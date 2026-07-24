@@ -163,6 +163,26 @@ function runStage2(){
  if(!names.length){console.log('FAIL: 敵が1体も出ていない');process.exit(1);}
  META.stg=0;backTitle();loadStage(0);
 }
+/* ---- 最終ウェーブのボスが、ステージ専用の特別な1体になっているか ---- */
+function checkFinalBoss(){
+ const want=[['ステージ1',0,FIN_ZI],['ステージ2',1,FIN2_ZI]];
+ for(const [nm,si,fi] of want){
+  META.sclr=[1];META.stg=si;setDiff=2;startSolo();
+  /* 通常のボス波(15)と最終波(20)を作って中身を見る */
+  const got=[];
+  for(const w of [15,STAGE_W]){
+   buildTide(w);
+   const b=G.tide.pool.find(e=>e.boss);
+   got.push(b?ZOMBIES[b.z.zi].n:'なし');
+  }
+  console.log(nm+': WAVE15のボス='+got[0]+' / WAVE'+STAGE_W+'のボス='+got[1]);
+  if(!ZOMBIES[fi]||got[1]!==ZOMBIES[fi].n){console.log('FAIL: 最終ボスが出ていない('+nm+')');process.exit(1);}
+  if(got[0]===got[1]){console.log('FAIL: 通常ボスと最終ボスが同じ('+nm+')');process.exit(1);}
+  backTitle();
+ }
+ META.stg=0;loadStage(0);
+}
+checkFinalBoss();
 runStage2();
 runPvE(1,'PvE古参(素の腕前)',false);
 const won=runPvE(1,'PvE古参(強化プレイ)',true);
