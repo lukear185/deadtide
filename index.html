@@ -525,6 +525,11 @@ const TOWERS=[
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'}
 ];
 const BASE_T=8;/* 通常解放できる基本タワー数 */
+/* 2026-07-24 永井さん指示: ショットガン台以外のタワー火力を0.75倍(攻撃/燃焼/⚙️生産) */
+for(const T of TOWERS){if(T.id==='shot')continue;
+ T.dmg=Math.round(T.dmg*.75*10)/10;
+ if(T.burn)T.burn=Math.round(T.burn*.75*10)/10;
+ if(T.inc)T.inc=Math.max(1,Math.round(T.inc*.75));}
 const UNLOCK_P=[0,0,180,260,360,480,650,850,1000,1250];
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
