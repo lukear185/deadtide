@@ -898,9 +898,12 @@ const SEG=[];let PLEN=0;
 for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
 function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}const e=SEG[SEG.length-1];return[e.b[0],e.b[1],0];}
 function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
-/* 上部HUDに隠れないよう、空の位置にあったマスは地面へ降ろしてある */
-const SLOTS=[[1300,228],[1000,250],[1210,300],[1240,515],[1475,540],[1080,555],[865,540],[655,500],[560,290],[300,470],[250,700],
- [1470,242],[1545,345],[1560,240],[1010,370],[1330,320],[1490,650],[1180,728],[920,728],[680,290],[510,470],[180,530]];
+/* 建設マス: 道路の中心線からちょうど95離した位置に、道なりの順で並べる。
+   道路半幅49+マス半28=77なので18px空く。散らばって見えないよう「道路沿いの列」になるよう配置。
+   除外: 拠点まわり150 / 工房枠135 / 協力の出撃テント / コアHPバーの表示位置 / マス同士は110以上。
+   ※ 位置を変えたら scratchpad の verify.js 相当のチェック(道路85以上・重なりなし)を通すこと */
+const SLOTS=[[1480,245],[1370,245],[1260,245],[1005,210],[1005,320],[1475,370],[1110,515],[1220,515],[1475,480],[1475,590],[1475,700],
+ [1000,555],[890,555],[665,560],[855,450],[720,285],[610,285],[500,285],[325,410],[325,520],[515,520],[530,640]];
 /* 廃品工房の専用スロット(画面左上)。初期1枠・増設で最大3枠 */
 const ECO_BASE=SLOTS.length,ECO_MAX=3;
 SLOTS.push([120,190],[262,190],[404,190]);
@@ -908,7 +911,8 @@ const isEcoSlot=si=>si>=ECO_BASE;
 const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
 const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
 const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
-const AI_ORDER=[2,1,5,7,3,8,6,0,9,4,10,14,19,18,12,16,17,21,13,11,15,20];
+/* 解放順(=最初の6枠)とCPUの建設優先順。先頭6つは道なりに散らして初期から全域を守れるように */
+const AI_ORDER=[2,8,12,16,19,21,6,14,4,10,17,20,0,11,1,3,5,7,9,13,15,18];
 /* 通常スロットも解放式: 初期6枠・⚙️で増設 */
 const SLOT_ORDER=AI_ORDER.slice();
 const SLOT0=6;

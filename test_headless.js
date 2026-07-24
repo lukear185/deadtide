@@ -41,7 +41,8 @@ function runPvE(diff,tag,cheat){
  setDiff=diff;
  startSolo();
  frames(30,.016);
- buildTower(G.players[0],2,0);buildTower(G.players[0],1,0);
+ /* 初期解放されている枠(AI_ORDERの先頭6つ)から選ぶこと */
+ buildTower(G.players[0],2,0);buildTower(G.players[0],8,0);
  let guard=0,dep=0,struck=false;
  while(G&&!G.over&&guard++<60000){
   frames(1,.033);
@@ -77,7 +78,8 @@ function runPvP(tag){
  newGame([{name:'キミ',kind:'me'},{name:'CPUカラス',kind:'cpu',ai:DIFFS[2]},{name:'CPUハイエナ',kind:'cpu',ai:DIFFS[1]}],0);
  startGameUI([{i:1,n:'CPUカラス'},{i:2,n:'CPUハイエナ'}]);
  frames(30,.016);
- buildTower(G.players[0],2,0);buildTower(G.players[0],1,0);
+ /* 初期解放されている枠(AI_ORDERの先頭6つ)から選ぶこと */
+ buildTower(G.players[0],2,0);buildTower(G.players[0],8,0);
  let guard=0,struck=false,pushed=0,dep=0;
  while(G&&!G.over&&guard++<40000){
   frames(1,.033);
@@ -110,7 +112,7 @@ function runCoop(tag){
  G.players[0].coreMax=90;G.players[0].core=90;
  startGameUI([{i:1,n:'P2'},{i:2,n:'P3'}]);
  frames(30,.016);
- buildTower(G.players[0],2,0);buildTower(G.players[1],1,0);buildTower(G.players[2],5,0);
+ buildTower(G.players[0],2,0);buildTower(G.players[1],8,0);buildTower(G.players[2],12,0);
  let guard=0,dep=[0,0,0];
  while(G&&!G.over&&guard++<60000){
   frames(1,.033);
