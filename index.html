@@ -978,6 +978,7 @@ function priceOf(C,kind,opt){
 function doPurchase(C,kind,opt){
  opt=opt||{};const p=priceOf(C,kind,opt);
  if(C.scrap<p||C.dead)return false;
+ if((kind==='unlock'||kind==='uun')&&G&&G.wave<3)return false;/* WAVE3クリアまで解放禁止(序盤の詰み防止) */
  if(kind==='unlock'&&C.unlocked>=TOWERS.length)return false;
  if(kind==='uun'&&C.uUn>=UNITS.length)return false;
  const tgt=opt.tgt!=null&&opt.tgt>=0?G.players[opt.tgt]:null;
@@ -1051,8 +1052,8 @@ function cpuPlan(C){
   const opts=[];
   const push=(k,w,o)=>{if(C.scrap>=priceOf(C,k,o||{}))opts.push({k,w,o:o||{}});};
   if(C.core<C.coreMax*.45)push('repair',6);
-  if(C.unlocked<TOWERS.length&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
-  if(C.uUn<UNITS.length&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
+  if(G.wave>=3&&C.unlocked<TOWERS.length&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
+  if(G.wave>=3&&C.uUn<UNITS.length&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
   push('atk',2.2);
   if(C.core<C.coreMax*.8)push('repair',1.2);
   {const gi=G.players.indexOf(C),alv=G.players.filter(p=>!p.dead).length,eq=100/alv,sh=G.tide.shares[gi];
@@ -1512,10 +1513,11 @@ function ivRender(){
  const pc=k=>priceOf(m,k,{zi:ivS.zi,cnt:ivS.cnt});
  const can=k=>m.scrap>=pc(k);
  const nx=m.unlocked<TOWERS.length?TOWERS[m.unlocked]:null;
+ const early=(G?G.wave:(CS.w||0))<3;/* WAVE3クリアまで解放ロック */
  let h='';
- h+=`<div class="card"><div class="ci">🔓</div><div class="ct">新タワー解放</div><div class="cdsc">${nx?('次:『'+nx.n+'』— '+nx.dsc):'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${nx&&can('unlock')?'':'disabled'}>⚙️${nx?pc('unlock'):'-'}</button></div>`;
+ h+=`<div class="card"><div class="ci">${early?'🔒':'🔓'}</div><div class="ct">新タワー解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる(序盤は基本装備で守れ)':nx?('次:『'+nx.n+'』— '+nx.dsc):'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${!early&&nx&&can('unlock')?'':'disabled'}>${early?'🔒':'⚙️'+(nx?pc('unlock'):'-')}</button></div>`;
  const uu2=m.uUn!=null?m.uUn:2,nu=uu2<UNITS.length?UNITS[uu2]:null;
- h+=`<div class="card"><div class="ci">🪖</div><div class="ct">新部隊解放</div><div class="cdsc">${nu?('次:『'+nu.n+'』— '+nu.dsc):'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${nu&&can('uun')?'':'disabled'}>⚙️${nu?pc('uun'):'-'}</button></div>`;
+ h+=`<div class="card"><div class="ci">${early?'🔒':'🪖'}</div><div class="ct">新部隊解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる':nu?('次:『'+nu.n+'』— '+nu.dsc):'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${!early&&nu&&can('uun')?'':'disabled'}>${early?'🔒':'⚙️'+(nu?pc('uun'):'-')}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${can('atk')?'':'disabled'}>⚙️${pc('atk')}</button></div>`;
  h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${can('repair')&&m.core<m.coreMax?'':'disabled'}>⚙️${pc('repair')}</button></div>`;
  if(!((G&&G.pve)||COOP)){
@@ -1540,6 +1542,7 @@ function actBuy(kind){
  const opt={zi:ivS.zi,cnt:ivS.cnt,tgt:kind==='big'?ivS.tB:kind==='jam'?ivS.tJ:kind==='send'?ivS.tS:null};
  const label={unlock:'🔓 新タワー解放!',uun:'🪖 新部隊解放!',atk:'🔧 火力増強!',repair:'🛠 コア修理!',big:'🌊 大押し流しを仕掛けた!',tide:'🌊 潮位を引き上げた!',jam:'⚡ 妨害工作を仕掛けた',send:'🧟 変異体を送った'}[kind];
  if(MODE==='client'){const m=meV(),p=priceOf(m,kind,opt);if(m.scrap<p)return;
+  if((kind==='unlock'||kind==='uun')&&(CS.w||0)<3)return;
   safeSend(NET.conn,{t:'c',a:'buy',k:kind,o:opt});
   m.scrap-=p;if(kind==='unlock')m.unlocked++;if(kind==='uun')m.uUn=(m.uUn!=null?m.uUn:2)+1;if(kind==='atk')m.atkLv++;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
   sfx.buy();ivLog(label);ivRender();return;}
