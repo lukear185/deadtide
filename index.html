@@ -89,7 +89,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .spec #deck,.spec #strikebtn,.spec #flagbtn,.spec #pushbtn,.spec #pushtgt,.spec #strikehint,.spec #flaghint{display:none!important}
 @media (max-width:760px){.mini{min-width:104px;max-width:116px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
- #deck{bottom:max(4px,env(safe-area-inset-bottom));gap:4px;max-width:calc(100vw - 172px)}
+ /* ホームバー分の余白を削り、ボタン帯を画面の一番下へ寄せる＝その分マップを大きく下まで使える */
+ #deck{bottom:max(3px,calc(env(safe-area-inset-bottom) - 13px));gap:4px;max-width:calc(100vw - 172px)}
  #deck .dk{width:50px;height:60px}
  #deck .dk canvas{width:29px;height:29px}
  #deck .dk .dn{font-size:8px}
@@ -1877,11 +1878,17 @@ function specName(){if(MODE==='client'){const o=(CS.ot||[]).find(x=>x.j===SPEC);
 const cv=$('cv'),ctx=cv.getContext('2d');
 let SC=1,OX=0,OY=0,DPR=1;
 function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
- const hudPad=Math.round(deckBandPx()*DPR);/* 下のユニットボタン帯を実測して確保＝タレット置き場と絶対に被らせない */
- const avail=Math.max(80,H-hudPad);
- SC=Math.min(W/MW,avail/MH);OX=(W-MW*SC)/2;OY=(avail-MH*SC)/2;}
+ const band=Math.round(deckBandPx()*DPR);/* 下のユニットボタン帯＝タレット置き場と絶対に被らせない */
+ const top=Math.round(hudTopPx()*DPR);/* 上のリソース表示帯＝地面がこの下から始まるようにする */
+ const availG=Math.max(60,H-top-band);/* 地面(空を除いたマップ)を置ける高さ */
+ SC=Math.min(W/MW,availG/(MH-SKYH));
+ OX=(W-MW*SC)/2;
+ let oy=top-SKYH*SC;/* 空の帯はHUDの裏に入れてよい＝地平線がHUDのすぐ下に来る */
+ const extra=(H-band)-(oy+MH*SC);if(extra>0)oy+=extra/2;/* 下に余ったら下へずらす */
+ OY=Math.max(0,oy);}
+const SKYH=108;/* マップ上端の空の帯(この部分だけは上のHUDの裏に入ってよい。工房ラベルはy=118から) */
 /* 画面下端からユニットボタンの上端までの高さ(CSSpx)。実測できない時は既定値 */
-let DECKBAND=74,DECKT=-9;
+let DECKBAND=74,DECKT=-9,HUDTOP=52,HUDT=-9;
 function deckBandPx(){
  const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
  if(now-DECKT<400)return DECKBAND;DECKT=now;
@@ -1889,6 +1896,14 @@ function deckBandPx(){
   if(r&&r.height>4)DECKBAND=Math.ceil(Math.max(0,(window.innerHeight||r.bottom)-r.top)+8);
  }catch(e){}
  return DECKBAND;}
+/* 画面上端からリソース表示(上のボタン帯)の下端までの高さ(CSSpx) */
+function hudTopPx(){
+ const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
+ if(now-HUDT<400)return HUDTOP;HUDT=now;
+ try{const d=$('topbar'),r=d&&d.getBoundingClientRect();
+  if(r&&r.height>4)HUDTOP=Math.ceil(r.bottom+6);
+ }catch(e){}
+ return HUDTOP;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');
  if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}if(id==='game')bgmOn();else if(id==='title')bgmOff();}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
