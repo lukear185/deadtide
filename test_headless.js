@@ -50,7 +50,9 @@ function runPvE(diff,tag,cheat){
   if(guard%1400===700&&G.phase==='wave'){me.flagD=clamp(projPath(ri(150,1450),ri(150,700)),PLEN*.1,PLEN*.9);}
   if(cheat&&G.phase==='wave'&&guard%90===0){
    for(let si=0;si<SLOTS.length;si++){if(!me.towers[si]){const ti=me.unlocked-1;if(me.scrap>=TOWERS[ti].cost){buildTower(me,si,ti);}break;}}
-   for(let si=0;si<SLOTS.length;si++){const tw=me.towers[si];if(tw&&tw.lv<3&&me.scrap>=upCost(tw.ti,tw.lv)){upTower(me,si);break;}}
+   for(let si=0;si<SLOTS.length;si++){const tw=me.towers[si];if(!tw)continue;let done=false;
+    for(const st of twStats(tw.ti)){if(tw.us[st]<USTAT_MAX&&me.scrap>=stCost(tw,st)){upTower(me,si,st);done=true;break;}}
+    if(done)break;}
   }
   if(G.phase==='interval'&&!me.ready){
    if(cheat)me.scrap+=1500;
@@ -118,7 +120,9 @@ function runCoop(tag){
     if(guard%(1100+pi*300)===500)P.flagD=clamp(projPath(ri(150,1450),ri(150,700)),PLEN*.1,PLEN*.9);}
    if(guard%120===0){for(let pi=0;pi<3;pi++){const P=G.players[pi];
     for(let si=0;si<SLOTS.length;si++){if(!F.towers[si]&&P.unlocked>0&&P.scrap>=TOWERS[P.unlocked-1].cost){buildTower(P,si,P.unlocked-1);break;}}
-    for(let si=0;si<SLOTS.length;si++){const tw=F.towers[si];if(tw&&(tw.own||0)===pi&&tw.lv<3&&P.scrap>=upCost(tw.ti,tw.lv)){upTower(P,si);break;}}}}
+    for(let si=0;si<SLOTS.length;si++){const tw=F.towers[si];if(!tw||(tw.own||0)!==pi)continue;let done=false;
+     for(const st of twStats(tw.ti)){if(tw.us[st]<USTAT_MAX&&P.scrap>=stCost(tw,st)){upTower(P,si,st);done=true;break;}}
+     if(done)break;}}}
   }
   if(G.phase==='interval'){for(const P of G.players){if(!P.ready){P.scrap+=600;doPurchase(P,'unlock',{});doPurchase(P,'uun',{});doPurchase(P,'atk',{});doPurchase(P,'repair',{});P.ready=true;}}}
  }

@@ -102,6 +102,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* 建設メニュー */
 #buildmenu{position:absolute;z-index:8;display:none;background:rgba(36,31,25,.94);border:3px solid var(--paper);border-radius:14px;padding:8px;box-shadow:0 6px 0 #000;max-width:270px}
 #buildmenu .bm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#buildmenu .bm-col{display:flex;flex-direction:column;gap:5px;margin:6px 0}
+#buildmenu .bm-us{text-align:left;font-size:13px}
+#buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
 .bm-item canvas{width:46px;height:40px}
 .bm-item .bn{font-size:9px;font-weight:900;white-space:nowrap}
@@ -380,8 +383,15 @@ const TOWERS=[
  {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:175,rate:2.4,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を狙撃'}
 ];
 const UNLOCK_P=[0,0,180,260,360,480,650,850];
-const upCost=(ti,lv)=>Math.round(TOWERS[ti].cost*(lv===1?1.2:1.9));
-const lvm=lv=>1+.55*(lv-1);
+/* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
+const USTAT_MAX=5;
+const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.5*Math.pow(1.45,tw.us[st]));
+const twStats=ti=>TOWERS[ti].type==='eco'?['d','r']:['d','r','g'];
+const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g:0));
+const twDmgM=tw=>1+.18*(tw.us?tw.us.d:0);
+const twRateM=tw=>1-.09*(tw.us?tw.us.r:0);
+const twRngM=tw=>1+.08*(tw.us?tw.us.g:0);
 const ZOMBIES=[
  {id:'walk',n:'ウォーカー',hp:72,sp:78,bt:12,dmg:1,mw:1,sc:1,atk:14,ar:.8,c:'#7a8f5f'},
  {id:'run',n:'ランナー',hp:46,sp:170,bt:14,dmg:1,mw:2,sc:.9,atk:10,ar:.6,c:'#a5b04a'},
@@ -528,8 +538,8 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   if(o.fire&&ti!==2){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,0,6,0,7);c.fill();}
   c.restore();
  }
- /* レベル表示 */
- c.fillStyle='#F2ECDC';for(let i=0;i<lv;i++){c.beginPath();c.moveTo(-12+i*9,26);c.lineTo(-8+i*9,19);c.lineTo(-4+i*9,26);c.closePath();c.fill();c.stroke();}
+ /* 強化ピップ表示(合計強化数を最大5個) */
+ c.fillStyle='#F2ECDC';for(let i=0;i<lv;i++){c.beginPath();c.moveTo(-19+i*8,26);c.lineTo(-15.5+i*8,20);c.lineTo(-12+i*8,26);c.closePath();c.fill();c.stroke();}
  if(o.jam){c.filter='none';c.fillStyle='#ffd23d';c.font='900 20px sans-serif';c.textAlign='center';c.fillText('⚡✖',0,-28);}
  c.restore();
 }
@@ -730,13 +740,14 @@ function buildTower(C,si,ti){
  const T=TOWERS[ti];
  const F=G&&G.coop?G.players[0]:C;
  if(C.dead||F.dead||F.towers[si]||ti>=C.unlocked||C.scrap<T.cost)return false;
- C.scrap-=T.cost;F.towers[si]={ti,lv:1,cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:T.cost,own:C.gi||0};
+ C.scrap-=T.cost;F.towers[si]={ti,us:{d:0,r:0,g:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:T.cost,own:C.gi||0};
  if(C.isMe)sfx.build();
  addFx(F,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:60,col:'#F2ECDC'});
  return true;
 }
-function upTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];if(!tw||tw.lv>=3)return false;const p=upCost(tw.ti,tw.lv);
- if(C.scrap<p||C.dead)return false;C.scrap-=p;tw.lv++;tw.spent+=p;if(C.isMe)sfx.build();return true;}
+function upTower(C,si,st){st=st||'d';const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
+ if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return false;const p=stCost(tw,st);
+ if(C.scrap<p||C.dead)return false;C.scrap-=p;tw.us[st]++;tw.spent+=p;if(C.isMe)sfx.build();return true;}
 function sellTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];if(!tw)return false;
  if(G&&G.coop&&(tw.own||0)!==(C.gi||0))return false;
  C.scrap+=Math.round(tw.spent*.6);F.towers[si]=null;if(C.isMe)sfx.sell();return true;}
@@ -812,17 +823,17 @@ function campStep(C,dt,wave){
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
   if(tw.jamT>0){tw.jamT-=dt;continue;}
   tw.cd-=dt;if(tw.fireT>0)tw.fireT-=dt;
-  const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=lvm(tw.lv);
+  const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=twDmgM(tw);
   const aB=G&&G.coop?1+.08*((G.players[tw.own||0]||C).atkLv):atkB;
-  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate;const g=Math.round(T.inc*m);C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
-  const rng=T.rng*(1+.12*(tw.lv-1)),r2=rng*rng;
+  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=Math.round(T.inc*(1+.2*tw.us.d));C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
+  const rng=T.rng*twRngM(tw),r2=rng*rng;
   let tg=null,best=-1;
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const dx=z.px-sx,dy=z.py-sy,ds=dx*dx+dy*dy;if(ds>r2)continue;
    if(T.minr&&ds<T.minr*T.minr)continue;
    const score=T.prio?z.hp:z.d;if(score>best){best=score;tg=z;}}
   if(tg)tw.ang=Math.atan2(tg.py-sy,tg.px-sx);
   if(tw.cd>0||!tg)continue;
-  tw.cd=T.rate;tw.fireT=.12;
+  tw.cd=T.rate*twRateM(tw);tw.fireT=.12;
   const dm=T.dmg*m*aB;
   if(T.type==='net'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){z.slowT=T.slowT;dmgZ(C,z,dm,1);}}addFx(C,'ring',sx,sy,'',{r:rng,col:'#9fd9c6'});if(C.isMe)sfx.net();}
   else if(T.type==='fire'){dmgZ(C,tg,dm,1);if(!tg.dead){tg.burnT=2;tg.burnD=T.burn*m*aB;}if(C.isMe&&Math.random()<.12)sfx.thunk();}
@@ -830,7 +841,7 @@ function campStep(C,dt,wave){
    for(let k=1;k<T.chain;k++){let nx=null,bd=1e9;for(const z of C.zombies){if(z.dead||hitl.includes(z))continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<130&&dd<bd){bd=dd;nx=z;}}
     if(!nx)break;dmgZ(C,nx,dm*Math.pow(.8,k),1);hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
    addFx(C,'zap',sx,sy,'',{pts});if(C.isMe)sfx.zap();}
-  else if(T.type==='blast'){C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:.85,dmg:dm,aoe:T.aoe*(1+.1*(tw.lv-1))});if(C.isMe)sfx.thunk();}
+  else if(T.type==='blast'){C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:.85,dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)});if(C.isMe)sfx.thunk();}
   else{/* bullet */
    if(T.multi){let cnt=0;const done=[];
     for(let k2=0;k2<T.multi;k2++){let nx=null,bd=1e9;for(const z of C.zombies){if(z.dead||done.includes(z))continue;const dd=dist(z.px,z.py,sx,sy);if(dd<=rng&&dd<bd){bd=dd;nx=z;}}
@@ -928,9 +939,10 @@ function cpuTick(C,dt){
   else if(ml<2+ex){for(let i=C.uUn-1;i>=0;i--)if(i!==3&&UNITS[i].rng<=60){uw=i;break;}}
   else if(rg<2+ex){for(let i=C.uUn-1;i>=0;i--)if(UNITS[i].rng>60&&UNITS[i].type!=='heal'){uw=i;break;}}
   if(uw>=0&&C.ucd[uw]<=0&&C.scrap>=UNITS[uw].cost*res&&deployUnit(C,uw))return;}
- let bi=-1,bp=1e9;
- for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(tw&&tw.lv<3&&tw.ti!==3){const p=upCost(tw.ti,tw.lv);if(p<bp){bp=p;bi=si;}}}
- if(bi>=0&&C.scrap>=bp*res*1.25)upTower(C,bi);
+ let bi=-1,bst=null,bp=1e9;
+ for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.ti===3)continue;
+  for(const st of twStats(tw.ti)){if(tw.us[st]>=USTAT_MAX)continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
+ if(bi>=0&&C.scrap>=bp*res*1.25)upTower(C,bi,bst);
 }
 function cpuPlan(C){
  const others=G.players.filter(p=>p!==C&&!p.dead);
@@ -1097,9 +1109,9 @@ function renderCamp(C,t){
   c.strokeStyle=SEL===si?'#E8A33D':INK;c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
   if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
    c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText('+',sx,sy+12);}
-  else drawTower(c,tw.ti,tw.lv,sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0});
+  else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0});
  }
- if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){c.strokeStyle='rgba(232,163,61,.8)';c.lineWidth=3;c.setLineDash([10,10]);c.beginPath();c.arc(SLOTS[SEL][0],SLOTS[SEL][1],TOWERS[tw.ti].rng*(1+.12*(tw.lv-1)),0,7);c.stroke();c.setLineDash([]);}}
+ if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){c.strokeStyle='rgba(232,163,61,.8)';c.lineWidth=3;c.setLineDash([10,10]);c.beginPath();c.arc(SLOTS[SEL][0],SLOTS[SEL][1],TOWERS[tw.ti].rng*twRngM(tw),0,7);c.stroke();c.setLineDash([]);}}
  /* 砲弾 */
  for(const sh of C.shells){const p2=sh.t/sh.fl;const px=sh.x+(sh.tx-sh.x)*p2,py=sh.y+(sh.ty-sh.y)*p2-Math.sin(Math.PI*p2)*110;
   c.fillStyle='#3c4136';c.beginPath();c.arc(px,py,7,0,7);c.fill();c.stroke();}
@@ -1293,15 +1305,21 @@ function openBM(si){
   for(let i=0;i<TOWERS.length;i++){if(i>=m.unlocked)continue;const T=TOWERS[i];
    h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
- }else{const T=TOWERS[tw.ti],up=tw.lv<3?upCost(tw.ti,tw.lv):null;
-  h=`<div id="bm-title">${T.n} Lv${tw.lv}${tw.lv>=3?'(MAX)':''} — ${T.dsc}</div><div class="bm-row">`;
-  h+=`<button class="btn grn sm" id="bm-up" ${up==null||m.scrap<up?'disabled':''}>${up==null?'Lv MAX':'⬆強化 ⚙️'+up}</button>`;
-  h+=`<button class="btn sm" id="bm-sell">💥売却</button></div>`;
+ }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
+  if(!tw.us)tw.us={d:0,r:0,g:0};
+  const rows=twStats(tw.ti).map(st=>{
+   const lvv=tw.us[st]||0,mx=lvv>=USTAT_MAX,p=mx?null:stCost(tw,st);
+   const lbl=eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st];
+   const pips='◆'.repeat(lvv)+'◇'.repeat(USTAT_MAX-lvv);
+   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx||m.scrap<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':'⚙️'+p}</button>`;
+  }).join('');
+  const canSell=!(COOP&&(tw.own||0)!==(MODE==='client'?CS.myJ:(G?G.myIdx:0)));
+  h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div><div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
  }
  bm.innerHTML=h;
  bm.querySelectorAll('[data-th]').forEach(cc=>{cc.getContext('2d').drawImage(THUMBS[+cc.dataset.th],0,0);});
  bm.querySelectorAll('[data-bd]').forEach(b=>{b.onclick=()=>{actBuild(si,+b.dataset.bd);closeBM();};});
- const bu=$('bm-up');if(bu)bu.onclick=()=>{actUp(si);openBM(si);};
+ bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
  const bs=$('bm-sell');if(bs)bs.onclick=()=>{actSell(si);closeBM();};
  const [px,py]=mapToClient(SLOTS[si][0],SLOTS[si][1]);
  bm.style.display='block';
@@ -1341,10 +1359,11 @@ function actPush(){
  if(G)pushTide(G.players[G.myIdx],PUSHTGT);
 }
 /* ---- アクション(ローカル/通信ルーティング) ---- */
-function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;safeSend(NET.conn,{t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,lv:1,jamT:0};sfx.build();}
+function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;safeSend(NET.conn,{t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:{d:0,r:0,g:0},jamT:0,own:CS.myJ};sfx.build();}
  else buildTower(G.players[G.myIdx],si,ti);}
-function actUp(si){if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||tw.lv>=3)return;const p=upCost(tw.ti,tw.lv);if(m.scrap<p)return;safeSend(NET.conn,{t:'c',a:'up',si});CS.meN.scrap-=p;tw.lv++;sfx.build();}
- else upTower(G.players[G.myIdx],si);}
+function actUp(si,st){st=st||'d';
+ if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if(m.scrap<p)return;safeSend(NET.conn,{t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
+ else upTower(G.players[G.myIdx],si,st);}
 function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;safeSend(NET.conn,{t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
  else sellTower(G.players[G.myIdx],si);}
 function actStrike(x,y){if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'st',x:Math.round(x),y:Math.round(y)});CS.meN.charge=0;sfx.boom();}
@@ -1473,7 +1492,7 @@ function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
  fd:Math.round(C.flagD),uu:C.uUn,dp:C.dep,
- tws:F.towers.map(t2=>t2?[t2.ti,t2.lv,t2.jamT>0?1:0,t2.own||0]:0),
+ tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
@@ -1482,7 +1501,7 @@ function packLane(C){
 function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)continue;const P=G.players[k];
  const o={j:k,n:P.name,hp:Math.ceil(P.core),mx:P.coreMax,dd:P.dead?1:0,pl:P.place,kw:P.killsWave,tw:P.totalWave,rd:P.ready?1:0,sh:Math.round(G.tide.shares[k]),en:Math.round(P.scrap)};
  if(!G.coop)o.ln={fd:Math.round(P.flagD),
-   tws:P.towers.map(t2=>t2?[t2.ti,t2.lv,t2.jamT>0?1:0]:0),
+   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g]:0),
    es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0]),
    us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid])};
  a.push(o);}return a;}
@@ -1492,7 +1511,7 @@ function hostNetTick(force){if(!G)return;
 function normMe(m){const old=CS.meN;
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
   uUn:m.uu!=null?m.uu:2,ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
-  towers:m.tws.map(x=>x?{ti:x[0],lv:x[1],jamT:x[2]?1:0,fireT:0,ang:-.6,spent:TOWERS[x[0]].cost,own:x[3]||0}:null)};}
+  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0},fireT:0,ang:-.6,spent:TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
  CS.w=d.w;CS.ph=d.ph;CS.tI=d.tI;CS.ot=d.ot||[];CS.ts=d.ts||[];CS.pr=d.pr||0;CS.tu=d.tu||0;
@@ -1545,7 +1564,7 @@ function clientCamp(dt){
  CC.shells=(CS.sh||[]).map(s2=>({t:0,fl:1,x:s2[0],y:s2[1],tx:s2[0],ty:s2[1]}));
  for(let si=0;si<SLOTS.length;si++){const tw=CC.towers[si];if(!tw)continue;const T=TOWERS[tw.ti];
   if(!T.rng){tw.fireT=0;continue;}
-  let tg=null,best=-1;const rng=T.rng*(1+.12*(tw.lv-1));
+  let tg=null,best=-1;const rng=T.rng*twRngM(tw);
   for(const z of CC.zombies){if(z.d<0)continue;const dd=dist(z.px,z.py,SLOTS[si][0],SLOTS[si][1]);if(dd<=rng&&z.d>best){best=z.d;tg=z;}}
   if(tg){tw.ang=Math.atan2(tg.py-SLOTS[si][1],tg.px-SLOTS[si][0]);tw.fireT=.1;}else tw.fireT=0;
  }
@@ -1556,7 +1575,7 @@ function clientCamp(dt){
   if(!o.ln)continue;
   let sc=CS.oc[o.j];if(!sc)sc=CS.oc[o.j]=mkSpecCamp();
   sc.core=o.hp;sc.coreMax=o.mx||50;sc.dead=!!o.dd;sc.waveDone=false;sc.flagD=o.ln.fd;
-  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],lv:x[1],jamT:x[2]?1:0,fireT:0,ang:-.6,spent:0}:null);
+  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0},fireT:0,ang:-.6,spent:0}:null);
   syncEnts(sc,o.ln.es||[],o.ln.us||[],dt);
  }
 }
@@ -1585,7 +1604,7 @@ function hostData(c,d){
  if(d.t==='c'&&G){
   const i=G.players.findIndex(p=>p.conn===c);if(i<0)return;const P=G.players[i];
   if(d.a==='bd')buildTower(P,d.si|0,d.ti|0);
-  else if(d.a==='up')upTower(P,d.si|0);
+  else if(d.a==='up')upTower(P,d.si|0,''+(d.st||'d'));
   else if(d.a==='sl')sellTower(P,d.si|0);
   else if(d.a==='st')airstrike(P,+d.x||0,+d.y||0,G.wave);
   else if(d.a==='buy')doPurchase(P,''+d.k,d.o||{});
