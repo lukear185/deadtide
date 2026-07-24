@@ -90,12 +90,16 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 @media (max-width:760px){.mini{min-width:104px;max-width:116px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
  /* ホームバー分の余白を削り、ボタン帯を画面の一番下へ寄せる＝その分マップを大きく下まで使える */
- #deck{bottom:max(3px,calc(env(safe-area-inset-bottom) - 13px));gap:4px;max-width:calc(100vw - 152px)}
- #deck .dk{width:48px;height:48px}
- #deck .dk canvas{width:22px;height:22px}
- #deck .dk .dn{font-size:8px;line-height:1.05}
- #flagbtn{width:52px;height:52px;font-size:21px}
- #strikebtn,#pushbtn{width:56px;height:56px}
+ #abar{gap:6px;padding:3px max(4px,env(safe-area-inset-right)) max(2px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
+ #deck{gap:4px}
+ #deck .dk{width:54px;height:52px}
+ #deck .dk canvas{width:24px;height:24px}
+ #deck .dk .dn{font-size:10px;line-height:12px}
+ #deck .dk .dc{font-size:10px;line-height:14px;height:14px}
+ #flagbtn,#strikebtn,#pushbtn{width:50px;height:50px}
+ #flagbtn{font-size:21px}
+ #strikebtn{font-size:23px}
+ #pushbtn{font-size:10px}
  /* 上のHUDも小さくしてフィールドを広げる */
  #topbar{gap:5px;padding:4px;padding-left:max(4px,env(safe-area-inset-left));padding-top:max(3px,env(safe-area-inset-top))}
  .hudpanel{padding:2px 7px;gap:5px;border-radius:9px}
@@ -115,23 +119,28 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #tideseg{display:flex;height:15px;border:2px solid var(--paper);border-radius:9px;overflow:hidden;box-shadow:0 3px 0 rgba(0,0,0,.4);background:#333}
 #tideseg i{display:block;height:100%;font-size:9px;font-weight:900;color:#fff;text-align:center;line-height:12px;overflow:hidden;white-space:nowrap;text-shadow:1px 1px 0 rgba(0,0,0,.6)}
 #tidelbl{text-align:center;font-size:10px;font-weight:900;color:var(--paper);text-shadow:1px 1px 0 #000;margin-top:2px}
-#pushbtn{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));width:66px;height:66px;border-radius:50%;border:3px solid var(--paper);background:#2b6f8f;color:#fff;font-size:12px;font-weight:900;box-shadow:0 4px 0 #000;z-index:6;line-height:1.15}
-#pushbtn:active{transform:scale(.93)}
-#pushbtn:disabled{opacity:.45}
-#pushtgt{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:calc(max(10px,env(safe-area-inset-bottom)) + 74px);background:rgba(36,31,25,.88);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:11px;padding:4px 9px;font-weight:900;z-index:6;display:none}
-#strikebtn{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:64px;height:64px;border-radius:50%;border:3px solid var(--paper);background:conic-gradient(var(--rust) 0%,#4a4034 0);color:#fff;font-size:26px;font-weight:900;box-shadow:0 4px 0 #000;z-index:6}
+/* 画面下の操作バー: 🚩集結旗・🎯航空支援・出撃デッキ・🌊押す を一列にまとめる。
+   フィールドの上にボタンを浮かせないぶん、マップを画面いっぱいまで広げられる */
+#abar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
+ padding:4px max(6px,env(safe-area-inset-right)) max(4px,calc(env(safe-area-inset-bottom) - 12px)) max(6px,env(safe-area-inset-left))}
+#abar>*{pointer-events:auto;flex:0 0 auto}
+#flagbtn,#strikebtn,#pushbtn{width:58px;height:58px;border-radius:50%;border:3px solid var(--paper);color:#fff;font-weight:900;box-shadow:0 3px 0 #000}
+#flagbtn{background:#4d6b3a;font-size:23px}
+#strikebtn{background:conic-gradient(var(--rust) 0%,#4a4034 0);font-size:26px}
+#pushbtn{background:#2b6f8f;font-size:12px;line-height:1.15}
+#flagbtn:active,#strikebtn:active,#pushbtn:active{transform:scale(.93)}
+#flagbtn.aim,#strikebtn.aim{outline:4px solid var(--amber)}
 #strikebtn.rdy{animation:pulse 1s infinite}
-#strikebtn.aim{outline:4px solid var(--amber)}
+#pushbtn:disabled{opacity:.45}
 @keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 16px var(--amber)}}
-#strikehint{position:absolute;left:84px;bottom:max(26px,env(safe-area-inset-bottom));color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
-#flagbtn{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:calc(max(10px,env(safe-area-inset-bottom)) + 74px);width:52px;height:52px;border-radius:50%;border:3px solid var(--paper);background:#4d6b3a;color:#fff;font-size:22px;font-weight:900;box-shadow:0 4px 0 #000;z-index:6}
-#flagbtn:active{transform:scale(.93)}
-#flagbtn.aim{outline:4px solid var(--amber)}
-#flaghint{position:absolute;left:84px;bottom:calc(max(26px,env(safe-area-inset-bottom)) + 74px);color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
-#deck{position:absolute;left:50%;transform:translateX(-50%);bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:5px;z-index:6;max-width:calc(100vw - 200px);overflow-x:auto;padding-bottom:2px}
-#deck .dk{position:relative;flex:0 0 auto;width:52px;height:54px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:1px 0 0;overflow:hidden}
-#deck .dk canvas{width:25px;height:25px;display:block;margin:0 auto}
-#deck .dk .dn{display:block;font-size:9px;font-weight:900;color:var(--ink);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:clip;padding:0 1px}
+.spec #abar{display:none!important}
+#pushtgt{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:76px;background:rgba(36,31,25,.88);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:11px;padding:4px 9px;font-weight:900;z-index:6;display:none}
+#strikehint{position:absolute;left:12px;bottom:78px;color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
+#flaghint{position:absolute;left:12px;bottom:98px;color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
+#deck{display:flex;gap:5px;overflow-x:auto;flex:0 1 auto;padding-bottom:2px}
+#deck .dk{position:relative;flex:0 0 auto;width:58px;height:58px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:2px 0 0;overflow:hidden}
+#deck .dk canvas{width:27px;height:27px;display:block;margin:0 auto}
+#deck .dk .dn{display:block;font-size:11px;font-weight:900;color:var(--ink);line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:clip;padding:0 1px}
 /* 出撃コストは下端の黒帯に金文字ではっきり出す(背景と同化して読めない問題の対策) */
 #deck .dk .dc{position:absolute;left:0;right:0;bottom:0;display:block;font-size:11px;font-weight:900;color:#ffd23d;background:var(--ink);line-height:15px;height:15px;letter-spacing:-.2px}
 #deck .dk .cdov{position:absolute;inset:0;pointer-events:none;border-radius:8px}
@@ -355,12 +364,14 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div id="minis"></div>
   <div id="tidebar"><div id="tideseg"></div><div id="tidelbl">死潮の取り分</div></div>
   <button id="pushtgt">→全員</button>
-  <button id="pushbtn">🌊押す<br>⚙️45</button>
-  <button id="strikebtn">🎯</button>
-  <button id="flagbtn">🚩</button>
   <div id="strikehint">タップした地点に爆撃!(もう一度🎯で解除)</div>
   <div id="flaghint">タップした地点へ部隊が集結!(もう一度🚩で解除)</div>
-  <div id="deck"></div>
+  <div id="abar">
+    <button id="flagbtn">🚩</button>
+    <button id="strikebtn">🎯</button>
+    <div id="deck"></div>
+    <button id="pushbtn">🌊押す<br>⚙️45</button>
+  </div>
   <div id="buildmenu"></div>
 </div>
 
@@ -2085,32 +2096,33 @@ function specName(){if(MODE==='client'){const o=(CS.ot||[]).find(x=>x.j===SPEC);
 const cv=$('cv'),ctx=cv.getContext('2d');
 let SC=1,OX=0,OY=0,DPR=1;
 function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
- const band=Math.round(deckBandPx()*DPR);/* 下のユニットボタン帯＝タレット置き場と絶対に被らせない */
- const top=Math.round(hudTopPx()*DPR);/* 上のリソース表示帯＝地面がこの下から始まるようにする */
- const availG=Math.max(60,H-top-band);/* 地面(空を除いたマップ)を置ける高さ */
- SC=Math.min(W/MW,availG/(MH-SKYH),Math.max(60,H-band)/MH);/* 3つ目=マップ全体がボタン帯より上に収まること */
- OX=(W-MW*SC)/2;
- let oy=Math.max(0,top-SKYH*SC);/* 空の帯はHUDの裏に入れてよい＝地平線がHUDのすぐ下に来る */
- const extra=(H-band)-(oy+MH*SC);if(extra>0)oy+=extra/2;/* 下に余ったら中央へ寄せる */
+ const band=Math.round(barBandPx()*DPR);/* 下の操作バーぶん＝ここにマップは入れない(タレット置き場と絶対に被らせない) */
+ const rres=Math.round(minisResPx()*DPR);/* 対戦のミニ盤面ぶんの右余白(ソロ・協力では0) */
+ const availW=Math.max(160,W-rres),availH=Math.max(90,H-band);
+ /* 空(上端SKYH)は画面の外へはみ出してよい＝そのぶん地面を大きく使う。ただし地平線の帯(SKYKEEP)は必ず残す */
+ SC=Math.min(availW/MW,availH/(MH-SKYH+SKYKEEP));
+ OX=(availW-MW*SC)/2;
+ let oy=availH-MH*SC;/* 地面の下端を操作バーの上端にぴったり付ける */
+ if(oy>0)oy*=.5;/* 縦に余る画面(PC等)では中央へ */
  OY=oy;}
-const SKYH=108;/* マップ上端の空の帯(この部分だけは上のHUDの裏に入ってよい。工房ラベルはy=118から) */
-/* 画面下端からユニットボタンの上端までの高さ(CSSpx)。実測できない時は既定値 */
-let DECKBAND=74,DECKT=-9,HUDTOP=52,HUDT=-9;
-function deckBandPx(){
+const SKYH=108,SKYKEEP=60;/* マップ上端の空の帯/そのうち画面に必ず残す高さ(地平線と廃墟の足元) */
+/* 画面下端から操作バーの上端までの高さ(CSSpx)。実測できない時は既定値 */
+let BARBAND=70,BARBT=-9,MINIRES=0,MINIT=-9;
+function barBandPx(){
  const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
- if(now-DECKT<400)return DECKBAND;DECKT=now;
- try{const d=$('deck'),r=d&&d.getBoundingClientRect();
-  if(r&&r.height>4)DECKBAND=Math.ceil(Math.max(0,(window.innerHeight||r.bottom)-r.top)+8);
+ if(now-BARBT<400)return BARBAND;BARBT=now;
+ try{const d=$('abar'),r=d&&d.getBoundingClientRect();
+  if(r&&r.height>4)BARBAND=Math.ceil(Math.max(0,(window.innerHeight||r.bottom)-r.top)+4);
  }catch(e){}
- return DECKBAND;}
-/* 画面上端からリソース表示(上のボタン帯)の下端までの高さ(CSSpx) */
-function hudTopPx(){
+ return BARBAND;}
+/* 対戦で右上に出るミニ盤面のぶんだけ、マップを左へ寄せて重なりを避ける */
+function minisResPx(){
  const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
- if(now-HUDT<400)return HUDTOP;HUDT=now;
- try{const d=$('topbar'),r=d&&d.getBoundingClientRect();
-  if(r&&r.height>4)HUDTOP=Math.ceil(r.bottom+6);
+ if(now-MINIT<400)return MINIRES;MINIT=now;
+ try{const d=$('minis'),r=d&&d.getBoundingClientRect();
+  MINIRES=(d&&d.children&&d.children.length&&r&&r.width>4)?Math.ceil(r.width+8):0;
  }catch(e){}
- return HUDTOP;}
+ return MINIRES;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');
  if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}if(id==='game')bgmOn();else if(id==='title')bgmOff();}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
@@ -2150,10 +2162,12 @@ function renderCamp(C,t){
  const shm=[.3,.7,1][FXLV];
  const shx=(C.shake>0?rnd(-4,4):0)*SC*shm,shy=(C.shake>0?rnd(-3,3):0)*SC*shm;
  c.setTransform(SC,0,0,SC,OX+shx,OY+shy);
+ /* 画面に映っている範囲(論理座標)。地面と空はここまで伸ばして描き、盤が浮いて見えないようにする */
+ const VL=Math.min(0,(-OX-shx)/SC),VR=Math.max(MW,(cv.width-OX-shx)/SC),VT=Math.min(0,(-OY-shy)/SC),VB=Math.max(MH,(cv.height-OY-shy)/SC);
  /* 荒野 */
  {const gg=c.createLinearGradient(0,110,0,MH);
   gg.addColorStop(0,mix('#C4AE84','#4f4839',dk*.72));gg.addColorStop(1,mix('#A8925F','#413b30',dk*.72));
-  c.fillStyle=gg;c.fillRect(0,110,MW,MH-110);}
+  c.fillStyle=gg;c.fillRect(VL,110,VR-VL,VB-110);}
  /* 土のムラ */
  c.save();
  for(const p of PATCHES){c.globalAlpha=p[5]?.1:.07;c.fillStyle=p[5]?'#6b5a37':'#d8c79b';
@@ -2168,9 +2182,9 @@ function renderCamp(C,t){
    c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+3+sw,g3[1]-g3[2]*.6);c.stroke();}}
  /* 地平線と廃墟 */
  {const sky=todCol(tod),sg=c.createLinearGradient(0,0,0,115);
-  sg.addColorStop(0,sky);sg.addColorStop(1,mix('#F2ECDC',sky,.72));c.fillStyle=sg;c.fillRect(0,0,MW,115);}
+  sg.addColorStop(0,sky);sg.addColorStop(1,mix('#F2ECDC',sky,.72));c.fillStyle=sg;c.fillRect(VL,VT,VR-VL,115-VT);}
  c.fillStyle=mix('#8a7a5e','#12151f',.35+tod*.45);
- [[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
+ [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
  if(isNM()){/* 血月 */
   c.fillStyle='#8a1a2a';c.beginPath();c.arc(1380,48,34,0,7);c.fill();
   c.globalAlpha=.35;c.fillStyle='#c1302e';c.beginPath();c.arc(1380,48,50+Math.sin(t*1.5)*4,0,7);c.fill();c.globalAlpha=1;
@@ -2180,7 +2194,7 @@ function renderCamp(C,t){
  if(tod>.6){c.globalAlpha=clamp((tod-.6)*3,0,1);c.fillStyle='#e8e4d2';c.beginPath();c.arc(1380,45,26,0,7);c.fill();
   c.fillStyle='#fff';for(let s=0;s<18;s++){const sx2=((s*197)%1500)+40,sy2=((s*83)%80)+12;c.globalAlpha=clamp((tod-.6)*3,0,1)*(.4+(s%3)*.2);c.fillRect(sx2,sy2,2,2);}c.globalAlpha=1;}/* 月と星 */
  }
- c.fillStyle='rgba(0,0,0,.25)';c.fillRect(0,110,MW,6);
+ c.fillStyle='rgba(0,0,0,.25)';c.fillRect(VL,110,VR-VL,6);
  /* 道路(路肩→アスファルト→ハイライト→白線→ひび→タイヤ痕) */
  const roadPath=()=>{c.beginPath();c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);};
  c.lineJoin='round';c.lineCap='round';
@@ -2231,8 +2245,9 @@ function renderCamp(C,t){
  c.fillStyle='#fff';c.strokeStyle=INK;c.lineWidth=4;c.font='900 22px sans-serif';c.textAlign='center';c.strokeText(htx,cx+4,cy-112);c.fillText(htx,cx+4,cy-112);c.lineWidth=3;
  /* 工房エリアの看板 */
  {const [ex0,ey0]=SLOTS[ECO_BASE];
-  c.fillStyle='rgba(36,31,25,.5)';rr(c,ex0-46,ey0-72,300,26,8);c.fill();
-  c.fillStyle='#E8A33D';c.font='900 18px sans-serif';c.textAlign='left';c.fillText('🏭 廃品工房エリア',ex0-38,ey0-53);}
+  /* 看板は枠の下に置く(マップ上端が画面上部のHUDに隠れるため) */
+  c.fillStyle='rgba(36,31,25,.5)';rr(c,ex0-46,ey0+44,300,26,8);c.fill();
+  c.fillStyle='#E8A33D';c.font='900 18px sans-serif';c.textAlign='left';c.fillText('🏭 廃品工房エリア',ex0-38,ey0+63);}
  /* スロットとタワー */
  for(let si=0;si<SLOTS.length;si++){const [sx,sy]=SLOTS[si],tw=C.towers[si];
   const eco=isEcoSlot(si),lock=!slotUnlocked(C,si);
