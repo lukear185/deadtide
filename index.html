@@ -88,8 +88,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 @media (max-width:760px){.mini{min-width:104px;max-width:116px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
  #deck{bottom:max(4px,env(safe-area-inset-bottom));gap:4px;max-width:calc(100vw - 172px)}
- #deck .dk{width:44px;height:48px}
- #deck .dk canvas{width:30px;height:30px}
+ #deck .dk{width:50px;height:60px}
+ #deck .dk canvas{width:29px;height:29px}
+ #deck .dk .dn{font-size:8px}
  #deck .dk .dc{font-size:9px}
  #flagbtn{width:56px;height:56px;font-size:23px}
  #strikebtn,#pushbtn{width:60px;height:60px}
@@ -117,8 +118,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #flagbtn.aim{outline:4px solid var(--amber)}
 #flaghint{position:absolute;left:84px;bottom:calc(max(26px,env(safe-area-inset-bottom)) + 74px);color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #deck{position:absolute;left:50%;transform:translateX(-50%);bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:5px;z-index:6;max-width:calc(100vw - 200px);overflow-x:auto;padding-bottom:2px}
-#deck .dk{position:relative;flex:0 0 auto;width:46px;height:52px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:1px 0 0;overflow:hidden}
-#deck .dk canvas{width:33px;height:33px;display:block;margin:0 auto}
+#deck .dk{position:relative;flex:0 0 auto;width:52px;height:64px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:1px 0 0;overflow:hidden}
+#deck .dk canvas{width:32px;height:32px;display:block;margin:0 auto}
+#deck .dk .dn{display:block;font-size:9px;font-weight:900;color:var(--ink);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:clip;padding:0 1px}
 #deck .dk .dc{display:block;font-size:9px;font-weight:900;color:var(--paper);line-height:1.2}
 #deck .dk .cdov{position:absolute;inset:0;pointer-events:none;border-radius:8px}
 #deck .dk .lk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(0,0,0,.55)}
@@ -422,8 +424,8 @@ const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
 const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;return soloMeta()?BT+clamp(META.nt||0,0,TOWERS.length-BT):BT;};
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;return soloMeta()?BU+clamp(META.nu||0,0,UNITS.length-BU):BU;};
-const LAB_NT=[400,750,1250,1900];/* 新型タワー4種の研究価格 */
-const LAB_NU=[350,650,1100,1700];/* 新型兵科4種の研究価格 */
+const LAB_NT=k=>Math.round(250*Math.pow(1.2,k));/* k個目のタワー解放価格 */
+const LAB_NU=k=>Math.round(120*Math.pow(1.14,k));/* k個目の兵科解放価格 */
 const LAB_STK={carpet:250,frost:200,napalm:300};
 const LAB_SC=lv=>Math.round(80*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
 const LAB_HP=lv=>Math.round(100*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
@@ -535,7 +537,7 @@ const TOWERS=[
  {id:'plasma',n:'プラズマ砲',cost:820,rng:420,dmg:210,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'超高熱の大爆発'},
  {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:95,rate:.7,type:'bullet',multi:3,pierce:1,c:'#8a8f96',dsc:'貫通弾を3連射する要塞'}
 ];
-const BASE_T=16;/* 通常解放できる基本タワー数(研究所ぶんを除く) */
+const BASE_T=10;/* 通常解放できる基本タワー数(これ以降は🔬研究所で解放) */
 /* 2026-07-24 永井さん指示: ①ショットガン以外0.75倍 → ②さらに全タワー0.75倍(=シ以外0.5625/シ0.75) */
 for(const T of TOWERS){
  const m0=(T.id==='shot'?1:.75)*.75;
@@ -596,13 +598,15 @@ const UNITS=[
  {id:'titan',n:'タイタン',cost:900,cd:22,hp:1500,atk:120,rate:1.3,rng:60,sp:44,type:'melee',c:'#8a8f96',dsc:'歩く城塞・全てを薙ぎ倒す'},
  {id:'valk',n:'ヴァルキリー',cost:820,cd:20,hp:520,atk:150,rate:1.8,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'空爆支援を伴う精鋭'}
 ];
-const BASE_U=26;/* 通常解放できる基本兵科数(研究所ぶんを除く) */
-/* 基本兵科は価格順に並べ替え(解放チェーンが素直な強さ順になる)。研究所ぶんは末尾のまま */
-{const base=UNITS.slice(0,BASE_U).sort((a,b)=>a.cost-b.cost),ext=UNITS.slice(BASE_U);
- UNITS.length=0;for(const u of base)UNITS.push(u);for(const u of ext)UNITS.push(u);}
+const BASE_U=6;/* 通常解放できる基本兵科数(これ以降は🔬研究所で解放) */
+/* 全兵科を価格順に並べ替え(前半=最初から使える/後半=研究所で解放)。ただし研究所専用の4種は必ず末尾 */
+{const LAST=['tnk','mech','titan','valk'];
+ const norm=UNITS.filter(u=>LAST.indexOf(u.id)<0).sort((a,b)=>a.cost-b.cost);
+ const last=LAST.map(id=>UNITS.find(u=>u.id===id)).filter(Boolean);
+ UNITS.length=0;for(const u of norm)UNITS.push(u);for(const u of last)UNITS.push(u);}
 const UBUF=1.2;/* ユニット全体強化倍率(2026-07-24 永井さん指示) */
 /* ティア: 序盤/中盤/終盤(+10%)/切り札(+30%) */
-const uTier=i=>i<6?1:i<12?2:i<BASE_U?3:4;
+const uTier=i=>i<6?1:i<14?2:i<22?3:4;
 const TSCALE=[1,1.06,1.14,1.24];
 for(let i=0;i<UNITS.length;i++){const tb=[1,1,1.1,1.3][uTier(i)-1];
  UNITS[i].hp=Math.round(UNITS[i].hp*UBUF*tb);UNITS[i].atk=Math.round(UNITS[i].atk*UBUF*tb);
@@ -643,7 +647,20 @@ function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t
 function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
 const SLOTS=[[1290,60],[1000,250],[1210,300],[1240,515],[1475,540],[1080,555],[865,540],[655,500],[560,290],[300,470],[250,700],
  [1470,60],[1600,60],[1560,240],[1010,370],[1330,320],[1490,650],[1180,728],[920,728],[680,290],[510,470],[180,530]];
+/* 廃品工房の専用スロット(画面左上)。初期1枠・増設で最大3枠 */
+const ECO_BASE=SLOTS.length,ECO_MAX=3;
+SLOTS.push([120,190],[262,190],[404,190]);
+const isEcoSlot=si=>si>=ECO_BASE;
+const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
+const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
+const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
 const AI_ORDER=[2,1,5,7,3,8,6,0,9,4,10,14,19,18,12,16,17,21,13,11,15,20];
+/* 通常スロットも解放式: 初期6枠・⚙️で増設 */
+const SLOT_ORDER=AI_ORDER.slice();
+const SLOT0=6;
+const prSlot=n=>Math.round(200*Math.pow(1.3,Math.max(0,n-SLOT0)));
+const slotUnlocked=(C,si)=>isEcoSlot(si)?ecoUnlocked(C,si):(C&&C.slk?!!C.slk[si]:SLOT_ORDER.indexOf(si)<SLOT0);
+const slotCount=C=>{let n=0;for(let i=0;i<ECO_BASE;i++)if(slotUnlocked(C,i))n++;return n;};
 const CORE=[110,620];
 /* ============ アート ============ */
 const INK='#241f19';
@@ -958,7 +975,7 @@ function makeThumbs(){for(let i=0;i<TOWERS.length;i++){const cvv=document.create
 let EID=1;
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
  core:50,coreMax:50,scrap:250,unlocked:2,atkLv:0,repairs:0,boosts:0,jams:0,
- towers:SLOTS.map(()=>null),zombies:[],shells:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
+ towers:SLOTS.map(()=>null),ecoN:1,slk:SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0),zombies:[],shells:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
 const ZHPM=.85;/* ゾンビHP全体倍率 */
@@ -1121,6 +1138,9 @@ function buildTower(C,si,ti){
  const T=TOWERS[ti];
  const F=G&&G.coop?G.players[0]:C;
  if(C.dead||F.dead||F.towers[si]||ti>=C.unlocked||C.scrap<T.cost)return false;
+ /* 廃品工房は専用スロット専用。逆に専用スロットには工房しか建てられない */
+ if(isEcoSlot(si)){if(T.type!=='eco'||!ecoUnlocked(F,si))return false;}
+ else if(T.type==='eco'||!slotUnlocked(F,si))return false;
  C.scrap-=T.cost;F.towers[si]={ti,us:{d:0,r:0,g:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:T.cost,own:C.gi||0};
  if(C.isMe)sfx.build();
  addFx(F,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:60,col:'#F2ECDC'});
@@ -1274,6 +1294,8 @@ function priceOf(C,kind,opt){
   case 'unlock':return C.unlocked<TOWERS.length?UNLOCK_P[C.unlocked]:1e9;
   case 'uun':return uupCost(C);
   case 'uup':return (C.uLv||0)<ULV_MAX?prUup(C.uLv||0):1e9;
+  case 'ecoslot':{const F2=(G&&G.coop)?G.players[0]:C;return (F2.ecoN||1)<ECO_MAX?prEco(F2.ecoN||1):1e9;}
+  case 'slot':{const F2=(G&&G.coop)?G.players[0]:C;return prSlot(slotCount(F2));}
   case 'atk':return prAtk(C.atkLv);
   case 'repair':return prRe(C.repairs);
   case 'big':return prBig(C.boosts);
@@ -1290,6 +1312,7 @@ function doPurchase(C,kind,opt){
  if(kind==='unlock'&&C.unlocked>=metaTowerCap())return false;/* ソロは研究所の解放枠まで */
  if(kind==='uun'&&C.uUn>=metaUnitCap())return false;
  if(kind==='uup'&&(C.uLv||0)>=ULV_MAX)return false;
+ if(kind==='ecoslot'&&(((G&&G.coop)?G.players[0]:C).ecoN||1)>=ECO_MAX)return false;
  const tgt=opt.tgt!=null&&opt.tgt>=0?G.players[opt.tgt]:null;
  if((kind==='big'||kind==='send'||kind==='jam')&&(!tgt||tgt===C||tgt.dead))return false;
  if(kind==='big'){
@@ -1305,6 +1328,12 @@ function doPurchase(C,kind,opt){
  switch(kind){
   case 'unlock':C.unlocked++;break;
   case 'uun':C.uUn++;break;
+  case 'slot':{const F2=(G&&G.coop)?G.players[0]:C,si2=opt.si|0;
+   if(si2<0||si2>=ECO_BASE||!F2.slk||F2.slk[si2]){C.scrap+=p;return false;}
+   F2.slk[si2]=true;
+   if(C.isMe){toast('🔓 建設スロットを解放!('+slotCount(F2)+'/'+ECO_BASE+')');addFx(F2,'ring',SLOTS[si2][0],SLOTS[si2][1],'',{r:70,col:'#F2ECDC'});}break;}
+  case 'ecoslot':{const F2=(G&&G.coop)?G.players[0]:C;F2.ecoN=(F2.ecoN||1)+1;
+   if(C.isMe){toast('🏭 工房スロットを増設した!('+F2.ecoN+'/'+ECO_MAX+')');addFx(F2,'ring',SLOTS[ECO_BASE+F2.ecoN-1][0],SLOTS[ECO_BASE+F2.ecoN-1][1],'',{r:70,col:'#E8A33D'});}break;}
   case 'uup':C.uLv=(C.uLv||0)+1;
    if(C.isMe){if(C.uLv===3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}
     else if(C.uLv===5){UI.banner('⚡ 部隊が進化した!!');sfx.elite();}
@@ -1341,7 +1370,17 @@ function cpuTick(C,dt){
  else if(armored>=2&&C.unlocked>4&&cnt[4]+cnt[5]<2)want=C.unlocked>5?5:4;
  else{for(let i=C.unlocked-1;i>=0;i--){if(i===3)continue;if(i===0&&cnt[0]>=3)continue;if(C.scrap>=TOWERS[i].cost*res){want=i;break;}}}
  if(want>=0&&C.scrap>=TOWERS[want].cost*res){
-  for(const si of AI_ORDER){if(si<SLOTS.length&&!C.towers[si]){if(buildTower(C,si,want))return;}}
+  if(TOWERS[want].type==='eco'){/* 工房は専用スロットへ */
+   for(let k=0;k<ECO_MAX;k++){const si=ECO_BASE+k;if(!C.towers[si]&&ecoUnlocked(C,si)){if(buildTower(C,si,want))return;}}
+   if(C.ecoN<ECO_MAX&&C.scrap>=prEco(C.ecoN)*res*1.2&&doPurchase(C,'ecoslot',{}))return;
+   want=-1;}
+  if(want>=0){let placed=false;
+   for(const si of AI_ORDER){if(si<SLOTS.length&&!C.towers[si]&&slotUnlocked(C,si)){if(buildTower(C,si,want)){placed=true;break;}}}
+   if(placed)return;
+   /* 空きスロットが無ければ解放を買う */
+   {let free=false;for(let si=0;si<ECO_BASE;si++)if(slotUnlocked(C,si)&&!C.towers[si])free=true;
+    if(!free&&slotCount(C)<ECO_BASE&&C.scrap>=prSlot(slotCount(C))*res*1.3){
+     for(const si of SLOT_ORDER)if(!slotUnlocked(C,si)){if(doPurchase(C,'slot',{si}))return;break;}}}}
   if(want>=4){for(const si of AI_ORDER){const t2=C.towers[si];
    if(t2&&t2.ti===0&&C.scrap>=TOWERS[want].cost*res){sellTower(C,si);if(buildTower(C,si,want))return;}}}
  }
@@ -1403,7 +1442,7 @@ function newGame(specs,myIdx){
 function awardMeta(){
  if(!soloMeta()||G.metaGain!=null)return;
  const mult=[.7,.85,1,1.3,1.6][G.pveDiff||2]||1;
- const gain=Math.max(1,Math.round((G.wave*10+G.players[0].kills*.5)*mult));
+ const gain=Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.2)*mult));
  META.pts+=gain;G.metaGain=gain;saveMeta();
 }
 function ev(idx,msg,warn){if(!G)return;if(idx===G.myIdx){toast(msg,warn);if(warn)sfx.warn();}else if(G.evq[idx])G.evq[idx].push({m:msg,w:warn?1:0});}
@@ -1464,7 +1503,7 @@ function specName(){if(MODE==='client'){const o=(CS.ot||[]).find(x=>x.j===SPEC);
 const cv=$('cv'),ctx=cv.getContext('2d');
 let SC=1,OX=0,OY=0,DPR=1;
 function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
- const hudPad=MOBILE?Math.round(54*DPR):0;/* スマホは下にデッキ帯を確保しマップと被らせない */
+ const hudPad=MOBILE?Math.round(66*DPR):0;/* スマホは下にデッキ帯を確保しマップと被らせない */
  SC=Math.min(W/MW,(H-hudPad)/MH);OX=(W-MW*SC)/2;OY=(H-hudPad-MH*SC)/2;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');if(id==='game')bgmOn();else if(id==='title')bgmOff();}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
@@ -1557,13 +1596,20 @@ function renderCamp(C,t){
  c.fillStyle=hr>.4?'#7ba33f':'#C1502E';if(hr>0){rr(c,cx-68,cy-100,142*hr,16,6);c.fill();}
  const htx='🏕 '+Math.ceil(C.core)+' / '+C.coreMax;
  c.fillStyle='#fff';c.strokeStyle=INK;c.lineWidth=4;c.font='900 22px sans-serif';c.textAlign='center';c.strokeText(htx,cx+4,cy-112);c.fillText(htx,cx+4,cy-112);c.lineWidth=3;
+ /* 工房エリアの看板 */
+ {const [ex0,ey0]=SLOTS[ECO_BASE];
+  c.fillStyle='rgba(36,31,25,.5)';rr(c,ex0-46,ey0-72,300,26,8);c.fill();
+  c.fillStyle='#E8A33D';c.font='900 18px sans-serif';c.textAlign='left';c.fillText('🏭 廃品工房エリア',ex0-38,ey0-53);}
  /* スロットとタワー */
  for(let si=0;si<SLOTS.length;si++){const [sx,sy]=SLOTS[si],tw=C.towers[si];
+  const eco=isEcoSlot(si),lock=!slotUnlocked(C,si);
   c.fillStyle='rgba(0,0,0,.18)';rr(c,sx-33,sy-30,66,64,10);c.fill();
-  c.fillStyle=tw?'#8d8474':'#7c7466';rr(c,sx-32,sy-32,64,64,10);c.fill();
-  c.strokeStyle=SEL===si?'#E8A33D':INK;c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
-  if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
-   c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText('+',sx,sy+12);}
+  c.fillStyle=lock?'#54503f':tw?(eco?'#9c8352':'#8d8474'):(eco?'#8a7444':'#7c7466');rr(c,sx-32,sy-32,64,64,10);c.fill();
+  c.strokeStyle=SEL===si?'#E8A33D':(eco?'#b08d4f':INK);c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
+  if(lock){c.fillStyle='rgba(20,16,12,.55)';rr(c,sx-32,sy-32,64,64,10);c.fill();
+   c.font='900 26px sans-serif';c.textAlign='center';c.fillText('🔒',sx,sy+10);}
+  else if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
+   c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(eco?'🏭':'+',sx,sy+12);}
   else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0});
  }
  if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){c.strokeStyle='rgba(232,163,61,.8)';c.lineWidth=3;c.setLineDash([10,10]);c.beginPath();c.arc(SLOTS[SEL][0],SLOTS[SEL][1],TOWERS[tw.ti].rng*twRngM(tw),0,7);c.stroke();c.setLineDash([]);}}
@@ -1817,11 +1863,25 @@ function evtToMap(e){const r=cv.getBoundingClientRect();return[((e.clientX-r.lef
 function closeBM(){$('buildmenu').style.display='none';SEL=-1;}
 function openBM(si){
  SEL=si;const m=meV(),bm=$('buildmenu'),tw=(m.towers||[])[si];
+ const eSlot=isEcoSlot(si),eN=m.ecoN||1;
  let h='';
- if(!tw){h='<div id="bm-title">🔨 タワー建設</div><div class="bm-grid">';
+ if(!eSlot&&!slotUnlocked(m,si)){/* 未解放の建設スロット=解放メニュー */
+  const p=prSlot(slotCount(m));
+  h=`<div id="bm-title">🔓 建設スロット解放</div>`+
+   `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">解放した数だけ価格が上がる(現在 ${slotCount(m)}/${ECO_BASE}枠)</div>`+
+   `<div class="bm-row"><button class="btn gold sm" id="bm-slot" ${m.scrap>=p?'':'disabled'}>🔓 解放 ⚙️${fmt(p)}</button></div>`;
+ }else if(eSlot&&!ecoUnlocked(m,si)){/* 未解放の工房スロット=増設メニュー */
+  const p=(eN<ECO_MAX)?prEco(eN):null;
+  const nextOk=(si-ECO_BASE)===eN;/* 増設は左から順に */
+  h=`<div id="bm-title">🏭 工房スロット ${si-ECO_BASE+1}/${ECO_MAX}</div>`+
+   `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'増設すると廃品工房をもう1基建てられる':'左の枠から順に増設できる'}</div>`+
+   `<div class="bm-row"><button class="btn gold sm" id="bm-eco" ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 増設 ⚙️'+fmt(p):'MAX'}</button></div>`;
+ }else if(!tw){h='<div id="bm-title">'+(eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div><div class="bm-grid">';
   for(let i=0;i<TOWERS.length;i++){if(i>=m.unlocked)continue;const T=TOWERS[i];
+   if(eSlot!==(T.type==='eco'))continue;/* 工房スロットには工房のみ・通常スロットには工房以外 */
    h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
+  if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">作戦タイムで『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
   if(!tw.us)tw.us={d:0,r:0,g:0};
   const rows=twStats(tw.ti).map(st=>{
@@ -1838,6 +1898,8 @@ function openBM(si){
  bm.querySelectorAll('[data-bd]').forEach(b=>{b.onclick=()=>{actBuild(si,+b.dataset.bd);closeBM();};});
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
  const bs=$('bm-sell');if(bs)bs.onclick=()=>{actSell(si);closeBM();};
+ const be=$('bm-eco');if(be)be.onclick=()=>{actEcoSlot();closeBM();};
+ const bl=$('bm-slot');if(bl)bl.onclick=()=>{actSlot(si);closeBM();};
  const [px,py]=mapToClient(SLOTS[si][0],SLOTS[si][1]);
  bm.style.display='block';
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
@@ -1884,6 +1946,17 @@ function actUp(si,st){st=st||'d';
  else upTower(G.players[G.myIdx],si,st);}
 function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;sendCmd({t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
  else sellTower(G.players[G.myIdx],si);}
+function actSlot(si){
+ const m=meV();if(!m)return;const p=prSlot(slotCount(m));
+ if(m.scrap<p){toast('⚙️'+fmt(p)+' 必要 — 建設スロット解放',true);return;}
+ if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'slot',o:{si}});m.scrap-=p;if(m.slk)m.slk[si]=true;sfx.buy();toast('🔓 建設スロットを解放!');return;}
+ if(G)doPurchase(G.players[G.myIdx],'slot',{si});}
+function actEcoSlot(){
+ const m=meV();if(!m)return;const eN=m.ecoN||1;
+ if(eN>=ECO_MAX)return;const p=prEco(eN);
+ if(m.scrap<p){toast('⚙️'+fmt(p)+' 必要 — 工房スロット増設',true);return;}
+ if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'ecoslot',o:{}});m.scrap-=p;m.ecoN=eN+1;sfx.buy();toast('🏭 工房スロットを増設!');return;}
+ if(G)doPurchase(G.players[G.myIdx],'ecoslot',{});}
 function actStrike(x,y){if(MODE==='client'){sendCmd({t:'c',a:'st',x:Math.round(x),y:Math.round(y)});CS.meN.charge=0;sfx.boom();}
  else airstrike(G.players[G.myIdx],x,y,G.wave);}
 function actDeploy(ui){
@@ -1907,7 +1980,7 @@ let DECKB=[],DECKEVO=0;
 function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKEVO=0;
  const dl=metaUnitCap();
  for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc+'(長押しで部隊強化)';
-  b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
+  b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dn">${U.n}</span><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
   /* 長押し=部隊強化 / 短押し=出撃 */
   let lpT=null,lpFired=false;
@@ -2062,8 +2135,8 @@ function renderStkSeg(){
 function renderLab(){
  $('lab-pts2').textContent='🧬 '+fmt(META.pts)+' pt';
  const items=[];
- if(META.nt<TOWERS.length-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({k:'nt',t:'🗼 新型タワー『'+T.n+'』',d:T.dsc+'(解放後、ゲーム内の解放カードに出現)',p:LAB_NT[META.nt]});}
- if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({k:'nu',t:'🤖 新型兵科『'+U.n+'』',d:U.dsc+'(解放後、ゲーム内の解放カードに出現)',p:LAB_NU[META.nu]});}
+ if(META.nt<TOWERS.length-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({k:'nt',t:'🗼 新型タワー『'+T.n+'』 ('+(META.nt+1)+'/'+(TOWERS.length-BASE_T)+')',d:T.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NT(META.nt)});}
+ if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({k:'nu',t:'🤖 新型兵科『'+U.n+'』 ('+(META.nu+1)+'/'+(UNITS.length-BASE_U)+')',d:U.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NU(META.nu)});}
  for(const k in LAB_STK){if(META.st.indexOf(k)<0){const S=STRIKES[k];items.push({k:'stk',id:k,t:S.ic+' 新砲撃『'+S.n+'』',d:S.dsc,p:LAB_STK[k]});}}
  if(META.sc0<5)items.push({k:'sc0',t:'⚙️ 初期スクラップ+40 (Lv'+META.sc0+'/5)',d:'開始資金が増える',p:LAB_SC(META.sc0)});
  if(META.hp0<5)items.push({k:'hp0',t:'🏕 コアHP+5 (Lv'+META.hp0+'/5)',d:'拠点の耐久が増える',p:LAB_HP(META.hp0)});
@@ -2095,7 +2168,7 @@ function code4(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0
 function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
- fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,
+ fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,ec:F.ecoN||1,sk:(F.slk||[]).map(v=>v?1:0).join(''),
  tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0,u.evo||0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0]),
@@ -2121,7 +2194,7 @@ function normMe(m){const old=CS.meN;
   else if(o5<5&&n5>=5){UI.banner('⚡ 部隊が進化した!!');sfx.elite();}
   else if(o5<3&&n5>=3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
-  uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
+  uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ecoN:m.ec||1,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
   towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0},fireT:0,ang:-.6,spent:TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
@@ -2184,7 +2257,7 @@ function clientCamp(dt){
  const m=CS.meN;if(!m){CC=null;return;}
  if(!CC)CC={zm:new Map(),um:new Map(),zombies:[],units:[],shells:[],fx:[],towers:[],shake:0};
  CC.core=m.core;CC.coreMax=m.coreMax;CC.dead=m.dead;CC.waveDone=m.waveDone;CC.towers=m.towers;
- CC.flagD=CS.fd!=null?CS.fd:null;CC.fda=CS.fda;
+ CC.flagD=CS.fd!=null?CS.fd:null;CC.fda=CS.fda;CC.ecoN=m.ecoN||1;CC.slk=m.slk;
  if(CC.shake>0)CC.shake-=dt;
  if(m.ucd)for(let i=0;i<m.ucd.length;i++)if(m.ucd[i]>0)m.ucd[i]-=dt;
  syncEnts(CC,CS.es||[],CS.us||[],dt);
