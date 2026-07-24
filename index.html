@@ -88,8 +88,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 @media (max-width:760px){.mini{min-width:104px;max-width:116px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
  #deck{bottom:max(4px,env(safe-area-inset-bottom));gap:4px;max-width:calc(100vw - 172px)}
- #deck .dk{width:44px;height:58px}
- #deck .dk canvas{width:38px;height:38px}
+ #deck .dk{width:44px;height:48px}
+ #deck .dk canvas{width:30px;height:30px}
  #deck .dk .dc{font-size:9px}
  #flagbtn{width:56px;height:56px;font-size:23px}
  #strikebtn,#pushbtn{width:60px;height:60px}
@@ -117,8 +117,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #flagbtn.aim{outline:4px solid var(--amber)}
 #flaghint{position:absolute;left:84px;bottom:calc(max(26px,env(safe-area-inset-bottom)) + 74px);color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #deck{position:absolute;left:50%;transform:translateX(-50%);bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:5px;z-index:6;max-width:calc(100vw - 200px);overflow-x:auto;padding-bottom:2px}
-#deck .dk{position:relative;flex:0 0 auto;width:46px;height:62px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:1px 0 0;overflow:hidden}
-#deck .dk canvas{width:40px;height:40px;display:block;margin:0 auto}
+#deck .dk{position:relative;flex:0 0 auto;width:46px;height:52px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:1px 0 0;overflow:hidden}
+#deck .dk canvas{width:33px;height:33px;display:block;margin:0 auto}
 #deck .dk .dc{display:block;font-size:9px;font-weight:900;color:var(--paper);line-height:1.2}
 #deck .dk .cdov{position:absolute;inset:0;pointer-events:none;border-radius:8px}
 #deck .dk .lk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(0,0,0,.55)}
@@ -929,7 +929,12 @@ function pushTide(C,tg){
  if(C.isMe)sfx.push();
  return true;
 }
-function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{}));}
+function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{}));
+ /* ホストは演出イベントをクライアントへも配信(参加側で見えない問題の対策) */
+ if(MODE==='host'&&G){
+  if(G.coop){if(C===G.players[0]){G.fxq=G.fxq||[];if(G.fxq.length<60)G.fxq.push([k,Math.round(x),Math.round(y),s||'',ex||null]);}}
+  else if(C.conn){C.fxq=C.fxq||[];if(C.fxq.length<60)C.fxq.push([k,Math.round(x),Math.round(y),s||'',ex||null]);}
+ }}
 function killZ(C,z){
  z.dead=true;C.kills++;C.killsWave++;
  const pay=G&&G.pve?D5v().pay:1;
@@ -960,7 +965,7 @@ function dmgZ(C,z,d,armorPierce){
  if(z.dead)return;
  if(z.armor&&!armorPierce)d*=.45;
  z.hp-=d;z.hitT=.1;
- if(C.isMe&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44,''+Math.max(1,Math.round(d)));
+ if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44,''+Math.max(1,Math.round(d)));
   if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
@@ -1057,8 +1062,8 @@ function campStep(C,dt,wave){
   if(blk){blk.eng++;
    z.acd=(z.acd||0)-dt;
    if(z.acd<=0){z.acd=z.ar;z.lgT=.22;dmgU(C,blk,z.atk);
-    if(C.isMe){if(Math.random()<.3)sfx.bite();
-     if(FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30,'',{sd:rnd(0,9),gray:1});}}
+    if(C.isMe&&Math.random()<.3)sfx.bite();
+    if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30,'',{sd:rnd(0,9),gray:1});}
    continue;
   }
   z.d+=z.sp*z.sm*slow*dt;
@@ -1342,7 +1347,7 @@ function specName(){if(MODE==='client'){const o=(CS.ot||[]).find(x=>x.j===SPEC);
 const cv=$('cv'),ctx=cv.getContext('2d');
 let SC=1,OX=0,OY=0,DPR=1;
 function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
- const hudPad=MOBILE?Math.round(64*DPR):0;/* スマホは下にデッキ帯を確保しマップと被らせない */
+ const hudPad=MOBILE?Math.round(54*DPR):0;/* スマホは下にデッキ帯を確保しマップと被らせない */
  SC=Math.min(W/MW,(H-hudPad)/MH);OX=(W-MW*SC)/2;OY=(H-hudPad-MH*SC)/2;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');if(id==='game')bgmOn();else if(id==='title')bgmOff();}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
@@ -1723,8 +1728,13 @@ function giveUpWave(){
  else{me.waveDone=true;UI.banner('🏳 WAVE放棄 (-'+dmg+')');}
 }
 $('ffwave').onclick=()=>giveUpWave();
-$('pausebtn').onclick=()=>{if(MODE==='solo'&&gameActive&&G&&!G.over){PAUSED=true;$('md-pause').classList.add('on');}};
+$('pausebtn').onclick=()=>{
+ if(!gameActive)return;
+ if(MODE==='solo'&&G&&!G.over){PAUSED=true;$('md-pause').classList.add('on');}
+ else{$('md-pause').classList.add('on');}/* マルチ中は一時停止せずメニューだけ開く(タイトルへ戻る用) */
+};
 $('bt-resume').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');};
+
 $('bt-quit').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');backTitle();};
 $('bt-rothide').onclick=()=>$('rotatehint').classList.add('off');
 $('ffbtn').onclick=()=>{if(!G)return;const SP=[1,2,8];G.spd=SP[(SP.indexOf(G.spd||1)+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
@@ -1838,7 +1848,7 @@ function backTitle(){
  try{document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen().catch(()=>{});}catch(e){}
  $('interv').classList.remove('on');$('pausebtn').style.display='none';$('ffbtn').style.display='none';
  try{if(NET.peer){NET.peer.destroy();}}catch(e){}
- NET={peer:null,conn:null,lob:[],host:false};CS={meN:null,ot:[],w:1,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0};CC=null;MODE='solo';
+ NET={peer:null,conn:null,lob:[],host:false};CS={meN:null,ot:[],w:1,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0};CC=null;CCFX=[];MODE='solo';
  show('title');
 }
 /* ---- 研究所UI ---- */
@@ -1876,7 +1886,7 @@ $('bt-howto-close').onclick=()=>$('md-howto').classList.remove('on');
 $('bt-totitle').onclick=backTitle;
 $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */
-let NET={peer:null,conn:null,lob:[],host:false},CS={meN:null,ot:[],w:0,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0},CC=null;
+let NET={peer:null,conn:null,lob:[],host:false},CS={meN:null,ot:[],w:0,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0},CC=null,CCFX=[];
 function safeSend(c,o){try{if(c&&c.open)c.send(o);}catch(e){}}
 function code4(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=A[ri(0,A.length-1)];return s;}
 function packLane(C){
@@ -1888,6 +1898,7 @@ function packLane(C){
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
  if(G&&G.coop)o.fda=G.players.map(P2=>Math.round(P2.flagD));
+ o.fq=G&&G.coop?(G.fxq||[]):(C.fxq||[]);
  return o;}
 function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)continue;const P=G.players[k];
  const o={j:k,n:P.name,hp:Math.ceil(P.core),mx:P.coreMax,dd:P.dead?1:0,pl:P.place,kw:P.killsWave,tw:P.totalWave,rd:P.ready?1:0,sh:Math.round(G.tide.shares[k]),en:Math.round(P.scrap)};
@@ -1898,7 +1909,8 @@ function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)co
  a.push(o);}return a;}
 function hostNetTick(force){if(!G)return;
  for(let i=0;i<G.players.length;i++){const P=G.players[i];if(P.kind!=='remote'||!P.conn)continue;
-  safeSend(P.conn,{t:'sn',w:G.wave,ph:G.phase==='wave'?1:0,tI:Math.max(0,G.tI),ts:G.tide.shares.map(x=>Math.round(x*10)/10),pr:G.tide.pool.length,tu:G.tide.upN,me:packLane(P),ot:othersFor(i),ev:(G.evq[i]||[]).splice(0),ov:G.over?1:0,wn:G.winner>=0?G.players[G.winner].name:''});}}
+  safeSend(P.conn,{t:'sn',w:G.wave,ph:G.phase==='wave'?1:0,tI:Math.max(0,G.tI),ts:G.tide.shares.map(x=>Math.round(x*10)/10),pr:G.tide.pool.length,tu:G.tide.upN,me:packLane(P),ot:othersFor(i),ev:(G.evq[i]||[]).splice(0),ov:G.over?1:0,wn:G.winner>=0?G.players[G.winner].name:''});}
+ for(const P of G.players)P.fxq=null;G.fxq=null;/* 演出キューは配信済みぶんを破棄 */}
 function normMe(m){const old=CS.meN;
  if(old&&m.core<old.core&&!m.dd){sfx.leak();dmgFlash();}
  if(old){const o5=old.uLv||0,n5=m.ul||0;
@@ -1912,6 +1924,15 @@ function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
  CS.w=d.w;CS.ph=d.ph;CS.tI=d.tI;CS.ot=d.ot||[];CS.ts=d.ts||[];CS.pr=d.pr||0;CS.tu=d.tu||0;
  normMe(d.me);CS.es=d.me.es||[];CS.sh=d.me.sh||[];CS.us=d.me.us||[];CS.fd=d.me.fd;CS.fda=d.me.fda||null;
+ /* ホストから届いた演出イベントを再生キューへ */
+ let fxBoom=false;
+ for(const f of (d.me.fq||[])){
+  if(FXLV===0&&(f[0]==='blood'||f[0]==='spark'))continue;
+  if(CCFX.length>=140)break;
+  CCFX.push(Object.assign({k:f[0],x:f[1],y:f[2],s:f[3]||'',t:0},f[4]||{}));
+  if(f[0]==='boomL')fxBoom=true;
+ }
+ if(fxBoom)sfx.boom();
  for(const e of (d.ev||[])){toast(e.m,!!e.w);if(e.w)sfx.warn();}
  if(d.ph===0&&!CS.ivOn&&CS.meN&&!CS.meN.dead&&!d.ov){CS.ivOn=true;CS.meN.ready=false;ivOpen();}
  if(CS.ivOn&&(d.ph===1||(CS.meN&&CS.meN.dead))){CS.ivOn=false;UI.closeInterval();}
@@ -1971,7 +1992,10 @@ function clientCamp(dt){
   for(const z of CC.zombies){if(z.d<0)continue;const dd=dist(z.px,z.py,SLOTS[si][0],SLOTS[si][1]);if(dd<=rng&&z.d>best){best=z.d;tg=z;}}
   if(tg){tw.ang=Math.atan2(tg.py-SLOTS[si][1],tg.px-SLOTS[si][0]);tw.fireT=.1;}else tw.fireT=0;
  }
- CC.fx=[];
+ /* ホストから届いた演出を再生(寿命管理はホストと同じ) */
+ for(const e of CCFX)e.t+=dt;
+ CCFX=CCFX.filter(e=>e.t<((e.d0||0)+(e.k==='txt'?1:e.k==='splat'?1.6:e.k==='boomL'?.7:e.k==='spark'?.6:.5)));
+ CC.fx=CCFX;
  if(CS.ph===1&&CC.zombies.length&&Math.random()<dt*Math.min(.45,.06+CC.zombies.length*.012))sfx.moan();
  /* 観戦用: 他プレイヤーの盤面を同期 */
  CS.oc=CS.oc||{};
@@ -2040,7 +2064,7 @@ function hostStart(){
  NET.lob.forEach((o,k)=>safeSend(o.conn,{t:'st',j:k+1,ns:specs.map(s=>s.name),md:coop?1:0}));
  startGameUI(specs.map((s,i)=>({i,n:s.name})).filter(o=>o.i!==0));
  if(coop){$('tidebar').style.display='none';$('pushbtn').style.display='none';}
- $('pausebtn').style.display='none';G.netT=.05;
+ $('pausebtn').style.display='inline-block';G.netT=.05;
 }
 function joinRoom(){
  const code=($('in-code').value.trim()||'').toUpperCase();
@@ -2060,11 +2084,11 @@ function clientData(d){
  if(!d)return;
  if(d.t==='lb'){$('lobby-list').innerHTML=d.ns.map((n,i)=>`<div class="pl">🏕 ${n}${i===0?' (ホスト)':''}</div>`).join('');return;}
  if(d.t==='full'){toast('ルームが満員か開始済みです',true);show('online');return;}
- if(d.t==='st'){MODE='client';CS={meN:null,ot:[],w:0,ph:1,tI:0,ivOn:false,over:false,es:[],sh:[],ts:[],pr:0,tu:0,myJ:d.j};CC=null;
+ if(d.t==='st'){MODE='client';CS={meN:null,ot:[],w:0,ph:1,tI:0,ivOn:false,over:false,es:[],sh:[],ts:[],pr:0,tu:0,myJ:d.j};CC=null;CCFX=[];
   COOP=!!d.md;
   startGameUI(d.ns.map((n,i)=>({i,n})).filter(o=>o.i!==d.j));
   if(COOP){$('tidebar').style.display='none';$('pushbtn').style.display='none';}
-  $('pausebtn').style.display='none';return;}
+  $('pausebtn').style.display='inline-block';return;}
  if(d.t==='sn')applySnap(d);
 }
 $('bt-host').onclick=()=>{ensureAC();hostRoom();};
