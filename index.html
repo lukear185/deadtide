@@ -1353,6 +1353,13 @@ function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remov
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
 const DOTS=[];for(let i=0;i<170;i++)DOTS.push([rnd(20,1580),rnd(130,745),rnd(1.5,4),Math.random()<.5]);
+/* 地面と道路の質感(起動時に一度だけ生成して使い回す) */
+const PATCHES=[];for(let i=0;i<26;i++)PATCHES.push([rnd(40,1560),rnd(140,740),rnd(40,120),rnd(20,60),rnd(0,3.14),Math.random()<.5]);
+const TUFTS=[];for(let i=0;i<70;i++)TUFTS.push([rnd(20,1580),rnd(130,748),rnd(4,9),rnd(0,9)]);
+const CRACKS=[];for(let i=0;i<34;i++){const d0=rnd(0,PLEN),p=pathPos(d0),a=rnd(0,6.28),l=rnd(14,46);
+ CRACKS.push([p[0]+Math.cos(a)*rnd(0,34),p[1]+Math.sin(a)*rnd(0,26),a,l,rnd(.5,1.6)]);}
+const SKID=[];for(let i=0;i<9;i++){const d0=rnd(120,PLEN-120),p1=pathPos(d0),p2=pathPos(d0+rnd(60,150));
+ SKID.push([p1[0],p1[1],p2[0],p2[1],rnd(-16,16)]);}
 const CARS=[[1455,255,-.4,'#7b4a3a'],[610,185,.35,'#4a5a6b'],[985,708,.12,'#6b6b4a']];
 const TREES=[[205,300],[1502,702],[860,92],[95,410]];
 function renderCamp(C,t){
@@ -1364,19 +1371,42 @@ function renderCamp(C,t){
  const shx=(C.shake>0?rnd(-4,4):0)*SC*shm,shy=(C.shake>0?rnd(-3,3):0)*SC*shm;
  c.setTransform(SC,0,0,SC,OX+shx,OY+shy);
  /* 荒野 */
- c.fillStyle=mix('#B7A177','#4c4638',dk*.72);c.fillRect(0,110,MW,MH-110);
+ {const gg=c.createLinearGradient(0,110,0,MH);
+  gg.addColorStop(0,mix('#C4AE84','#4f4839',dk*.72));gg.addColorStop(1,mix('#A8925F','#413b30',dk*.72));
+  c.fillStyle=gg;c.fillRect(0,110,MW,MH-110);}
+ /* 土のムラ */
+ c.save();
+ for(const p of PATCHES){c.globalAlpha=p[5]?.1:.07;c.fillStyle=p[5]?'#6b5a37':'#d8c79b';
+  c.save();c.translate(p[0],p[1]);c.rotate(p[4]);c.beginPath();c.ellipse(0,0,p[2],p[3],0,0,7);c.fill();c.restore();}
+ c.restore();
  for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
+ /* 枯れ草 */
+ if(FXLV>0){c.strokeStyle=mix('#8a7d4e','#3c3a2c',dk*.6);c.lineWidth=1.6;
+  for(const g3 of TUFTS){const sw=Math.sin(t*1.5+g3[3])*1.6;
+   c.beginPath();c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+sw,g3[1]-g3[2]);
+   c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]-3+sw,g3[1]-g3[2]*.7);
+   c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+3+sw,g3[1]-g3[2]*.6);c.stroke();}}
  /* 地平線と廃墟 */
  const sg=c.createLinearGradient(0,0,0,115);sg.addColorStop(0,mix('#D8C09A','#171c30',dk));sg.addColorStop(1,mix('#C4A87E','#2a2f45',dk));c.fillStyle=sg;c.fillRect(0,0,MW,115);
  c.fillStyle=mix('#8a7a5e','#12151f',.4+dk*.6);
  [[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
  if(dk>.25){c.globalAlpha=dk;c.fillStyle='#e8e4d2';c.beginPath();c.arc(1380,45,26,0,7);c.fill();c.globalAlpha=1;}
  c.fillStyle='rgba(0,0,0,.25)';c.fillRect(0,110,MW,6);
- /* 道路 */
- c.strokeStyle=mix('#57524a','#2f2d29',dk*.4);c.lineWidth=92;c.lineJoin='round';c.lineCap='round';
- c.beginPath();c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);c.stroke();
- c.strokeStyle='rgba(180,172,150,.55)';c.lineWidth=4;c.setLineDash([24,30]);
- c.beginPath();c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);c.stroke();c.setLineDash([]);
+ /* 道路(路肩→アスファルト→ハイライト→白線→ひび→タイヤ痕) */
+ const roadPath=()=>{c.beginPath();c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);};
+ c.lineJoin='round';c.lineCap='round';
+ c.strokeStyle='rgba(0,0,0,.22)';c.lineWidth=104;roadPath();c.stroke();/* 路肩の影 */
+ c.strokeStyle=mix('#6b6459','#39362f',dk*.5);c.lineWidth=98;roadPath();c.stroke();/* 縁石 */
+ c.strokeStyle=mix('#57524a','#2f2d29',dk*.4);c.lineWidth=92;roadPath();c.stroke();/* 舗装 */
+ c.save();c.globalAlpha=.5;c.strokeStyle=mix('#6e675c','#3a372f',dk*.4);c.lineWidth=54;roadPath();c.stroke();c.restore();/* 中央の摩耗 */
+ if(FXLV>0){c.save();c.globalAlpha=.5;c.strokeStyle='#2a2723';c.lineCap='butt';
+  for(const k of CRACKS){c.lineWidth=k[4];c.beginPath();c.moveTo(k[0],k[1]);
+   c.lineTo(k[0]+Math.cos(k[2])*k[3],k[1]+Math.sin(k[2])*k[3]*.7);c.stroke();}
+  c.globalAlpha=.16;c.strokeStyle='#171512';c.lineWidth=9;c.lineCap='round';
+  for(const s of SKID){c.beginPath();c.moveTo(s[0]+s[4],s[1]);c.lineTo(s[2]+s[4],s[3]);c.stroke();}
+  c.restore();c.lineCap='round';}
+ c.strokeStyle='rgba(190,182,158,.5)';c.lineWidth=4;c.setLineDash([24,30]);
+ roadPath();c.stroke();c.setLineDash([]);
  /* 装飾 */
  for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
@@ -1472,10 +1502,42 @@ function renderCamp(C,t){
   else if(e.k==='dmg'){c.globalAlpha=Math.max(0,1-e.t/.5);c.fillStyle='#fff';c.strokeStyle=INK;c.lineWidth=3;c.font='900 20px sans-serif';c.textAlign='center';const ty=e.y-e.t*40;c.strokeText(e.s,e.x,ty);c.fillText(e.s,e.x,ty);c.globalAlpha=1;}
   else if(e.k==='leak'){c.strokeStyle='rgba(232,72,50,'+Math.max(0,1-e.t*2)+')';c.lineWidth=8;c.beginPath();c.arc(CORE[0],CORE[1],40+e.t*140,0,7);c.stroke();}
  }
- /* 夜の帳 */
- if(dk>0){c.fillStyle='rgba(12,14,30,'+(dk*.42)+')';c.fillRect(0,110,MW,MH-110);
-  c.fillStyle='rgba(232,163,61,.2)';c.beginPath();c.arc(cx,cy,70,0,7);c.fill();
-  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(tw&&tw.fireT>0){c.fillStyle='rgba(255,220,120,.22)';c.beginPath();c.arc(SLOTS[si][0],SLOTS[si][1],55,0,7);c.fill();}}}
+ /* ===== 夜の帳 + 動的ライティング ===== */
+ if(dk>0){
+  c.save();
+  /* 影(闇)を一枚敷いてから、光源で削り取る=光が周囲を照らして見える */
+  c.globalCompositeOperation='source-over';
+  c.fillStyle='rgba(10,12,28,'+(dk*.52)+')';c.fillRect(0,110,MW,MH-110);
+  c.globalCompositeOperation='destination-out';
+  const lite=(x,y,r,a)=>{const g2=c.createRadialGradient(x,y,0,x,y,r);
+   g2.addColorStop(0,'rgba(0,0,0,'+a+')');g2.addColorStop(.55,'rgba(0,0,0,'+(a*.45)+')');g2.addColorStop(1,'rgba(0,0,0,0)');
+   c.fillStyle=g2;c.beginPath();c.arc(x,y,r,0,7);c.fill();};
+  lite(cx,cy,150,.95);/* 拠点の灯り */
+  if(FXLV>0){
+   for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
+    lite(SLOTS[si][0],SLOTS[si][1],62,.35);/* 常夜灯 */
+    if(tw.fireT>0)lite(SLOTS[si][0],SLOTS[si][1],150,.9);}/* 発砲閃光 */
+   for(const u of us2)if(u.fireT>0)lite(u.px,u.py-24,110,.8);
+   for(const z of C.zombies)if(z.burnT>0)lite(z.px,z.py-14,70,.6);/* 燃えてる敵 */
+   for(const e of C.fx){
+    if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0);if(tt>=0&&tt<.4)lite(e.x,e.y,(e.k==='boomL'?360:210)*(1-tt*2),1);}
+    else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts)lite(p4[0],p4[1],90,.85);
+   }
+   const fp2=BRANCH;if(COOP)for(let i=0;i<3;i++)lite(fp2[i][0],fp2[i][1]-10,70,.4);
+  }
+  c.restore();
+  /* 月光の色被り+ビネット(画面周辺を落として奥行きを出す) */
+  c.save();c.globalCompositeOperation='source-over';
+  c.fillStyle='rgba(60,90,160,'+(dk*.1)+')';c.fillRect(0,110,MW,MH-110);
+  const vg=c.createRadialGradient(MW/2,MH/2,MH*.36,MW/2,MH/2,MH*1.05);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,'+(.34+dk*.24)+')');
+  c.fillStyle=vg;c.fillRect(0,0,MW,MH);
+  c.restore();
+ }else{
+  const vg=c.createRadialGradient(MW/2,MH/2,MH*.4,MW/2,MH/2,MH*1.05);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.3)');
+  c.fillStyle=vg;c.fillRect(0,0,MW,MH);
+ }
  /* 照準 */
  if(AIM&&aimPos){c.strokeStyle='#E84832';c.lineWidth=4;c.setLineDash([12,10]);c.beginPath();c.arc(aimPos[0],aimPos[1],135,0,7);c.stroke();c.setLineDash([]);
   c.beginPath();c.moveTo(aimPos[0]-20,aimPos[1]);c.lineTo(aimPos[0]+20,aimPos[1]);c.moveTo(aimPos[0],aimPos[1]-20);c.lineTo(aimPos[0],aimPos[1]+20);c.stroke();}
