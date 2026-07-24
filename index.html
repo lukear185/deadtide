@@ -162,6 +162,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .ldc.sel{background:#ffd23d;box-shadow:0 0 0 2px #c9a13d inset}
 .ldc.lock{opacity:.42;filter:saturate(.3)}
 .ldc .lds{font-size:10px;font-weight:800;opacity:.75}
+.ldhdr{font-size:12px;font-weight:900;color:var(--rust2);margin:8px 2px 4px;text-align:left;border-top:2px dashed rgba(147,56,30,.4);padding-top:8px}
 #seg-stk{flex-wrap:wrap}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
@@ -764,10 +765,30 @@ const UVAR={
  shd:[
   {id:'bshd',n:'大盾兵',cm:1.2,hp:1.45,atk:1.2,c:'#5f8fa3',dsc:'一回り大きい盾で受け止める'},
   {id:'iron',n:'鉄壁',cm:1.45,hp:2,atk:1.45,c:'#8a8f96',dsc:'鋼板を並べた動く壁'},
-  {id:'fortr',n:'城塞兵',cm:1.75,hp:2.8,atk:1.75,c:'#c9a13d',dsc:'決して抜かれぬ人間城塞'}]
+  {id:'fortr',n:'城塞兵',cm:1.75,hp:2.8,atk:1.75,c:'#c9a13d',dsc:'決して抜かれぬ人間城塞'}],
+ /* ↓研究所限定の上級4種にも、姿が変わる3段階アップグレードを用意(2026-07-25) */
+ tnk:[
+  {id:'tnk2',n:'重戦車',cm:1.25,hp:1.4,atk:1.4,c:'#4a5560',dsc:'装甲を増した重戦車'},
+  {id:'tnk3',n:'陸上戦艦',cm:1.5,hp:1.9,atk:1.7,c:'#3f4a54',dsc:'主砲を備えた陸上戦艦'},
+  {id:'tnk4',n:'地響き',cm:1.85,hp:2.7,atk:2.3,c:'#5a4a3a',dsc:'全てを踏み潰す鋼鉄の要塞'}],
+ mech:[
+  {id:'mech2',n:'強襲メカ',cm:1.25,hp:1.4,atk:1.4,c:'#5c7d8a',dsc:'装甲を張った強襲機'},
+  {id:'mech3',n:'砲撃メカ',cm:1.5,hp:1.8,atk:1.8,c:'#6b7580',dsc:'両肩に重キャノンを積む'},
+  {id:'mech4',n:'決戦兵器',cm:1.85,hp:2.5,atk:2.4,c:'#8f6fae',dsc:'人類最後の切り札'}],
+ titan:[
+  {id:'titan2',n:'鋼の巨兵',cm:1.25,hp:1.4,atk:1.4,c:'#8a8f96',dsc:'鋼を纏った巨兵'},
+  {id:'titan3',n:'破城巨兵',cm:1.5,hp:1.9,atk:1.8,c:'#a0623a',dsc:'城壁すら砕く巨兵'},
+  {id:'titan4',n:'神話級タイタン',cm:1.85,hp:2.8,atk:2.5,c:'#c9a13d',dsc:'神話に謳われし究極の巨神'}],
+ valk:[
+  {id:'valk2',n:'天翼兵',cm:1.25,hp:1.4,atk:1.4,c:'#d8d2c4',dsc:'翼を広げた天翼の兵'},
+  {id:'valk3',n:'雷光ヴァルキリー',cm:1.5,hp:1.8,atk:1.8,c:'#9fdcf5',dsc:'雷光を纏う戦乙女'},
+  {id:'valk4',n:'戦乙女の長',cm:1.85,hp:2.5,atk:2.5,c:'#ffd23d',dsc:'戦乙女を率いる黄金の長'}]
 };
-const VARLIST=[];/* 研究所での解放順(まず全兵科の1段目→2段目→3段目) */
+const FVBASE=['tnk','mech','titan','valk'];/* 上級(研究所解放)の派生対象 */
+const ALLVB=VBASE.concat(FVBASE);
+const VARLIST=[];/* 研究所での解放順(基本兵科の1〜3段目→上級の1〜3段目) */
 for(let t=0;t<3;t++)for(const b of VBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v});}
+for(let t=0;t<3;t++)for(const b of FVBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v,adv:1});}
 const LAB_UV=k=>Math.round(90*Math.pow(1.13,k));/* k個目の派生解放価格 */
 /* ============ 弾薬(研究所で発射する弾そのものを強化) ============ */
 const AMMO=[
@@ -1144,29 +1165,35 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(tier===4){c.shadowColor='#E8A33D';c.shadowBlur=10;}
  c.lineWidth=2.4;c.strokeStyle=INK;
- if(id==='tnk'){/* 装甲車(研究所限定) */
-  c.scale(1.15,1.15);
-  c.fillStyle='#5c6b78';rr(c,-22,-26,44,18,5);c.fill();c.stroke();
+ if(id==='tnk'){/* 装甲車(研究所限定)／派生=重戦車→陸上戦艦→地響き */
+  const C0=vt?U.c:'#5c6b78';c.scale(1.15*(1+.06*vt),1.15*(1+.06*vt));
+  if(vt>=3){c.shadowColor='#ffd23d';c.shadowBlur=9;}
+  c.fillStyle=C0;rr(c,-22,-26,44,18,5);c.fill();c.stroke();
   c.fillStyle='#3f4a54';rr(c,-14,-36,22,11,4);c.fill();c.stroke();
   c.fillStyle='#2c333a';rr(c,6,-33,22,5,2);c.fill();c.stroke();
+  if(vt>=2){c.fillStyle='#2c333a';rr(c,6,-28,26,4,2);c.fill();c.stroke();}/* 第2主砲 */
   if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(31,-30,4+o.fireT*20,0,7);c.fill();}
   c.fillStyle='#241f19';
   for(const wx of[-15,-5,5,15]){c.beginPath();c.arc(wx,-6,5,0,7);c.fill();c.stroke();}
   c.fillStyle='#ffd23d';c.fillRect(-20,-25,40,2.5);
+  if(vt>=3){c.fillStyle='#ffd23d';for(let k=-1;k<=1;k++){c.beginPath();c.moveTo(k*11-3,-36);c.lineTo(k*11,-45);c.lineTo(k*11+3,-36);c.closePath();c.fill();c.stroke();}}
   c.restore();return;
  }
- if(id==='mech'){/* メカスーツ(研究所限定) */
-  c.scale(1.2,1.2);
+ if(id==='mech'){/* メカスーツ(研究所限定)／派生=強襲→砲撃→決戦兵器 */
+  const C0=vt?U.c:'#6b7580';c.scale(1.2*(1+.05*vt),1.2*(1+.05*vt));
+  if(vt>=3){c.shadowColor=U.c;c.shadowBlur=9;}
   c.fillStyle='#4a4034';
   c.fillRect(-10+walk*3,-12,7,12);c.strokeRect(-10+walk*3,-12,7,12);
   c.fillRect(4-walk*3,-12,7,12);c.strokeRect(4-walk*3,-12,7,12);
-  c.fillStyle='#6b7580';rr(c,-14,-40,28,30,8);c.fill();c.stroke();
+  c.fillStyle=C0;rr(c,-14,-40,28,30,8);c.fill();c.stroke();
   c.fillStyle='#9fdcf5';rr(c,-6,-34,12,8,3);c.fill();c.stroke();
   c.fillStyle='#3f4a54';rr(c,-21,-42,10,15,3);c.fill();c.stroke();
   c.fillStyle='#585e4c';rr(c,8,-49,10,21,3);c.fill();c.stroke();
+  if(vt>=2){c.fillStyle='#585e4c';rr(c,-31,-40,10,17,3);c.fill();c.stroke();c.fillStyle='#C1502E';c.beginPath();c.arc(-26,-42,3,0,7);c.fill();}/* 左肩キャノン */
   c.fillStyle='#C1502E';c.beginPath();c.arc(13,-51,3,0,7);c.fill();
   if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(13,-56,4+o.fireT*22,0,7);c.fill();}
   c.fillStyle='#ffd23d';c.fillRect(-14,-40,28,3);
+  if(vt>=3){c.fillStyle='#ffd23d';c.beginPath();c.arc(0,-46,2.6,0,7);c.fill();}
   c.restore();return;
  }
  if(id==='hnd'){
@@ -1267,13 +1294,21 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.globalAlpha=.6;c.fillStyle='#cdf1ff';c.beginPath();c.arc(30,-28,5+Math.sin(t*12)*2,0,7);c.fill();c.globalAlpha=1;}
  else if(id==='chief'){c.fillStyle='#3a3128';c.beginPath();c.moveTo(4,-27);c.lineTo(26,-30);c.lineTo(26,-26);c.lineTo(4,-24);c.closePath();c.fill();c.lineWidth=2.4;c.stroke();
   c.fillStyle='#ffd23d';c.fillRect(-11,-40,7,3);c.fillRect(-11,-35,7,3);}
- else if(id==='titan'){c.fillStyle='#8a8f96';rr(c,-16,-44,32,10,4);c.fill();c.lineWidth=2.6;c.stroke();
+ else if(id==='titan'){const C0=vt?U.c:'#8a8f96';
+  if(vt>=2){c.fillStyle=C0;rr(c,-30,-40,16,26,4);c.fill();c.lineWidth=2.6;c.stroke();c.lineWidth=2.4;}/* 左肩甲 */
+  c.fillStyle=C0;rr(c,-16,-44,32,10,4);c.fill();c.lineWidth=2.6;c.stroke();c.lineWidth=2.4;
   c.fillStyle='#5c6b78';rr(c,12,-40,14,26,4);c.fill();c.stroke();
   c.fillStyle='#C1502E';c.beginPath();c.arc(19,-30,3.4,0,7);c.fill();
-  c.fillStyle='#ffd23d';c.fillRect(-16,-44,32,2.6);}
- else if(id==='valk'){c.fillStyle='#d9a13d';c.beginPath();c.moveTo(-12,-40);c.lineTo(-28,-52);c.lineTo(-10,-30);c.closePath();c.fill();c.lineWidth=2.4;c.stroke();
+  c.fillStyle='#ffd23d';c.fillRect(-16,-44,32,2.6);
+  if(vt>=3){c.fillStyle='#ffd23d';for(let k=-1;k<=1;k++){c.beginPath();c.moveTo(k*8-2.5,-46);c.lineTo(k*8,-56);c.lineTo(k*8+2.5,-46);c.closePath();c.fill();c.stroke();}}}
+ else if(id==='valk'){const WC=vt?U.c:'#d9a13d';
+  /* 段階が上がるほど翼が増える */
+  const wings=1+vt;c.fillStyle=WC;
+  for(let w2=0;w2<wings;w2++){const sp=w2*7;
+   c.beginPath();c.moveTo(-12,-38+sp*0);c.lineTo(-28-sp,-52-sp);c.lineTo(-10,-30+0);c.closePath();c.fill();c.lineWidth=2.4;c.stroke();}
   c.fillStyle='#585e4c';rr(c,4,-42,24,7,3);c.fill();c.stroke();
-  c.fillStyle='#ffd23d';c.beginPath();c.moveTo(-2,-50);c.lineTo(2,-58);c.lineTo(6,-50);c.closePath();c.fill();c.stroke();}
+  c.fillStyle='#ffd23d';c.beginPath();c.moveTo(-2,-50);c.lineTo(2,-58);c.lineTo(6,-50);c.closePath();c.fill();c.stroke();
+  if(vt>=3&&FXLV>0){c.globalAlpha=.5;c.fillStyle='#cdf1ff';c.beginPath();c.arc(16,-40,4+Math.sin(t*10)*2,0,7);c.fill();c.globalAlpha=1;}}
  /* 発砲マズルフラッシュ */
  if(o.fireT>0&&FXLV>0){const mzy=id==='rkt'?-42:id==='mgn'?-27:id==='snp'?-30:-28,mzx=id==='rkt'?26:id==='mgn'?32:id==='snp'?33:27;
   c.fillStyle='#ffdd66';c.beginPath();c.arc(mzx,mzy,4.5+o.fireT*22,0,7);c.fill();
@@ -2814,7 +2849,7 @@ function renderLab(){
  if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({k:'nu',t:'🤖 新型兵科『'+U.n+'』 ('+(META.nu+1)+'/'+(UNITS.length-BASE_U)+')',d:U.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NU(META.nu)});}
  {const uv=META.uv||[],nv=VARLIST.find(x=>uv.indexOf(x.v.id)<0);
   if(nv){const B=UBASE.find(u=>u.id===nv.b)||{n:'?'};
-   items.push({k:'uv',id:nv.v.id,t:'🧬 派生キャラ『'+nv.v.n+'』 ('+(uv.length+1)+'/'+VARLIST.length+')',d:nv.v.dsc+' — 『'+B.n+'』の代わりに🎖編成で入れ替えられる',p:LAB_UV(uv.length)});}}
+   items.push({k:'uv',id:nv.v.id,t:(nv.adv?'⭐ 上級進化『':'🧬 派生キャラ『')+nv.v.n+'』 ('+(uv.length+1)+'/'+VARLIST.length+')',d:nv.v.dsc+' — 『'+B.n+'』の'+(nv.adv?'姿が変わる強化形態':'代わり')+'。🎖編成で切替',p:LAB_UV(uv.length)});}}
  if((META.am||0)<AMMO.length-1){const A=AMMO[(META.am||0)+1];
   items.push({k:'am',t:A.ic+' 弾薬『'+A.n+'』 ('+((META.am||0)+1)+'/'+(AMMO.length-1)+')',d:A.dsc+' — 🎖編成で装備する',p:LAB_AM[META.am||0]});}
  for(const k in LAB_STK){if(META.st.indexOf(k)<0){const S=STRIKES[k];items.push({k:'stk',id:k,t:S.ic+' 新砲撃『'+S.n+'』',d:S.dsc,p:LAB_STK[k]});}}
@@ -2909,15 +2944,18 @@ function renderLoad(){
  const box=$('load-items');if(!box)return;
  const uv=META.uv||[];if(!META.ld)META.ld={};
  let h='';
- VBASE.forEach((bid,n)=>{
+ const row=(bid,label)=>{
   const i=UBASE.findIndex(u=>u.id===bid);if(i<0)return;
   const B=UBASE[i],cur=META.ld[bid]||'',opts=[{v:null,def:B}].concat((UVAR[bid]||[]).map(v=>({v,def:mkVar(B,v)})));
-  h+='<div class="ldrow"><div class="lhd">'+(n+1)+'つ目の枠 — 基本『'+B.n+'』</div><div class="ldpick">';
+  h+='<div class="ldrow"><div class="lhd">'+label+'</div><div class="ldpick">';
   opts.forEach((o,k)=>{
    const vid=o.v?o.v.id:'',lock=o.v&&uv.indexOf(vid)<0,sel=cur===vid;
    h+='<button class="ldc'+(sel?' sel':'')+(lock?' lock':'')+'" data-b="'+bid+'" data-v="'+vid+'" data-i="'+i+'" data-k="'+k+'"'+(lock?' disabled':'')+'>'
     +'<canvas width="56" height="56"></canvas><span>'+(lock?'🔒':'')+o.def.n+'<br><span class="lds">⚙️'+o.def.cost+' HP'+o.def.hp+' 攻'+o.def.atk+'</span></span></button>';});
-  h+='</div></div>';});
+  h+='</div></div>';};
+ VBASE.forEach((bid,n)=>row(bid,(n+1)+'つ目の枠 — 基本『'+((UBASE.find(u=>u.id===bid))||{}).n+'』'));
+ h+='<div class="ldhdr">🔬 上級ユニット(研究所で解放・姿が変わる3段階)</div>';
+ FVBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'上級『'+B.n+'』');});
  /* 弾薬 */
  h+='<div class="ldrow"><div class="lhd">タワーの弾薬(実弾タワーに反映)</div><div class="ldpick">';
  AMMO.forEach((A,k)=>{const lock=k>(META.am||0),sel=(META.amEq||0)===k;
