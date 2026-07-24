@@ -78,7 +78,7 @@ function runPvP(tag){
  frames(30,.016);
  buildTower(G.players[0],2,0);buildTower(G.players[0],1,0);
  let guard=0,struck=false,pushed=0,dep=0;
- while(G&&!G.over&&guard++<30000){
+ while(G&&!G.over&&guard++<40000){
   frames(1,.033);
   if(guard%500===0)chkShares(tag+'@'+guard);
   if(!struck&&G.players[0].charge>=1&&G.players[0].zombies.length){const z=G.players[0].zombies[0];airstrike(G.players[0],z.px,z.py,G.wave);struck=true;}

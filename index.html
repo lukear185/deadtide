@@ -519,6 +519,9 @@ const prPush=u=>Math.round(45*Math.pow(1.15,u));
 const prBig=u=>Math.round(150*Math.pow(1.3,u));
 const prTide=u=>Math.round(180*Math.pow(1.3,u));
 const uupCost=C=>C.uUn<UNITS.length?UNITP[C.uUn]:1e9;
+const ULV_MAX=10;
+const prUup=lv=>Math.round(60*Math.pow(1.4,lv));/* 部隊強化: 低コスト設定 */
+const uDepCost=(C,ui)=>Math.round(UNITS[ui].cost*(1+.1*(C&&C.uLv||0)));/* 出撃費はレベルに比例 */
 const prSend=(zi,cnt)=>Math.ceil(ZOMBIES[zi].bt*3*cnt);
 /* ============ ルート ============ */
 const PATH=[[1660,150],[1100,150],[1100,420],[1380,420],[1380,650],[760,650],[760,380],[420,380],[420,620],[110,620]];
@@ -686,7 +689,7 @@ function makeThumbs(){for(let i=0;i<TOWERS.length;i++){const cvv=document.create
 let EID=1;
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
  core:50,coreMax:50,scrap:250,unlocked:2,atkLv:0,repairs:0,boosts:0,jams:0,
- towers:SLOTS.map(()=>null),zombies:[],shells:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
+ towers:SLOTS.map(()=>null),zombies:[],shells:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
 const ZHPM=.75;/* ゾンビHP全体倍率(2026-07-24 永井さん指示で0.75) */
@@ -698,7 +701,7 @@ function buildTide(wave){
  const up=T.up;
  const D=D5v();
  const warm=G.pve&&wave<=4?[.6,.72,.84,.94][wave-1]:1;/* PvE序盤の慣らし */
- const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.1,wave-8):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.08*(G.np-1):1);
+ const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.08*(G.np-1):1);
  T.mul=mul;
  const laneN=G.coop?1:alive;
  const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt*warm:1)*(G.coop?1+.4*(G.np-1):1));
@@ -810,13 +813,19 @@ function dmgZ(C,z,d,armorPierce){
 function deployUnit(C,ui){
  const U=UNITS[ui];
  const F=G&&G.coop?G.players[0]:C;
- if(C.dead||F.dead||ui>=C.uUn||C.ucd[ui]>0||C.scrap<U.cost)return false;
+ const dc=uDepCost(C,ui);
+ if(C.dead||F.dead||ui>=C.uUn||C.ucd[ui]>0||C.scrap<dc)return false;
  const cnt=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:C.units.length;
  const cap=G&&G.coop?COOP_MAXU:MAXU;
  if(cnt>=cap){if(C.isMe)toast('⚠ 部隊上限('+cap+'体)!',true);return false;}
- C.scrap-=U.cost;C.ucd[ui]=U.cd;C.dep++;
+ C.scrap-=dc;C.ucd[ui]=U.cd;C.dep++;
+ const lvM=1+.1*(C.uLv||0);/* 部隊レベル: 全兵科共通で+10%/Lv */
  const d0=G&&G.coop?branchD(C.gi||0)-rnd(0,20):PLEN-70-rnd(0,26);
- F.units.push({eid:EID++,ui,own:C.gi||0,d:d0,hp:U.hp,mhp:U.hp,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
+ const hp0=Math.round(U.hp*lvM);
+ F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
+ if(U.id==='hnd'){/* 猟犬は2体1組で出撃 */
+  const cnt2=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:F.units.length;
+  if(cnt2<(G&&G.coop?COOP_MAXU:MAXU))F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0+14,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});}
  const rp=G&&G.coop?pathPos(d0):CORE;
  const tier=uTier(ui);
  if(tier>=3){addFx(F,'ring',rp[0],rp[1],'',{r:tier===4?170:120,col:tier===4?'#ffd23d':'#E8A33D'});
@@ -890,25 +899,26 @@ function campStep(C,dt,wave){
  for(const u of C.units){
   if(u.dead)continue;
   const U=UNITS[u.ui];u.cd-=dt;
+  const ua=Math.round(U.atk*(u.am||1));/* 部隊レベル補正込み攻撃力 */
   let tg=null,best=-1;
   if(U.type==='heal'){
    if(u.cd<=0){let ta=null,br2=1;
     for(const a of C.units){if(a.dead||a===u||a.hp>=a.mhp)continue;const r5=a.hp/a.mhp;if(r5<br2&&Math.abs(u.d-a.d)<=U.rng){br2=r5;ta=a;}}
-    if(ta){u.cd=U.rate;ta.hp=Math.min(ta.mhp,ta.hp+U.atk);addFx(C,'txt',ta.px,ta.py-52,'+'+U.atk+'♥');addFx(C,'ring',ta.px,ta.py,'',{r:36,col:'#b7e07a'});if(C.isMe)sfx.heal();}}
+    if(ta){u.cd=U.rate;ta.hp=Math.min(ta.mhp,ta.hp+ua);addFx(C,'txt',ta.px,ta.py-52,'+'+ua+'♥');addFx(C,'ring',ta.px,ta.py,'',{r:36,col:'#b7e07a'});if(C.isMe)sfx.heal();}}
   }else
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const gap=u.d-z.d;
    if(gap>=-10&&gap<=U.rng&&z.d>best){best=z.d;tg=z;}}
   if(tg){
    if(u.cd<=0){u.cd=U.rate;
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
-    if(U.type==='frost'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,U.atk,1);}}
+    if(U.type==='frost'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,ua,1);}}
      addFx(C,'ring',tg.px,tg.py,'',{r:U.aoe,col:'#9fdcf5'});if(C.isMe)sfx.frost();}
-    else if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){dmgZ(C,z,U.atk,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}
+    else if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){dmgZ(C,z,ua,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}
      addFx(C,U.type==='blast'?'boom':'ring',tg.px,tg.py,'',{r:U.aoe,col:'#ffb347'});
      if(U.aoe>=100){C.shake=Math.max(C.shake||0,.14);u.fireT=.14;}
      if(C.isMe&&U.type==='blast')sfx.boom();}
-    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=U.rng){dmgZ(C,z,U.atk,pierce);if(++n2>=U.multi)break;}}}
-    else{dmgZ(C,tg,U.atk,pierce);
+    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=U.rng){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
+    else{dmgZ(C,tg,ua,pierce);
      if(U.rng>60){u.fireT=.1;addFx(C,'tr',u.px,u.py-24,'',{x2:tg.px,y2:tg.py-20,col:U.id==='snp'?'rgba(160,225,255,':null});if(C.isMe&&Math.random()<.4)sfx.shot();}}
    }
   }else{const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(U.rng>60?fD+70:fD,60,PLEN-40),df=goal-u.d;
@@ -967,6 +977,7 @@ function priceOf(C,kind,opt){
  switch(kind){
   case 'unlock':return C.unlocked<TOWERS.length?UNLOCK_P[C.unlocked]:1e9;
   case 'uun':return uupCost(C);
+  case 'uup':return (C.uLv||0)<ULV_MAX?prUup(C.uLv||0):1e9;
   case 'atk':return prAtk(C.atkLv);
   case 'repair':return prRe(C.repairs);
   case 'big':return prBig(C.boosts);
@@ -982,6 +993,7 @@ function doPurchase(C,kind,opt){
  if((kind==='unlock'||kind==='uun')&&G&&G.wave<3)return false;/* WAVE3クリアまで解放禁止(序盤の詰み防止) */
  if(kind==='unlock'&&C.unlocked>=TOWERS.length)return false;
  if(kind==='uun'&&C.uUn>=UNITS.length)return false;
+ if(kind==='uup'&&(C.uLv||0)>=ULV_MAX)return false;
  const tgt=opt.tgt!=null&&opt.tgt>=0?G.players[opt.tgt]:null;
  if((kind==='big'||kind==='send'||kind==='jam')&&(!tgt||tgt===C||tgt.dead))return false;
  if(kind==='big'){
@@ -997,6 +1009,7 @@ function doPurchase(C,kind,opt){
  switch(kind){
   case 'unlock':C.unlocked++;break;
   case 'uun':C.uUn++;break;
+  case 'uup':C.uLv=(C.uLv||0)+1;break;
   case 'atk':C.atkLv++;break;
   case 'repair':{C.repairs++;const FC=G&&G.coop?G.players[0]:C;FC.core=Math.min(FC.coreMax,FC.core+12);break;}
   case 'tide':G.tide.up++;G.tide.upN++;for(let k=0;k<G.players.length;k++)if(G.players[k]!==C&&!G.players[k].dead)ev(k,'🌊 '+C.name+' が潮位を引き上げた!次の波が深くなる…',true);break;
@@ -1055,6 +1068,7 @@ function cpuPlan(C){
   if(C.core<C.coreMax*.45)push('repair',6);
   if(G.wave>=3&&C.unlocked<TOWERS.length&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
   if(G.wave>=3&&C.uUn<UNITS.length&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
+  if(G.wave>=3&&(C.uLv||0)<ULV_MAX)push('uup',1.6);
   push('atk',2.2);
   if(C.core<C.coreMax*.8)push('repair',1.2);
   {const gi=G.players.indexOf(C),alv=G.players.filter(p=>!p.dead).length,eq=100/alv,sh=G.tide.shares[gi];
@@ -1147,7 +1161,7 @@ function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||
  const hudPad=MOBILE?Math.round(64*DPR):0;/* スマホは下にデッキ帯を確保しマップと被らせない */
  SC=Math.min(W/MW,(H-hudPad)/MH);OX=(W-MW*SC)/2;OY=(H-hudPad-MH*SC)/2;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');if(id==='game')bgmOn();else if(id==='title')bgmOff();}
-function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
+function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
 const DOTS=[];for(let i=0;i<170;i++)DOTS.push([rnd(20,1580),rnd(130,745),rnd(1.5,4),Math.random()<.5]);
 const CARS=[[1455,255,-.4,'#7b4a3a'],[610,185,.35,'#4a5a6b'],[985,708,.12,'#6b6b4a']];
@@ -1330,10 +1344,12 @@ function updHUD(){const m=meV();if(!m)return;
  const uun=m.uUn!=null?m.uUn:2;
  for(let i=0;i<DECKB.length;i++){const b=DECKB[i],U=UNITS[i];
   const cd=m.ucd?Math.max(0,m.ucd[i]||0):0;
-  b.classList.toggle('poor',m.scrap<U.cost);
+  const dc2=uDepCost(m,i);
+  b.classList.toggle('poor',m.scrap<dc2);
+  const dcEl=b.querySelector('.dc');if(dcEl)dcEl.textContent='⚙️'+dc2;
   b.querySelector('.lk').style.display=i<uun?'none':'flex';
   b.querySelector('.cdov').style.background=cd>0?`conic-gradient(rgba(10,9,8,.74) ${cd/U.cd*100}%,transparent 0)`:'none';
-  b.disabled=m.dead||i>=uun||cd>0||m.scrap<U.cost;
+  b.disabled=m.dead||i>=uun||cd>0||m.scrap<dc2;
  }
  /* 対象チップ */
  const os=aliveOthers();
@@ -1490,9 +1506,9 @@ function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return
 function actStrike(x,y){if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'st',x:Math.round(x),y:Math.round(y)});CS.meN.charge=0;sfx.boom();}
  else airstrike(G.players[G.myIdx],x,y,G.wave);}
 function actDeploy(ui){
- if(MODE==='client'){const m=meV();if(!m||m.dead)return;const U=UNITS[ui];
-  if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<U.cost)return;
-  safeSend(NET.conn,{t:'c',a:'un',ui});m.scrap-=U.cost;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
+ if(MODE==='client'){const m=meV();if(!m||m.dead)return;const U=UNITS[ui],dc=uDepCost(m,ui);
+  if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<dc)return;
+  safeSend(NET.conn,{t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
 let DECKB=[];
 function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];
@@ -1522,6 +1538,8 @@ function ivRender(){
  const uu2=m.uUn!=null?m.uUn:2,nu=uu2<UNITS.length?UNITS[uu2]:null;
  h+=`<div class="card"><div class="ci">${early?'🔒':'🪖'}</div><div class="ct">新部隊解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる':nu?('次:『'+nu.n+'』— '+nu.dsc):'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${!early&&nu&&can('uun')?'':'disabled'}>${early?'🔒':'⚙️'+(nu?pc('uun'):'-')}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${can('atk')?'':'disabled'}>⚙️${pc('atk')}</button></div>`;
+ {const ul2=m.uLv||0,umx=ul2>=ULV_MAX;
+ h+=`<div class="card"><div class="ci">⬆</div><div class="ct">部隊強化 Lv${ul2}</div><div class="cdsc">全部隊のHPと攻撃+10%(以後の出撃分・出撃費も比例して上がる)</div><button class="btn gold sm buy" data-buy="uup" ${!umx&&can('uup')?'':'disabled'}>${umx?'MAX':'⚙️'+pc('uup')}</button></div>`;}
  h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${can('repair')&&m.core<m.coreMax?'':'disabled'}>⚙️${pc('repair')}</button></div>`;
  if(!((G&&G.pve)||COOP)){
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">大押し流し</div><div class="cdsc">死潮の取り分を一気に15%相手へ押し付ける</div><div class="tgt">${tgtBtns('tB')}</div><button class="btn red sm buy" data-buy="big" ${can('big')&&ivS.tB>=0?'':'disabled'}>⚙️${pc('big')}</button></div>`;
@@ -1543,11 +1561,11 @@ function ivRender(){
 }
 function actBuy(kind){
  const opt={zi:ivS.zi,cnt:ivS.cnt,tgt:kind==='big'?ivS.tB:kind==='jam'?ivS.tJ:kind==='send'?ivS.tS:null};
- const label={unlock:'🔓 新タワー解放!',uun:'🪖 新部隊解放!',atk:'🔧 火力増強!',repair:'🛠 コア修理!',big:'🌊 大押し流しを仕掛けた!',tide:'🌊 潮位を引き上げた!',jam:'⚡ 妨害工作を仕掛けた',send:'🧟 変異体を送った'}[kind];
+ const label={unlock:'🔓 新タワー解放!',uun:'🪖 新部隊解放!',uup:'⬆ 部隊強化!',atk:'🔧 火力増強!',repair:'🛠 コア修理!',big:'🌊 大押し流しを仕掛けた!',tide:'🌊 潮位を引き上げた!',jam:'⚡ 妨害工作を仕掛けた',send:'🧟 変異体を送った'}[kind];
  if(MODE==='client'){const m=meV(),p=priceOf(m,kind,opt);if(m.scrap<p)return;
   if((kind==='unlock'||kind==='uun')&&(CS.w||0)<3)return;
   safeSend(NET.conn,{t:'c',a:'buy',k:kind,o:opt});
-  m.scrap-=p;if(kind==='unlock')m.unlocked++;if(kind==='uun')m.uUn=(m.uUn!=null?m.uUn:2)+1;if(kind==='atk')m.atkLv++;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
+  m.scrap-=p;if(kind==='unlock')m.unlocked++;if(kind==='uun')m.uUn=(m.uUn!=null?m.uUn:2)+1;if(kind==='uup')m.uLv=(m.uLv||0)+1;if(kind==='atk')m.atkLv++;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
   sfx.buy();ivLog(label);ivRender();return;}
  const me=G.players[G.myIdx];
  if(doPurchase(me,kind,opt)){sfx.buy();ivLog(label);ivRender();}
@@ -1623,7 +1641,7 @@ function code4(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0
 function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
- fd:Math.round(C.flagD),uu:C.uUn,dp:C.dep,
+ fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,
  tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0]),
@@ -1643,7 +1661,7 @@ function hostNetTick(force){if(!G)return;
 function normMe(m){const old=CS.meN;
  if(old&&m.core<old.core&&!m.dd){sfx.leak();dmgFlash();}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
-  uUn:m.uu!=null?m.uu:2,ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
+  uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
   towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0},fireT:0,ang:-.6,spent:TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
