@@ -9,6 +9,7 @@
 - 変更は「アンカー文字列の一意性をassertした置換パッチ」で行い、毎回 `node --check` と `node test_headless.js` を通すこと。
 - ライセンス運用: NC素材禁止。外部素材は使っていない(全部プロシージャル描画)。
 - index.htmlはGitHub Pagesにそのまま置いて動く状態を維持する。
+- **公開URL: https://lukear185.github.io/deadtide/** (repo=github.com/lukear185/deadtide・masterへpushすると1〜2分で自動反映)。スマホ/複数人テストはこのURLで行う。
 
 ## ゲーム概要(v4系・開発中)
 終末ゾンビ×対戦型2Dタワーディフェンス+ユニット召喚。1〜3拠点(ソロはCPU、オンラインはPeerJS P2Pβ)。
