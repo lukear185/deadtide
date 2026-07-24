@@ -51,7 +51,7 @@ function runPvE(diff,tag,cheat){
   if(cheat&&G.phase==='wave'&&guard%90===0){
    for(let si=0;si<SLOTS.length;si++){if(!me.towers[si]){const ti=me.unlocked-1;if(me.scrap>=TOWERS[ti].cost){buildTower(me,si,ti);}break;}}
    for(let si=0;si<SLOTS.length;si++){const tw=me.towers[si];if(!tw)continue;let done=false;
-    for(const st of twStats(tw.ti)){if(tw.us[st]<USTAT_MAX&&me.scrap>=stCost(tw,st)){upTower(me,si,st);done=true;break;}}
+    for(const st of twStats(tw.ti)){if(tw.us[st]<USTAT_MAX&&(me.up||0)>=stCost(tw,st)){upTower(me,si,st);done=true;break;}}
     if(done)break;}
   }
   if(G.phase==='interval'&&!me.ready){
@@ -121,7 +121,7 @@ function runCoop(tag){
    if(guard%120===0){for(let pi=0;pi<3;pi++){const P=G.players[pi];
     for(let si=0;si<SLOTS.length;si++){if(!F.towers[si]&&P.unlocked>0&&P.scrap>=TOWERS[P.unlocked-1].cost){buildTower(P,si,P.unlocked-1);break;}}
     for(let si=0;si<SLOTS.length;si++){const tw=F.towers[si];if(!tw||(tw.own||0)!==pi)continue;let done=false;
-     for(const st of twStats(tw.ti)){if(tw.us[st]<USTAT_MAX&&P.scrap>=stCost(tw,st)){upTower(P,si,st);done=true;break;}}
+     for(const st of twStats(tw.ti)){if(tw.us[st]<USTAT_MAX&&(P.up||0)>=stCost(tw,st)){upTower(P,si,st);done=true;break;}}
      if(done)break;}}}
   }
   if(G.phase==='interval'){for(const P of G.players){if(!P.ready){P.scrap+=600;doPurchase(P,'unlock',{});doPurchase(P,'uun',{});doPurchase(P,'atk',{});doPurchase(P,'repair',{});P.ready=true;}}}
