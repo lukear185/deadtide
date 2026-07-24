@@ -80,6 +80,15 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #flagbtn:active{transform:scale(.93)}
 #flagbtn.aim{outline:4px solid var(--amber)}
 #flaghint{position:absolute;left:84px;bottom:calc(max(26px,env(safe-area-inset-bottom)) + 74px);color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
+#deck{position:absolute;left:50%;transform:translateX(-50%);bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:5px;z-index:6}
+#deck .dk{position:relative;width:46px;height:62px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:1px 0 0;overflow:hidden}
+#deck .dk canvas{width:40px;height:40px;display:block;margin:0 auto}
+#deck .dk .dc{display:block;font-size:9px;font-weight:900;color:var(--paper);line-height:1.2}
+#deck .dk .cdov{position:absolute;inset:0;pointer-events:none;border-radius:8px}
+#deck .dk .lk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(0,0,0,.55)}
+#deck .dk.poor{opacity:.55}
+#deck .dk:active{transform:scale(.93)}
+#deck .dk:disabled{filter:saturate(.6)}
 #bigbanner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:7}
 #bigbanner span{font-size:min(10vw,54px);font-weight:900;color:#fff;text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 rgba(0,0,0,.4);animation:bpop .9s ease}
 @keyframes bpop{0%{transform:scale(.3);opacity:0}30%{transform:scale(1.15);opacity:1}60%{transform:scale(1)}100%{opacity:1}}
@@ -238,6 +247,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <button id="flagbtn">🚩</button>
   <div id="strikehint">タップした地点に爆撃!(もう一度🎯で解除)</div>
   <div id="flaghint">タップした地点へ部隊が集結!(もう一度🚩で解除)</div>
+  <div id="deck"></div>
   <div id="buildmenu"></div>
 </div>
 
@@ -508,8 +518,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
 }
 function drawCar(c,x,y,rot,col){c.save();c.translate(x,y);c.rotate(rot);c.lineWidth=3;c.strokeStyle=INK;c.fillStyle=col;rr(c,-34,-16,68,32,8);c.fill();c.stroke();c.fillStyle='#2c2c33';rr(c,-14,-12,26,24,5);c.fill();c.stroke();c.restore();}
 function drawTree(c,x,y){c.save();c.translate(x,y);c.strokeStyle='#3a3128';c.lineWidth=5;c.beginPath();c.moveTo(0,0);c.lineTo(0,-34);c.moveTo(0,-18);c.lineTo(-12,-30);c.moveTo(0,-24);c.lineTo(11,-36);c.stroke();c.restore();}
-const THUMBS=[];
-function makeThumbs(){for(let i=0;i<TOWERS.length;i++){const cvv=document.createElement('canvas');cvv.width=92;cvv.height=80;const c=cvv.getContext('2d');c.translate(46,42);c.scale(1.1,1.1);drawTower(c,i,1,0,0,-0.5,0,{});THUMBS[i]=cvv;}}
+const THUMBS=[],UTHUMBS=[];
+function makeThumbs(){for(let i=0;i<TOWERS.length;i++){const cvv=document.createElement('canvas');cvv.width=92;cvv.height=80;const c=cvv.getContext('2d');c.translate(46,42);c.scale(1.1,1.1);drawTower(c,i,1,0,0,-0.5,0,{});THUMBS[i]=cvv;}
+ for(let i=0;i<UNITS.length;i++){const cvv=document.createElement('canvas');cvv.width=88;cvv.height=88;const c=cvv.getContext('2d');c.translate(40,76);c.scale(1.35,1.35);drawUnit(c,i,0,0,1,0,0,{});UTHUMBS[i]=cvv;}}
 /* ============ シミュレーション ============ */
 let EID=1;
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
@@ -1020,6 +1031,15 @@ function updHUD(){const m=meV();if(!m)return;
  const pb=$('pushbtn'),pc=prPush(m.pushUses||0);
  pb.innerHTML='🌊押す<br>⚙️'+pc;
  pb.disabled=!inW||m.dead||m.scrap<pc||mySh<=8.2;
+ /* 出撃デッキ */
+ const uun=m.uUn!=null?m.uUn:2;
+ for(let i=0;i<DECKB.length;i++){const b=DECKB[i],U=UNITS[i];
+  const cd=m.ucd?Math.max(0,m.ucd[i]||0):0;
+  b.classList.toggle('poor',m.scrap<U.cost);
+  b.querySelector('.lk').style.display=i<uun?'none':'flex';
+  b.querySelector('.cdov').style.background=cd>0?`conic-gradient(rgba(10,9,8,.74) ${cd/U.cd*100}%,transparent 0)`:'none';
+  b.disabled=m.dead||i>=uun||cd>0||m.scrap<U.cost;
+ }
  /* 対象チップ */
  const os=aliveOthers();
  const tc=$('pushtgt');
@@ -1132,6 +1152,17 @@ function actSell(si){if(MODE==='client'){if(!meV().towers[si])return;safeSend(NE
  else sellTower(G.players[G.myIdx],si);}
 function actStrike(x,y){if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'st',x:Math.round(x),y:Math.round(y)});CS.meN.charge=0;sfx.boom();}
  else airstrike(G.players[G.myIdx],x,y,G.wave);}
+function actDeploy(ui){
+ if(MODE==='client'){const m=meV();if(!m||m.dead)return;const U=UNITS[ui];
+  if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<U.cost)return;
+  safeSend(NET.conn,{t:'c',a:'un',ui});m.scrap-=U.cost;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
+ if(G)deployUnit(G.players[G.myIdx],ui);}
+let DECKB=[];
+function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];
+ for(let i=0;i<UNITS.length;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk';b.title=U.n+' — '+U.dsc;
+  b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
+  const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
+  b.onclick=()=>actDeploy(i);w.appendChild(b);DECKB.push(b);}}
 $('pausebtn').onclick=()=>{if(MODE==='solo'&&gameActive&&G&&!G.over){PAUSED=true;$('md-pause').classList.add('on');}};
 $('bt-resume').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');};
 $('bt-quit').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');backTitle();};
@@ -1209,13 +1240,13 @@ function startSolo(){
  $('pausebtn').style.display='inline-block';
 }
 function startGameUI(others){
- gameActive=true;tipSt=false;ivLogs=[];PAUSED=false;SEL=-1;PUSHTGT=-1;setAim(false);
+ gameActive=true;tipSt=false;ivLogs=[];PAUSED=false;SEL=-1;PUSHTGT=-1;setAim(false);setFlagAim(false);buildDeck();
  ivS={zi:0,cnt:1,tB:-1,tS:-1,tJ:-1};
  $('ffbtn').style.display='none';$('ffbtn').textContent='⏩ ×1';
  buildMinis(others);show('game');
 }
 function backTitle(){
- gameActive=false;G=null;PAUSED=false;closeBM();setAim(false);
+ gameActive=false;G=null;PAUSED=false;closeBM();setAim(false);setFlagAim(false);
  $('interv').classList.remove('on');$('pausebtn').style.display='none';$('ffbtn').style.display='none';
  try{if(NET.peer){NET.peer.destroy();}}catch(e){}
  NET={peer:null,conn:null,lob:[],host:false};CS={meN:null,ot:[],w:1,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0};CC=null;MODE='solo';
