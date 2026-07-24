@@ -422,8 +422,8 @@ const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
 const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;return soloMeta()?BT+clamp(META.nt||0,0,TOWERS.length-BT):BT;};
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;return soloMeta()?BU+clamp(META.nu||0,0,UNITS.length-BU):BU;};
-const LAB_NT=[400,750];   /* 新タワー(レールガン/ガトリング)の研究価格 */
-const LAB_NU=[350,650];   /* 新兵科(装甲車/メカスーツ)の研究価格 */
+const LAB_NT=[400,750,1250,1900];/* 新型タワー4種の研究価格 */
+const LAB_NU=[350,650,1100,1700];/* 新型兵科4種の研究価格 */
 const LAB_STK={carpet:250,frost:200,napalm:300};
 const LAB_SC=lv=>Math.round(80*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
 const LAB_HP=lv=>Math.round(100*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
@@ -520,21 +520,32 @@ const TOWERS=[
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:34,rate:.95,type:'elec',chain:4,c:'#5fa8c9',dsc:'最大4体に連鎖電撃'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
  {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:175,rate:2.4,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を狙撃'},
+ /* ↓基本タワー拡張分(通常解放チェーンの続き) */
+ {id:'gren',n:'擲弾砲台',cost:300,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
+ {id:'cryo',n:'冷却塔',cost:320,rng:200,dmg:6,rate:1.4,type:'net',slowT:2.6,c:'#7fb6c9',dsc:'広範囲を長く凍らせる'},
+ {id:'laser',n:'レーザー塔',cost:460,rng:300,dmg:9,rate:.1,type:'bullet',pierce:1,c:'#c96b9f',dsc:'高速連射・装甲貫通'},
+ {id:'acid',n:'酸噴射器',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:'#8fbf4d',dsc:'装甲を溶かす強酸'},
+ {id:'sonic',n:'音響砲',cost:420,rng:230,dmg:26,rate:1.1,type:'bullet',multi:5,c:'#a58fd0',dsc:'衝撃波で5体同時'},
+ {id:'drone',n:'ドローン基地',cost:500,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
+ {id:'arty',n:'重砲台',cost:640,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
+ {id:'coil',n:'重テスラ',cost:700,rng:250,dmg:52,rate:1.1,type:'elec',chain:7,c:'#4fa8d9',dsc:'最大7体に連鎖する高圧電流'},
  /* ↓研究所限定の新タワー(ソロで🔬解放後にゲーム内解放チェーンへ出現) */
  {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程・装甲貫通の狙撃砲'},
- {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'}
+ {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'},
+ {id:'plasma',n:'プラズマ砲',cost:820,rng:420,dmg:210,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'超高熱の大爆発'},
+ {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:95,rate:.7,type:'bullet',multi:3,pierce:1,c:'#8a8f96',dsc:'貫通弾を3連射する要塞'}
 ];
-const BASE_T=8;/* 通常解放できる基本タワー数 */
+const BASE_T=16;/* 通常解放できる基本タワー数(研究所ぶんを除く) */
 /* 2026-07-24 永井さん指示: ①ショットガン以外0.75倍 → ②さらに全タワー0.75倍(=シ以外0.5625/シ0.75) */
 for(const T of TOWERS){
  const m0=(T.id==='shot'?1:.75)*.75;
  T.dmg=Math.round(T.dmg*m0*10)/10;
  if(T.burn)T.burn=Math.round(T.burn*m0*10)/10;
  if(T.inc)T.inc=Math.max(1,Math.round(T.inc*m0));}
-const UNLOCK_P=[0,0,180,260,360,480,650,850,1000,1250];
+const UNLOCK_P=[0,0,200,320,480,700,980,1350,1800,2400,3100,4000,5100,6400,8000,9900,12200,15000,18500,22500];
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
-const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.5*Math.pow(1.45,tw.us[st]));
+const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]));
 const twStats=ti=>TOWERS[ti].type==='eco'?['d','r']:['d','r','g'];
 const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g:0));
@@ -564,19 +575,39 @@ const UNITS=[
  {id:'snp',n:'スナイパー',cost:320,cd:10,hp:60,atk:135,rate:2,rng:430,sp:46,type:'pierce',c:'#4a5560',dsc:'超射程・装甲貫通'},
  {id:'mgn',n:'ミニガン',cost:370,cd:11,hp:110,atk:9,rate:.16,rng:200,sp:40,type:'bullet',c:'#6b7580',dsc:'弾幕をばら撒く'},
  {id:'rkt',n:'ロケラン',cost:420,cd:12,hp:95,atk:92,rate:2.4,rng:300,sp:42,type:'blast',aoe:100,c:'#7a7f6a',dsc:'範囲爆撃'},
+ /* ↓基本兵科の拡張分 */
+ {id:'spr',n:'斥候',cost:70,cd:3.5,hp:75,atk:16,rate:.45,rng:120,sp:120,type:'bullet',c:'#9c8f5c',dsc:'俊足の拳銃使い'},
+ {id:'axe',n:'斧使い',cost:130,cd:5,hp:210,atk:44,rate:1.1,rng:38,sp:64,type:'melee',c:'#a0623a',dsc:'一撃が重い近接'},
+ {id:'smg',n:'短機関銃',cost:170,cd:5.5,hp:100,atk:13,rate:.3,rng:190,sp:60,type:'bullet',c:'#7a8a5c',dsc:'手数で押す連射手'},
+ {id:'pike',n:'長槍兵',cost:200,cd:6.5,hp:300,atk:33,rate:.9,rng:70,sp:50,type:'pierce',c:'#6f8a8f',dsc:'間合いの外から刺す'},
+ {id:'flm',n:'火炎放射兵',cost:250,cd:8,hp:180,atk:20,rate:.35,rng:110,sp:48,type:'fire',burn:14,c:'#c9552e',dsc:'前方を焼き払う'},
+ {id:'gld',n:'重装盾',cost:300,cd:11,hp:760,atk:16,rate:1,rng:40,sp:38,type:'melee',c:'#4a5560',dsc:'鋼鉄の防壁'},
+ {id:'elec',n:'電磁兵',cost:330,cd:9,hp:120,atk:40,rate:1.5,rng:200,sp:50,type:'pierce',multi:3,c:'#5fa8c9',dsc:'雷撃が3体を貫く'},
+ {id:'mortarU',n:'迫撃兵',cost:360,cd:10,hp:110,atk:70,rate:2.2,rng:380,minr:90,sp:44,type:'blast',aoe:90,c:'#7d7a5c',dsc:'後方から曲射'},
+ {id:'engi',n:'工兵',cost:280,cd:9,hp:150,atk:30,rate:1.3,rng:150,sp:52,type:'heal',c:'#c9a13d',dsc:'仲間を修理する(回復)'},
+ {id:'ninja',n:'影',cost:400,cd:11,hp:170,atk:105,rate:.9,rng:46,sp:150,type:'pierce',c:'#3f4a54',dsc:'神速の暗殺者'},
+ {id:'gren2',n:'重擲弾兵',cost:450,cd:12,hp:200,atk:80,rate:2,rng:250,sp:46,type:'blast',aoe:110,c:'#6b7550',dsc:'束ねた爆薬を投げ込む'},
+ {id:'rail2',n:'レール狙撃',cost:520,cd:14,hp:90,atk:230,rate:2.6,rng:520,sp:42,type:'pierce',c:'#8f6fae',dsc:'超射程の貫通狙撃'},
+ {id:'frost2',n:'絶対零度',cost:480,cd:13,hp:150,atk:14,rate:1.2,rng:180,sp:46,type:'frost',aoe:150,c:'#9fdcf5',dsc:'広範囲を長時間凍結'},
+ {id:'chief',n:'隊長',cost:560,cd:15,hp:420,atk:74,rate:1.2,rng:230,sp:54,type:'bullet',multi:2,c:'#d8d2c4',dsc:'精鋭を率いる歴戦の兵'},
  /* ↓研究所限定の新兵科 */
  {id:'tnk',n:'装甲車',cost:520,cd:16,hp:820,atk:34,rate:.8,rng:44,sp:55,type:'melee',c:'#5c6b78',dsc:'走る要塞・轢き潰す'},
- {id:'mech',n:'メカスーツ',cost:620,cd:18,hp:460,atk:60,rate:1.1,rng:260,sp:48,type:'blast',aoe:80,c:'#6b7580',dsc:'肩部キャノンで範囲砲撃'}
+ {id:'mech',n:'メカスーツ',cost:620,cd:18,hp:460,atk:60,rate:1.1,rng:260,sp:48,type:'blast',aoe:80,c:'#6b7580',dsc:'肩部キャノンで範囲砲撃'},
+ {id:'titan',n:'タイタン',cost:900,cd:22,hp:1500,atk:120,rate:1.3,rng:60,sp:44,type:'melee',c:'#8a8f96',dsc:'歩く城塞・全てを薙ぎ倒す'},
+ {id:'valk',n:'ヴァルキリー',cost:820,cd:20,hp:520,atk:150,rate:1.8,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'空爆支援を伴う精鋭'}
 ];
-const BASE_U=12;/* 通常解放できる基本兵科数 */
+const BASE_U=26;/* 通常解放できる基本兵科数(研究所ぶんを除く) */
+/* 基本兵科は価格順に並べ替え(解放チェーンが素直な強さ順になる)。研究所ぶんは末尾のまま */
+{const base=UNITS.slice(0,BASE_U).sort((a,b)=>a.cost-b.cost),ext=UNITS.slice(BASE_U);
+ UNITS.length=0;for(const u of base)UNITS.push(u);for(const u of ext)UNITS.push(u);}
 const UBUF=1.2;/* ユニット全体強化倍率(2026-07-24 永井さん指示) */
-/* ティア: 0-3=序盤 4-7=中盤 8-10=終盤(+10%) 11=切り札(+30%) */
-const uTier=i=>i<4?1:i<8?2:i<11?3:4;
+/* ティア: 序盤/中盤/終盤(+10%)/切り札(+30%) */
+const uTier=i=>i<6?1:i<12?2:i<BASE_U?3:4;
 const TSCALE=[1,1.06,1.14,1.24];
 for(let i=0;i<UNITS.length;i++){const tb=[1,1,1.1,1.3][uTier(i)-1];
  UNITS[i].hp=Math.round(UNITS[i].hp*UBUF*tb);UNITS[i].atk=Math.round(UNITS[i].atk*UBUF*tb);
  UNITS[i].cost=Math.max(10,Math.round(UNITS[i].cost/2.5));/* 元の40%(1/5指示→後に2倍指示) */}
-const UNITP=[0,0,150,220,300,380,470,560,660,780,920,1080,1300,1550];
+const UNITP=[0,0,160,250,370,520,720,960,1260,1620,2050,2560,3150,3850,4650,5600,6700,7950,9400,11000,12900,15000,17400,20100,23200,26700,30600,35000];
 const MAXU=40;
 const STAGE_W=20;
 /* PvE/協力の難易度表: hp=体力倍率 cnt=物量倍率 sp=足の速さ boss=ボス体力 scrap=初期⚙️ pay=撃破報酬倍率 */
@@ -593,15 +624,15 @@ const COOP_MAXU=20;
 const PCOL=['#6f9c43','#E8A33D','#8f6fae'];
 const BRANCH=[[400,742],[280,742],[160,742]];
 const branchD=gi=>PLEN-(BRANCH[gi%BRANCH.length][0]-110);
-const prAtk=n=>Math.round(140*Math.pow(1.5,n));
-const prRe=u=>Math.round(120*Math.pow(1.35,u));
-const prJam=u=>Math.round(200*Math.pow(1.3,u));
+const prAtk=n=>Math.round(150*Math.pow(1.8,n));
+const prRe=u=>Math.round(130*Math.pow(1.5,u));
+const prJam=u=>Math.round(210*Math.pow(1.45,u));
 const prPush=u=>Math.round(45*Math.pow(1.15,u));
-const prBig=u=>Math.round(150*Math.pow(1.3,u));
-const prTide=u=>Math.round(180*Math.pow(1.3,u));
+const prBig=u=>Math.round(160*Math.pow(1.42,u));
+const prTide=u=>Math.round(190*Math.pow(1.42,u));
 const uupCost=C=>C.uUn<metaUnitCap()?UNITP[C.uUn]:1e9;
 const ULV_MAX=10;
-const prUup=lv=>Math.round(60*Math.pow(1.4,lv));/* 部隊強化: 低コスト設定 */
+const prUup=lv=>Math.round(70*Math.pow(1.6,lv));/* 部隊強化 */
 const uDepCost=(C,ui)=>Math.round(UNITS[ui].cost*(1+.1*(C&&C.uLv||0)));/* 出撃費はレベルに比例 */
 const prSend=(zi,cnt)=>Math.ceil(ZOMBIES[zi].bt*3*cnt);
 /* ============ ルート ============ */
@@ -663,14 +694,60 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  c.restore();
 }
 function drawTower(c,ti,lv,x,y,ang,t,o){
- o=o||{};const T=TOWERS[ti];
+ o=o||{};const T=TOWERS[ti],tid=T.id;
  c.save();c.translate(x,y);
  if(o.jam)c.filter='grayscale(1) brightness(.75)';
  c.lineWidth=3;c.strokeStyle=INK;
  /* 基部 */
  c.fillStyle='#6e6354';c.beginPath();c.arc(0,0,20,0,7);c.fill();c.stroke();
  c.fillStyle=T.c;c.beginPath();c.arc(0,0,14,0,7);c.fill();c.stroke();
- if(ti===3){/* 工房 */
+ /* ---- 拡張タワー ---- */
+ if(tid==='gren'){c.save();c.rotate(ang);c.fillStyle='#585e4c';rr(c,-2,-7,24,14,6);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(26,0,6,0,7);c.fill();}c.restore();
+  c.fillStyle='#4c5648';c.beginPath();c.arc(-10,8,5,0,7);c.fill();c.stroke();}
+ else if(tid==='cryo'){c.fillStyle='#5f8fa3';rr(c,-8,-30,16,30,5);c.fill();c.stroke();
+  c.fillStyle='#cdf1ff';c.beginPath();c.arc(0,-33,8,0,7);c.fill();c.stroke();
+  c.globalAlpha=.5;c.fillStyle='#9fdcf5';c.beginPath();c.arc(0,-33,12+Math.sin(t*3)*3,0,7);c.fill();c.globalAlpha=1;}
+ else if(tid==='laser'){c.save();c.rotate(ang);c.fillStyle='#5c5c66';rr(c,2,-3,26,6,3);c.fill();c.stroke();
+  c.fillStyle='#f0a8d8';c.beginPath();c.arc(30,0,o.fire?5:3,0,7);c.fill();
+  if(o.fire){c.strokeStyle='rgba(240,168,216,.7)';c.lineWidth=3;c.beginPath();c.moveTo(30,0);c.lineTo(90,0);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
+  c.restore();}
+ else if(tid==='acid'){c.fillStyle='#4c6b32';c.beginPath();c.arc(-7,-6,10,0,7);c.fill();c.stroke();
+  c.save();c.rotate(ang);c.fillStyle='#5c5c66';rr(c,4,-4,22,8,3);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#8fbf4d';c.beginPath();c.arc(30,0,5+Math.sin(t*20)*2,0,7);c.fill();}c.restore();}
+ else if(tid==='sonic'){c.save();c.rotate(ang);c.fillStyle='#6b5f8a';c.beginPath();c.moveTo(2,-6);c.lineTo(26,-16);c.lineTo(26,16);c.lineTo(2,6);c.closePath();c.fill();c.stroke();
+  if(o.fire){c.strokeStyle='rgba(200,180,240,.8)';c.lineWidth=2.4;for(let k=1;k<=3;k++){c.beginPath();c.arc(26,0,k*10,-.7,.7);c.stroke();}c.strokeStyle=INK;c.lineWidth=3;}
+  c.restore();}
+ else if(tid==='drone'){c.fillStyle='#3f4a54';rr(c,-14,-12,28,22,5);c.fill();c.stroke();
+  const dy=-26+Math.sin(t*3)*4;
+  c.save();c.translate(0,dy);c.fillStyle='#5f8fa3';rr(c,-7,-4,14,8,3);c.fill();c.stroke();
+  c.strokeStyle='rgba(220,230,240,.8)';c.lineWidth=2;
+  c.beginPath();c.moveTo(-12,-4);c.lineTo(-4,-4);c.moveTo(4,-4);c.lineTo(12,-4);c.stroke();c.strokeStyle=INK;c.lineWidth=3;c.restore();}
+ else if(tid==='arty'){c.save();c.rotate(ang);c.fillStyle='#4c5240';rr(c,-8,-11,44,22,7);c.fill();c.stroke();
+  c.fillStyle='#3c4136';rr(c,30,-7,10,14,3);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(44,0,9,0,7);c.fill();}c.restore();
+  c.fillStyle='#3c4136';c.beginPath();c.arc(0,0,9,0,7);c.fill();c.stroke();}
+ else if(tid==='coil'){c.fillStyle='#2f4a5c';rr(c,-7,-32,14,32,4);c.fill();c.stroke();
+  c.fillStyle='#9fdcf5';c.beginPath();c.arc(0,-38,10,0,7);c.fill();c.stroke();
+  c.strokeStyle='#cdf1ff';c.lineWidth=2.2;
+  for(let k=0;k<3;k++){const a2=t*9+k*2.1;c.beginPath();c.moveTo(0,-38);c.lineTo(Math.cos(a2)*14,-38+Math.sin(a2)*10);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;}
+ else if(tid==='rail'){c.save();c.rotate(ang);c.fillStyle='#5c5c66';rr(c,0,-9,50,5,2);c.fill();c.stroke();rr(c,0,4,50,5,2);c.fill();c.stroke();
+  c.fillStyle='#8f6fae';rr(c,4,-4,30,8,3);c.fill();c.stroke();
+  c.fillStyle='#d883ee';c.beginPath();c.arc(50,-2,o.fire?7:3.4,0,7);c.fill();c.restore();}
+ else if(tid==='gat'){c.save();c.rotate(ang);c.fillStyle='#4a5560';
+  const spin=t*22;
+  for(let k=0;k<4;k++){const oy=Math.sin(spin+k*1.57)*5;rr(c,2,oy-2,30,4,2);c.fill();c.stroke();}
+  c.fillStyle='#b0483a';rr(c,-6,-8,12,16,4);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(36,0,7,0,7);c.fill();}c.restore();}
+ else if(tid==='plasma'){c.save();c.rotate(ang);c.fillStyle='#6b4a66';rr(c,-4,-10,30,20,8);c.fill();c.stroke();
+  c.fillStyle='#d966b0';c.beginPath();c.arc(28,0,8+Math.sin(t*8)*2,0,7);c.fill();c.stroke();
+  c.fillStyle='#ffd0f0';c.beginPath();c.arc(28,0,4+Math.sin(t*8),0,7);c.fill();c.restore();
+  c.strokeStyle='rgba(217,102,176,.6)';c.lineWidth=2;c.beginPath();c.arc(0,0,24+Math.sin(t*4)*3,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
+ else if(tid==='fort'){c.save();c.rotate(ang);c.fillStyle='#5c6b78';rr(c,-8,-14,28,28,6);c.fill();c.stroke();
+  c.fillStyle='#3f4a54';for(let k=-1;k<=1;k++){rr(c,16,k*8-2.5,22,5,2);c.fill();c.stroke();}
+  if(o.fire){c.fillStyle='#ffdd66';for(let k=-1;k<=1;k++){c.beginPath();c.arc(40,k*8,5,0,7);c.fill();}}c.restore();}
+ else if(ti===3){/* 工房 */
   c.fillStyle='#8d7040';rr(c,-15,-16,30,26,4);c.fill();c.stroke();
   c.save();c.rotate(t*2);c.fillStyle='#d8cfba';for(let i=0;i<6;i++){c.rotate(Math.PI/3);c.fillRect(-2.5,-13,5,7);}c.beginPath();c.arc(0,0,7,0,7);c.fill();c.stroke();c.restore();
  }else if(ti===5){/* テスラ */
@@ -819,6 +896,46 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  else if(id==='snp'){c.strokeStyle='#3a3128';c.beginPath();c.moveTo(2,-28);c.lineTo(30,-30);c.stroke();c.fillStyle='#9fdcf5';c.beginPath();c.arc(12,-32,2.4,0,7);c.fill();}
  else if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,6,-32,20,10,3);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle='#2c333a';for(let k=0;k<3;k++)c.fillRect(24,-31+k*3,5,1.8);}
  else if(id==='rkt'){c.fillStyle='#585e4c';rr(c,-4,-46,26,8,3);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle='#C1502E';c.beginPath();c.arc(22,-42,3,0,7);c.fill();}
+ /* ---- 拡張兵科 ---- */
+ else if(id==='spr'){c.fillStyle='#3a3128';rr(c,6,-29,11,5,2);c.fill();c.lineWidth=2.4;c.stroke();}
+ else if(id==='axe'){c.save();c.translate(10,-30);c.rotate(.35+walk*.4);c.strokeStyle='#8a6a45';c.lineWidth=3.4;c.beginPath();c.moveTo(0,0);c.lineTo(15,-12);c.stroke();
+  c.fillStyle='#a8adb5';c.beginPath();c.moveTo(13,-16);c.lineTo(23,-9);c.lineTo(13,-4);c.closePath();c.fill();c.lineWidth=2;c.strokeStyle=INK;c.stroke();c.restore();}
+ else if(id==='smg'){c.fillStyle='#3f4a54';rr(c,4,-30,18,7,2);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle='#2c333a';rr(c,8,-24,5,7,2);c.fill();}
+ else if(id==='pike'){c.strokeStyle='#8a6a45';c.lineWidth=3.4;c.beginPath();c.moveTo(-6,-22);c.lineTo(34,-34);c.stroke();
+  c.fillStyle='#cfd5da';c.beginPath();c.moveTo(33,-38);c.lineTo(44,-35);c.lineTo(33,-30);c.closePath();c.fill();c.lineWidth=2;c.strokeStyle=INK;c.stroke();}
+ else if(id==='flm'){c.fillStyle='#5c5c66';rr(c,-18,-38,9,22,4);c.fill();c.stroke();
+  c.fillStyle='#8a4b28';rr(c,6,-31,18,7,3);c.fill();c.lineWidth=2.4;c.stroke();
+  c.fillStyle='#ffb347';c.beginPath();c.arc(28,-28,4+Math.sin(t*20)*2,0,7);c.fill();
+  c.fillStyle='#fff3c0';c.beginPath();c.arc(27,-28,2+Math.sin(t*20),0,7);c.fill();}
+ else if(id==='gld'){c.fillStyle='#8a8f96';rr(c,10,-46,12,40,5);c.fill();c.lineWidth=2.6;c.stroke();
+  c.fillStyle='#ffd23d';c.beginPath();c.arc(16,-26,4,0,7);c.fill();c.stroke();}
+ else if(id==='elec'){c.fillStyle='#3f4a54';rr(c,5,-30,16,6,3);c.fill();c.lineWidth=2.4;c.stroke();
+  c.fillStyle='#9fdcf5';c.beginPath();c.arc(24,-27,3.6+Math.sin(t*18),0,7);c.fill();
+  c.strokeStyle='#cdf1ff';c.lineWidth=1.6;c.beginPath();c.moveTo(24,-27);c.lineTo(30,-33+Math.sin(t*14)*3);c.stroke();c.strokeStyle=INK;}
+ else if(id==='mortarU'){c.save();c.translate(10,-28);c.rotate(-.75);c.fillStyle='#585e4c';rr(c,-4,-6,26,12,5);c.fill();c.lineWidth=2.4;c.stroke();c.restore();
+  c.fillStyle='#3c4136';c.beginPath();c.arc(9,-24,4,0,7);c.fill();c.stroke();}
+ else if(id==='engi'){c.fillStyle='#c9a13d';rr(c,8,-30,12,8,2);c.fill();c.lineWidth=2.4;c.stroke();
+  c.strokeStyle='#8a8f96';c.lineWidth=2.6;c.beginPath();c.moveTo(12,-32);c.lineTo(20,-40);c.stroke();c.strokeStyle=INK;}
+ else if(id==='ninja'){c.fillStyle='#3f4a54';rr(c,-14,-40,6,26,3);c.fill();c.stroke();
+  c.strokeStyle='#cfd5da';c.lineWidth=3;c.beginPath();c.moveTo(4,-26);c.lineTo(26,-34);c.stroke();c.strokeStyle=INK;
+  c.fillStyle='#C1502E';c.fillRect(-6,-45,16,3);}
+ else if(id==='gren2'){c.save();c.translate(9,-30);c.rotate(-.5+walk*.3);c.strokeStyle='#4a4034';c.lineWidth=3.2;c.beginPath();c.moveTo(0,0);c.lineTo(11,-11);c.stroke();c.restore();
+  for(let k=0;k<3;k++){c.fillStyle='#4c5648';c.beginPath();c.arc(16+k*5,-42-k*2,3.4,0,7);c.fill();c.lineWidth=2;c.stroke();}c.lineWidth=2.4;}
+ else if(id==='rail2'){c.fillStyle='#5c5c66';rr(c,0,-32,34,5,2);c.fill();c.lineWidth=2.4;c.stroke();
+  c.fillStyle='#8f6fae';rr(c,0,-27,34,4,2);c.fill();c.stroke();
+  c.fillStyle='#d883ee';c.beginPath();c.arc(6,-30,2.6+Math.sin(t*12),0,7);c.fill();}
+ else if(id==='frost2'){c.fillStyle='#5f8fa3';rr(c,-17,-38,9,22,4);c.fill();c.stroke();
+  c.fillStyle='#9fdcf5';rr(c,7,-31,18,7,3);c.fill();c.lineWidth=2.4;c.stroke();
+  c.globalAlpha=.6;c.fillStyle='#cdf1ff';c.beginPath();c.arc(30,-28,5+Math.sin(t*12)*2,0,7);c.fill();c.globalAlpha=1;}
+ else if(id==='chief'){c.fillStyle='#3a3128';c.beginPath();c.moveTo(4,-27);c.lineTo(26,-30);c.lineTo(26,-26);c.lineTo(4,-24);c.closePath();c.fill();c.lineWidth=2.4;c.stroke();
+  c.fillStyle='#ffd23d';c.fillRect(-11,-40,7,3);c.fillRect(-11,-35,7,3);}
+ else if(id==='titan'){c.fillStyle='#8a8f96';rr(c,-16,-44,32,10,4);c.fill();c.lineWidth=2.6;c.stroke();
+  c.fillStyle='#5c6b78';rr(c,12,-40,14,26,4);c.fill();c.stroke();
+  c.fillStyle='#C1502E';c.beginPath();c.arc(19,-30,3.4,0,7);c.fill();
+  c.fillStyle='#ffd23d';c.fillRect(-16,-44,32,2.6);}
+ else if(id==='valk'){c.fillStyle='#d9a13d';c.beginPath();c.moveTo(-12,-40);c.lineTo(-28,-52);c.lineTo(-10,-30);c.closePath();c.fill();c.lineWidth=2.4;c.stroke();
+  c.fillStyle='#585e4c';rr(c,4,-42,24,7,3);c.fill();c.stroke();
+  c.fillStyle='#ffd23d';c.beginPath();c.moveTo(-2,-50);c.lineTo(2,-58);c.lineTo(6,-50);c.closePath();c.fill();c.stroke();}
  /* 発砲マズルフラッシュ */
  if(o.fireT>0&&FXLV>0){const mzy=id==='rkt'?-42:id==='mgn'?-27:id==='snp'?-30:-28,mzx=id==='rkt'?26:id==='mgn'?32:id==='snp'?33:27;
   c.fillStyle='#ffdd66';c.beginPath();c.arc(mzx,mzy,4.5+o.fireT*22,0,7);c.fill();
@@ -1306,7 +1423,7 @@ function nextWave(){
  UI.closeInterval();UI.banner('WAVE '+G.wave+(G.wave%5===0?' 💀BOSS':''));
  sfx.horn();G.phase='wave';
  if(G.wave===1&&!G.players[G.myIdx].dead){
-  if(G.pve){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),6000);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),11400);setTimeout(()=>toast('🛡 WAVE '+STAGE_W+' を守り切ればステージクリアだ!'),16800);}
+  if(G.pve){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),6000);setTimeout(()=>toast('⬆ デッキのボタンを長押しで部隊レベルアップ!'),11400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),16800);setTimeout(()=>toast('🛡 WAVE '+STAGE_W+' を守り切ればステージクリアだ!'),22200);}
   else{setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!'),5600);setTimeout(()=>toast('💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ'),11000);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),16400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),21800);}}
 }
 function gameStep(dt){
@@ -1774,13 +1891,32 @@ function actDeploy(ui){
   if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<dc)return;
   sendCmd({t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
+/* 部隊レベルアップ(デッキの長押しでも買える=ウェーブ中もOK) */
+function buyUnitLevel(){
+ const m=meV();if(!m||m.dead)return;
+ const lv=m.uLv||0;
+ if(lv>=ULV_MAX){toast('⬆ 部隊レベルは最大です');return;}
+ const p=prUup(lv);
+ if(m.scrap<p){toast('⚙️'+fmt(p)+' 必要 — 部隊強化',true);return;}
+ if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'uup',o:{}});m.scrap-=p;m.uLv=lv+1;sfx.buy();
+  toast('⬆ 部隊強化 Lv'+m.uLv+' (次 ⚙️'+fmt(prUup(m.uLv))+')');updHUD();return;}
+ if(G){const me=G.players[G.myIdx];if(doPurchase(me,'uup',{})){sfx.buy();
+  toast('⬆ 部隊強化 Lv'+me.uLv+' (次 ⚙️'+fmt(prUup(me.uLv))+')');updHUD();}}
+}
 let DECKB=[],DECKEVO=0;
 function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKEVO=0;
  const dl=metaUnitCap();
- for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
+ for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc+'(長押しで部隊強化)';
   b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
-  b.onclick=()=>actDeploy(i);w.appendChild(b);DECKB.push(b);}}
+  /* 長押し=部隊強化 / 短押し=出撃 */
+  let lpT=null,lpFired=false;
+  const lpStart=()=>{lpFired=false;clearTimeout(lpT);lpT=setTimeout(()=>{lpFired=true;buyUnitLevel();},480);};
+  const lpEnd=()=>{clearTimeout(lpT);};
+  b.addEventListener('pointerdown',lpStart);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,lpEnd));
+  b.onclick=()=>{if(lpFired){lpFired=false;return;}actDeploy(i);};
+  w.appendChild(b);DECKB.push(b);}}
 /* ソロ限定: ウェーブ放棄=残敵+出現予定分のコアダメージを受けて即・作戦タイムへ */
 function giveUpDmg(me){let d=0;for(const z of me.zombies)if(!z.dead)d+=z.dmg;if(G)for(const e of G.tide.pool)d+=e.z.dmg;return d;}
 function giveUpWave(){
