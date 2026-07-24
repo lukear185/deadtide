@@ -780,7 +780,7 @@ const UNITS=[
  {id:'bat',n:'バット',cost:24,cd:2.2,hp:312,atk:22,rate:.7,rng:36,sp:72,type:'melee',c:'#c9a13d',dsc:'基本の殴り屋'},
  {id:'hnd',n:'猟犬',cost:20,cd:3,hp:156,atk:14,rate:.5,rng:34,sp:150,type:'melee',c:'#8a6a45',dsc:'速い・安い・噛む'},
  /* 序盤の壁役。攻撃はほとんど無いが、とにかく硬くて足を止める(2026-07-25追加) */
- {id:'big',n:'巨漢',cost:22,cd:7,hp:790,atk:9,rate:1.15,rng:40,sp:44,type:'melee',c:'#a1704a',dsc:'素手の壁。硬いが火力は無い'},
+ {id:'big',n:'巨漢',cost:26,cd:7,hp:900,atk:11,rate:1.2,rng:40,sp:44,type:'melee',c:'#a1704a',dsc:'素手の壁。硬いが火力は無い'},
  {id:'gun',n:'ガンナー',cost:44,cd:4,hp:215,atk:45,rate:.8,rng:220,sp:56,type:'bullet',c:'#5c7d8a',dsc:'基本の射撃手'},
  {id:'shd',n:'盾持ち',cost:60,cd:6,hp:1235,atk:12,rate:1,rng:36,sp:46,type:'melee',c:'#5c6b78',dsc:'前線の壁'},
  {id:'mol',n:'火炎瓶',cost:72,cd:7,hp:310,atk:75,rate:1.6,rng:180,sp:50,type:'fire',aoe:70,burn:12,c:'#c96b35',dsc:'範囲燃焼・装甲無視'},
@@ -831,7 +831,7 @@ while(UNITP.length<UNITS.length+2)UNITP.push(Math.round(UNITP[UNITP.length-1]*1.
 /* ============ 派生兵科(研究所で解放 → 編成画面で基本兵科と入れ替え) ============
  基本兵科(作戦タイムで解放できる7種)それぞれに、役割が同じで格上の3種を用意する。
  コストは微増。数値は基本兵科に対する倍率。 */
-const VBASE=['hnd','big','bat','spr','chain','gun','axe','shd'];
+const VBASE=['hnd','bat','big','spr','chain','gun','axe','shd'];
 const UVAR={
  hnd:[
   {id:'wolf',n:'狼',cm:1.2,hp:1.4,atk:1.35,sp:1.05,c:'#6b6b73',dsc:'群れで狩る野生の狼'},
