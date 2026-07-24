@@ -525,11 +525,12 @@ const TOWERS=[
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'}
 ];
 const BASE_T=8;/* 通常解放できる基本タワー数 */
-/* 2026-07-24 永井さん指示: ショットガン台以外のタワー火力を0.75倍(攻撃/燃焼/⚙️生産) */
-for(const T of TOWERS){if(T.id==='shot')continue;
- T.dmg=Math.round(T.dmg*.75*10)/10;
- if(T.burn)T.burn=Math.round(T.burn*.75*10)/10;
- if(T.inc)T.inc=Math.max(1,Math.round(T.inc*.75));}
+/* 2026-07-24 永井さん指示: ①ショットガン以外0.75倍 → ②さらに全タワー0.75倍(=シ以外0.5625/シ0.75) */
+for(const T of TOWERS){
+ const m0=(T.id==='shot'?1:.75)*.75;
+ T.dmg=Math.round(T.dmg*m0*10)/10;
+ if(T.burn)T.burn=Math.round(T.burn*m0*10)/10;
+ if(T.inc)T.inc=Math.max(1,Math.round(T.inc*m0));}
 const UNLOCK_P=[0,0,180,260,360,480,650,850,1000,1250];
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
@@ -609,8 +610,8 @@ const SEG=[];let PLEN=0;
 for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
 function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}const e=SEG[SEG.length-1];return[e.b[0],e.b[1],0];}
 function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
-const SLOTS=[[1290,60],[1000,250],[1210,300],[1240,515],[1475,540],[1080,555],[865,540],[655,500],[560,290],[300,470],[250,712],
- [1470,60],[1600,60],[1560,240],[1010,370],[1330,320],[1490,650],[1180,742],[900,742],[680,290],[510,470],[180,530]];
+const SLOTS=[[1290,60],[1000,250],[1210,300],[1240,515],[1475,540],[1080,555],[865,540],[655,500],[560,290],[300,470],[250,700],
+ [1470,60],[1600,60],[1560,240],[1010,370],[1330,320],[1490,650],[1180,728],[920,728],[680,290],[510,470],[180,530]];
 const AI_ORDER=[2,1,5,7,3,8,6,0,9,4,10,14,19,18,12,16,17,21,13,11,15,20];
 const CORE=[110,620];
 /* ============ アート ============ */
