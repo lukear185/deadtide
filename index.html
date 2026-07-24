@@ -281,6 +281,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <p>ゾンビの大群<b>「死潮」は世界に一つだけ</b>。画面上のゲージが「誰に何%流れるか」の取り分だ。<b>🌊押す</b>で⚙️を払えば、自分の取り分を相手へ押し流せる(連打するほど割高)。<b>5波ごとのボスは、いちばん押し負けてる奴の所へ行く。</b></p>
     <p>ただし——<b>受けた側は撃破⚙️を総取り</b>。耐えられるなら、押し付けられた潮はそのまま金脈になる。わざと受けて稼ぐのも戦略だ。取り分は放っておくと均等に戻っていく。</p>
     <p>道沿いの<b>空きスロットをタップ</b>してタワーを建設、建てた塔をタップで強化/売却。抜かれるとコアHPが削れ、0で脱落。建設も押し流しも妨害も、ぜんぶ同じ⚙️スクラップだ。</p>
+    <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。旗はいつでも置き直せる。ただし1人が足止めできるゾンビは3体まで——溢れた分は素通りされるぞ。新しい兵科は作戦タイムの<b>新部隊解放</b>で。</p>
     <p>作戦タイムでは<b>大押し流し</b>(一気に15%移す)/<b>潮位上昇</b>(次の波全体を深くする)/<b>変異体送り込み</b>/<b>妨害工作</b>(タワー封印)。🎯はチャージ式エアストライク。最後まで生き残った拠点の勝ちだ!</p>
     <button class="btn gold" id="bt-howto-close" style="margin-top:8px;width:100%">とじる</button>
   </div>
@@ -873,7 +874,7 @@ function nextWave(){
  for(const C of G.players)if(!C.dead)resetCampWave(C);
  UI.closeInterval();UI.banner('WAVE '+G.wave+(G.wave%5===0?' 💀BOSS':''));
  sfx.horn();G.phase='wave';
- if(G.wave===1&&!G.players[G.myIdx].dead){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!'),5600);setTimeout(()=>toast('💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ'),11000);}
+ if(G.wave===1&&!G.players[G.myIdx].dead){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!'),5600);setTimeout(()=>toast('💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ'),11000);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),16400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),21800);}
 }
 function gameStep(dt){
  if(!G||G.over)return;
@@ -1086,7 +1087,7 @@ function showResultA(){
  $('res-title').textContent=win?'🏆 最後の生存者!':'💀 '+me.place+'位…';
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=(G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達';
- $('res-stats').innerHTML=[['ゾンビ撃破',me.kills],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/8'],['火力増強','Lv'+me.atkLv]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+ $('res-stats').innerHTML=[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/8'],['火力増強','Lv'+me.atkLv]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
  show('result');
 }
@@ -1096,7 +1097,7 @@ function showResultC(sn){
  $('res-title').textContent=win?'🏆 最後の生存者!':'💀 '+sn.me.pl+'位…';
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=(sn.wn?('生存: '+sn.wn+' / '):'')+'WAVE '+sn.w+' まで到達';
- $('res-stats').innerHTML=[['ゾンビ撃破',sn.me.kl],['送った変異体',sn.me.sent+'体'],['解放タワー',sn.me.un+'/8']].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+ $('res-stats').innerHTML=[['ゾンビ撃破',sn.me.kl],['部隊出撃',(sn.me.dp||0)+'体'],['送った変異体',sn.me.sent+'体'],['解放タワー',sn.me.un+'/8']].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();show('result');
 }
 /* ---- 建設メニュー・入力 ---- */
@@ -1279,7 +1280,7 @@ let NET={peer:null,conn:null,lob:[],host:false},CS={meN:null,ot:[],w:0,ph:0,tI:0
 function safeSend(c,o){try{if(c&&c.open)c.send(o);}catch(e){}}
 function code4(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=A[ri(0,A.length-1)];return s;}
 function packLane(C){return{dd:C.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(C.core),un:C.unlocked,atk:C.atkLv,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:C.waveDone?1:0,kw:C.killsWave,tw:C.totalWave,kl:C.kills,sent:C.sentCount,pl:C.place,
- fd:Math.round(C.flagD),uu:C.uUn,
+ fd:Math.round(C.flagD),uu:C.uUn,dp:C.dep,
  tws:C.towers.map(t2=>t2?[t2.ti,t2.lv,t2.jamT>0?1:0]:0),
  us:C.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid]),
  es:C.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0]),
@@ -1300,7 +1301,7 @@ function applySnap(d){
  for(const e of (d.ev||[])){toast(e.m,!!e.w);if(e.w)sfx.warn();}
  if(d.ph===0&&!CS.ivOn&&CS.meN&&!CS.meN.dead&&!d.ov){CS.ivOn=true;CS.meN.ready=false;ivOpen();}
  if(CS.ivOn&&(d.ph===1||(CS.meN&&CS.meN.dead))){CS.ivOn=false;UI.closeInterval();}
- if(d.ov&&!CS.over){CS.over=true;showResultC({me:{pl:d.me.pl,kl:d.me.kl,sent:d.me.sent,un:d.me.un},w:d.w,wn:d.wn});}
+ if(d.ov&&!CS.over){CS.over=true;showResultC({me:{pl:d.me.pl,kl:d.me.kl,sent:d.me.sent,un:d.me.un,dp:d.me.dp},w:d.w,wn:d.wn});}
 }
 function clientCamp(dt){
  const m=CS.meN;if(!m){CC=null;return;}
