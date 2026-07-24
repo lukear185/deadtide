@@ -24,7 +24,7 @@ if(!ms){console.log('取得できず(ブラウザが動かなかった)');proces
 const U=ms[ms.length-1].replace(/%%/g,'').split(' ## ').map(l=>{const a=l.split('|');
  return {i:+a[0],id:a[1],n:a[2],hp:+a[3],atk:+a[4],rate:+a[5],rng:+a[6],aoe:+a[7],
   burn:+a[8],multi:+a[9],type:a[10],cost:+a[11],up:+a[12]};});
-const TANK=['shd','gld','tnk','titan'];
+const TANK=['big','shd','gld','tnk','titan'];
 const dpsOf=u=>u.atk/u.rate*(1+((u.multi||1)-1)*.6)*(1+u.aoe/220)+(u.burn?u.burn*.8:0);
 const roleOf=u=>u.type==='frost'?2.2:u.type==='heal'?2:TANK.indexOf(u.id)>=0?1.45:1;
 const scoreOf=u=>Math.pow(dpsOf(u),.6)*Math.pow(u.hp,.4)*roleOf(u);

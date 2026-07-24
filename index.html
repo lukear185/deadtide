@@ -153,13 +153,14 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* スマホ(指で触る端末)用の詰め直し。⚠上の@media(pointer:coarse)ではなくここに置くこと=
    同じ強さの指定は後ろが勝つため、#deckの定義より前に書くと効かない */
 @media (pointer:coarse){
- #abar{gap:6px;padding:3px max(4px,env(safe-area-inset-right)) max(3px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
- #deck{gap:4px}
- #deck .dk{width:58px;height:72px}
- #deck .dk canvas{width:52px;height:39px}
+ /* ⚠基本兵科8種+🚩🎯+諦める+🔊 が横に収まる幅にしてある(兵科を増やしたら要再計算) */
+ #abar{gap:5px;padding:3px max(4px,env(safe-area-inset-right)) max(3px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
+ #deck{gap:3px}
+ #deck .dk{width:54px;height:72px}
+ #deck .dk canvas{width:48px;height:36px}
  #deck .dk .dn{font-size:12px;line-height:15px;height:15px;bottom:14px}
  #deck .dk .dc{font-size:11px;line-height:14px;height:14px}
- #flagbtn,#strikebtn,#pushbtn{width:54px;height:54px}
+ #flagbtn,#strikebtn,#pushbtn{width:52px;height:52px}
  #abar #ffwave,#abar #mutebtn{height:54px;padding:0 9px;font-size:12px}
  #flagbtn{font-size:22px}
  #strikebtn{font-size:24px}
@@ -475,7 +476,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div class="modal" id="md-load">
   <div class="panel howto" style="max-width:600px;width:min(94vw,600px)">
     <h2 class="hd">🎖 編成</h2>
-    <p class="note" style="margin:4px 0 8px">作戦タイムで解放できる7つの枠に、どのキャラを入れるか決める。派生キャラと弾薬は🔬研究所で解放する。</p>
+    <p class="note" style="margin:4px 0 8px">作戦タイムで解放できる8つの枠に、どのキャラを入れるか決める。派生キャラと弾薬は🔬研究所で解放する。</p>
     <div id="load-items"></div>
     <button class="btn gold" id="bt-load-close" style="margin-top:8px;width:100%">この編成でいく</button>
   </div>
@@ -778,6 +779,8 @@ const isNM=()=>!!(G&&G.pveDiff===NM_DIFF);
 const UNITS=[
  {id:'bat',n:'バット',cost:24,cd:2.2,hp:312,atk:22,rate:.7,rng:36,sp:72,type:'melee',c:'#c9a13d',dsc:'基本の殴り屋'},
  {id:'hnd',n:'猟犬',cost:20,cd:3,hp:156,atk:14,rate:.5,rng:34,sp:150,type:'melee',c:'#8a6a45',dsc:'速い・安い・噛む'},
+ /* 序盤の壁役。攻撃はほとんど無いが、とにかく硬くて足を止める(2026-07-25追加) */
+ {id:'big',n:'巨漢',cost:22,cd:7,hp:790,atk:9,rate:1.15,rng:40,sp:44,type:'melee',c:'#a1704a',dsc:'素手の壁。硬いが火力は無い'},
  {id:'gun',n:'ガンナー',cost:44,cd:4,hp:215,atk:45,rate:.8,rng:220,sp:56,type:'bullet',c:'#5c7d8a',dsc:'基本の射撃手'},
  {id:'shd',n:'盾持ち',cost:60,cd:6,hp:1235,atk:12,rate:1,rng:36,sp:46,type:'melee',c:'#5c6b78',dsc:'前線の壁'},
  {id:'mol',n:'火炎瓶',cost:72,cd:7,hp:310,atk:75,rate:1.6,rng:180,sp:50,type:'fire',aoe:70,burn:12,c:'#c96b35',dsc:'範囲燃焼・装甲無視'},
@@ -810,7 +813,7 @@ const UNITS=[
  {id:'titan',n:'タイタン',cost:360,cd:22,hp:3115,atk:125,rate:1.3,rng:60,sp:44,type:'melee',c:'#8a8f96',dsc:'歩く城塞・全てを薙ぎ倒す'},
  {id:'valk',n:'ヴァルキリー',cost:328,cd:20,hp:1620,atk:351,rate:1.8,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'空爆支援を伴う精鋭'}
 ];
-const BASE_U=7;/* 通常解放できる基本兵科数(これ以降は🔬研究所で解放) */
+const BASE_U=8;/* 通常解放できる基本兵科数(これ以降は🔬研究所で解放) */
 /* 全兵科を価格順に並べ替え(前半=最初から使える/後半=研究所で解放)。ただし研究所専用の4種は必ず末尾 */
 {const LAST=['tnk','mech','titan','valk'];
  const norm=UNITS.filter(u=>LAST.indexOf(u.id)<0).sort((a,b)=>a.cost-b.cost);
@@ -828,7 +831,7 @@ while(UNITP.length<UNITS.length+2)UNITP.push(Math.round(UNITP[UNITP.length-1]*1.
 /* ============ 派生兵科(研究所で解放 → 編成画面で基本兵科と入れ替え) ============
  基本兵科(作戦タイムで解放できる7種)それぞれに、役割が同じで格上の3種を用意する。
  コストは微増。数値は基本兵科に対する倍率。 */
-const VBASE=['hnd','bat','spr','chain','gun','axe','shd'];
+const VBASE=['hnd','big','bat','spr','chain','gun','axe','shd'];
 const UVAR={
  hnd:[
   {id:'wolf',n:'狼',cm:1.2,hp:1.4,atk:1.35,sp:1.05,c:'#6b6b73',dsc:'群れで狩る野生の狼'},
@@ -854,6 +857,10 @@ const UVAR={
   {id:'waxe',n:'戦斧兵',cm:1.2,hp:1.3,atk:1.35,c:'#8a6a45',dsc:'戦場慣れした斧の使い手'},
   {id:'twin',n:'双斧',cm:1.45,hp:1.7,atk:1.8,rate:.85,c:'#b0483a',dsc:'両手の斧で連続で断つ'},
   {id:'exec',n:'処刑人',cm:1.75,hp:2.3,atk:2.5,c:'#3f4a54',dsc:'巨大な処刑斧を振り下ろす'}],
+ big:[
+  {id:'bounc',n:'用心棒',cm:1.2,hp:1.45,atk:1.35,c:'#8f6a4a',dsc:'場慣れした大男。腕っぷしも上がる'},
+  {id:'htank',n:'人間戦車',cm:1.45,hp:2,atk:1.5,c:'#7a6f5c',dsc:'ぶつかった物を押し返す肉の戦車'},
+  {id:'kojin',n:'不動の巨神',cm:1.75,hp:2.8,atk:1.8,c:'#c9a13d',dsc:'一歩も退かぬ巨神'}],
  shd:[
   {id:'bshd',n:'大盾兵',cm:1.2,hp:1.45,atk:1.2,c:'#5f8fa3',dsc:'一回り大きい盾で受け止める'},
   {id:'iron',n:'鉄壁',cm:1.45,hp:2,atk:1.45,c:'#8a8f96',dsc:'鋼板を並べた動く壁'},
@@ -1496,6 +1503,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(tier===4){c.shadowColor='#E8A33D';c.shadowBlur=10;}
  c.lineWidth=2.4;c.strokeStyle=INK;
+ if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
  if(id==='tnk'){/* 装甲車(研究所限定)／派生=重戦車→陸上戦艦→地響き */
   const C0=vt?U.c:'#5c6b78';c.scale(1.15*(1+.06*vt),1.15*(1+.06*vt));
   if(vt>=3){c.shadowColor='#ffd23d';c.shadowBlur=9;}
@@ -1557,7 +1565,16 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(id==='frz'){c.fillStyle='#5f8fa3';rr(c,-16,-36,8,20,4);c.fill();c.stroke();}
  if(id==='rkt'){}
  /* 胴体 */
- rr(c,-10,-34,20,24,7);c.fillStyle=U.c;c.fill();c.stroke();
+ if(id==='big'){/* 巨漢: 分厚い胸板と、突き出した太い腕+拳(武器は持たない) */
+  c.fillStyle=shade(U.c,.82);
+  c.beginPath();c.moveTo(-13,-33);c.lineTo(-20,-17+walk*2.5);c.lineTo(-11,-14);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(13,-33);c.lineTo(21,-17-walk*2.5);c.lineTo(12,-14);c.closePath();c.fill();c.stroke();
+  rr(c,-13,-37,26,26,9);c.fillStyle=U.c;c.fill();c.stroke();
+  c.fillStyle=shade(U.c,.9);
+  c.beginPath();c.arc(-20,-16+walk*2.5,4.8,0,7);c.fill();c.stroke();
+  c.beginPath();c.arc(21,-16-walk*2.5,4.8,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(U.c,1.15);c.fillRect(-6,-33,3,14);c.fillRect(3,-33,3,14);/* 胸の筋 */
+ }else{rr(c,-10,-34,20,24,7);c.fillStyle=U.c;c.fill();c.stroke();}
  if(id==='med'){c.fillStyle='#C1502E';c.fillRect(-4,-28,8,3);c.fillRect(-1.5,-30.5,3,8);}
  if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,-10,-20,20,10,4);c.fill();c.stroke();}
  /* 頭 */
