@@ -162,7 +162,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="logo-jp">— 死の潮を押し付け合え。最後まで立っていた拠点が勝つ —</div>
   </div>
   <div class="menu">
-    <button class="btn red" id="bt-solo">🔫 ひとりで防衛(vs CPU)</button>
+    <button class="btn red" id="bt-solo">🛡 ソロ作戦 — ステージ1</button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
     <button class="btn" id="bt-howto">📖 あそびかた</button>
   </div>
@@ -172,13 +172,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div class="scr" id="scr-setup">
   <div class="setwrap">
     <div class="panel">
-      <h2 class="hd">🏕 防衛準備</h2>
-      <p class="note" style="margin-bottom:6px">ライバル拠点(CPU)の数</p>
-      <div class="seg" id="seg-cpu">
-        <button class="btn sm sel" data-v="1">1拠点(タイマン)</button>
-        <button class="btn sm" data-v="2">2拠点(三つ巴)</button>
-      </div>
-      <p class="note" style="margin:10px 0 6px">CPUの練度</p>
+      <h2 class="hd">🏕 ステージ1 — 最終防衛拠点</h2>
+      <p class="note" style="margin-bottom:6px">押し寄せる死潮からWAVE20を守り切ればクリア。5波ごとにボスが来る。</p>
+      <p class="note" style="margin:10px 0 6px">ゾンビの強さ</p>
       <div class="seg" id="seg-diff">
         <button class="btn sm" data-v="0">新兵</button>
         <button class="btn sm sel" data-v="1">古参</button>
@@ -278,7 +274,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div class="modal" id="md-howto">
   <div class="panel howto">
     <h2 class="hd">📖 あそびかた</h2>
-    <p>ゾンビの大群<b>「死潮」は世界に一つだけ</b>。画面上のゲージが「誰に何%流れるか」の取り分だ。<b>🌊押す</b>で⚙️を払えば、自分の取り分を相手へ押し流せる(連打するほど割高)。<b>5波ごとのボスは、いちばん押し負けてる奴の所へ行く。</b></p>
+    <p><b>🛡 ソロ作戦</b>=ステージ制。押し寄せるウェーブを耐え抜き、<b>WAVE20を守り切ればステージクリア</b>。5波ごとにボスが来る。<b>📡 オンライン対戦</b>=以下の「死潮の綱引き」ルールだ。</p>
+    <p>対戦ではゾンビの大群<b>「死潮」は世界に一つだけ</b>。画面上のゲージが「誰に何%流れるか」の取り分だ。<b>🌊押す</b>で⚙️を払えば、自分の取り分を相手へ押し流せる(連打するほど割高)。<b>5波ごとのボスは、いちばん押し負けてる奴の所へ行く。</b></p>
     <p>ただし——<b>受けた側は撃破⚙️を総取り</b>。耐えられるなら、押し付けられた潮はそのまま金脈になる。わざと受けて稼ぐのも戦略だ。取り分は放っておくと均等に戻っていく。</p>
     <p>道沿いの<b>空きスロットをタップ</b>してタワーを建設、建てた塔をタップで強化/売却。抜かれるとコアHPが削れ、0で脱落。建設も押し流しも妨害も、ぜんぶ同じ⚙️スクラップだ。</p>
     <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。旗はいつでも置き直せる。ただし1人が足止めできるゾンビは3体まで——溢れた分は素通りされるぞ。新しい兵科は作戦タイムの<b>新部隊解放</b>で。</p>
@@ -378,6 +375,8 @@ const UNITS=[
 ];
 const UNITP=[0,0,150,220,300,420,560,720];
 const MAXU=20;
+const STAGE_W=20;
+const PVE_MUL=[.8,1,1.25];
 const prAtk=n=>Math.round(140*Math.pow(1.5,n));
 const prRe=u=>Math.round(120*Math.pow(1.35,u));
 const prJam=u=>Math.round(200*Math.pow(1.3,u));
@@ -535,7 +534,7 @@ function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,bur
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
- const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1);
+ const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(G.pve?PVE_MUL[G.pveDiff||1]:1);
  T.mul=mul;
  const n=Math.round(.85*alive*(7+wave*1.8)*(1+.2*up));
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave);
@@ -874,7 +873,9 @@ function nextWave(){
  for(const C of G.players)if(!C.dead)resetCampWave(C);
  UI.closeInterval();UI.banner('WAVE '+G.wave+(G.wave%5===0?' 💀BOSS':''));
  sfx.horn();G.phase='wave';
- if(G.wave===1&&!G.players[G.myIdx].dead){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!'),5600);setTimeout(()=>toast('💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ'),11000);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),16400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),21800);}
+ if(G.wave===1&&!G.players[G.myIdx].dead){
+  if(G.pve){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),6000);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),11400);setTimeout(()=>toast('🛡 WAVE '+STAGE_W+' を守り切ればステージクリアだ!'),16800);}
+  else{setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!'),5600);setTimeout(()=>toast('💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ'),11000);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),16400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),21800);}}
 }
 function gameStep(dt){
  if(!G||G.over)return;
@@ -886,7 +887,11 @@ function gameStep(dt){
     for(let k=0;k<G.players.length;k++)ev(k,'💀 '+C.name+' の拠点が陥落…',k===i);
     if(C.isMe){sfx.lose();if(G.alive>1&&G.players.every(p=>p.kind!=='remote')){$('ffbtn').style.display='block';toast('⏩で早送りできます');}}
    }}
-  if(G.alive<=1){const w=G.players.findIndex(p=>!p.dead);if(w>=0)G.players[w].place=1;G.winner=w;G.over=true;
+  if(G.pve){
+   const me=G.players[0];
+   if(me.dead){G.winner=-1;G.over=true;UI.showResult();return;}
+   if(me.waveDone&&G.wave>=STAGE_W){me.place=1;G.winner=0;G.over=true;UI.showResult();return;}
+  }else if(G.alive<=1){const w=G.players.findIndex(p=>!p.dead);if(w>=0)G.players[w].place=1;G.winner=w;G.over=true;
    if(MODE==='host'){try{G.netT=1;hostNetTick(1);}catch(e){}}
    UI.showResult();return;}
   let done=true;for(const C of G.players)if(!C.dead&&!C.waveDone)done=false;
@@ -1020,7 +1025,7 @@ function updHUD(){const m=meV();if(!m)return;
  const wv=MODE==='client'?(CS.w||1):(G?G.wave:1);const inW=MODE==='client'?CS.ph===1:(G&&G.phase==='wave');
  const zc=MODE==='client'?(CC?CC.zombies.length:0):(G?G.players[G.myIdx].zombies.length:0);
  const pr=MODE==='client'?(CS.pr||0):(G?G.tide.pool.length:0);
- $('wavebadge').textContent='WAVE '+wv+(inW&&!m.waveDone?' ・🧟'+zc+(pr>0?'+':''):'');
+ $('wavebadge').textContent='WAVE '+wv+(G&&G.pve?'/'+STAGE_W:'')+(inW&&!m.waveDone?' ・🧟'+zc+(pr>0?'+':''):'');
  $('energybox').textContent='⚙️ '+fmt(m.scrap);
  const sb=$('strikebtn');sb.style.background=`conic-gradient(var(--rust) ${m.charge*100}%,#4a4034 0)`;sb.classList.toggle('rdy',m.charge>=1&&!AIM);
  if(!tipSt&&m.charge>=1&&inW){tipSt=true;toast('🎯 エアストライク準備完了!ボタン→地点タップで爆撃!');}
@@ -1083,11 +1088,13 @@ const UI={
 };
 function showResultA(){
  gameActive=false;$('interv').classList.remove('on');closeBM();
- const me=G.players[G.myIdx],win=me.place===1;
- $('res-title').textContent=win?'🏆 最後の生存者!':'💀 '+me.place+'位…';
+ const me=G.players[G.myIdx],win=G.pve?G.winner===0:me.place===1;
+ $('res-title').textContent=G.pve?(win?'🏆 ステージ1 クリア!':'💀 拠点陥落…'):(win?'🏆 最後の生存者!':'💀 '+me.place+'位…');
  $('res-title').className='restitle'+(win?' win':'');
- $('res-sub').textContent=(G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達';
- $('res-stats').innerHTML=[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/8'],['火力増強','Lv'+me.atkLv]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+ $('res-sub').textContent=G.pve?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
+ $('res-stats').innerHTML=(G.pve
+  ?[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/8'],['解放部隊',me.uUn+'/'+UNITS.length],['火力増強','Lv'+me.atkLv]]
+  :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/8'],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
  show('result');
 }
@@ -1197,6 +1204,7 @@ function ivRender(){
  h+=`<div class="card"><div class="ci">🪖</div><div class="ct">新部隊解放</div><div class="cdsc">${nu?('次:『'+nu.n+'』— '+nu.dsc):'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${nu&&can('uun')?'':'disabled'}>⚙️${nu?pc('uun'):'-'}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${can('atk')?'':'disabled'}>⚙️${pc('atk')}</button></div>`;
  h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${can('repair')&&m.core<m.coreMax?'':'disabled'}>⚙️${pc('repair')}</button></div>`;
+ if(!(G&&G.pve)){
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">大押し流し</div><div class="cdsc">死潮の取り分を一気に15%相手へ押し付ける</div><div class="tgt">${tgtBtns('tB')}</div><button class="btn red sm buy" data-buy="big" ${can('big')&&ivS.tB>=0?'':'disabled'}>⚙️${pc('big')}</button></div>`;
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">潮位上昇</div><div class="cdsc">次の波【全体】を大きく強くする。押し勝ってる時の追い打ちに</div><button class="btn red sm buy" data-buy="tide" ${can('tide')?'':'disabled'}>⚙️${pc('tide')}</button></div>`;
  h+=`<div class="card atk"><div class="ci">⚡</div><div class="ct">妨害工作</div><div class="cdsc">相手のタワー1基を次ウェーブ開始から20秒封印</div><div class="tgt">${tgtBtns('tJ')}</div><button class="btn red sm buy" data-buy="jam" ${can('jam')&&ivS.tJ>=0?'':'disabled'}>⚙️${pc('jam')}</button></div>`;
@@ -1204,6 +1212,7 @@ function ivRender(){
  <div class="chips">${SENDABLE.map(zi=>`<button class="btn sm ${ivS.zi===zi?'sel':''}" data-zi="${zi}">${ZOMBIES[zi].n}</button>`).join('')}</div>
  <div class="chips">${[1,3,5].map(n2=>`<button class="btn sm ${ivS.cnt===n2?'sel':''}" data-cnt="${n2}">×${n2}</button>`).join('')}</div>
  <div class="tgt">${tgtBtns('tS')}</div><button class="btn red sm buy" data-buy="send" ${can('send')&&ivS.tS>=0?'':'disabled'}>⚙️${pc('send')}</button></div>`;
+ }
  $('ivcards').innerHTML=h;
  $('iven').textContent='⚙️ '+fmt(m.scrap);
  $('ivlog').innerHTML=ivLogs.join('<br>')||'<span style="opacity:.6">ここに行動ログが出ます</span>';
@@ -1243,18 +1252,18 @@ function paradeStep(t){
 /* ============ 画面遷移 ============ */
 let setCpu=1,setDiff=1;
 function segInit(id,cb){$(id).querySelectorAll('.btn').forEach(b=>{b.onclick=()=>{$(id).querySelectorAll('.btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');cb(+b.dataset.v);};});}
-segInit('seg-cpu',v=>setCpu=v);segInit('seg-diff',v=>setDiff=v);
+segInit('seg-diff',v=>setDiff=v);
 function startSolo(){
  MODE='solo';
- const names=['CPUカラス','CPUハイエナ'];
- const specs=[{name:'キミ',kind:'me'}];
- for(let i=0;i<setCpu;i++)specs.push({name:names[i],kind:'cpu',ai:DIFFS[setDiff]});
- newGame(specs,0);
- startGameUI(specs.map((s,i)=>({i,n:s.name})).filter(o=>o.i!==0));
+ newGame([{name:'キミ',kind:'me'}],0);
+ G.pve=1;G.pveDiff=setDiff;
+ startGameUI([]);
+ $('tidebar').style.display='none';$('pushbtn').style.display='none';
  $('pausebtn').style.display='inline-block';
 }
 function startGameUI(others){
  gameActive=true;tipSt=false;ivLogs=[];PAUSED=false;SEL=-1;PUSHTGT=-1;setAim(false);setFlagAim(false);buildDeck();
+ $('tidebar').style.display='';$('pushbtn').style.display='';
  ivS={zi:0,cnt:1,tB:-1,tS:-1,tJ:-1};
  $('ffbtn').style.display='none';$('ffbtn').textContent='⏩ ×1';
  buildMinis(others);show('game');
