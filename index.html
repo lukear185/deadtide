@@ -740,6 +740,7 @@ function campStep(C,dt,wave){
 function priceOf(C,kind,opt){
  switch(kind){
   case 'unlock':return C.unlocked<TOWERS.length?UNLOCK_P[C.unlocked]:1e9;
+  case 'uun':return uupCost(C);
   case 'atk':return prAtk(C.atkLv);
   case 'repair':return prRe(C.repairs);
   case 'big':return prBig(C.boosts);
@@ -753,6 +754,7 @@ function doPurchase(C,kind,opt){
  opt=opt||{};const p=priceOf(C,kind,opt);
  if(C.scrap<p||C.dead)return false;
  if(kind==='unlock'&&C.unlocked>=TOWERS.length)return false;
+ if(kind==='uun'&&C.uUn>=UNITS.length)return false;
  const tgt=opt.tgt!=null&&opt.tgt>=0?G.players[opt.tgt]:null;
  if((kind==='big'||kind==='send'||kind==='jam')&&(!tgt||tgt===C||tgt.dead))return false;
  if(kind==='big'){
@@ -767,6 +769,7 @@ function doPurchase(C,kind,opt){
  C.scrap-=p;
  switch(kind){
   case 'unlock':C.unlocked++;break;
+  case 'uun':C.uUn++;break;
   case 'atk':C.atkLv++;break;
   case 'repair':C.repairs++;C.core=Math.min(C.coreMax,C.core+12);break;
   case 'tide':G.tide.up++;G.tide.upN++;for(let k=0;k<G.players.length;k++)if(G.players[k]!==C&&!G.players[k].dead)ev(k,'🌊 '+C.name+' が潮位を引き上げた!次の波が深くなる…',true);break;
@@ -815,6 +818,7 @@ function cpuPlan(C){
   const push=(k,w,o)=>{if(C.scrap>=priceOf(C,k,o||{}))opts.push({k,w,o:o||{}});};
   if(C.core<C.coreMax*.45)push('repair',6);
   if(C.unlocked<TOWERS.length&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
+  if(C.uUn<UNITS.length&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
   push('atk',2.2);
   if(C.core<C.coreMax*.8)push('repair',1.2);
   {const gi=G.players.indexOf(C),alv=G.players.filter(p=>!p.dead).length,eq=100/alv,sh=G.tide.shares[gi];
@@ -1181,6 +1185,8 @@ function ivRender(){
  const nx=m.unlocked<TOWERS.length?TOWERS[m.unlocked]:null;
  let h='';
  h+=`<div class="card"><div class="ci">🔓</div><div class="ct">新タワー解放</div><div class="cdsc">${nx?('次:『'+nx.n+'』— '+nx.dsc):'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${nx&&can('unlock')?'':'disabled'}>⚙️${nx?pc('unlock'):'-'}</button></div>`;
+ const uu2=m.uUn!=null?m.uUn:2,nu=uu2<UNITS.length?UNITS[uu2]:null;
+ h+=`<div class="card"><div class="ci">🪖</div><div class="ct">新部隊解放</div><div class="cdsc">${nu?('次:『'+nu.n+'』— '+nu.dsc):'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${nu&&can('uun')?'':'disabled'}>⚙️${nu?pc('uun'):'-'}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${can('atk')?'':'disabled'}>⚙️${pc('atk')}</button></div>`;
  h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${can('repair')&&m.core<m.coreMax?'':'disabled'}>⚙️${pc('repair')}</button></div>`;
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">大押し流し</div><div class="cdsc">死潮の取り分を一気に15%相手へ押し付ける</div><div class="tgt">${tgtBtns('tB')}</div><button class="btn red sm buy" data-buy="big" ${can('big')&&ivS.tB>=0?'':'disabled'}>⚙️${pc('big')}</button></div>`;
@@ -1201,10 +1207,10 @@ function ivRender(){
 }
 function actBuy(kind){
  const opt={zi:ivS.zi,cnt:ivS.cnt,tgt:kind==='big'?ivS.tB:kind==='jam'?ivS.tJ:kind==='send'?ivS.tS:null};
- const label={unlock:'🔓 新タワー解放!',atk:'🔧 火力増強!',repair:'🛠 コア修理!',big:'🌊 大押し流しを仕掛けた!',tide:'🌊 潮位を引き上げた!',jam:'⚡ 妨害工作を仕掛けた',send:'🧟 変異体を送った'}[kind];
+ const label={unlock:'🔓 新タワー解放!',uun:'🪖 新部隊解放!',atk:'🔧 火力増強!',repair:'🛠 コア修理!',big:'🌊 大押し流しを仕掛けた!',tide:'🌊 潮位を引き上げた!',jam:'⚡ 妨害工作を仕掛けた',send:'🧟 変異体を送った'}[kind];
  if(MODE==='client'){const m=meV(),p=priceOf(m,kind,opt);if(m.scrap<p)return;
   safeSend(NET.conn,{t:'c',a:'buy',k:kind,o:opt});
-  m.scrap-=p;if(kind==='unlock')m.unlocked++;if(kind==='atk')m.atkLv++;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
+  m.scrap-=p;if(kind==='unlock')m.unlocked++;if(kind==='uun')m.uUn=(m.uUn!=null?m.uUn:2)+1;if(kind==='atk')m.atkLv++;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
   sfx.buy();ivLog(label);ivRender();return;}
  const me=G.players[G.myIdx];
  if(doPurchase(me,kind,opt)){sfx.buy();ivLog(label);ivRender();}
