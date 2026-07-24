@@ -65,6 +65,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .mini{cursor:pointer}
 .mini:active{transform:scale(.97)}
 .spec #deck,.spec #strikebtn,.spec #flagbtn,.spec #pushbtn,.spec #pushtgt,.spec #strikehint,.spec #flaghint{display:none!important}
+@media (max-width:760px){.mini{min-width:104px;max-width:116px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 .mini.dead{opacity:.55;filter:grayscale(1)}
 .mini .st{font-size:10px;opacity:.85}
 #tidebar{position:absolute;top:max(6px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(46vw,420px);z-index:5;pointer-events:none}
@@ -445,6 +446,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  o=o||{};const Z=ZOMBIES[zi],s=Z.sc;
  const walk=Math.sin(t*(Z.sp>90?14:8)+ph),bob=Math.abs(walk)*2.5*s;
  c.save();c.translate(x,y-bob);c.scale(dir*s,s);
+ if(o.lg>0)c.translate(o.lg*34,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
  c.lineWidth=2.6/s;c.strokeStyle=INK;
@@ -526,6 +528,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  o=o||{};const U=UNITS[ui],id=U.id;
  const walk=Math.sin(t*10+ph),bob=Math.abs(walk)*2;
  c.save();c.translate(x,y-bob);c.scale(dr,1);
+ if(o.fireT>0)c.translate(-2,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
  c.lineWidth=2.4;c.strokeStyle=INK;
  if(id==='hnd'){/* 猟犬 */
@@ -568,6 +571,10 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  else if(id==='snp'){c.strokeStyle='#3a3128';c.beginPath();c.moveTo(2,-28);c.lineTo(30,-30);c.stroke();c.fillStyle='#9fdcf5';c.beginPath();c.arc(12,-32,2.4,0,7);c.fill();}
  else if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,6,-32,20,10,3);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle='#2c333a';for(let k=0;k<3;k++)c.fillRect(24,-31+k*3,5,1.8);}
  else if(id==='rkt'){c.fillStyle='#585e4c';rr(c,-4,-46,26,8,3);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle='#C1502E';c.beginPath();c.arc(22,-42,3,0,7);c.fill();}
+ /* 発砲マズルフラッシュ */
+ if(o.fireT>0){const mzy=id==='rkt'?-42:id==='mgn'?-27:id==='snp'?-30:-28,mzx=id==='rkt'?26:id==='mgn'?32:id==='snp'?33:27;
+  c.fillStyle='#ffdd66';c.beginPath();c.arc(mzx,mzy,4.5+o.fireT*22,0,7);c.fill();
+  c.fillStyle='#fff3c0';c.beginPath();c.arc(mzx,mzy,2+o.fireT*10,0,7);c.fill();}
  c.restore();
 }
 function drawCar(c,x,y,rot,col){c.save();c.translate(x,y);c.rotate(rot);c.lineWidth=3;c.strokeStyle=INK;c.fillStyle=col;rr(c,-34,-16,68,32,8);c.fill();c.stroke();c.fillStyle='#2c2c33';rr(c,-14,-12,26,24,5);c.fill();c.stroke();c.restore();}
@@ -636,7 +643,9 @@ function tideStep(dt){
   if(C.zombies.length>=(G.coop?110:80)){T.qt+=.3;break;}
   T.pool.shift();
   C.zombies.push(mkZ(e.z));C.totalWave++;
-  if(e.boss){ev(ti2,'💀 ジャガーノートがこっちに来た!',true);if(C.isMe)sfx.growl();}
+  if(e.boss){ev(ti2,'💀 ジャガーノートがこっちに来た!',true);C.shake=.4;
+   addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:'#C1502E'});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
+   if(C.isMe)sfx.growl();}
   T.qt+=(T.pool.length?T.pool[0].dl:0);
  }
 }
@@ -672,7 +681,8 @@ function dmgZ(C,z,d,armorPierce){
  if(z.dead)return;
  if(z.armor&&!armorPierce)d*=.45;
  z.hp-=d;z.hitT=.1;
- if(C.isMe&&C.fx.length<70)addFx(C,'dmg',z.px+rnd(-8,8),z.py-44,''+Math.max(1,Math.round(d)));
+ if(C.isMe&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44,''+Math.max(1,Math.round(d)));
+  if(Math.random()<.35)addFx(C,'blood',z.px,z.py-28,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
 function deployUnit(C,ui){
@@ -729,6 +739,7 @@ function campStep(C,dt,wave){
  for(const z of C.zombies){
   z.sm=1;for(const s2 of scrs){if(s2!==z&&dist(z.px,z.py,s2.px,s2.py)<150){z.sm=1.35;break;}}
   if(z.hitT>0)z.hitT-=dt;
+  if(z.lgT>0)z.lgT-=dt;
   if(z.burnT>0){z.burnT-=dt;z.hp-=z.burnD*dt;if(z.hp<=0&&!z.dead)killZ(C,z);}
   if(z.dead)continue;
   const slow=z.slowT>0?.55:1;if(z.slowT>0)z.slowT-=dt;
@@ -736,7 +747,8 @@ function campStep(C,dt,wave){
   for(const u of C.units){if(u.dead||u.eng>=3)continue;const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
    z.acd=(z.acd||0)-dt;
-   if(z.acd<=0){z.acd=z.ar;dmgU(C,blk,z.atk);}
+   if(z.acd<=0){z.acd=z.ar;z.lgT=.22;dmgU(C,blk,z.atk);
+    if(C.isMe&&C.fx.length<70&&Math.random()<.5)addFx(C,'blood',blk.px,blk.py-30,'',{sd:rnd(0,9),gray:1});}
    continue;
   }
   z.d+=z.sp*z.sm*slow*dt;
@@ -745,7 +757,7 @@ function campStep(C,dt,wave){
  /* ユニット */
  const MR=38;
  for(let ui2=0;ui2<UNITS.length;ui2++)if(C.ucd[ui2]>0)C.ucd[ui2]-=dt;
- for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);if(u.hitT>0)u.hitT-=dt;}
+ for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;}
  for(const u of C.units){
   if(u.dead)continue;
   const U=UNITS[u.ui];u.cd-=dt;
@@ -764,9 +776,9 @@ function campStep(C,dt,wave){
      addFx(C,'ring',tg.px,tg.py,'',{r:U.aoe,col:'#9fdcf5'});if(C.isMe)sfx.frost();}
     else if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){dmgZ(C,z,U.atk,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}
      addFx(C,U.type==='blast'?'boom':'ring',tg.px,tg.py,'',{r:U.aoe,col:'#ffb347'});if(C.isMe&&U.type==='blast')sfx.boom();}
-    else if(U.multi){let n2=0;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=U.rng){dmgZ(C,z,U.atk,pierce);if(++n2>=U.multi)break;}}}
+    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=U.rng){dmgZ(C,z,U.atk,pierce);if(++n2>=U.multi)break;}}}
     else{dmgZ(C,tg,U.atk,pierce);
-     if(U.rng>60){addFx(C,'tr',u.px,u.py-24,'',{x2:tg.px,y2:tg.py-20});if(C.isMe&&Math.random()<.4)sfx.shot();}}
+     if(U.rng>60){u.fireT=.1;addFx(C,'tr',u.px,u.py-24,'',{x2:tg.px,y2:tg.py-20});if(C.isMe&&Math.random()<.4)sfx.shot();}}
    }
   }else{const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(U.rng>60?fD+70:fD,60,PLEN-40),df=goal-u.d;
    if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;}else u.back=false;}
@@ -1071,8 +1083,9 @@ function renderCamp(C,t){
  /* ゾンビ */
  const zs=C.zombies.slice().sort((a,b)=>a.py-b.py);
  for(const z of zs){if(z.d<0)continue;
-  if(z.slowT>0){c.fillStyle='rgba(111,156,143,.4)';c.beginPath();c.ellipse(z.px,z.py+4,20,9,0,0,7);c.fill();}
-  drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent});
+  if(z.slowT>0){c.fillStyle='rgba(159,220,245,.45)';c.beginPath();c.ellipse(z.px,z.py+4,20,9,0,0,7);c.fill();
+   c.font='900 16px sans-serif';c.textAlign='center';c.globalAlpha=.85;c.fillText('❄',z.px,z.py-64*ZOMBIES[z.zi].sc);c.globalAlpha=1;}
+  drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent,lg:z.lgT});
   if(z.hp<z.mhp){const w=36*(z.boss?1.7:1),r2=clamp(z.hp/z.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(z.px-w/2,z.py-58*ZOMBIES[z.zi].sc,w,6);c.fillStyle=z.sent?'#ff6a5a':'#8FBF4D';c.fillRect(z.px-w/2,z.py-58*ZOMBIES[z.zi].sc,w*r2,6);}
  }
  /* 集結旗(協力時は全員分・色分け) */
@@ -1084,7 +1097,8 @@ function renderCamp(C,t){
    else if(C.flagD!=null)fls=[{d:C.flagD,col:'#6f9c43'}];
   }else if(C.flagD!=null)fls=[{d:C.flagD,col:'#6f9c43'}];
   for(const f of fls){if(f.d==null)continue;const fp=pathPos(f.d),fw=Math.sin(t*5)*3;
-   c.save();c.translate(fp[0],fp[1]);c.strokeStyle=INK;c.lineWidth=3;
+   const pop=1+Math.max(0,(.3-(t-FLAGPOP))/.3)*.5;
+   c.save();c.translate(fp[0],fp[1]);c.scale(pop,pop);c.strokeStyle=INK;c.lineWidth=3;
    c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(0,3,14,6,0,0,7);c.fill();
    c.fillStyle='#8a6a45';c.fillRect(-2,-52,4,54);c.strokeRect(-2,-52,4,54);
    c.fillStyle=f.col;c.beginPath();c.moveTo(2,-52);c.lineTo(32+fw,-43);c.lineTo(2,-33);c.closePath();c.fill();c.stroke();
@@ -1092,7 +1106,7 @@ function renderCamp(C,t){
  /* ユニット */
  const us2=(C.units||[]).slice().sort((a,b)=>a.py-b.py);
  for(const u of us2){
-  drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT});
+  drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT});
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56,30,5);c.fillStyle='#ffd23d';c.fillRect(u.px-15,u.py-56,30*r4,5);}
   if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }
@@ -1103,6 +1117,9 @@ function renderCamp(C,t){
   else if(e.k==='ring'){c.strokeStyle=e.col||'#9fd9c6';c.globalAlpha=Math.max(0,.7-e.t*1.6);c.lineWidth=5;c.beginPath();c.arc(e.x,e.y,10+(e.r||160)*e.t*2.4,0,7);c.stroke();c.globalAlpha=1;}
   else if(e.k==='boom'||e.k==='boomL'){const bb=e.k==='boomL'?2:1;c.globalAlpha=Math.max(0,1-e.t/(e.k==='boomL'?.7:.5));c.fillStyle='#ffb347';c.beginPath();c.arc(e.x,e.y,14+e.t*180*bb,0,7);c.fill();c.fillStyle='rgba(90,80,70,.6)';c.beginPath();c.arc(e.x,e.y-10,10+e.t*220*bb,0,7);c.fill();c.globalAlpha=1;}
   else if(e.k==='splat'){c.globalAlpha=Math.max(0,.5-e.t*.3);c.fillStyle=e.gray?'#6e6354':'#4a5a2e';[[0,0,12],[-11,5,7],[10,6,8]].forEach(p3=>{c.beginPath();c.arc(e.x+p3[0],e.y+p3[1],p3[2],0,7);c.fill();});c.globalAlpha=1;}
+  else if(e.k==='blood'){c.globalAlpha=Math.max(0,.85-e.t*1.9);c.fillStyle=e.gray?'#8a2f2f':'#5a6e2e';
+   for(let k3=0;k3<5;k3++){const a=(e.sd||0)+k3*1.256;const bx=e.x+Math.cos(a)*e.t*170,by=e.y+Math.sin(a)*e.t*70+e.t*e.t*300;
+    c.beginPath();c.arc(bx,by,Math.max(.5,3.4-e.t*4),0,7);c.fill();}c.globalAlpha=1;}
   else if(e.k==='txt'){c.globalAlpha=Math.max(0,1-e.t);c.fillStyle='#8FBF4D';c.strokeStyle=INK;c.lineWidth=4;c.font='900 26px sans-serif';c.textAlign='center';const ty=e.y-e.t*46;c.strokeText(e.s,e.x,ty);c.fillText(e.s,e.x,ty);c.globalAlpha=1;c.lineWidth=3;}
   else if(e.k==='dmg'){c.globalAlpha=Math.max(0,1-e.t/.5);c.fillStyle='#fff';c.strokeStyle=INK;c.lineWidth=3;c.font='900 20px sans-serif';c.textAlign='center';const ty=e.y-e.t*40;c.strokeText(e.s,e.x,ty);c.fillText(e.s,e.x,ty);c.globalAlpha=1;}
   else if(e.k==='leak'){c.strokeStyle='rgba(232,72,50,'+Math.max(0,1-e.t*2)+')';c.lineWidth=8;c.beginPath();c.arc(CORE[0],CORE[1],40+e.t*140,0,7);c.stroke();}
@@ -1284,9 +1301,11 @@ function setAim(on){if(on)setFlagAim(false);AIM=on;aimPos=null;$('strikebtn').cl
 $('strikebtn').onclick=()=>{const m=meV();if(!m||m.dead||m.charge<1){setAim(false);return;}setAim(!AIM);};
 function setFlagAim(on){if(on)setAim(false);FLAGAIM=on;aimPos=null;$('flagbtn').classList.toggle('aim',on);$('flaghint').style.display=on?'block':'none';}
 $('flagbtn').onclick=()=>{const m=meV();if(!m||m.dead){setFlagAim(false);return;}setFlagAim(!FLAGAIM);};
+let FLAGPOP=-9;
 function actFlag(x,y){const fd=clamp(projPath(x,y),PLEN*.1,PLEN*.9);
- if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'fg',fd:Math.round(fd)});CS.fd=fd;sfx.dep();return;}
- if(G){const me=G.players[G.myIdx];if(me.dead)return;me.flagD=fd;const fp=pathPos(fd);addFx(me,'ring',fp[0],fp[1],'',{r:44,col:'#c9dba1'});sfx.dep();}}
+ if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'fg',fd:Math.round(fd)});CS.fd=fd;FLAGPOP=TT;sfx.dep();return;}
+ if(G){const me=G.players[G.myIdx];if(me.dead)return;me.flagD=fd;FLAGPOP=TT;
+  const F2=G.coop?G.players[0]:me;const fp=pathPos(fd);addFx(F2,'ring',fp[0],fp[1],'',{r:44,col:'#c9dba1'});sfx.dep();}}
 $('pushbtn').onclick=()=>{actPush();};
 $('pushtgt').onclick=()=>{const os=aliveOthers();if(!os.length)return;
  const order=[-1,...os.map(o=>o.i)];
