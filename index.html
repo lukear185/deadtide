@@ -642,6 +642,7 @@ function campStep(C,dt,wave){
  /* 位置・オーラ */
  const scrs=[];
  for(const z of C.zombies){const p=pathPos(Math.max(0,z.d));z.px=p[0];z.py=p[1];z.dr=Math.cos(p[2])>=-.05?1:-1;if(z.aura)scrs.push(z);}
+ for(const u of C.units)u.eng=0;
  for(const z of C.zombies){
   z.sm=1;for(const s2 of scrs){if(s2!==z&&dist(z.px,z.py,s2.px,s2.py)<150){z.sm=1.35;break;}}
   if(z.hitT>0)z.hitT-=dt;
@@ -649,8 +650,8 @@ function campStep(C,dt,wave){
   if(z.dead)continue;
   const slow=z.slowT>0?.55:1;if(z.slowT>0)z.slowT-=dt;
   let blk=null,bd2=1e9;
-  for(const u of C.units){if(u.dead)continue;const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
-  if(blk){
+  for(const u of C.units){if(u.dead||u.eng>=3)continue;const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
+  if(blk){blk.eng++;
    z.acd=(z.acd||0)-dt;
    if(z.acd<=0){z.acd=z.ar;dmgU(C,blk,z.atk);}
    continue;
