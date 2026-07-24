@@ -1,7 +1,9 @@
-/* 一時: 画面レイアウトの当たり判定チェック(iPhone横向き 852x393 想定) */
+/* 画面レイアウトの当たり判定チェック(iPhone横向き 852x393・セーフエリア左右59/下21 想定)
+   使い方: node test_layout.js  → 倍率・余白と、全スロット/コア/道路がUIに被っていないかを判定 */
 const fs=require('fs');
 const RECTS={
- abar:{left:0,top:331,right:852,bottom:393,width:852,height:62},
+ /* 操作バー: 上下padding(3+7) + カード高60 = 70 */
+ abar:{left:0,top:323,right:852,bottom:393,width:852,height:70},
  topbar:{left:59,top:3,right:650,bottom:32,width:591,height:29},
  minis:{left:0,top:0,right:0,bottom:0,width:0,height:0},
 };
@@ -30,7 +32,8 @@ global.Peer=function(){return {on(){},destroy(){},connect:()=>({on(){},open:fals
 const html=fs.readFileSync('./index.html','utf-8');
 const js=html.split('<script>')[1].split('</'+'script>')[0];
 const body=`
-;fitCanvas();
+;NOW=5000;/* 起動直後の400ms間は既定値が返るため、実測が走る時刻まで進めてから測る */
+fitCanvas();
 const css=v=>v/DPR;
 console.log('画面 852x393 / DPR='+DPR+'  倍率SC(CSS)='+(SC/DPR).toFixed(4));
 const fw=css(MW*SC),fh=css(MH*SC);

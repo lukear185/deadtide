@@ -90,16 +90,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 @media (max-width:760px){.mini{min-width:104px;max-width:116px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
  /* ホームバー分の余白を削り、ボタン帯を画面の一番下へ寄せる＝その分マップを大きく下まで使える */
- #abar{gap:6px;padding:3px max(4px,env(safe-area-inset-right)) max(2px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
- #deck{gap:4px}
- #deck .dk{width:54px;height:52px}
- #deck .dk canvas{width:24px;height:24px}
- #deck .dk .dn{font-size:10px;line-height:12px}
- #deck .dk .dc{font-size:10px;line-height:14px;height:14px}
- #flagbtn,#strikebtn,#pushbtn{width:50px;height:50px}
- #flagbtn{font-size:21px}
- #strikebtn{font-size:23px}
- #pushbtn{font-size:10px}
+ /* ⚠デッキ/操作バーのスマホ用指定は、後ろの通常指定に負けるのでこの下(#deck定義の後)に別ブロックで置く */
  /* 上のHUDも小さくしてフィールドを広げる */
  #topbar{gap:5px;padding:4px;padding-left:max(4px,env(safe-area-inset-left));padding-top:max(3px,env(safe-area-inset-top))}
  .hudpanel{padding:2px 7px;gap:5px;border-radius:9px}
@@ -138,11 +129,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #strikehint{position:absolute;left:12px;bottom:78px;color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #flaghint{position:absolute;left:12px;bottom:98px;color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #deck{display:flex;gap:5px;overflow-x:auto;flex:0 1 auto;padding-bottom:2px}
-#deck .dk{position:relative;flex:0 0 auto;width:58px;height:58px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:2px 0 0;overflow:hidden}
-#deck .dk canvas{width:27px;height:27px;display:block;margin:0 auto}
-#deck .dk .dn{display:block;font-size:11px;font-weight:900;color:var(--ink);line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:clip;padding:0 1px}
+#deck .dk{position:relative;flex:0 0 auto;width:60px;height:62px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:2px 0 0;overflow:hidden}
+#deck .dk canvas{width:28px;height:28px;display:block;margin:0 auto}
+/* 兵科名は下から2段目の黒帯に白文字で出す(淡色カードに黒文字だと潰れて読めないため) */
+#deck .dk .dn{position:absolute;left:0;right:0;bottom:16px;display:block;font-size:12px;font-weight:900;color:#f2ecdc;background:rgba(36,31,25,.9);line-height:16px;height:16px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.3px}
 /* 出撃コストは下端の黒帯に金文字ではっきり出す(背景と同化して読めない問題の対策) */
-#deck .dk .dc{position:absolute;left:0;right:0;bottom:0;display:block;font-size:11px;font-weight:900;color:#ffd23d;background:var(--ink);line-height:15px;height:15px;letter-spacing:-.2px}
+#deck .dk .dc{position:absolute;left:0;right:0;bottom:0;display:block;font-size:11px;font-weight:900;color:#ffd23d;background:var(--ink);line-height:16px;height:16px;letter-spacing:-.2px}
 #deck .dk .cdov{position:absolute;inset:0;pointer-events:none;border-radius:8px}
 #deck .dk .lk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(0,0,0,.55)}
 #deck .dk.poor{opacity:.55}
@@ -150,6 +142,20 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #deck .dk.t4{border-color:#ffd23d;box-shadow:0 3px 0 #000,0 0 9px rgba(232,163,61,.85)}
 #deck .dk:active{transform:scale(.93)}
 #deck .dk:disabled{filter:saturate(.6)}
+/* スマホ(指で触る端末)用の詰め直し。⚠上の@media(pointer:coarse)ではなくここに置くこと=
+   同じ強さの指定は後ろが勝つため、#deckの定義より前に書くと効かない */
+@media (pointer:coarse){
+ #abar{gap:6px;padding:3px max(4px,env(safe-area-inset-right)) max(3px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
+ #deck{gap:4px}
+ #deck .dk{width:58px;height:60px}
+ #deck .dk canvas{width:26px;height:26px}
+ #deck .dk .dn{font-size:12px;line-height:16px;height:16px;bottom:16px}
+ #deck .dk .dc{font-size:11px;line-height:16px;height:16px}
+ #flagbtn,#strikebtn,#pushbtn{width:54px;height:54px}
+ #flagbtn{font-size:22px}
+ #strikebtn{font-size:24px}
+ #pushbtn{font-size:11px}
+}
 #bigbanner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:7}
 #bigbanner span{font-size:min(10vw,54px);font-weight:900;color:#fff;text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 rgba(0,0,0,.4);animation:bpop .9s ease}
 @keyframes bpop{0%{transform:scale(.3);opacity:0}30%{transform:scale(1.15);opacity:1}60%{transform:scale(1)}100%{opacity:1}}
@@ -2105,7 +2111,7 @@ function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||
  let oy=availH-MH*SC;/* 地面の下端を操作バーの上端にぴったり付ける */
  if(oy>0)oy*=.5;/* 縦に余る画面(PC等)では中央へ */
  OY=oy;}
-const SKYH=108,SKYKEEP=60;/* マップ上端の空の帯/そのうち画面に必ず残す高さ(地平線と廃墟の足元) */
+const SKYH=108,SKYKEEP=36;/* マップ上端の空の帯/そのうち画面に必ず残す高さ(地平線と廃墟の足元) */
 /* 画面下端から操作バーの上端までの高さ(CSSpx)。実測できない時は既定値 */
 let BARBAND=70,BARBT=-9,MINIRES=0,MINIT=-9;
 function barBandPx(){
@@ -2127,10 +2133,11 @@ function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remov
  if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}if(id==='game')bgmOn();else if(id==='title')bgmOff();}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
-const DOTS=[];for(let i=0;i<170;i++)DOTS.push([rnd(20,1580),rnd(130,745),rnd(1.5,4),Math.random()<.5]);
+/* 地面の模様はマップの外(画面端まで伸ばす裁ち落とし部分)にも撒く=境目が見えないように */
+const DOTS=[];for(let i=0;i<260;i++)DOTS.push([rnd(-160,1760),rnd(120,940),rnd(1.5,4),Math.random()<.5]);
 /* 地面と道路の質感(起動時に一度だけ生成して使い回す) */
-const PATCHES=[];for(let i=0;i<26;i++)PATCHES.push([rnd(40,1560),rnd(140,740),rnd(40,120),rnd(20,60),rnd(0,3.14),Math.random()<.5]);
-const TUFTS=[];for(let i=0;i<70;i++)TUFTS.push([rnd(20,1580),rnd(130,748),rnd(4,9),rnd(0,9)]);
+const PATCHES=[];for(let i=0;i<42;i++)PATCHES.push([rnd(-150,1750),rnd(130,930),rnd(40,120),rnd(20,60),rnd(0,3.14),Math.random()<.5]);
+const TUFTS=[];for(let i=0;i<115;i++)TUFTS.push([rnd(-160,1760),rnd(120,942),rnd(4,9),rnd(0,9)]);
 const CRACKS=[];for(let i=0;i<34;i++){const d0=rnd(0,PLEN),p=pathPos(d0),a=rnd(0,6.28),l=rnd(14,46);
  CRACKS.push([p[0]+Math.cos(a)*rnd(0,34),p[1]+Math.sin(a)*rnd(0,26),a,l,rnd(.5,1.6)]);}
 const SKID=[];for(let i=0;i<9;i++){const d0=rnd(120,PLEN-120),p1=pathPos(d0),p2=pathPos(d0+rnd(60,150));
@@ -2366,7 +2373,7 @@ function renderCamp(C,t){
   c.save();
   /* 影(闇)を一枚敷いてから、光源で削り取る=光が周囲を照らして見える */
   c.globalCompositeOperation='source-over';
-  c.fillStyle='rgba(16,22,52,'+(night*.16)+')';c.fillRect(0,110,MW,MH-110);
+  c.fillStyle='rgba(16,22,52,'+(night*.16)+')';c.fillRect(VL,110,VR-VL,VB-110);
   c.globalCompositeOperation='destination-out';
   /* 発砲/爆発の光は「暗さを削る」だけだと時間帯の色と同じに見えるので、
      位置を控えておいて後から暖色(電撃だけ青白)を加算で乗せる */
@@ -2399,10 +2406,12 @@ function renderCamp(C,t){
   if(tod<.3)c.fillStyle='rgba(255,190,120,'+((.3-tod)*.2)+')';
   else if(tod>.42&&tod<.72)c.fillStyle='rgba(255,150,80,'+((.15-Math.abs(tod-.57)*.5))+')';
   else c.fillStyle='rgba(70,100,175,'+(night*.06)+')';
-  c.fillRect(0,110,MW,MH-110);
+  c.fillRect(VL,110,VR-VL,VB-110);
+  /* 色被りもビネットも「画面全体」に掛ける=マップの外(裁ち落とし部分)と色が変わって
+     盤の四角い縁が見えてしまうのを防ぐ */
   const vg=c.createRadialGradient(MW/2,MH/2,MH*.45,MW/2,MH/2,MH*1.15);
   vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,'+(.1+night*.08)+')');
-  c.fillStyle=vg;c.fillRect(0,0,MW,MH);
+  c.fillStyle=vg;c.fillRect(VL,VT,VR-VL,VB-VT);
   c.restore();
  }
  /* 照準 */
