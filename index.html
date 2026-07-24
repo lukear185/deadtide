@@ -70,7 +70,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #corebar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#7ba33f,#b7e07a)}
 #corelbl{font-size:13px;color:#b7e07a;min-width:22px;text-align:right}
 #energybox{font-size:15px;color:#ffd23d}
-#pausebtn,#ffbtn,#mutebtn{background:linear-gradient(#3d362d,#241f19);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:5px 10px;font-weight:900;display:none;box-shadow:0 3px 0 rgba(0,0,0,.45)}
+#pausebtn,#ffbtn,#mutebtn,#ffwave{background:linear-gradient(#3d362d,#241f19);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:5px 10px;font-weight:900;display:none;box-shadow:0 3px 0 rgba(0,0,0,.45)}
+#ffwave{border-color:var(--rust);color:#ff8a6a;white-space:nowrap}
 #mutebtn{display:inline-block}
 #minis{position:absolute;top:8px;right:0;display:flex;flex-direction:column;gap:5px;padding:0 8px;padding-right:max(8px,env(safe-area-inset-right));padding-top:max(0px,env(safe-area-inset-top));z-index:5}
 .mini{min-width:132px;max-width:152px;background:rgba(242,236,220,.93);border:2px solid var(--ink);border-radius:10px;padding:4px 8px;font-size:11px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.35)}
@@ -165,6 +166,17 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #ivready{width:100%;margin-top:8px;font-size:18px}
 /* ---- リザルト ---- */
 #scr-result{background:rgba(20,16,12,.88)}
+#reswrap{display:flex;flex-direction:column;align-items:center;gap:6px;max-height:100%;overflow:auto;padding:12px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+#res-left{display:flex;flex-direction:column;align-items:center;gap:6px}
+@media (orientation:landscape) and (max-height:560px){
+ #reswrap{flex-direction:row;gap:28px}
+ .restitle{font-size:min(7vw,42px)}
+ #res-sub{font-size:13px}
+ table.stats{font-size:12px;margin:0}
+ table.stats td{padding:4px 12px}
+ #reswrap .menu{margin-top:8px}
+ #reswrap .btn{padding:9px 16px;font-size:15px}
+}
 .restitle{font-size:min(14vw,60px);font-weight:900;color:#fff;text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 var(--rust2)}
 .restitle.win{color:var(--toxic)}
 table.stats{border-collapse:collapse;margin:10px 0;background:var(--pane);border:3px solid var(--ink);border-radius:12px;overflow:hidden;font-size:13px;font-weight:800}
@@ -184,7 +196,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #rotatehint .ic{font-size:64px;animation:rot 1.6s ease-in-out infinite}
 @keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
 #rotatehint p{font-weight:900;font-size:18px;line-height:1.7}
-@media (orientation:portrait){body.ingame #rotatehint:not(.off){display:flex}}
+@media (orientation:portrait){body #rotatehint:not(.off){display:flex}}
 #errbox{position:fixed;left:0;right:0;bottom:0;background:#900;color:#fff;font-size:11px;padding:6px;z-index:99;display:none;white-space:pre-wrap}
 .center{text-align:center}
 </style>
@@ -297,6 +309,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="hudpanel" id="energybox">⚙️ 0</div>
     <button id="pausebtn">⏸</button>
     <button id="ffbtn">⏩ ×1</button>
+    <button id="ffwave">🏳 放棄</button>
     <button id="mutebtn">🔊</button>
   </div>
   <div id="minis"></div>
@@ -326,12 +339,16 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 </div>
 
 <div class="scr" id="scr-result">
-  <div class="restitle" id="res-title">生還!</div>
-  <div class="note" id="res-sub" style="color:#fff;font-size:15px;font-weight:800;margin-top:4px"></div>
-  <table class="stats" id="res-stats"></table>
-  <div class="menu">
-    <button class="btn red" id="bt-rematch">🔁 もう一度防衛</button>
-    <button class="btn" id="bt-totitle">🏕 タイトルへ</button>
+  <div id="reswrap">
+    <div id="res-left">
+      <div class="restitle" id="res-title">生還!</div>
+      <div class="note" id="res-sub" style="color:#fff;font-size:15px;font-weight:800;margin-top:4px"></div>
+      <div class="menu">
+        <button class="btn red" id="bt-rematch">🔁 もう一度防衛</button>
+        <button class="btn" id="bt-totitle">🏕 タイトルへ</button>
+      </div>
+    </div>
+    <table class="stats" id="res-stats"></table>
   </div>
 </div>
 
@@ -440,13 +457,18 @@ function bgmOff(){clearInterval(bgmTimer);bgmTimer=null;}
 document.addEventListener('pointerdown',ensureAC);
 document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
 const STANDALONE=((typeof matchMedia==='function')&&matchMedia('(display-mode: standalone)').matches)||((typeof navigator!=='undefined')&&navigator.standalone===true);
+/* スマホのブラウザ起動: 最初のタップで全画面+横画面ロックを試みる(対応端末のみ) */
+if(MOBILE&&!STANDALONE){const fs1=()=>{document.removeEventListener('pointerdown',fs1);
+ try{const de=document.documentElement;if(de&&de.requestFullscreen&&!document.fullscreenElement){const p=de.requestFullscreen();p&&p.catch&&p.catch(()=>{});}}catch(e){}
+ try{if(screen.orientation&&screen.orientation.lock){const p2=screen.orientation.lock('landscape');p2&&p2.catch&&p2.catch(()=>{});}}catch(e){}};
+ document.addEventListener('pointerdown',fs1);}
 try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
 $('mutebtn').onclick=()=>{muted=!muted;$('mutebtn').textContent=muted?'🔇':'🔊';};
 /* ============ データ ============ */
 const MW=1600,MH=760;
 const TOWERS=[
  {id:'rifle',n:'ライフル櫓',cost:120,rng:230,dmg:22,rate:.55,type:'bullet',c:'#8a97a5',dsc:'基本の単発銃座'},
- {id:'shot',n:'ショットガン台',cost:200,rng:135,dmg:19.5,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'近距離3体同時撃ち'},
+ {id:'shot',n:'ショットガン台',cost:200,rng:175,dmg:26,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'3体同時撃ち'},
  {id:'net',n:'拘束ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:220,rng:0,dmg:0,rate:3,type:'eco',inc:16,c:'#b08d4f',dsc:'時間で⚙️を生産'},
  {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,c:'#c96b35',dsc:'装甲無視・継続燃焼'},
@@ -701,10 +723,10 @@ function buildTide(wave){
  const up=T.up;
  const D=D5v();
  const warm=G.pve&&wave<=4?[.6,.72,.84,.94][wave-1]:1;/* PvE序盤の慣らし */
- const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.08*(G.np-1):1);
+ const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.15*(G.np-1):1);
  T.mul=mul;
  const laneN=G.coop?1:alive;
- const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt*warm:1)*(G.coop?1+.4*(G.np-1):1));
+ const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt*warm:1)*(G.coop?1+.8*(G.np-1):1));
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave);
  const pool=[];
  for(let k=0;k<n;k++){let pick=zp[ri(0,zp.length-1)];
@@ -712,7 +734,7 @@ function buildTide(wave){
   pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul,wave)});}
  if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(6,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
  /* 毎ウェーブのエリート個体(W3以降・後半に配置) */
- if(wave>=3){const ne=1+Math.floor(wave/8);
+ if(wave>=3){const ne=(1+Math.floor(wave/8))*(G.coop?G.np:1);
   for(let k=0;k<ne;k++){const e=pool[ri(Math.floor(pool.length*.35),pool.length-1)];
    if(!e||e.boss||e.z.elite)continue;
    e.z.elite=1;e.z.hp*=2.6;e.z.mhp*=2.6;e.z.bt=Math.round(e.z.bt*3);e.z.atk*=1.4;e.z.sp*=.92;}}
@@ -1319,6 +1341,11 @@ function updHUD(){const m=meV();if(!m)return;
   if(cb&&cb.style){cb.style.width=Math.round(cr*100)+'%';cb.style.background=cr>.4?'linear-gradient(90deg,#7ba33f,#b7e07a)':'linear-gradient(90deg,#93381E,#C1502E)';}
   const cl=$('corelbl');cl.textContent=Math.ceil(m.core);if(cl.style)cl.style.color=cr>.4?'#b7e07a':'#ff8a6a';}
  $('energybox').textContent='⚙️ '+fmt(m.scrap);
+ /* ウェーブ放棄ボタン(ソロPvE・ウェーブ中のみ) */
+ {const gw=$('ffwave');
+  const on=!!(G&&G.pve&&!G.coop&&MODE!=='client'&&G.phase==='wave'&&!m.dead&&!m.waveDone&&gameActive);
+  if(gw&&gw.style)gw.style.display=on?'inline-block':'none';
+  if(on)gw.textContent='🏳 放棄 -'+giveUpDmg(m);}
  const sb=$('strikebtn');sb.style.background=`conic-gradient(var(--rust) ${m.charge*100}%,#4a4034 0)`;sb.classList.toggle('rdy',m.charge>=1&&!AIM);
  if(!tipSt&&m.charge>=1&&inW){tipSt=true;toast('🎯 エアストライク準備完了!ボタン→地点タップで爆撃!');}
  /* 死潮ゲージ */
@@ -1516,6 +1543,18 @@ function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];
   b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
   b.onclick=()=>actDeploy(i);w.appendChild(b);DECKB.push(b);}}
+/* ソロ限定: ウェーブ放棄=残敵+出現予定分のコアダメージを受けて即・作戦タイムへ */
+function giveUpDmg(me){let d=0;for(const z of me.zombies)if(!z.dead)d+=z.dmg;if(G)for(const e of G.tide.pool)d+=e.z.dmg;return d;}
+function giveUpWave(){
+ if(!G||!G.pve||G.coop||G.phase!=='wave'||MODE==='client')return;
+ const me=G.players[0];if(me.dead||me.waveDone)return;
+ const dmg=giveUpDmg(me);
+ me.core-=dmg;G.tide.pool=[];G.tide.qt=0;me.zombies=[];
+ addFx(me,'leak',CORE[0],CORE[1],'');me.shake=.3;dmgFlash();sfx.leak();
+ if(me.core<=0){me.core=0;me.dying=true;addFx(me,'boomL',CORE[0],CORE[1],'');}
+ else{me.waveDone=true;UI.banner('🏳 WAVE放棄 (-'+dmg+')');}
+}
+$('ffwave').onclick=()=>giveUpWave();
 $('pausebtn').onclick=()=>{if(MODE==='solo'&&gameActive&&G&&!G.over){PAUSED=true;$('md-pause').classList.add('on');}};
 $('bt-resume').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');};
 $('bt-quit').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');backTitle();};
