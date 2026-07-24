@@ -651,7 +651,9 @@ const HIT_COL=['#fff3c0','#ffe08a','#ffc078','#ff9a8a','#e0b0ff','#c8f2ff'];
 const twTier=tw=>{const n=tw&&tw.us?(tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)):0;return n>=13?5:n>=10?4:n>=7?3:n>=4?2:n>=2?1:0;};
 const twDmgM=tw=>1+.18*(tw.us?tw.us.d:0);
 const twRateM=tw=>1-.09*(tw.us?tw.us.r:0);
-const twRngM=tw=>1+.08*(tw.us?tw.us.g:0);
+const RNG_STEP=.13;/* 📡射程強化1段あたりの拡大率(2026-07-25: .08→.13へ拡大) */
+const twRngM=tw=>1+RNG_STEP*(tw.us?tw.us.g:0);
+const twRngMlv=g=>1+RNG_STEP*g;/* 指定Lvでの射程倍率(強化前プレビュー用) */
 const ZOMBIES=[
  {id:'walk',n:'ウォーカー',hp:72,sp:78,bt:12,dmg:1,mw:1,sc:1,atk:14,ar:.8,c:'#7a8f5f'},
  {id:'run',n:'ランナー',hp:46,sp:170,bt:14,dmg:1,mw:2,sc:.9,atk:10,ar:.6,c:'#a5b04a'},
@@ -2243,7 +2245,13 @@ function renderCamp(C,t){
    c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(eco?'🏭':'+',sx,sy+12);}
   else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0});
  }
- if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){c.strokeStyle='rgba(232,163,61,.8)';c.lineWidth=3;c.setLineDash([10,10]);c.beginPath();c.arc(SLOTS[SEL][0],SLOTS[SEL][1],TOWERS[tw.ti].rng*twRngM(tw),0,7);c.stroke();c.setLineDash([]);}}
+ if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){const T4=TOWERS[tw.ti],[sxx,syy]=SLOTS[SEL];
+   /* 射程を強化するとどこまで広がるか、強化前に薄い緑の輪でプレビュー */
+   if((tw.us?tw.us.g:0)<USTAT_MAX){const nr=T4.rng*twRngMlv((tw.us?tw.us.g:0)+1);
+    c.fillStyle='rgba(120,200,90,.10)';c.beginPath();c.arc(sxx,syy,nr,0,7);c.fill();
+    c.strokeStyle='rgba(150,230,110,.9)';c.lineWidth=3;c.setLineDash([6,8]);c.beginPath();c.arc(sxx,syy,nr,0,7);c.stroke();c.setLineDash([]);}
+   /* 現在の射程(オレンジの実線寄り) */
+   c.strokeStyle='rgba(232,163,61,.9)';c.lineWidth=3;c.setLineDash([10,10]);c.beginPath();c.arc(sxx,syy,T4.rng*twRngM(tw),0,7);c.stroke();c.setLineDash([]);}}
  /* 砲弾 */
  for(const sh of C.shells){const p2=sh.t/sh.fl;const px=sh.x+(sh.tx-sh.x)*p2,py=sh.y+(sh.ty-sh.y)*p2-Math.sin(Math.PI*p2)*110;
   c.fillStyle='#3c4136';c.beginPath();c.arc(px,py,7,0,7);c.fill();c.stroke();}
@@ -2564,7 +2572,9 @@ function openBM(si){
   if(!tw.us)tw.us={d:0,r:0,g:0};
   const rows=twStats(tw.ti).map(st=>{
    const lvv=tw.us[st]||0,mx=lvv>=USTAT_MAX,p=mx?null:stCost(tw,st);
-   const lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+twChain(T,tw)+'体)':'');
+   let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+twChain(T,tw)+'体)':'');
+   /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
+   if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
    const pips='◆'.repeat(lvv)+'◇'.repeat(USTAT_MAX-lvv);
    return `<button class="btn grn sm bm-us" data-us="${st}" ${mx||m.scrap<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':'⚙️'+fmt(p)}</button>`;
   }).join('');
