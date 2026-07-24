@@ -58,11 +58,19 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #scr-game.on{display:block}
 #cvwrap{position:absolute;inset:0;background:#000}
 #cv{position:absolute;inset:0;width:100%;height:100%}
-#topbar{position:absolute;top:0;left:0;width:auto;display:flex;align-items:center;gap:6px;background:none;padding:8px;padding-left:max(8px,env(safe-area-inset-left));padding-top:max(8px,env(safe-area-inset-top));pointer-events:none;z-index:5}
+#topbar{position:absolute;top:0;left:0;width:auto;display:flex;align-items:center;gap:7px;background:none;padding:8px;padding-left:max(8px,env(safe-area-inset-left));padding-top:max(8px,env(safe-area-inset-top));pointer-events:none;z-index:5}
 #topbar>*{pointer-events:auto}
-#wavebadge{background:var(--rust);color:#fff;border-radius:10px;padding:3px 10px;font-weight:900;font-size:15px;white-space:nowrap;border:2px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.4)}
-#energybox{background:var(--toxic);color:var(--ink);border:2px solid #fff;border-radius:10px;padding:3px 10px;font-weight:900;font-size:15px;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.4)}
-#pausebtn,#ffbtn,#mutebtn{background:rgba(36,31,25,.85);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:4px 10px;font-weight:900;display:none}
+.hudpanel{display:flex;align-items:center;gap:7px;background:linear-gradient(#3d362d,#241f19);border:2px solid var(--paper);border-radius:11px;padding:4px 11px;box-shadow:0 3px 0 rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.09);color:var(--paper);font-weight:900;white-space:nowrap}
+#wavepanel{border-color:var(--rust);background:linear-gradient(#4a2a20,#2a1712)}
+#wavebadge{font-size:15px;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.5)}
+#wprog{width:82px;height:9px;border:2px solid rgba(242,236,220,.75);border-radius:6px;background:#171310;overflow:hidden}
+#wprog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--rust),var(--amber));transition:width .35s}
+#corepanel{font-size:14px}
+#corebar{width:72px;height:9px;border:2px solid rgba(242,236,220,.75);border-radius:6px;background:#171310;overflow:hidden}
+#corebar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#7ba33f,#b7e07a)}
+#corelbl{font-size:13px;color:#b7e07a;min-width:22px;text-align:right}
+#energybox{font-size:15px;color:#ffd23d}
+#pausebtn,#ffbtn,#mutebtn{background:linear-gradient(#3d362d,#241f19);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:5px 10px;font-weight:900;display:none;box-shadow:0 3px 0 rgba(0,0,0,.45)}
 #mutebtn{display:inline-block}
 #minis{position:absolute;top:8px;right:0;display:flex;flex-direction:column;gap:5px;padding:0 8px;padding-right:max(8px,env(safe-area-inset-right));padding-top:max(0px,env(safe-area-inset-top));z-index:5}
 .mini{min-width:132px;max-width:152px;background:rgba(242,236,220,.93);border:2px solid var(--ink);border-radius:10px;padding:4px 8px;font-size:11px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.35)}
@@ -284,8 +292,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div id="dmgflash"></div>
   </div>
   <div id="topbar">
-    <span id="wavebadge">WAVE 1</span>
-    <span id="energybox">⚙️ 0</span>
+    <div class="hudpanel" id="wavepanel"><span id="wavebadge">WAVE 1</span><div id="wprog"><i></i></div></div>
+    <div class="hudpanel" id="corepanel"><span>🏕</span><div id="corebar"><i></i></div><span id="corelbl">50</span></div>
+    <div class="hudpanel" id="energybox">⚙️ 0</div>
     <button id="pausebtn">⏸</button>
     <button id="ffbtn">⏩ ×1</button>
     <button id="mutebtn">🔊</button>
@@ -458,9 +467,9 @@ const twRngM=tw=>1+.08*(tw.us?tw.us.g:0);
 const ZOMBIES=[
  {id:'walk',n:'ウォーカー',hp:72,sp:78,bt:12,dmg:1,mw:1,sc:1,atk:14,ar:.8,c:'#7a8f5f'},
  {id:'run',n:'ランナー',hp:46,sp:170,bt:14,dmg:1,mw:2,sc:.9,atk:10,ar:.6,c:'#a5b04a'},
- {id:'arm',n:'アーマード',hp:230,sp:57,bt:26,dmg:2,mw:3,armor:1,sc:1.1,atk:24,ar:1,c:'#5c6b78'},
- {id:'blo',n:'ブローター',hp:330,sp:50,bt:30,dmg:2,mw:4,split:2,sc:1.35,atk:30,ar:1.2,c:'#8f6fae'},
- {id:'scr',n:'スクリーマー',hp:115,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:12,ar:.9,c:'#d67ba8'},
+ {id:'arm',n:'アーマード',hp:185,sp:57,bt:26,dmg:2,mw:3,armor:1,sc:1.1,atk:24,ar:1,c:'#5c6b78'},
+ {id:'blo',n:'ブローター',hp:265,sp:50,bt:30,dmg:2,mw:4,split:2,sc:1.35,atk:30,ar:1.2,c:'#8f6fae'},
+ {id:'scr',n:'スクリーマー',hp:100,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:12,ar:.9,c:'#d67ba8'},
  {id:'dog',n:'感染ハウンド',hp:62,sp:215,bt:20,dmg:1,mw:8,sc:.85,atk:9,ar:.45,c:'#b0713d'},
  {id:'jug',n:'ジャガーノート',hp:2400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:85,ar:1.2,c:'#c14b3e'}
 ];
@@ -702,7 +711,7 @@ function buildTide(wave){
  if(wave>=3){const ne=1+Math.floor(wave/8);
   for(let k=0;k<ne;k++){const e=pool[ri(Math.floor(pool.length*.35),pool.length-1)];
    if(!e||e.boss||e.z.elite)continue;
-   e.z.elite=1;e.z.hp*=3.2;e.z.mhp*=3.2;e.z.bt=Math.round(e.z.bt*3);e.z.atk*=1.4;e.z.sp*=.92;}}
+   e.z.elite=1;e.z.hp*=2.6;e.z.mhp*=2.6;e.z.bt=Math.round(e.z.bt*3);e.z.atk*=1.4;e.z.sp*=.92;}}
  if(G.pve&&D.sp!==1)for(const e of pool)e.z.sp*=D.sp;
  for(let pi=0;pi<G.players.length;pi++){const P=G.players[pi];
   for(const s of P.inc.sent){for(let i=0;i<s.cnt;i++)pool.splice(ri(0,pool.length),0,{dl:.4,z:zSpec(s.zi,mul,wave,1,s.from),tgt:pi});}}
@@ -1284,7 +1293,15 @@ function updHUD(){const m=meV();if(!m)return;
  const wv=MODE==='client'?(CS.w||1):(G?G.wave:1);const inW=MODE==='client'?CS.ph===1:(G&&G.phase==='wave');
  const zc=MODE==='client'?(CC?CC.zombies.length:0):(G?G.players[G.myIdx].zombies.length:0);
  const pr=MODE==='client'?(CS.pr||0):(G?G.tide.pool.length:0);
- $('wavebadge').textContent='WAVE '+wv+((G&&G.pve)||COOP?'/'+STAGE_W:'')+(inW&&!m.waveDone?' ・🧟'+zc+(pr>0?'+':''):'');
+ $('wavebadge').textContent='WAVE '+Math.max(1,wv)+((G&&G.pve)||COOP?'/'+STAGE_W:'')+(inW&&wv%5===0?' 💀':'')+(inW&&!m.waveDone?' 🧟'+zc+(pr>0?'+':''):'');
+ /* 波進捗バー: 撃破率(概算) */
+ {const totalW=(m.totalWave||0)+pr;
+  const pct=inW?(totalW>0?clamp((totalW-pr-zc)/totalW,0,1):(m.waveDone?1:0)):0;
+  const wp=$('wprog').querySelector('i');if(wp&&wp.style)wp.style.width=Math.round(pct*100)+'%';}
+ /* コアHPバー */
+ {const cr=clamp(m.core/m.coreMax,0,1),cb=$('corebar').querySelector('i');
+  if(cb&&cb.style){cb.style.width=Math.round(cr*100)+'%';cb.style.background=cr>.4?'linear-gradient(90deg,#7ba33f,#b7e07a)':'linear-gradient(90deg,#93381E,#C1502E)';}
+  const cl=$('corelbl');cl.textContent=Math.ceil(m.core);if(cl.style)cl.style.color=cr>.4?'#b7e07a':'#ff8a6a';}
  $('energybox').textContent='⚙️ '+fmt(m.scrap);
  const sb=$('strikebtn');sb.style.background=`conic-gradient(var(--rust) ${m.charge*100}%,#4a4034 0)`;sb.classList.toggle('rdy',m.charge>=1&&!AIM);
  if(!tipSt&&m.charge>=1&&inW){tipSt=true;toast('🎯 エアストライク準備完了!ボタン→地点タップで爆撃!');}
