@@ -132,14 +132,18 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #strikehint{position:absolute;left:12px;bottom:78px;color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #flaghint{position:absolute;left:12px;bottom:98px;color:#fff;font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #deck{display:flex;gap:5px;overflow-x:auto;flex:0 1 auto;padding-bottom:2px}
-#deck .dk{position:relative;flex:0 0 auto;width:60px;height:66px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:2px 0 0;overflow:hidden}
-#deck .dk canvas{width:32px;height:32px;display:block;margin:0 auto}
+#deck .dk{position:relative;flex:0 0 auto;width:62px;height:78px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:2px 0 0;overflow:hidden}
+#deck .dk canvas{width:56px;height:42px;display:block;margin:0 auto}
 /* 兵科名は下から2段目の黒帯に白文字で出す(淡色カードに黒文字だと潰れて読めないため) */
-#deck .dk .dn{position:absolute;left:0;right:0;bottom:16px;display:block;font-size:12px;font-weight:900;color:#f2ecdc;background:rgba(36,31,25,.9);line-height:16px;height:16px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.3px}
+#deck .dk .dn{position:absolute;left:0;right:0;bottom:15px;display:block;font-size:12px;font-weight:900;color:#f2ecdc;background:rgba(36,31,25,.9);line-height:16px;height:16px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.3px}
 /* 出撃コストは下端の黒帯に金文字ではっきり出す(背景と同化して読めない問題の対策) */
 #deck .dk .dc{position:absolute;left:0;right:0;bottom:0;display:block;font-size:11px;font-weight:900;color:#ffd23d;background:var(--ink);line-height:16px;height:16px;letter-spacing:-.2px}
 #deck .dk .cdov{position:absolute;inset:0;pointer-events:none;border-radius:8px}
-#deck .dk .lk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(0,0,0,.55)}
+/* 未解放の印は右上の小さなバッジだけにする(全面に被せると兵科の姿が見えなくなるため)。
+   絵は灰色にして「まだ使えない」と分かるようにする */
+#deck .dk .lk{position:absolute;right:1px;top:1px;width:19px;height:19px;display:flex;align-items:center;justify-content:center;font-size:12px;background:rgba(10,9,8,.8);border-radius:7px}
+#deck .dk.lkon canvas{filter:grayscale(1) brightness(.72)}
+#deck .dk.lkon{background:#b9b0a0}
 #deck .dk.poor{opacity:.55}
 #deck .dk.t3{border-color:var(--amber)}
 #deck .dk.t4{border-color:#ffd23d;box-shadow:0 3px 0 #000,0 0 9px rgba(232,163,61,.85)}
@@ -150,10 +154,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 @media (pointer:coarse){
  #abar{gap:6px;padding:3px max(4px,env(safe-area-inset-right)) max(3px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
  #deck{gap:4px}
- #deck .dk{width:58px;height:62px}
- #deck .dk canvas{width:30px;height:30px}
- #deck .dk .dn{font-size:12px;line-height:16px;height:16px;bottom:16px}
- #deck .dk .dc{font-size:11px;line-height:16px;height:16px}
+ #deck .dk{width:58px;height:72px}
+ #deck .dk canvas{width:52px;height:39px}
+ #deck .dk .dn{font-size:12px;line-height:15px;height:15px;bottom:14px}
+ #deck .dk .dc{font-size:11px;line-height:14px;height:14px}
  #flagbtn,#strikebtn,#pushbtn{width:54px;height:54px}
  #abar #ffwave,#abar #mutebtn{height:54px;padding:0 9px;font-size:12px}
  #flagbtn{font-size:22px}
@@ -1394,9 +1398,10 @@ function makeThumbs(){for(let i=0;i<TOWERS.length;i++){const cvv=document.create
  for(let i=0;i<UNITS.length;i++)UTHUMBS[i]=bakeUThumb(i);}
 /* 出撃デッキのサムネ: 一度描いてから「実際に絵がある範囲」を測り、枠いっぱいに描き直す。
    そのまま縮小するとカードの中で人が豆粒になって姿が分からないため */
+const UTHW=104,UTHH=78;/* デッキのサムネの大きさ(カードの絵の欄と同じ横長。犬は横幅・人は高さいっぱいになる) */
 function bakeUThumb(i){
- /* まず大きめの下絵に描く(切れないように)→絵のある範囲を測る→枠に合わせて縮小して焼く */
- const B=180,S=88,tmp=document.createElement('canvas');tmp.width=B;tmp.height=B;
+ /* まず大きめの下絵に描く(切れないように)→絵のある範囲を測る→枠いっぱいに縮小して焼く */
+ const B=200,tmp=document.createElement('canvas');tmp.width=B;tmp.height=B;
  const c=tmp.getContext('2d');
  const ts=1.35/TSCALE[uTier(i)-1];
  c.translate(B*.5,B*.78);c.scale(ts,ts);drawUnit(c,i,0,0,1,.4,0,{});
@@ -1404,12 +1409,12 @@ function bakeUThumb(i){
  try{const d=c.getImageData(0,0,B,B).data;
   for(let y=0;y<B;y++)for(let x=0;x<B;x++){if(d[(y*B+x)*4+3]>12){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}
  }catch(e){}
- const out=document.createElement('canvas');out.width=S;out.height=S;
+ const out=document.createElement('canvas');out.width=UTHW;out.height=UTHH;
  const o=out.getContext('2d');
  if(x1<=x0||y1<=y0){/* 測れない環境(ヘッドレステスト等)は等倍で置くだけ */
-  o.drawImage(tmp,-B*.5+S*.5,-B*.78+S*.78);return out;}
- const m=4,k=Math.min((S-m*2)/(x1-x0+1),(S-m*2)/(y1-y0+1));
- o.translate(S/2,S/2);o.scale(k,k);o.translate(-(x0+x1+1)/2,-(y0+y1+1)/2);o.drawImage(tmp,0,0);
+  o.drawImage(tmp,UTHW*.5-B*.5,UTHH*.82-B*.78);return out;}
+ const m=3,k=Math.min((UTHW-m*2)/(x1-x0+1),(UTHH-m*2)/(y1-y0+1));
+ o.translate(UTHW/2,UTHH/2);o.scale(k,k);o.translate(-(x0+x1+1)/2,-(y0+y1+1)/2);o.drawImage(tmp,0,0);
  return out;}
 /* ============ シミュレーション ============ */
 let EID=1;
@@ -2506,7 +2511,7 @@ function updHUD(){const m=meV();if(!m)return;
   const dc2=uDepCost(m,i);
   b.classList.toggle('poor',m.scrap<dc2);
   const dcEl=b.querySelector('.dc');if(dcEl)dcEl.textContent='⚙️'+dc2;
-  b.querySelector('.lk').style.display=i<uun?'none':'flex';
+  const lkOn=i>=uun;b.querySelector('.lk').style.display=lkOn?'flex':'none';b.classList.toggle('lkon',lkOn);
   b.querySelector('.cdov').style.background=cd>0?`conic-gradient(rgba(10,9,8,.74) ${cd/U.cd*100}%,transparent 0)`:'none';
   b.disabled=m.dead||i>=uun||cd>0||m.scrap<dc2;
  }
@@ -2719,7 +2724,7 @@ let DECKB=[];
 function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];
  const dl=metaUnitCap();
  for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc+'(長押しで部隊強化)';
-  b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dn">${U.n}</span><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
+  b.innerHTML=`<canvas width="${UTHW}" height="${UTHH}"></canvas><span class="dn">${U.n}</span><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
   /* 長押し=部隊強化 / 短押し=出撃 */
   let lpT=null,lpFired=false;

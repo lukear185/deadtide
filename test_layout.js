@@ -2,8 +2,8 @@
    使い方: node test_layout.js  → 倍率・余白と、全スロット/コア/道路がUIに被っていないかを判定 */
 const fs=require('fs');
 const RECTS={
- /* 操作バー: 上下padding(3+7) + カード高62 = 72 */
- abar:{left:0,top:321,right:852,bottom:393,width:852,height:72},
+ /* 操作バー: 上下padding(3+7) + カード高72 = 82 (スマホ指定。PCは card78 → 86) */
+ abar:{left:0,top:311,right:852,bottom:393,width:852,height:82},
  /* 上のHUD: WAVE+コア+⚙️+🔩+⏸ まで(🏳放棄と🔊は操作バーへ移動済み) */
  topbar:{left:59,top:3,right:520,bottom:32,width:461,height:29},
  minis:{left:0,top:0,right:0,bottom:0,width:0,height:0},
