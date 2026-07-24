@@ -756,9 +756,10 @@ const uTier=i=>i<6?1:i<14?2:i<22?3:4;
 const TSCALE=[1,1.06,1.14,1.24];
 for(let i=0;i<UNITS.length;i++){const tb=[1,1,1.1,1.3][uTier(i)-1];
  /* 2026-07-25 指示: 全兵科のHPを2倍・遠距離(射程100以上)の攻撃力を1.5倍。
-    ただし基本7種は「初期が強すぎる」との実機評価を受けて控えめに(HP1.5倍・攻撃-12%)。
-    研究所で解放する上位兵科は据え置き=解放する動機を残す */
- const bas=i<BASE_U;
+    ただし基本兵科は「初期が強すぎる」との実機評価を受けて控えめに(HP1.5倍・攻撃-12%)。
+    ⚠最初から持っている猟犬とバットの2体だけは元の強さに戻す(2026-07-25ユーザー指示)。
+    研究所で解放する上位兵科も据え置き=解放する動機を残す */
+ const bas=i<BASE_U&&['hnd','bat'].indexOf(UNITS[i].id)<0;
  UNITS[i].hp=Math.round(UNITS[i].hp*UBUF*tb*(bas?1.5:2));
  UNITS[i].atk=Math.round(UNITS[i].atk*UBUF*tb*(UNITS[i].rng>=100?1.5:1)*(bas?.88:1));
  UNITS[i].cost=Math.max(10,Math.round(UNITS[i].cost/2.5));/* 元の40%(1/5指示→後に2倍指示) */}
