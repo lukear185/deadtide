@@ -248,7 +248,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <button class="btn sm sel" data-v="2">古参</button>
         <button class="btn sm" data-v="3">鬼軍曹</button>
         <button class="btn sm" data-v="4">悪夢</button>
+        <button class="btn sm" id="dif-nm" data-v="5" style="display:none;background:#3a1020;color:#ff8a6a;border-color:#8a3a5a">🌑ナイトメア</button>
       </div>
+      <p class="note" id="nm-note" style="margin:6px 0 0;font-size:11px;color:#ff8a6a;display:none">🌑 敵の生態系が一新される。獣の群れが来る。</p>
       <p class="note" style="margin:10px 0 6px">装備砲撃(研究所で新型を解放)</p>
       <div class="seg" id="seg-stk"></div>
     </div>
@@ -437,8 +439,8 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0};
-try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;}}catch(e){}
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0};
+try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;}}catch(e){}
 function saveMeta(){try{localStorage.setItem('dt_meta',JSON.stringify(META));}catch(e){}}
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
@@ -503,7 +505,14 @@ function bossActive(){
  const F=G.coop?G.players[0]:G.players[G.myIdx];
  return !!(F&&F.zombies.some(z=>z.boss));
 }
+const MELO_NM=[110,110,116,110,98,92,110,87,110,116,123,110,92,87,82,73];
 function bgmOn(){if(bgmTimer)return;bgmTimer=setInterval(()=>{if(!AC||muted)return;
+ if(typeof isNM==='function'&&isNM()&&!bossActive()){
+  const f=MELO_NM[bgmStep%MELO_NM.length];
+  beep(f,f*.97,.26,'sawtooth',.06);beep(f/2,f/2,.4,'triangle',.05);
+  if(bgmStep%4===0)beep(44,30,.28,'sawtooth',.16);
+  if(bgmStep%6===5&&Math.random()<.6)sfx.moanBig();
+  bgmStep++;return;}
  const epic=bossActive();
  if(epic){const f=MELO_B[bgmStep%MELO_B.length];
   beep(f,f,.17,'sawtooth',.065);beep(f*2,f*2,.12,'square',.03);
@@ -593,10 +602,21 @@ const ZOMBIES=[
  {id:'stlk',n:'ストーカー',hp:190,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:30,ar:.5,c:'#6b4a7a'},
  {id:'wrth',n:'レイス',hp:300,sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
  {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,atk:56,ar:1.1,c:'#5a6470'},
- {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:60,ar:1.2,aoe:5,c:'#c14b3e'}
+ {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:60,ar:1.2,aoe:5,c:'#c14b3e'},
+ /* ===== ナイトメア専用: 変異した獣たち(nm:1 の個体は通常の波には出ない) ===== */
+ {id:'nmRat',n:'巨鼠の群れ',hp:95,sp:205,bt:26,dmg:1,mw:1,nm:1,w:1.2,sc:.8,atk:16,ar:.35,c:'#6b5f4a'},
+ {id:'nmBoar',n:'変異猪',hp:430,sp:150,bt:64,dmg:3,mw:1,nm:1,w:.7,sc:1.2,atk:52,ar:1,c:'#7a5a3a'},
+ {id:'nmSpid',n:'肉蜘蛛',hp:260,sp:88,bt:58,dmg:2,mw:2,nm:1,noblock:1,w:.55,sc:1.05,atk:0,ar:9,c:'#4a3a5a'},
+ {id:'nmBat',n:'吸血蝙蝠',hp:150,sp:240,bt:48,dmg:2,mw:3,nm:1,noblock:1,w:.5,sc:.9,atk:0,ar:9,c:'#5a4a6b'},
+ {id:'nmCrow',n:'腐肉鴉',hp:190,sp:170,bt:54,dmg:2,mw:4,nm:1,aura:1,w:.55,sc:.95,atk:24,ar:.6,c:'#3f3a44'},
+ {id:'nmBear',n:'屍熊',hp:1050,sp:66,bt:150,dmg:5,mw:6,nm:1,armor:1,w:.35,sc:1.7,atk:78,ar:1.1,aoe:3,c:'#5a4a3a'},
+ {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:78,ar:1.1,aoe:7,c:'#8a3a5a'}
 ];
 const SENDABLE=[0,1,2,3];
-const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss);
+const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&!z.nm);
+const NM_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm);
+const NM_DIFF=5;/* 難易度インデックス: 5=ナイトメア */
+const isNM=()=>!!(G&&G.pveDiff===NM_DIFF);
 const UNITS=[
  {id:'bat',n:'バット',cost:60,cd:2.2,hp:130,atk:18,rate:.7,rng:36,sp:72,type:'melee',c:'#c9a13d',dsc:'基本の殴り屋'},
  {id:'hnd',n:'猟犬',cost:50,cd:3,hp:65,atk:12,rate:.5,rng:34,sp:150,type:'melee',c:'#8a6a45',dsc:'速い・安い・噛む'},
@@ -653,7 +673,8 @@ const D5=[
  {n:'兵長',hp:.84,cnt:.92,sp:1,boss:.9,scrap:275,pay:1.08},
  {n:'古参',hp:1,cnt:1,sp:1,boss:1,scrap:250,pay:1},
  {n:'鬼軍曹',hp:1.18,cnt:1.1,sp:1.05,boss:1.15,scrap:225,pay:.95},
- {n:'悪夢',hp:1.42,cnt:1.25,sp:1.1,boss:1.35,scrap:200,pay:.9}
+ {n:'悪夢',hp:1.42,cnt:1.25,sp:1.1,boss:1.35,scrap:200,pay:.9},
+ {n:'ナイトメア',hp:1.7,cnt:1.4,sp:1.18,boss:1.6,scrap:200,pay:.95}
 ];
 function D5v(){return D5[(G&&G.pveDiff!=null?G.pveDiff:2)]||D5[2];}
 const COOP_PAY=[1,.65,.5];
@@ -712,6 +733,90 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
  if(o.elite){c.shadowColor='#b04ad0';c.shadowBlur=13;}
  c.lineWidth=2.6/s;c.strokeStyle=INK;
+ /* ===== ナイトメアの獣たち ===== */
+ if(Z.id==='nmRat'){/* 巨鼠 */
+  c.fillStyle=Z.c;rr(c,-16,-15,30,12,7);c.fill();c.stroke();
+  c.fillRect(-11+walk*4,-4,4,5);c.fillRect(6-walk*4,-4,4,5);
+  c.strokeStyle='#a08a6a';c.lineWidth=2.4/s;c.beginPath();c.moveTo(-16,-9);c.quadraticCurveTo(-30,-6,-32,-14);c.stroke();c.strokeStyle=INK;
+  c.fillStyle=Z.c;c.beginPath();c.moveTo(14,-16);c.lineTo(26,-11);c.lineTo(14,-6);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.arc(12,-19,4,0,7);c.fill();c.stroke();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(19,-12,1.6,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='nmBoar'){/* 変異猪 */
+  c.fillStyle=Z.c;rr(c,-20,-30,40,22,10);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.8);
+  c.fillRect(-14+walk*4,-9,6,9);c.strokeRect(-14+walk*4,-9,6,9);c.fillRect(8-walk*4,-9,6,9);c.strokeRect(8-walk*4,-9,6,9);
+  c.fillStyle=Z.c;c.beginPath();c.arc(20,-26,10,0,7);c.fill();c.stroke();
+  c.fillStyle='#F2ECDC';c.beginPath();c.moveTo(24,-22);c.lineTo(34,-28);c.lineTo(25,-18);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3a3128';for(let k=0;k<4;k++){c.beginPath();c.moveTo(-8+k*7,-30);c.lineTo(-5+k*7,-38);c.lineTo(-2+k*7,-30);c.closePath();c.fill();}
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(24,-29,2,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='nmSpid'){/* 肉蜘蛛 */
+  c.strokeStyle=shade(Z.c,1.4);c.lineWidth=3/s;
+  for(let k=0;k<4;k++){const a3=Math.sin(t*6+k*1.5+ph)*6;
+   c.beginPath();c.moveTo(-4,-14);c.lineTo(-16-k*4,-24+a3);c.lineTo(-20-k*5,-2);c.stroke();
+   c.beginPath();c.moveTo(4,-14);c.lineTo(16+k*4,-24-a3);c.lineTo(20+k*5,-2);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(-6,-18,14,11,0,0,7);c.fill();c.stroke();
+  c.beginPath();c.arc(10,-16,8,0,7);c.fill();c.stroke();
+  c.fillStyle='#ff5a4a';for(let k=0;k<4;k++){c.beginPath();c.arc(12+(k%2)*5,-19+Math.floor(k/2)*5,1.6,0,7);c.fill();}
+  c.restore();return;}
+ if(Z.id==='nmBat'){/* 吸血蝙蝠(飛行) */
+  const fl=Math.sin(t*14+ph);
+  c.translate(0,-22-Math.abs(fl)*4);
+  c.fillStyle=shade(Z.c,.75);
+  c.beginPath();c.moveTo(-2,-10);c.lineTo(-26,-20-fl*10);c.lineTo(-22,-2);c.lineTo(-2,-4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(2,-10);c.lineTo(26,-20+fl*10);c.lineTo(22,-2);c.lineTo(2,-4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=Z.c;rr(c,-6,-16,12,16,5);c.fill();c.stroke();
+  c.beginPath();c.arc(2,-19,6,0,7);c.fill();c.stroke();
+  c.fillStyle=Z.c;c.beginPath();c.moveTo(-2,-24);c.lineTo(-4,-30);c.lineTo(1,-25);c.closePath();c.fill();
+  c.beginPath();c.moveTo(5,-24);c.lineTo(7,-30);c.lineTo(8,-24);c.closePath();c.fill();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(4,-19,1.6,0,7);c.fill();
+  c.fillStyle='#F2ECDC';c.beginPath();c.moveTo(1,-15);c.lineTo(3,-11);c.lineTo(5,-15);c.closePath();c.fill();
+  c.restore();return;}
+ if(Z.id==='nmCrow'){/* 腐肉鴉 */
+  const fl=Math.sin(t*11+ph);
+  c.translate(0,-14-Math.abs(fl)*3);
+  c.fillStyle=shade(Z.c,.8);
+  c.beginPath();c.moveTo(-4,-16);c.lineTo(-24,-26-fl*9);c.lineTo(-6,-8);c.closePath();c.fill();c.stroke();
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-14,13,9,0,0,7);c.fill();c.stroke();
+  c.beginPath();c.arc(11,-20,6,0,7);c.fill();c.stroke();
+  c.fillStyle='#c9a13d';c.beginPath();c.moveTo(15,-20);c.lineTo(26,-18);c.lineTo(15,-16);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(13,-22,1.6,0,7);c.fill();
+  c.fillStyle=shade(Z.c,1.1);c.beginPath();c.moveTo(-2,-16);c.lineTo(-22,-24+fl*9);c.lineTo(-4,-8);c.closePath();c.fill();c.stroke();
+  c.restore();return;}
+ if(Z.id==='nmBear'){/* 屍熊 */
+  c.fillStyle=Z.c;rr(c,-24,-44,48,34,14);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.8);
+  c.fillRect(-18+walk*5,-12,10,13);c.strokeRect(-18+walk*5,-12,10,13);
+  c.fillRect(8-walk*5,-12,10,13);c.strokeRect(8-walk*5,-12,10,13);
+  c.fillStyle=Z.c;c.beginPath();c.arc(22,-44,13,0,7);c.fill();c.stroke();
+  c.beginPath();c.arc(14,-54,5,0,7);c.fill();c.stroke();
+  c.beginPath();c.arc(29,-54,5,0,7);c.fill();c.stroke();
+  c.fillStyle='#3a3128';c.beginPath();c.arc(31,-42,4,0,7);c.fill();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(26,-47,2.2,0,7);c.fill();
+  c.fillStyle='#F2ECDC';for(let k=0;k<3;k++){c.beginPath();c.moveTo(24+k*3,-38);c.lineTo(26+k*3,-33);c.lineTo(28+k*3,-38);c.closePath();c.fill();}
+  c.strokeStyle='#8a3a3a';c.lineWidth=2.4/s;
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(-16+k*10,-40);c.lineTo(-10+k*10,-22);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.restore();return;}
+ if(Z.id==='nmHorr'){/* 肉塊の主(ナイトメアのボス) */
+  const pl=Math.sin(t*2.2+ph)*3;
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-34,32+pl,30-pl*.5,0,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.75);
+  for(let k=0;k<4;k++){const a4=Math.sin(t*3+k*1.7+ph)*7;
+   c.beginPath();c.ellipse(-24+k*16,-6+a4*.3,9,7,0,0,7);c.fill();c.stroke();}
+  c.strokeStyle=shade(Z.c,1.35);c.lineWidth=4/s;
+  for(let k=0;k<5;k++){const a5=Math.sin(t*2.6+k*1.3+ph)*10;
+   c.beginPath();c.moveTo(-20+k*10,-56);c.quadraticCurveTo(-24+k*11+a5,-74,-16+k*9+a5,-86);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle='#ffd23d';
+  for(const e2 of [[-14,-44,6],[6,-50,7],[18,-36,5],[-4,-28,5],[14,-20,4]]){
+   c.beginPath();c.arc(e2[0],e2[1],e2[2],0,7);c.fill();c.stroke();
+   c.fillStyle='#3a1020';c.beginPath();c.arc(e2[0]+1.5,e2[1],e2[2]*.45,0,7);c.fill();c.fillStyle='#ffd23d';}
+  c.fillStyle='#3a1020';c.beginPath();c.ellipse(0,-16,16,7,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#F2ECDC';for(let k=0;k<5;k++){c.beginPath();c.moveTo(-12+k*6,-20);c.lineTo(-10+k*6,-12);c.lineTo(-7+k*6,-20);c.closePath();c.fill();}
+  c.restore();return;}
  if(Z.id==='crwl'){/* クローラー: 地を這ってすり抜ける */
   c.fillStyle=Z.c;rr(c,-18,-14,36,12,6);c.fill();c.stroke();
   c.strokeStyle=INK;c.lineWidth=3/s;
@@ -1096,7 +1201,9 @@ function buildTide(wave){
  T.mul=mul;
  const laneN=G.coop?1:alive;
  const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(wave>=8?1+(wave-7)*.03:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1));
- const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave);
+ /* ナイトメアは獣ゾンビだけの完全別プール */
+ const nmOn=isNM();
+ const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave&&(nmOn?ZOMBIES[i].nm:!ZOMBIES[i].nm));
  const pool=[];
  /* 強敵・すり抜け個体は重み(w)で出現を絞る */
  const zwt=zp.map(i=>ZOMBIES[i].w||1),zwSum=zwt.reduce((a,b)=>a+b,0);
@@ -1104,7 +1211,7 @@ function buildTide(wave){
  for(let k=0;k<n;k++){let pick=pickZ();
   if(wave>=4&&Math.random()<Math.min(.4,wave*.03))pick=zp[zp.length-1];
   pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul,wave)});}
- if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(BOSS_ZI,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
+ if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(nmOn?NM_BOSS_ZI:BOSS_ZI,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
  /* 毎ウェーブのエリート個体(W3以降・後半に配置) */
  if(wave>=3){const ne=(1+Math.floor(wave/8))*(G.coop?G.np:1);
   for(let k=0;k<ne;k++){const e=pool[ri(Math.floor(pool.length*.35),pool.length-1)];
@@ -1689,9 +1796,17 @@ function newGame(specs,myIdx){
 /* ソロPvEの終了時に研究ptを付与(勝敗問わず) */
 function awardMeta(){
  if(!soloMeta()||G.metaGain!=null)return;
- const mult=[.7,.85,1,1.3,1.6][G.pveDiff||2]||1;
+ const d9=G.pveDiff||2;
+ const mult=[.7,.85,1,1.3,1.6,2.1][d9]||1;
  const gain=Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.2)*mult));
- META.pts+=gain;G.metaGain=gain;saveMeta();
+ META.pts+=gain;G.metaGain=gain;
+ /* クリア記録と、悪夢クリアによるナイトメア解禁 */
+ if(G.winner===0){
+  if(!META.clr)META.clr=[0,0,0,0,0,0];
+  META.clr[d9]=1;
+  if(d9===4&&!META.nmOK){META.nmOK=1;G.nmUnlocked=1;}
+ }
+ saveMeta();
 }
 function ev(idx,msg,warn){if(!G)return;if(idx===G.myIdx){toast(msg,warn);if(warn)sfx.warn();}else if(G.evq[idx])G.evq[idx].push({m:msg,w:warn?1:0});}
 function startInterval(){
@@ -1766,10 +1881,13 @@ const SKID=[];for(let i=0;i<9;i++){const d0=rnd(120,PLEN-120),p1=pathPos(d0),p2=
  SKID.push([p1[0],p1[1],p2[0],p2[1],rnd(-16,16)]);}
 /* 時間帯の色(朝→昼→夕→宵→夜)。画面の縁と空の色でウェーブの進行を表現する */
 const TOD_STOPS=[[0,'#e8a86a'],[.22,'#8fc0e8'],[.5,'#e08a4a'],[.72,'#5b4a86'],[1,'#121a3a']];
+/* ナイトメアは終始「血の夜」 */
+const TOD_NM=[[0,'#3a1020'],[.5,'#5a1226'],[1,'#1a0610']];
 function todCol(p){
- for(let i=1;i<TOD_STOPS.length;i++){const a=TOD_STOPS[i-1],b=TOD_STOPS[i];
+ const S=(G&&G.pveDiff===5)?TOD_NM:TOD_STOPS;
+ for(let i=1;i<S.length;i++){const a=S[i-1],b=S[i];
   if(p<=b[0]){const f=(p-a[0])/((b[0]-a[0])||1);return mix(a[1],b[1],clamp(f,0,1));}}
- return TOD_STOPS[TOD_STOPS.length-1][1];
+ return S[S.length-1][1];
 }
 const CARS=[[1455,255,-.4,'#7b4a3a'],[610,185,.35,'#4a5a6b'],[985,708,.12,'#6b6b4a']];
 const TREES=[[205,300],[1502,702],[860,92],[95,410]];
@@ -1807,9 +1925,15 @@ function renderCamp(C,t){
   sg.addColorStop(0,sky);sg.addColorStop(1,mix('#F2ECDC',sky,.72));c.fillStyle=sg;c.fillRect(0,0,MW,115);}
  c.fillStyle=mix('#8a7a5e','#12151f',.35+tod*.45);
  [[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
+ if(isNM()){/* 血月 */
+  c.fillStyle='#8a1a2a';c.beginPath();c.arc(1380,48,34,0,7);c.fill();
+  c.globalAlpha=.35;c.fillStyle='#c1302e';c.beginPath();c.arc(1380,48,50+Math.sin(t*1.5)*4,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle='#5a1020';c.beginPath();c.arc(1372,42,9,0,7);c.fill();c.beginPath();c.arc(1391,56,6,0,7);c.fill();
+ }else{
  if(tod<.42){c.globalAlpha=clamp((.42-tod)*3,0,.9);c.fillStyle='#fff3c0';c.beginPath();c.arc(300,52,30,0,7);c.fill();c.globalAlpha=1;}/* 太陽 */
  if(tod>.6){c.globalAlpha=clamp((tod-.6)*3,0,1);c.fillStyle='#e8e4d2';c.beginPath();c.arc(1380,45,26,0,7);c.fill();
   c.fillStyle='#fff';for(let s=0;s<18;s++){const sx2=((s*197)%1500)+40,sy2=((s*83)%80)+12;c.globalAlpha=clamp((tod-.6)*3,0,1)*(.4+(s%3)*.2);c.fillRect(sx2,sy2,2,2);}c.globalAlpha=1;}/* 月と星 */
+ }
  c.fillStyle='rgba(0,0,0,.25)';c.fillRect(0,110,MW,6);
  /* 道路(路肩→アスファルト→ハイライト→白線→ひび→タイヤ痕) */
  const roadPath=()=>{c.beginPath();c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);};
@@ -2144,7 +2268,8 @@ const UI={
 function showResultA(){
  gameActive=false;$('interv').classList.remove('on');closeBM();
  const me=G.players[G.myIdx],win=G.pve?G.winner===0:me.place===1;
- $('res-title').textContent=G.pve?(win?'🏆 ステージ1 クリア!':'💀 拠点陥落…'):(win?'🏆 最後の生存者!':'💀 '+me.place+'位…');
+ $('res-title').textContent=G.pve?(win?(G.pveDiff===NM_DIFF?'👑 ナイトメア制覇!!':'🏆 ステージ1 クリア!'):'💀 拠点陥落…'):(win?'🏆 最後の生存者!':'💀 '+me.place+'位…');
+ if(G.nmUnlocked)setTimeout(()=>toast('🌑 最難関「ナイトメア」が解禁された! 敵の生態系が一新される…',true),400);
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=G.pve?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
  $('res-stats').innerHTML=(G.pve
@@ -2475,7 +2600,9 @@ function renderLab(){
   doneS=META.st.filter(k=>k!=='air').map(k=>STRIKES[k].ic+STRIKES[k].n),
   doneX=[].concat(META.sc0?['⚙️初期資金+'+(META.sc0*40)]:[],META.hp0?['🏕コアHP+'+(META.hp0*5)]:[]);
  const done=[].concat(doneT,doneU,doneS,doneX);
+ const clrLbl=D5.map((d,i)=>((META.clr&&META.clr[i])?'<span class="lchip">🏆'+d.n+'</span>':'')).join('')||'<span style="opacity:.6">まだクリアなし</span>';
  $('lab-items').innerHTML=
+  `<div class="labdone"><b>🏁 クリア済みの難易度</b><div>${clrLbl}${META.nmOK?'':'<span style="opacity:.6;font-size:11px"> — 悪夢をクリアすると🌑ナイトメアが解禁</span>'}</div></div>`+
   `<div class="labdone"><b>✅ 解放済み (${done.length}件)</b><div>${done.length?done.map(x=>'<span class="lchip">'+x+'</span>').join(''):'<span style="opacity:.6">まだ何も解放していない</span>'}</div></div>`+
   items.map((it,i)=>`<div class="labitem"><div class="li-d"><b>${it.t}</b>${it.d?'<br><span style="font-weight:600;font-size:12px">'+it.d+'</span>':''}</div>${it.k?`<button class="btn gold sm" data-lab="${i}" ${META.pts>=it.p?'':'disabled'}>🧬${it.p}</button>`:''}</div>`).join('');
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
@@ -2490,7 +2617,14 @@ $('bt-gu-yes').onclick=()=>{$('md-giveup').classList.remove('on');giveUpWave();}
 $('bt-gu-no').onclick=()=>$('md-giveup').classList.remove('on');
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
 $('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
-$('bt-solo').onclick=()=>{ensureAC();renderStkSeg();updLabBtn();show('setup');};
+function refreshDiffUI(){
+ const on=!!META.nmOK,b=$('dif-nm');
+ if(b&&b.style)b.style.display=on?'inline-block':'none';
+ if($('nm-note')&&$('nm-note').style)$('nm-note').style.display=on?'block':'none';
+ if(!on&&setDiff===NM_DIFF){setDiff=4;
+  document.querySelectorAll('#seg-diff .btn').forEach(x=>x.classList.toggle('sel',+x.dataset.v===4));}
+}
+$('bt-solo').onclick=()=>{ensureAC();renderStkSeg();updLabBtn();refreshDiffUI();show('setup');};
 $('bt-start-solo').onclick=()=>{ensureAC();startSolo();};
 $('bt-back1').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
