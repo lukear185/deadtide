@@ -2607,7 +2607,8 @@ function openBM(si){
  bm.style.display='block';
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
  bm.style.left=clamp(px-bw/2,6,innerWidth-bw-6)+'px';
- bm.style.top=clamp(py+40,6,innerHeight-bh-6)+'px';
+ /* 下の操作バーには絶対に被せない(被るとデッキが押せなくなる) */
+ bm.style.top=clamp(py+40,6,Math.max(6,innerHeight-bh-6-barBandPx()))+'px';
 }
 cv.addEventListener('pointerdown',e=>{
  if(!gameActive)return;
