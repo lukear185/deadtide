@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>DEADTIDE - 最終防衛拠点</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <style>
@@ -67,10 +67,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .spec #deck,.spec #strikebtn,.spec #flagbtn,.spec #pushbtn,.spec #pushtgt,.spec #strikehint,.spec #flaghint{display:none!important}
 @media (max-width:760px){.mini{min-width:104px;max-width:116px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
- #deck .dk{width:52px;height:68px}
- #deck .dk canvas{width:44px;height:44px}
- #deck .dk .dc{font-size:10px}
- #flagbtn{width:58px;height:58px;font-size:24px}
+ #deck{bottom:max(4px,env(safe-area-inset-bottom));gap:4px;max-width:calc(100vw - 172px)}
+ #deck .dk{width:44px;height:58px}
+ #deck .dk canvas{width:38px;height:38px}
+ #deck .dk .dc{font-size:9px}
+ #flagbtn{width:56px;height:56px;font-size:23px}
+ #strikebtn,#pushbtn{width:60px;height:60px}
 }
 #dmgflash{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(ellipse at center,transparent 52%,rgba(200,30,20,.55) 100%)}
 #dmgflash.on{animation:dmgf .5s ease-out}
@@ -418,6 +420,7 @@ function bgmOn(){if(bgmTimer)return;bgmTimer=setInterval(()=>{if(!AC||muted)retu
  bgmStep++;},300);}
 function bgmOff(){clearInterval(bgmTimer);bgmTimer=null;}
 document.addEventListener('pointerdown',ensureAC);
+document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
 $('mutebtn').onclick=()=>{muted=!muted;$('mutebtn').textContent=muted?'🔇':'🔊';};
 /* ============ データ ============ */
 const MW=1600,MH=760;
@@ -1118,7 +1121,9 @@ function specCamp(j){if(MODE==='client')return (CS.oc||{})[j]||null;return G&&G.
 function specName(){if(MODE==='client'){const o=(CS.ot||[]).find(x=>x.j===SPEC);return o?o.n:'?';}return G&&G.players[SPEC]?G.players[SPEC].name:'?';}
 const cv=$('cv'),ctx=cv.getContext('2d');
 let SC=1,OX=0,OY=0,DPR=1;
-function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;SC=Math.min(W/MW,H/MH);OX=(W-MW*SC)/2;OY=(H-MH*SC)/2;}
+function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
+ const hudPad=MOBILE?Math.round(64*DPR):0;/* スマホは下にデッキ帯を確保しマップと被らせない */
+ SC=Math.min(W/MW,(H-hudPad)/MH);OX=(W-MW*SC)/2;OY=(H-hudPad-MH*SC)/2;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');if(id==='game')bgmOn();else if(id==='title')bgmOff();}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
