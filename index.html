@@ -597,10 +597,11 @@ function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
  const D=D5v();
- const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(G.pve?D.hp:1)*(G.coop?1+.08*(G.np-1):1);
+ const warm=G.pve&&wave<=4?[.6,.72,.84,.94][wave-1]:1;/* PvE序盤の慣らし */
+ const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.08*(G.np-1):1);
  T.mul=mul;
  const laneN=G.coop?1:alive;
- const n=Math.round(.85*laneN*(7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt:1)*(G.coop?1+.4*(G.np-1):1));
+ const n=Math.round(.85*laneN*(7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt*warm:1)*(G.coop?1+.4*(G.np-1):1));
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave);
  const pool=[];
  for(let k=0;k<n;k++){let pick=zp[ri(0,zp.length-1)];
