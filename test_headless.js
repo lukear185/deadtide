@@ -98,9 +98,46 @@ function runPvP(tag){
  if(mins>10)console.log('WARN: 決着まで10分超('+mins+'分)');
  backTitle();
 }
+/* ---- 協力プレイ(ホスト+疑似リモート2) ---- */
+function runCoop(tag){
+ MODE='solo';
+ newGame([{name:'ホスト',kind:'me'},{name:'P2',kind:'remote'},{name:'P3',kind:'remote'}],0);
+ COOP=true;G.pve=1;G.coop=1;G.pveDiff=2;
+ for(const P of G.players)P.scrap=D5[2].scrap;
+ G.players[0].coreMax=90;G.players[0].core=90;
+ startGameUI([{i:1,n:'P2'},{i:2,n:'P3'}]);
+ frames(30,.016);
+ buildTower(G.players[0],2,0);buildTower(G.players[1],1,0);buildTower(G.players[2],5,0);
+ let guard=0,dep=[0,0,0];
+ while(G&&!G.over&&guard++<60000){
+  frames(1,.033);
+  const F=G.players[0];
+  if(G.phase==='wave'){
+   for(let pi=0;pi<3;pi++){const P=G.players[pi];
+    if(Math.random()<.02&&deployUnit(P,ri(0,P.uUn-1)))dep[pi]++;
+    if(guard%(1100+pi*300)===500)P.flagD=clamp(projPath(ri(150,1450),ri(150,700)),PLEN*.1,PLEN*.9);}
+   if(guard%120===0){for(let pi=0;pi<3;pi++){const P=G.players[pi];
+    for(let si=0;si<SLOTS.length;si++){if(!F.towers[si]&&P.unlocked>0&&P.scrap>=TOWERS[P.unlocked-1].cost){buildTower(P,si,P.unlocked-1);break;}}
+    for(let si=0;si<SLOTS.length;si++){const tw=F.towers[si];if(tw&&(tw.own||0)===pi&&tw.lv<3&&P.scrap>=upCost(tw.ti,tw.lv)){upTower(P,si);break;}}}}
+  }
+  if(G.phase==='interval'){for(const P of G.players){if(!P.ready){P.scrap+=600;doPurchase(P,'unlock',{});doPurchase(P,'uun',{});doPurchase(P,'atk',{});doPurchase(P,'repair',{});P.ready=true;}}}
+ }
+ const mins=Math.round(guard*.033/60*10)/10;
+ const F=G?G.players[0]:null,won=G&&G.winner===0;
+ const owns=[0,0,0];if(F)for(const u of F.units)owns[u.own||0]++;
+ console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+'/'+STAGE_W+' 結果='+(won?'クリア':'陥落')+' dep=['+dep.join(',')+'] 部隊owner内訳=['+owns.join(',')+'] コア='+(F?Math.ceil(F.core)+'/'+F.coreMax:'?')+' ('+mins+'分)');
+ if(F)console.log('  各自⚙️=['+G.players.map(P=>Math.round(P.scrap)).join(',')+'] uUn=['+G.players.map(P=>P.uUn).join(',')+'] twr='+F.towers.filter(t=>t).length);
+ if(!G||!G.over){console.log('FAIL: 終了せず');process.exit(1);}
+ if(guard<600){console.log('FAIL: 即終了(協力の勝敗判定バグの疑い)');process.exit(1);}
+ if(dep[1]===0||dep[2]===0){console.log('FAIL: リモートプレイヤーの出撃が機能していない');process.exit(1);}
+ COOP=false;backTitle();
+ return won;
+}
 runPvE(1,'PvE古参(素の腕前)',false);
 const won=runPvE(1,'PvE古参(強化プレイ)',true);
 if(!won)console.log('WARN: 強化プレイでもステージクリア不可(バランス要確認)');
+const cw=runCoop('協力3人(古参)');
+if(!cw)console.log('INFO: 協力3人は陥落(良プレイなら勝てるかは実機で確認)');
 runPvP('対戦三つ巴');
 console.log('ALL TESTS DONE');
 process.exit(0);
