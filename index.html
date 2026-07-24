@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>DEADTIDE - 最終防衛拠点</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DEADTIDE">
+<meta name="theme-color" content="#241f19">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <style>
 :root{--ink:#241f19;--paper:#E8E0CE;--pane:#F2ECDC;--rust:#C1502E;--rust2:#93381E;--amber:#E8A33D;--toxic:#8FBF4D;--steel:#5c6b78;}
@@ -191,6 +199,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <button class="btn sm" data-v="1">演出:中</button>
       <button class="btn sm sel" data-v="2">演出:強</button>
     </div>
+    <p class="note" id="pwahint" style="display:none;text-align:center;margin-top:8px;max-width:340px">📲 ブラウザの共有メニュー→<b>「ホーム画面に追加」</b>すると、アプリみたいに全画面で遊べる!</p>
   </div>
   <canvas id="paradecv"></canvas>
 </div>
@@ -421,6 +430,8 @@ function bgmOn(){if(bgmTimer)return;bgmTimer=setInterval(()=>{if(!AC||muted)retu
 function bgmOff(){clearInterval(bgmTimer);bgmTimer=null;}
 document.addEventListener('pointerdown',ensureAC);
 document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
+const STANDALONE=((typeof matchMedia==='function')&&matchMedia('(display-mode: standalone)').matches)||((typeof navigator!=='undefined')&&navigator.standalone===true);
+try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
 $('mutebtn').onclick=()=>{muted=!muted;$('mutebtn').textContent=muted?'🔇':'🔊';};
 /* ============ データ ============ */
 const MW=1600,MH=760;
@@ -1775,6 +1786,7 @@ $('bt-lobby-start').onclick=hostStart;
 $('bt-lobby-back').onclick=backTitle;
 /* ============ メインループ・起動 ============ */
 makeThumbs();paradeInit();
+if(MOBILE&&!STANDALONE)$('pwahint').style.display='block';
 let last=performance.now();
 function loop(now){
  const dt0=Math.min(.05,(now-last)/1000);last=now;TT+=dt0;
