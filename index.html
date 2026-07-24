@@ -16,13 +16,14 @@
 <style>
 :root{--ink:#241f19;--paper:#E8E0CE;--pane:#F2ECDC;--rust:#C1502E;--rust2:#93381E;--amber:#E8A33D;--toxic:#8FBF4D;--steel:#5c6b78;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
+/* 実際の表示領域の高さ(--appH)を使う。iOSでツールバーが隠れると100%が実画面より短くなり、下に黒帯が出るため */
+html,body{height:100%;height:100dvh;height:var(--appH,100dvh);overflow:hidden}
 body{font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic UI','Meiryo',system-ui,sans-serif;background:var(--ink);color:var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation}
 /* 連打でiOSのダブルタップズームが発動してタップ座標がずれる対策(touch-actionは継承しないため個別指定) */
 button,.dk,.mini,.btn,.seg,#topbar,#deck,#minis,#tidebar,#buildmenu,#interv,.card{touch-action:manipulation}
 #cv,#cvwrap{touch-action:none}
 button{font-family:inherit;color:var(--ink)}
-.scr{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;overflow:auto}
+.scr{position:fixed;inset:0;height:var(--appH,100dvh);display:none;flex-direction:column;align-items:center;justify-content:center;overflow:auto}
 .scr.on{display:flex}
 .btn{display:block;border:3px solid var(--ink);border-radius:12px;background:var(--pane);box-shadow:0 5px 0 var(--ink);padding:12px 22px;font-size:18px;font-weight:800;cursor:pointer;transition:transform .05s}
 .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
@@ -57,7 +58,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .lobbylist{display:flex;flex-direction:column;gap:6px}
 .lobbylist .pl{border:2px solid var(--ink);border-radius:10px;padding:6px 10px;font-weight:800;background:#fff}
 /* ---- ゲーム(フルスクリーンHUD) ---- */
-#scr-game{position:fixed;inset:0;padding:0;background:#0a0908;transition:background 1.2s linear}
+#scr-game{position:fixed;inset:0;height:var(--appH,100dvh);padding:0;background:#0a0908;transition:background 1.2s linear}
 #scr-game.on{display:block}
 #cvwrap{position:absolute;inset:0;background:transparent}
 #cv{position:absolute;inset:0;width:100%;height:100%}
@@ -527,6 +528,15 @@ document.addEventListener('pointerdown',ensureAC);
 document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
 document.addEventListener('dblclick',e=>{try{e.preventDefault();}catch(x){}});/* 連打によるダブルタップズーム抑止 */
 /* 画面回転/リサイズ後にタップ座標がずれて反応しなくなる対策: スクロール位置と表示状態を強制リセット */
+/* 実際の表示高さを--appHへ流し込む(ブラウザのツールバー分の黒帯対策) */
+function syncAppH(){try{
+ const vv=window.visualViewport,h=Math.round(vv?vv.height:window.innerHeight);
+ if(h>0)document.documentElement.style.setProperty('--appH',h+'px');
+}catch(e){}}
+syncAppH();
+try{['resize','orientationchange','pageshow','focus'].forEach(ev=>window.addEventListener(ev,()=>{syncAppH();setTimeout(syncAppH,250);setTimeout(syncAppH,700);}));}catch(e){}
+try{if(window.visualViewport){visualViewport.addEventListener('resize',syncAppH);visualViewport.addEventListener('scroll',syncAppH);}}catch(e){}
+try{setInterval(syncAppH,1200);}catch(e){}
 try{['resize','orientationchange'].forEach(ev=>window.addEventListener(ev,()=>{
  try{window.scrollTo(0,0);}catch(e){}
  try{if(typeof closeBM==='function')closeBM();}catch(e){}
@@ -699,8 +709,9 @@ const SEG=[];let PLEN=0;
 for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
 function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}const e=SEG[SEG.length-1];return[e.b[0],e.b[1],0];}
 function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
-const SLOTS=[[1290,60],[1000,250],[1210,300],[1240,515],[1475,540],[1080,555],[865,540],[655,500],[560,290],[300,470],[250,700],
- [1470,60],[1600,60],[1560,240],[1010,370],[1330,320],[1490,650],[1180,728],[920,728],[680,290],[510,470],[180,530]];
+/* 上部HUDに隠れないよう、空の位置にあったマスは地面へ降ろしてある */
+const SLOTS=[[1300,228],[1000,250],[1210,300],[1240,515],[1475,540],[1080,555],[865,540],[655,500],[560,290],[300,470],[250,700],
+ [1470,242],[1545,345],[1560,240],[1010,370],[1330,320],[1490,650],[1180,728],[920,728],[680,290],[510,470],[180,530]];
 /* 廃品工房の専用スロット(画面左上)。初期1枠・増設で最大3枠 */
 const ECO_BASE=SLOTS.length,ECO_MAX=3;
 SLOTS.push([120,190],[262,190],[404,190]);
@@ -1866,9 +1877,20 @@ function specName(){if(MODE==='client'){const o=(CS.ot||[]).find(x=>x.j===SPEC);
 const cv=$('cv'),ctx=cv.getContext('2d');
 let SC=1,OX=0,OY=0,DPR=1;
 function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
- const hudPad=MOBILE?Math.round(66*DPR):0;/* スマホは下にデッキ帯を確保しマップと被らせない */
- SC=Math.min(W/MW,(H-hudPad)/MH);OX=(W-MW*SC)/2;OY=(H-hudPad-MH*SC)/2;}
-function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');if(id==='game')bgmOn();else if(id==='title')bgmOff();}
+ const hudPad=Math.round(deckBandPx()*DPR);/* 下のユニットボタン帯を実測して確保＝タレット置き場と絶対に被らせない */
+ const avail=Math.max(80,H-hudPad);
+ SC=Math.min(W/MW,avail/MH);OX=(W-MW*SC)/2;OY=(avail-MH*SC)/2;}
+/* 画面下端からユニットボタンの上端までの高さ(CSSpx)。実測できない時は既定値 */
+let DECKBAND=74,DECKT=-9;
+function deckBandPx(){
+ const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
+ if(now-DECKT<400)return DECKBAND;DECKT=now;
+ try{const d=$('deck'),r=d&&d.getBoundingClientRect();
+  if(r&&r.height>4)DECKBAND=Math.ceil(Math.max(0,(window.innerHeight||r.bottom)-r.top)+8);
+ }catch(e){}
+ return DECKBAND;}
+function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');
+ if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}if(id==='game')bgmOn();else if(id==='title')bgmOff();}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
 const DOTS=[];for(let i=0;i<170;i++)DOTS.push([rnd(20,1580),rnd(130,745),rnd(1.5,4),Math.random()<.5]);
@@ -1897,7 +1919,9 @@ function renderCamp(C,t){
  c.setTransform(1,0,0,1,0,0);
  {const fr=todCol(clamp((wv-1)/(STAGE_W-1||19),0,1));
   c.fillStyle=fr;c.fillRect(0,0,cv.width,cv.height);
-  if(FRAMECOL!==fr){FRAMECOL=fr;const sg2=$('scr-game');if(sg2&&sg2.style)sg2.style.background=fr;}}
+  if(FRAMECOL!==fr){FRAMECOL=fr;const sg2=$('scr-game');if(sg2&&sg2.style)sg2.style.background=fr;
+   /* ブラウザのバーが隠れた瞬間に下端が黒く見えないよう、土台の色も時間帯に合わせる */
+   try{document.body.style.background=fr;document.documentElement.style.background=fr;}catch(e){}}}
  /* 時間帯: ウェーブが進むほど朝→昼→夕→夜へ。フィールドは明るいまま、画面の縁(額縁)の色で時間を表現する */
  const tod=clamp((wv-1)/(STAGE_W-1||19),0,1);
  const dk=tod*.14;/* 盤面に落とす陰の強さは最小限 */
