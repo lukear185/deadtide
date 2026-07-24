@@ -184,6 +184,11 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button class="btn red" id="bt-solo">🛡 ソロ作戦 — ステージ1</button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
     <button class="btn" id="bt-howto">📖 あそびかた</button>
+    <div class="seg" id="seg-fx" style="margin-top:8px;justify-content:center">
+      <button class="btn sm" data-v="0">演出:弱</button>
+      <button class="btn sm" data-v="1">演出:中</button>
+      <button class="btn sm sel" data-v="2">演出:強</button>
+    </div>
   </div>
   <canvas id="paradecv"></canvas>
 </div>
@@ -345,6 +350,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 window.onerror=(m,s,l)=>{const e=document.getElementById('errbox');e.style.display='block';e.textContent='ERROR: '+m+' (line '+l+')';};
 const $=id=>document.getElementById(id);
 const MOBILE=(typeof matchMedia==='function')&&matchMedia('(pointer:coarse)').matches;
+let FXLV=2;/* 演出バランス 0=弱 1=中 2=強 */
+try{const v=localStorage.getItem('dt_fx');if(v!=null)FXLV=clamp(+v,0,2);}catch(e){}
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -638,7 +645,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  else if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,6,-32,20,10,3);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle='#2c333a';for(let k=0;k<3;k++)c.fillRect(24,-31+k*3,5,1.8);}
  else if(id==='rkt'){c.fillStyle='#585e4c';rr(c,-4,-46,26,8,3);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle='#C1502E';c.beginPath();c.arc(22,-42,3,0,7);c.fill();}
  /* 発砲マズルフラッシュ */
- if(o.fireT>0){const mzy=id==='rkt'?-42:id==='mgn'?-27:id==='snp'?-30:-28,mzx=id==='rkt'?26:id==='mgn'?32:id==='snp'?33:27;
+ if(o.fireT>0&&FXLV>0){const mzy=id==='rkt'?-42:id==='mgn'?-27:id==='snp'?-30:-28,mzx=id==='rkt'?26:id==='mgn'?32:id==='snp'?33:27;
   c.fillStyle='#ffdd66';c.beginPath();c.arc(mzx,mzy,4.5+o.fireT*22,0,7);c.fill();
   c.fillStyle='#fff3c0';c.beginPath();c.arc(mzx,mzy,2+o.fireT*10,0,7);c.fill();}
  /* ティア章: 終盤=金星・切り札=二つ星 */
@@ -753,16 +760,17 @@ function killZ(C,z){
  if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();if(z.elite)sfx.moanBig();else if(Math.random()<.2)sfx.moan();}
  /* 大物撃破の特別演出 */
  if(z.boss){
-  C.shake=.55;if(G)G.hitStopT=.85;
+  C.shake=.55;if(G)G.hitStopT=[0,.45,.85][FXLV];
   addFx(C,'boomL',z.px,z.py,'');
-  for(let k=0;k<3;k++)addFx(C,'boom',z.px+rnd(-80,80),z.py+rnd(-55,30),'',{d0:.12+k*.16});
-  addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:'#ffd23d',big:1});
+  const nb=[0,2,3][FXLV];
+  for(let k=0;k<nb;k++)addFx(C,'boom',z.px+rnd(-80,80),z.py+rnd(-55,30),'',{d0:.12+k*.16});
+  if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:'#ffd23d',big:1});
   addFx(C,'txt',z.px,z.py-90,'+'+g+'⚙️ 総取り!');
   if(C.isMe){sfx.bossKill();UI.banner('💀 ジャガーノート撃破!!');}
  }else if(z.elite){
   C.shake=Math.max(C.shake||0,.25);
   addFx(C,'ring',z.px,z.py,'',{r:130,col:'#d883ee'});
-  addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:'#d883ee'});
+  if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:'#d883ee'});
   if(C.isMe)sfx.eliteKill();
  }
  if(z.split){C.totalWave+=z.split;for(let i=0;i<z.split;i++)C.zombies.push(mkZ(zSpec(0,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i)));}
@@ -772,7 +780,7 @@ function dmgZ(C,z,d,armorPierce){
  if(z.armor&&!armorPierce)d*=.45;
  z.hp-=d;z.hitT=.1;
  if(C.isMe&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44,''+Math.max(1,Math.round(d)));
-  if(Math.random()<.35)addFx(C,'blood',z.px,z.py-28,'',{sd:rnd(0,9)});}
+  if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
 function deployUnit(C,ui){
@@ -843,7 +851,7 @@ function campStep(C,dt,wave){
    z.acd=(z.acd||0)-dt;
    if(z.acd<=0){z.acd=z.ar;z.lgT=.22;dmgU(C,blk,z.atk);
     if(C.isMe){if(Math.random()<.3)sfx.bite();
-     if(C.fx.length<70&&Math.random()<.5)addFx(C,'blood',blk.px,blk.py-30,'',{sd:rnd(0,9),gray:1});}}
+     if(FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30,'',{sd:rnd(0,9),gray:1});}}
    continue;
   }
   z.d+=z.sp*z.sm*slow*dt;
@@ -908,9 +916,10 @@ function campStep(C,dt,wave){
    addFx(C,'zap',sx,sy,'',{pts});if(C.isMe)sfx.zap();}
   else if(T.type==='blast'){C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:.85,dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)});if(C.isMe)sfx.thunk();}
   else{/* bullet */
-   if(T.multi){let cnt=0;const done=[];
-    for(let k2=0;k2<T.multi;k2++){let nx=null,bd=1e9;for(const z of C.zombies){if(z.dead||done.includes(z))continue;const dd=dist(z.px,z.py,sx,sy);if(dd<=rng&&dd<bd){bd=dd;nx=z;}}
-     if(!nx)break;done.push(nx);dmgZ(C,nx,dm,0);addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py});cnt++;}
+   if(T.multi){/* 先頭(コアに近い順)からT.multi体を撃つ */
+    const inr=[];for(const z of C.zombies){if(z.dead||z.d<0)continue;if(dist(z.px,z.py,sx,sy)<=rng)inr.push(z);}
+    inr.sort((a,b)=>b.d-a.d);let cnt=0;
+    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];dmgZ(C,nx,dm,0);addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py});cnt++;}
     if(C.isMe&&cnt)sfx.shotgun();}
    else{dmgZ(C,tg,dm,0);addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py});
     if(C.isMe){if(tw.ti===7)sfx.snipe();else if(Math.random()<.45)sfx.shot();}}
@@ -1120,7 +1129,8 @@ function renderCamp(C,t){
  c.setTransform(1,0,0,1,0,0);c.fillStyle='#0a0908';c.fillRect(0,0,cv.width,cv.height);
  const wv=MODE==='client'?(CS.w||1):(G?G.wave:1);
  const dk=clamp((wv-1)/14,0,1);
- const shx=(C.shake>0?rnd(-4,4):0)*SC,shy=(C.shake>0?rnd(-3,3):0)*SC;
+ const shm=[.3,.7,1][FXLV];
+ const shx=(C.shake>0?rnd(-4,4):0)*SC*shm,shy=(C.shake>0?rnd(-3,3):0)*SC*shm;
  c.setTransform(SC,0,0,SC,OX+shx,OY+shy);
  /* 荒野 */
  c.fillStyle=mix('#B7A177','#4c4638',dk*.72);c.fillRect(0,110,MW,MH-110);
@@ -1525,6 +1535,8 @@ function segInit(id,cb){$(id).querySelectorAll('.btn').forEach(b=>{b.onclick=()=
 segInit('seg-diff',v=>setDiff=v);
 segInit('lb-mode',v=>{setLMode=v;$('lb-diffwrap').style.display=v?'block':'none';});
 segInit('lb-diff',v=>setLDiff=v);
+segInit('seg-fx',v=>{FXLV=v;try{localStorage.setItem('dt_fx',''+v);}catch(e){}});
+document.querySelectorAll('#seg-fx .btn').forEach(b=>b.classList.toggle('sel',+b.dataset.v===FXLV));
 function startSolo(){
  MODE='solo';COOP=false;
  newGame([{name:'キミ',kind:'me'}],0);
