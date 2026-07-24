@@ -66,7 +66,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #topbar>*{pointer-events:auto}
 .hudpanel{display:flex;align-items:center;gap:7px;background:linear-gradient(#3d362d,#241f19);border:2px solid var(--paper);border-radius:11px;padding:4px 11px;box-shadow:0 3px 0 rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.09);color:var(--paper);font-weight:900;white-space:nowrap}
 #wavepanel{border-color:var(--rust);background:linear-gradient(#4a2a20,#2a1712)}
-#wavebadge{font-size:15px;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.5)}
+/* 幅を固定しないと、敵の数が1桁↔2桁で変わるたびにHUDが伸び縮みする */
+#wavebadge{font-size:15px;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.5);display:inline-block;min-width:192px;text-align:left;white-space:nowrap;font-variant-numeric:tabular-nums}
 #wprog{width:82px;height:9px;border:2px solid rgba(242,236,220,.75);border-radius:6px;background:#171310;overflow:hidden}
 #wprog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--rust),var(--amber));transition:width .35s}
 #corepanel{font-size:14px}
@@ -94,7 +95,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  /* 上のHUDも小さくする=右上の道路まで伸びないようにする(横に長いと道路に被る) */
  #topbar{gap:4px;padding:4px;padding-left:max(4px,env(safe-area-inset-left));padding-top:max(3px,env(safe-area-inset-top))}
  .hudpanel{padding:2px 6px;gap:4px;border-radius:9px}
- #wavebadge{font-size:12px}
+ #wavebadge{font-size:12px;min-width:154px}
  #wprog{width:42px;height:7px}
  #corebar{width:38px;height:7px}
  #corepanel,#corelbl{font-size:11px}
@@ -383,7 +384,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button id="strikebtn">🎯</button>
     <div id="deck"></div>
     <button id="pushbtn">🌊押す<br>⚙️45</button>
-    <button id="ffwave">🏳-0</button>
+    <button id="ffwave">🏳 諦める</button>
     <button id="mutebtn">🔊</button>
   </div>
   <div id="buildmenu"></div>
@@ -427,7 +428,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <p><b>ふたつの資源</b>——<b>⚙️スクラップ</b>はゾンビを倒すと手に入り、建設・タワーの現地強化・出撃・解放に使う。<b>🔩強化ポイント</b>は<b>ウェーブを守り切るたび</b>にもらえ(後半ほど大量)、<b>作戦タイムの強化(部隊レベル・火力増強・コア修理)</b>専用だ。全部は買えないので何を伸ばすか選べ。</p>
     <p>道沿いの<b>空きスロットをタップ</b>してタワーを建設、建てた塔をタップで<b>⚔攻撃/⏩連射/📡射程</b>を⚙️で個別強化(電撃塔だけは⚡連鎖数)。置き場は最初6ヶ所で、🔒のマスをタップすれば⚙️で増やせる。画面左上の<b>🏭工房エリア</b>は廃品工房の専用枠で、最大3基まで増設できる。</p>
     <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。<b>デッキを長押しすると部隊レベルアップ</b>(全兵科のHPと攻撃が上がる)。1人が足止めできるゾンビは3体まで——溢れた分は素通りだ。</p>
-    <p>🎯はチャージ式の航空支援。🏳は<b>ウェーブ放棄</b>(残った敵のぶんコアが傷つく代わりにすぐ次へ)。作戦タイムでは新タワー/新部隊の解放(⚙️)と、部隊レベル・火力増強・コア修理(🔩)を選べる。</p>
+    <p>🎯はチャージ式の航空支援。🏳は<b>このウェーブを諦める</b>(残った敵のぶんコアが傷つく代わりにすぐ次へ)。作戦タイムでは新タワー/新部隊の解放(⚙️)と、部隊レベル・火力増強・コア修理(🔩)を選べる。</p>
     <p><b>🔬 研究所(ソロ)</b>——出撃の結果に応じて<b>研究pt</b>が貯まる(負けても貯まる)。タイトル→ソロ作戦の研究所で、<b>新型タワー・新型兵科・新しい航空支援・初期資金・コアHP</b>を永久に解放できる。死ぬたびに次の自分が強くなる仕組みだ。</p>
     <button class="btn gold" id="bt-howto-close" style="margin-top:8px;width:100%">とじる</button>
   </div>
@@ -435,11 +436,11 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 
 <div class="modal" id="md-giveup">
   <div class="panel center" style="max-width:400px">
-    <h2 class="hd">🏳 このウェーブを放棄する?</h2>
+    <h2 class="hd">🏳 このウェーブを諦める?</h2>
     <p class="note" style="margin:8px 0;font-size:14px;line-height:1.7">残っている敵と、これから来る敵の分だけ<b>コアがダメージを受けて</b>すぐ作戦タイムに進む。</p>
     <table class="stats" style="margin:8px auto"><tr><td>受けるダメージ</td><td id="gu-dmg">-0</td></tr><tr><td>コアHP</td><td id="gu-core">-</td></tr></table>
     <div class="row" style="gap:10px;justify-content:center">
-      <button class="btn red" id="bt-gu-yes">🏳 放棄する</button>
+      <button class="btn red" id="bt-gu-yes">🏳 諦める</button>
       <button class="btn" id="bt-gu-no">↩ やめる</button>
     </div>
   </div>
@@ -1570,7 +1571,7 @@ function awardWavePts(C,quit){
  const base=wavePts(G.wave),gain=quit?Math.max(1,Math.round(base*.5)):base;
  const list=(G.coop&&C===G.players[0])?G.players:[C];
  for(const P of list){P.up=(P.up||0)+gain;P.upTotal=(P.upTotal||0)+gain;
-  if(P.isMe){toast(PT+' 強化ポイント +'+gain+(quit?'(放棄で半減)':''));}}
+  if(P.isMe){toast(PT+' 強化ポイント +'+gain+(quit?'(諦めたので半減)':''));}}
  const F=G.coop?G.players[0]:C;
  addFx(F,'txt',CORE[0],CORE[1]-120,'+'+gain+PT);
 }
@@ -2482,7 +2483,7 @@ function updHUD(){const m=meV();if(!m)return;
  {const gw=$('ffwave');
   const on=!!(G&&G.pve&&!G.coop&&MODE!=='client'&&G.phase==='wave'&&!m.dead&&!m.waveDone&&gameActive);
   if(gw&&gw.style)gw.style.display=on?'inline-block':'none';
-  if(on)gw.textContent='🏳-'+giveUpDmg(m);}
+  if(on)gw.textContent='🏳 諦める -'+giveUpDmg(m);}
  const sb=$('strikebtn');sb.style.background=`conic-gradient(var(--rust) ${m.charge*100}%,#4a4034 0)`;sb.classList.toggle('rdy',m.charge>=1&&!AIM);
  if(!tipSt&&m.charge>=1&&inW){tipSt=true;toast('🎯 エアストライク準備完了!ボタン→地点タップで爆撃!');}
  /* 死潮ゲージ */
@@ -2755,7 +2756,7 @@ function giveUpWave(){
  me.core-=dmg;G.tide.pool=[];G.tide.qt=0;me.zombies=[];
  addFx(me,'leak',CORE[0],CORE[1],'');me.shake=.3;dmgFlash();sfx.leak();
  if(me.core<=0){me.core=0;me.dying=true;addFx(me,'boomL',CORE[0],CORE[1],'');}
- else{me.waveDone=true;awardWavePts(me,true);UI.banner('🏳 WAVE放棄 (-'+dmg+')');}
+ else{me.waveDone=true;awardWavePts(me,true);UI.banner('🏳 このWAVEを諦めた (-'+dmg+')');}
 }
 $('ffwave').onclick=()=>{
  if(!G||!G.pve||G.coop||G.phase!=='wave'||MODE==='client')return;

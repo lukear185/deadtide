@@ -4,8 +4,9 @@ const fs=require('fs');
 const RECTS={
  /* 操作バー: 上下padding(3+7) + カード高72 = 82 (スマホ指定。PCは card78 → 86) */
  abar:{left:0,top:311,right:852,bottom:393,width:852,height:82},
- /* 上のHUD: WAVE+コア+⚙️+🔩+⏸ まで(🏳放棄と🔊は操作バーへ移動済み) */
- topbar:{left:59,top:3,right:520,bottom:32,width:461,height:29},
+ /* 上のHUD: WAVE+コア+⚙️+🔩+⏸ まで(🏳諦めると🔊は操作バーへ移動済み)。
+    右端=セーフエリア59+実測455=514(WAVEパネルは最長表示ぶんを常に確保する固定幅) */
+ topbar:{left:59,top:3,right:514,bottom:32,width:455,height:29},
  minis:{left:0,top:0,right:0,bottom:0,width:0,height:0},
 };
 function mkCtx(){return new Proxy({},{get:(t,k)=>{
