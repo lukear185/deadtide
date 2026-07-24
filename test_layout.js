@@ -4,7 +4,8 @@ const fs=require('fs');
 const RECTS={
  /* 操作バー: 上下padding(3+7) + カード高60 = 70 */
  abar:{left:0,top:323,right:852,bottom:393,width:852,height:70},
- topbar:{left:59,top:3,right:650,bottom:32,width:591,height:29},
+ /* 上のHUD: WAVE+コア+⚙️+🔩+⏸ まで(🏳放棄と🔊は操作バーへ移動済み) */
+ topbar:{left:59,top:3,right:520,bottom:32,width:461,height:29},
  minis:{left:0,top:0,right:0,bottom:0,width:0,height:0},
 };
 function mkCtx(){return new Proxy({},{get:(t,k)=>{
@@ -53,10 +54,15 @@ const cE=PATH[PATH.length-1],cS=PATH[0];
 [['コア',cE],['侵入口',cS]].forEach(([n,p])=>{const [x,y]=S(p[0],p[1]);
  let s='';for(const k of ['abar','topbar']){const b=R[k];if(b.width&&hit(x,y,46*SC/DPR,b))s+=' ['+k+'と重なる]';}
  console.log(n+' 画面('+x.toFixed(0)+','+y.toFixed(0)+')'+(s||' OK'));if(s)bad++;});
-/* 経路が操作バーに潜らないか(細かくサンプル) */
-let low=0;for(let d=0;d<=PLEN;d+=20){const p=pathPos(d);const [x,y]=S(p[0],p[1]);if(y+css(50*SC)>R.abar.top)low++;}
-console.log('道路が操作バーに潜る点='+low+'箇所');
+/* 道路(幅98=半分49に路肩を足して52)がUIに潜らないか。細かくサンプルして判定 */
+let low=0,up=0;
+for(let d=0;d<=PLEN;d+=10){const p=pathPos(d);const [x,y]=S(p[0],p[1]);const r=css(52*SC);
+ if(y+r>R.abar.top)low++;
+ if(hit(x,y,r,R.topbar))up++;
+}
+console.log('道路が操作バーに潜る点='+low+'箇所 / 上のHUDに潜る点='+up+'箇所');
 if(low)bad++;
+if(up)bad++;
 console.log(bad?('要修正 '+bad+'件'):'レイアウト判定: 重なりゼロ OK');
 process.exit(0);
 `;
