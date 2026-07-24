@@ -284,9 +284,14 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div class="scr" id="scr-setup">
   <div class="setwrap">
     <div class="panel">
-      <h2 class="hd">🏕 ステージ1 — 最終防衛拠点</h2>
-      <p class="note" style="margin-bottom:6px">押し寄せる死潮からWAVE20を守り切ればクリア。5波ごとにボスが来る。</p>
-      <p class="note" style="margin:10px 0 6px">ゾンビの強さ</p>
+      <h2 class="hd" id="stg-hd">🏕 ステージ1 — 廃線ハイウェイ</h2>
+      <p class="note" id="stg-sub" style="margin-bottom:6px">押し寄せる死潮からWAVE20を守り切ればクリア。5波ごとにボスが来る。</p>
+      <p class="note" style="margin:10px 0 6px">ステージ</p>
+      <div class="seg" id="seg-stage">
+        <button class="btn sm sel" data-v="0">1 廃線ハイウェイ</button>
+        <button class="btn sm" data-v="1" id="stg-b1">2 沈んだ港</button>
+      </div>
+      <p class="note" style="margin:10px 0 6px">敵の強さ</p>
       <div class="seg" id="seg-diff">
         <button class="btn sm" data-v="0">新兵</button>
         <button class="btn sm" data-v="1">兵長</button>
@@ -507,7 +512,7 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{}};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[]};
 try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  if(!Array.isArray(META.uv))META.uv=[];if(!META.ld||typeof META.ld!=='object')META.ld={};META.am=META.am||0;META.amEq=META.amEq||0;
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=META[k]||0;
@@ -702,11 +707,25 @@ const ZOMBIES=[
  {id:'nmBat',n:'吸血蝙蝠',hp:150,sp:240,bt:48,dmg:2,mw:3,nm:1,noblock:1,w:.5,sc:.9,atk:0,ar:9,c:'#5a4a6b'},
  {id:'nmCrow',n:'腐肉鴉',hp:190,sp:170,bt:54,dmg:2,mw:4,nm:1,aura:1,w:.55,sc:.95,atk:24,ar:.6,c:'#3f3a44'},
  {id:'nmBear',n:'屍熊',hp:1050,sp:66,bt:150,dmg:5,mw:6,nm:1,armor:1,w:.35,sc:1.7,atk:78,ar:1.1,aoe:3,c:'#5a4a3a'},
- {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:78,ar:1.1,aoe:7,c:'#8a3a5a'}
+ {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:78,ar:1.1,aoe:7,c:'#8a3a5a'},
+ /* ===== ステージ2「沈んだ港」専用: ゾンビ化した海の生き物(st:2 の個体は他の波には出ない) =====
+    役割はステージ1のゾンビと1対1で対応させてある(基本/快速/装甲/分裂/オーラ/高速/すり抜け/…) */
+ {id:'sCrab',n:'腐れガニ',hp:78,sp:74,bt:12,dmg:1,mw:1,st:2,sc:1,atk:15,ar:.85,c:'#8a6f5a',dsc:'甲羅ごと腐って這い寄る'},
+ {id:'sSard',n:'跳ねイワシ',hp:44,sp:175,bt:14,dmg:1,mw:2,st:2,sc:.9,atk:10,ar:.6,c:'#9fb0a8',dsc:'群れで跳ねながら殺到する'},
+ {id:'sLob',n:'甲殻ロブスター',hp:195,sp:55,bt:26,dmg:2,mw:3,st:2,armor:1,sc:1.1,atk:25,ar:1,c:'#b0553a',dsc:'硬い殻。実弾が効きにくい'},
+ {id:'sPuff',n:'膨張フグ',hp:260,sp:48,bt:30,dmg:2,mw:4,st:2,split:2,sc:1.3,atk:30,ar:1.2,c:'#c9a05f',dsc:'倒すと中から小型が出る'},
+ {id:'sConch',n:'鳴き貝',hp:105,sp:66,bt:36,dmg:2,mw:6,st:2,aura:1,sc:1,atk:12,ar:.9,c:'#d8b48f',dsc:'叫びで周りの仲間を加速させる'},
+ {id:'sMoray',n:'咬みウツボ',hp:60,sp:210,bt:20,dmg:1,mw:8,st:2,sc:.85,atk:9,ar:.45,c:'#5f7a52',dsc:'くねって突っ込んでくる'},
+ {id:'sStar',n:'這いヒトデ',hp:130,sp:50,bt:40,dmg:2,mw:6,st:2,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#c96b6b',dsc:'低く這って部隊をすり抜ける'},
+ {id:'sJelly',n:'溶けクラゲ',hp:250,sp:42,bt:62,dmg:3,mw:10,st:2,noblock:1,armor:1,w:.4,sc:1.25,atk:0,ar:9,c:'#8f7fae',dsc:'すり抜ける上に硬い'},
+ {id:'sAngl',n:'深海アンコウ',hp:430,sp:70,bt:74,dmg:3,mw:8,st:2,armor:1,w:.5,sc:1.3,atk:44,ar:.9,c:'#4a5a6b',dsc:'提灯で誘い、丸呑みにする'},
+ {id:'sShark',n:'影サメ',hp:195,sp:185,bt:60,dmg:2,mw:11,st:2,w:.5,sc:1.05,atk:32,ar:.5,c:'#54606b',dsc:'速く重い一撃'},
+ {id:'sKrak',n:'触腕の主',hp:1450,sp:38,bt:400,dmg:10,st:2,boss:1,armor:1,mw:5,sc:2.1,atk:62,ar:1.2,aoe:5,c:'#6b4a7a',dsc:'港の主。触腕で薙ぎ払う'}
 ];
 const SENDABLE=[0,1,2,3];
-const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&!z.nm);
+const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&!z.nm&&!z.st);
 const NM_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm);
+const ST2_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===2);
 const NM_DIFF=5;/* 難易度インデックス: 5=ナイトメア */
 const isNM=()=>!!(G&&G.pveDiff===NM_DIFF);
 const UNITS=[
@@ -899,31 +918,61 @@ const ULV_MAX=10;
 const prUup=lv=>Math.round(6*Math.pow(1.45,lv));/* 部隊強化(🔩) */
 const uDepCost=(C,ui)=>Math.round(UNITS[ui].cost*(1+.1*(C&&C.uLv||0)));/* 出撃費はレベルに比例 */
 const prSend=(zi,cnt)=>Math.ceil(ZOMBIES[zi].bt*3*cnt);
-/* ============ ルート ============ */
-const PATH=[[1660,150],[1100,150],[1100,420],[1380,420],[1380,650],[760,650],[760,380],[420,380],[420,620],[110,620]];
+/* ============ ステージ(道の形・建設マス・解放順・色) ============
+ ソロだけステージを選べる。協力/対戦は必ずステージ1を使う。
+ ⚠建設マスの数は全ステージ22で固定(ECO_BASEが動くと配列の形が崩れるため)。
+ マスは「道路の中心線からちょうど95」に道なりの順で置いてある(散らばって見せないため)。 */
+const STAGES=[
+ {n:'廃線ハイウェイ',sub:'砂に埋もれた最終防衛拠点',zs:0,
+  path:[[1660,150],[1100,150],[1100,420],[1380,420],[1380,650],[760,650],[760,380],[420,380],[420,620],[110,620]],
+  slots:[[1480,245],[1370,245],[1260,245],[1005,210],[1005,320],[1475,370],[1110,515],[1220,515],[1475,480],[1475,590],[1475,700],
+   [1000,555],[890,555],[665,560],[855,450],[720,285],[610,285],[500,285],[325,410],[325,520],[515,520],[530,640]],
+  order:[2,1,4,8,12,16,19,21,6,14,10,17,20,0,11,3,5,7,9,13,15,18],
+  pal:{g0:'#C4AE84',g1:'#A8925F',tuft:'#8a7d4e',bld:'#8a7a5e',patch:['#6b5a37','#d8c79b']}},
+ {n:'沈んだ港',sub:'死潮が運んできた海の亡骸',zs:2,
+  path:[[1660,700],[1150,700],[1150,480],[1480,480],[1480,200],[700,200],[700,430],[380,430],[380,660],[110,660]],
+  slots:[[1490,605],[1390,605],[1290,605],[1055,640],[1055,540],[1190,385],[1290,385],[1390,385],[1350,295],[1250,295],[1150,295],
+   [1050,295],[950,295],[850,295],[605,250],[680,525],[580,525],[480,335],[480,525],[380,335],[285,530],[475,630]],
+  order:[1,4,6,9,13,17,20,15,11,18,7,2,21,5,8,12,16,19,0,3,10,14],
+  pal:{g0:'#9EA6A0',g1:'#75858A',tuft:'#3f6b5e',bld:'#54636e',patch:['#41565c','#c2cbc6']}}
+];
+let STAGE=0;
+const stagePal=()=>(STAGES[STAGE]||STAGES[0]).pal;
+const stageZs=()=>(STAGES[STAGE]||STAGES[0]).zs;
+/* 次のステージは「1つ前のステージをどれかの難易度でクリア」すると解放される */
+const stageOK=i=>i<=0||!!((META.sclr||[])[i-1]);
+/* ============ ルート(loadStageで差し替わる) ============ */
+let PATH=STAGES[0].path;
 const SEG=[];let PLEN=0;
-for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
+function loadStage(si){
+ STAGE=clamp(si|0,0,STAGES.length-1);
+ const S=STAGES[STAGE];
+ PATH=S.path.map(p=>p.slice());
+ SEG.length=0;PLEN=0;
+ for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
+ SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());
+ AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
+ CORE=PATH[PATH.length-1].slice();
+ makeScenery();/* 地面の模様・道路のひび・タイヤ痕を作り直す */
+}
 function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}const e=SEG[SEG.length-1];return[e.b[0],e.b[1],0];}
 function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
-/* 建設マス: 道路の中心線からちょうど95離した位置に、道なりの順で並べる。
-   道路半幅49+マス半28=77なので18px空く。散らばって見えないよう「道路沿いの列」になるよう配置。
-   除外: 拠点まわり150 / 工房枠135 / 協力の出撃テント / コアHPバーの表示位置 / マス同士は110以上。
-   ※ 位置を変えたら scratchpad の verify.js 相当のチェック(道路85以上・重なりなし)を通すこと */
-const SLOTS=[[1480,245],[1370,245],[1260,245],[1005,210],[1005,320],[1475,370],[1110,515],[1220,515],[1475,480],[1475,590],[1475,700],
- [1000,555],[890,555],[665,560],[855,450],[720,285],[610,285],[500,285],[325,410],[325,520],[515,520],[530,640]];
-/* 廃品工房の専用スロット(画面左上)。初期1枠・増設で最大3枠 */
-const ECO_BASE=SLOTS.length,ECO_MAX=3;
-SLOTS.push([120,190],[262,190],[404,190]);
+/* 建設マス(loadStageでステージのものに差し替わる)。
+   置き方の決まり: 道路の中心線からちょうど95(道路半幅49+マス半28=77なので18px空く)。
+   道なりの順に並べる=散らばって見えないように。
+   除外: 拠点まわり150 / 工房枠135 / 協力の出撃テント / コアHPバーの表示位置 / マス同士は98以上。
+   ※ 位置を変えたら test_layout.js(道路とUIの重なり)を通すこと */
+let SLOTS=[];
+/* 廃品工房の専用スロット(画面左上・全ステージ共通)。初期1枠・増設で最大3枠 */
+const ECO_SLOTS=[[120,190],[262,190],[404,190]];
+const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定 */
 const isEcoSlot=si=>si>=ECO_BASE;
 const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
 const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
 const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
-/* 解放順(=最初のSLOT0枠)とCPUの建設優先順。先頭は道なりに散らして初期から全域を守れるように。
-   先頭7つ=2(上中央) 1(右上) 4(上中央の縦道沿い) 8(右) 12(中央) 16(左上) 19(左)。
-   21(左下・終盤)は初期から外して最初の購入対象にしてある(2026-07-25ユーザー指示) */
-const AI_ORDER=[2,1,4,8,12,16,19,21,6,14,10,17,20,0,11,3,5,7,9,13,15,18];
-/* 通常スロットも解放式: 初期6枠・⚙️で増設 */
-const SLOT_ORDER=AI_ORDER.slice();
+/* 解放順(=最初のSLOT0枠)とCPUの建設優先順。ステージごとにSTAGES[].orderで持つ。
+   先頭7つは道なりに散らして、初期から全域を守れるようにしてある */
+let AI_ORDER=[],SLOT_ORDER=[];
 const SLOT0=7;/* 初期から使える建設マスの数 */
 const prSlot=n=>Math.round(200*Math.pow(1.3,Math.max(0,n-SLOT0)));
 /* 強化ポイント🔩: ウェーブクリアで入手し、強化専用に使う(建設用の⚙️とは別財布) */
@@ -931,7 +980,7 @@ const wavePts=w=>Math.round(4+w*1.6+w*w*.16);
 const PT='🔩';
 const slotUnlocked=(C,si)=>isEcoSlot(si)?ecoUnlocked(C,si):(C&&C.slk?!!C.slk[si]:SLOT_ORDER.indexOf(si)<SLOT0);
 const slotCount=C=>{let n=0;for(let i=0;i<ECO_BASE;i++)if(slotUnlocked(C,i))n++;return n;};
-const CORE=[110,620];
+let CORE=[110,620];/* 拠点=経路の終点(loadStageで設定) */
 /* ============ アート ============ */
 const INK='#241f19';
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
@@ -1029,6 +1078,143 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    c.fillStyle='#3a1020';c.beginPath();c.arc(e2[0]+1.5,e2[1],e2[2]*.45,0,7);c.fill();c.fillStyle='#ffd23d';}
   c.fillStyle='#3a1020';c.beginPath();c.ellipse(0,-16,16,7,0,0,7);c.fill();c.stroke();
   c.fillStyle='#F2ECDC';for(let k=0;k<5;k++){c.beginPath();c.moveTo(-12+k*6,-20);c.lineTo(-10+k*6,-12);c.lineTo(-7+k*6,-20);c.closePath();c.fill();}
+  c.restore();return;}
+ /* ===== ステージ2「沈んだ港」: ゾンビ化した海の生き物 ===== */
+ if(Z.id==='sCrab'){/* 腐れガニ: 横長の甲羅と左右のハサミ、脚がカサカサ動く */
+  c.strokeStyle=shade(Z.c,.7);c.lineWidth=3/s;
+  for(let k=0;k<3;k++){const lg=Math.sin(t*9+ph+k*1.2)*4;
+   c.beginPath();c.moveTo(-6+k*7,-9);c.lineTo(-15+k*7+lg,1);c.stroke();
+   c.beginPath();c.moveTo(-6+k*7,-9);c.lineTo(-1+k*7-lg,1);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-15,19,11,0,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.8);
+  c.beginPath();c.moveTo(16,-18);c.lineTo(28+walk*2,-25);c.lineTo(31,-14);c.lineTo(18,-11);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-16,-18);c.lineTo(-28-walk*2,-23);c.lineTo(-31,-13);c.lineTo(-18,-11);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(5,-24,1.8,0,7);c.fill();c.beginPath();c.arc(11,-24,1.8,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='sSard'){/* 跳ねイワシ: 小魚が3匹まとまって跳ねる群れ */
+  for(let k=0;k<3;k++){const hop=Math.abs(Math.sin(t*9+ph+k*1.4))*10,fx=-18+k*18,fy=-14-hop-k*2;
+   c.fillStyle=k===1?shade(Z.c,1.12):Z.c;
+   c.beginPath();c.ellipse(fx,fy,11,6,-.22,0,7);c.fill();c.stroke();
+   c.beginPath();c.moveTo(fx-9,fy);c.lineTo(fx-19,fy-6);c.lineTo(fx-17,fy+6);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(Z.c,.6);c.fillRect(fx-7,fy-1,12,1.8);
+   c.fillStyle='#ff5a4a';c.beginPath();c.arc(fx+6,fy-1.5,1.7,0,7);c.fill();}
+  c.restore();return;}
+ if(Z.id==='sLob'){/* 甲殻ロブスター: 節のある長い体と太い両ハサミ */
+  c.fillStyle=shade(Z.c,.75);
+  for(let k=0;k<4;k++){rr(c,-26+k*7,-17-Math.sin(t*6+ph+k*.8)*1.5,9,12,3);c.fill();c.stroke();}
+  c.fillStyle=Z.c;rr(c,2,-23,22,18,6);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.9);
+  c.beginPath();c.moveTo(22,-21);c.lineTo(38+walk*3,-28);c.lineTo(43,-19);c.lineTo(24,-14);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(22,-12);c.lineTo(36-walk*3,-7);c.lineTo(40,-14);c.lineTo(24,-18);c.closePath();c.fill();c.stroke();
+  c.strokeStyle=shade(Z.c,1.3);c.lineWidth=2/s;
+  c.beginPath();c.moveTo(22,-23);c.quadraticCurveTo(34,-36,45,-31);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(20,-25,1.8,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='sPuff'){/* 膨張フグ: 呼吸で伸縮する丸い体とトゲ */
+  const br=Math.sin(t*3+ph)*3;
+  c.strokeStyle=shade(Z.c,.65);c.lineWidth=2.4/s;
+  for(let k=0;k<10;k++){const a6=k*.628,rd=15+br;
+   c.beginPath();c.moveTo(Math.cos(a6)*rd,-18+Math.sin(a6)*rd);c.lineTo(Math.cos(a6)*(rd+7),-18+Math.sin(a6)*(rd+7));c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle=shade(Z.c,.8);c.beginPath();c.moveTo(-13,-18);c.lineTo(-25,-25);c.lineTo(-24,-11);c.closePath();c.fill();c.stroke();
+  c.fillStyle=Z.c;c.beginPath();c.arc(0,-18,15+br,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,1.2);c.beginPath();c.ellipse(0,-11,10,5,0,0,7);c.fill();
+  c.fillStyle=INK;c.beginPath();c.ellipse(13,-14,3.4,2.6,0,0,7);c.fill();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(8,-23,2,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='sConch'){/* 鳴き貝: 背負った渦巻き貝から叫びの波紋 */
+  c.strokeStyle=shade(Z.c,1.4);c.lineWidth=2.2/s;
+  for(let k=1;k<=3;k++){const rp=((t*22+ph*8+k*9)%28)+6;c.globalAlpha=1-rp/34;
+   c.beginPath();c.arc(14,-26,rp,-.9,.9);c.stroke();}
+  c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle=shade(Z.c,.9);c.fillRect(-11+walk*3,-5,6,6);c.strokeRect(-11+walk*3,-5,6,6);
+  c.fillRect(3-walk*3,-5,6,6);c.strokeRect(3-walk*3,-5,6,6);
+  c.fillStyle=Z.c;rr(c,-14,-22,26,18,7);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.75);c.beginPath();c.arc(-6,-31,13,0,7);c.fill();c.stroke();
+  c.strokeStyle='#c9a13d';c.lineWidth=2.2/s;
+  c.beginPath();c.arc(-6,-31,8,0,5);c.stroke();c.beginPath();c.arc(-3,-31,4,0,5);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(9,-17,1.8,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='sMoray'){/* 咬みウツボ: 細長い体をくねらせ大口で咬む */
+  const wv=Math.sin(t*6+ph);
+  c.fillStyle=Z.c;
+  for(let k=0;k<5;k++){const bx=-30+k*9,by=-16+Math.sin(t*6+ph+k*.9)*5;
+   c.beginPath();c.ellipse(bx,by,7-k*.4,6.5,0,0,7);c.fill();c.stroke();}
+  const hy2=-16+Math.sin(t*6+ph+4.5)*5;
+  c.fillStyle=shade(Z.c,1.1);c.beginPath();c.ellipse(14,hy2,11,8,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#3a1020';c.beginPath();c.moveTo(14,hy2-5);c.lineTo(30,hy2-2+Math.abs(wv)*3);c.lineTo(14,hy2+5);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#F2ECDC';for(let k=0;k<3;k++){c.beginPath();c.moveTo(16+k*4,hy2-4);c.lineTo(18+k*4,hy2+1);c.lineTo(20+k*4,hy2-4);c.closePath();c.fill();}
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(12,hy2-4,1.8,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='sStar'){/* 這いヒトデ: 5本腕を広げて低く這う(すり抜け) */
+  c.globalAlpha=.86;
+  const sw3=Math.sin(t*3+ph)*.12;
+  c.fillStyle=Z.c;
+  for(let k=0;k<5;k++){const a7=-1.9+k*1.257+sw3,ln=27+Math.sin(t*4+ph+k)*3;
+   c.beginPath();c.moveTo(Math.cos(a7-.42)*10,-12+Math.sin(a7-.42)*10*.5);
+   c.lineTo(Math.cos(a7)*ln,-12+Math.sin(a7)*ln*.5);
+   c.lineTo(Math.cos(a7+.42)*10,-12+Math.sin(a7+.42)*10*.5);c.closePath();c.fill();c.stroke();}
+  c.fillStyle=shade(Z.c,1.2);c.beginPath();c.ellipse(0,-12,11,6,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(4,-13,2,0,7);c.fill();
+  c.globalAlpha=1;
+  c.restore();return;}
+ if(Z.id==='sJelly'){/* 溶けクラゲ: 半透明の傘とゆらぐ触手、ゆっくり上下 */
+  const fl2=Math.sin(t*2.2+ph);
+  c.translate(0,-10-fl2*4);c.globalAlpha=.58;
+  c.strokeStyle=shade(Z.c,1.3);c.lineWidth=3/s;
+  for(let k=0;k<5;k++){const sw=Math.sin(t*3+ph+k*.9)*7;
+   c.beginPath();c.moveTo(-14+k*7,-16);c.quadraticCurveTo(-14+k*7+sw,-6,-16+k*7+sw*1.4,6);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-16,18,14+fl2*2,0,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,1.35);c.beginPath();c.ellipse(-6,-21,7,5,0,0,7);c.fill();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(5,-20,1.8,0,7);c.fill();c.beginPath();c.arc(11,-19,1.8,0,7);c.fill();
+  c.globalAlpha=1;
+  c.restore();return;}
+ if(Z.id==='sAngl'){/* 深海アンコウ: 巨大な頭と牙、額の提灯が光る */
+  const gl=1+Math.sin(t*4+ph)*.25;
+  c.fillStyle=shade(Z.c,.8);c.beginPath();c.moveTo(-16,-24);c.lineTo(-35,-35);c.lineTo(-33,-11);c.closePath();c.fill();c.stroke();
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-24,24,20,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#3a1020';c.beginPath();c.moveTo(-8,-16);c.lineTo(24,-20);c.lineTo(22,-8);c.lineTo(-6,-8);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#F2ECDC';for(let k=0;k<5;k++){c.beginPath();c.moveTo(-6+k*6,-17);c.lineTo(-3+k*6,-9);c.lineTo(k*6,-17);c.closePath();c.fill();}
+  c.strokeStyle=shade(Z.c,1.3);c.lineWidth=2.4/s;
+  c.beginPath();c.moveTo(6,-42);c.quadraticCurveTo(20,-58,27,-48);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle='#c9a13d';c.beginPath();c.arc(28,-47,6*gl,0,7);c.fill();c.stroke();
+  c.fillStyle='#F2ECDC';c.beginPath();c.arc(28,-47,2.6*gl,0,7);c.fill();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(10,-30,2.2,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='sShark'){/* 影サメ: 流線型の体と背びれ、速い */
+  const sw2=Math.sin(t*10+ph);
+  c.fillStyle=shade(Z.c,.8);c.beginPath();c.moveTo(-20,-22);c.lineTo(-37,-33+sw2*5);c.lineTo(-33,-21);c.lineTo(-37,-10+sw2*5);c.closePath();c.fill();c.stroke();
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-22,24,11,0,0,7);c.fill();c.stroke();
+  c.beginPath();c.moveTo(2,-31);c.lineTo(-4,-47);c.lineTo(12,-30);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.85);c.beginPath();c.moveTo(-2,-13);c.lineTo(-11,-1+sw2*2);c.lineTo(6,-14);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#F2ECDC';c.beginPath();c.moveTo(6,-18);c.lineTo(25,-20);c.lineTo(6,-14);c.closePath();c.fill();c.stroke();
+  c.strokeStyle=shade(Z.c,.6);c.lineWidth=2/s;
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(2+k*4,-27);c.lineTo(4+k*4,-21);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(14,-26,2,0,7);c.fill();
+  c.restore();return;}
+ if(Z.id==='sKrak'){/* 触腕の主(港のボス): うねる触腕と大きな一つ目のタコ */
+  /* 触腕: 頭の下から左右に広がって地面まで垂れる */
+  c.strokeStyle=shade(Z.c,.68);c.lineWidth=8/s;c.lineCap='round';
+  for(let k=0;k<6;k++){const a8=Math.sin(t*2.2+k*1.1+ph)*11,bx=-26+k*10.5;
+   c.beginPath();c.moveTo(bx,-30);c.quadraticCurveTo(bx*2.1+a8,-14,bx*2.6+a8*1.6,2);c.stroke();}
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  /* 胴と頭(すこし縦長のタコ頭) */
+  c.fillStyle=shade(Z.c,.8);c.beginPath();c.ellipse(0,-31,26,13,0,0,7);c.fill();c.stroke();
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-52,25,24,0,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,1.22);c.beginPath();c.ellipse(-9,-63,10,6,0,0,7);c.fill();
+  /* 一つ目 */
+  const ey=Math.sin(t*1.6+ph)*2.2;
+  c.fillStyle='#F2ECDC';c.beginPath();c.arc(7,-50,11,0,7);c.fill();c.stroke();
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(9+ey,-50,5.5,0,7);c.fill();
+  c.fillStyle=INK;c.beginPath();c.arc(10+ey,-50,2.4,0,7);c.fill();
+  /* 吸盤 */
+  c.fillStyle='#c9a13d';for(let k=0;k<4;k++){c.beginPath();c.arc(-19+k*13,-29,3,0,7);c.fill();}
   c.restore();return;}
  if(Z.id==='crwl'){/* クローラー: 地を這ってすり抜ける */
   c.fillStyle=Z.c;rr(c,-18,-14,36,12,6);c.fill();c.stroke();
@@ -1442,9 +1628,14 @@ function buildTide(wave){
  /* 終盤(W12〜)は増え方を鈍らせる=画面が敵で埋まらないように */
  const taper=wave>=12?Math.max(0,(wave-11)*.5):0;
  const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1));
- /* ナイトメアは獣ゾンビだけの完全別プール */
+ /* 敵の顔ぶれは「ナイトメア=獣」「ステージ2=海の亡骸」「それ以外=ゾンビ」の完全別プール */
  const nmOn=isNM();
- const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave&&(nmOn?ZOMBIES[i].nm:!ZOMBIES[i].nm));
+ const st2=!nmOn&&G.pve&&!G.coop&&stageZs()===2;
+ const zp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
+  if(Z.boss||Z.mw>wave)return false;
+  if(nmOn)return !!Z.nm;
+  if(st2)return Z.st===2;
+  return !Z.nm&&!Z.st;});
  const pool=[];
  /* 強敵・すり抜け個体は重み(w)で出現を絞る */
  const zwt=zp.map(i=>ZOMBIES[i].w||1),zwSum=zwt.reduce((a,b)=>a+b,0);
@@ -1452,7 +1643,7 @@ function buildTide(wave){
  for(let k=0;k<n;k++){let pick=pickZ();
   if(wave>=4&&Math.random()<Math.min(.4,wave*.03))pick=zp[zp.length-1];
   pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul,wave)});}
- if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(nmOn?NM_BOSS_ZI:BOSS_ZI,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
+ if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(nmOn?NM_BOSS_ZI:st2?ST2_BOSS_ZI:BOSS_ZI,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
  /* 毎ウェーブのエリート個体(W3以降・後半に配置) */
  if(wave>=3){const ne=(1+Math.floor(wave/8))*(G.coop?G.np:1);
   for(let k=0;k<ne;k++){const e=pool[ri(Math.floor(pool.length*.35),pool.length-1)];
@@ -1610,7 +1801,11 @@ function killZ(C,z){
   if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:'#d883ee'});
   if(C.isMe)sfx.eliteKill();
  }
- if(z.split){C.totalWave+=z.split;for(let i=0;i<z.split;i++)C.zombies.push(mkZ(zSpec(0,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i)));}
+ /* 分裂で出てくる小型は、その敵と同じ生態系(=同じプール)の一番弱い個体にする */
+ if(z.split){C.totalWave+=z.split;
+  const Zp=ZOMBIES[z.zi]||{},base=ZOMBIES.findIndex(Q=>!Q.boss&&Q.mw<=1&&(Zp.nm?Q.nm:Zp.st?Q.st===Zp.st:(!Q.nm&&!Q.st)));
+  const bi=base<0?0:base;
+  for(let i=0;i<z.split;i++)C.zombies.push(mkZ(zSpec(bi,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i)));}
 }
 function dmgZ(C,z,d,armorPierce){
  if(z.dead)return;
@@ -2063,6 +2258,9 @@ function awardMeta(){
  if(G.winner===0){
   if(!META.clr)META.clr=[0,0,0,0,0,0];
   META.clr[d9]=1;
+  /* ステージのクリア記録(次のステージの解放条件) */
+  if(!Array.isArray(META.sclr))META.sclr=[];
+  if(!META.sclr[STAGE]){META.sclr[STAGE]=1;if(STAGES[STAGE+1])G.stgUnlocked=STAGE+1;}
   if(d9===4&&!META.nmOK){META.nmOK=1;G.nmUnlocked=1;}
  }
  saveMeta();
@@ -2164,14 +2362,17 @@ function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remov
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
 /* 地面の模様はマップの外(画面端まで伸ばす裁ち落とし部分)にも撒く=境目が見えないように */
-const DOTS=[];for(let i=0;i<260;i++)DOTS.push([rnd(-160,1760),rnd(120,940),rnd(1.5,4),Math.random()<.5]);
-/* 地面と道路の質感(起動時に一度だけ生成して使い回す) */
-const PATCHES=[];for(let i=0;i<42;i++)PATCHES.push([rnd(-150,1750),rnd(130,930),rnd(40,120),rnd(20,60),rnd(0,3.14),Math.random()<.5]);
-const TUFTS=[];for(let i=0;i<115;i++)TUFTS.push([rnd(-160,1760),rnd(120,942),rnd(4,9),rnd(0,9)]);
-const CRACKS=[];for(let i=0;i<34;i++){const d0=rnd(0,PLEN),p=pathPos(d0),a=rnd(0,6.28),l=rnd(14,46);
- CRACKS.push([p[0]+Math.cos(a)*rnd(0,34),p[1]+Math.sin(a)*rnd(0,26),a,l,rnd(.5,1.6)]);}
-const SKID=[];for(let i=0;i<9;i++){const d0=rnd(120,PLEN-120),p1=pathPos(d0),p2=pathPos(d0+rnd(60,150));
- SKID.push([p1[0],p1[1],p2[0],p2[1],rnd(-16,16)]);}
+const DOTS=[],PATCHES=[],TUFTS=[],CRACKS=[],SKID=[];
+/* 地面と道路の質感。ステージを読み込むたびに作り直す(道の形が変わるとひび割れの位置も変わるため) */
+function makeScenery(){
+ DOTS.length=0;for(let i=0;i<260;i++)DOTS.push([rnd(-160,1760),rnd(120,940),rnd(1.5,4),Math.random()<.5]);
+ PATCHES.length=0;for(let i=0;i<42;i++)PATCHES.push([rnd(-150,1750),rnd(130,930),rnd(40,120),rnd(20,60),rnd(0,3.14),Math.random()<.5]);
+ TUFTS.length=0;for(let i=0;i<115;i++)TUFTS.push([rnd(-160,1760),rnd(120,942),rnd(4,9),rnd(0,9)]);
+ CRACKS.length=0;for(let i=0;i<34;i++){const d0=rnd(0,PLEN),p=pathPos(d0),a=rnd(0,6.28),l=rnd(14,46);
+  CRACKS.push([p[0]+Math.cos(a)*rnd(0,34),p[1]+Math.sin(a)*rnd(0,26),a,l,rnd(.5,1.6)]);}
+ SKID.length=0;for(let i=0;i<9;i++){const d0=rnd(120,PLEN-120),p1=pathPos(d0),p2=pathPos(d0+rnd(60,150));
+  SKID.push([p1[0],p1[1],p2[0],p2[1],rnd(-16,16)]);}}
+loadStage(0);/* 起動時はステージ1を読み込んでおく */
 /* 時間帯の色(朝→昼→夕→宵→夜)。画面の縁と空の色でウェーブの進行を表現する */
 const TOD_STOPS=[[0,'#e8a86a'],[.22,'#8fc0e8'],[.5,'#e08a4a'],[.72,'#5b4a86'],[1,'#121a3a']];
 /* ナイトメアは終始「血の夜」 */
@@ -2201,18 +2402,19 @@ function renderCamp(C,t){
  c.setTransform(SC,0,0,SC,OX+shx,OY+shy);
  /* 画面に映っている範囲(論理座標)。地面と空はここまで伸ばして描き、盤が浮いて見えないようにする */
  const VL=Math.min(0,(-OX-shx)/SC),VR=Math.max(MW,(cv.width-OX-shx)/SC),VT=Math.min(0,(-OY-shy)/SC),VB=Math.max(MH,(cv.height-OY-shy)/SC);
- /* 荒野 */
+ /* 地面(ステージごとの色) */
+ const PAL=stagePal();
  {const gg=c.createLinearGradient(0,110,0,MH);
-  gg.addColorStop(0,mix('#C4AE84','#4f4839',dk*.72));gg.addColorStop(1,mix('#A8925F','#413b30',dk*.72));
+  gg.addColorStop(0,mix(PAL.g0,'#4f4839',dk*.72));gg.addColorStop(1,mix(PAL.g1,'#413b30',dk*.72));
   c.fillStyle=gg;c.fillRect(VL,110,VR-VL,VB-110);}
  /* 土のムラ */
  c.save();
- for(const p of PATCHES){c.globalAlpha=p[5]?.1:.07;c.fillStyle=p[5]?'#6b5a37':'#d8c79b';
+ for(const p of PATCHES){c.globalAlpha=p[5]?.1:.07;c.fillStyle=p[5]?PAL.patch[0]:PAL.patch[1];
   c.save();c.translate(p[0],p[1]);c.rotate(p[4]);c.beginPath();c.ellipse(0,0,p[2],p[3],0,0,7);c.fill();c.restore();}
  c.restore();
  for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
  /* 枯れ草 */
- if(FXLV>0){c.strokeStyle=mix('#8a7d4e','#3c3a2c',dk*.6);c.lineWidth=1.6;
+ if(FXLV>0){c.strokeStyle=mix(PAL.tuft,'#3c3a2c',dk*.6);c.lineWidth=1.6;
   for(const g3 of TUFTS){const sw=Math.sin(t*1.5+g3[3])*1.6;
    c.beginPath();c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+sw,g3[1]-g3[2]);
    c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]-3+sw,g3[1]-g3[2]*.7);
@@ -2220,7 +2422,7 @@ function renderCamp(C,t){
  /* 地平線と廃墟 */
  {const sky=todCol(tod),sg=c.createLinearGradient(0,0,0,115);
   sg.addColorStop(0,sky);sg.addColorStop(1,mix('#F2ECDC',sky,.72));c.fillStyle=sg;c.fillRect(VL,VT,VR-VL,115-VT);}
- c.fillStyle=mix('#8a7a5e','#12151f',.35+tod*.45);
+ c.fillStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
  [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
  if(isNM()){/* 血月 */
   c.fillStyle='#8a1a2a';c.beginPath();c.arc(1380,48,34,0,7);c.fill();
@@ -2849,12 +3051,14 @@ function paradeStep(t){
 let setCpu=1,setDiff=2,setLMode=0,setLDiff=2;
 function segInit(id,cb){$(id).querySelectorAll('.btn').forEach(b=>{b.onclick=()=>{$(id).querySelectorAll('.btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');cb(+b.dataset.v);};});}
 segInit('seg-diff',v=>setDiff=v);
+segInit('seg-stage',v=>{if(!stageOK(v)){refreshStageUI();return;}META.stg=v;saveMeta();refreshStageUI();});
 segInit('lb-mode',v=>{setLMode=v;$('lb-diffwrap').style.display=v?'block':'none';});
 segInit('lb-diff',v=>setLDiff=v);
 segInit('seg-fx',v=>{FXLV=v;try{localStorage.setItem('dt_fx',''+v);}catch(e){}});
 document.querySelectorAll('#seg-fx .btn').forEach(b=>b.classList.toggle('sel',+b.dataset.v===FXLV));
 function startSolo(){
  MODE='solo';COOP=false;
+ loadStage(stageOK(META.stg||0)?(META.stg||0):0);/* 選んだステージの地形と敵を読み込む */
  applyLoadout(true);/* 編成(派生兵科・弾薬)はソロのみ反映 */
  newGame([{name:'キミ',kind:'me'}],0);
  G.pve=1;G.pveDiff=setDiff;
@@ -3047,6 +3251,21 @@ function refreshDiffUI(){
  if($('nm-note')&&$('nm-note').style)$('nm-note').style.display=on?'block':'none';
  if(!on&&setDiff===NM_DIFF){setDiff=4;
   document.querySelectorAll('#seg-diff .btn').forEach(x=>x.classList.toggle('sel',+x.dataset.v===4));}
+ refreshStageUI();
+}
+/* ステージ選択の見た目(未解放は🔒つきで押せない)と、上の見出しの文言 */
+function refreshStageUI(){
+ if(!stageOK(META.stg||0))META.stg=0;
+ document.querySelectorAll('#seg-stage .btn').forEach(x=>{
+  const v=+x.dataset.v,ok=stageOK(v),S=STAGES[v];
+  if(!S){x.style.display='none';return;}
+  x.textContent=(v+1)+' '+S.n+(ok?'':' 🔒');
+  x.disabled=!ok;x.style.opacity=ok?'':'.5';
+  x.classList.toggle('sel',v===(META.stg||0));});
+ const S=STAGES[META.stg||0]||STAGES[0];
+ if($('stg-hd'))$('stg-hd').textContent='🏕 ステージ'+((META.stg||0)+1)+' — '+S.n;
+ if($('stg-sub'))$('stg-sub').textContent=S.sub+'。WAVE'+STAGE_W+'を守り切ればクリア。5波ごとにボスが来る。';
+ if($('bt-solo'))$('bt-solo').textContent='🛡 ソロ作戦 — ステージ'+((META.stg||0)+1);
 }
 $('bt-solo').onclick=()=>{ensureAC();renderStkSeg();updLabBtn();refreshDiffUI();show('setup');};
 $('bt-start-solo').onclick=()=>{ensureAC();startSolo();};
@@ -3238,6 +3457,7 @@ function hostGone(c){
 }
 function hostStart(){
  MODE='host';
+ loadStage(0);/* 協力/対戦は必ずステージ1にする(参加者と地形を揃えるため) */
  const coop=setLMode===1;
  const specs=[{name:NET.hostName||'ホスト',kind:'me'}];
  for(const o of NET.lob)specs.push({name:o.name,kind:'remote'});
@@ -3283,7 +3503,8 @@ function clientData(d){
   CLSNAP=TT;applySnap(d);}
 }
 function clientStart(d){
- MODE='client';CS={meN:null,ot:[],w:0,ph:1,tI:0,ivOn:false,over:false,es:[],sh:[],ts:[],pr:0,tu:0,myJ:d.j};CC=null;CCFX=[];
+ MODE='client';loadStage(0);/* 参加側もステージ1の地形で描く */
+ CS={meN:null,ot:[],w:0,ph:1,tI:0,ivOn:false,over:false,es:[],sh:[],ts:[],pr:0,tu:0,myJ:d.j};CC=null;CCFX=[];
  COOP=!!d.md;CLSNAP=TT;CLWARN=0;
  startGameUI((d.ns||[]).map((n,i)=>({i,n})).filter(o=>o.i!==d.j));
  if(COOP){$('tidebar').style.display='none';$('pushbtn').style.display='none';}

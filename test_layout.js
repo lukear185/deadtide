@@ -45,6 +45,23 @@ const R=${JSON.stringify(RECTS)};
 const S=(x,y)=>[css(OX+x*SC),css(OY+y*SC)];
 function hit(x,y,r,box){return x+r>box.left&&x-r<box.right&&y+r>box.top&&y-r<box.bottom;}
 let bad=0;
+/* 全ステージのマス・道路がUIに被っていないか */
+for(let si=0;si<STAGES.length;si++){
+ loadStage(si);
+ let ng=0;
+ SLOTS.forEach((s,i)=>{const [x,y]=S(s[0],s[1]);
+  for(const k of ['abar','topbar']){const b=R[k];if(!b.width)continue;
+   if(hit(x,y,30*SC/DPR,b)){console.log('NG: ステージ'+(si+1)+' スロット'+i+' が '+k+' と重なる');ng++;}}
+  if(x<0||y<0||x>852||y>393){console.log('NG: ステージ'+(si+1)+' スロット'+i+' が画面外');ng++;}});
+ let lo=0,up2=0;
+ for(let d=0;d<=PLEN;d+=10){const p=pathPos(d);const [x,y]=S(p[0],p[1]);const r=css(52*SC);
+  if(y+r>R.abar.top)lo++;if(hit(x,y,r,R.topbar))up2++;}
+ if(lo){console.log('NG: ステージ'+(si+1)+' 道路が操作バーに潜る '+lo+'点');ng++;}
+ if(up2){console.log('NG: ステージ'+(si+1)+' 道路が上のHUDに潜る '+up2+'点');ng++;}
+ console.log('ステージ'+(si+1)+' ('+STAGES[si].n+'): マス'+SLOTS.length+'個・道路'+(ng?'✗':'OK'));
+ bad+=ng;
+}
+loadStage(0);
 SLOTS.forEach((s,i)=>{const [x,y]=S(s[0],s[1]);
  for(const k of ['abar','topbar']){const b=R[k];if(!b.width)continue;
   if(hit(x,y,30*SC/DPR,b)){console.log('NG: スロット'+i+' ('+s[0]+','+s[1]+') が '+k+' と重なる → 画面('+x.toFixed(0)+','+y.toFixed(0)+')');bad++;}}

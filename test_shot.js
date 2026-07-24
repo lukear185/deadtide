@@ -10,7 +10,10 @@
 const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process');
 const OUT=path.resolve(process.argv[2]||'shot.png');
 const W=+(process.argv[3]||852),H=+(process.argv[4]||393);
-const PC=(process.argv[5]||'')==='pc';
+const OPT=(process.argv[5]||'');
+const PC=OPT.indexOf('pc')>=0;
+const ST=/st(\d)/.exec(OPT);/* 例 st2 = ステージ2を撮る */
+const WM=/w(\d+)/.exec(OPT),WAIT=WM?+WM[1]:9000;/* 例 w30000 = 30秒ぶん進めてから撮る(敵が出た状態) */
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'];
 const BR=BROWSERS.find(p=>fs.existsSync(p));
@@ -25,12 +28,14 @@ function coarseCSS(s){
   out+=s.slice(i+k.length,j-1)+'\n';from=j;}
  return out;}
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
- +'<scr'+'ipt>setTimeout(function(){try{setDiff=2;startSolo();}catch(e){document.title="ERR "+e.message;}'
+ +'<scr'+'ipt>setTimeout(function(){try{'
+ +(ST?('META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
+ +'setDiff=2;startSolo();}catch(e){document.title="ERR "+e.message;}'
  +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));
 const args=['--headless=new','--disable-gpu','--no-sandbox',
- '--force-device-scale-factor=2','--window-size='+W+','+H,'--virtual-time-budget=9000',
+ '--force-device-scale-factor=2','--window-size='+W+','+H,'--virtual-time-budget='+WAIT,
  '--screenshot='+OUT,'file:///'+tmp.replace(/\\/g,'/')];
 const r=cp.spawnSync(BR,args,{encoding:'utf-8'});
 console.log((r.stderr||'').split('\n').filter(l=>/written to file|ERROR/.test(l)).join('\n')||'(出力なし)');

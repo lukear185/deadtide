@@ -140,6 +140,30 @@ function runCoop(tag){
  COOP=false;backTitle();
  return won;
 }
+/* ---- ステージ2(沈んだ港・海の亡骸)の疎通確認 ---- */
+function runStage2(){
+ META.sclr=[1];META.stg=1;
+ const seen={};
+ setDiff=1;startSolo();
+ frames(30,.016);
+ if(STAGE!==1){console.log('FAIL: ステージ2が読み込まれていない');process.exit(1);}
+ buildTower(G.players[0],STAGES[1].order[0],0);
+ let guard=0;
+ while(G&&!G.over&&guard++<9000){
+  frames(1,.033);
+  const me=G.players[0];
+  for(const z of me.zombies)seen[ZOMBIES[z.zi].n]=1;
+  if(G.phase==='wave'&&Math.random()<.02)deployUnit(me,ri(0,me.uUn-1));
+  if(G.phase==='interval'&&!me.ready){doPurchase(me,'unlock',{});doPurchase(me,'uun',{});me.ready=true;}
+ }
+ const names=Object.keys(seen);
+ console.log('ステージ2: wave='+(G?G.wave:'?')+' 出た敵='+names.join('/'));
+ const bad=names.filter(n=>['ウォーカー','ランナー','アーマード','ブローター'].indexOf(n)>=0);
+ if(bad.length){console.log('FAIL: ステージ1のゾンビが混ざっている '+bad.join(','));process.exit(1);}
+ if(!names.length){console.log('FAIL: 敵が1体も出ていない');process.exit(1);}
+ META.stg=0;backTitle();loadStage(0);
+}
+runStage2();
 runPvE(1,'PvE古参(素の腕前)',false);
 const won=runPvE(1,'PvE古参(強化プレイ)',true);
 if(!won)console.log('WARN: 強化プレイでもステージクリア不可(バランス要確認)');
