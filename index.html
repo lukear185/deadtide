@@ -2011,11 +2011,21 @@ function upTower(C,si,st){st=st||'d';const F=G&&G.coop?G.players[0]:C;const tw=F
 function sellTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];if(!tw)return false;
  if(G&&G.coop&&(tw.own||0)!==(C.gi||0))return false;
  C.scrap+=Math.round(tw.spent*.6);F.towers[si]=null;if(C.isMe)sfx.sell();return true;}
+/* 砲撃は即着弾ではなく、画面の外から実際に飛んでくる=弾道が見える(2026-07-25ユーザー指示)。
+   発射時にロケットを1発出し、着弾した瞬間にairstrikeHitで効果を出す */
+const STK_FLY=.85;/* 飛行時間(秒) */
 function airstrike(C,x,y,wave){
  if(C.charge<1||C.dead)return false;
  const F=G&&G.coop?G.players[0]:C;
  C.charge=0;
- const stk=C.stk||'air';
+ F.shells.push({x:x-640,y:y-500,tx:x,ty:y,t:0,fl:STK_FLY,dmg:0,aoe:0,
+  stk:C.stk||'air',wave:wave||1,rk:1,byMe:!!C.isMe});
+ addFx(F,'ring',x,y,'',{r:80,col:'#ffdd66'});/* 着弾予定地の目印 */
+ if(C.isMe||F.isMe)sfx.thunk();
+ return true;
+}
+function airstrikeHit(C,x,y,wave,stk,mine){
+ const F=C;const isMine=!!mine||!!F.isMe;
  if(stk==='carpet'){/* 絨毯爆撃: 道に沿って前後300を連続爆撃 */
   const cd0=projPath(x,y),dm=110*(1+.15*wave);
   for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=300){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=15;}}}
@@ -2024,7 +2034,7 @@ function airstrike(C,x,y,wave){
  }else if(stk==='frost'){/* 凍結爆弾: 広範囲4秒凍結 */
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=170){z.slowT=Math.max(z.slowT,4);dmgZ(F,z,40*(1+.1*wave),1);}}
   addFx(F,'ring',x,y,'',{r:170,col:'#9fdcf5'});addFx(F,'spark',x,y,'',{sd:rnd(0,9),col:'#9fdcf5'});
-  if(C.isMe||F.isMe)sfx.frost();F.shake=.15;
+  ifisMinesfx.frost();F.shake=.15;
  }else if(stk==='napalm'){/* ナパーム: 強烈な継続燃焼 */
   const dm=60*(1+.12*wave);
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave);}}}
@@ -2032,7 +2042,7 @@ function airstrike(C,x,y,wave){
  }else if(stk==='mgun'){/* 機関銃掃射: 拠点から連射(以後campStepで継続) */
   F.mg={t:3.6,x,y,dmg:24*(1+.12*wave),cd:0};
   addFx(F,'ring',x,y,'',{r:150,col:'#ffdd66'});
-  if(C.isMe||F.isMe)sfx.shotgun();
+  ifisMinesfx.shotgun();
   return true;
  }else{/* 標準エアストライク */
   const dm=150*(1+.15*wave);
@@ -2043,7 +2053,7 @@ function airstrike(C,x,y,wave){
  addP(F,16,x,y,{sp:260,up:90,g:560,life:.6,r:3.4,col:stk==='frost'?'#cdf1ff':'#ffb347'});
  addP(F,8,x,y,{sp:70,up:50,g:-40,life:1.4,r:11,col:'#5c5148',typ:'smoke'});
  addP(F,10,x,y,{sp:220,up:20,g:620,life:.7,r:2.8,col:'#8a7a5e',flat:1});
- if((C.isMe||F.isMe)&&stk!=='frost')sfx.boom();
+ if(isMine&&stk!=='frost')sfx.boom();
  return true;
 }
 function campStep(C,dt,wave){
@@ -2198,6 +2208,7 @@ function campStep(C,dt,wave){
  }
  /* 砲弾 */
  for(const sh of C.shells){sh.t+=dt;if(sh.t>=sh.fl){sh.dead=true;
+  if(sh.stk){airstrikeHit(C,sh.tx,sh.ty,sh.wave,sh.stk,sh.byMe);continue;}/* 砲撃のロケットが着弾 */
   for(const z of C.zombies)if(!z.dead&&dist(z.px,z.py,sh.tx,sh.ty)<=sh.aoe)dmgZ(C,z,sh.dmg,1);
   addFx(C,'boom',sh.tx,sh.ty,'');
   addP(C,10,sh.tx,sh.ty,{sp:200,up:70,g:520,life:.45,r:3,col:'#ffb347'});
@@ -2649,8 +2660,24 @@ function renderCamp(C,t){
    /* 現在の射程(オレンジの実線寄り) */
    c.strokeStyle='rgba(232,163,61,.9)';c.lineWidth=3;c.setLineDash([10,10]);c.beginPath();c.arc(sxx,syy,T4.rng*twRngM(tw),0,7);c.stroke();c.setLineDash([]);}}
  /* 砲弾 */
- for(const sh of C.shells){const p2=sh.t/sh.fl;const px=sh.x+(sh.tx-sh.x)*p2,py=sh.y+(sh.ty-sh.y)*p2-Math.sin(Math.PI*p2)*110;
-  c.fillStyle='#3c4136';c.beginPath();c.arc(px,py,7,0,7);c.fill();c.stroke();}
+ for(const sh of C.shells){const p2=clamp(sh.t/sh.fl,0,1);
+  const px=sh.x+(sh.tx-sh.x)*p2,py=sh.y+(sh.ty-sh.y)*p2-Math.sin(Math.PI*p2)*(sh.rk?0:110);
+  if(sh.rk){/* 砲撃のロケット: 画面の外から煙の尾を引いて飛んでくる */
+   const ang=Math.atan2(sh.ty-sh.y,sh.tx-sh.x);
+   c.save();c.globalAlpha=.45+.3*Math.sin(t*18);c.strokeStyle='#ffdd66';c.lineWidth=3;
+   c.beginPath();c.arc(sh.tx,sh.ty,24+70*(1-p2),0,7);c.stroke();
+   c.beginPath();c.moveTo(sh.tx-18,sh.ty);c.lineTo(sh.tx+18,sh.ty);c.moveTo(sh.tx,sh.ty-18);c.lineTo(sh.tx,sh.ty+18);c.stroke();c.restore();
+   c.save();c.strokeStyle='rgba(232,228,216,.5)';c.lineWidth=11;c.lineCap='round';
+   c.beginPath();c.moveTo(px-Math.cos(ang)*190,py-Math.sin(ang)*190);c.lineTo(px,py);c.stroke();c.restore();
+   c.save();c.translate(px,py);c.rotate(ang);c.scale(1.7,1.7);c.lineWidth=1.6;
+   c.fillStyle='#ffb347';c.beginPath();c.ellipse(-20-Math.abs(Math.sin(t*40))*6,0,8,4.5,0,0,7);c.fill();
+   c.fillStyle='#c9c3b4';rr(c,-16,-5,26,10,4);c.fill();c.stroke();
+   c.fillStyle='#6e6354';
+   c.beginPath();c.moveTo(-15,-5);c.lineTo(-22,-12);c.lineTo(-10,-5);c.closePath();c.fill();
+   c.beginPath();c.moveTo(-15,5);c.lineTo(-22,12);c.lineTo(-10,5);c.closePath();c.fill();
+   c.fillStyle='#C1502E';c.beginPath();c.moveTo(10,-5);c.lineTo(21,0);c.lineTo(10,5);c.closePath();c.fill();c.stroke();
+   c.restore();
+  }else{c.fillStyle='#3c4136';c.beginPath();c.arc(px,py,7,0,7);c.fill();c.stroke();}}
  /* ゾンビ */
  const zs=C.zombies.slice().sort((a,b)=>a.py-b.py);
  for(const z of zs){if(z.d<0)continue;
