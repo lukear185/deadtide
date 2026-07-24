@@ -368,7 +368,7 @@ $('mutebtn').onclick=()=>{muted=!muted;$('mutebtn').textContent=muted?'🔇':'�
 const MW=1600,MH=760;
 const TOWERS=[
  {id:'rifle',n:'ライフル櫓',cost:120,rng:230,dmg:22,rate:.55,type:'bullet',c:'#8a97a5',dsc:'基本の単発銃座'},
- {id:'shot',n:'ショットガン台',cost:180,rng:135,dmg:15,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'近距離3体同時撃ち'},
+ {id:'shot',n:'ショットガン台',cost:200,rng:135,dmg:19.5,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'近距離3体同時撃ち'},
  {id:'net',n:'拘束ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:220,rng:0,dmg:0,rate:3,type:'eco',inc:16,c:'#b08d4f',dsc:'時間で⚙️を生産'},
  {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,c:'#c96b35',dsc:'装甲無視・継続燃焼'},
@@ -403,6 +403,8 @@ const UNITS=[
  {id:'mgn',n:'ミニガン',cost:370,cd:11,hp:110,atk:9,rate:.16,rng:200,sp:40,type:'bullet',c:'#6b7580',dsc:'弾幕をばら撒く'},
  {id:'rkt',n:'ロケラン',cost:420,cd:12,hp:95,atk:92,rate:2.4,rng:300,sp:42,type:'blast',aoe:100,c:'#7a7f6a',dsc:'範囲爆撃'}
 ];
+const UBUF=1.2;/* ユニット全体強化倍率(2026-07-24 永井さん指示) */
+for(const U of UNITS){U.hp=Math.round(U.hp*UBUF);U.atk=Math.round(U.atk*UBUF);}
 const UNITP=[0,0,150,220,300,380,470,560,660,780,920,1080];
 const MAXU=20;
 const STAGE_W=20;
