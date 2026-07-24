@@ -653,7 +653,37 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(tier===4){c.shadowColor='#E8A33D';c.shadowBlur=10;}
  c.lineWidth=2.4;c.strokeStyle=INK;
- if(id==='hnd'){/* 猟犬 */
+ if(id==='hnd'){
+  if(o.evo){/* 最終形態: ドラゴン */
+   const flap=Math.sin(t*8+ph);
+   c.scale(1.25,1.25);
+   /* 奥の翼 */
+   c.fillStyle='#8f3428';c.beginPath();c.moveTo(-4,-22);c.lineTo(-20,-40-flap*7);c.lineTo(3,-26);c.closePath();c.fill();c.stroke();
+   /* 尻尾 */
+   c.strokeStyle='#7a2f22';c.lineWidth=5;c.beginPath();c.moveTo(-16,-13);c.quadraticCurveTo(-30,-18,-32,-6);c.stroke();
+   c.strokeStyle=INK;c.lineWidth=2.4;
+   /* 胴体 */
+   c.fillStyle='#c14b3e';rr(c,-18,-22,34,16,8);c.fill();c.stroke();
+   /* 脚 */
+   c.fillStyle='#a33c31';
+   c.fillRect(-12+walk*3,-7,5,8);c.strokeRect(-12+walk*3,-7,5,8);
+   c.fillRect(5-walk*3,-7,5,8);c.strokeRect(5-walk*3,-7,5,8);
+   /* 背びれ */
+   c.fillStyle='#ffd23d';for(let k=0;k<3;k++){c.beginPath();c.moveTo(-10+k*8,-22);c.lineTo(-6+k*8,-29);c.lineTo(-2+k*8,-22);c.closePath();c.fill();c.stroke();}
+   /* 首と頭 */
+   c.fillStyle='#c14b3e';rr(c,10,-36,9,18,4);c.fill();c.stroke();
+   c.beginPath();c.arc(18,-37,7.5,0,7);c.fill();c.stroke();
+   /* 角 */
+   c.fillStyle='#F2ECDC';c.beginPath();c.moveTo(15,-43);c.lineTo(12,-51);c.lineTo(19,-44);c.closePath();c.fill();c.stroke();
+   /* 目と火 */
+   c.fillStyle='#ffd23d';c.beginPath();c.arc(21,-38,1.8,0,7);c.fill();
+   c.fillStyle='#ffb347';c.beginPath();c.arc(29,-35,3.5+Math.sin(t*16)*1.8,0,7);c.fill();
+   c.fillStyle='#fff3c0';c.beginPath();c.arc(28,-35,1.6+Math.sin(t*16),0,7);c.fill();
+   /* 手前の翼 */
+   c.fillStyle='#e0604f';c.beginPath();c.moveTo(-2,-24);c.lineTo(-15,-44+flap*7);c.lineTo(7,-28);c.closePath();c.fill();c.stroke();
+   c.restore();return;
+  }
+  /* 猟犬 */
   c.fillStyle='#8a6a45';rr(c,-15,-16,30,12,6);c.fill();c.stroke();
   c.fillRect(-12+walk*4,-5,5,6);c.strokeRect(-12+walk*4,-5,5,6);c.fillRect(7-walk*4,-5,5,6);c.strokeRect(7-walk*4,-5,5,6);
   c.beginPath();c.arc(17,-18,7,0,7);c.fill();c.stroke();
@@ -661,6 +691,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=INK;c.beginPath();c.arc(19,-19,1.4,0,7);c.fill();
   c.restore();return;
  }
+ if(o.evo){c.scale(1.12,1.12);c.shadowColor=U.c;c.shadowBlur=8;}
  /* 脚 */
  c.fillStyle='#4a4034';
  c.fillRect(-8+walk*3.5,-10,5,10);c.strokeRect(-8+walk*3.5,-10,5,10);
@@ -670,6 +701,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(id==='rkt'){}
  /* 胴体 */
  rr(c,-10,-34,20,24,7);c.fillStyle=U.c;c.fill();c.stroke();
+ if(o.evo){c.fillStyle='#ffd23d';c.fillRect(-10,-34,20,3);}
  if(id==='med'){c.fillStyle='#C1502E';c.fillRect(-4,-28,8,3);c.fillRect(-1.5,-30.5,3,8);}
  if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,-10,-20,20,10,4);c.fill();c.stroke();}
  /* 頭 */
@@ -677,6 +709,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  c.fillStyle=id==='shd'?'#3f4a54':id==='snp'?'#3a3128':id==='med'?'#e8e4d8':id==='frz'?'#5f8fa3':id==='mgn'?'#4c5648':id==='grn'?'#5c6648':'#C1502E';
  c.beginPath();c.arc(2,-44,8,Math.PI,0);c.fill();c.stroke();
  if(id==='med'){c.fillStyle='#C1502E';c.fillRect(0,-49,4,1.6);c.fillRect(1.2,-50.2,1.6,4);}
+ if(o.evo){c.fillStyle='#ffd23d';c.fillRect(-6,-45.6,16,2.2);}
  c.fillStyle=INK;c.beginPath();c.arc(6,-42,1.2,0,7);c.fill();
  /* 武器 */
  c.lineWidth=3.4;
@@ -704,9 +737,10 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
 }
 function drawCar(c,x,y,rot,col){c.save();c.translate(x,y);c.rotate(rot);c.lineWidth=3;c.strokeStyle=INK;c.fillStyle=col;rr(c,-34,-16,68,32,8);c.fill();c.stroke();c.fillStyle='#2c2c33';rr(c,-14,-12,26,24,5);c.fill();c.stroke();c.restore();}
 function drawTree(c,x,y){c.save();c.translate(x,y);c.strokeStyle='#3a3128';c.lineWidth=5;c.beginPath();c.moveTo(0,0);c.lineTo(0,-34);c.moveTo(0,-18);c.lineTo(-12,-30);c.moveTo(0,-24);c.lineTo(11,-36);c.stroke();c.restore();}
-const THUMBS=[],UTHUMBS=[];
+const THUMBS=[],UTHUMBS=[],UTHUMBS_E=[];
 function makeThumbs(){for(let i=0;i<TOWERS.length;i++){const cvv=document.createElement('canvas');cvv.width=92;cvv.height=80;const c=cvv.getContext('2d');c.translate(46,42);c.scale(1.1,1.1);drawTower(c,i,1,0,0,-0.5,0,{});THUMBS[i]=cvv;}
- for(let i=0;i<UNITS.length;i++){const cvv=document.createElement('canvas');cvv.width=88;cvv.height=88;const c=cvv.getContext('2d');const ts=1.35/TSCALE[uTier(i)-1];c.translate(40,76);c.scale(ts,ts);drawUnit(c,i,0,0,1,0,0,{});UTHUMBS[i]=cvv;}}
+ for(let i=0;i<UNITS.length;i++){const cvv=document.createElement('canvas');cvv.width=88;cvv.height=88;const c=cvv.getContext('2d');const ts=1.35/TSCALE[uTier(i)-1];c.translate(40,76);c.scale(ts,ts);drawUnit(c,i,0,0,1,0,0,{});UTHUMBS[i]=cvv;
+  const cvE=document.createElement('canvas');cvE.width=88;cvE.height=88;const cE=cvE.getContext('2d');const tsE=ts/1.16;cE.translate(40,76);cE.scale(tsE,tsE);drawUnit(cE,i,0,0,1,.4,0,{evo:1});UTHUMBS_E[i]=cvE;}}
 /* ============ シミュレーション ============ */
 let EID=1;
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
@@ -844,10 +878,11 @@ function deployUnit(C,ui){
  const lvM=1+.1*(C.uLv||0);/* 部隊レベル: 全兵科共通で+10%/Lv */
  const d0=G&&G.coop?branchD(C.gi||0)-rnd(0,20):PLEN-70-rnd(0,26);
  const hp0=Math.round(U.hp*lvM);
- F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
+ const evo=(C.uLv||0)>=5?1:0;/* Lv5で進化形態 */
+ F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,evo,d:d0,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
  if(U.id==='hnd'){/* 猟犬は2体1組で出撃 */
   const cnt2=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:F.units.length;
-  if(cnt2<(G&&G.coop?COOP_MAXU:MAXU))F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0+14,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});}
+  if(cnt2<(G&&G.coop?COOP_MAXU:MAXU))F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,evo,d:d0+14,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});}
  const rp=G&&G.coop?pathPos(d0):CORE;
  const tier=uTier(ui);
  if(tier>=3){addFx(F,'ring',rp[0],rp[1],'',{r:tier===4?170:120,col:tier===4?'#ffd23d':'#E8A33D'});
@@ -1031,7 +1066,8 @@ function doPurchase(C,kind,opt){
  switch(kind){
   case 'unlock':C.unlocked++;break;
   case 'uun':C.uUn++;break;
-  case 'uup':C.uLv=(C.uLv||0)+1;break;
+  case 'uup':C.uLv=(C.uLv||0)+1;
+   if(C.uLv===5&&C.isMe){UI.banner('⚡ 部隊が進化した!!');sfx.elite();}break;
   case 'atk':C.atkLv++;break;
   case 'repair':{C.repairs++;const FC=G&&G.coop?G.players[0]:C;FC.core=Math.min(FC.coreMax,FC.core+12);break;}
   case 'tide':G.tide.up++;G.tide.upN++;for(let k=0;k<G.players.length;k++)if(G.players[k]!==C&&!G.players[k].dead)ev(k,'🌊 '+C.name+' が潮位を引き上げた!次の波が深くなる…',true);break;
@@ -1283,7 +1319,7 @@ function renderCamp(C,t){
  /* ユニット */
  const us2=(C.units||[]).slice().sort((a,b)=>a.py-b.py);
  for(const u of us2){
-  drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT});
+  drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,evo:u.evo});
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56,30,5);c.fillStyle='#ffd23d';c.fillRect(u.px-15,u.py-56,30*r4,5);}
   if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }
@@ -1369,6 +1405,11 @@ function updHUD(){const m=meV();if(!m)return;
  pb.disabled=!inW||m.dead||m.scrap<pc||mySh<=8.2;
  /* 出撃デッキ */
  const uun=m.uUn!=null?m.uUn:2;
+ /* Lv5進化: デッキのサムネを進化後の姿に差し替え */
+ {const evoNow=(m.uLv||0)>=5;
+  if(evoNow!==DECKEVO){DECKEVO=evoNow;
+   for(let i=0;i<DECKB.length;i++){const cc2=DECKB[i].querySelector&&DECKB[i].querySelector('canvas');
+    if(cc2&&cc2.getContext){const c2=cc2.getContext('2d');if(c2.clearRect)c2.clearRect(0,0,88,88);c2.drawImage((evoNow?UTHUMBS_E:UTHUMBS)[i],0,0);}}}}
  for(let i=0;i<DECKB.length;i++){const b=DECKB[i],U=UNITS[i];
   const cd=m.ucd?Math.max(0,m.ucd[i]||0):0;
   const dc2=uDepCost(m,i);
@@ -1537,8 +1578,8 @@ function actDeploy(ui){
   if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<dc)return;
   safeSend(NET.conn,{t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
-let DECKB=[];
-function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];
+let DECKB=[],DECKEVO=false;
+function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKEVO=false;
  for(let i=0;i<UNITS.length;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
   b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
@@ -1578,7 +1619,7 @@ function ivRender(){
  h+=`<div class="card"><div class="ci">${early?'🔒':'🪖'}</div><div class="ct">新部隊解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる':nu?('次:『'+nu.n+'』— '+nu.dsc):'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${!early&&nu&&can('uun')?'':'disabled'}>${early?'🔒':'⚙️'+(nu?pc('uun'):'-')}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${can('atk')?'':'disabled'}>⚙️${pc('atk')}</button></div>`;
  {const ul2=m.uLv||0,umx=ul2>=ULV_MAX;
- h+=`<div class="card"><div class="ci">⬆</div><div class="ct">部隊強化 Lv${ul2}</div><div class="cdsc">全部隊のHPと攻撃+10%(以後の出撃分・出撃費も比例して上がる)</div><button class="btn gold sm buy" data-buy="uup" ${!umx&&can('uup')?'':'disabled'}>${umx?'MAX':'⚙️'+pc('uup')}</button></div>`;}
+ h+=`<div class="card"><div class="ci">${ul2>=5?'🐉':'⬆'}</div><div class="ct">部隊強化 Lv${ul2}</div><div class="cdsc">全部隊のHPと攻撃+10%(出撃費も比例)。<b>Lv5で進化して姿が変わる!</b>${ul2>=5?' — 進化済み':' あと'+(5-ul2)+'Lv'}</div><button class="btn gold sm buy" data-buy="uup" ${!umx&&can('uup')?'':'disabled'}>${umx?'MAX':'⚙️'+pc('uup')}</button></div>`;}
  h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${can('repair')&&m.core<m.coreMax?'':'disabled'}>⚙️${pc('repair')}</button></div>`;
  if(!((G&&G.pve)||COOP)){
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">大押し流し</div><div class="cdsc">死潮の取り分を一気に15%相手へ押し付ける</div><div class="tgt">${tgtBtns('tB')}</div><button class="btn red sm buy" data-buy="big" ${can('big')&&ivS.tB>=0?'':'disabled'}>⚙️${pc('big')}</button></div>`;
@@ -1682,7 +1723,7 @@ function packLane(C){
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
  fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,
  tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g]:0),
- us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
+ us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0,u.evo?1:0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
  if(G&&G.coop)o.fda=G.players.map(P2=>Math.round(P2.flagD));
@@ -1692,13 +1733,14 @@ function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)co
  if(!G.coop)o.ln={fd:Math.round(P.flagD),
    tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g]:0),
    es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0]),
-   us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid])};
+   us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0,u.evo?1:0])};
  a.push(o);}return a;}
 function hostNetTick(force){if(!G)return;
  for(let i=0;i<G.players.length;i++){const P=G.players[i];if(P.kind!=='remote'||!P.conn)continue;
   safeSend(P.conn,{t:'sn',w:G.wave,ph:G.phase==='wave'?1:0,tI:Math.max(0,G.tI),ts:G.tide.shares.map(x=>Math.round(x*10)/10),pr:G.tide.pool.length,tu:G.tide.upN,me:packLane(P),ot:othersFor(i),ev:(G.evq[i]||[]).splice(0),ov:G.over?1:0,wn:G.winner>=0?G.players[G.winner].name:''});}}
 function normMe(m){const old=CS.meN;
  if(old&&m.core<old.core&&!m.dd){sfx.leak();dmgFlash();}
+ if(old&&(old.uLv||0)<5&&(m.ul||0)>=5){UI.banner('⚡ 部隊が進化した!!');sfx.elite();}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
   uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
   towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0},fireT:0,ang:-.6,spent:TOWERS[x[0]].cost}:null)};}
@@ -1737,7 +1779,7 @@ function syncEnts(cc,es,us,dt){
  for(const r of us){const eid=r[3];useen.add(eid);
   let u=cc.um.get(eid);
   if(!u){u={eid,ui:r[0],d:r[1],ph:rnd(0,9),hitT:0,hpPc:r[2]};cc.um.set(eid,u);}
-  u.ui=r[0];u.td=r[1];u.own=r[4]||0;
+  u.ui=r[0];u.td=r[1];u.own=r[4]||0;u.evo=r[5]||0;
   if(r[2]<u.hpPc)u.hitT=.12;u.hpPc=r[2];u.hp=r[2];u.mhp=100;
  }
  for(const k of Array.from(cc.um.keys()))if(!useen.has(k))cc.um.delete(k);
