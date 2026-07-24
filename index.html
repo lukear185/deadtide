@@ -844,9 +844,11 @@ function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,d
  towers:SLOTS.map(()=>null),zombies:[],shells:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
-const ZHPM=.85;/* ゾンビHP全体倍率(通常個体を底上げしてボスとの段差をならす) */
+const ZHPM=.85;/* ゾンビHP全体倍率 */
+const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示) */
 function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
- return{zi,hp:Z.hp*ZHPM*m,mhp:Z.hp*ZHPM*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)),dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ const zhm=ZHPM*(Z.boss?1:ZHPM_N);
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)),dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
