@@ -134,6 +134,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #buildmenu{position:absolute;z-index:8;display:none;background:rgba(36,31,25,.94);border:3px solid var(--paper);border-radius:14px;padding:8px;box-shadow:0 6px 0 #000;max-width:270px}
 #buildmenu .bm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #buildmenu .bm-col{display:flex;flex-direction:column;gap:5px;margin:6px 0}
+#lab-items{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto}
+.labitem{display:flex;align-items:center;gap:8px;background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:800}
+.labitem .li-d{flex:1;text-align:left}
+#seg-stk{flex-wrap:wrap}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
@@ -240,7 +244,10 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <button class="btn sm" data-v="3">鬼軍曹</button>
         <button class="btn sm" data-v="4">悪夢</button>
       </div>
+      <p class="note" style="margin:10px 0 6px">装備砲撃(研究所で新型を解放)</p>
+      <div class="seg" id="seg-stk"></div>
     </div>
+    <button class="btn gold" id="bt-lab">🔬 研究所 <span id="lab-pts"></span></button>
     <button class="btn red" id="bt-start-solo">🧟 防衛開始!</button>
     <button class="btn" id="bt-back1">← もどる</button>
   </div>
@@ -368,6 +375,15 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
+<div class="modal" id="md-lab">
+  <div class="panel howto" style="max-width:560px;width:min(94vw,560px)">
+    <h2 class="hd">🔬 研究所 <span id="lab-pts2" style="float:right;color:var(--rust2)"></span></h2>
+    <p class="note" style="margin:4px 0 8px">出撃(ソロ)の結果で研究ptが貯まる。死んでも無駄にならない — 解放して次はもっと先へ。</p>
+    <div id="lab-items"></div>
+    <button class="btn gold" id="bt-lab-close" style="margin-top:8px;width:100%">とじる</button>
+  </div>
+</div>
+
 <div class="modal" id="md-pause">
   <div class="panel center">
     <h2 class="hd">⏸ 一時停止</h2>
@@ -392,6 +408,24 @@ const $=id=>document.getElementById(id);
 const MOBILE=(typeof matchMedia==='function')&&matchMedia('(pointer:coarse)').matches;
 let FXLV=2;/* 演出バランス 0=弱 1=中 2=強 */
 try{const v=localStorage.getItem('dt_fx');if(v!=null)FXLV=clamp(+v,0,2);}catch(e){}
+/* ============ 永久強化(研究所・ソロ限定ローグライト) ============ */
+const STRIKES={
+ air:{n:'エアストライク',ic:'🎯',ch:30,dsc:'一点爆撃+炎上'},
+ carpet:{n:'絨毯爆撃',ic:'🛩',ch:45,dsc:'道に沿って広範囲を連続爆撃'},
+ frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
+ napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
+};
+let META={pts:0,tc:3,uc:4,st:['air'],eq:'air',sc0:0,hp0:0};
+try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';}}catch(e){}
+function saveMeta(){try{localStorage.setItem('dt_meta',JSON.stringify(META));}catch(e){}}
+const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
+const metaTowerCap=()=>soloMeta()?clamp(META.tc,2,TOWERS.length):TOWERS.length;
+const metaUnitCap=()=>soloMeta()?clamp(META.uc,2,UNITS.length):UNITS.length;
+const LAB_TP=[0,0,0,100,200,350,550,800];          /* タワー枠+1の価格(現tc基準) */
+const LAB_UP=[0,0,0,0,120,200,300,420,560,720,900,1100]; /* 兵科枠+1の価格(現uc基準) */
+const LAB_STK={carpet:250,frost:200,napalm:300};
+const LAB_SC=lv=>Math.round(80*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
+const LAB_HP=lv=>Math.round(100*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -937,16 +971,34 @@ function sellTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
 function airstrike(C,x,y,wave){
  if(C.charge<1||C.dead)return false;
  const F=G&&G.coop?G.players[0]:C;
- C.charge=0;const dm=150*(1+.15*wave);
- for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20;}}}
- F.shake=.3;addFx(F,'boomL',x,y,'');if(C.isMe||F.isMe)sfx.boom();
+ C.charge=0;
+ const stk=C.stk||'air';
+ if(stk==='carpet'){/* 絨毯爆撃: 道に沿って前後300を連続爆撃 */
+  const cd0=projPath(x,y),dm=110*(1+.15*wave);
+  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=300){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=15;}}}
+  for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN));addFx(F,'boom',p[0],p[1],'',{d0:.07*(k+2)});}
+  F.shake=.4;
+ }else if(stk==='frost'){/* 凍結爆弾: 広範囲4秒凍結 */
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=170){z.slowT=Math.max(z.slowT,4);dmgZ(F,z,40*(1+.1*wave),1);}}
+  addFx(F,'ring',x,y,'',{r:170,col:'#9fdcf5'});addFx(F,'spark',x,y,'',{sd:rnd(0,9),col:'#9fdcf5'});
+  if(C.isMe||F.isMe)sfx.frost();F.shake=.15;
+ }else if(stk==='napalm'){/* ナパーム: 強烈な継続燃焼 */
+  const dm=60*(1+.12*wave);
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave);}}}
+  addFx(F,'boomL',x,y,'');addFx(F,'ring',x,y,'',{r:120,col:'#ffb347'});F.shake=.3;
+ }else{/* 標準エアストライク */
+  const dm=150*(1+.15*wave);
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20;}}}
+  F.shake=.3;addFx(F,'boomL',x,y,'');
+ }
+ if((C.isMe||F.isMe)&&stk!=='frost')sfx.boom();
  return true;
 }
 function campStep(C,dt,wave){
  if(C.dead)return;
  C.tm+=dt;
  if(C.shake>0)C.shake-=dt;
- if(!C.waveDone)C.charge=Math.min(1,C.charge+dt/30);
+ if(!C.waveDone)C.charge=Math.min(1,C.charge+dt/((C.stk&&STRIKES[C.stk]?STRIKES[C.stk].ch:30)));
  /* 位置・オーラ */
  const scrs=[];
  for(const z of C.zombies){const p=pathPos(Math.max(0,z.d));z.px=p[0];z.py=p[1];z.dr=Math.cos(p[2])>=-.05?1:-1;if(z.aura)scrs.push(z);}
@@ -1071,8 +1123,8 @@ function doPurchase(C,kind,opt){
  opt=opt||{};const p=priceOf(C,kind,opt);
  if(C.scrap<p||C.dead)return false;
  if((kind==='unlock'||kind==='uun')&&G&&G.wave<3)return false;/* WAVE3クリアまで解放禁止(序盤の詰み防止) */
- if(kind==='unlock'&&C.unlocked>=TOWERS.length)return false;
- if(kind==='uun'&&C.uUn>=UNITS.length)return false;
+ if(kind==='unlock'&&C.unlocked>=metaTowerCap())return false;/* ソロは研究所の解放枠まで */
+ if(kind==='uun'&&C.uUn>=metaUnitCap())return false;
  if(kind==='uup'&&(C.uLv||0)>=ULV_MAX)return false;
  const tgt=opt.tgt!=null&&opt.tgt>=0?G.players[opt.tgt]:null;
  if((kind==='big'||kind==='send'||kind==='jam')&&(!tgt||tgt===C||tgt.dead))return false;
@@ -1183,6 +1235,13 @@ function newGame(specs,myIdx){
  G={players,myIdx,np:players.length,wave:0,phase:'interval',tI:.01,alive:players.length,over:false,spd:1,winner:-1,netT:0,evq:players.map(()=>[]),tide:{pool:[],qt:0,total:0,shares:players.map(()=>100/players.length),up:0,upN:0,mul:1}};
  return G;
 }
+/* ソロPvEの終了時に研究ptを付与(勝敗問わず) */
+function awardMeta(){
+ if(!soloMeta()||G.metaGain!=null)return;
+ const mult=[.7,.85,1,1.3,1.6][G.pveDiff||2]||1;
+ const gain=Math.max(1,Math.round((G.wave*10+G.players[0].kills*.5)*mult));
+ META.pts+=gain;G.metaGain=gain;saveMeta();
+}
 function ev(idx,msg,warn){if(!G)return;if(idx===G.myIdx){toast(msg,warn);if(warn)sfx.warn();}else if(G.evq[idx])G.evq[idx].push({m:msg,w:warn?1:0});}
 function startInterval(){
  G.phase='interval';G.tI=15;
@@ -1215,10 +1274,10 @@ function gameStep(dt){
    }}
   if(G.pve){
    const me=G.players[0];
-   if(me.dead){G.winner=-1;G.over=true;
+   if(me.dead){G.winner=-1;G.over=true;awardMeta();
     if(MODE==='host'){try{G.netT=1;hostNetTick(1);}catch(e){}}
     UI.showResult();return;}
-   if(me.waveDone&&G.wave>=STAGE_W){for(const P of G.players)P.place=1;G.winner=0;G.over=true;
+   if(me.waveDone&&G.wave>=STAGE_W){for(const P of G.players)P.place=1;G.winner=0;G.over=true;awardMeta();
     if(MODE==='host'){try{G.netT=1;hostNetTick(1);}catch(e){}}
     UI.showResult();return;}
   }else if(G.alive<=1){const w=G.players.findIndex(p=>!p.dead);if(w>=0)G.players[w].place=1;G.winner=w;G.over=true;
@@ -1509,7 +1568,7 @@ function showResultA(){
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=G.pve?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
  $('res-stats').innerHTML=(G.pve
-  ?[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/8'],['解放部隊',me.uUn+'/'+UNITS.length],['火力増強','Lv'+me.atkLv]]
+  ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/8'],['解放部隊',me.uUn+'/'+UNITS.length],['火力増強','Lv'+me.atkLv]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/8'],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
  show('result');
@@ -1636,12 +1695,15 @@ function ivRender(){
  const m=meV();if(!m)return;
  const pc=k=>priceOf(m,k,{zi:ivS.zi,cnt:ivS.cnt});
  const can=k=>m.scrap>=pc(k);
- const nx=m.unlocked<TOWERS.length?TOWERS[m.unlocked]:null;
+ const tcap=metaTowerCap(),ucap=metaUnitCap();
+ const nx=m.unlocked<tcap?TOWERS[m.unlocked]:null;
+ const labT=!nx&&tcap<TOWERS.length,labU0=tcap<TOWERS.length;
  const early=(G?G.wave:(CS.w||0))<3;/* WAVE3クリアまで解放ロック */
  let h='';
- h+=`<div class="card"><div class="ci">${early?'🔒':'🔓'}</div><div class="ct">新タワー解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる(序盤は基本装備で守れ)':nx?('次:『'+nx.n+'』— '+nx.dsc):'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${!early&&nx&&can('unlock')?'':'disabled'}>${early?'🔒':'⚙️'+(nx?pc('unlock'):'-')}</button></div>`;
- const uu2=m.uUn!=null?m.uUn:2,nu=uu2<UNITS.length?UNITS[uu2]:null;
- h+=`<div class="card"><div class="ci">${early?'🔒':'🪖'}</div><div class="ct">新部隊解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる':nu?('次:『'+nu.n+'』— '+nu.dsc):'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${!early&&nu&&can('uun')?'':'disabled'}>${early?'🔒':'⚙️'+(nu?pc('uun'):'-')}</button></div>`;
+ h+=`<div class="card"><div class="ci">${early?'🔒':'🔓'}</div><div class="ct">新タワー解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる(序盤は基本装備で守れ)':nx?('次:『'+nx.n+'』— '+nx.dsc):labT?'🔬研究所で解放するとここに出る':'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${!early&&nx&&can('unlock')?'':'disabled'}>${early?'🔒':nx?'⚙️'+pc('unlock'):'-'}</button></div>`;
+ const uu2=m.uUn!=null?m.uUn:2,nu=uu2<ucap?UNITS[uu2]:null;
+ const labU=!nu&&ucap<UNITS.length;
+ h+=`<div class="card"><div class="ci">${early?'🔒':'🪖'}</div><div class="ct">新部隊解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる':nu?('次:『'+nu.n+'』— '+nu.dsc):labU?'🔬研究所で解放するとここに出る':'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${!early&&nu&&can('uun')?'':'disabled'}>${early?'🔒':nu?'⚙️'+pc('uun'):'-'}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${can('atk')?'':'disabled'}>⚙️${pc('atk')}</button></div>`;
  {const ul2=m.uLv||0,umx=ul2>=ULV_MAX;
  const evst=ul2>=10?'🌟最終形態':ul2>=5?'🐉進化済み':ul2>=3?'🛡強化装備':'新兵装備';
@@ -1705,8 +1767,12 @@ function startSolo(){
  MODE='solo';COOP=false;
  newGame([{name:'キミ',kind:'me'}],0);
  G.pve=1;G.pveDiff=setDiff;
- G.players[0].scrap=D5v().scrap;
+ const me=G.players[0];
+ me.scrap=D5v().scrap+40*(META.sc0||0);
+ me.coreMax=50+5*(META.hp0||0);me.core=me.coreMax;
+ me.stk=META.st.indexOf(META.eq)>=0?META.eq:'air';
  startGameUI([]);
+ $('strikebtn').textContent=STRIKES[me.stk].ic;
  $('tidebar').style.display='none';$('pushbtn').style.display='none';
  $('pausebtn').style.display='inline-block';
 }
@@ -1714,6 +1780,7 @@ function startGameUI(others){
  gameActive=true;tipSt=false;ivLogs=[];PAUSED=false;SEL=-1;PUSHTGT=-1;setAim(false);setFlagAim(false);setSpec(-1);buildDeck();
  try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}catch(e){}/* スマホのキーボードを閉じて画面高さを戻す */
  $('tidebar').style.display='';$('pushbtn').style.display='';
+ $('strikebtn').textContent='🎯';
  if(MOBILE){
   try{const de=document.documentElement;if(de&&de.requestFullscreen){const p=de.requestFullscreen();p&&p.catch&&p.catch(()=>{});}}catch(e){}
   try{if(screen.orientation&&screen.orientation.lock){const p2=screen.orientation.lock('landscape');p2&&p2.catch&&p2.catch(()=>{});}}catch(e){}
@@ -1731,7 +1798,32 @@ function backTitle(){
  NET={peer:null,conn:null,lob:[],host:false};CS={meN:null,ot:[],w:1,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0};CC=null;MODE='solo';
  show('title');
 }
-$('bt-solo').onclick=()=>{ensureAC();show('setup');};
+/* ---- 研究所UI ---- */
+function updLabBtn(){const e=$('lab-pts');if(e)e.textContent='🧬'+fmt(META.pts);}
+function renderStkSeg(){
+ const w=$('seg-stk');if(!w||!w.querySelectorAll)return;
+ w.innerHTML=META.st.map(k=>`<button class="btn sm ${META.eq===k?'sel':''}" data-stk="${k}">${STRIKES[k].ic}${STRIKES[k].n}</button>`).join('');
+ w.querySelectorAll('[data-stk]').forEach(b=>{b.onclick=()=>{META.eq=b.dataset.stk;saveMeta();renderStkSeg();};});
+}
+function renderLab(){
+ $('lab-pts2').textContent='🧬 '+fmt(META.pts)+' pt';
+ const items=[];
+ if(META.tc<TOWERS.length){const T=TOWERS[META.tc];items.push({k:'tc',t:'🔓 新タワー『'+T.n+'』',d:T.dsc,p:LAB_TP[META.tc]});}
+ if(META.uc<UNITS.length){const U=UNITS[META.uc];items.push({k:'uc',t:'🪖 新兵科『'+U.n+'』',d:U.dsc,p:LAB_UP[META.uc]});}
+ for(const k in LAB_STK){if(META.st.indexOf(k)<0){const S=STRIKES[k];items.push({k:'stk',id:k,t:S.ic+' 新砲撃『'+S.n+'』',d:S.dsc,p:LAB_STK[k]});}}
+ if(META.sc0<5)items.push({k:'sc0',t:'⚙️ 初期スクラップ+40 (Lv'+META.sc0+'/5)',d:'開始資金が増える',p:LAB_SC(META.sc0)});
+ if(META.hp0<5)items.push({k:'hp0',t:'🏕 コアHP+5 (Lv'+META.hp0+'/5)',d:'拠点の耐久が増える',p:LAB_HP(META.hp0)});
+ if(!items.length)items.push({t:'🎉 全研究完了!'});
+ $('lab-items').innerHTML=items.map((it,i)=>`<div class="labitem"><div class="li-d"><b>${it.t}</b>${it.d?'<br><span style="font-weight:600;font-size:12px">'+it.d+'</span>':''}</div>${it.k?`<button class="btn gold sm" data-lab="${i}" ${META.pts>=it.p?'':'disabled'}>🧬${it.p}</button>`:''}</div>`).join('');
+ $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
+  META.pts-=it.p;
+  if(it.k==='tc')META.tc++;else if(it.k==='uc')META.uc++;else if(it.k==='stk')META.st.push(it.id);
+  else if(it.k==='sc0')META.sc0++;else if(it.k==='hp0')META.hp0++;
+  saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();};});
+}
+$('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
+$('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
+$('bt-solo').onclick=()=>{ensureAC();renderStkSeg();updLabBtn();show('setup');};
 $('bt-start-solo').onclick=()=>{ensureAC();startSolo();};
 $('bt-back1').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
