@@ -46,18 +46,21 @@ function runMatch(cpu,diff,tag){
   if(guard%500===0)chkShares(tag+'@'+guard);
   if(!struck&&G.players[0].charge>=1&&G.players[0].zombies.length){const z=G.players[0].zombies[0];airstrike(G.players[0],z.px,z.py,G.wave);struck=true;}
   if(pushed<5&&G.phase==='wave'&&G.players[0].scrap>200&&Math.random()<.01){if(pushTide(G.players[0],-1))pushed++;}
-  if(G.phase==='wave'&&Math.random()<.02){if(typeof deployUnit==='function'&&deployUnit(G.players[0],ri(0,Math.min(1,G.players[0].uUn-1))))dep++;}
+  if(G.phase==='wave'&&Math.random()<.02){if(typeof deployUnit==='function'&&deployUnit(G.players[0],ri(0,G.players[0].uUn-1)))dep++;}
+  if(guard%1400===700&&G.phase==='wave'&&typeof projPath==='function'){G.players[0].flagD=clamp(projPath(ri(150,1450),ri(150,700)),PLEN*.1,PLEN*.9);}
   if(G.phase==='interval'&&!G.players[0].ready){
    const me=G.players[0];
-   doPurchase(me,'unlock',{});doPurchase(me,'atk',{});
+   doPurchase(me,'unlock',{});doPurchase(me,'uun',{});doPurchase(me,'atk',{});
    const tgt=G.players.findIndex((p,i)=>i!==0&&!p.dead);
    if(tgt>0){doPurchase(me,'big',{tgt});doPurchase(me,'send',{tgt,zi:1,cnt:3});}
    me.ready=true;
   }
  }
- console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+' winner='+(G&&G.winner>=0?G.players[G.winner].name:'?')+' places=['+(G?G.players.map(p=>p.name+':'+p.place).join(','):'')+'] dep0='+dep+' push0='+pushed+' guard='+guard);
- for(const P of (G?G.players:[])) console.log('  ['+P.name+'] dead='+P.dead+' core='+Math.ceil(P.core)+' units='+P.units.length+' dep='+P.dep+' kills='+P.kills+' twr='+P.towers.filter(t=>t).length);
+ const mins=Math.round(guard*.033/60*10)/10;
+ console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+' winner='+(G&&G.winner>=0?G.players[G.winner].name:'?')+' places=['+(G?G.players.map(p=>p.name+':'+p.place).join(','):'')+'] dep0='+dep+' push0='+pushed+' guard='+guard+' ('+mins+'分)');
+ for(const P of (G?G.players:[])) console.log('  ['+P.name+'] dead='+P.dead+' core='+Math.ceil(P.core)+' units='+P.units.length+' dep='+P.dep+' kills='+P.kills+' twr='+P.towers.filter(t=>t).length+' 回収⚙️='+Math.round(P.enTotal)+' uUn='+P.uUn);
  if(!G||!G.over){console.log('FAIL: 終了せず');process.exit(1);}
+ if(mins>10)console.log('WARN: 決着まで10分超('+mins+'分)');
  backTitle();
 }
 runMatch(1,2,'1v1鬼軍曹');
