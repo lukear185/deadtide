@@ -101,7 +101,7 @@
 
 ### 2026-07-25 第3弾(チャット直接指示)
 1. **廃品工房つき開始**: 研究所`🏭 廃品工房を建てた状態で開始`(META.ec1・220pt)。startSoloで`me.towers[ECO_BASE]`に工房を直接配置。※工房は元から**タップで個別強化可能**(twStats=`['d','r']`=⚙️産出/⏩サイクル、stCost払い)=既存仕様を確認。
-2. **系統強化(研究所)**: タワーは型ごと(TLINE: eco/fire/net/blast/elec)、兵科は型ごと(ULINE: melee/bullet/pierce/blast/fire/frost/heal)に各Lv3。**研究所で解放した新型タワー/新兵科にもそのまま乗る**(型判定なので)。META.tl{}/ul{}、tlv()/ulv()はsoloMetaゲート。効果=タワー威力+10%/段(+型別: eco産出+15%/fire燃焼+25%/net減速+20%/blast範囲+12%/elec連鎖+1)、兵科HP+8〜10%・攻撃+12%/段。価格LAB_TL/LAB_UL=140/110×1.55^lv。
+2. **系統強化(研究所)**: タワーは型ごと(TLINE: **bullet**/eco/fire/net/blast/elec=全6型網羅)、兵科は型ごと(ULINE: melee/bullet/pierce/blast/fire/frost/heal=全7型網羅)に各Lv3。⚠当初bullet型タワー(最多。base+研究所解放のrail/gat/fort等)を入れ忘れ→2026-07-25追加。**研究所で解放した新型タワー/新兵科にもそのまま乗る**(型判定なので)。META.tl{}/ul{}、tlv()/ulv()はsoloMetaゲート。効果=タワー威力+10%/段(+型別: eco産出+15%/fire燃焼+25%/net減速+20%/blast範囲+12%/elec連鎖+1)、兵科HP+8〜10%・攻撃+12%/段。価格LAB_TL/LAB_UL=140/110×1.55^lv。
 3. **新登場の紹介モーダル(md-intro)**: ソロで新解放タワー/兵科・**初登場のゾンビ**をウェーブ開始直後に画面中央で説明(絵+名前+ステータス+特性)。表示中`PAUSED=true`でゲーム停止、OKで次→全部閉じると再開。解放は`G.introQ`にpush(doPurchase unlock/uun)、敵は`G.seenZ`で初出だけ。⚠ヘッドレステストはOK待ちで固まるので**frames()内でPAUSED&&INTROQなら即introNext()**で自動送り。
 4. **終盤の敵: 数減・質増**: buildTideのnにW12〜taper(-0.5/wave)・下限8、増加係数.03→.016、lateX 1.035→1.055。1体HPは据置き成長だが**bt(報酬)にW12〜+5%/wave**。画面が埋まりにくく、撃破1体あたりの旨味を上げた。
 5. **ボスの削り報酬**: dmgZでボスに、削ったHP割合×(bt×pay×0.6)を**先払い**(z.bpaid累積)。倒しきれなくても削った分は入る。killZのとどめ報酬はbt×pay−bpaidで二重取り防止(協力も同様)。
