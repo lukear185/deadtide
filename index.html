@@ -476,8 +476,8 @@ const MAXU=20;
 const STAGE_W=20;
 /* PvE/協力の難易度表: hp=体力倍率 cnt=物量倍率 sp=足の速さ boss=ボス体力 scrap=初期⚙️ pay=撃破報酬倍率 */
 const D5=[
- {n:'新兵',hp:.72,cnt:.85,sp:.95,boss:.8,scrap:300,pay:1.15},
- {n:'兵長',hp:.88,cnt:.95,sp:1,boss:.9,scrap:275,pay:1.05},
+ {n:'新兵',hp:.68,cnt:.8,sp:.95,boss:.8,scrap:300,pay:1.2},
+ {n:'兵長',hp:.84,cnt:.92,sp:1,boss:.9,scrap:275,pay:1.08},
  {n:'古参',hp:1,cnt:1,sp:1,boss:1,scrap:250,pay:1},
  {n:'鬼軍曹',hp:1.18,cnt:1.1,sp:1.05,boss:1.15,scrap:225,pay:.95},
  {n:'悪夢',hp:1.42,cnt:1.25,sp:1.1,boss:1.35,scrap:200,pay:.9}
@@ -674,10 +674,10 @@ function buildTide(wave){
  const up=T.up;
  const D=D5v();
  const warm=G.pve&&wave<=4?[.6,.72,.84,.94][wave-1]:1;/* PvE序盤の慣らし */
- const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.08*(G.np-1):1);
+ const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.1,wave-8):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.08*(G.np-1):1);
  T.mul=mul;
  const laneN=G.coop?1:alive;
- const n=Math.round(.85*laneN*(7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt*warm:1)*(G.coop?1+.4*(G.np-1):1));
+ const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt*warm:1)*(G.coop?1+.4*(G.np-1):1));
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave);
  const pool=[];
  for(let k=0;k<n;k++){let pick=zp[ri(0,zp.length-1)];
@@ -709,7 +709,7 @@ function tideStep(dt){
  const T=G.tide;
  const alive=G.players.map((p,i)=>i).filter(i=>!G.players[i].dead);
  if(!G.pve&&alive.length>1){const eq=100/alive.length;
-  for(const i of alive){const d=eq-T.shares[i];T.shares[i]+=clamp(d,-1,1)*.6*dt;}
+  for(const i of alive){const d=eq-T.shares[i];T.shares[i]+=clamp(d,-1,1)*.45*dt;}
   normShares();}
  if(!T.pool.length)return;
  T.qt-=dt;let guard=0;
@@ -1008,17 +1008,18 @@ function cpuTick(C,dt){
   if(want>=4){for(const si of AI_ORDER){const t2=C.towers[si];
    if(t2&&t2.ti===0&&C.scrap>=TOWERS[want].cost*res){sellTower(C,si);if(buildTower(C,si,want))return;}}}
  }
- /* 出撃(盾1+近接2+射撃2を維持、waveで増員) */
+ /* 出撃(盾1+近接2+射撃2を維持、waveで増員)。新部隊解放費は貯金(rsv)として残す */
+ const rsv=C.uUn<UNITS.length&&wave>=2?Math.min(260,uupCost(C)):0;
  {let sh3=0,ml=0,rg=0;for(const u of C.units){if(u.dead)continue;if(u.ui===3)sh3++;else if(UNITS[u.ui].rng>60)rg++;else ml++;}
   const ex=Math.floor(wave/5);let uw=-1;
   if(C.uUn>3&&sh3<1)uw=3;
   else if(ml<2+ex){for(let i=C.uUn-1;i>=0;i--)if(i!==3&&UNITS[i].rng<=60){uw=i;break;}}
   else if(rg<2+ex){for(let i=C.uUn-1;i>=0;i--)if(UNITS[i].rng>60&&UNITS[i].type!=='heal'){uw=i;break;}}
-  if(uw>=0&&C.ucd[uw]<=0&&C.scrap>=UNITS[uw].cost*res&&deployUnit(C,uw))return;}
+  if(uw>=0&&C.ucd[uw]<=0&&C.scrap-rsv>=UNITS[uw].cost*res&&deployUnit(C,uw))return;}
  let bi=-1,bst=null,bp=1e9;
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.ti===3)continue;
   for(const st of twStats(tw.ti)){if(tw.us[st]>=USTAT_MAX)continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
- if(bi>=0&&C.scrap>=bp*res*1.25)upTower(C,bi,bst);
+ if(bi>=0&&C.scrap-rsv>=bp*res*1.25)upTower(C,bi,bst);
 }
 function cpuPlan(C){
  const others=G.players.filter(p=>p!==C&&!p.dead);
