@@ -367,7 +367,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div id="errbox"></div>
 <script>
 'use strict';
-window.onerror=(m,s,l)=>{const e=document.getElementById('errbox');e.style.display='block';e.textContent='ERROR: '+m+' (line '+l+')';};
+window.onerror=(m,s,l)=>{try{const e=document.getElementById('errbox');e.style.display='block';e.textContent='ERROR: '+m+(l?' (line '+l+')':'');clearTimeout(window.__ebT);window.__ebT=setTimeout(()=>{e.style.display='none';},6000);}catch(x){}};
 const $=id=>document.getElementById(id);
 const MOBILE=(typeof matchMedia==='function')&&matchMedia('(pointer:coarse)').matches;
 let FXLV=2;/* 演出バランス 0=弱 1=中 2=強 */
@@ -1378,9 +1378,11 @@ function minisUpd(){
  else return;
  for(const o of list){const d=$('mini'+o.i);if(!d)continue;
   d.classList.toggle('dead',!!o.dd);
-  d.querySelector('.hpbar i').style.width=clamp(o.hp/o.mx*100,0,100)+'%';
+  const hb=d.querySelector('.hpbar i');
+  if(hb&&hb.style)hb.style.width=clamp(o.hp/o.mx*100,0,100)+'%';
   const inWave=MODE==='client'?CS.ph===1:(G&&G.phase==='wave');
-  d.querySelector('.st').textContent=o.dd?('💀 陥落('+o.pl+'位)'):inWave?(COOP?('⚙️'+(o.en!=null?fmt(o.en):'-')):('🌊'+(o.sh!=null?o.sh+'%':'-')+' ⚔'+o.kw)):(o.rd?'✅ 配置OK':'🤔 作戦中…');
+  const st=d.querySelector('.st');
+  if(st)st.textContent=o.dd?('💀 陥落('+o.pl+'位)'):inWave?(COOP?('⚙️'+(o.en!=null?fmt(o.en):'-')):('🌊'+(o.sh!=null?o.sh+'%':'-')+' ⚔'+o.kw)):(o.rd?'✅ 配置OK':'🤔 作戦中…');
  }
 }
 let banT=null;
@@ -1585,6 +1587,7 @@ function startSolo(){
 }
 function startGameUI(others){
  gameActive=true;tipSt=false;ivLogs=[];PAUSED=false;SEL=-1;PUSHTGT=-1;setAim(false);setFlagAim(false);setSpec(-1);buildDeck();
+ try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}catch(e){}/* スマホのキーボードを閉じて画面高さを戻す */
  $('tidebar').style.display='';$('pushbtn').style.display='';
  if(MOBILE){
   try{const de=document.documentElement;if(de&&de.requestFullscreen){const p=de.requestFullscreen();p&&p.catch&&p.catch(()=>{});}}catch(e){}
@@ -1809,6 +1812,11 @@ makeThumbs();paradeInit();
 if(MOBILE&&!STANDALONE)$('pwahint').style.display='block';
 let last=performance.now();
 function loop(now){
+ try{loopBody(now);}catch(e){/* 1フレームの例外でゲーム全体を止めない */
+  try{window.onerror(e.message,'',0);}catch(x){}}
+ requestAnimationFrame(loop);
+}
+function loopBody(now){
  const dt0=Math.min(.05,(now-last)/1000);last=now;TT+=dt0;
  if(gameActive&&!PAUSED){
   if(MODE!=='client'){const sp=(G&&G.spd)||1;
@@ -1834,7 +1842,6 @@ function loop(now){
   }
  }
  if(MODE==='host'&&G&&gameActive){G.netT=(G.netT||0)-dt0;if(G.netT<=0){G.netT=.1;hostNetTick();}}
- requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 </script>
