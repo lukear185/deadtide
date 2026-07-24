@@ -806,6 +806,13 @@ function cpuTick(C,dt){
   if(want>=4){for(const si of AI_ORDER){const t2=C.towers[si];
    if(t2&&t2.ti===0&&C.scrap>=TOWERS[want].cost*res){sellTower(C,si);if(buildTower(C,si,want))return;}}}
  }
+ /* 出撃(盾1+近接2+射撃2を維持、waveで増員) */
+ {let sh3=0,ml=0,rg=0;for(const u of C.units){if(u.dead)continue;if(u.ui===3)sh3++;else if(UNITS[u.ui].rng>60)rg++;else ml++;}
+  const ex=Math.floor(wave/5);let uw=-1;
+  if(C.uUn>3&&sh3<1)uw=3;
+  else if(ml<2+ex){for(let i=C.uUn-1;i>=0;i--)if(i!==3&&UNITS[i].rng<=60){uw=i;break;}}
+  else if(rg<2+ex){for(let i=C.uUn-1;i>=0;i--)if(UNITS[i].rng>60){uw=i;break;}}
+  if(uw>=0&&C.ucd[uw]<=0&&C.scrap>=UNITS[uw].cost*res&&deployUnit(C,uw))return;}
  let bi=-1,bp=1e9;
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(tw&&tw.lv<3&&tw.ti!==3){const p=upCost(tw.ti,tw.lv);if(p<bp){bp=p;bi=si;}}}
  if(bi>=0&&C.scrap>=bp*res*1.25)upTower(C,bi);
