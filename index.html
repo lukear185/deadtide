@@ -683,7 +683,7 @@ const TOWERS=[
  {id:'shot',n:'ショットガン台',cost:200,rng:175,dmg:26,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'3体同時撃ち'},
  {id:'net',n:'拘束ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:145,rng:0,dmg:0,rate:3,type:'eco',inc:8,c:'#b08d4f',dsc:'時間で⚙️を生産'},
- {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,c:'#c96b35',dsc:'装甲無視・継続燃焼'},
+ {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,c:'#c96b35',dsc:'装甲に特効(約1.9倍)・継続燃焼'},
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:'#5fa8c9',dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
  {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:175,rate:2.4,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を狙撃'},
@@ -691,7 +691,7 @@ const TOWERS=[
  {id:'gren',n:'擲弾砲台',cost:300,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
  {id:'cryo',n:'冷却塔',cost:320,rng:200,dmg:6,rate:1.4,type:'net',slowT:2.6,c:'#7fb6c9',dsc:'広範囲を長く凍らせる'},
  {id:'laser',n:'レーザー塔',cost:460,rng:300,dmg:9,rate:.1,type:'bullet',pierce:1,c:'#c96b9f',dsc:'高速連射・装甲貫通'},
- {id:'acid',n:'酸噴射器',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:'#8fbf4d',dsc:'装甲を溶かす強酸'},
+ {id:'acid',n:'酸噴射器',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:'#8fbf4d',dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
  {id:'sonic',n:'音響砲',cost:420,rng:230,dmg:26,rate:1.1,type:'bullet',multi:5,c:'#a58fd0',dsc:'衝撃波で5体同時'},
  {id:'drone',n:'ドローン基地',cost:500,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
  {id:'arty',n:'重砲台',cost:640,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
@@ -939,6 +939,7 @@ function applyLoadout(on){
 const uName=ui=>UNITS[ui]?UNITS[ui].n:'';
 const MAXU=40;
 const STAGE_W=20;
+const FIRE_VS_ARMOR=1.9;/* 火炎放射塔の装甲特効(装甲持ちへの直撃と燃焼の倍率) */
 const IV_SEC=20;/* 作戦タイムの秒数 */
 const WAVE_LEAD=10;/* ウェーブ開始から敵が出るまでの猶予(タワー設置用) */
 /* PvE/協力の難易度表: hp=体力倍率 cnt=物量倍率 sp=足の速さ boss=ボス体力 scrap=初期⚙️ pay=撃破報酬倍率 */
@@ -2144,7 +2145,11 @@ function campStep(C,dt,wave){
    else if(T.type==='elec'){addP(C,4,sx,sy-24,{sp:120,g:60,life:.25,r:2,col:'#cdf1ff'});}
    else if(T.type==='net'){addP(C,4,sx,sy,{sp:70,g:0,flat:1,life:.5,r:2.4,col:T.id==='cryo'?'#cdf1ff':'#9fd9c6'});}}
   if(T.type==='net'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){z.slowT=T.slowT*(1+.2*TL);dmgZ(C,z,dm,1);}}addFx(C,'ring',sx,sy,'',{r:rng,col:'#9fd9c6'});if(C.isMe)sfx.net();}
-  else if(T.type==='fire'){dmgZ(C,tg,dm,1);if(!tg.dead){tg.burnT=2;tg.burnD=T.burn*m*aB*(1+.25*TL);}if(C.isMe&&Math.random()<.12)sfx.thunk();}
+  else if(T.type==='fire'){/* 火炎は装甲に特効=殻ごと焼く。直撃も燃焼もFIRE_VS_ARMOR倍、燃焼は1秒長い */
+   const av=tg.armor?FIRE_VS_ARMOR:1;
+   dmgZ(C,tg,dm*av,1);
+   if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+.25*TL)*av;}
+   if(C.isMe&&Math.random()<.12)sfx.thunk();}
   else if(T.type==='elec'){const chainN=twChain(T,tw)+TL;
    let cur=tg,hitl=[tg],pts=[[sx,sy],[tg.px,tg.py]];dmgZ(C,cur,dm,1);
    for(let k=1;k<chainN;k++){
