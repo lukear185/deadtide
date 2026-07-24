@@ -370,11 +370,14 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="panel howto">
     <h2 class="hd">📖 あそびかた</h2>
     <p><b>🛡 ソロ作戦</b>=ステージ制。押し寄せるウェーブを耐え抜き、<b>WAVE20を守り切ればステージクリア</b>。5波ごとにボスが来る。<b>📡 オンライン対戦</b>=以下の「死潮の綱引き」ルールだ。</p>
-    <p>対戦ではゾンビの大群<b>「死潮」は世界に一つだけ</b>。画面上のゲージが「誰に何%流れるか」の取り分だ。<b>🌊押す</b>で⚙️を払えば、自分の取り分を相手へ押し流せる(連打するほど割高)。<b>5波ごとのボスは、いちばん押し負けてる奴の所へ行く。</b></p>
+    <p><b>🤝 協力プレイ</b>=1枚の戦場を最大3人で守る。拠点(コア)は共有、各自のテントから自分の部隊を出撃させ、⚙️と強化は各自持ち。タワーは早い者勝ちの共有スロットだ。</p>
+    <p>対戦ではゾンビの大群<b>「死潮」は世界に一つだけ</b>。画面上のゲージが「誰に何%流れるか」の取り分だ。<b>🌊押す</b>で⚙️を払えば、自分の取り分を相手へ押し流せる(連打するほど割高)。<b>5波ごとのボスは、いちばん押し負けてる奴の所へ行く。</b>相手の盤面は右上の小窓で見え、タップすれば全画面で観戦できる。</p>
     <p>ただし——<b>受けた側は撃破⚙️を総取り</b>。耐えられるなら、押し付けられた潮はそのまま金脈になる。わざと受けて稼ぐのも戦略だ。取り分は放っておくと均等に戻っていく。</p>
-    <p>道沿いの<b>空きスロットをタップ</b>してタワーを建設、建てた塔をタップで強化/売却。抜かれるとコアHPが削れ、0で脱落。建設も押し流しも妨害も、ぜんぶ同じ⚙️スクラップだ。</p>
-    <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。旗はいつでも置き直せる。ただし1人が足止めできるゾンビは3体まで——溢れた分は素通りされるぞ。新しい兵科は作戦タイムの<b>新部隊解放</b>で。</p>
-    <p>作戦タイムでは<b>大押し流し</b>(一気に15%移す)/<b>潮位上昇</b>(次の波全体を深くする)/<b>変異体送り込み</b>/<b>妨害工作</b>(タワー封印)。🎯はチャージ式エアストライク。最後まで生き残った拠点の勝ちだ!</p>
+    <p><b>ふたつの資源</b>——<b>⚙️スクラップ</b>はゾンビを倒すと手に入り、建設・タワーの現地強化・出撃・解放に使う。<b>🔩強化ポイント</b>は<b>ウェーブを守り切るたび</b>にもらえ(後半ほど大量)、<b>作戦タイムの強化(部隊レベル・火力増強・コア修理)</b>専用だ。全部は買えないので何を伸ばすか選べ。</p>
+    <p>道沿いの<b>空きスロットをタップ</b>してタワーを建設、建てた塔をタップで<b>⚔攻撃/⏩連射/📡射程</b>を⚙️で個別強化(電撃塔だけは⚡連鎖数)。置き場は最初6ヶ所で、🔒のマスをタップすれば⚙️で増やせる。画面左上の<b>🏭工房エリア</b>は廃品工房の専用枠で、最大3基まで増設できる。</p>
+    <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。<b>デッキを長押しすると部隊レベルアップ</b>(全兵科が強くなり、Lv3/5/10で姿が進化する)。1人が足止めできるゾンビは3体まで——溢れた分は素通りだ。</p>
+    <p>🎯はチャージ式の航空支援。🏳は<b>ウェーブ放棄</b>(残った敵のぶんコアが傷つく代わりにすぐ次へ)。作戦タイムでは新タワー/新部隊の解放(⚙️)と、部隊レベル・火力増強・コア修理(🔩)を選べる。</p>
+    <p><b>🔬 研究所(ソロ)</b>——出撃の結果に応じて<b>研究pt</b>が貯まる(負けても貯まる)。タイトル→ソロ作戦の研究所で、<b>新型タワー・新型兵科・新しい航空支援・初期資金・コアHP</b>を永久に解放できる。死ぬたびに次の自分が強くなる仕組みだ。</p>
     <button class="btn gold" id="bt-howto-close" style="margin-top:8px;width:100%">とじる</button>
   </div>
 </div>
@@ -561,7 +564,7 @@ for(const T of TOWERS){
 const UNLOCK_P=[0,0,200,320,480,700,980,1350,1800,2400,3100,4000,5100,6400,8000,9900,12200,15000,18500,22500];
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
-const stCost=(tw,st)=>Math.round((2+TOWERS[tw.ti].cost*.012)*Math.pow(1.55,tw.us[st]));/* 🔩強化ポイント */
+const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]));/* 盤面の強化は⚙️払い */
 const twStats=ti=>TOWERS[ti].type==='eco'?['d','r']:(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
 const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 const twChain=(T,tw)=>T.chain+((tw&&tw.us&&tw.us.c)||0);
@@ -643,8 +646,8 @@ const COOP_MAXU=20;
 const PCOL=['#6f9c43','#E8A33D','#8f6fae'];
 const BRANCH=[[400,742],[280,742],[160,742]];
 const branchD=gi=>PLEN-(BRANCH[gi%BRANCH.length][0]-110);
-const prAtk=n=>Math.round(150*Math.pow(1.8,n));
-const prRe=u=>Math.round(130*Math.pow(1.5,u));
+const prAtk=n=>Math.round(8*Math.pow(1.5,n));/* 🔩 */
+const prRe=u=>Math.round(8*Math.pow(1.4,u));/* 🔩 */
 const prJam=u=>Math.round(210*Math.pow(1.45,u));
 const prPush=u=>Math.round(45*Math.pow(1.15,u));
 const prBig=u=>Math.round(160*Math.pow(1.42,u));
@@ -1261,7 +1264,7 @@ function buildTower(C,si,ti){
 }
 function upTower(C,si,st){st=st||'d';const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
  if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return false;const p=stCost(tw,st);
- if((C.up||0)<p||C.dead)return false;C.up-=p;tw.us[st]++;if(C.isMe)sfx.build();return true;}
+ if(C.scrap<p||C.dead)return false;C.scrap-=p;tw.us[st]++;tw.spent+=p;if(C.isMe)sfx.build();return true;}
 function sellTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];if(!tw)return false;
  if(G&&G.coop&&(tw.own||0)!==(C.gi||0))return false;
  C.scrap+=Math.round(tw.spent*.6);F.towers[si]=null;if(C.isMe)sfx.sell();return true;}
@@ -1447,8 +1450,8 @@ function priceOf(C,kind,opt){
   case 'uup':return (C.uLv||0)<ULV_MAX?prUup(C.uLv||0):1e9;/* ⚠🔩支払い */
   case 'ecoslot':{const F2=(G&&G.coop)?G.players[0]:C;return (F2.ecoN||1)<ECO_MAX?prEco(F2.ecoN||1):1e9;}
   case 'slot':{const F2=(G&&G.coop)?G.players[0]:C;return prSlot(slotCount(F2));}
-  case 'atk':return prAtk(C.atkLv);
-  case 'repair':return prRe(C.repairs);
+  case 'atk':return prAtk(C.atkLv);/* ⚠🔩支払い */
+  case 'repair':return prRe(C.repairs);/* ⚠🔩支払い */
   case 'big':return prBig(C.boosts);
   case 'tide':return prTide(MODE==='client'?(CS.tu||0):(G?G.tide.upN:0));
   case 'jam':return prJam(C.jams);
@@ -1458,7 +1461,7 @@ function priceOf(C,kind,opt){
 }
 function doPurchase(C,kind,opt){
  opt=opt||{};const p=priceOf(C,kind,opt);
- const usePts=(kind==='uup');/* 部隊強化は🔩払い */
+ const usePts=(kind==='uup'||kind==='atk'||kind==='repair');/* 準備画面の強化は🔩払い */
  if(C.dead)return false;
  if(usePts){if((C.up||0)<p)return false;}
  else if(C.scrap<p)return false;
@@ -1549,20 +1552,22 @@ function cpuTick(C,dt){
  let bi=-1,bst=null,bp=1e9;
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.ti===3)continue;
   for(const st of twStats(tw.ti)){if(tw.us[st]>=USTAT_MAX)continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
- if(bi>=0&&(C.up||0)>=bp)upTower(C,bi,bst);
- if((C.uLv||0)<ULV_MAX&&(C.up||0)>=prUup(C.uLv||0)*2)doPurchase(C,'uup',{});
+ if(bi>=0&&C.scrap-rsv>=bp*res*1.25)upTower(C,bi,bst);
 }
 function cpuPlan(C){
  const others=G.players.filter(p=>p!==C&&!p.dead);
  let guard=0;
  while(guard++<7){
   const opts=[];
-  const push=(k,w,o)=>{if(C.scrap>=priceOf(C,k,o||{}))opts.push({k,w,o:o||{}});};
-  if(C.core<C.coreMax*.45)push('repair',6);
+  const push=(k,w,o)=>{const pp=priceOf(C,k,o||{});
+   const pts=(k==='uup'||k==='atk'||k==='repair');
+   if(pts?((C.up||0)>=pp):(C.scrap>=pp))opts.push({k,w,o:o||{}});};
+  if(C.core<C.coreMax*.45&&(C.up||0)>=prRe(C.repairs))push('repair',6);
   if(G.wave>=3&&C.unlocked<metaTowerCap()&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
   if(G.wave>=3&&C.uUn<metaUnitCap()&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
-  push('atk',2.2);
-  if(C.core<C.coreMax*.8)push('repair',1.2);
+  if((C.up||0)>=prAtk(C.atkLv))push('atk',2.2);
+  if((C.uLv||0)<ULV_MAX&&(C.up||0)>=prUup(C.uLv||0))push('uup',2.0);
+  if(C.core<C.coreMax*.8&&(C.up||0)>=prRe(C.repairs))push('repair',1.2);
   {const gi=G.players.indexOf(C),alv=G.players.filter(p=>!p.dead).length,eq=100/alv,sh=G.tide.shares[gi];
    if(others.length){
     if(sh>eq-3)push('big',C.ai.ag*2.4,{tgt:0});
@@ -2027,8 +2032,8 @@ function showResultA(){
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=G.pve?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
  $('res-stats').innerHTML=(G.pve
-  ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+metaUnitCap()],['火力増強','Lv'+me.atkLv]]
-  :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/8'],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+  ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+metaUnitCap()],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv]]
+  :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+BASE_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
  show('result');
 }
@@ -2038,7 +2043,7 @@ function showResultC(sn){
  $('res-title').textContent=COOP?(win?'🏆 ステージ1 クリア!':'💀 拠点陥落…'):(win?'🏆 最後の生存者!':'💀 '+sn.me.pl+'位…');
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=COOP?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+sn.w+' で陥落…'):((sn.wn?('生存: '+sn.wn+' / '):'')+'WAVE '+sn.w+' まで到達');
- $('res-stats').innerHTML=[['ゾンビ撃破',sn.me.kl],['部隊出撃',(sn.me.dp||0)+'体'],['送った変異体',sn.me.sent+'体'],['解放タワー',sn.me.un+'/8']].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+ $('res-stats').innerHTML=[['ゾンビ撃破',sn.me.kl],['部隊出撃',(sn.me.dp||0)+'体'],['送った変異体',sn.me.sent+'体'],['解放タワー',sn.me.un+'/'+BASE_T]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();show('result');
 }
 /* ---- 建設メニュー・入力 ---- */
@@ -2072,10 +2077,10 @@ function openBM(si){
    const lvv=tw.us[st]||0,mx=lvv>=USTAT_MAX,p=mx?null:stCost(tw,st);
    const lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+twChain(T,tw)+'体)':'');
    const pips='◆'.repeat(lvv)+'◇'.repeat(USTAT_MAX-lvv);
-   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx||(m.up||0)<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':PT+p}</button>`;
+   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx||m.scrap<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':'⚙️'+fmt(p)}</button>`;
   }).join('');
   const canSell=!(COOP&&(tw.own||0)!==(MODE==='client'?CS.myJ:(G?G.myIdx:0)));
-  h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="cdsc" style="font-size:11px;color:var(--paper);margin:2px 0">強化は${PT}強化ポイント払い(所持 ${PT}${m.up||0})</div><div class="bm-col">${rows}</div><div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
+  h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div><div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
  }
  bm.innerHTML=h;
  bm.querySelectorAll('[data-th]').forEach(cc=>{cc.getContext('2d').drawImage(THUMBS[+cc.dataset.th],0,0);});
@@ -2126,7 +2131,7 @@ function actPush(){
 function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:{d:0,r:0,g:0,c:0},jamT:0,own:CS.myJ};sfx.build();}
  else buildTower(G.players[G.myIdx],si,ti);}
 function actUp(si,st){st=st||'d';
- if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if((m.up||0)<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.up=(CS.meN.up||0)-p;tw.us[st]++;sfx.build();}
+ if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
  else upTower(G.players[G.myIdx],si,st);}
 function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;sendCmd({t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
  else sellTower(G.players[G.myIdx],si);}
@@ -2233,11 +2238,11 @@ function ivRender(){
  const uu2=m.uUn!=null?m.uUn:2,nu=uu2<ucap?UNITS[uu2]:null;
  const labU=!nu&&ucap<UNITS.length;
  h+=`<div class="card"><div class="ci">${early?'🔒':'🪖'}</div><div class="ct">新部隊解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる':nu?('次:『'+nu.n+'』— '+nu.dsc):labU?'🔬研究所で解放するとここに出る':'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${!early&&nu&&can('uun')?'':'disabled'}>${early?'🔒':nu?'⚙️'+pc('uun'):'-'}</button></div>`;
- h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${can('atk')?'':'disabled'}>⚙️${pc('atk')}</button></div>`;
+ h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${(m.up||0)>=pc('atk')?'':'disabled'}>${PT}${pc('atk')}</button></div>`;
  {const ul2=m.uLv||0,umx=ul2>=ULV_MAX;
  const evst=ul2>=10?'🌟最終形態':ul2>=5?'🐉進化済み':ul2>=3?'🛡強化装備':'新兵装備';
  h+=`<div class="card"><div class="ci">${ul2>=5?'🐉':'⬆'}</div><div class="ct">部隊強化 Lv${ul2} <span style="font-size:11px">(${evst})</span></div><div class="cdsc">全部隊のHPと攻撃+10%(出撃費も比例)。<b>Lv3/5/10で段階進化!</b> — ${PT}払い(所持 ${PT}${m.up||0})</div><button class="btn gold sm buy" data-buy="uup" ${!umx&&(m.up||0)>=pc('uup')?'':'disabled'}>${umx?'MAX':PT+pc('uup')}</button></div>`;}
- h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${can('repair')&&m.core<m.coreMax?'':'disabled'}>⚙️${pc('repair')}</button></div>`;
+ h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${(m.up||0)>=pc('repair')&&m.core<m.coreMax?'':'disabled'}>${PT}${pc('repair')}</button></div>`;
  if(!((G&&G.pve)||COOP)){
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">大押し流し</div><div class="cdsc">死潮の取り分を一気に15%相手へ押し付ける</div><div class="tgt">${tgtBtns('tB')}</div><button class="btn red sm buy" data-buy="big" ${can('big')&&ivS.tB>=0?'':'disabled'}>⚙️${pc('big')}</button></div>`;
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">潮位上昇</div><div class="cdsc">次の波【全体】を大きく強くする。押し勝ってる時の追い打ちに</div><button class="btn red sm buy" data-buy="tide" ${can('tide')?'':'disabled'}>⚙️${pc('tide')}</button></div>`;
@@ -2248,7 +2253,7 @@ function ivRender(){
  <div class="tgt">${tgtBtns('tS')}</div><button class="btn red sm buy" data-buy="send" ${can('send')&&ivS.tS>=0?'':'disabled'}>⚙️${pc('send')}</button></div>`;
  }
  $('ivcards').innerHTML=h;
- $('iven').textContent='⚙️ '+fmt(m.scrap);
+ $('iven').textContent='⚙️ '+fmt(m.scrap)+'　'+PT+fmt(m.up||0);
  $('ivlog').innerHTML=ivLogs.join('<br>')||'<span style="opacity:.6">ここに行動ログが出ます</span>';
  $('ivcards').querySelectorAll('[data-tg]').forEach(b=>{b.onclick=()=>{const [k,v]=b.dataset.tg.split(':');ivS[k]=+v;ivRender();};});
  $('ivcards').querySelectorAll('[data-zi]').forEach(b=>{b.onclick=()=>{ivS.zi=+b.dataset.zi;ivRender();};});
@@ -2263,7 +2268,8 @@ function actBuy(kind){
  if(MODE==='client'){const m=meV(),p=priceOf(m,kind,opt);if(m.scrap<p)return;
   if((kind==='unlock'||kind==='uun')&&(CS.w||0)<3)return;
   sendCmd({t:'c',a:'buy',k:kind,o:opt});
-  if(kind==='uup'){m.up=(m.up||0)-p;m.uLv=(m.uLv||0)+1;}else m.scrap-=p;
+  if(kind==='uup'||kind==='atk'||kind==='repair')m.up=(m.up||0)-p;else m.scrap-=p;
+  if(kind==='uup')m.uLv=(m.uLv||0)+1;
   if(kind==='unlock')m.unlocked++;if(kind==='uun')m.uUn=(m.uUn!=null?m.uUn:2)+1;if(kind==='atk')m.atkLv++;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
   sfx.buy();ivLog(label);ivRender();return;}
  const me=G.players[G.myIdx];
