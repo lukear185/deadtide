@@ -1583,11 +1583,14 @@ function drawMinis(){
  for(const o of list){const el=$('mini'+o.j);if(!el||!el.querySelector)continue;
   const cvm=el.querySelector('.mv');if(!cvm||!cvm.getContext)continue;drawMini(cvm,o.camp);}
 }
-function buildMinis(list){const w=$('minis');w.innerHTML='';list.forEach(o=>{const d=document.createElement('div');d.className='mini';d.id='mini'+o.i;
- d.innerHTML=`<div class="nm"><span>${COOP?'🤝 ':''}${o.n}</span><span>${COOP?'':'👁'}</span></div>`+(COOP?'':`<div class="hpbar"><i style="width:100%"></i></div><canvas class="mv" width="200" height="95"></canvas>`)+`<div class="st">待機中</div>`;
- d.onclick=()=>{if(gameActive&&!COOP)setSpec(SPEC===o.i?-1:o.i);};
+function buildMinis(list){const w=$('minis');w.innerHTML='';
+ if(COOP)return;/* 協力プレイは盤面共有なので味方パネルを出さない */
+ list.forEach(o=>{const d=document.createElement('div');d.className='mini';d.id='mini'+o.i;
+ d.innerHTML=`<div class="nm"><span>${o.n}</span><span>👁</span></div><div class="hpbar"><i style="width:100%"></i></div><canvas class="mv" width="200" height="95"></canvas><div class="st">待機中</div>`;
+ d.onclick=()=>{if(gameActive)setSpec(SPEC===o.i?-1:o.i);};
  w.appendChild(d);});}
 function minisUpd(){
+ if(COOP)return;
  let list;
  if(MODE==='client')list=(CS.ot||[]).map(o=>({i:o.j,hp:o.hp,mx:o.mx,dd:o.dd,pl:o.pl,kw:o.kw,tw:o.tw,rd:o.rd,sh:o.sh,en:o.en}));
  else if(G)list=G.players.map((p,i)=>({i,hp:p.core,mx:p.coreMax,dd:p.dead?1:0,pl:p.place,kw:p.killsWave,tw:p.totalWave,rd:p.ready?1:0,sh:Math.round(G.tide.shares[i]),en:Math.round(p.scrap)})).filter(o=>o.i!==G.myIdx);
@@ -1680,7 +1683,7 @@ function setFlagAim(on){if(on)setAim(false);FLAGAIM=on;aimPos=null;$('flagbtn').
 $('flagbtn').onclick=()=>{const m=meV();if(!m||m.dead){setFlagAim(false);return;}setFlagAim(!FLAGAIM);};
 let FLAGPOP=-9;
 function actFlag(x,y){const fd=clamp(projPath(x,y),PLEN*.1,PLEN*.9);
- if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'fg',fd:Math.round(fd)});CS.fd=fd;FLAGPOP=TT;sfx.dep();return;}
+ if(MODE==='client'){sendCmd({t:'c',a:'fg',fd:Math.round(fd)});CS.fd=fd;FLAGPOP=TT;sfx.dep();return;}
  if(G){const me=G.players[G.myIdx];if(me.dead)return;me.flagD=fd;FLAGPOP=TT;
   const F2=G.coop?G.players[0]:me;const fp=pathPos(fd);addFx(F2,'ring',fp[0],fp[1],'',{r:44,col:'#c9dba1'});sfx.dep();}}
 $('pushbtn').onclick=()=>{actPush();};
@@ -1690,24 +1693,24 @@ $('pushtgt').onclick=()=>{const os=aliveOthers();if(!os.length)return;
 function actPush(){
  if(MODE==='client'){const m=meV();if(!m||m.dead)return;const p=prPush(m.pushUses||0);
   if(m.scrap<p||CS.ph!==1)return;
-  safeSend(NET.conn,{t:'c',a:'ps',tg:PUSHTGT});
+  sendCmd({t:'c',a:'ps',tg:PUSHTGT});
   m.scrap-=p;m.pushUses=(m.pushUses||0)+1;sfx.push();updHUD();return;}
  if(G)pushTide(G.players[G.myIdx],PUSHTGT);
 }
 /* ---- アクション(ローカル/通信ルーティング) ---- */
-function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;safeSend(NET.conn,{t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:{d:0,r:0,g:0},jamT:0,own:CS.myJ};sfx.build();}
+function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:{d:0,r:0,g:0},jamT:0,own:CS.myJ};sfx.build();}
  else buildTower(G.players[G.myIdx],si,ti);}
 function actUp(si,st){st=st||'d';
- if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if(m.scrap<p)return;safeSend(NET.conn,{t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
+ if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
  else upTower(G.players[G.myIdx],si,st);}
-function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;safeSend(NET.conn,{t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
+function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;sendCmd({t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
  else sellTower(G.players[G.myIdx],si);}
-function actStrike(x,y){if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'st',x:Math.round(x),y:Math.round(y)});CS.meN.charge=0;sfx.boom();}
+function actStrike(x,y){if(MODE==='client'){sendCmd({t:'c',a:'st',x:Math.round(x),y:Math.round(y)});CS.meN.charge=0;sfx.boom();}
  else airstrike(G.players[G.myIdx],x,y,G.wave);}
 function actDeploy(ui){
  if(MODE==='client'){const m=meV();if(!m||m.dead)return;const U=UNITS[ui],dc=uDepCost(m,ui);
   if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<dc)return;
-  safeSend(NET.conn,{t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
+  sendCmd({t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
 let DECKB=[],DECKEVO=0;
 function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKEVO=0;
@@ -1785,14 +1788,14 @@ function actBuy(kind){
  const label={unlock:'🔓 新タワー解放!',uun:'🪖 新部隊解放!',uup:'⬆ 部隊強化!',atk:'🔧 火力増強!',repair:'🛠 コア修理!',big:'🌊 大押し流しを仕掛けた!',tide:'🌊 潮位を引き上げた!',jam:'⚡ 妨害工作を仕掛けた',send:'🧟 変異体を送った'}[kind];
  if(MODE==='client'){const m=meV(),p=priceOf(m,kind,opt);if(m.scrap<p)return;
   if((kind==='unlock'||kind==='uun')&&(CS.w||0)<3)return;
-  safeSend(NET.conn,{t:'c',a:'buy',k:kind,o:opt});
+  sendCmd({t:'c',a:'buy',k:kind,o:opt});
   m.scrap-=p;if(kind==='unlock')m.unlocked++;if(kind==='uun')m.uUn=(m.uUn!=null?m.uUn:2)+1;if(kind==='uup')m.uLv=(m.uLv||0)+1;if(kind==='atk')m.atkLv++;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
   sfx.buy();ivLog(label);ivRender();return;}
  const me=G.players[G.myIdx];
  if(doPurchase(me,kind,opt)){sfx.buy();ivLog(label);ivRender();}
 }
 $('ivready').onclick=()=>{
- if(MODE==='client'){safeSend(NET.conn,{t:'c',a:'rd'});const m=meV();m.ready=true;ivRender();return;}
+ if(MODE==='client'){sendCmd({t:'c',a:'rd'});const m=meV();m.ready=true;ivRender();return;}
  const me=G.players[G.myIdx];me.ready=true;ivRender();
 };
 /* ============ パレード ============ */
@@ -1888,6 +1891,8 @@ $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */
 let NET={peer:null,conn:null,lob:[],host:false},CS={meN:null,ot:[],w:0,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0},CC=null,CCFX=[];
 function safeSend(c,o){try{if(c&&c.open)c.send(o);}catch(e){}}
+/* クライアントのコマンドには必ず自分の席番号(j)を載せる=接続が張り直されてもホストが本人を特定できる */
+function sendCmd(o){o.j=CS.myJ;safeSend(NET.conn,o);}
 function code4(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=A[ri(0,A.length-1)];return s;}
 function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
@@ -2030,7 +2035,11 @@ function hostData(c,d){
   if(gameActive||NET.lob.length>=2){safeSend(c,{t:'full'});setTimeout(()=>{try{c.close();}catch(e){}},300);return;}
   NET.lob.push({conn:c,name:(''+(d.n||'サバイバー')).slice(0,8)});renderLobby();return;}
  if(d.t==='c'&&G){
-  const i=G.players.findIndex(p=>p.conn===c);if(i<0)return;const P=G.players[i];
+  let i=G.players.findIndex(p=>p.conn===c);
+  if(i<0&&d.j!=null&&G.players[d.j|0]&&G.players[d.j|0].kind==='remote'){
+   /* 接続が張り直された等でconnが一致しない場合は席番号で再紐付け(操作が無視される事故の防止) */
+   i=d.j|0;G.players[i].conn=c;}
+  if(i<0)return;const P=G.players[i];
   if(d.a==='bd')buildTower(P,d.si|0,d.ti|0);
   else if(d.a==='up')upTower(P,d.si|0,''+(d.st||'d'));
   else if(d.a==='sl')sellTower(P,d.si|0);
