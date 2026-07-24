@@ -99,6 +99,13 @@
 5. **発砲光と時間帯の分離**: 光は「闇をくり抜く」方式のみだったため夜色と同色に見えていた → くり抜き位置を`glow[]`に控え、**加算合成で暖色(電撃だけ青白)を重ねる**。昼夜どちらでも「撃った光」と分かる。
 6. **研究所に序盤・中盤系を6種追加**(いずれも1波目から効く): 🔩開始強化pt+6/🤝開始部隊枠+1/🧱建設スロット初期+1/💰撃破報酬+6%/🏭工房産出+12%/⏱出撃CD-6%。研究所の項目は**価格の安い順に並べ替え**て序盤に届くものを上に出す。META: up0/uu0/sl0/py0/ec0/cd0。効果はソロのみ(`soloMeta()`ゲート=metaPay/metaCd/metaEco)。
 
+### 2026-07-25 第3弾(チャット直接指示)
+1. **廃品工房つき開始**: 研究所`🏭 廃品工房を建てた状態で開始`(META.ec1・220pt)。startSoloで`me.towers[ECO_BASE]`に工房を直接配置。※工房は元から**タップで個別強化可能**(twStats=`['d','r']`=⚙️産出/⏩サイクル、stCost払い)=既存仕様を確認。
+2. **系統強化(研究所)**: タワーは型ごと(TLINE: eco/fire/net/blast/elec)、兵科は型ごと(ULINE: melee/bullet/pierce/blast/fire/frost/heal)に各Lv3。**研究所で解放した新型タワー/新兵科にもそのまま乗る**(型判定なので)。META.tl{}/ul{}、tlv()/ulv()はsoloMetaゲート。効果=タワー威力+10%/段(+型別: eco産出+15%/fire燃焼+25%/net減速+20%/blast範囲+12%/elec連鎖+1)、兵科HP+8〜10%・攻撃+12%/段。価格LAB_TL/LAB_UL=140/110×1.55^lv。
+3. **新登場の紹介モーダル(md-intro)**: ソロで新解放タワー/兵科・**初登場のゾンビ**をウェーブ開始直後に画面中央で説明(絵+名前+ステータス+特性)。表示中`PAUSED=true`でゲーム停止、OKで次→全部閉じると再開。解放は`G.introQ`にpush(doPurchase unlock/uun)、敵は`G.seenZ`で初出だけ。⚠ヘッドレステストはOK待ちで固まるので**frames()内でPAUSED&&INTROQなら即introNext()**で自動送り。
+4. **終盤の敵: 数減・質増**: buildTideのnにW12〜taper(-0.5/wave)・下限8、増加係数.03→.016、lateX 1.035→1.055。1体HPは据置き成長だが**bt(報酬)にW12〜+5%/wave**。画面が埋まりにくく、撃破1体あたりの旨味を上げた。
+5. **ボスの削り報酬**: dmgZでボスに、削ったHP割合×(bt×pay×0.6)を**先払い**(z.bpaid累積)。倒しきれなくても削った分は入る。killZのとどめ報酬はbt×pay−bpaidで二重取り防止(協力も同様)。
+
 ## コードスキーマ(既存に合わせること)
 - キャンプ: `C.units[] {eid,ui,own,am,evo,d,hp,mhp,cd,hitT,fireT,ph,px,py,dr,back,eng}` / `C.ucd[]` / `C.uUn` / `C.uLv`(部隊Lv) / `C.up`(🔩) / `C.ecoN` / `C.slk[]`(スロット解放) / `C.ps[]`(パーティクル)
 - タワー: `C.towers[si] {ti,us:{d,r,g,c},cd,ang,jamT,fireT,spent,own}` — usが個別強化Lv(cは電撃の連鎖)

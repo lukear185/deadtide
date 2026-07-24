@@ -27,7 +27,8 @@ const html=fs.readFileSync(TARGET,'utf-8');
 const js=html.split('<script>')[1].split('</'+'script>')[0];
 const body=`
 ;console.log('LOAD OK. PLEN='+Math.round(PLEN)+' slots='+SLOTS.length+' units='+UNITS.length+' STAGE_W='+STAGE_W);
-function frames(n,step){for(let i=0;i<n;i++){NOW+=step*1000;const q=rafq.splice(0);for(const f of q)f(NOW);}}
+function frames(n,step){for(let i=0;i<n;i++){NOW+=step*1000;const q=rafq.splice(0);for(const f of q)f(NOW);
+ try{if(typeof PAUSED!=='undefined'&&PAUSED&&typeof INTROQ!=='undefined'){let g=0;while(PAUSED&&g++<40)introNext();}}catch(e){}}}
 function chkShares(tag){
  if(!G||G.pve)return;
  const alive=G.players.filter(p=>!p.dead).length;

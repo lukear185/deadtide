@@ -428,6 +428,17 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
+<div class="modal" id="md-intro">
+  <div class="panel center" style="max-width:400px;width:min(92vw,400px)">
+    <h2 class="hd" id="itr-h">新戦力</h2>
+    <canvas id="itr-cv" width="150" height="130" style="width:150px;height:130px;display:block;margin:2px auto;background:#e8dfc4;border:3px solid var(--ink);border-radius:12px"></canvas>
+    <div id="itr-n" style="font-size:19px;font-weight:900;margin-top:6px"></div>
+    <div id="itr-s" style="font-size:12px;font-weight:900;color:var(--rust2);margin-top:2px"></div>
+    <div id="itr-d" style="font-size:13px;font-weight:700;margin:6px 0 2px"></div>
+    <button class="btn gold" id="bt-itr-ok" style="margin-top:8px;width:100%">OK</button>
+  </div>
+</div>
+
 <div class="modal" id="md-load">
   <div class="panel howto" style="max-width:600px;width:min(94vw,600px)">
     <h2 class="hd">🎖 編成</h2>
@@ -469,10 +480,11 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{}};
 try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  if(!Array.isArray(META.uv))META.uv=[];if(!META.ld||typeof META.ld!=='object')META.ld={};META.am=META.am||0;META.amEq=META.amEq||0;
- for(const k of ['up0','cd0','ec0','sl0','py0','uu0'])META[k]=META[k]||0;}}catch(e){}
+ for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=META[k]||0;
+ if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
 function saveMeta(){try{localStorage.setItem('dt_meta',JSON.stringify(META));}catch(e){}}
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
@@ -765,6 +777,30 @@ const AMMO=[
  {id:'void',n:'崩壊弾',ic:'⚫',dm:1.75,pierce:1,aoe:62,col:'rgba(178,130,255,',hit:'#e0d0ff',w:2.3,dsc:'着弾点が崩壊する。威力+75%・貫通・小範囲'}
 ];
 const LAB_AM=[240,460,760];/* ビーム/プラズマ/崩壊の解放価格 */
+/* ============ 系統強化(研究所) ============
+ タワーは「型」ごと、兵科も「型」ごとに3段階まで鍛えられる。
+ 研究所で解放した新型タワー/新兵科にもそのまま乗るので、終盤の解放物も強化できる。 */
+const TLINE=[
+ {k:'eco',ic:'🏭',n:'工房設備',dsc:'廃品工房の産出+15%/段'},
+ {k:'fire',ic:'🔥',n:'燃焼促進剤',dsc:'火炎系タワーの継続燃焼+25%・威力+10%/段'},
+ {k:'net',ic:'🕸',n:'強化拘束具',dsc:'拘束系タワーの減速時間+20%・威力+10%/段'},
+ {k:'blast',ic:'💥',n:'高性能炸薬',dsc:'爆発系タワーの範囲+12%・威力+10%/段'},
+ {k:'elec',ic:'⚡',n:'高圧回路',dsc:'電撃系タワーの連鎖+1・威力+10%/段'}
+];
+const ULINE=[
+ {k:'melee',ic:'⚔',n:'近接訓練',dsc:'近接兵科のHP+10%・攻撃+10%/段'},
+ {k:'bullet',ic:'🔫',n:'射撃訓練',dsc:'射撃兵科のHP+8%・攻撃+12%/段'},
+ {k:'pierce',ic:'🗡',n:'貫通訓練',dsc:'貫通兵科のHP+8%・攻撃+12%/段'},
+ {k:'blast',ic:'💣',n:'爆撃訓練',dsc:'爆発兵科のHP+8%・攻撃+12%/段'},
+ {k:'fire',ic:'🔥',n:'焼夷訓練',dsc:'火炎兵科のHP+8%・攻撃+12%/段'},
+ {k:'frost',ic:'❄',n:'凍結訓練',dsc:'冷凍兵科のHP+8%・攻撃+12%/段'},
+ {k:'heal',ic:'✚',n:'衛生訓練',dsc:'回復兵科のHP+8%・回復量+12%/段'}
+];
+const LINE_MAX=3;
+const LAB_TL=lv=>Math.round(140*Math.pow(1.55,lv));
+const LAB_UL=lv=>Math.round(110*Math.pow(1.55,lv));
+const tlv=k=>soloMeta()?clamp((META.tl&&META.tl[k])||0,0,LINE_MAX):0;
+const ulv=k=>soloMeta()?clamp((META.ul&&META.ul[k])||0,0,LINE_MAX):0;
 /* ============ 編成(ロードアウト) ============ */
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
 let AMI=0;/* 現在装備中の弾薬 */
@@ -1305,7 +1341,7 @@ const ZHPM=.85;/* ゾンビHP全体倍率 */
 const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示) */
 function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)),dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
@@ -1313,11 +1349,14 @@ function buildTide(wave){
  const D=D5v();
  const warm=G.pve&&wave<=4?[.6,.72,.84,.94][wave-1]:1;/* PvE序盤の慣らし */
  /* 中盤(W8〜)から一段、終盤(W14〜)からもう一段きつくする */
- const midX=wave>=8?Math.pow(1.03,wave-7):1,lateX=wave>=14?Math.pow(1.035,wave-13):1;
+ /* 2026-07-25: 終盤は「数を減らして1体を強く」。lateXを厚くし、下のnを絞る */
+ const midX=wave>=8?Math.pow(1.03,wave-7):1,lateX=wave>=14?Math.pow(1.055,wave-13):1;
  const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*midX*lateX*(G.pve?D.hp*warm:1)*(G.coop?1+.11*(G.np-1):1);
  T.mul=mul;
  const laneN=G.coop?1:alive;
- const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(wave>=8?1+(wave-7)*.03:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1));
+ /* 終盤(W12〜)は増え方を鈍らせる=画面が敵で埋まらないように */
+ const taper=wave>=12?Math.max(0,(wave-11)*.5):0;
+ const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1));
  /* ナイトメアは獣ゾンビだけの完全別プール */
  const nmOn=isNM();
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave&&(nmOn?ZOMBIES[i].nm:!ZOMBIES[i].nm));
@@ -1458,8 +1497,8 @@ function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{})
 function killZ(C,z){
  z.dead=true;C.kills++;C.killsWave++;
  const pay=(G&&G.pve?D5v().pay:1)*metaPay();
- let g=Math.round(z.bt*pay);
- if(G&&G.coop){g=Math.ceil(z.bt*pay*COOP_PAY[Math.min(G.np,3)-1]);
+ let g=Math.max(0,Math.round(z.bt*pay)-(z.bpaid||0));/* 削って先払いした分を差し引く */
+ if(G&&G.coop){g=Math.max(0,Math.ceil((z.bt*pay-(z.bpaid||0))*COOP_PAY[Math.min(G.np,3)-1]));
   for(const P of G.players){P.scrap+=g;P.enTotal+=g;}}
  else{C.scrap+=g;C.enTotal+=g;}
  addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30,'+'+g+'⚙️');
@@ -1477,7 +1516,7 @@ function killZ(C,z){
   const nb=[0,2,3][FXLV];
   for(let k=0;k<nb;k++)addFx(C,'boom',z.px+rnd(-80,80),z.py+rnd(-55,30),'',{d0:.12+k*.16});
   if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:'#ffd23d',big:1});
-  addFx(C,'txt',z.px,z.py-90,'+'+g+'⚙️ 総取り!');
+  addFx(C,'txt',z.px,z.py-90,'+'+g+'⚙️ とどめ!'+(z.bpaid?'(削り '+z.bpaid+'⚙️)':''));
   if(C.isMe){sfx.bossKill();UI.banner('💀 ジャガーノート撃破!!');}
  }else if(z.elite){
   addP(C,14,z.px,z.py-24,{sp:200,up:80,g:540,life:.6,r:3,col:'#d883ee'});
@@ -1492,6 +1531,14 @@ function dmgZ(C,z,d,armorPierce){
  if(z.dead)return;
  if(z.armor&&!armorPierce)d*=.45;
  z.hp-=d;z.hitT=.1;
+ /* ボスは削った分だけ報酬を先払い(倒しきれなくても取り分が残る) */
+ if(z.boss&&z.mhp>0&&z.hp>0){
+  const pay0=(G&&G.pve?D5v().pay:1)*metaPay();
+  const owe=Math.floor(z.bt*pay0*.6*clamp(1-z.hp/z.mhp,0,1))-(z.bpaid||0);
+  if(owe>0){z.bpaid=(z.bpaid||0)+owe;
+   if(G&&G.coop){const cg=Math.ceil(owe*COOP_PAY[Math.min(G.np,3)-1]);for(const P of G.players){P.scrap+=cg;P.enTotal+=cg;}}
+   else{C.scrap+=owe;C.enTotal+=owe;}
+   if(owe>=3)addFx(C,'txt',z.px+rnd(-10,10),z.py-58,'+'+owe+'⚙️');}}
  if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44,''+Math.max(1,Math.round(d)));
   if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
@@ -1505,9 +1552,11 @@ function deployUnit(C,ui){
  const cap=G&&G.coop?COOP_MAXU:MAXU;
  if(cnt>=cap){if(C.isMe)toast('⚠ 部隊上限('+cap+'体)!',true);return false;}
  C.scrap-=dc;C.ucd[ui]=U.cd*metaCd();C.dep++;
- const lvM=1+.1*(C.uLv||0);/* 部隊レベル: 全兵科共通で+10%/Lv */
+ const UL=ulv(U.type);/* 系統訓練(研究所): 型ごとにHPと攻撃が伸びる */
+ const lvM=(1+.1*(C.uLv||0))*(1+(U.type==='melee'?.10:.12)*UL);/* 部隊レベル+訓練 */
+ const hpM=(1+.1*(C.uLv||0))*(1+(U.type==='melee'?.10:.08)*UL);
  const d0=G&&G.coop?branchD(C.gi||0)-rnd(0,20):PLEN-70-rnd(0,26);
- const hp0=Math.round(U.hp*lvM);
+ const hp0=Math.round(U.hp*hpM);
  F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
  if(U.id==='hnd'){/* 猟犬は2体1組で出撃 */
   const cnt2=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:F.units.length;
@@ -1676,7 +1725,7 @@ function campStep(C,dt,wave){
   tw.cd-=dt;if(tw.fireT>0)tw.fireT-=dt;
   const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=twDmgM(tw);
   const aB=G&&G.coop?1+.08*((G.players[tw.own||0]||C).atkLv):atkB;
-  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=Math.round(T.inc*(1+.2*tw.us.d)*metaEco());C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
+  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=Math.round(T.inc*(1+.2*tw.us.d)*metaEco()*(1+.15*tlv('eco')));C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
   const rng=T.rng*twRngM(tw),r2=rng*rng;
   let tg=null,best=-1;
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const dx=z.px-sx,dy=z.py-sy,ds=dx*dx+dy*dy;if(ds>r2)continue;
@@ -1686,7 +1735,8 @@ function campStep(C,dt,wave){
   if(tw.cd>0||!tg)continue;
   tw.cd=T.rate*twRateM(tw);tw.fireT=.12;
   const AMO=AMMO[T.type==='bullet'?AMI:0];/* 弾薬は実弾タワーにだけ載る */
-  const dm=T.dmg*m*aB*AMO.dm;
+  const TL=tlv(T.type);/* 系統強化(研究所) */
+  const dm=T.dmg*m*aB*AMO.dm*(1+.10*TL);
   /* 銃口の火花・煙・薬莢 */
   if(FXLV>0&&T.type!=='eco'){const mx2=sx+Math.cos(tw.ang)*26,my2=sy+Math.sin(tw.ang)*26;
    if(T.type==='bullet'){addP(C,4,mx2,my2,{sp:150,a:tw.ang,spread:.28,g:60,life:.12,r:2.2,col:'#fff3c0'});
@@ -1695,9 +1745,9 @@ function campStep(C,dt,wave){
    else if(T.type==='blast'){addP(C,5,mx2,my2,{sp:140,a:tw.ang,spread:.4,g:60,life:.14,r:2.8,col:'#ffdd66'});}
    else if(T.type==='elec'){addP(C,4,sx,sy-24,{sp:120,g:60,life:.25,r:2,col:'#cdf1ff'});}
    else if(T.type==='net'){addP(C,4,sx,sy,{sp:70,g:0,flat:1,life:.5,r:2.4,col:T.id==='cryo'?'#cdf1ff':'#9fd9c6'});}}
-  if(T.type==='net'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){z.slowT=T.slowT;dmgZ(C,z,dm,1);}}addFx(C,'ring',sx,sy,'',{r:rng,col:'#9fd9c6'});if(C.isMe)sfx.net();}
-  else if(T.type==='fire'){dmgZ(C,tg,dm,1);if(!tg.dead){tg.burnT=2;tg.burnD=T.burn*m*aB;}if(C.isMe&&Math.random()<.12)sfx.thunk();}
-  else if(T.type==='elec'){const chainN=twChain(T,tw);
+  if(T.type==='net'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){z.slowT=T.slowT*(1+.2*TL);dmgZ(C,z,dm,1);}}addFx(C,'ring',sx,sy,'',{r:rng,col:'#9fd9c6'});if(C.isMe)sfx.net();}
+  else if(T.type==='fire'){dmgZ(C,tg,dm,1);if(!tg.dead){tg.burnT=2;tg.burnD=T.burn*m*aB*(1+.25*TL);}if(C.isMe&&Math.random()<.12)sfx.thunk();}
+  else if(T.type==='elec'){const chainN=twChain(T,tw)+TL;
    let cur=tg,hitl=[tg],pts=[[sx,sy],[tg.px,tg.py]];dmgZ(C,cur,dm,1);
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
@@ -1709,7 +1759,7 @@ function campStep(C,dt,wave){
    addFx(C,'zap',sx,sy,'',{pts,sd:rnd(0,9)});
    if(FXLV>0)for(const p6 of pts)addP(C,2,p6[0],p6[1],{sp:60,g:40,life:.35,r:2,col:'#cdf1ff'});
    if(C.isMe)sfx.zap();}
-  else if(T.type==='blast'){C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:.85,dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)});if(C.isMe)sfx.thunk();}
+  else if(T.type==='blast'){C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:.85,dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)*(1+.12*TL)});if(C.isMe)sfx.thunk();}
   else{/* bullet */
    const tt2=twTier(tw),trC=AMO.col||TR_COL[tt2],hitC=AMO.hit||HIT_COL[tt2],trW=(2.6+tt2*.45)*(AMO.w||1);
    const prc=(T.pierce||AMO.pierce)?1:0;
@@ -1802,8 +1852,10 @@ function doPurchase(C,kind,opt){
  }
  if(usePts)C.up-=p;else C.scrap-=p;
  switch(kind){
-  case 'unlock':C.unlocked++;break;
-  case 'uun':C.uUn++;break;
+  case 'unlock':C.unlocked++;
+   if(C.isMe&&G){G.introQ=G.introQ||[];G.introQ.push({k:'t',i:C.unlocked-1});}break;
+  case 'uun':C.uUn++;
+   if(C.isMe&&G){G.introQ=G.introQ||[];G.introQ.push({k:'u',i:C.uUn-1});}break;
   case 'slot':{const F2=(G&&G.coop)?G.players[0]:C,si2=opt.si|0;
    if(si2<0||si2>=ECO_BASE||!F2.slk||F2.slk[si2]){C.scrap+=p;return false;}
    F2.slk[si2]=true;
@@ -1946,6 +1998,13 @@ function nextWave(){
  for(const C of G.players)if(!C.dead)resetCampWave(C);
  UI.closeInterval();UI.banner('WAVE '+G.wave+(G.wave%5===0?' 💀BOSS':''));
  sfx.horn();G.phase='wave';
+ /* ソロ: 新しく解放したもの・初登場の敵をウェーブ開始前に説明する(その間ゲームは止まる) */
+ if(G.pve&&!G.coop&&MODE==='solo'){
+  const q=(G.introQ||[]).slice();G.introQ=[];
+  const seen=G.seenZ||(G.seenZ={});
+  for(const e of G.tide.pool){const zi=e.z.zi;if(!seen[zi]){seen[zi]=1;q.push({k:'z',i:zi});}}
+  if(q.length){try{showIntro(q);}catch(e){}}
+ }
  if(G.wave===1&&!G.players[G.myIdx].dead){
   if(G.pve){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),6000);setTimeout(()=>toast('⬆ デッキのボタンを長押しで部隊レベルアップ!'),11400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),16800);setTimeout(()=>toast('🛡 WAVE '+STAGE_W+' を守り切ればステージクリアだ!'),22200);}
   else{setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!'),5600);setTimeout(()=>toast('💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ'),11000);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),16400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),21800);}}
@@ -2706,6 +2765,9 @@ function startSolo(){
  me.up=me.upTotal=12+6*(META.up0||0);
  me.uUn=2+(META.uu0||0);
  {const s0=SLOT0+(META.sl0||0);me.slk=SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<s0);}
+ if(META.ec1){/* 廃品工房を建てた状態で開始 */
+  const eti=TOWERS.findIndex(t=>t.type==='eco');
+  if(eti>=0)me.towers[ECO_BASE]={ti:eti,us:{d:0,r:0,g:0,c:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:TOWERS[eti].cost,own:0};}
  startGameUI([]);
  $('strikebtn').textContent=STRIKES[me.stk].ic;
  $('tidebar').style.display='none';$('pushbtn').style.display='none';
@@ -2764,6 +2826,12 @@ function renderLab(){
  if((META.py0||0)<5)items.push({k:'py0',t:'💰 撃破報酬+6% (Lv'+(META.py0||0)+'/5)',d:'ゾンビを倒した時の⚙️が増える(全ウェーブで効く)',p:LAB_PY0(META.py0||0)});
  if((META.ec0||0)<5)items.push({k:'ec0',t:'🏭 廃品工房の産出+12% (Lv'+(META.ec0||0)+'/5)',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({k:'cd0',t:'⏱ 出撃の待ち時間-6% (Lv'+(META.cd0||0)+'/5)',d:'部隊を続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
+ if(!(META.ec1||0))items.push({k:'ec1',t:'🏭 廃品工房を建てた状態で開始',d:'工房エリアに1基が最初から建っている(⚙️の立ち上がりが早い)',p:220});
+ /* ---- 系統強化(研究所で解放した新型にも効く) ---- */
+ for(const L of TLINE){const lv=(META.tl&&META.tl[L.k])||0;
+  if(lv<LINE_MAX)items.push({k:'tl',id:L.k,t:L.ic+' タワー強化『'+L.n+'』 (Lv'+lv+'/'+LINE_MAX+')',d:L.dsc+' — その型のタワー全部に効く(研究所で解放した新型も)',p:LAB_TL(lv)});}
+ for(const L of ULINE){const lv=(META.ul&&META.ul[L.k])||0;
+  if(lv<LINE_MAX)items.push({k:'ul',id:L.k,t:L.ic+' 部隊訓練『'+L.n+'』 (Lv'+lv+'/'+LINE_MAX+')',d:L.dsc+' — その型の兵科全部に効く(研究所で解放した新兵科も)',p:LAB_UL(lv)});}
  items.sort((a,b)=>(a.p||0)-(b.p||0));/* 安い(=序盤で届く)ものから並べる */
  if(!items.length)items.push({t:'🎉 全研究完了!'});
  /* 解放済みの一覧(何を取ったか分かるように) */
@@ -2774,7 +2842,10 @@ function renderLab(){
   doneA=AMMO.slice(1,1+(META.am||0)).map(a=>a.ic+a.n),
   doneX=[].concat(META.sc0?['⚙️初期資金+'+(META.sc0*40)]:[],META.hp0?['🏕コアHP+'+(META.hp0*5)]:[],
    META.up0?[PT+'開始+'+(META.up0*6)]:[],META.uu0?['🤝部隊枠+'+META.uu0]:[],META.sl0?['🧱建設枠+'+META.sl0]:[],
-   META.py0?['💰報酬+'+(META.py0*6)+'%']:[],META.ec0?['🏭産出+'+(META.ec0*12)+'%']:[],META.cd0?['⏱待ち-'+(META.cd0*6)+'%']:[]);
+   META.py0?['💰報酬+'+(META.py0*6)+'%']:[],META.ec0?['🏭産出+'+(META.ec0*12)+'%']:[],META.cd0?['⏱待ち-'+(META.cd0*6)+'%']:[],
+   META.ec1?['🏭工房つき開始']:[],
+   TLINE.filter(L=>(META.tl&&META.tl[L.k])).map(L=>L.ic+L.n+'Lv'+META.tl[L.k]),
+   ULINE.filter(L=>(META.ul&&META.ul[L.k])).map(L=>L.ic+L.n+'Lv'+META.ul[L.k]));
  const done=[].concat(doneT,doneU,doneV,doneA,doneS,doneX);
  const clrLbl=D5.map((d,i)=>((META.clr&&META.clr[i])?'<span class="lchip">🏆'+d.n+'</span>':'')).join('')||'<span style="opacity:.6">まだクリアなし</span>';
  $('lab-items').innerHTML=
@@ -2787,11 +2858,44 @@ function renderLab(){
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);}
   else if(it.k==='am'){META.am=(META.am||0)+1;META.amEq=META.am;}
   else if(it.k==='sc0')META.sc0++;else if(it.k==='hp0')META.hp0++;
-  else if(['up0','uu0','sl0','py0','ec0','cd0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+1;
+  else if(['up0','uu0','sl0','py0','ec0','cd0','ec1'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+1;
+  else if(it.k==='tl'){if(!META.tl)META.tl={};META.tl[it.id]=(META.tl[it.id]||0)+1;}
+  else if(it.k==='ul'){if(!META.ul)META.ul={};META.ul[it.id]=(META.ul[it.id]||0)+1;}
   saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();};});
  if(scEl)scEl.scrollTop=keepTop;
  if(pnl)pnl.scrollTop=keepTop2;
 }
+/* ---- 新登場の紹介(ウェーブ開始前に止めて説明する) ---- */
+let INTROQ=[];
+function showIntro(list){
+ INTROQ=(list||[]).slice();
+ if(!INTROQ.length)return;
+ PAUSED=true;introNext();
+}
+function introNext(){
+ const it=INTROQ.shift();
+ if(!it){$('md-intro').classList.remove('on');PAUSED=false;return;}
+ const cvv=$('itr-cv'),c=cvv.getContext&&cvv.getContext('2d');
+ if(c&&c.clearRect)c.clearRect(0,0,150,130);
+ let hd='',nm='',ds='',st='';
+ try{
+  if(it.k==='u'){const U=UNITS[it.i];hd='🪖 新しい部隊が使える!';nm=U.n;ds=U.dsc;
+   st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め':'');
+   if(c){c.save();c.translate(75,112);c.scale(1.5/(TSCALE[uTier(it.i)-1]||1),1.5/(TSCALE[uTier(it.i)-1]||1));drawUnit(c,it.i,0,0,1,.4,0,{});c.restore();}}
+  else if(it.k==='t'){const T=TOWERS[it.i];hd='🗼 新しいタワーが建てられる!';nm=T.n;ds=T.dsc;
+   st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒';
+   if(c){c.save();c.translate(75,84);c.scale(1.5,1.5);drawTower(c,it.i,1,0,0,-0.5,0,{});c.restore();}}
+  else if(it.k==='z'){const Z=ZOMBIES[it.i];hd='🧟 新種のゾンビが現れる!';nm=Z.n;
+   const tag=[];if(Z.armor)tag.push('装甲(通常弾が効きにくい)');if(Z.noblock)tag.push('すり抜け(鎖使いだけが止められる)');
+   if(Z.aura)tag.push('周囲を加速させる');if(Z.split)tag.push('倒すと分裂');if(Z.boss)tag.push('ボス');if(Z.aoe)tag.push('薙ぎ払い'+Z.aoe+'体');
+   ds=tag.length?tag.join(' ／ '):'ごく普通の個体。数で押してくる。';
+   st='HP'+Z.hp+' ／ 速さ'+Z.sp+' ／ 報酬⚙️'+Z.bt;
+   if(c){c.save();c.translate(75,114);const zs=1.35/(Z.sc||1);c.scale(zs,zs);drawZombie(c,it.i,0,0,1,.4,0,{});c.restore();}}
+ }catch(e){}
+ $('itr-h').textContent=hd;$('itr-n').textContent=nm;$('itr-d').textContent=ds;$('itr-s').textContent=st;
+ $('md-intro').classList.add('on');
+}
+$('bt-itr-ok').onclick=()=>{sfx.buy&&sfx.buy();introNext();};
 /* ---- 編成UI ---- */
 function ldPrev(cvv,i,def){
  const c=cvv.getContext&&cvv.getContext('2d');if(!c)return;
