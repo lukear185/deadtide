@@ -140,6 +140,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #lab-items{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto}
 .labitem{display:flex;align-items:center;gap:8px;background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:800}
 .labitem .li-d{flex:1;text-align:left}
+.labdone{background:#2f2b22;border:2px solid var(--paper);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:800;color:var(--paper);text-align:left}
+.labdone .lchip{display:inline-block;background:var(--pane);color:var(--ink);border-radius:8px;padding:1px 7px;margin:3px 4px 0 0;font-size:11px}
 #seg-stk{flex-wrap:wrap}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
@@ -430,6 +432,7 @@ try{const v=localStorage.getItem('dt_fx');if(v!=null)FXLV=clamp(+v,0,2);}catch(e
 /* ============ 永久強化(研究所・ソロ限定ローグライト) ============ */
 const STRIKES={
  air:{n:'エアストライク',ic:'🎯',ch:30,dsc:'一点爆撃+炎上'},
+ mgun:{n:'機関銃掃射',ic:'🔫',ch:26,dsc:'拠点から弾丸を連射して道を薙ぐ'},
  carpet:{n:'絨毯爆撃',ic:'🛩',ch:45,dsc:'道に沿って広範囲を連続爆撃'},
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
@@ -443,7 +446,7 @@ const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;return s
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;return soloMeta()?BU+clamp(META.nu||0,0,UNITS.length-BU):BU;};
 const LAB_NT=k=>Math.round(250*Math.pow(1.2,k));/* k個目のタワー解放価格 */
 const LAB_NU=k=>Math.round(120*Math.pow(1.14,k));/* k個目の兵科解放価格 */
-const LAB_STK={carpet:250,frost:200,napalm:300};
+const LAB_STK={mgun:150,carpet:250,frost:200,napalm:300};
 const LAB_SC=lv=>Math.round(80*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
 const LAB_HP=lv=>Math.round(100*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -583,9 +586,14 @@ const ZOMBIES=[
  {id:'blo',n:'ブローター',hp:265,sp:50,bt:30,dmg:2,mw:4,split:2,sc:1.35,atk:30,ar:1.2,c:'#8f6fae'},
  {id:'scr',n:'スクリーマー',hp:100,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:12,ar:.9,c:'#d67ba8'},
  {id:'dog',n:'感染ハウンド',hp:62,sp:215,bt:20,dmg:1,mw:8,sc:.85,atk:9,ar:.45,c:'#b0713d'},
- {id:'crwl',n:'クローラー',hp:125,sp:52,bt:40,dmg:2,mw:6,noblock:1,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
- {id:'ooze',n:'スライム状体',hp:255,sp:44,bt:62,dmg:3,mw:10,noblock:1,armor:1,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
- {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:60,ar:1.2,c:'#c14b3e'}
+ {id:'crwl',n:'クローラー',hp:125,sp:52,bt:40,dmg:2,mw:6,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
+ {id:'ooze',n:'スライム状体',hp:255,sp:44,bt:62,dmg:3,mw:10,noblock:1,armor:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
+ /* ↓中盤以降の強敵 */
+ {id:'brut',n:'ブルート',hp:420,sp:74,bt:74,dmg:3,mw:8,armor:1,w:.5,sc:1.3,atk:42,ar:.9,c:'#8a4a3a'},
+ {id:'stlk',n:'ストーカー',hp:190,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:30,ar:.5,c:'#6b4a7a'},
+ {id:'wrth',n:'レイス',hp:300,sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
+ {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,atk:56,ar:1.1,c:'#5a6470'},
+ {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:60,ar:1.2,aoe:5,c:'#c14b3e'}
 ];
 const SENDABLE=[0,1,2,3];
 const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss);
@@ -739,7 +747,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  c.fillRect(3-walk*4,-10,6,11);c.strokeRect(3-walk*4,-10,6,11);
  /* 胴体(前傾) */
  c.save();c.rotate(.14);
- const big=Z.id==='blo',hel=(Z.id==='arm'||Z.id==='jug');
+ const big=(Z.id==='blo'||Z.id==='brut'||Z.id==='tank'),hel=(Z.id==='arm'||Z.id==='jug'||Z.id==='tank');
+ if(Z.id==='wrth'){c.globalAlpha=.62;c.shadowColor='#7fd0ff';c.shadowBlur=12;}
  const bw=big?34:22,bh=big?30:26;
  rr(c,-bw/2,-12-bh,bw,bh,big?14:8);c.fillStyle=Z.c;c.fill();c.stroke();
  if(big){c.fillStyle=shade(Z.c,1.25);c.beginPath();c.arc(0,-24,9,0,7);c.fill();}
@@ -756,6 +765,19 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  if(Z.id==='scr'){c.fillStyle=INK;c.beginPath();c.ellipse(hx+4,hy+3,3.5,4.5,0,0,7);c.fill();}
  c.fillStyle='#fff';c.beginPath();c.arc(hx+3,hy-2,2.2,0,7);c.fill();c.fillStyle=INK;c.beginPath();c.arc(hx+3.6,hy-2,1.1,0,7);c.fill();
  c.restore();
+ if(Z.id==='brut'){/* ブルート: 肩の鉄板 */
+  c.fillStyle='#5a5048';rr(c,-20,-40,16,10,3);c.fill();c.stroke();rr(c,4,-40,16,10,3);c.fill();c.stroke();}
+ if(Z.id==='tank'){/* 重装兵: 全身プレート */
+  c.fillStyle='#3f4a54';rr(c,-14,-34,28,16,4);c.fill();c.stroke();
+  c.fillStyle='#8a8f96';c.fillRect(-14,-27,28,3);}
+ if(Z.id==='stlk'){/* ストーカー: 長い爪 */
+  c.strokeStyle='#cfd5da';c.lineWidth=2.6/s;
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(14,-26+k*3);c.lineTo(26+k*2,-30+k*5);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;}
+ if(Z.id==='wrth'){/* レイス: 裾が霧散 */
+  c.globalAlpha=.35;c.fillStyle=Z.c;
+  for(let k=0;k<3;k++){const w3=Math.sin(t*3+k+ph)*3;c.beginPath();c.ellipse(-8+k*8+w3,-2,7,5,0,0,7);c.fill();}
+  c.globalAlpha=.62;}
  if(Z.id==='jug'){/* ジャガーノート装甲+鎖 */
   c.strokeStyle='#8a8f96';c.lineWidth=3/s;c.beginPath();c.moveTo(-14,-20);c.lineTo(-22,-4);c.stroke();c.beginPath();c.arc(-23,-2,3,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=2.6/s;}
  c.restore();
@@ -1061,22 +1083,25 @@ const ZHPM=.85;/* ゾンビHP全体倍率 */
 const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示) */
 function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)),dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)),dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
  const D=D5v();
  const warm=G.pve&&wave<=4?[.6,.72,.84,.94][wave-1]:1;/* PvE序盤の慣らし */
- const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*(G.pve?D.hp*warm:1)*(G.coop?1+.15*(G.np-1):1);
+ /* 中盤(W8〜)から一段、終盤(W14〜)からもう一段きつくする */
+ const midX=wave>=8?Math.pow(1.03,wave-7):1,lateX=wave>=14?Math.pow(1.035,wave-13):1;
+ const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*midX*lateX*(G.pve?D.hp*warm:1)*(G.coop?1+.11*(G.np-1):1);
  T.mul=mul;
  const laneN=G.coop?1:alive;
- const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(G.pve?D.cnt*warm:1)*(G.coop?1+.8*(G.np-1):1));
+ const n=Math.round(.85*laneN*(G.pve?6.5+wave*1.6:7+wave*1.8)*(1+.2*up)*(wave>=8?1+(wave-7)*.03:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1));
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave);
  const pool=[];
- for(let k=0;k<n;k++){let pick=zp[ri(0,zp.length-1)];
-  /* すり抜け個体は出現を絞る(部隊で止められない=強力なため) */
-  if(ZOMBIES[pick].noblock&&Math.random()>.35)pick=zp[ri(0,zp.length-1)];
+ /* 強敵・すり抜け個体は重み(w)で出現を絞る */
+ const zwt=zp.map(i=>ZOMBIES[i].w||1),zwSum=zwt.reduce((a,b)=>a+b,0);
+ const pickZ=()=>{let r2=Math.random()*zwSum;for(let i=0;i<zp.length;i++){r2-=zwt[i];if(r2<=0)return zp[i];}return zp[zp.length-1];};
+ for(let k=0;k<n;k++){let pick=pickZ();
   if(wave>=4&&Math.random()<Math.min(.4,wave*.03))pick=zp[zp.length-1];
   pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul,wave)});}
  if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(BOSS_ZI,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
@@ -1317,6 +1342,11 @@ function airstrike(C,x,y,wave){
   const dm=60*(1+.12*wave);
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave);}}}
   addFx(F,'boomL',x,y,'');addFx(F,'ring',x,y,'',{r:120,col:'#ffb347'});F.shake=.3;
+ }else if(stk==='mgun'){/* 機関銃掃射: 拠点から連射(以後campStepで継続) */
+  F.mg={t:3.6,x,y,dmg:24*(1+.12*wave),cd:0};
+  addFx(F,'ring',x,y,'',{r:150,col:'#ffdd66'});
+  if(C.isMe||F.isMe)sfx.shotgun();
+  return true;
  }else{/* 標準エアストライク */
   const dm=150*(1+.15*wave);
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20;}}}
@@ -1354,7 +1384,15 @@ function campStep(C,dt,wave){
   for(const u of C.units){if(u.dead||u.eng>=3)continue;const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
    z.acd=(z.acd||0)-dt;
-   if(z.acd<=0){z.acd=z.ar;z.lgT=.22;dmgU(C,blk,z.atk);
+   if(z.acd<=0){z.acd=z.ar;z.lgT=.22;
+    if(z.aoe){/* ボス級=薙ぎ払い(周囲の部隊を同時に殴る) */
+     const tg2=[];for(const u2 of C.units){if(u2.dead)continue;const gp=Math.abs(u2.d-z.d);if(gp<=110)tg2.push({u:u2,gp});}
+     tg2.sort((a,b)=>a.gp-b.gp);
+     for(let k9=0;k9<Math.min(z.aoe,tg2.length);k9++)dmgU(C,tg2[k9].u,z.atk*.65);/* 薙ぎ払いは1体あたり65% */
+     addFx(C,'ring',z.px,z.py-16,'',{r:96,col:'#ff8a6a'});
+     addP(C,8,z.px,z.py-18,{sp:170,up:40,g:420,life:.35,r:2.6,col:'#ff9a6a',flat:1});
+     C.shake=Math.max(C.shake||0,.16);if(C.isMe)sfx.thunk();
+    }else dmgU(C,blk,z.atk);
     if(C.isMe&&Math.random()<.3)sfx.bite();
     if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30,'',{sd:rnd(0,9),gray:1});}
    continue;
@@ -1466,6 +1504,22 @@ function campStep(C,dt,wave){
   addP(C,6,sh.tx,sh.ty,{sp:60,up:40,g:-40,life:1.1,r:8,col:'#6e6354',typ:'smoke'});
   addP(C,7,sh.tx,sh.ty,{sp:150,up:30,g:600,life:.5,r:2.4,col:'#8a7a5e',flat:1});
   if(C.isMe)sfx.boom();}}
+ /* 機関銃掃射(拠点から弾丸を連射) */
+ if(C.mg&&C.mg.t>0){
+  C.mg.t-=dt;C.mg.cd-=dt;
+  while(C.mg.cd<=0&&C.mg.t>0){
+   C.mg.cd+=.075;
+   let tg3=null,bd3=1e9;
+   for(const z of C.zombies){if(z.dead||z.d<0)continue;const dd=dist(z.px,z.py,C.mg.x,C.mg.y);if(dd<=230&&dd<bd3){bd3=dd;tg3=z;}}
+   if(!tg3)break;/* 射程内に敵がいなければ撃たない */
+   dmgZ(C,tg3,C.mg.dmg,0);
+   addFx(C,'tr',CORE[0],CORE[1]-24,'',{x2:tg3.px+rnd(-6,6),y2:tg3.py-18,col:'rgba(255,235,150,',hit:'#fff3c0',w:3});
+   if(FXLV>0){addP(C,2,CORE[0]+18,CORE[1]-24,{sp:120,a:Math.atan2(tg3.py-CORE[1],tg3.px-CORE[0]),spread:.3,g:80,life:.12,r:2,col:'#fff3c0'});
+    addP(C,1,CORE[0]+10,CORE[1]-18,{sp:60,up:40,g:600,life:.8,r:1.5,col:'#c9b98a',typ:'shell',gr:CORE[1]+8});}
+   if(C.isMe&&Math.random()<.35)sfx.shot();
+  }
+  if(C.mg.t<=0)C.mg=null;
+ }
  stepP(C,dt);
  /* エフェクト整理 */
  for(const e of C.fx)e.t+=dt;
@@ -2415,7 +2469,15 @@ function renderLab(){
  if(META.sc0<5)items.push({k:'sc0',t:'⚙️ 初期スクラップ+40 (Lv'+META.sc0+'/5)',d:'開始資金が増える',p:LAB_SC(META.sc0)});
  if(META.hp0<5)items.push({k:'hp0',t:'🏕 コアHP+5 (Lv'+META.hp0+'/5)',d:'拠点の耐久が増える',p:LAB_HP(META.hp0)});
  if(!items.length)items.push({t:'🎉 全研究完了!'});
- $('lab-items').innerHTML=items.map((it,i)=>`<div class="labitem"><div class="li-d"><b>${it.t}</b>${it.d?'<br><span style="font-weight:600;font-size:12px">'+it.d+'</span>':''}</div>${it.k?`<button class="btn gold sm" data-lab="${i}" ${META.pts>=it.p?'':'disabled'}>🧬${it.p}</button>`:''}</div>`).join('');
+ /* 解放済みの一覧(何を取ったか分かるように) */
+ const doneT=TOWERS.slice(BASE_T,BASE_T+META.nt).map(t=>'🗼'+t.n),
+  doneU=UNITS.slice(BASE_U,BASE_U+META.nu).map(u=>'🤖'+u.n),
+  doneS=META.st.filter(k=>k!=='air').map(k=>STRIKES[k].ic+STRIKES[k].n),
+  doneX=[].concat(META.sc0?['⚙️初期資金+'+(META.sc0*40)]:[],META.hp0?['🏕コアHP+'+(META.hp0*5)]:[]);
+ const done=[].concat(doneT,doneU,doneS,doneX);
+ $('lab-items').innerHTML=
+  `<div class="labdone"><b>✅ 解放済み (${done.length}件)</b><div>${done.length?done.map(x=>'<span class="lchip">'+x+'</span>').join(''):'<span style="opacity:.6">まだ何も解放していない</span>'}</div></div>`+
+  items.map((it,i)=>`<div class="labitem"><div class="li-d"><b>${it.t}</b>${it.d?'<br><span style="font-weight:600;font-size:12px">'+it.d+'</span>':''}</div>${it.k?`<button class="btn gold sm" data-lab="${i}" ${META.pts>=it.p?'':'disabled'}>🧬${it.p}</button>`:''}</div>`).join('');
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
   META.pts-=it.p;
   if(it.k==='nt')META.nt++;else if(it.k==='nu')META.nu++;else if(it.k==='stk')META.st.push(it.id);
