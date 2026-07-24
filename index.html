@@ -569,6 +569,10 @@ const twStats=ti=>TOWERS[ti].type==='eco'?['d','r']:(TOWERS[ti].type==='elec'?['
 const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 const twChain=(T,tw)=>T.chain+((tw&&tw.us&&tw.us.c)||0);
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0):0));
+/* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
+const TR_COL=['rgba(255,235,150,','rgba(255,206,84,','rgba(255,150,60,','rgba(255,92,80,','rgba(206,120,255,','rgba(120,230,255,'];
+const HIT_COL=['#fff3c0','#ffe08a','#ffc078','#ff9a8a','#e0b0ff','#c8f2ff'];
+const twTier=tw=>{const n=tw&&tw.us?(tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)):0;return n>=13?5:n>=10?4:n>=7?3:n>=4?2:n>=2?1:0;};
 const twDmgM=tw=>1+.18*(tw.us?tw.us.d:0);
 const twRateM=tw=>1-.09*(tw.us?tw.us.r:0);
 const twRngM=tw=>1+.08*(tw.us?tw.us.g:0);
@@ -579,9 +583,12 @@ const ZOMBIES=[
  {id:'blo',n:'ブローター',hp:265,sp:50,bt:30,dmg:2,mw:4,split:2,sc:1.35,atk:30,ar:1.2,c:'#8f6fae'},
  {id:'scr',n:'スクリーマー',hp:100,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:12,ar:.9,c:'#d67ba8'},
  {id:'dog',n:'感染ハウンド',hp:62,sp:215,bt:20,dmg:1,mw:8,sc:.85,atk:9,ar:.45,c:'#b0713d'},
+ {id:'crwl',n:'クローラー',hp:125,sp:52,bt:40,dmg:2,mw:6,noblock:1,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
+ {id:'ooze',n:'スライム状体',hp:255,sp:44,bt:62,dmg:3,mw:10,noblock:1,armor:1,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
  {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:60,ar:1.2,c:'#c14b3e'}
 ];
 const SENDABLE=[0,1,2,3];
+const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss);
 const UNITS=[
  {id:'bat',n:'バット',cost:60,cd:2.2,hp:130,atk:18,rate:.7,rng:36,sp:72,type:'melee',c:'#c9a13d',dsc:'基本の殴り屋'},
  {id:'hnd',n:'猟犬',cost:50,cd:3,hp:65,atk:12,rate:.5,rng:34,sp:150,type:'melee',c:'#8a6a45',dsc:'速い・安い・噛む'},
@@ -697,7 +704,28 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
  if(o.elite){c.shadowColor='#b04ad0';c.shadowBlur=13;}
  c.lineWidth=2.6/s;c.strokeStyle=INK;
- if(zi===5){/* ハウンド */
+ if(Z.id==='crwl'){/* クローラー: 地を這ってすり抜ける */
+  c.fillStyle=Z.c;rr(c,-18,-14,36,12,6);c.fill();c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3/s;
+  for(let k=0;k<3;k++){const w2=Math.sin(t*7+ph+k)*4;
+   c.beginPath();c.moveTo(-10+k*10,-3);c.lineTo(-14+k*10+w2,4);c.stroke();
+   c.beginPath();c.moveTo(-10+k*10,-11);c.lineTo(-14+k*10-w2,-18);c.stroke();}
+  c.lineWidth=2.6/s;
+  c.fillStyle=shade(Z.c,1.15);c.beginPath();c.arc(19,-11,8,0,7);c.fill();c.stroke();
+  c.fillStyle='#fff';c.beginPath();c.arc(21,-13,2.4,0,7);c.fill();
+  c.fillStyle=INK;c.beginPath();c.arc(22,-13,1.2,0,7);c.fill();
+  c.restore();return;
+ }
+ if(Z.id==='ooze'){/* スライム状体: 形を変えながらすり抜ける */
+  const wob=Math.sin(t*3+ph)*3;
+  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-14,20+wob,15-wob*.5,0,0,7);c.fill();c.stroke();
+  c.globalAlpha=.5;c.fillStyle=shade(Z.c,1.3);c.beginPath();c.ellipse(-5,-20,8,6,0,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle=INK;c.beginPath();c.arc(6,-17,2.2,0,7);c.fill();c.beginPath();c.arc(13,-15,2.2,0,7);c.fill();
+  c.fillStyle=Z.c;for(let k=0;k<3;k++){const dy2=Math.sin(t*4+k*2+ph)*2;
+   c.beginPath();c.ellipse(-12+k*11,-1+dy2,5,3,0,0,7);c.fill();}
+  c.restore();return;
+ }
+ if(Z.id==='dog'){/* ハウンド */
   c.fillStyle=Z.c;rr(c,-16,-18,32,13,6);c.fill();c.stroke();
   c.fillRect(-13+walk*4,-6,5,7);c.strokeRect(-13+walk*4,-6,5,7);c.fillRect(8-walk*4,-6,5,7);c.strokeRect(8-walk*4,-6,5,7);
   c.beginPath();c.arc(18,-20,8,0,7);c.fill();c.stroke();
@@ -711,10 +739,11 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  c.fillRect(3-walk*4,-10,6,11);c.strokeRect(3-walk*4,-10,6,11);
  /* 胴体(前傾) */
  c.save();c.rotate(.14);
- const bw=zi===3?34:22,bh=zi===3?30:26;
- rr(c,-bw/2,-12-bh,bw,bh,zi===3?14:8);c.fillStyle=Z.c;c.fill();c.stroke();
- if(zi===3){c.fillStyle=shade(Z.c,1.25);c.beginPath();c.arc(0,-24,9,0,7);c.fill();}
- if(zi===2||zi===6){c.fillStyle='#3f4a54';rr(c,-bw/2+2,-12-bh+4,bw-4,10,4);c.fill();c.stroke();}
+ const big=Z.id==='blo',hel=(Z.id==='arm'||Z.id==='jug');
+ const bw=big?34:22,bh=big?30:26;
+ rr(c,-bw/2,-12-bh,bw,bh,big?14:8);c.fillStyle=Z.c;c.fill();c.stroke();
+ if(big){c.fillStyle=shade(Z.c,1.25);c.beginPath();c.arc(0,-24,9,0,7);c.fill();}
+ if(hel){c.fillStyle='#3f4a54';rr(c,-bw/2+2,-12-bh+4,bw-4,10,4);c.fill();c.stroke();}
  /* 腕(前へ) */
  c.strokeStyle=INK;c.lineWidth=4.5/s;
  c.beginPath();c.moveTo(2,-30);c.lineTo(16,-26+walk*3);c.stroke();
@@ -723,11 +752,11 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  /* 頭(傾き) */
  const hx=8,hy=-40;
  c.beginPath();c.arc(hx,hy,10,0,7);c.fillStyle=shade(Z.c,1.1);c.fill();c.stroke();
- if(zi===2||zi===6){c.fillStyle='#5c6b78';c.beginPath();c.arc(hx,hy-2,10,Math.PI,0);c.fill();c.stroke();}
- if(zi===4){c.fillStyle=INK;c.beginPath();c.ellipse(hx+4,hy+3,3.5,4.5,0,0,7);c.fill();}
+ if(hel){c.fillStyle='#5c6b78';c.beginPath();c.arc(hx,hy-2,10,Math.PI,0);c.fill();c.stroke();}
+ if(Z.id==='scr'){c.fillStyle=INK;c.beginPath();c.ellipse(hx+4,hy+3,3.5,4.5,0,0,7);c.fill();}
  c.fillStyle='#fff';c.beginPath();c.arc(hx+3,hy-2,2.2,0,7);c.fill();c.fillStyle=INK;c.beginPath();c.arc(hx+3.6,hy-2,1.1,0,7);c.fill();
  c.restore();
- if(zi===6){/* ジャガーノート装甲+鎖 */
+ if(Z.id==='jug'){/* ジャガーノート装甲+鎖 */
   c.strokeStyle='#8a8f96';c.lineWidth=3/s;c.beginPath();c.moveTo(-14,-20);c.lineTo(-22,-4);c.stroke();c.beginPath();c.arc(-23,-2,3,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=2.6/s;}
  c.restore();
 }
@@ -1032,7 +1061,7 @@ const ZHPM=.85;/* ゾンビHP全体倍率 */
 const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示) */
 function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)),dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)),dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
@@ -1046,9 +1075,11 @@ function buildTide(wave){
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>!ZOMBIES[i].boss&&ZOMBIES[i].mw<=wave);
  const pool=[];
  for(let k=0;k<n;k++){let pick=zp[ri(0,zp.length-1)];
+  /* すり抜け個体は出現を絞る(部隊で止められない=強力なため) */
+  if(ZOMBIES[pick].noblock&&Math.random()>.35)pick=zp[ri(0,zp.length-1)];
   if(wave>=4&&Math.random()<Math.min(.4,wave*.03))pick=zp[zp.length-1];
   pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul,wave)});}
- if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(6,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
+ if(wave%5===0)pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(BOSS_ZI,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});
  /* 毎ウェーブのエリート個体(W3以降・後半に配置) */
  if(wave>=3){const ne=(1+Math.floor(wave/8))*(G.coop?G.np:1);
   for(let k=0;k<ne;k++){const e=pool[ri(Math.floor(pool.length*.35),pool.length-1)];
@@ -1319,6 +1350,7 @@ function campStep(C,dt,wave){
   if(z.dead)continue;
   const slow=z.slowT>0?.55:1;if(z.slowT>0)z.slowT-=dt;
   let blk=null,bd2=1e9;
+  if(!z.noblock)/* すり抜け個体は部隊に足止めされない */
   for(const u of C.units){if(u.dead||u.eng>=3)continue;const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
    z.acd=(z.acd||0)-dt;
@@ -1411,15 +1443,18 @@ function campStep(C,dt,wave){
     if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===cur)continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<150&&dd<bd){bd=dd;nx=z;}}}
     if(!nx)break;
     dmgZ(C,nx,dm*Math.pow(.85,k),1);if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
-   addFx(C,'zap',sx,sy,'',{pts});if(C.isMe)sfx.zap();}
+   addFx(C,'zap',sx,sy,'',{pts,sd:rnd(0,9)});
+   if(FXLV>0)for(const p6 of pts)addP(C,2,p6[0],p6[1],{sp:60,g:40,life:.35,r:2,col:'#cdf1ff'});
+   if(C.isMe)sfx.zap();}
   else if(T.type==='blast'){C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:.85,dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)});if(C.isMe)sfx.thunk();}
   else{/* bullet */
+   const tt2=twTier(tw),trC=TR_COL[tt2],hitC=HIT_COL[tt2],trW=2.6+tt2*.45;
    if(T.multi){/* 先頭(コアに近い順)からT.multi体を撃つ */
     const inr=[];for(const z of C.zombies){if(z.dead||z.d<0)continue;if(dist(z.px,z.py,sx,sy)<=rng)inr.push(z);}
     inr.sort((a,b)=>b.d-a.d);let cnt=0;
-    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];dmgZ(C,nx,dm,T.pierce?1:0);addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py});cnt++;}
+    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];dmgZ(C,nx,dm,T.pierce?1:0);addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py,col:trC,hit:hitC,w:trW});cnt++;}
     if(C.isMe&&cnt)sfx.shotgun();}
-   else{dmgZ(C,tg,dm,T.pierce?1:0);addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py,col:T.pierce?'rgba(216,131,238,':null});
+   else{dmgZ(C,tg,dm,T.pierce?1:0);addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py,col:T.pierce?'rgba(216,131,238,':trC,hit:hitC,w:trW});
     if(C.isMe){if(tw.ti===7)sfx.snipe();else if(Math.random()<.45)sfx.shot();}}
   }
  }
@@ -1832,9 +1867,36 @@ function renderCamp(C,t){
  drawP(c,C);
  /* エフェクト */
  for(const e of C.fx){
-  if(e.k==='tr'){c.strokeStyle=(e.col||'rgba(255,235,150,')+(1-e.t/.14)+')';c.lineWidth=e.col?4:3;c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();}
-  else if(e.k==='zap'){c.strokeStyle='rgba(160,225,255,'+Math.max(0,1-e.t/.22)+')';c.lineWidth=4;c.beginPath();const ps=e.pts;c.moveTo(ps[0][0],ps[0][1]);for(let i2=1;i2<ps.length;i2++)c.lineTo(ps[i2][0]+rnd(-5,5),ps[i2][1]+rnd(-5,5));c.stroke();}
-  else if(e.k==='ring'){c.strokeStyle=e.col||'#9fd9c6';c.globalAlpha=Math.max(0,.7-e.t*1.6);c.lineWidth=5;c.beginPath();c.arc(e.x,e.y,10+(e.r||160)*e.t*2.4,0,7);c.stroke();c.globalAlpha=1;}
+  if(e.k==='tr'){const a2=Math.max(0,1-e.t/.14);
+   c.strokeStyle=(e.col||'rgba(255,235,150,')+a2+')';c.lineWidth=(e.w||3);c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();
+   /* 着弾は控えめな点光だけ */
+   c.globalAlpha=a2*.8;c.fillStyle=e.hit||'#fff3c0';c.beginPath();c.arc(e.x2,e.y2,1.4+a2*1.8,0,7);c.fill();c.globalAlpha=1;}
+  else if(e.k==='zap'){
+   /* 電流が流れて見えるよう、太い芯+細い枝+走る光点で描く */
+   const life=.5,k5=Math.max(0,1-e.t/life),ps=e.pts;if(ps.length<2)continue;
+   const seed=(e.sd||0);
+   const jag=(i2,amp)=>{const q=Math.sin(seed+i2*3.1+e.t*11)*amp,w2=Math.cos(seed+i2*1.7+e.t*8)*amp;return[q,w2];};
+   c.lineCap='round';c.lineJoin='round';
+   for(const pass of [[9,'rgba(90,170,255,',.30],[4.5,'rgba(190,235,255,',.75],[1.8,'rgba(255,255,255,',1]]){
+    c.strokeStyle=pass[1]+(k5*pass[2])+')';c.lineWidth=pass[0];
+    c.beginPath();c.moveTo(ps[0][0],ps[0][1]);
+    for(let i2=1;i2<ps.length;i2++){
+     const ax=ps[i2-1][0],ay=ps[i2-1][1],bx=ps[i2][0],by=ps[i2][1];
+     for(let s2=1;s2<=3;s2++){const f2=s2/3,jj=jag(i2*3+s2,s2===3?0:7);
+      c.lineTo(ax+(bx-ax)*f2+jj[0],ay+(by-ay)*f2+jj[1]);}}
+    c.stroke();}
+   /* 枝分かれ */
+   c.strokeStyle='rgba(200,240,255,'+(k5*.5)+')';c.lineWidth=1.6;
+   for(let i2=1;i2<ps.length;i2++){const jj=jag(i2*7,10);
+    c.beginPath();c.moveTo(ps[i2][0],ps[i2][1]);c.lineTo(ps[i2][0]+jj[0]*1.8,ps[i2][1]+jj[1]*1.8);c.stroke();}
+   /* 電流が経路を走る光点 */
+   {const prog=clamp(e.t/life,0,.999),seg=Math.min(ps.length-2,Math.floor(prog*(ps.length-1))),f3=(prog*(ps.length-1))%1;
+    if(seg>=0){const gx=ps[seg][0]+(ps[seg+1][0]-ps[seg][0])*f3,gy=ps[seg][1]+(ps[seg+1][1]-ps[seg][1])*f3;
+     c.globalAlpha=k5;c.fillStyle='#fff';c.beginPath();c.arc(gx,gy,4.5,0,7);c.fill();
+     c.fillStyle='rgba(150,220,255,.7)';c.beginPath();c.arc(gx,gy,9,0,7);c.fill();c.globalAlpha=1;}}
+   for(const p5 of ps){c.globalAlpha=k5*.9;c.fillStyle='#dff4ff';c.beginPath();c.arc(p5[0],p5[1],3.2,0,7);c.fill();c.globalAlpha=1;}
+  }
+  else if(e.k==='ring'){c.strokeStyle=e.col||'#9fd9c6';c.globalAlpha=Math.max(0,.45-e.t*1.4);c.lineWidth=3;c.beginPath();c.arc(e.x,e.y,10+(e.r||160)*e.t*2.4,0,7);c.stroke();c.globalAlpha=1;}
   else if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0);if(tt>=0){const bb=e.k==='boomL'?2:1,dur=(e.k==='boomL'?.7:.5);
    c.globalAlpha=Math.max(0,1-tt/dur);
    c.fillStyle='#fff3c0';c.beginPath();c.arc(e.x,e.y,8+tt*90*bb,0,7);c.fill();
