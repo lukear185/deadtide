@@ -415,14 +415,15 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,tc:3,uc:4,st:['air'],eq:'air',sc0:0,hp0:0};
-try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';}}catch(e){}
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0};
+try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;}}catch(e){}
 function saveMeta(){try{localStorage.setItem('dt_meta',JSON.stringify(META));}catch(e){}}
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
-const metaTowerCap=()=>soloMeta()?clamp(META.tc,2,TOWERS.length):TOWERS.length;
-const metaUnitCap=()=>soloMeta()?clamp(META.uc,2,UNITS.length):UNITS.length;
-const LAB_TP=[0,0,0,100,200,350,550,800];          /* タワー枠+1の価格(現tc基準) */
-const LAB_UP=[0,0,0,0,120,200,300,420,560,720,900,1100]; /* 兵科枠+1の価格(現uc基準) */
+/* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
+const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;return soloMeta()?BT+clamp(META.nt||0,0,TOWERS.length-BT):BT;};
+const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;return soloMeta()?BU+clamp(META.nu||0,0,UNITS.length-BU):BU;};
+const LAB_NT=[400,750];   /* 新タワー(レールガン/ガトリング)の研究価格 */
+const LAB_NU=[350,650];   /* 新兵科(装甲車/メカスーツ)の研究価格 */
 const LAB_STK={carpet:250,frost:200,napalm:300};
 const LAB_SC=lv=>Math.round(80*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
 const LAB_HP=lv=>Math.round(100*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
@@ -518,9 +519,13 @@ const TOWERS=[
  {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,c:'#c96b35',dsc:'装甲無視・継続燃焼'},
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:34,rate:.95,type:'elec',chain:4,c:'#5fa8c9',dsc:'最大4体に連鎖電撃'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
- {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:175,rate:2.4,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を狙撃'}
+ {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:175,rate:2.4,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を狙撃'},
+ /* ↓研究所限定の新タワー(ソロで🔬解放後にゲーム内解放チェーンへ出現) */
+ {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程・装甲貫通の狙撃砲'},
+ {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'}
 ];
-const UNLOCK_P=[0,0,180,260,360,480,650,850];
+const BASE_T=8;/* 通常解放できる基本タワー数 */
+const UNLOCK_P=[0,0,180,260,360,480,650,850,1000,1250];
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.5*Math.pow(1.45,tw.us[st]));
@@ -552,8 +557,12 @@ const UNITS=[
  {id:'med',n:'医療兵',cost:290,cd:10,hp:85,atk:26,rate:1.4,rng:150,sp:52,type:'heal',c:'#d8d2c4',dsc:'周囲の部隊を回復'},
  {id:'snp',n:'スナイパー',cost:320,cd:10,hp:60,atk:135,rate:2,rng:430,sp:46,type:'pierce',c:'#4a5560',dsc:'超射程・装甲貫通'},
  {id:'mgn',n:'ミニガン',cost:370,cd:11,hp:110,atk:9,rate:.16,rng:200,sp:40,type:'bullet',c:'#6b7580',dsc:'弾幕をばら撒く'},
- {id:'rkt',n:'ロケラン',cost:420,cd:12,hp:95,atk:92,rate:2.4,rng:300,sp:42,type:'blast',aoe:100,c:'#7a7f6a',dsc:'範囲爆撃'}
+ {id:'rkt',n:'ロケラン',cost:420,cd:12,hp:95,atk:92,rate:2.4,rng:300,sp:42,type:'blast',aoe:100,c:'#7a7f6a',dsc:'範囲爆撃'},
+ /* ↓研究所限定の新兵科 */
+ {id:'tnk',n:'装甲車',cost:520,cd:16,hp:820,atk:34,rate:.8,rng:44,sp:55,type:'melee',c:'#5c6b78',dsc:'走る要塞・轢き潰す'},
+ {id:'mech',n:'メカスーツ',cost:620,cd:18,hp:460,atk:60,rate:1.1,rng:260,sp:48,type:'blast',aoe:80,c:'#6b7580',dsc:'肩部キャノンで範囲砲撃'}
 ];
+const BASE_U=12;/* 通常解放できる基本兵科数 */
 const UBUF=1.2;/* ユニット全体強化倍率(2026-07-24 永井さん指示) */
 /* ティア: 0-3=序盤 4-7=中盤 8-10=終盤(+10%) 11=切り札(+30%) */
 const uTier=i=>i<4?1:i<8?2:i<11?3:4;
@@ -561,7 +570,7 @@ const TSCALE=[1,1.06,1.14,1.24];
 for(let i=0;i<UNITS.length;i++){const tb=[1,1,1.1,1.3][uTier(i)-1];
  UNITS[i].hp=Math.round(UNITS[i].hp*UBUF*tb);UNITS[i].atk=Math.round(UNITS[i].atk*UBUF*tb);
  UNITS[i].cost=Math.max(10,Math.round(UNITS[i].cost/2.5));/* 元の40%(1/5指示→後に2倍指示) */}
-const UNITP=[0,0,150,220,300,380,470,560,660,780,920,1080];
+const UNITP=[0,0,150,220,300,380,470,560,660,780,920,1080,1300,1550];
 const MAXU=40;
 const STAGE_W=20;
 /* PvE/協力の難易度表: hp=体力倍率 cnt=物量倍率 sp=足の速さ boss=ボス体力 scrap=初期⚙️ pay=撃破報酬倍率 */
@@ -584,7 +593,7 @@ const prJam=u=>Math.round(200*Math.pow(1.3,u));
 const prPush=u=>Math.round(45*Math.pow(1.15,u));
 const prBig=u=>Math.round(150*Math.pow(1.3,u));
 const prTide=u=>Math.round(180*Math.pow(1.3,u));
-const uupCost=C=>C.uUn<UNITS.length?UNITP[C.uUn]:1e9;
+const uupCost=C=>C.uUn<metaUnitCap()?UNITP[C.uUn]:1e9;
 const ULV_MAX=10;
 const prUup=lv=>Math.round(60*Math.pow(1.4,lv));/* 部隊強化: 低コスト設定 */
 const uDepCost=(C,ui)=>Math.round(UNITS[ui].cost*(1+.1*(C&&C.uLv||0)));/* 出撃費はレベルに比例 */
@@ -596,7 +605,7 @@ for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0]
 function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}const e=SEG[SEG.length-1];return[e.b[0],e.b[1],0];}
 function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
 const SLOTS=[[1290,60],[1000,250],[1210,300],[1240,515],[1475,540],[1080,555],[865,540],[655,500],[560,290],[300,470],[250,712],
- [1520,70],[1450,330],[980,60],[990,370],[1550,450],[1180,742],[620,730],[860,300],[510,470],[1600,250],[180,510]];
+ [1470,60],[1600,60],[1560,240],[1010,370],[1330,320],[1490,650],[1180,742],[900,742],[680,290],[510,470],[180,530]];
 const AI_ORDER=[2,1,5,7,3,8,6,0,9,4,10,14,19,18,12,16,17,21,13,11,15,20];
 const CORE=[110,620];
 /* ============ アート ============ */
@@ -699,6 +708,31 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(tier===4){c.shadowColor='#E8A33D';c.shadowBlur=10;}
  c.lineWidth=2.4;c.strokeStyle=INK;
  const ev=o.evo||0;
+ if(id==='tnk'){/* 装甲車(研究所限定) */
+  c.scale(1.15,1.15);
+  c.fillStyle='#5c6b78';rr(c,-22,-26,44,18,5);c.fill();c.stroke();
+  c.fillStyle='#3f4a54';rr(c,-14,-36,22,11,4);c.fill();c.stroke();
+  c.fillStyle='#2c333a';rr(c,6,-33,22,5,2);c.fill();c.stroke();
+  if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(31,-30,4+o.fireT*20,0,7);c.fill();}
+  c.fillStyle='#241f19';
+  for(const wx of[-15,-5,5,15]){c.beginPath();c.arc(wx,-6,5,0,7);c.fill();c.stroke();}
+  c.fillStyle='#ffd23d';c.fillRect(-20,-25,40,2.5);
+  c.restore();return;
+ }
+ if(id==='mech'){/* メカスーツ(研究所限定) */
+  c.scale(1.2,1.2);
+  c.fillStyle='#4a4034';
+  c.fillRect(-10+walk*3,-12,7,12);c.strokeRect(-10+walk*3,-12,7,12);
+  c.fillRect(4-walk*3,-12,7,12);c.strokeRect(4-walk*3,-12,7,12);
+  c.fillStyle='#6b7580';rr(c,-14,-40,28,30,8);c.fill();c.stroke();
+  c.fillStyle='#9fdcf5';rr(c,-6,-34,12,8,3);c.fill();c.stroke();
+  c.fillStyle='#3f4a54';rr(c,-21,-42,10,15,3);c.fill();c.stroke();
+  c.fillStyle='#585e4c';rr(c,8,-49,10,21,3);c.fill();c.stroke();
+  c.fillStyle='#C1502E';c.beginPath();c.arc(13,-51,3,0,7);c.fill();
+  if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(13,-56,4+o.fireT*22,0,7);c.fill();}
+  c.fillStyle='#ffd23d';c.fillRect(-14,-40,28,3);
+  c.restore();return;
+ }
  if(id==='hnd'){
   if(ev>=2){/* Lv5=ドラゴン / Lv10=金色の成竜 */
    const gold=ev>=3,flap=Math.sin(t*8+ph);
@@ -1085,9 +1119,9 @@ function campStep(C,dt,wave){
    if(T.multi){/* 先頭(コアに近い順)からT.multi体を撃つ */
     const inr=[];for(const z of C.zombies){if(z.dead||z.d<0)continue;if(dist(z.px,z.py,sx,sy)<=rng)inr.push(z);}
     inr.sort((a,b)=>b.d-a.d);let cnt=0;
-    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];dmgZ(C,nx,dm,0);addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py});cnt++;}
+    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];dmgZ(C,nx,dm,T.pierce?1:0);addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py});cnt++;}
     if(C.isMe&&cnt)sfx.shotgun();}
-   else{dmgZ(C,tg,dm,0);addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py});
+   else{dmgZ(C,tg,dm,T.pierce?1:0);addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py,col:T.pierce?'rgba(216,131,238,':null});
     if(C.isMe){if(tw.ti===7)sfx.snipe();else if(Math.random()<.45)sfx.shot();}}
   }
  }
@@ -1201,8 +1235,8 @@ function cpuPlan(C){
   const opts=[];
   const push=(k,w,o)=>{if(C.scrap>=priceOf(C,k,o||{}))opts.push({k,w,o:o||{}});};
   if(C.core<C.coreMax*.45)push('repair',6);
-  if(G.wave>=3&&C.unlocked<TOWERS.length&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
-  if(G.wave>=3&&C.uUn<UNITS.length&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
+  if(G.wave>=3&&C.unlocked<metaTowerCap()&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
+  if(G.wave>=3&&C.uUn<metaUnitCap()&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
   if(G.wave>=3&&(C.uLv||0)<ULV_MAX)push('uup',1.6);
   push('atk',2.2);
   if(C.core<C.coreMax*.8)push('repair',1.2);
@@ -1568,7 +1602,7 @@ function showResultA(){
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=G.pve?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
  $('res-stats').innerHTML=(G.pve
-  ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/8'],['解放部隊',me.uUn+'/'+UNITS.length],['火力増強','Lv'+me.atkLv]]
+  ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+metaUnitCap()],['火力増強','Lv'+me.atkLv]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/8'],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
  show('result');
@@ -1664,7 +1698,8 @@ function actDeploy(ui){
  if(G)deployUnit(G.players[G.myIdx],ui);}
 let DECKB=[],DECKEVO=0;
 function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKEVO=0;
- for(let i=0;i<UNITS.length;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
+ const dl=metaUnitCap();
+ for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
   b.innerHTML=`<canvas width="88" height="88"></canvas><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
   b.onclick=()=>actDeploy(i);w.appendChild(b);DECKB.push(b);}}
@@ -1808,8 +1843,8 @@ function renderStkSeg(){
 function renderLab(){
  $('lab-pts2').textContent='🧬 '+fmt(META.pts)+' pt';
  const items=[];
- if(META.tc<TOWERS.length){const T=TOWERS[META.tc];items.push({k:'tc',t:'🔓 新タワー『'+T.n+'』',d:T.dsc,p:LAB_TP[META.tc]});}
- if(META.uc<UNITS.length){const U=UNITS[META.uc];items.push({k:'uc',t:'🪖 新兵科『'+U.n+'』',d:U.dsc,p:LAB_UP[META.uc]});}
+ if(META.nt<TOWERS.length-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({k:'nt',t:'🗼 新型タワー『'+T.n+'』',d:T.dsc+'(解放後、ゲーム内の解放カードに出現)',p:LAB_NT[META.nt]});}
+ if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({k:'nu',t:'🤖 新型兵科『'+U.n+'』',d:U.dsc+'(解放後、ゲーム内の解放カードに出現)',p:LAB_NU[META.nu]});}
  for(const k in LAB_STK){if(META.st.indexOf(k)<0){const S=STRIKES[k];items.push({k:'stk',id:k,t:S.ic+' 新砲撃『'+S.n+'』',d:S.dsc,p:LAB_STK[k]});}}
  if(META.sc0<5)items.push({k:'sc0',t:'⚙️ 初期スクラップ+40 (Lv'+META.sc0+'/5)',d:'開始資金が増える',p:LAB_SC(META.sc0)});
  if(META.hp0<5)items.push({k:'hp0',t:'🏕 コアHP+5 (Lv'+META.hp0+'/5)',d:'拠点の耐久が増える',p:LAB_HP(META.hp0)});
@@ -1817,7 +1852,7 @@ function renderLab(){
  $('lab-items').innerHTML=items.map((it,i)=>`<div class="labitem"><div class="li-d"><b>${it.t}</b>${it.d?'<br><span style="font-weight:600;font-size:12px">'+it.d+'</span>':''}</div>${it.k?`<button class="btn gold sm" data-lab="${i}" ${META.pts>=it.p?'':'disabled'}>🧬${it.p}</button>`:''}</div>`).join('');
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
   META.pts-=it.p;
-  if(it.k==='tc')META.tc++;else if(it.k==='uc')META.uc++;else if(it.k==='stk')META.st.push(it.id);
+  if(it.k==='nt')META.nt++;else if(it.k==='nu')META.nu++;else if(it.k==='stk')META.st.push(it.id);
   else if(it.k==='sc0')META.sc0++;else if(it.k==='hp0')META.hp0++;
   saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();};});
 }
