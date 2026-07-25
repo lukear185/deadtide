@@ -98,6 +98,8 @@ lines.push("const ICO={"+Object.keys(EMOJI).filter(n=>OUT[n]).map(n=>"'"+EMOJI[n
 lines.push("const ICO_RE=/"+Object.keys(EMOJI).filter(n=>OUT[n]).map(n=>EMOJI[n]).join('|')+"/g;");
 lines.push("/* HTML文字列の中の絵文字を画像に差し替える。⚠textContentに入れる文字列には使わないこと */");
 lines.push("const IC=s=>String(s).replace(ICO_RE,m=>ICO[m]?'<img class=\"ico\" src=\"'+ICO[m]+'\" alt=\"\">':m);");
+lines.push("/* 名前で1枚ぶんのimgタグを作る。素材が無ければ第2引数の絵文字にそのまま落ちる */");
+lines.push("const icoImg=(n,em)=>ICN[n]?'<img class=\"ico\" src=\"'+ICN[n]+'\" alt=\"\">':(em||'');");
 const block=lines.join('\n');
 const html=fs.readFileSync(HTML,'utf-8');
 const S='/* === ICONS-START === */',E='/* === ICONS-END === */';
