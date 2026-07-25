@@ -31,6 +31,12 @@ const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連した状態で撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
 const TRN=OPT.indexOf('train')>=0;/* train = 🏋鍛錬所のリズム訓練を撮る(trainres=結果画面) */
+const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=line = 🔬研究所の指定タブを開いた状態で撮る */
+const LAB=!!LM,LABT=(LM&&LM[1])||'new';
+const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
+const LOAD=!!LDM,LOADT=(LDM&&LDM[1])||'base';
+const TRH=OPT.indexOf('trhome')>=0;/* trhome = 🏋鍛錬所のモーダル */
+const TTL=OPT.indexOf('title')>=0;/* title = タイトル画面をそのまま撮る */
 /* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
 const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 /* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため)
@@ -43,7 +49,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
  +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
- +(GC?'META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
+ +(LAB?('META.pts=99999;META.nt=2;META.nu=3;META.sc0=1;META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");')
+     :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
+     :TTL?'META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'
+     :TRH?'META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};renderTrain();document.getElementById("md-train").classList.add("on");'
+     :GC?'META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
      :TRN?('META.tr0=1;META.hmat=99;META.hero={hNox:1};META.hlv={hNox:3};renderTrain();trainStart("hNox");'
        /* 実時間で流れるのを待たず、譜面の途中(ノートが画面に出ている所)まで一気に進める */
        +(OPT.indexOf('trainres')>=0?'TR.score=430;TR.pf=28;TR.gd=9;TR.ms=4;TR.best=17;trainEnd();'
