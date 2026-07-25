@@ -53,8 +53,9 @@ const REC=[
                            {f:'powerful explosions_multiples',t:1,d:.30,g:-3,r:1.45,dl:8}]},
  {k:'gat',     d:.16, g:-6, mix:[{f:'WHIP Snap Crack',t:0,d:.07,g:-7,r:1.75},
                            {f:'powerful explosions_multiples',t:3,d:.16,g:-8,r:2.10,dl:5}]},
- {k:'shotgun', d:.44, g:-2, mix:[{f:'CrackerPull_WithBang',t:0,d:.13,g:-5,r:.95},
-                           {f:'powerful explosions_multiples',t:1,d:.44,g:-2,r:1.00,dl:10}]},
+ /* ⚠ショットガンだけは**重ねずに1本のまま**。第59弾で合成に変えたらユーザーから
+    「前のほうがよかった」と指摘が出たので第57弾の音に戻した(2026-07-26)。 */
+ {k:'shotgun', f:'Explosion Small Blast Enemy',  t:0, d:.30, g:-1, r:.80},
  {k:'snipe',   d:.58, g:-1, mix:[{f:'WHIP Snap Crack',t:0,d:.12,g:-4,r:.85},
                            {f:'powerful explosions_multiples',t:3,d:.58,g:-1,r:.72,dl:12}]},
  {k:'cannon',  d:.95, g:-1, mix:[{f:'Booms_Vol2_011',t:0,d:.95,g:-2,r:.85},
