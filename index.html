@@ -705,17 +705,18 @@ const TOWERS=[
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:'#5fa8c9',dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
  {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い'},
- /* ↓基本タワー拡張分(通常解放チェーンの続き) */
+ /* ↓ここまでと次の2つ(擲弾砲台・冷却塔)までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
  {id:'gren',n:'擲弾砲台',cost:300,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
  /* frz=完全凍結の秒数(動けず殴れもしない)。凍結が解けたあと frz×2 秒は再凍結しない=最大でも稼働率50% */
  {id:'cryo',n:'冷却塔',cost:320,rng:200,dmg:6,rate:6,type:'net',frz:2.6,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。撃つ間隔はとても長い'},
+ /* ===== ここから下の10種が🔬研究所でしか解放できない(BASE_T=10・上から順に固定で出る) =====
+    ⚠並び順がそのまま研究所に出る順番。入れ替えると既存プレイヤーの解放済み(META.nt)が別のタワーを指す */
  {id:'laser',n:'レーザー塔',cost:460,rng:300,dmg:9,rate:.1,type:'bullet',pierce:1,c:'#c96b9f',dsc:'高速連射・装甲貫通'},
  {id:'acid',n:'酸噴射器',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:'#8fbf4d',dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
  {id:'sonic',n:'音響砲',cost:420,rng:230,dmg:26,rate:1.1,type:'bullet',multi:5,c:'#a58fd0',dsc:'衝撃波で5体同時'},
  {id:'drone',n:'ドローン基地',cost:500,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
  {id:'arty',n:'重砲台',cost:640,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
  {id:'coil',n:'重テスラ',cost:700,rng:250,dmg:68,rate:1.1,type:'elec',chain:7,c:'#4fa8d9',dsc:'高圧電流が長く連鎖する'},
- /* ↓研究所限定の新タワー(ソロで🔬解放後にゲーム内解放チェーンへ出現) */
  /* beam=ビームの半幅。type は bullet のまま(弾薬と🔫銃器改良を効かせるため)、撃ち方だけ線状にする */
  {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。線上の敵を全部貫く(装甲貫通)'},
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'},
