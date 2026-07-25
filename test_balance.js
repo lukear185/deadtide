@@ -32,15 +32,21 @@ const sc=U.map(scoreOf);
 const ANCHOR=1,g=Math.pow(sc[U.length-1]/sc[ANCHOR],1/(U.length-1-ANCHOR));
 console.log('目標の伸び=1段ごとに約+'+Math.round((g-1)*100)+'%');
 console.log('番 兵科          HP    攻  出撃  解放費   DPS  戦力  目標   ずれ');
-let bad=0,prev=-1;
+let bad=0,prev=-1,prevHp=-1,wallBad=0;
 for(let i=0;i<U.length;i++){
  const u=U[i],tgt=i<=ANCHOR?sc[i]:sc[ANCHOR]*Math.pow(g,i-ANCHOR);
  const dev=Math.round((sc[i]/tgt-1)*100);
- const inv=sc[i]<prev;if(inv)bad++;prev=sc[i];
+ /* ⚠壁役はHPが価値の全てで、この式(DPS重視)では正しく測れない。
+    順番の検査からは外し、壁どうしでHPが増えているかだけ見る */
+ const isWall=TANK.indexOf(u.id)>=0;
+ if(isWall){if(u.hp<prevHp){console.log('  ↑壁役なのに前の壁よりHPが低い');wallBad++;}prevHp=u.hp;}
+ const inv=!isWall&&sc[i]<prev;if(inv)bad++;if(!isWall)prev=sc[i];
  console.log(String(i).padStart(2)+' '+u.n.padEnd(12,'　').slice(0,12)+
   String(u.hp).padStart(6)+String(u.atk).padStart(6)+String(u.cost).padStart(6)+
   String(u.up).padStart(8)+String(Math.round(dpsOf(u))).padStart(6)+
   String(Math.round(sc[i])).padStart(6)+String(Math.round(tgt)).padStart(6)+
-  (dev>0?'+':'')+String(dev).padStart(4)+'%'+(inv?'  ← 前より弱い':''));
+  (dev>0?'+':'')+String(dev).padStart(4)+'%'+(isWall?'  [壁役=順番検査の対象外]':inv?'  ← 前より弱い':''));
 }
-console.log(bad?('⚠順番が逆転している兵科が'+bad+'件ある'):'✅ 解放順に強くなっている(逆転なし)');
+console.log(bad?('⚠順番が逆転している兵科が'+bad+'件ある'):'✅ 解放順に強くなっている(逆転なし・壁役を除く)');
+if(wallBad)console.log('⚠壁役のHPの並びが逆転している');
+else console.log('✅ 壁役('+TANK.join('/')+')はHPが解放順に増えている');
