@@ -399,7 +399,40 @@ function checkEvo(){
  console.log('進化: 同時に'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
  META.uv=[];
 }
+/* ---- 💎英雄召集(ガチャ): 排出率・重複・魔石の増減 ---- */
+function checkGacha(){
+ if(HEROES.length!==11){console.log('FAIL: 英雄が11種でない '+HEROES.length);process.exit(1);}
+ const cnt={};for(const h of HEROES)cnt[h.rk]=(cnt[h.rk]||0)+1;
+ const want={1:5,2:3,3:1,4:1,5:1};
+ for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
+ if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
+ /* 魔石が足りない時は引けない */
+ META.gem=0;META.hero={};META.hmat=0;META.pts=0;
+ gcPull(1);
+ if((META.gem||0)!==0||Object.keys(META.hero).length){console.log('FAIL: 魔石0でも引けてしまう');process.exit(1);}
+ /* 10連=25個ぴったり減る */
+ META.gem=25;gcPull(10);
+ if(META.gem!==0){console.log('FAIL: 10連の消費が25でない(残'+META.gem+')');process.exit(1);}
+ /* 十分な回数で排出分布を確認(はずれ55%前後・英雄が全レア度から出る) */
+ META.gem=3*20000;META.hero={};
+ let dud=0,byRk={1:0,2:0,3:0,4:0,5:0};
+ for(let i=0;i<20000;i++){const o=gcPick();if(o.dud)dud++;else byRk[o.hero.rk]++;}
+ const dp=dud/200;
+ if(Math.abs(dp-55)>3){console.log('FAIL: はずれ枠の率がずれている '+dp.toFixed(1)+'%');process.exit(1);}
+ if(!byRk[5]){console.log('WARN: 2万回でギガトンレアが出なかった(確率0.1%なので稀にあり得る)');}
+ /* 重複は鍛錬素材になる */
+ META.hero={};META.hmat=0;
+ const h5=HEROES.find(h=>h.rk===5);
+ gcApply({hero:h5});const m0=META.hmat;gcApply({hero:h5});
+ if(META.hero[h5.id]!==2){console.log('FAIL: 所持数が増えていない');process.exit(1);}
+ if(META.hmat<=m0){console.log('FAIL: 重複が鍛錬素材になっていない');process.exit(1);}
+ /* ボス撃破の💎付与(通常1/最終3)が定義されているか */
+ if(!(GEM_BOSS===1&&GEM_FIN===3)){console.log('FAIL: ボスの魔石量が想定と違う');process.exit(1);}
+ console.log('ガチャ: 英雄11種(★1x5/★2x3/★3/★4/★5)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
+ META.gem=0;META.hero={};META.hmat=0;
+}
 checkStrikes();
+checkGacha();
 checkProgress();
 checkEvo();
 checkHook();

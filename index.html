@@ -189,6 +189,20 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .labcat{margin:14px 0 2px;padding:5px 10px;border-radius:9px;background:#3d362d;border:2px solid var(--paper);
  color:#ffd23d;font-weight:900;font-size:13px;text-align:left}
 .labcat span{display:block;color:var(--paper);opacity:.72;font-weight:700;font-size:11px;margin-top:1px}
+/* 英雄召集(ガチャ) */
+.hcard{display:flex;align-items:center;gap:8px;background:#2f2b22;border:2px solid var(--paper);border-radius:10px;padding:5px 9px;margin:4px 0;color:var(--paper);font-size:12px}
+.hcard .hn{font-weight:900;font-size:13px}
+.hcard .hs{font-size:11px;opacity:.85}
+.hcard.r1{border-color:#8a8f96}.hcard.r2{border-color:#5fa8c9;background:#26333a}
+.hcard.r3{border-color:#b07ad0;background:#312640}
+.hcard.r4{border-color:#ffd23d;background:#3d3218;box-shadow:0 0 10px rgba(255,210,61,.45)}
+.hcard.r5{border-color:#ff6a4a;background:#43201a;box-shadow:0 0 16px rgba(255,106,74,.6)}
+.hcard.dud{border-color:#5a5445;background:#26241e;opacity:.9}
+.hcard .rk{flex:0 0 auto;font-size:11px;font-weight:900}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:5px;margin-top:6px}
+.hgrid .hb{background:#2f2b22;border:2px solid #55503f;border-radius:9px;padding:4px 6px;font-size:11px;color:var(--paper);text-align:left}
+.hgrid .hb.own{border-color:var(--paper)}
+.hgrid .hb .hq{font-size:10px;opacity:.75}
 .labdone .lchip{display:inline-block;background:var(--pane);color:var(--ink);border-radius:8px;padding:1px 7px;margin:3px 4px 0 0;font-size:11px}
 /* 編成画面 */
 .ldrow{background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:6px 8px;margin-bottom:6px;text-align:left}
@@ -282,6 +296,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
   <div class="menu">
     <button class="btn red" id="bt-solo">🛡 ソロ作戦 — ステージ1</button>
+    <button class="btn gold" id="bt-gacha">💎 英雄召集 <span id="gem-cnt"></span></button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
     <button class="btn" id="bt-howto">📖 あそびかた</button>
     <div class="seg" id="seg-fx" style="margin-top:8px;justify-content:center">
@@ -465,6 +480,21 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
+<div class="modal" id="md-gacha">
+  <div class="panel howto" style="max-width:560px;width:min(94vw,560px)">
+    <h2 class="hd">💎 英雄召集 <span id="gc-gem" style="float:right;color:var(--rust2)"></span></h2>
+    <p class="note" style="margin:4px 0 8px">💎魔石はボスを倒した時だけ手に入る(通常ボス+1 / 最終ボス+3)。英雄は🏗鍛錬所で鍛えて出撃させる。</p>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <button class="btn gold sm" id="gc-1">単発 💎3</button>
+      <button class="btn gold sm" id="gc-10">10連 💎25</button>
+      <button class="btn sm" id="gc-rate">確率</button>
+    </div>
+    <div id="gc-res"></div>
+    <div id="gc-list"></div>
+    <button class="btn gold" id="bt-gacha-close" style="margin-top:8px;width:100%">とじる</button>
+  </div>
+</div>
+
 <div class="modal" id="md-lab">
   <div class="panel howto" style="max-width:560px;width:min(94vw,560px)">
     <h2 class="hd">🔬 研究所 <span id="lab-pts2" style="float:right;color:var(--rust2)"></span></h2>
@@ -528,13 +558,14 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[]};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0};
 try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
  if(!Array.isArray(META.uv))META.uv=[];if(!META.ld||typeof META.ld!=='object')META.ld={};META.am=META.am||0;META.amEq=META.amEq||0;
- for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=META[k]||0;
+ for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','gem','hmat'])META[k]=META[k]||0;
+ if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
  if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
 function saveMeta(){try{localStorage.setItem('dt_meta',JSON.stringify(META));}catch(e){}}
 /* ============ 中断と再開(ソロ専用) ============
@@ -975,6 +1006,43 @@ const LAB_UL=lv=>Math.round(110*Math.pow(1.55,lv));
 const tlv=k=>soloMeta()?clamp((META.tl&&META.tl[k])||0,0,LINE_MAX):0;
 const ulv=k=>soloMeta()?clamp((META.ul&&META.ul[k])||0,0,LINE_MAX):0;
 /* ============ 編成(ロードアウト) ============ */
+/* ============ 英雄(ヒーロー) ============
+ 💎魔石のガチャで手に入る特別な部隊。1ゲームに1回だけ拠点から出撃でき、固有の必殺技を持つ。
+ ⚠2026-07-25時点では「入手(ガチャ)と所持」までを実装。鍛錬所と出撃・必殺技はこれから。
+ rk=レア度1〜5。hp/atk/rate/sp は素の値(鍛錬で伸びる)。ult=必殺技 */
+const HEROES=[
+ /* ★1 弱ヒーロー(5種) */
+ {id:'hCop',n:'元警官',rk:1,hp:900,atk:120,rate:.9,sp:64,c:'#4a6b8a',ult:'制圧射撃',udsc:'前方の敵を撃ち続けて足を止める'},
+ {id:'hFire',n:'消防士',rk:1,hp:1400,atk:80,rate:1.2,sp:56,c:'#b0483a',ult:'放水',udsc:'範囲の敵を押し戻して消火(燃焼解除+減速)'},
+ {id:'hHunt',n:'猟師',rk:1,hp:820,atk:165,rate:1.4,sp:70,c:'#7a6a45',ult:'一斉罠',udsc:'足元に罠を撒いて踏んだ敵を拘束'},
+ {id:'hMech',n:'整備士',rk:1,hp:1050,atk:95,rate:1,sp:60,c:'#8a8f96',ult:'応急修理',udsc:'コアを回復し、壊れかけのタワーを直す'},
+ {id:'hPost',n:'配達人',rk:1,hp:760,atk:110,rate:.7,sp:118,c:'#c9a13d',ult:'速達',udsc:'超高速で突っ込んで一直線の敵を轢き飛ばす'},
+ /* ★2 レア(3種) */
+ {id:'hSf',n:'特殊部隊員',rk:2,hp:1600,atk:290,rate:.75,sp:78,c:'#3f4a54',ult:'精密狙撃',udsc:'最大HPの敵に必殺の一撃'},
+ {id:'hMed',n:'軍医',rk:2,hp:1450,atk:150,rate:1,sp:66,c:'#b7e07a',ult:'蘇生',udsc:'戦死した部隊をその場に呼び戻す'},
+ {id:'hBomb',n:'爆破屋',rk:2,hp:1350,atk:330,rate:1.6,sp:62,c:'#d9884a',ult:'大爆破',udsc:'仕掛けた爆薬を一斉に起爆する'},
+ /* ★3 激レア(1種) */
+ {id:'hSeer',n:'死潮の預言者',rk:3,hp:2100,atk:420,rate:1.1,sp:70,c:'#8f6fae',ult:'時間停止',udsc:'盤面の敵を数秒完全に止める'},
+ /* ★4 ウルトラレア(1種) */
+ {id:'hGiant',n:'鋼鉄の巨人',rk:4,hp:5200,atk:560,rate:1.5,sp:46,c:'#c9a13d',ult:'地響き',udsc:'全域の敵を吹き飛ばして気絶させる'},
+ /* ★5 ギガトンレア(1種) */
+ {id:'hNox',n:'終焉の騎士',rk:5,hp:6800,atk:980,rate:.9,sp:74,c:'#ff6a4a',ult:'死の宣告',udsc:'画面上の敵すべてに致命傷を刻む'}
+];
+const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
+const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
+/* はずれ枠(4種)。⚠ここで配るのは研究所と同じメタ強化=無駄玉にならないようにするため */
+const GDUD=[
+ {id:'gpt',n:'🧬 研究pt',w:22,dsc:'研究ptがまとまって手に入る'},
+ {id:'gmat',n:'🔧 鍛錬素材',w:20,dsc:'英雄の鍛錬に使う素材(鍛錬所で消費)'},
+ {id:'gsc',n:'⚙️ 初期資金アップ',w:7,dsc:'出撃時の所持⚙️が永久に+40'},
+ {id:'gup',n:'🔩 開始強化ptアップ',w:6,dsc:'出撃時の🔩が永久に+6'}
+];
+/* 排出率(%)。はずれ55 / 弱35 / レア8 / 激レア1.5 / ウルトラ0.4 / ギガトン0.1 */
+const G_RATE=[['dud',55],['r1',35],['r2',8],['r3',1.5],['r4',.4],['r5',.1]];
+const G_COST1=3,G_COST10=25;/* 単発/10連の💎 */
+const GEM_BOSS=1,GEM_FIN=3;/* 通常ボス/最終ボスを倒した時の💎 */
+const heroOf=id=>HEROES.find(h=>h.id===id);
+const heroOwned=id=>((META.hero||{})[id]||0)>0;
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
 let AMI=0;/* 現在装備中の弾薬 */
 function varOf(bid){const vid=META.ld&&META.ld[bid];if(!vid)return null;
@@ -1889,7 +1957,7 @@ const ZHPM=.85;/* ゾンビHP全体倍率 */
 const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示) */
 function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,frzCd:0,frzUsed:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
@@ -2068,6 +2136,12 @@ function killZ(C,z){
   for(const P of G.players){P.scrap+=g;P.enTotal+=g;}}
  else{C.scrap+=g;C.enTotal+=g;}
  addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30,'+'+g+'⚙️');
+ /* 💎魔石: ボス級を倒した時だけ落ちる(英雄召集の通貨)。ソロのみ */
+ if(z.boss&&soloMeta()&&C.isMe){const gm=z.fin?GEM_FIN:GEM_BOSS;
+  META.gem=(META.gem||0)+gm;G.gemGain=(G.gemGain||0)+gm;saveMeta();
+  addFx(C,'txt',z.px,z.py-58,'💎+'+gm);
+  addP(C,14,z.px,z.py-30,{sp:170,up:80,g:420,life:.9,r:3,col:'#9fdcf5'});
+  toast('💎 魔石を'+gm+'個 手に入れた(計'+META.gem+')');}
  /* 血しぶきと地面の染み */
  const bsc=z.boss?2.4:z.elite?1.5:1;
  addP(C,Math.round(9*bsc),z.px,z.py-22,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
@@ -3226,7 +3300,8 @@ function showResultA(){
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=G.pve?(win?'WAVE '+curW()+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
  $('res-stats').innerHTML=(G.pve
-  ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+metaUnitCap()],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv]]
+  ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),
+    ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+metaUnitCap()],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+BASE_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
  show('result');
@@ -3611,7 +3686,8 @@ function backTitle(){
  show('title');
 }
 /* ---- 研究所UI ---- */
-function updLabBtn(){const e=$('lab-pts');if(e)e.textContent='🧬'+fmt(META.pts);}
+function updLabBtn(){const e=$('lab-pts');if(e)e.textContent='🧬'+fmt(META.pts);
+ const g=$('gem-cnt');if(g)g.textContent='💎'+(META.gem||0);}
 function renderStkSeg(){
  const w=$('seg-stk');if(!w||!w.querySelectorAll)return;
  w.innerHTML=META.st.map(k=>`<button class="btn sm ${META.eq===k?'sel':''}" data-stk="${k}">${STRIKES[k].ic}${STRIKES[k].n}</button>`).join('');
@@ -3780,6 +3856,77 @@ $('bt-load').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
 $('bt-load-close').onclick=()=>$('md-load').classList.remove('on');
 $('bt-gu-yes').onclick=()=>{$('md-giveup').classList.remove('on');giveUpWave();};
 $('bt-gu-no').onclick=()=>$('md-giveup').classList.remove('on');
+/* ============ 💎 英雄召集(ガチャ) ============
+   魔石はボス撃破でしか手に入らない。はずれ枠も研究所と同じメタ強化なので無駄玉にはならない */
+function gcPick(){
+ let r=Math.random()*100;
+ let tier='dud';
+ for(const [k,p] of G_RATE){if(r<p){tier=k;break;}r-=p;}
+ if(tier==='dud'){
+  const ws=GDUD.reduce((a,d)=>a+d.w,0);let r2=Math.random()*ws;
+  for(const d of GDUD){r2-=d.w;if(r2<=0)return{dud:d};}
+  return{dud:GDUD[0]};
+ }
+ const rk=+tier.slice(1),pool=HEROES.filter(h=>h.rk===rk);
+ return{hero:pool[ri(0,pool.length-1)]};
+}
+/* 1回ぶんの結果を実際に反映する。同じ英雄が重なったら鍛錬素材になる */
+function gcApply(o){
+ if(o.dud){
+  const d=o.dud;
+  if(d.id==='gpt'){const v=ri(80,200);META.pts+=v;o.txt='🧬 研究pt +'+v;}
+  else if(d.id==='gmat'){const v=ri(2,5);META.hmat=(META.hmat||0)+v;o.txt='🔧 鍛錬素材 +'+v;}
+  else if(d.id==='gsc'){META.sc0=(META.sc0||0)+1;o.txt='⚙️ 初期資金 +40 (永久)';}
+  else{META.up0=(META.up0||0)+1;o.txt='🔩 開始強化pt +6 (永久)';}
+  return o;
+ }
+ const h=o.hero;
+ if(!META.hero)META.hero={};
+ const had=META.hero[h.id]||0;
+ META.hero[h.id]=had+1;
+ o.dupe=had>0;
+ if(o.dupe){const v=h.rk*3;META.hmat=(META.hmat||0)+v;o.txt='重複 → 🔧 鍛錬素材 +'+v;}
+ else o.txt='NEW!';
+ return o;
+}
+function gcPull(n){
+ const cost=n===10?G_COST10:G_COST1;
+ if((META.gem||0)<cost){toast('💎'+cost+' 必要(所持 '+(META.gem||0)+') — ボスを倒すと手に入る',true);return;}
+ META.gem-=cost;
+ const out=[];for(let i=0;i<n;i++)out.push(gcApply(gcPick()));
+ saveMeta();
+ const best=out.reduce((a,o)=>Math.max(a,o.hero?o.hero.rk:0),0);
+ if(best>=4)sfx.win&&sfx.win();else if(best>=2)sfx.elite&&sfx.elite();else sfx.buy&&sfx.buy();
+ renderGacha(out);
+}
+function gcRateHtml(){
+ return '<div class="labdone"><b>排出率</b><div style="font-size:11px">'
+  +G_RATE.map(([k,p])=>(k==='dud'?'はずれ枠':RK_S[+k.slice(1)]+' '+RK_N[+k.slice(1)])+' '+p+'%').join(' ／ ')
+  +'<br>はずれ枠の中身: '+GDUD.map(d=>d.n).join(' / ')+'</div></div>';
+}
+function renderGacha(res){
+ $('gc-gem').textContent='💎 '+(META.gem||0)+'  🔧'+(META.hmat||0);
+ $('gem-cnt').textContent='💎'+(META.gem||0);
+ $('gc-1').disabled=(META.gem||0)<G_COST1;
+ $('gc-10').disabled=(META.gem||0)<G_COST10;
+ $('gc-res').innerHTML=(res&&res.length)?('<div class="labdone" style="border-color:var(--rust2)"><b>召集結果</b></div>'
+  +res.map(o=>{
+   if(o.dud)return '<div class="hcard dud"><span class="rk">—</span><div><div class="hn">'+o.dud.n+'</div><div class="hs">'+o.txt+'</div></div></div>';
+   const h=o.hero;
+   return '<div class="hcard r'+h.rk+'"><span class="rk">'+RK_S[h.rk]+'</span><div><div class="hn">'+h.n+' <span class="hs">'+(o.dupe?'':'✨')+o.txt+'</span></div>'
+    +'<div class="hs">必殺技『'+h.ult+'』— '+h.udsc+'</div></div></div>';}).join('')):'';
+ const own=HEROES.filter(h=>heroOwned(h.id)).length;
+ $('gc-list').innerHTML='<div class="labdone" style="margin-top:6px"><b>英雄図鑑 '+own+'/'+HEROES.length+'</b>'
+  +'<div class="hgrid">'+HEROES.map(h=>{const c=(META.hero||{})[h.id]||0;
+   return '<div class="hb'+(c?' own':'')+'">'+(c?RK_S[h.rk]+' '+h.n:'??? '+RK_S[h.rk])
+    +'<div class="hq">'+(c?'所持'+c+' / 必殺『'+h.ult+'』':RK_N[h.rk]+'枠')+'</div></div>';}).join('')
+  +'</div></div>';
+}
+$('bt-gacha').onclick=()=>{renderGacha(null);$('md-gacha').classList.add('on');};
+$('bt-gacha-close').onclick=()=>$('md-gacha').classList.remove('on');
+$('gc-1').onclick=()=>gcPull(1);
+$('gc-10').onclick=()=>gcPull(10);
+$('gc-rate').onclick=()=>{$('gc-res').innerHTML=gcRateHtml();};
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
 $('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
 /* 難易度は「1つ下をクリアするまで押せない」。未解放は🔒つきで無効にする(2026-07-25) */
