@@ -768,3 +768,33 @@
 ⚔冒険・📖ゾンビ図鑑・🔧鍛錬素材・鍛錬Lvのコードは**そのまま残してある**ので、
 **再び開ける時は `TR_OPEN` を true にするだけ**。英雄まわり(💎召集・TDでの出撃・必殺技)は今までどおり。
 ⚠🔧鍛錬素材はガチャの重複で貯まり続けるが、しまっている間は使い道が無い(再開時にそのまま使える)。
+
+## 第57弾(2026-07-26) — 効果音29種を本物の素材に差し替えた
+「そろそろ見た目に入っていきたい」の第1段。**効果/手間比が一番大きい音から**着手した。
+
+### 素材
+永井さんのDownloadsにあった **Sonniss #GameAudioGDC Bundle**(5zip・6.6GB)を使用。
+Readmeに `LICENSE: ROYALTY-FREE / Use them personally or commercially without attribution` と明記=**商用可・クレジット不要**。
+ゲームに合うライブラリが揃っていた: Epic Stock Media「Tower Defense Game」「Humanoid Creatures(不死者の声)」
+「Halloween Game(狼の唸り/Gore)」、David Dumais「Melee Weapons」、Alexander Kopeikin「Designed Ice」、
+Cinematic Sound Design のUI系5パック、Federico Soler「Trailer Alarms/Booms」ほか。
+
+### 仕組み
+- **`tool_sfx.js` を新設**(scan / build / embed)。
+  ① `silencedetect` で長い多テイク素材から「音のかたまり」を切り出す
+  ② ピークを測って-1dBへ正規化 → フェード → モノラル22050Hz
+  ③ **MP3**へ変換(⚠ogg/vorbis と ogg/opus は Safari が再生できないことがあるので使わない)
+  ④ base64にして index.html の `/* <<SFXB>> */` 〜 `/* <</SFXB>> */` へ流し込む
+- **29種で130KB / base64 174KB**。index.html は 0.74MB。単一HTMLのまま。
+- 再生は `sfxPlay()`。**素材が無ければ今までの合成音(`SFXSYN`)に落ちる**ので、
+  ヘッドレステストは今までどおり通る。呼び出し側(`sfx.shot()` など)は**1か所も直していない**。
+- 連射音はピッチを少し揺らす(`SFX_VAR`)+ **同じ音は45msに1回まで**(`SFX_MIN`)。
+  これが無いとガトリングで20発ぶん重なって耳が痛い。
+- **`test_sfx.js` を新設**: ヘッドレスChromeで実際に `decodeAudioData` が29本とも通るか見る。
+  ⚠Node環境にはAudioContextが無いので test_headless では合成音側しか通らない=この検査が要る。
+
+### 教訓
+- **ffmpegで音を切り出す時は `-vn -sn -dn -map_metadata -1` を必ず `-i` の後ろに付ける**。
+  素材WAVにジャケット画像が埋まっていて、付けないと**oggの中にtheoraの動画が入り1本30KBに膨らむ**
+  (合計550KB→170KBになった)。`-i` より前に置くと入力側の指定と見なされて無視される。
+- **ブラウザ向けの音はMP3**。ogg/vorbis も ogg/opus も Safari(iPhone)で鳴らない可能性がある。

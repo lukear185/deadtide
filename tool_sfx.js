@@ -1,0 +1,175 @@
+/* 効果音づくりの道具(2026-07-26 第57弾)
+   素材: Sonniss #GameAudioGDC Bundle(ROYALTY-FREE・商用利用可・クレジット不要)
+   ⚠素材の生WAVはリポジトリに入れない(1本40MBある)。ここでは「切って・縮めて・埋め込む」だけをやる。
+
+   使い方(Node.js):
+     node tool_sfx.js scan  [素材フォルダ]   … 素材の中の「音のかたまり」を一覧にする(テイク番号を決めるため)
+     node tool_sfx.js build [素材フォルダ]   … レシピどおりに切り出して sfx_out/*.mp3 を作る
+     node tool_sfx.js embed                  … sfx_out/*.mp3 を index.html へ base64 で埋め込む
+
+   ⚠ffmpeg が要る(winget install "FFmpeg (Essentials Build)")。
+     PATHに無ければ winget の既定の置き場を自動で探す。 */
+const fs=require('fs'),path=require('path'),cp=require('child_process');
+
+/* ---- ffmpeg を見つける ---- */
+function findFF(){
+ const cands=[process.env.FFMPEG,'ffmpeg',
+  path.join(process.env.LOCALAPPDATA||'','Microsoft','WinGet','Links','ffmpeg.exe'),
+  path.join(process.env.LOCALAPPDATA||'','Microsoft','WinGet','Packages',
+   'Gyan.FFmpeg.Essentials_Microsoft.Winget.Source_8wekyb3d8bbwe','ffmpeg-8.1.1-essentials_build','bin','ffmpeg.exe')];
+ for(const c of cands){
+  if(!c)continue;
+  try{cp.execFileSync(c,['-hide_banner','-version'],{stdio:'ignore'});return c;}catch(e){}}
+ /* winget のフォルダ名にはバージョンが入るので、総当たりで探す */
+ try{
+  const base=path.join(process.env.LOCALAPPDATA||'','Microsoft','WinGet','Packages');
+  for(const d of fs.readdirSync(base)){
+   if(!/ffmpeg/i.test(d))continue;
+   const st=[path.join(base,d)];
+   while(st.length){
+    const cur=st.pop();
+    for(const e of fs.readdirSync(cur,{withFileTypes:true})){
+     const p=path.join(cur,e.name);
+     if(e.isDirectory())st.push(p);
+     else if(e.name.toLowerCase()==='ffmpeg.exe')return p;}}}
+ }catch(e){}
+ return null;}
+const FF=findFF();
+if(!FF){console.log('FAIL: ffmpeg が見つからない。winget install "FFmpeg (Essentials Build)" を実行するか、環境変数 FFMPEG にパスを入れてください');process.exit(1);}
+const run=a=>{try{return cp.execFileSync(FF,a,{encoding:'utf8',stdio:['ignore','pipe','pipe']});}
+ catch(e){return (e.stdout||'')+(e.stderr||'');}};
+const runE=a=>{try{const r=cp.spawnSync(FF,a,{encoding:'utf8'});return (r.stdout||'')+(r.stderr||'');}catch(e){return '';}};
+
+/* ---- レシピ ----
+   k=ゲーム側のキー / f=素材ファイル名の一部 / t=テイク番号(scanで出る番号・0始まり)
+   d=切り出す最大秒 / g=音量の足し引き(dB) / r=再生ピッチ(1より小さいと低く長くなる)
+   ⚠短いUI素材は「かたまり」が1つしかないので t:0 のまま */
+const REC=[
+ /* --- タワーと戦闘 --- */
+ {k:'shot',    f:'WHIP Snap Crack',              t:1, d:.20, g:-2, r:.85},
+ {k:'shotgun', f:'Explosion Small Blast Enemy',  t:0, d:.30, g:-1, r:.80},
+ {k:'snipe',   f:'WHIP Snap Crack',              t:3, d:.34, g: 0, r:.62},
+ {k:'zap',     f:'Impact Electric Tonal Deep',   t:0, d:.32, g:-1, r:1.1},
+ {k:'thunk',   f:'METAL SWING HIT',              t:0, d:.26, g:-3, r:1.0},
+ {k:'boom',    f:'Booms_Vol2_011',               t:0, d:.85, g:-1, r:1.0},
+ {k:'net',     f:'Whoosh Glass Crystal',         t:0, d:.36, g:-3, r:1.0},
+ {k:'frost',   f:'Skill Freeze Whoosh Break',    t:0, d:.60, g:-2, r:1.0},
+ /* --- 建設・経済・UI --- */
+ {k:'build',   f:'Tower Deploy Hitech Robot',    t:0, d:.60, g:-2, r:1.0},
+ {k:'sell',    f:'Interface Deny Low Fat Dark',  t:0, d:.40, g:-3, r:1.0},
+ {k:'coin',    f:'Ting Coins',                   t:0, d:.40, g:-4, r:1.0},
+ {k:'buy',     f:'Interface Accept Glassy Snap', t:0, d:.36, g:-3, r:1.0},
+ {k:'warn',    f:'Alarms_Vol2_QuarterNotes',     t:0, d:.55, g:-3, r:1.0},
+ {k:'dep',     f:'Action Deploy Units Sword',    t:0, d:.50, g:-3, r:1.0},
+ {k:'heal',    f:'Magic Light Spell Enchantment',t:0, d:.60, g:-3, r:1.0},
+ /* --- 波・拠点 --- */
+ {k:'horn',    f:'Alarms_Vol2_WholeNotes',       t:0, d:1.2, g:-2, r:.9},
+ {k:'leak',    f:'Impact Hit Rapid Chord',       t:0, d:.55, g:-2, r:1.0},
+ {k:'push',    f:'Impact Water Deep Submerge',   t:0, d:.60, g:-2, r:1.0},
+ /* --- ゾンビ --- */
+ {k:'growl',   f:'Werewolf Growl Menacing',      t:0, d:.95, g:-2, r:.9},
+ {k:'moan',    f:'Male Screeching Breath Inhale',t:0, d:.70, g:-5, r:.9},
+ {k:'moanBig', f:'Sea Beast Creature Pain',      t:0, d:1.0, g:-3, r:.8},
+ {k:'bite',    f:'Hit Blood Spill Splat Wood',   t:0, d:.26, g:-4, r:1.0},
+ {k:'splat',   f:'Gore Designed Transient',      t:0, d:.36, g:-5, r:1.0},
+ /* --- 節目 --- */
+ {k:'elite',    f:'Alert Designed Transition Swell',t:0, d:.90, g:-2, r:1.0},
+ {k:'eliteKill',f:'Impact Cut Sweep',              t:0, d:.60, g:-2, r:1.0},
+ {k:'bossKill', f:'Booms_Vol2_214',                t:0, d:1.3, g:-1, r:.95},
+ {k:'clearJ',   f:'Power Up Bright Positive',      t:0, d:.85, g:-3, r:1.0},
+ {k:'win',      f:'Game Entry Happy Short',        t:0, d:1.3, g:-3, r:1.0},
+ {k:'lose',     f:'Transition Braam Slow Dark',    t:0, d:1.5, g:-2, r:1.0}
+];
+
+const SRC=process.argv[3]||path.join(__dirname,'sfx_src');
+const OUT=path.join(__dirname,'sfx_out');
+function findSrc(frag){
+ const fs2=fs.readdirSync(SRC).filter(f=>/\.wav$/i.test(f));
+ const hit=fs2.filter(f=>f.toLowerCase().indexOf(frag.toLowerCase())>=0);
+ return hit.length?path.join(SRC,hit[0]):null;}
+/* 無音で区切って「音のかたまり」を出す。⚠40MBの多テイク素材から1発を選ぶための要 */
+const segCache={};
+function segs(file){
+ if(segCache[file])return segCache[file];
+ const o=runE(['-hide_banner','-i',file,'-af','silencedetect=noise=-45dB:d=0.12','-f','null','-']);
+ const dur=(/Duration: (\d+):(\d+):([\d.]+)/.exec(o)||[]).slice(1);
+ const total=dur.length?(+dur[0]*3600+ +dur[1]*60+ +dur[2]):0;
+ const ends=[...o.matchAll(/silence_end: ([\d.]+)/g)].map(m=>+m[1]);
+ const starts=[...o.matchAll(/silence_start: ([\d.]+)/g)].map(m=>+m[1]);
+ const out=[];
+ let cur=0;
+ if(starts.length===0){out.push([0,total]);}
+ else{
+  for(let i=0;i<starts.length;i++){
+   const s=cur,e=starts[i];
+   if(e-s>.05)out.push([s,e-s]);
+   cur=ends[i]!==undefined?ends[i]:e;}
+  if(total-cur>.05)out.push([cur,total-cur]);}
+ segCache[file]=out;return out;}
+
+if(process.argv[2]==='scan'){
+ for(const R of REC){
+  const f=findSrc(R.f);
+  if(!f){console.log('× 素材なし: '+R.k+'  ("'+R.f+'")');continue;}
+  const s=segs(f);
+  console.log('['+R.k+'] '+path.basename(f)+'  かたまり'+s.length+'個');
+  s.slice(0,10).forEach((q,i)=>console.log('   '+(i===R.t?'→':'  ')+i+': 開始'+q[0].toFixed(2)+'s 長さ'+q[1].toFixed(2)+'s'));
+ }
+ process.exit(0);
+}
+if(process.argv[2]==='build'){
+ if(!fs.existsSync(OUT))fs.mkdirSync(OUT);
+ let total=0,ng=0;
+ for(const R of REC){
+  const f=findSrc(R.f);
+  if(!f){console.log('× 素材なし: '+R.k);ng++;continue;}
+  const s=segs(f);
+  const q=s[Math.min(R.t,s.length-1)]||[0,R.d];
+  const st=Math.max(0,q[0]-.01),d=Math.min(R.d,q[1]+.02);
+  const dst=path.join(OUT,R.k+'.mp3');
+  /* ⚠まずピークを測って -1dB へ正規化する(素材ごとに音量がバラバラなため) */
+  const probe=runE(['-hide_banner','-ss',String(st),'-t',String(d),'-i',f,'-af','volumedetect','-f','null','-']);
+  const mx=+((/max_volume: (-?[\d.]+) dB/.exec(probe)||[0,0])[1]);
+  const gain=(-1-mx)+(R.g||0);
+  const fo=Math.max(.03,Math.min(.12,d*.18));
+  const af='volume='+gain.toFixed(2)+'dB,afade=t=in:st=0:d=0.006,afade=t=out:st='+(d-fo).toFixed(3)+':d='+fo.toFixed(3)
+   +',aresample=22050,alimiter=limit=0.97';
+  /* ⚠`-vn -map_metadata -1` を必ず付ける。素材WAVにはジャケット画像が埋まっていることがあり、
+     付け忘れると**oggの中にtheoraの動画が入って1本30KBに膨らむ**(実際にそうなった) */
+  /* ⚠`-vn -map_metadata -1` は**必ず -i の後ろ**に置く(前に置くと入力側の指定として無視される)。
+     付け忘れると素材WAVに埋まったジャケット画像がtheoraの動画としてoggに入り、1本30KBに膨らむ */
+  /* ⚠形式は**MP3**。ogg/vorbis や ogg/opus は Safari(iPhone) が再生できないことがあるので使わない。
+     MP3ならどのブラウザでも decodeAudioData が通る。モノラル22050Hz・VBR品質5でおよそ6KB/秒 */
+  runE(['-y','-hide_banner','-ss',String(st),'-t',String(d),'-i',f,
+   '-vn','-sn','-dn','-map_metadata','-1','-ac','1','-ar','22050','-af',af,
+   '-c:a','libmp3lame','-q:a','5',dst]);
+  if(!fs.existsSync(dst)){console.log('× 変換失敗: '+R.k);ng++;continue;}
+  const kb=fs.statSync(dst).size/1024;total+=kb;
+  console.log('  '+R.k.padEnd(10)+d.toFixed(2)+'s  '+kb.toFixed(1)+'KB   ← '+path.basename(f).slice(0,44));
+ }
+ console.log('---- 合計 '+total.toFixed(1)+'KB / '+REC.length+'種'+(ng?('  ⚠失敗'+ng):'')+' ----');
+ process.exit(ng?1:0);
+}
+if(process.argv[2]==='embed'){
+ const H=path.join(__dirname,'index.html');
+ let s=fs.readFileSync(H,'utf8');
+ const A='/* <<SFXB>> */',B='/* <</SFXB>> */';
+ const ia=s.indexOf(A),ib=s.indexOf(B);
+ if(ia<0||ib<0){console.log('FAIL: index.html に '+A+' 〜 '+B+' の目印が無い');process.exit(1);}
+ const rows=[];let total=0;
+ for(const R of REC){
+  const p=path.join(OUT,R.k+'.mp3');
+  if(!fs.existsSync(p)){console.log('  (無し) '+R.k);continue;}
+  const b=fs.readFileSync(p).toString('base64');
+  total+=b.length;
+  rows.push(" "+R.k+":['"+b+"',"+(R.r||1)+"]");
+ }
+ const body=A+"\r\n/* 効果音(Sonniss #GameAudioGDC Bundle・ROYALTY-FREE・商用可・クレジット不要)。\r\n"
+  +"   ⚠この塊は tool_sfx.js が書き換える。手で編集しない。[base64, 再生ピッチ] */\r\n"
+  +"const SFXB={\r\n"+rows.join(",\r\n")+"};\r\n"+B;
+ s=s.slice(0,ia)+body+s.slice(ib+B.length);
+ fs.writeFileSync(H,s);
+ console.log('埋め込み '+rows.length+'種 / base64 '+(total/1024).toFixed(0)+'KB');
+ process.exit(0);
+}
+console.log('使い方: node tool_sfx.js scan|build|embed [素材フォルダ]');

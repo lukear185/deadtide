@@ -9,7 +9,9 @@
 - 出力・コメント・報告はすべて日本語。
 - 設計判断はチャット側(永井さん⇔Opus)の決定が最優先。**ここに無い機能を勝手に追加しない**。追加提案は実装せず永井さんに確認。
 - 変更は「アンカー文字列の一意性をassertした置換パッチ」で行い、毎回 `node --check`・`node test_undef.js`・`node test_headless.js` を通すこと。
-- ライセンス運用: NC素材禁止。外部素材は使っていない(全部プロシージャル描画)。
+- ライセンス運用: NC素材禁止。**絵は全部プロシージャル描画**(外部素材なし)。
+  **効果音だけ外部素材**=Sonniss #GameAudioGDC Bundle(ROYALTY-FREE・商用可・クレジット不要)。
+  生WAVはリポジトリに入れない(1本40MB)。加工済みMP3を index.html に base64 で埋め込んである。
 - index.htmlはGitHub Pagesにそのまま置いて動く状態を維持する。
 - **公開URL: https://lukear185.github.io/deadtide/** (repo=github.com/lukear185/deadtide・masterへpushすると1〜2分で自動反映)。スマホ/複数人テストはこのURLで行う。
 - **実機テストのURLはリンクのまま本文に書く/引き継ぎ文はコードブロックで出す**。下の「⚡ 渡し方」を必ず読むこと。
