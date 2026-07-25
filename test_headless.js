@@ -928,6 +928,19 @@ process.exit(0);
  try{
   const f=new Function(js+'\n;return (typeof renderTrain==="function")&&(typeof heroUlt==="function")&&DEV===true;');
   if(!f()){console.log('FAIL: 🛠DEVモードでスクリプトが最後まで走らない');process.exit(1);}
+  /* ⭐実機テスト用に「最初から全開放」になっているか(2026-07-26ユーザー指示)。
+     ⚠soloMeta()はGを見るので、ソロを1戦始めてから拠点の状態を測る */
+  const g=new Function(js+'\n;META.stg=0;setDiff=2;startSolo();'
+   +'const m=G.players[0];'
+   +'return [m.unlocked,T_PLAY,m.uUn,U_N,m.ecoN,ECO_MAX,m.supN,SUP_MAX,'
+   +'m.slk.slice(0,ECO_BASE).filter(v=>v).length,ECO_BASE,META.st.length,Object.keys(STRIKES).length];')();
+  const [un,tp,uu,un2,ec,ecm,sp,spm,sl,slm,st,stm]=g;
+  if(un<tp){console.log('FAIL: 🛠DEVでタワーが全解放されていない '+un+'/'+tp);process.exit(1);}
+  if(uu<un2){console.log('FAIL: 🛠DEVで兵科が全解放されていない '+uu+'/'+un2);process.exit(1);}
+  if(ec<ecm||sp<spm){console.log('FAIL: 🛠DEVで工房/支援の枠が全部開いていない '+ec+'/'+ecm+' '+sp+'/'+spm);process.exit(1);}
+  if(sl<slm){console.log('FAIL: 🛠DEVで建設マスが全部開いていない '+sl+'/'+slm);process.exit(1);}
+  if(st<stm){console.log('FAIL: 🛠DEVで砲撃が全部解放されていない '+st+'/'+stm);process.exit(1);}
+  console.log('🛠DEVモード: タワー'+un+'種・兵科'+uu+'種・建設マス'+sl+'+工房'+ec+'+支援'+sp+'・砲撃'+st+'種 すべて最初から使える OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
  }finally{

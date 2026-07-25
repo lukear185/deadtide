@@ -799,6 +799,9 @@ function resumeRun(){
  if(d.hsel!=null){m.hUi=d.hsel?hUiOf(d.hsel):-1;m.hOut=(d.hOut===2)?2:0;m.hCg=0;}
  if(d.flagD)m.flagD=clamp(d.flagD,0,PLEN);
  if(d.slk&&d.slk.length)m.slk=m.slk.map((v,i)=>!!d.slk[i]);
+ /* ⚠🛠DEVは「最初から全開放」なので、中断前のセーブで巻き戻さない */
+ if(DEV){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.uUn=Math.max(m.uUn||0,metaUnitCap());
+  m.ecoN=ECO_MAX;m.supN=SUP_MAX;m.slk=m.slk.map((v,i)=>i<ECO_BASE?true:v);}
  if(d.tw&&d.tw.length)m.towers=m.towers.map((t,i)=>{const s=d.tw[i];
   return s?{ti:s.ti,us:s.us||{d:0,r:0,g:0,c:0},cd:rnd(.1,.5),ang:-.6,jamT:0,fireT:0,spent:s.spent||0,own:0}:null;});
  $('strikebtn').textContent=(STRIKES[m.stk]||STRIKES.air).ic;
@@ -807,8 +810,12 @@ function resumeRun(){
 }
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
-const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;return soloMeta()?BT+clamp(META.nt||0,0,TP-BT):BT;};
-const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN=(typeof U_N!=='undefined')?U_N:UNITS.length;return soloMeta()?BU+clamp(META.nu||0,0,UN-BU):BU;};
+/* ⚠🛠DEVは**モードを問わず全種類**を上限にする(実機テスト用・2026-07-26ユーザー指示)。
+   soloMeta()はGを見るので、拠点を作る瞬間(newCamp)はまだ false になり得る=ここでDEVを見るのが確実 */
+const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;
+ return DEV?TP:(soloMeta()?BT+clamp(META.nt||0,0,TP-BT):BT);};
+const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN=(typeof U_N!=='undefined')?U_N:UNITS.length;
+ return DEV?UN:(soloMeta()?BU+clamp(META.nu||0,0,UN-BU):BU);};
 const LAB_NT=k=>Math.round(250*Math.pow(1.2,k));/* k個目のタワー解放価格 */
 const LAB_NU=k=>Math.round(120*Math.pow(1.14,k));/* k個目の兵科解放価格 */
 const LAB_STK={mgun:150,carpet:250,frost:200,napalm:300};
@@ -2506,9 +2513,14 @@ function bakeUThumb(i){
  return out;}
 /* ============ シミュレーション ============ */
 let EID=1;
+/* ⭐🛠DEVモード(?dev=1)は**最初から全部建てられる/出せる**状態で始める(2026-07-26ユーザー指示)。
+   実機で演出やバランスを見るのに、毎回⚙️を貯めて解放するのは回らないため。
+   ⚠通常モードは今までどおり(タワー2種・兵科2種・建設マス7つ)。DEVのセーブは別枠なので普段のデータは汚れない */
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
- core:50,coreMax:50,scrap:250,unlocked:2,atkLv:0,repairs:0,boosts:0,jams:0,
- towers:SLOTS.map(()=>null),ecoN:1,supN:0,up:12,upTotal:12,slk:SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0),zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
+ core:50,coreMax:50,scrap:250,unlocked:DEV?metaTowerCap():2,atkLv:0,repairs:0,boosts:0,jams:0,
+ towers:SLOTS.map(()=>null),ecoN:DEV?ECO_MAX:1,supN:DEV?SUP_MAX:0,up:12,upTotal:12,
+ slk:SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0)),
+ zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:DEV?metaUnitCap():2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
  hUi:-1,hOut:0,hCg:0,fallen:[],/* 英雄: 連れて行く英雄のUNITS添字 / 0=未出撃 1=出撃中 2=戦死 / 必殺チャージ / 戦死した部隊(蘇生用) */
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
@@ -4825,8 +4837,10 @@ function startSolo(){
  me.hOut=0;me.hCg=0;me.fallen=[];
  /* 研究所の序盤系ボーナス */
  me.up=me.upTotal=12+6*(META.up0||0);
- me.uUn=2+(META.uu0||0);
- {const s0=SLOT0+(META.sl0||0);me.slk=SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<s0);}
+ /* ⚠🛠DEVは newCamp で全開放してあるので、ここの「開始時ボーナス」で巻き戻さない */
+ me.uUn=DEV?metaUnitCap():2+(META.uu0||0);
+ {const s0=SLOT0+(META.sl0||0);
+  me.slk=SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<s0));}
  if(META.ec1){/* 廃品工房を建てた状態で開始 */
   const eti=TOWERS.findIndex(t=>t.type==='eco');
   if(eti>=0)me.towers[ECO_BASE]={ti:eti,us:{d:0,r:0,g:0,c:0,f:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:TOWERS[eti].cost,own:0};}
@@ -6816,6 +6830,16 @@ $('bt-join').onclick=()=>{ensureAC();joinRoom();};
 $('bt-lobby-start').onclick=hostStart;
 $('bt-lobby-back').onclick=backTitle;
 /* ============ メインループ・起動 ============ */
+/* ⭐🛠DEVモードは**タワーと兵科を最初から全部解放**しておく(2026-07-26ユーザー指示=実機テスト用)。
+   ⚠`devTop()` はMETAを読み込んだ直後(データ定義より**前**)に呼ばれるので、
+     T_PLAY/U_N のような後で定義される const をそこで触ると TDZ で落ちる(ZCAVEで実際に踏んだ)。
+     だから「研究所で解放する種類」の開放だけは、全部の定義が終わったここでやる。 */
+if(DEV){try{
+ META.nt=Math.max(META.nt||0,T_PLAY-BASE_T);
+ META.nu=Math.max(META.nu||0,U_N-BASE_U);
+ for(const k in LAB_STK)if(META.st.indexOf(k)<0)META.st.push(k);/* 砲撃5種も全部 */
+ saveMeta();
+}catch(e){}}
 makeThumbs();paradeInit();updLabBtn();/* 🏋鍛錬所ボタンの表示/💎🔧の残数を起動時に合わせる */
 try{applyIcons();}catch(e){}/* 画面アイコンの差し替え(素材が無ければ絵文字のまま) */
 /* 🔊音の確認: ?sfx=1 なら起動と同時に開く。🛠DEVモードならタイトルにボタンを出す。

@@ -348,6 +348,15 @@
 - 🧬研究pt・💎魔石・🔧鍛錬素材が**実質無限**(使ったそばから補充=`devTop()`。`saveMeta()`が通るたびに戻る)
 - ゲーム中の⚙️スクラップ・🔩強化ptも99,999を切ったら補充(HUDの桁が溢れないよう99,999止まり)
 - **全ステージ・全難易度・全英雄が最初から選べる**(`diffOK`/`stageOK`/`renderHeroSeg`)
+- ⭐**タワー20種・兵科32種・建設マス全部(通常22+工房3+支援2)・砲撃5種が最初から使える**
+  (2026-07-26ユーザー指示=毎回⚙️を貯めて解放していては実機確認が回らないため)。
+  ⚠仕込みは3か所ある。**片方だけ直すと元に戻る**ので必ずセットで見ること:
+  ①`metaTowerCap()`/`metaUnitCap()` が DEV では全種類を返す
+  ②`newCamp()` の `unlocked`/`uUn`/`ecoN`/`supN`/`slk` の初期値
+  ③`startSolo()` の「開始時ボーナス」(`me.uUn=` と `me.slk=`)と `resumeRun()` の復元 — ここで巻き戻さない
+  ⚠研究所側の「新しい種類」(`META.nt`/`META.nu`)と砲撃(`META.st`)は**起動の最後**で開けている。
+    `devTop()`(METAを読んだ直後)でやると `T_PLAY` などのconstがTDZで落ちる。
+  検査は `test_headless.js` の `checkDevLoad()`。撮影は `node test_shot.js out.png 852 393 dev`。
 - **セーブは別枠**(`dt_meta_dev` / `dt_run_dev`)。⚠普通に遊ぶ時のデータは汚れないので、
   ここで買った研究所の解放や引いた英雄は**通常モードには持ち越されない**
 - タイトル右上の版数が `v2.0 β 🛠DEV` になる+ゲーム開始時にトーストが出る(付け忘れ/外し忘れ防止)
@@ -370,6 +379,7 @@ node test_shot.js out.png 852 393 "nmboss+z=fBeast,nmHorr"   # ナイトメア�
 node test_shot.js out.png 852 393 u=grn          # その兵科を3体出して撃たせ続ける(攻撃の演出用。+die=倒れるまで放置)
 node test_shot.js out.png 852 393 stk=napalm     # その砲撃の着弾を撮る(air/mgun/carpet/frost/napalm)
 node test_shot.js out.png 852 393 fxdemo         # 新しい演出を1つずつ並べて、寿命の途中で止めて撮る
+node test_shot.js out.png 852 393 dev            # 🛠DEVモード(全開放)の画面を撮る
 node test_shot.js out.png 852 393 hero=all        # 英雄11人を経路に並べて撮る(見た目の確認)
 node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させて撮る(+nodep=出撃前のボタンだけ見る)
 node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=line 記録は lab=rec
