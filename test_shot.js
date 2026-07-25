@@ -63,10 +63,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'renderTrain();trainStart("hNox",1);'
        /* 実時間で掘るのを待たず、見栄えのする盤面(広間2つ+つなぎの坑道)を作ってしまう */
        +'(function(){var d=function(x,y){cvDigAt(x,y,true);};'
-       +'for(var y=2;y<=7;y++)for(var x=1;x<=6;x++)d(x,y);'
-       +'for(var x=7;x<=13;x++)d(x,5);'
-       +'for(var y=3;y<=7;y++)for(var x=13;x<=17;x++)d(x,y);'
-       +'for(var x=18;x<=22;x++)d(x,4);})();'
+       +'for(var y=6;y<=14;y++)for(var x=1;x<=8;x++)d(x,y);'
+       +'for(var x=9;x<=19;x++)d(x,10);'
+       +'for(var y=7;y<=13;y++)for(var x=19;x<=26;x++)d(x,y);'
+       +'for(var x=27;x<=37;x++)d(x,10);'
+       +'for(var y=8;y<=14;y++)for(var x=37;x<=44;x++)d(x,y);})();'
        +(TRRAID||TRRES?'cvInvade();':'')
        /* trainflood = 🌊死潮が満ちている所を撮る(本来は第2波から) */
        +(OPT.indexOf('trainflood')>=0?'TR.twMax=3.4;':'')

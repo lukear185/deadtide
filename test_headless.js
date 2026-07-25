@@ -515,6 +515,18 @@ function checkTrain(){
  TR.mana=0;
  if(cvDigAt(2,5)){console.log('FAIL: 🦴骸が0でも掘れてしまう');process.exit(1);}
  TR.mana=CV_MAX;
+ /* ---- 養分をふくむ土を掘ると、その場でゾンビが生まれる ---- */
+ {TR.zs.length=0;
+  let born=0,tried=0;
+  for(let y=0;y<CV_H&&born<3;y++){
+   const x=1;if(!cvCanDig(x,y))continue;
+   tried++;TR.nut[cvI(x,y)]=3;const n0=TR.zs.length;
+   cvDigAt(x,y,true);
+   if(TR.zs.length>n0)born++;}
+  if(!tried){console.log('FAIL: 侵入口の隣が1マスも掘れない');process.exit(1);}
+  if(born<3){console.log('FAIL: 養分のある土を掘ってもゾンビが生まれない '+born+'/'+tried);process.exit(1);}
+  /* 養分は掘ると消える=同じ所から二度は出ない */
+  if(TR.nut[cvI(1,0)]!==0){console.log('FAIL: 掘っても養分が残っている');process.exit(1);}}
  /* ---- 開放度で格が決まる: 広く掘るほど強いゾンビ ---- */
  for(let y=3;y<=7;y++)for(let x=1;x<=5;x++)cvDigAt(x,y,true);
  const dMid=cvDeg(3,5);

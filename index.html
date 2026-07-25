@@ -4538,12 +4538,15 @@ $('gc-10').onclick=()=>gcPull(10);
 $('gc-rate').onclick=()=>{$('gc-res').innerHTML=IC(gcRateHtml());};
 /* ============ 🏋 ヒーロー鍛錬所(洞窟・マザーゾンビ防衛) ============
    ユーザー決定(2026-07-26): スワイプのリズム訓練は廃止し、まるごと作り替えた。
+   さらに実機で「ミニゲームすぎる」との指摘を受け、**盤面を5倍に広げて本家寄りに作り直した**(第50弾)。
    『ゆうしゃのくせになまいきだ。』のオマージュだが、**借りたのは骨だけ**:
     ①操作は「土を掘る」だけ ②掘らないと戦力が育たないが掘ると侵入者の道ができる
     ③直接殴れない(湧いたゾンビ越しにしか干渉できない) ④侵入者は勝手に動く
-   本家の顔である「食物連鎖の階層(コケ→ムシ→トカゲ)」「養分/魔分の土」「魔王の連行タイム」は入れていない。
+   本家の顔である「食物連鎖の階層(コケ→ムシ→トカゲ)」「魔王の連行タイム」は入れていない。
    代わりにDEADTIDE固有の要素を主役にしてある:
-    ・湧く格は**そのマスの開放度**(周囲8マスのうち空洞の数)で決まる=広く掘った部屋の中心ほど強い
+    ・**土に養分(nut)が鉱脈状に埋まっていて、掘った瞬間にそこからゾンビが生まれる**
+      (本家の「養分を含む土を掘ると魔物が湧く」に当たる部分。ただし階層も食物連鎖も無い)
+    ・広く掘った部屋(開放度が高いマス)は格が1つ上がり、そこからゆっくり自然に湧き続ける
     ・🧿ゾンビのコア=TD側で同種を倒すと落ち、洞窟に出せる種類の解放と強化に使う
     ・🌊死潮=波の中で下から満ちて引く。水没したマスは壁と同じ(こちらにも相手にも効く)
     ・🦠感染=倒したお供の英雄が次の波から味方として湧く
@@ -4551,31 +4554,34 @@ $('gc-rate').onclick=()=>{$('gc-res').innerHTML=IC(gcRateHtml());};
    立場はTD側の裏返し=こちらがゾンビ側で、守るのはマザーゾンビ。
    波をしのぐと訓練成功=経験値。鍛錬Lvが上がるほど英雄が強くなり、次から撃退しづらくなる。
    ⚠鍛錬所はタイトル側の施設(戦場の建設マスではない)=試合を止めずに済むため。 */
-const CV_W=26,CV_H=10;       /* 盤面のマス数(横×縦)。縦=深さで、下ほど深い */
-const CV_DIG=6;              /* 1マス掘るのに要る🦴骸 */
-const CV_MAX=60;             /* 🦴骸の上限 */
-const CV_REG=7,CV_REG_B=15;  /* 🦴骸の回復(毎秒)。侵攻中 / 巣作り中 */
-const CV_NEST=18;            /* 巣作りタイムの秒数 */
-const CV_RAID=60;            /* 侵攻フェーズの制限秒。しのぎ切れば次の波 */
-const CV_SPAWN=2.2;          /* ゾンビが湧く間隔(秒) */
-const CV_ZMAX=18;            /* 場に出せるゾンビの上限 */
-const CV_SPD_OPEN=.45;       /* 英雄が空洞を1マス進む秒数 */
-const CV_SPD_DIG=1.8;        /* 英雄が土を1マス掘り抜く秒数 */
-const CV_ZSPD=.55;           /* ゾンビが1マス進む秒数(素の速さで割る) */
+const CV_W=56,CV_H=24;       /* 盤面のマス数(横×縦)。縦=深さで、下ほど深い */
+const CV_CS=30;              /* 1マスの表示px。画面には28×11マスぶんしか映らない=カメラで動かす */
+const CV_DIG=10;             /* 1マス掘るのに要る🦴骸 */
+const CV_MAX=100;            /* 🦴骸の上限 */
+const CV_REG=8,CV_REG_B=20;  /* 🦴骸の回復(毎秒)。侵攻中 / 巣作り中=巣作り25秒でおよそ50マス掘れる */
+const CV_NEST=25;            /* 巣作りタイムの秒数 */
+const CV_RAID=75;            /* 侵攻フェーズの制限秒。しのぎ切れば次の波 */
+const CV_SPAWN=3.5;          /* 部屋から自然に湧く間隔(秒)。主役は「掘って湧かす」方 */
+const CV_ZMAX=25;            /* 場に出せるゾンビの上限 */
+const CV_SPD_OPEN=.30;       /* 英雄が空洞を1マス進む秒数 */
+const CV_SPD_DIG=1.1;        /* 英雄が土を1マス掘り抜く秒数 */
+const CV_ZSPD=.42;           /* ゾンビが1マス進む秒数(素の速さで割る) */
 /* ⚠この2つが無いとゾンビが1マスに無限に重なり、英雄が数秒で溶ける(TD側のENG_MAXと同じ理屈) */
 const CV_ENG=3;              /* 1人の英雄に同時に噛みつけるゾンビの数 */
 const CV_CELL=2;             /* 1マスに同時に居られるゾンビの数 */
 const CV_WET=12;             /* 潮が引いた跡で湧きが倍になる秒数 */
-const CV_CORE_X=23,CV_CORE_Y=4;/* マザーゾンビの左上マス(2×2)。右端に1列ぶん壁を残して埋まって見せる */
+const CV_CORE_X=53,CV_CORE_Y=11;/* マザーゾンビの左上マス(2×2)。右端に1列ぶん壁を残して埋まって見せる */
+const CV_MINI=1.7;           /* ミニマップの1マスあたりpx */
+const CV_FOLLOW=4;           /* ミニマップを触ってから、カメラが自動追従に戻るまでの秒数 */
 /* 難易度3段階。🔧の消費は同じで、深いほど波数もお供も増えるが経験値の倍率が上がる */
 const TR_DIF=[
- {n:'浅層',w:5, core:700,hm:1,   am:1,xm:1,   dsc:'5波。お供は1人まで'},
- {n:'中層',w:8, core:800,hm:1.12,am:2,xm:1.35,dsc:'8波。お供は2人まで'},
- {n:'深層',w:12,core:900,hm:1.25,am:3,xm:1.8, dsc:'12波。お供は3人まで'}
+ {n:'浅層',w:4,core:1200,hm:1,   am:1,xm:1,   dsc:'4波。お供は1人まで'},
+ {n:'中層',w:6,core:1500,hm:1.12,am:2,xm:1.35,dsc:'6波。お供は2人まで'},
+ {n:'深層',w:9,core:1800,hm:1.25,am:3,xm:1.8, dsc:'9波。お供は3人まで'}
 ];
 /* 報酬(スコア=経験値)。しのいだ波 / 倒した英雄 / 与えたダメージ1あたり / 全波しのいだ時
    ⚠与ダメージぶんを入れてあるのは、第1波でマザーゾンビを倒されても手応えが0にならないようにするため */
-const TR_PW=220,TR_PK=180,TR_PD=.08,TR_PC=700;
+const TR_PW=380,TR_PK=200,TR_PD=.06,TR_PC=800;
 /* 開放度(周囲8マスの空洞数) → 湧く格 */
 const cvTier=o=>o<=2?1:o<=4?2:o<=6?3:4;
 /* 岩肌の凹凸を「マスの座標から決まる乱数」で出す=毎フレーム描き直してもチラつかない */
@@ -4610,8 +4616,8 @@ function renderTrain(){
 }
 function renderTrHero(box){
  const hint=$('tr-hint');
- if(hint)hint.innerHTML='英雄が訓練のために洞窟へ攻めてくる。<b>タップで土を掘って</b>ゾンビを湧かせ、マザーゾンビを守り切れば訓練成功。'
-  +'<b>広く掘った部屋の中心ほど強いゾンビ</b>が湧くが、掘った所は英雄の通り道にもなる。';
+ if(hint)hint.innerHTML='英雄が訓練のために洞窟へ攻めてくる。<b>養分をふくむ土を掘るとゾンビが生まれる</b>。'
+  +'マザーゾンビを守り切れば訓練成功。ただし<b>掘った所は英雄の通り道にもなる</b>。';
  const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));
  const df=$('tr-dif'),g=$('bt-tr-go');
  if(!own.length){
@@ -4642,7 +4648,7 @@ function renderTrHero(box){
 function renderZoo(box){
  const hint=$('tr-hint');
  if(hint)hint.innerHTML='🧿コアは<b>ソロ作戦で同じ種類のゾンビを倒す</b>と手に入る。解放した種類だけが洞窟に湧く。'
-  +'<b>格が高いゾンビほど広く掘った部屋</b>でないと湧かない。';
+  +'<b>格が高いゾンビほど、養分の濃い土か広く掘った部屋</b>でないと出てこない。';
  box.innerHTML='<div class="lgrid">'+ZCAVE.map(q=>{
   const zi=zcZi(q.id),Z=ZOMBIES[zi]||{};
   const lv=zcLv(q.id),have=zcHave(q.id),bo=zcBoost(q.id);
@@ -4690,34 +4696,79 @@ function cvDeg(x,y){let n=0;
 function cvCanDig(x,y){
  if(!cvIn(x,y)||cvAt(x,y)!==0)return false;
  return cvAt(x-1,y)>0||cvAt(x+1,y)>0||cvAt(x,y-1)>0||cvAt(x,y+1)>0;}
+/* 土に埋まっている養分を鉱脈状に作る。深い所・奥ほど濃い。
+   ⚠しきい値を固定にすると、乱数のブレで盤面が緑だらけにも空っぽにもなる(実際に緑だらけになった)。
+     濃い順に並べ替えて**割合で格を割り当てる**=どの回でも「養分のあるマスは全体の28%」に揃う。 */
+const CV_NUT_Q=[.02,.06,.14,.28];/* 上位から 格4 / 格3 / 格2 / 格1 の累積割合 */
+function cvGenNut(){
+ const N=CV_W*CV_H,f=new Float32Array(N),n=new Uint8Array(N);
+ for(let k=0;k<70;k++){
+  const bx=rnd(0,CV_W),by=rnd(0,CV_H),r=rnd(1.6,4.6),s=rnd(.6,2.1);
+  const x0=Math.max(0,Math.floor(bx-r)),x1=Math.min(CV_W-1,Math.ceil(bx+r));
+  const y0=Math.max(0,Math.floor(by-r)),y1=Math.min(CV_H-1,Math.ceil(by+r));
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+   const d=Math.hypot(x-bx,y-by);if(d>r)continue;
+   f[cvI(x,y)]+=s*(1-d/r);}}
+ /* 深い所・奥ほど少し濃く寄せる */
+ /* ⚠奥(x)への寄せを強くすると濃い養分が全部マザーゾンビ側に固まり、序盤に掘る物が無くなる。
+      「深さ(y)で濃くなる」を主にして、奥への寄せは弱く留める */
+ for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++)f[cvI(x,y)]+=(y/CV_H)*.6+(x/CV_W)*.15;
+ const idx=[];for(let i=0;i<N;i++)idx.push(i);
+ idx.sort((a,b)=>f[b]-f[a]);
+ const q=CV_NUT_Q.map(v=>Math.round(N*v));
+ for(let k=0;k<idx.length;k++){
+  const i=idx[k];
+  n[i]=k<q[0]?4:k<q[1]?3:k<q[2]?2:k<q[3]?1:0;}
+ return n;}
+/* 1マス掘る。⚠養分が入っていたら、その場でゾンビが生まれる(本家の「掘ると湧く」に当たる所) */
 function cvDigAt(x,y,free){
  if(!cvCanDig(x,y))return false;
  if(!free){if(TR.mana<CV_DIG)return false;TR.mana-=CV_DIG;}
- TR.g[cvI(x,y)]=1;TR.dug++;
- TR.dirty=true;/* 経路を引き直す */
- for(let k=0;k<5;k++)TR.ps.push({x:x+rnd(.1,.9),y:y+rnd(.1,.9),vx:rnd(-.6,.6),vy:rnd(-1.4,-.3),t:0,life:rnd(.3,.6),c:'#6b5a3a'});
+ const i=cvI(x,y);
+ TR.g[i]=1;TR.dug++;TR.dirty=true;
+ const nut=TR.nut[i];
+ for(let k=0;k<(nut?7:4);k++)TR.ps.push({x:x+rnd(.1,.9),y:y+rnd(.1,.9),
+  vx:rnd(-.7,.7),vy:rnd(-1.5,-.3),t:0,life:rnd(.3,.65),c:nut?'#7ba33f':'#6b5a3a'});
+ if(nut>0){
+  TR.nut[i]=0;
+  /* 養分が濃いほど格が高い。広間の中心で掘るとさらに+1 */
+  cvMakeZ(x,y,clamp(nut+(cvDeg(x,y)>=6?1:0),1,4),true);
+ }
  return true;}
 
 /* ---------------- 経路 ---------------- */
-/* 英雄用: マザーゾンビからのコスト場(空洞=1・土=4)。土を掘るのは高くつくので、掘ってある道を選ぶ */
+/* 英雄用: マザーゾンビからのコスト場(空洞=1・土=4)。土を掘るのは高くつくので、掘ってある道を選ぶ
+   ⚠マスが1344個あるのでO(n^2)のダイクストラだと重い=二分ヒープで回す */
 function cvPathHero(){
- const N=CV_W*CV_H,INF=1e9,d=new Float64Array(N).fill(INF),done=new Uint8Array(N);
- for(let y=CV_CORE_Y;y<CV_CORE_Y+2;y++)for(let x=CV_CORE_X;x<CV_CORE_X+2;x++)d[cvI(x,y)]=0;
- for(;;){
-  let bi=-1,bd=INF;
-  for(let i=0;i<N;i++)if(!done[i]&&d[i]<bd){bd=d[i];bi=i;}
-  if(bi<0)break;
-  done[bi]=1;
-  const x=bi%CV_W,y=(bi-x)/CV_W;
+ const N=CV_W*CV_H,INF=1e9,d=new Float64Array(N).fill(INF);
+ const hi=[],hv=[];
+ const push=(i,v)=>{hi.push(i);hv.push(v);let c=hi.length-1;
+  while(c>0){const p=(c-1)>>1;if(hv[p]<=hv[c])break;
+   const a=hi[p];hi[p]=hi[c];hi[c]=a;const b=hv[p];hv[p]=hv[c];hv[c]=b;c=p;}};
+ const pop=()=>{const ti=hi[0];POPV=hv[0];
+  const li=hi.pop(),lv=hv.pop();
+  if(hi.length){hi[0]=li;hv[0]=lv;let c=0;
+   for(;;){const l=c*2+1,r=l+1;let m=c;
+    if(l<hi.length&&hv[l]<hv[m])m=l;
+    if(r<hi.length&&hv[r]<hv[m])m=r;
+    if(m===c)break;
+    const a=hi[m];hi[m]=hi[c];hi[c]=a;const b=hv[m];hv[m]=hv[c];hv[c]=b;c=m;}}
+  return ti;};
+ let POPV=0;
+ for(let y=CV_CORE_Y;y<CV_CORE_Y+2;y++)for(let x=CV_CORE_X;x<CV_CORE_X+2;x++){
+  const i=cvI(x,y);d[i]=0;push(i,0);}
+ while(hi.length){
+  const i=pop(),v=POPV;
+  if(v>d[i])continue;
+  const x=i%CV_W,y=(i-x)/CV_W;
   const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
   for(const p of nb){
    if(!cvIn(p[0],p[1]))continue;
-   const j=cvI(p[0],p[1]);if(done[j])continue;
    const t=cvAt(p[0],p[1]);
    if(t===2)continue;/* マザーゾンビの中は通らない */
-   if(t===1&&cvWater(p[1]))continue;/* 水没した空洞は壁と同じ */
-   const w=t===1?1:4;
-   if(bd+w<d[j])d[j]=bd+w;}}
+   if(cvWater(p[1]))continue;/* 水没した所は壁と同じ */
+   const j=cvI(p[0],p[1]),w=t===1?1:4;
+   if(v+w<d[j]){d[j]=v+w;push(j,v+w);}}}
  TR.hpf=d;}
 /* ゾンビ用: 英雄たちからの距離(空洞だけ・掘れないので土は通れない) */
 function cvPathZ(){
@@ -4735,13 +4786,35 @@ function cvPathZ(){
 
 /* ---------------- 湧き ---------------- */
 function cvUnlocked(){const a=[];for(const q of ZCAVE)if(zcLv(q.id)>0)a.push(q);return a;}
+/* そのマスに、格capまでのゾンビを1体つくる。dig=掘って生まれた場合(演出を強くする) */
+function cvMakeZ(x,y,cap,dig){
+ if(TR.zs.length>=CV_ZMAX)return null;
+ /* 🦠感染体: 倒したお供の英雄が味方として湧く */
+ if(TR.inf.length&&Math.random()<Math.min(.35,TR.inf.length*.12)){
+  const ui=TR.inf[ri(0,TR.inf.length-1)],U=UNITS[ui];
+  const z={inf:1,ui,n:U.n+'(感染体)',cx:x,cy:y,tx:x,ty:y,p:0,
+   hp:U.hp*.4,mhp:U.hp*.4,atk:U.atk*.6,ar:Math.max(.5,U.rate),cd:0,sp:1,t:rnd(0,6),hitT:0,dead:0,c:'#7ba33f'};
+  TR.zs.push(z);return z;}
+ const pool=cvUnlocked().filter(q=>q.tier<=cap);
+ if(!pool.length)return null;
+ const top=Math.max.apply(null,pool.map(q=>q.tier));
+ /* 25%だけ1段下も混ぜて単調にならないようにする */
+ const want=(Math.random()<.25&&top>1)?top-1:top;
+ let pick=pool.filter(q=>q.tier===want);if(!pick.length)pick=pool;
+ const q=pick[ri(0,pick.length-1)],zi=zcZi(q.id),Z=ZOMBIES[zi],bo=zcBoost(q.id);
+ const z={zi,n:Z.n,cx:x,cy:y,tx:x,ty:y,p:0,
+  hp:Z.hp*bo,mhp:Z.hp*bo,atk:(q.atk||Z.atk)*bo,ar:q.ar||Z.ar||1,cd:0,
+  sp:Z.sp/80,t:rnd(0,6),hitT:0,dead:0,born:dig?.5:0,c:Z.c};
+ TR.zs.push(z);
+ if(dig){TR.fx.push({k:'ring',x:x+.5,y:y+.5,r:.9,t:0,c:'#7ba33f'});beep(180,320,.08,'sawtooth',.05);}
+ return z;}
+/* 広く掘った部屋からゆっくり自然に湧く(掘って湧かす方が主役なので、こちらは控えめ) */
 function cvSpawn(){
  if(TR.zs.length>=CV_ZMAX)return;
- const pool=cvUnlocked();if(!pool.length)return;
- /* 湧ける空洞マスを集める(英雄から3マス以上離れていること)。潮が引いた跡は重みが倍 */
  const cells=[];
  for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
   if(!cvWalk(x,y))continue;
+  if(cvDeg(x,y)<5)continue;/* 部屋の中だけ。細い坑道からは湧かない */
   let near=false;
   for(const H of TR.hs){if(H.dead)continue;
    if(Math.max(Math.abs(H.cx-x),Math.abs(H.cy-y))<3){near=true;break;}}
@@ -4751,22 +4824,7 @@ function cvSpawn(){
  let tw=0;for(const c of cells)tw+=c.w;
  let r=Math.random()*tw,cell=cells[0];
  for(const c of cells){r-=c.w;if(r<=0){cell=c;break;}}
- /* 🦠感染体: 倒したお供の英雄が味方として湧く */
- if(TR.inf.length&&Math.random()<Math.min(.35,TR.inf.length*.12)){
-  const ui=TR.inf[ri(0,TR.inf.length-1)],U=UNITS[ui];
-  TR.zs.push({inf:1,ui,n:U.n+'(感染体)',cx:cell.x,cy:cell.y,tx:cell.x,ty:cell.y,p:0,
-   hp:U.hp*.4,mhp:U.hp*.4,atk:U.atk*.6,ar:Math.max(.5,U.rate),cd:0,sp:1,t:rnd(0,6),hitT:0,dead:0,c:'#7ba33f'});
-  return;}
- /* そのマスの格で湧く種類が決まる。25%だけ1段下も混ぜて単調にならないようにする */
- const cap=cvTier(cvDeg(cell.x,cell.y));
- let ok=pool.filter(q=>q.tier<=cap);if(!ok.length)return;
- const top=Math.max.apply(null,ok.map(q=>q.tier));
- const want=(Math.random()<.25&&top>1)?top-1:top;
- let pick=ok.filter(q=>q.tier===want);if(!pick.length)pick=ok;
- const q=pick[ri(0,pick.length-1)],zi=zcZi(q.id),Z=ZOMBIES[zi],bo=zcBoost(q.id);
- TR.zs.push({zi,n:Z.n,cx:cell.x,cy:cell.y,tx:cell.x,ty:cell.y,p:0,
-  hp:Z.hp*bo,mhp:Z.hp*bo,atk:(q.atk||Z.atk)*bo,ar:q.ar||Z.ar||1,cd:0,
-  sp:Z.sp/80,t:rnd(0,6),hitT:0,dead:0,c:Z.c});
+ cvMakeZ(cell.x,cell.y,cvTier(cvDeg(cell.x,cell.y)),false);
 }
 
 /* ---------------- 攻めてくる英雄 ---------------- */
@@ -4776,7 +4834,7 @@ function cvMkHero(hid,own){
  const hp=(500+h.rk*120)*bo*D.hm*(own?1:.72);
  return {hid,own:own?1:0,n:h.n,rk:h.rk,c:h.c,ui:hUiOf(hid),
   hp,mhp:hp,atk:(30+h.rk*8)*bo*(own?1:.8),rate:h.rate||1,cd:0,
-  cx:0,cy:ri(0,CV_H-1),tx:0,ty:0,p:0,st:'move',dead:0,hitT:0,t:rnd(0,6),
+  cx:0,cy:ri(0,CV_H-1),tx:0,ty:0,p:0,st:'move',dead:0,hitT:0,t:rnd(0,6),eng:0,
   ch:0,uch:h.uch||30,ult:h.ult,udsc:h.udsc||'',ut:CV_ULT[hid]||'aoe',rush:0,ultT:0,ultN:''};
 }
 /* 必殺技。名前と演出は英雄ごとに個別、効き目は7型に集約 */
@@ -4786,8 +4844,8 @@ function cvUlt(H){
  const hit=(z,dm)=>{z.hp-=dm;z.hitT=.2;if(z.hp<=0)cvKillZ(z);};
  const near=(z,r)=>Math.max(Math.abs(z.cx-H.cx),Math.abs(z.cy-H.cy))<=r;
  const alive=TR.zs.filter(z=>!z.dead);
- if(H.ut==='aoe'){for(const z of alive)if(near(z,2))hit(z,H.atk*2.6);
-  TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:2.6,t:0,c:H.c});}
+ if(H.ut==='aoe'){for(const z of alive)if(near(z,3))hit(z,H.atk*2.6);
+  TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:3.2,t:0,c:H.c});}
  else if(H.ut==='line'){for(const z of alive)if(z.cy===H.cy)hit(z,H.atk*2.2);
   TR.fx.push({k:'line',y:H.cy+.5,t:0,c:H.c});}
  else if(H.ut==='all'){for(const z of alive)hit(z,H.atk*1.9);
@@ -4818,6 +4876,22 @@ function cvKillH(H){
 }
 
 /* ---------------- 1フレームぶんの進行 ---------------- */
+const cvCoreAdj=(x,y)=>{
+ for(let cy=CV_CORE_Y;cy<CV_CORE_Y+2;cy++)for(let cx=CV_CORE_X;cx<CV_CORE_X+2;cx++)
+  if(Math.abs(cx-x)+Math.abs(cy-y)===1)return true;
+ return false;};
+/* コスト場を1段下る隣のマスを選ぶ。水没マスは避ける */
+function cvNextStep(H){
+ const d=TR.hpf,here=d[cvI(H.cx,H.cy)];
+ let best=null,bv=here;
+ const nb=[[H.cx+1,H.cy],[H.cx,H.cy-1],[H.cx,H.cy+1],[H.cx-1,H.cy]];
+ for(const p of nb){
+  if(!cvIn(p[0],p[1]))continue;
+  const t=cvAt(p[0],p[1]);if(t===2)continue;
+  if(cvWater(p[1]))continue;
+  const v=d[cvI(p[0],p[1])];
+  if(v<bv){bv=v;best=p;}}
+ return best;}
 function cvStepHeroes(dt){
  for(const H of TR.hs){
   if(H.dead)continue;
@@ -4836,8 +4910,7 @@ function cvStepHeroes(dt){
     sfx.thunk&&sfx.thunk();}
    continue;}
   /* ② マザーゾンビに隣接していたら殴る */
-  const cin=H.cx>=CV_CORE_X-1&&H.cx<=CV_CORE_X+2&&H.cy>=CV_CORE_Y-1&&H.cy<=CV_CORE_Y+2;
-  if(cin&&cvCoreAdj(H.cx,H.cy)){
+  if(cvCoreAdj(H.cx,H.cy)){
    H.st='core';
    if(H.cd<=0){H.cd=H.rate;TR.core-=H.atk;H.hitT=.12;TR.shake=Math.max(TR.shake,.16);
     sfx.leak&&sfx.leak();
@@ -4857,22 +4930,17 @@ function cvStepHeroes(dt){
    H.cx=H.tx;H.cy=H.ty;H.p=0;H.st='move';}
  }
 }
-const cvCoreAdj=(x,y)=>{
- for(let cy=CV_CORE_Y;cy<CV_CORE_Y+2;cy++)for(let cx=CV_CORE_X;cx<CV_CORE_X+2;cx++)
-  if(Math.abs(cx-x)+Math.abs(cy-y)===1)return true;
- return false;};
-/* コスト場を1段下る隣のマスを選ぶ。水没マスは避ける */
-function cvNextStep(H){
- const d=TR.hpf,here=d[cvI(H.cx,H.cy)];
+function cvNextZ(z){
+ const d=TR.zpf,here=d[cvI(z.cx,z.cy)];
+ if(here<0)return null;
  let best=null,bv=here;
- const nb=[[H.cx+1,H.cy],[H.cx,H.cy-1],[H.cx,H.cy+1],[H.cx-1,H.cy]];
+ const nb=[[z.cx-1,z.cy],[z.cx+1,z.cy],[z.cx,z.cy-1],[z.cx,z.cy+1]];
  for(const p of nb){
-  if(!cvIn(p[0],p[1]))continue;
-  const t=cvAt(p[0],p[1]);if(t===2)continue;
-  if(t===1&&cvWater(p[1]))continue;
-  if(t===0&&cvWater(p[1]))continue;/* 水没した所は掘っても水なので入らない */
-  const v=d[cvI(p[0],p[1])];
-  if(v<bv){bv=v;best=p;}}
+  if(!cvWalk(p[0],p[1]))continue;
+  const j=cvI(p[0],p[1]);
+  if(TR.occ&&TR.occ[j]>=CV_CELL)continue;/* 定員いっぱいのマスへは入らない */
+  const v=d[j];
+  if(v>=0&&v<bv){bv=v;best=p;}}
  return best;}
 function cvStepZ(dt){
  /* マスの定員と、英雄に噛みつける数を毎フレーム数え直す */
@@ -4883,6 +4951,7 @@ function cvStepZ(dt){
  for(const z of TR.zs){
   if(z.dead)continue;
   z.t+=dt;z.hitT=Math.max(0,z.hitT-dt);z.cd-=dt;
+  if(z.born>0)z.born-=dt;
   if(z.stop>0){z.stop-=dt;continue;}
   /* 水没したマスにいたら押し流されて死ぬ */
   if(cvWater(z.cy)){z.hp-=dt*90;if(z.hp<=0){cvKillZ(z);continue;}}
@@ -4909,20 +4978,10 @@ function cvStepZ(dt){
  }
  TR.zs=TR.zs.filter(z=>!z.dead||(z.dt=(z.dt||0)+dt)<.4);
 }
-function cvNextZ(z){
- const d=TR.zpf,here=d[cvI(z.cx,z.cy)];
- if(here<0)return null;
- let best=null,bv=here;
- const nb=[[z.cx-1,z.cy],[z.cx+1,z.cy],[z.cx,z.cy-1],[z.cx,z.cy+1]];
- for(const p of nb){
-  if(!cvWalk(p[0],p[1]))continue;
-  const j=cvI(p[0],p[1]);
-  if(TR.occ&&TR.occ[j]>=CV_CELL)continue;/* 定員いっぱいのマスへは入らない */
-  const v=d[j];
-  if(v>=0&&v<bv){bv=v;best=p;}}
- return best;}
 
 /* ---------------- 波の進行 ---------------- */
+/* ⚠CSSで display:none にしてあるので、出す時は 'inline-block' を明示すること */
+function cvSkipBtn(on){const sk=$('trskip');if(sk&&sk.style)sk.style.display=on?'inline-block':'none';}
 function cvWaveStart(){
  TR.wave++;
  const D=TR_DIF[TR.dif];
@@ -4935,12 +4994,13 @@ function cvWaveStart(){
   list.push(cvMkHero(pool[ri(0,pool.length-1)].id,false));}
  TR.next=list;
  /* この波の潮位(巣作り中に予報として出す) */
- TR.twMax=TR.wave>=2?Math.min(5,.6+TR.wave*.42):0;
- TR.msg='第'+TR.wave+'波 — 巣を作れ';TR.msgT=2.2;
+ TR.twMax=TR.wave>=2?Math.min(9,1+TR.wave*.9):0;
+ TR.msg='第'+TR.wave+'波 — 巣を掘れ';TR.msgT=2.2;
  cvSkipBtn(true);
 }
-/* ⚠CSSで display:none にしてあるので、出す時は 'inline-block' を明示すること */
-function cvSkipBtn(on){const sk=$('trskip');if(sk&&sk.style)sk.style.display=on?'inline-block':'none';}
+function cvFreeEntry(){
+ for(let y=0;y<CV_H;y++)if(cvWalk(0,y))return y;
+ return 0;}
 function cvInvade(){
  TR.phase='raid';TR.pt=CV_RAID;
  TR.hs=TR.next;TR.next=null;
@@ -4951,9 +5011,6 @@ function cvInvade(){
  cvSkipBtn(false);
  sfx.horn&&sfx.horn();
 }
-function cvFreeEntry(){
- for(let y=0;y<CV_H;y++)if(cvWalk(0,y))return y;
- return 0;}
 
 /* ---------------- 開始・終了 ---------------- */
 function trainStart(hid,dif){
@@ -4963,20 +5020,22 @@ function trainStart(hid,dif){
  ensureAC();
  const d=clamp(dif|0,0,TR_DIF.length-1),D=TR_DIF[d];
  TR={hid,dif:d,t:0,wave:0,phase:'nest',pt:0,
-  g:new Uint8Array(CV_W*CV_H),wet:new Float32Array(CV_W*CV_H),
-  hpf:null,zpf:null,dirty:true,
+  g:new Uint8Array(CV_W*CV_H),nut:null,wet:new Float32Array(CV_W*CV_H),
+  hpf:null,zpf:null,dirty:true,occ:null,
   mana:CV_MAX,dug:0,
   zs:[],hs:[],next:null,inf:[],ps:[],fx:[],
   core:D.core,coreMax:D.core,
   tw:0,twMax:0,
+  cam:{x:0,y:Math.max(0,CV_H*.5-5.5)},camT:0,geo:null,/* 最初は侵入口側の真ん中あたりを映す */
   score:0,dmg:0,zkill:0,hkill:0,waveOK:0,
   msg:'',msgT:0,shake:0,
   done:false,res:null,win:false,
-  bacc:0,bstep:0};
- /* 初期の空洞: 左端の縦坑(侵入口)・マザーゾンビ・マザーゾンビの前の小部屋 */
- for(let y=0;y<CV_H;y++)TR.g[cvI(0,y)]=1;
- for(let y=CV_CORE_Y;y<CV_CORE_Y+2;y++)for(let x=CV_CORE_X;x<CV_CORE_X+2;x++)TR.g[cvI(x,y)]=2;
- for(let y=CV_CORE_Y-1;y<=CV_CORE_Y+2;y++)if(cvIn(CV_CORE_X-1,y))TR.g[cvI(CV_CORE_X-1,y)]=1;
+  bacc:0,bstep:0,sp:0};
+ TR.nut=cvGenNut();
+ /* 初期の空洞: 左端の縦坑(侵入口)・マザーゾンビ・その前の小部屋 */
+ for(let y=0;y<CV_H;y++){TR.g[cvI(0,y)]=1;TR.nut[cvI(0,y)]=0;}
+ for(let y=CV_CORE_Y;y<CV_CORE_Y+2;y++)for(let x=CV_CORE_X;x<CV_CORE_X+2;x++){TR.g[cvI(x,y)]=2;TR.nut[cvI(x,y)]=0;}
+ for(let y=CV_CORE_Y-1;y<=CV_CORE_Y+2;y++)if(cvIn(CV_CORE_X-1,y)){TR.g[cvI(CV_CORE_X-1,y)]=1;TR.nut[cvI(CV_CORE_X-1,y)]=0;}
  cvWaveStart();
  cvPathHero();cvPathZ();
  $('md-train').classList.remove('on');
@@ -5009,6 +5068,7 @@ function trainStep(dt){
   dt=Math.min(.05,dt);
   TR.t+=dt;
   cvBgm(dt);
+  TR.camT=Math.max(0,TR.camT-dt);
   /* 🦴骸の回復 */
   TR.mana=Math.min(CV_MAX,TR.mana+(TR.phase==='nest'?CV_REG_B:CV_REG)*dt);
   /* 潮の満ち引き(侵攻中だけ。前半で満ちて後半で引く) */
@@ -5025,8 +5085,8 @@ function trainStep(dt){
   for(let i=0;i<TR.wet.length;i++)if(TR.wet[i]>0)TR.wet[i]-=dt;
   if(TR.dirty){cvPathHero();TR.dirty=false;}
   cvPathZ();
-  /* 湧き */
-  TR.sp=(TR.sp||0)+dt;
+  /* 部屋からの自然湧き */
+  TR.sp+=dt;
   if(TR.sp>=CV_SPAWN){TR.sp=0;cvSpawn();}
   /* フェーズ */
   TR.pt-=dt;
@@ -5043,6 +5103,7 @@ function trainStep(dt){
     else{cvWaveStart();TR.hs=[];}
    }
   }
+  cvCamFollow(dt);
   /* 粒 */
   for(const p of TR.ps){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=4*dt;}
   TR.ps=TR.ps.filter(p=>p.t<p.life);
@@ -5052,6 +5113,23 @@ function trainStep(dt){
  TR.msgT=Math.max(0,TR.msgT-dt);
  TR.shake=Math.max(0,TR.shake-dt);
  trainDraw();
+}
+/* 侵攻中は、いちばん奥まで来ている英雄をカメラが追う。
+   ⚠ミニマップを触った直後(CV_FOLLOW秒)はユーザーの見たい所を優先する */
+function cvCamFollow(dt){
+ if(!TR.geo||TR.camT>0)return;
+ let tx=null,ty=null;
+ if(TR.phase==='raid'){
+  let best=null;
+  for(const H of TR.hs){if(H.dead)continue;if(!best||H.cx>best.cx)best=H;}
+  if(best){tx=best.cx;ty=best.cy;}
+ }
+ if(tx==null)return;
+ const g=TR.geo;
+ const gx=clamp(tx-g.vw*.5,0,Math.max(0,CV_W-g.vw));
+ const gy=clamp(ty-g.vh*.5,0,Math.max(0,CV_H-g.vh));
+ const k=Math.min(1,dt*2.2);
+ TR.cam.x+=(gx-TR.cam.x)*k;TR.cam.y+=(gy-TR.cam.y)*k;
 }
 
 /* ---------------- BGM(手続き生成) ----------------
@@ -5089,9 +5167,12 @@ function cvBgm(dt){
 
 /* ---------------- 描画 ---------------- */
 function cvGeom(w,h){
- const top=34,bot=26;
- const cs=Math.min(w/CV_W,(h-top-bot)/CV_H);
- return {w,h,cs,ox:(w-cs*CV_W)*.5,oy:top+((h-top-bot)-cs*CV_H)*.5,top,bot};}
+ const top=34,bot=26,ph=h-top-bot;
+ const cs=CV_CS;
+ const vw=Math.min(CV_W,w/cs),vh=Math.min(CV_H,ph/cs);
+ const mw=Math.round(CV_W*CV_MINI),mh=Math.round(CV_H*CV_MINI);
+ return {w,h,cs,top,bot,ph,vw,vh,
+  mx:w-mw-8,my:h-bot-mh-6,mw,mh};}
 function trainDraw(){
  if(!TR||!trcv||!trx||!trcv.getBoundingClientRect)return;
  const r=trcv.getBoundingClientRect(),w=Math.max(240,Math.round(r.width)),h=Math.max(180,Math.round(r.height));
@@ -5101,75 +5182,85 @@ function trainDraw(){
  c.setTransform(dpr,0,0,dpr,0,0);
  const g=cvGeom(w,h);TR.geo=g;
  const CS=g.cs;
- const P=(cx,cy)=>[g.ox+cx*CS,g.oy+cy*CS];
- c.fillStyle='#15120e';c.fillRect(0,0,w,h);
+ TR.cam.x=clamp(TR.cam.x,0,Math.max(0,CV_W-g.vw));
+ TR.cam.y=clamp(TR.cam.y,0,Math.max(0,CV_H-g.vh));
+ const P=(cx,cy)=>[(cx-TR.cam.x)*CS,g.top+(cy-TR.cam.y)*CS];
+ c.fillStyle='#0d0b08';c.fillRect(0,0,w,h);
+ /* 盤面は上下のHUDへはみ出さないように切り取る */
+ c.save();c.beginPath();c.rect(0,g.top,w,g.ph);c.clip();
  const sk=TR.shake>0?(Math.random()-.5)*9*TR.shake:0;
- c.save();c.translate(sk,0);
+ c.translate(sk,0);
+ /* 映っているマスだけ描く */
+ const x0=Math.max(0,Math.floor(TR.cam.x)-1),x1=Math.min(CV_W-1,Math.ceil(TR.cam.x+g.vw)+1);
+ const y0=Math.max(0,Math.floor(TR.cam.y)-1),y1=Math.min(CV_H-1,Math.ceil(TR.cam.y+g.vh)+1);
  /* 地形。⚠土と空洞が見分けられないと遊べないので、
     ①空洞は真っ黒に塗る ②土は「削り出した岩」に見えるよう上と左に明るいベベルを付ける
-    ③掘れるマスは枠で囲まず、小さな点だけ置く(枠にすると盤面がタイルの海になって読めない) */
- c.fillStyle='#0d0b08';c.fillRect(g.ox,g.oy,CS*CV_W,CS*CV_H);
- for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
-  const t=TR.g[cvI(x,y)];if(t!==0)continue;
+    ③掘れるマスは枠で囲まず十字の印だけ置く(枠にすると盤面がタイルの海になって読めない)
+    ④養分は粒の数と明るさで見せる=どこを掘ればゾンビが出るかが一目で分かる */
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+  const i=cvI(x,y),t=TR.g[i];if(t!==0)continue;
   const p=P(x,y),hh=trHash(x*31.7+y*11.3);
-  c.fillStyle=y<3?'#5a4630':y<7?'#4e3d29':'#433322';
+  c.fillStyle=y<CV_H*.3?'#5a4630':y<CV_H*.68?'#4e3d29':'#433322';
   c.fillRect(p[0],p[1],CS+1,CS+1);
   c.fillStyle='rgba(0,0,0,'+(.10*hh).toFixed(3)+')';c.fillRect(p[0],p[1],CS+1,CS+1);
-  /* 空洞に面した側だけ角を立てる=掘った断面に見える */
   if(cvAt(x,y-1)>0){c.fillStyle='rgba(255,232,190,.16)';c.fillRect(p[0],p[1],CS+1,3);}
   if(cvAt(x-1,y)>0){c.fillStyle='rgba(255,232,190,.10)';c.fillRect(p[0],p[1],3,CS+1);}
   if(cvAt(x,y+1)>0){c.fillStyle='rgba(0,0,0,.38)';c.fillRect(p[0],p[1]+CS-3,CS+1,4);}
   if(cvAt(x+1,y)>0){c.fillStyle='rgba(0,0,0,.28)';c.fillRect(p[0]+CS-3,p[1],4,CS+1);}
-  /* 岩肌の粒 */
   if(hh>.84){c.fillStyle='rgba(0,0,0,.24)';c.fillRect(p[0]+CS*(.2+hh*.4),p[1]+CS*(.25+hh*.4),3,3);}
-  /* 掘れる印。⚠丸だと岩肌の粒と見分けがつかないので十字にしてある */
+  /* 養分の鉱脈 */
+  /* ⚠養分は「粒の数と明るさ」だけで見せる。大きな半透明の円を敷くと盤面が緑まみれになって
+       土と空洞の区別がつかなくなる(実際になった)。光らせるのは格4だけ */
+  const nu=TR.nut[i];
+  if(nu>0){
+   const gl=.34+.15*nu+.08*Math.sin(TR.t*2.4+x*.9+y*1.3);
+   c.fillStyle='rgba('+(110+nu*22)+','+(160+nu*16)+',60,'+gl.toFixed(3)+')';
+   for(let k=0;k<nu;k++){const a=k*1.9+hh*6;
+    c.beginPath();c.arc(p[0]+CS*(.5+Math.cos(a)*.24),p[1]+CS*(.5+Math.sin(a)*.24),1.1+nu*.22,0,7);c.fill();}
+   if(nu>=4){c.fillStyle='rgba(183,224,122,.14)';
+    c.beginPath();c.arc(p[0]+CS*.5,p[1]+CS*.5,CS*.22,0,7);c.fill();}
+  }
   if(cvCanDig(x,y)&&TR.mana>=CV_DIG){
-   const mx2=p[0]+CS*.5,my2=p[1]+CS*.5,q2=CS*.16;
-   c.strokeStyle='rgba(255,210,61,'+(.42+.26*Math.sin(TR.t*4+x*.7+y)).toFixed(3)+')';c.lineWidth=2;
+   const mx2=p[0]+CS*.5,my2=p[1]+CS*.5,q2=CS*.15;
+   c.strokeStyle='rgba(255,210,61,'+(.40+.24*Math.sin(TR.t*4+x*.7+y)).toFixed(3)+')';c.lineWidth=2;
    c.beginPath();c.moveTo(mx2-q2,my2);c.lineTo(mx2+q2,my2);c.moveTo(mx2,my2-q2);c.lineTo(mx2,my2+q2);c.stroke();}
  }
  /* 潮が引いた跡=しばらく湧きが倍になるマス */
- for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
   if(TR.g[cvI(x,y)]!==1||TR.wet[cvI(x,y)]<=0)continue;
   const p=P(x,y);c.fillStyle='rgba(74,217,208,.14)';c.fillRect(p[0],p[1],CS+1,CS+1);}
  /* マザーゾンビ(守る対象)。膨れた腹から仔を産み続ける個体。
-    ⚠2×2マス(実寸66px程度)しか無いので細部は描かず、
-      「巣穴・触手・腹・痩せた上半身・頭」の5つだけで形を作る。66pxを基準に描いて後で縮める。
-      HPが減ると体に傷が増え、目の色が黄→赤に変わる(数字はHUDのバーで見せる) */
- {const p=P(CV_CORE_X,CV_CORE_Y),S=CS*2;
+    ⚠2×2マス(60px)しか無いので細部は描かず「巣穴・触手・腹・痩せた上半身・頭」の5つだけで形を作る。
+      66pxを基準に描いてから縮める。HPが減ると傷が増え、目が黄→赤に変わる */
+ if(CV_CORE_X+1>=x0&&CV_CORE_X<=x1+1&&CV_CORE_Y+1>=y0&&CV_CORE_Y<=y1+1){
+  const p=P(CV_CORE_X,CV_CORE_Y),S=CS*2;
   const pu=.5+.5*Math.sin(TR.t*2.2),lo=clamp(TR.core/TR.coreMax,0,1);
   c.save();c.translate(p[0]+S*.5,p[1]+S*.5);c.scale(S/66,S/66);
   c.lineWidth=2.6;c.strokeStyle=INK;
   c.fillStyle='#241014';c.beginPath();c.ellipse(0,2,32,31,0,0,7);c.fill();
-  /* 壁へ食い込む触手 */
   c.strokeStyle='rgba(122,60,50,.9)';c.lineWidth=3.4;
   for(let k=0;k<7;k++){const a=k*.9+TR.t*.25;
    c.beginPath();c.moveTo(0,4);
    c.quadraticCurveTo(Math.cos(a)*16,4+Math.sin(a)*14,Math.cos(a)*31,4+Math.sin(a)*29);c.stroke();}
   c.lineWidth=2.6;c.strokeStyle=INK;
-  /* 腹(卵嚢)。脈打って膨らむ */
   const rb=17+1.6*pu;
   c.fillStyle='#8a4a52';c.beginPath();c.ellipse(0,6,rb+2,rb,0,0,7);c.fill();c.stroke();
   c.fillStyle='rgba(255,138,106,'+(.24+.2*pu).toFixed(3)+')';
   c.beginPath();c.ellipse(-3,4,rb*.5,rb*.45,0,0,7);c.fill();
-  /* 腹の中で動く仔 */
   c.fillStyle='#c96a5a';
   for(let k=0;k<5;k++){const a=k*1.25+TR.t*.6;
    c.beginPath();c.arc(Math.cos(a)*8,6+Math.sin(a)*6,2.6,0,7);c.fill();}
-  /* 痩せた上半身と腕 */
   c.fillStyle='#a5636a';
   c.beginPath();c.moveTo(-7,-6);c.lineTo(7,-6);c.lineTo(5,-19);c.lineTo(-5,-19);c.closePath();c.fill();c.stroke();
   c.strokeStyle='#a5636a';c.lineWidth=4.5;
   c.beginPath();c.moveTo(-6,-16);c.quadraticCurveTo(-19,-12+pu*2,-22,1);c.stroke();
   c.beginPath();c.moveTo(6,-16);c.quadraticCurveTo(19,-12+pu*2,22,1);c.stroke();
   c.lineWidth=2.6;c.strokeStyle=INK;
-  /* 頭 */
   c.fillStyle='#c9a08a';c.beginPath();c.ellipse(0,-24,8,9,0,0,7);c.fill();c.stroke();
   c.fillStyle=lo<.34?'#ff6a4a':'#ffd23d';
   c.beginPath();c.arc(-3.4,-25,2.1,0,7);c.fill();
   c.beginPath();c.arc(3.4,-25,2.1,0,7);c.fill();
   c.fillStyle='#3a1a20';c.beginPath();c.ellipse(0,-18.5,4.5,2.6,0,0,7);c.fill();
-  /* 傷: HPが減るほど増える */
   c.strokeStyle='rgba(28,14,12,.8)';c.lineWidth=2.2;
   const nc=Math.round((1-lo)*5);
   for(let k=0;k<nc;k++){const a=k*1.6+.4;
@@ -5178,19 +5269,21 @@ function trainDraw(){
   c.restore();}
  /* 死潮 */
  if(TR.tw>0){
-  const wy=g.oy+(CV_H-TR.tw)*CS;
-  c.fillStyle='rgba(42,120,132,.55)';c.fillRect(g.ox,wy,CS*CV_W,g.oy+CS*CV_H-wy);
+  const wy=g.top+(CV_H-TR.tw-TR.cam.y)*CS;
+  c.fillStyle='rgba(42,120,132,.55)';c.fillRect(0,wy,w,g.top+g.ph-wy);
   c.strokeStyle='rgba(159,220,245,.8)';c.lineWidth=2;
   c.beginPath();
-  for(let i=0;i<=CV_W*2;i++){const xx=g.ox+i*CS*.5,yy=wy+Math.sin(TR.t*2.4+i*.7)*2.5;
+  for(let i=0;i<=w/12;i++){const xx=i*12,yy=wy+Math.sin(TR.t*2.4+i*.5)*2.5;
    if(i)c.lineTo(xx,yy);else c.moveTo(xx,yy);}
   c.stroke();}
  /* ゾンビ */
  for(const z of TR.zs){
   const cx=z.cx+(z.tx-z.cx)*z.p,cy=z.cy+(z.ty-z.cy)*z.p;
+  if(cx<TR.cam.x-2||cx>TR.cam.x+g.vw+2||cy<TR.cam.y-2||cy>TR.cam.y+g.vh+2)continue;
   const p=P(cx+.5,cy+.9);
   c.save();c.translate(p[0],p[1]);
   if(z.dead)c.globalAlpha=Math.max(0,1-(z.dt||0)/.4);
+  if(z.born>0){const k=z.born/.5;c.globalAlpha=(z.dead?c.globalAlpha:1)*(1-k*.5);}
   if(z.inf){
    const s2=(CS*.60)/(50*1.24);c.scale(s2,s2);
    try{drawUnit(c,z.ui,0,0,1,z.t,0,{});}catch(e){}
@@ -5199,7 +5292,6 @@ function trainDraw(){
    try{drawZombie(c,z.zi,0,0,-1,z.t,0,{hitT:z.hitT});}catch(e){}
   }
   c.restore();
-  /* HPの細い帯 */
   if(!z.dead&&z.hp<z.mhp){const q=P(cx,cy);
    c.fillStyle='rgba(0,0,0,.5)';c.fillRect(q[0]+3,q[1]+2,CS-6,3);
    c.fillStyle='#7ba33f';c.fillRect(q[0]+3,q[1]+2,(CS-6)*clamp(z.hp/z.mhp,0,1),3);}
@@ -5210,6 +5302,7 @@ function trainDraw(){
  for(const H of TR.hs){
   if(H.dead)continue;
   const cx=H.cx+(H.tx-H.cx)*(H.st==='move'?H.p:0),cy=H.cy+(H.ty-H.cy)*(H.st==='move'?H.p:0);
+  if(cx<TR.cam.x-2||cx>TR.cam.x+g.vw+2||cy<TR.cam.y-2||cy>TR.cam.y+g.vh+2)continue;
   const p=P(cx+.5,cy+.95);
   c.save();c.translate(p[0],p[1]);
   if(H.hitT>0&&Math.floor(TR.t*22)%2===0)c.globalAlpha=.5;
@@ -5217,12 +5310,10 @@ function trainDraw(){
   const s2=(CS*.78)/(50*1.24);c.scale(s2,s2);
   try{drawUnit(c,H.ui,0,0,-1,H.t,0,{});}catch(e){}
   c.restore();
-  /* 掘っている最中は的の位置に×を出す */
   if(H.st==='dig'){const q=P(H.tx+.5,H.ty+.5);
    c.strokeStyle='rgba(255,210,61,'+(.4+.4*Math.sin(TR.t*14))+')';c.lineWidth=2.5;
    c.beginPath();c.moveTo(q[0]-CS*.24,q[1]-CS*.24);c.lineTo(q[0]+CS*.24,q[1]+CS*.24);
    c.moveTo(q[0]+CS*.24,q[1]-CS*.24);c.lineTo(q[0]-CS*.24,q[1]+CS*.24);c.stroke();}
-  /* 名前・HP・必殺チャージ */
   /* ⚠英雄の絵はマスより背が高いので、名前と帯はマスの上端よりさらに上へ出す */
   const q=P(cx,cy),ty=q[1]-CS*.30;
   c.fillStyle='rgba(0,0,0,.6)';c.fillRect(q[0]-6,ty-11,CS+12,11);
@@ -5239,7 +5330,7 @@ function trainDraw(){
    c.strokeStyle=f.c;c.globalAlpha=a;c.lineWidth=3;
    c.beginPath();c.arc(p[0],p[1],CS*f.r*(.4+f.t*1.6),0,7);c.stroke();c.globalAlpha=1;}
   else if(f.k==='line'){const p=P(0,f.y);
-   c.fillStyle=f.c;c.globalAlpha=a*.5;c.fillRect(g.ox,p[1]-CS*.3,CS*CV_W,CS*.6);c.globalAlpha=1;}
+   c.fillStyle=f.c;c.globalAlpha=a*.5;c.fillRect(0,p[1]-CS*.3,w,CS*.6);c.globalAlpha=1;}
   else if(f.k==='flash'){c.fillStyle=f.c;c.globalAlpha=a*.28;c.fillRect(0,0,w,h);c.globalAlpha=1;}
  }
  /* 粒 */
@@ -5247,8 +5338,30 @@ function trainDraw(){
   c.fillStyle=p2.c;c.globalAlpha=Math.max(0,1-p2.t/p2.life);
   c.fillRect(p[0]-1.5,p[1]-1.5,3,3);c.globalAlpha=1;}
  c.restore();
+ cvMini(c,g);
  cvHud(c,w,h,g);
  if(TR.done&&TR.res)cvResult(c,w,h);
+}
+/* 全体を見るためのミニマップ。⚠盤面が画面の4倍あるので、これが無いとどこを掘っているか分からない */
+function cvMini(c,g){
+ const s=CV_MINI;
+ c.fillStyle='rgba(12,9,7,.86)';c.fillRect(g.mx-3,g.my-3,g.mw+6,g.mh+6);
+ c.strokeStyle='rgba(242,236,220,.5)';c.lineWidth=1.5;c.strokeRect(g.mx-3,g.my-3,g.mw+6,g.mh+6);
+ for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
+  const i=cvI(x,y),t=TR.g[i];
+  if(t===1){c.fillStyle=cvWater(y)?'#2a7884':'#181410';}
+  else if(t===2){c.fillStyle='#C1502E';}
+  else{const nu=TR.nut[i];c.fillStyle=nu>=3?'#7ba33f':nu>=1?'#4f5730':'#4a3a28';}
+  c.fillRect(g.mx+x*s,g.my+y*s,s+.5,s+.5);}
+ /* マザーゾンビは1マスだと見えないので、はっきり大きく出す */
+ c.fillStyle='#ff6a4a';c.fillRect(g.mx+CV_CORE_X*s-1,g.my+CV_CORE_Y*s-1,s*2+2,s*2+2);
+ c.fillStyle='#9fdcf5';
+ for(const z of TR.zs)if(!z.dead)c.fillRect(g.mx+z.cx*s-.5,g.my+z.cy*s-.5,s+1,s+1);
+ c.fillStyle='#ffd23d';
+ for(const H of TR.hs)if(!H.dead)c.fillRect(g.mx+H.cx*s-1,g.my+H.cy*s-1,s+2,s+2);
+ /* いま映っている範囲 */
+ c.strokeStyle='#F2ECDC';c.lineWidth=1.5;
+ c.strokeRect(g.mx+TR.cam.x*s,g.my+TR.cam.y*s,g.vw*s,g.vh*s);
 }
 function cvHud(c,w,h,g){
  c.textAlign='left';c.textBaseline='alphabetic';
@@ -5256,40 +5369,35 @@ function cvHud(c,w,h,g){
  const D=TR_DIF[TR.dif];
  c.fillStyle='#F2ECDC';c.font='900 13px sans-serif';
  c.fillText('第'+TR.wave+'/'+D.w+'波',8,20);
- /* マザーゾンビのHP */
  const bx=78,bw=Math.min(150,w*.2);
  c.fillStyle='rgba(0,0,0,.6)';c.fillRect(bx,9,bw,12);
  c.fillStyle='#C1502E';c.fillRect(bx,9,bw*clamp(TR.core/TR.coreMax,0,1),12);
  c.strokeStyle='#F2ECDC';c.lineWidth=1.5;c.strokeRect(bx,9,bw,12);
  c.fillStyle='#F2ECDC';c.font='900 10px sans-serif';
  c.fillText('マザー '+Math.max(0,Math.round(TR.core)),bx+4,19);
- /* 🦴骸 */
  const mx=bx+bw+10;
  c.fillStyle='rgba(0,0,0,.6)';c.fillRect(mx,9,90,12);
  c.fillStyle='#c9a13d';c.fillRect(mx,9,90*clamp(TR.mana/CV_MAX,0,1),12);
  c.strokeStyle='#F2ECDC';c.strokeRect(mx,9,90,12);
- c.fillStyle=TR.mana>=CV_DIG?'#241f19':'#F2ECDC';c.font='900 10px sans-serif';
+ c.fillStyle=TR.mana>=CV_MAX*.5?'#241f19':'#F2ECDC';c.font='900 10px sans-serif';
  c.fillText('🦴 '+Math.floor(TR.mana),mx+4,19);
- /* フェーズと残り時間 */
  c.textAlign='right';c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';
  const ph=TR.phase==='nest'?'巣作り':'侵攻';
  c.fillText(ph+' '+Math.max(0,Math.ceil(TR.pt))+'秒',w-96,19);
- /* 下の帯: 潮位の予報 / 次に来る面子 */
+ /* 下の帯 */
  c.textAlign='left';
  c.fillStyle='rgba(20,16,12,.8)';c.fillRect(0,h-24,w,24);
  c.fillStyle='#9fdcf5';c.font='900 11px sans-serif';
- c.fillText('🌊 この波の潮位 '+(TR.twMax>0?('▲'+TR.twMax.toFixed(1)+'段'):'なし'),8,h-8);
+ c.fillText('🌊 '+(TR.twMax>0?('この波の潮位 ▲'+TR.twMax.toFixed(1)+'段'):'この波は潮が来ない'),8,h-8);
  if(TR.phase==='nest'&&TR.next){
   c.fillStyle='#ffd23d';
-  c.fillText('つぎに来る: '+TR.next.map(x=>x.n+(x.own?'(訓練)':'')).join(' / '),190,h-8);}
+  c.fillText('つぎに来る: '+TR.next.map(x=>x.n+(x.own?'(訓練)':'')).join(' / '),210,h-8);}
  else{c.fillStyle='#c9c4b4';
-  c.fillText('ゾンビ '+TR.zs.filter(z=>!z.dead).length+'／'+CV_ZMAX+'　🦠感染 '+TR.inf.length,190,h-8);}
- /* 真ん中のお知らせ */
+  c.fillText('ゾンビ '+TR.zs.filter(z=>!z.dead).length+'／'+CV_ZMAX+'　🦠感染 '+TR.inf.length,210,h-8);}
  if(TR.msgT>0&&TR.msg){
   c.textAlign='center';c.globalAlpha=clamp(TR.msgT/.8,0,1);
   c.fillStyle='#ffd23d';c.font='900 20px sans-serif';
-  c.fillText(TR.msg,w*.5,44);c.globalAlpha=1;}
- /* 必殺技の名前 */
+  c.fillText(TR.msg,w*.5,52);c.globalAlpha=1;}
  for(const H of (TR.hs||[]))if(H.ultT>0){
   c.textAlign='center';c.globalAlpha=clamp(H.ultT/.6,0,1);
   c.fillStyle=H.c;c.font='900 22px sans-serif';
@@ -5315,27 +5423,58 @@ function cvResult(c,w,h){
  c.fillText('画面をタップして鍛錬所へもどる',w*.5,h*.84);
 }
 
-/* ---------------- 入力(タップで掘るだけ) ---------------- */
-function trTap(cx,cy){
- if(!TR||TR.done||!TR.geo)return;
- const g=TR.geo;
- const x=Math.floor((cx-g.ox)/g.cs),y=Math.floor((cy-g.oy)/g.cs);
- if(!cvIn(x,y))return;
+/* ---------------- 入力 ----------------
+   盤面をなぞる=掘る(1マスずつタップさせると数が多すぎて手が回らない)
+   ミニマップをなぞる=見る場所を移す */
+let trDrag=null;/* 'dig' | 'cam' */
+function trCell(cx,cy){
+ const g=TR.geo;if(!g)return null;
+ const x=Math.floor(cx/g.cs+TR.cam.x),y=Math.floor((cy-g.top)/g.cs+TR.cam.y);
+ return cvIn(x,y)?[x,y]:null;}
+function trDig(cx,cy){
+ const p=trCell(cx,cy);if(!p)return;
+ const x=p[0],y=p[1];
+ if(cvAt(x,y)!==0)return;
  if(cvWater(y)){TR.msg='水没していて掘れない';TR.msgT=1;return;}
- if(!cvCanDig(x,y)){
-  if(cvAt(x,y)===0){TR.msg='空洞に接した所しか掘れない';TR.msgT=1;}
-  return;}
- if(TR.mana<CV_DIG){TR.msg='🦴骸が足りない';TR.msgT=1;sfx.warn&&sfx.warn();return;}
- cvDigAt(x,y);
+ if(!cvCanDig(x,y)){TR.msg='空洞に接した所しか掘れない';TR.msgT=1;return;}
+ if(TR.mana<CV_DIG){TR.msg='🦴骸が足りない';TR.msgT=1;return;}
+ if(!cvDigAt(x,y))return;
  beep(220,120,.05,'square',.05);
+ /* ⚠盤面は画面の4倍あるので、端で掘ったらその方向へ少し画面を送る。
+      これが無いと、なぞって掘り進めた先が画面の外に出て掘れなくなる */
+ const g=TR.geo;if(!g)return;
+ if(x<TR.cam.x+2)TR.cam.x=Math.max(0,TR.cam.x-1.2);
+ else if(x>TR.cam.x+g.vw-3)TR.cam.x=Math.min(Math.max(0,CV_W-g.vw),TR.cam.x+1.2);
+ if(y<TR.cam.y+2)TR.cam.y=Math.max(0,TR.cam.y-1.2);
+ else if(y>TR.cam.y+g.vh-3)TR.cam.y=Math.min(Math.max(0,CV_H-g.vh),TR.cam.y+1.2);
+ TR.camT=CV_FOLLOW;
 }
+function trCam(cx,cy){
+ const g=TR.geo;if(!g)return;
+ TR.cam.x=clamp((cx-g.mx)/CV_MINI-g.vw*.5,0,Math.max(0,CV_W-g.vw));
+ TR.cam.y=clamp((cy-g.my)/CV_MINI-g.vh*.5,0,Math.max(0,CV_H-g.vh));
+ TR.camT=CV_FOLLOW;
+}
+function trInMini(cx,cy){
+ const g=TR.geo;if(!g)return false;
+ return cx>=g.mx-6&&cx<=g.mx+g.mw+6&&cy>=g.my-6&&cy<=g.my+g.mh+6;}
 if(trcv&&trcv.addEventListener){
+ const rel=e=>{const r=trcv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
  trcv.addEventListener('pointerdown',e=>{
   if(!TR)return;
   if(TR.done){trainBack();return;}
-  const r=trcv.getBoundingClientRect();
-  trTap(e.clientX-r.left,e.clientY-r.top);
+  const p=rel(e);
+  if(trInMini(p[0],p[1])){trDrag='cam';trCam(p[0],p[1]);}
+  else{trDrag='dig';trDig(p[0],p[1]);}
+  try{trcv.setPointerCapture&&trcv.setPointerCapture(e.pointerId);}catch(x){}
  });
+ trcv.addEventListener('pointermove',e=>{
+  if(!TR||TR.done||!trDrag)return;
+  const p=rel(e);
+  if(trDrag==='cam')trCam(p[0],p[1]);else trDig(p[0],p[1]);
+ });
+ trcv.addEventListener('pointerup',()=>{trDrag=null;});
+ trcv.addEventListener('pointercancel',()=>{trDrag=null;});
 }
 $('bt-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
 $('bt-train-close').onclick=()=>$('md-train').classList.remove('on');
