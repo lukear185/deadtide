@@ -239,6 +239,8 @@ node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させ�
 node test_shot.js out.png 852 393 train          # 🏋鍛錬所のリズム訓練を撮る(trainres=結果画面)
 node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=line 記録は lab=rec
 node test_shot.js out.png 852 393 load           # 🎖編成(load=am で弾薬タブ) / trhome=🏋鍛錬所 / gacha=💎召集
+node tool_slice.js ui_src/sheet-a.png --list     # 1枚のシート画像からアイコンを自動で切り出す(まず数と並びを確認)
+node tool_slice.js ui_src/sheet-a.png ic-scrap,ic-up,ic-res,ic-gem,ic-mat   # 名前を付けて書き出す
 ```
 合格基準: 試合が over=true / シェア合計100±2 / FAILが出ない。
 ※ ヘッドレスはDOM/Canvasをスタブしているため見た目は検証できない。**見た目は`test_shot.js`で撮って目視**し、最終確認は永井さんが実機で行う(画面下部に赤いエラー帯が出る仕組みあり=window.onerror)。
