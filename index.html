@@ -1155,7 +1155,7 @@ const TOWERS=[
     ⚠growは指数なので上限が無いと⚡連鎖数Lv5+研究所で青天井になる。必ずgmaxで頭を止めること */
  {id:'coil',n:'重テスラ',cost:700,rng:250,dmg:15,rate:1.1,type:'elec',chain:7,arcT:.1,grow:1.45,gmax:5,c:'#4fa8d9',dsc:'電流がゆっくり伝わり、跳ねるたびに威力が跳ね上がる(最大5倍)'},
  /* beam=ビームの半幅。type は bullet のまま(弾薬と🔫銃器改良を効かせるため)、撃ち方だけ線状にする */
- {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。線上の敵を全部貫く(装甲貫通)'},
+ {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。一番多く貫ける向きを自動で狙い、線上の敵を全部貫く(装甲貫通)'},
  /* ↓重テスラ(1つ上)より後に解放される4種は、必ず重テスラより強くなるよう数値を置く(2026-07-25ユーザー指示)。
     目安は「実戦DPS=届く敵の数ぶん」: 重テスラ92 < レールガン174 < ガトリング225 < プラズマ307 < 要塞砲482 */
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:36,rate:.09,type:'bullet',c:'#b0483a',dsc:'単体をひたすら削る弾幕。射程は短い'},
@@ -2081,6 +2081,15 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.strokeStyle='#8a8f96';c.lineWidth=3/s;c.beginPath();c.moveTo(-14,-20);c.lineTo(-22,-4);c.stroke();c.beginPath();c.arc(-23,-2,3,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=2.6/s;}
  c.restore();
 }
+/* ⭐ドローン基地の2機は**常に浮いていて、ゆっくり漂う**(2026-07-26 第68弾ユーザー指示)。
+   ⚠**状態を持たせない**=時刻と枠番号だけで位置が決まる。こうしておくと
+     ①描画と発射で必ず同じ場所になる ②スナップショットに載らない対戦の相手盤面でも同じに見える。
+   返すのは塔の中心からのずれ(px)。 */
+function droneOff(k,si,tt){
+ const ph=(si||0)*1.31+k*3.14159;
+ return [Math.cos(tt*.62+ph)*26+Math.sin(tt*1.13+ph)*7,
+         -34+Math.sin(tt*.83+ph)*11+Math.cos(tt*1.7+ph)*3];
+}
 function drawTower(c,ti,lv,x,y,ang,t,o){
  o=o||{};const T=TOWERS[ti],tid=T.id;
  c.save();c.translate(x,y);
@@ -2137,11 +2146,21 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  else if(tid==='sonic'){c.save();c.rotate(ang);c.fillStyle='#6b5f8a';c.beginPath();c.moveTo(2,-6);c.lineTo(26,-16);c.lineTo(26,16);c.lineTo(2,6);c.closePath();c.fill();c.stroke();
   if(o.fire){c.strokeStyle='rgba(200,180,240,.8)';c.lineWidth=2.4;for(let k=1;k<=3;k++){c.beginPath();c.arc(26,0,k*10,-.7,.7);c.stroke();}c.strokeStyle=INK;c.lineWidth=3;}
   c.restore();}
- else if(tid==='drone'){c.fillStyle='#3f4a54';rr(c,-14,-12,28,22,5);c.fill();c.stroke();
-  const dy=-26+Math.sin(t*3)*4;
-  c.save();c.translate(0,dy);c.fillStyle='#5f8fa3';rr(c,-7,-4,14,8,3);c.fill();c.stroke();
-  c.strokeStyle='rgba(220,230,240,.8)';c.lineWidth=2;
-  c.beginPath();c.moveTo(-12,-4);c.lineTo(-4,-4);c.moveTo(4,-4);c.lineTo(12,-4);c.stroke();c.strokeStyle=INK;c.lineWidth=3;c.restore();}
+ else if(tid==='drone'){/* 発着台 */
+  c.fillStyle='#3f4a54';rr(c,-14,-12,28,22,5);c.fill();c.stroke();
+  c.fillStyle='#2f3a44';c.beginPath();c.arc(0,-1,6,0,7);c.fill();
+  /* ⭐2機が常に浮いていて漂っている。撃つ時はこの位置から小粒の弾が出る */
+  for(let k=0;k<2;k++){const dp=droneOff(k,o.si,t);
+   c.save();c.translate(dp[0],dp[1]);c.lineWidth=2;
+   c.fillStyle='#5f8fa3';rr(c,-7,-3.5,14,8,3);c.fill();c.stroke();
+   c.fillStyle='#3f4a54';rr(c,-9.5,-5.5,4.5,2.6,1.2);c.fill();rr(c,5,-5.5,4.5,2.6,1.2);c.fill();
+   c.strokeStyle='rgba(226,236,244,.85)';c.lineWidth=2;
+   for(const ox of [-7.5,7.5]){const w9=5.5+Math.abs(Math.sin(t*40+k))*1.8;
+    c.beginPath();c.ellipse(ox,-6,w9,1.6,0,0,7);c.stroke();}
+   c.fillStyle=(Math.sin(t*6+k*3)>0)?'#ff5a4a':'#3c4136';
+   c.beginPath();c.arc(0,4,1.8,0,7);c.fill();
+   c.restore();}
+  c.strokeStyle=INK;c.lineWidth=3;}
  else if(tid==='arty'){c.save();c.rotate(ang);c.fillStyle='#4c5240';rr(c,-8,-11,44,22,7);c.fill();c.stroke();
   c.fillStyle='#3c4136';rr(c,30,-7,10,14,3);c.fill();c.stroke();
   if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(44,0,9,0,7);c.fill();}c.restore();
@@ -2683,7 +2702,7 @@ function awardWavePts(C,quit){
 /* エフェクトの持ち時間。⚠ここと描画側の割り算を必ず揃えること(ずれると途中で消える/残る) */
 const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slash:.26,shock:.5,
  toss:.3,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
- beam:.3,drn:.62,spread:.22,wave:.5,pboom:.55};
+ beam:.3,pel:.16,spread:.22,wave:.5,pboom:.55};
 /* ⚠寿命が1つずつ違う演出は ex に `lf` を持たせる(投擲=飛ぶ距離で / 死体=大きさで変わる)。
    `d0` は「その秒数だけ待ってから始まる」=絨毯爆撃の時間差に使う */
 const fxLife=(k,e)=>(e&&e.lf!=null)?e.lf:(FX_LIFE[k]!==undefined?FX_LIFE[k]:.5);
@@ -3193,6 +3212,27 @@ function campStep(C,dt,wave){
    if(T.minr&&ds<T.minr*T.minr)continue;
    const score=T.prio?z.hp:z.d;if(score>best){best=score;tg=z;}}
   if(tg)tw.ang=Math.atan2(tg.py-sy,tg.px-sx);
+  /* ⭐ビーム砲(レールガン)は**線上に一番多く乗る向き**へ狙いを付ける(2026-07-26ユーザー指示)。
+     ⚠貫通するので、狙うべきは「敵1体」ではなく**並びの向き**。同数なら合計HPが多い並びを選ぶ。
+     ⚠候補×敵の総当たりなので毎フレームやると重い。0.1秒ごと(と撃つ直前)だけ引き直す */
+  if(T.beam&&tg){
+   tw.aimT=(tw.aimT||0)-dt;
+   if(tw.aimT<=0||tw.cd<=0){
+    tw.aimT=.1;
+    const bw=T.beam*(1+.06*tw.us.g),cand=[];
+    for(const z of C.zombies){if(z.dead||z.d<0)continue;
+     const dx=z.px-sx,dy=z.py-sy;if(dx*dx+dy*dy<=r2)cand.push(z);}
+    /* 向きの候補は多くても24本(コアに近い順=止めたい順に選ぶ) */
+    const dirs=cand.slice().sort((a,b)=>b.d-a.d).slice(0,24);
+    let bn=-1,bhp=-1,ba=tw.ang;
+    for(const z of dirs){
+     const a=Math.atan2(z.py-sy,z.px-sx),ex=sx+Math.cos(a)*rng,ey=sy+Math.sin(a)*rng;
+     let n=0,hp=0;
+     for(const z2 of cand)if(segDist(z2.px,z2.py,sx,sy,ex,ey)<=bw){n++;hp+=z2.hp;}
+     if(n>bn||(n===bn&&hp>bhp)){bn=n;bhp=hp;ba=a;}}
+    tw.aim=ba;}
+   if(tw.aim!=null)tw.ang=tw.aim;
+  }
   /* ⭐レールガンは撃つ前に「きゅいーん」と充填する。⚠溜まり具合(tw.chg)は絵と音のためだけの値 */
   if(T.id==='rail'){
    const cw=Math.min(RAIL_CHG,T.rate*twRateM(tw)*.6);
@@ -3279,8 +3319,9 @@ function campStep(C,dt,wave){
    const splash=(z0)=>{if(!AMO.aoe)return;
     for(const z2 of C.zombies){if(z2.dead||z2===z0)continue;if(dist(z2.px,z2.py,z0.px,z0.py)<=AMO.aoe)dmgZ(C,z2,dm*.45,1);}
     addFx(C,'ring',z0.px,z0.py,'',{r:AMO.aoe,col:'#b282ff'});};
-   if(T.beam){/* ビーム砲: 狙った敵の方向へ射程いっぱいまで貫通ビームを撃ち、線上の敵を全部巻き込む */
-    const ang=Math.atan2(tg.py-sy,tg.px-sx),ex=sx+Math.cos(ang)*rng,ey=sy+Math.sin(ang)*rng;
+   if(T.beam){/* ビーム砲: 射程いっぱいまで貫通ビームを撃ち、線上の敵を全部巻き込む。
+     ⚠向き(tw.ang)は上で「一番多く貫ける並び」を選んである */
+    const ang=tw.ang,ex=sx+Math.cos(ang)*rng,ey=sy+Math.sin(ang)*rng;
     const bw=T.beam*(1+.06*tw.us.g);/* 📡射程を上げるとビームも太くなる */
     let cnt=0;
     for(const z of C.zombies){if(z.dead||z.d<0)continue;
@@ -3304,9 +3345,12 @@ function campStep(C,dt,wave){
     const kd=T.id==='drone'?'drone':T.id==='fort'?'fort':T.id==='sonic'?'sonic':T.id==='shot'?'shot':'';
     for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];splash(nx);dmgZ(C,nx,dm,prc);
      if(kd==='drone'&&FXLV>0){
-      /* 機体が飛んでいって撃つ。⚠ダメージは投げた瞬間に済んでいて、遅らせているのは絵だけ */
-      addFx(C,'drn',sx,sy-16,'',{x2:nx.px,y2:nx.py-24,lf:.62,sd:rnd(0,9),col:trC});
-      later(C,.3,()=>{hitFx(C,nx,tw.ang,hitC,prc,T.type);});
+      /* ⭐**浮いている2機がそれぞれ小粒の弾を撃つ**(2026-07-26ユーザー指示)。
+         ⚠ダメージは撃った瞬間に済んでいて、遅らせているのは着弾の絵だけ */
+      const dp=droneOff(k2%2,si,TT),bx=sx+dp[0],by=sy+dp[1];
+      addFx(C,'pel',bx,by,'',{x2:nx.px,y2:nx.py-20,lf:.16,col:trC});
+      addP(C,2,bx,by,{sp:70,a:Math.atan2((nx.py-20)-by,nx.px-bx),spread:.35,g:60,life:.1,r:1.4,col:'#fff3c0'});
+      later(C,.16,()=>{hitFx(C,nx,tw.ang,hitC,prc,T.type);});
      }else if(kd==='fort'){
       /* 極太の貫通弾。⚠細い曳光線だと「最終兵器」に見えない */
       addFx(C,'beam',sx,sy,'',{x2:nx.px,y2:nx.py-14,col:'rgba(255,226,150,',col2:'rgba(255,246,214,',w:9,lf:.34});
@@ -3835,7 +3879,7 @@ function renderCamp(C,t){
    c.font='900 26px sans-serif';c.textAlign='center';c.fillText('🔒',sx,sy+10);}
   else if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
    c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(sup?'🏗':eco?'🏭':'+',sx,sy+12);}
-  else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0});
+  else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
   }
   /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
   if(EDIT){const bad=edBad(si);
@@ -4144,33 +4188,14 @@ function renderCamp(C,t){
      c.quadraticCurveTo(bx+w8*pass[0]*1.3,by-h8*pass[0]*.6,bx+w8*pass[0],by);
      c.closePath();c.fill();}}
    c.globalAlpha=1;c.restore();}
-  else if(e.k==='drn'){/* ⭐ドローン基地: 機体が飛び出して敵を撃って戻る(2026-07-26 第66弾)。
-    ⚠今までは塔から曳光線が出るだけで、ライフル櫓と見分けが付かなかった */
-   const lfD=fxLife('drn',e),k8=clamp(e.t/lfD,0,1),sd=e.sd||0;
-   /* 0〜45%=行き / 45〜72%=その場で撃つ / 72〜100%=帰り */
-   const f8=k8<.45?(k8/.45):k8<.72?1:1-(k8-.72)/.28;
-   const ez=q=>q<0?0:q>1?1:q*q*(3-2*q);/* 出だしと終わりを滑らかに */
-   const g8=ez(f8);
-   const dx=e.x+(e.x2-e.x)*g8,dy=e.y+(e.y2-e.y)*g8-Math.sin(Math.PI*g8)*34+Math.sin(sd+e.t*17)*2.5;
-   c.save();c.translate(dx,dy);
-   if((e.x2-e.x)<0)c.scale(-1,1);
-   c.lineWidth=2;c.strokeStyle=INK;
-   /* 機体 */
-   c.fillStyle='#5f8fa3';rr(c,-8,-4,16,9,3);c.fill();c.stroke();
-   c.fillStyle='#3f4a54';rr(c,-11,-6,5,3,1.5);c.fill();rr(c,6,-6,5,3,1.5);c.fill();
-   /* 回転翼(速く回っているので楕円のブレで描く) */
-   c.strokeStyle='rgba(226,236,244,.85)';c.lineWidth=2.2;
-   for(const ox of [-8.5,8.5]){const w9=6+Math.abs(Math.sin(sd+e.t*40))*2;
-    c.beginPath();c.ellipse(ox,-6.5,w9,1.8,0,0,7);c.stroke();}
-   /* 下面の標識灯 */
-   c.fillStyle=(Math.sin(e.t*30)>0)?'#ff5a4a':'#3c4136';
-   c.beginPath();c.arc(0,4.5,2,0,7);c.fill();
-   /* 撃っている間だけ銃口が光り、下へ短い曳光線が出る */
-   if(k8>=.45&&k8<.72){
-    c.fillStyle='#ffdd66';c.beginPath();c.arc(0,7,3.4+Math.sin(e.t*60)*1.4,0,7);c.fill();
-    c.strokeStyle='rgba(255,235,150,.85)';c.lineWidth=2;
-    c.beginPath();c.moveTo(0,8);c.lineTo(rnd(-4,4),24);c.stroke();}
-   c.restore();}
+  else if(e.k==='pel'){/* ⭐ドローンが撃つ小粒の弾(2026-07-26 第68弾)。短い尾を引いて飛ぶ */
+   const lfP=fxLife('pel',e),p6=clamp(e.t/lfP,0,1);
+   const bx=e.x+(e.x2-e.x)*p6,by=e.y+(e.y2-e.y)*p6;
+   const q6=Math.max(0,p6-.3),tx6=e.x+(e.x2-e.x)*q6,ty6=e.y+(e.y2-e.y)*q6;
+   c.strokeStyle=(e.col||'rgba(255,235,150,')+'0.5)';c.lineWidth=1.8;
+   c.beginPath();c.moveTo(tx6,ty6);c.lineTo(bx,by);c.stroke();
+   c.fillStyle='#ffe08a';c.beginPath();c.arc(bx,by,2.6,0,7);c.fill();
+   c.fillStyle='#fff';c.beginPath();c.arc(bx,by,1.2,0,7);c.fill();}
   else if(e.k==='spread'){/* ⭐ショットガン台の散弾: 銃口から扇に散る短い弾筋 */
    const lfS=fxLife('spread',e),a8=Math.max(0,1-e.t/lfS),len=e.len||140,sd=e.sd||0;
    c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);

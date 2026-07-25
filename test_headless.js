@@ -496,7 +496,7 @@ function checkTwFx(){
   me.towers[si]=null;
   return kinds;
  };
- const want={cryo:['ice','shock'],drone:['drn'],fort:['beam'],sonic:['wave'],
+ const want={cryo:['ice','shock'],drone:['pel'],fort:['beam'],sonic:['wave'],
   shot:['spread'],laser:['beam'],plasma:['pboom'],gat:['tr'],rail:['beam','shock']};
  for(const tid of Object.keys(want)){
   const k=run(tid,tid==='plasma'?140:60);
@@ -506,6 +506,38 @@ function checkTwFx(){
   if(['drone','sonic','fort','laser','rail'].indexOf(tid)>=0&&k.tr){
    console.log('FAIL: '+tid+' がまだ汎用の曳光線(tr)を出している');process.exit(1);}
  }
+ /* ---- ドローンは常時2機が浮いて漂っている(2026-07-26 第68弾) ----
+    ⚠位置は「時刻と枠番号だけ」で決まる=描画と発射で同じ場所になり、対戦の相手盤面でも同じに見える */
+ {const a0=droneOff(0,3,0),a1=droneOff(1,3,0),b0=droneOff(0,3,1.3);
+  if(Math.abs(a0[0]-a1[0])<6&&Math.abs(a0[1]-a1[1])<6){
+   console.log('FAIL: 2機のドローンが同じ場所に重なっている');process.exit(1);}
+  if(Math.abs(a0[0]-b0[0])<2&&Math.abs(a0[1]-b0[1])<2){
+   console.log('FAIL: ドローンが時間で動いていない');process.exit(1);}
+  /* 塔から離れすぎない(枠の周りを漂う範囲に収まっているか) */
+  for(let q=0;q<40;q++){const p=droneOff(q%2,3,q*.37);
+   if(Math.hypot(p[0],p[1])>60){console.log('FAIL: ドローンが塔から離れすぎ '+p);process.exit(1);}}
+  console.log('ドローン基地: 2機が塔の周りを常時漂う(位置は時刻と枠番号だけで決まる) OK');}
+ /* ---- レールガンは「一番多く貫ける向き」を狙う(2026-07-26 第68弾) ---- */
+ {const ti=TOWERS.findIndex(T=>T.id==='rail');
+  me.units.length=0;me.zombies.length=0;me.fx.length=0;me.dly=[];me.scrap=99999;
+  me.towers[si]=null;const pu=me.unlocked;me.unlocked=ti+1;buildTower(me,si,ti);me.unlocked=pu;
+  /* 経路の前方に「まとまった群れ」、別の場所に「硬い1体」を置く。
+     素直に一番硬いのを狙うと1体、並びを狙うと群れごと抜ける */
+  const grp=[];
+  for(let k=0;k<5;k++){const z=mkZ(zSpec(zi,1,20),Math.max(20,base-40-k*30));z.hp=z.mhp=5000;me.zombies.push(z);grp.push(z);}
+  const solo=mkZ(zSpec(zi,1,20),Math.max(20,base-300));solo.hp=solo.mhp=1e7;me.zombies.push(solo);
+  campStep(me,.001,G.wave);
+  const tw=me.towers[si];
+  let hits=0;
+  for(let k=0;k<80&&!hits;k++){
+   const hp0=me.zombies.map(z=>z.hp);
+   campStep(me,.05,G.wave);
+   let n=0;for(let q=0;q<me.zombies.length;q++)if(me.zombies[q].hp<hp0[q])n++;
+   if(n)hits=n;}
+  me.towers[si]=null;
+  if(hits<3){console.log('FAIL: レールガンが並びを狙えていない(1発で'+hits+'体しか当たっていない)');process.exit(1);}
+  if(tw.aim==null){console.log('FAIL: レールガンの狙い(tw.aim)が決まっていない');process.exit(1);}
+  console.log('レールガン: 一番多く貫ける向きを自動で狙う(1発で'+hits+'体) OK');}
  /* ---- レールガンの充填(2026-07-26 第67弾) ----
     撃つ前に tw.chg が 0→1 で溜まり、撃った瞬間に0へ戻ること。ビームは普通より長く残ること */
  {const ti=TOWERS.findIndex(T=>T.id==='rail');
