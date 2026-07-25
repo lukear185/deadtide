@@ -480,7 +480,7 @@ function checkHero(){
  console.log('英雄: 11人の出撃(1ゲーム1回・戦死したら終わり)と必殺技11種 OK(うち'+dmgN+'種が直接ダメージ)');
  META.hero={};META.hsel='';
 }
-/* ---- 🏋鍛錬所の洞窟(母核防衛) ----
+/* ---- 🏋鍛錬所の洞窟(マザーゾンビ防衛) ----
    ⚠画面をタップしないと動かない部分なので、掘る・湧く・英雄のAI・波の進行を直接呼んで確かめる */
 function checkTrain(){
  const h=HEROES[0];
@@ -542,7 +542,7 @@ function checkTrain(){
   if(H.cx<=x0){console.log('FAIL: 英雄が奥へ進まない(st='+H.st+' p='+(+H.p).toFixed(2)
    +' cost='+TR.hpf[cvI(H.cx,H.cy)]+' 敵'+TR.zs.length+' pos='+H.cx+','+H.cy+')');process.exit(1);}
   TR.sp=0;/* 湧きを戻す */}
- /* ---- 最後まで走らせる(全波しのぐ or 母核が砕ける) ---- */
+ /* ---- 最後まで走らせる(全波しのぐ or マザーゾンビが倒される) ---- */
  gd=0;
  while(!TR.done&&gd++<24000)trainStep(.05);
  if(!TR.done||!TR.res){console.log('FAIL: 訓練が終わらない(波'+TR.wave+'/'+TR.phase+')');process.exit(1);}
@@ -561,14 +561,14 @@ function checkTrain(){
   try{cvUlt(H);}catch(e){console.log('FAIL: 必殺技『'+q.ult+'』で例外: '+e.message);process.exit(1);}
   if(H.ch!==0){console.log('FAIL: 必殺技を撃ってもチャージが戻らない '+q.id);process.exit(1);}}
  trainBack();
- /* ---- 母核が砕けたら失敗として終わる ---- */
+ /* ---- マザーゾンビが倒されたら失敗として終わる ---- */
  META.hmat=100;trainStart(h.id,0);
  cvInvade();
  {const H=TR.hs[0];H.cx=CV_CORE_X-1;H.cy=CV_CORE_Y;H.cd=0;H.st='core';
   TR.core=1;TR.zs.length=0;
   let g3=0;while(!TR.done&&g3++<200)trainStep(.05);}
- if(!TR.done){console.log('FAIL: 母核が砕けても終わらない');process.exit(1);}
- if(TR.win){console.log('FAIL: 母核が砕けたのに成功扱いになっている');process.exit(1);}
+ if(!TR.done){console.log('FAIL: マザーゾンビが倒されても終わらない');process.exit(1);}
+ if(TR.win){console.log('FAIL: マザーゾンビが倒されたのに成功扱いになっている');process.exit(1);}
  /* ---- 経験値の上限(鍛錬Lv10を超えない) ---- */
  META.hlv[h.id]=0;META.hxp[h.id]=0;
  TR.done=false;TR.score=999999;trainEnd(false);
@@ -582,8 +582,8 @@ function checkTrain(){
  if(hu.mhp!==want){console.log('FAIL: 鍛錬LvがHPに乗っていない '+hu.mhp+'(想定'+want+')');process.exit(1);}
  backTitle();
  console.log('鍛錬所の洞窟: 🧿コアの解放と強化・掘る(🦴骸)・開放度で格が決まる湧き・英雄のAI(掘って進む)'
-  +'・必殺技'+HEROES.length+'種・波の進行('+okWv+'波しのいで'+(okWin?'訓練成功':'母核が砕けた')+')'
-  +'・母核破壊で失敗・Lv上限'+TR_MAX+'・英雄のHPに反映 OK');
+  +'・必殺技'+HEROES.length+'種・波の進行('+okWv+'波しのいで'+(okWin?'訓練成功':'マザーゾンビが倒された')+')'
+  +'・マザーゾンビが倒されたら失敗・Lv上限'+TR_MAX+'・英雄のHPに反映 OK');
  META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;META.zc={};META.zl={walk:1};
 }
 /* ---- 支援施設2枠(タワーとは別軸)が、解放してから建つか・効果が乗るか ---- */
