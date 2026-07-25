@@ -46,14 +46,17 @@ A hand screen-printed sprite sheet of exactly 3 separate game icons arranged in 
 
 ---
 
-# 枠(9スライス用・アイコンが終わってから)
-⚠**中央が完全に透明**であることが必須。中が塗られていると使えない。
+# 枠(9スライス用)
+⚠**「transparent background」と書いてはいけない**。生成AIは透明を描けず、**灰色のグラデーションを描いてしまう**
+(2026-07-26に実際にそうなり、3枚とも使えなかった)。**枠の内側も外側も、シアン `#00FFFF` のベタ塗り**を指定すること。
+⚠**内側に影・グラデーション・光が入っていると切り抜けない**。ベタ一色であることが絶対条件。
 
 ## fr-btn.png(普通のボタン枠 / 横長)
-A hand screen-printed UI button frame, border only, hollow rectangular frame with a completely transparent empty center, rounded corners with small riveted metal corner plates, plain straight uninterrupted edges between the corners so the middle can be stretched horizontally. Flat single-tone fills only, no gradients, no soft shading, no glossy highlights, at most two tones. Very thick dark outline #241f19 with slightly uneven hand-drawn wobble and a subtle misregistered print offset. Cream #F2ECDC and steel blue #5c6b78. No text, no fill inside, transparent background, PNG with alpha.
+A hand screen-printed UI button frame, border only. A hollow rectangular frame with rounded corners and small riveted metal corner plates, with plain straight uninterrupted edges between the corners so the middle can be stretched horizontally. Flat single-tone fills only, no gradients, no soft shading, no glossy highlights, at most two tones. Very thick dark outline #241f19 with slightly uneven hand-drawn wobble and a subtle misregistered print offset. Cream #F2ECDC and steel blue #5c6b78. The area inside the frame is completely empty and must be filled with exactly the same plain solid cyan #00FFFF as the outside background. Plain solid cyan #00FFFF everywhere except the frame itself, no shadows, no glow, no gradient, no vignette, no text.
 
 ## fr-btn-red.png / fr-btn-gold.png
-上と同じ文で、色を rust red #C1502E / amber gold #E8A33D に差し替える。
+上と同じ文で、`Cream #F2ECDC and steel blue #5c6b78.` を
+`Rust red #C1502E and cream #F2ECDC.` / `Amber gold #E8A33D and cream #F2ECDC.` に差し替える。
 
 ## fr-panel.png(モーダルのパネル枠 / 正方形)
-A hand screen-printed UI panel frame, border only, hollow square frame with a completely transparent empty center, rounded corners with riveted sheet metal brackets, plain straight uninterrupted edges between the corners so it can be stretched in both directions. Flat single-tone fills only, no gradients, no soft shading, no glossy highlights, at most two tones. Very thick dark outline #241f19 with slightly uneven hand-drawn wobble and a subtle misregistered print offset. Cream #F2ECDC and steel blue #5c6b78. No text, no fill inside, transparent background, PNG with alpha.
+A hand screen-printed UI panel frame, border only. A hollow square frame with rounded corners and riveted sheet metal brackets, with plain straight uninterrupted edges between the corners so it can be stretched in both directions. Flat single-tone fills only, no gradients, no soft shading, no glossy highlights, at most two tones. Very thick dark outline #241f19 with slightly uneven hand-drawn wobble and a subtle misregistered print offset. Cream #F2ECDC and steel blue #5c6b78. The area inside the frame is completely empty and must be filled with exactly the same plain solid cyan #00FFFF as the outside background. Plain solid cyan #00FFFF everywhere except the frame itself, no shadows, no glow, no gradient, no vignette, no text.
