@@ -1051,15 +1051,18 @@ const STAGES=[
     ③道の内角には必ず建設マスを置く(slotsの先頭6つが角のマス。コの字の所は真ん中に1つ) */
  {n:'廃線ハイウェイ',sub:'砂に埋もれた最終防衛拠点',zs:0,
   path:[[1660,175],[1360,175],[1360,680],[1100,680],[1100,440],[840,440],[840,680],[580,680],[580,440],[340,440],[340,660],[80,660]],
-  slots:[[1458,273],[1230,582],[970,538],[710,582],[460,538],[242,562],
-   [300,350],[620,350],[750,400],[930,720],[1450,720],[410,340],[480,650],[1200,440],[1460,390],[1460,500],[1460,610],[840,330],[520,300],[190,380],[730,290],[620,240]],
+  /* 2026-07-25: 実機の🛠編集モード(?edit=1)でユーザーが直接置いた配置。全28マス条件OKを検算済み */
+  slots:[[1458,273],[1227,583],[970,557],[710,582],[457,564],[242,562],
+   [340,342],[710,460],[972,344],[968,675],[1460,722],[459,341],[712,339],[1228,464],[1460,390],[1460,500],[1460,610],[1102,345],[585,339],[217,345],[847,342],[1229,349]],
+  sup:[[864,206],[989,207],[1110,206]],
   order:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
   pal:{g0:'#C4AE84',g1:'#A8925F',tuft:'#8a7d4e',bld:'#8a7a5e',patch:['#6b5a37','#d8c79b']}},
  {n:'沈んだ港',sub:'死潮が運んできた海の亡骸',zs:2,
   path:[[1660,700],[1150,700],[1150,480],[1480,480],[1480,200],[700,200],[700,430],[380,430],[380,660],[110,660]],
-  /* 道は据え置き。マスだけ引き直して、先頭6つを内角のマスにした(2026-07-25) */
+  /* 道は据え置き。マスは先頭6つが内角。⚠施設枠はステージごと=ここの道(y=200)の上に来ないよう別座標(2026-07-25) */
   slots:[[1248,590],[1382,354],[798,298],[602,332],[478,528],[282,562],
-   [290,390],[740,520],[1060,440],[1520,570],[390,330],[480,640],[590,530],[600,210],[800,410],[1050,550],[1050,660],[1360,580],[500,290],[850,510],[670,610],[550,730]],
+   [290,390],[740,520],[1060,440],[1520,570],[440,330],[480,640],[590,530],[600,210],[800,410],[1050,550],[1050,660],[1360,580],[850,510],[670,610],[550,730],[960,730]],
+  sup:[[960,300],[1090,300],[1220,300]],
   order:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
   hpM:1.35,/* 港は廃線ハイウェイより重い(同じ難易度でも敵のHP・攻撃が1.35倍) */
   pal:{g0:'#9EA6A0',g1:'#75858A',tuft:'#3f6b5e',bld:'#54636e',patch:['#41565c','#c2cbc6']}}
@@ -1087,7 +1090,7 @@ function loadStage(si){
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
- SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of SUP_SLOTS)SLOTS.push(e.slice());
+ SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of (S.sup||SUP_SLOTS))SLOTS.push(e.slice());
  AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
  CORE=PATH[PATH.length-1].slice();
  makeScenery();/* 地面の模様・道路のひび・タイヤ痕を作り直す */
@@ -1101,9 +1104,11 @@ function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0
    ※ 位置を変えたら test_layout.js(道路とUIの重なり)を通すこと */
 let SLOTS=[];
 /* 廃品工房の専用スロット(画面左上・全ステージ共通)。初期1枠・増設で最大3枠 */
-const ECO_SLOTS=[[120,190],[262,190],[404,190]];
+const ECO_SLOTS=[[131,213],[253,211],[374,211]];
 /* 支援施設の専用スロット(画面中央〜右上・全ステージ共通)。タワーとは別軸の建物をここに建てる。
    ⚠2026-07-25にステージ1の道を下へ寄せて、この場所を空けた */
+/* 施設枠の既定値。⚠ステージごとに道の形が違うので、各ステージの `sup:` があればそちらが優先される
+   (ステージ2はここの座標だと道の上に乗ってしまう) */
 const SUP_SLOTS=[[980,310],[1120,310],[1250,310]];
 const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定 */
 const SUP_BASE=ECO_BASE+ECO_MAX;/* =25。ここから3枠が支援施設 */
@@ -3375,20 +3380,23 @@ function edOut(){
  const txt='slots:'+f(SLOTS.slice(0,ECO_BASE))+',\n'
   +'ECO_SLOTS='+f(SLOTS.slice(ECO_BASE,SUP_BASE))+';\n'
   +'SUP_SLOTS='+f(SLOTS.slice(SUP_BASE))+';';
- const ta=$('ed-out');if(ta){ta.value=txt;try{ta.select();document.execCommand('copy');}catch(e){}}
+ const ta=$('ed-out');if(ta){ta.style.display='block';ta.value=txt;try{ta.select();document.execCommand('copy');}catch(e){}}
  let ng=0;for(let i=0;i<SLOTS.length;i++)if(edBad(i).length)ng++;
  toast(ng?('📋 出力した(⚠条件に反するマスが'+ng+'個ある)'):'📋 出力してコピーした(条件は全部OK)',!!ng);
 }
 function edPanel(){
  if(!EDIT||$('edbar'))return;
  const d=document.createElement('div');d.id='edbar';
- d.style.cssText='position:absolute;left:6px;bottom:96px;z-index:9;display:flex;flex-direction:column;gap:4px;align-items:flex-start';
- d.innerHTML='<div style="display:flex;gap:4px">'
-  +'<button class="btn sm" id="ed-add">➕マス</button>'
-  +'<button class="btn sm" id="ed-del">🗑削除</button>'
-  +'<button class="btn gold sm" id="ed-cp">📋出力</button></div>'
-  +'<textarea id="ed-out" style="width:min(70vw,520px);height:54px;font-size:10px" readonly></textarea>';
+ d.style.cssText='position:absolute;left:4px;bottom:70px;z-index:9;display:flex;flex-direction:column;gap:3px;align-items:flex-start;opacity:.92';
+ d.innerHTML='<div style="display:flex;gap:3px">'
+  +'<button class="btn sm" id="ed-tg" style="padding:2px 7px">🛠</button>'
+  +'<button class="btn sm" id="ed-add" style="padding:2px 7px">➕</button>'
+  +'<button class="btn sm" id="ed-del" style="padding:2px 7px">🗑</button>'
+  +'<button class="btn gold sm" id="ed-cp" style="padding:2px 7px">📋出力</button></div>'
+  +'<textarea id="ed-out" style="width:min(58vw,400px);height:30px;font-size:9px;display:none" readonly></textarea>';
  $('scr-game').appendChild(d);
+ /* 出力欄はマスを隠すので、押した時だけ出す */
+ $('ed-tg').onclick=()=>{const ta=$('ed-out');ta.style.display=(ta.style.display==='none')?'block':'none';};
  $('ed-add').onclick=()=>{SLOTS.splice(ECO_BASE,0,[800,470]);EDSEL=ECO_BASE;
   toast('➕ マスを追加した(通常枠が'+(ECO_BASE+1)+'個になった。数を変えたら私に伝えること)',true);};
  $('ed-del').onclick=()=>{if(EDSEL<0||EDSEL>=ECO_BASE){toast('消したい通常マスを選んでから',true);return;}
