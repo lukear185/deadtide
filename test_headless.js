@@ -165,9 +165,9 @@ function runStage2(){
 }
 /* ---- 最終ウェーブのボスが、ステージ専用の特別な1体になっているか ---- */
 function checkFinalBoss(){
- const want=[['ステージ1',0,FIN_ZI],['ステージ2',1,FIN2_ZI]];
- for(const [nm,si,fi] of want){
-  META.sclr=[1];META.stg=si;setDiff=2;startSolo();
+ const want=[['ステージ1',0,FIN_ZI,2],['ステージ2',1,FIN2_ZI,2],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF]];
+ for(const [nm,si,fi,df] of want){
+  META.sclr=[1];META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   /* 通常のボス波(15)と最終波(20)を作って中身を見る */
   const got=[];
   for(const w of [15,STAGE_W]){
@@ -180,7 +180,31 @@ function checkFinalBoss(){
   if(got[0]===got[1]){console.log('FAIL: 通常ボスと最終ボスが同じ('+nm+')');process.exit(1);}
   backTitle();
  }
- META.stg=0;loadStage(0);
+ META.stg=0;setDiff=2;loadStage(0);
+}
+/* ---- 🌑ナイトメア(獣プール)を実走: 獣しか出ないか・最終ボスまで描画で例外が出ないか ---- */
+function runNightmare(){
+ META.sclr=[1];META.stg=0;META.nmOK=1;setDiff=NM_DIFF;startSolo();
+ frames(30,.016);
+ if(!isNM()){console.log('FAIL: ナイトメアになっていない');process.exit(1);}
+ const seen={};
+ let guard=0;
+ while(G&&!G.over&&guard++<9000){
+  frames(1,.033);
+  const me=G.players[0];
+  for(const z of me.zombies)seen[ZOMBIES[z.zi].n]=1;
+  if(G.phase==='wave'&&Math.random()<.02)deployUnit(me,ri(0,me.uUn-1));
+  if(G.phase==='interval'&&!me.ready){doPurchase(me,'unlock',{});doPurchase(me,'uun',{});me.ready=true;}
+ }
+ const names=Object.keys(seen);
+ console.log('🌑ナイトメア: wave='+(G?G.wave:'?')+' 出た敵='+names.join('/'));
+ const bad=names.filter(n=>{const Z=ZOMBIES.find(q=>q.n===n);return !Z||!Z.nm;});
+ if(bad.length){console.log('FAIL: 獣以外が混ざっている '+bad.join(','));process.exit(1);}
+ if(!names.length){console.log('FAIL: 敵が1体も出ていない');process.exit(1);}
+ /* 最終ボスは描画も通しておく(bakeZ→drawZombieで例外が出ないこと) */
+ try{SPR.z={};bakeZ(FINNM_ZI,0);bakeZ(FINNM_ZI,1);}
+ catch(e){console.log('FAIL: 原初の獣の描画で例外: '+e.message);process.exit(1);}
+ setDiff=2;backTitle();loadStage(0);
 }
 /* ---- 砲撃4種+機関銃掃射が、発射も着弾も例外なく通るか ----
    ⚠rAFの中の例外はtry/catchに飲まれるので、着弾処理は直接呼んで確かめる */
@@ -202,6 +226,7 @@ function checkStrikes(){
 checkStrikes();
 checkFinalBoss();
 runStage2();
+runNightmare();
 runPvE(1,'PvE古参(素の腕前)',false);
 const won=runPvE(1,'PvE古参(強化プレイ)',true);
 if(!won)console.log('WARN: 強化プレイでもステージクリア不可(バランス要確認)');

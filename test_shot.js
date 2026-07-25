@@ -27,10 +27,21 @@ function coarseCSS(s){
   while(j<s.length&&d>0){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}
   out+=s.slice(i+k.length,j-1)+'\n';from=j;}
  return out;}
+const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
+const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
+/* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
+const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  +(ST?('META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
- +'setDiff=2;startSolo();}catch(e){document.title="ERR "+e.message;}'
+ +(VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
+     :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
+     :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
+ +(ZIDS.length?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
+     +'var ids='+JSON.stringify(ZIDS)+';'
+     +'ids.forEach(function(id,k){var zi=ZOMBIES.findIndex(function(q){return q.id===id;});'
+     +'if(zi>=0)me.zombies.push(mkZ(zSpec(zi,1,20),PLEN*(.3+k*.18)));});'
+     +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
  +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));

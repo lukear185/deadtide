@@ -9,6 +9,13 @@ const RECTS={
  topbar:{left:59,top:3,right:514,bottom:32,width:455,height:29},
  minis:{left:0,top:0,right:0,bottom:0,width:0,height:0},
 };
+/* 対戦だけ出るもの(セーフエリア左59/右59を見込んだ実測値)。
+   死潮ゲージは上のHUDの真下・左寄せの1行(2026-07-25にここへ移した)。
+   ミニ盤面は右上に縦積み=そのぶんマップは左へ寄る(minisResPx) */
+const VS={
+ tidebar:{left:67,top:33,right:267,bottom:47,width:200,height:14},
+ minis:{left:669,top:8,right:793,bottom:250,width:124,height:242},
+};
 function mkCtx(){return new Proxy({},{get:(t,k)=>{
  if(k==='canvas')return {};
  if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});
@@ -41,7 +48,7 @@ console.log('画面 852x393 / DPR='+DPR+'  倍率SC(CSS)='+(SC/DPR).toFixed(4));
 const fw=css(MW*SC),fh=css(MH*SC);
 console.log('フィールド見た目='+fw.toFixed(0)+'x'+fh.toFixed(0)+'CSSpx  横の余白=左右'+css(OX).toFixed(0)+'px  上端OY='+css(OY).toFixed(0)+'px(マイナス=空を画面外へ)');
 console.log('空の見えている高さ='+(css(OY)+SKYH*SC/DPR).toFixed(1)+'px');
-const R=${JSON.stringify(RECTS)};
+const R=${JSON.stringify(RECTS)},VS=${JSON.stringify(VS)};
 const S=(x,y)=>[css(OX+x*SC),css(OY+y*SC)];
 function hit(x,y,r,box){return x+r>box.left&&x-r<box.right&&y+r>box.top&&y-r<box.bottom;}
 let bad=0;
@@ -81,6 +88,27 @@ for(let d=0;d<=PLEN;d+=10){const p=pathPos(d);const [x,y]=S(p[0],p[1]);const r=c
 console.log('道路が操作バーに潜る点='+low+'箇所 / 上のHUDに潜る点='+up+'箇所');
 if(low)bad++;
 if(up)bad++;
+/* ===== 対戦(死潮ゲージ+ミニ盤面)の重なり ===== */
+/* ミニ盤面のぶんマップが左へ寄るので、対戦の倍率で測り直す */
+MINIRES=Math.ceil(VS.minis.width+8);MINIT=NOW;fitCanvas();
+const S2=(x,y)=>[css(OX+x*SC),css(OY+y*SC)];
+function ovBox(a,b){return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;}
+console.log('--- 対戦 ---');
+console.log('倍率SC(CSS)='+(SC/DPR).toFixed(4)+'  フィールド見た目='+css(MW*SC).toFixed(0)+'x'+css(MH*SC).toFixed(0)+'CSSpx');
+/* ①死潮ゲージが上のHUD/ミニ盤面と重なっていないか(重なると コア/⚙️/🔩/⏸ が隠れる) */
+for(const [k,b] of [['topbar',R.topbar],['minis',VS.minis]])
+ if(ovBox(VS.tidebar,b)){console.log('NG: 死潮ゲージが '+k+' と重なる');bad++;}
+/* ②死潮ゲージが道路に被っていないか(侵入口は画面右上=ここが本題) */
+let tb=0;for(let d=0;d<=PLEN;d+=10){const p=pathPos(d);const [x,y]=S2(p[0],p[1]);const r=css(52*SC);
+ if(hit(x,y,r,VS.tidebar))tb++;}
+if(tb){console.log('NG: 死潮ゲージが道路に被る '+tb+'点');bad++;}
+else console.log('死潮ゲージ x 道路: OK');
+/* ③参考表示(失敗にはしない)。マップは高さで頭打ちなので、これ以上は詰められない */
+let ts=0;SLOTS.forEach(s=>{const [x,y]=S2(s[0],s[1]);if(hit(x,y,30*SC/DPR,VS.tidebar))ts++;});
+let ms=0;for(let d=0;d<=PLEN;d+=10){const p=pathPos(d);const [x,y]=S2(p[0],p[1]);
+ if(hit(x,y,css(52*SC),VS.minis))ms++;}
+console.log('参考: 死潮ゲージが建設マスの上端をかすめる='+ts+'個 / ミニ盤面が道路(=マップ外の侵入路)に掛かる='+ms+'点');
+MINIRES=0;MINIT=NOW;fitCanvas();
 console.log(bad?('要修正 '+bad+'件'):'レイアウト判定: 重なりゼロ OK');
 process.exit(0);
 `;
