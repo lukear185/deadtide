@@ -1240,6 +1240,10 @@ const G_COST1=3,G_COST10=25;/* 単発/10連の💎 */
 const GEM_BOSS=1,GEM_FIN=3;/* 通常ボス/最終ボスを倒した時の💎 */
 const heroOf=id=>HEROES.find(h=>h.id===id);
 const heroOwned=id=>((META.hero||{})[id]||0)>0;
+/* ⚠2026-07-26(第56弾): **🏋鍛錬所は一旦しまってある**(ユーザー決定=「あとから作りこむ」)。
+   タイトルにボタンを出さず、🔬研究所の解放項目からも外す。⚔冒険・📖図鑑・🔧のコードはそのまま残してある。
+   **再び開ける時はここを true にするだけ**(それ以外は触らなくてよい)。 */
+const TR_OPEN=false;
 /* 🏋鍛錬(鍛錬所で上がるレベル)。HPと攻撃が+8%/Lv・最大Lv10=+80% */
 const TR_MAX=10,TR_COST=10;/* 上限Lv / 1回の鍛錬で使う🔧鍛錬素材 */
 const TR_NEED=lv=>100+60*lv;/* そのLvから次へ上がるのに必要な経験 */
@@ -4243,9 +4247,10 @@ function applyFrames(){
 function updLabBtn(){const e=$('lab-pts');if(e)e.innerHTML=IC('🧬')+fmt(META.pts);
  const g=$('gem-cnt');if(g)g.innerHTML=IC('💎')+(META.gem||0);
  refreshTrainBtn();}
-/* 🏋鍛錬所は研究所で解放するまでタイトルに出さない */
+/* 🏋鍛錬所は研究所で解放するまでタイトルに出さない。
+   ⚠さらに `TR_OPEN=false` の間はDEVでも一切出さない(2026-07-26に一旦しまった) */
 function refreshTrainBtn(){const b=$('bt-train');if(!b||!b.style)return;
- b.style.display=(META.tr0||DEV)?'block':'none';
+ b.style.display=(TR_OPEN&&(META.tr0||DEV))?'block':'none';
  const m=$('tr-mat');if(m)m.innerHTML=IC('🔧')+fmt(META.hmat||0);}
 function renderStkSeg(){
  const w=$('seg-stk');if(!w||!w.querySelectorAll)return;
@@ -4309,7 +4314,8 @@ function renderLab(){
  if((META.py0||0)<5)items.push({cat:'eco',k:'py0',ic:'💰',t:'撃破報酬+6%',tag:'Lv'+(META.py0||0)+'/5',d:'ゾンビを倒した時の⚙️が増える(全ウェーブ)',p:LAB_PY0(META.py0||0)});
  if((META.ec0||0)<5)items.push({cat:'eco',k:'ec0',ic:'🏭',t:'工房の産出+12%',tag:'Lv'+(META.ec0||0)+'/5',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({cat:'eco',k:'cd0',ic:'⏱',t:'出撃の待ち-6%',tag:'Lv'+(META.cd0||0)+'/5',d:'部隊を続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
- if(!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'タイトルに鍛錬所が開く。🔧を注いで英雄のHPと攻撃が最大+80%',p:300});
+ /* ⚠鍛錬所をしまっている間は解放項目も出さない(🧬300払っても入口が無いため) */
+ if(TR_OPEN&&!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'タイトルに鍛錬所が開く。🔧を注いで英雄のHPと攻撃が最大+80%',p:300});
  if(!(META.ec1||0))items.push({cat:'start',k:'ec1',ic:'🏭',t:'工房つきで開始',tag:'1回きり',d:'工房エリアに1基が最初から建っている',p:220});
  /* ---- 系統強化(研究所で解放した新型にも効く) ---- */
  for(const L of TLINE){const lv=(META.tl&&META.tl[L.k])||0;
