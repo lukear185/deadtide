@@ -608,7 +608,7 @@ function resumeRun(){
 }
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
-const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;return soloMeta()?BT+clamp(META.nt||0,0,TOWERS.length-BT):BT;};
+const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;return soloMeta()?BT+clamp(META.nt||0,0,TP-BT):BT;};
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;return soloMeta()?BU+clamp(META.nu||0,0,UNITS.length-BU):BU;};
 const LAB_NT=k=>Math.round(250*Math.pow(1.2,k));/* k個目のタワー解放価格 */
 const LAB_NU=k=>Math.round(120*Math.pow(1.14,k));/* k個目の兵科解放価格 */
@@ -764,7 +764,16 @@ const TOWERS=[
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:36,rate:.09,type:'bullet',c:'#b0483a',dsc:'単体をひたすら削る弾幕。射程は短い'},
  {id:'plasma',n:'プラズマ砲',cost:820,rng:420,dmg:300,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'最大の爆発範囲で群れを溶かす'},
  {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:150,rate:.7,type:'bullet',multi:4,pierce:1,c:'#8a8f96',dsc:'貫通弾を4体へ同時に叩き込む最終兵器'},
+ /* ===== 支援施設(type:'sup') =====
+    タワーとは別軸。専用の支援枠2つにしか建たず、タワーの解放チェーンにも研究所にも出さない。
+    ⚠タワーの強化はしないこと(ユーザー指示)。効いてよいのは 情報 / 部隊 / 経済 の3軸だけ。
+    ⚠必ず配列の最後(TOWERSの末尾)に置く。T_PLAYで解放チェーンと切り分けている */
+ {id:'radio',n:'電波塔',cost:380,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
+ {id:'medic',n:'野戦病院',cost:420,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:'#b7e07a',dsc:'部隊全員のHPを毎秒16回復し、出撃の待ち時間を20%短縮'},
+ {id:'depot',n:'物資投下所',cost:460,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:'#c9a13d',dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'}
 ];
+const SUP_N=3;/* ↑末尾の支援施設の数 */
+const T_PLAY=TOWERS.length-SUP_N;/* 解放チェーン/研究所に出るタワーの数 */
 const BASE_T=10;/* 通常解放できる基本タワー数(これ以降は🔬研究所で解放) */
 /* 2026-07-24 永井さん指示: ①ショットガン以外0.75倍 → ②さらに全タワー0.75倍(=シ以外0.5625/シ0.75) */
 for(const T of TOWERS){
@@ -777,7 +786,7 @@ const UNLOCK_P=[0,0,200,320,480,700,980,1350,1800,2400,3100,4000,5100,6400,8000,
 const USTAT_MAX=5;
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]));/* 盤面の強化は⚙️払い */
 /* 冷却塔だけは⚔攻撃の代わりに❄冷却回数を伸ばす(2026-07-25ユーザー指示。攻撃力を上げても意味が無い塔のため) */
-const twStats=ti=>TOWERS[ti].type==='eco'?['d','r']
+const twStats=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
  :TOWERS[ti].frzN?['f','r','g']
  :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
 const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
@@ -1125,7 +1134,9 @@ const STAGES=[
   slots:[[1248,590],[1378,295],[798,298],[602,332],[478,528],[282,562],
    [404,331],[705,531],[1042,488],[1520,591],[505,330],[480,640],[590,530],[600,216],[800,410],[1043,598],[1045,711],[1381,592],[1382,385],[278,452],[591,643],[1292,385]],
   order:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
-  hpM:1.35,/* 港は廃線ハイウェイより重い(同じ難易度でも敵のHP・攻撃が1.35倍) */
+  hpM:1.35,
+  /* ⚠支援枠はステージごと。ここの座標を共通にすると片方のステージで道の上に乗る */
+  sup:[[870,340],[1170,340]],/* 港は廃線ハイウェイより重い(同じ難易度でも敵のHP・攻撃が1.35倍) */
   pal:{g0:'#9EA6A0',g1:'#75858A',tuft:'#3f6b5e',bld:'#54636e',patch:['#41565c','#c2cbc6']}}
 ];
 let STAGE=0;
@@ -1152,7 +1163,7 @@ function loadStage(si){
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
- SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());
+ SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of (S.sup||SUP_SLOTS))SLOTS.push(e.slice());
  AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
  CORE=PATH[PATH.length-1].slice();
  makeScenery();/* 地面の模様・道路のひび・タイヤ痕を作り直す */
@@ -1167,8 +1178,15 @@ function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0
 let SLOTS=[];
 /* 廃品工房の専用スロット(画面左上・全ステージ共通)。初期1枠・増設で最大3枠 */
 const ECO_SLOTS=[[129,213],[253,211],[374,211]];
-const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定(通常22+工房3=25) */
-const isEcoSlot=si=>si>=ECO_BASE;
+/* 支援枠(2つ)。⚠道の形がステージごとに違うので座標は STAGES[].sup に持つ(共通座標だと片方で道の上に乗る)。
+   建てる前に⚙️で枠を解放する必要がある(左から順) */
+const SUP_SLOTS=[[560,235],[1160,235]];/* 既定値(STAGES[].sup が無い時だけ使う) */
+const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定(通常22+工房3+支援2=27) */
+const SUP_BASE=ECO_BASE+ECO_MAX,SUP_MAX=2;
+const isEcoSlot=si=>si>=ECO_BASE&&si<SUP_BASE;
+const isSupSlot=si=>si>=SUP_BASE;
+const supUnlocked=(C,si)=>(si-SUP_BASE)<(C&&C.supN||0);
+const prSup=n=>[600,1500][n]||1e9;/* n=現在の解放数 → 次の枠の価格 */
 const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
 const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
 const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
@@ -1180,7 +1198,7 @@ const prSlot=n=>Math.round(200*Math.pow(1.3,Math.max(0,n-SLOT0)));
 /* 強化ポイント🔩: ウェーブクリアで入手し、強化専用に使う(建設用の⚙️とは別財布) */
 const wavePts=w=>Math.round(4+w*1.6+w*w*.16);
 const PT='🔩';
-const slotUnlocked=(C,si)=>isEcoSlot(si)?ecoUnlocked(C,si):(C&&C.slk?!!C.slk[si]:SLOT_ORDER.indexOf(si)<SLOT0);
+const slotUnlocked=(C,si)=>isSupSlot(si)?supUnlocked(C,si):isEcoSlot(si)?ecoUnlocked(C,si):(C&&C.slk?!!C.slk[si]:SLOT_ORDER.indexOf(si)<SLOT0);
 const slotCount=C=>{let n=0;for(let i=0;i<ECO_BASE;i++)if(slotUnlocked(C,i))n++;return n;};
 let CORE=[110,620];/* 拠点=経路の終点(loadStageで設定) */
 /* ============ アート ============ */
@@ -1629,6 +1647,37 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  /* 基部 */
  c.fillStyle='#6e6354';c.beginPath();c.arc(0,0,20,0,7);c.fill();c.stroke();
  c.fillStyle=T.c;c.beginPath();c.arc(0,0,14,0,7);c.fill();c.stroke();
+ /* ---- 支援施設(撃たない。砲身の代わりに設備が乗る) ---- */
+ if(tid==='radio'){/* 電波塔: 鉄塔と点滅する電波 */
+  c.strokeStyle='#8a8f96';c.lineWidth=3;
+  c.beginPath();c.moveTo(-12,2);c.lineTo(0,-32);c.lineTo(12,2);c.stroke();
+  for(let k=0;k<3;k++){const y=-4-k*9;c.beginPath();c.moveTo(-9+k*2.6,y);c.lineTo(9-k*2.6,y);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.fillStyle='#ff5a4a';c.beginPath();c.arc(0,-34,3.4,0,7);c.fill();
+  c.strokeStyle='rgba(159,220,245,'+(.35+Math.sin(t*3)*.3)+')';c.lineWidth=2.4;
+  for(let k=1;k<=2;k++){c.beginPath();c.arc(0,-34,7+k*7+Math.sin(t*3)*2,-2.5,-.65);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.restore();return;}
+ if(tid==='medic'){/* 野戦病院: 十字のテント */
+  c.fillStyle='#d8cdb0';c.beginPath();c.moveTo(-21,2);c.lineTo(0,-28);c.lineTo(21,2);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#b7e07a';c.fillRect(-3.5,-19,7,14);c.fillRect(-9,-15.5,18,7);
+  c.strokeRect(-3.5,-19,7,14);
+  c.globalAlpha=.35+Math.sin(t*2.4)*.18;c.fillStyle='#b7e07a';c.beginPath();c.arc(0,-14,24,0,7);c.fill();c.globalAlpha=1;
+  c.restore();return;}
+ if(tid==='depot'){/* 物資投下所: 着地標識と補給箱、パラシュートが揺れる */
+  c.fillStyle='#6e6354';rr(c,-20,-8,40,10,3);c.fill();c.stroke();
+  c.fillStyle='#c9a13d';rr(c,-13,-26,26,19,4);c.fill();c.stroke();
+  c.strokeStyle='#7a5f2a';c.lineWidth=2.4;
+  c.beginPath();c.moveTo(0,-26);c.lineTo(0,-7);c.stroke();
+  c.beginPath();c.moveTo(-13,-16.5);c.lineTo(13,-16.5);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  const pw=Math.sin(t*1.6)*3;
+  c.fillStyle='#e0d6bc';c.beginPath();c.arc(pw,-38,11,3.34,6.08);c.fill();c.stroke();
+  c.strokeStyle='#9a8f74';c.lineWidth=1.6;
+  c.beginPath();c.moveTo(pw-10,-36);c.lineTo(-5,-26);c.stroke();
+  c.beginPath();c.moveTo(pw+10,-36);c.lineTo(5,-26);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.restore();return;}
  /* ---- 拡張タワー ---- */
  if(tid==='gren'){c.save();c.rotate(ang);c.fillStyle='#585e4c';rr(c,-2,-7,24,14,6);c.fill();c.stroke();
   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(26,0,6,0,7);c.fill();}c.restore();
@@ -1950,7 +1999,7 @@ function bakeUThumb(i){
 let EID=1;
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
  core:50,coreMax:50,scrap:250,unlocked:2,atkLv:0,repairs:0,boosts:0,jams:0,
- towers:SLOTS.map(()=>null),ecoN:1,up:12,upTotal:12,slk:SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0),zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
+ towers:SLOTS.map(()=>null),ecoN:1,supN:0,up:12,upTotal:12,slk:SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0),zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
 const ZHPM=.85;/* ゾンビHP全体倍率 */
@@ -2010,8 +2059,26 @@ function buildTide(wave){
  if(pool.length)pool[0].dl=1.1;
  /* ウェーブ開始からLEAD秒は敵が出ない=タワーを建てる時間(2026-07-25ユーザー指示) */
  T.pool=pool;T.lead=WAVE_LEAD;T.qt=(pool.length?pool[0].dl:0)+WAVE_LEAD;T.total=pool.length;T.up=0;
+ /* 📻電波塔: この波の顔ぶれと総数を先に読む(設置猶予の5秒で対策を決められる) */
+ try{const me9=G.players[G.myIdx];
+  if(me9&&me9.supRadio&&!me9.dead){
+   const cn={};for(const e of pool)cn[ZOMBIES[e.z.zi].n]=(cn[ZOMBIES[e.z.zi].n]||0)+1;
+   const top=Object.keys(cn).sort((a,b)=>cn[b]-cn[a]).slice(0,4).map(k=>k+'×'+cn[k]);
+   const sp=[];if(pool.some(e=>e.z.armor))sp.push('装甲');if(pool.some(e=>e.z.scl))sp.push('鱗');
+   if(pool.some(e=>e.z.noblock))sp.push('すり抜け');if(pool.some(e=>e.boss))sp.push('ボス');
+   toast('📻 予報 W'+wave+': 全'+pool.length+'体 — '+top.join(' / ')+(sp.length?' ['+sp.join('・')+']':''));
+  }}catch(e){}
 }
 function resetCampWave(C){
+ /* 📦物資投下所: ウェーブが始まるたびに補給が1つ届く */
+ if(C.supDepot&&G&&G.wave>0){
+  const pick=ri(0,4);
+  if(pick===0){const g=Math.round(120+G.wave*22);C.scrap+=g;C.enTotal+=g;if(C.isMe)toast('📦 補給: ⚙️'+g);}
+  else if(pick===1){const p=Math.round(4+G.wave*.9);C.up=(C.up||0)+p;C.upTotal=(C.upTotal||0)+p;if(C.isMe)toast('📦 補給: '+PT+p);}
+  else if(pick===2){const h=Math.min(C.coreMax-C.core,Math.round(C.coreMax*.15));C.core+=h;if(C.isMe)toast('📦 補給: 🏕コア +'+Math.round(h));}
+  else if(pick===3){for(let k=0;k<C.ucd.length;k++)C.ucd[k]=0;if(C.isMe)toast('📦 補給: 部隊の待ち時間を全部リセット');}
+  else{C.charge=1;if(C.isMe)toast('📦 補給: 砲撃チャージ完了!');}
+ }
  C.totalWave=0;C.killsWave=0;C.waveDone=false;C.ready=false;C.planned=false;C.pushUses=0;
  C.arcs=[];/* 前の波の連鎖電撃が残っていると、居なくなった敵を起点に跳ね続ける */
  for(const j of C.inc.jam){const built=C.towers.map((t,i)=>t?i:-1).filter(i=>i>=0);
@@ -2196,7 +2263,7 @@ function deployUnit(C,ui){
  const cnt=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:C.units.length;
  const cap=G&&G.coop?COOP_MAXU:MAXU;
  if(cnt>=cap){if(C.isMe)toast('⚠ 部隊上限('+cap+'体)!',true);return false;}
- C.scrap-=dc;C.ucd[ui]=U.cd*metaCd();C.dep++;
+ C.scrap-=dc;C.ucd[ui]=U.cd*metaCd()*(C.supCd||1);C.dep++;/* 🏥野戦病院ぶんCD短縮 */
  const UL=ulv(U.type);/* 系統訓練(研究所): 型ごとにHPと攻撃が伸びる */
  const lvM=(1+.1*(C.uLv||0))*(1+(U.type==='melee'?.10:.12)*UL);/* 部隊レベル+訓練 */
  const hpM=(1+.1*(C.uLv||0))*(1+(U.type==='melee'?.10:.08)*UL);
@@ -2225,10 +2292,15 @@ function dmgU(C,u,d2){
 function buildTower(C,si,ti){
  const T=TOWERS[ti];
  const F=G&&G.coop?G.players[0]:C;
- if(C.dead||F.dead||F.towers[si]||ti>=C.unlocked||C.scrap<T.cost)return false;
- /* 廃品工房は専用スロット専用。逆に専用スロットには工房しか建てられない */
- if(isEcoSlot(si)){if(T.type!=='eco'||!ecoUnlocked(F,si))return false;}
- else if(T.type==='eco'||!slotUnlocked(F,si))return false;
+ if(C.dead||F.dead||F.towers[si]||C.scrap<T.cost)return false;
+ /* 支援施設はタワーの解放チェーン(unlocked)の外。それ以外は解放済みの物だけ */
+ if(T.type!=='sup'&&ti>=C.unlocked)return false;
+ /* 廃品工房・支援施設は専用スロット専用。逆に専用スロットにはそれしか建てられない */
+ if(isSupSlot(si)){if(T.type!=='sup'||!supUnlocked(F,si))return false;
+  /* 同じ支援施設は1つまで(2枠に同じ物を2つ建てさせない) */
+  for(let k=SUP_BASE;k<SLOTS.length;k++)if(F.towers[k]&&F.towers[k].ti===ti)return false;}
+ else if(isEcoSlot(si)){if(T.type!=='eco'||!ecoUnlocked(F,si))return false;}
+ else if(T.type==='eco'||T.type==='sup'||!slotUnlocked(F,si))return false;
  C.scrap-=T.cost;F.towers[si]={ti,us:{d:0,r:0,g:0,c:0,f:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:T.cost,own:C.gi||0};
  if(C.isMe)sfx.build();
  addFx(F,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:60,col:'#F2ECDC'});
@@ -2387,9 +2459,20 @@ function campStep(C,dt,wave){
    if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;}else u.back=false;}
  }
  C.units=C.units.filter(u=>!u.dead);
+ /* 支援施設の効果をまとめる。⚠タワーの性能には一切触らない(情報/部隊/経済の3軸だけ) */
+ {let sh=0,scd=1,rad=0,dep=0;
+  for(let si=SUP_BASE;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.jamT>0)continue;
+   const T=TOWERS[tw.ti];if(!T||T.type!=='sup')continue;
+   if(T.supH)sh+=T.supH;if(T.supCd)scd*=T.supCd;if(T.supD)dep=1;if(T.id==='radio')rad=1;}
+  C.supH=sh;C.supCd=scd;C.supRadio=rad;C.supDepot=dep;}
+ /* 🏥野戦病院: 部隊を回復する */
+ if(C.supH>0)for(const u of C.units){if(u.dead||u.hp>=u.mhp)continue;
+  u.hp=Math.min(u.mhp,u.hp+C.supH*dt);
+  if(FXLV===2&&Math.random()<dt*.5)addP(C,1,u.px,u.py-20,{sp:14,up:34,g:-40,life:.7,r:2.2,col:'#b7e07a'});}
  /* タワー */
  const atkB=1+.08*C.atkLv;
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
+  if(TOWERS[tw.ti]&&TOWERS[tw.ti].type==='sup')continue;/* 支援施設は撃たない */
   if(tw.jamT>0){tw.jamT-=dt;continue;}
   tw.cd-=dt;if(tw.fireT>0)tw.fireT-=dt;
   const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=twDmgM(tw);
@@ -2538,6 +2621,7 @@ function priceOf(C,kind,opt){
   case 'uun':return uupCost(C);
   case 'uup':return (C.uLv||0)<ULV_MAX?prUup(C.uLv||0):1e9;/* ⚠🔩支払い */
   case 'ecoslot':{const F2=(G&&G.coop)?G.players[0]:C;return (F2.ecoN||1)<ECO_MAX?prEco(F2.ecoN||1):1e9;}
+  case 'supslot':{const F3=(G&&G.coop)?G.players[0]:C;return (F3.supN||0)<SUP_MAX?prSup(F3.supN||0):1e9;}
   case 'slot':{const F2=(G&&G.coop)?G.players[0]:C;return prSlot(slotCount(F2));}
   case 'atk':return prAtk(C.atkLv);/* ⚠🔩支払い */
   case 'repair':return prRe(C.repairs);/* ⚠🔩支払い */
@@ -2559,6 +2643,7 @@ function doPurchase(C,kind,opt){
  if(kind==='uun'&&C.uUn>=metaUnitCap())return false;
  if(kind==='uup'&&(C.uLv||0)>=ULV_MAX)return false;
  if(kind==='ecoslot'&&(((G&&G.coop)?G.players[0]:C).ecoN||1)>=ECO_MAX)return false;
+ if(kind==='supslot'&&(((G&&G.coop)?G.players[0]:C).supN||0)>=SUP_MAX)return false;
  const tgt=opt.tgt!=null&&opt.tgt>=0?G.players[opt.tgt]:null;
  if((kind==='big'||kind==='send'||kind==='jam')&&(!tgt||tgt===C||tgt.dead))return false;
  if(kind==='big'){
@@ -2580,6 +2665,8 @@ function doPurchase(C,kind,opt){
    if(si2<0||si2>=ECO_BASE||!F2.slk||F2.slk[si2]){C.scrap+=p;return false;}
    F2.slk[si2]=true;
    if(C.isMe){toast('🔓 建設スロットを解放!('+slotCount(F2)+'/'+ECO_BASE+')');addFx(F2,'ring',SLOTS[si2][0],SLOTS[si2][1],'',{r:70,col:'#F2ECDC'});}break;}
+  case 'supslot':{const F3=(G&&G.coop)?G.players[0]:C;F3.supN=(F3.supN||0)+1;
+   if(C.isMe)UI.banner('🏗 支援枠を開いた!');break;}
   case 'ecoslot':{const F2=(G&&G.coop)?G.players[0]:C;F2.ecoN=(F2.ecoN||1)+1;
    if(C.isMe){toast('🏭 工房スロットを増設した!('+F2.ecoN+'/'+ECO_MAX+')');addFx(F2,'ring',SLOTS[ECO_BASE+F2.ecoN-1][0],SLOTS[ECO_BASE+F2.ecoN-1][1],'',{r:70,col:'#E8A33D'});}break;}
   case 'uup':C.uLv=(C.uLv||0)+1;
@@ -2936,14 +3023,14 @@ function renderCamp(C,t){
   c.fillStyle='#E8A33D';c.font='900 18px sans-serif';c.textAlign='left';c.fillText('🏭 廃品工房エリア',ex0-38,ey0+63);}
  /* スロットとタワー */
  for(let si=0;si<SLOTS.length;si++){const [sx,sy]=SLOTS[si],tw=C.towers[si];
-  const eco=isEcoSlot(si),lock=!slotUnlocked(C,si);
+  const eco=isEcoSlot(si),sup=isSupSlot(si),lock=!slotUnlocked(C,si);
   c.fillStyle='rgba(0,0,0,.18)';rr(c,sx-33,sy-30,66,64,10);c.fill();
-  c.fillStyle=lock?'#54503f':tw?(eco?'#9c8352':'#8d8474'):(eco?'#8a7444':'#7c7466');rr(c,sx-32,sy-32,64,64,10);c.fill();
-  c.strokeStyle=SEL===si?'#E8A33D':(eco?'#b08d4f':INK);c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
+  c.fillStyle=lock?'#54503f':tw?(sup?'#4f6b7a':eco?'#9c8352':'#8d8474'):(sup?'#48606d':eco?'#8a7444':'#7c7466');rr(c,sx-32,sy-32,64,64,10);c.fill();
+  c.strokeStyle=SEL===si?'#E8A33D':(sup?'#7fb6c9':eco?'#b08d4f':INK);c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
   if(lock){c.fillStyle='rgba(20,16,12,.55)';rr(c,sx-32,sy-32,64,64,10);c.fill();
    c.font='900 26px sans-serif';c.textAlign='center';c.fillText('🔒',sx,sy+10);}
   else if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
-   c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(eco?'🏭':'+',sx,sy+12);}
+   c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(sup?'🏗':eco?'🏭':'+',sx,sy+12);}
   else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0});
   /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
   if(EDIT){const bad=edBad(si);
@@ -3321,23 +3408,29 @@ function evtToMap(e){const r=cv.getBoundingClientRect();return[((e.clientX-r.lef
 function closeBM(){$('buildmenu').style.display='none';SEL=-1;}
 function openBM(si){
  SEL=si;const m=meV(),bm=$('buildmenu'),tw=(m.towers||[])[si];
- const eSlot=isEcoSlot(si),eN=m.ecoN||1;
+ const eSlot=isEcoSlot(si),sSlot=isSupSlot(si),eN=m.ecoN||1;
  let h='';
- if(!eSlot&&!slotUnlocked(m,si)){/* 未解放の建設スロット=解放メニュー */
+ if(!eSlot&&!sSlot&&!slotUnlocked(m,si)){/* 未解放の建設スロット=解放メニュー */
   const p=prSlot(slotCount(m));
   h=`<div id="bm-title">🔓 建設スロット解放</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">解放した数だけ価格が上がる(現在 ${slotCount(m)}/${ECO_BASE}枠)</div>`+
    `<div class="bm-row"><button class="btn gold sm" id="bm-slot" ${m.scrap>=p?'':'disabled'}>🔓 解放 ⚙️${fmt(p)}</button></div>`;
+ }else if(sSlot&&!supUnlocked(m,si)){/* 未解放の支援枠=解放メニュー */
+  const sn=m.supN||0,p=(sn<SUP_MAX)?prSup(sn):null,nextOk=(si-SUP_BASE)===sn;
+  h=`<div id="bm-title">🏗 支援枠 ${si-SUP_BASE+1}/${SUP_MAX}</div>`+
+   `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'開くと支援施設(電波塔/野戦病院/物資投下所)を建てられる':'左の枠から順に開ける'}</div>`+
+   `<div class="bm-row"><button class="btn gold sm" id="bm-sup" ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 解放 ⚙️'+fmt(p):'MAX'}</button></div>`;
  }else if(eSlot&&!ecoUnlocked(m,si)){/* 未解放の工房スロット=増設メニュー */
   const p=(eN<ECO_MAX)?prEco(eN):null;
   const nextOk=(si-ECO_BASE)===eN;/* 増設は左から順に */
   h=`<div id="bm-title">🏭 工房スロット ${si-ECO_BASE+1}/${ECO_MAX}</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'増設すると廃品工房をもう1基建てられる':'左の枠から順に増設できる'}</div>`+
    `<div class="bm-row"><button class="btn gold sm" id="bm-eco" ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 増設 ⚙️'+fmt(p):'MAX'}</button></div>`;
- }else if(!tw){h='<div id="bm-title">'+(eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div><div class="bm-grid">';
+ }else if(!tw){h='<div id="bm-title">'+(sSlot?'🏗 支援施設を建設':eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div>'+(sSlot?'<div class="cdsc" style="font-size:12px;margin:2px 0 6px;color:var(--paper)">タワーの性能には影響しない。同じ施設は1つまで</div>':'')+'<div class="bm-grid">';
   for(let i=0;i<TOWERS.length;i++){const T=TOWERS[i];
-   if(eSlot!==(T.type==='eco'))continue;/* 工房スロットには工房のみ・通常スロットには工房以外 */
-   if(!eSlot&&i>=m.unlocked)continue;
+   const want=sSlot?'sup':eSlot?'eco':'';
+   if(want){if(T.type!==want)continue;}
+   else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
    h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
   if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">作戦タイムで『廃品工房』を解放すると建てられる</div>';
@@ -3361,6 +3454,7 @@ function openBM(si){
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
  const bs=$('bm-sell');if(bs)bs.onclick=()=>{actSell(si);closeBM();};
  const be=$('bm-eco');if(be)be.onclick=()=>{actEcoSlot();closeBM();};
+ const bs2=$('bm-sup');if(bs2)bs2.onclick=()=>{actSupSlot();closeBM();};
  const bl=$('bm-slot');if(bl)bl.onclick=()=>{actSlot(si);closeBM();};
  const [px,py]=mapToClient(SLOTS[si][0],SLOTS[si][1]);
  bm.style.display='block';
@@ -3376,7 +3470,7 @@ let EDSEL=-1,EDDRAG=false;
 /* そのマスが置き場所の条件を満たしているか。満たさない項目名を返す(空なら合格) */
 function edBad(si){
  const p=SLOTS[si];if(!p)return[];
- const bad=[],area=isEcoSlot(si)?1:0;
+ const bad=[],area=isSupSlot(si)?2:isEcoSlot(si)?1:0;
  /* 工房枠は画面のいちばん上(y=190)に置く決まりなので、上端の制限は通常マスにだけ掛ける */
  if(p[0]<75||p[0]>1560||p[1]>730||(area!==1&&p[1]<205))bad.push('画面外');
  let rd=1e9;for(let i=0;i<PATH.length-1;i++)rd=Math.min(rd,segDist(p[0],p[1],PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]));
@@ -3482,6 +3576,12 @@ function actEcoSlot(){
  if(m.scrap<p){toast('⚙️'+fmt(p)+' 必要 — 工房スロット増設',true);return;}
  if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'ecoslot',o:{}});m.scrap-=p;m.ecoN=eN+1;sfx.buy();toast('🏭 工房スロットを増設!');return;}
  if(G)doPurchase(G.players[G.myIdx],'ecoslot',{});}
+function actSupSlot(){
+ const m=meV();if(!m)return;const sn=m.supN||0;
+ if(sn>=SUP_MAX)return;const p=prSup(sn);
+ if(m.scrap<p){toast('⚙️'+fmt(p)+' 必要 — 支援枠の解放',true);return;}
+ if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'supslot',o:{}});m.scrap-=p;m.supN=sn+1;sfx.buy();toast('🏗 支援枠を開いた!');return;}
+ if(G)doPurchase(G.players[G.myIdx],'supslot',{});}
 function actStrike(x,y){if(MODE==='client'){sendCmd({t:'c',a:'st',x:Math.round(x),y:Math.round(y)});CS.meN.charge=0;sfx.boom();}
  else airstrike(G.players[G.myIdx],x,y,G.wave);}
 function actDeploy(ui){
@@ -3708,7 +3808,7 @@ function renderLab(){
  const pnl=$('md-lab').querySelector('.panel'),keepTop2=(pnl&&pnl.scrollTop)||0;
  $('lab-pts2').textContent='🧬 '+fmt(META.pts)+' pt';
  const items=[];
- if(META.nt<TOWERS.length-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',t:'🗼 新型タワー『'+T.n+'』 ('+(META.nt+1)+'/'+(TOWERS.length-BASE_T)+')',d:T.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NT(META.nt)});}
+ if(META.nt<T_PLAY-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',t:'🗼 新型タワー『'+T.n+'』 ('+(META.nt+1)+'/'+(T_PLAY-BASE_T)+')',d:T.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NT(META.nt)});}
  if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({cat:'new',k:'nu',t:'🤖 新型兵科『'+U.n+'』 ('+(META.nu+1)+'/'+(UNITS.length-BASE_U)+')',d:U.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NU(META.nu)});}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */

@@ -431,7 +431,46 @@ function checkGacha(){
  console.log('ガチャ: 英雄11種(★1x5/★2x3/★3/★4/★5)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
  META.gem=0;META.hero={};META.hmat=0;
 }
+/* ---- 支援施設2枠(タワーとは別軸)が、解放してから建つか・効果が乗るか ---- */
+function checkSup(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0];me.scrap=99999;
+ const sti=TOWERS.findIndex(T=>T.type==='sup');
+ if(sti<0||sti<T_PLAY){console.log('FAIL: 支援施設がTOWERSの末尾に無い');process.exit(1);}
+ /* 未解放の支援枠には建たない */
+ if(buildTower(me,SUP_BASE,sti)){console.log('FAIL: 未解放の支援枠に建った');process.exit(1);}
+ doPurchase(me,'supslot',{});
+ if((me.supN||0)!==1){console.log('FAIL: 支援枠が開かない');process.exit(1);}
+ /* 支援枠にタワー、通常枠に支援施設は建たない */
+ if(buildTower(me,SUP_BASE,0)){console.log('FAIL: 支援枠に普通のタワーが建った');process.exit(1);}
+ if(buildTower(me,AI_ORDER[0],sti)){console.log('FAIL: 通常枠に支援施設が建った');process.exit(1);}
+ /* 野戦病院: 部隊を回復し、出撃CDを短縮する */
+ const tim=TOWERS.findIndex(T=>T.id==='medic');
+ if(!buildTower(me,SUP_BASE,tim)){console.log('FAIL: 野戦病院が建たない');process.exit(1);}
+ campStep(me,.02,G.wave);
+ if(!(me.supH>0&&me.supCd<1)){console.log('FAIL: 野戦病院の効果が乗っていない');process.exit(1);}
+ me.ucd[0]=0;deployUnit(me,0);
+ const u=me.units[0];if(u){u.hp=1;campStep(me,.5,G.wave);
+  if(!(u.hp>1)){console.log('FAIL: 野戦病院が回復していない');process.exit(1);}}
+ /* 同じ施設は2つ建たない */
+ doPurchase(me,'supslot',{});
+ if(buildTower(me,SUP_BASE+1,tim)){console.log('FAIL: 同じ支援施設が2つ建った');process.exit(1);}
+ /* 物資投下所: ウェーブ開始で補給が届く */
+ const tid2=TOWERS.findIndex(T=>T.id==='depot');
+ buildTower(me,SUP_BASE+1,tid2);campStep(me,.02,G.wave);
+ if(!me.supDepot){console.log('FAIL: 物資投下所が効いていない');process.exit(1);}
+ const s0=me.scrap,u0=me.up||0,c0=me.core,ch0=me.charge;
+ let got=false;for(let k=0;k<40&&!got;k++){resetCampWave(me);
+  if(me.scrap>s0||(me.up||0)>u0||me.core>c0||me.charge>ch0||me.ucd.every(v=>v===0))got=true;}
+ if(!got){console.log('FAIL: 補給が一度も届かない');process.exit(1);}
+ /* 支援施設は解放チェーンに混ざらない */
+ if(metaTowerCap()>T_PLAY){console.log('FAIL: 支援施設が解放チェーンに混ざっている');process.exit(1);}
+ console.log('支援施設: 枠は⚙️解放制・専用枠のみ・同じ物は1つまで・野戦病院と物資投下所の効果OK');
+ backTitle();
+}
 checkStrikes();
+checkSup();
 checkGacha();
 checkProgress();
 checkEvo();
