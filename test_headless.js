@@ -379,6 +379,37 @@ function checkBite(){
  }
  if(ng.length){
   console.log('FAIL: 噛みつかれているのに反撃できない兵科がある → '+ng.join(' / '));process.exit(1);}
+ /* ---- 攻撃の絵が出ているか(2026-07-26 第64弾) ----
+    ⚠近接攻撃には長らく**絵が1つも無かった**。数で確かめられるようにしておく */
+ {/* ⚠範囲攻撃(aoe)や多目標(multi)の近接兵科は別の枝を通るので、**素の近接**を選び直して置く */
+  const pi=mel.filter(i=>!UNITS[i].aoe&&!UNITS[i].multi&&UNITS[i].type!=='heal')[0];
+  if(pi==null){console.log('FAIL: 素の近接兵科が見つからない');process.exit(1);}
+  const PU=UNITS[pi];
+  me.units.length=0;me.zombies.length=0;me.fx.length=0;
+  const ud=me.flagD;
+  me.units.push({eid:EID++,ui:pi,own:0,am:1,d:ud,hp:99999,mhp:99999,cd:0,hitT:0,fireT:0,ph:0,px:0,py:0,dr:-1,eng:0});
+  const z3=mkZ(zSpec(zi,1,10),ud-ENG_GAP);z3.hp=z3.mhp=99999;me.zombies.push(z3);
+  /* ⚠**エフェクトは寿命が短い**(斬撃0.26秒・銃口の閃光0.14秒)。
+     まとめて回してから me.fx を見ると、消えた後なので何も見つからない(実際にそうなった)。
+     1ステップごとに拾うこと */
+  const kinds={};
+  for(let k=0;k<40;k++){campStep(me,.05,G.wave);for(const e of me.fx)kinds[e.k]=(kinds[e.k]||0)+1;}
+  if(!kinds.slash){
+   console.log('FAIL: 近接攻撃に斬撃の絵が出ていない('+PU.n+' / 出た絵='+Object.keys(kinds).join(',')+')');process.exit(1);}
+  if(!kinds.hit&&!kinds.ric){console.log('FAIL: 着弾の絵が出ていない');process.exit(1);}}
+ /* ---- タワーの銃口の閃光と、装甲に弾かれる火花 ---- */
+ {me.units.length=0;me.zombies.length=0;me.fx.length=0;me.scrap=99999;
+  const si=AI_ORDER[0],ti=TOWERS.findIndex(T=>T.id==='rifle');
+  me.towers[si]=null;const pu=me.unlocked;me.unlocked=ti+1;buildTower(me,si,ti);me.unlocked=pu;
+  const base=projPath(SLOTS[si][0],SLOTS[si][1]);
+  /* 装甲持ち(アーマード)を目の前に置くと、通常弾は弾かれる絵になるはず */
+  const az=ZOMBIES.findIndex(z=>z.id==='arm');
+  const z2=mkZ(zSpec(az,1,20),Math.max(20,base-40));z2.hp=z2.mhp=99999;me.zombies.push(z2);
+  const kinds={};
+  for(let k=0;k<60;k++){campStep(me,.05,G.wave);for(const e of me.fx)kinds[e.k]=(kinds[e.k]||0)+1;}
+  if(!kinds.mzl){console.log('FAIL: タワーの銃口の閃光が出ていない');process.exit(1);}
+  if(!kinds.ric){console.log('FAIL: 装甲に通常弾が弾かれる火花が出ていない');process.exit(1);}
+  console.log('演出: 近接の斬撃・着弾・銃口の閃光・装甲に弾かれる火花 すべて出ている OK');}
  console.log('反撃: 近接'+mel.length+'兵科すべて、噛みつかれた相手(gap='+ENG_GAP+')に反撃できる OK');
  backTitle();
 }
