@@ -74,6 +74,11 @@ const REC=[
  {k:'dronefx', f:'Tower Deploy Hitech Robot',    t:0, d:.28, g:-9, r:1.55},
  /* --- 汎用 --- */
  {k:'zap',     f:'Impact Electric Tonal Deep',   t:0, d:.32, g:-1, r:1.1},
+ /* ⚠重テスラは「ゆっくり伝わって跳ねるほど重くなる」タワーなので、テスラコイルと同じ音では役割が伝わらない。
+    電撃を低くしたものに**低い胴鳴り(トレーラーのブーム)と金属の低音**を重ねて重量感を出す */
+ {k:'zap2',    d:.62, g:-2, mix:[{f:'Impact Electric Tonal Deep',t:0,d:.62,g:-5,r:.72},
+                           {f:'Booms_Vol2_075',t:0,d:.62,g:-2,r:.80,dl:6},
+                           {f:'Metal Scrape Low Tonal LFE',t:0,d:.62,g:-10,r:.85,dl:14}]},
  {k:'thunk',   f:'METAL SWING HIT',              t:0, d:.26, g:-3, r:1.0},
  {k:'boom',    f:'Booms_Vol2_011',               t:0, d:.85, g:-1, r:1.0},
  {k:'net',     f:'Whoosh Glass Crystal',         t:0, d:.36, g:-3, r:1.0},
