@@ -596,6 +596,11 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 const fmt=n=>Math.floor(n).toLocaleString();
 const dist=(x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
+/* 点(px,py)と線分(x1,y1)-(x2,y2)の距離。ビーム砲が線上の敵を拾うのに使う */
+function segDist(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L=dx*dx+dy*dy;
+ if(L<=0)return dist(px,py,x1,y1);
+ const u=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/L));
+ return dist(px,py,x1+dx*u,y1+dy*u);}
 function dmgFlash(){const df=$('dmgflash');if(!df||!df.classList)return;df.classList.remove('on');if(df.offsetWidth!=null)void df.offsetWidth;df.classList.add('on');}
 function toast(msg,warn){const t=document.createElement('div');t.className='toast'+(warn?' warn':'');t.textContent=msg;$('toasts').appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},2600);}
 /* ============ サウンド ============ */
@@ -711,7 +716,8 @@ const TOWERS=[
  {id:'arty',n:'重砲台',cost:640,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
  {id:'coil',n:'重テスラ',cost:700,rng:250,dmg:68,rate:1.1,type:'elec',chain:7,c:'#4fa8d9',dsc:'高圧電流が長く連鎖する'},
  /* ↓研究所限定の新タワー(ソロで🔬解放後にゲーム内解放チェーンへ出現) */
- {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程・装甲貫通の狙撃砲'},
+ /* beam=ビームの半幅。type は bullet のまま(弾薬と🔫銃器改良を効かせるため)、撃ち方だけ線状にする */
+ {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。線上の敵を全部貫く(装甲貫通)'},
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'},
  {id:'plasma',n:'プラズマ砲',cost:820,rng:420,dmg:210,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'超高熱の大爆発'},
  {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:95,rate:.7,type:'bullet',multi:3,pierce:1,c:'#8a8f96',dsc:'貫通弾を3連射する要塞'}
@@ -2302,7 +2308,17 @@ function campStep(C,dt,wave){
    const splash=(z0)=>{if(!AMO.aoe)return;
     for(const z2 of C.zombies){if(z2.dead||z2===z0)continue;if(dist(z2.px,z2.py,z0.px,z0.py)<=AMO.aoe)dmgZ(C,z2,dm*.45,1);}
     addFx(C,'ring',z0.px,z0.py,'',{r:AMO.aoe,col:'#b282ff'});};
-   if(T.multi){/* 先頭(コアに近い順)からT.multi体を撃つ */
+   if(T.beam){/* ビーム砲: 狙った敵の方向へ射程いっぱいまで貫通ビームを撃ち、線上の敵を全部巻き込む */
+    const ang=Math.atan2(tg.py-sy,tg.px-sx),ex=sx+Math.cos(ang)*rng,ey=sy+Math.sin(ang)*rng;
+    const bw=T.beam*(1+.06*tw.us.g);/* 📡射程を上げるとビームも太くなる */
+    let cnt=0;
+    for(const z of C.zombies){if(z.dead||z.d<0)continue;
+     if(segDist(z.px,z.py,sx,sy,ex,ey)>bw)continue;
+     splash(z);dmgZ(C,z,dm,prc);cnt++;}
+    addFx(C,'beam',sx,sy,'',{x2:ex,y2:ey,col:trC,w:bw});
+    if(FXLV>0)addP(C,6,sx+Math.cos(ang)*26,sy+Math.sin(ang)*26,{sp:150,a:ang,spread:.2,g:40,life:.25,r:2.2,col:'#e6ccff'});
+    if(C.isMe&&cnt)sfx.snipe();}
+   else if(T.multi){/* 先頭(コアに近い順)からT.multi体を撃つ */
     const inr=[];for(const z of C.zombies){if(z.dead||z.d<0)continue;if(dist(z.px,z.py,sx,sy)<=rng)inr.push(z);}
     inr.sort((a,b)=>b.d-a.d);let cnt=0;
     for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];splash(nx);dmgZ(C,nx,dm,prc);addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py,col:trC,hit:hitC,w:trW});cnt++;}
@@ -2859,6 +2875,14 @@ function renderCamp(C,t){
    c.strokeStyle=(e.col||'rgba(255,235,150,')+a2+')';c.lineWidth=(e.w||3);c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();
    /* 着弾は控えめな点光だけ */
    c.globalAlpha=a2*.8;c.fillStyle=e.hit||'#fff3c0';c.beginPath();c.arc(e.x2,e.y2,1.4+a2*1.8,0,7);c.fill();c.globalAlpha=1;}
+  else if(e.k==='beam'){/* ビーム砲: 太い光の帯が一瞬走って細く消える */
+   const life=.3,a3=Math.max(0,1-e.t/life),w3=(e.w||24)*2;
+   c.lineCap='round';
+   for(const pass of [[w3,'rgba(180,120,255,',.30],[w3*.5,'rgba(216,170,255,',.65],[w3*.16,'rgba(255,255,255,',1]]){
+    c.strokeStyle=pass[1]+(a3*pass[2])+')';c.lineWidth=pass[0]*(.35+a3*.65);
+    c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();}
+   c.lineCap='butt';
+   c.globalAlpha=a3;c.fillStyle='#fff';c.beginPath();c.arc(e.x,e.y,3+a3*7,0,7);c.fill();c.globalAlpha=1;}
   else if(e.k==='zap'){
    /* 電流が流れて見えるよう、太い芯+細い枝+走る光点で描く */
    const life=.5,k5=Math.max(0,1-e.t/life),ps=e.pts;if(ps.length<2)continue;

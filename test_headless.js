@@ -256,8 +256,41 @@ function checkCryo(){
  console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・解凍直後の再凍結なし OK');
  backTitle();
 }
+/* ---- レールガン(ビーム砲)が線上の敵を全部巻き込むか ---- */
+function checkBeam(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0],ti=TOWERS.findIndex(t=>t.id==='rail');
+ if(ti<0||!TOWERS[ti].beam){console.log('FAIL: レールガンがビーム砲になっていない');process.exit(1);}
+ const si=AI_ORDER[0];me.scrap=9999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
+ buildTower(me,si,ti);
+ if(!me.towers[si]){console.log('FAIL: レールガンが建たない');process.exit(1);}
+ /* 塔から見て同じ方向・別の距離に3体並べる=1発で全部当たるはず */
+ const [sx,sy]=SLOTS[si],T=TOWERS[ti];
+ me.zombies.length=0;
+ const zs=[];
+ for(let k=0;k<3;k++){const z=mkZ(zSpec(0,1,5),100+k*40);z.hp=z.mhp=1e9;me.zombies.push(z);zs.push(z);}
+ campStep(me,.001,G.wave);/* px/pyを経路から埋める */
+ /* 塔と1体目を結ぶ線上に残り2体を移動させる(経路の形に依存しないため直接置く) */
+ const ang=Math.atan2(zs[0].py-sy,zs[0].px-sx);
+ for(let k=1;k<3;k++){zs[k].px=sx+Math.cos(ang)*(120+k*90);zs[k].py=sy+Math.sin(ang)*(120+k*90);}
+ const hp0=zs.map(z=>z.hp);
+ me.towers[si].cd=0;
+ /* 位置を上書きしたまま撃たせる=campStepは位置を再計算してしまうので発射部分だけ直接呼べない。
+    代わりに敵の経路距離dを使わない当たり判定(segDist)を直接検証する */
+ const ex=sx+Math.cos(ang)*T.rng,ey=sy+Math.sin(ang)*T.rng;
+ let onLine=0;for(const z of zs)if(segDist(z.px,z.py,sx,sy,ex,ey)<=T.beam)onLine++;
+ if(onLine<3){console.log('FAIL: ビームの判定(segDist)が線上の敵を拾えていない '+onLine+'/3');process.exit(1);}
+ /* 実際に1フレーム回して、複数体が同時に削れることを確かめる */
+ let hit=0;
+ for(let k=0;k<60&&hit<2;k++){campStep(me,.05,G.wave);hit=zs.filter((z,i)=>z.hp<hp0[i]).length;}
+ if(hit<2){console.log('FAIL: ビームが1体しか巻き込んでいない('+hit+'体)');process.exit(1);}
+ console.log('レールガン(ビーム砲): 1発で'+hit+'体を同時に貫通 OK');
+ backTitle();
+}
 checkStrikes();
 checkCryo();
+checkBeam();
 checkFinalBoss();
 runStage2();
 runNightmare();

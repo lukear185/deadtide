@@ -31,6 +31,8 @@ const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
 /* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
 const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
+/* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため) */
+const TM=/t=([A-Za-z]+)/.exec(OPT),TID=TM?TM[1]:'';
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  +(ST?('META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
@@ -43,6 +45,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'if(zi>=0){var z9=mkZ(zSpec(zi,1,20),PLEN*(.3+k*.18));'
      +(OPT.indexOf('frz')>=0?'if(k%2===0)z9.frzT=99;':'')/* frz=1体おきに凍結させて見比べる */
      +'me.zombies.push(z9);}});'
+     +(TID?('var ti9=TOWERS.findIndex(function(q){return q.id==="'+TID+'";});'
+       +'var si9=AI_ORDER[0];me.scrap=99999;me.unlocked=Math.max(me.unlocked,ti9+1);me.towers[si9]=null;'
+       +'buildTower(me,si9,ti9);'
+       +'setInterval(function(){try{var t9=me.towers[si9];if(t9)t9.cd=0;'
+       +'me.zombies.forEach(function(z){z.hp=z.mhp;});}catch(e){}},80);'):'')
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
  +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
