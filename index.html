@@ -598,6 +598,9 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 const fmt=n=>Math.floor(n).toLocaleString();
+/* 🛠マス編集モード。URLに ?edit=1 が付いている時だけ有効(下の「マス編集モード」を参照)。
+   ⚠stageOK/buildTide など早い所からも参照するので、宣言はここ(ファイルの上の方)に置くこと */
+const EDIT=(()=>{try{return (location.search||'').indexOf('edit=1')>=0;}catch(e){return false;}})();
 const dist=(x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
 /* 点(px,py)と線分(x1,y1)-(x2,y2)の距離。ビーム砲が線上の敵を拾うのに使う */
 function segDist(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,L=dx*dx+dy*dy;
@@ -1079,8 +1082,9 @@ function scArr(si){if(!Array.isArray(META.sc))META.sc=[];
  return META.sc[clamp(si|0,0,STAGES.length-1)];}
 /* 難易度は1つ下をクリアしないと選べない(新兵から順に) */
 const diffOK=(si,d)=>d<=0||!!scArr(si)[d-1];
-/* 次のステージは「前のステージを🌑ナイトメアでクリア」すると開く */
-const stageOK=i=>i<=0||!!scArr(i-1)[NM_DIFF];
+/* 次のステージは「前のステージを🌑ナイトメアでクリア」すると開く。
+   ⚠🛠編集モード(?edit=1)だけは全ステージ無条件で開ける=マスの配置作業のため */
+const stageOK=i=>EDIT||i<=0||!!scArr(i-1)[NM_DIFF];
 /* ============ ルート(loadStageで差し替わる) ============ */
 let PATH=STAGES[0].path;
 const SEG=[];let PLEN=0;
@@ -1976,6 +1980,8 @@ function buildTide(wave){
  if(G.pve&&D.sp!==1)for(const e of pool)e.z.sp*=D.sp;
  for(let pi=0;pi<G.players.length;pi++){const P=G.players[pi];
   for(const s of P.inc.sent){for(let i=0;i<s.cnt;i++)pool.splice(ri(0,pool.length),0,{dl:.4,z:zSpec(s.zi,mul,wave,1,s.from),tgt:pi});}}
+ /* 🛠編集モード: 敵を一切出さない(マスの配置に集中するため) */
+ if(EDIT){T.pool=[];T.total=0;T.qt=1e9;T.lead=0;T.up=0;return;}/* leadを大きくするとHUDの🔨に桁が出るので0 */
  if(pool.length)pool[0].dl=1.1;
  /* ウェーブ開始からLEAD秒は敵が出ない=タワーを建てる時間(2026-07-25ユーザー指示) */
  T.pool=pool;T.lead=WAVE_LEAD;T.qt=(pool.length?pool[0].dl:0)+WAVE_LEAD;T.total=pool.length;T.up=0;
@@ -2502,7 +2508,8 @@ function campStep(C,dt,wave){
  C.shells=C.shells.filter(s=>!s.dead);
  /* ゾンビ環境音: 数に応じてうめき */
  if(C.isMe&&C.zombies.length&&Math.random()<dt*Math.min(.45,.06+C.zombies.length*.012))sfx.moan();
- if(!C.zombies.length&&G&&!G.tide.pool.length&&!C.waveDone&&!C.dying){C.waveDone=true;awardWavePts(C,false);
+ /* 🛠編集モードは敵が1体も出ないので、ウェーブが即終了して波だけ進むのを止める */
+ if(!EDIT&&!C.zombies.length&&G&&!G.tide.pool.length&&!C.waveDone&&!C.dying){C.waveDone=true;awardWavePts(C,false);
   if(C.isMe){sfx.clearJ();UI.banner('🛡 WAVE '+(G?G.wave:'')+' 制圧!');}}
 }
 /* ============ 購入 ============ */
@@ -3355,7 +3362,6 @@ function openBM(si){
 /* ============ 🛠 マス編集モード(?edit=1 の時だけ) ============
    実機で建設マスを指でドラッグして置き直し、そのまま `slots:[...]` を書き出すための開発用モード。
    ⚠URLに ?edit=1 が無ければ一切動かない=公開ビルドに入れても普通のプレイヤーには見えない */
-const EDIT=(()=>{try{return (location.search||'').indexOf('edit=1')>=0;}catch(e){return false;}})();
 let EDSEL=-1,EDDRAG=false;
 /* そのマスが置き場所の条件を満たしているか。満たさない項目名を返す(空なら合格) */
 function edBad(si){
