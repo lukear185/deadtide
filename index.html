@@ -67,6 +67,17 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  #paradecv{height:86px;opacity:.5;z-index:0}
 }
 #paradecv{position:fixed;left:0;right:0;bottom:0;width:100%;height:120px;pointer-events:none}
+/* ⚔ 冒険(育成RPG)。画面いっぱいのキャンバス1枚+左下の十字キー */
+#scr-rpg{background:#0d0b08;justify-content:flex-start;align-items:stretch;overflow:hidden}
+#rgcv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#rgquit{position:absolute;right:max(8px,env(safe-area-inset-right));top:max(40px,env(safe-area-inset-top));z-index:2;
+ background:rgba(36,31,25,.9);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:12px;padding:5px 10px;font-weight:900}
+/* ⚠十字キーは画面の左下。戦闘中とメニュー中はJS側で display:none にする */
+#rgpad{position:absolute;left:max(6px,env(safe-area-inset-left));bottom:calc(6px + max(0px,env(safe-area-inset-bottom)));
+ z-index:2;display:flex;flex-direction:column;align-items:center;gap:3px;opacity:.92}
+#rgpad button{width:44px;height:32px;background:rgba(36,31,25,.92);border:2px solid var(--paper);border-radius:8px;
+ color:var(--paper);font-size:14px;font-weight:900;touch-action:none;padding:0}
+#rgpad .rgrow{display:flex;gap:34px}
 /* 鍛錬所の英雄カード(研究所と同じ .lc グリッドに乗せる) */
 .lc.trc.sel{border-color:var(--rust);box-shadow:0 0 0 3px rgba(193,80,46,.4)}
 .lc .zth{width:64px;height:64px;align-self:center;display:block}
@@ -564,6 +575,16 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <span class="bphint" style="margin:0">💎はボス撃破でのみ入手(通常+1 / 最終+3)</span>
     </div>
     <div class="bpbody"><div id="gc-res"></div><div id="gc-list"></div></div>
+  </div>
+</div>
+
+<div class="scr" id="scr-rpg">
+  <canvas id="rgcv"></canvas>
+  <button id="rgquit">✕ やめる</button>
+  <div id="rgpad">
+    <button id="rgU">▲</button>
+    <div class="rgrow"><button id="rgL">◀</button><button id="rgR">▶</button></div>
+    <button id="rgD">▼</button>
   </div>
 </div>
 
@@ -4516,7 +4537,7 @@ $('gc-rate').onclick=()=>{$('gc-res').innerHTML=IC(gcRateHtml());};
     ① 英雄の鍛錬Lv(HPと攻撃が+8%/Lv・最大10) ② ソロ作戦のゾンビ図鑑
    ⚠鍛錬の中身(🔧鍛錬素材を何に使わせるか)は作り直し予定。
      今は「🔧を注いで経験値を入れる」だけの**暫定の形**で、遊びとしての中身はまだ無い。 */
-let TRSEL='',TRTAB='hero';
+let TRSEL='',TRTAB='adv';/* 既定は⚔冒険のタブ(鍛錬所の本体はこちら) */
 const TR_XP=150;/* 🔧TR_COST ぶん注いだ時に入る経験値(暫定) */
 
 /* ---------------- 🏋 鍛錬所のモーダル ---------------- */
@@ -4524,11 +4545,11 @@ function renderTrain(){
  const box=$('tr-list');if(!box)return;
  const mt=$('tr-mat2');if(mt)mt.innerHTML=IC('🔧 ')+fmt(META.hmat||0);
  const tb=$('tr-tabs');
- if(tb){tb.innerHTML=[['hero','🦸 鍛える'],['zoo','📖 ゾンビ図鑑']].map(x=>
+ if(tb){tb.innerHTML=[['adv','⚔ 冒険'],['hero','🦸 鍛える'],['zoo','📖 ゾンビ図鑑']].map(x=>
    '<button class="tb'+(TRTAB===x[0]?' on':'')+'" data-tt="'+x[0]+'">'+x[1]+'</button>').join('');
   tb.querySelectorAll('[data-tt]').forEach(e=>{e.onclick=()=>{TRTAB=e.dataset.tt;renderTrain();};});}
  const ft=$('tr-foot');if(ft&&ft.style)ft.style.display=TRTAB==='hero'?'':'none';
- if(TRTAB==='zoo')renderZoo(box);else renderTrHero(box);
+ if(TRTAB==='zoo')renderZoo(box);else if(TRTAB==='adv')renderAdv(box);else renderTrHero(box);
 }
 function renderTrHero(box){
  const hint=$('tr-hint');
@@ -4577,6 +4598,34 @@ function trainGrind(hid){
  renderTrain();updLabBtn();
 }
 
+/* ---------------- ⚔ 冒険(育成RPG)への入口 ---------------- */
+function renderAdv(box){
+ const hint=$('tr-hint');
+ if(hint)hint.innerHTML='英雄たちが共通の世界を冒険する<b>育成RPG</b>。'
+  +'<b>ここで上げたレベルの半分がTD側の鍛錬Lvになる</b>(最大'+TR_MAX+')。'
+  +'⚠<b>ソロ作戦でクリアした ステージ×難易度 のエリアにしか行けない</b>。';
+ const R=rgMeta();
+ const own=DEV?HEROES.map(h=>h.id):HEROES.filter(h=>heroOwned(h.id)).map(h=>h.id);
+ if(!own.length){
+  box.innerHTML=IC('<div class="labdone">まだ英雄がいない。💎英雄召集で仲間にしよう</div>');return;}
+ const okN=RG_AREAS.filter(A=>rgAreaOK(A)||DEV).length;
+ const clN=RG_AREAS.filter(A=>R.cl[A.k]).length;
+ box.innerHTML='<div class="bphint" style="margin:0 0 5px">'
+  +'行けるエリア '+okN+'／'+RG_AREAS.length+'　踏破 '+clN+'　所持金 '+fmt(R.gold)+'G</div>'
+  +'<button class="btn red" id="bt-rg-go" style="width:100%;margin-bottom:6px">▶ 冒険に出る</button>'
+  +'<div class="lgrid">'+own.map(id=>{
+   const H=heroOf(id),lv=rgLv(id),s=rgStat(id),inp=R.pt.indexOf(id)>=0;
+   return '<div class="lc'+(inp?' sel':'')+'">'
+    +'<div class="tg">'+RK_S[H.rk]+(inp?'　パーティ':'　ひかえ')+'</div>'
+    +'<div class="nm">'+H.n+'</div>'
+    +'<div class="tg">レベル '+lv+'／'+RG_LVMAX+'　→ 鍛錬Lv'+rgTrLv(lv)+'</div>'
+    +'<div class="ds">HP'+s.hp+'・MP'+s.mp+'・ちから'+s.st+'<br>まもり'+s.df+'・すばやさ'+s.sp
+      +'<br>つぎまで '+(lv>=RG_LVMAX?'—':Math.max(0,rgNeed(lv)-rgXp(id)))+'</div></div>';
+  }).join('')+'</div>';
+ const g=$('bt-rg-go');
+ if(g)g.onclick=()=>{if(rgOpen())$('md-train').classList.remove('on');};
+}
+
 /* ---------------- 📖 ゾンビ図鑑 ---------------- */
 /* sil=未発見。⚠何がいるか分からないよう真っ黒のシルエットで出す */
 function zcThumb(cv,zi,sil){
@@ -4620,6 +4669,943 @@ function renderZoo(box){
  box.querySelectorAll('canvas.zth').forEach(cv=>
   zcThumb(cv,+cv.dataset.zi,cv.classList&&cv.classList.contains('zsil')));
 }
+
+/* ============ ⚔ 冒険(育成RPG・鍛錬所の中身) ============
+   2026-07-26(第54弾)。⚠**TDとは全く別のゲーム**として作る(ユーザー決定)。
+   骨子: ①英雄全員が共通の世界を冒険する ②見下ろしマップを歩く ③がっつりコマンド戦闘
+        ④所持している英雄から4人パーティ ⑤ここで上げたLvが**TD側の鍛錬Lvに反映**される
+        ⑥**TD側でクリアしたエリアにしか行けない**(ソロ作戦の進行とつながっている)
+   ⚠廃止した洞窟の轍を踏まないこと=「見てるだけ」の時間を作らない。戦闘は毎ターン手を動かす。 */
+
+/* ---- 寸法 ---- */
+const RG_CS=26;              /* 1マスの表示px */
+const RG_MW=40,RG_MH=28;     /* 生成するマップのマス数 */
+const RG_TW=21,RG_TH=15;     /* 拠点の町のマス数(固定) */
+const RG_ENC=[.055,.10];     /* 1歩あたりの遭遇率(通路/奥) */
+const RG_PARTY=4;            /* パーティの人数 */
+const RG_LVMAX=40;           /* RPG側のレベル上限 */
+/* RPGのLv → TD側の鍛錬Lv(0〜10)。Lv21で+80%(上限)に届く */
+const rgTrLv=lv=>clamp(Math.floor((lv-1)/2),0,TR_MAX);
+/* 次のレベルに要る経験値。⚠序盤は軽く、後半で伸ばす */
+const rgNeed=lv=>Math.round(14*Math.pow(lv,1.72)+6*lv);
+
+/* ---- エリア(TD側の「ステージ×難易度」に対応。クリアしたぶんだけ開く) ----
+   si=ステージ番号 / di=難易度番号(D5の添字)。META.sc[si][di] が立っていれば入れる */
+const RG_AREAS=[
+ {k:'a0',n:'郊外の廃線',   si:0,di:0,lv:1, th:'road',dsc:'錆びた線路が草に埋もれている'},
+ {k:'a1',n:'高架の下',     si:0,di:1,lv:5, th:'road',dsc:'崩れた高架が影を落とす'},
+ {k:'a2',n:'車両基地',     si:0,di:2,lv:9, th:'road',dsc:'置き去りの車両が並ぶ'},
+ {k:'a3',n:'廃線ハイウェイ',si:0,di:3,lv:14,th:'road',dsc:'砂に埋もれた最終防衛線'},
+ {k:'a4',n:'終着駅',       si:0,di:4,lv:19,th:'road',dsc:'誰も降りなかった駅'},
+ {k:'b0',n:'潮の浅瀬',     si:1,di:0,lv:7, th:'sea', dsc:'膝まで潮が満ちている'},
+ {k:'b1',n:'沈んだ桟橋',   si:1,di:1,lv:11,th:'sea', dsc:'折れた桟橋が海へ続く'},
+ {k:'b2',n:'貨物船の墓場', si:1,di:2,lv:16,th:'sea', dsc:'錆びた船腹が壁になっている'},
+ {k:'b3',n:'沈んだ港',     si:1,di:3,lv:21,th:'sea', dsc:'港の底で何かが動いている'},
+ {k:'b4',n:'深淵の入口',   si:1,di:4,lv:26,th:'sea', dsc:'底の見えない裂け目'},
+ {k:'n0',n:'血月の森',     si:0,di:5,lv:30,th:'night',dsc:'月が赤い。獣の匂いがする'},
+ {k:'n1',n:'原初の巣',     si:1,di:5,lv:35,th:'night',dsc:'すべての獣が生まれた場所'}
+];
+const rgAreaOK=A=>{try{return !!(META.sc&&META.sc[A.si]&&META.sc[A.si][A.di]);}catch(e){return false;}};
+const rgArea=k=>RG_AREAS.find(a=>a.k===k);
+
+/* ---- とくぎ ----
+   t: atk=攻撃 / heal=回復 / rev=蘇生 / buf=味方強化 / deb=敵弱体 / stp=行動不能
+   tg: one=敵1体 / all=敵全体 / ally=味方1人 / party=味方全体 / self=自分
+   pw: 効き目の倍率(攻撃はちから基準・回復は固定値基準) */
+const RG_SK=[
+ /* 元警官 */
+ {id:'s_sup', n:'制圧射撃',mp:4, t:'atk',tg:'all',pw:.72,dsc:'敵全体を撃ちすくめる'},
+ {id:'s_aim', n:'狙い撃ち',mp:6, t:'atk',tg:'one',pw:2.3, dsc:'急所を撃ち抜く。会心が出やすい',crit:.35},
+ /* 消防士 */
+ {id:'s_water',n:'放水',   mp:5, t:'atk',tg:'all',pw:.62,dsc:'敵全体を押し流し、素早さを下げる',deb:'sp'},
+ {id:'s_flame',n:'火炎放射',mp:9,t:'atk',tg:'all',pw:1.15,dsc:'炎で敵全体を焼く'},
+ /* 猟師 */
+ {id:'s_trap',n:'一斉罠',  mp:6, t:'deb',tg:'all',pw:1,  dsc:'敵全体の素早さを大きく下げる',deb:'sp'},
+ {id:'s_pier',n:'貫通矢',  mp:5, t:'atk',tg:'one',pw:1.9,dsc:'守りを無視して射抜く',ign:1},
+ /* 整備士 */
+ {id:'s_fix', n:'応急修理',mp:4, t:'heal',tg:'ally',pw:34,dsc:'味方1人のHPを回復する'},
+ {id:'s_wall',n:'鉄壁',    mp:7, t:'buf',tg:'party',pw:1,dsc:'味方全体の守りを上げる',buf:'df'},
+ /* 配達人 */
+ {id:'s_dash',n:'速達',    mp:5, t:'atk',tg:'one',pw:1.7,dsc:'先制で轢き飛ばす。必ず先に動く',fst:1},
+ {id:'s_conf',n:'かく乱',  mp:5, t:'deb',tg:'all',pw:1,  dsc:'敵全体の攻撃力を下げる',deb:'st'},
+ /* 特殊部隊員 */
+ {id:'s_snip',n:'精密狙撃',mp:8, t:'atk',tg:'one',pw:3.1,dsc:'HPが一番高い敵に必殺の一撃',crit:.5},
+ {id:'s_burst',n:'掃射',   mp:10,t:'atk',tg:'all',pw:1.25,dsc:'敵全体を薙ぎ払う'},
+ /* 軍医 */
+ {id:'s_heal',n:'治療',    mp:4, t:'heal',tg:'ally',pw:46,dsc:'味方1人を大きく回復する'},
+ {id:'s_care',n:'一斉手当',mp:9, t:'heal',tg:'party',pw:34,dsc:'味方全体を回復する'},
+ {id:'s_rev', n:'蘇生',    mp:14,t:'rev',tg:'ally',pw:.6,dsc:'倒れた味方を呼び戻す'},
+ /* 爆破屋 */
+ {id:'s_bomb',n:'大爆破',  mp:9, t:'atk',tg:'all',pw:1.35,dsc:'仕掛けた爆薬を一斉に起爆する'},
+ {id:'s_time',n:'時限爆弾',mp:7, t:'atk',tg:'one',pw:2.6,dsc:'一点に爆薬を詰め込む'},
+ /* 死潮の預言者 */
+ {id:'s_stop',n:'時間停止',mp:12,t:'stp',tg:'all',pw:1,  dsc:'敵全体を1ターン動けなくする'},
+ {id:'s_fore',n:'予知',    mp:6, t:'buf',tg:'party',pw:1,dsc:'味方全体の素早さを上げる',buf:'sp'},
+ {id:'s_tide',n:'死潮',    mp:13,t:'atk',tg:'all',pw:1.6,dsc:'潮が敵全体を飲み込む'},
+ /* 鋼鉄の巨人 */
+ {id:'s_quake',n:'地響き', mp:10,t:'atk',tg:'all',pw:1.4,dsc:'地面を割って敵全体を打ち上げる'},
+ {id:'s_guard',n:'かばう', mp:5, t:'buf',tg:'self',pw:1, dsc:'仲間への攻撃を一身に引き受ける',buf:'cov'},
+ /* 終焉の騎士 */
+ {id:'s_doom',n:'死の宣告',mp:15,t:'atk',tg:'one',pw:4.2,dsc:'致命傷を刻みつける',crit:.4},
+ {id:'s_end', n:'終焉',    mp:20,t:'atk',tg:'all',pw:2.2,dsc:'すべてを終わらせる一撃'}
+];
+const RG_SK_BY={};for(const s of RG_SK)RG_SK_BY[s.id]=s;
+
+/* ---- 英雄のRPGステータス ----
+   b=Lv1の値 / g=1レベルごとの伸び。sk=[[習得Lv,とくぎid],...]
+   ⚠TD側のHEROESとは別物の数値。ここを触ってもTDの英雄の強さは変わらない
+     (TDに効くのは鍛錬Lv=Lv/2 だけ) */
+const RG_HERO={
+ hCop :{b:{hp:34,mp:8, st:11,df:9, sp:10},g:{hp:6.2,mp:2.0,st:2.2,df:1.7,sp:1.6},sk:[[1,'s_sup'],[8,'s_aim']]},
+ hFire:{b:{hp:44,mp:7, st:9, df:12,sp:8}, g:{hp:8.0,mp:1.8,st:1.8,df:2.2,sp:1.2},sk:[[1,'s_water'],[10,'s_flame']]},
+ hHunt:{b:{hp:32,mp:9, st:13,df:8, sp:12},g:{hp:5.8,mp:2.2,st:2.5,df:1.5,sp:2.0},sk:[[1,'s_trap'],[7,'s_pier']]},
+ hMech:{b:{hp:38,mp:10,st:9, df:11,sp:9}, g:{hp:6.8,mp:2.6,st:1.7,df:2.1,sp:1.4},sk:[[1,'s_fix'],[9,'s_wall']]},
+ hPost:{b:{hp:30,mp:8, st:10,df:7, sp:17},g:{hp:5.4,mp:2.0,st:2.0,df:1.3,sp:2.8},sk:[[1,'s_dash'],[9,'s_conf']]},
+ hSf  :{b:{hp:46,mp:11,st:16,df:12,sp:13},g:{hp:8.4,mp:2.6,st:3.0,df:2.2,sp:2.1},sk:[[1,'s_snip'],[12,'s_burst']]},
+ hMed :{b:{hp:40,mp:14,st:10,df:11,sp:11},g:{hp:7.2,mp:3.4,st:1.8,df:2.0,sp:1.8},sk:[[1,'s_heal'],[8,'s_care'],[16,'s_rev']]},
+ hBomb:{b:{hp:38,mp:12,st:17,df:9, sp:10},g:{hp:6.6,mp:2.8,st:3.2,df:1.6,sp:1.6},sk:[[1,'s_time'],[11,'s_bomb']]},
+ hSeer:{b:{hp:44,mp:16,st:15,df:12,sp:12},g:{hp:7.8,mp:3.8,st:2.9,df:2.2,sp:2.0},sk:[[1,'s_fore'],[10,'s_stop'],[20,'s_tide']]},
+ hGiant:{b:{hp:70,mp:9,st:19,df:19,sp:6}, g:{hp:12.5,mp:2.2,st:3.4,df:3.4,sp:1.0},sk:[[1,'s_guard'],[12,'s_quake']]},
+ hNox :{b:{hp:62,mp:15,st:24,df:15,sp:14},g:{hp:11.0,mp:3.4,st:4.4,df:2.6,sp:2.3},sk:[[1,'s_doom'],[24,'s_end']]}
+};
+/* ---- どうぐ ---- */
+const RG_IT=[
+ {id:'herb', n:'やくそう',    p:12, t:'heal',pw:40, dsc:'HPを40ほど回復する'},
+ {id:'herb2',n:'上やくそう',  p:44, t:'heal',pw:120,dsc:'HPを120ほど回復する'},
+ {id:'water',n:'まほうの水',  p:36, t:'mp',  pw:22, dsc:'MPを22ほど回復する'},
+ {id:'life', n:'いのちの雫',  p:180,t:'rev', pw:.5, dsc:'倒れた仲間を半分のHPで起こす'},
+ {id:'nut',  n:'ちからの実',  p:600,t:'perm',st:'st',dsc:'使った1人のちからが永久に+3'},
+ {id:'seed', n:'まもりの種',  p:600,t:'perm',st:'df',dsc:'使った1人のまもりが永久に+3'},
+ {id:'wing', n:'かえりの羽',  p:25, t:'warp',dsc:'その場から拠点へ戻る'}
+];
+const RG_IT_BY={};for(const i of RG_IT)RG_IT_BY[i.id]=i;
+
+/* ---- セーブ(META.rpg) ----
+   ⚠METAの正規化ブロックは「セーブが無いと丸ごと走らない」ので、ここで毎回ならす
+     (洞窟の図鑑で実際に踏んだ落とし穴) */
+function rgMeta(){
+ const R=META.rpg=META.rpg||{};
+ if(!R.lv||typeof R.lv!=='object')R.lv={};
+ if(!R.xp||typeof R.xp!=='object')R.xp={};
+ if(!R.it||typeof R.it!=='object')R.it={herb:3};
+ if(!R.pm||typeof R.pm!=='object')R.pm={};/* 実と種で伸びた永久ぶん id→{st,df} */
+ if(!Array.isArray(R.pt))R.pt=[];
+ if(!R.cl||typeof R.cl!=='object')R.cl={};/* 踏破したエリア */
+ if(typeof R.gold!=='number')R.gold=80;
+ return R;}
+const rgLv=id=>{const R=rgMeta();return clamp(R.lv[id]||1,1,RG_LVMAX);};
+const rgXp=id=>{const R=rgMeta();return R.xp[id]||0;};
+const rgHave=id=>{const R=rgMeta();return R.it[id]||0;};
+/* そのLvでのステータス。⚠ちからの実などの永久上昇はここで足す */
+function rgStat(id){
+ const J=RG_HERO[id]||RG_HERO.hCop,lv=rgLv(id),k=lv-1,R=rgMeta(),pm=R.pm[id]||{};
+ return {hp:Math.round(J.b.hp+J.g.hp*k),mp:Math.round(J.b.mp+J.g.mp*k),
+  st:Math.round(J.b.st+J.g.st*k)+(pm.st||0),df:Math.round(J.b.df+J.g.df*k)+(pm.df||0),
+  sp:Math.round(J.b.sp+J.g.sp*k)};
+}
+/* そのLvで使えるとくぎ */
+const rgSkills=id=>((RG_HERO[id]||{}).sk||[]).filter(s=>rgLv(id)>=s[0]).map(s=>RG_SK_BY[s[1]]).filter(Boolean);
+/* 経験値を入れる。⚠TD側の鍛錬Lvもここで同期する(RPGで育てる=英雄が強くなる、の芯) */
+function rgAddXp(id,v){
+ const R=rgMeta();let lv=clamp(R.lv[id]||1,1,RG_LVMAX),xp=(R.xp[id]||0)+Math.max(0,Math.round(v)),up=0;
+ while(lv<RG_LVMAX&&xp>=rgNeed(lv)){xp-=rgNeed(lv);lv++;up++;}
+ if(lv>=RG_LVMAX)xp=0;
+ R.lv[id]=lv;R.xp[id]=xp;
+ /* TD側へ反映(鍛錬Lvは下がらないよう max を取る) */
+ META.hlv=META.hlv||{};META.hlv[id]=Math.max(META.hlv[id]||0,rgTrLv(lv));
+ return up;}
+
+/* ---- 敵のRPG化 ----
+   ⚠TDのHP/攻撃はそのままでは桁が合わない(HP72〜3000)。ここで対数寄りに圧縮して、
+     エリアの深さ(A.lv)で底上げする。=**図鑑の36種がそのまま冒険の敵になる** */
+function rgFoe(zi,A){
+ const Z=ZOMBIES[zi],d=Math.max(1,A?A.lv:1);
+ const s=1+d*.16;                                  /* エリアの深さぶんの底上げ */
+ const hp=Math.round((10+Math.pow(Z.hp,.62)*1.5)*s);
+ const st=Math.round((3+Math.pow(Math.max(6,Z.atk),.66)*1.25)*s);
+ const df=Math.round((2+Math.pow(Z.hp,.42)*.9+(Z.armor||Z.scl?4:0))*s);
+ const sp=Math.round(3+Z.sp*.055+(Z.noblock?3:0));
+ const exp=Math.round((4+Math.pow(Z.hp,.55)*1.1)*(1+d*.22)*(Z.boss?3.2:1));
+ const gold=Math.round((3+Math.pow(Z.hp,.5)*.9)*(1+d*.18)*(Z.boss?4:1));
+ return {zi,n:Z.n,mhp:hp,hp,st,df,sp,exp,gold,c:Z.c,
+  boss:!!Z.boss,armor:!!(Z.armor||Z.scl),aura:!!Z.aura,split:!!Z.split,eva:!!Z.noblock,
+  bst:0,bdf:0,bsp:0,stun:0,dead:0,hitT:0,cd:0};
+}
+/* エリアの敵プール。ステージ1=普通のゾンビ / ステージ2=海の生き物 / ナイトメア=獣 */
+function rgPool(A){
+ const out=[];
+ for(let i=0;i<ZOMBIES.length;i++){
+  const Z=ZOMBIES[i];
+  if(A.th==='night'){if(!Z.nm)continue;}
+  else if(A.si===1){if(Z.st!==2)continue;}
+  else {if(Z.st||Z.nm)continue;}
+  if(Z.fin)continue;                    /* 最終ボスは「ぬし」専用 */
+  if(Z.boss&&A.di<3)continue;           /* ボス級は難しいエリアだけ雑魚にも混ざる */
+  out.push(i);}
+ return out.length?out:[0];}
+/* そのエリアの「ぬし」(最深部で待っている1体) */
+function rgLord(A){
+ const pool=[];
+ for(let i=0;i<ZOMBIES.length;i++){
+  const Z=ZOMBIES[i];
+  if(A.th==='night'){if(!Z.nm)continue;}
+  else if(A.si===1){if(Z.st!==2)continue;}
+  else {if(Z.st||Z.nm)continue;}
+  if(Z.boss)pool.push(i);}
+ if(!pool.length)return rgPool(A)[0];
+ /* 難易度が高いエリアほど「最終ボス(fin)」が出る */
+ const fin=pool.filter(i=>ZOMBIES[i].fin),nor=pool.filter(i=>!ZOMBIES[i].fin);
+ return (A.di>=4&&fin.length)?fin[0]:(nor.length?nor[nor.length-1]:pool[0]);}
+
+/* ---- マップ生成 ----
+   0=壁 / 1=床 / 2=出入口(拠点へ戻る) / 3=ぬしの間 / 4=宝箱
+   ⚠手描きのマップを12枚作るのは無理なので**自動生成**。テーマで見た目だけ変える。
+     酔歩(drunkard walk)で掘る=行き止まりと分かれ道が自然にできて「歩いている」感じが出る */
+function rgGen(A){
+ const W=RG_MW,H=RG_MH,g=new Uint8Array(W*H);
+ const I=(x,y)=>y*W+x;
+ let cx=2,cy=(H>>1);
+ const dig=(x,y)=>{if(x>0&&x<W-1&&y>0&&y<H-1)g[I(x,y)]=1;};
+ dig(cx,cy);
+ /* 本流: 左から右へ蛇行しながら掘る */
+ let far=[cx,cy];
+ for(let k=0;k<W*H*.55;k++){
+  const r=Math.random();
+  if(r<.52)cx++;else if(r<.66)cx--;else if(r<.83)cy++;else cy--;
+  cx=clamp(cx,1,W-2);cy=clamp(cy,1,H-2);
+  dig(cx,cy);
+  /* たまに部屋を広げる */
+  if(Math.random()<.06)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)dig(cx+dx,cy+dy);
+  if(cx>far[0])far=[cx,cy];}
+ /* 枝道(行き止まり)を数本 */
+ for(let b=0;b<7;b++){
+  let bx=ri(2,W-3),by=ri(2,H-3);
+  if(!g[I(bx,by)])continue;
+  const d=[[1,0],[-1,0],[0,1],[0,-1]][ri(0,3)];
+  for(let k=0;k<ri(4,11);k++){bx=clamp(bx+d[0],1,W-2);by=clamp(by+d[1],1,H-2);dig(bx,by);}}
+ /* 入口(左)と ぬしの間(右奥) */
+ const sx=2,sy=(H>>1);
+ for(let y=sy-1;y<=sy+1;y++)dig(sx,y);
+ g[I(1,sy)]=2;g[I(sx,sy)]=1;
+ const bx=far[0],by=far[1];
+ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)dig(bx+dx,by+dy);
+ g[I(bx,by)]=3;
+ /* 宝箱を3つ、入口から離れた床に置く */
+ const cand=[];
+ for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)
+  if(g[I(x,y)]===1&&Math.abs(x-sx)+Math.abs(y-sy)>12)cand.push([x,y]);
+ for(let k=0;k<3&&cand.length;k++){
+  const p=cand.splice(ri(0,cand.length-1),1)[0];g[I(p[0],p[1])]=4;}
+ return {w:W,h:H,g,sx,sy,bx,by,th:A.th};}
+/* 拠点の町。⚠こちらは固定の間取り(宿屋・道具屋・酒場・門) */
+function rgTown(){
+ const W=RG_TW,H=RG_TH,g=new Uint8Array(W*H);
+ const I=(x,y)=>y*W+x;
+ for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)g[I(x,y)]=1;
+ /* 建物(10=宿屋 11=道具屋 12=酒場 13=門) */
+ const bld=[[4,3,10],[10,3,11],[16,3,12],[10,11,13]];
+ for(const b of bld){
+  for(let dy=-1;dy<=1;dy++)for(let dx=-2;dx<=2;dx++){
+   const x=b[0]+dx,y=b[1]+dy;if(x>0&&x<W-1&&y>0&&y<H-1)g[I(x,y)]=0;}
+  g[I(b[0],b[1]+2)]=b[2];/* 入口だけ足元に置く */
+ }
+ return {w:W,h:H,g,sx:10,sy:8,town:1,bld};}
+
+/* ---- 実行中の状態 ---- */
+let RG=null;
+const rgcv=$('rgcv'),rgx=(rgcv&&rgcv.getContext)?rgcv.getContext('2d'):null;
+const rgAt=(x,y)=>{const M=RG.map;return (x<0||y<0||x>=M.w||y>=M.h)?0:M.g[y*M.w+x];};
+const rgWalk=(x,y)=>rgAt(x,y)!==0;
+/* パーティの生きている人 */
+const rgAlive=()=>RG.pt.filter(p=>p.hp>0);
+function rgMkParty(){
+ const R=rgMeta();
+ return R.pt.map(id=>{
+  const s=rgStat(id);
+  return {id,n:(heroOf(id)||{}).n||id,ui:hUiOf(id),c:(heroOf(id)||{}).c||'#F2ECDC',
+   hp:s.hp,mhp:s.hp,mp:s.mp,mmp:s.mp,st:s.st,df:s.df,sp:s.sp,
+   bst:0,bdf:0,bsp:0,cov:0,stun:0,hitT:0};});
+}
+/* 拠点で全回復 */
+function rgRest(){for(const p of RG.pt){p.hp=p.mhp;p.mp=p.mmp;}}
+
+/* ---- 開始・移動 ---- */
+function rgOpen(){
+ const R=rgMeta();
+ /* 所持している英雄だけ。パーティが空なら自動で埋める */
+ const own=DEV?HEROES.map(h=>h.id):HEROES.filter(h=>heroOwned(h.id)).map(h=>h.id);
+ R.pt=R.pt.filter(id=>own.indexOf(id)>=0);
+ for(const id of own){if(R.pt.length>=RG_PARTY)break;if(R.pt.indexOf(id)<0)R.pt.push(id);}
+ if(!R.pt.length){toast('先に💎英雄召集で仲間を集めよう',true);return false;}
+ saveMeta();
+ RG={sc:'town',map:rgTown(),px:10,py:8,dir:2,walk:0,step:0,enc:0,
+  area:null,pt:rgMkParty(),bt:null,md:null,msg:'',msgT:0,t:0,
+  cam:{x:0,y:0},key:{x:0,y:0},geo:null,fade:1};
+ rgRest();
+ show('rpg');
+ return true;}
+function rgBack(){RG=null;saveMeta();show('title');updLabBtn();renderTrain();$('md-train').classList.add('on');}
+/* エリアへ入る */
+function rgEnter(k){
+ const A=rgArea(k);if(!A)return;
+ if(!rgAreaOK(A)&&!DEV){toast('ソロ作戦で '+STAGES[A.si].n+' の '+D5[A.di].n+' をクリアすると行ける',true);return;}
+ RG.area=A;RG.map=rgGen(A);RG.px=RG.map.sx;RG.py=RG.map.sy;RG.sc='field';RG.md=null;
+ RG.enc=0;RG.fade=1;
+ rgSay(A.n+' に着いた — '+A.dsc);}
+function rgSay(s,t){RG.msg=s;RG.msgT=t||2.4;}
+/* 1マス歩く。⚠壁と画面外は進めない。歩くたびに遭遇判定 */
+function rgMove(dx,dy){
+ if(!RG||RG.sc!=='field'&&RG.sc!=='town')return;
+ if(RG.walk>0)return;
+ RG.dir=dy<0?0:dy>0?2:dx<0?3:1;
+ const nx=RG.px+dx,ny=RG.py+dy;
+ if(!rgWalk(nx,ny))return;
+ RG.ox=RG.px;RG.oy=RG.py;RG.px=nx;RG.py=ny;RG.walk=1;RG.step++;
+ const t=rgAt(nx,ny);
+ if(t===2){RG.sc='town';RG.map=rgTown();RG.px=10;RG.py=10;RG.walk=0;rgSay('拠点へ帰ってきた');return;}
+ if(t===4){/* 宝箱 */
+  RG.map.g[ny*RG.map.w+nx]=1;
+  const R=rgMeta(),g=Math.round((18+RG.area.lv*9)*rnd(.7,1.5));
+  R.gold+=g;
+  if(Math.random()<.45){const it=RG_IT[ri(0,2)];R.it[it.id]=(R.it[it.id]||0)+1;
+   rgSay('宝箱! '+fmt(g)+'G と '+it.n);}
+  else rgSay('宝箱! '+fmt(g)+'G を見つけた');
+  saveMeta();sfx.buy&&sfx.buy();return;}
+ if(t===3){/* ぬしの間 */
+  RG.map.g[ny*RG.map.w+nx]=1;
+  rgBattle([rgFoe(rgLord(RG.area),RG.area)],true);return;}
+ if(t>=10){rgShop(t);return;}
+ if(RG.sc==='field'){
+  RG.enc+=RG_ENC[RG.step%7===0?1:0];
+  if(Math.random()<RG.enc){RG.enc=0;rgStartEnc();}}
+}
+function rgStartEnc(){
+ const A=RG.area,pool=rgPool(A);
+ const n=ri(1,Math.min(4,1+Math.floor(A.lv/7)+1));
+ const fs=[];for(let k=0;k<n;k++)fs.push(rgFoe(pool[ri(0,pool.length-1)],A));
+ rgBattle(fs,false);}
+
+/* ---- 戦闘 ----
+   ⚠**毎ターン全員ぶんコマンドを入れる**(ドラクエ式)。
+     洞窟で「見てるだけ」になったのが失敗の芯だったので、手を止める時間を作らない */
+const RG_STG=s=>1+.25*clamp(s,-2,2);/* 強化/弱体の段階 → 倍率 */
+function rgBattle(fs,lord){
+ RG.sc='battle';
+ RG.bt={fs,lord:!!lord,ph:'cmd',si:0,cmds:[],acts:[],ai:0,t:0,log:'',sub:null,
+  exp:0,gold:0,res:null,turn:1};
+ for(const p of RG.pt){p.bst=0;p.bdf=0;p.bsp=0;p.cov=0;p.stun=0;}
+ rgBtNext(true);
+ sfx.horn&&sfx.horn();}
+/* 次にコマンドを入れる人へ。first=最初から */
+function rgBtNext(first){
+ const B=RG.bt;
+ if(first){B.cmds=[];B.si=-1;}
+ for(let i=B.si+1;i<RG.pt.length;i++){
+  const p=RG.pt[i];
+  if(p.hp<=0||p.stun>0){B.cmds[i]=null;continue;}
+  B.si=i;B.sub=null;return;}
+ rgBtResolve();}
+function rgBtBack(){
+ const B=RG.bt;
+ if(B.sub){B.sub=null;return;}
+ for(let i=B.si-1;i>=0;i--){const p=RG.pt[i];if(p.hp<=0||p.stun>0)continue;B.si=i;B.cmds[i]=null;return;}}
+/* コマンドを決めて次の人へ */
+function rgBtSet(c){RG.bt.cmds[RG.bt.si]=c;RG.bt.sub=null;rgBtNext(false);}
+/* ---- 行動順を組んで解決キューを作る ---- */
+function rgBtResolve(){
+ const B=RG.bt,acts=[];
+ for(let i=0;i<RG.pt.length;i++){
+  const p=RG.pt[i],c=B.cmds[i];
+  if(!c||p.hp<=0)continue;
+  const sk=c.sk?RG_SK_BY[c.sk]:null;
+  acts.push({s:'p',i,c,sp:p.sp*RG_STG(p.bsp)*rnd(.85,1.15)+(sk&&sk.fst?9999:0)+(c.c==='run'?9999:0)});}
+ for(let i=0;i<B.fs.length;i++){
+  const f=B.fs[i];if(f.dead||f.stun>0)continue;
+  acts.push({s:'e',i,sp:f.sp*RG_STG(f.bsp)*rnd(.85,1.15)});}
+ acts.sort((a,b)=>b.sp-a.sp);
+ B.acts=acts;B.ai=0;B.ph='run';B.t=0;B.log='';
+ rgBtStep();}
+/* 1つ解決して、メッセージを出す */
+function rgBtStep(){
+ const B=RG.bt;
+ /* 決着がついていたら結果待ちへ(逃走成功もここを通る) */
+ if(B.res){B.ph='end';return;}
+ /* 全滅判定 */
+ if(!B.fs.some(f=>!f.dead)){rgBtWin();return;}
+ if(!rgAlive().length){rgBtLose();return;}
+ if(B.ai>=B.acts.length){rgBtTurnEnd();return;}
+ const a=B.acts[B.ai++];
+ B.t=.62;
+ if(a.s==='p'){
+  const p=RG.pt[a.i];
+  if(p.hp<=0){B.log='';rgBtStep();return;}
+  rgBtDoP(p,a.c);
+ }else{
+  const f=B.fs[a.i];
+  if(f.dead){B.log='';rgBtStep();return;}
+  rgBtDoE(f);}
+}
+/* 味方の行動 */
+function rgBtDoP(p,c){
+ const B=RG.bt;
+ const foes=()=>B.fs.filter(f=>!f.dead);
+ const pick=()=>{const l=foes();return c.tg!=null&&B.fs[c.tg]&&!B.fs[c.tg].dead?B.fs[c.tg]:(l[0]||null);};
+ if(c.c==='def'){p.bdf=clamp(p.bdf+2,-2,2);B.log=p.n+' は身を守っている';return;}
+ if(c.c==='run'){
+  const ps=rgAlive().reduce((a,x)=>a+x.sp,0)/Math.max(1,rgAlive().length);
+  const es=foes().reduce((a,x)=>a+x.sp,0)/Math.max(1,foes().length);
+  if(B.lord){B.log='ぬしが逃がしてくれない!';return;}
+  if(Math.random()<clamp(.42+(ps-es)*.03,.12,.92)){B.log='うまく逃げ切った!';B.res='flee';return;}
+  B.log='しかし回り込まれた!';return;}
+ if(c.c==='it'){
+  const it=RG_IT_BY[c.it];const R=rgMeta();
+  if(!it||rgHave(it.id)<=0){B.log=p.n+' はどうぐを持っていない';return;}
+  R.it[it.id]--;saveMeta();
+  const tg=RG.pt[c.tg]||p;
+  if(it.t==='heal'){const v=it.pw;tg.hp=Math.min(tg.mhp,tg.hp+v);B.log=p.n+' の'+it.n+'! '+tg.n+' のHPが '+v+' 回復した';}
+  else if(it.t==='mp'){tg.mp=Math.min(tg.mmp,tg.mp+it.pw);B.log=p.n+' の'+it.n+'! '+tg.n+' のMPが回復した';}
+  else if(it.t==='rev'){if(tg.hp>0){B.log='しかし何も起こらなかった';}
+   else{tg.hp=Math.max(1,Math.round(tg.mhp*it.pw));B.log=tg.n+' が起き上がった!';}}
+  else if(it.t==='perm'){R.pm[tg.id]=R.pm[tg.id]||{};R.pm[tg.id][it.st]=(R.pm[tg.id][it.st]||0)+3;
+   saveMeta();tg[it.st]+=3;B.log=tg.n+' の'+(it.st==='st'?'ちから':'まもり')+' が上がった!';}
+  else B.log=p.n+' は'+it.n+' を使った';
+  return;}
+ if(c.c==='sk'){
+  const sk=RG_SK_BY[c.sk];
+  if(!sk||p.mp<sk.mp){B.log=p.n+' はMPが足りない';return;}
+  p.mp-=sk.mp;
+  B.log=p.n+' の『'+sk.n+'』!';
+  if(sk.t==='atk'){
+   const list=sk.tg==='all'?foes():[pick()].filter(Boolean);
+   let tot=0;
+   for(const f of list){tot+=rgHitF(p,f,sk);}
+   if(!list.length)B.log+=' しかし敵がいない';
+   return;}
+  if(sk.t==='heal'){
+   const list=sk.tg==='party'?RG.pt.filter(x=>x.hp>0):[RG.pt[c.tg]||p];
+   for(const t of list){if(t.hp<=0)continue;t.hp=Math.min(t.mhp,t.hp+sk.pw+Math.round(p.mp*.2));}
+   B.log+=' '+(sk.tg==='party'?'みんな':(list[0]||p).n)+' のHPが回復した';return;}
+  if(sk.t==='rev'){const t=RG.pt[c.tg];
+   if(t&&t.hp<=0){t.hp=Math.max(1,Math.round(t.mhp*sk.pw));B.log+=' '+t.n+' が起き上がった!';}
+   else B.log+=' しかし効果がなかった';return;}
+  if(sk.t==='buf'){
+   const list=sk.tg==='self'?[p]:RG.pt.filter(x=>x.hp>0);
+   for(const t of list){if(sk.buf==='cov')t.cov=2;else t['b'+sk.buf]=clamp((t['b'+sk.buf]||0)+1,-2,2);}
+   B.log+=(sk.buf==='cov'?' 仲間をかばう構えだ':' 味方が強くなった');return;}
+  if(sk.t==='deb'){
+   for(const f of foes())f['b'+sk.deb]=clamp((f['b'+sk.deb]||0)-1,-2,2);
+   B.log+=' 敵がひるんだ';return;}
+  if(sk.t==='stp'){
+   for(const f of foes())if(!f.boss||Math.random()<.5)f.stun=1;
+   B.log+=' 時が止まった!';return;}
+  return;}
+ /* たたかう */
+ const f=pick();
+ if(!f){B.log=p.n+' の攻撃は空を切った';return;}
+ B.log=p.n+' の攻撃!';
+ rgHitF(p,f,null);}
+/* 味方→敵のダメージ */
+function rgHitF(p,f,sk){
+ const B=RG.bt;
+ if(f.eva&&!sk&&Math.random()<.18){B.log+=' '+f.n+' はひらりとかわした';return 0;}
+ const pw=sk?sk.pw:1;
+ const crit=Math.random()<((sk&&sk.crit)||.06);
+ const df=sk&&sk.ign?0:f.df*RG_STG(f.bdf);
+ let d=Math.round((p.st*RG_STG(p.bst)*pw*2.1-df*.9)*rnd(.9,1.12));
+ d=Math.max(1,d);if(crit)d=Math.round(d*1.9);
+ f.hp-=d;f.hitT=.3;
+ B.log+=' '+f.n+' に '+d+' のダメージ'+(crit?' 会心の一撃!':'');
+ if(f.hp<=0){f.hp=0;f.dead=1;B.exp+=f.exp;B.gold+=f.gold;B.log+=' / '+f.n+' をたおした!';}
+ return d;}
+/* 敵の行動 */
+function rgBtDoE(f){
+ const B=RG.bt;
+ const live=rgAlive();
+ if(!live.length)return;
+ const cov=live.filter(x=>x.cov>0);
+ const tgt=cov.length?cov[ri(0,cov.length-1)]:live[ri(0,live.length-1)];
+ const r=Math.random();
+ if(f.boss&&r<.28){
+  B.log=f.n+' のなぎ払い!';
+  for(const t of live)rgHitP(f,t,.8);
+  return;}
+ if(f.split&&r<.16&&B.fs.filter(x=>!x.dead).length<4){
+  const n=rgFoe(f.zi,RG.area);n.mhp=Math.round(n.mhp*.6);n.hp=n.mhp;
+  B.fs.push(n);B.log=f.n+' が仲間を呼んだ!';return;}
+ if(f.aura&&r<.20){
+  for(const x of B.fs)if(!x.dead)x.bst=clamp(x.bst+1,-2,2);
+  B.log=f.n+' の叫び! 敵全体の攻撃力が上がった';return;}
+ if(f.armor&&r<.18){f.bdf=clamp(f.bdf+1,-2,2);B.log=f.n+' は身を固めた';return;}
+ B.log=f.n+' の攻撃!';
+ rgHitP(f,tgt,1);}
+/* 敵→味方のダメージ */
+function rgHitP(f,p,pw){
+ const B=RG.bt;
+ let d=Math.round((f.st*RG_STG(f.bst)*pw*2.0-p.df*RG_STG(p.bdf)*.95)*rnd(.9,1.12));
+ d=Math.max(1,d);
+ p.hp-=d;p.hitT=.3;
+ B.log+=' '+p.n+' に '+d+' のダメージ';
+ if(p.hp<=0){p.hp=0;B.log+=' / '+p.n+' は倒れた!';}
+ RG.shake=.22;}
+/* ターンの終わり */
+function rgBtTurnEnd(){
+ const B=RG.bt;
+ for(const p of RG.pt){if(p.cov>0)p.cov--;if(p.stun>0)p.stun--;}
+ for(const f of B.fs){if(f.stun>0)f.stun--;}
+ B.turn++;
+ B.ph='cmd';B.si=-1;rgBtNext(false);}
+function rgBtWin(){
+ const B=RG.bt;B.res='win';B.ph='end';
+ const R=rgMeta();
+ R.gold+=B.gold;
+ const live=rgAlive();
+ const each=Math.max(1,Math.round(B.exp/Math.max(1,live.length)));
+ B.up=[];
+ for(const p of live){
+  const u=rgAddXp(p.id,each);
+  if(u)B.up.push(p.n+' は レベル '+rgLv(p.id)+' に上がった!');}
+ saveMeta();
+ B.log='戦いに勝った!  経験値 '+B.exp+' / '+B.gold+'G';
+ sfx.win&&sfx.win();}
+function rgBtLose(){
+ const B=RG.bt;B.res='lose';B.ph='end';
+ const R=rgMeta();R.gold=Math.floor(R.gold*.5);saveMeta();
+ B.log='全滅してしまった…  所持金の半分を落とした';
+ sfx.lose&&sfx.lose();}
+/* 戦闘の後始末 */
+function rgBtClose(){
+ const B=RG.bt;
+ if(B.res==='lose'){RG.sc='town';RG.map=rgTown();RG.px=10;RG.py=10;RG.bt=null;
+  RG.pt=rgMkParty();rgRest();rgSay('気がつくと拠点だった');return;}
+ if(B.res==='win'&&B.lord){
+  const R=rgMeta();
+  if(!R.cl[RG.area.k]){R.cl[RG.area.k]=1;R.gold+=200+RG.area.lv*40;saveMeta();}
+  RG.bt=null;RG.sc='town';RG.map=rgTown();RG.px=10;RG.py=10;
+  /* ⚠ステータスを取り直す(レベルが上がっているので最大HPが伸びる) */
+  const keep=RG.pt.map(p=>({hp:p.hp,mp:p.mp}));
+  RG.pt=rgMkParty();RG.pt.forEach((p,i)=>{if(keep[i]){p.hp=Math.min(p.mhp,keep[i].hp);p.mp=Math.min(p.mmp,keep[i].mp);}});
+  rgSay(RG.area.n+' の ぬし を討ち取った!');return;}
+ RG.bt=null;RG.sc='field';
+ const keep=RG.pt.map(p=>({hp:p.hp,mp:p.mp}));
+ RG.pt=rgMkParty();RG.pt.forEach((p,i)=>{if(keep[i]){p.hp=Math.min(p.mhp,keep[i].hp);p.mp=Math.min(p.mmp,keep[i].mp);}});
+}
+
+/* ---- 町の施設 ---- */
+function rgShop(t){
+ RG.md={k:t===10?'inn':t===11?'shop':t===12?'bar':'gate',pick:0,tab:0};}
+function rgInnCost(){let s=0;for(const id of rgMeta().pt)s+=rgLv(id);return 4+s*3;}
+
+/* ---- 1フレームぶんの進行 ---- */
+function rgStep(dt){
+ if(!RG)return;
+ dt=Math.min(.05,dt);RG.t+=dt;
+ RG.msgT=Math.max(0,RG.msgT-dt);
+ RG.shake=Math.max(0,(RG.shake||0)-dt*2);
+ if(RG.fade>0)RG.fade=Math.max(0,RG.fade-dt*2.2);
+ for(const p of RG.pt)p.hitT=Math.max(0,p.hitT-dt);
+ if(RG.sc==='battle'&&RG.bt){
+  for(const f of RG.bt.fs)f.hitT=Math.max(0,f.hitT-dt);
+  if(RG.bt.ph==='run'){RG.bt.t-=dt;if(RG.bt.t<=0)rgBtStep();}
+ }else{
+  if(RG.walk>0){RG.walk=Math.max(0,RG.walk-dt/.13);}
+  else if(!RG.md){
+   const k=RG.key;
+   if(k.x||k.y)rgMove(k.x?(k.x>0?1:-1):0,k.x?0:(k.y>0?1:-1));}
+ }
+ rgDraw();}
+
+/* ---- 描画 ---- */
+/* 岩肌や地面の粒を「マスの座標から決まる乱数」で出す=毎フレーム描き直してもチラつかない */
+const rgHash=n=>{const s=Math.sin(n*127.1)*43758.5453;return s-Math.floor(s);};
+function rgGeo(w,h){return {w,h,top:34,bot:0};}
+function rgHitAdd(x,y,w,h,fn){RG.hit.push({x,y,w,h,fn});}
+/* 押せる枠を1つ描いて、当たり判定も登録する */
+function rgBtn(c,x,y,w,h,lb,fn,on,dis){
+ c.fillStyle=dis?'rgba(60,54,44,.75)':on?'#C1502E':'rgba(28,24,18,.9)';
+ c.fillRect(x,y,w,h);
+ c.strokeStyle=dis?'rgba(242,236,220,.28)':'#F2ECDC';c.lineWidth=1.6;c.strokeRect(x,y,w,h);
+ c.fillStyle=dis?'rgba(242,236,220,.4)':'#F2ECDC';
+ c.font='900 '+Math.min(13,Math.round(h*.46))+'px sans-serif';c.textAlign='center';c.textBaseline='middle';
+ c.fillText(lb,x+w*.5,y+h*.54);
+ c.textAlign='left';c.textBaseline='alphabetic';
+ if(!dis)rgHitAdd(x,y,w,h,fn);}
+/* ⚠床と壁の明暗はしっかり離すこと。近い色にすると「どこが道か」が読めず、
+   暗い方が地面に見えてしまう(最初そうなった)。床=明るい / 壁=ほぼ黒 / a=壁の上面(岩肌) */
+const RG_TH_C={road:{f:'#57503f',w:'#191510',a:'#7a6f56'},
+ sea:{f:'#3c5158',w:'#0f1a20',a:'#5b8089'},
+ night:{f:'#453548',w:'#150f1a',a:'#6b4560'},
+ town:{f:'#6b6148',w:'#241f18',a:'#8a7c5c'}};
+function rgDraw(){
+ if(!RG||!rgcv||!rgx||!rgcv.getBoundingClientRect)return;
+ const r=rgcv.getBoundingClientRect(),w=Math.max(240,Math.round(r.width)),h=Math.max(180,Math.round(r.height));
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ if(rgcv.width!==Math.round(w*dpr)){rgcv.width=Math.round(w*dpr);rgcv.height=Math.round(h*dpr);}
+ const c=rgx;if(!c.setTransform)return;
+ c.setTransform(dpr,0,0,dpr,0,0);
+ RG.hit=[];RG.geo=rgGeo(w,h);
+ /* ⚠十字キーは戦闘中とメニュー中は邪魔(パーティ枠に重なる)ので隠す。
+    `display=''` はCSSに戻ってしまうので 'flex' を明示すること */
+ {const hid=(RG.sc==='battle'||RG.md);
+  const pad=$('rgpad');if(pad&&pad.style)pad.style.display=hid?'none':'flex';
+  const q=$('rgquit');if(q&&q.style)q.style.display=RG.md?'none':'block';}
+ c.fillStyle='#0d0b08';c.fillRect(0,0,w,h);
+ if(RG.sc==='battle')rgDrawBattle(c,w,h);else rgDrawMap(c,w,h);
+ if(RG.md)rgDrawMenu(c,w,h);
+ /* メッセージ。⚠画面の下は十字キーの置き場なので、帯は上のHUDのすぐ下に出す */
+ if(RG.msgT>0&&RG.msg&&RG.sc!=='battle'){
+  c.globalAlpha=clamp(RG.msgT/.7,0,1);
+  c.fillStyle='rgba(16,13,10,.9)';c.fillRect(w*.10,40,w*.72,28);
+  c.strokeStyle='#F2ECDC';c.lineWidth=1.6;c.strokeRect(w*.10,40,w*.72,28);
+  c.fillStyle='#F2ECDC';c.font='900 13px sans-serif';c.textAlign='center';
+  c.fillText(RG.msg,w*.46,59);c.textAlign='left';c.globalAlpha=1;}
+ if(RG.fade>0){c.fillStyle='rgba(0,0,0,'+RG.fade.toFixed(3)+')';c.fillRect(0,0,w,h);}
+}
+/* ---- マップ(町/フィールド) ---- */
+function rgDrawMap(c,w,h){
+ const M=RG.map,CS=RG_CS,g=RG.geo;
+ const ph=h-g.top;
+ const fx=RG.walk>0?(RG.ox+(RG.px-RG.ox)*(1-RG.walk)):RG.px;
+ const fy=RG.walk>0?(RG.oy+(RG.py-RG.oy)*(1-RG.walk)):RG.py;
+ /* ⚠マップが画面より小さい時は中央に寄せる(町は21マス=546pxしかないので、
+    そのままだと右半分が真っ黒になる) */
+ const camx=(M.w<w/CS)?-((w/CS)-M.w)*.5:clamp(fx+.5-(w/CS)*.5,0,Math.max(0,M.w-w/CS));
+ const camy=(M.h<ph/CS)?-((ph/CS)-M.h)*.5:clamp(fy+.5-(ph/CS)*.5,0,Math.max(0,M.h-ph/CS));
+ const P=(x,y)=>[(x-camx)*CS,g.top+(y-camy)*CS];
+ const TH=RG_TH_C[M.town?'town':M.th]||RG_TH_C.road;
+ c.save();c.beginPath();c.rect(0,g.top,w,ph);c.clip();
+ const x0=Math.max(0,Math.floor(camx)-1),x1=Math.min(M.w-1,Math.ceil(camx+w/CS)+1);
+ const y0=Math.max(0,Math.floor(camy)-1),y1=Math.min(M.h-1,Math.ceil(camy+ph/CS)+1);
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+  const t=M.g[y*M.w+x],p=P(x,y),hh=rgHash(x*29.3+y*13.7);
+  if(t===0){
+   /* ⚠壁を真っ黒のままにすると「何も無い所」に見える。わずかにムラを乗せて岩肌にする */
+   c.fillStyle=TH.w;c.fillRect(p[0],p[1],CS+1,CS+1);
+   c.fillStyle='rgba(255,246,230,'+(.02+.05*hh).toFixed(3)+')';c.fillRect(p[0],p[1],CS+1,CS+1);
+   if(y+1<M.h&&M.g[(y+1)*M.w+x]){c.fillStyle=TH.a;c.fillRect(p[0],p[1]+CS-4,CS+1,4);}
+   if(hh>.72){c.fillStyle='rgba(255,246,230,.07)';c.fillRect(p[0]+CS*(.2+hh*.5),p[1]+CS*(.25+hh*.45),3,3);}
+   continue;}
+  c.fillStyle=TH.f;c.fillRect(p[0],p[1],CS+1,CS+1);
+  c.fillStyle='rgba(0,0,0,'+(.10*hh).toFixed(3)+')';c.fillRect(p[0],p[1],CS+1,CS+1);
+  if(t===2){c.fillStyle='#ffd23d';c.font='900 15px sans-serif';c.textAlign='center';
+   c.fillText('⇦',p[0]+CS*.5,p[1]+CS*.72);c.textAlign='left';}
+  else if(t===3){c.fillStyle='#ff6a4a';
+   c.beginPath();c.arc(p[0]+CS*.5,p[1]+CS*.5,CS*.3,0,7);c.fill();
+   c.fillStyle='#0d0b08';c.font='900 13px sans-serif';c.textAlign='center';
+   c.fillText('主',p[0]+CS*.5,p[1]+CS*.66);c.textAlign='left';}
+  else if(t===4){c.fillStyle='#c9a13d';c.fillRect(p[0]+CS*.22,p[1]+CS*.3,CS*.56,CS*.42);
+   c.strokeStyle=INK;c.lineWidth=1.6;c.strokeRect(p[0]+CS*.22,p[1]+CS*.3,CS*.56,CS*.42);}
+  else if(t>=10){
+   const nm=t===10?'宿':t===11?'店':t===12?'酒':'門';
+   c.fillStyle='#8a6a3a';c.fillRect(p[0]+CS*.12,p[1]+CS*.1,CS*.76,CS*.8);
+   c.strokeStyle=INK;c.lineWidth=1.8;c.strokeRect(p[0]+CS*.12,p[1]+CS*.1,CS*.76,CS*.8);
+   c.fillStyle='#F2ECDC';c.font='900 13px sans-serif';c.textAlign='center';
+   c.fillText(nm,p[0]+CS*.5,p[1]+CS*.68);c.textAlign='left';}
+ }
+ /* 建物の屋根(町だけ。入口の上に置いて「建物」に見せる) */
+ if(M.bld)for(const b of M.bld){
+  const p=P(b[0]-2,b[1]-1);
+  c.fillStyle='#6b4a3a';c.fillRect(p[0],p[1],CS*5,CS*3);
+  c.strokeStyle=INK;c.lineWidth=2;c.strokeRect(p[0],p[1],CS*5,CS*3);
+  c.fillStyle='#3a2a22';c.fillRect(p[0],p[1],CS*5,CS*.9);
+  c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';c.textAlign='center';
+  c.fillText(b[2]===10?'やどや':b[2]===11?'どうぐや':b[2]===12?'さかば':'まちのもん',p[0]+CS*2.5,p[1]+CS*1.9);
+  c.textAlign='left';}
+ /* 主人公(先頭のメンバー) */
+ {const p=P(fx+.5,fy+.95),lead=RG.pt[0];
+  c.save();c.translate(p[0],p[1]);
+  const s=(CS*.92)/(50*1.24);
+  c.scale(s*(RG.dir===3?-1:1),s);
+  try{drawUnit(c,lead?lead.ui:HERO_I0,0,0,-1,RG.t,0,{});}catch(e){}
+  c.restore();}
+ c.restore();
+ rgHud(c,w,h);}
+/* 上のHUD(パーティのHP/MPとゴールド) */
+function rgHud(c,w,h){
+ c.fillStyle='rgba(18,15,11,.9)';c.fillRect(0,0,w,34);
+ c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';c.textAlign='left';
+ c.fillText(RG.sc==='town'?'拠点':(RG.area?RG.area.n:''),8,15);
+ c.fillStyle='#ffd23d';c.font='900 11px sans-serif';
+ c.fillText(fmt(rgMeta().gold)+' G',8,29);
+ const bw=Math.min(96,(w-140)/4);
+ for(let i=0;i<RG.pt.length;i++){
+  const p=RG.pt[i],x=120+i*(bw+6);
+  c.fillStyle=p.hp>0?'#F2ECDC':'#8a6a6a';c.font='900 10px sans-serif';
+  c.fillText(p.n.slice(0,5)+' L'+rgLv(p.id),x,11);
+  c.fillStyle='rgba(0,0,0,.55)';c.fillRect(x,14,bw,6);
+  c.fillStyle=p.hp>p.mhp*.3?'#7ba33f':'#ff6a4a';c.fillRect(x,14,bw*clamp(p.hp/p.mhp,0,1),6);
+  c.fillStyle='rgba(0,0,0,.55)';c.fillRect(x,22,bw,4);
+  c.fillStyle='#6fa8d8';c.fillRect(x,22,bw*clamp(p.mp/Math.max(1,p.mmp),0,1),4);
+  c.fillStyle='#F2ECDC';c.font='900 9px sans-serif';c.textAlign='right';
+  c.fillText(Math.max(0,Math.round(p.hp))+'/'+p.mhp,x+bw,11);c.textAlign='left';}
+ rgBtn(c,w-42,4,36,26,'☰',()=>{RG.md={k:'menu',pick:0};});}
+
+/* ---- 戦闘の描画 ---- */
+function rgDrawBattle(c,w,h){
+ const B=RG.bt;
+ const sk=RG.shake>0?(Math.random()-.5)*8*RG.shake:0;
+ c.fillStyle=RG.area&&RG.area.th==='sea'?'#16232a':RG.area&&RG.area.th==='night'?'#1a1420':'#201c16';
+ c.fillRect(0,0,w,h);
+ c.save();c.translate(sk,0);
+ /* 敵 */
+ const live=B.fs.filter(f=>!f.dead);
+ const n=Math.max(1,B.fs.length),ew=Math.min(150,w/n);
+ for(let i=0;i<B.fs.length;i++){
+  const f=B.fs[i],x=w*.5+(i-(n-1)/2)*ew,y=150;
+  if(f.dead)continue;
+  c.save();c.translate(x,y);
+  const Z=ZOMBIES[f.zi],s=(f.boss?92:64)/(50*(Z.sc||1));
+  c.scale(s,s);
+  if(f.hitT>0&&Math.floor(RG.t*24)%2===0)c.globalAlpha=.45;
+  try{drawZombie(c,f.zi,0,0,-1,RG.t,0,{hitT:f.hitT});}catch(e){}
+  c.restore();
+  c.fillStyle='#F2ECDC';c.font='900 10px sans-serif';c.textAlign='center';
+  c.fillText(f.n+(f.stun>0?' (停止)':''),x,y+14);
+  c.fillStyle='rgba(0,0,0,.55)';c.fillRect(x-30,y+18,60,4);
+  c.fillStyle='#ff6a4a';c.fillRect(x-30,y+18,60*clamp(f.hp/f.mhp,0,1),4);
+  c.textAlign='left';
+  if(B.sub&&B.sub.k==='tgtF')rgHitAdd(x-ew*.45,40,ew*.9,130,()=>{const s2=B.sub;s2.c.tg=i;rgBtSet(s2.c);});}
+ c.restore();
+ /* パーティ */
+ const pw=Math.min(150,(w-24)/Math.max(1,RG.pt.length));
+ const px0=(w-pw*RG.pt.length)*.5;/* 人数が少なくても中央に寄せる */
+ for(let i=0;i<RG.pt.length;i++){
+  const p=RG.pt[i],x=px0+i*pw,y=h-72;
+  const cur=B.ph==='cmd'&&B.si===i;
+  c.fillStyle=cur?'rgba(193,80,46,.35)':'rgba(18,15,11,.85)';c.fillRect(x,y,pw-6,58);
+  c.strokeStyle=cur?'#ffd23d':'rgba(242,236,220,.5)';c.lineWidth=cur?2.2:1.4;c.strokeRect(x,y,pw-6,58);
+  c.fillStyle=p.hp>0?'#F2ECDC':'#8a6a6a';c.font='900 11px sans-serif';
+  c.fillText(p.n.slice(0,7),x+6,y+15);
+  c.font='900 10px sans-serif';c.fillStyle='#c9c4b4';
+  c.fillText('HP '+Math.max(0,Math.round(p.hp))+'/'+p.mhp,x+6,y+30);
+  c.fillText('MP '+Math.max(0,Math.round(p.mp))+'/'+p.mmp,x+6,y+43);
+  c.fillStyle='rgba(0,0,0,.5)';c.fillRect(x+6,y+47,pw-18,5);
+  c.fillStyle=p.hp>p.mhp*.3?'#7ba33f':'#ff6a4a';c.fillRect(x+6,y+47,(pw-18)*clamp(p.hp/p.mhp,0,1),5);
+  if(B.sub&&B.sub.k==='tgtP')rgHitAdd(x,y,pw-6,58,()=>{const s2=B.sub;s2.c.tg=i;rgBtSet(s2.c);});}
+ /* メッセージ帯 */
+ c.fillStyle='rgba(10,8,6,.9)';c.fillRect(0,h-112,w,38);
+ c.strokeStyle='rgba(242,236,220,.35)';c.lineWidth=1.4;c.strokeRect(0,h-112,w,38);
+ c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';c.textAlign='left';
+ c.fillText(B.log||'',10,h-88);
+ if(B.ph==='end'&&B.up&&B.up.length){c.fillStyle='#b7e07a';c.font='900 11px sans-serif';
+  c.fillText(B.up.join(' / ').slice(0,64),10,h-120);}
+ /* コマンド */
+ if(B.ph==='cmd')rgDrawCmd(c,w,h);
+ else if(B.ph==='run'){rgHitAdd(0,0,w,h,()=>{RG.bt.t=0;rgBtStep();});
+  c.fillStyle='#c9c4b4';c.font='900 10px sans-serif';c.textAlign='right';
+  c.fillText('タップで送る',w-8,h-88);c.textAlign='left';}
+ else{rgHitAdd(0,0,w,h,()=>rgBtClose());
+  c.fillStyle='#ffd23d';c.font='900 11px sans-serif';c.textAlign='right';
+  c.fillText('タップでつづける',w-8,h-88);c.textAlign='left';}
+}
+/* コマンド入力 */
+function rgDrawCmd(c,w,h){
+ const B=RG.bt,p=RG.pt[B.si];
+ if(!p)return;
+ const y0=h-176,bw=Math.min(112,w/6),bh=30;
+ c.fillStyle='#ffd23d';c.font='900 12px sans-serif';c.textAlign='left';
+ c.fillText(p.n+' はどうする?',10,y0-8);
+ if(!B.sub){
+  const cmds=[['たたかう',()=>{B.sub={k:'tgtF',c:{c:'atk'}};}],
+   ['とくぎ',()=>{B.sub={k:'sk',pick:0};}],
+   ['どうぐ',()=>{B.sub={k:'it',pick:0};}],
+   ['ぼうぎょ',()=>rgBtSet({c:'def'})],
+   ['にげる',()=>rgBtSet({c:'run'})]];
+  cmds.forEach((q,i)=>rgBtn(c,10+i*(bw+6),y0,bw,bh,q[0],q[1]));
+  if(B.si>0)rgBtn(c,10+5*(bw+6),y0,bw*.7,bh,'◀もどる',()=>rgBtBack());
+  return;}
+ if(B.sub.k==='tgtF'){
+  c.fillStyle='#F2ECDC';c.font='900 11px sans-serif';
+  c.fillText('相手を選ぶ(敵をタップ)',10,y0+12);
+  rgBtn(c,10,y0+22,bw,bh,'◀もどる',()=>{B.sub=null;});return;}
+ if(B.sub.k==='tgtP'){
+  c.fillStyle='#F2ECDC';c.font='900 11px sans-serif';
+  c.fillText('味方を選ぶ(下の枠をタップ)',10,y0+12);
+  rgBtn(c,10,y0+22,bw,bh,'◀もどる',()=>{B.sub=null;});return;}
+ if(B.sub.k==='sk'){
+  const list=rgSkills(p.id);
+  if(!list.length){c.fillStyle='#c9c4b4';c.font='900 11px sans-serif';c.fillText('まだとくぎを覚えていない',10,y0+14);}
+  list.forEach((s,i)=>{
+   const x=10+(i%4)*(bw+6),y=y0+Math.floor(i/4)*(bh+4);
+   rgBtn(c,x,y,bw,bh,s.n+' '+s.mp,()=>{
+    const cm={c:'sk',sk:s.id};
+    if(s.tg==='one')B.sub={k:'tgtF',c:cm};
+    else if(s.tg==='ally')B.sub={k:'tgtP',c:cm};
+    else rgBtSet(cm);},false,p.mp<s.mp);});
+  rgBtn(c,10+4*(bw+6),y0,bw*.7,bh,'◀もどる',()=>{B.sub=null;});return;}
+ if(B.sub.k==='it'){
+  const list=RG_IT.filter(i=>rgHave(i.id)>0&&i.t!=='warp');
+  if(!list.length){c.fillStyle='#c9c4b4';c.font='900 11px sans-serif';c.fillText('どうぐを持っていない',10,y0+14);}
+  list.forEach((it,i)=>{
+   const x=10+(i%4)*(bw+6),y=y0+Math.floor(i/4)*(bh+4);
+   rgBtn(c,x,y,bw,bh,it.n+' x'+rgHave(it.id),()=>{
+    const cm={c:'it',it:it.id};
+    if(it.t==='warp'){rgBtSet(cm);return;}
+    B.sub={k:'tgtP',c:cm};});});
+  rgBtn(c,10+4*(bw+6),y0,bw*.7,bh,'◀もどる',()=>{B.sub=null;});return;}
+}
+
+/* ---- メニューと町の施設(canvasの上に描く) ---- */
+function rgPanel(c,w,h,title){
+ c.fillStyle='rgba(10,8,6,.86)';c.fillRect(0,0,w,h);
+ c.fillStyle='rgba(28,24,18,.96)';c.fillRect(w*.06,20,w*.88,h-40);
+ c.strokeStyle='#F2ECDC';c.lineWidth=2;c.strokeRect(w*.06,20,w*.88,h-40);
+ c.fillStyle='#ffd23d';c.font='900 15px sans-serif';c.textAlign='left';
+ c.fillText(title,w*.08,42);
+ c.fillStyle='#c9c4b4';c.font='900 11px sans-serif';c.textAlign='right';
+ c.fillText(fmt(rgMeta().gold)+' G',w*.92,42);c.textAlign='left';}
+function rgDrawMenu(c,w,h){
+ const M=RG.md,R=rgMeta();
+ const close=()=>{RG.md=null;};
+ if(M.k==='menu'){
+  rgPanel(c,w,h,'☰ メニュー');
+  const bw=Math.min(150,w*.2),bh=34;
+  const its=[['つよさ',()=>{RG.md={k:'stat'};}],
+   ['もちもの',()=>{RG.md={k:'bag',pick:0};}],
+   ['拠点へもどる',()=>{
+     if(RG.sc==='town'){rgSay('もう拠点にいる');close();return;}
+     if(rgHave('wing')<=0){rgSay('かえりの羽を持っていない');close();return;}
+     R.it.wing--;saveMeta();RG.sc='town';RG.map=rgTown();RG.px=10;RG.py=10;RG.fade=1;close();rgSay('拠点へ戻った');}],
+   ['冒険をやめる',()=>rgBack()],
+   ['とじる',close]];
+  its.forEach((q,i)=>rgBtn(c,w*.08+(i%4)*(bw+8),64+Math.floor(i/4)*(bh+8),bw,bh,q[0],q[1]));
+  c.fillStyle='#c9c4b4';c.font='900 11px sans-serif';
+  c.fillText('※冒険の記録は自動で保存される。TD側の鍛錬Lvは レベル÷2 で反映(最大10)',w*.08,h-34);
+  return;}
+ if(M.k==='stat'){
+  rgPanel(c,w,h,'つよさ');
+  const cw=(w*.84)/Math.max(1,RG.pt.length);
+  RG.pt.forEach((p,i)=>{
+   const x=w*.08+i*cw,s=rgStat(p.id),lv=rgLv(p.id);
+   c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';
+   c.fillText(p.n,x,72);
+   c.fillStyle='#ffd23d';c.font='900 11px sans-serif';
+   c.fillText('レベル '+lv+'  (鍛錬Lv'+rgTrLv(lv)+')',x,90);
+   c.fillStyle='#c9c4b4';c.font='900 11px sans-serif';
+   const L=['HP '+p.hp+'/'+s.hp,'MP '+p.mp+'/'+s.mp,'ちから '+s.st,'まもり '+s.df,'すばやさ '+s.sp,
+    lv>=RG_LVMAX?'これ以上あがらない':('つぎのLvまで '+Math.max(0,rgNeed(lv)-rgXp(p.id)))];
+   L.forEach((t,k)=>c.fillText(t,x,110+k*15));
+   const sk=rgSkills(p.id);
+   c.fillStyle='#9fdcf5';
+   sk.forEach((s2,k)=>c.fillText('・'+s2.n+' ('+s2.mp+')',x,206+k*14));});
+  rgBtn(c,w*.08,h-52,120,30,'◀もどる',()=>{RG.md={k:'menu'};});return;}
+ if(M.k==='bag'){
+  rgPanel(c,w,h,'もちもの');
+  const list=RG_IT.filter(i=>rgHave(i.id)>0);
+  if(!list.length){c.fillStyle='#c9c4b4';c.font='900 12px sans-serif';c.fillText('何も持っていない',w*.08,72);}
+  const bw=Math.min(160,w*.21),bh=30;
+  list.forEach((it,i)=>{
+   const x=w*.08+(i%4)*(bw+8),y=64+Math.floor(i/4)*(bh+30);
+   rgBtn(c,x,y,bw,bh,it.n+' x'+rgHave(it.id),()=>{RG.md={k:'bagT',it:it.id};});
+   c.fillStyle='#c9c4b4';c.font='900 10px sans-serif';c.fillText(it.dsc.slice(0,18),x,y+bh+13);});
+  rgBtn(c,w*.08,h-52,120,30,'◀もどる',()=>{RG.md={k:'menu'};});return;}
+ if(M.k==='bagT'){
+  const it=RG_IT_BY[M.it];
+  rgPanel(c,w,h,it.n+' を だれに?');
+  const bw=Math.min(160,w*.21);
+  RG.pt.forEach((p,i)=>rgBtn(c,w*.08+i*(bw+8),80,bw,44,
+   p.n+'  '+Math.max(0,Math.round(p.hp))+'/'+p.mhp,()=>rgUseItem(it,p)));
+  rgBtn(c,w*.08,h-52,120,30,'◀もどる',()=>{RG.md={k:'bag'};});return;}
+ if(M.k==='inn'){
+  const cost=rgInnCost();
+  rgPanel(c,w,h,'やどや');
+  c.fillStyle='#F2ECDC';c.font='900 13px sans-serif';
+  c.fillText('ひと晩 '+cost+'G で、みんな元どおりに回復します',w*.08,74);
+  rgBtn(c,w*.08,100,150,36,'とまる ('+cost+'G)',()=>{
+   if(R.gold<cost){rgSay('お金が足りない');RG.md=null;return;}
+   R.gold-=cost;saveMeta();rgRest();RG.md=null;rgSay('ぐっすり眠った — 全回復!');sfx.win&&sfx.win();});
+  rgBtn(c,w*.08+160,100,120,36,'やめる',close);return;}
+ if(M.k==='shop'){
+  rgPanel(c,w,h,'どうぐや');
+  const bw=Math.min(170,w*.22),bh=32;
+  RG_IT.forEach((it,i)=>{
+   const x=w*.08+(i%4)*(bw+8),y=64+Math.floor(i/4)*(bh+32);
+   rgBtn(c,x,y,bw,bh,it.n+' '+it.p+'G',()=>{
+    if(R.gold<it.p){rgSay('お金が足りない');return;}
+    R.gold-=it.p;R.it[it.id]=(R.it[it.id]||0)+1;saveMeta();sfx.buy&&sfx.buy();},false,R.gold<it.p);
+   c.fillStyle='#c9c4b4';c.font='900 10px sans-serif';
+   c.fillText(it.dsc.slice(0,20)+' (所持'+rgHave(it.id)+')',x,y+bh+13);});
+  rgBtn(c,w*.08,h-52,120,30,'でる',close);return;}
+ if(M.k==='bar'){
+  rgPanel(c,w,h,'さかば — なかまを えらぶ (4人まで)');
+  const own=DEV?HEROES.map(h=>h.id):HEROES.filter(h=>heroOwned(h.id)).map(h=>h.id);
+  const bw=(w*.84-7*5)/6,bh=44;
+  own.forEach((id,i)=>{
+   const on=R.pt.indexOf(id)>=0,H=heroOf(id);
+   const x=w*.08+(i%6)*(bw+7),y=62+Math.floor(i/6)*(bh+8);
+   rgBtn(c,x,y,bw,bh,H.n.slice(0,6)+'\nL'+rgLv(id),()=>{
+    if(on){if(R.pt.length<=1){rgSay('ひとりは残さないといけない');return;}
+     R.pt=R.pt.filter(x2=>x2!==id);}
+    else{if(R.pt.length>=RG_PARTY){rgSay('4人まで');return;}R.pt.push(id);}
+    saveMeta();
+    const keep={};for(const p of RG.pt)keep[p.id]={hp:p.hp,mp:p.mp};
+    RG.pt=rgMkParty();
+    for(const p of RG.pt)if(keep[p.id]){p.hp=Math.min(p.mhp,keep[p.id].hp);p.mp=Math.min(p.mmp,keep[p.id].mp);}
+   },on);
+   c.fillStyle=on?'#ffd23d':'#c9c4b4';c.font='900 9px sans-serif';c.textAlign='center';
+   c.fillText(on?'えらんでいる':'ひかえ',x+bw*.5,y+bh+11);c.textAlign='left';});
+  rgBtn(c,w*.08,h-46,120,30,'でる',close);return;}
+ if(M.k==='gate'){
+  rgPanel(c,w,h,'まちのもん — どこへ ゆく?');
+  /* ⚠列の幅は「枠の中身の幅」から割り出すこと。固定値だと6列目がパネルからはみ出す */
+  const bw=(w*.84-7*5)/6,bh=38;
+  RG_AREAS.forEach((A,i)=>{
+   const ok=rgAreaOK(A)||DEV,cl=!!R.cl[A.k];
+   const x=w*.08+(i%6)*(bw+7),y=60+Math.floor(i/6)*(bh+30);
+   rgBtn(c,x,y,bw,bh,(cl?'☑ ':'')+A.n,()=>{if(!ok)return;RG.md=null;rgEnter(A.k);},false,!ok);
+   c.fillStyle=ok?'#c9c4b4':'#8a7a6a';c.font='900 9px sans-serif';
+   c.fillText(ok?('てきレベル '+A.lv):('🔒'+STAGES[A.si].n+' '+D5[A.di].n),x,y+bh+12);
+   if(ok){c.fillStyle='#7a7060';c.fillText(A.dsc.slice(0,13),x,y+bh+23);}});
+  rgBtn(c,w*.08,h-40,120,28,'やめる',close);return;}
+}
+/* フィールドで道具を使う */
+function rgUseItem(it,p){
+ const R=rgMeta();
+ if(rgHave(it.id)<=0)return;
+ if(it.t==='heal'){if(p.hp<=0){rgSay('倒れている仲間には効かない');return;}
+  p.hp=Math.min(p.mhp,p.hp+it.pw);}
+ else if(it.t==='mp'){if(p.hp<=0){rgSay('倒れている仲間には効かない');return;}p.mp=Math.min(p.mmp,p.mp+it.pw);}
+ else if(it.t==='rev'){if(p.hp>0){rgSay(p.n+' は倒れていない');return;}p.hp=Math.max(1,Math.round(p.mhp*it.pw));}
+ else if(it.t==='perm'){R.pm[p.id]=R.pm[p.id]||{};R.pm[p.id][it.st]=(R.pm[p.id][it.st]||0)+3;p[it.st]+=3;}
+ else if(it.t==='warp'){
+  if(RG.sc==='town'){rgSay('もう拠点にいる');return;}
+  RG.sc='town';RG.map=rgTown();RG.px=10;RG.py=10;RG.fade=1;}
+ else return;
+ R.it[it.id]--;saveMeta();
+ RG.md={k:'bag',pick:0};
+ rgSay(it.n+' を つかった');
+ sfx.buy&&sfx.buy();}
+
+/* ---- 入力 ---- */
+if(rgcv&&rgcv.addEventListener){
+ rgcv.addEventListener('pointerdown',e=>{
+  if(!RG)return;
+  const r=rgcv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  const hs=RG.hit||[];
+  for(let i=hs.length-1;i>=0;i--){const q=hs[i];
+   if(x>=q.x&&x<=q.x+q.w&&y>=q.y&&y<=q.y+q.h){q.fn();return;}}
+ });
+}
+/* 十字キー(押しっぱなしで歩き続ける) */
+function rgPad(id,dx,dy){
+ const b=$(id);if(!b||!b.addEventListener)return;
+ const on=e=>{if(RG){RG.key={x:dx,y:dy};}if(e&&e.preventDefault)e.preventDefault();};
+ const off=()=>{if(RG&&RG.key.x===dx&&RG.key.y===dy)RG.key={x:0,y:0};};
+ b.addEventListener('pointerdown',on);
+ b.addEventListener('pointerup',off);
+ b.addEventListener('pointerleave',off);
+ b.addEventListener('pointercancel',off);
+}
+rgPad('rgU',0,-1);rgPad('rgD',0,1);rgPad('rgL',-1,0);rgPad('rgR',1,0);
+if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('keydown',e=>{
+ if(!RG||SCR!=='rpg')return;
+ const k=e.key;
+ if(k==='ArrowUp')RG.key={x:0,y:-1};else if(k==='ArrowDown')RG.key={x:0,y:1};
+ else if(k==='ArrowLeft')RG.key={x:-1,y:0};else if(k==='ArrowRight')RG.key={x:1,y:0};
+});
+if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('keyup',e=>{
+ if(!RG)return;RG.key={x:0,y:0};});
+if($('rgquit'))$('rgquit').onclick=()=>rgBack();
+
 $('bt-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
 $('bt-train-close').onclick=()=>$('md-train').classList.remove('on');
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
@@ -4943,6 +5929,7 @@ function loopBody(now){
   drawMinis();
  }
  if(SCR==='title')paradeStep(TT);
+ if(SCR==='rpg')rgStep(dt0);
  hudT-=dt0;
  if(hudT<=0&&gameActive){hudT=.12;updHUD();minisUpd();
   if($('interv').classList.contains('on')){

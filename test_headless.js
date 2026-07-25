@@ -529,6 +529,110 @@ function checkTrain(){
   +'📖ゾンビ図鑑 全'+ZOMBIES.length+'種を'+ZDEX_G.length+'欄に整理・ソロの撃破で'+seen+'種登録 OK');
  META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;META.zdex={};
 }
+/* ---- ⚔冒険(育成RPG) ----
+   ⚠画面をタップしないと動かない部分なので、歩く/戦う/育つ/町の施設 を直接呼んで確かめる */
+function checkRpg(){
+ META.hero={};for(const id of ['hCop','hSf','hMed','hBomb'])META.hero[id]=1;
+ META.tr0=1;META.rpg=null;META.hlv={};META.hxp={};
+ /* ステージ1は古参まで、ステージ2は未クリア という状態にする */
+ META.sc=[[1,1,1,0,0,0],[0,0,0,0,0,0]];
+ const R=rgMeta();
+ if(R.gold<=0){console.log('FAIL: 初期の所持金が無い');process.exit(1);}
+ /* ---- 行けるエリアはTD側のクリア状況で決まる ---- */
+ if(!rgAreaOK(rgArea('a0'))){console.log('FAIL: クリア済みのエリアに行けない');process.exit(1);}
+ if(rgAreaOK(rgArea('a3'))){console.log('FAIL: 未クリアの難易度のエリアに行けてしまう');process.exit(1);}
+ if(rgAreaOK(rgArea('b0'))){console.log('FAIL: 未クリアのステージのエリアに行けてしまう');process.exit(1);}
+ /* ---- 拠点から始まる ---- */
+ if(!rgOpen()){console.log('FAIL: 冒険が始まらない');process.exit(1);}
+ if(RG.sc!=='town'){console.log('FAIL: 拠点から始まらない');process.exit(1);}
+ if(RG.pt.length!==Math.min(RG_PARTY,4)){console.log('FAIL: パーティが4人にならない '+RG.pt.length);process.exit(1);}
+ /* ---- エリアへ入って歩く ---- */
+ rgEnter('a0');
+ if(RG.sc!=='field'){console.log('FAIL: エリアへ入れない');process.exit(1);}
+ {const x0=RG.px,y0=RG.py;
+  /* ⚠入口の左隣は「拠点へ戻る出口」なので壁ではない。壁の判定はマスの中身で選ぶこと */
+  let wall=null,open=null;
+  for(const d of [[1,0],[0,1],[0,-1],[-1,0]]){
+   const t=rgAt(x0+d[0],y0+d[1]);
+   if(t===0&&!wall)wall=d;
+   if(t===1&&!open)open=d;}
+  if(wall){RG.walk=0;rgMove(wall[0],wall[1]);
+   if(RG.px!==x0||RG.py!==y0){console.log('FAIL: 壁を抜けて歩けてしまう');process.exit(1);}}
+  if(!open){console.log('FAIL: 入口からどこにも進めない');process.exit(1);}
+  RG.walk=0;rgMove(open[0],open[1]);
+  if(RG.px===x0&&RG.py===y0){console.log('FAIL: 空いている所へ歩けない');process.exit(1);}
+  /* 遭遇して戦闘に入ってしまっていたら、いったん戻す */
+  if(RG.sc==='battle'){RG.bt=null;RG.sc='field';}}
+ /* ---- 敵はエリアのステージに合ったものだけ出る ---- */
+ {const A=rgArea('b0'),pool=rgPool(A);
+  for(const zi of pool)if(ZOMBIES[zi].st!==2){
+   console.log('FAIL: 港のエリアに港以外の敵が出る '+ZOMBIES[zi].id);process.exit(1);}
+  const A2=rgArea('n0'),p2=rgPool(A2);
+  for(const zi of p2)if(!ZOMBIES[zi].nm){
+   console.log('FAIL: ナイトメアのエリアに獣以外が出る '+ZOMBIES[zi].id);process.exit(1);}}
+ /* ---- 戦闘: 全員ぶんコマンドを入れて解決する ---- */
+ const A=rgArea('a0');
+ rgBattle([rgFoe(0,A),rgFoe(1,A)],false);
+ if(RG.sc!=='battle'||RG.bt.ph!=='cmd'){console.log('FAIL: 戦闘が始まらない');process.exit(1);}
+ const hp0=RG.bt.fs[0].hp;
+ let guard=0;
+ while(RG.bt&&RG.bt.ph!=='end'&&guard++<400){
+  const B=RG.bt;
+  if(B.ph==='cmd'){
+   const p=RG.pt[B.si];
+   const sk=rgSkills(p.id).filter(s=>s.mp<=p.mp&&s.t==='atk');
+   if(sk.length&&Math.random()<.5){
+    const s=sk[0];
+    rgBtSet(s.tg==='one'?{c:'sk',sk:s.id,tg:0}:{c:'sk',sk:s.id});
+   }else rgBtSet({c:'atk',tg:0});
+  }else rgBtStep();}
+ if(guard>=400){console.log('FAIL: 戦闘が終わらない(無限ループ)');process.exit(1);}
+ if(RG.bt.fs[0].hp>=hp0){console.log('FAIL: 敵にダメージが入っていない');process.exit(1);}
+ const res=RG.bt.res;
+ if(res!=='win'&&res!=='lose'){console.log('FAIL: 勝敗がつかない res='+res);process.exit(1);}
+ /* ---- 勝つと経験値が入り、TD側の鍛錬Lvへ反映される ---- */
+ if(res==='win'){
+  const id=RG.pt[0].id;
+  if(rgLv(id)<1||(rgXp(id)<=0&&rgLv(id)<=1)){console.log('FAIL: 経験値が入っていない');process.exit(1);}}
+ rgBtClose();
+ /* 反映の式そのものも確かめる(戦闘の乱数に頼らない) */
+ {const id='hCop';META.rpg.lv[id]=1;META.rpg.xp[id]=0;META.hlv={};
+  rgAddXp(id,999999);
+  if(rgLv(id)!==RG_LVMAX){console.log('FAIL: 上限までレベルが上がらない '+rgLv(id));process.exit(1);}
+  if((META.hlv[id]||0)!==TR_MAX){
+   console.log('FAIL: RPGのLvがTD側の鍛錬Lvに反映されない '+(META.hlv[id]||0));process.exit(1);}
+  if(rgTrLv(1)!==0||rgTrLv(21)!==10){console.log('FAIL: 鍛錬Lvの換算がおかしい');process.exit(1);}}
+ /* ---- 町の施設 ---- */
+ RG.sc='town';RG.map=rgTown();RG.px=10;RG.py=10;RG.pt=rgMkParty();
+ for(const p of RG.pt)p.hp=1;
+ {const R2=rgMeta(),cost=rgInnCost();R2.gold=cost+50;
+  R2.gold-=cost;rgRest();
+  if(RG.pt.some(p=>p.hp<p.mhp)){console.log('FAIL: 宿屋で全回復しない');process.exit(1);}}
+ {const R2=rgMeta(),n0=rgHave('herb');R2.gold=999;
+  R2.gold-=RG_IT_BY.herb.p;R2.it.herb=(R2.it.herb||0)+1;
+  if(rgHave('herb')!==n0+1){console.log('FAIL: どうぐが増えない');process.exit(1);}
+  const p=RG.pt[0];p.hp=1;rgUseItem(RG_IT_BY.herb,p);
+  if(p.hp<=1){console.log('FAIL: やくそうで回復しない');process.exit(1);}}
+ /* ---- 全12エリアが3つのテーマに割り振られていて、ぬしが必ずいる ---- */
+ for(const Ax of RG_AREAS){
+  const l=rgLord(Ax);
+  if(l==null||!ZOMBIES[l]){console.log('FAIL: '+Ax.n+' のぬしが決まらない');process.exit(1);}
+  if(!rgPool(Ax).length){console.log('FAIL: '+Ax.n+' の敵プールが空');process.exit(1);}}
+ /* ---- 全11人ぶんのRPGステータスと、Lv1で使えるとくぎがある ---- */
+ for(const H of HEROES){
+  if(!RG_HERO[H.id]){console.log('FAIL: '+H.n+' のRPGステータスが無い');process.exit(1);}
+  const sk=(RG_HERO[H.id].sk||[]).filter(s=>s[0]<=1);
+  if(!sk.length){console.log('FAIL: '+H.n+' がLv1でとくぎを覚えていない');process.exit(1);}
+  for(const s of RG_HERO[H.id].sk)if(!RG_SK_BY[s[1]]){
+   console.log('FAIL: 存在しないとくぎ '+s[1]);process.exit(1);}}
+ rgBack();
+ if(RG!==null){console.log('FAIL: 冒険をやめても状態が残っている');process.exit(1);}
+ console.log('⚔冒険: 行けるエリアはTD側のクリア連動(12エリア)・拠点/歩行/壁・'
+  +'コマンド戦闘('+res+')・経験値→鍛錬Lv反映(Lv'+RG_LVMAX+'→鍛錬Lv'+TR_MAX+')・'
+  +'宿屋/どうぐ・英雄'+HEROES.length+'人ぶんのステータスととくぎ'+RG_SK.length+'種 OK');
+ META.hero={};META.rpg=null;META.hlv={};META.hxp={};META.tr0=0;
+ META.sc=[[0,0,0,0,0,0],[0,0,0,0,0,0]];
+}
 /* ---- 支援施設2枠(タワーとは別軸)が、解放してから建つか・効果が乗るか ---- */
 function checkSup(){
  META.stg=0;setDiff=2;startSolo();
@@ -572,6 +676,7 @@ checkSup();
 checkGacha();
 checkHero();
 checkTrain();
+checkRpg();
 checkProgress();
 checkEvo();
 checkHook();

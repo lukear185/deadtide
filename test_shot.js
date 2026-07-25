@@ -42,6 +42,8 @@ const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
    ⚠発射の瞬間しか出ないエフェクト(電撃の連鎖など)は、ヘッドレスの仮想時間の進み方しだいで
      写らないことがある。写らなければ w の値を変えて数回撮る。最終確認は実機で。 */
 const TM=/t=([A-Za-z]+)/.exec(OPT),TID=TM?TM[1]:'';
+/* ⚔冒険(育成RPG): rpg=拠点の町 / rpgf=エリアのフィールド / rpgb=戦闘 / rpgg=門(エリア選択) / rpgs=つよさ */
+const RPM=/rpg([a-z]?)/.exec(OPT),RPG=!!RPM,RPGK=RPM?RPM[1]:'';
 /* 例 hero=hNox = その英雄を出撃させて撮る / hero=all = 英雄11人を経路上に並べて撮る */
 const HM=/hero=([A-Za-z]+)/.exec(OPT),HID=HM?HM[1]:'';
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
@@ -54,7 +56,18 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
        +'META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});'
-       +'TRTAB="'+(OPT.indexOf('trzoo')>=0?'zoo':'hero')+'";renderTrain();document.getElementById("md-train").classList.add("on");')
+       +'META.rpg={lv:{hNox:12,hSf:7,hMed:5,hCop:3},xp:{hNox:60},pt:["hNox","hSf","hMed","hCop"],gold:1240,cl:{a0:1,a1:1}};'
+       +'META.sc=[[1,1,1,1,1,1],[1,1,1,0,0,0]];'
+       +'TRTAB="'+(OPT.indexOf('trzoo')>=0?'zoo':OPT.indexOf('trhero')>=0?'hero':'adv')+'";renderTrain();document.getElementById("md-train").classList.add("on");')
+     :RPG?('META.tr0=1;META.hero={hNox:1,hSf:1,hMed:1,hCop:1,hBomb:1,hSeer:1};'
+       +'META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.stg=1;'
+       +'rgOpen();rgMeta().gold=1240;rgMeta().it={herb:6,herb2:2,water:3,wing:1};'
+       +(RPGK==='f'||RPGK==='b'?'rgEnter("a2");':'')
+       +(RPGK==='b'?'rgBattle([rgFoe(0,rgArea("a2")),rgFoe(4,rgArea("a2")),rgFoe(2,rgArea("a2"))],false);'
+         +'RG.bt.ph="cmd";RG.bt.si=0;':'')
+       +(RPGK==='g'?'RG.md={k:"gate"};':'')
+       +(RPGK==='s'?'RG.md={k:"stat"};':'')
+       +'RG.fade=0;rgStep(0.02);')
      :GC?'META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
