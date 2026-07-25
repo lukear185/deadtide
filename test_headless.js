@@ -506,16 +506,16 @@ function checkTrain(){
  if(!TR.next||TR.next.length!==1||!TR.next[0].own){
   console.log('FAIL: 第1波は育成対象1人だけのはず');process.exit(1);}
  try{trainStep(.016);}catch(e){console.log('FAIL: 洞窟の進行で例外: '+e.message);process.exit(1);}
- /* ---- 掘る: 空洞に隣接した土だけ・🦴骸を消費 ---- */
+ /* ---- 掘る: 空洞に隣接した土だけ・🩸腐肉を消費 ---- */
  if(cvCanDig(6,5)){console.log('FAIL: 空洞から離れた土が掘れてしまう');process.exit(1);}
  if(!cvCanDig(1,5)){console.log('FAIL: 侵入口の隣が掘れない');process.exit(1);}
- const mn=TR.mana;
- if(!cvDigAt(1,5)){console.log('FAIL: 掘れない');process.exit(1);}
- if(Math.abs(TR.mana-(mn-CV_DIG))>1e-9){console.log('FAIL: 掘っても🦴骸が減らない');process.exit(1);}
- TR.mana=0;
- if(cvDigAt(2,5)){console.log('FAIL: 🦴骸が0でも掘れてしまう');process.exit(1);}
- TR.mana=CV_MAX;
- /* ---- 養分をふくむ土を掘ると、その場でゾンビが生まれる ---- */
+ {const b0=TR.bio;TR.nut[cvI(1,5)]=0;
+  if(!cvDigAt(1,5)){console.log('FAIL: 掘れない');process.exit(1);}
+  if(Math.abs(TR.bio-(b0-CV_DIG))>1e-9){console.log('FAIL: 掘っても🩸腐肉が減らない');process.exit(1);}}
+ TR.bio=0;
+ if(cvDigAt(2,5)){console.log('FAIL: 🩸腐肉が0でも掘れてしまう');process.exit(1);}
+ TR.bio=CV_BIO0;
+ /* ---- 腐肉をふくむ土を掘ると、その場でゾンビが生まれる ---- */
  {TR.zs.length=0;
   let born=0,tried=0;
   for(let y=0;y<CV_H&&born<3;y++){
@@ -524,9 +524,23 @@ function checkTrain(){
    cvDigAt(x,y,true);
    if(TR.zs.length>n0)born++;}
   if(!tried){console.log('FAIL: 侵入口の隣が1マスも掘れない');process.exit(1);}
-  if(born<3){console.log('FAIL: 養分のある土を掘ってもゾンビが生まれない '+born+'/'+tried);process.exit(1);}
-  /* 養分は掘ると消える=同じ所から二度は出ない */
-  if(TR.nut[cvI(1,0)]!==0){console.log('FAIL: 掘っても養分が残っている');process.exit(1);}}
+  if(born<3){console.log('FAIL: 腐肉のある土を掘ってもゾンビが生まれない '+born+'/'+tried);process.exit(1);}
+  if(TR.nut[cvI(1,0)]!==0){console.log('FAIL: 掘っても腐肉が残っている');process.exit(1);}
+  if(!TR.zs[0].bio){console.log('FAIL: 生まれたゾンビが腐肉を抱えていない');process.exit(1);}}
+ /* ---- ⭐循環: 自然に死ねば腐肉は戻る／英雄に食われると戻らず英雄が強くなる ---- */
+ {const z=TR.zs[0],b0=TR.bio;
+  cvKillZ(z);
+  if(TR.bio<=b0){console.log('FAIL: ゾンビが死んでも腐肉が戻らない');process.exit(1);}
+  const z2=TR.zs.filter(q=>!q.dead)[0];
+  const H0=cvMkHero(h.id,true),b1=TR.bio,g1=cvGrow(H0);
+  cvKillZ(z2,H0);
+  if(TR.bio!==b1){console.log('FAIL: 英雄に食われたのに腐肉が戻っている');process.exit(1);}
+  if(!(cvGrow(H0)>g1)){console.log('FAIL: 英雄がゾンビを食っても強くならない');process.exit(1);}
+  if(TR.eaten<=0){console.log('FAIL: 食われた腐肉が記録されていない');process.exit(1);}
+  /* 英雄を倒すと腐肉が増える=総量を増やす唯一の手段 */
+  const b2=TR.bio;TR.hs=[H0];cvKillH(H0);
+  if(TR.bio<=b2+CV_KILL_BIO-1){console.log('FAIL: 英雄を倒しても腐肉が増えない');process.exit(1);}
+  TR.hs=[];}
  /* ---- 開放度で格が決まる: 広く掘るほど強いゾンビ ---- */
  for(let y=3;y<=7;y++)for(let x=1;x<=5;x++)cvDigAt(x,y,true);
  const dMid=cvDeg(3,5);
@@ -534,7 +548,7 @@ function checkTrain(){
  const dNeck=cvDeg(0,0);
  if(cvTier(dNeck)>2){console.log('FAIL: 細い坑道の格が高すぎる(開放度'+dNeck+')');process.exit(1);}
  /* ---- 湧き: 解放した種類だけ・格を超えない ---- */
- TR.zs.length=0;
+ TR.zs.length=0;TR.bio=CV_BIO_MAX;
  for(let k=0;k<60;k++)cvSpawn();
  if(!TR.zs.length){console.log('FAIL: ゾンビが湧かない');process.exit(1);}
  for(const z of TR.zs){
@@ -554,6 +568,63 @@ function checkTrain(){
   if(H.cx<=x0){console.log('FAIL: 英雄が奥へ進まない(st='+H.st+' p='+(+H.p).toFixed(2)
    +' cost='+TR.hpf[cvI(H.cx,H.cy)]+' 敵'+TR.zs.length+' pos='+H.cx+','+H.cy+')');process.exit(1);}
   TR.sp=0;/* 湧きを戻す */}
+ /* ---- ⭐侵攻中に掘った道は英雄が通らない ---- */
+ {const H=TR.hs[0];
+  /* 英雄の1つ上のマスを侵攻中に掘る → コスト場で到達不能(INF)になっているはず */
+  let fx=-1,fy=-1;
+  for(let y=0;y<CV_H&&fx<0;y++)for(let x=1;x<CV_W;x++){
+   if(cvCanDig(x,y)){fx=x;fy=y;break;}}
+  if(fx<0){console.log('FAIL: 侵攻中に掘れるマスが無い');process.exit(1);}
+  TR.bio=CV_BIO_MAX;cvDigAt(fx,fy);
+  if(!cvFresh(cvI(fx,fy))){console.log('FAIL: 侵攻中に掘った印が付かない');process.exit(1);}
+  cvPathHero();
+  if(TR.hpf[cvI(fx,fy)]<1e9){console.log('FAIL: 侵攻中に掘った道を英雄が通れてしまう');process.exit(1);}
+  /* 巣作りに戻れば普通の道になる */
+  const save=TR.raidT;TR.raidT=-1;
+  if(cvFresh(cvI(fx,fy))){console.log('FAIL: 巣作り中まで通れない道になっている');process.exit(1);}
+  TR.raidT=save;}
+ /* ---- ⭐ゾンビは徘徊し、英雄が近づいたら襲いに行く ---- */
+ {TR.zs.length=0;
+  const H=TR.hs[0];
+  /* 英雄から遠い所に置いたゾンビは、英雄めがけて動かない(=徘徊する) */
+  let far=null;
+  for(let y=0;y<CV_H&&!far;y++)for(let x=0;x<CV_W;x++){
+   if(!cvWalk(x,y))continue;
+   if(Math.abs(x-H.cx)+Math.abs(y-H.cy)>CV_AGGRO+6){far=[x,y];break;}}
+  if(far){
+   const z=cvMakeZ(far[0],far[1],1,20,false);
+   if(!z){console.log('FAIL: 徘徊の確認用ゾンビが作れない');process.exit(1);}
+   cvPathZ();
+   const d0=Math.abs(z.cx-H.cx)+Math.abs(z.cy-H.cy);
+   const nx=cvNextZ(z);
+   if(nx){const d1=Math.abs(nx[0]-H.cx)+Math.abs(nx[1]-H.cy);
+    if(TR.zpf[cvI(z.cx,z.cy)]>=0&&TR.zpf[cvI(z.cx,z.cy)]<=CV_AGGRO&&d1>=d0){
+     console.log('FAIL: 英雄が近いのに襲いに行かない');process.exit(1);}}
+   /* 向きが決まっていること(徘徊の誘導則が働く前提) */
+   if(!(z.dir>=0&&z.dir<=3)){console.log('FAIL: ゾンビに向きが無い');process.exit(1);}}
+  TR.zs.length=0;}
+ /* ---- ⭐🪨崩落と🏠マザーゾンビの移動 ---- */
+ {TR.bio=CV_BIO_MAX;
+  const ox=TR.mx,oy=TR.my;
+  /* 崩落: 空洞を土に戻す */
+  let cx=-1,cy=-1;
+  for(let y=0;y<CV_H&&cx<0;y++)for(let x=1;x<CV_W;x++){
+   if(TR.g[cvI(x,y)]===1){cx=x;cy=y;break;}}
+  if(cx<0){console.log('FAIL: 崩せる空洞が無い');process.exit(1);}
+  const b0=TR.bio;
+  if(!cvCrush(cx,cy)){console.log('FAIL: 崩落できない');process.exit(1);}
+  if(TR.g[cvI(cx,cy)]!==0){console.log('FAIL: 崩しても土に戻らない');process.exit(1);}
+  if(TR.bio!==b0-CV_CRUSH){console.log('FAIL: 崩落でも腐肉が減らない');process.exit(1);}
+  /* マザー移動: 2×2ぶん掘れている所へ */
+  for(let y=3;y<=6;y++)for(let x=3;x<=6;x++)cvDigAt(x,y,true);
+  const b1=TR.bio;
+  if(!cvMoveMom(4,4)){console.log('FAIL: マザーゾンビを移せない');process.exit(1);}
+  if(TR.mx!==4||TR.my!==4){console.log('FAIL: マザーゾンビの位置が変わらない');process.exit(1);}
+  if(TR.g[cvI(ox,oy)]!==1){console.log('FAIL: 元いた所が空洞に戻らない');process.exit(1);}
+  if(TR.bio!==b1-CV_MOVE){console.log('FAIL: マザー移動でも腐肉が減らない');process.exit(1);}
+  /* 掘れていない所へは移せない */
+  if(cvMoveMom(CV_W-4,1)){console.log('FAIL: 土の中へマザーゾンビを移せてしまう');process.exit(1);}
+  cvMoveMom(ox,oy);/* 元に戻す(戻せなくても以降の判定には影響しない) */}
  /* ---- 最後まで走らせる(全波しのぐ or マザーゾンビが倒される) ---- */
  gd=0;
  while(!TR.done&&gd++<24000)trainStep(.05);
@@ -576,7 +647,7 @@ function checkTrain(){
  /* ---- マザーゾンビが倒されたら失敗として終わる ---- */
  META.hmat=100;trainStart(h.id,0);
  cvInvade();
- {const H=TR.hs[0];H.cx=CV_CORE_X-1;H.cy=CV_CORE_Y;H.cd=0;H.st='core';
+ {const H=TR.hs[0];H.cx=TR.mx-1;H.cy=TR.my;H.cd=0;H.st='core';
   TR.core=1;TR.zs.length=0;
   let g3=0;while(!TR.done&&g3++<200)trainStep(.05);}
  if(!TR.done){console.log('FAIL: マザーゾンビが倒されても終わらない');process.exit(1);}
@@ -593,7 +664,8 @@ function checkTrain(){
  const hu=me.units.filter(u=>u.hro)[0],U=UNITS[me.hUi],want=Math.round(U.hp*hBoost(h.id));
  if(hu.mhp!==want){console.log('FAIL: 鍛錬LvがHPに乗っていない '+hu.mhp+'(想定'+want+')');process.exit(1);}
  backTitle();
- console.log('鍛錬所の洞窟: 🧿コアの解放と強化・掘る(🦴骸)・開放度で格が決まる湧き・英雄のAI(掘って進む)'
+ console.log('鍛錬所の洞窟: 🧿コアの解放と強化・掘る(🩸腐肉)・掘るとゾンビが生まれる・腐肉の循環(戻る/食われる/奪う)'
+  +'・徘徊と襲撃・侵攻中に掘った道は通らない・🪨崩落・🏠マザー移動・英雄のAI(掘って進む)'
   +'・必殺技'+HEROES.length+'種・波の進行('+okWv+'波しのいで'+(okWin?'訓練成功':'マザーゾンビが倒された')+')'
   +'・マザーゾンビが倒されたら失敗・Lv上限'+TR_MAX+'・英雄のHPに反映 OK');
  META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;META.zc={};META.zl={walk:1};
