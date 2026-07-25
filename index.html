@@ -743,8 +743,11 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
 function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;
- /* 🧿コアも実質無限に。⚠ZCAVEはこの関数より下で定義されるので、起動直後の1回目はまだ無い */
- if(typeof ZCAVE!=='undefined'){META.zc=META.zc||{};for(const q of ZCAVE)META.zc[q.id]=DEV_INF;}}
+ /* 🧿コアも実質無限に。
+    ⚠ZCAVEはこの関数より下で定義される const なので、起動直後の1回目はまだ入っていない。
+      **constのTDZは `typeof` でも ReferenceError を投げる**(varや未宣言と違う)=typeofガードでは防げない。
+      try/catchで受けること。ここを間違えるとスクリプト全体が止まってタイトルから先へ進めなくなる。 */
+ try{META.zc=META.zc||{};for(const q of ZCAVE)META.zc[q.id]=DEV_INF;}catch(e){}}
 devTop();
 /* DEVモードだと分かるようにタイトル右上の版数へ印を付ける(付け忘れ/外し忘れ防止) */
 if(DEV)try{const e=document.getElementById('vertag');if(e)e.textContent='v2.0 β 🛠DEV';}catch(e){}

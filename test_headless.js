@@ -647,4 +647,21 @@ runPvP('対戦三つ巴');
 console.log('ALL TESTS DONE');
 process.exit(0);
 `;
+/* ---- 🛠DEVモード(?dev=1)でも最後まで読み込めるか ----
+   ⚠DEVは location.search で決まるので、下の実走テストは**常にDEV=false側しか通らない**。
+     DEV側だけで落ちる事故(constのTDZを typeof で見て例外→スクリプト全体が停止)を実際に踏んだので、
+     ここで別スコープ(new Function)で1回だけ読み込んで、最後まで走るかを確かめる。 */
+(function checkDevLoad(){
+ const savedLoc=global.location,savedRaf=rafq.length;
+ global.location={search:'?dev=1',href:'',hash:''};
+ try{
+  const f=new Function(js+'\n;return (typeof cvSpawn==="function")&&(typeof heroUlt==="function")&&DEV===true;');
+  if(!f()){console.log('FAIL: 🛠DEVモードでスクリプトが最後まで走らない');process.exit(1);}
+ }catch(e){
+  console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
+ }finally{
+  global.location=savedLoc;rafq.length=savedRaf;/* 二重読み込みの後始末 */
+ }
+ console.log('🛠DEVモード(?dev=1): 最後まで読み込める OK');
+})();
 try{eval(js+'\n'+body);}catch(e){console.log('LOAD FAIL:',e.message,(e.stack||'').split('\n').slice(0,4).join(' | '));process.exit(1);}
