@@ -103,9 +103,19 @@ const REC=[
  {k:'zap',     f:'Impact Electric Tonal Deep',   t:0, d:.32, g:-1, r:1.1},
  /* ⚠重テスラは「ゆっくり伝わって跳ねるほど重くなる」タワーなので、テスラコイルと同じ音では役割が伝わらない。
     電撃を低くしたものに**低い胴鳴り(トレーラーのブーム)と金属の低音**を重ねて重量感を出す */
- {k:'zap2',    d:.62, g:-2, mix:[{f:'Impact Electric Tonal Deep',t:0,d:.62,g:-5,r:.72},
-                           {f:'Booms_Vol2_075',t:0,d:.62,g:-2,r:.80,dl:6},
-                           {f:'Metal Scrape Low Tonal LFE',t:0,d:.62,g:-10,r:.85,dl:14}]},
+ /* ⚠第62弾で低音を足したが、まだ**軽い・電気感が薄い**とユーザー指摘(2026-07-26)。**4層**に組み直す:
+    ①低く落とした放電(主役) ②「ぶぅぅん」という高電圧のハム(Buzzを大きく下げて唸らせる)
+    ③コイルのハム(実物の電気ハム) ④トレーラーの低い胴鳴り。長さも0.62→0.90秒に伸ばして重さを出す。
+    ⚠テスラコイル(`zap`)は軽いままにしておくこと=役割の違いが音で分かるのが狙い */
+ {k:'zap2',    d:.90, g:-1,
+  /* ⚠「重い」の正体は150〜300Hz。ここを持ち上げ、スマホで鳴らない60Hz以下は逆に削って場所を空ける。
+     2.6kHzを少し上げると放電の“バチッ”が立って電気感が出る */
+  af:'highpass=f=58:p=2,equalizer=f=200:t=q:w=0.9:g=9,equalizer=f=130:t=q:w=1.0:g=4,'
+    +'equalizer=f=2600:t=q:w=1.6:g=3,treble=g=-6:f=4500',
+  mix:[{f:'ELECArc_ArcDesign15',t:0,d:.90,g:-4,r:.62},
+       {f:'ELECBuzz_Buzz27',t:0,d:.90,g:-1,r:.52},
+       {f:'Electricity Hum, Lightbulb',t:0,d:.90,g:-8,r:.70,dl:25},
+       {f:'EffectiveTrailer_Booms_Vol2_214',t:0,d:.90,g:-3,r:1.0,dl:15}]},
  {k:'thunk',   f:'METAL SWING HIT',              t:0, d:.26, g:-3, r:1.0},
  {k:'boom',    f:'Booms_Vol2_011',               t:0, d:.85, g:-1, r:1.0},
  {k:'net',     f:'Whoosh Glass Crystal',         t:0, d:.36, g:-3, r:1.0},
@@ -241,12 +251,17 @@ if(process.argv[2]==='build'){
     '-vn','-sn','-dn','-map_metadata','-1','-ac','1','-ar','22050',TMP]);
    ok=fs.existsSync(TMP);}
   if(!ok){console.log('× 書き出し失敗: '+R.k);ng++;continue;}
-  /* ---- ② ピークを測って、狙った音量でMP3へ ---- */
-  const pr=runE(['-hide_banner','-i',TMP,'-af','volumedetect','-f','null','-']);
+  /* ---- ② ピークを測って、狙った音量でMP3へ ----
+     ⚠`R.af` があれば**先に**掛けてから測る(EQで持ち上げたぶんを含めてピークを合わせるため)。
+       R.af は「スマホで聴こえる帯域へ寄せる」ためのEQに使う。
+       ⚠**120Hz以下はスマホのスピーカーがほぼ鳴らせない**=そこに置いた低音は聴こえない。
+         「重い」を作るなら 150〜300Hz を持ち上げること(重テスラで実際に踏んだ) */
+  const eq=R.af?R.af+',':'';
+  const pr=runE(['-hide_banner','-i',TMP,'-af',eq+'volumedetect','-f','null','-']);
   const mx=+((/max_volume: (-?[\d.]+) dB/.exec(pr)||[0,0])[1]);
   const gain=(-1-mx)+(R.g||0);
   const fo=Math.max(.03,Math.min(.14,dur*.22));
-  const af='volume='+gain.toFixed(2)+'dB,atrim=0:'+dur.toFixed(3)
+  const af=eq+'volume='+gain.toFixed(2)+'dB,atrim=0:'+dur.toFixed(3)
    +',afade=t=in:st=0:d=0.004,afade=t=out:st='+(dur-fo).toFixed(3)+':d='+fo.toFixed(3)
    +',alimiter=limit=0.97';
   /* ⚠形式は**MP3**。ogg/vorbis も ogg/opus も Safari(iPhone) で鳴らない可能性があるので使わない */
