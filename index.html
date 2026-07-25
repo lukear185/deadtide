@@ -1504,6 +1504,12 @@ const IV_SEC=20;/* 作戦タイムの秒数 */
 /* 部隊1体が同時に足止めできる敵の数。鎖使い(hook)がすり抜け敵を抱える時だけ枠が広い
    =すり抜け敵は鎖使い以外に止められる相手が居ないため、3体で埋まると4体目から素通りしてしまう */
 const ENG_MAX=3,ENG_HOOK=8;
+/* ⭐ゾンビが部隊に噛みつける前後の幅(gap=u.d-z.d がこの範囲なら殴られる)。
+   ⚠**部隊の攻撃範囲はこれ以上でなければならない**。近接兵科の射程は34〜40しかないので、
+     素のままだと猟犬(34)などは「噛みつかれているのに届かない」状態になり、
+     しかも旗で足が止まっているので前へ出て詰めることもできない=一方的に殴られ続ける
+     (2026-07-26にユーザーから指摘。実際そうなっていた)。 */
+const ENG_GAP=36;
 const WAVE_LEAD=5;/* ウェーブ開始から敵が出るまでの猶予(タワー設置用)。2026-07-25に10→5秒へ */
 /* PvE/協力の難易度表: hp=体力倍率 cnt=物量倍率 sp=足の速さ boss=ボス体力 scrap=初期⚙️ pay=撃破報酬倍率 */
 /* 難易度は「新兵から順に」クリアして開けていく(2026-07-25ユーザー指示)。
@@ -2982,7 +2988,7 @@ function campStep(C,dt,wave){
    /* 1体が同時に抱えられる数。⚠すり抜け敵が重なると鎖使いが3体で埋まり、4体目から素通りしていた
       (普通の敵は他の部隊へ回れるが、すり抜け敵は鎖使いにしか止められないため逃げ場が無い。2026-07-25修正) */
    if(u.eng>=(z.noblock&&hk?ENG_HOOK:ENG_MAX))continue;
-   const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
+   const gap=u.d-z.d;if(gap>=-6&&gap<=ENG_GAP&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
    if(z.frzT<=0)z.acd=(z.acd||0)-dt;/* 凍結中は殴れない */
    if(z.frzT<=0&&z.acd<=0){z.acd=z.ar;z.lgT=.22;
@@ -3019,8 +3025,10 @@ function campStep(C,dt,wave){
     for(const a of C.units){if(a.dead||a===u||a.hp>=a.mhp)continue;const r5=a.hp/a.mhp;if(r5<br2&&Math.abs(u.d-a.d)<=U.rng){br2=r5;ta=a;}}
     if(ta){u.cd=U.rate;ta.hp=Math.min(ta.mhp,ta.hp+ua);addFx(C,'txt',ta.px,ta.py-52,'+'+ua+'♥');addFx(C,'ring',ta.px,ta.py,'',{r:36,col:'#b7e07a'});if(C.isMe)sfx.heal();}}
   }else
+  /* ⚠**噛みついてくる相手には必ず届くようにする**。射程が噛みつきの窓(ENG_GAP)より短い近接兵科は、
+     素のままだと殴られているのに反撃できない。旗で足が止まっているので詰めることもできない */
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const gap=u.d-z.d;
-   if(gap>=-10&&gap<=U.rng&&z.d>best){best=z.d;tg=z;}}
+   if(gap>=-10&&gap<=Math.max(U.rng,ENG_GAP+2)&&z.d>best){best=z.d;tg=z;}}
   if(tg){
    if(u.cd<=0){u.cd=U.rate;
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
@@ -3034,7 +3042,7 @@ function campStep(C,dt,wave){
      addP(C,4,tg.px,tg.py-10,{sp:50,up:30,g:-30,life:.9,r:6,col:'#6e6354',typ:'smoke'});
      if(U.aoe>=100){C.shake=Math.max(C.shake||0,.14);u.fireT=.14;}
      if(C.isMe&&U.type==='blast')sfx.boom();}
-    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=U.rng){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
+    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
     else{dmgZ(C,tg,ua,pierce);
      if(U.rng>60){u.fireT=.1;addFx(C,'tr',u.px,u.py-24,'',{x2:tg.px,y2:tg.py-20,col:U.id==='snp'?'rgba(160,225,255,':null});
       if(FXLV>0){const d5=(u.dr||-1),mx3=u.px+d5*30,my3=u.py-27;

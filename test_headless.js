@@ -350,6 +350,38 @@ function checkCoil(){
 }
 /* ---- 鎖使いが、重なったすり抜け敵を取りこぼさないか ----
    ⚠1体が抱えられる数(ENG_MAX=3)で頭打ちになり、4体目から素通りしていたバグの再発防止 */
+/* ---- 噛みつかれている相手には必ず反撃できるか ----
+   ⚠近接兵科の射程は34〜40しかないのに、ゾンビは gap=36 まで近づけば殴れる。
+     素のままだと猟犬(射程34)は「殴られているのに届かない」うえ、旗で足が止まっていて詰められない
+     =一方的に殴られ続ける(2026-07-26にユーザーから指摘)。全近接兵科で反撃できることを見る */
+function checkBite(){
+ META.stg=0;setDiff=2;startSolo();frames(20,.016);
+ const me=G.players[0];
+ const mel=[];
+ for(let i=0;i<U_N;i++)if(UNITS[i].rng<=ENG_GAP+2)mel.push(i);
+ if(!mel.length){console.log('FAIL: 近接兵科が1つも見つからない');process.exit(1);}
+ const zi=ZOMBIES.findIndex(z=>z.id==='walk');
+ let ng=[];
+ for(const ui of mel){
+  const U=UNITS[ui];
+  me.units.length=0;me.zombies.length=0;
+  /* 部隊を旗の位置に置き、ゾンビを「噛みつける一番遠い所」(gap=ENG_GAP)に置く */
+  const ud=me.flagD;
+  me.units.push({eid:EID++,ui,own:0,am:1,d:ud,hp:U.hp,mhp:U.hp,cd:0,hitT:0,fireT:0,ph:0,px:0,py:0,dr:-1,eng:0});
+  const z=mkZ(zSpec(zi,1,10),ud-ENG_GAP);
+  z.hp=z.mhp=99999;
+  me.zombies.push(z);
+  const hp0=z.hp,uhp0=me.units[0].hp;
+  for(let k=0;k<40;k++)campStep(me,.05,G.wave);
+  const bitten=me.units[0].hp<uhp0;
+  const hit=z.hp<hp0;
+  if(bitten&&!hit)ng.push(U.n+'(射程'+U.rng+')');
+ }
+ if(ng.length){
+  console.log('FAIL: 噛みつかれているのに反撃できない兵科がある → '+ng.join(' / '));process.exit(1);}
+ console.log('反撃: 近接'+mel.length+'兵科すべて、噛みつかれた相手(gap='+ENG_GAP+')に反撃できる OK');
+ backTitle();
+}
 function checkHook(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
@@ -680,6 +712,7 @@ checkRpg();
 checkProgress();
 checkEvo();
 checkHook();
+checkBite();
 checkCryo();
 checkBeam();
 checkCoil();
