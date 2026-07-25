@@ -223,7 +223,41 @@ function checkStrikes(){
  console.log('砲撃'+ks.length+'種('+ks.join('/')+'): 発射と着弾OK');
  backTitle();
 }
+/* ---- 冷却塔の完全凍結が本当に効いているか ----
+   ⚠campStepはrAFの中なので例外もロジック抜けもテストに出ない。直接呼んで数字で確かめる */
+function checkCryo(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0],ti=TOWERS.findIndex(t=>t.id==='cryo');
+ if(ti<0){console.log('FAIL: 冷却塔が見つからない');process.exit(1);}
+ const si=AI_ORDER[0];me.scrap=9999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
+ buildTower(me,si,ti);
+ if(!me.towers[si]||me.towers[si].ti!==ti){console.log('FAIL: 冷却塔が建たない');process.exit(1);}
+ /* 塔の足元に敵を1体置いて、凍る→止まる→解ける→再凍結しない を見る */
+ const [sx,sy]=SLOTS[si];
+ me.zombies.length=0;
+ const z=mkZ(zSpec(0,1,5),projPath(sx,sy));
+ z.hp=z.mhp=1e9;/* 凍結の検証中に死なせない */
+ me.zombies.push(z);
+ me.towers[si].cd=0;
+ let frozeAt=-1,movedWhileFrozen=0,d0=0;
+ for(let k=0;k<400;k++){
+  const wasF=z.frzT>0;d0=z.d;
+  campStep(me,.05,G.wave);
+  if(z.frzT>0&&frozeAt<0)frozeAt=k;
+  if(wasF&&z.frzT>0&&Math.abs(z.d-d0)>1e-6)movedWhileFrozen++;
+ }
+ if(frozeAt<0){console.log('FAIL: 冷却塔が敵を凍らせていない');process.exit(1);}
+ if(movedWhileFrozen){console.log('FAIL: 凍結中なのに敵が動いている '+movedWhileFrozen+'回');process.exit(1);}
+ /* 解凍直後に撃たれても再凍結しないこと(永久ロック防止) */
+ z.frzT=0;z.frzCd=1.5;
+ me.towers[si].cd=0;campStep(me,.05,G.wave);
+ if(z.frzT>0){console.log('FAIL: 凍結耐性(frzCd)が効いていない=永久ロックできてしまう');process.exit(1);}
+ console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・解凍直後の再凍結なし OK');
+ backTitle();
+}
 checkStrikes();
+checkCryo();
 checkFinalBoss();
 runStage2();
 runNightmare();

@@ -40,7 +40,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +(ZIDS.length?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
      +'var ids='+JSON.stringify(ZIDS)+';'
      +'ids.forEach(function(id,k){var zi=ZOMBIES.findIndex(function(q){return q.id===id;});'
-     +'if(zi>=0)me.zombies.push(mkZ(zSpec(zi,1,20),PLEN*(.3+k*.18)));});'
+     +'if(zi>=0){var z9=mkZ(zSpec(zi,1,20),PLEN*(.3+k*.18));'
+     +(OPT.indexOf('frz')>=0?'if(k%2===0)z9.frzT=99;':'')/* frz=1体おきに凍結させて見比べる */
+     +'me.zombies.push(z9);}});'
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
  +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');

@@ -699,10 +699,11 @@ const TOWERS=[
  {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,c:'#c96b35',dsc:'装甲に特効(約1.9倍)・継続燃焼'},
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:'#5fa8c9',dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
- {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:175,rate:2.4,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を狙撃'},
+ {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,c:'#5c6b78',dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い'},
  /* ↓基本タワー拡張分(通常解放チェーンの続き) */
  {id:'gren',n:'擲弾砲台',cost:300,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
- {id:'cryo',n:'冷却塔',cost:320,rng:200,dmg:6,rate:1.4,type:'net',slowT:2.6,c:'#7fb6c9',dsc:'広範囲を長く凍らせる'},
+ /* frz=完全凍結の秒数(動けず殴れもしない)。凍結が解けたあと frz×2 秒は再凍結しない=最大でも稼働率50% */
+ {id:'cryo',n:'冷却塔',cost:320,rng:200,dmg:6,rate:6,type:'net',frz:2.6,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。撃つ間隔はとても長い'},
  {id:'laser',n:'レーザー塔',cost:460,rng:300,dmg:9,rate:.1,type:'bullet',pierce:1,c:'#c96b9f',dsc:'高速連射・装甲貫通'},
  {id:'acid',n:'酸噴射器',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:'#8fbf4d',dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
  {id:'sonic',n:'音響砲',cost:420,rng:230,dmg:26,rate:1.1,type:'bullet',multi:5,c:'#a58fd0',dsc:'衝撃波で5体同時'},
@@ -923,7 +924,7 @@ const TLINE=[
  {k:'bullet',ic:'🔫',n:'銃器改良',dsc:'実弾系タワー(ライフル/ショットガン/狙撃/ガトリング等)の威力+10%/段'},
  {k:'eco',ic:'🏭',n:'工房設備',dsc:'廃品工房の産出+15%/段'},
  {k:'fire',ic:'🔥',n:'燃焼促進剤',dsc:'火炎系タワーの継続燃焼+25%・威力+10%/段'},
- {k:'net',ic:'🕸',n:'強化拘束具',dsc:'拘束系タワーの減速時間+20%・威力+10%/段'},
+ {k:'net',ic:'🕸',n:'強化拘束具',dsc:'拘束系タワーの減速/凍結時間+20%・威力+10%/段'},
  {k:'blast',ic:'💥',n:'高性能炸薬',dsc:'爆発系タワーの範囲+12%・威力+10%/段'},
  {k:'elec',ic:'⚡',n:'高圧回路',dsc:'電撃系タワーの連鎖+1・威力+10%/段'}
 ];
@@ -1832,7 +1833,7 @@ const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示)
 function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
  return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
-function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
+function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,frzCd:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
@@ -2171,15 +2172,18 @@ function campStep(C,dt,wave){
   /* 歩行の土埃 */
   if(FXLV===2&&!z.dead&&z.d>0&&Math.random()<dt*(z.sp>140?2.2:.9))addP(C,1,z.px-4,z.py+2,{sp:16,g:-8,flat:1,life:.5,r:3.2,col:'#b9a67c',typ:'smoke'});
   if(z.dead)continue;
-  const slow=z.slowT>0?.55:1;if(z.slowT>0)z.slowT-=dt;
+  /* 凍結中は完全停止(移動も攻撃もできない)。解けてもしばらくは再凍結しない=永久ロック防止 */
+  if(z.frzCd>0)z.frzCd-=dt;
+  if(z.frzT>0)z.frzT-=dt;
+  const slow=z.frzT>0?0:(z.slowT>0?.55:1);if(z.slowT>0)z.slowT-=dt;
   let blk=null,bd2=1e9;
   for(const u of C.units){if(u.dead||u.eng>=3)continue;
    /* すり抜け個体は普通の部隊では止められないが、鎖持ち(hook)だけは引きずり出して足止めできる */
    if(z.noblock&&!(UNITS[u.ui]&&UNITS[u.ui].hook))continue;
    const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
-   z.acd=(z.acd||0)-dt;
-   if(z.acd<=0){z.acd=z.ar;z.lgT=.22;
+   if(z.frzT<=0)z.acd=(z.acd||0)-dt;/* 凍結中は殴れない */
+   if(z.frzT<=0&&z.acd<=0){z.acd=z.ar;z.lgT=.22;
     if(z.aoe){/* ボス級=薙ぎ払い(周囲の部隊を同時に殴る) */
      const tg2=[];for(const u2 of C.units){if(u2.dead)continue;const gp=Math.abs(u2.d-z.d);if(gp<=110)tg2.push({u:u2,gp});}
      tg2.sort((a,b)=>a.gp-b.gp);
@@ -2267,7 +2271,12 @@ function campStep(C,dt,wave){
    else if(T.type==='blast'){addP(C,5,mx2,my2,{sp:140,a:tw.ang,spread:.4,g:60,life:.14,r:2.8,col:'#ffdd66'});}
    else if(T.type==='elec'){addP(C,4,sx,sy-24,{sp:120,g:60,life:.25,r:2,col:'#cdf1ff'});}
    else if(T.type==='net'){addP(C,4,sx,sy,{sp:70,g:0,flat:1,life:.5,r:2.4,col:T.id==='cryo'?'#cdf1ff':'#9fd9c6'});}}
-  if(T.type==='net'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){z.slowT=T.slowT*(1+.2*TL);dmgZ(C,z,dm,1);}}addFx(C,'ring',sx,sy,'',{r:rng,col:'#9fd9c6'});if(C.isMe)sfx.net();}
+  if(T.type==='net'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){
+    z.slowT=T.slowT*(1+.2*TL);
+    /* 完全凍結(冷却塔)。解凍後 frz×2 秒は効かない=強化しても稼働率は50%止まり */
+    if(T.frz&&z.frzCd<=0){const ft=T.frz*(1+.2*TL);z.frzT=ft;z.frzCd=ft*2;}
+    dmgZ(C,z,dm,1);}}
+   addFx(C,'ring',sx,sy,'',{r:rng,col:T.frz?'#cdf1ff':'#9fd9c6'});if(C.isMe)sfx.net();}
   else if(T.type==='fire'){/* 火炎は装甲に特効=殻ごと焼く。直撃も燃焼もFIRE_VS_ARMOR倍、燃焼は1秒長い */
    const av=tg.armor?FIRE_VS_ARMOR:1;
    dmgZ(C,tg,dm*av,1);
@@ -2799,12 +2808,21 @@ function renderCamp(C,t){
  const zs=C.zombies.slice().sort((a,b)=>a.py-b.py);
  for(const z of zs){if(z.d<0)continue;
   groundShadow(c,z.px,z.py,15*ZOMBIES[z.zi].sc*(z.boss?1.8:z.elite?1.3:1));
-  if(z.slowT>0){c.fillStyle='rgba(159,220,245,.45)';c.beginPath();c.ellipse(z.px,z.py+4,20,9,0,0,7);c.fill();
+  if(z.slowT>0||z.frzT>0){c.fillStyle=z.frzT>0?'rgba(205,241,255,.6)':'rgba(159,220,245,.45)';
+   c.beginPath();c.ellipse(z.px,z.py+4,z.frzT>0?26:20,z.frzT>0?11:9,0,0,7);c.fill();
    c.font='900 16px sans-serif';c.textAlign='center';c.globalAlpha=.85;c.fillText('❄',z.px,z.py-64*ZOMBIES[z.zi].sc);c.globalAlpha=1;}
   /* 通常時は焼き込みスプライト・特殊状態のみ直接描画 */
   if(!(z.hitT>0||z.lgT>0||z.sent))
    drawSpr(c,bakeZ(z.zi,z.elite?1:0),sprFrame(t,z.ph,ZOMBIES[z.zi].sp>90?14:8),z.px,z.py,(z.dr||1)<0);
   else drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent,lg:z.lgT,elite:z.elite});
+  /* 完全凍結: 氷漬けにして「止まっている」と一目で分かるようにする */
+  if(z.frzT>0){const zc=ZOMBIES[z.zi].sc,bw=30*zc,bh=64*zc;
+   c.save();c.globalAlpha=.5;c.fillStyle='#bfe8ff';
+   rr(c,z.px-bw,z.py-bh-6,bw*2,bh+14,7*zc);c.fill();
+   c.globalAlpha=.85;c.strokeStyle='#eafaff';c.lineWidth=2;c.stroke();
+   c.globalAlpha=.7;c.fillStyle='#eafaff';
+   c.beginPath();c.moveTo(z.px-bw*.5,z.py-bh-6);c.lineTo(z.px-bw*.1,z.py-bh-16*zc);c.lineTo(z.px+bw*.2,z.py-bh-6);c.closePath();c.fill();
+   c.restore();}
   if(z.elite){c.font='900 15px sans-serif';c.textAlign='center';c.fillStyle='#d883ee';c.fillText('👑',z.px,z.py-72*ZOMBIES[z.zi].sc);}
   if(z.hp<z.mhp){const w=36*(z.boss?1.7:z.elite?1.35:1),r2=clamp(z.hp/z.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(z.px-w/2,z.py-58*ZOMBIES[z.zi].sc,w,6);c.fillStyle=z.sent?'#ff6a5a':z.elite?'#d883ee':'#8FBF4D';c.fillRect(z.px-w/2,z.py-58*ZOMBIES[z.zi].sc,w*r2,6);}
  }
@@ -3608,7 +3626,7 @@ function packLane(C){
  fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,ec:F.ecoN||1,up:Math.round(C.up||0),sk:(F.slk||[]).map(v=>v?1:0).join(''),
  tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
- es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0]),
+ es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
  if(G&&G.coop)o.fda=G.players.map(P2=>Math.round(P2.flagD));
  o.fq=G&&G.coop?(G.fxq||[]):(C.fxq||[]);
@@ -3618,7 +3636,7 @@ function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)co
  const o={j:k,n:P.name,hp:Math.ceil(P.core),mx:P.coreMax,dd:P.dead?1:0,pl:P.place,kw:P.killsWave,tw:P.totalWave,rd:P.ready?1:0,sh:Math.round(G.tide.shares[k]),en:Math.round(P.scrap)};
  if(!G.coop)o.ln={fd:Math.round(P.flagD),
    tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0]:0),
-   es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0]),
+   es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
    us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0])};
  a.push(o);}return a;}
 function hostNetTick(force){if(!G)return;
@@ -3659,7 +3677,7 @@ function syncEnts(cc,es,us,dt){
  for(const r of es){const eid=r[3];seen.add(eid);
   let z=cc.zm.get(eid);
   if(!z){z={eid,zi:r[0],d:r[1],ph:rnd(0,9),hitT:0,hpPc:r[2]};cc.zm.set(eid,z);}
-  z.zi=r[0];z.td=r[1];z.boss=r[4];z.sent=r[5];z.slowT=r[6]?1:0;z.elite=r[7]||0;
+  z.zi=r[0];z.td=r[1];z.boss=r[4];z.sent=r[5];z.slowT=r[6]?1:0;z.elite=r[7]||0;z.frzT=r[8]?1:0;
   if(r[2]<z.hpPc)z.hitT=.12;z.hpPc=r[2];z.hp=r[2];z.mhp=100;
  }
  for(const k of Array.from(cc.zm.keys()))if(!seen.has(k)){
