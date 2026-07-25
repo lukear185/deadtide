@@ -50,10 +50,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +(OPT.indexOf('frz')>=0?'if(k%2===0)z9.frzT=99;':'')/* frz=1体おきに凍結させて見比べる */
      +'me.zombies.push(z9);}});'
      +(TID?('var ti9=TOWERS.findIndex(function(q){return q.id==="'+TID+'";});'
-       +'var si9=AI_ORDER[0];me.scrap=99999;me.towers[si9]=null;'
+       +'me.scrap=99999;'
+       /* 支援施設(type:sup)は専用枠にしか建たないので、施設枠へ3種まとめて建てる */
+       +'if(TOWERS[ti9].type==="sup"){for(var k9=0;k9<SUP_N;k9++){me.towers[SUP_BASE+k9]=null;buildTower(me,SUP_BASE+k9,T_PLAY+k9);}}else{'
+       +'var si9=AI_ORDER[0];me.towers[si9]=null;'
        /* 解放数は建てる瞬間だけ上げて戻す(上げっぱなしにすると解放カード周りで画面が止まる) */
-       +'var pu9=me.unlocked;me.unlocked=ti9+1;buildTower(me,si9,ti9);me.unlocked=pu9;'
-       +'setInterval(function(){try{var t9=me.towers[si9];if(t9)t9.cd=0;'
+       +'var pu9=me.unlocked;me.unlocked=ti9+1;buildTower(me,si9,ti9);me.unlocked=pu9;}'
+       +'setInterval(function(){try{var t9=me.towers[AI_ORDER[0]];if(t9)t9.cd=0;'
        +'me.zombies.forEach(function(z){z.hp=z.mhp;});}catch(e){}},80);'):'')
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
  +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
