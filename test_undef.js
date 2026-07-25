@@ -16,6 +16,23 @@
 const fs=require('fs');
 const TARGET=process.argv[2]||'./index.html';
 
+/* ============ 0. まず文法を見る ============
+   ⚠置換パッチで**閉じ括弧の数がずれる**事故は、この検査(名前の照合)では捕まらない。
+     2026-07-26に `if(C.isMe){…}}` を `twSfx(C,T);}}` へ置き換えて `}` が1個余り、
+     ここは素通りして test_headless で初めて落ちた。先に構文だけ見ておけば一瞬で分かる。 */
+(function checkSyntax(){
+ const html=fs.readFileSync(TARGET,'utf-8');
+ const i=html.indexOf('<scr'+'ipt>'),j=html.lastIndexOf('</scr'+'ipt>');
+ if(i<0||j<0)return;
+ const js=html.slice(i+8,j);
+ try{new Function(js);}
+ catch(e){
+  console.log('❌ 文法エラー: '+e.message);
+  console.log('   (置換パッチで括弧の数がずれていないか確かめること)');
+  process.exit(1);}
+ console.log('文法: OK');
+})();
+
 /* ============ 1. コメント・文字列・正規表現を空白に潰す ============
    テンプレート文字列は `文字の部分だけ` を潰し、${ }の中はコードとして残す(入れ子にも対応) */
 function strip(src){

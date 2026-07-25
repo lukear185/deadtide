@@ -45,10 +45,33 @@ const runE=a=>{try{const r=cp.spawnSync(FF,a,{encoding:'utf8'});return (r.stdout
    d=切り出す最大秒 / g=音量の足し引き(dB) / r=再生ピッチ(1より小さいと低く長くなる)
    ⚠短いUI素材は「かたまり」が1つしかないので t:0 のまま */
 const REC=[
- /* --- タワーと戦闘 --- */
- {k:'shot',    f:'WHIP Snap Crack',              t:1, d:.20, g:-2, r:.85},
- {k:'shotgun', f:'Explosion Small Blast Enemy',  t:0, d:.30, g:-1, r:.80},
- {k:'snipe',   f:'WHIP Snap Crack',              t:3, d:.34, g: 0, r:.62},
+ /* --- 銃と砲 -------------------------------------------------------------
+    ⚠**銃声の素材はバンドルに無い**。なので**重ねて作る**=
+      ①鋭い立ち上がり(鞭のスナップ/クラッカーの破裂) + ②胴鳴り(花火の至近爆発)。
+      実際のゲーム音響でも銃声はこうやって組み立てる。`mix:[…]` が層。dl=遅らせるミリ秒 */
+ {k:'shot',    d:.30, g:-1, mix:[{f:'WHIP Snap Crack',t:0,d:.10,g:-5,r:1.30},
+                           {f:'powerful explosions_multiples',t:1,d:.30,g:-3,r:1.45,dl:8}]},
+ {k:'gat',     d:.16, g:-6, mix:[{f:'WHIP Snap Crack',t:0,d:.07,g:-7,r:1.75},
+                           {f:'powerful explosions_multiples',t:3,d:.16,g:-8,r:2.10,dl:5}]},
+ {k:'shotgun', d:.44, g:-2, mix:[{f:'CrackerPull_WithBang',t:0,d:.13,g:-5,r:.95},
+                           {f:'powerful explosions_multiples',t:1,d:.44,g:-2,r:1.00,dl:10}]},
+ {k:'snipe',   d:.58, g:-1, mix:[{f:'WHIP Snap Crack',t:0,d:.12,g:-4,r:.85},
+                           {f:'powerful explosions_multiples',t:3,d:.58,g:-1,r:.72,dl:12}]},
+ {k:'cannon',  d:.95, g:-1, mix:[{f:'Booms_Vol2_011',t:0,d:.95,g:-2,r:.85},
+                           {f:'powerful explosions_multiples',t:1,d:.75,g:-5,r:.60,dl:6}]},
+ {k:'mortar',  d:.38, g:-4, mix:[{f:'Metal Hit Thud Thump Low Ring',t:0,d:.28,g:-5,r:1.0},
+                           {f:'powerful explosions_multiples',t:1,d:.38,g:-7,r:.80,dl:10}]},
+ /* --- タワーの種類ごとの音 --- */
+ {k:'laser',   f:'UIGlitch_User interface_Glitch_High',t:0, d:.28, g:-6, r:1.25},
+ {k:'rail',    d:.42, g:-3, mix:[{f:'AEROJet_Blast Off Clean',t:0,d:.42,g:-5,r:1.55},
+                           {f:'Impact Electric Tonal Deep',t:0,d:.42,g:-6,r:1.15,dl:4}]},
+ {k:'plasma',  d:.42, g:-3, mix:[{f:'Water, Liquid Impact, Bubble, Sci Fi',t:0,d:.42,g:-4,r:.85},
+                           {f:'Impact Electric Tonal Deep',t:0,d:.42,g:-8,r:.90,dl:6}]},
+ {k:'sonic',   f:'Metal Bowed Screech Tonal',    t:0, d:.55, g:-8, r:1.0},
+ {k:'acid',    f:'Water, Liquid Impact, Bubble, Sci Fi',t:0, d:.34, g:-8, r:1.35},
+ {k:'flame',   f:'Whoosh Fire Deep Growl Monster',t:0, d:.50, g:-8, r:1.15},
+ {k:'dronefx', f:'Tower Deploy Hitech Robot',    t:0, d:.28, g:-9, r:1.55},
+ /* --- 汎用 --- */
  {k:'zap',     f:'Impact Electric Tonal Deep',   t:0, d:.32, g:-1, r:1.1},
  {k:'thunk',   f:'METAL SWING HIT',              t:0, d:.26, g:-3, r:1.0},
  {k:'boom',    f:'Booms_Vol2_011',               t:0, d:.85, g:-1, r:1.0},
@@ -132,35 +155,74 @@ if(process.argv[2]==='scan'){
 }
 if(process.argv[2]==='build'){
  if(!fs.existsSync(OUT))fs.mkdirSync(OUT);
- let total=0,ng=0;
+ const TMP=path.join(require('os').tmpdir(),'dt_sfx_tmp.wav');
+ let total=0,ng=0,warn=0;
+ /* ⭐**2回に分けて作る**。
+    ① まず素の音を一時WAVへ書き出す(層を重ねるならここで混ぜる)
+    ② できた音のピークを測り、そのぶんだけ持ち上げてMP3へ
+    ⚠これをやらないと、録り音の小さい素材を重ねた時に全体が-43dBまで沈んで**ほぼ無音**になる
+      (ライフルの銃声で実際に沈んだ)。R.g は「最終的なピークを-1dBから何dB下げるか」 */
  for(const R of REC){
-  const f=findSrc(R.f);
-  if(!f){console.log('× 素材なし: '+R.k);ng++;continue;}
-  const s=segs(f);
-  const q=s[Math.min(R.t,s.length-1)]||[0,R.d];
-  const st=Math.max(0,q[0]-.01),d=Math.min(R.d,q[1]+.02);
   const dst=path.join(OUT,R.k+'.mp3');
-  /* ⚠まずピークを測って -1dB へ正規化する(素材ごとに音量がバラバラなため) */
-  const probe=runE(['-hide_banner','-ss',String(st),'-t',String(d),'-i',f,'-af','volumedetect','-f','null','-']);
-  const mx=+((/max_volume: (-?[\d.]+) dB/.exec(probe)||[0,0])[1]);
+  let dur=R.d,ok=false;
+  try{fs.unlinkSync(TMP);}catch(e){}
+  if(R.mix){
+   /* ---- 層を重ねて作る(銃声など。バンドルに銃声の素材が無いため) ---- */
+   const args=[],fc=[];let n=0,miss=0;
+   for(const L of R.mix){
+    const lf=findSrc(L.f);
+    if(!lf){console.log('× 素材なし: '+R.k+' の層 "'+L.f+'"');miss=1;break;}
+    const ls=segs(lf),lq=ls[Math.min(L.t||0,ls.length-1)]||[0,L.d];
+    const lst=Math.max(0,lq[0]-.005),ld=Math.min(L.d,lq[1]+.02);
+    /* ⚠層ごとに**先にピークを揃えてから** L.g で混ぜ具合を決める(素材の録り音量がバラバラなため) */
+    const lp=runE(['-hide_banner','-ss',String(lst),'-t',String(ld),'-i',lf,'-af','volumedetect','-f','null','-']);
+    const lmx=+((/max_volume: (-?[\d.]+) dB/.exec(lp)||[0,0])[1]);
+    args.push('-ss',String(lst),'-t',String(ld),'-i',lf);
+    /* ⚠asetrate はピッチと速さを一緒に変える(テープの早回しと同じ)=銃の「軽い/重い」を作り分けられる */
+    fc.push('['+n+':a]volume='+((-1-lmx)+(L.g||0)).toFixed(2)+'dB,asetrate=44100*'+(L.r||1)+',aresample=44100'
+     +(L.dl?(',adelay='+L.dl+'|'+L.dl):'')+'[a'+n+']');
+    n++;}
+   if(miss){ng++;continue;}
+   fc.push(Array.from({length:n},(_,i)=>'[a'+i+']').join('')
+    +'amix=inputs='+n+':duration=longest:normalize=0,alimiter=limit=0.98[out]');
+   runE(['-y','-hide_banner'].concat(args,['-filter_complex',fc.join(';'),'-map','[out]',
+    '-vn','-sn','-dn','-map_metadata','-1','-ac','1','-ar','22050',TMP]));
+   ok=fs.existsSync(TMP);
+  }else{
+   const f=findSrc(R.f);
+   if(!f){console.log('× 素材なし: '+R.k);ng++;continue;}
+   const s=segs(f),q=s[Math.min(R.t,s.length-1)]||[0,R.d];
+   const st=Math.max(0,q[0]-.01);
+   dur=Math.min(R.d,q[1]+.02);
+   /* ⚠`-vn -sn -dn -map_metadata -1` は**必ず -i の後ろ**に置く(前だと入力側の指定と見なされて無視される)。
+      付け忘れると素材WAVに埋まったジャケット画像が動画として混ざり、1本30KBに膨らむ(実際に膨らんだ) */
+   runE(['-y','-hide_banner','-ss',String(st),'-t',String(dur),'-i',f,
+    '-vn','-sn','-dn','-map_metadata','-1','-ac','1','-ar','22050',TMP]);
+   ok=fs.existsSync(TMP);}
+  if(!ok){console.log('× 書き出し失敗: '+R.k);ng++;continue;}
+  /* ---- ② ピークを測って、狙った音量でMP3へ ---- */
+  const pr=runE(['-hide_banner','-i',TMP,'-af','volumedetect','-f','null','-']);
+  const mx=+((/max_volume: (-?[\d.]+) dB/.exec(pr)||[0,0])[1]);
   const gain=(-1-mx)+(R.g||0);
-  const fo=Math.max(.03,Math.min(.12,d*.18));
-  const af='volume='+gain.toFixed(2)+'dB,afade=t=in:st=0:d=0.006,afade=t=out:st='+(d-fo).toFixed(3)+':d='+fo.toFixed(3)
-   +',aresample=22050,alimiter=limit=0.97';
-  /* ⚠`-vn -map_metadata -1` を必ず付ける。素材WAVにはジャケット画像が埋まっていることがあり、
-     付け忘れると**oggの中にtheoraの動画が入って1本30KBに膨らむ**(実際にそうなった) */
-  /* ⚠`-vn -map_metadata -1` は**必ず -i の後ろ**に置く(前に置くと入力側の指定として無視される)。
-     付け忘れると素材WAVに埋まったジャケット画像がtheoraの動画としてoggに入り、1本30KBに膨らむ */
-  /* ⚠形式は**MP3**。ogg/vorbis や ogg/opus は Safari(iPhone) が再生できないことがあるので使わない。
-     MP3ならどのブラウザでも decodeAudioData が通る。モノラル22050Hz・VBR品質5でおよそ6KB/秒 */
-  runE(['-y','-hide_banner','-ss',String(st),'-t',String(d),'-i',f,
-   '-vn','-sn','-dn','-map_metadata','-1','-ac','1','-ar','22050','-af',af,
-   '-c:a','libmp3lame','-q:a','5',dst]);
+  const fo=Math.max(.03,Math.min(.14,dur*.22));
+  const af='volume='+gain.toFixed(2)+'dB,atrim=0:'+dur.toFixed(3)
+   +',afade=t=in:st=0:d=0.004,afade=t=out:st='+(dur-fo).toFixed(3)+':d='+fo.toFixed(3)
+   +',alimiter=limit=0.97';
+  /* ⚠形式は**MP3**。ogg/vorbis も ogg/opus も Safari(iPhone) で鳴らない可能性があるので使わない */
+  runE(['-y','-hide_banner','-i',TMP,'-vn','-sn','-dn','-map_metadata','-1','-ac','1','-ar','22050',
+   '-af',af,'-c:a','libmp3lame','-q:a','5',dst]);
   if(!fs.existsSync(dst)){console.log('× 変換失敗: '+R.k);ng++;continue;}
+  /* 仕上がりのピークを確認(小さすぎたら知らせる) */
+  const pr2=runE(['-hide_banner','-i',dst,'-af','volumedetect','-f','null','-']);
+  const mx2=+((/max_volume: (-?[\d.]+) dB/.exec(pr2)||[0,0])[1]);
   const kb=fs.statSync(dst).size/1024;total+=kb;
-  console.log('  '+R.k.padEnd(10)+d.toFixed(2)+'s  '+kb.toFixed(1)+'KB   ← '+path.basename(f).slice(0,44));
+  const low=mx2<-14;if(low)warn++;
+  console.log('  '+R.k.padEnd(9)+dur.toFixed(2)+'s '+kb.toFixed(1).padStart(5)+'KB  ピーク'+mx2.toFixed(1)+'dB'
+   +(low?' ⚠小さい':'')+'  ← '+(R.mix?(R.mix.length+'層を合成'):path.basename(findSrc(R.f)).slice(0,40)));
  }
- console.log('---- 合計 '+total.toFixed(1)+'KB / '+REC.length+'種'+(ng?('  ⚠失敗'+ng):'')+' ----');
+ try{fs.unlinkSync(TMP);}catch(e){}
+ console.log('---- 合計 '+total.toFixed(1)+'KB / '+REC.length+'種'
+  +(ng?('  ⚠失敗'+ng):'')+(warn?('  ⚠音量が小さい'+warn+'種'):'')+' ----');
  process.exit(ng?1:0);
 }
 if(process.argv[2]==='embed'){
