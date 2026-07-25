@@ -487,15 +487,24 @@ function checkTrain(){
  META.hero={};META.hero[h.id]=1;META.hsel=h.id;META.hmat=100;META.hlv={};META.hxp={};META.tr0=1;
  META.zc={};META.zl={walk:1};
  try{renderTrain();}catch(e){console.log('FAIL: 鍛錬所の一覧で例外: '+e.message);process.exit(1);}
- /* ---- 🧿コアの解放と強化 ---- */
- META.zc.run=ZC_OPEN;zcBuy('run');
- if(zcLv('run')!==1){console.log('FAIL: 🧿コアでゾンビを解放できない');process.exit(1);}
- if(zcHave('run')!==0){console.log('FAIL: 解放してもコアが減っていない');process.exit(1);}
- META.zc.run=zcNeed(1);zcBuy('run');
- if(zcLv('run')!==2||Math.abs(zcBoost('run')-1.12)>1e-9){
+ /* ---- 🧿コアは「強化」だけに使う(解放の概念は廃止) ---- */
+ META.zc.run=zcNeed(0);zcBuy('run');
+ if(zcLv('run')!==1){console.log('FAIL: 🧿コアでゾンビを強化できない');process.exit(1);}
+ if(zcHave('run')!==0){console.log('FAIL: 強化してもコアが減っていない');process.exit(1);}
+ if(Math.abs(zcBoost('run')-1.12)>1e-9){
   console.log('FAIL: 🧿コアの強化が乗らない Lv'+zcLv('run')+' 倍率'+zcBoost('run'));process.exit(1);}
  META.zc.tank=1;zcBuy('tank');
- if(zcLv('tank')!==0){console.log('FAIL: コアが足りないのに解放できてしまう');process.exit(1);}
+ if(zcLv('tank')!==0){console.log('FAIL: コアが足りないのに強化できてしまう');process.exit(1);}
+ /* 進化ツリーが行き止まりなく繋がっていること */
+ for(const e of ZEVO){
+  if(!ZC_BY[e.from]){console.log('FAIL: 進化元が図鑑に無い '+e.from);process.exit(1);}
+  if(!ZC_BY[e.to]){console.log('FAIL: 進化先が図鑑に無い '+e.to);process.exit(1);}
+  if(!ZC_FAM[e.eat]){console.log('FAIL: 知らない肉塊の系統 '+e.eat);process.exit(1);}}
+ {/* 初期種2つから全12種へ辿り着けること */
+  const reach={};reach[ZC_SEED.hard]=1;reach[ZC_SEED.fast]=1;
+  for(let k=0;k<8;k++)for(const e of ZEVO)if(reach[e.from])reach[e.to]=1;
+  const lost=ZCAVE.filter(q=>!reach[q.id]).map(q=>q.id);
+  if(lost.length){console.log('FAIL: 進化で辿り着けない種類がある '+lost.join(','));process.exit(1);}}
  /* ---- 訓練の開始 ---- */
  const m0=META.hmat;
  trainStart(h.id,1);
@@ -515,26 +524,71 @@ function checkTrain(){
  TR.bio=0;
  if(cvDigAt(2,5)){console.log('FAIL: 🩸腐肉が0でも掘れてしまう');process.exit(1);}
  TR.bio=CV_BIO0;
- /* ---- 腐肉をふくむ土を掘ると、その場でゾンビが生まれる ---- */
- {TR.zs.length=0;
+ /* ---- 腐肉をふくむ土を削ると、その場で**初期種**が生まれる ---- */
+ {TR.zs.length=0;TR.inf.length=0;
   let born=0,tried=0;
   for(let y=0;y<CV_H&&born<3;y++){
    const x=1;if(!cvCanDig(x,y))continue;
-   tried++;TR.nut[cvI(x,y)]=3;const n0=TR.zs.length;
+   tried++;TR.nut[cvI(x,y)]=(born%2)?4:1;const n0=TR.zs.length;
    cvDigAt(x,y,true);
    if(TR.zs.length>n0)born++;}
-  if(!tried){console.log('FAIL: 侵入口の隣が1マスも掘れない');process.exit(1);}
-  if(born<3){console.log('FAIL: 腐肉のある土を掘ってもゾンビが生まれない '+born+'/'+tried);process.exit(1);}
-  if(TR.nut[cvI(1,0)]!==0){console.log('FAIL: 掘っても腐肉が残っている');process.exit(1);}
-  if(!TR.zs[0].bio){console.log('FAIL: 生まれたゾンビが腐肉を抱えていない');process.exit(1);}}
- /* ---- ⭐循環: 自然に死ねば腐肉は戻る／英雄に食われると戻らず英雄が強くなる ---- */
- {const z=TR.zs[0],b0=TR.bio;
+  if(!tried){console.log('FAIL: 侵入口の隣が1マスも削れない');process.exit(1);}
+  if(born<3){console.log('FAIL: 腐肉のある土を削ってもゾンビが生まれない '+born+'/'+tried);process.exit(1);}
+  if(TR.nut[cvI(1,0)]!==0){console.log('FAIL: 削っても腐肉が残っている');process.exit(1);}
+  if(!TR.zs[0].bio){console.log('FAIL: 生まれたゾンビが腐肉を抱えていない');process.exit(1);}
+  /* ⚠土から出るのは初期種2つだけ(上位種は進化でしか出ない) */
+  for(const z of TR.zs){if(z.inf)continue;
+   if(z.zcid!==ZC_SEED.hard&&z.zcid!==ZC_SEED.fast){
+    console.log('FAIL: 土から初期種以外が出た '+z.zcid);process.exit(1);}}
+  /* 腐肉レベルで系統が分かれる */
+  TR.zs.length=0;
+  {let fy=-1;for(let y=0;y<CV_H;y++)if(cvCanDig(1,y)){fy=y;break;}
+   if(fy<0){console.log('FAIL: 系統の確認用に削れるマスが無い');process.exit(1);}
+   TR.nut[cvI(1,fy)]=1;cvDigAt(1,fy,true);
+   if(!TR.zs.length||TR.zs[0].zcid!==ZC_SEED.hard){console.log('FAIL: 薄い鉱脈から硬い系が出ない');process.exit(1);}
+   TR.zs.length=0;
+   let fy2=-1;for(let y=0;y<CV_H;y++)if(cvCanDig(1,y)){fy2=y;break;}
+   if(fy2>=0){TR.nut[cvI(1,fy2)]=3;cvDigAt(1,fy2,true);
+    if(!TR.zs.length||TR.zs[0].zcid!==ZC_SEED.fast){console.log('FAIL: 濃い鉱脈から速い系が出ない');process.exit(1);}}}}
+ /* ---- ⭐🔪間引き → 🥩肉塊 → 食べて進化 ---- */
+ {TR.zs.length=0;TR.meat.length=0;TR.bio=CV_BIO_MAX;
+  /* 間引くと肉塊が残る(腐肉は戻らない) */
+  const victim=cvMakeZ(2,2,ZC_SEED.hard,30,false);
+  if(!victim){console.log('FAIL: 間引き用のゾンビが作れない');process.exit(1);}
+  const b0=TR.bio;
+  if(!cvCull(2,2)){console.log('FAIL: 間引けない');process.exit(1);}
+  if(TR.meat.length!==1){console.log('FAIL: 間引いても🥩肉塊が残らない');process.exit(1);}
+  if(TR.bio!==b0){console.log('FAIL: 間引いたのに腐肉が戻っている(肉塊と二重取り)');process.exit(1);}
+  if(TR.meat[0].fam!=='hard'){console.log('FAIL: 肉塊の系統が違う '+TR.meat[0].fam);process.exit(1);}
+  /* 肉塊は食べられなければ腐って腐肉に戻る。⚠上限に張り付いていると増えたか判らないので下げておく */
+  TR.bio=100;const b1=TR.bio;TR.meat[0].t=CV_MEAT_T;cvStepMeat(.01);
+  if(TR.meat.length!==0||TR.bio<=b1){console.log('FAIL: 肉塊が腐っても腐肉に戻らない');process.exit(1);}
+  /* 硬い肉塊3個で ウォーカー→アーマード */
+  const ev=ZEVO.filter(e=>e.from===ZC_SEED.hard&&e.eat==='hard')[0];
+  const z=cvMakeZ(3,3,ZC_SEED.hard,30,false);
+  z.fed.hard=ev.n;
+  if(!cvEvolve(z)){console.log('FAIL: 肉塊がたまっても進化しない');process.exit(1);}
+  if(z.zcid!==ev.to){console.log('FAIL: 進化先が違う '+z.zcid+'(想定'+ev.to+')');process.exit(1);}
+  if(!zcSeen(ev.to)){console.log('FAIL: 進化しても図鑑に載らない');process.exit(1);}
+  if(z.fed.hard!==0){console.log('FAIL: 進化しても食べた数が戻らない');process.exit(1);}
+  /* 別系統を食べると別の枝へ */
+  const ev2=ZEVO.filter(e=>e.from===ZC_SEED.hard&&e.eat==='fast')[0];
+  const z2=cvMakeZ(4,4,ZC_SEED.hard,30,false);
+  z2.fed.fast=ev2.n;cvEvolve(z2);
+  if(z2.zcid!==ev2.to){console.log('FAIL: 別系統の肉塊で行き先が変わらない '+z2.zcid);process.exit(1);}
+  if(ev.to===ev2.to){console.log('FAIL: 系統ちがいでも進化先が同じ');process.exit(1);}
+  TR.zs.length=0;TR.meat.length=0;}
+ /* ---- ⭐循環: 英雄以外に倒されると🥩肉塊が残る／英雄に食われると何も残らず英雄が強くなる ---- */
+ {TR.zs.length=0;TR.meat.length=0;
+  const z=cvMakeZ(6,6,ZC_SEED.hard,30,false),m0=TR.meat.length;
+  cvMakeZ(6,7,ZC_SEED.fast,30,false);
   cvKillZ(z);
-  if(TR.bio<=b0){console.log('FAIL: ゾンビが死んでも腐肉が戻らない');process.exit(1);}
+  if(TR.meat.length<=m0){console.log('FAIL: ゾンビが死んでも肉塊が残らない');process.exit(1);}
   const z2=TR.zs.filter(q=>!q.dead)[0];
-  const H0=cvMkHero(h.id,true),b1=TR.bio,g1=cvGrow(H0);
+  const H0=cvMkHero(h.id,true),b1=TR.bio,g1=cvGrow(H0),mt1=TR.meat.length;
   cvKillZ(z2,H0);
   if(TR.bio!==b1){console.log('FAIL: 英雄に食われたのに腐肉が戻っている');process.exit(1);}
+  if(TR.meat.length!==mt1){console.log('FAIL: 英雄に食われたのに肉塊が残っている');process.exit(1);}
   if(!(cvGrow(H0)>g1)){console.log('FAIL: 英雄がゾンビを食っても強くならない');process.exit(1);}
   if(TR.eaten<=0){console.log('FAIL: 食われた腐肉が記録されていない');process.exit(1);}
   /* 英雄を倒すと腐肉が増える=総量を増やす唯一の手段 */
@@ -547,15 +601,15 @@ function checkTrain(){
  if(cvTier(dMid)!==4){console.log('FAIL: 広間の中心が格4にならない(開放度'+dMid+')');process.exit(1);}
  const dNeck=cvDeg(0,0);
  if(cvTier(dNeck)>2){console.log('FAIL: 細い坑道の格が高すぎる(開放度'+dNeck+')');process.exit(1);}
- /* ---- 湧き: 解放した種類だけ・格を超えない ---- */
+ /* ---- 巣からの自然湧きも初期種だけ ---- */
  TR.zs.length=0;TR.bio=CV_BIO_MAX;
  for(let k=0;k<60;k++)cvSpawn();
  if(!TR.zs.length){console.log('FAIL: ゾンビが湧かない');process.exit(1);}
  for(const z of TR.zs){
   if(z.inf)continue;
   const id=ZOMBIES[z.zi].id;
-  if(zcLv(id)<=0){console.log('FAIL: 未解放のゾンビが湧いた '+id);process.exit(1);}
-  if(!ZC_BY[id]){console.log('FAIL: 洞窟に出ないはずのゾンビが湧いた '+id);process.exit(1);}}
+  if(!ZC_BY[id]){console.log('FAIL: 洞窟に出ないはずのゾンビが湧いた '+id);process.exit(1);}
+  if(id!==ZC_SEED.hard&&id!==ZC_SEED.fast){console.log('FAIL: 巣から初期種以外が湧いた '+id);process.exit(1);}}
  /* ---- 巣作り→侵攻 ---- */
  let gd=0;
  while(TR.phase==='nest'&&gd++<3000)trainStep(.05);
@@ -592,7 +646,7 @@ function checkTrain(){
    if(!cvWalk(x,y))continue;
    if(Math.abs(x-H.cx)+Math.abs(y-H.cy)>CV_AGGRO+6){far=[x,y];break;}}
   if(far){
-   const z=cvMakeZ(far[0],far[1],1,20,false);
+   const z=cvMakeZ(far[0],far[1],ZC_SEED.hard,20,false);
    if(!z){console.log('FAIL: 徘徊の確認用ゾンビが作れない');process.exit(1);}
    cvPathZ();
    const d0=Math.abs(z.cx-H.cx)+Math.abs(z.cy-H.cy);
@@ -664,8 +718,10 @@ function checkTrain(){
  const hu=me.units.filter(u=>u.hro)[0],U=UNITS[me.hUi],want=Math.round(U.hp*hBoost(h.id));
  if(hu.mhp!==want){console.log('FAIL: 鍛錬LvがHPに乗っていない '+hu.mhp+'(想定'+want+')');process.exit(1);}
  backTitle();
- console.log('鍛錬所の洞窟: 🧿コアの解放と強化・掘る(🩸腐肉)・掘るとゾンビが生まれる・腐肉の循環(戻る/食われる/奪う)'
-  +'・徘徊と襲撃・侵攻中に掘った道は通らない・🪨崩落・🏠マザー移動・英雄のAI(掘って進む)'
+ console.log('鍛錬所の洞窟: 🧿コアの強化と進化ツリー(初期種2つから全'+ZCAVE.length+'種へ到達可)'
+  +'・🔦採掘レーザーで削る(🩸腐肉)・削ると初期種が生まれる・🔪間引き→🥩肉塊→食べて進化(系統で行き先が変わる)'
+  +'・腐肉の循環(肉塊/腐って戻る/英雄に食われる/英雄から奪う)'
+  +'・徘徊と襲撃・侵攻中に削った道は通らない・🪨崩落・🏠マザー移動・英雄のAI(削って進む)'
   +'・必殺技'+HEROES.length+'種・波の進行('+okWv+'波しのいで'+(okWin?'訓練成功':'マザーゾンビが倒された')+')'
   +'・マザーゾンビが倒されたら失敗・Lv上限'+TR_MAX+'・英雄のHPに反映 OK');
  META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;META.zc={};META.zl={walk:1};

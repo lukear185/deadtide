@@ -71,7 +71,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(TRRAID||TRRES?'cvInvade();':'')
        /* trainflood = 🌊死潮が満ちている所を撮る(本来は第2波から) */
        +(OPT.indexOf('trainflood')>=0?'TR.twMax=3.4;':'')
-       +'for(var k=0;k<45;k++)cvSpawn();trainStep(0.05);'
+       /* ⚠1フレームしか進めないと、削った瞬間の採掘レーザーの光条が45本すべて残って画面が縦線だらけになる */
+       +'for(var k=0;k<45;k++)cvSpawn();for(var k3=0;k3<8;k3++)trainStep(0.05);'
        /* 侵攻中は少し時間を進めて、英雄が奥へ入った所を撮る */
        +(TRRAID?'for(var k2=0;k2<200;k2++)if(!TR.done)trainStep(0.05);':'')
        +(TRRES?'TR.dmg=5200;TR.waveOK=6;TR.hkill=3;TR.zkill=41;TR.dug=58;trainEnd(true);trainStep(0.001);':''))
