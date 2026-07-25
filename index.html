@@ -1058,7 +1058,7 @@ const STAGES=[
  {n:'沈んだ港',sub:'死潮が運んできた海の亡骸',zs:2,
   path:[[1660,700],[1150,700],[1150,480],[1480,480],[1480,200],[700,200],[700,430],[380,430],[380,660],[110,660]],
   /* 道は据え置き。マスだけ引き直して、先頭6つを内角のマスにした(2026-07-25) */
-  slots:[[1248,590],[1382,340],[798,298],[602,332],[478,528],[282,562],
+  slots:[[1248,590],[1382,354],[798,298],[602,332],[478,528],[282,562],
    [290,390],[740,520],[1060,440],[1520,570],[390,330],[480,640],[590,530],[600,210],[800,410],[1050,550],[1050,660],[1360,580],[500,290],[850,510],[670,610],[550,730]],
   order:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
   hpM:1.35,/* 港は廃線ハイウェイより重い(同じ難易度でも敵のHP・攻撃が1.35倍) */
@@ -2921,6 +2921,17 @@ function renderCamp(C,t){
   else if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
    c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(sup?'🏗':eco?'🏭':'+',sx,sy+12);}
   else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0});
+  /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
+  if(EDIT){const bad=edBad(si);
+   c.lineWidth=bad.length?5:3;c.strokeStyle=bad.length?'#ff3b2f':(EDSEL===si?'#ffd23d':'rgba(255,255,255,.5)');
+   rr(c,sx-34,sy-34,68,68,11);c.stroke();c.lineWidth=3;c.strokeStyle=INK;
+   c.font='900 15px sans-serif';c.textAlign='center';
+   c.fillStyle='rgba(0,0,0,.6)';rr(c,sx-32,sy-52,64,17,5);c.fill();
+   c.fillStyle=bad.length?'#ff8a6a':'#fff';
+   c.fillText(si+' '+Math.round(sx)+','+Math.round(sy),sx,sy-39);
+   if(bad.length){c.fillStyle='rgba(0,0,0,.6)';rr(c,sx-40,sy+34,80,16,5);c.fill();
+    c.fillStyle='#ff8a6a';c.font='900 12px sans-serif';c.fillText(bad.slice(0,2).join('/'),sx,sy+46);}
+  }
  }
  if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){const T4=TOWERS[tw.ti],[sxx,syy]=SLOTS[SEL];
    /* 射程を強化するとどこまで広がるか、強化前に薄い緑の輪でプレビュー */
@@ -3336,10 +3347,68 @@ function openBM(si){
  /* 下の操作バーには絶対に被せない(被るとデッキが押せなくなる) */
  bm.style.top=clamp(py+40,6,Math.max(6,innerHeight-bh-6-barBandPx()))+'px';
 }
+/* ============ 🛠 マス編集モード(?edit=1 の時だけ) ============
+   実機で建設マスを指でドラッグして置き直し、そのまま `slots:[...]` を書き出すための開発用モード。
+   ⚠URLに ?edit=1 が無ければ一切動かない=公開ビルドに入れても普通のプレイヤーには見えない */
+const EDIT=(()=>{try{return (location.search||'').indexOf('edit=1')>=0;}catch(e){return false;}})();
+let EDSEL=-1,EDDRAG=false;
+/* そのマスが置き場所の条件を満たしているか。満たさない項目名を返す(空なら合格) */
+function edBad(si){
+ const p=SLOTS[si];if(!p)return[];
+ const bad=[],area=isSupSlot(si)?2:isEcoSlot(si)?1:0;
+ /* 工房枠は画面のいちばん上(y=190)に置く決まりなので、上端の制限は通常マスにだけ掛ける */
+ if(p[0]<75||p[0]>1560||p[1]>730||(area!==1&&p[1]<205))bad.push('画面外');
+ let rd=1e9;for(let i=0;i<PATH.length-1;i++)rd=Math.min(rd,segDist(p[0],p[1],PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]));
+ if(rd<95)bad.push('道'+Math.round(rd));
+ if(dist(p[0],p[1],CORE[0],CORE[1])<150)bad.push('拠点');
+ for(const b of BRANCH)if(dist(p[0],p[1],b[0],b[1])<120)bad.push('テント');
+ if(area===0&&p[0]<270&&p[1]>385&&p[1]<535)bad.push('HPバー');
+ for(let k=0;k<SLOTS.length;k++){if(k===si)continue;
+  const ak=isSupSlot(k)?2:isEcoSlot(k)?1:0;
+  /* 同じ専用エリアの中は隣どうしなので120でよい。エリアをまたぐ時は135、通常どうしは110 */
+  const lim=(area===ak&&area!==0)?120:(area||ak)?135:110;
+  if(dist(p[0],p[1],SLOTS[k][0],SLOTS[k][1])<lim)bad.push('マス'+k);}
+ return bad;
+}
+function edOut(){
+ const f=a=>'['+a.map(p=>'['+Math.round(p[0])+','+Math.round(p[1])+']').join(',')+']';
+ const txt='slots:'+f(SLOTS.slice(0,ECO_BASE))+',\n'
+  +'ECO_SLOTS='+f(SLOTS.slice(ECO_BASE,SUP_BASE))+';\n'
+  +'SUP_SLOTS='+f(SLOTS.slice(SUP_BASE))+';';
+ const ta=$('ed-out');if(ta){ta.value=txt;try{ta.select();document.execCommand('copy');}catch(e){}}
+ let ng=0;for(let i=0;i<SLOTS.length;i++)if(edBad(i).length)ng++;
+ toast(ng?('📋 出力した(⚠条件に反するマスが'+ng+'個ある)'):'📋 出力してコピーした(条件は全部OK)',!!ng);
+}
+function edPanel(){
+ if(!EDIT||$('edbar'))return;
+ const d=document.createElement('div');d.id='edbar';
+ d.style.cssText='position:absolute;left:6px;bottom:96px;z-index:9;display:flex;flex-direction:column;gap:4px;align-items:flex-start';
+ d.innerHTML='<div style="display:flex;gap:4px">'
+  +'<button class="btn sm" id="ed-add">➕マス</button>'
+  +'<button class="btn sm" id="ed-del">🗑削除</button>'
+  +'<button class="btn gold sm" id="ed-cp">📋出力</button></div>'
+  +'<textarea id="ed-out" style="width:min(70vw,520px);height:54px;font-size:10px" readonly></textarea>';
+ $('scr-game').appendChild(d);
+ $('ed-add').onclick=()=>{SLOTS.splice(ECO_BASE,0,[800,470]);EDSEL=ECO_BASE;
+  toast('➕ マスを追加した(通常枠が'+(ECO_BASE+1)+'個になった。数を変えたら私に伝えること)',true);};
+ $('ed-del').onclick=()=>{if(EDSEL<0||EDSEL>=ECO_BASE){toast('消したい通常マスを選んでから',true);return;}
+  SLOTS.splice(EDSEL,1);EDSEL=-1;toast('🗑 マスを消した(通常枠が'+(ECO_BASE-1)+'個)',true);};
+ $('ed-cp').onclick=edOut;
+}
+cv.addEventListener('pointermove',e=>{if(EDIT&&EDDRAG&&EDSEL>=0){const [mx,my]=evtToMap(e);
+ SLOTS[EDSEL][0]=Math.round(clamp(mx,60,1580));SLOTS[EDSEL][1]=Math.round(clamp(my,195,740));}});
+['pointerup','pointercancel','pointerleave'].forEach(ev=>cv.addEventListener(ev,()=>{EDDRAG=false;}));
 cv.addEventListener('pointerdown',e=>{
  if(!gameActive)return;
  if(SPEC>=0){setSpec(-1);return;}
  const [mx,my]=evtToMap(e);
+ if(EDIT){/* 編集モード: マスを掴んで動かす。建設メニューは開かない */
+  edPanel();closeBM();
+  let h=-1,bd=1e9;
+  for(let si=0;si<SLOTS.length;si++){const d=dist(mx,my,SLOTS[si][0],SLOTS[si][1]);if(d<70&&d<bd){bd=d;h=si;}}
+  EDSEL=h;EDDRAG=h>=0;
+  return;
+ }
  if(AIM){const m=meV();if(m&&m.charge>=1&&my>115){actStrike(mx,my);}setAim(false);return;}
  if(FLAGAIM){if(my>115)actFlag(mx,my);setFlagAim(false);return;}
  let hit=-1;
@@ -3580,6 +3649,7 @@ function startGameUI(others){
  ivS={zi:0,cnt:1,tB:-1,tS:-1,tJ:-1};
  $('ffbtn').style.display='none';$('ffbtn').textContent='⏩ ×1';
  buildMinis(others);show('game');
+ if(EDIT){try{edPanel();toast('🛠 マス編集モード: マスを指でドラッグ→📋出力で座標を書き出す',true);}catch(e){}}
 }
 function backTitle(){
  gameActive=false;G=null;PAUSED=false;COOP=false;closeBM();setAim(false);setFlagAim(false);setSpec(-1);

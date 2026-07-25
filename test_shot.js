@@ -37,7 +37,8 @@ const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 const TM=/t=([A-Za-z]+)/.exec(OPT),TID=TM?TM[1]:'';
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
- +(ST?('META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
+ /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
+ +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
  +(VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
@@ -64,7 +65,7 @@ const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));
 const args=['--headless=new','--disable-gpu','--no-sandbox',
  '--force-device-scale-factor=2','--window-size='+W+','+H,'--virtual-time-budget='+WAIT,
- '--screenshot='+OUT,'file:///'+tmp.replace(/\\/g,'/')];
+ '--screenshot='+OUT,'file:///'+tmp.replace(/\\/g,'/')+(OPT.indexOf('edit')>=0?'?edit=1':'')];/* edit=マス編集モードで撮る */
 const r=cp.spawnSync(BR,args,{encoding:'utf-8'});
 console.log((r.stderr||'').split('\n').filter(l=>/written to file|ERROR/.test(l)).join('\n')||'(出力なし)');
 console.log('→ '+OUT+'  '+W+'x'+H+' / '+(PC?'PC用CSS':'スマホ用CSSを強制適用')+' / 実寸の2倍で撮影');
