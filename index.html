@@ -2653,8 +2653,11 @@ function awardWavePts(C,quit){
  addFx(F,'txt',CORE[0],CORE[1]-120,'+'+gain+PT);
 }
 /* エフェクトの持ち時間。⚠ここと描画側の割り算を必ず揃えること(ずれると途中で消える/残る) */
-const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slash:.26,shock:.5};
-const fxLife=k=>FX_LIFE[k]!==undefined?FX_LIFE[k]:.5;
+const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slash:.26,shock:.5,
+ toss:.3,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55};
+/* ⚠寿命が1つずつ違う演出は ex に `lf` を持たせる(投擲=飛ぶ距離で / 死体=大きさで変わる)。
+   `d0` は「その秒数だけ待ってから始まる」=絨毯爆撃の時間差に使う */
+const fxLife=(k,e)=>(e&&e.lf!=null)?e.lf:(FX_LIFE[k]!==undefined?FX_LIFE[k]:.5);
 /* ⭐部隊の「豪華さ」段階 0〜3。進化キャラは UNITS の別の添字なので、idから段階を引く表を作る。
    英雄は最大。⚠段階が上がるほどエフェクトを派手にする(ユーザー指示) */
 const UFX_T={};for(const e of VARLIST)UFX_T[e.v.id]=e.t+1;
@@ -2665,6 +2668,21 @@ function hitFx(C,z,ang,col,prc,type){
  if(FXLV<1||!z)return;
  if(z.armor&&!prc&&type==='bullet')addFx(C,'ric',z.px,z.py-18,'',{ang});
  else addFx(C,'hit',z.px,z.py-18,'',{ang,col:col||'#ffd23d'});}
+/* ⭐投げた物が山なりに飛ぶ絵(2026-07-26 第65弾)。飛んでいる秒数を返す(0=飛ばさずその場で発動)。
+   ⚠当たり判定は今までどおり即時のまま=数値のバランスには一切触っていない。
+   見た目だけ「投げる→飛ぶ→着弾して爆発」の順に並べ替えている(爆発は later() で遅らせる) */
+function tossFly(C,u,U,tx,ty,kind,col){
+ if(FXLV<1||!U||U.rng<=60)return 0;
+ const ox=u.px,oy=u.py-30,ds=dist(ox,oy,tx,ty);
+ const lf=clamp(ds/950,.16,.42);
+ addFx(C,'toss',ox,oy,'',{x2:tx,y2:ty-8,lf,kind,col,hi:38+ds*.24,sd:rnd(0,9)});
+ return lf;
+}
+/* ⭐「少し後で起こすもの」の待ち行列(2026-07-26 第65弾)。
+   投げた物が飛んでいる間に爆発の絵が出てしまうと当たった感じにならないので、着弾に合わせて遅らせる。
+   ⚠ダメージ計算はここに入れないこと=当たり判定は今までどおり即時のままにして、遊びの数値は一切変えない。
+   ⚠中身が関数なのでセーブには乗らない(saveRunは項目を並べて書き出す方式なので問題ない)。 */
+function later(C,sec,fn){if(!C)return;(C.dly=C.dly||[]).push({t:sec,fn});}
 function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{}));
  /* ホストは演出イベントをクライアントへも配信(参加側で見えない問題の対策) */
  if(MODE==='host'&&G){
@@ -2693,6 +2711,11 @@ function killZ(C,z){
  const bsc=z.boss?2.4:z.elite?1.5:1;
  addP(C,Math.round(9*bsc),z.px,z.py-22,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
  addP(C,Math.round(3*bsc),z.px,z.py,{sp:0,g:0,life:6,r:11*bsc,col:'#2f3a1c',typ:'stain',jx:12*bsc,jy:5});
+ /* ⭐倒れる死体(2026-07-26 第65弾)。大きいほど長く残り、雑魚はさっと消える */
+ if(FXLV>0)addFx(C,'corpse',z.px,z.py,'',{zi:z.zi,el:z.elite?1:0,dr:z.dr||1,
+  lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1)});
+ /* 大物が倒れると足元に土煙が広がる。⚠雑魚には出さない(画面が埋まる) */
+ if(FXLV>0&&(z.boss||z.elite))addFx(C,'dust',z.px,z.py+2,'',{r:z.boss?120:66});
  /* ⚠断末魔は「呻き」ではなく専用の声(die)を混ぜる。同じ呻きだけだと倒した手応えが出ない */
  if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
   if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
@@ -2827,30 +2850,48 @@ function airstrikeHit(C,x,y,wave,stk,mine){
  if(stk==='carpet'){/* 絨毯爆撃: 道に沿って前後300を連続爆撃 */
   const cd0=projPath(x,y),dm=110*(1+.15*wave);
   for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=300){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=15;}}}
-  for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN));addFx(F,'boom',p[0],p[1],'',{d0:.07*(k+2)});}
+  /* ⭐時間差で5発。1発ずつに土煙と衝撃波を付けて「線に沿って落ちてくる」のを見せる(第65弾) */
+  for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN)),dd=.07*(k+2);
+   addFx(F,'boom',p[0],p[1],'',{d0:dd});
+   if(FXLV>0){addFx(F,'dust',p[0],p[1]+4,'',{d0:dd,r:96});
+    addFx(F,'shock',p[0],p[1]+4,'',{d0:dd,r:62,col:'#ffdd66'});
+    later(F,dd,()=>{addP(F,7,p[0],p[1]-10,{sp:210,up:70,g:540,life:.5,r:3,col:'#ffb347'});
+     addP(F,4,p[0],p[1]-6,{sp:60,up:40,g:-40,life:1.2,r:9,col:'#6e6354',typ:'smoke'});});}}
   F.shake=.4;
  }else if(stk==='frost'){/* 凍結爆弾: 広範囲4秒凍結 */
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=170){z.slowT=Math.max(z.slowT,4);dmgZ(F,z,40*(1+.1*wave),1);}}
   addFx(F,'ring',x,y,'',{r:170,col:'#9fdcf5'});addFx(F,'spark',x,y,'',{sd:rnd(0,9),col:'#9fdcf5'});
+  /* ⭐氷の破片が突き立ち、地面が白く凍る */
+  if(FXLV>0){addFx(F,'ice',x,y-10,'',{sd:rnd(0,9),r:120,lf:.85});
+   addP(F,7,x,y,{sp:30,g:0,life:5,r:15,col:'#b9dcea',typ:'stain',jx:62,jy:24});}
   if(isMine)sfx.frost();F.shake=.15;
  }else if(stk==='napalm'){/* ナパーム: 強烈な継続燃焼 */
   const dm=60*(1+.12*wave);
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave);}}}
   addFx(F,'boomL',x,y,'');addFx(F,'ring',x,y,'',{r:120,col:'#ffb347'});F.shake=.3;
+  /* ⭐燃え続けているのが見えるよう火の海を残す(燃焼5秒に合わせる) */
+  if(FXLV>0)addFx(F,'pool',x,y+2,'',{r:120,sd:rnd(0,9),lf:4.2});
  }else if(stk==='mgun'){/* 機関銃掃射: 拠点から連射(以後campStepで継続) */
   F.mg={t:3.6,x,y,dmg:24*(1+.12*wave),cd:0};
   addFx(F,'ring',x,y,'',{r:150,col:'#ffdd66'});
+  if(FXLV>0)addFx(F,'dust',x,y+2,'',{r:130,lf:.8});
   if(isMine)sfx.shotgun();
   return true;
  }else{/* 標準エアストライク */
   const dm=150*(1+.15*wave);
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20;}}}
   F.shake=.3;addFx(F,'boomL',x,y,'');
+  /* ⭐床を押す衝撃波+土煙+短い残り火。⚠爆発の丸だけだと「重さ」が出ない */
+  if(FXLV>0){addFx(F,'shock',x,y+4,'',{r:92,col:'#ffdd66'});
+   addFx(F,'dust',x,y+4,'',{r:150,lf:.7});
+   addFx(F,'pool',x,y+2,'',{r:84,sd:rnd(0,9),lf:1.8});}
  }
  /* 着弾のパーティクル */
  addP(F,16,x,y,{sp:260,up:90,g:560,life:.6,r:3.4,col:stk==='frost'?'#cdf1ff':'#ffb347'});
  addP(F,8,x,y,{sp:70,up:50,g:-40,life:1.4,r:11,col:'#5c5148',typ:'smoke'});
  addP(F,10,x,y,{sp:220,up:20,g:620,life:.7,r:2.8,col:'#8a7a5e',flat:1});
+ /* 焦げ跡(凍結だけは白い霜) */
+ if(FXLV>0)addP(F,4,x,y,{sp:0,g:0,life:7,r:24,col:stk==='frost'?'#b9dcea':'#2b2620',typ:'stain',jx:38,jy:15});
  if(isMine&&stk!=='frost')sfx.boom();
  return true;
 }
@@ -3046,20 +3087,39 @@ function campStep(C,dt,wave){
    if(u.cd<=0){u.cd=U.rate;
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
     if(U.type==='frost'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,ua,1);}}
-     addFx(C,'ring',tg.px,tg.py,'',{r:U.aoe,col:'#9fdcf5'});
-     addP(C,8,tg.px,tg.py-14,{sp:110,g:180,life:.5,r:2.2,col:'#cdf1ff'});
-     if(C.isMe)sfx.frost();}
+     const tx9=tg.px,ty9=tg.py;
+     const im9=()=>{addFx(C,'ring',tx9,ty9,'',{r:U.aoe,col:'#9fdcf5'});
+      addFx(C,'ice',tx9,ty9-12,'',{sd:rnd(0,9),r:U.aoe*.55});
+      addP(C,8,tx9,ty9-14,{sp:110,g:180,life:.5,r:2.2,col:'#cdf1ff'});
+      if(C.isMe)sfx.frost();};
+     const f9=tossFly(C,u,U,tx9,ty9,'ice','#cdf1ff');
+     if(f9>0)later(C,f9,im9);else im9();}
     else if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){dmgZ(C,z,ua,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}
-     addFx(C,U.type==='blast'?'boom':'ring',tg.px,tg.py,'',{r:U.aoe,col:'#ffb347'});
-     addP(C,7,tg.px,tg.py-10,{sp:160,up:50,g:520,life:.4,r:2.6,col:'#ffb347'});
-     addP(C,4,tg.px,tg.py-10,{sp:50,up:30,g:-30,life:.9,r:6,col:'#6e6354',typ:'smoke'});
-     if(U.aoe>=100){C.shake=Math.max(C.shake||0,.14);u.fireT=.14;}
-     if(C.isMe&&U.type==='blast')sfx.boom();}
+     const tx9=tg.px,ty9=tg.py,fire9=U.type==='fire';
+     const im9=()=>{addFx(C,U.type==='blast'?'boom':'ring',tx9,ty9,'',{r:U.aoe,col:'#ffb347'});
+      addP(C,7,tx9,ty9-10,{sp:160,up:50,g:520,life:.4,r:2.6,col:'#ffb347'});
+      addP(C,4,tx9,ty9-10,{sp:50,up:30,g:-30,life:.9,r:6,col:'#6e6354',typ:'smoke'});
+      /* 火炎瓶は割れて燃え広がる=火の海が少し残る */
+      if(fire9&&FXLV>0)addFx(C,'pool',tx9,ty9+2,'',{r:U.aoe*.8,sd:rnd(0,9),lf:1.6});
+      if(U.aoe>=100){addFx(C,'dust',tx9,ty9+2,'',{r:U.aoe*.9});C.shake=Math.max(C.shake||0,.14);}
+      if(C.isMe&&U.type==='blast')sfx.boom();};
+     const f9=tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c');
+     if(f9>0)later(C,f9,im9);else im9();
+     if(U.aoe>=100)u.fireT=.14;}
     else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
     else{dmgZ(C,tg,ua,pierce);
      /* ⭐進化段階が上がるほどエフェクトを豪華にする(ユーザー指示)。英雄は最大 */
      const utl=uFxTier(u),ucl=UFX_COL[utl];
-     if(U.rng>60){u.fireT=.1;
+     if(U.type==='fire'&&U.rng>60){
+      /* ⭐火炎放射兵は「弾道の線」ではなく炎の帯を吹く(2026-07-26 第65弾)。
+         ⚠今まで銃と同じ曳光線だったので、何を撃っているのか分からなかった */
+      u.fireT=.1;
+      const aa=Math.atan2((tg.py-22)-(u.py-28),tg.px-u.px);
+      if(FXLV>0){addFx(C,'flame',u.px+Math.cos(aa)*16,u.py-28+Math.sin(aa)*16,'',
+        {ang:aa,len:Math.max(70,U.rng*.95),col:U.c||'#ff9a3d',sd:rnd(0,9)});
+       if(FXLV>1)addP(C,1,tg.px,tg.py-18,{sp:50,up:40,g:-60,life:.7,r:4.5,col:'#6e6354',typ:'smoke'});}
+      if(C.isMe&&Math.random()<.3)sfx.flame();}
+     else if(U.rng>60){u.fireT=.1;
       addFx(C,'tr',u.px,u.py-24,'',{x2:tg.px,y2:tg.py-20,col:U.id==='snp'?'rgba(160,225,255,':null,w:2.6+utl*.7});
       if(FXLV>0){const d5=(u.dr||-1),mx3=u.px+d5*30,my3=u.py-27;
        addP(C,2,mx3,my3,{sp:90,a:d5<0?3.14:0,spread:.4,g:120,life:.14,r:1.8,col:'#ffdd66'});
@@ -3135,6 +3195,9 @@ function campStep(C,dt,wave){
    addFx(C,'ring',sx,sy,'',{r:rng,col:T.frz?'#cdf1ff':'#9fd9c6'});twSfx(C,T);}
   else if(T.type==='fire'){/* 火炎は装甲に特効=殻ごと焼く。直撃も燃焼もFIRE_VS_ARMOR倍、燃焼は1秒長い */
    const av=tg.armor?FIRE_VS_ARMOR:1;
+   /* ⭐炎(酸)の帯を狙った方向へ吹く。⚠今までは銃口の粒だけで「届いている」感じが出ていなかった */
+   if(FXLV>0)addFx(C,'flame',sx+Math.cos(tw.ang)*24,sy+Math.sin(tw.ang)*24,'',
+    {ang:tw.ang,len:rng*.92,col:T.id==='acid'?'#a8e05a':'#ff9a3d',sd:rnd(0,9)});
    dmgZ(C,tg,dm*av,1);
    if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+.25*TL)*av;}
    /* ⚠火炎は連続で当たるので、鳴らしすぎないよう間引く(45msの制限も効く) */
@@ -3235,10 +3298,14 @@ function campStep(C,dt,wave){
   }
   if(C.mg.t<=0)C.mg=null;
  }
+ /* 遅らせておいた演出(投擲の着弾など)を起こす */
+ if(C.dly&&C.dly.length){
+  for(const q of C.dly){q.t-=dt;if(q.t<=0){q.done=1;if(typeof q.fn==='function'){try{q.fn();}catch(e){}}}}
+  C.dly=C.dly.filter(q=>!q.done);}
  stepP(C,dt);
  /* エフェクト整理 */
  for(const e of C.fx)e.t+=dt;
- C.fx=C.fx.filter(e=>e.t<((e.d0||0)+fxLife(e.k)));
+ C.fx=C.fx.filter(e=>e.t<((e.d0||0)+fxLife(e.k,e)));
  C.zombies=C.zombies.filter(z=>!z.dead);
  C.shells=C.shells.filter(s=>!s.dead);
  /* ゾンビ環境音: 数に応じてうめき */
@@ -3737,6 +3804,16 @@ function renderCamp(C,t){
     c.restore();
    }
   }else{c.fillStyle='#3c4136';c.beginPath();c.arc(px,py,7,0,7);c.fill();c.stroke();}}
+ /* ⭐倒した敵の死体(2026-07-26 第65弾)。今までは消えて無くなるだけで倒した手応えが薄かった。
+    生きている敵より先に描く=死体の上を後続が歩いてくる形にする */
+ for(const e of C.fx){if(e.k!=='corpse')continue;
+  const lf6=fxLife('corpse',e),k6=clamp(e.t/lf6,0,1),fl6=Math.min(1,k6*3.4);
+  /* 倒れ切ってからしばらく残り、最後にすっと消える */
+  /* ⚠生きている敵と紛らわしくならないよう、少し薄く描く */
+  c.save();c.globalAlpha=Math.max(0,1-Math.pow(k6,3))*.72;
+  c.translate(e.x,e.y);c.rotate(((e.dr||1)<0?1:-1)*1.5*(1-Math.pow(1-fl6,3)));
+  try{drawSpr(c,bakeZ(e.zi,e.el?1:0),0,0,0,(e.dr||1)<0);}catch(e6){}
+  c.restore();c.globalAlpha=1;}
  /* ゾンビ */
  const zs=C.zombies.slice().sort((a,b)=>a.py-b.py);
  for(const z of zs){if(z.d<0)continue;
@@ -3788,6 +3865,8 @@ function renderCamp(C,t){
  drawP(c,C);
  /* エフェクト */
  for(const e of C.fx){
+  if(e.d0&&e.t<e.d0)continue;/* 着弾待ち(時間差の爆撃) */
+  if(e.k==='corpse')continue;/* 死体はゾンビより先に描いてある */
   if(e.k==='tr'){const a2=Math.max(0,1-e.t/.14);
    c.strokeStyle=(e.col||'rgba(255,235,150,')+a2+')';c.lineWidth=(e.w||3);c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();
    /* 着弾は控えめな点光だけ */
@@ -3867,12 +3946,12 @@ function renderCamp(C,t){
     if(r1<=r0)continue;
     c.beginPath();c.moveTo(Math.cos(aa)*r0,Math.sin(aa)*r0*.7);c.lineTo(Math.cos(aa)*r1,Math.sin(aa)*r1*.7);c.stroke();}
    c.globalAlpha=1;c.restore();}
-  else if(e.k==='shock'){/* 重い砲の発射で床が押される衝撃波 */
-   const a4=Math.max(0,1-e.t/fxLife('shock')),rr=(e.r||54)*e.t*3.4;
+  else if(e.k==='shock'){/* 重い砲の発射で床が押される衝撃波。⚠時間差(d0)で出す時があるので待った分を引く */
+   const tt=e.t-(e.d0||0),a4=Math.max(0,1-tt/fxLife('shock',e)),rr=(e.r||54)*tt*3.4;
    c.strokeStyle=e.col||'#fff0c8';
-   c.globalAlpha=a4*.5;c.lineWidth=3*(1-e.t*1.6)+.5;
+   c.globalAlpha=a4*.5;c.lineWidth=3*(1-tt*1.6)+.5;
    c.beginPath();c.ellipse(e.x,e.y,rr,rr*.4,0,0,7);c.stroke();
-   c.globalAlpha=a4*.2;c.lineWidth=8*(1-e.t*1.8)+.5;
+   c.globalAlpha=a4*.2;c.lineWidth=8*(1-tt*1.8)+.5;
    c.beginPath();c.ellipse(e.x,e.y,rr*.66,rr*.28,0,0,7);c.stroke();c.globalAlpha=1;}
   else if(e.k==='slash'){/* ⭐近接の斬撃。段階(lv)が上がるほど太く、外側にもう1本増える */
    const a4=Math.max(0,1-e.t/fxLife('slash')),lv=e.lv||0,rr=e.r||26;
@@ -3884,6 +3963,74 @@ function renderCamp(C,t){
    if(lv>=2){c.strokeStyle='rgba(255,255,255,'+(a4*.75).toFixed(2)+')';c.lineWidth=1.6;
     c.beginPath();c.arc(0,0,rr*1.2,sw-.62,sw+.62);c.stroke();}
    c.lineCap='butt';c.globalAlpha=1;c.restore();}
+  else if(e.k==='toss'){/* ⭐投げた物が山なりに飛ぶ(擲弾兵・火炎瓶・冷凍弾)。⚠絵だけ=当たり判定は投げた瞬間に済んでいる */
+   const lfT=fxLife('toss',e),p6=clamp((e.t-(e.d0||0))/lfT,0,1),hi=e.hi||60;
+   const at=q=>[e.x+(e.x2-e.x)*q,e.y+(e.y2-e.y)*q-Math.sin(Math.PI*q)*hi];
+   const b6=at(p6);
+   /* 尾を引く=次に何が落ちてくるか目で追える */
+   c.globalAlpha=.4;c.fillStyle=e.col||'#c9b98a';
+   for(let i6=1;i6<=3;i6++){const q6=Math.max(0,p6-i6*.06),t6=at(q6);
+    c.beginPath();c.arc(t6[0],t6[1],3.2-i6*.7,0,7);c.fill();}
+   c.globalAlpha=1;
+   c.save();c.translate(b6[0],b6[1]);c.rotate((e.sd||0)+e.t*(e.kind==='ice'?6:22));
+   c.scale(1.35,1.35);/* ⚠実画面では豆粒なので少し大きめに描く */
+   c.lineWidth=1.2;c.strokeStyle=INK;
+   if(e.kind==='bottle'){/* 火炎瓶 */
+    c.fillStyle='#c98a3d';rr(c,-4,-6,8,12,3);c.fill();c.stroke();
+    c.fillStyle='#ffb347';c.beginPath();c.arc(0,-8.5,3.4,0,7);c.fill();
+    c.fillStyle='#fff3c0';c.beginPath();c.arc(0,-8.5,1.5,0,7);c.fill();}
+   else if(e.kind==='ice'){/* 冷凍弾 */
+    c.fillStyle='#cdf1ff';c.beginPath();c.moveTo(0,-6);c.lineTo(5,0);c.lineTo(0,6);c.lineTo(-5,0);c.closePath();c.fill();c.stroke();}
+   else{/* 擲弾・砲弾 */
+    c.fillStyle='#4e5540';c.beginPath();c.ellipse(0,0,6.2,4.4,0,0,7);c.fill();c.stroke();
+    c.fillStyle='#8a9470';c.fillRect(-6,-1.2,12,2.4);}
+   c.restore();}
+  else if(e.k==='flame'){/* ⭐火炎放射(兵科・火炎放射塔・酸噴射器)。銃口から広がる炎の帯 */
+   /* ⚠寿命が0.2秒しかないので、線形に薄くすると出た瞬間しか見えない。終わり際に一気に消す */
+   const lfF=fxLife('flame',e),k7=clamp(e.t/lfF,0,1),a7=1-k7*k7,len=e.len||110,sd=e.sd||0;
+   const base=e.col||'#ff9a3d',hot=(base==='#a8e05a'||base==='#8fbf4d')?'#e8ff9f':'#fff3c0';
+   c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);
+   for(let i7=0;i7<7;i7++){const f7=(i7+1)/7,px7=len*f7*(.35+k7*.75),rr7=4+f7*len*.12;
+    c.globalAlpha=a7*(.95-f7*.45);/* 根本ほど濃く、先ほど薄く=吹き出しているのが分かる */
+    c.fillStyle=f7<.4?hot:base;
+    c.beginPath();c.ellipse(px7,Math.sin(sd+i7*2.1+e.t*22)*rr7*.5,rr7*1.3,rr7,0,0,7);c.fill();}
+   c.globalAlpha=1;c.restore();}
+  else if(e.k==='ice'){/* ⭐氷の破片が地面に突き立つ(凍結の着弾)。
+    ⚠この絵柄は「太い黒フチ+べた塗り」で統一しているので、氷にも輪郭を入れないと浮いて見える。
+      散らしすぎると宙に浮いた三角に見えるので、足元を白く凍らせたうえで内側に寄せる */
+   const lfI=fxLife('ice',e),tt=e.t-(e.d0||0),a7=Math.max(0,1-tt/lfI),R=(e.r||90)*.62,sd=e.sd||0;
+   const gr=Math.min(1,tt*7);
+   c.save();c.translate(e.x,e.y);c.globalAlpha=a7*.95;
+   c.fillStyle='#dbeef7';c.beginPath();c.ellipse(0,4,R*1.15*gr,R*.46*gr,0,0,7);c.fill();
+   c.strokeStyle=INK;c.lineWidth=2.4;c.lineJoin='round';
+   for(let i7=0;i7<7;i7++){const a=sd+i7*.897,rd=R*(.25+((i7*37)%10)/22)*gr;
+    const bx=Math.cos(a)*rd,by=4+Math.sin(a)*rd*.5,h=17+((i7*53)%15),w7=6+((i7*17)%5);
+    c.fillStyle=i7%2?'#bfe8ff':'#8fc9e8';
+    c.beginPath();c.moveTo(bx-w7,by);c.lineTo(bx,by-h);c.lineTo(bx+w7,by);c.closePath();c.fill();c.stroke();}
+   c.lineJoin='miter';c.globalAlpha=1;c.restore();}
+  else if(e.k==='pool'){/* ⭐火の海: 着弾地点がしばらく燃え続ける(ナパーム・火炎瓶) */
+   const lfP=fxLife('pool',e),k7=clamp((e.t-(e.d0||0))/lfP,0,1),a7=Math.min(1,(1-k7)*2.4),R=e.r||100,sd=e.sd||0;
+   c.save();c.translate(e.x,e.y);
+   c.globalAlpha=a7*.22;c.fillStyle='#7a2f14';c.beginPath();c.ellipse(0,0,R*.9,R*.4,0,0,7);c.fill();
+   /* ⚠丸を並べると「炎」ではなく「玉」に見える。根本が太く先が細い舌の形にする */
+   for(let i7=0;i7<12;i7++){const a=sd+i7*.523,rd=R*(.18+((i7*29)%10)/13);
+    const bx=Math.cos(a)*rd,by=Math.sin(a)*rd*.45,fl=(Math.sin(sd+i7*1.7+e.t*9)+1)*.5;
+    const w8=4+fl*2.5,h8=15+fl*14;
+    c.globalAlpha=a7*(.45+fl*.45);
+    for(const pass of [[1,fl>.55?'#ffb347':'#e0662a'],[.5,'#ffdd66']]){
+     c.fillStyle=pass[1];c.beginPath();
+     c.moveTo(bx-w8*pass[0],by);
+     c.quadraticCurveTo(bx-w8*pass[0]*1.3,by-h8*pass[0]*.6,bx,by-h8*pass[0]);
+     c.quadraticCurveTo(bx+w8*pass[0]*1.3,by-h8*pass[0]*.6,bx+w8*pass[0],by);
+     c.closePath();c.fill();}}
+   c.globalAlpha=1;c.restore();}
+  else if(e.k==='dust'){/* ⭐土煙: 着弾や大物が倒れた時に低く速く広がる */
+   const lfD=fxLife('dust',e),k7=clamp((e.t-(e.d0||0))/lfD,0,1),R=(e.r||90)*(.25+k7*.95),a7=Math.max(0,1-k7);
+   c.save();c.globalAlpha=a7*.42;c.fillStyle='#9a8b70';
+   c.beginPath();c.ellipse(e.x,e.y,R,R*.34,0,0,7);c.fill();
+   c.globalAlpha=a7*.26;c.fillStyle='#c4b393';
+   c.beginPath();c.ellipse(e.x,e.y,R*.66,R*.22,0,0,7);c.fill();
+   c.globalAlpha=1;c.restore();}
   else if(e.k==='splat'){c.globalAlpha=Math.max(0,.5-e.t*.3);c.fillStyle=e.gray?'#6e6354':'#4a5a2e';[[0,0,12],[-11,5,7],[10,6,8]].forEach(p3=>{c.beginPath();c.arc(e.x+p3[0],e.y+p3[1],p3[2],0,7);c.fill();});c.globalAlpha=1;}
   else if(e.k==='blood'){c.globalAlpha=Math.max(0,.85-e.t*1.9);c.fillStyle=e.gray?'#8a2f2f':'#5a6e2e';
    for(let k3=0;k3<5;k3++){const a=(e.sd||0)+k3*1.256;const bx=e.x+Math.cos(a)*e.t*170,by=e.y+Math.sin(a)*e.t*70+e.t*e.t*300;

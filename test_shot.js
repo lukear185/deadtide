@@ -47,6 +47,14 @@ const TM=/t=([A-Za-z]+)/.exec(OPT),TID=TM?TM[1]:'';
 const RPM=/rpg([a-z]?)/.exec(OPT),RPG=!!RPM,RPGK=RPM?RPM[1]:'';
 /* 例 hero=hNox = その英雄を出撃させて撮る / hero=all = 英雄11人を経路上に並べて撮る */
 const HM=/hero=([A-Za-z]+)/.exec(OPT),HID=HM?HM[1]:'';
+/* 例 u=grn = その兵科を3体出して、目の前にゾンビを湧かせ続ける(攻撃と撃破の演出を撮るため)
+   ⚠ゾンビは倒されたら補充されるので、投擲の軌道・炎・死体がいつでも画面に出ている状態になる */
+const UM=/u=([A-Za-z0-9]+)/.exec(OPT),UID=UM?UM[1]:'';
+/* 例 stk=napalm = その砲撃を繰り返し撃ち込む(着弾の演出を撮るため。air/mgun/carpet/frost/napalm) */
+const SKM=/stk=([a-z]+)/.exec(OPT),SKID=SKM?SKM[1]:'';
+/* fxdemo = 新しい演出を1つずつ並べて、寿命の途中の姿で止めて撮る(絵そのものを確かめる用)
+   ⚠一瞬しか出ない演出は実戦の撮影ではまず捉えられないので、こうして並べて見る */
+const FXD=OPT.indexOf('fxdemo')>=0;
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
@@ -104,6 +112,52 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         +(OPT.indexOf('nodep')>=0?''/* nodep=出撃させずにボタンだけ見る */
           :'heroDeploy(me);me.hCg=1;var hu=me.units.filter(function(u){return u.hro;})[0];if(hu)hu.d=PLEN*.62;'))
      +'updHUD();}catch(e){document.title="ERR3 "+e.message;}},1000);'):'')
+ +(UID?('setTimeout(function(){try{var me=G.players[0];me.scrap=999999;'
+     +'var ui9=UNITS.findIndex(function(q){return q.id==="'+UID+'";});'
+     +'if(ui9<0)throw new Error("兵科 '+UID+' が無い");'
+     +'var pu9=me.uUn;me.uUn=UNITS.length;'
+     +'for(var k9=0;k9<3;k9++){me.ucd[ui9]=0;deployUnit(me,ui9);}me.uUn=pu9;'
+     +'var D9=PLEN*.55;me.units.forEach(function(u,i){u.d=D9-i*26;});'
+     +'var zi9=ZOMBIES.findIndex(function(q){return !q.boss&&!q.nm&&!q.st;});'
+     +'var add9=function(){me.zombies.push(mkZ(zSpec(zi9,1,10),D9-160-Math.random()*80));};'
+     +'me.zombies.length=0;for(var k9=0;k9<6;k9++)add9();'
+     /* die= を付けない限りゾンビのHPを戻す(倒れると的が消えて攻撃の演出が撮れないため) */
+     +'setInterval(function(){try{me.units.forEach(function(u){u.cd=0;});'
+     +(OPT.indexOf('die')>=0?'':'me.zombies.forEach(function(z){z.hp=z.mhp;});')
+     +'while(me.zombies.length<6)add9();}catch(e){}},80);'
+     +'}catch(e){document.title="ERR4 "+e.message;}},1200);'):'')
+ +(SKID?('setTimeout(function(){try{var me=G.players[0];me.stk="'+SKID+'";'
+     +'var zi8=ZOMBIES.findIndex(function(q){return !q.boss&&!q.nm&&!q.st;});'
+     +'var add8=function(){me.zombies.push(mkZ(zSpec(zi8,1,10),PLEN*(.42+Math.random()*.12)));};'
+     +'me.zombies.length=0;for(var k8=0;k8<8;k8++)add8();'
+     /* ⚠飛来物を飛ばす airstrike() だと、ヘッドレスの仮想時間では着弾の瞬間をまず捉えられない
+        (撮れるのは飛んでいる途中ばかり)。**着弾処理を直に呼んで**、着弾の絵が常に出ている状態にする */
+     +'var n8=0;setInterval(function(){try{while(me.zombies.length<8)add8();'
+     +'me.zombies.forEach(function(z){z.hp=z.mhp;z.burnT=0;});'
+     /* ⚠画面座標(px)はcampStepでしか入らない。足したばかりの敵はpx=0なので、
+        **座標が入っている個体**を選ぶこと(zombies[0]を使うと1発も撃てない) */
+     +'var z8=null;for(var i8=0;i8<me.zombies.length;i8++)if(me.zombies[i8].px){z8=me.zombies[i8];break;}'
+     +'if(!z8)return;'
+     /* ⚠連射すると煙が溜まって画面が真っ白になる。**前の着弾が消えてから**次を撃つ */
+     +'var busy8=me.fx.some(function(e){return /^(pool|boomL|dust|ice)$/.test(e.k);});'
+     +'if(!busy8){n8++;airstrikeHit(me,z8.px,z8.py,10,"'+SKID+'",true);}}catch(e){}},90);'
+     +'}catch(e){document.title="ERR5 "+e.message;}},1300);'):'')
+ +(FXD?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
+     +'var D=[["toss",240,300,{x2:420,y2:300,lf:.3,hi:90,kind:"nade",col:"#7d8a5c",sd:1},.5],'
+     +'["toss",240,430,{x2:420,y2:430,lf:.3,hi:90,kind:"bottle",col:"#ffb347",sd:2},.5],'
+     +'["toss",240,560,{x2:420,y2:560,lf:.3,hi:90,kind:"ice",col:"#cdf1ff",sd:3},.5],'
+     +'["flame",560,300,{ang:0,len:200,col:"#ff9a3d",sd:1},.55],'
+     +'["flame",560,470,{ang:0,len:200,col:"#a8e05a",sd:2},.55],'
+     +'["ice",900,320,{r:120,sd:1},.35],'
+     +'["dust",900,540,{r:150},.35],'
+     +'["pool",1240,340,{r:120,sd:1,lf:4.2},.15],'
+     +'["shock",1240,560,{r:92,col:"#ffdd66"},.3],'
+     +'["corpse",1450,400,{zi:0,el:0,dr:1,lf:1},.55]];'
+     /* 毎フレーム作り直して、寿命の途中の姿で止める */
+     +'setInterval(function(){try{me.fx.length=0;me.dly=[];'
+     +'D.forEach(function(d){var e=Object.assign({k:d[0],x:d[1],y:d[2],t:0,s:""},d[3]);'
+     +'e.t=(fxLife(e.k,e))*d[4];me.fx.push(e);});}catch(e){}},16);'
+     +'}catch(e){document.title="ERR6 "+e.message;}},1200);'):'')
  +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));

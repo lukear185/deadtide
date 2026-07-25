@@ -413,6 +413,69 @@ function checkBite(){
  console.log('反撃: 近接'+mel.length+'兵科すべて、噛みつかれた相手(gap='+ENG_GAP+')に反撃できる OK');
  backTitle();
 }
+/* ---- エフェクト第2弾(2026-07-26 第65弾) ----
+   投擲の軌道(toss) / 炎の帯(flame) / 火の海(pool) / 氷の破片(ice) / 土煙(dust) / 倒れる死体(corpse)。
+   ⚠寿命が短い(炎0.2秒・投擲0.16〜0.42秒)ので、まとめて回してから見ると消えた後になる。
+     1ステップごとに拾うこと。⚠投擲の着弾は later() で遅らせているので、飛ぶ秒数ぶん回す必要がある */
+function checkFx2(){
+ META.stg=0;setDiff=2;startSolo();frames(20,.016);
+ const me=G.players[0];
+ const zi=ZOMBIES.findIndex(z=>z.id==='walk');
+ /* その兵科を1体置き、射程の内側にゾンビを置いて撃たせ、出た絵を数える */
+ const run=(uid,tough,steps)=>{
+  const ui=UNITS.findIndex(u=>u.id===uid);
+  if(ui<0){console.log('FAIL: 兵科 '+uid+' が見つからない');process.exit(1);}
+  const U=UNITS[ui],ud=me.flagD;
+  me.units.length=0;me.zombies.length=0;me.fx.length=0;me.dly=[];
+  me.units.push({eid:EID++,ui,own:0,am:1,d:ud,hp:99999,mhp:99999,cd:0,hitT:0,fireT:0,ph:0,px:0,py:0,dr:-1,eng:0});
+  const z=mkZ(zSpec(zi,1,10),ud-Math.min(U.rng*.55,110));
+  if(tough)z.hp=z.mhp=99999;
+  me.zombies.push(z);
+  const kinds={};
+  for(let k=0;k<(steps||60);k++){campStep(me,.05,G.wave);
+   for(const e of me.fx)kinds[e.k]=(kinds[e.k]||0)+1;}
+  return kinds;
+ };
+ const need=(kinds,k,msg)=>{if(!kinds[k]){
+  console.log('FAIL: '+msg+'(出た絵='+(Object.keys(kinds).join(',')||'なし')+')');process.exit(1);}};
+ /* 擲弾兵: 投げた物が飛び、遅れて爆発する */
+ {const k=run('grn',true);
+  need(k,'toss','擲弾兵の投擲が飛んでいない');
+  need(k,'boom','擲弾兵の着弾の爆発が出ていない');}
+ /* 火炎瓶: 瓶が飛び、割れた所に火の海が残る */
+ {const k=run('mol',true);
+  need(k,'toss','火炎瓶が飛んでいない');
+  need(k,'pool','火炎瓶の火の海が出ていない');}
+ /* 火炎放射兵: 曳光線ではなく炎の帯 */
+ {const k=run('flm',true);
+  need(k,'flame','火炎放射兵の炎が出ていない');
+  if(k.tr){console.log('FAIL: 火炎放射兵がまだ銃の曳光線を出している');process.exit(1);}}
+ /* 撃破: 敵が倒れる(死体が残る) */
+ {const k=run('grn',false,40);
+  need(k,'corpse','倒した敵の死体が出ていない');}
+ /* 火炎放射塔も炎の帯を吹く */
+ {me.units.length=0;me.zombies.length=0;me.fx.length=0;me.scrap=99999;
+  const si=AI_ORDER[0],ti=TOWERS.findIndex(T=>T.id==='flame');
+  me.towers[si]=null;const pu=me.unlocked;me.unlocked=ti+1;buildTower(me,si,ti);me.unlocked=pu;
+  const base=projPath(SLOTS[si][0],SLOTS[si][1]);
+  const z=mkZ(zSpec(zi,1,20),Math.max(20,base-40));z.hp=z.mhp=99999;me.zombies.push(z);
+  const kinds={};
+  for(let k2=0;k2<40;k2++){campStep(me,.05,G.wave);for(const e of me.fx)kinds[e.k]=(kinds[e.k]||0)+1;}
+  need(kinds,'flame','火炎放射塔の炎が出ていない');
+  me.towers[si]=null;}
+ /* 砲撃5種の着弾: 種類ごとに違う絵が出る */
+ {me.units.length=0;me.zombies.length=0;
+  const z=mkZ(zSpec(zi,1,10),PLEN*.5);z.hp=z.mhp=99999;me.zombies.push(z);
+  campStep(me,.001,G.wave);/* ⚠画面座標(px/py)はcampStepでしか入らない */
+  const want={air:['shock','dust','pool'],frost:['ice'],napalm:['pool'],carpet:['dust'],mgun:['dust']};
+  for(const stk of Object.keys(want)){
+   me.fx.length=0;me.dly=[];
+   airstrikeHit(me,z.px,z.py,10,stk,true);
+   const kinds={};for(const e of me.fx)kinds[e.k]=1;
+   for(const w of want[stk])need(kinds,w,'砲撃'+stk+'の着弾に'+w+'が出ていない');}}
+ console.log('演出2: 投擲の軌道・炎の帯・火の海・氷の破片・土煙・倒れる死体・砲撃5種の着弾 すべて出ている OK');
+ backTitle();
+}
 function checkHook(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
@@ -744,6 +807,7 @@ checkProgress();
 checkEvo();
 checkHook();
 checkBite();
+checkFx2();
 checkCryo();
 checkBeam();
 checkCoil();
