@@ -380,6 +380,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button class="btn gold" id="bt-train" style="display:none">🏋 鍛錬所 <span id="tr-mat"></span></button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
     <button class="btn" id="bt-howto">📖 あそびかた</button>
+    <button class="btn sm" id="bt-sfx" style="display:none">🔊 音の確認</button>
     <div class="seg" id="seg-fx" style="margin-top:8px;justify-content:center">
       <button class="btn sm" data-v="0">演出:弱</button>
       <button class="btn sm" data-v="1">演出:中</button>
@@ -595,6 +596,17 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="bphint" id="tr-hint"></div>
     <div class="bpbody" id="tr-list"></div>
     <div class="bpfoot" id="tr-foot"><button class="btn red" id="bt-tr-go">🏋 鍛える 🔧10</button></div>
+  </div>
+</div>
+
+<div class="modal" id="md-sfx">
+  <div class="panel bigpanel">
+    <div class="bphd"><b>🔊 音の確認</b><span class="pt" id="sfx-cnt"></span><button class="xbtn" id="bt-sfx-close">✕</button></div>
+    <div class="tabs" id="sfx-tabs"></div>
+    <div class="bphint" id="sfx-hint"></div>
+    <div class="bpbody" id="sfx-list"></div>
+    <div class="bpfoot"><button class="btn sm" id="bt-sfx-all">▶ このタブを順に鳴らす</button>
+      <span class="bphint" style="margin:0">音量 <input type="range" id="sfx-vol" min="0" max="100" value="85" style="vertical-align:middle;width:110px"></span></div>
   </div>
 </div>
 
@@ -971,6 +983,65 @@ const SFX_SET={
  growl:  {s1:['growl','growl2'],      s2:['growl'],                 nm:['growl2','growl']},
  bite:   {s1:['bite','bite2'],        s2:['bite','bite2'],          nm:['bite2','bite']}
 };
+/* ============ 🔊 音の確認(2026-07-26 第60弾) ============
+   ⚠**いちいちゲームを進めないと音が聴けない**のは確認が回らない(ユーザー指摘)。
+     公開URLに **?sfx=1** を付けると、48種を一覧でタップして鳴らせる画面が開く。
+     🛠DEVモードのタイトルにも「🔊 音の確認」ボタンを出す。 */
+const SFXTEST=(()=>{try{return (location.search||'').indexOf('sfx=1')>=0;}catch(e){return false;}})();
+/* キー → [表示名, どこで鳴るか, タブ] */
+const SFX_LBL={
+ shot:['ライフル櫓','弾を撃つたび','tw'], gat:['ガトリング要塞','連射','tw'],
+ shotgun:['ショットガン台','散弾','tw'], snipe:['スナイパー塔','単発','tw'],
+ cannon:['要塞砲・重砲台','発射','tw'], mortar:['迫撃砲・擲弾砲台','発射','tw'],
+ laser:['レーザー塔','照射','tw'], rail:['レールガン','ビーム','tw'],
+ plasma:['プラズマ砲','発射','tw'], sonic:['音響砲','発射','tw'],
+ acid:['酸噴射器','噴射','tw'], flame:['火炎放射塔','放射','tw'],
+ dronefx:['ドローン基地','射出','tw'], zap:['テスラコイル・重テスラ','放電','tw'],
+ frost:['冷却塔・凍結爆弾','凍結','tw'], net:['拘束ネット砲','発射','tw'],
+ boom:['爆発','砲弾の着弾・砲撃','tw'], thunk:['命中','近接の当たり','tw'],
+ moan:['ゾンビの呻き①','徘徊中・撃破時','z'], moan2:['ゾンビの呻き②','同上','z'],
+ moan3:['ゾンビの呻き③','同上','z'], moanW:['水棲の呻き','②沈んだ港','z'],
+ moanN:['蟲の呻き','🌑ナイトメア','z'],
+ moanBig:['大型の呻き','エリート撃破','z'], moanBig2:['T-Rexの咆哮','大型・ナイトメア','z'],
+ growl:['ボスの唸り(死の笛)','ボス出現','z'], growl2:['ボスの唸り(人狼)','ボス出現','z'],
+ die:['断末魔','撃破','z'], bite:['噛みつき①','部隊への攻撃','z'], bite2:['噛みつき②','同上','z'],
+ splat:['血しぶき','撃破','z'], scratch:['爪で壁を掻く','🌑ナイトメアのBGM','z'],
+ build:['建設','タワーを建てる','ui'], sell:['売却','タワーを売る','ui'],
+ coin:['⚙️入手','ゾンビ撃破','ui'], buy:['購入','研究所・強化','ui'],
+ warn:['警告','⚙️不足など','ui'], dep:['部隊の出撃','デッキを押す','ui'],
+ heal:['回復','野戦病院・軍医','ui'], push:['死潮を押す','対戦','ui'],
+ net2:['—','—','ui'],
+ horn:['ウェーブ開始','波の始まり','ev'], leak:['コアに被弾','敵が抜けた','ev'],
+ elite:['エリート出現','強い個体が来る','ev'], eliteKill:['エリート撃破','','ev'],
+ bossKill:['ボス撃破','','ev'], clearJ:['ウェーブ制圧','波をしのいだ','ev'],
+ win:['勝利','クリア','ev'], lose:['敗北','コア陥落','ev']};
+const SFX_TAB=[['tw','🔫 タワー'],['z','🧟 ゾンビ'],['ui','🖥 UI・経済'],['ev','🏁 節目']];
+let SFXTAB='tw';
+function renderSfxTest(){
+ const box=$('sfx-list');if(!box)return;
+ const cn=$('sfx-cnt');if(cn)cn.textContent=Object.keys(SFXB).length+'種';
+ const hint=$('sfx-hint');
+ if(hint)hint.innerHTML='押すとその音だけ鳴る。<b>ゲームを進めなくても全部確かめられる</b>。'
+  +'気になったものがあれば名前を伝えてもらえれば差し替える。';
+ const tb=$('sfx-tabs');
+ if(tb){tb.innerHTML=SFX_TAB.map(x=>'<button class="tb'+(SFXTAB===x[0]?' on':'')+'" data-st="'+x[0]+'">'+x[1]+'</button>').join('');
+  tb.querySelectorAll('[data-st]').forEach(e=>{e.onclick=()=>{SFXTAB=e.dataset.st;renderSfxTest();};});}
+ const ks=Object.keys(SFXB).filter(k=>((SFX_LBL[k]||[])[2]||'ui')===SFXTAB);
+ box.innerHTML='<div class="lgrid">'+ks.map(k=>{
+  const L=SFX_LBL[k]||[k,'',''];
+  return '<div class="lc" data-sk="'+k+'" style="cursor:pointer">'
+   +'<div class="nm">'+L[0]+'</div>'
+   +'<div class="tg">'+k+'</div>'
+   +'<div class="ds">'+(L[1]||'')+'</div>'
+   +'<div class="bu">▶ 鳴らす</div></div>';
+ }).join('')+'</div>';
+ box.querySelectorAll('[data-sk]').forEach(e=>{e.onclick=()=>{ensureAC();sfxTry(e.dataset.sk);};});
+}
+/* 指定したキーだけを鳴らす(くじ引きを通さない)。素材が無ければ合成音 */
+function sfxTry(k){
+ SFXLAST[k]=-99;/* ⚠連打できるよう45msの制限を無視する */
+ if(!sfxPlay(k,1,0)&&SFXSYN[k])SFXSYN[k]();}
+function openSfxTest(){ensureAC();renderSfxTest();$('md-sfx').classList.add('on');}
 /* ⭐タワーごとの発射音(2026-07-26 第59弾)。id→音のキー。
    ⚠TOWERSの定義には手を入れない=ここの表だけで音を差し替えられる。
    ⚠銃声の素材はバンドルに無いので、tool_sfx.js が「鋭い立ち上がり+胴鳴り」を重ねて作っている */
@@ -5995,6 +6066,13 @@ if($('rgquit'))$('rgquit').onclick=()=>rgBack();
 
 $('bt-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
 $('bt-train-close').onclick=()=>$('md-train').classList.remove('on');
+$('bt-sfx-close').onclick=()=>$('md-sfx').classList.remove('on');
+$('sfx-vol').oninput=e=>{SFXVOL=(+e.target.value||0)/100;};
+/* このタブぶんを順に鳴らす(600msおき) */
+$('bt-sfx-all').onclick=()=>{
+ ensureAC();
+ const ks=Object.keys(SFXB).filter(k=>((SFX_LBL[k]||[])[2]||'ui')===SFXTAB);
+ ks.forEach((k,i)=>setTimeout(()=>sfxTry(k),i*620));};
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
 $('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
 /* 難易度は「1つ下をクリアするまで押せない」。未解放は🔒つきで無効にする(2026-07-25) */
@@ -6288,6 +6366,13 @@ $('bt-lobby-back').onclick=backTitle;
 /* ============ メインループ・起動 ============ */
 makeThumbs();paradeInit();updLabBtn();/* 🏋鍛錬所ボタンの表示/💎🔧の残数を起動時に合わせる */
 try{applyIcons();}catch(e){}/* 画面アイコンの差し替え(素材が無ければ絵文字のまま) */
+/* 🔊音の確認: ?sfx=1 なら起動と同時に開く。🛠DEVモードならタイトルにボタンを出す。
+   ⚠`el.style.display=''` はCSSの指定に戻るので 'block' を明示すること */
+try{
+ const b=$('bt-sfx');
+ if(b){if(DEV||SFXTEST)b.style.display='block';b.onclick=()=>openSfxTest();}
+ if(SFXTEST)setTimeout(()=>{try{openSfxTest();}catch(e){}},300);
+}catch(e){}
 try{applyFrames();}catch(e){}/* ボタン/パネルの枠(素材が無ければ従来の見た目) */
 try{for(const k in ICO)icoImgFor(k);for(const k in ICN)icoImgFor(k);}catch(e){}/* canvas用に先読みしておく */
 if(MOBILE&&!STANDALONE)$('pwahint').style.display='block';

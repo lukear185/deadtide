@@ -35,6 +35,7 @@ const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
 const LOAD=!!LDM,LOADT=(LDM&&LDM[1])||'base';
 const TRH=OPT.indexOf('trhome')>=0;/* trhome = 🏋鍛錬所のモーダル */
+const SFXT=OPT.indexOf('sfx')>=0;/* sfx = 🔊音の確認の画面 */
 const TTL=OPT.indexOf('title')>=0;/* title = タイトル画面をそのまま撮る */
 /* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
 const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
@@ -68,6 +69,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(RPGK==='g'?'RG.md={k:"gate"};':'')
        +(RPGK==='s'?'RG.md={k:"stat"};':'')
        +'RG.fade=0;rgStep(0.02);')
+     :SFXT?'openSfxTest();'
      :GC?'META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
