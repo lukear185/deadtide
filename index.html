@@ -3368,11 +3368,10 @@ function edBad(si){
  if(dist(p[0],p[1],CORE[0],CORE[1])<150)bad.push('拠点');
  for(const b of BRANCH)if(dist(p[0],p[1],b[0],b[1])<120)bad.push('テント');
  if(area===0&&p[0]<270&&p[1]>385&&p[1]<535)bad.push('HPバー');
+ /* マス同士は「枠(64px)が重ならない」ことだけが条件=72。以前は110だったが、
+    タップ判定を「一番近いマス」に直したので、くっつけて置いても押し分けられる(2026-07-25ユーザー要望) */
  for(let k=0;k<SLOTS.length;k++){if(k===si)continue;
-  const ak=isSupSlot(k)?2:isEcoSlot(k)?1:0;
-  /* 同じ専用エリアの中は隣どうしなので120でよい。エリアをまたぐ時は135、通常どうしは110 */
-  const lim=(area===ak&&area!==0)?120:(area||ak)?135:110;
-  if(dist(p[0],p[1],SLOTS[k][0],SLOTS[k][1])<lim)bad.push('マス'+k);}
+  if(dist(p[0],p[1],SLOTS[k][0],SLOTS[k][1])<72)bad.push('マス'+k);}
  return bad;
 }
 function edOut(){
@@ -3419,9 +3418,13 @@ cv.addEventListener('pointerdown',e=>{
  }
  if(AIM){const m=meV();if(m&&m.charge>=1&&my>115){actStrike(mx,my);}setAim(false);return;}
  if(FLAGAIM){if(my>115)actFlag(mx,my);setFlagAim(false);return;}
- let hit=-1;
+ /* ⚠「範囲内で最初に見つかったマス」ではなく「一番近いマス」を選ぶ。
+    先着順だと、マスを近づけて置いた時に手前のマスばかり反応して奥のマスが押せなくなる(2026-07-25修正) */
+ let hit=-1,hb=1e9;
  const hr=MOBILE?60:44;
- for(let si=0;si<SLOTS.length;si++){if(Math.abs(mx-SLOTS[si][0])<hr&&Math.abs(my-SLOTS[si][1])<hr){hit=si;break;}}
+ for(let si=0;si<SLOTS.length;si++){
+  if(Math.abs(mx-SLOTS[si][0])>=hr||Math.abs(my-SLOTS[si][1])>=hr)continue;
+  const d=dist(mx,my,SLOTS[si][0],SLOTS[si][1]);if(d<hb){hb=d;hit=si;}}
  if(hit>=0)openBM(hit);else closeBM();
 });
 cv.addEventListener('pointermove',e=>{if(AIM||FLAGAIM)aimPos=evtToMap(e);});
