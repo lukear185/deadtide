@@ -348,7 +348,29 @@ function checkHook(){
  console.log('鎖使い: 重なったすり抜け敵'+ENG_HOOK+'体を全部足止め・超過分'+through+'体は素通り OK');
  backTitle();
 }
+/* ---- 研究所の進化: どの兵科からでも選べるか / 大幅に強くなるか ---- */
+function checkEvo(){
+ META.uv=[];META.nu=0;META.pts=1e9;
+ renderLab();
+ const vs=LAB_ITEMS.filter(o=>o.k==='uv');
+ if(vs.length<VBASE.length){console.log('FAIL: 進化の選択肢が'+vs.length+'件しか出ていない(基本兵科'+VBASE.length+'種ぶん出るはず)');process.exit(1);}
+ /* 上級兵科の進化は、本体が未解放なら出ないこと */
+ const adv=vs.filter(o=>/上級進化/.test(o.t));
+ if(adv.length){console.log('FAIL: 本体未解放の上級兵科の進化が出ている '+adv.length+'件');process.exit(1);}
+ /* 1つ買っても「次の段階」が同じ兵科で出る=段階は飛ばせない */
+ const first=vs[0];META.uv.push(first.id);renderLab();
+ const again=LAB_ITEMS.filter(o=>o.k==='uv');
+ if(again.some(o=>o.id===first.id)){console.log('FAIL: 買った進化がまだ選択肢に残っている');process.exit(1);}
+ /* 進化で大幅に強くなること(最終段階が素の2.5倍以上) */
+ let worst=99;
+ for(const b of ALLVB){const list=UVAR[b]||[];if(!list.length)continue;
+  const top=list[list.length-1];worst=Math.min(worst,Math.max(top.hp||1,top.atk||1));}
+ if(worst<2.5){console.log('FAIL: 最終進化の伸びが小さい(最小'+worst+'倍)');process.exit(1);}
+ console.log('進化: 同時に'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
+ META.uv=[];
+}
 checkStrikes();
+checkEvo();
 checkHook();
 checkCryo();
 checkBeam();

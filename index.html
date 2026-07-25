@@ -446,7 +446,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <p>ただし——<b>受けた側は撃破⚙️を総取り</b>。耐えられるなら、押し付けられた潮はそのまま金脈になる。わざと受けて稼ぐのも戦略だ。取り分は放っておくと均等に戻っていく。</p>
     <p><b>ふたつの資源</b>——<b>⚙️スクラップ</b>はゾンビを倒すと手に入り、建設・タワーの現地強化・出撃・解放に使う。<b>🔩強化ポイント</b>は<b>ウェーブを守り切るたび</b>にもらえ(後半ほど大量)、<b>作戦タイムの強化(部隊レベル・火力増強・コア修理)</b>専用だ。全部は買えないので何を伸ばすか選べ。</p>
     <p>道沿いの<b>空きスロットをタップ</b>してタワーを建設、建てた塔をタップで<b>⚔攻撃/⏩連射/📡射程</b>を⚙️で個別強化(電撃塔だけは⚡連鎖数)。置き場は最初6ヶ所で、🔒のマスをタップすれば⚙️で増やせる。画面左上の<b>🏭工房エリア</b>は廃品工房の専用枠で、最大3基まで増設できる。</p>
-    <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。<b>デッキを長押しすると部隊レベルアップ</b>(全兵科のHPと攻撃が上がる)。1人が足止めできるゾンビは3体まで——溢れた分は素通りだ。</p>
+    <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。部隊レベル(全兵科のHPと攻撃が上がる)は<b>作戦タイムの強化カード</b>で上げろ。1人が足止めできるゾンビは3体まで——溢れた分は素通りだ(すり抜ける敵は<b>鎖使い</b>だけが止められる)。</p>
     <p>🎯はチャージ式の航空支援。🏳は<b>このウェーブを諦める</b>(残った敵のぶんコアが傷つく代わりにすぐ次へ)。作戦タイムでは新タワー/新部隊の解放(⚙️)と、部隊レベル・火力増強・コア修理(🔩)を選べる。</p>
     <p><b>🔬 研究所(ソロ)</b>——出撃の結果に応じて<b>研究pt</b>が貯まる(負けても貯まる)。タイトル→ソロ作戦の研究所で、<b>新型タワー・新型兵科・新しい航空支援・初期資金・コアHP</b>を永久に解放できる。死ぬたびに次の自分が強くなる仕組みだ。</p>
     <button class="btn gold" id="bt-howto-close" style="margin-top:8px;width:100%">とじる</button>
@@ -916,10 +916,20 @@ const UVAR={
 };
 const FVBASE=['tnk','mech','titan','valk'];/* 上級(研究所解放)の派生対象 */
 const ALLVB=VBASE.concat(FVBASE);
-const VARLIST=[];/* 研究所での解放順(基本兵科の1〜3段目→上級の1〜3段目) */
+/* 進化は「大幅に強くなる」代わりに研究ptも高い(2026-07-25ユーザー指示)。
+   33個の数値を手で書き換えず、定義値の「1からの伸び」をまとめて増幅する=設計の比率が崩れない。
+   rate(連射)とsp(速さ)は据え置き。cm(出撃費の倍率)も少し上げて、強さのぶん⚙️を払わせる */
+const VAR_BOOST=1.8,VAR_COSTB=1.45;
+for(const b in UVAR)for(const v of UVAR[b]){
+ for(const k of ['hp','atk'])if(v[k])v[k]=+(1+(v[k]-1)*VAR_BOOST).toFixed(2);
+ if(v.cm)v.cm=+(1+(v.cm-1)*VAR_COSTB).toFixed(2);
+}
+const VARLIST=[];/* 全派生の一覧(解放済みの表示・名前引きに使う。解放の順番はもう固定していない) */
 for(let t=0;t<3;t++)for(const b of VBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v});}
 for(let t=0;t<3;t++)for(const b of FVBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v,adv:1});}
-const LAB_UV=k=>Math.round(90*Math.pow(1.13,k));/* k個目の派生解放価格 */
+const LAB_UV=k=>Math.round(240*Math.pow(1.13,k));/* k個目の進化解放価格(2026-07-25に90→240へ) */
+/* 上級兵科(tnk/mech/titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
+const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&i<BASE_U+(META.nu||0);};
 /* ============ 弾薬(研究所で発射する弾そのものを強化) ============ */
 const AMMO=[
  {id:'std',n:'通常弾',ic:'🔸',dm:1,dsc:'標準の実弾'},
@@ -3282,31 +3292,15 @@ function actDeploy(ui){
   if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<dc)return;
   sendCmd({t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
-/* 部隊レベルアップ(デッキの長押しでも買える=ウェーブ中もOK) */
-function buyUnitLevel(){
- const m=meV();if(!m||m.dead)return;
- const lv=m.uLv||0;
- if(lv>=ULV_MAX){toast('⬆ 部隊レベルは最大です');return;}
- const p=prUup(lv);
- if((m.up||0)<p){toast(PT+fmt(p)+' 必要 — 部隊強化(所持 '+PT+(m.up||0)+')',true);return;}
- if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'uup',o:{}});m.up=(m.up||0)-p;m.uLv=lv+1;sfx.buy();
-  toast('⬆ 部隊強化 Lv'+m.uLv+' (次 '+PT+fmt(prUup(m.uLv))+')');updHUD();return;}
- if(G){const me=G.players[G.myIdx];if(doPurchase(me,'uup',{})){sfx.buy();
-  toast('⬆ 部隊強化 Lv'+me.uLv+' (次 '+PT+fmt(prUup(me.uLv))+')');updHUD();}}
-}
 let DECKB=[];
 function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];
  const dl=metaUnitCap();
- for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc+'(長押しで部隊強化)';
+ /* ⚠デッキの長押し=部隊レベルアップ は廃止済み(2026-07-25ユーザー指示)。
+    部隊レベルは作戦タイムの強化カードだけで上げる。デッキは「押したら出撃」だけの単純な操作にする */
+ for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
   b.innerHTML=`<canvas width="${UTHW}" height="${UTHH}"></canvas><span class="dn">${U.n}</span><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
-  /* 長押し=部隊強化 / 短押し=出撃 */
-  let lpT=null,lpFired=false;
-  const lpStart=()=>{lpFired=false;clearTimeout(lpT);lpT=setTimeout(()=>{lpFired=true;buyUnitLevel();},480);};
-  const lpEnd=()=>{clearTimeout(lpT);};
-  b.addEventListener('pointerdown',lpStart);
-  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,lpEnd));
-  b.onclick=()=>{if(lpFired){lpFired=false;return;}actDeploy(i);};
+  b.onclick=()=>actDeploy(i);
   w.appendChild(b);DECKB.push(b);}}
 /* ソロ限定: ウェーブ放棄=残敵+出現予定分のコアダメージを受けて即・作戦タイムへ */
 function giveUpDmg(me){let d=0;for(const z of me.zombies)if(!z.dead)d+=z.dmg;if(G)for(const e of G.tide.pool)d+=e.z.dmg;return d;}
@@ -3393,6 +3387,19 @@ function ivRender(){
  $('ivcards').querySelectorAll('[data-cnt]').forEach(b=>{b.onclick=()=>{ivS.cnt=+b.dataset.cnt;ivRender();};});
  $('ivcards').querySelectorAll('[data-buy]').forEach(b=>{b.onclick=()=>actBuy(b.dataset.buy);});
  const rb=$('ivready');rb.disabled=m.ready&&MODE!=='client';rb.textContent=(m.ready?'✅ 待機中…':'✅ 配置完了!');
+}
+/* 部隊レベルアップ。⚠🔩払いなので下の共通処理(⚙️払い)には乗せられず専用のまま。
+   2026-07-25にデッキ長押しの入口を廃止し、作戦タイムの強化カードからだけ買えるようにした */
+function buyUnitLevel(){
+ const m=meV();if(!m||m.dead)return;
+ const lv=m.uLv||0;
+ if(lv>=ULV_MAX){toast('⬆ 部隊レベルは最大です');return;}
+ const p=prUup(lv);
+ if((m.up||0)<p){toast(PT+fmt(p)+' 必要 — 部隊強化(所持 '+PT+(m.up||0)+')',true);return;}
+ if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'uup',o:{}});m.up=(m.up||0)-p;m.uLv=lv+1;sfx.buy();
+  toast('⬆ 部隊強化 Lv'+m.uLv+' (次 '+PT+fmt(prUup(m.uLv))+')');updHUD();return;}
+ if(G){const me=G.players[G.myIdx];if(doPurchase(me,'uup',{})){sfx.buy();
+  toast('⬆ 部隊強化 Lv'+me.uLv+' (次 '+PT+fmt(prUup(me.uLv))+')');updHUD();}}
 }
 function actBuy(kind){
  if(kind==='uup'){buyUnitLevel();ivRender();return;}
@@ -3496,6 +3503,7 @@ const LAB_CATS=[
  {k:'start',n:'🚀 開始時のブースト',d:'1波目から効く。序盤の立ち上がりが楽になる'},
  {k:'eco',n:'💰 収入と効率',d:'⚙️の稼ぎや出撃の回転が良くなる'}
 ];
+let LAB_ITEMS=[];/* 直近に研究所へ出した項目(テストから中身を確認するため) */
 function renderLab(){
  const scEl=$('lab-items'),keepTop=(scEl&&scEl.scrollTop)||0;/* 購入後もスクロール位置を維持 */
  const pnl=$('md-lab').querySelector('.panel'),keepTop2=(pnl&&pnl.scrollTop)||0;
@@ -3503,9 +3511,20 @@ function renderLab(){
  const items=[];
  if(META.nt<TOWERS.length-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',t:'🗼 新型タワー『'+T.n+'』 ('+(META.nt+1)+'/'+(TOWERS.length-BASE_T)+')',d:T.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NT(META.nt)});}
  if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({cat:'new',k:'nu',t:'🤖 新型兵科『'+U.n+'』 ('+(META.nu+1)+'/'+(UNITS.length-BASE_U)+')',d:U.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NU(META.nu)});}
- {const uv=META.uv||[],nv=VARLIST.find(x=>uv.indexOf(x.v.id)<0);
-  if(nv){const B=UBASE.find(u=>u.id===nv.b)||{n:'?'};
-   items.push({cat:'var',k:'uv',id:nv.v.id,t:(nv.adv?'⭐ 上級進化『':'🧬 派生キャラ『')+nv.v.n+'』 ('+(uv.length+1)+'/'+VARLIST.length+')',d:nv.v.dsc+' — 『'+B.n+'』の'+(nv.adv?'姿が変わる強化形態':'代わり')+'。🎖編成で切替',p:LAB_UV(uv.length)});}}
+ /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
+    出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
+ {const uv=META.uv||[];
+  for(const b of ALLVB){
+   const list=UVAR[b]||[],nx=list.find(v=>uv.indexOf(v.id)<0);
+   if(!nx)continue;
+   const adv=FVBASE.indexOf(b)>=0;
+   if(adv&&!uvBaseOK(b))continue;/* 本体が未解放の上級兵科は出さない */
+   const B=UBASE.find(u=>u.id===b)||{n:'?'},t=list.indexOf(nx)+1;
+   items.push({cat:'var',k:'uv',id:nx.id,
+    t:(adv?'⭐ 上級進化『':'🧬 進化『')+nx.n+'』 ('+B.n+' 第'+t+'段階/'+list.length+')',
+    d:nx.dsc+' — HP×'+(nx.hp||1)+'・攻撃×'+(nx.atk||1)+'(出撃費×'+(nx.cm||1.2)+')。🎖編成で切替',
+    p:LAB_UV(uv.length)});
+  }}
  if((META.am||0)<AMMO.length-1){const A=AMMO[(META.am||0)+1];
   items.push({cat:'var',k:'am',t:A.ic+' 弾薬『'+A.n+'』 ('+((META.am||0)+1)+'/'+(AMMO.length-1)+')',d:A.dsc+' — 🎖編成で装備する',p:LAB_AM[META.am||0]});}
  for(const k in LAB_STK){if(META.st.indexOf(k)<0){const S=STRIKES[k];items.push({cat:'stk',k:'stk',id:k,t:S.ic+' 新砲撃『'+S.n+'』',d:S.dsc,p:LAB_STK[k]});}}
@@ -3539,6 +3558,7 @@ function renderLab(){
    META.ec1?['🏭工房つき開始']:[],
    TLINE.filter(L=>(META.tl&&META.tl[L.k])).map(L=>L.ic+L.n+'Lv'+META.tl[L.k]),
    ULINE.filter(L=>(META.ul&&META.ul[L.k])).map(L=>L.ic+L.n+'Lv'+META.ul[L.k]));
+ LAB_ITEMS=items;
  const done=[].concat(doneT,doneU,doneV,doneA,doneS,doneX);
  const clrLbl=D5.map((d,i)=>((META.clr&&META.clr[i])?'<span class="lchip">🏆'+d.n+'</span>':'')).join('')||'<span style="opacity:.6">まだクリアなし</span>';
  $('lab-items').innerHTML=
