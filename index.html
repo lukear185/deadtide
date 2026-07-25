@@ -2045,7 +2045,7 @@ function airstrikeHit(C,x,y,wave,stk,mine){
  }else if(stk==='frost'){/* 凍結爆弾: 広範囲4秒凍結 */
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=170){z.slowT=Math.max(z.slowT,4);dmgZ(F,z,40*(1+.1*wave),1);}}
   addFx(F,'ring',x,y,'',{r:170,col:'#9fdcf5'});addFx(F,'spark',x,y,'',{sd:rnd(0,9),col:'#9fdcf5'});
-  ifisMinesfx.frost();F.shake=.15;
+  if(isMine)sfx.frost();F.shake=.15;
  }else if(stk==='napalm'){/* ナパーム: 強烈な継続燃焼 */
   const dm=60*(1+.12*wave);
   for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave);}}}
@@ -2053,7 +2053,7 @@ function airstrikeHit(C,x,y,wave,stk,mine){
  }else if(stk==='mgun'){/* 機関銃掃射: 拠点から連射(以後campStepで継続) */
   F.mg={t:3.6,x,y,dmg:24*(1+.12*wave),cd:0};
   addFx(F,'ring',x,y,'',{r:150,col:'#ffdd66'});
-  ifisMinesfx.shotgun();
+  if(isMine)sfx.shotgun();
   return true;
  }else{/* 標準エアストライク */
   const dm=150*(1+.15*wave);

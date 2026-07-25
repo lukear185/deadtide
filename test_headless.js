@@ -182,6 +182,24 @@ function checkFinalBoss(){
  }
  META.stg=0;loadStage(0);
 }
+/* ---- 砲撃4種+機関銃掃射が、発射も着弾も例外なく通るか ----
+   ⚠rAFの中の例外はtry/catchに飲まれるので、着弾処理は直接呼んで確かめる */
+function checkStrikes(){
+ META.stg=0;setDiff=1;startSolo();
+ frames(20,.016);
+ const me=G.players[0],p=pathPos(PLEN*.5),ks=Object.keys(STRIKES);
+ for(const k of ks){
+  me.stk=k;me.charge=1;
+  let ok=false;
+  try{ok=airstrike(me,p[0],p[1],3);}catch(e){console.log('FAIL: 砲撃'+k+'の発射で例外: '+e.message);process.exit(1);}
+  if(!ok){console.log('FAIL: 砲撃'+k+'が発射できない');process.exit(1);}
+  try{airstrikeHit(me,p[0],p[1],3,k,true);}catch(e){console.log('FAIL: 砲撃'+k+'の着弾処理で例外: '+e.message);process.exit(1);}
+ }
+ frames(120,.033);/* 飛んでいる弾を着弾させる */
+ console.log('砲撃'+ks.length+'種('+ks.join('/')+'): 発射と着弾OK');
+ backTitle();
+}
+checkStrikes();
 checkFinalBoss();
 runStage2();
 runPvE(1,'PvE古参(素の腕前)',false);
