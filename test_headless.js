@@ -480,6 +480,53 @@ function checkHero(){
  console.log('英雄: 11人の出撃(1ゲーム1回・戦死したら終わり)と必殺技11種 OK(うち'+dmgN+'種が直接ダメージ)');
  META.hero={};META.hsel='';
 }
+/* ---- 🏋鍛錬所のリズム訓練 ----
+   ⚠画面をスワイプしないと動かない部分なので、判定・経験値・Lv上限を直接呼んで確かめる */
+function checkTrain(){
+ const h=HEROES[0];
+ META.hero={};META.hero[h.id]=1;META.hsel=h.id;META.hmat=100;META.hlv={};META.hxp={};META.tr0=1;
+ try{renderTrain();}catch(e){console.log('FAIL: 鍛錬所の一覧で例外: '+e.message);process.exit(1);}
+ const m0=META.hmat;
+ trainStart(h.id);
+ if(!TR){console.log('FAIL: 訓練が始まらない');process.exit(1);}
+ if(META.hmat!==m0-TR_COST){console.log('FAIL: 🔧鍛錬素材が減っていない');process.exit(1);}
+ if(TR.notes.length!==TR_N){console.log('FAIL: 譜面のノート数が違う '+TR.notes.length);process.exit(1);}
+ if(SCR!=='train'){console.log('FAIL: 訓練画面へ切り替わらない');process.exit(1);}
+ const iv0=TR.notes[1].t-TR.notes[0].t,iv1=TR.notes[TR_N-1].t-TR.notes[TR_N-2].t;
+ if(!(iv1<iv0*.6)){console.log('FAIL: 終盤で速くなっていない '+iv0.toFixed(2)+'→'+iv1.toFixed(2));process.exit(1);}
+ try{trainStep(.016);}catch(e){console.log('FAIL: 訓練の描画で例外: '+e.message);process.exit(1);}
+ /* ノートが無いところで振る=空振り(コンボが切れる) */
+ TR.combo=5;TR.t=0;trainInput(0);
+ if(TR.combo!==0){console.log('FAIL: 空振りでコンボが切れない');process.exit(1);}
+ /* ちょうどのタイミング+正しい向き=PERFECT */
+ const n0=TR.notes[0];TR.t=n0.t;trainInput(n0.d);
+ if(n0.hit!==1||TR.pf!==1||TR.score<=0){console.log('FAIL: PERFECT判定が出ない');process.exit(1);}
+ /* 向き違い=ミス */
+ const n1=TR.notes[1];TR.t=n1.t;trainInput(n1.d===1?-1:1);
+ if(n1.hit!==2||TR.ms!==1||TR.combo!==0){console.log('FAIL: 向き違いがミスにならない');process.exit(1);}
+ /* 通り過ぎたら自動でミス */
+ const ms0=TR.ms;TR.t=TR.notes[2].t+TR_GOOD+.05;trainStep(.001);
+ if(TR.ms<=ms0){console.log('FAIL: 見逃しがミスにならない');process.exit(1);}
+ /* 終了=スコアが経験値になりLvが上がる */
+ TR.score=TR_NEED(0)+TR_NEED(1)+5;TR.t=TR.len+1;trainStep(.001);
+ if(!TR.done||!TR.res){console.log('FAIL: 訓練が終わらない');process.exit(1);}
+ if(hLv(h.id)!==2){console.log('FAIL: 鍛錬Lvが2にならない '+hLv(h.id));process.exit(1);}
+ if(Math.abs(hBoost(h.id)-1.16)>1e-9){console.log('FAIL: 鍛錬の伸びが+16%でない');process.exit(1);}
+ /* 上限を超えない */
+ META.hxp[h.id]=0;TR.score=999999;TR.done=false;TR.t=TR.len+1;trainStep(.001);
+ if(hLv(h.id)!==TR_MAX){console.log('FAIL: 鍛錬Lvの上限が'+TR_MAX+'でない '+hLv(h.id));process.exit(1);}
+ trainBack();
+ if(TR){console.log('FAIL: 訓練から戻れない');process.exit(1);}
+ /* 鍛錬Lvが実際の英雄のHPに乗るか */
+ META.stg=0;setDiff=2;startSolo();frames(20,.016);
+ const me=G.players[0];
+ if(!heroDeploy(me)){console.log('FAIL: 鍛錬後に英雄が出撃できない');process.exit(1);}
+ const hu=me.units.filter(u=>u.hro)[0],U=UNITS[me.hUi],want=Math.round(U.hp*hBoost(h.id));
+ if(hu.mhp!==want){console.log('FAIL: 鍛錬LvがHPに乗っていない '+hu.mhp+'(想定'+want+')');process.exit(1);}
+ backTitle();
+ console.log('鍛錬所: 譜面'+TR_N+'ノート(終盤ほど速い)・判定4種(PERFECT/ミス/見逃し/空振り)・経験値とLv上限'+TR_MAX+'・英雄のHPに反映 OK');
+ META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;
+}
 /* ---- 支援施設2枠(タワーとは別軸)が、解放してから建つか・効果が乗るか ---- */
 function checkSup(){
  META.stg=0;setDiff=2;startSolo();
@@ -522,6 +569,7 @@ checkStrikes();
 checkSup();
 checkGacha();
 checkHero();
+checkTrain();
 checkProgress();
 checkEvo();
 checkHook();

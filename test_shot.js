@@ -30,6 +30,7 @@ function coarseCSS(s){
 const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連した状態で撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
+const TRN=OPT.indexOf('train')>=0;/* train = 🏋鍛錬所のリズム訓練を撮る(trainres=結果画面) */
 /* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
 const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 /* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため)
@@ -43,6 +44,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
  +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
  +(GC?'META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
+     :TRN?('META.tr0=1;META.hmat=99;META.hero={hNox:1};META.hlv={hNox:3};renderTrain();trainStart("hNox");'
+       /* 実時間で流れるのを待たず、譜面の途中(ノートが画面に出ている所)まで一気に進める */
+       +(OPT.indexOf('trainres')>=0?'TR.score=430;TR.pf=28;TR.gd=9;TR.ms=4;TR.best=17;trainEnd();'
+         :'TR.t=TR.notes[6].t-0.9;')
+       /* ⚠コンボと判定文字はtrainStepの後に入れる(先に入れると見逃し処理でリセットされる) */
+       +'trainStep(0.001);'+(OPT.indexOf('trainres')>=0?'':'TR.combo=13;TR.jl="PERFECT!";TR.jc="#ffd23d";TR.jt=9;'))
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'

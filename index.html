@@ -50,6 +50,18 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .logo-jp{font-size:15px;font-weight:900;color:var(--paper);opacity:.9;letter-spacing:4px;margin-top:6px;text-shadow:2px 2px 0 #000}
 .menu{display:flex;flex-direction:column;gap:12px;width:min(320px,86vw);margin-top:16px}
 #paradecv{position:fixed;left:0;right:0;bottom:0;width:100%;height:120px;pointer-events:none}
+/* 🏋鍛錬所のリズム訓練。画面いっぱいのキャンバス1枚+最小限のHUD */
+#scr-train{background:#1a1712;justify-content:flex-start;align-items:stretch;overflow:hidden}
+#trcv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#trquit{position:absolute;right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));z-index:2;
+ background:rgba(36,31,25,.9);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:6px 11px;font-weight:900}
+/* 鍛錬所の英雄カード */
+.trrow{display:flex;align-items:center;gap:8px;border:2px solid var(--ink);border-radius:12px;background:#efe7d2;padding:7px 9px;margin-bottom:6px}
+.trrow.sel{border-color:var(--rust);box-shadow:0 0 0 2px rgba(193,80,46,.35)}
+.trrow .tn{flex:1 1 auto;min-width:0;font-size:13px;font-weight:900;line-height:1.3}
+.trrow .tg{height:8px;border:2px solid var(--ink);border-radius:6px;background:#cdbfa2;overflow:hidden;margin-top:3px}
+.trrow .tg i{display:block;height:100%;background:linear-gradient(90deg,#7ba33f,#b7e07a)}
+.trrow .ts{font-size:11px;font-weight:700;opacity:.8}
 .ver{position:fixed;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--paper);opacity:.6}
 /* ---- セットアップ/ロビー ---- */
 .setwrap{width:min(430px,92vw);display:flex;flex-direction:column;gap:12px}
@@ -299,6 +311,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="menu">
     <button class="btn red" id="bt-solo">🛡 ソロ作戦 — ステージ1</button>
     <button class="btn gold" id="bt-gacha">💎 英雄召集 <span id="gem-cnt"></span></button>
+    <button class="btn gold" id="bt-train" style="display:none">🏋 鍛錬所 <span id="tr-mat"></span></button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
     <button class="btn" id="bt-howto">📖 あそびかた</button>
     <div class="seg" id="seg-fx" style="margin-top:8px;justify-content:center">
@@ -500,6 +513,20 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
+<div class="scr" id="scr-train">
+  <canvas id="trcv"></canvas>
+  <button id="trquit">✕ やめる</button>
+</div>
+
+<div class="modal" id="md-train">
+  <div class="panel howto" style="max-width:560px;width:min(94vw,560px)">
+    <h2 class="hd">🏋 ヒーロー鍛錬所 <span id="tr-mat2" style="float:right;color:var(--rust2)"></span></h2>
+    <p class="note" style="margin:4px 0 8px">🔧鍛錬素材を払ってリズム訓練。<b>飛んでくる玉は矢印の向きへスワイプしてよける</b>、<b>まえ(↑)にスワイプで訓練ダミーを斬る</b>。スコアがそのまま英雄の経験値になり、Lvが上がるとHPと攻撃が+8%ずつ伸びる(最大Lv10=+80%)。</p>
+    <div id="tr-list"></div>
+    <button class="btn gold" id="bt-train-close" style="margin-top:8px;width:100%">とじる</button>
+  </div>
+</div>
+
 <div class="modal" id="md-lab">
   <div class="panel howto" style="max-width:560px;width:min(94vw,560px)">
     <h2 class="hd">🔬 研究所 <span id="lab-pts2" style="float:right;color:var(--rust2)"></span></h2>
@@ -570,14 +597,16 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:''};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{}};
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
 try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
  if(!Array.isArray(META.uv))META.uv=[];if(!META.ld||typeof META.ld!=='object')META.ld={};META.am=META.am||0;META.amEq=META.amEq||0;
- for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','gem','hmat'])META[k]=META[k]||0;
+ for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','gem','hmat','tr0'])META[k]=META[k]||0;
+ if(!META.hlv||typeof META.hlv!=='object')META.hlv={};/* 英雄の鍛錬Lv id→Lv */
+ if(!META.hxp||typeof META.hxp!=='object')META.hxp={};/* 次のLvまでの経験 id→pt */
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
  if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
  if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
@@ -1076,6 +1105,11 @@ const G_COST1=3,G_COST10=25;/* 単発/10連の💎 */
 const GEM_BOSS=1,GEM_FIN=3;/* 通常ボス/最終ボスを倒した時の💎 */
 const heroOf=id=>HEROES.find(h=>h.id===id);
 const heroOwned=id=>((META.hero||{})[id]||0)>0;
+/* 🏋鍛錬(ヒーロー鍛錬所のリズム訓練で上がるレベル)。HPと攻撃が+8%/Lv・最大Lv10=+80% */
+const TR_MAX=10,TR_COST=10;/* 上限Lv / 1回の訓練で使う🔧鍛錬素材 */
+const TR_NEED=lv=>100+60*lv;/* そのLvから次へ上がるのに必要な経験 */
+const hLv=id=>clamp((META.hlv&&META.hlv[id])||0,0,TR_MAX);
+const hBoost=id=>1+.08*hLv(id);
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
 /* 英雄をUNITSの末尾に「特別な兵科」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=兵科の数え上げには U_N を使うこと
@@ -2450,7 +2484,7 @@ function heroDeploy(C){
  if(!C||C.dead||C.hUi<0||C.hOut!==0)return false;
  if(C.units.length>=MAXU){if(C.isMe)toast('⚠ 部隊上限('+MAXU+'体)! 空きを作ってから',true);return false;}
  const U=UNITS[C.hUi],H=heroAt(C.hUi);if(!U||!H)return false;
- const lvM=1+.1*(C.uLv||0);/* 部隊レベルは英雄にも乗る */
+ const lvM=(1+.1*(C.uLv||0))*hBoost(H.id);/* 部隊レベル+🏋鍛錬レベルが乗る */
  const hp0=Math.round(U.hp*lvM);
  C.units.push({eid:EID++,ui:C.hUi,own:C.gi||0,hro:1,am:lvM,d:PLEN-70,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
  C.hOut=1;C.hCg=0;
@@ -4004,7 +4038,12 @@ function backTitle(){
 }
 /* ---- 研究所UI ---- */
 function updLabBtn(){const e=$('lab-pts');if(e)e.textContent='🧬'+fmt(META.pts);
- const g=$('gem-cnt');if(g)g.textContent='💎'+(META.gem||0);}
+ const g=$('gem-cnt');if(g)g.textContent='💎'+(META.gem||0);
+ refreshTrainBtn();}
+/* 🏋鍛錬所は研究所で解放するまでタイトルに出さない */
+function refreshTrainBtn(){const b=$('bt-train');if(!b||!b.style)return;
+ b.style.display=(META.tr0||DEV)?'block':'none';
+ const m=$('tr-mat');if(m)m.textContent='🔧'+fmt(META.hmat||0);}
 function renderStkSeg(){
  const w=$('seg-stk');if(!w||!w.querySelectorAll)return;
  w.innerHTML=META.st.map(k=>`<button class="btn sm ${META.eq===k?'sel':''}" data-stk="${k}">${STRIKES[k].ic}${STRIKES[k].n}</button>`).join('');
@@ -4063,6 +4102,7 @@ function renderLab(){
  if((META.py0||0)<5)items.push({cat:'eco',k:'py0',t:'💰 撃破報酬+6% (Lv'+(META.py0||0)+'/5)',d:'ゾンビを倒した時の⚙️が増える(全ウェーブで効く)',p:LAB_PY0(META.py0||0)});
  if((META.ec0||0)<5)items.push({cat:'eco',k:'ec0',t:'🏭 廃品工房の産出+12% (Lv'+(META.ec0||0)+'/5)',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({cat:'eco',k:'cd0',t:'⏱ 出撃の待ち時間-6% (Lv'+(META.cd0||0)+'/5)',d:'部隊を続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
+ if(!(META.tr0||0))items.push({cat:'new',k:'tr0',t:'🏋 ヒーロー鍛錬所',d:'タイトルに鍛錬所が開く。🔧鍛錬素材でリズム訓練して英雄のHPと攻撃を伸ばせる(最大Lv10=+80%)',p:300});
  if(!(META.ec1||0))items.push({cat:'start',k:'ec1',t:'🏭 廃品工房を建てた状態で開始',d:'工房エリアに1基が最初から建っている(⚙️の立ち上がりが早い)',p:220});
  /* ---- 系統強化(研究所で解放した新型にも効く) ---- */
  for(const L of TLINE){const lv=(META.tl&&META.tl[L.k])||0;
@@ -4103,10 +4143,10 @@ function renderLab(){
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);}
   else if(it.k==='am'){META.am=(META.am||0)+1;META.amEq=META.am;}
   else if(it.k==='sc0')META.sc0++;else if(it.k==='hp0')META.hp0++;
-  else if(['up0','uu0','sl0','py0','ec0','cd0','ec1'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+1;
+  else if(['up0','uu0','sl0','py0','ec0','cd0','ec1','tr0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+1;
   else if(it.k==='tl'){if(!META.tl)META.tl={};META.tl[it.id]=(META.tl[it.id]||0)+1;}
   else if(it.k==='ul'){if(!META.ul)META.ul={};META.ul[it.id]=(META.ul[it.id]||0)+1;}
-  saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();};});
+  saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();};});
  if(scEl)scEl.scrollTop=keepTop;
  if(pnl)pnl.scrollTop=keepTop2;
 }
@@ -4250,10 +4290,225 @@ function renderGacha(res){
   +'</div></div>';
 }
 $('bt-gacha').onclick=()=>{renderGacha(null);$('md-gacha').classList.add('on');};
-$('bt-gacha-close').onclick=()=>{$('md-gacha').classList.remove('on');try{renderHeroSeg();}catch(e){}};
+$('bt-gacha-close').onclick=()=>{$('md-gacha').classList.remove('on');try{renderHeroSeg();refreshTrainBtn();}catch(e){}};
 $('gc-1').onclick=()=>gcPull(1);
 $('gc-10').onclick=()=>gcPull(10);
 $('gc-rate').onclick=()=>{$('gc-res').innerHTML=gcRateHtml();};
+/* ============ 🏋 ヒーロー鍛錬所(タイミング&リズムの訓練) ============
+   ユーザー決定(2026-07-25): 指のスワイプ ←/まえ(↑)/→ の3方向だけで遊ぶ。
+   奥から飛んでくる玉は**描いてある矢印の向きへスワイプしてよける**、まえ(↑)で訓練ダミーを斬る。
+   スコアがそのまま経験値になり、Lvが上がると英雄のHPと攻撃が+8%ずつ伸びる(最大Lv10)。
+   ⚠鍛錬所はタイトル側の施設(戦場の建設マスではない)=試合を止めずに済むため。 */
+const TR_LEAD=1.55;/* ノートが見えてから判定ラインに届くまでの秒数 */
+const TR_N=46;/* 1回に流れるノート数 */
+const TR_PERF=.085,TR_GOOD=.20;/* 判定の幅(秒) */
+let TR=null,TRSEL='',trSw=null;
+const trcv=$('trcv'),trx=(trcv&&trcv.getContext)?trcv.getContext('2d'):null;
+function renderTrain(){
+ const box=$('tr-list');if(!box)return;
+ const mt=$('tr-mat2');if(mt)mt.textContent='🔧 '+fmt(META.hmat||0);
+ const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));
+ if(!own.length){box.innerHTML='<div class="labdone">まだ英雄がいない。💎英雄召集で仲間にしよう</div>';return;}
+ if(!own.some(h=>h.id===TRSEL))TRSEL=own[0].id;
+ box.innerHTML=own.map(h=>{
+  const lv=hLv(h.id),xp=(META.hxp&&META.hxp[h.id])||0,nd=TR_NEED(lv),bo=hBoost(h.id),U=UNITS[hUiOf(h.id)];
+  const pct=lv>=TR_MAX?100:Math.round(clamp(xp/nd,0,1)*100);
+  return '<div class="trrow'+(TRSEL===h.id?' sel':'')+'" data-tr="'+h.id+'"><div class="tn">'
+   +RK_S[h.rk]+' '+h.n+' <span class="ts">鍛錬Lv'+lv+'/'+TR_MAX+(lv?' (+'+Math.round((bo-1)*100)+'%)':'')+'</span>'
+   +'<div class="ts">HP'+Math.round(U.hp*bo)+' ／ 攻撃'+Math.round(U.atk*bo)+' ／ 必殺『'+h.ult+'』</div>'
+   +'<div class="tg"><i style="width:'+pct+'%"></i></div>'
+   +'<div class="ts">'+(lv>=TR_MAX?'鍛錬しつくした':(xp+' / '+nd))+'</div></div></div>';
+ }).join('')+'<button class="btn red" id="bt-tr-go" style="width:100%;margin-top:8px">🏋 訓練する 🔧'+TR_COST+'</button>';
+ box.querySelectorAll('[data-tr]').forEach(e=>{e.onclick=()=>{TRSEL=e.dataset.tr;renderTrain();};});
+ const g=$('bt-tr-go');
+ if(g){g.disabled=!DEV&&(META.hmat||0)<TR_COST;g.onclick=()=>trainStart(TRSEL);}
+}
+function trainStart(hid){
+ const h=heroOf(hid);if(!h)return;
+ if(!DEV&&(META.hmat||0)<TR_COST){toast('🔧'+TR_COST+' 必要(所持 '+(META.hmat||0)+') — 英雄召集の重複で貯まる',true);return;}
+ META.hmat=Math.max(0,(META.hmat||0)-TR_COST);saveMeta();
+ ensureAC();
+ TR={hid,t:0,len:0,score:0,combo:0,best:0,pf:0,gd:0,ms:0,notes:[],bi:0,done:false,res:null,
+  jl:'',jc:'#fff',jt:0,shake:0,swing:0,duckT:0,duckD:0,hitT:0};
+ let tt=TR_LEAD+.9,last=9;
+ for(let i=0;i<TR_N;i++){
+  let d=0;for(let g=0;g<5;g++){d=[-1,0,1][ri(0,2)];if(d!==last)break;}/* 同じ向きが続きすぎないように */
+  last=d;TR.notes.push({t:tt,d,hit:0});
+  tt+=1.02-.60*(i/(TR_N-1));/* だんだん詰まる(1.02秒 → 0.42秒) */
+ }
+ TR.len=tt+1.3;
+ $('md-train').classList.remove('on');
+ show('train');
+}
+function trJudge(s,c){if(TR){TR.jl=s;TR.jc=c;TR.jt=.55;}}
+/* スワイプ1回ぶんの判定。d: -1=← / 0=まえ(↑) / 1=→ */
+function trainInput(d){
+ if(!TR||TR.done||d==null)return;
+ let best=null,bd=9;
+ for(const n of TR.notes){if(n.hit)continue;const dt=Math.abs(n.t-TR.t);if(dt<bd&&dt<=TR_GOOD){bd=dt;best=n;}}
+ if(!best){TR.combo=0;trJudge('空振り','#b9b0a0');return;}
+ if(best.d!==d){best.hit=2;TR.ms++;TR.combo=0;TR.shake=.18;trJudge('ミス','#ff8a6a');sfx.splat&&sfx.splat();return;}
+ const perf=bd<=TR_PERF,mul=1+Math.min(1,Math.floor(TR.combo/10)*.1);
+ best.hit=1;TR.score+=Math.round((perf?100:50)*mul);
+ TR.combo++;if(TR.combo>TR.best)TR.best=TR.combo;
+ if(perf)TR.pf++;else TR.gd++;
+ if(d===0){TR.swing=.24;TR.hitT=.2;beep(780,1150,.07,'square',.07);}
+ else{TR.duckT=.26;TR.duckD=d;beep(520,760,.06,'triangle',.06);}
+ trJudge(perf?'PERFECT!':'GOOD',perf?'#ffd23d':'#b7e07a');
+}
+function trainEnd(){
+ if(!TR||TR.done)return;
+ TR.done=true;
+ const gain=TR.score;
+ let lv=hLv(TR.hid),xp=((META.hxp&&META.hxp[TR.hid])||0)+gain,up=0;
+ while(lv<TR_MAX&&xp>=TR_NEED(lv)){xp-=TR_NEED(lv);lv++;up++;}
+ if(lv>=TR_MAX)xp=0;
+ if(!META.hlv)META.hlv={};if(!META.hxp)META.hxp={};
+ META.hlv[TR.hid]=lv;META.hxp[TR.hid]=xp;
+ saveMeta();
+ TR.res={gain,lv,up,xp,need:TR_NEED(lv)};
+ if(up)sfx.win&&sfx.win();else sfx.clearJ&&sfx.clearJ();
+}
+function trainBack(){TR=null;trSw=null;show('title');updLabBtn();renderTrain();$('md-train').classList.add('on');}
+function trainStep(dt){
+ if(!TR)return;
+ if(!TR.done){
+  TR.t+=dt;
+  /* 拍の刻み(リズムに乗れるように、ノートが判定ラインに来る瞬間に小さく鳴らす) */
+  while(TR.bi<TR.notes.length&&TR.t>=TR.notes[TR.bi].t){beep(300,300,.03,'sine',.03);TR.bi++;}
+  for(const n of TR.notes)if(!n.hit&&n.t<TR.t-TR_GOOD){n.hit=2;TR.ms++;TR.combo=0;TR.shake=.16;trJudge('ミス','#ff8a6a');}
+  if(TR.t>=TR.len)trainEnd();
+ }
+ TR.jt=Math.max(0,TR.jt-dt);TR.shake=Math.max(0,TR.shake-dt);
+ TR.swing=Math.max(0,TR.swing-dt);TR.duckT=Math.max(0,TR.duckT-dt);TR.hitT=Math.max(0,TR.hitT-dt);
+ trainDraw();
+}
+/* 訓練生(後ろ姿)。⚠戦場の英雄は横向きなので、こちらは訓練画面専用に描き起こしている */
+function drawTrainee(c,x,y,s,col,sw){
+ c.save();c.translate(x,y);c.scale(s,s);c.lineWidth=2.6;c.strokeStyle=INK;
+ c.fillStyle='#3a3128';
+ c.fillRect(-13,-16,10,16);c.strokeRect(-13,-16,10,16);
+ c.fillRect(3,-16,10,16);c.strokeRect(3,-16,10,16);
+ c.fillStyle=col;c.beginPath();c.moveTo(-16,-54);c.lineTo(16,-54);c.lineTo(19,-6);c.lineTo(-19,-6);c.closePath();c.fill();c.stroke();
+ c.fillStyle='#3a3128';c.fillRect(-17,-32,34,5);c.strokeRect(-17,-32,34,5);/* 帯(マントが一枚布に見えないように) */
+ c.fillStyle='#2f3742';/* 両腕 */
+ rr(c,-25,-54,9,22,4);c.fill();c.stroke();rr(c,16,-54,9,22,4);c.fill();c.stroke();
+ rr(c,-20,-58,40,11,4);c.fill();c.stroke();/* 肩 */
+ c.fillStyle='#d9b28a';c.beginPath();c.arc(0,-68,9.5,0,7);c.fill();c.stroke();
+ c.fillStyle=col;rr(c,-10,-75,20,7,3);c.fill();c.stroke();
+ c.save();c.translate(21,-50);c.rotate(-.45-sw*1.5);
+ c.fillStyle='#c9c4b4';c.beginPath();c.moveTo(-3,2);c.lineTo(3,2);c.lineTo(2,-42);c.lineTo(-2,-42);c.closePath();c.fill();c.stroke();
+ c.restore();c.restore();
+}
+function drawDummy(c,x,y,s,hit){
+ c.save();c.translate(x,y);c.scale(s,s);c.lineWidth=2.6;c.strokeStyle=INK;
+ if(hit>0)c.filter='brightness(1.7)';
+ c.fillStyle='#6b5a3a';c.fillRect(-4,-24,8,24);c.strokeRect(-4,-24,8,24);
+ c.fillStyle='#c9a96a';rr(c,-15,-62,30,40,11);c.fill();c.stroke();
+ c.fillStyle='#8a7448';c.fillRect(-15,-52,30,3);c.fillRect(-15,-41,30,3);c.fillRect(-15,-30,30,3);
+ c.fillStyle='#c9a96a';c.beginPath();c.arc(0,-70,10,0,7);c.fill();c.stroke();
+ c.fillStyle='#C1502E';c.beginPath();c.arc(0,-45,6.5,0,7);c.fill();c.stroke();
+ c.restore();
+}
+function trainDraw(){
+ if(!TR||!trcv||!trx||!trcv.getBoundingClientRect)return;
+ const r=trcv.getBoundingClientRect(),w=Math.max(240,Math.round(r.width)),h=Math.max(180,Math.round(r.height));
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ if(trcv.width!==Math.round(w*dpr)){trcv.width=Math.round(w*dpr);trcv.height=Math.round(h*dpr);}
+ const c=trx;if(!c.setTransform)return;
+ c.setTransform(dpr,0,0,dpr,0,0);
+ const sk=TR.shake>0?(Math.random()-.5)*10*TR.shake:0;
+ c.save();c.translate(sk,0);
+ const FAR=h*.30,LINE=h*.78,H=heroOf(TR.hid)||HEROES[0];
+ /* 背景: 上=道場の壁 / 下=床 */
+ c.fillStyle='#231e18';c.fillRect(-20,0,w+40,h);
+ c.fillStyle='#3a3128';c.beginPath();c.moveTo(w*.5-w*.10,FAR-10);c.lineTo(w*.5+w*.10,FAR-10);c.lineTo(w*1.05,h);c.lineTo(-w*.05,h);c.closePath();c.fill();
+ c.strokeStyle='rgba(242,236,220,.10)';c.lineWidth=2;
+ for(const d of [-1,0,1]){c.beginPath();c.moveTo(w*.5+d*w*.055,FAR-10);c.lineTo(w*.5+d*w*.30,h);c.stroke();}
+ /* 訓練ダミー(奥) */
+ drawDummy(c,w*.5,FAR,Math.min(1.5,h/300),TR.hitT);
+ /* 判定ライン */
+ c.strokeStyle='rgba(255,210,61,.85)';c.lineWidth=4;
+ c.beginPath();c.moveTo(w*.5-w*.36,LINE);c.lineTo(w*.5+w*.36,LINE);c.stroke();
+ /* ノート(奥の物から先に描く=手前が上に来る) */
+ const list=TR.notes.map(n=>({n,p:1-(n.t-TR.t)/TR_LEAD})).filter(o=>o.p>-.05&&o.p<1.25&&o.n.hit!==1)
+  .sort((a,b)=>a.p-b.p);
+ for(const o of list){
+  const n=o.n,p=clamp(o.p,0,1.25);
+  const x=w*.5+n.d*(w*.055+(w*.30-w*.055)*p),y=FAR-10+(LINE-FAR+10)*p;
+  const s=(.30+.70*p)*Math.min(1.5,h/300);
+  const al=n.hit===2?.28:1;
+  c.save();c.globalAlpha=al;c.translate(x,y);c.scale(s,s);c.lineWidth=2.6;c.strokeStyle=INK;
+  if(n.d===0){/* まえ(↑)=ダミーを斬るノート */
+   c.fillStyle='#ffd23d';c.beginPath();c.moveTo(0,-26);c.lineTo(20,0);c.lineTo(0,26);c.lineTo(-20,0);c.closePath();c.fill();c.stroke();
+   c.fillStyle=INK;c.font='900 22px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('↑',0,1);
+  }else{/* 玉=矢印の向きへスワイプしてよける */
+   c.fillStyle='#4a4034';c.beginPath();c.arc(0,0,20,0,7);c.fill();c.stroke();
+   c.fillStyle='#C1502E';c.beginPath();c.arc(-6,-6,7,0,7);c.fill();
+   c.fillStyle='#F2ECDC';c.font='900 22px sans-serif';c.textAlign='center';c.textBaseline='middle';
+   c.fillText(n.d<0?'←':'→',0,1);
+  }
+  c.restore();
+ }
+ /* 訓練生(手前)。⚠大きく描くと画面の真ん中を塞いでノートが見えなくなるので、
+    頭が判定ラインに来るくらいの大きさ・位置に抑える */
+ {const dk=TR.duckT>0?TR.duckD*(TR.duckT/.26)*w*.13:0;
+  drawTrainee(c,w*.5+dk,LINE+h*.20,Math.min(1.1,h/340),H.c,TR.swing>0?TR.swing/.24:0);}
+ c.restore();
+ /* HUD */
+ c.textAlign='left';c.textBaseline='alphabetic';
+ c.fillStyle='#F2ECDC';c.font='900 20px sans-serif';
+ c.fillText('SCORE '+TR.score,14,30);
+ c.font='900 14px sans-serif';c.fillStyle='#c9c4b4';
+ c.fillText(RK_S[H.rk]+' '+H.n+' — 鍛錬Lv'+hLv(TR.hid),14,50);
+ /* ⚠コンボは右上に出すと「✕やめる」の下に隠れる。スコアの下(左)に出すこと */
+ if(TR.combo>=2){c.fillStyle='#ffd23d';c.font='900 20px sans-serif';c.textAlign='left';c.fillText(TR.combo+' COMBO',14,74);}
+ /* 残りの帯 */
+ {const p=clamp(TR.t/TR.len,0,1);c.fillStyle='rgba(255,255,255,.18)';c.fillRect(0,h-6,w,6);
+  c.fillStyle='#7ba33f';c.fillRect(0,h-6,w*p,6);}
+ /* ⚠判定の文字は訓練生の頭に被らない高さに出す */
+ if(TR.jt>0&&TR.jl){c.globalAlpha=clamp(TR.jt/.55,0,1);c.fillStyle=TR.jc;c.font='900 28px sans-serif';c.textAlign='center';
+  c.fillText(TR.jl,w*.5,LINE-h*.26);c.globalAlpha=1;}
+ if(TR.done&&TR.res){
+  const R=TR.res;
+  c.fillStyle='rgba(20,16,12,.86)';c.fillRect(0,0,w,h);
+  c.textAlign='center';c.fillStyle='#F2ECDC';c.font='900 26px sans-serif';
+  c.fillText('訓練おわり!',w*.5,h*.24);
+  c.font='900 20px sans-serif';c.fillStyle='#ffd23d';
+  c.fillText('SCORE '+R.gain+' → 経験値 +'+R.gain,w*.5,h*.38);
+  c.font='900 15px sans-serif';c.fillStyle='#c9c4b4';
+  c.fillText('PERFECT '+TR.pf+' ／ GOOD '+TR.gd+' ／ ミス '+TR.ms+' ／ 最大コンボ '+TR.best,w*.5,h*.50);
+  c.font='900 19px sans-serif';c.fillStyle=R.up?'#b7e07a':'#F2ECDC';
+  c.fillText(R.up?(H.n+' 鍛錬Lv'+R.lv+' に上がった! (+'+Math.round(R.up*8)+'%)')
+   :(H.n+' 鍛錬Lv'+R.lv+'  次まで '+Math.max(0,R.need-R.xp)),w*.5,h*.62);
+  c.font='900 15px sans-serif';c.fillStyle='#c9c4b4';
+  c.fillText('画面をタップして鍛錬所へもどる',w*.5,h*.78);
+ }
+}
+if(trcv&&trcv.addEventListener){
+ trcv.addEventListener('pointerdown',e=>{if(TR&&!TR.done)trSw={x:e.clientX,y:e.clientY};});
+ trcv.addEventListener('pointerup',e=>{
+  if(!TR)return;
+  if(TR.done){trainBack();return;}
+  if(!trSw)return;
+  const dx=e.clientX-trSw.x,dy=e.clientY-trSw.y;trSw=null;
+  if(Math.hypot(dx,dy)<24)return;/* 短すぎる動きはスワイプにしない */
+  if(Math.abs(dx)>Math.abs(dy))trainInput(dx<0?-1:1);
+  else if(dy<0)trainInput(0);
+ });
+ trcv.addEventListener('pointercancel',()=>{trSw=null;});
+}
+/* PCでの確認用: 矢印キーでも同じ入力ができる */
+try{window.addEventListener('keydown',e=>{
+ if(SCR!=='train'||!TR)return;
+ if(TR.done){trainBack();return;}
+ if(e.key==='ArrowLeft')trainInput(-1);
+ else if(e.key==='ArrowRight')trainInput(1);
+ else if(e.key==='ArrowUp')trainInput(0);
+});}catch(e){}
+$('bt-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
+$('bt-train-close').onclick=()=>$('md-train').classList.remove('on');
+$('trquit').onclick=()=>{if(TR&&!TR.done)toast('🔧'+TR_COST+' は戻らない');trainBack();};
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
 $('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
 /* 難易度は「1つ下をクリアするまで押せない」。未解放は🔒つきで無効にする(2026-07-25) */
@@ -4545,7 +4800,7 @@ $('bt-join').onclick=()=>{ensureAC();joinRoom();};
 $('bt-lobby-start').onclick=hostStart;
 $('bt-lobby-back').onclick=backTitle;
 /* ============ メインループ・起動 ============ */
-makeThumbs();paradeInit();
+makeThumbs();paradeInit();updLabBtn();/* 🏋鍛錬所ボタンの表示/💎🔧の残数を起動時に合わせる */
 if(MOBILE&&!STANDALONE)$('pwahint').style.display='block';
 let last=performance.now();
 function loop(now){
@@ -4572,6 +4827,7 @@ function loopBody(now){
   drawMinis();
  }
  if(SCR==='title')paradeStep(TT);
+ if(SCR==='train')trainStep(dt0);
  hudT-=dt0;
  if(hudT<=0&&gameActive){hudT=.12;updHUD();minisUpd();
   if($('interv').classList.contains('on')){
