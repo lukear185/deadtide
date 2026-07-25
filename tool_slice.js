@@ -28,7 +28,9 @@ if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const ext=path.extname(SRC).slice(1).toLowerCase();
 const mime=ext==='jpg'?'jpeg':ext;
 const dataUrl='data:image/'+mime+';base64,'+fs.readFileSync(SRC).toString('base64');
-const CFG={bg:opt('bg',''),tol:+opt('tol',30),gap:+opt('gap',26),size:+opt('size',512),pad:+opt('pad',.06)};
+/* --rect = 正方形に整えず、元の縦横比のまま切り出す(枠=9スライス用はこちら) */
+const CFG={bg:opt('bg',''),tol:+opt('tol',30),gap:+opt('gap',26),size:+opt('size',512),pad:+opt('pad',.06),
+ rect:A.indexOf('--rect')>=0};
 
 const page=`<!doctype html><meta charset="utf-8"><body><pre id="o"></pre><script>
 const CFG=${JSON.stringify(CFG)};
@@ -100,18 +102,24 @@ function run(){
  for(const r of rows){r.list.sort((a,b)=>(a.x0+a.x1)-(b.x0+b.x1));for(const b of r.list)out.push(b);}
  /* 正方形に切って書き出す */
  const S=CFG.size,res=[];
- const t=document.createElement('canvas');t.width=S;t.height=S;
- const tc=t.getContext('2d');
+ const t=document.createElement('canvas');
+ const tc=t.getContext('2d',{willReadFrequently:true});
  for(const b of out){
-  const bw=b.x1-b.x0+1,bh=b.y1-b.y0+1,side=Math.max(bw,bh)*(1+CFG.pad*2);
+  const bw=b.x1-b.x0+1,bh=b.y1-b.y0+1;
+  /* 枠(--rect)は縦横比を保ったまま、絵のある範囲ぴったりに切る。
+     ⚠正方形に整えると9スライスの角の位置がずれて使えない */
+  const sw=CFG.rect?bw*(1+CFG.pad*2):Math.max(bw,bh)*(1+CFG.pad*2);
+  const sh=CFG.rect?bh*(1+CFG.pad*2):sw;
+  const S2=CFG.rect?Math.round(S*(sw/Math.max(sw,sh))):S,S3=CFG.rect?Math.round(S*(sh/Math.max(sw,sh))):S;
+  if(t.width!==S2||t.height!==S3){t.width=S2;t.height=S3;}
   const cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;
-  tc.clearRect(0,0,S,S);
+  tc.clearRect(0,0,S2,S3);
   tc.imageSmoothingQuality='high';
-  tc.drawImage(cv,cx-side/2,cy-side/2,side,side,0,0,S,S);
+  tc.drawImage(cv,cx-sw/2,cy-sh/2,sw,sh,0,0,S2,S3);
   /* 背景を抜いて透過にする(元が透過PNGならそのまま) */
   if(!anyAlpha){
-   const id=tc.getImageData(0,0,S,S),q=id.data;
-   for(let i=0;i<S*S;i++){
+   const id=tc.getImageData(0,0,t.width,t.height),q=id.data;
+   for(let i=0;i<t.width*t.height;i++){
     const dr=q[i*4]-bg[0],dg=q[i*4+1]-bg[1],db=q[i*4+2]-bg[2];
     const dist2=dr*dr+dg*dg+db*db;
     if(dist2<=tol2){q[i*4+3]=0;continue;}

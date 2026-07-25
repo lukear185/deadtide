@@ -11,6 +11,8 @@ const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_p
 const A=process.argv.slice(2);
 const opt=(k,d)=>{const m=A.find(s=>s.startsWith('--'+k+'='));return m?m.slice(k.length+3):d;};
 const SIZE=+opt('size',96),DRY=A.indexOf('--dry')>=0,NOPAL=A.indexOf('--nopal')>=0;
+/* 枠(fr-)は引き伸ばして使うのでアイコンより解像度が要る */
+const FRSIZE=+opt('frsize',256);
 /* ゲームの配色。⚠AI生成の絵は「なめらかな陰影+数百色」で、これが一番のAI臭の元。
    縮小したあとに全ピクセルをこの色のどれかへ寄せる(減色)と、
    グラデーションが消えて全アイコンの色調が揃い、手描きの素材に近い見え方になる。
@@ -38,7 +40,7 @@ if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const srcs=files.map(f=>({n:path.basename(f,'.png'),
  u:'data:image/png;base64,'+fs.readFileSync(path.join(DIR,f)).toString('base64')}));
 const page=`<!doctype html><meta charset="utf-8"><body><pre id="o"></pre><script>
-const SRC=${JSON.stringify(srcs)},SIZE=${SIZE},PAL=${JSON.stringify(PAL)},USEPAL=${NOPAL?'false':'true'};
+const SRC=${JSON.stringify(srcs)},SIZE=${SIZE},FRSIZE=${FRSIZE},PAL=${JSON.stringify(PAL)},USEPAL=${NOPAL?'false':'true'};
 /* 減色: 一番近いパレット色へ寄せる(ディザは掛けない=ベタになるのが狙い) */
 function quantize(c,w,h){
  const id=c.getImageData(0,0,w,h),q=id.data;
@@ -62,7 +64,8 @@ SRC.forEach(function(s){
  im.onload=function(){
   /* 枠(fr-)は縦横比を保ったまま、アイコン(ic-)は正方形に収める */
   const ar=im.naturalWidth/im.naturalHeight;
-  const w=ar>=1?SIZE:Math.round(SIZE*ar),h=ar>=1?Math.round(SIZE/ar):SIZE;
+  const SZ=/^fr-/.test(s.n)?FRSIZE:SIZE;
+  const w=ar>=1?SZ:Math.round(SZ*ar),h=ar>=1?Math.round(SZ/ar):SZ;
   const cv=document.createElement('canvas');cv.width=w;cv.height=h;
   const c=cv.getContext('2d');c.imageSmoothingQuality='high';
   c.drawImage(im,0,0,w,h);
