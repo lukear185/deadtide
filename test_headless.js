@@ -65,7 +65,7 @@ function runPvE(diff,tag,cheat){
  const mins=Math.round(guard*.033/60*10)/10;
  const me=G?G.players[0]:null;
  const won=G&&G.winner===0;
- console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+'/'+STAGE_W+' 結果='+(won?'クリア':'陥落')+' dep0='+dep+' guard='+guard+' ('+mins+'分)');
+ console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+'/'+curW()+' 結果='+(won?'クリア':'陥落')+' dep0='+dep+' guard='+guard+' ('+mins+'分)');
  if(me)console.log('  [キミ] core='+Math.ceil(me.core)+' kills='+me.kills+' twr='+me.towers.filter(t=>t).length+' uUn='+me.uUn+' 回収⚙️='+Math.round(me.enTotal));
  if(!G||!G.over){console.log('FAIL: 終了せず');process.exit(1);}
  if(guard<600){console.log('FAIL: 即終了(PvE勝敗判定バグの疑い)');process.exit(1);}
@@ -132,7 +132,7 @@ function runCoop(tag){
  const mins=Math.round(guard*.033/60*10)/10;
  const F=G?G.players[0]:null,won=G&&G.winner===0;
  const owns=[0,0,0];if(F)for(const u of F.units)owns[u.own||0]++;
- console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+'/'+STAGE_W+' 結果='+(won?'クリア':'陥落')+' dep=['+dep.join(',')+'] 部隊owner内訳=['+owns.join(',')+'] コア='+(F?Math.ceil(F.core)+'/'+F.coreMax:'?')+' ('+mins+'分)');
+ console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+'/'+curW()+' 結果='+(won?'クリア':'陥落')+' dep=['+dep.join(',')+'] 部隊owner内訳=['+owns.join(',')+'] コア='+(F?Math.ceil(F.core)+'/'+F.coreMax:'?')+' ('+mins+'分)');
  if(F)console.log('  各自⚙️=['+G.players.map(P=>Math.round(P.scrap)).join(',')+'] uUn=['+G.players.map(P=>P.uUn).join(',')+'] twr='+F.towers.filter(t=>t).length);
  if(!G||!G.over){console.log('FAIL: 終了せず');process.exit(1);}
  if(guard<600){console.log('FAIL: 即終了(協力の勝敗判定バグの疑い)');process.exit(1);}
@@ -142,7 +142,7 @@ function runCoop(tag){
 }
 /* ---- ステージ2(沈んだ港・海の亡骸)の疎通確認 ---- */
 function runStage2(){
- META.sclr=[1];META.stg=1;
+ META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=1;
  const seen={};
  setDiff=1;startSolo();
  frames(30,.016);
@@ -165,17 +165,17 @@ function runStage2(){
 }
 /* ---- 最終ウェーブのボスが、ステージ専用の特別な1体になっているか ---- */
 function checkFinalBoss(){
- const want=[['ステージ1',0,FIN_ZI,2],['ステージ2',1,FIN2_ZI,2],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF]];
+ const want=[['ステージ1',0,FIN_ZI,4],['ステージ2',1,FIN2_ZI,4],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF]];
  for(const [nm,si,fi,df] of want){
-  META.sclr=[1];META.stg=si;META.nmOK=1;setDiff=df;startSolo();
-  /* 通常のボス波(15)と最終波(20)を作って中身を見る */
+  META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=si;META.nmOK=1;setDiff=df;startSolo();
+  /* 通常のボス波(15)と最終波を作って中身を見る */
   const got=[];
-  for(const w of [15,STAGE_W]){
+  for(const w of [15,20]){
    buildTide(w);
    const b=G.tide.pool.find(e=>e.boss);
    got.push(b?ZOMBIES[b.z.zi].n:'なし');
   }
-  console.log(nm+': WAVE15のボス='+got[0]+' / WAVE'+STAGE_W+'のボス='+got[1]);
+  console.log(nm+': WAVE15のボス='+got[0]+' / 最終WAVE20のボス='+got[1]);
   if(!ZOMBIES[fi]||got[1]!==ZOMBIES[fi].n){console.log('FAIL: 最終ボスが出ていない('+nm+')');process.exit(1);}
   if(got[0]===got[1]){console.log('FAIL: 通常ボスと最終ボスが同じ('+nm+')');process.exit(1);}
   backTitle();
@@ -184,7 +184,7 @@ function checkFinalBoss(){
 }
 /* ---- 🌑ナイトメア(獣プール)を実走: 獣しか出ないか・最終ボスまで描画で例外が出ないか ---- */
 function runNightmare(){
- META.sclr=[1];META.stg=0;META.nmOK=1;setDiff=NM_DIFF;startSolo();
+ META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=0;META.nmOK=1;setDiff=NM_DIFF;startSolo();
  frames(30,.016);
  if(!isNM()){console.log('FAIL: ナイトメアになっていない');process.exit(1);}
  const seen={};
@@ -253,8 +253,39 @@ function checkCryo(){
  z.frzT=0;z.frzCd=1.5;
  me.towers[si].cd=0;campStep(me,.05,G.wave);
  if(z.frzT>0){console.log('FAIL: 凍結耐性(frzCd)が効いていない=永久ロックできてしまう');process.exit(1);}
- console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・解凍直後の再凍結なし OK');
+ /* 同じ敵を凍らせられる回数の上限(初期5・❄冷却回数で最大10) */
+ const tw=me.towers[si],Tc=TOWERS[tw.ti];
+ if(twFrzN(Tc,tw)!==5){console.log('FAIL: 冷却回数の初期値が5でない '+twFrzN(Tc,tw));process.exit(1);}
+ tw.us.f=USTAT_MAX;
+ if(twFrzN(Tc,tw)!==10){console.log('FAIL: 冷却回数を最大まで上げても10にならない '+twFrzN(Tc,tw));process.exit(1);}
+ if(twStats(tw.ti).indexOf('d')>=0){console.log('FAIL: 冷却塔に⚔攻撃の強化が残っている');process.exit(1);}
+ if(twStats(tw.ti).indexOf('f')<0){console.log('FAIL: 冷却塔に❄冷却回数の強化が無い');process.exit(1);}
+ tw.us.f=0;
+ z.frzT=0;z.frzCd=0;z.frzUsed=5;/* 5回使い切った敵はもう凍らない */
+ tw.cd=0;campStep(me,.05,G.wave);
+ if(z.frzT>0){console.log('FAIL: 上限(5回)を超えて凍っている');process.exit(1);}
+ console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・再凍結なし・同じ敵は5回まで(強化で10) OK');
  backTitle();
+}
+/* ---- 難易度の進行(新兵から順に開く)とステージの解放 ---- */
+function checkProgress(){
+ META.sc=[[0,0,0,0,0,0],[0,0,0,0,0,0]];META.sclr=[];
+ if(!diffOK(0,0)){console.log('FAIL: 新兵が選べない');process.exit(1);}
+ if(diffOK(0,1)){console.log('FAIL: 新兵をクリアしていないのに兵長が選べる');process.exit(1);}
+ if(stageOK(1)){console.log('FAIL: ステージ1をナイトメアでクリアしていないのに港が開いている');process.exit(1);}
+ scArr(0)[0]=1;
+ if(!diffOK(0,1)){console.log('FAIL: 新兵クリア後に兵長が開かない');process.exit(1);}
+ for(let d=1;d<=4;d++)scArr(0)[d]=1;
+ if(stageOK(1)){console.log('FAIL: 悪夢どまりで港が開いている(ナイトメアが条件のはず)');process.exit(1);}
+ scArr(0)[NM_DIFF]=1;
+ if(!stageOK(1)){console.log('FAIL: ナイトメアをクリアしても港が開かない');process.exit(1);}
+ /* 難易度ごとの最終ウェーブ */
+ const ws=D5.map(d=>d.w).join('/');
+ if(ws!=='5/7/10/15/20/20'){console.log('FAIL: 難易度ごとの最終ウェーブが違う '+ws);process.exit(1);}
+ /* 港は廃線ハイウェイより重い */
+ if(!((STAGES[1].hpM||1)>(STAGES[0].hpM||1))){console.log('FAIL: 港がステージ1より重くない');process.exit(1);}
+ console.log('進行: 難易度は順に解放(最終W='+ws+')/港はナイトメアクリアで解放/港の重さx'+STAGES[1].hpM+' OK');
+ META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];
 }
 /* ---- レールガン(ビーム砲)が線上の敵を全部巻き込むか ---- */
 function checkBeam(){
@@ -401,6 +432,7 @@ function checkSup(){
  backTitle();
 }
 checkStrikes();
+checkProgress();
 checkSup();
 checkEvo();
 checkHook();
@@ -410,9 +442,9 @@ checkCoil();
 checkFinalBoss();
 runStage2();
 runNightmare();
-runPvE(1,'PvE古参(素の腕前)',false);
-const won=runPvE(1,'PvE古参(強化プレイ)',true);
-if(!won)console.log('WARN: 強化プレイでもステージクリア不可(バランス要確認)');
+runPvE(2,'PvE'+D5[2].n+'(素の腕前・W'+D5[2].w+')',false);
+const won=runPvE(4,'PvE'+D5[4].n+'(強化プレイ・W'+D5[4].w+')',true);
+if(!won)console.log('WARN: 悪夢は強化プレイでもクリア不可(バランス要確認)');
 const cw=runCoop('協力3人(古参)');
 if(!cw)console.log('INFO: 協力3人は陥落(良プレイなら勝てるかは実機で確認)');
 runPvP('対戦三つ巴');
