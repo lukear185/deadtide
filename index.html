@@ -716,7 +716,9 @@ const TOWERS=[
  {id:'sonic',n:'音響砲',cost:420,rng:230,dmg:26,rate:1.1,type:'bullet',multi:5,c:'#a58fd0',dsc:'衝撃波で5体同時'},
  {id:'drone',n:'ドローン基地',cost:500,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
  {id:'arty',n:'重砲台',cost:640,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
- {id:'coil',n:'重テスラ',cost:700,rng:250,dmg:68,rate:1.1,type:'elec',chain:7,c:'#4fa8d9',dsc:'高圧電流が長く連鎖する'},
+ /* arcT=1跳ねにかかる秒数(テスラコイルは0=一瞬で全部)。grow=跳ねるたびの威力倍率・gmax=その上限。
+    ⚠growは指数なので上限が無いと⚡連鎖数Lv5+研究所で青天井になる。必ずgmaxで頭を止めること */
+ {id:'coil',n:'重テスラ',cost:700,rng:250,dmg:15,rate:1.1,type:'elec',chain:7,arcT:.1,grow:1.45,gmax:5,c:'#4fa8d9',dsc:'電流がゆっくり伝わり、跳ねるたびに威力が跳ね上がる(最大5倍)'},
  /* beam=ビームの半幅。type は bullet のまま(弾薬と🔫銃器改良を効かせるため)、撃ち方だけ線状にする */
  {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。線上の敵を全部貫く(装甲貫通)'},
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'},
@@ -1832,7 +1834,7 @@ function bakeUThumb(i){
 let EID=1;
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
  core:50,coreMax:50,scrap:250,unlocked:2,atkLv:0,repairs:0,boosts:0,jams:0,
- towers:SLOTS.map(()=>null),ecoN:1,up:12,upTotal:12,slk:SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0),zombies:[],shells:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
+ towers:SLOTS.map(()=>null),ecoN:1,up:12,upTotal:12,slk:SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0),zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
 const ZHPM=.85;/* ゾンビHP全体倍率 */
@@ -1889,6 +1891,7 @@ function buildTide(wave){
 }
 function resetCampWave(C){
  C.totalWave=0;C.killsWave=0;C.waveDone=false;C.ready=false;C.planned=false;C.pushUses=0;
+ C.arcs=[];/* 前の波の連鎖電撃が残っていると、居なくなった敵を起点に跳ね続ける */
  for(const j of C.inc.jam){const built=C.towers.map((t,i)=>t?i:-1).filter(i=>i>=0);
   if(built.length){const si=built[ri(0,built.length-1)];C.towers[si].jamT=20;}}
  C.inc={sent:[],jam:[]};
@@ -2289,6 +2292,11 @@ function campStep(C,dt,wave){
    dmgZ(C,tg,dm*av,1);
    if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+.25*TL)*av;}
    if(C.isMe&&Math.random()<.12)sfx.thunk();}
+  else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
+    跳ねるたびに威力が grow 倍(gmax 倍で頭打ち)＝群れが長いほど後半が重くなる */
+   const chainN=twChain(T,tw)+TL;
+   C.arcs.push({x:sx,y:sy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
+   if(C.isMe)sfx.zap();}
   else if(T.type==='elec'){const chainN=twChain(T,tw)+TL;
    let cur=tg,hitl=[tg],pts=[[sx,sy],[tg.px,tg.py]];dmgZ(C,cur,dm,1);
    for(let k=1;k<chainN;k++){
@@ -2328,6 +2336,30 @@ function campStep(C,dt,wave){
     if(C.isMe){if(tw.ti===7)sfx.snipe();else if(Math.random()<.45)sfx.shot();}}
   }
  }
+ /* ゆっくり伝わる連鎖電撃(重テスラ)。1跳ねごとに step 秒かけて次の敵へ移り、威力が増えていく */
+ if(!C.arcs)C.arcs=[];
+ for(const a of C.arcs){
+  a.t+=dt;
+  while(!a.dead&&a.t>=a.step&&a.k<a.n){
+   a.t-=a.step;
+   if(a.first){/* 最初の1体は塔から直接 */
+    a.first=0;
+    addFx(C,'zap',a.x,a.y,'',{pts:[[a.x,a.y],[a.cur.px,a.cur.py]],sd:rnd(0,9),wm:1});
+    dmgZ(C,a.cur,a.dm,1);a.k++;continue;}
+   let nx=null,bd=1e9;
+   for(const z of C.zombies){if(z.dead||a.hitl.includes(z))continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<150&&dd<bd){bd=dd;nx=z;}}
+   if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===a.cur)continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<150&&dd<bd){bd=dd;nx=z;}}}
+   if(!nx){a.dead=true;break;}
+   const gm=Math.min(Math.pow(a.grow,a.k),a.gmax);
+   addFx(C,'zap',a.cur.px,a.cur.py,'',{pts:[[a.cur.px,a.cur.py],[nx.px,nx.py]],sd:rnd(0,9),wm:.7+gm*.34});
+   if(FXLV>0)addP(C,2+Math.round(gm),nx.px,nx.py,{sp:60+gm*22,g:40,life:.35,r:2,col:'#cdf1ff'});
+   dmgZ(C,nx,a.dm*gm,1);
+   if(a.hitl.indexOf(nx)<0)a.hitl.push(nx);
+   a.cur=nx;a.k++;
+  }
+  if(a.k>=a.n)a.dead=true;
+ }
+ C.arcs=C.arcs.filter(a=>!a.dead);
  /* 砲弾 */
  for(const sh of C.shells){sh.t+=dt;if(sh.t>=sh.fl){sh.dead=true;
   if(sh.stk){airstrikeHit(C,sh.tx,sh.ty,sh.wave,sh.stk,sh.byMe);continue;}/* 砲撃のロケットが着弾 */
@@ -2890,8 +2922,9 @@ function renderCamp(C,t){
    const seed=(e.sd||0);
    const jag=(i2,amp)=>{const q=Math.sin(seed+i2*3.1+e.t*11)*amp,w2=Math.cos(seed+i2*1.7+e.t*8)*amp;return[q,w2];};
    c.lineCap='round';c.lineJoin='round';
+   const wm=e.wm||1;/* 重テスラは跳ねるほど太くなる=威力が上がったのが見て分かる */
    for(const pass of [[9,'rgba(90,170,255,',.30],[4.5,'rgba(190,235,255,',.75],[1.8,'rgba(255,255,255,',1]]){
-    c.strokeStyle=pass[1]+(k5*pass[2])+')';c.lineWidth=pass[0];
+    c.strokeStyle=pass[1]+(k5*pass[2])+')';c.lineWidth=pass[0]*wm;
     c.beginPath();c.moveTo(ps[0][0],ps[0][1]);
     for(let i2=1;i2<ps.length;i2++){
      const ax=ps[i2-1][0],ay=ps[i2-1][1],bx=ps[i2][0],by=ps[i2][1];

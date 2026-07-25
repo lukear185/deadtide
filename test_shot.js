@@ -31,7 +31,9 @@ const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
 /* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
 const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
-/* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため) */
+/* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため)
+   ⚠発射の瞬間しか出ないエフェクト(電撃の連鎖など)は、ヘッドレスの仮想時間の進み方しだいで
+     写らないことがある。写らなければ w の値を変えて数回撮る。最終確認は実機で。 */
 const TM=/t=([A-Za-z]+)/.exec(OPT),TID=TM?TM[1]:'';
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
@@ -41,13 +43,16 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
  +(ZIDS.length?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
      +'var ids='+JSON.stringify(ZIDS)+';'
+     /* t= でタワーも建てる時は、そのタワーの目の前に詰めて並べる(射程・連鎖の確認用) */
+     +(TID?'var si0=AI_ORDER[0],base=projPath(SLOTS[si0][0],SLOTS[si0][1]);':'var base=0;')
      +'ids.forEach(function(id,k){var zi=ZOMBIES.findIndex(function(q){return q.id===id;});'
-     +'if(zi>=0){var z9=mkZ(zSpec(zi,1,20),PLEN*(.3+k*.18));'
+     +'if(zi>=0){var z9=mkZ(zSpec(zi,1,20),'+(TID?'Math.max(20,base-60+k*45)':'PLEN*(.3+k*.18)')+');'
      +(OPT.indexOf('frz')>=0?'if(k%2===0)z9.frzT=99;':'')/* frz=1体おきに凍結させて見比べる */
      +'me.zombies.push(z9);}});'
      +(TID?('var ti9=TOWERS.findIndex(function(q){return q.id==="'+TID+'";});'
-       +'var si9=AI_ORDER[0];me.scrap=99999;me.unlocked=Math.max(me.unlocked,ti9+1);me.towers[si9]=null;'
-       +'buildTower(me,si9,ti9);'
+       +'var si9=AI_ORDER[0];me.scrap=99999;me.towers[si9]=null;'
+       /* 解放数は建てる瞬間だけ上げて戻す(上げっぱなしにすると解放カード周りで画面が止まる) */
+       +'var pu9=me.unlocked;me.unlocked=ti9+1;buildTower(me,si9,ti9);me.unlocked=pu9;'
        +'setInterval(function(){try{var t9=me.towers[si9];if(t9)t9.cd=0;'
        +'me.zombies.forEach(function(z){z.hp=z.mhp;});}catch(e){}},80);'):'')
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')

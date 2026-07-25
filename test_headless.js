@@ -288,9 +288,40 @@ function checkBeam(){
  console.log('レールガン(ビーム砲): 1発で'+hit+'体を同時に貫通 OK');
  backTitle();
 }
+/* ---- 重テスラ: 連鎖が「時間をかけて」伝わり、跳ねるほど威力が上がるか ---- */
+function checkCoil(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0],ti=TOWERS.findIndex(t=>t.id==='coil'),T=TOWERS[ti];
+ if(ti<0||!T.arcT){console.log('FAIL: 重テスラが「ゆっくり伝わる」設定になっていない');process.exit(1);}
+ const si=AI_ORDER[0];me.scrap=9999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
+ buildTower(me,si,ti);
+ const [sx,sy]=SLOTS[si];
+ me.zombies.length=0;
+ const zs=[];
+ for(let k=0;k<6;k++){const z=mkZ(zSpec(0,1,5),200+k*30);z.hp=z.mhp=1e9;me.zombies.push(z);zs.push(z);}
+ campStep(me,.001,G.wave);/* px/pyを経路から埋める(位置は毎フレーム経路で上書きされるので直接いじらない) */
+ me.towers[si].cd=0;
+ const hp0=zs.map(z=>z.hp);
+ /* 1フレームで全部終わっていないこと=時間をかけて伝わっていること */
+ campStep(me,.02,G.wave);
+ const hitNow=zs.filter((z,i)=>z.hp<hp0[i]).length;
+ if(!me.arcs||!me.arcs.length){console.log('FAIL: 連鎖電撃(arcs)が発生していない');process.exit(1);}
+ if(hitNow>2){console.log('FAIL: 連鎖が一瞬で全部に届いている(遅延していない) '+hitNow+'体');process.exit(1);}
+ for(let k=0;k<80&&me.arcs.length;k++)campStep(me,.02,G.wave);
+ const dmg=zs.map((z,i)=>Math.round(hp0[i]-z.hp));
+ const hit=dmg.filter(d=>d>0);
+ if(hit.length<4){console.log('FAIL: 連鎖が伸びていない('+hit.length+'体) '+dmg.join('/'));process.exit(1);}
+ /* 跳ねる順は経路の形で決まるので、順番ではなく「差」で見る=後半の一撃が初撃の何倍か */
+ const mn=Math.min.apply(null,hit),mx=Math.max.apply(null,hit);
+ if(mx<mn*2.5){console.log('FAIL: 跳ねるほど威力が上がっていない(最大'+mx+' / 最小'+mn+') '+dmg.join('/'));process.exit(1);}
+ console.log('重テスラ: '+hit.length+'体へ順に伝播・被弾量='+dmg.join('/')+' (最大は最小の'+(mx/mn).toFixed(1)+'倍) OK');
+ backTitle();
+}
 checkStrikes();
 checkCryo();
 checkBeam();
+checkCoil();
 checkFinalBoss();
 runStage2();
 runNightmare();
