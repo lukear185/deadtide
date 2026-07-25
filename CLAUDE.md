@@ -184,6 +184,16 @@
 - 演出: addFx(C,kind,…) kind: tr/zap/ring/boom/boomL/spark/splat/blood/txt/dmg/leak。粒は addP(C,n,x,y,opt)。
 - 描画最適化: bakeU/bakeZ→SPRキャッシュ(4コマ)、drawSpr()で描画。特殊状態のみ drawUnit/drawZombie に直接フォールバック。
 
+## 🛠 実機テスト用のDEVモード(`?dev=1`)
+公開URLに **`?dev=1`** を付けて起動すると、実機での動作確認がすぐできる状態になる
+(例: `https://lukear185.github.io/deadtide/?dev=1`)。
+- 🧬研究pt・💎魔石・🔧鍛錬素材が**実質無限**(使ったそばから補充=`devTop()`。`saveMeta()`が通るたびに戻る)
+- ゲーム中の⚙️スクラップ・🔩強化ptも99,999を切ったら補充(HUDの桁が溢れないよう99,999止まり)
+- **全ステージ・全難易度・全英雄が最初から選べる**(`diffOK`/`stageOK`/`renderHeroSeg`)
+- **セーブは別枠**(`dt_meta_dev` / `dt_run_dev`)。⚠普通に遊ぶ時のデータは汚れないので、
+  ここで買った研究所の解放や引いた英雄は**通常モードには持ち越されない**
+- タイトル右上の版数が `v2.0 β 🛠DEV` になる+ゲーム開始時にトーストが出る(付け忘れ/外し忘れ防止)
+
 ## テスト手順(Node.js=`C:\Program Files\nodejs\node.exe`)
 毎回流すもの:
 ```

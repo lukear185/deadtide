@@ -290,7 +290,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <body>
 
 <div class="scr on" id="scr-title">
-  <div class="ver">v2.0 β</div>
+  <div class="ver" id="vertag">v2.0 β</div>
   <div class="logo-wrap">
     <div class="logo-sub">SURVIVORS' LAST STAND</div>
     <div class="logo">DEAD<em>TIDE</em></div>
@@ -555,6 +555,13 @@ const $=id=>document.getElementById(id);
 const MOBILE=(typeof matchMedia==='function')&&matchMedia('(pointer:coarse)').matches;
 let FXLV=2;/* 演出バランス 0=弱 1=中 2=強 */
 try{const v=localStorage.getItem('dt_fx');if(v!=null)FXLV=clamp(+v,0,2);}catch(e){}
+/* 🛠DEVモード(実機テスト用)。URLに ?dev=1 が付いている時だけ有効。
+   🧬研究pt・💎魔石・🔧鍛錬素材・⚙️スクラップ・🔩強化ptが実質無限になり、
+   全ステージ/全難易度/全英雄が最初から選べる。
+   ⚠セーブは別枠(dt_meta_dev / dt_run_dev)にしてあるので、普通に遊ぶ時のデータは汚れない。
+   ⚠METAの読み込みより先に決める必要があるので、宣言はここに置くこと */
+const DEV=(()=>{try{return (location.search||'').indexOf('dev=1')>=0;}catch(e){return false;}})();
+const DEV_INF=99999999;
 /* ============ 永久強化(研究所・ソロ限定ローグライト) ============ */
 const STRIKES={
  air:{n:'エアストライク',ic:'🎯',ch:30,dsc:'一点爆撃+炎上'},
@@ -564,7 +571,8 @@ const STRIKES={
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
 let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:''};
-try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
+const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
+try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
@@ -573,11 +581,16 @@ try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof m
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
  if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
  if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
-function saveMeta(){try{localStorage.setItem('dt_meta',JSON.stringify(META));}catch(e){}}
+/* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
+function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;}
+devTop();
+/* DEVモードだと分かるようにタイトル右上の版数へ印を付ける(付け忘れ/外し忘れ防止) */
+if(DEV)try{const e=document.getElementById('vertag');if(e)e.textContent='v2.0 β 🛠DEV';}catch(e){}
+function saveMeta(){devTop();try{localStorage.setItem(META_KEY,JSON.stringify(META));}catch(e){}}
 /* ============ 中断と再開(ソロ専用) ============
  ウェーブの区切りごとに自動保存する。中断した場合、そのウェーブは最初からやり直しになる。
  敵の位置までは保存しない=「ウェーブ開始直前の状態」に戻す方式。 */
-const RUN_KEY='dt_run';
+const RUN_KEY=DEV?'dt_run_dev':'dt_run';
 function loadRun(){try{const d=JSON.parse(localStorage.getItem(RUN_KEY)||'null');return (d&&d.v===1)?d:null;}catch(e){return null;}}
 function clearRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}try{refreshRunUI();}catch(e){}}
 function saveRun(){
@@ -1169,11 +1182,11 @@ function scArr(si){if(!Array.isArray(META.sc))META.sc=[];
  for(let k=0;k<META.sc.length;k++){if(!Array.isArray(META.sc[k]))META.sc[k]=[0,0,0,0,0,0];
   while(META.sc[k].length<6)META.sc[k].push(0);}
  return META.sc[clamp(si|0,0,STAGES.length-1)];}
-/* 難易度は1つ下をクリアしないと選べない(新兵から順に) */
-const diffOK=(si,d)=>d<=0||!!scArr(si)[d-1];
+/* 難易度は1つ下をクリアしないと選べない(新兵から順に)。⚠🛠DEVモードは全部選べる */
+const diffOK=(si,d)=>DEV||d<=0||!!scArr(si)[d-1];
 /* 次のステージは「前のステージを🌑ナイトメアでクリア」すると開く。
-   ⚠🛠編集モード(?edit=1)だけは全ステージ無条件で開ける=マスの配置作業のため */
-const stageOK=i=>EDIT||i<=0||!!scArr(i-1)[NM_DIFF];
+   ⚠🛠編集モード(?edit=1)と🛠DEVモード(?dev=1)だけは全ステージ無条件で開ける */
+const stageOK=i=>EDIT||DEV||i<=0||!!scArr(i-1)[NM_DIFF];
 /* ============ ルート(loadStageで差し替わる) ============ */
 let PATH=STAGES[0].path;
 const SEG=[];let PLEN=0;
@@ -2542,6 +2555,9 @@ function heroUlt(C,wave){
 }
 function campStep(C,dt,wave){
  if(C.dead)return;
+ /* 🛠DEVモード: 自分の⚙️と🔩を切らさない(実機テストで建てたい物をすぐ建てるため) */
+ /* ⚠HUDの桁が溢れないよう、ゲーム中は99,999止まりにして減ったら補充する */
+ if(DEV&&C.isMe){if(C.scrap<50000)C.scrap=99999;if((C.up||0)<50000)C.up=99999;}
  C.tm+=dt;
  if(C.shake>0)C.shake-=dt;
  if(!C.waveDone)C.charge=Math.min(1,C.charge+dt/((C.stk&&STRIKES[C.stk]?STRIKES[C.stk].ch:30)));
@@ -3946,7 +3962,7 @@ function startSolo(){
  me.coreMax=50+5*(META.hp0||0);me.core=me.coreMax;
  me.stk=META.st.indexOf(META.eq)>=0?META.eq:'air';
  /* 🦸連れて行く英雄(ソロ専用・所持していない英雄が選ばれていたら連れて行かない) */
- me.hUi=(META.hsel&&heroOwned(META.hsel))?hUiOf(META.hsel):-1;
+ me.hUi=(META.hsel&&(DEV||heroOwned(META.hsel)))?hUiOf(META.hsel):-1;
  me.hOut=0;me.hCg=0;me.fallen=[];
  /* 研究所の序盤系ボーナス */
  me.up=me.upTotal=12+6*(META.up0||0);
@@ -3976,6 +3992,7 @@ function startGameUI(others){
  $('ffbtn').style.display='none';$('ffbtn').textContent='⏩ ×1';
  buildMinis(others);show('game');
  if(EDIT){try{edPanel();toast('🛠 マス編集モード: マスを指でドラッグ→📋出力で座標を書き出す',true);}catch(e){}}
+ if(DEV){try{toast('🛠 DEVモード: 🧬💎🔧⚙️🔩が無限・全ステージ/難易度/英雄が選べる(セーブは別枠)',true);}catch(e){}}
 }
 function backTitle(){
  gameActive=false;G=null;PAUSED=false;COOP=false;closeBM();setAim(false);setFlagAim(false);setSpec(-1);
@@ -3996,8 +4013,8 @@ function renderStkSeg(){
 /* 🦸 連れて行く英雄を選ぶ(所持している英雄だけ並べる) */
 function renderHeroSeg(){
  const w=$('seg-hero');if(!w||!w.querySelectorAll)return;
- const own=HEROES.filter(h=>heroOwned(h.id));
- if(META.hsel&&!heroOwned(META.hsel))META.hsel='';
+ const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));/* 🛠DEVは全員選べる */
+ if(!DEV&&META.hsel&&!heroOwned(META.hsel))META.hsel='';
  if(!own.length){w.innerHTML='<span class="note" style="font-size:11px">まだ英雄がいない。💎英雄召集で仲間にしよう</span>';return;}
  w.innerHTML='<button class="btn sm '+(META.hsel?'':'sel')+'" data-h="">連れて行かない</button>'
   +own.map(h=>`<button class="btn sm ${META.hsel===h.id?'sel':''}" data-h="${h.id}" title="必殺技『${h.ult}』— ${h.udsc}">${RK_S[h.rk]}${h.n}</button>`).join('');
