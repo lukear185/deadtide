@@ -268,12 +268,11 @@ function checkBeam(){
  /* 塔から見て同じ方向・別の距離に3体並べる=1発で全部当たるはず */
  const [sx,sy]=SLOTS[si],T=TOWERS[ti];
  me.zombies.length=0;
- const zs=[];
- for(let k=0;k<3;k++){const z=mkZ(zSpec(0,1,5),100+k*40);z.hp=z.mhp=1e9;me.zombies.push(z);zs.push(z);}
+ const zs=[],base=projPath(sx,sy);
+ /* 経路の形に依存しないよう、塔の正面に3体を密着させて並べる(ビーム半幅26に全部入る間隔) */
+ for(let k=0;k<3;k++){const z=mkZ(zSpec(0,1,5),Math.max(20,base-8+k*8));z.hp=z.mhp=1e9;me.zombies.push(z);zs.push(z);}
  campStep(me,.001,G.wave);/* px/pyを経路から埋める */
- /* 塔と1体目を結ぶ線上に残り2体を移動させる(経路の形に依存しないため直接置く) */
  const ang=Math.atan2(zs[0].py-sy,zs[0].px-sx);
- for(let k=1;k<3;k++){zs[k].px=sx+Math.cos(ang)*(120+k*90);zs[k].py=sy+Math.sin(ang)*(120+k*90);}
  const hp0=zs.map(z=>z.hp);
  me.towers[si].cd=0;
  /* 位置を上書きしたまま撃たせる=campStepは位置を再計算してしまうので発射部分だけ直接呼べない。
@@ -369,7 +368,40 @@ function checkEvo(){
  console.log('進化: 同時に'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
  META.uv=[];
 }
+/* ---- 支援施設(タワーとは別軸)が建って、効果が乗るか ---- */
+function checkSup(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0];
+ me.scrap=99999;
+ const sti=TOWERS.findIndex(T=>T.type==='sup');
+ if(sti<0||sti<T_PLAY){console.log('FAIL: 支援施設がTOWERSの末尾に無い');process.exit(1);}
+ /* 施設枠にはタワーが建たない・通常枠には施設が建たない */
+ if(buildTower(me,SUP_BASE,0)){console.log('FAIL: 施設枠に普通のタワーが建った');process.exit(1);}
+ if(buildTower(me,AI_ORDER[0],sti)){console.log('FAIL: 通常枠に支援施設が建った');process.exit(1);}
+ /* 解放チェーンの外=最初から建てられる */
+ if(!buildTower(me,SUP_BASE,sti)){console.log('FAIL: 支援施設が建たない');process.exit(1);}
+ /* 効果が乗るか(管制塔=射程・発電所=間隔・野戦病院=回復) */
+ const ti2=TOWERS.findIndex(T=>T.id==='radar');
+ me.towers[SUP_BASE]=null;buildTower(me,SUP_BASE,ti2);
+ campStep(me,.02,G.wave);
+ if(!(me.supR>1.01)){console.log('FAIL: 管制塔の射程効果が乗っていない supR='+me.supR);process.exit(1);}
+ const ti3=TOWERS.findIndex(T=>T.id==='gen');
+ me.towers[SUP_BASE+1]=null;buildTower(me,SUP_BASE+1,ti3);
+ campStep(me,.02,G.wave);
+ if(!(me.supF<.99)){console.log('FAIL: 発電所の連射効果が乗っていない supF='+me.supF);process.exit(1);}
+ const ti4=TOWERS.findIndex(T=>T.id==='medic');
+ me.towers[SUP_BASE+2]=null;buildTower(me,SUP_BASE+2,ti4);
+ me.uUn=Math.max(me.uUn,1);me.ucd[0]=0;deployUnit(me,0);
+ const u=me.units[0];if(u){u.hp=1;campStep(me,.5,G.wave);
+  if(!(u.hp>1)){console.log('FAIL: 野戦病院が回復していない');process.exit(1);}}
+ /* 研究所には出てこないこと(タワーの解放チェーンにも入らない) */
+ if(metaTowerCap()>T_PLAY){console.log('FAIL: 支援施設が解放チェーンに混ざっている');process.exit(1);}
+ console.log('支援施設: 専用枠のみ・解放不要・射程x'+me.supR.toFixed(2)+'/間隔x'+me.supF.toFixed(2)+'/回復'+me.supH+' OK');
+ backTitle();
+}
 checkStrikes();
+checkSup();
 checkEvo();
 checkHook();
 checkCryo();

@@ -574,7 +574,7 @@ function resumeRun(){
 }
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
-const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;return soloMeta()?BT+clamp(META.nt||0,0,TOWERS.length-BT):BT;};
+const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;return soloMeta()?BT+clamp(META.nt||0,0,TP-BT):BT;};
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;return soloMeta()?BU+clamp(META.nu||0,0,UNITS.length-BU):BU;};
 const LAB_NT=k=>Math.round(250*Math.pow(1.2,k));/* k個目のタワー解放価格 */
 const LAB_NU=k=>Math.round(120*Math.pow(1.14,k));/* k個目の兵科解放価格 */
@@ -725,8 +725,16 @@ const TOWERS=[
     目安は「実戦DPS=届く敵の数ぶん」: 重テスラ92 < レールガン174 < ガトリング225 < プラズマ307 < 要塞砲482 */
  {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:36,rate:.09,type:'bullet',c:'#b0483a',dsc:'単体をひたすら削る弾幕。射程は短い'},
  {id:'plasma',n:'プラズマ砲',cost:820,rng:420,dmg:300,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'最大の爆発範囲で群れを溶かす'},
- {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:150,rate:.7,type:'bullet',multi:4,pierce:1,c:'#8a8f96',dsc:'貫通弾を4体へ同時に叩き込む最終兵器'}
+ {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:150,rate:.7,type:'bullet',multi:4,pierce:1,c:'#8a8f96',dsc:'貫通弾を4体へ同時に叩き込む最終兵器'},
+ /* ===== 支援施設(type:'sup') =====
+    ⚠タワーとは別軸。専用の施設スロットにしか建たず、解放チェーン(unlocked)にも研究所にも出さない。
+    撃たない代わりに「盤面全体の性能」を底上げする。必ず配列の最後に置くこと(T_PLAYで切り分けている) */
+ {id:'radar',n:'管制塔',cost:400,rng:0,dmg:0,rate:0,type:'sup',supR:1.2,c:'#5f8fa3',dsc:'味方タワー全部の射程+20%'},
+ {id:'gen',n:'発電所',cost:520,rng:0,dmg:0,rate:0,type:'sup',supF:.84,c:'#c9a13d',dsc:'味方タワー全部の撃つ間隔-16%'},
+ {id:'medic',n:'野戦病院',cost:460,rng:0,dmg:0,rate:0,type:'sup',supH:16,c:'#b7e07a',dsc:'部隊全員のHPを毎秒16回復する'}
 ];
+const SUP_N=3;/* ↑末尾の支援施設の数 */
+const T_PLAY=TOWERS.length-SUP_N;/* 解放チェーン/研究所に出るタワーの数 */
 const BASE_T=10;/* 通常解放できる基本タワー数(これ以降は🔬研究所で解放) */
 /* 2026-07-24 永井さん指示: ①ショットガン以外0.75倍 → ②さらに全タワー0.75倍(=シ以外0.5625/シ0.75) */
 for(const T of TOWERS){
@@ -738,7 +746,7 @@ const UNLOCK_P=[0,0,200,320,480,700,980,1350,1800,2400,3100,4000,5100,6400,8000,
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]));/* 盤面の強化は⚙️払い */
-const twStats=ti=>TOWERS[ti].type==='eco'?['d','r']:(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
+const twStats=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']:(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
 const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 const twChain=(T,tw)=>T.chain+((tw&&tw.us&&tw.us.c)||0);
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0):0));
@@ -1024,17 +1032,21 @@ const prSend=(zi,cnt)=>Math.ceil(ZOMBIES[zi].bt*3*cnt);
  ⚠建設マスの数は全ステージ22で固定(ECO_BASEが動くと配列の形が崩れるため)。
  マスは「道路の中心線からちょうど95」に道なりの順で置いてある(散らばって見せないため)。 */
 const STAGES=[
+ /* ⚠2026-07-25にステージ1の道を引き直した(ユーザー指示)。
+    ①道を下半分に寄せて、画面中央〜右上に施設用の空きを作る ②拠点を左端(x=80)まで伸ばす
+    ③道の内角には必ず建設マスを置く(slotsの先頭6つが角のマス。コの字の所は真ん中に1つ) */
  {n:'廃線ハイウェイ',sub:'砂に埋もれた最終防衛拠点',zs:0,
-  path:[[1660,150],[1100,150],[1100,420],[1380,420],[1380,650],[760,650],[760,380],[420,380],[420,620],[110,620]],
-  slots:[[1480,245],[1370,245],[1260,245],[1005,210],[1005,320],[1475,370],[1110,515],[1220,515],[1475,480],[1475,590],[1475,700],
-   [1000,555],[890,555],[665,560],[855,450],[720,285],[610,285],[500,285],[325,410],[325,520],[515,520],[530,640]],
-  order:[2,1,4,8,12,16,19,21,6,14,10,17,20,0,11,3,5,7,9,13,15,18],
+  path:[[1660,175],[1360,175],[1360,680],[1100,680],[1100,440],[840,440],[840,680],[580,680],[580,440],[340,440],[340,660],[80,660]],
+  slots:[[1458,273],[1230,582],[970,538],[710,582],[460,538],[242,562],
+   [300,350],[620,350],[750,400],[930,720],[1450,720],[410,340],[480,650],[1200,440],[1460,390],[1460,500],[1460,610],[840,330],[520,300],[190,380],[730,290],[620,240]],
+  order:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
   pal:{g0:'#C4AE84',g1:'#A8925F',tuft:'#8a7d4e',bld:'#8a7a5e',patch:['#6b5a37','#d8c79b']}},
  {n:'沈んだ港',sub:'死潮が運んできた海の亡骸',zs:2,
   path:[[1660,700],[1150,700],[1150,480],[1480,480],[1480,200],[700,200],[700,430],[380,430],[380,660],[110,660]],
-  slots:[[1490,605],[1390,605],[1290,605],[1055,640],[1055,540],[1190,385],[1290,385],[1390,385],[1350,295],[1250,295],[1150,295],
-   [1050,295],[950,295],[850,295],[605,250],[680,525],[580,525],[480,335],[480,525],[380,335],[285,530],[475,630]],
-  order:[1,4,6,9,13,17,20,15,11,18,7,2,21,5,8,12,16,19,0,3,10,14],
+  /* 道は据え置き。マスだけ引き直して、先頭6つを内角のマスにした(2026-07-25) */
+  slots:[[1248,590],[1382,340],[798,298],[602,332],[478,528],[282,562],
+   [290,390],[740,520],[1060,440],[1520,570],[390,330],[480,640],[590,530],[600,210],[800,410],[1050,550],[1050,660],[1360,580],[500,290],[850,510],[670,610],[550,730]],
+  order:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
   pal:{g0:'#9EA6A0',g1:'#75858A',tuft:'#3f6b5e',bld:'#54636e',patch:['#41565c','#c2cbc6']}}
 ];
 let STAGE=0;
@@ -1051,7 +1063,7 @@ function loadStage(si){
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
- SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());
+ SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of SUP_SLOTS)SLOTS.push(e.slice());
  AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
  CORE=PATH[PATH.length-1].slice();
  makeScenery();/* 地面の模様・道路のひび・タイヤ痕を作り直す */
@@ -1066,8 +1078,13 @@ function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0
 let SLOTS=[];
 /* 廃品工房の専用スロット(画面左上・全ステージ共通)。初期1枠・増設で最大3枠 */
 const ECO_SLOTS=[[120,190],[262,190],[404,190]];
+/* 支援施設の専用スロット(画面中央〜右上・全ステージ共通)。タワーとは別軸の建物をここに建てる。
+   ⚠2026-07-25にステージ1の道を下へ寄せて、この場所を空けた */
+const SUP_SLOTS=[[980,310],[1120,310],[1250,310]];
 const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定 */
-const isEcoSlot=si=>si>=ECO_BASE;
+const SUP_BASE=ECO_BASE+ECO_MAX;/* =25。ここから3枠が支援施設 */
+const isEcoSlot=si=>si>=ECO_BASE&&si<SUP_BASE;
+const isSupSlot=si=>si>=SUP_BASE;
 const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
 const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
 const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
@@ -1079,7 +1096,7 @@ const prSlot=n=>Math.round(200*Math.pow(1.3,Math.max(0,n-SLOT0)));
 /* 強化ポイント🔩: ウェーブクリアで入手し、強化専用に使う(建設用の⚙️とは別財布) */
 const wavePts=w=>Math.round(4+w*1.6+w*w*.16);
 const PT='🔩';
-const slotUnlocked=(C,si)=>isEcoSlot(si)?ecoUnlocked(C,si):(C&&C.slk?!!C.slk[si]:SLOT_ORDER.indexOf(si)<SLOT0);
+const slotUnlocked=(C,si)=>isSupSlot(si)?true:isEcoSlot(si)?ecoUnlocked(C,si):(C&&C.slk?!!C.slk[si]:SLOT_ORDER.indexOf(si)<SLOT0);
 const slotCount=C=>{let n=0;for(let i=0;i<ECO_BASE;i++)if(slotUnlocked(C,i))n++;return n;};
 let CORE=[110,620];/* 拠点=経路の終点(loadStageで設定) */
 /* ============ アート ============ */
@@ -1528,6 +1545,32 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  /* 基部 */
  c.fillStyle='#6e6354';c.beginPath();c.arc(0,0,20,0,7);c.fill();c.stroke();
  c.fillStyle=T.c;c.beginPath();c.arc(0,0,14,0,7);c.fill();c.stroke();
+ /* ---- 支援施設(撃たない。砲身の代わりに設備が乗る) ---- */
+ if(tid==='radar'){/* 管制塔: 回るパラボラ */
+  c.fillStyle='#4a5560';rr(c,-7,-26,14,26,4);c.fill();c.stroke();
+  const sw=Math.sin(t*.9)*.5;
+  c.save();c.translate(0,-30);c.rotate(sw);
+  c.fillStyle='#cfe0ea';c.beginPath();c.ellipse(0,0,15,7,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#5f8fa3';c.beginPath();c.ellipse(0,-2,10,4,0,0,7);c.fill();
+  c.restore();
+  c.fillStyle='#8fd0ff';c.globalAlpha=.55+Math.sin(t*4)*.3;c.beginPath();c.arc(0,-40,3.5,0,7);c.fill();c.globalAlpha=1;
+  c.restore();return;}
+ if(tid==='gen'){/* 発電所: 発電機と回る羽根 */
+  c.fillStyle='#7a6a45';rr(c,-16,-22,32,22,5);c.fill();c.stroke();
+  c.fillStyle='#3a3128';rr(c,-11,-17,22,8,3);c.fill();
+  c.save();c.translate(0,-30);c.rotate(t*3.2);
+  c.strokeStyle='#c9a13d';c.lineWidth=4;
+  for(let k=0;k<3;k++){const a=k*2.094;c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*14,Math.sin(a)*14);c.stroke();}
+  c.restore();c.lineWidth=3;c.strokeStyle=INK;
+  c.fillStyle='#ffd23d';c.globalAlpha=.5+Math.sin(t*6)*.35;c.beginPath();c.arc(11,-12,3.2,0,7);c.fill();c.globalAlpha=1;
+  c.restore();return;}
+ if(tid==='medic'){/* 野戦病院: 十字のテント */
+  c.fillStyle='#d8cdb0';c.beginPath();c.moveTo(-20,0);c.lineTo(0,-28);c.lineTo(20,0);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#b7e07a';c.fillRect(-3.5,-20,7,14);c.fillRect(-9,-16.5,18,7);
+  c.strokeStyle=INK;c.strokeRect(-3.5,-20,7,14);
+  c.fillStyle='#8a8f96';c.beginPath();c.arc(-15,-4,4,0,7);c.fill();c.stroke();
+  c.globalAlpha=.45+Math.sin(t*2.4)*.2;c.fillStyle='#b7e07a';c.beginPath();c.arc(0,-16,22,0,7);c.fill();c.globalAlpha=1;
+  c.restore();return;}
  /* ---- 拡張タワー ---- */
  if(tid==='gren'){c.save();c.rotate(ang);c.fillStyle='#585e4c';rr(c,-2,-7,24,14,6);c.fill();c.stroke();
   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(26,0,6,0,7);c.fill();}c.restore();
@@ -2111,10 +2154,13 @@ function dmgU(C,u,d2){
 function buildTower(C,si,ti){
  const T=TOWERS[ti];
  const F=G&&G.coop?G.players[0]:C;
- if(C.dead||F.dead||F.towers[si]||ti>=C.unlocked||C.scrap<T.cost)return false;
- /* 廃品工房は専用スロット専用。逆に専用スロットには工房しか建てられない */
- if(isEcoSlot(si)){if(T.type!=='eco'||!ecoUnlocked(F,si))return false;}
- else if(T.type==='eco'||!slotUnlocked(F,si))return false;
+ if(C.dead||F.dead||F.towers[si]||C.scrap<T.cost)return false;
+ /* 支援施設は解放チェーン(unlocked)の外＝最初から建てられる。それ以外は解放済みの物だけ */
+ if(T.type!=='sup'&&ti>=C.unlocked)return false;
+ /* 廃品工房・支援施設は専用スロット専用。逆に専用スロットにはそれしか建てられない */
+ if(isSupSlot(si)){if(T.type!=='sup')return false;}
+ else if(isEcoSlot(si)){if(T.type!=='eco'||!ecoUnlocked(F,si))return false;}
+ else if(T.type==='eco'||T.type==='sup'||!slotUnlocked(F,si))return false;
  C.scrap-=T.cost;F.towers[si]={ti,us:{d:0,r:0,g:0,c:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:T.cost,own:C.gi||0};
  if(C.isMe)sfx.build();
  addFx(F,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:60,col:'#F2ECDC'});
@@ -2273,22 +2319,31 @@ function campStep(C,dt,wave){
    if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;}else u.back=false;}
  }
  C.units=C.units.filter(u=>!u.dead);
+ /* 支援施設の効果をまとめる(建っている施設ぶんだけ盤面全体が底上げされる) */
+ {let sr=1,sf=1,sh=0;
+  for(let si=SUP_BASE;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.jamT>0)continue;
+   const T=TOWERS[tw.ti];if(!T||T.type!=='sup')continue;
+   if(T.supR)sr*=T.supR;if(T.supF)sf*=T.supF;if(T.supH)sh+=T.supH;}
+  C.supR=sr;C.supF=sf;C.supH=sh;}
+ if(C.supH>0)for(const u of C.units){if(u.dead)continue;
+  if(u.hp<u.mhp){u.hp=Math.min(u.mhp,u.hp+C.supH*dt);if(FXLV===2&&Math.random()<dt*.5)addP(C,1,u.px,u.py-20,{sp:14,up:34,g:-40,life:.7,r:2.2,col:'#b7e07a'});}}
  /* タワー */
  const atkB=1+.08*C.atkLv;
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
+  if(TOWERS[tw.ti]&&TOWERS[tw.ti].type==='sup')continue;/* 施設は撃たない */
   if(tw.jamT>0){tw.jamT-=dt;continue;}
   tw.cd-=dt;if(tw.fireT>0)tw.fireT-=dt;
   const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=twDmgM(tw);
   const aB=G&&G.coop?1+.08*((G.players[tw.own||0]||C).atkLv):atkB;
   if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=Math.round(T.inc*(1+.2*tw.us.d)*metaEco()*(1+.15*tlv('eco')));C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
-  const rng=T.rng*twRngM(tw),r2=rng*rng;
+  const rng=T.rng*twRngM(tw)*(C.supR||1),r2=rng*rng;/* 管制塔ぶんの射程 */
   let tg=null,best=-1;
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const dx=z.px-sx,dy=z.py-sy,ds=dx*dx+dy*dy;if(ds>r2)continue;
    if(T.minr&&ds<T.minr*T.minr)continue;
    const score=T.prio?z.hp:z.d;if(score>best){best=score;tg=z;}}
   if(tg)tw.ang=Math.atan2(tg.py-sy,tg.px-sx);
   if(tw.cd>0||!tg)continue;
-  tw.cd=T.rate*twRateM(tw);tw.fireT=.12;
+  tw.cd=T.rate*twRateM(tw)*(C.supF||1);tw.fireT=.12;/* 発電所ぶんの連射 */
   const AMO=AMMO[T.type==='bullet'?AMI:0];/* 弾薬は実弾タワーにだけ載る */
   const TL=tlv(T.type);/* 系統強化(研究所) */
   const dm=T.dmg*m*aB*AMO.dm*(1+.10*TL);
@@ -2501,6 +2556,9 @@ function cpuTick(C,dt){
  else if(armored>=2&&C.unlocked>4&&cnt[4]+cnt[5]<2)want=C.unlocked>5?5:4;
  else{for(let i=C.unlocked-1;i>=0;i--){if(i===3)continue;if(i===0&&cnt[0]>=3)continue;if(C.scrap>=TOWERS[i].cost*res){want=i;break;}}}
  if(want>=0&&C.scrap>=TOWERS[want].cost*res){
+  /* 支援施設: ⚙️に余裕がある時だけ、空いている施設枠へ1つ建てる(CPUも底上げを取れるように) */
+  if(C.scrap>1400*res)for(let k=0;k<SUP_N;k++){const si=SUP_BASE+k;
+   if(!C.towers[si]){const sti=T_PLAY+((C.gi||0)+k)%SUP_N;if(buildTower(C,si,sti))return;}}
   if(TOWERS[want].type==='eco'){/* 工房は専用スロットへ */
    for(let k=0;k<ECO_MAX;k++){const si=ECO_BASE+k;if(!C.towers[si]&&ecoUnlocked(C,si)){if(buildTower(C,si,want))return;}}
    if(C.ecoN<ECO_MAX&&C.scrap>=prEco(C.ecoN)*res*1.2&&doPurchase(C,'ecoslot',{}))return;
@@ -2813,16 +2871,20 @@ function renderCamp(C,t){
   /* 看板は枠の下に置く(マップ上端が画面上部のHUDに隠れるため) */
   c.fillStyle='rgba(36,31,25,.5)';rr(c,ex0-46,ey0+44,300,26,8);c.fill();
   c.fillStyle='#E8A33D';c.font='900 18px sans-serif';c.textAlign='left';c.fillText('🏭 廃品工房エリア',ex0-38,ey0+63);}
+ /* 支援施設エリアの看板 */
+ {const [sx0,sy0]=SLOTS[SUP_BASE];
+  c.fillStyle='rgba(36,31,25,.5)';rr(c,sx0-46,sy0+44,330,26,8);c.fill();
+  c.fillStyle='#9fdcf5';c.font='900 18px sans-serif';c.textAlign='left';c.fillText('🏗 支援施設エリア',sx0-38,sy0+63);}
  /* スロットとタワー */
  for(let si=0;si<SLOTS.length;si++){const [sx,sy]=SLOTS[si],tw=C.towers[si];
-  const eco=isEcoSlot(si),lock=!slotUnlocked(C,si);
+  const eco=isEcoSlot(si),sup=isSupSlot(si),lock=!slotUnlocked(C,si);
   c.fillStyle='rgba(0,0,0,.18)';rr(c,sx-33,sy-30,66,64,10);c.fill();
-  c.fillStyle=lock?'#54503f':tw?(eco?'#9c8352':'#8d8474'):(eco?'#8a7444':'#7c7466');rr(c,sx-32,sy-32,64,64,10);c.fill();
-  c.strokeStyle=SEL===si?'#E8A33D':(eco?'#b08d4f':INK);c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
+  c.fillStyle=lock?'#54503f':tw?(sup?'#4f6b7a':eco?'#9c8352':'#8d8474'):(sup?'#48606d':eco?'#8a7444':'#7c7466');rr(c,sx-32,sy-32,64,64,10);c.fill();
+  c.strokeStyle=SEL===si?'#E8A33D':(sup?'#7fb6c9':eco?'#b08d4f':INK);c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
   if(lock){c.fillStyle='rgba(20,16,12,.55)';rr(c,sx-32,sy-32,64,64,10);c.fill();
    c.font='900 26px sans-serif';c.textAlign='center';c.fillText('🔒',sx,sy+10);}
   else if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
-   c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(eco?'🏭':'+',sx,sy+12);}
+   c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px sans-serif';c.textAlign='center';c.fillText(sup?'🏗':eco?'🏭':'+',sx,sy+12);}
   else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0});
  }
  if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){const T4=TOWERS[tw.ti],[sxx,syy]=SLOTS[SEL];
@@ -3188,9 +3250,9 @@ function evtToMap(e){const r=cv.getBoundingClientRect();return[((e.clientX-r.lef
 function closeBM(){$('buildmenu').style.display='none';SEL=-1;}
 function openBM(si){
  SEL=si;const m=meV(),bm=$('buildmenu'),tw=(m.towers||[])[si];
- const eSlot=isEcoSlot(si),eN=m.ecoN||1;
+ const eSlot=isEcoSlot(si),sSlot=isSupSlot(si),eN=m.ecoN||1;
  let h='';
- if(!eSlot&&!slotUnlocked(m,si)){/* 未解放の建設スロット=解放メニュー */
+ if(!eSlot&&!sSlot&&!slotUnlocked(m,si)){/* 未解放の建設スロット=解放メニュー */
   const p=prSlot(slotCount(m));
   h=`<div id="bm-title">🔓 建設スロット解放</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">解放した数だけ価格が上がる(現在 ${slotCount(m)}/${ECO_BASE}枠)</div>`+
@@ -3201,9 +3263,13 @@ function openBM(si){
   h=`<div id="bm-title">🏭 工房スロット ${si-ECO_BASE+1}/${ECO_MAX}</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'増設すると廃品工房をもう1基建てられる':'左の枠から順に増設できる'}</div>`+
    `<div class="bm-row"><button class="btn gold sm" id="bm-eco" ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 増設 ⚙️'+fmt(p):'MAX'}</button></div>`;
- }else if(!tw){h='<div id="bm-title">'+(eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div><div class="bm-grid">';
-  for(let i=0;i<TOWERS.length;i++){if(i>=m.unlocked)continue;const T=TOWERS[i];
-   if(eSlot!==(T.type==='eco'))continue;/* 工房スロットには工房のみ・通常スロットには工房以外 */
+ }else if(!tw){h='<div id="bm-title">'+(sSlot?'🏗 支援施設を建設':eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div>'
+   +(sSlot?'<div class="cdsc" style="font-size:12px;margin:2px 0 6px;color:var(--paper)">撃たない代わりに盤面全体を底上げする。解放は不要</div>':'')
+   +'<div class="bm-grid">';
+  for(let i=0;i<TOWERS.length;i++){const T=TOWERS[i];
+   const want=sSlot?'sup':eSlot?'eco':'';
+   if(want){if(T.type!==want)continue;}
+   else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
    h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
   if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">作戦タイムで『廃品工房』を解放すると建てられる</div>';
@@ -3509,7 +3575,7 @@ function renderLab(){
  const pnl=$('md-lab').querySelector('.panel'),keepTop2=(pnl&&pnl.scrollTop)||0;
  $('lab-pts2').textContent='🧬 '+fmt(META.pts)+' pt';
  const items=[];
- if(META.nt<TOWERS.length-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',t:'🗼 新型タワー『'+T.n+'』 ('+(META.nt+1)+'/'+(TOWERS.length-BASE_T)+')',d:T.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NT(META.nt)});}
+ if(META.nt<T_PLAY-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',t:'🗼 新型タワー『'+T.n+'』 ('+(META.nt+1)+'/'+(T_PLAY-BASE_T)+')',d:T.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NT(META.nt)});}
  if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({cat:'new',k:'nu',t:'🤖 新型兵科『'+U.n+'』 ('+(META.nu+1)+'/'+(UNITS.length-BASE_U)+')',d:U.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NU(META.nu)});}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
