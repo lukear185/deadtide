@@ -10,7 +10,21 @@
 const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process');
 const A=process.argv.slice(2);
 const opt=(k,d)=>{const m=A.find(s=>s.startsWith('--'+k+'='));return m?m.slice(k.length+3):d;};
-const SIZE=+opt('size',96),DRY=A.indexOf('--dry')>=0;
+const SIZE=+opt('size',96),DRY=A.indexOf('--dry')>=0,NOPAL=A.indexOf('--nopal')>=0;
+/* ゲームの配色。⚠AI生成の絵は「なめらかな陰影+数百色」で、これが一番のAI臭の元。
+   縮小したあとに全ピクセルをこの色のどれかへ寄せる(減色)と、
+   グラデーションが消えて全アイコンの色調が揃い、手描きの素材に近い見え方になる。
+   --nopal を付けると素の色のまま埋め込む */
+const PAL=[
+ [0x24,0x1f,0x19],[0x3a,0x31,0x28],[0x4a,0x40,0x34],   /* 墨・焦茶 */
+ [0x3f,0x4a,0x54],[0x5c,0x6b,0x78],[0x8a,0x8f,0x96],   /* 鋼 */
+ [0x93,0x38,0x1e],[0xc1,0x50,0x2e],[0xd9,0x78,0x4a],   /* 錆 */
+ [0xc9,0xa1,0x3d],[0xe8,0xa3,0x3d],[0xf0,0xc4,0x73],   /* 琥珀 */
+ [0x6f,0x9c,0x43],[0x8f,0xbf,0x4d],[0xb7,0xe0,0x7a],   /* 毒々しい緑 */
+ [0x6b,0x5a,0x3a],[0xa0,0x83,0x56],[0xc9,0xa9,0x6a],   /* 土・革 */
+ [0x8f,0x6f,0xae],[0xb0,0x7a,0xd0],                    /* 紫 */
+ [0xd8,0xd2,0xc4],[0xe8,0xe0,0xce],[0xf2,0xec,0xdc]    /* 紙 */
+];
 const DIR=path.join(__dirname,'ui_src'),HTML=path.join(__dirname,'index.html');
 /* 資源の5種だけは絵文字から引けるようにする(文字列中の絵文字を画像へ差し替えるため)。
    ⚠画面アイコンやタブは絵文字が重複する(🧬も📖も2用途ある)ので、名前で引く ICN を使うこと */
@@ -23,7 +37,24 @@ if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const srcs=files.map(f=>({n:path.basename(f,'.png'),
  u:'data:image/png;base64,'+fs.readFileSync(path.join(DIR,f)).toString('base64')}));
 const page=`<!doctype html><meta charset="utf-8"><body><pre id="o"></pre><script>
-const SRC=${JSON.stringify(srcs)},SIZE=${SIZE};
+const SRC=${JSON.stringify(srcs)},SIZE=${SIZE},PAL=${JSON.stringify(PAL)},USEPAL=${NOPAL?'false':'true'};
+/* 減色: 一番近いパレット色へ寄せる(ディザは掛けない=ベタになるのが狙い) */
+function quantize(c,w,h){
+ const id=c.getImageData(0,0,w,h),q=id.data;
+ for(let i=0;i<w*h;i++){
+  if(q[i*4+3]<8){q[i*4+3]=0;continue;}
+  const r=q[i*4],g=q[i*4+1],b=q[i*4+2];
+  let bi=0,bd=1e9;
+  for(let k=0;k<PAL.length;k++){
+   const dr=r-PAL[k][0],dg=g-PAL[k][1],db=b-PAL[k][2];
+   /* 目の感度に合わせて緑を重く見る */
+   const d=dr*dr*3+dg*dg*4+db*db*2;
+   if(d<bd){bd=d;bi=k;}
+  }
+  q[i*4]=PAL[bi][0];q[i*4+1]=PAL[bi][1];q[i*4+2]=PAL[bi][2];
+ }
+ c.putImageData(id,0,0);
+}
 let done=0;const out={};
 SRC.forEach(function(s){
  const im=new Image();
@@ -34,6 +65,7 @@ SRC.forEach(function(s){
   const cv=document.createElement('canvas');cv.width=w;cv.height=h;
   const c=cv.getContext('2d');c.imageSmoothingQuality='high';
   c.drawImage(im,0,0,w,h);
+  if(USEPAL)quantize(c,w,h);
   out[s.n]=cv.toDataURL('image/png');
   if(++done===SRC.length)fin();
  };
