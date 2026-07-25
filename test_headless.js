@@ -497,7 +497,7 @@ function checkTwFx(){
   return kinds;
  };
  const want={cryo:['ice','shock'],drone:['drn'],fort:['beam'],sonic:['wave'],
-  shot:['spread'],laser:['beam'],plasma:['pboom'],gat:['tr'],rail:['beam']};
+  shot:['spread'],laser:['beam'],plasma:['pboom'],gat:['tr'],rail:['beam','shock']};
  for(const tid of Object.keys(want)){
   const k=run(tid,tid==='plasma'?140:60);
   for(const w of want[tid])if(!k[w]){
@@ -506,6 +506,27 @@ function checkTwFx(){
   if(['drone','sonic','fort','laser','rail'].indexOf(tid)>=0&&k.tr){
    console.log('FAIL: '+tid+' がまだ汎用の曳光線(tr)を出している');process.exit(1);}
  }
+ /* ---- レールガンの充填(2026-07-26 第67弾) ----
+    撃つ前に tw.chg が 0→1 で溜まり、撃った瞬間に0へ戻ること。ビームは普通より長く残ること */
+ {const ti=TOWERS.findIndex(T=>T.id==='rail');
+  me.units.length=0;me.zombies.length=0;me.fx.length=0;me.dly=[];me.scrap=99999;
+  me.towers[si]=null;const pu=me.unlocked;me.unlocked=ti+1;buildTower(me,si,ti);me.unlocked=pu;
+  const z=mkZ(zSpec(zi,1,20),Math.max(20,base-60));z.hp=z.mhp=1e9;me.zombies.push(z);
+  const tw=me.towers[si];
+  let maxChg=0,fired=0,chgBefore=0,beamLf=0;
+  for(let k=0;k<120;k++){
+   const before=tw.cd;
+   campStep(me,.05,G.wave);
+   maxChg=Math.max(maxChg,tw.chg||0);
+   /* 撃った回(cdが増えた回)の直前に、ちゃんと溜まっていたか */
+   if(tw.cd>before){fired++;if(chgBefore<.5)chgBefore=maxChg;}
+   for(const e of me.fx)if(e.k==='beam')beamLf=Math.max(beamLf,fxLife('beam',e));}
+  me.towers[si]=null;
+  if(!fired){console.log('FAIL: レールガンが1発も撃っていない');process.exit(1);}
+  if(maxChg<.9){console.log('FAIL: レールガンの充填(tw.chg)が溜まりきっていない 最大'+maxChg.toFixed(2));process.exit(1);}
+  if(beamLf<=FX_LIFE.beam){console.log('FAIL: 超電磁砲のビームが普通のビームより長く残っていない '+beamLf);process.exit(1);}
+  if(typeof SFXB!=='undefined'&&!SFXB.railChg){console.log('FAIL: 充填音(railChg)が埋め込まれていない');process.exit(1);}
+  console.log('レールガン: 充填0→'+maxChg.toFixed(2)+'→発射('+fired+'回)・ビームは'+beamLf.toFixed(2)+'秒(普通は'+FX_LIFE.beam+'秒) OK');}
  /* 発射音の使い回しが残っていないこと(要塞砲=重砲台 / 擲弾砲台=迫撃砲 / 冷却塔=凍結爆弾 だった) */
  {const ids=['fort','arty','mortar','gren','cryo','net','plasma','drone','laser','sonic','rail','gat'];
   const seen={};

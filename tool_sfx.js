@@ -78,8 +78,15 @@ const REC=[
                            {f:'Explosion Small Blast Enemy',t:0,d:.30,g:-11,r:1.30,dl:8}]},
  /* --- タワーの種類ごとの音 --- */
  {k:'laser',   f:'UIGlitch_User interface_Glitch_High',t:0, d:.28, g:-6, r:1.25},
- {k:'rail',    d:.42, g:-3, mix:[{f:'AEROJet_Blast Off Clean',t:0,d:.42,g:-5,r:1.55},
-                           {f:'Impact Electric Tonal Deep',t:0,d:.42,g:-6,r:1.15,dl:4}]},
+ /* ⭐レールガンは「きゅいーん」と充填してから撃つ(2026-07-26ユーザー指示)。
+    音を**充填(railChg)**と**発射(rail)**の2本に分け、撃つ RAIL_CHG 秒前から充填音を鳴らす。
+    ⚠充填音は上がっていく系(ArcPowerUp)でないと「きゅいーん」にならない。
+      発射は電気の放電を主役にして、ジェットの抜けと低い胴鳴りを足す=近未来の超電磁砲 */
+ {k:'railChg', d:.60, g:-6, mix:[{f:'ELECArc_ArcPowerUpDesign04',t:0,d:.60,g:-2,r:1.15},
+                           {f:'Shimmer Loop Small Bell Metal Taps',t:0,d:.60,g:-15,r:1.60,dl:60}]},
+ {k:'rail',    d:.95, g:-1, mix:[{f:'ELECArc_ArcDesign15',t:0,d:.95,g:-2,r:.88},
+                           {f:'AEROJet_Blast Off Clean',t:0,d:.80,g:-7,r:1.20,dl:15},
+                           {f:'EffectiveTrailer_Booms_Vol2_214',t:0,d:.95,g:-7,r:.90,dl:30}]},
  /* ⚠プラズマ砲は「水のはじけ」で作っていたので、迫撃砲との違いが出ていなかった(2026-07-26ユーザー指摘)。
     **電気の充填 → 放電 → 低音のバースト** に組み直して、エネルギー兵器だと音だけで分かるようにする */
  {k:'plasma',  d:.70, g:-2, mix:[{f:'ELECArc_ArcPowerUpDesign04',t:0,d:.30,g:-8,r:1.25},
