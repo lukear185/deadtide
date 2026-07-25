@@ -12,7 +12,8 @@ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf-8');
 const BR=['C:/Program Files/Google/Chrome/Application/chrome.exe',
  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
-const js=`var o=[];for(var i=0;i<UNITS.length;i++){var U=UNITS[i];
+/* ⚠英雄(UNITSの末尾・U_N以降)は解放順の対象外なので数えない */
+const js=`var o=[];var N=(typeof U_N!=='undefined')?U_N:UNITS.length;for(var i=0;i<N;i++){var U=UNITS[i];
  o.push([i,U.id,U.n,U.hp,U.atk,U.rate,U.rng,U.aoe||0,U.burn||0,U.multi||1,U.type,U.cost,UNITP[i]||0].join('|'));}
 document.body.insertAdjacentHTML('beforeend','<pre>%%'+o.join(' ## ')+'%%</pre>');`;
 const tmp=path.join(os.tmpdir(),'dt_balance.html');

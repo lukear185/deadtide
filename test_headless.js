@@ -431,6 +431,55 @@ function checkGacha(){
  console.log('ガチャ: 英雄11種(★1x5/★2x3/★3/★4/★5)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
  META.gem=0;META.hero={};META.hmat=0;
 }
+/* ---- 🦸英雄: 出撃(1ゲーム1回)と必殺技11種 ----
+   ⚠必殺技は画面のボタンからしか呼ばれない=普段のテストを素通りするので、ここで11人ぶん直接呼ぶ */
+function checkHero(){
+ if(HERO_I0!==U_N){console.log('FAIL: 英雄がUNITSの末尾(U_N以降)に無い');process.exit(1);}
+ META.stg=0;setDiff=2;META.nu=99;startSolo();
+ if(metaUnitCap()>U_N){console.log('FAIL: 英雄まで兵科として解放できてしまう '+metaUnitCap());process.exit(1);}
+ backTitle();META.nu=0;
+ let dmgN=0;
+ for(const h of HEROES){
+  META.stg=0;setDiff=2;META.hero={};META.hero[h.id]=1;META.hsel=h.id;
+  startSolo();frames(20,.016);
+  const me=G.players[0];
+  if(me.hUi<0||heroAt(me.hUi).id!==h.id){console.log('FAIL: 英雄が装備されていない '+h.id);process.exit(1);}
+  /* 出撃するまで必殺技は溜まらない */
+  me.waveDone=false;campStep(me,1,3);
+  if((me.hCg||0)>0){console.log('FAIL: 出撃前なのに必殺技が溜まる '+h.id);process.exit(1);}
+  if(!heroDeploy(me)){console.log('FAIL: 英雄が出撃できない '+h.id);process.exit(1);}
+  if(heroDeploy(me)){console.log('FAIL: 英雄が2回出撃できてしまう '+h.id);process.exit(1);}
+  const hu=me.units.filter(u=>u.hro)[0];
+  if(!hu){console.log('FAIL: 英雄の実体が居ない '+h.id);process.exit(1);}
+  frames(5,.016);/* 英雄ボタン/描画まわりを1回通す(例外が出ないか) */
+  if(heroUlt(me,5)){console.log('FAIL: チャージ0で必殺技が撃てた '+h.id);process.exit(1);}
+  campStep(me,h.uch,3);
+  if((me.hCg||0)<1){console.log('FAIL: 必殺技が溜まらない '+h.id);process.exit(1);}
+  /* 敵を前に並べて撃つ */
+  me.zombies.length=0;
+  for(let k=0;k<8;k++)me.zombies.push(mkZ(zSpec(0,1,20),Math.max(20,hu.d-40-k*60)));
+  me.core=me.coreMax-20;me.fallen=[{ui:0,am:1,mhp:100,d:hu.d}];
+  campStep(me,.001,5);/* ⚠画面上の座標(px/py)はcampStepでしか入らない=範囲判定の必殺技が空振りする */
+  const snap=()=>[me.zombies.reduce((a,z)=>a+z.hp,0),me.core,me.units.length,
+   me.zombies.reduce((a,z)=>a+(z.frzT||0)+(z.slowT||0),0),me.zombies.reduce((a,z)=>a+z.d,0)];
+  const s0=snap();
+  let ok=false;
+  try{ok=heroUlt(me,5);}catch(e){console.log('FAIL: 必殺技『'+h.ult+'』で例外: '+e.message);process.exit(1);}
+  if(!ok){console.log('FAIL: 必殺技が発動しない '+h.id);process.exit(1);}
+  if((me.hCg||0)!==0){console.log('FAIL: 必殺技のチャージが戻っていない '+h.id);process.exit(1);}
+  const s1=snap();
+  if(s0.every((v,i)=>Math.abs(v-s1[i])<1e-6)){console.log('FAIL: 必殺技『'+h.ult+'』に何の効果も無い');process.exit(1);}
+  if(s1[0]<s0[0])dmgN++;
+  /* 倒れたら二度と出せない */
+  dmgU(me,hu,hu.hp+1);
+  if(me.hOut!==2){console.log('FAIL: 英雄の戦死が記録されない '+h.id);process.exit(1);}
+  if(heroDeploy(me)){console.log('FAIL: 戦死した英雄が再出撃できる '+h.id);process.exit(1);}
+  backTitle();
+ }
+ if(dmgN<8){console.log('FAIL: 敵にダメージを与える必殺技が少なすぎる '+dmgN);process.exit(1);}
+ console.log('英雄: 11人の出撃(1ゲーム1回・戦死したら終わり)と必殺技11種 OK(うち'+dmgN+'種が直接ダメージ)');
+ META.hero={};META.hsel='';
+}
 /* ---- 支援施設2枠(タワーとは別軸)が、解放してから建つか・効果が乗るか ---- */
 function checkSup(){
  META.stg=0;setDiff=2;startSolo();
@@ -472,6 +521,7 @@ function checkSup(){
 checkStrikes();
 checkSup();
 checkGacha();
+checkHero();
 checkProgress();
 checkEvo();
 checkHook();

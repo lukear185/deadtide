@@ -36,6 +36,8 @@ const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
    ⚠発射の瞬間しか出ないエフェクト(電撃の連鎖など)は、ヘッドレスの仮想時間の進み方しだいで
      写らないことがある。写らなければ w の値を変えて数回撮る。最終確認は実機で。 */
 const TM=/t=([A-Za-z]+)/.exec(OPT),TID=TM?TM[1]:'';
+/* 例 hero=hNox = その英雄を出撃させて撮る / hero=all = 英雄11人を経路上に並べて撮る */
+const HM=/hero=([A-Za-z]+)/.exec(OPT),HID=HM?HM[1]:'';
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
@@ -62,6 +64,14 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'setInterval(function(){try{var t9=me.towers[AI_ORDER[0]];if(t9)t9.cd=0;'
        +'me.zombies.forEach(function(z){z.hp=z.mhp;});}catch(e){}},80);'):'')
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
+ +(HID?('setTimeout(function(){try{var me=G.players[0];'
+     +(HID==='all'
+       ?'me.units.length=0;HEROES.forEach(function(h,k){var ui=HERO_I0+k;'
+        +'me.units.push({eid:EID++,ui:ui,own:0,hro:1,am:1,d:PLEN*(.22+k*.05),hp:UNITS[ui].hp,mhp:UNITS[ui].hp,cd:99,hitT:0,ph:k,px:0,py:0});});'
+       :'META.hero["'+HID+'"]=1;META.hsel="'+HID+'";me.hUi=hUiOf("'+HID+'");me.hOut=0;'
+        +(OPT.indexOf('nodep')>=0?''/* nodep=出撃させずにボタンだけ見る */
+          :'heroDeploy(me);me.hCg=1;var hu=me.units.filter(function(u){return u.hro;})[0];if(hu)hu.d=PLEN*.62;'))
+     +'updHUD();}catch(e){document.title="ERR3 "+e.message;}},1000);'):'')
  +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));

@@ -87,7 +87,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .mini .mv{display:block;width:100%;height:auto;border:2px solid var(--ink);border-radius:6px;background:#8f8266;margin:2px 0}
 .mini{cursor:pointer}
 .mini:active{transform:scale(.97)}
-.spec #deck,.spec #strikebtn,.spec #flagbtn,.spec #pushbtn,.spec #pushtgt,.spec #strikehint,.spec #flaghint{display:none!important}
+.spec #deck,.spec #strikebtn,.spec #flagbtn,.spec #pushbtn,.spec #herobtn,.spec #pushtgt,.spec #strikehint,.spec #flaghint{display:none!important}
 /* 横852pxのスマホでも小窓を詰める(既定の152px幅だと右上の侵入口を覆い隠す) */
 @media (max-width:900px){.mini{min-width:100px;max-width:112px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
@@ -124,14 +124,16 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #abar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
  padding:4px max(6px,env(safe-area-inset-right)) max(4px,calc(env(safe-area-inset-bottom) - 12px)) max(6px,env(safe-area-inset-left))}
 #abar>*{pointer-events:auto;flex:0 0 auto}
-#flagbtn,#strikebtn,#pushbtn{width:58px;height:58px;border-radius:50%;border:3px solid var(--paper);color:#fff;font-weight:900;box-shadow:0 3px 0 #000}
+#flagbtn,#strikebtn,#pushbtn,#herobtn{width:58px;height:58px;border-radius:50%;border:3px solid var(--paper);color:#fff;font-weight:900;box-shadow:0 3px 0 #000}
 #flagbtn{background:#4d6b3a;font-size:23px}
 #strikebtn{background:conic-gradient(var(--rust) 0%,#4a4034 0);font-size:26px}
 #pushbtn{background:#2b6f8f;font-size:12px;line-height:1.15}
-#flagbtn:active,#strikebtn:active,#pushbtn:active{transform:scale(.93)}
+/* 🦸英雄ボタン(ソロ専用)。対戦の🌊押すと同じ位置=横幅は増えない */
+#herobtn{background:#6b4a8a;font-size:12px;line-height:1.15;display:none}
+#flagbtn:active,#strikebtn:active,#pushbtn:active,#herobtn:active{transform:scale(.93)}
 #flagbtn.aim,#strikebtn.aim{outline:4px solid var(--amber)}
-#strikebtn.rdy{animation:pulse 1s infinite}
-#pushbtn:disabled{opacity:.45}
+#strikebtn.rdy,#herobtn.rdy{animation:pulse 1s infinite}
+#pushbtn:disabled,#herobtn:disabled{opacity:.45}
 @keyframes pulse{50%{transform:scale(1.08);box-shadow:0 0 16px var(--amber)}}
 .spec #ffwave{display:none!important}
 /* 🏳放棄と🔊は上のHUDから操作バーへ移した(上に長く伸びると右上の道路に被るため) */
@@ -168,11 +170,11 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  #deck .dk canvas{width:48px;height:36px}
  #deck .dk .dn{font-size:12px;line-height:15px;height:15px;bottom:14px}
  #deck .dk .dc{font-size:11px;line-height:14px;height:14px}
- #flagbtn,#strikebtn,#pushbtn{width:52px;height:52px}
+ #flagbtn,#strikebtn,#pushbtn,#herobtn{width:52px;height:52px}
  #abar #ffwave,#abar #mutebtn{height:54px;padding:0 9px;font-size:12px}
  #flagbtn{font-size:22px}
  #strikebtn{font-size:24px}
- #pushbtn{font-size:11px}
+ #pushbtn,#herobtn{font-size:11px}
 }
 #bigbanner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:7}
 #bigbanner span{font-size:min(10vw,54px);font-weight:900;color:#fff;text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 rgba(0,0,0,.4);animation:bpop .9s ease}
@@ -331,6 +333,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <p class="note" id="nm-note" style="margin:6px 0 0;font-size:11px;color:#ff8a6a;display:none">🌑 敵の生態系が一新される。獣の群れが来る。</p>
       <p class="note" style="margin:10px 0 6px">装備砲撃(研究所で新型を解放)</p>
       <div class="seg" id="seg-stk"></div>
+      <p class="note" style="margin:10px 0 6px">🦸 連れて行く英雄(💎英雄召集で入手・1ゲーム1回だけ出撃できる)</p>
+      <div class="seg" id="seg-hero"></div>
     </div>
     <button class="btn" id="bt-load">🎖 編成</button>
     <button class="btn gold" id="bt-lab">🔬 研究所 <span id="lab-pts"></span></button>
@@ -417,6 +421,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button id="flagbtn">🚩</button>
     <button id="strikebtn">🎯</button>
     <div id="deck"></div>
+    <button id="herobtn">🦸<br>出撃</button>
     <button id="pushbtn">🌊押す<br>⚙️45</button>
     <button id="ffwave">🏳 諦める</button>
     <button id="mutebtn">🔊</button>
@@ -558,7 +563,7 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:''};
 try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
@@ -566,6 +571,7 @@ try{const mv=JSON.parse(localStorage.getItem('dt_meta')||'null');if(mv&&typeof m
  if(!Array.isArray(META.uv))META.uv=[];if(!META.ld||typeof META.ld!=='object')META.ld={};META.am=META.am||0;META.amEq=META.amEq||0;
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','gem','hmat'])META[k]=META[k]||0;
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
+ if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
  if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
 function saveMeta(){try{localStorage.setItem('dt_meta',JSON.stringify(META));}catch(e){}}
 /* ============ 中断と再開(ソロ専用) ============
@@ -583,6 +589,7 @@ function saveRun(){
   repairs:m.repairs||0,boosts:m.boosts||0,ecoN:m.ecoN||1,up:Math.round(m.up||0),upTotal:Math.round(m.upTotal||0),
   uUn:m.uUn,uLv:m.uLv||0,kills:m.kills||0,enTotal:Math.round(m.enTotal||0),charge:m.charge||0,
   stk:m.stk||'air',flagD:Math.round(m.flagD||0),
+  hsel:(m.hUi>=0&&heroAt(m.hUi))?heroAt(m.hUi).id:'',hOut:m.hOut||0,
   slk:(m.slk||[]).map(v=>v?1:0),
   tw:(m.towers||[]).map(t=>t?{ti:t.ti,us:t.us,spent:t.spent}:0)};
  try{localStorage.setItem(RUN_KEY,JSON.stringify(d));}catch(e){}
@@ -598,6 +605,9 @@ function resumeRun(){
  m.repairs=d.repairs||0;m.boosts=d.boosts||0;m.ecoN=d.ecoN||1;m.up=d.up||0;m.upTotal=d.upTotal||0;
  m.uUn=d.uUn||2;m.uLv=d.uLv||0;m.kills=d.kills||0;m.enTotal=d.enTotal||0;m.charge=d.charge||0;
  if(d.stk&&STRIKES[d.stk])m.stk=d.stk;
+ /* 🦸英雄: ウェーブの区切りで保存するので「出撃中」は未出撃に戻す(盤面に実体が残らないため)。
+    ただし戦死(2)はそのまま引き継ぐ=1ゲーム1回の約束を再開で覆せないようにする */
+ if(d.hsel!=null){m.hUi=d.hsel?hUiOf(d.hsel):-1;m.hOut=(d.hOut===2)?2:0;m.hCg=0;}
  if(d.flagD)m.flagD=clamp(d.flagD,0,PLEN);
  if(d.slk&&d.slk.length)m.slk=m.slk.map((v,i)=>!!d.slk[i]);
  if(d.tw&&d.tw.length)m.towers=m.towers.map((t,i)=>{const s=d.tw[i];
@@ -609,7 +619,7 @@ function resumeRun(){
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
 const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;return soloMeta()?BT+clamp(META.nt||0,0,TP-BT):BT;};
-const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;return soloMeta()?BU+clamp(META.nu||0,0,UNITS.length-BU):BU;};
+const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN=(typeof U_N!=='undefined')?U_N:UNITS.length;return soloMeta()?BU+clamp(META.nu||0,0,UN-BU):BU;};
 const LAB_NT=k=>Math.round(250*Math.pow(1.2,k));/* k個目のタワー解放価格 */
 const LAB_NU=k=>Math.round(120*Math.pow(1.14,k));/* k個目の兵科解放価格 */
 const LAB_STK={mgun:150,carpet:250,frost:200,napalm:300};
@@ -1018,24 +1028,25 @@ const ulv=k=>soloMeta()?clamp((META.ul&&META.ul[k])||0,0,LINE_MAX):0;
 /* ============ 英雄(ヒーロー) ============
  💎魔石のガチャで手に入る特別な部隊。1ゲームに1回だけ拠点から出撃でき、固有の必殺技を持つ。
  ⚠2026-07-25時点では「入手(ガチャ)と所持」までを実装。鍛錬所と出撃・必殺技はこれから。
- rk=レア度1〜5。hp/atk/rate/sp は素の値(鍛錬で伸びる)。ult=必殺技 */
+ rk=レア度1〜5。hp/atk/rate/sp は素の値(鍛錬で伸びる)。ult=必殺技
+ ty/rng/aoe/burn=通常攻撃の型(兵科と同じ意味)。uch=必殺技のチャージ秒数(砲撃と同じ考え方) */
 const HEROES=[
  /* ★1 弱ヒーロー(5種) */
- {id:'hCop',n:'元警官',rk:1,hp:900,atk:120,rate:.9,sp:64,c:'#4a6b8a',ult:'制圧射撃',udsc:'前方の敵を撃ち続けて足を止める'},
- {id:'hFire',n:'消防士',rk:1,hp:1400,atk:80,rate:1.2,sp:56,c:'#b0483a',ult:'放水',udsc:'範囲の敵を押し戻して消火(燃焼解除+減速)'},
- {id:'hHunt',n:'猟師',rk:1,hp:820,atk:165,rate:1.4,sp:70,c:'#7a6a45',ult:'一斉罠',udsc:'足元に罠を撒いて踏んだ敵を拘束'},
- {id:'hMech',n:'整備士',rk:1,hp:1050,atk:95,rate:1,sp:60,c:'#8a8f96',ult:'応急修理',udsc:'コアを回復し、壊れかけのタワーを直す'},
- {id:'hPost',n:'配達人',rk:1,hp:760,atk:110,rate:.7,sp:118,c:'#c9a13d',ult:'速達',udsc:'超高速で突っ込んで一直線の敵を轢き飛ばす'},
+ {id:'hCop',n:'元警官',rk:1,hp:900,atk:120,rate:.9,sp:64,c:'#4a6b8a',ty:'bullet',rng:300,uch:28,ult:'制圧射撃',udsc:'前方の敵を撃ち続けて足を止める'},
+ {id:'hFire',n:'消防士',rk:1,hp:1400,atk:80,rate:1.2,sp:56,c:'#b0483a',ty:'fire',rng:140,aoe:70,burn:16,uch:28,ult:'放水',udsc:'範囲の敵を押し戻して消火(燃焼解除+減速)'},
+ {id:'hHunt',n:'猟師',rk:1,hp:820,atk:165,rate:1.4,sp:70,c:'#7a6a45',ty:'pierce',rng:380,uch:30,ult:'一斉罠',udsc:'足元に罠を撒いて踏んだ敵を拘束'},
+ {id:'hMech',n:'整備士',rk:1,hp:1050,atk:95,rate:1,sp:60,c:'#8a8f96',ty:'melee',rng:44,uch:26,ult:'応急修理',udsc:'コアを回復し、壊れかけのタワーを直す'},
+ {id:'hPost',n:'配達人',rk:1,hp:760,atk:110,rate:.7,sp:118,c:'#c9a13d',ty:'melee',rng:40,uch:24,ult:'速達',udsc:'超高速で突っ込んで一直線の敵を轢き飛ばす'},
  /* ★2 レア(3種) */
- {id:'hSf',n:'特殊部隊員',rk:2,hp:1600,atk:290,rate:.75,sp:78,c:'#3f4a54',ult:'精密狙撃',udsc:'最大HPの敵に必殺の一撃'},
- {id:'hMed',n:'軍医',rk:2,hp:1450,atk:150,rate:1,sp:66,c:'#b7e07a',ult:'蘇生',udsc:'戦死した部隊をその場に呼び戻す'},
- {id:'hBomb',n:'爆破屋',rk:2,hp:1350,atk:330,rate:1.6,sp:62,c:'#d9884a',ult:'大爆破',udsc:'仕掛けた爆薬を一斉に起爆する'},
+ {id:'hSf',n:'特殊部隊員',rk:2,hp:1600,atk:290,rate:.75,sp:78,c:'#3f4a54',ty:'bullet',rng:420,uch:34,ult:'精密狙撃',udsc:'最大HPの敵に必殺の一撃'},
+ {id:'hMed',n:'軍医',rk:2,hp:1450,atk:150,rate:1,sp:66,c:'#b7e07a',ty:'bullet',rng:260,uch:36,ult:'蘇生',udsc:'戦死した部隊をその場に呼び戻す'},
+ {id:'hBomb',n:'爆破屋',rk:2,hp:1350,atk:330,rate:1.6,sp:62,c:'#d9884a',ty:'blast',rng:300,aoe:95,uch:34,ult:'大爆破',udsc:'仕掛けた爆薬を一斉に起爆する'},
  /* ★3 激レア(1種) */
- {id:'hSeer',n:'死潮の預言者',rk:3,hp:2100,atk:420,rate:1.1,sp:70,c:'#8f6fae',ult:'時間停止',udsc:'盤面の敵を数秒完全に止める'},
+ {id:'hSeer',n:'死潮の預言者',rk:3,hp:2100,atk:420,rate:1.1,sp:70,c:'#8f6fae',ty:'pierce',rng:340,uch:40,ult:'時間停止',udsc:'盤面の敵を数秒完全に止める'},
  /* ★4 ウルトラレア(1種) */
- {id:'hGiant',n:'鋼鉄の巨人',rk:4,hp:5200,atk:560,rate:1.5,sp:46,c:'#c9a13d',ult:'地響き',udsc:'全域の敵を吹き飛ばして気絶させる'},
+ {id:'hGiant',n:'鋼鉄の巨人',rk:4,hp:5200,atk:560,rate:1.5,sp:46,c:'#c9a13d',ty:'blast',rng:64,aoe:110,uch:46,ult:'地響き',udsc:'全域の敵を吹き飛ばして気絶させる'},
  /* ★5 ギガトンレア(1種) */
- {id:'hNox',n:'終焉の騎士',rk:5,hp:6800,atk:980,rate:.9,sp:74,c:'#ff6a4a',ult:'死の宣告',udsc:'画面上の敵すべてに致命傷を刻む'}
+ {id:'hNox',n:'終焉の騎士',rk:5,hp:6800,atk:980,rate:.9,sp:74,c:'#ff6a4a',ty:'melee',rng:48,uch:52,ult:'死の宣告',udsc:'画面上の敵すべてに致命傷を刻む'}
 ];
 const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
 const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
@@ -1053,6 +1064,15 @@ const GEM_BOSS=1,GEM_FIN=3;/* 通常ボス/最終ボスを倒した時の💎 */
 const heroOf=id=>HEROES.find(h=>h.id===id);
 const heroOwned=id=>((META.hero||{})[id]||0)>0;
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
+/* 英雄をUNITSの末尾に「特別な兵科」として足す。
+   ⚠ここより後ろはデッキにも解放チェーンにも出さない=兵科の数え上げには U_N を使うこと
+   (UNITS.length を使うと英雄まで解放対象になってしまう) */
+const U_N=UBASE.length,HERO_I0=UNITS.length;
+for(const h of HEROES)UNITS.push({id:h.id,n:h.n,cost:0,cd:9999,hp:h.hp,atk:h.atk,rate:h.rate,
+ rng:h.rng,sp:h.sp,type:h.ty,aoe:h.aoe||0,burn:h.burn||0,c:h.c,hro:h.rk,
+ dsc:'英雄 — 必殺技『'+h.ult+'』'});
+const hUiOf=id=>{const k=HEROES.findIndex(h=>h.id===id);return k<0?-1:HERO_I0+k;};
+const heroAt=ui=>HEROES[ui-HERO_I0]||null;
 let AMI=0;/* 現在装備中の弾薬 */
 function varOf(bid){const vid=META.ld&&META.ld[bid];if(!vid)return null;
  if((META.uv||[]).indexOf(vid)<0)return null;
@@ -1756,6 +1776,41 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  if(o.jam){c.filter='none';c.fillStyle='#ffd23d';c.font='900 20px sans-serif';c.textAlign='center';c.fillText('⚡✖',0,-28);}
  c.restore();
 }
+/* 🦸英雄の姿。⚠11人それぞれの造形はまだ=今は「英雄の共通シルエット」で、
+   マントと武器の形と★の数がレア度と攻撃の型で変わるだけ。個別の見た目は後回し(ユーザー了承済み)。
+   描ける範囲は |x|≦54・y≧-105(bakeSetの箱)。はみ出すと無言で切られる */
+function drawHeroBody(c,U,walk,o){
+ const col=U.c,rk=U.hro||1,ty=U.type;
+ if(rk>=4){c.shadowColor=col;c.shadowBlur=10;}
+ /* マント(レア度が上がるほど大きい) */
+ c.fillStyle=col;c.beginPath();
+ c.moveTo(-5,-47);c.lineTo(-15-rk*1.6,-22+walk*2.5);c.lineTo(-9,-1);c.lineTo(7,-5);c.lineTo(8,-45);
+ c.closePath();c.fill();c.stroke();
+ /* 脚 */
+ c.fillStyle='#3a3128';
+ c.fillRect(-7+walk*3.5,-16,6,16);c.strokeRect(-7+walk*3.5,-16,6,16);
+ c.fillRect(2-walk*3.5,-16,6,16);c.strokeRect(2-walk*3.5,-16,6,16);
+ /* 胴+肩当て */
+ c.fillStyle='#2f3742';rr(c,-10,-41,20,26,5);c.fill();c.stroke();
+ c.fillStyle=col;rr(c,-11,-41,22,7,3);c.fill();c.stroke();
+ /* 頭+バイザー */
+ c.fillStyle='#d9b28a';c.beginPath();c.arc(0,-48,7.5,0,7);c.fill();c.stroke();
+ c.fillStyle=col;rr(c,-8,-53,16,6,2);c.fill();c.stroke();
+ /* 武器(攻撃の型で持ち物が変わる) */
+ c.fillStyle='#3a3128';
+ if(ty==='pierce'){rr(c,3,-38,32,3.5,1.5);c.fill();c.stroke();c.fillStyle=col;rr(c,10,-41,7,3,1);c.fill();}
+ else if(ty==='bullet'){rr(c,3,-37,25,4.5,1.5);c.fill();c.stroke();}
+ else if(ty==='fire'){rr(c,3,-35,19,6,2.5);c.fill();c.stroke();c.fillStyle='#585e4c';rr(c,-17,-40,8,16,3);c.fill();c.stroke();}
+ else if(ty==='blast'){rr(c,1,-40,24,8,3);c.fill();c.stroke();c.fillStyle=col;c.beginPath();c.arc(25,-36,3.5,0,7);c.fill();c.stroke();}
+ else if(ty==='heal'){rr(c,6,-30,12,10,2);c.fill();c.stroke();c.fillStyle='#b7e07a';c.fillRect(10,-27,4,4);}
+ else{/* 近接=大剣 */
+  c.fillStyle='#c9c4b4';c.beginPath();c.moveTo(6,-34);c.lineTo(11,-36);c.lineTo(13,-64);c.lineTo(8,-66);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3a3128';rr(c,4,-36,11,4,1.5);c.fill();c.stroke();}
+ if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,-35,4+o.fireT*20,0,7);c.fill();}
+ /* レア度の★ */
+ c.shadowBlur=0;c.fillStyle='#ffd23d';c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px sans-serif';c.textAlign='center';
+ const st='★'.repeat(Math.min(5,rk));c.strokeText(st,1,-61);c.fillText(st,1,-61);
+}
 function drawUnit(c,ui,x,y,dr,t,ph,o){
  o=o||{};const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
  const walk=Math.sin(t*10+ph),bob=Math.abs(walk)*2;
@@ -1767,6 +1822,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(tier===4){c.shadowColor='#E8A33D';c.shadowBlur=10;}
  c.lineWidth=2.4;c.strokeStyle=INK;
+ if(U.hro){drawHeroBody(c,U,walk,o);c.restore();return;}/* 🦸英雄は専用の姿 */
  if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
  if(id==='tnk'){/* 装甲車(研究所限定)／派生=重戦車→陸上戦艦→地響き */
   const C0=vt?U.c:'#5c6b78';c.scale(1.15*(1+.06*vt),1.15*(1+.06*vt));
@@ -2000,6 +2056,7 @@ let EID=1;
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
  core:50,coreMax:50,scrap:250,unlocked:2,atkLv:0,repairs:0,boosts:0,jams:0,
  towers:SLOTS.map(()=>null),ecoN:1,supN:0,up:12,upTotal:12,slk:SLOTS.map((_,i)=>i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0),zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
+ hUi:-1,hOut:0,hCg:0,fallen:[],/* 英雄: 連れて行く英雄のUNITS添字 / 0=未出撃 1=出撃中 2=戦死 / 必殺チャージ / 戦死した部隊(蘇生用) */
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
 const ZHPM=.85;/* ゾンビHP全体倍率 */
@@ -2287,6 +2344,14 @@ function dmgU(C,u,d2){
  if(u.hp<=0){u.dead=true;addFx(C,'splat',u.px,u.py,'',{gray:1});
   addP(C,8,u.px,u.py-22,{sp:130,up:50,g:520,life:.5,r:2.6,col:'#8a2f2f',jx:5,jy:7});
   addP(C,2,u.px,u.py,{sp:0,g:0,life:6,r:10,col:'#5c2626',typ:'stain',jx:9,jy:4});
+  if(u.hro){/* 英雄は1ゲーム1回=倒れたら終わり */
+   C.hOut=2;addFx(C,'ring',u.px,u.py,'',{r:150,col:'#ff8a6a'});
+   const H=heroAt(u.ui);addFx(C,'txt',u.px,u.py-80,'★ '+(H?H.n:'英雄')+' 戦死…');
+   C.shake=Math.max(C.shake||0,.3);
+  }else{/* 蘇生(軍医の必殺技)のために戦死した部隊を控えておく */
+   if(!C.fallen)C.fallen=[];
+   C.fallen.push({ui:u.ui,am:u.am||1,mhp:u.mhp,d:u.d});
+   if(C.fallen.length>14)C.fallen.shift();}
   if(C.isMe)sfx.splat();}
 }
 function buildTower(C,si,ti){
@@ -2364,11 +2429,124 @@ function airstrikeHit(C,x,y,wave,stk,mine){
  if(isMine&&stk!=='frost')sfx.boom();
  return true;
 }
+/* ============ 🦸 英雄(出撃と必殺技) ============
+   ソロ専用。1ゲームに1回だけ拠点から出撃でき、以後は砲撃と同じように必殺技のチャージが溜まる。
+   ⚠英雄は UNITS の末尾(HERO_I0以降)に居る特別な兵科なので、戦闘・描画は普通の部隊と同じ経路を通る。
+   見分けは u.hro(=1)。倒れたら復活しない(hOut=2)。 */
+function heroDeploy(C){
+ if(!C||C.dead||C.hUi<0||C.hOut!==0)return false;
+ if(C.units.length>=MAXU){if(C.isMe)toast('⚠ 部隊上限('+MAXU+'体)! 空きを作ってから',true);return false;}
+ const U=UNITS[C.hUi],H=heroAt(C.hUi);if(!U||!H)return false;
+ const lvM=1+.1*(C.uLv||0);/* 部隊レベルは英雄にも乗る */
+ const hp0=Math.round(U.hp*lvM);
+ C.units.push({eid:EID++,ui:C.hUi,own:C.gi||0,hro:1,am:lvM,d:PLEN-70,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
+ C.hOut=1;C.hCg=0;
+ addFx(C,'ring',CORE[0],CORE[1],'',{r:200,col:'#ffd23d'});
+ addFx(C,'txt',CORE[0],CORE[1]-86,'★ '+H.n+' 参戦!');
+ addP(C,22,CORE[0],CORE[1]-18,{sp:250,up:130,g:520,life:.8,r:3.4,col:'#ffd23d',jx:8,jy:6});
+ C.shake=Math.max(C.shake||0,.3);
+ if(C.isMe){sfx.elite&&sfx.elite();toast('★ 英雄『'+H.n+'』参戦! 必殺技『'+H.ult+'』のチャージ開始');}
+ return true;
+}
+const heroUch=C=>{const H=heroAt(C.hUi);return (H&&H.uch)||30;};
+/* 必殺技。英雄1人につき1種類。威力はウェーブが進むほど上がる(砲撃と同じ考え方) */
+function heroUlt(C,wave){
+ if(!C||C.dead||C.hOut!==1||C.hCg<1)return false;
+ const u=C.units.find(x=>x.hro&&!x.dead);if(!u)return false;
+ const H=heroAt(C.hUi);if(!H)return false;
+ C.hCg=0;
+ const W=1+.13*(wave||1),live=C.zombies.filter(z=>!z.dead&&z.d>=0);
+ /* 英雄の前方(=敵が来る側)にいる敵を距離順に拾う */
+ const front=r=>live.filter(z=>{const g=u.d-z.d;return g>=-20&&g<=r;});
+ const id=H.id;
+ if(id==='hCop'){/* 制圧射撃: 前方をなぎ払い、足を止める */
+  const ts=front(520);
+  for(const z of ts){dmgZ(C,z,230*W,1);if(!z.dead)z.slowT=Math.max(z.slowT||0,4.5);
+   addFx(C,'tr',u.px,u.py-26,'',{x2:z.px,y2:z.py-20});}
+  addFx(C,'ring',u.px,u.py,'',{r:120,col:'#ffdd66'});
+  addP(C,18,u.px+(u.dr||-1)*-26,u.py-26,{sp:200,g:120,life:.3,r:2.2,col:'#fff3c0'});
+  if(C.isMe)sfx.shotgun&&sfx.shotgun();
+ }else if(id==='hFire'){/* 放水: 押し戻し+消火+減速 */
+  for(const z of live){if(dist(z.px,z.py,u.px,u.py)>250)continue;
+   dmgZ(C,z,110*W,1);if(z.dead)continue;
+   z.d=Math.max(0,z.d-95);z.burnT=0;z.slowT=Math.max(z.slowT||0,4);}
+  addFx(C,'ring',u.px,u.py,'',{r:250,col:'#9fdcf5'});
+  addP(C,24,u.px,u.py-30,{sp:260,up:40,g:300,life:.6,r:3,col:'#cdf1ff'});
+  if(C.isMe)sfx.frost&&sfx.frost();
+ }else if(id==='hHunt'){/* 一斉罠: 踏んだ敵を拘束(完全停止) */
+  const ts=front(440);
+  for(const z of ts){dmgZ(C,z,150*W,1);if(!z.dead)z.frzT=Math.max(z.frzT||0,3.2);}
+  for(let k=0;k<5;k++){const p=pathPos(clamp(u.d-k*90,0,PLEN));addFx(C,'ring',p[0],p[1],'',{r:52,col:'#c9a13d'});}
+  if(C.isMe)sfx.net&&sfx.net();
+ }else if(id==='hMech'){/* 応急修理: コア回復+タワーの妨害解除+部隊を回復 */
+  const hl=Math.min(C.coreMax-C.core,8);C.core=Math.min(C.coreMax,C.core+8);
+  for(const tw of C.towers)if(tw&&tw.jamT>0)tw.jamT=0;
+  for(const u2 of C.units)if(!u2.dead)u2.hp=Math.min(u2.mhp,u2.hp+u2.mhp*.35);
+  addFx(C,'ring',CORE[0],CORE[1],'',{r:170,col:'#b7e07a'});
+  addFx(C,'txt',CORE[0],CORE[1]-70,'+'+Math.round(hl)+'♥ 応急修理');
+  if(C.isMe)sfx.heal&&sfx.heal();
+ }else if(id==='hPost'){/* 速達: 前方へ突進して一直線に轢き飛ばす */
+  const ts=front(620);
+  for(const z of ts){dmgZ(C,z,300*W,1);if(!z.dead)z.d=Math.max(0,z.d-70);}
+  const nd=Math.max(60,u.d-240),p=pathPos(nd);
+  for(let k=0;k<6;k++){const q=pathPos(clamp(u.d-k*45,0,PLEN));addFx(C,'ring',q[0],q[1],'',{r:40-k*4,col:'#ffd23d'});}
+  u.d=nd;u.px=p[0];u.py=p[1];
+  addP(C,20,p[0],p[1]-20,{sp:240,up:60,g:520,life:.5,r:2.8,col:'#ffd23d'});
+  C.shake=Math.max(C.shake||0,.2);if(C.isMe)sfx.thunk&&sfx.thunk();
+ }else if(id==='hSf'){/* 精密狙撃: 一番HPの高い敵に必殺の一撃 */
+  let tg=null,bh=-1;for(const z of live)if(z.hp>bh){bh=z.hp;tg=z;}
+  if(tg){const dm=tg.hp*.45+2600*W;
+   addFx(C,'tr',u.px,u.py-26,'',{x2:tg.px,y2:tg.py-20,col:'rgba(160,225,255,'});
+   addFx(C,'txt',tg.px,tg.py-70,'必殺!');
+   dmgZ(C,tg,dm,1);addFx(C,'boom',tg.px,tg.py,'');}
+  if(C.isMe)sfx.shot&&sfx.shot();
+ }else if(id==='hMed'){/* 蘇生: 戦死した部隊を呼び戻す+生存部隊を全回復 */
+  let n=0;const room=MAXU-C.units.length;
+  while(C.fallen&&C.fallen.length&&n<Math.min(4,room)){
+   const f=C.fallen.pop();
+   C.units.push({eid:EID++,ui:f.ui,own:C.gi||0,am:f.am,d:clamp(u.d-10-n*12,60,PLEN-40),hp:f.mhp,mhp:f.mhp,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
+   n++;}
+  for(const u2 of C.units)if(!u2.dead)u2.hp=u2.mhp;
+  addFx(C,'ring',u.px,u.py,'',{r:210,col:'#b7e07a'});
+  addFx(C,'txt',u.px,u.py-80,n?('蘇生 '+n+'体!'):'部隊 全回復!');
+  addP(C,20,u.px,u.py-26,{sp:150,up:110,g:-60,life:1,r:2.8,col:'#b7e07a',jx:9,jy:7});
+  if(C.isMe)sfx.heal&&sfx.heal();
+ }else if(id==='hBomb'){/* 大爆破: 道沿いに仕掛けた爆薬を一斉起爆 */
+  for(let k=0;k<5;k++){
+   const cd0=clamp(u.d-40-k*150,0,PLEN),p=pathPos(cd0);
+   for(const z of live){if(z.dead)continue;if(dist(z.px,z.py,p[0],p[1])>140)continue;
+    dmgZ(C,z,440*W,1);if(!z.dead){z.burnT=3;z.burnD=40*W;}}
+   addFx(C,'boomL',p[0],p[1],'',{d0:.08*k});}
+  C.shake=Math.max(C.shake||0,.45);if(C.isMe)sfx.boom&&sfx.boom();
+ }else if(id==='hSeer'){/* 時間停止: 盤面の敵を完全停止 */
+  for(const z of live)z.frzT=Math.max(z.frzT||0,4.5);
+  addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:'#8f6fae'});
+  addFx(C,'txt',u.px,u.py-84,'時間停止');
+  addP(C,26,u.px,u.py-30,{sp:180,up:70,g:-40,life:1.2,r:3,col:'#c9a1ff',jx:12,jy:9});
+  if(C.isMe)sfx.frost&&sfx.frost();
+ }else if(id==='hGiant'){/* 地響き: 全域を吹き飛ばして気絶させる */
+  for(const z of live){dmgZ(C,z,560*W,1);if(z.dead)continue;
+   z.d=Math.max(0,z.d-150);z.frzT=Math.max(z.frzT||0,2.2);}
+  for(let k=0;k<4;k++){const p=pathPos(clamp(PLEN*(.2+k*.2),0,PLEN));addFx(C,'boomL',p[0],p[1],'',{d0:.06*k});}
+  addFx(C,'ring',u.px,u.py,'',{r:420,col:'#c9a13d'});
+  C.shake=Math.max(C.shake||0,.6);if(C.isMe)sfx.boom&&sfx.boom();
+ }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
+  for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
+   addFx(C,'spark',z.px,z.py-18,'',{sd:rnd(0,9),col:'#ff6a4a'});}
+  addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:'#ff6a4a'});
+  addFx(C,'txt',u.px,u.py-84,'死の宣告');
+  C.shake=Math.max(C.shake||0,.5);if(C.isMe)sfx.win&&sfx.win();
+ }
+ if(C.isMe)toast('⚡ 必殺技『'+H.ult+'』!');
+ return true;
+}
 function campStep(C,dt,wave){
  if(C.dead)return;
  C.tm+=dt;
  if(C.shake>0)C.shake-=dt;
  if(!C.waveDone)C.charge=Math.min(1,C.charge+dt/((C.stk&&STRIKES[C.stk]?STRIKES[C.stk].ch:30)));
+ /* 🦸英雄の必殺技チャージ(出撃してから溜まり始める) */
+ if(!C.waveDone&&C.hOut===1)C.hCg=Math.min(1,(C.hCg||0)+dt/heroUch(C));
  /* 位置・オーラ */
  const scrs=[];
  for(const z of C.zombies){const p=pathPos(Math.max(0,z.d));z.px=p[0];z.py=p[1];z.dr=Math.cos(p[2])>=-.05?1:-1;if(z.aura)scrs.push(z);}
@@ -2719,7 +2897,7 @@ function cpuTick(C,dt){
    if(t2&&t2.ti===0&&C.scrap>=TOWERS[want].cost*res){sellTower(C,si);if(buildTower(C,si,want))return;}}}
  }
  /* 出撃(盾1+近接2+射撃2を維持、waveで増員)。新部隊解放費は貯金(rsv)として残す */
- const rsv=C.uUn<UNITS.length&&wave>=2?Math.min(260,uupCost(C)):0;
+ const rsv=C.uUn<U_N&&wave>=2?Math.min(260,uupCost(C)):0;
  {let sh3=0,ml=0,rg=0;for(const u of C.units){if(u.dead)continue;if(u.ui===3)sh3++;else if(UNITS[u.ui].rng>60)rg++;else ml++;}
   const ex=Math.floor(wave/5);let uw=-1;
   if(C.uUn>3&&sh3<1)uw=3;
@@ -3303,6 +3481,18 @@ function updHUD(){const m=meV();if(!m)return;
  }
  $('tideseg').innerHTML=seg;
  $('tidelbl').textContent='🌊あなた'+Math.round(mySh)+'%';
+ /* 🦸英雄ボタン(ソロで英雄を連れて行く時だけ出る) */
+ {const hb=$('herobtn'),hu=m.hUi==null?-1:m.hUi,H=hu>=0?heroAt(hu):null;
+  if(hb&&hb.style){
+   if(!H||MODE==='client'||COOP){hb.style.display='none';}
+   else{hb.style.display='inline-block';/* ⚠''にするとCSSのdisplay:noneに戻ってしまう */
+    const st=m.hOut||0,cg=clamp(m.hCg||0,0,1);
+    if(st===0){hb.innerHTML='🦸<br>出撃';hb.style.background='#6b4a8a';hb.disabled=!!m.dead;hb.classList.remove('rdy');}
+    else if(st===1){hb.innerHTML='⚡<br>'+H.ult.slice(0,4);
+     hb.style.background=`conic-gradient(#c9a1ff ${cg*100}%,#3a2f4a 0)`;
+     hb.disabled=!!m.dead||cg<1;hb.classList.toggle('rdy',cg>=1);}
+    else{hb.innerHTML='💀<br>戦死';hb.style.background='#4a4034';hb.disabled=true;hb.classList.remove('rdy');}
+    hb.title=H.n+' — 必殺技『'+H.ult+'』'+H.udsc;}}}
  /* 押すボタン */
  const pb=$('pushbtn'),pc=prPush(m.pushUses||0);
  pb.innerHTML='🌊押す<br>⚙️'+pc;
@@ -3547,6 +3737,13 @@ function actFlag(x,y){const fd=clamp(projPath(x,y),PLEN*.1,PLEN*.9);
  if(G){const me=G.players[G.myIdx];if(me.dead)return;me.flagD=fd;FLAGPOP=TT;
   const F2=G.coop?G.players[0]:me;const fp=pathPos(fd);addFx(F2,'ring',fp[0],fp[1],'',{r:44,col:'#c9dba1'});sfx.dep();}}
 $('pushbtn').onclick=()=>{actPush();};
+/* 🦸英雄: 1回目のタップで出撃、以後はチャージが満タンになるたび必殺技 */
+$('herobtn').onclick=()=>{
+ if(!G||MODE==='client')return;
+ const me=G.players[G.myIdx];if(!me||me.dead||me.hUi<0)return;
+ if(me.hOut===0)heroDeploy(me);
+ else if(me.hOut===1&&me.hCg>=1)heroUlt(me,G.wave);
+ updHUD();};
 $('pushtgt').onclick=()=>{const os=aliveOthers();if(!os.length)return;
  const order=[-1,...os.map(o=>o.i)];
  PUSHTGT=order[(order.indexOf(PUSHTGT)+1)%order.length];updHUD();};
@@ -3661,7 +3858,7 @@ function ivRender(){
  let h='';
  h+=`<div class="card"><div class="ci">${early?'🔒':'🔓'}</div><div class="ct">新タワー解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる(序盤は基本装備で守れ)':nx?('次:『'+nx.n+'』— '+nx.dsc):labT?'🔬研究所で解放するとここに出る':'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${!early&&nx&&can('unlock')?'':'disabled'}>${early?'🔒':nx?'⚙️'+pc('unlock'):'-'}</button></div>`;
  const uu2=m.uUn!=null?m.uUn:2,nu=uu2<ucap?UNITS[uu2]:null;
- const labU=!nu&&ucap<UNITS.length;
+ const labU=!nu&&ucap<U_N;
  h+=`<div class="card"><div class="ci">${early?'🔒':'🪖'}</div><div class="ct">新部隊解放</div><div class="cdsc">${early?'WAVE3を守り切ると解放できる':nu?('次:『'+nu.n+'』— '+nu.dsc):labU?'🔬研究所で解放するとここに出る':'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${!early&&nu&&can('uun')?'':'disabled'}>${early?'🔒':nu?'⚙️'+pc('uun'):'-'}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${(m.up||0)>=pc('atk')?'':'disabled'}>${PT}${pc('atk')}</button></div>`;
  {const ul2=m.uLv||0,umx=ul2>=ULV_MAX;
@@ -3748,6 +3945,9 @@ function startSolo(){
  me.scrap=D5v().scrap+40*(META.sc0||0);
  me.coreMax=50+5*(META.hp0||0);me.core=me.coreMax;
  me.stk=META.st.indexOf(META.eq)>=0?META.eq:'air';
+ /* 🦸連れて行く英雄(ソロ専用・所持していない英雄が選ばれていたら連れて行かない) */
+ me.hUi=(META.hsel&&heroOwned(META.hsel))?hUiOf(META.hsel):-1;
+ me.hOut=0;me.hCg=0;me.fallen=[];
  /* 研究所の序盤系ボーナス */
  me.up=me.upTotal=12+6*(META.up0||0);
  me.uUn=2+(META.uu0||0);
@@ -3793,6 +3993,16 @@ function renderStkSeg(){
  w.innerHTML=META.st.map(k=>`<button class="btn sm ${META.eq===k?'sel':''}" data-stk="${k}">${STRIKES[k].ic}${STRIKES[k].n}</button>`).join('');
  w.querySelectorAll('[data-stk]').forEach(b=>{b.onclick=()=>{META.eq=b.dataset.stk;saveMeta();renderStkSeg();};});
 }
+/* 🦸 連れて行く英雄を選ぶ(所持している英雄だけ並べる) */
+function renderHeroSeg(){
+ const w=$('seg-hero');if(!w||!w.querySelectorAll)return;
+ const own=HEROES.filter(h=>heroOwned(h.id));
+ if(META.hsel&&!heroOwned(META.hsel))META.hsel='';
+ if(!own.length){w.innerHTML='<span class="note" style="font-size:11px">まだ英雄がいない。💎英雄召集で仲間にしよう</span>';return;}
+ w.innerHTML='<button class="btn sm '+(META.hsel?'':'sel')+'" data-h="">連れて行かない</button>'
+  +own.map(h=>`<button class="btn sm ${META.hsel===h.id?'sel':''}" data-h="${h.id}" title="必殺技『${h.ult}』— ${h.udsc}">${RK_S[h.rk]}${h.n}</button>`).join('');
+ w.querySelectorAll('[data-h]').forEach(b=>{b.onclick=()=>{META.hsel=b.dataset.h;saveMeta();renderHeroSeg();};});
+}
 /* 研究所の並び順=このカテゴリ順で固定。値段では並べ替えない */
 const LAB_CATS=[
  {k:'new',n:'🆕 新しい種類を解放',d:'解放するとゲーム中の解放カードに出るようになる'},
@@ -3809,7 +4019,7 @@ function renderLab(){
  $('lab-pts2').textContent='🧬 '+fmt(META.pts)+' pt';
  const items=[];
  if(META.nt<T_PLAY-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',t:'🗼 新型タワー『'+T.n+'』 ('+(META.nt+1)+'/'+(T_PLAY-BASE_T)+')',d:T.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NT(META.nt)});}
- if(META.nu<UNITS.length-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({cat:'new',k:'nu',t:'🤖 新型兵科『'+U.n+'』 ('+(META.nu+1)+'/'+(UNITS.length-BASE_U)+')',d:U.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NU(META.nu)});}
+ if(META.nu<U_N-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({cat:'new',k:'nu',t:'🤖 新型兵科『'+U.n+'』 ('+(META.nu+1)+'/'+(U_N-BASE_U)+')',d:U.dsc+' — 解放後はゲーム内の解放カードに出現',p:LAB_NU(META.nu)});}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -4023,7 +4233,7 @@ function renderGacha(res){
   +'</div></div>';
 }
 $('bt-gacha').onclick=()=>{renderGacha(null);$('md-gacha').classList.add('on');};
-$('bt-gacha-close').onclick=()=>$('md-gacha').classList.remove('on');
+$('bt-gacha-close').onclick=()=>{$('md-gacha').classList.remove('on');try{renderHeroSeg();}catch(e){}};
 $('gc-1').onclick=()=>gcPull(1);
 $('gc-10').onclick=()=>gcPull(10);
 $('gc-rate').onclick=()=>{$('gc-res').innerHTML=gcRateHtml();};
@@ -4058,7 +4268,7 @@ function refreshStageUI(){
  if($('stg-sub'))$('stg-sub').textContent=S.sub+'。難易度ごとの最終WAVEまで守り切ればクリア(新兵5→兵長7→古参10→鬼軍曹15→悪夢20→🌑20)。WAVE10と15にボス、WAVE20には専用の大物が来る。';
  if($('bt-solo'))$('bt-solo').textContent='🛡 ソロ作戦 — ステージ'+((META.stg||0)+1);
 }
-$('bt-solo').onclick=()=>{ensureAC();renderStkSeg();updLabBtn();refreshDiffUI();refreshRunUI();show('setup');};
+$('bt-solo').onclick=()=>{ensureAC();renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show('setup');};
 /* ⚠ここでclearRun()はしない=押し間違いで中断記録が消えるため。
    新しく始めた側が最初の作戦タイムで上書きするので実害はない */
 $('bt-start-solo').onclick=()=>{ensureAC();startSolo();};
