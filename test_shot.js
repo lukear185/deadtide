@@ -152,7 +152,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'["dust",900,540,{r:150},.35],'
      +'["pool",1240,340,{r:120,sd:1,lf:4.2},.15],'
      +'["shock",1240,560,{r:92,col:"#ffdd66"},.3],'
-     +'["corpse",1450,400,{zi:0,el:0,dr:1,lf:1},.55]];'
+     +'["corpse",1450,400,{zi:0,el:0,dr:1,lf:1},.55],'
+     /* 第66弾: タワーごとの撃ち方 */
+     +'["drn",300,660,{x2:620,y2:660,lf:.62,sd:1,col:"rgba(255,235,150,"},.55],'
+     +'["spread",760,690,{ang:0,len:210,col:"rgba(255,235,150,",sd:2},.35],'
+     +'["wave",1030,690,{ang:0,r:220,col:"#c8b4f0"},.45],'
+     +'["pboom",1400,680,{r:140,sd:3},.30]];'
      /* 毎フレーム作り直して、寿命の途中の姿で止める */
      +'setInterval(function(){try{me.fx.length=0;me.dly=[];'
      +'D.forEach(function(d){var e=Object.assign({k:d[0],x:d[1],y:d[2],t:0,s:""},d[3]);'

@@ -476,6 +476,47 @@ function checkFx2(){
  console.log('演出2: 投擲の軌道・炎の帯・火の海・氷の破片・土煙・倒れる死体・砲撃5種の着弾 すべて出ている OK');
  backTitle();
 }
+/* ---- タワーごとに撃ち方が違うか(2026-07-26 第66弾) ----
+   ユーザー指摘=「威力が多少変わってるだけで変化がない」。
+   絵(fxの種類)と音(TW_SFX)が、タワーごとに別物になっていることを見る */
+function checkTwFx(){
+ META.stg=0;setDiff=2;startSolo();frames(20,.016);
+ const me=G.players[0];
+ const zi=ZOMBIES.findIndex(z=>z.id==='walk');
+ const si=AI_ORDER[0],base=projPath(SLOTS[si][0],SLOTS[si][1]);
+ const run=(tid,steps)=>{
+  const ti=TOWERS.findIndex(T=>T.id===tid);
+  if(ti<0){console.log('FAIL: タワー '+tid+' が無い');process.exit(1);}
+  me.units.length=0;me.zombies.length=0;me.fx.length=0;me.dly=[];me.shells.length=0;me.scrap=99999;
+  me.towers[si]=null;const pu=me.unlocked;me.unlocked=ti+1;buildTower(me,si,ti);me.unlocked=pu;
+  /* ⚠最小射程を持つ砲(迫撃砲・重砲台)はここでは見ない=近すぎて撃たないため */
+  for(let k=0;k<5;k++){const z=mkZ(zSpec(zi,1,20),Math.max(20,base-30-k*26));z.hp=z.mhp=99999;me.zombies.push(z);}
+  const kinds={};
+  for(let k=0;k<(steps||60);k++){campStep(me,.05,G.wave);for(const e of me.fx)kinds[e.k]=(kinds[e.k]||0)+1;}
+  me.towers[si]=null;
+  return kinds;
+ };
+ const want={cryo:['ice','shock'],drone:['drn'],fort:['beam'],sonic:['wave'],
+  shot:['spread'],laser:['beam'],plasma:['pboom'],gat:['tr'],rail:['beam']};
+ for(const tid of Object.keys(want)){
+  const k=run(tid,tid==='plasma'?140:60);
+  for(const w of want[tid])if(!k[w]){
+   console.log('FAIL: '+tid+' に '+w+' の絵が出ていない(出た絵='+(Object.keys(k).join(',')||'なし')+')');process.exit(1);}
+  /* 撃ち方を分けたタワーが、汎用の曳光線(tr)に戻っていないこと */
+  if(['drone','sonic','fort','laser','rail'].indexOf(tid)>=0&&k.tr){
+   console.log('FAIL: '+tid+' がまだ汎用の曳光線(tr)を出している');process.exit(1);}
+ }
+ /* 発射音の使い回しが残っていないこと(要塞砲=重砲台 / 擲弾砲台=迫撃砲 / 冷却塔=凍結爆弾 だった) */
+ {const ids=['fort','arty','mortar','gren','cryo','net','plasma','drone','laser','sonic','rail','gat'];
+  const seen={};
+  for(const id of ids){const k=TW_SFX[id];
+   if(!k){console.log('FAIL: '+id+' に発射音が割り当てられていない');process.exit(1);}
+   if(seen[k]){console.log('FAIL: '+id+' と '+seen[k]+' が同じ発射音('+k+')を使っている');process.exit(1);}
+   seen[k]=id;
+   if(typeof SFXB!=='undefined'&&!SFXB[k]){console.log('FAIL: 発射音 '+k+' が埋め込まれていない');process.exit(1);}}}
+ console.log('タワーの撃ち方: 冷却塔/ドローン/要塞砲/音響砲/ショットガン/レーザー/プラズマ が別々の絵・別々の音 OK');
+ backTitle();
+}
 function checkHook(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
@@ -808,6 +849,7 @@ checkEvo();
 checkHook();
 checkBite();
 checkFx2();
+checkTwFx();
 checkCryo();
 checkBeam();
 checkCoil();

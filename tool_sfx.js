@@ -3,9 +3,15 @@
    ⚠素材の生WAVはリポジトリに入れない(1本40MBある)。ここでは「切って・縮めて・埋め込む」だけをやる。
 
    使い方(Node.js):
-     node tool_sfx.js scan  [素材フォルダ]   … 素材の中の「音のかたまり」を一覧にする(テイク番号を決めるため)
-     node tool_sfx.js build [素材フォルダ]   … レシピどおりに切り出して sfx_out/*.mp3 を作る
-     node tool_sfx.js embed                  … sfx_out/*.mp3 を index.html へ base64 で埋め込む
+     node tool_sfx.js scan  [素材フォルダ]        … 素材の中の「音のかたまり」を一覧にする(テイク番号を決めるため)
+     node tool_sfx.js build [素材フォルダ] [キー]  … レシピどおりに切り出して sfx_out/*.mp3 を作る
+     node tool_sfx.js embed                       … sfx_out/*.mp3 を index.html へ base64 で埋め込む
+
+   ⚠**素材の生WAVは作ったあと消してある**(1本40MBあるため)。作り直す時は
+     Downloadsの5つのzipから**必要なファイルだけ**取り出して sfx_src へ置く。
+     その時は `build` の第2引数に**直したいキーだけ**をカンマ区切りで渡すこと
+     (素材が揃っていない他のキーを巻き込まずに済む。既存の sfx_out はそのまま残るので embed で全部入る)。
+       例) node tool_sfx.js build sfx_src cryo,fort,plasma
 
    ⚠ffmpeg が要る(winget install "FFmpeg (Essentials Build)")。
      PATHに無ければ winget の既定の置き場を自動で探す。 */
@@ -62,16 +68,30 @@ const REC=[
                            {f:'powerful explosions_multiples',t:1,d:.75,g:-5,r:.60,dl:6}]},
  {k:'mortar',  d:.38, g:-4, mix:[{f:'Metal Hit Thud Thump Low Ring',t:0,d:.28,g:-5,r:1.0},
                            {f:'powerful explosions_multiples',t:1,d:.38,g:-7,r:.80,dl:10}]},
+ /* ⭐要塞砲は重砲台と同じ `cannon` を鳴らしていた=最終兵器なのに特別感が無かった(2026-07-26ユーザー指摘)。
+    **閂を落とす金属音 → 巨砲の一発 → 破片が飛び散る尾** の3段にして、他のどの砲とも違う音にする */
+ {k:'fort',    d:1.25,g:-1, mix:[{f:'METLImpt_Metal Old File Impact',t:0,d:.20,g:-9,r:.75},
+                           {f:'EffectiveTrailer_Booms_Vol2_214',t:0,d:1.25,g:-1,r:.82,dl:70},
+                           {f:'Woosh Debris',t:0,d:1.0,g:-10,r:.90,dl:150}]},
+ /* ⭐擲弾砲台も迫撃砲と同じ音だった。小回りの利く砲なので**軽く短い「ポンッ」**に分ける */
+ {k:'gren',    d:.30, g:-4, mix:[{f:'Metal Hit Thud Thump Low Ring',t:0,d:.22,g:-4,r:1.45},
+                           {f:'Explosion Small Blast Enemy',t:0,d:.30,g:-11,r:1.30,dl:8}]},
  /* --- タワーの種類ごとの音 --- */
  {k:'laser',   f:'UIGlitch_User interface_Glitch_High',t:0, d:.28, g:-6, r:1.25},
  {k:'rail',    d:.42, g:-3, mix:[{f:'AEROJet_Blast Off Clean',t:0,d:.42,g:-5,r:1.55},
                            {f:'Impact Electric Tonal Deep',t:0,d:.42,g:-6,r:1.15,dl:4}]},
- {k:'plasma',  d:.42, g:-3, mix:[{f:'Water, Liquid Impact, Bubble, Sci Fi',t:0,d:.42,g:-4,r:.85},
-                           {f:'Impact Electric Tonal Deep',t:0,d:.42,g:-8,r:.90,dl:6}]},
+ /* ⚠プラズマ砲は「水のはじけ」で作っていたので、迫撃砲との違いが出ていなかった(2026-07-26ユーザー指摘)。
+    **電気の充填 → 放電 → 低音のバースト** に組み直して、エネルギー兵器だと音だけで分かるようにする */
+ {k:'plasma',  d:.70, g:-2, mix:[{f:'ELECArc_ArcPowerUpDesign04',t:0,d:.30,g:-8,r:1.25},
+                           {f:'ELECArc_ArcDesign15',t:0,d:.55,g:-2,r:.85,dl:70},
+                           {f:'Collect Scifi Futuristic Electronic Bass Burst',t:0,d:.70,g:-6,r:.80,dl:95}]},
  {k:'sonic',   f:'Metal Bowed Screech Tonal',    t:0, d:.55, g:-8, r:1.0},
  {k:'acid',    f:'Water, Liquid Impact, Bubble, Sci Fi',t:0, d:.34, g:-8, r:1.35},
  {k:'flame',   f:'Whoosh Fire Deep Growl Monster',t:0, d:.50, g:-8, r:1.15},
- {k:'dronefx', f:'Tower Deploy Hitech Robot',    t:0, d:.28, g:-9, r:1.55},
+ /* ⚠ドローン基地は「建設」と同じ素材を早回ししただけだった。
+    **回転翼のブーン + サーボの立ち上がり**で、機体が飛び出す音にする */
+ {k:'dronefx', d:.46, g:-6, mix:[{f:'ELECBuzz_Buzz27',t:0,d:.46,g:-4,r:1.85},
+                           {f:'Tower Deploy Hitech Robot',t:0,d:.30,g:-9,r:1.70,dl:20}]},
  /* --- 汎用 --- */
  {k:'zap',     f:'Impact Electric Tonal Deep',   t:0, d:.32, g:-1, r:1.1},
  /* ⚠重テスラは「ゆっくり伝わって跳ねるほど重くなる」タワーなので、テスラコイルと同じ音では役割が伝わらない。
@@ -83,6 +103,11 @@ const REC=[
  {k:'boom',    f:'Booms_Vol2_011',               t:0, d:.85, g:-1, r:1.0},
  {k:'net',     f:'Whoosh Glass Crystal',         t:0, d:.36, g:-3, r:1.0},
  {k:'frost',   f:'Skill Freeze Whoosh Break',    t:0, d:.60, g:-2, r:1.0},
+ /* ⭐冷却塔は凍結爆弾(frost)と同じ音だった。**氷が張っていく「ひんやり感」**を専用に作る(2026-07-26ユーザー指摘)。
+    地面が凍るパキパキ + 鈴の煌めき + 氷が締まる音。爆発系の音を1つも混ぜないのが肝 */
+ {k:'cryo',    d:.72, g:-3, mix:[{f:'ice, surface cracking, fissure, fast, hard',t:0,d:.72,g:-2,r:.92},
+                           {f:'Shimmer Loop Small Bell Metal Taps',t:0,d:.72,g:-10,r:1.35,dl:10},
+                           {f:'ice, crack, ice block snapping',t:0,d:.45,g:-9,r:1.10,dl:55}]},
  /* --- 建設・経済・UI --- */
  {k:'build',   f:'Tower Deploy Hitech Robot',    t:0, d:.60, g:-2, r:1.0},
  {k:'sell',    f:'Interface Deny Low Fat Dark',  t:0, d:.40, g:-3, r:1.0},
@@ -163,12 +188,15 @@ if(process.argv[2]==='build'){
  if(!fs.existsSync(OUT))fs.mkdirSync(OUT);
  const TMP=path.join(require('os').tmpdir(),'dt_sfx_tmp.wav');
  let total=0,ng=0,warn=0;
+ /* 第2引数があれば、そのキーだけ作り直す(素材を全部そろえなくて済む) */
+ const only=(process.argv[4]||'').split(',').map(s=>s.trim()).filter(Boolean);
  /* ⭐**2回に分けて作る**。
     ① まず素の音を一時WAVへ書き出す(層を重ねるならここで混ぜる)
     ② できた音のピークを測り、そのぶんだけ持ち上げてMP3へ
     ⚠これをやらないと、録り音の小さい素材を重ねた時に全体が-43dBまで沈んで**ほぼ無音**になる
       (ライフルの銃声で実際に沈んだ)。R.g は「最終的なピークを-1dBから何dB下げるか」 */
  for(const R of REC){
+  if(only.length&&only.indexOf(R.k)<0)continue;
   const dst=path.join(OUT,R.k+'.mp3');
   let dur=R.d,ok=false;
   try{fs.unlinkSync(TMP);}catch(e){}
