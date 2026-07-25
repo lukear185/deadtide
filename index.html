@@ -67,19 +67,6 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  #paradecv{height:86px;opacity:.5;z-index:0}
 }
 #paradecv{position:fixed;left:0;right:0;bottom:0;width:100%;height:120px;pointer-events:none}
-/* 🏋鍛錬所のリズム訓練。画面いっぱいのキャンバス1枚+最小限のHUD */
-#scr-train{background:#1a1712;justify-content:flex-start;align-items:stretch;overflow:hidden}
-#trcv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
-#trquit{position:absolute;right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));z-index:2;
- background:rgba(36,31,25,.9);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:6px 11px;font-weight:900}
-/* 洞窟の操作ボタン(左下に横一列)。⚠下端から28px上げてある。
-   画面下24pxは面子や🩸の内訳を出す帯なので、重ねると読めなくなる */
-#trbtns{position:absolute;left:max(8px,env(safe-area-inset-left));bottom:calc(28px + max(0px,env(safe-area-inset-bottom)));
- z-index:2;display:flex;flex-direction:row;gap:5px;align-items:center}
-#trbtns button{display:none;background:rgba(36,31,25,.92);border:2px solid var(--paper);border-radius:10px;
- color:var(--paper);font-size:12px;padding:5px 10px;font-weight:900;white-space:nowrap}
-#trbtns #trskip{background:var(--rust);color:#fff}
-#trbtns button.on{background:var(--amber);color:var(--ink)}
 /* 鍛錬所の英雄カード(研究所と同じ .lc グリッドに乗せる) */
 .lc.trc.sel{border-color:var(--rust);box-shadow:0 0 0 3px rgba(193,80,46,.4)}
 .lc .zth{width:64px;height:64px;align-self:center;display:block}
@@ -580,24 +567,13 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
-<div class="scr" id="scr-train">
-  <canvas id="trcv"></canvas>
-  <button id="trquit">✕ やめる</button>
-  <div id="trbtns">
-    <button id="trskip">▶ 攻めてこい</button>
-    <button id="trcull">🔪 間引き</button>
-    <button id="trcrush">🪨 崩落 50</button>
-    <button id="trmove">🏠 マザー移動 80</button>
-  </div>
-</div>
-
 <div class="modal" id="md-train">
   <div class="panel bigpanel">
     <div class="bphd"><b>🏋 鍛錬所</b><span class="pt" id="tr-mat2"></span><button class="xbtn" id="bt-train-close">✕</button></div>
     <div class="tabs" id="tr-tabs"></div>
     <div class="bphint" id="tr-hint"></div>
     <div class="bpbody" id="tr-list"></div>
-    <div class="bpfoot" id="tr-foot"><div class="tabs" id="tr-dif"></div><button class="btn red" id="bt-tr-go">🏋 訓練する 🔧10</button></div>
+    <div class="bpfoot" id="tr-foot"><button class="btn red" id="bt-tr-go">🏋 鍛える 🔧10</button></div>
   </div>
 </div>
 
@@ -734,7 +710,7 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zc:{},zl:{},zdex:{}};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{}};
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
 try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
@@ -746,17 +722,10 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!META.hxp||typeof META.hxp!=='object')META.hxp={};/* 次のLvまでの経験 id→pt */
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
  if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
- if(!META.zc||typeof META.zc!=='object')META.zc={};/* 🧿ゾンビのコア id→個数 */
- if(!META.zl||typeof META.zl!=='object')META.zl={};/* 洞窟のゾンビの強化Lv id→Lv(0〜5) */
- if(!META.zdex||typeof META.zdex!=='object')META.zdex={};/* 図鑑: 洞窟で一度でも出した種類 */
+ if(!META.zdex||typeof META.zdex!=='object')META.zdex={};/* 📖図鑑: ソロで倒したことがある種類 */
  if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
-function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;
- /* 🧿コアも実質無限に。
-    ⚠ZCAVEはこの関数より下で定義される const なので、起動直後の1回目はまだ入っていない。
-      **constのTDZは `typeof` でも ReferenceError を投げる**(varや未宣言と違う)=typeofガードでは防げない。
-      try/catchで受けること。ここを間違えるとスクリプト全体が止まってタイトルから先へ進めなくなる。 */
- try{META.zc=META.zc||{};for(const q of ZCAVE)META.zc[q.id]=DEV_INF;}catch(e){}}
+function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;}
 devTop();
 /* DEVモードだと分かるようにタイトル右上の版数へ印を付ける(付け忘れ/外し忘れ防止) */
 if(DEV)try{const e=document.getElementById('vertag');if(e)e.textContent='v2.0 β 🛠DEV';}catch(e){}
@@ -1250,54 +1219,25 @@ const G_COST1=3,G_COST10=25;/* 単発/10連の💎 */
 const GEM_BOSS=1,GEM_FIN=3;/* 通常ボス/最終ボスを倒した時の💎 */
 const heroOf=id=>HEROES.find(h=>h.id===id);
 const heroOwned=id=>((META.hero||{})[id]||0)>0;
-/* 🏋鍛錬(ヒーロー鍛錬所のリズム訓練で上がるレベル)。HPと攻撃が+8%/Lv・最大Lv10=+80% */
-const TR_MAX=10,TR_COST=10;/* 上限Lv / 1回の訓練で使う🔧鍛錬素材 */
+/* 🏋鍛錬(鍛錬所で上がるレベル)。HPと攻撃が+8%/Lv・最大Lv10=+80% */
+const TR_MAX=10,TR_COST=10;/* 上限Lv / 1回の鍛錬で使う🔧鍛錬素材 */
 const TR_NEED=lv=>100+60*lv;/* そのLvから次へ上がるのに必要な経験 */
 const hLv=id=>clamp((META.hlv&&META.hlv[id])||0,0,TR_MAX);
 const hBoost=id=>1+.08*hLv(id);
-/* 🧿ゾンビのコア(2026-07-26): TD側(ソロ)で同じ種類を倒すと落ちる。
-   🏋鍛錬所の洞窟に出せるゾンビの「解放」と「強化」に使う=モードをまたぐ往復ループ。
-   ⚠洞窟で使えるのはステージ1の12種だけ(ボスと海の生き物は除く)。
-   ⚠2026-07-26(第52弾)に役割を変えた: **コアは「解放」ではなく「強化」だけに使う**。
-     洞窟に出せる種類は🧿では増えない=**土から生まれるのは初期種2つだけで、あとは肉塊を食べた進化で増える**。
-   fam = 肉塊の系統(進化先を決める)。st = 進化の段数(図鑑の表示用)。
-   ⚠TD側で atk:0 の敵(すり抜け専門のクローラー/スライム状体/レイス)は洞窟だと何もできないので、
-     洞窟用の攻撃力(atk)と攻撃間隔(ar)をここで上書きしている */
-const ZCAVE=[
- /* 硬い系(起点=ウォーカー) */
- {id:'walk',fam:'hard',st:1},{id:'arm',fam:'hard',st:2},{id:'scr',fam:'hard',st:2},
- {id:'brut',fam:'hard',st:3},{id:'blo',fam:'hard',st:3},{id:'tank',fam:'hard',st:4},
- /* 速い系(起点=ランナー) */
- {id:'run', fam:'fast',st:1},{id:'dog',fam:'fast',st:2},{id:'crwl',fam:'fast',st:2,atk:18,ar:1},
- {id:'stlk',fam:'fast',st:3},{id:'ooze',fam:'fast',st:3,atk:34,ar:1.2},{id:'wrth',fam:'fast',st:4,atk:44,ar:1}
-];
-const ZC_FAM={hard:'硬い',fast:'速い'};
-/* 土から生まれる初期種。⚠腐肉レベル1〜2で硬い系、3〜4で速い系が出る=どの鉱脈を削るかで系統を選ぶ */
-const ZC_SEED={hard:'walk',fast:'run'};
-/* 起点の2種は最初から図鑑に載っている。
-   ⚠METAの正規化ブロックは**セーブが無いと丸ごと走らない**ので、そこに書くと新規プレイヤーだけ 0/12 になる
-     (実際になった)。ZC_SEEDを定義したここで必ず入れること */
-META.zdex=META.zdex||{};META.zdex[ZC_SEED.hard]=1;META.zdex[ZC_SEED.fast]=1;
-/* 進化: from が eat 系統の肉塊を n 個食べると to になる。
-   ⚠**何を食べたかで行き先が変わる**のがこの仕組みの肝(同じ種でも別系統の肉塊なら別の枝へ) */
-const ZEVO=[
- {from:'walk',eat:'hard',n:3,to:'arm'},  {from:'walk',eat:'fast',n:3,to:'scr'},
- {from:'arm', eat:'hard',n:4,to:'brut'}, {from:'arm', eat:'fast',n:4,to:'blo'},
- {from:'brut',eat:'hard',n:5,to:'tank'},
- {from:'run', eat:'fast',n:3,to:'dog'},  {from:'run', eat:'hard',n:3,to:'crwl'},
- {from:'dog', eat:'fast',n:4,to:'stlk'}, {from:'dog', eat:'hard',n:4,to:'ooze'},
- {from:'stlk',eat:'fast',n:5,to:'wrth'}
-];
-const ZC_P=.06;   /* コアの落ちる確率(エリートは2倍) */
-const ZC_LV=5;    /* 強化の上限Lv */
-const zcNeed=lv=>lv<=0?8:6*(lv+1);/* 次のLvに要るコア(満額92でLv5) */
-const zcHave=id=>(META.zc&&META.zc[id])||0;
-const zcLv=id=>clamp((META.zl&&META.zl[id])||0,0,ZC_LV);
-const zcBoost=id=>1+.12*zcLv(id);/* Lv0が等倍、そこから+12%/Lv */
-const zcSeen=id=>!!(META.zdex&&META.zdex[id]);/* 図鑑: 洞窟で一度でも出したか */
-const ZC_BY={};for(const q of ZCAVE)ZC_BY[q.id]=q;
-const zcOf=zi=>ZC_BY[(ZOMBIES[zi]||{}).id];/* ZOMBIESの添字 → 洞窟で使える種類か */
-const zcEvo=id=>ZEVO.filter(e=>e.from===id);
+/* 📖ゾンビ図鑑(2026-07-26 第53弾): ソロ作戦で初めて倒したゾンビが載る。
+   ⚠元は「🧿コアを集めて洞窟のゾンビを強化する」仕組みだったが、**洞窟をまるごと廃止した**ので
+     記録(図鑑)だけ残した。コアの所持数(META.zc)と強化Lv(META.zl)は廃止。 */
+const zcSeen=id=>!!(META.zdex&&META.zdex[id]);
+/* 初めて倒した種類を図鑑に登録する。戻り値=新しく載ったか */
+function zdexAdd(id){
+ if(!id)return false;
+ META.zdex=META.zdex||{};
+ if(META.zdex[id])return false;
+ META.zdex[id]=1;saveMeta();return true;}
+/* 図鑑の並び。ステージごとに分ける(ボスも最終ボスもその面の欄に入る) */
+const ZDEX_G=[{n:'① 廃線ハイウェイ',f:z=>!z.st&&!z.nm},
+ {n:'② 沈んだ港',f:z=>z.st===2},
+ {n:'🌑 ナイトメア',f:z=>!!z.nm}];
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
 /* 英雄をUNITSの末尾に「特別な兵科」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=兵科の数え上げには U_N を使うこと
@@ -2501,12 +2441,10 @@ function killZ(C,z){
   addFx(C,'txt',z.px,z.py-58,'💎+'+gm);
   addP(C,14,z.px,z.py-30,{sp:170,up:80,g:420,life:.9,r:3,col:'#9fdcf5'});
   toast('💎 魔石を'+gm+'個 手に入れた(計'+META.gem+')');}
- /* 🧿コア: 🏋鍛錬所の洞窟に出せる12種を倒した時だけ落ちる。ソロのみ */
- if(soloMeta()&&C.isMe){const q=zcOf(z.zi);
-  if(q&&Math.random()<ZC_P*(z.elite?2:1)){
-   META.zc=META.zc||{};META.zc[q.id]=(META.zc[q.id]||0)+1;saveMeta();
-   addFx(C,'txt',z.px,z.py-46,'🧿'+ZOMBIES[z.zi].n+'のコア');
-   addP(C,8,z.px,z.py-26,{sp:150,up:70,g:400,life:.8,r:2.6,col:'#b7e07a'});}}
+ /* 📖ゾンビ図鑑: ソロで初めて倒した種類を登録する */
+ if(soloMeta()&&C.isMe&&zdexAdd((ZOMBIES[z.zi]||{}).id)){
+  addFx(C,'txt',z.px,z.py-46,'📖'+ZOMBIES[z.zi].n+' 図鑑に登録');
+  addP(C,8,z.px,z.py-26,{sp:150,up:70,g:400,life:.8,r:2.6,col:'#b7e07a'});}
  /* 血しぶきと地面の染み */
  const bsc=z.boss?2.4:z.elite?1.5:1;
  addP(C,Math.round(9*bsc),z.px,z.py-22,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
@@ -4350,7 +4288,7 @@ function renderLab(){
  if((META.py0||0)<5)items.push({cat:'eco',k:'py0',ic:'💰',t:'撃破報酬+6%',tag:'Lv'+(META.py0||0)+'/5',d:'ゾンビを倒した時の⚙️が増える(全ウェーブ)',p:LAB_PY0(META.py0||0)});
  if((META.ec0||0)<5)items.push({cat:'eco',k:'ec0',ic:'🏭',t:'工房の産出+12%',tag:'Lv'+(META.ec0||0)+'/5',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({cat:'eco',k:'cd0',ic:'⏱',t:'出撃の待ち-6%',tag:'Lv'+(META.cd0||0)+'/5',d:'部隊を続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
- if(!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'タイトルに鍛錬所が開く。リズム訓練で英雄のHPと攻撃が最大+80%',p:300});
+ if(!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'タイトルに鍛錬所が開く。🔧を注いで英雄のHPと攻撃が最大+80%',p:300});
  if(!(META.ec1||0))items.push({cat:'start',k:'ec1',ic:'🏭',t:'工房つきで開始',tag:'1回きり',d:'工房エリアに1基が最初から建っている',p:220});
  /* ---- 系統強化(研究所で解放した新型にも効く) ---- */
  for(const L of TLINE){const lv=(META.tl&&META.tl[L.k])||0;
@@ -4567,110 +4505,39 @@ $('bt-gacha-close').onclick=()=>{$('md-gacha').classList.remove('on');try{render
 $('gc-1').onclick=()=>gcPull(1);
 $('gc-10').onclick=()=>gcPull(10);
 $('gc-rate').onclick=()=>{$('gc-res').innerHTML=IC(gcRateHtml());};
-/* ============ 🏋 ヒーロー鍛錬所(洞窟・マザーゾンビ防衛) ============
-   『ゆうしゃのくせになまいきだ。』のオマージュ。2026-07-26に3度作り直している(第49→50→51弾)。
-   ⚠**この設計の芯は「循環が閉じていること」**。本家の発明は次の3つで、ここを外すと
-     「掘る→ゾンビが出る→英雄が来る→戦う」の一方通行になって手応えが消える(実際になった):
-      ①**資源＝脅威の同一化**: 英雄を倒すと腐肉が増える／英雄はゾンビを倒すと強くなる
-      ②**総量保存**: 盤面の腐肉は増えない。増やす唯一の手段が英雄を倒すこと
-      ③**死＝資源の還元**: ゾンビが死ぬと腐肉が手持ちへ戻る(英雄に食われたぶんは戻らない)
-   ⚠**資源は🩸腐肉1本**。掘るのも崩落もマザー移動も同じ資源=「今使うか、後に残すか」で毎回悩ませる。
-   ⚠**自律ユニットの誘導則は1つだけ・一目で分かるもの**にする(本家のコケの直進則にあたる):
-      ゾンビは**通路を直進し、行き止まりで向きを変える**。英雄が`CV_AGGRO`歩以内に来たら襲いかかる。
-      これで「どこをどう掘るか」がゾンビの流れを決める=地形設計に意味が出る。
-   ⚠**侵攻中に掘った道を英雄は通らない**(本家の勇者の癖)。侵攻中も手を動かせるようにするための要。
-   本家の顔である「食物連鎖の階層(コケ→ムシ→トカゲ)」「魔王の連行タイム」は入れていない。
-   DEADTIDE固有: 🧿ゾンビのコア / 🌊死潮の満ち引き / 🦠感染 / 攻めてくる英雄の必殺技。
-   立場はTD側の裏返し=こちらがゾンビ側で、守るのはマザーゾンビ。
-   ⚠鍛錬所はタイトル側の施設(戦場の建設マスではない)=試合を止めずに済むため。 */
-const CV_W=56,CV_H=24;       /* 盤面のマス数(横×縦)。縦=深さで、下ほど深い */
-const CV_CS=30;              /* 1マスの表示px。画面には28×11マスぶんしか映らない=カメラで動かす */
-/* ---- 🩸腐肉(唯一の資源) ---- */
-const CV_DIG=8;              /* 1マス掘るのに要る腐肉 */
-const CV_BIO0=300;           /* 開始時の手持ち */
-const CV_BIO_REG=4;          /* マザーゾンビが毎秒生む腐肉(これだけでは足りない=循環を回すこと) */
-const CV_BIO_MAX=999;
-const CV_NUT_U=10;           /* 埋蔵レベル1あたりの腐肉。⚠レベル1を掘ると±2でほぼ収支ゼロになる大きさ */
-const CV_BACK=.7;            /* ゾンビが死んだ時に手持ちへ戻る割合 */
-const CV_KILL_BIO=300;       /* 英雄を倒した時に入る腐肉 */
-const CV_GROW=900;           /* 英雄がこれだけ腐肉を吸うと成長が上限に届く */
-const CV_GROW_MAX=.8;        /* 英雄の成長の上限(+80%) */
-const CV_CRUSH=50;           /* 🪨崩落のコスト */
-const CV_MOVE=80;            /* 🏠マザーゾンビを移すコスト */
-/* ---- 🥩肉塊と進化 ---- */
-const CV_MEAT_T=30;          /* 肉塊が腐って腐肉に戻るまでの秒数 */
-const CV_MEAT_BACK=.7;       /* 腐った時に手持ちへ戻る割合 */
-const CV_BAIT=3;             /* ゾンビが肉塊に気づいて寄る距離(歩数) */
-const CV_EAT_T=1.2;          /* 肉塊を1つ食べるのにかかる秒数 */
-/* ---- 進行 ---- */
-const CV_NEST=25;            /* 巣作りタイムの秒数 */
-const CV_RAID=75;            /* 侵攻フェーズの制限秒。しのぎ切れば次の波 */
-const CV_SPAWN=3.5;          /* 部屋から自然に湧く間隔(秒)。主役は「掘って湧かす」方 */
-const CV_ZMAX=25;            /* 場に出せるゾンビの上限 */
-const CV_AGGRO=5;            /* 英雄がこの歩数以内に来たらゾンビが襲いに行く(それまでは徘徊) */
-const CV_SPD_OPEN=.30;       /* 英雄が空洞を1マス進む秒数 */
-const CV_SPD_DIG=1.1;        /* 英雄が土を1マス掘り抜く秒数 */
-const CV_ZSPD=.42;           /* ゾンビが1マス進む秒数(素の速さで割る) */
-/* ⚠この2つが無いとゾンビが1マスに無限に重なり、英雄が数秒で溶ける(TD側のENG_MAXと同じ理屈) */
-const CV_ENG=3;              /* 1人の英雄に同時に噛みつけるゾンビの数 */
-const CV_CELL=2;             /* 1マスに同時に居られるゾンビの数 */
-const CV_WET=12;             /* 潮が引いた跡で湧きが倍になる秒数 */
-const CV_MOM_X=53,CV_MOM_Y=11;/* マザーゾンビの初期マス(2×2)。以後は TR.mx/TR.my が正 */
-const CV_MINI=1.7;           /* ミニマップの1マスあたりpx */
-const CV_FOLLOW=4;           /* ミニマップを触ってから、カメラが自動追従に戻るまでの秒数 */
-/* 難易度3段階。🔧の消費は同じで、深いほど波数もお供も増えるが経験値の倍率が上がる */
-const TR_DIF=[
- {n:'浅層',w:4,core:1200,hm:1,   am:1,xm:1,   dsc:'4波。お供は1人まで'},
- {n:'中層',w:6,core:1500,hm:1.12,am:2,xm:1.35,dsc:'6波。お供は2人まで'},
- {n:'深層',w:9,core:1800,hm:1.25,am:3,xm:1.8, dsc:'9波。お供は3人まで'}
-];
-/* 報酬(スコア=経験値)。しのいだ波 / 倒した英雄 / 与えたダメージ1あたり / 全波しのいだ時 */
-const TR_PW=380,TR_PK=200,TR_PD=.06,TR_PC=800;
-/* 開放度(周囲8マスの空洞数) → 湧く格 */
-const cvTier=o=>o<=2?1:o<=4?2:o<=6?3:4;
-/* 岩肌の凹凸を「マスの座標から決まる乱数」で出す=毎フレーム描き直してもチラつかない */
-const trHash=n=>{const s=Math.sin(n*127.1)*43758.5453;return s-Math.floor(s);};
-const ZC_TIER_N=['','細い坑道','小部屋','広間','大広間の中心'];
-/* 必殺技の型。名前と説明は英雄ごとに個別に出すが、効き目はこの7種に集約してある */
-const CV_ULT={hCop:'line',hFire:'aoe',hHunt:'aoe',hMech:'heal',hPost:'rush',
- hSf:'snipe',hMed:'heal',hBomb:'aoe',hSeer:'stop',hGiant:'all',hNox:'all'};
-const CV_DIR=[[1,0],[0,1],[-1,0],[0,-1]];
-let TR=null,TRSEL='',TRDIF=0,TRTAB='hero';
-const trcv=$('trcv'),trx=(trcv&&trcv.getContext)?trcv.getContext('2d'):null;
-const zcTotal=()=>{let n=0;for(const q of ZCAVE)n+=zcHave(q.id);return n;};
-const zcZi=id=>ZOMBIES.findIndex(z=>z.id===id);
+/* ============ 🏋 鍛錬所 と 📖ゾンビ図鑑 ============
+   ⚠2026-07-26(第53弾)に**洞窟をまるごと廃止した**。
+     『ゆうしゃのくせになまいきだ。』式の「土を掘って生態系を育て、自律ユニットに戦わせる」防衛戦を
+     4度作り直したが、**タワーディフェンスに間接統治のミニゲームを足すのは噛み合わない**というユーザー判断。
+     消したもの: 洞窟の盤面(56×24)/🔦採掘レーザー/🩸腐肉/🥩肉塊と進化ツリー/🧿コアの強化/
+     マザーゾンビ防衛/🌊死潮/🦠感染/攻めてくる英雄の必殺技/専用BGM。
+   ⚠**同じものを作り直さないこと**。ここに手を入れるなら設計から別物にする。
+   いま残っているのは次の2つだけ:
+    ① 英雄の鍛錬Lv(HPと攻撃が+8%/Lv・最大10) ② ソロ作戦のゾンビ図鑑
+   ⚠鍛錬の中身(🔧鍛錬素材を何に使わせるか)は作り直し予定。
+     今は「🔧を注いで経験値を入れる」だけの**暫定の形**で、遊びとしての中身はまだ無い。 */
+let TRSEL='',TRTAB='hero';
+const TR_XP=150;/* 🔧TR_COST ぶん注いだ時に入る経験値(暫定) */
 
-/* ---------------- 鍛錬所のモーダル ---------------- */
-/* sil=未発見。⚠中身が分からないよう真っ黒のシルエットで出す */
-function zcThumb(cv,zi,sil){
- const c=cv.getContext&&cv.getContext('2d');if(!c||!c.save)return;
- const W=cv.width,H=cv.height;c.clearRect(0,0,W,H);
- const s=(H*.74)/64/(ZOMBIES[zi].sc||1);
- c.save();c.translate(W*.5,H*.9);c.scale(s,s);
- if(sil&&c.filter!==undefined)c.filter='brightness(0)';
- try{drawZombie(c,zi,0,0,-1,.4,0,{});}catch(e){}
- c.restore();
-}
+/* ---------------- 🏋 鍛錬所のモーダル ---------------- */
 function renderTrain(){
  const box=$('tr-list');if(!box)return;
- const mt=$('tr-mat2');if(mt)mt.innerHTML=IC('🔧 ')+fmt(META.hmat||0)+'　🧿 '+fmt(zcTotal());
+ const mt=$('tr-mat2');if(mt)mt.innerHTML=IC('🔧 ')+fmt(META.hmat||0);
  const tb=$('tr-tabs');
- if(tb){tb.innerHTML=[['hero','🦸 訓練する'],['zoo','🧿 ゾンビ']].map(x=>
+ if(tb){tb.innerHTML=[['hero','🦸 鍛える'],['zoo','📖 ゾンビ図鑑']].map(x=>
    '<button class="tb'+(TRTAB===x[0]?' on':'')+'" data-tt="'+x[0]+'">'+x[1]+'</button>').join('');
   tb.querySelectorAll('[data-tt]').forEach(e=>{e.onclick=()=>{TRTAB=e.dataset.tt;renderTrain();};});}
- const ft=$('tr-foot');if(ft)ft.style.display=TRTAB==='hero'?'':'none';
+ const ft=$('tr-foot');if(ft&&ft.style)ft.style.display=TRTAB==='hero'?'':'none';
  if(TRTAB==='zoo')renderZoo(box);else renderTrHero(box);
 }
 function renderTrHero(box){
  const hint=$('tr-hint');
- if(hint)hint.innerHTML='英雄が訓練のために洞窟へ攻めてくる。<b>🔦採掘レーザーで腐肉をふくむ土を削ると初期種が生まれる</b>。'
-  +'<b>🔪間引いて残した🥩肉塊を食べさせると進化</b>する。英雄に倒されたぶんは英雄の力になるので、'
-  +'腐肉を増やす唯一の手は<b>英雄を倒すこと</b>。';
+ if(hint)hint.innerHTML=IC('🔧鍛錬素材を注いで英雄を鍛える。<b>鍛錬Lvが1上がるごとにHPと攻撃が+8%</b>'
+  +'(最大Lv'+TR_MAX+'で+80%)。🔧は💎英雄召集の重複で貯まる。<b>※鍛錬の中身は作り直し中の暫定版</b>');
  const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));
- const df=$('tr-dif'),g=$('bt-tr-go');
+ const g=$('bt-tr-go');
  if(!own.length){
   box.innerHTML=IC('<div class="labdone">まだ英雄がいない。💎英雄召集で仲間にしよう</div>');
-  if(df)df.innerHTML='';
   if(g){g.disabled=true;g.textContent='英雄がいない';}
   return;}
  if(!own.some(h=>h.id===TRSEL))TRSEL=own[0].id;
@@ -4686,1058 +4553,75 @@ function renderTrHero(box){
    +'<div class="tg">'+(lv>=TR_MAX?'鍛錬しつくした':('経験 '+xp+' / '+nd))+'</div></div>';
  }).join('')+'</div>');
  box.querySelectorAll('[data-tr]').forEach(e=>{e.onclick=()=>{TRSEL=e.dataset.tr;renderTrain();};});
- if(df){df.innerHTML=TR_DIF.map((D,i)=>'<button class="tb'+(TRDIF===i?' on':'')+'" data-td="'+i+'">'
-   +D.n+' <i>'+D.w+'波</i></button>').join('');
-  df.querySelectorAll('[data-td]').forEach(e=>{e.onclick=()=>{TRDIF=+e.dataset.td;renderTrain();};});}
- if(g){const sel=heroOf(TRSEL);
-  g.innerHTML=icoImg('ic-train','🏋')+' '+(sel?sel.n:'')+' を'+TR_DIF[TRDIF].n+'で迎え撃つ '+IC('🔧')+TR_COST;
-  g.disabled=!DEV&&(META.hmat||0)<TR_COST;g.onclick=()=>trainStart(TRSEL,TRDIF);}
+ if(g){const sel=heroOf(TRSEL),done=!!sel&&hLv(sel.id)>=TR_MAX;
+  g.innerHTML=icoImg('ic-train','🏋')+' '+(sel?sel.n:'')+' を鍛える '+IC('🔧')+TR_COST+' → 経験+'+TR_XP;
+  g.disabled=done||(!DEV&&(META.hmat||0)<TR_COST);
+  if(done)g.textContent=sel.n+' は鍛錬しつくした';
+  g.onclick=()=>trainGrind(TRSEL);}
 }
-/* 🧿タブ=生態系の図鑑。⚠コアは「解放」ではなく「強化」だけに使う(2026-07-26 第52弾)。
-   洞窟に出せる種類が増えるのは、肉塊を食べた進化を実際に成功させた時だけ */
-function renderZoo(box){
- const hint=$('tr-hint');
- if(hint)hint.innerHTML='土から生まれるのは<b>ウォーカーとランナーの2種だけ</b>。'
-  +'<b>間引いて残した🥩肉塊を食べさせると進化</b>し、<b>何系統の肉塊を食べたかで行き先が変わる</b>。'
-  +'🧿コアはソロ作戦で同じ種類を倒すと手に入り、<b>強化だけ</b>に使う。';
- const seen=ZCAVE.filter(q=>zcSeen(q.id)).length;
- box.innerHTML='<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+ZCAVE.length+' 種</div>'
-  +'<div class="lgrid">'+ZCAVE.map(q=>{
-  const zi=zcZi(q.id),Z=ZOMBIES[zi]||{};
-  const lv=zcLv(q.id),have=zcHave(q.id),bo=zcBoost(q.id);
-  const need=lv>=ZC_LV?0:zcNeed(lv),can=need>0&&have>=need;
-  const ev=zcEvo(q.id).map(e=>ZC_FAM[e.eat]+'肉塊'+e.n+'→'+(zcSeen(e.to)?ZOMBIES[zcZi(e.to)].n:'???')).join('<br>');
-  if(!zcSeen(q.id))
-   return '<div class="lc" style="opacity:.5">'
-    +'<canvas class="zth zsil" width="128" height="128" data-zi="'+zi+'"></canvas>'
-    +'<div class="nm">??? </div>'
-    +'<div class="tg">'+ZC_FAM[q.fam]+'系 '+q.st+'段目</div>'
-    +'<div class="ds">まだ洞窟で出したことがない<br>🧿 所持 '+have+'</div>'
-    +'<div class="bu" style="opacity:.5">未発見</div></div>';
-  return '<div class="lc'+(can?' can':'')+'">'
-   +'<canvas class="zth" width="128" height="128" data-zi="'+zi+'"></canvas>'
-   +'<div class="nm">'+Z.n+'</div>'
-   /* ⚠所持数は .ds ではなく .tg 側へ。.dsは3行までなので、進化先2行+HP行で埋まってしまう */
-   +'<div class="tg">'+ZC_FAM[q.fam]+'系 '+q.st+'段目／Lv'+lv+'/'+ZC_LV+'／🧿'+have+'</div>'
-   +'<div class="ds">HP'+Math.round(Z.hp*bo)+'・攻撃'+Math.round((q.atk||Z.atk)*bo)+'<br>'
-     +(ev||'これ以上は進化しない')+'</div>'
-   +(lv>=ZC_LV?'<div class="bu" style="opacity:.55">鍛えつくした</div>'
-     :'<button class="bu" data-zo="'+q.id+'"'+(can?'':' disabled')+'>🧿'+need+' でLv'+(lv+1)+'へ</button>')
-   +'</div>';
- }).join('')+'</div>';
- box.querySelectorAll('canvas.zth').forEach(cv=>zcThumb(cv,+cv.dataset.zi,cv.classList&&cv.classList.contains('zsil')));
- box.querySelectorAll('[data-zo]').forEach(e=>{e.onclick=()=>zcBuy(e.dataset.zo);});
-}
-function zcBuy(id){
- const lv=zcLv(id);if(lv>=ZC_LV)return;
- const need=zcNeed(lv),Z=ZOMBIES[zcZi(id)];
- if(zcHave(id)<need){toast('🧿'+Z.n+'のコアが '+need+' 要る(所持 '+zcHave(id)+')',true);return;}
- META.zc=META.zc||{};META.zl=META.zl||{};
- META.zc[id]=zcHave(id)-need;META.zl[id]=lv+1;saveMeta();
- sfx.buy&&sfx.buy();
- toast(Z.n+(lv?(' を Lv'+(lv+1)+' に強化した'):' を洞窟に出せるようになった'));
- renderTrain();
-}
-
-/* ---------------- 盤面の読み書き ---------------- */
-const cvI=(x,y)=>y*CV_W+x;
-const cvIn=(x,y)=>x>=0&&x<CV_W&&y>=0&&y<CV_H;
-/* 0=土 / 1=空洞 / 2=マザーゾンビ */
-const cvAt=(x,y)=>cvIn(x,y)?TR.g[cvI(x,y)]:0;
-const cvWater=y=>y>=CV_H-TR.tw;
-/* 通れるマス(空洞で、水没していない)。マザーゾンビのマスは通れない=隣から殴る */
-const cvWalk=(x,y)=>cvAt(x,y)===1&&!cvWater(y);
-/* 空いていて定員に余裕があるマス(ゾンビの移動先) */
-const cvFree=(x,y)=>cvWalk(x,y)&&!(TR.occ&&TR.occ[cvI(x,y)]>=CV_CELL);
-/* 開放度=周囲8マスのうち空洞(マザーゾンビも含む)の数 */
-function cvDeg(x,y){let n=0;
- for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
-  if(!dx&&!dy)continue;
-  if(cvAt(x+dx,y+dy)>0)n++;}
- return n;}
-/* 掘れるのは「空洞に4近傍で隣接する土」だけ */
-function cvCanDig(x,y){
- if(!cvIn(x,y)||cvAt(x,y)!==0)return false;
- return cvAt(x-1,y)>0||cvAt(x+1,y)>0||cvAt(x,y-1)>0||cvAt(x,y+1)>0;}
-/* 侵攻が始まった後に掘られたマスか(=英雄が通らない道) */
-const cvFresh=i=>TR.raidT>=0&&TR.dugT[i]>TR.raidT;
-/* 土に埋まっている腐肉を鉱脈状に作る。深い所・奥ほど濃い。
-   ⚠しきい値を固定にすると、乱数のブレで盤面が鉱脈だらけにも空っぽにもなる(実際になった)。
-     濃い順に並べ替えて**割合で格を割り当てる**=どの回でも「腐肉のあるマスは全体の28%」に揃う。 */
-const CV_NUT_Q=[.02,.06,.14,.28];/* 上位から 格4 / 格3 / 格2 / 格1 の累積割合 */
-function cvGenNut(){
- const N=CV_W*CV_H,f=new Float32Array(N),n=new Uint8Array(N);
- for(let k=0;k<70;k++){
-  const bx=rnd(0,CV_W),by=rnd(0,CV_H),r=rnd(1.6,4.6),s=rnd(.6,2.1);
-  const x0=Math.max(0,Math.floor(bx-r)),x1=Math.min(CV_W-1,Math.ceil(bx+r));
-  const y0=Math.max(0,Math.floor(by-r)),y1=Math.min(CV_H-1,Math.ceil(by+r));
-  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-   const d=Math.hypot(x-bx,y-by);if(d>r)continue;
-   f[cvI(x,y)]+=s*(1-d/r);}}
- /* ⚠奥(x)への寄せを強くすると濃い鉱脈が全部マザーゾンビ側に固まり、序盤に掘る物が無くなる */
- for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++)f[cvI(x,y)]+=(y/CV_H)*.6+(x/CV_W)*.15;
- const idx=[];for(let i=0;i<N;i++)idx.push(i);
- idx.sort((a,b)=>f[b]-f[a]);
- const q=CV_NUT_Q.map(v=>Math.round(N*v));
- for(let k=0;k<idx.length;k++){
-  const i=idx[k];
-  n[i]=k<q[0]?4:k<q[1]?3:k<q[2]?2:k<q[3]?1:0;}
- return n;}
-/* 🔦採掘レーザーで1マス削る。⚠腐肉が埋まっていたら、それが解放されてその場で**初期種**が生まれる。
-   ⚠土から出るのは初期種2つだけ。上位種は「肉塊を食べた進化」でしか手に入らない(第52弾) */
-function cvDigAt(x,y,free){
- if(!cvCanDig(x,y))return false;
- if(!free){if(TR.bio<CV_DIG)return false;TR.bio-=CV_DIG;}
- const i=cvI(x,y);
- TR.g[i]=1;TR.dug++;TR.dirty=true;TR.dugT[i]=TR.t;
- const nut=TR.nut[i];
- TR.beams.push({x:x+.5,y:y+.5,t:0});/* レーザーの光条 */
- for(let k=0;k<(nut?7:4);k++)TR.ps.push({x:x+rnd(.1,.9),y:y+rnd(.1,.9),
-  vx:rnd(-.7,.7),vy:rnd(-1.5,-.3),t:0,life:rnd(.3,.65),c:nut?'#c85a64':'#6b5a3a'});
- if(nut>0){
-  TR.nut[i]=0;TR.buried=Math.max(0,TR.buried-nut*CV_NUT_U);
-  /* ⚠腐肉レベル1〜2=硬い系の起点(ウォーカー) / 3〜4=速い系の起点(ランナー)。
-     どの鉱脈を削るかで、どちらの系統を育てるかが決まる。レベル4は2匹 */
-  const seed=nut<=2?ZC_SEED.hard:ZC_SEED.fast;
-  cvMakeZ(x,y,seed,nut*CV_NUT_U,true);
-  if(nut>=4)cvMakeZ(x,y,seed,nut*CV_NUT_U*.5,true);
- }
- /* 侵攻中に削った道は英雄が通らない=安全な増援ルートになる(1回だけ教える) */
- if(TR.raidT>=0&&!TR.toldFresh){TR.toldFresh=1;TR.msg='侵攻中に削った道は英雄が通らない';TR.msgT=2.6;}
- return true;}
-
-/* ---------------- 経路 ---------------- */
-/* 英雄用: マザーゾンビからのコスト場(空洞=1・土=4)。土を掘るのは高くつくので、掘ってある道を選ぶ
-   ⚠マスが1344個あるのでO(n^2)のダイクストラだと重い=二分ヒープで回す
-   ⚠侵攻が始まった後に掘られたマスは通らない(本家の勇者の癖) */
-function cvPathHero(){
- const N=CV_W*CV_H,INF=1e9,d=new Float64Array(N).fill(INF);
- const hi=[],hv=[];let popv=0;
- const push=(i,v)=>{hi.push(i);hv.push(v);let c=hi.length-1;
-  while(c>0){const p=(c-1)>>1;if(hv[p]<=hv[c])break;
-   const a=hi[p];hi[p]=hi[c];hi[c]=a;const b=hv[p];hv[p]=hv[c];hv[c]=b;c=p;}};
- const pop=()=>{const ti=hi[0];popv=hv[0];
-  const li=hi.pop(),lv=hv.pop();
-  if(hi.length){hi[0]=li;hv[0]=lv;let c=0;
-   for(;;){const l=c*2+1,r=l+1;let m=c;
-    if(l<hi.length&&hv[l]<hv[m])m=l;
-    if(r<hi.length&&hv[r]<hv[m])m=r;
-    if(m===c)break;
-    const a=hi[m];hi[m]=hi[c];hi[c]=a;const b=hv[m];hv[m]=hv[c];hv[c]=b;c=m;}}
-  return ti;};
- for(let y=TR.my;y<TR.my+2;y++)for(let x=TR.mx;x<TR.mx+2;x++){
-  if(!cvIn(x,y))continue;const i=cvI(x,y);d[i]=0;push(i,0);}
- while(hi.length){
-  const i=pop(),v=popv;
-  if(v>d[i])continue;
-  const x=i%CV_W,y=(i-x)/CV_W;
-  for(const dd of CV_DIR){
-   const nx=x+dd[0],ny=y+dd[1];
-   if(!cvIn(nx,ny))continue;
-   const t=cvAt(nx,ny);
-   if(t===2)continue;/* マザーゾンビの中は通らない */
-   if(cvWater(ny))continue;/* 水没した所は壁と同じ */
-   const j=cvI(nx,ny);
-   if(t===1&&cvFresh(j))continue;/* 侵攻中に掘られた道は通らない */
-   const w=t===1?1:4;
-   if(v+w<d[j]){d[j]=v+w;push(j,v+w);}}}
- TR.hpf=d;}
-/* ゾンビ用: 英雄たちからの距離(空洞だけ・掘れないので土は通れない) */
-function cvPathZ(){
- const N=CV_W*CV_H,d=new Int32Array(N).fill(-1),q=[];
- for(const H of TR.hs){if(H.dead)continue;
-  const i=cvI(H.cx,H.cy);if(d[i]<0){d[i]=0;q.push(i);}}
- for(let h=0;h<q.length;h++){
-  const i=q[h],x=i%CV_W,y=(i-x)/CV_W;
-  for(const dd of CV_DIR){
-   const nx=x+dd[0],ny=y+dd[1];
-   if(!cvWalk(nx,ny))continue;
-   const j=cvI(nx,ny);if(d[j]>=0)continue;
-   d[j]=d[i]+1;q.push(j);}}
- TR.zpf=d;}
-
-/* ---------------- 湧き ---------------- */
-/* 指定した種類のゾンビを1体つくる。
-   bio=そのゾンビが抱える腐肉(死ぬと肉塊になる量)。dig=削って生まれた場合 */
-function cvMakeZ(x,y,zcid,bio,dig){
- if(TR.zs.length>=CV_ZMAX)return null;
- /* 🦠感染体: 倒したお供の英雄が味方として湧く */
- if(dig&&TR.inf.length&&Math.random()<Math.min(.35,TR.inf.length*.12)){
-  const ui=TR.inf[ri(0,TR.inf.length-1)],U=UNITS[ui];
-  const z={inf:1,ui,n:U.n+'(感染体)',cx:x,cy:y,tx:x,ty:y,p:0,dir:ri(0,3),bio:bio||20,fam:'hard',fed:{hard:0,fast:0},
-   hp:U.hp*.4,mhp:U.hp*.4,atk:U.atk*.6,ar:Math.max(.5,U.rate),cd:0,sp:1,t:rnd(0,6),hitT:0,dead:0,c:'#7ba33f'};
-  TR.zs.push(z);return z;}
- const q=ZC_BY[zcid];if(!q)return null;
- const zi=zcZi(q.id),Z=ZOMBIES[zi],bo=zcBoost(q.id);
- const z={zi,zcid:q.id,fam:q.fam,n:Z.n,cx:x,cy:y,tx:x,ty:y,p:0,dir:ri(0,3),bio:bio||CV_NUT_U,
-  fed:{hard:0,fast:0},eatT:0,
-  hp:Z.hp*bo,mhp:Z.hp*bo,atk:(q.atk||Z.atk)*bo,ar:q.ar||Z.ar||1,cd:0,
-  sp:Z.sp/80,t:rnd(0,6),hitT:0,dead:0,born:dig?.5:0,c:Z.c};
- TR.zs.push(z);
- if(!META.zdex[q.id]){META.zdex[q.id]=1;saveMeta();}
- if(dig){TR.fx.push({k:'ring',x:x+.5,y:y+.5,r:.9,t:0,c:'#c85a64'});beep(180,320,.08,'sawtooth',.05);}
- return z;}
-/* 肉塊を食べきったゾンビが進化する。⚠**何系統の肉塊を食べたか**で行き先が変わる */
-function cvEvolve(z){
- if(z.inf||!z.zcid)return false;
- for(const e of zcEvo(z.zcid)){
-  if((z.fed[e.eat]||0)<e.n)continue;
-  const q=ZC_BY[e.to];if(!q)continue;
-  const zi=zcZi(q.id),Z=ZOMBIES[zi],bo=zcBoost(q.id);
-  const from=z.n;
-  z.zcid=q.id;z.fam=q.fam;z.zi=zi;z.n=Z.n;z.c=Z.c;
-  z.mhp=Z.hp*bo;z.hp=z.mhp;z.atk=(q.atk||Z.atk)*bo;z.ar=q.ar||Z.ar||1;z.sp=Z.sp/80;
-  z.bio=Math.round(z.bio+e.n*CV_NUT_U*.6);
-  z.fed={hard:0,fast:0};z.born=.5;
-  TR.evo++;
-  TR.fx.push({k:'ring',x:z.cx+.5,y:z.cy+.5,r:1.4,t:0,c:'#ffd23d'});
-  for(let k=0;k<12;k++)TR.ps.push({x:z.cx+.5,y:z.cy+.5,vx:rnd(-1.8,1.8),vy:rnd(-2.2,-.3),t:0,life:rnd(.4,.8),c:'#ffd23d'});
-  const isNew=!META.zdex[q.id];
-  if(isNew){META.zdex[q.id]=1;saveMeta();}
-  TR.msg=from+' → '+Z.n+(isNew?'  (図鑑に登録)':'');TR.msgT=2.4;
-  sfx.elite&&sfx.elite();
-  return true;}
- return false;}
-/* 広く掘った部屋からゆっくり自然に湧く。⚠これも手持ちの腐肉を食う(タダで増えると総量保存が壊れる) */
-function cvSpawn(){
- if(TR.zs.length>=CV_ZMAX)return;
- const cells=[];
- for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
-  if(!cvWalk(x,y))continue;
-  if(cvDeg(x,y)<5)continue;/* 部屋の中だけ。細い坑道からは湧かない */
-  let near=false;
-  for(const H of TR.hs){if(H.dead)continue;
-   if(Math.max(Math.abs(H.cx-x),Math.abs(H.cy-y))<3){near=true;break;}}
-  if(near)continue;
-  cells.push({x,y,w:TR.wet[cvI(x,y)]>0?2:1});}
- if(!cells.length)return;
- let tw=0;for(const c of cells)tw+=c.w;
- let r=Math.random()*tw,cell=cells[0];
- for(const c of cells){r-=c.w;if(r<=0){cell=c;break;}}
- /* ⚠巣から自然に湧くのも**初期種だけ**。上位種は進化でしか出ない。
-    開放度(部屋の広さ)は「どちらの系統が湧きやすいか」に効く=広い巣ほど速い系が出る */
- const deg=cvDeg(cell.x,cell.y),seed=deg>=7?ZC_SEED.fast:ZC_SEED.hard;
- const cost=CV_NUT_U*2;
- if(TR.bio<cost)return;
- TR.bio-=cost;
- cvMakeZ(cell.x,cell.y,seed,cost,false);
-}
-
-/* ---------------- 攻めてくる英雄 ---------------- */
-const cvGrow=H=>1+Math.min(CV_GROW_MAX,(H.grow||0)/CV_GROW);
-function cvMkHero(hid,own){
- const h=heroOf(hid)||HEROES[0],D=TR_DIF[TR.dif];
- const bo=own?hBoost(hid):1;/* 育成対象だけ鍛錬Lvで強くなる */
- const hp=(500+h.rk*120)*bo*D.hm*(own?1:.72);
- return {hid,own:own?1:0,n:h.n,rk:h.rk,c:h.c,ui:hUiOf(hid),
-  hp,mhp:hp,atk0:(30+h.rk*8)*bo*(own?1:.8),mhp0:hp,grow:0,
-  rate:h.rate||1,cd:0,
-  cx:0,cy:ri(0,CV_H-1),tx:0,ty:0,p:0,st:'move',dead:0,hitT:0,t:rnd(0,6),eng:0,
-  ch:0,uch:h.uch||30,ult:h.ult,udsc:h.udsc||'',ut:CV_ULT[hid]||'aoe',rush:0,ultT:0,ultN:''};
-}
-/* 必殺技。名前と演出は英雄ごとに個別、効き目は7型に集約 */
-function cvUlt(H){
- H.ch=0;H.ultT=1.4;H.ultN=H.ult;
- TR.shake=Math.max(TR.shake,.3);
- const atk=H.atk0*cvGrow(H);
- const hit=(z,dm)=>{z.hp-=dm;z.hitT=.2;if(z.hp<=0)cvKillZ(z,H);};
- const near=(z,r)=>Math.max(Math.abs(z.cx-H.cx),Math.abs(z.cy-H.cy))<=r;
- const alive=TR.zs.filter(z=>!z.dead);
- if(H.ut==='aoe'){for(const z of alive)if(near(z,3))hit(z,atk*2.6);
-  TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:3.2,t:0,c:H.c});}
- else if(H.ut==='line'){for(const z of alive)if(z.cy===H.cy)hit(z,atk*2.2);
-  TR.fx.push({k:'line',y:H.cy+.5,t:0,c:H.c});}
- else if(H.ut==='all'){for(const z of alive)hit(z,atk*1.9);
-  TR.fx.push({k:'flash',t:0,c:H.c});}
- else if(H.ut==='snipe'){let b=null;for(const z of alive)if(!b||z.hp>b.hp)b=z;
-  if(b){hit(b,b.mhp*1.2+atk*3);TR.fx.push({k:'ring',x:b.cx+.5,y:b.cy+.5,r:1.2,t:0,c:'#ffd23d'});}}
- else if(H.ut==='heal'){H.hp=Math.min(H.mhp,H.hp+H.mhp*.34);
-  TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:1.6,t:0,c:'#b7e07a'});}
- else if(H.ut==='rush'){H.rush=6;TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:1.4,t:0,c:'#ffd23d'});}
- else if(H.ut==='stop'){for(const z of alive)z.stop=Math.max(z.stop||0,4);
-  TR.fx.push({k:'flash',t:0,c:'#9fdcf5'});}
- sfx.boom&&sfx.boom();
-}
-/* ゾンビの死。by=英雄に倒された場合。⚠ここが循環の要:
-   英雄に倒されると腐肉は戻らず英雄の力になる。それ以外は**🥩肉塊**が残り、
-   ・他のゾンビが食べれば進化の餌になる
-   ・食べられずに`CV_MEAT_T`秒たつと腐って腐肉が手持ちへ戻る
-   つまり「間引き=資源として回収するか、進化の餌にするか」の選択になる */
-function cvKillZ(z,by){
- if(z.dead)return;
- z.dead=1;TR.zkill++;
- if(by){by.grow=(by.grow||0)+z.bio;TR.eaten+=z.bio;
-  by.mhp=by.mhp0*cvGrow(by);
-  TR.fx.push({k:'ring',x:z.cx+.5,y:z.cy+.5,r:.7,t:0,c:'#ff8a6a'});}
- else{TR.meat.push({x:z.cx,y:z.cy,fam:z.fam||'hard',amt:z.bio,t:0,ph:rnd(0,6)});}
- for(let k=0;k<7;k++)TR.ps.push({x:z.cx+.5,y:z.cy+.5,vx:rnd(-1.6,1.6),vy:rnd(-2,-.2),t:0,life:rnd(.3,.65),
-  c:by?'#ff8a6a':'#c85a64'});
-}
-/* 肉塊の更新: 食べられずに時間切れになったら腐って腐肉に戻る */
-function cvStepMeat(dt){
- for(const m of TR.meat){
-  if(m.gone)continue;
-  m.t+=dt;
-  if(m.t>=CV_MEAT_T){m.gone=1;
-   const back=Math.round(m.amt*CV_MEAT_BACK);
-   TR.bio=Math.min(CV_BIO_MAX,TR.bio+back);TR.back+=back;}}
- TR.meat=TR.meat.filter(m=>!m.gone);
-}
-/* ゾンビをタップで間引く(本家のつつきに当たる)。⚠肉塊を作る唯一の手段 */
-function cvCull(x,y){
- let best=null;
- for(const z of TR.zs){if(z.dead)continue;
-  if(z.cx===x&&z.cy===y){best=z;break;}}
- if(!best){TR.msg='そのマスにゾンビがいない';TR.msgT=1.2;return false;}
- cvKillZ(best);
- TR.cull++;
- TR.shake=Math.max(TR.shake,.14);
- sfx.splat&&sfx.splat();
- return true;}
-function cvKillH(H){
- if(H.dead)return;
- H.dead=1;TR.hkill++;TR.score+=TR_PK;
- /* ⚠腐肉の総量が増える唯一の手段。英雄が吸ったぶんも取り返す */
- const g=CV_KILL_BIO+Math.round(H.grow||0);
- TR.bio=Math.min(CV_BIO_MAX,TR.bio+g);TR.won+=g;
- for(let k=0;k<14;k++)TR.ps.push({x:H.cx+.5,y:H.cy+.5,vx:rnd(-2.2,2.2),vy:rnd(-2.6,-.3),t:0,life:rnd(.4,.9),c:H.c});
- TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:2.4,t:0,c:'#c85a64'});
- /* 🦠感染: お供は次の波からこちらの味方として湧く。育成対象は訓練なので帰るだけ */
- if(!H.own&&H.ui>=0&&TR.inf.indexOf(H.ui)<0)TR.inf.push(H.ui);
- TR.msg=(H.own?(H.n+' を撃退した!'):(H.n+' を倒した — 感染して味方になる'))+'  🩸+'+g;
- TR.msgT=2.6;
- sfx.eliteKill&&sfx.eliteKill();
-}
-
-/* ---------------- 崩落・マザーゾンビの移動 ---------------- */
-function cvCrush(x,y){
- if(!cvIn(x,y))return false;
- if(cvAt(x,y)!==1){TR.msg='空洞しか崩せない';TR.msgT=1.2;return false;}
- if(TR.bio<CV_CRUSH){TR.msg='🩸腐肉が足りない';TR.msgT=1.2;sfx.warn&&sfx.warn();return false;}
- TR.bio-=CV_CRUSH;
- const i=cvI(x,y);TR.g[i]=0;TR.nut[i]=0;TR.dugT[i]=0;TR.dirty=true;
- /* 落ちた岩は真下と四方を潰す */
- for(const z of TR.zs){if(z.dead)continue;
-  if(Math.abs(z.cx-x)+Math.abs(z.cy-y)<=1){z.hp-=9999;cvKillZ(z);}}
- for(const H of TR.hs){if(H.dead)continue;
-  if(Math.abs(H.cx-x)+Math.abs(H.cy-y)<=1){
-   H.hp-=H.mhp*.18;H.hitT=.3;TR.dmg+=H.mhp*.18;
-   if(H.hp<=0)cvKillH(H);}}
- TR.shake=Math.max(TR.shake,.35);
- for(let k=0;k<18;k++)TR.ps.push({x:x+rnd(0,1),y:y+rnd(0,1),vx:rnd(-2,2),vy:rnd(-2.4,.4),t:0,life:rnd(.3,.8),c:'#6b5a3a'});
- sfx.boom&&sfx.boom();
- return true;}
-function cvMoveMom(x,y){
- if(TR.bio<CV_MOVE){TR.msg='🩸腐肉が足りない';TR.msgT=1.2;sfx.warn&&sfx.warn();return false;}
- /* 2×2ぶん空いていて、水没しておらず、英雄がいない所にしか移せない */
- for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
-  const nx=x+dx,ny=y+dy;
-  if(!cvIn(nx,ny)||cvAt(nx,ny)!==1||cvWater(ny)){TR.msg='2×2ぶん削れている所へしか移せない';TR.msgT=1.6;return false;}}
- for(const H of TR.hs){if(H.dead)continue;
-  if(H.cx>=x-1&&H.cx<=x+2&&H.cy>=y-1&&H.cy<=y+2){TR.msg='英雄のいる所へは移せない';TR.msgT=1.6;return false;}}
- TR.bio-=CV_MOVE;
- for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
-  const nx=TR.mx+dx,ny=TR.my+dy;if(cvIn(nx,ny))TR.g[cvI(nx,ny)]=1;}
- TR.mx=x;TR.my=y;
- for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++)TR.g[cvI(x+dx,y+dy)]=2;
- TR.dirty=true;TR.msg='マザーゾンビを移した';TR.msgT=1.8;
- sfx.dep&&sfx.dep();
- return true;}
-
-/* ---------------- 1フレームぶんの進行 ---------------- */
-const cvMomAdj=(x,y)=>{
- for(let cy=TR.my;cy<TR.my+2;cy++)for(let cx=TR.mx;cx<TR.mx+2;cx++)
-  if(Math.abs(cx-x)+Math.abs(cy-y)===1)return true;
- return false;};
-/* コスト場を1段下る隣のマスを選ぶ。水没マス・侵攻中に掘られた道は避ける */
-function cvNextStep(H){
- const d=TR.hpf,here=d[cvI(H.cx,H.cy)];
- let best=null,bv=here;
- for(const dd of [[1,0],[0,-1],[0,1],[-1,0]]){
-  const nx=H.cx+dd[0],ny=H.cy+dd[1];
-  if(!cvIn(nx,ny))continue;
-  const t=cvAt(nx,ny);if(t===2)continue;
-  if(cvWater(ny))continue;
-  const j=cvI(nx,ny);
-  if(t===1&&cvFresh(j))continue;
-  if(d[j]<bv){bv=d[j];best=[nx,ny];}}
- return best;}
-function cvStepHeroes(dt){
- for(const H of TR.hs){
-  if(H.dead)continue;
-  H.t+=dt;H.hitT=Math.max(0,H.hitT-dt);H.ultT=Math.max(0,H.ultT-dt);
-  H.rush=Math.max(0,H.rush-dt);
-  H.ch+=dt/H.uch;if(H.ch>=1)cvUlt(H);
-  H.cd-=dt;
-  const atk=H.atk0*cvGrow(H);
-  /* ① 隣にゾンビがいたら足を止めて戦う */
-  let tgt=null;
-  for(const z of TR.zs){if(z.dead)continue;
-   if(Math.abs(z.cx-H.cx)+Math.abs(z.cy-H.cy)<=1){tgt=z;break;}}
-  if(tgt){
-   H.st='fight';
-   if(H.cd<=0){H.cd=H.rate;tgt.hp-=atk;tgt.hitT=.18;H.hitT=.12;
-    if(tgt.hp<=0)cvKillZ(tgt,H);
-    sfx.thunk&&sfx.thunk();}
-   continue;}
-  /* ② マザーゾンビに隣接していたら殴る */
-  if(cvMomAdj(H.cx,H.cy)){
-   H.st='core';
-   if(H.cd<=0){H.cd=H.rate;TR.core-=atk;H.hitT=.12;TR.shake=Math.max(TR.shake,.16);
-    sfx.leak&&sfx.leak();
-    if(TR.core<=0){TR.core=0;trainEnd(false);return;}}
-   continue;}
-  /* ③ 進む。掘ってある道が安いので、そこを選んで進んでくる */
-  if(H.st!=='move'&&H.st!=='dig'){H.st='move';H.p=0;H.tx=H.cx;H.ty=H.cy;}
-  if(H.p<=0){
-   const nx=cvNextStep(H);
-   if(!nx){H.st='wait';continue;}
-   H.tx=nx[0];H.ty=nx[1];
-   H.st=cvAt(H.tx,H.ty)===1?'move':'dig';
-   H.dur=(H.st==='move'?CV_SPD_OPEN:CV_SPD_DIG)/(H.rush>0?2.2:1);}
-  H.p+=dt/H.dur;
-  if(H.p>=1){
-   if(H.st==='dig'){const j=cvI(H.tx,H.ty);TR.g[j]=1;TR.dugT[j]=0;TR.nut[j]=0;TR.dirty=true;}
-   H.cx=H.tx;H.cy=H.ty;H.p=0;H.st='move';}
- }
-}
-/* ⭐ゾンビの誘導則(ここが1つだけの単純な法則):
-   **通路を直進し、行き止まりで向きを変える**。英雄がCV_AGGRO歩以内に来たら襲いに行く。
-   ⚠この法則があるから「どこをどう掘るか」でゾンビの流れが決まる。
-     英雄へ一直線にすると、掘る位置に意味が無くなって「出して戦うだけ」になる(実際になった)。 */
-function cvNextZ(z){
- const d=TR.zpf,here=d[cvI(z.cx,z.cy)];
- /* 英雄が近い=襲いに行く */
- if(here>=0&&here<=CV_AGGRO){
-  let best=null,bv=here;
-  for(const dd of CV_DIR){
-   const nx=z.cx+dd[0],ny=z.cy+dd[1];
-   if(!cvFree(nx,ny))continue;
-   const v=d[cvI(nx,ny)];
-   if(v>=0&&v<bv){bv=v;best=[nx,ny];}}
-  if(best)return best;}
- /* 🥩肉塊が近くにあれば、そちらへ寄る(餌に寄るのは一目で分かるので誘導則に足してよい) */
- {let mb=null,md=CV_BAIT+1;
-  for(const m of TR.meat){if(m.gone)continue;
-   const d2=Math.abs(m.x-z.cx)+Math.abs(m.y-z.cy);
-   if(d2>0&&d2<md){md=d2;mb=m;}}
-  if(mb){
-   const cand=[];
-   for(const dd of CV_DIR){
-    const nx=z.cx+dd[0],ny=z.cy+dd[1];
-    if(!cvFree(nx,ny))continue;
-    if(Math.abs(mb.x-nx)+Math.abs(mb.y-ny)<md)cand.push([nx,ny]);}
-   if(cand.length)return cand[ri(0,cand.length-1)];}}
- /* 徘徊: まず今の向きへ */
- const f=CV_DIR[z.dir];
- if(cvFree(z.cx+f[0],z.cy+f[1]))return [z.cx+f[0],z.cy+f[1]];
- /* 行き止まり: 来た方向以外から選び直す */
- const back=(z.dir+2)%4,cand=[];
- for(let k=0;k<4;k++){
-  if(k===back)continue;
-  const nx=z.cx+CV_DIR[k][0],ny=z.cy+CV_DIR[k][1];
-  if(cvFree(nx,ny))cand.push([k,nx,ny]);}
- if(cand.length){const p=cand[ri(0,cand.length-1)];z.dir=p[0];return [p[1],p[2]];}
- const bx=z.cx+CV_DIR[back][0],by=z.cy+CV_DIR[back][1];
- if(cvFree(bx,by)){z.dir=back;return [bx,by];}
- return null;}
-function cvStepZ(dt){
- /* マスの定員と、英雄に噛みつける数を毎フレーム数え直す */
- const occ=new Int16Array(CV_W*CV_H);
- for(const z of TR.zs)if(!z.dead)occ[cvI(z.tx,z.ty)]++;
- TR.occ=occ;
- for(const H of TR.hs)H.eng=0;
- for(const z of TR.zs){
-  if(z.dead)continue;
-  z.t+=dt;z.hitT=Math.max(0,z.hitT-dt);z.cd-=dt;
-  if(z.born>0)z.born-=dt;
-  if(z.stop>0){z.stop-=dt;continue;}
-  /* 水没したマスにいたら押し流されて死ぬ */
-  if(cvWater(z.cy)){z.hp-=dt*90;if(z.hp<=0){cvKillZ(z);continue;}}
-  let tgt=null;
-  for(const H of TR.hs){if(H.dead)continue;
-   if(Math.abs(H.cx-z.cx)+Math.abs(H.cy-z.cy)<=1){tgt=H;break;}}
-  if(tgt){
-   /* 噛みつき枠が埋まっていたら、その場で順番待ち(後ろから殴り放題にしない) */
-   if(tgt.eng>=CV_ENG){z.p=0;continue;}
-   tgt.eng++;
-   if(z.cd<=0){z.cd=z.ar;tgt.hp-=z.atk;tgt.hitT=.18;
-    TR.dmg+=z.atk;
-    if(tgt.hp<=0)cvKillH(tgt);
-    sfx.bite&&sfx.bite();}
-   z.p=0;continue;}
-  /* 🥩同じマスに肉塊があれば食べる。規定数たまると進化する */
-  if(!z.inf&&z.p<=0){
-   let m=null;
-   for(const q of TR.meat){if(!q.gone&&q.x===z.cx&&q.y===z.cy){m=q;break;}}
-   if(m){
-    z.eatT+=dt;
-    if(z.eatT>=CV_EAT_T){
-     z.eatT=0;m.gone=1;
-     z.fed[m.fam]=(z.fed[m.fam]||0)+1;
-     z.bio+=Math.round(m.amt*.4);
-     TR.ate++;
-     for(let k=0;k<5;k++)TR.ps.push({x:z.cx+.5,y:z.cy+.6,vx:rnd(-1,1),vy:rnd(-1.4,-.2),t:0,life:rnd(.25,.5),c:'#c85a64'});
-     cvEvolve(z);}
-    z.p=0;continue;}
-   z.eatT=0;}
-  if(z.p<=0){
-   const nx=cvNextZ(z);
-   if(!nx)continue;
-   z.tx=nx[0];z.ty=nx[1];z.dur=CV_ZSPD/clamp(z.sp,.5,2.6);}
-  if(z.tx===z.cx&&z.ty===z.cy)continue;
-  z.p+=dt/z.dur;
-  if(z.p>=1){z.cx=z.tx;z.cy=z.ty;z.p=0;}
- }
- TR.zs=TR.zs.filter(z=>!z.dead||(z.dt=(z.dt||0)+dt)<.4);
-}
-
-/* ---------------- 波の進行 ---------------- */
-function cvBtns(){
- const sk=$('trskip');if(sk&&sk.style)sk.style.display=(TR&&!TR.done&&TR.phase==='nest')?'inline-block':'none';
- const cu=$('trcull');if(cu){if(cu.style)cu.style.display=(TR&&!TR.done)?'inline-block':'none';
-  if(cu.classList)cu.classList.toggle('on',!!(TR&&TR.mode==='cull'));}
- const cr=$('trcrush');if(cr){if(cr.style)cr.style.display=(TR&&!TR.done)?'inline-block':'none';
-  if(cr.classList)cr.classList.toggle('on',!!(TR&&TR.mode==='crush'));}
- const mv=$('trmove');if(mv){if(mv.style)mv.style.display=(TR&&!TR.done)?'inline-block':'none';
-  if(mv.classList)mv.classList.toggle('on',!!(TR&&TR.mode==='move'));}
-}
-function cvWaveStart(){
- TR.wave++;
- const D=TR_DIF[TR.dif];
- TR.phase='nest';TR.pt=CV_NEST;TR.raidT=-1;TR.toldFresh=0;
- /* この波で攻めてくる面子を先に決める(巣作り中に見せる=対策できるように) */
- const list=[cvMkHero(TR.hid,true)];
- const nAd=Math.min(D.am,Math.floor((TR.wave-1)/2));
- for(let k=0;k<nAd;k++){
-  const pool=HEROES.filter(h=>h.id!==TR.hid);
-  list.push(cvMkHero(pool[ri(0,pool.length-1)].id,false));}
- /* ⚠育成対象の成長は波をまたいで引き継ぐ=「ゾンビを食わせるほど手強くなる」 */
- list[0].grow=TR.grow||0;list[0].mhp=list[0].mhp0*cvGrow(list[0]);list[0].hp=list[0].mhp;
- TR.next=list;
- TR.twMax=TR.wave>=2?Math.min(9,1+TR.wave*.9):0;
- TR.msg='第'+TR.wave+'波 — 巣を広げろ';TR.msgT=2.2;
- cvBtns();
-}
-function cvFreeEntry(){
- for(let y=0;y<CV_H;y++)if(cvWalk(0,y))return y;
- return 0;}
-function cvInvade(){
- TR.phase='raid';TR.pt=CV_RAID;TR.raidT=TR.t;
- TR.hs=TR.next;TR.next=null;
- for(const H of TR.hs){H.cy=clamp(H.cy,0,CV_H-1);H.cx=0;H.p=0;
-  if(!cvWalk(0,H.cy))H.cy=cvFreeEntry();}
- TR.dirty=true;
- TR.msg='侵攻!  '+TR.hs.map(h=>h.n).join(' / ');TR.msgT=2.6;
- cvBtns();
- sfx.horn&&sfx.horn();
-}
-
-/* ---------------- 開始・終了 ---------------- */
-function trainStart(hid,dif){
+/* 🔧を注いで経験値を入れる(暫定)。⚠上限Lvに届いたら余った経験は切り捨て */
+function trainGrind(hid){
  const h=heroOf(hid);if(!h)return;
- if(!DEV&&(META.hmat||0)<TR_COST){toast('🔧'+TR_COST+' 必要(所持 '+(META.hmat||0)+') — 英雄召集の重複で貯まる',true);return;}
- META.hmat=Math.max(0,(META.hmat||0)-TR_COST);saveMeta();
- ensureAC();
- const d=clamp(dif|0,0,TR_DIF.length-1),D=TR_DIF[d];
- TR={hid,dif:d,t:0,wave:0,phase:'nest',pt:0,raidT:-1,toldFresh:0,mode:'',
-  g:new Uint8Array(CV_W*CV_H),nut:null,wet:new Float32Array(CV_W*CV_H),dugT:new Float32Array(CV_W*CV_H),
-  hpf:null,zpf:null,dirty:true,occ:null,
-  bio:CV_BIO0,buried:0,back:0,eaten:0,won:0,grow:0,dug:0,cull:0,ate:0,evo:0,
-  zs:[],hs:[],next:null,inf:[],ps:[],fx:[],meat:[],beams:[],
-  core:D.core,coreMax:D.core,mx:CV_MOM_X,my:CV_MOM_Y,
-  tw:0,twMax:0,
-  cam:{x:0,y:Math.max(0,CV_H*.5-5.5)},camT:0,geo:null,/* 最初は侵入口側の真ん中あたりを映す */
-  score:0,dmg:0,zkill:0,hkill:0,waveOK:0,
-  msg:'',msgT:0,shake:0,
-  done:false,res:null,win:false,
-  bacc:0,bstep:0,sp:0};
- TR.nut=cvGenNut();
- /* 初期の空洞: 左端の縦坑(侵入口)・マザーゾンビ・その前の小部屋 */
- for(let y=0;y<CV_H;y++){TR.g[cvI(0,y)]=1;TR.nut[cvI(0,y)]=0;}
- for(let y=TR.my;y<TR.my+2;y++)for(let x=TR.mx;x<TR.mx+2;x++){TR.g[cvI(x,y)]=2;TR.nut[cvI(x,y)]=0;}
- for(let y=TR.my-1;y<=TR.my+2;y++)if(cvIn(TR.mx-1,y)){TR.g[cvI(TR.mx-1,y)]=1;TR.nut[cvI(TR.mx-1,y)]=0;}
- for(let i=0;i<TR.nut.length;i++)TR.buried+=TR.nut[i]*CV_NUT_U;
- cvWaveStart();
- cvPathHero();cvPathZ();
- $('md-train').classList.remove('on');
- show('train');
-}
-function trainEnd(win){
- if(!TR||TR.done)return;
- TR.done=true;TR.win=!!win;TR.mode='';
- const D=TR_DIF[TR.dif];
- const base=TR.score+TR.waveOK*TR_PW+Math.round(TR.dmg*TR_PD)+(win?TR_PC:0);
- const gain=Math.max(0,Math.round(base*D.xm));
- let lv=hLv(TR.hid),xp=((META.hxp&&META.hxp[TR.hid])||0)+gain,up=0;
+ if(hLv(hid)>=TR_MAX){toast(h.n+' はもう鍛錬しつくした',true);return;}
+ if(!DEV&&(META.hmat||0)<TR_COST){
+  toast('🔧'+TR_COST+' 必要(所持 '+(META.hmat||0)+') — 英雄召集の重複で貯まる',true);return;}
+ META.hmat=Math.max(0,(META.hmat||0)-TR_COST);
+ let lv=hLv(hid),xp=((META.hxp&&META.hxp[hid])||0)+TR_XP,up=0;
  while(lv<TR_MAX&&xp>=TR_NEED(lv)){xp-=TR_NEED(lv);lv++;up++;}
  if(lv>=TR_MAX)xp=0;
  if(!META.hlv)META.hlv={};if(!META.hxp)META.hxp={};
- META.hlv[TR.hid]=lv;META.hxp[TR.hid]=xp;
- saveMeta();
- TR.res={gain,base,lv,up,xp,need:TR_NEED(lv)};
- cvBtns();
- if(win)sfx.win&&sfx.win();else sfx.lose&&sfx.lose();
-}
-function trainBack(){
- TR=null;cvBtns();
- show('title');updLabBtn();renderTrain();$('md-train').classList.add('on');
-}
-function trainStep(dt){
- if(!TR)return;
- if(!TR.done){
-  dt=Math.min(.05,dt);
-  TR.t+=dt;
-  cvBgm(dt);
-  TR.camT=Math.max(0,TR.camT-dt);
-  /* 🩸腐肉: マザーゾンビが生む分だけが自然増(あとは循環で回す) */
-  TR.bio=Math.min(CV_BIO_MAX,TR.bio+CV_BIO_REG*dt);
-  /* 潮の満ち引き(侵攻中だけ。前半で満ちて後半で引く) */
-  const tw0=TR.tw;
-  if(TR.phase==='raid'&&TR.twMax>0){
-   const k=clamp(1-TR.pt/CV_RAID,0,1);
-   TR.tw=TR.twMax*Math.sin(Math.PI*k);
-  }else TR.tw=0;
-  if(Math.floor(TR.tw)!==Math.floor(tw0)){
-   TR.dirty=true;
-   if(TR.tw<tw0)for(let y=0;y<CV_H;y++){if(y>=CV_H-tw0&&y<CV_H-TR.tw)
-    for(let x=0;x<CV_W;x++)if(TR.g[cvI(x,y)]===1)TR.wet[cvI(x,y)]=CV_WET;}}
-  for(let i=0;i<TR.wet.length;i++)if(TR.wet[i]>0)TR.wet[i]-=dt;
-  if(TR.dirty){cvPathHero();TR.dirty=false;}
-  cvPathZ();
-  TR.sp+=dt;
-  if(TR.sp>=CV_SPAWN){TR.sp=0;cvSpawn();}
-  TR.pt-=dt;
-  if(TR.phase==='nest'){
-   if(TR.pt<=0)cvInvade();
-  }else{
-   cvStepHeroes(dt);
-   if(TR.done)return;
-   cvStepZ(dt);
-   const over=TR.pt<=0||TR.hs.every(h=>h.dead);
-   if(over){
-    TR.waveOK++;
-    /* 育成対象が食ったぶんは次の波へ引き継ぐ */
-    const own=TR.hs.filter(h=>h.own)[0];
-    if(own&&!own.dead)TR.grow=own.grow||0;
-    if(TR.wave>=TR_DIF[TR.dif].w){trainEnd(true);}
-    else{cvWaveStart();TR.hs=[];}
-   }
-  }
-  cvCamFollow(dt);
-  cvStepMeat(dt);
-  for(const p of TR.ps){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=4*dt;}
-  TR.ps=TR.ps.filter(p=>p.t<p.life);
-  for(const f of TR.fx)f.t+=dt;
-  TR.fx=TR.fx.filter(f=>f.t<.6);
-  for(const b of TR.beams)b.t+=dt;
-  TR.beams=TR.beams.filter(b=>b.t<.22);
- }
- TR.msgT=Math.max(0,TR.msgT-dt);
- TR.shake=Math.max(0,TR.shake-dt);
- trainDraw();
-}
-/* 侵攻中は、いちばん奥まで来ている英雄をカメラが追う。
-   ⚠ミニマップを触った直後(CV_FOLLOW秒)はユーザーの見たい所を優先する */
-function cvCamFollow(dt){
- if(!TR.geo||TR.camT>0)return;
- let tx=null,ty=null;
- if(TR.phase==='raid'){
-  let best=null;
-  for(const H of TR.hs){if(H.dead)continue;if(!best||H.cx>best.cx)best=H;}
-  if(best){tx=best.cx;ty=best.cy;}}
- if(tx==null)return;
- const g=TR.geo;
- const gx=clamp(tx-g.vw*.5,0,Math.max(0,CV_W-g.vw));
- const gy=clamp(ty-g.vh*.5,0,Math.max(0,CV_H-g.vh));
- const k=Math.min(1,dt*2.2);
- TR.cam.x+=(gx-TR.cam.x)*k;TR.cam.y+=(gy-TR.cam.y)*k;
+ META.hlv[hid]=lv;META.hxp[hid]=xp;saveMeta();
+ if(up){sfx.win&&sfx.win();
+  toast(h.n+' 鍛錬Lv'+lv+' に上がった (HPと攻撃 合計+'+Math.round((hBoost(hid)-1)*100)+'%)');}
+ else sfx.buy&&sfx.buy();
+ renderTrain();updLabBtn();
 }
 
-/* ---------------- BGM(手続き生成) ----------------
-   ⚠setIntervalは使わない(ヘッドレスの仮想時間が鈍るため)=trainStepのdtで進める */
-const CV_SC=[0,2,3,5,7,8,10];/* 自然短音階 */
-const CV_BS=[0,0,7,0, 3,3,0,0, 5,5,3,3, 0,7,3,0];
-const CV_LD=[7,-1,9,10, -1,9,7,-1, 5,-1,7,9, -1,7,5,3];
-const cvHz=(root,dg)=>root*Math.pow(2,(CV_SC[((dg%7)+7)%7]+12*Math.floor(dg/7))/12);
-let CVNB=null;
-function cvNoise(dur,vol,f){if(!AC||muted)return;try{
- if(!CVNB||CVNB.sampleRate!==AC.sampleRate){const n=Math.max(1,Math.floor(AC.sampleRate*.4));
-  CVNB=AC.createBuffer(1,n,AC.sampleRate);const d=CVNB.getChannelData(0);
-  for(let i=0;i<n;i++)d[i]=Math.random()*2-1;}
- const s=AC.createBufferSource();s.buffer=CVNB;s.loop=true;
- const bq=AC.createBiquadFilter();bq.type='highpass';bq.frequency.value=f||6000;
- const gn=AC.createGain(),t=AC.currentTime;
- gn.gain.setValueAtTime(vol,t);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
- s.connect(bq).connect(gn).connect(AC.destination);s.start(t);s.stop(t+dur+.03);
-}catch(e){}}
-function cvBeat(n){
- const raid=TR.phase==='raid',root=raid?110:98,i=n%16;
- if(i===0||i===6||i===8||i===14)beep(126,40,.17,'sine',.18);
- if(raid&&(i===4||i===12)){cvNoise(.13,.10,1700);beep(200,130,.07,'triangle',.05);}
- if(i%2===0)cvNoise(.028,i%4===0?.045:.026,8200);
- const bd=CV_BS[i],bf=cvHz(root,bd)/2;
- beep(bf,bf,.15,'sawtooth',.07);
- if(raid){const ld=CV_LD[i];if(ld>=0){const lf=cvHz(root,ld)*2;beep(lf,lf,.11,'square',.036);}}
-}
-function cvBgm(dt){
- if(!AC||muted){TR.bacc=0;return;}
- const bpm=TR.phase==='raid'?132:104,sp=60/bpm/4;
- TR.bacc=Math.min(TR.bacc+dt,sp*4);
- while(TR.bacc>=sp){cvBeat(TR.bstep++);TR.bacc-=sp;}
-}
-
-/* ---------------- 描画 ---------------- */
-function cvGeom(w,h){
- const top=34,bot=26,ph=h-top-bot;
- const cs=CV_CS;
- const vw=Math.min(CV_W,w/cs),vh=Math.min(CV_H,ph/cs);
- const mw=Math.round(CV_W*CV_MINI),mh=Math.round(CV_H*CV_MINI);
- return {w,h,cs,top,bot,ph,vw,vh,mx:w-mw-8,my:h-bot-mh-6,mw,mh};}
-function trainDraw(){
- if(!TR||!trcv||!trx||!trcv.getBoundingClientRect)return;
- const r=trcv.getBoundingClientRect(),w=Math.max(240,Math.round(r.width)),h=Math.max(180,Math.round(r.height));
- const dpr=Math.min(2,window.devicePixelRatio||1);
- if(trcv.width!==Math.round(w*dpr)){trcv.width=Math.round(w*dpr);trcv.height=Math.round(h*dpr);}
- const c=trx;if(!c.setTransform)return;
- c.setTransform(dpr,0,0,dpr,0,0);
- const g=cvGeom(w,h);TR.geo=g;
- const CS=g.cs;
- TR.cam.x=clamp(TR.cam.x,0,Math.max(0,CV_W-g.vw));
- TR.cam.y=clamp(TR.cam.y,0,Math.max(0,CV_H-g.vh));
- const P=(cx,cy)=>[(cx-TR.cam.x)*CS,g.top+(cy-TR.cam.y)*CS];
- c.fillStyle='#0d0b08';c.fillRect(0,0,w,h);
- c.save();c.beginPath();c.rect(0,g.top,w,g.ph);c.clip();
- const sk=TR.shake>0?(Math.random()-.5)*9*TR.shake:0;
- c.translate(sk,0);
- const x0=Math.max(0,Math.floor(TR.cam.x)-1),x1=Math.min(CV_W-1,Math.ceil(TR.cam.x+g.vw)+1);
- const y0=Math.max(0,Math.floor(TR.cam.y)-1),y1=Math.min(CV_H-1,Math.ceil(TR.cam.y+g.vh)+1);
- /* 地形。⚠土と空洞が見分けられないと遊べないので、
-    ①空洞は真っ黒に塗る ②土は「削り出した岩」に見えるよう上と左に明るいベベルを付ける
-    ③掘れるマスは枠で囲まず十字の印だけ置く(枠にすると盤面がタイルの海になって読めない)
-    ④腐肉は粒の数と明るさで見せる=どこを掘ればゾンビが出るかが一目で分かる */
- for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-  const i=cvI(x,y),t=TR.g[i];
-  if(t===1){
-   /* 侵攻中に掘った道=英雄が通らない道。青くして区別できるようにする */
-   if(cvFresh(i)){c.fillStyle='rgba(74,140,200,.16)';c.fillRect(P(x,y)[0],P(x,y)[1],CS+1,CS+1);}
-   if(TR.wet[i]>0){const p=P(x,y);c.fillStyle='rgba(74,217,208,.14)';c.fillRect(p[0],p[1],CS+1,CS+1);}
-   continue;}
-  if(t!==0)continue;
-  const p=P(x,y),hh=trHash(x*31.7+y*11.3);
-  c.fillStyle=y<CV_H*.3?'#5a4630':y<CV_H*.68?'#4e3d29':'#433322';
-  c.fillRect(p[0],p[1],CS+1,CS+1);
-  c.fillStyle='rgba(0,0,0,'+(.10*hh).toFixed(3)+')';c.fillRect(p[0],p[1],CS+1,CS+1);
-  if(cvAt(x,y-1)>0){c.fillStyle='rgba(255,232,190,.16)';c.fillRect(p[0],p[1],CS+1,3);}
-  if(cvAt(x-1,y)>0){c.fillStyle='rgba(255,232,190,.10)';c.fillRect(p[0],p[1],3,CS+1);}
-  if(cvAt(x,y+1)>0){c.fillStyle='rgba(0,0,0,.38)';c.fillRect(p[0],p[1]+CS-3,CS+1,4);}
-  if(cvAt(x+1,y)>0){c.fillStyle='rgba(0,0,0,.28)';c.fillRect(p[0]+CS-3,p[1],4,CS+1);}
-  if(hh>.84){c.fillStyle='rgba(0,0,0,.24)';c.fillRect(p[0]+CS*(.2+hh*.4),p[1]+CS*(.25+hh*.4),3,3);}
-  /* ⚠腐肉は「粒の数と明るさ」だけで見せる。大きな半透明の円を敷くと盤面が埋まって読めなくなる */
-  const nu=TR.nut[i];
-  if(nu>0){
-   const gl=.36+.14*nu+.08*Math.sin(TR.t*2.4+x*.9+y*1.3);
-   c.fillStyle='rgba('+(170+nu*20)+','+(70+nu*8)+','+(80+nu*6)+','+gl.toFixed(3)+')';
-   for(let k=0;k<nu;k++){const a=k*1.9+hh*6;
-    c.beginPath();c.arc(p[0]+CS*(.5+Math.cos(a)*.24),p[1]+CS*(.5+Math.sin(a)*.24),1.1+nu*.22,0,7);c.fill();}
-   if(nu>=4){c.fillStyle='rgba(255,138,106,.14)';
-    c.beginPath();c.arc(p[0]+CS*.5,p[1]+CS*.5,CS*.22,0,7);c.fill();}}
-  if(cvCanDig(x,y)&&TR.bio>=CV_DIG){
-   const mx2=p[0]+CS*.5,my2=p[1]+CS*.5,q2=CS*.15;
-   c.strokeStyle='rgba(255,210,61,'+(.40+.24*Math.sin(TR.t*4+x*.7+y)).toFixed(3)+')';c.lineWidth=2;
-   c.beginPath();c.moveTo(mx2-q2,my2);c.lineTo(mx2+q2,my2);c.moveTo(mx2,my2-q2);c.lineTo(mx2,my2+q2);c.stroke();}
- }
- /* マザーゾンビ(守る対象)。膨れた腹から仔を産み続ける個体。
-    ⚠2×2マス(60px)しか無いので細部は描かず「巣穴・触手・腹・痩せた上半身・頭」の5つだけで形を作る */
- if(TR.mx+1>=x0&&TR.mx<=x1+1&&TR.my+1>=y0&&TR.my<=y1+1){
-  const p=P(TR.mx,TR.my),S=CS*2;
-  const pu=.5+.5*Math.sin(TR.t*2.2),lo=clamp(TR.core/TR.coreMax,0,1);
-  c.save();c.translate(p[0]+S*.5,p[1]+S*.5);c.scale(S/66,S/66);
-  c.lineWidth=2.6;c.strokeStyle=INK;
-  c.fillStyle='#241014';c.beginPath();c.ellipse(0,2,32,31,0,0,7);c.fill();
-  c.strokeStyle='rgba(122,60,50,.9)';c.lineWidth=3.4;
-  for(let k=0;k<7;k++){const a=k*.9+TR.t*.25;
-   c.beginPath();c.moveTo(0,4);
-   c.quadraticCurveTo(Math.cos(a)*16,4+Math.sin(a)*14,Math.cos(a)*31,4+Math.sin(a)*29);c.stroke();}
-  c.lineWidth=2.6;c.strokeStyle=INK;
-  const rb=17+1.6*pu;
-  c.fillStyle='#8a4a52';c.beginPath();c.ellipse(0,6,rb+2,rb,0,0,7);c.fill();c.stroke();
-  c.fillStyle='rgba(255,138,106,'+(.24+.2*pu).toFixed(3)+')';
-  c.beginPath();c.ellipse(-3,4,rb*.5,rb*.45,0,0,7);c.fill();
-  c.fillStyle='#c96a5a';
-  for(let k=0;k<5;k++){const a=k*1.25+TR.t*.6;
-   c.beginPath();c.arc(Math.cos(a)*8,6+Math.sin(a)*6,2.6,0,7);c.fill();}
-  c.fillStyle='#a5636a';
-  c.beginPath();c.moveTo(-7,-6);c.lineTo(7,-6);c.lineTo(5,-19);c.lineTo(-5,-19);c.closePath();c.fill();c.stroke();
-  c.strokeStyle='#a5636a';c.lineWidth=4.5;
-  c.beginPath();c.moveTo(-6,-16);c.quadraticCurveTo(-19,-12+pu*2,-22,1);c.stroke();
-  c.beginPath();c.moveTo(6,-16);c.quadraticCurveTo(19,-12+pu*2,22,1);c.stroke();
-  c.lineWidth=2.6;c.strokeStyle=INK;
-  c.fillStyle='#c9a08a';c.beginPath();c.ellipse(0,-24,8,9,0,0,7);c.fill();c.stroke();
-  c.fillStyle=lo<.34?'#ff6a4a':'#ffd23d';
-  c.beginPath();c.arc(-3.4,-25,2.1,0,7);c.fill();
-  c.beginPath();c.arc(3.4,-25,2.1,0,7);c.fill();
-  c.fillStyle='#3a1a20';c.beginPath();c.ellipse(0,-18.5,4.5,2.6,0,0,7);c.fill();
-  c.strokeStyle='rgba(28,14,12,.8)';c.lineWidth=2.2;
-  const nc=Math.round((1-lo)*5);
-  for(let k=0;k<nc;k++){const a=k*1.6+.4;
-   c.beginPath();c.moveTo(Math.cos(a)*6,6+Math.sin(a)*6);
-   c.lineTo(Math.cos(a)*16,6+Math.sin(a)*15);c.stroke();}
-  c.restore();}
- /* 死潮 */
- if(TR.tw>0){
-  const wy=g.top+(CV_H-TR.tw-TR.cam.y)*CS;
-  c.fillStyle='rgba(42,120,132,.55)';c.fillRect(0,wy,w,g.top+g.ph-wy);
-  c.strokeStyle='rgba(159,220,245,.8)';c.lineWidth=2;
-  c.beginPath();
-  for(let i=0;i<=w/12;i++){const xx=i*12,yy=wy+Math.sin(TR.t*2.4+i*.5)*2.5;
-   if(i)c.lineTo(xx,yy);else c.moveTo(xx,yy);}
-  c.stroke();}
- /* 🥩肉塊。⚠残り時間が分かるように、腐りかけは薄くして輪を細くする */
- for(const m of TR.meat){
-  if(m.gone)continue;
-  if(m.x<TR.cam.x-2||m.x>TR.cam.x+g.vw+2||m.y<TR.cam.y-2||m.y>TR.cam.y+g.vh+2)continue;
-  const p=P(m.x+.5,m.y+.62),k=clamp(1-m.t/CV_MEAT_T,0,1);
-  c.save();c.translate(p[0],p[1]);c.globalAlpha=.35+.65*k;
-  const fa=m.fam==='fast';
-  c.fillStyle=fa?'#a05a8a':'#a53a44';c.strokeStyle=INK;c.lineWidth=2;
-  c.beginPath();c.ellipse(0,0,CS*.24,CS*.17,0,0,7);c.fill();c.stroke();
-  c.fillStyle=fa?'#d08ab0':'#d4666e';
-  c.beginPath();c.ellipse(-CS*.05,-CS*.04,CS*.10,CS*.07,0,0,7);c.fill();
-  c.globalAlpha=1;
-  /* 残り時間の輪 */
-  c.strokeStyle=fa?'rgba(208,138,176,.7)':'rgba(212,102,110,.7)';c.lineWidth=1.6;
-  c.beginPath();c.arc(0,0,CS*.31,-Math.PI/2,-Math.PI/2+Math.PI*2*k);c.stroke();
-  c.restore();}
- /* ゾンビ */
- for(const z of TR.zs){
-  const cx=z.cx+(z.tx-z.cx)*z.p,cy=z.cy+(z.ty-z.cy)*z.p;
-  if(cx<TR.cam.x-2||cx>TR.cam.x+g.vw+2||cy<TR.cam.y-2||cy>TR.cam.y+g.vh+2)continue;
-  const p=P(cx+.5,cy+.9);
-  c.save();c.translate(p[0],p[1]);
-  if(z.dead)c.globalAlpha=Math.max(0,1-(z.dt||0)/.4);
-  if(z.born>0){const k=z.born/.5;c.globalAlpha=(z.dead?c.globalAlpha:1)*(1-k*.5);}
-  if(z.inf){
-   const s2=(CS*.60)/(50*1.24);c.scale(s2,s2);
-   try{drawUnit(c,z.ui,0,0,1,z.t,0,{});}catch(e){}
-  }else{
-   const s2=(CS*.62)/(50*(ZOMBIES[z.zi].sc||1));c.scale(s2*(z.dir===0?-1:1),s2);
-   try{drawZombie(c,z.zi,0,0,-1,z.t,0,{hitT:z.hitT});}catch(e){}
-  }
-  c.restore();
-  if(!z.dead&&z.hp<z.mhp){const q=P(cx,cy);
-   c.fillStyle='rgba(0,0,0,.5)';c.fillRect(q[0]+3,q[1]+2,CS-6,3);
-   c.fillStyle='#7ba33f';c.fillRect(q[0]+3,q[1]+2,(CS-6)*clamp(z.hp/z.mhp,0,1),3);}
-  if(z.stop>0){const q=P(cx+.5,cy+.5);c.strokeStyle='#9fdcf5';c.lineWidth=2;
-   c.beginPath();c.arc(q[0],q[1],CS*.42,0,7);c.stroke();}
- }
- /* 英雄 */
- for(const H of TR.hs){
-  if(H.dead)continue;
-  const cx=H.cx+(H.tx-H.cx)*(H.st==='move'?H.p:0),cy=H.cy+(H.ty-H.cy)*(H.st==='move'?H.p:0);
-  if(cx<TR.cam.x-2||cx>TR.cam.x+g.vw+2||cy<TR.cam.y-2||cy>TR.cam.y+g.vh+2)continue;
-  const p=P(cx+.5,cy+.95);
-  c.save();c.translate(p[0],p[1]);
-  if(H.hitT>0&&Math.floor(TR.t*22)%2===0)c.globalAlpha=.5;
-  /* ⚠drawUnitは内部でTSCALE倍するので、ここでは「マスに収まる高さ÷素の絵の高さ」を掛ける */
-  const s2=(CS*.78)/(50*1.24);c.scale(s2,s2);
-  try{drawUnit(c,H.ui,0,0,-1,H.t,0,{});}catch(e){}
-  c.restore();
-  if(H.st==='dig'){const q=P(H.tx+.5,H.ty+.5);
-   c.strokeStyle='rgba(255,210,61,'+(.4+.4*Math.sin(TR.t*14))+')';c.lineWidth=2.5;
-   c.beginPath();c.moveTo(q[0]-CS*.24,q[1]-CS*.24);c.lineTo(q[0]+CS*.24,q[1]+CS*.24);
-   c.moveTo(q[0]+CS*.24,q[1]-CS*.24);c.lineTo(q[0]-CS*.24,q[1]+CS*.24);c.stroke();}
-  /* ⚠英雄の絵はマスより背が高いので、名前と帯はマスの上端よりさらに上へ出す */
-  const q=P(cx,cy),ty=q[1]-CS*.30,gr=Math.round((cvGrow(H)-1)*100);
-  c.fillStyle='rgba(0,0,0,.6)';c.fillRect(q[0]-8,ty-11,CS+16,11);
-  c.fillStyle=H.own?'#ffd23d':'#9fdcf5';c.font='900 9px sans-serif';c.textAlign='center';
-  c.fillText(H.n+(H.own?'':'(お供)')+(gr?' +'+gr+'%':''),q[0]+CS*.5,ty-3);
-  c.fillStyle='rgba(0,0,0,.6)';c.fillRect(q[0]-8,ty,CS+16,4);
-  c.fillStyle=H.own?'#ffd23d':'#9fdcf5';c.fillRect(q[0]-8,ty,(CS+16)*clamp(H.hp/H.mhp,0,1),4);
-  c.fillStyle='#C1502E';c.fillRect(q[0]-8,ty+4,(CS+16)*clamp(H.ch,0,1),2);
- }
- for(const f of TR.fx){
-  const a=1-f.t/.6;
-  if(f.k==='ring'){const p=P(f.x,f.y);
-   c.strokeStyle=f.c;c.globalAlpha=a;c.lineWidth=3;
-   c.beginPath();c.arc(p[0],p[1],CS*f.r*(.4+f.t*1.6),0,7);c.stroke();c.globalAlpha=1;}
-  else if(f.k==='line'){const p=P(0,f.y);
-   c.fillStyle=f.c;c.globalAlpha=a*.5;c.fillRect(0,p[1]-CS*.3,w,CS*.6);c.globalAlpha=1;}
-  else if(f.k==='flash'){c.fillStyle=f.c;c.globalAlpha=a*.28;c.fillRect(0,0,w,h);c.globalAlpha=1;}
- }
- for(const p2 of TR.ps){const p=P(p2.x,p2.y);
-  c.fillStyle=p2.c;c.globalAlpha=Math.max(0,1-p2.t/p2.life);
-  c.fillRect(p[0]-1.5,p[1]-1.5,3,3);c.globalAlpha=1;}
- /* 🔦採掘レーザー: 画面の上から削った点へ光条が走る */
- for(const b of TR.beams){
-  const p=P(b.x,b.y),a=Math.max(0,1-b.t/.22);
-  c.globalAlpha=a;
-  c.strokeStyle='#9fdcf5';c.lineWidth=2.2;
-  c.beginPath();c.moveTo(p[0],g.top);c.lineTo(p[0],p[1]);c.stroke();
-  c.strokeStyle='rgba(159,220,245,.35)';c.lineWidth=7;
-  c.beginPath();c.moveTo(p[0],g.top);c.lineTo(p[0],p[1]);c.stroke();
-  c.fillStyle='#F2ECDC';c.beginPath();c.arc(p[0],p[1],CS*(.10+.22*(1-a)),0,7);c.fill();
-  c.globalAlpha=1;}
+/* ---------------- 📖 ゾンビ図鑑 ---------------- */
+/* sil=未発見。⚠何がいるか分からないよう真っ黒のシルエットで出す */
+function zcThumb(cv,zi,sil){
+ const c=cv.getContext&&cv.getContext('2d');if(!c||!c.save)return;
+ const W=cv.width,H=cv.height;c.clearRect(0,0,W,H);
+ const s=(H*.74)/64/(ZOMBIES[zi].sc||1);
+ c.save();c.translate(W*.5,H*.9);c.scale(s,s);
+ if(sil&&c.filter!==undefined)c.filter='brightness(0)';
+ try{drawZombie(c,zi,0,0,-1,.4,0,{});}catch(e){}
  c.restore();
- cvMini(c,g);
- cvHud(c,w,h,g);
- if(TR.done&&TR.res)cvResult(c,w,h);
 }
-/* 全体を見るためのミニマップ。⚠盤面が画面の4倍あるので、これが無いとどこを掘っているか分からない */
-function cvMini(c,g){
- const s=CV_MINI;
- c.fillStyle='rgba(12,9,7,.86)';c.fillRect(g.mx-3,g.my-3,g.mw+6,g.mh+6);
- c.strokeStyle='rgba(242,236,220,.5)';c.lineWidth=1.5;c.strokeRect(g.mx-3,g.my-3,g.mw+6,g.mh+6);
- for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
-  const i=cvI(x,y),t=TR.g[i];
-  if(t===1){c.fillStyle=cvWater(y)?'#2a7884':cvFresh(i)?'#24384a':'#181410';}
-  else if(t===2){c.fillStyle='#C1502E';}
-  else{const nu=TR.nut[i];c.fillStyle=nu>=3?'#b0485a':nu>=1?'#5c4232':'#4a3a28';}
-  c.fillRect(g.mx+x*s,g.my+y*s,s+.5,s+.5);}
- c.fillStyle='#ff6a4a';c.fillRect(g.mx+TR.mx*s-1,g.my+TR.my*s-1,s*2+2,s*2+2);
- c.fillStyle='#9fdcf5';
- for(const z of TR.zs)if(!z.dead)c.fillRect(g.mx+z.cx*s-.5,g.my+z.cy*s-.5,s+1,s+1);
- c.fillStyle='#ffd23d';
- for(const H of TR.hs)if(!H.dead)c.fillRect(g.mx+H.cx*s-1,g.my+H.cy*s-1,s+2,s+2);
- c.strokeStyle='#F2ECDC';c.lineWidth=1.5;
- c.strokeRect(g.mx+TR.cam.x*s,g.my+TR.cam.y*s,g.vw*s,g.vh*s);
-}
-function cvHud(c,w,h,g){
- c.textAlign='left';c.textBaseline='alphabetic';
- c.fillStyle='rgba(20,16,12,.85)';c.fillRect(0,0,w,30);
- const D=TR_DIF[TR.dif];
- c.fillStyle='#F2ECDC';c.font='900 13px sans-serif';
- c.fillText('第'+TR.wave+'/'+D.w+'波',8,20);
- const bx=78,bw=Math.min(140,w*.19);
- c.fillStyle='rgba(0,0,0,.6)';c.fillRect(bx,9,bw,12);
- c.fillStyle='#C1502E';c.fillRect(bx,9,bw*clamp(TR.core/TR.coreMax,0,1),12);
- c.strokeStyle='#F2ECDC';c.lineWidth=1.5;c.strokeRect(bx,9,bw,12);
- c.fillStyle='#F2ECDC';c.font='900 10px sans-serif';
- c.fillText('マザー '+Math.max(0,Math.round(TR.core)),bx+4,19);
- /* 🩸腐肉の手持ち。⚠埋蔵量は桁が大きいのでここには入れない(枠からはみ出す)=下の帯へ */
- const mx=bx+bw+10;
- c.fillStyle='rgba(0,0,0,.6)';c.fillRect(mx,9,86,12);
- c.fillStyle='#b0485a';c.fillRect(mx,9,86*clamp(TR.bio/500,0,1),12);
- c.strokeStyle='#F2ECDC';c.strokeRect(mx,9,86,12);
- c.fillStyle='#F2ECDC';c.font='900 10px sans-serif';
- c.fillText('🩸 '+Math.floor(TR.bio),mx+4,19);
- c.textAlign='right';c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';
- const ph=TR.phase==='nest'?'巣作り':'侵攻';
- c.fillText(ph+' '+Math.max(0,Math.ceil(TR.pt))+'秒',w-96,19);
- /* 下の帯 */
- c.textAlign='left';
- c.fillStyle='rgba(20,16,12,.8)';c.fillRect(0,h-24,w,24);
- if(TR.mode){c.fillStyle='#ffd23d';c.font='900 12px sans-serif';
-  c.fillText(TR.mode==='cull'?'🔪 間引きたいゾンビをタップ(🥩肉塊が残る。もう一度ボタンで解除)'
-   :TR.mode==='crush'?'🪨 崩したい空洞をタップ(もう一度ボタンで取り消し)'
-   :'🏠 移す先(2×2ぶん削れている所)をタップ',300,h-8);}
- else if(TR.phase==='nest'&&TR.next){
-  c.fillStyle='#ffd23d';c.font='900 11px sans-serif';
-  c.fillText('つぎに来る: '+TR.next.map(x=>x.n+(x.own?'(訓練)':'')).join(' / '),300,h-8);}
- else{c.fillStyle='#c9c4b4';c.font='900 11px sans-serif';
-  c.fillText('ゾンビ '+TR.zs.filter(z=>!z.dead).length+'／'+CV_ZMAX+'　🥩肉塊 '+TR.meat.length
-   +'　進化 '+TR.evo+'　🦠感染 '+TR.inf.length,300,h-8);}
- c.textAlign='right';c.fillStyle='#b0485a';c.font='900 11px sans-serif';
- c.fillText('まだ土に埋まっている🩸 '+Math.round(TR.buried),w-8,h-8);
- c.textAlign='left';
- if(TR.msgT>0&&TR.msg){
-  c.textAlign='center';c.globalAlpha=clamp(TR.msgT/.8,0,1);
-  c.fillStyle='#ffd23d';c.font='900 20px sans-serif';
-  c.fillText(TR.msg,w*.5,52);c.globalAlpha=1;}
- for(const H of (TR.hs||[]))if(H.ultT>0){
-  c.textAlign='center';c.globalAlpha=clamp(H.ultT/.6,0,1);
-  c.fillStyle=H.c;c.font='900 22px sans-serif';
-  c.fillText(H.n+ '『'+H.ultN+'』',w*.5,h*.42);c.globalAlpha=1;}
-}
-function cvResult(c,w,h){
- const R=TR.res,H=heroOf(TR.hid)||HEROES[0];
- c.fillStyle='rgba(20,16,12,.88)';c.fillRect(0,0,w,h);
- c.textAlign='center';
- c.fillStyle=TR.win?'#b7e07a':'#ff8a6a';c.font='900 26px sans-serif';
- c.fillText(TR.win?'守り切った! 訓練成功':'マザーゾンビが倒された…',w*.5,h*.22);
- c.fillStyle='#ffd23d';c.font='900 19px sans-serif';
- c.fillText('経験値 +'+R.gain,w*.5,h*.36);
- c.fillStyle='#c9c4b4';c.font='900 13px sans-serif';
- c.fillText('しのいだ波 '+TR.waveOK+'／倒した英雄 '+TR.hkill+'／倒したゾンビ '+TR.zkill
-  +'／削ったマス '+TR.dug,w*.5,h*.45);
- c.fillText('🩸戻った '+Math.round(TR.back)+'／英雄に食われた '+Math.round(TR.eaten)
-  +'／英雄から奪った '+Math.round(TR.won),w*.5,h*.53);
- c.fillStyle=R.up?'#b7e07a':'#F2ECDC';c.font='900 18px sans-serif';
- c.fillText(R.up?(H.n+' 鍛錬Lv'+R.lv+' に上がった! (HPと攻撃 合計+'+Math.round((hBoost(TR.hid)-1)*100)+'%)')
-  :(H.n+' 鍛錬Lv'+R.lv+'  次まで '+Math.max(0,R.need-R.xp)),w*.5,h*.64);
- if(R.up){c.fillStyle='#c9c4b4';c.font='900 12px sans-serif';
-  c.fillText('※強くなったぶん、次はもっと撃退しづらくなる',w*.5,h*.73);}
- c.fillStyle='#c9c4b4';c.font='900 14px sans-serif';
- c.fillText('画面をタップして鍛錬所へもどる',w*.5,h*.86);
-}
-
-/* ---------------- 入力 ----------------
-   盤面をなぞる=掘る(1マスずつタップさせると数が多すぎて手が回らない)
-   ミニマップをなぞる=見る場所を移す / 🪨崩落・🏠マザー移動はボタンでモードに入ってからタップ */
-let trDrag=null;/* 'dig' | 'cam' */
-function trCell(cx,cy){
- const g=TR.geo;if(!g)return null;
- const x=Math.floor(cx/g.cs+TR.cam.x),y=Math.floor((cy-g.top)/g.cs+TR.cam.y);
- return cvIn(x,y)?[x,y]:null;}
-function trDig(cx,cy){
- const p=trCell(cx,cy);if(!p)return;
- const x=p[0],y=p[1];
- if(cvAt(x,y)!==0)return;
- if(cvWater(y)){TR.msg='水没していて削れない';TR.msgT=1;return;}
- if(!cvCanDig(x,y)){TR.msg='空洞に接した所しか削れない';TR.msgT=1;return;}
- if(TR.bio<CV_DIG){TR.msg='🩸腐肉が足りない';TR.msgT=1;return;}
- if(!cvDigAt(x,y))return;
- beep(220,120,.05,'square',.05);
- /* ⚠盤面は画面の4倍あるので、端で掘ったらその方向へ少し画面を送る */
- const g=TR.geo;if(!g)return;
- if(x<TR.cam.x+2)TR.cam.x=Math.max(0,TR.cam.x-1.2);
- else if(x>TR.cam.x+g.vw-3)TR.cam.x=Math.min(Math.max(0,CV_W-g.vw),TR.cam.x+1.2);
- if(y<TR.cam.y+2)TR.cam.y=Math.max(0,TR.cam.y-1.2);
- else if(y>TR.cam.y+g.vh-3)TR.cam.y=Math.min(Math.max(0,CV_H-g.vh),TR.cam.y+1.2);
- TR.camT=CV_FOLLOW;
-}
-function trCam(cx,cy){
- const g=TR.geo;if(!g)return;
- TR.cam.x=clamp((cx-g.mx)/CV_MINI-g.vw*.5,0,Math.max(0,CV_W-g.vw));
- TR.cam.y=clamp((cy-g.my)/CV_MINI-g.vh*.5,0,Math.max(0,CV_H-g.vh));
- TR.camT=CV_FOLLOW;}
-function trInMini(cx,cy){
- const g=TR.geo;if(!g)return false;
- return cx>=g.mx-6&&cx<=g.mx+g.mw+6&&cy>=g.my-6&&cy<=g.my+g.mh+6;}
-if(trcv&&trcv.addEventListener){
- const rel=e=>{const r=trcv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
- trcv.addEventListener('pointerdown',e=>{
-  if(!TR)return;
-  if(TR.done){trainBack();return;}
-  const p=rel(e);
-  if(trInMini(p[0],p[1])){trDrag='cam';trCam(p[0],p[1]);return;}
-  if(TR.mode){
-   const cel=trCell(p[0],p[1]);
-   if(cel){
-    if(TR.mode==='cull'){cvCull(cel[0],cel[1]);return;}/* 間引きはモードを維持 */
-    if(TR.mode==='crush')cvCrush(cel[0],cel[1]);else cvMoveMom(cel[0],cel[1]);}
-   TR.mode='';cvBtns();return;}
-  trDrag='dig';trDig(p[0],p[1]);
-  try{trcv.setPointerCapture&&trcv.setPointerCapture(e.pointerId);}catch(x){}
- });
- trcv.addEventListener('pointermove',e=>{
-  if(!TR||TR.done||!trDrag)return;
-  const p=rel(e);
-  if(trDrag==='cam')trCam(p[0],p[1]);else trDig(p[0],p[1]);
- });
- trcv.addEventListener('pointerup',()=>{trDrag=null;});
- trcv.addEventListener('pointercancel',()=>{trDrag=null;});
+/* ⚠見出し+グリッドを ZDEX_G の順に積む。1画面に全部は入らないので .bpbody 側でスクロールさせる */
+function renderZoo(box){
+ const hint=$('tr-hint');
+ if(hint)hint.innerHTML='ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は影だけで出る。';
+ const seen=ZOMBIES.filter(z=>zcSeen(z.id)).length;
+ let html='<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+ZOMBIES.length+' 種</div>';
+ for(const G2 of ZDEX_G){
+  const list=[];
+  for(let i=0;i<ZOMBIES.length;i++)if(G2.f(ZOMBIES[i]))list.push(i);
+  if(!list.length)continue;
+  let sn=0;for(const i of list)if(zcSeen(ZOMBIES[i].id))sn++;
+  html+='<div class="bphint" style="margin:7px 0 3px">'+G2.n+'　'+sn+'／'+list.length+'</div>'
+   +'<div class="lgrid">'+list.map(i=>{
+    const z=ZOMBIES[i],ok=zcSeen(z.id);
+    /* 特徴は1つに絞らず全部並べる(装甲+オーラのような複合がいるため) */
+    const tg=[];
+    if(z.fin)tg.push('最終ボス');else if(z.boss)tg.push('ボス');
+    if(z.armor)tg.push('装甲');if(z.scl)tg.push('鱗の鎧');
+    if(z.noblock)tg.push('すり抜け');if(z.aura)tg.push('オーラ');if(z.split)tg.push('分裂');
+    const tag=tg.length?tg.join('・'):'通常';
+    return '<div class="lc"'+(ok?'':' style="opacity:.55"')+'>'
+     +'<canvas class="zth'+(ok?'':' zsil')+'" width="128" height="128" data-zi="'+i+'"></canvas>'
+     +'<div class="nm">'+(ok?z.n:'???')+'</div>'
+     +'<div class="tg">'+(ok?('HP'+z.hp+'・攻撃'+z.atk+'／'+tag):'未発見')+'</div>'
+     +'<div class="ds">'+(ok?(z.dsc||('速さ'+z.sp+'／抜けられるとコアに'+z.dmg+'ダメージ'))
+       :'ソロ作戦で倒すと載る')+'</div></div>';
+   }).join('')+'</div>';
+ }
+ box.innerHTML=html;
+ box.querySelectorAll('canvas.zth').forEach(cv=>
+  zcThumb(cv,+cv.dataset.zi,cv.classList&&cv.classList.contains('zsil')));
 }
 $('bt-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
 $('bt-train-close').onclick=()=>$('md-train').classList.remove('on');
-$('trquit').onclick=()=>{if(TR&&!TR.done)toast('🔧'+TR_COST+' は戻らない');trainBack();};
-/* 巣作りタイムを打ち切って侵攻を始める(掘る物が無くて待つだけの時間を省く) */
-$('trskip').onclick=()=>{if(TR&&!TR.done&&TR.phase==='nest')cvInvade();};
-/* 🪨崩落 / 🏠マザー移動 は「モードに入ってから盤面をタップ」の2段階(誤爆すると痛いので) */
-/* 🔪間引きだけはモードを維持する(何体も続けて処理したいので)。もう一度押すと解除 */
-$('trcull').onclick=()=>{if(TR&&!TR.done){TR.mode=TR.mode==='cull'?'':'cull';cvBtns();}};
-$('trcrush').onclick=()=>{if(TR&&!TR.done){TR.mode=TR.mode==='crush'?'':'crush';cvBtns();}};
-$('trmove').onclick=()=>{if(TR&&!TR.done){TR.mode=TR.mode==='move'?'':'move';cvBtns();}};
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
 $('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
 /* 難易度は「1つ下をクリアするまで押せない」。未解放は🔒つきで無効にする(2026-07-25) */
@@ -6059,7 +4943,6 @@ function loopBody(now){
   drawMinis();
  }
  if(SCR==='title')paradeStep(TT);
- if(SCR==='train')trainStep(dt0);
  hudT-=dt0;
  if(hudT<=0&&gameActive){hudT=.12;updHUD();minisUpd();
   if($('interv').classList.contains('on')){

@@ -30,9 +30,6 @@ function coarseCSS(s){
 const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連した状態で撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
-/* train = 🏋鍛錬所の洞窟(巣作り中) / trainraid = 侵攻中 / trainres = 結果画面 */
-const TRN=OPT.indexOf('train')>=0;
-const TRRAID=OPT.indexOf('trainraid')>=0,TRRES=OPT.indexOf('trainres')>=0;
 const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=line = 🔬研究所の指定タブを開いた状態で撮る */
 const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
@@ -55,27 +52,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
      :TTL?'META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
-       +'META.zl={walk:3,run:2,dog:1,arm:2,scr:1,blo:1};META.zc={walk:22,run:9,tank:4,crwl:8,brut:31};'
+       /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
+       +'META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});'
        +'TRTAB="'+(OPT.indexOf('trzoo')>=0?'zoo':'hero')+'";renderTrain();document.getElementById("md-train").classList.add("on");')
      :GC?'META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
-     :TRN?('META.tr0=1;META.hmat=99;META.hero={hNox:1,hSf:1};META.hlv={hNox:3};'
-       +'META.zl={walk:3,run:2,dog:1,arm:2,scr:1,crwl:1,blo:1,stlk:1,brut:1};META.zc={walk:22,run:9,tank:4};'
-       +'renderTrain();trainStart("hNox",1);'
-       /* 実時間で掘るのを待たず、見栄えのする盤面(広間2つ+つなぎの坑道)を作ってしまう */
-       +'(function(){var d=function(x,y){cvDigAt(x,y,true);};'
-       +'for(var y=6;y<=14;y++)for(var x=1;x<=8;x++)d(x,y);'
-       +'for(var x=9;x<=19;x++)d(x,10);'
-       +'for(var y=7;y<=13;y++)for(var x=19;x<=26;x++)d(x,y);'
-       +'for(var x=27;x<=37;x++)d(x,10);'
-       +'for(var y=8;y<=14;y++)for(var x=37;x<=44;x++)d(x,y);})();'
-       +(TRRAID||TRRES?'cvInvade();':'')
-       /* trainflood = 🌊死潮が満ちている所を撮る(本来は第2波から) */
-       +(OPT.indexOf('trainflood')>=0?'TR.twMax=3.4;':'')
-       /* ⚠1フレームしか進めないと、削った瞬間の採掘レーザーの光条が45本すべて残って画面が縦線だらけになる */
-       +'for(var k=0;k<45;k++)cvSpawn();for(var k3=0;k3<8;k3++)trainStep(0.05);'
-       /* 侵攻中は少し時間を進めて、英雄が奥へ入った所を撮る */
-       +(TRRAID?'for(var k2=0;k2<200;k2++)if(!TR.done)trainStep(0.05);':'')
-       +(TRRES?'TR.dmg=5200;TR.waveOK=6;TR.hkill=3;TR.zkill=41;TR.dug=58;trainEnd(true);trainStep(0.001);':''))
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
