@@ -114,6 +114,7 @@ function collectDecls(code){
 const GLOBALS=new Set((
  'Math JSON Object Array String Number Boolean Date RegExp Error TypeError RangeError Map Set WeakMap WeakSet '+
  'Promise Symbol Proxy Reflect BigInt Function parseInt parseFloat isNaN isFinite '+
+ 'Uint8Array Uint16Array Uint32Array Int8Array Int16Array Int32Array Float32Array Float64Array ArrayBuffer DataView '+
  'encodeURIComponent decodeURIComponent encodeURI decodeURI escape unescape '+
  'window document navigator location history localStorage sessionStorage console performance '+
  'requestAnimationFrame cancelAnimationFrame setTimeout clearTimeout setInterval clearInterval queueMicrotask '+

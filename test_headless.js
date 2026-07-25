@@ -480,52 +480,111 @@ function checkHero(){
  console.log('英雄: 11人の出撃(1ゲーム1回・戦死したら終わり)と必殺技11種 OK(うち'+dmgN+'種が直接ダメージ)');
  META.hero={};META.hsel='';
 }
-/* ---- 🏋鍛錬所のリズム訓練 ----
-   ⚠画面をスワイプしないと動かない部分なので、判定・経験値・Lv上限を直接呼んで確かめる */
+/* ---- 🏋鍛錬所の洞窟(母核防衛) ----
+   ⚠画面をタップしないと動かない部分なので、掘る・湧く・英雄のAI・波の進行を直接呼んで確かめる */
 function checkTrain(){
  const h=HEROES[0];
  META.hero={};META.hero[h.id]=1;META.hsel=h.id;META.hmat=100;META.hlv={};META.hxp={};META.tr0=1;
+ META.zc={};META.zl={walk:1};
  try{renderTrain();}catch(e){console.log('FAIL: 鍛錬所の一覧で例外: '+e.message);process.exit(1);}
+ /* ---- 🧿コアの解放と強化 ---- */
+ META.zc.run=ZC_OPEN;zcBuy('run');
+ if(zcLv('run')!==1){console.log('FAIL: 🧿コアでゾンビを解放できない');process.exit(1);}
+ if(zcHave('run')!==0){console.log('FAIL: 解放してもコアが減っていない');process.exit(1);}
+ META.zc.run=zcNeed(1);zcBuy('run');
+ if(zcLv('run')!==2||Math.abs(zcBoost('run')-1.12)>1e-9){
+  console.log('FAIL: 🧿コアの強化が乗らない Lv'+zcLv('run')+' 倍率'+zcBoost('run'));process.exit(1);}
+ META.zc.tank=1;zcBuy('tank');
+ if(zcLv('tank')!==0){console.log('FAIL: コアが足りないのに解放できてしまう');process.exit(1);}
+ /* ---- 訓練の開始 ---- */
  const m0=META.hmat;
- trainStart(h.id);
+ trainStart(h.id,1);
  if(!TR){console.log('FAIL: 訓練が始まらない');process.exit(1);}
  if(META.hmat!==m0-TR_COST){console.log('FAIL: 🔧鍛錬素材が減っていない');process.exit(1);}
- if(TR.notes.length!==TR_N){console.log('FAIL: 譜面のノート数が違う '+TR.notes.length);process.exit(1);}
  if(SCR!=='train'){console.log('FAIL: 訓練画面へ切り替わらない');process.exit(1);}
- const iv0=TR.notes[1].t-TR.notes[0].t,iv1=TR.notes[TR_N-1].t-TR.notes[TR_N-2].t;
- if(!(iv1<iv0*.6)){console.log('FAIL: 終盤で速くなっていない '+iv0.toFixed(2)+'→'+iv1.toFixed(2));process.exit(1);}
- try{trainStep(.016);}catch(e){console.log('FAIL: 訓練の描画で例外: '+e.message);process.exit(1);}
- /* ノートが無いところで振る=空振り(コンボが切れる) */
- TR.combo=5;TR.t=0;trainInput(0);
- if(TR.combo!==0){console.log('FAIL: 空振りでコンボが切れない');process.exit(1);}
- /* ちょうどのタイミング+正しい向き=PERFECT */
- const n0=TR.notes[0];TR.t=n0.t;trainInput(n0.d);
- if(n0.hit!==1||TR.pf!==1||TR.score<=0){console.log('FAIL: PERFECT判定が出ない');process.exit(1);}
- /* 向き違い=ミス */
- const n1=TR.notes[1];TR.t=n1.t;trainInput(n1.d===1?-1:1);
- if(n1.hit!==2||TR.ms!==1||TR.combo!==0){console.log('FAIL: 向き違いがミスにならない');process.exit(1);}
- /* 通り過ぎたら自動でミス */
- const ms0=TR.ms;TR.t=TR.notes[2].t+TR_GOOD+.05;trainStep(.001);
- if(TR.ms<=ms0){console.log('FAIL: 見逃しがミスにならない');process.exit(1);}
- /* 終了=スコアが経験値になりLvが上がる */
- TR.score=TR_NEED(0)+TR_NEED(1)+5;TR.t=TR.len+1;trainStep(.001);
- if(!TR.done||!TR.res){console.log('FAIL: 訓練が終わらない');process.exit(1);}
- if(hLv(h.id)!==2){console.log('FAIL: 鍛錬Lvが2にならない '+hLv(h.id));process.exit(1);}
- if(Math.abs(hBoost(h.id)-1.16)>1e-9){console.log('FAIL: 鍛錬の伸びが+16%でない');process.exit(1);}
- /* 上限を超えない */
- META.hxp[h.id]=0;TR.score=999999;TR.done=false;TR.t=TR.len+1;trainStep(.001);
- if(hLv(h.id)!==TR_MAX){console.log('FAIL: 鍛錬Lvの上限が'+TR_MAX+'でない '+hLv(h.id));process.exit(1);}
+ if(TR.wave!==1||TR.phase!=='nest'){console.log('FAIL: 第1波の巣作りから始まらない');process.exit(1);}
+ if(!TR.next||TR.next.length!==1||!TR.next[0].own){
+  console.log('FAIL: 第1波は育成対象1人だけのはず');process.exit(1);}
+ try{trainStep(.016);}catch(e){console.log('FAIL: 洞窟の進行で例外: '+e.message);process.exit(1);}
+ /* ---- 掘る: 空洞に隣接した土だけ・🦴骸を消費 ---- */
+ if(cvCanDig(6,5)){console.log('FAIL: 空洞から離れた土が掘れてしまう');process.exit(1);}
+ if(!cvCanDig(1,5)){console.log('FAIL: 侵入口の隣が掘れない');process.exit(1);}
+ const mn=TR.mana;
+ if(!cvDigAt(1,5)){console.log('FAIL: 掘れない');process.exit(1);}
+ if(Math.abs(TR.mana-(mn-CV_DIG))>1e-9){console.log('FAIL: 掘っても🦴骸が減らない');process.exit(1);}
+ TR.mana=0;
+ if(cvDigAt(2,5)){console.log('FAIL: 🦴骸が0でも掘れてしまう');process.exit(1);}
+ TR.mana=CV_MAX;
+ /* ---- 開放度で格が決まる: 広く掘るほど強いゾンビ ---- */
+ for(let y=3;y<=7;y++)for(let x=1;x<=5;x++)cvDigAt(x,y,true);
+ const dMid=cvDeg(3,5);
+ if(cvTier(dMid)!==4){console.log('FAIL: 広間の中心が格4にならない(開放度'+dMid+')');process.exit(1);}
+ const dNeck=cvDeg(0,0);
+ if(cvTier(dNeck)>2){console.log('FAIL: 細い坑道の格が高すぎる(開放度'+dNeck+')');process.exit(1);}
+ /* ---- 湧き: 解放した種類だけ・格を超えない ---- */
+ TR.zs.length=0;
+ for(let k=0;k<60;k++)cvSpawn();
+ if(!TR.zs.length){console.log('FAIL: ゾンビが湧かない');process.exit(1);}
+ for(const z of TR.zs){
+  if(z.inf)continue;
+  const id=ZOMBIES[z.zi].id;
+  if(zcLv(id)<=0){console.log('FAIL: 未解放のゾンビが湧いた '+id);process.exit(1);}
+  if(!ZC_BY[id]){console.log('FAIL: 洞窟に出ないはずのゾンビが湧いた '+id);process.exit(1);}}
+ /* ---- 巣作り→侵攻 ---- */
+ let gd=0;
+ while(TR.phase==='nest'&&gd++<3000)trainStep(.05);
+ if(TR.phase!=='raid'){console.log('FAIL: 侵攻フェーズへ移らない');process.exit(1);}
+ if(!TR.hs.length||TR.hs[0].cx!==0){console.log('FAIL: 英雄が侵入口から攻めてこない');process.exit(1);}
+ /* ---- 英雄は掘ってある道を選び、無ければ自分で掘って進む ---- */
+ {const H=TR.hs[0],x0=H.cx;
+  TR.zs.length=0;TR.sp=-999;/* 湧きを止めて移動だけを見る */
+  let g2=0;while(H.cx===x0&&!TR.done&&g2++<400)trainStep(.05);
+  if(H.cx<=x0){console.log('FAIL: 英雄が奥へ進まない(st='+H.st+' p='+(+H.p).toFixed(2)
+   +' cost='+TR.hpf[cvI(H.cx,H.cy)]+' 敵'+TR.zs.length+' pos='+H.cx+','+H.cy+')');process.exit(1);}
+  TR.sp=0;/* 湧きを戻す */}
+ /* ---- 最後まで走らせる(全波しのぐ or 母核が砕ける) ---- */
+ gd=0;
+ while(!TR.done&&gd++<24000)trainStep(.05);
+ if(!TR.done||!TR.res){console.log('FAIL: 訓練が終わらない(波'+TR.wave+'/'+TR.phase+')');process.exit(1);}
+ if(TR.dmg<=0){console.log('FAIL: ゾンビが英雄に一度もダメージを与えていない');process.exit(1);}
+ if(TR.res.gain<=0){console.log('FAIL: 経験値が入らない(しのいだ波'+TR.waveOK+' 与ダメ'+Math.round(TR.dmg)+')');process.exit(1);}
+ if(hLv(h.id)<=0){console.log('FAIL: 訓練しても鍛錬Lvが上がらない');process.exit(1);}
+ const okWin=TR.win,okWv=TR.waveOK;
  trainBack();
  if(TR){console.log('FAIL: 訓練から戻れない');process.exit(1);}
- /* 鍛錬Lvが実際の英雄のHPに乗るか */
+ /* ---- 必殺技11種が例外なく撃てる ---- */
+ META.hmat=100;trainStart(h.id,0);cvInvade();
+ for(const q of HEROES){
+  const H=cvMkHero(q.id,false);
+  TR.hs=[H];TR.zs.length=0;
+  for(let k=0;k<6;k++)cvSpawn();
+  try{cvUlt(H);}catch(e){console.log('FAIL: 必殺技『'+q.ult+'』で例外: '+e.message);process.exit(1);}
+  if(H.ch!==0){console.log('FAIL: 必殺技を撃ってもチャージが戻らない '+q.id);process.exit(1);}}
+ trainBack();
+ /* ---- 母核が砕けたら失敗として終わる ---- */
+ META.hmat=100;trainStart(h.id,0);
+ cvInvade();
+ {const H=TR.hs[0];H.cx=CV_CORE_X-1;H.cy=CV_CORE_Y;H.cd=0;H.st='core';
+  TR.core=1;TR.zs.length=0;
+  let g3=0;while(!TR.done&&g3++<200)trainStep(.05);}
+ if(!TR.done){console.log('FAIL: 母核が砕けても終わらない');process.exit(1);}
+ if(TR.win){console.log('FAIL: 母核が砕けたのに成功扱いになっている');process.exit(1);}
+ /* ---- 経験値の上限(鍛錬Lv10を超えない) ---- */
+ META.hlv[h.id]=0;META.hxp[h.id]=0;
+ TR.done=false;TR.score=999999;trainEnd(false);
+ if(hLv(h.id)!==TR_MAX){console.log('FAIL: 鍛錬Lvの上限が'+TR_MAX+'でない '+hLv(h.id));process.exit(1);}
+ trainBack();
+ /* ---- 鍛錬Lvが実際の英雄のHPに乗るか ---- */
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0];
  if(!heroDeploy(me)){console.log('FAIL: 鍛錬後に英雄が出撃できない');process.exit(1);}
  const hu=me.units.filter(u=>u.hro)[0],U=UNITS[me.hUi],want=Math.round(U.hp*hBoost(h.id));
  if(hu.mhp!==want){console.log('FAIL: 鍛錬LvがHPに乗っていない '+hu.mhp+'(想定'+want+')');process.exit(1);}
  backTitle();
- console.log('鍛錬所: 譜面'+TR_N+'ノート(終盤ほど速い)・判定4種(PERFECT/ミス/見逃し/空振り)・経験値とLv上限'+TR_MAX+'・英雄のHPに反映 OK');
- META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;
+ console.log('鍛錬所の洞窟: 🧿コアの解放と強化・掘る(🦴骸)・開放度で格が決まる湧き・英雄のAI(掘って進む)'
+  +'・必殺技'+HEROES.length+'種・波の進行('+okWv+'波しのいで'+(okWin?'訓練成功':'母核が砕けた')+')'
+  +'・母核破壊で失敗・Lv上限'+TR_MAX+'・英雄のHPに反映 OK');
+ META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;META.zc={};META.zl={walk:1};
 }
 /* ---- 支援施設2枠(タワーとは別軸)が、解放してから建つか・効果が乗るか ---- */
 function checkSup(){

@@ -72,8 +72,13 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #trcv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 #trquit{position:absolute;right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));z-index:2;
  background:rgba(36,31,25,.9);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:6px 11px;font-weight:900}
+/* 巣作りタイムを打ち切って侵攻を始めるボタン(左下・巣作り中だけ出す) */
+/* ⚠下端から28px上げてある。画面下24pxは潮位と面子を出す帯なので、重ねると読めなくなる */
+#trskip{position:absolute;left:max(8px,env(safe-area-inset-left));bottom:calc(28px + max(0px,env(safe-area-inset-bottom)));z-index:2;display:none;
+ background:var(--rust);border:2px solid var(--paper);border-radius:10px;color:#fff;font-size:13px;padding:6px 11px;font-weight:900}
 /* 鍛錬所の英雄カード(研究所と同じ .lc グリッドに乗せる) */
 .lc.trc.sel{border-color:var(--rust);box-shadow:0 0 0 3px rgba(193,80,46,.4)}
+.lc .zth{width:64px;height:64px;align-self:center;display:block}
 .lc .tbar{height:7px;border:2px solid var(--ink);border-radius:6px;background:#cdbfa2;overflow:hidden;margin-top:3px}
 .lc .tbar i{display:block;height:100%;background:linear-gradient(90deg,#7ba33f,#b7e07a)}
 .ver{position:fixed;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--paper);opacity:.6}
@@ -574,14 +579,16 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div class="scr" id="scr-train">
   <canvas id="trcv"></canvas>
   <button id="trquit">✕ やめる</button>
+  <button id="trskip">▶ 攻めてこい</button>
 </div>
 
 <div class="modal" id="md-train">
   <div class="panel bigpanel">
     <div class="bphd"><b>🏋 鍛錬所</b><span class="pt" id="tr-mat2"></span><button class="xbtn" id="bt-train-close">✕</button></div>
-    <div class="bphint">飛んでくる玉は<b>矢印の向きへスワイプしてよける</b>／<b>まえ(↑)で訓練ダミーを斬る</b>。スコア=経験値。Lvで英雄のHPと攻撃が+8%ずつ(最大+80%)</div>
+    <div class="tabs" id="tr-tabs"></div>
+    <div class="bphint" id="tr-hint"></div>
     <div class="bpbody" id="tr-list"></div>
-    <div class="bpfoot"><button class="btn red" id="bt-tr-go">🏋 訓練する 🔧10</button></div>
+    <div class="bpfoot" id="tr-foot"><div class="tabs" id="tr-dif"></div><button class="btn red" id="bt-tr-go">🏋 訓練する 🔧10</button></div>
   </div>
 </div>
 
@@ -718,7 +725,7 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{}};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zc:{},zl:{}};
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
 try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
@@ -730,9 +737,14 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!META.hxp||typeof META.hxp!=='object')META.hxp={};/* 次のLvまでの経験 id→pt */
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
  if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
+ if(!META.zc||typeof META.zc!=='object')META.zc={};/* 🧿ゾンビのコア id→個数 */
+ if(!META.zl||typeof META.zl!=='object')META.zl={};/* 洞窟に出せるゾンビ id→Lv(0=未解放) */
+ if(!META.zl.walk)META.zl.walk=1;/* ウォーカーだけ最初から出せる */
  if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
-function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;}
+function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;
+ /* 🧿コアも実質無限に。⚠ZCAVEはこの関数より下で定義されるので、起動直後の1回目はまだ無い */
+ if(typeof ZCAVE!=='undefined'){META.zc=META.zc||{};for(const q of ZCAVE)META.zc[q.id]=DEV_INF;}}
 devTop();
 /* DEVモードだと分かるようにタイトル右上の版数へ印を付ける(付け忘れ/外し忘れ防止) */
 if(DEV)try{const e=document.getElementById('vertag');if(e)e.textContent='v2.0 β 🛠DEV';}catch(e){}
@@ -1231,6 +1243,27 @@ const TR_MAX=10,TR_COST=10;/* 上限Lv / 1回の訓練で使う🔧鍛錬素材 
 const TR_NEED=lv=>100+60*lv;/* そのLvから次へ上がるのに必要な経験 */
 const hLv=id=>clamp((META.hlv&&META.hlv[id])||0,0,TR_MAX);
 const hBoost=id=>1+.08*hLv(id);
+/* 🧿ゾンビのコア(2026-07-26): TD側(ソロ)で同じ種類を倒すと落ちる。
+   🏋鍛錬所の洞窟に出せるゾンビの「解放」と「強化」に使う=モードをまたぐ往復ループ。
+   ⚠洞窟で使えるのはステージ1の12種だけ(ボスと海の生き物は除く)。
+   tier = そのゾンビが湧くのに要るマスの「格」(1=細い坑道 〜 4=広間の中心)
+   ⚠TD側で atk:0 の敵(すり抜け専門のクローラー/スライム状体/レイス)は洞窟だと何もできないので、
+     洞窟用の攻撃力(atk)と攻撃間隔(ar)をここで上書きしている */
+const ZCAVE=[
+ {id:'walk',tier:1},{id:'run',tier:1},{id:'dog',tier:1},
+ {id:'arm', tier:2},{id:'scr',tier:2},{id:'crwl',tier:2,atk:18,ar:1},
+ {id:'blo', tier:3},{id:'ooze',tier:3,atk:34,ar:1.2},{id:'stlk',tier:3},
+ {id:'brut',tier:4},{id:'wrth',tier:4,atk:44,ar:1},{id:'tank',tier:4}
+];
+const ZC_P=.06;   /* コアの落ちる確率(エリートは2倍) */
+const ZC_OPEN=8;  /* 解放に要るコアの数 */
+const ZC_LV=5;    /* 強化の上限Lv */
+const zcNeed=lv=>lv<=0?ZC_OPEN:6*(lv+1);/* 次のLvに要るコア(Lv0=解放・満額92でLv5) */
+const zcHave=id=>(META.zc&&META.zc[id])||0;
+const zcLv=id=>clamp((META.zl&&META.zl[id])||0,0,ZC_LV);
+const zcBoost=id=>1+.12*Math.max(0,zcLv(id)-1);/* 解放(Lv1)が等倍、そこから+12%/Lv */
+const ZC_BY={};for(const q of ZCAVE)ZC_BY[q.id]=q;
+const zcOf=zi=>ZC_BY[(ZOMBIES[zi]||{}).id];/* ZOMBIESの添字 → 洞窟で使える種類か */
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
 /* 英雄をUNITSの末尾に「特別な兵科」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=兵科の数え上げには U_N を使うこと
@@ -2434,6 +2467,12 @@ function killZ(C,z){
   addFx(C,'txt',z.px,z.py-58,'💎+'+gm);
   addP(C,14,z.px,z.py-30,{sp:170,up:80,g:420,life:.9,r:3,col:'#9fdcf5'});
   toast('💎 魔石を'+gm+'個 手に入れた(計'+META.gem+')');}
+ /* 🧿コア: 🏋鍛錬所の洞窟に出せる12種を倒した時だけ落ちる。ソロのみ */
+ if(soloMeta()&&C.isMe){const q=zcOf(z.zi);
+  if(q&&Math.random()<ZC_P*(z.elite?2:1)){
+   META.zc=META.zc||{};META.zc[q.id]=(META.zc[q.id]||0)+1;saveMeta();
+   addFx(C,'txt',z.px,z.py-46,'🧿'+ZOMBIES[z.zi].n+'のコア');
+   addP(C,8,z.px,z.py-26,{sp:150,up:70,g:400,life:.8,r:2.6,col:'#b7e07a'});}}
  /* 血しぶきと地面の染み */
  const bsc=z.boss?2.4:z.elite?1.5:1;
  addP(C,Math.round(9*bsc),z.px,z.py-22,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
@@ -4494,21 +4533,89 @@ $('bt-gacha-close').onclick=()=>{$('md-gacha').classList.remove('on');try{render
 $('gc-1').onclick=()=>gcPull(1);
 $('gc-10').onclick=()=>gcPull(10);
 $('gc-rate').onclick=()=>{$('gc-res').innerHTML=IC(gcRateHtml());};
-/* ============ 🏋 ヒーロー鍛錬所(タイミング&リズムの訓練) ============
-   ユーザー決定(2026-07-25): 指のスワイプ ←/まえ(↑)/→ の3方向だけで遊ぶ。
-   奥から飛んでくる玉は**描いてある矢印の向きへスワイプしてよける**、まえ(↑)で訓練ダミーを斬る。
-   スコアがそのまま経験値になり、Lvが上がると英雄のHPと攻撃が+8%ずつ伸びる(最大Lv10)。
+/* ============ 🏋 ヒーロー鍛錬所(洞窟・母核防衛) ============
+   ユーザー決定(2026-07-26): スワイプのリズム訓練は廃止し、まるごと作り替えた。
+   『ゆうしゃのくせになまいきだ。』のオマージュだが、**借りたのは骨だけ**:
+    ①操作は「土を掘る」だけ ②掘らないと戦力が育たないが掘ると侵入者の道ができる
+    ③直接殴れない(湧いたゾンビ越しにしか干渉できない) ④侵入者は勝手に動く
+   本家の顔である「食物連鎖の階層(コケ→ムシ→トカゲ)」「養分/魔分の土」「魔王の連行タイム」は入れていない。
+   代わりにDEADTIDE固有の要素を主役にしてある:
+    ・湧く格は**そのマスの開放度**(周囲8マスのうち空洞の数)で決まる=広く掘った部屋の中心ほど強い
+    ・🧿ゾンビのコア=TD側で同種を倒すと落ち、洞窟に出せる種類の解放と強化に使う
+    ・🌊死潮=波の中で下から満ちて引く。水没したマスは壁と同じ(こちらにも相手にも効く)
+    ・🦠感染=倒したお供の英雄が次の波から味方として湧く
+    ・攻めてくる英雄は必殺技を撃つ(未所持の英雄も出るので「こんなのがいるのか」が分かる)
+   立場はTD側の裏返し=こちらがゾンビ側で、守るのは母核。
+   波をしのぐと訓練成功=経験値。鍛錬Lvが上がるほど英雄が強くなり、次から撃退しづらくなる。
    ⚠鍛錬所はタイトル側の施設(戦場の建設マスではない)=試合を止めずに済むため。 */
-const TR_LEAD=1.55;/* ノートが見えてから判定ラインに届くまでの秒数 */
-const TR_N=46;/* 1回に流れるノート数 */
-const TR_PERF=.085,TR_GOOD=.20;/* 判定の幅(秒) */
-let TR=null,TRSEL='',trSw=null;
+const CV_W=26,CV_H=10;       /* 盤面のマス数(横×縦)。縦=深さで、下ほど深い */
+const CV_DIG=6;              /* 1マス掘るのに要る🦴骸 */
+const CV_MAX=60;             /* 🦴骸の上限 */
+const CV_REG=7,CV_REG_B=15;  /* 🦴骸の回復(毎秒)。侵攻中 / 巣作り中 */
+const CV_NEST=18;            /* 巣作りタイムの秒数 */
+const CV_RAID=60;            /* 侵攻フェーズの制限秒。しのぎ切れば次の波 */
+const CV_SPAWN=2.2;          /* ゾンビが湧く間隔(秒) */
+const CV_ZMAX=18;            /* 場に出せるゾンビの上限 */
+const CV_SPD_OPEN=.45;       /* 英雄が空洞を1マス進む秒数 */
+const CV_SPD_DIG=1.8;        /* 英雄が土を1マス掘り抜く秒数 */
+const CV_ZSPD=.55;           /* ゾンビが1マス進む秒数(素の速さで割る) */
+/* ⚠この2つが無いとゾンビが1マスに無限に重なり、英雄が数秒で溶ける(TD側のENG_MAXと同じ理屈) */
+const CV_ENG=3;              /* 1人の英雄に同時に噛みつけるゾンビの数 */
+const CV_CELL=2;             /* 1マスに同時に居られるゾンビの数 */
+const CV_WET=12;             /* 潮が引いた跡で湧きが倍になる秒数 */
+const CV_CORE_X=23,CV_CORE_Y=4;/* 母核の左上マス(2×2)。右端に1列ぶん壁を残して埋まって見せる */
+/* 難易度3段階。🔧の消費は同じで、深いほど波数もお供も増えるが経験値の倍率が上がる */
+const TR_DIF=[
+ {n:'浅層',w:5, core:700,hm:1,   am:1,xm:1,   dsc:'5波。お供は1人まで'},
+ {n:'中層',w:8, core:800,hm:1.12,am:2,xm:1.35,dsc:'8波。お供は2人まで'},
+ {n:'深層',w:12,core:900,hm:1.25,am:3,xm:1.8, dsc:'12波。お供は3人まで'}
+];
+/* 報酬(スコア=経験値)。しのいだ波 / 倒した英雄 / 与えたダメージ1あたり / 全波しのいだ時
+   ⚠与ダメージぶんを入れてあるのは、第1波で母核を割られても手応えが0にならないようにするため */
+const TR_PW=220,TR_PK=180,TR_PD=.08,TR_PC=700;
+/* 開放度(周囲8マスの空洞数) → 湧く格 */
+const cvTier=o=>o<=2?1:o<=4?2:o<=6?3:4;
+/* 岩肌の凹凸を「マスの座標から決まる乱数」で出す=毎フレーム描き直してもチラつかない */
+const trHash=n=>{const s=Math.sin(n*127.1)*43758.5453;return s-Math.floor(s);};
+const ZC_TIER_N=['','細い坑道','小部屋','広間','大広間の中心'];
+/* 必殺技の型。名前と説明は英雄ごとに個別に出すが、効き目はこの7種に集約してある */
+const CV_ULT={hCop:'line',hFire:'aoe',hHunt:'aoe',hMech:'heal',hPost:'rush',
+ hSf:'snipe',hMed:'heal',hBomb:'aoe',hSeer:'stop',hGiant:'all',hNox:'all'};
+let TR=null,TRSEL='',TRDIF=0,TRTAB='hero';
 const trcv=$('trcv'),trx=(trcv&&trcv.getContext)?trcv.getContext('2d'):null;
+const zcTotal=()=>{let n=0;for(const q of ZCAVE)n+=zcHave(q.id);return n;};
+const zcZi=id=>ZOMBIES.findIndex(z=>z.id===id);
+
+/* ---------------- 鍛錬所のモーダル ---------------- */
+function zcThumb(cv,zi){
+ const c=cv.getContext&&cv.getContext('2d');if(!c||!c.save)return;
+ const W=cv.width,H=cv.height;c.clearRect(0,0,W,H);
+ const s=(H*.74)/64/(ZOMBIES[zi].sc||1);
+ c.save();c.translate(W*.5,H*.9);c.scale(s,s);
+ try{drawZombie(c,zi,0,0,-1,.4,0,{});}catch(e){}
+ c.restore();
+}
 function renderTrain(){
  const box=$('tr-list');if(!box)return;
- const mt=$('tr-mat2');if(mt)mt.innerHTML=IC('🔧 ')+fmt(META.hmat||0);
+ const mt=$('tr-mat2');if(mt)mt.innerHTML=IC('🔧 ')+fmt(META.hmat||0)+'　🧿 '+fmt(zcTotal());
+ const tb=$('tr-tabs');
+ if(tb){tb.innerHTML=[['hero','🦸 訓練する'],['zoo','🧿 ゾンビ']].map(x=>
+   '<button class="tb'+(TRTAB===x[0]?' on':'')+'" data-tt="'+x[0]+'">'+x[1]+'</button>').join('');
+  tb.querySelectorAll('[data-tt]').forEach(e=>{e.onclick=()=>{TRTAB=e.dataset.tt;renderTrain();};});}
+ const ft=$('tr-foot');if(ft)ft.style.display=TRTAB==='hero'?'':'none';
+ if(TRTAB==='zoo')renderZoo(box);else renderTrHero(box);
+}
+function renderTrHero(box){
+ const hint=$('tr-hint');
+ if(hint)hint.innerHTML='英雄が訓練のために洞窟へ攻めてくる。<b>タップで土を掘って</b>ゾンビを湧かせ、母核を守り切れば訓練成功。'
+  +'<b>広く掘った部屋の中心ほど強いゾンビ</b>が湧くが、掘った所は英雄の通り道にもなる。';
  const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));
- if(!own.length){box.innerHTML=IC('<div class="labdone">まだ英雄がいない。💎英雄召集で仲間にしよう</div>');return;}
+ const df=$('tr-dif'),g=$('bt-tr-go');
+ if(!own.length){
+  box.innerHTML=IC('<div class="labdone">まだ英雄がいない。💎英雄召集で仲間にしよう</div>');
+  if(df)df.innerHTML='';
+  if(g){g.disabled=true;g.textContent='英雄がいない';}
+  return;}
  if(!own.some(h=>h.id===TRSEL))TRSEL=own[0].id;
  box.innerHTML=IC('<div class="lgrid">'+own.map(h=>{
   const lv=hLv(h.id),xp=(META.hxp&&META.hxp[h.id])||0,nd=TR_NEED(lv),bo=hBoost(h.id),U=UNITS[hUiOf(h.id)];
@@ -4522,98 +4629,466 @@ function renderTrain(){
    +'<div class="tg">'+(lv>=TR_MAX?'鍛錬しつくした':('経験 '+xp+' / '+nd))+'</div></div>';
  }).join('')+'</div>');
  box.querySelectorAll('[data-tr]').forEach(e=>{e.onclick=()=>{TRSEL=e.dataset.tr;renderTrain();};});
- const g=$('bt-tr-go');
+ if(df){df.innerHTML=TR_DIF.map((D,i)=>'<button class="tb'+(TRDIF===i?' on':'')+'" data-td="'+i+'">'
+   +D.n+' <i>'+D.w+'波</i></button>').join('');
+  df.querySelectorAll('[data-td]').forEach(e=>{e.onclick=()=>{TRDIF=+e.dataset.td;renderTrain();};});}
  if(g){const sel=heroOf(TRSEL);
-  g.innerHTML=icoImg('ic-train','🏋')+' '+(sel?sel.n:'')+' を訓練する '+IC('🔧')+TR_COST;
-  g.disabled=!DEV&&(META.hmat||0)<TR_COST;g.onclick=()=>trainStart(TRSEL);}
+  g.innerHTML=icoImg('ic-train','🏋')+' '+(sel?sel.n:'')+' を'+TR_DIF[TRDIF].n+'で迎え撃つ '+IC('🔧')+TR_COST;
+  g.disabled=!DEV&&(META.hmat||0)<TR_COST;g.onclick=()=>trainStart(TRSEL,TRDIF);}
 }
-function trainStart(hid){
+function renderZoo(box){
+ const hint=$('tr-hint');
+ if(hint)hint.innerHTML='🧿コアは<b>ソロ作戦で同じ種類のゾンビを倒す</b>と手に入る。解放した種類だけが洞窟に湧く。'
+  +'<b>格が高いゾンビほど広く掘った部屋</b>でないと湧かない。';
+ box.innerHTML='<div class="lgrid">'+ZCAVE.map(q=>{
+  const zi=zcZi(q.id),Z=ZOMBIES[zi]||{};
+  const lv=zcLv(q.id),have=zcHave(q.id),bo=zcBoost(q.id);
+  const need=lv>=ZC_LV?0:zcNeed(lv),can=need>0&&have>=need;
+  return '<div class="lc'+(can?' can':'')+'">'
+   +'<canvas class="zth" width="128" height="128" data-zi="'+zi+'"></canvas>'
+   +'<div class="nm">'+Z.n+'</div>'
+   +'<div class="tg">格'+q.tier+' — '+ZC_TIER_N[q.tier]+'に湧く</div>'
+   +'<div class="ds">'+(lv?('Lv'+lv+'／HP'+Math.round(Z.hp*bo)+'・攻撃'+Math.round((q.atk||Z.atk)*bo))
+      :'未解放 — まだ洞窟に出せない')+'<br>🧿 所持 '+have+'</div>'
+   +(lv>=ZC_LV?'<div class="bu" style="opacity:.55">鍛えつくした</div>'
+     :'<button class="bu" data-zo="'+q.id+'"'+(can?'':' disabled')+'>🧿'+need+' で'+(lv?('Lv'+(lv+1)+'へ'):'解放')+'</button>')
+   +'</div>';
+ }).join('')+'</div>';
+ box.querySelectorAll('canvas.zth').forEach(cv=>zcThumb(cv,+cv.dataset.zi));
+ box.querySelectorAll('[data-zo]').forEach(e=>{e.onclick=()=>zcBuy(e.dataset.zo);});
+}
+function zcBuy(id){
+ const lv=zcLv(id);if(lv>=ZC_LV)return;
+ const need=zcNeed(lv),Z=ZOMBIES[zcZi(id)];
+ if(zcHave(id)<need){toast('🧿'+Z.n+'のコアが '+need+' 要る(所持 '+zcHave(id)+')',true);return;}
+ META.zc=META.zc||{};META.zl=META.zl||{};
+ META.zc[id]=zcHave(id)-need;META.zl[id]=lv+1;saveMeta();
+ sfx.buy&&sfx.buy();
+ toast(Z.n+(lv?(' を Lv'+(lv+1)+' に強化した'):' を洞窟に出せるようになった'));
+ renderTrain();
+}
+
+/* ---------------- 盤面の読み書き ---------------- */
+const cvI=(x,y)=>y*CV_W+x;
+const cvIn=(x,y)=>x>=0&&x<CV_W&&y>=0&&y<CV_H;
+/* 0=土 / 1=空洞 / 2=母核 */
+const cvAt=(x,y)=>cvIn(x,y)?TR.g[cvI(x,y)]:0;
+/* 水没しているか(死潮は下から満ちる) */
+const cvWater=y=>y>=CV_H-TR.tw;
+/* 通れるマス(空洞で、水没していない)。母核は通れない=隣から殴る */
+const cvWalk=(x,y)=>cvAt(x,y)===1&&!cvWater(y);
+/* 開放度=周囲8マスのうち空洞(母核も含む)の数 */
+function cvDeg(x,y){let n=0;
+ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+  if(!dx&&!dy)continue;
+  if(cvAt(x+dx,y+dy)>0)n++;}
+ return n;}
+/* 掘れるのは「空洞に4近傍で隣接する土」だけ */
+function cvCanDig(x,y){
+ if(!cvIn(x,y)||cvAt(x,y)!==0)return false;
+ return cvAt(x-1,y)>0||cvAt(x+1,y)>0||cvAt(x,y-1)>0||cvAt(x,y+1)>0;}
+function cvDigAt(x,y,free){
+ if(!cvCanDig(x,y))return false;
+ if(!free){if(TR.mana<CV_DIG)return false;TR.mana-=CV_DIG;}
+ TR.g[cvI(x,y)]=1;TR.dug++;
+ TR.dirty=true;/* 経路を引き直す */
+ for(let k=0;k<5;k++)TR.ps.push({x:x+rnd(.1,.9),y:y+rnd(.1,.9),vx:rnd(-.6,.6),vy:rnd(-1.4,-.3),t:0,life:rnd(.3,.6),c:'#6b5a3a'});
+ return true;}
+
+/* ---------------- 経路 ---------------- */
+/* 英雄用: 母核からのコスト場(空洞=1・土=4)。土を掘るのは高くつくので、掘ってある道を選ぶ */
+function cvPathHero(){
+ const N=CV_W*CV_H,INF=1e9,d=new Float64Array(N).fill(INF),done=new Uint8Array(N);
+ for(let y=CV_CORE_Y;y<CV_CORE_Y+2;y++)for(let x=CV_CORE_X;x<CV_CORE_X+2;x++)d[cvI(x,y)]=0;
+ for(;;){
+  let bi=-1,bd=INF;
+  for(let i=0;i<N;i++)if(!done[i]&&d[i]<bd){bd=d[i];bi=i;}
+  if(bi<0)break;
+  done[bi]=1;
+  const x=bi%CV_W,y=(bi-x)/CV_W;
+  const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+  for(const p of nb){
+   if(!cvIn(p[0],p[1]))continue;
+   const j=cvI(p[0],p[1]);if(done[j])continue;
+   const t=cvAt(p[0],p[1]);
+   if(t===2)continue;/* 母核の中は通らない */
+   if(t===1&&cvWater(p[1]))continue;/* 水没した空洞は壁と同じ */
+   const w=t===1?1:4;
+   if(bd+w<d[j])d[j]=bd+w;}}
+ TR.hpf=d;}
+/* ゾンビ用: 英雄たちからの距離(空洞だけ・掘れないので土は通れない) */
+function cvPathZ(){
+ const N=CV_W*CV_H,d=new Int32Array(N).fill(-1),q=[];
+ for(const H of TR.hs){if(H.dead)continue;
+  const i=cvI(H.cx,H.cy);if(d[i]<0){d[i]=0;q.push(i);}}
+ for(let h=0;h<q.length;h++){
+  const i=q[h],x=i%CV_W,y=(i-x)/CV_W;
+  const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+  for(const p of nb){
+   if(!cvWalk(p[0],p[1]))continue;
+   const j=cvI(p[0],p[1]);if(d[j]>=0)continue;
+   d[j]=d[i]+1;q.push(j);}}
+ TR.zpf=d;}
+
+/* ---------------- 湧き ---------------- */
+function cvUnlocked(){const a=[];for(const q of ZCAVE)if(zcLv(q.id)>0)a.push(q);return a;}
+function cvSpawn(){
+ if(TR.zs.length>=CV_ZMAX)return;
+ const pool=cvUnlocked();if(!pool.length)return;
+ /* 湧ける空洞マスを集める(英雄から3マス以上離れていること)。潮が引いた跡は重みが倍 */
+ const cells=[];
+ for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
+  if(!cvWalk(x,y))continue;
+  let near=false;
+  for(const H of TR.hs){if(H.dead)continue;
+   if(Math.max(Math.abs(H.cx-x),Math.abs(H.cy-y))<3){near=true;break;}}
+  if(near)continue;
+  cells.push({x,y,w:TR.wet[cvI(x,y)]>0?2:1});}
+ if(!cells.length)return;
+ let tw=0;for(const c of cells)tw+=c.w;
+ let r=Math.random()*tw,cell=cells[0];
+ for(const c of cells){r-=c.w;if(r<=0){cell=c;break;}}
+ /* 🦠感染体: 倒したお供の英雄が味方として湧く */
+ if(TR.inf.length&&Math.random()<Math.min(.35,TR.inf.length*.12)){
+  const ui=TR.inf[ri(0,TR.inf.length-1)],U=UNITS[ui];
+  TR.zs.push({inf:1,ui,n:U.n+'(感染体)',cx:cell.x,cy:cell.y,tx:cell.x,ty:cell.y,p:0,
+   hp:U.hp*.4,mhp:U.hp*.4,atk:U.atk*.6,ar:Math.max(.5,U.rate),cd:0,sp:1,t:rnd(0,6),hitT:0,dead:0,c:'#7ba33f'});
+  return;}
+ /* そのマスの格で湧く種類が決まる。25%だけ1段下も混ぜて単調にならないようにする */
+ const cap=cvTier(cvDeg(cell.x,cell.y));
+ let ok=pool.filter(q=>q.tier<=cap);if(!ok.length)return;
+ const top=Math.max.apply(null,ok.map(q=>q.tier));
+ const want=(Math.random()<.25&&top>1)?top-1:top;
+ let pick=ok.filter(q=>q.tier===want);if(!pick.length)pick=ok;
+ const q=pick[ri(0,pick.length-1)],zi=zcZi(q.id),Z=ZOMBIES[zi],bo=zcBoost(q.id);
+ TR.zs.push({zi,n:Z.n,cx:cell.x,cy:cell.y,tx:cell.x,ty:cell.y,p:0,
+  hp:Z.hp*bo,mhp:Z.hp*bo,atk:(q.atk||Z.atk)*bo,ar:q.ar||Z.ar||1,cd:0,
+  sp:Z.sp/80,t:rnd(0,6),hitT:0,dead:0,c:Z.c});
+}
+
+/* ---------------- 攻めてくる英雄 ---------------- */
+function cvMkHero(hid,own){
+ const h=heroOf(hid)||HEROES[0],D=TR_DIF[TR.dif];
+ const bo=own?hBoost(hid):1;/* 育成対象だけ鍛錬Lvで強くなる */
+ const hp=(500+h.rk*120)*bo*D.hm*(own?1:.72);
+ return {hid,own:own?1:0,n:h.n,rk:h.rk,c:h.c,ui:hUiOf(hid),
+  hp,mhp:hp,atk:(30+h.rk*8)*bo*(own?1:.8),rate:h.rate||1,cd:0,
+  cx:0,cy:ri(0,CV_H-1),tx:0,ty:0,p:0,st:'move',dead:0,hitT:0,t:rnd(0,6),
+  ch:0,uch:h.uch||30,ult:h.ult,udsc:h.udsc||'',ut:CV_ULT[hid]||'aoe',rush:0,ultT:0,ultN:''};
+}
+/* 必殺技。名前と演出は英雄ごとに個別、効き目は7型に集約 */
+function cvUlt(H){
+ H.ch=0;H.ultT=1.4;H.ultN=H.ult;
+ TR.shake=Math.max(TR.shake,.3);
+ const hit=(z,dm)=>{z.hp-=dm;z.hitT=.2;if(z.hp<=0)cvKillZ(z);};
+ const near=(z,r)=>Math.max(Math.abs(z.cx-H.cx),Math.abs(z.cy-H.cy))<=r;
+ const alive=TR.zs.filter(z=>!z.dead);
+ if(H.ut==='aoe'){for(const z of alive)if(near(z,2))hit(z,H.atk*2.6);
+  TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:2.6,t:0,c:H.c});}
+ else if(H.ut==='line'){for(const z of alive)if(z.cy===H.cy)hit(z,H.atk*2.2);
+  TR.fx.push({k:'line',y:H.cy+.5,t:0,c:H.c});}
+ else if(H.ut==='all'){for(const z of alive)hit(z,H.atk*1.9);
+  TR.fx.push({k:'flash',t:0,c:H.c});}
+ else if(H.ut==='snipe'){let b=null;for(const z of alive)if(!b||z.hp>b.hp)b=z;
+  if(b){hit(b,b.mhp*1.2+H.atk*3);TR.fx.push({k:'ring',x:b.cx+.5,y:b.cy+.5,r:1.2,t:0,c:'#ffd23d'});}}
+ else if(H.ut==='heal'){H.hp=Math.min(H.mhp,H.hp+H.mhp*.34);
+  TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:1.6,t:0,c:'#b7e07a'});}
+ else if(H.ut==='rush'){H.rush=6;TR.fx.push({k:'ring',x:H.cx+.5,y:H.cy+.5,r:1.4,t:0,c:'#ffd23d'});}
+ else if(H.ut==='stop'){for(const z of alive)z.stop=Math.max(z.stop||0,4);
+  TR.fx.push({k:'flash',t:0,c:'#9fdcf5'});}
+ sfx.boom&&sfx.boom();
+}
+function cvKillZ(z){
+ if(z.dead)return;
+ z.dead=1;TR.zkill++;
+ for(let k=0;k<7;k++)TR.ps.push({x:z.cx+.5,y:z.cy+.5,vx:rnd(-1.6,1.6),vy:rnd(-2,-.2),t:0,life:rnd(.3,.65),c:'#4a5a2e'});
+}
+function cvKillH(H){
+ if(H.dead)return;
+ H.dead=1;TR.hkill++;TR.score+=TR_PK;
+ for(let k=0;k<14;k++)TR.ps.push({x:H.cx+.5,y:H.cy+.5,vx:rnd(-2.2,2.2),vy:rnd(-2.6,-.3),t:0,life:rnd(.4,.9),c:H.c});
+ /* 🦠感染: お供は次の波からこちらの味方として湧く。育成対象は訓練なので帰るだけ */
+ if(!H.own&&H.ui>=0&&TR.inf.indexOf(H.ui)<0)TR.inf.push(H.ui);
+ TR.msg=H.own?(H.n+' を撃退した!'):(H.n+' を倒した — 感染して味方になる');
+ TR.msgT=2.4;
+ sfx.eliteKill&&sfx.eliteKill();
+}
+
+/* ---------------- 1フレームぶんの進行 ---------------- */
+function cvStepHeroes(dt){
+ for(const H of TR.hs){
+  if(H.dead)continue;
+  H.t+=dt;H.hitT=Math.max(0,H.hitT-dt);H.ultT=Math.max(0,H.ultT-dt);
+  H.rush=Math.max(0,H.rush-dt);
+  H.ch+=dt/H.uch;if(H.ch>=1)cvUlt(H);
+  H.cd-=dt;
+  /* ① 隣にゾンビがいたら足を止めて戦う */
+  let tgt=null;
+  for(const z of TR.zs){if(z.dead)continue;
+   if(Math.abs(z.cx-H.cx)+Math.abs(z.cy-H.cy)<=1){tgt=z;break;}}
+  if(tgt){
+   H.st='fight';
+   if(H.cd<=0){H.cd=H.rate;tgt.hp-=H.atk;tgt.hitT=.18;H.hitT=.12;
+    if(tgt.hp<=0)cvKillZ(tgt);
+    sfx.thunk&&sfx.thunk();}
+   continue;}
+  /* ② 母核に隣接していたら母核を殴る */
+  const cin=H.cx>=CV_CORE_X-1&&H.cx<=CV_CORE_X+2&&H.cy>=CV_CORE_Y-1&&H.cy<=CV_CORE_Y+2;
+  if(cin&&cvCoreAdj(H.cx,H.cy)){
+   H.st='core';
+   if(H.cd<=0){H.cd=H.rate;TR.core-=H.atk;H.hitT=.12;TR.shake=Math.max(TR.shake,.16);
+    sfx.leak&&sfx.leak();
+    if(TR.core<=0){TR.core=0;trainEnd(false);return;}}
+   continue;}
+  /* ③ 進む。掘ってある道が安いので、そこを選んで進んでくる */
+  if(H.st!=='move'&&H.st!=='dig'){H.st='move';H.p=0;H.tx=H.cx;H.ty=H.cy;}
+  if(H.p<=0){
+   const nx=cvNextStep(H);
+   if(!nx){H.st='wait';continue;}
+   H.tx=nx[0];H.ty=nx[1];
+   H.st=cvAt(H.tx,H.ty)===1?'move':'dig';
+   H.dur=(H.st==='move'?CV_SPD_OPEN:CV_SPD_DIG)/(H.rush>0?2.2:1);}
+  H.p+=dt/H.dur;
+  if(H.p>=1){
+   if(H.st==='dig'){TR.g[cvI(H.tx,H.ty)]=1;TR.dirty=true;}
+   H.cx=H.tx;H.cy=H.ty;H.p=0;H.st='move';}
+ }
+}
+const cvCoreAdj=(x,y)=>{
+ for(let cy=CV_CORE_Y;cy<CV_CORE_Y+2;cy++)for(let cx=CV_CORE_X;cx<CV_CORE_X+2;cx++)
+  if(Math.abs(cx-x)+Math.abs(cy-y)===1)return true;
+ return false;};
+/* コスト場を1段下る隣のマスを選ぶ。水没マスは避ける */
+function cvNextStep(H){
+ const d=TR.hpf,here=d[cvI(H.cx,H.cy)];
+ let best=null,bv=here;
+ const nb=[[H.cx+1,H.cy],[H.cx,H.cy-1],[H.cx,H.cy+1],[H.cx-1,H.cy]];
+ for(const p of nb){
+  if(!cvIn(p[0],p[1]))continue;
+  const t=cvAt(p[0],p[1]);if(t===2)continue;
+  if(t===1&&cvWater(p[1]))continue;
+  if(t===0&&cvWater(p[1]))continue;/* 水没した所は掘っても水なので入らない */
+  const v=d[cvI(p[0],p[1])];
+  if(v<bv){bv=v;best=p;}}
+ return best;}
+function cvStepZ(dt){
+ /* マスの定員と、英雄に噛みつける数を毎フレーム数え直す */
+ const occ=new Int16Array(CV_W*CV_H);
+ for(const z of TR.zs)if(!z.dead)occ[cvI(z.tx,z.ty)]++;
+ TR.occ=occ;
+ for(const H of TR.hs)H.eng=0;
+ for(const z of TR.zs){
+  if(z.dead)continue;
+  z.t+=dt;z.hitT=Math.max(0,z.hitT-dt);z.cd-=dt;
+  if(z.stop>0){z.stop-=dt;continue;}
+  /* 水没したマスにいたら押し流されて死ぬ */
+  if(cvWater(z.cy)){z.hp-=dt*90;if(z.hp<=0){cvKillZ(z);continue;}}
+  let tgt=null;
+  for(const H of TR.hs){if(H.dead)continue;
+   if(Math.abs(H.cx-z.cx)+Math.abs(H.cy-z.cy)<=1){tgt=H;break;}}
+  if(tgt){
+   /* 噛みつき枠が埋まっていたら、その場で順番待ち(後ろから殴り放題にしない) */
+   if(tgt.eng>=CV_ENG){z.p=0;continue;}
+   tgt.eng++;
+   if(z.cd<=0){z.cd=z.ar;tgt.hp-=z.atk;tgt.hitT=.18;
+    TR.dmg+=z.atk;
+    if(tgt.hp<=0)cvKillH(tgt);
+    sfx.bite&&sfx.bite();}
+   z.p=0;continue;}
+  /* 英雄へ近づく(空洞だけを通る) */
+  if(z.p<=0){
+   const nx=cvNextZ(z);
+   if(!nx)continue;
+   z.tx=nx[0];z.ty=nx[1];z.dur=CV_ZSPD/clamp(z.sp,.5,2.6);}
+  if(z.tx===z.cx&&z.ty===z.cy)continue;
+  z.p+=dt/z.dur;
+  if(z.p>=1){z.cx=z.tx;z.cy=z.ty;z.p=0;}
+ }
+ TR.zs=TR.zs.filter(z=>!z.dead||(z.dt=(z.dt||0)+dt)<.4);
+}
+function cvNextZ(z){
+ const d=TR.zpf,here=d[cvI(z.cx,z.cy)];
+ if(here<0)return null;
+ let best=null,bv=here;
+ const nb=[[z.cx-1,z.cy],[z.cx+1,z.cy],[z.cx,z.cy-1],[z.cx,z.cy+1]];
+ for(const p of nb){
+  if(!cvWalk(p[0],p[1]))continue;
+  const j=cvI(p[0],p[1]);
+  if(TR.occ&&TR.occ[j]>=CV_CELL)continue;/* 定員いっぱいのマスへは入らない */
+  const v=d[j];
+  if(v>=0&&v<bv){bv=v;best=p;}}
+ return best;}
+
+/* ---------------- 波の進行 ---------------- */
+function cvWaveStart(){
+ TR.wave++;
+ const D=TR_DIF[TR.dif];
+ TR.phase='nest';TR.pt=CV_NEST;
+ /* この波で攻めてくる面子を先に決める(巣作り中に見せる=対策できるように) */
+ const list=[cvMkHero(TR.hid,true)];
+ const nAd=Math.min(D.am,Math.floor((TR.wave-1)/2));
+ for(let k=0;k<nAd;k++){
+  const pool=HEROES.filter(h=>h.id!==TR.hid);
+  list.push(cvMkHero(pool[ri(0,pool.length-1)].id,false));}
+ TR.next=list;
+ /* この波の潮位(巣作り中に予報として出す) */
+ TR.twMax=TR.wave>=2?Math.min(5,.6+TR.wave*.42):0;
+ TR.msg='第'+TR.wave+'波 — 巣を作れ';TR.msgT=2.2;
+ cvSkipBtn(true);
+}
+/* ⚠CSSで display:none にしてあるので、出す時は 'inline-block' を明示すること */
+function cvSkipBtn(on){const sk=$('trskip');if(sk&&sk.style)sk.style.display=on?'inline-block':'none';}
+function cvInvade(){
+ TR.phase='raid';TR.pt=CV_RAID;
+ TR.hs=TR.next;TR.next=null;
+ for(const H of TR.hs){H.cy=clamp(H.cy,0,CV_H-1);H.cx=0;H.p=0;
+  if(!cvWalk(0,H.cy))H.cy=cvFreeEntry();}
+ TR.dirty=true;
+ TR.msg='侵攻!  '+TR.hs.map(h=>h.n).join(' / ');TR.msgT=2.6;
+ cvSkipBtn(false);
+ sfx.horn&&sfx.horn();
+}
+function cvFreeEntry(){
+ for(let y=0;y<CV_H;y++)if(cvWalk(0,y))return y;
+ return 0;}
+
+/* ---------------- 開始・終了 ---------------- */
+function trainStart(hid,dif){
  const h=heroOf(hid);if(!h)return;
  if(!DEV&&(META.hmat||0)<TR_COST){toast('🔧'+TR_COST+' 必要(所持 '+(META.hmat||0)+') — 英雄召集の重複で貯まる',true);return;}
  META.hmat=Math.max(0,(META.hmat||0)-TR_COST);saveMeta();
  ensureAC();
- TR={hid,t:0,len:0,score:0,combo:0,best:0,pf:0,gd:0,ms:0,notes:[],bi:0,done:false,res:null,
-  jl:'',jc:'#fff',jt:0,shake:0,swing:0,duckT:0,duckD:0,hitT:0};
- let tt=TR_LEAD+.9,last=9;
- for(let i=0;i<TR_N;i++){
-  let d=0;for(let g=0;g<5;g++){d=[-1,0,1][ri(0,2)];if(d!==last)break;}/* 同じ向きが続きすぎないように */
-  last=d;TR.notes.push({t:tt,d,hit:0});
-  tt+=1.02-.60*(i/(TR_N-1));/* だんだん詰まる(1.02秒 → 0.42秒) */
- }
- TR.len=tt+1.3;
+ const d=clamp(dif|0,0,TR_DIF.length-1),D=TR_DIF[d];
+ TR={hid,dif:d,t:0,wave:0,phase:'nest',pt:0,
+  g:new Uint8Array(CV_W*CV_H),wet:new Float32Array(CV_W*CV_H),
+  hpf:null,zpf:null,dirty:true,
+  mana:CV_MAX,dug:0,
+  zs:[],hs:[],next:null,inf:[],ps:[],fx:[],
+  core:D.core,coreMax:D.core,
+  tw:0,twMax:0,
+  score:0,dmg:0,zkill:0,hkill:0,waveOK:0,
+  msg:'',msgT:0,shake:0,
+  done:false,res:null,win:false,
+  bacc:0,bstep:0};
+ /* 初期の空洞: 左端の縦坑(侵入口)・母核・母核の前の小部屋 */
+ for(let y=0;y<CV_H;y++)TR.g[cvI(0,y)]=1;
+ for(let y=CV_CORE_Y;y<CV_CORE_Y+2;y++)for(let x=CV_CORE_X;x<CV_CORE_X+2;x++)TR.g[cvI(x,y)]=2;
+ for(let y=CV_CORE_Y-1;y<=CV_CORE_Y+2;y++)if(cvIn(CV_CORE_X-1,y))TR.g[cvI(CV_CORE_X-1,y)]=1;
+ cvWaveStart();
+ cvPathHero();cvPathZ();
  $('md-train').classList.remove('on');
  show('train');
 }
-function trJudge(s,c){if(TR){TR.jl=s;TR.jc=c;TR.jt=.55;}}
-/* スワイプ1回ぶんの判定。d: -1=← / 0=まえ(↑) / 1=→ */
-function trainInput(d){
- if(!TR||TR.done||d==null)return;
- let best=null,bd=9;
- for(const n of TR.notes){if(n.hit)continue;const dt=Math.abs(n.t-TR.t);if(dt<bd&&dt<=TR_GOOD){bd=dt;best=n;}}
- if(!best){TR.combo=0;trJudge('空振り','#b9b0a0');return;}
- if(best.d!==d){best.hit=2;TR.ms++;TR.combo=0;TR.shake=.18;trJudge('ミス','#ff8a6a');sfx.splat&&sfx.splat();return;}
- const perf=bd<=TR_PERF,mul=1+Math.min(1,Math.floor(TR.combo/10)*.1);
- best.hit=1;TR.score+=Math.round((perf?100:50)*mul);
- TR.combo++;if(TR.combo>TR.best)TR.best=TR.combo;
- if(perf)TR.pf++;else TR.gd++;
- if(d===0){TR.swing=.24;TR.hitT=.2;beep(780,1150,.07,'square',.07);}
- else{TR.duckT=.26;TR.duckD=d;beep(520,760,.06,'triangle',.06);}
- trJudge(perf?'PERFECT!':'GOOD',perf?'#ffd23d':'#b7e07a');
-}
-function trainEnd(){
+function trainEnd(win){
  if(!TR||TR.done)return;
- TR.done=true;
- const gain=TR.score;
+ TR.done=true;TR.win=!!win;
+ const D=TR_DIF[TR.dif];
+ const base=TR.score+TR.waveOK*TR_PW+Math.round(TR.dmg*TR_PD)+(win?TR_PC:0);
+ const gain=Math.max(0,Math.round(base*D.xm));
  let lv=hLv(TR.hid),xp=((META.hxp&&META.hxp[TR.hid])||0)+gain,up=0;
  while(lv<TR_MAX&&xp>=TR_NEED(lv)){xp-=TR_NEED(lv);lv++;up++;}
  if(lv>=TR_MAX)xp=0;
  if(!META.hlv)META.hlv={};if(!META.hxp)META.hxp={};
  META.hlv[TR.hid]=lv;META.hxp[TR.hid]=xp;
  saveMeta();
- TR.res={gain,lv,up,xp,need:TR_NEED(lv)};
- if(up)sfx.win&&sfx.win();else sfx.clearJ&&sfx.clearJ();
+ TR.res={gain,base,lv,up,xp,need:TR_NEED(lv)};
+ cvSkipBtn(false);
+ if(win)sfx.win&&sfx.win();else sfx.lose&&sfx.lose();
 }
-function trainBack(){TR=null;trSw=null;show('title');updLabBtn();renderTrain();$('md-train').classList.add('on');}
+function trainBack(){
+ TR=null;
+ cvSkipBtn(false);
+ show('title');updLabBtn();renderTrain();$('md-train').classList.add('on');
+}
 function trainStep(dt){
  if(!TR)return;
  if(!TR.done){
+  dt=Math.min(.05,dt);
   TR.t+=dt;
-  /* 拍の刻み(リズムに乗れるように、ノートが判定ラインに来る瞬間に小さく鳴らす) */
-  while(TR.bi<TR.notes.length&&TR.t>=TR.notes[TR.bi].t){beep(300,300,.03,'sine',.03);TR.bi++;}
-  for(const n of TR.notes)if(!n.hit&&n.t<TR.t-TR_GOOD){n.hit=2;TR.ms++;TR.combo=0;TR.shake=.16;trJudge('ミス','#ff8a6a');}
-  if(TR.t>=TR.len)trainEnd();
+  cvBgm(dt);
+  /* 🦴骸の回復 */
+  TR.mana=Math.min(CV_MAX,TR.mana+(TR.phase==='nest'?CV_REG_B:CV_REG)*dt);
+  /* 潮の満ち引き(侵攻中だけ。前半で満ちて後半で引く) */
+  const tw0=TR.tw;
+  if(TR.phase==='raid'&&TR.twMax>0){
+   const k=clamp(1-TR.pt/CV_RAID,0,1);
+   TR.tw=TR.twMax*Math.sin(Math.PI*k);
+  }else TR.tw=0;
+  if(Math.floor(TR.tw)!==Math.floor(tw0)){
+   TR.dirty=true;
+   /* 引いた跡のマスは しばらく湧きが倍になる */
+   if(TR.tw<tw0)for(let y=0;y<CV_H;y++){if(y>=CV_H-tw0&&y<CV_H-TR.tw)
+    for(let x=0;x<CV_W;x++)if(TR.g[cvI(x,y)]===1)TR.wet[cvI(x,y)]=CV_WET;}}
+  for(let i=0;i<TR.wet.length;i++)if(TR.wet[i]>0)TR.wet[i]-=dt;
+  if(TR.dirty){cvPathHero();TR.dirty=false;}
+  cvPathZ();
+  /* 湧き */
+  TR.sp=(TR.sp||0)+dt;
+  if(TR.sp>=CV_SPAWN){TR.sp=0;cvSpawn();}
+  /* フェーズ */
+  TR.pt-=dt;
+  if(TR.phase==='nest'){
+   if(TR.pt<=0)cvInvade();
+  }else{
+   cvStepHeroes(dt);
+   if(TR.done)return;
+   cvStepZ(dt);
+   const over=TR.pt<=0||TR.hs.every(h=>h.dead);
+   if(over){
+    TR.waveOK++;
+    if(TR.wave>=TR_DIF[TR.dif].w){trainEnd(true);}
+    else{cvWaveStart();TR.hs=[];}
+   }
+  }
+  /* 粒 */
+  for(const p of TR.ps){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=4*dt;}
+  TR.ps=TR.ps.filter(p=>p.t<p.life);
+  for(const f of TR.fx)f.t+=dt;
+  TR.fx=TR.fx.filter(f=>f.t<.6);
  }
- TR.jt=Math.max(0,TR.jt-dt);TR.shake=Math.max(0,TR.shake-dt);
- TR.swing=Math.max(0,TR.swing-dt);TR.duckT=Math.max(0,TR.duckT-dt);TR.hitT=Math.max(0,TR.hitT-dt);
+ TR.msgT=Math.max(0,TR.msgT-dt);
+ TR.shake=Math.max(0,TR.shake-dt);
  trainDraw();
 }
-/* 訓練生(後ろ姿)。⚠戦場の英雄は横向きなので、こちらは訓練画面専用に描き起こしている */
-function drawTrainee(c,x,y,s,col,sw){
- c.save();c.translate(x,y);c.scale(s,s);c.lineWidth=2.6;c.strokeStyle=INK;
- c.fillStyle='#3a3128';
- c.fillRect(-13,-16,10,16);c.strokeRect(-13,-16,10,16);
- c.fillRect(3,-16,10,16);c.strokeRect(3,-16,10,16);
- c.fillStyle=col;c.beginPath();c.moveTo(-16,-54);c.lineTo(16,-54);c.lineTo(19,-6);c.lineTo(-19,-6);c.closePath();c.fill();c.stroke();
- c.fillStyle='#3a3128';c.fillRect(-17,-32,34,5);c.strokeRect(-17,-32,34,5);/* 帯(マントが一枚布に見えないように) */
- c.fillStyle='#2f3742';/* 両腕 */
- rr(c,-25,-54,9,22,4);c.fill();c.stroke();rr(c,16,-54,9,22,4);c.fill();c.stroke();
- rr(c,-20,-58,40,11,4);c.fill();c.stroke();/* 肩 */
- c.fillStyle='#d9b28a';c.beginPath();c.arc(0,-68,9.5,0,7);c.fill();c.stroke();
- c.fillStyle=col;rr(c,-10,-75,20,7,3);c.fill();c.stroke();
- c.save();c.translate(21,-50);c.rotate(-.45-sw*1.5);
- c.fillStyle='#c9c4b4';c.beginPath();c.moveTo(-3,2);c.lineTo(3,2);c.lineTo(2,-42);c.lineTo(-2,-42);c.closePath();c.fill();c.stroke();
- c.restore();c.restore();
+
+/* ---------------- BGM(手続き生成) ----------------
+   ⚠setIntervalは使わない(ヘッドレスの仮想時間が鈍るため)=trainStepのdtで進める */
+const CV_SC=[0,2,3,5,7,8,10];/* 自然短音階 */
+const CV_BS=[0,0,7,0, 3,3,0,0, 5,5,3,3, 0,7,3,0];
+const CV_LD=[7,-1,9,10, -1,9,7,-1, 5,-1,7,9, -1,7,5,3];
+const cvHz=(root,dg)=>root*Math.pow(2,(CV_SC[((dg%7)+7)%7]+12*Math.floor(dg/7))/12);
+let CVNB=null;
+function cvNoise(dur,vol,f){if(!AC||muted)return;try{
+ if(!CVNB||CVNB.sampleRate!==AC.sampleRate){const n=Math.max(1,Math.floor(AC.sampleRate*.4));
+  CVNB=AC.createBuffer(1,n,AC.sampleRate);const d=CVNB.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=Math.random()*2-1;}
+ const s=AC.createBufferSource();s.buffer=CVNB;s.loop=true;
+ const bq=AC.createBiquadFilter();bq.type='highpass';bq.frequency.value=f||6000;
+ const gn=AC.createGain(),t=AC.currentTime;
+ gn.gain.setValueAtTime(vol,t);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ s.connect(bq).connect(gn).connect(AC.destination);s.start(t);s.stop(t+dur+.03);
+}catch(e){}}
+function cvBeat(n){
+ const raid=TR.phase==='raid',root=raid?110:98,i=n%16;
+ if(i===0||i===6||i===8||i===14)beep(126,40,.17,'sine',.18);
+ if(raid&&(i===4||i===12)){cvNoise(.13,.10,1700);beep(200,130,.07,'triangle',.05);}
+ if(i%2===0)cvNoise(.028,i%4===0?.045:.026,8200);
+ const bd=CV_BS[i],bf=cvHz(root,bd)/2;
+ beep(bf,bf,.15,'sawtooth',.07);
+ if(raid){const ld=CV_LD[i];if(ld>=0){const lf=cvHz(root,ld)*2;beep(lf,lf,.11,'square',.036);}}
 }
-function drawDummy(c,x,y,s,hit){
- c.save();c.translate(x,y);c.scale(s,s);c.lineWidth=2.6;c.strokeStyle=INK;
- if(hit>0)c.filter='brightness(1.7)';
- c.fillStyle='#6b5a3a';c.fillRect(-4,-24,8,24);c.strokeRect(-4,-24,8,24);
- c.fillStyle='#c9a96a';rr(c,-15,-62,30,40,11);c.fill();c.stroke();
- c.fillStyle='#8a7448';c.fillRect(-15,-52,30,3);c.fillRect(-15,-41,30,3);c.fillRect(-15,-30,30,3);
- c.fillStyle='#c9a96a';c.beginPath();c.arc(0,-70,10,0,7);c.fill();c.stroke();
- c.fillStyle='#C1502E';c.beginPath();c.arc(0,-45,6.5,0,7);c.fill();c.stroke();
- c.restore();
+function cvBgm(dt){
+ if(!AC||muted){TR.bacc=0;return;}
+ const bpm=TR.phase==='raid'?132:104,sp=60/bpm/4;
+ TR.bacc=Math.min(TR.bacc+dt,sp*4);
+ while(TR.bacc>=sp){cvBeat(TR.bstep++);TR.bacc-=sp;}
 }
+
+/* ---------------- 描画 ---------------- */
+function cvGeom(w,h){
+ const top=34,bot=26;
+ const cs=Math.min(w/CV_W,(h-top-bot)/CV_H);
+ return {w,h,cs,ox:(w-cs*CV_W)*.5,oy:top+((h-top-bot)-cs*CV_H)*.5,top,bot};}
 function trainDraw(){
  if(!TR||!trcv||!trx||!trcv.getBoundingClientRect)return;
  const r=trcv.getBoundingClientRect(),w=Math.max(240,Math.round(r.width)),h=Math.max(180,Math.round(r.height));
@@ -4621,98 +5096,220 @@ function trainDraw(){
  if(trcv.width!==Math.round(w*dpr)){trcv.width=Math.round(w*dpr);trcv.height=Math.round(h*dpr);}
  const c=trx;if(!c.setTransform)return;
  c.setTransform(dpr,0,0,dpr,0,0);
- const sk=TR.shake>0?(Math.random()-.5)*10*TR.shake:0;
+ const g=cvGeom(w,h);TR.geo=g;
+ const CS=g.cs;
+ const P=(cx,cy)=>[g.ox+cx*CS,g.oy+cy*CS];
+ c.fillStyle='#15120e';c.fillRect(0,0,w,h);
+ const sk=TR.shake>0?(Math.random()-.5)*9*TR.shake:0;
  c.save();c.translate(sk,0);
- const FAR=h*.30,LINE=h*.78,H=heroOf(TR.hid)||HEROES[0];
- /* 背景: 上=道場の壁 / 下=床 */
- c.fillStyle='#231e18';c.fillRect(-20,0,w+40,h);
- c.fillStyle='#3a3128';c.beginPath();c.moveTo(w*.5-w*.10,FAR-10);c.lineTo(w*.5+w*.10,FAR-10);c.lineTo(w*1.05,h);c.lineTo(-w*.05,h);c.closePath();c.fill();
- c.strokeStyle='rgba(242,236,220,.10)';c.lineWidth=2;
- for(const d of [-1,0,1]){c.beginPath();c.moveTo(w*.5+d*w*.055,FAR-10);c.lineTo(w*.5+d*w*.30,h);c.stroke();}
- /* 訓練ダミー(奥) */
- drawDummy(c,w*.5,FAR,Math.min(1.5,h/300),TR.hitT);
- /* 判定ライン */
- c.strokeStyle='rgba(255,210,61,.85)';c.lineWidth=4;
- c.beginPath();c.moveTo(w*.5-w*.36,LINE);c.lineTo(w*.5+w*.36,LINE);c.stroke();
- /* ノート(奥の物から先に描く=手前が上に来る) */
- const list=TR.notes.map(n=>({n,p:1-(n.t-TR.t)/TR_LEAD})).filter(o=>o.p>-.05&&o.p<1.25&&o.n.hit!==1)
-  .sort((a,b)=>a.p-b.p);
- for(const o of list){
-  const n=o.n,p=clamp(o.p,0,1.25);
-  const x=w*.5+n.d*(w*.055+(w*.30-w*.055)*p),y=FAR-10+(LINE-FAR+10)*p;
-  const s=(.30+.70*p)*Math.min(1.5,h/300);
-  const al=n.hit===2?.28:1;
-  c.save();c.globalAlpha=al;c.translate(x,y);c.scale(s,s);c.lineWidth=2.6;c.strokeStyle=INK;
-  if(n.d===0){/* まえ(↑)=ダミーを斬るノート */
-   c.fillStyle='#ffd23d';c.beginPath();c.moveTo(0,-26);c.lineTo(20,0);c.lineTo(0,26);c.lineTo(-20,0);c.closePath();c.fill();c.stroke();
-   c.fillStyle=INK;c.font='900 22px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('↑',0,1);
-  }else{/* 玉=矢印の向きへスワイプしてよける */
-   c.fillStyle='#4a4034';c.beginPath();c.arc(0,0,20,0,7);c.fill();c.stroke();
-   c.fillStyle='#C1502E';c.beginPath();c.arc(-6,-6,7,0,7);c.fill();
-   c.fillStyle='#F2ECDC';c.font='900 22px sans-serif';c.textAlign='center';c.textBaseline='middle';
-   c.fillText(n.d<0?'←':'→',0,1);
+ /* 地形。⚠土と空洞が見分けられないと遊べないので、
+    ①空洞は真っ黒に塗る ②土は「削り出した岩」に見えるよう上と左に明るいベベルを付ける
+    ③掘れるマスは枠で囲まず、小さな点だけ置く(枠にすると盤面がタイルの海になって読めない) */
+ c.fillStyle='#0d0b08';c.fillRect(g.ox,g.oy,CS*CV_W,CS*CV_H);
+ for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
+  const t=TR.g[cvI(x,y)];if(t!==0)continue;
+  const p=P(x,y),hh=trHash(x*31.7+y*11.3);
+  c.fillStyle=y<3?'#5a4630':y<7?'#4e3d29':'#433322';
+  c.fillRect(p[0],p[1],CS+1,CS+1);
+  c.fillStyle='rgba(0,0,0,'+(.10*hh).toFixed(3)+')';c.fillRect(p[0],p[1],CS+1,CS+1);
+  /* 空洞に面した側だけ角を立てる=掘った断面に見える */
+  if(cvAt(x,y-1)>0){c.fillStyle='rgba(255,232,190,.16)';c.fillRect(p[0],p[1],CS+1,3);}
+  if(cvAt(x-1,y)>0){c.fillStyle='rgba(255,232,190,.10)';c.fillRect(p[0],p[1],3,CS+1);}
+  if(cvAt(x,y+1)>0){c.fillStyle='rgba(0,0,0,.38)';c.fillRect(p[0],p[1]+CS-3,CS+1,4);}
+  if(cvAt(x+1,y)>0){c.fillStyle='rgba(0,0,0,.28)';c.fillRect(p[0]+CS-3,p[1],4,CS+1);}
+  /* 岩肌の粒 */
+  if(hh>.84){c.fillStyle='rgba(0,0,0,.24)';c.fillRect(p[0]+CS*(.2+hh*.4),p[1]+CS*(.25+hh*.4),3,3);}
+  /* 掘れる印。⚠丸だと岩肌の粒と見分けがつかないので十字にしてある */
+  if(cvCanDig(x,y)&&TR.mana>=CV_DIG){
+   const mx2=p[0]+CS*.5,my2=p[1]+CS*.5,q2=CS*.16;
+   c.strokeStyle='rgba(255,210,61,'+(.42+.26*Math.sin(TR.t*4+x*.7+y)).toFixed(3)+')';c.lineWidth=2;
+   c.beginPath();c.moveTo(mx2-q2,my2);c.lineTo(mx2+q2,my2);c.moveTo(mx2,my2-q2);c.lineTo(mx2,my2+q2);c.stroke();}
+ }
+ /* 潮が引いた跡=しばらく湧きが倍になるマス */
+ for(let y=0;y<CV_H;y++)for(let x=0;x<CV_W;x++){
+  if(TR.g[cvI(x,y)]!==1||TR.wet[cvI(x,y)]<=0)continue;
+  const p=P(x,y);c.fillStyle='rgba(74,217,208,.14)';c.fillRect(p[0],p[1],CS+1,CS+1);}
+ /* 母核(守る対象)。脈打つ肉の塊 */
+ {const p=P(CV_CORE_X,CV_CORE_Y),s2=CS*2,mx=p[0]+s2*.5,my=p[1]+s2*.5;
+  const pu=.5+.5*Math.sin(TR.t*2.6),lo=clamp(TR.core/TR.coreMax,0,1);
+  c.fillStyle='#3a1a20';c.fillRect(p[0],p[1],s2,s2);
+  c.strokeStyle='rgba(193,80,46,.5)';c.lineWidth=2;
+  for(let k=0;k<6;k++){const a=k*1.047+TR.t*.3;
+   c.beginPath();c.moveTo(mx,my);
+   c.quadraticCurveTo(mx+Math.cos(a)*s2*.3,my+Math.sin(a)*s2*.3,
+    mx+Math.cos(a)*s2*.48,my+Math.sin(a)*s2*.48);c.stroke();}
+  c.fillStyle='rgba(193,80,46,'+(.16+.10*pu)+')';
+  c.beginPath();c.arc(mx,my,s2*(.42+.05*pu),0,7);c.fill();
+  c.fillStyle='#C1502E';c.beginPath();c.arc(mx,my,s2*(.26+.03*pu),0,7);c.fill();
+  c.fillStyle='#ff8a6a';c.beginPath();c.arc(mx-s2*.05,my-s2*.05,s2*(.11+.02*pu),0,7);c.fill();
+  c.strokeStyle=lo<.34?'#ff6a4a':'#ffd23d';c.lineWidth=2.5;
+  c.beginPath();c.arc(mx,my,s2*.36,-Math.PI/2,-Math.PI/2+Math.PI*2*lo);c.stroke();}
+ /* 死潮 */
+ if(TR.tw>0){
+  const wy=g.oy+(CV_H-TR.tw)*CS;
+  c.fillStyle='rgba(42,120,132,.55)';c.fillRect(g.ox,wy,CS*CV_W,g.oy+CS*CV_H-wy);
+  c.strokeStyle='rgba(159,220,245,.8)';c.lineWidth=2;
+  c.beginPath();
+  for(let i=0;i<=CV_W*2;i++){const xx=g.ox+i*CS*.5,yy=wy+Math.sin(TR.t*2.4+i*.7)*2.5;
+   if(i)c.lineTo(xx,yy);else c.moveTo(xx,yy);}
+  c.stroke();}
+ /* ゾンビ */
+ for(const z of TR.zs){
+  const cx=z.cx+(z.tx-z.cx)*z.p,cy=z.cy+(z.ty-z.cy)*z.p;
+  const p=P(cx+.5,cy+.9);
+  c.save();c.translate(p[0],p[1]);
+  if(z.dead)c.globalAlpha=Math.max(0,1-(z.dt||0)/.4);
+  if(z.inf){
+   const s2=(CS*.60)/(50*1.24);c.scale(s2,s2);
+   try{drawUnit(c,z.ui,0,0,1,z.t,0,{});}catch(e){}
+  }else{
+   const s2=(CS*.62)/(50*(ZOMBIES[z.zi].sc||1));c.scale(s2,s2);
+   try{drawZombie(c,z.zi,0,0,-1,z.t,0,{hitT:z.hitT});}catch(e){}
   }
   c.restore();
+  /* HPの細い帯 */
+  if(!z.dead&&z.hp<z.mhp){const q=P(cx,cy);
+   c.fillStyle='rgba(0,0,0,.5)';c.fillRect(q[0]+3,q[1]+2,CS-6,3);
+   c.fillStyle='#7ba33f';c.fillRect(q[0]+3,q[1]+2,(CS-6)*clamp(z.hp/z.mhp,0,1),3);}
+  if(z.stop>0){const q=P(cx+.5,cy+.5);c.strokeStyle='#9fdcf5';c.lineWidth=2;
+   c.beginPath();c.arc(q[0],q[1],CS*.42,0,7);c.stroke();}
  }
- /* 訓練生(手前)。⚠大きく描くと画面の真ん中を塞いでノートが見えなくなるので、
-    頭が判定ラインに来るくらいの大きさ・位置に抑える */
- {const dk=TR.duckT>0?TR.duckD*(TR.duckT/.26)*w*.13:0;
-  drawTrainee(c,w*.5+dk,LINE+h*.20,Math.min(1.1,h/340),H.c,TR.swing>0?TR.swing/.24:0);}
+ /* 英雄 */
+ for(const H of TR.hs){
+  if(H.dead)continue;
+  const cx=H.cx+(H.tx-H.cx)*(H.st==='move'?H.p:0),cy=H.cy+(H.ty-H.cy)*(H.st==='move'?H.p:0);
+  const p=P(cx+.5,cy+.95);
+  c.save();c.translate(p[0],p[1]);
+  if(H.hitT>0&&Math.floor(TR.t*22)%2===0)c.globalAlpha=.5;
+  /* ⚠drawUnitは内部でTSCALE倍するので、ここでは「マスに収まる高さ÷素の絵の高さ」を掛ける */
+  const s2=(CS*.78)/(50*1.24);c.scale(s2,s2);
+  try{drawUnit(c,H.ui,0,0,-1,H.t,0,{});}catch(e){}
+  c.restore();
+  /* 掘っている最中は的の位置に×を出す */
+  if(H.st==='dig'){const q=P(H.tx+.5,H.ty+.5);
+   c.strokeStyle='rgba(255,210,61,'+(.4+.4*Math.sin(TR.t*14))+')';c.lineWidth=2.5;
+   c.beginPath();c.moveTo(q[0]-CS*.24,q[1]-CS*.24);c.lineTo(q[0]+CS*.24,q[1]+CS*.24);
+   c.moveTo(q[0]+CS*.24,q[1]-CS*.24);c.lineTo(q[0]-CS*.24,q[1]+CS*.24);c.stroke();}
+  /* 名前・HP・必殺チャージ */
+  /* ⚠英雄の絵はマスより背が高いので、名前と帯はマスの上端よりさらに上へ出す */
+  const q=P(cx,cy),ty=q[1]-CS*.30;
+  c.fillStyle='rgba(0,0,0,.6)';c.fillRect(q[0]-6,ty-11,CS+12,11);
+  c.fillStyle=H.own?'#ffd23d':'#9fdcf5';c.font='900 9px sans-serif';c.textAlign='center';
+  c.fillText(H.n+(H.own?'':'(お供)'),q[0]+CS*.5,ty-3);
+  c.fillStyle='rgba(0,0,0,.6)';c.fillRect(q[0]-6,ty,CS+12,4);
+  c.fillStyle=H.own?'#ffd23d':'#9fdcf5';c.fillRect(q[0]-6,ty,(CS+12)*clamp(H.hp/H.mhp,0,1),4);
+  c.fillStyle='#C1502E';c.fillRect(q[0]-6,ty+4,(CS+12)*clamp(H.ch,0,1),2);
+ }
+ /* 演出 */
+ for(const f of TR.fx){
+  const a=1-f.t/.6;
+  if(f.k==='ring'){const p=P(f.x,f.y);
+   c.strokeStyle=f.c;c.globalAlpha=a;c.lineWidth=3;
+   c.beginPath();c.arc(p[0],p[1],CS*f.r*(.4+f.t*1.6),0,7);c.stroke();c.globalAlpha=1;}
+  else if(f.k==='line'){const p=P(0,f.y);
+   c.fillStyle=f.c;c.globalAlpha=a*.5;c.fillRect(g.ox,p[1]-CS*.3,CS*CV_W,CS*.6);c.globalAlpha=1;}
+  else if(f.k==='flash'){c.fillStyle=f.c;c.globalAlpha=a*.28;c.fillRect(0,0,w,h);c.globalAlpha=1;}
+ }
+ /* 粒 */
+ for(const p2 of TR.ps){const p=P(p2.x,p2.y);
+  c.fillStyle=p2.c;c.globalAlpha=Math.max(0,1-p2.t/p2.life);
+  c.fillRect(p[0]-1.5,p[1]-1.5,3,3);c.globalAlpha=1;}
  c.restore();
- /* HUD */
+ cvHud(c,w,h,g);
+ if(TR.done&&TR.res)cvResult(c,w,h);
+}
+function cvHud(c,w,h,g){
  c.textAlign='left';c.textBaseline='alphabetic';
- c.fillStyle='#F2ECDC';c.font='900 20px sans-serif';
- c.fillText('SCORE '+TR.score,14,30);
- c.font='900 14px sans-serif';c.fillStyle='#c9c4b4';
- c.fillText(RK_S[H.rk]+' '+H.n+' — 鍛錬Lv'+hLv(TR.hid),14,50);
- /* ⚠コンボは右上に出すと「✕やめる」の下に隠れる。スコアの下(左)に出すこと */
- if(TR.combo>=2){c.fillStyle='#ffd23d';c.font='900 20px sans-serif';c.textAlign='left';c.fillText(TR.combo+' COMBO',14,74);}
- /* 残りの帯 */
- {const p=clamp(TR.t/TR.len,0,1);c.fillStyle='rgba(255,255,255,.18)';c.fillRect(0,h-6,w,6);
-  c.fillStyle='#7ba33f';c.fillRect(0,h-6,w*p,6);}
- /* ⚠判定の文字は訓練生の頭に被らない高さに出す */
- if(TR.jt>0&&TR.jl){c.globalAlpha=clamp(TR.jt/.55,0,1);c.fillStyle=TR.jc;c.font='900 28px sans-serif';c.textAlign='center';
-  c.fillText(TR.jl,w*.5,LINE-h*.26);c.globalAlpha=1;}
- if(TR.done&&TR.res){
-  const R=TR.res;
-  c.fillStyle='rgba(20,16,12,.86)';c.fillRect(0,0,w,h);
-  c.textAlign='center';c.fillStyle='#F2ECDC';c.font='900 26px sans-serif';
-  c.fillText('訓練おわり!',w*.5,h*.24);
-  c.font='900 20px sans-serif';c.fillStyle='#ffd23d';
-  c.fillText('SCORE '+R.gain+' → 経験値 +'+R.gain,w*.5,h*.38);
-  c.font='900 15px sans-serif';c.fillStyle='#c9c4b4';
-  c.fillText('PERFECT '+TR.pf+' ／ GOOD '+TR.gd+' ／ ミス '+TR.ms+' ／ 最大コンボ '+TR.best,w*.5,h*.50);
-  c.font='900 19px sans-serif';c.fillStyle=R.up?'#b7e07a':'#F2ECDC';
-  c.fillText(R.up?(H.n+' 鍛錬Lv'+R.lv+' に上がった! (+'+Math.round(R.up*8)+'%)')
-   :(H.n+' 鍛錬Lv'+R.lv+'  次まで '+Math.max(0,R.need-R.xp)),w*.5,h*.62);
-  c.font='900 15px sans-serif';c.fillStyle='#c9c4b4';
-  c.fillText('画面をタップして鍛錬所へもどる',w*.5,h*.78);
- }
+ c.fillStyle='rgba(20,16,12,.85)';c.fillRect(0,0,w,30);
+ const D=TR_DIF[TR.dif];
+ c.fillStyle='#F2ECDC';c.font='900 13px sans-serif';
+ c.fillText('第'+TR.wave+'/'+D.w+'波',8,20);
+ /* 母核HP */
+ const bx=78,bw=Math.min(150,w*.2);
+ c.fillStyle='rgba(0,0,0,.6)';c.fillRect(bx,9,bw,12);
+ c.fillStyle='#C1502E';c.fillRect(bx,9,bw*clamp(TR.core/TR.coreMax,0,1),12);
+ c.strokeStyle='#F2ECDC';c.lineWidth=1.5;c.strokeRect(bx,9,bw,12);
+ c.fillStyle='#F2ECDC';c.font='900 10px sans-serif';
+ c.fillText('母核 '+Math.max(0,Math.round(TR.core)),bx+4,19);
+ /* 🦴骸 */
+ const mx=bx+bw+10;
+ c.fillStyle='rgba(0,0,0,.6)';c.fillRect(mx,9,90,12);
+ c.fillStyle='#c9a13d';c.fillRect(mx,9,90*clamp(TR.mana/CV_MAX,0,1),12);
+ c.strokeStyle='#F2ECDC';c.strokeRect(mx,9,90,12);
+ c.fillStyle=TR.mana>=CV_DIG?'#241f19':'#F2ECDC';c.font='900 10px sans-serif';
+ c.fillText('🦴 '+Math.floor(TR.mana),mx+4,19);
+ /* フェーズと残り時間 */
+ c.textAlign='right';c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';
+ const ph=TR.phase==='nest'?'巣作り':'侵攻';
+ c.fillText(ph+' '+Math.max(0,Math.ceil(TR.pt))+'秒',w-96,19);
+ /* 下の帯: 潮位の予報 / 次に来る面子 */
+ c.textAlign='left';
+ c.fillStyle='rgba(20,16,12,.8)';c.fillRect(0,h-24,w,24);
+ c.fillStyle='#9fdcf5';c.font='900 11px sans-serif';
+ c.fillText('🌊 この波の潮位 '+(TR.twMax>0?('▲'+TR.twMax.toFixed(1)+'段'):'なし'),8,h-8);
+ if(TR.phase==='nest'&&TR.next){
+  c.fillStyle='#ffd23d';
+  c.fillText('つぎに来る: '+TR.next.map(x=>x.n+(x.own?'(訓練)':'')).join(' / '),190,h-8);}
+ else{c.fillStyle='#c9c4b4';
+  c.fillText('ゾンビ '+TR.zs.filter(z=>!z.dead).length+'／'+CV_ZMAX+'　🦠感染 '+TR.inf.length,190,h-8);}
+ /* 真ん中のお知らせ */
+ if(TR.msgT>0&&TR.msg){
+  c.textAlign='center';c.globalAlpha=clamp(TR.msgT/.8,0,1);
+  c.fillStyle='#ffd23d';c.font='900 20px sans-serif';
+  c.fillText(TR.msg,w*.5,44);c.globalAlpha=1;}
+ /* 必殺技の名前 */
+ for(const H of (TR.hs||[]))if(H.ultT>0){
+  c.textAlign='center';c.globalAlpha=clamp(H.ultT/.6,0,1);
+  c.fillStyle=H.c;c.font='900 22px sans-serif';
+  c.fillText(H.n+ '『'+H.ultN+'』',w*.5,h*.42);c.globalAlpha=1;}
+}
+function cvResult(c,w,h){
+ const R=TR.res,H=heroOf(TR.hid)||HEROES[0];
+ c.fillStyle='rgba(20,16,12,.88)';c.fillRect(0,0,w,h);
+ c.textAlign='center';
+ c.fillStyle=TR.win?'#b7e07a':'#ff8a6a';c.font='900 26px sans-serif';
+ c.fillText(TR.win?'守り切った! 訓練成功':'母核が砕けた…',w*.5,h*.22);
+ c.fillStyle='#ffd23d';c.font='900 19px sans-serif';
+ c.fillText('経験値 +'+R.gain,w*.5,h*.36);
+ c.fillStyle='#c9c4b4';c.font='900 13px sans-serif';
+ c.fillText('しのいだ波 '+TR.waveOK+'／倒した英雄 '+TR.hkill+'／倒したゾンビ '+TR.zkill
+  +'／掘ったマス '+TR.dug+'／与ダメージ '+Math.round(TR.dmg),w*.5,h*.47);
+ c.fillStyle=R.up?'#b7e07a':'#F2ECDC';c.font='900 18px sans-serif';
+ c.fillText(R.up?(H.n+' 鍛錬Lv'+R.lv+' に上がった! (HPと攻撃 合計+'+Math.round((hBoost(TR.hid)-1)*100)+'%)')
+  :(H.n+' 鍛錬Lv'+R.lv+'  次まで '+Math.max(0,R.need-R.xp)),w*.5,h*.60);
+ if(R.up){c.fillStyle='#c9c4b4';c.font='900 12px sans-serif';
+  c.fillText('※強くなったぶん、次はもっと撃退しづらくなる',w*.5,h*.70);}
+ c.fillStyle='#c9c4b4';c.font='900 14px sans-serif';
+ c.fillText('画面をタップして鍛錬所へもどる',w*.5,h*.84);
+}
+
+/* ---------------- 入力(タップで掘るだけ) ---------------- */
+function trTap(cx,cy){
+ if(!TR||TR.done||!TR.geo)return;
+ const g=TR.geo;
+ const x=Math.floor((cx-g.ox)/g.cs),y=Math.floor((cy-g.oy)/g.cs);
+ if(!cvIn(x,y))return;
+ if(cvWater(y)){TR.msg='水没していて掘れない';TR.msgT=1;return;}
+ if(!cvCanDig(x,y)){
+  if(cvAt(x,y)===0){TR.msg='空洞に接した所しか掘れない';TR.msgT=1;}
+  return;}
+ if(TR.mana<CV_DIG){TR.msg='🦴骸が足りない';TR.msgT=1;sfx.warn&&sfx.warn();return;}
+ cvDigAt(x,y);
+ beep(220,120,.05,'square',.05);
 }
 if(trcv&&trcv.addEventListener){
- trcv.addEventListener('pointerdown',e=>{if(TR&&!TR.done)trSw={x:e.clientX,y:e.clientY};});
- trcv.addEventListener('pointerup',e=>{
+ trcv.addEventListener('pointerdown',e=>{
   if(!TR)return;
   if(TR.done){trainBack();return;}
-  if(!trSw)return;
-  const dx=e.clientX-trSw.x,dy=e.clientY-trSw.y;trSw=null;
-  if(Math.hypot(dx,dy)<24)return;/* 短すぎる動きはスワイプにしない */
-  if(Math.abs(dx)>Math.abs(dy))trainInput(dx<0?-1:1);
-  else if(dy<0)trainInput(0);
+  const r=trcv.getBoundingClientRect();
+  trTap(e.clientX-r.left,e.clientY-r.top);
  });
- trcv.addEventListener('pointercancel',()=>{trSw=null;});
 }
-/* PCでの確認用: 矢印キーでも同じ入力ができる */
-try{window.addEventListener('keydown',e=>{
- if(SCR!=='train'||!TR)return;
- if(TR.done){trainBack();return;}
- if(e.key==='ArrowLeft')trainInput(-1);
- else if(e.key==='ArrowRight')trainInput(1);
- else if(e.key==='ArrowUp')trainInput(0);
-});}catch(e){}
 $('bt-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
 $('bt-train-close').onclick=()=>$('md-train').classList.remove('on');
 $('trquit').onclick=()=>{if(TR&&!TR.done)toast('🔧'+TR_COST+' は戻らない');trainBack();};
+/* 巣作りタイムを打ち切って侵攻を始める(🦴骸が尽きて待つだけの時間を省く) */
+$('trskip').onclick=()=>{if(TR&&!TR.done&&TR.phase==='nest')cvInvade();};
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
 $('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
 /* 難易度は「1つ下をクリアするまで押せない」。未解放は🔒つきで無効にする(2026-07-25) */
