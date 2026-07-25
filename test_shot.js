@@ -74,7 +74,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +(TID?('var ti9=TOWERS.findIndex(function(q){return q.id==="'+TID+'";});'
        +'me.scrap=99999;'
        /* 支援施設(type:sup)は専用枠にしか建たないので、施設枠へ3種まとめて建てる */
-       +'if(TOWERS[ti9].type==="sup"){for(var k9=0;k9<SUP_N;k9++){me.towers[SUP_BASE+k9]=null;buildTower(me,SUP_BASE+k9,T_PLAY+k9);}}else{'
+       +'if(TOWERS[ti9].type==="sup"){for(var k9=0;k9<SUP_N;k9++){me.towers[SUP_BASE+k9]=null;buildTower(me,SUP_BASE+k9,T_PLAY+k9);}}'
+       /* 廃品工房は工房エリア専用の枠にしか建たない */
+       +'else if(TOWERS[ti9].type==="eco"){me.towers[ECO_BASE]=null;var pe=me.unlocked;me.unlocked=ti9+1;'
+       +'buildTower(me,ECO_BASE,ti9);me.unlocked=pe;'
+       +'setInterval(function(){try{var te=me.towers[ECO_BASE];if(te)te.cd=0;}catch(e){}},120);}else{'
        +'var si9=AI_ORDER[0];me.towers[si9]=null;'
        /* 解放数は建てる瞬間だけ上げて戻す(上げっぱなしにすると解放カード周りで画面が止まる) */
        +'var pu9=me.unlocked;me.unlocked=ti9+1;buildTower(me,si9,ti9);me.unlocked=pu9;}'
