@@ -721,9 +721,11 @@ const TOWERS=[
  {id:'coil',n:'重テスラ',cost:700,rng:250,dmg:15,rate:1.1,type:'elec',chain:7,arcT:.1,grow:1.45,gmax:5,c:'#4fa8d9',dsc:'電流がゆっくり伝わり、跳ねるたびに威力が跳ね上がる(最大5倍)'},
  /* beam=ビームの半幅。type は bullet のまま(弾薬と🔫銃器改良を効かせるため)、撃ち方だけ線状にする */
  {id:'rail',n:'レールガン',cost:680,rng:900,dmg:310,rate:3,type:'bullet',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。線上の敵を全部貫く(装甲貫通)'},
- {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:11,rate:.09,type:'bullet',c:'#b0483a',dsc:'止まらない弾幕の壁'},
- {id:'plasma',n:'プラズマ砲',cost:820,rng:420,dmg:210,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'超高熱の大爆発'},
- {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:95,rate:.7,type:'bullet',multi:3,pierce:1,c:'#8a8f96',dsc:'貫通弾を3連射する要塞'}
+ /* ↓重テスラ(1つ上)より後に解放される4種は、必ず重テスラより強くなるよう数値を置く(2026-07-25ユーザー指示)。
+    目安は「実戦DPS=届く敵の数ぶん」: 重テスラ92 < レールガン174 < ガトリング225 < プラズマ307 < 要塞砲482 */
+ {id:'gat',n:'ガトリング要塞',cost:540,rng:215,dmg:36,rate:.09,type:'bullet',c:'#b0483a',dsc:'単体をひたすら削る弾幕。射程は短い'},
+ {id:'plasma',n:'プラズマ砲',cost:820,rng:420,dmg:300,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'最大の爆発範囲で群れを溶かす'},
+ {id:'fort',n:'要塞砲',cost:900,rng:380,dmg:150,rate:.7,type:'bullet',multi:4,pierce:1,c:'#8a8f96',dsc:'貫通弾を4体へ同時に叩き込む最終兵器'}
 ];
 const BASE_T=10;/* 通常解放できる基本タワー数(これ以降は🔬研究所で解放) */
 /* 2026-07-24 永井さん指示: ①ショットガン以外0.75倍 → ②さらに全タワー0.75倍(=シ以外0.5625/シ0.75) */
@@ -977,6 +979,9 @@ const MAXU=40;
 const STAGE_W=20;
 const FIRE_VS_ARMOR=1.9;/* 火炎放射塔の装甲特効(装甲持ちへの直撃と燃焼の倍率) */
 const IV_SEC=20;/* 作戦タイムの秒数 */
+/* 部隊1体が同時に足止めできる敵の数。鎖使い(hook)がすり抜け敵を抱える時だけ枠が広い
+   =すり抜け敵は鎖使い以外に止められる相手が居ないため、3体で埋まると4体目から素通りしてしまう */
+const ENG_MAX=3,ENG_HOOK=8;
 const WAVE_LEAD=5;/* ウェーブ開始から敵が出るまでの猶予(タワー設置用)。2026-07-25に10→5秒へ */
 /* PvE/協力の難易度表: hp=体力倍率 cnt=物量倍率 sp=足の速さ boss=ボス体力 scrap=初期⚙️ pay=撃破報酬倍率 */
 const D5=[
@@ -2187,9 +2192,13 @@ function campStep(C,dt,wave){
   if(z.frzT>0)z.frzT-=dt;
   const slow=z.frzT>0?0:(z.slowT>0?.55:1);if(z.slowT>0)z.slowT-=dt;
   let blk=null,bd2=1e9;
-  for(const u of C.units){if(u.dead||u.eng>=3)continue;
+  for(const u of C.units){if(u.dead)continue;
    /* すり抜け個体は普通の部隊では止められないが、鎖持ち(hook)だけは引きずり出して足止めできる */
-   if(z.noblock&&!(UNITS[u.ui]&&UNITS[u.ui].hook))continue;
+   const hk=!!(UNITS[u.ui]&&UNITS[u.ui].hook);
+   if(z.noblock&&!hk)continue;
+   /* 1体が同時に抱えられる数。⚠すり抜け敵が重なると鎖使いが3体で埋まり、4体目から素通りしていた
+      (普通の敵は他の部隊へ回れるが、すり抜け敵は鎖使いにしか止められないため逃げ場が無い。2026-07-25修正) */
+   if(u.eng>=(z.noblock&&hk?ENG_HOOK:ENG_MAX))continue;
    const gap=u.d-z.d;if(gap>=-6&&gap<=36&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
    if(z.frzT<=0)z.acd=(z.acd||0)-dt;/* 凍結中は殴れない */

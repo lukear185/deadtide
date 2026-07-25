@@ -318,7 +318,38 @@ function checkCoil(){
  console.log('重テスラ: '+hit.length+'体へ順に伝播・被弾量='+dmg.join('/')+' (最大は最小の'+(mx/mn).toFixed(1)+'倍) OK');
  backTitle();
 }
+/* ---- 鎖使いが、重なったすり抜け敵を取りこぼさないか ----
+   ⚠1体が抱えられる数(ENG_MAX=3)で頭打ちになり、4体目から素通りしていたバグの再発防止 */
+function checkHook(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0];
+ const ci=UNITS.findIndex(u=>u.hook),zi=ZOMBIES.findIndex(z=>z.noblock&&!z.nm&&!z.st);
+ if(ci<0||zi<0){console.log('FAIL: 鎖使い/すり抜け敵が見つからない');process.exit(1);}
+ me.units.length=0;me.zombies.length=0;
+ /* 鎖使いを1体だけ置き、その目の前にすり抜け敵をENG_HOOK体ぴったり重ねる */
+ me.uUn=Math.max(me.uUn,ci+1);me.ucd[ci]=0;me.scrap=9999;
+ if(!deployUnit(me,ci)){console.log('FAIL: 鎖使いが出せない');process.exit(1);}
+ const u=me.units[0];u.d=PLEN*.5;
+ /* ⚠ここは ENG_HOOK ではなく実数で書く。定数を使うと「上限を下げただけ」でもテストが通ってしまう */
+ const NEED=6;
+ for(let k=0;k<NEED;k++){const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);}
+ const d0=me.zombies.map(z=>z.d);
+ for(let k=0;k<40;k++)campStep(me,.03,G.wave);
+ /* 敵はdが増える向き(0=侵入口→PLEN=コア)に進む。足止めできていればdはほとんど増えない */
+ const slipped=me.zombies.filter((z,i)=>z.d-d0[i]>18).length;
+ if(slipped){console.log('FAIL: 鎖使いが居るのにすり抜け敵が'+slipped+'/'+NEED+'体 素通りした');process.exit(1);}
+ /* 逆に、上限を超えたぶんは素通りしてよい(鎖使い1体が無限に抱えないこと) */
+ while(me.zombies.length<ENG_HOOK+4){const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);}
+ const ex=me.zombies.slice(ENG_HOOK),e0=ex.map(z=>z.d);
+ for(let k=0;k<40;k++)campStep(me,.03,G.wave);
+ const through=ex.filter((z,i)=>z.d-e0[i]>18).length;
+ if(!through){console.log('FAIL: 鎖使い1体が上限(ENG_HOOK='+ENG_HOOK+')を超えて抱えている');process.exit(1);}
+ console.log('鎖使い: 重なったすり抜け敵'+ENG_HOOK+'体を全部足止め・超過分'+through+'体は素通り OK');
+ backTitle();
+}
 checkStrikes();
+checkHook();
 checkCryo();
 checkBeam();
 checkCoil();
