@@ -66,14 +66,27 @@ const REC=[
  {k:'horn',    f:'Alarms_Vol2_WholeNotes',       t:0, d:1.2, g:-2, r:.9},
  {k:'leak',    f:'Impact Hit Rapid Chord',       t:0, d:.55, g:-2, r:1.0},
  {k:'push',    f:'Impact Water Deep Submerge',   t:0, d:.60, g:-2, r:1.0},
- /* --- ゾンビ --- */
- {k:'growl',   f:'Werewolf Growl Menacing',      t:0, d:.95, g:-2, r:.9},
- {k:'moan',    f:'Male Screeching Breath Inhale',t:0, d:.70, g:-5, r:.9},
+ /* --- ゾンビの声 ----------------------------------------------------------
+    ⚠**同じ呻きが繰り返されると怖くない**。通常の呻きは3種そろえて毎回くじを引く。
+    さらにステージで声が変わる: ①廃線=人型 / ②沈んだ港=水棲 / 🌑ナイトメア=獣・蟲。
+    怖さの主役は `growl`(ボスの唸り)=**アステカの死の笛**。実在の「一番怖い楽器」 */
+ {k:'growl',   f:'Aztec Death Whistle Distortion',t:0,d:1.1, g:-2, r:.85},
+ {k:'growl2',  f:'Werewolf Growl Menacing',      t:0, d:.95, g:-2, r:.85},
+ {k:'moan',    f:'Violent Humanoid Creature Exhale',t:0,d:.55,g:-5, r:.9},
+ {k:'moan2',   f:'Male Screeching Breath Inhale',t:0, d:.70, g:-6, r:.88},
+ {k:'moan3',   f:'Ethereal Entity Grim Pain',    t:0, d:.85, g:-6, r:.92},
+ {k:'moanW',   f:'Aquatic Creature Gurgling',    t:0, d:.80, g:-6, r:.9},
+ {k:'moanN',   f:'Insectoid Creature Tremble',   t:0, d:.75, g:-6, r:.9},
  {k:'moanBig', f:'Sea Beast Creature Pain',      t:0, d:1.0, g:-3, r:.8},
+ {k:'moanBig2',f:'T Rex',                        t:0, d:1.2, g:-3, r:.85},
+ {k:'die',     f:'Male Flutter Death Vocal',     t:0, d:.85, g:-5, r:.9},
  {k:'bite',    f:'Hit Blood Spill Splat Wood',   t:0, d:.26, g:-4, r:1.0},
+ {k:'bite2',   f:'Orc Male Attack Long Heavy',   t:0, d:.45, g:-6, r:1.0},
  {k:'splat',   f:'Gore Designed Transient',      t:0, d:.36, g:-5, r:1.0},
+ {k:'scratch', f:'Cladding_NailScratch',         t:0, d:.60, g:-7, r:1.0},
  /* --- 節目 --- */
- {k:'elite',    f:'Alert Designed Transition Swell',t:0, d:.90, g:-2, r:1.0},
+ /* ⚠エリート出現は「怖い」で正解。ささやき声の悲鳴を歪ませた素材を使う */
+ {k:'elite',    f:'Jumpscare Vocal Aggressive',    t:0, d:.95, g:-3, r:1.0},
  {k:'eliteKill',f:'Impact Cut Sweep',              t:0, d:.60, g:-2, r:1.0},
  {k:'bossKill', f:'Booms_Vol2_214',                t:0, d:1.3, g:-1, r:.95},
  {k:'clearJ',   f:'Power Up Bright Positive',      t:0, d:.85, g:-3, r:1.0},

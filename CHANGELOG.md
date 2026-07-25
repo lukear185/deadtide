@@ -798,3 +798,29 @@ Cinematic Sound Design のUI系5パック、Federico Soler「Trailer Alarms/Boom
   素材WAVにジャケット画像が埋まっていて、付けないと**oggの中にtheoraの動画が入り1本30KBに膨らむ**
   (合計550KB→170KBになった)。`-i` より前に置くと入力側の指定と見なされて無視される。
 - **ブラウザ向けの音はMP3**。ogg/vorbis も ogg/opus も Safari(iPhone)で鳴らない可能性がある。
+
+## 第58弾(2026-07-26) — ゾンビの声を怖くした(9種→ステージ別にくじ引き)
+ユーザー指摘=**「ゾンビの声これ以外ない？もっと怖めの」**。バンドルを掘り直して差し替えた。
+
+### 差し替え・追加した声
+| キー | 素材 | ねらい |
+|---|---|---|
+| `growl`(ボスの唸り) | **アステカの死の笛**(InMotionAudio - The Death Whistle) | 実在の「世界一怖い楽器」。狼の唸りより格段に怖い |
+| `growl2` | 人狼の唸り(旧growl) | くじの片方として残した |
+| `moan` | 凶暴な人型の吐息(SoundBits - Vox Bestiae) | 短く鋭い。通常ゾンビ |
+| `moan2` | 旧moan(きしむ吸気) | |
+| `moan3` | 幽体の苦悶(Vox Bestiae) | |
+| `moanW` | **水棲生物のごぼごぼ**(Vox Bestiae) | ②沈んだ港のゾンビ |
+| `moanN` | **蟲の震え声**(Vox Bestiae) | 🌑ナイトメアの獣 |
+| `moanBig2` | **T-Rexの咆哮**(344 Audio - Dinosaurs) | 大型・ナイトメア |
+| `die` | 途切れる死の声(Humanoid Creatures Vol 4) | **断末魔**。撃破時に混ぜる |
+| `bite2` | オークの重い攻撃声 | 噛みつきのくじ |
+| `scratch` | 爪で壁を掻く音(Sinister Textures 5) | ナイトメアのBGMに時々混ぜる |
+| `elite` | **歪んだ悲鳴のささやき**(Halloween Game・Jumpscare) | エリート出現。前より怖い |
+
+### 仕組み
+- ⭐**同じ声が繰り返されると怖くない**。`SFX_SET` で1つのキーに複数の素材を割り当て、鳴らすたびにくじを引く。
+- ⭐**ステージで声が変わる**(`sfxScene()`): ①廃線=人型 / ②沈んだ港=水棲 / 🌑ナイトメア=獣・蟲。
+  ⚠`isNM()`/`STAGE` は `sfx` を組み立てる時点ではまだ無いので、**鳴らす瞬間に try/catch で見る**
+  (constのTDZは typeof でも例外を投げるため typeofガードでは防げない)。
+- 全38種で base64 239KB / index.html は 0.80MB。単一HTMLのまま。
