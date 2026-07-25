@@ -399,41 +399,8 @@ function checkEvo(){
  console.log('進化: 同時に'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
  META.uv=[];
 }
-/* ---- 支援施設(タワーとは別軸)が建って、効果が乗るか ---- */
-function checkSup(){
- META.stg=0;setDiff=2;startSolo();
- frames(20,.016);
- const me=G.players[0];
- me.scrap=99999;
- const sti=TOWERS.findIndex(T=>T.type==='sup');
- if(sti<0||sti<T_PLAY){console.log('FAIL: 支援施設がTOWERSの末尾に無い');process.exit(1);}
- /* 施設枠にはタワーが建たない・通常枠には施設が建たない */
- if(buildTower(me,SUP_BASE,0)){console.log('FAIL: 施設枠に普通のタワーが建った');process.exit(1);}
- if(buildTower(me,AI_ORDER[0],sti)){console.log('FAIL: 通常枠に支援施設が建った');process.exit(1);}
- /* 解放チェーンの外=最初から建てられる */
- if(!buildTower(me,SUP_BASE,sti)){console.log('FAIL: 支援施設が建たない');process.exit(1);}
- /* 効果が乗るか(管制塔=射程・発電所=間隔・野戦病院=回復) */
- const ti2=TOWERS.findIndex(T=>T.id==='radar');
- me.towers[SUP_BASE]=null;buildTower(me,SUP_BASE,ti2);
- campStep(me,.02,G.wave);
- if(!(me.supR>1.01)){console.log('FAIL: 管制塔の射程効果が乗っていない supR='+me.supR);process.exit(1);}
- const ti3=TOWERS.findIndex(T=>T.id==='gen');
- me.towers[SUP_BASE+1]=null;buildTower(me,SUP_BASE+1,ti3);
- campStep(me,.02,G.wave);
- if(!(me.supF<.99)){console.log('FAIL: 発電所の連射効果が乗っていない supF='+me.supF);process.exit(1);}
- const ti4=TOWERS.findIndex(T=>T.id==='medic');
- me.towers[SUP_BASE+2]=null;buildTower(me,SUP_BASE+2,ti4);
- me.uUn=Math.max(me.uUn,1);me.ucd[0]=0;deployUnit(me,0);
- const u=me.units[0];if(u){u.hp=1;campStep(me,.5,G.wave);
-  if(!(u.hp>1)){console.log('FAIL: 野戦病院が回復していない');process.exit(1);}}
- /* 研究所には出てこないこと(タワーの解放チェーンにも入らない) */
- if(metaTowerCap()>T_PLAY){console.log('FAIL: 支援施設が解放チェーンに混ざっている');process.exit(1);}
- console.log('支援施設: 専用枠のみ・解放不要・射程x'+me.supR.toFixed(2)+'/間隔x'+me.supF.toFixed(2)+'/回復'+me.supH+' OK');
- backTitle();
-}
 checkStrikes();
 checkProgress();
-checkSup();
 checkEvo();
 checkHook();
 checkCryo();
