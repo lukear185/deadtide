@@ -4,7 +4,9 @@
      node tool_slice.js ui_src/sheet-a.png --list           … 何個見つかったかだけ見る(確認用の連番で出す)
    オプション:
      --bg=#ff00ff  背景色を指定(既定=四隅から自動判定)
-     --tol=60      背景とみなす色の近さ(0〜200。にじみが残るなら上げる)
+     --tol=30      背景とみなす色の近さ(0〜200。にじみが残るなら上げる)
+                   ⚠上げすぎると「背景に近い色のアイコン」まで消える。
+                     マゼンタ背景に紫の結晶を描いたら、tol=60では紫が白く抜けた(2026-07-25)
      --gap=26      この距離以内の塊は「1つのアイコンの部品」として繋げる
      --size=512    書き出す1枚のサイズ(正方形)
      --pad=0.06    切り出しの余白(短辺に対する割合)
@@ -26,7 +28,7 @@ if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const ext=path.extname(SRC).slice(1).toLowerCase();
 const mime=ext==='jpg'?'jpeg':ext;
 const dataUrl='data:image/'+mime+';base64,'+fs.readFileSync(SRC).toString('base64');
-const CFG={bg:opt('bg',''),tol:+opt('tol',60),gap:+opt('gap',26),size:+opt('size',512),pad:+opt('pad',.06)};
+const CFG={bg:opt('bg',''),tol:+opt('tol',30),gap:+opt('gap',26),size:+opt('size',512),pad:+opt('pad',.06)};
 
 const page=`<!doctype html><meta charset="utf-8"><body><pre id="o"></pre><script>
 const CFG=${JSON.stringify(CFG)};
