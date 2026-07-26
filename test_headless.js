@@ -366,6 +366,80 @@ function checkTut(){
   if(!SFX_LBL[k]||SFX_LBL[k][2]!=='ui'){console.log('FAIL: 🔊音の確認に sfx.'+k+' が出ない');process.exit(1);}}
  console.log('ボタンの音: tap・back OK');
 }
+/* ---- 🎓チュートリアル中は「光っている所」以外を押せない(2026-07-26 第89弾) ----
+   ユーザー指示「ここを選べって案内はあるけど、ほかのところをタップできちゃう。強制的にやらせて」。
+   ⚠tutPass() は DOM を持たない=**closest だけを持つ偽の要素**で検査できる
+     (DOM側だけを見る検査はヘッドレスでは0個でも通ってしまうため、こちら側で見る)。 */
+function checkTutLock(){
+ /* 偽の要素。自分のセレクタが問い合わせの並びに入っていれば当たったことにする */
+ const mk=s=>({id:'',closest:q=>{
+  const a=String(q).split(',');
+  for(let i=0;i<a.length;i++)if(a[i].trim()===s)return {};
+  return null;}});
+ tutStart();
+ if(!TUT){console.log('FAIL: チュートリアルが始まっていない');process.exit(1);}
+ const st=TUT.st;let nHi=0,nAl=0;
+ for(let i=0;i<st.length;i++){
+  TUT.i=i;TUT.hi=st[i].hi||null;
+  if(tutPass({target:mk('#tut')})!==true){
+   console.log('FAIL: 帯の「▶次へ」が押せない段がある: '+st[i].id);process.exit(1);}
+  if(tutPass({target:mk('#bt-solo')})!==false){
+   console.log('FAIL: 光っていない所を押せてしまう段がある: '+st[i].id);process.exit(1);}
+  if(tutPass({target:mk('#pausebtn')})!==false){
+   console.log('FAIL: 光っていない所を押せてしまう段がある: '+st[i].id);process.exit(1);}
+  /* ⭐**ゲームを止めて閉じるまで待つもの**(新登場の紹介)は、どの段でも押せること。
+     塞ぐと PAUSED のまま二度と動かない(実機で踏んだ) */
+  if(tutPass({target:mk('#md-intro')})!==true){
+   console.log('FAIL: 新登場の紹介を閉じられない段がある(止まったまま詰む): '+st[i].id);process.exit(1);}
+  if(st[i].hi&&st[i].hi.k==='dom'){nHi++;
+   if(tutPass({target:mk(st[i].hi.s)})!==true){
+    console.log('FAIL: 光っている所を押せない段がある: '+st[i].id+' '+st[i].hi.s);process.exit(1);}}
+  if(st[i].al){const a=String(st[i].al).split(',');
+   for(let k=0;k<a.length;k++){nAl++;
+    if(tutPass({target:mk(a[k].trim())})!==true){
+     console.log('FAIL: al で許した所が押せない: '+st[i].id+' '+a[k]);process.exit(1);}}}
+ }
+ /* 盤面(canvas)。⭐マスの段は「光っているマスだけ」・🚩🎯は狙っている最中だけ通す */
+ const cvT={id:'cv',closest:()=>null};
+ TUT.hi=null;AIM=false;FLAGAIM=false;
+ if(tutPass({target:cvT})!==false){console.log('FAIL: 盤面のタップが素通りしている');process.exit(1);}
+ FLAGAIM=true;
+ if(tutPass({target:cvT})!==true){console.log('FAIL: 🚩の地点タップが通らない=集結旗の段で詰まる');process.exit(1);}
+ FLAGAIM=false;AIM=true;
+ if(tutPass({target:cvT})!==true){console.log('FAIL: 🎯の地点タップが通らない=航空支援の段で詰まる');process.exit(1);}
+ AIM=false;
+ const si=tutSlot(G.players[0]);
+ if(slotHit(SLOTS[si][0],SLOTS[si][1])!==si){
+  console.log('FAIL: slotHit がそのマスを返さない(チュートリアルが正しいマスを判定できない)');process.exit(1);}
+ if(slotHit(-9999,-9999)!==-1){console.log('FAIL: マスから遠く離れた所で slotHit が当たっている');process.exit(1);}
+ /* ⭐**逃げ道**: 建設メニューを閉じられた時に、光っているマスを押し直せること
+    (実機で確かめて見つけた。塞いだままだとメニューを閉じた瞬間に永久に詰む) */
+ const bs=st.filter(S=>S.hi&&S.hi.k==='dom'&&S.hi.s==='#buildmenu')[0];
+ if(!bs){console.log('FAIL: 建設メニューを光らせる段が無い');process.exit(1);}
+ TUT.i=st.indexOf(bs);TUT.hi=bs.hi;
+ if(tutSlotOK()!==1){console.log('FAIL: 建てる段でマスを押せない=建設メニューを閉じると永久に詰む');process.exit(1);}
+ const us=st.filter(S=>S.hi&&S.hi.k==='dom'&&S.hi.s==='#deck')[0];
+ if(us){TUT.i=st.indexOf(us);TUT.hi=us.hi;
+  if(tutSlotOK()){console.log('FAIL: 部隊を出す段で盤面のマスまで押せる(印と食い違う)');process.exit(1);}}
+ /* ⭐**戦っている最中は手を縛らない**=デッキを許した段は、どのマスにも建てられること
+    (塞ぐと押せないまま拠点を削られる) */
+ for(let i=0;i<st.length;i++){
+  if(!st[i].al||String(st[i].al).indexOf('#deck')<0)continue;
+  TUT.i=i;TUT.hi=st[i].hi||null;
+  if(tutSlotOK()!==2){console.log('FAIL: 戦っている段で盤面が塞がっている: '+st[i].id);process.exit(1);}}
+ /* ⭐**逃げ道**: 1波目で負けた時にリザルトが閉じられないと詰む */
+ const scr0=SCR;SCR='result';
+ if(tutPass({target:mk('#res-back')})!==true){
+  console.log('FAIL: リザルトが出ている時まで塞いでいる(負けると閉じられず詰む)');process.exit(1);}
+ SCR=scr0;
+ /* ⭐**再読み込みの逃げ道**: 始めた時点で META.tut が立っていないと、詰んだ時に永久に出続ける */
+ if(!META.tut){console.log('FAIL: チュートリアルを始めても META.tut が立たない(詰んだ時の逃げ道が無い)');process.exit(1);}
+ /* チュートリアル中でなければ何も塞がない */
+ tutEnd(false);backTitle();
+ if(tutPass({target:mk('#bt-solo')})!==true){console.log('FAIL: チュートリアル外まで塞いでいる');process.exit(1);}
+ console.log('🎓チュートリアルの縛り: 光っている所'+nHi+'件+特例'+nAl+'件だけ押せる / '+
+  '盤面はマスと🚩🎯の狙いだけ / リザルトと再読み込みの逃げ道あり OK');
+}
 function checkResume(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
@@ -1586,6 +1660,7 @@ checkTwFx();
 checkZLook();
 checkSfxGain();
 checkTut();
+checkTutLock();
 checkResume();
 checkTwNew();
 checkPerUp();

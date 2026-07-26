@@ -393,6 +393,11 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* 光らせる印。⚠!important=各ボタンが持っている枠より強くする必要がある */
 .tuthi{outline:4px solid var(--gold)!important;outline-offset:2px;animation:tutp .9s infinite}
 @keyframes tutp{0%,100%{outline-color:var(--gold)}50%{outline-color:var(--rust)}}
+/* ⭐光っていない所を押した時=帯を左右に揺らす(2026-07-26 第89弾)。
+   ⚠**無反応にしない**。押しても何も起きないだけだと「固まった」に見える。 */
+#tut.no{animation:tutno .38s}
+@keyframes tutno{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}
+ 40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 /* ---- リザルト ---- */
 #scr-result{background:rgba(20,16,12,.88)}
 #reswrap{display:flex;flex-direction:column;align-items:center;gap:6px;max-height:100%;overflow:auto;padding:12px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
@@ -1240,6 +1245,21 @@ for(const k of Object.keys(SFXSYN).concat(Object.keys(SFXB)))if(!sfx[k]){
    ⚠すでに音があるもの(デッキの出撃・建設メニューの品目・小窓)は**ここに入れない**=二重に鳴るため。
    ⚠capture で拾う=各ボタンの onclick が何をしても、押した手応えだけは必ず鳴る。 */
 const UI_TAP_SEL='.btn,.xbtn,.tabs .tb,.lc .bu,.lc[data-sk],.grc,.ldc,.hgrid .hb,#rgpad button';
+/* ⭐🎓チュートリアル中は**光っている所以外を押させない**(2026-07-26 第89弾ユーザー指示
+     「ここを選べって案内はあるけど、ほかのところをタップできちゃう」)。
+   ⚠**押した音のリスナーより先に登録すること**。stopImmediatePropagation で
+     「押せていないのに手応えだけ鳴る」のを止めている(同じ document に付いた後続の
+     リスナーは、先に登録した方が止めないと必ず鳴ってしまう)。
+   ⚠判定 tutPass() は下の方で定義しているが、事象が飛ぶのは読み込み後なので問題ない。
+   ⚠例外が出た時は**通す**=どんな不具合が起きてもゲームが操作不能にならないようにする。 */
+['pointerdown','pointerup','click'].forEach(ev=>document.addEventListener(ev,e=>{
+ let pass=true;try{pass=tutPass(e);}catch(x){pass=true;}
+ if(pass)return;
+ try{ensureAC();}catch(x){}
+ try{e.preventDefault();}catch(x){}
+ e.stopImmediatePropagation();
+ if(ev==='pointerdown'){try{tutNope();}catch(x){}}
+},true));
 document.addEventListener('pointerdown',e=>{
  try{
   const t=e.target;if(!t||!t.closest)return;
@@ -5276,15 +5296,21 @@ cv.addEventListener('pointerdown',e=>{
  }
  if(AIM){const m=meV();if(m&&m.charge>=1&&my>115){actStrike(mx,my);}setAim(false);return;}
  if(FLAGAIM){if(my>115)actFlag(mx,my);setFlagAim(false);return;}
- /* ⚠「範囲内で最初に見つかったマス」ではなく「一番近いマス」を選ぶ。
-    先着順だと、マスを近づけて置いた時に手前のマスばかり反応して奥のマスが押せなくなる(2026-07-25修正) */
+ const hit=slotHit(mx,my);
+ if(hit>=0)openBM(hit);else closeBM();
+});
+/* 押した点に一番近い建設マス(範囲外は-1)。⚠🎓チュートリアルの「このマスだけ押させる」判定でも使うので
+   **ここ1か所に置く**(2つに分けると片方だけ直して食い違う)。
+   ⚠「範囲内で最初に見つかったマス」ではなく「一番近いマス」を選ぶ。
+   先着順だと、マスを近づけて置いた時に手前のマスばかり反応して奥のマスが押せなくなる(2026-07-25修正) */
+function slotHit(mx,my){
  let hit=-1,hb=1e9;
  const hr=MOBILE?60:44;
  for(let si=0;si<SLOTS.length;si++){
   if(Math.abs(mx-SLOTS[si][0])>=hr||Math.abs(my-SLOTS[si][1])>=hr)continue;
   const d=dist(mx,my,SLOTS[si][0],SLOTS[si][1]);if(d<hb){hb=d;hit=si;}}
- if(hit>=0)openBM(hit);else closeBM();
-});
+ return hit;
+}
 cv.addEventListener('pointermove',e=>{if(AIM||FLAGAIM)aimPos=evtToMap(e);});
 function setAim(on){if(on)setFlagAim(false);AIM=on;aimPos=null;$('strikebtn').classList.toggle('aim',on);$('strikehint').style.display=on?'block':'none';}
 $('strikebtn').onclick=()=>{const m=meV();if(!m||m.dead||m.charge<1){setAim(false);return;}setAim(!AIM);};
@@ -5586,9 +5612,11 @@ function tutSteps(){return[
  {id:'slot',scr:'game',t:'まずタワーを建てろ',
   m:'光っているマスをタップ。道の角は敵が長く居座るので狙い目だ。',
   hi:{k:'slot'},ok:C=>SEL===tutSlot(C)},
+ /* ⚠**sl**=その段は光っているマスを押してよい(第89弾)。ここで建設メニューを閉じられた時に
+    盤面まで塞いでいると**二度と開けず詰む**(実機で確かめて見つけた)。 */
  {id:'build',scr:'game',t:'⚙️スクラップで建てる',
   m:'好きなタワーを選べ。建てたあと塔をタップすると⚔攻撃・⏩連射・📡射程を個別に強化できる。',
-  hi:{k:'dom',s:'#buildmenu'},ok:C=>!!(C.towers||[])[tutSlot(C)]},
+  hi:{k:'dom',s:'#buildmenu'},sl:1,ok:C=>!!(C.towers||[])[tutSlot(C)]},
  {id:'unit',scr:'game',t:'主役は生存者部隊だ',
   m:'下のデッキから出撃させろ。部隊はウェーブを跨いで戦い続ける。',
   hi:{k:'dom',s:'#deck'},ok:C=>C.units.length>0},
@@ -5605,11 +5633,16 @@ function tutSteps(){return[
  {id:'go',scr:'game',t:'まもなくウェーブ開始',
   m:'ウェーブ中もタワーは建てられるし、部隊も出せる。2波目からは作戦タイムに強化を選べる。',
   hi:null,pre:()=>{TUT.ran=true;if(G)G.tI=Math.min(G.tI,4);},ok:()=>!!(G&&G.phase==='wave')},
+ /* ⚠**戦っている間は手を縛らない**(第89弾)。1波目が終わるまでの2段は待ち時間が長いので、
+    ここまでで教えた操作(デッキ・🚩・🎯・光っているマス)は使えるままにする。
+    塞ぐと**押せないまま拠点を削られる**うえ、負けても何もできない。 */
  {id:'fight',scr:'game',t:'倒すと⚙️が手に入る',
-  m:'1人の部隊が食い止められるのは3体まで。溢れた分は素通りするので、数と壁役で受けろ。',hi:null},
+  m:'1人の部隊が食い止められるのは3体まで。溢れた分は素通りするので、数と壁役で受けろ。',
+  hi:null,al:'#deck,#flagbtn,#strikebtn',sl:2},
  {id:'clear',scr:'game',t:'守り切ると🔩が入る',
   m:'ウェーブを制圧すると🔩強化ポイント。作戦タイムのカードで部隊レベル(全兵科+10%)を上げろ。',
-  hi:{k:'dom',s:'#interv'},ok:()=>!!(G&&G.phase==='interval'&&G.wave>=1)},
+  hi:{k:'dom',s:'#interv'},al:'#deck,#flagbtn,#strikebtn',sl:2,
+  ok:()=>!!(G&&G.phase==='interval'&&G.wave>=1)},
  {id:'lab',scr:'game',t:'負けても強くなる',
   m:'出撃の結果で🧬研究ptが貯まる。タイトルの🔬研究所で新型タワーや兵科を永久に解放できる。',hi:null},
  /* ⭐ここから先はタイトルへ戻って続ける(2026-07-26ユーザー指示
@@ -5625,10 +5658,61 @@ function tutSteps(){return[
   hi:{k:'dom',s:'#gc-1'},
   /* ⚠🛠DEVでは💎が補充されるので、減ったかどうかだけでは判定できない。演出(GC)が始まったかも見る */
   ok:()=>!!GC||((META.gem||0)<(TUT.gem0||0))},
+ /* ⚠**al**=その段だけ特別に押せる所(第89弾)。ここは召集の演出が動いている最中なので、
+    「撃て!」のタップと結果ウィンドウを塞いでしまうと引いた物が見られない。 */
  {id:'end',scr:'title',t:'以上だ。健闘を祈る',
-  m:'この案内はタイトルの「🎓 あそびかた」からいつでもやり直せる。',hi:null}
+  m:'この案内はタイトルの「🎓 あそびかた」からいつでもやり直せる。',hi:null,al:'#md-gacha,#md-gcres'}
 ];}
 function tutHold(){return !!(TUT&&TUT.on&&!TUT.ran);}/* 作戦タイムの残り時間を止める */
+/* ============ 🎓 チュートリアル中は光っている所しか押せない(第89弾) ============
+   ユーザー指示「ここを選べって案内はあるけど、ほかのところをタップできちゃう。強制的にやらせて」。
+   ⭐**通す=true**。迷ったら通す側に倒す=不具合が出てもゲームが操作不能にならないため。
+   押してよいのは4つだけ:
+     ①帯(#tut)の「▶ 次へ」 ②その段が光らせている所(hi) ③その段が特別に許した所(al)
+     ④盤面(canvas)のうち、その段でやらせている操作にあたるタップ
+   ⚠**リザルトが出ている時は全部通す**。1波目で負けた時に閉じられなくなると詰む。 */
+/* ⚠ゲームを止めて「閉じるまで待つ」もの=どの段でも必ず押せるようにする(下の tutPass を見ること) */
+const TUT_FREE='#md-intro';
+function tutPass(e){
+ if(!TUT||!TUT.on)return true;
+ const t=e&&e.target;if(!t||!t.closest)return true;
+ if(SCR==='result')return true;
+ /* ⭐**ゲームを止めて「閉じるまで待つ」ものは必ず通す**(実機で踏んだ)。
+    新登場の紹介モーダルは PAUSED=true にして OK を押すまで待つので、
+    ここを塞ぐと**止まったまま二度と動かない**。PAUSED も見ておく=同じ形の物が増えても詰まない。 */
+ if(t.closest(TUT_FREE))return true;
+ if(PAUSED)return true;
+ if(t.closest('#tut'))return true;
+ const S=TUT.st[TUT.i]||{},hi=TUT.hi;
+ if(S.al&&t.closest(S.al))return true;
+ if(hi&&hi.k==='dom'&&t.closest(hi.s))return true;
+ if(t===cv||t.id==='cv')return tutCvOK(e);
+ return false;
+}
+/* 盤面のタップ。⚠🚩/🎯は「ボタンを押してから地点をタップ」の2段構えなので、
+   狙っている最中(AIM/FLAGAIM)は通す。マスの段は**光っているマスだけ**通す
+   (他のマスを押せると建設メニューが別の枠で開き、印と食い違う)。 */
+function tutCvOK(e){
+ if(AIM||FLAGAIM)return true;
+ const k=tutSlotOK();if(!k)return false;
+ const C=G&&G.players[0];if(!C)return false;
+ try{const p=evtToMap(e),h=slotHit(p[0],p[1]);
+  return k===2?h>=0:h===tutSlot(C);}catch(x){return false;}
+}
+/* その段で建設マスを押してよいか。**0=押せない / 1=光っているマスだけ / 2=どのマスでも**。
+   ⚠1は**建設メニューを閉じられた時の逃げ道**でもある(閉じたあと開き直せないと詰む)。
+   ⚠2は戦っている最中の段=手を縛らないため(印は出さない)。 */
+function tutSlotOK(){
+ if(!TUT||!TUT.on)return 0;
+ const S=TUT.st[TUT.i]||{},hi=TUT.hi;
+ if(S.sl)return S.sl;
+ return (hi&&hi.k==='slot')?1:0;
+}
+/* 押せない所を押した時の反応。⚠無反応だと「固まった」に見えるので帯を揺らす */
+function tutNope(){
+ const e=$('tut');if(!e||!e.classList)return;
+ e.classList.remove('no');try{void e.offsetWidth;}catch(x){}e.classList.add('no');
+}
 /* タイトルの「🎓 あそびかた」。⚠**最初の段(open)を出している最中なら、それを進める**
    =押した瞬間に TUT を作り直してしまうと、いつまでも最初の段から動かない */
 function tutOpen(){
@@ -5637,6 +5721,11 @@ function tutOpen(){
 }
 function tutBegin(from){
  TUT={on:true,i:-1,st:tutSteps(),mk:0,ran:false,t:0,si:null,gem0:0,mv:0};
+ /* ⭐**始めた時点で「出した」ことにする**(第89弾)。第89弾で光っている所以外を押せなくしたので、
+    万一どこかの段で詰まった時の逃げ道が**再読み込みだけ**になった。ここで立てておけば
+    再読み込みで自動起動が二度と掛からない=遊べなくなる事故を防げる。
+    ⚠途中でやめた人も「🎓 あそびかた」からいつでもやり直せる。 */
+ META.tut=1;saveMeta();
  tutGo(from);
 }
 function tutAuto(){tutBegin(0);}/* はじめての人=タイトルの「開くところ」から */
@@ -5686,8 +5775,12 @@ function tutEnd(done){
    ⚠**dir(向き)を持たない**=時刻だけで形が決まるので、どこから描いても同じに見える。 */
 function tutMark(c,C,t){
  const hi=TUT&&TUT.on&&TUT.hi;
- if(!hi||(hi.k!=='slot'&&hi.k!=='core'))return;
- const p=hi.k==='core'?PATH[PATH.length-1]:SLOTS[tutSlot(C)];
+ if(!TUT||!TUT.on)return;
+ /* ⭐建てる段(sl:1)でも、建設メニューを閉じていたら印を出し直す
+    =押す所が分からないまま塞がれている状態を作らない(第89弾) */
+ const sl=(hi&&hi.k==='slot')||(tutSlotOK()===1&&SEL!==tutSlot(C));
+ if(!sl&&!(hi&&hi.k==='core'))return;
+ const p=(hi&&hi.k==='core')?PATH[PATH.length-1]:SLOTS[tutSlot(C)];
  if(!p)return;
  const pu=(Math.sin(t*4)+1)*.5,r=(hi.k==='core'?86:52)+pu*10;
  c.save();
