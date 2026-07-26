@@ -282,7 +282,11 @@ function checkCryo(){
 function checkTips(){
  /* 廃止した操作を案内していないか。⚠デッキ長押しは2026-07-25に廃止済みなのに案内が残っていた */
  const NG=[['長押し','デッキ長押しの部隊レベルアップは廃止済み'],
-  ['段階進化','部隊の段階進化は廃止済み'],['洞窟','🕳洞窟は削除済み']];
+  ['段階進化','部隊の段階進化は廃止済み'],['洞窟','🕳洞窟は削除済み'],
+  /* ⚠2026-07-26ユーザー指示で「WAVE〜を守り切ればクリアだ!」を削除した。
+     ⭐**消した案内は「出ていないこと」を検査する**=でないと足し直されても気づけない。
+     クリア条件は上のWAVE表示とステージ選択の説明に出ているので、操作案内には要らない。 */
+  ['WAVE ','最終ウェーブの案内は2026-07-26に削除した(ユーザー指示)']];
  for(const d of [0,4]){/* 新兵(5波)と悪夢(20波)で見る=最終ウェーブが難易度ごとに違うため */
   META.stg=0;setDiff=d;startSolo();
   frames(10,.016);
@@ -290,11 +294,6 @@ function checkTips(){
   if(!t.length){console.log('FAIL: 操作案内が空');process.exit(1);}
   for(const s of t)for(const [w,why] of NG)if(s.indexOf(w)>=0){
    console.log('FAIL: 操作案内に古い内容が残っている「'+w+'」('+why+') → '+s);process.exit(1);}
-  /* 最終ウェーブが「その難易度の値」になっているか(STAGE_W固定だと新兵でも20と出てしまう) */
-  const w=curW(),hit=t.filter(s=>s.indexOf('WAVE '+w)>=0);
-  if(!hit.length){console.log('FAIL: 難易度'+d+'(最終W'+w+')の案内にその数字が出ていない → '+t.join(' / '));process.exit(1);}
-  if(t.some(s=>s.indexOf('WAVE '+STAGE_W)>=0&&w!==STAGE_W)){
-   console.log('FAIL: 最終ウェーブを STAGE_W 固定で出している(難易度ごとに違う)');process.exit(1);}
   backTitle();
  }
  /* 英雄を連れている時だけ案内が1つ増えるか */
@@ -313,7 +312,7 @@ function checkTips(){
  /* 押した音を鳴らす対象に、主要な画面のボタンが入っているか */
  for(const sel of ['.btn','.xbtn','.tabs .tb','.lc .bu','.grc','.ldc'])
   if(UI_TAP_SEL.indexOf(sel)<0){console.log('FAIL: 押した音の対象に '+sel+' が入っていない');process.exit(1);}
- console.log('操作案内: 新兵は「WAVE 5」・悪夢は「WAVE 20」・廃止した操作の案内なし / ボタンの音 tap・back OK');
+ console.log('操作案内: 廃止した操作('+NG.map(x=>x[0]).join('/')+')の案内なし / 英雄の案内 / ボタンの音 tap・back OK');
 }
 /* ---- 中断 → 再開(ソロ)で持ち物が失われないか(2026-07-26に追加) ----
    ⚠localStorage をスタブしたので初めて検査できるようになった。
