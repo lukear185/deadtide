@@ -412,6 +412,25 @@ function checkTutLock(){
  if(slotHit(SLOTS[si][0],SLOTS[si][1])!==si){
   console.log('FAIL: slotHit がそのマスを返さない(チュートリアルが正しいマスを判定できない)');process.exit(1);}
  if(slotHit(-9999,-9999)!==-1){console.log('FAIL: マスから遠く離れた所で slotHit が当たっている');process.exit(1);}
+ /* ⭐**「ここだ」の矢印**(ユーザー指示「左右とかに反復しながら案内印」)。
+    ⚠置き場所を決める所はDOMを触らないので、寸法を渡して直に見られる。
+    見るのは①下端の帯は真上から指す ②右寄りは左から指す ③左寄りは右から指す
+    ④画面からはみ出さない ⑤印が対象に重ならない。 */
+ {const W=852,H=393,S=34;
+  const rc=(l,t,w,h)=>({left:l,top:t,width:w,height:h,right:l+w,bottom:t+h});
+  const deck=tutPtrPos(rc(235,315,460,70),W,H,S,6);
+  if(deck.k!=='pd'){console.log('FAIL: 下端の帯を指す矢印が真上から出ていない('+deck.k+')');process.exit(1);}
+  if(deck.y+S>315){console.log('FAIL: 矢印が対象(デッキ)に重なっている');process.exit(1);}
+  const rgt=tutPtrPos(rc(470,235,335,50),W,H,S,6);
+  if(rgt.k!=='pr'){console.log('FAIL: 右寄りのボタンを左から指していない('+rgt.k+')');process.exit(1);}
+  if(rgt.x+S>470){console.log('FAIL: 矢印が対象(右寄りのボタン)に重なっている');process.exit(1);}
+  const lft=tutPtrPos(rc(20,120,180,50),W,H,S,6);
+  if(lft.k!=='pl'){console.log('FAIL: 左寄りのボタンを右から指していない('+lft.k+')');process.exit(1);}
+  /* 端に貼り付いた対象でも画面の中に収まるか(はみ出すと印が見えない) */
+  const eg=[rc(0,0,60,40),rc(W-60,0,60,40),rc(0,H-40,60,40),rc(W-60,H-40,60,40),rc(0,0,W,H)];
+  for(let i=0;i<eg.length;i++){const q=tutPtrPos(eg[i],W,H,S,6);
+   if(q.x<0||q.y<0||q.x+S>W||q.y+S>H){console.log('FAIL: 矢印が画面からはみ出す(端の対象'+i+')');process.exit(1);}}
+ }
  /* ⭐**逃げ道**: 建設メニューを閉じられた時に、光っているマスを押し直せること
     (実機で確かめて見つけた。塞いだままだとメニューを閉じた瞬間に永久に詰む) */
  const bs=st.filter(S=>S.hi&&S.hi.k==='dom'&&S.hi.s==='#buildmenu')[0];

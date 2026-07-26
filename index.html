@@ -398,6 +398,23 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #tut.no{animation:tutno .38s}
 @keyframes tutno{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}
  40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+/* ⭐「ここだ」の矢印(2026-07-26 第89弾ユーザー指示「矢印とか、ここだよ〜みたいな表示が欲しい。
+   左右とかに反復しながら案内印」)。⚠**枠を光らせるだけでは気づかれない**=動く印を横に添える。
+   ⚠絵は左向き。向きは回転で作り、**指している方向に往復させる**(押す所へ吸い寄せる動き)。
+   ⚠pointer-events:none=印そのものがタップを食わないこと(押せる所を隠したら本末転倒)。 */
+#tutptr{position:fixed;z-index:61;width:34px;height:34px;display:none;pointer-events:none;
+ filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
+#tutptr.on{display:block}
+#tutptr svg{width:100%;height:100%;display:block;overflow:visible}
+#tutptr polygon{fill:var(--gold);stroke:var(--ink);stroke-width:4;stroke-linejoin:round}
+#tutptr.pd{animation:tpd .68s infinite}
+#tutptr.pu{animation:tpu .68s infinite}
+#tutptr.pr{animation:tpr .68s infinite}
+#tutptr.pl{animation:tpl .68s infinite}
+@keyframes tpd{0%,100%{transform:translateY(-8px) rotate(-90deg)}50%{transform:translateY(5px) rotate(-90deg)}}
+@keyframes tpu{0%,100%{transform:translateY(8px) rotate(90deg)}50%{transform:translateY(-5px) rotate(90deg)}}
+@keyframes tpr{0%,100%{transform:translateX(-8px) rotate(180deg)}50%{transform:translateX(5px) rotate(180deg)}}
+@keyframes tpl{0%,100%{transform:translateX(8px)}50%{transform:translateX(-5px)}}
 /* ---- リザルト ---- */
 #scr-result{background:rgba(20,16,12,.88)}
 #reswrap{display:flex;flex-direction:column;align-items:center;gap:6px;max-height:100%;overflow:auto;padding:12px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
@@ -607,6 +624,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="tx"><div class="tt" id="tut-t"></div><div class="tm" id="tut-m"></div></div>
   <button class="btn gold sm" id="tut-next">▶ 次へ</button>
 </div>
+<!-- 「ここだ」の矢印(第89弾)。⚠絵は**左向き**で置いてあり、向きはCSSの回転で作る。
+     置き場所と向きは tutPtrPos() が決める(DOMを触らない関数=検査できる) -->
+<div id="tutptr"><svg viewBox="0 0 40 40"><polygon points="2,20 24,4 24,13 38,13 38,27 24,27 24,36"/></svg></div>
 
 <div class="scr" id="scr-result">
   <div id="reswrap">
@@ -5708,6 +5728,46 @@ function tutSlotOK(){
  if(S.sl)return S.sl;
  return (hi&&hi.k==='slot')?1:0;
 }
+/* ============ 「ここだ」の矢印(第89弾) ============
+   ⚠**置き場所と向きを決める所はDOMを触らない**=検査できるようにするため。
+   k は **pd=真上から下を指す / pu=真下から上を指す / pr=左から右を指す / pl=右から左を指す**。
+   ⭐選び方: **画面の下端に貼り付いている物(操作バー=デッキ・🚩・🎯)は真上から**指す
+     (左右には別のボタンが並んでいるので、横から指すと印が隣のボタンに重なる)。
+     **上端に貼り付いている物(HUD)は真下から**。それ以外は**横から**指す
+     (横画面は縦が393pxしかなく、上下に置くと他の物に被る)。 */
+const TUT_PTR=34;
+function tutPtrPos(r,W,H,S,G){
+ S=S||TUT_PTR;G=G==null?6:G;
+ const cx=r.left+r.width/2,cy=r.top+r.height/2;
+ let k=(H-r.bottom<44)?'pd':(r.top<44?'pu':(cx>W*.5?'pr':'pl'));
+ let x,y;
+ const put=()=>{
+  if(k==='pd'){x=cx-S/2;y=r.top-S-G;}
+  else if(k==='pu'){x=cx-S/2;y=r.bottom+G;}
+  else if(k==='pr'){x=r.left-S-G;y=cy-S/2;}
+  else{x=r.right+G;y=cy-S/2;}};
+ put();
+ /* 画面からはみ出すなら反対側へ回す(印が端で潰れて見えなくなるのを防ぐ) */
+ if(k==='pd'&&y<2){k='pu';put();}
+ else if(k==='pu'&&y>H-S-2){k='pd';put();}
+ else if(k==='pr'&&x<2){k='pl';put();}
+ else if(k==='pl'&&x>W-S-2){k='pr';put();}
+ return {k:k,x:Math.max(2,Math.min(W-S-2,x)),y:Math.max(2,Math.min(H-S-2,y))};
+}
+/* 毎フレーム置き直す。⚠DOMは作り直されることがある(デッキ・建設メニュー)ので位置を覚えない。
+   ⚠**盤面のマス/拠点の段では出さない**(tutMark が輪と矢印を描いている)。
+   ⚠**止まっている間(PAUSED)は引っ込める**=紹介モーダルの上に浮いて残るため。 */
+function tutPtr(){
+ const p=$('tutptr');if(!p||!p.classList)return;
+ const hi=TUT&&TUT.on&&TUT.hi;
+ let el=null;
+ try{if(hi&&hi.k==='dom'&&!PAUSED)el=document.querySelector(hi.s);}catch(e){}
+ let r=null;try{r=el&&el.getBoundingClientRect();}catch(e){}
+ if(!r||(!r.width&&!r.height)){p.classList.remove('on');return;}
+ const q=tutPtrPos(r,window.innerWidth||852,window.innerHeight||393);
+ p.style.left=Math.round(q.x)+'px';p.style.top=Math.round(q.y)+'px';
+ p.className='on '+q.k;
+}
 /* 押せない所を押した時の反応。⚠無反応だと「固まった」に見えるので帯を揺らす */
 function tutNope(){
  const e=$('tut');if(!e||!e.classList)return;
@@ -5762,6 +5822,8 @@ function tutGo(i){
 function tutHi(hi){
  try{document.querySelectorAll('.tuthi').forEach(el=>el.classList.remove('tuthi'));}catch(e){}
  TUT&&(TUT.hi=hi||null);
+ /* ⚠矢印はここで引っ込める。tutEnd も通るので「終わったのに矢印だけ残る」を防げる */
+ try{const p=$('tutptr');if(p&&p.classList&&!(hi&&hi.k==='dom'))p.classList.remove('on');}catch(e){}
  if(hi&&hi.k==='dom'){try{const el=document.querySelector(hi.s);if(el)el.classList.add('tuthi');}catch(e){}}
 }
 function tutEnd(done){
@@ -8221,6 +8283,7 @@ function loopBody(now){
   drawMinis();
  }
  if(TUT&&!PAUSED)tutStep(dt0);/* ⚠タイトルの段(ガチャ)もあるので gameActive では絞らない */
+ if(TUT)tutPtr();/* ⚠止まっている間も置き直す(中で引っ込める)ので PAUSED では絞らない */
  if(SCR==='title')paradeStep(TT);
  if(SCR==='rpg')rgStep(dt0);
  if(GC)gcStep(dt0);/* 💎英雄召集の演出 */
