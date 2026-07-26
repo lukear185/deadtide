@@ -18,10 +18,12 @@ const fs=require('fs'),path=require('path'),zlib=require('zlib');
 /* ---- 共通パレット(全種で共有する。ここを変えると全部の色が変わる) ----
    ⚠**種類ごとに色を変えない**。同じ表に寄せるからこそ36種を並べても浮かない。
    ⚠青や紫の敵(ステージ2の海の生き物)を足す時は、ここに色を足してから変換し直すこと。 */
-const PALETTE=['#0c1109','#091220','#1f392a','#0f486f','#4a2908','#923705','#467511','#668b17',
- '#799a1a','#9d8f16','#4b515e','#92af20','#bdbc2b','#cedf2e','#556f93','#99acbf'];
+const PALETTE=['#fed207','#ffff95','#000000','#020302','#02233d','#0868a7',
+ '#33390e','#612f0a','#7e3f0d','#ba521e','#728f26','#aeaa2e',
+ '#ccda37','#1586cb','#1a8bd1','#1b8cd2','#98d047','#6cbb7b',
+ '#1e8cd0','#1d8dd3','#b7d548','#c7e048','#1d93da','#e3f35a'];
 /* データに書く時の1文字。⚠16色までしか使えないので、色を足す時はここも足す */
-const CHARS='0123456789abcdef';
+const CHARS='0123456789abcdefghijklmnopqrstuv';/* 最大32色 */
 
 /* ============ PNG 読み書き(依存パッケージなし) ============ */
 function decodePNG(buf){
@@ -71,8 +73,8 @@ function encodePNG(w,h,rgba){
 const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 const PAL=PALETTE.map(hex2rgb);
 /* 目に合わせた重み付き距離(緑の違いに敏感・青の違いに鈍い) */
-function nearIdx(r,g,b){let bi=0,bd=1e18;
- for(let i=0;i<PAL.length;i++){const p=PAL[i];
+function nearIn(pal,r,g,b){let bi=0,bd=1e18;
+ for(let i=0;i<pal.length;i++){const p=pal[i];
   const d=(r-p[0])**2*.9+(g-p[1])**2*1.2+(b-p[2])**2*.7;if(d<bd){bd=d;bi=i;}}
  return bi;}
 /* 絵から色表を作る(メディアンカット)=パレットを更新したい時用 */
@@ -93,8 +95,20 @@ function medianCut(list,n){
   return s.map(v=>Math.round(v/b.length));});}
 
 /* ============ 変換 ============ */
-function convert(file,id,TH){
+/* auto=その絵から16色を作って使う(基準の絵を選ぶ時用)。既定は全種で共有するPALETTE */
+function convert(file,id,TH,auto,nf){
  const im=decodePNG(fs.readFileSync(file));
+ let pal=PAL;
+ if(auto){const pts=[];
+  for(let y=0;y<im.h;y+=2)for(let x=0;x<im.w;x+=2){const [r,g,b,a]=im.px(x,y);if(a>200)pts.push([r,g,b]);}
+  /* ⚠**面積で色を割り当てるので、目のような小さくて派手な部分は色をもらえない**。
+     先に「一番鮮やかな色」と「一番明るい色」を種として押さえてから残りを割る */
+  const NC=+((/--c=(d+)/.exec(process.argv.join(" "))||[])[1]||24);
+  const sat=c=>Math.max(...c)-Math.min(...c);
+  const seeds=[];
+  const byS=pts.slice().sort((a,b)=>sat(b)-sat(a));if(byS[0])seeds.push(byS[0]);
+  const byL=pts.slice().sort((a,b)=>(b[0]+b[1]+b[2])-(a[0]+a[1]+a[2]));if(byL[0])seeds.push(byL[0]);
+  pal=seeds.concat(medianCut(pts,Math.max(2,NC-seeds.length)));}
  const solid=(x,y)=>im.px(x,y)[3]>16;
  /* コマに切る(縦に1本も絵が無い列で区切る) */
  const has=[];for(let x=0;x<im.w;x++){let n=0;for(let y=0;y<im.h;y++)if(solid(x,y)){n=1;break;}has.push(n);}
@@ -102,28 +116,44 @@ function convert(file,id,TH){
  for(let x=0;x<im.w;x++){if(has[x]&&st<0)st=x;else if(!has[x]&&st>=0){segs.push([st,x-1]);st=-1;}}
  if(st>=0)segs.push([st,im.w-1]);
  if(!segs.length)throw new Error('絵が見つからない(背景が透明か確認)');
+ /* ⚠**手が隣のコマに届いていると空白で切れない**(実際に4コマを3つと誤認した)。
+    コマ数が分かっている時は、絵のある範囲を等分して切る */
+ if(nf&&segs.length!==nf){
+  let a=im.w,b=-1;for(const s of segs){if(s[0]<a)a=s[0];if(s[1]>b)b=s[1];}
+  segs.length=0;const wd=(b-a+1)/nf;
+  for(let i=0;i<nf;i++)segs.push([Math.round(a+i*wd),Math.round(a+(i+1)*wd)-1]);
+  console.log('  (コマが繋がっていたので'+nf+'等分で切った)');}
  /* 全体の上端と下端で縮尺を決める=**コマごとに拡大率を変えない**(変えると大きさがちらつく) */
  let gy0=im.h,gy1=-1;
  for(let y=0;y<im.h;y++)for(let x=0;x<im.w;x++)if(solid(x,y)){if(y<gy0)gy0=y;if(y>gy1)gy1=y;}
  const sc=(gy1-gy0+1)/TH;
- /* 各コマをドットに落とす(透明度で重み付けした平均) */
+ /* 各コマをドットに落とす。
+    ⭐**平均を取ってはいけない**(2026-07-27に踏んだ)。目や歯のような「小さくて明るい点」は
+      周りの暗い色と平均されて濁り、**一番読ませたいものほど消える**。実際、元絵には黄色い目が
+      はっきり描かれているのに、変換後は緑の塊になっていた。
+    ⭐正しいやり方は**セル内で一番多い色を選ぶ**(最頻色)。輪郭と小さな特徴が残る。 */
  const raw=segs.map(s=>{
   const tw=Math.max(1,Math.round((s[1]-s[0]+1)/sc)),g=[];
   for(let ty=0;ty<TH;ty++){const row=[];
    for(let tx=0;tx<tw;tx++){
-    let ar=0,ag=0,ab=0,aa=0,n=0;
+    const cnt=new Array(pal.length).fill(0);let op=0,n=0;
     const sx0=s[0]+tx*sc,sy0=gy0+ty*sc;
     for(let y=Math.floor(sy0);y<Math.min(im.h,Math.ceil(sy0+sc));y++)
      for(let x=Math.floor(sx0);x<Math.min(im.w,Math.ceil(sx0+sc));x++){
-      const [r,g2,b,a]=im.px(x,y);const f=a/255;ar+=r*f;ag+=g2*f;ab+=b*f;aa+=f;n++;}
-    row.push((!n||aa/n<.42)?null:[Math.round(ar/aa),Math.round(ag/aa),Math.round(ab/aa)]);}
+      const [r,g2,b,a]=im.px(x,y);n++;
+      if(a<128)continue;
+      op++;cnt[nearIn(pal,r,g2,b)]++;}
+    if(!n||op/n<.42){row.push(null);continue;}
+    let bi=0;for(let i=1;i<cnt.length;i++)if(cnt[i]>cnt[bi])bi=i;
+    row.push(bi);}
    g.push(row);}
   return {w:tw,g};});
  /* 横の基準点=**足の位置**(体の中心だと腕を伸ばしたコマでずれて、歩くたびに横滑りする) */
  const anch=raw.map(f=>{
   let sum=0,n=0;
-  for(let y=TH-1;y>=TH-4;y--)for(let x=0;x<f.w;x++)if(f.g[y]&&f.g[y][x]){sum+=x;n++;}
-  if(!n){for(let x=0;x<f.w;x++)for(let y=0;y<TH;y++)if(f.g[y][x]){sum+=x;n++;}}
+  /* ⚠色の番号は0もありうる。真偽で判定すると一番暗い色(輪郭)が空と見なされる */
+  for(let y=TH-1;y>=TH-4;y--)for(let x=0;x<f.w;x++)if(f.g[y]&&f.g[y][x]!=null){sum+=x;n++;}
+  if(!n){for(let x=0;x<f.w;x++)for(let y=0;y<TH;y++)if(f.g[y][x]!=null){sum+=x;n++;}}
   return n?sum/n:f.w/2;});
  /* 基準点を揃えて同じ幅の枠へ入れ直す */
  const L=Math.ceil(Math.max(...raw.map((f,i)=>anch[i]))),
@@ -133,14 +163,17 @@ function convert(file,id,TH){
   const off=Math.round(L-anch[i]),rows=[];
   for(let y=0;y<TH;y++){let s='';
    for(let x=0;x<OW;x++){const sx=x-off;
-    const c=(sx>=0&&sx<f.w)?f.g[y][sx]:null;
-    s+=c?CHARS[nearIdx(c[0],c[1],c[2])]:' ';}
+    const c=(sx>=0&&sx<f.w)?f.g[y][sx]:null;/* もう色の番号が入っている */
+    s+=(c==null)?' ':CHARS[c];}
    rows.push(s);}
   return rows;});
- return {id,w:OW,h:TH,ax,f:frames,src:path.basename(file)};}
+ /* ⚠その絵から作った色表を使った時は、色表も一緒に返す(描く側がこれで引く) */
+ return {id,w:OW,h:TH,ax,f:frames,src:path.basename(file),
+  pal:pal.map(c=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''))};}
 
 /* ---- 下見用のPNG(実寸と5倍を並べる) ---- */
 function preview(d,out){
+ const P=(d.pal||PALETTE).map(hex2rgb);
  const M=5,GAP=3,BG=[236,232,220];
  const TOT=(d.w+GAP)*d.f.length,OW=TOT*M+8,OH=d.h+GAP*2+d.h*M+8;
  const buf=Buffer.alloc(OW*OH*4,0);
@@ -150,7 +183,7 @@ function preview(d,out){
  d.f.forEach((rows,k)=>{
   for(let y=0;y<d.h;y++)for(let x=0;x<d.w;x++){
    const ch=rows[y][x];if(ch===' ')continue;
-   const c=PAL[CHARS.indexOf(ch)];
+   const c=P[CHARS.indexOf(ch)];
    px(2+k*(d.w+GAP)+x,2+y,c);
    for(let j=0;j<M;j++)for(let i=0;i<M;i++)px(2+(k*(d.w+GAP)+x)*M+i,d.h+GAP*2+y*M+j,c);}});
  fs.writeFileSync(out,encodePNG(OW,OH,buf));}
@@ -165,7 +198,10 @@ function embed(){
   const d=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
   return ' '+d.id+':{w:'+d.w+',h:'+d.h+',ax:'+d.ax+',lh:50,f:[\n'
    +d.f.map(rows=>'  ['+rows.map(r=>"'"+r+"'").join(',\n   ')+']').join(',\n')+']}';});
- const js='const PX_PAL=['+PALETTE.map(h=>"'"+h+"'").join(',')+'];\n'
+ /* ⚠**1文字→色の番号は CHARS の並び順**。16色を超えた時に parseInt(ch,16) では引けないので、
+    描く側にも同じ並びを渡す(PX_CH) */
+ const js='const PX_CH=\''+CHARS+'\';\n'
+  +'const PX_PAL=['+PALETTE.map(h=>"'"+h+"'").join(',')+'];\n'
   +'const PX_Z={\n'+parts.join(',\n')+'\n};';
  const p=path.join(__dirname,'index.html');
  const s=fs.readFileSync(p,'utf8');
@@ -188,7 +224,8 @@ if(args.length<2){
  console.log('使い方: node tool_px.js <png> <id> [--h=40]  /  node tool_px.js --embed');
  process.exit(1);}
 const HM=/--h=(\d+)/.exec(args.join(' ')),TH=HM?+HM[1]:40;
-const d=convert(args[0],args[1],TH);
+const AUTO=/--auto/.test(args.join(' '));const NFM=/--f=(d+)/.exec(args.join(' '));
+const d=convert(args[0],args[1],TH,AUTO,NFM?+NFM[1]:4);
 for(const dir of ['px_data','px_prev'])if(!fs.existsSync(path.join(__dirname,dir)))fs.mkdirSync(path.join(__dirname,dir));
 fs.writeFileSync(path.join(__dirname,'px_data',d.id+'.json'),JSON.stringify(d));
 preview(d,path.join(__dirname,'px_prev',d.id+'.png'));

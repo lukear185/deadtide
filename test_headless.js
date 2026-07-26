@@ -1255,8 +1255,8 @@ function checkPixel(){
    for(let y=0;y<rows.length;y++){
     if(rows[y].length!==sp.w){console.log('FAIL: ドット絵の行の長さが違う '+id+' コマ'+k+' '+y+'行目: '+rows[y].length+'/'+sp.w);process.exit(1);}
     for(let x=0;x<rows[y].length;x++){const ch=rows[y].charAt(x);
-     /* ⚠1文字=色の番号(16進1桁)。tool_px.js が書き出す形 */
-     if(ch!==' '&&!PX_PAL[parseInt(ch,16)]){console.log('FAIL: 色表に無い文字「'+ch+'」 '+id+' '+y+'行目');process.exit(1);}}}
+     /* ⚠1文字→色は PX_CH の並び順で引く(tool_px.js が書き出す形) */
+     if(ch!==' '&&!PX_PAL[PX_CH.indexOf(ch)]){console.log('FAIL: 色表に無い文字「'+ch+'」 '+id+' '+y+'行目');process.exit(1);}}}
   /* 横の基準点(足の位置)が枠の中にあるか */
   if(sp.ax==null||sp.ax<0||sp.ax>sp.w){console.log('FAIL: 基準点axが枠の外: '+id+' ax='+sp.ax);process.exit(1);}}
   /* 中身が空でないか(全部空白だと透明のまま消える) */
