@@ -6121,6 +6121,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
  if(o.elite){c.shadowColor='#b04ad0';c.shadowBlur=13;}
+ /* ⚠黒フチを絵の大きさに比例させて太くする(2.6*CH_UP)のは**試して駄目だった**(第96弾)。
+    34pxでは3.9だとフチが図形を食い、頭がヘルメット・腕が黒い棒になる。2.6のままが正しい */
  c.lineWidth=2.6/s;c.strokeStyle=INK;
  /* ===== ナイトメアの獣たち ===== */
  if(Z.id==='nmRat'){/* 巨鼠 */
@@ -6473,24 +6475,73 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
       クローラー=平たい / スライム=頭も脚も無い塊 / ブルート=逆三角形で腕を引きずる /
       ストーカー=背を水平にした前傾+長い爪 / レイス=脚が無く裾が霧に散る /
       重装兵=横に広い低い箱 / ジャガーノート=棘の肩当てと鉄球 */
- if(Z.id==='walk'){/* ウォーカー: 直立の基本形。首と肩が見えるので遠目でも「人」に読める。
-    ⚠腕は**胴の前と後ろに分けて明暗を変える**。並べて描くと22pxで1本の突起に潰れる */
+ if(Z.id==='walk'){/* ⭐ウォーカー(2026-07-27 第96弾に描き直し・34px前提)。
+    ⭐**効いたのは「色の区分け」**=それまで頭も服も脚も Z.c 一色で、明暗1段しか無かった。
+      34pxあれば **肌 / シャツ / ズボン / 靴** の4色に分けられ、それだけで「服を着た人」に読める。
+      ⚠**形をいじるより先に色を分ける**。1回目(第94弾)は形だけ凝って一色のままだったので不採用になった。
+    ⚠**肌を出す所を作る**(頭・片腕の袖から先・裾から下)=全部服だと着ぐるみに見える。
+    ⚠片袖を破って**左右で腕の見た目を変える**。左右対称だと置物に見える。 */
   const sw=walk*3.2;
-  c.fillStyle=shade(Z.c,.62);
-  rr(c,-9+sw,-14,8,15,3);c.fill();c.stroke();
-  rr(c,1-sw,-14,8,15,3);c.fill();c.stroke();
-  c.lineCap='round';
-  c.strokeStyle=shade(Z.c,.6);c.lineWidth=5.4/s;
-  c.beginPath();c.moveTo(0,-34);c.lineTo(13,-32+sw);c.stroke();
-  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
-  zFill(c,()=>rr(c,-11,-38,22,26,8),Z.c,-25);
-  c.lineCap='round';
-  c.strokeStyle=shade(Z.c,.92);c.lineWidth=5.4/s;
-  c.beginPath();c.moveTo(4,-29);c.lineTo(18,-24-sw);c.stroke();
-  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
-  c.fillStyle=shade(Z.c,.88);rr(c,-2,-42,7,6,2);c.fill();c.stroke();
-  zFill(c,()=>{c.beginPath();c.arc(2,-45,9,0,7);},Z.c,-45);
-  zEye(c,6,-46);
+  const SKIN=Z.c,SHIRT='#4d5a68',PANTS='#4a3d2e',SHOE='#2b2419',BLOOD='#5e211d';
+  /* ⭐**割り付け(ここが一番効く)**: 全高55のうち 頭13 / 胴17 / 脚24。
+     ⚠頭を全高の3割まで大きくすると人形に見える(2回踏んだ)。⚠逆に2割まで小さくすると顔が読めない。
+     ⚠**頭は肩より狭く**(頭12幅 vs 肩19幅)。同じ幅だと全身のうち頭だけが目に入る。 */
+  /* --- 脚(ズボン→靴)。奥の脚は暗く --- */
+  const leg=(dx,dk)=>{
+   c.fillStyle=shade(PANTS,dk);
+   c.beginPath();c.moveTo(-3.4+dx*.3,-24);c.lineTo(3.4+dx*.3,-24);c.lineTo(3.1+dx,-6);c.lineTo(-3.1+dx,-6);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(SHOE,dk);
+   c.beginPath();c.moveTo(-3.3+dx,-6);c.lineTo(3.3+dx,-6);c.lineTo(5.4+dx,-.6);c.lineTo(-3.5+dx,-.6);c.closePath();c.fill();c.stroke();};
+  leg(-3.6-sw*1.6,.72);leg(3.4+sw*1.6,1);
+  /* --- 奥の腕: 前に伸ばす(袖のまま・暗い)。⚠両腕を前に出す形がいちばん「ゾンビ」に読める。
+     ⚠**手前の腕より短く・低く**すること=長さと高さが揃うと1本の太い腕に見える(実際にそうなった) --- */
+  c.fillStyle=shade(SHIRT,.7);
+  c.beginPath();c.moveTo(1,-35);c.lineTo(5,-35.6);c.lineTo(11.6,-29.4+sw*.6);c.lineTo(11,-26+sw*.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(SKIN,.66);/* 奥の手 */
+  c.beginPath();c.moveTo(10.8,-30+sw*.6);c.lineTo(14.2,-29.2+sw*.6);c.lineTo(14.6,-25.6+sw*.6);c.lineTo(10.6,-25.2+sw*.6);c.closePath();c.fill();c.stroke();
+  /* --- 胴(シャツ)。肩を落として裾を欠かす --- */
+  const body=()=>{c.beginPath();
+   c.moveTo(-10,-37);c.lineTo(7.4,-38.4);       /* 肩(前が少し高い) */
+   c.lineTo(9,-28);c.lineTo(8,-23);             /* 前の脇から腰 */
+   c.lineTo(4,-20);c.lineTo(1,-24);c.lineTo(-3,-19);c.lineTo(-6,-24);c.lineTo(-8.8,-22);/* 破れた裾 */
+   c.closePath();};
+  c.fillStyle=SHIRT;body();c.fill();c.stroke();
+  c.save();c.beginPath();c.rect(-14,-29,30,26);c.clip();/* 腰側だけ暗く(1段) */
+  c.fillStyle=shade(SHIRT,.8);body();c.fill();c.restore();
+  c.fillStyle=BLOOD;/* 肩の血。⚠**縦に長い形にするとネクタイに見える**(2回そうなった)=横に広く付ける */
+  c.beginPath();c.moveTo(-3,-36.4);c.lineTo(3.6,-37.4);c.lineTo(6,-35);c.lineTo(1,-33.4);
+  c.lineTo(2,-31);c.lineTo(-1.4,-33);c.lineTo(-3.6,-34);c.closePath();c.fill();
+  /* --- 手前の腕: 袖が破れて肌が出ている。前へ伸ばす --- */
+  c.fillStyle=shade(SHIRT,1.14);/* 二の腕(袖) */
+  c.beginPath();c.moveTo(2.4,-36.4);c.lineTo(7.4,-37);c.lineTo(11.4,-33.2);c.lineTo(6.4,-31.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=SKIN;/* 前腕(肌) */
+  c.beginPath();c.moveTo(6.8,-33.4);c.lineTo(11.6,-34.4);c.lineTo(18.6,-31.6-sw*.6);c.lineTo(18,-27.8-sw*.6);c.closePath();c.fill();c.stroke();
+  /* 手=小さく角のある形(丸い玉にすると棒の先に球が付いて見える) */
+  c.beginPath();c.moveTo(18,-32.4-sw*.6);c.lineTo(21.6,-31.6-sw*.6);c.lineTo(22,-27.6-sw*.6);
+  c.lineTo(19,-26.4-sw*.6);c.lineTo(17.6,-28-sw*.6);c.closePath();c.fill();c.stroke();
+  /* --- 首(短く・暗く)。⚠長いと頭が体から浮く --- */
+  c.fillStyle=shade(SKIN,.7);
+  c.beginPath();c.moveTo(-1,-40);c.lineTo(4,-40);c.lineTo(4,-36.4);c.lineTo(-1,-36.4);c.closePath();c.fill();c.stroke();
+  /* ⭐頭は**正面寄り**にする: 横顔の卵に描くと、正面向きの胴と噛み合わず
+     「胴は正面・顔は横」の変な絵になる。⚠髪を側頭部まで回すと**頭巾/ヘルメット**に見えたので、
+     この個体は**禿げ**にした(髪を描かないのが一番安全)。目は前の1つ+落ちくぼんだ穴。 */
+  zFill(c,()=>{c.beginPath();
+   c.moveTo(-4.6,-45);
+   c.bezierCurveTo(-4.8,-50,-2.4,-52.4,1.4,-52.6);  /* 側頭部〜てっぺん */
+   c.bezierCurveTo(5.2,-52.8,7.6,-50.4,7.6,-46.2);  /* てっぺん〜こめかみ */
+   c.lineTo(6.8,-42);                                /* 頬(直線気味=角を作る) */
+   c.bezierCurveTo(5.8,-39.8,-2,-39.8,-3.4,-42);     /* あご(横に広い) */
+   /* ⚠**頭に明暗の段を入れない**(zFillの第4引数をあごの下に置いて効かなくする)。
+      顔の途中で切ると**上半分が別の球に見えて「頭に瘤が乗っている」**絵になる。
+      頭は一色+眉の影だけが正解だった(2回作り直して分かった) */
+   c.closePath();},SKIN,-39.4);
+  c.fillStyle=shade(SKIN,.72);/* 眉の下の影(目の上だけ・薄く)。⚠濃く広く入れると耳や穴に見える */
+  c.beginPath();c.moveTo(2,-47.6);c.lineTo(7.2,-47.2);c.lineTo(7,-45.8);c.lineTo(2.2,-46.2);c.closePath();c.fill();
+  zEye(c,4.6,-45.6,1.9);                             /* 前の目 */
+  c.fillStyle=shade(SKIN,.46);                       /* 奥の目=落ちくぼんだ穴(小さく・少し上) */
+  c.beginPath();c.ellipse(.4,-46.2,1.5,1.4,0,0,7);c.fill();
+  c.fillStyle=INK;/* 開いた口(横に広く・下寄り) */
+  c.beginPath();c.moveTo(.6,-42);c.lineTo(5.4,-42.2);c.lineTo(4.6,-40);c.lineTo(1.4,-40);c.closePath();c.fill();
   c.restore();return;}
  if(Z.id==='run'){/* ランナー: 全力で走る人。胴を斜めに**立て**、手足を大きく前後に振る。
     ⚠胴を横に寝かせると四つ足の生き物に見える(一度そうなった) */
@@ -7398,7 +7449,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  /* ⭐英雄の光は**レア度の色**にする(第91弾)。全員が同じ琥珀色だと、せっかく11人ぶん
     描き分けた色が光に飲まれて全部金色に見えた(並べて撮って気づいた) */
  if(tier===4){c.shadowColor=U.hro?(RARE[Math.min(4,U.hro-1)]||AMBER):AMBER;c.shadowBlur=10;}
- c.lineWidth=2.4;c.strokeStyle=INK;
+ c.lineWidth=2.4;c.strokeStyle=INK;/* ⚠部隊側は c.scale(tsc) の中なので、これで既に絵の大きさに比例している */
  if(U.hro){drawHeroBody(c,U,walk,o);c.restore();return;}/* 🦸英雄は専用の姿 */
  if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
  if(id==='tnk'){/* 装甲車(研究所限定)／派生=重戦車→陸上戦艦→地響き */

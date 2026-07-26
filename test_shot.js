@@ -258,9 +258,15 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'c.fillStyle=PAPER;c.fillRect(0,0,W2,H2);'
      +'var zi=ZOMBIES.findIndex(function(q){return q.id==="'+PXID+'";});'
      +'var LB=["今のコード描画","ドット絵の試作"];'
+     /* ⚠**行の位置は窓の高さの割合で決めてはいけない**(2026-07-27に踏んだ)。
+        x6の絵は実寸の6倍=130pxあるので、割合で置くと**x3の絵がx6の絵に重なって描かれ**、
+        「頭に瘤が乗った変な絵」に見える。それを絵の不具合だと思って4回も直しに行った。
+        絵の高さ(実寸で約22px)から**下から積み上げて**置くこと。 */
+     +'var UH=46,BY=H2*.94;'/* UH=実寸1倍の絵の高さ(px)。55単位x Z.sc x s0 ≒ 46 */
+     +'var ROWY={1:BY-6*UH-3*UH-40,3:BY-6*UH-20,6:BY};'
      +'[1,3,6].forEach(function(mag,row){'
      +' [0,1].forEach(function(side){'
-     +'  var px=W2*(.25+side*.5),py=H2*(.3+row*.24);'
+     +'  var px=W2*(.25+side*.5),py=ROWY[mag];'
      +'  c.fillStyle=INK;c.font="900 13px "+FF;c.textAlign="center";'
      +'  if(row===0)c.fillText(LB[side],px,H2*.12);'
      +'  c.fillText("x"+mag,px-90,py);'
