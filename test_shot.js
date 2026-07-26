@@ -74,6 +74,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'META.tut=1;'
  /* pxon = 🧪ドット絵の試作を有効にして撮る(既定は切ってある) */
  +(/pxon/.test(OPT)?'PX_ON=true;':'')
+ /* v2 = ⭐輪郭を1本にまとめる2度描きを有効にして撮る(?v2=1 と同じ。既定は切ってある) */
+ +(/v2on/.test(OPT)?'VEC2=true;':'')
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
  +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
  +(LAB?('META.pts=99999;META.nt=2;META.nu=3;META.sc0=1;META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");')

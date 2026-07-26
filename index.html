@@ -1965,6 +1965,57 @@ function rotMark(c,x,y,w,h,ph,t){
    ⭐タワー(twBase)と同じ考え方=**上を明るく下を暗く1段だけ**陰影を入れると、平たい図形が塊に見える。
    ⚠2段以上入れても22pxでは分からないので入れない。
    pathFn は c にパスを組むだけの関数(fill/strokeはこちらでやる)。yc より下だけ暗くする。 */
+/* ⭐**「〇と□を組み合わせた感」を消す2度描き**(2026-07-27ユーザー指摘)。
+   ⚠原因は**部品ごとに黒フチが閉じていること**。胴・頭・腕・脚を1個ずつフチ付きで描いて重ねているので、
+     生き物1体ではなく「図形が5個乗っている」に見える。
+   直し方=**同じ絵を3回描く**:
+     ①太らせた黒だけ    → 重なった部品が融合して**輪郭が外周に1本**になる
+     ②少し細い明色を左上へずらして → ①との差が**縁の光**になる(22pxでも効く数少ない立体表現)
+     ③塗りだけ(線なし)  → 内側は色の境目だけになり、部品の縁が出ない
+   ⚠**キャラの描画コードには一切触らない**。canvasの手前に薄い層をかぶせて振る舞いだけ変える
+     =36種+32種+11人を1個ずつ描き直さずに済む。
+   ⚠焼き込み(bakeU/bakeZ)の時しか通らないので3回描いても重くない。
+   ⚠既定は切ってある。**公開URLに `?v2=1`** を付けた時だけ有効(今までのものと見比べるため)。 */
+let VEC2=false;try{VEC2=/[?&]v2=1/.test(location.search);}catch(e){}
+const VEC2_W=7.0;/* シルエットを太らせる量(局所座標) */
+/* ⚠**縁の光は最初の試作で失敗した**(2026-07-27)。明色を太らせて重ねると、
+   黒の輪郭のほとんどを塗りつぶしてしまい、**黒フチが1px以下に痩せて全体が白っぽい塊**になった。
+   縁の光を出すなら「黒より十分細く・薄く」でなければならない。0にすると縁の光の層を飛ばす。 */
+const VEC2_R=0;/* 縁の光の太さ(0=出さない) */
+const VEC2_RC='rgba(255,247,228,.38)';
+/* ①②用: 何を塗ろうとしても1色。線も同じ色で太らせる=部品が融合する */
+function silLayer(c,W,col){
+ return new Proxy(c,{
+  get(t,k){
+   if(k==='fill')return function(){t.save();t.fillStyle=col;t.strokeStyle=col;t.lineWidth=W;
+    t.lineJoin='round';t.lineCap='round';t.fill.apply(t,arguments);t.stroke();t.restore();};
+   if(k==='stroke')return function(){t.save();t.strokeStyle=col;t.lineWidth=(t.lineWidth||2)+W;
+    t.lineJoin='round';t.lineCap='round';t.stroke.apply(t,arguments);t.restore();};
+   if(k==='fillRect')return function(x,y,w,h){t.save();t.fillStyle=col;t.strokeStyle=col;t.lineWidth=W;
+    t.lineJoin='round';t.beginPath();t.rect(x,y,w,h);t.fill();t.stroke();t.restore();};
+   if(k==='fillText'||k==='strokeText')return function(){};
+   const v=t[k];return typeof v==='function'?v.bind(t):v;},
+  set(t,k,v){
+   /* ⚠色・透明度・影は無視する=シルエットは1色でないと意味がない */
+   if(k==='fillStyle'||k==='strokeStyle'||k==='shadowColor'||k==='shadowBlur'||k==='filter'||k==='globalAlpha')return true;
+   t[k]=v;return true;}});
+}
+/* ③用: 塗り + **内側だけの細い線**。
+   ⚠**線を全部捨てると胸当てや肩当てが胴に溶けて、ただの塊になる**(2026-07-27に実際にそうなった)。
+     捨てるのではなく「**その部品の塗りを暗くした色で・半分の太さ**」で引く。
+     こうすると外周は黒1本のまま、内側は色の段差として残る。
+   ⚠塗りが色名やグラデーションの時は暗くできないので、その線は引かない(黒フチが復活するより無害) */
+function flatLayer(c){
+ return new Proxy(c,{
+  get(t,k){
+   if(k==='stroke')return function(){
+    const f=t.fillStyle;
+    if(typeof f!=='string'||f.charAt(0)!=='#')return;
+    t.save();t.strokeStyle=shade(f,.58);t.lineWidth=Math.max(.6,(t.lineWidth||2)*.5);
+    t.stroke.apply(t,arguments);t.restore();};
+   const v=t[k];return typeof v==='function'?v.bind(t):v;},
+  set(t,k,v){t[k]=v;return true;}});
+}
 function zFill(c,pathFn,col,yc){
  c.fillStyle=col;pathFn();c.fill();
  c.save();c.beginPath();c.rect(-60,yc,120,180);c.clip();
@@ -6005,7 +6056,13 @@ function pxDraw(c,sp,id,fi,s,vw,dir){
  c.restore();return true;
 }
 function drawZombie(c,zi,x,y,dir,t,ph,o){
- o=o||{};const Z=ZOMBIES[zi],s=Z.sc*(o.elite?1.35:1);
+ o=o||{};
+ /* ⭐2度描き(?v2=1の時だけ)。⚠**o.v2 で再入を止める**=無限に呼び合う */
+ if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
+  drawZombie(silLayer(c,VEC2_W,INK),zi,x,y,dir,t,ph,o1);
+  if(VEC2_R>0)drawZombie(silLayer(c,VEC2_R,VEC2_RC),zi,x-.9,y-1.6,dir,t,ph,o1);
+  drawZombie(flatLayer(c),zi,x,y,dir,t,ph,o1);return;}
+ const Z=ZOMBIES[zi],s=Z.sc*(o.elite?1.35:1);
  const walk=Math.sin(t*(Z.sp>90?14:8)+ph);
  let bob=Math.abs(walk)*2.5*s;
  /* 🧪ドット絵の種類は**上下の揺れも歩幅に合わせる**(すり足のコマで浮く)。
@@ -6756,7 +6813,12 @@ function twTank(c,x,y,w,h,col){
  c.fillStyle=shade(col,.72);c.save();c.beginPath();c.rect(x+w*.45,y,w*.55,h);c.clip();rr(c,x,y,w,h,w/2);c.fill();c.restore();
 }
 function drawTower(c,ti,lv,x,y,ang,t,o){
- o=o||{};const T=TOWERS[ti],tid=T.id;
+ o=o||{};
+ if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
+  drawTower(silLayer(c,VEC2_W,INK),ti,lv,x,y,ang,t,o1);
+  if(VEC2_R>0)drawTower(silLayer(c,VEC2_R,VEC2_RC),ti,lv,x-.9,y-1.6,ang,t,o1);
+  drawTower(flatLayer(c),ti,lv,x,y,ang,t,o1);return;}
+ const T=TOWERS[ti],tid=T.id;
  c.save();c.translate(x,y);
  if(o.jam)c.filter='grayscale(1) brightness(.75)';
  c.lineWidth=3;c.strokeStyle=INK;
@@ -7275,7 +7337,12 @@ function uBack(c,k,U,walk){
   c.lineTo(-20,-6+walk*2);c.lineTo(-2,-11);c.closePath();c.fill();c.stroke();}
 }
 function drawUnit(c,ui,x,y,dr,t,ph,o){
- o=o||{};const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
+ o=o||{};
+ if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
+  drawUnit(silLayer(c,VEC2_W,INK),ui,x,y,dr,t,ph,o1);
+  if(VEC2_R>0)drawUnit(silLayer(c,VEC2_R,VEC2_RC),ui,x-.9,y-1.6,dr,t,ph,o1);
+  drawUnit(flatLayer(c),ui,x,y,dr,t,ph,o1);return;}
+ const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
  const walk=Math.sin(t*10+ph),bob=Math.abs(walk)*2;
  const tier=uTier(ui),tsc=TSCALE[tier-1];
  c.save();c.translate(x,y-bob);
