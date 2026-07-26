@@ -110,8 +110,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        /* 支援施設(type:sup)は専用枠にしか建たないので、施設枠へ3種まとめて建てる */
        +'if(TOWERS[ti9].type==="sup"){for(var k9=0;k9<SUP_N;k9++){me.towers[SUP_BASE+k9]=null;buildTower(me,SUP_BASE+k9,T_PLAY+k9);}}'
        /* 廃品工房は工房エリア専用の枠にしか建たない */
+       /* 上級廃品工房(grd)は直接は建たない=普通の工房を全部MAXにしてから建て替える */
        +'else if(TOWERS[ti9].type==="eco"){me.towers[ECO_BASE]=null;var pe=me.unlocked;me.unlocked=ti9+1;'
-       +'buildTower(me,ECO_BASE,ti9);me.unlocked=pe;'
+       +'buildTower(me,ECO_BASE,TOWERS[ti9].grd?ECO_TI:ti9);me.unlocked=pe;'
+       +'if(TOWERS[ti9].grd){var tg9=me.towers[ECO_BASE];'
+       +'twStats(ECO_TI).forEach(function(s9){tg9.us[s9]=USTAT_MAX;});me.scrap=99999;gradeTower(me,ECO_BASE);}'
        +'setInterval(function(){try{var te=me.towers[ECO_BASE];if(te)te.cd=0;}catch(e){}},120);}else{'
        +'var si9=AI_ORDER[0];me.towers[si9]=null;'
        /* 解放数は建てる瞬間だけ上げて戻す(上げっぱなしにすると解放カード周りで画面が止まる) */

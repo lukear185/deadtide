@@ -1219,7 +1219,8 @@ const TOWERS=[
  {id:'shot',n:'ショットガン台',cost:200,rng:175,dmg:26,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'3体同時撃ち'},
  {id:'net',n:'拘束ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:145,rng:0,dmg:0,rate:3,type:'eco',inc:8,c:'#b08d4f',dsc:'時間で⚙️を生産'},
- {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,c:'#c96b35',dsc:'装甲に特効(約1.9倍)・継続燃焼'},
+ /* fspl=狙った敵の周りにも通る炎の広がり(px)。周りへは直撃の1/4だけ入る(2026-07-26ユーザー指示) */
+ {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,fspl:62,c:'#c96b35',dsc:'装甲に特効(約1.9倍)・継続燃焼・周りにも1/4'},
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:TECH2,dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
  {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い'},
@@ -1230,7 +1231,9 @@ const TOWERS=[
  {id:'cryo',n:'冷却塔',cost:320,rng:200,dmg:6,rate:6,type:'net',frz:2.6,frzN:5,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。同じ敵を凍らせられるのは5回まで'},
  /* ===== ここから下の10種が🔬研究所でしか解放できない(BASE_T=10・上から順に固定で出る) =====
     ⚠並び順がそのまま研究所に出る順番。入れ替えると既存プレイヤーの解放済み(META.nt)が別のタワーを指す */
- {id:'laser',n:'レーザー塔',cost:460,rng:300,dmg:9,rate:.1,type:'bullet',pierce:1,c:'#c96b9f',dsc:'高速連射・装甲貫通'},
+ /* heatN=同じ敵を撃ち続けて最大まで焼き切るのに要る発射数 / heatM=その時の威力の倍率(2026-07-26ユーザー指示)。
+    ⚠別の敵に狙いが移った瞬間に0へ戻る=雑魚を薙ぐ塔ではなく「1体を焼き切る」塔になる */
+ {id:'laser',n:'レーザー塔',cost:460,rng:300,dmg:9,rate:.1,type:'bullet',pierce:1,heatN:20,heatM:2,c:'#c96b9f',dsc:'高速連射・装甲貫通・同じ敵を撃ち続けると最大2倍まで威力が上がる'},
  {id:'acid',n:'酸噴射器',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:TOXIC,dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
  {id:'sonic',n:'音響砲',cost:420,rng:230,dmg:26,rate:1.1,type:'bullet',multi:5,c:'#a58fd0',dsc:'衝撃波で5体同時'},
  {id:'drone',n:'ドローン基地',cost:500,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
@@ -1251,10 +1254,22 @@ const TOWERS=[
     ⚠必ず配列の最後(TOWERSの末尾)に置く。T_PLAYで解放チェーンと切り分けている */
  {id:'radio',n:'電波塔',cost:380,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
  {id:'medic',n:'野戦病院',cost:420,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:LIFE,dsc:'部隊全員のHPを毎秒16回復し、出撃の待ち時間を20%短縮'},
- {id:'depot',n:'物資投下所',cost:460,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'}
+ {id:'depot',n:'物資投下所',cost:460,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
+ /* ===== グレードアップ専用(grd:1) =====
+    ⭐廃品工房を⚙️産出・⏩サイクルとも最大まで上げると、ここへ建て替えられる(2026-07-26ユーザー指示)。
+    ⚠建設リストにも解放チェーンにも研究所にも出さない=`grd` で弾き、T_PLAY からも除いてある。
+    ⚠建て替えると強化Lvは0に戻る。素の産出(6.25/秒)が工房MAX(5.56/秒)より上なので、建て替えた瞬間に下がらない。
+    ⚠数値は下の一括調整(×0.5625)を通ったあとで効く=inc:26 は実際には15になる。
+    ⚠cost は建設費ではなく**強化費の基準**(建設リストには出さないため)。
+      上級MAX20.8/秒 = 工房MAXの3.7倍。ここまで上げるのに 700+約4200⚙️ かかり、
+      増える分(+15.3/秒)で元を取るのに約320秒=1試合の半分。安くすると工房だけで勝ててしまう */
+ {id:'scrap2',n:'上級廃品工房',cost:240,rng:0,dmg:0,rate:2.4,type:'eco',inc:26,grd:1,c:'#d8ae5c',dsc:'解体炉つきの大型工房。⚙️をずっと速く生む'}
 ];
-const SUP_N=3;/* ↑末尾の支援施設の数 */
-const T_PLAY=TOWERS.length-SUP_N;/* 解放チェーン/研究所に出るタワーの数 */
+const SUP_N=3;/* 支援施設の数(末尾のグレードアップ専用の1つ手前まで) */
+const GRD_N=1;/* ↑末尾のグレードアップ専用の数 */
+const GRD_TI=TOWERS.findIndex(T=>T.grd);/* 上級廃品工房の添字 */
+const GRD_COST=700;/* 建て替えの費用(⚙️) */
+const T_PLAY=TOWERS.length-SUP_N-GRD_N;/* 解放チェーン/研究所に出るタワーの数 */
 const BASE_T=10;/* 通常解放できる基本タワー数(これ以降は🔬研究所で解放) */
 /* ⭐レールガンの充填時間(2026-07-26ユーザー指示=「きゅいーんとチャージしてから超電磁砲を放つ」)。
    ⚠**見た目と音だけ**の演出。撃つ間隔(T.rate)も威力も変えていない=
@@ -2280,7 +2295,18 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  else if(tid==='fort'){c.save();c.rotate(ang);c.fillStyle=STEEL;rr(c,-8,-14,28,28,6);c.fill();c.stroke();
   c.fillStyle='#3f4a54';for(let k=-1;k<=1;k++){rr(c,16,k*8-2.5,22,5,2);c.fill();c.stroke();}
   if(o.fire){c.fillStyle='#ffdd66';for(let k=-1;k<=1;k++){c.beginPath();c.arc(40,k*8,5,0,7);c.fill();}}c.restore();}
- else if(ti===3){/* 工房 */
+ else if(tid==='scrap2'){/* 上級廃品工房: 解体炉つきの大型工房。⚠工房と同じ絵にしない(何が違うのか分からなくなる) */
+  c.fillStyle='#7a5f34';rr(c,-19,-19,38,31,5);c.fill();c.stroke();
+  c.fillStyle='#5c5346';rr(c,9,-31,10,15,2);c.fill();c.stroke();/* 煙突 */
+  /* 解体炉の口。中で火が揺れる=「燃やして⚙️に変えている」ことが分かる */
+  c.fillStyle='#2a1a10';rr(c,-12,-3,23,14,3);c.fill();c.stroke();
+  c.fillStyle='#ff9a3d';c.globalAlpha=.5+Math.sin(t*7)*.28;rr(c,-9,1,17,9,2);c.fill();c.globalAlpha=1;
+  /* 歯車2つ(逆回りで噛み合う) */
+  const gear=(gx,gy,r,sp)=>{c.save();c.translate(gx,gy);c.rotate(t*sp);c.fillStyle=PAPER2;
+   for(let i=0;i<6;i++){c.rotate(Math.PI/3);c.fillRect(-2.2,-r-5.5,4.4,6);}
+   c.beginPath();c.arc(0,0,r,0,7);c.fill();c.stroke();c.restore();};
+  gear(-8,-13,6,2.2);gear(7,-11,4.4,-3.1);
+ }else if(ti===3){/* 工房 */
   c.fillStyle='#8d7040';rr(c,-15,-16,30,26,4);c.fill();c.stroke();
   c.save();c.rotate(t*2);c.fillStyle=PAPER2;for(let i=0;i<6;i++){c.rotate(Math.PI/3);c.fillRect(-2.5,-13,5,7);}c.beginPath();c.arc(0,0,7,0,7);c.fill();c.stroke();c.restore();
  }else if(ti===5){/* テスラ */
@@ -2941,6 +2967,7 @@ function dmgU(C,u,d2){
 function buildTower(C,si,ti){
  const T=TOWERS[ti];
  const F=G&&G.coop?G.players[0]:C;
+ if(!T||T.grd)return false;/* グレードアップ専用は直接は建たない(建て替えでしか手に入らない) */
  if(C.dead||F.dead||F.towers[si]||C.scrap<T.cost)return false;
  /* 支援施設はタワーの解放チェーン(unlocked)の外。それ以外は解放済みの物だけ */
  if(T.type!=='sup'&&ti>=C.unlocked)return false;
@@ -2958,6 +2985,22 @@ function buildTower(C,si,ti){
 function upTower(C,si,st){st=st||'d';const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
  if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return false;const p=stCost(tw,st);
  if(C.scrap<p||C.dead)return false;C.scrap-=p;tw.us[st]++;tw.spent+=p;if(C.isMe)sfx.build();return true;}
+/* ⭐廃品工房 → 上級廃品工房への建て替え(2026-07-26ユーザー指示)。
+   条件=その工房の強化が全部MAX。⚠強化Lvは0に戻る(上級の素の産出が工房MAXより上なので下がらない) */
+function canGrade(C,tw){
+ if(!tw||GRD_TI<0)return false;const T=TOWERS[tw.ti];
+ if(!T||T.type!=='eco'||T.grd)return false;
+ if(!tw.us)return false;
+ return twStats(tw.ti).every(st=>(tw.us[st]||0)>=USTAT_MAX);
+}
+function gradeTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
+ if(!canGrade(C,tw)||C.dead||F.dead||C.scrap<GRD_COST)return false;
+ if(G&&G.coop&&(tw.own||0)!==(C.gi||0))return false;
+ C.scrap-=GRD_COST;tw.ti=GRD_TI;tw.us={d:0,r:0,g:0,c:0,f:0};tw.spent+=GRD_COST;tw.cd=0;
+ if(C.isMe){sfx.build();toast('⬆ '+TOWERS[GRD_TI].n+'になった!');}
+ addFx(F,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:76,col:GOLD});
+ return true;
+}
 function sellTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];if(!tw)return false;
  if(G&&G.coop&&(tw.own||0)!==(C.gi||0))return false;
  C.scrap+=Math.round(tw.spent*.6);F.towers[si]=null;if(C.isMe)sfx.sell();return true;}
@@ -3371,6 +3414,13 @@ function campStep(C,dt,wave){
    if(FXLV>0)addFx(C,'flame',sx+Math.cos(tw.ang)*24,sy+Math.sin(tw.ang)*24,'',
     {ang:tw.ang,len:rng*.92,col:T.id==='acid'?'#a8e05a':'#ff9a3d',sd:rnd(0,9)});
    dmgZ(C,tg,dm*av,1);
+   /* ⭐吹き付けた炎は狙った敵の周りにも広がる=直撃の1/4だけ通る(2026-07-26ユーザー指示)。
+      ⚠装甲特効は敵ごとに見る(周りの敵が装甲持ちならそちらにも1.9倍が乗る)。燃焼が付くのは直撃だけ */
+   if(T.fspl){const sr=T.fspl*(1+.06*tw.us.g);
+    for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
+     if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
+     dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1);}
+    if(FXLV>0)addFx(C,'ring',tg.px,tg.py,'',{r:sr,col:'#ff9a3d'});}
    if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+.25*TL)*av;}
    /* ⚠火炎は連続で当たるので、鳴らしすぎないよう間引く(45msの制限も効く) */
    if(Math.random()<.35)twSfx(C,T);}
@@ -3455,10 +3505,19 @@ function campStep(C,dt,wave){
      else if(kd==='fort'){C.shake=Math.max(C.shake||0,.22);
       addP(C,6,sx,sy-6,{sp:110,a:tw.ang-1.7,spread:.6,up:60,g:640,life:1.1,r:2.4,col:DIM,typ:'shell',gr:sy+12});}}
     if(cnt)twSfx(C,T);}
-   else{splash(tg);dmgZ(C,tg,dm,prc);
-    /* ⭐レーザー塔は「弾」ではなく細いビームが走る(ライフル櫓と同じ曳光線に見えていた) */
+   else{
+    /* ⭐同じ敵を焼き続けると威力が上がる(レーザー塔・最大 heatM 倍)。狙いが別の敵へ移ったら0に戻す。
+       ⚠溜まり具合(tw.hs)は威力と絵にだけ効く=対戦の相手盤面には送らないが、当たり判定はホストが持つので食い違わない */
+    let dmH=dm,hk=0;
+    if(T.heatN){
+     if(tw.hz!==tg){tw.hz=tg;tw.hs=0;}else tw.hs=Math.min((tw.hs||0)+1,T.heatN);
+     hk=(tw.hs||0)/T.heatN;dmH=dm*(1+((T.heatM||2)-1)*hk);}
+    splash(tg);dmgZ(C,tg,dmH,prc);
+    /* ⭐レーザー塔は「弾」ではなく細いビームが走る(ライフル櫓と同じ曳光線に見えていた)。
+       ⭐焼き切るほどビームが太く白熱する=今どれだけ溜まっているかが目で分かる */
     if(T.id==='laser'&&FXLV>0)addFx(C,'beam',sx,sy,'',
-     {x2:tg.px,y2:tg.py-14,col:'rgba(230,140,205,',col2:'rgba(255,205,238,',w:5,lf:.16});
+     {x2:tg.px,y2:tg.py-14,col:hk>.5?'rgba(255,170,225,':'rgba(230,140,205,',
+      col2:hk>.5?'rgba(255,240,250,':'rgba(255,205,238,',w:5+hk*7,lf:.16});
     else addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py,col:(!AMO.col&&T.pierce)?'rgba(216,131,238,':trC,hit:hitC,w:trW});
     hitFx(C,tg,tw.ang,hitC,prc,T.type);
     /* ⚠タワーごとに音が違う。連射しても45msの制限で重ならない */
@@ -3651,7 +3710,8 @@ function cpuTick(C,dt){
   else if(rg<2+ex){for(let i=C.uUn-1;i>=0;i--)if(UNITS[i].rng>60&&UNITS[i].type!=='heal'){uw=i;break;}}
   if(uw>=0&&C.ucd[uw]<=0&&C.scrap-rsv>=UNITS[uw].cost*res&&deployUnit(C,uw))return;}
  let bi=-1,bst=null,bp=1e9;
- for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.ti===3)continue;
+ /* ⚠CPUは廃品工房(上級も)を強化しない=経済より塔を優先する、という既存の考え方をそのまま残す */
+ for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||TOWERS[tw.ti].type==='eco')continue;
   for(const st of twStats(tw.ti)){if(tw.us[st]>=USTAT_MAX)continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
  if(bi>=0&&C.scrap-rsv>=bp*res*1.25)upTower(C,bi,bst);
 }
@@ -3961,12 +4021,17 @@ function renderCamp(C,t){
    c.fillText('🔒',sx,sy+6);c.globalAlpha=1;
   }else{
   c.fillStyle='rgba(0,0,0,.18)';rr(c,sx-33,sy-30,66,64,10);c.fill();
-  c.fillStyle=lock?'#54503f':tw?(sup?'#4f6b7a':eco?'#9c8352':'#8d8474'):(sup?'#48606d':eco?'#8a7444':'#7c7466');rr(c,sx-32,sy-32,64,64,10);c.fill();
-  c.strokeStyle=SEL===si?AMBER:(sup?'#7fb6c9':eco?'#b08d4f':INK);c.lineWidth=SEL===si?5:3;c.stroke();c.lineWidth=3;c.strokeStyle=INK;
+  c.fillStyle=lock?'#54503f':tw?(sup?'#33596e':eco?'#9c8352':'#8d8474'):(sup?'#2b5468':eco?'#8a7444':'#7c7466');rr(c,sx-32,sy-32,64,64,10);c.fill();
+  c.strokeStyle=SEL===si?AMBER:(sup?TECH:eco?'#b08d4f':INK);c.lineWidth=SEL===si?5:(sup?4:3);c.stroke();c.lineWidth=3;c.strokeStyle=INK;
+  /* ⭐支援枠は普通のタワー置き場と見分けが付かなかった(2026-07-26ユーザー指摘)。
+     青い二重枠にして、他のどの枠とも違う見た目にする */
+  if(sup&&SEL!==si){c.strokeStyle=TECH2;c.lineWidth=2;rr(c,sx-27,sy-27,54,54,8);c.stroke();c.lineWidth=3;c.strokeStyle=INK;}
   if(lock){c.fillStyle='rgba(20,16,12,.55)';rr(c,sx-32,sy-32,64,64,10);c.fill();
    c.font='900 26px '+FF;c.textAlign='center';c.fillText('🔒',sx,sy+10);}
-  else if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-24,sy-24,48,48,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
-   c.fillStyle='rgba(36,31,25,.55)';c.font='900 34px '+FF;c.textAlign='center';c.fillText(sup?'🏗':eco?'🏭':'+',sx,sy+12);}
+  else if(!tw){c.strokeStyle='rgba(36,31,25,.5)';c.setLineDash([7,7]);rr(c,sx-22,sy-24,44,40,8);c.stroke();c.setLineDash([]);c.strokeStyle=INK;
+   c.fillStyle=sup?'rgba(205,241,255,.85)':'rgba(36,31,25,.55)';c.font='900 30px '+FF;c.textAlign='center';c.fillText(sup?'🏗':eco?'🏭':'+',sx,sy+4);
+   /* ⭐空いている専用枠は名前も出す=「ここは何を建てる場所か」を読ませる(+ の枠と混ざらない) */
+   if(sup||eco){c.fillStyle=sup?FROST:GLOW;c.font='900 11px '+FF;c.fillText(sup?'支援施設':'廃品工房',sx,sy+26);}}
   else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
   }
   /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
@@ -4559,6 +4624,18 @@ function showResultC(sn){
 function mapToClient(x,y){const r=cv.getBoundingClientRect();return[r.left+(OX+x*SC)/DPR,r.top+(OY+y*SC)/DPR];}
 function evtToMap(e){const r=cv.getBoundingClientRect();return[((e.clientX-r.left)*DPR-OX)/SC,((e.clientY-r.top)*DPR-OY)/SC];}
 function closeBM(){$('buildmenu').style.display='none';SEL=-1;}
+/* ⭐建設メニューを開いている間に⚙️が増えたら、その場で押せるようにする(2026-07-26ユーザー指示)。
+   ⚠以前は開いた瞬間の所持額でボタンが固まっていて、敵を倒して足りたのに開き直すまで強化できなかった。
+   ⚠中身(innerHTML)は作り直さない=押している最中に作り直すとタップを取りこぼす。
+     価格は各ボタンの data-p に入れてあるので、押せる/押せないの付け外しだけをする */
+function refreshBM(){
+ if(SEL<0)return;const bm=$('buildmenu');if(!bm||bm.style.display!=='block')return;
+ const m=meV();if(!m)return;const sc=m.scrap;
+ bm.querySelectorAll('[data-p]').forEach(b=>{
+  const ok=sc>=(+b.dataset.p||0);
+  if(b.classList.contains('bm-item'))b.classList.toggle('poor',!ok);
+  else b.disabled=!ok;});
+}
 function openBM(si){
  SEL=si;const m=meV(),bm=$('buildmenu'),tw=(m.towers||[])[si];
  const eSlot=isEcoSlot(si),sSlot=isSupSlot(si),eN=m.ecoN||1;
@@ -4567,24 +4644,25 @@ function openBM(si){
   const p=prSlot(slotCount(m));
   h=`<div id="bm-title">🔓 建設スロット解放</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">解放した数だけ価格が上がる(現在 ${slotCount(m)}/${ECO_BASE}枠)</div>`+
-   `<div class="bm-row"><button class="btn gold sm" id="bm-slot" ${m.scrap>=p?'':'disabled'}>🔓 解放 ⚙️${fmt(p)}</button></div>`;
+   `<div class="bm-row"><button class="btn gold sm" id="bm-slot" data-p="${p}" ${m.scrap>=p?'':'disabled'}>🔓 解放 ⚙️${fmt(p)}</button></div>`;
  }else if(sSlot&&!supUnlocked(m,si)){/* 未解放の支援枠=解放メニュー */
   const sn=m.supN||0,p=(sn<SUP_MAX)?prSup(sn):null,nextOk=(si-SUP_BASE)===sn;
   h=`<div id="bm-title">🏗 支援枠 ${si-SUP_BASE+1}/${SUP_MAX}</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'開くと支援施設(電波塔/野戦病院/物資投下所)を建てられる':'左の枠から順に開ける'}</div>`+
-   `<div class="bm-row"><button class="btn gold sm" id="bm-sup" ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 解放 ⚙️'+fmt(p):'MAX'}</button></div>`;
+   `<div class="bm-row"><button class="btn gold sm" id="bm-sup" ${nextOk&&p!=null?'data-p="'+p+'"':''} ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 解放 ⚙️'+fmt(p):'MAX'}</button></div>`;
  }else if(eSlot&&!ecoUnlocked(m,si)){/* 未解放の工房スロット=増設メニュー */
   const p=(eN<ECO_MAX)?prEco(eN):null;
   const nextOk=(si-ECO_BASE)===eN;/* 増設は左から順に */
   h=`<div id="bm-title">🏭 工房スロット ${si-ECO_BASE+1}/${ECO_MAX}</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'増設すると廃品工房をもう1基建てられる':'左の枠から順に増設できる'}</div>`+
-   `<div class="bm-row"><button class="btn gold sm" id="bm-eco" ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 増設 ⚙️'+fmt(p):'MAX'}</button></div>`;
+   `<div class="bm-row"><button class="btn gold sm" id="bm-eco" ${nextOk&&p!=null?'data-p="'+p+'"':''} ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 増設 ⚙️'+fmt(p):'MAX'}</button></div>`;
  }else if(!tw){h='<div id="bm-title">'+(sSlot?'🏗 支援施設を建設':eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div>'+(sSlot?'<div class="cdsc" style="font-size:12px;margin:2px 0 6px;color:var(--paper)">タワーの性能には影響しない。同じ施設は1つまで</div>':'')+'<div class="bm-grid">';
   for(let i=0;i<TOWERS.length;i++){const T=TOWERS[i];
    const want=sSlot?'sup':eSlot?'eco':'';
+   if(T.grd)continue;/* グレードアップ専用は建設リストに出さない */
    if(want){if(T.type!==want)continue;}
    else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
-   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
+   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
   if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">作戦タイムで『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
@@ -4596,16 +4674,19 @@ function openBM(si){
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
    if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
    const pips='◆'.repeat(lvv)+'◇'.repeat(USTAT_MAX-lvv);
-   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx||m.scrap<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':'⚙️'+fmt(p)}</button>`;
+   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx?'':'data-p="'+p+'"'} ${mx||m.scrap<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':'⚙️'+fmt(p)}</button>`;
   }).join('');
   const canSell=!(COOP&&(tw.own||0)!==(MODE==='client'?CS.myJ:(G?G.myIdx:0)));
-  h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div><div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
+  /* ⭐廃品工房を全部MAXまで上げたら『上級廃品工房』へ建て替えられる(2026-07-26ユーザー指示) */
+  const grd=canGrade(m,tw)?`<div class="bm-row"><button class="btn gold sm" id="bm-grd" data-p="${GRD_COST}" ${m.scrap>=GRD_COST?'':'disabled'}>⬆ ${TOWERS[GRD_TI].n}へ ⚙️${fmt(GRD_COST)}</button></div>`:'';
+  h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div>${grd}<div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
  }
  bm.innerHTML=IC(h);
  bm.querySelectorAll('[data-th]').forEach(cc=>{cc.getContext('2d').drawImage(THUMBS[+cc.dataset.th],0,0);});
  bm.querySelectorAll('[data-bd]').forEach(b=>{b.onclick=()=>{actBuild(si,+b.dataset.bd);closeBM();};});
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
  const bs=$('bm-sell');if(bs)bs.onclick=()=>{actSell(si);closeBM();};
+ const bg=$('bm-grd');if(bg)bg.onclick=()=>{actGrade(si);openBM(si);};
  const be=$('bm-eco');if(be)be.onclick=()=>{actEcoSlot();closeBM();};
  const bs2=$('bm-sup');if(bs2)bs2.onclick=()=>{actSupSlot();closeBM();};
  const bl=$('bm-slot');if(bl)bl.onclick=()=>{actSlot(si);closeBM();};
@@ -4723,6 +4804,10 @@ function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=
 function actUp(si,st){st=st||'d';
  if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
  else upTower(G.players[G.myIdx],si,st);}
+function actGrade(si){
+ if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!canGrade(m,tw)||m.scrap<GRD_COST)return;
+  sendCmd({t:'c',a:'gd',si});CS.meN.scrap-=GRD_COST;tw.ti=GRD_TI;tw.us={d:0,r:0,g:0,c:0,f:0};sfx.build();return;}
+ if(G)gradeTower(G.players[G.myIdx],si);}
 function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;sendCmd({t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
  else sellTower(G.players[G.myIdx],si);}
 function actSlot(si){
@@ -7174,6 +7259,7 @@ function hostData(c,d){
   P.stAck=1;/* 操作が届いている=開始通知は届いている */
   if(d.a==='bd')buildTower(P,d.si|0,d.ti|0);
   else if(d.a==='up')upTower(P,d.si|0,''+(d.st||'d'));
+  else if(d.a==='gd')gradeTower(P,d.si|0);
   else if(d.a==='sl')sellTower(P,d.si|0);
   else if(d.a==='st')airstrike(P,+d.x||0,+d.y||0,G.wave);
   else if(d.a==='buy')doPurchase(P,''+d.k,d.o||{});
@@ -7299,7 +7385,7 @@ function loopBody(now){
  if(SCR==='rpg')rgStep(dt0);
  if(GC)gcStep(dt0);/* 💎英雄召集の演出 */
  hudT-=dt0;
- if(hudT<=0&&gameActive){hudT=.12;updHUD();minisUpd();
+ if(hudT<=0&&gameActive){hudT=.12;updHUD();minisUpd();refreshBM();
   if($('interv').classList.contains('on')){
    const tI=MODE==='client'?CS.tI:(G?G.tI:0);
    $('ivtimer').textContent=Math.ceil(Math.max(0,tI));

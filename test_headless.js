@@ -267,6 +267,89 @@ function checkCryo(){
  console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・再凍結なし・同じ敵は5回まで(強化で10) OK');
  backTitle();
 }
+/* ---- 火炎放射塔の周囲ダメージ / レーザー塔の焼き切り / 廃品工房の建て替え(2026-07-26) ---- */
+function checkTwNew(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0],si=AI_ORDER[0],[sx,sy]=SLOTS[si];
+ /* ① 火炎放射塔: 狙った1体の周りにも1/4だけ通る */
+ {const ti=TOWERS.findIndex(t=>t.id==='flame');
+  if(ti<0){console.log('FAIL: 火炎放射塔が見つからない');process.exit(1);}
+  me.scrap=99999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
+  buildTower(me,si,ti);
+  me.zombies.length=0;
+  /* 塔の目の前に3体重ねて置く(px/pyはcampStepでしか入らないので1回回してから測る) */
+  for(let k=0;k<3;k++){const z=mkZ(zSpec(0,1,5),projPath(sx,sy));z.hp=z.mhp=1e6;me.zombies.push(z);}
+  me.towers[si].cd=999;campStep(me,.001,G.wave);/* 座標だけ入れる(まだ撃たせない) */
+  const hp0=me.zombies.map(z=>z.hp);
+  me.towers[si].cd=0;campStep(me,.001,G.wave);
+  const hit=me.zombies.map((z,i)=>hp0[i]-z.hp).filter(d=>d>0).sort((a,b)=>b-a);
+  if(hit.length<2){console.log('FAIL: 火炎放射塔が周りの敵に当たっていない(当たったのは'+hit.length+'体)');process.exit(1);}
+  const r=hit[1]/hit[0];
+  if(Math.abs(r-.25)>.02){console.log('FAIL: 火炎の周囲ダメージが直撃の1/4でない ('+(r*100).toFixed(1)+'%)');process.exit(1);}
+  console.log('火炎放射塔: 直撃'+hit[0].toFixed(1)+' + 周りの'+(hit.length-1)+'体へ'+hit[1].toFixed(1)+'(直撃の'+(r*100).toFixed(0)+'%) OK');
+ }
+ /* ② レーザー塔: 同じ敵を撃ち続けると最大2倍・別の敵に移ると0に戻る */
+ {const ti=TOWERS.findIndex(t=>t.id==='laser'),T=TOWERS[ti];
+  if(ti<0){console.log('FAIL: レーザー塔が見つからない');process.exit(1);}
+  me.scrap=99999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
+  buildTower(me,si,ti);
+  me.zombies.length=0;
+  const z=mkZ(zSpec(0,1,5),projPath(sx,sy));z.hp=z.mhp=1e9;me.zombies.push(z);
+  me.towers[si].cd=999;campStep(me,.001,G.wave);
+  const tw=me.towers[si];
+  /* 1発目(溜まり0)の被害量 */
+  tw.cd=0;let h0=z.hp;campStep(me,.001,G.wave);const d1=h0-z.hp;
+  /* heatN 発ぶん撃ち込んでから測る=最大まで焼き切った状態 */
+  for(let k=0;k<T.heatN+2;k++){tw.cd=0;campStep(me,.001,G.wave);}
+  tw.cd=0;h0=z.hp;campStep(me,.001,G.wave);const dMax=h0-z.hp;
+  if(tw.hs!==T.heatN){console.log('FAIL: レーザーの溜まりが上限に達しない '+tw.hs+'/'+T.heatN);process.exit(1);}
+  const mul=dMax/d1;
+  if(Math.abs(mul-T.heatM)>.05){console.log('FAIL: レーザーが最大'+T.heatM+'倍にならない ('+mul.toFixed(2)+'倍)');process.exit(1);}
+  /* 別の敵に移ったら0へ戻る */
+  z.dead=true;z.hp=0;
+  const z2=mkZ(zSpec(0,1,5),projPath(sx,sy));z2.hp=z2.mhp=1e9;me.zombies.push(z2);
+  tw.cd=999;campStep(me,.001,G.wave);
+  tw.cd=0;h0=z2.hp;campStep(me,.001,G.wave);const dNew=h0-z2.hp;
+  if(tw.hs!==0){console.log('FAIL: 別の敵に移っても溜まりが残っている hs='+tw.hs);process.exit(1);}
+  if(Math.abs(dNew-d1)>d1*.05){console.log('FAIL: 次の敵で威力が戻っていない '+dNew.toFixed(1)+' vs '+d1.toFixed(1));process.exit(1);}
+  console.log('レーザー塔: 1発目'+d1.toFixed(1)+' → '+T.heatN+'発で'+dMax.toFixed(1)+'('+mul.toFixed(2)+'倍)・次の敵で'+dNew.toFixed(1)+'にリセット OK');
+ }
+ /* ③ 廃品工房 → 上級廃品工房への建て替え */
+ {const ti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
+  me.scrap=99999;me.ecoN=Math.max(me.ecoN||1,1);me.towers[esi]=null;
+  me.unlocked=Math.max(me.unlocked,ti+1);
+  buildTower(me,esi,ti);
+  const tw=me.towers[esi];
+  if(!tw){console.log('FAIL: 廃品工房が建たない');process.exit(1);}
+  if(canGrade(me,tw)){console.log('FAIL: 強化していないのに建て替えられる');process.exit(1);}
+  for(const st of twStats(ti))tw.us[st]=USTAT_MAX;
+  if(!canGrade(me,tw)){console.log('FAIL: 全部MAXにしても建て替えられない');process.exit(1);}
+  /* 建て替える前後の産出(毎秒)を比べる=下がってはいけない */
+  const rateOf=t=>{const T=TOWERS[t.ti];return (T.inc*(1+.2*t.us.d))/(T.rate*(1-.08*t.us.r));};
+  const before=rateOf(tw);
+  me.scrap=99999;
+  if(!gradeTower(me,esi)){console.log('FAIL: 建て替えが通らない');process.exit(1);}
+  if(tw.ti!==GRD_TI){console.log('FAIL: 上級廃品工房になっていない');process.exit(1);}
+  if(twStats(tw.ti).some(st=>tw.us[st]!==0)){console.log('FAIL: 建て替えても強化Lvが0に戻っていない');process.exit(1);}
+  const after=rateOf(tw);
+  if(after<before){console.log('FAIL: 建て替えると産出が下がる '+before.toFixed(2)+'→'+after.toFixed(2)+'/秒');process.exit(1);}
+  if(canGrade(me,tw)){console.log('FAIL: 上級廃品工房をさらに建て替えられる');process.exit(1);}
+  for(const st of twStats(tw.ti))tw.us[st]=USTAT_MAX;
+  /* 元を取るのにかかる時間も出す(安すぎると工房を並べるだけで勝ててしまう) */
+  const maxR=rateOf(tw);let cst=GRD_COST;
+  for(const st of twStats(tw.ti))for(let l=0;l<USTAT_MAX;l++)cst+=Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,l));
+  const pay=Math.round(cst/(maxR-before));
+  if(pay<150){console.log('FAIL: 上級化が安すぎる(元を取るのに'+pay+'秒)=工房を並べるだけで勝ててしまう');process.exit(1);}
+  if(pay>600){console.log('FAIL: 上級化が高すぎる(元を取るのに'+pay+'秒)=1試合で元が取れない');process.exit(1);}
+  console.log('上級廃品工房: 工房MAX'+before.toFixed(2)+'/秒 → 建て替え直後'+after.toFixed(2)+'/秒 → 上級MAX'+maxR.toFixed(2)+'/秒'
+   +' (⚙️'+cst+'で+'+(maxR-before).toFixed(1)+'/秒=元を取るのに'+pay+'秒) OK');
+ }
+ /* ④ 上級廃品工房は建設リストにも解放チェーンにも出さない */
+ if(GRD_TI<T_PLAY){console.log('FAIL: 上級廃品工房が解放チェーン(T_PLAY)に入っている');process.exit(1);}
+ if(metaTowerCap()>T_PLAY){console.log('FAIL: 研究所の解放枠が T_PLAY を超えている');process.exit(1);}
+ backTitle();
+}
 /* ---- 難易度の進行(新兵から順に開く)とステージの解放 ---- */
 function checkProgress(){
  META.sc=[[0,0,0,0,0,0],[0,0,0,0,0,0]];META.sclr=[];
@@ -979,6 +1062,7 @@ checkBite();
 checkFx2();
 checkGachaFx();
 checkTwFx();
+checkTwNew();
 checkCryo();
 checkBeam();
 checkCoil();
