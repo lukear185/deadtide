@@ -1,0 +1,201 @@
+/* ============ tool_px.js — 生成されたドット絵PNGをゲーム用のデータに変換する ============
+   2026-07-27 第93弾。ユーザー決定=**絵は生成AIに描かせ、揃えるのはこちらでやる**。
+   画像生成AIは「ドット絵風のイラスト」しか出せない(格子が揃わない・色が数万色・縁がぼける)。
+   そこでこの道具が**規格を機械的に強制する**:
+     ①高さを40ドットに正規化  ②足の位置で横を揃える(コマ間のがたつきを消す)
+     ③色を共通パレットに寄せる ④コマの幅を揃える
+   これで、生成のたびに絵柄が多少ぶれても **大きさ・色・接地だけは全種そろう**。
+
+   使い方:
+     node tool_px.js px_src/walk.png walk          … 変換して px_data/walk.json と下見PNGを作る
+     node tool_px.js px_src/walk.png walk --h=44   … 高さ(ドット)を変える
+     node tool_px.js --embed                       … px_data/*.json を index.html に流し込む
+     node tool_px.js --pal px_src/walk.png         … その絵から16色の色表を作って表示(パレット更新用)
+
+   ⚠元のPNG(px_src/)は1枚2MBあるのでGitに入れない。**入れるのは変換後のjsonだけ**(1体5KB程度)。 */
+const fs=require('fs'),path=require('path'),zlib=require('zlib');
+
+/* ---- 共通パレット(全種で共有する。ここを変えると全部の色が変わる) ----
+   ⚠**種類ごとに色を変えない**。同じ表に寄せるからこそ36種を並べても浮かない。
+   ⚠青や紫の敵(ステージ2の海の生き物)を足す時は、ここに色を足してから変換し直すこと。 */
+const PALETTE=['#0c1109','#091220','#1f392a','#0f486f','#4a2908','#923705','#467511','#668b17',
+ '#799a1a','#9d8f16','#4b515e','#92af20','#bdbc2b','#cedf2e','#556f93','#99acbf'];
+/* データに書く時の1文字。⚠16色までしか使えないので、色を足す時はここも足す */
+const CHARS='0123456789abcdef';
+
+/* ============ PNG 読み書き(依存パッケージなし) ============ */
+function decodePNG(buf){
+ if(buf.readUInt32BE(0)!==0x89504e47)throw new Error('PNGではない');
+ let p=8,ihdr=null,idat=[],plte=null,trns=null;
+ while(p<buf.length){
+  const len=buf.readUInt32BE(p),typ=buf.toString('ascii',p+4,p+8),d=buf.slice(p+8,p+8+len);
+  if(typ==='IHDR')ihdr={w:d.readUInt32BE(0),h:d.readUInt32BE(4),bd:d[8],ct:d[9],il:d[12]};
+  else if(typ==='IDAT')idat.push(d);else if(typ==='PLTE')plte=d;else if(typ==='tRNS')trns=d;
+  else if(typ==='IEND')break;
+  p+=12+len;}
+ if(ihdr.il)throw new Error('インターレースPNGは未対応');
+ if(ihdr.bd!==8)throw new Error('8bit以外は未対応');
+ const ch={0:1,2:3,3:1,4:2,6:4}[ihdr.ct];
+ const raw=zlib.inflateSync(Buffer.concat(idat));
+ const stride=ihdr.w*ch,out=Buffer.alloc(ihdr.h*stride);let q=0;
+ for(let y=0;y<ihdr.h;y++){
+  const f=raw[q++],line=raw.slice(q,q+stride);q+=stride;
+  const o=y*stride,pr=(y-1)*stride;
+  for(let x=0;x<stride;x++){
+   const a=x>=ch?out[o+x-ch]:0,b=y>0?out[pr+x]:0,c=(y>0&&x>=ch)?out[pr+x-ch]:0;
+   let v=line[x];
+   if(f===1)v+=a;else if(f===2)v+=b;else if(f===3)v+=((a+b)>>1);
+   else if(f===4){const pa=Math.abs(b-c),pb=Math.abs(a-c),pc=Math.abs(a+b-2*c);
+    v+=(pa<=pb&&pa<=pc)?a:(pb<=pc?b:c);}
+   out[o+x]=v&255;}}
+ const px=(x,y)=>{const i=y*stride+x*ch;
+  if(ihdr.ct===6)return [out[i],out[i+1],out[i+2],out[i+3]];
+  if(ihdr.ct===2)return [out[i],out[i+1],out[i+2],255];
+  if(ihdr.ct===0)return [out[i],out[i],out[i],255];
+  if(ihdr.ct===4)return [out[i],out[i],out[i],out[i+1]];
+  const k=out[i];return [plte[k*3],plte[k*3+1],plte[k*3+2],trns&&k<trns.length?trns[k]:255];};
+ return {w:ihdr.w,h:ihdr.h,px};}
+const CRC=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}
+ return b=>{let c=0xffffffff;for(let i=0;i<b.length;i++)c=t[(c^b[i])&255]^(c>>>8);return (c^0xffffffff)>>>0;};})();
+function chunk(type,data){const len=Buffer.alloc(4);len.writeUInt32BE(data.length);
+ const td=Buffer.concat([Buffer.from(type,'ascii'),data]),cr=Buffer.alloc(4);cr.writeUInt32BE(CRC(td));
+ return Buffer.concat([len,td,cr]);}
+function encodePNG(w,h,rgba){
+ const stride=w*4,raw=Buffer.alloc(h*(stride+1));
+ for(let y=0;y<h;y++){raw[y*(stride+1)]=0;rgba.copy(raw,y*(stride+1)+1,y*stride,(y+1)*stride);}
+ const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(w,0);ihdr.writeUInt32BE(h,4);ihdr[8]=8;ihdr[9]=6;
+ return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),
+  chunk('IHDR',ihdr),chunk('IDAT',zlib.deflateSync(raw,{level:9})),chunk('IEND',Buffer.alloc(0))]);}
+
+/* ============ 色 ============ */
+const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const PAL=PALETTE.map(hex2rgb);
+/* 目に合わせた重み付き距離(緑の違いに敏感・青の違いに鈍い) */
+function nearIdx(r,g,b){let bi=0,bd=1e18;
+ for(let i=0;i<PAL.length;i++){const p=PAL[i];
+  const d=(r-p[0])**2*.9+(g-p[1])**2*1.2+(b-p[2])**2*.7;if(d<bd){bd=d;bi=i;}}
+ return bi;}
+/* 絵から色表を作る(メディアンカット)=パレットを更新したい時用 */
+function medianCut(list,n){
+ let boxes=[list];
+ while(boxes.length<n){
+  let bi=-1,bs=-1;
+  boxes.forEach((b,i)=>{if(b.length<2)return;let s=0;
+   for(let k=0;k<3;k++){let mn=255,mx=0;for(const p of b){if(p[k]<mn)mn=p[k];if(p[k]>mx)mx=p[k];}s=Math.max(s,mx-mn);}
+   if(s>bs){bs=s;bi=i;}});
+  if(bi<0)break;
+  const b=boxes[bi];let ch=0,bs2=-1;
+  for(let k=0;k<3;k++){let mn=255,mx=0;for(const p of b){if(p[k]<mn)mn=p[k];if(p[k]>mx)mx=p[k];}
+   if(mx-mn>bs2){bs2=mx-mn;ch=k;}}
+  b.sort((p,q)=>p[ch]-q[ch]);
+  const h=b.length>>1;boxes.splice(bi,1,b.slice(0,h),b.slice(h));}
+ return boxes.filter(b=>b.length).map(b=>{const s=[0,0,0];for(const p of b){s[0]+=p[0];s[1]+=p[1];s[2]+=p[2];}
+  return s.map(v=>Math.round(v/b.length));});}
+
+/* ============ 変換 ============ */
+function convert(file,id,TH){
+ const im=decodePNG(fs.readFileSync(file));
+ const solid=(x,y)=>im.px(x,y)[3]>16;
+ /* コマに切る(縦に1本も絵が無い列で区切る) */
+ const has=[];for(let x=0;x<im.w;x++){let n=0;for(let y=0;y<im.h;y++)if(solid(x,y)){n=1;break;}has.push(n);}
+ const segs=[];let st=-1;
+ for(let x=0;x<im.w;x++){if(has[x]&&st<0)st=x;else if(!has[x]&&st>=0){segs.push([st,x-1]);st=-1;}}
+ if(st>=0)segs.push([st,im.w-1]);
+ if(!segs.length)throw new Error('絵が見つからない(背景が透明か確認)');
+ /* 全体の上端と下端で縮尺を決める=**コマごとに拡大率を変えない**(変えると大きさがちらつく) */
+ let gy0=im.h,gy1=-1;
+ for(let y=0;y<im.h;y++)for(let x=0;x<im.w;x++)if(solid(x,y)){if(y<gy0)gy0=y;if(y>gy1)gy1=y;}
+ const sc=(gy1-gy0+1)/TH;
+ /* 各コマをドットに落とす(透明度で重み付けした平均) */
+ const raw=segs.map(s=>{
+  const tw=Math.max(1,Math.round((s[1]-s[0]+1)/sc)),g=[];
+  for(let ty=0;ty<TH;ty++){const row=[];
+   for(let tx=0;tx<tw;tx++){
+    let ar=0,ag=0,ab=0,aa=0,n=0;
+    const sx0=s[0]+tx*sc,sy0=gy0+ty*sc;
+    for(let y=Math.floor(sy0);y<Math.min(im.h,Math.ceil(sy0+sc));y++)
+     for(let x=Math.floor(sx0);x<Math.min(im.w,Math.ceil(sx0+sc));x++){
+      const [r,g2,b,a]=im.px(x,y);const f=a/255;ar+=r*f;ag+=g2*f;ab+=b*f;aa+=f;n++;}
+    row.push((!n||aa/n<.42)?null:[Math.round(ar/aa),Math.round(ag/aa),Math.round(ab/aa)]);}
+   g.push(row);}
+  return {w:tw,g};});
+ /* 横の基準点=**足の位置**(体の中心だと腕を伸ばしたコマでずれて、歩くたびに横滑りする) */
+ const anch=raw.map(f=>{
+  let sum=0,n=0;
+  for(let y=TH-1;y>=TH-4;y--)for(let x=0;x<f.w;x++)if(f.g[y]&&f.g[y][x]){sum+=x;n++;}
+  if(!n){for(let x=0;x<f.w;x++)for(let y=0;y<TH;y++)if(f.g[y][x]){sum+=x;n++;}}
+  return n?sum/n:f.w/2;});
+ /* 基準点を揃えて同じ幅の枠へ入れ直す */
+ const L=Math.ceil(Math.max(...raw.map((f,i)=>anch[i]))),
+       R=Math.ceil(Math.max(...raw.map((f,i)=>f.w-anch[i])));
+ const OW=L+R,ax=L;
+ const frames=raw.map((f,i)=>{
+  const off=Math.round(L-anch[i]),rows=[];
+  for(let y=0;y<TH;y++){let s='';
+   for(let x=0;x<OW;x++){const sx=x-off;
+    const c=(sx>=0&&sx<f.w)?f.g[y][sx]:null;
+    s+=c?CHARS[nearIdx(c[0],c[1],c[2])]:' ';}
+   rows.push(s);}
+  return rows;});
+ return {id,w:OW,h:TH,ax,f:frames,src:path.basename(file)};}
+
+/* ---- 下見用のPNG(実寸と5倍を並べる) ---- */
+function preview(d,out){
+ const M=5,GAP=3,BG=[236,232,220];
+ const TOT=(d.w+GAP)*d.f.length,OW=TOT*M+8,OH=d.h+GAP*2+d.h*M+8;
+ const buf=Buffer.alloc(OW*OH*4,0);
+ const px=(x,y,c)=>{if(x<0||y<0||x>=OW||y>=OH)return;const i=(y*OW+x)*4;
+  buf[i]=c[0];buf[i+1]=c[1];buf[i+2]=c[2];buf[i+3]=255;};
+ for(let y=0;y<OH;y++)for(let x=0;x<OW;x++)px(x,y,BG);
+ d.f.forEach((rows,k)=>{
+  for(let y=0;y<d.h;y++)for(let x=0;x<d.w;x++){
+   const ch=rows[y][x];if(ch===' ')continue;
+   const c=PAL[CHARS.indexOf(ch)];
+   px(2+k*(d.w+GAP)+x,2+y,c);
+   for(let j=0;j<M;j++)for(let i=0;i<M;i++)px(2+(k*(d.w+GAP)+x)*M+i,d.h+GAP*2+y*M+j,c);}});
+ fs.writeFileSync(out,encodePNG(OW,OH,buf));}
+
+/* ---- index.html へ流し込む ---- */
+const MARK0='/* PX-DATA-START */',MARK1='/* PX-DATA-END */';
+function embed(){
+ const dir=path.join(__dirname,'px_data');
+ if(!fs.existsSync(dir)){console.log('px_data/ が無い');process.exit(1);}
+ const files=fs.readdirSync(dir).filter(f=>f.endsWith('.json')).sort();
+ const parts=files.map(f=>{
+  const d=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
+  return ' '+d.id+':{w:'+d.w+',h:'+d.h+',ax:'+d.ax+',lh:50,f:[\n'
+   +d.f.map(rows=>'  ['+rows.map(r=>"'"+r+"'").join(',\n   ')+']').join(',\n')+']}';});
+ const js='const PX_PAL=['+PALETTE.map(h=>"'"+h+"'").join(',')+'];\n'
+  +'const PX_Z={\n'+parts.join(',\n')+'\n};';
+ const p=path.join(__dirname,'index.html');
+ const s=fs.readFileSync(p,'utf8');
+ const a=s.indexOf(MARK0),b=s.indexOf(MARK1);
+ if(a<0||b<0){console.log('index.html に '+MARK0+' / '+MARK1+' が無い');process.exit(1);}
+ fs.writeFileSync(p,s.slice(0,a+MARK0.length)+'\n'+js+'\n'+s.slice(b));
+ console.log('index.html に流し込んだ: '+files.length+'種 ('+(js.length/1024).toFixed(1)+'KB)');}
+
+/* ============ 入口 ============ */
+const args=process.argv.slice(2);
+if(args[0]==='--embed'){embed();return;}
+if(args[0]==='--pal'){
+ const im=decodePNG(fs.readFileSync(args[1]));
+ const pts=[];
+ for(let y=0;y<im.h;y+=2)for(let x=0;x<im.w;x+=2){const [r,g,b,a]=im.px(x,y);if(a>200)pts.push([r,g,b]);}
+ const p=medianCut(pts,+(args[2]||16));
+ console.log(p.map(c=>"'#"+c.map(v=>v.toString(16).padStart(2,'0')).join('')+"'").join(','));
+ return;}
+if(args.length<2){
+ console.log('使い方: node tool_px.js <png> <id> [--h=40]  /  node tool_px.js --embed');
+ process.exit(1);}
+const HM=/--h=(\d+)/.exec(args.join(' ')),TH=HM?+HM[1]:40;
+const d=convert(args[0],args[1],TH);
+for(const dir of ['px_data','px_prev'])if(!fs.existsSync(path.join(__dirname,dir)))fs.mkdirSync(path.join(__dirname,dir));
+fs.writeFileSync(path.join(__dirname,'px_data',d.id+'.json'),JSON.stringify(d));
+preview(d,path.join(__dirname,'px_prev',d.id+'.png'));
+/* 点検: コマ間で足の位置と体の量がぶれていないか */
+const cnt=d.f.map(rows=>rows.join('').split('').filter(c=>c!==' ').length);
+const top=d.f.map(rows=>{for(let y=0;y<d.h;y++)if(rows[y].trim())return y;return d.h;});
+console.log('■ '+d.id+': '+d.f.length+'コマ / '+d.w+'x'+d.h+'ドット / 基準点x='+d.ax);
+console.log('  塗り数: '+cnt.join(', ')+'  (差 '+(Math.max(...cnt)-Math.min(...cnt))+'ドット)');
+console.log('  上端  : '+top.join(', ')+'  (差 '+(Math.max(...top)-Math.min(...top))+'ドット)');
+console.log('  書き出し: px_data/'+d.id+'.json / px_prev/'+d.id+'.png');
