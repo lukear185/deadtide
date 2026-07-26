@@ -1032,6 +1032,11 @@ function sfxPlay(k,v,p){
   return true;}catch(e){return false;}}
 /* 合成音(素材が無い時のフォールバック。ヘッドレスはこちらを通る) */
 const SFXSYN={
+ /* ⭐ボタンを押した時の音(2026-07-26ユーザー指示=タイトル等が無音だった)。
+    ⚠「買えた/建った」の音とは役割が違う=**押したことの手応え**なので、短く控えめにして重なっても邪魔にならないようにする。
+    tap=進む(高い) / back=閉じる・戻る(低い) の2つだけ。耳で「進んだのか戻ったのか」が分かる */
+ tap:()=>{beep(1150,780,.032,'triangle',.055);beep(330,240,.055,'sine',.04);},
+ back:()=>{beep(560,330,.05,'triangle',.055);beep(190,150,.075,'sine',.035);},
  shot:()=>beep(210,70,.05,'square',.05), shotgun:()=>beep(120,40,.09,'sawtooth',.09),
  snipe:()=>beep(900,120,.09,'sawtooth',.09), zap:()=>beep(880,180,.1,'sawtooth',.07),
  thunk:()=>beep(140,70,.09,'triangle',.1), boom:()=>{beep(110,26,.4,'sawtooth',.2);beep(300,60,.28,'square',.1);},
@@ -1102,6 +1107,8 @@ const SFX_LBL={
  growl:['ボスの唸り(死の笛)','ボス出現','z'], growl2:['ボスの唸り(人狼)','ボス出現','z'],
  die:['断末魔','撃破','z'], bite:['噛みつき①','部隊への攻撃','z'], bite2:['噛みつき②','同上','z'],
  splat:['血しぶき','撃破','z'], scratch:['爪で壁を掻く','🌑ナイトメアのBGM','z'],
+ tap:['ボタンを押した','タイトル・研究所・編成などのボタン全部','ui'],
+ back:['閉じる/戻る','✕ボタン・やめる','ui'],
  build:['建設','タワーを建てる','ui'], sell:['売却','タワーを売る','ui'],
  coin:['⚙️入手','ゾンビ撃破','ui'], buy:['購入','研究所・強化','ui'],
  warn:['警告','⚙️不足など','ui'], dep:['部隊の出撃','デッキを押す','ui'],
@@ -1122,7 +1129,8 @@ function renderSfxTest(){
  const tb=$('sfx-tabs');
  if(tb){tb.innerHTML=SFX_TAB.map(x=>'<button class="tb'+(SFXTAB===x[0]?' on':'')+'" data-st="'+x[0]+'">'+x[1]+'</button>').join('');
   tb.querySelectorAll('[data-st]').forEach(e=>{e.onclick=()=>{SFXTAB=e.dataset.st;renderSfxTest();};});}
- const ks=Object.keys(SFXB).filter(k=>((SFX_LBL[k]||[])[2]||'ui')===SFXTAB);
+ /* ⚠素材(SFXB)だけで絞ると、合成で作った音(tap/back)が一覧に出ず確認できない */
+ const ks=Object.keys(SFXB).concat(Object.keys(SFXSYN).filter(k=>!SFXB[k])).filter(k=>SFX_LBL[k]&&(SFX_LBL[k][2]||'ui')===SFXTAB);
  box.innerHTML='<div class="lgrid">'+ks.map(k=>{
   const L=SFX_LBL[k]||[k,'',''];
   return '<div class="lc" data-sk="'+k+'" style="cursor:pointer">'
@@ -1159,6 +1167,22 @@ for(const k of Object.keys(SFXSYN).concat(Object.keys(SFXB)))if(!sfx[k]){
   let key=kk;
   if(set){const l=set[sfxScene()]||set.s1;key=l[(Math.random()*l.length)|0];}
   if(!sfxPlay(key,1,SFX_VAR[kk]||0)&&syn)syn();};}
+/* ⭐押した音は**1本のリスナーにまとめる**(2026-07-26ユーザー指示)。
+   ⚠ボタンごとに `sfx.tap()` を書くと必ずつけ忘れる(タイトル・研究所・編成・召集が全部無音だった)。
+   ⚠すでに音があるもの(デッキの出撃・建設メニューの品目・小窓)は**ここに入れない**=二重に鳴るため。
+   ⚠capture で拾う=各ボタンの onclick が何をしても、押した手応えだけは必ず鳴る。 */
+const UI_TAP_SEL='.btn,.xbtn,.tabs .tb,.lc .bu,.lc[data-sk],.grc,.ldc,.hgrid .hb,#rgpad button';
+document.addEventListener('pointerdown',e=>{
+ try{
+  const t=e.target;if(!t||!t.closest)return;
+  const el=t.closest(UI_TAP_SEL);
+  if(!el||el.disabled||el.classList.contains('lock'))return;
+  ensureAC();
+  /* ✕(閉じる)と「戻る/やめる」系は低い音にして、進んだのか戻ったのかを耳で区別できるようにする */
+  const back=el.classList.contains('xbtn')||/close|back|quit|cancel/i.test(el.id||'');
+  (back?sfx.back:sfx.tap)();
+ }catch(x){}
+},true);
 const MELO=[196,196,233,196,175,175,208,175,196,196,233,262,233,208,196,175];
 /* ボス戦用: 短調の重いリフ */
 const MELO_B=[147,147,175,196,147,147,220,196,147,131,147,175,131,110,123,131];
@@ -1704,6 +1728,9 @@ const stageOK=i=>EDIT||DEV||i<=0||!!scArr(i-1)[NM_DIFF];
 /* ============ ルート(loadStageで差し替わる) ============ */
 let PATH=STAGES[0].path;
 const SEG=[];let PLEN=0;
+/* 道路が右へ突き抜けている分を含めた「収めたい幅」(loadStageで決まる)。
+   ⚠使う場所(fitCanvas)より前で宣言すること=letのTDZで落ちるため */
+let PMAXX=MW;
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  const S=STAGES[STAGE];
@@ -1713,6 +1740,10 @@ function loadStage(si){
  SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of (S.sup||SUP_SLOTS))SLOTS.push(e.slice());
  AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
  CORE=PATH[PATH.length-1].slice();
+ /* ⭐道路(侵入路)は**マップ矩形の外**(x>MW)まで伸びている。対戦のミニ盤面と重ねないためには、
+    マップ矩形ではなく「道路の右端」まで画面に収める必要がある(2026-07-26ユーザー指示)。
+    ⚠道路には幅があるので半幅+余白ぶん見ておく。ミニ盤面が無いソロ/協力ではこの値は使わない=マップは縮まない */
+ PMAXX=MW;for(const p of PATH)PMAXX=Math.max(PMAXX,p[0]+59);/* 59=縁石の半幅49+10の余白 */
  makeScenery();/* 地面の模様・道路のひび・タイヤ痕を作り直す */
 }
 function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}const e=SEG[SEG.length-1];return[e.b[0],e.b[1],0];}
@@ -3716,10 +3747,19 @@ function cpuTick(C,dt){
   else if(rg<2+ex){for(let i=C.uUn-1;i>=0;i--)if(UNITS[i].rng>60&&UNITS[i].type!=='heal'){uw=i;break;}}
   if(uw>=0&&C.ucd[uw]<=0&&C.scrap-rsv>=UNITS[uw].cost*res&&deployUnit(C,uw))return;}
  let bi=-1,bst=null,bp=1e9;
- /* ⚠CPUは廃品工房(上級も)を強化しない=経済より塔を優先する、という既存の考え方をそのまま残す */
- for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||TOWERS[tw.ti].type==='eco')continue;
+ /* ⭐CPUも廃品工房を育てる(2026-07-26ユーザー指示)。以前は工房を強化対象から外していたため、
+    対戦で**人間だけが経済を伸ばせる**状態だった。
+    ⚠ただし工房は「後で効く」投資なので、序盤(W4まで)と終盤(残り3波)は塔を優先する
+      =勝負が決まる時間帯に⚙️を寝かせないため。 */
+ const ecoOK=wave>=4&&wave<=Math.max(4,curW()-3);
+ for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
+  const isEco=TOWERS[tw.ti].type==='eco';
+  if(isEco&&!ecoOK)continue;
   for(const st of twStats(tw.ti)){if(tw.us[st]>=USTAT_MAX)continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
- if(bi>=0&&C.scrap-rsv>=bp*res*1.25)upTower(C,bi,bst);
+ if(bi>=0&&C.scrap-rsv>=bp*res*1.25){upTower(C,bi,bst);return;}
+ /* ⭐工房を全部MAXまで上げたら『上級廃品工房』へ建て替える(人間と同じ手を打てるようにする) */
+ if(ecoOK)for(let k=0;k<ECO_MAX;k++){const si=ECO_BASE+k,tw=C.towers[si];
+  if(tw&&canGrade(C,tw)&&C.scrap-rsv>=GRD_COST*res*1.3){gradeTower(C,si);return;}}
 }
 function cpuPlan(C){
  const others=G.players.filter(p=>p!==C&&!p.dead);
@@ -3813,8 +3853,33 @@ function nextWave(){
   if(q.length){try{showIntro(q);}catch(e){}}
  }
  if(G.wave===1&&!G.players[G.myIdx].dead){
-  if(G.pve){setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),6000);setTimeout(()=>toast('⬆ デッキのボタンを長押しで部隊レベルアップ!'),11400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),16800);setTimeout(()=>toast('🛡 WAVE '+STAGE_W+' を守り切ればステージクリアだ!'),22200);}
-  else{setTimeout(()=>toast('🔨 道沿いの空きスロットをタップしてタワーを建てろ!'),900);setTimeout(()=>toast('🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!'),5600);setTimeout(()=>toast('💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ'),11000);setTimeout(()=>toast('🪖 主役は部隊!下のデッキから生存者を出撃させろ'),16400);setTimeout(()=>toast('🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'),21800);}}
+  waveTips().forEach((s,i)=>setTimeout(()=>toast(s),900+i*5400));}
+}
+/* WAVE1の頭に上から出てくる操作案内。
+   ⚠**内容が古くなりやすい場所**(2026-07-26に2つの嘘が見つかった):
+     ①「デッキ長押しで部隊レベルアップ」=**2026-07-25に廃止した操作**を案内し続けていた
+     ②最終ウェーブを `STAGE_W`(=20)固定で出していたので、新兵(5波)でも「WAVE20まで」と嘘をついていた
+   ⭐操作や仕様を変えたら**必ずここも直す**こと。最終ウェーブは難易度ごとに違うので `curW()` を使う。
+   ⚠**DOMを触らないデータの関数に分けてある**=`checkTips()` が中身を検査できるようにするため
+     (toast は setTimeout で出るので、差し込む側は検査できない)。 */
+function waveTips(){
+ const pve=!!(G&&G.pve);
+ const t=pve
+  ?['🔨 道の角にある空きマスをタップしてタワーを建てろ!',
+    '🪖 主役は部隊!下のデッキから生存者を出撃させろ',
+    '⬆ 部隊レベルは作戦タイムの強化カードで上げる(全兵科が+10%ずつ強くなる)',
+    '🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!',
+    '🎯ボタン→地点タップで航空支援。チャージが溜まるたび撃てる',
+    '🛡 WAVE '+curW()+' を守り切ればクリアだ!']
+  :['🔨 道の角にある空きマスをタップしてタワーを建てろ!',
+    '🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!',
+    '💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ',
+    '🪖 主役は部隊!下のデッキから生存者を出撃させろ',
+    '🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'];
+ /* ソロで英雄を連れて来ている時だけ、その案内を足す */
+ const me=G&&G.players&&G.players[G.myIdx];
+ if(pve&&me&&me.hUi>=0)t.push('🦸ボタンで英雄が出撃。1試合に1回だけ・倒れたら二度と出せない');
+ return t;
 }
 function gameStep(dt){
  if(!G||G.over)return;
@@ -3857,9 +3922,14 @@ function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||
  const band=Math.round(barBandPx()*DPR);/* 下の操作バーぶん＝ここにマップは入れない(タレット置き場と絶対に被らせない) */
  const rres=Math.round(minisResPx()*DPR);/* 対戦のミニ盤面ぶんの右余白(ソロ・協力では0) */
  const availW=Math.max(160,W-rres),availH=Math.max(90,H-band);
+ /* ⭐ミニ盤面がある時(対戦)は、マップ矩形ではなく**道路の右端(PMAXX)**まで収める(2026-07-26ユーザー指示)。
+    ⚠侵入路はマップ矩形の外(x>MW)にあるため、MWだけを基準にすると助走路がミニ盤面の下へ潜る。
+    ⚠ソロ/協力(rres=0)では今までどおりMW基準=マップは1pxも縮まない */
+ const wantW=rres>0?PMAXX:MW;
  /* 空(上端SKYH)は画面の外へはみ出してよい＝そのぶん地面を大きく使う。ただし地平線の帯(SKYKEEP)は必ず残す */
- SC=Math.min(availW/MW,availH/(MH-SKYH+SKYKEEP));
- OX=(availW-MW*SC)/2;
+ SC=Math.min(availW/wantW,availH/(MH-SKYH+SKYKEEP));
+ /* 中央寄せが基本。ただし道路の右端がミニ盤面に届く時は、その分だけ左へ寄せる */
+ OX=Math.min((availW-MW*SC)/2,availW-wantW*SC);
  let oy=availH-MH*SC;/* 地面の下端を操作バーの上端にぴったり付ける */
  if(oy>0)oy*=.5;/* 縦に余る画面(PC等)では中央へ */
  OY=oy;}
@@ -3878,7 +3948,10 @@ function minisResPx(){
  const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
  if(now-MINIT<400)return MINIRES;MINIT=now;
  try{const d=$('minis'),r=d&&d.getBoundingClientRect();
-  MINIRES=(d&&d.children&&d.children.length&&r&&r.width>4)?Math.ceil(r.width+8):0;
+  /* ⚠幅だけで測ってはいけない(2026-07-26)。小窓は right:0 でも safe-area の分だけ右に隙間が空くので、
+     「幅+8」では足りず**侵入路が小窓の下に潜っていた**。実際の左端から画面右端までを余白にする */
+  MINIRES=(d&&d.children&&d.children.length&&r&&r.width>4)
+   ?Math.ceil(Math.max(r.width,(window.innerWidth||r.right)-r.left)+8):0;
  }catch(e){}
  return MINIRES;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');

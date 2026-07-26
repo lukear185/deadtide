@@ -274,6 +274,41 @@ function checkCryo(){
  console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・再凍結なし・同じ敵は5回まで(強化で10) OK');
  backTitle();
 }
+/* ---- WAVE1の操作案内(tips)が古くなっていないか / ボタンを押した音があるか(2026-07-26に追加) ---- */
+function checkTips(){
+ /* 廃止した操作を案内していないか。⚠デッキ長押しは2026-07-25に廃止済みなのに案内が残っていた */
+ const NG=[['長押し','デッキ長押しの部隊レベルアップは廃止済み'],
+  ['段階進化','部隊の段階進化は廃止済み'],['洞窟','🕳洞窟は削除済み']];
+ for(const d of [0,4]){/* 新兵(5波)と悪夢(20波)で見る=最終ウェーブが難易度ごとに違うため */
+  META.stg=0;setDiff=d;startSolo();
+  frames(10,.016);
+  const t=waveTips();
+  if(!t.length){console.log('FAIL: 操作案内が空');process.exit(1);}
+  for(const s of t)for(const [w,why] of NG)if(s.indexOf(w)>=0){
+   console.log('FAIL: 操作案内に古い内容が残っている「'+w+'」('+why+') → '+s);process.exit(1);}
+  /* 最終ウェーブが「その難易度の値」になっているか(STAGE_W固定だと新兵でも20と出てしまう) */
+  const w=curW(),hit=t.filter(s=>s.indexOf('WAVE '+w)>=0);
+  if(!hit.length){console.log('FAIL: 難易度'+d+'(最終W'+w+')の案内にその数字が出ていない → '+t.join(' / '));process.exit(1);}
+  if(t.some(s=>s.indexOf('WAVE '+STAGE_W)>=0&&w!==STAGE_W)){
+   console.log('FAIL: 最終ウェーブを STAGE_W 固定で出している(難易度ごとに違う)');process.exit(1);}
+  backTitle();
+ }
+ /* 英雄を連れている時だけ案内が1つ増えるか */
+ META.stg=0;setDiff=2;startSolo();frames(10,.016);
+ const n0=waveTips().length;
+ G.players[0].hUi=HERO_I0;
+ if(waveTips().length!==n0+1){console.log('FAIL: 英雄を連れているのに🦸の案内が出ない');process.exit(1);}
+ backTitle();
+ /* ボタンを押した音(2026-07-26ユーザー指示=タイトル等が無音だった) */
+ for(const k of ['tap','back']){
+  if(typeof sfx[k]!=='function'){console.log('FAIL: sfx.'+k+' が無い(ボタンの音)');process.exit(1);}
+  if(!SFXSYN[k]){console.log('FAIL: sfx.'+k+' に合成音が無い=素材が無い環境で無音になる');process.exit(1);}
+  if(!SFX_LBL[k]||SFX_LBL[k][2]!=='ui'){console.log('FAIL: 🔊音の確認に sfx.'+k+' が出ない');process.exit(1);}}
+ /* 押した音を鳴らす対象に、主要な画面のボタンが入っているか */
+ for(const sel of ['.btn','.xbtn','.tabs .tb','.lc .bu','.grc','.ldc'])
+  if(UI_TAP_SEL.indexOf(sel)<0){console.log('FAIL: 押した音の対象に '+sel+' が入っていない');process.exit(1);}
+ console.log('操作案内: 新兵は「WAVE 5」・悪夢は「WAVE 20」・廃止した操作の案内なし / ボタンの音 tap・back OK');
+}
 /* ---- 中断 → 再開(ソロ)で持ち物が失われないか(2026-07-26に追加) ----
    ⚠localStorage をスタブしたので初めて検査できるようになった。
      以前は「保存系はヘッドレスでは検証されない」ままで、supN の保存漏れを見逃していた。 */
@@ -1119,6 +1154,7 @@ checkBite();
 checkFx2();
 checkGachaFx();
 checkTwFx();
+checkTips();
 checkResume();
 checkTwNew();
 checkCryo();
@@ -1129,7 +1165,11 @@ runStage2();
 runNightmare();
 runPvE(2,'PvE'+D5[2].n+'(素の腕前・W'+D5[2].w+')',false);
 const won=runPvE(4,'PvE'+D5[4].n+'(強化プレイ・W'+D5[4].w+')',true);
-if(!won)console.log('WARN: 悪夢は強化プレイでもクリア不可(バランス要確認)');
+/* ⚠悪夢がこのテストでクリアできないのは**設計どおり**(2026-07-26ユーザー明示・何度も同じ話になっている)。
+   ソロはローグライトで、🔬研究所の永久解放を積んで初めて勝てる難易度にしてある。
+   このテストは「研究所をほとんど解放していない状態＋機械的な操作」なので、負けて当たり前。
+   ⭐**ここを見て難易度を下げないこと**。見るべきは「どこまで行けたか(wave)」の推移だけ。 */
+if(!won)console.log('INFO: 悪夢は上の行の wave まで(研究所の解放を積んで勝つ難易度=これは想定どおり)');
 const cw=runCoop('協力3人(古参)');
 if(!cw)console.log('INFO: 協力3人は陥落(良プレイなら勝てるかは実機で確認)');
 runPvP('対戦三つ巴');

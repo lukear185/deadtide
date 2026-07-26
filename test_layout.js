@@ -90,7 +90,9 @@ if(low)bad++;
 if(up)bad++;
 /* ===== 対戦(死潮ゲージ+ミニ盤面)の重なり ===== */
 /* ミニ盤面のぶんマップが左へ寄るので、対戦の倍率で測り直す */
-MINIRES=Math.ceil(VS.minis.width+8);MINIT=NOW;fitCanvas();
+/* ⚠minisResPx() と同じ式で測ること。幅だけで測ると本体側の直し(小窓の左端から画面右端までを余白にする)が
+   検査に反映されず、**直したのに掛かったままに見える** */
+MINIRES=Math.ceil(Math.max(VS.minis.width,innerWidth-VS.minis.left)+8);MINIT=NOW;fitCanvas();
 const S2=(x,y)=>[css(OX+x*SC),css(OY+y*SC)];
 function ovBox(a,b){return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;}
 console.log('--- 対戦 ---');
@@ -103,11 +105,15 @@ let tb=0;for(let d=0;d<=PLEN;d+=10){const p=pathPos(d);const [x,y]=S2(p[0],p[1])
  if(hit(x,y,r,VS.tidebar))tb++;}
 if(tb){console.log('NG: 死潮ゲージが道路に被る '+tb+'点');bad++;}
 else console.log('死潮ゲージ x 道路: OK');
-/* ③参考表示(失敗にはしない)。マップは高さで頭打ちなので、これ以上は詰められない */
+/* ③ ⭐ミニ盤面と道路の重なりは**許さない**(2026-07-26ユーザー指示「完全にかからないようにして」)。
+   以前は「参考表示」で失敗にしていなかったが、要件になったので NG にする。
+   直し方=マップを縮める(fitCanvas が PMAXX まで収める)か、小窓を小さくする */
 let ts=0;SLOTS.forEach(s=>{const [x,y]=S2(s[0],s[1]);if(hit(x,y,30*SC/DPR,VS.tidebar))ts++;});
 let ms=0;for(let d=0;d<=PLEN;d+=10){const p=pathPos(d);const [x,y]=S2(p[0],p[1]);
  if(hit(x,y,css(52*SC),VS.minis))ms++;}
-console.log('参考: 死潮ゲージが建設マスの上端をかすめる='+ts+'個 / ミニ盤面が道路(=マップ外の侵入路)に掛かる='+ms+'点');
+if(ms){console.log('NG: ミニ盤面が道路(マップ外の侵入路)に掛かる '+ms+'点');bad++;}
+else console.log('ミニ盤面 x 道路: OK(掛かる点ゼロ)');
+console.log('参考: 死潮ゲージが建設マスの上端をかすめる='+ts+'個');
 MINIRES=0;MINIT=NOW;fitCanvas();
 console.log(bad?('要修正 '+bad+'件'):'レイアウト判定: 重なりゼロ OK');
 process.exit(0);
