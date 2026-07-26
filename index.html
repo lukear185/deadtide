@@ -376,6 +376,21 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .chips .btn{font-size:10px;padding:3px 6px;box-shadow:0 2px 0 var(--ink)}
 #ivlog{margin-top:8px;font-size:11px;font-weight:700;line-height:1.7;max-height:76px;overflow:auto;background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:6px}
 #ivready{width:100%;margin-top:8px;font-size:18px}
+/* ---- 🎓 チュートリアル(2026-07-26 第86弾) ----
+   ⚠**画面の上に置く**。光らせる相手(デッキ・🚩・🎯・✅配置完了)はどれも下端にあるので、
+     下に置くと自分で隠してしまう。上のHUD(〜y50)は避けて y54 から。
+   ⚠**pointer-events:none**にして下の盤面のタップを邪魔しない(▶ボタンだけ拾う)。 */
+#tut{position:fixed;left:8px;right:8px;top:54px;z-index:60;display:none;gap:8px;align-items:center;
+ pointer-events:none;background:var(--ink);color:var(--paper);border:3px solid var(--gold);
+ border-radius:12px;padding:7px 10px;box-shadow:0 5px 0 rgba(0,0,0,.35)}
+#tut.on{display:flex}
+#tut .tx{flex:1 1 auto;min-width:0}
+#tut .tt{font-size:13px;font-weight:900;color:var(--gold);line-height:1.3}
+#tut .tm{font-size:12px;font-weight:700;line-height:1.5;margin-top:2px}
+#tut .btn{pointer-events:auto;flex:0 0 auto}
+/* 光らせる印。⚠!important=各ボタンが持っている枠より強くする必要がある */
+.tuthi{outline:4px solid var(--gold)!important;outline-offset:2px;animation:tutp .9s infinite}
+@keyframes tutp{0%,100%{outline-color:var(--gold)}50%{outline-color:var(--rust)}}
 /* ---- リザルト ---- */
 #scr-result{background:rgba(20,16,12,.88)}
 #reswrap{display:flex;flex-direction:column;align-items:center;gap:6px;max-height:100%;overflow:auto;padding:12px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
@@ -434,7 +449,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button class="btn gold" id="bt-gacha">💎 英雄召集 <span id="gem-cnt"></span></button>
     <button class="btn gold" id="bt-train" style="display:none">🏋 鍛錬所 <span id="tr-mat"></span></button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
-    <button class="btn" id="bt-howto">📖 あそびかた</button>
+    <button class="btn" id="bt-howto">🎓 あそびかた</button>
     <button class="btn sm" id="bt-sfx" style="display:none">🔊 音の確認</button>
     <div class="seg" id="seg-fx" style="margin-top:8px;justify-content:center">
       <button class="btn sm" data-v="0">演出:弱</button>
@@ -579,6 +594,13 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
+<!-- 🎓 チュートリアル(第86弾)。⚠**文言は tutSteps() にだけ置く**(ここには何も書かない)。
+     WAVE1にトーストで流していた操作案内を廃止し、実際に操作させて覚えてもらう形にした -->
+<div id="tut">
+  <div class="tx"><div class="tt" id="tut-t"></div><div class="tm" id="tut-m"></div></div>
+  <button class="btn gold sm" id="tut-next">▶ 次へ</button>
+</div>
+
 <div class="scr" id="scr-result">
   <div id="reswrap">
     <div id="res-left">
@@ -590,22 +612,6 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       </div>
     </div>
     <table class="stats" id="res-stats"></table>
-  </div>
-</div>
-
-<div class="modal" id="md-howto">
-  <div class="panel howto">
-    <h2 class="hd">📖 あそびかた</h2>
-    <p><b>🛡 ソロ作戦</b>=ステージ制。押し寄せるウェーブを耐え抜き、<b>WAVE20を守り切ればステージクリア</b>。5波ごとにボスが来る。<b>📡 オンライン対戦</b>=以下の「死潮の綱引き」ルールだ。</p>
-    <p><b>🤝 協力プレイ</b>=1枚の戦場を最大3人で守る。拠点(コア)は共有、各自のテントから自分の部隊を出撃させ、⚙️と強化は各自持ち。タワーは早い者勝ちの共有スロットだ。</p>
-    <p>対戦ではゾンビの大群<b>「死潮」は世界に一つだけ</b>。画面上のゲージが「誰に何%流れるか」の取り分だ。<b>🌊押す</b>で⚙️を払えば、自分の取り分を相手へ押し流せる(連打するほど割高)。<b>5波ごとのボスは、いちばん押し負けてる奴の所へ行く。</b>相手の盤面は右上の小窓で見え、タップすれば全画面で観戦できる。</p>
-    <p>ただし——<b>受けた側は撃破⚙️を総取り</b>。耐えられるなら、押し付けられた潮はそのまま金脈になる。わざと受けて稼ぐのも戦略だ。取り分は放っておくと均等に戻っていく。</p>
-    <p><b>ふたつの資源</b>——<b>⚙️スクラップ</b>はゾンビを倒すと手に入り、建設・タワーの現地強化・出撃・解放に使う。<b>🔩強化ポイント</b>は<b>ウェーブを守り切るたび</b>にもらえ(後半ほど大量)、<b>作戦タイムの強化(部隊レベル・火力増強・コア修理)</b>専用だ。全部は買えないので何を伸ばすか選べ。</p>
-    <p>道沿いの<b>空きスロットをタップ</b>してタワーを建設、建てた塔をタップで<b>⚔攻撃/⏩連射/📡射程</b>を⚙️で個別強化(電撃塔だけは⚡連鎖数)。置き場は最初6ヶ所で、🔒のマスをタップすれば⚙️で増やせる。画面左上の<b>🏭工房エリア</b>は廃品工房の専用枠で、最大3基まで増設できる。</p>
-    <p><b>主役は生存者部隊</b>。画面下のデッキから⚙️で出撃させろ。部隊はウェーブを跨いで戦い続け、<b>🚩集結旗</b>(ボタン→地点タップ)まで前進してそこで戦線を張る。部隊レベル(全兵科のHPと攻撃が上がる)は<b>作戦タイムの強化カード</b>で上げろ。1人が足止めできるゾンビは3体まで——溢れた分は素通りだ(すり抜ける敵は<b>鎖使い</b>だけが止められる)。</p>
-    <p>🎯はチャージ式の航空支援。🏳は<b>このウェーブを諦める</b>(残った敵のぶんコアが傷つく代わりにすぐ次へ)。作戦タイムでは新タワー/新部隊の解放(⚙️)と、部隊レベル・火力増強・コア修理(🔩)を選べる。</p>
-    <p><b>🔬 研究所(ソロ)</b>——出撃の結果に応じて<b>研究pt</b>が貯まる(負けても貯まる)。タイトル→ソロ作戦の研究所で、<b>新型タワー・新型兵科・新しい航空支援・初期資金・コアHP</b>を永久に解放できる。死ぬたびに次の自分が強くなる仕組みだ。</p>
-    <button class="btn gold" id="bt-howto-close" style="margin-top:8px;width:100%">とじる</button>
   </div>
 </div>
 
@@ -875,7 +881,7 @@ const RUN_KEY=DEV?'dt_run_dev':'dt_run';
 function loadRun(){try{const d=JSON.parse(localStorage.getItem(RUN_KEY)||'null');return (d&&d.v===1)?d:null;}catch(e){return null;}}
 function clearRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}try{refreshRunUI();}catch(e){}}
 function saveRun(){
- if(!(MODE==='solo'&&G&&G.pve&&!G.coop&&!G.over))return;
+ if(!(MODE==='solo'&&G&&G.pve&&!G.coop&&!G.over)||G.tut)return;/* 🎓チュートリアルは中断保存しない */
  const m=G.players[0];if(!m||m.dead)return;
  const d={v:1,stg:STAGE,dif:G.pveDiff==null?2:G.pveDiff,
   wave:G.phase==='wave'?Math.max(0,G.wave-1):G.wave,
@@ -4213,6 +4219,7 @@ function newGame(specs,myIdx){
 /* ソロPvEの終了時に研究ptを付与(勝敗問わず) */
 function awardMeta(){
  if(!soloMeta()||G.metaGain!=null)return;
+ if(G.tut){G.metaGain=0;return;}/* 🎓チュートリアルの戦績は記録しない */
  clearRun();/* 決着がついたら中断の記録は消す */
  /* ⚠**`G.pveDiff||2` と書いてはいけない**(2026-07-26に実際に踏んだ)。新兵は 0 なので
     `0||2` で**古参(2)としてクリアが記録され**、①兵長が永久に開かない ②鬼軍曹が勝手に開く という状態になっていた。
@@ -4261,8 +4268,6 @@ function nextWave(){
   for(const e of G.tide.pool){const zi=e.z.zi;if(!seen[zi]){seen[zi]=1;q.push({k:'z',i:zi});}}
   if(q.length){try{showIntro(q);}catch(e){}}
  }
- if(G.wave===1&&!G.players[G.myIdx].dead){
-  waveTips().forEach((s,i)=>setTimeout(()=>toast(s),900+i*5400));}
 }
 /* WAVE1の頭に上から出てくる操作案内。
    ⚠**内容が古くなりやすい場所**(2026-07-26に2つの嘘が見つかった):
@@ -4271,29 +4276,10 @@ function nextWave(){
    ⭐操作や仕様を変えたら**必ずここも直す**こと。最終ウェーブは難易度ごとに違うので `curW()` を使う。
    ⚠**DOMを触らないデータの関数に分けてある**=`checkTips()` が中身を検査できるようにするため
      (toast は setTimeout で出るので、差し込む側は検査できない)。 */
-/* WAVE1に出す操作案内。⚠**DOMを触らないデータの関数**にしてあるので検査できる。
-   ⚠**操作や仕様を変えたらここも直すこと**(廃止した操作を案内し続ける事故が実際にあった)。
-   ⚠**「WAVE〜を守り切ればクリアだ!」は2026-07-26にユーザー指示で削除した**。足し直さないこと
-     (クリア条件は上のWAVE表示とステージ選択の説明に出ているので、操作案内に混ぜる必要がない)。
-     検査 checkTips() が「WAVE 」を禁止語にしているので、復活させると落ちる。 */
-function waveTips(){
- const pve=!!(G&&G.pve);
- const t=pve
-  ?['🔨 道の角にある空きマスをタップしてタワーを建てろ!',
-    '🪖 主役は部隊!下のデッキから生存者を出撃させろ',
-    '⬆ 部隊レベルは作戦タイムの強化カードで上げる(全兵科が+10%ずつ強くなる)',
-    '🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!',
-    '🎯ボタン→地点タップで航空支援。チャージが溜まるたび撃てる']
-  :['🔨 道の角にある空きマスをタップしてタワーを建てろ!',
-    '🌊 上のゲージ=死潮の取り分。「押す」で⚙️を払い相手に流せ!',
-    '💰 受けた側は撃破⚙️を総取り。耐えれば潮は金脈だ',
-    '🪖 主役は部隊!下のデッキから生存者を出撃させろ',
-    '🚩ボタン→地点タップで集結旗。部隊はそこへ前進して戦線を張る!'];
- /* ソロで英雄を連れて来ている時だけ、その案内を足す */
- const me=G&&G.players&&G.players[G.myIdx];
- if(pve&&me&&me.hUi>=0)t.push('🦸ボタンで英雄が出撃。1試合に1回だけ・倒れたら二度と出せない');
- return t;
-}
+/* ⚠**WAVE1のトースト案内(waveTips)は2026-07-26にユーザー指示で廃止した**。
+   「案内いらんな。チュートリアルを最初に用意して、そこで全部説明すればOK」
+   =操作の説明は 🎓チュートリアル(tutSteps)に一本化してある。**ここに書き戻さないこと**。
+   検査 checkTut() が「操作の説明が tutSteps に揃っているか」を見る。 */
 function gameStep(dt){
  if(!G||G.over)return;
  if(G.phase==='wave'){
@@ -4318,7 +4304,7 @@ function gameStep(dt){
   let done=true;for(const C of G.players)if(!C.dead&&!C.waveDone)done=false;
   if(done)startInterval();
  }else if(G.phase==='interval'){
-  G.tI-=dt;
+  if(!tutHold())G.tI-=dt;/* 🎓チュートリアル中は時間で波が始まらないようにする */
   for(const C of G.players){if(C.kind==='cpu'&&!C.dead&&!C.planned){C.aiPlanT-=dt;if(C.aiPlanT<=0){C.planned=true;cpuPlan(C);}}}
   let allr=true;for(const C of G.players)if(!C.dead&&!C.ready)allr=false;
   if(G.tI<=0||allr){if(G.wave>0)for(const C of G.players)if(C.kind==='cpu'&&!C.dead&&!C.planned){C.planned=true;cpuPlan(C);}nextWave();}
@@ -4498,6 +4484,9 @@ function renderCamp(C,t){
   /* 看板は枠の下に置く(マップ上端が画面上部のHUDに隠れるため) */
   c.fillStyle='rgba(36,31,25,.5)';rr(c,ex0-46,ey0+44,300,26,8);c.fill();
   c.fillStyle=AMBER;c.font='900 18px '+FF;c.textAlign='left';c.fillText('🏭 廃品工房エリア',ex0-38,ey0+63);}
+ /* 🎓チュートリアルの「ここをタップ」の印。⚠**ずっと出しておく**=点滅で消えている間に
+    どこか分からなくなる。太い輪+下向きの矢印で、盤面のどこでも一目で分かるようにする */
+ tutMark(c,C,t);
  /* スロットとタワー */
  for(let si=0;si<SLOTS.length;si++){const [sx,sy]=SLOTS[si],tw=C.towers[si];
   const eco=isEcoSlot(si),sup=isSupSlot(si),lock=!slotUnlocked(C,si);
@@ -5540,7 +5529,143 @@ function startGameUI(others){
  if(EDIT){try{edPanel();toast('🛠 マス編集モード: マスを指でドラッグ→📋出力で座標を書き出す',true);}catch(e){}}
  if(DEV){try{toast('🛠 DEVモード: 🧬💎🔧⚙️🔩が無限・全ステージ/難易度/英雄が選べる(セーブは別枠)',true);}catch(e){}}
 }
+/* ============ 🎓 チュートリアル(2026-07-26 第86弾) ============
+   ⭐ユーザー指示「案内いらんな。チュートリアルを最初に用意して、そこで全部説明すればOK」。
+     WAVE1にトーストで流していた操作案内(waveTips)は**廃止**し、
+     **実際に操作させて覚えてもらう形**にした。タイトルの「🎓 あそびかた」がこれになる。
+   ⚠**文言は tutSteps() にだけ置く**(DOMを触らないデータの関数なので検査できる)。
+     操作や仕様を変えたらここも直すこと=古い案内が残る事故を何度も踏んでいる。
+   ⚠**進むのは「実際にその操作をした時」だけ**。時間で勝手に進めない。
+     読むだけの段(okが無い段)は▶ボタンで進む。
+   ⚠**本編の記録を汚さない**: G.tut=1 を立て、awardMeta / saveRun を素通りさせる。
+     難易度は新兵(0)・ステージ1に固定し、⚙️は足りなくならないよう補充する。
+   段の形: {id, t:見出し, m:本文, hi:光らせる所, pre:段に入る時, ok:進む条件(無ければ▶で進む)}
+     hi = {k:'dom',s:セレクタ} / {k:'slot'}(建設マス) / {k:'core'}(拠点) / null */
+let TUT=null;
+/* チュートリアルで建てさせるマス。⚠工房枠(eco)と支援枠(sup)は専用なので除く。
+   ⭐**一度決めたら動かさない**(TUT.siに覚える)。毎回選び直すと、建てた瞬間に
+     「空いている枠」が別のマスに移り、①印が飛ぶ ②「建てたか」の判定が別のマスを見て
+     永久に進めなくなる(2026-07-26に踏んだ)。
+   ⭐**画面の下寄りのマスを選ぶ**。上の帯(チュートリアルの文)が画面の上に出るので、
+     一番上の枠を選ぶと**印が文で隠れて「光っているマス」が見えない**(撮って気づいた)。 */
+function tutSlot(C){
+ if(TUT&&TUT.si!=null)return TUT.si;
+ let best=-1,by=-1;
+ for(const si of SLOT_ORDER){
+  if(isEcoSlot(si)||isSupSlot(si)||!slotUnlocked(C,si)||(C.towers||[])[si])continue;
+  if(SLOTS[si][1]>by){by=SLOTS[si][1];best=si;}}
+ if(best<0)best=SLOT_ORDER[0];
+ if(TUT)TUT.si=best;
+ return best;
+}
+function tutSteps(){return[
+ {id:'core',t:'ここがお前の拠点だ',
+  m:'ゾンビは道をたどってここへ来る。コアHPが0になったら負けだ。',hi:{k:'core'}},
+ {id:'slot',t:'まずタワーを建てろ',
+  m:'光っているマスをタップ。道の角は敵が長く居座るので狙い目だ。',
+  hi:{k:'slot'},ok:C=>SEL===tutSlot(C)},
+ {id:'build',t:'⚙️スクラップで建てる',
+  m:'好きなタワーを選べ。建てたあと塔をタップすると⚔攻撃・⏩連射・📡射程を個別に強化できる。',
+  hi:{k:'dom',s:'#buildmenu'},ok:C=>!!(C.towers||[])[tutSlot(C)]},
+ {id:'unit',t:'主役は生存者部隊だ',
+  m:'下のデッキから出撃させろ。部隊はウェーブを跨いで戦い続ける。',
+  hi:{k:'dom',s:'#deck'},ok:C=>C.units.length>0},
+ {id:'flag',t:'🚩集結旗で戦線を張る',
+  m:'🚩を押してから地点をタップ。部隊はそこまで前進して敵を食い止める。',
+  hi:{k:'dom',s:'#flagbtn'},pre:C=>{TUT.mk=C.flagD;},ok:C=>C.flagD!==TUT.mk},
+ {id:'strike',t:'🎯航空支援を落とせ',
+  m:'チャージが溜まるたび撃てる。🎯を押してから落とす地点をタップ。',
+  hi:{k:'dom',s:'#strikebtn'},pre:C=>{C.charge=1;},ok:C=>C.charge<1},
+ /* ⚠**1波目の前には作戦タイムのパネルが出ない**(2波目以降だけ)。
+    ここで「✅配置完了!」を押させようとすると、見えないボタンを待つことになり
+    しかも時間も止めているので**永久に進めなくなる**(2026-07-26に踏んだ)。
+    この段で時間の停止を解除し、数秒でウェーブが始まるようにする。 */
+ {id:'go',t:'まもなくウェーブ開始',
+  m:'ウェーブ中もタワーは建てられるし、部隊も出せる。2波目からは作戦タイムに強化を選べる。',
+  hi:null,pre:()=>{TUT.ran=true;if(G)G.tI=Math.min(G.tI,4);},ok:()=>!!(G&&G.phase==='wave')},
+ {id:'fight',t:'倒すと⚙️が手に入る',
+  m:'1人の部隊が食い止められるのは3体まで。溢れた分は素通りするので、数と壁役で受けろ。',hi:null},
+ {id:'clear',t:'守り切ると🔩が入る',
+  m:'ウェーブを制圧すると🔩強化ポイント。作戦タイムのカードで部隊レベル(全兵科+10%)を上げろ。',
+  hi:{k:'dom',s:'#interv'},ok:()=>!!(G&&G.phase==='interval'&&G.wave>=1)},
+ {id:'lab',t:'負けても強くなる',
+  m:'出撃の結果で🧬研究ptが貯まる。タイトルの🔬研究所で新型タワーや兵科を永久に解放できる。',hi:null},
+ {id:'end',t:'以上だ。健闘を祈る',
+  m:'この案内はタイトルの「🎓 あそびかた」からいつでもやり直せる。',hi:null}
+];}
+function tutHold(){return !!(TUT&&TUT.on&&!TUT.ran);}/* 作戦タイムの残り時間を止める */
+function tutStart(){
+ setDiff=0;META.stg=0;/* 新兵・ステージ1に固定 */
+ startSolo();
+ if(G)G.tut=1;
+ TUT={on:true,i:-1,st:tutSteps(),mk:0,ran:false,t:0,si:null};
+ if(G)tutSlot(G.players[0]);/* 建てさせるマスをここで確定させる */
+ tutGo(0);
+}
+function tutGo(i){
+ if(!TUT)return;
+ tutHi(null);
+ if(i>=TUT.st.length){tutEnd(true);return;}
+ TUT.i=i;TUT.t=0;
+ const S=TUT.st[i],C=G&&G.players[0];
+ if(S.pre&&C){try{S.pre(C);}catch(e){}}
+ if(S.id==='fight')TUT.ran=true;/* ここから先は波を止めない */
+ const e=$('tut');if(!e)return;
+ $('tut-t').textContent=S.t;$('tut-m').textContent=S.m;
+ $('tut-next').style.display=S.ok?'none':'inline-block';
+ e.classList.add('on');
+ tutHi(S.hi);
+}
+/* 光らせる。DOMはクラスを付け替え、盤面(マス/拠点)は輪を出す(tutStepで打ち直す) */
+function tutHi(hi){
+ try{document.querySelectorAll('.tuthi').forEach(el=>el.classList.remove('tuthi'));}catch(e){}
+ TUT&&(TUT.hi=hi||null);
+ if(hi&&hi.k==='dom'){const el=document.querySelector(hi.s);if(el)el.classList.add('tuthi');}
+}
+/* 盤面に出す印。⚠マップ座標のまま描く(renderCamp の変換の中で呼ばれる)。
+   ⚠**dir(向き)を持たない**=時刻だけで形が決まるので、どこから描いても同じに見える。 */
+function tutMark(c,C,t){
+ const hi=TUT&&TUT.on&&TUT.hi;
+ if(!hi||(hi.k!=='slot'&&hi.k!=='core'))return;
+ const p=hi.k==='core'?PATH[PATH.length-1]:SLOTS[tutSlot(C)];
+ if(!p)return;
+ const pu=(Math.sin(t*4)+1)*.5,r=(hi.k==='core'?86:52)+pu*10;
+ c.save();
+ c.strokeStyle=GOLD;c.lineWidth=6;c.globalAlpha=.5+pu*.5;
+ c.beginPath();c.arc(p[0],p[1],r,0,7);c.stroke();
+ c.strokeStyle=INK;c.lineWidth=2;c.globalAlpha=.9;
+ c.beginPath();c.arc(p[0],p[1],r,0,7);c.stroke();
+ /* 下向きの矢印(輪の真上で上下に揺れる) */
+ const ay=p[1]-r-26-pu*10;
+ c.globalAlpha=1;c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=3;
+ c.beginPath();c.moveTo(p[0]-17,ay);c.lineTo(p[0]+17,ay);c.lineTo(p[0],ay+26);c.closePath();
+ c.fill();c.stroke();
+ c.restore();
+}
+function tutStep(dt){
+ if(!TUT||!TUT.on)return;
+ const C=G&&G.players[0];
+ if(!C){tutEnd(false);return;}
+ TUT.t+=dt;
+ if(C.scrap<300)C.scrap=300;/* ⚠足りなくて先へ進めない状態を作らない */
+ const hi=TUT.hi;/* 盤面の印は tutMark() が毎フレーム描く */
+ /* ⚠DOMは作り直されることがある(デッキ・建設メニュー)ので、光る印を毎秒付け直す */
+ if(hi&&hi.k==='dom'&&TUT.t-(TUT.dt2||-9)>1){
+  TUT.dt2=TUT.t;const el=document.querySelector(hi.s);
+  if(el&&!el.classList.contains('tuthi'))el.classList.add('tuthi');}
+ const S=TUT.st[TUT.i];
+ if(S&&S.ok){let ok=false;try{ok=!!S.ok(C);}catch(e){}
+  if(ok)tutGo(TUT.i+1);}
+}
+function tutEnd(done){
+ tutHi(null);
+ const e=$('tut');if(e)e.classList.remove('on');
+ TUT=null;
+ META.tut=1;saveMeta();
+ if(done){backTitle();toast('🎓 チュートリアル終了!ソロ作戦で腕を試せ');}
+}
 function backTitle(){
+ if(TUT){TUT=null;tutHi(null);const te=$('tut');if(te)te.classList.remove('on');META.tut=1;saveMeta();}
  gameActive=false;G=null;PAUSED=false;COOP=false;closeBM();setAim(false);setFlagAim(false);setSpec(-1);
  try{document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen().catch(()=>{});}catch(e){}
  $('interv').classList.remove('on');$('pausebtn').style.display='none';$('ffbtn').style.display='none';
@@ -7632,8 +7757,8 @@ $('bt-run-resume').onclick=()=>{ensureAC();if(!resumeRun())refreshRunUI();};
 $('bt-back1').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
 $('bt-back2').onclick=()=>show('title');
-$('bt-howto').onclick=()=>$('md-howto').classList.add('on');
-$('bt-howto-close').onclick=()=>$('md-howto').classList.remove('on');
+$('bt-howto').onclick=()=>tutStart();
+$('tut-next').onclick=()=>{if(TUT)tutGo(TUT.i+1);};
 $('bt-totitle').onclick=backTitle;
 $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */
@@ -7907,6 +8032,17 @@ try{
 try{applyFrames();}catch(e){}/* ボタン/パネルの枠(素材が無ければ従来の見た目) */
 try{for(const k in ICO)icoImgFor(k);for(const k in ICN)icoImgFor(k);}catch(e){}/* canvas用に先読みしておく */
 if(MOBILE&&!STANDALONE)$('pwahint').style.display='block';
+/* 🎓 はじめての人には起動時にチュートリアルを出す(2026-07-26 第86弾)。
+   ⚠**すでに遊んでいる人には勝手に出さない**=難易度を1つでもクリアしていれば出さない。
+     出したら二度と自動では出さない(META.tut)。あとはタイトルの「🎓 あそびかた」からいつでも。
+   ⚠?sfx=1 / ?edit=1 の時は出さない(確認作業の邪魔になる)。 */
+/* ⚠**条件は待ってから見る**。読み込んだ瞬間に見て、あとで待つ形にすると
+   「待っている間に条件が変わった」場合に効かない(撮影ツールが META.tut=1 を立てても
+   チュートリアルが始まってしまい、タイトルの撮影が全部チュートリアルの絵になった)。 */
+setTimeout(()=>{try{
+ const played=(META.sc||[]).some(r=>(r||[]).some(v=>v));
+ if(!META.tut&&!played&&!SFXTEST&&!EDIT&&SCR==='title')tutStart();
+}catch(e){}},600);
 let last=performance.now();
 function loop(now){
  try{loopBody(now);}catch(e){/* 1フレームの例外でゲーム全体を止めない */
@@ -7931,6 +8067,7 @@ function loopBody(now){
   if(C)renderCamp(C,TT);
   drawMinis();
  }
+ if(TUT&&gameActive&&!PAUSED)tutStep(dt0);
  if(SCR==='title')paradeStep(TT);
  if(SCR==='rpg')rgStep(dt0);
  if(GC)gcStep(dt0);/* 💎英雄召集の演出 */

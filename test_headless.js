@@ -16,8 +16,11 @@ function mkEl(id){return {id,children:[],classList:{add(){},remove(){},toggle(){
  set onclick(f){},get onclick(){return null}};}
 const cache={};
 global.window=global;
+/* ⚠document.querySelector を持たせておく。無いと🎓チュートリアルの「光らせる」処理が例外になり、
+   しかもそれを try/catch で握り潰すと**検査が何も見ていない**状態になる(2026-07-26 第86弾) */
 global.document={getElementById:id=>cache[id]||(cache[id]=mkEl(id)),createElement:()=>mkEl('dyn'),
- querySelectorAll:()=>[],addEventListener(){},body:{classList:{add(){},remove(){},toggle(){}}}};
+ querySelector:sel=>mkEl('q'),querySelectorAll:()=>[],
+ addEventListener(){},body:{classList:{add(){},remove(){},toggle(){}}}};
 global.innerWidth=800;global.innerHeight=380;global.devicePixelRatio=1;global.navigator={};
 /* ⭐localStorage のスタブ。⚠これが無いと**中断/再開が一度も検査されない**
    (実際に supN の保存漏れ=再開すると建てた支援施設が消えるバグを見逃していた) */
@@ -279,44 +282,72 @@ function checkCryo(){
  backTitle();
 }
 /* ---- WAVE1の操作案内(tips)が古くなっていないか / ボタンを押した音があるか(2026-07-26に追加) ---- */
-function checkTips(){
- /* 廃止した操作を案内していないか。⚠デッキ長押しは2026-07-25に廃止済みなのに案内が残っていた */
+/* ---- 🎓チュートリアルの文言(2026-07-26 第86弾) ----
+   ⭐WAVE1のトースト案内(waveTips)は廃止し、操作の説明はチュートリアルに一本化した。
+   ⚠**説明文は仕様変更に取り残される**。実際に2回踏んでいる:
+     ①廃止した操作(デッキ長押しで部隊レベルアップ)を案内し続けていた
+     ②最終ウェーブを STAGE_W 固定で出していたので新兵(5波)でも「WAVE20まで」と嘘をついていた。
+   ⚠**中身(tutSteps)はDOMを触らないデータの関数**にしてあるので、こちらで直に検査できる。
+   ⚠DOM側だけを見る検査は、ヘッドレスでは0個でも通ってしまう=何も見ていないのにOKと出る。 */
+function checkTut(){
+ /* 廃止した操作・古い言い回しが混ざっていないか */
  const NG=[['長押し','デッキ長押しの部隊レベルアップは廃止済み'],
   ['段階進化','部隊の段階進化は廃止済み'],['洞窟','🕳洞窟は削除済み'],
-  /* ⚠2026-07-26ユーザー指示で「WAVE〜を守り切ればクリアだ!」を削除した。
-     ⭐**消した案内は「出ていないこと」を検査する**=でないと足し直されても気づけない。
-     クリア条件は上のWAVE表示とステージ選択の説明に出ているので、操作案内には要らない。 */
-  ['WAVE ','最終ウェーブの案内は2026-07-26に削除した(ユーザー指示)']];
- for(const d of [0,4]){/* 新兵(5波)と悪夢(20波)で見る=最終ウェーブが難易度ごとに違うため */
-  META.stg=0;setDiff=d;startSolo();
-  frames(10,.016);
-  const t=waveTips();
-  if(!t.length){console.log('FAIL: 操作案内が空');process.exit(1);}
-  for(const s of t)for(const [w,why] of NG)if(s.indexOf(w)>=0){
-   console.log('FAIL: 操作案内に古い内容が残っている「'+w+'」('+why+') → '+s);process.exit(1);}
-  backTitle();
+  ['WAVE20','最終ウェーブは難易度ごとに違う(新兵5〜悪夢20)ので固定で書かない'],
+  ['6ヶ所','建設スロットの初期解放は SLOT0=7'],
+  ['あそびかた画面','あそびかたのモーダルは削除しチュートリアルに置き換えた']];
+ META.stg=0;setDiff=0;startSolo();frames(10,.016);
+ const st=tutSteps();
+ if(st.length<6){console.log('FAIL: チュートリアルの段が少なすぎる('+st.length+')');process.exit(1);}
+ const ids={};
+ for(const S of st){
+  if(!S.id||!S.t||!S.m){console.log('FAIL: チュートリアルの段に見出しか本文が無い: '+JSON.stringify(S.id));process.exit(1);}
+  if(ids[S.id]){console.log('FAIL: チュートリアルの段のidが重複: '+S.id);process.exit(1);}
+  ids[S.id]=1;
+  for(const d of NG)if((S.t+S.m).indexOf(d[0])>=0){
+   console.log('FAIL: チュートリアルに古い内容が残っている「'+d[0]+'」('+d[1]+') → '+S.m);process.exit(1);}
  }
- /* 英雄を連れている時だけ案内が1つ増えるか */
- META.stg=0;setDiff=2;startSolo();frames(10,.016);
- /* ⚠前の検査が META.hsel を残していると連れて行く英雄が入ってしまうので、明示的に「連れて行かない」にしてから測る */
- G.players[0].hUi=-1;
- const n0=waveTips().length;
- G.players[0].hUi=HERO_I0;
- if(waveTips().length!==n0+1){console.log('FAIL: 英雄を連れているのに🦸の案内が出ない');process.exit(1);}
+ /* ⭐**操作の説明が一通り揃っているか**。案内を消した時に説明ごと消える事故を防ぐ */
+ const all=st.map(S=>S.t+S.m).join(' ');
+ const MUST=[['タワー','タワーの建設'],['デッキ','部隊の出撃'],['🚩','集結旗'],
+  ['🎯','航空支援'],['⚙️','スクラップ'],['🔩','強化ポイント'],['🔬','研究所']];
+ const lack=MUST.filter(x=>all.indexOf(x[0])<0).map(x=>x[1]);
+ if(lack.length){console.log('FAIL: チュートリアルで説明していない要素: '+lack.join('/'));process.exit(1);}
+ /* ⭐**操作させる段が実際にあるか**(読むだけの紙芝居になっていないか=ユーザー指示は「操作させる形式」) */
+ const act=st.filter(S=>typeof S.ok==='function').length;
+ if(act<4){console.log('FAIL: 実際に操作させる段が少なすぎる('+act+'段)');process.exit(1);}
+ /* 本編の記録を汚さないか */
+ tutStart();
+ if(!G||!G.tut){console.log('FAIL: チュートリアルに G.tut が立っていない(戦績が記録されてしまう)');process.exit(1);}
+ if(!TUT||TUT.i!==0){console.log('FAIL: チュートリアルが1段目から始まっていない');process.exit(1);}
+ /* 作戦タイムの残り時間が止まるか(操作を覚える前に波が来ない) */
+ const t0=G.tI;frames(60,.05);
+ if(G.tI!==t0){console.log('FAIL: チュートリアル中に作戦タイムが進んでいる('+t0+'→'+G.tI+')');process.exit(1);}
+ /* ⭐**進めなくなる段が無いか**(2026-07-26に実際に踏んだ)。
+    1波目の前には作戦タイムのパネルが出ないので、そこで「✅配置完了!」を押させようとすると
+    見えないボタンを待つうえに時間も止まっていて**永久に進めない**。
+    → 各段の pre を通しながら進め、時間の停止が解除されて実際にウェーブが始まるかを見る。 */
+ for(let k=0;k<st.length&&TUT;k++){
+  if(TUT.st[TUT.i]&&TUT.st[TUT.i].id==='go')break;
+  tutGo(TUT.i+1);
+ }
+ if(!TUT||TUT.st[TUT.i].id!=='go'){console.log('FAIL: goの段までたどり着けない');process.exit(1);}
+ if(tutHold()){console.log('FAIL: ウェーブ開始の段なのに時間が止まったまま=永久に進めない');process.exit(1);}
+ frames(300,.05);
+ if(!G||G.phase!=='wave'){console.log('FAIL: ウェーブ開始の段で待ってもウェーブが始まらない');process.exit(1);}
+ /* 全段を通せるか(ぶら下がりや例外が無いか) */
+ for(let k=0;k<st.length+2&&TUT;k++)tutGo(TUT.i+1);
+ if(TUT){console.log('FAIL: チュートリアルが最後まで進まない');process.exit(1);}
+ if(!META.tut){console.log('FAIL: チュートリアルを終えても META.tut が立たない(毎回出てしまう)');process.exit(1);}
  backTitle();
+ console.log('🎓チュートリアル: '+st.length+'段(うち操作させる段'+act+')/ 古い言い回しなし / 説明の抜けなし / 戦績を汚さない OK');
  /* ボタンを押した音(2026-07-26ユーザー指示=タイトル等が無音だった) */
  for(const k of ['tap','back']){
   if(typeof sfx[k]!=='function'){console.log('FAIL: sfx.'+k+' が無い(ボタンの音)');process.exit(1);}
   if(!SFXSYN[k]){console.log('FAIL: sfx.'+k+' に合成音が無い=素材が無い環境で無音になる');process.exit(1);}
   if(!SFX_LBL[k]||SFX_LBL[k][2]!=='ui'){console.log('FAIL: 🔊音の確認に sfx.'+k+' が出ない');process.exit(1);}}
- /* 押した音を鳴らす対象に、主要な画面のボタンが入っているか */
- for(const sel of ['.btn','.xbtn','.tabs .tb','.lc .bu','.grc','.ldc'])
-  if(UI_TAP_SEL.indexOf(sel)<0){console.log('FAIL: 押した音の対象に '+sel+' が入っていない');process.exit(1);}
- console.log('操作案内: 廃止した操作('+NG.map(x=>x[0]).join('/')+')の案内なし / 英雄の案内 / ボタンの音 tap・back OK');
+ console.log('ボタンの音: tap・back OK');
 }
-/* ---- 中断 → 再開(ソロ)で持ち物が失われないか(2026-07-26に追加) ----
-   ⚠localStorage をスタブしたので初めて検査できるようになった。
-     以前は「保存系はヘッドレスでは検証されない」ままで、supN の保存漏れを見逃していた。 */
 function checkResume(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
@@ -1505,7 +1536,7 @@ checkGachaFx();
 checkTwFx();
 checkZLook();
 checkSfxGain();
-checkTips();
+checkTut();
 checkResume();
 checkTwNew();
 checkPerUp();

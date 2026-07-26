@@ -55,12 +55,18 @@ const SKM=/stk=([a-z]+)/.exec(OPT),SKID=SKM?SKM[1]:'';
 /* fxdemo = 新しい演出を1つずつ並べて、寿命の途中の姿で止めて撮る(絵そのものを確かめる用)
    ⚠一瞬しか出ない演出は実戦の撮影ではまず捉えられないので、こうして並べて見る */
 const FXD=OPT.indexOf('fxdemo')>=0;
+/* tut / tut=3 = 🎓チュートリアルを撮る(数字はその段まで進めてから撮る) */
+const TUM=/tut(?:=([0-9]+))?/.exec(OPT),TUT=!!TUM,TUTI=TUM&&TUM[1]?+TUM[1]:0;
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
+ /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
+    タイトルや研究所の撮影が全部チュートリアルの絵になる(tut オプションは自分で呼ぶので影響なし) */
+ +'META.tut=1;'
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
  +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
  +(LAB?('META.pts=99999;META.nt=2;META.nu=3;META.sc0=1;META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");')
      :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
+     :TUT?('tutStart();for(var q=0;q<'+TUTI+';q++)tutGo(TUT.i+1);')
      :TTL?'META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
