@@ -1114,7 +1114,7 @@ const SFX_SET={
 const SFXTEST=(()=>{try{return (location.search||'').indexOf('sfx=1')>=0;}catch(e){return false;}})();
 /* キー → [表示名, どこで鳴るか, タブ] */
 const SFX_LBL={
- shot:['ライフル櫓','弾を撃つたび','tw'], gat:['ガトリング要塞','連射','tw'],
+ shot:['ライフル台','弾を撃つたび','tw'], gat:['ガトリング要塞','連射','tw'],
  shotgun:['ショットガン台','散弾','tw'], snipe:['スナイパー塔','単発','tw'],
  cannon:['重砲台','発射','tw'], mortar:['迫撃砲','発射','tw'],
  fort:['要塞砲','閂→巨砲→破片の尾','tw'], gren:['擲弾砲台','軽い発射音','tw'],
@@ -1269,7 +1269,7 @@ $('mutebtn').onclick=()=>{muted=!muted;$('mutebtn').textContent=muted?'🔇':'�
 /* ============ データ ============ */
 const MW=1600,MH=760;
 const TOWERS=[
- {id:'rifle',n:'ライフル櫓',cost:120,rng:230,dmg:22,rate:.55,type:'bullet',c:'#8a97a5',dsc:'基本の単発銃座'},
+ {id:'rifle',n:'ライフル台',cost:120,rng:230,dmg:22,rate:.55,type:'bullet',c:'#8a97a5',dsc:'基本の単発銃座'},
  {id:'shot',n:'ショットガン台',cost:200,rng:175,dmg:26,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'3体同時撃ち'},
  {id:'net',n:'拘束ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:145,rng:0,dmg:0,rate:3,type:'eco',inc:8,up2:'scrap2',gc:700,c:'#b08d4f',dsc:'時間で⚙️を生産'},
@@ -3588,7 +3588,7 @@ function campStep(C,dt,wave){
     if(big&&FXLV>1)addFx(C,'shock',sx,sy+8,'',{r:54,col:MZ[0]});}
    if(T.type==='bullet'){addP(C,4,mx2,my2,{sp:150,a:tw.ang,spread:.28,g:60,life:.12,r:2.2,col:GLOW});
     addP(C,1,sx,sy-6,{sp:70,a:tw.ang-1.6,spread:.5,up:40,g:600,life:.9,r:1.6,col:DIM,typ:'shell',gr:sy+10});
-    /* ⭐ガトリング要塞は薬莢が滝のように落ちる=弾幕を張っている感じを出す(ライフル櫓と同じ絵だった) */
+    /* ⭐ガトリング要塞は薬莢が滝のように落ちる=弾幕を張っている感じを出す(ライフル台と同じ絵だった) */
     if(T.id==='gat')addP(C,2,sx,sy-4,{sp:95,a:tw.ang-1.95,spread:.65,up:55,g:660,life:1,r:1.7,col:DIM,typ:'shell',gr:sy+12});}
    else if(T.type==='fire'){addP(C,3,mx2,my2,{sp:60,a:tw.ang,spread:.5,g:-40,life:.5,r:3,col:T.id==='acid'?TOXIC:'#ff9a3d'});}
    else if(T.type==='blast'){addP(C,5,mx2,my2,{sp:140,a:tw.ang,spread:.4,g:60,life:.14,r:2.8,col:'#ffdd66'});}
@@ -3717,7 +3717,7 @@ function campStep(C,dt,wave){
      if(tw.hz!==tg){tw.hz=tg;tw.hs=0;}else tw.hs=Math.min((tw.hs||0)+1,hn);
      hk=hn?(tw.hs||0)/hn:0;dmH=dm*(1+((T.heatM||2)-1)*hk);}
     splash(tg);dmgZ(C,tg,dmH,prc);
-    /* ⭐レーザー塔は「弾」ではなく細いビームが走る(ライフル櫓と同じ曳光線に見えていた)。
+    /* ⭐レーザー塔は「弾」ではなく細いビームが走る(ライフル台と同じ曳光線に見えていた)。
        ⭐焼き切るほどビームが太く白熱する=今どれだけ溜まっているかが目で分かる */
     if(T.id==='laser'&&FXLV>0)addFx(C,'beam',sx,sy,'',
      {x2:tg.px,y2:tg.py-14,col:hk>.5?'rgba(255,170,225,':'rgba(230,140,205,',
@@ -5663,7 +5663,7 @@ const GC_BANG=1.9; /* 撃ってから結果カードへ移るまで */
      タレット = 予告。基本はダメージと同じ段だが、**たまに1段下がる(下振れだけ・上振れはしない)**
      → **レーザーが出たら★4以上が確定**する=見た瞬間に沸ける。ライフルでも木っ端みじんなら大当たり */
 const GC_TW=['rifle','shot','laser'];      /* ライフル / ショットガン / レーザー(レーザーが一番レア) */
-const GC_TWN=['ライフル櫓','ショットガン台','レーザー塔'];
+const GC_TWN=['ライフル台','ショットガン台','レーザー塔'];
 const GC_ZM=['walk','arm','brut'];         /* ゾンビ3種(大きさと色が違うものを選ぶ) */
 /* ⚠倒し方は**確定で木っ端みじん**の1種類だけ(2026-07-26ユーザー指示=軽傷/重傷はやめた)。
    結果の示唆は「跡地に出るもの」の★の数と色でやる */

@@ -380,7 +380,7 @@ function checkPerUp(){
   tw.cd=999;campStep(me,.001,G.wave);
   tw.cd=0;const h0=z.hp;campStep(me,.001,G.wave);return h0-z.hp;};
  const base=hit1('rifle');
- if(!(base>0)){console.log('FAIL: ライフル櫓が当たっていない');process.exit(1);}
+ if(!(base>0)){console.log('FAIL: ライフル台が当たっていない');process.exit(1);}
  META.tw={rifle:LINE_MAX};
  const up=hit1('rifle');
  const want=1+TW_DMG_STEP*LINE_MAX;
@@ -390,7 +390,7 @@ function checkPerUp(){
  const sBase=hit1('shot');
  META.tw={rifle:LINE_MAX,shot:0};
  const sNow=hit1('shot');
- if(Math.abs(sNow-sBase)>sBase*.02){console.log('FAIL: ライフル櫓を鍛えたのにショットガン台まで強くなっている');process.exit(1);}
+ if(Math.abs(sNow-sBase)>sBase*.02){console.log('FAIL: ライフル台を鍛えたのにショットガン台まで強くなっている');process.exit(1);}
  /* --- ② 型の持ち味も同じ段数で伸びる --- */
  META.tw={};
  /* 火炎の燃焼 */
