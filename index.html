@@ -7869,15 +7869,62 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   if(vid==='fenr'){c.scale(1.3,1.3);c.shadowColor=TECH;c.shadowBlur=10;}
   else if(vid==='cerb'){c.scale(1.18,1.18);}
   else if(vid==='wolf'){c.scale(1.08,1.08);}
-  /* 尻尾(狼系はふさふさ) */
-  if(vid){c.strokeStyle=BC;c.lineWidth=vid==='wolf'?5:6;c.beginPath();c.moveTo(-14,-14);
-   c.quadraticCurveTo(-26,-20-Math.sin(t*9+ph)*3,-28,-8);c.stroke();c.strokeStyle=INK;c.lineWidth=2.4;}
-  c.fillStyle=BC;rr(c,-15,-16,30,12,6);c.fill();c.stroke();
-  c.fillRect(-12+walk*4,-5,5,6);c.strokeRect(-12+walk*4,-5,5,6);c.fillRect(7-walk*4,-5,5,6);c.strokeRect(7-walk*4,-5,5,6);
-  const head=(hx,hy,r)=>{c.fillStyle=BC;c.beginPath();c.arc(hx,hy,r,0,7);c.fill();c.stroke();
-   if(vid){/* 耳 */c.beginPath();c.moveTo(hx-3,hy-r+1);c.lineTo(hx-5,hy-r-6);c.lineTo(hx+1,hy-r);c.closePath();c.fill();c.stroke();}
-   c.fillStyle=vid==='fenr'?FROST:RUST;c.fillRect(hx-7,hy+2,5,4);
-   c.fillStyle=vid==='cerb'?'#ffb347':vid==='fenr'?FROST:INK;c.beginPath();c.arc(hx+2,hy-1,1.5,0,7);c.fill();};
+  /* ⭐第102弾に描き直し。⚠それまで**角丸長方形の胴+5x6の脚4本+丸い頭**で、犬に見えていなかった。
+     ゾンビのハウンドと同じ手当て=**背中を反らせ腹をくびれさせる/脚は先が細く足先を付ける/
+     鼻面は頭と1本の輪郭で繋ぐ/耳は短く太く後ろへ寝かせる/首輪で色を割る** */
+  /* 尻尾(狼系はふさふさ・先が細い) */
+  {const tw2=vid?(vid==='wolf'?4:5):2.6,sw2=Math.sin(t*9+ph)*3;
+   c.fillStyle=shade(BC,.8);
+   c.beginPath();c.moveTo(-13,-16);c.lineTo(-11,-11);
+   c.bezierCurveTo(-20,-12,-26,-18-sw2,-25,-25-sw2);
+   c.bezierCurveTo(-27-tw2*.4,-17-sw2,-20,-13,-13,-16);c.closePath();c.fill();c.stroke();}
+  /* 脚(奥2本→胴→手前2本)。根元が太く先が細い+足先 */
+  const dleg2=(x0,dx,dk,h2)=>{
+   c.fillStyle=shade(BC,dk);
+   c.beginPath();c.moveTo(x0-2.6,-h2);c.lineTo(x0+2.6,-h2);c.lineTo(x0+2+dx,-2.6);c.lineTo(x0-2+dx,-2.6);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(x0-2.2+dx,-3);c.lineTo(x0+2.2+dx,-3);c.lineTo(x0+3.6+dx,-.4);c.lineTo(x0-2.8+dx,-.4);c.closePath();c.fill();c.stroke();};
+  dleg2(-9,-walk*3.6,.66,9);dleg2(8,walk*3.6,.66,9);
+  /* 胴(背が反り腹がくびれる) */
+  c.fillStyle=BC;
+  c.beginPath();
+  c.moveTo(-14,-11);
+  c.bezierCurveTo(-16,-16,-11,-18.6,-4,-18.4);
+  c.bezierCurveTo(4,-18.2,10,-18.6,13,-17);
+  c.lineTo(12,-9);
+  c.bezierCurveTo(6,-6.6,-6,-6.6,-12,-9);
+  c.closePath();c.fill();c.stroke();
+  c.save();c.beginPath();c.rect(-20,-12,40,14);c.clip();/* 腹側だけ暗く1段 */
+  c.fillStyle=shade(BC,.78);
+  c.beginPath();c.moveTo(-14,-11);c.bezierCurveTo(-16,-16,-11,-18.6,-4,-18.4);
+  c.bezierCurveTo(4,-18.2,10,-18.6,13,-17);c.lineTo(12,-9);
+  c.bezierCurveTo(6,-6.6,-6,-6.6,-12,-9);c.closePath();c.fill();c.restore();
+  dleg2(-5,-walk*2.6,.94,10);dleg2(11,walk*2.6,1,10);
+  /* 首輪(革+鋲。⚠犬に見せる一番安い手当て) */
+  c.fillStyle='#5c4326';
+  c.beginPath();c.moveTo(9,-18);c.lineTo(13.4,-18.6);c.lineTo(14,-11);c.lineTo(9.6,-10.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=vid?GOLD2:'#8a7f68';c.beginPath();c.arc(11.6,-14.4,1.5,0,7);c.fill();
+  const head=(hx,hy,r)=>{
+   const s2=r/7;/* 元の半径7を基準に伸縮 */
+   c.fillStyle=shade(BC,.82);/* 耳(短く太く後ろへ) */
+   c.beginPath();c.moveTo(hx-2*s2,hy-3*s2);c.lineTo(hx-7.4*s2,hy-7.4*s2);c.lineTo(hx-4.6*s2,hy-8.4*s2);
+   c.lineTo(hx+1.6*s2,hy-4.6*s2);c.closePath();c.fill();c.stroke();
+   c.fillStyle=BC;/* 頭+鼻面を1本の輪郭で */
+   c.beginPath();
+   c.moveTo(hx-5*s2,hy+1*s2);
+   c.bezierCurveTo(hx-5.4*s2,hy-5*s2,hx-1.4*s2,hy-7.6*s2,hx+2.6*s2,hy-7*s2);
+   c.bezierCurveTo(hx+6.4*s2,hy-6.2*s2,hx+7.4*s2,hy-2.6*s2,hx+7*s2,hy-.2*s2);
+   c.lineTo(hx+15*s2,hy+2.6*s2);c.lineTo(hx+14.6*s2,hy+6*s2);
+   c.lineTo(hx+6*s2,hy+7.4*s2);
+   c.bezierCurveTo(hx+.4*s2,hy+8.4*s2,hx-4.4*s2,hy+5.4*s2,hx-5*s2,hy+1*s2);
+   c.closePath();c.fill();c.stroke();
+   c.fillStyle=vid==='fenr'?FROST:INK;/* 鼻 */
+   c.beginPath();c.arc(hx+14*s2,hy+4.2*s2,1.7*s2,0,7);c.fill();
+   c.fillStyle=PANE;/* 牙(不揃いに2本) */
+   for(const k of [[hx+7.6*s2,3.2],[hx+10.6*s2,4.4]]){
+    c.beginPath();c.moveTo(k[0],hy+6.6*s2);c.lineTo(k[0]+1.3*s2,hy+(6.6+k[1])*s2);c.lineTo(k[0]+2.3*s2,hy+6.6*s2);c.closePath();c.fill();}
+   c.fillStyle='#fff';c.beginPath();c.arc(hx+3.4*s2,hy-1.4*s2,2*s2,0,7);c.fill();
+   c.fillStyle=vid==='cerb'?'#ffb347':vid==='fenr'?FROST:INK;
+   c.beginPath();c.arc(hx+4.2*s2,hy-1.4*s2,1.1*s2,0,7);c.fill();};
   if(vid==='cerb'){head(14,-24,5.5);head(20,-15,5.5);head(16,-19,6.5);}
   else head(17,-18,vid==='fenr'?8:7);
   if(vid==='fenr'&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(27,-16,3+Math.sin(t*12)*1.5,0,7);c.fill();c.globalAlpha=1;}
@@ -8392,7 +8439,10 @@ function deployUnit(C,ui){
  const d0=G&&G.coop?branchD(C.gi||0)-rnd(0,20):PLEN-70-rnd(0,26);
  const hp0=Math.round(U.hp*hpM);
  F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
- if(U.id==='hnd'){/* 猟犬は2体1組で出撃 */
+ /* ⚠**派生も2体1組にする**(2026-07-27ユーザー報告のバグ)。`U.id` で見ていたため、
+    編成で狼/ケルベロス/フェンリルに替えると id が変わって**1体しか出なかった**。
+    派生は `U.base` に元の兵科idを持っているので、そちらで判定する */
+ if((U.base||U.id)==='hnd'){/* 猟犬(と派生)は2体1組で出撃 */
   const cnt2=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:F.units.length;
   if(cnt2<(G&&G.coop?COOP_MAXU:MAXU))F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0+14,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});}
  const rp=G&&G.coop?pathPos(d0):CORE;
