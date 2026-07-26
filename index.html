@@ -5314,6 +5314,10 @@ function applyIcons(){
   ['#bt-gacha','ic-gem','💎'],/* ⚠updLabBtnの後に呼ぶこと(先に呼ぶと数字側の💎を食う) */
   ['#md-lab .bphd b','ic-lab','🔬'],['#md-train .bphd b','ic-train','🏋'],
   ['#md-load .bphd b','ic-load','🎖'],['#md-gacha .bphd b','ic-gem','💎'],
+  /* ⭐💎召集の画面は**見出しだけ画像で、ボタンと説明文が絵文字のまま**だったので
+     同じ画面に2種類の💎が並んでいた(2026-07-26ユーザー指摘)。同じ資源は必ず同じ絵にする */
+  ['#gc-1','ic-gem','💎'],['#gc-10','ic-gem','💎'],['#md-gacha .bphint','ic-gem','💎'],
+  ['#md-gcres .bphd b','ic-gem','💎'],['#tr-foot .btn','ic-mat','🔧'],
   ['#corepanel span','ic-core','🏕'],['#flagbtn','ic-flag','🚩']];
  for(const [sel,ic,em] of M){
   if(!ICN[ic])continue;
