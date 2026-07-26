@@ -502,6 +502,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
     <button class="btn" id="bt-howto">🎓 あそびかた</button>
     <button class="btn sm" id="bt-sfx" style="display:none">🔊 音の確認</button>
+    <!-- 📖ゾンビ図鑑: ⚠🛠DEVモード(?dev=1)の時だけ出す。絵の確認用なので全種そのまま見える -->
+    <button class="btn sm" id="bt-zoo" style="display:none">📖 ゾンビ図鑑</button>
     <div class="seg" id="seg-fx" style="margin-top:8px;justify-content:center">
       <button class="btn sm" data-v="0">演出:弱</button>
       <button class="btn sm" data-v="1">演出:中</button>
@@ -750,6 +752,15 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="bpbody" id="sfx-list"></div>
     <div class="bpfoot"><button class="btn sm" id="bt-sfx-all">▶ このタブを順に鳴らす</button>
       <span class="bphint" style="margin:0">音量 <input type="range" id="sfx-vol" min="0" max="100" value="85" style="vertical-align:middle;width:110px"></span></div>
+  </div>
+</div>
+
+<!-- 📖ゾンビ図鑑(単独の窓)。⚠🛠DEVモード専用=絵の確認用に鍛錬所を開かずに見られるようにした -->
+<div class="modal" id="md-zoo">
+  <div class="panel bigpanel">
+    <div class="bphd"><b>📖 ゾンビ図鑑</b><span class="pt" id="zoo-cnt"></span><button class="xbtn" id="bt-zoo-close">✕</button></div>
+    <div class="bphint" id="zoo-hint"></div>
+    <div class="bpbody" id="zoo-list"></div>
   </div>
 </div>
 
@@ -1805,7 +1816,8 @@ const hBoost=id=>1+.08*hLv(id);
 /* 📖ゾンビ図鑑(2026-07-26 第53弾): ソロ作戦で初めて倒したゾンビが載る。
    ⚠元は「🧿コアを集めて洞窟のゾンビを強化する」仕組みだったが、**洞窟をまるごと廃止した**ので
      記録(図鑑)だけ残した。コアの所持数(META.zc)と強化Lv(META.zl)は廃止。 */
-const zcSeen=id=>!!(META.zdex&&META.zdex[id]);
+/* ⚠🛠DEVモードは**全種見えている扱い**にする(絵の確認用。本番の記録は汚さない=zdexAddは別経路) */
+const zcSeen=id=>DEV||!!(META.zdex&&META.zdex[id]);
 /* 初めて倒した種類を図鑑に登録する。戻り値=新しく載ったか */
 function zdexAdd(id){
  if(!id)return false;
@@ -11813,11 +11825,13 @@ function zcThumb(cv,zi,sil){
  c.restore();
 }
 /* ⚠見出し+グリッドを ZDEX_G の順に積む。1画面に全部は入らないので .bpbody 側でスクロールさせる */
-function renderZoo(box){
- const hint=$('tr-hint');
- if(hint)hint.innerHTML='ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は影だけで出る。';
+function renderZoo(box,hintId){
+ const hint=$(hintId||'tr-hint');/* ⚠単独の窓(md-zoo)から呼ぶ時は説明文の置き場が違う */
+ if(hint)hint.innerHTML=DEV?'🛠DEVモード=絵の確認用に<b>全種そのまま見える</b>(本番はソロ作戦で倒した種類だけ)。'
+  :'ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は影だけで出る。';
  const seen=ZOMBIES.filter(z=>zcSeen(z.id)).length;
- let html='<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+ZOMBIES.length+' 種</div>';
+ /* ⚠単独の窓は見出しに数を出しているので、ここでは出さない(1画面に同じ数が2つ並ぶ) */
+ let html=hintId?'':'<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+ZOMBIES.length+' 種</div>';
  for(const G2 of ZDEX_G){
   const list=[];
   for(let i=0;i<ZOMBIES.length;i++)if(G2.f(ZOMBIES[i]))list.push(i);
@@ -11843,6 +11857,14 @@ function renderZoo(box){
  box.innerHTML=html;
  box.querySelectorAll('canvas.zth').forEach(cv=>
   zcThumb(cv,+cv.dataset.zi,cv.classList&&cv.classList.contains('zsil')));
+}
+/* 📖ゾンビ図鑑の単独の窓を開く(🛠DEV専用)。⚠鍛錬所のタブ側とは別の入口なので両方が同じ renderZoo を通る */
+function openZoo(){
+ const box=$('zoo-list');if(!box)return;
+ const n=$('zoo-cnt');
+ if(n)n.textContent=ZOMBIES.filter(z=>zcSeen(z.id)).length+' / '+ZOMBIES.length+' 種';
+ renderZoo(box,'zoo-hint');
+ $('md-zoo').classList.add('on');
 }
 
 /* ============ ⚔ 冒険(育成RPG・鍛錬所の中身) ============
@@ -13358,6 +13380,14 @@ try{
  const b=$('bt-sfx');
  if(b){if(DEV||SFXTEST)b.style.display='block';b.onclick=()=>openSfxTest();}
  if(SFXTEST)setTimeout(()=>{try{openSfxTest();}catch(e){}},300);
+}catch(e){}
+/* 📖ゾンビ図鑑: 🛠DEVモードの時だけタイトルにボタンを出す(2026-07-27ユーザー指示)。
+   ⚠鍛錬所(しまってある)を開かずに絵を確認できるよう**単独の窓**にしてある */
+try{
+ const zb=$('bt-zoo');
+ if(zb){if(DEV)zb.style.display='block';
+  zb.onclick=()=>{openZoo();};}
+ const zc=$('bt-zoo-close');if(zc)zc.onclick=()=>$('md-zoo').classList.remove('on');
 }catch(e){}
 try{applyFrames();}catch(e){}/* ボタン/パネルの枠(素材が無ければ従来の見た目) */
 try{for(const k in ICO)icoImgFor(k);for(const k in ICN)icoImgFor(k);}catch(e){}/* canvas用に先読みしておく */

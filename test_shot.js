@@ -82,6 +82,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
      /* tutauto=はじめての人の入り口(タイトルで「🎓あそびかた」を光らせる段)から撮る */
      :TUT?((OPT.indexOf('tutauto')>=0?'tutAuto();':'tutStart();')+'for(var q=0;q<'+TUTI+';q++)tutGo(TUT.i+1);')
+     /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
+     :(OPT.indexOf('zoo')>=0)?'openZoo();'
      :TTL?'META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
