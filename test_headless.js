@@ -405,9 +405,25 @@ function checkPerUp(){
   const wb=1+TW_TRAIT.fire.v*LINE_MAX;
   if(!(b1>b0)){console.log('FAIL: 火炎放射塔を鍛えても燃焼が増えない '+b0+'→'+b1);process.exit(1);}
   if(Math.abs(b1/b0-wb)>.05){console.log('FAIL: 燃焼の伸びが想定と違う 期待'+wb.toFixed(2)+'倍 実際'+(b1/b0).toFixed(2)+'倍');process.exit(1);}}
- /* 電撃の連鎖数 */
- {META.tw={};const t0=twChainTest('tesla');META.tw={tesla:LINE_MAX};const t1=twChainTest('tesla');
-  if(t1!==t0+TW_TRAIT.elec.v*LINE_MAX){console.log('FAIL: テスラコイルの連鎖が増えない '+t0+'→'+t1);process.exit(1);}}
+ /* 電撃の連鎖数。⚠**実際に飛んだ体数を数える**こと。
+    期待値を実装と同じ式で作ると、実装が壊れても検査も同じように壊れて必ず通ってしまう(レビュー指摘) */
+ {const chainHit=(id,lv)=>{
+   META.tw={};if(lv)META.tw[id]=lv;
+   const ti=TOWERS.findIndex(t=>t.id===id);
+   me.scrap=999999;me.unlocked=Math.max(me.unlocked,ti+1);me.towers[si]=null;buildTower(me,si,ti);
+   const tw=me.towers[si];
+   me.zombies.length=0;
+   /* 連鎖は150px以内へ跳ねるので、塔の前に詰めて12体並べる(上限まで届く数) */
+   for(let k=0;k<12;k++){const z=mkZ(zSpec(0,1,5),Math.max(20,projPath(sx,sy)-40+k*22));z.hp=z.mhp=1e9;me.zombies.push(z);}
+   tw.cd=999;campStep(me,.001,G.wave);
+   const h0=me.zombies.map(z=>z.hp);
+   tw.cd=0;campStep(me,.001,G.wave);
+   return me.zombies.filter((z,i)=>h0[i]-z.hp>0).length;};
+  const c0=chainHit('tesla',0),c3=chainHit('tesla',LINE_MAX);
+  if(!(c0>0)){console.log('FAIL: テスラコイルが1体にも当たっていない');process.exit(1);}
+  const wantC=TW_TRAIT.elec.v*LINE_MAX;
+  if(c3-c0!==wantC){console.log('FAIL: テスラの連鎖が Lv'+LINE_MAX+'で+'+wantC+'体にならない ('+c0+'体→'+c3+'体)');process.exit(1);}
+  console.log('電撃の連鎖: 素'+c0+'体 → 研究所Lv'+LINE_MAX+'で'+c3+'体(実際に当たった数を数えた) OK');}
  /* --- ③ 工房の3段は1つの枠を共有する(建て替えで無駄にならない) --- */
  {const ks=['scrap','scrap2','scrap3'].map(id=>twKey(TOWERS[TOWERS.findIndex(t=>t.id===id)]));
   if(new Set(ks).size!==1){console.log('FAIL: 工房の3段が別々の強化枠になっている ['+ks.join(',')+']');process.exit(1);}
@@ -428,6 +444,13 @@ function checkPerUp(){
  META.tw={};META.nt=T_PLAY-BASE_T;META.nu=U_N-BASE_U;renderLab();/* 全部解放した状態で数える */
  {const rows=LAB_ITEMS.filter(o=>o.cat==='twup');
   const supN=TOWERS.filter(T=>T.type==='sup').length;
+  /* ⚠「一覧に出ていないか」だけ見ると、支援施設は T_PLAY の外なので**構造上ぜったい落ちない検査**になる。
+     ①持ち味の表に sup が無い ②形の表にも無い ③T_PLAY の範囲に sup が居ない ④一覧にも出ない、の4つを見る(レビュー指摘) */
+  if(TW_TRAIT.sup){console.log('FAIL: 支援施設の型が持ち味の表に入っている');process.exit(1);}
+  for(const T of TOWERS)if(T.type==='sup'&&TW_SHAPE[T.id]){
+   console.log('FAIL: 支援施設('+T.n+')が基部の形の表に入っている=専用の絵が上書きされる');process.exit(1);}
+  for(let i=0;i<T_PLAY;i++)if(TOWERS[i].type==='sup'){
+   console.log('FAIL: 支援施設が T_PLAY の範囲に入っている(強化の対象になってしまう)');process.exit(1);}
   if(rows.some(o=>{const T=TOWERS.find(t=>twKey(t)===o.id);return T&&T.type==='sup';})){
    console.log('FAIL: 支援施設が強化の一覧に出ている');process.exit(1);}
   /* ⚠支援施設(sup)とグレードアップ専用(grd)はどちらも T_PLAY の**外**(TOWERSの末尾)にあるので、
@@ -486,15 +509,75 @@ function checkPerUp(){
    if(Math.abs(d1/d0-w)>.03){console.log('FAIL: 砲撃'+k+'に威力強化が乗っていない ('+(d1/d0).toFixed(2)+'倍)');process.exit(1);}}
   META.st0=0;
   console.log('砲撃の威力: Lv'+STK_MAX+'で直撃x'+(s1.d/s0.d).toFixed(2)+'・燃焼x'+(s1.b/s0.b).toFixed(2)+'(5種すべて) OK');}
+ /* --- ⑦ 派生キャラを装備した状態でも、研究所が『素の兵科のid』で保存すること(2026-07-26レビュー) ---
+    ⚠applyLoadout(true) は UNITS[i] を派生キャラの実体に差し替え、タイトルへ戻っても元に戻らない。
+      研究所が UNITS から引くと『狼』のidで保存され、出撃側(unKey=元のid)が読めず**強化が消えて🧬が丸損**になる。
+      しかも Lv0/3 と表示されて重ね買いできてしまう。 */
+ {const U0=UBASE[0];
+  const vb=(typeof UVAR==='object'&&UVAR[U0.id])?UVAR[U0.id][0]:null;
+  if(vb){
+   META.uv=[vb.id];META.ld={};META.ld[U0.id]=vb.id;META.nu=U_N-BASE_U;META.un={};
+   META.stg=0;setDiff=2;startSolo();frames(10,.016);
+   /* 派生が実際に UNITS に入っているか(前提の確認。入っていないとこの検査は何も見ていない) */
+   if(UNITS[0].id!==vb.id){console.log('FAIL: 検査の前提が崩れている(編成で派生が適用されていない)');process.exit(1);}
+   backTitle();
+   renderLab();
+   const uns=LAB_ITEMS.filter(o=>o.k==='un');
+   const ng=uns.filter(o=>!UBASE.some(u=>u.id===o.id));
+   if(ng.length){console.log('FAIL: 研究所の兵科強化が派生キャラのidで登録されている ['+ng.map(o=>o.id).join(',')+']');process.exit(1);}
+   /* 素のidで買った強化が、派生を装備した状態でもちゃんと乗るか */
+   META.un={};META.un[U0.id]=LINE_MAX;
+   META.stg=0;setDiff=2;startSolo();frames(10,.016);
+   const me2=G.players[0];
+   me2.scrap=999999;me2.ucd=UNITS.map(()=>0);me2.uUn=U_N;me2.units.length=0;
+   deployUnit(me2,0);
+   const uu=me2.units[me2.units.length-1];
+   const st2=UN_STEP(UNITS[0].type),wantA=1+st2.a*LINE_MAX;
+   if(Math.abs((uu.am||1)-wantA)>.03){
+    console.log('FAIL: 派生キャラに元の兵科の強化が乗っていない 期待x'+wantA.toFixed(2)+' 実際x'+(uu.am||1).toFixed(2));process.exit(1);}
+   console.log('派生キャラ: 「'+UNITS[0].n+'」を装備しても研究所は素のid('+uns.length+'件すべて)で登録し、強化x'+(uu.am||1).toFixed(2)+'が乗る OK');
+   META.uv=[];META.ld={};META.un={};backTitle();
+  }}
+ /* --- ⑧ 廃品工房の産出は「発射処理」と「ウェーブ放棄の精算」で同じ額であること ---
+    ⚠同じ式が2か所に散らばっていて、精算側だけ研究所の産出強化が抜けていた(鍛えた工房ほど損をしていた) */
+ {META.stg=0;setDiff=2;startSolo();frames(20,.016);
+  const me3=G.players[0];
+  me3.towers[ECO_BASE]=null;me3.scrap=999999;me3.unlocked=Math.max(me3.unlocked,ECO_TI+1);
+  buildTower(me3,ECO_BASE,ECO_TI);
+  const tw3=me3.towers[ECO_BASE];
+  META.tw={};const p0=ecoPer(TOWERS[ECO_TI],tw3);
+  META.tw={scrap:LINE_MAX};const p1=ecoPer(TOWERS[ECO_TI],tw3);
+  const wantR=1+TW_TRAIT.eco.v*LINE_MAX;
+  if(Math.abs(p1/p0-wantR)>.06){console.log('FAIL: 工房の産出に研究所の強化が乗っていない 期待x'+wantR.toFixed(2)+' 実際x'+(p1/p0).toFixed(2));process.exit(1);}
+  /* 実際に⚙️が入る額と、精算に使う額が一致するか(2か所に式が散らばる事故の再発防止) */
+  const g0=me3.scrap;tw3.cd=0;campStep(me3,.001,G.wave);const real=me3.scrap-g0;
+  if(real!==p1){console.log('FAIL: 実際に入る⚙️('+real+')と ecoPer('+p1+')が食い違う=式が2か所にある');process.exit(1);}
+  console.log('工房の産出: 1サイクル'+p0+'⚙️ → 研究所Lv'+LINE_MAX+'で'+p1+'⚙️(x'+(p1/p0).toFixed(2)+')・放棄の精算も同じ式 OK');
+  META.tw={};backTitle();}
+ /* --- ⑨ ドローンの弾の座標が有限であること(NaNだと弾の演出が丸ごと消える) ---
+    ⚠原因は「ローカル変数名がグローバルのゲーム時刻 TT を隠していた」こと。
+      件数だけ数える検査では NaN でも通ってしまうので、座標そのものを見る。 */
+ {META.stg=0;setDiff=2;startSolo();frames(20,.016);
+  const me4=G.players[0],si4=AI_ORDER[0],ti4=TOWERS.findIndex(t=>t.id==='drone');
+  if(ti4>=0){
+   me4.scrap=999999;me4.unlocked=Math.max(me4.unlocked,ti4+1);me4.towers[si4]=null;
+   buildTower(me4,si4,ti4);
+   const [sx4,sy4]=SLOTS[si4];
+   me4.zombies.length=0;
+   for(let k=0;k<3;k++){const z=mkZ(zSpec(0,1,5),projPath(sx4,sy4));z.hp=z.mhp=1e9;me4.zombies.push(z);}
+   me4.towers[si4].cd=999;campStep(me4,.001,G.wave);
+   me4.fx.length=0;me4.towers[si4].cd=0;campStep(me4,.001,G.wave);
+   const pel=me4.fx.filter(e=>e.k==='pel');
+   if(!pel.length){console.log('FAIL: ドローンの弾(pel)が1つも出ていない');process.exit(1);}
+   const nan=pel.filter(e=>!isFinite(e.x)||!isFinite(e.y)||!isFinite(e.x2||0)||!isFinite(e.y2||0));
+   if(nan.length){console.log('FAIL: ドローンの弾の座標がNaN('+nan.length+'/'+pel.length+'発)=弾の演出が消えている');process.exit(1);}
+   /* droneOff 自体も直に見る(時刻を渡さないと NaN を返す作りなので) */
+   const dp=droneOff(0,si4,12.34);
+   if(!isFinite(dp[0])||!isFinite(dp[1])){console.log('FAIL: droneOff が NaN を返す');process.exit(1);}
+   console.log('ドローンの弾: '+pel.length+'発すべて座標が有限(NaNなし) OK');}
+  backTitle();}
  META.tw={};META.un={};META.st0=0;
  backTitle();
-}
-/* 連鎖数だけを測るための小さな道具 */
-function twChainTest(id){
- const me=G.players[0],si=AI_ORDER[0],ti=TOWERS.findIndex(t=>t.id===id);
- me.scrap=999999;me.unlocked=Math.max(me.unlocked,ti+1);me.towers[si]=null;buildTower(me,si,ti);
- const tw=me.towers[si],T=TOWERS[ti],TT=TW_TRAIT[T.type];
- return twChain(T,tw)+(TT&&TT.k==='chain'?TT.v*twlv(twKey(T)):0);
 }
 /* ---- 火炎放射塔の周囲ダメージ / レーザー塔の焼き切り / 廃品工房の建て替え(2026-07-26) ---- */
 function checkTwNew(){

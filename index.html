@@ -1587,7 +1587,7 @@ const LAB_TW=lv=>Math.round(60*Math.pow(1.5,lv));/* 60/90/135 = 1種フル285 */
 const LAB_UN=lv=>Math.round(45*Math.pow(1.5,lv));/* 45/68/101 = 1種フル214 */
 /* ⭐🎯砲撃の威力(2026-07-26ユーザー指示)。今までは砲撃だけ**研究所で一切強化できなかった** */
 const STK_MAX=5,STK_STEP=.12;/* 5段・+12%/段 = 最大×1.60 */
-const LAB_ST0=lv=>Math.round(130*Math.pow(1.5,lv));/* 130/195/293/439/659 = フル1,716 */
+const LAB_ST0=lv=>Math.round(130*Math.pow(1.5,lv));/* 130/195/293/439/658 = フル1,715 */
 /* そのタワー/兵科の強化Lv。⚠ソロ専用メタ(協力/対戦とクライアントでは必ず0) */
 /* ⭐強化を引くキー。**工房の3段(廃品工房/上級/プラント)は1つの枠を共有する**
    =建て替えで強化が無駄にならないため。⚠支援施設(sup)は強化しない(タワーの性能に触らない約束) */
@@ -2277,14 +2277,95 @@ function droneOff(k,si,tt){
  return [Math.cos(tt*.62+ph)*26+Math.sin(tt*1.13+ph)*7,
          -34+Math.sin(tt*.83+ph)*11+Math.cos(tt*1.7+ph)*3];
 }
+/* 廃品工房が1サイクルで生む⚙️。⚠**産出の式は必ずここだけに置く**
+   (2026-07-26: 同じ式が発射処理とウェーブ放棄の精算に散らばっていて、精算側だけ研究所の強化が抜けていた) */
+function ecoPer(T,tw){
+ const d=(tw&&tw.us&&tw.us.d)||0;
+ return Math.round(T.inc*(1+.2*d)*metaEco()*(1+TW_TRAIT.eco.v*twlv(twKey(T))));
+}
+/* ============ タワーの基部の形(2026-07-26 第81弾) ============
+   ⭐ユーザー指示「タレットなどの見た目を作っていこう」。
+   ⚠**実機ではタワーは35pxしかない**(建設マス64px × 倍率0.446)。試しにBlenderでスプライトを焼いて
+     比べたが、縮小で輪郭がアンチエイリアスに溶けて**今のコード描画の方がはっきり見えた**ので、
+     コードで描く方針にした(比べた画像は第81弾の記録)。
+   ⚠35pxで効くのは **①輪郭の形 ②明暗 ③色** の3つだけ。細かい模様は描いても消える。
+   ⚠それまで20種すべてが「二重の円+砲身」で、遠目に色しか違わなかった=ここで形を分ける。
+   形の種類: circle=二重円 / box=角丸の四角 / tower=櫓(脚が出る) / tripod=三脚 /
+             dish=平たい皿 / hex=六角 / oct=八角の要塞 / mast=細い支柱 */
+const TW_SHAPE={
+ /* 実弾系 */
+ rifle:'tower',shot:'box',sniper:'tripod',gat:'box',fort:'oct',laser:'mast',sonic:'dish',drone:'box',rail:'tripod',
+ /* 爆発系 */
+ mortar:'dish',gren:'hex',arty:'oct',plasma:'hex',
+ /* 電撃系 */
+ tesla:'mast',coil:'mast',
+ /* 拘束系 */
+ net:'dish',cryo:'hex',
+ /* 火炎系 */
+ flame:'box',acid:'box'
+};
+/* 基部を描く。⚠上を明るく下を暗く**1段だけ**陰影を入れる=平たい図形が立体に見える。
+   2段以上入れても35pxでは分からないので入れない。 */
+function twBase(c,T,t){
+ const sh=TW_SHAPE[T.id]||'circle',col=T.c,dk=shade(col,.72),pad='#6e6354',padDk=shade(pad,.74);
+ const half=(fn)=>{/* 下半分だけ暗く塗る(clipで切る) */
+  c.save();c.beginPath();c.rect(-40,1,80,60);c.clip();fn();c.restore();};
+ if(sh==='box'){
+  c.fillStyle=pad;rr(c,-19,-18,38,37,5);c.fill();c.stroke();
+  half(()=>{c.fillStyle=padDk;rr(c,-19,-18,38,37,5);c.fill();});
+  c.fillStyle=col;rr(c,-13,-12,26,25,4);c.fill();c.stroke();
+  half(()=>{c.fillStyle=dk;rr(c,-13,-12,26,25,4);c.fill();});
+ }else if(sh==='tower'){/* 櫓=四角い台から脚が外へ出る。輪郭にギザギザが出て遠目でも分かる */
+  c.fillStyle=padDk;
+  for(let i=0;i<4;i++){const a=Math.PI/4+i*Math.PI/2;
+   c.save();c.translate(Math.cos(a)*17,Math.sin(a)*17);c.rotate(a);
+   rr(c,-6,-3.5,12,7,2);c.fill();c.stroke();c.restore();}
+  c.fillStyle=pad;rr(c,-16,-15,32,31,4);c.fill();c.stroke();
+  half(()=>{c.fillStyle=padDk;rr(c,-16,-15,32,31,4);c.fill();});
+  c.fillStyle=col;rr(c,-11,-10,22,21,3);c.fill();c.stroke();
+  half(()=>{c.fillStyle=dk;rr(c,-11,-10,22,21,3);c.fill();});
+ }else if(sh==='tripod'){/* 三脚=細い脚3本。中心が小さいので「据え付けた銃」に見える */
+  c.fillStyle=padDk;
+  for(let i=0;i<3;i++){const a=-Math.PI/2+i*Math.PI*2/3;
+   c.save();c.rotate(a);rr(c,-3.5,0,7,21,3);c.fill();c.stroke();c.restore();}
+  c.fillStyle=pad;c.beginPath();c.arc(0,0,13,0,7);c.fill();c.stroke();
+  half(()=>{c.fillStyle=padDk;c.beginPath();c.arc(0,0,13,0,7);c.fill();});
+  c.fillStyle=col;c.beginPath();c.arc(0,0,8.5,0,7);c.fill();c.stroke();
+  half(()=>{c.fillStyle=dk;c.beginPath();c.arc(0,0,8.5,0,7);c.fill();});
+ }else if(sh==='dish'){/* 皿=横長の楕円。低く構えた砲に見える */
+  c.fillStyle=pad;c.beginPath();c.ellipse(0,2,21,15,0,0,7);c.fill();c.stroke();
+  half(()=>{c.fillStyle=padDk;c.beginPath();c.ellipse(0,2,21,15,0,0,7);c.fill();});
+  c.fillStyle=col;c.beginPath();c.ellipse(0,0,14,10,0,0,7);c.fill();c.stroke();
+  half(()=>{c.fillStyle=dk;c.beginPath();c.ellipse(0,0,14,10,0,0,7);c.fill();});
+ }else if(sh==='hex'||sh==='oct'){/* 多角形。ocTは要塞らしく大きめ */
+  const n=sh==='hex'?6:8,r1=sh==='hex'?20:22,r2=sh==='hex'?13:15;
+  const poly=(r,rot)=>{c.beginPath();
+   for(let i=0;i<n;i++){const a=rot+i*Math.PI*2/n;const fx=Math.cos(a)*r,fy=Math.sin(a)*r;
+    if(i)c.lineTo(fx,fy);else c.moveTo(fx,fy);}c.closePath();};
+  c.fillStyle=pad;poly(r1,Math.PI/n);c.fill();c.stroke();
+  half(()=>{c.fillStyle=padDk;poly(r1,Math.PI/n);c.fill();});
+  c.fillStyle=col;poly(r2,0);c.fill();c.stroke();
+  half(()=>{c.fillStyle=dk;poly(r2,0);c.fill();});
+ }else if(sh==='mast'){/* 支柱=縦に細い。上に円盤が載る=背が高い塔に見える */
+  c.fillStyle=padDk;rr(c,-15,6,30,10,4);c.fill();c.stroke();/* 足場 */
+  c.fillStyle=pad;rr(c,-7,-14,14,24,3);c.fill();c.stroke();/* 柱 */
+  half(()=>{c.fillStyle=padDk;rr(c,-7,-14,14,24,3);c.fill();});
+  c.fillStyle=col;c.beginPath();c.arc(0,-13,11,0,7);c.fill();c.stroke();
+  half(()=>{c.fillStyle=dk;c.beginPath();c.arc(0,-13,11,0,7);c.fill();});
+ }else{/* circle=今までの二重円(支援施設や工房など、上で専用の絵を描くものはここに来ない) */
+  c.fillStyle=pad;c.beginPath();c.arc(0,0,20,0,7);c.fill();c.stroke();
+  half(()=>{c.fillStyle=padDk;c.beginPath();c.arc(0,0,20,0,7);c.fill();});
+  c.fillStyle=col;c.beginPath();c.arc(0,0,14,0,7);c.fill();c.stroke();
+  half(()=>{c.fillStyle=dk;c.beginPath();c.arc(0,0,14,0,7);c.fill();});
+ }
+}
 function drawTower(c,ti,lv,x,y,ang,t,o){
  o=o||{};const T=TOWERS[ti],tid=T.id;
  c.save();c.translate(x,y);
  if(o.jam)c.filter='grayscale(1) brightness(.75)';
  c.lineWidth=3;c.strokeStyle=INK;
- /* 基部 */
- c.fillStyle='#6e6354';c.beginPath();c.arc(0,0,20,0,7);c.fill();c.stroke();
- c.fillStyle=T.c;c.beginPath();c.arc(0,0,14,0,7);c.fill();c.stroke();
+ /* 基部(形はタワーごとに違う=35pxでは輪郭だけが見分けの手がかりになるため) */
+ twBase(c,T,t);
  /* ---- 支援施設(撃たない。砲身の代わりに設備が乗る) ---- */
  if(tid==='radio'){/* 電波塔: 鉄塔と点滅する電波 */
   c.strokeStyle='#8a8f96';c.lineWidth=3;
@@ -3450,7 +3531,7 @@ function campStep(C,dt,wave){
   tw.cd-=dt;if(tw.fireT>0)tw.fireT-=dt;
   const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=twDmgM(tw);
   const aB=G&&G.coop?1+.08*((G.players[tw.own||0]||C).atkLv):atkB;
-  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=Math.round(T.inc*(1+.2*tw.us.d)*metaEco()*(1+TW_TRAIT.eco.v*twlv(twKey(T))));C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
+  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=ecoPer(T,tw);C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
   const rng=T.rng*twRngM(tw),r2=rng*rng;
   let tg=null,best=-1;
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const dx=z.px-sx,dy=z.py-sy,ds=dx*dx+dy*dy;if(ds>r2)continue;
@@ -3490,7 +3571,9 @@ function campStep(C,dt,wave){
   const AMO=AMMO[T.type==='bullet'?AMI:0];/* 弾薬は実弾タワーにだけ載る */
   /* ⭐研究所の個別強化(そのタワー1種ぶん)。TL=段数、TT=その型の持ち味。
     ⚠型ごとのまとめ強化だった頃と同じ場所で効かせている=当たり判定や順番は変えていない */
- const TL=twlv(twKey(T)),TT=TW_TRAIT[T.type];
+ /* ⚠ローカル名を TT にしてはいけない=**グローバルの TT(ゲーム時刻)を隠してしまう**。
+    実際に droneOff(…,TT) が undefined を受けて弾の座標が NaN になり、ドローンの弾が消えていた(2026-07-26) */
+ const TL=twlv(twKey(T)),TRT=TW_TRAIT[T.type];
   const dm=T.dmg*m*aB*AMO.dm*(1+TW_DMG_STEP*TL);/* 威力+15%/段(型ごとだった頃は+10%) */
   /* 銃口の火花・煙・薬莢 */
   if(FXLV>0&&T.type!=='eco'){const mx2=sx+Math.cos(tw.ang)*26,my2=sy+Math.sin(tw.ang)*26;
@@ -3513,10 +3596,15 @@ function campStep(C,dt,wave){
    else if(T.type==='net'){addP(C,4,sx,sy,{sp:70,g:0,flat:1,life:.5,r:2.4,col:T.id==='cryo'?FROST:'#9fd9c6'});}}
   if(T.type==='net'){let nfz=0;
    for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){
-    z.slowT=T.slowT*(1+(TT&&TT.k==='slow'?TT.v*TL:0));
+    z.slowT=T.slowT*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));
     /* 完全凍結(冷却塔)。解凍後 frz×2 秒は効かない=稼働率50%止まり。
        さらに同じ敵を凍らせられるのは twFrzN 回まで(初期5・❄冷却回数の強化で最大10) */
-    if(T.frz&&z.frzCd<=0&&(z.frzUsed||0)<twFrzN(T,tw)){const ft=T.frz*(1+(TT&&TT.k==='slow'?TT.v*TL:0));z.frzT=ft;z.frzCd=ft*2;z.frzUsed=(z.frzUsed||0)+1;
+    if(T.frz&&z.frzCd<=0&&(z.frzUsed||0)<twFrzN(T,tw)){const ft=T.frz*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));z.frzT=ft;
+     /* ⚠再凍結までの耐性は**素の凍結時間**の2倍で固定する(2026-07-26)。
+        強化後の ft で作ると凍結も待ちも同じ比率で伸びて稼働率が33%に張り付き、
+        『凍結+20%』を買っても実質の拘束時間が 増加しない=買う意味が無くなる。
+        素の2倍にしておけば、強化するほど稼働率が上がる(素33%→Lv3で44%)。 */
+     z.frzCd=T.frz*2;z.frzUsed=(z.frzUsed||0)+1;
      /* ⭐凍らせた敵の足元に氷が張る=どれが止まったのか一目で分かる(2026-07-26) */
      if(FXLV>0&&++nfz<=6)addFx(C,'ice',z.px,z.py,'',{r:26,sd:rnd(0,9),lf:.55});}
     dmgZ(C,z,dm,1);}}
@@ -3537,15 +3625,15 @@ function campStep(C,dt,wave){
      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
      dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1);}
     if(FXLV>0)addFx(C,'ring',tg.px,tg.py,'',{r:sr,col:'#ff9a3d'});}
-   if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+(TT&&TT.k==='burn'?TT.v*TL:0))*av;}
+   if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+(TRT&&TRT.k==='burn'?TRT.v*TL:0))*av;}
    /* ⚠火炎は連続で当たるので、鳴らしすぎないよう間引く(45msの制限も効く) */
    if(Math.random()<.35)twSfx(C,T);}
   else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
     跳ねるたびに威力が grow 倍(gmax 倍で頭打ち)＝群れが長いほど後半が重くなる */
-   const chainN=twChain(T,tw)+(TT&&TT.k==='chain'?TT.v*TL:0);
+   const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?TRT.v*TL:0);
    C.arcs.push({x:sx,y:sy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
-  else if(T.type==='elec'){const chainN=twChain(T,tw)+(TT&&TT.k==='chain'?TT.v*TL:0);
+  else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?TRT.v*TL:0);
    let cur=tg,hitl=[tg],pts=[[sx,sy],[tg.px,tg.py]];dmgZ(C,cur,dm*(cur.scl?ELEC_VS_SCALE:1),1);
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
@@ -3562,7 +3650,7 @@ function campStep(C,dt,wave){
       速く・低く飛び、着弾はエネルギーの炸裂になる。⚠数値(威力・範囲・間隔)は一切変えていない */
    const pz=T.id==='plasma'?1:0;
    C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:pz?.42:.85,
-    dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)*(1+(TT&&TT.k==='aoe'?TT.v*TL:0)),pz,
+    dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)*(1+(TRT&&TRT.k==='aoe'?TRT.v*TL:0)),pz,
     /* 砲弾の大きさも砲ごとに変える(重砲台は大玉・擲弾砲台は小玉) */
     sz:T.id==='arty'?1.55:T.id==='gren'?.7:1});
    twSfx(C,T);}
@@ -4845,7 +4933,9 @@ function openBM(si){
   if(!tw.us)tw.us=newUs();
   const rows=twStats(tw.ti).map(st=>{
    const lvv=tw.us[st]||0,mx=lvv>=USTAT_MAX,p=mx?null:stCost(tw,st);
-   let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+twChain(T,tw)+'体)':'')
+   /* ⚠⚡連鎖数は研究所の個別強化(elecの持ち味+1/段)も足して出す=実際に飛ぶ数と合わせる */
+   const chBonus=(TW_TRAIT[T.type]&&TW_TRAIT[T.type].k==='chain')?TW_TRAIT[T.type].v*twlv(twKey(T)):0;
+   let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
     +(st==='f'?(mx?'('+twFrzN(T,tw)+'回)':'('+twFrzN(T,tw)+'→'+(twFrzN(T,tw)+1)+'回)'):'')
     /* 🔥昇温速度は「最大倍率まで何発か」を出す=数字が減るほど良い、と分かるように */
     +(st==='h'?(mx?'('+twHeatN(T,tw)+'発)':'('+twHeatN(T,tw)+'→'+twHeatN(T,{us:Object.assign({},tw.us,{h:(tw.us.h||0)+1})})+'発)'):'');
@@ -5031,7 +5121,7 @@ function ecoCompensate(me){
  const rest=Math.max(0,me.zombies.length*1.1+(G?G.tide.pool.length*0.55:0));/* 残敵から推定した残り秒数 */
  for(let si=ECO_BASE;si<SLOTS.length;si++){const tw=me.towers[si];if(!tw)continue;
   const T=TOWERS[tw.ti];if(T.type!=='eco')continue;
-  const cyc=T.rate*(1-.08*tw.us.r),per=Math.round(T.inc*(1+.2*tw.us.d)*metaEco());
+  const cyc=T.rate*(1-.08*tw.us.r),per=ecoPer(T,tw);/* ⚠放棄の精算にも研究所の産出強化を乗せる */
   g+=Math.round(per*(rest/Math.max(.5,cyc)));}
  if(g>0){me.scrap+=g;me.enTotal+=g;addFx(me,'txt',SLOTS[ECO_BASE][0],SLOTS[ECO_BASE][1]-40,'+'+g+'⚙️');toast('🏭 工房の生産ぶん +'+g+'⚙️ を精算');}
  return g;
@@ -5296,7 +5386,7 @@ function renderLab(){
  /* 項目は {ic:絵柄, t:名前, tag:小さいラベル, d:説明, p:値段} の形で作る=カードに流し込むため */
  const items=[];
  if(META.nt<T_PLAY-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',ic:'🗼',t:T.n,tag:'新型タワー '+(META.nt+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:LAB_NT(META.nt)});}
- if(META.nu<U_N-BASE_U){const U=UNITS[BASE_U+META.nu];items.push({cat:'new',k:'nu',ic:'🤖',t:U.n,tag:'新型兵科 '+(META.nu+1)+'/'+(U_N-BASE_U),d:U.dsc,p:LAB_NU(META.nu)});}
+ if(META.nu<U_N-BASE_U){const U=UBASE[BASE_U+META.nu];/* ⚠UNITSは派生に差し替わるのでUBASE */items.push({cat:'new',k:'nu',ic:'🤖',t:U.n,tag:'新型兵科 '+(META.nu+1)+'/'+(U_N-BASE_U),d:U.dsc,p:LAB_NU(META.nu)});}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -5335,11 +5425,14 @@ function renderLab(){
    if(i>=BASE_T&&(i-BASE_T)>=(META.nt||0))continue;/* 研究所でまだ解放していない新型 */
    const key=twKey(T);if(seen[key])continue;seen[key]=1;
    const lv=(META.tw&&META.tw[key])||0;if(lv>=LINE_MAX)continue;
-   const TT=TW_TRAIT[T.type];
-   const d=(T.type==='eco'?'':'威力+'+Math.round(TW_DMG_STEP*100)+'%')+(TT?(T.type==='eco'?'':'・')+TT.t:'')+'/段';
+   const TRT=TW_TRAIT[T.type];/* ⚠TT という名前は使わない=グローバルのゲーム時刻を隠すため */
+   const d=(T.type==='eco'?'':'威力+'+Math.round(TW_DMG_STEP*100)+'%')+(TRT?(T.type==='eco'?'':'・')+TRT.t:'')+'/段';
    items.push({cat:'twup',k:'tw',id:key,sm:1,ic:TW_IC[T.type]||'🗼',t:T.n,tag:'Lv'+lv+'/'+LINE_MAX,d,p:LAB_TW(lv)});}}
  /* ---- ⭐兵科1種ごとの強化。派生キャラは元の兵科の枠を共有する ---- */
- for(let i=0;i<U_N;i++){const U=UNITS[i];
+ /* ⚠**UNITS ではなく UBASE(素の兵科)から引くこと**(2026-07-26にレビューで発覚)。
+    UNITS は編成を適用した時点で派生キャラの実体に差し替わり、タイトルへ戻っても元に戻らない。
+    UNITS で引くと『狼』のidで保存され、出撃側(unKey=元のid)が読めず**強化が消える**。 */
+ for(let i=0;i<U_N;i++){const U=UBASE[i];
   if(i>=BASE_U&&(i-BASE_U)>=(META.nu||0))continue;/* まだ解放していない兵科 */
   const lv=(META.un&&META.un[U.id])||0;if(lv>=LINE_MAX)continue;
   const st=UN_STEP(U.type),hl=U.type==='heal'?'回復':'攻撃';
@@ -5361,7 +5454,9 @@ function renderLab(){
    META.st0?['🎯砲撃威力+'+Math.round(META.st0*STK_STEP*100)+'%']:[],
    /* ⭐鍛えたタワー/兵科(名前が引けないidは飛ばす) */
    Object.keys(META.tw||{}).map(id=>{const T=TOWERS.find(t=>twKey(t)===id);return T?'🗼'+T.n+'Lv'+META.tw[id]:'';}).filter(Boolean),
-   Object.keys(META.un||{}).map(id=>{const U=UNITS.find(u=>u.id===id);return U?'🪖'+U.n+'Lv'+META.un[id]:'';}).filter(Boolean));
+   /* ⚠UNITS は派生キャラに差し替わっていることがあるので UBASE(不変)から名前を引く */
+   Object.keys(META.un||{}).map(id=>{const U=UBASE.find(u=>u.id===id)||UNITS.find(u=>unKey(u)===id);
+    return U?'🪖'+U.n+'Lv'+META.un[id]:'';}).filter(Boolean));
  LAB_ITEMS=items;
  const done=[].concat(doneT,doneU,doneV,doneA,doneS,doneX);
  /* ---- タブ(買える数をバッジで出す=どこに何が残っているか一目で分かる) ---- */
@@ -7543,6 +7638,14 @@ if(DEV){try{
  META.nt=Math.max(META.nt||0,T_PLAY-BASE_T);
  META.nu=Math.max(META.nu||0,U_N-BASE_U);
  for(const k in LAB_STK)if(META.st.indexOf(k)<0)META.st.push(k);/* 砲撃5種も全部 */
+ /* ⭐個別強化(タワー/兵科)と砲撃の威力も最大にする(2026-07-26)。
+    ⚠ここを開けないと**実機で強化の効果を確かめられない**(DEVは全開放という約束) */
+ if(!META.tw||typeof META.tw!=='object')META.tw={};
+ if(!META.un||typeof META.un!=='object')META.un={};
+ for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];if(T.type==='sup')continue;
+  const k2=twKey(T);if((META.tw[k2]||0)<LINE_MAX)META.tw[k2]=LINE_MAX;}
+ for(let i=0;i<U_N;i++){const U=UBASE[i];if((META.un[U.id]||0)<LINE_MAX)META.un[U.id]=LINE_MAX;}
+ META.st0=Math.max(META.st0||0,STK_MAX);
  saveMeta();
 }catch(e){}}
 makeThumbs();paradeInit();updLabBtn();/* 🏋鍛錬所ボタンの表示/💎🔧の残数を起動時に合わせる */

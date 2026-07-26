@@ -30,7 +30,7 @@ function coarseCSS(s){
 const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連した状態で撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
-const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=line = 🔬研究所の指定タブを開いた状態で撮る */
+const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=twup(タワー強化) / lab=unup(部隊強化) / lab=rec(記録) = 🔬研究所の指定タブ */
 const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
 const LOAD=!!LDM,LOADT=(LDM&&LDM[1])||'base';

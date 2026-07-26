@@ -533,7 +533,7 @@ node test_shot.js out.png 852 393 fxdemo         # 新しい演出を1つずつ�
 node test_shot.js out.png 852 393 dev            # 🛠DEVモード(全開放)の画面を撮る
 node test_shot.js out.png 852 393 hero=all        # 英雄11人を経路に並べて撮る(見た目の確認)
 node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させて撮る(+nodep=出撃前のボタンだけ見る)
-node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=line 記録は lab=rec
+node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=twup lab=unup 記録は lab=rec
 node test_shot.js out.png 852 393 load           # 🎖編成(load=am で弾薬タブ)
 node test_shot.js out.png 852 393 "gacha5+gbang" # 💎召集(gacha=撃て! / +gfly=弾が飛ぶ / +gbang=木っ端みじん+示唆 /
                                                 #   +gcard=結果カード / +gres=結果ウィンドウ / gacha5=★5 / +gt0/1/2=タレットの段)
