@@ -994,6 +994,40 @@ runPvP('対戦三つ巴');
 console.log('ALL TESTS DONE');
 process.exit(0);
 `;
+/* ---- 書体と色の表(パレット)が崩れていないか ----
+   ⚠これはソースを読む静的な検査(実走ではない)。
+   ①canvasの文字が全部 FF(共通の書体)を通っているか=以前は canvas だけ sans-serif で別書体だった
+   ②CSSの :root と JS の定数が同じ値か=**片方だけ直すとHTMLとcanvasで色がずれる**
+   ③canvasの文字色・HTML本文に色を直に書いていないか=同じ役目の色が少しずつ違う値で散らばるのを防ぐ */
+(function checkPalette(){
+ const nFont=(html.match(/\.font=/g)||[]).length,nFF=(html.match(/px '\+FF/g)||[]).length;
+ if(nFont!==nFF){console.log('FAIL: canvasの書体がバラバラ('+nFont+'か所中'+nFF+'か所しかFFを通っていない)');process.exit(1);}
+ if(/px sans-serif'/.test(html)){console.log('FAIL: canvasに sans-serif 直書きが残っている');process.exit(1);}
+ /* CSSの :root と JS の定数の突き合わせ。左=CSS変数名 右=JSの定数名 */
+ const PAIR=[['ink','INK'],['ink2','INK2'],['ink3','INK3'],['ink4','INK4'],['void','VOID'],
+  ['pane','PANE'],['paper','PAPER'],['paper2','PAPER2'],['paper3','PAPER3'],['dim','DIM'],
+  ['rust','RUST'],['rust2','RUST2'],['amber','AMBER'],['gold','GOLD'],['gold2','GOLD2'],['glow','GLOW'],
+  ['toxic','TOXIC'],['life','LIFE'],['life2','LIFE2'],['tech','TECH'],['tech2','TECH2'],
+  ['frost','FROST'],['steel','STEEL'],['hero','HEROC'],['danger','DANGER'],['danger2','DANGER2'],['gone','GONE']];
+ for(const [cv,jv] of PAIR){
+  const a=(html.match(new RegExp('--'+cv+':(#[0-9a-f]{6})'))||[])[1];
+  const b=(html.match(new RegExp('\\b'+jv+"='(#[0-9a-f]{6})'"))||[])[1];
+  if(!a){console.log('FAIL: CSSに --'+cv+' が無い');process.exit(1);}
+  if(!b){console.log('FAIL: JSに '+jv+' が無い');process.exit(1);}
+  if(a!==b){console.log('FAIL: --'+cv+'('+a+') と '+jv+'('+b+') の色が違う=HTMLとcanvasでずれる');process.exit(1);}
+ }
+ /* canvasの文字色に直書きが残っていないか(font と同じ行の fillStyle を見る) */
+ const bad=[];
+ for(const ln of html.split('\n'))if(/\.font=/.test(ln)){
+  const m=ln.match(/fillStyle=[^;]*'#[0-9a-fA-F]{3,6}'/);if(m)bad.push(m[0]);}
+ if(bad.length){console.log('FAIL: canvasの文字色に直書きが残っている: '+bad.slice(0,3).join(' / '));process.exit(1);}
+ /* HTML本文(</style>より後・<script>より前)の直書き色 */
+ const bodyHtml=html.slice(html.indexOf('</style>'),html.indexOf('\n<script>',html.indexOf('</style>')));
+ const bh=bodyHtml.match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g);
+ if(bh){console.log('FAIL: HTML本文に色を直に書いている: '+bh.slice(0,3).join(' / '));process.exit(1);}
+ const nc=(html.match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g)||[]).length;
+ console.log('書体と色の表: canvasの文字'+nFont+'か所すべて共通の書体 / CSSとJSの色'+PAIR.length+'組が一致 / 直書きの色 '+nc+'か所(絵の色だけ) OK');
+})();
 /* ---- 🛠DEVモード(?dev=1)でも最後まで読み込めるか ----
    ⚠DEVは location.search で決まるので、下の実走テストは**常にDEV=false側しか通らない**。
      DEV側だけで落ちる事故(constのTDZを typeof で見て例外→スクリプト全体が停止)を実際に踏んだので、
