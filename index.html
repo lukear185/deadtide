@@ -7225,11 +7225,22 @@ function renderLab(){
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
  }
  $('lab-items').innerHTML=IC(body);
- /* ⭐カードの姿を描く。⚠innerHTMLを入れた**後**でないと canvas がまだ無い */
- $('lab-items').querySelectorAll('[data-pv]').forEach(cv2=>{
+ /* ⭐カードの姿を描く。⚠innerHTMLを入れた**後**でないと canvas がまだ無い。
+    ⚠⭐**canvasの中の寸法(width/height属性)とCSSの見た目の寸法は必ず合わせる**(2026-07-27に踏んだ)。
+      .pvc は CSSが「横=カードの幅いっぱい・縦=52px」なのに中身を120x104で作っていたため、
+      ブラウザが引き伸ばして**絵が横に伸びて縦に潰れていた**(研究所の派生タブで発覚)。
+      fitDrawは中の寸法に合わせて綺麗に収めるので、**潰れの原因は必ずこの食い違いの方**。
+    ⚠**開いた直後は clientWidth が0のことがある**(まだ表示されていない/字の読み込み中)ので、
+      次のフレームでもう一度測って描き直す。 */
+ const drawPv=()=>{$('lab-items').querySelectorAll('[data-pv]').forEach(cv2=>{
   const it=items[+cv2.dataset.pv];if(!it||!it.pv)return;
+  const r=Math.min(2,(window.devicePixelRatio||1));
+  const w=Math.round((cv2.clientWidth||120)*r),h=Math.round((cv2.clientHeight||52)*r);
+  if(w>0&&h>0&&(cv2.width!==w||cv2.height!==h)){cv2.width=w;cv2.height=h;}
   fitDraw(cv2,it.pv.k==='t'?(cc=>drawTower(cc,it.pv.i,0,0,0,-0.55,1.2,{}))
-                          :(cc=>drawUnitAs(cc,it.pv.i,it.pv.def)),4);});
+                           :(cc=>drawUnitAs(cc,it.pv.i,it.pv.def)),4*r);});};
+ drawPv();
+ if(window.requestAnimationFrame)requestAnimationFrame(drawPv);
  /* まとめ買いの切り替え(押したら値段とラベルを付け直す) */
  $('lab-items').querySelectorAll('[data-mul]').forEach(b=>{b.onclick=()=>{LABMUL=+b.dataset.mul;renderLab();};});
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
