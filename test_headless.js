@@ -487,41 +487,47 @@ function checkGachaFx(){
  gcStart(res);
  if(!GC){console.log('FAIL: 召集の演出が始まらない(canvasが取れていない)');process.exit(1);}
  if(GC.best!==5){console.log('FAIL: 予告の色が最高レア度になっていない best='+GC.best);process.exit(1);}
- if(GC.ph!=='summon'){console.log('FAIL: 魔法陣から始まっていない '+GC.ph);process.exit(1);}
- /* 魔法陣→炸裂→撃て!→発射→カード と進むこと */
- for(let k=0;k<40&&GC.ph==='summon';k++)gcStep(.05);
- if(GC.ph!=='burst'){console.log('FAIL: 魔法陣のあと炸裂に進まない '+GC.ph);process.exit(1);}
- for(let k=0;k<40&&GC.ph==='burst';k++)gcStep(.05);
- if(GC.ph!=='aim'){console.log('FAIL: 炸裂のあと「撃て!」に進まない '+GC.ph);process.exit(1);}
- /* 押すと撃つ。押さなくても待ちすぎたら自動で撃つ(止まったままにならない) */
+ /* ⭐撃つ場面は**召集1回につき1回だけ**。最初から「撃て!」で始まること */
+ if(GC.ph!=='aim'){console.log('FAIL: 「撃て!」から始まっていない '+GC.ph);process.exit(1);}
+ /* ⭐押すまで絶対に進まないこと(時間では進まない) */
+ for(let k=0;k<120;k++)gcStep(.05);
+ if(GC.ph!=='aim'){console.log('FAIL: 押していないのに勝手に進んだ '+GC.ph);process.exit(1);}
+ /* 押すと撃つ。弾が飛んでいる間は飛ばせない */
  gcTap(0,0);
  if(GC.ph!=='fire'){console.log('FAIL: 押しても撃たない '+GC.ph);process.exit(1);}
- for(let k=0;k<40&&GC.ph==='fire';k++)gcStep(.05);
- if(GC.ph!=='card'){console.log('FAIL: 撃ったあとカードに進まない '+GC.ph);process.exit(1);}
- /* 押すと次の1枚(=次の「撃て!」)へ。最後まで行くと閉じる */
  gcTap(0,0);
- if(!GC||GC.i!==1||GC.ph!=='aim'){console.log('FAIL: 押しても次の1枚に進まない');process.exit(1);}
- for(let k=0;k<3;k++){gcTap(0,0);gcTap(0,0);gcTap(0,0);}
+ if(GC.ph!=='fire'){console.log('FAIL: 弾が飛んでいる途中で飛ばせてしまう');process.exit(1);}
+ for(let k=0;k<12;k++)gcStep(.05);/* 着弾させる(⚠0.05を10回足しても浮動小数で0.5に届かない) */
+ if(!GC.hit){console.log('FAIL: 弾が当たっていない(GC_FLY秒たっても着弾しない)');process.exit(1);}
+ for(let k=0;k<80&&GC.ph==='fire';k++)gcStep(.05);
+ if(GC.ph!=='card'){console.log('FAIL: 撃ったあと結果カードに進まない '+GC.ph);process.exit(1);}
+ /* ⭐撃つ場面は1回きり=2枚目以降はカードのまま(「撃て!」に戻らない) */
+ gcTap(0,0);
+ if(!GC||GC.i!==1||GC.ph!=='card'){console.log('FAIL: 2枚目で撃つ場面に戻っている '+(GC&&GC.ph));process.exit(1);}
+ gcTap(0,0);gcTap(0,0);
  if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
- /* 押さずに放っておいても自動で撃つ */
- gcStart(res);GC.ph='aim';GC.t=0;
- for(let k=0;k<60&&GC.ph==='aim';k++)gcStep(.05);
- if(GC.ph==='aim'){console.log('FAIL: 「撃て!」で止まったまま進まない');process.exit(1);}
- gcEnd();
- /* ⭐展開が読めること: ダメージは結果そのもの / タレットは予告で**下振れだけ**(上振れしない)
-    → レーザー(段2)が出たら★4以上が確定する */
+ /* ⭐展開が読めること: タレット/ゾンビは予告で**下振れだけ**(上振れしない)
+    → レーザー(段2)が出たら★4以上が確定 / レアでない時は基本ライフル+通常ゾンビ */
+ let sawRifleLow=0;
  for(let k=0;k<400;k++){
   const rk=k%6;
   const one=[rk===0?{dud:GDUD[0],txt:''}:{hero:HEROES.find(h=>h.rk===rk),txt:''}];
   if(!one[0].dud&&!one[0].hero)continue;
-  gcStart(one);const s=GC.sc[0],r=gcRank(one[0]);
-  const want=r>=4?2:r>=2?1:0;
-  if(s.dg!==want){console.log('FAIL: レア度'+r+'のダメージ段が違う '+s.dg+'(期待'+want+')');process.exit(1);}
-  if(s.tw>s.dg){console.log('FAIL: タレットの予告が上振れしている(レア度'+r+' 予告'+s.tw+' 実際'+s.dg+')');process.exit(1);}
-  if(s.tw===2&&r<4){console.log('FAIL: レーザーが出たのに★4未満(レア度'+r+')');process.exit(1);}
-  if(r===5&&s.tw!==2){console.log('FAIL: ★5なのにレーザーで見せていない');process.exit(1);}
+  gcStart(one);const r=gcRank(one[0]),base=r>=4?2:r>=2?1:0;
+  if(GC.tw>base){console.log('FAIL: 予告が上振れしている(レア度'+r+' 予告'+GC.tw+' 上限'+base+')');process.exit(1);}
+  if(GC.tw===2&&r<4){console.log('FAIL: レーザーが出たのに★4未満(レア度'+r+')');process.exit(1);}
+  if(r===5&&GC.tw!==2){console.log('FAIL: ★5なのにレーザーで見せていない');process.exit(1);}
+  if(GC.zk!==GC.tw){console.log('FAIL: ゾンビの種類がタレットの段と揃っていない');process.exit(1);}
+  if(r<=1){if(GC.tw!==0){console.log('FAIL: レアでないのにライフル以外が出ている(レア度'+r+')');process.exit(1);}sawRifleLow=1;}
   gcEnd();
  }
+ if(!sawRifleLow){console.log('FAIL: レアでない時の見せ方を確かめられていない');process.exit(1);}
+ /* ⭐10連でも撃つ場面は1回だけ=示唆するのは「その回の一番いい結果」 */
+ {const many=[{dud:GDUD[0],txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{dud:GDUD[1],txt:''}];
+  gcStart(many);
+  if(GC.best!==4){console.log('FAIL: 10連の示唆が一番いい結果になっていない '+GC.best);process.exit(1);}
+  if(GC.tw>2||GC.tw<1){console.log('FAIL: ★4の予告の段がおかしい '+GC.tw);process.exit(1);}
+  gcEnd();}
  /* 「まとめて見る」で途中でも閉じられること */
  gcStart(res);GC.ph='card';GC.sk=[10,10,90,20];
  gcTap(20,15);
@@ -546,7 +552,7 @@ function checkGachaFx(){
   for(const r of rows)if((r.lbl||'').length>6){console.log('FAIL: アイコンの文字が長すぎる「'+r.lbl+'」');process.exit(1);}
   console.log('召集結果の一覧: アイコン'+rows.length+'個(英雄'+hero.length+'/はずれ'+dud.length+')・一番レアを最初に選ぶ・文字は★と+数字だけ OK');
   try{renderGcRes(res);}catch(e){console.log('FAIL: 召集結果の描き出しで例外 '+e.message);process.exit(1);}}
- console.log('💎英雄召集の演出: 魔法陣→炸裂→撃て!→傷→カード / 予告は下振れのみ(レーザー=★4以上確定) OK');
+ console.log('💎英雄召集の演出: 撃て!(押すまで進まない)→弾が飛ぶ→木っ端みじん→跡地の示唆→結果カード / 撃つのは1回だけ / 予告は下振れのみ OK');
 }
 function checkTwFx(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
