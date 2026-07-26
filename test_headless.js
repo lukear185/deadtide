@@ -530,6 +530,22 @@ function checkGachaFx(){
  const before=JSON.stringify(res);
  gcStart(res);for(let k=0;k<80;k++)gcStep(.05);gcEnd();
  if(JSON.stringify(res)!==before){console.log('FAIL: 演出が結果の中身を書き換えている');process.exit(1);}
+ /* ---- 召集結果は別ウィンドウのアイコン一覧(2026-07-26 第73弾) ----
+    ⚠ヘッドレスのDOMは差し込んだ要素を数えられないので、DOMを触らない gcResRows() の方を検査する */
+ {const rows=gcResRows(res);
+  if(rows.length!==res.length){console.log('FAIL: アイコンの数が結果の数と合わない '+rows.length+'/'+res.length);process.exit(1);}
+  const hero=rows.filter(r=>!r.dud),dud=rows.filter(r=>r.dud);
+  if(hero.some(r=>!(r.ui>=0))){console.log('FAIL: 英雄のアイコンに絵が割り当たっていない');process.exit(1);}
+  if(hero.some(r=>!r.lbl)){console.log('FAIL: 英雄のアイコンに★が付いていない');process.exit(1);}
+  if(dud.some(r=>!r.ic)){console.log('FAIL: はずれ枠のアイコンが空');process.exit(1);}
+  /* 新規はNEW・重複はNEWなし */
+  if(rows[0].nw!==1||rows[2].nw!==0){console.log('FAIL: NEW/重複の印が合っていない');process.exit(1);}
+  /* 一番レアなもの(★5=先頭)が最初から選ばれること */
+  if(gcResBest(rows)!==0){console.log('FAIL: 一番レアな結果が最初に選ばれない '+gcResBest(rows));process.exit(1);}
+  /* 枠の中に長い文章が入っていないこと(アイコン制の肝) */
+  for(const r of rows)if((r.lbl||'').length>6){console.log('FAIL: アイコンの文字が長すぎる「'+r.lbl+'」');process.exit(1);}
+  console.log('召集結果の一覧: アイコン'+rows.length+'個(英雄'+hero.length+'/はずれ'+dud.length+')・一番レアを最初に選ぶ・文字は★と+数字だけ OK');
+  try{renderGcRes(res);}catch(e){console.log('FAIL: 召集結果の描き出しで例外 '+e.message);process.exit(1);}}
  console.log('💎英雄召集の演出: 魔法陣→炸裂→撃て!→傷→カード / 予告は下振れのみ(レーザー=★4以上確定) OK');
 }
 function checkTwFx(){
