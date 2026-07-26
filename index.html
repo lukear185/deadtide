@@ -11014,6 +11014,47 @@ function closeGcRes(){
  $('md-gcres').classList.remove('on');
  try{renderGacha(null);renderHeroSeg();refreshTrainBtn();}catch(e){}
 }
+/* ⭐ガチャ演出の背景(2026-07-27ユーザー指摘「背景がなんもない」)。床と遠近線だけだった。
+   ⚠**毎フレーム乱数を引くと廃墟の形が踊る**ので、並びは起動時に1回だけ決める。 */
+const gcLcg=(seed,n,f)=>{let s=seed,a=[];
+ const rnd=()=>((s=(s*1103515245+12345)&0x7fffffff)/0x7fffffff);
+ for(let i=0;i<n;i++)a.push(f(rnd,i));return a;};
+const GC_BLD=gcLcg(20260727,28,r=>({x:r(),w:.03+r()*.05,h:.10+r()*.30,f:r()}));
+const GC_EMB=gcLcg(7771,36,r=>({x:r(),y:r(),sp:.25+r()*.8,r:1+Math.round(r()*2)}));
+function gcBg(c,w,h,hz,t){
+ /* 空=地平線のあたりだけ赤く焼けている */
+ let g=null;
+ try{g=c.createRadialGradient&&c.createRadialGradient(w*.72,hz,10,w*.72,hz,h*1.6);}catch(e){}
+ if(g){g.addColorStop(0,'#43211a');g.addColorStop(.42,'#1e1315');g.addColorStop(1,'#0b0a0c');c.fillStyle=g;}
+ else c.fillStyle='#141110';
+ c.fillRect(-w,-h,w*3,hz+h);
+ /* 血の月 */
+ c.globalAlpha=.9;c.fillStyle='#c14b3e';c.beginPath();c.arc(w*.28,hz-h*.44,h*.075,0,7);c.fill();
+ c.globalAlpha=.15;c.beginPath();c.arc(w*.28,hz-h*.44,h*.16,0,7);c.fill();c.globalAlpha=1;
+ /* 廃墟の輪郭(奥と手前の2列。奥は薄く小さく) */
+ for(let L=1;L>=0;L--){
+  const base=L?'#181316':'#241b1b',sc=L?.72:1;
+  for(const b of GC_BLD){
+   if((b.f<.5)!==(L===1))continue;
+   const bw=w*b.w*sc,bh=h*b.h*sc,bx=-w*.2+b.x*w*1.4,by=hz-bh;
+   c.fillStyle=base;c.fillRect(bx,by,bw,bh);
+   if(b.f>.74){/* 窓の灯り */
+    c.fillStyle='rgba(232,163,61,.45)';
+    for(let k=0;k<3;k++)c.fillRect(bx+bw*.26,by+bh*(.18+k*.24),bw*.18,bh*.06);}
+  }}
+ /* 遠くの火(ゆらぐ) */
+ for(let i=0;i<3;i++){const fx=w*(.16+i*.32),fl=.55+Math.sin(t*(2.6+i*.7)+i)*.45;
+  c.globalAlpha=.26*fl;c.fillStyle='#e8a33d';
+  c.beginPath();c.ellipse(fx,hz-1,w*.055,h*.055,0,0,7);c.fill();}
+ c.globalAlpha=1;
+ /* 舞い上がる火の粉 */
+ for(const e of GC_EMB){
+  const ex=(((e.x+t*e.sp*.02)%1.3)-.15)*w;
+  const ey=hz-((e.y*h*.5+t*e.sp*22)%(h*.62));
+  c.globalAlpha=.5;c.fillStyle=(e.r>2?'#e8a33d':'#b8ae96');
+  c.fillRect(ex,ey,e.r,e.r);}
+ c.globalAlpha=1;
+}
 /* 光条(レアなほど本数が多くて速い) */
 function gcRays(c,cx,cy,R,n,rot,col,a){
  c.save();c.translate(cx,cy);c.rotate(rot);c.globalAlpha=a;c.fillStyle=col;
@@ -11052,7 +11093,7 @@ function gcDraw(){
   c.save();
   c.translate(cx+CAM.sx,cy+CAM.sy);c.scale(CAM.z,CAM.z);c.translate(-CAM.x,-CAM.y);
   /* ---- 奥行きのある地面(消失点へ収束させる)。⚠寄せるので**画面より広く**描く(端に隙間が出る) ---- */
-  c.fillStyle='#141110';c.fillRect(-w,-h,w*3,hz+h);
+  gcBg(c,w,h,hz,GC.t);
   c.fillStyle='#2b2419';c.fillRect(-w,hz,w*3,h*2);
   {const vx=w*.62;
    c.strokeStyle='rgba(242,236,220,.09)';c.lineWidth=2;
