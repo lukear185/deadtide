@@ -940,6 +940,12 @@ function checkMetaReset(){
  META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.am=2;META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;/* タワー/兵科の個別強化と砲撃威力 */
  META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
+ /* ⭐🛠DEVの「研究をリセット」は**研究所ぶんだけ**を戻す=難易度とステージの解放は残す */
+ metaResetLab();
+ if(META.pts!==0||META.nt!==0||META.st0!==0){console.log('FAIL: 研究リセットで研究所ぶんが消えていない');process.exit(1);}
+ if(!(META.sc&&META.sc[0]&&META.sc[0][0])||META.nmOK!==1){console.log('FAIL: 研究リセットで難易度の解放まで消えている');process.exit(1);}
+ META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.am=2;META.py0=3;
+ META.tw={rifle:2};META.un={bat:3};META.st0=4;
  metaReset();
  const keep=[['gem',META.gem===7],['英雄',!!(META.hero&&META.hero.hNox)],['hmat',META.hmat===5],
   ['図鑑',!!(META.zdex&&META.zdex.walk)],['鍛錬Lv',!!(META.hlv&&META.hlv.hNox)],

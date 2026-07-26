@@ -897,14 +897,19 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
      💎魔石・英雄・🔧鍛錬素材・📖図鑑・⚔冒険の進捗・編成の選択は**消さない**。 */
 const META_RESET=1;
 /* ⚠**関数に分けてある**=検査(checkMetaReset)から呼んで「消してはいけないものを消していないか」を見るため */
-function metaReset(){
- /* 難易度とステージの解放 */
- META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;
- /* 研究所で買ったもの(🆕新しい種類 / 🧬派生と弾薬 / 🎯砲撃 / 📈系統 / 🚀開始ブースト / 💰経済)と研究pt */
+/* 研究所で買ったもの(🆕新しい種類 / 🧬派生と弾薬 / 🎯砲撃 / 📈系統 / 🚀開始ブースト / 💰経済)と研究pt。
+   ⚠**分けてある理由**: 🛠DEVの「研究をリセット」から研究所ぶんだけを戻すため
+   (難易度とステージの解放は消したくない)。2026-07-27ユーザー指示。 */
+function metaResetLab(){
  META.pts=0;META.nt=0;META.nu=0;META.st=['air'];META.eq='air';
  META.uv=[];META.am=0;META.amEq=0;META.ld={};
  META.tw={};META.un={};META.st0=0;
  for(const k of ['sc0','hp0','up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=0;
+}
+function metaReset(){
+ /* 難易度とステージの解放 */
+ META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;
+ metaResetLab();
 }
 try{if((META.rst|0)<META_RESET){META.rst=META_RESET;metaReset();saveMeta();}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
@@ -7210,8 +7215,13 @@ function renderLab(){
   const list=items.map((it,i)=>({it,i})).filter(o=>(o.it.cat||'new')===LABTAB);
   /* ⭐まとめ買いの切り替え。⚠**段があるカードが1枚も無いタブでは出さない**(押しても何も変わらないため) */
   const anyM=list.some(o=>LAB_MSTEP[o.it.k]);
-  body='<div class="bphint">'+(anyM?('<span class="mulsw">'+LAB_MULS.map(m=>
-     '<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join('')+'</span>'):'')
+  /* ⭐🛠DEVの「研究をリセット」(2026-07-27ユーザー指示)。DEVは起動時にタワー/兵科を全部Lv20まで
+     開けてしまうので、**研究所の画面が空になって見た目を確かめられない**。
+     ⚠押しても**再読み込みすれば元に戻る**(起動時にまた全開放されるため)=消える心配は無い。
+     ⚠セーブはDEV専用の枠(dt_meta_dev)なので、普通に遊ぶ時のデータには触れない。 */
+  const tools=(DEV?'<button data-labrst>🛠リセット</button>':'')
+   +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
+  body='<div class="bphint">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
     +cat.d+'</div>'
    +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=META.pts>=it.p;
      /* ⭐姿があるものは絵文字ではなく**実物**を描く(第91弾)。何を解放/強化するのか一目で分かる */
@@ -7243,6 +7253,10 @@ function renderLab(){
  if(window.requestAnimationFrame)requestAnimationFrame(drawPv);
  /* まとめ買いの切り替え(押したら値段とラベルを付け直す) */
  $('lab-items').querySelectorAll('[data-mul]').forEach(b=>{b.onclick=()=>{LABMUL=+b.dataset.mul;renderLab();};});
+ /* 🛠DEVの研究リセット。⚠難易度とステージの解放は消さない(metaResetLabは研究所ぶんだけ) */
+ $('lab-items').querySelectorAll('[data-labrst]').forEach(b=>{b.onclick=()=>{
+  metaResetLab();devTop();saveMeta();renderLab();renderStkSeg();updLabBtn();
+  toast('🛠 研究所をリセットした(再読み込みで全開放に戻る)');};});
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
   /* ⭐まとめ買いの段数。⚠**表に無い種類は必ず1**(「次の1つ」を買う形の項目を複数回進めない) */
   const n=(LAB_MSTEP[it.k]&&it.n>1)?it.n:1;
