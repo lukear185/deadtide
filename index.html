@@ -1599,7 +1599,23 @@ const BASE_U=8;/* 通常解放できる基本兵科数(これ以降は🔬研究
  UNITS.length=0;for(const u of norm)UNITS.push(u);for(const u of last)UNITS.push(u);}
 /* ティア: 序盤/中盤/終盤/切り札(見た目の大きさとデッキ枠の色に使う) */
 const uTier=i=>i<6?1:i<14?2:i<22?3:4;
-const TSCALE=[1,1.06,1.14,1.24];
+/* ============ ⭐キャラの表示を大きくする(2026-07-27 第95弾ユーザー指示「でかくしよ」) ============
+   ⚠実測(852x393・SC=0.392): ウォーカーは**画面で22.7px**しかなかった。
+     この画素数では造形の差が出ない=見た目の作り直しを3回捨てた本当の原因はここ。
+   ⚠**一律に掛けてはいけない**。ボスは既に111pxあるので同じ倍率だと画面(高さ298px)の半分を覆う。
+     **小さいものほど効く累乗の曲線**にする=雑魚x1.5 / 屍熊x1.29 / ボスx1.15。
+   ⚠Z.sc と TSCALE は**見た目にしか使われていない**(当たり判定・射程・戦力・当たり値には一切入らない)
+     ので、これでバランスは動かない。焼き箱(bakeSet)も scale に比例するので絵が切れることもない。
+   ⚠⭐**演出の「py からの高さ」も同じだけ持ち上げること**(62か所に `*CH_UP` を掛けてある)。
+     掛け忘れると**銃口の閃光・血・ダメージ数字・HPバーが体の中にめり込む**。
+     ゾンビの絵に付く印(❄👑HPバー)は元から `*ZOMBIES[].sc` を掛ける作りだったので触っていない。
+     ⚠持ち上げる倍率は**一律 CH_UP**(個体ごとの sc ではない)=元のコードも一律だったので、
+       ここを個体ごとにすると今までの見え方が変わってしまう。 */
+const CH_UP=1.5,CH_P=.72;
+const chUp=sc=>CH_UP*Math.pow(sc||1,CH_P);
+for(const z of ZOMBIES)z.sc=chUp(z.sc);
+const TSCALE=[1,1.06,1.14,1.24].map(s=>chUp(s));
+const TW_SC=1.3;/* タワーの表示倍率。⚠建設マスの枠(64px)とタップ判定は変えない */
 /* ⚠2026-07-25: 強さの一括倍率(UBUF/ティア補正/HP2倍/遠距離1.5倍/コスト÷2.5)は廃止。
    UNITSに書いてある数値が そのままゲーム内の値になる=強さの調整はUNITSを直接いじること。
    並び順(=解放順)に戦力が1段ごとに約+7%ずつ上がるよう設計してある。
@@ -7823,14 +7839,14 @@ const uFxTier=u=>u.hro?3:(UFX_T[(UNITS[u.ui]||{}).id]||0);
 /* 着弾の絵。⚠**装甲に通常弾が弾かれた時は跳ね返る火花にする**=相性が悪いのが目で分かる */
 function hitFx(C,z,ang,col,prc,type){
  if(FXLV<1||!z)return;
- if(z.armor&&!prc&&type==='bullet')addFx(C,'ric',z.px,z.py-18,'',{ang});
- else addFx(C,'hit',z.px,z.py-18,'',{ang,col:col||GOLD});}
+ if(z.armor&&!prc&&type==='bullet')addFx(C,'ric',z.px,z.py-18*CH_UP,'',{ang});
+ else addFx(C,'hit',z.px,z.py-18*CH_UP,'',{ang,col:col||GOLD});}
 /* ⭐投げた物が山なりに飛ぶ絵(2026-07-26 第65弾)。飛んでいる秒数を返す(0=飛ばさずその場で発動)。
    ⚠当たり判定は今までどおり即時のまま=数値のバランスには一切触っていない。
    見た目だけ「投げる→飛ぶ→着弾して爆発」の順に並べ替えている(爆発は later() で遅らせる) */
 function tossFly(C,u,U,tx,ty,kind,col){
  if(FXLV<1||!U||U.rng<=60)return 0;
- const ox=u.px,oy=u.py-30,ds=dist(ox,oy,tx,ty);
+ const ox=u.px,oy=u.py-30*CH_UP,ds=dist(ox,oy,tx,ty);
  const lf=clamp(ds/950,.16,.42);
  addFx(C,'toss',ox,oy,'',{x2:tx,y2:ty-8,lf,kind,col,hi:38+ds*.24,sd:rnd(0,9)});
  return lf;
@@ -7853,20 +7869,20 @@ function killZ(C,z){
  if(G&&G.coop){g=Math.max(0,Math.ceil((z.bt*pay-(z.bpaid||0))*COOP_PAY[Math.min(G.np,3)-1]));
   for(const P of G.players){P.scrap+=g;P.enTotal+=g;}}
  else{C.scrap+=g;C.enTotal+=g;}
- addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30,'+'+g+'⚙️');
+ addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');
  /* 💎魔石: ボス級を倒した時だけ落ちる(英雄召集の通貨)。ソロのみ */
  if(z.boss&&soloMeta()&&C.isMe){const gm=z.fin?GEM_FIN:GEM_BOSS;
   META.gem=(META.gem||0)+gm;G.gemGain=(G.gemGain||0)+gm;saveMeta();
-  addFx(C,'txt',z.px,z.py-58,'💎+'+gm);
-  addP(C,14,z.px,z.py-30,{sp:170,up:80,g:420,life:.9,r:3,col:TECH});
+  addFx(C,'txt',z.px,z.py-58*CH_UP,'💎+'+gm);
+  addP(C,14,z.px,z.py-30*CH_UP,{sp:170,up:80,g:420,life:.9,r:3,col:TECH});
   toast('💎 魔石を'+gm+'個 手に入れた(計'+META.gem+')');}
  /* 📖ゾンビ図鑑: ソロで初めて倒した種類を登録する */
  if(soloMeta()&&C.isMe&&zdexAdd((ZOMBIES[z.zi]||{}).id)){
-  addFx(C,'txt',z.px,z.py-46,'📖'+ZOMBIES[z.zi].n+' 図鑑に登録');
-  addP(C,8,z.px,z.py-26,{sp:150,up:70,g:400,life:.8,r:2.6,col:LIFE});}
+  addFx(C,'txt',z.px,z.py-46*CH_UP,'📖'+ZOMBIES[z.zi].n+' 図鑑に登録');
+  addP(C,8,z.px,z.py-26*CH_UP,{sp:150,up:70,g:400,life:.8,r:2.6,col:LIFE});}
  /* 血しぶきと地面の染み */
  const bsc=z.boss?2.4:z.elite?1.5:1;
- addP(C,Math.round(9*bsc),z.px,z.py-22,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
+ addP(C,Math.round(9*bsc),z.px,z.py-22*CH_UP,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
  addP(C,Math.round(3*bsc),z.px,z.py,{sp:0,g:0,life:6,r:11*bsc,col:'#2f3a1c',typ:'stain',jx:12*bsc,jy:5});
  /* ⭐倒れる死体(2026-07-26 第65弾)。大きいほど長く残り、雑魚はさっと消える */
  if(FXLV>0)addFx(C,'corpse',z.px,z.py,'',{zi:z.zi,el:z.elite?1:0,dr:z.dr||1,
@@ -7878,17 +7894,17 @@ function killZ(C,z){
   if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
  /* 大物撃破の特別演出 */
  if(z.boss){
-  addP(C,26,z.px,z.py-30,{sp:300,up:120,g:540,life:.9,r:4,col:GOLD,jx:14,jy:14});
-  addP(C,10,z.px,z.py-20,{sp:80,up:60,g:-40,life:1.6,r:13,col:'#5c5148',typ:'smoke'});
+  addP(C,26,z.px,z.py-30*CH_UP,{sp:300,up:120,g:540,life:.9,r:4,col:GOLD,jx:14,jy:14});
+  addP(C,10,z.px,z.py-20*CH_UP,{sp:80,up:60,g:-40,life:1.6,r:13,col:'#5c5148',typ:'smoke'});
   C.shake=.55;if(G)G.hitStopT=[0,.45,.85][FXLV];
   addFx(C,'boomL',z.px,z.py,'');
   const nb=[0,2,3][FXLV];
   for(let k=0;k<nb;k++)addFx(C,'boom',z.px+rnd(-80,80),z.py+rnd(-55,30),'',{d0:.12+k*.16});
   if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:GOLD,big:1});
-  addFx(C,'txt',z.px,z.py-90,'+'+g+'⚙️ とどめ!'+(z.bpaid?'(削り '+z.bpaid+'⚙️)':''));
+  addFx(C,'txt',z.px,z.py-90*CH_UP,'+'+g+'⚙️ とどめ!'+(z.bpaid?'(削り '+z.bpaid+'⚙️)':''));
   if(C.isMe){sfx.bossKill();UI.banner('💀 ジャガーノート撃破!!');}
  }else if(z.elite){
-  addP(C,14,z.px,z.py-24,{sp:200,up:80,g:540,life:.6,r:3,col:HEROC});
+  addP(C,14,z.px,z.py-24*CH_UP,{sp:200,up:80,g:540,life:.6,r:3,col:HEROC});
   C.shake=Math.max(C.shake||0,.25);
   addFx(C,'ring',z.px,z.py,'',{r:130,col:HEROC});
   if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:HEROC});
@@ -7912,9 +7928,9 @@ function dmgZ(C,z,d,armorPierce){
   if(owe>0){z.bpaid=(z.bpaid||0)+owe;
    if(G&&G.coop){const cg=Math.ceil(owe*COOP_PAY[Math.min(G.np,3)-1]);for(const P of G.players){P.scrap+=cg;P.enTotal+=cg;}}
    else{C.scrap+=owe;C.enTotal+=owe;}
-   if(owe>=3)addFx(C,'txt',z.px+rnd(-10,10),z.py-58,'+'+owe+'⚙️');}}
- if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44,''+Math.max(1,Math.round(d)));
-  if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28,'',{sd:rnd(0,9)});}
+   if(owe>=3)addFx(C,'txt',z.px+rnd(-10,10),z.py-58*CH_UP,'+'+owe+'⚙️');}}
+ if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)));
+  if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28*CH_UP,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
 function deployUnit(C,ui){
@@ -7948,11 +7964,11 @@ function dmgU(C,u,d2){
  if(u.dead)return;
  u.hp-=d2;u.hitT=.1;
  if(u.hp<=0){u.dead=true;addFx(C,'splat',u.px,u.py,'',{gray:1});
-  addP(C,8,u.px,u.py-22,{sp:130,up:50,g:520,life:.5,r:2.6,col:'#8a2f2f',jx:5,jy:7});
+  addP(C,8,u.px,u.py-22*CH_UP,{sp:130,up:50,g:520,life:.5,r:2.6,col:'#8a2f2f',jx:5,jy:7});
   addP(C,2,u.px,u.py,{sp:0,g:0,life:6,r:10,col:'#5c2626',typ:'stain',jx:9,jy:4});
   if(u.hro){/* 英雄は1ゲーム1回=倒れたら終わり */
    C.hOut=2;addFx(C,'ring',u.px,u.py,'',{r:150,col:DANGER2});
-   const H=heroAt(u.ui);addFx(C,'txt',u.px,u.py-80,'★ '+(H?H.n:'英雄')+' 戦死…');
+   const H=heroAt(u.ui);addFx(C,'txt',u.px,u.py-80*CH_UP,'★ '+(H?H.n:'英雄')+' 戦死…');
    C.shake=Math.max(C.shake||0,.3);
   }else{/* 蘇生(軍医の必殺技)のために戦死した部隊を控えておく */
    if(!C.fallen)C.fallen=[];
@@ -8110,16 +8126,16 @@ function heroUlt(C,wave){
  if(id==='hCop'){/* 制圧射撃: 前方をなぎ払い、足を止める */
   const ts=front(520);
   for(const z of ts){dmgZ(C,z,230*W,1);if(!z.dead)z.slowT=Math.max(z.slowT||0,4.5);
-   addFx(C,'tr',u.px,u.py-26,'',{x2:z.px,y2:z.py-20});}
+   addFx(C,'tr',u.px,u.py-26*CH_UP,'',{x2:z.px,y2:z.py-20*CH_UP});}
   addFx(C,'ring',u.px,u.py,'',{r:120,col:'#ffdd66'});
-  addP(C,18,u.px+(u.dr||-1)*-26,u.py-26,{sp:200,g:120,life:.3,r:2.2,col:GLOW});
+  addP(C,18,u.px+(u.dr||-1)*-26*CH_UP,u.py-26*CH_UP,{sp:200,g:120,life:.3,r:2.2,col:GLOW});
   if(C.isMe)sfx.shotgun&&sfx.shotgun();
  }else if(id==='hFire'){/* 放水: 押し戻し+消火+減速 */
   for(const z of live){if(dist(z.px,z.py,u.px,u.py)>250)continue;
    dmgZ(C,z,110*W,1);if(z.dead)continue;
    z.d=Math.max(0,z.d-95);z.burnT=0;z.slowT=Math.max(z.slowT||0,4);}
   addFx(C,'ring',u.px,u.py,'',{r:250,col:TECH});
-  addP(C,24,u.px,u.py-30,{sp:260,up:40,g:300,life:.6,r:3,col:FROST});
+  addP(C,24,u.px,u.py-30*CH_UP,{sp:260,up:40,g:300,life:.6,r:3,col:FROST});
   if(C.isMe)sfx.frost&&sfx.frost();
  }else if(id==='hHunt'){/* 一斉罠: 踏んだ敵を拘束(完全停止) */
   const ts=front(440);
@@ -8144,8 +8160,8 @@ function heroUlt(C,wave){
  }else if(id==='hSf'){/* 精密狙撃: 一番HPの高い敵に必殺の一撃 */
   let tg=null,bh=-1;for(const z of live)if(z.hp>bh){bh=z.hp;tg=z;}
   if(tg){const dm=tg.hp*.45+2600*W;
-   addFx(C,'tr',u.px,u.py-26,'',{x2:tg.px,y2:tg.py-20,col:'rgba(160,225,255,'});
-   addFx(C,'txt',tg.px,tg.py-70,'必殺!');
+   addFx(C,'tr',u.px,u.py-26*CH_UP,'',{x2:tg.px,y2:tg.py-20*CH_UP,col:'rgba(160,225,255,'});
+   addFx(C,'txt',tg.px,tg.py-70*CH_UP,'必殺!');
    dmgZ(C,tg,dm,1);addFx(C,'boom',tg.px,tg.py,'');}
   if(C.isMe)sfx.shot&&sfx.shot();
  }else if(id==='hMed'){/* 蘇生: 戦死した部隊を呼び戻す+生存部隊を全回復 */
@@ -8156,8 +8172,8 @@ function heroUlt(C,wave){
    n++;}
   for(const u2 of C.units)if(!u2.dead)u2.hp=u2.mhp;
   addFx(C,'ring',u.px,u.py,'',{r:210,col:LIFE});
-  addFx(C,'txt',u.px,u.py-80,n?('蘇生 '+n+'体!'):'部隊 全回復!');
-  addP(C,20,u.px,u.py-26,{sp:150,up:110,g:-60,life:1,r:2.8,col:LIFE,jx:9,jy:7});
+  addFx(C,'txt',u.px,u.py-80*CH_UP,n?('蘇生 '+n+'体!'):'部隊 全回復!');
+  addP(C,20,u.px,u.py-26*CH_UP,{sp:150,up:110,g:-60,life:1,r:2.8,col:LIFE,jx:9,jy:7});
   if(C.isMe)sfx.heal&&sfx.heal();
  }else if(id==='hBomb'){/* 大爆破: 道沿いに仕掛けた爆薬を一斉起爆 */
   for(let k=0;k<5;k++){
@@ -8169,8 +8185,8 @@ function heroUlt(C,wave){
  }else if(id==='hSeer'){/* 時間停止: 盤面の敵を完全停止 */
   for(const z of live)z.frzT=Math.max(z.frzT||0,4.5);
   addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:'#8f6fae'});
-  addFx(C,'txt',u.px,u.py-84,'時間停止');
-  addP(C,26,u.px,u.py-30,{sp:180,up:70,g:-40,life:1.2,r:3,col:'#c9a1ff',jx:12,jy:9});
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'時間停止');
+  addP(C,26,u.px,u.py-30*CH_UP,{sp:180,up:70,g:-40,life:1.2,r:3,col:'#c9a1ff',jx:12,jy:9});
   if(C.isMe)sfx.frost&&sfx.frost();
  }else if(id==='hGiant'){/* 地響き: 全域を吹き飛ばして気絶させる */
   for(const z of live){dmgZ(C,z,560*W,1);if(z.dead)continue;
@@ -8180,9 +8196,9 @@ function heroUlt(C,wave){
   C.shake=Math.max(C.shake||0,.6);if(C.isMe)sfx.boom&&sfx.boom();
  }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
   for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
-   addFx(C,'spark',z.px,z.py-18,'',{sd:rnd(0,9),col:DANGER});}
+   addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:DANGER});}
   addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:DANGER});
-  addFx(C,'txt',u.px,u.py-84,'死の宣告');
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'死の宣告');
   C.shake=Math.max(C.shake||0,.5);if(C.isMe)sfx.win&&sfx.win();
  }
  if(C.isMe)toast('⚡ 必殺技『'+H.ult+'』!');
@@ -8207,7 +8223,7 @@ function campStep(C,dt,wave){
   if(z.hitT>0)z.hitT-=dt;
   if(z.lgT>0)z.lgT-=dt;
   if(z.burnT>0){z.burnT-=dt;z.hp-=z.burnD*dt;
-   if(FXLV>0&&Math.random()<dt*9)addP(C,1,z.px,z.py-16,{sp:22,up:45,g:-70,life:.6,r:2.4,col:Math.random()<.5?'#ff9a3d':GOLD,jx:7,jy:9});
+   if(FXLV>0&&Math.random()<dt*9)addP(C,1,z.px,z.py-16*CH_UP,{sp:22,up:45,g:-70,life:.6,r:2.4,col:Math.random()<.5?'#ff9a3d':GOLD,jx:7,jy:9});
    if(z.hp<=0&&!z.dead)killZ(C,z);}
   /* 歩行の土埃 */
   if(FXLV===2&&!z.dead&&z.d>0&&Math.random()<dt*(z.sp>140?2.2:.9))addP(C,1,z.px-4,z.py+2,{sp:16,g:-8,flat:1,life:.5,r:3.2,col:'#b9a67c',typ:'smoke'});
@@ -8232,12 +8248,12 @@ function campStep(C,dt,wave){
      const tg2=[];for(const u2 of C.units){if(u2.dead)continue;const gp=Math.abs(u2.d-z.d);if(gp<=110)tg2.push({u:u2,gp});}
      tg2.sort((a,b)=>a.gp-b.gp);
      for(let k9=0;k9<Math.min(z.aoe,tg2.length);k9++)dmgU(C,tg2[k9].u,z.atk*.65);/* 薙ぎ払いは1体あたり65% */
-     addFx(C,'ring',z.px,z.py-16,'',{r:96,col:DANGER2});
-     addP(C,8,z.px,z.py-18,{sp:170,up:40,g:420,life:.35,r:2.6,col:'#ff9a6a',flat:1});
+     addFx(C,'ring',z.px,z.py-16*CH_UP,'',{r:96,col:DANGER2});
+     addP(C,8,z.px,z.py-18*CH_UP,{sp:170,up:40,g:420,life:.35,r:2.6,col:'#ff9a6a',flat:1});
      C.shake=Math.max(C.shake||0,.16);if(C.isMe)sfx.thunk();
     }else dmgU(C,blk,z.atk);
     if(C.isMe&&Math.random()<.3)sfx.bite();
-    if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30,'',{sd:rnd(0,9),gray:1});}
+    if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30*CH_UP,'',{sd:rnd(0,9),gray:1});}
    continue;
   }
   z.d+=z.sp*z.sm*slow*dt;
@@ -8259,7 +8275,7 @@ function campStep(C,dt,wave){
   if(U.type==='heal'){
    if(u.cd<=0){let ta=null,br2=1;
     for(const a of C.units){if(a.dead||a===u||a.hp>=a.mhp)continue;const r5=a.hp/a.mhp;if(r5<br2&&Math.abs(u.d-a.d)<=U.rng){br2=r5;ta=a;}}
-    if(ta){u.cd=U.rate;ta.hp=Math.min(ta.mhp,ta.hp+ua);addFx(C,'txt',ta.px,ta.py-52,'+'+ua+'♥');addFx(C,'ring',ta.px,ta.py,'',{r:36,col:LIFE});if(C.isMe)sfx.heal();}}
+    if(ta){u.cd=U.rate;ta.hp=Math.min(ta.mhp,ta.hp+ua);addFx(C,'txt',ta.px,ta.py-52*CH_UP,'+'+ua+'♥');addFx(C,'ring',ta.px,ta.py,'',{r:36,col:LIFE});if(C.isMe)sfx.heal();}}
   }else
   /* ⚠**噛みついてくる相手には必ず届くようにする**。射程が噛みつきの窓(ENG_GAP)より短い近接兵科は、
      素のままだと殴られているのに反撃できない。旗で足が止まっているので詰めることもできない */
@@ -8296,25 +8312,25 @@ function campStep(C,dt,wave){
       /* ⭐火炎放射兵は「弾道の線」ではなく炎の帯を吹く(2026-07-26 第65弾)。
          ⚠今まで銃と同じ曳光線だったので、何を撃っているのか分からなかった */
       u.fireT=.1;
-      const aa=Math.atan2((tg.py-22)-(u.py-28),tg.px-u.px);
-      if(FXLV>0){addFx(C,'flame',u.px+Math.cos(aa)*16,u.py-28+Math.sin(aa)*16,'',
+      const aa=Math.atan2((tg.py-22*CH_UP)-(u.py-28*CH_UP),tg.px-u.px);
+      if(FXLV>0){addFx(C,'flame',u.px+Math.cos(aa)*16*CH_UP,u.py-28*CH_UP+Math.sin(aa)*16*CH_UP,'',
         {ang:aa,len:Math.max(70,U.rng*.95),col:U.c||'#ff9a3d',sd:rnd(0,9)});
-       if(FXLV>1)addP(C,1,tg.px,tg.py-18,{sp:50,up:40,g:-60,life:.7,r:4.5,col:'#6e6354',typ:'smoke'});}
+       if(FXLV>1)addP(C,1,tg.px,tg.py-18*CH_UP,{sp:50,up:40,g:-60,life:.7,r:4.5,col:'#6e6354',typ:'smoke'});}
       if(C.isMe&&Math.random()<.3)sfx.flame();}
      else if(U.rng>60){u.fireT=.1;
-      addFx(C,'tr',u.px,u.py-24,'',{x2:tg.px,y2:tg.py-20,col:U.id==='snp'?'rgba(160,225,255,':null,w:2.6+utl*.7});
-      if(FXLV>0){const d5=(u.dr||-1),mx3=u.px+d5*30,my3=u.py-27;
+      addFx(C,'tr',u.px,u.py-24*CH_UP,'',{x2:tg.px,y2:tg.py-20*CH_UP,col:U.id==='snp'?'rgba(160,225,255,':null,w:2.6+utl*.7});
+      if(FXLV>0){const d5=(u.dr||-1),mx3=u.px+d5*30*CH_UP,my3=u.py-27*CH_UP;
        addP(C,2,mx3,my3,{sp:90,a:d5<0?3.14:0,spread:.4,g:120,life:.14,r:1.8,col:'#ffdd66'});
-       addP(C,1,u.px,u.py-24,{sp:60,a:d5<0?2.2:.9,spread:.4,up:35,g:600,life:.8,r:1.4,col:DIM,typ:'shell',gr:u.py});
+       addP(C,1,u.px,u.py-24*CH_UP,{sp:60,a:d5<0?2.2:.9,spread:.4,up:35,g:600,life:.8,r:1.4,col:DIM,typ:'shell',gr:u.py});
        /* 銃口の閃光 */
-       addFx(C,'mzl',mx3,my3,'',{ang:Math.atan2((tg.py-20)-my3,tg.px-mx3),r:8+utl*3.5,col:ucl});
-       hitFx(C,tg,Math.atan2((tg.py-20)-my3,tg.px-mx3),ucl,pierce,U.type);}
+       addFx(C,'mzl',mx3,my3,'',{ang:Math.atan2((tg.py-20*CH_UP)-my3,tg.px-mx3),r:8+utl*3.5,col:ucl});
+       hitFx(C,tg,Math.atan2((tg.py-20*CH_UP)-my3,tg.px-mx3),ucl,pierce,U.type);}
       if(C.isMe&&Math.random()<.4)sfx.shot();}
      else if(FXLV>0){
       /* ⭐近接。**今まで攻撃の絵が1つも無かった**=当たった手応えが皆無だった(2026-07-26) */
       u.fireT=.1;
-      const aa=Math.atan2((tg.py-22)-(u.py-26),tg.px-u.px);
-      addFx(C,'slash',u.px,u.py-26,'',{ang:aa,r:24+utl*7,lv:utl,col:ucl});
+      const aa=Math.atan2((tg.py-22*CH_UP)-(u.py-26*CH_UP),tg.px-u.px);
+      addFx(C,'slash',u.px,u.py-26*CH_UP,'',{ang:aa,r:(24+utl*7)*CH_UP,lv:utl,col:ucl});
       hitFx(C,tg,aa,ucl,pierce,U.type);}}
    }
   }else{const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(U.rng>60?fD+70:fD,60,PLEN-40),df=goal-u.d;
@@ -8330,7 +8346,7 @@ function campStep(C,dt,wave){
  /* 🏥野戦病院: 部隊を回復する */
  if(C.supH>0)for(const u of C.units){if(u.dead||u.hp>=u.mhp)continue;
   u.hp=Math.min(u.mhp,u.hp+C.supH*dt);
-  if(FXLV===2&&Math.random()<dt*.5)addP(C,1,u.px,u.py-20,{sp:14,up:34,g:-40,life:.7,r:2.2,col:LIFE});}
+  if(FXLV===2&&Math.random()<dt*.5)addP(C,1,u.px,u.py-20*CH_UP,{sp:14,up:34,g:-40,life:.7,r:2.2,col:LIFE});}
  /* タワー */
  const atkB=1+.08*C.atkLv;
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
@@ -8498,12 +8514,12 @@ function campStep(C,dt,wave){
       /* ⭐**浮いている2機がそれぞれ小粒の弾を撃つ**(2026-07-26ユーザー指示)。
          ⚠ダメージは撃った瞬間に済んでいて、遅らせているのは着弾の絵だけ */
       const dp=droneOff(k2%2,si,TT),bx=sx+dp[0],by=sy+dp[1];
-      addFx(C,'pel',bx,by,'',{x2:nx.px,y2:nx.py-20,lf:.16,col:trC});
-      addP(C,2,bx,by,{sp:70,a:Math.atan2((nx.py-20)-by,nx.px-bx),spread:.35,g:60,life:.1,r:1.4,col:GLOW});
+      addFx(C,'pel',bx,by,'',{x2:nx.px,y2:nx.py-20*CH_UP,lf:.16,col:trC});
+      addP(C,2,bx,by,{sp:70,a:Math.atan2((nx.py-20*CH_UP)-by,nx.px-bx),spread:.35,g:60,life:.1,r:1.4,col:GLOW});
       later(C,.16,()=>{hitFx(C,nx,tw.ang,hitC,prc,T.type);});
      }else if(kd==='fort'){
       /* 極太の貫通弾。⚠細い曳光線だと「最終兵器」に見えない */
-      addFx(C,'beam',sx,sy,'',{x2:nx.px,y2:nx.py-14,col:'rgba(255,226,150,',col2:'rgba(255,246,214,',w:9,lf:.34});
+      addFx(C,'beam',sx,sy,'',{x2:nx.px,y2:nx.py-14*CH_UP,col:'rgba(255,226,150,',col2:'rgba(255,246,214,',w:9,lf:.34});
       hitFx(C,nx,tw.ang,hitC,prc,T.type);
      }else if(kd==='sonic'){/* 音の輪だけ。弾は飛ばない */
       hitFx(C,nx,tw.ang,hitC,prc,T.type);
@@ -8528,7 +8544,7 @@ function campStep(C,dt,wave){
     /* ⭐レーザー塔は「弾」ではなく細いビームが走る(ライフル台と同じ曳光線に見えていた)。
        ⭐焼き切るほどビームが太く白熱する=今どれだけ溜まっているかが目で分かる */
     if(T.id==='laser'&&FXLV>0)addFx(C,'beam',sx,sy,'',
-     {x2:tg.px,y2:tg.py-14,col:hk>.5?'rgba(255,170,225,':'rgba(230,140,205,',
+     {x2:tg.px,y2:tg.py-14*CH_UP,col:hk>.5?'rgba(255,170,225,':'rgba(230,140,205,',
       col2:hk>.5?'rgba(255,240,250,':'rgba(255,205,238,',w:5+hk*7,lf:.16});
     else addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py,col:(!AMO.col&&T.pierce)?'rgba(216,131,238,':trC,hit:hitC,w:trW});
     hitFx(C,tg,tw.ang,hitC,prc,T.type);
@@ -8586,7 +8602,7 @@ function campStep(C,dt,wave){
    for(const z of C.zombies){if(z.dead||z.d<0)continue;const dd=dist(z.px,z.py,C.mg.x,C.mg.y);if(dd<=230&&dd<bd3){bd3=dd;tg3=z;}}
    if(!tg3)break;/* 射程内に敵がいなければ撃たない */
    dmgZ(C,tg3,C.mg.dmg,0);
-   addFx(C,'tr',CORE[0],CORE[1]-24,'',{x2:tg3.px+rnd(-6,6),y2:tg3.py-18,col:'rgba(255,235,150,',hit:GLOW,w:3});
+   addFx(C,'tr',CORE[0],CORE[1]-24,'',{x2:tg3.px+rnd(-6,6),y2:tg3.py-18*CH_UP,col:'rgba(255,235,150,',hit:GLOW,w:3});
    if(FXLV>0){addP(C,2,CORE[0]+18,CORE[1]-24,{sp:120,a:Math.atan2(tg3.py-CORE[1],tg3.px-CORE[0]),spread:.3,g:80,life:.12,r:2,col:GLOW});
     addP(C,1,CORE[0]+10,CORE[1]-18,{sp:60,up:40,g:600,life:.8,r:1.5,col:DIM,typ:'shell',gr:CORE[1]+8});}
    if(C.isMe&&Math.random()<.35)sfx.shot();
@@ -9091,7 +9107,10 @@ function renderCamp(C,t){
    c.fillStyle=sup?'rgba(205,241,255,.85)':'rgba(36,31,25,.55)';c.font='900 30px '+FF;c.textAlign='center';c.fillText(sup?'🏗':eco?'🏭':'+',sx,sy+4);
    /* ⭐空いている専用枠は名前も出す=「ここは何を建てる場所か」を読ませる(+ の枠と混ざらない) */
    if(sup||eco){c.fillStyle=sup?FROST:GLOW;c.font='900 11px '+FF;c.fillText(sup?'支援施設':'廃品工房',sx,sy+26);}}
-  else drawTower(c,tw.ti,twPips(tw),sx,sy,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
+  /* ⭐タワーも大きく描く(第95弾)。⚠枠とタップ判定は変えないので、ここで拡大するだけ */
+  else {c.save();c.translate(sx,sy);c.scale(TW_SC,TW_SC);
+   drawTower(c,tw.ti,twPips(tw),0,0,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
+   c.restore();}
   }
   /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
   if(EDIT){const bad=edBad(si);
@@ -9224,12 +9243,12 @@ function renderCamp(C,t){
  /* ユニット */
  const us2=(C.units||[]).slice().sort((a,b)=>a.py-b.py);
  for(const u of us2){
-  groundShadow(c,u.px,u.py,14);
+  groundShadow(c,u.px,u.py,14*CH_UP);
   if(!(u.hitT>0||u.fireT>0))
    drawSpr(c,bakeU(u.ui),sprFrame(t,u.ph,10),u.px,u.py,(u.dr||-1)<0);
   else drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT});
-  if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56,30*r4,5);}
-  if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
+  if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
+  if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64*CH_UP,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }
  /* パーティクル(キャラの下=地面の染み → 上=火花や煙) */
  drawP(c,C);
@@ -9485,8 +9504,8 @@ function renderCamp(C,t){
    for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
     lite(SLOTS[si][0],SLOTS[si][1],62,.35);/* 常夜灯 */
     if(tw.fireT>0){lite(SLOTS[si][0],SLOTS[si][1],95,.7);glow.push([SLOTS[si][0],SLOTS[si][1],86,.5,'255,214,120']);}}/* 発砲閃光 */
-   for(const u of us2)if(u.fireT>0){lite(u.px,u.py-24,110,.8);glow.push([u.px,u.py-24,88,.42,'255,214,120']);}
-   for(const z of C.zombies)if(z.burnT>0){lite(z.px,z.py-14,70,.6);glow.push([z.px,z.py-14,60,.3,'255,140,60']);}/* 燃えてる敵 */
+   for(const u of us2)if(u.fireT>0){lite(u.px,u.py-24*CH_UP,110,.8);glow.push([u.px,u.py-24*CH_UP,88,.42,'255,214,120']);}
+   for(const z of C.zombies)if(z.burnT>0){lite(z.px,z.py-14*CH_UP,70,.6);glow.push([z.px,z.py-14*CH_UP,60,.3,'255,140,60']);}/* 燃えてる敵 */
    for(const e of C.fx){
     if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0);if(tt>=0&&tt<.4){const rr2=(e.k==='boomL'?360:210)*(1-tt*2);lite(e.x,e.y,rr2,1);glow.push([e.x,e.y,rr2*.85,.6*(1-tt*2.5),'255,170,70']);}}
     else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){lite(p4[0],p4[1],90,.85);glow.push([p4[0],p4[1],76,.45,'150,225,255']);}
