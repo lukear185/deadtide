@@ -1025,6 +1025,36 @@ function checkGachaFx(){
   try{renderGcRes(res);}catch(e){console.log('FAIL: 召集結果の描き出しで例外 '+e.message);process.exit(1);}}
  console.log('💎英雄召集の演出: 撃て!(押すまで進まない)→弾が飛ぶ→木っ端みじん→跡地の示唆→結果カード / 撃つのは1回だけ / 予告は下振れのみ OK');
 }
+/* ---- ゾンビ36種が1種ずつ違う絵になっているか(2026-07-26 第82弾) ----
+   ⭐それまでステージ1の13種のうち10種が**同じ胴を共有**していて、実機(22px)では色しか違わなかった。
+   ⚠検査の期待値を実装と同じ式で作らないこと=drawZombie が実際に積んだ**図形の並びを記録して**数える。
+   ⚠色は見ない。色だけ違って形が同じ、を通してしまうため。
+   ⚠数値も見ない。ゾンビごとに Z.sc と歩幅が違うので、数値を入れると
+     「胴が丸ごと同じでも別物に見える」=必ず通る検査になってしまう。 */
+function checkZLook(){
+ /* (1) 静的: 全ゾンビが drawZombie の中に自分の枝を持っているか */
+ const miss=ZOMBIES.filter(Z=>js.indexOf("Z.id==='"+Z.id+"'")<0).map(Z=>Z.n);
+ if(miss.length){console.log('FAIL: 専用の絵が無いゾンビ(共通の胴に落ちる): '+miss.join('/'));process.exit(1);}
+ /* (2) 実走: 図形を積む命令の並びを記録して、同じ並びの組が無いか見る */
+ const GEO=['moveTo','lineTo','arc','arcTo','ellipse','rect','fillRect','strokeRect',
+  'quadraticCurveTo','bezierCurveTo','closePath','fill','stroke','clip'];
+ const fp={};
+ for(let zi=0;zi<ZOMBIES.length;zi++){
+  const rec=[];
+  const rc=new Proxy({},{get:(t,k)=>{
+   if(k==='canvas')return {};
+   if(k==='measureText')return ()=>({width:10});
+   if(typeof k!=='string')return undefined;
+   return ()=>{if(GEO.indexOf(k)>=0)rec.push(k);};},set:()=>true});
+  drawZombie(rc,zi,0,0,1,1.7,0,{});
+  if(!rec.length){console.log('FAIL: '+ZOMBIES[zi].n+' が何も描いていない');process.exit(1);}
+  const key=rec.join(',');
+  (fp[key]||(fp[key]=[])).push(ZOMBIES[zi].n);
+ }
+ const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join('='));
+ if(dup.length){console.log('FAIL: 同じ形で描かれているゾンビ: '+dup.join(' / '));process.exit(1);}
+ console.log('ゾンビの絵: '+ZOMBIES.length+'種すべてが専用の枝を持ち、図形の並びも全部違う OK');
+}
 function checkTwFx(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0];
@@ -1452,6 +1482,7 @@ checkBite();
 checkFx2();
 checkGachaFx();
 checkTwFx();
+checkZLook();
 checkTips();
 checkResume();
 checkTwNew();

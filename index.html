@@ -1383,7 +1383,7 @@ const ZOMBIES=[
  {id:'brut',n:'ブルート',hp:420,sp:74,bt:74,dmg:3,mw:8,armor:1,w:.5,sc:1.3,atk:42,ar:.9,c:'#8a4a3a'},
  {id:'stlk',n:'ストーカー',hp:190,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:30,ar:.5,c:'#6b4a7a'},
  {id:'wrth',n:'レイス',hp:300,sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
- {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,atk:56,ar:1.1,c:'#5a6470'},
+ {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,atk:56,ar:1.1,c:'#39424c'},
  {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:60,ar:1.2,aoe:5,c:'#c14b3e'},
  /* ===== ナイトメア専用: 変異した獣たち(nm:1 の個体は通常の波には出ない) ===== */
  {id:'nmRat',n:'巨鼠の群れ',hp:95,sp:205,bt:26,dmg:1,mw:1,nm:1,w:1.2,sc:.8,atk:16,ar:.35,c:'#6b5f4a'},
@@ -1841,11 +1841,29 @@ function rotMark(c,x,y,w,h,ph,t){
  c.globalAlpha=.42;c.fillStyle='#3f4a35';
  c.beginPath();c.ellipse(x-w*.22,y-h*.06,w*.22,h*.26,.4,0,7);c.fill();
  c.beginPath();c.ellipse(x+w*.24,y+h*.16,w*.15,h*.2,-.3,0,7);c.fill();
- c.globalAlpha=.92;c.fillStyle='#efe7d2';
- for(let k=0;k<3;k++)c.fillRect(x-w*.08+k*w*.1,y-h*.17,2.1,h*.33);/* 露出した骨 */
+ /* ⚠露出した骨は**強く出しすぎない**こと(2026-07-26 第82弾)。
+    以前は体の真ん中に白い棒を3本、不透明で引いていたため、実機の22pxでは
+    **12種すべてに同じ白い印が並ぶ**のが一番目立ち、かえって見分けを邪魔していた。 */
+ c.globalAlpha=.6;c.fillStyle='#efe7d2';
+ for(let k=0;k<2;k++)c.fillRect(x-w*.26+k*w*.11,y-h*.13,1.7,h*.26);
  c.globalAlpha=.55;c.fillStyle='#86a06a';
  c.fillRect(x+w*.02,y+h*.2+((t*12+ph*7)%12),2,4.5);/* したたる粘液 */
  c.restore();
+}
+/* ============ ゾンビの体を描く共通処理(2026-07-26 第82弾) ============
+   ⭐タワー(twBase)と同じ考え方=**上を明るく下を暗く1段だけ**陰影を入れると、平たい図形が塊に見える。
+   ⚠2段以上入れても22pxでは分からないので入れない。
+   pathFn は c にパスを組むだけの関数(fill/strokeはこちらでやる)。yc より下だけ暗くする。 */
+function zFill(c,pathFn,col,yc){
+ c.fillStyle=col;pathFn();c.fill();
+ c.save();c.beginPath();c.rect(-60,yc,120,180);c.clip();
+ c.fillStyle=shade(col,.74);pathFn();c.fill();c.restore();
+ pathFn();c.stroke();
+}
+/* 目。⚠22pxでは点1つに潰れるので、白目を大きめに取って「目がある」ことだけ伝える */
+function zEye(c,x,y,r){r=r||2.3;
+ c.fillStyle='#fff';c.beginPath();c.arc(x,y,r,0,7);c.fill();
+ c.fillStyle=INK;c.beginPath();c.arc(x+r*.36,y,r*.52,0,7);c.fill();
 }
 function mix(a,b,f){const p=parseInt(a.slice(1),16),q=parseInt(b.slice(1),16);const r=((p>>16)+(((q>>16)-(p>>16))*f))|0,g2=(((p>>8)&255)+((((q>>8)&255)-((p>>8)&255))*f))|0,bl=((p&255)+(((q&255)-(p&255))*f))|0;return `rgb(${r},${g2},${bl})`;}
 function drawZombie(c,zi,x,y,dir,t,ph,o){
@@ -2198,74 +2216,261 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.fillStyle=DANGER;c.beginPath();c.arc(32,-60,3.2,0,7);c.fill();
   rotMark(c,-10,-48,48,42,ph,t);
   c.restore();return;}
- if(Z.id==='crwl'){/* クローラー: 地を這ってすり抜ける */
-  c.fillStyle=Z.c;rr(c,-18,-14,36,12,6);c.fill();c.stroke();
-  c.strokeStyle=INK;c.lineWidth=3/s;
+/* ===== ① 廃線ハイウェイ(2026-07-26 第82弾で作り直し) =====
+    ⚠**実機でゾンビは22CSSpxしかない**(タワーの35pxより更に小さい)。
+      効くのは ①輪郭の形 ②明暗 ③色 の3つだけで、細かい模様は何を描いても消える。
+    ⚠それまで13種のうち10種が「丸い頭+同じ胴+2本脚」を共有しており、
+      実機では色しか違わなかった=ここで1種ずつ輪郭を分けた。
+    輪郭の狙い: ウォーカー=直立 / ランナー=前傾して脚が開く / アーマード=角ばった箱と兜 /
+      ブローター=球 / スクリーマー=のけ反って両腕を上げる / 感染ハウンド=四つ足 /
+      クローラー=平たい / スライム=頭も脚も無い塊 / ブルート=逆三角形で腕を引きずる /
+      ストーカー=背を水平にした前傾+長い爪 / レイス=脚が無く裾が霧に散る /
+      重装兵=横に広い低い箱 / ジャガーノート=棘の肩当てと鉄球 */
+ if(Z.id==='walk'){/* ウォーカー: 直立の基本形。首と肩が見えるので遠目でも「人」に読める。
+    ⚠腕は**胴の前と後ろに分けて明暗を変える**。並べて描くと22pxで1本の突起に潰れる */
+  const sw=walk*3.2;
+  c.fillStyle=shade(Z.c,.62);
+  rr(c,-9+sw,-14,8,15,3);c.fill();c.stroke();
+  rr(c,1-sw,-14,8,15,3);c.fill();c.stroke();
+  c.lineCap='round';
+  c.strokeStyle=shade(Z.c,.6);c.lineWidth=5.4/s;
+  c.beginPath();c.moveTo(0,-34);c.lineTo(13,-32+sw);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>rr(c,-11,-38,22,26,8),Z.c,-25);
+  c.lineCap='round';
+  c.strokeStyle=shade(Z.c,.92);c.lineWidth=5.4/s;
+  c.beginPath();c.moveTo(4,-29);c.lineTo(18,-24-sw);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle=shade(Z.c,.88);rr(c,-2,-42,7,6,2);c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();c.arc(2,-45,9,0,7);},Z.c,-45);
+  zEye(c,6,-46);
+  c.restore();return;}
+ if(Z.id==='run'){/* ランナー: 全力で走る人。胴を斜めに**立て**、手足を大きく前後に振る。
+    ⚠胴を横に寝かせると四つ足の生き物に見える(一度そうなった) */
+  const sw=Math.sin(t*15+ph);
+  c.lineCap='round';
+  c.strokeStyle=shade(Z.c,.54);c.lineWidth=6.5/s;
+  c.beginPath();c.moveTo(-3,-23);c.lineTo(-13-sw*5,-15);c.lineTo(-19-sw*7,-2);c.stroke();
+  c.strokeStyle=shade(Z.c,.6);c.lineWidth=5/s;
+  c.beginPath();c.moveTo(1,-37);c.lineTo(-12-sw*4,-31);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>{c.beginPath();c.ellipse(1,-30,10,13,.62,0,7);},Z.c,-30);
+  c.lineCap='round';
+  c.strokeStyle=shade(Z.c,.74);c.lineWidth=6.5/s;
+  c.beginPath();c.moveTo(2,-23);c.lineTo(12+sw*5,-18);c.lineTo(14+sw*6,-2);c.stroke();
+  c.strokeStyle=shade(Z.c,.92);c.lineWidth=5/s;
+  c.beginPath();c.moveTo(5,-36);c.lineTo(18+sw*4,-33);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>{c.beginPath();c.arc(11,-44,8.5,0,7);},Z.c,-44);
+  zEye(c,15,-45,2.2);
+  c.restore();return;}
+ if(Z.id==='arm'){/* アーマード: 胸当てと半分だけの兜。顔も手足もむき出し。
+    ⚠重装兵(全身鉄板で顔が見えない・横に広い)と**同じ絵にならないよう**にここで分けている */
+  const sw=walk*2.8;
+  c.fillStyle=shade(Z.c,.56);
+  rr(c,-9+sw,-14,8,15,3);c.fill();c.stroke();
+  rr(c,1-sw,-14,8,15,3);c.fill();c.stroke();
+  zFill(c,()=>rr(c,-10,-39,21,26,4),Z.c,-26);
+  c.fillStyle='#3f4a54';
+  rr(c,-15,-39,30,15,2);c.fill();c.stroke();
+  c.fillStyle='#8a8f96';c.fillRect(-15,-33,30,3);
+  c.lineCap='round';c.strokeStyle=shade(Z.c,.9);c.lineWidth=5.4/s;
+  c.beginPath();c.moveTo(6,-31);c.lineTo(19,-27+sw);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>{c.beginPath();c.arc(2,-47,9,0,7);},Z.c,-47);
+  c.fillStyle=STEEL;c.beginPath();c.arc(2,-48,9,Math.PI,0);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#8a8f96';c.fillRect(-7,-51,18,3);
+  zEye(c,6,-45,2.1);
+  c.restore();return;}
+ if(Z.id==='blo'){/* ブローター: ほぼ球。膞れた腹に小さな頭が埋まり、脚は短い切り株 */
+  const br=Math.sin(t*2.6+ph)*1.6,sw=walk*2.4;
+  c.fillStyle=shade(Z.c,.6);
+  rr(c,-13+sw,-12,10,13,4);c.fill();c.stroke();
+  rr(c,3-sw,-12,10,13,4);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.8);
+  rr(c,15,-32,13,7,3);c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();c.ellipse(0,-29,21+br,19+br,0,0,7);},Z.c,-29);
+  c.globalAlpha=.5;c.fillStyle=shade(Z.c,1.32);
+  c.beginPath();c.ellipse(-5,-36,10,6,-.4,0,7);c.fill();c.globalAlpha=1;
+  zFill(c,()=>{c.beginPath();c.arc(15,-44,8,0,7);},Z.c,-44);
+  zEye(c,18,-45,2.2);
+  c.restore();return;}
+ if(Z.id==='scr'){/* スクリーマー: のけ反って両腕を上げ、叫びの輪を飛ばす。唯一の「腕が上がった」輪郭 */
+  const sw=Math.sin(t*8+ph);
+  c.lineCap='round';c.strokeStyle=shade(Z.c,.6);c.lineWidth=6/s;
+  c.beginPath();c.moveTo(-4,-15);c.lineTo(-7,-1);c.stroke();
+  c.beginPath();c.moveTo(4,-15);c.lineTo(8,-1);c.stroke();
+  c.strokeStyle=shade(Z.c,.86);c.lineWidth=5/s;
+  c.beginPath();c.moveTo(-3,-34);c.lineTo(-14,-45-sw*3);c.stroke();
+  c.beginPath();c.moveTo(4,-34);c.lineTo(15,-47+sw*3);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>rr(c,-9,-38,19,25,8),Z.c,-26);
+  c.save();c.translate(1,-44);c.rotate(-.5);
+  zFill(c,()=>{c.beginPath();c.ellipse(0,0,8.5,9.5,0,0,7);},Z.c,0);
+  c.fillStyle=INK;c.beginPath();c.ellipse(1,4,3.6,5,0,0,7);c.fill();
+  c.restore();
+  zEye(c,3,-49,2);
+  c.globalAlpha=.55;c.strokeStyle=shade(Z.c,1.35);c.lineWidth=2.2/s;
+  for(let k=0;k<2;k++){const rd=9+k*5+((t*11+ph*5)%6);
+   c.beginPath();c.arc(5,-46,rd,-1,1);c.stroke();}
+  c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.restore();return;}
+ if(Z.id==='dog'){/* 感染ハウンド: 四つ足。低く長い胴と突き出た鼻面 */
+  const sw=walk*4;
+  c.fillStyle=shade(Z.c,.72);
+  c.fillRect(-12-sw,-8,5,9);c.strokeRect(-12-sw,-8,5,9);
+  c.fillRect(7+sw,-8,5,9);c.strokeRect(7+sw,-8,5,9);
+  c.strokeStyle=shade(Z.c,.68);c.lineWidth=3.4/s;c.lineCap='round';
+  c.beginPath();c.moveTo(-15,-18);c.quadraticCurveTo(-26,-21,-24,-31);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle=shade(Z.c,.6);
+  c.fillRect(-15+sw,-8,5,9);c.strokeRect(-15+sw,-8,5,9);
+  c.fillRect(10-sw,-8,5,9);c.strokeRect(10-sw,-8,5,9);
+  zFill(c,()=>rr(c,-17,-21,33,14,7),Z.c,-13);
+  zFill(c,()=>{c.beginPath();c.arc(17,-23,8.5,0,7);},Z.c,-23);
+  c.fillStyle=shade(Z.c,.86);
+  c.beginPath();c.moveTo(21,-27);c.lineTo(32,-22);c.lineTo(21,-18);c.closePath();c.fill();c.stroke();
+  c.fillStyle=Z.c;
+  c.beginPath();c.moveTo(13,-30);c.lineTo(11,-38);c.lineTo(18,-31);c.closePath();c.fill();c.stroke();
+  c.fillStyle=PANE;
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(23+k*3,-22);c.lineTo(25+k*3,-18);c.lineTo(27+k*3,-22);c.closePath();c.fill();}
+  zEye(c,19,-26,2);
+  c.restore();return;}
+ if(Z.id==='crwl'){/* クローラー: 地を這ってすり抜ける。背が低く長い輪郭 */
+  c.strokeStyle=shade(Z.c,.6);c.lineWidth=3.4/s;c.lineCap='round';
   for(let k=0;k<3;k++){const w2=Math.sin(t*7+ph+k)*4;
-   c.beginPath();c.moveTo(-10+k*10,-3);c.lineTo(-14+k*10+w2,4);c.stroke();
-   c.beginPath();c.moveTo(-10+k*10,-11);c.lineTo(-14+k*10-w2,-18);c.stroke();}
-  c.lineWidth=2.6/s;
-  c.fillStyle=shade(Z.c,1.15);c.beginPath();c.arc(19,-11,8,0,7);c.fill();c.stroke();
-  c.fillStyle='#fff';c.beginPath();c.arc(21,-13,2.4,0,7);c.fill();
-  c.fillStyle=INK;c.beginPath();c.arc(22,-13,1.2,0,7);c.fill();
-  c.restore();return;
- }
- if(Z.id==='ooze'){/* スライム状体: 形を変えながらすり抜ける */
+   c.beginPath();c.moveTo(-10+k*10,-4);c.lineTo(-15+k*10+w2,3);c.stroke();
+   c.beginPath();c.moveTo(-10+k*10,-11);c.lineTo(-15+k*10-w2,-19);c.stroke();}
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>rr(c,-19,-15,36,14,6),Z.c,-8);
+  zFill(c,()=>{c.beginPath();c.ellipse(20,-13,9,7,-.15,0,7);},Z.c,-13);
+  zEye(c,23,-15,2.2);
+  c.restore();return;}
+ if(Z.id==='ooze'){/* スライム状体: 形を変えながらすり抜ける。輪郭に頭も脚も無い塊 */
   const wob=Math.sin(t*3+ph)*3;
-  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-14,20+wob,15-wob*.5,0,0,7);c.fill();c.stroke();
-  c.globalAlpha=.5;c.fillStyle=shade(Z.c,1.3);c.beginPath();c.ellipse(-5,-20,8,6,0,0,7);c.fill();c.globalAlpha=1;
-  c.fillStyle=INK;c.beginPath();c.arc(6,-17,2.2,0,7);c.fill();c.beginPath();c.arc(13,-15,2.2,0,7);c.fill();
-  c.fillStyle=Z.c;for(let k=0;k<3;k++){const dy2=Math.sin(t*4+k*2+ph)*2;
-   c.beginPath();c.ellipse(-12+k*11,-1+dy2,5,3,0,0,7);c.fill();}
-  c.restore();return;
- }
- if(Z.id==='dog'){/* ハウンド */
-  c.fillStyle=Z.c;rr(c,-16,-18,32,13,6);c.fill();c.stroke();
-  c.fillRect(-13+walk*4,-6,5,7);c.strokeRect(-13+walk*4,-6,5,7);c.fillRect(8-walk*4,-6,5,7);c.strokeRect(8-walk*4,-6,5,7);
-  c.beginPath();c.arc(18,-20,8,0,7);c.fill();c.stroke();
-  c.beginPath();c.moveTo(14,-26);c.lineTo(12,-32);c.lineTo(18,-27);c.closePath();c.fill();c.stroke();
-  c.fillStyle=INK;c.beginPath();c.arc(20,-21,1.5,0,7);c.fill();
-  c.restore();return;
- }
- /* 脚 */
- c.fillStyle=shade(Z.c,.8);
- c.fillRect(-9+walk*4,-10,6,11);c.strokeRect(-9+walk*4,-10,6,11);
- c.fillRect(3-walk*4,-10,6,11);c.strokeRect(3-walk*4,-10,6,11);
- /* 胴体(前傾) */
- c.save();c.rotate(.14);
- const big=(Z.id==='blo'||Z.id==='brut'||Z.id==='tank'),hel=(Z.id==='arm'||Z.id==='jug'||Z.id==='tank');
- if(Z.id==='wrth'){c.globalAlpha=.62;c.shadowColor='#7fd0ff';c.shadowBlur=12;}
- const bw=big?34:22,bh=big?30:26;
- rr(c,-bw/2,-12-bh,bw,bh,big?14:8);c.fillStyle=Z.c;c.fill();c.stroke();
- if(big){c.fillStyle=shade(Z.c,1.25);c.beginPath();c.arc(0,-24,9,0,7);c.fill();}
- if(hel){c.fillStyle='#3f4a54';rr(c,-bw/2+2,-12-bh+4,bw-4,10,4);c.fill();c.stroke();}
- /* 腕(前へ) */
- c.strokeStyle=INK;c.lineWidth=4.5/s;
- c.beginPath();c.moveTo(2,-30);c.lineTo(16,-26+walk*3);c.stroke();
- c.beginPath();c.moveTo(2,-24);c.lineTo(15,-18-walk*3);c.stroke();
- c.lineWidth=2.6/s;
- /* 頭(傾き) */
- const hx=8,hy=-40;
- c.beginPath();c.arc(hx,hy,10,0,7);c.fillStyle=shade(Z.c,1.1);c.fill();c.stroke();
- if(hel){c.fillStyle=STEEL;c.beginPath();c.arc(hx,hy-2,10,Math.PI,0);c.fill();c.stroke();}
- if(Z.id==='scr'){c.fillStyle=INK;c.beginPath();c.ellipse(hx+4,hy+3,3.5,4.5,0,0,7);c.fill();}
- c.fillStyle='#fff';c.beginPath();c.arc(hx+3,hy-2,2.2,0,7);c.fill();c.fillStyle=INK;c.beginPath();c.arc(hx+3.6,hy-2,1.1,0,7);c.fill();
- c.restore();
- if(Z.id==='brut'){/* ブルート: 肩の鉄板 */
-  c.fillStyle='#5a5048';rr(c,-20,-40,16,10,3);c.fill();c.stroke();rr(c,4,-40,16,10,3);c.fill();c.stroke();}
- if(Z.id==='tank'){/* 重装兵: 全身プレート */
-  c.fillStyle='#3f4a54';rr(c,-14,-34,28,16,4);c.fill();c.stroke();
-  c.fillStyle='#8a8f96';c.fillRect(-14,-27,28,3);}
- if(Z.id==='stlk'){/* ストーカー: 長い爪 */
-  c.strokeStyle='#cfd5da';c.lineWidth=2.6/s;
-  for(let k=0;k<3;k++){c.beginPath();c.moveTo(14,-26+k*3);c.lineTo(26+k*2,-30+k*5);c.stroke();}
-  c.strokeStyle=INK;c.lineWidth=2.6/s;}
- if(Z.id==='wrth'){/* レイス: 裾が霧散 */
-  c.globalAlpha=.35;c.fillStyle=Z.c;
-  for(let k=0;k<3;k++){const w3=Math.sin(t*3+k+ph)*3;c.beginPath();c.ellipse(-8+k*8+w3,-2,7,5,0,0,7);c.fill();}
-  c.globalAlpha=.62;}
- if(Z.id==='jug'){/* ジャガーノート装甲+鎖 */
-  c.strokeStyle='#8a8f96';c.lineWidth=3/s;c.beginPath();c.moveTo(-14,-20);c.lineTo(-22,-4);c.stroke();c.beginPath();c.arc(-23,-2,3,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=2.6/s;}
+  zFill(c,()=>{c.beginPath();c.moveTo(-21-wob,0);
+   c.bezierCurveTo(-24-wob,-19,-12,-26+wob,0,-26+wob);
+   c.bezierCurveTo(13,-26+wob,23+wob,-18,20+wob,0);c.closePath();},Z.c,-12);
+  c.globalAlpha=.45;c.fillStyle=shade(Z.c,1.35);
+  c.beginPath();c.ellipse(-5,-18,9,6,0,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle=INK;c.beginPath();c.arc(7,-16,2.4,0,7);c.fill();c.beginPath();c.arc(14,-13,2.4,0,7);c.fill();
+  c.fillStyle=Z.c;
+  for(let k=0;k<3;k++){const dy2=Math.sin(t*4+k*2+ph)*2;
+   c.beginPath();c.ellipse(-13+k*12,1+dy2,5,3,0,0,7);c.fill();c.stroke();}
+  c.restore();return;}
+ if(Z.id==='brut'){/* ブルート: 逆三角形。肩が大きく張り出し、長い腕を地面まで垂らす */
+  const sw=walk*2.5;
+  c.fillStyle=shade(Z.c,.58);
+  rr(c,-11+sw,-15,10,16,4);c.fill();c.stroke();
+  rr(c,2-sw,-15,10,16,4);c.fill();c.stroke();
+  c.lineCap='round';c.strokeStyle=shade(Z.c,.76);c.lineWidth=9/s;
+  c.beginPath();c.moveTo(-14,-38);c.quadraticCurveTo(-25,-26,-21+sw*2,-4);c.stroke();
+  c.beginPath();c.moveTo(14,-38);c.quadraticCurveTo(25,-26,21-sw*2,-4);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>{c.beginPath();c.moveTo(-19,-44);c.lineTo(19,-44);c.lineTo(11,-13);c.lineTo(-11,-13);c.closePath();},Z.c,-28);
+  c.fillStyle='#5a5048';
+  rr(c,-23,-47,15,10,3);c.fill();c.stroke();
+  rr(c,8,-47,15,10,3);c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();c.arc(2,-46,7.5,0,7);},Z.c,-46);
+  zEye(c,5,-47,2);
+  c.restore();return;}
+ if(Z.id==='stlk'){/* ストーカー: 低く構えた二足の狩り手。長い前腕を前下へ伸ばし、爪を地面近くに構える。
+    ⚠爪を**頭と同じ高さ**に置くと「開いた噂」に見えて鳥になる(一度そうなった)。
+    ⚠頭を胴と地続きにすると「首の無い鳥」になるので、短い首を入れて離す */
+  const sw=Math.sin(t*14+ph);
+  c.lineCap='round';
+  c.strokeStyle=shade(Z.c,.54);c.lineWidth=6/s;
+  c.beginPath();c.moveTo(-8,-22);c.lineTo(-18-sw*4,-16);c.lineTo(-13-sw*5,-1);c.stroke();
+  c.strokeStyle=shade(Z.c,.7);
+  c.beginPath();c.moveTo(-4,-22);c.lineTo(4+sw*4,-15);c.lineTo(0+sw*5,-1);c.stroke();
+  /* 後ろの腕(暗い方を胴より先に描く) */
+  c.strokeStyle=shade(Z.c,.62);c.lineWidth=4.6/s;
+  c.beginPath();c.moveTo(2,-26);c.lineTo(13-sw*2,-14);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>{c.beginPath();c.ellipse(-3,-28,16,9,-.22,0,7);},Z.c,-28);
+  /* 背の棘(後ろ半分だけ。頭の上まで伸ばすと鳥の冠羽になる) */
+  c.fillStyle=shade(Z.c,1.3);
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(-19+k*7,-34);c.lineTo(-16+k*7,-41);c.lineTo(-13+k*7,-34);c.closePath();c.fill();c.stroke();}
+  /* 短い首と、胴より上に出た頭 */
+  c.fillStyle=shade(Z.c,.8);
+  c.beginPath();c.moveTo(8,-32);c.lineTo(14,-38);c.lineTo(19,-33);c.lineTo(13,-28);c.closePath();c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();c.ellipse(19,-39,10,8,.1,0,7);},Z.c,-39);
+  zEye(c,23,-40,2.1);
+  /* 前の腕を前下へ伸ばし、爪を地面近くで構える */
+  c.lineCap='round';c.strokeStyle=shade(Z.c,.9);c.lineWidth=5/s;
+  c.beginPath();c.moveTo(6,-25);c.lineTo(20+sw*3,-11);c.stroke();
+  c.lineCap='butt';c.strokeStyle='#cfd5da';c.lineWidth=2.4/s;
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(21+sw*3,-11);c.lineTo(31+sw*3+k*1.5,-14+k*6);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.restore();return;}
+ if(Z.id==='wrth'){/* レイス: 脚が無く裾が霧に散る。唯一の「足が地に着いていない」輪郭 */
+  const fl=Math.sin(t*2.4+ph)*2.5;
+  c.globalAlpha=.72;c.shadowColor='#7fd0ff';c.shadowBlur=11;
+  c.fillStyle=Z.c;
+  c.beginPath();c.moveTo(-13,-28);c.quadraticCurveTo(-9+fl,-12,-3+fl,2);
+  c.lineTo(4-fl,2);c.quadraticCurveTo(10-fl,-12,13,-28);c.closePath();c.fill();c.stroke();
+  c.globalAlpha=.32;
+  for(let k=0;k<3;k++){const w3=Math.sin(t*3+k*2+ph)*3;
+   c.beginPath();c.ellipse(-9+k*9+w3,-2,7,4,0,0,7);c.fill();}
+  c.globalAlpha=.72;
+  zFill(c,()=>{c.beginPath();c.moveTo(-14,-26);c.quadraticCurveTo(-16,-50,0,-53);
+   c.quadraticCurveTo(16,-50,14,-26);c.closePath();},Z.c,-40);
+  c.globalAlpha=.8;c.fillStyle='#101820';
+  c.beginPath();c.ellipse(2,-42,8,9.5,0,0,7);c.fill();c.globalAlpha=.72;
+  c.fillStyle='#7fd0ff';
+  c.beginPath();c.arc(0,-44,2.2,0,7);c.fill();c.beginPath();c.arc(6,-44,2.2,0,7);c.fill();
+  c.lineCap='round';c.strokeStyle=Z.c;c.lineWidth=4/s;
+  c.beginPath();c.moveTo(10,-36);c.lineTo(22,-30+fl);c.stroke();
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.restore();return;}
+ if(Z.id==='tank'){/* 重装兵: 横に広く低い箱。全身が鉄板で、顔はバイザーの隙間だけ */
+  const sw=walk*2.2;
+  c.fillStyle='#2f3840';
+  rr(c,-14+sw,-13,12,14,3);c.fill();c.stroke();
+  rr(c,3-sw,-13,12,14,3);c.fill();c.stroke();
+  c.fillStyle='#3f4a54';
+  rr(c,-26,-42,15,14,3);c.fill();c.stroke();
+  rr(c,11,-42,15,14,3);c.fill();c.stroke();
+  zFill(c,()=>rr(c,-16,-42,32,30,3),Z.c,-27);
+  c.fillStyle='#8a8f96';c.fillRect(-16,-32,32,4);
+  c.fillStyle='#2f3840';c.fillRect(-16,-24,32,3);
+  c.fillStyle=shade(Z.c,.76);rr(c,13,-34+sw,14,8,3);c.fill();c.stroke();
+  zFill(c,()=>rr(c,-8,-53,17,12,4),STEEL,-47);
+  c.fillStyle=INK;c.fillRect(-5,-49,13,4);
+  c.fillStyle=DANGER;c.fillRect(3,-48.5,3,3);
+  c.restore();return;}
+ if(Z.id==='jug'){/* ジャガーノート(①のボス): 棘の肩当てを付けた巨躯。鉄球の鎖を引きずる */
+  const sw=walk*2.5;
+  c.fillStyle='#2f3840';
+  rr(c,-15+sw,-16,13,17,4);c.fill();c.stroke();
+  rr(c,3-sw,-16,13,17,4);c.fill();c.stroke();
+  c.strokeStyle='#8a8f96';c.lineWidth=3.2/s;
+  c.beginPath();c.moveTo(-18,-34);c.quadraticCurveTo(-29,-20,-31,-7);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  c.fillStyle='#5a5048';c.beginPath();c.arc(-33,-6,7,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,.7);
+  rr(c,13,-40+sw,17,11,4);c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();c.moveTo(-23,-50);c.lineTo(23,-50);c.lineTo(14,-15);c.lineTo(-14,-15);c.closePath();},Z.c,-32);
+  c.fillStyle='#3f4a54';rr(c,-15,-38,30,15,3);c.fill();c.stroke();
+  c.fillStyle='#8a8f96';c.fillRect(-15,-31,30,3);
+  for(const sx of [-1,1]){
+   c.save();c.scale(sx,1);
+   c.fillStyle='#4a5560';rr(c,11,-57,18,15,4);c.fill();c.stroke();
+   c.fillStyle='#cfd5da';
+   for(let k=0;k<3;k++){c.beginPath();c.moveTo(13+k*5,-57);c.lineTo(15.5+k*5,-66);c.lineTo(18+k*5,-57);c.closePath();c.fill();c.stroke();}
+   c.restore();}
+  zFill(c,()=>{c.beginPath();c.arc(2,-55,11,0,7);},Z.c,-55);
+  c.fillStyle=STEEL;c.beginPath();c.arc(2,-57,11,Math.PI,0);c.closePath();c.fill();c.stroke();
+  c.fillStyle=INK;c.fillRect(-4,-55,13,4);
+  c.fillStyle=DANGER;c.beginPath();c.arc(6,-53,2.4,0,7);c.fill();
+  c.restore();return;}
+ /* ↓上のどれにも当てはまらない個体の保険(ゾンビを足したときに何も出ないのを防ぐ) */
+ c.fillStyle=shade(Z.c,.7);
+ c.fillRect(-9+walk*4,-13,7,14);c.strokeRect(-9+walk*4,-13,7,14);
+ c.fillRect(2-walk*4,-13,7,14);c.strokeRect(2-walk*4,-13,7,14);
+ zFill(c,()=>rr(c,-11,-38,22,26,8),Z.c,-25);
+ zFill(c,()=>{c.beginPath();c.arc(2,-45,9,0,7);},Z.c,-45);
+ zEye(c,6,-46);
  c.restore();
 }
 /* ⭐ドローン基地の2機は**常に浮いていて、ゆっくり漂う**(2026-07-26 第68弾ユーザー指示)。
