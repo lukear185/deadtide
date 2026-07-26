@@ -1227,6 +1227,95 @@ function checkZLook(){
  if(dup.length){console.log('FAIL: 同じ形で描かれているゾンビ: '+dup.join(' / '));process.exit(1);}
  console.log('ゾンビの絵: '+ZOMBIES.length+'種すべてが専用の枝を持ち、図形の並びも全部違う OK');
 }
+/* ---- 兵科32種・英雄11人・タワー20種の絵が1つずつ違うか(2026-07-26 第91弾) ----
+   ⭐ゾンビ(checkZLook)と同じ考え方。**共通の胴+武器だけ**の作りに戻ると、
+     実機(25px)では色しか違わない絵になる=それを静的+実走で見張る。
+   ⚠**色も数値も見ない**。図形を積む命令の並びだけを見る(色を入れると必ず通る検査になる)。 */
+function shapeFp(drawFn){
+ const GEO=['moveTo','lineTo','arc','arcTo','ellipse','rect','fillRect','strokeRect',
+  'quadraticCurveTo','bezierCurveTo','closePath','fill','stroke','clip','translate','rotate','scale'];
+ const rec=[];
+ const rc=new Proxy({},{get:(t,k)=>{
+  if(k==='canvas')return {};
+  if(k==='measureText')return ()=>({width:10});
+  if(typeof k!=='string')return undefined;
+  return ()=>{if(GEO.indexOf(k)>=0)rec.push(k);};},set:()=>true});
+ drawFn(rc);
+ return rec;
+}
+function checkULook(){
+ /* (1) 全兵科に「体型・かぶり物・背負い物」の指定があるか */
+ const miss=[];
+ for(let i=0;i<U_N;i++){const id=UBASE[i].id;if(!U_LOOK[id])miss.push(UBASE[i].n);}
+ if(miss.length){console.log('FAIL: 見た目の指定が無い兵科(共通の姿になる): '+miss.join('/'));process.exit(1);}
+ /* (2) かぶり物が偏っていないか(同じ頭が多すぎると見分けが付かない) */
+ const hc={};for(const k in U_LOOK)hc[U_LOOK[k].h]=(hc[U_LOOK[k].h]||0)+1;
+ const many=Object.keys(hc).filter(k=>k&&hc[k]>4);
+ if(many.length){console.log('FAIL: 同じかぶり物が5種以上に付いている: '+many.join('/'));process.exit(1);}
+ /* (3) 実走: 図形の並びが全部違うか */
+ const fp={};
+ for(let i=0;i<U_N;i++){
+  const rec=shapeFp(rc=>drawUnit(rc,i,0,0,1,1.7,0,{}));
+  if(!rec.length){console.log('FAIL: '+UNITS[i].n+' が何も描いていない');process.exit(1);}
+  const key=rec.join(',');(fp[key]||(fp[key]=[])).push(UNITS[i].n);}
+ const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join('='));
+ if(dup.length){console.log('FAIL: 同じ形で描かれている兵科: '+dup.join(' / '));process.exit(1);}
+ console.log('兵科の絵: '+U_N+'種すべてが違う体型/かぶり物/背負い物を持ち、図形の並びも全部違う OK');
+}
+function checkHeroLook(){
+ const miss=HEROES.filter(h=>!H_LOOK[h.id]).map(h=>h.n);
+ if(miss.length){console.log('FAIL: 見た目の指定が無い英雄(共通の姿になる): '+miss.join('/'));process.exit(1);}
+ const fp={};
+ for(let k=0;k<HEROES.length;k++){
+  const rec=shapeFp(rc=>drawUnit(rc,HERO_I0+k,0,0,1,1.7,0,{}));
+  if(!rec.length){console.log('FAIL: '+HEROES[k].n+' が何も描いていない');process.exit(1);}
+  const key=rec.join(',');(fp[key]||(fp[key]=[])).push(HEROES[k].n);}
+ const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join('='));
+ if(dup.length){console.log('FAIL: 同じ形で描かれている英雄: '+dup.join(' / '));process.exit(1);}
+ /* 武器とかぶり物が全員バラバラか(1人ずつの造形にした意味が消えるため) */
+ const ws={},hs={};for(const id in H_LOOK){ws[H_LOOK[id].w]=1;hs[H_LOOK[id].h]=1;}
+ if(Object.keys(ws).length<HEROES.length){console.log('FAIL: 英雄の武器が重複している');process.exit(1);}
+ if(Object.keys(hs).length<HEROES.length){console.log('FAIL: 英雄のかぶり物が重複している');process.exit(1);}
+ console.log('英雄の絵: '+HEROES.length+'人すべてが専用のかぶり物・武器・背中の物を持つ OK');
+}
+function checkTwLook(){
+ const fp={};
+ for(let i=0;i<TOWERS.length;i++){
+  const rec=shapeFp(rc=>drawTower(rc,i,0,0,0,0.3,1.7,{}));
+  if(!rec.length){console.log('FAIL: '+TOWERS[i].n+' が何も描いていない');process.exit(1);}
+  const key=rec.join(',');(fp[key]||(fp[key]=[])).push(TOWERS[i].n);}
+ const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join('='));
+ if(dup.length){console.log('FAIL: 同じ形で描かれているタワー: '+dup.join(' / '));process.exit(1);}
+ console.log('タワーの絵: '+TOWERS.length+'種すべてが違う砲身/特徴パーツを持つ OK');
+}
+/* ---- 姿のプレビュー(第91弾) ----
+   ⭐ユーザー指示「全容が見える大きさに」。⚠DOM側だけの検査はヘッドレスでは0個でも通るので、
+     **項目データ(LAB_ITEMS)に姿の指定(pv)が付いているか**を見る。 */
+function checkPreview(){
+ META.pts=999999;META.nt=3;META.nu=4;renderLab();
+ const need=LAB_ITEMS.filter(it=>it.k==='nt'||it.k==='nu'||it.k==='tw'||it.k==='un'||it.k==='uv');
+ if(!need.length){console.log('FAIL: 研究所にタワー/兵科の項目が1つも無い');process.exit(1);}
+ const nopv=need.filter(it=>!it.pv).map(it=>it.t);
+ if(nopv.length){console.log('FAIL: 姿(pv)の無い項目がある=絵文字のままになる: '+nopv.slice(0,5).join('/'));process.exit(1);}
+ for(const it of need){
+  if(it.pv.k==='t'&&!TOWERS[it.pv.i]){console.log('FAIL: 姿の指す先が無い(タワー): '+it.t);process.exit(1);}
+  if(it.pv.k==='u'&&!UNITS[it.pv.i]){console.log('FAIL: 姿の指す先が無い(兵科): '+it.t);process.exit(1);}}
+ /* fitDraw が例外を出さずに描けるか(測れない環境でも中央に置くだけで通ること) */
+ let drew=0;
+ const fake={width:80,height:60,getContext:()=>({save(){},restore(){},clearRect(){},translate(){},scale(){},
+  beginPath(){},moveTo(){},lineTo(){},arc(){},ellipse(){},rect(){},closePath(){},fill(){},stroke(){},
+  fillRect(){},strokeRect(){},quadraticCurveTo(){},bezierCurveTo(){},clip(){},drawImage(){},fillText(){},strokeText(){},
+  measureText:()=>({width:10}),set fillStyle(v){},set strokeStyle(v){},set lineWidth(v){},set font(v){},
+  set textAlign(v){},set globalAlpha(v){},set filter(v){},set shadowColor(v){},set shadowBlur(v){},set lineJoin(v){}})};
+ fitDraw(fake,()=>{drew++;},4);
+ if(!drew){console.log('FAIL: fitDraw が絵を描いていない');process.exit(1);}
+ /* 派生キャラを描いても UNITS が元に戻っているか(戻し忘れると編成が壊れる) */
+ const keep=UNITS[0];drawUnitAs({save(){},restore(){},translate(){},scale(){},beginPath(){},moveTo(){},lineTo(){},
+  arc(){},ellipse(){},rect(){},closePath(){},fill(){},stroke(){},fillRect(){},strokeRect(){},quadraticCurveTo(){},
+  clip(){},fillText(){},strokeText(){},measureText:()=>({width:10})},0,{id:'zzz',n:'X',c:'#fff',type:'melee',hp:1,atk:1,cost:1,cd:1,rate:1,rng:1,sp:1});
+ if(UNITS[0]!==keep){console.log('FAIL: drawUnitAs が UNITS を元に戻していない');process.exit(1);}
+ console.log('姿のプレビュー: 研究所'+need.length+'件に実物の絵 / 枠いっぱいに収める処理あり OK');
+}
 /* ---- 音を鳴らす所が必ず音量の表(SFX_GAIN)を通っているか(2026-07-26 第84弾) ----
    ⚠**?sfx=1 の確認画面だけ素の音量で鳴らしていた**。音量を下げる直しを入れたのに
      確認画面では下がって聴こえず、**「ゲームを進めずに音を確かめる」という画面の存在意義が
@@ -1677,6 +1766,10 @@ checkFx2();
 checkGachaFx();
 checkTwFx();
 checkZLook();
+checkULook();
+checkHeroLook();
+checkTwLook();
+checkPreview();
 checkSfxGain();
 checkTut();
 checkTutLock();

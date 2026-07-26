@@ -57,6 +57,14 @@ const SKM=/stk=([a-z]+)/.exec(OPT),SKID=SKM?SKM[1]:'';
 const FXD=OPT.indexOf('fxdemo')>=0;
 /* tut / tut=3 = 🎓チュートリアルを撮る(数字はその段まで進めてから撮る) */
 const TUM=/tut(?:auto)?(?:=([0-9]+))?/.exec(OPT),TUT=!!TUM,TUTI=TUM&&TUM[1]?+TUM[1]:0;
+/* ⭐grid=tw|u|hero|z = 見た目を**実機と同じ大きさで並べて**撮る(2026-07-26 第91弾)。
+   ⚠絵を直す作業は「撮る→直す→また撮る」の繰り返しになるので、1種ずつ実戦で撮っていては回らない。
+   ⚠**実機の大きさ(タワー35px・キャラ25px前後)で見ること**。大きく描いて満足すると実機で潰れる。
+     並べる時は 実寸 と 3倍 を2段に出す(実寸=見分けが付くか / 3倍=細部が壊れていないか)。
+   例) node test_shot.js out.png 1280 720 grid=u */
+const GRM=/grid=([a-z]+)/.exec(OPT),GRID=GRM?GRM[1]:'';
+/* intro=t|u|z = 新登場の紹介モーダル(タワー/兵科/ゾンビ) */
+const IRM=/intro(?:=([tuz]))?/.exec(OPT),INTRO=!!IRM,INTROK=(IRM&&IRM[1])||'u';
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
@@ -192,7 +200,41 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'D.forEach(function(d){var e=Object.assign({k:d[0],x:d[1],y:d[2],t:0,s:""},d[3]);'
      +'e.t=(fxLife(e.k,e))*d[4];me.fx.push(e);});}catch(e){}},16);'
      +'}catch(e){document.title="ERR6 "+e.message;}},1200);'):'')
- +'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);},200);</scr'+'ipt>';
+ +(GRID?('setTimeout(function(){try{'
+     /* 実機(852px幅)と同じ縮尺。⚠ウィンドウの大きさで変えない=毎回同じ大きさで見比べるため */
+     +'var s0=852/1600;'
+     +'var cvv=document.createElement("canvas");document.body.appendChild(cvv);'
+     +'cvv.style.cssText="position:fixed;left:0;top:0;width:100%;height:100%;z-index:9999";'
+     +'var W2=window.innerWidth,H2=window.innerHeight,DP=window.devicePixelRatio||1;'
+     +'cvv.width=W2*DP;cvv.height=H2*DP;var c=cvv.getContext("2d");c.scale(DP,DP);'
+     +'c.fillStyle=PAPER;c.fillRect(0,0,W2,H2);'
+     +'var K="'+GRID+'",items=[];'
+     +'if(K==="tw"){for(var i=0;i<TOWERS.length;i++)items.push({n:TOWERS[i].n,i:i});}'
+     +'else if(K==="u"){for(var i=0;i<U_N;i++)items.push({n:UNITS[i].n,i:i});}'
+     +'else if(K==="hero"){for(var i=0;i<HEROES.length;i++)items.push({n:HEROES[i].n,i:HERO_I0+i});}'
+     +'else{for(var i=0;i<ZOMBIES.length;i++)items.push({n:ZOMBIES[i].n,i:i});}'
+     +'var n=items.length,cols=Math.ceil(Math.sqrt(n*W2/H2*.75)),rows=Math.ceil(n/cols);'
+     +'var cw=W2/cols,ch=H2/rows;'
+     +'for(var k=0;k<n;k++){var cx=(k%cols)*cw,cy=Math.floor(k/cols)*ch;'
+     +'c.save();c.beginPath();c.rect(cx,cy,cw,ch);c.clip();'
+     +'c.strokeStyle="rgba(0,0,0,.15)";c.lineWidth=1;c.strokeRect(cx+.5,cy+.5,cw-1,ch-1);'
+     +'c.fillStyle=INK;c.font="900 11px "+FF;c.textAlign="left";c.fillText(items[k].n,cx+5,cy+13);'
+     /* 左=実寸 / 右=3倍。⚠実寸で見分けが付くかが本番、3倍は細部の壊れを見るため */
+     +'var by=cy+ch-8;'
+     +'for(var m=0;m<2;m++){var sc=(m?3:1)*s0,px=cx+(m?cw*.62:cw*.22);'
+     /* タワーは中心が原点なので、足元が同じ高さに並ぶよう少し持ち上げる */
+     +'c.save();c.translate(px,by-(K==="tw"?22*sc:0));c.scale(sc,sc);c.lineWidth=3;c.strokeStyle=INK;'
+     +'try{if(K==="tw")drawTower(c,items[k].i,0,0,0,-0.55,1.2,{});'
+     +'else if(K==="z")drawZombie(c,items[k].i,0,0,1,1.2,0,{});'
+     +'else drawUnit(c,items[k].i,0,0,1,1.2,0,{});}catch(e){}'
+     +'c.restore();}'
+     +'c.restore();}'
+     +'}catch(e){document.title="ERR7 "+e.message;}},1500);'):'')
+ /* intro / intro=t|u|z = 新登場の紹介モーダルを出して撮る(姿が枠いっぱいに出るかの確認用) */
+ +(INTRO?('setTimeout(function(){try{showIntro([{k:"'+INTROK+'",i:'+(INTROK==='t'?15:INTROK==='z'?12:20)+'}]);}'
+     +'catch(e){document.title="ERR8 "+e.message;}},1400);'):'')
+ +(INTRO?'':'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);')
+ +'},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));
 const args=['--headless=new','--disable-gpu','--no-sandbox',

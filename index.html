@@ -266,6 +266,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  background:var(--pane);padding:6px 7px;text-align:left}
 .lc.can{border-color:var(--amber);box-shadow:0 0 0 2px rgba(232,163,61,.45)}
 .lc .ic{font-size:19px;line-height:1.1}
+/* ⭐解放/強化するタワー・キャラは**実物の姿**を出す(2026-07-26 第91弾ユーザー指示)。
+   ⚠絵文字のアイコンでは「何を解放するのか」が分からなかった。中身は fitDraw が枠いっぱいに描く */
+.lc .pvc{width:100%;height:52px;display:block;background:var(--paper3);border-radius:7px;margin-bottom:2px}
+.lgrid.tight .lc .pvc{height:38px}
 .lc .nm{font-size:13px;font-weight:900;line-height:1.25}
 .lc .tg{font-size:10px;font-weight:800;color:var(--rust2);line-height:1.2}
 .lc .ds{font-size:10.5px;font-weight:700;opacity:.7;line-height:1.32;
@@ -337,7 +341,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .ldrow .lhd{font-size:12px;font-weight:900;color:var(--ink);opacity:.7;margin-bottom:4px}
 .ldpick{display:flex;gap:5px;flex-wrap:wrap}
 .ldc{flex:0 0 auto;display:flex;align-items:center;gap:5px;background:var(--pane);border:2px solid var(--ink);border-radius:9px;padding:3px 8px;font-size:12px;font-weight:900;color:var(--ink)}
-.ldc canvas{width:26px;height:26px;display:block}
+/* ⭐姿は「何を選ぶのか分かる大きさ」で出す(2026-07-26 第91弾ユーザー指示)。
+   26pxでは色の点にしかならなかった。中身は fitDraw が枠いっぱいに描く */
+.ldc canvas{width:42px;height:42px;display:block;background:var(--paper3);border-radius:6px}
 .ldc.sel{background:var(--gold);box-shadow:0 0 0 2px var(--gold2) inset}
 .ldc.lock{opacity:.42;filter:saturate(.3)}
 .ldc .lds{font-size:10px;font-weight:800;opacity:.75}
@@ -2658,6 +2664,52 @@ function twBase(c,T,t){
   half(()=>{c.fillStyle=dk;c.beginPath();c.arc(0,0,14,0,7);c.fill();});
  }
 }
+/* ============ 砲身と特徴パーツ(2026-07-26 第91弾) ============
+   ⭐ユーザー指示「タワーの砲身と特徴パーツ」。基部の形は第81弾で20種に分けたが、
+     上に乗る物が「細い棒1本」ばかりで、実機(35px)では**どれも同じ塔に見えていた**。
+   ⚠**砲身は「太さ・本数・砲口の形」で分ける**。細い棒は何本描いても同じ影にしかならない。
+   ⚠**特徴パーツ(フィン・弾倉・弾帯・タンク・アンテナ)は基部=回らない側に置く**。
+     砲身は狙う向きで回るので、そこに個性を置くと**向き次第で見分けが付かなくなる**。 */
+const GUNM='#4a5560';/* 砲身の金属色(明) */
+/* 砲身1本。x0=付け根 / len=長さ / w=太さ。下半分だけ暗くして丸い筒に見せる */
+function twGun(c,x0,len,w,col,r){
+ const cc=col||GUNM,rd=r==null?Math.min(3.5,w/2):r;
+ c.fillStyle=cc;rr(c,x0,-w/2,len,w,rd);c.fill();c.stroke();
+ c.save();c.beginPath();c.rect(x0-1,0,len+2,w);c.clip();
+ c.fillStyle=shade(cc,.7);rr(c,x0,-w/2,len,w,rd);c.fill();c.restore();
+}
+/* 砲口。kind: brake=制退器(横に張り出す) / flare=ラッパ / cone=先細り / ring=輪 / sight=照星 */
+function twMuz(c,x,w,kind,col){
+ const cc=col||GUNM;c.fillStyle=cc;
+ if(kind==='brake'){rr(c,x-3,-w*.9,7,w*1.8,2);c.fill();c.stroke();rr(c,x+3,-w*.62,4,w*1.24,1.5);c.fill();c.stroke();}
+ else if(kind==='flare'){c.beginPath();c.moveTo(x-2,-w*.55);c.lineTo(x+8,-w*1.15);c.lineTo(x+8,w*1.15);c.lineTo(x-2,w*.55);c.closePath();c.fill();c.stroke();}
+ else if(kind==='cone'){c.beginPath();c.moveTo(x-2,-w*.6);c.lineTo(x+9,-w*.22);c.lineTo(x+9,w*.22);c.lineTo(x-2,w*.6);c.closePath();c.fill();c.stroke();}
+ else if(kind==='ring'){c.beginPath();c.arc(x,0,w*.85,0,7);c.fill();c.stroke();c.fillStyle=shade(cc,.55);c.beginPath();c.arc(x,0,w*.4,0,7);c.fill();}
+ else if(kind==='sight'){rr(c,x-4,-w*1.5,3,w*1.2,1);c.fill();c.stroke();}
+}
+/* 放熱フィン(基部の左右に段々)。⚠回らない側に置くこと */
+function twFins(c,y,n,w,col){
+ c.fillStyle=col||'#6b7580';
+ /* ⚠基部に**食い込ませて**描く(離すと宙に浮いた棒に見える。実機で撮って気づいた) */
+ for(let i=0;i<n;i++){const yy=y+i*5;
+  rr(c,-25,yy,12,3.8,1.4);c.fill();c.stroke();
+  rr(c,13,yy,12,3.8,1.4);c.fill();c.stroke();}
+}
+/* 弾倉ドラム(横から見た円盤)。⚠基部に付ける */
+function twDrum(c,x,y,r,col){
+ c.fillStyle=col||'#3f4a54';c.beginPath();c.arc(x,y,r,0,7);c.fill();c.stroke();
+ c.fillStyle=shade(col||'#3f4a54',1.35);c.beginPath();c.arc(x,y,r*.45,0,7);c.fill();c.stroke();
+}
+/* 弾帯(薬莢が並んだ帯) */
+function twBelt(c,x,y,n,col){
+ c.fillStyle='#3a3128';rr(c,x-2,y-3,n*5+4,7,2);c.fill();c.stroke();
+ c.fillStyle=col||GOLD2;for(let i=0;i<n;i++)c.fillRect(x+i*5,y-1.6,3.2,4);
+}
+/* 燃料/冷媒タンク(基部の後ろに背負う) */
+function twTank(c,x,y,w,h,col){
+ c.fillStyle=col;rr(c,x,y,w,h,w/2);c.fill();c.stroke();
+ c.fillStyle=shade(col,.72);c.save();c.beginPath();c.rect(x+w*.45,y,w*.55,h);c.clip();rr(c,x,y,w,h,w/2);c.fill();c.restore();
+}
 function drawTower(c,ti,lv,x,y,ang,t,o){
  o=o||{};const T=TOWERS[ti],tid=T.id;
  c.save();c.translate(x,y);
@@ -2697,21 +2749,52 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   c.strokeStyle=INK;c.lineWidth=3;
   c.restore();return;}
  /* ---- 拡張タワー ---- */
- if(tid==='gren'){c.save();c.rotate(ang);c.fillStyle='#585e4c';rr(c,-2,-7,24,14,6);c.fill();c.stroke();
-  if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(26,0,6,0,7);c.fill();}c.restore();
-  c.fillStyle='#4c5648';c.beginPath();c.arc(-10,8,5,0,7);c.fill();c.stroke();}
- else if(tid==='cryo'){c.fillStyle='#5f8fa3';rr(c,-8,-30,16,30,5);c.fill();c.stroke();
-  c.fillStyle=FROST;c.beginPath();c.arc(0,-33,8,0,7);c.fill();c.stroke();
-  c.globalAlpha=.5;c.fillStyle=TECH;c.beginPath();c.arc(0,-33,12+Math.sin(t*3)*3,0,7);c.fill();c.globalAlpha=1;}
- else if(tid==='laser'){c.save();c.rotate(ang);c.fillStyle='#5c5c66';rr(c,2,-3,26,6,3);c.fill();c.stroke();
-  c.fillStyle='#f0a8d8';c.beginPath();c.arc(30,0,o.fire?5:3,0,7);c.fill();
-  if(o.fire){c.strokeStyle='rgba(240,168,216,.7)';c.lineWidth=3;c.beginPath();c.moveTo(30,0);c.lineTo(90,0);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
+ /* 擲弾砲台: 短く太い口径+**回転弾倉**(基部に付けるので向きが変わっても分かる) */
+ if(tid==='gren'){c.save();c.rotate(ang);twGun(c,-2,24,15,'#585e4c',6);twMuz(c,22,7.5,'flare','#4c5648');
+  if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(30,0,6,0,7);c.fill();}c.restore();
+  twDrum(c,-19,8,8,'#4c5648');
+  c.fillStyle='#3c4136';c.beginPath();c.arc(-19,8,2.4,0,7);c.fill();}
+ /* 冷却塔: 冷媒タンク2本+**放熱フィン**+氷の球(撃たないので砲身は無い) */
+ else if(tid==='cryo'){
+  twFins(c,-6,3,10,'#7fb6c9');
+  twTank(c,-13,-30,11,26,'#5f8fa3');twTank(c,2,-26,11,22,'#4d7a8c');
+  c.fillStyle=FROST;c.beginPath();c.arc(-2,-36,9,0,7);c.fill();c.stroke();
+  /* 霜の結晶(輪郭に角が出て「氷」に見える) */
+  c.strokeStyle=TECH;c.lineWidth=2.2;
+  for(let k=0;k<3;k++){const a2=t*.6+k*1.05;
+   c.beginPath();c.moveTo(-2-Math.cos(a2)*13,-36-Math.sin(a2)*13);c.lineTo(-2+Math.cos(a2)*13,-36+Math.sin(a2)*13);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.globalAlpha=.45;c.fillStyle=TECH;c.beginPath();c.arc(-2,-36,12+Math.sin(t*3)*3,0,7);c.fill();c.globalAlpha=1;}
+ /* レーザー塔: 細いエミッター+**集光レンズ環**。基部には放熱フィン(🔥昇温速度の塔らしさ) */
+ else if(tid==='laser'){
+  twFins(c,2,2,9,'#a5758f');/* 放熱フィンは足元に(🔥昇温速度の塔らしさ) */
+  c.save();c.rotate(ang);twGun(c,2,26,7,'#5c5c66',3);
+  /* 集光レンズは**先端に1枚だけ**。粒を並べると芋虫に見える(実機で撮って気づいた) */
+  twMuz(c,27,5,'ring','#c96b9f');
+  c.fillStyle='#f0a8d8';c.beginPath();c.arc(29,0,o.fire?4.5:2.6,0,7);c.fill();
+  if(o.fire){c.strokeStyle='rgba(240,168,216,.7)';c.lineWidth=3;c.beginPath();c.moveTo(31,0);c.lineTo(90,0);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
   c.restore();}
- else if(tid==='acid'){c.fillStyle='#4c6b32';c.beginPath();c.arc(-7,-6,10,0,7);c.fill();c.stroke();
-  c.save();c.rotate(ang);c.fillStyle='#5c5c66';rr(c,4,-4,22,8,3);c.fill();c.stroke();
-  if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(30,0,5+Math.sin(t*20)*2,0,7);c.fill();}c.restore();}
- else if(tid==='sonic'){c.save();c.rotate(ang);c.fillStyle='#6b5f8a';c.beginPath();c.moveTo(2,-6);c.lineTo(26,-16);c.lineTo(26,16);c.lineTo(2,6);c.closePath();c.fill();c.stroke();
-  if(o.fire){c.strokeStyle='rgba(200,180,240,.8)';c.lineWidth=2.4;for(let k=1;k<=3;k++){c.beginPath();c.arc(26,0,k*10,-.7,.7);c.stroke();}c.strokeStyle=INK;c.lineWidth=3;}
+ /* 酸噴射器: 薬液タンク2本+**先の垂れたノズル**(滴が落ちる) */
+ else if(tid==='acid'){
+  twTank(c,-24,-16,10,22,'#4c6b32');twTank(c,-11,-20,10,26,TOXIC);
+  /* 薬液を送るホース(タンクから砲身へ回り込む)。⚠火炎放射塔と輪郭で区別が付くように */
+  c.strokeStyle='#3f4a54';c.lineWidth=4.2;
+  c.beginPath();c.moveTo(-14,-8);c.quadraticCurveTo(-2,4,8,-2);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.save();c.rotate(ang);twGun(c,4,20,9,'#5c5c66',4);
+  c.fillStyle='#4c6b32';c.beginPath();c.moveTo(22,-4.5);c.lineTo(31,-2);c.lineTo(31,5);c.lineTo(22,4.5);c.closePath();c.fill();c.stroke();
+  if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(33,2,5+Math.sin(t*20)*2,0,7);c.fill();}
+  c.restore();
+  c.fillStyle=TOXIC;c.globalAlpha=.6+Math.sin(t*4)*.3;c.beginPath();c.arc(-19,8,2.6,0,7);c.fill();c.globalAlpha=1;}
+ /* 音響砲: **大きなホーン**+共鳴リング3本。ホーンは砲身より太く、輪郭で分かる */
+ else if(tid==='sonic'){c.save();c.rotate(ang);
+  c.fillStyle='#6b5f8a';c.beginPath();c.moveTo(0,-7);c.lineTo(28,-19);c.lineTo(28,19);c.lineTo(0,7);c.closePath();c.fill();c.stroke();
+  c.save();c.beginPath();c.rect(-2,0,32,22);c.clip();
+  c.fillStyle=shade('#6b5f8a',.7);c.beginPath();c.moveTo(0,-7);c.lineTo(28,-19);c.lineTo(28,19);c.lineTo(0,7);c.closePath();c.fill();c.restore();
+  c.strokeStyle='#a58fd0';c.lineWidth=2.4;
+  for(let k=0;k<3;k++){const xx=8+k*7,hh=9+k*3.4;c.beginPath();c.moveTo(xx,-hh);c.lineTo(xx,hh);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  if(o.fire){c.strokeStyle='rgba(200,180,240,.8)';c.lineWidth=2.4;for(let k=1;k<=3;k++){c.beginPath();c.arc(28,0,k*10,-.7,.7);c.stroke();}c.strokeStyle=INK;c.lineWidth=3;}
   c.restore();}
  else if(tid==='drone'){/* 発着台 */
   c.fillStyle='#3f4a54';rr(c,-14,-12,28,22,5);c.fill();c.stroke();
@@ -2728,16 +2811,27 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
    c.beginPath();c.arc(0,4,1.8,0,7);c.fill();
    c.restore();}
   c.strokeStyle=INK;c.lineWidth=3;}
- else if(tid==='arty'){c.save();c.rotate(ang);c.fillStyle='#4c5240';rr(c,-8,-11,44,22,7);c.fill();c.stroke();
-  c.fillStyle='#3c4136';rr(c,30,-7,10,14,3);c.fill();c.stroke();
-  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(44,0,9,0,7);c.fill();}c.restore();
+ /* 重砲台: **極太の砲身+制退器**+後ろに駐鋤(地面を噛む脚)。一番ごつい砲に見せる */
+ else if(tid==='arty'){
+  c.fillStyle='#4c5240';c.beginPath();c.moveTo(-26,-4);c.lineTo(-14,-8);c.lineTo(-14,10);c.lineTo(-28,14);c.closePath();c.fill();c.stroke();
+  c.save();c.rotate(ang);twGun(c,-8,42,23,'#4c5240',7);
+  twMuz(c,36,11.5,'brake','#3c4136');
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(46,0,9,0,7);c.fill();}c.restore();
   c.fillStyle='#3c4136';c.beginPath();c.arc(0,0,9,0,7);c.fill();c.stroke();}
- else if(tid==='coil'){c.fillStyle='#2f4a5c';rr(c,-7,-32,14,32,4);c.fill();c.stroke();
-  c.fillStyle=TECH;c.beginPath();c.arc(0,-38,10,0,7);c.fill();c.stroke();
+ /* 重テスラ: 太い柱に**碍子(白い円盤)を3枚**+大きな球。テスラコイルとの違いを輪郭で出す */
+ else if(tid==='coil'){
+  c.fillStyle='#2f4a5c';rr(c,-9,-30,18,30,4);c.fill();c.stroke();
+  c.fillStyle='#cfd5da';for(let k=0;k<3;k++){c.beginPath();c.ellipse(0,-8-k*8,13-k*1.5,3.4,0,0,7);c.fill();c.stroke();}
+  c.fillStyle=TECH;c.beginPath();c.arc(0,-40,11,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(TECH,1.4);c.beginPath();c.arc(-3,-43,4,0,7);c.fill();
   c.strokeStyle=FROST;c.lineWidth=2.2;
-  for(let k=0;k<3;k++){const a2=t*9+k*2.1;c.beginPath();c.moveTo(0,-38);c.lineTo(Math.cos(a2)*14,-38+Math.sin(a2)*10);c.stroke();}
+  for(let k=0;k<3;k++){const a2=t*9+k*2.1;c.beginPath();c.moveTo(0,-40);c.lineTo(Math.cos(a2)*15,-40+Math.sin(a2)*11);c.stroke();}
   c.strokeStyle=INK;c.lineWidth=3;}
  else if(tid==='rail'){const cg=o.chg||0;
+  /* ⭐**蓄電器を基部の左右に**(回らない側)=向きが変わってもレールガンだと分かる */
+  c.fillStyle='#4a4258';rr(c,-24,-10,10,20,4);c.fill();c.stroke();rr(c,14,-10,10,20,4);c.fill();c.stroke();
+  c.fillStyle=HEROC;c.globalAlpha=.45+cg*.55;
+  c.beginPath();c.arc(-19,-4,2.6,0,7);c.fill();c.beginPath();c.arc(19,-4,2.6,0,7);c.fill();c.globalAlpha=1;
   c.save();c.rotate(ang);c.fillStyle='#5c5c66';rr(c,0,-9,50,5,2);c.fill();c.stroke();rr(c,0,4,50,5,2);c.fill();c.stroke();
   c.fillStyle='#8f6fae';rr(c,4,-4,30,8,3);c.fill();c.stroke();
   /* ⭐充填中(きゅいーん): 2本のレールの間を電気が走り、砲口に光が溜まって輪が吸い込まれる */
@@ -2752,18 +2846,33 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
    c.beginPath();c.arc(50,-2,3+cg*9,0,7);c.fill();c.globalAlpha=1;
    c.strokeStyle=INK;c.lineWidth=3;}
   c.fillStyle=HEROC;c.beginPath();c.arc(50,-2,o.fire?7:3.4,0,7);c.fill();c.restore();}
- else if(tid==='gat'){c.save();c.rotate(ang);c.fillStyle='#4a5560';
+ /* ガトリング要塞: 回る銃身束+**大きな弾倉ドラムと弾帯**(基部)=撃っていなくても弾幕の塔だと分かる */
+ else if(tid==='gat'){
+  twDrum(c,-17,4,9,'#7a2f28');twBelt(c,-12,10,5,GOLD2);
+  c.save();c.rotate(ang);c.fillStyle='#4a5560';
   const spin=t*22;
-  for(let k=0;k<4;k++){const oy=Math.sin(spin+k*1.57)*5;rr(c,2,oy-2,30,4,2);c.fill();c.stroke();}
-  c.fillStyle='#b0483a';rr(c,-6,-8,12,16,4);c.fill();c.stroke();
-  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(36,0,7,0,7);c.fill();}c.restore();}
- else if(tid==='plasma'){c.save();c.rotate(ang);c.fillStyle='#6b4a66';rr(c,-4,-10,30,20,8);c.fill();c.stroke();
-  c.fillStyle='#d966b0';c.beginPath();c.arc(28,0,8+Math.sin(t*8)*2,0,7);c.fill();c.stroke();
-  c.fillStyle='#ffd0f0';c.beginPath();c.arc(28,0,4+Math.sin(t*8),0,7);c.fill();c.restore();
+  for(let k=0;k<4;k++){const oy=Math.sin(spin+k*1.57)*5.5;
+   c.fillStyle=oy>0?'#3a424b':'#5a6570';rr(c,2,oy-2.6,32,5.2,2.4);c.fill();c.stroke();}
+  c.fillStyle='#b0483a';rr(c,-8,-9,14,18,5);c.fill();c.stroke();
+  c.fillStyle='#3f4a54';rr(c,30,-7,6,14,2);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(40,0,7,0,7);c.fill();}c.restore();}
+ /* プラズマ砲: 太い砲身の先に**でかいプラズマ球**+基部に放熱フィン */
+ else if(tid==='plasma'){
+  twFins(c,-4,3,10,'#a5588f');
+  c.save();c.rotate(ang);twGun(c,-4,30,22,'#6b4a66',8);
+  c.fillStyle='#8a5a80';for(let k=0;k<2;k++){rr(c,6+k*9,-13,5,26,2);c.fill();c.stroke();}
+  c.fillStyle='#d966b0';c.beginPath();c.arc(30,0,9+Math.sin(t*8)*2,0,7);c.fill();c.stroke();
+  c.fillStyle='#ffd0f0';c.beginPath();c.arc(30,0,4.5+Math.sin(t*8),0,7);c.fill();c.restore();
   c.strokeStyle='rgba(217,102,176,.6)';c.lineWidth=2;c.beginPath();c.arc(0,0,24+Math.sin(t*4)*3,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
- else if(tid==='fort'){c.save();c.rotate(ang);c.fillStyle=STEEL;rr(c,-8,-14,28,28,6);c.fill();c.stroke();
-  c.fillStyle='#3f4a54';for(let k=-1;k<=1;k++){rr(c,16,k*8-2.5,22,5,2);c.fill();c.stroke();}
-  if(o.fire){c.fillStyle='#ffdd66';for(let k=-1;k<=1;k++){c.beginPath();c.arc(40,k*8,5,0,7);c.fill();}}c.restore();}
+ /* 要塞砲: 3連装+**防盾**(砲の前に立つ板)+リベット。最終兵器らしい厚み */
+ else if(tid==='fort'){c.save();c.rotate(ang);
+  c.fillStyle=STEEL;rr(c,-10,-15,28,30,6);c.fill();c.stroke();
+  c.save();c.beginPath();c.rect(-12,0,32,18);c.clip();c.fillStyle=shade(STEEL,.72);rr(c,-10,-15,28,30,6);c.fill();c.restore();
+  c.fillStyle='#3f4a54';for(let k=-1;k<=1;k++){rr(c,14,k*9-3,24,6,2.4);c.fill();c.stroke();}
+  /* 防盾(砲身の付け根に立てた板)=横から見ると輪郭に段が出る */
+  c.fillStyle='#6b7580';rr(c,10,-17,6,34,2);c.fill();c.stroke();
+  c.fillStyle=PAPER3;for(let k=-1;k<=1;k++){c.beginPath();c.arc(13,k*11,1.6,0,7);c.fill();}
+  if(o.fire){c.fillStyle='#ffdd66';for(let k=-1;k<=1;k++){c.beginPath();c.arc(40,k*9,5,0,7);c.fill();}}c.restore();}
  else if(tid==='scrap3'){/* 廃品プラント(3段目): 炉が二基+運び出すベルト。⚠上級と一目で違うこと */
   c.fillStyle='#6b5530';rr(c,-22,-21,44,34,5);c.fill();c.stroke();
   /* 煙突2本(高さを変えて工場らしくする) */
@@ -2792,31 +2901,66 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
    for(let i=0;i<6;i++){c.rotate(Math.PI/3);c.fillRect(-2.2,-r-5.5,4.4,6);}
    c.beginPath();c.arc(0,0,r,0,7);c.fill();c.stroke();c.restore();};
   gear(-8,-13,6,2.2);gear(7,-11,4.4,-3.1);
- }else if(ti===3){/* 工房 */
+ }else if(tid==='scrap'){/* 廃品工房: 歯車+積み上げた廃材(輪郭に凸凹を出す) */
   c.fillStyle='#8d7040';rr(c,-15,-16,30,26,4);c.fill();c.stroke();
+  c.fillStyle='#6b5530';rr(c,-22,-6,9,16,2);c.fill();c.stroke();/* 積んだ廃材 */
+  c.fillStyle='#9c8f5c';rr(c,-24,-12,8,7,1.5);c.fill();c.stroke();
   c.save();c.rotate(t*2);c.fillStyle=PAPER2;for(let i=0;i<6;i++){c.rotate(Math.PI/3);c.fillRect(-2.5,-13,5,7);}c.beginPath();c.arc(0,0,7,0,7);c.fill();c.stroke();c.restore();
- }else if(ti===5){/* テスラ */
+ }else if(tid==='tesla'){/* テスラコイル: 柱に**巻き線**を3周+小さめの球(重テスラより細く低い) */
   c.fillStyle='#3d5666';rr(c,-5,-26,10,26,3);c.fill();c.stroke();
-  c.fillStyle=TECH;c.beginPath();c.arc(0,-30,7,0,7);c.fill();c.stroke();
-  c.strokeStyle=FROST;c.lineWidth=2;c.beginPath();c.moveTo(0,-30);c.lineTo(6*Math.sin(t*9),-38);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
- }else if(ti===7){/* スナイパー */
-  c.save();c.rotate(ang);c.fillStyle='#4a5560';rr(c,0,-4,44,8,3);c.fill();c.stroke();c.fillStyle=TECH;c.beginPath();c.arc(14,0,3,0,7);c.fill();c.restore();
-  c.fillStyle=STEEL;c.beginPath();c.arc(0,0,9,0,7);c.fill();c.stroke();
- }else if(ti===6){/* 迫撃砲 */
-  c.save();c.rotate(ang);c.fillStyle='#585e4c';rr(c,-6,-9,30,18,6);c.fill();c.stroke();c.restore();
-  c.fillStyle='#3c4136';c.beginPath();c.arc(0,0,7,0,7);c.fill();c.stroke();
- }else if(ti===4){/* 火炎 */
-  c.fillStyle='#8a4b28';c.beginPath();c.arc(-6,-4,9,0,7);c.fill();c.stroke();
-  c.save();c.rotate(ang);c.fillStyle='#5c5c66';rr(c,4,-4,20,8,3);c.fill();c.stroke();
-  if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(28,0,5+Math.sin(t*22)*2,0,7);c.fill();}
+  c.strokeStyle='#c98f4a';c.lineWidth=2.2;
+  for(let k=0;k<3;k++){c.beginPath();c.ellipse(0,-8-k*6,7.5,2.6,0,0,7);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.fillStyle=TECH;c.beginPath();c.arc(0,-31,7.5,0,7);c.fill();c.stroke();
+  c.strokeStyle=FROST;c.lineWidth=2;c.beginPath();c.moveTo(0,-31);c.lineTo(7*Math.sin(t*9),-40);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
+ }else if(tid==='sniper'){/* スナイパー塔: 長い細身+**大きなスコープ**+制退器。二脚が基部から出る */
+  c.save();c.rotate(ang);twGun(c,0,44,7,'#4a5560',3);
+  twMuz(c,42,3.5,'brake','#3a424b');
+  /* スコープ(砲身より太い筒を上に載せる=横顔で一番目立つ) */
+  c.fillStyle='#2c333a';rr(c,8,-11,20,7,3);c.fill();c.stroke();
+  c.fillStyle=TECH;c.beginPath();c.arc(27,-7.5,2.6,0,7);c.fill();
   c.restore();
- }else{/* 銃座系 */
+  c.fillStyle=STEEL;c.beginPath();c.arc(0,0,9,0,7);c.fill();c.stroke();
+ }else if(tid==='mortar'){/* 迫撃砲: **上を向いた太い筒**+底板。砲口が大きく開いている */
+  c.save();c.rotate(ang-.5);
+  c.fillStyle='#585e4c';c.beginPath();c.moveTo(-8,-11);c.lineTo(26,-15);c.lineTo(26,15);c.lineTo(-8,11);c.closePath();c.fill();c.stroke();
+  c.save();c.beginPath();c.rect(-10,0,40,20);c.clip();c.fillStyle=shade('#585e4c',.7);
+  c.beginPath();c.moveTo(-8,-11);c.lineTo(26,-15);c.lineTo(26,15);c.lineTo(-8,11);c.closePath();c.fill();c.restore();
+  c.fillStyle='#2a2f26';c.beginPath();c.ellipse(26,0,4,14,0,0,7);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,0,7,0,7);c.fill();}
+  c.restore();
+  c.fillStyle='#3c4136';rr(c,-16,4,32,8,3);c.fill();c.stroke();/* 底板 */
+ }else if(tid==='flame'){/* 火炎放射塔: **燃料タンク2本**+ラッパ口のノズル+種火 */
+  twTank(c,-25,-18,11,24,'#8a4b28');twTank(c,-12,-22,11,28,'#c96b35');
+  c.save();c.rotate(ang);twGun(c,4,18,9,'#5c5c66',4);
+  twMuz(c,20,4.5,'flare','#6b6b73');
+  c.fillStyle='#ffb347';c.globalAlpha=.55+Math.sin(t*12)*.3;c.beginPath();c.arc(29,-4,2.6,0,7);c.fill();c.globalAlpha=1;
+  if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(30,0,6+Math.sin(t*22)*2,0,7);c.fill();
+   c.fillStyle=GLOW;c.beginPath();c.arc(29,0,3+Math.sin(t*22),0,7);c.fill();}
+  c.restore();
+ }else if(tid==='shot'){/* ショットガン台: **上下二連の太い砲身**+弾帯。ライフル台と一目で違うこと */
+  twBelt(c,-24,8,4,'#b0483a');
   c.save();c.rotate(ang);
-  c.fillStyle='#4a5560';
-  if(ti===1){rr(c,2,-7,22,5,2);c.fill();c.stroke();rr(c,2,2,22,5,2);c.fill();c.stroke();}
-  else if(ti===2){rr(c,2,-5,18,10,4);c.fill();c.stroke();c.fillStyle='#cfe7dd';c.beginPath();c.arc(22,0,5,0,7);c.fill();c.stroke();}
-  else{rr(c,2,-4,26,8,3);c.fill();c.stroke();}
-  if(o.fire&&ti!==2){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,0,6,0,7);c.fill();}
+  twGun(c,2,22,9,'#4a5560',3);c.save();c.translate(0,0);c.restore();
+  c.save();c.translate(0,-9);twGun(c,2,22,9,'#5a6570',3);twMuz(c,22,4.5,'flare','#3a424b');c.restore();
+  twMuz(c,22,4.5,'flare','#3a424b');
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,0,6,0,7);c.fill();c.beginPath();c.arc(30,-9,6,0,7);c.fill();}
+  c.restore();
+ }else if(tid==='net'){/* 拘束ネット砲: 太い筒の先に**四角い網カゴ**+巻いたロープ */
+  c.fillStyle='#4f7a6c';c.beginPath();c.arc(-17,4,7,0,7);c.fill();c.stroke();
+  c.strokeStyle='#cfe7dd';c.lineWidth=1.8;c.beginPath();c.arc(-17,4,3.6,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
+  c.save();c.rotate(ang);twGun(c,2,16,13,'#5f8f7a',4);
+  c.fillStyle='#cfe7dd';rr(c,17,-9,11,18,2);c.fill();c.stroke();
+  c.strokeStyle='#4f7a6c';c.lineWidth=1.6;
+  for(let k=0;k<2;k++){c.beginPath();c.moveTo(19+k*5,-9);c.lineTo(19+k*5,9);c.stroke();}
+  c.beginPath();c.moveTo(17,0);c.lineTo(28,0);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
+  c.restore();
+ }else{/* ライフル台: 細い単砲身+照星+小さな箱弾倉(いちばん素朴な形にして基準にする) */
+  c.save();c.rotate(ang);
+  twGun(c,2,26,8,'#4a5560',3);
+  twMuz(c,26,4,'sight','#3a424b');
+  c.fillStyle='#3f4a54';rr(c,-2,4,10,9,2);c.fill();c.stroke();/* 弾倉 */
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(31,0,6,0,7);c.fill();}
   c.restore();
  }
  /* 強化ピップ表示(合計強化数を最大5個) */
@@ -2824,40 +2968,266 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  if(o.jam){c.filter='none';c.fillStyle=GOLD;c.font='900 20px '+FF;c.textAlign='center';c.fillText('⚡✖',0,-28);}
  c.restore();
 }
-/* 🦸英雄の姿。⚠11人それぞれの造形はまだ=今は「英雄の共通シルエット」で、
-   マントと武器の形と★の数がレア度と攻撃の型で変わるだけ。個別の見た目は後回し(ユーザー了承済み)。
-   描ける範囲は |x|≦54・y≧-105(bakeSetの箱)。はみ出すと無言で切られる */
+/* ============ 🦸英雄の姿(2026-07-26 第91弾で11人ぶんに分けた) ============
+   ⭐ユーザー指示「英雄11人それぞれの見た目」。それまでは**共通シルエット1つ**で、
+     マントと武器の形と★の数がレア度と型で変わるだけだった=誰を出しても同じ人に見えた。
+   ⚠英雄は普通の部隊より少し大きく映るが、それでも30px前後。
+     効くのは ①輪郭(かぶり物・背中の物・武器の長さ) ②明暗 ③色 の3つ。
+   ⚠描ける範囲は |x|≦54・y≧-105(bakeSetの箱)。はみ出すと無言で切られる。
+   ⚠**11人ぶん枝を持つこと**(共通の胴に真偽値を足す作りは、実機で色しか違わない絵になる)。 */
+const H_LOOK={
+ hCop  :{cape:0,h:'peak',  w:'pistol', k:'',      c2:'#2f3742'},/* 元警官: 制帽+拳銃+盾 */
+ hFire :{cape:0,h:'fire',  w:'hose',   k:'tank',  c2:'#4a3a30'},/* 消防士: つば広ヘル+放水銃+ボンベ */
+ hHunt :{cape:0,h:'hat',   w:'bow',    k:'quiver',c2:'#4a4034'},/* 猟師: つば帽+弓+矢筒 */
+ hMech :{cape:0,h:'hard',  w:'wrench', k:'tool',  c2:'#4a4a52'},/* 整備士: 作業帽+レンチ+工具袋 */
+ hPost :{cape:1,h:'cap',   w:'bag',    k:'',      c2:'#3a3128'},/* 配達人: 帽子+鞄(軽装・短マント) */
+ hSf   :{cape:0,h:'nvg',   w:'rifle',  k:'pack',  c2:'#2c333a'},/* 特殊部隊員: 暗視装置+長い小銃 */
+ hMed  :{cape:0,h:'nurse', w:'kit',    k:'medbag',c2:'#e8e4d8'},/* 軍医: 白帽+医療鞄 */
+ hBomb :{cape:0,h:'goggle',w:'bomb',   k:'dyna',  c2:'#5c4a30'},/* 爆破屋: ゴーグル+爆弾+ダイナマイト */
+ hSeer :{cape:1,h:'veil',  w:'staff',  k:'',      c2:'#3a2f48'},/* 預言者: 頭巾+杖(長い) */
+ hGiant:{cape:0,h:'ironm', w:'fist',   k:'',      c2:'#6b6b73'},/* 鋼鉄の巨人: 全身鉄+巨大な拳 */
+ hNox  :{cape:1,h:'skull', w:'scythe', k:'',      c2:'#241a22'} /* 終焉の騎士: 髑髏兜+大鎌 */
+};
 function drawHeroBody(c,U,walk,o){
- const col=U.c,rk=U.hro||1,ty=U.type;
+ const col=U.c,rk=U.hro||1,L=H_LOOK[U.id]||{cape:1,h:'peak',w:'rifle',k:'',c2:'#2f3742'};
+ const big=L.h==='ironm';/* 鋼鉄の巨人だけ体格が違う */
  if(rk>=4){c.shadowColor=col;c.shadowBlur=10;}
- /* マント(レア度が上がるほど大きい) */
- c.fillStyle=col;c.beginPath();
- c.moveTo(-5,-47);c.lineTo(-15-rk*1.6,-22+walk*2.5);c.lineTo(-9,-1);c.lineTo(7,-5);c.lineTo(8,-45);
- c.closePath();c.fill();c.stroke();
+ if(big)c.scale(1.24,1.24);
+ /* マント(持っている者だけ。レア度が上がるほど大きい) */
+ if(L.cape){c.fillStyle=col;c.beginPath();
+  c.moveTo(-5,-47);c.lineTo(-15-rk*1.6,-22+walk*2.5);c.lineTo(-9,-1);c.lineTo(7,-5);c.lineTo(8,-45);
+  c.closePath();c.fill();c.stroke();}
+ /* 背中の物(輪郭に出る=誰なのかが背中でも分かる) */
+ if(L.k==='tank'){c.fillStyle='#b0483a';rr(c,-19,-42,10,22,4);c.fill();c.stroke();}
+ else if(L.k==='quiver'){c.save();c.translate(-14,-32);c.rotate(.42);c.fillStyle='#6b5530';rr(c,-4,-13,9,26,3);c.fill();c.stroke();
+  c.fillStyle=PAPER2;for(let i=0;i<3;i++)c.fillRect(-3+i*3,-19,1.8,7);c.restore();}
+ else if(L.k==='pack'){c.fillStyle='#3f4a54';rr(c,-19,-40,10,20,3);c.fill();c.stroke();}
+ else if(L.k==='tool'){c.fillStyle=GOLD2;rr(c,-19,-34,11,14,2);c.fill();c.stroke();}
+ else if(L.k==='medbag'){c.fillStyle=PAPER;rr(c,-19,-36,11,15,3);c.fill();c.stroke();
+  c.fillStyle=RUST;c.fillRect(-15,-31,4,1.8);c.fillRect(-13.9,-32.4,1.8,4.6);}
+ else if(L.k==='dyna'){for(let i=0;i<3;i++){c.fillStyle=RUST;rr(c,-20+i*4,-38+i*1.5,4,14,1.6);c.fill();c.stroke();}}
  /* 脚 */
  c.fillStyle='#3a3128';
  c.fillRect(-7+walk*3.5,-16,6,16);c.strokeRect(-7+walk*3.5,-16,6,16);
  c.fillRect(2-walk*3.5,-16,6,16);c.strokeRect(2-walk*3.5,-16,6,16);
- /* 胴+肩当て */
- c.fillStyle='#2f3742';rr(c,-10,-41,20,26,5);c.fill();c.stroke();
- c.fillStyle=col;rr(c,-11,-41,22,7,3);c.fill();c.stroke();
- /* 頭+バイザー */
- c.fillStyle='#d9b28a';c.beginPath();c.arc(0,-48,7.5,0,7);c.fill();c.stroke();
- c.fillStyle=col;rr(c,-8,-53,16,6,2);c.fill();c.stroke();
- /* 武器(攻撃の型で持ち物が変わる) */
+ /* 胴(職ごとに色と形が違う)+肩当て */
+ c.fillStyle=L.c2;
+ if(big){rr(c,-13,-44,26,30,7);c.fill();c.stroke();c.fillStyle=col;rr(c,-15,-44,30,9,3);c.fill();c.stroke();}
+ else{rr(c,-10,-41,20,26,5);c.fill();c.stroke();c.fillStyle=col;rr(c,-11,-41,22,7,3);c.fill();c.stroke();}
+ /* 頭 */
+ const hy=big?-52:-48;
+ c.fillStyle='#d9b28a';c.beginPath();c.arc(0,hy,7.5,0,7);c.fill();c.stroke();
+ if(L.h==='peak'){c.fillStyle=L.c2;c.beginPath();c.arc(0,hy-2,8,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle=L.c2;rr(c,4,hy-3,14,3.4,1.5);c.fill();c.stroke();c.fillStyle=GOLD;c.fillRect(-4,hy-8,9,2.4);}
+ else if(L.h==='fire'){c.fillStyle=col;c.beginPath();c.arc(0,hy-2,8.4,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle=col;rr(c,-13,hy-3,26,4,2);c.fill();c.stroke();/* 広いつば */
+  c.fillStyle=GOLD;c.beginPath();c.moveTo(-3,hy-9);c.lineTo(0,hy-15);c.lineTo(3,hy-9);c.closePath();c.fill();c.stroke();}
+ else if(L.h==='hat'){c.fillStyle='#6b5530';c.beginPath();c.arc(0,hy-3,7.6,Math.PI,0);c.fill();c.stroke();
+  c.beginPath();c.ellipse(0,hy-3,14,3.4,0,0,7);c.fill();c.stroke();
+  c.fillStyle=LIFE;c.fillRect(-7,hy-6,14,2.2);}/* つば広帽+羽根の帯 */
+ else if(L.h==='hard'){c.fillStyle=GOLD;c.beginPath();c.arc(0,hy-2,8.4,Math.PI,0);c.fill();c.stroke();
+  rr(c,-8,hy-3,20,3.6,1.6);c.fill();c.stroke();}
+ else if(L.h==='cap'){c.fillStyle=col;c.beginPath();c.arc(0,hy-2,8,Math.PI,0);c.fill();c.stroke();
+  rr(c,6,hy-3,12,3.4,1.5);c.fill();c.stroke();}
+ else if(L.h==='nvg'){c.fillStyle=L.c2;c.beginPath();c.arc(0,hy-2,8.4,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle='#4a5560';for(const s of[-1,1]){rr(c,s*4-2.4,hy-9,4.8,7,1.6);c.fill();c.stroke();}
+  c.fillStyle=TOXIC;c.fillRect(-3.4,hy-4,7,2);}/* 暗視装置(2つの筒) */
+ else if(L.h==='nurse'){c.fillStyle=PAPER;c.beginPath();c.arc(0,hy-2,8,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle=RUST;c.fillRect(-2,hy-8,4.4,1.8);c.fillRect(-.7,hy-9.4,1.8,4.6);}
+ else if(L.h==='goggle'){c.fillStyle='#5c4a30';c.beginPath();c.arc(0,hy-2,8,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle='#3f4a54';rr(c,-8,hy-4,17,6,2);c.fill();c.stroke();c.fillStyle=FROST;c.fillRect(1,hy-3,5,3);}
+ else if(L.h==='veil'){/* 頭巾(顔が影・裾が長い) */
+  c.fillStyle=L.c2;c.beginPath();c.arc(0,hy-2,10,Math.PI,0);c.lineTo(11,hy+9);c.lineTo(-11,hy+9);c.closePath();c.fill();c.stroke();
+  c.fillStyle=col;c.beginPath();c.arc(1,hy-1,3.4,0,7);c.fill();}
+ else if(L.h==='ironm'){/* 全面の鉄仮面 */
+  c.fillStyle='#8a8f96';rr(c,-9,hy-10,19,20,4);c.fill();c.stroke();
+  c.fillStyle=INK;c.fillRect(-6,hy-2,16,3.6);
+  c.fillStyle=GOLD;c.fillRect(-9,hy-10,19,2.6);}
+ else if(L.h==='skull'){/* 髑髏兜+角 */
+  c.fillStyle=PAPER2;c.beginPath();c.arc(0,hy-1,8.6,0,7);c.fill();c.stroke();
+  c.fillStyle=INK;c.beginPath();c.arc(-3,hy-1,2,0,7);c.fill();c.beginPath();c.arc(4,hy-1,2,0,7);c.fill();
+  c.fillRect(-2.4,hy+4,5,3);
+  c.fillStyle=col;for(const s of[-1,1]){c.beginPath();c.moveTo(s*6,hy-6);c.lineTo(s*15,hy-17);c.lineTo(s*11,hy-4);c.closePath();c.fill();c.stroke();}}
+ else{c.fillStyle=col;rr(c,-8,hy-5,16,6,2);c.fill();c.stroke();}
+ /* 武器(11人ぶん別々。⚠腕の先の小さな棒は消えるので、輪郭が変わる大きさで描く) */
  c.fillStyle='#3a3128';
- if(ty==='pierce'){rr(c,3,-38,32,3.5,1.5);c.fill();c.stroke();c.fillStyle=col;rr(c,10,-41,7,3,1);c.fill();}
- else if(ty==='bullet'){rr(c,3,-37,25,4.5,1.5);c.fill();c.stroke();}
- else if(ty==='fire'){rr(c,3,-35,19,6,2.5);c.fill();c.stroke();c.fillStyle='#585e4c';rr(c,-17,-40,8,16,3);c.fill();c.stroke();}
- else if(ty==='blast'){rr(c,1,-40,24,8,3);c.fill();c.stroke();c.fillStyle=col;c.beginPath();c.arc(25,-36,3.5,0,7);c.fill();c.stroke();}
- else if(ty==='heal'){rr(c,6,-30,12,10,2);c.fill();c.stroke();c.fillStyle=LIFE;c.fillRect(10,-27,4,4);}
- else{/* 近接=大剣 */
-  c.fillStyle=DIM;c.beginPath();c.moveTo(6,-34);c.lineTo(11,-36);c.lineTo(13,-64);c.lineTo(8,-66);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#3a3128';rr(c,4,-36,11,4,1.5);c.fill();c.stroke();}
+ if(L.w==='pistol'){rr(c,4,-36,14,5,2);c.fill();c.stroke();
+  c.fillStyle='#4a5560';rr(c,-16,-40,9,20,2);c.fill();c.stroke();}/* 拳銃+盾 */
+ else if(L.w==='hose'){c.fillStyle='#b0483a';rr(c,3,-36,22,7,3);c.fill();c.stroke();
+  /* ⚠ラッパ口は**自分で描く**。twMuz は y=0 に描くので、ここで呼ぶと足元に落ちる(撮って気づいた) */
+  c.fillStyle='#8a8f96';c.beginPath();c.moveTo(24,-36.5);c.lineTo(33,-40);c.lineTo(33,-25);c.lineTo(24,-28.5);c.closePath();c.fill();c.stroke();}
+ else if(L.w==='bow'){/* 弓。⚠太い円弧だけだと「輪」に見える=弦をはっきり描いて弓に見せる */
+  c.strokeStyle='#6b5530';c.lineWidth=3.6;
+  c.beginPath();c.arc(6,-36,16,-1.15,1.15);c.stroke();
+  c.strokeStyle=PAPER3;c.lineWidth=1.8;
+  c.beginPath();c.moveTo(12.5,-50.6);c.lineTo(4,-36);c.lineTo(12.5,-21.4);c.stroke();/* 引き絞った弦 */
+  c.strokeStyle='#3a3128';c.lineWidth=2.6;c.beginPath();c.moveTo(0,-36);c.lineTo(26,-36);c.stroke();/* 矢 */
+  c.strokeStyle=INK;c.lineWidth=2.4;}
+ else if(L.w==='wrench'){c.fillStyle='#a8adb5';c.save();c.translate(8,-34);c.rotate(-.5);
+  rr(c,-2,-16,5.5,24,2);c.fill();c.stroke();c.beginPath();c.arc(.6,-17,5,0,7);c.fill();c.stroke();
+  c.fillStyle=L.c2;c.beginPath();c.arc(.6,-17,2.2,0,7);c.fill();c.restore();}
+ else if(L.w==='bag'){c.fillStyle=GOLD2;rr(c,6,-34,15,13,3);c.fill();c.stroke();
+  c.fillStyle='#8a6a45';c.fillRect(9,-34,3,13);}
+ else if(L.w==='rifle'){rr(c,3,-38,34,5,2);c.fill();c.stroke();
+  c.fillStyle='#2c333a';rr(c,12,-42,12,4,1.5);c.fill();c.stroke();}
+ else if(L.w==='kit'){c.fillStyle=PAPER;rr(c,6,-33,14,11,2);c.fill();c.stroke();
+  c.fillStyle=RUST;c.fillRect(11,-29,4.4,1.8);c.fillRect(12.3,-30.4,1.8,4.6);}
+ else if(L.w==='bomb'){c.fillStyle='#3a3128';c.beginPath();c.arc(15,-33,8,0,7);c.fill();c.stroke();
+  c.strokeStyle=GOLD2;c.lineWidth=2;c.beginPath();c.moveTo(15,-41);c.quadraticCurveTo(21,-47,17,-51);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.4;
+  c.fillStyle=DANGER;c.beginPath();c.arc(17,-52,2.4,0,7);c.fill();}
+ else if(L.w==='staff'){c.fillStyle='#5c4a30';rr(c,6,-72,5,52,2);c.fill();c.stroke();
+  c.fillStyle=col;c.beginPath();c.arc(8.5,-74,7,0,7);c.fill();c.stroke();
+  c.fillStyle=GLOW;c.beginPath();c.arc(8.5,-74,3,0,7);c.fill();}
+ else if(L.w==='fist'){c.fillStyle='#8a8f96';c.beginPath();c.arc(20,-32,11,0,7);c.fill();c.stroke();
+  c.fillStyle=GOLD;for(let i=0;i<3;i++){c.beginPath();c.arc(24,-38+i*5,2,0,7);c.fill();}}
+ else if(L.w==='scythe'){/* 大鎌: 柄+大きく反った刃 */
+  c.fillStyle='#3a3128';c.save();c.translate(8,-38);c.rotate(-.18);rr(c,-3,-30,6,58,2);c.fill();c.stroke();c.restore();
+  c.fillStyle=DIM;c.beginPath();c.moveTo(6,-70);c.quadraticCurveTo(30,-64,26,-44);
+  c.quadraticCurveTo(24,-58,4,-63);c.closePath();c.fill();c.stroke();}
+ else{c.fillStyle=DIM;c.beginPath();c.moveTo(6,-34);c.lineTo(11,-36);c.lineTo(13,-64);c.lineTo(8,-66);c.closePath();c.fill();c.stroke();}
  if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,-35,4+o.fireT*20,0,7);c.fill();}
  /* レア度の★ */
  c.shadowBlur=0;c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px '+FF;c.textAlign='center';
- const st='★'.repeat(Math.min(5,rk));c.strokeText(st,1,-61);c.fillText(st,1,-61);
+ const st='★'.repeat(Math.min(5,rk));c.strokeText(st,1,big?-70:-61);c.fillText(st,1,big?-70:-61);
+}
+/* ============ 兵科の見た目(2026-07-26 第91弾) ============
+   ⭐ユーザー指示「兵科32種の見た目」。それまでは**全員が同じ胴+同じ頭**で、違うのは色と
+     手に持った小さな武器だけ=実機(25px)では**色しか違わない絵**だった(ゾンビで踏んだのと同じ失敗)。
+   ⚠25pxで効くのは ①輪郭 ②明暗 ③色 の3つ。だから1種ずつに
+     **体型(b) / かぶり物(h) / 背負い物(k)** を与えて、頭と背中の輪郭で見分けられるようにする。
+   ⚠**武器だけを変えるのは効かない**(腕の先の小さな棒は潰れて消える)。
+   ⚠派生キャラ(vt)は上から兜と肩当てを重ねるので、ここは素の形だけでよい。 */
+const U_LOOK={
+ bat:{b:'slim',h:'cap',k:''},           hnd:{b:'slim',h:'',k:''},
+ big:{b:'wide',h:'bald',k:''},          spr:{b:'slim',h:'beret',k:'pack'},
+ chain:{b:'norm',h:'mask',k:'coil'},    gun:{b:'norm',h:'helm',k:'pack'},
+ axe:{b:'wide',h:'horn',k:''},          shd:{b:'norm',h:'bowl',k:''},
+ smg:{b:'slim',h:'phone',k:'mag'},      mol:{b:'slim',h:'band',k:'bottle'},
+ pike:{b:'tall',h:'crest',k:''},        grn:{b:'norm',h:'helm',k:'nade'},
+ frz:{b:'norm',h:'visor',k:'tank'},     flm:{b:'norm',h:'gas',k:'tank2'},
+ saw:{b:'wide',h:'goggle',k:''},        engi:{b:'norm',h:'hard',k:'tool'},
+ med:{b:'slim',h:'nurse',k:'medbag'},   gld:{b:'wide',h:'great',k:''},
+ snp:{b:'crouch',h:'ghillie',k:''},     elec:{b:'norm',h:'anth',k:'batt'},
+ mortarU:{b:'norm',h:'earmuff',k:'tube'},mgn:{b:'wide',h:'weld',k:'mag'},
+ ninja:{b:'slim',h:'hood',k:'sword'},   rkt:{b:'norm',h:'helm',k:'rock'},
+ gren2:{b:'wide',h:'face',k:'nade'},    rail2:{b:'norm',h:'visor',k:'batt'},
+ frost2:{b:'norm',h:'ice',k:'tank2'},   chief:{b:'norm',h:'peak',k:'cloak'},
+ tnk:{b:'norm',h:'',k:''},              mech:{b:'norm',h:'',k:''},
+ titan:{b:'wide',h:'slit',k:''},        valk:{b:'norm',h:'wingh',k:''}
+};
+const uLook=id=>U_LOOK[id]||{b:'norm',h:'helm',k:''};
+/* 胴。⚠**上を明るく下を暗く1段だけ**(twBase/zFillと同じ理屈)=平たい図形が塊に見える */
+function uBody(c,b,col){
+ const P=b==='slim'?[-8,-33,16,23,7]:b==='wide'?[-13,-35,26,25,8]
+  :b==='tall'?[-9,-38,18,28,6]:b==='crouch'?[-11,-31,22,21,7]:[-10,-34,20,24,7];
+ const path=()=>{c.beginPath();rr(c,P[0],P[1],P[2],P[3],P[4]);};
+ c.fillStyle=col;path();c.fill();
+ c.save();c.beginPath();c.rect(-30,P[1]+P[3]*.45,60,40);c.clip();
+ c.fillStyle=shade(col,.76);path();c.fill();c.restore();
+ path();c.stroke();
+ return P;
+}
+/* かぶり物。⚠**頭は画面の一番上=25pxでも輪郭が残る唯一の場所**。ここを1種ずつ変える */
+function uHead(c,k,U,hy){
+ const y=hy==null?-42:hy,col=U.c;
+ const skin=()=>{c.fillStyle='#e8c39a';c.beginPath();c.arc(2,y,8,0,7);c.fill();c.stroke();};
+ const cap=(cc,r)=>{c.fillStyle=cc;c.beginPath();c.arc(2,y-2,r||8,Math.PI,0);c.fill();c.stroke();};
+ skin();
+ if(k==='bald'){c.fillStyle=shade('#e8c39a',.9);c.beginPath();c.arc(2,y-2,8,Math.PI,0);c.fill();c.stroke();}
+ else if(k==='cap'){cap(GOLD2);c.fillStyle=GOLD2;rr(c,8,-3+y,12,3.4,1.5);c.fill();c.stroke();}/* 野球帽のつば */
+ else if(k==='beret'){c.fillStyle='#6b7550';c.beginPath();c.ellipse(1,y-5,10,5,-.2,0,7);c.fill();c.stroke();}
+ else if(k==='helm'){cap('#5c6648',9);c.fillStyle='#5c6648';rr(c,-7,y-2,18,3.4,1.6);c.fill();c.stroke();}
+ else if(k==='hard'){cap(GOLD,8.6);c.fillStyle=GOLD;rr(c,-6,y-3,19,3.6,1.6);c.fill();c.stroke();}/* 工事用ヘルメット */
+ else if(k==='horn'){cap('#8a6a45');c.fillStyle=PAPER3;
+  /* ⚠角は**横に太く**張り出させる。細く上へ伸ばすと兎の耳に見えた(実機で撮って直した) */
+  for(const s of[-1,1]){c.beginPath();c.moveTo(2+s*5,y-8);
+   c.lineTo(2+s*17,y-9);c.lineTo(2+s*19,y-3);c.lineTo(2+s*13,y-4);c.lineTo(2+s*5,y-1);
+   c.closePath();c.fill();c.stroke();}}
+ else if(k==='bowl'){/* 丸い鉄帽(浅い椀)。ふちが横に広い */
+  cap('#4a5560',8.4);c.fillStyle='#4a5560';rr(c,-9,y-3,22,4,2);c.fill();c.stroke();}
+ else if(k==='earmuff'){cap('#5c6648',8.4);c.fillStyle='#3f4a54';
+  for(const s of[-1,1]){c.beginPath();c.arc(2+s*8,y-1,4.2,0,7);c.fill();c.stroke();}}
+ else if(k==='hood'){/* 布のフード(後ろに垂れる) */
+  c.fillStyle='#3a3f48';c.beginPath();c.arc(2,y-2,9.6,Math.PI,0);
+  c.lineTo(11.6,y+3);c.lineTo(-9,y+4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3a3f48';c.beginPath();c.moveTo(-7,y-4);c.lineTo(-16,y+8);c.lineTo(-5,y+2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=PAPER;c.fillRect(3,y-2,6,2.6);return;}
+ else if(k==='anth'){cap('#3f4a54');c.strokeStyle=TECH;c.lineWidth=2.2;
+  c.beginPath();c.moveTo(4,y-8);c.lineTo(9,y-19);c.stroke();c.strokeStyle=INK;c.lineWidth=2.4;
+  c.fillStyle=TECH;c.beginPath();c.arc(9,y-20,2.6,0,7);c.fill();c.stroke();}
+ else if(k==='slit'){/* 分厚い面頬(横一文字の覗き穴+頭頂の稜) */
+  c.fillStyle='#6b7580';rr(c,-8,y-11,20,20,4);c.fill();c.stroke();
+  c.fillStyle=GOLD;c.beginPath();c.moveTo(-2,y-11);c.lineTo(2,y-18);c.lineTo(6,y-11);c.closePath();c.fill();c.stroke();
+  c.fillStyle=INK;c.fillRect(-5,y-3,16,3.4);return;}
+ else if(k==='crest'){cap('#6f8a8f',9);c.fillStyle=RUST;/* 前立て(縦の飾り) */
+  c.beginPath();c.moveTo(-1,y-8);c.lineTo(2,y-19);c.lineTo(5,y-8);c.closePath();c.fill();c.stroke();}
+ else if(k==='great'){/* 全面兜(目の隙間だけ) */
+  c.fillStyle='#8a8f96';rr(c,-7,y-10,18,19,5);c.fill();c.stroke();
+  c.fillStyle=INK;c.fillRect(-4,y-3,15,3);return;}
+ else if(k==='face'){cap('#5c6648',9);c.fillStyle='#3f4a54';rr(c,-4,y-2,14,7,2);c.fill();c.stroke();}/* 面頬 */
+ else if(k==='gas'){cap('#4c5648');c.fillStyle='#3f4a54';c.beginPath();c.arc(4,y+2,6.4,0,7);c.fill();c.stroke();
+  c.fillStyle='#6b7580';c.beginPath();c.arc(7,y+4,3.4,0,7);c.fill();c.stroke();return;}/* 濾過缶 */
+ else if(k==='visor'){cap('#3f4a54');c.fillStyle=TECH;rr(c,-5,y-2,15,5,2);c.fill();c.stroke();return;}
+ else if(k==='goggle'){cap('#8a6a45');c.fillStyle='#3f4a54';rr(c,-5,y-3,15,6,2);c.fill();c.stroke();
+  c.fillStyle=FROST;c.fillRect(4,y-2,5,3);return;}
+ else if(k==='weld'){/* 溶接面(四角い面) */
+  c.fillStyle='#4a5560';rr(c,-6,y-10,17,17,3);c.fill();c.stroke();
+  c.fillStyle=TECH;c.fillRect(-3,y-3,12,3.4);return;}
+ else if(k==='band'){c.fillStyle=RUST;rr(c,-6,y-6,17,5,2);c.fill();c.stroke();
+  c.fillStyle=RUST;c.beginPath();c.moveTo(-6,y-4);c.lineTo(-13,y+2);c.lineTo(-6,y);c.closePath();c.fill();c.stroke();}/* 鉢巻の垂れ */
+ else if(k==='mask'){c.fillStyle='#3a3f48';c.beginPath();c.arc(2,y-1,8.4,0,7);c.fill();c.stroke();
+  c.fillStyle=PAPER;c.fillRect(2,y-3,7,3);return;}/* 覆面(目だけ白) */
+ else if(k==='phone'){cap('#7a8a5c');c.fillStyle='#3f4a54';c.beginPath();c.arc(-5,y,3.6,0,7);c.fill();c.stroke();
+  c.strokeStyle='#3f4a54';c.lineWidth=2;c.beginPath();c.arc(2,y-6,7.5,3.34,6.08);c.stroke();c.strokeStyle=INK;c.lineWidth=2.4;}/* ヘッドセット */
+ else if(k==='nurse'){c.fillStyle=PAPER;cap(PAPER);c.fillStyle=RUST;c.fillRect(0,y-8,4,1.8);c.fillRect(1.2,y-9.2,1.6,4.2);}
+ else if(k==='ghillie'){/* 布をかぶった狙撃手=輪郭がギザギザ */
+  c.fillStyle='#5c6648';c.beginPath();c.moveTo(-9,y+4);
+  for(let i=0;i<6;i++)c.lineTo(-9+i*3.6,y-7-((i%2)?2:6));
+  c.lineTo(12,y+4);c.closePath();c.fill();c.stroke();return;}
+ else if(k==='ice'){cap(FROST);c.fillStyle=TECH;/* 氷の冠 */
+  for(const s of[-1,0,1]){c.beginPath();c.moveTo(2+s*6-2,y-7);c.lineTo(2+s*6,y-15);c.lineTo(2+s*6+2,y-7);c.closePath();c.fill();c.stroke();}}
+ else if(k==='peak'){cap('#4a5560');c.fillStyle='#4a5560';rr(c,7,y-3,13,3.4,1.5);c.fill();c.stroke();
+  c.fillStyle=GOLD;c.fillRect(-3,y-8,10,2.4);}/* 制帽+金の線 */
+ else if(k==='wingh'){cap(GOLD2,8.6);c.fillStyle=PAPER2;/* 翼の付いた兜 */
+  for(const s of[-1,1]){c.beginPath();c.moveTo(2+s*7,y-6);c.lineTo(2+s*16,y-13);c.lineTo(2+s*7,y-11);c.closePath();c.fill();c.stroke();}}
+ else cap(RUST);
+ c.fillStyle=INK;c.beginPath();c.arc(6,y,1.3,0,7);c.fill();
+}
+/* 背負い物。⚠胴より**奥**に描く(手前に描くと胴に貼り付いた模様に見える) */
+function uBack(c,k,U,walk){
+ const col=U.c;
+ if(k==='pack'){c.fillStyle='#5c5346';rr(c,-19,-32,10,18,3);c.fill();c.stroke();
+  c.fillStyle=GOLD2;c.fillRect(-18,-27,8,2.6);}
+ else if(k==='tank'){c.fillStyle='#5f8fa3';rr(c,-18,-36,9,21,4);c.fill();c.stroke();}
+ else if(k==='tank2'){c.fillStyle=shade(col,.8);rr(c,-20,-37,9,23,4);c.fill();c.stroke();
+  c.fillStyle=shade(col,1.1);rr(c,-12,-34,8,19,4);c.fill();c.stroke();}
+ else if(k==='mag'){c.fillStyle='#3f4a54';c.beginPath();c.arc(-16,-24,7.5,0,7);c.fill();c.stroke();
+  c.fillStyle='#6b7580';c.beginPath();c.arc(-16,-24,3,0,7);c.fill();}
+ else if(k==='bottle'){for(let i=0;i<3;i++){c.fillStyle=i===1?'#6f9c8f':'#8a6a45';
+  rr(c,-21+i*4.5,-33+i*1.5,4.2,12,1.6);c.fill();c.stroke();}}
+ else if(k==='nade'){for(let i=0;i<3;i++){c.fillStyle='#4c5648';
+  c.beginPath();c.arc(-17+i*1.5,-32+i*7,3.8,0,7);c.fill();c.stroke();}}
+ else if(k==='rock'){for(let i=0;i<2;i++){c.fillStyle='#585e4c';rr(c,-21+i*6,-36,5,20,2.5);c.fill();c.stroke();
+  c.fillStyle=RUST;c.beginPath();c.arc(-18.5+i*6,-36,2.6,0,7);c.fill();}}
+ else if(k==='tube'){c.save();c.translate(-15,-24);c.rotate(-.4);c.fillStyle='#585e4c';
+  rr(c,-4,-14,8,28,4);c.fill();c.stroke();c.restore();}
+ else if(k==='batt'){c.fillStyle='#3f4a54';rr(c,-19,-33,11,19,3);c.fill();c.stroke();
+  c.fillStyle=TECH;c.fillRect(-17,-29,7,3);c.fillRect(-17,-23,7,3);}
+ else if(k==='coil'){/* ⚠細い輪を重ねると石鹸の泡に見えた。**太い縄の輪**にする(実機で撮って直した) */
+  c.strokeStyle='#8a6a45';c.lineWidth=5;
+  c.beginPath();c.arc(-15,-26,7,0,7);c.stroke();
+  c.strokeStyle='#5c4a30';c.lineWidth=1.6;
+  c.beginPath();c.arc(-15,-26,7,0,7);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.4;}
+ else if(k==='sword'){c.fillStyle='#3f4a54';c.save();c.translate(-13,-30);c.rotate(-.5);
+  rr(c,-3,-16,6,30,2);c.fill();c.stroke();c.restore();}
+ else if(k==='tool'){c.fillStyle=GOLD2;rr(c,-19,-28,11,13,2);c.fill();c.stroke();
+  c.fillStyle='#5c5346';c.fillRect(-17,-25,7,2.4);}
+ else if(k==='medbag'){c.fillStyle=PAPER;rr(c,-19,-29,11,14,3);c.fill();c.stroke();
+  c.fillStyle=RUST;c.fillRect(-15,-25,4,1.6);c.fillRect(-13.8,-26.2,1.6,4);}
+ else if(k==='cloak'){c.fillStyle=shade(col,.85);c.beginPath();c.moveTo(-8,-36);
+  c.lineTo(-20,-6+walk*2);c.lineTo(-2,-11);c.closePath();c.fill();c.stroke();}
 }
 function drawUnit(c,ui,x,y,dr,t,ph,o){
  o=o||{};const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
@@ -2868,7 +3238,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  c.scale(dr*tsc,tsc);
  if(o.fireT>0)c.translate(-2,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
- if(tier===4){c.shadowColor=AMBER;c.shadowBlur=10;}
+ /* ⭐英雄の光は**レア度の色**にする(第91弾)。全員が同じ琥珀色だと、せっかく11人ぶん
+    描き分けた色が光に飲まれて全部金色に見えた(並べて撮って気づいた) */
+ if(tier===4){c.shadowColor=U.hro?(RARE[Math.min(4,U.hro-1)]||AMBER):AMBER;c.shadowBlur=10;}
  c.lineWidth=2.4;c.strokeStyle=INK;
  if(U.hro){drawHeroBody(c,U,walk,o);c.restore();return;}/* 🦸英雄は専用の姿 */
  if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
@@ -2927,11 +3299,11 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  c.fillStyle='#4a4034';
  c.fillRect(-8+walk*3.5,-10,5,10);c.strokeRect(-8+walk*3.5,-10,5,10);
  c.fillRect(3-walk*3.5,-10,5,10);c.strokeRect(3-walk*3.5,-10,5,10);
- /* 背負い物(胴より奥) */
+ /* 背負い物(胴より奥)。⭐兵科ごとに違う物を背負わせて**背中の輪郭**で見分ける(第91弾) */
  if(vt>=3){/* 派生3段目=マント */
   c.fillStyle=U.c;c.beginPath();c.moveTo(-8,-36);c.lineTo(-22,-4+walk*2);c.lineTo(-2,-10);c.closePath();c.fill();c.stroke();}
- if(id==='frz'){c.fillStyle='#5f8fa3';rr(c,-16,-36,8,20,4);c.fill();c.stroke();}
- if(id==='rkt'){}
+ const LK=uLook(id);
+ uBack(c,LK.k,U,walk);
  /* 胴体 */
  if(id==='big'){/* 巨漢: 分厚い胸板と、突き出した太い腕+拳(武器は持たない) */
   c.fillStyle=shade(U.c,.82);
@@ -2942,15 +3314,11 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.beginPath();c.arc(-20,-16+walk*2.5,4.8,0,7);c.fill();c.stroke();
   c.beginPath();c.arc(21,-16-walk*2.5,4.8,0,7);c.fill();c.stroke();
   c.fillStyle=shade(U.c,1.15);c.fillRect(-6,-33,3,14);c.fillRect(3,-33,3,14);/* 胸の筋 */
- }else{rr(c,-10,-34,20,24,7);c.fillStyle=U.c;c.fill();c.stroke();}
+ }else{uBody(c,LK.b,U.c);}/* ⭐体型も兵科ごと(細身/普通/ずんぐり/のっぽ/前傾) */
  if(id==='med'){c.fillStyle=RUST;c.fillRect(-4,-28,8,3);c.fillRect(-1.5,-30.5,3,8);}
  if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,-10,-20,20,10,4);c.fill();c.stroke();}
- /* 頭 */
- c.beginPath();c.arc(2,-42,8,0,7);c.fillStyle='#e8c39a';c.fill();c.stroke();
- c.fillStyle=id==='shd'?'#3f4a54':id==='snp'?'#3a3128':id==='med'?'#e8e4d8':id==='frz'?'#5f8fa3':id==='mgn'?'#4c5648':id==='grn'?'#5c6648':RUST;
- c.beginPath();c.arc(2,-44,8,Math.PI,0);c.fill();c.stroke();
- if(id==='med'){c.fillStyle=RUST;c.fillRect(0,-49,4,1.6);c.fillRect(1.2,-50.2,1.6,4);}
- c.fillStyle=INK;c.beginPath();c.arc(6,-42,1.2,0,7);c.fill();
+ /* 頭+かぶり物(⭐兵科ごとに形を変える。25pxで見分けが付く数少ない場所) */
+ uHead(c,LK.h,U,LK.b==='tall'?-46:LK.b==='crouch'?-39:LK.b==='wide'?-43:-42);
  /* 武器 */
  c.lineWidth=3.4;
  if(id==='bat'){c.save();c.translate(9,-28);c.rotate(.5+walk*.35);c.strokeStyle='#8a6a45';c.beginPath();c.moveTo(0,0);c.lineTo(16,-8);c.stroke();c.restore();}
@@ -5972,8 +6340,10 @@ function renderLab(){
  $('lab-pts2').innerHTML=IC('🧬 ')+fmt(META.pts);
  /* 項目は {ic:絵柄, t:名前, tag:小さいラベル, d:説明, p:値段} の形で作る=カードに流し込むため */
  const items=[];
- if(META.nt<T_PLAY-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',ic:'🗼',t:T.n,tag:'新型タワー '+(META.nt+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:LAB_NT(META.nt)});}
- if(META.nu<U_N-BASE_U){const U=UBASE[BASE_U+META.nu];/* ⚠UNITSは派生に差し替わるのでUBASE */items.push({cat:'new',k:'nu',ic:'🤖',t:U.n,tag:'新型兵科 '+(META.nu+1)+'/'+(U_N-BASE_U),d:U.dsc,p:LAB_NU(META.nu)});}
+ /* ⭐カードには**実物の姿**を出す(2026-07-26 第91弾ユーザー指示「全容が見える大きさに」)。
+    pv={k:'t'|'u', i:添字, def:差し替える中身} を持たせると、下で canvas に描く */
+ if(META.nt<T_PLAY-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',ic:'🗼',pv:{k:'t',i:BASE_T+META.nt},t:T.n,tag:'新型タワー '+(META.nt+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:LAB_NT(META.nt)});}
+ if(META.nu<U_N-BASE_U){const U=UBASE[BASE_U+META.nu];/* ⚠UNITSは派生に差し替わるのでUBASE */items.push({cat:'new',k:'nu',ic:'🤖',pv:{k:'u',i:BASE_U+META.nu,def:U},t:U.n,tag:'新型兵科 '+(META.nu+1)+'/'+(U_N-BASE_U),d:U.dsc,p:LAB_NU(META.nu)});}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -5983,7 +6353,8 @@ function renderLab(){
    const adv=FVBASE.indexOf(b)>=0;
    if(adv&&!uvBaseOK(b))continue;/* 本体が未解放の上級兵科は出さない */
    const B=UBASE.find(u=>u.id===b)||{n:'?'},t=list.indexOf(nx)+1;
-   items.push({cat:'var',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',t:nx.n,
+   const bi=UBASE.findIndex(u=>u.id===b);
+   items.push({cat:'var',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
     tag:(adv?'上級進化 ':'進化 ')+B.n+' 第'+t+'段階/'+list.length,
     d:'HP×'+(nx.hp||1)+' 攻撃×'+(nx.atk||1)+' 費用×'+(nx.cm||1.2)+' — '+nx.dsc,
     p:LAB_UV(uv.length)});
@@ -6014,7 +6385,7 @@ function renderLab(){
    const lv=(META.tw&&META.tw[key])||0;if(lv>=LINE_MAX)continue;
    const TRT=TW_TRAIT[T.type];/* ⚠TT という名前は使わない=グローバルのゲーム時刻を隠すため */
    const d=(T.type==='eco'?'':'威力+'+Math.round(TW_DMG_STEP*100)+'%')+(TRT?(T.type==='eco'?'':'・')+TRT.t:'')+'/段';
-   items.push({cat:'twup',k:'tw',id:key,sm:1,ic:TW_IC[T.type]||'🗼',t:T.n,tag:'Lv'+lv+'/'+LINE_MAX,d,p:LAB_TW(lv)});}}
+   items.push({cat:'twup',k:'tw',id:key,sm:1,ic:TW_IC[T.type]||'🗼',pv:{k:'t',i:i},t:T.n,tag:'Lv'+lv+'/'+LINE_MAX,d,p:LAB_TW(lv)});}}
  /* ---- ⭐兵科1種ごとの強化。派生キャラは元の兵科の枠を共有する ---- */
  /* ⚠**UNITS ではなく UBASE(素の兵科)から引くこと**(2026-07-26にレビューで発覚)。
     UNITS は編成を適用した時点で派生キャラの実体に差し替わり、タイトルへ戻っても元に戻らない。
@@ -6023,7 +6394,7 @@ function renderLab(){
   if(i>=BASE_U&&(i-BASE_U)>=(META.nu||0))continue;/* まだ解放していない兵科 */
   const lv=(META.un&&META.un[U.id])||0;if(lv>=LINE_MAX)continue;
   const st=UN_STEP(U.type),hl=U.type==='heal'?'回復':'攻撃';
-  items.push({cat:'unup',k:'un',id:U.id,sm:1,ic:UN_IC[U.type]||'🪖',t:U.n,tag:'Lv'+lv+'/'+LINE_MAX,
+  items.push({cat:'unup',k:'un',id:U.id,sm:1,ic:UN_IC[U.type]||'🪖',pv:{k:'u',i:i,def:U},t:U.n,tag:'Lv'+lv+'/'+LINE_MAX,
    d:hl+'+'+Math.round(st.a*100)+'%・HP+'+Math.round(st.h*100)+'%/段',p:LAB_UN(lv)});}
  /* ---- ⭐🎯砲撃の威力(それまで砲撃だけ研究所で強化できなかった) ---- */
  if((META.st0||0)<STK_MAX)items.push({cat:'stk',k:'st0',ic:'🎯',t:'砲撃の威力+'+Math.round(STK_STEP*100)+'%',
@@ -6070,7 +6441,10 @@ function renderLab(){
   const list=items.map((it,i)=>({it,i})).filter(o=>(o.it.cat||'new')===LABTAB);
   body='<div class="bphint">'+cat.d+'</div>'
    +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=META.pts>=it.p;
-     return '<div class="lc'+(can?' can':'')+'"><div class="ic">'+(it.ic||'🔬')+'</div>'
+     /* ⭐姿があるものは絵文字ではなく**実物**を描く(第91弾)。何を解放/強化するのか一目で分かる */
+     return '<div class="lc'+(can?' can':'')+'">'
+      +(it.pv?('<canvas class="pvc'+(it.sm?' sm':'')+'" width="120" height="104" data-pv="'+o.i+'"></canvas>')
+             :('<div class="ic">'+(it.ic||'🔬')+'</div>'))
       +'<div class="nm">'+it.t+'</div>'
       +(it.tag?'<div class="tg">'+it.tag+(it.sm&&it.d?' '+it.d:'')+'</div>':'')
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
@@ -6078,6 +6452,11 @@ function renderLab(){
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
  }
  $('lab-items').innerHTML=IC(body);
+ /* ⭐カードの姿を描く。⚠innerHTMLを入れた**後**でないと canvas がまだ無い */
+ $('lab-items').querySelectorAll('[data-pv]').forEach(cv2=>{
+  const it=items[+cv2.dataset.pv];if(!it||!it.pv)return;
+  fitDraw(cv2,it.pv.k==='t'?(cc=>drawTower(cc,it.pv.i,0,0,0,-0.55,1.2,{}))
+                          :(cc=>drawUnitAs(cc,it.pv.i,it.pv.def)),4);});
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
   META.pts-=it.p;
   if(it.k==='nt')META.nt++;else if(it.k==='nu')META.nu++;else if(it.k==='stk')META.st.push(it.id);
@@ -6102,34 +6481,65 @@ function introNext(){
  const it=INTROQ.shift();
  if(!it){$('md-intro').classList.remove('on');PAUSED=false;return;}
  const cvv=$('itr-cv'),c=cvv.getContext&&cvv.getContext('2d');
- if(c&&c.clearRect)c.clearRect(0,0,150,130);
+ if(c&&c.clearRect)c.clearRect(0,0,cvv.width,cvv.height);
  let hd='',nm='',ds='',st='';
  try{
+  /* ⭐絵は**枠いっぱい**に描く(第91弾)。決め打ちの1.5倍では、大きい物ははみ出し小さい物は豆粒だった */
   if(it.k==='u'){const U=UNITS[it.i];hd='🪖 新しい部隊が使える!';nm=U.n;ds=U.dsc;
    st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め':'');
-   if(c){c.save();c.translate(75,112);c.scale(1.5/(TSCALE[uTier(it.i)-1]||1),1.5/(TSCALE[uTier(it.i)-1]||1));drawUnit(c,it.i,0,0,1,.4,0,{});c.restore();}}
+   fitDraw(cvv,cc=>drawUnit(cc,it.i,0,0,1,.4,0,{}),8);}
   else if(it.k==='t'){const T=TOWERS[it.i];hd='🗼 新しいタワーが建てられる!';nm=T.n;ds=T.dsc;
    st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒';
-   if(c){c.save();c.translate(75,84);c.scale(1.5,1.5);drawTower(c,it.i,1,0,0,-0.5,0,{});c.restore();}}
+   fitDraw(cvv,cc=>drawTower(cc,it.i,1,0,0,-0.5,0,{}),8);}
   else if(it.k==='z'){const Z=ZOMBIES[it.i];hd='🧟 新種のゾンビが現れる!';nm=Z.n;
    const tag=[];if(Z.armor)tag.push('装甲(通常弾が効きにくい・火炎に弱い)');if(Z.scl)tag.push('鱗の鎧(通常弾が効きにくい・⚡電撃に弱い)');if(Z.noblock)tag.push('すり抜け(鎖使いだけが止められる)');
    if(Z.aura)tag.push('周囲を加速させる');if(Z.split)tag.push('倒すと分裂');if(Z.boss)tag.push('ボス');if(Z.aoe)tag.push('薙ぎ払い'+Z.aoe+'体');
    ds=tag.length?tag.join(' ／ '):'ごく普通の個体。数で押してくる。';
    st='HP'+Z.hp+' ／ 速さ'+Z.sp+' ／ 報酬⚙️'+Z.bt;
-   if(c){c.save();c.translate(75,114);const zs=1.35/(Z.sc||1);c.scale(zs,zs);drawZombie(c,it.i,0,0,1,.4,0,{});c.restore();}}
+   fitDraw(cvv,cc=>drawZombie(cc,it.i,0,0,1,.4,0,{}),8);}
  }catch(e){}
  $('itr-h').textContent=hd;$('itr-n').textContent=nm;$('itr-d').textContent=ds;$('itr-s').textContent=st;
  $('md-intro').classList.add('on');
 }
 $('bt-itr-ok').onclick=()=>{sfx.buy&&sfx.buy();introNext();};
-/* ---- 編成UI ---- */
-function ldPrev(cvv,i,def){
+/* ============ 姿のプレビュー(2026-07-26 第91弾) ============
+   ⭐ユーザー指示「キャラ/タワーのプレビューを"全容が見える大きさ"にする」。
+     それまでは決め打ちの倍率で描いていたので、**大きい物ははみ出し、小さい物は豆粒**だった。
+   ⚠やり方は bakeUThumb と同じ=**一度描いて絵のある範囲を測り、枠いっぱいになる倍率で描き直す**。
+   ⚠**焼いた絵を引き伸ばさない**(ぼやける)。測るのは下絵、本番は**もう一度ベクタで描く**。
+   ⚠getImageData が使えない環境(ヘッドレス)では測れないので、そのまま中央に置くだけにする。 */
+function fitDraw(cvv,drawFn,pad){
+ if(!cvv)return;
  const c=cvv.getContext&&cvv.getContext('2d');if(!c)return;
- if(c.clearRect)c.clearRect(0,0,56,56);
- const keep=UNITS[i];UNITS[i]=def;
- try{c.save();c.translate(27,50);const s=.62/(TSCALE[uTier(i)-1]||1);c.scale(s,s);drawUnit(c,i,0,0,1,.4,0,{});c.restore();}catch(e){}
+ const W=cvv.width||56,H=cvv.height||56,B=200,m=pad==null?3:pad;
+ if(c.clearRect)c.clearRect(0,0,W,H);
+ let box=null;
+ try{
+  const tmp=document.createElement('canvas');tmp.width=B;tmp.height=B;
+  const t=tmp.getContext('2d');
+  if(t&&t.getImageData){
+   t.save();t.translate(B*.5,B*.72);t.lineWidth=3;t.strokeStyle=INK;drawFn(t);t.restore();
+   const d=t.getImageData(0,0,B,B).data;let x0=B,y0=B,x1=-1,y1=-1;
+   for(let y=0;y<B;y++)for(let x=0;x<B;x++)if(d[(y*B+x)*4+3]>12){
+    if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+   if(x1>x0&&y1>y0)box=[x0-B*.5,y0-B*.72,x1-B*.5,y1-B*.72];}
+ }catch(e){}
+ c.save();
+ if(box){const k=Math.min((W-m*2)/(box[2]-box[0]+1),(H-m*2)/(box[3]-box[1]+1));
+  c.translate(W/2,H/2);c.scale(k,k);c.translate(-(box[0]+box[2])/2,-(box[1]+box[3])/2);}
+ else {c.translate(W/2,H*.78);const s=Math.min(W,H)/64;c.scale(s,s);}
+ c.lineWidth=3;c.strokeStyle=INK;
+ try{drawFn(c);}catch(e){}
+ c.restore();
+}
+/* 兵科を「別の中身」で描く(派生キャラのプレビュー用)。⚠必ず元に戻すこと */
+function drawUnitAs(c,i,def){
+ const keep=UNITS[i];if(def)UNITS[i]=def;
+ try{drawUnit(c,i,0,0,1,.4,0,{});}catch(e){}
  UNITS[i]=keep;
 }
+/* ---- 編成UI ---- */
+function ldPrev(cvv,i,def){fitDraw(cvv,c=>drawUnitAs(c,i,def),3);}
 /* 編成もタブ制。⚠13行を縦に積むと横画面(高さ393px)で1行半しか見えない */
 let LDTAB='base';
 const LD_TABS=[{k:'base',n:'🪖 基本の枠',d:'作戦タイムで解放できる8つの枠に、どのキャラを入れるか決める'},
@@ -6150,7 +6560,8 @@ function renderLoad(){
   opts.forEach((o,k)=>{
    const vid=o.v?o.v.id:'',lock=o.v&&uv.indexOf(vid)<0,sel=cur===vid;
    h+='<button class="ldc'+(sel?' sel':'')+(lock?' lock':'')+'" data-b="'+bid+'" data-v="'+vid+'" data-i="'+i+'" data-k="'+k+'"'+(lock?' disabled':'')+'>'
-    +'<canvas width="56" height="56"></canvas><span>'+(lock?'🔒':'')+o.def.n+'<br><span class="lds">⚙️'+o.def.cost+' HP'+o.def.hp+' 攻'+o.def.atk+'</span></span></button>';});
+    /* ⭐姿は枠いっぱいに描く(第91弾)。56pxだと何を選ぶのか分からなかった */
+    +'<canvas width="76" height="76"></canvas><span>'+(lock?'🔒':'')+o.def.n+'<br><span class="lds">⚙️'+o.def.cost+' HP'+o.def.hp+' 攻'+o.def.atk+'</span></span></button>';});
   h+='</div></div>';};
  if(LDTAB==='base')VBASE.forEach((bid,n)=>row(bid,(n+1)+'つ目の枠 — 基本『'+((UBASE.find(u=>u.id===bid))||{}).n+'』'));
  else if(LDTAB==='adv')FVBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'上級『'+B.n+'』');});
