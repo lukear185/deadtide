@@ -116,82 +116,116 @@ function convert(file,id,TH,auto,nf){
   const byL=pts.slice().sort((a,b)=>(b[0]+b[1]+b[2])-(a[0]+a[1]+a[2]));if(byL[0])seeds.push(byL[0]);
   pal=seeds.concat(medianCut(pts,Math.max(2,NC-seeds.length)));}
  const solid=(x,y)=>im.px(x,y)[3]>16;
- /* コマに切る(縦に1本も絵が無い列で区切る) */
- const has=[];for(let x=0;x<im.w;x++){let n=0;for(let y=0;y<im.h;y++)if(solid(x,y)){n=1;break;}has.push(n);}
- const segs=[];let st=-1;
- for(let x=0;x<im.w;x++){if(has[x]&&st<0)st=x;else if(!has[x]&&st>=0){segs.push([st,x-1]);st=-1;}}
- if(st>=0)segs.push([st,im.w-1]);
- if(!segs.length)throw new Error('絵が見つからない(背景が透明か確認)');
- /* ⚠**手が隣のコマに届いていると空白で切れない**(実際に4コマを3つと誤認した)。
-    コマ数が分かっている時は、絵のある範囲を等分して切る */
- if(nf&&segs.length!==nf){
-  let a=im.w,b=-1;for(const s of segs){if(s[0]<a)a=s[0];if(s[1]>b)b=s[1];}
-  segs.length=0;const wd=(b-a+1)/nf;
-  for(let i=0;i<nf;i++)segs.push([Math.round(a+i*wd),Math.round(a+(i+1)*wd)-1]);
-  console.log('  (コマが繋がっていたので'+nf+'等分で切った)');}
- /* 全体の上端と下端で縮尺を決める=**コマごとに拡大率を変えない**(変えると大きさがちらつく) */
- let gy0=im.h,gy1=-1;
- for(let y=0;y<im.h;y++)for(let x=0;x<im.w;x++)if(solid(x,y)){if(y<gy0)gy0=y;if(y>gy1)gy1=y;}
- const sc=(gy1-gy0+1)/TH;
- /* 各コマをドットに落とす。
-    ⭐**平均を取ってはいけない**(2026-07-27に踏んだ)。目や歯のような「小さくて明るい点」は
-      周りの暗い色と平均されて濁り、**一番読ませたいものほど消える**。実際、元絵には黄色い目が
-      はっきり描かれているのに、変換後は緑の塊になっていた。
-    ⭐正しいやり方は**セル内で一番多い色を選ぶ**(最頻色)。輪郭と小さな特徴が残る。 */
- const raw=segs.map(s=>{
-  const tw=Math.max(1,Math.round((s[1]-s[0]+1)/sc)),g=[];
-  for(let ty=0;ty<TH;ty++){const row=[];
-   for(let tx=0;tx<tw;tx++){
-    const cnt=new Array(pal.length).fill(0);let op=0,n=0;
-    const sx0=s[0]+tx*sc,sy0=gy0+ty*sc;
-    for(let y=Math.floor(sy0);y<Math.min(im.h,Math.ceil(sy0+sc));y++)
-     for(let x=Math.floor(sx0);x<Math.min(im.w,Math.ceil(sx0+sc));x++){
-      const [r,g2,b,a]=im.px(x,y);n++;
-      if(a<128)continue;
-      op++;cnt[nearIn(pal,r,g2,b)]++;}
-    if(!n||op/n<.42){row.push(null);continue;}
-    let bi=0;for(let i=1;i<cnt.length;i++)if(cnt[i]>cnt[bi])bi=i;
-    row.push(bi);}
-   g.push(row);}
-  return {w:tw,g};});
- /* 横の基準点=**足の位置**(体の中心だと腕を伸ばしたコマでずれて、歩くたびに横滑りする) */
- const anch=raw.map(f=>{
-  let sum=0,n=0;
-  /* ⚠色の番号は0もありうる。真偽で判定すると一番暗い色(輪郭)が空と見なされる */
-  for(let y=TH-1;y>=TH-4;y--)for(let x=0;x<f.w;x++)if(f.g[y]&&f.g[y][x]!=null){sum+=x;n++;}
-  if(!n){for(let x=0;x<f.w;x++)for(let y=0;y<TH;y++)if(f.g[y][x]!=null){sum+=x;n++;}}
-  return n?sum/n:f.w/2;});
- /* 基準点を揃えて同じ幅の枠へ入れ直す */
- const L=Math.ceil(Math.max(...raw.map((f,i)=>anch[i]))),
-       R=Math.ceil(Math.max(...raw.map((f,i)=>f.w-anch[i])));
- const OW=L+R,ax=L;
- const frames=raw.map((f,i)=>{
-  const off=Math.round(L-anch[i]),rows=[];
-  for(let y=0;y<TH;y++){let s='';
-   for(let x=0;x<OW;x++){const sx=x-off;
-    const c=(sx>=0&&sx<f.w)?f.g[y][sx]:null;/* もう色の番号が入っている */
-    s+=(c==null)?' ':CHARS[c];}
-   rows.push(s);}
-  return rows;});
- /* ⚠その絵から作った色表を使った時は、色表も一緒に返す(描く側がこれで引く) */
- return {id,w:OW,h:TH,ax,f:frames,src:path.basename(file),
-  pal:pal.map(c=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''))};}
+ /* ---- 1つの帯(=1方向ぶんの4コマ)をドットに落とす ---- */
+ const oneRow=(y0,y1)=>{
+  /* コマに切る(縦に1本も絵が無い列で区切る) */
+  const has=[];for(let x=0;x<im.w;x++){let n=0;for(let y=y0;y<=y1;y++)if(solid(x,y)){n=1;break;}has.push(n);}
+  const segs=[];let st=-1;
+  for(let x=0;x<im.w;x++){if(has[x]&&st<0)st=x;else if(!has[x]&&st>=0){segs.push([st,x-1]);st=-1;}}
+  if(st>=0)segs.push([st,im.w-1]);
+  if(!segs.length)throw new Error('絵が見つからない(背景が透明か確認)');
+  /* ⚠**手が隣のコマに届いていると空白で切れない**(実際に4コマを3つと誤認した)。
+     コマ数が分かっている時は、絵のある範囲を等分して切る */
+  if(nf&&segs.length!==nf){
+   let a=im.w,b=-1;for(const s of segs){if(s[0]<a)a=s[0];if(s[1]>b)b=s[1];}
+   segs.length=0;const wd=(b-a+1)/nf;
+   for(let i=0;i<nf;i++)segs.push([Math.round(a+i*wd),Math.round(a+(i+1)*wd)-1]);
+   console.log('  (コマが繋がっていたので'+nf+'等分で切った)');}
+  /* 帯の上端と下端で縮尺を決める=**コマごとに拡大率を変えない**(変えると大きさがちらつく)。
+     ⭐帯ごとに測るので、生成AIが正面だけ少し小さく描いても**3方向の背丈が自動でそろう**。 */
+  const sc=(y1-y0+1)/TH;
+  /* 各コマをドットに落とす。
+     ⭐**平均を取ってはいけない**(2026-07-27に踏んだ)。目や歯のような「小さくて明るい点」は
+       周りの暗い色と平均されて濁り、**一番読ませたいものほど消える**。実際、元絵には黄色い目が
+       はっきり描かれているのに、変換後は緑の塊になっていた。
+     ⭐正しいやり方は**セル内で一番多い色を選ぶ**(最頻色)。輪郭と小さな特徴が残る。 */
+  const raw=segs.map(s=>{
+   const tw=Math.max(1,Math.round((s[1]-s[0]+1)/sc)),g=[];
+   for(let ty=0;ty<TH;ty++){const row=[];
+    for(let tx=0;tx<tw;tx++){
+     const cnt=new Array(pal.length).fill(0);let op=0,n=0;
+     const sx0=s[0]+tx*sc,sy0=y0+ty*sc;
+     for(let y=Math.floor(sy0);y<Math.min(im.h,Math.ceil(sy0+sc));y++)
+      for(let x=Math.floor(sx0);x<Math.min(im.w,Math.ceil(sx0+sc));x++){
+       const [r,g2,b,a]=im.px(x,y);n++;
+       if(a<128)continue;
+       op++;cnt[nearIn(pal,r,g2,b)]++;}
+     if(!n||op/n<.42){row.push(null);continue;}
+     let bi=0;for(let i=1;i<cnt.length;i++)if(cnt[i]>cnt[bi])bi=i;
+     row.push(bi);}
+    g.push(row);}
+   return {w:tw,g};});
+  /* 横の基準点=**足の位置**(体の中心だと腕を伸ばしたコマでずれて、歩くたびに横滑りする) */
+  const anch=raw.map(f=>{
+   let sum=0,n=0;
+   /* ⚠色の番号は0もありうる。真偽で判定すると一番暗い色(輪郭)が空と見なされる */
+   for(let y=TH-1;y>=TH-4;y--)for(let x=0;x<f.w;x++)if(f.g[y]&&f.g[y][x]!=null){sum+=x;n++;}
+   if(!n){for(let x=0;x<f.w;x++)for(let y=0;y<TH;y++)if(f.g[y][x]!=null){sum+=x;n++;}}
+   return n?sum/n:f.w/2;});
+  /* 基準点を揃えて同じ幅の枠へ入れ直す */
+  const L=Math.ceil(Math.max(...raw.map((f,i)=>anch[i]))),
+        R=Math.ceil(Math.max(...raw.map((f,i)=>f.w-anch[i])));
+  const OW=L+R;
+  const frames=raw.map((f,i)=>{
+   const off=Math.round(L-anch[i]),rows=[];
+   for(let y=0;y<TH;y++){let s='';
+    for(let x=0;x<OW;x++){const sx=x-off;
+     const c=(sx>=0&&sx<f.w)?f.g[y][sx]:null;/* もう色の番号が入っている */
+     s+=(c==null)?' ':CHARS[c];}
+    rows.push(s);}
+   return rows;});
+  return {w:OW,ax:L,f:frames};};
+ /* ---- ⭐3行×4コマの絵(横向き/正面/背面)に対応する(2026-07-27) ----
+    道の**約半分は縦移動**なので、横向きの絵だけだと「絵が滑っている」ようにしか見えない。
+    横に1本も絵が無い行で帯に切り、帯が3本以上あれば**上から 横向き→正面→背面**とみなす。
+    ⚠生成AIは頼んでいない4行目を足すことがある(ウォーカーで実際に4行出た)。
+      `--map=0,1,3` でどの帯を使うか選び直せる。
+    ⚠**高さ1〜2画素の細い帯は縁のゴミ**なので捨てる(これも実際に出た)。 */
+ const bands=[];{let st=-1;
+  for(let y=0;y<im.h;y++){let has=0;for(let x=0;x<im.w;x++)if(solid(x,y)){has=1;break;}
+   if(has&&st<0)st=y;else if(!has&&st>=0){bands.push([st,y-1]);st=-1;}}
+  if(st>=0)bands.push([st,im.h-1]);}
+ if(!bands.length)throw new Error('絵が見つからない(背景が透明か確認)');
+ const tall=Math.max(...bands.map(b=>b[1]-b[0]+1));
+ const rows=bands.filter(b=>(b[1]-b[0]+1)>=tall*.4);
+ const out={id,h:TH,src:path.basename(file),
+  /* ⚠その絵から作った色表を使った時は、色表も一緒に返す(描く側がこれで引く) */
+  pal:pal.map(c=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''))};
+ if(rows.length>=3){
+  const MM=/--map=(\d+),(\d+),(\d+)/.exec(process.argv.join(' '));
+  const map=MM?[+MM[1],+MM[2],+MM[3]]:[0,1,2];
+  console.log('  帯'+rows.length+'本 → 横向き=帯'+map[0]+' / 正面=帯'+map[1]+' / 背面=帯'+map[2]);
+  const S=oneRow(rows[map[0]][0],rows[map[0]][1]),
+        F=oneRow(rows[map[1]][0],rows[map[1]][1]),
+        B=oneRow(rows[map[2]][0],rows[map[2]][1]);
+  out.w=S.w;out.ax=S.ax;out.f=S.f;
+  out.fr={w:F.w,ax:F.ax,f:F.f};out.bk={w:B.w,ax:B.ax,f:B.f};
+ }else{
+  const S=oneRow(rows[0][0],rows[rows.length-1][1]);
+  out.w=S.w;out.ax=S.ax;out.f=S.f;}
+ return out;}
 
-/* ---- 下見用のPNG(実寸と5倍を並べる) ---- */
+/* ---- 下見用のPNG(実寸と5倍を並べる。3方向あれば縦に3段) ---- */
 function preview(d,out){
  const P=(d.pal||PALETTE).map(hex2rgb);
  const M=5,GAP=3,BG=[236,232,220];
- const TOT=(d.w+GAP)*d.f.length,OW=TOT*M+8,OH=d.h+GAP*2+d.h*M+8;
+ const sets=[{w:d.w,ax:d.ax,f:d.f}];
+ if(d.fr)sets.push(d.fr);
+ if(d.bk)sets.push(d.bk);
+ const OW=Math.max(...sets.map(s=>(s.w+GAP)*s.f.length))*M+8;
+ const SH=d.h+GAP*2+d.h*M+GAP*3;/* 1方向ぶんの高さ(実寸の段+5倍の段) */
+ const OH=SH*sets.length+8;
  const buf=Buffer.alloc(OW*OH*4,0);
  const px=(x,y,c)=>{if(x<0||y<0||x>=OW||y>=OH)return;const i=(y*OW+x)*4;
   buf[i]=c[0];buf[i+1]=c[1];buf[i+2]=c[2];buf[i+3]=255;};
  for(let y=0;y<OH;y++)for(let x=0;x<OW;x++)px(x,y,BG);
- d.f.forEach((rows,k)=>{
-  for(let y=0;y<d.h;y++)for(let x=0;x<d.w;x++){
-   const ch=rows[y][x];if(ch===' ')continue;
-   const c=P[CHARS.indexOf(ch)];
-   px(2+k*(d.w+GAP)+x,2+y,c);
-   for(let j=0;j<M;j++)for(let i=0;i<M;i++)px(2+(k*(d.w+GAP)+x)*M+i,d.h+GAP*2+y*M+j,c);}});
+ sets.forEach((sp,si)=>{const oy=2+si*SH;
+  sp.f.forEach((rows,k)=>{
+   for(let y=0;y<d.h;y++)for(let x=0;x<sp.w;x++){
+    const ch=rows[y][x];if(ch===' ')continue;
+    const c=P[CHARS.indexOf(ch)];
+    px(2+k*(sp.w+GAP)+x,oy+y,c);
+    for(let j=0;j<M;j++)for(let i=0;i<M;i++)px(2+(k*(sp.w+GAP)+x)*M+i,oy+d.h+GAP*2+y*M+j,c);}});});
  fs.writeFileSync(out,encodePNG(OW,OH,buf));}
 
 /* ---- index.html へ流し込む ---- */
@@ -200,10 +234,14 @@ function embed(){
  const dir=path.join(__dirname,'px_data');
  if(!fs.existsSync(dir)){console.log('px_data/ が無い');process.exit(1);}
  const files=fs.readdirSync(dir).filter(f=>f.endsWith('.json')).sort();
+ /* ⚠**向きごとに幅と基準点が違う**(横向きは腕を伸ばすぶん広い)ので、正面/背面も w と ax を持たせる */
+ const fx=f=>'[\n'+f.map(rows=>'  ['+rows.map(r=>"'"+r+"'").join(',\n   ')+']').join(',\n')+']';
  const parts=files.map(f=>{
   const d=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
-  return ' '+d.id+':{w:'+d.w+',h:'+d.h+',ax:'+d.ax+',lh:50,f:[\n'
-   +d.f.map(rows=>'  ['+rows.map(r=>"'"+r+"'").join(',\n   ')+']').join(',\n')+']}';});
+  let s=' '+d.id+':{w:'+d.w+',h:'+d.h+',ax:'+d.ax+',lh:50,f:'+fx(d.f);
+  if(d.fr)s+=',\n  fr:{w:'+d.fr.w+',ax:'+d.fr.ax+',f:'+fx(d.fr.f)+'}';
+  if(d.bk)s+=',\n  bk:{w:'+d.bk.w+',ax:'+d.bk.ax+',f:'+fx(d.bk.f)+'}';
+  return s+'}';});
  /* ⚠**1文字→色の番号は CHARS の並び順**。16色を超えた時に parseInt(ch,16) では引けないので、
     描く側にも同じ並びを渡す(PX_CH) */
  const js='const PX_CH=\''+CHARS+'\';\n'
@@ -236,9 +274,17 @@ for(const dir of ['px_data','px_prev'])if(!fs.existsSync(path.join(__dirname,dir
 fs.writeFileSync(path.join(__dirname,'px_data',d.id+'.json'),JSON.stringify(d));
 preview(d,path.join(__dirname,'px_prev',d.id+'.png'));
 /* 点検: コマ間で足の位置と体の量がぶれていないか */
-const cnt=d.f.map(rows=>rows.join('').split('').filter(c=>c!==' ').length);
-const top=d.f.map(rows=>{for(let y=0;y<d.h;y++)if(rows[y].trim())return y;return d.h;});
-console.log('■ '+d.id+': '+d.f.length+'コマ / '+d.w+'x'+d.h+'ドット / 基準点x='+d.ax);
-console.log('  塗り数: '+cnt.join(', ')+'  (差 '+(Math.max(...cnt)-Math.min(...cnt))+'ドット)');
-console.log('  上端  : '+top.join(', ')+'  (差 '+(Math.max(...top)-Math.min(...top))+'ドット)');
+console.log('■ '+d.id+': '+(d.fr?'3方向':'横向きのみ')+' / '+d.f.length+'コマ / '+d.w+'x'+d.h+'ドット / 基準点x='+d.ax);
+const look=(nm,sp)=>{
+ const cnt=sp.f.map(rows=>rows.join('').split('').filter(c=>c!==' ').length);
+ const top=sp.f.map(rows=>{for(let y=0;y<d.h;y++)if(rows[y].trim())return y;return d.h;});
+ /* ⭐**下半分(脚)がコマごとに動いているか**を見る。正面/背面は生成AIが脚を動かさないことがあり、
+    向きが正しくても「絵が滑っている」ように見える。1コマ目との違いを数える */
+ const leg=sp.f.map(rows=>{let s='';for(let y=Math.floor(d.h*.55);y<d.h;y++)s+=rows[y];return s;});
+ const dif=leg.slice(1).map(s=>{let n=0;for(let i=0;i<s.length;i++)if(s[i]!==leg[0][i])n++;return n;});
+ console.log('  ['+nm+'] 幅'+sp.w+' 塗り数'+cnt.join('/')+'(差'+(Math.max(...cnt)-Math.min(...cnt))
+  +') 上端差'+(Math.max(...top)-Math.min(...top))+' 脚の変化'+dif.join('/')+'ドット');};
+look('横向き',{w:d.w,f:d.f});
+if(d.fr)look('正面 ',d.fr);
+if(d.bk)look('背面 ',d.bk);
 console.log('  書き出し: px_data/'+d.id+'.json / px_prev/'+d.id+'.png');

@@ -1249,22 +1249,33 @@ function checkPixel(){
  for(const id in PX_Z){
   const sp=PX_Z[id],Z=ZOMBIES.find(z=>z.id===id);
   if(!Z){console.log('FAIL: ドット絵の指す先が無い: '+id);process.exit(1);}
-  for(let k=0;k<sp.f.length;k++){
-   const rows=sp.f[k];
-   if(rows.length!==sp.h){console.log('FAIL: ドット絵の行数が違う '+id+' コマ'+k+': '+rows.length+'/'+sp.h);process.exit(1);}
-   for(let y=0;y<rows.length;y++){
-    if(rows[y].length!==sp.w){console.log('FAIL: ドット絵の行の長さが違う '+id+' コマ'+k+' '+y+'行目: '+rows[y].length+'/'+sp.w);process.exit(1);}
-    for(let x=0;x<rows[y].length;x++){const ch=rows[y].charAt(x);
-     /* ⚠1文字→色は PX_CH の並び順で引く(tool_px.js が書き出す形) */
-     if(ch!==' '&&!PX_PAL[PX_CH.indexOf(ch)]){console.log('FAIL: 色表に無い文字「'+ch+'」 '+id+' '+y+'行目');process.exit(1);}}}
-  /* 横の基準点(足の位置)が枠の中にあるか */
-  if(sp.ax==null||sp.ax<0||sp.ax>sp.w){console.log('FAIL: 基準点axが枠の外: '+id+' ax='+sp.ax);process.exit(1);}}
-  /* 中身が空でないか(全部空白だと透明のまま消える) */
-  let n=0;for(const r of sp.f[0])for(let x=0;x<r.length;x++)if(r.charAt(x)!==' ')n++;
-  if(n<80){console.log('FAIL: ドット絵の中身が薄すぎる: '+id+' ('+n+'点)');process.exit(1);}}
+  /* ⭐向きは3つ(横向き/正面/背面)。正面と背面が無い種類は横向きだけを見る。
+     ⚠**幅と基準点は向きごとに違う**(横向きは腕を伸ばすぶん広い)ので、向きごとに測ること */
+  const sets=[['横向き',sp],['正面',sp.fr],['背面',sp.bk]].filter(a=>a[1]);
+  for(const st of sets){const nm=st[0],S=st[1];
+   for(let k=0;k<S.f.length;k++){
+    const rows=S.f[k];
+    if(rows.length!==sp.h){console.log('FAIL: ドット絵の行数が違う '+id+' '+nm+' コマ'+k+': '+rows.length+'/'+sp.h);process.exit(1);}
+    for(let y=0;y<rows.length;y++){
+     if(rows[y].length!==S.w){console.log('FAIL: ドット絵の行の長さが違う '+id+' '+nm+' コマ'+k+' '+y+'行目: '+rows[y].length+'/'+S.w);process.exit(1);}
+     for(let x=0;x<rows[y].length;x++){const ch=rows[y].charAt(x);
+      /* ⚠1文字→色は PX_CH の並び順で引く(tool_px.js が書き出す形) */
+      if(ch!==' '&&!PX_PAL[PX_CH.indexOf(ch)]){console.log('FAIL: 色表に無い文字「'+ch+'」 '+id+' '+nm+' '+y+'行目');process.exit(1);}}}}
+   /* 横の基準点(足の位置)が枠の中にあるか */
+   if(S.ax==null||S.ax<0||S.ax>S.w){console.log('FAIL: 基準点axが枠の外: '+id+' '+nm+' ax='+S.ax);process.exit(1);}
+   /* 中身が空でないか(全部空白だと透明のまま消える) */
+   let n=0;for(const r of S.f[0])for(let x=0;x<r.length;x++)if(r.charAt(x)!==' ')n++;
+   if(n<80){console.log('FAIL: ドット絵の中身が薄すぎる: '+id+' '+nm+' ('+n+'点)');process.exit(1);}}}
+ /* ⭐進む向きから正しい絵を選べているか。⚠**画面のyは下が正**なので sin>0 が「手前に来る=正面」。
+    ここを取り違えると、縦の道で全員が背中を見せて歩いてくる */
+ const HP=Math.PI/2;
+ const wants=[[0,'s'],[Math.PI,'s'],[HP,'f'],[-HP,'b']];
+ for(const w of wants){const got=pxVw(w[0]);
+  if(got!==w[1]){console.log('FAIL: 向きの選び方が違う 角度'+w[0].toFixed(2)+' → '+got+'(正しくは'+w[1]+')');process.exit(1);}}
  /* 既定では切ってあること(1体だけ画風が違う状態で公開しないため) */
  if(PX_ON){console.log('FAIL: ドット絵の試作が既定で有効になっている(?px=1 の時だけにすること)');process.exit(1);}
- console.log('🧪ドット絵の試作: '+Object.keys(PX_Z).length+'種('+Object.keys(PX_Z).join('/')+') 形は正しい / 既定は切 OK');
+ const dirN=Object.keys(PX_Z).filter(k=>PX_Z[k].fr&&PX_Z[k].bk).length;
+ console.log('🧪ドット絵の試作: '+Object.keys(PX_Z).length+'種('+Object.keys(PX_Z).join('/')+') / 3方向そろい='+dirN+'種 形は正しい / 既定は切 OK');
 }
 function checkULook(){
  /* (1) 全兵科に「体型・かぶり物・背負い物」の指定があるか */
