@@ -42,7 +42,7 @@ const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 /* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため)
    ⚠発射の瞬間しか出ないエフェクト(電撃の連鎖など)は、ヘッドレスの仮想時間の進み方しだいで
      写らないことがある。写らなければ w の値を変えて数回撮る。最終確認は実機で。 */
-const TM=/t=([A-Za-z]+)/.exec(OPT),TID=TM?TM[1]:'';
+const TM=/t=([A-Za-z0-9]+)/.exec(OPT),TID=TM?TM[1]:'';/* ⚠数字も拾うこと(以前は [A-Za-z]+ で `t=scrap2` が `scrap` になっていた) */
 /* ⚔冒険(育成RPG): rpg=拠点の町 / rpgf=エリアのフィールド / rpgb=戦闘 / rpgg=門(エリア選択) / rpgs=つよさ */
 const RPM=/rpg([a-z]?)/.exec(OPT),RPG=!!RPM,RPGK=RPM?RPM[1]:'';
 /* 例 hero=hNox = その英雄を出撃させて撮る / hero=all = 英雄11人を経路上に並べて撮る */
@@ -97,7 +97,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
- +(ZIDS.length?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
+ /* ⚠以前は `ZIDS.length` を条件にしていたため、**`t=` を単体で指定すると丸ごと無視されていた**
+      (敵を並べずにタワーだけ撮りたい時に、何も建たないまま撮れてしまう)。`t=` だけでも走らせる */
+ +((ZIDS.length||TID)?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
      +'var ids='+JSON.stringify(ZIDS)+';'
      /* t= でタワーも建てる時は、そのタワーの目の前に詰めて並べる(射程・連鎖の確認用) */
      +(TID?'var si0=AI_ORDER[0],base=projPath(SLOTS[si0][0],SLOTS[si0][1]);':'var base=0;')

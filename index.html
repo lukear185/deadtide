@@ -852,7 +852,9 @@ function saveRun(){
  const d={v:1,stg:STAGE,dif:G.pveDiff==null?2:G.pveDiff,
   wave:G.phase==='wave'?Math.max(0,G.wave-1):G.wave,
   core:m.core,coreMax:m.coreMax,scrap:Math.round(m.scrap),unlocked:m.unlocked,atkLv:m.atkLv,
-  repairs:m.repairs||0,boosts:m.boosts||0,ecoN:m.ecoN||1,up:Math.round(m.up||0),upTotal:Math.round(m.upTotal||0),
+  /* ⚠supN(支援枠をいくつ開いたか)を保存し忘れると、再開したときに建ててあった支援施設が
+     「未解放の枠に建っている」状態になって消える(2026-07-26に発覚) */
+  repairs:m.repairs||0,boosts:m.boosts||0,ecoN:m.ecoN||1,supN:m.supN||0,up:Math.round(m.up||0),upTotal:Math.round(m.upTotal||0),
   uUn:m.uUn,uLv:m.uLv||0,kills:m.kills||0,enTotal:Math.round(m.enTotal||0),charge:m.charge||0,
   stk:m.stk||'air',flagD:Math.round(m.flagD||0),
   hsel:(m.hUi>=0&&heroAt(m.hUi))?heroAt(m.hUi).id:'',hOut:m.hOut||0,
@@ -868,7 +870,7 @@ function resumeRun(){
  const m=G.players[0];
  G.wave=d.wave||0;
  m.core=d.core;m.coreMax=d.coreMax;m.scrap=d.scrap;m.unlocked=d.unlocked;m.atkLv=d.atkLv||0;
- m.repairs=d.repairs||0;m.boosts=d.boosts||0;m.ecoN=d.ecoN||1;m.up=d.up||0;m.upTotal=d.upTotal||0;
+ m.repairs=d.repairs||0;m.boosts=d.boosts||0;m.ecoN=d.ecoN||1;m.supN=d.supN||0;m.up=d.up||0;m.upTotal=d.upTotal||0;
  m.uUn=d.uUn||2;m.uLv=d.uLv||0;m.kills=d.kills||0;m.enTotal=d.enTotal||0;m.charge=d.charge||0;
  if(d.stk&&STRIKES[d.stk])m.stk=d.stk;
  /* 🦸英雄: ウェーブの区切りで保存するので「出撃中」は未出撃に戻す(盤面に実体が残らないため)。
@@ -880,7 +882,7 @@ function resumeRun(){
  if(DEV){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.uUn=Math.max(m.uUn||0,metaUnitCap());
   m.ecoN=ECO_MAX;m.supN=SUP_MAX;m.slk=m.slk.map((v,i)=>i<ECO_BASE?true:v);}
  if(d.tw&&d.tw.length)m.towers=m.towers.map((t,i)=>{const s=d.tw[i];
-  return s?{ti:s.ti,us:s.us||{d:0,r:0,g:0,c:0},cd:rnd(.1,.5),ang:-.6,jamT:0,fireT:0,spent:s.spent||0,own:0}:null;});
+  return s?{ti:s.ti,us:Object.assign(newUs(),s.us||{}),cd:rnd(.1,.5),ang:-.6,jamT:0,fireT:0,spent:s.spent||0,own:0}:null;});
  $('strikebtn').textContent=(STRIKES[m.stk]||STRIKES.air).ic;
  toast('▶ WAVE '+((G.wave||0)+1)+' から再開!');
  return true;
@@ -1286,7 +1288,11 @@ for(const T of TOWERS){
 const UNLOCK_P=[0,0,200,320,480,700,980,1350,1800,2400,3100,4000,5100,6400,8000,9900,12200,15000,18500,22500];
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
-const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]));/* 盤面の強化は⚙️払い */
+/* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
+   場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
+   `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0});
+const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]||0));/* 盤面の強化は⚙️払い */
 /* 冷却塔だけは⚔攻撃の代わりに❄冷却回数を伸ばす(2026-07-25ユーザー指示。攻撃力を上げても意味が無い塔のため) */
 const twStats=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
  :TOWERS[ti].frzN?['f','r','g']
@@ -1343,7 +1349,7 @@ const ZOMBIES=[
     ⚠この2種が無いと、終盤に多く選ばれる「リストの最後の個体」が影サメ(HP195)になり、
       ステージ2のWAVE20の総HPがステージ1の6割まで落ちる(2026-07-25に発覚して追加) */
  {id:'sRay',n:'亡霊エイ',hp:300,sp:96,bt:84,dmg:3,mw:13,st:2,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b7a',dsc:'音もなく滑る。すり抜ける上に群れを昂ぶらせる'},
- {id:'sTurt',n:'巨大ウミガメ',hp:680,sp:52,bt:130,dmg:4,mw:15,st:2,scl:1,w:.3,sc:1.45,atk:56,ar:1.1,c:'#5f6b52',dsc:'ぶ厚い甲羅。分厚い鱗甲羅。実弾がほとんど効かないが電撃に弱い'},
+ {id:'sTurt',n:'巨大ウミガメ',hp:680,sp:52,bt:130,dmg:4,mw:15,st:2,scl:1,w:.3,sc:1.45,atk:56,ar:1.1,c:'#5f6b52',dsc:'ぶ厚い鱗の甲羅。実弾がほとんど効かないが電撃に弱い'},
  {id:'sKrak',n:'触腕の主',hp:1450,sp:38,bt:400,dmg:10,st:2,boss:1,scl:1,mw:5,sc:2.1,atk:62,ar:1.2,aoe:5,c:'#6b4a7a',dsc:'港の主。触腕で薙ぎ払う'},
  /* ===== 各ステージの最終ボス(WAVE20だけに出る特別な1体。fin:1) ===== */
  {id:'fKing',n:'屍山の王',hp:2600,sp:34,bt:900,dmg:16,boss:1,fin:1,armor:1,aura:1,mw:20,sc:2.6,atk:88,ar:1.15,aoe:7,c:'#6b3a34',dsc:'融合した屍の山。周囲の群れを昂ぶらせ、薙ぎ払う'},
@@ -2977,7 +2983,7 @@ function buildTower(C,si,ti){
   for(let k=SUP_BASE;k<SLOTS.length;k++)if(F.towers[k]&&F.towers[k].ti===ti)return false;}
  else if(isEcoSlot(si)){if(T.type!=='eco'||!ecoUnlocked(F,si))return false;}
  else if(T.type==='eco'||T.type==='sup'||!slotUnlocked(F,si))return false;
- C.scrap-=T.cost;F.towers[si]={ti,us:{d:0,r:0,g:0,c:0,f:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:T.cost,own:C.gi||0};
+ C.scrap-=T.cost;F.towers[si]={ti,us:newUs(),cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:T.cost,own:C.gi||0};
  if(C.isMe)sfx.build();
  addFx(F,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:60,col:PANE});
  return true;
@@ -2996,7 +3002,7 @@ function canGrade(C,tw){
 function gradeTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
  if(!canGrade(C,tw)||C.dead||F.dead||C.scrap<GRD_COST)return false;
  if(G&&G.coop&&(tw.own||0)!==(C.gi||0))return false;
- C.scrap-=GRD_COST;tw.ti=GRD_TI;tw.us={d:0,r:0,g:0,c:0,f:0};tw.spent+=GRD_COST;tw.cd=0;
+ C.scrap-=GRD_COST;tw.ti=GRD_TI;tw.us=newUs();tw.spent+=GRD_COST;tw.cd=0;
  if(C.isMe){sfx.build();toast('⬆ '+TOWERS[GRD_TI].n+'になった!');}
  addFx(F,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:76,col:GOLD});
  return true;
@@ -4666,7 +4672,7 @@ function openBM(si){
   h+='</div>';
   if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">作戦タイムで『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
-  if(!tw.us)tw.us={d:0,r:0,g:0};
+  if(!tw.us)tw.us=newUs();
   const rows=twStats(tw.ti).map(st=>{
    const lvv=tw.us[st]||0,mx=lvv>=USTAT_MAX,p=mx?null:stCost(tw,st);
    let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+twChain(T,tw)+'体)':'')
@@ -4799,14 +4805,14 @@ function actPush(){
  if(G)pushTide(G.players[G.myIdx],PUSHTGT);
 }
 /* ---- アクション(ローカル/通信ルーティング) ---- */
-function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:{d:0,r:0,g:0,c:0,f:0},jamT:0,own:CS.myJ};sfx.build();}
+function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:newUs(),jamT:0,own:CS.myJ};sfx.build();}
  else buildTower(G.players[G.myIdx],si,ti);}
 function actUp(si,st){st=st||'d';
  if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
  else upTower(G.players[G.myIdx],si,st);}
 function actGrade(si){
  if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!canGrade(m,tw)||m.scrap<GRD_COST)return;
-  sendCmd({t:'c',a:'gd',si});CS.meN.scrap-=GRD_COST;tw.ti=GRD_TI;tw.us={d:0,r:0,g:0,c:0,f:0};sfx.build();return;}
+  sendCmd({t:'c',a:'gd',si});CS.meN.scrap-=GRD_COST;tw.ti=GRD_TI;tw.us=newUs();sfx.build();return;}
  if(G)gradeTower(G.players[G.myIdx],si);}
 function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;sendCmd({t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
  else sellTower(G.players[G.myIdx],si);}
@@ -5004,7 +5010,7 @@ function startSolo(){
   me.slk=SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<s0));}
  if(META.ec1){/* 廃品工房を建てた状態で開始 */
   const eti=TOWERS.findIndex(t=>t.type==='eco');
-  if(eti>=0)me.towers[ECO_BASE]={ti:eti,us:{d:0,r:0,g:0,c:0,f:0},cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:TOWERS[eti].cost,own:0};}
+  if(eti>=0)me.towers[ECO_BASE]={ti:eti,us:newUs(),cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:TOWERS[eti].cost,own:0};}
  startGameUI([]);
  $('strikebtn').textContent=STRIKES[me.stk].ic;
  $('tidebar').style.display='none';$('pushbtn').style.display='none';
@@ -7105,7 +7111,7 @@ function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
  fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,ec:F.ecoN||1,up:Math.round(C.up||0),sk:(F.slk||[]).map(v=>v?1:0).join(''),
- tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0]:0),
+ tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0)]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
@@ -7116,7 +7122,7 @@ function packLane(C){
 function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)continue;const P=G.players[k];
  const o={j:k,n:P.name,hp:Math.ceil(P.core),mx:P.coreMax,dd:P.dead?1:0,pl:P.place,kw:P.killsWave,tw:P.totalWave,rd:P.ready?1:0,sh:Math.round(G.tide.shares[k]),en:Math.round(P.scrap)};
  if(!G.coop)o.ln={fd:Math.round(P.flagD),
-   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0]:0),
+   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0)]:0),
    es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
    us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0])};
  a.push(o);}return a;}
@@ -7133,7 +7139,7 @@ function normMe(m){const old=CS.meN;
   else if(o5<3&&n5>=3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
   uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ecoN:m.ec||1,up:m.up||0,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
-  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0},fireT:0,ang:-.6,spent:TOWERS[x[0]].cost}:null)};}
+  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0},chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
  CS.w=d.w;CS.ph=d.ph;CS.tI=d.tI;CS.ot=d.ot||[];CS.ts=d.ts||[];CS.pr=d.pr||0;CS.tu=d.tu||0;
@@ -7219,7 +7225,7 @@ function clientCamp(dt){
   if(!o.ln)continue;
   let sc=CS.oc[o.j];if(!sc)sc=CS.oc[o.j]=mkSpecCamp();
   sc.core=o.hp;sc.coreMax=o.mx||50;sc.dead=!!o.dd;sc.waveDone=false;sc.flagD=o.ln.fd;
-  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0},fireT:0,ang:-.6,spent:0}:null);
+  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0},chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||0}:null);
   syncEnts(sc,o.ln.es||[],o.ln.us||[],dt);
  }
 }

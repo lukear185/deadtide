@@ -19,6 +19,10 @@ global.window=global;
 global.document={getElementById:id=>cache[id]||(cache[id]=mkEl(id)),createElement:()=>mkEl('dyn'),
  querySelectorAll:()=>[],addEventListener(){},body:{classList:{add(){},remove(){},toggle(){}}}};
 global.innerWidth=800;global.innerHeight=380;global.devicePixelRatio=1;global.navigator={};
+/* ⭐localStorage のスタブ。⚠これが無いと**中断/再開が一度も検査されない**
+   (実際に supN の保存漏れ=再開すると建てた支援施設が消えるバグを見逃していた) */
+{const LS={};global.localStorage={getItem:k=>(k in LS?LS[k]:null),setItem:(k,v)=>{LS[k]=''+v;},
+ removeItem:k=>{delete LS[k];},clear:()=>{for(const k in LS)delete LS[k];}};}
 let NOW=0;global.performance={now:()=>NOW};
 const rafq=[];global.requestAnimationFrame=f=>{rafq.push(f);return rafq.length;};
 global.AudioContext=function(){return {state:'running',resume(){},createOscillator:()=>({type:'',frequency:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect:()=>({connect(){}}),start(){},stop(){}}),createGain:()=>({gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect:()=>({connect(){}})}),destination:{},currentTime:0};};
@@ -266,6 +270,56 @@ function checkCryo(){
  if(z.frzT>0){console.log('FAIL: 上限(5回)を超えて凍っている');process.exit(1);}
  console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・再凍結なし・同じ敵は5回まで(強化で10) OK');
  backTitle();
+}
+/* ---- 中断 → 再開(ソロ)で持ち物が失われないか(2026-07-26に追加) ----
+   ⚠localStorage をスタブしたので初めて検査できるようになった。
+     以前は「保存系はヘッドレスでは検証されない」ままで、supN の保存漏れを見逃していた。 */
+function checkResume(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const m=G.players[0];
+ /* 一通り「進んだ状態」を作る=枠を開け、支援施設を建て、工房を上級化し、冷却塔を強化する */
+ m.scrap=99999;m.unlocked=T_PLAY;m.uUn=U_N;m.up=77;m.upTotal=120;m.uLv=4;m.atkLv=2;
+ m.core=41;m.kills=123;m.enTotal=4567;m.charge=.7;m.flagD=PLEN*.4;
+ m.ecoN=ECO_MAX;m.supN=SUP_MAX;m.slk=m.slk.map(()=>true);
+ /* 支援施設3種のうち2つを支援枠へ */
+ for(let k=0;k<SUP_MAX;k++){m.towers[SUP_BASE+k]=null;buildTower(m,SUP_BASE+k,T_PLAY+k);}
+ /* 工房を建てて全部MAX → 上級へ建て替え */
+ m.towers[ECO_BASE]=null;buildTower(m,ECO_BASE,ECO_TI);
+ for(const st of twStats(ECO_TI))m.towers[ECO_BASE].us[st]=USTAT_MAX;
+ m.scrap=99999;gradeTower(m,ECO_BASE);
+ /* 冷却塔を建てて❄冷却回数を上げる(us.f が保存されるか) */
+ const cti=TOWERS.findIndex(t=>t.id==='cryo'),csi=AI_ORDER[0];
+ m.towers[csi]=null;buildTower(m,csi,cti);m.towers[csi].us.f=3;m.towers[csi].us.r=2;
+ G.wave=7;G.phase='iv';
+ const want={supN:m.supN,ecoN:m.ecoN,unlocked:m.unlocked,uUn:m.uUn,uLv:m.uLv,up:Math.round(m.up),
+  atkLv:m.atkLv,core:m.core,kills:m.kills,slk:m.slk.filter(v=>v).length,
+  ecoTi:m.towers[ECO_BASE].ti,cryoF:m.towers[csi].us.f,cryoR:m.towers[csi].us.r,
+  sup:m.towers.slice(SUP_BASE).filter(t=>t).length,stk:m.stk};
+ saveRun();
+ backTitle();
+ if(!resumeRun()){console.log('FAIL: 中断したのに再開できない');process.exit(1);}
+ const n=G.players[0];
+ const got={supN:n.supN,ecoN:n.ecoN,unlocked:n.unlocked,uUn:n.uUn,uLv:n.uLv,up:Math.round(n.up),
+  atkLv:n.atkLv,core:n.core,kills:n.kills,slk:n.slk.filter(v=>v).length,
+  ecoTi:n.towers[ECO_BASE]?n.towers[ECO_BASE].ti:-1,
+  cryoF:n.towers[csi]?n.towers[csi].us.f:-1,cryoR:n.towers[csi]?n.towers[csi].us.r:-1,
+  sup:n.towers.slice(SUP_BASE).filter(t=>t).length,stk:n.stk};
+ for(const k of Object.keys(want))if(want[k]!==got[k]){
+  console.log('FAIL: 再開で '+k+' が失われている(中断時 '+want[k]+' → 再開後 '+got[k]+')');process.exit(1);}
+ /* 建ててあった支援施設が「未解放の枠の上」になっていないか=これが supN 保存漏れの症状 */
+ for(let k=0;k<SUP_MAX;k++)if(n.towers[SUP_BASE+k]&&!slotUnlocked(n,SUP_BASE+k)){
+  console.log('FAIL: 再開後、支援施設が未解放の枠に建っている(支援枠が閉じた)');process.exit(1);}
+ /* 上級廃品工房が再開後もちゃんと⚙️を生むか */
+ const g0=n.scrap;n.towers[ECO_BASE].cd=0;campStep(n,.05,G.wave);
+ if(n.scrap<=g0){console.log('FAIL: 再開した上級廃品工房が⚙️を生んでいない');process.exit(1);}
+ /* 強化ボタンの価格が NaN にならないか(usの形が場所ごとに違っていた事故の再発防止) */
+ for(let si=0;si<SLOTS.length;si++){const tw=n.towers[si];if(!tw)continue;
+  for(const st of twStats(tw.ti)){const p=stCost(tw,st);
+   if(!isFinite(p)){console.log('FAIL: 再開後の強化費がNaN(枠'+si+' '+st+')');process.exit(1);}}}
+ console.log('中断→再開: 支援枠'+got.supN+'・工房'+got.ecoN+'・支援施設'+got.sup+'基・上級工房・冷却塔の強化(f='+got.cryoF+')'
+  +'・解放'+got.unlocked+'種・マス'+got.slk+'枠 すべて引き継げている OK');
+ clearRun();backTitle();
 }
 /* ---- 火炎放射塔の周囲ダメージ / レーザー塔の焼き切り / 廃品工房の建て替え(2026-07-26) ---- */
 function checkTwNew(){
@@ -1062,6 +1116,7 @@ checkBite();
 checkFx2();
 checkGachaFx();
 checkTwFx();
+checkResume();
 checkTwNew();
 checkCryo();
 checkBeam();
