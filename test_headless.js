@@ -414,6 +414,33 @@ function checkResume(){
  clearRun();backTitle();
 }
 /* ---- 研究所の個別強化(タワー1種ごと / 兵科1種ごと)と砲撃の威力(2026-07-26) ---- */
+/* ---- 研究所の個別強化の「刻み」(2026-07-26 第88弾) ----
+   ⭐ユーザー指示「3段だとすぐ強化が終わって全部マックスになる。
+     おれはこの火炎系を上げていくぞ、みたいな各々のビルドを作っていくのを大事にしたい」。
+   ⚠**狙いそのものを数字で見張る**=段数を戻したり価格を緩めたりすると落ちる。
+     ①十分細かく刻んであるか ②1本は手が届くか ③全部取りは手が届かないか。
+   ⚠②と③の両方を見ること。どちらか片方だと「全部安い」「全部高い」に倒れても気づけない。 */
+function checkLabSteps(){
+ if(LINE_MAX<10){console.log('FAIL: 個別強化の段数が少なすぎる('+LINE_MAX+'段)=すぐ全部マックスになる');process.exit(1);}
+ if(STK_MAX<10){console.log('FAIL: 砲撃の段数が少なすぎる('+STK_MAX+'段)');process.exit(1);}
+ const sum=(f)=>{let t=0;for(let i=0;i<LINE_MAX;i++)t+=f(i);return t;};
+ const tw1=sum(LAB_TW),un1=sum(LAB_UN);
+ let st1=0;for(let i=0;i<STK_MAX;i++)st1+=LAB_ST0(i);
+ /* 1本を伸ばし切るのは「数回の出撃ぶん」で届くこと(届かないと選ぶ楽しみ以前に何も伸びない) */
+ if(tw1>4000||un1>4000){console.log('FAIL: 1本を伸ばし切るのが高すぎる(タワー'+tw1+'/兵科'+un1+'🧬)');process.exit(1);}
+ if(tw1<800||un1<800){console.log('FAIL: 1本を伸ばし切るのが安すぎる(タワー'+tw1+'/兵科'+un1+'🧬)=すぐ終わる');process.exit(1);}
+ /* 全部取りは手が届かないこと=何を伸ばすか選ばせるための本丸 */
+ const seenT={};let nT=0;
+ for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];if(T.type==='sup')continue;
+  const k=twKey(T);if(seenT[k])continue;seenT[k]=1;nT++;}
+ const all=tw1*nT+un1*U_N+st1;
+ if(all<60000){console.log('FAIL: 全部取りが安すぎる('+all+'🧬)=結局すべてマックスになる');process.exit(1);}
+ /* 1段の伸びが細かいこと(段数だけ増やして1段を据え置くと、伸び切った時に壊れる) */
+ if(TW_DMG_STEP*LINE_MAX>1.5){console.log('FAIL: 伸び切ったタワーが強すぎる(x'+(1+TW_DMG_STEP*LINE_MAX).toFixed(2)+')');process.exit(1);}
+ for(const ty in TW_TRAIT){const v=TW_TRAIT[ty].v*LINE_MAX;
+  if(TW_TRAIT[ty].k!=='chain'&&v>2){console.log('FAIL: 伸び切った持ち味が強すぎる '+ty+' +'+Math.round(v*100)+'%');process.exit(1);}}
+ console.log('研究所の刻み: '+LINE_MAX+'段 / 1本フル タワー'+tw1+'・兵科'+un1+'🧬 / 全部取り'+all+'🧬(=選ばせる) OK');
+}
 function checkPerUp(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0],si=AI_ORDER[0],[sx,sy]=SLOTS[si];
@@ -596,7 +623,11 @@ function checkPerUp(){
   META.tw={};const p0=ecoPer(TOWERS[ECO_TI],tw3);
   META.tw={scrap:LINE_MAX};const p1=ecoPer(TOWERS[ECO_TI],tw3);
   const wantR=1+TW_TRAIT.eco.v*LINE_MAX;
-  if(Math.abs(p1/p0-wantR)>.06){console.log('FAIL: 工房の産出に研究所の強化が乗っていない 期待x'+wantR.toFixed(2)+' 実際x'+(p1/p0).toFixed(2));process.exit(1);}
+  /* ⚠**倍率(割り算)で見てはいけない**。ecoPer は Math.round した整数を返すので、
+     素が5⚙️だと x1.70 の期待に対して round(8.5)=9 → 実測 x1.80 になり、
+     正しく効いていても落ちる(2026-07-26に段数を20に刻んだ時に踏んだ)。
+     **丸めの1⚙️ぶんを許して「値」で見る**。強化が丸ごと乗っていなければ差は1より大きく開く。 */
+  if(Math.abs(p1-p0*wantR)>1.2){console.log('FAIL: 工房の産出に研究所の強化が乗っていない 期待'+(p0*wantR).toFixed(1)+'⚙️ 実際'+p1+'⚙️(x'+(p1/p0).toFixed(2)+')');process.exit(1);}
   /* 実際に⚙️が入る額と、精算に使う額が一致するか(2か所に式が散らばる事故の再発防止) */
   const g0=me3.scrap;tw3.cd=0;campStep(me3,.001,G.wave);const real=me3.scrap-g0;
   if(real!==p1){console.log('FAIL: 実際に入る⚙️('+real+')と ecoPer('+p1+')が食い違う=式が2か所にある');process.exit(1);}
@@ -1558,6 +1589,7 @@ checkTut();
 checkResume();
 checkTwNew();
 checkPerUp();
+checkLabSteps();
 checkCryo();
 checkBeam();
 checkCoil();

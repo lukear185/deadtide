@@ -1607,29 +1607,41 @@ const LAB_AM=[240,460,760];/* ビーム/プラズマ/崩壊の解放価格 */
  ⚠保存は META.tw{タワーid:Lv} / META.un{兵科id:Lv}。**旧 META.tl/ul(型ごと)は廃止**した
    (直前の META_RESET=1 で全プレイヤーの tl/ul は空になっているので、移行するものが無い)。
  ⚠idで引くので、**タワー/兵科を足したら自動で強化対象になる**(型の表に足す必要はもう無い)。 */
-const LINE_MAX=3;
-/* 型ごとの「持ち味」の伸び(1段あたり)。⚠ここに無い型は威力だけ伸びる */
+/* ⭐**20段まで刻む**(2026-07-26ユーザー指示)。
+   「3段だとすぐ強化が終わって全部マックスになる。**おれはこの火炎系を上げていくぞ**みたいな
+     各々のビルドを作っていくのを大事にしたい」。
+   ⚠**1段の伸びを小さく・段数を多く・全部取りは手が届かない**の3つで「選ばせる」。
+     1種フル(20段)= タワー約2,400🧬 / 兵科約1,800🧬 に対し、**全部取ると約11万🧬**
+     (=1〜数回の出撃で1本は伸ばせるが、52本すべては到底埋まらない)。
+   ⚠伸び切った時の強さは3段だった頃より上げてある(威力 +45%→**+100%**)。
+     20段ぶん注ぎ込むのだから、伸ばした1本は「別物」になるべき。 */
+const LINE_MAX=20;
+/* 型ごとの「持ち味」の伸び(1段あたり)。⚠ここに無い型は威力だけ伸びる。
+   ⚠20段で: 産出+70% / 燃焼+160% / 減速・凍結+100% / 爆発範囲+50% / 連鎖+5 */
 const TW_TRAIT={
- eco:{k:'inc',v:.15,t:'産出+15%'},
- fire:{k:'burn',v:.25,t:'継続燃焼+25%'},
- net:{k:'slow',v:.20,t:'減速/凍結+20%'},
- blast:{k:'aoe',v:.12,t:'爆発範囲+12%'},
- elec:{k:'chain',v:1,t:'連鎖+1'}
+ eco:{k:'inc',v:.035,t:'産出+3.5%'},
+ fire:{k:'burn',v:.08,t:'継続燃焼+8%'},
+ net:{k:'slow',v:.05,t:'減速/凍結+5%'},
+ blast:{k:'aoe',v:.025,t:'爆発範囲+2.5%'},
+ /* ⚠連鎖は整数なので端数を切り捨てる=4段ごとに1体増える(使う側で Math.floor する) */
+ elec:{k:'chain',v:.25,t:'連鎖+0.25体'}/* ⚠カードは「…/段」と続くので**1段あたりの言い方**にする(4段で+1体) */
 };
 /* 一覧に出す絵文字。⚠タワー20枚・兵科32枚が全部同じ絵だと見分けられないので型で変える */
 const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡'};
 const UN_IC={melee:'⚔',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚'};
-const TW_DMG_STEP=.15;/* タワーの威力(1段あたり) ⚠工房(eco)は威力を使わないので産出だけ */
+const TW_DMG_STEP=.05;/* タワーの威力(1段あたり)=20段で+100%。⚠工房(eco)は威力を使わないので産出だけ */
 /* 兵科は近接だけHP寄り、それ以外は攻撃寄り(型ごと強化の時の配分をそのまま引き継ぐ) */
-const UN_STEP=ty=>ty==='melee'?{a:.10,h:.10}:{a:.12,h:.08};
-/* 価格。⚠対象が20種/32種に増えたぶん1種あたりは安くしてある
-   (全部取り切ると タワー5,700 + 兵科6,848 = 12,548🧬。型ごとだった頃の全取り7,973より多いが、
-    「使う数種だけ選んで伸ばす」のが狙いなので全部取る前提にしない) */
-const LAB_TW=lv=>Math.round(60*Math.pow(1.5,lv));/* 60/90/135 = 1種フル285 */
-const LAB_UN=lv=>Math.round(45*Math.pow(1.5,lv));/* 45/68/101 = 1種フル214 */
+const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 20段で 近接+60%/+60% それ以外+80%/+40% */
+/* 価格。⚠**1段が安く・段数が多い**形にしてある(x1.5だと20段目が天文学的になるので x1.13)。
+   1段目は タワー30 / 兵科22 と手軽で、20段目は タワー306 / 兵科224。
+   1種フル= タワー約2,428🧬 / 兵科約1,781🧬。
+   ⚠**全部取ると約11万🧬**(タワー20本48,560 + 兵科32本56,992 + 砲撃4,857)。
+     3段だった頃の全取り12,548🧬の約9倍=**全部埋める前提の数字ではない**。何を伸ばすか選ぶこと。 */
+const LAB_TW=lv=>Math.round(30*Math.pow(1.13,lv));/* 30…306 = 1種フル約2,428 */
+const LAB_UN=lv=>Math.round(22*Math.pow(1.13,lv));/* 22…224 = 1種フル約1,781 */
 /* ⭐🎯砲撃の威力(2026-07-26ユーザー指示)。今までは砲撃だけ**研究所で一切強化できなかった** */
-const STK_MAX=5,STK_STEP=.12;/* 5段・+12%/段 = 最大×1.60 */
-const LAB_ST0=lv=>Math.round(130*Math.pow(1.5,lv));/* 130/195/293/439/658 = フル1,715 */
+const STK_MAX=20,STK_STEP=.04;/* 20段・+4%/段 = 最大×1.80(タワー/兵科と同じ刻みに揃えた) */
+const LAB_ST0=lv=>Math.round(60*Math.pow(1.13,lv));/* 60…612 = フル約4,857 */
 /* そのタワー/兵科の強化Lv。⚠ソロ専用メタ(協力/対戦とクライアントでは必ず0) */
 /* ⭐強化を引くキー。**工房の3段(廃品工房/上級/プラント)は1つの枠を共有する**
    =建て替えで強化が無駄にならないため。⚠支援施設(sup)は強化しない(タワーの性能に触らない約束) */
@@ -3877,10 +3889,10 @@ function campStep(C,dt,wave){
    if(Math.random()<.35)twSfx(C,T);}
   else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
     跳ねるたびに威力が grow 倍(gmax 倍で頭打ち)＝群れが長いほど後半が重くなる */
-   const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?TRT.v*TL:0);
+   const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
    C.arcs.push({x:sx,y:sy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
-  else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?TRT.v*TL:0);
+  else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
    let cur=tg,hitl=[tg],pts=[[sx,sy],[tg.px,tg.py]];dmgZ(C,cur,dm*(cur.scl?ELEC_VS_SCALE:1),1);
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
@@ -5168,7 +5180,7 @@ function openBM(si){
   const rows=twStats(tw.ti).map(st=>{
    const lvv=tw.us[st]||0,mx=lvv>=USTAT_MAX,p=mx?null:stCost(tw,st);
    /* ⚠⚡連鎖数は研究所の個別強化(elecの持ち味+1/段)も足して出す=実際に飛ぶ数と合わせる */
-   const chBonus=(TW_TRAIT[T.type]&&TW_TRAIT[T.type].k==='chain')?TW_TRAIT[T.type].v*twlv(twKey(T)):0;
+   const chBonus=(TW_TRAIT[T.type]&&TW_TRAIT[T.type].k==='chain')?Math.floor(TW_TRAIT[T.type].v*twlv(twKey(T))):0;
    let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
     +(st==='f'?(mx?'('+twFrzN(T,tw)+'回)':'('+twFrzN(T,tw)+'→'+(twFrzN(T,tw)+1)+'回)'):'')
     /* 🔥昇温速度は「最大倍率まで何発か」を出す=数字が減るほど良い、と分かるように */
