@@ -2067,6 +2067,12 @@ function zFill(c,pathFn,col,yc){
  c.fillStyle=shade(col,.74);pathFn();c.fill();c.restore();
  pathFn();c.stroke();
 }
+/* ⭐ゾンビの「色の区分け」(2026-07-27 第96弾)。**肌は Z.c、服と装備はここから引く**。
+   ⚠それまで頭も服も脚も Z.c 一色+明暗1段だったので、形をどう凝っても「緑の塊」に見えていた。
+   ⚠体ごとに服の色を変えると盤面が散らかるので、**服は3系統(sh/sh2/rag)だけ**に絞る。
+   ⚠獣(ハウンド)・塊(スライム)・幽霊(レイス)・全身鉄(重装兵/ジャガーノート)は
+     服を着ていないか元から2色以上あるので**触らない**。 */
+const ZW={sh:'#4d5a68',sh2:'#5f5142',rag:'#6b6152',pa:'#4a3d2e',sho:'#2b2419',bl:'#5e211d'};
 /* 目。⚠22pxでは点1つに潰れるので、白目を大きめに取って「目がある」ことだけ伝える */
 function zEye(c,x,y,r){r=r||2.3;
  c.fillStyle='#fff';c.beginPath();c.arc(x,y,r,0,7);c.fill();
@@ -6482,7 +6488,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠**肌を出す所を作る**(頭・片腕の袖から先・裾から下)=全部服だと着ぐるみに見える。
     ⚠片袖を破って**左右で腕の見た目を変える**。左右対称だと置物に見える。 */
   const sw=walk*3.2;
-  const SKIN=Z.c,SHIRT='#4d5a68',PANTS='#4a3d2e',SHOE='#2b2419',BLOOD='#5e211d';
+  const SKIN=Z.c,SHIRT=ZW.sh,PANTS=ZW.pa,SHOE=ZW.sho,BLOOD=ZW.bl;/* 色は ZW の表から引く */
   /* ⭐**割り付け(ここが一番効く)**: 全高55のうち 頭13 / 胴17 / 脚24。
      ⚠頭を全高の3割まで大きくすると人形に見える(2回踏んだ)。⚠逆に2割まで小さくすると顔が読めない。
      ⚠**頭は肩より狭く**(頭12幅 vs 肩19幅)。同じ幅だと全身のうち頭だけが目に入る。 */
@@ -6544,31 +6550,39 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.beginPath();c.moveTo(.6,-42);c.lineTo(5.4,-42.2);c.lineTo(4.6,-40);c.lineTo(1.4,-40);c.closePath();c.fill();
   c.restore();return;}
  if(Z.id==='run'){/* ランナー: 全力で走る人。胴を斜めに**立て**、手足を大きく前後に振る。
-    ⚠胴を横に寝かせると四つ足の生き物に見える(一度そうなった) */
+    ⚠胴を横に寝かせると四つ足の生き物に見える(一度そうなった)。
+    ⭐色の区分け(第96弾)=脚はズボン・胴はシャツ・腕と頭は肌。⚠靴を足すと足先が地面から浮いて見えたので付けていない */
   const sw=Math.sin(t*15+ph);
   c.lineCap='round';
-  c.strokeStyle=shade(Z.c,.54);c.lineWidth=6.5/s;
+  c.strokeStyle=shade(ZW.pa,.8);c.lineWidth=6.5/s;/* 奥の脚(ズボン) */
   c.beginPath();c.moveTo(-3,-23);c.lineTo(-13-sw*5,-15);c.lineTo(-19-sw*7,-2);c.stroke();
-  c.strokeStyle=shade(Z.c,.6);c.lineWidth=5/s;
+  c.strokeStyle=shade(Z.c,.6);c.lineWidth=5/s;/* 奥の腕(肌) */
   c.beginPath();c.moveTo(1,-37);c.lineTo(-12-sw*4,-31);c.stroke();
   c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
-  zFill(c,()=>{c.beginPath();c.ellipse(1,-30,10,13,.62,0,7);},Z.c,-30);
+  zFill(c,()=>{c.beginPath();c.ellipse(1,-30,10,13,.62,0,7);},ZW.sh,-30);/* 胴(シャツ) */
+  c.fillStyle=ZW.bl;/* 脇腹の血 */
+  c.beginPath();c.moveTo(-2,-30);c.lineTo(4,-32);c.lineTo(5,-27);c.lineTo(-1,-25);c.closePath();c.fill();
   c.lineCap='round';
-  c.strokeStyle=shade(Z.c,.74);c.lineWidth=6.5/s;
+  c.strokeStyle=ZW.pa;c.lineWidth=6.5/s;/* 手前の脚(ズボン) */
   c.beginPath();c.moveTo(2,-23);c.lineTo(12+sw*5,-18);c.lineTo(14+sw*6,-2);c.stroke();
-  c.strokeStyle=shade(Z.c,.92);c.lineWidth=5/s;
+  c.strokeStyle=shade(Z.c,.92);c.lineWidth=5/s;/* 手前の腕(肌) */
   c.beginPath();c.moveTo(5,-36);c.lineTo(18+sw*4,-33);c.stroke();
   c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
   zFill(c,()=>{c.beginPath();c.arc(11,-44,8.5,0,7);},Z.c,-44);
   zEye(c,15,-45,2.2);
+  c.fillStyle=INK;c.beginPath();c.ellipse(13,-40,2.4,1.6,-.2,0,7);c.fill();/* 開いた口 */
   c.restore();return;}
  if(Z.id==='arm'){/* アーマード: 胸当てと半分だけの兜。顔も手足もむき出し。
     ⚠重装兵(全身鉄板で顔が見えない・横に広い)と**同じ絵にならないよう**にここで分けている */
   const sw=walk*2.8;
-  c.fillStyle=shade(Z.c,.56);
+  /* ⭐色の区分け(第96弾)=脚はズボン+靴・胴はシャツ・胸当てと兜は鉄・顔と腕は肌 */
+  c.fillStyle=shade(ZW.pa,.8);
   rr(c,-9+sw,-14,8,15,3);c.fill();c.stroke();
+  c.fillStyle=ZW.pa;
   rr(c,1-sw,-14,8,15,3);c.fill();c.stroke();
-  zFill(c,()=>rr(c,-10,-39,21,26,4),Z.c,-26);
+  c.fillStyle=ZW.sho;/* 靴 */
+  rr(c,-10+sw,-4,9,5,2);c.fill();c.stroke();rr(c,1-sw,-4,9,5,2);c.fill();c.stroke();
+  zFill(c,()=>rr(c,-10,-39,21,26,4),ZW.sh,-26);
   c.fillStyle='#3f4a54';
   rr(c,-15,-39,30,15,2);c.fill();c.stroke();
   c.fillStyle='#8a8f96';c.fillRect(-15,-33,30,3);
@@ -6582,8 +6596,10 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.restore();return;}
  if(Z.id==='blo'){/* ブローター: ほぼ球。膞れた腹に小さな頭が埋まり、脚は短い切り株 */
   const br=Math.sin(t*2.6+ph)*1.6,sw=walk*2.4;
-  c.fillStyle=shade(Z.c,.6);
+  /* ⭐色の区分け(第96弾)=短い脚に破れたズボン。腹は肌のまま(ここが売りなので服で隠さない) */
+  c.fillStyle=shade(ZW.pa,.82);
   rr(c,-13+sw,-12,10,13,4);c.fill();c.stroke();
+  c.fillStyle=ZW.pa;
   rr(c,3-sw,-12,10,13,4);c.fill();c.stroke();
   c.fillStyle=shade(Z.c,.8);
   rr(c,15,-32,13,7,3);c.fill();c.stroke();
@@ -6595,14 +6611,15 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.restore();return;}
  if(Z.id==='scr'){/* スクリーマー: のけ反って両腕を上げ、叫びの輪を飛ばす。唯一の「腕が上がった」輪郭 */
   const sw=Math.sin(t*8+ph);
-  c.lineCap='round';c.strokeStyle=shade(Z.c,.6);c.lineWidth=6/s;
+  /* ⭐色の区分け(第96弾)=脚はズボン・胴はぼろ布(他の2人と違う系統)・上げた腕と頭は肌 */
+  c.lineCap='round';c.strokeStyle=shade(ZW.pa,.9);c.lineWidth=6/s;
   c.beginPath();c.moveTo(-4,-15);c.lineTo(-7,-1);c.stroke();
   c.beginPath();c.moveTo(4,-15);c.lineTo(8,-1);c.stroke();
   c.strokeStyle=shade(Z.c,.86);c.lineWidth=5/s;
   c.beginPath();c.moveTo(-3,-34);c.lineTo(-14,-45-sw*3);c.stroke();
   c.beginPath();c.moveTo(4,-34);c.lineTo(15,-47+sw*3);c.stroke();
   c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
-  zFill(c,()=>rr(c,-9,-38,19,25,8),Z.c,-26);
+  zFill(c,()=>rr(c,-9,-38,19,25,8),ZW.rag,-26);
   c.save();c.translate(1,-44);c.rotate(-.5);
   zFill(c,()=>{c.beginPath();c.ellipse(0,0,8.5,9.5,0,0,7);},Z.c,0);
   c.fillStyle=INK;c.beginPath();c.ellipse(1,4,3.6,5,0,0,7);c.fill();
@@ -6640,7 +6657,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    c.beginPath();c.moveTo(-10+k*10,-4);c.lineTo(-15+k*10+w2,3);c.stroke();
    c.beginPath();c.moveTo(-10+k*10,-11);c.lineTo(-15+k*10-w2,-19);c.stroke();}
   c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
-  zFill(c,()=>rr(c,-19,-15,36,14,6),Z.c,-8);
+  /* ⭐色の区分け(第96弾)=這っている胴はシャツ、頭と手足は肌 */
+  zFill(c,()=>rr(c,-19,-15,36,14,6),ZW.sh,-8);
   zFill(c,()=>{c.beginPath();c.ellipse(20,-13,9,7,-.15,0,7);},Z.c,-13);
   zEye(c,23,-15,2.2);
   c.restore();return;}
@@ -6658,8 +6676,10 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.restore();return;}
  if(Z.id==='brut'){/* ブルート: 逆三角形。肩が大きく張り出し、長い腕を地面まで垂らす */
   const sw=walk*2.5;
-  c.fillStyle=shade(Z.c,.58);
+  /* ⭐色の区分け(第96弾)=破れたズボンだけ履いている(上半身は裸=肩幅が売りなので服で隠さない) */
+  c.fillStyle=shade(ZW.pa,.8);
   rr(c,-11+sw,-15,10,16,4);c.fill();c.stroke();
+  c.fillStyle=ZW.pa;
   rr(c,2-sw,-15,10,16,4);c.fill();c.stroke();
   c.lineCap='round';c.strokeStyle=shade(Z.c,.76);c.lineWidth=9/s;
   c.beginPath();c.moveTo(-14,-38);c.quadraticCurveTo(-25,-26,-21+sw*2,-4);c.stroke();
@@ -6676,10 +6696,11 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠爪を**頭と同じ高さ**に置くと「開いた噂」に見えて鳥になる(一度そうなった)。
     ⚠頭を胴と地続きにすると「首の無い鳥」になるので、短い首を入れて離す */
   const sw=Math.sin(t*14+ph);
+  /* ⭐色の区分け(第96弾)=脚は破れたズボン。上半身は肌のまま(低く構えた胴と爪が売りなので隠さない) */
   c.lineCap='round';
-  c.strokeStyle=shade(Z.c,.54);c.lineWidth=6/s;
+  c.strokeStyle=shade(ZW.pa,.78);c.lineWidth=6/s;
   c.beginPath();c.moveTo(-8,-22);c.lineTo(-18-sw*4,-16);c.lineTo(-13-sw*5,-1);c.stroke();
-  c.strokeStyle=shade(Z.c,.7);
+  c.strokeStyle=ZW.pa;
   c.beginPath();c.moveTo(-4,-22);c.lineTo(4+sw*4,-15);c.lineTo(0+sw*5,-1);c.stroke();
   /* 後ろの腕(暗い方を胴より先に描く) */
   c.strokeStyle=shade(Z.c,.62);c.lineWidth=4.6/s;
