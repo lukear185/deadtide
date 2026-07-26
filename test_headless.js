@@ -104,7 +104,10 @@ function runPvP(tag){
  console.log(tag+': over='+(G&&G.over)+' wave='+(G&&G.wave)+' winner='+(G&&G.winner>=0?G.players[G.winner].name:'?')+' places=['+(G?G.players.map(p=>p.name+':'+p.place).join(','):'')+'] dep0='+dep+' push0='+pushed+' guard='+guard+' ('+mins+'分)');
  for(const P of (G?G.players:[])) console.log('  ['+P.name+'] dead='+P.dead+' core='+Math.ceil(P.core)+' units='+P.units.length+' dep='+P.dep+' kills='+P.kills+' twr='+P.towers.filter(t=>t).length+' 回収⚙️='+Math.round(P.enTotal)+' uUn='+P.uUn);
  if(!G||!G.over){console.log('FAIL: 終了せず');process.exit(1);}
- if(mins>10)console.log('WARN: 決着まで10分超('+mins+'分)');
+ /* ⚠1試合が長いことは問題ではない(2026-07-26ユーザー明示)。
+    「息抜きゲーム」は**別プロジェクトの合間に作る**という意味で、短時間で終わるゲームという意味ではない。
+    無限に終わらない(=決着しない)ことだけが困るので、その水準まで閾値を上げてある */
+ if(mins>45)console.log('WARN: 決着まで45分超('+mins+'分)=綱引きが噛み合っていない疑い');
  backTitle();
 }
 /* ---- 協力プレイ(ホスト+疑似リモート2) ---- */
