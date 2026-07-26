@@ -314,6 +314,21 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:4px 6px;font-size:11px;color:var(--paper);text-align:left}
 .hgrid .hb.own{border-color:var(--paper)}
 .hgrid .hb .hq{font-size:10px;opacity:.75}
+/* ⭐召集画面の骨格(2026-07-27 第93弾): 左2/3=目玉の英雄 / 右1/3=💎と大きなボタン。
+   ⚠**横画面は高さ393pxしか無い**=参考にした本物の召集画面は縦画面なので、縦に積むと画面外に出る。
+     ここは必ず**横に2つ並べる**こと。 */
+.gchome{display:flex;gap:8px;height:100%;align-items:stretch}
+.gcshow{flex:1 1 auto;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void)}
+/* ⚠canvasは中の寸法(width/height属性)とCSSの寸法を合わせること=食い違うと絵が潰れる(gcHomeFit) */
+#gc-hcv{display:block;width:100%;height:100%}
+.gcside{flex:0 0 200px;display:flex;flex-direction:column;gap:6px}
+.gcgemb{border:3px solid var(--ink);border-radius:11px;background:var(--ink3);color:var(--gold);
+ font-weight:900;font-size:20px;text-align:center;padding:2px 0;letter-spacing:-.5px}
+.gcbig{width:100%;padding:8px 6px;font-size:17px;line-height:1.1}
+.gcbig small{display:block;font-size:12px;font-weight:900;opacity:.85;margin-top:1px}
+.gcrow2{display:flex;gap:5px}
+.gcrow2 .btn{flex:1 1 0;padding:5px 4px}
+.gchint{font-size:10.5px;font-weight:700;opacity:.75;line-height:1.35;margin-top:auto}
 /* 💎英雄召集の演出(第71弾): パネル全面にかぶせる canvas。押すと次へ */
 .modal .panel.bigpanel{position:relative}
 #gc-cv{position:absolute;left:0;top:0;width:100%;height:100%;display:none;z-index:6;
@@ -669,13 +684,27 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div class="modal" id="md-gacha">
   <div class="panel bigpanel">
     <div class="bphd"><b>💎 英雄召集</b><span class="pt" id="gc-gem"></span><button class="xbtn" id="bt-gacha-close">✕</button></div>
-    <div class="bprow">
-      <button class="btn gold sm" id="gc-1">単発 💎3</button>
-      <button class="btn gold sm" id="gc-10">10連 💎25</button>
-      <button class="btn sm" id="gc-rate">確率</button>
-      <span class="bphint" style="margin:0">💎はボス撃破でのみ入手(通常+1 / 最終+3)</span>
+    <div class="bpbody">
+      <!-- 召集画面の骨格(第93弾): 左=目玉の英雄を大きく / 右=💎所持と大きな単発/10連 -->
+      <div class="gchome" id="gc-home">
+        <div class="gcshow"><canvas id="gc-hcv"></canvas></div>
+        <div class="gcside">
+          <div class="gcgemb" id="gc-gemb">💎 0</div>
+          <button class="btn gold gcbig" id="gc-1">単発<small>💎3</small></button>
+          <button class="btn gold gcbig" id="gc-10">10連<small>💎25</small></button>
+          <div class="gcrow2">
+            <button class="btn sm" id="gc-dex">📖 図鑑</button>
+            <button class="btn sm" id="gc-rate">確率</button>
+          </div>
+          <div class="gchint" id="gc-hint">💎はボス撃破のみ(通常+1 / 最終+3)</div>
+        </div>
+      </div>
+      <!-- ⚠図鑑と確率は畳んでおく(常時出すと目玉の英雄より図鑑の方が目立つ) -->
+      <div id="gc-sub" style="display:none">
+        <div class="bprow"><button class="btn sm" id="gc-back">← 戻る</button><span class="bphint" id="gc-subt" style="margin:0"></span></div>
+        <div id="gc-res"></div><div id="gc-list"></div>
+      </div>
     </div>
-    <div class="bpbody"><div id="gc-res"></div><div id="gc-list"></div></div>
     <!-- 💎召集の演出(第71弾): パネル全面にかぶせる。押すと次へ/まとめて見る -->
     <canvas id="gc-cv"></canvas>
   </div>
@@ -10381,7 +10410,7 @@ function applyIcons(){
   ['#md-load .bphd b','ic-load','🎖'],['#md-gacha .bphd b','ic-gem','💎'],
   /* ⭐💎召集の画面は**見出しだけ画像で、ボタンと説明文が絵文字のまま**だったので
      同じ画面に2種類の💎が並んでいた(2026-07-26ユーザー指摘)。同じ資源は必ず同じ絵にする */
-  ['#gc-1','ic-gem','💎'],['#gc-10','ic-gem','💎'],['#md-gacha .bphint','ic-gem','💎'],
+  ['#gc-1','ic-gem','💎'],['#gc-10','ic-gem','💎'],['#gc-hint','ic-gem','💎'],
   ['#md-gcres .bphd b','ic-gem','💎'],['#tr-foot .btn','ic-mat','🔧'],
   ['#corepanel span','ic-core','🏕'],['#flagbtn','ic-flag','🚩']];
  for(const [sel,ic,em] of M){
@@ -10674,12 +10703,9 @@ $('bt-itr-ok').onclick=()=>{sfx.buy&&sfx.buy();introNext();};
    ⚠やり方は bakeUThumb と同じ=**一度描いて絵のある範囲を測り、枠いっぱいになる倍率で描き直す**。
    ⚠**焼いた絵を引き伸ばさない**(ぼやける)。測るのは下絵、本番は**もう一度ベクタで描く**。
    ⚠getImageData が使えない環境(ヘッドレス)では測れないので、そのまま中央に置くだけにする。 */
-function fitDraw(cvv,drawFn,pad){
- if(!cvv)return;
- const c=cvv.getContext&&cvv.getContext('2d');if(!c)return;
- const W=cvv.width||56,H=cvv.height||56,B=200,m=pad==null?3:pad;
- if(c.clearRect)c.clearRect(0,0,W,H);
- let box=null;
+/* 絵のある範囲を測るだけ(前半)。⚠測れない環境(ヘッドレス)では null */
+function fitMeasure(drawFn){
+ const B=200;
  try{
   const tmp=document.createElement('canvas');tmp.width=B;tmp.height=B;
   const t=tmp.getContext('2d');
@@ -10688,15 +10714,43 @@ function fitDraw(cvv,drawFn,pad){
    const d=t.getImageData(0,0,B,B).data;let x0=B,y0=B,x1=-1,y1=-1;
    for(let y=0;y<B;y++)for(let x=0;x<B;x++)if(d[(y*B+x)*4+3]>12){
     if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
-   if(x1>x0&&y1>y0)box=[x0-B*.5,y0-B*.72,x1-B*.5,y1-B*.72];}
+   if(x1>x0&&y1>y0)return [x0-B*.5,y0-B*.72,x1-B*.5,y1-B*.72];}
  }catch(e){}
+ return null;
+}
+/* ⚠測るのは重い(200×200のピクセルを全部見る)ので、毎フレーム描く所は**キーで覚えておく** */
+const FITBOX={};
+function fitBox(key,drawFn){
+ if(key&&FITBOX[key]!==undefined)return FITBOX[key];
+ const b=fitMeasure(drawFn);if(key)FITBOX[key]=b;return b;
+}
+/* 枠の中で絵が実際に占める矩形[x0,y0,x1,y1]を**先に**知る。
+   ⚠背景に光や影を敷きたい時に要る(描いてから測ると手遅れ)。fitDrawIn と同じ式で計算すること */
+function fitRect(key,drawFn,x,y,w,h,pad){
+ const box=fitBox(key,drawFn),m=pad==null?3:pad;
+ if(!box)return [x+w*.25,y+h*.25,x+w*.75,y+h*.75];
+ const k=Math.min((w-m*2)/(box[2]-box[0]+1),(h-m*2)/(box[3]-box[1]+1));
+ const cw=(box[2]-box[0])*k*.5,ch=(box[3]-box[1])*k*.5;
+ return [x+w/2-cw,y+h/2-ch,x+w/2+cw,y+h/2+ch];
+}
+/* canvasの**一部分**(x,y,w,h)を枠に見立てて、そこいっぱいに描く。
+   ⚠fitDraw は canvas 全面版。背景の上に重ねる時はこちらを使う */
+function fitDrawIn(c,drawFn,x,y,w,h,pad,key){
+ const box=fitBox(key,drawFn),m=pad==null?3:pad;
  c.save();
- if(box){const k=Math.min((W-m*2)/(box[2]-box[0]+1),(H-m*2)/(box[3]-box[1]+1));
-  c.translate(W/2,H/2);c.scale(k,k);c.translate(-(box[0]+box[2])/2,-(box[1]+box[3])/2);}
- else {c.translate(W/2,H*.78);const s=Math.min(W,H)/64;c.scale(s,s);}
+ if(box){const k=Math.min((w-m*2)/(box[2]-box[0]+1),(h-m*2)/(box[3]-box[1]+1));
+  c.translate(x+w/2,y+h/2);c.scale(k,k);c.translate(-(box[0]+box[2])/2,-(box[1]+box[3])/2);}
+ else {c.translate(x+w/2,y+h*.78);const s=Math.min(w,h)/64;c.scale(s,s);}
  c.lineWidth=3;c.strokeStyle=INK;
  try{drawFn(c);}catch(e){}
  c.restore();
+}
+function fitDraw(cvv,drawFn,pad){
+ if(!cvv)return;
+ const c=cvv.getContext&&cvv.getContext('2d');if(!c)return;
+ const W=cvv.width||56,H=cvv.height||56;
+ if(c.clearRect)c.clearRect(0,0,W,H);
+ fitDrawIn(c,drawFn,0,0,W,H,pad,null);
 }
 /* 兵科を「別の中身」で描く(派生キャラのプレビュー用)。⚠必ず元に戻すこと */
 function drawUnitAs(c,i,def){
@@ -10796,19 +10850,120 @@ function gcRateHtml(){
   +G_RATE.map(([k,p])=>(k==='dud'?'はずれ枠':RK_S[+k.slice(1)]+' '+RK_N[+k.slice(1)])+' '+p+'%').join(' ／ ')
   +'<br>はずれ枠の中身: '+GDUD.map(d=>d.n).join(' / ')+'</div></div>';
 }
-function renderGacha(res){
- $('gc-gem').innerHTML=IC('💎 '+(META.gem||0)+'  🔧'+(META.hmat||0));
- $('gem-cnt').innerHTML=IC('💎')+(META.gem||0);
- $('gc-1').disabled=(META.gem||0)<G_COST1;
- $('gc-10').disabled=(META.gem||0)<G_COST10;
- /* ⚠結果の一覧は**別ウィンドウ(#md-gcres)**に移した(第73弾)。ここは確率表示のための空き地 */
- $('gc-res').innerHTML='';
+/* ============ 💎召集画面の骨格(2026-07-27 第93弾) ============
+   ⭐ユーザー指示=「ソシャゲの召集画面みたいに、目玉の英雄が大きく出ている画面にする」。
+     左2/3=目玉の英雄を枠いっぱい+光条+レア度の色 / 右1/3=💎所持と大きな単発/10連。
+   ⚠**横画面は高さ393pxしか無い**=参考にした本物の召集画面は縦画面なので、そのまま縦に積むと画面外に出る。
+   ⚠**📖英雄図鑑と確率は畳んでボタンから開く**(常時出しておくと目玉の英雄より図鑑の方が目立つ)。
+   ⚠確率と配るもの(gcPick/gcApply)には**一切触っていない**=変えたのは見た目だけ。 */
+let GCV='home';/* 開いている面: home / dex(図鑑) / rate(確率) */
+/* 目玉の英雄=まだ持っていない中で一番レアなもの(全部持っていたら★5)。
+   ⚠1人に固定すると、持っている英雄が出続けて「引く理由」が画面から消える */
+function gcStarHero(){
+ let best=null;
+ for(const h of HEROES)if(!heroOwned(h.id)&&(!best||h.rk>best.rk))best=h;
+ return best||HEROES[HEROES.length-1];
+}
+function gcDexHtml(){
  const own=HEROES.filter(h=>heroOwned(h.id)).length;
- $('gc-list').innerHTML='<div class="labdone" style="margin-top:6px"><b>英雄図鑑 '+own+'/'+HEROES.length+'</b>'
+ return '<div class="labdone" style="margin-top:6px"><b>英雄図鑑 '+own+'/'+HEROES.length+'</b>'
   +'<div class="hgrid">'+HEROES.map(h=>{const c=(META.hero||{})[h.id]||0;
    return '<div class="hb'+(c?' own':'')+'">'+(c?RK_S[h.rk]+' '+h.n:'??? '+RK_S[h.rk])
     +'<div class="hq">'+(c?'所持'+c+' / 必殺『'+h.ult+'』':RK_N[h.rk]+'枠')+'</div></div>';}).join('')
   +'</div></div>';
+}
+function gcView(v){
+ GCV=v;
+ const home=$('gc-home'),sub=$('gc-sub');
+ if(home)home.style.display=(v==='home')?'flex':'none';
+ if(sub)sub.style.display=(v==='home')?'none':'block';
+ /* ⚠結果の一覧は**別ウィンドウ(#md-gcres)**に移した(第73弾)。ここは確率/図鑑の置き場 */
+ $('gc-res').innerHTML=(v==='rate')?IC(gcRateHtml()):'';
+ $('gc-list').innerHTML=(v==='dex')?gcDexHtml():'';
+ const st=$('gc-subt');if(st)st.textContent=(v==='rate')?'1回ごとに抽選する(天井は無い)':(v==='dex')?'引いた英雄がここに載る':'';
+ /* ⚠開いた直後は clientWidth が0のことがあるので、次のフレームで測り直してから描く */
+ if(v==='home')requestAnimationFrame(()=>{gcHomeFit();gcHomeDraw();});
+}
+function renderGacha(res){
+ $('gc-gem').innerHTML=IC('🔧 '+(META.hmat||0));
+ $('gem-cnt').innerHTML=IC('💎')+(META.gem||0);
+ const gb=$('gc-gemb');if(gb)gb.innerHTML=IC('💎 ')+(META.gem||0);
+ $('gc-1').disabled=(META.gem||0)<G_COST1;
+ $('gc-10').disabled=(META.gem||0)<G_COST10;
+ const own=HEROES.filter(h=>heroOwned(h.id)).length;
+ const dx=$('gc-dex');if(dx)dx.textContent='📖 図鑑 '+own+'/'+HEROES.length;
+ gcView(GCV);
+}
+/* 目玉の英雄を見せる面(毎フレーム描く)。⚠背景と光条は演出(gcBg/gcRays)と同じものを使い回す */
+const GCH={t:0,w:0,h:0,dpr:1};
+const gcOpen=()=>{try{return $('md-gacha').classList.contains('on');}catch(e){return false;}};
+function gcHomeFit(){
+ const cv=$('gc-hcv');if(!cv)return;
+ const w=cv.clientWidth||480,h=cv.clientHeight||300;
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ cv.width=Math.max(2,Math.round(w*dpr));cv.height=Math.max(2,Math.round(h*dpr));
+ GCH.w=w;GCH.h=h;GCH.dpr=dpr;
+}
+function gcHomeStep(dt){
+ GCH.t+=dt;
+ const cv=$('gc-hcv');
+ if(cv&&(cv.clientWidth!==GCH.w||cv.clientHeight!==GCH.h))gcHomeFit();
+ gcHomeDraw();
+}
+function gcHomeDraw(){
+ const cv=$('gc-hcv'),c=cv&&cv.getContext&&cv.getContext('2d');if(!c)return;
+ const w=GCH.w||cv.clientWidth||480,h=GCH.h||cv.clientHeight||300,t=GCH.t;
+ if(w<8||h<8)return;
+ const H=gcStarHero(),col=RARE[H.rk-1]||RARE[0],ui=hUiOf(H.id);
+ c.setTransform(GCH.dpr,0,0,GCH.dpr,0,0);
+ c.clearRect(0,0,w,h);
+ c.save();c.beginPath();c.rect(0,0,w,h);c.clip();
+ c.fillStyle=VOID;c.fillRect(0,0,w,h);
+ const hz=h*.72;/* 地平線=英雄の足元より少し下 */
+ gcBg(c,w,h,hz,t);
+ /* 地面(地平線より下は gcBg が描かないので自分で敷く) */
+ c.fillStyle='#1b1512';c.fillRect(0,hz,w,h-hz);
+ c.globalAlpha=.5;c.fillStyle='#0d0a09';c.fillRect(0,hz+(h-hz)*.55,w,h);c.globalAlpha=1;
+ /* 光条=レアなほど本数が多くて速い。
+    ⚠**薄く・本数を控える**。濃くすると旭日旗のような模様が主役になり、廃墟も血の月も消える(撮って直した) */
+ gcRays(c,w*.5,hz-h*.34,Math.max(w,h)*.95,7+H.rk*2,t*(.09+H.rk*.02),col,.05+H.rk*.01);
+ /* 四隅を落とす=光条を端で沈めて中央(英雄)に目が行く */
+ let vg=null;
+ try{vg=c.createRadialGradient&&c.createRadialGradient(w*.5,hz-h*.3,h*.12,w*.5,hz-h*.3,Math.max(w,h)*.62);}catch(e){}
+ if(vg){vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.78)');c.fillStyle=vg;c.fillRect(0,0,w,h);}
+ /* 英雄(枠いっぱい)。⚠上下に少し揺らす=止まっていると絵が貼ってあるだけに見える。
+    ⚠**光は「絵が実際に占める矩形」に合わせて敷く**(fitRect)。決め打ちの座標だと、
+      枠の中で絵が上下に寄った時に光だけ足元から離れて水たまりのように見える(撮って直した) */
+ const bob=Math.sin(t*1.5)*h*.012;
+ const drw=cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),key='gh:'+H.id;
+ const bx=w*.08,by=h*.015+bob,bw2=w*.84,bh2=h-58-h*.015;
+ if(ui>=0){
+  const R=fitRect(key,drw,bx,by,bw2,bh2,2),rw=R[2]-R[0],rh=R[3]-R[1];
+  /* 後光(レア度の色) */
+  let ag=null;const acx=(R[0]+R[2])/2,acy=R[1]+rh*.45;
+  try{ag=c.createRadialGradient&&c.createRadialGradient(acx,acy,rh*.06,acx,acy,rh*.72);}catch(e){}
+  if(ag){ag.addColorStop(0,col);ag.addColorStop(1,'rgba(0,0,0,0)');
+   c.globalAlpha=.28;c.fillStyle=ag;c.fillRect(0,0,w,h);c.globalAlpha=1;}
+  /* 足元の光の輪 */
+  c.globalAlpha=.26;c.fillStyle=col;
+  c.beginPath();c.ellipse(acx,R[3]-rh*.05,rw*.32,rh*.042,0,0,7);c.fill();c.globalAlpha=1;
+  fitDrawIn(c,drw,bx,by,bw2,bh2,2,key);
+ }
+ /* 「目玉」の帯 */
+ const bw=Math.min(112,w*.30),bh=20;
+ c.fillStyle=col;rr(c,6,6,bw,bh,7);c.fill();
+ c.lineWidth=3;c.strokeStyle=INK;rr(c,6,6,bw,bh,7);c.stroke();
+ c.textAlign='center';c.fillStyle=INK;c.font='900 12px '+FF;
+ c.fillText(heroOwned(H.id)?'ぜんぶ揃った':'いま狙える最上位',6+bw/2,6+14);
+ /* 名札(レア度・名前・必殺技)。⚠canvasの文字は必ず FF を通す。
+    ⚠**★は描かない**=drawHeroBody が頭の上に★を描くので、名札にも入れると同じ画面に★が2組並ぶ */
+ const ny=h-52;
+ c.globalAlpha=.82;c.fillStyle=INK4;rr(c,6,ny,w-12,46,10);c.fill();c.globalAlpha=1;
+ c.lineWidth=3;c.strokeStyle=col;rr(c,6,ny,w-12,46,10);c.stroke();
+ c.fillStyle=col;c.font='900 12px '+FF;c.fillText(RK_N[H.rk]+'枠',w*.5,ny+15);
+ c.fillStyle=PANE;c.font='900 19px '+FF;c.fillText(H.n,w*.5,ny+34);
+ c.fillStyle=GOLD;c.font='900 11px '+FF;c.fillText('必殺『'+H.ult+'』— '+H.udsc,w*.5,ny+45);
+ c.restore();
 }
 /* ============ 💎英雄召集の演出(2026-07-26 第71弾) ============
    ⚠今までは結果が**テキストの一覧で出るだけ**で、引いた手応えが何も無かった。
@@ -11283,7 +11438,7 @@ function gcDraw(){
 }
 {const cv=$('gc-cv');
  if(cv)cv.onclick=(e)=>{const r=cv.getBoundingClientRect();gcTap(e.clientX-r.left,e.clientY-r.top);};}
-$('bt-gacha').onclick=()=>{renderGacha(null);$('md-gacha').classList.add('on');};
+$('bt-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');};
 $('bt-gacha-close').onclick=()=>{
  if(GC)gcEnd();/* 演出の途中で閉じても止まったままにならないように */
  $('md-gacha').classList.remove('on');try{renderHeroSeg();refreshTrainBtn();}catch(e){}};
@@ -11291,7 +11446,9 @@ $('bt-gcres-close').onclick=closeGcRes;
 $('bt-gcres-ok').onclick=closeGcRes;
 $('gc-1').onclick=()=>gcPull(1);
 $('gc-10').onclick=()=>gcPull(10);
-$('gc-rate').onclick=()=>{$('gc-res').innerHTML=IC(gcRateHtml());};
+$('gc-rate').onclick=()=>gcView('rate');
+$('gc-dex').onclick=()=>gcView('dex');
+$('gc-back').onclick=()=>gcView('home');
 /* ============ 🏋 鍛錬所 と 📖ゾンビ図鑑 ============
    ⚠2026-07-26(第53弾)に**洞窟をまるごと廃止した**。
      『ゆうしゃのくせになまいきだ。』式の「土を掘って生態系を育て、自律ユニットに戦わせる」防衛戦を
@@ -12993,6 +13150,7 @@ function loopBody(now){
  if(SCR==='title')paradeStep(TT);
  if(SCR==='rpg')rgStep(dt0);
  if(GC)gcStep(dt0);/* 💎英雄召集の演出 */
+ else if(GCV==='home'&&gcOpen())gcHomeStep(dt0);/* 💎召集画面(目玉の英雄を見せる面) */
  hudT-=dt0;
  if(hudT<=0&&gameActive){hudT=.12;updHUD();minisUpd();refreshBM();
   if($('interv').classList.contains('on')){

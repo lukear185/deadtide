@@ -100,7 +100,15 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'RG.fade=0;rgStep(0.02);')
      :SFXT?'openSfxTest();'
      /* gacha=10連の演出 / gacha5=★5を引いた状態で撮る(いちばん派手な絵を確かめる用) */
-     :GC?('META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");/* gopen=召集画面を開いただけの姿(ボタンと説明文のアイコンを確かめる用) */'+(OPT.indexOf('gopen')>=0?'':'gcPull(10);')+''
+     :GC?('META.gem=200;'
+       /* gowned=★5まで持っている状態(目玉が下のレア度に降りた時の絵を確かめる用) */
+       +(OPT.indexOf('gowned')>=0?'META.hero={};HEROES.forEach((h,i)=>{if(i>0)META.hero[h.id]=1;});':'')
+       +'renderGacha(null);document.getElementById("md-gacha").classList.add("on");'
+       /* gopen=召集画面を開いただけの姿 / gdex=📖英雄図鑑 / grate=確率 */
+       +(OPT.indexOf('gdex')>=0?'gcView("dex");':'')
+       +(OPT.indexOf('grate')>=0?'gcView("rate");':'')
+       +((OPT.indexOf('gopen')>=0||OPT.indexOf('gdex')>=0||OPT.indexOf('grate')>=0)
+         ?'if(GCV==="home"){gcHomeFit();gcHomeStep(0.5);}':'gcPull(10);')+''
        +(OPT.indexOf('gacha5')>=0
          ?'if(GC){GC.res[0]={hero:HEROES[HEROES.length-1],txt:"NEW!"};GC.best=5;}':'')
        /* ⚠ヘッドレスの仮想時間ではrAFがほとんど回らず、いつまでも魔法陣のまま。
