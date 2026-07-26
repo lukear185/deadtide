@@ -1166,9 +1166,14 @@ function checkGachaFx(){
  /* ⭐押すまで絶対に進まないこと(時間では進まない) */
  for(let k=0;k<120;k++)gcStep(.05);
  if(GC.ph!=='aim'){console.log('FAIL: 押していないのに勝手に進んだ '+GC.ph);process.exit(1);}
- /* 押すと撃つ。弾が飛んでいる間は飛ばせない */
+ /* ⭐押すと**まず溜める**(2026-07-27)。⚠押した瞬間に結果へ向かうのが安っぽさの元だった */
  gcTap(0,0);
- if(GC.ph!=='fire'){console.log('FAIL: 押しても撃たない '+GC.ph);process.exit(1);}
+ if(GC.ph!=='chg'){console.log('FAIL: 押しても溜めに入らない '+GC.ph);process.exit(1);}
+ /* ⚠溜めは飛ばせないこと(飛ばせると「ため」が無くなって元に戻る) */
+ gcTap(0,0);
+ if(GC.ph!=='chg'){console.log('FAIL: 溜めを飛ばせてしまう '+GC.ph);process.exit(1);}
+ for(let k=0;k<40&&GC.ph==='chg';k++)gcStep(.05);
+ if(GC.ph!=='fire'){console.log('FAIL: 溜め切っても撃たない '+GC.ph);process.exit(1);}
  gcTap(0,0);
  if(GC.ph!=='fire'){console.log('FAIL: 弾が飛んでいる途中で飛ばせてしまう');process.exit(1);}
  for(let k=0;k<12;k++)gcStep(.05);/* 着弾させる(⚠0.05を10回足しても浮動小数で0.5に届かない) */

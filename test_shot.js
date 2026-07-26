@@ -109,7 +109,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(OPT.indexOf('gres')>=0?'gcEnd();':'')
        /* gfly=弾が飛んでいる途中 / gbang=木っ端みじん+跡地の示唆 */
        +(OPT.indexOf('gfly')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY*.55;}':'')
-       +(OPT.indexOf('gbang')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+.75;GC.hit=1;}':'')
+       +(OPT.indexOf('gbang')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+.75;GC.hit=1;}':'')
+       /* gchg=溜め(押してから撃つまで) / ghold=着弾で止めている一瞬 */
+       +(OPT.indexOf('gchg')>=0?'if(GC){GC.ph="chg";GC.t=GC_CHG*.8;}':'')
+       +(OPT.indexOf('ghold')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD*.5;GC.hit=1;}':'')
        /* gt0/gt1/gt2 でタレットの段(ライフル/ショットガン/レーザー)を指定。
           ⚠オプション名に「w+数字」を入れないこと=時間指定 `w(\d+)` に食われる(gtw2 で実際に踏んだ) */
        +((/gt(\d)/.exec(OPT))?('if(GC){GC.tw=GC.zk='+(/gt(\d)/.exec(OPT))[1]+';}'):''))

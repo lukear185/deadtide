@@ -7456,6 +7456,12 @@ const GC_COL=[['#7a8f6a','#cfe0b8'],/* 0=はずれ枠 */
  ['#ffb830',GLOW],[DANGER,'#ffd7b0']];
 const GC_FLY=.5;   /* 弾が飛んでいる秒数(目で追えること) */
 const GC_BANG=1.9; /* 撃ってから結果カードへ移るまで */
+/* ⭐演出の「間」(2026-07-27ユーザー指示=ソシャゲみたいなちゃんとした演出にしたい)。
+   ⚠**安っぽさの原因は絵ではなく組み立て**だった。押した瞬間に結果へ向かい、カメラが1ミリも動かず、
+     音が演出に同期していなかった。効くのは次の3つで、どれも絵に依存しない:
+     ①溜め(押してから撃つまでの「ため」) ②カメラ(寄り・引き・揺れ) ③着弾で一瞬止める(ヒットストップ) */
+const GC_CHG=.85;  /* 「撃て!」を押してから実際に撃つまでの溜め */
+const GC_HOLD=.14; /* 着弾の瞬間に画を止める長さ=ここで一拍おくと衝撃が出る */
 /* ⭐撃つ演出(2026-07-26 第72弾ユーザー指示)。
    「撃て!」でタップ → タレットがゾンビを撃つ → 傷の具合で結果がだいたい読める → GETのカードへ。
    ⚠**展開が読めること**が肝なので、対応をはっきり決めてある:
@@ -7493,14 +7499,59 @@ function gcStart(res){
  cv.classList.add('on');gcFit();
  if(sfx.heal)sfx.heal();
 }
-/* 「撃て!」→ 発射。タレットの種類で音を変える */
+/* 「撃て!」→ **まず溜める**。溜め切ってから gcShoot() で撃つ */
 function gcFire(){
  if(!GC||GC.ph!=='aim')return;
+ GC.ph='chg';GC.t=0;GC.hit=0;
+ /* きゅいーんと充填する音(レールガンのものを流用=素材を増やさずに済む) */
+ if(sfx.railChg)sfx.railChg();
+}
+/* 溜め切って実際に撃つ。タレットの種類で音を変える */
+function gcShoot(){
+ if(!GC)return;
  GC.ph='fire';GC.t=0;GC.hit=0;
  const tw=GC.tw;
  if(tw===2&&sfx.laser)sfx.laser();
  else if(tw===1&&sfx.shotgun)sfx.shotgun();
  else if(sfx.shot)sfx.shot();
+}
+/* ⭐カメラ(2026-07-27)。⚠**同じ絵でもカメラが動くだけで別物に見える**。
+   返すのは {x,y,z,sx,sy} = 見る中心・寄り・揺れ。画面の外が見えないよう地面は広めに描くこと。
+   ⚠**文字と閃光にはカメラを掛けない**(寄せると読めなくなる/画面の端に隙間ができる) */
+function gcCam(w,h,TX,TY,ZX,ZY){
+ const t=GC.t,ph=GC.ph;
+ let x=(TX+ZX)/2,y=(TY+ZY)/2-20,z=1,sx=0,sy=0;
+ if(ph==='aim'){
+  /* 待っている間はゆっくり息をする程度(止まっていると死んで見える) */
+  z=1.03+Math.sin(t*.9)*.012;
+  x+=Math.sin(t*.5)*10;y+=Math.cos(t*.42)*6;
+ }else if(ph==='chg'){
+  /* 溜め=タレット寄りへ。⚠**寄せすぎない**(的が画面から消えると何を撃つのか分からなくなる)。
+     終わり際ほど速く寄ると「来るぞ」という感じが出る */
+  const k=clamp(t/GC_CHG,0,1),e=k*k;
+  const gx=TX+130,gy=TY-95;
+  z=1.03+e*.20;x+=(gx-x)*e;y+=(gy-y)*e;
+  /* 撃つ直前に小刻みに震える */
+  const q=Math.max(0,k-.55)/.45;sx=(Math.sin(t*54)*3.2)*q;sy=(Math.cos(t*61)*2.4)*q;
+ }else if(ph==='fire'){
+  const ft=t,gx=TX+130,gy=TY-95;
+  if(ft<GC_FLY){
+   /* 弾を追って的の方へ流す。⚠寄りは**緩める**=速い動きに強い寄りを足すと何も読めない */
+   const k=clamp(ft/GC_FLY,0,1);
+   z=1.23-k*.13;x=gx+((ZX-60)-gx)*k;y=gy+((ZY-40)-gy)*k;
+   /* 発射の反動(最初の0.12秒だけ強く蹴る) */
+   const r=Math.max(0,1-ft/.12);sx=Math.sin(ft*90)*11*r;sy=Math.cos(ft*77)*7*r;
+  }else{
+   const hk=clamp((ft-GC_FLY-GC_HOLD)/1.05,0,1);
+   /* 着弾で一気に寄ってから、ゆっくり引いて跡地を見せる */
+   const e=hk*hk*(3-2*hk);
+   z=1.46-e*.43;x=ZX+(( (TX+ZX)/2 )-ZX)*e;y=(ZY-30)+(((TY+ZY)/2-20)-(ZY-30))*e;
+   /* 揺れは着弾直後だけ。⚠**長く揺らすと酔う**ので0.35で消す */
+   const q=Math.max(0,1-hk/.35);
+   sx=Math.sin(ft*73)*20*q*q;sy=Math.cos(ft*97)*14*q*q;
+  }
+ }
+ return {x,y,z,sx,sy};
 }
 /* 傷が出た瞬間の音(木っ端みじんが一番派手) */
 function gcHitSfx(){
@@ -7515,9 +7566,11 @@ function gcStep(dt){
  /* ⚠「撃て!」は**押すまで絶対に進めない**(2026-07-26ユーザー指示)。時間では進まない */
  if(GC.ph==='aim'){GC.t+=dt;try{gcDraw();}catch(e){}return;}
  GC.t+=dt;
+ /* 溜め切ったら撃つ */
+ if(GC.ph==='chg'&&GC.t>=GC_CHG){gcShoot();}
  /* 撃った弾が当たる瞬間に音を鳴らす(1発だけ) */
  if(GC.ph==='fire'&&!GC.hit&&GC.t>=GC_FLY){GC.hit=1;gcHitSfx();}
- if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_BANG){GC.ph='card';GC.t=0;}
+ if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_HOLD+GC_BANG){GC.ph='card';GC.t=0;}
  try{gcDraw();}catch(e){}
 }
 /* 押した時: 「撃て!」なら撃つ / 撃った後の余韻は飛ばす / カードなら次の1枚へ */
@@ -7525,9 +7578,11 @@ function gcTap(mx,my){
  if(!GC)return;
  if(GC.sk&&mx>=GC.sk[0]&&my>=GC.sk[1]&&mx<=GC.sk[0]+GC.sk[2]&&my<=GC.sk[1]+GC.sk[3]){gcEnd();return;}
  if(GC.ph==='aim'){gcFire();return;}
+ /* ⚠溜めている間は飛ばさない(ここを飛ばせると「ため」が無くなって元の安っぽさに戻る) */
+ if(GC.ph==='chg')return;
  if(GC.ph==='fire'){
   /* 弾が飛んでいる間は飛ばさない(当たる前に結果へ行くと何が起きたか分からない) */
-  if(GC.t<GC_FLY+.35)return;
+  if(GC.t<GC_FLY+GC_HOLD+.35)return;
   GC.ph='card';GC.t=0;return;}
  GC.i++;
  if(GC.i>=GC.res.length){gcEnd();return;}
@@ -7618,27 +7673,32 @@ function gcDraw(){
      ⚠奥行きを出すため**タレットは手前(大きく)・ゾンビは奥(小さく)**で斜めに置く。
      ⚠弾は GC_FLY 秒かけて飛ぶ=目で追える。⚠「撃て!」は押すまで進まない。
      ⚠倒し方は**確定で木っ端みじん**。**跡地に出るもの**がこの召集の結果を示唆する */
-  const fire=GC.ph==='fire',ft=GC.t;
+  const fire=GC.ph==='fire',chg=GC.ph==='chg',ft=GC.t;
   const hz=h*.40;                       /* 地平線 */
   const TX=w*.24,TY=h*.88,TS=2.5;       /* タレット=手前(大きい) */
   const ZX=w*.70,ZY=h*.55,ZS=1.4;       /* ゾンビ=奥(小さい) */
   const zidx=gcZi(GC.zk),Z=ZOMBIES[zidx]||{sc:1,c:'#7a8f5f'};
-  const hit=fire&&ft>=GC_FLY,hk=hit?clamp((ft-GC_FLY)/1.05,0,1):0;
+  /* ⭐着弾したら GC_HOLD 秒だけ画を止める(ヒットストップ)。hk はそのあとから進む。
+     ⚠止めている間も**ゾンビは立ったまま**にする=消すと0.14秒の穴が空いて手応えが消える */
+  const hit=fire&&ft>=GC_FLY,hk=hit?clamp((ft-GC_FLY-GC_HOLD)/1.05,0,1):0;
+  const stop=hit&&ft<GC_FLY+GC_HOLD;
   const mx=TX+64,my=TY-64,ex=ZX,ey=ZY-26;/* 銃口 → 的 */
-  /* ---- 奥行きのある地面(消失点へ収束させる) ---- */
-  c.fillStyle='#141110';c.fillRect(0,0,w,hz);
-  c.fillStyle='#2b2419';c.fillRect(0,hz,w,h-hz);
+  /* ⭐ここからカメラを掛ける。⚠**文字と閃光には掛けない**ので、あとで必ず restore する */
+  const CAM=gcCam(w,h,TX,TY,ZX,ZY);
+  c.save();
+  c.translate(cx+CAM.sx,cy+CAM.sy);c.scale(CAM.z,CAM.z);c.translate(-CAM.x,-CAM.y);
+  /* ---- 奥行きのある地面(消失点へ収束させる)。⚠寄せるので**画面より広く**描く(端に隙間が出る) ---- */
+  c.fillStyle='#141110';c.fillRect(-w,-h,w*3,hz+h);
+  c.fillStyle='#2b2419';c.fillRect(-w,hz,w*3,h*2);
   {const vx=w*.62;
    c.strokeStyle='rgba(242,236,220,.09)';c.lineWidth=2;
    for(let i=-5;i<=7;i++){c.beginPath();c.moveTo(vx+i*w*.24,h+60);c.lineTo(vx,hz);c.stroke();}
    for(let i=1;i<=6;i++){const q=i/6,yy=hz+(h-hz)*q*q;
-    c.beginPath();c.moveTo(0,yy);c.lineTo(w,yy);c.stroke();}
+    c.beginPath();c.moveTo(-w,yy);c.lineTo(w*2,yy);c.stroke();}
    c.strokeStyle='rgba(242,236,220,.22)';
-   c.beginPath();c.moveTo(0,hz);c.lineTo(w,hz);c.stroke();c.lineWidth=3;}
-  /* 着弾の瞬間だけ画面が白く飛ぶ */
-  if(hit&&hk<.22){c.globalAlpha=(1-hk/.22)*.8;c.fillStyle='#fff';c.fillRect(0,0,w,h);c.globalAlpha=1;}
+   c.beginPath();c.moveTo(-w,hz);c.lineTo(w*2,hz);c.stroke();c.lineWidth=3;}
   /* ---- ゾンビ(奥)。⚠手前のタレットより先に描く=奥行きの順番 ---- */
-  if(!hit){
+  if(!hit||stop){
    c.save();c.translate(ZX,ZY);c.scale(ZS/(Z.sc||1),ZS/(Z.sc||1));
    try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
    c.restore();
@@ -7658,7 +7718,9 @@ function gcDraw(){
    c.globalAlpha=Math.min(1,hk*2.5)*.55;c.fillStyle='#4a5a2e';
    c.beginPath();c.ellipse(ZX,ZY+2,44*Math.min(1,hk*2),12*Math.min(1,hk*2),0,0,7);c.fill();c.globalAlpha=1;
    /* ---- ⭐跡地に残る「示唆」= この召集の一番いい結果を教える ---- */
-   const gk=clamp((hk-.22)/.5,0,1);
+   /* ⭐**一度に全部出さない**。まず「木っ端みじん!!」を見せ、それが消えてから気配が立ち上る
+      (同時に出すと★と文字が重なって、どちらも読めなくなっていた) */
+   const gk=clamp((hk-.32)/.5,0,1);
    if(gk>0){
     const rk=GC.best,LC=GC_COL[rk]||GC_COL[0],ry=ZY-24-gk*20;
     /* 地面から立ち上る光の柱 */
@@ -7684,7 +7746,22 @@ function gcDraw(){
    /* ⚠drawTowerは基部の円の中心が原点なので、そのまま地面に置くと半分が埋まる */
    c.save();c.translate(TX,TY-42);c.scale(TS,TS);
    try{if(ti>=0)drawTower(c,ti,0,0,0,ang,GC.t,{fire:fire&&ft<.16,si:0});}catch(e){}
-   c.restore();}
+   c.restore();
+   /* ⭐溜めている間は銃口に光が溜まっていく(何が起きているのか目で分かるように) */
+   if(chg){const k=clamp(ft/GC_CHG,0,1),r=6+k*k*26;
+    c.globalAlpha=.30+k*.45;c.fillStyle=COL[0];
+    c.beginPath();c.arc(mx,my,r,0,7);c.fill();
+    c.globalAlpha=.85;c.fillStyle=COL[1];
+    c.beginPath();c.arc(mx,my,r*.45,0,7);c.fill();
+    c.globalAlpha=1;c.fillStyle='#fff';
+    c.beginPath();c.arc(mx,my,r*.2,0,7);c.fill();
+    /* 溜まるほど内へ吸い込まれる光の筋 */
+    c.strokeStyle=COL[0];c.lineWidth=2;
+    for(let i=0;i<6;i++){const a=i*1.047+ft*3,d=r*2.4*(1-k*.7);
+     c.globalAlpha=(.5-k*.35);
+     c.beginPath();c.moveTo(mx+Math.cos(a)*d,my+Math.sin(a)*d);
+     c.lineTo(mx+Math.cos(a)*(d*.45),my+Math.sin(a)*(d*.45));c.stroke();}
+    c.globalAlpha=1;c.lineWidth=3;}}
   /* ---- 弾(GC_FLY秒かけて奥へ飛ぶ。奥へ行くほど小さくなる) ---- */
   if(fire&&ft<=GC_FLY+.04){
    const p=clamp(ft/GC_FLY,0,1),bx=mx+(ex-mx)*p,by=my+(ey-my)*p,sz=1-p*.55;
@@ -7710,18 +7787,29 @@ function gcDraw(){
     c.fillStyle=GLOW;c.beginPath();c.arc(bx,by,4.2*sz,0,7);c.fill();
     c.fillStyle='#fff';c.beginPath();c.arc(bx,by,2*sz,0,7);c.fill();}
   }
+  /* ⭐ここでカメラを外す。これより下は画面にべた張り(寄せると読めない/端に隙間が出る) */
+  c.restore();
+  /* 着弾の閃光。⚠**止めている間は白を出しっぱなし**にして、そのあと一気に引く */
+  if(hit){const fl=stop?1:Math.max(0,1-hk/.22);
+   if(fl>0){c.globalAlpha=fl*.85;c.fillStyle='#fff';c.fillRect(0,0,w,h);c.globalAlpha=1;}}
+  /* ⭐溜めている間は画面の四隅を暗く締める(視線が中央に集まって「来るぞ」という感じが出る) */
+  if(chg){const k=clamp(ft/GC_CHG,0,1);
+   const g=c.createRadialGradient&&c.createRadialGradient(cx,cy,Math.min(w,h)*(.42-k*.22),cx,cy,Math.max(w,h)*.72);
+   if(g){g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,'+(.35+k*.45).toFixed(3)+')');
+    c.fillStyle=g;c.fillRect(0,0,w,h);}}
   /* ---- 文字 ---- */
   c.textAlign='center';
-  c.fillStyle=COL[0];c.font='900 13px '+FF;
-  c.fillText(GC_TWN[GC.tw],TX,TY+16);
-  if(!fire){
+  /* ⚠タワーの名前は**狙っている間だけ**。カメラが動くと文字だけ取り残されて位置が合わなくなる */
+  if(!fire&&!chg){c.fillStyle=COL[0];c.font='900 13px '+FF;c.fillText(GC_TWN[GC.tw],TX,TY+16);}
+  if(!fire&&!chg){
    const bl=.55+Math.abs(Math.sin(t*7))*.45;
    c.globalAlpha=bl;c.fillStyle=COL[1];c.font='900 42px '+FF;
    c.fillText('撃て！',cx,h*.22);c.globalAlpha=1;
    c.fillStyle='rgba(242,236,220,.85)';c.font='900 13px '+FF;
    c.fillText('▶ タップで発射',cx,h*.22+24);
-  }else if(hit){
-   c.globalAlpha=Math.min(1,hk*6);
+  }else if(hit&&hk<.36){
+   /* ⚠出しっぱなしにすると、あとから立ち上る★の気配と重なって両方読めなくなる=先に消す */
+   c.globalAlpha=Math.min(1,hk*8)*Math.min(1,(.36-hk)/.07);
    c.fillStyle=DANGER;c.font='900 34px '+FF;
    c.fillText('木っ端みじん!!',cx,h*.16);c.globalAlpha=1;
   }
