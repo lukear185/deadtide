@@ -282,8 +282,19 @@ const look=(nm,sp)=>{
     向きが正しくても「絵が滑っている」ように見える。1コマ目との違いを数える */
  const leg=sp.f.map(rows=>{let s='';for(let y=Math.floor(d.h*.55);y<d.h;y++)s+=rows[y];return s;});
  const dif=leg.slice(1).map(s=>{let n=0;for(let i=0;i<s.length;i++)if(s[i]!==leg[0][i])n++;return n;});
+ /* ⭐**元絵が粗いと「絵面が別のゲーム」になる**(2026-07-27に踏んだ)。
+    生成AIに「平らな色で・色数を絞って」と強く言うと、**もっと粗いドットで描いてくる**ことがある。
+    それを44ドットへ引き伸ばすので、輪郭が2〜3ドットに太り、体つきもずんぐりして画風が変わる。
+    ⚠数値だけ見ていると気づけない(塗り数も脚の変化も正常に見える)。
+    測り方=**1ドットあたりの色の変わり目**。ウォーカーと良い方のアーマードが0.62、
+    粗い絵は0.35しか無かった(=細部が半分消えている)。0.50を下回ったら元絵から作り直す。 */
+ let fill=0,chg=0;
+ for(const rows of sp.f)for(const r of rows){let p=' ';
+  for(let x=0;x<r.length;x++){const c=r.charAt(x);if(c!==' ')fill++;if(c!==p)chg++;p=c;}}
+ const den=fill?chg/fill:0;
  console.log('  ['+nm+'] 幅'+sp.w+' 塗り数'+cnt.join('/')+'(差'+(Math.max(...cnt)-Math.min(...cnt))
-  +') 上端差'+(Math.max(...top)-Math.min(...top))+' 脚の変化'+dif.join('/')+'ドット');};
+  +') 上端差'+(Math.max(...top)-Math.min(...top))+' 脚の変化'+dif.join('/')+' 細かさ'+den.toFixed(2)
+  +(den<.5?' ⚠元絵が粗い(0.50未満)=輪郭が太る。生成し直した方がよい':''));};
 look('横向き',{w:d.w,f:d.f});
 if(d.fr)look('正面 ',d.fr);
 if(d.bk)look('背面 ',d.bk);
