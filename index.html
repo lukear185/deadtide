@@ -384,6 +384,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  pointer-events:none;background:var(--ink);color:var(--paper);border:3px solid var(--gold);
  border-radius:12px;padding:7px 10px;box-shadow:0 5px 0 rgba(0,0,0,.35)}
 #tut.on{display:flex}
+/* タイトル側の段は下に置く。上に置くと「ソロ作戦」のボタンに被る(撮って気づいた) */
+#tut.tl{top:auto;bottom:10px}
 #tut .tx{flex:1 1 auto;min-width:0}
 #tut .tt{font-size:13px;font-weight:900;color:var(--gold);line-height:1.3}
 #tut .tm{font-size:12px;font-weight:700;line-height:1.5;margin-top:2px}
@@ -5512,6 +5514,7 @@ function startSolo(){
  $('pausebtn').style.display='inline-block';
 }
 function startGameUI(others){
+ if(TUT&&!TUT.mv)tutEnd(false);/* 🎓チュートリアル中に普通の試合を始めたら畳む */
  gameActive=true;tipSt=false;ivLogs=[];PAUSED=false;SEL=-1;PUSHTGT=-1;setAim(false);setFlagAim(false);setSpec(-1);
  if(!(MODE==='solo'&&!COOP))applyLoadout(false);/* 協力/対戦は素の兵科・通常弾で統一 */
  buildDeck();
@@ -5558,69 +5561,114 @@ function tutSlot(C){
  if(TUT)TUT.si=best;
  return best;
 }
+/* 段の表。⚠**scr** はその段を見せる画面='title'(タイトル)/'game'(戦場)。
+   tutGo() が画面をまたぐ時に自動で行き来する(戦場を始める/タイトルへ戻る)。 */
 function tutSteps(){return[
- {id:'core',t:'ここがお前の拠点だ',
+ /* ⭐**いきなり戦場を始めない**(2026-07-26ユーザー指示「いきなり始まるんじゃなくて
+    チュートリアルを開くとこからにして」)。まずタイトルで「🎓あそびかた」を押させる。
+    ⚠この段だけは ok を持たない=ボタンの onclick(tutOpen)が次へ進める。 */
+ {id:'open',scr:'title',t:'ようこそ。まずは操作を覚えよう',
+  m:'光っている「🎓 あそびかた」を押せ。実際に動かしながら教える。',hi:{k:'dom',s:'#bt-howto'}},
+ {id:'core',scr:'game',t:'ここがお前の拠点だ',
   m:'ゾンビは道をたどってここへ来る。コアHPが0になったら負けだ。',hi:{k:'core'}},
- {id:'slot',t:'まずタワーを建てろ',
+ {id:'slot',scr:'game',t:'まずタワーを建てろ',
   m:'光っているマスをタップ。道の角は敵が長く居座るので狙い目だ。',
   hi:{k:'slot'},ok:C=>SEL===tutSlot(C)},
- {id:'build',t:'⚙️スクラップで建てる',
+ {id:'build',scr:'game',t:'⚙️スクラップで建てる',
   m:'好きなタワーを選べ。建てたあと塔をタップすると⚔攻撃・⏩連射・📡射程を個別に強化できる。',
   hi:{k:'dom',s:'#buildmenu'},ok:C=>!!(C.towers||[])[tutSlot(C)]},
- {id:'unit',t:'主役は生存者部隊だ',
+ {id:'unit',scr:'game',t:'主役は生存者部隊だ',
   m:'下のデッキから出撃させろ。部隊はウェーブを跨いで戦い続ける。',
   hi:{k:'dom',s:'#deck'},ok:C=>C.units.length>0},
- {id:'flag',t:'🚩集結旗で戦線を張る',
+ {id:'flag',scr:'game',t:'🚩集結旗で戦線を張る',
   m:'🚩を押してから地点をタップ。部隊はそこまで前進して敵を食い止める。',
   hi:{k:'dom',s:'#flagbtn'},pre:C=>{TUT.mk=C.flagD;},ok:C=>C.flagD!==TUT.mk},
- {id:'strike',t:'🎯航空支援を落とせ',
+ {id:'strike',scr:'game',t:'🎯航空支援を落とせ',
   m:'チャージが溜まるたび撃てる。🎯を押してから落とす地点をタップ。',
   hi:{k:'dom',s:'#strikebtn'},pre:C=>{C.charge=1;},ok:C=>C.charge<1},
  /* ⚠**1波目の前には作戦タイムのパネルが出ない**(2波目以降だけ)。
     ここで「✅配置完了!」を押させようとすると、見えないボタンを待つことになり
     しかも時間も止めているので**永久に進めなくなる**(2026-07-26に踏んだ)。
     この段で時間の停止を解除し、数秒でウェーブが始まるようにする。 */
- {id:'go',t:'まもなくウェーブ開始',
+ {id:'go',scr:'game',t:'まもなくウェーブ開始',
   m:'ウェーブ中もタワーは建てられるし、部隊も出せる。2波目からは作戦タイムに強化を選べる。',
   hi:null,pre:()=>{TUT.ran=true;if(G)G.tI=Math.min(G.tI,4);},ok:()=>!!(G&&G.phase==='wave')},
- {id:'fight',t:'倒すと⚙️が手に入る',
+ {id:'fight',scr:'game',t:'倒すと⚙️が手に入る',
   m:'1人の部隊が食い止められるのは3体まで。溢れた分は素通りするので、数と壁役で受けろ。',hi:null},
- {id:'clear',t:'守り切ると🔩が入る',
+ {id:'clear',scr:'game',t:'守り切ると🔩が入る',
   m:'ウェーブを制圧すると🔩強化ポイント。作戦タイムのカードで部隊レベル(全兵科+10%)を上げろ。',
   hi:{k:'dom',s:'#interv'},ok:()=>!!(G&&G.phase==='interval'&&G.wave>=1)},
- {id:'lab',t:'負けても強くなる',
+ {id:'lab',scr:'game',t:'負けても強くなる',
   m:'出撃の結果で🧬研究ptが貯まる。タイトルの🔬研究所で新型タワーや兵科を永久に解放できる。',hi:null},
- {id:'end',t:'以上だ。健闘を祈る',
+ /* ⭐ここから先はタイトルへ戻って続ける(2026-07-26ユーザー指示
+    「チュートリアルクリアしたらガチャ石3個プレゼントして、一回ガチャするまでがチュートリアル」)。
+    ⚠**💎はこの段に入った時点で渡す**=ここで抜けても手元に残る。 */
+ {id:'gift',scr:'title',t:'よくやった。💎を3つやろう',
+  m:'「💎 英雄召集」を押せ。英雄は1試合に1回だけ出せる切り札だ。',
+  hi:{k:'dom',s:'#bt-gacha'},
+  pre:()=>{META.gem=(META.gem||0)+3;saveMeta();updLabBtn();TUT.gem0=META.gem;},
+  ok:()=>{try{return $('md-gacha').classList.contains('on');}catch(e){return false;}}},
+ {id:'pull',scr:'title',t:'単発を1回引いてみろ',
+  m:'💎3で1回引ける。はずれ枠も研究所と同じ永久強化になるので無駄玉にはならない。',
+  hi:{k:'dom',s:'#gc-1'},
+  /* ⚠🛠DEVでは💎が補充されるので、減ったかどうかだけでは判定できない。演出(GC)が始まったかも見る */
+  ok:()=>!!GC||((META.gem||0)<(TUT.gem0||0))},
+ {id:'end',scr:'title',t:'以上だ。健闘を祈る',
   m:'この案内はタイトルの「🎓 あそびかた」からいつでもやり直せる。',hi:null}
 ];}
 function tutHold(){return !!(TUT&&TUT.on&&!TUT.ran);}/* 作戦タイムの残り時間を止める */
-function tutStart(){
- setDiff=0;META.stg=0;/* 新兵・ステージ1に固定 */
- startSolo();
+/* タイトルの「🎓 あそびかた」。⚠**最初の段(open)を出している最中なら、それを進める**
+   =押した瞬間に TUT を作り直してしまうと、いつまでも最初の段から動かない */
+function tutOpen(){
+ if(TUT&&TUT.on&&TUT.st[TUT.i]&&TUT.st[TUT.i].id==='open'){tutGo(TUT.i+1);return;}
+ tutStart();
+}
+function tutBegin(from){
+ TUT={on:true,i:-1,st:tutSteps(),mk:0,ran:false,t:0,si:null,gem0:0,mv:0};
+ tutGo(from);
+}
+function tutAuto(){tutBegin(0);}/* はじめての人=タイトルの「開くところ」から */
+function tutStart(){tutBegin(1);}/* ボタンから=そのまま戦場へ */
+/* 戦場を始める。⚠新兵・ステージ1に固定し、G.tut=1 で本編の記録を汚さない */
+function tutBattle(){
+ setDiff=0;META.stg=0;
+ TUT.mv=1;startSolo();TUT.mv=0;
  if(G)G.tut=1;
- TUT={on:true,i:-1,st:tutSteps(),mk:0,ran:false,t:0,si:null};
- if(G)tutSlot(G.players[0]);/* 建てさせるマスをここで確定させる */
- tutGo(0);
+ TUT.si=null;if(G)tutSlot(G.players[0]);/* 建てさせるマスをここで確定させる */
 }
 function tutGo(i){
  if(!TUT)return;
  tutHi(null);
  if(i>=TUT.st.length){tutEnd(true);return;}
+ const S=TUT.st[i];
+ /* ⚠画面をまたぐ段は、先に画面を移してから中身を出す */
+ if(S.scr==='game'&&!(G&&G.tut))tutBattle();
+ if(S.scr==='title'&&SCR!=='title'){TUT.mv=1;backTitle();TUT.mv=0;}
  TUT.i=i;TUT.t=0;
- const S=TUT.st[i],C=G&&G.players[0];
- if(S.pre&&C){try{S.pre(C);}catch(e){}}
- if(S.id==='fight')TUT.ran=true;/* ここから先は波を止めない */
+ const C=G&&G.players[0];
+ if(S.pre){try{S.pre(C);}catch(e){}}
+ if(S.id==='fight')TUT.ran=true;
  const e=$('tut');if(!e)return;
- $('tut-t').textContent=S.t;$('tut-m').textContent=S.m;
- $('tut-next').style.display=S.ok?'none':'inline-block';
- e.classList.add('on');
+ /* ⚠**同じ画面の同じ資源は同じ絵にする**(2026-07-26ユーザー指摘)。
+    textContent のままだと💎が絵文字(青)、ボタンは画像(紫の結晶)で、1画面に2種類の💎が並ぶ。
+    ⚠文言は tutSteps に固定で書いてある自分の文字列だけなので、そのまま innerHTML に入れてよい。 */
+ $('tut-t').innerHTML=IC(S.t);$('tut-m').innerHTML=IC(S.m);
+ $('tut-next').style.display=(S.ok||S.id==='open')?'none':'inline-block';
+ e.classList.add('on');e.classList.toggle('tl',S.scr==='title');
  tutHi(S.hi);
 }
-/* 光らせる。DOMはクラスを付け替え、盤面(マス/拠点)は輪を出す(tutStepで打ち直す) */
+/* 光らせる。DOMはクラスを付け替え、盤面(マス/拠点)は tutMark() が毎フレーム描く */
 function tutHi(hi){
  try{document.querySelectorAll('.tuthi').forEach(el=>el.classList.remove('tuthi'));}catch(e){}
  TUT&&(TUT.hi=hi||null);
- if(hi&&hi.k==='dom'){const el=document.querySelector(hi.s);if(el)el.classList.add('tuthi');}
+ if(hi&&hi.k==='dom'){try{const el=document.querySelector(hi.s);if(el)el.classList.add('tuthi');}catch(e){}}
+}
+function tutEnd(done){
+ tutHi(null);
+ const e=$('tut');if(e)e.classList.remove('on');
+ TUT=null;
+ META.tut=1;saveMeta();
+ if(done)toast('🎓 チュートリアル終了!ソロ作戦で腕を試せ');
 }
 /* 盤面に出す印。⚠マップ座標のまま描く(renderCamp の変換の中で呼ばれる)。
    ⚠**dir(向き)を持たない**=時刻だけで形が決まるので、どこから描いても同じに見える。 */
@@ -5644,10 +5692,10 @@ function tutMark(c,C,t){
 }
 function tutStep(dt){
  if(!TUT||!TUT.on)return;
- const C=G&&G.players[0];
- if(!C){tutEnd(false);return;}
  TUT.t+=dt;
- if(C.scrap<300)C.scrap=300;/* ⚠足りなくて先へ進めない状態を作らない */
+ /* ⚠タイトルの段では戦場が無い。**無い前提で書く**(以前は戦場が無いと打ち切っていた) */
+ const C=(G&&G.tut)?G.players[0]:null;
+ if(C&&C.scrap<300)C.scrap=300;/* ⚠足りなくて先へ進めない状態を作らない */
  const hi=TUT.hi;/* 盤面の印は tutMark() が毎フレーム描く */
  /* ⚠DOMは作り直されることがある(デッキ・建設メニュー)ので、光る印を毎秒付け直す */
  if(hi&&hi.k==='dom'&&TUT.t-(TUT.dt2||-9)>1){
@@ -5665,7 +5713,7 @@ function tutEnd(done){
  if(done){backTitle();toast('🎓 チュートリアル終了!ソロ作戦で腕を試せ');}
 }
 function backTitle(){
- if(TUT){TUT=null;tutHi(null);const te=$('tut');if(te)te.classList.remove('on');META.tut=1;saveMeta();}
+ if(TUT&&!TUT.mv)tutEnd(false);/* ⚠TUT.mv=チュートリアル自身が画面を移している最中=畳まない */
  gameActive=false;G=null;PAUSED=false;COOP=false;closeBM();setAim(false);setFlagAim(false);setSpec(-1);
  try{document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen().catch(()=>{});}catch(e){}
  $('interv').classList.remove('on');$('pausebtn').style.display='none';$('ffbtn').style.display='none';
@@ -7757,7 +7805,7 @@ $('bt-run-resume').onclick=()=>{ensureAC();if(!resumeRun())refreshRunUI();};
 $('bt-back1').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
 $('bt-back2').onclick=()=>show('title');
-$('bt-howto').onclick=()=>tutStart();
+$('bt-howto').onclick=()=>tutOpen();
 $('tut-next').onclick=()=>{if(TUT)tutGo(TUT.i+1);};
 $('bt-totitle').onclick=backTitle;
 $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
@@ -8041,7 +8089,7 @@ if(MOBILE&&!STANDALONE)$('pwahint').style.display='block';
    チュートリアルが始まってしまい、タイトルの撮影が全部チュートリアルの絵になった)。 */
 setTimeout(()=>{try{
  const played=(META.sc||[]).some(r=>(r||[]).some(v=>v));
- if(!META.tut&&!played&&!SFXTEST&&!EDIT&&SCR==='title')tutStart();
+ if(!META.tut&&!played&&!SFXTEST&&!EDIT&&SCR==='title')tutAuto();
 }catch(e){}},600);
 let last=performance.now();
 function loop(now){
@@ -8067,7 +8115,7 @@ function loopBody(now){
   if(C)renderCamp(C,TT);
   drawMinis();
  }
- if(TUT&&gameActive&&!PAUSED)tutStep(dt0);
+ if(TUT&&!PAUSED)tutStep(dt0);/* ⚠タイトルの段(ガチャ)もあるので gameActive では絞らない */
  if(SCR==='title')paradeStep(TT);
  if(SCR==='rpg')rgStep(dt0);
  if(GC)gcStep(dt0);/* 💎英雄召集の演出 */

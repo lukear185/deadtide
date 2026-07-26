@@ -316,10 +316,23 @@ function checkTut(){
  /* ⭐**操作させる段が実際にあるか**(読むだけの紙芝居になっていないか=ユーザー指示は「操作させる形式」) */
  const act=st.filter(S=>typeof S.ok==='function').length;
  if(act<4){console.log('FAIL: 実際に操作させる段が少なすぎる('+act+'段)');process.exit(1);}
+ /* ⭐**いきなり戦場を始めない**(2026-07-26ユーザー指示)。
+    はじめての人=タイトルで「🎓あそびかた」を押させる段から / ボタンから=そのまま戦場へ。 */
+ if(st[0].id!=='open'||st[0].scr!=='title'){console.log('FAIL: 1段目がタイトルの「開くところ」になっていない');process.exit(1);}
+ tutAuto();
+ if(!TUT||TUT.st[TUT.i].id!=='open'){console.log('FAIL: 自動起動が「開くところ」から始まっていない');process.exit(1);}
+ if(G&&G.tut){console.log('FAIL: 自動起動でいきなり戦場が始まっている');process.exit(1);}
+ tutOpen();/* ボタンを押した=次へ進む(TUTを作り直さないこと) */
+ if(!TUT||TUT.st[TUT.i].id==='open'){console.log('FAIL: 🎓あそびかたを押しても最初の段から動かない');process.exit(1);}
+ tutEnd(false);
+ /* ⭐**終わりに💎3個を渡し、ガチャを1回引くまでがチュートリアル**(2026-07-26ユーザー指示) */
+ const gEnd=st.filter(S=>S.scr==='title').map(S=>S.id);
+ if(gEnd.indexOf('gift')<0||gEnd.indexOf('pull')<0){console.log('FAIL: 💎を渡す段/ガチャを引く段が無い');process.exit(1);}
+ if(st[st.length-1].scr!=='title'){console.log('FAIL: 最後の段がタイトル側になっていない');process.exit(1);}
  /* 本編の記録を汚さないか */
  tutStart();
  if(!G||!G.tut){console.log('FAIL: チュートリアルに G.tut が立っていない(戦績が記録されてしまう)');process.exit(1);}
- if(!TUT||TUT.i!==0){console.log('FAIL: チュートリアルが1段目から始まっていない');process.exit(1);}
+ if(!TUT||TUT.st[TUT.i].scr!=='game'){console.log('FAIL: ボタンから始めた時に戦場へ入っていない');process.exit(1);}
  /* 作戦タイムの残り時間が止まるか(操作を覚える前に波が来ない) */
  const t0=G.tI;frames(60,.05);
  if(G.tI!==t0){console.log('FAIL: チュートリアル中に作戦タイムが進んでいる('+t0+'→'+G.tI+')');process.exit(1);}
@@ -336,11 +349,16 @@ function checkTut(){
  frames(300,.05);
  if(!G||G.phase!=='wave'){console.log('FAIL: ウェーブ開始の段で待ってもウェーブが始まらない');process.exit(1);}
  /* 全段を通せるか(ぶら下がりや例外が無いか) */
+ const gem0=META.gem||0;
  for(let k=0;k<st.length+2&&TUT;k++)tutGo(TUT.i+1);
  if(TUT){console.log('FAIL: チュートリアルが最後まで進まない');process.exit(1);}
+ const got=(META.gem||0)-gem0;
+ if(got!==3){console.log('FAIL: チュートリアルで渡す💎が3個ではない('+got+'個)');process.exit(1);}
+ META.gem=gem0;/* ⚠測ったら戻す=検査どうしがMETAを汚し合わないように */
  if(!META.tut){console.log('FAIL: チュートリアルを終えても META.tut が立たない(毎回出てしまう)');process.exit(1);}
  backTitle();
- console.log('🎓チュートリアル: '+st.length+'段(うち操作させる段'+act+')/ 古い言い回しなし / 説明の抜けなし / 戦績を汚さない OK');
+ console.log('🎓チュートリアル: '+st.length+'段(操作させる段'+act+'/タイトル側'+gEnd.length+')'+
+  ' / 開くところから始まる / 最後に💎3個+ガチャ1回 / 古い言い回しなし / 説明の抜けなし / 戦績を汚さない OK');
  /* ボタンを押した音(2026-07-26ユーザー指示=タイトル等が無音だった) */
  for(const k of ['tap','back']){
   if(typeof sfx[k]!=='function'){console.log('FAIL: sfx.'+k+' が無い(ボタンの音)');process.exit(1);}
