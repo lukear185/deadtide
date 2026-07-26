@@ -1074,9 +1074,9 @@ const SFXSYN={
  warn:()=>{beep(660,660,.1,'square',.1);setTimeout(()=>beep(500,500,.14,'square',.1),120);},
  horn:()=>{beep(180,140,.32,'sawtooth',.12);setTimeout(()=>beep(240,190,.36,'sawtooth',.12),150);},
  leak:()=>{beep(700,500,.12,'square',.12);setTimeout(()=>beep(500,340,.16,'square',.12),110);},
- growl:()=>{beep(80,36,.55,'sawtooth',.2);beep(140,55,.4,'square',.1);groan(46,1.9,.13);},
- moan:()=>groan(rnd(68,112),rnd(.7,1.4),.05),
- moanBig:()=>groan(52,1.6,.09),
+ growl:()=>{beep(80,36,.55,'sawtooth',.05);beep(140,55,.4,'square',.025);groan(46,1.9,.033);},
+ moan:()=>groan(rnd(68,112),rnd(.7,1.4),.033),
+ moanBig:()=>groan(52,1.6,.07),
  bite:()=>{beep(150,60,.06,'sawtooth',.08);if(Math.random()<.4)groan(rnd(80,120),.5,.04);},
  splat:()=>beep(190,60,.09,'triangle',.06),
  push:()=>{beep(170,70,.24,'sawtooth',.13);setTimeout(()=>beep(120,55,.2,'sawtooth',.1),90);},
@@ -1084,11 +1084,36 @@ const SFXSYN={
  heal:()=>{beep(660,990,.09,'sine',.06);setTimeout(()=>beep(880,1320,.09,'sine',.05),70);},
  frost:()=>beep(1300,300,.16,'triangle',.06),
  elite:()=>{[392,523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,f,.11,'square',.07),i*70));setTimeout(()=>beep(196,180,.3,'sawtooth',.08),80);},
- bossKill:()=>{beep(110,26,.5,'sawtooth',.22);beep(300,60,.32,'square',.1);groan(38,2.2,.15);[523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,f,.15,'square',.1),340+i*100));},
+ bossKill:()=>{beep(110,26,.5,'sawtooth',.13);beep(300,60,.32,'square',.058);groan(38,2.2,.087);[523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>beep(f,f,.15,'square',.058),340+i*100));},
  eliteKill:()=>{beep(210,60,.24,'sawtooth',.13);groan(72,.9,.07);setTimeout(()=>beep(880,1320,.12,'triangle',.08),110);},
  clearJ:()=>{[660,830,1108].forEach((f,i)=>setTimeout(()=>beep(f,f,.12,'square',.08),i*90));},
  win:()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,f,.18,'square',.1),i*140));},
  lose:()=>{[400,340,280,200].forEach((f,i)=>setTimeout(()=>beep(f,f*.9,.22,'triangle',.1),i*170));}
+};
+/* ⭐ゾンビの声だけ音量を下げる(2026-07-26ユーザー指示「ゾンビの声を全体的に下げて。特にボス登場時の叫び声」)。
+   ⚠**素材を焼き直さずここで下げる**=tool_sfx.js を回さなくても効き、あとから数字だけで調整できる。
+   ⚠⭐**耳で確かめられないので、実際に鳴る音量(RMS)を測ってから決めた**。分かったこと:
+     ①**ボス登場の咆哮 growl が53種で一番大きかった**(RMS 0.441・全体の平均0.150の約3倍・1.1秒)
+     ②**同じ役割の変種どうしで音量がバラバラ**だった(growl 0.441 に対し growl2 0.191=2.3倍差)。
+       くじで引くので、鳴るたびに大きさが変わっていた
+     ③うめき声も moan3(0.188)と moanW(0.059)で3.2倍差があった
+   なので「一律に下げる」のではなく、**役割ごとに同じ音量へ揃えてから下げている**。
+   狙い: うめき≒0.065(始終鳴る環境音なので他より小さく) / ボスの咆哮≒0.11 / ボス撃破≒0.18。
+   ⚠**1.0を超える値は書かない**(下げる指示なので、元から小さい moanW/scratch は素のまま)。
+   ⚠合成音(SFXSYN)側の値も同じ倍率で下げてある=素材が無い環境でも釣り合いが崩れない。
+   ⚠新しい声を足したら**必ず測ってからここに1行足す**(scratchpad の meas.js / 検査は test_sfx.js)。 */
+const SFX_GAIN={
+ /* ボス登場の咆哮(素のRMS: growl .441 / growl2 .191) */
+ growl:.25, growl2:.58,
+ /* ボス撃破(素 .309)。53種で2番目に大きかったので下げる */
+ bossKill:.58,
+ /* エリート/ボスのうめき(素 moanBig .096 / moanBig2 .136) */
+ moanBig:.78, moanBig2:.55,
+ /* ふつうのうめき(素 moan .099 / moan2 .104 / moan3 .188 / moanN .082)。moanWは素で.059なので触らない */
+ moan:.65, moan2:.62, moan3:.35, moanN:.79,
+ /* 断末魔(素 .084) */
+ die:.72
+ /* ⚠bite/bite2 は「噛みつく音」で声ではないため触っていない(素 .102/.117=平均並み) */
 };
 /* 連射・多発する音はピッチを少し揺らす(同じ波形が続くと耳が疲れる) */
 const SFX_VAR={shot:.10,shotgun:.08,bite:.14,bite2:.12,splat:.12,thunk:.10,zap:.08,coin:.08,
@@ -1194,7 +1219,7 @@ for(const k of Object.keys(SFXSYN).concat(Object.keys(SFXB)))if(!sfx[k]){
  sfx[kk]=()=>{
   let key=kk;
   if(set){const l=set[sfxScene()]||set.s1;key=l[(Math.random()*l.length)|0];}
-  if(!sfxPlay(key,1,SFX_VAR[kk]||0)&&syn)syn();};}
+  if(!sfxPlay(key,SFX_GAIN[key]||1,SFX_VAR[kk]||0)&&syn)syn();};}
 /* ⭐押した音は**1本のリスナーにまとめる**(2026-07-26ユーザー指示)。
    ⚠ボタンごとに `sfx.tap()` を書くと必ずつけ忘れる(タイトル・研究所・編成・召集が全部無音だった)。
    ⚠すでに音があるもの(デッキの出撃・建設メニューの品目・小窓)は**ここに入れない**=二重に鳴るため。
@@ -1222,22 +1247,24 @@ function bossActive(){
  return !!(F&&F.zombies.some(z=>z.boss));
 }
 const MELO_NM=[110,110,116,110,98,92,110,87,110,116,123,110,92,87,82,73];
+/* ⚠BGMは beep() を直に呼ぶので **SFXVOL(音量スライダー)を通らない**=下の数字がそのまま音量。
+   2026-07-26ユーザー指示「BGM少しだけ音量上げて」で、3種すべて一律 x1.25 にした。 */
 function bgmOn(){if(bgmTimer)return;bgmTimer=setInterval(()=>{if(!AC||muted)return;
  if(typeof isNM==='function'&&isNM()&&!bossActive()){
   const f=MELO_NM[bgmStep%MELO_NM.length];
-  beep(f,f*.97,.26,'sawtooth',.06);beep(f/2,f/2,.4,'triangle',.05);
-  if(bgmStep%4===0)beep(44,30,.28,'sawtooth',.16);
+  beep(f,f*.97,.26,'sawtooth',.075);beep(f/2,f/2,.4,'triangle',.062);
+  if(bgmStep%4===0)beep(44,30,.28,'sawtooth',.2);
   if(bgmStep%6===5&&Math.random()<.6)sfx.moanBig();
   else if(bgmStep%11===7&&Math.random()<.5)sfx.scratch();/* 遠くで爪が壁を掻く音 */
   bgmStep++;return;}
  const epic=bossActive();
  if(epic){const f=MELO_B[bgmStep%MELO_B.length];
-  beep(f,f,.17,'sawtooth',.065);beep(f*2,f*2,.12,'square',.03);
-  beep(f/2,f/2,.3,'sawtooth',.085);
-  if(bgmStep%4===0)beep(52,28,.2,'sawtooth',.2);
+  beep(f,f,.17,'sawtooth',.081);beep(f*2,f*2,.12,'square',.038);
+  beep(f/2,f/2,.3,'sawtooth',.106);
+  if(bgmStep%4===0)beep(52,28,.2,'sawtooth',.25);
   if(bgmStep%8===6&&Math.random()<.5)sfx.moanBig();
  }else{const f=MELO[bgmStep%MELO.length];
-  beep(f,f,.18,'triangle',.05);if(bgmStep%4===0)beep(f/2,f/2,.34,'sawtooth',.035);}
+  beep(f,f,.18,'triangle',.062);if(bgmStep%4===0)beep(f/2,f/2,.34,'sawtooth',.044);}
  bgmStep++;},300);}
 function bgmOff(){clearInterval(bgmTimer);bgmTimer=null;}
 document.addEventListener('pointerdown',ensureAC);
