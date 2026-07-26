@@ -6749,26 +6749,52 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    c.beginPath();c.arc(5,-46,rd,-1,1);c.stroke();}
   c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;
   c.restore();return;}
- if(Z.id==='dog'){/* 感染ハウンド: 四つ足。低く長い胴と突き出た鼻面 */
+ if(Z.id==='dog'){/* ⭐感染ハウンド(第98弾に描き直し): 四つ足。**低く長い胴と突き出た鼻面**が売り。
+    ⚠四角い脚を4本並べるのをやめ、**根元が太く先が細い脚+足先**にした。
+    ⚠胴は角丸長方形ではなく**背中が反り腹がくびれた形**。⚠鼻面は頭と1本の輪郭で繋ぐ(別の三角を貼らない)。
+    ⭐首の破れた革の首輪で色を分ける(獣でも「元は飼い犬」が出る) */
   const sw=walk*4;
-  c.fillStyle=shade(Z.c,.72);
-  c.fillRect(-12-sw,-8,5,9);c.strokeRect(-12-sw,-8,5,9);
-  c.fillRect(7+sw,-8,5,9);c.strokeRect(7+sw,-8,5,9);
-  c.strokeStyle=shade(Z.c,.68);c.lineWidth=3.4/s;c.lineCap='round';
-  c.beginPath();c.moveTo(-15,-18);c.quadraticCurveTo(-26,-21,-24,-31);c.stroke();
-  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
-  c.fillStyle=shade(Z.c,.6);
-  c.fillRect(-15+sw,-8,5,9);c.strokeRect(-15+sw,-8,5,9);
-  c.fillRect(10-sw,-8,5,9);c.strokeRect(10-sw,-8,5,9);
-  zFill(c,()=>rr(c,-17,-21,33,14,7),Z.c,-13);
-  zFill(c,()=>{c.beginPath();c.arc(17,-23,8.5,0,7);},Z.c,-23);
-  c.fillStyle=shade(Z.c,.86);
-  c.beginPath();c.moveTo(21,-27);c.lineTo(32,-22);c.lineTo(21,-18);c.closePath();c.fill();c.stroke();
-  c.fillStyle=Z.c;
-  c.beginPath();c.moveTo(13,-30);c.lineTo(11,-38);c.lineTo(18,-31);c.closePath();c.fill();c.stroke();
-  c.fillStyle=PANE;
-  for(let k=0;k<3;k++){c.beginPath();c.moveTo(23+k*3,-22);c.lineTo(25+k*3,-18);c.lineTo(27+k*3,-22);c.closePath();c.fill();}
-  zEye(c,19,-26,2);
+  const dleg=(x0,dx,dk,h2)=>{
+   c.fillStyle=shade(Z.c,dk);
+   c.beginPath();c.moveTo(x0-3,-h2);c.lineTo(x0+3,-h2);c.lineTo(x0+2.2+dx,-3.6);c.lineTo(x0-2.2+dx,-3.6);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(x0-2.4+dx,-4);c.lineTo(x0+2.4+dx,-4);c.lineTo(x0+4+dx,-.6);c.lineTo(x0-3.2+dx,-.6);c.closePath();c.fill();c.stroke();};
+  dleg(-10,-sw,.64,11);dleg(9,sw,.64,11);            /* 奥の2本 */
+  /* 尾(先が細い) */
+  c.fillStyle=shade(Z.c,.7);
+  c.beginPath();c.moveTo(-15,-19);c.lineTo(-13,-15);
+  c.bezierCurveTo(-22,-16,-26,-24,-23,-32);c.bezierCurveTo(-25.6,-24,-21,-18,-15,-19);c.closePath();c.fill();c.stroke();
+  /* 胴(背中が反り、腹がくびれる) */
+  zFill(c,()=>{c.beginPath();
+   c.moveTo(-16,-14);
+   c.bezierCurveTo(-18,-20,-12,-23,-4,-22.6);   /* 尻から背中 */
+   c.bezierCurveTo(6,-22.2,13,-23,16,-21);      /* 背中から肩 */
+   c.lineTo(15,-11);
+   c.bezierCurveTo(8,-8,-6,-8,-13,-11);          /* 腹(くびれる) */
+   c.closePath();},Z.c,-14);
+  c.strokeStyle=shade(Z.c,.6);c.lineWidth=2/s;/* 浮き出た肋 */
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(-2+k*5,-20);c.quadraticCurveTo(-1+k*5,-15,-3+k*5,-11);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  dleg(-6,-sw*.7,.9,12);dleg(12,sw*.7,1,12);        /* 手前の2本 */
+  /* 首輪(破れた革) */
+  c.fillStyle='#5c4326';
+  c.beginPath();c.moveTo(11,-23);c.lineTo(16,-24);c.lineTo(17,-15);c.lineTo(12,-14);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GOLD2;c.beginPath();c.arc(14.4,-18.6,1.6,0,7);c.fill();
+  /* 頭と鼻面(1本の輪郭)+伏せた耳 */
+  c.fillStyle=shade(Z.c,.8);/* 耳(後ろへ伏せる)。⚠細長く上へ伸ばすと角に見える=短く太く後ろへ寝かせる */
+  c.beginPath();c.moveTo(14,-30);c.lineTo(8.6,-34.6);c.lineTo(11,-35.6);c.lineTo(18.6,-31.4);c.closePath();c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();
+   c.moveTo(12,-27.6);
+   c.bezierCurveTo(12,-33,16,-35.4,20,-34.6);    /* 額 */
+   c.bezierCurveTo(24,-33.8,25,-30,24.6,-27.4);  /* 目の上 */
+   c.lineTo(33,-24.6);c.lineTo(32.6,-21);        /* 鼻面(前へ突き出す) */
+   c.lineTo(24,-19.6);
+   c.bezierCurveTo(18,-18.6,12.6,-21,12,-24.6);  /* 顎の下 */
+   c.closePath();},Z.c,-24.6);
+  c.fillStyle=INK;c.beginPath();c.arc(32.4,-23,1.7,0,7);c.fill();/* 鼻 */
+  c.fillStyle=PANE;/* 牙(不揃いに3本) */
+  for(const k of [[25.6,3.4],[28.4,4.6],[31,2.8]]){
+   c.beginPath();c.moveTo(k[0],-21.4);c.lineTo(k[0]+1.4,-21.4+k[1]);c.lineTo(k[0]+2.4,-21.4);c.closePath();c.fill();}
+  zEye(c,21.6,-28.4,2);
   c.restore();return;}
  if(Z.id==='crwl'){/* ⭐クローラー(第97弾に描き直し): 地を這ってすり抜ける。**背が低く長い輪郭**が売り。
     ⚠手足を細い線で放射状に出すと虫に見えるので、**前は腕・後ろは脚**とはっきり分けて太さも変える。
@@ -6801,17 +6827,32 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.fillStyle=shade(Z.c,.46);c.beginPath();c.ellipse(18,-14.8,1.5,1.4,0,0,7);c.fill();
   c.fillStyle=INK;c.beginPath();c.ellipse(21.6,-11.6,2.4,1.7,0,0,7);c.fill();
   c.restore();return;}
- if(Z.id==='ooze'){/* スライム状体: 形を変えながらすり抜ける。輪郭に頭も脚も無い塊 */
-  const wob=Math.sin(t*3+ph)*3;
-  zFill(c,()=>{c.beginPath();c.moveTo(-21-wob,0);
-   c.bezierCurveTo(-24-wob,-19,-12,-26+wob,0,-26+wob);
-   c.bezierCurveTo(13,-26+wob,23+wob,-18,20+wob,0);c.closePath();},Z.c,-12);
-  c.globalAlpha=.45;c.fillStyle=shade(Z.c,1.35);
-  c.beginPath();c.ellipse(-5,-18,9,6,0,0,7);c.fill();c.globalAlpha=1;
-  c.fillStyle=INK;c.beginPath();c.arc(7,-16,2.4,0,7);c.fill();c.beginPath();c.arc(14,-13,2.4,0,7);c.fill();
-  c.fillStyle=Z.c;
-  for(let k=0;k<3;k++){const dy2=Math.sin(t*4+k*2+ph)*2;
-   c.beginPath();c.ellipse(-13+k*12,1+dy2,5,3,0,0,7);c.fill();c.stroke();}
+ if(Z.id==='ooze'){/* ⭐スライム状体(第98弾に描き直し): 形を変えながらすり抜ける。**頭も脚も無い塊**が売り。
+    ⚠なめらかな山型だと「置いた半円」に見えるので、**輪郭に大小のこぶ**を作り、
+      こぶごとに違う速さで揺らす。⭐**飲み込んだ物(骨と鉄片)を中に沈めて**おくと塊の厚みが出る */
+  const wob=Math.sin(t*3+ph)*3,w2=Math.sin(t*2.1+ph*1.7)*2.4,w3=Math.sin(t*4.3+ph*.6)*1.8;
+  zFill(c,()=>{c.beginPath();
+   c.moveTo(-21-wob,0);
+   c.bezierCurveTo(-24-wob,-14,-20,-19+w2,-14,-20+w2);      /* 左のこぶ */
+   c.bezierCurveTo(-9,-21-w3,-11,-27+wob,-4,-27+wob);       /* 上の高いこぶ */
+   c.bezierCurveTo(2,-27+wob,3,-22+w3,8,-23+w3);            /* くびれてから小さいこぶ */
+   c.bezierCurveTo(15,-24-w2,23+wob,-16,20+wob,0);
+   c.closePath();},Z.c,-12);
+  c.globalAlpha=.45;c.fillStyle=shade(Z.c,1.35);/* 表面のつやめき(2つ・大きさ違い) */
+  c.beginPath();c.ellipse(-7,-19+w2,8,5,-.2,0,7);c.fill();
+  c.beginPath();c.ellipse(9,-17+w3,4,2.6,.3,0,7);c.fill();c.globalAlpha=1;
+  c.globalAlpha=.5;c.fillStyle=shade(Z.c,.6);/* 中の濃い澱み */
+  c.beginPath();c.ellipse(-2,-9,11,5,.1,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle='#cfc9b4';/* 飲み込んだ骨 */
+  c.save();c.rotate(.34);c.beginPath();c.ellipse(-6,-12,5.6,1.9,0,0,7);c.fill();
+  c.beginPath();c.arc(-11.2,-12.6,2.1,0,7);c.fill();c.beginPath();c.arc(-.8,-11.4,2.1,0,7);c.fill();c.restore();
+  c.fillStyle='#5a6874';/* 飲み込んだ鉄片 */
+  c.beginPath();c.moveTo(10,-8);c.lineTo(16,-11);c.lineTo(17,-6);c.lineTo(11,-4);c.closePath();c.fill();
+  c.fillStyle=INK;/* 目(大きさと高さを変える) */
+  c.beginPath();c.arc(6,-17+w3,2.6,0,7);c.fill();c.beginPath();c.arc(13.4,-13.4,2,0,7);c.fill();
+  c.fillStyle=Z.c;/* 下に垂れる滴(大きさ違い) */
+  for(const k of [[-13,5.4,3.2],[0,4.2,2.4],[11,6,3.6]]){const dy2=Math.sin(t*4+k[0]*.3+ph)*2;
+   c.beginPath();c.ellipse(k[0],1+dy2,k[1],k[2],0,0,7);c.fill();c.stroke();}
   c.restore();return;}
  if(Z.id==='brut'){/* ブルート: 逆三角形。肩が大きく張り出し、長い腕を地面まで垂らす */
   const sw=walk*2.5;
@@ -6919,40 +6960,93 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.strokeStyle=INK;c.lineWidth=2.6/s;
   c.restore();return;}
  if(Z.id==='wrth'){/* レイス: 脚が無く裾が霧に散る。唯一の「足が地に着いていない」輪郭 */
+  /* ⭐第98弾に描き直し。⚠裾を左右対称の二等辺三角にすると「布のマント」に見えるので、
+     **長さの違う筋を4本**に散らす。⚠フードの中は**もっと暗く**して顔が無いことを見せる */
   const fl=Math.sin(t*2.4+ph)*2.5;
   c.globalAlpha=.72;c.shadowColor='#7fd0ff';c.shadowBlur=11;
   c.fillStyle=Z.c;
-  c.beginPath();c.moveTo(-13,-28);c.quadraticCurveTo(-9+fl,-12,-3+fl,2);
-  c.lineTo(4-fl,2);c.quadraticCurveTo(10-fl,-12,13,-28);c.closePath();c.fill();c.stroke();
-  c.globalAlpha=.32;
+  /* 霧に散る裾(筋の長さと太さを変える) */
+  /* ⚠筋を1本ずつ下ろすと**足が3本のクラゲ**に見えた(2回踏んだ)。
+     **1枚の裾**にして、底辺を不揃いのぎざぎざにする=布が霧に解けていく形になる */
+  const wv=x=>Math.sin(t*3+x*.35+ph)*2.2;
+  c.beginPath();
+  c.moveTo(-14,-26);
+  c.bezierCurveTo(-15,-18,-14+wv(-14),-11,-12+wv(-12),-6);/* 左端 */
+  c.lineTo(-9+wv(-9),-12);c.lineTo(-6+wv(-6),-3);         /* ぎざぎざの裾(深さ不揃い) */
+  c.lineTo(-2+wv(-2),-10);c.lineTo(2+wv(2),-7);
+  c.lineTo(5+wv(5),-13);c.lineTo(9+wv(9),-4);
+  c.lineTo(11+wv(11),-11);
+  c.bezierCurveTo(14+wv(13),-16,15,-20,14.6,-26);
+  c.closePath();c.fill();
+  c.globalAlpha=.3;
   for(let k=0;k<3;k++){const w3=Math.sin(t*3+k*2+ph)*3;
-   c.beginPath();c.ellipse(-9+k*9+w3,-2,7,4,0,0,7);c.fill();}
+   c.beginPath();c.ellipse(-8+k*9+w3,-1,7,3.4,0,0,7);c.fill();}
   c.globalAlpha=.72;
-  zFill(c,()=>{c.beginPath();c.moveTo(-14,-26);c.quadraticCurveTo(-16,-50,0,-53);
-   c.quadraticCurveTo(16,-50,14,-26);c.closePath();},Z.c,-40);
-  c.globalAlpha=.8;c.fillStyle='#101820';
-  c.beginPath();c.ellipse(2,-42,8,9.5,0,0,7);c.fill();c.globalAlpha=.72;
-  c.fillStyle='#7fd0ff';
-  c.beginPath();c.arc(0,-44,2.2,0,7);c.fill();c.beginPath();c.arc(6,-44,2.2,0,7);c.fill();
-  c.lineCap='round';c.strokeStyle=Z.c;c.lineWidth=4/s;
-  c.beginPath();c.moveTo(10,-36);c.lineTo(22,-30+fl);c.stroke();
-  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  /* 頭巾(左右非対称に垂れる) */
+  zFill(c,()=>{c.beginPath();
+   c.moveTo(-14,-24);
+   c.bezierCurveTo(-17,-40,-13,-52,0,-53.4);
+   c.bezierCurveTo(13,-52,17,-42,14.6,-26);
+   c.bezierCurveTo(9,-22,-8,-22,-14,-24);c.closePath();},Z.c,-40);
+  c.globalAlpha=.86;c.fillStyle='#0b1118';/* 頭巾の中(顔が無い) */
+  c.beginPath();c.moveTo(-6,-48);c.bezierCurveTo(-9,-40,-7,-32,1,-31);
+  c.bezierCurveTo(9,-32,11,-40,8,-48);c.bezierCurveTo(3,-50,-1,-50,-6,-48);c.closePath();c.fill();
+  c.globalAlpha=.72;
+  c.fillStyle='#7fd0ff';/* 目(大きさを変える) */
+  c.beginPath();c.arc(-1,-43,2.4,0,7);c.fill();c.beginPath();c.arc(6,-42.4,1.9,0,7);c.fill();
+  /* 伸びる腕(先が細い霧) */
+  c.fillStyle=Z.c;
+  c.beginPath();c.moveTo(10,-38);c.lineTo(13,-40);
+  c.bezierCurveTo(19,-36,23,-32,25,-28+fl);
+  c.bezierCurveTo(21,-30,15,-33,9,-34);c.closePath();c.fill();
   c.restore();return;}
- if(Z.id==='tank'){/* 重装兵: 横に広く低い箱。全身が鉄板で、顔はバイザーの隙間だけ */
+ if(Z.id==='tank'){/* ⭐重装兵(第98弾に描き直し): **横に広く低い箱**が売り。全身が鉄板で顔はバイザーの隙間だけ。
+    ⚠ジャガーノート(縦に高い+棘)と混ざらないよう、こちらは**低く・平たく・棘なし**に徹する。
+    ⚠角丸長方形を積むのをやめ、鉄を3色+**段付きの装甲**+不揃いの鋲にする */
   const sw=walk*2.2;
-  c.fillStyle='#2f3840';
-  rr(c,-14+sw,-13,12,14,3);c.fill();c.stroke();
-  rr(c,3-sw,-13,12,14,3);c.fill();c.stroke();
-  c.fillStyle='#3f4a54';
-  rr(c,-26,-42,15,14,3);c.fill();c.stroke();
-  rr(c,11,-42,15,14,3);c.fill();c.stroke();
-  zFill(c,()=>rr(c,-16,-42,32,30,3),Z.c,-27);
-  c.fillStyle='#8a8f96';c.fillRect(-16,-32,32,4);
-  c.fillStyle='#2f3840';c.fillRect(-16,-24,32,3);
-  c.fillStyle=shade(Z.c,.76);rr(c,13,-34+sw,14,8,3);c.fill();c.stroke();
-  zFill(c,()=>rr(c,-8,-53,17,12,4),STEEL,-47);
-  c.fillStyle=INK;c.fillRect(-5,-49,13,4);
-  c.fillStyle=DANGER;c.fillRect(3,-48.5,3,3);
+  const TK1='#2b333b',TK2='#4c5862',TK3='#8f99a2';
+  /* 具足(短くて太い) */
+  const tleg=(dx,dk)=>{
+   c.fillStyle=shade(TK1,dk);
+   c.beginPath();c.moveTo(-6.6+dx,-14);c.lineTo(6.6+dx,-14);c.lineTo(5.8+dx,-5);c.lineTo(-5.8+dx,-5);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(TK2,dk);c.fillRect(-6+dx,-11.4,12,2.4);
+   c.fillStyle=shade('#1c2126',dk);
+   c.beginPath();c.moveTo(-6+dx,-5);c.lineTo(6+dx,-5);c.lineTo(8.6+dx,-.6);c.lineTo(-6.6+dx,-.6);c.closePath();c.fill();c.stroke();};
+  tleg(-8+sw,.84);tleg(8-sw,1);
+  /* 奥の腕(鉄の籠手) */
+  c.fillStyle=shade(TK1,.8);
+  c.beginPath();c.moveTo(13,-36+sw);c.lineTo(20,-35+sw);c.lineTo(28,-28+sw);c.lineTo(25,-23+sw);c.closePath();c.fill();c.stroke();
+  /* 胴(横に広い装甲)。⚠肩の上をわずかに丸める=真四角だと箱に見える */
+  zFill(c,()=>{c.beginPath();
+   c.moveTo(-17,-41);c.lineTo(-18,-20);c.lineTo(-14,-13);c.lineTo(14,-13);c.lineTo(18,-20);c.lineTo(17,-41);
+   c.bezierCurveTo(8,-45,-8,-45,-17,-41);c.closePath();},Z.c,-27);
+  c.fillStyle=TK1;/* 装甲を3段に割る(継ぎ目で「板を重ねた」を出す) */
+  c.beginPath();c.moveTo(-16,-39);c.lineTo(16,-39);c.lineTo(15.4,-32);c.lineTo(-15.4,-32);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-15.4,-31);c.lineTo(15.4,-31);c.lineTo(14.6,-24);c.lineTo(-14.6,-24);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-14.6,-23);c.lineTo(14.6,-23);c.lineTo(13.4,-16);c.lineTo(-13.4,-16);c.closePath();c.fill();c.stroke();
+  c.fillStyle=TK2;c.fillRect(-15.6,-37,31.2,2.4);c.fillRect(-14.8,-29,29.6,2.2);
+  c.fillStyle='#1c2126';/* 鋲(不揃いに打つ) */
+  for(const b of [[-12,-35.4],[-2,-34.6],[9,-35.4],[-10,-20],[6,-19.4],[13,-27]]){
+   c.beginPath();c.arc(b[0],b[1],1.7,0,7);c.fill();}
+  /* 肩当て(左右で形が違う・棘なし) */
+  c.fillStyle=TK2;
+  c.beginPath();c.moveTo(-16,-42);c.bezierCurveTo(-18,-46,-25,-46,-26,-41);
+  c.lineTo(-25,-30);c.lineTo(-16,-31);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(16,-42);c.bezierCurveTo(19,-47,27,-46,27.6,-40);
+  c.lineTo(26,-28);c.lineTo(16,-30);c.closePath();c.fill();c.stroke();
+  c.fillStyle=TK3;c.fillRect(-25.4,-38,9,2.2);c.fillRect(17,-37.4,9.6,2.2);
+  /* 手前の腕 */
+  c.fillStyle=TK2;
+  c.beginPath();c.moveTo(16,-35-sw);c.lineTo(23,-34-sw);c.lineTo(31,-27-sw);c.lineTo(28,-22-sw);c.closePath();c.fill();c.stroke();
+  /* 兜(低く、バイザーの隙間だけ) */
+  zFill(c,()=>{c.beginPath();
+   c.moveTo(-9,-49);c.lineTo(10,-49);c.lineTo(11,-42);c.lineTo(-8,-42);c.closePath();},STEEL,-44);
+  c.fillStyle=TK1;
+  c.beginPath();c.moveTo(-9.4,-49.6);c.bezierCurveTo(-9.6,-55,-5,-57.4,1,-57.4);
+  c.bezierCurveTo(7,-57.4,11.4,-55,11,-49.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=TK3;c.fillRect(-8.6,-53.4,19.4,2.4);
+  c.fillStyle=INK;c.fillRect(-6,-48.4,15,4.2);/* バイザーの隙間 */
+  c.fillStyle=DANGER;c.beginPath();c.arc(5.4,-46.2,2,0,7);c.fill();
   c.restore();return;}
  if(Z.id==='jug'){/* ジャガーノート(①のボス): 棘の肩当てを付けた巨躯。鉄球の鎖を引きずる */
   const sw=walk*2.5;
