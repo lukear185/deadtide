@@ -534,6 +534,31 @@ function checkLabSteps(){
   if(TW_TRAIT[ty].k!=='chain'&&v>2){console.log('FAIL: 伸び切った持ち味が強すぎる '+ty+' +'+Math.round(v*100)+'%');process.exit(1);}}
  console.log('研究所の刻み: '+LINE_MAX+'段 / 1本フル タワー'+tw1+'・兵科'+un1+'🧬 / 全部取り'+all+'🧬(=選ばせる) OK');
 }
+/* ⭐まとめ買い(×5)の検査。⚠**値段だけ合っていても駄目**で、
+   「払った段数ぶん実際に上がるか」「残りが足りない時に縮むか」「表に無い項目は1回きりか」を見る。
+   ⚠DOMを見ても分からない(ヘッドレスは差し込んだ要素を数えられない)ので LAB_ITEMS を見る */
+function checkLabMul(){
+ const keep=META.pts;
+ META.pts=999999;META.tw={};META.un={};META.st0=0;META.nt=3;META.nu=3;
+ LABMUL=5;renderLab();
+ const it=LAB_ITEMS.find(x=>x.k==='tw');
+ if(!it){console.log('FAIL: まとめ買いの検査でタワー強化の項目が出ない');process.exit(1);}
+ let want=0;for(let i=0;i<5;i++)want+=LAB_TW(i);
+ if(it.n!==5||it.p!==want){console.log('FAIL: ×5の値段が1段ずつの合計と違う('+it.p+'/'+want+' n='+it.n+')');process.exit(1);}
+ /* 実際に5段上がるか */
+ const id=it.id,before=(META.tw[id]||0);
+ META.pts-=it.p;META.tw[id]=before+it.n;
+ if(META.tw[id]!==before+5){console.log('FAIL: ×5を買っても5段上がらない');process.exit(1);}
+ /* 残りが足りない時は縮むこと(あと3段しか無いのに×5と出すのは嘘) */
+ META.tw[id]=LINE_MAX-3;renderLab();
+ const it2=LAB_ITEMS.find(x=>x.k==='tw'&&x.id===id);
+ if(!it2||it2.n!==3){console.log('FAIL: 残り3段なのに×3へ縮んでいない(n='+(it2&&it2.n)+')');process.exit(1);}
+ /* 「次の1つ」を買う形の項目(新型タワーなど)はまとめ買いの対象外 */
+ const nt=LAB_ITEMS.find(x=>x.k==='nt');
+ if(nt&&nt.n>1){console.log('FAIL: 新型タワーの解放がまとめ買いになっている');process.exit(1);}
+ LABMUL=1;META.pts=keep;META.tw={};META.un={};
+ console.log('研究所のまとめ買い: ×5='+want+'🧬(1段ずつの合計と一致)/残り3段では×3へ縮む/解放項目は対象外 OK');
+}
 function checkPerUp(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0],si=AI_ORDER[0],[sx,sy]=SLOTS[si];
@@ -1812,6 +1837,7 @@ checkResume();
 checkTwNew();
 checkPerUp();
 checkLabSteps();
+checkLabMul();
 checkCryo();
 checkBeam();
 checkCoil();

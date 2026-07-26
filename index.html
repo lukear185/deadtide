@@ -261,6 +261,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .bprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:0 0 auto}
 .bpfoot .btn{width:100%;padding:8px 12px;font-size:15px}
 .bphint{font-size:11px;font-weight:700;opacity:.75;margin:1px 0 4px;text-align:left;flex:0 0 auto}
+/* ⭐まとめ買いの切り替え(2026-07-27)。20段に刻んだので1本フルに20タップ要った。
+   ⚠横幅が無いのでカードにボタンを増やせない=**画面にひとつだけ**置いて全カードに効かせる */
+.mulsw{float:right;display:flex;gap:3px;opacity:1}
+.mulsw button{border:2px solid var(--ink);border-radius:8px;background:var(--paper2);color:var(--ink);
+ font:900 11px/1 var(--ff);padding:3px 8px}
+.mulsw button.on{background:var(--rust);color:var(--pane)}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;align-items:stretch}
 .lc{display:flex;flex-direction:column;gap:2px;border:2px solid var(--ink);border-radius:10px;
  background:var(--pane);padding:6px 7px;text-align:left}
@@ -1184,16 +1190,16 @@ const SFX_LBL={
  shot:['ライフル台','弾を撃つたび','tw'], gat:['ガトリング要塞','連射','tw'],
  shotgun:['ショットガン台','散弾','tw'], snipe:['スナイパー塔','単発','tw'],
  cannon:['重砲台','発射','tw'], mortar:['迫撃砲','発射','tw'],
- fort:['要塞砲','閂→巨砲→破片の尾','tw'], gren:['擲弾砲台','軽い発射音','tw'],
+ fort:['要塞砲','閂→巨砲→破片の尾','tw'], gren:['爆裂砲台','軽い発射音','tw'],
  laser:['レーザー塔','照射','tw'],
  railChg:['レールガン(充填)','撃つ0.55秒前の「きゅいーん」','tw'],
  rail:['レールガン(発射)','超電磁砲','tw'],
  plasma:['プラズマ砲','発射','tw'], sonic:['音響砲','発射','tw'],
- acid:['酸噴射器','噴射','tw'], flame:['火炎放射塔','放射','tw'],
+ acid:['酸噴射砲','噴射','tw'], flame:['火炎放射塔','放射','tw'],
  dronefx:['ドローン基地','射出','tw'], zap:['テスラコイル','放電','tw'],
  zap2:['重テスラ','放電(低く重い)','tw'],
  frost:['凍結爆弾(砲撃)','凍結','tw'], cryo:['冷却塔','氷が張るひんやり音','tw'],
- net:['拘束ネット砲','発射','tw'],
+ net:['ネット砲','発射','tw'],
  boom:['爆発','砲弾の着弾・砲撃','tw'], thunk:['命中','近接の当たり','tw'],
  moan:['ゾンビの呻き①','徘徊中・撃破時','z'], moan2:['ゾンビの呻き②','同上','z'],
  moan3:['ゾンビの呻き③','同上','z'], moanW:['水棲の呻き','②沈んだ港','z'],
@@ -1250,7 +1256,7 @@ function openSfxTest(){ensureAC();renderSfxTest();$('md-sfx').classList.add('on'
    ⚠銃声の素材はバンドルに無いので、tool_sfx.js が「鋭い立ち上がり+胴鳴り」を重ねて作っている */
 const TW_SFX={rifle:'shot',shot:'shotgun',sniper:'snipe',gat:'gat',
  /* ⚠**使い回しをやめた**(2026-07-26ユーザー指摘=「威力が違うだけで変化がない」)。
-    要塞砲は重砲台と、擲弾砲台は迫撃砲と、冷却塔は凍結爆弾と同じ音だった */
+    要塞砲は重砲台と、爆裂砲台は迫撃砲と、冷却塔は凍結爆弾と同じ音だった */
  fort:'fort',arty:'cannon',mortar:'mortar',gren:'gren',plasma:'plasma',
  rail:'rail',laser:'laser',sonic:'sonic',drone:'dronefx',
  flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net'};
@@ -1270,7 +1276,7 @@ for(const k of Object.keys(SFXSYN).concat(Object.keys(SFXB)))if(!sfx[k]){
    ⚠ボタンごとに `sfx.tap()` を書くと必ずつけ忘れる(タイトル・研究所・編成・召集が全部無音だった)。
    ⚠すでに音があるもの(デッキの出撃・建設メニューの品目・小窓)は**ここに入れない**=二重に鳴るため。
    ⚠capture で拾う=各ボタンの onclick が何をしても、押した手応えだけは必ず鳴る。 */
-const UI_TAP_SEL='.btn,.xbtn,.tabs .tb,.lc .bu,.lc[data-sk],.grc,.ldc,.hgrid .hb,#rgpad button';
+const UI_TAP_SEL='.btn,.xbtn,.tabs .tb,.lc .bu,.lc[data-sk],.grc,.ldc,.hgrid .hb,#rgpad button,.mulsw button';
 /* ⭐🎓チュートリアル中は**光っている所以外を押させない**(2026-07-26 第89弾ユーザー指示
      「ここを選べって案内はあるけど、ほかのところをタップできちゃう」)。
    ⚠**押した音のリスナーより先に登録すること**。stopImmediatePropagation で
@@ -1359,15 +1365,15 @@ const MW=1600,MH=760;
 const TOWERS=[
  {id:'rifle',n:'ライフル台',cost:120,rng:230,dmg:22,rate:.55,type:'bullet',c:'#8a97a5',dsc:'基本の単発銃座'},
  {id:'shot',n:'ショットガン台',cost:200,rng:175,dmg:26,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'3体同時撃ち'},
- {id:'net',n:'拘束ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
+ {id:'net',n:'ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:145,rng:0,dmg:0,rate:3,type:'eco',inc:8,up2:'scrap2',gc:700,c:'#b08d4f',dsc:'時間で⚙️を生産'},
  /* fspl=狙った敵の周りにも通る炎の広がり(px)。周りへは直撃の1/4だけ入る(2026-07-26ユーザー指示) */
  {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,fspl:62,c:'#c96b35',dsc:'装甲に特効(約1.9倍)・継続燃焼・周りにも1/4'},
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:TECH2,dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
  {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い'},
- /* ↓ここまでと次の2つ(擲弾砲台・冷却塔)までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
- {id:'gren',n:'擲弾砲台',cost:300,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
+ /* ↓ここまでと次の2つ(爆裂砲台・冷却塔)までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
+ {id:'gren',n:'爆裂砲台',cost:300,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
  /* frz=完全凍結の秒数(動けず殴れもしない)。凍結が解けたあと frz×2 秒は再凍結しない=最大でも稼働率50% */
  /* frzN=同じ敵を凍らせられる回数(❄冷却回数の強化で+1/段・最大10)。使い切った敵はもう凍らない */
  {id:'cryo',n:'冷却塔',cost:320,rng:200,dmg:6,rate:6,type:'net',frz:2.6,frzN:5,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。同じ敵を凍らせられるのは5回まで'},
@@ -1376,7 +1382,7 @@ const TOWERS=[
  /* heatN=同じ敵を撃ち続けて最大まで焼き切るのに要る発射数 / heatM=その時の威力の倍率(2026-07-26ユーザー指示)。
     ⚠別の敵に狙いが移った瞬間に0へ戻る=雑魚を薙ぐ塔ではなく「1体を焼き切る」塔になる */
  {id:'laser',n:'レーザー塔',cost:460,rng:360,dmg:9,rate:.1,type:'bullet',pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'高速連射・装甲貫通・同じ敵を撃ち続けると最大3倍まで威力が上がる'},
- {id:'acid',n:'酸噴射器',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:TOXIC,dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
+ {id:'acid',n:'酸噴射砲',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:TOXIC,dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
  {id:'sonic',n:'音響砲',cost:420,rng:230,dmg:26,rate:1.1,type:'bullet',multi:5,c:'#a58fd0',dsc:'衝撃波で5体同時'},
  {id:'drone',n:'ドローン基地',cost:500,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
  {id:'arty',n:'重砲台',cost:640,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
@@ -1522,7 +1528,7 @@ const UNITS=[
  {id:'gun',n:'ガンナー',cost:44,cd:4,hp:215,atk:45,rate:.8,rng:220,sp:56,type:'bullet',c:'#5c7d8a',dsc:'基本の射撃手'},
  {id:'shd',n:'盾持ち',cost:60,cd:6,hp:4500,atk:3,rate:1,rng:36,sp:46,type:'melee',c:STEEL,dsc:'攻撃力は皆無。ただひたすら硬い本物の壁'},
  {id:'mol',n:'火炎瓶',cost:72,cd:7,hp:310,atk:75,rate:1.6,rng:180,sp:50,type:'fire',aoe:70,burn:12,c:'#c96b35',dsc:'範囲燃焼・装甲無視'},
- {id:'grn',n:'擲弾兵',cost:86,cd:8,hp:340,atk:120,rate:1.9,rng:240,sp:50,type:'blast',aoe:75,c:'#7d8a5c',dsc:'山なり範囲爆撃'},
+ {id:'grn',n:'爆弾兵',cost:86,cd:8,hp:340,atk:120,rate:1.9,rng:240,sp:50,type:'blast',aoe:75,c:'#7d8a5c',dsc:'山なり範囲爆撃'},
  {id:'frz',n:'冷凍兵',cost:96,cd:8.5,hp:360,atk:18,rate:1.1,rng:150,sp:48,type:'frost',aoe:110,c:'#7fb6c9',dsc:'範囲を凍らせ減速'},
  {id:'saw',n:'チェーンソー',cost:104,cd:9,hp:410,atk:40,rate:.6,rng:38,sp:60,type:'fire',multi:2,c:'#b0483a',dsc:'前線の破砕機'},
  {id:'med',n:'医療兵',cost:116,cd:10,hp:310,atk:71,rate:1.4,rng:150,sp:52,type:'heal',c:'#d8d2c4',dsc:'周囲の部隊を回復'},
@@ -1541,7 +1547,7 @@ const UNITS=[
  {id:'mortarU',n:'迫撃兵',cost:144,cd:10,hp:565,atk:271,rate:2.2,rng:380,minr:90,sp:44,type:'blast',aoe:90,c:'#7d7a5c',dsc:'後方から曲射'},
  {id:'engi',n:'工兵',cost:112,cd:9,hp:360,atk:54,rate:1.3,rng:150,sp:52,type:'heal',c:GOLD2,dsc:'仲間を修理する(回復)'},
  {id:'ninja',n:'影',cost:160,cd:11,hp:605,atk:188,rate:.9,rng:46,sp:150,type:'pierce',c:'#3f4a54',dsc:'神速の暗殺者'},
- {id:'gren2',n:'重擲弾兵',cost:180,cd:12,hp:900,atk:270,rate:2,rng:250,sp:46,type:'blast',aoe:110,c:'#6b7550',dsc:'束ねた爆薬を投げ込む'},
+ {id:'gren2',n:'重爆弾兵',cost:180,cd:12,hp:900,atk:270,rate:2,rng:250,sp:46,type:'blast',aoe:110,c:'#6b7550',dsc:'束ねた爆薬を投げ込む'},
  {id:'rail2',n:'レール狙撃',cost:208,cd:14,hp:510,atk:972,rate:2.6,rng:520,sp:42,type:'pierce',c:'#8f6fae',dsc:'超射程の貫通狙撃'},
  {id:'frost2',n:'絶対零度',cost:192,cd:13,hp:715,atk:51,rate:1.2,rng:180,sp:46,type:'frost',aoe:150,c:TECH,dsc:'広範囲を長時間凍結'},
  {id:'chief',n:'隊長',cost:224,cd:15,hp:1290,atk:170,rate:1.2,rng:230,sp:54,type:'bullet',multi:2,c:'#d8d2c4',dsc:'精鋭を率いる歴戦の兵'},
@@ -3486,7 +3492,7 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   c.strokeStyle=INK;c.lineWidth=3;
   c.restore();return;}
  /* ---- 拡張タワー ---- */
- /* 擲弾砲台: 短く太い口径+**回転弾倉**(基部に付けるので向きが変わっても分かる) */
+ /* 爆裂砲台: 短く太い口径+**回転弾倉**(基部に付けるので向きが変わっても分かる) */
  if(tid==='gren'){c.save();c.rotate(ang);twGun(c,-2,24,15,'#585e4c',6);twMuz(c,22,7.5,'flare','#4c5648');
   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(30,0,6,0,7);c.fill();}c.restore();
   twDrum(c,-19,8,8,'#4c5648');
@@ -3511,7 +3517,7 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   c.fillStyle='#f0a8d8';c.beginPath();c.arc(29,0,o.fire?4.5:2.6,0,7);c.fill();
   if(o.fire){c.strokeStyle='rgba(240,168,216,.7)';c.lineWidth=3;c.beginPath();c.moveTo(31,0);c.lineTo(90,0);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
   c.restore();}
- /* 酸噴射器: 薬液タンク2本+**先の垂れたノズル**(滴が落ちる) */
+ /* 酸噴射砲: 薬液タンク2本+**先の垂れたノズル**(滴が落ちる) */
  else if(tid==='acid'){
   twTank(c,-24,-16,10,22,'#4c6b32');twTank(c,-11,-20,10,26,TOXIC);
   /* 薬液を送るホース(タンクから砲身へ回り込む)。⚠火炎放射塔と輪郭で区別が付くように */
@@ -3683,7 +3689,7 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   twMuz(c,22,4.5,'flare','#3a424b');
   if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,0,6,0,7);c.fill();c.beginPath();c.arc(30,-9,6,0,7);c.fill();}
   c.restore();
- }else if(tid==='net'){/* 拘束ネット砲: 太い筒の先に**四角い網カゴ**+巻いたロープ */
+ }else if(tid==='net'){/* ネット砲: 太い筒の先に**四角い網カゴ**+巻いたロープ */
   c.fillStyle='#4f7a6c';c.beginPath();c.arc(-17,4,7,0,7);c.fill();c.stroke();
   c.strokeStyle='#cfe7dd';c.lineWidth=1.8;c.beginPath();c.arc(-17,4,3.6,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
   c.save();c.rotate(ang);twGun(c,2,16,13,'#5f8f7a',4);
@@ -5013,7 +5019,7 @@ function campStep(C,dt,wave){
      if(FXLV>0&&++nfz<=6)addFx(C,'ice',z.px,z.py,'',{r:26,sd:rnd(0,9),lf:.55});}
     dmgZ(C,z,dm,1);}}
    addFx(C,'ring',sx,sy,'',{r:rng,col:T.frz?FROST:'#9fd9c6'});
-   /* ⭐冷却塔は冷気が床を這う白い波も出す。⚠拘束ネット砲と同じ輪1つでは見分けが付かなかった */
+   /* ⭐冷却塔は冷気が床を這う白い波も出す。⚠ネット砲と同じ輪1つでは見分けが付かなかった */
    if(T.frz&&FXLV>0)addFx(C,'shock',sx,sy+6,'',{r:rng*.62,col:'#e8f7ff'});
    twSfx(C,T);}
   else if(T.type==='fire'){/* 火炎は装甲に特効=殻ごと焼く。直撃も燃焼もFIRE_VS_ARMOR倍、燃焼は1秒長い */
@@ -5055,7 +5061,7 @@ function campStep(C,dt,wave){
    const pz=T.id==='plasma'?1:0;
    C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:pz?.42:.85,
     dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)*(1+(TRT&&TRT.k==='aoe'?TRT.v*TL:0)),pz,
-    /* 砲弾の大きさも砲ごとに変える(重砲台は大玉・擲弾砲台は小玉) */
+    /* 砲弾の大きさも砲ごとに変える(重砲台は大玉・爆裂砲台は小玉) */
     sz:T.id==='arty'?1.55:T.id==='gren'?.7:1});
    twSfx(C,T);}
   else{/* bullet */
@@ -5764,7 +5770,7 @@ function renderCamp(C,t){
     c.fillStyle=RUST;c.beginPath();c.moveTo(10,-5);c.lineTo(21,0);c.lineTo(10,5);c.closePath();c.fill();c.stroke();
     c.restore();
    }
-  }else{/* 砲弾。⚠大きさを砲ごとに変えてある(重砲台=大玉 / 擲弾砲台=小玉) */
+  }else{/* 砲弾。⚠大きさを砲ごとに変えてある(重砲台=大玉 / 爆裂砲台=小玉) */
    const rz=7*(sh.sz||1);
    c.fillStyle='#3c4136';c.beginPath();c.arc(px,py,rz,0,7);c.fill();c.stroke();
    c.fillStyle='#6b6b5a';c.beginPath();c.arc(px-rz*.3,py-rz*.3,rz*.35,0,7);c.fill();}}
@@ -5934,7 +5940,7 @@ function renderCamp(C,t){
    if(lv>=2){c.strokeStyle='rgba(255,255,255,'+(a4*.75).toFixed(2)+')';c.lineWidth=1.6;
     c.beginPath();c.arc(0,0,rr*1.2,sw-.62,sw+.62);c.stroke();}
    c.lineCap='butt';c.globalAlpha=1;c.restore();}
-  else if(e.k==='toss'){/* ⭐投げた物が山なりに飛ぶ(擲弾兵・火炎瓶・冷凍弾)。⚠絵だけ=当たり判定は投げた瞬間に済んでいる */
+  else if(e.k==='toss'){/* ⭐投げた物が山なりに飛ぶ(爆弾兵・火炎瓶・冷凍弾)。⚠絵だけ=当たり判定は投げた瞬間に済んでいる */
    const lfT=fxLife('toss',e),p6=clamp((e.t-(e.d0||0))/lfT,0,1),hi=e.hi||60;
    const at=q=>[e.x+(e.x2-e.x)*q,e.y+(e.y2-e.y)*q-Math.sin(Math.PI*q)*hi];
    const b6=at(p6);
@@ -5956,7 +5962,7 @@ function renderCamp(C,t){
     c.fillStyle='#4e5540';c.beginPath();c.ellipse(0,0,6.2,4.4,0,0,7);c.fill();c.stroke();
     c.fillStyle='#8a9470';c.fillRect(-6,-1.2,12,2.4);}
    c.restore();}
-  else if(e.k==='flame'){/* ⭐火炎放射(兵科・火炎放射塔・酸噴射器)。銃口から広がる炎の帯 */
+  else if(e.k==='flame'){/* ⭐火炎放射(兵科・火炎放射塔・酸噴射砲)。銃口から広がる炎の帯 */
    /* ⚠寿命が0.2秒しかないので、線形に薄くすると出た瞬間しか見えない。終わり際に一気に消す */
    const lfF=fxLife('flame',e),k7=clamp(e.t/lfF,0,1),a7=1-k7*k7,len=e.len||110,sd=e.sd||0;
    const base=e.col||'#ff9a3d',hot=(base==='#a8e05a'||base===TOXIC)?'#e8ff9f':GLOW;
@@ -7073,6 +7079,21 @@ const LAB_CATS=[
  {k:'rec',ic:'ic-tab-rec',em:'📖',t:'記録',d:'クリア状況と、今までに解放したもの'}
 ];
 let LABTAB='new';
+/* ⭐まとめ買いの倍率(2026-07-27ユーザー指示)。20段に刻んだので1本フルに**20タップ**要った。
+   ⚠**カードにボタンを増やす余地は無い**(横画面は高さ393pxで、.lgrid.tightは6列=1枚60px)。
+     そこで**画面にひとつだけ切り替えを置いて全カードに効かせる**。
+   ⚠効くのは**段があるもの**だけ(タワー/兵科/砲撃威力/開始ブースト/収入)。
+     新しい種類・進化・弾薬・砲撃の解放は「次の1つ」を買う形なので常に×1。 */
+let LABMUL=1;
+const LAB_MULS=[1,5];
+/* まとめ買いが効く項目の表 = {種類: [最大段, 値段の式]}。
+   ⚠**ここに無い種類は常に×1**。項目を足した時にここへ書き忘れても、まとめ買いが効かないだけで壊れない。 */
+const LAB_MSTEP={sc0:[5,LAB_SC],hp0:[5,LAB_HP],up0:[5,LAB_UP0],uu0:[2,LAB_UU0],sl0:[4,LAB_SL0],
+ py0:[5,LAB_PY0],ec0:[5,LAB_EC0],cd0:[5,LAB_CD0],
+ tw:[LINE_MAX,LAB_TW],un:[LINE_MAX,LAB_UN],st0:[STK_MAX,LAB_ST0]};
+/* その項目の今の段(タワー/兵科はidごと、それ以外は META[種類]) */
+const labLv=it=>it.k==='tw'?((META.tw&&META.tw[it.id])||0)
+ :(it.k==='un'?((META.un&&META.un[it.id])||0):(META[it.k]||0));
 let LAB_ITEMS=[];/* 直近に研究所へ出した項目(テストから中身を確認するため) */
 function renderLab(){
  const scEl=$('lab-items'),keepTop=(scEl&&scEl.scrollTop)||0;/* 購入後もスクロール位置を維持 */
@@ -7154,6 +7175,15 @@ function renderLab(){
    /* ⚠UNITS は派生キャラに差し替わっていることがあるので UBASE(不変)から名前を引く */
    Object.keys(META.un||{}).map(id=>{const U=UBASE.find(u=>u.id===id)||UNITS.find(u=>unKey(u)===id);
     return U?'🪖'+U.n+'Lv'+META.un[id]:'';}).filter(Boolean));
+ /* ⭐まとめ買い: 段があるものだけ「LABMUL段ぶん」の値段にまとめる。
+    ⚠残りが足りない時は**残りぶんに縮める**(×5と出しておいて3段しか上がらないのは嘘になる)。 */
+ for(const it of items){
+  const S=LAB_MSTEP[it.k];if(!S)continue;
+  const lv=labLv(it),n=Math.max(1,Math.min(LABMUL,S[0]-lv));
+  if(n<2)continue;
+  let p=0;for(let i=0;i<n;i++)p+=S[1](lv+i);
+  it.n=n;it.p=p;it.tag='Lv'+lv+'→'+(lv+n)+'/'+S[0];
+ }
  LAB_ITEMS=items;
  const done=[].concat(doneT,doneU,doneV,doneA,doneS,doneX);
  /* ---- タブ(買える数をバッジで出す=どこに何が残っているか一目で分かる) ---- */
@@ -7178,7 +7208,11 @@ function renderLab(){
  }else{
   const cat=LAB_CATS.find(c=>c.k===LABTAB)||LAB_CATS[0];
   const list=items.map((it,i)=>({it,i})).filter(o=>(o.it.cat||'new')===LABTAB);
-  body='<div class="bphint">'+cat.d+'</div>'
+  /* ⭐まとめ買いの切り替え。⚠**段があるカードが1枚も無いタブでは出さない**(押しても何も変わらないため) */
+  const anyM=list.some(o=>LAB_MSTEP[o.it.k]);
+  body='<div class="bphint">'+(anyM?('<span class="mulsw">'+LAB_MULS.map(m=>
+     '<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join('')+'</span>'):'')
+    +cat.d+'</div>'
    +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=META.pts>=it.p;
      /* ⭐姿があるものは絵文字ではなく**実物**を描く(第91弾)。何を解放/強化するのか一目で分かる */
      return '<div class="lc'+(can?' can':'')+'">'
@@ -7187,7 +7221,7 @@ function renderLab(){
       +'<div class="nm">'+it.t+'</div>'
       +(it.tag?'<div class="tg">'+it.tag+(it.sm&&it.d?' '+it.d:'')+'</div>':'')
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
-      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>🧬'+fmt(it.p)+'</button></div>';}).join('')+'</div>')
+      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')+'</button></div>';}).join('')+'</div>')
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
  }
  $('lab-items').innerHTML=IC(body);
@@ -7196,16 +7230,20 @@ function renderLab(){
   const it=items[+cv2.dataset.pv];if(!it||!it.pv)return;
   fitDraw(cv2,it.pv.k==='t'?(cc=>drawTower(cc,it.pv.i,0,0,0,-0.55,1.2,{}))
                           :(cc=>drawUnitAs(cc,it.pv.i,it.pv.def)),4);});
+ /* まとめ買いの切り替え(押したら値段とラベルを付け直す) */
+ $('lab-items').querySelectorAll('[data-mul]').forEach(b=>{b.onclick=()=>{LABMUL=+b.dataset.mul;renderLab();};});
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
+  /* ⭐まとめ買いの段数。⚠**表に無い種類は必ず1**(「次の1つ」を買う形の項目を複数回進めない) */
+  const n=(LAB_MSTEP[it.k]&&it.n>1)?it.n:1;
   META.pts-=it.p;
   if(it.k==='nt')META.nt++;else if(it.k==='nu')META.nu++;else if(it.k==='stk')META.st.push(it.id);
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);}
   else if(it.k==='am'){META.am=(META.am||0)+1;META.amEq=META.am;}
-  else if(it.k==='sc0')META.sc0++;else if(it.k==='hp0')META.hp0++;
-  else if(['up0','uu0','sl0','py0','ec0','cd0','ec1','tr0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+1;
-  else if(it.k==='st0')META.st0=(META.st0||0)+1;
-  else if(it.k==='tw'){if(!META.tw)META.tw={};META.tw[it.id]=(META.tw[it.id]||0)+1;}
-  else if(it.k==='un'){if(!META.un)META.un={};META.un[it.id]=(META.un[it.id]||0)+1;}
+  else if(it.k==='sc0')META.sc0+=n;else if(it.k==='hp0')META.hp0+=n;
+  else if(['up0','uu0','sl0','py0','ec0','cd0','ec1','tr0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+n;
+  else if(it.k==='st0')META.st0=(META.st0||0)+n;
+  else if(it.k==='tw'){if(!META.tw)META.tw={};META.tw[it.id]=(META.tw[it.id]||0)+n;}
+  else if(it.k==='un'){if(!META.un)META.un={};META.un[it.id]=(META.un[it.id]||0)+n;}
   saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();};});
  if(scEl)scEl.scrollTop=keepTop;
 }
