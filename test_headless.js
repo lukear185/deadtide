@@ -365,6 +365,137 @@ function checkResume(){
   +'・解放'+got.unlocked+'種・マス'+got.slk+'枠 すべて引き継げている OK');
  clearRun();backTitle();
 }
+/* ---- 研究所の個別強化(タワー1種ごと / 兵科1種ごと)と砲撃の威力(2026-07-26) ---- */
+function checkPerUp(){
+ META.stg=0;setDiff=2;startSolo();frames(20,.016);
+ const me=G.players[0],si=AI_ORDER[0],[sx,sy]=SLOTS[si];
+ /* 素の状態にしてから測る(前の検査の買い物が残っていると倍率がずれる) */
+ META.tw={};META.un={};META.st0=0;
+ /* --- ① タワー1種ごとに威力が上がる。他のタワーには影響しない --- */
+ const put=(id)=>{const ti=TOWERS.findIndex(t=>t.id===id);
+  me.scrap=999999;me.unlocked=Math.max(me.unlocked,ti+1);me.towers[si]=null;buildTower(me,si,ti);return me.towers[si];};
+ const hit1=(id)=>{const tw=put(id);
+  me.zombies.length=0;
+  const z=mkZ(zSpec(0,1,5),projPath(sx,sy));z.hp=z.mhp=1e9;me.zombies.push(z);
+  tw.cd=999;campStep(me,.001,G.wave);
+  tw.cd=0;const h0=z.hp;campStep(me,.001,G.wave);return h0-z.hp;};
+ const base=hit1('rifle');
+ if(!(base>0)){console.log('FAIL: ライフル櫓が当たっていない');process.exit(1);}
+ META.tw={rifle:LINE_MAX};
+ const up=hit1('rifle');
+ const want=1+TW_DMG_STEP*LINE_MAX;
+ if(Math.abs(up/base-want)>.03){console.log('FAIL: タワー個別強化Lv'+LINE_MAX+'で威力が'+want.toFixed(2)+'倍にならない ('+(up/base).toFixed(2)+'倍)');process.exit(1);}
+ /* 別のタワー(ショットガン台)には乗らない=個別であること */
+ META.tw={};
+ const sBase=hit1('shot');
+ META.tw={rifle:LINE_MAX,shot:0};
+ const sNow=hit1('shot');
+ if(Math.abs(sNow-sBase)>sBase*.02){console.log('FAIL: ライフル櫓を鍛えたのにショットガン台まで強くなっている');process.exit(1);}
+ /* --- ② 型の持ち味も同じ段数で伸びる --- */
+ META.tw={};
+ /* 火炎の燃焼 */
+ {const tw=put('flame');me.zombies.length=0;
+  const z=mkZ(zSpec(0,1,5),projPath(sx,sy));z.hp=z.mhp=1e9;me.zombies.push(z);
+  tw.cd=999;campStep(me,.001,G.wave);tw.cd=0;campStep(me,.001,G.wave);const b0=z.burnD;
+  META.tw={flame:LINE_MAX};const tw2=put('flame');
+  me.zombies.length=0;const z2=mkZ(zSpec(0,1,5),projPath(sx,sy));z2.hp=z2.mhp=1e9;me.zombies.push(z2);
+  tw2.cd=999;campStep(me,.001,G.wave);tw2.cd=0;campStep(me,.001,G.wave);const b1=z2.burnD;
+  /* ⚠燃焼(burnD)は威力(dm)とは別枠で作られている=威力+15%は乗らない(元の型ごと強化の頃からそう)。
+     つまり火炎放射塔を鍛えると『直撃x1.45 + 燃焼x1.75』になる */
+  const wb=1+TW_TRAIT.fire.v*LINE_MAX;
+  if(!(b1>b0)){console.log('FAIL: 火炎放射塔を鍛えても燃焼が増えない '+b0+'→'+b1);process.exit(1);}
+  if(Math.abs(b1/b0-wb)>.05){console.log('FAIL: 燃焼の伸びが想定と違う 期待'+wb.toFixed(2)+'倍 実際'+(b1/b0).toFixed(2)+'倍');process.exit(1);}}
+ /* 電撃の連鎖数 */
+ {META.tw={};const t0=twChainTest('tesla');META.tw={tesla:LINE_MAX};const t1=twChainTest('tesla');
+  if(t1!==t0+TW_TRAIT.elec.v*LINE_MAX){console.log('FAIL: テスラコイルの連鎖が増えない '+t0+'→'+t1);process.exit(1);}}
+ /* --- ③ 工房の3段は1つの枠を共有する(建て替えで無駄にならない) --- */
+ {const ks=['scrap','scrap2','scrap3'].map(id=>twKey(TOWERS[TOWERS.findIndex(t=>t.id===id)]));
+  if(new Set(ks).size!==1){console.log('FAIL: 工房の3段が別々の強化枠になっている ['+ks.join(',')+']');process.exit(1);}
+  META.tw={scrap:LINE_MAX};
+  const inc=(id)=>{const ti=TOWERS.findIndex(t=>t.id===id),T=TOWERS[ti];
+   me.towers[ECO_BASE]=null;me.scrap=999999;me.unlocked=Math.max(me.unlocked,ti+1);
+   if(T.grd){buildTower(me,ECO_BASE,ECO_TI);let g=0;
+    while(me.towers[ECO_BASE].ti!==ti&&g++<8){const t2=me.towers[ECO_BASE];
+     twStats(t2.ti).forEach(x=>t2.us[x]=USTAT_MAX);me.scrap=999999;if(!gradeTower(me,ECO_BASE))break;}
+   }else buildTower(me,ECO_BASE,ti);
+   const tw=me.towers[ECO_BASE];tw.us=newUs();
+   const g0=me.scrap;tw.cd=0;campStep(me,.001,G.wave);return me.scrap-g0;};
+  const a=inc('scrap'),b=inc('scrap3');
+  if(!(a>0&&b>0)){console.log('FAIL: 工房が⚙️を生んでいない '+a+' / '+b);process.exit(1);}
+  META.tw={};const a0=inc('scrap');
+  if(!(a>a0)){console.log('FAIL: 工房を鍛えても産出が増えない '+a0+'→'+a);process.exit(1);}}
+ /* --- ④ 支援施設は強化の対象にしない --- */
+ META.tw={};META.nt=T_PLAY-BASE_T;META.nu=U_N-BASE_U;renderLab();/* 全部解放した状態で数える */
+ {const rows=LAB_ITEMS.filter(o=>o.cat==='twup');
+  const supN=TOWERS.filter(T=>T.type==='sup').length;
+  if(rows.some(o=>{const T=TOWERS.find(t=>twKey(t)===o.id);return T&&T.type==='sup';})){
+   console.log('FAIL: 支援施設が強化の一覧に出ている');process.exit(1);}
+  /* ⚠支援施設(sup)とグレードアップ専用(grd)はどちらも T_PLAY の**外**(TOWERSの末尾)にあるので、
+     T_PLAY のループには最初から入らない=解放済みなら T_PLAY 種ぜんぶが並ぶ。
+     工房も T_PLAY 内には scrap の1つだけ(上級/プラントは外)なので自然に1枠になる */
+  const wantN=T_PLAY;
+  if(rows.length!==wantN){console.log('FAIL: タワー強化の項目数が合わない 期待'+wantN+' 実際'+rows.length);process.exit(1);}
+  const uns=LAB_ITEMS.filter(o=>o.cat==='unup');
+  if(uns.length!==U_N){console.log('FAIL: 兵科強化の項目数が合わない 期待'+U_N+' 実際'+uns.length);process.exit(1);}
+  const st=LAB_ITEMS.filter(o=>o.k==='st0');
+  if(st.length!==1){console.log('FAIL: 砲撃の威力強化が研究所に出ていない');process.exit(1);}
+  /* まだ解放していないタワーは出さない */
+  META.nt=0;renderLab();
+  const rows0=LAB_ITEMS.filter(o=>o.cat==='twup');
+  if(rows0.length>=rows.length){console.log('FAIL: 未解放のタワーまで強化の一覧に出ている');process.exit(1);}
+  console.log('研究所の個別強化: タワー'+rows.length+'枠(支援'+supN+'種と工房の上位2段は対象外=工房は1枠を共有)/兵科'+uns.length+'種/砲撃の威力1項目 OK');}
+ /* --- ⑤ 兵科1種ごと。派生キャラは元の兵科の枠を共有する --- */
+ META.un={};
+ {const ui=0,U=UNITS[ui];
+  me.units.length=0;me.scrap=999999;me.ucd=UNITS.map(()=>0);me.uUn=U_N;
+  deployUnit(me,ui);const u0=me.units[me.units.length-1];const a0=u0.am,h0=u0.mhp;
+  META.un={[U.id]:LINE_MAX};
+  me.units.length=0;me.ucd=UNITS.map(()=>0);deployUnit(me,ui);
+  const u1=me.units[me.units.length-1];
+  const st=UN_STEP(U.type);
+  if(Math.abs(u1.am/a0-(1+st.a*LINE_MAX))>.03){console.log('FAIL: 兵科強化で攻撃が上がらない '+(u1.am/a0).toFixed(2)+'倍');process.exit(1);}
+  if(Math.abs(u1.mhp/h0-(1+st.h*LINE_MAX))>.03){console.log('FAIL: 兵科強化でHPが上がらない '+(u1.mhp/h0).toFixed(2)+'倍');process.exit(1);}
+  /* 派生キャラ(進化)が元の兵科の強化を継承するか */
+  const vb=(typeof UVAR==='object'&&UVAR[U.id])?UVAR[U.id][0]:null;
+  if(vb){const V=mkVar(U,vb);
+   if(unKey(V)!==U.id){console.log('FAIL: 派生キャラ('+V.n+')が元の兵科の強化枠を引き継いでいない');process.exit(1);}
+   if(unlv(unKey(V))!==LINE_MAX){console.log('FAIL: 派生キャラに元の兵科の強化Lvが乗っていない');process.exit(1);}}
+  console.log('兵科の個別強化: '+U.n+'をLv'+LINE_MAX+'で攻撃x'+(u1.am/a0).toFixed(2)+'・HPx'+(u1.mhp/h0).toFixed(2)
+   +(vb?' / 派生「'+mkVar(U,vb).n+'」も同じ枠を共有':'')+' OK');}
+ /* --- ⑥ 砲撃の威力。直撃と燃焼の両方に乗ること --- */
+ {const stkDmg=()=>{me.zombies.length=0;
+   const z=mkZ(zSpec(0,1,5),PLEN*.5);z.hp=z.mhp=1e9;me.zombies.push(z);
+   campStep(me,.001,G.wave);
+   const h0=z.hp;airstrikeHit(me,z.px,z.py,5,'napalm',true);
+   return {d:h0-z.hp,b:z.burnD};};
+  META.st0=0;const s0=stkDmg();
+  META.st0=STK_MAX;const s1=stkDmg();
+  const w=1+STK_STEP*STK_MAX;
+  if(!(s0.d>0)){console.log('FAIL: 砲撃が当たっていない');process.exit(1);}
+  if(Math.abs(s1.d/s0.d-w)>.02){console.log('FAIL: 砲撃の威力がLv'+STK_MAX+'で'+w.toFixed(2)+'倍にならない ('+(s1.d/s0.d).toFixed(2)+'倍)');process.exit(1);}
+  if(Math.abs(s1.b/s0.b-w)>.02){console.log('FAIL: 砲撃の燃焼に強化が乗っていない ('+(s1.b/s0.b).toFixed(2)+'倍)');process.exit(1);}
+  /* 5種すべてに乗っているか(1つでも掛け忘れると片方だけ強くならない) */
+  for(const k of ['air','carpet','frost','mgun']){
+   me.zombies.length=0;const z=mkZ(zSpec(0,1,5),PLEN*.5);z.hp=z.mhp=1e9;me.zombies.push(z);
+   campStep(me,.001,G.wave);
+   META.st0=0;let h=z.hp;airstrikeHit(me,z.px,z.py,5,k,true);
+   const d0=k==='mgun'?(me.mg?me.mg.dmg:0):(h-z.hp);
+   META.st0=STK_MAX;h=z.hp;airstrikeHit(me,z.px,z.py,5,k,true);
+   const d1=k==='mgun'?(me.mg?me.mg.dmg:0):(h-z.hp);
+   if(!(d0>0)){console.log('FAIL: 砲撃'+k+'が効いていない');process.exit(1);}
+   if(Math.abs(d1/d0-w)>.03){console.log('FAIL: 砲撃'+k+'に威力強化が乗っていない ('+(d1/d0).toFixed(2)+'倍)');process.exit(1);}}
+  META.st0=0;
+  console.log('砲撃の威力: Lv'+STK_MAX+'で直撃x'+(s1.d/s0.d).toFixed(2)+'・燃焼x'+(s1.b/s0.b).toFixed(2)+'(5種すべて) OK');}
+ META.tw={};META.un={};META.st0=0;
+ backTitle();
+}
+/* 連鎖数だけを測るための小さな道具 */
+function twChainTest(id){
+ const me=G.players[0],si=AI_ORDER[0],ti=TOWERS.findIndex(t=>t.id===id);
+ me.scrap=999999;me.unlocked=Math.max(me.unlocked,ti+1);me.towers[si]=null;buildTower(me,si,ti);
+ const tw=me.towers[si],T=TOWERS[ti],TT=TW_TRAIT[T.type];
+ return twChain(T,tw)+(TT&&TT.k==='chain'?TT.v*twlv(twKey(T)):0);
+}
 /* ---- 火炎放射塔の周囲ダメージ / レーザー塔の焼き切り / 廃品工房の建て替え(2026-07-26) ---- */
 function checkTwNew(){
  META.stg=0;setDiff=2;startSolo();
@@ -526,7 +657,8 @@ function checkProgress(){
 function checkMetaReset(){
  META.gem=7;META.hero={hNox:1};META.hmat=5;META.zdex={walk:1};META.hlv={hNox:2};META.hxp={hNox:30};
  META.rpg={gold:99};META.hsel='hNox';META.tr0=1;
- META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.am=2;META.py0=3;META.tl={bullet:2};
+ META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.am=2;META.py0=3;
+ META.tw={rifle:2};META.un={bat:3};META.st0=4;/* タワー/兵科の個別強化と砲撃威力 */
  META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
  metaReset();
  const keep=[['gem',META.gem===7],['英雄',!!(META.hero&&META.hero.hNox)],['hmat',META.hmat===5],
@@ -536,7 +668,8 @@ function checkMetaReset(){
  for(const [n,ok] of keep)if(!ok){console.log('FAIL: リセットで消してはいけないもの('+n+')が消えている');process.exit(1);}
  const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
   ['派生',META.uv.length===0],['弾薬',META.am===0],['経済強化',META.py0===0],
-  ['系統強化',Object.keys(META.tl).length===0],['砲撃',META.st.length===1&&META.st[0]==='air'],
+  ['タワー個別強化',Object.keys(META.tw).length===0],['兵科個別強化',Object.keys(META.un).length===0],
+  ['砲撃の威力',(META.st0||0)===0],['砲撃の種類',META.st.length===1&&META.st[0]==='air'],
   ['難易度の記録',!scArr(0)[0]&&!scArr(0)[5]],['ナイトメア解放',!META.nmOK]];
  for(const [n,ok] of gone)if(!ok){console.log('FAIL: リセットしたのに '+n+' が残っている');process.exit(1);}
  console.log('セーブのリセット: 難易度と研究所('+gone.length+'項目)を消し、💎英雄🔧図鑑⚔冒険('+keep.length+'項目)は残す OK');
@@ -935,7 +1068,8 @@ function checkEvo(){
  const vs=LAB_ITEMS.filter(o=>o.k==='uv');
  if(vs.length<VBASE.length){console.log('FAIL: 進化の選択肢が'+vs.length+'件しか出ていない(基本兵科'+VBASE.length+'種ぶん出るはず)');process.exit(1);}
  /* 上級兵科の進化は、本体が未解放なら出ないこと */
- const adv=vs.filter(o=>/上級進化/.test(o.t));
+ /* ⚠以前は o.t(名前)を見ていたが '上級進化' は o.tag 側にあるため**常に0件=何も検査していなかった**(2026-07-26に修正) */
+ const adv=vs.filter(o=>/上級進化/.test(o.tag||''));
  if(adv.length){console.log('FAIL: 本体未解放の上級兵科の進化が出ている '+adv.length+'件');process.exit(1);}
  /* 1つ買っても「次の段階」が同じ兵科で出る=段階は飛ばせない */
  const first=vs[0];META.uv.push(first.id);renderLab();
@@ -1238,6 +1372,7 @@ checkTwFx();
 checkTips();
 checkResume();
 checkTwNew();
+checkPerUp();
 checkCryo();
 checkBeam();
 checkCoil();

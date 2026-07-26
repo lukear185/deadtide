@@ -270,6 +270,15 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .lc .tg{font-size:10px;font-weight:800;color:var(--rust2);line-height:1.2}
 .lc .ds{font-size:10.5px;font-weight:700;opacity:.7;line-height:1.32;
  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+/* ⭐タワー/兵科の個別強化は項目が20〜32枚並ぶ。普通のカード(4列・説明3行)だと
+   1画面に8枚しか入らず探せないので、**小さいカードで6列**にする(1画面に18枚)。
+   ⚠説明は .tg の1行に収める(.ds を出さない) */
+.lgrid.tight{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
+.lgrid.tight .lc{padding:4px 5px;gap:1px}
+.lgrid.tight .lc .ic{font-size:15px;line-height:1}
+.lgrid.tight .lc .nm{font-size:11.5px;line-height:1.2}
+.lgrid.tight .lc .tg{font-size:9px;line-height:1.15}
+.lgrid.tight .lc .bu{font-size:11px;padding:2px 0}
 .lc .bu{margin-top:auto;border:2px solid var(--ink);border-radius:8px;background:var(--amber);color:var(--ink);
  font-size:12px;font-weight:900;padding:3px 0;width:100%;box-shadow:0 3px 0 var(--ink)}
 .lc .bu:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
@@ -820,20 +829,21 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,tl:{},ul:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{}};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},am:0,amEq:0,up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{}};
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
 try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
  if(!Array.isArray(META.uv))META.uv=[];if(!META.ld||typeof META.ld!=='object')META.ld={};META.am=META.am||0;META.amEq=META.amEq||0;
- for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','gem','hmat','tr0'])META[k]=META[k]||0;
+ for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0'])META[k]=META[k]||0;
  if(!META.hlv||typeof META.hlv!=='object')META.hlv={};/* 英雄の鍛錬Lv id→Lv */
  if(!META.hxp||typeof META.hxp!=='object')META.hxp={};/* 次のLvまでの経験 id→pt */
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
  if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
  if(!META.zdex||typeof META.zdex!=='object')META.zdex={};/* 📖図鑑: ソロで倒したことがある種類 */
- if(!META.tl||typeof META.tl!=='object')META.tl={};if(!META.ul||typeof META.ul!=='object')META.ul={};}}catch(e){}
+ /* ⚠タワー/兵科の個別強化。旧 META.tl/ul(型ごと)は廃止したので読まない */
+ if(!META.tw||typeof META.tw!=='object')META.tw={};if(!META.un||typeof META.un!=='object')META.un={};}}catch(e){}
 /* ⭐**難易度の解放と🔬研究所を1回だけリセットする**(2026-07-26ユーザー指示)。
    理由: ①難易度を「1つ下をクリアで開く」に変える前のデータで、飛び越して開いているプレイヤーがいる
         ②`G.pveDiff||2` のバグで**新兵クリアが古参として記録されていた**(兵長が開かず鬼軍曹が開く)
@@ -848,7 +858,7 @@ function metaReset(){
  /* 研究所で買ったもの(🆕新しい種類 / 🧬派生と弾薬 / 🎯砲撃 / 📈系統 / 🚀開始ブースト / 💰経済)と研究pt */
  META.pts=0;META.nt=0;META.nu=0;META.st=['air'];META.eq='air';
  META.uv=[];META.am=0;META.amEq=0;META.ld={};
- META.tl={};META.ul={};
+ META.tw={};META.un={};META.st0=0;
  for(const k of ['sc0','hp0','up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=0;
 }
 try{if((META.rst|0)<META_RESET){META.rst=META_RESET;metaReset();saveMeta();}}catch(e){}
@@ -1547,31 +1557,47 @@ const AMMO=[
  {id:'void',n:'崩壊弾',ic:'⚫',dm:1.75,pierce:1,aoe:62,col:'rgba(178,130,255,',hit:'#e0d0ff',w:2.3,dsc:'着弾点が崩壊する。威力+75%・貫通・小範囲'}
 ];
 const LAB_AM=[240,460,760];/* ビーム/プラズマ/崩壊の解放価格 */
-/* ============ 系統強化(研究所) ============
- タワーは「型」ごと、兵科も「型」ごとに3段階まで鍛えられる。
- 研究所で解放した新型タワー/新兵科にもそのまま乗るので、終盤の解放物も強化できる。 */
-const TLINE=[
- {k:'bullet',ic:'🔫',n:'銃器改良',dsc:'実弾系タワー(ライフル/ショットガン/狙撃/ガトリング等)の威力+10%/段'},
- {k:'eco',ic:'🏭',n:'工房設備',dsc:'廃品工房の産出+15%/段'},
- {k:'fire',ic:'🔥',n:'燃焼促進剤',dsc:'火炎系タワーの継続燃焼+25%・威力+10%/段'},
- {k:'net',ic:'🕸',n:'強化拘束具',dsc:'拘束系タワーの減速/凍結時間+20%・威力+10%/段'},
- {k:'blast',ic:'💥',n:'高性能炸薬',dsc:'爆発系タワーの範囲+12%・威力+10%/段'},
- {k:'elec',ic:'⚡',n:'高圧回路',dsc:'電撃系タワーの連鎖+1・威力+10%/段'}
-];
-const ULINE=[
- {k:'melee',ic:'⚔',n:'近接訓練',dsc:'近接兵科のHP+10%・攻撃+10%/段'},
- {k:'bullet',ic:'🔫',n:'射撃訓練',dsc:'射撃兵科のHP+8%・攻撃+12%/段'},
- {k:'pierce',ic:'🗡',n:'貫通訓練',dsc:'貫通兵科のHP+8%・攻撃+12%/段'},
- {k:'blast',ic:'💣',n:'爆撃訓練',dsc:'爆発兵科のHP+8%・攻撃+12%/段'},
- {k:'fire',ic:'🔥',n:'焼夷訓練',dsc:'火炎兵科のHP+8%・攻撃+12%/段'},
- {k:'frost',ic:'❄',n:'凍結訓練',dsc:'冷凍兵科のHP+8%・攻撃+12%/段'},
- {k:'heal',ic:'✚',n:'衛生訓練',dsc:'回復兵科のHP+8%・回復量+12%/段'}
-];
+/* ============ 個別強化(研究所) ============
+ ⭐**タワー1種ごと・兵科1種ごと**に3段まで鍛える(2026-07-26ユーザー指示。
+   それまでは「実弾系/火炎系…」という型ごとのまとめ強化だった=どのタワーを使っても同じ伸び方だった)。
+ ⚠型ごとから個別に変えたので、1項目が効く範囲が狭くなった。そのぶん1段の伸びを大きくしてある(威力+10%→+15%)。
+ ⚠**型らしさは残す**=威力に加えて、その型の持ち味(燃焼/減速/連鎖/爆発範囲/産出)も同じ段数で伸びる。
+ ⚠保存は META.tw{タワーid:Lv} / META.un{兵科id:Lv}。**旧 META.tl/ul(型ごと)は廃止**した
+   (直前の META_RESET=1 で全プレイヤーの tl/ul は空になっているので、移行するものが無い)。
+ ⚠idで引くので、**タワー/兵科を足したら自動で強化対象になる**(型の表に足す必要はもう無い)。 */
 const LINE_MAX=3;
-const LAB_TL=lv=>Math.round(140*Math.pow(1.55,lv));
-const LAB_UL=lv=>Math.round(110*Math.pow(1.55,lv));
-const tlv=k=>soloMeta()?clamp((META.tl&&META.tl[k])||0,0,LINE_MAX):0;
-const ulv=k=>soloMeta()?clamp((META.ul&&META.ul[k])||0,0,LINE_MAX):0;
+/* 型ごとの「持ち味」の伸び(1段あたり)。⚠ここに無い型は威力だけ伸びる */
+const TW_TRAIT={
+ eco:{k:'inc',v:.15,t:'産出+15%'},
+ fire:{k:'burn',v:.25,t:'継続燃焼+25%'},
+ net:{k:'slow',v:.20,t:'減速/凍結+20%'},
+ blast:{k:'aoe',v:.12,t:'爆発範囲+12%'},
+ elec:{k:'chain',v:1,t:'連鎖+1'}
+};
+/* 一覧に出す絵文字。⚠タワー20枚・兵科32枚が全部同じ絵だと見分けられないので型で変える */
+const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡'};
+const UN_IC={melee:'⚔',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚'};
+const TW_DMG_STEP=.15;/* タワーの威力(1段あたり) ⚠工房(eco)は威力を使わないので産出だけ */
+/* 兵科は近接だけHP寄り、それ以外は攻撃寄り(型ごと強化の時の配分をそのまま引き継ぐ) */
+const UN_STEP=ty=>ty==='melee'?{a:.10,h:.10}:{a:.12,h:.08};
+/* 価格。⚠対象が20種/32種に増えたぶん1種あたりは安くしてある
+   (全部取り切ると タワー5,700 + 兵科6,848 = 12,548🧬。型ごとだった頃の全取り7,973より多いが、
+    「使う数種だけ選んで伸ばす」のが狙いなので全部取る前提にしない) */
+const LAB_TW=lv=>Math.round(60*Math.pow(1.5,lv));/* 60/90/135 = 1種フル285 */
+const LAB_UN=lv=>Math.round(45*Math.pow(1.5,lv));/* 45/68/101 = 1種フル214 */
+/* ⭐🎯砲撃の威力(2026-07-26ユーザー指示)。今までは砲撃だけ**研究所で一切強化できなかった** */
+const STK_MAX=5,STK_STEP=.12;/* 5段・+12%/段 = 最大×1.60 */
+const LAB_ST0=lv=>Math.round(130*Math.pow(1.5,lv));/* 130/195/293/439/659 = フル1,716 */
+/* そのタワー/兵科の強化Lv。⚠ソロ専用メタ(協力/対戦とクライアントでは必ず0) */
+/* ⭐強化を引くキー。**工房の3段(廃品工房/上級/プラント)は1つの枠を共有する**
+   =建て替えで強化が無駄にならないため。⚠支援施設(sup)は強化しない(タワーの性能に触らない約束) */
+const twKey=T=>(T&&T.type==='eco')?'scrap':(T&&T.id)||'';
+/* 兵科は**派生キャラが元の兵科の枠を共有する**(猟犬を鍛えれば狼/ケルベロス/フェンリルにも効く) */
+const unKey=U=>(U&&(U.base||U.id))||'';
+const twlv=id=>soloMeta()?clamp((META.tw&&META.tw[id])||0,0,LINE_MAX):0;
+const unlv=id=>soloMeta()?clamp((META.un&&META.un[id])||0,0,LINE_MAX):0;
+/* 砲撃の威力倍率。⚠**燃焼(burnD)にも掛ける**=直撃だけ強くなるとナパームだけ効きが半分になる */
+const stkPow=()=>soloMeta()?1+STK_STEP*clamp(META.st0||0,0,STK_MAX):1;
 /* ============ 編成(ロードアウト) ============ */
 /* ============ 英雄(ヒーロー) ============
  💎魔石のガチャで手に入る特別な部隊。1ゲームに1回だけ拠点から出撃でき、固有の必殺技を持つ。
@@ -3011,9 +3037,10 @@ function deployUnit(C,ui){
  const cap=G&&G.coop?COOP_MAXU:MAXU;
  if(cnt>=cap){if(C.isMe)toast('⚠ 部隊上限('+cap+'体)!',true);return false;}
  C.scrap-=dc;C.ucd[ui]=U.cd*metaCd()*(C.supCd||1);C.dep++;/* 🏥野戦病院ぶんCD短縮 */
- const UL=ulv(U.type);/* 系統訓練(研究所): 型ごとにHPと攻撃が伸びる */
- const lvM=(1+.1*(C.uLv||0))*(1+(U.type==='melee'?.10:.12)*UL);/* 部隊レベル+訓練 */
- const hpM=(1+.1*(C.uLv||0))*(1+(U.type==='melee'?.10:.08)*UL);
+ /* ⭐研究所の個別強化(その兵科1種ぶん)。⚠部隊レベル(全兵科+10%/Lv)とは別枠で掛け算 */
+ const UL=unlv(unKey(U)),US=UN_STEP(U.type);
+ const lvM=(1+.1*(C.uLv||0))*(1+US.a*UL);/* 部隊レベル+訓練 */
+ const hpM=(1+.1*(C.uLv||0))*(1+US.h*UL);
  const d0=G&&G.coop?branchD(C.gi||0)-rnd(0,20):PLEN-70-rnd(0,26);
  const hp0=Math.round(U.hp*hpM);
  F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
@@ -3109,9 +3136,13 @@ function airstrike(C,x,y,wave){
 }
 function airstrikeHit(C,x,y,wave,stk,mine){
  const F=C;const isMine=!!mine||!!F.isMe;
+ /* ⭐研究所の🎯砲撃強化(2026-07-26ユーザー指示)。それまで砲撃は**研究所で一切強化できなかった**。
+    ⚠直撃だけでなく燃焼(burnD)にも掛ける=ナパームは燃焼が主火力なので、掛けないと効きが半分になる。
+    ⚠soloMeta()で包んであるので協力/対戦には効かない(砲撃は対戦でも撃てる) */
+ const SP=stkPow();
  if(stk==='carpet'){/* 絨毯爆撃: 道に沿って前後300を連続爆撃 */
-  const cd0=projPath(x,y),dm=110*(1+.15*wave);
-  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=300){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=15;}}}
+  const cd0=projPath(x,y),dm=110*(1+.15*wave)*SP;
+  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=300){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=15*SP;}}}
   /* ⭐時間差で5発。1発ずつに土煙と衝撃波を付けて「線に沿って落ちてくる」のを見せる(第65弾) */
   for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN)),dd=.07*(k+2);
    addFx(F,'boom',p[0],p[1],'',{d0:dd});
@@ -3121,27 +3152,27 @@ function airstrikeHit(C,x,y,wave,stk,mine){
      addP(F,4,p[0],p[1]-6,{sp:60,up:40,g:-40,life:1.2,r:9,col:'#6e6354',typ:'smoke'});});}}
   F.shake=.4;
  }else if(stk==='frost'){/* 凍結爆弾: 広範囲4秒凍結 */
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=170){z.slowT=Math.max(z.slowT,4);dmgZ(F,z,40*(1+.1*wave),1);}}
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=170){z.slowT=Math.max(z.slowT,4);dmgZ(F,z,40*(1+.1*wave)*SP,1);}}
   addFx(F,'ring',x,y,'',{r:170,col:TECH});addFx(F,'spark',x,y,'',{sd:rnd(0,9),col:TECH});
   /* ⭐氷の破片が突き立ち、地面が白く凍る */
   if(FXLV>0){addFx(F,'ice',x,y-10,'',{sd:rnd(0,9),r:120,lf:.85});
    addP(F,7,x,y,{sp:30,g:0,life:5,r:15,col:'#b9dcea',typ:'stain',jx:62,jy:24});}
   if(isMine)sfx.frost();F.shake=.15;
  }else if(stk==='napalm'){/* ナパーム: 強烈な継続燃焼 */
-  const dm=60*(1+.12*wave);
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave);}}}
+  const dm=60*(1+.12*wave)*SP;
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave)*SP;}}}
   addFx(F,'boomL',x,y,'');addFx(F,'ring',x,y,'',{r:120,col:'#ffb347'});F.shake=.3;
   /* ⭐燃え続けているのが見えるよう火の海を残す(燃焼5秒に合わせる) */
   if(FXLV>0)addFx(F,'pool',x,y+2,'',{r:120,sd:rnd(0,9),lf:4.2});
  }else if(stk==='mgun'){/* 機関銃掃射: 拠点から連射(以後campStepで継続) */
-  F.mg={t:3.6,x,y,dmg:24*(1+.12*wave),cd:0};
+  F.mg={t:3.6,x,y,dmg:24*(1+.12*wave)*SP,cd:0};
   addFx(F,'ring',x,y,'',{r:150,col:'#ffdd66'});
   if(FXLV>0)addFx(F,'dust',x,y+2,'',{r:130,lf:.8});
   if(isMine)sfx.shotgun();
   return true;
  }else{/* 標準エアストライク */
-  const dm=150*(1+.15*wave);
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20;}}}
+  const dm=150*(1+.15*wave)*SP;
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20*SP;}}}
   F.shake=.3;addFx(F,'boomL',x,y,'');
   /* ⭐床を押す衝撃波+土煙+短い残り火。⚠爆発の丸だけだと「重さ」が出ない */
   if(FXLV>0){addFx(F,'shock',x,y+4,'',{r:92,col:'#ffdd66'});
@@ -3419,7 +3450,7 @@ function campStep(C,dt,wave){
   tw.cd-=dt;if(tw.fireT>0)tw.fireT-=dt;
   const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=twDmgM(tw);
   const aB=G&&G.coop?1+.08*((G.players[tw.own||0]||C).atkLv):atkB;
-  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=Math.round(T.inc*(1+.2*tw.us.d)*metaEco()*(1+.15*tlv('eco')));C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
+  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=Math.round(T.inc*(1+.2*tw.us.d)*metaEco()*(1+TW_TRAIT.eco.v*twlv(twKey(T))));C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
   const rng=T.rng*twRngM(tw),r2=rng*rng;
   let tg=null,best=-1;
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const dx=z.px-sx,dy=z.py-sy,ds=dx*dx+dy*dy;if(ds>r2)continue;
@@ -3457,8 +3488,10 @@ function campStep(C,dt,wave){
   if(tw.cd>0||!tg)continue;
   tw.cd=T.rate*twRateM(tw);tw.fireT=.12;
   const AMO=AMMO[T.type==='bullet'?AMI:0];/* 弾薬は実弾タワーにだけ載る */
-  const TL=tlv(T.type);/* 系統強化(研究所) */
-  const dm=T.dmg*m*aB*AMO.dm*(1+.10*TL);
+  /* ⭐研究所の個別強化(そのタワー1種ぶん)。TL=段数、TT=その型の持ち味。
+    ⚠型ごとのまとめ強化だった頃と同じ場所で効かせている=当たり判定や順番は変えていない */
+ const TL=twlv(twKey(T)),TT=TW_TRAIT[T.type];
+  const dm=T.dmg*m*aB*AMO.dm*(1+TW_DMG_STEP*TL);/* 威力+15%/段(型ごとだった頃は+10%) */
   /* 銃口の火花・煙・薬莢 */
   if(FXLV>0&&T.type!=='eco'){const mx2=sx+Math.cos(tw.ang)*26,my2=sy+Math.sin(tw.ang)*26;
    /* ⭐銃口の閃光。⚠丸い光を1つ置くだけでは「撃った」感じが出ないので、**向きを持った扇形**にする。
@@ -3480,10 +3513,10 @@ function campStep(C,dt,wave){
    else if(T.type==='net'){addP(C,4,sx,sy,{sp:70,g:0,flat:1,life:.5,r:2.4,col:T.id==='cryo'?FROST:'#9fd9c6'});}}
   if(T.type==='net'){let nfz=0;
    for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){
-    z.slowT=T.slowT*(1+.2*TL);
+    z.slowT=T.slowT*(1+(TT&&TT.k==='slow'?TT.v*TL:0));
     /* 完全凍結(冷却塔)。解凍後 frz×2 秒は効かない=稼働率50%止まり。
        さらに同じ敵を凍らせられるのは twFrzN 回まで(初期5・❄冷却回数の強化で最大10) */
-    if(T.frz&&z.frzCd<=0&&(z.frzUsed||0)<twFrzN(T,tw)){const ft=T.frz*(1+.2*TL);z.frzT=ft;z.frzCd=ft*2;z.frzUsed=(z.frzUsed||0)+1;
+    if(T.frz&&z.frzCd<=0&&(z.frzUsed||0)<twFrzN(T,tw)){const ft=T.frz*(1+(TT&&TT.k==='slow'?TT.v*TL:0));z.frzT=ft;z.frzCd=ft*2;z.frzUsed=(z.frzUsed||0)+1;
      /* ⭐凍らせた敵の足元に氷が張る=どれが止まったのか一目で分かる(2026-07-26) */
      if(FXLV>0&&++nfz<=6)addFx(C,'ice',z.px,z.py,'',{r:26,sd:rnd(0,9),lf:.55});}
     dmgZ(C,z,dm,1);}}
@@ -3504,15 +3537,15 @@ function campStep(C,dt,wave){
      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
      dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1);}
     if(FXLV>0)addFx(C,'ring',tg.px,tg.py,'',{r:sr,col:'#ff9a3d'});}
-   if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+.25*TL)*av;}
+   if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+(TT&&TT.k==='burn'?TT.v*TL:0))*av;}
    /* ⚠火炎は連続で当たるので、鳴らしすぎないよう間引く(45msの制限も効く) */
    if(Math.random()<.35)twSfx(C,T);}
   else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
     跳ねるたびに威力が grow 倍(gmax 倍で頭打ち)＝群れが長いほど後半が重くなる */
-   const chainN=twChain(T,tw)+TL;
+   const chainN=twChain(T,tw)+(TT&&TT.k==='chain'?TT.v*TL:0);
    C.arcs.push({x:sx,y:sy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
-  else if(T.type==='elec'){const chainN=twChain(T,tw)+TL;
+  else if(T.type==='elec'){const chainN=twChain(T,tw)+(TT&&TT.k==='chain'?TT.v*TL:0);
    let cur=tg,hitl=[tg],pts=[[sx,sy],[tg.px,tg.py]];dmgZ(C,cur,dm*(cur.scl?ELEC_VS_SCALE:1),1);
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
@@ -3529,7 +3562,7 @@ function campStep(C,dt,wave){
       速く・低く飛び、着弾はエネルギーの炸裂になる。⚠数値(威力・範囲・間隔)は一切変えていない */
    const pz=T.id==='plasma'?1:0;
    C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:pz?.42:.85,
-    dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)*(1+.12*TL),pz,
+    dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)*(1+(TT&&TT.k==='aoe'?TT.v*TL:0)),pz,
     /* 砲弾の大きさも砲ごとに変える(重砲台は大玉・擲弾砲台は小玉) */
     sz:T.id==='arty'?1.55:T.id==='gren'?.7:1});
    twSfx(C,T);}
@@ -5248,8 +5281,9 @@ function renderHeroSeg(){
 const LAB_CATS=[
  {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'解放するとゲーム中の解放カードに出るようになる'},
  {k:'var',ic:'ic-tab-var',em:'🧬',t:'派生',d:'🎖編成の画面で入れ替えて使う'},
- {k:'stk',ic:'ic-tab-stk',em:'🎯',t:'砲撃',d:'ソロ設定の画面で装備を選ぶ'},
- {k:'line',ic:'ic-tab-line',em:'📈',t:'系統',d:'その型のタワー/兵科すべてに効く(研究所で解放した新型にも)'},
+ {k:'stk',ic:'ic-tab-stk',em:'🎯',t:'砲撃',d:'種類を増やして威力を上げる(装備の選択はソロ設定の画面)'},
+ {k:'twup',ic:'ic-tab-line',em:'🗼',t:'タワー',d:'タワー1種ずつ鍛える(解放したものだけ並ぶ)'},
+ {k:'unup',ic:'ic-tab-line',em:'🪖',t:'部隊',d:'兵科1種ずつ鍛える(派生キャラにも同じだけ効く)'},
  {k:'start',ic:'ic-tab-start',em:'🚀',t:'開始',d:'1波目から効く。序盤の立ち上がりが楽になる'},
  {k:'eco',ic:'ic-tab-eco',em:'💰',t:'経済',d:'⚙️の稼ぎや出撃の回転が良くなる'},
  {k:'rec',ic:'ic-tab-rec',em:'📖',t:'記録',d:'クリア状況と、今までに解放したもの'}
@@ -5292,11 +5326,28 @@ function renderLab(){
  /* ⚠鍛錬所をしまっている間は解放項目も出さない(🧬300払っても入口が無いため) */
  if(TR_OPEN&&!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'タイトルに鍛錬所が開く。🔧を注いで英雄のHPと攻撃が最大+80%',p:300});
  if(!(META.ec1||0))items.push({cat:'start',k:'ec1',ic:'🏭',t:'工房つきで開始',tag:'1回きり',d:'工房エリアに1基が最初から建っている',p:220});
- /* ---- 系統強化(研究所で解放した新型にも効く) ---- */
- for(const L of TLINE){const lv=(META.tl&&META.tl[L.k])||0;
-  if(lv<LINE_MAX)items.push({cat:'line',k:'tl',id:L.k,ic:L.ic,t:L.n,tag:'タワー系統 Lv'+lv+'/'+LINE_MAX,d:L.dsc,p:LAB_TL(lv)});}
- for(const L of ULINE){const lv=(META.ul&&META.ul[L.k])||0;
-  if(lv<LINE_MAX)items.push({cat:'line',k:'ul',id:L.k,ic:L.ic,t:L.n,tag:'部隊系統 Lv'+lv+'/'+LINE_MAX,d:L.dsc,p:LAB_UL(lv)});}
+ /* ---- ⭐タワー1種ごとの強化(2026-07-26ユーザー指示。型ごとのまとめ強化から変えた) ----
+    ⚠**まだ解放していないタワーは出さない**=持っていない物を強化できても意味がないため。
+    ⚠工房の3段は1枠を共有(twKey)。支援施設は対象外。 */
+ {const seen={};
+  for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];
+   if(T.type==='sup')continue;
+   if(i>=BASE_T&&(i-BASE_T)>=(META.nt||0))continue;/* 研究所でまだ解放していない新型 */
+   const key=twKey(T);if(seen[key])continue;seen[key]=1;
+   const lv=(META.tw&&META.tw[key])||0;if(lv>=LINE_MAX)continue;
+   const TT=TW_TRAIT[T.type];
+   const d=(T.type==='eco'?'':'威力+'+Math.round(TW_DMG_STEP*100)+'%')+(TT?(T.type==='eco'?'':'・')+TT.t:'')+'/段';
+   items.push({cat:'twup',k:'tw',id:key,sm:1,ic:TW_IC[T.type]||'🗼',t:T.n,tag:'Lv'+lv+'/'+LINE_MAX,d,p:LAB_TW(lv)});}}
+ /* ---- ⭐兵科1種ごとの強化。派生キャラは元の兵科の枠を共有する ---- */
+ for(let i=0;i<U_N;i++){const U=UNITS[i];
+  if(i>=BASE_U&&(i-BASE_U)>=(META.nu||0))continue;/* まだ解放していない兵科 */
+  const lv=(META.un&&META.un[U.id])||0;if(lv>=LINE_MAX)continue;
+  const st=UN_STEP(U.type),hl=U.type==='heal'?'回復':'攻撃';
+  items.push({cat:'unup',k:'un',id:U.id,sm:1,ic:UN_IC[U.type]||'🪖',t:U.n,tag:'Lv'+lv+'/'+LINE_MAX,
+   d:hl+'+'+Math.round(st.a*100)+'%・HP+'+Math.round(st.h*100)+'%/段',p:LAB_UN(lv)});}
+ /* ---- ⭐🎯砲撃の威力(それまで砲撃だけ研究所で強化できなかった) ---- */
+ if((META.st0||0)<STK_MAX)items.push({cat:'stk',k:'st0',ic:'🎯',t:'砲撃の威力+'+Math.round(STK_STEP*100)+'%',
+  tag:'Lv'+(META.st0||0)+'/'+STK_MAX,d:'装備している砲撃すべての直撃と燃焼が強くなる',p:LAB_ST0(META.st0||0)});
  /* 解放済みの一覧(何を取ったか分かるように) */
  const doneT=TOWERS.slice(BASE_T,BASE_T+META.nt).map(t=>'🗼'+t.n),
   doneU=UNITS.slice(BASE_U,BASE_U+META.nu).map(u=>'🤖'+u.n),
@@ -5307,8 +5358,10 @@ function renderLab(){
    META.up0?[PT+'開始+'+(META.up0*6)]:[],META.uu0?['🤝部隊枠+'+META.uu0]:[],META.sl0?['🧱建設枠+'+META.sl0]:[],
    META.py0?['💰報酬+'+(META.py0*6)+'%']:[],META.ec0?['🏭産出+'+(META.ec0*12)+'%']:[],META.cd0?['⏱待ち-'+(META.cd0*6)+'%']:[],
    META.ec1?['🏭工房つき開始']:[],
-   TLINE.filter(L=>(META.tl&&META.tl[L.k])).map(L=>L.ic+L.n+'Lv'+META.tl[L.k]),
-   ULINE.filter(L=>(META.ul&&META.ul[L.k])).map(L=>L.ic+L.n+'Lv'+META.ul[L.k]));
+   META.st0?['🎯砲撃威力+'+Math.round(META.st0*STK_STEP*100)+'%']:[],
+   /* ⭐鍛えたタワー/兵科(名前が引けないidは飛ばす) */
+   Object.keys(META.tw||{}).map(id=>{const T=TOWERS.find(t=>twKey(t)===id);return T?'🗼'+T.n+'Lv'+META.tw[id]:'';}).filter(Boolean),
+   Object.keys(META.un||{}).map(id=>{const U=UNITS.find(u=>u.id===id);return U?'🪖'+U.n+'Lv'+META.un[id]:'';}).filter(Boolean));
  LAB_ITEMS=items;
  const done=[].concat(doneT,doneU,doneV,doneA,doneS,doneX);
  /* ---- タブ(買える数をバッジで出す=どこに何が残っているか一目で分かる) ---- */
@@ -5334,11 +5387,11 @@ function renderLab(){
   const cat=LAB_CATS.find(c=>c.k===LABTAB)||LAB_CATS[0];
   const list=items.map((it,i)=>({it,i})).filter(o=>(o.it.cat||'new')===LABTAB);
   body='<div class="bphint">'+cat.d+'</div>'
-   +(list.length?('<div class="lgrid">'+list.map(o=>{const it=o.it,can=META.pts>=it.p;
+   +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=META.pts>=it.p;
      return '<div class="lc'+(can?' can':'')+'"><div class="ic">'+(it.ic||'🔬')+'</div>'
       +'<div class="nm">'+it.t+'</div>'
-      +(it.tag?'<div class="tg">'+it.tag+'</div>':'')
-      +(it.d?'<div class="ds">'+it.d+'</div>':'')
+      +(it.tag?'<div class="tg">'+it.tag+(it.sm&&it.d?' '+it.d:'')+'</div>':'')
+      +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
       +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>🧬'+fmt(it.p)+'</button></div>';}).join('')+'</div>')
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
  }
@@ -5350,8 +5403,9 @@ function renderLab(){
   else if(it.k==='am'){META.am=(META.am||0)+1;META.amEq=META.am;}
   else if(it.k==='sc0')META.sc0++;else if(it.k==='hp0')META.hp0++;
   else if(['up0','uu0','sl0','py0','ec0','cd0','ec1','tr0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+1;
-  else if(it.k==='tl'){if(!META.tl)META.tl={};META.tl[it.id]=(META.tl[it.id]||0)+1;}
-  else if(it.k==='ul'){if(!META.ul)META.ul={};META.ul[it.id]=(META.ul[it.id]||0)+1;}
+  else if(it.k==='st0')META.st0=(META.st0||0)+1;
+  else if(it.k==='tw'){if(!META.tw)META.tw={};META.tw[it.id]=(META.tw[it.id]||0)+1;}
+  else if(it.k==='un'){if(!META.un)META.un={};META.un[it.id]=(META.un[it.id]||0)+1;}
   saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();};});
  if(scEl)scEl.scrollTop=keepTop;
 }
