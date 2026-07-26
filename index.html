@@ -2159,10 +2159,23 @@ function pxImg(sp,id,fi){
    c.fillStyle=PX_PAL[PX_CH.indexOf(ch)]||INK;c.fillRect(x,y,1,1);}}
  PX_CACHE[key]=cvv;return cvv;
 }
+/* ⭐**コマは「進んだ距離」で送る**(2026-07-27に直した)。時間で送ると、
+   ①速い個体ほど足が地面を滑る ②上下の揺れと歩幅がずれる ③コマ送りが遅くて「絵が動いている」ように見える。
+   距離で送ると**足が地面に食いついて見え**、速い個体は自動的にコマ送りも速くなる。
+   ⚠距離が渡ってこない所(図鑑・撮影ツール)は時間で送る(PX_FPS)。 */
+const PX_STEP=8;/* 何マス進むごとに次のコマへ(遅い個体の歩幅) */
+const PX_FPS=9;/* 距離が分からない時のコマ送り(毎秒) */
+/* ⚠**速い個体は歩幅も広くする**。距離だけで割ると、感染ハウンド(速さ215)が
+   毎秒27コマになって残像にしかならない。歩幅を速さに比例させて10〜12コマ/秒に収める */
+const pxStep=spd=>Math.max(PX_STEP,(spd||78)/12);
+function pxFrame(sp,dist,t,ph,spd){
+ const n=sp.f.length;
+ const u=(dist==null)?(t*PX_FPS+ph):(-dist/pxStep(spd));
+ return ((Math.floor(u)%n)+n)%n;
+}
 /* ⚠**コード描画と同じ大きさに置く**(lh=盤面での高さ)。1ドット=画面の1画素に固定すると
    縮尺が変わった時に他のキャラと大きさが揃わなくなる=まず「同じ大きさ」を優先する。 */
-function pxDraw(c,sp,id,t,ph,s){
- const n=sp.f.length,fi=Math.floor((((t*5+ph)/(Math.PI*2))%1+1)%1*n)%n;
+function pxDraw(c,sp,id,fi,s){
  const im=pxImg(sp,id,fi);if(!im||!c.drawImage)return false;
  const k=(sp.lh||50)/sp.h;
  c.save();c.imageSmoothingEnabled=false;
@@ -2172,11 +2185,15 @@ function pxDraw(c,sp,id,t,ph,s){
 }
 function drawZombie(c,zi,x,y,dir,t,ph,o){
  o=o||{};const Z=ZOMBIES[zi],s=Z.sc*(o.elite?1.35:1);
- const walk=Math.sin(t*(Z.sp>90?14:8)+ph),bob=Math.abs(walk)*2.5*s;
+ const walk=Math.sin(t*(Z.sp>90?14:8)+ph);
+ let bob=Math.abs(walk)*2.5*s;
+ /* 🧪ドット絵の種類は**上下の揺れも歩幅に合わせる**(すり足のコマで浮く)。
+    ⚠揺れだけ別の周期で動かすと、脚が前に出ていないのに体が沈んで「絵が動いている」ように見える */
+ const PXS=pxOf(Z.id);let pxf=0;
+ if(PXS){pxf=pxFrame(PXS,o.d,t,ph,Z.sp);bob=(pxf%2?1.6:0)*s;}
  c.save();c.translate(x,y-bob);c.scale(dir*s,s);
  /* 🧪ドット絵の試作: 用意がある種類だけ差し替える(無い種類は今までどおりコード描画) */
- {const PXS=pxOf(Z.id);
-  if(PXS&&pxDraw(c,PXS,Z.id,t,ph,s)){c.restore();return;}}
+ if(PXS&&pxDraw(c,PXS,Z.id,pxf,s)){c.restore();return;}
  if(o.lg>0)c.translate(o.lg*34,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
@@ -5259,7 +5276,8 @@ function renderCamp(C,t){
   /* ⚠🧪ドット絵の種類は焼き込みを通さない=焼くと1ドットが画面の1画素からずれてボケる */
   if(!(z.hitT>0||z.lgT>0||z.sent||pxOf(ZOMBIES[z.zi].id)))
    drawSpr(c,bakeZ(z.zi,z.elite?1:0),sprFrame(t,z.ph,ZOMBIES[z.zi].sp>90?14:8),z.px,z.py,(z.dr||1)<0);
-  else drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent,lg:z.lgT,elite:z.elite});
+  /* ⚠**d(進んだ距離)を渡す**=ドット絵のコマ送りを距離で回すため(足が滑らない) */
+  else drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent,lg:z.lgT,elite:z.elite,d:z.d});
   /* 完全凍結: 氷漬けにして「止まっている」と一目で分かるようにする */
   if(z.frzT>0){const zc=ZOMBIES[z.zi].sc,bw=30*zc,bh=64*zc;
    c.save();c.globalAlpha=.5;c.fillStyle='#bfe8ff';
