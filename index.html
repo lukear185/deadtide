@@ -7671,11 +7671,25 @@ const uLook=id=>U_LOOK[id]||{b:'norm',h:'helm',k:''};
 function uBody(c,b,col){
  const P=b==='slim'?[-8,-33,16,23,7]:b==='wide'?[-13,-35,26,25,8]
   :b==='tall'?[-9,-38,18,28,6]:b==='crouch'?[-11,-31,22,21,7]:[-10,-34,20,24,7];
- const path=()=>{c.beginPath();rr(c,P[0],P[1],P[2],P[3],P[4]);};
+ /* ⭐第100弾: 角丸長方形をやめた。**肩を落として腰でくびれさせる**=四角い胴は段ボールに見える。
+    ⚠ここは兵科32種の共通部品なので、直すと32種ぜんぶに効く */
+ const x0=P[0],y0=P[1],w=P[2],h=P[3],x1=x0+w,y1=y0+h,mx=x0+w/2;
+ const path=()=>{c.beginPath();
+  c.moveTo(x0-w*.02,y0+h*.18);
+  c.bezierCurveTo(x0-w*.04,y0+h*.06,x0+w*.16,y0-h*.03,mx,y0-h*.02);   /* 左肩 */
+  c.bezierCurveTo(x1-w*.16,y0-h*.03,x1+w*.04,y0+h*.06,x1+w*.02,y0+h*.18);/* 右肩 */
+  c.bezierCurveTo(x1+w*.02,y0+h*.55,x1-w*.10,y1-h*.10,x1-w*.14,y1);    /* 右の脇から腰 */
+  c.lineTo(x0+w*.14,y1);
+  c.bezierCurveTo(x0+w*.10,y1-h*.10,x0-w*.02,y0+h*.55,x0-w*.02,y0+h*.18);
+  c.closePath();};
  c.fillStyle=col;path();c.fill();
- c.save();c.beginPath();c.rect(-30,P[1]+P[3]*.45,60,40);c.clip();
+ c.save();c.beginPath();c.rect(-30,y0+h*.45,60,40);c.clip();
  c.fillStyle=shade(col,.76);path();c.fill();c.restore();
  path();c.stroke();
+ /* 帯(胴の塊を割る)。⚠これが無いと大きい胴が一枚板に見える */
+ c.fillStyle=shade(col,.6);
+ c.beginPath();c.moveTo(x0+w*.06,y1-h*.24);c.lineTo(x1-w*.06,y1-h*.24);
+ c.lineTo(x1-w*.08,y1-h*.13);c.lineTo(x0+w*.08,y1-h*.13);c.closePath();c.fill();
  return P;
 }
 /* かぶり物。⚠**頭は画面の一番上=25pxでも輪郭が残る唯一の場所**。ここを1種ずつ変える */
@@ -7850,10 +7864,16 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   if(vid==='fenr'&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(27,-16,3+Math.sin(t*12)*1.5,0,7);c.fill();c.globalAlpha=1;}
   c.restore();return;
  }
- /* 脚 */
- c.fillStyle='#4a4034';
- c.fillRect(-8+walk*3.5,-10,5,10);c.strokeRect(-8+walk*3.5,-10,5,10);
- c.fillRect(3-walk*3.5,-10,5,10);c.strokeRect(3-walk*3.5,-10,5,10);
+ /* 脚 ⭐第100弾に描き直し。⚠それまで**5x10の四角2つ**で、履き物も無かった。
+    ズボンは根元が太く先が細い形+**軍靴**にする。⚠兵科32種はここを共有しているので、
+    直すと32種ぜんぶが一度に良くなる(ゾンビは1種ずつ枝を持っていたので個別だった) */
+ for(const L of [[-5.5+walk*3.5,.78],[5.5-walk*3.5,1]]){
+  const dx=L[0],dk=L[1];
+  c.fillStyle=shade('#4a4034',dk);
+  c.beginPath();c.moveTo(dx-3.4,-13);c.lineTo(dx+3.4,-13);c.lineTo(dx+2.8,-4);c.lineTo(dx-2.8,-4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade('#2b2419',dk);
+  c.beginPath();c.moveTo(dx-3,-4.2);c.lineTo(dx+3,-4.2);c.lineTo(dx+4.6,0);c.lineTo(dx-3.4,0);c.closePath();c.fill();c.stroke();
+ }
  /* 背負い物(胴より奥)。⭐兵科ごとに違う物を背負わせて**背中の輪郭**で見分ける(第91弾) */
  if(vt>=3){/* 派生3段目=マント */
   c.fillStyle=U.c;c.beginPath();c.moveTo(-8,-36);c.lineTo(-22,-4+walk*2);c.lineTo(-2,-10);c.closePath();c.fill();c.stroke();}
