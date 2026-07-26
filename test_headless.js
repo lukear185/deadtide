@@ -29,6 +29,10 @@ global.AudioContext=function(){return {state:'running',resume(){},createOscillat
 global.Peer=function(){return {on(){},destroy(){},connect:()=>({on(){},open:false})};};
 const html=fs.readFileSync(TARGET,'utf-8');
 const js=html.split('<script>')[1].split('</'+'script>')[0];
+/* ⚠**この下の body はテンプレート文字列(バッククォート)**なので、
+   中のコメントにバッククォートを書くと文字列が途中で閉じて
+   「どう見ても正しいコメント行で SyntaxError」になる(2026-07-26に実際に踏んだ)。
+   コード片を引用したい時は「」で囲むか、記号なしで書くこと。 */
 const body=`
 ;console.log('LOAD OK. PLEN='+Math.round(PLEN)+' slots='+SLOTS.length+' units='+UNITS.length+' STAGE_W='+STAGE_W);
 function frames(n,step){for(let i=0;i<n;i++){NOW+=step*1000;const q=rafq.splice(0);for(const f of q)f(NOW);
@@ -295,6 +299,8 @@ function checkTips(){
  }
  /* 英雄を連れている時だけ案内が1つ増えるか */
  META.stg=0;setDiff=2;startSolo();frames(10,.016);
+ /* ⚠前の検査が META.hsel を残していると連れて行く英雄が入ってしまうので、明示的に「連れて行かない」にしてから測る */
+ G.players[0].hUi=-1;
  const n0=waveTips().length;
  G.players[0].hUi=HERO_I0;
  if(waveTips().length!==n0+1){console.log('FAIL: 英雄を連れているのに🦸の案内が出ない');process.exit(1);}
@@ -405,7 +411,24 @@ function checkTwNew(){
   tw.cd=0;h0=z2.hp;campStep(me,.001,G.wave);const dNew=h0-z2.hp;
   if(tw.hs!==0){console.log('FAIL: 別の敵に移っても溜まりが残っている hs='+tw.hs);process.exit(1);}
   if(Math.abs(dNew-d1)>d1*.05){console.log('FAIL: 次の敵で威力が戻っていない '+dNew.toFixed(1)+' vs '+d1.toFixed(1));process.exit(1);}
-  console.log('レーザー塔: 1発目'+d1.toFixed(1)+' → '+T.heatN+'発で'+dMax.toFixed(1)+'('+mul.toFixed(2)+'倍)・次の敵で'+dNew.toFixed(1)+'にリセット OK');
+  /* ⭐強化の内訳(2026-07-26ユーザー指示): 📡射程を消して🔥昇温速度にした。射程は初期値を1.2倍にしてある */
+  const stl=twStats(ti);
+  if(stl.indexOf('g')>=0){console.log('FAIL: レーザー塔に📡射程の強化が残っている');process.exit(1);}
+  if(stl.indexOf('h')<0){console.log('FAIL: レーザー塔に🔥昇温速度の強化が無い');process.exit(1);}
+  if(T.rng!==360){console.log('FAIL: レーザー塔の射程が初期の1.2倍(360)でない '+T.rng);process.exit(1);}
+  if(T.heatM!==3){console.log('FAIL: レーザー塔の最大倍率が3でない '+T.heatM);process.exit(1);}
+  /* 🔥昇温速度を上げると、最大倍率まで要る発射数が減る */
+  const n0=twHeatN(T,{us:newUs()}),n5=twHeatN(T,{us:Object.assign(newUs(),{h:USTAT_MAX})});
+  if(!(n5<n0*.6)){console.log('FAIL: 🔥昇温速度を最大にしても発射数が十分減らない '+n0+'→'+n5);process.exit(1);}
+  /* 実際に少ない発射数で最大まで上がるか */
+  tw.us.h=USTAT_MAX;tw.hz=null;tw.hs=0;
+  const z3=me.zombies.find(q=>!q.dead);z3.hp=z3.mhp=1e9;
+  for(let k=0;k<n5+2;k++){tw.cd=0;campStep(me,.001,G.wave);}
+  tw.cd=0;let hb=z3.hp;campStep(me,.001,G.wave);const dFast=hb-z3.hp;
+  if(Math.abs(dFast/d1-T.heatM)>.06){console.log('FAIL: 🔥昇温速度Lv5で'+n5+'発撃っても最大倍率にならない ('+(dFast/d1).toFixed(2)+'倍)');process.exit(1);}
+  tw.us.h=0;
+  console.log('レーザー塔: 1発目'+d1.toFixed(1)+' → '+T.heatN+'発で'+dMax.toFixed(1)+'('+mul.toFixed(2)+'倍)・次の敵で'+dNew.toFixed(1)+'にリセット'
+   +' / 射程'+T.rng+' / 強化=['+stl.map(x=>USTAT_L[x]).join(',')+'] / 🔥昇温速度Lv5で'+n0+'発→'+n5+'発 OK');
  }
  /* ③ 廃品工房 → 上級廃品工房への建て替え */
  {const ti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
@@ -422,23 +445,42 @@ function checkTwNew(){
   const before=rateOf(tw);
   me.scrap=99999;
   if(!gradeTower(me,esi)){console.log('FAIL: 建て替えが通らない');process.exit(1);}
-  if(tw.ti!==GRD_TI){console.log('FAIL: 上級廃品工房になっていない');process.exit(1);}
+  if(TOWERS[tw.ti].id!=='scrap2'){console.log('FAIL: 上級廃品工房になっていない');process.exit(1);}
   if(twStats(tw.ti).some(st=>tw.us[st]!==0)){console.log('FAIL: 建て替えても強化Lvが0に戻っていない');process.exit(1);}
   const after=rateOf(tw);
   if(after<before){console.log('FAIL: 建て替えると産出が下がる '+before.toFixed(2)+'→'+after.toFixed(2)+'/秒');process.exit(1);}
-  if(canGrade(me,tw)){console.log('FAIL: 上級廃品工房をさらに建て替えられる');process.exit(1);}
+  /* ⭐3段目(廃品プラント)まで通しで確かめる。段を足したらここも自然に伸びる */
   for(const st of twStats(tw.ti))tw.us[st]=USTAT_MAX;
-  /* 元を取るのにかかる時間も出す(安すぎると工房を並べるだけで勝ててしまう) */
-  const maxR=rateOf(tw);let cst=GRD_COST;
-  for(const st of twStats(tw.ti))for(let l=0;l<USTAT_MAX;l++)cst+=Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,l));
-  const pay=Math.round(cst/(maxR-before));
-  if(pay<150){console.log('FAIL: 上級化が安すぎる(元を取るのに'+pay+'秒)=工房を並べるだけで勝ててしまう');process.exit(1);}
-  if(pay>600){console.log('FAIL: 上級化が高すぎる(元を取るのに'+pay+'秒)=1試合で元が取れない');process.exit(1);}
-  console.log('上級廃品工房: 工房MAX'+before.toFixed(2)+'/秒 → 建て替え直後'+after.toFixed(2)+'/秒 → 上級MAX'+maxR.toFixed(2)+'/秒'
-   +' (⚙️'+cst+'で+'+(maxR-before).toFixed(1)+'/秒=元を取るのに'+pay+'秒) OK');
+  const line=[TOWERS[ECO_TI].n+'MAX'+before.toFixed(1),TOWERS[tw.ti].n+'MAX'+rateOf(tw).toFixed(1)];
+  { /* 2段目(上級)の採算 */
+   let cc=T_GCOST(ECO_TI);
+   for(const st of twStats(tw.ti))for(let l=0;l<USTAT_MAX;l++)cc+=Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,l));
+   const pp=Math.round(cc/(rateOf(tw)-before));
+   if(pp<150||pp>600){console.log('FAIL: '+TOWERS[tw.ti].n+'の採算が外れている(元を取るのに'+pp+'秒)');process.exit(1);}
+  }
+  let guard=0;
+  while(canGrade(me,tw)&&guard++<8){
+   const prevMax=rateOf(tw),nm=TOWERS[T_GRD(tw.ti)].n,gcst=T_GCOST(tw.ti);
+   me.scrap=999999;
+   if(!gradeTower(me,ECO_BASE)){console.log('FAIL: '+nm+'への建て替えが通らない');process.exit(1);}
+   if(twStats(tw.ti).some(st=>tw.us[st]!==0)){console.log('FAIL: '+nm+'で強化Lvが0に戻っていない');process.exit(1);}
+   const raw=rateOf(tw);
+   if(raw<prevMax){console.log('FAIL: '+nm+'にすると産出が下がる '+prevMax.toFixed(2)+'→'+raw.toFixed(2)+'/秒');process.exit(1);}
+   for(const st of twStats(tw.ti))tw.us[st]=USTAT_MAX;
+   const mx=rateOf(tw);
+   /* この段も「元を取るのに1試合の半分」に収まっているか */
+   let cc=gcst;for(const st of twStats(tw.ti))for(let l=0;l<USTAT_MAX;l++)cc+=Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,l));
+   const pp=Math.round(cc/(mx-prevMax));
+   if(pp<150||pp>600){console.log('FAIL: '+nm+'の採算が外れている(元を取るのに'+pp+'秒)');process.exit(1);}
+   line.push(nm+'MAX'+mx.toFixed(1));
+  }
+  if(line.length<3){console.log('FAIL: 廃品工房の段が2つしかない(3段目が作られていない)');process.exit(1);}
+  if(canGrade(me,tw)){console.log('FAIL: 最終段をさらに建て替えられる');process.exit(1);}
+  console.log('廃品工房の段('+line.length+'段・建て替えても産出は下がらない・どの段も元を取るのに150〜600秒): ');
+  console.log('  '+line.join(' → ')+' 毎秒 OK');
  }
  /* ④ 上級廃品工房は建設リストにも解放チェーンにも出さない */
- if(GRD_TI<T_PLAY){console.log('FAIL: 上級廃品工房が解放チェーン(T_PLAY)に入っている');process.exit(1);}
+ for(const T of TOWERS)if(T.grd&&TOWERS.indexOf(T)<T_PLAY){console.log('FAIL: '+T.n+' が解放チェーン(T_PLAY)に入っている');process.exit(1);}
  if(metaTowerCap()>T_PLAY){console.log('FAIL: 研究所の解放枠が T_PLAY を超えている');process.exit(1);}
  backTitle();
 }
@@ -459,7 +501,45 @@ function checkProgress(){
  if(ws!=='5/7/10/15/20/20'){console.log('FAIL: 難易度ごとの最終ウェーブが違う '+ws);process.exit(1);}
  /* 港は廃線ハイウェイより重い */
  if(!((STAGES[1].hpM||1)>(STAGES[0].hpM||1))){console.log('FAIL: 港がステージ1より重くない');process.exit(1);}
- console.log('進行: 難易度は順に解放(最終W='+ws+')/港はナイトメアクリアで解放/港の重さx'+STAGES[1].hpM+' OK');
+ /* ⭐**クリアした難易度がそのまま記録されるか**を awardMeta() を通して見る(2026-07-26に追加)。
+    ⚠ここを scArr(0)[d]=1 と直に書く検査だけにしていたため、
+      G.pveDiff||2(新兵=0 が古参=2 として記録される)というバグを長く見逃していた。
+      症状は「新兵をクリアしても兵長が開かない・鬼軍曹が勝手に開く」。 */
+ for(let d=0;d<D5.length;d++){
+  META.sc=[[0,0,0,0,0,0],[0,0,0,0,0,0]];META.sclr=[];META.clr=[0,0,0,0,0,0];META.pts=0;
+  META.stg=0;setDiff=d;startSolo();
+  G.winner=0;G.over=true;G.wave=D5[d].w;
+  awardMeta();
+  const got=scArr(0).map((v,i)=>v?i:-1).filter(i=>i>=0);
+  if(got.length!==1||got[0]!==d){
+   console.log('FAIL: '+D5[d].n+'(難易度'+d+')をクリアしたのに、記録されたのは難易度 ['+got.join(',')+']');process.exit(1);}
+  if(d+1<D5.length&&!diffOK(0,d+1)){
+   console.log('FAIL: '+D5[d].n+'をクリアしても次の'+D5[d+1].n+'が開かない');process.exit(1);}
+  if(d+2<D5.length&&diffOK(0,d+2)){
+   console.log('FAIL: '+D5[d].n+'をクリアしただけで'+D5[d+2].n+'まで開いている(飛び越し)');process.exit(1);}
+  backTitle();
+ }
+ console.log('進行: 難易度は順に解放(最終W='+ws+')/クリアした難易度がそのまま記録される/港はナイトメアクリアで解放/港の重さx'+STAGES[1].hpM+' OK');
+ META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];
+}
+/* ---- セーブの1回だけのリセットが、消してはいけないものを消していないか(2026-07-26) ---- */
+function checkMetaReset(){
+ META.gem=7;META.hero={hNox:1};META.hmat=5;META.zdex={walk:1};META.hlv={hNox:2};META.hxp={hNox:30};
+ META.rpg={gold:99};META.hsel='hNox';META.tr0=1;
+ META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.am=2;META.py0=3;META.tl={bullet:2};
+ META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
+ metaReset();
+ const keep=[['gem',META.gem===7],['英雄',!!(META.hero&&META.hero.hNox)],['hmat',META.hmat===5],
+  ['図鑑',!!(META.zdex&&META.zdex.walk)],['鍛錬Lv',!!(META.hlv&&META.hlv.hNox)],
+  ['鍛錬経験',!!(META.hxp&&META.hxp.hNox)],['冒険',!!(META.rpg&&META.rpg.gold===99)],
+  ['連れて行く英雄',META.hsel==='hNox'],['鍛錬所の解放',META.tr0===1]];
+ for(const [n,ok] of keep)if(!ok){console.log('FAIL: リセットで消してはいけないもの('+n+')が消えている');process.exit(1);}
+ const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
+  ['派生',META.uv.length===0],['弾薬',META.am===0],['経済強化',META.py0===0],
+  ['系統強化',Object.keys(META.tl).length===0],['砲撃',META.st.length===1&&META.st[0]==='air'],
+  ['難易度の記録',!scArr(0)[0]&&!scArr(0)[5]],['ナイトメア解放',!META.nmOK]];
+ for(const [n,ok] of gone)if(!ok){console.log('FAIL: リセットしたのに '+n+' が残っている');process.exit(1);}
+ console.log('セーブのリセット: 難易度と研究所('+gone.length+'項目)を消し、💎英雄🔧図鑑⚔冒険('+keep.length+'項目)は残す OK');
  META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];
 }
 /* ---- レールガン(ビーム砲)が線上の敵を全部巻き込むか ---- */
@@ -1148,6 +1228,7 @@ checkHero();
 checkTrain();
 checkRpg();
 checkProgress();
+checkMetaReset();
 checkEvo();
 checkHook();
 checkBite();

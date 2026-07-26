@@ -115,8 +115,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        /* 上級廃品工房(grd)は直接は建たない=普通の工房を全部MAXにしてから建て替える */
        +'else if(TOWERS[ti9].type==="eco"){me.towers[ECO_BASE]=null;var pe=me.unlocked;me.unlocked=ti9+1;'
        +'buildTower(me,ECO_BASE,TOWERS[ti9].grd?ECO_TI:ti9);me.unlocked=pe;'
-       +'if(TOWERS[ti9].grd){var tg9=me.towers[ECO_BASE];'
-       +'twStats(ECO_TI).forEach(function(s9){tg9.us[s9]=USTAT_MAX;});me.scrap=99999;gradeTower(me,ECO_BASE);}'
+       /* 目的の段(ti9)に届くまで「全部MAX→建て替え」を繰り返す=3段目以降も撮れる */
+       +'if(TOWERS[ti9].grd){var tg9=me.towers[ECO_BASE],gu9=0;'
+       +'while(tg9&&tg9.ti!==ti9&&gu9++<8){twStats(tg9.ti).forEach(function(s9){tg9.us[s9]=USTAT_MAX;});'
+       +'me.scrap=999999;if(!gradeTower(me,ECO_BASE))break;}}'
        +'setInterval(function(){try{var te=me.towers[ECO_BASE];if(te)te.cd=0;}catch(e){}},120);}else{'
        +'var si9=AI_ORDER[0];me.towers[si9]=null;'
        /* 解放数は建てる瞬間だけ上げて戻す(上げっぱなしにすると解放カード周りで画面が止まる) */
