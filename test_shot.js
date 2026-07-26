@@ -63,6 +63,8 @@ const TUM=/tut(?:auto)?(?:=([0-9]+))?/.exec(OPT),TUT=!!TUM,TUTI=TUM&&TUM[1]?+TUM
      並べる時は 実寸 と 3倍 を2段に出す(実寸=見分けが付くか / 3倍=細部が壊れていないか)。
    例) node test_shot.js out.png 1280 720 grid=u */
 const GRM=/grid=([a-z]+)/.exec(OPT),GRID=GRM?GRM[1]:'';
+/* pxcmp / pxcmp=walk = 🧪ドット絵の試作をコード描画と並べて撮る */
+const PXM=/pxcmp(?:=([A-Za-z0-9]+))?/.exec(OPT),PXC=!!PXM,PXID=(PXM&&PXM[1])||'walk';
 /* intro=t|u|z = 新登場の紹介モーダル(タワー/兵科/ゾンビ) */
 const IRM=/intro(?:=([tuz]))?/.exec(OPT),INTRO=!!IRM,INTROK=(IRM&&IRM[1])||'u';
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
@@ -70,6 +72,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
     タイトルや研究所の撮影が全部チュートリアルの絵になる(tut オプションは自分で呼ぶので影響なし) */
  +'META.tut=1;'
+ /* pxon = 🧪ドット絵の試作を有効にして撮る(既定は切ってある) */
+ +(/pxon/.test(OPT)?'PX_ON=true;':'')
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
  +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
  +(LAB?('META.pts=99999;META.nt=2;META.nu=3;META.sc0=1;META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");')
@@ -225,11 +229,34 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* タワーは中心が原点なので、足元が同じ高さに並ぶよう少し持ち上げる */
      +'c.save();c.translate(px,by-(K==="tw"?22*sc:0));c.scale(sc,sc);c.lineWidth=3;c.strokeStyle=INK;'
      +'try{if(K==="tw")drawTower(c,items[k].i,0,0,0,-0.55,1.2,{});'
-     +'else if(K==="z")drawZombie(c,items[k].i,0,0,1,1.2,0,{});'
+     +'else if(K==="z"){if(typeof PX_ON!=="undefined")PX_ON=false;drawZombie(c,items[k].i,0,0,1,1.2,0,{});if(typeof PX_ON!=="undefined")PX_ON=true;}'
      +'else drawUnit(c,items[k].i,0,0,1,1.2,0,{});}catch(e){}'
      +'c.restore();}'
      +'c.restore();}'
      +'}catch(e){document.title="ERR7 "+e.message;}},1500);'):'')
+ /* ⭐pxcmp = 🧪ドット絵の試作を「コード描画と並べて」撮る(2026-07-27 第92弾)。
+    ⚠**実寸で並べないと比べる意味が無い**。左=今のコード描画・右=ドット絵。下段は3倍 */
+ +(PXC?('setTimeout(function(){try{'
+     +'var s0=852/1600;'
+     +'var cvv=document.createElement("canvas");document.body.appendChild(cvv);'
+     +'cvv.style.cssText="position:fixed;left:0;top:0;width:100%;height:100%;z-index:9999";'
+     +'var W2=window.innerWidth,H2=window.innerHeight,DP=window.devicePixelRatio||1;'
+     +'cvv.width=W2*DP;cvv.height=H2*DP;var c=cvv.getContext("2d");c.scale(DP,DP);'
+     +'c.fillStyle=PAPER;c.fillRect(0,0,W2,H2);'
+     +'var zi=ZOMBIES.findIndex(function(q){return q.id==="'+PXID+'";});'
+     +'var LB=["今のコード描画","ドット絵の試作"];'
+     +'[1,3,6].forEach(function(mag,row){'
+     +' [0,1].forEach(function(side){'
+     +'  var px=W2*(.25+side*.5),py=H2*(.3+row*.24);'
+     +'  c.fillStyle=INK;c.font="900 13px "+FF;c.textAlign="center";'
+     +'  if(row===0)c.fillText(LB[side],px,H2*.12);'
+     +'  c.fillText("x"+mag,px-90,py);'
+     +'  PX_ON=!!side;'
+     +'  c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);c.lineWidth=3;c.strokeStyle=INK;'
+     +'  try{drawZombie(c,zi,0,0,1,1.15,0,{});}catch(e){}c.restore();'
+     +' });});'
+     +'PX_ON=true;'
+     +'}catch(e){document.title="ERR9 "+e.message;}},1500);'):'')
  /* intro / intro=t|u|z = 新登場の紹介モーダルを出して撮る(姿が枠いっぱいに出るかの確認用) */
  +(INTRO?('setTimeout(function(){try{showIntro([{k:"'+INTROK+'",i:'+(INTROK==='t'?15:INTROK==='z'?12:20)+'}]);}'
      +'catch(e){document.title="ERR8 "+e.message;}},1400);'):'')

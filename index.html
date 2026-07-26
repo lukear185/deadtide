@@ -1966,10 +1966,125 @@ function zEye(c,x,y,r){r=r||2.3;
  c.fillStyle=INK;c.beginPath();c.arc(x+r*.36,y,r*.52,0,7);c.fill();
 }
 function mix(a,b,f){const p=parseInt(a.slice(1),16),q=parseInt(b.slice(1),16);const r=((p>>16)+(((q>>16)-(p>>16))*f))|0,g2=(((p>>8)&255)+((((q>>8)&255)-((p>>8)&255))*f))|0,bl=((p&255)+(((q&255)-(p&255))*f))|0;return `rgb(${r},${g2},${bl})`;}
+/* ============ 🧪ドット絵の試作(2026-07-27 第92弾・ウォーカー1体だけ) ============
+   ⭐ユーザー指示「見た目をハリボテじゃなくちゃんとしたやつにできないか。1体だけ試しに」。
+   ⚠**実機の画素数は ゾンビ22px × DPR1.5 ≒ 33画素**。3D焼きや高精細イラストはこの画素数に入らない
+     (第81弾で実際に負けた)。**その画素数のために描かれたドット絵**なら入る=縮小でボケないため。
+   ⚠**1ドット=画面の1画素**になる倍率で置き、`imageSmoothingEnabled=false` を必ず切る。
+     補間が入ると輪郭がぼやけて、ドット絵にした利点が丸ごと消える。
+   ⚠ここは**試作**。⭐**既定は切ってある**=1体だけドット絵だと他のゾンビと画風が食い違うため。
+     **公開URLに `?px=1` を付けた時だけ**有効(実機で見比べるため)。良ければ広げる/駄目なら消す。
+   書き方: 1文字=1画素・' '=透明。色は PX_PAL を引く。全部の行を同じ長さにすること(検査あり)。 */
+let PX_ON=false;try{PX_ON=/[?&]px=1/.test(location.search);}catch(e){}
+const PX_PAL={
+ K:'#221a12',/* 輪郭 */      H:'#3a3226',/* 髪 */
+ S:'#8aa06a',/* 肌(中) */    D:'#5f7348',/* 肌(影) */   L:'#a9c187',/* 肌(光) */
+ C:'#5a4f3e',/* 服(中) */    B:'#3d3529',/* 服(影) */   V:'#6e6250',/* 服(光) */
+ E:'#f2e9b0',/* 目 */        R:'#8a2f28',/* 血 */       N:'#cfc3a4' /* 骨 */
+};
+/* ⚠**頭を大きく(全高の4割)・目を大きく**。今のコード描画がその形なので、
+   写実的な等身で描くと**同じ大きさに見えず、遠目でただの棒**になる(1回目の試作で実際にそうなった)。
+   lh=絵が占める「盤面の高さ」。コード描画(約50)に合わせないと大きさが揃わない。 */
+const PX_Z={walk:{w:30,h:34,lh:50,f:[[
+ '                              ',
+ '        KKKKKKKKKK            ',
+ '      KKHHHHHHHHHHKK          ',
+ '     KHHHHHHHHHHHHHHK         ',
+ '    KHHHHHHHHHHHHHHHK         ',
+ '    KHHSSSSSSSSSSSSSK         ',
+ '    KSSSSSSSSSSSSSSSK         ',
+ '    KSSLSSSSKKEEKSSSK         ',
+ '    KSSDSSSSKEEKKSSSK         ',
+ '    KSSDSSSSSKKKSSSK          ',
+ '     KSSSSSSSSSSSSSK          ',
+ '     KSDSSSSKNKNKSSK          ',
+ '     KSSKKKKKKKKKSSK          ',
+ '      KSDSSSSSSSSSK           ',
+ '       KDSSSSSSSSK            ',
+ '        KKKSSKKK              ',
+ '       KKKCCCCKKK             ',
+ '     KKCVVCCCCCCKK            ',
+ '    KSSKCVCCCCCCCCKKKKK       ',
+ '    KSLKCVCCCCCCCCCSSLSKK     ',
+ '    KSSKCVCCCCCCCCKSSSSSSK    ',
+ '    KKKKCBCCCRCCCCKKSSSSKK    ',
+ '        KBCCCRCCCBK   KKKK    ',
+ '        KBCCCCCCCBK           ',
+ '        KBBCCCCCBBK           ',
+ '         KBKBBKBBK            ',
+ '         KSSSKSSSK            ',
+ '         KSSKKSSK             ',
+ '        KDSSK KSSK            ',
+ '        KSSSK KSSDK           ',
+ '       KKSSSK KSSSKK          ',
+ '       KSSSSK KSSSSK          ',
+ '       KKKKKK KKKKKK          ',
+ '                              '
+],[
+ '                              ',
+ '                              ',
+ '        KKKKKKKKKK            ',
+ '      KKHHHHHHHHHHKK          ',
+ '     KHHHHHHHHHHHHHHK         ',
+ '    KHHHHHHHHHHHHHHHK         ',
+ '    KHHSSSSSSSSSSSSSK         ',
+ '    KSSSSSSSSSSSSSSSK         ',
+ '    KSSLSSSSKKEEKSSSK         ',
+ '    KSSDSSSSKEEKKSSSK         ',
+ '    KSSDSSSSSKKKSSSK          ',
+ '     KSSSSSSSSSSSSSK          ',
+ '     KSDSSSSKNKNKSSK          ',
+ '     KSSKKKKKKKKKSSK          ',
+ '      KSDSSSSSSSSSK           ',
+ '       KDSSSSSSSSK            ',
+ '        KKKSSKKK              ',
+ '       KKKCCCCKKK             ',
+ '     KKCVVCCCCCCKK            ',
+ '    KSSKCVCCCCCCCCKKKK        ',
+ '    KSLKCVCCCCCCCCCSSLKK      ',
+ '    KSSKCVCCCCCCCCKSSSSSK     ',
+ '    KKKKCBCCCRCCCCKKSSSKK     ',
+ '        KBCCCRCCCBK  KKKK     ',
+ '        KBCCCCCCCBK           ',
+ '        KBBCCCCCBBK           ',
+ '         KBKBBKBBK            ',
+ '         KSSSKSSSK            ',
+ '          KSSKSSK             ',
+ '          KSSKSSK             ',
+ '         KDSSKSSDK            ',
+ '         KSSSKSSSK            ',
+ '        KKSSSKSSSKK           ',
+ '        KKKKKKKKKKK           '
+]]}};
+const PX_CACHE={};
+const pxOf=id=>PX_ON?(PX_Z[id]||null):null;
+function pxImg(sp,id,fi){
+ const key=id+'_'+fi;if(PX_CACHE[key])return PX_CACHE[key];
+ const rows=sp.f[fi%sp.f.length];
+ const cvv=document.createElement('canvas');cvv.width=sp.w;cvv.height=sp.h;
+ const c=cvv.getContext&&cvv.getContext('2d');if(!c||!c.fillRect)return null;
+ for(let y=0;y<rows.length;y++){const r=rows[y];
+  for(let x=0;x<r.length;x++){const ch=r.charAt(x);if(ch===' ')continue;
+   c.fillStyle=PX_PAL[ch]||INK;c.fillRect(x,y,1,1);}}
+ PX_CACHE[key]=cvv;return cvv;
+}
+/* ⚠**コード描画と同じ大きさに置く**(lh=盤面での高さ)。1ドット=画面の1画素に固定すると
+   縮尺が変わった時に他のキャラと大きさが揃わなくなる=まず「同じ大きさ」を優先する。 */
+function pxDraw(c,sp,id,t,ph,s){
+ const n=sp.f.length,fi=Math.floor((((t*5+ph)/(Math.PI*2))%1+1)%1*n)%n;
+ const im=pxImg(sp,id,fi);if(!im||!c.drawImage)return false;
+ const k=(sp.lh||50)/sp.h;
+ c.save();c.imageSmoothingEnabled=false;
+ try{c.drawImage(im,-sp.w*k*.5,-sp.h*k,sp.w*k,sp.h*k);}catch(e){c.restore();return false;}
+ c.restore();return true;
+}
 function drawZombie(c,zi,x,y,dir,t,ph,o){
  o=o||{};const Z=ZOMBIES[zi],s=Z.sc*(o.elite?1.35:1);
  const walk=Math.sin(t*(Z.sp>90?14:8)+ph),bob=Math.abs(walk)*2.5*s;
  c.save();c.translate(x,y-bob);c.scale(dir*s,s);
+ /* 🧪ドット絵の試作: 用意がある種類だけ差し替える(無い種類は今までどおりコード描画) */
+ {const PXS=pxOf(Z.id);
+  if(PXS&&pxDraw(c,PXS,Z.id,t,ph,s)){c.restore();return;}}
  if(o.lg>0)c.translate(o.lg*34,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
  if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
@@ -5049,7 +5164,8 @@ function renderCamp(C,t){
    c.beginPath();c.ellipse(z.px,z.py+4,z.frzT>0?26:20,z.frzT>0?11:9,0,0,7);c.fill();
    c.font='900 16px '+FF;c.textAlign='center';c.globalAlpha=.85;c.fillText('❄',z.px,z.py-64*ZOMBIES[z.zi].sc);c.globalAlpha=1;}
   /* 通常時は焼き込みスプライト・特殊状態のみ直接描画 */
-  if(!(z.hitT>0||z.lgT>0||z.sent))
+  /* ⚠🧪ドット絵の種類は焼き込みを通さない=焼くと1ドットが画面の1画素からずれてボケる */
+  if(!(z.hitT>0||z.lgT>0||z.sent||pxOf(ZOMBIES[z.zi].id)))
    drawSpr(c,bakeZ(z.zi,z.elite?1:0),sprFrame(t,z.ph,ZOMBIES[z.zi].sp>90?14:8),z.px,z.py,(z.dr||1)<0);
   else drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent,lg:z.lgT,elite:z.elite});
   /* 完全凍結: 氷漬けにして「止まっている」と一目で分かるようにする */

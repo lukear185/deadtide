@@ -1243,6 +1243,26 @@ function shapeFp(drawFn){
  drawFn(rc);
  return rec;
 }
+/* ---- 🧪ドット絵の試作(2026-07-27 第92弾) ----
+   ⚠絵は文字の並びなので、**行の長さが1つでも違うと絵がずれる**。目では気づけないので検査する。 */
+function checkPixel(){
+ for(const id in PX_Z){
+  const sp=PX_Z[id],Z=ZOMBIES.find(z=>z.id===id);
+  if(!Z){console.log('FAIL: ドット絵の指す先が無い: '+id);process.exit(1);}
+  for(let k=0;k<sp.f.length;k++){
+   const rows=sp.f[k];
+   if(rows.length!==sp.h){console.log('FAIL: ドット絵の行数が違う '+id+' コマ'+k+': '+rows.length+'/'+sp.h);process.exit(1);}
+   for(let y=0;y<rows.length;y++){
+    if(rows[y].length!==sp.w){console.log('FAIL: ドット絵の行の長さが違う '+id+' コマ'+k+' '+y+'行目: '+rows[y].length+'/'+sp.w);process.exit(1);}
+    for(let x=0;x<rows[y].length;x++){const ch=rows[y].charAt(x);
+     if(ch!==' '&&!PX_PAL[ch]){console.log('FAIL: 色表に無い文字「'+ch+'」 '+id+' '+y+'行目');process.exit(1);}}}}
+  /* 中身が空でないか(全部空白だと透明のまま消える) */
+  let n=0;for(const r of sp.f[0])for(let x=0;x<r.length;x++)if(r.charAt(x)!==' ')n++;
+  if(n<80){console.log('FAIL: ドット絵の中身が薄すぎる: '+id+' ('+n+'点)');process.exit(1);}}
+ /* 既定では切ってあること(1体だけ画風が違う状態で公開しないため) */
+ if(PX_ON){console.log('FAIL: ドット絵の試作が既定で有効になっている(?px=1 の時だけにすること)');process.exit(1);}
+ console.log('🧪ドット絵の試作: '+Object.keys(PX_Z).length+'種('+Object.keys(PX_Z).join('/')+') 形は正しい / 既定は切 OK');
+}
 function checkULook(){
  /* (1) 全兵科に「体型・かぶり物・背負い物」の指定があるか */
  const miss=[];
@@ -1766,6 +1786,7 @@ checkFx2();
 checkGachaFx();
 checkTwFx();
 checkZLook();
+checkPixel();
 checkULook();
 checkHeroLook();
 checkTwLook();
