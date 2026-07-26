@@ -479,6 +479,35 @@ function checkFx2(){
 /* ---- タワーごとに撃ち方が違うか(2026-07-26 第66弾) ----
    ユーザー指摘=「威力が多少変わってるだけで変化がない」。
    絵(fxの種類)と音(TW_SFX)が、タワーごとに別物になっていることを見る */
+/* ---- 💎英雄召集の演出(2026-07-26 第71弾) ----
+   ⚠**結果(gcPick/gcApply)は演出で変わってはいけない**。段階が進むこと・全部見せ終えて閉じることを見る */
+function checkGachaFx(){
+ const res=[{hero:HEROES[HEROES.length-1],txt:'NEW!'},{dud:GDUD[0],txt:'🧬 研究pt +100'},
+  {hero:HEROES[0],txt:'重複 → 🔧 鍛錬素材 +3',dupe:true}];
+ gcStart(res);
+ if(!GC){console.log('FAIL: 召集の演出が始まらない(canvasが取れていない)');process.exit(1);}
+ if(GC.best!==5){console.log('FAIL: 予告の色が最高レア度になっていない best='+GC.best);process.exit(1);}
+ if(GC.ph!=='summon'){console.log('FAIL: 魔法陣から始まっていない '+GC.ph);process.exit(1);}
+ /* 魔法陣→炸裂→カード と自動で進むこと */
+ for(let k=0;k<40&&GC.ph==='summon';k++)gcStep(.05);
+ if(GC.ph!=='burst'){console.log('FAIL: 魔法陣のあと炸裂に進まない '+GC.ph);process.exit(1);}
+ for(let k=0;k<40&&GC.ph==='burst';k++)gcStep(.05);
+ if(GC.ph!=='card'){console.log('FAIL: 炸裂のあとカードに進まない '+GC.ph);process.exit(1);}
+ /* 押すと次の1枚へ。最後まで行くと閉じる */
+ gcTap(0,0);
+ if(!GC||GC.i!==1){console.log('FAIL: 押しても次の1枚に進まない');process.exit(1);}
+ gcTap(0,0);gcTap(0,0);
+ if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
+ /* 「まとめて見る」で途中でも閉じられること */
+ gcStart(res);GC.ph='card';GC.sk=[10,10,90,20];
+ gcTap(20,15);
+ if(GC){console.log('FAIL: 「まとめて見る」で閉じられない');process.exit(1);}
+ /* 演出を通しても、配られる中身が変わっていないこと */
+ const before=JSON.stringify(res);
+ gcStart(res);for(let k=0;k<80;k++)gcStep(.05);gcEnd();
+ if(JSON.stringify(res)!==before){console.log('FAIL: 演出が結果の中身を書き換えている');process.exit(1);}
+ console.log('💎英雄召集の演出: 魔法陣→炸裂→1枚ずつ・まとめて見る・結果は書き換えない OK');
+}
 function checkTwFx(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0];
@@ -902,6 +931,7 @@ checkEvo();
 checkHook();
 checkBite();
 checkFx2();
+checkGachaFx();
 checkTwFx();
 checkCryo();
 checkBeam();

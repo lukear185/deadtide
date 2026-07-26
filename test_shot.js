@@ -78,7 +78,14 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(RPGK==='s'?'RG.md={k:"stat"};':'')
        +'RG.fade=0;rgStep(0.02);')
      :SFXT?'openSfxTest();'
-     :GC?'META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
+     /* gacha=10連の演出 / gacha5=★5を引いた状態で撮る(いちばん派手な絵を確かめる用) */
+     :GC?('META.gem=200;renderGacha(null);document.getElementById("md-gacha").classList.add("on");gcPull(10);'
+       +(OPT.indexOf('gacha5')>=0
+         ?'if(GC){GC.res[0]={hero:HEROES[HEROES.length-1],txt:"NEW!"};GC.best=5;}':'')
+       /* ⚠ヘッドレスの仮想時間ではrAFがほとんど回らず、いつまでも魔法陣のまま。
+          カードの絵を撮りたい時は段階を直に進める(gcard=カード / gburst=炸裂) */
+       +(OPT.indexOf('gcard')>=0?'if(GC){GC.ph="card";GC.t=.42;}':'')
+       +(OPT.indexOf('gburst')>=0?'if(GC){GC.ph="burst";GC.t=.12;}':''))
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
