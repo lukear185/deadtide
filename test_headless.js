@@ -488,16 +488,40 @@ function checkGachaFx(){
  if(!GC){console.log('FAIL: 召集の演出が始まらない(canvasが取れていない)');process.exit(1);}
  if(GC.best!==5){console.log('FAIL: 予告の色が最高レア度になっていない best='+GC.best);process.exit(1);}
  if(GC.ph!=='summon'){console.log('FAIL: 魔法陣から始まっていない '+GC.ph);process.exit(1);}
- /* 魔法陣→炸裂→カード と自動で進むこと */
+ /* 魔法陣→炸裂→撃て!→発射→カード と進むこと */
  for(let k=0;k<40&&GC.ph==='summon';k++)gcStep(.05);
  if(GC.ph!=='burst'){console.log('FAIL: 魔法陣のあと炸裂に進まない '+GC.ph);process.exit(1);}
  for(let k=0;k<40&&GC.ph==='burst';k++)gcStep(.05);
- if(GC.ph!=='card'){console.log('FAIL: 炸裂のあとカードに進まない '+GC.ph);process.exit(1);}
- /* 押すと次の1枚へ。最後まで行くと閉じる */
+ if(GC.ph!=='aim'){console.log('FAIL: 炸裂のあと「撃て!」に進まない '+GC.ph);process.exit(1);}
+ /* 押すと撃つ。押さなくても待ちすぎたら自動で撃つ(止まったままにならない) */
  gcTap(0,0);
- if(!GC||GC.i!==1){console.log('FAIL: 押しても次の1枚に進まない');process.exit(1);}
- gcTap(0,0);gcTap(0,0);
+ if(GC.ph!=='fire'){console.log('FAIL: 押しても撃たない '+GC.ph);process.exit(1);}
+ for(let k=0;k<40&&GC.ph==='fire';k++)gcStep(.05);
+ if(GC.ph!=='card'){console.log('FAIL: 撃ったあとカードに進まない '+GC.ph);process.exit(1);}
+ /* 押すと次の1枚(=次の「撃て!」)へ。最後まで行くと閉じる */
+ gcTap(0,0);
+ if(!GC||GC.i!==1||GC.ph!=='aim'){console.log('FAIL: 押しても次の1枚に進まない');process.exit(1);}
+ for(let k=0;k<3;k++){gcTap(0,0);gcTap(0,0);gcTap(0,0);}
  if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
+ /* 押さずに放っておいても自動で撃つ */
+ gcStart(res);GC.ph='aim';GC.t=0;
+ for(let k=0;k<60&&GC.ph==='aim';k++)gcStep(.05);
+ if(GC.ph==='aim'){console.log('FAIL: 「撃て!」で止まったまま進まない');process.exit(1);}
+ gcEnd();
+ /* ⭐展開が読めること: ダメージは結果そのもの / タレットは予告で**下振れだけ**(上振れしない)
+    → レーザー(段2)が出たら★4以上が確定する */
+ for(let k=0;k<400;k++){
+  const rk=k%6;
+  const one=[rk===0?{dud:GDUD[0],txt:''}:{hero:HEROES.find(h=>h.rk===rk),txt:''}];
+  if(!one[0].dud&&!one[0].hero)continue;
+  gcStart(one);const s=GC.sc[0],r=gcRank(one[0]);
+  const want=r>=4?2:r>=2?1:0;
+  if(s.dg!==want){console.log('FAIL: レア度'+r+'のダメージ段が違う '+s.dg+'(期待'+want+')');process.exit(1);}
+  if(s.tw>s.dg){console.log('FAIL: タレットの予告が上振れしている(レア度'+r+' 予告'+s.tw+' 実際'+s.dg+')');process.exit(1);}
+  if(s.tw===2&&r<4){console.log('FAIL: レーザーが出たのに★4未満(レア度'+r+')');process.exit(1);}
+  if(r===5&&s.tw!==2){console.log('FAIL: ★5なのにレーザーで見せていない');process.exit(1);}
+  gcEnd();
+ }
  /* 「まとめて見る」で途中でも閉じられること */
  gcStart(res);GC.ph='card';GC.sk=[10,10,90,20];
  gcTap(20,15);
@@ -506,7 +530,7 @@ function checkGachaFx(){
  const before=JSON.stringify(res);
  gcStart(res);for(let k=0;k<80;k++)gcStep(.05);gcEnd();
  if(JSON.stringify(res)!==before){console.log('FAIL: 演出が結果の中身を書き換えている');process.exit(1);}
- console.log('💎英雄召集の演出: 魔法陣→炸裂→1枚ずつ・まとめて見る・結果は書き換えない OK');
+ console.log('💎英雄召集の演出: 魔法陣→炸裂→撃て!→傷→カード / 予告は下振れのみ(レーザー=★4以上確定) OK');
 }
 function checkTwFx(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);

@@ -5212,8 +5212,22 @@ const GC_COL=[['#7a8f6a','#cfe0b8'],/* 0=はずれ枠 */
  ['#cfd6dd','#ffffff'],['#5fa8c9','#cdf1ff'],['#b07ad0','#f2d4ff'],
  ['#ffb830','#fff3c0'],['#ff5a3a','#ffd7b0']];
 const GC_SUM=1.15,GC_BST=.45;/* 魔法陣に集まる秒数 / 炸裂の秒数 */
+/* ⭐撃つ演出(2026-07-26 第72弾ユーザー指示)。
+   「撃て!」でタップ → タレットがゾンビを撃つ → 傷の具合で結果がだいたい読める → GETのカードへ。
+   ⚠**展開が読めること**が肝なので、対応をはっきり決めてある:
+     ダメージ = 結果そのもの(軽傷=はずれ/★1 / 重傷=★2-3 / 木っ端みじん=★4-5)
+     タレット = 予告。基本はダメージと同じ段だが、**たまに1段下がる(下振れだけ・上振れはしない)**
+     → **レーザーが出たら★4以上が確定**する=見た瞬間に沸ける。ライフルでも木っ端みじんなら大当たり */
+const GC_TW=['rifle','shot','laser'];      /* ライフル / ショットガン / レーザー(レーザーが一番レア) */
+const GC_TWN=['ライフル櫓','ショットガン台','レーザー塔'];
+const GC_ZM=['walk','arm','brut'];         /* ゾンビ3種(大きさと色が違うものを選ぶ) */
+const GC_DGN=['軽傷…','重傷!','木っ端みじん!!'];
+const GC_TWC=[['#cfd6dd','#ffffff'],['#E8A33D','#ffdd66'],['#c96b9f','#f0a8d8']];
+const GC_AIM=1.6,GC_FIRE=.85;/* 「撃て!」を待つ秒数(過ぎたら自動で撃つ) / 撃ってから傷が出るまで */
 let GC=null;
 const gcRank=o=>o.dud?0:o.hero.rk;
+const gcTi=k=>TOWERS.findIndex(T=>T.id===GC_TW[k]);
+const gcZi=k=>{const i=ZOMBIES.findIndex(z=>z.id===GC_ZM[k]);return i<0?0:i;};
 function gcFit(){
  const cv=$('gc-cv');if(!cv)return;
  const w=cv.clientWidth||760,h=cv.clientHeight||360;
@@ -5224,9 +5238,32 @@ function gcFit(){
 function gcStart(res){
  const cv=$('gc-cv');
  if(!cv||!cv.getContext||!res||!res.length){renderGacha(res);return;}
- GC={res,i:0,ph:'summon',t:0,best:res.reduce((a,o)=>Math.max(a,gcRank(o)),0),w:760,h:360,dpr:1,sk:null};
+ /* ⚠演出用の値は**結果の中(res)に混ぜない**。混ぜると「演出が結果を書き換えていないか」を見られなくなる */
+ const sc=res.map(o=>{
+  const r=gcRank(o),dg=r>=4?2:r>=2?1:0;
+  /* たまに1段下がる=下振れだけ。★5は必ず最上段で見せる */
+  const tw=(r<5&&Math.random()<.35)?Math.max(0,dg-1):dg;
+  return{tw,dg,zi:(res.indexOf(o)+dg)%GC_ZM.length};
+ });
+ GC={res,sc,i:0,ph:'summon',t:0,best:res.reduce((a,o)=>Math.max(a,gcRank(o)),0),w:760,h:360,dpr:1,sk:null};
  cv.classList.add('on');gcFit();
  if(sfx.heal)sfx.heal();
+}
+/* 「撃て!」→ 発射。タレットの種類で音を変える */
+function gcFire(){
+ if(!GC||GC.ph!=='aim')return;
+ GC.ph='fire';GC.t=0;GC.hit=0;
+ const tw=GC.sc[GC.i].tw;
+ if(tw===2&&sfx.laser)sfx.laser();
+ else if(tw===1&&sfx.shotgun)sfx.shotgun();
+ else if(sfx.shot)sfx.shot();
+}
+/* 傷が出た瞬間の音(木っ端みじんが一番派手) */
+function gcHitSfx(){
+ const dg=GC?GC.sc[GC.i].dg:0;
+ if(dg>=2){if(sfx.boom)sfx.boom();if(sfx.eliteKill)sfx.eliteKill();}
+ else if(dg===1){if(sfx.splat)sfx.splat();}
+ else if(sfx.thunk)sfx.thunk();
 }
 function gcBurstSfx(){
  const b=GC?GC.best:0;
@@ -5243,19 +5280,24 @@ function gcStep(dt){
  {const cv=$('gc-cv');if(cv&&(cv.clientWidth!==GC.w||cv.clientHeight!==GC.h))gcFit();}
  GC.t+=dt;
  if(GC.ph==='summon'&&GC.t>=GC_SUM){GC.ph='burst';GC.t=0;gcBurstSfx();}
- else if(GC.ph==='burst'&&GC.t>=GC_BST){GC.ph='card';GC.t=0;}
+ else if(GC.ph==='burst'&&GC.t>=GC_BST){GC.ph='aim';GC.t=0;}
+ /* ⚠「撃て!」で止まったままにならないよう、待ちすぎたら自動で撃つ */
+ else if(GC.ph==='aim'&&GC.t>=GC_AIM)gcFire();
+ else if(GC.ph==='fire'&&GC.t>=GC_FIRE){GC.ph='card';GC.t=0;}
+ /* 撃った弾が当たる瞬間に音を鳴らす(1発だけ) */
+ if(GC.ph==='fire'&&!GC.hit&&GC.t>=.14){GC.hit=1;gcHitSfx();}
  try{gcDraw();}catch(e){}
 }
-/* 押した時: 演出中なら飛ばす / カード表示中なら次の1枚へ */
+/* 押した時: 「撃て!」なら撃つ / 傷を見せている間は飛ばす / カードなら次の1枚へ */
 function gcTap(mx,my){
  if(!GC)return;
  if(GC.sk&&mx>=GC.sk[0]&&my>=GC.sk[1]&&mx<=GC.sk[0]+GC.sk[2]&&my<=GC.sk[1]+GC.sk[3]){gcEnd();return;}
- if(GC.ph!=='card'){GC.ph='card';GC.t=0;gcBurstSfx();return;}
+ if(GC.ph==='summon'||GC.ph==='burst'){GC.ph='aim';GC.t=0;gcBurstSfx();return;}
+ if(GC.ph==='aim'){gcFire();return;}
+ if(GC.ph==='fire'){GC.ph='card';GC.t=0;return;}
  GC.i++;
  if(GC.i>=GC.res.length){gcEnd();return;}
- GC.t=0;
- const r=gcRank(GC.res[GC.i]);
- if(r>=3&&sfx.elite)sfx.elite();else if(sfx.coin)sfx.coin();
+ GC.t=0;GC.hit=0;GC.ph='aim';
 }
 function gcEnd(){
  const cv=$('gc-cv');if(cv)cv.classList.remove('on');
@@ -5273,10 +5315,13 @@ function gcDraw(){
  const w=GC.w,h=GC.h;
  c.setTransform(GC.dpr,0,0,GC.dpr,0,0);
  c.clearRect(0,0,w,h);
- /* ⚠下の一覧が透けると気が散る。ほぼ不透明で覆う */
- c.fillStyle='rgba(12,10,8,.985)';c.fillRect(0,0,w,h);
+ /* ⚠下の一覧が透けると気が散る。**完全に**覆う(薄く残すと図鑑の枠が見えて安っぽくなる) */
+ c.fillStyle='#0c0a08';c.fillRect(0,0,w,h);
  const cx=w/2,cy=h*.5,t=GC.t;
- const COL=GC_COL[GC.ph==='card'?gcRank(GC.res[GC.i]):GC.best]||GC_COL[0];
+ /* ⚠撃つ場面の色は**タレットの段**で決める(レア度の色を出すと結果が先に分かってしまう) */
+ const COL=GC.ph==='card'?(GC_COL[gcRank(GC.res[GC.i])]||GC_COL[0])
+  :(GC.ph==='aim'||GC.ph==='fire')?(GC_TWC[GC.sc[GC.i].tw]||GC_TWC[0])
+  :(GC_COL[GC.best]||GC_COL[0]);
  c.lineWidth=3;c.strokeStyle=INK;c.textAlign='center';
  if(GC.ph==='summon'){
   const k=clamp(t/GC_SUM,0,1),R=Math.min(w,h)*.30;
@@ -5316,6 +5361,106 @@ function gcDraw(){
   c.beginPath();c.arc(cx,cy,10+k*R*.35,0,7);c.fill();
   c.globalAlpha=Math.max(0,1-k*2.2);c.fillStyle='#fff';
   c.beginPath();c.arc(cx,cy,6+k*R*.16,0,7);c.fill();c.globalAlpha=1;
+ }else if(GC.ph==='aim'||GC.ph==='fire'){
+  /* ⭐撃つ場面。タレットの種類とゾンビの傷で、結果がだいたい読める(第72弾ユーザー指示) */
+  const S=GC.sc[GC.i],fire=GC.ph==='fire',ft=GC.t;
+  const gy=h*.76,tx0=w*.23,zx0=w*.70;
+  const zidx=gcZi(S.zi),Z=ZOMBIES[zidx]||{sc:1,c:'#7a8f5f'};
+  const hit=fire&&ft>=.14,hk=hit?clamp((ft-.14)/.58,0,1):0;
+  /* 地面 */
+  c.fillStyle='#241f19';c.fillRect(0,gy,w,h-gy);
+  c.strokeStyle='rgba(242,236,220,.16)';c.lineWidth=2;
+  c.beginPath();c.moveTo(0,gy);c.lineTo(w,gy);c.stroke();c.lineWidth=3;
+  /* 木っ端みじんの瞬間だけ画面が白く飛ぶ */
+  if(S.dg===2&&hit&&hk<.3){c.globalAlpha=(1-hk/.3)*.75;c.fillStyle='#fff';c.fillRect(0,0,w,h);c.globalAlpha=1;}
+  /* ---- ゾンビ ---- */
+  if(!(S.dg===2&&hit)){
+   let dx=0,rot=0,sink=0;
+   if(hit){
+    if(S.dg===0){dx=10*Math.min(1,hk*5)*(1-hk*.5);rot=Math.sin(hk*38)*.06*(1-hk);}
+    else{dx=34*hk;rot=hk*.55;sink=hk*10;}
+   }
+   const zsc=2.2/(Z.sc||1);
+   c.save();c.translate(zx0+dx,gy+sink);c.rotate(rot);c.scale(zsc,zsc);
+   /* ⚠白フラッシュ(hitT)は当たった瞬間だけ。出しっぱなしにすると真っ白な人形にしか見えない */
+   try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{hitT:(hit&&hk<.22)?.1:0});}catch(e){}
+   c.restore();
+  }else{
+   /* 木っ端みじん: 肉片が飛び散って血だまりが残る */
+   /* 爆風の輪 */
+   c.strokeStyle='rgba(255,180,120,'+Math.max(0,1-hk*2.2).toFixed(3)+')';c.lineWidth=6*(1-hk)+1;
+   c.beginPath();c.ellipse(zx0,gy-40,30+hk*220,(30+hk*220)*.5,0,0,7);c.stroke();c.lineWidth=3;
+   /* ⚠肉片は落ちたら**地面に転がしておく**。画面外へ消すと、撮った時に何も残っていない */
+   for(let i=0;i<20;i++){
+    const a=-.15-i*.31,sp=130+((i*57)%110);
+    const px=zx0+Math.cos(a)*sp*hk*1.5;
+    let py=gy-46+Math.sin(a)*sp*hk*1.3+380*hk*hk;
+    if(py>gy-3)py=gy-3;
+    c.save();c.translate(px,py);c.rotate(i*1.1+hk*11);
+    c.fillStyle=(i%3===0)?'#8a2f2f':(Z.c||'#7a8f5f');c.strokeStyle=INK;c.lineWidth=2;
+    rr(c,-5,-4,10,8,3);c.fill();c.stroke();c.restore();}
+   c.lineWidth=3;
+   c.globalAlpha=Math.min(1,hk*2.5)*.55;c.fillStyle='#4a5a2e';
+   c.beginPath();c.ellipse(zx0,gy+2,64*Math.min(1,hk*2),17*Math.min(1,hk*2),0,0,7);c.fill();c.globalAlpha=1;
+  }
+  /* 血しぶき(軽傷/重傷) */
+  if(hit&&S.dg<2){const n=S.dg===0?7:18;
+   c.fillStyle='#8a2f2f';
+   for(let i=0;i<n;i++){const a=-.5-i*.38,sp=(S.dg===0?75:165)+((i*37)%60);
+    const px=zx0+Math.cos(a)*sp*hk;
+    let py=gy-48+Math.sin(a)*sp*hk+340*hk*hk;
+    if(py>gy-1)py=gy-1;/* 落ちた血は地面に残す */
+    c.beginPath();c.arc(px,py,Math.max(.9,3.4-hk*1.6),0,7);c.fill();}}
+  /* ---- タレット ---- */
+  {const ti=gcTi(S.tw);
+   /* ⚠drawTowerは基部の円の中心が原点なので、そのまま地面に置くと半分が埋まる */
+   c.save();c.translate(tx0,gy-38);c.scale(2.05,2.05);
+   try{if(ti>=0)drawTower(c,ti,0,0,0,0,GC.t,{fire:fire&&ft<.18,si:0});}catch(e){}
+   c.restore();}
+  /* ---- 弾 ---- */
+  if(fire){
+   const mx=tx0+56,my=gy-42,ex=zx0-16,ey=gy-56;
+   if(S.tw===2){/* レーザー: 太いビームがしばらく残る=一番レア */
+    const a2=Math.max(0,1-ft/.45);c.lineCap='round';
+    for(const p of [[28,'rgba(201,107,159,',.35],[14,'rgba(240,168,216,',.7],[4.5,'rgba(255,255,255,',1]]){
+     c.strokeStyle=p[1]+(a2*p[2]).toFixed(3)+')';c.lineWidth=p[0]*(.6+a2*.4);
+     c.beginPath();c.moveTo(mx,my);c.lineTo(ex,ey);c.stroke();}
+    c.lineCap='butt';
+   }else if(S.tw===1){/* ショットガン: 扇に散る */
+    const a2=Math.max(0,1-ft/.22);c.lineCap='round';
+    c.strokeStyle='rgba(255,235,150,'+a2.toFixed(3)+')';c.lineWidth=2.6;
+    for(let i=0;i<9;i++){c.beginPath();c.moveTo(mx,my);c.lineTo(ex,ey+(i-4)*14);c.stroke();}
+    c.lineCap='butt';
+   }else{/* ライフル: 1本 */
+    const a2=Math.max(0,1-ft/.15);
+    c.strokeStyle='rgba(255,235,150,'+a2.toFixed(3)+')';c.lineWidth=3.6;
+    c.beginPath();c.moveTo(mx,my);c.lineTo(ex,ey);c.stroke();}
+  }
+  /* ---- 文字 ---- */
+  c.textAlign='center';
+  c.fillStyle=COL[0];c.font='900 13px sans-serif';
+  c.fillText(GC_TWN[S.tw],tx0,gy+24);
+  if(!fire){
+   const bl=.55+Math.abs(Math.sin(t*7))*.45;
+   c.globalAlpha=bl;c.fillStyle=COL[1];c.font='900 40px sans-serif';
+   c.fillText('撃て！',cx,h*.30);c.globalAlpha=1;
+   c.fillStyle='rgba(242,236,220,.8)';c.font='900 13px sans-serif';
+   c.fillText('▶ タップで発射',cx,h*.30+24);
+  }else if(hit){
+   const gr=Math.min(1,hk*5);
+   c.globalAlpha=gr;
+   c.fillStyle=S.dg===2?'#ff5a3a':S.dg===1?'#E8A33D':'#cfd6dd';
+   c.font='900 '+(S.dg===2?38:30)+'px sans-serif';
+   c.fillText(GC_DGN[S.dg],cx,h*.24);c.globalAlpha=1;
+  }
+  c.fillStyle='rgba(242,236,220,.75)';c.font='900 12px sans-serif';
+  c.fillText('('+(GC.i+1)+' / '+GC.res.length+')',cx,h-12);
+  if(GC.res.length>1){
+   const sw=104,sh=24,sx=w-sw-10,sy=h-sh-8;GC.sk=[sx,sy,sw,sh];
+   c.fillStyle='rgba(242,236,220,.14)';rr(c,sx,sy,sw,sh,8);c.fill();
+   c.lineWidth=2;c.strokeStyle='rgba(242,236,220,.5)';rr(c,sx,sy,sw,sh,8);c.stroke();c.lineWidth=3;
+   c.fillStyle='#F2ECDC';c.font='900 12px sans-serif';c.fillText('≫ まとめて見る',sx+sw/2,sy+16);
+  }else GC.sk=null;
  }else{
   const o=GC.res[GC.i],rk=gcRank(o),k=clamp(t/.42,0,1);
   const ez=k*k*(3-2*k);

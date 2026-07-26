@@ -85,7 +85,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        /* ⚠ヘッドレスの仮想時間ではrAFがほとんど回らず、いつまでも魔法陣のまま。
           カードの絵を撮りたい時は段階を直に進める(gcard=カード / gburst=炸裂) */
        +(OPT.indexOf('gcard')>=0?'if(GC){GC.ph="card";GC.t=.42;}':'')
-       +(OPT.indexOf('gburst')>=0?'if(GC){GC.ph="burst";GC.t=.12;}':''))
+       +(OPT.indexOf('gburst')>=0?'if(GC){GC.ph="burst";GC.t=.12;}':'')
+       +(OPT.indexOf('gaim')>=0?'if(GC){GC.ph="aim";GC.t=.2;}':'')
+       /* gfire=撃った直後の傷。gfire2/gfire1/gfire0 でダメージ段(木っ端みじん/重傷/軽傷)を指定 */
+       +(OPT.indexOf('gfire')>=0?('if(GC){GC.ph="fire";GC.t=.42;GC.hit=1;'
+         +((/gfire(\d)/.exec(OPT))?('GC.sc[0].dg='+(/gfire(\d)/.exec(OPT))[1]
+           +';GC.sc[0].tw=Math.min(GC.sc[0].tw,'+(/gfire(\d)/.exec(OPT))[1]+');'):'')+'}'):''))
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
