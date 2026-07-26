@@ -7692,6 +7692,25 @@ function uBody(c,b,col){
  c.lineTo(x1-w*.08,y1-h*.13);c.lineTo(x0+w*.08,y1-h*.13);c.closePath();c.fill();
  return P;
 }
+/* ⭐腕(2026-07-27 第101弾)。⚠それまで**腕が1本も無く、武器だけが体の横に浮いていた**
+   (76pxのプレビューで見て気づいた)。ここも兵科32種の共通部品なので、足すと全部に効く。
+   ⚠**奥の腕は胴より先に描いて根元を隠す**。手前の腕は胴の後・武器の前に描く(手が握りに来る)。
+   ⚠⚠ブロックコメントの中に「アスタリスク2つ+スラッシュ」を書くとコメントが早く閉じる(ここで踏んだ) */
+const U_SKIN='#e8c39a';
+const uShoulder=b=>{const P=b==='slim'?[16,-33,23]:b==='wide'?[26,-35,25]
+ :b==='tall'?[18,-38,28]:b==='crouch'?[22,-31,21]:[20,-34,24];
+ return [P[0]*.42,P[1]+P[2]*.13];};/* [肩の横位置, 肩の高さ] */
+function uArm(c,sx,sy,ln,drop,w,col,hand){
+ /* 二の腕→前腕→手 の3つ。⚠一直線の棒だと板に見えるので少し折る */
+ c.fillStyle=col;
+ c.beginPath();c.moveTo(sx-1,sy-w*.5);c.lineTo(sx+ln*.5,sy+drop*.4-w*.45);
+ c.lineTo(sx+ln*.5,sy+drop*.4+w*.45);c.lineTo(sx-1,sy+w*.5);c.closePath();c.fill();c.stroke();
+ c.fillStyle=hand;
+ c.beginPath();c.moveTo(sx+ln*.5-.4,sy+drop*.4-w*.42);c.lineTo(sx+ln,sy+drop-w*.36);
+ c.lineTo(sx+ln,sy+drop+w*.36);c.lineTo(sx+ln*.5-.4,sy+drop*.4+w*.42);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(sx+ln-.3,sy+drop-w*.5);c.lineTo(sx+ln+w*.75,sy+drop-w*.34);
+ c.lineTo(sx+ln+w*.8,sy+drop+w*.4);c.lineTo(sx+ln-.3,sy+drop+w*.5);c.closePath();c.fill();c.stroke();
+}
 /* かぶり物。⚠**頭は画面の一番上=25pxでも輪郭が残る唯一の場所**。ここを1種ずつ変える */
 function uHead(c,k,U,hy){
  const y=hy==null?-42:hy,col=U.c;
@@ -7879,6 +7898,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=U.c;c.beginPath();c.moveTo(-8,-36);c.lineTo(-22,-4+walk*2);c.lineTo(-2,-10);c.closePath();c.fill();c.stroke();}
  const LK=uLook(id);
  uBack(c,LK.k,U,walk);
+ /* 奥の腕(胴より先=根元が胴に隠れる) */
+ if(id!=='big'&&id!=='hnd'){const S=uShoulder(LK.b);
+  uArm(c,-S[0]*.3,S[1]+1.5,S[0]*1.5,3.5+walk*1.2,5.4,shade(U.c,.66),shade(U_SKIN,.7));}
  /* 胴体 */
  if(id==='big'){/* 巨漢: 分厚い胸板と、突き出した太い腕+拳(武器は持たない) */
   c.fillStyle=shade(U.c,.82);
@@ -7892,6 +7914,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  }else{uBody(c,LK.b,U.c);}/* ⭐体型も兵科ごと(細身/普通/ずんぐり/のっぽ/前傾) */
  if(id==='med'){c.fillStyle=RUST;c.fillRect(-4,-28,8,3);c.fillRect(-1.5,-30.5,3,8);}
  if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,-10,-20,20,10,4);c.fill();c.stroke();}
+ /* 手前の腕(胴の後・武器の前=手が武器の握りに来る) */
+ if(id!=='big'&&id!=='hnd'){const S=uShoulder(LK.b);
+  uArm(c,-S[0]*.15,S[1]+2.5,S[0]*1.75,2-walk*1.2,5.8,U.c,U_SKIN);}
  /* 頭+かぶり物(⭐兵科ごとに形を変える。25pxで見分けが付く数少ない場所) */
  uHead(c,LK.h,U,LK.b==='tall'?-46:LK.b==='crouch'?-39:LK.b==='wide'?-43:-42);
  /* 武器 */
