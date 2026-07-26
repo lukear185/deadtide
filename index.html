@@ -1103,8 +1103,11 @@ const SFXSYN={
    ⚠合成音(SFXSYN)側の値も同じ倍率で下げてある=素材が無い環境でも釣り合いが崩れない。
    ⚠新しい声を足したら**必ず測ってからここに1行足す**(scratchpad の meas.js / 検査は test_sfx.js)。 */
 const SFX_GAIN={
- /* ボス登場の咆哮(素のRMS: growl .441 / growl2 .191) */
- growl:.25, growl2:.58,
+ /* ボス登場の咆哮(素のRMS: growl .441 / growl2 .191)。
+    ⚠**1.1秒鳴りっぱなしの音は、RMSが同じでも短い音よりずっと大きく感じる**
+      (2026-07-26ユーザー指摘「ボスのうなり(死の笛)がでかすぎる」。0.111まで下げてもまだ大きかった)。
+      大うめきと同じ0.07まで落としてある。 */
+ growl:.16, growl2:.37,
  /* ボス撃破(素 .309)。53種で2番目に大きかったので下げる */
  bossKill:.58,
  /* エリート/ボスのうめき(素 moanBig .096 / moanBig2 .136) */
@@ -1194,10 +1197,14 @@ function renderSfxTest(){
  }).join('')+'</div>';
  box.querySelectorAll('[data-sk]').forEach(e=>{e.onclick=()=>{ensureAC();sfxTry(e.dataset.sk);};});
 }
-/* 指定したキーだけを鳴らす(くじ引きを通さない)。素材が無ければ合成音 */
+/* 指定したキーだけを鳴らす(くじ引きを通さない)。素材が無ければ合成音。
+   ⭐⚠**必ず SFX_GAIN を通すこと**(2026-07-26 第84弾に踏んだ)。
+     ここだけ素の音量で鳴らしていたため、**確認画面とゲーム中で音量が違っていた**。
+     音量を下げる直しを入れたのに、確認画面では下がって聴こえない=
+     **この画面の存在意義(ゲームを進めずに音を確かめる)が丸ごと無効**になっていた。 */
 function sfxTry(k){
  SFXLAST[k]=-99;/* ⚠連打できるよう45msの制限を無視する */
- if(!sfxPlay(k,1,0)&&SFXSYN[k])SFXSYN[k]();}
+ if(!sfxPlay(k,SFX_GAIN[k]||1,0)&&SFXSYN[k])SFXSYN[k]();}
 function openSfxTest(){ensureAC();renderSfxTest();$('md-sfx').classList.add('on');}
 /* ⭐タワーごとの発射音(2026-07-26 第59弾)。id→音のキー。
    ⚠TOWERSの定義には手を入れない=ここの表だけで音を差し替えられる。

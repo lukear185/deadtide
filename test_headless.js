@@ -1055,6 +1055,28 @@ function checkZLook(){
  if(dup.length){console.log('FAIL: 同じ形で描かれているゾンビ: '+dup.join(' / '));process.exit(1);}
  console.log('ゾンビの絵: '+ZOMBIES.length+'種すべてが専用の枝を持ち、図形の並びも全部違う OK');
 }
+/* ---- 音を鳴らす所が必ず音量の表(SFX_GAIN)を通っているか(2026-07-26 第84弾) ----
+   ⚠**?sfx=1 の確認画面だけ素の音量で鳴らしていた**。音量を下げる直しを入れたのに
+     確認画面では下がって聴こえず、**「ゲームを進めずに音を確かめる」という画面の存在意義が
+     丸ごと無効**になっていた(ユーザーが「まだでかい」と気づいて発覚)。
+   ⚠新しく音を鳴らす所を足した時に同じことが起きるので、静的に見張る。
+   ⚠この関数は body(テンプレート文字列)の中に入るので、正規表現も改行のエスケープも使わない。 */
+function checkSfxGain(){
+ const NL=String.fromCharCode(10),bad=[];
+ for(const ln of js.split(NL)){
+  if(ln.indexOf('function sfxPlay(')>=0)continue;/* 定義そのものは除く */
+  if(ln.indexOf('sfxPlay(')<0)continue;
+  if(ln.indexOf('SFX_GAIN')<0)bad.push(ln.trim().slice(0,70));
+ }
+ if(bad.length){console.log('FAIL: 音量の表(SFX_GAIN)を通さずに鳴らしている所がある: '+bad.join(' / '));process.exit(1);}
+ /* 表のキーが実在するか。⚠打ち間違えると**黙って効かない**(下げたつもりで下がらない) */
+ const un=Object.keys(SFX_GAIN).filter(k=>!SFXB[k]);
+ if(un.length){console.log('FAIL: SFX_GAIN に素材の無いキーがある: '+un.join('/'));process.exit(1);}
+ /* ⚠1.0を超える値は書かない約束(「下げる」ための表なので) */
+ const up=Object.keys(SFX_GAIN).filter(k=>SFX_GAIN[k]>1);
+ if(up.length){console.log('FAIL: SFX_GAIN に1.0を超える値がある: '+up.join('/'));process.exit(1);}
+ console.log('音量の表: 鳴らす所すべてが SFX_GAIN を通り、'+Object.keys(SFX_GAIN).length+'件すべて実在するキー OK');
+}
 function checkTwFx(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0];
@@ -1483,6 +1505,7 @@ checkFx2();
 checkGachaFx();
 checkTwFx();
 checkZLook();
+checkSfxGain();
 checkTips();
 checkResume();
 checkTwNew();
