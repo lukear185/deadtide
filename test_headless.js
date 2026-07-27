@@ -214,7 +214,12 @@ function checkEarly(){
 }
 /* ---- 最終ウェーブのボスが、ステージ専用の特別な1体になっているか ---- */
 function checkFinalBoss(){
- const want=[['ステージ1',0,FIN_ZI,4],['ステージ2',1,FIN2_ZI,4],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF]];
+ /* ⭐2026-07-27に**「🌑×ステージ2=深海のナイトメア」**を足した(4プール目)。
+    ⚠ここに行を足すだけでは足りず、下の checkZPools() が「混ざっていないか」を見ている。
+    ⚠⚠このファイルは39行目から末尾まで**丸ごとテンプレートリテラル**なので、
+      コメントであってもバッククォートを書いた瞬間に文字列が閉じて壊れる。絶対に使わないこと。 */
+ const want=[['ステージ1',0,FIN_ZI,4],['ステージ2',1,FIN2_ZI,4],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF],
+  ['🌑深海のナイトメア',1,FINNM2_ZI,NM_DIFF]];
  for(const [nm,si,fi,df] of want){
   META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   /* 通常のボス波(15)と最終波を作って中身を見る */
@@ -229,6 +234,40 @@ function checkFinalBoss(){
   if(got[0]===got[1]){console.log('FAIL: 通常ボスと最終ボスが同じ('+nm+')');process.exit(1);}
   backTitle();
  }
+ META.stg=0;setDiff=2;loadStage(0);
+}
+/* ---- ⭐敵プール4つが1体も混ざっていないか(2026-07-27に「🌑×ステージ2」を足した時に追加) ----
+   ⚠印は nm と st の2枚重ねで、①無/無 ②無/2 ③有/無 ④有/2 の4通り。
+     Z.nm だけ・Z.st===2 だけで拾うコードが1か所でも残ると**④が二重に混ざる**。
+   ⚠**波の中身だけでなく、ボス・最終ボス・分裂の子・図鑑の並びも同じ印で分かれているか**を見る。 */
+function checkZPools(){
+ const key=Z=>(Z.nm?'n':'-')+(Z.st||0);
+ const want=[['① 廃線',0,4,'-0'],['② 沈んだ港',1,4,'-2'],['🌑 ナイトメア',0,NM_DIFF,'n0'],['🌑 深海のナイトメア',1,NM_DIFF,'n2']];
+ for(const [nm,si,df,k] of want){
+  META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=si;META.nmOK=1;setDiff=df;startSolo();
+  const seen={},bad=[];
+  for(const w of [1,5,10,15,20]){buildTide(w);
+   for(const e of G.tide.pool){const Z=ZOMBIES[e.z.zi];seen[Z.n]=1;if(key(Z)!==k)bad.push(Z.n+'('+key(Z)+')');}}
+  if(bad.length){console.log('FAIL: '+nm+' に別プールが混ざっている: '+[...new Set(bad)].join(','));process.exit(1);}
+  if(Object.keys(seen).length<5){console.log('FAIL: '+nm+' の顔ぶれが少なすぎる('+Object.keys(seen).length+'種)');process.exit(1);}
+  /* 分裂の子も同じプールから湧くこと(印が違う子が湧くと、獣の波に深海が生まれる) */
+  const sp=ZOMBIES.map((Z,i)=>({Z,i})).filter(o=>o.Z.split&&key(o.Z)===k);
+  for(const o of sp){
+   const me=G.players[0];me.zombies.length=0;
+   const z=mkZ(zSpec(o.i,1,10),PLEN*.5);z.hp=1;me.zombies.push(z);
+   campStep(me,.001,G.wave);killZ(me,z);
+   for(const c2 of me.zombies){const Z2=ZOMBIES[c2.zi];
+    if(key(Z2)!==k){console.log('FAIL: '+o.Z.n+' の分裂から別プールの '+Z2.n+' が湧いた');process.exit(1);}}}
+  console.log(nm+': '+Object.keys(seen).length+'種すべて印'+k+' / 分裂の子も同じプール OK');
+  backTitle();
+ }
+ /* 図鑑は4グループに分かれ、同じ敵が2グループに出ないこと */
+ const cnt={};
+ for(const g of ZDEX_G)for(const Z of ZOMBIES)if(g.f(Z))cnt[Z.id]=(cnt[Z.id]||0)+1;
+ const dup=Object.keys(cnt).filter(k2=>cnt[k2]>1),miss=ZOMBIES.filter(Z=>!cnt[Z.id]);
+ if(dup.length){console.log('FAIL: 図鑑で2グループに出ている敵: '+dup.join(','));process.exit(1);}
+ if(miss.length){console.log('FAIL: 図鑑のどのグループにも入らない敵: '+miss.map(Z=>Z.id).join(','));process.exit(1);}
+ console.log('📖図鑑: '+ZDEX_G.length+'グループに'+ZOMBIES.length+'種が重複なく収まっている OK');
  META.stg=0;setDiff=2;loadStage(0);
 }
 /* ---- 🌑ナイトメア(獣プール)を実走: 獣しか出ないか・最終ボスまで描画で例外が出ないか ---- */
@@ -2114,6 +2153,7 @@ checkBeam();
 checkCoil();
 checkEarly();
 checkFinalBoss();
+checkZPools();
 runStage2();
 runNightmare();
 runPvE(2,'PvE'+D5[2].n+'(素の腕前・W'+D5[2].w+')',false);

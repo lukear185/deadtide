@@ -1285,7 +1285,9 @@ const SFX_VAR={shot:.10,shotgun:.08,bite:.14,bite2:.12,splat:.12,thunk:.10,zap:.
    ⚠ここは sfx を組み立てる時点では isNM も STAGE もまだ無いので、**鳴らす瞬間に** try/catch で見る
      (constのTDZは typeof でも例外を投げるため、typeofガードでは防げない) */
 function sfxScene(){
- try{if(isNM())return 'nm';}catch(e){}
+ /* ⚠**ナイトメア×ステージ2(深海のナイトメア)は獣の声ではなく水の声**にする(2026-07-27)。
+    出てくるのは変異した深海の生き物なので、獣・蟲の声だと絵と音が食い違う。 */
+ try{if(isNM())return STAGE===1?'s2':'nm';}catch(e){}
  try{if(STAGE===1)return 's2';}catch(e){}
  return 's1';}
 const SFX_SET={
@@ -1718,6 +1720,23 @@ const ZOMBIES=[
  {id:'nmCrow',n:'腐肉鴉',hp:190,sp:170,bt:54,dmg:2,mw:4,nm:1,aura:1,w:.55,sc:.95,atk:34,ar:.6,c:'#3f3a44'},
  {id:'nmBear',n:'屍熊',hp:1050,sp:66,bt:150,dmg:5,mw:6,nm:1,armor:1,w:.35,sc:1.7,atk:109,ar:1.1,aoe:3,c:'#5a4a3a'},
  {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:109,ar:1.1,aoe:7,c:'#8a3a5a'},
+ /* ===== 🌑ナイトメア × ステージ2 専用: 変異した深海の生き物(nm:1 かつ st:2) =====
+    ⭐2026-07-27ユーザー指示「2ステージ目のナイトメアも別の種類の敵にしたい」。方向は
+      **A=深海の生き物が変異した**(ユーザー選択)。⚠それまでは**ステージ2でも陸の獣が出ていた**。
+    ⚠役割は上の獣8種と1対1で対応させてある(快速雑魚/装甲/高速すり抜け/加速/中型/分裂/突進/重装大型)
+      =強さの並びを作り直さずに済み、難易度が変わらない。
+    ⚠**印は `nm:1`+`st:2` の2枚重ね**。プールの選び分けは
+      「nm かつ st2」→ここ / 「nm だけ」→上の獣 / 「st2 だけ」→沈んだ港 の3択。
+      ⚠だから既存の絞り込み(`Z.nm` / `Z.st===2`)は**必ず相手側を除く条件を足す**こと。 */
+ {id:'dLant',n:'発光ハダカイワシ',hp:105,sp:215,bt:26,dmg:1,mw:1,nm:1,st:2,w:1.2,sc:.8,atk:22,ar:.35,c:'#6b8f9c',dsc:'体側の光を明滅させて群れで殺到する'},
+ {id:'dIsop',n:'屍喰らいグソクムシ',hp:300,sp:62,bt:38,dmg:2,mw:1,nm:1,st:2,armor:1,w:.9,sc:1.05,atk:44,ar:.9,c:'#7a6f5a',dsc:'節くれた装甲。実弾が効きにくいが火炎に弱い'},
+ {id:'dGob',n:'顎のミツクリザメ',hp:450,sp:158,bt:66,dmg:3,mw:1,nm:1,st:2,w:.7,sc:1.2,aoe:2,atk:75,ar:1,c:'#a8909c',dsc:'顎を突き出して2体まとめて薙ぎ払う'},
+ {id:'dCuke',n:'夢ナマコ',hp:270,sp:86,bt:58,dmg:2,mw:2,nm:1,st:2,noblock:1,split:2,w:.55,sc:1.05,atk:0,ar:9,c:'#9c5a6b',dsc:'低く這ってすり抜け、倒すと弾けて分かれる'},
+ {id:'dOar',n:'リュウグウノツカイ',hp:160,sp:245,bt:48,dmg:2,mw:3,nm:1,st:2,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#b8b0c4',dsc:'銀の帯がうねって部隊をすり抜ける'},
+ {id:'dVamp',n:'吸血コウモリダコ',hp:200,sp:168,bt:54,dmg:2,mw:4,nm:1,st:2,aura:1,w:.55,sc:.95,atk:36,ar:.6,c:'#5a3a4a',dsc:'外套を翻して周りの群れを昂ぶらせる'},
+ {id:'dSquid',n:'硝子イカ',hp:390,sp:118,bt:60,dmg:2,mw:6,nm:1,st:2,scl:1,w:.5,sc:1.15,atk:58,ar:.8,c:'#7f9cae',dsc:'透き通った鱗の鎧。実弾が効きにくいが⚡電撃に弱い'},
+ {id:'dCoel',n:'腐肉シーラカンス',hp:1080,sp:64,bt:150,dmg:5,mw:6,nm:1,st:2,armor:1,w:.35,sc:1.7,atk:112,ar:1.1,aoe:3,c:'#4a6b5a',dsc:'太古の肉鰭。ぶ厚い装甲で3体を薙ぎ払う'},
+ {id:'dWhal',n:'腐骸の鯨',hp:2600,sp:36,bt:600,dmg:14,boss:1,nm:1,st:2,armor:1,mw:5,sc:2.4,atk:109,ar:1.1,aoe:7,c:'#3f5a6b',dsc:'肉の落ちた鯨の骸。顎で7体を薙ぎ払う'},
  /* ===== ステージ2「沈んだ港」専用: ゾンビ化した海の生き物(st:2 の個体は他の波には出ない) =====
     役割はステージ1のゾンビと1対1で対応させてある(基本/快速/装甲/分裂/オーラ/高速/すり抜け/…) */
  {id:'sCrab',n:'腐れガニ',hp:78,sp:74,bt:12,dmg:1,mw:1,st:2,sc:1,atk:21,ar:.85,c:'#7d7a55',dsc:'甲羅ごと腐って這い寄る'},
@@ -1739,16 +1758,22 @@ const ZOMBIES=[
  /* ===== 各ステージの最終ボス(WAVE20だけに出る特別な1体。fin:1) ===== */
  {id:'fKing',n:'屍山の王',hp:2600,sp:34,bt:900,dmg:16,boss:1,fin:1,armor:1,aura:1,mw:20,sc:2.6,atk:123,ar:1.15,aoe:7,c:'#6b3a34',dsc:'融合した屍の山。周囲の群れを昂ぶらせ、薙ぎ払う'},
  {id:'fMoth',n:'深淵の母',hp:2600,sp:32,bt:900,dmg:16,st:2,boss:1,fin:1,scl:1,split:3,mw:20,sc:2.6,atk:120,ar:1.2,aoe:6,c:'#3f5a63',dsc:'港の底で孵り続けるもの。倒すと弾けて周りを巻き込み、仔が這い出る'},
+ {id:'fLevi',n:'原初の海淵',hp:3000,sp:42,bt:900,dmg:16,nm:1,st:2,boss:1,fin:1,scl:1,aura:1,split:3,mw:20,sc:2.7,atk:132,ar:1.1,aoe:8,c:'#2f4a63',dsc:'すべての深海の源。群れを狂わせ、薙ぎ払い、倒れても弾ける'},
  {id:'fBeast',n:'原初の獣',hp:3000,sp:44,bt:900,dmg:16,nm:1,boss:1,fin:1,armor:1,aura:1,split:3,mw:20,sc:2.7,atk:132,ar:1.1,aoe:8,c:'#6b2f3a',dsc:'すべての獣の源。群れを狂わせ、薙ぎ払い、倒すと弾けて仔を産み落とす'}
 ];
 const SENDABLE=[0,1,2,3];
+/* ⚠**プールは4つある**(2026-07-27にナイトメア×ステージ2を足した)。印の組み合わせで見分ける:
+   ①廃線=nmもstも無い / ②沈んだ港=stだけ / ③ナイトメア=nmだけ / ④深海のナイトメア=nmとstの両方。
+   ⚠だから `z.nm` や `z.st===2` だけで拾うと**④が混ざる**。必ず相手側を除くこと。 */
 const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&!z.nm&&!z.st);
-const NM_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm);
-const ST2_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===2);
-/* 最終ウェーブ専用のボス(ステージごと・ナイトメアは獣プール専用の1体) */
+const NM_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&!z.st);
+const ST2_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===2&&!z.nm);
+const NM2_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&z.st===2);/* 🌑×② 腐骸の鯨 */
+/* 最終ウェーブ専用のボス(ステージごと・ナイトメアはプールごとに1体) */
 const FIN_ZI=ZOMBIES.findIndex(z=>z.fin&&!z.st&&!z.nm);
-const FIN2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===2);
-const FINNM_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm);
+const FIN2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===2&&!z.nm);
+const FINNM_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&!z.st);
+const FINNM2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===2);/* 🌑×② 原初の海淵 */
 const NM_DIFF=5;/* 難易度インデックス: 5=ナイトメア */
 const isNM=()=>!!(G&&G.pveDiff===NM_DIFF);
 const UNITS=[
@@ -2044,9 +2069,11 @@ function zdexAdd(id){
  if(META.zdex[id])return false;
  META.zdex[id]=1;saveMeta();return true;}
 /* 図鑑の並び。ステージごとに分ける(ボスも最終ボスもその面の欄に入る) */
+/* ⚠**4プールぶん**に分けて並べる。⚠`z.st===2` だけ / `z.nm` だけ で拾うと深海ナイトメアが二重に出る */
 const ZDEX_G=[{n:'① 廃線ハイウェイ',f:z=>!z.st&&!z.nm},
- {n:'② 沈んだ港',f:z=>z.st===2},
- {n:'🌑 ナイトメア',f:z=>!!z.nm}];
+ {n:'② 沈んだ港',f:z=>z.st===2&&!z.nm},
+ {n:'🌑 ナイトメア',f:z=>!!z.nm&&!z.st},
+ {n:'🌑 深海のナイトメア',f:z=>!!z.nm&&z.st===2}];
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
 /* 英雄をUNITSの末尾に「特別な兵科」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=兵科の数え上げには U_N を使うこと
@@ -6675,6 +6702,333 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠**服を着ていないので ZW は使えない**。海の生き物は ZS の表(腹/ひれ/関節/腐肉)で分ける。
     ⚠**同じ部品を等間隔に並べない**=脚・棘・節・触腕は長さも間隔も必ず崩す。
     ⚠**棘やひれは胴より先に描く**=後から乗せると底辺の黒フチが体を横切って「櫛を乗せた」ように見える。 */
+ /* ===== 🌑深海のナイトメア(2026-07-27・ステージ2×ナイトメア専用の8種+ボス2体) =====
+    ⚠**沈んだ港の海の亡骸とは別物に見せる**のが要件=同じ魚でも「腐って死んだもの」ではなく
+      **深海の圧に潰された異形**にする。決め手は3つ:
+      ①**目が異常に大きい/または目が無い** ②**体が半透明で中が透ける** ③**自分で光る**。
+    ⚠ハリボテ感の4原因(等間隔・左右対称/直線の台形/一直線の腕/胴の上から生える棘)は全種で避ける。 */
+ if(Z.id==='dLant'){/* ⭐発光ハダカイワシ: 快速の雑魚(巨鼠の位置)。跳ねイワシと**必ず描き分ける**。
+    ⭐違いは**体側に並ぶ発光点**と**顔の半分を占める目**。⚠発光点は等間隔にしない(大小と間を崩す)。 */
+  const F=[[-19,-9,.62,.26,1.7,.6],[15,-14,.72,-.32,3.0,.76],[-3,-20,1.06,-.1,0,1]];
+  for(let k=0;k<3;k++){const f=F[k],hop=Math.abs(Math.sin(t*10+ph+f[4]))*9*f[2];
+   c.save();c.translate(f[0],f[1]-hop);c.rotate(f[3]);c.scale(f[2],f[2]);
+   c.fillStyle=shade(ZS.fin,f[5]*1.25);/* 尾。⚠深海魚なので細く長い */
+   c.beginPath();c.moveTo(-5,0);c.lineTo(-15.4,-4.4);c.quadraticCurveTo(-10.4,0,-14.6,4.8);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(-3.4,-4.6);c.lineTo(2.2,-8.4);c.lineTo(3.8,-3.8);c.closePath();c.fill();c.stroke();
+   const fb=()=>{c.beginPath();c.moveTo(-6.6,.4);
+    c.bezierCurveTo(-6,-7.6,4.4,-9.4,11.6,-2.6);
+    c.bezierCurveTo(6.4,7.4,-4.6,6.6,-6.6,.4);c.closePath();};
+   c.fillStyle=shade(Z.c,f[5]*.82);fb();c.fill();
+   c.save();fb();c.clip();/* 腹だけ明るく=背が暗いと魚に読める */
+   c.fillStyle=shade(ZS.bel,f[5]*.9);c.fillRect(-9,1.2,26,12);c.restore();
+   fb();c.stroke();
+   /* ⭐発光点。⚠**間隔も大きさも崩す**=等間隔に並べると縫い目に見える */
+   c.fillStyle='#d8ffe8';
+   for(const g of [[-4.4,3.2,1.5],[-.6,4.2,1.1],[3.4,4,1.7],[6.6,2.6,1.05],[1.4,-5.4,1.2]]){
+    c.globalAlpha=.55+.45*Math.sin(t*7+ph+g[0]);
+    c.beginPath();c.arc(g[0],g[1],g[2],0,7);c.fill();}
+   c.globalAlpha=1;
+   zEye(c,8,-3,3.4/Math.sqrt(f[2]));/* ⚠深海魚は目が大きい=ここで跳ねイワシと差が付く */
+   c.restore();}
+  c.lineWidth=2.6/s;rotMark(c,-2,-16,30,14,ph,t);
+  c.restore();return;}
+ if(Z.id==='dIsop'){/* ⭐屍喰らいグソクムシ(ダイオウグソクムシ): 装甲の基本個体。
+    ⭐**幅の違う背甲7節**が売り。⚠同じ角丸を等間隔に並べると芋虫になるので、
+      節ごとに幅・高さ・前後の重なりを変え、**中央がいちばん太い紡錘形**にする。
+    ⚠脚は左右対称に生やさない=歩く位相を左右でずらす。 */
+  const sw=walk*1.6;
+  /* 脚(下に描いて胴で根元を隠す)。⚠長さと角度を1本ずつ変える */
+  c.strokeStyle=INK;c.lineWidth=3.4/1;
+  for(const L of [[-15,.9,13],[-7,-.6,15],[1,.7,16],[9,-.5,14],[16,.8,11]]){
+   const sg=Math.sin(t*9+ph+L[0]*.3)*3;
+   c.beginPath();c.moveTo(L[0],-9);
+   c.quadraticCurveTo(L[0]-4+sg,-4,L[0]-7+sg*1.6,-1+L[1]);c.stroke();}
+  c.lineWidth=2.6/s;
+  /* 尾扇(3枚・角度違い) */
+  c.fillStyle=shade(ZS.fin,1.1);
+  for(const f of [[-6,-4],[0,0],[5,3.6]]){
+   c.beginPath();c.moveTo(-17,-14);c.lineTo(-27,-13+f[0]);c.lineTo(-24,-8.6+f[1]);c.closePath();c.fill();c.stroke();}
+  /* 背甲。[中心x, 半幅, 上端] を1節ずつ変える */
+  const SEG=[[-16,5.2,-16],[-9.6,6.6,-19],[-3,7.4,-21.4],[3.4,7.2,-21],[9.4,6.2,-19.4],[14.8,5,-17],[19.4,4,-15]];
+  for(let k=0;k<SEG.length;k++){const g=SEG[k];
+   c.fillStyle=shade(Z.c,k%2?1.06:.9);
+   c.beginPath();c.moveTo(g[0]-g[1],-8.6);
+   c.quadraticCurveTo(g[0],g[2],g[0]+g[1],-8.6);c.closePath();c.fill();c.stroke();}
+  /* 頭(兜)。⚠前へせり出させると「甲殻の顔」に読める */
+  c.fillStyle=shade(Z.c,1.14);
+  c.beginPath();c.moveTo(19,-8.6);c.quadraticCurveTo(25.4,-17.4,30.6,-9.4);
+  c.quadraticCurveTo(27,-5.4,19,-8.6);c.closePath();c.fill();c.stroke();
+  /* 触角2本(長さ違い) */
+  c.lineWidth=2.2;
+  for(const a of [[30,-13,16,-7],[29,-11.6,13,-3]]){
+   c.beginPath();c.moveTo(a[0],a[1]);
+   c.quadraticCurveTo(a[0]+a[2]*.6,a[1]-6+sw,a[0]+a[2],a[1]+a[3]);c.stroke();}
+  c.lineWidth=2.6/s;
+  zEye(c,26.6,-12.4,2.4);
+  rotMark(c,-2,-14,34,12,ph,t);
+  c.restore();return;}
+ if(Z.id==='dGob'){/* ⭐顎のミツクリザメ: 突進する中型(変異猪の位置)。
+    ⭐決め手は**前へ長く突き出た吻**と、その下から**別に飛び出す顎**。
+    ⚠影サメと同じ「速い魚」にしないため、**顎を体から離して前に出す**(周期で伸び縮み)。 */
+  const jaw=(Math.sin(t*4+ph)*.5+.5);/* 0..1 で顎が出る */
+  c.fillStyle=shade(ZS.fin,1.15);/* 尾(上葉が長い)・胸びれ */
+  c.beginPath();c.moveTo(-16,-20);c.lineTo(-34,-34);c.lineTo(-26,-18);c.lineTo(-32,-10);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-2,-14);c.lineTo(-10,-2);c.lineTo(4,-11);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-6,-27);c.lineTo(-2,-38);c.lineTo(5,-25);c.closePath();c.fill();c.stroke();/* 背びれ */
+  const bd=()=>{c.beginPath();c.moveTo(-17,-20);
+   c.bezierCurveTo(-12,-32,6,-34,20,-25);
+   c.bezierCurveTo(9,-11,-11,-11,-17,-20);c.closePath();};
+  c.fillStyle=shade(Z.c,.92);bd();c.fill();
+  c.save();bd();c.clip();c.fillStyle=shade(ZS.bel,1.06);c.fillRect(-20,-18,44,16);c.restore();
+  bd();c.stroke();
+  /* ⭐吻(上へ反った長い鼻)。⚠まっすぐの三角にしない */
+  c.fillStyle=shade(Z.c,1.08);
+  c.beginPath();c.moveTo(16,-30);c.quadraticCurveTo(34,-33.4,42,-27.6);
+  c.quadraticCurveTo(30,-24.4,17,-24.6);c.closePath();c.fill();c.stroke();
+  /* ⭐飛び出す顎(本体から離れて前へ) */
+  c.save();c.translate(6+jaw*13,0);
+  c.fillStyle=shade(ZS.rot,1.05);
+  c.beginPath();c.moveTo(8,-24);c.quadraticCurveTo(22,-22.6,25.6,-16);
+  c.quadraticCurveTo(14,-13.4,7,-17.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=PANE;/* 牙(不揃い) */
+  for(const k of [[11,4.4],[15.4,6],[19.6,4.2],[23,3]])
+   {c.beginPath();c.moveTo(k[0],-22.4);c.lineTo(k[0]+1.8,-22.4+k[1]);c.lineTo(k[0]+3.2,-22.4);c.closePath();c.fill();}
+  c.restore();
+  zEye(c,17.4,-28.4,2.6);
+  rotMark(c,-2,-22,34,14,ph,t);
+  c.restore();return;}
+ if(Z.id==='dCuke'){/* ⭐夢ナマコ(ユメナマコ): 這ってすり抜け、倒すと分かれる。
+    ⭐決め手は**半透明のドーム状の体**と、頭の上に立つ**帆(ヴェール)**。
+    ⚠すり抜ける個体なので**低く平たく**する(肉蜘蛛・這いヒトデと同じ理屈)。 */
+  const pu=Math.sin(t*3.4+ph)*1.6;/* ぷるぷる */
+  /* 管足(下・不等間隔で長さ違い) */
+  c.strokeStyle=INK;c.lineWidth=3;
+  for(const L of [[-16,7],[-9,9],[-2,8],[6,10],[13,7],[19,6]]){
+   const sg=Math.sin(t*8+ph+L[0]*.4)*2.4;
+   c.beginPath();c.moveTo(L[0],-6);c.quadraticCurveTo(L[0]+sg,-3,L[0]+sg*1.8,-6+L[1]);c.stroke();}
+  c.lineWidth=2.6/s;
+  const bd=()=>{c.beginPath();c.moveTo(-21,-5);
+   c.bezierCurveTo(-19,-19-pu,-6,-23-pu,3,-21-pu);
+   c.bezierCurveTo(15,-19,23,-13,24,-5);c.closePath();};
+  c.fillStyle=shade(Z.c,.86);bd();c.fill();
+  /* ⭐中が透ける=**内臓の管を体の中に描く**。半透明の表現はこれが一番安い */
+  c.save();bd();c.clip();
+  c.globalAlpha=.5;c.strokeStyle=shade(ZS.rot,1.2);c.lineWidth=3.4;
+  c.beginPath();c.moveTo(-16,-8);c.bezierCurveTo(-6,-16,4,-6,16,-12);c.stroke();
+  c.globalAlpha=.32;c.fillStyle=PANE;
+  for(const g of [[-11,-13,3.4],[2,-15,4.6],[13,-10,3]]){c.beginPath();c.arc(g[0],g[1],g[2],0,7);c.fill();}
+  c.restore();c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;
+  bd();c.stroke();
+  /* ⭐帆。⚠左右対称に立てない=前へ倒す */
+  c.fillStyle=shade(ZS.fin,1.25);
+  c.beginPath();c.moveTo(-2,-20-pu);c.quadraticCurveTo(9,-36-pu,20,-27-pu);
+  c.quadraticCurveTo(11,-19-pu,-2,-20-pu);c.closePath();c.fill();c.stroke();
+  zEye(c,19,-11,2.4);
+  rotMark(c,-2,-12,34,10,ph,t);
+  c.restore();return;}
+ if(Z.id==='dOar'){/* ⭐リュウグウノツカイ: 高速ですり抜ける(吸血蝙蝠の位置)。
+    ⭐決め手は**銀の長い帯がうねる**こと。⚠1本の棒にしない=波形で描いて厚みを持たせる。
+    ⚠背びれは**赤く、長さを1本ずつ変えて**立てる(等間隔の櫛にしない)。 */
+  const wv=x2=>Math.sin(t*7+ph+x2*.13)*5.2;
+  const top=[],bot=[];
+  for(let x2=-30;x2<=30;x2+=6){const yy=-22+wv(x2);top.push([x2,yy-4.4]);bot.push([x2,yy+4]);}
+  c.fillStyle=shade(Z.c,1.02);
+  c.beginPath();c.moveTo(top[0][0],top[0][1]);
+  for(const p2 of top)c.lineTo(p2[0],p2[1]);
+  for(let k=bot.length-1;k>=0;k--)c.lineTo(bot[k][0],bot[k][1]);
+  c.closePath();c.fill();c.stroke();
+  /* 赤い背びれ(長さバラバラ) */
+  c.fillStyle=shade(ZS.rot,1.25);
+  for(const g of [[-24,9],[-15,13],[-6,7],[3,15],[12,10],[21,6]]){
+   const yy=-22+wv(g[0])-4.4;
+   c.beginPath();c.moveTo(g[0]-2.4,yy);c.lineTo(g[0]+1,yy-g[1]);c.lineTo(g[0]+3,yy);c.closePath();c.fill();c.stroke();}
+  /* 頭(前端をふくらませる)と、冠のように伸びる2本の長い鰭条 */
+  const hy=-22+wv(30);
+  c.fillStyle=shade(Z.c,1.14);
+  c.beginPath();c.ellipse(31,hy,7.4,6.4,.2,0,7);c.fill();c.stroke();
+  c.strokeStyle=shade(ZS.rot,1.3);c.lineWidth=3;
+  for(const a of [[30,24],[16,17]]){
+   c.beginPath();c.moveTo(31,hy-5);
+   c.quadraticCurveTo(34,hy-5-a[0]*.6,28+Math.sin(t*5+ph)*5,hy-a[1]-6);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zEye(c,34,hy-1,2.8);
+  rotMark(c,-4,-20,40,12,ph,t);
+  c.restore();return;}
+ if(Z.id==='dVamp'){/* ⭐吸血コウモリダコ: 群れを昂ぶらせる(腐肉鴉の位置)。
+    ⭐決め手は**腕どうしを膜でつないだ傘**。⚠腕を8本等間隔に生やすと花火になるので、
+      **膜の縁を波打たせて1枚の傘**として描き、腕は縁から短く覗かせるだけにする。 */
+  const fl=Math.sin(t*5+ph)*3.4;/* 膜のはためき */
+  c.fillStyle=shade(Z.c,.82);/* 傘(外套膜) */
+  c.beginPath();c.moveTo(-24,-4+fl*.5);
+  c.quadraticCurveTo(-20,-16,-13,-6-fl);
+  c.quadraticCurveTo(-7,-16,-1,-5+fl);
+  c.quadraticCurveTo(5,-17,12,-6-fl);
+  c.quadraticCurveTo(18,-15,23,-3+fl*.6);
+  c.bezierCurveTo(26,-24,10,-38,-2,-36);
+  c.bezierCurveTo(-16,-34,-26,-20,-24,-4+fl*.5);c.closePath();c.fill();c.stroke();
+  /* 縁から覗く腕(長さ違い・左右非対称) */
+  c.strokeStyle=INK;c.lineWidth=2.8;
+  for(const L of [[-19,7],[-9,11],[2,8],[13,12],[20,6]]){
+   c.beginPath();c.moveTo(L[0],-6);
+   c.quadraticCurveTo(L[0]+fl,-2,L[0]-2+fl*1.4,-6+L[1]);c.stroke();}
+  c.lineWidth=2.6/s;
+  /* 胴(傘の上に載る頭)。⚠なめらかな球にしない=後ろへ尖らせる */
+  c.fillStyle=shade(Z.c,1.12);
+  c.beginPath();c.moveTo(-14,-31);c.quadraticCurveTo(-6,-44,10,-38);
+  c.quadraticCurveTo(20,-33,14,-27);c.quadraticCurveTo(0,-22,-14,-31);c.closePath();c.fill();c.stroke();
+  /* ⭐**異様に大きい赤い目**=これがコウモリダコの顔 */
+  c.fillStyle='#d94a4a';c.beginPath();c.arc(9,-33.6,5.4,0,7);c.fill();c.stroke();
+  c.fillStyle=INK;c.beginPath();c.arc(10.6,-33.6,2.4,0,7);c.fill();
+  rotMark(c,-2,-22,34,14,ph,t);
+  c.restore();return;}
+ if(Z.id==='dSquid'){/* ⭐硝子イカ: 鱗の鎧を持つ中型(⚡電撃に弱い)。
+    ⭐決め手は**透き通った胴の中に内臓が浮いて見える**こと。⚠溶けクラゲと被らないよう、
+      クラゲは「傘+垂れる触手」、こちらは**尖った円錐の胴+三角のひれ+束ねた腕**にする。 */
+  const sw=Math.sin(t*6+ph)*3;
+  /* 腕(束。⚠1本ずつ長さと反りを変える) */
+  c.strokeStyle=INK;c.lineWidth=3.2;
+  for(const L of [[7,-13,16],[5,-9,20],[9,-6,14],[3,-16,12],[8,-11,22]]){
+   c.beginPath();c.moveTo(14,L[1]-6);
+   c.quadraticCurveTo(14+L[2]*.6,L[1]-6+sw,14+L[2],L[1]-6+L[0]);c.stroke();}
+  c.lineWidth=2.6/s;
+  c.fillStyle=shade(ZS.fin,1.2);/* ひれ(左右で大きさを変える) */
+  c.beginPath();c.moveTo(-16,-26);c.lineTo(-30,-32);c.lineTo(-17,-17);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-16,-20);c.lineTo(-27,-11);c.lineTo(-15,-13);c.closePath();c.fill();c.stroke();
+  const bd=()=>{c.beginPath();c.moveTo(-19,-22);
+   c.bezierCurveTo(-14,-33,4,-35,15,-25);
+   c.bezierCurveTo(6,-12,-13,-13,-19,-22);c.closePath();};
+  c.fillStyle=shade(Z.c,.9);bd();c.fill();
+  /* ⭐中が透ける: 内臓を胴の中に浮かせる */
+  c.save();bd();c.clip();
+  c.globalAlpha=.42;c.fillStyle=shade(ZS.rot,1.1);
+  c.beginPath();c.ellipse(-6,-23,7.6,4.4,.3,0,7);c.fill();
+  c.globalAlpha=.3;c.fillStyle=PANE;
+  c.beginPath();c.ellipse(4,-27,4.4,2.6,-.2,0,7);c.fill();
+  c.restore();c.globalAlpha=1;
+  bd();c.stroke();
+  zEye(c,12.6,-24,3.2);
+  rotMark(c,-2,-20,32,14,ph,t);
+  c.restore();return;}
+ if(Z.id==='dCoel'){/* ⭐腐肉シーラカンス: 装甲の大物(屍熊の位置)。
+    ⭐決め手は**肉質の柄が付いたひれ(肉鰭)**と**三葉の尾**。⚠ただの大きい魚にしないため、
+      ひれを「腕のように関節で曲げて」体から離す。 */
+  const sw=walk*3.2;
+  /* 三葉の尾(上・中・下で長さが違う) */
+  c.fillStyle=shade(ZS.fin,1.18);
+  c.beginPath();c.moveTo(-26,-34);c.lineTo(-44,-46);c.lineTo(-34,-30);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-30,-30);c.lineTo(-52,-28+sw);c.lineTo(-30,-24);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-26,-24);c.lineTo(-42,-13);c.lineTo(-30,-21);c.closePath();c.fill();c.stroke();
+  /* ⭐肉鰭。⚠**柄→ひれ**の2段にすると「腕」に見えて他の魚と差が付く */
+  const lobe=(bx,by,ang,ln)=>{c.save();c.translate(bx,by);c.rotate(ang+sw*.03);
+   c.fillStyle=shade(Z.c,1.05);
+   c.beginPath();c.moveTo(-4,-4);c.lineTo(ln,-5);c.lineTo(ln,4);c.lineTo(-4,4);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(ZS.fin,1.1);
+   c.beginPath();c.moveTo(ln-1,-6);c.lineTo(ln+13,-12);c.lineTo(ln+15,2);c.lineTo(ln-1,6);c.closePath();c.fill();c.stroke();
+   c.restore();};
+  lobe(-6,-16,.5,11);lobe(12,-18,.9,9);/* 下の2枚(左右で角度と長さを変える) */
+  lobe(-10,-44,-.5,10);/* 背の1枚 */
+  const bd=()=>{c.beginPath();c.moveTo(-28,-30);
+   c.bezierCurveTo(-24,-50,6,-56,28,-42);
+   c.bezierCurveTo(34,-32,20,-16,-4,-17);
+   c.bezierCurveTo(-18,-17,-26,-22,-28,-30);c.closePath();};
+  c.fillStyle=shade(Z.c,.9);bd();c.fill();
+  c.save();bd();c.clip();c.fillStyle=shade(ZS.bel,.92);c.fillRect(-32,-26,70,18);
+  /* ⭐厚い鱗。⚠等間隔の格子にせず、行ごとにずらす */
+  c.globalAlpha=.34;c.strokeStyle=INK;c.lineWidth=1.6;
+  for(let r2=0;r2<4;r2++)for(let k=0;k<6;k++){
+   c.beginPath();c.arc(-22+k*9+(r2%2?4.5:0),-46+r2*8,5.4,-.6,1.1);c.stroke();}
+  c.restore();c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;
+  bd();c.stroke();
+  c.fillStyle=shade(ZS.rot,1.1);/* 開いた口 */
+  c.beginPath();c.moveTo(20,-32);c.quadraticCurveTo(32,-30,30,-23);
+  c.quadraticCurveTo(22,-22,18,-26);c.closePath();c.fill();c.stroke();
+  c.fillStyle=PANE;
+  for(const k of [[21,4],[25,5.4],[29,3.6]])
+   {c.beginPath();c.moveTo(k[0],-30);c.lineTo(k[0]+1.8,-30+k[1]);c.lineTo(k[0]+3.2,-30);c.closePath();c.fill();}
+  zEye(c,22,-40,3);
+  rotMark(c,-4,-32,48,20,ph,t);
+  c.restore();return;}
+ if(Z.id==='dWhal'){/* ⭐腐骸の鯨(深海ナイトメアのボス): 肉の落ちた鯨の骸。
+    ⭐決め手は**むき出しの肋骨**。⚠肉塊の主(こぶだらけ)・触腕の主(触手)と被らせない。
+    ⚠肋骨は等間隔に並べない=前が太く後ろが細く、間隔も詰めたり開けたりする。 */
+  const sw=walk*4;
+  c.fillStyle=shade(ZS.fin,1.1);/* 尾びれ(ぼろぼろ) */
+  c.beginPath();c.moveTo(-40,-40);c.lineTo(-66,-58);c.lineTo(-58,-40);
+  c.lineTo(-70,-30);c.lineTo(-52,-32);c.lineTo(-44,-26);c.closePath();c.fill();c.stroke();
+  /* 胴(前が重く後ろが細い) */
+  const bd=()=>{c.beginPath();c.moveTo(-42,-38);
+   c.bezierCurveTo(-36,-64,10,-76,44,-58);
+   c.bezierCurveTo(56,-46,32,-22,-6,-26);
+   c.bezierCurveTo(-28,-28,-40,-30,-42,-38);c.closePath();};
+  c.fillStyle=shade(Z.c,.88);bd();c.fill();
+  c.save();bd();c.clip();
+  c.fillStyle=shade(ZS.bel,.8);c.fillRect(-46,-36,110,22);
+  /* ⭐肋骨。⚠**前ほど太く・間隔も不揃い** */
+  c.strokeStyle=PANE;c.globalAlpha=.85;
+  for(const R of [[26,4.6,28],[16,4.2,30],[7,3.6,29],[-3,3.2,26],[-11,2.6,22],[-20,2.2,18],[-27,1.8,14]]){
+   c.lineWidth=R[1];
+   c.beginPath();c.moveTo(R[0],-64);c.quadraticCurveTo(R[0]-7,-64+R[2]*.6,R[0]-3,-64+R[2]);c.stroke();}
+  /* 背骨 */
+  c.globalAlpha=.7;c.lineWidth=5;
+  c.beginPath();c.moveTo(-38,-46);c.quadraticCurveTo(0,-68,40,-56);c.stroke();
+  c.restore();c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;
+  bd();c.stroke();
+  /* 顎(下顎を落として大きく開く) */
+  c.fillStyle=shade(Z.c,1.06);
+  c.beginPath();c.moveTo(30,-56);c.quadraticCurveTo(58,-54,64,-44);
+  c.quadraticCurveTo(46,-42,28,-46);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(ZS.rot,1);
+  c.beginPath();c.moveTo(28,-42);c.quadraticCurveTo(54,-38+sw,60,-28+sw);
+  c.quadraticCurveTo(40,-24,26,-32);c.closePath();c.fill();c.stroke();
+  c.fillStyle=PANE;/* 髭板を牙のように(不揃い) */
+  for(const k of [[33,7],[39,9.4],[45,6.6],[51,8.2],[57,5]])
+   {c.beginPath();c.moveTo(k[0],-45);c.lineTo(k[0]+2.2,-45+k[1]);c.lineTo(k[0]+4,-45);c.closePath();c.fill();}
+  zEye(c,33,-54,3.4);
+  rotMark(c,-6,-42,64,26,ph,t);
+  c.restore();return;}
+ if(Z.id==='fLevi'){/* ⭐原初の海淵(深海ナイトメアの最終ボス): すべての深海の源。
+    ⭐決め手は**縦に裂けた口**と**輪になって並ばない無数の目**と**誘い出す提灯**。
+    ⚠原初の獣(毛と角)・深淵の母(卵嚢)と被らせない=こちらは**光と口**で押す。 */
+  const pu=Math.sin(t*2.6+ph)*3.4,gl=.5+.5*Math.sin(t*4+ph);
+  /* 触腕(背後・長さバラバラ) */
+  c.strokeStyle=shade(Z.c,.7);c.lineWidth=7;
+  for(const L of [[-30,-70,-40],[-24,-84,-30],[-36,-56,-22],[-18,-92,-16]]){
+   c.beginPath();c.moveTo(-14,-52);
+   c.bezierCurveTo(L[0],L[1],L[0]-24,L[1]+18,L[0]-34,L[1]+L[2]+34+pu);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  /* 本体(前が重い塊。⚠なめらかな楕円にしない=こぶで崩す) */
+  const bd=()=>{c.beginPath();c.moveTo(-40,-30);
+   c.bezierCurveTo(-46,-58,-30,-84,-2,-86+pu);
+   c.bezierCurveTo(24,-88,50,-70,52,-46);
+   c.bezierCurveTo(54,-26,26,-16,-8,-19);
+   c.bezierCurveTo(-28,-21,-38,-22,-40,-30);c.closePath();};
+  c.fillStyle=shade(Z.c,.92);bd();c.fill();
+  c.save();bd();c.clip();
+  c.fillStyle=shade(ZS.bel,.62);c.fillRect(-44,-34,110,24);
+  c.globalAlpha=.3;c.fillStyle='#7fe0ff';/* 体内で光る */
+  for(const g of [[-14,-58,16],[16,-46,20],[2,-72,12]]){
+   c.beginPath();c.arc(g[0],g[1],g[2]*(.7+gl*.3),0,7);c.fill();}
+  c.restore();c.globalAlpha=1;bd();c.stroke();
+  /* ⭐縦に裂けた口。⚠横一文字にすると笑って見える */
+  c.fillStyle=INK;
+  c.beginPath();c.moveTo(40,-64);c.quadraticCurveTo(30,-46,42,-26);
+  c.quadraticCurveTo(52,-46,40,-64);c.closePath();c.fill();
+  c.fillStyle=PANE;/* 牙(両縁から互い違いに) */
+  for(const k of [[-1,-58,5],[1,-50,6.4],[-1,-42,5.4],[1,-34,4.6]]){
+   c.beginPath();c.moveTo(38+k[0]*4,k[1]);c.lineTo(38+k[0]*4+k[2]*(k[0]>0?-1:1),k[1]+3);
+   c.lineTo(38+k[0]*4,k[1]+6);c.closePath();c.fill();}
+  /* ⭐提灯(前に垂れる誘引突起)。⚠これが「深海」の記号 */
+  c.strokeStyle=INK;c.lineWidth=3.2;
+  c.beginPath();c.moveTo(28,-80);c.quadraticCurveTo(58,-92,62,-64+pu);c.stroke();
+  c.globalAlpha=.35+gl*.4;c.fillStyle='#bff4ff';
+  c.beginPath();c.arc(62,-62+pu,11,0,7);c.fill();
+  c.globalAlpha=1;c.fillStyle='#eaffff';
+  c.beginPath();c.arc(62,-62+pu,4.4,0,7);c.fill();c.strokeStyle=INK;c.lineWidth=2.6/s;c.stroke();
+  /* ⭐無数の目。⚠等間隔・同じ大きさにしない */
+  for(const e of [[8,-70,4.4],[-6,-60,3],[18,-58,3.6],[-16,-46,2.6],[4,-44,3.2],[-2,-76,2.4],[24,-70,2.8]])
+   zEye(c,e[0],e[1],e[2]);
+  rotMark(c,-6,-46,72,30,ph,t);
+  c.restore();return;}
  if(Z.id==='sCrab'){/* ⭐腐れガニ(第101弾に描き直し): ステージ2の基本個体(ウォーカーの位置)。
     ⚠それまで「楕円+左右対称の台形のハサミ+等間隔の3本脚」で、実寸では羽の生えた塊に見えた。
     ⭐**片方のハサミだけ大きくする**(シオマネキ)。左右非対称にすると一気に生き物に読める。
@@ -9572,13 +9926,18 @@ function buildTide(wave){
  /* 終盤(W12〜)は増え方を鈍らせる=画面が敵で埋まらないように */
  const taper=wave>=12?Math.max(0,(wave-11)*.5):0;
  const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1));
- /* 敵の顔ぶれは「ナイトメア=獣」「ステージ2=海の亡骸」「それ以外=ゾンビ」の完全別プール */
+ /* ⭐敵の顔ぶれは**4つの完全別プール**(2026-07-27に「🌑×ステージ2」を足した)。
+    ①廃線=ゾンビ / ②沈んだ港=海の亡骸 / ③ナイトメア=獣 / ④🌑×②=変異した深海の生き物。
+    ⚠それまでは**ナイトメアならステージを問わず獣**だったので、沈んだ港で陸の獣が出ていた。 */
  const nmOn=isNM();
- const st2=!nmOn&&G.pve&&!G.coop&&stageZs()===2;
+ const on2=G.pve&&!G.coop&&stageZs()===2;/* いま2面か(難易度は見ない) */
+ const st2=!nmOn&&on2;
+ const nm2=nmOn&&on2;/* ④深海のナイトメア */
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
   if(Z.boss||Z.mw>wave)return false;
-  if(nmOn)return !!Z.nm;
-  if(st2)return Z.st===2;
+  if(nm2)return !!Z.nm&&Z.st===2;
+  if(nmOn)return !!Z.nm&&!Z.st;/* ⚠**!Z.st を忘れると獣の波に深海が混ざる** */
+  if(st2)return Z.st===2&&!Z.nm;/* ⚠同じく **!Z.nm** を忘れると沈んだ港に深海ナイトメアが出る */
   return !Z.nm&&!Z.st;});
  const pool=[];
  /* 強敵・すり抜け個体は重み(w)で出現を絞る */
@@ -9592,7 +9951,11 @@ function buildTide(wave){
  /* 通常ボス=WAVE10と15 / 特別な最終ボス=WAVE20。新兵(5)・兵長(7)にはボスが出ない */
  if(wave===10||wave===15||wave===20||(!G.pve&&wave%5===0)){
   const fin=!!(G.pve&&wave>=20);
-  const bi=nmOn?((fin&&FINNM_ZI>=0)?FINNM_ZI:NM_BOSS_ZI):st2?((fin&&FIN2_ZI>=0)?FIN2_ZI:ST2_BOSS_ZI):((fin&&FIN_ZI>=0)?FIN_ZI:BOSS_ZI);
+  /* ⚠**プール4つぶん**を同じ順で見ること(④→③→②→①)。④を先に見ないと獣のボスが出る */
+  const bi=nm2?((fin&&FINNM2_ZI>=0)?FINNM2_ZI:NM2_BOSS_ZI)
+   :nmOn?((fin&&FINNM_ZI>=0)?FINNM_ZI:NM_BOSS_ZI)
+   :st2?((fin&&FIN2_ZI>=0)?FIN2_ZI:ST2_BOSS_ZI)
+   :((fin&&FIN_ZI>=0)?FIN_ZI:BOSS_ZI);
   pool.splice(Math.floor(pool.length/2),0,{dl:1.0,z:zSpec(bi,mul*(1+wave*.02)*(G.pve?D.boss/D.hp:1),wave),boss:1});}
  /* 毎ウェーブのエリート個体(W3以降・後半に配置) */
  if(wave>=3){const ne=(1+Math.floor(wave/8))*(G.coop?G.np:1);
@@ -9871,7 +10234,10 @@ function killZ(C,z){
    addFx(C,'ring',z.px,z.py,'',{r:br,col:TOXIC});
    addP(C,14,z.px,z.py-18*CH_UP,{sp:210,up:70,g:460,life:.55,r:3.2,col:'#9fbf4a',jx:9,jy:7});
    C.shake=Math.max(C.shake||0,.24);if(C.isMe)sfx.boom&&sfx.boom();}
-  const Zp=ZOMBIES[z.zi]||{},base=ZOMBIES.findIndex(Q=>!Q.boss&&Q.mw<=1&&(Zp.nm?Q.nm:Zp.st?Q.st===Zp.st:(!Q.nm&&!Q.st)));
+  /* ⚠**プールは4つ**(廃線/沈んだ港/ナイトメア/深海のナイトメア)。印を両方見ないと、
+     深海ナイトメアの分裂から**陸の獣(巨鼠)が湧く**。⚠印が完全に一致するものだけを探すこと。 */
+  const Zp=ZOMBIES[z.zi]||{},pn=!!Zp.nm,ps=Zp.st||0,
+   base=ZOMBIES.findIndex(Q=>!Q.boss&&Q.mw<=1&&!!Q.nm===pn&&(Q.st||0)===ps);
   const bi=base<0?0:base;
   for(let i=0;i<z.split;i++)C.zombies.push(mkZ(zSpec(bi,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i)));}
 }
@@ -14035,14 +14401,15 @@ function rgFoe(zi,A){
   boss:!!Z.boss,armor:!!(Z.armor||Z.scl),aura:!!Z.aura,split:!!Z.split,eva:!!Z.noblock,
   bst:0,bdf:0,bsp:0,stun:0,dead:0,fade:1,hitT:0,cd:0};
 }
-/* エリアの敵プール。ステージ1=普通のゾンビ / ステージ2=海の生き物 / ナイトメア=獣 */
+/* エリアの敵プール。ステージ1=普通のゾンビ / ステージ2=海の生き物 / ナイトメア=獣。
+   ⚠**深海のナイトメア(nm:1+st:2)は冒険には出さない**=対応するエリアが無いため。
+     `z.nm` だけ / `z.st===2` だけで拾うと混ざるので、**必ず相手側を除く**こと。 */
+const rgOK=(Z,A)=>A.th==='night'?(!!Z.nm&&!Z.st):A.si===1?(Z.st===2&&!Z.nm):(!Z.st&&!Z.nm);
 function rgPool(A){
  const out=[];
  for(let i=0;i<ZOMBIES.length;i++){
   const Z=ZOMBIES[i];
-  if(A.th==='night'){if(!Z.nm)continue;}
-  else if(A.si===1){if(Z.st!==2)continue;}
-  else {if(Z.st||Z.nm)continue;}
+  if(!rgOK(Z,A))continue;
   if(Z.fin)continue;                    /* 最終ボスは「ぬし」専用 */
   if(Z.boss&&A.di<3)continue;           /* ボス級は難しいエリアだけ雑魚にも混ざる */
   out.push(i);}
@@ -14052,9 +14419,7 @@ function rgLord(A){
  const pool=[];
  for(let i=0;i<ZOMBIES.length;i++){
   const Z=ZOMBIES[i];
-  if(A.th==='night'){if(!Z.nm)continue;}
-  else if(A.si===1){if(Z.st!==2)continue;}
-  else {if(Z.st||Z.nm)continue;}
+  if(!rgOK(Z,A))continue;
   if(Z.boss)pool.push(i);}
  if(!pool.length)return rgPool(A)[0];
  /* 難易度が高いエリアほど「最終ボス(fin)」が出る */
