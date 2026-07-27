@@ -1078,6 +1078,21 @@ function groan(f0,dur,vol){if(!AC||muted)return;try{const t=AC.currentTime;
   o.frequency.exponentialRampToValueAtTime(Math.max(28,f0*.55),t+dur);
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+dur*.28);g.gain.exponentialRampToValueAtTime(.001,t+dur);
   o.connect(g).connect(AC.destination);o.start(t);o.stop(t+dur+.05);}}catch(e){}}
+/* ⭐**ノイズを削って作る「本物っぽい」音**(2026-07-27ユーザー判断
+     「こういう電子音じゃない」=オシレータ(beep)は何をどう重ねても必ず電子音に聞こえる)。
+   ⚠爆発・衝撃・地鳴りは**ノイズをローパスで削る**のが正解。倍音が連続しているので生音に聞こえる。
+   ⚠**ノイズの元は1回だけ作って使い回す**(毎回44100個の乱数を作ると連射で重くなる)。
+   ⚠f0→f1 は**フィルタの開き具合**。低く閉じるほど「ドーン」、高く開くほど「シャー」。
+     ⚠f1 は130を下回らせない=スマホのスピーカーが鳴らせず、音が消えたように聞こえる。 */
+let NZBUF=null;
+function nzHit(f0,f1,dur,vol,q){if(!AC||muted)return;try{const t=AC.currentTime;
+ if(!NZBUF){const n=Math.floor(AC.sampleRate*2),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=Math.random()*2-1;NZBUF=b;}
+ const s=AC.createBufferSource();s.buffer=NZBUF;s.loop=true;
+ const lp=AC.createBiquadFilter();lp.type='lowpass';lp.Q.value=q||6;
+ lp.frequency.setValueAtTime(f0,t);lp.frequency.exponentialRampToValueAtTime(Math.max(130,f1),t+dur);
+ const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+ s.connect(lp).connect(g).connect(AC.destination);s.start(t);s.stop(t+dur+.02);}catch(e){}}
 /* <<SFXB>> */
 /* 効果音(Sonniss #GameAudioGDC Bundle・ROYALTY-FREE・商用可・クレジット不要)。
    ⚠この塊は tool_sfx.js が書き換える。手で編集しない。[base64, 再生ピッチ] */
@@ -1202,22 +1217,16 @@ const SFXSYN={
       **スマホのスピーカーは200Hz以下をほとんど鳴らせない**。低い音を作りたい時ほど、
       重低音そのものではなく**倍音の多い波形(sawtooth)を中音域で下降させる**こと。
     ⚠鳴る帯域(900→130Hz)に収めたうえで、下降を1.3秒かけてゆっくりやる=「どぅーーん」になる。 */
- slowmo:()=>{beep(900,300,.28,'square',.16);beep(560,140,1.3,'sawtooth',.22);
-  beep(300,150,1.5,'triangle',.16);setTimeout(()=>beep(400,190,.8,'sawtooth',.13),620);},
- /* ⭐**「どぅーん」の候補3つ**(2026-07-27ユーザー判断「スローモーションはいいけど音が微妙」)。
-    ⚠**音の good/bad は言葉で詰めても収束しない**ので、鳴らして選べる形にした。
-      `?sfx=1` の一覧に並べてあるので、タップして選んでもらい、決まったら残りは消すこと。
-    ⚠3つとも**200Hz以下へは落とさない**(スマホで鳴らないため)。 */
- slowA:()=>{beep(520,140,1.3,'sawtooth',.20);beep(780,210,1.3,'triangle',.10);
-  beep(1040,280,1.15,'sine',.07);},/* A テープが止まる: 3本が一緒に下がる */
- slowB:()=>{beep(320,150,.5,'sawtooth',.24);beep(640,300,.2,'square',.12);
-  [180,370,580].forEach((d,i)=>setTimeout(()=>beep(300-i*34,150,.45,'triangle',.14/(i+1.3)),d));},/* B ドーン+こだま */
- slowC:()=>{beep(392,380,1.6,'triangle',.17);beep(395,383,1.6,'sine',.14);
-  beep(262,258,1.8,'sine',.11);setTimeout(()=>beep(784,772,1,'sine',.06),40);},/* C ゴーン: 鐘 */
+ /* ⚠**候補A/B/Cは全部オシレータで作っていて、どれも電子音だった**(ユーザー判断
+      「Bが近いけど、音が高すぎる上にこういう電子音じゃない」)。B(ドーン+こだま)の骨格を残したまま、
+      **中身をノイズ(nzHit)に差し替え、帯域も1オクターブ下げた**のがこれ。
+    ⚠一発叩いて、こだまが3回returnする形。⚠低いサイン波は「体」を足すためだけに薄く重ねる。 */
+ slowmo:()=>{nzHit(760,140,.75,.34);beep(165,120,.7,'triangle',.13);
+  [210,450,730].forEach((d,i)=>setTimeout(()=>nzHit(520-i*90,135,.55,.20/(i+1.4)),d));},
  /* ⭐**酸爆発**。⚠2026-07-27に「酸っぽいけど爆発感が無い」で作り直した=
     溶ける高音(しゅわっ)の前に**弾ける低音の芯**を置く。芯が無いと「霧吹き」に聞こえる。 */
- acidPop:()=>{beep(180,48,.34,'sawtooth',.20);beep(900,180,.14,'sawtooth',.13);
-  beep(420,120,.26,'square',.11);setTimeout(()=>beep(1400,500,.22,'triangle',.07),70);},
+ acidPop:()=>{nzHit(1500,180,.32,.26);beep(190,135,.3,'triangle',.12);
+  setTimeout(()=>nzHit(4200,1400,.3,.10,2),50);},/* 弾ける芯 → 溶ける「しゅわ」 */
  win:()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,f,.18,'square',.1),i*140));},
  lose:()=>{[400,340,280,200].forEach((f,i)=>setTimeout(()=>beep(f,f*.9,.22,'triangle',.1),i*170));}
 };
@@ -1306,10 +1315,7 @@ const SFX_LBL={
  bossKill:['ボス撃破','','ev'], clearJ:['ウェーブ制圧','波をしのいだ','ev'],
  /* ⚠**新しい合成音は必ずここに足す**=?sfx=1 で鳴らして確かめられないと、
     実機で「聞こえない」と言われた時に原因(音量なのか帯域なのか呼ばれていないのか)が切り分けられない */
- slowmo:['どぅーん(いま入っている)','ウェーブ制圧のスローモーション','ev'],
- slowA:['どぅーん候補A テープが止まる','3本の音が一緒に下がる','ev'],
- slowB:['どぅーん候補B ドーン+こだま','一発殴って余韻が返る','ev'],
- slowC:['どぅーん候補C ゴーン(鐘)','低く長く響く','ev'],
+ slowmo:['どぅーん','ウェーブ制圧のスローモーション','ev'],
  acidPop:['酸爆発','酸まみれの敵が倒れた','ev'],
  win:['勝利','クリア','ev'], lose:['敗北','コア陥落','ev']};
 const SFX_TAB=[['tw','🔫 タワー'],['z','🧟 ゾンビ'],['ui','🖥 UI・経済'],['ev','🏁 節目']];
