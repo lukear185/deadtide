@@ -1732,8 +1732,15 @@ const twStatsRaw=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r'
  :TOWERS[ti].cont?(TOWERS[ti].heatN?['d','h','m']:['d','b','g'])
  :TOWERS[ti].heatN?['d','r','h']
  :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
+/* ⚠⚠**冷却塔(frzN)だけは⏩連射を外さない**(2026-07-27にユーザー指摘
+     「ドローンとかも進化すると攻撃速度ないけど大丈夫?」を調べて見つけた)。理由は3つ:
+   ①**威力の枠を持っていない**ので、下の「連射を失った塔は⚔攻撃を厚くする」補正が一切効かず、
+     外すと**ただ弱くなるだけ**になる。
+   ②凍らせられる回数は**10回で頭打ち**なので、連射を伸ばしても無限には効かない。
+   ③そもそも撃つ間隔が6秒の塔で、「早すぎてうるさい」の対象ではない。
+   ⚠ドローン母艦は⚔攻撃を持っているので補正が効く=外して問題ない(調べて確認済み)。 */
 const twStats=ti=>{const T=TOWERS[ti],L=twStatsRaw(ti);
- return (T&&T.grd&&T.type!=='eco')?L.filter(k=>k!=='r'):L;};
+ return (T&&T.grd&&T.type!=='eco'&&!T.frzN)?L.filter(k=>k!=='r'):L;};
 /* ⭐⭐**⏩連射を失った塔だけ、⚔攻撃の1段を大きくして帳尻を合わせる**(2026-07-27ユーザー指摘
      「そもそも既に進化後の攻撃速度上昇の強化が無くて他の強化になってるやつがあるから、
        それが強くなっちゃうと思うからいい感じにバランス取って」)。
@@ -1780,6 +1787,9 @@ const usMinSt=(ti,st)=>{const T=TOWERS[ti];
    ⚠canGrade も upTower もこの上限を見ること(usMax だけを見ると進化できなくなる) */
 const usCap=(ti,st)=>{const T=TOWERS[ti];
  if(st==='n'&&T&&T.drn)return Math.min(usMinSt(ti,st)+USTAT_MAX,DR_MAX-(T.drn||1));
+ /* ⚠**❄冷却回数は進化しても5段まで**(2026-07-27)。上の twFrzN が5段までしか数えないので、
+    ここで止めないと**6段目以降を買えるのに何も起きない死んだ強化**になる。 */
+ if(st==='f')return USTAT_MAX;
  return usMinSt(ti,st)+USTAT_MAX;};
 const twChain=(T,tw)=>T.chain+Math.round(usEff((tw&&tw.us&&tw.us.c)||0));
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));

@@ -1101,6 +1101,23 @@ function checkTwNew(){
     if(Math.abs(dps/7.231-1)>.08){console.log('FAIL: 進化フルのDPSが作り替える前とずれている x'+dps.toFixed(2)+' (旧7.23)');process.exit(1);}
     console.log('進化の強化: 連射は素MAX(x'+(1/twRateM(tw)).toFixed(2)+')で頭打ち / フル強化のDPS x'+dps.toFixed(2)+'(旧7.23) OK');}}
   me.towers[si]=null;
+  /* ⭐**進化後の「買えるのに何も起きない強化」を全塔で潰す**(2026-07-27ユーザー指摘
+       「ドローンとかも進化すると攻撃速度ないけど大丈夫?」を調べて見つけた)。
+     ⚠❄冷却回数は twFrzN が5段までしか数えないので、上限を止めないと6段目から死に枠になる。
+     ⚠**買える枠が1つしかない塔も作らない**=進化しても伸ばす楽しみが無くなる。 */
+  {const bad=[],thin=[];
+   for(let i=0;i<TOWERS.length;i++){const T=TOWERS[i];
+    if(!T.grd||T.type==='sup')continue;
+    const st=twStats(i),live=st.filter(k=>usCap(i,k)>usMinSt(i,k));
+    for(const k of st)if(usCap(i,k)<usMinSt(i,k))bad.push(T.n+':'+k);
+    if(live.length<2)thin.push(T.n+'('+live.length+'枠)');}
+   if(bad.length){console.log('FAIL: 進化後の上限が引き継ぎ段より低い '+bad.join(','));process.exit(1);}
+   if(thin.length){console.log('FAIL: 進化後に伸ばせる枠が1つ以下の塔がある '+thin.join(','));process.exit(1);}
+   /* ⚠冷却塔は⏩連射を外さない例外(威力枠が無く、外すとただ弱くなるだけのため) */
+   {const ci=TOWERS.findIndex(t=>t.id==='cryo2');
+    if(ci<0||twStats(ci).indexOf('r')<0){console.log('FAIL: 極低温塔から⏩連射が外れている(威力枠が無いので外してはいけない)');process.exit(1);}
+    if(usCap(ci,'f')!==USTAT_MAX){console.log('FAIL: ❄冷却回数が5段で止まっていない');process.exit(1);}}
+   console.log('進化後の強化枠: 全'+TOWERS.filter(t=>t.grd&&t.type!==\'sup\').length+'種すべて2枠以上が実際に伸びる / 死に枠なし OK');}
   /* 工房だけは今までどおり0に戻ること(次の段の素が前の段のMAXより上なので下がらない) */
   {const eti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
    me.scrap=9999999;me.towers[esi]=null;me.unlocked=Math.max(me.unlocked,eti+1);
