@@ -902,6 +902,10 @@ function drawIcoText(c,s,x,y,fs){
 const $=id=>document.getElementById(id);
 const MOBILE=(typeof matchMedia==='function')&&matchMedia('(pointer:coarse)').matches;
 let FXLV=2;/* 演出バランス 0=弱 1=中 2=強 */
+/* ⭐**爽快感の「間」**(2026-07-27ユーザー指示「爽快感を出す・重くならないやつで」)。
+   ⚠絵も粒も1つも増やさない=**時間の伸び縮みだけ**で手応えを出すので、重さはゼロ。
+   CLEAR_HOLD=ウェーブをしのいだあと作戦タイムへ入るまでの余韻(秒) / CLEAR_SLOW=その間の速さ。 */
+const CLEAR_HOLD=2,CLEAR_SLOW=.35;
 try{const v=localStorage.getItem('dt_fx');if(v!=null)FXLV=clamp(+v,0,2);}catch(e){}
 /* 🛠DEVモード(実機テスト用)。URLに ?dev=1 が付いている時だけ有効。
    🧬研究pt・💎魔石・🔧鍛錬素材・⚙️スクラップ・🔩強化ptが実質無限になり、
@@ -9719,6 +9723,12 @@ function killZ(C,z){
   lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1)});
  /* 大物が倒れると足元に土煙が広がる。⚠雑魚には出さない(画面が埋まる) */
  if(FXLV>0&&(z.boss||z.elite))addFx(C,'dust',z.px,z.py+2,'',{r:z.boss?120:66});
+ /* ⭐**雑魚撃破の「間」**(2026-07-27ユーザー指示「爽快感を出す・重くならないやつで」)。
+    ⚠絵を1つも増やさずに手応えだけ足す=**時間を0.03秒だけ引き延ばす**。
+    ⚠**必ず間隔を空ける**(kickCd)。1体ごとに掛けると、群れを薙いだ時に試合ぜんぶが
+      スローモーションになってしまう。0.12秒に1回まで=速く倒すほど「トトン」と刻む。
+    ⚠大物は下でボス用の長いスローが掛かるので、ここでは掛けない。⚠演出オフ(FXLV=0)では出さない */
+ if(G&&FXLV>0&&C.isMe&&!z.boss&&(G.kickCd||0)<=0){G.kickT=.03;G.kickCd=.12;}
  /* ⚠断末魔は「呻き」ではなく専用の声(die)を混ぜる。同じ呻きだけだと倒した手応えが出ない */
  if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
   if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
@@ -10764,7 +10774,9 @@ let G=null;
 function newGame(specs,myIdx){
  EID=1;
  const players=specs.map((s,i)=>{const c=newCamp(s.name,s.kind,s.ai||DIFFS[1],i===myIdx);c.gi=i;return c;});
- G={players,myIdx,np:players.length,wave:0,phase:'interval',tI:.01,alive:players.length,over:false,spd:1,winner:-1,netT:0,evq:players.map(()=>[]),tide:{pool:[],qt:0,total:0,shares:players.map(()=>100/players.length),up:0,upN:0,mul:1}};
+ G={players,myIdx,np:players.length,wave:0,phase:'interval',tI:.01,alive:players.length,over:false,spd:1,winner:-1,netT:0,
+  hitStopT:0,kickT:0,kickCd:0,clearT:null,/* ⭐撃破の間・ウェーブ制圧の余韻(スローモーション) */
+  evq:players.map(()=>[]),tide:{pool:[],qt:0,total:0,shares:players.map(()=>100/players.length),up:0,upN:0,mul:1}};
  return G;
 }
 /* ソロPvEの終了時に研究ptを付与(勝敗問わず) */
@@ -10853,7 +10865,16 @@ function gameStep(dt){
    if(MODE==='host'){try{G.netT=1;hostNetTick(1);}catch(e){}}
    UI.showResult();return;}
   let done=true;for(const C of G.players)if(!C.dead&&!C.waveDone)done=false;
-  if(done)startInterval();
+  /* ⭐**しのいだ瞬間にすぐ準備タイムへ行くと味気ない**(2026-07-27ユーザー指示)ので、
+     2秒だけスローモーションで余韻を置いてから作戦タイムへ入る。
+     ⚠**残り秒数は実時間で数える**=`dt` はすでに CLEAR_SLOW 倍に遅くなって届くので、
+       割り戻してから引く。これをしないと 2秒が 2/CLEAR_SLOW 秒(約6秒)になる。
+     ⚠演出オフ(FXLV=0)では余韻を入れない=今までどおりすぐ切り替わる。 */
+  if(done){
+   if(G.clearT==null)G.clearT=FXLV>0?CLEAR_HOLD:0;
+   G.clearT-=dt/CLEAR_SLOW;
+   if(G.clearT<=0){G.clearT=null;startInterval();}
+  }
  }else if(G.phase==='interval'){
   if(!tutHold())G.tI-=dt;/* 🎓チュートリアル中は時間で波が始まらないようにする */
   for(const C of G.players){if(C.kind==='cpu'&&!C.dead&&!C.planned){C.aiPlanT-=dt;if(C.aiPlanT<=0){C.planned=true;cpuPlan(C);}}}
@@ -11175,6 +11196,13 @@ function renderCamp(C,t){
   c.save();c.globalAlpha=Math.max(0,1-Math.pow(k6,3))*.72;
   c.translate(e.x,e.y);c.rotate(((e.dr||1)<0?1:-1)*1.5*(1-Math.pow(1-fl6,3)));
   try{drawSpr(c,bakeZ(e.zi,e.el?1:0),0,0,0,(e.dr||1)<0);}catch(e6){}
+  /* ⭐**倒れた瞬間だけ白く光る**(2026-07-27ユーザー指示「爽快感・重くならないやつで」)。
+     ⚠粒も光源も増やさない=**同じ絵をもう1枚 lighter で重ねるだけ**(0.1秒で消える)。
+     ⚠死体は addFx で倒した瞬間に湧くので、ここが「死んだ瞬間」そのもの。 */
+  if(e.t<.1){const fw=1-e.t/.1;
+   c.globalCompositeOperation='lighter';c.globalAlpha=fw;
+   try{drawSpr(c,bakeZ(e.zi,e.el?1:0),0,0,0,(e.dr||1)<0);}catch(e7){}
+   c.globalCompositeOperation='source-over';}
   c.restore();c.globalAlpha=1;}
  /* ゾンビ */
  const zs=C.zombies.slice().sort((a,b)=>a.py-b.py);
@@ -15251,8 +15279,13 @@ function loopBody(now){
  const dt0=Math.min(.05,(now-last)/1000);last=now;TT+=dt0;
  if(gameActive&&!PAUSED){
   if(MODE!=='client'){const sp=(G&&G.spd)||1;
-   let step=Math.min(.033,dt0);
-   if(G&&G.hitStopT>0){G.hitStopT-=dt0;step*=.3;}/* ボス撃破スローモーション */
+   let step=Math.min(.033,dt0),sl=1;
+   /* ⚠**スローは掛け算にしない**(重なると止まって見える)。一番遅いものだけを採る */
+   if(G&&G.hitStopT>0){G.hitStopT-=dt0;sl=.3;}/* ボス撃破 */
+   if(G&&G.kickCd>0)G.kickCd-=dt0;
+   if(G&&G.kickT>0){G.kickT-=dt0;sl=Math.min(sl,.35);}/* ⭐雑魚撃破の「間」 */
+   if(G&&G.clearT>0)sl=Math.min(sl,CLEAR_SLOW);/* ⭐ウェーブ制圧の余韻 */
+   step*=sl;
    for(let k=0;k<sp;k++)gameStep(step);}
   else{clientCamp(dt0);
    /* ホストからの更新が途切れたら黙って固まらずに知らせる */
