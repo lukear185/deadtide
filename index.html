@@ -910,10 +910,10 @@ const DEV_INF=99999999;
 /* ============ 永久強化(研究所・ソロ限定ローグライト) ============ */
 const STRIKES={
  air:{n:'エアストライク',ic:'🎯',ch:30,dsc:'一点爆撃+炎上'},
- mgun:{n:'機関銃掃射',ic:'🔫',ch:26,dsc:'拠点から弾丸を連射して道を薙ぐ'},
- carpet:{n:'絨毯爆撃',ic:'🛩',ch:45,dsc:'道に沿って広範囲を連続爆撃'},
- frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4秒凍結+小ダメージ'},
- napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を強烈に燃やし続ける'}
+ mgun:{n:'機関銃掃射',ic:'🔫',ch:26,dsc:'拠点から3.6秒ぶん連射して道を薙ぐ'},
+ carpet:{n:'絨毯爆撃',ic:'🛩',ch:45,dsc:'道に沿って前後330を連続爆撃。最も重く最も広い'},
+ frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4.5秒止めて中ダメージ'},
+ napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を5秒燃やし続ける。総ダメージが大きい'}
 };
 let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{}};
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
@@ -1014,20 +1014,25 @@ const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP
  return DEV?TP:(soloMeta()?BT+clamp(META.nt||0,0,TP-BT):BT);};
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN=(typeof U_N!=='undefined')?U_N:UNITS.length;
  return DEV?UN:(soloMeta()?BU+clamp(META.nu||0,0,UN-BU):BU);};
-/* ⭐2026-07-27ユーザー指示で**研究所の値段を全体的に1.5倍**にした(派生だけは下の LAB_UV で作り直し)。
+/* ⭐2026-07-27ユーザー指示で**研究所の値段を全体的に上げた**(1.5倍→さらに1.8倍=素の2.7倍)。
    ⚠検査 checkLabSteps() は「1本フルが4,000🧬を超えない/全部取りが60,000🧬を下回らない」を見ている。 */
-const LAB_NT=k=>Math.round(400*Math.pow(1.2,k));/* k個目のタワー解放価格 */
-const LAB_NU=k=>Math.round(190*Math.pow(1.14,k));/* k個目の兵科解放価格 */
-const LAB_STK={mgun:225,carpet:375,frost:300,napalm:450};
-const LAB_SC=lv=>Math.round(120*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
-const LAB_HP=lv=>Math.round(150*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
+const LAB_NT=k=>Math.round(720*Math.pow(1.2,k));/* k個目のタワー解放価格 */
+const LAB_NU=k=>Math.round(342*Math.pow(1.14,k));/* k個目の兵科解放価格 */
+/* ⭐**砲撃は順番に解放する**(2026-07-27ユーザー指示「砲撃のタブは新種タブに移動して順番に開放に、順番に強さも変えて」)。
+   ⚠**並び=強さの順**。1つ前より必ず強くなるように数値も置き直してある(airstrikeHit)。
+   air(初期から持っている) → 掃射 → 凍結 → ナパーム → 絨毯。 */
+const STK_ORDER=['mgun','frost','napalm','carpet'];
+const LAB_STK=[300,600,1000,1600];/* k個目の解放価格 */
+const stkNext=()=>STK_ORDER.find(k=>(META.st||[]).indexOf(k)<0)||'';
+const LAB_SC=lv=>Math.round(216*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
+const LAB_HP=lv=>Math.round(270*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
 /* ---- 序盤・中盤から効く永久強化(安く・すぐ効く) ---- */
-const LAB_UP0=lv=>Math.round(105*Math.pow(1.45,lv)); /* 開始🔩+6(最大5) */
-const LAB_CD0=lv=>Math.round(135*Math.pow(1.5,lv));  /* 出撃の待ち時間-6%(最大5) */
-const LAB_EC0=lv=>Math.round(128*Math.pow(1.5,lv));  /* 廃品工房の産出+12%(最大5) */
-const LAB_SL0=lv=>Math.round(195*Math.pow(1.6,lv)); /* 建設スロット初期+1(最大4) */
-const LAB_PY0=lv=>Math.round(165*Math.pow(1.55,lv));/* 撃破報酬+6%(最大5) */
-const LAB_UU0=lv=>Math.round(270*Math.pow(1.8,lv)); /* 開始時の部隊枠+1(最大2) */
+const LAB_UP0=lv=>Math.round(189*Math.pow(1.45,lv)); /* 開始🔩+6(最大5) */
+const LAB_CD0=lv=>Math.round(243*Math.pow(1.5,lv));  /* 出撃の待ち時間-6%(最大5) */
+const LAB_EC0=lv=>Math.round(230*Math.pow(1.5,lv));  /* 廃品工房の産出+12%(最大5) */
+const LAB_SL0=lv=>Math.round(351*Math.pow(1.6,lv)); /* 建設スロット初期+1(最大4) */
+const LAB_PY0=lv=>Math.round(297*Math.pow(1.55,lv));/* 撃破報酬+6%(最大5) */
+const LAB_UU0=lv=>Math.round(486*Math.pow(1.8,lv)); /* 開始時の部隊枠+1(最大2) */
 const metaPay=()=>soloMeta()?1+.06*(META.py0||0):1;
 const metaCd=()=>soloMeta()?1-.06*(META.cd0||0):1;
 const metaEco=()=>soloMeta()?1+.12*(META.ec0||0):1;
@@ -1435,7 +1440,7 @@ const TOWERS=[
     ⚠並び順がそのまま研究所に出る順番。入れ替えると既存プレイヤーの解放済み(META.nt)が別のタワーを指す */
  /* heatN=同じ敵を撃ち続けて最大まで焼き切るのに要る発射数 / heatM=その時の威力の倍率(2026-07-26ユーザー指示)。
     ⚠別の敵に狙いが移った瞬間に0へ戻る=雑魚を薙ぐ塔ではなく「1体を焼き切る」塔になる */
- {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が最大3倍まで上がる'},
+ {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が上がる(素で3倍・🔺最大倍率MAXで6倍)'},
  {id:'acid',n:'酸噴射砲',cost:390,up2:'acid2',gc:3120,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:TOXIC,dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
  {id:'drone',n:'ドローン基地',cost:500,up2:'drone2',gc:4000,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
  {id:'arty',n:'重砲台',cost:640,up2:'arty2',gc:5120,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
@@ -1484,7 +1489,7 @@ const TOWERS=[
  {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'bullet',prio:1,pierce:1,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。最大HPの敵を一撃で'},
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:76,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:7,slowT:5.6,c:'#9fd6e8',dsc:'凍結が長く、同じ敵を7回まで凍らせられる'},
- {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'三枚のレンズで束ねた光。焼き切ると最大4倍'},
+ {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
  {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・極めて強い継続'},
  {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',multi:3,c:'#7fb0c4',dsc:'三機の無人機が同時に叩く'},
  {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
@@ -1748,8 +1753,9 @@ for(let t=0;t<3;t++)for(const b of FVBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARL
    ⚠それまでは**取った総数だけ**で決まっていた(240×1.13^k)ので、
      「浅い段をつまみ食いする」のと「1本を最後まで伸ばす」のが同じ値段だった。
    ⭐t=その兵科の第何段階(0..2) / k=すでに取った派生の総数。
-     総数のぶんは緩やかに(1.022^k)効かせて、**最後の1つが1,000🧬くらい**に着地する。 */
-const UV_TIER=[100,300,500];
+     総数のぶんは緩やかに(1.022^k)効かせる。⚠最初は100/300/500だったが、
+     「研究所の必要ptがまだ低い」というユーザー判断で全タブごと1.8倍にした(最後の1つは約1,900🧬)。 */
+const UV_TIER=[180,540,900];/* ⚠2026-07-27に全タブを上げた時に1.8倍(最後の1つは約1,900🧬) */
 const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(1.022,k||0));
 /* 上級兵科(tnk/mech/titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
 const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&i<BASE_U+(META.nu||0);};
@@ -1790,15 +1796,15 @@ const TW_DMG_STEP=.05;/* タワーの威力(1段あたり)=20段で+100%。⚠�
 /* 兵科は近接だけHP寄り、それ以外は攻撃寄り(型ごと強化の時の配分をそのまま引き継ぐ) */
 const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 20段で 近接+60%/+60% それ以外+80%/+40% */
 /* 価格。⚠**1段が安く・段数が多い**形にしてある(x1.5だと20段目が天文学的になるので x1.13)。
-   1段目は タワー45 / 兵科33 と手軽で、20段目は タワー459 / 兵科336。
-   1種フル= タワー約3,642🧬 / 兵科約2,672🧬。
+   1段目は タワー81 / 兵科59 で、20段目は タワー826 / 兵科601。
+   1種フル= タワー約6,556🧬 / 兵科約4,777🧬。
    ⚠**全部取ると約11万🧬**(タワー20本48,560 + 兵科32本56,992 + 砲撃4,857)。
      3段だった頃の全取り12,548🧬の約9倍=**全部埋める前提の数字ではない**。何を伸ばすか選ぶこと。 */
-const LAB_TW=lv=>Math.round(45*Math.pow(1.13,lv));/* 45…459 = 1種フル約3,642 */
-const LAB_UN=lv=>Math.round(33*Math.pow(1.13,lv));/* 33…336 = 1種フル約2,672 */
+const LAB_TW=lv=>Math.round(81*Math.pow(1.13,lv));/* 81…826 = 1種フル約6,556 */
+const LAB_UN=lv=>Math.round(59*Math.pow(1.13,lv));/* 59…601 = 1種フル約4,777 */
 /* ⭐🎯砲撃の威力(2026-07-26ユーザー指示)。今までは砲撃だけ**研究所で一切強化できなかった** */
 const STK_MAX=20,STK_STEP=.04;/* 20段・+4%/段 = 最大×1.80(タワー/兵科と同じ刻みに揃えた) */
-const LAB_ST0=lv=>Math.round(90*Math.pow(1.13,lv));/* 90…918 = フル約7,286 */
+const LAB_ST0=lv=>Math.round(162*Math.pow(1.13,lv));/* 162…1652 = フル約13,115 */
 /* そのタワー/兵科の強化Lv。⚠ソロ専用メタ(協力/対戦とクライアントでは必ず0) */
 /* ⭐強化を引くキー。**工房の3段(廃品工房/上級/プラント)は1つの枠を共有する**
    =建て替えで強化が無駄にならないため。⚠支援施設(sup)は強化しない(タワーの性能に触らない約束) */
@@ -8077,18 +8083,24 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  }
  /* 業火放射塔: タンク3本+**二又の火口**+種火2つ */
  else if(tid==='flame2'){
-  /* ⚠タンクを**縦に3本立てない**=「色の付いた棒の束」になって何の塔か読めない(撮って直した)。
-     基部の後ろへ**横に寝かせて**2本にし、代わりに**二又の火口**を大きく出す */
-  twTank(c,-32,-12,25,10,'#b0483a');twTank(c,-32,2,25,10,'#8a3a24');
+  /* ⭐**火炎放射塔の完成形として描く**(2026-07-27ユーザー指示「火炎感があった前の雰囲気に近づけて」)。
+     火炎放射塔の言葉づかい(**立てた燃料タンク+ラッパ口+種火**)をそのまま使い、
+     タンクを3本に増やし、ラッパを二連にし、種火を大きくする。
+     ⚠**二又の平たい板**にすると火炎放射に見えない(1回そうして直した)=ラッパ口を残すこと。 */
+  twTank(c,-27,-20,10,26,'#8a3a24');twTank(c,-15,-26,11,32,'#c96b35');twTank(c,-3,-20,10,26,'#8a3a24');
   c.save();c.rotate(ang);
-  twGun(c,0,14,13,'#7a4a2a',4.5);
-  for(const sg of [-1,1]){c.save();c.translate(12,0);c.rotate(sg*.34);
-   c.fillStyle='#a5602e';c.beginPath();c.moveTo(0,-6.5);c.lineTo(16,-10.5);c.lineTo(19,0);c.lineTo(16,10.5);c.lineTo(0,6.5);c.closePath();c.fill();c.stroke();
-   c.fillStyle='#5c3418';c.beginPath();c.ellipse(17,0,3,7,0,0,7);c.fill();
-   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(22,0,7+Math.sin(t*22)*1.8,0,7);c.fill();}
-   c.restore();}
+  /* 上下二連のラッパ口(火炎放射塔は1本。太さと本数で「完成形」を出す) */
+  c.save();c.translate(0,-8);twGun(c,4,15,8,'#5c5c66',4);twMuz(c,18,4.5,'flare','#7a6b60');
+   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(27,0,6+Math.sin(t*22)*2,0,7);c.fill();
+    c.fillStyle=GLOW;c.beginPath();c.arc(26,0,3+Math.sin(t*22),0,7);c.fill();}c.restore();
+  c.save();c.translate(0,7);twGun(c,4,20,11,'#6b6b73',5);twMuz(c,24,6,'flare','#8a7b70');
+   if(o.fire){c.fillStyle='#ff9a3d';c.beginPath();c.arc(34,0,8+Math.sin(t*19)*2.4,0,7);c.fill();
+    c.fillStyle=GLOW;c.beginPath();c.arc(33,0,4+Math.sin(t*19),0,7);c.fill();}c.restore();
+  /* 種火(ラッパの手前で常に揺れている=撃っていなくても「火の塔」に見える) */
+  c.fillStyle='#ffb347';c.globalAlpha=.6+Math.sin(t*12)*.32;
+  c.beginPath();c.arc(24,-13,3.2,0,7);c.fill();
+  c.beginPath();c.arc(30,13,3.6,0,7);c.fill();c.globalAlpha=1;
   c.restore();
-  c.fillStyle=GOLD;c.globalAlpha=.65+Math.sin(t*7)*.3;c.beginPath();c.arc(-7,-17,4,0,7);c.fill();c.globalAlpha=1;
  }
  /* 雷神コイル: 太い柱に巻線5周+大玉。基部から**放電棒**が4本 */
  else if(tid==='tesla2'){
@@ -8164,19 +8176,24 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  }
  /* 溶解噴射砲: 二又のノズル+タンク2本。滴った酸が基部にたまる */
  else if(tid==='acid2'){
-  /* ⚠火炎と同じ理由でタンクは**横に寝かせる**。二又の口を大きくして「噴く物」に読ませる */
-  twTank(c,-32,-12,25,10,'#7a9c3a');twTank(c,-32,2,25,10,'#5f7a2a');
+  /* ⭐**酸噴射砲の完成形として描く**(業火放射塔と同じ直し。2026-07-27)。
+     酸噴射砲の言葉づかい(**立てた薬液タンク+送りホース+平たい噴射口+滴る酸**)をそのまま使い、
+     タンクを3本・噴射口を二連にする。⚠**二又の平たい板**にすると葉っぱに見える(1回そうして直した)。 */
+  twTank(c,-27,-18,10,24,'#4c6b32');twTank(c,-15,-24,11,30,TOXIC);twTank(c,-3,-18,10,24,'#4c6b32');
+  c.strokeStyle='#3f4a54';c.lineWidth=4.4;
+  c.beginPath();c.moveTo(-16,-6);c.quadraticCurveTo(-2,6,10,-1);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
   c.save();c.rotate(ang);
-  twGun(c,0,13,12,'#4c6b28',4);
-  for(const sg of [-1,1]){c.save();c.translate(11,0);c.rotate(sg*.36);
-   c.fillStyle='#5f8a2e';c.beginPath();c.moveTo(0,-6);c.lineTo(15,-9.5);c.lineTo(18,0);c.lineTo(15,9.5);c.lineTo(0,6);c.closePath();c.fill();c.stroke();
-   c.fillStyle='#33501a';c.beginPath();c.ellipse(16,0,2.8,6.5,0,0,7);c.fill();
-   if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(21,0,6+Math.sin(t*19)*1.6,0,7);c.fill();}
-   c.restore();}
+  c.save();c.translate(0,-8);twGun(c,4,16,8,'#5c5c66',4);
+   c.fillStyle='#4c6b32';c.beginPath();c.moveTo(19,-4);c.lineTo(27,-2);c.lineTo(27,4.5);c.lineTo(19,4);c.closePath();c.fill();c.stroke();
+   if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(29,1,5+Math.sin(t*20)*1.8,0,7);c.fill();}c.restore();
+  c.save();c.translate(0,7);twGun(c,4,21,11,'#6b6b73',5);
+   c.fillStyle='#5f8a2e';c.beginPath();c.moveTo(24,-5.5);c.lineTo(34,-2.5);c.lineTo(34,6);c.lineTo(24,5.5);c.closePath();c.fill();c.stroke();
+   if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(37,2,7+Math.sin(t*17)*2.2,0,7);c.fill();}c.restore();
   c.restore();
   /* 滴った酸(基部の足元にたまる) */
-  c.fillStyle=TOXIC;c.globalAlpha=.55+Math.sin(t*3.4)*.3;
-  c.beginPath();c.arc(-13,15,3.4,0,7);c.fill();c.beginPath();c.arc(-4,18,2.6,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle=TOXIC;c.globalAlpha=.6+Math.sin(t*4)*.3;
+  c.beginPath();c.arc(-21,10,3,0,7);c.fill();c.beginPath();c.arc(-12,14,2.4,0,7);c.fill();c.globalAlpha=1;
  }
  /* 無人機母艦: 大きな発着台+**3機**が漂う(元は2機。数で一目で分かる) */
  else if(tid==='drone2'){
@@ -9753,8 +9770,8 @@ function airstrikeHit(C,x,y,wave,stk,mine){
     ⚠soloMeta()で包んであるので協力/対戦には効かない(砲撃は対戦でも撃てる) */
  const SP=stkPow(C);
  if(stk==='carpet'){/* 絨毯爆撃: 道に沿って前後300を連続爆撃 */
-  const cd0=projPath(x,y),dm=110*(1+.15*wave)*SP;
-  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=300){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=15*SP;}}}
+  const cd0=projPath(x,y),dm=240*(1+.15*wave)*SP;
+  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=330){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=40*SP;}}}
   /* ⭐時間差で5発。1発ずつに土煙と衝撃波を付けて「線に沿って落ちてくる」のを見せる(第65弾) */
   for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN)),dd=.07*(k+2);
    addFx(F,'boom',p[0],p[1],'',{d0:dd});
@@ -9764,20 +9781,20 @@ function airstrikeHit(C,x,y,wave,stk,mine){
      addP(F,4,p[0],p[1]-6,{sp:60,up:40,g:-40,life:1.2,r:9,col:'#6e6354',typ:'smoke'});});}}
   F.shake=.4;
  }else if(stk==='frost'){/* 凍結爆弾: 広範囲4秒凍結 */
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=170){z.slowT=Math.max(z.slowT,4);dmgZ(F,z,40*(1+.1*wave)*SP,1);}}
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=180){z.slowT=Math.max(z.slowT,4.5);dmgZ(F,z,230*(1+.1*wave)*SP,1);}}
   addFx(F,'ring',x,y,'',{r:170,col:TECH});addFx(F,'spark',x,y,'',{sd:rnd(0,9),col:TECH});
   /* ⭐氷の破片が突き立ち、地面が白く凍る */
   if(FXLV>0){addFx(F,'ice',x,y-10,'',{sd:rnd(0,9),r:120,lf:.85});
    addP(F,7,x,y,{sp:30,g:0,life:5,r:15,col:'#b9dcea',typ:'stain',jx:62,jy:24});}
   if(isMine)sfx.frost();F.shake=.15;
  }else if(stk==='napalm'){/* ナパーム: 強烈な継続燃焼 */
-  const dm=60*(1+.12*wave)*SP;
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=120){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=30*(1+.1*wave)*SP;}}}
+  const dm=150*(1+.12*wave)*SP;
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=130){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=50*(1+.1*wave)*SP;}}}
   addFx(F,'boomL',x,y,'');addFx(F,'ring',x,y,'',{r:120,col:'#ffb347'});F.shake=.3;
   /* ⭐燃え続けているのが見えるよう火の海を残す(燃焼5秒に合わせる) */
   if(FXLV>0)addFx(F,'pool',x,y+2,'',{r:120,sd:rnd(0,9),lf:4.2});
  }else if(stk==='mgun'){/* 機関銃掃射: 拠点から連射(以後campStepで継続) */
-  F.mg={t:3.6,x,y,dmg:24*(1+.12*wave)*SP,cd:0};
+  F.mg={t:3.6,x,y,dmg:36*(1+.12*wave)*SP,cd:0};/* ⚠0.075秒ごとに48発=1回の総量はここ×48 */
   addFx(F,'ring',x,y,'',{r:150,col:'#ffdd66'});
   if(FXLV>0)addFx(F,'dust',x,y+2,'',{r:130,lf:.8});
   if(isMine)sfx.shotgun();
@@ -12329,9 +12346,8 @@ function renderHeroSeg(){
    n=タブの短い名前 / d=そのタブの1行説明 */
 /* ic=タブのアイコン素材名 / em=素材が無い時の絵文字 / t=タブの文字 */
 const LAB_CATS=[
- {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'解放するとゲーム中の解放カードに出るようになる'},
+ {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'タワー/兵科/🎯砲撃を1つずつ順番に解放する'},
  {k:'var',ic:'ic-tab-var',em:'🧬',t:'派生',d:'🎖編成の画面で入れ替えて使う'},
- {k:'stk',ic:'ic-tab-stk',em:'🎯',t:'砲撃',d:'種類を増やして威力を上げる(装備の選択はソロ設定の画面)'},
  {k:'twup',ic:'ic-tab-line',em:'🗼',t:'タワー',d:'タワー1種ずつ鍛える(解放したものだけ並ぶ)'},
  {k:'unup',ic:'ic-tab-line',em:'🪖',t:'部隊',d:'兵科1種ずつ鍛える(派生キャラにも同じだけ効く)'},
  {k:'start',ic:'ic-tab-start',em:'🚀',t:'開始',d:'1波目から効く。序盤の立ち上がりが楽になる'},
@@ -12379,7 +12395,9 @@ function renderLab(){
     d:'HP×'+(nx.hp||1)+' 攻撃×'+(nx.atk||1)+' 費用×'+(nx.cm||1.2)+' — '+nx.dsc,
     p:LAB_UV(t-1,uv.length)});
   }}
- for(const k in LAB_STK){if(META.st.indexOf(k)<0){const S=STRIKES[k];items.push({cat:'stk',k:'stk',id:k,ic:S.ic,t:S.n,tag:'砲撃',d:S.dsc,p:LAB_STK[k]});}}
+ /* ⭐砲撃は「次の1つ」だけを新種タブに出す(タワー/兵科と同じ形) */
+ {const nk=stkNext();if(nk){const S=STRIKES[nk],ki=STK_ORDER.indexOf(nk);
+  items.push({cat:'new',k:'stk',id:nk,ic:S.ic,t:S.n,tag:'砲撃 '+(ki+1)+'/'+STK_ORDER.length,d:S.dsc,p:LAB_STK[ki]});}}
  if(META.sc0<5)items.push({cat:'start',k:'sc0',ic:'⚙️',t:'初期スクラップ+40',tag:'Lv'+META.sc0+'/5',d:'開始資金が増える',p:LAB_SC(META.sc0)});
  if(META.hp0<5)items.push({cat:'start',k:'hp0',ic:'🏕',t:'コアHP+5',tag:'Lv'+META.hp0+'/5',d:'拠点の耐久が増える',p:LAB_HP(META.hp0)});
  /* ---- 1波目から効く強化(序盤・中盤向け) ---- */
@@ -12415,7 +12433,7 @@ function renderLab(){
   items.push({cat:'unup',k:'un',id:U.id,sm:1,ic:UN_IC[U.type]||'🪖',pv:{k:'u',i:i,def:U},t:U.n,tag:'Lv'+lv+'/'+LINE_MAX,
    d:hl+'+'+Math.round(st.a*100)+'%・HP+'+Math.round(st.h*100)+'%/段',p:LAB_UN(lv)});}
  /* ---- ⭐🎯砲撃の威力(それまで砲撃だけ研究所で強化できなかった) ---- */
- if((META.st0||0)<STK_MAX)items.push({cat:'stk',k:'st0',ic:'🎯',t:'砲撃の威力+'+Math.round(STK_STEP*100)+'%',
+ if((META.st0||0)<STK_MAX)items.push({cat:'new',k:'st0',ic:'🎯',t:'砲撃の威力+'+Math.round(STK_STEP*100)+'%',
   tag:'Lv'+(META.st0||0)+'/'+STK_MAX,d:'装備している砲撃すべての直撃と燃焼が強くなる',p:LAB_ST0(META.st0||0)});
  /* 解放済みの一覧(何を取ったか分かるように) */
  const doneT=TOWERS.slice(BASE_T,BASE_T+META.nt).map(t=>'🗼'+t.n),
@@ -14948,7 +14966,7 @@ $('bt-lobby-back').onclick=backTitle;
 if(DEV){try{
  META.nt=Math.max(META.nt||0,T_PLAY-BASE_T);
  META.nu=Math.max(META.nu||0,U_N-BASE_U);
- for(const k in LAB_STK)if(META.st.indexOf(k)<0)META.st.push(k);/* 砲撃5種も全部 */
+ for(const k of STK_ORDER)if(META.st.indexOf(k)<0)META.st.push(k);/* 砲撃5種も全部 */
  /* ⭐個別強化(タワー/兵科)と砲撃の威力も最大にする(2026-07-26)。
     ⚠ここを開けないと**実機で強化の効果を確かめられない**(DEVは全開放という約束) */
  if(!META.tw||typeof META.tw!=='object')META.tw={};

@@ -527,8 +527,10 @@ function checkLabSteps(){
  const sum=(f)=>{let t=0;for(let i=0;i<LINE_MAX;i++)t+=f(i);return t;};
  const tw1=sum(LAB_TW),un1=sum(LAB_UN);
  let st1=0;for(let i=0;i<STK_MAX;i++)st1+=LAB_ST0(i);
- /* 1本を伸ばし切るのは「数回の出撃ぶん」で届くこと(届かないと選ぶ楽しみ以前に何も伸びない) */
- if(tw1>4000||un1>4000){console.log('FAIL: 1本を伸ばし切るのが高すぎる(タワー'+tw1+'/兵科'+un1+'🧬)');process.exit(1);}
+ /* 1本を伸ばし切るのは「何回かの出撃ぶん」で届くこと(届かないと選ぶ楽しみ以前に何も伸びない)。
+    ⚠上限は2026-07-27に4,000→9,000へ上げた=ユーザー判断「研究所の必要ptがまだ低い」で
+      全タブを1.5倍→さらに1.8倍(素の2.7倍)にしたため。**安くしたい時はここも一緒に下げること** */
+ if(tw1>9000||un1>9000){console.log('FAIL: 1本を伸ばし切るのが高すぎる(タワー'+tw1+'/兵科'+un1+'🧬)');process.exit(1);}
  if(tw1<800||un1<800){console.log('FAIL: 1本を伸ばし切るのが安すぎる(タワー'+tw1+'/兵科'+un1+'🧬)=すぐ終わる');process.exit(1);}
  /* 全部取りは手が届かないこと=何を伸ばすか選ばせるための本丸 */
  const seenT={};let nT=0;
@@ -709,6 +711,31 @@ function checkPerUp(){
    if(!(d0>0)){console.log('FAIL: 砲撃'+k+'が効いていない');process.exit(1);}
    if(Math.abs(d1/d0-w)>.03){console.log('FAIL: 砲撃'+k+'に威力強化が乗っていない ('+(d1/d0).toFixed(2)+'倍)');process.exit(1);}}
   META.st0=0;
+  /* ⭐**砲撃は解放の順に強くなる**(2026-07-27ユーザー指示「順番に開放に、順番に強さも変えて」)。
+     ⚠1体あたりではなく**1回撃った時の総ダメージ**で見る=絨毯爆撃は薄く広い、ナパームは狭く重い、
+       という違いを1体だけ置いて測ると順番が逆に出る。道に沿って敵を並べて総量を測る。 */
+  {const tot=k=>{me.zombies.length=0;me.mg=null;
+    for(let i=0;i<14;i++){const z=mkZ(zSpec(0,1,5),PLEN*.5-260+i*40);z.hp=z.mhp=1e9;me.zombies.push(z);}
+    campStep(me,.001,G.wave);
+    const mid=me.zombies[7],h0=me.zombies.map(z=>z.hp);
+    airstrikeHit(me,mid.px,mid.py,10,k,true);
+    let d=0;me.zombies.forEach((z,i)=>{d+=(h0[i]-z.hp)+(z.burnD||0)*(z.burnT||0);});
+    /* 機関銃掃射は撃った瞬間ではなく3.6秒かけて当たるので、その総量を足す */
+    if(me.mg)d+=me.mg.dmg*(me.mg.t/.075);/* 0.075秒ごとに1発 */
+    return d;};
+   const seq=['air'].concat(STK_ORDER),pw=seq.map(tot);
+   for(let i=1;i<seq.length;i++)if(!(pw[i]>pw[i-1])){
+    console.log('FAIL: 砲撃が解放の順に強くなっていない '+seq[i-1]+'('+Math.round(pw[i-1])+') → '+seq[i]+'('+Math.round(pw[i])+')');process.exit(1);}
+   /* 解放は「次の1つ」だけ出ること(タワー/兵科と同じ形) */
+   const keep=(META.st||[]).slice();META.st=['air'];
+   renderLab();
+   const st1=LAB_ITEMS.filter(it=>it.k==='stk');
+   if(st1.length!==1||st1[0].id!==STK_ORDER[0]){
+    console.log('FAIL: 砲撃の解放が「次の1つ」になっていない('+st1.length+'件)');process.exit(1);}
+   if(st1[0].cat!=='new'){console.log('FAIL: 砲撃の解放が新種タブに出ていない');process.exit(1);}
+   if(LAB_CATS.some(c=>c.k==='stk')){console.log('FAIL: 砲撃タブが残っている');process.exit(1);}
+   META.st=keep;
+   console.log('砲撃: 新種タブで順番に解放(air→'+STK_ORDER.join('→')+')・総ダメージ '+pw.map(v=>Math.round(v)).join('<')+' OK');}
   console.log('砲撃の威力: Lv'+STK_MAX+'で直撃x'+(s1.d/s0.d).toFixed(2)+'・燃焼x'+(s1.b/s0.b).toFixed(2)+'(5種すべて) OK');}
  /* --- ⑦ 派生キャラを装備した状態でも、研究所が『素の兵科のid』で保存すること(2026-07-26レビュー) ---
     ⚠applyLoadout(true) は UNITS[i] を派生キャラの実体に差し替え、タイトルへ戻っても元に戻らない。
