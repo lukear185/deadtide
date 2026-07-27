@@ -13176,11 +13176,14 @@ function tutSteps(){return[
   hi:{k:'slotI',i:ECO_BASE},al:'#buildmenu',low:1,
   pre:C=>{if(C&&C.unlocked<=ECO_TI)C.unlocked=ECO_TI+1;},
   ok:C=>!!(C.towers||[])[ECO_BASE]},
- /* ⭐**🏗支援施設**(2026-07-27ユーザー指示で追加)。⚠枠の解放が⚙️600と高いので**読むだけ**の段にする
-    (ここで買わせると、そのぶんタワーが建たないまま1波目に入ることになる)。 */
+ /* ⭐**🏗支援施設**(2026-07-27ユーザー指示で追加)。
+    ⚠**読むだけの段にしていたのをやめた**(2026-07-28ユーザー指摘「スクラップがなくて支援枠建てれない」)。
+      枠の解放は⚙️600だが、チュートリアルの⚙️は下で毎フレーム補充している飾りなので出し惜しむ意味がない。
+      **押せないボタンを見せる**方が悪い。sc0 でこの段だけ下限を上げ、実際に開けて建てさせる。 */
  {id:'sup',scr:'game',t:'🏗支援施設の枠もある',
-  m:'青い破線の枠は支援施設だけの場所だ。⚙️で枠を開けると 📻電波塔(次の波の中身が読める)・🏥野戦病院(部隊を回復)・📦物資投下所 が建つ。タワーの火力は上がらないが試合の運びが変わる。',
-  hi:{k:'slotI',i:SUP_BASE},low:1},
+  m:'青い破線の枠は支援施設だけの場所だ。⚙️で枠を開けると 📻電波塔(次の波の中身が読める)・🏥野戦病院(部隊を回復)・📦物資投下所 が建つ。開けて1つ建ててみろ。',
+  hi:{k:'slotI',i:SUP_BASE},al:'#buildmenu',low:1,sc0:700,
+  ok:C=>!!(C.towers||[])[SUP_BASE]},
  {id:'unit',scr:'game',t:'主役は生存者部隊だ',
   m:'下のデッキから出撃させろ。部隊はウェーブを跨いで戦い続ける。',
   hi:{k:'dom',s:'#deck'},ok:C=>C.units.length>0},
@@ -13367,6 +13370,11 @@ function tutGo(i){
  const C=G&&G.players[0];
  if(S.pre){try{S.pre(C);}catch(e){}}
  if(S.id==='fight')TUT.ran=true;
+ /* ⭐**段が変わったら建設・強化ウィンドウを畳む**(2026-07-28ユーザー指摘
+      「タレットタップすると強化ウィンドウが出て消せないから邪魔」)。
+    ⚠前の段で開いたウィンドウが**次の段まで居座って画面の半分を塞ぐ**のが元凶だった。
+    ⚠**build の段だけは畳まない**=この段は「ウィンドウが開いた」ことで入ってくるため。 */
+ if(S.id!=='build'){try{closeBM();}catch(e2){}}
  const e=$('tut');if(!e)return;
  /* ⚠**同じ画面の同じ資源は同じ絵にする**(2026-07-26ユーザー指摘)。
     textContent のままだと💎が絵文字(青)、ボタンは画像(紫の結晶)で、1画面に2種類の💎が並ぶ。
@@ -13375,8 +13383,25 @@ function tutGo(i){
  $('tut-next').style.display=(S.ok||S.id==='open')?'none':'inline-block';
  /* ⚠**帯が印を隠さないようにする**(2026-07-27)。工房枠・支援枠は画面の上の方にあるので、
     その段では帯を下へ回す(low)。NOTES: 光らせる所が帯で隠れると何を指しているか分からない */
- e.classList.add('on');e.classList.toggle('tl',S.scr==='title'||!!S.low);
+ e.classList.add('on');tutBand();
  tutHi(S.hi);
+}
+/* ⭐帯を上に置くか下に置くか(2026-07-28ユーザー指摘「タレットの強化と文が被ってて押しづらい」)。
+   ⚠強化ウィンドウは高さが300pxを超えるので**必ず画面の上端に貼り付く**
+     (openBM が下の操作バーを避けて置くため)。帯を上に出したままだと⚔攻撃・⏩連射が隠れる。
+   ⭐**ウィンドウが上半分に出ている間だけ帯を下へ逃がす**=下に隠れるのはデッキだが、
+     ウィンドウが開いている段(建設・強化・工房・支援)ではデッキを使わせないので困らない。 */
+function tutBand(){
+ const e=$('tut');if(!e||!e.classList)return;
+ const S=(TUT&&TUT.st[TUT.i])||{};
+ let low=(S.scr==='title')||!!S.low;
+ if(!low)try{
+  const bm=$('buildmenu');
+  if(bm&&bm.style.display==='block'){
+   const r=bm.getBoundingClientRect();
+   if(r.height&&r.top<(innerHeight||393)*.5)low=true;}
+ }catch(x){}
+ e.classList.toggle('tl',low);
 }
 /* 光らせる。DOMはクラスを付け替え、盤面(マス/拠点)は tutMark() が毎フレーム描く */
 function tutHi(hi){
@@ -13425,14 +13450,18 @@ function tutStep(dt){
  TUT.t+=dt;
  /* ⚠タイトルの段では戦場が無い。**無い前提で書く**(以前は戦場が無いと打ち切っていた) */
  const C=(G&&G.tut)?G.players[0]:null;
- if(C&&C.scrap<300)C.scrap=300;/* ⚠足りなくて先へ進めない状態を作らない */
+ const S=TUT.st[TUT.i]||{};
+ /* ⚠足りなくて先へ進めない状態を作らない。⭐**sc0**=その段だけ下限を上げる
+    (支援枠の解放は⚙️600なので、300のままでは「押せないボタン」を見せることになる) */
+ const fl=S.sc0||300;
+ if(C&&C.scrap<fl)C.scrap=fl;
+ tutBand();/* 帯が建設・強化ウィンドウに被らないよう毎フレーム置き直す */
  const hi=TUT.hi;/* 盤面の印は tutMark() が毎フレーム描く */
  /* ⚠DOMは作り直されることがある(デッキ・建設メニュー)ので、光る印を毎秒付け直す */
  if(hi&&hi.k==='dom'&&TUT.t-(TUT.dt2||-9)>1){
   TUT.dt2=TUT.t;const el=document.querySelector(hi.s);
   if(el&&!el.classList.contains('tuthi'))el.classList.add('tuthi');}
- const S=TUT.st[TUT.i];
- if(S&&S.ok){let ok=false;try{ok=!!S.ok(C);}catch(e){}
+ if(S.ok){let ok=false;try{ok=!!S.ok(C);}catch(e){}
   if(ok)tutGo(TUT.i+1);}
 }
 function tutEnd(done){

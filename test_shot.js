@@ -95,7 +95,16 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +(LAB?('META.pts=99999;META.nt=2;META.nu=3;META.sc0=1;META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");')
      :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
      /* tutauto=はじめての人の入り口(タイトルで「🎓あそびかた」を光らせる段)から撮る */
-     :TUT?((OPT.indexOf('tutauto')>=0?'tutAuto();':'tutStart();')+'for(var q=0;q<'+TUTI+';q++)tutGo(TUT.i+1);')
+     /* tutbm = その段のまま塔を建てて強化ウィンドウを開いて撮る(帯と被っていないかを見る) */
+     :TUT?((OPT.indexOf('tutauto')>=0?'tutAuto();':'tutStart();')+'for(var q=0;q<'+TUTI+';q++)tutGo(TUT.i+1);'
+       /* ⚠resize で closeBM されるので、開き直し続ける(撮影の瞬間まで開いていればよい) */
+       +(OPT.indexOf('tutbm')>=0?'try{var s9=tutSlot(G.players[0]);G.players[0].scrap=9999;actBuild(s9,0);'
+         /* ⚠**撮る直前に resize が飛ぶ**(--screenshot は撮影前に窓を作り直す)。
+            index.html は resize で closeBM() するので、**resize の後にも開き直す**こと
+            (setInterval では撮影に間に合わず、いつまでもウィンドウ無しの絵が撮れる) */
+         +'window.addEventListener("resize",function(){try{openBM(s9);}catch(e9){}});'
+         +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e9){}},120);'
+         +'}catch(e){}':''))
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
      :STP?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.nmOK=1;META.st=["air","mgun","frost","napalm"];'
