@@ -12114,7 +12114,13 @@ function renderCamp(C,t){
   c.fillStyle=PANE;c.strokeStyle=INK;c.font='900 24px '+FF;c.textAlign='center';
   c.strokeText('💀 '+bn,800,y0);c.fillText('💀 '+bn,800,y0);c.lineWidth=3;}
  const inW=MODE==='client'?CS.ph===1:(G&&G.phase==='wave');
- if(C.waveDone&&!C.dead&&gameActive&&inW){c.fillStyle='rgba(0,0,0,.42)';c.fillRect(0,MH*.36,MW,90);c.fillStyle=PANE;c.font='900 40px '+FF;c.textAlign='center';c.fillText('🛡 防衛成功! 他拠点の戦闘を待機中…',800,MH*.36+60);}
+ /* ⭐**「他拠点の戦闘を待機中」は対戦でしか出さない**(2026-07-27ユーザー指摘
+    「ウェーブ終了後に出るのおかしいね。対戦モード以外では出ないように」)。
+    ⚠ソロには他拠点が無く、協力は**全員が同じ盤面**を守るので、どちらも「他拠点」が存在しない。
+    ⚠それまでは `C.waveDone` だけで出していたので、ソロでも毎ウェーブ後に出ていた。 */
+ const vsWait=!COOP&&(MODE==='client'?(CS.ot||[]).some(o=>!o.dd)
+  :!!(G&&!G.coop&&G.players.some((p,i)=>i!==G.myIdx&&!p.dead)));
+ if(C.waveDone&&!C.dead&&gameActive&&inW&&vsWait){c.fillStyle='rgba(0,0,0,.42)';c.fillRect(0,MH*.36,MW,90);c.fillStyle=PANE;c.font='900 40px '+FF;c.textAlign='center';c.fillText('🛡 防衛成功! 他拠点の戦闘を待機中…',800,MH*.36+60);}
  if(C.dead){c.fillStyle='rgba(30,16,12,.62)';c.fillRect(0,0,MW,MH);c.fillStyle=PANE;c.font='900 60px '+FF;c.textAlign='center';c.fillText('💀 拠点陥落…',800,MH*.44);c.font='900 28px '+FF;c.fillText('観戦モード',800,MH*.44+50);}
  if(SPEC>=0){c.fillStyle='rgba(36,31,25,.78)';rr(c,MW/2-360,178,720,56,16);c.fill();c.strokeStyle=PANE;c.lineWidth=3;c.stroke();
   c.fillStyle=PANE;c.font='900 30px '+FF;c.textAlign='center';c.fillText('👁 '+specName()+' の拠点を観戦中 — 画面タップで戻る',MW/2,215);}
