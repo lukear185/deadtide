@@ -1070,7 +1070,10 @@ let AC=null,muted=false,bgmTimer=null,bgmStep=0;
 function ensureAC(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
  if(AC&&AC.state==='suspended')AC.resume();
  /* ⚠効果音の素材はここで初めて展開する(AudioContextはユーザー操作の後でしか作れないため) */
- try{sfxLoad();}catch(e){}}
+ try{sfxLoad();}catch(e){}
+ /* ⭐タイトルBGMもここで始める。⚠**起動直後は AudioContext が作れない**ので、
+    show('title') の時点では鳴らせない=最初のタップでここへ来た時に鳴り始める。 */
+ try{if(SCR&&SCR!=='game')tbgmOn();}catch(e){}}
 function beep(f1,f2,dur,type,vol){if(!AC||muted)return;try{const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=type||'square';o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f2||f1),t+dur);g.gain.setValueAtTime(vol||.08,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+dur+.02);}catch(e){}}
 /* ゾンビのうめき: 低音ノコギリ波2本をデチューン+下降ピッチで合成 */
 function groan(f0,dur,vol){if(!AC||muted)return;try{const t=AC.currentTime;
@@ -1434,6 +1437,30 @@ function bgmOn(){if(bgmTimer)return;bgmTimer=setInterval(()=>{if(!AC||muted)retu
   beep(f,f,.18,'triangle',.062);if(bgmStep%4===0)beep(f/2,f/2,.34,'sawtooth',.044);}
  bgmStep++;},300);}
 function bgmOff(){clearInterval(bgmTimer);bgmTimer=null;}
+/* ⭐**タイトル画面のBGM**(2026-07-27ユーザー指示「タイトル画面とかでちょっとホラーっぽいBGMを。
+     ゲーム入ったら切れるように」)。⚠**音楽素材は足さない**(1曲入れるだけで数MB)。
+     絵と同じく**その場で合成する**=容量ゼロ・ライセンスの心配もなし。
+   ⚠**間を大きく空ける**のが肝。メニューでずっと鳴り続ける音なので、音符を詰めると数十秒で耳障りになる。
+   3層: ①低いドローン(2本をわずかにずらす=うなりが出て不安になる) ②まばらな短調の音
+     ③遠くの風(ノイズ)+たまに聞こえるうめき声。
+   ⚠**AudioContextはユーザー操作の後でしか作れない**ので、起動直後は鳴らない。
+     `ensureAC()`(最初のタップで走る)から呼び直している。 */
+const TBGM=[196,0,0,233,0,0,0,0,175,0,208,0,0,0,0,0];/* ソ / シ♭ / ファ / ラ♭ = 短調+半音のにごり */
+let tbgmTimer=null,tbgmStep=0;
+function tbgmOn(){if(tbgmTimer||!AC)return;
+ /* ⚠🔊音の確認画面(?sfx=1)では鳴らさない=1つずつ聴き比べる画面なので邪魔になる */
+ try{if(SFXTEST)return;}catch(e){}
+ tbgmStep=0;
+ tbgmTimer=setInterval(()=>{if(!AC||muted||SCR==='game')return;
+  const s=tbgmStep%16,f=TBGM[s];
+  /* ①ドローン。⚠鳴らす長さ(3.4秒)>差し込む間隔(2.8秒)にして途切れさせない */
+  if(s%4===0){beep(98,97,3.4,'triangle',.035);beep(98.6,97.6,3.4,'sine',.03);}
+  if(f)beep(f,f*.995,2.2,'triangle',.05);/* ②まばらな音 */
+  if(s===8)beep(f*1.5,f*1.5,1.6,'sine',.026);/* 5度をうっすら重ねる */
+  if(s===13&&Math.random()<.5)nzHit(700,180,2.2,.05,1);/* ③遠くの風 */
+  if(s===6&&Math.random()<.25&&sfx.moan)sfx.moan();/* たまに遠くでうめく */
+  tbgmStep++;},700);}
+function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
 document.addEventListener('pointerdown',ensureAC);
 document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
 document.addEventListener('dblclick',e=>{try{e.preventDefault();}catch(x){}});/* 連打によるダブルタップズーム抑止 */
@@ -11000,7 +11027,9 @@ function minisResPx(){
  }catch(e){}
  return MINIRES;}
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');
- if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}if(id==='game')bgmOn();else if(id==='title')bgmOff();}
+ if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}/* ⭐ゲームに入ったらタイトルBGMを切り、出たら戻す(2026-07-27ユーザー指示)。
+    ⚠戦闘中のBGM(bgmOn)は**ゲーム以外の画面すべてで止める**=以前はタイトルでしか止めていなかった。 */
+ if(id==='game'){tbgmOff();bgmOn();}else{bgmOff();tbgmOn();}}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
 /* 地面の模様はマップの外(画面端まで伸ばす裁ち落とし部分)にも撒く=境目が見えないように */
