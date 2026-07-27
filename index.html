@@ -6148,88 +6148,289 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     34pxでは3.9だとフチが図形を食い、頭がヘルメット・腕が黒い棒になる。2.6のままが正しい */
  c.lineWidth=2.6/s;c.strokeStyle=INK;
  /* ===== ナイトメアの獣たち ===== */
- if(Z.id==='nmRat'){/* 巨鼠 */
-  c.fillStyle=Z.c;rr(c,-16,-15,30,12,7);c.fill();c.stroke();
-  c.fillRect(-11+walk*4,-4,4,5);c.fillRect(6-walk*4,-4,4,5);
-  c.strokeStyle='#a08a6a';c.lineWidth=2.4/s;c.beginPath();c.moveTo(-16,-9);c.quadraticCurveTo(-30,-6,-32,-14);c.stroke();c.strokeStyle=INK;
-  c.fillStyle=Z.c;c.beginPath();c.moveTo(14,-16);c.lineTo(26,-11);c.lineTo(14,-6);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.arc(12,-19,4,0,7);c.fill();c.stroke();
-  c.fillStyle=DANGER;c.beginPath();c.arc(19,-12,1.6,0,7);c.fill();
+ /* ===== 🌑ナイトメアの獣たち(2026-07-27 第103弾に8種すべて描き直し) =====
+    ⚠ここが一番古い絵で、**角丸長方形の胴+丸い頭+等間隔の部品**が全種に残っていた。
+    ⭐当てるのはステージ1・2と同じ3つ: ①大きさ ②色の区分け(`ZB`) ③ハリボテ感の4原因。
+    ⚠獣は服を着ていないので、**背(Z.c)/腹の下毛/爪と牙/むき出しの肉** で分ける。 */
+ if(Z.id==='nmRat'){/* ⭐巨鼠の群れ(第103弾に描き直し): 名前のとおり**群れ**にする。
+    ⚠それまで角丸長方形の胴+丸い頭+三角の鼻を**1匹だけ**描いていた=石鹸に尻尾が付いて見えた。
+    ⭐大きさ・高さ・位相を変えた3匹にすると、部品の繰り返しが**群れ**として意味を持つ。 */
+  const RT=[[-18,-1,.64,1.9,.66],[13,-3,.76,3.2,.8],[-2,0,1.04,0,1]];
+  for(let k=0;k<3;k++){const r=RT[k],bw=Math.sin(t*11+ph+r[3]),dk=r[4];
+   c.save();c.translate(r[0],r[1]);c.scale(r[2],r[2]);
+   c.fillStyle=shade(Z.c,dk*.66);/* 尾(先が細い) */
+   c.beginPath();c.moveTo(-13,-13);c.lineTo(-12,-9.6);
+   c.quadraticCurveTo(-24,-9,-27.4,-19+bw*2);
+   c.quadraticCurveTo(-22,-12,-13,-13);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(Z.c,dk*.64);/* 奥の脚 */
+   for(const g of [[-8,-3.4],[6,3.4]]){
+    c.beginPath();c.moveTo(g[0]-2.6,-9);c.lineTo(g[0]+2.6,-9);
+    c.lineTo(g[0]+2.2+g[1]*bw*.5,-.6);c.lineTo(g[0]-2.2+g[1]*bw*.5,-.6);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();/* 胴(背が丸く盛り上がる) */
+    c.moveTo(-14,-9.6);
+    c.bezierCurveTo(-15.4,-16,-9,-19.4,-2,-19);
+    c.bezierCurveTo(5,-18.6,11,-17.4,13,-14);
+    c.lineTo(12,-8);
+    c.bezierCurveTo(6,-5.4,-8,-5.4,-14,-8);
+    c.closePath();},Z.c,-10);
+   c.fillStyle=shade(Z.c,dk*.9);/* 手前の脚 */
+   for(const g of [[-4,-3],[9,3]]){
+    c.beginPath();c.moveTo(g[0]-2.6,-9);c.lineTo(g[0]+2.6,-9);
+    c.lineTo(g[0]+2.2+g[1]*bw*.5,-.6);c.lineTo(g[0]-2.2+g[1]*bw*.5,-.6);c.closePath();c.fill();c.stroke();}
+   c.fillStyle=shade(Z.c,dk*.76);/* 耳(丸く大きい=鼠の決め手) */
+   c.beginPath();c.arc(12.4,-20.4,4.6,0,7);c.fill();c.stroke();
+   zFill(c,()=>{c.beginPath();/* 頭+鼻面を1本の輪郭で */
+    c.moveTo(9,-16.4);
+    c.bezierCurveTo(9,-21.4,13,-23.4,17,-22.4);
+    c.bezierCurveTo(21,-21.4,22.4,-18,22,-15.6);
+    c.lineTo(27.4,-13.6);c.lineTo(27,-10.8);
+    c.lineTo(19,-9.8);
+    c.bezierCurveTo(13,-9.2,9.4,-13,9,-16.4);
+    c.closePath();},Z.c,-14);
+   c.fillStyle='#d88a9a';c.beginPath();c.arc(26.4,-12.2,1.6,0,7);c.fill();/* 鼻 */
+   c.fillStyle=PANE;/* 前歯(不揃いに2本) */
+   c.beginPath();c.moveTo(21.6,-10.8);c.lineTo(22.6,-6.4);c.lineTo(24,-10.4);c.closePath();c.fill();
+   zEye(c,17.4,-17,1.9);
+   c.restore();}
   c.restore();return;}
- if(Z.id==='nmBoar'){/* 変異猪 */
-  c.fillStyle=Z.c;rr(c,-20,-30,40,22,10);c.fill();c.stroke();
-  c.fillStyle=shade(Z.c,.8);
-  c.fillRect(-14+walk*4,-9,6,9);c.strokeRect(-14+walk*4,-9,6,9);c.fillRect(8-walk*4,-9,6,9);c.strokeRect(8-walk*4,-9,6,9);
-  c.fillStyle=Z.c;c.beginPath();c.arc(20,-26,10,0,7);c.fill();c.stroke();
-  c.fillStyle=PANE;c.beginPath();c.moveTo(24,-22);c.lineTo(34,-28);c.lineTo(25,-18);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#3a3128';for(let k=0;k<4;k++){c.beginPath();c.moveTo(-8+k*7,-30);c.lineTo(-5+k*7,-38);c.lineTo(-2+k*7,-30);c.closePath();c.fill();}
-  c.fillStyle=DANGER;c.beginPath();c.arc(24,-29,2,0,7);c.fill();
+ if(Z.id==='nmBoar'){/* ⭐変異猪(第103弾に描き直し): 突進する獣。**前が重く後ろが細い体**と牙が売り。
+    ⚠それまで角丸長方形+丸い頭+等間隔の棘4本+四角い脚2本で、実機では茶色い箱だった。
+    ⚠鬣は**胴より先に描いて根元を埋める**(棘を胴の上から乗せると底辺の黒フチが体を横切る)。 */
+  const sw=walk*4;
+  const bleg=(x0,dx,dk,h2)=>{
+   c.fillStyle=shade(Z.c,dk);
+   c.beginPath();c.moveTo(x0-3.6,-h2);c.lineTo(x0+3.6,-h2);c.lineTo(x0+2.6+dx,-4.4);c.lineTo(x0-2.6+dx,-4.4);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade('#2b2419',dk*1.15);/* 蹄 */
+   c.beginPath();c.moveTo(x0-2.8+dx,-4.6);c.lineTo(x0+2.8+dx,-4.6);c.lineTo(x0+3.6+dx,-.4);c.lineTo(x0-3.2+dx,-.4);c.closePath();c.fill();c.stroke();};
+  bleg(-13,-sw,.6,15);bleg(9,sw,.6,16);
+  c.fillStyle=shade(Z.c,.7);/* 尾(短く巻く) */
+  c.beginPath();c.moveTo(-19,-24);c.lineTo(-17,-20.6);
+  c.quadraticCurveTo(-26,-19,-27.4,-27);c.quadraticCurveTo(-24,-21.6,-19,-24);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(Z.c,1.26);/* 鬣(⚠長さも間隔も崩す) */
+  for(const g of [[-8,7.6],[-2,11],[3.6,8],[9.4,11.6],[14.4,7]]){
+   c.beginPath();c.moveTo(g[0]-3.2,-28);c.lineTo(g[0]+.6,-28-g[1]);c.lineTo(g[0]+3.6,-28);c.closePath();c.fill();c.stroke();}
+  zFill(c,()=>{c.beginPath();/* 胴(前が高く後ろが低い) */
+   c.moveTo(-20,-19.6);
+   c.bezierCurveTo(-22.4,-26,-14,-29.4,-4,-29.8);
+   c.bezierCurveTo(6,-30.2,16,-31.4,20,-27);
+   c.lineTo(19,-13.6);
+   c.bezierCurveTo(8,-9.6,-10,-9.6,-19,-13.6);
+   c.closePath();},Z.c,-20);
+  bleg(-8,-sw*.7,.94,16);bleg(14,sw*.7,1,17);
+  c.fillStyle=shade(Z.c,.76);/* 耳 */
+  c.beginPath();c.moveTo(19.4,-31.6);c.lineTo(15,-39);c.lineTo(23.4,-35.6);c.closePath();c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();/* 頭+鼻面を1本の輪郭で */
+   c.moveTo(15,-27);
+   c.bezierCurveTo(15,-34.4,20,-37.4,26,-36);
+   c.bezierCurveTo(31.4,-34.6,33.4,-30,32,-26.6);
+   c.lineTo(37.4,-24);c.lineTo(36.4,-19.4);
+   c.lineTo(27,-18.4);
+   c.bezierCurveTo(19,-17.8,15.4,-22,15,-27);
+   c.closePath();},Z.c,-24);
+  c.fillStyle=INK;c.beginPath();c.ellipse(36,-21.6,2.4,2,0,0,7);c.fill();/* 鼻 */
+  c.fillStyle=PANE;/* 牙(⚠左右で長さを変える) */
+  c.beginPath();c.moveTo(30.6,-19);c.lineTo(35.4,-30.4);c.lineTo(33.6,-18.6);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(26.6,-18.8);c.lineTo(28.6,-25.6);c.lineTo(29.4,-18.4);c.closePath();c.fill();c.stroke();
+  zEye(c,25,-30,2);
   c.restore();return;}
- if(Z.id==='nmSpid'){/* 肉蜘蛛 */
-  c.strokeStyle=shade(Z.c,1.4);c.lineWidth=3/s;
-  for(let k=0;k<4;k++){const a3=Math.sin(t*6+k*1.5+ph)*6;
-   c.beginPath();c.moveTo(-4,-14);c.lineTo(-16-k*4,-24+a3);c.lineTo(-20-k*5,-2);c.stroke();
-   c.beginPath();c.moveTo(4,-14);c.lineTo(16+k*4,-24-a3);c.lineTo(20+k*5,-2);c.stroke();}
+ if(Z.id==='nmSpid'){/* ⭐肉蜘蛛(第103弾に描き直し): すり抜ける。**膝で折れた8本脚**と肉の腹が売り。
+    ⚠それまで**同じ太さの線を等間隔に8本**引いていたので、蜘蛛ではなく櫛に見えた。
+    ⭐脚は「**根元から上へ上がってから下へ降りる**」=膝を作ると一気に蜘蛛に読める。
+    ⚠脚も長さと膝の高さを崩す。⚠線ではなく帯で描く(細い線は黒フチに食われて棒になる)。 */
+  /* ⚠膝を体の**真上**に置くと脚が縦の棒になり、体に**檻**をかぶせたように見える(1回そうなった)。
+     膝は体より**外側**へ張り出させ、高さは体の少し上までに留めること。 */
+  const sleg=(hx,kx,ky,fx,dk,k)=>{
+   const a3=Math.sin(t*6+ph+k*1.1)*2.4;
+   c.fillStyle=shade(Z.c,dk);
+   c.beginPath();
+   c.moveTo(hx-2.6,-16);c.lineTo(hx+2.6,-15);
+   c.lineTo(kx+2.4,ky+a3+1.6);c.lineTo(fx+1.6,-.6);c.lineTo(fx-1.6,-.6);c.lineTo(kx-2.6,ky+a3-.6);
+   c.closePath();c.fill();c.stroke();};
+  /* ⚠脚の付け根は**全部 頭胸部**に置く。腹から生やすと脚が腹を縦に横切って檻に見える(2回踏んだ) */
+  sleg(2,-21,-26,-31,.58,0);sleg(5,-6,-29,-13,.62,1);
+  sleg(9,15,-28,21,.58,2);sleg(13,31,-25,38,.62,3);
+  zFill(c,()=>{c.beginPath();/* 腹(いちばん大きい塊) */
+   c.ellipse(-9,-19,15,12.6,-.12,0,7);},Z.c,-18);
+  c.fillStyle=ZS.rot;/* 破れて覗く肉(⚠大きさを変えて2つ) */
+  c.beginPath();c.ellipse(-13,-21,5,3.4,.4,0,7);c.fill();
+  c.beginPath();c.ellipse(-5,-13.6,3,2,-.3,0,7);c.fill();
+  c.fillStyle=shade(Z.c,1.3);/* 腹の筋(長さ違い) */
+  c.beginPath();c.moveTo(-19,-25);c.quadraticCurveTo(-10,-27.4,-2,-24);c.lineTo(-2,-22.6);
+  c.quadraticCurveTo(-10,-25.6,-19,-23.4);c.closePath();c.fill();
+  sleg(3,-15,-23,-24,.9,4);sleg(7,-1,-26,-6,.96,5);
+  sleg(10,20,-25,27,.92,6);sleg(14,35,-22,43,1,7);
+  zFill(c,()=>{c.beginPath();/* 頭胸部 */
+   c.ellipse(9,-17,9.6,8.4,0,0,7);},Z.c,-16);
+  c.fillStyle=INK;/* 牙(不揃いに2本) */
+  c.beginPath();c.moveTo(14,-12.6);c.lineTo(16.4,-6.4);c.lineTo(17.6,-12.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(11,-12);c.lineTo(12.4,-7.6);c.lineTo(14,-12);c.closePath();c.fill();
+  c.fillStyle=DANGER;/* 単眼の群れ(⚠大きさを変える) */
+  for(const e2 of [[14.4,-21,2.4],[10.4,-22.6,1.7],[16.6,-17.6,1.5],[12,-18,1.2]]){
+   c.beginPath();c.arc(e2[0],e2[1],e2[2],0,7);c.fill();}
+  c.restore();return;}
+ if(Z.id==='nmBat'){/* ⭐吸血蝙蝠(第103弾に描き直し): 飛んですり抜ける。
+    ⚠平たい三角の翼を左右対称に開いていたので**紙飛行機**に見えた。
+    ⭐**指の骨で翼を割り、後縁を扇形に欠く**。⚠左右で羽ばたきの位相を変える(揃うと1枚の板に潰れる)。 */
+  const fl=Math.sin(t*14+ph),fl2=Math.sin(t*14+ph+.9);
+  c.translate(0,-24-Math.abs(fl)*4);
+  const wing=(sg,f,dk)=>{
+   const tp=-16-f*11;
+   c.fillStyle=shade(Z.c,dk);
+   c.beginPath();
+   c.moveTo(sg*2,-11);
+   c.quadraticCurveTo(sg*15,tp-4,sg*29,tp);          /* 前縁 */
+   c.quadraticCurveTo(sg*24,tp+7,sg*22,tp+8);        /* 後縁を扇形に欠く */
+   c.quadraticCurveTo(sg*18,tp+4,sg*15,tp+9);
+   c.quadraticCurveTo(sg*11,tp+6,sg*8,tp+12);
+   c.quadraticCurveTo(sg*5,tp+9,sg*2,-4);
+   c.closePath();c.fill();c.stroke();
+   c.strokeStyle=shade(Z.c,dk*.6);c.lineWidth=1.7/s;/* 指の骨(長さ違い) */
+   for(const g of [[22,8],[15,9],[8,12]]){
+    c.beginPath();c.moveTo(sg*2,-9);c.lineTo(sg*g[0],tp+g[1]-1.4);c.stroke();}
+   c.strokeStyle=INK;c.lineWidth=2.6/s;};
+  wing(-1,fl2,.7);
+  zFill(c,()=>{c.beginPath();/* 胴(毛むくじゃら) */
+   c.moveTo(-5.4,-14);
+   c.bezierCurveTo(-6,-21,-3,-24,1,-24);
+   c.bezierCurveTo(5,-24,7.6,-21,7,-14);
+   c.bezierCurveTo(5,-6,-3.4,-6,-5.4,-14);
+   c.closePath();},Z.c,-13);
+  wing(1,fl,.86);
+  c.fillStyle=shade(Z.c,.8);/* 耳(細長く上へ=蝙蝠の決め手。左右で長さを変える) */
+  c.beginPath();c.moveTo(-2.6,-25);c.lineTo(-5.4,-35);c.lineTo(1.6,-27.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(3.6,-25.4);c.lineTo(5.4,-33.4);c.lineTo(7.4,-25.6);c.closePath();c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();/* 頭(鼻面が短い) */
+   c.moveTo(-3.6,-24.4);
+   c.bezierCurveTo(-3.6,-29.6,0,-31.6,3.6,-31);
+   c.bezierCurveTo(7,-30.4,8.6,-27,8,-24);
+   c.lineTo(10.4,-22.4);c.lineTo(9.6,-20);
+   c.bezierCurveTo(4,-18,-2.6,-20.4,-3.6,-24.4);
+   c.closePath();},Z.c,-22);
+  c.fillStyle=PANE;/* 牙(不揃いに2本) */
+  c.beginPath();c.moveTo(4.4,-20.4);c.lineTo(5.4,-15.4);c.lineTo(6.6,-20);c.closePath();c.fill();
+  c.beginPath();c.moveTo(1.4,-20.6);c.lineTo(2.2,-17);c.lineTo(3.4,-20.4);c.closePath();c.fill();
+  zEye(c,4,-26.4,2);
+  c.restore();return;}
+ if(Z.id==='nmCrow'){/* ⭐腐肉鴉(第103弾に描き直し): 群れを昂ぶらせる。
+    ⚠楕円の胴+丸い頭+三角の翼2枚で、実機では**黒い紙飛行機**に見えた。
+    ⭐**風切羽を長さ違いに割り、尾を扇に開く**。⚠嘴は先が下へ曲がる(まっすぐだと鶴に見える)。 */
+  const fl=Math.sin(t*11+ph),fl2=Math.sin(t*11+ph+.8);
+  c.translate(0,-17-Math.abs(fl)*3);
+  const cw=(f,dk,off)=>{/* 翼(後縁を羽の長さで欠く) */
+   c.fillStyle=shade(Z.c,dk);
+   c.beginPath();c.moveTo(-3+off,-13);
+   c.quadraticCurveTo(-14+off,-23-f*8,-31+off,-21-f*9);
+   c.lineTo(-25+off,-14-f*7);c.lineTo(-20+off,-16.4-f*6);
+   c.lineTo(-14+off,-9.4-f*4);c.lineTo(-9+off,-11.6-f*3);
+   c.lineTo(-3.4+off,-5.6);
+   c.closePath();c.fill();c.stroke();};
+  cw(fl2,.66,-3);
+  c.fillStyle=shade(Z.c,.76);/* 尾(扇形・羽の長さ違い) */
+  c.beginPath();c.moveTo(-8,-13.6);c.lineTo(-27,-7.6);c.lineTo(-24,-4);c.lineTo(-19.4,-6);
+  c.lineTo(-16,-1.6);c.lineTo(-7,-6.6);c.closePath();c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();/* 胴 */
+   c.moveTo(-9,-12.4);
+   c.bezierCurveTo(-10.4,-19.4,-2,-23.4,6,-22.4);
+   c.bezierCurveTo(13,-21.4,16,-17,15,-12);
+   c.bezierCurveTo(10,-4.6,-4,-4.6,-9,-12.4);
+   c.closePath();},Z.c,-12);
+  cw(fl,.9,2);
+  zFill(c,()=>{c.beginPath();/* 頭(首から一続き) */
+   c.moveTo(9,-19.4);
+   c.bezierCurveTo(9.6,-25.4,14,-27.4,18,-26.4);
+   c.bezierCurveTo(22,-25.4,23.4,-22,22.6,-19);
+   c.bezierCurveTo(19,-15.4,11,-15.6,9,-19.4);
+   c.closePath();},Z.c,-18);
+  c.fillStyle=GOLD2;/* 嘴(先が下へ曲がる) */
+  c.beginPath();c.moveTo(21,-23.4);c.lineTo(33,-21.4);c.lineTo(33.4,-17.6);c.lineTo(30.6,-18.6);
+  c.lineTo(21.4,-18.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(GOLD2,.7);c.fillRect(22,-21,8,1.4);/* 嘴の合わせ目 */
+  c.fillStyle=ZS.rot;/* 首の裂けた所 */
+  c.beginPath();c.ellipse(11,-16.6,3.4,2.2,.4,0,7);c.fill();
+  zEye(c,17.6,-23,2.2);
+  c.restore();return;}
+ if(Z.id==='nmBear'){/* ⭐屍熊(第103弾に描き直し): 装甲持ちの大物。**肩の瘤と低く垂れた頭**が熊の決め手。
+    ⚠角丸長方形+丸い頭+丸い耳2つ+四角い脚2本で、実機では茶色い箱だった。
+    ⚠爪と牙は不揃いに。⚠あばらの傷を等間隔で3本引かない。 */
+  const sw=walk*5;
+  const rleg2=(x0,dx,dk,h2)=>{
+   c.fillStyle=shade(Z.c,dk);
+   /* ⚠まっすぐな四角だとテーブルの脚に見える=根元を太く、足首で絞る */
+   c.beginPath();c.moveTo(x0-7,-h2);c.lineTo(x0+7,-h2);c.lineTo(x0+5.6+dx*.5,-13);
+   c.lineTo(x0+4.6+dx,-6);c.lineTo(x0-4.6+dx,-6);c.lineTo(x0-5.6+dx*.5,-13);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(x0-5.4+dx,-6.4);c.lineTo(x0+5.4+dx,-6.4);c.lineTo(x0+7.4+dx,-.6);c.lineTo(x0-6.4+dx,-.6);c.closePath();c.fill();c.stroke();
+   c.fillStyle=PANE;/* 爪(⚠等間隔に並べない) */
+   for(const k of [[-3.4,3.2],[.6,4.2],[4.4,2.8]]){
+    c.beginPath();c.moveTo(x0+k[0]+dx,-2.4);c.lineTo(x0+k[0]+1.4+dx,-2.4+k[1]);c.lineTo(x0+k[0]+2.6+dx,-2.4);c.closePath();c.fill();}};
+  rleg2(-16,-sw,.62,22);rleg2(12,sw,.62,20);
+  zFill(c,()=>{c.beginPath();/* 胴(肩に瘤・尻が低い) */
+   c.moveTo(-26,-20);
+   c.bezierCurveTo(-28,-34,-18,-40,-6,-41);
+   c.bezierCurveTo(4,-42,14,-48,20,-44);   /* 肩の瘤(前が高い) */
+   c.lineTo(24,-24);
+   c.bezierCurveTo(12,-14,-14,-14,-26,-20);
+   c.closePath();},Z.c,-24);
+  c.strokeStyle=ZS.rot;c.lineWidth=2.6/s;/* あばらの傷(⚠長さも間隔も崩す) */
+  for(const g of [[-18,-34,-12,-22],[-9,-37,-4,-24],[-1,-33,3,-25]]){
+   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.stroke();}
   c.strokeStyle=INK;c.lineWidth=2.6/s;
-  c.fillStyle=Z.c;c.beginPath();c.ellipse(-6,-18,14,11,0,0,7);c.fill();c.stroke();
-  c.beginPath();c.arc(10,-16,8,0,7);c.fill();c.stroke();
-  c.fillStyle=DANGER;for(let k=0;k<4;k++){c.beginPath();c.arc(12+(k%2)*5,-19+Math.floor(k/2)*5,1.6,0,7);c.fill();}
+  rleg2(-10,-sw*.7,.92,23);rleg2(16,sw*.7,1,21);
+  c.fillStyle=shade(Z.c,.78);/* 耳(小さく丸い=熊の決め手。左右で大きさを変える) */
+  c.beginPath();c.arc(20,-52,5.4,0,7);c.fill();c.stroke();
+  c.beginPath();c.arc(31,-50,4.4,0,7);c.fill();c.stroke();
+  zFill(c,()=>{c.beginPath();/* 頭+鼻面を1本の輪郭で(前へ低く突き出す) */
+   c.moveTo(19,-40);
+   c.bezierCurveTo(18,-49,24,-53.4,31,-52.4);
+   c.bezierCurveTo(38,-51.4,40.4,-46,39,-41.6);
+   c.lineTo(47,-38.4);c.lineTo(46,-32.6);
+   c.lineTo(34,-30.6);
+   c.bezierCurveTo(24,-29.6,19.6,-34.6,19,-40);
+   c.closePath();},Z.c,-38);
+  c.fillStyle=INK;c.beginPath();c.ellipse(45.4,-35.6,2.8,2.2,0,0,7);c.fill();/* 鼻 */
+  c.fillStyle=PANE;/* 牙(不揃いに3本) */
+  for(const k of [[34,5.4],[38.4,7],[42.6,4.6]]){
+   c.beginPath();c.moveTo(k[0],-31.4);c.lineTo(k[0]+2,-31.4+k[1]);c.lineTo(k[0]+3.6,-31.4);c.closePath();c.fill();}
+  zEye(c,29.4,-45.6,2.6);
   c.restore();return;}
- if(Z.id==='nmBat'){/* 吸血蝙蝠(飛行) */
-  const fl=Math.sin(t*14+ph);
-  c.translate(0,-22-Math.abs(fl)*4);
-  c.fillStyle=shade(Z.c,.75);
-  c.beginPath();c.moveTo(-2,-10);c.lineTo(-26,-20-fl*10);c.lineTo(-22,-2);c.lineTo(-2,-4);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(2,-10);c.lineTo(26,-20+fl*10);c.lineTo(22,-2);c.lineTo(2,-4);c.closePath();c.fill();c.stroke();
-  c.fillStyle=Z.c;rr(c,-6,-16,12,16,5);c.fill();c.stroke();
-  c.beginPath();c.arc(2,-19,6,0,7);c.fill();c.stroke();
-  c.fillStyle=Z.c;c.beginPath();c.moveTo(-2,-24);c.lineTo(-4,-30);c.lineTo(1,-25);c.closePath();c.fill();
-  c.beginPath();c.moveTo(5,-24);c.lineTo(7,-30);c.lineTo(8,-24);c.closePath();c.fill();
-  c.fillStyle=DANGER;c.beginPath();c.arc(4,-19,1.6,0,7);c.fill();
-  c.fillStyle=PANE;c.beginPath();c.moveTo(1,-15);c.lineTo(3,-11);c.lineTo(5,-15);c.closePath();c.fill();
-  c.restore();return;}
- if(Z.id==='nmCrow'){/* 腐肉鴉 */
-  const fl=Math.sin(t*11+ph);
-  c.translate(0,-14-Math.abs(fl)*3);
-  c.fillStyle=shade(Z.c,.8);
-  c.beginPath();c.moveTo(-4,-16);c.lineTo(-24,-26-fl*9);c.lineTo(-6,-8);c.closePath();c.fill();c.stroke();
-  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-14,13,9,0,0,7);c.fill();c.stroke();
-  c.beginPath();c.arc(11,-20,6,0,7);c.fill();c.stroke();
-  c.fillStyle=GOLD2;c.beginPath();c.moveTo(15,-20);c.lineTo(26,-18);c.lineTo(15,-16);c.closePath();c.fill();c.stroke();
-  c.fillStyle=DANGER;c.beginPath();c.arc(13,-22,1.6,0,7);c.fill();
-  c.fillStyle=shade(Z.c,1.1);c.beginPath();c.moveTo(-2,-16);c.lineTo(-22,-24+fl*9);c.lineTo(-4,-8);c.closePath();c.fill();c.stroke();
-  c.restore();return;}
- if(Z.id==='nmBear'){/* 屍熊 */
-  c.fillStyle=Z.c;rr(c,-24,-44,48,34,14);c.fill();c.stroke();
-  c.fillStyle=shade(Z.c,.8);
-  c.fillRect(-18+walk*5,-12,10,13);c.strokeRect(-18+walk*5,-12,10,13);
-  c.fillRect(8-walk*5,-12,10,13);c.strokeRect(8-walk*5,-12,10,13);
-  c.fillStyle=Z.c;c.beginPath();c.arc(22,-44,13,0,7);c.fill();c.stroke();
-  c.beginPath();c.arc(14,-54,5,0,7);c.fill();c.stroke();
-  c.beginPath();c.arc(29,-54,5,0,7);c.fill();c.stroke();
-  c.fillStyle='#3a3128';c.beginPath();c.arc(31,-42,4,0,7);c.fill();
-  c.fillStyle=DANGER;c.beginPath();c.arc(26,-47,2.2,0,7);c.fill();
-  c.fillStyle=PANE;for(let k=0;k<3;k++){c.beginPath();c.moveTo(24+k*3,-38);c.lineTo(26+k*3,-33);c.lineTo(28+k*3,-38);c.closePath();c.fill();}
-  c.strokeStyle='#8a3a3a';c.lineWidth=2.4/s;
-  for(let k=0;k<3;k++){c.beginPath();c.moveTo(-16+k*10,-40);c.lineTo(-10+k*10,-22);c.stroke();}
-  c.strokeStyle=INK;c.lineWidth=2.6/s;
-  c.restore();return;}
- if(Z.id==='nmHorr'){/* 肉塊の主(ナイトメアのボス) */
-  const pl=Math.sin(t*2.2+ph)*3;
-  c.fillStyle=Z.c;c.beginPath();c.ellipse(0,-34,32+pl,30-pl*.5,0,0,7);c.fill();c.stroke();
-  c.fillStyle=shade(Z.c,.75);
-  for(let k=0;k<4;k++){const a4=Math.sin(t*3+k*1.7+ph)*7;
-   c.beginPath();c.ellipse(-24+k*16,-6+a4*.3,9,7,0,0,7);c.fill();c.stroke();}
-  c.strokeStyle=shade(Z.c,1.35);c.lineWidth=4/s;
-  for(let k=0;k<5;k++){const a5=Math.sin(t*2.6+k*1.3+ph)*10;
-   c.beginPath();c.moveTo(-20+k*10,-56);c.quadraticCurveTo(-24+k*11+a5,-74,-16+k*9+a5,-86);c.stroke();}
-  c.strokeStyle=INK;c.lineWidth=2.6/s;
-  c.fillStyle=GOLD;
-  for(const e2 of [[-14,-44,6],[6,-50,7],[18,-36,5],[-4,-28,5],[14,-20,4]]){
+ if(Z.id==='nmHorr'){/* ⭐肉塊の主(第103弾に描き直し・ナイトメアのボス): 融合した肉の塊。
+    ⚠**なめらかな楕円**に、等間隔の触手5本・足4つ・牙5本を並べていたので「玉に櫛が3段」に見えた。
+    ⭐輪郭に**大小のこぶ**を作り、こぶごとに違う速さで揺らす(スライム状体で分かったのと同じ)。
+    ⚠触手・足・牙は全部**長さも間隔も崩す**。目だけは元から不揃いだったのでそのまま。 */
+  const w1=Math.sin(t*2.2+ph)*3,w2=Math.sin(t*1.7+ph*1.4)*2.4,w3=Math.sin(t*3.1+ph*.7)*2;
+  c.fillStyle=shade(Z.c,.7);/* 疑似足(大きさも間隔も違う) */
+  for(const g of [[-26,10,7.6,1.2],[-11,7.4,5.6,2.6],[4,11,8,.4],[21,8.4,6.4,3.4]]){
+   const a4=Math.sin(t*3+g[3]+ph)*2.2;
+   c.beginPath();c.ellipse(g[0],-6+a4*.4,g[1],g[2],0,0,7);c.fill();c.stroke();}
+  c.strokeStyle=shade(Z.c,1.4);c.lineCap='round';/* 触手(太さも長さも崩す) */
+  for(const g of [[-22,-52,5,1.1],[-9,-62,3.4,2.3],[3,-56,6,.5],[16,-64,3.8,3.1],[26,-50,4.6,1.7]]){
+   const a5=Math.sin(t*2.6+g[3]+ph)*10;
+   c.lineWidth=g[2];
+   c.beginPath();c.moveTo(g[0],-52);c.quadraticCurveTo(g[0]-4+a5,g[1]-10,g[0]+4+a5,g[1]-22);c.stroke();}
+  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
+  zFill(c,()=>{c.beginPath();/* 肉の塊(輪郭にこぶ) */
+   c.moveTo(-33-w1,-30);
+   c.bezierCurveTo(-36,-46,-28,-58+w2,-16,-59+w2);
+   c.bezierCurveTo(-8,-60-w3,-9,-66+w1,0,-66+w1);
+   c.bezierCurveTo(9,-66+w1,10,-58+w3,18,-60+w3);
+   c.bezierCurveTo(29,-62-w2,36+w1,-46,34+w1,-30);
+   c.bezierCurveTo(32,-14,-30,-14,-33-w1,-30);
+   c.closePath();},Z.c,-32);
+  c.fillStyle=ZS.rot;/* むき出しの肉(大きさ違い) */
+  c.beginPath();c.ellipse(-20,-42,10,7,.3,0,7);c.fill();
+  c.beginPath();c.ellipse(22,-52,6,4,-.4,0,7);c.fill();
+  c.globalAlpha=.4;c.fillStyle=shade(Z.c,1.4);/* 表面のつやめき */
+  c.beginPath();c.ellipse(-12,-54+w2,13,6,-.16,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle=GOLD;/* 目(大きさも高さも違う) */
+  for(const e2 of [[-16,-46,6.4],[5,-52,7.4],[19,-38,5],[-5,-30,5.4],[15,-24,4],[-25,-31,3.4]]){
    c.beginPath();c.arc(e2[0],e2[1],e2[2],0,7);c.fill();c.stroke();
-   c.fillStyle='#3a1020';c.beginPath();c.arc(e2[0]+1.5,e2[1],e2[2]*.45,0,7);c.fill();c.fillStyle=GOLD;}
-  c.fillStyle='#3a1020';c.beginPath();c.ellipse(0,-16,16,7,0,0,7);c.fill();c.stroke();
-  c.fillStyle=PANE;for(let k=0;k<5;k++){c.beginPath();c.moveTo(-12+k*6,-20);c.lineTo(-10+k*6,-12);c.lineTo(-7+k*6,-20);c.closePath();c.fill();}
+   c.fillStyle='#3a1020';c.beginPath();c.arc(e2[0]+e2[2]*.26,e2[1],e2[2]*.46,0,7);c.fill();c.fillStyle=GOLD;}
+  c.fillStyle='#3a1020';/* 口(横に裂ける) */
+  c.beginPath();c.ellipse(0,-16,17,7.4,.04,0,7);c.fill();c.stroke();
+  c.fillStyle=PANE;/* 牙(⚠等間隔に並べない) */
+  for(const k of [[-13,7.4],[-7.4,9.6],[-1,6.6],[4.6,9],[10.4,7.6]]){
+   c.beginPath();c.moveTo(k[0],-21);c.lineTo(k[0]+2.4,-21+k[1]);c.lineTo(k[0]+4.4,-21);c.closePath();c.fill();}
+  for(const k of [[-9,5.4],[1.4,6.6],[8,4.6]]){
+   c.beginPath();c.moveTo(k[0],-11.6);c.lineTo(k[0]+2.2,-11.6-k[1]);c.lineTo(k[0]+4,-11.6);c.closePath();c.fill();}
   c.restore();return;}
  /* ===== ステージ2「沈んだ港」: ゾンビ化した海の生き物(2026-07-27 第101弾に13種すべて描き直し) =====
     ⭐ステージ1で分かった3つをそのまま当てる:
@@ -6865,39 +7066,71 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   rotMark(c,-6,-58,50,36,ph,t);
   c.restore();return;}
  if(Z.id==='fBeast'){/* 原初の獣(ナイトメアの最終ボス): 背から仔獣の頭が生え、腹に仔をぶら下げた巨獣
-    ⚠スプライトに焼く箱の中に収まるのは局所座標で|x|≦54・y≧-105まで(bakeSet)。はみ出すと切れる */
+    ⚠スプライトに焼く箱の中に収まるのは局所座標で|x|≦54・y≧-105まで(bakeSet)。はみ出すと切れる。
+    ⭐第103弾に描き直し。⚠それまで**楕円の胴+等間隔の四角い脚4本+同じ大きさの仔の頭3つ**で、
+      大きいだけの塊だった。脚は根元を太く足首で絞り、仔の頭と角と牙は全部大きさを崩す。 */
   const br=Math.sin(t*2+ph)*3,gp=Math.sin(t*3.4+ph);
-  /* 4本の太い脚 */
-  for(const lg of [[-36,1],[-18,-1],[2,1],[20,-1]]){
-   const sw=walk*lg[1]*4;
-   c.fillStyle=shade(Z.c,.72);
-   c.beginPath();c.moveTo(lg[0]-7,-30);c.lineTo(lg[0]+7,-30);c.lineTo(lg[0]+9+sw,-2);c.lineTo(lg[0]-9+sw,-2);c.closePath();c.fill();c.stroke();
-   c.fillStyle='#efe7d2';
-   for(let k=0;k<2;k++){c.beginPath();c.moveTo(lg[0]-6+sw+k*7,-2);c.lineTo(lg[0]-3+sw+k*7,2);c.lineTo(lg[0]+sw+k*7,-2);c.closePath();c.fill();}}
-  /* 腹にぶら下がる仔(倒すと這い出てくる) */
-  c.fillStyle=shade(Z.c,.85);
-  for(let k=0;k<3;k++){const sy=Math.sin(t*2.6+k*1.8+ph)*2;
-   c.beginPath();c.ellipse(-28+k*16,-14+sy,7,5,0,0,7);c.fill();c.stroke();}
-  /* 胴 */
-  c.fillStyle=Z.c;c.beginPath();c.ellipse(-10,-48,38,26+br*.3,0,0,7);c.fill();c.stroke();
-  /* 背に生えた仔獣の頭 */
-  for(const hd of [[-34,-68,9],[-16,-76,11],[4,-70,9]]){
-   c.fillStyle=shade(Z.c,1.2);c.beginPath();c.arc(hd[0],hd[1],hd[2],0,7);c.fill();c.stroke();
-   c.beginPath();c.moveTo(hd[0]-hd[2]*.8,hd[1]-hd[2]*.7);c.lineTo(hd[0]-hd[2]*.35,hd[1]-hd[2]*1.6);c.lineTo(hd[0]-hd[2]*.1,hd[1]-hd[2]*.75);c.closePath();c.fill();c.stroke();
-   c.fillStyle='#ffb03d';c.beginPath();c.arc(hd[0]+hd[2]*.35,hd[1],2.2,0,7);c.fill();}
-  /* 頭部と巨大な顎(胴から前へ突き出す) */
-  c.fillStyle=Z.c;c.beginPath();c.ellipse(30,-54,20,19,0,0,7);c.fill();c.stroke();
-  c.fillStyle=shade(Z.c,.8);
-  c.beginPath();c.moveTo(38,-62);c.lineTo(53,-52-gp*2);c.lineTo(38,-40);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#efe7d2';
-  for(let k=0;k<3;k++){c.beginPath();c.moveTo(36+k*6,-54);c.lineTo(39+k*6,-45+gp*2);c.lineTo(42+k*6,-54);c.closePath();c.fill();}
-  for(let k=0;k<2;k++){c.beginPath();c.moveTo(39+k*6,-45+gp*3);c.lineTo(42+k*6,-54);c.lineTo(45+k*6,-45+gp*3);c.closePath();c.fill();}
-  /* 角 */
-  c.fillStyle=shade(Z.c,1.35);
-  c.beginPath();c.moveTo(20,-66);c.lineTo(10,-96);c.lineTo(30,-70);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(38,-62);c.lineTo(50,-84);c.lineTo(46,-58);c.closePath();c.fill();c.stroke();
-  c.fillStyle=DANGER;c.beginPath();c.arc(32,-60,3.2,0,7);c.fill();
-  rotMark(c,-10,-48,48,42,ph,t);
+  /* ⚠全部を Z.c 一色で塗ると**巨大な塊**になって形が読めない(第103弾に踏んだ)。
+     脚を暗く・頭と仔獣を明るくして、部位ごとに段を付ける。 */
+  const LC='#43202a',HC='#8a3c4a';
+  /* 4本の太い脚(⚠等間隔・同じ太さで並べない) */
+  const fleg=(x0,h2,wd,dk,dir2)=>{
+   const sw=walk*dir2*4;
+   c.fillStyle=shade(LC,dk);
+   c.beginPath();c.moveTo(x0-wd,-h2);c.lineTo(x0+wd,-h2);
+   c.lineTo(x0+wd*.72+sw*.5,-14);c.lineTo(x0+wd*.62+sw,-2.4);c.lineTo(x0-wd*.62+sw,-2.4);c.lineTo(x0-wd*.72+sw*.5,-14);
+   c.closePath();c.fill();c.stroke();
+   c.fillStyle='#efe7d2';/* 爪(不揃いに3本) */
+   for(const k of [[-5,3.6],[-.6,4.6],[3.4,3]]){
+    c.beginPath();c.moveTo(x0+k[0]+sw,-2.6);c.lineTo(x0+k[0]+1.6+sw,-2.6+k[1]);c.lineTo(x0+k[0]+3+sw,-2.6);c.closePath();c.fill();}};
+  fleg(-34,30,8,.86,1);fleg(-14,32,7,.9,-1);
+  c.fillStyle=shade(LC,1.3);/* 腹にぶら下がる仔(大きさ違い) */
+  for(const g of [[-30,7.6,5.4,1.2],[-14,5.6,4,2.8],[2,8.4,6,.3]]){
+   const sy=Math.sin(t*2.6+g[3]+ph)*2;
+   c.beginPath();c.ellipse(g[0],-14+sy,g[1],g[2],0,0,7);c.fill();c.stroke();
+   c.fillStyle='#ffb03d';c.beginPath();c.arc(g[0]+g[1]*.4,-15+sy,1.6,0,7);c.fill();
+   c.fillStyle=shade(LC,1.3);}
+  zFill(c,()=>{c.beginPath();/* 胴(肩が高く尻が低い・輪郭にこぶ) */
+   c.moveTo(-46,-42);
+   c.bezierCurveTo(-50,-60,-38,-70+br*.4,-22,-71+br*.4);
+   c.bezierCurveTo(-6,-72,10,-76,20,-68);
+   c.lineTo(24,-40);
+   c.bezierCurveTo(6,-24,-32,-26,-46,-42);
+   c.closePath();},Z.c,-46);
+  c.fillStyle=ZS.rot;/* 裂けた脇腹とあばら(⚠長さを崩す) */
+  c.beginPath();c.ellipse(-30,-52,9,6,.3,0,7);c.fill();
+  c.strokeStyle=ZS.rot;c.lineWidth=2.6/s;
+  for(const g of [[-20,-62,-14,-44],[-8,-66,-3,-46],[3,-62,6,-48]]){
+   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6/s;
+  /* 背に生えた仔獣の頭(⚠大きさも高さも崩す) */
+  for(const hd of [[-36,-70,8],[-18,-80,11.4],[2,-74,6.6]]){
+   c.fillStyle=HC;c.beginPath();c.arc(hd[0],hd[1],hd[2],0,7);c.fill();c.stroke();
+   c.beginPath();c.moveTo(hd[0]-hd[2]*.85,hd[1]-hd[2]*.7);c.lineTo(hd[0]-hd[2]*.3,hd[1]-hd[2]*1.7);
+   c.lineTo(hd[0]-hd[2]*.05,hd[1]-hd[2]*.75);c.closePath();c.fill();c.stroke();
+   c.fillStyle='#ffb03d';c.beginPath();c.arc(hd[0]+hd[2]*.34,hd[1]-hd[2]*.1,hd[2]*.24,0,7);c.fill();}
+  fleg(-2,33,7.4,1.16,1);fleg(18,31,8.4,1.24,-1);
+  /* 角(⚠左右対称にしない。太さも長さも変える) */
+  c.fillStyle=shade(HC,1.2);
+  c.beginPath();c.moveTo(19,-66);c.lineTo(8,-97);c.lineTo(16,-92);c.lineTo(30,-70);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(37,-62);c.lineTo(51,-86);c.lineTo(50,-77);c.lineTo(46,-57);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#2a0d16';/* 口の中(頭より先に敷いて、輪郭の切り欠きから覗かせる) */
+  c.beginPath();c.moveTo(28,-52);c.lineTo(52,-58);c.lineTo(52,-38);c.closePath();c.fill();
+  zFill(c,()=>{c.beginPath();/* 頭(顎を切り欠く) */
+   c.moveTo(13,-54);
+   c.bezierCurveTo(13,-68,24,-74,34,-72);
+   c.bezierCurveTo(45,-70,50,-62,49,-56);
+   c.lineTo(30,-52);          /* 上顎の内側 */
+   c.lineTo(50,-42);          /* 下顎の内側 */
+   c.bezierCurveTo(38,-34,16,-40,13,-54);
+   c.closePath();},HC,-52);
+  c.fillStyle='#efe7d2';/* 牙(⚠長さも間隔も崩す) */
+  for(const k of [[33,-51.4,8.4],[38.6,-53.6,11],[44,-55.6,7.6]]){
+   c.beginPath();c.moveTo(k[0],k[1]);c.lineTo(k[0]+2.6,k[1]+k[2]+gp);c.lineTo(k[0]+5,k[1]+.6);c.closePath();c.fill();}
+  for(const k of [[35,-44.4,7.6],[42,-47.4,9.4]]){
+   c.beginPath();c.moveTo(k[0],k[1]);c.lineTo(k[0]+2.4,k[1]-k[2]-gp);c.lineTo(k[0]+4.6,k[1]-.6);c.closePath();c.fill();}
+  zEye(c,29,-62,3.6);
+  rotMark(c,-14,-52,44,38,ph,t);
   c.restore();return;}
 /* ===== ① 廃線ハイウェイ(2026-07-26 第82弾で作り直し) =====
     ⚠**実機でゾンビは22CSSpxしかない**(タワーの35pxより更に小さい)。
