@@ -10708,50 +10708,15 @@ function renderCamp(C,t){
    for(const p5 of ps){c.globalAlpha=k5*.9;c.fillStyle='#dff4ff';c.beginPath();c.arc(p5[0],p5[1],3.2,0,7);c.fill();c.globalAlpha=1;}
   }
   else if(e.k==='ring'){c.strokeStyle=e.col||'#9fd9c6';c.globalAlpha=Math.max(0,.45-e.t*1.4);c.lineWidth=3;c.beginPath();c.arc(e.x,e.y,10+(e.r||160)*e.t*2.4,0,7);c.stroke();c.globalAlpha=1;}
-  /* ⭐爆発(2026-07-27 第105弾に描き直し)。
-     ⚠それまで**半透明の丸2枚**(白+橙)だけで、**黒フチが無かった**=このゲームの絵は全部
-       「太い黒フチ+べた塗り」なので、爆発だけが霞んで**別のゲームの絵**に見えていた。
-     ⭐**煙→火球(黒フチ)→破片→閃光**の4層に分ける。⚠火球の輪郭にこぶを作り、破片は長さも角度も崩す。 */
-  else if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0);if(tt>=0){
-   const bb=e.k==='boomL'?1.7:1,dur=(e.k==='boomL'?.7:.5),kk=clamp(tt/dur,0,1),sd=e.sd||e.x*.07;
-   /* ①煙(いちばん奥・遅れて残る。⚠丸を等間隔に並べない) */
-   /* ⚠煙は**火球の外側**に置く。中心に重ねると、火球の下から茶色が透けて
-      「オレンジの輪の中に泥がある」絵になる(第105弾に踏んだ) */
-   c.globalAlpha=Math.max(0,.4-kk*.4);c.fillStyle='#6b6055';
-   for(let i=0;i<5;i++){const a=sd+i*1.87,rd=(40+(i%3)*13)*bb*(.45+kk*1.1);
-    c.beginPath();c.arc(e.x+Math.cos(a)*rd,e.y+Math.sin(a)*rd*.5,(9+(i%4)*4)*bb*(.6+kk*.8),0,7);c.fill();}
-   /* ②火球(⭐黒フチ+べた塗り。輪郭は不揃いのこぶ)
-      ⚠**半透明のまま出さない**=べた塗りの世界で薄い色を重ねると必ず「霞」になる。
-        寿命の半分までは不透明のまま出し、そこから一気に消す(NOTESの `1-k*k` と同じ考え) */
-   const g2=kk<.5?1:Math.max(0,1-(kk-.5)/.5);
-   if(g2>0){const R=(18+kk*68)*bb;/* ⚠火球が小さいと爆発が「点」に見える=実際の爆風の広さに近づける */
-    c.globalAlpha=g2;c.lineWidth=2.6;c.strokeStyle=INK;c.fillStyle='#ff9a3d';
-    c.beginPath();
-    for(let i=0;i<9;i++){const a=sd+i*.698,rd=R*(.76+((i*29)%11)*.042);
-     const px=e.x+Math.cos(a)*rd,py=e.y+Math.sin(a)*rd*.84;
-     if(i)c.lineTo(px,py);else c.moveTo(px,py);}
-    c.closePath();c.fill();c.stroke();
-    /* ⭐中心の白熱(閃光)。⚠**輪郭のこぶと同じ形**にしないと球の中に円盤が浮いて見える */
-    c.globalAlpha=g2;c.fillStyle='#ffd23d';
-    c.beginPath();
-    for(let i=0;i<9;i++){const a=sd+i*.698,rd=R*(.76+((i*29)%11)*.042)*.62;
-     const px=e.x+Math.cos(a)*rd+R*.05,py=e.y+Math.sin(a)*rd*.84-R*.08;
-     if(i)c.lineTo(px,py);else c.moveTo(px,py);}
-    c.closePath();c.fill();}
-   /* ③破片(⚠長さも角度も大きさも崩す) */
-   const g3=Math.max(0,1-kk*1.6);
-   /* ⚠破片は**火球の外**へ飛ばす。火球の上に置くと中心が泥色に濁る(第105弾に踏んだ) */
-   if(g3>0){c.globalAlpha=g3;c.fillStyle='#4a4034';
-    for(let i=0;i<7;i++){const a=sd+i*.92+((i*13)%7)*.11,rd=(46+((i*17)%5)*11)*bb*(.5+kk*1.3);
-     const px=e.x+Math.cos(a)*rd,py=e.y+Math.sin(a)*rd*.62,sz=(2.4+((i*11)%4))*bb*.8;
-     c.beginPath();c.moveTo(px-sz,py);c.lineTo(px+sz*.4,py-sz*1.3);c.lineTo(px+sz,py+sz*.5);c.closePath();c.fill();}}
+  else if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0);if(tt>=0){const bb=e.k==='boomL'?2:1,dur=(e.k==='boomL'?.7:.5);
+   c.globalAlpha=Math.max(0,1-tt/dur);
+   c.fillStyle=GLOW;c.beginPath();c.arc(e.x,e.y,8+tt*90*bb,0,7);c.fill();
+   c.globalAlpha=Math.max(0,.85-tt/dur);
+   c.fillStyle='#ffb347';c.beginPath();c.arc(e.x,e.y,14+tt*180*bb,0,7);c.fill();
    c.globalAlpha=1;}}
-  /* ⚠火花は **k*2π/n の等間隔**で、長さも全部同じだった=ウニに見える。角度も長さも崩す */
-  else if(e.k==='spark'){const n3=e.big?10:7,ln=e.big?130:75;c.strokeStyle=e.col||GOLD;c.globalAlpha=Math.max(0,1-e.t/.6);
-   for(let k4=0;k4<n3;k4++){const a=(e.sd||0)+k4*6.283/n3+((k4*23)%7)*.06,
-    lm=.62+((k4*31)%9)*.085,r0=e.t*280*lm,r1=r0+ln*lm*(1-e.t*1.4);
+  else if(e.k==='spark'){const n3=e.big?10:7,ln=e.big?130:75;c.strokeStyle=e.col||GOLD;c.globalAlpha=Math.max(0,1-e.t/.6);c.lineWidth=e.big?4:3;
+   for(let k4=0;k4<n3;k4++){const a=(e.sd||0)+k4*6.283/n3,r0=e.t*280,r1=r0+ln*(1-e.t*1.4);
     if(r1<=r0)continue;
-    c.lineWidth=(e.big?4:3)*(.6+((k4*19)%5)*.16);
     c.beginPath();c.moveTo(e.x+Math.cos(a)*r0,e.y+Math.sin(a)*r0*.6);c.lineTo(e.x+Math.cos(a)*r1,e.y+Math.sin(a)*r1*.6);c.stroke();}c.globalAlpha=1;}
   else if(e.k==='mzl'){/* 銃口の閃光。⚠丸だけだと「撃った」感じが出ないので向き(ang)に扇形で出す */
    const a4=Math.max(0,1-e.t/fxLife('mzl')),r4=(e.r||14)*(.55+a4*.85);
@@ -10769,11 +10734,8 @@ function renderCamp(C,t){
    c.fillStyle='#fff';c.beginPath();c.arc(0,0,1.6+a4*4.4,0,7);c.fill();
    c.strokeStyle=e.col||GOLD;c.lineWidth=2.2;
    const ba=(e.ang||0)+Math.PI;
-   /* ⚠**同じ長さの線を .42 刻みの等間隔**で5本引いていた=櫛に見える。角度も長さも崩す */
-   for(let i4=0;i4<5;i4++){const aa=ba+(i4-2)*.42+((i4*17)%5)*.07,
-    lm=.66+((i4*23)%7)*.1,r0=e.t*95*lm,r1=r0+26*lm*(1-e.t*2.6);
+   for(let i4=0;i4<5;i4++){const aa=ba+(i4-2)*.42,r0=e.t*95,r1=r0+26*(1-e.t*2.6);
     if(r1<=r0)continue;
-    c.lineWidth=2.2*(.7+((i4*13)%4)*.16);
     c.beginPath();c.moveTo(Math.cos(aa)*r0,Math.sin(aa)*r0);c.lineTo(Math.cos(aa)*r1,Math.sin(aa)*r1);c.stroke();}
    c.globalAlpha=1;c.restore();}
   else if(e.k==='ric'){/* ⭐装甲に弾かれた=浅い角度で跳ねる金色の火花。相性が悪いのが一目で分かる */
@@ -10793,26 +10755,16 @@ function renderCamp(C,t){
    c.beginPath();c.ellipse(e.x,e.y,rr,rr*.4,0,0,7);c.stroke();
    c.globalAlpha=a4*.2;c.lineWidth=8*(1-tt*1.8)+.5;
    c.beginPath();c.ellipse(e.x,e.y,rr*.66,rr*.28,0,0,7);c.stroke();c.globalAlpha=1;}
-  /* ⭐近接の斬撃(2026-07-27 第105弾に描き直し)。
-     ⚠**細い円弧を1本 stroke で引くだけ**だったので、実機では白い糸にしか見えなかった。
-     ⭐**厚みのある三日月(黒フチ付き)**にし、内側に薄い残像を1枚重ねる。
-     ⚠真ん中が太く両端が細い形にする=同じ太さの帯だと輪ゴムに見える。 */
-  else if(e.k==='slash'){
+  else if(e.k==='slash'){/* ⭐近接の斬撃。段階(lv)が上がるほど太く、外側にもう1本増える */
    const a4=Math.max(0,1-e.t/fxLife('slash')),lv=e.lv||0,rr=e.r||26;
-   c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);
-   const sw=-1.0+e.t*7,hw=.92,th=(3.6+lv*1.6)*(.5+a4*.7);
-   const cres=(r0,w0,ln2)=>{c.beginPath();
-    for(let i=0;i<=10;i++){const u=i/10,a=sw-hw+u*hw*2,w=w0*Math.sin(Math.PI*u);
-     const px=Math.cos(a)*(r0+w),py=Math.sin(a)*(r0+w);
-     if(i)c.lineTo(px,py);else c.moveTo(px,py);}
-    for(let i=10;i>=0;i--){const u=i/10,a=sw-hw+u*hw*2,w=w0*Math.sin(Math.PI*u);
-     c.lineTo(Math.cos(a)*(r0-w),Math.sin(a)*(r0-w));}
-    c.closePath();c.fill();if(ln2)c.stroke();};
-   c.lineWidth=2.2;c.strokeStyle=INK;
-   c.globalAlpha=a4*.4;c.fillStyle=e.col||PANE;cres(rr*.82,th*.62,0);/* 残像 */
-   c.globalAlpha=a4;c.fillStyle=e.col||PANE;cres(rr,th,1);           /* 本体 */
-   if(lv>=2){c.globalAlpha=a4*.8;c.fillStyle=GLOW;cres(rr,th*.34,0);}/* 刃の芯 */
-   c.globalAlpha=1;c.restore();}
+   c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);c.globalAlpha=a4;
+   c.lineCap='round';
+   const sw=-1.0+e.t*7;
+   c.strokeStyle=e.col||PANE;c.lineWidth=(3+lv*1.7)*(.45+a4*.85);
+   c.beginPath();c.arc(0,0,rr,sw-.85,sw+.85);c.stroke();
+   if(lv>=2){c.strokeStyle='rgba(255,255,255,'+(a4*.75).toFixed(2)+')';c.lineWidth=1.6;
+    c.beginPath();c.arc(0,0,rr*1.2,sw-.62,sw+.62);c.stroke();}
+   c.lineCap='butt';c.globalAlpha=1;c.restore();}
   else if(e.k==='toss'){/* ⭐投げた物が山なりに飛ぶ(爆弾兵・火炎瓶・冷凍弾)。⚠絵だけ=当たり判定は投げた瞬間に済んでいる */
    const lfT=fxLife('toss',e),p6=clamp((e.t-(e.d0||0))/lfT,0,1),hi=e.hi||60;
    const at=q=>[e.x+(e.x2-e.x)*q,e.y+(e.y2-e.y)*q-Math.sin(Math.PI*q)*hi];
@@ -10963,10 +10915,7 @@ function renderCamp(C,t){
    for(const u of us2)if(u.fireT>0){lite(u.px,u.py-24*CH_UP,110,.8);glow.push([u.px,u.py-24*CH_UP,88,.42,'255,214,120']);}
    for(const z of C.zombies)if(z.burnT>0){lite(z.px,z.py-14*CH_UP,70,.6);glow.push([z.px,z.py-14*CH_UP,60,.3,'255,140,60']);}/* 燃えてる敵 */
    for(const e of C.fx){
-    /* ⚠⭐**光の輪を火球より大きくしない**(2026-07-27 第105弾に直した)。
-       210/360 は火球(半径60前後)の3〜6倍あり、爆発が**ぼんやりした霞**にしか見えなかった。
-       絵の主役は火球なので、光はその少し外までに留める。 */
-    if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0);if(tt>=0&&tt<.4){const rr2=(e.k==='boomL'?190:115)*(1-tt*2);lite(e.x,e.y,rr2,1);glow.push([e.x,e.y,rr2*.8,.45*(1-tt*2.5),'255,170,70']);}}
+    if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0);if(tt>=0&&tt<.4){const rr2=(e.k==='boomL'?360:210)*(1-tt*2);lite(e.x,e.y,rr2,1);glow.push([e.x,e.y,rr2*.85,.6*(1-tt*2.5),'255,170,70']);}}
     else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){lite(p4[0],p4[1],90,.85);glow.push([p4[0],p4[1],76,.45,'150,225,255']);}
    }
    const fp2=BRANCH;if(COOP)for(let i=0;i<3;i++)lite(fp2[i][0],fp2[i][1]-10,70,.4);
