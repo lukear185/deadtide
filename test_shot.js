@@ -67,6 +67,8 @@ const GRM=/grid=([a-z]+)/.exec(OPT),GRID=GRM?GRM[1]:'';
 const PXM=/pxcmp(?:=([A-Za-z0-9]+))?/.exec(OPT),PXC=!!PXM,PXID=(PXM&&PXM[1])||'walk';
 /* intro=t|u|z = 新登場の紹介モーダル(タワー/兵科/ゾンビ) */
 const IRM=/intro(?:=([tuz]))?/.exec(OPT),INTRO=!!IRM,INTROK=(IRM&&IRM[1])||'u';
+/* iv = 作戦タイム(準備画面)の強化カードを撮る。⚠🔩と⚙️を潤沢にして全部のカードを押せる状態にする */
+const IV=/(^|\+)iv(\+|$)/.test(OPT);
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
@@ -128,7 +130,6 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        /* gt0/gt1/gt2 でタレットの段(ライフル/ショットガン/レーザー)を指定。
           ⚠オプション名に「w+数字」を入れないこと=時間指定 `w(\d+)` に食われる(gtw2 で実際に踏んだ) */
        +((/gt(\d)/.exec(OPT))?('if(GC){GC.tw=GC.zk='+(/gt(\d)/.exec(OPT))[1]+';}'):''))
-     :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
  /* ⚠以前は `ZIDS.length` を条件にしていたため、**`t=` を単体で指定すると丸ごと無視されていた**
@@ -198,6 +199,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'var busy8=me.fx.some(function(e){return /^(pool|boomL|dust|ice)$/.test(e.k);});'
      +'if(!busy8){n8++;airstrikeHit(me,z8.px,z8.py,10,"'+SKID+'",true);}}catch(e){}},90);'
      +'}catch(e){document.title="ERR5 "+e.message;}},1300);'):'')
+ +(IV?('setTimeout(function(){try{var mI=G.players[0];mI.up=9999;mI.scrap=99999;'
+     /* ⚠新登場の紹介モーダル(PAUSED)が上に乗るので、待ってから畳んで開く */
+     +'INTROQ.length=0;G.introQ=[];document.getElementById("md-intro").classList.remove("on");PAUSED=false;ivOpen();'
+     +'}catch(e){document.title="ERR6 "+e.message;}},1200);'):'')
  +(FXD?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
      +'var D=[["toss",240,300,{x2:420,y2:300,lf:.3,hi:90,kind:"nade",col:"#7d8a5c",sd:1},.5],'
      +'["toss",240,430,{x2:420,y2:430,lf:.3,hi:90,kind:"bottle",col:"#ffb347",sd:2},.5],'
@@ -212,7 +217,6 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* 第66弾: タワーごとの撃ち方 */
      +'["pel",300,660,{x2:620,y2:660,lf:.16,col:"rgba(255,235,150,"},.55],'
      +'["spread",760,690,{ang:0,len:210,col:"rgba(255,235,150,",sd:2},.35],'
-     +'["wave",1030,690,{ang:0,r:220,col:"#c8b4f0"},.45],'
      +'["pboom",1400,680,{r:140,sd:3},.30]];'
      /* 毎フレーム作り直して、寿命の途中の姿で止める */
      +'setInterval(function(){try{me.fx.length=0;me.dly=[];'
