@@ -411,7 +411,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  pointer-events:none;background:var(--ink);color:var(--paper);border:3px solid var(--gold);
  border-radius:12px;padding:7px 10px;box-shadow:0 5px 0 rgba(0,0,0,.35)}
 #tut.on{display:flex}
-/* タイトル側の段は下に置く。上に置くと「ソロ作戦」のボタンに被る(撮って気づいた) */
+/* タイトル側の段は下に置く。上に置くと「ソロ作戦」のボタンに被る(撮って気づいた)。
+   ⭐盤面の**上の方**を光らせる段(工房枠・支援枠)も同じく下に置く=帯が印を隠してしまうため */
 #tut.tl{top:auto;bottom:10px}
 #tut .tx{flex:1 1 auto;min-width:0}
 #tut .tt{font-size:13px;font-weight:900;color:var(--gold);line-height:1.3}
@@ -11709,6 +11710,25 @@ function tutSteps(){return[
  {id:'build',scr:'game',t:'⚙️スクラップで建てる',
   m:'好きなタワーを選べ。建てたあと塔をタップすると⚔攻撃・⏩連射・📡射程を個別に強化できる。',
   hi:{k:'dom',s:'#buildmenu'},sl:1,ok:C=>!!(C.towers||[])[tutSlot(C)]},
+ /* ⭐**塔は建てたあとが本番**(2026-07-27ユーザー指示で追加)。実際に1段だけ強化させる。
+    ⚠建設メニューの中の強化ボタンを押させるので al で通す(hi はマスなので中身までは通らない)。 */
+ {id:'twup',scr:'game',t:'塔は建てたあとが本番',
+  m:'建てた塔をもう一度タップしろ。⚔攻撃・⏩連射・📡射程を1つずつ⚙️で伸ばせる。1段でいい、押してみろ。',
+  hi:{k:'slot'},sl:1,al:'#buildmenu',
+  ok:C=>{const tw=(C.towers||[])[tutSlot(C)];if(!tw||!tw.us)return false;
+   return twStats(tw.ti).some(st=>(tw.us[st]||0)>0);}},
+ /* ⭐**🏭廃品工房**(2026-07-27ユーザー指示で追加)。実際に建てさせる。
+    ⚠工房は解放チェーンの3番目なので、始めたばかりでは建てられない。この段でだけ開けてやる。 */
+ {id:'eco',scr:'game',t:'🏭廃品工房で⚙️を稼げ',
+  m:'画面左上の茶色い枠は廃品工房の専用エリアだ。建てておくと放っておいても⚙️スクラップが増える。長い試合の土台になる。',
+  hi:{k:'slotI',i:ECO_BASE},al:'#buildmenu',low:1,
+  pre:C=>{if(C&&C.unlocked<=ECO_TI)C.unlocked=ECO_TI+1;},
+  ok:C=>!!(C.towers||[])[ECO_BASE]},
+ /* ⭐**🏗支援施設**(2026-07-27ユーザー指示で追加)。⚠枠の解放が⚙️600と高いので**読むだけ**の段にする
+    (ここで買わせると、そのぶんタワーが建たないまま1波目に入ることになる)。 */
+ {id:'sup',scr:'game',t:'🏗支援施設の枠もある',
+  m:'青い破線の枠は支援施設だけの場所だ。⚙️で枠を開けると 📻電波塔(次の波の中身が読める)・🏥野戦病院(部隊を回復)・📦物資投下所 が建つ。タワーの火力は上がらないが試合の運びが変わる。',
+  hi:{k:'slotI',i:SUP_BASE},low:1},
  {id:'unit',scr:'game',t:'主役は生存者部隊だ',
   m:'下のデッキから出撃させろ。部隊はウェーブを跨いで戦い続ける。',
   hi:{k:'dom',s:'#deck'},ok:C=>C.units.length>0},
@@ -11722,6 +11742,10 @@ function tutSteps(){return[
     ここで「✅配置完了!」を押させようとすると、見えないボタンを待つことになり
     しかも時間も止めているので**永久に進めなくなる**(2026-07-26に踏んだ)。
     この段で時間の停止を解除し、数秒でウェーブが始まるようにする。 */
+ /* ⭐**🦸英雄**(2026-07-27ユーザー指示で追加)。説明のために1人つけてあるので実際に出させる。 */
+ {id:'hero',scr:'game',t:'🦸英雄は1試合に1回の切り札',
+  m:'🦸を押すと拠点から出撃する。倒れたら二度と出せないが、出したあとはボタンが必殺技に変わり、溜まるたびに撃てる。',
+  hi:{k:'dom',s:'#herobtn'},ok:C=>(C.hOut||0)>0},
  {id:'go',scr:'game',t:'まもなくウェーブ開始',
   m:'ウェーブ中もタワーは建てられるし、部隊も出せる。2波目からは作戦タイムに強化を選べる。',
   hi:null,pre:()=>{TUT.ran=true;if(G)G.tI=Math.min(G.tI,4);},ok:()=>!!(G&&G.phase==='wave')},
@@ -11789,15 +11813,19 @@ function tutCvOK(e){
  const k=tutSlotOK();if(!k)return false;
  const C=G&&G.players[0];if(!C)return false;
  try{const p=evtToMap(e),h=slotHit(p[0],p[1]);
-  return k===2?h>=0:h===tutSlot(C);}catch(x){return false;}
+  if(k===2)return h>=0;
+  if(k===3)return h===((TUT.hi&&TUT.hi.i)!=null?TUT.hi.i:-1);/* 決め打ちのマスだけ */
+  return h===tutSlot(C);}catch(x){return false;}
 }
 /* その段で建設マスを押してよいか。**0=押せない / 1=光っているマスだけ / 2=どのマスでも**。
    ⚠1は**建設メニューを閉じられた時の逃げ道**でもある(閉じたあと開き直せないと詰む)。
+   **3=hi.i のマスだけ**(工房枠・支援枠を教える段)。
    ⚠2は戦っている最中の段=手を縛らないため(印は出さない)。 */
 function tutSlotOK(){
  if(!TUT||!TUT.on)return 0;
  const S=TUT.st[TUT.i]||{},hi=TUT.hi;
  if(S.sl)return S.sl;
+ if(hi&&hi.k==='slotI')return 3;/* 3=決め打ちのマスだけ */
  return (hi&&hi.k==='slot')?1:0;
 }
 /* ============ 「ここだ」の矢印(第89弾) ============
@@ -11867,6 +11895,10 @@ function tutBattle(){
  setDiff=0;META.stg=0;
  TUT.mv=1;startSolo();TUT.mv=0;
  if(G)G.tut=1;
+ /* ⭐**説明のために英雄を1人つけておく**(2026-07-27ユーザー指示)。
+    ⚠持っていなくても付ける=🦸ボタンが出ないと「英雄の説明」ができないため。
+    ⚠G.tut が立っているので戦績もセーブも汚さない。 */
+ try{if(G){const hi9=hUiOf('hCop');if(hi9>=0){G.players[0].hUi=hi9;G.players[0].hOut=0;G.players[0].hCg=0;}}}catch(e){}
  TUT.si=null;if(G)tutSlot(G.players[0]);/* 建てさせるマスをここで確定させる */
 }
 function tutGo(i){
@@ -11887,7 +11919,9 @@ function tutGo(i){
     ⚠文言は tutSteps に固定で書いてある自分の文字列だけなので、そのまま innerHTML に入れてよい。 */
  $('tut-t').innerHTML=IC(S.t);$('tut-m').innerHTML=IC(S.m);
  $('tut-next').style.display=(S.ok||S.id==='open')?'none':'inline-block';
- e.classList.add('on');e.classList.toggle('tl',S.scr==='title');
+ /* ⚠**帯が印を隠さないようにする**(2026-07-27)。工房枠・支援枠は画面の上の方にあるので、
+    その段では帯を下へ回す(low)。NOTES: 光らせる所が帯で隠れると何を指しているか分からない */
+ e.classList.add('on');e.classList.toggle('tl',S.scr==='title'||!!S.low);
  tutHi(S.hi);
 }
 /* 光らせる。DOMはクラスを付け替え、盤面(マス/拠点)は tutMark() が毎フレーム描く */
@@ -11912,9 +11946,12 @@ function tutMark(c,C,t){
  if(!TUT||!TUT.on)return;
  /* ⭐建てる段(sl:1)でも、建設メニューを閉じていたら印を出し直す
     =押す所が分からないまま塞がれている状態を作らない(第89弾) */
- const sl=(hi&&hi.k==='slot')||(tutSlotOK()===1&&SEL!==tutSlot(C));
+ /* ⭐**slotI**=マス番号を決め打ちで光らせる(工房枠・支援枠。2026-07-27)。
+    tutSlot() は普通のマスしか返さないので、専用枠を教えるにはこれが要る */
+ const si2=(hi&&hi.k==='slotI')?hi.i:-1;
+ const sl=(hi&&hi.k==='slot')||si2>=0||(tutSlotOK()===1&&SEL!==tutSlot(C));
  if(!sl&&!(hi&&hi.k==='core'))return;
- const p=(hi&&hi.k==='core')?PATH[PATH.length-1]:SLOTS[tutSlot(C)];
+ const p=(hi&&hi.k==='core')?PATH[PATH.length-1]:SLOTS[si2>=0?si2:tutSlot(C)];
  if(!p)return;
  const pu=(Math.sin(t*4)+1)*.5,r=(hi.k==='core'?86:52)+pu*10;
  c.save();
