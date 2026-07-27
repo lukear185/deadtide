@@ -1235,18 +1235,22 @@ function checkMetaReset(){
  META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;
  metaReset();
- const keep=[['gem',META.gem===7],['英雄',!!(META.hero&&META.hero.hNox)],['hmat',META.hmat===5],
-  ['図鑑',!!(META.zdex&&META.zdex.walk)],['鍛錬Lv',!!(META.hlv&&META.hlv.hNox)],
-  ['鍛錬経験',!!(META.hxp&&META.hxp.hNox)],['冒険',!!(META.rpg&&META.rpg.gold===99)],
-  ['連れて行く英雄',META.hsel==='hNox'],['鍛錬所の解放',META.tr0===1]];
- for(const [n,ok] of keep)if(!ok){console.log('FAIL: リセットで消してはいけないもの('+n+')が消えている');process.exit(1);}
+ /* ⭐**2026-07-27から「全部消す」**(ユーザー指示「通常プレイ用のやつは初期化して最初からに」)。
+    ⚠それまでは💎英雄🔧図鑑⚔冒険を残す作りで、この検査もそれを守っていた。**方針が変わった**。
+    ⚠新しいセーブ項目を足したら metaResetAll() にも書くこと=ここで消え残りを捕まえる。 */
+ const gone2=[['💎魔石',(META.gem||0)===0],['引いた英雄',Object.keys(META.hero||{}).length===0],
+  ['🔧鍛錬素材',(META.hmat||0)===0],['📖図鑑',Object.keys(META.zdex||{}).length===0],
+  ['鍛錬Lv',Object.keys(META.hlv||{}).length===0],['鍛錬経験',Object.keys(META.hxp||{}).length===0],
+  ['⚔冒険',Object.keys(META.rpg||{}).length===0],['連れて行く英雄',!META.hsel],
+  ['鍛錬所の解放',!META.tr0],['選んでいたステージ',!META.stg]];
+ for(const [n,ok] of gone2)if(!ok){console.log('FAIL: 初期化しても '+n+' が残っている');process.exit(1);}
  const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
   ['派生',META.uv.length===0],['経済強化',META.py0===0],
   ['タワー個別強化',Object.keys(META.tw).length===0],['兵科個別強化',Object.keys(META.un).length===0],
   ['砲撃の威力',(META.st0||0)===0],['砲撃の種類',META.st.length===1&&META.st[0]==='air'],
   ['難易度の記録',!scArr(0)[0]&&!scArr(0)[5]],['ナイトメア解放',!META.nmOK]];
  for(const [n,ok] of gone)if(!ok){console.log('FAIL: リセットしたのに '+n+' が残っている');process.exit(1);}
- console.log('セーブのリセット: 難易度と研究所('+gone.length+'項目)を消し、💎英雄🔧図鑑⚔冒険('+keep.length+'項目)は残す OK');
+ console.log('セーブの初期化: 難易度と研究所('+gone.length+'項目)+💎英雄🔧図鑑⚔冒険('+gone2.length+'項目)を全部消す OK');
  META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];
 }
 /* ---- レールガン(ビーム砲)が線上の敵を全部巻き込むか ---- */
