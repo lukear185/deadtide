@@ -834,8 +834,17 @@ function checkPerUp(){
    if(stl4.indexOf('n')<0){console.log('FAIL: ドローン基地に🛩機体数の強化が無い');process.exit(1);}
    if(twDrN(T4,{us:newUs()})!==1){console.log('FAIL: 素のドローンが1機でない '+twDrN(T4,{us:newUs()}));process.exit(1);}
    if(twDrN(T4,{us:Object.assign(newUs(),{n:USTAT_MAX})})!==5){console.log('FAIL: 強化しても5機にならない');process.exit(1);}
-   {const g4=TOWERS.findIndex(t=>t.id==='drone2');
-    if(twDrN(TOWERS[g4],{us:Object.assign(newUs(),{n:USTAT_MAX*2})})!==8){console.log('FAIL: 母艦が8機にならない');process.exit(1);}}
+   /* ⭐**進化しても機数は5機のまま**。進化で増えるのは1機が積める弾数(2026-07-27ユーザー指示) */
+   {const g4=TOWERS.findIndex(t=>t.id==='drone2'),G4=TOWERS[g4];
+    if(twDrN(G4,{us:Object.assign(newUs(),{n:USTAT_MAX*2})})!==5){console.log('FAIL: 母艦の機数が5機を超えている');process.exit(1);}
+    if(twStats(g4).indexOf('n')>=0){console.log('FAIL: 母艦にまだ🛩機体数の強化が残っている');process.exit(1);}
+    if(twStats(g4).indexOf('a')<0){console.log('FAIL: 母艦に🔫弾数の強化が無い');process.exit(1);}
+    if(twDrAmmo(G4,{us:newUs()})!==10){console.log('FAIL: 母艦の素の弾数が10発でない');process.exit(1);}
+    if(twDrAmmo(G4,{us:Object.assign(newUs(),{a:USTAT_MAX})})!==20){console.log('FAIL: 🔫弾数MAXで20発にならない');process.exit(1);}
+    /* ⚠🔫弾数は**素のドローン基地に無かった枠**=0段から5段ぶん買える(引き継ぎ0) */
+    if(usMinSt(g4,'a')!==0){console.log('FAIL: 母艦の🔫弾数が引き継ぎ段から始まっている');process.exit(1);}
+    if(usMinSt(g4,'d')!==USTAT_MAX){console.log('FAIL: 母艦の⚔攻撃が引き継がれていない');process.exit(1);}
+    if(usCap(g4,'a')!==USTAT_MAX){console.log('FAIL: 母艦の🔫弾数の上限が5段でない');process.exit(1);}}
    /* 🛩機体数は上限(1→5=4段)より先は買えないこと=無駄な段を作らない */
    if(usCap(ti4,'n')!==4){console.log('FAIL: 🛩機体数の上限が4段でない '+usCap(ti4,'n'));process.exit(1);}
    me4.scrap=999999;me4.unlocked=Math.max(me4.unlocked,ti4+1);me4.towers[si4]=null;
@@ -862,7 +871,16 @@ function checkPerUp(){
    /* ⭐弾は**機体の位置から**出ていること(基地の中心から出ていたのがユーザー指摘の元) */
    const fromBase=pel.filter(e=>Math.hypot(e.x-sx4,e.y-sy4)<6).length;
    if(fromBase===pel.length){console.log('FAIL: 弾が基地の中心から出ている(機体から出ていない)');process.exit(1);}
-   console.log('ドローン基地: 素1機→強化で5機(母艦8機)・機体が敵を追って自分の射程で撃つ・弾'+pel.length+'発すべて機体から OK');}
+   /* ⭐**弾を撃ち切ったら基地へ戻って補給する**(2026-07-27ユーザー指示)。
+      ⚠弾数(10発)より多く撃たせて、基地へ戻る→補給→また撃つ が回るかを見る。 */
+   {const d0=tw4.dr[0];d0.am=1;d0.rl=0;d0.x=sx4+200;d0.y=sy4;
+    let back=false,refill=false;
+    for(let k=0;k<200;k++){campStep(me4,.05,G.wave);
+     if(d0.rl>0&&Math.hypot(d0.x-sx4,d0.y-sy4)<40)back=true;
+     if(back&&d0.am>=twDrAmmo(T4,tw4)){refill=true;break;}}
+    if(!back){console.log('FAIL: 弾切れのドローンが基地へ戻っていない');process.exit(1);}
+    if(!refill){console.log('FAIL: 基地へ戻っても弾が補給されない');process.exit(1);}}
+   console.log('ドローン基地: 素1機→強化で5機(進化しても5機)・弾10発で基地へ戻って補給・母艦は弾20発まで・弾'+pel.length+'発すべて機体から OK');}
   backTitle();}
  META.tw={};META.un={};META.st0=0;
  backTitle();

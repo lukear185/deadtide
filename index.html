@@ -1449,7 +1449,7 @@ const TOWERS=[
     ⚠それまでは multi:2 の「2体を同時に撃つ塔」で、機体は飾りだった。
     今は**機体1つ1つが敵を追いかけて、自分の射程(基地の半分)に入ったら撃つ**。
     ⚠📡射程の強化代は廃止し、**🛩機体数**に置き換えてある(下の twStats)。 */
- {id:'drone',n:'ドローン基地',cost:500,up2:'drone2',gc:4000,rng:330,dmg:30,rate:.8,type:'bullet',drn:1,c:'#5f8fa3',dsc:'追尾ドローンが自分で敵を追って撃つ(強化で最大5機)'},
+ {id:'drone',n:'ドローン基地',cost:500,up2:'drone2',gc:4000,rng:330,dmg:30,rate:.8,type:'bullet',drn:1,c:'#5f8fa3',mag:10,dsc:'追尾ドローンが自分で敵を追って撃つ(強化で最大5機)。弾を10発撃つと基地へ戻って補給する'},
  {id:'arty',n:'重砲台',cost:640,up2:'arty2',gc:5120,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
  /* arcT=1跳ねにかかる秒数(テスラコイルは0=一瞬で全部)。grow=跳ねるたびの威力倍率・gmax=その上限。
     ⚠growは指数なので上限が無いと⚡連鎖数Lv5+研究所で青天井になる。必ずgmaxで頭を止めること */
@@ -1498,7 +1498,7 @@ const TOWERS=[
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:7,slowT:5.6,c:'#9fd6e8',dsc:'凍結が長く、同じ敵を7回まで凍らせられる'},
  {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
  {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・極めて強い継続'},
- {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:2,drGrd:1,c:'#7fb0c4',dsc:'装甲甲板の母艦。ドローンが2機から飛び立つ(強化で最大8機)'},
+ {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
  {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
  {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
  {id:'railx',n:'軌道砲',base:'rail',grd:1,cost:2040,rng:1008,dmg:620,rate:2.55,type:'bullet',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
@@ -1540,22 +1540,22 @@ const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0});
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0});
 /* 盤面の強化は⚙️払い。⚠進化先は**そのタワーの値段で1段目から数え直す**(引き継いだLvのぶん
    1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
-const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMin(tw.ti)));
+const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMinSt(tw.ti,st)));
 /* 冷却塔だけは⚔攻撃の代わりに❄冷却回数を伸ばす(2026-07-25ユーザー指示。攻撃力を上げても意味が無い塔のため) */
 /* ⭐レーザー塔(heatNを持つ塔)は📡射程の代わりに🔥昇温速度を伸ばす(2026-07-26ユーザー指示)。
    射程はもともと初期値を1.2倍にしてあり、伸ばすより「早く最大倍率まで焼き切る」方が塔の役目に合う */
 /* ⭐**継続攻撃の2つは⏩連射の代わりに固有の強化代を持つ**(2026-07-27ユーザー選択)。
    火炎放射塔=🔥継続ダメージ(燃焼の量) / レーザー塔=🔺最大倍率(焼き切った時の上限) */
 const twStats=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
- :TOWERS[ti].drn?['d','r','n']/* ドローン基地=📡射程の代わりに🛩機体数 */
+ :TOWERS[ti].drn?(TOWERS[ti].grd?['d','r','a']:['d','r','n'])/* 素=🛩機体数 / 進化後=🔫弾数 */
  :TOWERS[ti].frzN?['f','r','g']
  :TOWERS[ti].cont?(TOWERS[ti].heatN?['d','h','m']:['d','b','g'])
  :TOWERS[ti].heatN?['d','r','h']
  :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
-const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに13%短くなる(Lv5で20発→9発) */
 const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*usEff((tw&&tw.us&&tw.us.h)||0))));
 const twFrzN=(T,tw)=>(T.frzN||0)+Math.round(usEff((tw&&tw.us&&tw.us.f)||0));/* 同じ敵を凍らせられる回数(最大5+5=10) */
@@ -1565,14 +1565,25 @@ const twHeatT=(T,tw)=>twHeatN(T,tw)*(T.rate||.1);
 const twHeatM=(T,tw)=>(T.heatM||2)+.6*usEff((tw&&tw.us&&tw.us.m)||0);
 /* 🔥継続ダメージ(火炎放射塔): 1段ごとに燃焼+25%(Lv5で2.25倍) */
 const twBurnM=tw=>1+.25*usEff((tw&&tw.us&&tw.us.b)||0);
-/* 🛩機体数(ドローン基地): 1段ごとに+1機。基地は最大5機・母艦は最大8機 */
-const twDrMax=T=>(T&&T.drGrd)?8:5;
-const twDrN=(T,tw)=>Math.min(twDrMax(T),(T.drn||1)+((tw&&tw.us&&tw.us.n)||0));
+/* 🛩機体数(ドローン基地): 1段ごとに+1機。⭐**素も進化後も最大5機**(2026-07-27ユーザー指示)。
+   ⚠進化しても機数は増えない=進化で増えるのは**1機が積める弾数**(下の twDrAmmo)。 */
+const DR_MAX=5;
+const twDrN=(T,tw)=>Math.min(DR_MAX,(T.drn||1)+((tw&&tw.us&&tw.us.n)||0));
+/* 🔫弾数(進化した母艦だけ): 1機が積める弾。撃ち切ると基地へ戻って DRN_RLD 秒かけて補給する。
+   素は10発・🔫弾数1段ごとに+2発で最大20発。 */
+const twDrAmmo=(T,tw)=>(T.mag||10)+2*((tw&&tw.us&&tw.us.a)||0);
+/* ⭐**進化で引き継ぐ段は「強化代ごと」に見る**(2026-07-27)。
+   ⚠母艦の🔫弾数は**素のドローン基地に無かった枠**なので0段から始まる。
+     塔ごと一律に usMin を引くと、値段が 1.75^-5 になって只同然になり、印(◆)の数も壊れる。 */
+const usMinSt=(ti,st)=>{const T=TOWERS[ti];
+ if(!T||!T.grd||T.type==='eco')return 0;
+ const b=TOWERS.findIndex(q=>q.up2===T.id);
+ return (b>=0&&twStats(b).indexOf(st)>=0)?USTAT_MAX:0;};
 /* ⭐**機数が上限に届いたらそれ以上は買えない**=無駄な段を作らない。
    ⚠canGrade も upTower もこの上限を見ること(usMax だけを見ると進化できなくなる) */
 const usCap=(ti,st)=>{const T=TOWERS[ti];
- if(st==='n'&&T&&T.drn)return Math.min(usMax(ti),usMin(ti)+twDrMax(T)-(T.drn||1));
- return usMax(ti);};
+ if(st==='n'&&T&&T.drn)return Math.min(usMinSt(ti,st)+USTAT_MAX,DR_MAX-(T.drn||1));
+ return usMinSt(ti,st)+USTAT_MAX;};
 const twChain=(T,tw)=>T.chain+Math.round(usEff((tw&&tw.us&&tw.us.c)||0));
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
 /* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
@@ -1704,6 +1715,7 @@ const TSCALE=[1,1.06,1.14,1.24].map(s=>chUp(s));
 const TW_SC=1.3;/* タワーの表示倍率。⚠建設マスの枠(64px)とタップ判定は変えない */
 const DRN_R=.5;/* ドローン自身の射程=基地の射程の半分 */
 const DRN_SP=190;/* ドローンの飛ぶ速さ(世界px/秒) */
+const DRN_RLD=2;/* 弾を撃ち切ってから撃てるようになるまで(秒)。基地に着いてから数える */
 /* ⭐**撃つ位置は塔ごとに違う**(2026-07-27ユーザー指摘
    「テスラなら明らかにここから出そうなてっぺんがあるのに中央から電気が出ている」)。
    ⚠それまで**弾も電撃も砲弾もぜんぶ塔の中心(sx,sy)から**出していた。
@@ -8034,16 +8046,21 @@ function drawDrones(c,T,sx,sy,tw,t){
  c.save();c.strokeStyle=INK;
  for(let k=0;k<ds.length;k++){const d=ds[k];
   if(!isFinite(d.x)||!isFinite(d.y))continue;
-  c.save();c.translate(d.x,d.y+Math.sin(t*4+k*1.7)*2.4);c.scale(TW_SC,TW_SC);c.lineWidth=2/TW_SC;
-  c.fillStyle=T.drGrd?'#9fd0e4':'#5f8fa3';rr(c,-7,-3.5,14,8,3);c.fill();c.stroke();
+  const rld=d.rl>0;/* 補給中 */
+  c.save();c.translate(d.x,d.y+Math.sin(t*4+k*1.7)*(rld?.8:2.4));c.scale(TW_SC,TW_SC);c.lineWidth=2/TW_SC;
+  if(rld)c.globalAlpha=.6;
+  c.fillStyle=T.grd?'#9fd0e4':'#5f8fa3';rr(c,-7,-3.5,14,8,3);c.fill();c.stroke();
   c.fillStyle='#3f4a54';rr(c,-9.5,-5.5,4.5,2.6,1.2);c.fill();rr(c,5,-5.5,4.5,2.6,1.2);c.fill();
   c.strokeStyle='rgba(226,236,244,.85)';
   for(const ox of [-7.5,7.5]){const w9=5.5+Math.abs(Math.sin(t*40+k))*1.8;
    c.beginPath();c.ellipse(ox,-6,w9,1.6,0,0,7);c.stroke();}
   c.strokeStyle=INK;
-  c.fillStyle=(Math.sin(t*6+k*3)>0)?DANGER:'#3c4136';
+  c.fillStyle=rld?GOLD:((Math.sin(t*6+k*3)>0)?DANGER:'#3c4136');
   c.beginPath();c.arc(0,4,1.8,0,7);c.fill();
-  c.restore();}
+  /* ⭐補給中は輪が回る=「今は撃てない」が一目で分かる */
+  if(rld){c.globalAlpha=1;c.strokeStyle=GOLD;c.lineWidth=2.2/TW_SC;
+   c.beginPath();c.arc(0,0,10,t*7,t*7+3.4);c.stroke();c.strokeStyle=INK;}
+  c.globalAlpha=1;c.restore();}
  c.restore();c.lineWidth=3;
 }
 function drawCont(c,T,sx,sy,tw,t){
@@ -10213,15 +10230,26 @@ function campStep(C,dt,wave){
      ⚠**基地の射程(rng)が「機体が出て行ける範囲」**、機体自身の射程はその半分(DRN_R)。
      ⚠機体ごとに狙いとクールダウンを持つ(tw.dr)ので、塔の tw.cd は使わない。 */
   if(T.drn){
-   const n9=twDrN(T,tw),dR=rng*DRN_R;
+   const n9=twDrN(T,tw),dR=rng*DRN_R,MAG=twDrAmmo(T,tw);
    if(!tw.dr)tw.dr=[];
-   while(tw.dr.length<n9)tw.dr.push({x:sx+rnd(-24,24),y:sy+rnd(-24,24),cd:rnd(0,T.rate)});
+   while(tw.dr.length<n9)tw.dr.push({x:sx+rnd(-24,24),y:sy+rnd(-24,24),cd:rnd(0,T.rate),am:MAG,rl:0});
    if(tw.dr.length>n9)tw.dr.length=n9;
    const TLd=twlv(twKey(T));
    const dmd=T.dmg*m*aB*(1+TW_DMG_STEP*TLd);
    const prc9=T.pierce?1:0,tt9=twTier(tw),trC9=TR_COL[tt9],hitC9=HIT_COL[tt9];
    const taken=[];
    for(let di=0;di<tw.dr.length;di++){const d=tw.dr[di];
+    if(d.am==null)d.am=MAG;
+    if(d.am>MAG)d.am=MAG;/* 🔫弾数を強化した直後 */
+    /* ⭐**弾を撃ち切ったら基地へ戻って補給する**(2026-07-27ユーザー指示)。
+       ⚠戻っている間も補給中も撃たない=これが「弾数」を強化する理由になる。 */
+    if(d.am<=0||d.rl>0){
+     const bx9=sx,by9=sy-16*TW_SC;
+     let rx=bx9-d.x,ry=by9-d.y,rd=Math.sqrt(rx*rx+ry*ry)||1;
+     if(rd>4){const mv=Math.min(DRN_SP*1.25*dt,rd);d.x+=rx/rd*mv;d.y+=ry/rd*mv;}
+     if(rd<=22){if(!(d.rl>0))d.rl=DRN_RLD;d.rl-=dt;if(d.rl<=0){d.rl=0;d.am=MAG;d.cd=0;}}
+     continue;
+    }
     /* 狙いは「基地の射程内で、自分に一番近い敵」。
        ⚠**他の機体が狙っている敵は避ける**=1体に群がらず散らばって撃つ。
          全部取られていたら重複を許す(敵が機体より少ない時に撃たなくなるのを防ぐ) */
@@ -10249,7 +10277,7 @@ function campStep(C,dt,wave){
      if(od>rng){d.x=sx+ox/od*rng;d.y=sy+oy/od*rng;}}
     d.cd-=dt;
     if(tg2&&d.cd<=0&&dist(d.x,d.y,tg2.px,tg2.py)<=dR){
-     d.cd=T.rate*twRateM(tw);
+     d.cd=T.rate*twRateM(tw);d.am--;
      dmgZ(C,tg2,dmd,prc9);
      if(FXLV>0){addFx(C,'pel',d.x,d.y,'',{x2:tg2.px,y2:tg2.py-20*CH_UP,lf:.16,col:trC9});
       addP(C,2,d.x,d.y,{sp:70,a:Math.atan2((tg2.py-20*CH_UP)-d.y,tg2.px-d.x),spread:.35,g:60,life:.1,r:1.4,col:GLOW});}
@@ -11731,7 +11759,7 @@ function openBM(si){
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
   if(!tw.us)tw.us=newUs();
   const rows=twStats(tw.ti).map(st=>{
-   const lvv=tw.us[st]||0,mn9=usMin(tw.ti),mx9=usCap(tw.ti,st),mx=lvv>=mx9,p=mx?null:stCost(tw,st);
+   const lvv=tw.us[st]||0,mn9=usMinSt(tw.ti,st),mx9=usCap(tw.ti,st),mx=lvv>=mx9,p=mx?null:stCost(tw,st);
    /* ⚠⚡連鎖数は研究所の個別強化(elecの持ち味+1/段)も足して出す=実際に飛ぶ数と合わせる */
    const chBonus=(TW_TRAIT[T.type]&&TW_TRAIT[T.type].k==='chain')?Math.floor(TW_TRAIT[T.type].v*twlv(twKey(T))):0;
    let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
@@ -11742,7 +11770,8 @@ function openBM(si){
     /* 🔺最大倍率 / 🔥継続ダメージ も「今→強化後」を出す */
     +(st==='m'?(mx?'(x'+twHeatM(T,tw).toFixed(1)+')':'(x'+twHeatM(T,tw).toFixed(1)+'→x'+twHeatM(T,{us:Object.assign({},tw.us,{m:lvv+1})}).toFixed(1)+')'):'')
     +(st==='b'?(mx?'(x'+twBurnM(tw).toFixed(2)+')':'(x'+twBurnM(tw).toFixed(2)+'→x'+twBurnM({us:Object.assign({},tw.us,{b:lvv+1})}).toFixed(2)+')'):'')
-    +(st==='n'?(mx?'('+twDrN(T,tw)+'機)':'('+twDrN(T,tw)+'→'+twDrN(T,{us:Object.assign({},tw.us,{n:lvv+1})})+'機)'):'');
+    +(st==='n'?(mx?'('+twDrN(T,tw)+'機)':'('+twDrN(T,tw)+'→'+twDrN(T,{us:Object.assign({},tw.us,{n:lvv+1})})+'機)'):'')
+    +(st==='a'?(mx?'('+twDrAmmo(T,tw)+'発)':'('+twDrAmmo(T,tw)+'→'+twDrAmmo(T,{us:Object.assign({},tw.us,{a:lvv+1})})+'発)'):'');
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
    if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
    /* ⚠進化先は引き継いだぶんを引いて数える(◆が10個並ぶとボタンからはみ出す) */
@@ -14899,7 +14928,7 @@ function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,sk:C.stkLv||0,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
  fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,ec:F.ecoN||1,up:Math.round(C.up||0),sk:(F.slk||[]).map(v=>v?1:0).join(''),
- tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0,t2.us.n||0,(t2.dr||[]).map(d=>[Math.round(d.x),Math.round(d.y)])]:0),
+ tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0,t2.us.n||0,(t2.dr||[]).map(d=>[Math.round(d.x),Math.round(d.y),d.rl>0?1:0]),t2.us.a||0]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
@@ -14910,7 +14939,7 @@ function packLane(C){
 function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)continue;const P=G.players[k];
  const o={j:k,n:P.name,hp:Math.ceil(P.core),mx:P.coreMax,dd:P.dead?1:0,pl:P.place,kw:P.killsWave,tw:P.totalWave,rd:P.ready?1:0,sh:Math.round(G.tide.shares[k]),en:Math.round(P.scrap)};
  if(!G.coop)o.ln={fd:Math.round(P.flagD),
-   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0,t2.us.n||0,(t2.dr||[]).map(d=>[Math.round(d.x),Math.round(d.y)])]:0),
+   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0,t2.us.n||0,(t2.dr||[]).map(d=>[Math.round(d.x),Math.round(d.y),d.rl>0?1:0]),t2.us.a||0]:0),
    es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
    us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0])};
  a.push(o);}return a;}
@@ -14927,7 +14956,7 @@ function normMe(m){const old=CS.meN;
   else if(o5<3&&n5>=3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,stkLv:m.sk||0,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
   uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ecoN:m.ec||1,up:m.up||0,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
-  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
+  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0,a:x[18]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0,rl:p[2]?1:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
  CS.w=d.w;CS.ph=d.ph;CS.tI=d.tI;CS.ot=d.ot||[];CS.ts=d.ts||[];CS.pr=d.pr||0;CS.tu=d.tu||0;
@@ -15013,7 +15042,7 @@ function clientCamp(dt){
   if(!o.ln)continue;
   let sc=CS.oc[o.j];if(!sc)sc=CS.oc[o.j]=mkSpecCamp();
   sc.core=o.hp;sc.coreMax=o.mx||50;sc.dead=!!o.dd;sc.waveDone=false;sc.flagD=o.ln.fd;
-  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||0}:null);
+  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0,a:x[18]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0,rl:p[2]?1:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||0}:null);
   syncEnts(sc,o.ln.es||[],o.ln.us||[],dt);
  }
 }
