@@ -1546,14 +1546,20 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
        「BGMをある程度流したら若干盛り上がってくる感じに。1サイクルしたらまた最初の落ち着いた感じに」)。
      ⚠**曲を足さない**=同じ素材の**音量と密度だけ**を山なりに動かす。だから容量も重さもゼロ。
      ⚠山は sin の半周(0→1→0)。⚠最大でも1.9倍までにする=急に大きくなると驚く。 */
-  const up=Math.sin(Math.PI*s/TB_LOOP),vol=1+.9*up;
+  /* ⚠**山はもっと高く**(2026-07-27ユーザー指示「盛り上がりの時はもっと盛り上がっていいよ」)。
+     ⚠1.9倍→**2.8倍**。⚠山の形も sin の3乗根にして**頂上に長く留まる**ようにしてある
+       (素のsinだと一瞬で通り過ぎて「盛り上がった」と感じにくい)。 */
+  const up=Math.pow(Math.sin(Math.PI*s/TB_LOOP),.6),vol=1+1.8*up;
   /* ①ドローン。⚠鳴らす長さ(3.4秒)>差し込む間隔(2.8秒)にして途切れさせない */
   if(s%4===0){beep(98,97,3.4,'triangle',.097*vol);beep(98.6,97.6,3.4,'sine',.083*vol);}
   if(f)beep(f,f*.995,2.2,'triangle',.137*vol);/* ②まばらな音 */
   if(s%16===8)beep(f*1.5,f*1.5,1.6,'sine',.070*vol);/* 5度をうっすら重ねる */
   /* ⭐盛り上がってくると**音が増える**=山の頂上だけオクターブ上と裏拍が乗る(密度でも上げる) */
-  if(up>.55&&f)beep(f*2,f*2,1.1,'sine',.05*up);
-  if(up>.75&&s%2===1)beep(147,146,1.4,'triangle',.05*up);
+  if(up>.45&&f)beep(f*2,f*2,1.1,'sine',.075*up);
+  if(up>.6&&s%2===1)beep(147,146,1.4,'triangle',.075*up);
+  /* 頂上では**拍が入る**(低い打点)=密度でも盛り上がりを出す。⚠低すぎない帯域で */
+  if(up>.72&&s%4===2)nzHit(420,150,.5,.14,1);
+  if(up>.86&&s%8===6&&f)beep(f*3,f*3,.9,'triangle',.05*up);
   if(s%16===13&&Math.random()<.5)nzHit(700,180,2.2,.137*vol,1);/* ③遠くの風 */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
@@ -1607,7 +1613,7 @@ const TOWERS=[
  /* ↓ここまでと次の冷却塔までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
  /* frz=完全凍結の秒数(動けず殴れもしない)。⭐**凍っていない敵は必ず凍る**(2026-07-27に再凍結の耐性を廃止) */
  /* frzN=同じ敵を凍らせられる回数(❄冷却回数の強化で+1/段・最大10)。使い切った敵はもう凍らない */
- {id:'cryo',n:'冷却塔',cost:320,up2:'cryo2',gc:2560,rng:200,dmg:6,rate:6,type:'net',frz:2.6,frzN:5,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。同じ敵を凍らせられるのは5回まで(❄冷却回数で最大10回・進化しても増えない)'},
+ {id:'cryo',n:'冷却塔',cost:320,up2:'cryo2',gc:2560,rng:200,dmg:6,rate:6,type:'net',frz:2.1,frzN:5,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。同じ敵を凍らせられるのは5回まで(❄冷却回数で最大10回・進化しても増えない)'},
  /* ===== ここから下の10種が🔬研究所でしか解放できない(BASE_T=10・上から順に固定で出る) =====
     ⚠並び順がそのまま研究所に出る順番。入れ替えると既存プレイヤーの解放済み(META.nt)が別のタワーを指す */
  /* heatN=同じ敵を撃ち続けて最大まで焼き切るのに要る発射数 / heatM=その時の威力の倍率(2026-07-26ユーザー指示)。
@@ -1670,7 +1676,7 @@ const TOWERS=[
  {id:'mortar2',n:'重迫撃砲',base:'mortar',grd:1,cost:1290,rng:526,minr:160,dmg:170,rate:2.2,type:'blast',aoe:106,c:'#949c80',dsc:'重い弾を遠くへ。爆発範囲も広い'},
  {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'bullet',prio:1,pierce:1,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。最大HPの敵を一撃で'},
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:76,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
- {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
+ {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
  {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
  {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・強い酸で削り、倒れた敵が大きな酸爆発を起こす'},
  {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
@@ -1715,7 +1721,7 @@ const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0});
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0});/* z=❄凍結時間(極低温塔だけ) */
 /* 盤面の強化は⚙️払い。⚠進化先は**そのタワーの値段で1段目から数え直す**(引き継いだLvのぶん
    1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMinSt(tw.ti,st)));
@@ -1734,7 +1740,11 @@ const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]
    ⚠twStatsRaw=外す前の一覧。**どの塔が⏩連射を失ったか**を下の twLostRate が見るのに要る。 */
 const twStatsRaw=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
  :TOWERS[ti].drn?(TOWERS[ti].grd?['d','r','a']:['d','r','n'])/* 素=🛩機体数 / 進化後=🔫弾数 */
- :TOWERS[ti].frzN?['f','r','g']
+/* ⭐**進化すると❄冷却回数の枠が❄凍結時間に入れ替わる**(2026-07-27ユーザー指示
+     「極低温塔は凍結時間を強化できるようにしよう」)。
+   ⚠回数は**どの塔でも10回で頭打ち**にしたので、進化後に回数の枠を残すと死に枠になる。
+     そこを「1回あたりを長くする」に差し替える=**回数は増えないが、止まっている時間は伸びる**。 */
+ :TOWERS[ti].frzN?(TOWERS[ti].grd?['z','r','g']:['f','r','g'])
  :TOWERS[ti].cont?(TOWERS[ti].heatN?['d','h','m']:['d','b','g'])
  :TOWERS[ti].heatN?['d','r','h']
  :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
@@ -1759,7 +1769,7 @@ const twStats=ti=>{const T=TOWERS[ti],L=twStatsRaw(ti);
 const TW_DSTEP=.20,TW_DSTEP_G=.40;
 const twLostRate=ti=>{const T=TOWERS[ti];if(!T||!T.grd||T.type==='eco')return false;
  const b=TOWERS.findIndex(z=>z.up2===T.id);return b>=0&&twStatsRaw(b).indexOf('r')>=0;};
-const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに13%短くなる(Lv5で20発→9発) */
 const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*usEff((tw&&tw.us&&tw.us.h)||0))));
 /* ⭐**同じ敵を凍らせられる回数は、進化しても増えない**(2026-07-27ユーザー指示
@@ -1768,6 +1778,9 @@ const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*usEff((tw&&tw.us
      **建て替えるだけで同じ敵をさらに凍らせられた**(実質ずっと止められる)。
    ⭐直し方=①極低温塔の素を冷却塔と同じ5回にする ②❄冷却回数は**5段までしか数えない**。
      これで**どの塔でも上限は必ず10回**に揃う。⚠数え方(z.frzUsed)は元から敵1体に1つで共通。 */
+/* ⭐❄凍結時間(極低温塔だけ): 1段ごとに+14%。5段で**1.7倍**(素3.3秒→5.6秒)。
+   ⚠回数(twFrzN)とは別物。**回数は増やさず、1回の長さだけ伸ばす**。 */
+const twFrzT=(T,tw)=>(T.frz||0)*(1+.14*usEff((tw&&tw.us&&tw.us.z)||0));
 const twFrzN=(T,tw)=>(T.frzN||0)+Math.min(USTAT_MAX,Math.round((tw&&tw.us&&tw.us.f)||0));/* どの塔でも最大5+5=10回 */
 /* 最大倍率まで焼き切るのに要る**秒数**(継続攻撃なので発射数ではなく時間で見る) */
 const twHeatT=(T,tw)=>twHeatN(T,tw)*(T.rate||.1);
@@ -11026,7 +11039,7 @@ function campStep(C,dt,wave){
          永久ロックは**回数の上限(twFrzN)**が止めるので耐性は元から要らなかった
          (5回×2.6秒=13秒ぶんしか凍らせられない)。
        ⚠すでに凍っている敵は数え直さない=回数を無駄に食わない。 */
-    if(T.frz&&z.frzT<=0&&(z.frzUsed||0)<twFrzN(T,tw)){const ft=T.frz*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));z.frzT=ft;
+    if(T.frz&&z.frzT<=0&&(z.frzUsed||0)<twFrzN(T,tw)){const ft=twFrzT(T,tw)*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));z.frzT=ft;/* ⚠T.frzではなく twFrzT(❄凍結時間の強化ぶん) */
      z.frzUsed=(z.frzUsed||0)+1;
      /* ⭐凍らせた敵の足元に氷が張る=どれが止まったのか一目で分かる(2026-07-26) */
      if(FXLV>0&&++nfz<=6)addFx(C,'ice',z.px,z.py,'',{r:26,sd:rnd(0,9),lf:.55});}
@@ -12487,6 +12500,7 @@ function openBM(si){
     /* 🔺最大倍率 / 🔥継続ダメージ も「今→強化後」を出す */
     +(st==='m'?(mx?'(x'+twHeatM(T,tw).toFixed(1)+')':'(x'+twHeatM(T,tw).toFixed(1)+'→x'+twHeatM(T,{us:Object.assign({},tw.us,{m:lvv+1})}).toFixed(1)+')'):'')
     +(st==='b'?(mx?'(x'+twBurnM(tw).toFixed(2)+')':'(x'+twBurnM(tw).toFixed(2)+'→x'+twBurnM({us:Object.assign({},tw.us,{b:lvv+1})}).toFixed(2)+')'):'')
+    +(st==='z'?(mx?'('+twFrzT(T,tw).toFixed(1)+'秒)':'('+twFrzT(T,tw).toFixed(1)+'→'+twFrzT(T,{us:Object.assign({},tw.us,{z:lvv+1})}).toFixed(1)+'秒)'):'')
     +(st==='n'?(mx?'('+twDrN(T,tw)+'機)':'('+twDrN(T,tw)+'→'+twDrN(T,{us:Object.assign({},tw.us,{n:lvv+1})})+'機)'):'')
     +(st==='a'?(mx?'('+twDrAmmo(T,tw)+'発)':'('+twDrAmmo(T,tw)+'→'+twDrAmmo(T,{us:Object.assign({},tw.us,{a:lvv+1})})+'発)'):'');
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
@@ -12804,7 +12818,16 @@ let PAR=[];
 /* ⭐**種類ごとに1〜3発**(2026-07-27ユーザー指示)。⚠HPで決める=硬そうな見た目の奴が硬い、が一致する。
    ⚠ここに出るのは廃線の序盤6種だけなので、素のHPで3段に割ればちょうど1/2/3発に散る。 */
 const parHP=zi=>{const h=(ZOMBIES[zi]||{}).hp||0;return h>=200?3:h>=110?2:1;};
-function parNew(){const zi=[0,0,1,2,3,4,5][ri(0,6)];
+/* ⭐⭐**1%で虹色のゾンビ**(2026-07-27ユーザー指示
+     「タイトル画面でゾンビ倒すとき1%の確率で左から虹色のゾンビが出てきて、
+       そいつ倒すとガチャ石10個もらえるように」)。
+   ⚠**必ず左から**出す(parNew は元から x=-60 で湧くので、湧く向きはそのまま)。
+   ⚠**逃げられる**のが肝=速く歩かせて、倒すのに3発要る。だから当たると嬉しい。
+   ⚠報酬はセーブに直で足すので、**タイトルでしか湧かせない**(paradeStep は SCR==='title' 限定)。 */
+const RB_RATE=.01,RB_GEM=10,RB_HP=3;
+function parNew(){
+ if(Math.random()<RB_RATE)return {zi:5,x:-60,sp:56,ph:rnd(0,9),ht:0,hp:RB_HP,kb:0,fl:0,rb:1};
+ const zi=[0,0,1,2,3,4,5][ri(0,6)];
  return {zi,x:-60,sp:rnd(16,42),ph:rnd(0,9),ht:0,hp:parHP(zi),kb:0,fl:0};}
 function paradeInit(){PAR=[];for(let i=0;i<7;i++){const z=parNew();z.x=rnd(0,innerWidth);PAR.push(z);}}
 /* ⭐**タイトルのゾンビはタップで倒せる**(2026-07-27ユーザー指示
@@ -12827,7 +12850,12 @@ function paradeHit(cx,cy){
     ⚠倒れるのは最後の1発だけ=途中の発は「効いている」ことだけ伝える。 */
  best.fl=1;best.kb=14;
  if(--best.hp>0){if(sfx.thunk)sfx.thunk();return true;}
- best.ht=.001;/* 倒れ始め */
+  best.ht=.001;/* 倒れ始め */
+ if(best.rb){/* ⭐虹色を倒した=💎魔石(英雄召集の石)を10個 */
+  META.gem=(META.gem||0)+RB_GEM;try{saveMeta();updLabBtn();}catch(x){}
+  if(sfx.bossKill)sfx.bossKill();
+  try{toast('🌈 虹のゾンビを倒した! 💎魔石 +'+RB_GEM+'(計'+META.gem+')',true);}catch(x){}
+  return true;}
  if(sfx.splat)sfx.splat();
  if(sfx.die)sfx.die();/* ⚠**倒した時だけ**声を出す(行進中は無言=ユーザー指示) */
  return true;
@@ -12857,6 +12885,13 @@ function paradeStep(t){
    pctx.restore();pctx.globalAlpha=1;continue;}
   p.x+=p.sp*.016;if(p.x>w+60)PAR[i]=parNew();
   const dx=p.x-p.kb;
+  /* ⭐虹色は色相をぐるぐる回すだけ=専用の絵を描かないので重さゼロ。⚠後光も付けて見逃さないようにする */
+  if(p.rb){pctx.save();
+   pctx.globalAlpha=.5+.5*Math.sin(t*8);pctx.fillStyle='#fff';
+   pctx.beginPath();pctx.arc(dx,h-34,26,0,7);pctx.fill();pctx.globalAlpha=1;
+   pctx.filter='hue-rotate('+Math.round((t*260)%360)+'deg) saturate(3) brightness(1.25)';
+   drawZombie(pctx,p.zi,dx,h-20,1,t,p.ph,{});
+   pctx.restore();continue;}
   drawZombie(pctx,p.zi,dx,h-20,1,t,p.ph,{});
   /* ⭐殴った瞬間だけ白く光らせる。⚠同じ絵をもう1枚 lighter で重ねるだけ(盤面の撃破と同じやり方) */
   if(p.fl>0){pctx.save();pctx.globalCompositeOperation='lighter';pctx.globalAlpha=p.fl;
