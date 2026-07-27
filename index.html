@@ -908,10 +908,9 @@ let FXLV=2;/* 演出バランス 0=弱 1=中 2=強 */
    ⚠**2026-07-27にユーザー判断「スローがわかりづらい」で作り直した**:
      ①速さ .35→**.18**(はっきり遅くする) ②`sfx.slowmo()` の「どぅーん」を被せる
      ③画面全体を暗く落とす(fillRect 1枚=重さゼロ)。**画面だけでは気づけない**のが分かりづらさの正体だった。
-   KICK_*=雑魚撃破の「間」。⚠**.03秒で35%程度では誰も気づかない**(ユーザー判断)ので、
-     **ほぼ完全に止める**(6%)形に変えた。⚠そのぶん間隔(KICK_CD)を空けて連打を防ぐ。 */
+   ⚠**雑魚1体ごとのヒットストップは入れて外した**(同日・ユーザー判断「全く分からないレベル」)。
+     敵が小さく数も多いので1体ぶんの間は埋もれる。書き戻さないこと。 */
 const CLEAR_HOLD=2,CLEAR_SLOW=.18;
-const KICK_T=.05,KICK_SLOW=.06,KICK_CD=.2;
 try{const v=localStorage.getItem('dt_fx');if(v!=null)FXLV=clamp(+v,0,2);}catch(e){}
 /* 🛠DEVモード(実機テスト用)。URLに ?dev=1 が付いている時だけ有効。
    🧬研究pt・💎魔石・🔧鍛錬素材・⚙️スクラップ・🔩強化ptが実質無限になり、
@@ -1199,14 +1198,16 @@ const SFXSYN={
  eliteKill:()=>{beep(210,60,.24,'sawtooth',.13);groan(72,.9,.07);setTimeout(()=>beep(880,1320,.12,'triangle',.08),110);},
  clearJ:()=>{[660,830,1108].forEach((f,i)=>setTimeout(()=>beep(f,f,.12,'square',.08),i*90));},
  /* ⭐**「どぅーん」**(2026-07-27ユーザー指示「スローですよ感が出るサウンドを」)。
-    ⚠ウェーブをしのいだ瞬間のスローモーションに被せる音。**低音が長く落ちていく**ことで
-      「時間が伸びた」ことを耳で分からせる=画面だけでは気づけなかったため。
-    衝撃(短い中音)→ノコギリの下降→サイン波の重低音、の3枚重ね。 */
- slowmo:()=>{beep(420,70,.22,'square',.10);beep(190,38,1.5,'sawtooth',.15);
-  beep(95,26,1.8,'sine',.15);setTimeout(()=>groan(44,1.5,.05),120);},
- /* ⭐**酸爆発**。爆発音(boom)ではなく「ぶしゅっ」と溶ける音にする=酸っぽさは音でも出す */
- acidPop:()=>{beep(760,150,.13,'sawtooth',.09);beep(240,55,.32,'triangle',.11);
-  setTimeout(()=>beep(120,44,.34,'sine',.07),60);},
+    ⚠⚠**最初の版は26〜95Hzまで落としていて、スマホでは一切聞こえなかった**(ユーザー判断「音聞こえない」)。
+      **スマホのスピーカーは200Hz以下をほとんど鳴らせない**。低い音を作りたい時ほど、
+      重低音そのものではなく**倍音の多い波形(sawtooth)を中音域で下降させる**こと。
+    ⚠鳴る帯域(900→130Hz)に収めたうえで、下降を1.3秒かけてゆっくりやる=「どぅーーん」になる。 */
+ slowmo:()=>{beep(900,300,.28,'square',.16);beep(560,140,1.3,'sawtooth',.22);
+  beep(300,150,1.5,'triangle',.16);setTimeout(()=>beep(400,190,.8,'sawtooth',.13),620);},
+ /* ⭐**酸爆発**。⚠2026-07-27に「酸っぽいけど爆発感が無い」で作り直した=
+    溶ける高音(しゅわっ)の前に**弾ける低音の芯**を置く。芯が無いと「霧吹き」に聞こえる。 */
+ acidPop:()=>{beep(180,48,.34,'sawtooth',.20);beep(900,180,.14,'sawtooth',.13);
+  beep(420,120,.26,'square',.11);setTimeout(()=>beep(1400,500,.22,'triangle',.07),70);},
  win:()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,f,.18,'square',.1),i*140));},
  lose:()=>{[400,340,280,200].forEach((f,i)=>setTimeout(()=>beep(f,f*.9,.22,'triangle',.1),i*170));}
 };
@@ -1293,6 +1294,10 @@ const SFX_LBL={
  horn:['ウェーブ開始','波の始まり','ev'], leak:['コアに被弾','敵が抜けた','ev'],
  elite:['エリート出現','強い個体が来る','ev'], eliteKill:['エリート撃破','','ev'],
  bossKill:['ボス撃破','','ev'], clearJ:['ウェーブ制圧','波をしのいだ','ev'],
+ /* ⚠**新しい合成音は必ずここに足す**=?sfx=1 で鳴らして確かめられないと、
+    実機で「聞こえない」と言われた時に原因(音量なのか帯域なのか呼ばれていないのか)が切り分けられない */
+ slowmo:['どぅーん','ウェーブ制圧のスローモーション','ev'],
+ acidPop:['酸爆発','酸まみれの敵が倒れた','ev'],
  win:['勝利','クリア','ev'], lose:['敗北','コア陥落','ev']};
 const SFX_TAB=[['tw','🔫 タワー'],['z','🧟 ゾンビ'],['ui','🖥 UI・経済'],['ev','🏁 節目']];
 let SFXTAB='tw';
@@ -9738,12 +9743,11 @@ function killZ(C,z){
   lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1)});
  /* 大物が倒れると足元に土煙が広がる。⚠雑魚には出さない(画面が埋まる) */
  if(FXLV>0&&(z.boss||z.elite))addFx(C,'dust',z.px,z.py+2,'',{r:z.boss?120:66});
- /* ⭐**雑魚撃破の「間」**(2026-07-27ユーザー指示「爽快感を出す・重くならないやつで」)。
-    ⚠絵を1つも増やさずに手応えだけ足す=**時間を0.03秒だけ引き延ばす**。
-    ⚠**必ず間隔を空ける**(kickCd)。1体ごとに掛けると、群れを薙いだ時に試合ぜんぶが
-      スローモーションになってしまう。0.12秒に1回まで=速く倒すほど「トトン」と刻む。
-    ⚠大物は下でボス用の長いスローが掛かるので、ここでは掛けない。⚠演出オフ(FXLV=0)では出さない */
- if(G&&FXLV>0&&C.isMe&&!z.boss&&(G.kickCd||0)<=0){G.kickT=KICK_T;G.kickCd=KICK_CD;}
+ /* ⚠**雑魚撃破の「間」(ヒットストップ)は2026-07-27に入れて、同日に外した**。
+    ユーザー実機判断=「全く何が変わったのか分からないレベル」。
+    0.03秒×35%→0.05秒×6%(ほぼ完全停止)まで強めても伝わらなかった。
+    敵が小さく・数が多く・1体ずつ狙って倒す作りではないので、**1体ぶんの間は埋もれる**。
+    ⚠**書き戻さないこと**。手応えを足すならウェーブ単位(制圧のスロー)の方に寄せる。 */
  /* ⚠断末魔は「呻き」ではなく専用の声(die)を混ぜる。同じ呻きだけだと倒した手応えが出ない */
  if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
   if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
@@ -9776,10 +9780,15 @@ function killZ(C,z){
   /* ⭐**爆発ではなく「溶ける」絵にする**(2026-07-27ユーザー指示「酸っぽい爆発にして(色とか)」)。
      ⚠火薬の橙は一切使わない。**黄緑→緑の2重の輪**+**跳ねて落ちる飛沫**+**地面に残る酸だまり**。
      ⚠飛沫は g を強めにして**下へ落とす**=炎の粒(上へ昇る)と見分けがつく。 */
-  addFx(C,'ring',z.px,z.py,'',{r:ar,col:'#d4ff3a'});
+  /* ⚠2026-07-27に「酸っぽいけど**爆発感が無い**」で作り直した。足りなかったのは
+     ①**画面の揺れ** ②**弾けた瞬間の白い芯** ③**外へ強く飛ぶ初速**——この3つ。
+     色だけ酸にしても、動きが柔らかいと「霧吹き」に見える。 */
+  C.shake=Math.max(C.shake||0,.28);
+  if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:'#eaffa0',big:1});
+  addFx(C,'ring',z.px,z.py,'',{r:ar,col:'#eaffa0'});
   addFx(C,'ring',z.px,z.py,'',{r:ar*.62,col:TOXIC});
-  addP(C,16,z.px,z.py-16*CH_UP,{sp:200,up:95,g:900,life:.75,r:3.4,col:'#d4ff3a',jx:9,jy:7});
-  addP(C,10,z.px,z.py-10*CH_UP,{sp:130,up:45,g:760,life:.9,r:2.6,col:TOXIC,jx:7,jy:6});
+  addP(C,18,z.px,z.py-16*CH_UP,{sp:420,up:120,g:900,life:.6,r:3.6,col:'#d4ff3a',jx:12,jy:9});
+  addP(C,12,z.px,z.py-10*CH_UP,{sp:260,up:60,g:760,life:.85,r:2.6,col:TOXIC,jx:9,jy:7});
   /* もやっとした酸の霧(上へ薄く広がる) */
   if(FXLV>0)addP(C,4,z.px,z.py-20*CH_UP,{sp:60,up:38,g:-90,life:1.1,r:12,col:'#6f9c3a',typ:'smoke',jx:10,jy:6});
   /* 地面に残る酸だまり */
@@ -10798,7 +10807,7 @@ function newGame(specs,myIdx){
  EID=1;
  const players=specs.map((s,i)=>{const c=newCamp(s.name,s.kind,s.ai||DIFFS[1],i===myIdx);c.gi=i;return c;});
  G={players,myIdx,np:players.length,wave:0,phase:'interval',tI:.01,alive:players.length,over:false,spd:1,winner:-1,netT:0,
-  hitStopT:0,kickT:0,kickCd:0,clearT:null,/* ⭐撃破の間・ウェーブ制圧の余韻(スローモーション) */
+  hitStopT:0,clearT:null,/* ボス撃破・ウェーブ制圧の余韻(スローモーション) */
   evq:players.map(()=>[]),tide:{pool:[],qt:0,total:0,shares:players.map(()=>100/players.length),up:0,upN:0,mul:1}};
  return G;
 }
@@ -15313,8 +15322,6 @@ function loopBody(now){
    let step=Math.min(.033,dt0),sl=1;
    /* ⚠**スローは掛け算にしない**(重なると止まって見える)。一番遅いものだけを採る */
    if(G&&G.hitStopT>0){G.hitStopT-=dt0;sl=.3;}/* ボス撃破 */
-   if(G&&G.kickCd>0)G.kickCd-=dt0;
-   if(G&&G.kickT>0){G.kickT-=dt0;sl=Math.min(sl,KICK_SLOW);}/* ⭐雑魚撃破の「間」 */
    if(G&&G.clearT>0)sl=Math.min(sl,CLEAR_SLOW);/* ⭐ウェーブ制圧の余韻 */
    step*=sl;
    for(let k=0;k<sp;k++)gameStep(step);}
