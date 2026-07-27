@@ -9367,13 +9367,19 @@ function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
  const D=D5v();
- const warm=G.pve&&wave<=4?[.6,.72,.84,.94][wave-1]:1;/* PvE序盤の慣らし */
+ /* ⭐**序盤を強くした**(2026-07-27ユーザー指示「序盤の敵の強さをもっと強くして」)。
+    ①慣らし(warm)をほぼ無くす: [.6,.72,.84,.94] → [.9,.96,1,1]。hpと**数**の両方に効く
+    ②その上で**1〜6波だけ**体力を底上げする(earlyX)。中盤以降(7波〜)は1に戻るので
+      今までのバランスを動かさない。⚠中盤・終盤を触りたい時は midX/lateX の方を見ること。
+    結果(古参・体力の倍率): W1 0.60→1.17 / W2 0.72→1.24 / W3 0.84→1.23 / W4 0.94→1.17 / W5 1→1.11 */
+ const warm=G.pve&&wave<=4?[.9,.96,1,1][wave-1]:1;
+ const earlyX=(G.pve&&wave<=6)?1.30-(wave-1)*.05:1;
  /* 中盤(W8〜)から一段、終盤(W14〜)からもう一段きつくする */
  /* 2026-07-25: 終盤は「数を減らして1体を強く」。lateXを厚くし、下のnを絞る */
  const midX=wave>=8?Math.pow(1.03,wave-7):1,lateX=wave>=14?Math.pow(1.055,wave-13):1;
  /* ステージごとの重さ。後のステージほど同じ難易度でも重い(2026-07-25ユーザー指示) */
  const stX=(G.pve&&!G.coop)?((STAGES[STAGE]||{}).hpM||1):1;
- const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*midX*lateX*(G.pve?D.hp*warm:1)*(G.coop?1+.11*(G.np-1):1)*stX;
+ const mul=(1+.16*(wave-1)+.25*up)*(wave>10?Math.pow(G.pve?1.11:1.17,wave-10):1)*(wave>30?Math.pow(1.3,wave-30):1)*(!G.pve&&wave>8?Math.pow(1.13,wave-8):1)*midX*lateX*earlyX*(G.pve?D.hp*warm:1)*(G.coop?1+.11*(G.np-1):1)*stX;
  T.mul=mul;
  const laneN=G.coop?1:alive;
  /* 終盤(W12〜)は増え方を鈍らせる=画面が敵で埋まらないように */

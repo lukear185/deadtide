@@ -177,6 +177,27 @@ function runStage2(){
  if(!names.length){console.log('FAIL: 敵が1体も出ていない');process.exit(1);}
  META.stg=0;backTitle();loadStage(0);
 }
+/* ---- ⭐序盤の歯ごたえ(2026-07-27ユーザー指示「序盤の敵の強さをもっと強くして」) ----
+   ⚠**慣らし(warm)を薄くし、1〜6波だけ体力を底上げ(earlyX)してある**。
+     ここを緩めると「最初の数波は置いておくだけで勝てる」に戻るので、数字で見張る。
+   ⚠見るのは**1波の総HP**(体×1体のHP)。数だけ・強さだけを見ると片方を薄めても通ってしまう。 */
+function checkEarly(){
+ META.stg=0;setDiff=2;startSolo();
+ const tot=w=>{buildTide(w);return G.tide.pool.reduce((a,e)=>a+(e.z.mhp||0),0);};
+ const hp=[1,2,3,4,5,6].map(tot);
+ for(let i=1;i<hp.length;i++)if(!(hp[i]>hp[i-1])){
+  console.log('FAIL: 波が進んでも総HPが増えていない W'+i+'('+Math.round(hp[i-1])+') → W'+(i+1)+'('+Math.round(hp[i])+')');process.exit(1);}
+ /* ⭐**1波目の体力倍率が1を下回らない**=「慣らし」で最初の数波を空気にしない。
+    ⚠総HPの比では見ないこと=序盤は**出る敵の顔ぶれ(mw)**が軽いので、どう調整しても4波目とは開く。
+    見るべきは**倍率そのもの**(2026-07-27に 0.60 → 1.17 へ上げた)。 */
+ buildTide(1);const m1=G.tide.mul;
+ if(!(m1>=1)){console.log('FAIL: 1波目の体力倍率が1未満(序盤が空気になる) x'+m1.toFixed(2));process.exit(1);}
+ /* 1波目に出る数(置いておくだけで捌ける数にしない) */
+ buildTide(1);const n1=G.tide.pool.length;
+ if(n1<6){console.log('FAIL: 1波目の敵が少なすぎる('+n1+'体)');process.exit(1);}
+ console.log('序盤の歯ごたえ: 古参の総HP W1〜W6 = '+hp.map(v=>Math.round(v)).join('<')+' / 1波目'+n1+'体・体力x'+m1.toFixed(2)+' OK');
+ backTitle();META.stg=0;setDiff=2;loadStage(0);
+}
 /* ---- 最終ウェーブのボスが、ステージ専用の特別な1体になっているか ---- */
 function checkFinalBoss(){
  const want=[['ステージ1',0,FIN_ZI,4],['ステージ2',1,FIN2_ZI,4],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF]];
@@ -1993,6 +2014,7 @@ checkLabMul();
 checkCryo();
 checkBeam();
 checkCoil();
+checkEarly();
 checkFinalBoss();
 runStage2();
 runNightmare();
