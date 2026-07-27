@@ -8077,18 +8077,18 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  }
  /* 業火放射塔: タンク3本+**二又の火口**+種火2つ */
  else if(tid==='flame2'){
-  twTank(c,-24,-30,11,26,'#8a3a24');twTank(c,-10,-34,11,30,'#b0483a');twTank(c,4,-30,11,26,'#8a3a24');
+  /* ⚠タンクを**縦に3本立てない**=「色の付いた棒の束」になって何の塔か読めない(撮って直した)。
+     基部の後ろへ**横に寝かせて**2本にし、代わりに**二又の火口**を大きく出す */
+  twTank(c,-32,-12,25,10,'#b0483a');twTank(c,-32,2,25,10,'#8a3a24');
   c.save();c.rotate(ang);
-  twGun(c,0,16,12,'#7a4a2a',4);
-  c.save();c.translate(15,0);
-  for(const sy of [-7,7]){c.save();c.translate(0,sy);c.rotate(sy>0?.24:-.24);
-   c.fillStyle='#a5602e';c.beginPath();c.moveTo(0,-5.5);c.lineTo(13,-9);c.lineTo(13,9);c.lineTo(0,5.5);c.closePath();c.fill();c.stroke();
-   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(16,0,6+Math.sin(t*22)*1.6,0,7);c.fill();}
+  twGun(c,0,14,13,'#7a4a2a',4.5);
+  for(const sg of [-1,1]){c.save();c.translate(12,0);c.rotate(sg*.34);
+   c.fillStyle='#a5602e';c.beginPath();c.moveTo(0,-6.5);c.lineTo(16,-10.5);c.lineTo(19,0);c.lineTo(16,10.5);c.lineTo(0,6.5);c.closePath();c.fill();c.stroke();
+   c.fillStyle='#5c3418';c.beginPath();c.ellipse(17,0,3,7,0,0,7);c.fill();
+   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(22,0,7+Math.sin(t*22)*1.8,0,7);c.fill();}
    c.restore();}
   c.restore();
-  c.fillStyle=GOLD;c.globalAlpha=.65+Math.sin(t*7)*.3;
-  c.beginPath();c.arc(12,-11,3.4,0,7);c.fill();c.beginPath();c.arc(12,11,3.4,0,7);c.fill();c.globalAlpha=1;
-  c.restore();
+  c.fillStyle=GOLD;c.globalAlpha=.65+Math.sin(t*7)*.3;c.beginPath();c.arc(-7,-17,4,0,7);c.fill();c.globalAlpha=1;
  }
  /* 雷神コイル: 太い柱に巻線5周+大玉。基部から**放電棒**が4本 */
  else if(tid==='tesla2'){
@@ -8164,16 +8164,19 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  }
  /* 溶解噴射砲: 二又のノズル+タンク2本。滴った酸が基部にたまる */
  else if(tid==='acid2'){
-  twTank(c,-23,-28,12,26,'#5f7a2a');twTank(c,-8,-32,12,30,'#7a9c3a');
+  /* ⚠火炎と同じ理由でタンクは**横に寝かせる**。二又の口を大きくして「噴く物」に読ませる */
+  twTank(c,-32,-12,25,10,'#7a9c3a');twTank(c,-32,2,25,10,'#5f7a2a');
   c.save();c.rotate(ang);
-  twGun(c,0,15,11,'#4c6b28',4);
-  for(const sy of [-6,6]){c.save();c.translate(14,sy);c.rotate(sy>0?.3:-.3);
-   c.fillStyle='#5f8a2e';c.beginPath();c.moveTo(0,-5);c.lineTo(14,-8);c.lineTo(14,8);c.lineTo(0,5);c.closePath();c.fill();c.stroke();
-   if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(17,0,5.5+Math.sin(t*19)*1.5,0,7);c.fill();}
+  twGun(c,0,13,12,'#4c6b28',4);
+  for(const sg of [-1,1]){c.save();c.translate(11,0);c.rotate(sg*.36);
+   c.fillStyle='#5f8a2e';c.beginPath();c.moveTo(0,-6);c.lineTo(15,-9.5);c.lineTo(18,0);c.lineTo(15,9.5);c.lineTo(0,6);c.closePath();c.fill();c.stroke();
+   c.fillStyle='#33501a';c.beginPath();c.ellipse(16,0,2.8,6.5,0,0,7);c.fill();
+   if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(21,0,6+Math.sin(t*19)*1.6,0,7);c.fill();}
    c.restore();}
   c.restore();
+  /* 滴った酸(基部の足元にたまる) */
   c.fillStyle=TOXIC;c.globalAlpha=.55+Math.sin(t*3.4)*.3;
-  c.beginPath();c.arc(-17,10,3.2,0,7);c.fill();c.beginPath();c.arc(-9,13,2.6,0,7);c.fill();c.globalAlpha=1;
+  c.beginPath();c.arc(-13,15,3.4,0,7);c.fill();c.beginPath();c.arc(-4,18,2.6,0,7);c.fill();c.globalAlpha=1;
  }
  /* 無人機母艦: 大きな発着台+**3機**が漂う(元は2機。数で一目で分かる) */
  else if(tid==='drone2'){
