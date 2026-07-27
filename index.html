@@ -8290,20 +8290,11 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   c.fillStyle=TOXIC;c.globalAlpha=.6+Math.sin(t*4)*.3;
   c.beginPath();c.arc(-21,10,3,0,7);c.fill();c.beginPath();c.arc(-12,14,2.4,0,7);c.fill();c.globalAlpha=1;
  }
- /* 無人機母艦: 大きな発着台+**3機**が漂う(元は2機。数で一目で分かる) */
- else if(tid==='drone2'){
-  c.fillStyle='#35404a';rr(c,-17,-14,34,26,6);c.fill();c.stroke();
-  c.fillStyle='#28323c';c.beginPath();c.arc(0,-2,8,0,7);c.fill();
-  c.fillStyle=TECH;c.globalAlpha=.4+Math.sin(t*3)*.25;c.beginPath();c.arc(0,-2,5,0,7);c.fill();c.globalAlpha=1;
-  for(let k=0;k<3;k++){const a2=t*1.5+k*2.09,dx=Math.cos(a2)*27,dy=Math.sin(a2)*11-16;
-   c.save();c.translate(dx,dy);c.lineWidth=2;
-   c.fillStyle='#7fb0c4';rr(c,-8,-4,16,9,3.5);c.fill();c.stroke();
-   c.fillStyle='#35404a';rr(c,-11,-6.5,5,3,1.4);c.fill();rr(c,6,-6.5,5,3,1.4);c.fill();
-   c.strokeStyle='rgba(226,236,244,.85)';c.lineWidth=2;
-   for(const ox of [-8.5,8.5]){const w9=6+Math.abs(Math.sin(t*40+k))*2;
-    c.beginPath();c.ellipse(ox,-7,w9,1.7,0,0,7);c.stroke();}
-   c.strokeStyle=INK;c.lineWidth=3;c.restore();}
- }
+ /* ⚠**無人機母艦の絵をここに書かないこと**(2026-07-27に実際に踏んだ)。
+    進化先18種を描いた時、ここに「飾りの機体3機」を描いた枝を置いていたが、
+    そのあとドローンを本物の実体(tw.dr)にしたので、**本物の5機とは別に3機浮いて見えていた**。
+    ⚠**枝が2つあると先に書いた方だけが当たる**ので、あとから直した方は一生描かれない。
+    母艦の絵は下の tid==='drone2'(装甲甲板+管制塔)ひとつだけ。 */
  /* 列車砲: **超長の砲身**+軌道の枕木(基部)。最も長い輪郭にする */
  else if(tid==='arty2'){
   c.fillStyle='#4a4a38';rr(c,-26,12,52,7,2);c.fill();c.stroke();
