@@ -183,10 +183,12 @@ function runStage2(){
    ⚠見るのは**1波の総HP**(体×1体のHP)。数だけ・強さだけを見ると片方を薄めても通ってしまう。 */
 function checkEarly(){
  META.stg=0;setDiff=2;startSolo();
- const tot=w=>{buildTide(w);return G.tide.pool.reduce((a,e)=>a+(e.z.mhp||0),0);};
+ /* ⚠**顔ぶれは毎回ランダムに引く**ので、1回ぶんの総HPで隣どうしを比べると普通に前後する。
+    5回ぶんの平均で見て、しかも**隣ではなく離れた波**(W1<W3<W6)で比べる。 */
+ const tot=w=>{let t=0;for(let k=0;k<5;k++){buildTide(w);t+=G.tide.pool.reduce((a,e)=>a+(e.z.mhp||0),0);}return t/5;};
  const hp=[1,2,3,4,5,6].map(tot);
- for(let i=1;i<hp.length;i++)if(!(hp[i]>hp[i-1])){
-  console.log('FAIL: 波が進んでも総HPが増えていない W'+i+'('+Math.round(hp[i-1])+') → W'+(i+1)+'('+Math.round(hp[i])+')');process.exit(1);}
+ if(!(hp[0]<hp[2]&&hp[2]<hp[5])){
+  console.log('FAIL: 波が進んでも総HPが増えていない '+hp.map(v=>Math.round(v)).join('/'));process.exit(1);}
  /* ⭐**1波目の体力倍率が1を下回らない**=「慣らし」で最初の数波を空気にしない。
     ⚠総HPの比では見ないこと=序盤は**出る敵の顔ぶれ(mw)**が軽いので、どう調整しても4波目とは開く。
     見るべきは**倍率そのもの**(2026-07-27に 0.60 → 1.17 へ上げた)。 */
@@ -195,6 +197,18 @@ function checkEarly(){
  /* 1波目に出る数(置いておくだけで捌ける数にしない) */
  buildTide(1);const n1=G.tide.pool.length;
  if(n1<6){console.log('FAIL: 1波目の敵が少なすぎる('+n1+'体)');process.exit(1);}
+ /* ⭐**中盤からウェーブの中が小波に割れている**(2026-07-27ユーザー指示)。
+    ⚠見るのは「長い間隔(小波の切れ目)がいくつ入っているか」。
+      敵の数や強さは**一切変えていない**ので、そちらで測ろうとしても差が出ない。 */
+ {const gaps=w=>{buildTide(w);return G.tide.pool.filter((e,i)=>i>0&&e.dl>=2).length;};
+  if(gaps(3)!==0){console.log('FAIL: 序盤(W3)まで小波に割れている');process.exit(1);}
+  const g14=gaps(14),g20=gaps(20);
+  if(g14!==subN(14)-1){console.log('FAIL: W14の小波が想定と違う '+g14+'(想定'+(subN(14)-1)+')');process.exit(1);}
+  if(!(g20>=g14)){console.log('FAIL: 波が進んでも小波が増えていない W14='+g14+' W20='+g20);process.exit(1);}
+  /* 切れ目の休みが「一瞬」になっていないこと(一気に出るのを防ぐのが目的) */
+  buildTide(14);const gp=G.tide.pool.filter((e,i)=>i>0&&e.dl>=2).map(e=>e.dl);
+  if(gp.some(v=>v<2)){console.log('FAIL: 小波の切れ目が短すぎる');process.exit(1);}
+  console.log('小波: W3=割らない / W14='+(g14+1)+'波に分割(休み'+subGap(14).toFixed(1)+'秒) / W20='+(g20+1)+'波 OK');}
  console.log('序盤の歯ごたえ: 古参の総HP W1〜W6 = '+hp.map(v=>Math.round(v)).join('<')+' / 1波目'+n1+'体・体力x'+m1.toFixed(2)+' OK');
  backTitle();META.stg=0;setDiff=2;loadStage(0);
 }
