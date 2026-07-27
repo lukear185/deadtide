@@ -191,7 +191,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* 🏳放棄と🔊は上のHUDから操作バーへ移した(上に長く伸びると右上の道路に被るため) */
 #abar #ffwave,#abar #mutebtn{height:58px;padding:0 11px;border-radius:12px;font-size:13px;box-shadow:0 3px 0 #000}
 #abar #ffwave:active,#abar #mutebtn:active{transform:scale(.93)}
-#pushtgt{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:76px;background:rgba(36,31,25,.88);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:11px;padding:4px 9px;font-weight:900;z-index:6;display:none}
+/* ⭐相手の小窓の**真下に詰める**(2026-07-27ユーザー指摘=画面右に大きな空きがあった)。
+   ⚠`position:absolute`+`bottom:76px`で画面の下に貼っていたので、小窓との間が80pxほど空いていた。
+   #minis(縦のflex)の最後の子にして流し込む=相手が1人でも2人でも自動で詰まる。 */
+#pushtgt{align-self:flex-end;margin-top:3px;background:rgba(36,31,25,.88);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:11px;padding:4px 9px;font-weight:900;display:none}
 #strikehint{position:absolute;left:12px;bottom:78px;color:var(--pane);font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #flaghint{position:absolute;left:12px;bottom:98px;color:var(--pane);font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #deck{display:flex;gap:5px;overflow-x:auto;flex:0 1 auto;padding-bottom:2px}
@@ -11386,9 +11389,23 @@ function renderCamp(C,t){
   c.font='900 32px '+FF;c.textAlign='center';c.fillText('🚩',fp2[0],fp2[1]-10);}
  /* ボスHP */
  const bs=C.zombies.find(z=>z.boss);
- if(bs){c.fillStyle='#fff';rr(c,430,132,740,28,12);c.fill();c.strokeStyle=INK;c.lineWidth=4;c.stroke();
-  c.fillStyle=RUST;const r3=clamp(bs.hp/bs.mhp,0,1);if(r3>0){rr(c,435,137,730*r3,18,8);c.fill();}
-  c.fillStyle=PANE;c.strokeStyle=INK;c.font='900 24px '+FF;c.textAlign='center';c.strokeText('💀 ジャガーノート',800,124);c.fillText('💀 ジャガーノート',800,124);c.lineWidth=3;}
+ if(bs){
+  /* ⭐**画面の上から何pxかで置く**(2026-07-27ユーザー指摘=対戦で死潮ゲージと重なっていた)。
+     ⚠世界座標で決め打ちにしていたのが原因。**対戦はマップが1割小さい**ので、同じ世界座標でも
+       画面ではその分だけ上に来て、上のHUDや死潮ゲージに食い込む。
+     ⚠対戦だけ死潮ゲージ(上から約47px)があるので、その下まで下げる。 */
+  const vsMode=!(G&&(G.pve||G.coop))&&MODE!=='solo';
+  const oy9=(typeof OY==='number'?OY:0),sc9=(typeof SC==='number'&&SC>0)?SC:1;
+  /* ⚠SC/OX/OY は**デバイスpx**(canvasはDPR倍で作る)。CSSpxで置きたいので DPR を掛ける */
+  /* ⚠**名前は y0 の上に出る**(baseline)ので、HUDの下端(約28px)+文字の高さ ぶん余裕を取る。
+     対戦はさらに死潮ゲージ(約47pxまで)の下へ。 */
+  const y0=((vsMode?62:46)*(DPR||1)-oy9)/sc9;
+  c.fillStyle='#fff';rr(c,430,y0+8,740,28,12);c.fill();c.strokeStyle=INK;c.lineWidth=4;c.stroke();
+  c.fillStyle=RUST;const r3=clamp(bs.hp/bs.mhp,0,1);if(r3>0){rr(c,435,y0+13,730*r3,18,8);c.fill();}
+  /* ⚠名前は決め打ちにしない=屍山の王・深淵の母・原初の獣でも「ジャガーノート」と出ていた */
+  const bn=(ZOMBIES[bs.zi]||{}).n||'ボス';
+  c.fillStyle=PANE;c.strokeStyle=INK;c.font='900 24px '+FF;c.textAlign='center';
+  c.strokeText('💀 '+bn,800,y0);c.fillText('💀 '+bn,800,y0);c.lineWidth=3;}
  const inW=MODE==='client'?CS.ph===1:(G&&G.phase==='wave');
  if(C.waveDone&&!C.dead&&gameActive&&inW){c.fillStyle='rgba(0,0,0,.42)';c.fillRect(0,MH*.36,MW,90);c.fillStyle=PANE;c.font='900 40px '+FF;c.textAlign='center';c.fillText('🛡 防衛成功! 他拠点の戦闘を待機中…',800,MH*.36+60);}
  if(C.dead){c.fillStyle='rgba(30,16,12,.62)';c.fillRect(0,0,MW,MH);c.fillStyle=PANE;c.font='900 60px '+FF;c.textAlign='center';c.fillText('💀 拠点陥落…',800,MH*.44);c.font='900 28px '+FF;c.fillText('観戦モード',800,MH*.44+50);}
@@ -11500,7 +11517,9 @@ function buildMinis(list){const w=$('minis');w.innerHTML='';
  list.forEach(o=>{const d=document.createElement('div');d.className='mini';d.id='mini'+o.i;
  d.innerHTML=`<div class="nm"><span>${o.n}</span><span>👁</span></div><div class="hpbar"><i style="width:100%"></i></div><canvas class="mv" width="200" height="95"></canvas><div class="st">待機中</div>`;
  d.onclick=()=>{if(gameActive)setSpec(SPEC===o.i?-1:o.i);};
- w.appendChild(d);});}
+ w.appendChild(d);});
+ /* ⭐→全員に分散 のチップを小窓の下へ入れる(空きを作らない) */
+ try{const tc=$('pushtgt');if(tc)w.appendChild(tc);}catch(e){}}
 function minisUpd(){
  if(COOP)return;
  let list;
