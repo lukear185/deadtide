@@ -156,8 +156,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'me.scrap=999999;if(!gradeTower(me,ECO_BASE))break;}}'
        +'setInterval(function(){try{var te=me.towers[ECO_BASE];if(te)te.cd=0;}catch(e){}},120);}else{'
        +'var si9=AI_ORDER[0];me.towers[si9]=null;'
+       /* ⭐タレットの進化先(grd)も直接は建たない=素のタワーを建てて全部MAXにしてから進化させる */
+       +'var b9=TOWERS[ti9].grd?TOWERS.findIndex(function(q){return q.up2===TOWERS[ti9].id;}):ti9;'
        /* 解放数は建てる瞬間だけ上げて戻す(上げっぱなしにすると解放カード周りで画面が止まる) */
-       +'var pu9=me.unlocked;me.unlocked=ti9+1;buildTower(me,si9,ti9);me.unlocked=pu9;}'
+       +'var pu9=me.unlocked;me.unlocked=b9+1;buildTower(me,si9,b9);me.unlocked=pu9;'
+       +'if(TOWERS[ti9].grd){var tg9=me.towers[si9],gu9=0;'
+       +'while(tg9&&tg9.ti!==ti9&&gu9++<8){twStats(tg9.ti).forEach(function(s9){tg9.us[s9]=USTAT_MAX;});'
+       +'me.scrap=999999;if(!gradeTower(me,si9))break;}}}'
        +'setInterval(function(){try{var t9=me.towers[AI_ORDER[0]];if(t9)t9.cd=0;'
        +'me.zombies.forEach(function(z){z.hp=z.mhp;});}catch(e){}},80);'):'')
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
@@ -232,7 +237,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'cvv.width=W2*DP;cvv.height=H2*DP;var c=cvv.getContext("2d");c.scale(DP,DP);'
      +'c.fillStyle=PAPER;c.fillRect(0,0,W2,H2);'
      +'var K="'+GRID+'",items=[];'
-     +'if(K==="tw"){for(var i=0;i<TOWERS.length;i++)items.push({n:TOWERS[i].n,i:i});}'
+     /* ⭐tw=素のタワーだけ / tg=進化先だけ(2026-07-27)。42種を一度に並べると固まる */
+     +'if(K==="tw"){for(var i=0;i<TOWERS.length;i++)if(!TOWERS[i].grd)items.push({n:TOWERS[i].n,i:i});}'
+     +'else if(K==="tg"){for(var i=0;i<TOWERS.length;i++)if(TOWERS[i].grd)items.push({n:TOWERS[i].n,i:i});}'
      +'else if(K==="u"){for(var i=0;i<U_N;i++)items.push({n:UNITS[i].n,i:i});}'
      +'else if(K==="hero"){for(var i=0;i<HEROES.length;i++)items.push({n:HEROES[i].n,i:HERO_I0+i});}'
      +'else{for(var i=0;i<ZOMBIES.length;i++)items.push({n:ZOMBIES[i].n,i:i});}'
@@ -246,8 +253,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'var by=cy+ch-8;'
      +'for(var m=0;m<2;m++){var sc=(m?3:1)*s0,px=cx+(m?cw*.62:cw*.22);'
      /* タワーは中心が原点なので、足元が同じ高さに並ぶよう少し持ち上げる */
-     +'c.save();c.translate(px,by-(K==="tw"?22*sc:0));c.scale(sc,sc);c.lineWidth=3;c.strokeStyle=INK;'
-     +'try{if(K==="tw")drawTower(c,items[k].i,0,0,0,-0.55,1.2,{});'
+     +'c.save();c.translate(px,by-(K==="tw"||K==="tg"?22*sc:0));c.scale(sc,sc);c.lineWidth=3;c.strokeStyle=INK;'
+     +'try{if(K==="tw"||K==="tg")drawTower(c,items[k].i,0,0,0,-0.55,1.2,{});'
      +'else if(K==="z"){if(typeof PX_ON!=="undefined")PX_ON=false;drawZombie(c,items[k].i,0,0,1,1.2,0,{});if(typeof PX_ON!=="undefined")PX_ON=true;}'
      +'else drawUnit(c,items[k].i,0,0,1,1.2,0,{});}catch(e){}'
      +'c.restore();}'

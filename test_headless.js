@@ -864,6 +864,59 @@ function checkTwNew(){
   console.log('レーザー塔: 継続攻撃 毎秒'+d1.toFixed(1)+' → '+t0.toFixed(1)+'秒で'+dMax.toFixed(1)+'('+mul.toFixed(2)+'倍)・次の敵でリセット'
    +' / 射程'+T.rng+' / 強化=['+stl.map(x=>USTAT_L[x]).join(',')+'] / 🔥昇温速度Lv5で'+t0.toFixed(1)+'秒→'+t5.toFixed(1)+'秒 OK');
  }
+ /* ④ ⭐タレットの進化(2026-07-27ユーザー指示。研究所の弾薬アップグレードの置き換え)
+    ⚠見るのは4つ: ①素のタワー全部に進化先がある ②全部MAXにしないと進化できない
+    ③進化しても強化Lvが消えない(工房だけは0に戻る) ④進化後は必ず強くなる。 */
+ {
+  /* ①素の実戦タワー(工房を除く)は全部 up2 を持つ */
+  const lack=[];
+  for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];
+   if(T.type==='sup'||T.type==='eco')continue;
+   if(T_GRD(i)<0)lack.push(T.n);}
+  if(lack.length){console.log('FAIL: 進化先の無いタワーがある: '+lack.join('/'));process.exit(1);}
+  /* 進化先は解放チェーン(T_PLAY)の外に居ること=建設リストにも研究所にも出さない */
+  for(let i=0;i<T_PLAY;i++){const g=T_GRD(i);
+   if(g>=0&&g<T_PLAY){console.log('FAIL: 進化先が解放チェーンの中に居る: '+TOWERS[g].n);process.exit(1);}}
+  /* ④どの進化先も、素のタワーを全部MAXにした時より強いこと(1秒あたりの威力で見る) */
+  const mx={us:Object.assign(newUs(),{d:USTAT_MAX,r:USTAT_MAX,g:USTAT_MAX,c:USTAT_MAX,f:USTAT_MAX,h:USTAT_MAX,b:USTAT_MAX,m:USTAT_MAX})};
+  const dps=(T,tw)=>T.rate>0?(T.dmg*twDmgM(tw))/(T.rate*(T.cont?1:twRateM(tw))):0;
+  for(let i=0;i<T_PLAY;i++){const T=TOWERS[i],g=T_GRD(i);
+   if(g<0||T.type==='eco'||T.type==='sup')continue;
+   const E=TOWERS[g];
+   if(!(dps(E,mx)>dps(T,mx)*1.4)){
+    console.log('FAIL: '+E.n+' が '+T.n+'(全部MAX)より十分強くない '+dps(E,mx).toFixed(1)+' vs '+dps(T,mx).toFixed(1));process.exit(1);}
+   /* ⚠射程は**強化Lvを引き継ぐ**ので素の値どうしで比べる(実効値は両方に同じ倍率が乗る) */
+   if(E.rng>0&&!(E.rng>=T.rng*1.1)){
+    console.log('FAIL: '+E.n+' の射程が '+T.n+' より広くない '+E.rng+' vs '+T.rng);process.exit(1);}
+   /* ⭐研究所の枠は元のタワーと共有する=進化しても積んだLvが無駄にならない */
+   if(twKey(E)!==twKey(T)){console.log('FAIL: '+E.n+' の研究所の枠が '+T.n+' と別になっている');process.exit(1);}
+   /* 発射音の割り当てが無いと無音になる */
+   if(!TW_SFX[E.id]){console.log('FAIL: '+E.n+' に発射音が割り当てられていない');process.exit(1);}}
+  /* ②③実際に建てて、MAXにするまで進化できず、進化したら強化Lvが残ること */
+  const ti=TOWERS.findIndex(t=>t.id==='rifle');
+  me.scrap=9999999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
+  buildTower(me,si,ti);
+  const tw=me.towers[si];
+  if(canGrade(me,tw)){console.log('FAIL: 強化していないのに進化できてしまう');process.exit(1);}
+  for(const st of twStats(ti))for(let k=0;k<USTAT_MAX;k++)upTower(me,si,st);
+  if(!canGrade(me,tw)){console.log('FAIL: 全部MAXにしても進化できない');process.exit(1);}
+  const before=twStats(ti).map(st=>tw.us[st]);
+  if(!gradeTower(me,si)){console.log('FAIL: 進化に失敗した');process.exit(1);}
+  if(tw.ti!==T_GRD(ti)){console.log('FAIL: 進化先が違う');process.exit(1);}
+  const after=twStats(tw.ti).map(st=>tw.us[st]);
+  if(after.join()!==before.join()){console.log('FAIL: 進化で強化Lvが消えた '+before.join()+'→'+after.join());process.exit(1);}
+  if(canGrade(me,tw)){console.log('FAIL: 進化先からさらに進化できてしまう');process.exit(1);}
+  me.towers[si]=null;
+  /* 工房だけは今までどおり0に戻ること(次の段の素が前の段のMAXより上なので下がらない) */
+  {const eti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
+   me.scrap=9999999;me.towers[esi]=null;me.unlocked=Math.max(me.unlocked,eti+1);
+   buildTower(me,esi,eti);const et=me.towers[esi];
+   for(const st of twStats(eti))for(let k=0;k<USTAT_MAX;k++)upTower(me,esi,st);
+   gradeTower(me,esi);
+   if(twStats(et.ti).some(st=>(et.us[st]||0)!==0)){console.log('FAIL: 工房の建て替えで強化Lvが0に戻っていない');process.exit(1);}
+   me.towers[esi]=null;}
+  console.log('タレットの進化: 素の'+(T_PLAY-1)+'種すべてに専用の進化先 / 全部MAXでだけ進化 / 強化Lvは引き継ぐ(工房だけ0に戻る) / どれも素のMAXより強い OK');
+ }
  /* ③ 廃品工房 → 上級廃品工房への建て替え */
  {const ti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
   me.scrap=99999;me.ecoN=Math.max(me.ecoN||1,1);me.towers[esi]=null;
@@ -960,14 +1013,14 @@ function checkProgress(){
 function checkMetaReset(){
  META.gem=7;META.hero={hNox:1};META.hmat=5;META.zdex={walk:1};META.hlv={hNox:2};META.hxp={hNox:30};
  META.rpg={gold:99};META.hsel='hNox';META.tr0=1;
- META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.am=2;META.py0=3;
+ META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;/* タワー/兵科の個別強化と砲撃威力 */
  META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
  /* ⭐🛠DEVの「研究をリセット」は**研究所ぶんだけ**を戻す=難易度とステージの解放は残す */
  metaResetLab();
  if(META.pts!==0||META.nt!==0||META.st0!==0){console.log('FAIL: 研究リセットで研究所ぶんが消えていない');process.exit(1);}
  if(!(META.sc&&META.sc[0]&&META.sc[0][0])||META.nmOK!==1){console.log('FAIL: 研究リセットで難易度の解放まで消えている');process.exit(1);}
- META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.am=2;META.py0=3;
+ META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;
  metaReset();
  const keep=[['gem',META.gem===7],['英雄',!!(META.hero&&META.hero.hNox)],['hmat',META.hmat===5],
@@ -976,7 +1029,7 @@ function checkMetaReset(){
   ['連れて行く英雄',META.hsel==='hNox'],['鍛錬所の解放',META.tr0===1]];
  for(const [n,ok] of keep)if(!ok){console.log('FAIL: リセットで消してはいけないもの('+n+')が消えている');process.exit(1);}
  const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
-  ['派生',META.uv.length===0],['弾薬',META.am===0],['経済強化',META.py0===0],
+  ['派生',META.uv.length===0],['経済強化',META.py0===0],
   ['タワー個別強化',Object.keys(META.tw).length===0],['兵科個別強化',Object.keys(META.un).length===0],
   ['砲撃の威力',(META.st0||0)===0],['砲撃の種類',META.st.length===1&&META.st[0]==='air'],
   ['難易度の記録',!scArr(0)[0]&&!scArr(0)[5]],['ナイトメア解放',!META.nmOK]];
