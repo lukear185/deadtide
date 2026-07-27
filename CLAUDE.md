@@ -174,8 +174,10 @@ node test_shot.js out.png 852 393        # 実画面のスクショ(スマホ用
 node test_shot.js out.png 852 393 st2    # ステージ2を撮る / pc=PC表示 / w30000=時間を進める
 node test_shot.js out.png 852 393 vs     # 対戦(空き枠はCPU)を撮る
 node test_shot.js out.png 852 393 "nmboss+z=fBeast,nmHorr"   # ナイトメアで、指定した敵だけ経路に並べて撮る
-node test_shot.js out.png 852 393 "st2+nmboss+z=dWhal,fLevi" # ⚠🌑深海のナイトメアは **st2 も付ける**
+node test_shot.js out.png 852 393 "st2+nmboss+noitr+z=dWhal,fLevi" # ⚠🌑深海のナイトメアは **st2 も付ける**
                                                 #   (nmboss だけだとステージ1のまま=獣プールになる)
+                                                # ⭐noitr =「新種のゾンビが現れる!」の紹介モーダルを出さない
+                                                #   ⚠新しい敵の絵を撮る時は必ず付ける(画面を覆って邪魔になる)
 node test_shot.js out.png 852 393 u=grn          # その兵科を3体出して撃たせ続ける(攻撃の演出用。+die=倒れるまで放置)
 node test_shot.js out.png 852 393 stk=napalm     # その砲撃の着弾を撮る(air/mgun/carpet/frost/napalm)
 node test_shot.js out.png 852 393 fxdemo         # 新しい演出を1つずつ並べて、寿命の途中で止めて撮る

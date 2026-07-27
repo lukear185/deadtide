@@ -30,6 +30,10 @@ function coarseCSS(s){
 const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連した状態で撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
+/* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
+   ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
+     (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
+const NOITR=OPT.indexOf('noitr')>=0;
 const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=twup(タワー強化) / lab=unup(部隊強化) / lab=rec(記録) = 🔬研究所の指定タブ */
 const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
@@ -136,7 +140,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +((/gt(\d)/.exec(OPT))?('if(GC){GC.tw=GC.zk='+(/gt(\d)/.exec(OPT))[1]+';}'):''))
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
-     :'setDiff=2;startSolo();')+'}catch(e){document.title="ERR "+e.message;}'
+     :'setDiff=2;startSolo();')+(NOITR?'showIntro=function(){};':'')+'}catch(e){document.title="ERR "+e.message;}'
  /* ⚠以前は `ZIDS.length` を条件にしていたため、**`t=` を単体で指定すると丸ごと無視されていた**
       (敵を並べずにタワーだけ撮りたい時に、何も建たないまま撮れてしまう)。`t=` だけでも走らせる */
  +((ZIDS.length||TID)?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'

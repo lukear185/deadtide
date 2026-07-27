@@ -755,7 +755,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="bphint" id="sfx-hint"></div>
     <div class="bpbody" id="sfx-list"></div>
     <div class="bpfoot"><button class="btn sm" id="bt-sfx-all">▶ このタブを順に鳴らす</button>
-      <span class="bphint" style="margin:0">音量 <input type="range" id="sfx-vol" min="0" max="100" value="72" style="vertical-align:middle;width:110px"></span></div>
+      <span class="bphint" style="margin:0">音量 <input type="range" id="sfx-vol" min="0" max="100" value="58" style="vertical-align:middle;width:110px"></span></div>
   </div>
 </div>
 
@@ -1160,7 +1160,7 @@ const SFXB={
      ヘッドレステストにはAudioContextが無いので、必ず合成音側を通る=検査は今までどおり動く。
    ⚠素材の差し替えは `node tool_sfx.js build/embed`。SFXB は手で編集しない。 */
 const SFXBUF={},SFXDEC={};
-let SFXVOL=.72;/* ⚠2026-07-27に .85→.72(ユーザー「音がでかすぎる」)。⚠下のスライダーの value も一緒に直すこと */
+let SFXVOL=.58;/* ⚠2026-07-27に .85→.72(ユーザー「音がでかすぎる」)。⚠下のスライダーの value も一緒に直すこと */
 function b64buf(s){const b=atob(s),n=b.length,a=new Uint8Array(n);
  for(let i=0;i<n;i++)a[i]=b.charCodeAt(i);return a.buffer;}
 function sfxLoad(){
@@ -1264,17 +1264,17 @@ const SFX_GAIN={
     ⚠**1.1秒鳴りっぱなしの音は、RMSが同じでも短い音よりずっと大きく感じる**
       (2026-07-26ユーザー指摘「ボスのうなり(死の笛)がでかすぎる」。0.111まで下げてもまだ大きかった)。
       大うめきと同じ0.07まで落としてある。 */
- growl:.16, growl2:.37,
+ growl:.112, growl2:.259,
  /* ボス撃破(素 .309)。53種で2番目に大きかったので下げる。
     ⚠2026-07-27に .58→.372 へ再度下げた=全体を0.13へ揃えたので、
       **ゾンビの声が「ゾンビ以外の一番大きい音」を超えない**という検査(test_sfx ①)に掛かるため。 */
- bossKill:.372,
+ bossKill:.260,
  /* エリート/ボスのうめき(素 moanBig .096 / moanBig2 .136) */
- moanBig:.78, moanBig2:.55,
+ moanBig:.546, moanBig2:.385,
  /* ふつうのうめき(素 moan .099 / moan2 .104 / moan3 .188 / moanN .082)。moanWは素で.059なので触らない */
- moan:.65, moan2:.62, moan3:.35, moanN:.79,
+ moan:.455, moan2:.434, moan3:.245, moanN:.553, moanW:.70, scratch:.70,
  /* 断末魔(素 .084) */
- die:.72
+ die:.504
  /* ⚠bite/bite2 は「噛みつく音」で声ではないため触っていない(素 .102/.117=平均並み) */
 };
 /* 連射・多発する音はピッチを少し揺らす(同じ波形が続くと耳が疲れる) */
@@ -1481,7 +1481,6 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
   if(f)beep(f,f*.995,2.2,'triangle',.137);/* ②まばらな音 */
   if(s===8)beep(f*1.5,f*1.5,1.6,'sine',.070);/* 5度をうっすら重ねる */
   if(s===13&&Math.random()<.5)nzHit(700,180,2.2,.137,1);/* ③遠くの風 */
-  if(s===6&&Math.random()<.25&&sfx.moan)sfx.moan();/* たまに遠くでうめく */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
 document.addEventListener('pointerdown',ensureAC);
@@ -12653,14 +12652,48 @@ $('ivready').onclick=()=>{
 /* ============ パレード ============ */
 const pcv=$('paradecv'),pctx=pcv.getContext('2d');
 let PAR=[];
-function paradeInit(){PAR=[];for(let i=0;i<7;i++)PAR.push({zi:[0,0,1,2,3,4,5][ri(0,6)],x:rnd(0,innerWidth),sp:rnd(16,42),ph:rnd(0,9)});}
+function paradeInit(){PAR=[];for(let i=0;i<7;i++)PAR.push({zi:[0,0,1,2,3,4,5][ri(0,6)],x:rnd(0,innerWidth),sp:rnd(16,42),ph:rnd(0,9),ht:0});}
+/* ⭐**タイトルのゾンビはタップで倒せる**(2026-07-27ユーザー指示
+     「タイトルでゾンビタップして倒せるようにして、倒したときだけ撃破ボイス」)。
+   ⚠**canvas を pointer-events:auto にしてはいけない**=行進canvasは画面下120pxに敷いてあり、
+     メニューのボタンより後ろに描かれているので、当たり判定を持たせると下のボタンが押せなくなる。
+   ⭐だから**タップは画面側(#scr-title)で拾い、ボタンの上を押した時は何もしない**。
+   ⚠倒れた個体は消さずに `ht`(0→1)で転がして薄くし、切ったところで画面外へ戻して別の種類に生まれ変わらせる。 */
+function paradeHit(cx,cy){
+ if(SCR!=='title')return false;
+ const r=pcv.getBoundingClientRect();
+ const px=cx-r.left,py=cy-r.top;
+ if(px<0||px>r.width||py<0||py>r.height)return false;
+ let best=null,bd=1e9;
+ for(const p of PAR){if(p.ht>0)continue;const d=Math.abs(p.x-px);if(d<34&&d<bd){bd=d;best=p;}}
+ if(!best)return false;
+ best.ht=.001;/* 倒れ始め */
+ ensureAC();
+ if(sfx.die)sfx.die();/* ⚠**倒した時だけ**声を出す(行進中は無言=ユーザー指示) */
+ return true;
+}
+document.addEventListener('pointerdown',e=>{
+ if(SCR!=='title')return;
+ /* ⚠ボタン・入力の上は素通りさせる=タイトルの操作を邪魔しない */
+ if(e.target&&e.target.closest&&e.target.closest('button,.btn,input,select,a,.tb,label'))return;
+ paradeHit(e.clientX,e.clientY);
+},true);
 function paradeStep(t){
  if(SCR!=='title')return;
  const w=innerWidth,h=120;const dpr=Math.min(2,window.devicePixelRatio||1);
  if(pcv.width!==w*dpr){pcv.width=w*dpr;pcv.height=h*dpr;}
  pctx.setTransform(dpr,0,0,dpr,0,0);pctx.clearRect(0,0,w,h);
  pctx.fillStyle='rgba(0,0,0,.35)';pctx.fillRect(0,h-24,w,24);
- for(const p of PAR){p.x+=p.sp*.016;if(p.x>w+60){p.x=-60;p.zi=[0,0,1,2,3,4,5][ri(0,6)];}
+ for(const p of PAR){
+  if(p.ht>0){/* ⭐タップで倒された個体: 転がって薄くなり、切ったら画面外から別の種類で戻る */
+   p.ht+=.016/.55;
+   if(p.ht>=1){p.ht=0;p.x=-60;p.zi=[0,0,1,2,3,4,5][ri(0,6)];p.sp=rnd(16,42);p.ph=rnd(0,9);continue;}
+   const k=p.ht;
+   pctx.save();pctx.globalAlpha=Math.max(0,1-k*k);
+   pctx.translate(p.x,h-20);pctx.rotate(1.5*(1-Math.pow(1-k,3)));
+   drawZombie(pctx,p.zi,0,0,1,t,p.ph,{});
+   pctx.restore();pctx.globalAlpha=1;continue;}
+  p.x+=p.sp*.016;if(p.x>w+60){p.x=-60;p.zi=[0,0,1,2,3,4,5][ri(0,6)];}
   drawZombie(pctx,p.zi,p.x,h-20,1,t,p.ph,{});}
 }
 /* ============ 画面遷移 ============ */
