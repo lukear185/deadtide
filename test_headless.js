@@ -263,10 +263,15 @@ function checkCryo(){
  }
  if(frozeAt<0){console.log('FAIL: 冷却塔が敵を凍らせていない');process.exit(1);}
  if(movedWhileFrozen){console.log('FAIL: 凍結中なのに敵が動いている '+movedWhileFrozen+'回');process.exit(1);}
- /* 解凍直後に撃たれても再凍結しないこと(永久ロック防止) */
- z.frzT=0;z.frzCd=1.5;
+ /* ⭐**凍っていない敵は必ず凍る**(2026-07-27に再凍結の耐性 frzCd を廃止した)。
+    ⚠**位置を戻してから見ること**=20秒歩かせたあとは射程200の外に出ていて、
+      何を検査しても素通りしてしまう(耐性の検査が実際そうなっていた) */
+ z.d=projPath(sx,sy);z.frzT=0;z.frzUsed=0;
  me.towers[si].cd=0;campStep(me,.05,G.wave);
- if(z.frzT>0){console.log('FAIL: 凍結耐性(frzCd)が効いていない=永久ロックできてしまう');process.exit(1);}
+ if(!(z.frzT>0)){console.log('FAIL: 凍っていない敵を凍らせていない(冷却塔の空振り)');process.exit(1);}
+ /* すでに凍っている敵に撃っても冷却回数を食わないこと */
+ {const u0=z.frzUsed;z.frzT=1;me.towers[si].cd=0;campStep(me,.05,G.wave);
+  if(z.frzUsed!==u0){console.log('FAIL: 凍結中の敵に冷却回数を使っている');process.exit(1);}}
  /* 同じ敵を凍らせられる回数の上限(初期5・❄冷却回数で最大10) */
  const tw=me.towers[si],Tc=TOWERS[tw.ti];
  if(twFrzN(Tc,tw)!==5){console.log('FAIL: 冷却回数の初期値が5でない '+twFrzN(Tc,tw));process.exit(1);}
@@ -275,10 +280,10 @@ function checkCryo(){
  if(twStats(tw.ti).indexOf('d')>=0){console.log('FAIL: 冷却塔に⚔攻撃の強化が残っている');process.exit(1);}
  if(twStats(tw.ti).indexOf('f')<0){console.log('FAIL: 冷却塔に❄冷却回数の強化が無い');process.exit(1);}
  tw.us.f=0;
- z.frzT=0;z.frzCd=0;z.frzUsed=5;/* 5回使い切った敵はもう凍らない */
+ z.d=projPath(sx,sy);z.frzT=0;z.frzUsed=5;/* 5回使い切った敵はもう凍らない */
  tw.cd=0;campStep(me,.05,G.wave);
  if(z.frzT>0){console.log('FAIL: 上限(5回)を超えて凍っている');process.exit(1);}
- console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・再凍結なし・同じ敵は5回まで(強化で10) OK');
+ console.log('冷却塔: '+(frozeAt*.05).toFixed(2)+'秒で凍結・凍結中の移動0・空振りなし・同じ敵は5回まで(強化で10) OK');
  backTitle();
 }
 /* ---- WAVE1の操作案内(tips)が古くなっていないか / ボタンを押した音があるか(2026-07-26に追加) ---- */
@@ -1425,14 +1430,14 @@ function checkTwFx(){
   me.towers[si]=null;
   return kinds;
  };
- const want={cryo:['ice','shock'],drone:['pel'],fort:['beam'],sonic:['wave'],
+ const want={cryo:['ice','shock'],drone:['pel'],fort:['beam'],
   shot:['spread'],laser:['beam'],plasma:['pboom'],gat:['tr'],rail:['beam','shock']};
  for(const tid of Object.keys(want)){
   const k=run(tid,tid==='plasma'?140:60);
   for(const w of want[tid])if(!k[w]){
    console.log('FAIL: '+tid+' に '+w+' の絵が出ていない(出た絵='+(Object.keys(k).join(',')||'なし')+')');process.exit(1);}
   /* 撃ち方を分けたタワーが、汎用の曳光線(tr)に戻っていないこと */
-  if(['drone','sonic','fort','laser','rail'].indexOf(tid)>=0&&k.tr){
+  if(['drone','fort','laser','rail'].indexOf(tid)>=0&&k.tr){
    console.log('FAIL: '+tid+' がまだ汎用の曳光線(tr)を出している');process.exit(1);}
  }
  /* ---- ドローンは常時2機が浮いて漂っている(2026-07-26 第68弾) ----
@@ -1489,14 +1494,14 @@ function checkTwFx(){
   if(typeof SFXB!=='undefined'&&!SFXB.railChg){console.log('FAIL: 充填音(railChg)が埋め込まれていない');process.exit(1);}
   console.log('レールガン: 充填0→'+maxChg.toFixed(2)+'→発射('+fired+'回)・ビームは'+beamLf.toFixed(2)+'秒(普通は'+FX_LIFE.beam+'秒) OK');}
  /* 発射音の使い回しが残っていないこと(要塞砲=重砲台 / 擲弾砲台=迫撃砲 / 冷却塔=凍結爆弾 だった) */
- {const ids=['fort','arty','mortar','gren','cryo','net','plasma','drone','laser','sonic','rail','gat'];
+ {const ids=['fort','arty','mortar','gren','cryo','net','plasma','drone','laser','rail','gat'];
   const seen={};
   for(const id of ids){const k=TW_SFX[id];
    if(!k){console.log('FAIL: '+id+' に発射音が割り当てられていない');process.exit(1);}
    if(seen[k]){console.log('FAIL: '+id+' と '+seen[k]+' が同じ発射音('+k+')を使っている');process.exit(1);}
    seen[k]=id;
    if(typeof SFXB!=='undefined'&&!SFXB[k]){console.log('FAIL: 発射音 '+k+' が埋め込まれていない');process.exit(1);}}}
- console.log('タワーの撃ち方: 冷却塔/ドローン/要塞砲/音響砲/ショットガン/レーザー/プラズマ が別々の絵・別々の音 OK');
+ console.log('タワーの撃ち方: 冷却塔/ドローン/要塞砲/ショットガン/レーザー/プラズマ が別々の絵・別々の音 OK');
  backTitle();
 }
 function checkHook(){
