@@ -1521,11 +1521,22 @@ for(const T of TOWERS){
 const UNLOCK_P=[0,0,200,320,480,700,980,1350,1800,2400,3100,4000,5100,6400,8000,9900,12200,15000,18500,22500];
 /* タワー個別強化: d=攻撃(工房は産出) r=連射 g=射程。各Lv5まで・費用は基礎価格の50%×1.45^Lv */
 const USTAT_MAX=5;
+/* ⭐**進化したタレットは、もう5段ぶん強化できる**(2026-07-27ユーザー指示)。
+   ⚠進化は強化Lvを引き継ぐ作りなので、そのままだと**進化した瞬間に買うものが無くなる**。
+   ⚠**工房(eco)は除く**=工房は3段あって建て替えのたびにLvが0へ戻る作りなので、上限を伸ばすと二重になる。
+   usMin=進化で引き継いだぶん(=そこが新しい0段目) / usMax=その塔で買える上限。 */
+const usMin=ti=>(TOWERS[ti]&&TOWERS[ti].grd&&TOWERS[ti].type!=='eco')?USTAT_MAX:0;
+const usMax=ti=>usMin(ti)+USTAT_MAX;
+/* ⭐**6段目から先は効き目が半分**(usEff)。⚠そのまま倍にすると⏩連射が10段で
+   1-.09*10=0.10=**10倍撃つ**ことになって壊れる。半分にすれば 5段で1.82倍→10段で3.08倍に収まる。 */
+const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
 const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0});
-const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]||0));/* 盤面の強化は⚙️払い */
+/* 盤面の強化は⚙️払い。⚠進化先は**そのタワーの値段で1段目から数え直す**(引き継いだLvのぶん
+   1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
+const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMin(tw.ti)));
 /* 冷却塔だけは⚔攻撃の代わりに❄冷却回数を伸ばす(2026-07-25ユーザー指示。攻撃力を上げても意味が無い塔のため) */
 /* ⭐レーザー塔(heatNを持つ塔)は📡射程の代わりに🔥昇温速度を伸ばす(2026-07-26ユーザー指示)。
    射程はもともと初期値を1.2倍にしてあり、伸ばすより「早く最大倍率まで焼き切る」方が塔の役目に合う */
@@ -1538,25 +1549,25 @@ const twStats=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
  :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
 const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに13%短くなる(Lv5で20発→9発) */
-const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*((tw&&tw.us&&tw.us.h)||0))));
-const twFrzN=(T,tw)=>(T.frzN||0)+((tw&&tw.us&&tw.us.f)||0);/* 同じ敵を凍らせられる回数(最大5+5=10) */
+const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*usEff((tw&&tw.us&&tw.us.h)||0))));
+const twFrzN=(T,tw)=>(T.frzN||0)+Math.round(usEff((tw&&tw.us&&tw.us.f)||0));/* 同じ敵を凍らせられる回数(最大5+5=10) */
 /* 最大倍率まで焼き切るのに要る**秒数**(継続攻撃なので発射数ではなく時間で見る) */
 const twHeatT=(T,tw)=>twHeatN(T,tw)*(T.rate||.1);
 /* 🔺最大倍率(レーザー塔): 1段ごとに+0.6倍(素3.0 → Lv5で6.0) */
-const twHeatM=(T,tw)=>(T.heatM||2)+.6*((tw&&tw.us&&tw.us.m)||0);
+const twHeatM=(T,tw)=>(T.heatM||2)+.6*usEff((tw&&tw.us&&tw.us.m)||0);
 /* 🔥継続ダメージ(火炎放射塔): 1段ごとに燃焼+25%(Lv5で2.25倍) */
-const twBurnM=tw=>1+.25*((tw&&tw.us&&tw.us.b)||0);
-const twChain=(T,tw)=>T.chain+((tw&&tw.us&&tw.us.c)||0);
+const twBurnM=tw=>1+.25*usEff((tw&&tw.us&&tw.us.b)||0);
+const twChain=(T,tw)=>T.chain+Math.round(usEff((tw&&tw.us&&tw.us.c)||0));
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
 /* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
 const TR_COL=['rgba(255,235,150,','rgba(255,206,84,','rgba(255,150,60,','rgba(255,92,80,','rgba(206,120,255,','rgba(120,230,255,'];
 const HIT_COL=[GLOW,'#ffe08a','#ffc078','#ff9a8a','#e0b0ff','#c8f2ff'];
 const twTier=tw=>{const n=tw&&tw.us?(tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0)):0;return n>=13?5:n>=10?4:n>=7?3:n>=4?2:n>=2?1:0;};
-const twDmgM=tw=>1+.18*(tw.us?tw.us.d:0);
-const twRateM=tw=>1-.09*(tw.us?tw.us.r:0);
+const twDmgM=tw=>1+.18*usEff(tw.us?tw.us.d:0);
+const twRateM=tw=>1-.09*usEff(tw.us?tw.us.r:0);
 const RNG_STEP=.13;/* 📡射程強化1段あたりの拡大率(2026-07-25: .08→.13へ拡大) */
-const twRngM=tw=>1+RNG_STEP*(tw.us?tw.us.g:0);
-const twRngMlv=g=>1+RNG_STEP*g;/* 指定Lvでの射程倍率(強化前プレビュー用) */
+const twRngM=tw=>1+RNG_STEP*usEff(tw.us?tw.us.g:0);
+const twRngMlv=g=>1+RNG_STEP*usEff(g);/* 指定Lvでの射程倍率(強化前プレビュー用) */
 const ZOMBIES=[
  {id:'walk',n:'ウォーカー',hp:72,sp:78,bt:12,dmg:1,mw:1,sc:1,atk:20,ar:.8,c:'#7a8f5f'},
  {id:'run',n:'ランナー',hp:46,sp:170,bt:14,dmg:1,mw:2,sc:.9,atk:14,ar:.6,c:'#a5b04a'},
@@ -9715,7 +9726,7 @@ function buildTower(C,si,ti){
  return true;
 }
 function upTower(C,si,st){st=st||'d';const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
- if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return false;const p=stCost(tw,st);
+ if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=usMax(tw.ti))return false;const p=stCost(tw,st);
  if(C.scrap<p||C.dead)return false;C.scrap-=p;tw.us[st]++;tw.spent+=p;if(C.isMe)sfx.build();return true;}
 /* ⭐**強化しきったら次の形態へ**(工房=2026-07-26 / タレットの進化=2026-07-27ユーザー指示)。
    条件=そのタワーの強化(twStats)が全部MAX。⚠次の段が無ければ出さない。 */
@@ -9724,7 +9735,7 @@ function canGrade(C,tw){
  if(!T||T.type==='sup')return false;/* 支援施設は進化しない */
  if(T_GRD(tw.ti)<0)return false;/* 次の段が無い(最終段)なら建て替えられない */
  if(!tw.us)return false;
- return twStats(tw.ti).every(st=>(tw.us[st]||0)>=USTAT_MAX);
+ return twStats(tw.ti).every(st=>(tw.us[st]||0)>=usMax(tw.ti));
 }
 function gradeTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
  if(!canGrade(C,tw))return false;
@@ -10078,7 +10089,7 @@ function campStep(C,dt,wave){
   tw.cd-=dt;if(tw.fireT>0)tw.fireT-=dt;
   const T=TOWERS[tw.ti],[sx,sy]=SLOTS[si],m=twDmgM(tw);
   const aB=G&&G.coop?1+.08*((G.players[tw.own||0]||C).atkLv):atkB;
-  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*tw.us.r);const g=ecoPer(T,tw);C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
+  if(T.type==='eco'){if(tw.cd<=0){tw.cd=T.rate*(1-.08*usEff(tw.us.r));const g=ecoPer(T,tw);C.scrap+=g;C.enTotal+=g;addFx(C,'txt',sx,sy-34,'+'+g+'⚙️');}continue;}
   const rng=T.rng*twRngM(tw),r2=rng*rng;
   let tg=null,best=-1;
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const dx=z.px-sx,dy=z.py-sy,ds=dx*dx+dy*dy;if(ds>r2)continue;
@@ -10092,7 +10103,7 @@ function campStep(C,dt,wave){
    tw.aimT=(tw.aimT||0)-dt;
    if(tw.aimT<=0||tw.cd<=0){
     tw.aimT=.1;
-    const bw=T.beam*(1+.06*tw.us.g),cand=[];
+    const bw=T.beam*(1+.06*usEff(tw.us.g)),cand=[];
     for(const z of C.zombies){if(z.dead||z.d<0)continue;
      const dx=z.px-sx,dy=z.py-sy;if(dx*dx+dy*dy<=r2)cand.push(z);}
     /* 向きの候補は多くても24本(コアに近い順=止めたい順に選ぶ) */
@@ -10142,7 +10153,7 @@ function campStep(C,dt,wave){
    }else{/* 火炎放射塔: 装甲特効・燃焼・周りへ1/4 は今までどおり */
     const av=tg.armor?FIRE_VS_ARMOR:1,df=dps*dt*av;
     dmgZ(C,tg,df,1,1);acc(tg,df);
-    if(T.fspl){const sr=T.fspl*(1+.06*tw.us.g);
+    if(T.fspl){const sr=T.fspl*(1+.06*usEff(tw.us.g));
      for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
       if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
       dmgZ(C,z2,dps*dt*.25*(z2.armor?FIRE_VS_ARMOR:1),1,1);}}
@@ -10211,7 +10222,7 @@ function campStep(C,dt,wave){
    dmgZ(C,tg,dm*av,1);
    /* ⭐吹き付けた炎は狙った敵の周りにも広がる=直撃の1/4だけ通る(2026-07-26ユーザー指示)。
       ⚠装甲特効は敵ごとに見る(周りの敵が装甲持ちならそちらにも1.9倍が乗る)。燃焼が付くのは直撃だけ */
-   if(T.fspl){const sr=T.fspl*(1+.06*tw.us.g);
+   if(T.fspl){const sr=T.fspl*(1+.06*usEff(tw.us.g));
     for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
      dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1);}
@@ -10241,7 +10252,7 @@ function campStep(C,dt,wave){
       速く・低く飛び、着弾はエネルギーの炸裂になる。⚠数値(威力・範囲・間隔)は一切変えていない */
    const pz=T.id==='plasma'?1:0;
    C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:pz?.42:.85,
-    dmg:dm,aoe:T.aoe*(1+.06*tw.us.g)*(1+(TRT&&TRT.k==='aoe'?TRT.v*TL:0)),pz,
+    dmg:dm,aoe:T.aoe*(1+.06*usEff(tw.us.g))*(1+(TRT&&TRT.k==='aoe'?TRT.v*TL:0)),pz,
     /* 砲弾の大きさも砲ごとに変える(重砲台は大玉・爆裂砲台は小玉) */
     sz:T.id==='arty'?1.55:T.id==='gren'?.7:1});
    twSfx(C,T);}
@@ -10255,7 +10266,7 @@ function campStep(C,dt,wave){
    if(T.beam){/* ビーム砲: 射程いっぱいまで貫通ビームを撃ち、線上の敵を全部巻き込む。
      ⚠向き(tw.ang)は上で「一番多く貫ける並び」を選んである */
     const ang=tw.ang,ex=sx+Math.cos(ang)*rng,ey=sy+Math.sin(ang)*rng;
-    const bw=T.beam*(1+.06*tw.us.g);/* 📡射程を上げるとビームも太くなる */
+    const bw=T.beam*(1+.06*usEff(tw.us.g));/* 📡射程を上げるとビームも太くなる */
     let cnt=0;
     for(const z of C.zombies){if(z.dead||z.d<0)continue;
      if(segDist(z.px,z.py,sx,sy,ex,ey)>bw)continue;
@@ -10512,7 +10523,7 @@ function cpuTick(C,dt){
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
   const isEco=TOWERS[tw.ti].type==='eco';
   if(isEco&&!ecoOK)continue;
-  for(const st of twStats(tw.ti)){if(tw.us[st]>=USTAT_MAX)continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
+  for(const st of twStats(tw.ti)){if(tw.us[st]>=usMax(tw.ti))continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
  if(bi>=0&&C.scrap-rsv>=bp*res*1.25){upTower(C,bi,bst);return;}
  /* ⭐**強化しきったタワーは次の形態へ**(人間と同じ手を打てるようにする)。
     工房=2026-07-26 / タレットの進化=2026-07-27。⚠工房だけは序盤と終盤に建て替えない(ecoOK) */
@@ -10897,7 +10908,7 @@ function renderCamp(C,t){
  }
  if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){const T4=TOWERS[tw.ti],[sxx,syy]=SLOTS[SEL];
    /* 射程を強化するとどこまで広がるか、強化前に薄い緑の輪でプレビュー */
-   if((tw.us?tw.us.g:0)<USTAT_MAX){const nr=T4.rng*twRngMlv((tw.us?tw.us.g:0)+1);
+   if((tw.us?tw.us.g:0)<usMax(tw.ti)){const nr=T4.rng*twRngMlv((tw.us?tw.us.g:0)+1);
     c.fillStyle='rgba(120,200,90,.10)';c.beginPath();c.arc(sxx,syy,nr,0,7);c.fill();
     c.strokeStyle='rgba(150,230,110,.9)';c.lineWidth=3;c.setLineDash([6,8]);c.beginPath();c.arc(sxx,syy,nr,0,7);c.stroke();c.setLineDash([]);}
    /* 現在の射程(オレンジの実線寄り) */
@@ -11563,7 +11574,7 @@ function openBM(si){
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
   if(!tw.us)tw.us=newUs();
   const rows=twStats(tw.ti).map(st=>{
-   const lvv=tw.us[st]||0,mx=lvv>=USTAT_MAX,p=mx?null:stCost(tw,st);
+   const lvv=tw.us[st]||0,mn9=usMin(tw.ti),mx9=usMax(tw.ti),mx=lvv>=mx9,p=mx?null:stCost(tw,st);
    /* ⚠⚡連鎖数は研究所の個別強化(elecの持ち味+1/段)も足して出す=実際に飛ぶ数と合わせる */
    const chBonus=(TW_TRAIT[T.type]&&TW_TRAIT[T.type].k==='chain')?Math.floor(TW_TRAIT[T.type].v*twlv(twKey(T))):0;
    let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
@@ -11576,7 +11587,8 @@ function openBM(si){
     +(st==='b'?(mx?'(x'+twBurnM(tw).toFixed(2)+')':'(x'+twBurnM(tw).toFixed(2)+'→x'+twBurnM({us:Object.assign({},tw.us,{b:lvv+1})}).toFixed(2)+')'):'');
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
    if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
-   const pips='◆'.repeat(lvv)+'◇'.repeat(USTAT_MAX-lvv);
+   /* ⚠進化先は引き継いだぶんを引いて数える(◆が10個並ぶとボタンからはみ出す) */
+   const pips='◆'.repeat(Math.max(0,lvv-mn9))+'◇'.repeat(Math.max(0,mx9-lvv));
    return `<button class="btn grn sm bm-us" data-us="${st}" ${mx?'':'data-p="'+p+'"'} ${mx||m.scrap<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':'⚙️'+fmt(p)}</button>`;
   }).join('');
   const canSell=!(COOP&&(tw.own||0)!==(MODE==='client'?CS.myJ:(G?G.myIdx:0)));
@@ -11715,7 +11727,7 @@ function actPush(){
 function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:newUs(),jamT:0,own:CS.myJ};sfx.build();}
  else buildTower(G.players[G.myIdx],si,ti);}
 function actUp(si,st){st=st||'d';
- if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=USTAT_MAX)return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
+ if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=usMax(tw.ti))return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
  else upTower(G.players[G.myIdx],si,st);}
 function actGrade(si){
  if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!canGrade(m,tw)||m.scrap<T_GCOST(tw.ti))return;
@@ -11765,7 +11777,7 @@ function ecoCompensate(me){
  const rest=Math.max(0,me.zombies.length*1.1+(G?G.tide.pool.length*0.55:0));/* 残敵から推定した残り秒数 */
  for(let si=ECO_BASE;si<SLOTS.length;si++){const tw=me.towers[si];if(!tw)continue;
   const T=TOWERS[tw.ti];if(T.type!=='eco')continue;
-  const cyc=T.rate*(1-.08*tw.us.r),per=ecoPer(T,tw);/* ⚠放棄の精算にも研究所の産出強化を乗せる */
+  const cyc=T.rate*(1-.08*usEff(tw.us.r)),per=ecoPer(T,tw);/* ⚠放棄の精算にも研究所の産出強化を乗せる */
   g+=Math.round(per*(rest/Math.max(.5,cyc)));}
  if(g>0){me.scrap+=g;me.enTotal+=g;addFx(me,'txt',SLOTS[ECO_BASE][0],SLOTS[ECO_BASE][1]-40,'+'+g+'⚙️');toast('🏭 工房の生産ぶん +'+g+'⚙️ を精算');}
  return g;

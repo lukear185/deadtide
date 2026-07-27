@@ -933,6 +933,18 @@ function checkTwNew(){
   const after=twStats(tw.ti).map(st=>tw.us[st]);
   if(after.join()!==before.join()){console.log('FAIL: 進化で強化Lvが消えた '+before.join()+'→'+after.join());process.exit(1);}
   if(canGrade(me,tw)){console.log('FAIL: 進化先からさらに進化できてしまう');process.exit(1);}
+  /* ⭐**進化したあとも、もう5段ぶん強化できる**(2026-07-27ユーザー指示)。
+     ⚠引き継いだLvが上限だと、進化した瞬間に買うものが無くなる。 */
+  if(usMax(tw.ti)!==USTAT_MAX*2){console.log('FAIL: 進化先の強化上限が2倍になっていない '+usMax(tw.ti));process.exit(1);}
+  {const d0=twDmgM(tw),r0=twRateM(tw),g0=twRngM(tw);
+   me.scrap=99999999;
+   for(const st of twStats(tw.ti))for(let k=0;k<USTAT_MAX;k++)
+    if(!upTower(me,si,st)){console.log('FAIL: 進化後に '+st+' を強化できない(Lv'+tw.us[st]+')');process.exit(1);}
+   if(twStats(tw.ti).some(st=>tw.us[st]!==USTAT_MAX*2)){console.log('FAIL: 進化後の強化が上限まで届かない');process.exit(1);}
+   if(upTower(me,si,twStats(tw.ti)[0])){console.log('FAIL: 上限を超えて強化できてしまう');process.exit(1);}
+   /* 6段目から先は効き目が半分(⏩連射が10段で10倍撃つ壊れ方を防ぐ) */
+   if(!(twDmgM(tw)>d0&&twRateM(tw)<r0&&twRngM(tw)>g0)){console.log('FAIL: 進化後の強化が効いていない');process.exit(1);}
+   if(!(twRateM(tw)>.3)){console.log('FAIL: ⏩連射が効きすぎている x'+(1/twRateM(tw)).toFixed(2));process.exit(1);}}
   me.towers[si]=null;
   /* 工房だけは今までどおり0に戻ること(次の段の素が前の段のMAXより上なので下がらない) */
   {const eti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
@@ -941,8 +953,9 @@ function checkTwNew(){
    for(const st of twStats(eti))for(let k=0;k<USTAT_MAX;k++)upTower(me,esi,st);
    gradeTower(me,esi);
    if(twStats(et.ti).some(st=>(et.us[st]||0)!==0)){console.log('FAIL: 工房の建て替えで強化Lvが0に戻っていない');process.exit(1);}
+   if(usMax(et.ti)!==USTAT_MAX){console.log('FAIL: 工房の強化上限まで2倍になっている(工房は3段あるので伸ばさない)');process.exit(1);}
    me.towers[esi]=null;}
-  console.log('タレットの進化: 素の'+(T_PLAY-1)+'種すべてに専用の進化先 / 全部MAXでだけ進化 / 強化Lvは引き継ぐ(工房だけ0に戻る) / どれも素のMAXより強い OK');
+  console.log('タレットの進化: 素の'+(T_PLAY-1)+'種すべてに専用の進化先 / 全部MAXでだけ進化 / 強化Lvは引き継ぐ(工房だけ0に戻る) / 進化後にもう'+USTAT_MAX+'段(効き目は半分) / どれも素のMAXより強い OK');
  }
  /* ③ 廃品工房 → 上級廃品工房への建て替え */
  {const ti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
