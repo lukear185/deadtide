@@ -178,6 +178,7 @@ node test_shot.js out.png 852 393 dev            # 🛠DEVモード(全開放)�
 node test_shot.js out.png 1400 800 grid=tw       # 素のタワーを並べる(grid=tg で進化先だけ)
 node test_shot.js out.png 852 393 t=fort2        # 進化先のタワーを実戦で撮る(素を建てて自動で進化させる)
 node test_shot.js out.png 852 393 iv             # 作戦タイム(準備画面)の強化カード
+node test_shot.js out.png 852 393 re2            # 一度タイトルへ戻ってから2回目の出撃(2回目でしか出ない不具合用)
 node test_shot.js out.png 852 393 hero=all        # 英雄11人を経路に並べて撮る(見た目の確認)
 node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させて撮る(+nodep=出撃前のボタンだけ見る)
 node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=twup lab=unup 記録は lab=rec

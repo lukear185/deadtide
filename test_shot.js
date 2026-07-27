@@ -69,6 +69,10 @@ const PXM=/pxcmp(?:=([A-Za-z0-9]+))?/.exec(OPT),PXC=!!PXM,PXID=(PXM&&PXM[1])||'w
 const IRM=/intro(?:=([tuz]))?/.exec(OPT),INTRO=!!IRM,INTROK=(IRM&&IRM[1])||'u';
 /* iv = 作戦タイム(準備画面)の強化カードを撮る。⚠🔩と⚙️を潤沢にして全部のカードを押せる状態にする */
 const IV=/(^|\+)iv(\+|$)/.test(OPT);
+/* re2 = 一度タイトルへ戻ってから**もう一度出撃**して撮る。
+   ⚠2回目でしか出ない不具合(DOMを作り直す所で要素が消える等)を捕まえるための撮り方。
+   画面下に赤いエラー帯が出ていないかを見る。 */
+const RE2=/(^|\+)re2(\+|$)/.test(OPT);
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
@@ -205,6 +209,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'var busy8=me.fx.some(function(e){return /^(pool|boomL|dust|ice)$/.test(e.k);});'
      +'if(!busy8){n8++;airstrikeHit(me,z8.px,z8.py,10,"'+SKID+'",true);}}catch(e){}},90);'
      +'}catch(e){document.title="ERR5 "+e.message;}},1300);'):'')
+ +(RE2?('setTimeout(function(){try{backTitle();startSolo();'
+     +'}catch(e){document.title="ERR10 "+e.message;}},1000);'):'')
  +(IV?('setTimeout(function(){try{var mI=G.players[0];mI.up=9999;mI.scrap=99999;'
      /* ⚠新登場の紹介モーダル(PAUSED)が上に乗るので、待ってから畳んで開く */
      +'INTROQ.length=0;G.introQ=[];document.getElementById("md-intro").classList.remove("on");PAUSED=false;ivOpen();'

@@ -11592,7 +11592,9 @@ function updHUD(){const m=meV();if(!m)return;
  /* 対象チップ */
  const os=aliveOthers();
  const tc=$('pushtgt');
- if(os.length>1&&!m.dead){tc.style.display='block';
+ /* ⚠**無くても落ちないようにする**=DOMを移す作りにしたので、消えた時に毎フレーム例外を投げない */
+ if(!tc||!tc.style){}
+ else if(os.length>1&&!m.dead){tc.style.display='block';
   if(PUSHTGT>=0&&!os.some(o=>o.i===PUSHTGT))PUSHTGT=-1;
   tc.textContent=PUSHTGT<0?'→全員に分散':'→'+(os.find(o=>o.i===PUSHTGT)||{}).n;
  }else{tc.style.display='none';if(os.length===1)PUSHTGT=os[0].i;}
@@ -11622,14 +11624,20 @@ function drawMinis(){
  for(const o of list){const el=$('mini'+o.j);if(!el||!el.querySelector)continue;
   const cvm=el.querySelector('.mv');if(!cvm||!cvm.getContext)continue;drawMini(cvm,o.camp);}
 }
-function buildMinis(list){const w=$('minis');w.innerHTML='';
+function buildMinis(list){const w=$('minis');
+ /* ⚠⭐**先に「→全員に分散」を外へ出す**(2026-07-27に実際に踏んだ)。
+    このボタンを #minis の中へ入れる作りにしたので、**2回目の出撃で innerHTML='' が消してしまい**、
+    以後 updHUD の tc.style で毎フレーム落ちていた(画面下に赤いエラー帯が出続ける)。
+    ⚠**innerHTML='' で作り直す所へDOMを移したら、必ず先に退避させること**。 */
+ const tc9=$('pushtgt');if(tc9&&tc9.parentNode===w&&document.body)document.body.appendChild(tc9);
+ w.innerHTML='';
  if(COOP)return;/* 協力プレイは盤面共有なので味方パネルを出さない */
  list.forEach(o=>{const d=document.createElement('div');d.className='mini';d.id='mini'+o.i;
  d.innerHTML=`<div class="nm"><span>${o.n}</span><span>👁</span></div><div class="hpbar"><i style="width:100%"></i></div><canvas class="mv" width="200" height="95"></canvas><div class="st">待機中</div>`;
  d.onclick=()=>{if(gameActive)setSpec(SPEC===o.i?-1:o.i);};
  w.appendChild(d);});
- /* ⭐→全員に分散 のチップを小窓の下へ入れる(空きを作らない) */
- try{const tc=$('pushtgt');if(tc)w.appendChild(tc);}catch(e){}}
+ /* ⭐→全員に分散 のチップを小窓の下へ入れる(空きを作らない)。⚠相手が居ない時は入れない */
+ try{if(tc9&&list.length)w.appendChild(tc9);}catch(e){}}
 function minisUpd(){
  if(COOP)return;
  let list;
