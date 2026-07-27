@@ -821,27 +821,48 @@ function checkPerUp(){
   if(real!==p1){console.log('FAIL: 実際に入る⚙️('+real+')と ecoPer('+p1+')が食い違う=式が2か所にある');process.exit(1);}
   console.log('工房の産出: 1サイクル'+p0+'⚙️ → 研究所Lv'+LINE_MAX+'で'+p1+'⚙️(x'+(p1/p0).toFixed(2)+')・放棄の精算も同じ式 OK');
   META.tw={};backTitle();}
- /* --- ⑨ ドローンの弾の座標が有限であること(NaNだと弾の演出が丸ごと消える) ---
-    ⚠原因は「ローカル変数名がグローバルのゲーム時刻 TT を隠していた」こと。
-      件数だけ数える検査では NaN でも通ってしまうので、座標そのものを見る。 */
+ /* --- ⑨ ⭐ドローン基地(2026-07-27に作り替え=機体1つ1つが敵を追って撃つ) ---
+    見るのは4つ: ①強化で機体が増える(1→5・母艦は8) ②機体が基地から飛び出す
+    ③弾(pel)が機体の位置から出て座標が有限 ④📡射程の強化代が消えて🛩機体数になっている。
+    ⚠**塔の tw.cd では撃たない**(機体ごとに cd を持つ)ので、cd を0にする昔の書き方では何も出ない。 */
  {META.stg=0;setDiff=2;startSolo();frames(20,.016);
   const me4=G.players[0],si4=AI_ORDER[0],ti4=TOWERS.findIndex(t=>t.id==='drone');
   if(ti4>=0){
+   const T4=TOWERS[ti4];
+   const stl4=twStats(ti4);
+   if(stl4.indexOf('g')>=0){console.log('FAIL: ドローン基地に📡射程の強化が残っている');process.exit(1);}
+   if(stl4.indexOf('n')<0){console.log('FAIL: ドローン基地に🛩機体数の強化が無い');process.exit(1);}
+   if(twDrN(T4,{us:newUs()})!==1){console.log('FAIL: 素のドローンが1機でない '+twDrN(T4,{us:newUs()}));process.exit(1);}
+   if(twDrN(T4,{us:Object.assign(newUs(),{n:USTAT_MAX})})!==5){console.log('FAIL: 強化しても5機にならない');process.exit(1);}
+   {const g4=TOWERS.findIndex(t=>t.id==='drone2');
+    if(twDrN(TOWERS[g4],{us:Object.assign(newUs(),{n:USTAT_MAX*2})})!==8){console.log('FAIL: 母艦が8機にならない');process.exit(1);}}
+   /* 🛩機体数は上限(1→5=4段)より先は買えないこと=無駄な段を作らない */
+   if(usCap(ti4,'n')!==4){console.log('FAIL: 🛩機体数の上限が4段でない '+usCap(ti4,'n'));process.exit(1);}
    me4.scrap=999999;me4.unlocked=Math.max(me4.unlocked,ti4+1);me4.towers[si4]=null;
    buildTower(me4,si4,ti4);
-   const [sx4,sy4]=SLOTS[si4];
+   const tw4=me4.towers[si4],[sx4,sy4]=SLOTS[si4];
+   tw4.us.n=2;/* 3機にして散らばりも見る */
    me4.zombies.length=0;
-   for(let k=0;k<3;k++){const z=mkZ(zSpec(0,1,5),projPath(sx4,sy4));z.hp=z.mhp=1e9;me4.zombies.push(z);}
-   me4.towers[si4].cd=999;campStep(me4,.001,G.wave);
-   me4.fx.length=0;me4.towers[si4].cd=0;campStep(me4,.001,G.wave);
-   const pel=me4.fx.filter(e=>e.k==='pel');
+   /* ⚠**機体の射程(基地の半分×0.7)より遠くに置く**=近すぎると「もう届く」ので飛ばない */
+   for(let k=0;k<4;k++){const z=mkZ(zSpec(0,1,5),projPath(sx4,sy4)-230-k*26);z.hp=z.mhp=1e9;me4.zombies.push(z);}
+   me4.fx.length=0;
+   /* ⚠**弾(pel)は0.16秒で消える**ので、最後のフレームだけ見ると空振りする=毎フレーム集める */
+   const pel=[];
+   for(let k=0;k<80;k++){campStep(me4,.05,G.wave);for(const e of me4.fx)if(e.k==='pel'&&pel.indexOf(e)<0)pel.push(e);}
+   if(!tw4.dr||tw4.dr.length!==3){console.log('FAIL: 機体が3機になっていない '+(tw4.dr?tw4.dr.length:'なし'));process.exit(1);}
+   /* 機体が基地から飛び出しているか(=追いかけている) */
+   const away=tw4.dr.filter(d=>Math.hypot(d.x-sx4,d.y-sy4)>40).length;
+   if(!away){console.log('FAIL: 機体が基地から飛び出していない(敵を追っていない)');process.exit(1);}
+   /* 基地の射程より外へは行かないこと */
+   const far=tw4.dr.filter(d=>Math.hypot(d.x-sx4,d.y-sy4)>T4.rng*twRngM(tw4)+2).length;
+   if(far){console.log('FAIL: 機体が基地の射程の外まで飛んでいる');process.exit(1);}
    if(!pel.length){console.log('FAIL: ドローンの弾(pel)が1つも出ていない');process.exit(1);}
    const nan=pel.filter(e=>!isFinite(e.x)||!isFinite(e.y)||!isFinite(e.x2||0)||!isFinite(e.y2||0));
-   if(nan.length){console.log('FAIL: ドローンの弾の座標がNaN('+nan.length+'/'+pel.length+'発)=弾の演出が消えている');process.exit(1);}
-   /* droneOff 自体も直に見る(時刻を渡さないと NaN を返す作りなので) */
-   const dp=droneOff(0,si4,12.34);
-   if(!isFinite(dp[0])||!isFinite(dp[1])){console.log('FAIL: droneOff が NaN を返す');process.exit(1);}
-   console.log('ドローンの弾: '+pel.length+'発すべて座標が有限(NaNなし) OK');}
+   if(nan.length){console.log('FAIL: ドローンの弾の座標がNaN('+nan.length+'/'+pel.length+'発)');process.exit(1);}
+   /* ⭐弾は**機体の位置から**出ていること(基地の中心から出ていたのがユーザー指摘の元) */
+   const fromBase=pel.filter(e=>Math.hypot(e.x-sx4,e.y-sy4)<6).length;
+   if(fromBase===pel.length){console.log('FAIL: 弾が基地の中心から出ている(機体から出ていない)');process.exit(1);}
+   console.log('ドローン基地: 素1機→強化で5機(母艦8機)・機体が敵を追って自分の射程で撃つ・弾'+pel.length+'発すべて機体から OK');}
   backTitle();}
  META.tw={};META.un={};META.st0=0;
  backTitle();
@@ -1595,7 +1616,7 @@ function checkTwFx(){
   if(['drone','fort','rail'].indexOf(tid)>=0&&k.tr){
    console.log('FAIL: '+tid+' がまだ汎用の曳光線(tr)を出している');process.exit(1);}
  }
- /* ---- ドローンは常時2機が浮いて漂っている(2026-07-26 第68弾) ----
+ /* ---- ⚠droneOff は**敵が居ない時の漂い先**にだけ使う(2026-07-27に役割が変わった) ----
     ⚠位置は「時刻と枠番号だけ」で決まる=描画と発射で同じ場所になり、対戦の相手盤面でも同じに見える */
  {const a0=droneOff(0,3,0),a1=droneOff(1,3,0),b0=droneOff(0,3,1.3);
   if(Math.abs(a0[0]-a1[0])<6&&Math.abs(a0[1]-a1[1])<6){
@@ -1605,7 +1626,7 @@ function checkTwFx(){
   /* 塔から離れすぎない(枠の周りを漂う範囲に収まっているか) */
   for(let q=0;q<40;q++){const p=droneOff(q%2,3,q*.37);
    if(Math.hypot(p[0],p[1])>60){console.log('FAIL: ドローンが塔から離れすぎ '+p);process.exit(1);}}
-  console.log('ドローン基地: 2機が塔の周りを常時漂う(位置は時刻と枠番号だけで決まる) OK');}
+  console.log('ドローンの漂い: 敵が居ない時の行き先が枠と時刻だけで決まり、塔から離れすぎない OK');}
  /* ---- レールガンは「一番多く貫ける向き」を狙う(2026-07-26 第68弾) ---- */
  {const ti=TOWERS.findIndex(T=>T.id==='rail');
   me.units.length=0;me.zombies.length=0;me.fx.length=0;me.dly=[];me.scrap=99999;

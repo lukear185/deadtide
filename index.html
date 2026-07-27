@@ -1445,7 +1445,11 @@ const TOWERS=[
     ⚠別の敵に狙いが移った瞬間に0へ戻る=雑魚を薙ぐ塔ではなく「1体を焼き切る」塔になる */
  {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が上がる(素で3倍・🔺最大倍率MAXで6倍)'},
  {id:'acid',n:'酸噴射砲',cost:390,up2:'acid2',gc:3120,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:TOXIC,dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
- {id:'drone',n:'ドローン基地',cost:500,up2:'drone2',gc:4000,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
+/* ⭐drn=**そこから飛び立つドローンの数**(2026-07-27ユーザー指示で作り替え)。
+    ⚠それまでは multi:2 の「2体を同時に撃つ塔」で、機体は飾りだった。
+    今は**機体1つ1つが敵を追いかけて、自分の射程(基地の半分)に入ったら撃つ**。
+    ⚠📡射程の強化代は廃止し、**🛩機体数**に置き換えてある(下の twStats)。 */
+ {id:'drone',n:'ドローン基地',cost:500,up2:'drone2',gc:4000,rng:330,dmg:30,rate:.8,type:'bullet',drn:1,c:'#5f8fa3',dsc:'追尾ドローンが自分で敵を追って撃つ(強化で最大5機)'},
  {id:'arty',n:'重砲台',cost:640,up2:'arty2',gc:5120,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
  /* arcT=1跳ねにかかる秒数(テスラコイルは0=一瞬で全部)。grow=跳ねるたびの威力倍率・gmax=その上限。
     ⚠growは指数なので上限が無いと⚡連鎖数Lv5+研究所で青天井になる。必ずgmaxで頭を止めること */
@@ -1494,7 +1498,7 @@ const TOWERS=[
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:7,slowT:5.6,c:'#9fd6e8',dsc:'凍結が長く、同じ敵を7回まで凍らせられる'},
  {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
  {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・極めて強い継続'},
- {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',multi:3,c:'#7fb0c4',dsc:'三機の無人機が同時に叩く'},
+ {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:2,drGrd:1,c:'#7fb0c4',dsc:'装甲甲板の母艦。ドローンが2機から飛び立つ(強化で最大8機)'},
  {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
  {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
  {id:'railx',n:'軌道砲',base:'rail',grd:1,cost:2040,rng:1008,dmg:620,rate:2.55,type:'bullet',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
@@ -1536,7 +1540,7 @@ const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0});
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0});
 /* 盤面の強化は⚙️払い。⚠進化先は**そのタワーの値段で1段目から数え直す**(引き継いだLvのぶん
    1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMin(tw.ti)));
@@ -1546,11 +1550,12 @@ const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]
 /* ⭐**継続攻撃の2つは⏩連射の代わりに固有の強化代を持つ**(2026-07-27ユーザー選択)。
    火炎放射塔=🔥継続ダメージ(燃焼の量) / レーザー塔=🔺最大倍率(焼き切った時の上限) */
 const twStats=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
+ :TOWERS[ti].drn?['d','r','n']/* ドローン基地=📡射程の代わりに🛩機体数 */
  :TOWERS[ti].frzN?['f','r','g']
  :TOWERS[ti].cont?(TOWERS[ti].heatN?['d','h','m']:['d','b','g'])
  :TOWERS[ti].heatN?['d','r','h']
  :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
-const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに13%短くなる(Lv5で20発→9発) */
 const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*usEff((tw&&tw.us&&tw.us.h)||0))));
 const twFrzN=(T,tw)=>(T.frzN||0)+Math.round(usEff((tw&&tw.us&&tw.us.f)||0));/* 同じ敵を凍らせられる回数(最大5+5=10) */
@@ -1560,6 +1565,14 @@ const twHeatT=(T,tw)=>twHeatN(T,tw)*(T.rate||.1);
 const twHeatM=(T,tw)=>(T.heatM||2)+.6*usEff((tw&&tw.us&&tw.us.m)||0);
 /* 🔥継続ダメージ(火炎放射塔): 1段ごとに燃焼+25%(Lv5で2.25倍) */
 const twBurnM=tw=>1+.25*usEff((tw&&tw.us&&tw.us.b)||0);
+/* 🛩機体数(ドローン基地): 1段ごとに+1機。基地は最大5機・母艦は最大8機 */
+const twDrMax=T=>(T&&T.drGrd)?8:5;
+const twDrN=(T,tw)=>Math.min(twDrMax(T),(T.drn||1)+((tw&&tw.us&&tw.us.n)||0));
+/* ⭐**機数が上限に届いたらそれ以上は買えない**=無駄な段を作らない。
+   ⚠canGrade も upTower もこの上限を見ること(usMax だけを見ると進化できなくなる) */
+const usCap=(ti,st)=>{const T=TOWERS[ti];
+ if(st==='n'&&T&&T.drn)return Math.min(usMax(ti),usMin(ti)+twDrMax(T)-(T.drn||1));
+ return usMax(ti);};
 const twChain=(T,tw)=>T.chain+Math.round(usEff((tw&&tw.us&&tw.us.c)||0));
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
 /* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
@@ -1689,6 +1702,29 @@ const chUp=sc=>CH_UP*Math.pow(sc||1,CH_P);
 for(const z of ZOMBIES)z.sc=chUp(z.sc);
 const TSCALE=[1,1.06,1.14,1.24].map(s=>chUp(s));
 const TW_SC=1.3;/* タワーの表示倍率。⚠建設マスの枠(64px)とタップ判定は変えない */
+const DRN_R=.5;/* ドローン自身の射程=基地の射程の半分 */
+const DRN_SP=190;/* ドローンの飛ぶ速さ(世界px/秒) */
+/* ⭐**撃つ位置は塔ごとに違う**(2026-07-27ユーザー指摘
+   「テスラなら明らかにここから出そうなてっぺんがあるのに中央から電気が出ている」)。
+   ⚠それまで**弾も電撃も砲弾もぜんぶ塔の中心(sx,sy)から**出していた。
+   ⚠塔は TW_SC 倍で描いてあるので、**絵の中の座標に TW_SC を掛けて世界座標にする**。
+   b=[x,y] 回らない位置(基部に固定=テスラの球など) / g=砲身に沿った距離(狙う向きに回る)。
+   ⚠ここに無い塔は g=26(今までと同じ)に落ちる。 */
+const TW_MZ={
+ /* 電撃=てっぺんの球から(回らない) */
+ tesla:{b:[0,-31]},tesla2:{b:[0,-42]},coil:{b:[0,-40]},coil2:{b:[0,-52]},
+ /* 砲身の長さに合わせる(絵の中の砲口の位置) */
+ rifle:{g:31},rifle2:{g:36},shot:{g:27},shot2:{g:31},net:{g:26},net2:{g:33},
+ mortar:{g:24},mortar2:{g:38},sniper:{g:46},sniper2:{g:51},gren:{g:24},gren2:{g:25},
+ laser:{g:30},laser2:{g:32},acid:{g:31},acid2:{g:34},flame:{g:22},flame2:{g:30},
+ drone:{g:0},drone2:{g:0},arty:{g:40},arty2:{g:52},rail:{g:44},railx:{g:46},
+ gat:{g:31},gat2:{g:31},plasma:{g:29},plasma2:{g:31},fort:{g:34},fort2:{g:36},
+ cryo:{b:[0,-36]},cryo2:{b:[-1,-46]}
+};
+/* その塔が実際に撃つ点(世界座標) */
+function twMzPt(T,sx,sy,ang){const m=TW_MZ[(T&&T.id)||'']||{};
+ if(m.b)return [sx+m.b[0]*TW_SC,sy+m.b[1]*TW_SC];
+ return [sx+Math.cos(ang)*((m.g!=null?m.g:26)*TW_SC),sy+Math.sin(ang)*((m.g!=null?m.g:26)*TW_SC)];}
 /* ⚠2026-07-25: 強さの一括倍率(UBUF/ティア補正/HP2倍/遠距離1.5倍/コスト÷2.5)は廃止。
    UNITSに書いてある数値が そのままゲーム内の値になる=強さの調整はUNITSを直接いじること。
    並び順(=解放順)に戦力が1段ごとに約+7%ずつ上がるよう設計してある。
@@ -7852,7 +7888,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
      ①描画と発射で必ず同じ場所になる ②スナップショットに載らない対戦の相手盤面でも同じに見える。
    返すのは塔の中心からのずれ(px)。 */
 function droneOff(k,si,tt){
- const ph=(si||0)*1.31+k*3.14159;
+ const ph=(si||0)*1.31+k*2.39996;/* ⚠**黄金角で散らす**=8機まで重ならない(以前は2機前提でπだった) */
  return [Math.cos(tt*.62+ph)*26+Math.sin(tt*1.13+ph)*7,
          -34+Math.sin(tt*.83+ph)*11+Math.cos(tt*1.7+ph)*3];
 }
@@ -7991,10 +8027,29 @@ function twTank(c,x,y,w,h,col){
 /* ⭐継続攻撃(火炎放射塔・レーザー塔)の帯を描く(2026-07-27)。
    ⚠**fx として毎フレーム積むと「何台も置くと重い」が直らない**ので、塔の描画で直に引く。
    ⚠ここは世界座標(sx,sy=塔の位置)。塔本体の拡大(TW_SC)の**外**で呼ぶこと。 */
+/* ⭐ドローンは**塔の外(世界座標)で描く**(2026-07-27)。
+   ⚠塔の絵は translate+scale(TW_SC) の中なので、そこで描くと機体まで一緒に回って縮む。 */
+function drawDrones(c,T,sx,sy,tw,t){
+ const ds=tw&&tw.dr;if(!ds||!ds.length)return;
+ c.save();c.strokeStyle=INK;
+ for(let k=0;k<ds.length;k++){const d=ds[k];
+  if(!isFinite(d.x)||!isFinite(d.y))continue;
+  c.save();c.translate(d.x,d.y+Math.sin(t*4+k*1.7)*2.4);c.scale(TW_SC,TW_SC);c.lineWidth=2/TW_SC;
+  c.fillStyle=T.drGrd?'#9fd0e4':'#5f8fa3';rr(c,-7,-3.5,14,8,3);c.fill();c.stroke();
+  c.fillStyle='#3f4a54';rr(c,-9.5,-5.5,4.5,2.6,1.2);c.fill();rr(c,5,-5.5,4.5,2.6,1.2);c.fill();
+  c.strokeStyle='rgba(226,236,244,.85)';
+  for(const ox of [-7.5,7.5]){const w9=5.5+Math.abs(Math.sin(t*40+k))*1.8;
+   c.beginPath();c.ellipse(ox,-6,w9,1.6,0,0,7);c.stroke();}
+  c.strokeStyle=INK;
+  c.fillStyle=(Math.sin(t*6+k*3)>0)?DANGER:'#3c4136';
+  c.beginPath();c.arc(0,4,1.8,0,7);c.fill();
+  c.restore();}
+ c.restore();c.lineWidth=3;
+}
 function drawCont(c,T,sx,sy,tw,t){
  const z=tw.ct;if(!z||!isFinite(z.px)||!isFinite(z.py))return;
  const tx=z.px,ty=z.py-14*CH_UP;
- const ang=Math.atan2(ty-sy,tx-sx),mx=sx+Math.cos(ang)*30,my=sy+Math.sin(ang)*30;
+ const ang=Math.atan2(ty-sy,tx-sx),mz=twMzPt(T,sx,sy,ang),mx=mz[0],my=mz[1];
  c.save();c.lineCap='round';
  if(T.heatN){/* レーザー: 焼き切るほど太く白熱する */
   const hk=clamp(tw.chg||0,0,1);
@@ -8336,20 +8391,22 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(33,2,5+Math.sin(t*20)*2,0,7);c.fill();}
   c.restore();
   c.fillStyle=TOXIC;c.globalAlpha=.6+Math.sin(t*4)*.3;c.beginPath();c.arc(-19,8,2.6,0,7);c.fill();c.globalAlpha=1;}
- else if(tid==='drone'){/* 発着台 */
+else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
   c.fillStyle='#3f4a54';rr(c,-14,-12,28,22,5);c.fill();c.stroke();
   c.fillStyle='#2f3a44';c.beginPath();c.arc(0,-1,6,0,7);c.fill();
-  /* ⭐2機が常に浮いていて漂っている。撃つ時はこの位置から小粒の弾が出る */
-  for(let k=0;k<2;k++){const dp=droneOff(k,o.si,t);
-   c.save();c.translate(dp[0],dp[1]);c.lineWidth=2;
-   c.fillStyle='#5f8fa3';rr(c,-7,-3.5,14,8,3);c.fill();c.stroke();
-   c.fillStyle='#3f4a54';rr(c,-9.5,-5.5,4.5,2.6,1.2);c.fill();rr(c,5,-5.5,4.5,2.6,1.2);c.fill();
-   c.strokeStyle='rgba(226,236,244,.85)';c.lineWidth=2;
-   for(const ox of [-7.5,7.5]){const w9=5.5+Math.abs(Math.sin(t*40+k))*1.8;
-    c.beginPath();c.ellipse(ox,-6,w9,1.6,0,0,7);c.stroke();}
-   c.fillStyle=(Math.sin(t*6+k*3)>0)?DANGER:'#3c4136';
-   c.beginPath();c.arc(0,4,1.8,0,7);c.fill();
-   c.restore();}
+  c.fillStyle=TECH;c.globalAlpha=.35+Math.sin(t*3)*.22;c.beginPath();c.arc(0,-1,4,0,7);c.fill();c.globalAlpha=1;
+  c.strokeStyle='#8a97a5';c.lineWidth=2.4;/* 発着の誘導灯 */
+  for(const ox of [-11,11]){c.beginPath();c.moveTo(ox,-11);c.lineTo(ox,-16);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;}
+ else if(tid==='drone2'){/* 母艦: 装甲甲板+管制塔+誘導灯(⭐機体の数では見分けない=数は強化で変わる) */
+  c.fillStyle='#2f3a44';rr(c,-20,-14,40,26,6);c.fill();c.stroke();
+  c.fillStyle='#4a5a68';rr(c,-16,-11,32,12,4);c.fill();c.stroke();
+  c.fillStyle='#7fb0c4';rr(c,-6,-24,12,13,3);c.fill();c.stroke();/* 管制塔 */
+  c.fillStyle='#28323c';c.beginPath();c.arc(0,3,7,0,7);c.fill();
+  c.fillStyle=TECH;c.globalAlpha=.4+Math.sin(t*3)*.25;c.beginPath();c.arc(0,3,4.6,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle=(Math.sin(t*5)>0)?DANGER:'#3c4136';c.beginPath();c.arc(0,-26,2.6,0,7);c.fill();
+  c.strokeStyle='#8a97a5';c.lineWidth=2.6;
+  for(const ox of [-17,17]){c.beginPath();c.moveTo(ox,-13);c.lineTo(ox,-19);c.stroke();}
   c.strokeStyle=INK;c.lineWidth=3;}
  /* 重砲台: **極太の砲身+制退器**+後ろに駐鋤(地面を噛む脚)。一番ごつい砲に見せる */
  else if(tid==='arty'){
@@ -9749,7 +9806,7 @@ function buildTower(C,si,ti){
  return true;
 }
 function upTower(C,si,st){st=st||'d';const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
- if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=usMax(tw.ti))return false;const p=stCost(tw,st);
+ if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=usCap(tw.ti,st))return false;const p=stCost(tw,st);
  if(C.scrap<p||C.dead)return false;C.scrap-=p;tw.us[st]++;tw.spent+=p;if(C.isMe)sfx.build();return true;}
 /* ⭐**強化しきったら次の形態へ**(工房=2026-07-26 / タレットの進化=2026-07-27ユーザー指示)。
    条件=そのタワーの強化(twStats)が全部MAX。⚠次の段が無ければ出さない。 */
@@ -9758,7 +9815,7 @@ function canGrade(C,tw){
  if(!T||T.type==='sup')return false;/* 支援施設は進化しない */
  if(T_GRD(tw.ti)<0)return false;/* 次の段が無い(最終段)なら建て替えられない */
  if(!tw.us)return false;
- return twStats(tw.ti).every(st=>(tw.us[st]||0)>=usMax(tw.ti));
+ return twStats(tw.ti).every(st=>(tw.us[st]||0)>=usCap(tw.ti,st));
 }
 function gradeTower(C,si){const F=G&&G.coop?G.players[0]:C;const tw=F.towers[si];
  if(!canGrade(C,tw))return false;
@@ -10151,6 +10208,57 @@ function campStep(C,dt,wave){
      ⚠1発ごとの弾・銃口の閃光・曳光線を作らないので、何台置いても重くならない。
      ⚠威力の総量は連射だった頃と同じ(dps = T.dmg / T.rate)。⏩連射が無いので twRateM は掛けない。
      ⚠**絵は fx ではなく塔の描画で出す**(tw.ct=狙っている敵)=fxが毎フレーム積まれない。 */
+  /* ⭐**ドローン基地: 機体1つ1つが敵を追いかけて撃つ**(2026-07-27ユーザー指示)。
+     ⚠それまでは塔が multi 体を同時に撃つだけで、機体は基地の周りを漂う飾りだった。
+     ⚠**基地の射程(rng)が「機体が出て行ける範囲」**、機体自身の射程はその半分(DRN_R)。
+     ⚠機体ごとに狙いとクールダウンを持つ(tw.dr)ので、塔の tw.cd は使わない。 */
+  if(T.drn){
+   const n9=twDrN(T,tw),dR=rng*DRN_R;
+   if(!tw.dr)tw.dr=[];
+   while(tw.dr.length<n9)tw.dr.push({x:sx+rnd(-24,24),y:sy+rnd(-24,24),cd:rnd(0,T.rate)});
+   if(tw.dr.length>n9)tw.dr.length=n9;
+   const TLd=twlv(twKey(T));
+   const dmd=T.dmg*m*aB*(1+TW_DMG_STEP*TLd);
+   const prc9=T.pierce?1:0,tt9=twTier(tw),trC9=TR_COL[tt9],hitC9=HIT_COL[tt9];
+   const taken=[];
+   for(let di=0;di<tw.dr.length;di++){const d=tw.dr[di];
+    /* 狙いは「基地の射程内で、自分に一番近い敵」。
+       ⚠**他の機体が狙っている敵は避ける**=1体に群がらず散らばって撃つ。
+         全部取られていたら重複を許す(敵が機体より少ない時に撃たなくなるのを防ぐ) */
+    let tg2=null,bd=1e9,tgAny=null,bdAny=1e9;
+    for(const z of C.zombies){if(z.dead||z.d<0)continue;
+     const ddx=z.px-sx,ddy=z.py-sy;if(ddx*ddx+ddy*ddy>r2)continue;
+     const dd=dist(z.px,z.py,d.x,d.y);
+     if(dd<bdAny){bdAny=dd;tgAny=z;}
+     if(taken.indexOf(z)>=0)continue;
+     if(dd<bd){bd=dd;tg2=z;}}
+    if(!tg2)tg2=tgAny;
+    if(tg2)taken.push(tg2);
+    /* 動き: 狙いがあれば自分の射程の7割まで詰める。無ければ基地の周りを漂う */
+    if(tg2){
+     /* ⚠**寄る先を機体ごとにずらす**=同じ敵に群がった時に真上で重なって1機に見える */
+     const oa=di*2.39996,ty2=tg2.py-14*CH_UP+Math.sin(oa)*15;
+     let vx=(tg2.px+Math.cos(oa)*26)-d.x,vy=ty2-d.y,dl=Math.sqrt(vx*vx+vy*vy)||1;
+     const want=dl-dR*.7;
+     if(want>1){const mv=Math.min(DRN_SP*dt,want);d.x+=vx/dl*mv;d.y+=vy/dl*mv;}
+    }else{const dp=droneOff(di,si,TT);
+     d.x+=((sx+dp[0]*TW_SC)-d.x)*Math.min(1,dt*2.2);
+     d.y+=((sy+dp[1]*TW_SC)-d.y)*Math.min(1,dt*2.2);}
+    /* ⚠基地から射程より遠くへは行かせない(画面の端まで飛んで行ってしまう) */
+    {const ox=d.x-sx,oy=d.y-sy,od=Math.sqrt(ox*ox+oy*oy);
+     if(od>rng){d.x=sx+ox/od*rng;d.y=sy+oy/od*rng;}}
+    d.cd-=dt;
+    if(tg2&&d.cd<=0&&dist(d.x,d.y,tg2.px,tg2.py)<=dR){
+     d.cd=T.rate*twRateM(tw);
+     dmgZ(C,tg2,dmd,prc9);
+     if(FXLV>0){addFx(C,'pel',d.x,d.y,'',{x2:tg2.px,y2:tg2.py-20*CH_UP,lf:.16,col:trC9});
+      addP(C,2,d.x,d.y,{sp:70,a:Math.atan2((tg2.py-20*CH_UP)-d.y,tg2.px-d.x),spread:.35,g:60,life:.1,r:1.4,col:GLOW});}
+     const zz=tg2;later(C,.16,()=>{hitFx(C,zz,tw.ang,hitC9,prc9,T.type);});
+     if(di===0)twSfx(C,T);
+    }
+   }
+   tw.fireT=0;continue;
+  }
   if(T.cont){
    tw.ct=tg||null;
    if(!tg){tw.hz=null;tw.hs=0;tw.chg=0;tw.fireT=0;continue;}
@@ -10182,8 +10290,8 @@ function campStep(C,dt,wave){
       dmgZ(C,z2,dps*dt*.25*(z2.armor?FIRE_VS_ARMOR:1),1,1);}}
     if(!tg.dead){tg.burnT=Math.max(tg.burnT||0,2+(tg.armor?1:0));
      tg.burnD=T.burn*m*aB*(1+(TRTc&&TRTc.k==='burn'?TRTc.v*TLc:0))*twBurnM(tw)*av;}
-    if(FXLV>0&&Math.random()<dt*16)addP(C,1,sx+Math.cos(tw.ang)*30,sy+Math.sin(tw.ang)*30,
-     {sp:110,a:tw.ang,spread:.35,g:-40,life:.35,r:3,col:T.id==='acid'?TOXIC:'#ff9a3d'});
+    if(FXLV>0&&Math.random()<dt*16){const mp=twMzPt(T,sx,sy,tw.ang);addP(C,1,mp[0],mp[1],
+     {sp:110,a:tw.ang,spread:.35,g:-40,life:.35,r:3,col:T.id==='acid'?TOXIC:'#ff9a3d'});}
    }
    /* ⚠音は鳴らしっぱなしにできないので0.3秒ごとに1回だけ */
    tw.sfT=(tw.sfT||0)-dt;if(tw.sfT<=0){tw.sfT=.3;twSfx(C,T);}
@@ -10198,7 +10306,8 @@ function campStep(C,dt,wave){
  const TL=twlv(twKey(T)),TRT=TW_TRAIT[T.type];
   const dm=T.dmg*m*aB*(1+TW_DMG_STEP*TL);/* 威力+15%/段(型ごとだった頃は+10%) */
   /* 銃口の火花・煙・薬莢 */
-  if(FXLV>0&&T.type!=='eco'){const mx2=sx+Math.cos(tw.ang)*26,my2=sy+Math.sin(tw.ang)*26;
+  const [mzx,mzy]=twMzPt(T,sx,sy,tw.ang);/* ⭐ここから撃つ(塔ごとに違う) */
+  if(FXLV>0&&T.type!=='eco'){const mx2=mzx,my2=mzy;
    /* ⭐銃口の閃光。⚠丸い光を1つ置くだけでは「撃った」感じが出ないので、**向きを持った扇形**にする。
       色と大きさはタワーの型で変える=何が撃ったか音を消しても分かる */
    {const MZ=T.type==='fire'?[T.id==='acid'?'#a8e05a':'#ff9a3d',1.15]
@@ -10240,7 +10349,7 @@ function campStep(C,dt,wave){
   else if(T.type==='fire'){/* 火炎は装甲に特効=殻ごと焼く。直撃も燃焼もFIRE_VS_ARMOR倍、燃焼は1秒長い */
    const av=tg.armor?FIRE_VS_ARMOR:1;
    /* ⭐炎(酸)の帯を狙った方向へ吹く。⚠今までは銃口の粒だけで「届いている」感じが出ていなかった */
-   if(FXLV>0)addFx(C,'flame',sx+Math.cos(tw.ang)*24,sy+Math.sin(tw.ang)*24,'',
+   if(FXLV>0)addFx(C,'flame',mzx,mzy,'',
     {ang:tw.ang,len:rng*.92,col:T.id==='acid'?'#a8e05a':'#ff9a3d',sd:rnd(0,9)});
    dmgZ(C,tg,dm*av,1);
    /* ⭐吹き付けた炎は狙った敵の周りにも広がる=直撃の1/4だけ通る(2026-07-26ユーザー指示)。
@@ -10256,10 +10365,10 @@ function campStep(C,dt,wave){
   else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
     跳ねるたびに威力が grow 倍(gmax 倍で頭打ち)＝群れが長いほど後半が重くなる */
    const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
-   C.arcs.push({x:sx,y:sy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
+   C.arcs.push({x:mzx,y:mzy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
   else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
-   let cur=tg,hitl=[tg],pts=[[sx,sy],[tg.px,tg.py]];dmgZ(C,cur,dm*(cur.scl?ELEC_VS_SCALE:1),1);
+   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*(cur.scl?ELEC_VS_SCALE:1),1);
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
     let nx=null,bd=1e9;
@@ -10274,7 +10383,7 @@ function campStep(C,dt,wave){
    /* ⭐プラズマ砲だけは「砲弾」ではなく**プラズマ球**を撃つ(2026-07-26ユーザー指摘=迫撃砲と区別が付かない)。
       速く・低く飛び、着弾はエネルギーの炸裂になる。⚠数値(威力・範囲・間隔)は一切変えていない */
    const pz=T.id==='plasma'?1:0;
-   C.shells.push({x:sx,y:sy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:pz?.42:.85,
+   C.shells.push({x:mzx,y:mzy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:pz?.42:.85,
     dmg:dm,aoe:T.aoe*(1+.06*usEff(tw.us.g))*(1+(TRT&&TRT.k==='aoe'?TRT.v*TL:0)),pz,
     /* 砲弾の大きさも砲ごとに変える(重砲台は大玉・爆裂砲台は小玉) */
     sz:T.id==='arty'?1.55:T.id==='gren'?.7:1});
@@ -10288,20 +10397,20 @@ function campStep(C,dt,wave){
     addFx(C,'ring',z0.px,z0.py,'',{r:T.spl,col:'#b282ff'});};
    if(T.beam){/* ビーム砲: 射程いっぱいまで貫通ビームを撃ち、線上の敵を全部巻き込む。
      ⚠向き(tw.ang)は上で「一番多く貫ける並び」を選んである */
-    const ang=tw.ang,ex=sx+Math.cos(ang)*rng,ey=sy+Math.sin(ang)*rng;
+    const ang=tw.ang,ex=mzx+Math.cos(ang)*rng,ey=mzy+Math.sin(ang)*rng;
     const bw=T.beam*(1+.06*usEff(tw.us.g));/* 📡射程を上げるとビームも太くなる */
     let cnt=0;
     for(const z of C.zombies){if(z.dead||z.d<0)continue;
-     if(segDist(z.px,z.py,sx,sy,ex,ey)>bw)continue;
+     if(segDist(z.px,z.py,mzx,mzy,ex,ey)>bw)continue;
      splash(z);dmgZ(C,z,dm,prc);if(cnt<4)hitFx(C,z,ang,hitC,prc,T.type);cnt++;}
     /* ⚠色は紫で固定(以前から `col` は無視されていた)。beamが色を受けるようになったので明示する。
        ⭐sus=撃ちっぱなしのビーム=太いまま残ってから一気に消える(2026-07-26ユーザー指示) */
-    addFx(C,'beam',sx,sy,'',{x2:ex,y2:ey,col:'rgba(180,120,255,',col2:'rgba(216,170,255,',w:bw,
+    addFx(C,'beam',mzx,mzy,'',{x2:ex,y2:ey,col:'rgba(180,120,255,',col2:'rgba(216,170,255,',w:bw,
      lf:RAIL_BEAM,sus:1});
     /* 砲口の輪と、床を薙ぐ衝撃 */
     if(FXLV>0){addFx(C,'shock',sx,sy+8,'',{r:76,col:'#d8b4ff'});
      C.shake=Math.max(C.shake||0,.2);}
-    if(FXLV>0)addP(C,6,sx+Math.cos(ang)*26,sy+Math.sin(ang)*26,{sp:150,a:ang,spread:.2,g:40,life:.25,r:2.2,col:'#e6ccff'});
+    if(FXLV>0)addP(C,6,mzx,mzy,{sp:150,a:ang,spread:.2,g:40,life:.25,r:2.2,col:'#e6ccff'});
     if(cnt)twSfx(C,T);}
    else if(T.multi){/* 先頭(コアに近い順)からT.multi体を撃つ */
     const inr=[];for(const z of C.zombies){if(z.dead||z.d<0)continue;if(dist(z.px,z.py,sx,sy)<=rng)inr.push(z);}
@@ -10320,13 +10429,13 @@ function campStep(C,dt,wave){
       later(C,.16,()=>{hitFx(C,nx,tw.ang,hitC,prc,T.type);});
      }else if(kd==='fort'){
       /* 極太の貫通弾。⚠細い曳光線だと「最終兵器」に見えない */
-      addFx(C,'beam',sx,sy,'',{x2:nx.px,y2:nx.py-14*CH_UP,col:'rgba(255,226,150,',col2:'rgba(255,246,214,',w:9,lf:.34});
+      addFx(C,'beam',mzx,mzy,'',{x2:nx.px,y2:nx.py-14*CH_UP,col:'rgba(255,226,150,',col2:'rgba(255,246,214,',w:9,lf:.34});
       hitFx(C,nx,tw.ang,hitC,prc,T.type);
-     }else{addFx(C,'tr',sx,sy,'',{x2:nx.px,y2:nx.py,col:trC,hit:hitC,w:trW});
+     }else{addFx(C,'tr',mzx,mzy,'',{x2:nx.px,y2:nx.py,col:trC,hit:hitC,w:trW});
       hitFx(C,nx,tw.ang,hitC,prc,T.type);}
      cnt++;}
     if(cnt&&FXLV>0){
-     if(kd==='shot')addFx(C,'spread',sx+Math.cos(tw.ang)*24,sy+Math.sin(tw.ang)*24,'',
+     if(kd==='shot')addFx(C,'spread',mzx,mzy,'',
       {ang:tw.ang,len:rng*.85,col:trC,sd:rnd(0,9)});
      else if(kd==='fort'){C.shake=Math.max(C.shake||0,.22);
       addP(C,6,sx,sy-6,{sp:110,a:tw.ang-1.7,spread:.6,up:60,g:640,life:1.1,r:2.4,col:DIM,typ:'shell',gr:sy+12});}}
@@ -10341,10 +10450,10 @@ function campStep(C,dt,wave){
     splash(tg);dmgZ(C,tg,dmH,prc);
     /* ⭐レーザー塔は「弾」ではなく細いビームが走る(ライフル台と同じ曳光線に見えていた)。
        ⭐焼き切るほどビームが太く白熱する=今どれだけ溜まっているかが目で分かる */
-    if(T.id==='laser'&&FXLV>0)addFx(C,'beam',sx,sy,'',
+    if(T.id==='laser'&&FXLV>0)addFx(C,'beam',mzx,mzy,'',
      {x2:tg.px,y2:tg.py-14*CH_UP,col:hk>.5?'rgba(255,170,225,':'rgba(230,140,205,',
       col2:hk>.5?'rgba(255,240,250,':'rgba(255,205,238,',w:5+hk*7,lf:.16});
-    else addFx(C,'tr',sx,sy,'',{x2:tg.px,y2:tg.py,col:T.pierce?'rgba(216,131,238,':trC,hit:hitC,w:trW});
+    else addFx(C,'tr',mzx,mzy,'',{x2:tg.px,y2:tg.py,col:T.pierce?'rgba(216,131,238,':trC,hit:hitC,w:trW});
     hitFx(C,tg,tw.ang,hitC,prc,T.type);
     /* ⚠タワーごとに音が違う。連射しても45msの制限で重ならない */
     twSfx(C,T);}
@@ -10546,7 +10655,7 @@ function cpuTick(C,dt){
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
   const isEco=TOWERS[tw.ti].type==='eco';
   if(isEco&&!ecoOK)continue;
-  for(const st of twStats(tw.ti)){if(tw.us[st]>=usMax(tw.ti))continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
+  for(const st of twStats(tw.ti)){if(tw.us[st]>=usCap(tw.ti,st))continue;const p=stCost(tw,st);if(p<bp){bp=p;bi=si;bst=st;}}}
  if(bi>=0&&C.scrap-rsv>=bp*res*1.25){upTower(C,bi,bst);return;}
  /* ⭐**強化しきったタワーは次の形態へ**(人間と同じ手を打てるようにする)。
     工房=2026-07-26 / タレットの進化=2026-07-27。⚠工房だけは序盤と終盤に建て替えない(ecoOK) */
@@ -10915,7 +11024,8 @@ function renderCamp(C,t){
    drawTower(c,tw.ti,twPips(tw),0,0,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
    c.restore();
    /* ⭐継続攻撃の炎/ビームは塔の外(世界座標)で引く */
-   if(tw.ct&&!(tw.jamT>0)&&TOWERS[tw.ti]&&TOWERS[tw.ti].cont)drawCont(c,TOWERS[tw.ti],sx,sy,tw,t);}
+   if(tw.ct&&!(tw.jamT>0)&&TOWERS[tw.ti]&&TOWERS[tw.ti].cont)drawCont(c,TOWERS[tw.ti],sx,sy,tw,t);
+   if(TOWERS[tw.ti]&&TOWERS[tw.ti].drn)drawDrones(c,TOWERS[tw.ti],sx,sy,tw,t);}
   }
   /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
   if(EDIT){const bad=edBad(si);
@@ -11613,7 +11723,7 @@ function openBM(si){
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
   if(!tw.us)tw.us=newUs();
   const rows=twStats(tw.ti).map(st=>{
-   const lvv=tw.us[st]||0,mn9=usMin(tw.ti),mx9=usMax(tw.ti),mx=lvv>=mx9,p=mx?null:stCost(tw,st);
+   const lvv=tw.us[st]||0,mn9=usMin(tw.ti),mx9=usCap(tw.ti,st),mx=lvv>=mx9,p=mx?null:stCost(tw,st);
    /* ⚠⚡連鎖数は研究所の個別強化(elecの持ち味+1/段)も足して出す=実際に飛ぶ数と合わせる */
    const chBonus=(TW_TRAIT[T.type]&&TW_TRAIT[T.type].k==='chain')?Math.floor(TW_TRAIT[T.type].v*twlv(twKey(T))):0;
    let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
@@ -11623,7 +11733,8 @@ function openBM(si){
     +(st==='h'?(mx?'('+twHeatT(T,tw).toFixed(1)+'秒)':'('+twHeatT(T,tw).toFixed(1)+'→'+twHeatT(T,{us:Object.assign({},tw.us,{h:(tw.us.h||0)+1})}).toFixed(1)+'秒)'):'')
     /* 🔺最大倍率 / 🔥継続ダメージ も「今→強化後」を出す */
     +(st==='m'?(mx?'(x'+twHeatM(T,tw).toFixed(1)+')':'(x'+twHeatM(T,tw).toFixed(1)+'→x'+twHeatM(T,{us:Object.assign({},tw.us,{m:lvv+1})}).toFixed(1)+')'):'')
-    +(st==='b'?(mx?'(x'+twBurnM(tw).toFixed(2)+')':'(x'+twBurnM(tw).toFixed(2)+'→x'+twBurnM({us:Object.assign({},tw.us,{b:lvv+1})}).toFixed(2)+')'):'');
+    +(st==='b'?(mx?'(x'+twBurnM(tw).toFixed(2)+')':'(x'+twBurnM(tw).toFixed(2)+'→x'+twBurnM({us:Object.assign({},tw.us,{b:lvv+1})}).toFixed(2)+')'):'')
+    +(st==='n'?(mx?'('+twDrN(T,tw)+'機)':'('+twDrN(T,tw)+'→'+twDrN(T,{us:Object.assign({},tw.us,{n:lvv+1})})+'機)'):'');
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
    if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
    /* ⚠進化先は引き継いだぶんを引いて数える(◆が10個並ぶとボタンからはみ出す) */
@@ -11766,7 +11877,7 @@ function actPush(){
 function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:newUs(),jamT:0,own:CS.myJ};sfx.build();}
  else buildTower(G.players[G.myIdx],si,ti);}
 function actUp(si,st){st=st||'d';
- if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=usMax(tw.ti))return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
+ if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=usCap(tw.ti,st))return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
  else upTower(G.players[G.myIdx],si,st);}
 function actGrade(si){
  if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!canGrade(m,tw)||m.scrap<T_GCOST(tw.ti))return;
@@ -14780,7 +14891,7 @@ function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,sk:C.stkLv||0,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
  fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,ec:F.ecoN||1,up:Math.round(C.up||0),sk:(F.slk||[]).map(v=>v?1:0).join(''),
- tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0]:0),
+ tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0,t2.us.n||0,(t2.dr||[]).map(d=>[Math.round(d.x),Math.round(d.y)])]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
@@ -14791,7 +14902,7 @@ function packLane(C){
 function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)continue;const P=G.players[k];
  const o={j:k,n:P.name,hp:Math.ceil(P.core),mx:P.coreMax,dd:P.dead?1:0,pl:P.place,kw:P.killsWave,tw:P.totalWave,rd:P.ready?1:0,sh:Math.round(G.tide.shares[k]),en:Math.round(P.scrap)};
  if(!G.coop)o.ln={fd:Math.round(P.flagD),
-   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0]:0),
+   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0,t2.us.n||0,(t2.dr||[]).map(d=>[Math.round(d.x),Math.round(d.y)])]:0),
    es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
    us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0])};
  a.push(o);}return a;}
@@ -14808,7 +14919,7 @@ function normMe(m){const old=CS.meN;
   else if(o5<3&&n5>=3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,stkLv:m.sk||0,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
   uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ecoN:m.ec||1,up:m.up||0,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
-  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0},ct:x[14]?{px:x[14],py:x[15]}:null,chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
+  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
  CS.w=d.w;CS.ph=d.ph;CS.tI=d.tI;CS.ot=d.ot||[];CS.ts=d.ts||[];CS.pr=d.pr||0;CS.tu=d.tu||0;
@@ -14894,7 +15005,7 @@ function clientCamp(dt){
   if(!o.ln)continue;
   let sc=CS.oc[o.j];if(!sc)sc=CS.oc[o.j]=mkSpecCamp();
   sc.core=o.hp;sc.coreMax=o.mx||50;sc.dead=!!o.dd;sc.waveDone=false;sc.flagD=o.ln.fd;
-  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0},ct:x[14]?{px:x[14],py:x[15]}:null,chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||0}:null);
+  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||0}:null);
   syncEnts(sc,o.ln.es||[],o.ln.us||[],dt);
  }
 }
