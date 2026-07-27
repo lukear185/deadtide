@@ -109,7 +109,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
    ⚠それまで .setwrap は全画面共通の 430px 固定で、横画面(852px)では**左右に420pxの空きが出て**
      縦にスクロールしないと「防衛開始」に届かなかった。
    ⚠広げるのは #scr-setup だけ=オンライン対戦などの他画面は今までどおり。 */
-#scr-setup .setwrap{width:min(1040px,96vw)}
+/* ⚠**画面いっぱいより少しだけ小さく**(2026-07-27ユーザー指示)。96vw だと縁が無く窮屈に見えた */
+#scr-setup .setwrap{width:min(980px,89vw)}
 /* ⚠**パネルの高さは「画面 - 下のボタン列」で切る**=88dvhにすると
    ボタン列がはみ出して「防衛開始」が画面外に出る(実際に一度やった) */
 #scr-setup .setwrap{gap:8px}
@@ -1497,24 +1498,29 @@ const MELO_NM=[110,110,116,110,98,92,110,87,110,116,123,110,92,87,82,73];
 /* ⚠BGMは beep() を直に呼ぶので **SFXVOL(音量スライダー)を通らない**=下の数字がそのまま音量。
    2026-07-26ユーザー指示「BGM少しだけ音量上げて」で、3種すべて一律 x1.25 にした。
    ⭐2026-07-27ユーザー指示「BGM関係は小さい」で**さらに一律 x1.55**、同日「もう少し上げて」で**x1.25**(タイトルBGMも同じだけ上げてある)。
+   ⚠⚠**同日「ゲーム中のBGMが音割れしてる」で戦闘中だけ下げ直した**。割れていた正体は
+     **4拍ごとの重低音(44Hz/52Hz)を .375/.46 まで上げていたこと**。beep は素の波形をそのまま足すので、
+     旋律と重なった瞬間に振幅が1を超えて潰れる。⚠しかも**44/52Hzはスマホでは鳴らない**ので、
+     下げても聞こえ方は変わらず、割れだけが消える。**低音は音量を稼ぐ場所ではない**。
+   ⚠タイトルBGM(tbgm)は重低音を持たないので割れていない=そのまま。
    ⚠**効果音を下げるのと同時にやること**=BGMだけ上げても、効果音が鳴った瞬間に埋もれる。
      このときは 効果音を全体0.13へ揃える + SFXVOL .85→.72 + BGM x1.55 の3つを同時にやった。 */
 function bgmOn(){if(bgmTimer)return;bgmTimer=setInterval(()=>{if(!AC||muted)return;
  if(typeof isNM==='function'&&isNM()&&!bossActive()){
   const f=MELO_NM[bgmStep%MELO_NM.length];
-  beep(f,f*.97,.26,'sawtooth',.145);beep(f/2,f/2,.4,'triangle',.120);
-  if(bgmStep%4===0)beep(44,30,.28,'sawtooth',.375);
+  beep(f,f*.97,.26,'sawtooth',.115);beep(f/2,f/2,.4,'triangle',.090);
+  if(bgmStep%4===0)beep(44,30,.28,'sawtooth',.14);
   if(bgmStep%6===5&&Math.random()<.6)sfx.moanBig();
   else if(bgmStep%11===7&&Math.random()<.5)sfx.scratch();/* 遠くで爪が壁を掻く音 */
   bgmStep++;return;}
  const epic=bossActive();
  if(epic){const f=MELO_B[bgmStep%MELO_B.length];
-  beep(f,f,.17,'sawtooth',.156);beep(f*2,f*2,.12,'square',.074);
-  beep(f/2,f/2,.3,'sawtooth',.205);
-  if(bgmStep%4===0)beep(52,28,.2,'sawtooth',.46);
+  beep(f,f,.17,'sawtooth',.125);beep(f*2,f*2,.12,'square',.058);
+  beep(f/2,f/2,.3,'sawtooth',.125);
+  if(bgmStep%4===0)beep(52,28,.2,'sawtooth',.16);
   if(bgmStep%8===6&&Math.random()<.5)sfx.moanBig();
  }else{const f=MELO[bgmStep%MELO.length];
-  beep(f,f,.18,'triangle',.120);if(bgmStep%4===0)beep(f/2,f/2,.34,'sawtooth',.085);}
+  beep(f,f,.18,'triangle',.100);if(bgmStep%4===0)beep(f/2,f/2,.34,'sawtooth',.062);}
  bgmStep++;},300);}
 function bgmOff(){clearInterval(bgmTimer);bgmTimer=null;}
 /* ⭐**タイトル画面のBGM**(2026-07-27ユーザー指示「タイトル画面とかでちょっとホラーっぽいBGMを。
@@ -1628,7 +1634,7 @@ const TOWERS=[
  /* ↓重テスラ(1つ上)より後に解放される4種は、必ず重テスラより強くなるよう数値を置く(2026-07-25ユーザー指示)。
     目安は「実戦DPS=届く敵の数ぶん」: 重テスラ92 < レールガン174 < ガトリング225 < プラズマ307 < 要塞砲482 */
  {id:'gat',n:'ガトリング要塞',cost:540,up2:'gat2',gc:4320,rng:215,dmg:36,rate:.09,type:'bullet',c:'#b0483a',dsc:'単体をひたすら削る弾幕。射程は短い'},
- {id:'plasma',n:'プラズマ砲',cost:820,up2:'plasma2',gc:6560,rng:420,dmg:300,rate:2.2,type:'blast',aoe:150,c:'#d966b0',dsc:'最大の爆発範囲で群れを溶かす'},
+ {id:'plasma',n:'プラズマ砲',cost:820,up2:'plasma2',gc:6560,rng:420,dmg:300,rate:2.2,type:'blast',aoe:150,pz:1,c:'#d966b0',dsc:'最大の爆発範囲で群れを溶かす'},
  {id:'fort',n:'要塞砲',cost:900,up2:'fort2',gc:7200,rng:380,dmg:150,rate:.7,type:'bullet',multi:4,pierce:1,c:'#8a8f96',dsc:'貫通弾を4体へ同時に叩き込む最終兵器'},
  /* ===== 支援施設(type:'sup') =====
     タワーとは別軸。専用の支援枠2つにしか建たず、タワーの解放チェーンにも研究所にも出さない。
@@ -1672,7 +1678,7 @@ const TOWERS=[
  {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
  {id:'railx',n:'軌道砲',base:'rail',grd:1,cost:2040,rng:1008,dmg:620,rate:2.55,type:'bullet',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
  {id:'gat2',n:'重ガトリング',base:'gat',grd:1,cost:1620,rng:241,dmg:72,rate:.09,type:'bullet',c:'#d05a48',dsc:'六本の砲身が唸る。単体をひたすら溶かす'},
- {id:'plasma2',n:'プラズマ炉',base:'plasma',grd:1,cost:2460,rng:470,dmg:600,rate:1.87,type:'blast',aoe:186,spl:70,c:'#f07fc8',dsc:'炉心から撃ち出す極大の爆発。着弾点の周りも崩れる'},
+ {id:'plasma2',n:'プラズマ炉',base:'plasma',grd:1,cost:2460,rng:470,dmg:600,rate:1.87,type:'blast',aoe:186,spl:70,pz:1,/* ⚠pz=プラズマ球を撃つ印。進化先にも必ず付ける */c:'#f07fc8',dsc:'炉心から撃ち出す極大の爆発。着弾点の周りも崩れる'},
  {id:'fort2',n:'超弩級要塞砲',base:'fort',grd:1,cost:2700,rng:426,dmg:300,rate:.6,type:'bullet',multi:5,pierce:1,spl:62,c:'#a3a8b0',dsc:'三連の巨砲が5体を同時に貫く。最終形態'},
  {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'}
 ];
@@ -11068,11 +11074,14 @@ function campStep(C,dt,wave){
   else if(T.type==='blast'){
    /* ⭐プラズマ砲だけは「砲弾」ではなく**プラズマ球**を撃つ(2026-07-26ユーザー指摘=迫撃砲と区別が付かない)。
       速く・低く飛び、着弾はエネルギーの炸裂になる。⚠数値(威力・範囲・間隔)は一切変えていない */
-   const pz=T.id==='plasma'?1:0;
+   /* ⚠**進化先(プラズマ炉)が漏れていた**(2026-07-27ユーザー指摘
+        「プラズマ砲はいい感じの弾とエフェクトなのに、プラズマ炉になるとただの弾と爆発になってる」)。
+      ⚠id を1つずつ書くと進化先や新しい砲を足すたびに漏れる。**タワー側の pz:1 で持たせる**。 */
+   const pz=T.pz?1:0;
    C.shells.push({x:mzx,y:mzy,tx:tg.px+rnd(-14,14),ty:tg.py+rnd(-14,14),t:0,fl:pz?.42:.85,
     dmg:dm,aoe:T.aoe*(1+.06*usEff(tw.us.g))*(1+(TRT&&TRT.k==='aoe'?TRT.v*TL:0)),pz,
     /* 砲弾の大きさも砲ごとに変える(重砲台は大玉・爆裂砲台は小玉) */
-    sz:T.id==='arty'?1.55:T.id==='gren'?.7:1});
+    sz:T.id==='arty'?1.55:T.id==='arty2'?1.75:T.id==='gren'?.7:T.id==='plasma2'?1.3:1});
    twSfx(C,T);}
   else{/* bullet */
    const tt2=twTier(tw),trC=TR_COL[tt2],hitC=HIT_COL[tt2],trW=2.6+tt2*.45;
