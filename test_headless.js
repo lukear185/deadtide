@@ -1067,11 +1067,18 @@ function checkTwNew(){
   if(canGrade(me,tw)){console.log('FAIL: 強化していないのに進化できてしまう');process.exit(1);}
   for(const st of twStats(ti))for(let k=0;k<USTAT_MAX;k++)upTower(me,si,st);
   if(!canGrade(me,tw)){console.log('FAIL: 全部MAXにしても進化できない');process.exit(1);}
-  const before=twStats(ti).map(st=>tw.us[st]);
+  /* ⚠**引き継ぎは「外す前の一覧(twStatsRaw)」で見る**=進化すると⏩連射が買えなくなるので、
+     twStats どうしで比べると数が合わず、消えていないのに落ちる(2026-07-27) */
+  const before=twStatsRaw(ti).map(st=>tw.us[st]);
+  const rate0=twRateM(tw);
   if(!gradeTower(me,si)){console.log('FAIL: 進化に失敗した');process.exit(1);}
   if(tw.ti!==T_GRD(ti)){console.log('FAIL: 進化先が違う');process.exit(1);}
-  const after=twStats(tw.ti).map(st=>tw.us[st]);
+  const after=twStatsRaw(ti).map(st=>tw.us[st]);
   if(after.join()!==before.join()){console.log('FAIL: 進化で強化Lvが消えた '+before.join()+'→'+after.join());process.exit(1);}
+  /* ⭐**進化後は⏩連射を買えない**(2026-07-27ユーザー指示「攻撃速度が早すぎてうるさすぎる」)。
+     ⚠買った段はそのまま効くこと=進化して遅くなったら「進化が罰」になる。 */
+  if(twStats(tw.ti).indexOf('r')>=0){console.log('FAIL: 進化後も⏩連射が買えてしまう');process.exit(1);}
+  if(twRateM(tw)!==rate0){console.log('FAIL: 進化で連射が変わった '+rate0+'→'+twRateM(tw));process.exit(1);}
   if(canGrade(me,tw)){console.log('FAIL: 進化先からさらに進化できてしまう');process.exit(1);}
   /* ⭐**進化したあとも、もう5段ぶん強化できる**(2026-07-27ユーザー指示)。
      ⚠引き継いだLvが上限だと、進化した瞬間に買うものが無くなる。 */
@@ -1083,8 +1090,16 @@ function checkTwNew(){
    if(twStats(tw.ti).some(st=>tw.us[st]!==USTAT_MAX*2)){console.log('FAIL: 進化後の強化が上限まで届かない');process.exit(1);}
    if(upTower(me,si,twStats(tw.ti)[0])){console.log('FAIL: 上限を超えて強化できてしまう');process.exit(1);}
    /* 6段目から先は効き目が半分(⏩連射が10段で10倍撃つ壊れ方を防ぐ) */
-   if(!(twDmgM(tw)>d0&&twRateM(tw)<r0&&twRngM(tw)>g0)){console.log('FAIL: 進化後の強化が効いていない');process.exit(1);}
-   if(!(twRateM(tw)>.3)){console.log('FAIL: ⏩連射が効きすぎている x'+(1/twRateM(tw)).toFixed(2));process.exit(1);}}
+   if(!(twDmgM(tw)>d0&&twRngM(tw)>g0)){console.log('FAIL: 進化後の強化が効いていない');process.exit(1);}
+   /* ⭐**連射は進化後フルでも素MAX(0.55倍)で頭打ち**=これが「うるさすぎる」の直し。
+      ⚠旧は 1-.09*usEff(10)=0.325倍まで縮んでいた。 */
+   if(twRateM(tw)!==r0){console.log('FAIL: 進化後に連射が伸びている '+r0+'→'+twRateM(tw));process.exit(1);}
+   if(Math.abs(twRateM(tw)-.55)>1e-9){console.log('FAIL: 連射が素MAXの0.55倍になっていない '+twRateM(tw));process.exit(1);}
+   /* ⭐**⏩連射を外したぶんは⚔攻撃で埋め合わせる**=フル強化のDPSが作り替える前と揃うこと。
+      旧 (1+.18*7.5)/(1-.09*7.5)=7.23倍。⚠±8%まで許す(段の刻みが違うのでぴったりにはならない) */
+   {const dps=twDmgM(tw)/twRateM(tw);
+    if(Math.abs(dps/7.231-1)>.08){console.log('FAIL: 進化フルのDPSが作り替える前とずれている x'+dps.toFixed(2)+' (旧7.23)');process.exit(1);}
+    console.log('進化の強化: 連射は素MAX(x'+(1/twRateM(tw)).toFixed(2)+')で頭打ち / フル強化のDPS x'+dps.toFixed(2)+'(旧7.23) OK');}}
   me.towers[si]=null;
   /* 工房だけは今までどおり0に戻ること(次の段の素が前の段のMAXより上なので下がらない) */
   {const eti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
