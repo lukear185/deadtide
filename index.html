@@ -1254,12 +1254,12 @@ const SFX_GAIN={
  fort:.323, zap:.511, frost:.570, rail:.597, cannon:.598, boom:.620, shot:.627,
  cryo:.669, gren:.674, shotgun:.675, snipe:.711, push:.727, zap2:.790, mortar:.810,
  lose:.861, win:.889,
- build:.450,/* ⚠一番よく鳴る音なので他より下げる */
+ build:.329,/* ⚠一番よく鳴る音なので他より下げる */
  /* ⚠**ウェーブ開始のホーン**。2026-07-27に0.138→**0.090**へ下げた
     (ユーザー「新種のゾンビが現れる の音でかすぎ」=あの画面の直前に鳴っているのがこれ)。
     ⚠全体を0.13へ揃えた結果、**手を入れなかったホーンが52種で一番大きい音になっていた**。
     ⚠1.5秒の吹奏で、しかも画面が止まって静かになった直後に鳴るので、数字以上に大きく感じる。 */
- horn:.651,
+ horn:.470,
  /* ボス登場の咆哮(素のRMS: growl .441 / growl2 .191)。
     ⚠**1.1秒鳴りっぱなしの音は、RMSが同じでも短い音よりずっと大きく感じる**
       (2026-07-26ユーザー指摘「ボスのうなり(死の笛)がでかすぎる」。0.111まで下げてもまだ大きかった)。
@@ -1477,10 +1477,10 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
  tbgmTimer=setInterval(()=>{if(!AC||muted||SCR==='game')return;
   const s=tbgmStep%16,f=TBGM[s];
   /* ①ドローン。⚠鳴らす長さ(3.4秒)>差し込む間隔(2.8秒)にして途切れさせない */
-  if(s%4===0){beep(98,97,3.4,'triangle',.069);beep(98.6,97.6,3.4,'sine',.059);}
-  if(f)beep(f,f*.995,2.2,'triangle',.098);/* ②まばらな音 */
-  if(s===8)beep(f*1.5,f*1.5,1.6,'sine',.050);/* 5度をうっすら重ねる */
-  if(s===13&&Math.random()<.5)nzHit(700,180,2.2,.098,1);/* ③遠くの風 */
+  if(s%4===0){beep(98,97,3.4,'triangle',.097);beep(98.6,97.6,3.4,'sine',.083);}
+  if(f)beep(f,f*.995,2.2,'triangle',.137);/* ②まばらな音 */
+  if(s===8)beep(f*1.5,f*1.5,1.6,'sine',.070);/* 5度をうっすら重ねる */
+  if(s===13&&Math.random()<.5)nzHit(700,180,2.2,.137,1);/* ③遠くの風 */
   if(s===6&&Math.random()<.25&&sfx.moan)sfx.moan();/* たまに遠くでうめく */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
