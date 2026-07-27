@@ -12814,6 +12814,7 @@ $('ivready').onclick=()=>{
 };
 /* ============ パレード ============ */
 const pcv=$('paradecv'),pctx=pcv.getContext('2d');
+let RBC=null;/* 虹ゾンビを焼く使い回しcanvas */
 let PAR=[];
 /* ⭐**種類ごとに1〜3発**(2026-07-27ユーザー指示)。⚠HPで決める=硬そうな見た目の奴が硬い、が一致する。
    ⚠ここに出るのは廃線の序盤6種だけなので、素のHPで3段に割ればちょうど1/2/3発に散る。 */
@@ -12885,12 +12886,32 @@ function paradeStep(t){
    pctx.restore();pctx.globalAlpha=1;continue;}
   p.x+=p.sp*.016;if(p.x>w+60)PAR[i]=parNew();
   const dx=p.x-p.kb;
-  /* ⭐虹色は色相をぐるぐる回すだけ=専用の絵を描かないので重さゼロ。⚠後光も付けて見逃さないようにする */
-  if(p.rb){pctx.save();
-   pctx.globalAlpha=.5+.5*Math.sin(t*8);pctx.fillStyle='#fff';
-   pctx.beginPath();pctx.arc(dx,h-34,26,0,7);pctx.fill();pctx.globalAlpha=1;
-   pctx.filter='hue-rotate('+Math.round((t*260)%360)+'deg) saturate(3) brightness(1.25)';
-   drawZombie(pctx,p.zi,dx,h-20,1,t,p.ph,{});
+  /* ⭐⭐**虹色の塗り分け**(2026-07-27にユーザー報告「虹じゃなくて白い丸い点滅が背景にある犬だった」)。
+     ⚠⚠**`ctx.filter` は iOS Safari で効かない**=hue-rotate は丸ごと無視され、後光だけが出ていた。
+     ⭐**どこでも効くやり方**=別canvasに一度描いて、`source-atop` で虹のグラデを被せる。
+       source-atop は「すでに描いてある所にだけ乗せる」ので、**絵の形どおりに色が乗る**。
+     ⚠canvasは1枚だけ作って使い回す(毎フレーム作ると重い)。⚠dpr を掛けて焼かないとぼやける。 */
+  if(p.rb){const dpr2=Math.min(2,window.devicePixelRatio||1),SZ=160;
+   if(!RBC){RBC=document.createElement('canvas');}
+   if(RBC.width!==Math.round(SZ*dpr2)){RBC.width=RBC.height=Math.round(SZ*dpr2);}
+   const rc=RBC.getContext('2d');
+   rc.setTransform(dpr2,0,0,dpr2,0,0);rc.clearRect(0,0,SZ,SZ);
+   rc.save();rc.translate(SZ/2,120);
+   try{drawZombie(rc,p.zi,0,0,1,t,p.ph,{});}catch(e2){}
+   rc.restore();
+   rc.globalCompositeOperation='source-atop';
+   {const hs=(t*150)%360,g2=rc.createLinearGradient(SZ*.2,SZ*.35,SZ*.8,SZ*.85);
+    for(let k=0;k<=4;k++)g2.addColorStop(k/4,'hsl('+((hs+k*72)%360)+',95%,56%)');
+    rc.globalAlpha=.82;rc.fillStyle=g2;rc.fillRect(0,0,SZ,SZ);rc.globalAlpha=1;}
+   rc.globalCompositeOperation='source-over';
+   /* 後光も虹にする。⚠白のままだと「白い点滅」にしか見えない */
+   pctx.save();
+   {const hs=(t*150)%360;
+    for(let k=0;k<3;k++){pctx.globalAlpha=.30-k*.08;
+     pctx.fillStyle='hsl('+((hs+k*120)%360)+',95%,62%)';
+     pctx.beginPath();pctx.arc(dx,h-34,20+k*9+Math.sin(t*7+k)*3,0,7);pctx.fill();}}
+   pctx.globalAlpha=1;
+   pctx.drawImage(RBC,dx-SZ/2,h-20-120,SZ,SZ);
    pctx.restore();continue;}
   drawZombie(pctx,p.zi,dx,h-20,1,t,p.ph,{});
   /* ⭐殴った瞬間だけ白く光らせる。⚠同じ絵をもう1枚 lighter で重ねるだけ(盤面の撃破と同じやり方) */
