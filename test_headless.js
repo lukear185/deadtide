@@ -1371,8 +1371,26 @@ function checkFx2(){
    me.fx.length=0;me.dly=[];
    airstrikeHit(me,z.px,z.py,10,stk,true);
    const kinds={};for(const e of me.fx)kinds[e.k]=1;
-   for(const w of want[stk])need(kinds,w,'砲撃'+stk+'の着弾に'+w+'が出ていない');}}
+   for(const w of want[stk])need(kinds,w,'砲撃'+stk+'の着弾に'+w+'が出ていない');
+   /* ⭐2026-07-27に足した「砲撃の着弾は思いきり盛る」= 白フラッシュ+強い揺れ+短いスロー */
+   if(!(me.flash>0)){console.log('FAIL: 砲撃'+stk+'の着弾で白フラッシュ(flash)が焚かれていない');process.exit(1);}
+   if(!(me.shake>=.3)){console.log('FAIL: 砲撃'+stk+'の着弾の揺れが弱い('+me.shake+')');process.exit(1);}
+   /* ⚠掃射(mgun)だけは3.6秒撃ち続けるのでスローを掛けない(撃っている間ずっと遅くなるため) */
+   if(stk!=='mgun'&&!(G.hitStopT>0)){console.log('FAIL: 砲撃'+stk+'の着弾でスローが掛かっていない');process.exit(1);}
+   me.flash=0;me.shake=0;G.hitStopT=0;}
+  /* ⭐**爆風で死体が吹き飛ぶ**(kbZ→killZ→死体fxのkb)。⚠dmgZより先に呼ばないと死体が湧いたあとになる */
+  {me.zombies.length=0;
+   const z2=mkZ(zSpec(0,1,10),PLEN*.5);z2.hp=z2.mhp=200;me.zombies.push(z2);
+   campStep(me,.001,G.wave);
+   me.fx.length=0;/* ⚠**campStepの後に消す**=盤面の塔が先に倒すと、吹き飛びの無い死体が混ざる */
+   airstrikeHit(me,z2.px-40,z2.py,10,'air',true);
+   const cp=me.fx.find(e=>e.k==='corpse');
+   if(!cp){console.log('FAIL: 砲撃で倒しても死体が出ない');process.exit(1);}
+   if(!(cp.kb>0)){console.log('FAIL: 爆風で倒した死体に吹き飛び(kb)が乗っていない');process.exit(1);}
+   if(!(cp.kx>0)){console.log('FAIL: 死体の吹き飛ぶ向きが爆心の外向きでない(kx='+cp.kx+')');process.exit(1);}
+   me.flash=0;me.shake=0;G.hitStopT=0;}}
  console.log('演出2: 投擲の軌道・炎の帯・火の海・氷の破片・土煙・倒れる死体・砲撃5種の着弾 すべて出ている OK');
+ console.log('🎯砲撃の手応え: 白フラッシュ+揺れ+スローが5種すべてに乗る / 爆風で死体が外へ吹き飛ぶ OK');
  backTitle();
 }
 /* ---- タワーごとに撃ち方が違うか(2026-07-26 第66弾) ----

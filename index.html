@@ -9756,7 +9756,8 @@ function killZ(C,z){
  addP(C,Math.round(3*bsc),z.px,z.py,{sp:0,g:0,life:6,r:11*bsc,col:'#2f3a1c',typ:'stain',jx:12*bsc,jy:5});
  /* ⭐倒れる死体(2026-07-26 第65弾)。大きいほど長く残り、雑魚はさっと消える */
  if(FXLV>0)addFx(C,'corpse',z.px,z.py,'',{zi:z.zi,el:z.elite?1:0,dr:z.dr||1,
-  lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1)});
+  lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1),
+  kb:z.kbp||0,kx:z.kbx||0,ky:z.kby||0});/* ⭐爆風で吹き飛ぶ(kbZで書かれていた時だけ) */
  /* 大物が倒れると足元に土煙が広がる。⚠雑魚には出さない(画面が埋まる) */
  if(FXLV>0&&(z.boss||z.elite))addFx(C,'dust',z.px,z.py+2,'',{r:z.boss?120:66});
  /* ⚠**雑魚撃破の「間」(ヒットストップ)は2026-07-27に入れて、同日に外した**。
@@ -9792,7 +9793,7 @@ function killZ(C,z){
  if(z.acdX>0){const ax=z.acdX,ar=z.acdR||110;z.acdX=0;z.acdT=0;
   for(const z2 of C.zombies){if(z2.dead||z2===z)continue;
    if(dist(z2.px,z2.py,z.px,z.py)>ar)continue;
-   dmgZ(C,z2,ax,1);}
+   kbZ(z2,z.px,z.py,95);dmgZ(C,z2,ax,1);}
   /* ⭐**爆発ではなく「溶ける」絵にする**(2026-07-27ユーザー指示「酸っぽい爆発にして(色とか)」)。
      ⚠火薬の橙は一切使わない。**黄緑→緑の2重の輪**+**跳ねて落ちる飛沫**+**地面に残る酸だまり**。
      ⚠飛沫は g を強めにして**下へ落とす**=炎の粒(上へ昇る)と見分けがつく。 */
@@ -9826,6 +9827,14 @@ function killZ(C,z){
   const bi=base<0?0:base;
   for(let i=0;i<z.split;i++)C.zombies.push(mkZ(zSpec(bi,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i)));}
 }
+/* ⭐**爆風で死体を吹き飛ばす**(2026-07-27ユーザー指示「爽快感」)。
+   ⚠**必ず dmgZ より先に呼ぶ**=dmgZ の中で死ぬと、その場で死体fxが湧いてしまうため。
+   ⚠向きと強さを敵に書いておくだけ。実際に飛ばすのは killZ→死体fx(kb/kx/ky)。
+   ⚠**縦は半分**にする=見下ろし気味の絵なので、素直に飛ばすと上下に伸びて不自然に見える。
+   ⚠大物は飛ばない(ボス1/4・エリート3/5)=重い敵が軽々飛ぶと嘘くさくなる。 */
+function kbZ(z,cx,cy,pw){if(!z||z.dead)return;
+ const dx=z.px-cx,dy=(z.py-cy)*.5,l=Math.hypot(dx,dy)||1;
+ z.kbx=dx/l;z.kby=dy/(l*2);z.kbp=pw*(z.boss?.25:z.elite?.6:1);}
 /* quiet=ダメージ数字と血を出さない(継続攻撃はまとめて1つ出すので毎フレーム湧かせない) */
 function dmgZ(C,z,d,armorPierce,quiet){
  if(z.dead)return;
@@ -9962,7 +9971,7 @@ function airstrikeHit(C,x,y,wave,stk,mine){
  const SP=stkPow(C);
  if(stk==='carpet'){/* 絨毯爆撃: 道に沿って前後300を連続爆撃 */
   const cd0=projPath(x,y),dm=240*(1+.15*wave)*SP;
-  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=330){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=40*SP;}}}
+  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=330){kbZ(z,x,y,150);dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=40*SP;}}}
   /* ⭐時間差で5発。1発ずつに土煙と衝撃波を付けて「線に沿って落ちてくる」のを見せる(第65弾) */
   for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN)),dd=.07*(k+2);
    addFx(F,'boom',p[0],p[1],'',{d0:dd});
@@ -9980,7 +9989,7 @@ function airstrikeHit(C,x,y,wave,stk,mine){
   if(isMine)sfx.frost();F.shake=.15;
  }else if(stk==='napalm'){/* ナパーム: 強烈な継続燃焼 */
   const dm=150*(1+.12*wave)*SP;
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=130){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=50*(1+.1*wave)*SP;}}}
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=130){kbZ(z,x,y,130);dmgZ(F,z,dm,1);if(!z.dead){z.burnT=5;z.burnD=50*(1+.1*wave)*SP;}}}
   addFx(F,'boomL',x,y,'');addFx(F,'ring',x,y,'',{r:120,col:'#ffb347'});F.shake=.3;
   /* ⭐燃え続けているのが見えるよう火の海を残す(燃焼5秒に合わせる) */
   if(FXLV>0)addFx(F,'pool',x,y+2,'',{r:120,sd:rnd(0,9),lf:4.2});
@@ -9989,10 +9998,13 @@ function airstrikeHit(C,x,y,wave,stk,mine){
   addFx(F,'ring',x,y,'',{r:150,col:'#ffdd66'});
   if(FXLV>0)addFx(F,'dust',x,y+2,'',{r:130,lf:.8});
   if(isMine)sfx.shotgun();
+  /* ⚠掃射だけは**3.6秒撃ち続ける**ので、下の「着弾を盛る」処理には合流させない
+     (スローを掛けると撃っている間ずっと遅くなる)。フラッシュと揺れだけ軽く出す */
+  if(isMine&&FXLV>0){F.flash=.12;F.flashC='255,244,214';F.shake=Math.max(F.shake||0,.34);}
   return true;
  }else{/* 標準エアストライク */
   const dm=150*(1+.15*wave)*SP;
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20*SP;}}}
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){kbZ(z,x,y,155);dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20*SP;}}}
   F.shake=.3;addFx(F,'boomL',x,y,'');
   /* ⭐床を押す衝撃波+土煙+短い残り火。⚠爆発の丸だけだと「重さ」が出ない */
   if(FXLV>0){addFx(F,'shock',x,y+4,'',{r:92,col:'#ffdd66'});
@@ -10006,6 +10018,14 @@ function airstrikeHit(C,x,y,wave,stk,mine){
  /* 焦げ跡(凍結だけは白い霜) */
  if(FXLV>0)addP(F,4,x,y,{sp:0,g:0,life:7,r:24,col:stk==='frost'?'#b9dcea':'#2b2620',typ:'stain',jx:38,jy:15});
  if(isMine&&stk!=='frost')sfx.boom();
+ /* ⭐⭐**🎯砲撃の着弾は思いきり盛る**(2026-07-27ユーザー指示「爽快感」)。
+    ⚠**砲撃はプレイヤーが自分の意思で撃つ数少ない行為**なので、ここが手応えの本丸。
+    ⚠1試合で数回しか撃たない=**いくら盛っても重くならない**(雑魚撃破と違って埋もれもしない)。
+    白フラッシュ(1枚塗り)+強い揺れ+短いスロー、の3点。⚠自分の画面だけ(isMine)。 */
+ if(isMine&&FXLV>0){
+  F.flash=stk==='frost'?.14:.22;F.flashC=stk==='frost'?'190,225,240':'255,244,214';
+  F.shake=Math.max(F.shake||0,stk==='frost'?.35:.62);
+  if(G)G.hitStopT=Math.max(G.hitStopT||0,stk==='carpet'?.42:.26);}
  return true;
 }
 /* ============ 🦸 英雄(出撃と必殺技) ============
@@ -10126,6 +10146,7 @@ function campStep(C,dt,wave){
  if(DEV&&C.isMe){if(C.scrap<50000)C.scrap=99999;if((C.up||0)<50000)C.up=99999;}
  C.tm+=dt;
  if(C.shake>0)C.shake-=dt;
+ if(C.flash>0)C.flash-=dt;/* ⭐🎯砲撃の着弾で焚く白フラッシュ(下の renderCamp で1枚塗るだけ) */
  if(!C.waveDone)C.charge=Math.min(1,C.charge+dt/((C.stk&&STRIKES[C.stk]?STRIKES[C.stk].ch:30)));
  /* 🦸英雄の必殺技チャージ(出撃してから溜まり始める) */
  if(!C.waveDone&&C.hOut===1)C.hCg=Math.min(1,(C.hCg||0)+dt/heroUch(C));
@@ -10604,7 +10625,9 @@ function campStep(C,dt,wave){
  /* 砲弾 */
  for(const sh of C.shells){sh.t+=dt;if(sh.t>=sh.fl){sh.dead=true;
   if(sh.stk){airstrikeHit(C,sh.tx,sh.ty,sh.wave,sh.stk,sh.byMe);continue;}/* 砲撃のロケットが着弾 */
-  for(const z of C.zombies)if(!z.dead&&dist(z.px,z.py,sh.tx,sh.ty)<=sh.aoe)dmgZ(C,z,sh.dmg,1);
+  /* ⭐爆発は死体を外へ吹き飛ばす。⚠爆発範囲が広い砲ほど強く飛ばす(迫撃砲<重砲台<プラズマ砲) */
+  for(const z of C.zombies)if(!z.dead&&dist(z.px,z.py,sh.tx,sh.ty)<=sh.aoe){
+   kbZ(z,sh.tx,sh.ty,42+sh.aoe*.45);dmgZ(C,z,sh.dmg,1);}
   if(sh.pz){/* ⭐プラズマの炸裂: 火薬の爆発ではなくエネルギーが弾ける */
    addFx(C,'pboom',sh.tx,sh.ty,'',{r:sh.aoe,sd:rnd(0,9)});
    addP(C,14,sh.tx,sh.ty,{sp:250,up:50,g:230,life:.55,r:2.8,col:'#f0a8e0'});
@@ -11245,7 +11268,12 @@ function renderCamp(C,t){
   /* 倒れ切ってからしばらく残り、最後にすっと消える */
   /* ⚠生きている敵と紛らわしくならないよう、少し薄く描く */
   c.save();c.globalAlpha=Math.max(0,1-Math.pow(k6,3))*.72;
-  c.translate(e.x,e.y);c.rotate(((e.dr||1)<0?1:-1)*1.5*(1-Math.pow(1-fl6,3)));
+  c.translate(e.x,e.y);
+  /* ⭐**爆風で吹き飛ぶ**(2026-07-27)。⚠毎フレーム積分せず**e.tだけの式**で出す=
+     fxの更新処理を1行も触らずに済み、重さも増えない。0.4秒かけて外へ滑り、途中で軽く跳ねる。 */
+  if(e.kb>0){const fq=Math.min(1,e.t/.4),ez=1-Math.pow(1-fq,2);
+   c.translate(e.kx*e.kb*ez,e.ky*e.kb*ez-Math.sin(fq*Math.PI)*e.kb*.3);}
+  c.rotate(((e.dr||1)<0?1:-1)*1.5*(1-Math.pow(1-fl6,3)));
   try{drawSpr(c,bakeZ(e.zi,e.el?1:0),0,0,0,(e.dr||1)<0);}catch(e6){}
   /* ⭐**倒れた瞬間だけ白く光る**(2026-07-27ユーザー指示「爽快感・重くならないやつで」)。
      ⚠粒も光源も増やさない=**同じ絵をもう1枚 lighter で重ねるだけ**(0.1秒で消える)。
@@ -11638,6 +11666,12 @@ function renderCamp(C,t){
  if(G&&G.clearT>0&&C.isMe){const kk=clamp(G.clearT/CLEAR_HOLD,0,1);
   c.fillStyle='rgba(8,12,26,'+(.4*Math.sin(kk*Math.PI)).toFixed(3)+')';
   c.fillRect(-4000,-4000,20000,20000);}
+ /* ⭐🎯砲撃の着弾フラッシュ。⚠**加算(lighter)で白く飛ばす**=ただ白を被せると絵が霞むだけになる。
+    ⚠こちらも1枚塗りなので重さゼロ。0.22秒で消える。 */
+ if(C.flash>0){const ff=clamp(C.flash/.22,0,1);
+  c.globalCompositeOperation='lighter';
+  c.fillStyle='rgba('+(C.flashC||'255,244,214')+','+(.5*ff*ff).toFixed(3)+')';
+  c.fillRect(-4000,-4000,20000,20000);c.globalCompositeOperation='source-over';}
  /* 照準 */
  if(AIM&&aimPos){c.strokeStyle='#E84832';c.lineWidth=4;c.setLineDash([12,10]);c.beginPath();c.arc(aimPos[0],aimPos[1],135,0,7);c.stroke();c.setLineDash([]);
   c.beginPath();c.moveTo(aimPos[0]-20,aimPos[1]);c.lineTo(aimPos[0]+20,aimPos[1]);c.moveTo(aimPos[0],aimPos[1]-20);c.lineTo(aimPos[0],aimPos[1]+20);c.stroke();}
