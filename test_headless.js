@@ -922,6 +922,32 @@ function checkTwNew(){
    if(!(twBurnM({us:Object.assign(newUs(),{b:USTAT_MAX})})>=2.2)){console.log('FAIL: 🔥継続ダメージLv5でも燃焼が2.2倍に届かない');process.exit(1);}}
   console.log('火炎放射塔: 継続攻撃 毎秒'+dpsGot.toFixed(1)+' + 周りの'+(hit.length-1)+'体へ'+(hit[1]/DT).toFixed(1)+'(直撃の'+(r*100).toFixed(0)+'%)'+' / 強化=['+twStats(ti).map(x=>USTAT_L[x]).join(',')+'] OK');
  }
+ /* ⭐① -2 酸噴射砲: 燃焼ではなく**酸**が乗る / 酸まみれのまま倒れると周りの敵にも入る
+    (2026-07-27ユーザー指示。それまでは type:'fire' の燃焼そのままで全19種の最弱だった) */
+ {const ti=TOWERS.findIndex(t=>t.id==='acid'),T=TOWERS[ti];
+  if(ti<0){console.log('FAIL: 酸噴射砲が見つからない');process.exit(1);}
+  if(!T.axr||!T.axm){console.log('FAIL: 酸噴射砲に酸爆発(axr/axm)が無い');process.exit(1);}
+  me.scrap=99999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
+  buildTower(me,si,ti);
+  me.zombies.length=0;
+  const z0=mkZ(zSpec(0,1,5),projPath(sx,sy));z0.hp=z0.mhp=1e6;me.zombies.push(z0);
+  campStep(me,.6,G.wave);
+  if(!(z0.acdT>0&&z0.acdD>0)){console.log('FAIL: 酸噴射砲を撃っても酸(acdT)が乗らない');process.exit(1);}
+  if(z0.burnT>0){console.log('FAIL: 酸噴射砲がまだ燃焼(burnT)を付けている=酸に置き換わっていない');process.exit(1);}
+  if(!(z0.acdX>0)){console.log('FAIL: 酸爆発の威力(acdX)が乗っていない');process.exit(1);}
+  /* 倒れた瞬間に周りへ入るか。⚠部隊とコアには当たらないこと */
+  const nb=mkZ(zSpec(0,1,5),z0.d+2);nb.hp=nb.mhp=1e6;me.zombies.push(nb);
+  campStep(me,.001,G.wave);/* nb に座標を入れる */
+  nb.acdT=0;nb.acdD=0;nb.acdX=0;/* 巻き込まれる側は酸なしにして、入った量だけを見る */
+  const nb0=nb.hp,ux=me.units.length,cx=me.core,ax=z0.acdX;
+  z0.hp=0;killZ(me,z0);
+  const got=nb0-nb.hp;
+  if(!(got>0)){console.log('FAIL: 酸まみれの敵が倒れても周りに酸爆発が入らない');process.exit(1);}
+  if(Math.abs(got/ax-1)>.02){console.log('FAIL: 酸爆発の威力が acdX と違う '+got.toFixed(1)+' vs '+ax.toFixed(1));process.exit(1);}
+  if(me.core!==cx||me.units.length!==ux){console.log('FAIL: 酸爆発がコアか部隊に当たっている');process.exit(1);}
+  if(z0.acdX!==0){console.log('FAIL: 酸爆発のあとも acdX が残っている(二度撒ける)');process.exit(1);}
+  console.log('酸噴射砲: 酸'+z0.acdD.toFixed(1)+'/秒('+T.acdT+'秒)+ 倒れると半径'+T.axr+'へ'+Math.round(ax)+'(酸の'+T.axm+'倍)・部隊とコアには当たらない OK');
+ }
  /* ② レーザー塔: 継続攻撃。同じ敵を焼き続けると最大 heatM 倍・別の敵に移ると0に戻る
     ⭐2026-07-27に**連射→継続攻撃**へ変えた。溜まり(tw.hs)は「発射数」ではなく
       **経過時間を発射数に換算した値**(dt/T.rate ずつ増える)。 */

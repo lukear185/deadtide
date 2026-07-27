@@ -1427,6 +1427,12 @@ const TOWERS=[
  {id:'shot',n:'ショットガン台',cost:200,up2:'shot2',gc:1600,rng:175,dmg:26,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'3体同時撃ち'},
  {id:'net',n:'ネット砲',cost:160,up2:'net2',gc:1280,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:145,rng:0,dmg:0,rate:3,type:'eco',inc:8,up2:'scrap2',gc:700,c:'#b08d4f',dsc:'時間で⚙️を生産'},
+ /* ⭐**爆裂砲台はここ**(2026-07-27ユーザー指示「爆裂砲台は順番前にしよう」)。
+    ⚠それまでは迫撃砲・スナイパー塔より**後**(9番目・1800⚙️)に解放されていたが、
+      建設費300・実戦DPS34と**同じ爆発型の迫撃砲(50)より弱い**ので、解放順が逆立ちしていた。
+      ここへ移して「範囲攻撃の入門」にした=迫撃砲(遠射程)→重砲台→プラズマ砲と素直に伸びる。
+    ⚠移したのは基本タワー(BASE_T=10)の中だけなので、研究所の解放済み(META.nt)はずれない。 */
+ {id:'gren',n:'爆裂砲台',cost:300,up2:'gren2',gc:2400,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
  /* fspl=狙った敵の周りにも通る炎の広がり(px)。周りへは直撃の1/4だけ入る(2026-07-26ユーザー指示) */
 /* ⭐cont=**継続攻撃**(2026-07-27ユーザー指示「連射ではなく継続攻撃に。何台も置くと重い」)。
     狙っている間ずっと**1秒あたり dmg/rate** を与える=与える量は連射だった頃と同じで、
@@ -1435,8 +1441,7 @@ const TOWERS=[
  {id:'tesla',n:'テスラコイル',cost:340,up2:'tesla2',gc:2720,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:TECH2,dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,up2:'mortar2',gc:3440,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
  {id:'sniper',n:'スナイパー塔',cost:540,up2:'sniper2',gc:4320,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い'},
- /* ↓ここまでと次の2つ(爆裂砲台・冷却塔)までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
- {id:'gren',n:'爆裂砲台',cost:300,up2:'gren2',gc:2400,rng:280,dmg:38,rate:1.5,type:'blast',aoe:70,c:'#7d8a5c',dsc:'小回りの利く範囲砲'},
+ /* ↓ここまでと次の冷却塔までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
  /* frz=完全凍結の秒数(動けず殴れもしない)。⭐**凍っていない敵は必ず凍る**(2026-07-27に再凍結の耐性を廃止) */
  /* frzN=同じ敵を凍らせられる回数(❄冷却回数の強化で+1/段・最大10)。使い切った敵はもう凍らない */
  {id:'cryo',n:'冷却塔',cost:320,up2:'cryo2',gc:2560,rng:200,dmg:6,rate:6,type:'net',frz:2.6,frzN:5,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。同じ敵を凍らせられるのは5回まで'},
@@ -1445,7 +1450,13 @@ const TOWERS=[
  /* heatN=同じ敵を撃ち続けて最大まで焼き切るのに要る発射数 / heatM=その時の威力の倍率(2026-07-26ユーザー指示)。
     ⚠別の敵に狙いが移った瞬間に0へ戻る=雑魚を薙ぐ塔ではなく「1体を焼き切る」塔になる */
  {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が上がる(素で3倍・🔺最大倍率MAXで6倍)'},
- {id:'acid',n:'酸噴射砲',cost:390,up2:'acid2',gc:3120,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:TOXIC,dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
+ /* ⭐**酸は燃焼とは別枠の継続ダメージ**(2026-07-27ユーザー指示
+      「酸噴射は酸の継続ダメージをつけて、その酸がついてる敵が死んだら酸爆発で周囲にダメージにしよう」)。
+    ⚠それまでは type:'fire' の燃焼をそのまま使っていて、**実戦DPS30=全19種で最弱**だった
+      (研究所で4,000🧬払うのに、基本タワーの火炎放射塔58より弱かった)。
+    acdT=酸が残る秒数 / axr=酸爆発の半径 / axm=爆発の威力(酸の継続ダメージの何倍か)。
+    ⚠爆発は**敵にだけ**効く(部隊とコアには一切当たらない)。⚠装甲を無視して通る。 */
+ {id:'acid',n:'酸噴射砲',cost:390,up2:'acid2',gc:3120,rng:170,dmg:10,rate:.3,type:'fire',burn:26,acdT:3,axr:110,axm:5,c:TOXIC,dsc:'装甲に特効(約1.9倍)・酸が残り続けて削る。酸まみれの敵が倒れると酸爆発で周りも溶ける'},
 /* ⭐drn=**そこから飛び立つドローンの数**(2026-07-27ユーザー指示で作り替え)。
     ⚠それまでは multi:2 の「2体を同時に撃つ塔」で、機体は飾りだった。
     今は**機体1つ1つが敵を追いかけて、自分の射程(基地の半分)に入ったら撃つ**。
@@ -1498,7 +1509,7 @@ const TOWERS=[
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:76,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:7,slowT:5.6,c:'#9fd6e8',dsc:'凍結が長く、同じ敵を7回まで凍らせられる'},
  {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
- {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・極めて強い継続'},
+ {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・強い酸で削り、倒れた敵が大きな酸爆発を起こす'},
  {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
  {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
  {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
@@ -9449,7 +9460,8 @@ const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示)
 function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
  return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
-function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,frzUsed:0,burnT:0,burnD:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
+/* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
+function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,frzUsed:0,burnT:0,burnD:0,acdT:0,acdD:0,acdX:0,acdR:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
@@ -9728,6 +9740,18 @@ function killZ(C,z){
   if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:HEROC});
   if(C.isMe)sfx.eliteKill();
  }
+ /* ⭐**酸爆発**(2026-07-27ユーザー指示)。酸まみれのまま倒れると、体が弾けて周りの敵を溶かす。
+    ⚠**敵にだけ**当たる(部隊とコアには一切効かない)。⚠装甲は無視して通る(酸だから)。
+    ⚠先に acdX を消してから撒く=巻き込まれた敵がまた酸持ちでも、自分の酸は二度使われない。
+      連鎖そのものは起きてよい(酸を撒いた群れがまとめて溶けるのがこの塔の役目)。 */
+ if(z.acdX>0){const ax=z.acdX,ar=z.acdR||110;z.acdX=0;z.acdT=0;
+  for(const z2 of C.zombies){if(z2.dead||z2===z)continue;
+   if(dist(z2.px,z2.py,z.px,z.py)>ar)continue;
+   dmgZ(C,z2,ax,1);}
+  addFx(C,'ring',z.px,z.py,'',{r:ar,col:TOXIC});
+  addP(C,12,z.px,z.py-16*CH_UP,{sp:190,up:60,g:430,life:.6,r:3,col:TOXIC,jx:8,jy:7});
+  if(FXLV>0)addP(C,5,z.px,z.py,{sp:0,g:0,life:3.5,r:9,col:'#4a6b1e',typ:'stain',jx:ar*.5,jy:ar*.22});
+  if(C.isMe&&Math.random()<.45&&sfx.boom)sfx.boom();}
  /* 分裂で出てくる小型は、その敵と同じ生態系(=同じプール)の一番弱い個体にする */
  if(z.split){C.totalWave+=z.split;
   /* ⭐**弾けた瞬間に周りの部隊を巻き込む**(2026-07-27ユーザー指示)。
@@ -10057,6 +10081,10 @@ function campStep(C,dt,wave){
   if(z.lgT>0)z.lgT-=dt;
   if(z.burnT>0){z.burnT-=dt;z.hp-=z.burnD*dt;
    if(FXLV>0&&Math.random()<dt*9)addP(C,1,z.px,z.py-16*CH_UP,{sp:22,up:45,g:-70,life:.6,r:2.4,col:Math.random()<.5?'#ff9a3d':GOLD,jx:7,jy:9});
+   if(z.hp<=0&&!z.dead)killZ(C,z);}
+  /* ⭐酸。燃焼と違って**滴り落ちる**ので粒は下へ落とす。倒れた時の酸爆発は killZ 側 */
+  if(z.acdT>0&&!z.dead){z.acdT-=dt;z.hp-=z.acdD*dt;
+   if(FXLV>0&&Math.random()<dt*8)addP(C,1,z.px+rnd(-7,7),z.py-16*CH_UP,{sp:12,up:-10,g:260,life:.5,r:2.2,col:TOXIC,jx:5,jy:4});
    if(z.hp<=0&&!z.dead)killZ(C,z);}
   /* 歩行の土埃 */
   if(FXLV===2&&!z.dead&&z.d>0&&Math.random()<dt*(z.sp>140?2.2:.9))addP(C,1,z.px-4,z.py+2,{sp:16,g:-8,flat:1,life:.5,r:3.2,col:'#b9a67c',typ:'smoke'});
@@ -10388,7 +10416,10 @@ function campStep(C,dt,wave){
      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
      dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1);}
     if(FXLV>0)addFx(C,'ring',tg.px,tg.py,'',{r:sr,col:'#ff9a3d'});}
-   if(!tg.dead){tg.burnT=2+(tg.armor?1:0);tg.burnD=T.burn*m*aB*(1+(TRT&&TRT.k==='burn'?TRT.v*TL:0))*av;}
+   if(!tg.dead){const bd=T.burn*m*aB*(1+(TRT&&TRT.k==='burn'?TRT.v*TL:0))*av;
+    /* ⭐酸(axr持ち)は燃焼ではなく**酸**として乗せる=倒れた時に酸爆発が起きる */
+    if(T.axr){tg.acdT=T.acdT+(tg.armor?1:0);tg.acdD=bd;tg.acdX=bd*T.axm;tg.acdR=T.axr;}
+    else{tg.burnT=2+(tg.armor?1:0);tg.burnD=bd;}}
    /* ⚠火炎は連続で当たるので、鳴らしすぎないよう間引く(45msの制限も効く) */
    if(Math.random()<.35)twSfx(C,T);}
   else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
@@ -11488,6 +11519,8 @@ function renderCamp(C,t){
     if(tw.fireT>0){lite(SLOTS[si][0],SLOTS[si][1],95,.7);glow.push([SLOTS[si][0],SLOTS[si][1],86,.5,'255,214,120']);}}/* 発砲閃光 */
    for(const u of us2)if(u.fireT>0){lite(u.px,u.py-24*CH_UP,110,.8);glow.push([u.px,u.py-24*CH_UP,88,.42,'255,214,120']);}
    for(const z of C.zombies)if(z.burnT>0){lite(z.px,z.py-14*CH_UP,70,.6);glow.push([z.px,z.py-14*CH_UP,60,.3,'255,140,60']);}/* 燃えてる敵 */
+  /* ⭐酸まみれの敵は緑に光る=「こいつが倒れると弾ける」が見て分かるようにする */
+  for(const z of C.zombies)if(z.acdT>0)glow.push([z.px,z.py-14*CH_UP,54,.26,'150,230,60']);
    for(const e of C.fx){
     /* ⭐⚠**火球の上の暗がりを必ず外すこと**(2026-07-27 第106弾)。
        画面には時間帯の陰が掛かるので、`lite` の範囲が火球とずれていると
