@@ -43,6 +43,8 @@ const SFXT=OPT.indexOf('sfx')>=0;/* sfx = 🔊音の確認の画面 */
 const TTL=OPT.indexOf('title')>=0;/* title = タイトル画面をそのまま撮る */
 /* ⭐setup = 🧟ソロの出撃準備画面(ステージ/難易度/砲撃/英雄を選ぶ所)。2026-07-27に2列へ作り替えた */
 const STP=OPT.indexOf('setup')>=0;
+/* ⭐opt = ⚙オプション(音量バー+演出の強さ)。⚠title と一緒に渡すこと(例: "title+opt") */
+const OPTM=OPT.indexOf('opt')>=0;
 /* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
 const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 /* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため)
@@ -99,7 +101,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :STP?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.nmOK=1;META.st=["air","mgun","frost","napalm"];'
        +'META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.hero={hNox:1,hSf:1,hCop:1};'
        +'renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show("setup");')
-     :TTL?'META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'
+     :TTL?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'+(OPTM?'optRender();document.getElementById("md-opt").classList.add("on");':''))
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
        +'META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});'

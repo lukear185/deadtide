@@ -188,6 +188,7 @@ node test_shot.js out.png 852 393 iv             # 作戦タイム(準備画面)
 node test_shot.js out.png 852 393 re2            # 一度タイトルへ戻ってから2回目の出撃(2回目でしか出ない不具合用)
 node test_shot.js out.png 852 393 hero=all        # 英雄11人を経路に並べて撮る(見た目の確認)
 node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させて撮る(+nodep=出撃前のボタンだけ見る)
+node test_shot.js out.png 852 393 "title+opt"    # ⚙オプション(音量バー+演出の強さ)
 node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=twup lab=unup 記録は lab=rec
 node test_shot.js out.png 852 393 load           # 🎖編成
 node test_shot.js out.png 852 393 "gacha5+gbang" # 💎召集(gacha=撃て! / +gfly=弾が飛ぶ / +gbang=木っ端みじん+示唆 /
