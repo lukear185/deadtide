@@ -1414,7 +1414,10 @@ const TOWERS=[
  {id:'net',n:'ネット砲',cost:160,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  {id:'scrap',n:'廃品工房',cost:145,rng:0,dmg:0,rate:3,type:'eco',inc:8,up2:'scrap2',gc:700,c:'#b08d4f',dsc:'時間で⚙️を生産'},
  /* fspl=狙った敵の周りにも通る炎の広がり(px)。周りへは直撃の1/4だけ入る(2026-07-26ユーザー指示) */
- {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',burn:14,fspl:62,c:'#c96b35',dsc:'装甲に特効(約1.9倍)・継続燃焼・周りにも1/4'},
+/* ⭐cont=**継続攻撃**(2026-07-27ユーザー指示「連射ではなく継続攻撃に。何台も置くと重い」)。
+    狙っている間ずっと**1秒あたり dmg/rate** を与える=与える量は連射だった頃と同じで、
+    1発ごとの弾・演出が丸ごと消える。⚠この2つは⏩連射の強化代を持たない(下の twStats)。 */
+ {id:'flame',n:'火炎放射塔',cost:280,rng:145,dmg:8,rate:.14,type:'fire',cont:1,burn:14,fspl:62,c:'#c96b35',dsc:'炎を吹き続ける。装甲に特効(約1.9倍)・継続燃焼・周りにも1/4'},
  {id:'tesla',n:'テスラコイル',cost:340,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:TECH2,dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
  {id:'sniper',n:'スナイパー塔',cost:540,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い'},
@@ -1427,7 +1430,7 @@ const TOWERS=[
     ⚠並び順がそのまま研究所に出る順番。入れ替えると既存プレイヤーの解放済み(META.nt)が別のタワーを指す */
  /* heatN=同じ敵を撃ち続けて最大まで焼き切るのに要る発射数 / heatM=その時の威力の倍率(2026-07-26ユーザー指示)。
     ⚠別の敵に狙いが移った瞬間に0へ戻る=雑魚を薙ぐ塔ではなく「1体を焼き切る」塔になる */
- {id:'laser',n:'レーザー塔',cost:460,rng:360,dmg:9,rate:.1,type:'bullet',pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'高速連射・装甲貫通・同じ敵を撃ち続けると最大3倍まで威力が上がる'},
+ {id:'laser',n:'レーザー塔',cost:460,rng:360,dmg:9,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が最大3倍まで上がる'},
  {id:'acid',n:'酸噴射砲',cost:390,rng:170,dmg:10,rate:.3,type:'fire',burn:26,c:TOXIC,dsc:'装甲に特効(約1.9倍)・強い継続ダメージ'},
  {id:'drone',n:'ドローン基地',cost:500,rng:330,dmg:30,rate:.8,type:'bullet',multi:2,c:'#5f8fa3',dsc:'追尾ドローンが2体を叩く'},
  {id:'arty',n:'重砲台',cost:640,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
@@ -1485,25 +1488,34 @@ const USTAT_MAX=5;
 /* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0});
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0});
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,tw.us[st]||0));/* 盤面の強化は⚙️払い */
 /* 冷却塔だけは⚔攻撃の代わりに❄冷却回数を伸ばす(2026-07-25ユーザー指示。攻撃力を上げても意味が無い塔のため) */
 /* ⭐レーザー塔(heatNを持つ塔)は📡射程の代わりに🔥昇温速度を伸ばす(2026-07-26ユーザー指示)。
    射程はもともと初期値を1.2倍にしてあり、伸ばすより「早く最大倍率まで焼き切る」方が塔の役目に合う */
+/* ⭐**継続攻撃の2つは⏩連射の代わりに固有の強化代を持つ**(2026-07-27ユーザー選択)。
+   火炎放射塔=🔥継続ダメージ(燃焼の量) / レーザー塔=🔺最大倍率(焼き切った時の上限) */
 const twStats=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
  :TOWERS[ti].frzN?['f','r','g']
+ :TOWERS[ti].cont?(TOWERS[ti].heatN?['d','h','m']:['d','b','g'])
  :TOWERS[ti].heatN?['d','r','h']
  :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
-const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに13%短くなる(Lv5で20発→9発) */
 const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*((tw&&tw.us&&tw.us.h)||0))));
 const twFrzN=(T,tw)=>(T.frzN||0)+((tw&&tw.us&&tw.us.f)||0);/* 同じ敵を凍らせられる回数(最大5+5=10) */
+/* 最大倍率まで焼き切るのに要る**秒数**(継続攻撃なので発射数ではなく時間で見る) */
+const twHeatT=(T,tw)=>twHeatN(T,tw)*(T.rate||.1);
+/* 🔺最大倍率(レーザー塔): 1段ごとに+0.6倍(素3.0 → Lv5で6.0) */
+const twHeatM=(T,tw)=>(T.heatM||2)+.6*((tw&&tw.us&&tw.us.m)||0);
+/* 🔥継続ダメージ(火炎放射塔): 1段ごとに燃焼+25%(Lv5で2.25倍) */
+const twBurnM=tw=>1+.25*((tw&&tw.us&&tw.us.b)||0);
 const twChain=(T,tw)=>T.chain+((tw&&tw.us&&tw.us.c)||0);
-const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0):0));
+const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
 /* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
 const TR_COL=['rgba(255,235,150,','rgba(255,206,84,','rgba(255,150,60,','rgba(255,92,80,','rgba(206,120,255,','rgba(120,230,255,'];
 const HIT_COL=[GLOW,'#ffe08a','#ffc078','#ff9a8a','#e0b0ff','#c8f2ff'];
-const twTier=tw=>{const n=tw&&tw.us?(tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)):0;return n>=13?5:n>=10?4:n>=7?3:n>=4?2:n>=2?1:0;};
+const twTier=tw=>{const n=tw&&tw.us?(tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0)):0;return n>=13?5:n>=10?4:n>=7?3:n>=4?2:n>=2?1:0;};
 const twDmgM=tw=>1+.18*(tw.us?tw.us.d:0);
 const twRateM=tw=>1-.09*(tw.us?tw.us.r:0);
 const RNG_STEP=.13;/* 📡射程強化1段あたりの拡大率(2026-07-25: .08→.13へ拡大) */
@@ -7915,6 +7927,34 @@ function twTank(c,x,y,w,h,col){
  c.fillStyle=col;rr(c,x,y,w,h,w/2);c.fill();c.stroke();
  c.fillStyle=shade(col,.72);c.save();c.beginPath();c.rect(x+w*.45,y,w*.55,h);c.clip();rr(c,x,y,w,h,w/2);c.fill();c.restore();
 }
+/* ⭐継続攻撃(火炎放射塔・レーザー塔)の帯を描く(2026-07-27)。
+   ⚠**fx として毎フレーム積むと「何台も置くと重い」が直らない**ので、塔の描画で直に引く。
+   ⚠ここは世界座標(sx,sy=塔の位置)。塔本体の拡大(TW_SC)の**外**で呼ぶこと。 */
+function drawCont(c,T,sx,sy,tw,t){
+ const z=tw.ct;if(!z||!isFinite(z.px)||!isFinite(z.py))return;
+ const tx=z.px,ty=z.py-14*CH_UP;
+ const ang=Math.atan2(ty-sy,tx-sx),mx=sx+Math.cos(ang)*30,my=sy+Math.sin(ang)*30;
+ c.save();c.lineCap='round';
+ if(T.heatN){/* レーザー: 焼き切るほど太く白熱する */
+  const hk=clamp(tw.chg||0,0,1);
+  c.globalAlpha=.5;c.strokeStyle=hk>.5?'#ffaae1':'#e68ccd';
+  c.lineWidth=5+hk*7;c.beginPath();c.moveTo(mx,my);c.lineTo(tx,ty);c.stroke();
+  c.globalAlpha=.95;c.strokeStyle=hk>.5?'#fff0fa':'#ffcdee';
+  c.lineWidth=1.8+hk*3;c.beginPath();c.moveTo(mx,my);c.lineTo(tx,ty);c.stroke();
+  c.globalAlpha=.45+Math.sin(t*30)*.2;c.fillStyle=hk>.5?'#fff0fa':'#ffb0dd';
+  c.beginPath();c.arc(tx,ty,5+hk*6,0,7);c.fill();
+ }else{/* 火炎: 根元が細く先が広がる帯を3枚重ねる(⚠黒フチは付けない=炎は物ではなく光) */
+  const len=Math.min(dist(sx,sy,tx,ty)+18,(T.rng||150)*1.05);
+  c.translate(mx,my);c.rotate(ang);
+  const wob=Math.sin(t*22)*2.4,acid=T.id==='acid';
+  const band=(l,w0,w1,col,a)=>{c.globalAlpha=a;c.fillStyle=col;c.beginPath();
+   c.moveTo(0,-w0);c.lineTo(l,-w1);c.quadraticCurveTo(l+w1*.7,0,l,w1);c.lineTo(0,w0);c.closePath();c.fill();};
+  band(len,5,20+wob,acid?'#6f9c43':'#c9541f',.42);
+  band(len*.82,4,14+wob,acid?'#a8e05a':'#ff9a3d',.55);
+  band(len*.5,3,8,acid?'#dcf5a0':'#ffdd66',.66);
+ }
+ c.restore();c.globalAlpha=1;c.lineCap='butt';
+}
 function drawTower(c,ti,lv,x,y,ang,t,o){
  o=o||{};
  if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
@@ -9318,7 +9358,8 @@ function killZ(C,z){
   const bi=base<0?0:base;
   for(let i=0;i<z.split;i++)C.zombies.push(mkZ(zSpec(bi,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i)));}
 }
-function dmgZ(C,z,d,armorPierce){
+/* quiet=ダメージ数字と血を出さない(継続攻撃はまとめて1つ出すので毎フレーム湧かせない) */
+function dmgZ(C,z,d,armorPierce,quiet){
  if(z.dead)return;
  /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する */
  if((z.armor||z.scl)&&!armorPierce)d*=.45;
@@ -9331,7 +9372,7 @@ function dmgZ(C,z,d,armorPierce){
    if(G&&G.coop){const cg=Math.ceil(owe*COOP_PAY[Math.min(G.np,3)-1]);for(const P of G.players){P.scrap+=cg;P.enTotal+=cg;}}
    else{C.scrap+=owe;C.enTotal+=owe;}
    if(owe>=3)addFx(C,'txt',z.px+rnd(-10,10),z.py-58*CH_UP,'+'+owe+'⚙️');}}
- if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)));
+ if(!quiet&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)));
   if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28*CH_UP,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
@@ -9790,6 +9831,48 @@ function campStep(C,dt,wave){
    const ch=tg?clamp(1-tw.cd/cw,0,1):0;
    if(ch>0&&!(tw.chg>0)&&C.isMe)sfx.railChg();
    tw.chg=ch;
+  }
+  /* ⭐**継続攻撃**(火炎放射塔・レーザー塔)。狙っている間ずっと dps×dt を与える。
+     ⚠1発ごとの弾・銃口の閃光・曳光線を作らないので、何台置いても重くならない。
+     ⚠威力の総量は連射だった頃と同じ(dps = T.dmg / T.rate)。⏩連射が無いので twRateM は掛けない。
+     ⚠**絵は fx ではなく塔の描画で出す**(tw.ct=狙っている敵)=fxが毎フレーム積まれない。 */
+  if(T.cont){
+   tw.ct=tg||null;
+   if(!tg){tw.hz=null;tw.hs=0;tw.chg=0;tw.fireT=0;continue;}
+   tw.fireT=.12;
+   const TLc=twlv(twKey(T)),TRTc=TW_TRAIT[T.type],AMOc=AMMO[T.type==='bullet'?AMI:0];
+   const dps=(T.dmg/T.rate)*m*aB*AMOc.dm*(1+TW_DMG_STEP*TLc);
+   /* ⚠**ダメージ数字は毎フレーム出さない**(継続攻撃は1フレーム1回当たるので、そのままだと
+        数字と血が画面を埋めて「重い」が直らない)。0.35秒ぶんためて1つにまとめて出す。 */
+   const acc=(z0,dd)=>{tw.dacc=(tw.dacc||0)+dd;tw.dnT=(tw.dnT||0)-dt;
+    if(tw.dnT<=0){tw.dnT=.35;
+     if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){
+      addFx(C,'dmg',z0.px+rnd(-8,8),z0.py-44*CH_UP,''+Math.max(1,Math.round(tw.dacc)));
+      if(FXLV>0&&Math.random()<.5)addFx(C,'blood',z0.px,z0.py-28*CH_UP,'',{sd:rnd(0,9)});}
+     tw.dacc=0;}};
+   if(T.heatN){/* レーザー塔: 同じ敵を焼き続けるほど威力が上がる(最大 twHeatM 倍) */
+    const hn=twHeatN(T,tw);
+    if(tw.hz!==tg){tw.hz=tg;tw.hs=0;}else tw.hs=Math.min((tw.hs||0)+dt/T.rate,hn);
+    const hk=hn?(tw.hs||0)/hn:0;
+    tw.chg=hk;/* ⚠溜まり具合は chg に載せる=対戦の相手盤面にもそのまま流れる(レールガンと同じ枠) */
+    const dl=dps*dt*(1+(twHeatM(T,tw)-1)*hk);
+    dmgZ(C,tg,dl,(T.pierce||AMOc.pierce)?1:0,1);acc(tg,dl);
+    if(FXLV>0&&Math.random()<dt*14)addP(C,1,tg.px,tg.py-14*CH_UP,{sp:70,g:60,life:.2,r:1.8,col:hk>.5?'#fff0fa':'#ffb0dd'});
+   }else{/* 火炎放射塔: 装甲特効・燃焼・周りへ1/4 は今までどおり */
+    const av=tg.armor?FIRE_VS_ARMOR:1,df=dps*dt*av;
+    dmgZ(C,tg,df,1,1);acc(tg,df);
+    if(T.fspl){const sr=T.fspl*(1+.06*tw.us.g);
+     for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
+      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
+      dmgZ(C,z2,dps*dt*.25*(z2.armor?FIRE_VS_ARMOR:1),1,1);}}
+    if(!tg.dead){tg.burnT=Math.max(tg.burnT||0,2+(tg.armor?1:0));
+     tg.burnD=T.burn*m*aB*(1+(TRTc&&TRTc.k==='burn'?TRTc.v*TLc:0))*twBurnM(tw)*av;}
+    if(FXLV>0&&Math.random()<dt*16)addP(C,1,sx+Math.cos(tw.ang)*30,sy+Math.sin(tw.ang)*30,
+     {sp:110,a:tw.ang,spread:.35,g:-40,life:.35,r:3,col:T.id==='acid'?TOXIC:'#ff9a3d'});
+   }
+   /* ⚠音は鳴らしっぱなしにできないので0.3秒ごとに1回だけ */
+   tw.sfT=(tw.sfT||0)-dt;if(tw.sfT<=0){tw.sfT=.3;twSfx(C,T);}
+   continue;
   }
   if(tw.cd>0||!tg)continue;
   tw.cd=T.rate*twRateM(tw);tw.fireT=.12;
@@ -10514,7 +10597,9 @@ function renderCamp(C,t){
   /* ⭐タワーも大きく描く(第95弾)。⚠枠とタップ判定は変えないので、ここで拡大するだけ */
   else {c.save();c.translate(sx,sy);c.scale(TW_SC,TW_SC);
    drawTower(c,tw.ti,twPips(tw),0,0,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
-   c.restore();}
+   c.restore();
+   /* ⭐継続攻撃の炎/ビームは塔の外(世界座標)で引く */
+   if(tw.ct&&!(tw.jamT>0)&&TOWERS[tw.ti]&&TOWERS[tw.ti].cont)drawCont(c,TOWERS[tw.ti],sx,sy,tw,t);}
   }
   /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
   if(EDIT){const bad=edBad(si);
@@ -11202,7 +11287,11 @@ function openBM(si){
    let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
     +(st==='f'?(mx?'('+twFrzN(T,tw)+'回)':'('+twFrzN(T,tw)+'→'+(twFrzN(T,tw)+1)+'回)'):'')
     /* 🔥昇温速度は「最大倍率まで何発か」を出す=数字が減るほど良い、と分かるように */
-    +(st==='h'?(mx?'('+twHeatN(T,tw)+'発)':'('+twHeatN(T,tw)+'→'+twHeatN(T,{us:Object.assign({},tw.us,{h:(tw.us.h||0)+1})})+'発)'):'');
+    /* 🔥昇温速度は「最大倍率まで何秒か」を出す(継続攻撃になったので発射数ではなく時間) */
+    +(st==='h'?(mx?'('+twHeatT(T,tw).toFixed(1)+'秒)':'('+twHeatT(T,tw).toFixed(1)+'→'+twHeatT(T,{us:Object.assign({},tw.us,{h:(tw.us.h||0)+1})}).toFixed(1)+'秒)'):'')
+    /* 🔺最大倍率 / 🔥継続ダメージ も「今→強化後」を出す */
+    +(st==='m'?(mx?'(x'+twHeatM(T,tw).toFixed(1)+')':'(x'+twHeatM(T,tw).toFixed(1)+'→x'+twHeatM(T,{us:Object.assign({},tw.us,{m:lvv+1})}).toFixed(1)+')'):'')
+    +(st==='b'?(mx?'(x'+twBurnM(tw).toFixed(2)+')':'(x'+twBurnM(tw).toFixed(2)+'→x'+twBurnM({us:Object.assign({},tw.us,{b:lvv+1})}).toFixed(2)+')'):'');
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
    if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
    const pips='◆'.repeat(lvv)+'◇'.repeat(USTAT_MAX-lvv);
@@ -14329,7 +14418,7 @@ function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
  const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,sk:C.stkLv||0,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
  fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,ec:F.ecoN||1,up:Math.round(C.up||0),sk:(F.slk||[]).map(v=>v?1:0).join(''),
- tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0]:0),
+ tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
  es:F.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
  sh:F.shells.map(sh=>{const p=clamp(sh.t/sh.fl,0,1);return[Math.round(sh.x+(sh.tx-sh.x)*p),Math.round(sh.y+(sh.ty-sh.y)*p-Math.sin(Math.PI*p)*110)];})};
@@ -14340,7 +14429,7 @@ function packLane(C){
 function othersFor(j){const a=[];for(let k=0;k<G.players.length;k++){if(k===j)continue;const P=G.players[k];
  const o={j:k,n:P.name,hp:Math.ceil(P.core),mx:P.coreMax,dd:P.dead?1:0,pl:P.place,kw:P.killsWave,tw:P.totalWave,rd:P.ready?1:0,sh:Math.round(G.tide.shares[k]),en:Math.round(P.scrap)};
  if(!G.coop)o.ln={fd:Math.round(P.flagD),
-   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0]:0),
+   tws:P.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0]:0),
    es:P.zombies.filter(z=>z.d>-2).map(z=>[z.zi,Math.round(z.d),Math.round(clamp(z.hp/z.mhp,0,1)*100),z.eid,z.boss?1:0,z.sent?1:0,z.slowT>0?1:0,z.elite?1:0,z.frzT>0?1:0]),
    us:P.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0])};
  a.push(o);}return a;}
@@ -14357,7 +14446,7 @@ function normMe(m){const old=CS.meN;
   else if(o5<3&&n5>=3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,stkLv:m.sk||0,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
   uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ecoN:m.ec||1,up:m.up||0,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
-  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0},chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
+  towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0},ct:x[14]?{px:x[14],py:x[15]}:null,chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}
  CS.w=d.w;CS.ph=d.ph;CS.tI=d.tI;CS.ot=d.ot||[];CS.ts=d.ts||[];CS.pr=d.pr||0;CS.tu=d.tu||0;
@@ -14443,7 +14532,7 @@ function clientCamp(dt){
   if(!o.ln)continue;
   let sc=CS.oc[o.j];if(!sc)sc=CS.oc[o.j]=mkSpecCamp();
   sc.core=o.hp;sc.coreMax=o.mx||50;sc.dead=!!o.dd;sc.waveDone=false;sc.flagD=o.ln.fd;
-  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0},chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||0}:null);
+  sc.towers=(o.ln.tws||[]).map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0},ct:x[14]?{px:x[14],py:x[15]}:null,chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||0}:null);
   syncEnts(sc,o.ln.es||[],o.ln.us||[],dt);
  }
 }

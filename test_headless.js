@@ -786,65 +786,80 @@ function checkTwNew(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
  const me=G.players[0],si=AI_ORDER[0],[sx,sy]=SLOTS[si];
- /* ① 火炎放射塔: 狙った1体の周りにも1/4だけ通る */
- {const ti=TOWERS.findIndex(t=>t.id==='flame');
+ /* ① 火炎放射塔: 継続攻撃(狙っている間ずっと当たる)+狙った1体の周りにも1/4だけ通る
+    ⭐2026-07-27に**連射→継続攻撃**へ変えた。1発ぶんではなく**1秒あたり**で見る。 */
+ {const ti=TOWERS.findIndex(t=>t.id==='flame'),T=TOWERS[ti];
   if(ti<0){console.log('FAIL: 火炎放射塔が見つからない');process.exit(1);}
+  if(!T.cont){console.log('FAIL: 火炎放射塔が継続攻撃(cont)になっていない');process.exit(1);}
   me.scrap=99999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
   buildTower(me,si,ti);
   me.zombies.length=0;
   /* 塔の目の前に3体重ねて置く(px/pyはcampStepでしか入らないので1回回してから測る) */
   for(let k=0;k<3;k++){const z=mkZ(zSpec(0,1,5),projPath(sx,sy));z.hp=z.mhp=1e6;me.zombies.push(z);}
-  me.towers[si].cd=999;campStep(me,.001,G.wave);/* 座標だけ入れる(まだ撃たせない) */
+  campStep(me,.001,G.wave);/* 座標を入れる */
+  me.zombies.forEach(z=>{z.hp=z.mhp;z.burnT=0;z.burnD=0;});
   const hp0=me.zombies.map(z=>z.hp);
-  me.towers[si].cd=0;campStep(me,.001,G.wave);
-  const hit=me.zombies.map((z,i)=>hp0[i]-z.hp).filter(d=>d>0).sort((a,b)=>b-a);
+  /* ⚠燃焼が混ざると直撃と周囲の比が測れないので、測る間だけ燃焼を切る */
+  const bk=T.burn;T.burn=0;
+  const DT=.5;campStep(me,DT,G.wave);
+  T.burn=bk;
+  const hit=me.zombies.map((z,i)=>hp0[i]-z.hp).filter(d=>d>0).sort((x,y)=>y-x);
   if(hit.length<2){console.log('FAIL: 火炎放射塔が周りの敵に当たっていない(当たったのは'+hit.length+'体)');process.exit(1);}
   const r=hit[1]/hit[0];
   if(Math.abs(r-.25)>.02){console.log('FAIL: 火炎の周囲ダメージが直撃の1/4でない ('+(r*100).toFixed(1)+'%)');process.exit(1);}
-  console.log('火炎放射塔: 直撃'+hit[0].toFixed(1)+' + 周りの'+(hit.length-1)+'体へ'+hit[1].toFixed(1)+'(直撃の'+(r*100).toFixed(0)+'%) OK');
+  /* 1秒あたりの威力が「連射だった頃と同じ(dmg/rate)」であること */
+  const dpsWant=T.dmg/T.rate,dpsGot=hit[0]/DT;
+  if(Math.abs(dpsGot/dpsWant-1)>.06){console.log('FAIL: 継続攻撃のDPSが連射だった頃と違う '+dpsGot.toFixed(1)+' vs '+dpsWant.toFixed(1));process.exit(1);}
+  /* 強化の内訳: ⏩連射を消して🔥継続ダメージにした */
+  {const stl=twStats(ti);
+   if(stl.indexOf('r')>=0){console.log('FAIL: 火炎放射塔に⏩連射の強化が残っている');process.exit(1);}
+   if(stl.indexOf('b')<0){console.log('FAIL: 火炎放射塔に🔥継続ダメージの強化が無い');process.exit(1);}
+   if(!(twBurnM({us:Object.assign(newUs(),{b:USTAT_MAX})})>=2.2)){console.log('FAIL: 🔥継続ダメージLv5でも燃焼が2.2倍に届かない');process.exit(1);}}
+  console.log('火炎放射塔: 継続攻撃 毎秒'+dpsGot.toFixed(1)+' + 周りの'+(hit.length-1)+'体へ'+(hit[1]/DT).toFixed(1)+'(直撃の'+(r*100).toFixed(0)+'%)'+' / 強化=['+twStats(ti).map(x=>USTAT_L[x]).join(',')+'] OK');
  }
- /* ② レーザー塔: 同じ敵を撃ち続けると最大2倍・別の敵に移ると0に戻る */
+ /* ② レーザー塔: 継続攻撃。同じ敵を焼き続けると最大 heatM 倍・別の敵に移ると0に戻る
+    ⭐2026-07-27に**連射→継続攻撃**へ変えた。溜まり(tw.hs)は「発射数」ではなく
+      **経過時間を発射数に換算した値**(dt/T.rate ずつ増える)。 */
  {const ti=TOWERS.findIndex(t=>t.id==='laser'),T=TOWERS[ti];
   if(ti<0){console.log('FAIL: レーザー塔が見つからない');process.exit(1);}
+  if(!T.cont){console.log('FAIL: レーザー塔が継続攻撃(cont)になっていない');process.exit(1);}
   me.scrap=99999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
   buildTower(me,si,ti);
   me.zombies.length=0;
   const z=mkZ(zSpec(0,1,5),projPath(sx,sy));z.hp=z.mhp=1e9;me.zombies.push(z);
-  me.towers[si].cd=999;campStep(me,.001,G.wave);
+  campStep(me,.001,G.wave);
   const tw=me.towers[si];
-  /* 1発目(溜まり0)の被害量 */
-  tw.cd=0;let h0=z.hp;campStep(me,.001,G.wave);const d1=h0-z.hp;
-  /* heatN 発ぶん撃ち込んでから測る=最大まで焼き切った状態 */
-  for(let k=0;k<T.heatN+2;k++){tw.cd=0;campStep(me,.001,G.wave);}
-  tw.cd=0;h0=z.hp;campStep(me,.001,G.wave);const dMax=h0-z.hp;
-  if(tw.hs!==T.heatN){console.log('FAIL: レーザーの溜まりが上限に達しない '+tw.hs+'/'+T.heatN);process.exit(1);}
+  /* 溜まり0のときの1秒あたり */
+  tw.hz=null;tw.hs=0;let h0=z.hp;const DT=.02;campStep(me,DT,G.wave);const d1=(h0-z.hp)/DT;
+  /* 最大まで焼き切ってから測る */
+  const secs=twHeatT(T,tw);
+  for(let k=0;k<Math.ceil(secs/DT)+4;k++)campStep(me,DT,G.wave);
+  h0=z.hp;campStep(me,DT,G.wave);const dMax=(h0-z.hp)/DT;
+  if(Math.abs(tw.hs-T.heatN)>1e-6){console.log('FAIL: レーザーの溜まりが上限に達しない '+tw.hs+'/'+T.heatN);process.exit(1);}
   const mul=dMax/d1;
   if(Math.abs(mul-T.heatM)>.05){console.log('FAIL: レーザーが最大'+T.heatM+'倍にならない ('+mul.toFixed(2)+'倍)');process.exit(1);}
+  /* 1秒あたりの素の威力が「連射だった頃と同じ(dmg/rate)」であること */
+  if(Math.abs(d1/(T.dmg/T.rate)-1)>.06){console.log('FAIL: 継続攻撃のDPSが連射だった頃と違う '+d1.toFixed(1));process.exit(1);}
   /* 別の敵に移ったら0へ戻る */
   z.dead=true;z.hp=0;
   const z2=mkZ(zSpec(0,1,5),projPath(sx,sy));z2.hp=z2.mhp=1e9;me.zombies.push(z2);
-  tw.cd=999;campStep(me,.001,G.wave);
-  tw.cd=0;h0=z2.hp;campStep(me,.001,G.wave);const dNew=h0-z2.hp;
-  if(tw.hs!==0){console.log('FAIL: 別の敵に移っても溜まりが残っている hs='+tw.hs);process.exit(1);}
-  if(Math.abs(dNew-d1)>d1*.05){console.log('FAIL: 次の敵で威力が戻っていない '+dNew.toFixed(1)+' vs '+d1.toFixed(1));process.exit(1);}
-  /* ⭐強化の内訳(2026-07-26ユーザー指示): 📡射程を消して🔥昇温速度にした。射程は初期値を1.2倍にしてある */
+  campStep(me,.001,G.wave);
+  h0=z2.hp;campStep(me,DT,G.wave);const dNew=(h0-z2.hp)/DT;
+  if(dNew>d1*1.3){console.log('FAIL: 次の敵で威力が戻っていない '+dNew.toFixed(1)+' vs '+d1.toFixed(1));process.exit(1);}
+  /* ⭐強化の内訳(2026-07-27): 📡射程は🔥昇温速度・⏩連射は🔺最大倍率に置き換えてある */
   const stl=twStats(ti);
   if(stl.indexOf('g')>=0){console.log('FAIL: レーザー塔に📡射程の強化が残っている');process.exit(1);}
+  if(stl.indexOf('r')>=0){console.log('FAIL: レーザー塔に⏩連射の強化が残っている');process.exit(1);}
   if(stl.indexOf('h')<0){console.log('FAIL: レーザー塔に🔥昇温速度の強化が無い');process.exit(1);}
+  if(stl.indexOf('m')<0){console.log('FAIL: レーザー塔に🔺最大倍率の強化が無い');process.exit(1);}
   if(T.rng!==360){console.log('FAIL: レーザー塔の射程が初期の1.2倍(360)でない '+T.rng);process.exit(1);}
   if(T.heatM!==3){console.log('FAIL: レーザー塔の最大倍率が3でない '+T.heatM);process.exit(1);}
-  /* 🔥昇温速度を上げると、最大倍率まで要る発射数が減る */
-  const n0=twHeatN(T,{us:newUs()}),n5=twHeatN(T,{us:Object.assign(newUs(),{h:USTAT_MAX})});
-  if(!(n5<n0*.6)){console.log('FAIL: 🔥昇温速度を最大にしても発射数が十分減らない '+n0+'→'+n5);process.exit(1);}
-  /* 実際に少ない発射数で最大まで上がるか */
-  tw.us.h=USTAT_MAX;tw.hz=null;tw.hs=0;
-  const z3=me.zombies.find(q=>!q.dead);z3.hp=z3.mhp=1e9;
-  for(let k=0;k<n5+2;k++){tw.cd=0;campStep(me,.001,G.wave);}
-  tw.cd=0;let hb=z3.hp;campStep(me,.001,G.wave);const dFast=hb-z3.hp;
-  if(Math.abs(dFast/d1-T.heatM)>.06){console.log('FAIL: 🔥昇温速度Lv5で'+n5+'発撃っても最大倍率にならない ('+(dFast/d1).toFixed(2)+'倍)');process.exit(1);}
-  tw.us.h=0;
-  console.log('レーザー塔: 1発目'+d1.toFixed(1)+' → '+T.heatN+'発で'+dMax.toFixed(1)+'('+mul.toFixed(2)+'倍)・次の敵で'+dNew.toFixed(1)+'にリセット'
-   +' / 射程'+T.rng+' / 強化=['+stl.map(x=>USTAT_L[x]).join(',')+'] / 🔥昇温速度Lv5で'+n0+'発→'+n5+'発 OK');
+  if(!(twHeatM(T,{us:Object.assign(newUs(),{m:USTAT_MAX})})>=5.9)){console.log('FAIL: 🔺最大倍率Lv5でも6倍に届かない');process.exit(1);}
+  /* 🔥昇温速度を上げると、最大倍率まで要る秒数が減る */
+  const t0=twHeatT(T,{us:newUs()}),t5=twHeatT(T,{us:Object.assign(newUs(),{h:USTAT_MAX})});
+  if(!(t5<t0*.6)){console.log('FAIL: 🔥昇温速度を最大にしても秒数が十分減らない '+t0+'→'+t5);process.exit(1);}
+  console.log('レーザー塔: 継続攻撃 毎秒'+d1.toFixed(1)+' → '+t0.toFixed(1)+'秒で'+dMax.toFixed(1)+'('+mul.toFixed(2)+'倍)・次の敵でリセット'
+   +' / 射程'+T.rng+' / 強化=['+stl.map(x=>USTAT_L[x]).join(',')+'] / 🔥昇温速度Lv5で'+t0.toFixed(1)+'秒→'+t5.toFixed(1)+'秒 OK');
  }
  /* ③ 廃品工房 → 上級廃品工房への建て替え */
  {const ti=TOWERS.findIndex(t=>t.id==='scrap'),esi=ECO_BASE;
@@ -1132,16 +1147,24 @@ function checkFx2(){
  /* 撃破: 敵が倒れる(死体が残る) */
  {const k=run('grn',false,40);
   need(k,'corpse','倒した敵の死体が出ていない');}
- /* 火炎放射塔も炎の帯を吹く */
- {me.units.length=0;me.zombies.length=0;me.fx.length=0;me.scrap=99999;
-  const si=AI_ORDER[0],ti=TOWERS.findIndex(T=>T.id==='flame');
+ /* ⭐火炎放射塔・レーザー塔は**継続攻撃**(2026-07-27)。
+    ⚠fx を毎フレーム積むのをやめて塔の描画で直に引くようにしたので、**絵の検査は fx ではなく
+      「狙っている先(tw.ct)が入っているか」で見る**。ここを fx で見ていると、直した瞬間に落ちる。 */
+ for(const cid of ['flame','laser']){
+  me.units.length=0;me.zombies.length=0;me.fx.length=0;me.scrap=99999;
+  const si=AI_ORDER[0],ti=TOWERS.findIndex(T=>T.id===cid);
   me.towers[si]=null;const pu=me.unlocked;me.unlocked=ti+1;buildTower(me,si,ti);me.unlocked=pu;
   const base=projPath(SLOTS[si][0],SLOTS[si][1]);
   const z=mkZ(zSpec(zi,1,20),Math.max(20,base-40));z.hp=z.mhp=99999;me.zombies.push(z);
-  const kinds={};
-  for(let k2=0;k2<40;k2++){campStep(me,.05,G.wave);for(const e of me.fx)kinds[e.k]=(kinds[e.k]||0)+1;}
-  need(kinds,'flame','火炎放射塔の炎が出ていない');
+  const hp0=z.hp;let nfx=0;
+  for(let k2=0;k2<40;k2++){campStep(me,.05,G.wave);nfx=Math.max(nfx,me.fx.length);}
+  const tw=me.towers[si];
+  if(!tw.ct){console.log('FAIL: '+cid+' が狙っている先(tw.ct)を持っていない=継続攻撃の絵が出ない');process.exit(1);}
+  if(!(hp0-z.hp>0)){console.log('FAIL: '+cid+' の継続攻撃がダメージを与えていない');process.exit(1);}
+  /* ⚠**溜まる演出を作っていないこと**=何台も置くと重い問題の対策そのもの */
+  if(nfx>12){console.log('FAIL: '+cid+' が毎フレーム演出を積んでいる(最大'+nfx+'件)');process.exit(1);}
   me.towers[si]=null;}
+ console.log('継続攻撃: 火炎放射塔/レーザー塔 は狙い先を持ち、演出を積まない OK');
  /* 砲撃5種の着弾: 種類ごとに違う絵が出る */
  {me.units.length=0;me.zombies.length=0;
   const z=mkZ(zSpec(zi,1,10),PLEN*.5);z.hp=z.mhp=99999;me.zombies.push(z);
@@ -1431,13 +1454,14 @@ function checkTwFx(){
   return kinds;
  };
  const want={cryo:['ice','shock'],drone:['pel'],fort:['beam'],
-  shot:['spread'],laser:['beam'],plasma:['pboom'],gat:['tr'],rail:['beam','shock']};
+  /* ⚠レーザー塔は**継続攻撃**にしたので fx を出さない(絵は塔の描画で引く)=ここに入れない */
+  shot:['spread'],plasma:['pboom'],gat:['tr'],rail:['beam','shock']};
  for(const tid of Object.keys(want)){
   const k=run(tid,tid==='plasma'?140:60);
   for(const w of want[tid])if(!k[w]){
    console.log('FAIL: '+tid+' に '+w+' の絵が出ていない(出た絵='+(Object.keys(k).join(',')||'なし')+')');process.exit(1);}
   /* 撃ち方を分けたタワーが、汎用の曳光線(tr)に戻っていないこと */
-  if(['drone','fort','laser','rail'].indexOf(tid)>=0&&k.tr){
+  if(['drone','fort','rail'].indexOf(tid)>=0&&k.tr){
    console.log('FAIL: '+tid+' がまだ汎用の曳光線(tr)を出している');process.exit(1);}
  }
  /* ---- ドローンは常時2機が浮いて漂っている(2026-07-26 第68弾) ----
@@ -1494,14 +1518,14 @@ function checkTwFx(){
   if(typeof SFXB!=='undefined'&&!SFXB.railChg){console.log('FAIL: 充填音(railChg)が埋め込まれていない');process.exit(1);}
   console.log('レールガン: 充填0→'+maxChg.toFixed(2)+'→発射('+fired+'回)・ビームは'+beamLf.toFixed(2)+'秒(普通は'+FX_LIFE.beam+'秒) OK');}
  /* 発射音の使い回しが残っていないこと(要塞砲=重砲台 / 擲弾砲台=迫撃砲 / 冷却塔=凍結爆弾 だった) */
- {const ids=['fort','arty','mortar','gren','cryo','net','plasma','drone','laser','rail','gat'];
+ {const ids=['fort','arty','mortar','gren','cryo','net','plasma','drone','laser','rail','gat'];/* 発射音は継続攻撃の2つにも要る */
   const seen={};
   for(const id of ids){const k=TW_SFX[id];
    if(!k){console.log('FAIL: '+id+' に発射音が割り当てられていない');process.exit(1);}
    if(seen[k]){console.log('FAIL: '+id+' と '+seen[k]+' が同じ発射音('+k+')を使っている');process.exit(1);}
    seen[k]=id;
    if(typeof SFXB!=='undefined'&&!SFXB[k]){console.log('FAIL: 発射音 '+k+' が埋め込まれていない');process.exit(1);}}}
- console.log('タワーの撃ち方: 冷却塔/ドローン/要塞砲/ショットガン/レーザー/プラズマ が別々の絵・別々の音 OK');
+ console.log('タワーの撃ち方: 冷却塔/ドローン/要塞砲/ショットガン/プラズマ が別々の絵・別々の音 OK');
  backTitle();
 }
 function checkHook(){
