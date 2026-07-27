@@ -41,6 +41,8 @@ const LOAD=!!LDM,LOADT=(LDM&&LDM[1])||'base';
 const TRH=OPT.indexOf('trhome')>=0;/* trhome = 🏋鍛錬所のモーダル */
 const SFXT=OPT.indexOf('sfx')>=0;/* sfx = 🔊音の確認の画面 */
 const TTL=OPT.indexOf('title')>=0;/* title = タイトル画面をそのまま撮る */
+/* ⭐setup = 🧟ソロの出撃準備画面(ステージ/難易度/砲撃/英雄を選ぶ所)。2026-07-27に2列へ作り替えた */
+const STP=OPT.indexOf('setup')>=0;
 /* 例 z=fBeast,nmHorr = その敵だけを経路上に並べて撮る(見た目の確認用) */
 const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 /* 例 t=rail = そのタワーを最初の枠に建てて撃たせ続ける(発射エフェクトを撮るため)
@@ -94,6 +96,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :TUT?((OPT.indexOf('tutauto')>=0?'tutAuto();':'tutStart();')+'for(var q=0;q<'+TUTI+';q++)tutGo(TUT.i+1);')
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
+     :STP?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.nmOK=1;META.st=["air","mgun","frost","napalm"];'
+       +'META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.hero={hNox:1,hSf:1,hCop:1};'
+       +'renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show("setup");')
      :TTL?'META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */

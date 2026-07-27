@@ -105,6 +105,37 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .ver{position:fixed;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--paper);opacity:.6}
 /* ---- セットアップ/ロビー ---- */
 .setwrap{width:min(430px,92vw);display:flex;flex-direction:column;gap:12px}
+/* ⭐**出撃準備だけ画面を大きく使う**(2026-07-27ユーザー指示)。
+   ⚠それまで .setwrap は全画面共通の 430px 固定で、横画面(852px)では**左右に420pxの空きが出て**
+     縦にスクロールしないと「防衛開始」に届かなかった。
+   ⚠広げるのは #scr-setup だけ=オンライン対戦などの他画面は今までどおり。 */
+#scr-setup .setwrap{width:min(1040px,96vw)}
+/* ⚠**パネルの高さは「画面 - 下のボタン列」で切る**=88dvhにすると
+   ボタン列がはみ出して「防衛開始」が画面外に出る(実際に一度やった) */
+#scr-setup .setwrap{gap:8px}
+#scr-setup .panel{padding:12px 16px;max-height:calc(100dvh - 96px);overflow:auto}
+#scr-setup .stcols{display:grid;grid-template-columns:1fr 1fr;gap:2px 22px;align-items:start}
+#scr-setup .stcol{min-width:0}
+#scr-setup .nlbl{margin:8px 0 5px}
+/* 下のボタンも1列に積まず横に並べる。⚠「防衛開始」だけ広く取って押し間違えを防ぐ */
+#scr-setup .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+#scr-setup .btnrow .btn{flex:1 1 150px;padding:11px 12px}
+#scr-setup .btnrow #bt-start-solo{flex:2 1 220px}
+/* ⚠**縦画面と狭い画面では1列に戻す**=2列のままだとボタンの字が折り返して読めなくなる */
+@media (max-width:760px){
+ #scr-setup .stcols{grid-template-columns:1fr}
+ #scr-setup .btnrow .btn{flex:1 1 100%}
+}
+/* ⚠**横画面のスマホは高さが393pxしかない**。ここを詰めないと、幅を広げても結局スクロールになる */
+@media (max-height:470px){
+ #scr-setup .panel{padding:8px 12px}
+ #scr-setup .hd{font-size:19px;margin-bottom:2px}
+ #scr-setup #stg-sub{font-size:11px;line-height:1.35;margin-bottom:2px}
+ #scr-setup .nlbl{margin:5px 0 3px;font-size:11px}
+ #scr-setup .seg{gap:5px}
+ #scr-setup .seg .btn.sm{padding:5px 10px;font-size:13px;box-shadow:0 3px 0 var(--ink)}
+ #scr-setup .btnrow .btn{padding:8px 10px;font-size:15px}
+}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .codebig{font-size:44px;font-weight:900;letter-spacing:8px;text-align:center;background:var(--pane);border:3px dashed var(--ink);border-radius:14px;padding:8px}
 .lobbylist{display:flex;flex-direction:column;gap:6px}
@@ -236,6 +267,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 @keyframes bpop{0%{transform:scale(.3);opacity:0}30%{transform:scale(1.15);opacity:1}60%{transform:scale(1)}100%{opacity:1}}
 /* 建設メニュー */
 #buildmenu{position:absolute;z-index:8;display:none;background:rgba(36,31,25,.94);border:3px solid var(--paper);border-radius:14px;padding:8px;box-shadow:0 6px 0 #000;max-width:270px}
+#buildmenu{padding-top:8px}
+/* ⭐閉じる✕(2026-07-27)。⚠パネルは狭いので中身を押し下げず**右上に重ねる**。
+   ⚠指で押せる大きさ(32px)を確保する=小さいと閉じられないのと同じ */
+#buildmenu #bm-x{position:absolute;right:-10px;top:-12px;width:34px;height:34px;line-height:1;padding:0;
+ font-size:17px;font-weight:900;border-radius:50%;background:var(--paper);color:var(--ink);
+ border:3px solid var(--ink);box-shadow:0 3px 0 #000;z-index:2}
 #buildmenu .bm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #buildmenu .bm-col{display:flex;flex-direction:column;gap:5px;margin:6px 0}
 /* ⚠旧 #lab-items{max-height:52vh} は削除した。.bpbody(flexで残り全部)より後ろに残っていると
@@ -524,12 +561,17 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="panel">
       <h2 class="hd" id="stg-hd">🏕 ステージ1 — 廃線ハイウェイ</h2>
       <p class="note" id="stg-sub" style="margin-bottom:6px">押し寄せる死潮からWAVE20を守り切ればクリア。5波ごとにボスが来る。</p>
-      <p class="note" style="margin:10px 0 6px">ステージ</p>
+      <!-- ⭐横画面は幅が余っていたので**2列**にした(2026-07-27ユーザー指示
+           「この画面を画面を大きく使って見やすくわかりやすい感じにして」)。
+           ⚠縦画面と狭い画面では1列に戻る(CSS側のメディアクエリ)。 -->
+      <div class="stcols">
+      <div class="stcol">
+      <p class="note nlbl">ステージ</p>
       <div class="seg" id="seg-stage">
         <button class="btn sm sel" data-v="0">1 廃線ハイウェイ</button>
         <button class="btn sm" data-v="1" id="stg-b1">2 沈んだ港</button>
       </div>
-      <p class="note" style="margin:10px 0 6px">敵の強さ</p>
+      <p class="note nlbl">敵の強さ</p>
       <div class="seg" id="seg-diff">
         <button class="btn sm" data-v="0">新兵</button>
         <button class="btn sm" data-v="1">兵長</button>
@@ -539,16 +581,22 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <button class="btn sm" id="dif-nm" data-v="5" style="display:none;background:var(--nm);color:var(--danger2);border-color:var(--nm2)">🌑ナイトメア</button>
       </div>
       <p class="note" id="nm-note" style="margin:6px 0 0;font-size:11px;color:var(--danger2);display:none">🌑 敵の生態系が一新される。獣の群れが来る。</p>
-      <p class="note" style="margin:10px 0 6px">装備砲撃(研究所で新型を解放)</p>
+      </div>
+      <div class="stcol">
+      <p class="note nlbl">装備砲撃(研究所で新型を解放)</p>
       <div class="seg" id="seg-stk"></div>
-      <p class="note" style="margin:10px 0 6px">🦸 連れて行く英雄(💎英雄召集で入手・1ゲーム1回だけ出撃できる)</p>
+      <p class="note nlbl">🦸 連れて行く英雄(💎英雄召集で入手・1ゲーム1回だけ出撃できる)</p>
       <div class="seg" id="seg-hero"></div>
+      </div>
+      </div>
     </div>
+    <div class="btnrow">
     <button class="btn" id="bt-load">🎖 編成</button>
     <button class="btn gold" id="bt-lab">🔬 研究所 <span id="lab-pts"></span></button>
     <button class="btn gold" id="bt-run-resume" style="display:none">▶ 続きから</button>
     <button class="btn red" id="bt-start-solo">🧟 防衛開始!</button>
     <button class="btn" id="bt-back1">← もどる</button>
+    </div>
   </div>
 </div>
 
@@ -1030,23 +1078,32 @@ const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN
 /* ⭐2026-07-27ユーザー指示で**研究所の値段を全体的に上げた**(1.5倍→さらに1.8倍=素の2.7倍)。
    さらに同日、**タワー/部隊タブだけ1段ごとの伸び方を x1.13→x1.20 に**した(LAB_TW/LAB_UN)。
    ⚠検査 checkLabSteps() は「1本フルが20,000🧬を超えない/全部取りが60,000🧬を下回らない」を見ている。 */
-const LAB_NT=k=>Math.round(720*Math.pow(1.2,k));/* k個目のタワー解放価格 */
-const LAB_NU=k=>Math.round(342*Math.pow(1.14,k));/* k個目の兵科解放価格 */
+const LAB_NT=k=>Math.round(430*Math.pow(1.2707,k));/* k個目のタワー解放価格 430/546/694…3,715 */
+const LAB_NU=k=>Math.round(200*Math.pow(1.1726,k));/* k個目の兵科解放価格 200/235/275…4,123 */
 /* ⭐**砲撃は順番に解放する**(2026-07-27ユーザー指示「砲撃のタブは新種タブに移動して順番に開放に、順番に強さも変えて」)。
    ⚠**並び=強さの順**。1つ前より必ず強くなるように数値も置き直してある(airstrikeHit)。
    air(初期から持っている) → 掃射 → 凍結 → ナパーム → 絨毯。 */
 const STK_ORDER=['mgun','frost','napalm','carpet'];
 const LAB_STK=[300,600,1000,1600];/* k個目の解放価格 */
 const stkNext=()=>STK_ORDER.find(k=>(META.st||[]).indexOf(k)<0)||'';
-const LAB_SC=lv=>Math.round(216*Math.pow(1.5,lv));  /* 初期⚙️+40(最大5) */
-const LAB_HP=lv=>Math.round(270*Math.pow(1.5,lv)); /* コアHP+5(最大5) */
+/* ⭐⭐**2026-07-27に「序盤だけ安く」揃え直した**(ユーザー指示
+     「そんなに強くない奴が高すぎたり、レベル1→2の時点で高すぎるとかがある。
+       レベル低い時点の必要数は下げて、中盤以降は今のまま」)。
+   ⭐やり方=**最終段の値段は1🧬も動かさず、1段目だけ下げて、その分だけ伸び率を上げる**。
+     こうすると「序盤は軽い / 伸ばし切る重さは今までどおり」が同時に成り立つ。
+   ⚠**値段を効果に見合わせること**。それまでは5段しかない永久強化(コアHP+5など)の1段目が
+     189〜486🧬もあり、**20段刻みのタワー個別強化(81🧬で威力+5%)より1段が3〜6倍高かった**。
+     「弱いものが高い」の正体はこれ。1段目は効果の強さ順に 90〜330🧬 へ揃えてある。
+   ⚠数字を触ったら **node test_headless.js**(checkLabSteps/checkLabMul)を必ず流すこと。 */
+const LAB_SC=lv=>Math.round(96*Math.pow(1.8373,lv));  /* 初期⚙️+40(最大5) 96/176/324/595/1094 */
+const LAB_HP=lv=>Math.round(110*Math.pow(1.8776,lv)); /* コアHP+5(最大5) 110/207/388/728/1367 */
 /* ---- 序盤・中盤から効く永久強化(安く・すぐ効く) ---- */
-const LAB_UP0=lv=>Math.round(189*Math.pow(1.45,lv)); /* 開始🔩+6(最大5) */
-const LAB_CD0=lv=>Math.round(243*Math.pow(1.5,lv));  /* 出撃の待ち時間-6%(最大5) */
-const LAB_EC0=lv=>Math.round(230*Math.pow(1.5,lv));  /* 廃品工房の産出+12%(最大5) */
-const LAB_SL0=lv=>Math.round(351*Math.pow(1.6,lv)); /* 建設スロット初期+1(最大4) */
-const LAB_PY0=lv=>Math.round(297*Math.pow(1.55,lv));/* 撃破報酬+6%(最大5) */
-const LAB_UU0=lv=>Math.round(486*Math.pow(1.8,lv)); /* 開始時の部隊枠+1(最大2) */
+const LAB_UP0=lv=>Math.round(90*Math.pow(1.7453,lv)); /* 開始🔩+6(最大5) 90/157/274/478/835 */
+const LAB_CD0=lv=>Math.round(105*Math.pow(1.85,lv));  /* 出撃の待ち時間-6%(最大5) 105/194/359/665/1230 */
+const LAB_EC0=lv=>Math.round(100*Math.pow(1.8471,lv));  /* 廃品工房の産出+12%(最大5) 100/185/341/630/1164 */
+const LAB_SL0=lv=>Math.round(150*Math.pow(2.1243,lv)); /* 建設スロット初期+1(最大4) 150/319/677/1438 */
+const LAB_PY0=lv=>Math.round(130*Math.pow(1.9055,lv));/* 撃破報酬+6%(最大5) 130/248/472/899/1714 */
+const LAB_UU0=lv=>Math.round(330*Math.pow(2.6515,lv)); /* 開始時の部隊枠+1(最大2) 330/875 */
 const metaPay=()=>soloMeta()?1+.06*(META.py0||0):1;
 const metaCd=()=>soloMeta()?1-.06*(META.cd0||0):1;
 const metaEco=()=>soloMeta()?1+.12*(META.ec0||0):1;
@@ -1990,13 +2047,13 @@ const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 20段で 近接+60
    1種フル= タワー約15,123🧬 / 兵科約11,014🧬(1回の出撃で入るのが約2,500〜6,600🧬)。
    ⚠**全部取ると約50万🧬**=**全部埋める前提の数字ではない**。何を伸ばすか選ぶこと。
    ⚠⚠**値段を変えたら test_headless.js の checkLabSteps() の上限も一緒に直す**(片方だけだと落ちる)。 */
-const LAB_TW=lv=>Math.round(81*Math.pow(1.20,lv));/* 81…2,588 = 1種フル約15,123 */
-const LAB_UN=lv=>Math.round(59*Math.pow(1.20,lv));/* 59…1,885 = 1種フル約11,014 */
+const LAB_TW=lv=>Math.round(48*Math.pow(1.2335,lv));/* 48/59/73/90…2,588 = 1種フル約13,465 */
+const LAB_UN=lv=>Math.round(35*Math.pow(1.2334,lv));/* 35/43/53/66…1,885 = 1種フル約9,809 */
 /* ⭐🎯砲撃の威力(2026-07-26ユーザー指示)。今までは砲撃だけ**研究所で一切強化できなかった** */
 const STK_MAX=20,STK_STEP=.04;/* 20段・+4%/段 = 最大×1.80(タワー/兵科と同じ刻みに揃えた) */
 /* ⚠2026-07-27に x1.13→**x1.15**(ユーザー指示「砲撃の威力の必要Pは**少しだけ**増やして」)。
    タワー/部隊は x1.20 まで上げたが、砲撃は1項目で全砲撃に効くので上げ幅を小さくしてある。 */
-const LAB_ST0=lv=>Math.round(162*Math.pow(1.15,lv));/* 162…2,306 = フル約16,596 */
+const LAB_ST0=lv=>Math.round(90*Math.pow(1.1861,lv));/* 90/107/127…2,306 = フル約14,211 */
 /* そのタワー/兵科の強化Lv。⚠ソロ専用メタ(協力/対戦とクライアントでは必ず0) */
 /* ⭐強化を引くキー。**工房の3段(廃品工房/上級/プラント)は1つの枠を共有する**
    =建て替えで強化が無駄にならないため。⚠支援施設(sup)は強化しない(タワーの性能に触らない約束) */
@@ -12361,7 +12418,12 @@ function openBM(si){
    :(nx9>=0?`<div class="cdsc" style="font-size:12px;color:var(--gold)">⬆ 強化を全部MAXにすると『${TOWERS[nx9].n}』へ進化できる(⚙️${fmt(T_GCOST(tw.ti))})</div>`:'');
   h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div>${grd}<div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
  }
- bm.innerHTML=IC(h);
+ /* ⭐**必ず閉じられる✕を付ける**(2026-07-27ユーザー指摘
+      「チュートリアル中にタレット強化する時、強化ウィンドウが消せない」)。
+    ⚠それまで閉じる手段は**盤面の何も無い所をタップする**だけだった。
+      チュートリアル中は光っているマス以外を押させない作りなので、**閉じる術が無くなっていた**。
+    ⚠✕は下の TUT_FREE にも入れてある=チュートリアル中でも必ず押せる。 */
+ bm.innerHTML='<button id="bm-x" class="xbtn" aria-label="閉じる">✕</button>'+IC(h);
  bm.querySelectorAll('[data-th]').forEach(cc=>{cc.getContext('2d').drawImage(THUMBS[+cc.dataset.th],0,0);});
  bm.querySelectorAll('[data-bd]').forEach(b=>{b.onclick=()=>{actBuild(si,+b.dataset.bd);closeBM();};});
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
@@ -12370,6 +12432,7 @@ function openBM(si){
  const be=$('bm-eco');if(be)be.onclick=()=>{actEcoSlot();closeBM();};
  const bs2=$('bm-sup');if(bs2)bs2.onclick=()=>{actSupSlot();closeBM();};
  const bl=$('bm-slot');if(bl)bl.onclick=()=>{actSlot(si);closeBM();};
+ const bx=$('bm-x');if(bx)bx.onclick=()=>{closeBM();};
  const [px,py]=mapToClient(SLOTS[si][0],SLOTS[si][1]);
  bm.style.display='block';
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
@@ -12876,7 +12939,9 @@ function tutHold(){return !!(TUT&&TUT.on&&!TUT.ran);}/* 作戦タイムの残り
      ④盤面(canvas)のうち、その段でやらせている操作にあたるタップ
    ⚠**リザルトが出ている時は全部通す**。1波目で負けた時に閉じられなくなると詰む。 */
 /* ⚠ゲームを止めて「閉じるまで待つ」もの=どの段でも必ず押せるようにする(下の tutPass を見ること) */
-const TUT_FREE='#md-intro';
+/* ⚠**チュートリアル中でも必ず押させるもの**。閉じられないと詰むUIはここに入れる。
+   #md-intro=新登場の紹介(閉じるまでPAUSED) / #bm-x=建設・強化ウィンドウの✕(2026-07-27に追加) */
+const TUT_FREE='#md-intro,#bm-x';
 function tutPass(e){
  if(!TUT||!TUT.on)return true;
  const t=e&&e.target;if(!t||!t.closest)return true;
