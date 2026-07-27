@@ -1705,7 +1705,7 @@ function checkGacha(){
  if(META.hero[h5.id]!==2){console.log('FAIL: 所持数が増えていない');process.exit(1);}
  if(META.hmat<=m0){console.log('FAIL: 重複が鍛錬素材になっていない');process.exit(1);}
  /* ボス撃破の💎付与(通常1/最終3)が定義されているか */
- if(!(GEM_BOSS===1&&GEM_FIN===3)){console.log('FAIL: ボスの魔石量が想定と違う');process.exit(1);}
+ if(!(GEM_BOSS===2&&GEM_FIN===6)){console.log('FAIL: ボスの魔石量が想定と違う');process.exit(1);}
  console.log('ガチャ: 英雄11種(★1x5/★2x3/★3/★4/★5)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
  META.gem=0;META.hero={};META.hmat=0;
 }
