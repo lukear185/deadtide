@@ -1975,7 +1975,10 @@ const STAGE_W=20;/* 協力/対戦(難易度で長さが変わらない側)の最
 const diffW=d=>(D5[d]||D5[2]).w;
 const curW=()=>(G&&G.pve&&!G.coop&&G.pveDiff!=null)?diffW(G.pveDiff):STAGE_W;
 const FIRE_VS_ARMOR=1.9;/* 火炎放射塔の装甲特効(装甲持ちへの直撃と燃焼の倍率) */
-const ELEC_VS_SCALE=1.9;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
+const ELEC_VS_SCALE=1.9;
+/* ⭐電撃が次の敵へ跳べる距離(テスラコイル・重テスラで共通)。
+   2026-07-27ユーザー指示で150→180(1.2倍)。⚠**2つの塔で同じ値を使う**ので必ずここだけを直すこと */
+const ARC_HOP=180;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
 const IV_SEC=20;/* 作戦タイムの秒数 */
 /* 部隊1体が同時に足止めできる敵の数。⭐**すり抜け敵を止められる兵科(hook)だけ枠が広い**
    =すり抜け敵は普通の部隊では止められないので、3体で埋まると4体目から素通りしてしまう。
@@ -10391,8 +10394,8 @@ function campStep(C,dt,wave){
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
     let nx=null,bd=1e9;
-    for(const z of C.zombies){if(z.dead||hitl.includes(z))continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<150&&dd<bd){bd=dd;nx=z;}}
-    if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===cur)continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<150&&dd<bd){bd=dd;nx=z;}}}
+    for(const z of C.zombies){if(z.dead||hitl.includes(z))continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
+    if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===cur)continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
     if(!nx)break;
     dmgZ(C,nx,dm*Math.pow(.85,k)*(nx.scl?ELEC_VS_SCALE:1),1);if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
    addFx(C,'zap',sx,sy,'',{pts,sd:rnd(0,9)});
@@ -10489,8 +10492,8 @@ function campStep(C,dt,wave){
     addFx(C,'zap',a.x,a.y,'',{pts:[[a.x,a.y],[a.cur.px,a.cur.py]],sd:rnd(0,9),wm:1});
     dmgZ(C,a.cur,a.dm*(a.cur.scl?ELEC_VS_SCALE:1),1);a.k++;continue;}
    let nx=null,bd=1e9;
-   for(const z of C.zombies){if(z.dead||a.hitl.includes(z))continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<150&&dd<bd){bd=dd;nx=z;}}
-   if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===a.cur)continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<150&&dd<bd){bd=dd;nx=z;}}}
+   for(const z of C.zombies){if(z.dead||a.hitl.includes(z))continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
+   if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===a.cur)continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
    if(!nx){a.dead=true;break;}
    const gm=Math.min(Math.pow(a.grow,a.k),a.gmax);
    addFx(C,'zap',a.cur.px,a.cur.py,'',{pts:[[a.cur.px,a.cur.py],[nx.px,nx.py]],sd:rnd(0,9),wm:.7+gm*.34});
