@@ -1532,28 +1532,44 @@ function checkHook(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
  const me=G.players[0];
- const ci=UNITS.findIndex(u=>u.hook),zi=ZOMBIES.findIndex(z=>z.noblock&&!z.nm&&!z.st);
- if(ci<0||zi<0){console.log('FAIL: 鎖使い/すり抜け敵が見つからない');process.exit(1);}
- me.units.length=0;me.zombies.length=0;
- /* 鎖使いを1体だけ置き、その目の前にすり抜け敵をENG_HOOK体ぴったり重ねる */
- me.uUn=Math.max(me.uUn,ci+1);me.ucd[ci]=0;me.scrap=9999;
- if(!deployUnit(me,ci)){console.log('FAIL: 鎖使いが出せない');process.exit(1);}
- const u=me.units[0];u.d=PLEN*.5;
- /* ⚠ここは ENG_HOOK ではなく実数で書く。定数を使うと「上限を下げただけ」でもテストが通ってしまう */
- const NEED=6;
- for(let k=0;k<NEED;k++){const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);}
- const d0=me.zombies.map(z=>z.d);
- for(let k=0;k<40;k++)campStep(me,.03,G.wave);
- /* 敵はdが増える向き(0=侵入口→PLEN=コア)に進む。足止めできていればdはほとんど増えない */
- const slipped=me.zombies.filter((z,i)=>z.d-d0[i]>18).length;
- if(slipped){console.log('FAIL: 鎖使いが居るのにすり抜け敵が'+slipped+'/'+NEED+'体 素通りした');process.exit(1);}
- /* 逆に、上限を超えたぶんは素通りしてよい(鎖使い1体が無限に抱えないこと) */
- while(me.zombies.length<ENG_HOOK+4){const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);}
- const ex=me.zombies.slice(ENG_HOOK),e0=ex.map(z=>z.d);
- for(let k=0;k<40;k++)campStep(me,.03,G.wave);
- const through=ex.filter((z,i)=>z.d-e0[i]>18).length;
- if(!through){console.log('FAIL: 鎖使い1体が上限(ENG_HOOK='+ENG_HOOK+')を超えて抱えている');process.exit(1);}
- console.log('鎖使い: 重なったすり抜け敵'+ENG_HOOK+'体を全部足止め・超過分'+through+'体は素通り OK');
+ const zi=ZOMBIES.findIndex(z=>z.noblock&&!z.nm&&!z.st);
+ const hooks=[];UNITS.forEach((u,i)=>{if(u.hook)hooks.push(i);});
+ if(!hooks.length||zi<0){console.log('FAIL: すり抜けを止められる兵科/すり抜け敵が見つからない');process.exit(1);}
+ /* ⭐**すり抜け敵を止められる兵科は複数ある**(2026-07-27ユーザー指示で鎖使い以外にも増やした)。
+    hook の値がそのまま「同時に抱えられる数」。⚠専門の鎖使いが一番広いこと。 */
+ if(hooks.length<3){console.log('FAIL: すり抜けを止められる兵科が少なすぎる('+hooks.length+'種)');process.exit(1);}
+ const ci=UNITS.findIndex(u=>u.id==='chain');
+ if(ci<0||UNITS[ci].hook!==Math.max(...hooks.map(i=>UNITS[i].hook))){
+  console.log('FAIL: 専門の鎖使いが一番多く抱えられていない');process.exit(1);}
+ const names=[];
+ for(const ui of hooks){
+  const N=UNITS[ui].hook;
+  me.units.length=0;me.zombies.length=0;
+  me.uUn=Math.max(me.uUn,ui+1);me.ucd[ui]=0;me.scrap=999999;
+  if(!deployUnit(me,ui)){console.log('FAIL: '+UNITS[ui].n+' が出せない');process.exit(1);}
+  const u=me.units[me.units.length-1];u.d=PLEN*.5;u.hp=u.mhp=1e9;
+  /* ⚠**上限ぴったり**を重ねて、1体も素通りしないこと */
+  for(let k=0;k<N;k++){const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);}
+  const d0=me.zombies.map(z=>z.d);
+  for(let k=0;k<40;k++)campStep(me,.03,G.wave);
+  const slipped=me.zombies.filter((z,i)=>z.d-d0[i]>18).length;
+  if(slipped){console.log('FAIL: '+UNITS[ui].n+' が居るのにすり抜け敵が'+slipped+'/'+N+'体 素通りした');process.exit(1);}
+  /* 逆に、上限を超えたぶんは素通りしてよい(1体が無限に抱えないこと) */
+  while(me.zombies.length<N+4){const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);}
+  const ex=me.zombies.slice(N),e0=ex.map(z=>z.d);
+  for(let k=0;k<40;k++)campStep(me,.03,G.wave);
+  const through=ex.filter((z,i)=>z.d-e0[i]>18).length;
+  if(!through){console.log('FAIL: '+UNITS[ui].n+' 1体が上限('+N+')を超えて抱えている');process.exit(1);}
+  names.push(UNITS[ui].n+N+'体');
+ }
+ /* 普通の兵科ではすり抜け敵を止められないこと(hookの意味が消えていないか) */
+ {const ni=UNITS.findIndex(u=>!u.hook&&u.type==='melee');
+  me.units.length=0;me.zombies.length=0;me.uUn=Math.max(me.uUn,ni+1);me.ucd[ni]=0;me.scrap=999999;
+  deployUnit(me,ni);const u=me.units[me.units.length-1];u.d=PLEN*.5;u.hp=u.mhp=1e9;
+  const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);const d0=z.d;
+  for(let k=0;k<40;k++)campStep(me,.03,G.wave);
+  if(z.d-d0<=18){console.log('FAIL: hookを持たない'+UNITS[ni].n+'がすり抜け敵を止めている');process.exit(1);}}
+ console.log('すり抜けを止める兵科: '+names.join(' / ')+' — 上限ぴったりまで足止め・超過分は素通り・他の兵科は素通り OK');
  backTitle();
 }
 /* ---- 研究所の進化: どの兵科からでも選べるか / 大幅に強くなるか ---- */

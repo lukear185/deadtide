@@ -1581,7 +1581,7 @@ const UNITS=[
  {id:'bat',n:'バット',cost:24,cd:2.2,hp:312,atk:22,rate:.7,rng:36,sp:72,type:'melee',c:GOLD2,dsc:'基本の殴り屋'},
  {id:'hnd',n:'猟犬',cost:20,cd:3,hp:156,atk:14,rate:.5,rng:34,sp:150,type:'melee',c:'#8a6a45',dsc:'速い・安い・噛む'},
  /* 序盤の壁役。攻撃はほとんど無いが、とにかく硬くて足を止める(2026-07-25追加) */
- {id:'big',n:'巨漢',cost:26,cd:7,hp:450,atk:11,rate:1.2,rng:40,sp:44,type:'melee',c:'#a1704a',dsc:'素手の壁。硬いが火力は無い'},
+ {id:'big',n:'巨漢',cost:26,cd:7,hp:450,atk:11,rate:1.2,rng:40,sp:44,type:'melee',hook:2,c:'#a1704a',dsc:'素手の壁。硬いが火力は無い。這う敵も掴んで止める(2体)'},
  {id:'gun',n:'ガンナー',cost:44,cd:4,hp:215,atk:45,rate:.8,rng:220,sp:56,type:'bullet',c:'#5c7d8a',dsc:'基本の射撃手'},
  {id:'shd',n:'盾持ち',cost:60,cd:6,hp:4500,atk:3,rate:1,rng:36,sp:46,type:'melee',c:STEEL,dsc:'攻撃力は皆無。ただひたすら硬い本物の壁'},
  {id:'mol',n:'火炎瓶',cost:72,cd:7,hp:310,atk:75,rate:1.6,rng:180,sp:50,type:'fire',aoe:70,burn:12,c:'#c96b35',dsc:'範囲燃焼・装甲無視'},
@@ -1594,10 +1594,10 @@ const UNITS=[
  {id:'rkt',n:'ロケラン',cost:168,cd:12,hp:560,atk:408,rate:2.4,rng:300,sp:42,type:'blast',aoe:100,c:'#7a7f6a',dsc:'範囲爆撃'},
  /* ↓基本兵科の拡張分 */
  {id:'spr',n:'斥候',cost:28,cd:3.5,hp:145,atk:27,rate:.45,rng:120,sp:120,type:'bullet',c:'#9c8f5c',dsc:'俊足の拳銃使い'},
- {id:'chain',n:'鎖使い',cost:42,cd:5,hp:470,atk:30,rate:1,rng:64,sp:56,type:'melee',hook:1,c:'#7a6a8f',dsc:'すり抜ける敵も鎖で引きずり出して足止めする'},
+ {id:'chain',n:'鎖使い',cost:42,cd:5,hp:470,atk:30,rate:1,rng:64,sp:56,type:'melee',hook:8,c:'#7a6a8f',dsc:'すり抜ける敵を鎖で引きずり出す。8体まで同時に足止め'},
  {id:'axe',n:'斧使い',cost:52,cd:5,hp:390,atk:48,rate:1.1,rng:38,sp:64,type:'melee',c:'#a0623a',dsc:'一撃が重い近接'},
  {id:'smg',n:'短機関銃',cost:68,cd:5.5,hp:240,atk:23,rate:.3,rng:190,sp:60,type:'bullet',c:'#7a8a5c',dsc:'手数で押す連射手'},
- {id:'pike',n:'長槍兵',cost:80,cd:6.5,hp:730,atk:41,rate:.9,rng:70,sp:50,type:'pierce',c:'#6f8a8f',dsc:'間合いの外から刺す'},
+ {id:'pike',n:'長槍兵',cost:80,cd:6.5,hp:730,atk:41,rate:.9,rng:70,sp:50,type:'pierce',hook:4,c:'#6f8a8f',dsc:'間合いの外から刺す。這う敵も穂先で縫い止める(4体)'},
  {id:'flm',n:'火炎放射兵',cost:100,cd:8,hp:375,atk:31,rate:.35,rng:110,sp:48,type:'fire',burn:14,c:'#c9552e',dsc:'前方を焼き払う'},
  {id:'gld',n:'重装盾',cost:120,cd:11,hp:6500,atk:25,rate:1,rng:40,sp:38,type:'melee',c:'#4a5560',dsc:'鋼鉄の防壁'},
  {id:'elec',n:'電磁兵',cost:132,cd:9,hp:475,atk:118,rate:1.5,rng:200,sp:50,type:'pierce',multi:3,c:TECH2,dsc:'雷撃が3体を貫く'},
@@ -1609,7 +1609,7 @@ const UNITS=[
  {id:'frost2',n:'絶対零度',cost:192,cd:13,hp:715,atk:51,rate:1.2,rng:180,sp:46,type:'frost',aoe:150,c:TECH,dsc:'広範囲を長時間凍結'},
  {id:'chief',n:'隊長',cost:224,cd:15,hp:1290,atk:170,rate:1.2,rng:230,sp:54,type:'bullet',multi:2,c:'#d8d2c4',dsc:'精鋭を率いる歴戦の兵'},
  /* ↓研究所限定の新兵科 */
- {id:'tnk',n:'装甲車',cost:208,cd:16,hp:8500,atk:62,rate:.8,rng:44,sp:55,type:'melee',c:STEEL,dsc:'走る要塞・轢き潰す'},
+ {id:'tnk',n:'装甲車',cost:208,cd:16,hp:8500,atk:62,rate:.8,rng:44,sp:55,type:'melee',hook:6,c:STEEL,dsc:'走る要塞。すり抜ける敵も履帯で轢き潰す(6体)'},
  {id:'mech',n:'メカスーツ',cost:248,cd:18,hp:1855,atk:181,rate:1.1,rng:260,sp:48,type:'blast',aoe:80,c:'#6b7580',dsc:'肩部キャノンで範囲砲撃'},
  {id:'titan',n:'タイタン',cost:360,cd:22,hp:10500,atk:125,rate:1.3,rng:60,sp:44,type:'melee',c:'#8a8f96',dsc:'歩く城塞・全てを薙ぎ倒す'},
  {id:'valk',n:'ヴァルキリー',cost:328,cd:20,hp:1620,atk:351,rate:1.8,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'空爆支援を伴う精鋭'}
@@ -1884,9 +1884,12 @@ const curW=()=>(G&&G.pve&&!G.coop&&G.pveDiff!=null)?diffW(G.pveDiff):STAGE_W;
 const FIRE_VS_ARMOR=1.9;/* 火炎放射塔の装甲特効(装甲持ちへの直撃と燃焼の倍率) */
 const ELEC_VS_SCALE=1.9;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
 const IV_SEC=20;/* 作戦タイムの秒数 */
-/* 部隊1体が同時に足止めできる敵の数。鎖使い(hook)がすり抜け敵を抱える時だけ枠が広い
-   =すり抜け敵は鎖使い以外に止められる相手が居ないため、3体で埋まると4体目から素通りしてしまう */
+/* 部隊1体が同時に足止めできる敵の数。⭐**すり抜け敵を止められる兵科(hook)だけ枠が広い**
+   =すり抜け敵は普通の部隊では止められないので、3体で埋まると4体目から素通りしてしまう。
+   ⭐**hook の値がそのまま「同時に抱えられる数」**(2026-07-27ユーザー指示で鎖使い以外にも増やした)=
+     巨漢2 / 長槍兵4 / 装甲車6 / 鎖使い8。専門の鎖使いが一番広い。 */
 const ENG_MAX=3,ENG_HOOK=8;
+const uHook=ui=>(UNITS[ui]&&UNITS[ui].hook)||0;/* 0=すり抜け敵を止められない */
 /* ⭐ゾンビが部隊に噛みつける前後の幅(gap=u.d-z.d がこの範囲なら殴られる)。
    ⚠**部隊の攻撃範囲はこれ以上でなければならない**。近接兵科の射程は34〜40しかないので、
      素のままだと猟犬(34)などは「噛みつかれているのに届かない」状態になり、
@@ -9676,12 +9679,12 @@ function campStep(C,dt,wave){
   const slow=z.frzT>0?0:(z.slowT>0?.55:1);if(z.slowT>0)z.slowT-=dt;
   let blk=null,bd2=1e9;
   for(const u of C.units){if(u.dead)continue;
-   /* すり抜け個体は普通の部隊では止められないが、鎖持ち(hook)だけは引きずり出して足止めできる */
-   const hk=!!(UNITS[u.ui]&&UNITS[u.ui].hook);
+   /* すり抜け個体は普通の部隊では止められないが、hookを持つ兵科だけは引きずり出して足止めできる */
+   const hk=uHook(u.ui);
    if(z.noblock&&!hk)continue;
    /* 1体が同時に抱えられる数。⚠すり抜け敵が重なると鎖使いが3体で埋まり、4体目から素通りしていた
       (普通の敵は他の部隊へ回れるが、すり抜け敵は鎖使いにしか止められないため逃げ場が無い。2026-07-25修正) */
-   if(u.eng>=(z.noblock&&hk?ENG_HOOK:ENG_MAX))continue;
+   if(u.eng>=(z.noblock&&hk?Math.max(ENG_MAX,hk):ENG_MAX))continue;
    const gap=u.d-z.d;if(gap>=-6&&gap<=ENG_GAP&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
    if(z.frzT<=0)z.acd=(z.acd||0)-dt;/* 凍結中は殴れない */
@@ -12239,7 +12242,7 @@ function introNext(){
  try{
   /* ⭐絵は**枠いっぱい**に描く(第91弾)。決め打ちの1.5倍では、大きい物ははみ出し小さい物は豆粒だった */
   if(it.k==='u'){const U=UNITS[it.i];hd='🪖 新しい部隊が使える!';nm=U.n;ds=U.dsc;
-   st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め':'');
+   st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め('+U.hook+'体)':'');
    fitDraw(cvv,cc=>drawUnit(cc,it.i,0,0,1,.4,0,{}),8);}
   else if(it.k==='t'){const T=TOWERS[it.i];hd='🗼 新しいタワーが建てられる!';nm=T.n;ds=T.dsc;
    st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒';
