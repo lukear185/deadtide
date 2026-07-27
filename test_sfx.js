@@ -69,6 +69,12 @@ for(const k of MOAN)if(V[k]>oAvg)fail.push(k+'('+V[k].toFixed(3)+')が他の音�
 /* ③ 同じ役割の変種どうしで音量が離れていないこと(くじで引くので、鳴るたびに大きさが変わってしまう) */
 for(const grp of [ROAR,MOAN,BIG])
  if(max(grp)>avg(grp)*1.8)fail.push('['+grp.join('/')+']の音量差が大きすぎる(最大'+max(grp).toFixed(3)+' 平均'+avg(grp).toFixed(3)+')');
+/* ⭐④ **飛び抜けて大きい音が無いこと**(2026-07-27ユーザー指示「音がでかすぎる。一回全部見てみて」)。
+   ⚠それまでは 0.066〜0.402 と**6倍**開いていて、大きい方が耳につくので全体がうるさく聞こえていた。
+   ⚠**平均の1.45倍まで**に抑える(いまは最大/平均=1.19)。⚠新しい素材を足した時にここで捕まる。
+   ⚠直し方は `SFX_GAIN` にその音の倍率を足す=**素材を焼き直さない**(tool_sfx.js を回さなくて済む)。 */
+if(oMax>oAvg*1.45)fail.push('飛び抜けて大きい音がある(最大'+oMax.toFixed(3)+' 平均'+oAvg.toFixed(3)
+ +' = x'+(oMax/oAvg).toFixed(2)+')。SFX_GAINで下げること');
 if(fail.length){console.log('FAIL: 音量の釣り合い\n  - '+fail.join('\n  - '));process.exit(1);}
 console.log('音量の釣り合い: 咆哮'+avg(ROAR).toFixed(3)+' / うめき'+avg(MOAN).toFixed(3)
  +' / 大うめき'+avg(BIG).toFixed(3)+' / ボス撃破'+V.bossKill.toFixed(3)

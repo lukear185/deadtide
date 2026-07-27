@@ -755,7 +755,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="bphint" id="sfx-hint"></div>
     <div class="bpbody" id="sfx-list"></div>
     <div class="bpfoot"><button class="btn sm" id="bt-sfx-all">▶ このタブを順に鳴らす</button>
-      <span class="bphint" style="margin:0">音量 <input type="range" id="sfx-vol" min="0" max="100" value="85" style="vertical-align:middle;width:110px"></span></div>
+      <span class="bphint" style="margin:0">音量 <input type="range" id="sfx-vol" min="0" max="100" value="72" style="vertical-align:middle;width:110px"></span></div>
   </div>
 </div>
 
@@ -1160,7 +1160,7 @@ const SFXB={
      ヘッドレステストにはAudioContextが無いので、必ず合成音側を通る=検査は今までどおり動く。
    ⚠素材の差し替えは `node tool_sfx.js build/embed`。SFXB は手で編集しない。 */
 const SFXBUF={},SFXDEC={};
-let SFXVOL=.85;
+let SFXVOL=.72;/* ⚠2026-07-27に .85→.72(ユーザー「音がでかすぎる」)。⚠下のスライダーの value も一緒に直すこと */
 function b64buf(s){const b=atob(s),n=b.length,a=new Uint8Array(n);
  for(let i=0;i<n;i++)a[i]=b.charCodeAt(i);return a.buffer;}
 function sfxLoad(){
@@ -1244,13 +1244,26 @@ const SFXSYN={
    ⚠合成音(SFXSYN)側の値も同じ倍率で下げてある=素材が無い環境でも釣り合いが崩れない。
    ⚠新しい声を足したら**必ず測ってからここに1行足す**(scratchpad の meas.js / 検査は test_sfx.js)。 */
 const SFX_GAIN={
+ /* ⭐⭐**2026-07-27に効果音を全部そろえ直した**(ユーザー指示「タレット置く音とかいろいろ音がでかすぎる。
+      逆にBGM関係は小さい。一回全部見てみて」)。
+    ⚠**測ってから決めること**(`node test_sfx.js` が52種のRMSを出す)。耳では絶対に揃わない。
+    ⚠揃える先は**RMS 0.13**。それまでは 0.066(火炎)〜0.402(要塞砲)と**6倍**開いていて、
+      大きい方が耳につくので「全体にうるさい」に聞こえていた。⚠小さい音は上げない=下に合わせる。
+    ⚠**建設音(build)だけは0.10まで下げる**=タレットを置くたびに鳴る一番手数の多い音なので、
+      ほかと同じ0.13だと連打した時に一番うるさく感じる(ユーザーが名指しした音)。 */
+ fort:.323, zap:.511, frost:.570, rail:.597, cannon:.598, boom:.620, shot:.627,
+ cryo:.669, gren:.674, shotgun:.675, snipe:.711, push:.727, zap2:.790, mortar:.810,
+ lose:.861, win:.889,
+ build:.530,/* ⚠一番よく鳴る音なので他より下げる */
  /* ボス登場の咆哮(素のRMS: growl .441 / growl2 .191)。
     ⚠**1.1秒鳴りっぱなしの音は、RMSが同じでも短い音よりずっと大きく感じる**
       (2026-07-26ユーザー指摘「ボスのうなり(死の笛)がでかすぎる」。0.111まで下げてもまだ大きかった)。
       大うめきと同じ0.07まで落としてある。 */
  growl:.16, growl2:.37,
- /* ボス撃破(素 .309)。53種で2番目に大きかったので下げる */
- bossKill:.58,
+ /* ボス撃破(素 .309)。53種で2番目に大きかったので下げる。
+    ⚠2026-07-27に .58→.372 へ再度下げた=全体を0.13へ揃えたので、
+      **ゾンビの声が「ゾンビ以外の一番大きい音」を超えない**という検査(test_sfx ①)に掛かるため。 */
+ bossKill:.372,
  /* エリート/ボスのうめき(素 moanBig .096 / moanBig2 .136) */
  moanBig:.78, moanBig2:.55,
  /* ふつうのうめき(素 moan .099 / moan2 .104 / moan3 .188 / moanN .082)。moanWは素で.059なので触らない */
@@ -1418,23 +1431,26 @@ function bossActive(){
 }
 const MELO_NM=[110,110,116,110,98,92,110,87,110,116,123,110,92,87,82,73];
 /* ⚠BGMは beep() を直に呼ぶので **SFXVOL(音量スライダー)を通らない**=下の数字がそのまま音量。
-   2026-07-26ユーザー指示「BGM少しだけ音量上げて」で、3種すべて一律 x1.25 にした。 */
+   2026-07-26ユーザー指示「BGM少しだけ音量上げて」で、3種すべて一律 x1.25 にした。
+   ⭐2026-07-27ユーザー指示「BGM関係は小さい」で**さらに一律 x1.55**(タイトルBGMも同じだけ上げてある)。
+   ⚠**効果音を下げるのと同時にやること**=BGMだけ上げても、効果音が鳴った瞬間に埋もれる。
+     このときは 効果音を全体0.13へ揃える + SFXVOL .85→.72 + BGM x1.55 の3つを同時にやった。 */
 function bgmOn(){if(bgmTimer)return;bgmTimer=setInterval(()=>{if(!AC||muted)return;
  if(typeof isNM==='function'&&isNM()&&!bossActive()){
   const f=MELO_NM[bgmStep%MELO_NM.length];
-  beep(f,f*.97,.26,'sawtooth',.075);beep(f/2,f/2,.4,'triangle',.062);
-  if(bgmStep%4===0)beep(44,30,.28,'sawtooth',.2);
+  beep(f,f*.97,.26,'sawtooth',.116);beep(f/2,f/2,.4,'triangle',.096);
+  if(bgmStep%4===0)beep(44,30,.28,'sawtooth',.30);
   if(bgmStep%6===5&&Math.random()<.6)sfx.moanBig();
   else if(bgmStep%11===7&&Math.random()<.5)sfx.scratch();/* 遠くで爪が壁を掻く音 */
   bgmStep++;return;}
  const epic=bossActive();
  if(epic){const f=MELO_B[bgmStep%MELO_B.length];
-  beep(f,f,.17,'sawtooth',.081);beep(f*2,f*2,.12,'square',.038);
-  beep(f/2,f/2,.3,'sawtooth',.106);
-  if(bgmStep%4===0)beep(52,28,.2,'sawtooth',.25);
+  beep(f,f,.17,'sawtooth',.125);beep(f*2,f*2,.12,'square',.059);
+  beep(f/2,f/2,.3,'sawtooth',.164);
+  if(bgmStep%4===0)beep(52,28,.2,'sawtooth',.37);
   if(bgmStep%8===6&&Math.random()<.5)sfx.moanBig();
  }else{const f=MELO[bgmStep%MELO.length];
-  beep(f,f,.18,'triangle',.062);if(bgmStep%4===0)beep(f/2,f/2,.34,'sawtooth',.044);}
+  beep(f,f,.18,'triangle',.096);if(bgmStep%4===0)beep(f/2,f/2,.34,'sawtooth',.068);}
  bgmStep++;},300);}
 function bgmOff(){clearInterval(bgmTimer);bgmTimer=null;}
 /* ⭐**タイトル画面のBGM**(2026-07-27ユーザー指示「タイトル画面とかでちょっとホラーっぽいBGMを。
@@ -1454,10 +1470,10 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
  tbgmTimer=setInterval(()=>{if(!AC||muted||SCR==='game')return;
   const s=tbgmStep%16,f=TBGM[s];
   /* ①ドローン。⚠鳴らす長さ(3.4秒)>差し込む間隔(2.8秒)にして途切れさせない */
-  if(s%4===0){beep(98,97,3.4,'triangle',.035);beep(98.6,97.6,3.4,'sine',.03);}
-  if(f)beep(f,f*.995,2.2,'triangle',.05);/* ②まばらな音 */
-  if(s===8)beep(f*1.5,f*1.5,1.6,'sine',.026);/* 5度をうっすら重ねる */
-  if(s===13&&Math.random()<.5)nzHit(700,180,2.2,.05,1);/* ③遠くの風 */
+  if(s%4===0){beep(98,97,3.4,'triangle',.055);beep(98.6,97.6,3.4,'sine',.047);}
+  if(f)beep(f,f*.995,2.2,'triangle',.078);/* ②まばらな音 */
+  if(s===8)beep(f*1.5,f*1.5,1.6,'sine',.040);/* 5度をうっすら重ねる */
+  if(s===13&&Math.random()<.5)nzHit(700,180,2.2,.078,1);/* ③遠くの風 */
   if(s===6&&Math.random()<.25&&sfx.moan)sfx.moan();/* たまに遠くでうめく */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
