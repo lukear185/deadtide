@@ -706,6 +706,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div id="tut">
   <div class="tx"><div class="tt" id="tut-t"></div><div class="tm" id="tut-m"></div></div>
   <button class="btn gold sm" id="tut-next">▶ 次へ</button>
+  <!-- ⭐やめる(2026-07-28ユーザー指示「2回目からは途中でやめれるように」)。
+       ⚠**初回は出さない**=最初の1回は最後まで通してもらう(第89弾の「強制的にやらせて」を保つ) -->
+  <button class="btn sm" id="tut-quit" style="display:none">やめる</button>
 </div>
 <!-- 「ここだ」の矢印(第89弾)。⚠絵は**左向き**で置いてあり、向きはCSSの回転で作る。
      置き場所と向きは tutPtrPos() が決める(DOMを触らない関数=検査できる) -->
@@ -1043,7 +1046,7 @@ function metaResetAll(){
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
- META.stg=0;META.tut=0;                        /* 選んでいたステージ・チュートリアル済み */
+ META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
 }
 try{if((META.rst|0)<META_RESET){META.rst=META_RESET;metaReset();saveMeta();}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
@@ -13566,6 +13569,16 @@ function tutSteps(){return[
  {id:'end',scr:'title',t:'以上だ。健闘を祈る',
   m:'この案内はタイトルの「🎓 あそびかた」からいつでもやり直せる。',hi:null,al:'#md-gacha,#md-gcres'}
 ];}
+/* ⭐**2回目からは💎とガチャの段を外す**(2026-07-28ユーザー指示
+     「2回目からはガチャに誘導せずその前までで終わって。今のままだとガチャに何回も誘導される」)。
+   ⚠外すのは3段(gift=💎3個を渡す / pull=1回引かせる / end=締め)。**💎を配る段が消えるので、
+     やり直すたびに💎が3個ずつ増える穴もここで塞がる**。
+   ⚠判定は `META.tutOk`(最後まで通したか)。`META.tut` は**始めた時点で立つ**ので使えない
+     (再読み込みで自動起動しないための印であって、済んだ印ではない)。 */
+function tutStepsNow(){
+ const a=tutSteps();
+ return (META.tutOk)?a.filter(s=>['gift','pull','end'].indexOf(s.id)<0):a;
+}
 function tutHold(){return !!(TUT&&TUT.on&&!TUT.ran);}/* 作戦タイムの残り時間を止める */
 /* ============ 🎓 チュートリアル中は光っている所しか押せない(第89弾) ============
    ユーザー指示「ここを選べって案内はあるけど、ほかのところをタップできちゃう。強制的にやらせて」。
@@ -13669,7 +13682,7 @@ function tutOpen(){
  tutStart();
 }
 function tutBegin(from){
- TUT={on:true,i:-1,st:tutSteps(),mk:0,ran:false,t:0,si:null,gem0:0,mv:0};
+ TUT={on:true,i:-1,st:tutStepsNow(),mk:0,ran:false,t:0,si:null,gem0:0,mv:0};
  /* ⭐**始めた時点で「出した」ことにする**(第89弾)。第89弾で光っている所以外を押せなくしたので、
     万一どこかの段で詰まった時の逃げ道が**再読み込みだけ**になった。ここで立てておけば
     再読み込みで自動起動が二度と掛からない=遊べなくなる事故を防げる。
@@ -13713,6 +13726,8 @@ function tutGo(i){
     ⚠文言は tutSteps に固定で書いてある自分の文字列だけなので、そのまま innerHTML に入れてよい。 */
  $('tut-t').innerHTML=IC(S.t);$('tut-m').innerHTML=IC(S.m);
  $('tut-next').style.display=(S.ok||S.id==='open')?'none':'inline-block';
+ /* ⭐やめる=**2回目以降だけ出す**(初回は最後まで通してもらう) */
+ {const q=$('tut-quit');if(q&&q.style)q.style.display=META.tutOk?'inline-block':'none';}
  /* ⚠**帯が印を隠さないようにする**(2026-07-27)。工房枠・支援枠は画面の上の方にあるので、
     その段では帯を下へ回す(low)。NOTES: 光らせる所が帯で隠れると何を指しているか分からない */
  e.classList.add('on');tutBand();
@@ -13800,7 +13815,11 @@ function tutEnd(done){
  tutHi(null);
  const e=$('tut');if(e)e.classList.remove('on');
  TUT=null;
- META.tut=1;saveMeta();
+ META.tut=1;
+ /* ⭐**最後まで通した印**(2026-07-28)。これが立つと2回目以降=💎とガチャの段が消え、やめるボタンが出る。
+    ⚠`META.tut` は始めた時点で立つので済んだ印にはならない。⚠**途中でやめた時(done=false)は立てない**。 */
+ if(done)META.tutOk=1;
+ saveMeta();
  if(done){backTitle();toast('🎓 チュートリアル終了!ソロ作戦で腕を試せ');}
 }
 function backTitle(){
@@ -16303,6 +16322,9 @@ $('bt-online').onclick=()=>{ensureAC();show('online');};
 $('bt-back2').onclick=()=>show('title');
 $('bt-howto').onclick=()=>tutOpen();
 $('tut-next').onclick=()=>{if(TUT)tutGo(TUT.i+1);};
+/* ⭐やめる(2回目以降だけ出る)。⚠**done=false で終わる**=最後まで通した印(tutOk)は動かさない */
+$('tut-quit').onclick=()=>{if(!TUT)return;tutEnd(false);backTitle();
+ toast('🎓 やめた。タイトルの「🎓 あそびかた」からいつでもやり直せる');};
 $('bt-totitle').onclick=backTitle;
 $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */

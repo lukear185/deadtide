@@ -376,6 +376,8 @@ function checkTut(){
   ['6ヶ所','建設スロットの初期解放は SLOT0=7'],
   ['あそびかた画面','あそびかたのモーダルは削除しチュートリアルに置き換えた']];
  META.stg=0;setDiff=0;startSolo();frames(10,.016);
+ /* ⚠**最後まで通した印を消してから測る**=立っていると2回目扱いになり💎とガチャの段が消える(2026-07-28) */
+ META.tutOk=0;
  const st=tutSteps();
  if(st.length<6){console.log('FAIL: チュートリアルの段が少なすぎる('+st.length+')');process.exit(1);}
  const ids={};
@@ -438,6 +440,19 @@ function checkTut(){
  if(got!==3){console.log('FAIL: チュートリアルで渡す💎が3個ではない('+got+'個)');process.exit(1);}
  META.gem=gem0;/* ⚠測ったら戻す=検査どうしがMETAを汚し合わないように */
  if(!META.tut){console.log('FAIL: チュートリアルを終えても META.tut が立たない(毎回出てしまう)');process.exit(1);}
+ if(!META.tutOk){console.log('FAIL: 最後まで通しても META.tutOk が立たない(2回目の判定ができない)');process.exit(1);}
+ /* ⭐**2回目からは💎とガチャの段を外す**(2026-07-28ユーザー指示)。
+    ⚠ここが壊れると**やり直すたびに💎が3個ずつ増える**=無限に増やせてしまう */
+ {const st2=tutStepsNow();
+  for(const id of ['gift','pull','end'])if(st2.some(S=>S.id===id)){
+   console.log('FAIL: 2回目のチュートリアルに「'+id+'」の段が残っている(何度もガチャへ誘導される)');process.exit(1);}
+  if(st2.length>=st.length){console.log('FAIL: 2回目の段が減っていない');process.exit(1);}
+  const g2=META.gem||0;
+  tutStart();for(let k=0;k<st2.length+2&&TUT;k++)tutGo(TUT.i+1);
+  if(TUT){console.log('FAIL: 2回目のチュートリアルが最後まで進まない');process.exit(1);}
+  if((META.gem||0)!==g2){console.log('FAIL: 2回目のチュートリアルで💎が増えている('+((META.gem||0)-g2)+'個)');process.exit(1);}
+  console.log('🎓2回目: '+st2.length+'段(💎とガチャの3段を外した)/💎は増えない OK');}
+ META.tutOk=0;
  backTitle();
  console.log('🎓チュートリアル: '+st.length+'段(操作させる段'+act+'/タイトル側'+gEnd.length+')'+
   ' / 開くところから始まる / 最後に💎3個+ガチャ1回 / 古い言い回しなし / 説明の抜けなし / 戦績を汚さない OK');
@@ -453,6 +468,7 @@ function checkTut(){
    ⚠tutPass() は DOM を持たない=**closest だけを持つ偽の要素**で検査できる
      (DOM側だけを見る検査はヘッドレスでは0個でも通ってしまうため、こちら側で見る)。 */
 function checkTutLock(){
+ META.tutOk=0;/* ⚠段の数が変わらないよう初回扱いに戻す */
  /* 偽の要素。自分のセレクタが問い合わせの並びに入っていれば当たったことにする */
  const mk=s=>({id:'',closest:q=>{
   const a=String(q).split(',');
