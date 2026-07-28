@@ -588,6 +588,35 @@ function checkResume(){
   +'・解放'+got.unlocked+'種・マス'+got.slk+'枠 すべて引き継げている OK');
  clearRun();backTitle();
 }
+/* ⭐**中断→再開で同じウェーブを稼ぎ直せないか**(2026-07-28ユーザー指摘
+     「ウェーブ2でゾンビ倒して400稼いでタレット置く→中断→再開 で永遠に稼げちゃう」)。
+   ⚠原因=中断した瞬間の状態(稼いだ⚙️・建てた塔)を保存したうえで**ウェーブ番号だけ1つ戻していた**。
+   ⭐直し方=ウェーブが始まった瞬間の写し(G.rsnap)を保存する。**戻すなら丸ごと戻す**。 */
+function checkResumeFarm(){
+ META.stg=0;setDiff=2;startSolo();
+ const m=G.players[0];
+ m.scrap=500;G.wave=1;G.phase='interval';
+ nextWave();PAUSED=false;/* WAVE2を始める=ここで写しを取っているはず */
+ const w0=G.wave,s0=Math.round(m.scrap);
+ /* 戦闘中に400稼いで塔を1基建てる */
+ m.scrap+=400;const si=AI_ORDER[0];m.towers[si]=null;buildTower(m,si,0);
+ if(!m.towers[si]){console.log('FAIL: 検査用の塔が建っていない');process.exit(1);}
+ saveRun();
+ const d=loadRun();
+ if(!d){console.log('FAIL: 戦闘中に中断しても何も保存されない');process.exit(1);}
+ if(d.scrap!==s0){console.log('FAIL: 戦闘中に稼いだ⚙️まで保存している(ウェーブ開始時'+s0+' → 保存'+d.scrap+')'
+  +'=同じウェーブを何度でも稼ぎ直せる');process.exit(1);}
+ if(d.tw[si]){console.log('FAIL: 戦闘中に建てた塔まで保存している=稼ぎ直せる');process.exit(1);}
+ if((d.wave||0)+1!==w0){console.log('FAIL: 再開するウェーブがずれている(保存'+d.wave+' → WAVE'
+  +((d.wave||0)+1)+' / 中断したのは WAVE'+w0+')');process.exit(1);}
+ backTitle();
+ if(!resumeRun()){console.log('FAIL: 戦闘中の中断から再開できない');process.exit(1);}
+ const n=G.players[0];
+ if(Math.round(n.scrap)!==s0){console.log('FAIL: 再開後の⚙️がウェーブ開始時と違う('+s0+'→'+Math.round(n.scrap)+')');process.exit(1);}
+ if(n.towers[si]){console.log('FAIL: 再開後に戦闘中の塔が残っている');process.exit(1);}
+ console.log('中断の稼ぎ直し: WAVE'+w0+'の戦闘中に+400して塔を建てて中断 → 保存も再開も⚙️'+s0+'・塔なし(丸ごと巻き戻る) OK');
+ clearRun();backTitle();
+}
 /* ---- 研究所の個別強化(タワー1種ごと / 兵科1種ごと)と砲撃の威力(2026-07-26) ---- */
 /* ---- 研究所の個別強化の「刻み」(2026-07-26 第88弾) ----
    ⭐ユーザー指示「3段だとすぐ強化が終わって全部マックスになる。
@@ -2180,6 +2209,7 @@ checkSfxGain();
 checkTut();
 checkTutLock();
 checkResume();
+checkResumeFarm();
 checkTwNew();
 checkPerUp();
 checkLabSteps();

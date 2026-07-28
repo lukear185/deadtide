@@ -868,7 +868,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <button class="btn gold" id="bt-suspend">💾 中断してタイトルへ</button>
       <button class="btn" id="bt-quit">🏕 やめる(記録を消す)</button>
     </div>
-    <p class="note" id="pause-note" style="margin:8px 0 0;font-size:11px">💾中断=このウェーブの初めから再開できる。</p>
+    <p class="note" id="pause-note" style="margin:8px 0 0;font-size:11px">💾中断=このウェーブの初めからやり直し。戦闘中に稼いだ⚙️や建てた塔は持ち越さない。</p>
   </div>
 </div>
 <div id="rotatehint">
@@ -1058,9 +1058,10 @@ function saveMeta(){devTop();try{localStorage.setItem(META_KEY,JSON.stringify(ME
 const RUN_KEY=DEV?'dt_run_dev':'dt_run';
 function loadRun(){try{const d=JSON.parse(localStorage.getItem(RUN_KEY)||'null');return (d&&d.v===1)?d:null;}catch(e){return null;}}
 function clearRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}try{refreshRunUI();}catch(e){}}
-function saveRun(){
- if(!(MODE==='solo'&&G&&G.pve&&!G.coop&&!G.over)||G.tut)return;/* 🎓チュートリアルは中断保存しない */
- const m=G.players[0];if(!m||m.dead)return;
+/* ⚠**中身を作るだけ**の関数に分けてある=ウェーブが始まった瞬間の写しを取るため(下の saveRun) */
+function runData(){
+ if(!(MODE==='solo'&&G&&G.pve&&!G.coop&&!G.over)||G.tut)return null;/* 🎓チュートリアルは中断保存しない */
+ const m=G.players[0];if(!m||m.dead)return null;
  const d={v:1,stg:STAGE,dif:G.pveDiff==null?2:G.pveDiff,
   wave:G.phase==='wave'?Math.max(0,G.wave-1):G.wave,
   core:m.core,coreMax:m.coreMax,scrap:Math.round(m.scrap),unlocked:m.unlocked,atkLv:m.atkLv,stkLv:m.stkLv||0,
@@ -1071,10 +1072,24 @@ function saveRun(){
   stk:m.stk||'air',flagD:Math.round(m.flagD||0),
   hsel:(m.hUi>=0&&heroAt(m.hUi))?heroAt(m.hUi).id:'',hOut:m.hOut||0,
   slk:(m.slk||[]).map(v=>v?1:0),
-  tw:(m.towers||[]).map(t=>t?{ti:t.ti,us:t.us,spent:t.spent}:0)};
- try{localStorage.setItem(RUN_KEY,JSON.stringify(d));}catch(e){}
+  tw:(m.towers||[]).map(t=>t?{ti:t.ti,us:Object.assign({},t.us),spent:t.spent}:0)};
+ return d;
+}
+/* ⭐⭐**戦闘中に中断したら「そのウェーブが始まった時の状態」しか保存しない**(2026-07-28ユーザー指摘)。
+   ⚠それまでは**中断した瞬間の状態(稼いだ⚙️・建てた塔)を保存したうえでウェーブ番号だけ1つ戻していた**ので、
+     「敵を倒して稼ぐ → 中断 → 再開」で**同じウェーブを何度でも稼ぎ直せた**(⚙️が無限に増える)。
+   ⭐直し方=ウェーブが始まった瞬間の写し(`G.rsnap`)を取っておき、**戦闘中の保存はそれを書く**。
+     作戦タイム中の中断は今までどおり「その時の状態」でよい=ウェーブをやり直さないので得をしない。
+   ⚠写しは**文字列で持つ**=中身のまま持つと `us`(強化段)が塔と繋がっていて、
+     中断するまでに強化したぶんが写しにも反映されてしまう。 */
+function saveRun(){
+ let s=(G&&G.phase==='wave'&&G.rsnap)?G.rsnap:null;
+ if(!s){const d=runData();if(!d)return;s=JSON.stringify(d);}
+ try{localStorage.setItem(RUN_KEY,s);}catch(e){}
  try{refreshRunUI();}catch(e){}
 }
+/* ウェーブが始まった瞬間の写しを取る。⚠ソロ以外や🎓チュートリアルでは null になる(runDataが弾く) */
+function runSnap(){try{const d=runData();G.rsnap=d?JSON.stringify(d):null;}catch(e){}}
 function resumeRun(){
  const d=loadRun();if(!d)return false;
  META.stg=d.stg||0;setDiff=d.dif==null?2:d.dif;
@@ -11607,6 +11622,7 @@ function nextWave(){
  for(const C of G.players)if(!C.dead)resetCampWave(C);
  UI.closeInterval();UI.banner('WAVE '+G.wave+(G.wave%5===0?' 💀BOSS':''));
  sfx.horn();G.phase='wave';
+ runSnap();/* ⚠ここで写しを取る=戦闘中に中断した時はこれを保存する(稼ぎ直しの穴を塞ぐため) */
  /* ソロ: 新しく解放したもの・初登場の敵をウェーブ開始前に説明する(その間ゲームは止まる) */
  if(G.pve&&!G.coop&&MODE==='solo'){
   const q=(G.introQ||[]).slice();G.introQ=[];
@@ -12877,7 +12893,9 @@ $('pausebtn').onclick=()=>{
 };
 $('bt-resume').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');};
 /* 中断=いまの状態を保存してタイトルへ(そのウェーブの初めから再開できる) */
-$('bt-suspend').onclick=()=>{saveRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();toast('💾 中断した。タイトルの「続きから」で再開できる');};
+/* ⚠戦闘中の中断は**そのウェーブの初めの状態**が保存される(稼ぎ直しの穴を塞ぐため)。そう言い切る */
+$('bt-suspend').onclick=()=>{const mid=!!(G&&G.phase==='wave');saveRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();
+ toast(mid?'💾 中断した。このウェーブの初めから再開する(戦闘中のぶんは持ち越さない)':'💾 中断した。タイトルの「続きから」で再開できる');};
 $('bt-quit').onclick=()=>{clearRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();};
 $('bt-rothide').onclick=()=>$('rotatehint').classList.add('off');
 $('ffbtn').onclick=()=>{if(!G)return;const SP=[1,2,8];G.spd=SP[(SP.indexOf(G.spd||1)+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
