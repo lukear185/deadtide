@@ -2383,6 +2383,17 @@ const uHook=ui=>(UNITS[ui]&&UNITS[ui].hook)||0;/* 0=すり抜け敵を止めら�
      しかも旗で足が止まっているので前へ出て詰めることもできない=一方的に殴られ続ける
      (2026-07-26にユーザーから指摘。実際そうなっていた)。 */
 const ENG_GAP=36;
+/* ⭐⭐**🚩集結旗にどこまで詰めるかは兵科ごとに違う**(2026-07-28ユーザー指示
+     「各々のユニットの攻撃射程まで旗に近づくようにしたい。敵がいないときに旗のとこまで
+       遠距離職も行っちゃって遠距離の意味があまりなくなっちゃうから」)。
+   ⚠それまでは**遠距離は一律で旗の70後ろ**だったので、射程430のスナイパーも射程120の斥候も同じ所に並び、
+     「射程が長い=安全な位置から戦える」という利点がまるごと消えていた。
+   ⭐**自分の射程ぶん下がった所で止まる**。ただし引き算が2つ要る:
+     ①`ENG_GAP`(=36)=敵は前衛の36手前で足を止めるので、ぴったり射程ぶん下がると
+       **足止めした敵に一発も届かない**(射程の外で棒立ちになる)
+     ②止まる判定の遊び(±8)。合わせて50引く。
+   ⚠射程50以下(近接)は0=今までどおり旗の位置に立つ。 */
+const uStand=U=>Math.max(0,(U.rng||0)-ENG_GAP-14);
 /* ⭐**中盤からはウェーブの中をいくつかの小波に割る**(2026-07-27ユーザー指示
    「中盤ぐらいの敵の数が増えてきた当たりからウェーブ中にも若干のウェーブを作って
      一気に敵を出さないで欲しい(重さ対策も兼ねて)」)。
@@ -10996,7 +11007,7 @@ function campStep(C,dt,wave){
       addFx(C,'slash',u.px,u.py-26*CH_UP,'',{ang:aa,r:(24+utl*7)*CH_UP,lv:utl,col:ucl});
       hitFx(C,tg,aa,ucl,pierce,U.type);}}
    }
-  }else{const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(U.rng>60?fD+70:fD,60,PLEN-40),df=goal-u.d;
+  }else{const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(fD+uStand(U),60,PLEN-40),df=goal-u.d;
    if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;}else u.back=false;}
  }
  C.units=C.units.filter(u=>!u.dead);
