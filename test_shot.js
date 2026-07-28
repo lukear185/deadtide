@@ -141,7 +141,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(OPT.indexOf('gdex')>=0?'gcView("dex");':'')
        +(OPT.indexOf('grate')>=0?'gcView("rate");':'')
        +((OPT.indexOf('gopen')>=0||OPT.indexOf('gdex')>=0||OPT.indexOf('grate')>=0)
-         ?'if(GCV==="home"){gcHomeFit();gcHomeStep(0.5);}':'gcPull(10);')+''
+         /* ⚠gt=秒数を渡すと目玉の回転をその時刻で止めて撮れる(前後が入れ替わる所を見るため) */
+         ?('if(GCV==="home"){gcHomeFit();gcHomeStep('+((/gspin=([0-9.]+)/.exec(OPT)||[0,'0.5'])[1])+');}'):'gcPull(10);')+''
        +(OPT.indexOf('gacha5')>=0
          ?'if(GC){GC.res[0]={hero:HEROES[HEROES.length-1],txt:"NEW!"};GC.best=5;}':'')
        /* ⚠ヘッドレスの仮想時間ではrAFがほとんど回らず、いつまでも魔法陣のまま。

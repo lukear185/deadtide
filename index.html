@@ -14260,13 +14260,19 @@ function gcRateHtml(){
    ⚠**📖英雄図鑑と確率は畳んでボタンから開く**(常時出しておくと目玉の英雄より図鑑の方が目立つ)。
    ⚠確率と配るもの(gcPick/gcApply)には**一切触っていない**=変えたのは見た目だけ。 */
 let GCV='home';/* 開いている面: home / dex(図鑑) / rate(確率) */
-/* 目玉の英雄=まだ持っていない中で一番レアなもの(全部持っていたら★5)。
-   ⚠1人に固定すると、持っている英雄が出続けて「引く理由」が画面から消える */
-function gcStarHero(){
- let best=null;
- for(const h of HEROES)if(!heroOwned(h.id)&&(!best||h.rk>best.rk))best=h;
- return best||HEROES[HEROES.length-1];
+/* 目玉の英雄=まだ持っていない中で一番レアなもの(全部持っていたら最高レア度)。
+   ⚠1人に固定すると、持っている英雄が出続けて「引く理由」が画面から消える。
+   ⭐**同じレア度が複数いるなら全員を出す**(2026-07-28ユーザー指示
+     「暁の王が今出る最上位に順番で出るようにして」)。★5が2人になったので、
+     1人だけ出す作りのままだと**もう片方が永久に画面に出ない**。
+   ⚠並びは HEROES の順=足した順に回ってくる。 */
+function gcStarList(){
+ let rk=0;
+ for(const h of HEROES)if(!heroOwned(h.id)&&h.rk>rk)rk=h.rk;
+ if(!rk){const m=HEROES.reduce((a,h)=>Math.max(a,h.rk),1);return HEROES.filter(h=>h.rk===m);}
+ return HEROES.filter(h=>h.rk===rk&&!heroOwned(h.id));
 }
+function gcStarHero(){return gcStarList()[0]||HEROES[HEROES.length-1];}
 function gcDexHtml(){
  const own=HEROES.filter(h=>heroOwned(h.id)).length;
  return '<div class="labdone" style="margin-top:6px"><b>英雄図鑑 '+own+'/'+HEROES.length+'</b>'
@@ -14317,7 +14323,15 @@ function gcHomeDraw(){
  const cv=$('gc-hcv'),c=cv&&cv.getContext&&cv.getContext('2d');if(!c)return;
  const w=GCH.w||cv.clientWidth||480,h=GCH.h||cv.clientHeight||300,t=GCH.t;
  if(w<8||h<8)return;
- const H=gcStarHero(),col=RARE[H.rk-1]||RARE[0],ui=hUiOf(H.id);
+ /* ⭐**円を描いて前後が入れ替わる**(2026-07-28ユーザー指示)。
+    ⚠奥行きは **z=cos(角度)** だけで作る=1で手前・-1で奥。大きさ・上下・薄さを全部 z から出せば
+      「回っている」に見える。⚠**必ず奥から描く**(並べ替えを忘れると奥の者が手前に出て崩れる)。 */
+ const LIST=gcStarList(),n=Math.max(1,LIST.length),spin=t*.5;
+ const items=LIST.map((hh,i)=>{const a=spin+i*Math.PI*2/n;
+  return {h:hh,z:n>1?Math.cos(a):1,sx:n>1?Math.sin(a):0};});
+ items.sort((p,q)=>p.z-q.z);
+ const H=items.length?items[items.length-1].h:HEROES[HEROES.length-1];
+ const col=RARE[H.rk-1]||RARE[0];
  c.setTransform(GCH.dpr,0,0,GCH.dpr,0,0);
  c.clearRect(0,0,w,h);
  c.save();c.beginPath();c.rect(0,0,w,h);c.clip();
@@ -14338,19 +14352,31 @@ function gcHomeDraw(){
     ⚠**光は「絵が実際に占める矩形」に合わせて敷く**(fitRect)。決め打ちの座標だと、
       枠の中で絵が上下に寄った時に光だけ足元から離れて水たまりのように見える(撮って直した) */
  const bob=Math.sin(t*1.5)*h*.012;
- const drw=cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),key='gh:'+H.id;
- const bx=w*.08,by=h*.015+bob,bw2=w*.84,bh2=h-58-h*.015;
- if(ui>=0){
-  const R=fitRect(key,drw,bx,by,bw2,bh2,2),rw=R[2]-R[0],rh=R[3]-R[1];
+ const bw0=w*.84,bh0=h-58-h*.015,cx0=w*.5;
+ for(const it of items){
+  const ui=hUiOf(it.h.id);if(ui<0)continue;
+  const drw=cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),key='gh:'+it.h.id;
+  /* 手前ほど大きく・低く・はっきり。⚠1人しかいない時は今までどおり枠いっぱい */
+  /* ⚠**上下の差を大きく取る**=真円だと手前と奥が同時に中央へ来る瞬間があり、
+     横のずれだけだと**奥の者が完全に隠れる**(撮って気づいた)。奥ほど高く小さく薄く。 */
+  const sc=(n>1)?(.60+.40*(it.z+1)/2):1;
+  const ww=bw0*(n>1?.60:1)*sc,hh2=bh0*(n>1?.74:1)*sc;
+  const bx=cx0+it.sx*w*(n>1?.24:0)-ww/2;
+  const by=h*.015+bob+(bh0-hh2)*(n>1?.5:0)+(n>1?it.z*h*.075:0);
+  const R=fitRect(key,drw,bx,by,ww,hh2,2),rw=R[2]-R[0],rh=R[3]-R[1];
+  const fade=(n>1)?(.45+.55*(it.z+1)/2):1;
   /* 後光(レア度の色) */
   let ag=null;const acx=(R[0]+R[2])/2,acy=R[1]+rh*.45;
   try{ag=c.createRadialGradient&&c.createRadialGradient(acx,acy,rh*.06,acx,acy,rh*.72);}catch(e){}
   if(ag){ag.addColorStop(0,col);ag.addColorStop(1,'rgba(0,0,0,0)');
-   c.globalAlpha=.28;c.fillStyle=ag;c.fillRect(0,0,w,h);c.globalAlpha=1;}
+   c.globalAlpha=.28*fade;c.fillStyle=ag;c.fillRect(0,0,w,h);c.globalAlpha=1;}
   /* 足元の光の輪 */
-  c.globalAlpha=.26;c.fillStyle=col;
+  c.globalAlpha=.26*fade;c.fillStyle=col;
   c.beginPath();c.ellipse(acx,R[3]-rh*.05,rw*.32,rh*.042,0,0,7);c.fill();c.globalAlpha=1;
-  fitDrawIn(c,drw,bx,by,bw2,bh2,2,key);
+  /* ⚠奥の者は薄くする=これが無いと「大きさ違いが2人並んでいる」だけに見える */
+  c.globalAlpha=fade;
+  fitDrawIn(c,drw,bx,by,ww,hh2,2,key);
+  c.globalAlpha=1;
  }
  /* 「目玉」の帯 */
  const bw=Math.min(112,w*.30),bh=20;
