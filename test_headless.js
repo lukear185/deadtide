@@ -1915,9 +1915,10 @@ function checkEvo(){
 }
 /* ---- 💎英雄召集(ガチャ): 排出率・重複・魔石の増減 ---- */
 function checkGacha(){
- if(HEROES.length!==11){console.log('FAIL: 英雄が11種でない '+HEROES.length);process.exit(1);}
+ /* ⚠2026-07-28ユーザー指示で★3を2人・★4を1人足した(11→14種) */
+ if(HEROES.length!==14){console.log('FAIL: 英雄が14種でない '+HEROES.length);process.exit(1);}
  const cnt={};for(const h of HEROES)cnt[h.rk]=(cnt[h.rk]||0)+1;
- const want={1:5,2:3,3:1,4:1,5:1};
+ const want={1:5,2:3,3:3,4:2,5:1};
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
  /* 魔石が足りない時は引けない */
@@ -1942,7 +1943,7 @@ function checkGacha(){
  if(META.hmat<=m0){console.log('FAIL: 重複が鍛錬素材になっていない');process.exit(1);}
  /* ボス撃破の💎付与(通常1/最終3)が定義されているか */
  if(!(GEM_BOSS===2&&GEM_FIN===6)){console.log('FAIL: ボスの魔石量が想定と違う');process.exit(1);}
- console.log('ガチャ: 英雄11種(★1x5/★2x3/★3/★4/★5)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
+ console.log('ガチャ: 英雄'+HEROES.length+'種(★1x5/★2x3/★3x3/★4x2/★5)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
  META.gem=0;META.hero={};META.hmat=0;
 }
 /* ---- 🦸英雄: 出撃(1ゲーム1回)と必殺技11種 ----
@@ -1991,7 +1992,7 @@ function checkHero(){
   backTitle();
  }
  if(dmgN<8){console.log('FAIL: 敵にダメージを与える必殺技が少なすぎる '+dmgN);process.exit(1);}
- console.log('英雄: 11人の出撃(1ゲーム1回・戦死したら終わり)と必殺技11種 OK(うち'+dmgN+'種が直接ダメージ)');
+ console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  META.hero={};META.hsel='';
 }
 /* ---- 🏋鍛錬所(🔧で英雄を鍛える)と 📖ゾンビ図鑑 ----

@@ -2284,10 +2284,13 @@ const HEROES=[
  {id:'hSf',n:'特殊部隊員',rk:2,hp:1600,atk:290,rate:.75,sp:78,c:'#3f4a54',ty:'bullet',rng:420,uch:34,ult:'精密狙撃',udsc:'最大HPの敵に必殺の一撃'},
  {id:'hMed',n:'軍医',rk:2,hp:1450,atk:150,rate:1,sp:66,c:LIFE,ty:'bullet',rng:260,uch:36,ult:'蘇生',udsc:'戦死した部隊をその場に呼び戻す'},
  {id:'hBomb',n:'爆破屋',rk:2,hp:1350,atk:330,rate:1.6,sp:62,c:'#d9884a',ty:'blast',rng:300,aoe:95,uch:34,ult:'大爆破',udsc:'仕掛けた爆薬を一斉に起爆する'},
- /* ★3 激レア(1種) */
+ /* ★3 激レア(3種)。⚠2026-07-28ユーザー指示で2人足した(毒霧の魔女・傭兵団長) */
  {id:'hSeer',n:'死潮の預言者',rk:3,hp:2100,atk:420,rate:1.1,sp:70,c:'#8f6fae',ty:'pierce',rng:340,uch:40,ult:'時間停止',udsc:'盤面の敵を数秒完全に止める'},
- /* ★4 ウルトラレア(1種) */
+ {id:'hVenom',n:'毒霧の魔女',rk:3,hp:1950,atk:300,rate:1.3,sp:66,c:TOXIC,ty:'fire',rng:210,aoe:85,burn:26,uch:38,ult:'腐食の霧',udsc:'盤面の敵の装甲を溶かし、じわじわ焼く'},
+ {id:'hCmd',n:'傭兵団長',rk:3,hp:2400,atk:380,rate:.95,sp:72,c:'#8a7a4a',ty:'bullet',rng:300,uch:42,ult:'増援要請',udsc:'いま出せる一番強い兵科を4体その場に呼ぶ'},
+ /* ★4 ウルトラレア(2種)。⚠2026-07-28ユーザー指示で1人足した(雷鳴の巫女) */
  {id:'hGiant',n:'鋼鉄の巨人',rk:4,hp:5200,atk:560,rate:1.5,sp:46,c:GOLD2,ty:'blast',rng:64,aoe:110,uch:46,ult:'地響き',udsc:'全域の敵を吹き飛ばして気絶させる'},
+ {id:'hStorm',n:'雷鳴の巫女',rk:4,hp:3900,atk:640,rate:1.2,sp:68,c:'#7fa8d9',ty:'pierce',rng:360,uch:48,ult:'雷嵐',udsc:'落雷が次々に落ちて敵を撃ち抜き、気絶させる'},
  /* ★5 ギガトンレア(1種) */
  {id:'hNox',n:'終焉の騎士',rk:5,hp:6800,atk:980,rate:.9,sp:74,c:DANGER,ty:'melee',rng:48,uch:52,ult:'死の宣告',udsc:'画面上の敵すべてに致命傷を刻む'}
 ];
@@ -9379,7 +9382,10 @@ const H_LOOK={
  hMed  :{cape:0,h:'nurse', w:'kit',    k:'medbag',c2:'#e8e4d8'},/* 軍医: 白帽+医療鞄 */
  hBomb :{cape:0,h:'goggle',w:'bomb',   k:'dyna',  c2:'#7a6240'},/* 爆破屋: ゴーグル+爆弾+ダイナマイト */
  hSeer :{cape:1,h:'veil',  w:'staff',  k:'',      c2:'#54446b'},/* 預言者: 頭巾+杖(長い) */
+ hVenom:{cape:1,h:'gasm',  w:'flask',  k:'canis', c2:'#4a6b52'},/* 毒霧の魔女: 防毒面+噴霧瓶+毒ボンベ */
+ hCmd  :{cape:0,h:'beret', w:'saber',  k:'radio', c2:'#5c6348'},/* 傭兵団長: ベレー帽+指揮刀+無線機 */
  hGiant:{cape:0,h:'ironm', w:'fist',   k:'',      c2:'#7a7a84'},/* 鋼鉄の巨人: 全身鉄+巨大な拳 */
+ hStorm:{cape:1,h:'crown', w:'spear',  k:'coil',  c2:'#5a4f7a'},/* 雷鳴の巫女: 雷冠+雷槍+背中のコイル */
  hNox  :{cape:1,h:'skull', w:'scythe', k:'',      c2:'#3f2c38'} /* 終焉の騎士: 髑髏兜+大鎌 */
 };
 function drawHeroBody(c,U,walk,o){
@@ -9400,6 +9406,17 @@ function drawHeroBody(c,U,walk,o){
  else if(L.k==='medbag'){c.fillStyle=PAPER;rr(c,-19,-36,11,15,3);c.fill();c.stroke();
   c.fillStyle=RUST;c.fillRect(-15,-31,4,1.8);c.fillRect(-13.9,-32.4,1.8,4.6);}
  else if(L.k==='dyna'){for(let i=0;i<3;i++){c.fillStyle=RUST;rr(c,-20+i*4,-38+i*1.5,4,14,1.6);c.fill();c.stroke();}}
+ /* 毒ボンベ2本(長さ違い)。⚠同じ物を等間隔に並べない=ハリボテに見える */
+ else if(L.k==='canis'){const cb=[[-20,-42,18],[-15,-38,13]];
+  for(const q of cb){c.fillStyle=shade(TOXIC,.72);rr(c,q[0],q[1],7,q[2],3);c.fill();c.stroke();
+   c.fillStyle=GOLD2;c.fillRect(q[0]+1.4,q[1]+2,4.2,2);}}
+ /* 無線機+長いアンテナ(輪郭で分かる) */
+ else if(L.k==='radio'){c.fillStyle='#3f4a3a';rr(c,-19,-40,10,19,3);c.fill();c.stroke();
+  c.strokeStyle=DIM;c.lineWidth=2.2;c.beginPath();c.moveTo(-15,-40);c.quadraticCurveTo(-19,-58,-13,-70);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.4;c.fillStyle=GOLD;c.beginPath();c.arc(-13,-71,2.2,0,7);c.fill();}
+ /* 背中の放電コイル(輪が3段+芯) */
+ else if(L.k==='coil'){c.fillStyle='#4a5560';rr(c,-19,-44,9,24,3);c.fill();c.stroke();
+  c.fillStyle=TECH;for(let i=0;i<3;i++){c.beginPath();c.ellipse(-14.5,-40+i*7,5.4,1.9,0,0,7);c.fill();c.stroke();}}
  /* ⭐脚(2026-07-27 第104弾)。⚠それまで**黒い四角2つ**で、履き物も明暗も無かった=
     実機では「棒人間の脚」にしか見えなかった。兵科と同じ ズボン(`UW.pa`)+軍靴(`UW.sho`) にする */
  for(const LL of [[-4.4+walk*3.5,.76],[4.4-walk*3.5,1]]){
@@ -9451,6 +9468,21 @@ function drawHeroBody(c,U,walk,o){
   c.fillStyle='#8a8f96';rr(c,-9,hy-10,19,20,4);c.fill();c.stroke();
   c.fillStyle=INK;c.fillRect(-6,hy-2,16,3.6);
   c.fillStyle=GOLD;c.fillRect(-9,hy-10,19,2.6);}
+ else if(L.h==='gasm'){/* 防毒面(丸い眼鏡2つ+口元の吸収缶) */
+  c.fillStyle=shade(L.c2,1.1);c.beginPath();c.arc(0,hy-2,8.6,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle='#2f3742';rr(c,-9,hy-4,19,9,3);c.fill();c.stroke();
+  c.fillStyle=TOXIC;for(const s of[-1,1]){c.beginPath();c.arc(s*3.4+.5,hy-.4,3,0,7);c.fill();c.stroke();}
+  c.fillStyle='#8a8f96';rr(c,1,hy+4,8,6,2);c.fill();c.stroke();}
+ else if(L.h==='beret'){/* ベレー帽(片側に垂れる)+徽章 */
+  c.fillStyle=L.c2;c.beginPath();c.moveTo(-9,hy-2);
+  c.quadraticCurveTo(-10,hy-11,1,hy-11);c.quadraticCurveTo(13,hy-11,12,hy-4);
+  c.quadraticCurveTo(9,hy-1,-9,hy-2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GOLD;c.beginPath();c.arc(-4,hy-6,2.4,0,7);c.fill();c.stroke();}
+ else if(L.h==='crown'){/* 雷冠(3本の棘)+額の光 */
+  c.fillStyle='#c8b06a';rr(c,-9,hy-7,19,4.4,1.6);c.fill();c.stroke();
+  for(const q of [[-6,-13],[1,-18],[7,-12]]){c.fillStyle=GOLD;
+   c.beginPath();c.moveTo(q[0]-2.6,hy-6);c.lineTo(q[0],hy+q[1]);c.lineTo(q[0]+2.6,hy-6);c.closePath();c.fill();c.stroke();}
+  c.fillStyle=TECH;c.beginPath();c.arc(.5,hy-4.4,2,0,7);c.fill();}
  else if(L.h==='skull'){/* 髑髏兜+角 */
   c.fillStyle=PAPER2;c.beginPath();c.arc(0,hy-1,8.6,0,7);c.fill();c.stroke();
   c.fillStyle=INK;c.beginPath();c.arc(-3,hy-1,2,0,7);c.fill();c.beginPath();c.arc(4,hy-1,2,0,7);c.fill();
@@ -9459,7 +9491,7 @@ function drawHeroBody(c,U,walk,o){
  else{c.fillStyle=col;rr(c,-8,hy-5,16,6,2);c.fill();c.stroke();}
  /* ⭐顔(第104弾)。⚠それまで**目も口も無かった**。ゾンビ・兵科と同じ `zEye` にする。
     ⚠顔が隠れる3人(頭巾/鉄仮面/髑髏)は上で描いてあるので触らない */
- if(L.h!=='veil'&&L.h!=='ironm'&&L.h!=='skull'){
+ if(L.h!=='veil'&&L.h!=='ironm'&&L.h!=='skull'&&L.h!=='gasm'){
   zEye(c,4,hy+.2,2.1);
   c.fillStyle=shade('#d9b28a',.66);c.fillRect(1.6,hy+4.2,3.4,1.3);}
  /* 武器(11人ぶん別々。⚠腕の先の小さな棒は消えるので、輪郭が変わる大きさで描く) */
@@ -9494,6 +9526,24 @@ function drawHeroBody(c,U,walk,o){
   c.fillStyle=GLOW;c.beginPath();c.arc(8.5,-74,3,0,7);c.fill();}
  else if(L.w==='fist'){c.fillStyle='#8a8f96';c.beginPath();c.arc(20,-32,11,0,7);c.fill();c.stroke();
   c.fillStyle=GOLD;for(let i=0;i<3;i++){c.beginPath();c.arc(24,-38+i*5,2,0,7);c.fill();}}
+ else if(L.w==='flask'){/* 噴霧瓶: 丸瓶+ノズル+吹き出す霧 */
+  /* ⚠瓶は**胴から離して小さめに**=大きいと胴に重なってただの黒い球に見える(撮って気づいた) */
+  c.fillStyle=shade(TOXIC,.8);c.beginPath();c.arc(15,-28,6.2,0,7);c.fill();c.stroke();
+  c.fillStyle='#8a8f96';rr(c,12.5,-38,5,7,1.6);c.fill();c.stroke();
+  c.fillStyle=shade(TOXIC,1.15);/* ラッパ口も緑=霧が出る所だと分かる */
+  c.beginPath();c.moveTo(17,-37);c.lineTo(28,-42);c.lineTo(28,-32);c.closePath();c.fill();c.stroke();
+  c.fillStyle=TOXIC;for(const q of [[32,-44,2.8],[37,-38,2.1],[32,-31,1.7]]){
+   c.beginPath();c.arc(q[0],q[1],q[2],0,7);c.fill();}}
+ else if(L.w==='saber'){/* 指揮刀: 細く反った刃を高く掲げる+護拳 */
+  c.strokeStyle=PAPER2;c.lineWidth=4.2;/* ⚠細いと輪郭に埋もれる=太めに、明るい鋼色で */
+  c.beginPath();c.moveTo(9,-38);c.quadraticCurveTo(21,-58,18,-80);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.4;
+  c.fillStyle=GOLD;c.beginPath();c.arc(9,-37,3.4,0,7);c.fill();c.stroke();
+  c.fillStyle='#3a3128';rr(c,7,-36,5,10,2);c.fill();c.stroke();}
+ else if(L.w==='spear'){/* 雷槍: 長い柄+光る穂先 */
+  c.fillStyle='#5c4a30';c.save();c.translate(10,-38);c.rotate(.14);rr(c,-2.6,-40,5.2,70,2);c.fill();c.stroke();c.restore();
+  c.fillStyle=TECH;c.beginPath();c.moveTo(4,-80);c.lineTo(11,-96);c.lineTo(18,-78);c.lineTo(11,-72);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GLOW;c.beginPath();c.arc(11,-80,2.6,0,7);c.fill();}
  else if(L.w==='scythe'){/* 大鎌: 柄+大きく反った刃 */
   c.fillStyle='#3a3128';c.save();c.translate(8,-38);c.rotate(-.18);rr(c,-3,-30,6,58,2);c.fill();c.stroke();c.restore();
   c.fillStyle=DIM;c.beginPath();c.moveTo(6,-70);c.quadraticCurveTo(30,-64,26,-44);
@@ -10858,6 +10908,55 @@ function heroUlt(C,wave){
   addFx(C,'txt',u.px,u.py-84*CH_UP,'時間停止');
   addP(C,26,u.px,u.py-30*CH_UP,{sp:180,up:70,g:-40,life:1.2,r:3,col:'#c9a1ff',jx:12,jy:9});
   if(C.isMe)sfx.frost&&sfx.frost();
+ }else if(id==='hVenom'){/* 腐食の霧: 盤面の装甲(鱗も)を溶かして継続ダメージ */
+  /* ⚠**装甲を消すのが本体**=素の通常弾は装甲相手に45%しか通らないので、
+     火力そのものより「以降ずっと効きが2倍になる」ほうが強い */
+  for(const z of live){z.armor=0;z.scl=0;dmgZ(C,z,190*W,1);
+   if(z.dead)continue;
+   z.burnT=Math.max(z.burnT||0,5);z.burnD=Math.max(z.burnD||0,58*W);
+   z.slowT=Math.max(z.slowT||0,3.2);}
+  for(let k=0;k<4;k++){const p=pathPos(clamp(u.d-30-k*170,0,PLEN));
+   addFx(C,'pool',p[0],p[1]+2,'',{r:120,sd:rnd(0,9),lf:3.4});}
+  addFx(C,'ring',u.px,u.py,'',{r:340,col:TOXIC});
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'装甲を溶かした!');
+  addP(C,22,u.px,u.py-28*CH_UP,{sp:170,up:60,g:-30,life:1.1,r:3.4,col:TOXIC,typ:'smoke'});
+  if(C.isMe)sfx.acid&&sfx.acid();
+ }else if(id==='hCmd'){/* 増援要請: いま出せる中で一番高い兵科を4体、その場に呼ぶ */
+  const F=(G&&G.coop)?G.players[0]:C;
+  let bi=-1,bc=-1;
+  for(let k=0;k<Math.min(C.uUn||0,U_N);k++){const UU=UNITS[k];if(UU&&UU.cost>bc){bc=UU.cost;bi=k;}}
+  const room=(G&&G.coop?COOP_MAXU:MAXU)-F.units.length;
+  let n=0;
+  if(bi>=0)for(let k=0;k<Math.min(4,room);k++){
+   const UU=UNITS[bi],UL=unlv(unKey(UU)),US=UN_STEP(UU.type);
+   const lvM=(1+.1*(C.uLv||0))*(1+US.a*UL),hp0=Math.round(UU.hp*(1+.1*(C.uLv||0))*(1+US.h*UL));
+   F.units.push({eid:EID++,ui:bi,own:C.gi||0,am:lvM,d:clamp(u.d-8-k*15,60,PLEN-40),
+    hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
+   n++;}
+  addFx(C,'ring',u.px,u.py,'',{r:200,col:GOLD});
+  addFx(C,'txt',u.px,u.py-84*CH_UP,n?('増援 '+n+'体!'):'これ以上は呼べない');
+  addP(C,16,u.px,u.py-26*CH_UP,{sp:140,up:90,g:-40,life:.9,r:2.6,col:GOLD,jx:10,jy:7});
+  if(C.isMe)sfx.dep&&sfx.dep();
+ }else if(id==='hStorm'){/* 雷嵐: 数秒かけて落雷が次々に落ちる */
+  /* ⚠**1発目はその場で落とす**=全部 later に回すと、押した瞬間に何も起きず「不発」に見える
+     (検査 checkHero も「発動した直後に盤面が変わったか」を見ている) */
+  const bolt=()=>{
+   const ls=C.zombies.filter(z=>!z.dead&&z.d>=0);if(!ls.length)return;
+   /* ⚠**HPの高い順から狙う**=無作為だと雑魚ばかり撃って「ただの花火」になる */
+   ls.sort((a,b)=>b.hp-a.hp);
+   const z=ls[Math.min(ls.length-1,(Math.random()*3)|0)];
+   const tx=z.px,ty=z.py;
+   for(const z2 of C.zombies){if(z2.dead)continue;if(dist(z2.px,z2.py,tx,ty)>110)continue;
+    dmgZ(C,z2,430*W,1);if(!z2.dead)z2.frzT=Math.max(z2.frzT||0,1.8);}
+   addFx(C,'tr',tx+rnd(-14,14),ty-250,'',{x2:tx,y2:ty-16*CH_UP,col:'rgba(190,225,255,',w:5});
+   addFx(C,'shock',tx,ty-10,'',{r:110,col:'#cfeaff'});
+   addP(C,10,tx,ty-14,{sp:190,up:50,g:400,life:.4,r:2.4,col:'#cfeaff'});
+   C.shake=Math.max(C.shake||0,.24);
+   if(C.isMe)sfx.zap&&sfx.zap();};
+  bolt();
+  for(let k=1;k<8;k++)later(C,k*.17,bolt);
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'雷嵐');
+  addFx(C,'ring',u.px,u.py,'',{r:300,col:TECH});
  }else if(id==='hGiant'){/* 地響き: 全域を吹き飛ばして気絶させる */
   for(const z of live){dmgZ(C,z,560*W,1);if(z.dead)continue;
    z.d=Math.max(0,z.d-150);z.frzT=Math.max(z.frzT||0,2.2);}
@@ -14862,6 +14961,15 @@ const RG_SK=[
  /* 鋼鉄の巨人 */
  {id:'s_quake',n:'地響き', mp:10,t:'atk',tg:'all',pw:1.4,dsc:'地面を割って敵全体を打ち上げる'},
  {id:'s_guard',n:'かばう', mp:5, t:'buf',tg:'self',pw:1, dsc:'仲間への攻撃を一身に引き受ける',buf:'cov'},
+ /* 毒霧の魔女 */
+ {id:'s_mist',n:'毒霧',    mp:6, t:'atk',tg:'all',pw:.82,dsc:'敵全体を毒の霧で包み、守りを下げる',deb:'df'},
+ {id:'s_melt',n:'腐食',    mp:10,t:'atk',tg:'all',pw:1.3,dsc:'守りを無視して溶かす',ign:1},
+ /* 傭兵団長 */
+ {id:'s_rally',n:'号令',   mp:6, t:'buf',tg:'party',pw:1,dsc:'味方全体の攻撃力を上げる',buf:'st'},
+ {id:'s_order',n:'総攻撃', mp:11,t:'atk',tg:'all',pw:1.3,dsc:'全員で一斉に叩き込む'},
+ /* 雷鳴の巫女 */
+ {id:'s_bolt', n:'落雷',   mp:7, t:'atk',tg:'one',pw:2.6,dsc:'雷を落として撃ち抜く',ign:1},
+ {id:'s_storm',n:'雷嵐',   mp:15,t:'atk',tg:'all',pw:1.7,dsc:'雷が次々に落ちる'},
  /* 終焉の騎士 */
  {id:'s_doom',n:'死の宣告',mp:15,t:'atk',tg:'one',pw:4.2,dsc:'致命傷を刻みつける',crit:.4},
  {id:'s_end', n:'終焉',    mp:20,t:'atk',tg:'all',pw:2.2,dsc:'すべてを終わらせる一撃'}
@@ -14882,7 +14990,10 @@ const RG_HERO={
  hMed :{b:{hp:40,mp:14,st:10,df:11,sp:11},g:{hp:7.2,mp:3.4,st:1.8,df:2.0,sp:1.8},sk:[[1,'s_heal'],[8,'s_care'],[16,'s_rev']]},
  hBomb:{b:{hp:38,mp:12,st:17,df:9, sp:10},g:{hp:6.6,mp:2.8,st:3.2,df:1.6,sp:1.6},sk:[[1,'s_time'],[11,'s_bomb']]},
  hSeer:{b:{hp:44,mp:16,st:15,df:12,sp:12},g:{hp:7.8,mp:3.8,st:2.9,df:2.2,sp:2.0},sk:[[1,'s_fore'],[10,'s_stop'],[20,'s_tide']]},
+ hVenom:{b:{hp:40,mp:18,st:14,df:10,sp:11},g:{hp:7.0,mp:4.2,st:2.7,df:1.8,sp:1.8},sk:[[1,'s_mist'],[12,'s_melt']]},
+ hCmd :{b:{hp:50,mp:13,st:15,df:14,sp:12},g:{hp:9.0,mp:3.0,st:2.8,df:2.5,sp:1.9},sk:[[1,'s_rally'],[11,'s_order']]},
  hGiant:{b:{hp:70,mp:9,st:19,df:19,sp:6}, g:{hp:12.5,mp:2.2,st:3.4,df:3.4,sp:1.0},sk:[[1,'s_guard'],[12,'s_quake']]},
+ hStorm:{b:{hp:52,mp:20,st:20,df:13,sp:15},g:{hp:9.4,mp:4.6,st:3.6,df:2.3,sp:2.4},sk:[[1,'s_bolt'],[14,'s_storm']]},
  hNox :{b:{hp:62,mp:15,st:24,df:15,sp:14},g:{hp:11.0,mp:3.4,st:4.4,df:2.6,sp:2.3},sk:[[1,'s_doom'],[24,'s_end']]}
 };
 /* ---- どうぐ ---- */
