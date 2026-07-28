@@ -12951,10 +12951,13 @@ const RB_RATE=.01,RB_GEM=10,RB_HP=3;
    ⚠絵は**ステージ2の甲殻ロブスターを使い回す**(新しく描かない)。金色は虹と同じやり方=
      別canvasに焼いて `source-atop` で金のグラデを被せる(`ctx.filter` は iOS で効かないため)。
    ⚠5発要るので**虹より少し遅く歩かせる**=倒し切る前に逃げられると、0.1%が台無しになる。 */
+/* ⚠🛠DEV(`?dev=1`)では**50%**で出す(2026-07-28ユーザー指示)=0.1%では実機で見て確かめられないため。
+   ⚠普通に遊ぶ側の確率は 0.1% のまま。 */
 const LB_RATE=.001,LB_GEM=30,LB_HP=5,LB_ZI=ZOMBIES.findIndex(z=>z.id==='sLob');
+const lbRate=()=>DEV?.5:LB_RATE;
 function parNew(){
  /* ⚠**珍しい方から順に判定する**=両方に当たった時に金が虹に食われないように */
- if(LB_ZI>=0&&Math.random()<LB_RATE)return {zi:LB_ZI,x:-60,sp:44,ph:rnd(0,9),ht:0,hp:LB_HP,kb:0,fl:0,lb:1};
+ if(LB_ZI>=0&&Math.random()<lbRate())return {zi:LB_ZI,x:-60,sp:44,ph:rnd(0,9),ht:0,hp:LB_HP,kb:0,fl:0,lb:1};
  if(Math.random()<RB_RATE)return {zi:5,x:-60,sp:56,ph:rnd(0,9),ht:0,hp:RB_HP,kb:0,fl:0,rb:1};
  const zi=[0,0,1,2,3,4,5][ri(0,6)];
  return {zi,x:-60,sp:rnd(16,42),ph:rnd(0,9),ht:0,hp:parHP(zi),kb:0,fl:0};}
