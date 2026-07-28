@@ -193,7 +193,7 @@ node test_shot.js out.png 852 393 t=fort2        # 進化先のタワーを実�
 node test_shot.js out.png 852 393 iv             # 作戦タイム(準備画面)の強化カード
 node test_shot.js out.png 852 393 re2            # 一度タイトルへ戻ってから2回目の出撃(2回目でしか出ない不具合用)
 node test_shot.js out.png 852 393 "tut=3+tutbm"  # 🎓チュートリアル(数字=進める段数。tutbm=塔を建てて強化ウィンドウも開く)
-node test_shot.js out.png 852 393 hero=all        # 英雄14人を経路に並べて撮る(見た目の確認)
+node test_shot.js out.png 852 393 hero=all        # 英雄18人を経路に並べて撮る(見た目の確認)
 node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させて撮る(+nodep=出撃前のボタンだけ見る)
 node test_shot.js out.png 852 393 "title+opt"    # ⚙オプション(音量バー+演出の強さ)
 node test_shot.js out.png 852 393 "title+lob"    # ✨黄金のロブスター(0.1%・5発・💎30) / rbz=🌈虹のゾンビ

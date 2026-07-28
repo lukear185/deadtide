@@ -2280,19 +2280,23 @@ const HEROES=[
  {id:'hHunt',n:'猟師',rk:1,hp:820,atk:165,rate:1.4,sp:70,c:'#7a6a45',ty:'pierce',rng:380,uch:30,ult:'一斉罠',udsc:'足元に罠を撒いて踏んだ敵を拘束'},
  {id:'hMech',n:'整備士',rk:1,hp:1050,atk:95,rate:1,sp:60,c:'#8a8f96',ty:'melee',rng:44,uch:26,ult:'応急修理',udsc:'コアを回復し、壊れかけのタワーを直す'},
  {id:'hPost',n:'配達人',rk:1,hp:760,atk:110,rate:.7,sp:118,c:GOLD2,ty:'melee',rng:40,uch:24,ult:'速達',udsc:'超高速で突っ込んで一直線の敵を轢き飛ばす'},
- /* ★2 レア(3種) */
+ /* ★2 レア(4種)。⚠2026-07-28ユーザー指示で1人足した(闇商人) */
  {id:'hSf',n:'特殊部隊員',rk:2,hp:1600,atk:290,rate:.75,sp:78,c:'#3f4a54',ty:'bullet',rng:420,uch:34,ult:'精密狙撃',udsc:'最大HPの敵に必殺の一撃'},
  {id:'hMed',n:'軍医',rk:2,hp:1450,atk:150,rate:1,sp:66,c:LIFE,ty:'bullet',rng:260,uch:36,ult:'蘇生',udsc:'戦死した部隊をその場に呼び戻す'},
  {id:'hBomb',n:'爆破屋',rk:2,hp:1350,atk:330,rate:1.6,sp:62,c:'#d9884a',ty:'blast',rng:300,aoe:95,uch:34,ult:'大爆破',udsc:'仕掛けた爆薬を一斉に起爆する'},
+ {id:'hDeal',n:'闇商人',rk:2,hp:1500,atk:200,rate:1,sp:74,c:'#a58a5c',ty:'bullet',rng:240,uch:32,ult:'闇取引',udsc:'煙玉を撒いて敵から⚙️を巻き上げ、部隊の出撃待ちを全部消す'},
  /* ★3 激レア(3種)。⚠2026-07-28ユーザー指示で2人足した(毒霧の魔女・傭兵団長) */
  {id:'hSeer',n:'死潮の預言者',rk:3,hp:2100,atk:420,rate:1.1,sp:70,c:'#8f6fae',ty:'pierce',rng:340,uch:40,ult:'時間停止',udsc:'盤面の敵を数秒完全に止める'},
  {id:'hVenom',n:'毒霧の魔女',rk:3,hp:1950,atk:300,rate:1.3,sp:66,c:TOXIC,ty:'fire',rng:210,aoe:85,burn:26,uch:38,ult:'腐食の霧',udsc:'盤面の敵の装甲を溶かし、じわじわ焼く'},
  {id:'hCmd',n:'傭兵団長',rk:3,hp:2400,atk:380,rate:.95,sp:72,c:'#8a7a4a',ty:'bullet',rng:300,uch:42,ult:'増援要請',udsc:'いま出せる一番強い兵科を4体その場に呼ぶ'},
- /* ★4 ウルトラレア(2種)。⚠2026-07-28ユーザー指示で1人足した(雷鳴の巫女) */
+ {id:'hMag',n:'磁力技師',rk:3,hp:2250,atk:350,rate:1.2,sp:64,c:'#6f9cae',ty:'blast',rng:200,aoe:90,uch:40,ult:'引力場',udsc:'前方の敵を1か所へ引き寄せて足止めする(すり抜ける敵も掴む)'},
+ /* ★4 ウルトラレア(3種)。⚠2026-07-28ユーザー指示で2人足した(雷鳴の巫女・炉心の番人) */
  {id:'hGiant',n:'鋼鉄の巨人',rk:4,hp:5200,atk:560,rate:1.5,sp:46,c:GOLD2,ty:'blast',rng:64,aoe:110,uch:46,ult:'地響き',udsc:'全域の敵を吹き飛ばして気絶させる'},
  {id:'hStorm',n:'雷鳴の巫女',rk:4,hp:3900,atk:640,rate:1.2,sp:68,c:'#7fa8d9',ty:'pierce',rng:360,uch:48,ult:'雷嵐',udsc:'落雷が次々に落ちて敵を撃ち抜き、気絶させる'},
- /* ★5 ギガトンレア(1種) */
- {id:'hNox',n:'終焉の騎士',rk:5,hp:6800,atk:980,rate:.9,sp:74,c:DANGER,ty:'melee',rng:48,uch:52,ult:'死の宣告',udsc:'画面上の敵すべてに致命傷を刻む'}
+ {id:'hReact',n:'炉心の番人',rk:4,hp:4400,atk:520,rate:1.3,sp:52,c:'#c9d94a',ty:'fire',rng:150,aoe:80,burn:30,uch:50,ult:'炉心解放',udsc:'12秒間すべてのタワーの攻撃が+60%。発動時に熱波で焼く'},
+ /* ★5 ギガトンレア(2種)。⚠2026-07-28ユーザー指示で1人足した(暁の王) */
+ {id:'hNox',n:'終焉の騎士',rk:5,hp:6800,atk:980,rate:.9,sp:74,c:DANGER,ty:'melee',rng:48,uch:52,ult:'死の宣告',udsc:'画面上の敵すべてに致命傷を刻む'},
+ {id:'hDawn',n:'暁の王',rk:5,hp:6200,atk:880,rate:1,sp:76,c:GOLD,ty:'bullet',rng:320,uch:54,ult:'暁の号令',udsc:'12秒間すべての部隊の攻撃2倍・被ダメージ半減。発動時に全回復'}
 ];
 const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
 const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
@@ -9381,12 +9385,17 @@ const H_LOOK={
  hSf   :{cape:0,h:'nvg',   w:'rifle',  k:'pack',  c2:'#42505c'},/* 特殊部隊員: 暗視装置+長い小銃 */
  hMed  :{cape:0,h:'nurse', w:'kit',    k:'medbag',c2:'#e8e4d8'},/* 軍医: 白帽+医療鞄 */
  hBomb :{cape:0,h:'goggle',w:'bomb',   k:'dyna',  c2:'#7a6240'},/* 爆破屋: ゴーグル+爆弾+ダイナマイト */
+ hDeal :{cape:1,h:'hood',  w:'case',   k:'crate', c2:'#5a4a52'},/* 闇商人: 目深のフード+提げ鞄+木箱 */
  hSeer :{cape:1,h:'veil',  w:'staff',  k:'',      c2:'#54446b'},/* 預言者: 頭巾+杖(長い) */
  hVenom:{cape:1,h:'gasm',  w:'flask',  k:'canis', c2:'#4a6b52'},/* 毒霧の魔女: 防毒面+噴霧瓶+毒ボンベ */
  hCmd  :{cape:0,h:'beret', w:'saber',  k:'radio', c2:'#5c6348'},/* 傭兵団長: ベレー帽+指揮刀+無線機 */
+ hMag  :{cape:0,h:'welder',w:'magnet', k:'batt',  c2:'#41586b'},/* 磁力技師: 溶接面+U字磁石+電池 */
  hGiant:{cape:0,h:'ironm', w:'fist',   k:'',      c2:'#7a7a84'},/* 鋼鉄の巨人: 全身鉄+巨大な拳 */
  hStorm:{cape:1,h:'crown', w:'spear',  k:'coil',  c2:'#5a4f7a'},/* 雷鳴の巫女: 雷冠+雷槍+背中のコイル */
- hNox  :{cape:1,h:'skull', w:'scythe', k:'',      c2:'#3f2c38'} /* 終焉の騎士: 髑髏兜+大鎌 */
+ hReact:{cape:0,h:'hazmat',w:'rod',    k:'drum',  c2:'#6b6340'},/* 炉心の番人: 防護頭巾+燃料棒+ドラム缶 */
+ hNox  :{cape:1,h:'skull', w:'scythe', k:'',      c2:'#3f2c38'},/* 終焉の騎士: 髑髏兜+大鎌 */
+ /* ⚠暁の王は**マント無し**=マントも翼も金色なので、重ねると翼が消える(色が近い物を重ねない) */
+ hDawn :{cape:0,h:'halo',  w:'banner', k:'wing',  c2:'#8a7452'} /* 暁の王: 光輪+軍旗+光の翼 */
 };
 function drawHeroBody(c,U,walk,o){
  const col=U.c,rk=U.hro||1,L=H_LOOK[U.id]||{cape:1,h:'peak',w:'rifle',k:'',c2:'#2f3742'};
@@ -9417,6 +9426,24 @@ function drawHeroBody(c,U,walk,o){
  /* 背中の放電コイル(輪が3段+芯) */
  else if(L.k==='coil'){c.fillStyle='#4a5560';rr(c,-19,-44,9,24,3);c.fill();c.stroke();
   c.fillStyle=TECH;for(let i=0;i<3;i++){c.beginPath();c.ellipse(-14.5,-40+i*7,5.4,1.9,0,0,7);c.fill();c.stroke();}}
+ /* 背負った木箱(縄で縛ってある) */
+ else if(L.k==='crate'){c.fillStyle='#7a6242';rr(c,-21,-41,13,19,2);c.fill();c.stroke();
+  c.strokeStyle='#4a3c28';c.lineWidth=2;
+  c.beginPath();c.moveTo(-21,-34);c.lineTo(-8,-34);c.moveTo(-15,-41);c.lineTo(-15,-22);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.4;}
+ /* 電池パック(端子が2つ光る) */
+ else if(L.k==='batt'){c.fillStyle='#3a4450';rr(c,-20,-40,11,20,2);c.fill();c.stroke();
+  c.fillStyle=TECH;for(let i=0;i<2;i++){c.beginPath();c.arc(-16.5+i*5,-36,2,0,7);c.fill();}
+  c.fillStyle=GOLD2;c.fillRect(-19,-27,9,2.4);}
+ /* ドラム缶(帯が2本・放射の印) */
+ else if(L.k==='drum'){c.fillStyle='#5c6b3a';rr(c,-21,-44,12,25,3);c.fill();c.stroke();
+  c.fillStyle=shade('#5c6b3a',.7);c.fillRect(-21,-39,12,2.2);c.fillRect(-21,-28,12,2.2);
+  c.fillStyle=GOLD;c.beginPath();c.arc(-15,-33.5,2.6,0,7);c.fill();}
+ /* 光の翼(左右非対称の羽根3枚) */
+ else if(L.k==='wing'){c.fillStyle=shade(GOLD,1.05);
+  for(const q of [[-40,-4],[-44,6],[-36,14]]){
+   c.beginPath();c.moveTo(-8,-40);c.quadraticCurveTo(-26,-46+q[1],q[0],-30+q[1]);
+   c.quadraticCurveTo(-24,-32+q[1],-8,-34);c.closePath();c.fill();c.stroke();}}
  /* ⭐脚(2026-07-27 第104弾)。⚠それまで**黒い四角2つ**で、履き物も明暗も無かった=
     実機では「棒人間の脚」にしか見えなかった。兵科と同じ ズボン(`UW.pa`)+軍靴(`UW.sho`) にする */
  for(const LL of [[-4.4+walk*3.5,.76],[4.4-walk*3.5,1]]){
@@ -9478,6 +9505,28 @@ function drawHeroBody(c,U,walk,o){
   c.quadraticCurveTo(-10,hy-11,1,hy-11);c.quadraticCurveTo(13,hy-11,12,hy-4);
   c.quadraticCurveTo(9,hy-1,-9,hy-2);c.closePath();c.fill();c.stroke();
   c.fillStyle=GOLD;c.beginPath();c.arc(-4,hy-6,2.4,0,7);c.fill();c.stroke();}
+ else if(L.h==='hood'){/* 目深のフード(顔が影・口元だけ見える) */
+  c.fillStyle=L.c2;c.beginPath();c.arc(0,hy-1,9.4,Math.PI,.35);c.lineTo(6,hy+7);c.lineTo(-10,hy+8);c.closePath();c.fill();c.stroke();
+  c.fillStyle=INK;c.beginPath();c.ellipse(1.5,hy-1,6,4.4,0,0,7);c.fill();
+  c.fillStyle=GOLD2;c.beginPath();c.arc(4,hy-1.5,1.7,0,7);c.fill();/* 光る目 */
+  c.fillStyle=shade('#d9b28a',.8);c.fillRect(2,hy+4.4,4.4,1.6);}
+ else if(L.h==='welder'){/* 溶接面(四角い面+細い覗き窓・上に跳ね上げた蝶番) */
+  c.fillStyle='#3f4a54';rr(c,-9,hy-11,19,19,3);c.fill();c.stroke();
+  c.fillStyle=TECH2;rr(c,-6,hy-5,15,4.4,1.4);c.fill();c.stroke();
+  c.fillStyle=GOLD2;c.fillRect(-9,hy-12.6,19,2.6);
+  c.fillStyle='#8a8f96';c.fillRect(-4,hy+6,10,2.2);}
+ else if(L.h==='hazmat'){/* 防護頭巾(丸窓+吸気の蛇腹) */
+  c.fillStyle=shade(L.c2,1.25);c.beginPath();c.arc(0,hy-1,9.6,0,7);c.fill();c.stroke();
+  c.fillStyle='#2f3742';c.beginPath();c.ellipse(2,hy-1,6.4,5,0,0,7);c.fill();c.stroke();
+  c.fillStyle=GOLD;c.beginPath();c.ellipse(4,hy-2.6,2.2,1.6,0,0,7);c.fill();
+  c.strokeStyle=DIM2;c.lineWidth=2.4;
+  c.beginPath();c.moveTo(-7,hy+4);c.quadraticCurveTo(-15,hy+8,-16,hy-2);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.4;}
+ else if(L.h==='halo'){/* 光輪+細い額冠(顔は出す) */
+  c.fillStyle=GOLD;c.beginPath();c.ellipse(0,hy-13,11,3.4,0,0,7);c.fill();c.stroke();
+  c.fillStyle=GLOW;c.beginPath();c.ellipse(0,hy-13,7,1.8,0,0,7);c.fill();
+  c.fillStyle=shade(GOLD,.85);rr(c,-8,hy-7,17,3.6,1.4);c.fill();c.stroke();
+  c.fillStyle='#6b5530';c.beginPath();c.arc(0,hy-4,8,Math.PI,0);c.fill();c.stroke();}
  else if(L.h==='crown'){/* 雷冠(3本の棘)+額の光 */
   c.fillStyle='#c8b06a';rr(c,-9,hy-7,19,4.4,1.6);c.fill();c.stroke();
   for(const q of [[-6,-13],[1,-18],[7,-12]]){c.fillStyle=GOLD;
@@ -9491,7 +9540,7 @@ function drawHeroBody(c,U,walk,o){
  else{c.fillStyle=col;rr(c,-8,hy-5,16,6,2);c.fill();c.stroke();}
  /* ⭐顔(第104弾)。⚠それまで**目も口も無かった**。ゾンビ・兵科と同じ `zEye` にする。
     ⚠顔が隠れる3人(頭巾/鉄仮面/髑髏)は上で描いてあるので触らない */
- if(L.h!=='veil'&&L.h!=='ironm'&&L.h!=='skull'&&L.h!=='gasm'){
+ if(['veil','ironm','skull','gasm','hood','welder','hazmat'].indexOf(L.h)<0){
   zEye(c,4,hy+.2,2.1);
   c.fillStyle=shade('#d9b28a',.66);c.fillRect(1.6,hy+4.2,3.4,1.3);}
  /* 武器(11人ぶん別々。⚠腕の先の小さな棒は消えるので、輪郭が変わる大きさで描く) */
@@ -9540,6 +9589,30 @@ function drawHeroBody(c,U,walk,o){
   c.strokeStyle=INK;c.lineWidth=2.4;
   c.fillStyle=GOLD;c.beginPath();c.arc(9,-37,3.4,0,7);c.fill();c.stroke();
   c.fillStyle='#3a3128';rr(c,7,-36,5,10,2);c.fill();c.stroke();}
+ else if(L.w==='case'){/* 提げ鞄(留め金2つ)+こぼれた⚙️ */
+  c.fillStyle='#6b5530';rr(c,7,-30,17,13,2);c.fill();c.stroke();
+  c.fillStyle=shade('#6b5530',.7);c.fillRect(7,-25,17,2.2);
+  c.fillStyle=GOLD2;for(let i=0;i<2;i++){c.beginPath();c.arc(11+i*7,-25.8,1.8,0,7);c.fill();}
+  c.fillStyle=GOLD;for(const q of [[27,-33,2.4],[31,-27,1.9]]){c.beginPath();c.arc(q[0],q[1],q[2],0,7);c.fill();c.stroke();}}
+ else if(L.w==='magnet'){/* U字磁石(赤白の極)+火花 */
+  c.strokeStyle='#b0483a';c.lineWidth=6.4;
+  c.beginPath();c.arc(16,-34,9,Math.PI*.55,Math.PI*2.45);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.4;
+  c.fillStyle=PAPER2;rr(c,10,-27,6,6,1.4);c.fill();c.stroke();
+  rr(c,20,-27,6,6,1.4);c.fill();c.stroke();
+  c.fillStyle=TECH;for(const q of [[30,-38,2.2],[33,-31,1.7]]){c.beginPath();c.arc(q[0],q[1],q[2],0,7);c.fill();}}
+ else if(L.w==='rod'){/* 燃料棒(光る芯を挟んだ長い筒) */
+  c.fillStyle='#8a8f96';c.save();c.translate(10,-36);c.rotate(-.32);
+  rr(c,-3.4,-26,7,48,2);c.fill();c.stroke();
+  c.fillStyle=shade('#c9d94a',1.1);rr(c,-2,-22,4.2,26,1.4);c.fill();
+  c.restore();
+  c.fillStyle=GLOW;c.beginPath();c.arc(19,-58,3.4,0,7);c.fill();c.stroke();}
+ else if(L.w==='banner'){/* 軍旗(長い竿+なびく旗) */
+  c.fillStyle='#5c4a30';rr(c,7,-80,4.6,58,2);c.fill();c.stroke();
+  c.fillStyle=col;c.beginPath();c.moveTo(11,-78);
+  c.quadraticCurveTo(30,-74,26,-64);c.quadraticCurveTo(30,-56,11,-58);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(col,.72);c.fillRect(14,-70,9,3);
+  c.fillStyle=GLOW;c.beginPath();c.arc(9.3,-82,3,0,7);c.fill();c.stroke();}
  else if(L.w==='spear'){/* 雷槍: 長い柄+光る穂先 */
   c.fillStyle='#5c4a30';c.save();c.translate(10,-38);c.rotate(.14);rr(c,-2.6,-40,5.2,70,2);c.fill();c.stroke();c.restore();
   c.fillStyle=TECH;c.beginPath();c.moveTo(4,-80);c.lineTo(11,-96);c.lineTo(18,-78);c.lineTo(11,-72);c.closePath();c.fill();c.stroke();
@@ -10667,6 +10740,7 @@ function deployUnit(C,ui){
 }
 function dmgU(C,u,d2){
  if(u.dead)return;
+ if((C.uOv||0)>0)d2*=.5;/* ⭐暁の王『暁の号令』=部隊の被ダメージ半減(英雄も含む) */
  u.hp-=d2;u.hitT=.1;
  if(u.hp<=0){u.dead=true;addFx(C,'splat',u.px,u.py,'',{gray:1});
   addP(C,8,u.px,u.py-22*CH_UP,{sp:130,up:50,g:520,life:.5,r:2.6,col:'#8a2f2f',jx:5,jy:7});
@@ -10902,6 +10976,46 @@ function heroUlt(C,wave){
     dmgZ(C,z,440*W,1);if(!z.dead){z.burnT=3;z.burnD=40*W;}}
    addFx(C,'boomL',p[0],p[1],'',{d0:.08*k});}
   C.shake=Math.max(C.shake||0,.45);if(C.isMe)sfx.boom&&sfx.boom();
+ }else if(id==='hDeal'){/* 闇取引: 煙玉で足止めしつつ、敵から⚙️を巻き上げ、出撃待ちを全部消す */
+  /* ⚠**唯一の経済の必殺技**=火力ではなく「いま欲しい物をすぐ建てられる」で効く */
+  let g=0;
+  for(const z of live){g+=Math.round(14+z.bt*.5);
+   z.slowT=Math.max(z.slowT||0,4);
+   addP(C,2,z.px,z.py-24*CH_UP,{sp:40,up:30,g:-20,life:.8,r:5,col:'#6e6354',typ:'smoke'});}
+  g=Math.round(g*W);C.scrap+=g;C.enTotal=(C.enTotal||0)+g;
+  for(let k=0;k<C.ucd.length;k++)C.ucd[k]=0;/* 出撃待ちを全部消す */
+  addFx(C,'ring',u.px,u.py,'',{r:280,col:GOLD2});
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'+'+fmt(g)+'⚙️ 闇取引');
+  addP(C,18,u.px,u.py-28*CH_UP,{sp:150,up:80,g:-30,life:1,r:4,col:'#6e6354',typ:'smoke'});
+  if(C.isMe)sfx.coin&&sfx.coin();
+ }else if(id==='hMag'){/* 引力場: 前方の敵を1か所へ引き寄せて足止め */
+  /* ⚠**すり抜ける敵(noblock)も掴む**=引力なので足の有無に関係ない、が売り */
+  const cd0=Math.max(40,u.d-190),ts=live.filter(z=>Math.abs(z.d-cd0)<=420);
+  for(const z of ts){z.d=cd0+rnd(-26,26);z.frzT=Math.max(z.frzT||0,2.6);dmgZ(C,z,210*W,1);}
+  const p=pathPos(clamp(cd0,0,PLEN));
+  for(let k=0;k<3;k++)addFx(C,'ring',p[0],p[1],'',{r:150-k*40,col:TECH});
+  addFx(C,'shock',p[0],p[1]-8,'',{r:150,col:'#bfe4f5'});
+  addP(C,20,p[0],p[1]-16,{sp:120,up:40,g:180,life:.6,r:2.6,col:TECH,jx:11,jy:8});
+  C.shake=Math.max(C.shake||0,.24);if(C.isMe)sfx.zap&&sfx.zap();
+ }else if(id==='hReact'){/* 炉心解放: 12秒間タワーの攻撃+60%。発動時に熱波で焼く */
+  C.atkT=Math.max(C.atkT||0,12);
+  for(const z of live){if(dist(z.px,z.py,u.px,u.py)>420)continue;
+   dmgZ(C,z,240*W,1);if(!z.dead){z.burnT=Math.max(z.burnT||0,4);z.burnD=Math.max(z.burnD||0,44*W);}}
+  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
+   addFx(C,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:56,col:'#c9d94a'});}
+  addFx(C,'ring',u.px,u.py,'',{r:420,col:'#c9d94a'});
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'炉心解放! 塔の火力+60%');
+  addP(C,22,u.px,u.py-28*CH_UP,{sp:190,up:70,g:-20,life:1,r:3.2,col:'#e8f57a'});
+  C.shake=Math.max(C.shake||0,.3);if(C.isMe)sfx.flame&&sfx.flame();
+ }else if(id==='hDawn'){/* 暁の号令: 12秒間 部隊の攻撃2倍・被ダメ半減。発動時に全回復 */
+  C.uOv=Math.max(C.uOv||0,12);
+  for(const u2 of C.units)if(!u2.dead){u2.hp=u2.mhp;
+   addFx(C,'ring',u2.px,u2.py,'',{r:44,col:GOLD});}
+  for(const z of live)z.slowT=Math.max(z.slowT||0,3.2);/* 光に怯む */
+  addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:GOLD});
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'暁の号令!');
+  addP(C,26,u.px,u.py-30*CH_UP,{sp:170,up:110,g:-50,life:1.3,r:3.4,col:GLOW,jx:12,jy:9});
+  C.shake=Math.max(C.shake||0,.24);if(C.isMe)sfx.win&&sfx.win();
  }else if(id==='hSeer'){/* 時間停止: 盤面の敵を完全停止 */
   for(const z of live)z.frzT=Math.max(z.frzT||0,4.5);
   addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:'#8f6fae'});
@@ -10979,6 +11093,10 @@ function campStep(C,dt,wave){
  /* ⚠HUDの桁が溢れないよう、ゲーム中は99,999止まりにして減ったら補充する */
  if(DEV&&C.isMe){if(C.scrap<50000)C.scrap=99999;if((C.up||0)<50000)C.up=99999;}
  C.tm+=dt;
+ /* ⭐英雄の時限バフ(2026-07-28)。⚠**効かせる場所は1か所ずつ**にしてある=
+    炉心解放(atkT)は下の atkB / 暁の号令(uOv)は部隊の攻撃力と dmgU の2か所だけ。 */
+ if(C.atkT>0)C.atkT-=dt;
+ if(C.uOv>0)C.uOv-=dt;
  if(C.shake>0)C.shake-=dt;
  if(C.flash>0)C.flash-=dt;/* ⭐🎯砲撃の着弾で焚く白フラッシュ(下の renderCamp で1枚塗るだけ) */
  if(!C.waveDone)C.charge=Math.min(1,C.charge+dt/((C.stk&&STRIKES[C.stk]?STRIKES[C.stk].ch:30)));
@@ -11043,7 +11161,8 @@ function campStep(C,dt,wave){
  for(const u of C.units){
   if(u.dead)continue;
   const U=UNITS[u.ui];u.cd-=dt;
-  const ua=Math.round(U.atk*(u.am||1));/* 部隊レベル補正込み攻撃力 */
+  /* 部隊レベル補正込み攻撃力。⚠**暁の号令**(uOv)はここと dmgU の2か所だけで効かせる */
+  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?2:1));
   let tg=null,best=-1;
   if(U.type==='heal'){
    if(u.cd<=0){let ta=null,br2=1;
@@ -11121,7 +11240,8 @@ function campStep(C,dt,wave){
   u.hp=Math.min(u.mhp,u.hp+C.supH*dt);
   if(FXLV===2&&Math.random()<dt*.5)addP(C,1,u.px,u.py-20*CH_UP,{sp:14,up:34,g:-40,life:.7,r:2.2,col:LIFE});}
  /* タワー */
- const atkB=1+.08*C.atkLv;
+ /* ⚠**炉心の番人の『炉心解放』**(atkT)はここだけで効かせる=タワー全部に一律+60% */
+ const atkB=1+.08*C.atkLv+((C.atkT||0)>0?.6:0);
  for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
   if(TOWERS[tw.ti]&&TOWERS[tw.ti].type==='sup')continue;/* 支援施設は撃たない */
   if(tw.jamT>0){tw.jamT-=dt;continue;}
@@ -14961,6 +15081,18 @@ const RG_SK=[
  /* 鋼鉄の巨人 */
  {id:'s_quake',n:'地響き', mp:10,t:'atk',tg:'all',pw:1.4,dsc:'地面を割って敵全体を打ち上げる'},
  {id:'s_guard',n:'かばう', mp:5, t:'buf',tg:'self',pw:1, dsc:'仲間への攻撃を一身に引き受ける',buf:'cov'},
+ /* 闇商人 */
+ {id:'s_smoke',n:'煙玉',   mp:5, t:'deb',tg:'all',pw:1,  dsc:'敵全体の素早さを下げて場を濁す',deb:'sp'},
+ {id:'s_bribe',n:'買収',   mp:9, t:'atk',tg:'one',pw:2.1,dsc:'弱みを突いて手痛い一撃',crit:.3},
+ /* 磁力技師 */
+ {id:'s_pull', n:'引力場', mp:7, t:'atk',tg:'all',pw:.95,dsc:'敵全体を引き寄せて叩きつける'},
+ {id:'s_iron', n:'鉄壁磁場',mp:8,t:'buf',tg:'party',pw:1,dsc:'味方全体の守りを上げる',buf:'df'},
+ /* 炉心の番人 */
+ {id:'s_burn2',n:'熱波',   mp:9, t:'atk',tg:'all',pw:1.2,dsc:'高熱で敵全体を焼く'},
+ {id:'s_melt2',n:'炉心解放',mp:14,t:'buf',tg:'party',pw:1,dsc:'味方全体の攻撃力を上げる',buf:'st'},
+ /* 暁の王 */
+ {id:'s_dawn', n:'暁の号令',mp:13,t:'buf',tg:'party',pw:1,dsc:'味方全体の攻撃力を上げる',buf:'st'},
+ {id:'s_judge',n:'裁きの光',mp:18,t:'atk',tg:'all',pw:2.0,dsc:'暁の光で敵全体を裁く',ign:1},
  /* 毒霧の魔女 */
  {id:'s_mist',n:'毒霧',    mp:6, t:'atk',tg:'all',pw:.82,dsc:'敵全体を毒の霧で包み、守りを下げる',deb:'df'},
  {id:'s_melt',n:'腐食',    mp:10,t:'atk',tg:'all',pw:1.3,dsc:'守りを無視して溶かす',ign:1},
@@ -14992,6 +15124,10 @@ const RG_HERO={
  hSeer:{b:{hp:44,mp:16,st:15,df:12,sp:12},g:{hp:7.8,mp:3.8,st:2.9,df:2.2,sp:2.0},sk:[[1,'s_fore'],[10,'s_stop'],[20,'s_tide']]},
  hVenom:{b:{hp:40,mp:18,st:14,df:10,sp:11},g:{hp:7.0,mp:4.2,st:2.7,df:1.8,sp:1.8},sk:[[1,'s_mist'],[12,'s_melt']]},
  hCmd :{b:{hp:50,mp:13,st:15,df:14,sp:12},g:{hp:9.0,mp:3.0,st:2.8,df:2.5,sp:1.9},sk:[[1,'s_rally'],[11,'s_order']]},
+ hDeal:{b:{hp:36,mp:12,st:12,df:9, sp:14},g:{hp:6.4,mp:2.8,st:2.2,df:1.6,sp:2.2},sk:[[1,'s_smoke'],[9,'s_bribe']]},
+ hMag :{b:{hp:46,mp:14,st:14,df:15,sp:9}, g:{hp:8.2,mp:3.2,st:2.6,df:2.8,sp:1.4},sk:[[1,'s_pull'],[10,'s_iron']]},
+ hReact:{b:{hp:58,mp:17,st:18,df:16,sp:9},g:{hp:10.4,mp:3.9,st:3.3,df:2.9,sp:1.4},sk:[[1,'s_burn2'],[13,'s_melt2']]},
+ hDawn:{b:{hp:60,mp:19,st:21,df:17,sp:15},g:{hp:10.8,mp:4.4,st:3.9,df:3.0,sp:2.4},sk:[[1,'s_dawn'],[18,'s_judge']]},
  hGiant:{b:{hp:70,mp:9,st:19,df:19,sp:6}, g:{hp:12.5,mp:2.2,st:3.4,df:3.4,sp:1.0},sk:[[1,'s_guard'],[12,'s_quake']]},
  hStorm:{b:{hp:52,mp:20,st:20,df:13,sp:15},g:{hp:9.4,mp:4.6,st:3.6,df:2.3,sp:2.4},sk:[[1,'s_bolt'],[14,'s_storm']]},
  hNox :{b:{hp:62,mp:15,st:24,df:15,sp:14},g:{hp:11.0,mp:3.4,st:4.4,df:2.6,sp:2.3},sk:[[1,'s_doom'],[24,'s_end']]}

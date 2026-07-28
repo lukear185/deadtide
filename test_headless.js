@@ -1915,10 +1915,10 @@ function checkEvo(){
 }
 /* ---- 💎英雄召集(ガチャ): 排出率・重複・魔石の増減 ---- */
 function checkGacha(){
- /* ⚠2026-07-28ユーザー指示で★3を2人・★4を1人足した(11→14種) */
- if(HEROES.length!==14){console.log('FAIL: 英雄が14種でない '+HEROES.length);process.exit(1);}
+ /* ⚠2026-07-28ユーザー指示で★3x2・★4x1(→14種)、さらに★2〜★5を1人ずつ(→18種)足した */
+ if(HEROES.length!==18){console.log('FAIL: 英雄が18種でない '+HEROES.length);process.exit(1);}
  const cnt={};for(const h of HEROES)cnt[h.rk]=(cnt[h.rk]||0)+1;
- const want={1:5,2:3,3:3,4:2,5:1};
+ const want={1:5,2:4,3:4,4:3,5:2};
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
  /* 魔石が足りない時は引けない */
@@ -1943,7 +1943,7 @@ function checkGacha(){
  if(META.hmat<=m0){console.log('FAIL: 重複が鍛錬素材になっていない');process.exit(1);}
  /* ボス撃破の💎付与(通常1/最終3)が定義されているか */
  if(!(GEM_BOSS===2&&GEM_FIN===6)){console.log('FAIL: ボスの魔石量が想定と違う');process.exit(1);}
- console.log('ガチャ: 英雄'+HEROES.length+'種(★1x5/★2x3/★3x3/★4x2/★5)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
+ console.log('ガチャ: 英雄'+HEROES.length+'種(★1x5/★2x4/★3x4/★4x3/★5x2)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
  META.gem=0;META.hero={};META.hmat=0;
 }
 /* ---- 🦸英雄: 出撃(1ゲーム1回)と必殺技11種 ----
@@ -1986,7 +1986,9 @@ function checkHero(){
   if(s0.every((v,i)=>Math.abs(v-s1[i])<1e-6)){console.log('FAIL: 必殺技『'+h.ult+'』に何の効果も無い');process.exit(1);}
   if(s1[0]<s0[0])dmgN++;
   /* 倒れたら二度と出せない */
-  dmgU(me,hu,hu.hp+1);
+  /* ⚠**十分に大きい一撃で殺す**=暁の号令(uOv)が生きていると被ダメージが半分になり、
+     hp+1 では死なない(2026-07-28に踏んだ) */
+  dmgU(me,hu,hu.hp*10+1000);
   if(me.hOut!==2){console.log('FAIL: 英雄の戦死が記録されない '+h.id);process.exit(1);}
   if(heroDeploy(me)){console.log('FAIL: 戦死した英雄が再出撃できる '+h.id);process.exit(1);}
   backTitle();
