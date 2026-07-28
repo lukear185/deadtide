@@ -196,6 +196,7 @@ node test_shot.js out.png 852 393 "tut=3+tutbm"  # 🎓チュートリアル(数
 node test_shot.js out.png 852 393 hero=all        # 英雄11人を経路に並べて撮る(見た目の確認)
 node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させて撮る(+nodep=出撃前のボタンだけ見る)
 node test_shot.js out.png 852 393 "title+opt"    # ⚙オプション(音量バー+演出の強さ)
+node test_shot.js out.png 852 393 "title+lob"    # ✨黄金のロブスター(0.1%・5発・💎30) / rbz=🌈虹のゾンビ
 node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=twup lab=unup 記録は lab=rec
 node test_shot.js out.png 852 393 load           # 🎖編成
 node test_shot.js out.png 852 393 "gacha5+gbang" # 💎召集(gacha=撃て! / +gfly=弾が飛ぶ / +gbang=木っ端みじん+示唆 /

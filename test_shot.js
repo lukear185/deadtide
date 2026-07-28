@@ -110,7 +110,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :STP?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.nmOK=1;META.st=["air","mgun","frost","napalm"];'
        +'META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.hero={hNox:1,hSf:1,hCop:1};'
        +'renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show("setup");')
-     :TTL?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'+(OPTM?'optRender();document.getElementById("md-opt").classList.add("on");':''))
+     /* lob=✨黄金のロブスター(0.1%)を画面の真ん中に立たせて撮る / rb=🌈虹のゾンビ */
+     :TTL?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;updLabBtn();'
+       /* ⚠ほかの行進を消してから置く=隣のゾンビと重なって形が読めない */
+       +(OPT.indexOf('lob')>=0?'setTimeout(function(){PAR.length=0;PAR.push({zi:LB_ZI,x:innerWidth*.3,sp:0,ph:1,ht:0,hp:LB_HP,kb:0,fl:0,lb:1});},300);':'')
+       +(OPT.indexOf('rbz')>=0?'setTimeout(function(){PAR.length=0;PAR.push({zi:5,x:innerWidth*.3,sp:0,ph:1,ht:0,hp:RB_HP,kb:0,fl:0,rb:1});},300);':'')
+       +(OPTM?'optRender();document.getElementById("md-opt").classList.add("on");':''))
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
        +'META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});'
