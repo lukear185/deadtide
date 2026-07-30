@@ -2726,6 +2726,25 @@ function loadStage(si){
  makeScenery();/* 地面の模様・道路のひび・タイヤ痕を作り直す */
 }
 function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}const e=SEG[SEG.length-1];return[e.b[0],e.b[1],0];}
+/* ⭐⭐**道の上での「左右どちらを向くか」**(2026-08-01ユーザー指摘
+     「攻撃するときに左向いて攻撃するの全キャラやめて。しっかり敵の方見よう」)。
+   ⚠⚠**その場の道の角度だけで決めてはいけない**=道が**真縦**になっている所では
+     `Math.cos(角度)` がほぼ0になり、分岐がいつも同じ側(左)を選ぶ。
+     実機では**敵が右上に居るのに部隊が全員左を向いて撃っていた**。
+   ⭐**少し先の道の点まで見に行って左右を決める**。近くで差が出なければ順に遠くを見る。
+   sign=+1 → d が増える側(コア側) / sign=-1 → d が減る側(敵の湧く側)を向く。 */
+const PF_L=[90,200,380];
+function pathFace(d,px,sign,ang){
+ for(let i=0;i<3;i++){const q=pathPos(clamp(d+sign*PF_L[i],0,PLEN)),dx=q[0]-px;
+  if(Math.abs(dx)>8)return dx>0?1:-1;}
+ return (Math.cos(ang)>=-.05?1:-1)*sign;/* 道が真縦のまま=今までどおり道の向きで決める */
+}
+/* 部隊の向き: ①狙っている敵が居ればその敵の側 ②後退中は進む向き ③それ以外は敵の来る側。
+   ⚠真上・真下の敵(横の差が小さい)では①を使わない=左右にちらつく */
+function uFace(u,p){
+ if(!u.back&&u.tgx!=null){const dx=u.tgx-p[0];if(Math.abs(dx)>6)return dx>0?1:-1;}
+ return pathFace(u.d,p[0],u.back?1:-1,p[2]);
+}
 function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
 /* 建設マス(loadStageでステージのものに差し替わる)。
    置き方の決まり: 道路の中心線からちょうど95(道路半幅49+マス半28=77なので18px空く)。
@@ -14525,7 +14544,8 @@ function campStep(C,dt,wave){
  if(!C.waveDone&&C.hOut===1)C.hCg=Math.min(1,(C.hCg||0)+dt/heroUch(C));
  /* 位置・オーラ */
  const scrs=[];
- for(const z of C.zombies){const p=pathPos(Math.max(0,z.d));z.px=p[0];z.py=p[1];z.dr=Math.cos(p[2])>=-.05?1:-1;z.vw=pxVw(p[2]);if(z.aura)scrs.push(z);}
+ /* ⚠向きは `pathFace` で決める(道が真縦の所で左右がおかしくなるため。掟は pathFace の所) */
+ for(const z of C.zombies){const p=pathPos(Math.max(0,z.d));z.px=p[0];z.py=p[1];z.dr=pathFace(Math.max(0,z.d),p[0],1,p[2]);z.vw=pxVw(p[2]);if(z.aura)scrs.push(z);}
  for(const u of C.units)u.eng=0;
  for(const z of C.zombies){
   z.sm=1;for(const s2 of scrs){if(s2!==z&&dist(z.px,z.py,s2.px,s2.py)<150){z.sm=1.35;break;}}
@@ -14594,7 +14614,7 @@ function campStep(C,dt,wave){
  /* ユニット */
  const MR=38;
  for(let ui2=0;ui2<UNITS.length;ui2++)if(C.ucd[ui2]>0)C.ucd[ui2]-=dt;
- for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;
+ for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=uFace(u,p);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;
   /* ⭐必殺技の前置き。⚠退がるのは**絵の位置だけ**で u.d は動かさない(技の起点をずらさない) */
   if(u.ulW>0){u.ulW-=dt;
    if(u.ulBk>0){const q=clamp(1-u.ulW/(u.ulW0||1),0,1);
@@ -14628,7 +14648,7 @@ function campStep(C,dt,wave){
         だから cd だけで振らせると「出した途端に振る」「誰も居ないのに振る」の2つが起きる。
       ⭐**この印と `u.fired`(一度でも攻撃したか)の両方を見ること**。
         ⚠他のキャラに攻撃モーションを付ける時も必ず同じようにする。 */
-   u.eng=1;
+   u.eng=1;u.tgx=tg.px;/* ⭐狙っている敵の横位置=次のフレームの「向き」に使う(uFace) */
    /* ⭐⭐**4段階(待機→溜め→発射→硬直)**。u.cd=硬直 / u.chg=溜めの進行度(0→1) / u.ct=いま溜めている印。
       ⚠溜め中は狙っている座標を控える(照準の線を引くため)。 */
    const cgT9=uChgT(u.ui);
@@ -14808,7 +14828,7 @@ function campStep(C,dt,wave){
       addFx(C,'slash',u.px,u.py-26*CH_UP,'',{ang:aa,r:(24+utl*7)*CH_UP,lv:utl,col:ucl});
       hitFx(C,tg,aa,ucl,pierce,U.type);}}
    }
-  }else{u.ct=0;u.eng=0;/* ⚠**u.chg は消さない**=溜めの進行度は次の対象へ引き継ぐ(設計の3番目) */
+  }else{u.ct=0;u.eng=0;u.tgx=null;/* ⚠**u.chg は消さない**=溜めの進行度は次の対象へ引き継ぐ(設計の3番目) */
    /* ⭐⭐**歩いている間に構えておく**(2026-07-30ユーザー指摘)。
       ⚠溜めを入れると**接敵した最初の1発が必ず遅れる**ので、波が当たった瞬間に押し込まれる。
         持続DPSは戻してあっても、ぶつかった瞬間だけは戻っていなかった。
@@ -20754,7 +20774,7 @@ function syncEnts(cc,es,us,dt){
  cc.zombies=[];
  for(const z of cc.zm.values()){
   if(z.td!=null)z.d+=(z.td-z.d)*Math.min(1,dt*10);
-  const p=pathPos(Math.max(0,z.d));z.px=p[0];z.py=p[1];z.dr=Math.cos(p[2])>=-.05?1:-1;z.vw=pxVw(p[2]);
+  const p=pathPos(Math.max(0,z.d));z.px=p[0];z.py=p[1];z.dr=pathFace(Math.max(0,z.d),p[0],1,p[2]);z.vw=pxVw(p[2]);
   if(z.hitT>0)z.hitT-=dt;
   cc.zombies.push(z);
  }
@@ -20769,7 +20789,7 @@ function syncEnts(cc,es,us,dt){
  cc.units=[];
  for(const u of cc.um.values()){
   if(u.td!=null){const mv=u.td-u.d;u.d+=mv*Math.min(1,dt*10);u.back=mv>4;}
-  const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);
+  const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=uFace(u,p);/* ⚠相手の盤面も同じ向きの決め方にする */
   if(u.hitT>0)u.hitT-=dt;
   cc.units.push(u);
  }
