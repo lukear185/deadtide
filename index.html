@@ -9899,7 +9899,7 @@ const U_PZ={
  spr  :{ls:6.4,lh:-.6,tl:.10,hb:[11,-23.6],hf:[6.8,-23.4],cs:'scarf'},
  chain:{ls:4.6,lw:1.2,tl:.05,hb:[10,-24.4],hf:[4.4,-28],cs:'harn'},
  gun  :{ls:5.0,lw:.6,hb:[19,-24.2],hf:[9.4,-19.4],cs:'vest'},
- axe  :{ls:4.4,lw:1.8,tl:.09,hb:[6.9,-26.9],hf:[13.4,-28.8],cs:'pelt'},
+ axe  :{ls:4.4,lw:1.8,tl:.09,hb:[6.9,-23.4],hf:[13.4,-24.4],cs:'pelt'},
  shd  :{ls:3.6,lw:1.6,lh:1.2,tl:-.04,hh:0,hb:[10.5,-24.6],hf:[11.5,-29.6],cs:'plate'},
  smg  :{ls:5.6,hb:[16,-25],hf:[9.4,-20],cs:'bando'},
  mol  :{ls:5.4,tl:.06,hb:[9.4,-24],hf:[12.4,-36.6],cs:'heat'},
@@ -10295,11 +10295,13 @@ function uBack0(c,k,U,walk){
   rr(c,-4,-14,8,28,4);c.fill();c.stroke();c.restore();}
  else if(k==='batt'){c.fillStyle='#3f4a54';rr(c,-19,-33,11,19,3);c.fill();c.stroke();
   c.fillStyle=TECH;c.fillRect(-17,-29,7,3);c.fillRect(-17,-23,7,3);}
- else if(k==='coil'){/* ⚠細い輪を重ねると石鹸の泡に見えた。**太い縄の輪**にする(実機で撮って直した) */
-  c.strokeStyle='#8a6a45';c.lineWidth=5;
-  c.beginPath();c.arc(-15,-26,7,0,7);c.stroke();
-  c.strokeStyle='#5c4a30';c.lineWidth=1.6;
-  c.beginPath();c.arc(-15,-26,7,0,7);c.stroke();
+ else if(k==='coil'){/* ⚠細い輪を重ねると石鹸の泡に見えた。**太い縄の輪**にする(実機で撮って直した)。
+    ⚠**大きくしすぎない**(2026-08-01に縮めた)=半径7では胴と同じ大きさの輪になり、
+      背中に**巨大なドーナツ**が浮いて見えた */
+  c.strokeStyle='#8a6a45';c.lineWidth=4.2;
+  c.beginPath();c.arc(-14,-25,4.8,0,7);c.stroke();
+  c.strokeStyle='#5c4a30';c.lineWidth=1.4;
+  c.beginPath();c.arc(-14,-25,4.8,0,7);c.stroke();
   c.strokeStyle=INK;c.lineWidth=2.4;}
  else if(k==='sword'){c.fillStyle='#3f4a54';c.save();c.translate(-13,-30);c.rotate(-.5);
   rr(c,-3,-16,6,30,2);c.fill();c.stroke();c.restore();}
@@ -10322,9 +10324,13 @@ function uBack0(c,k,U,walk){
    c.closePath();c.fill();c.stroke();}}
  else if(k==='cloak'){/* ⚠**兵科の色で塗らない**(2026-08-01)=隊長は白っぽい色なので、
     そのまま塗ると背中に**白い帆**が立っているように見えた。外套は必ず濃い色にする */
-  c.fillStyle='#5c4a3a';c.beginPath();c.moveTo(-8,-37);
-  c.lineTo(-21,-5+walk*2);c.lineTo(-1,-11);c.closePath();c.fill();c.stroke();
-  c.fillStyle=GOLD;c.beginPath();c.arc(-7.4,-35.4,2.2,0,7);c.fill();c.stroke();}/* 留め金 */
+  /* ⚠**幅を広げすぎない**(2026-08-01)=胴の倍ある三角にすると背中に**帆**が立って見える。
+     ⭐肩から細く垂らして裾だけ揺らす */
+  c.fillStyle='#5c4a3a';c.beginPath();c.moveTo(-7.4,-37);
+  c.bezierCurveTo(-13,-30,-15,-20,-14.4,-9+walk*2);
+  c.lineTo(-6.4,-12);c.lineTo(-2.6,-13.4);
+  c.bezierCurveTo(-3.4,-24,-3.4,-31,-3.4,-36.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GOLD;c.beginPath();c.arc(-6,-35.4,2.2,0,7);c.fill();c.stroke();}/* 留め金 */
 }
 /* ⭐バットのスイングの進み(0=構え / >0=振っている最中)。0=いま振った直後 → 1=次に振る直前。
    ⚠攻撃していない(cd<=0)時は0=構え。
@@ -11043,17 +11049,26 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
     ⚠それまでは斜め上へ振り上げていて、刃が**顔と同じ高さ**に来て「開いた嘴」に見えた
       (ゾンビで踏んだのと同じ穴)。⭐刃はあごより下に置く。
     ⚠三日月1枚だと鎌になる=**上下2枚の刃(双刃)**にすると「重い斧」に読める。 */
-  c.save();c.translate(4,-26);c.rotate(-.30+walk*.06);
+  /* ⚠⚠**上下に同じ大きさの刃を開くと「メガホン」になる**(2026-08-01に撮って直した)。
+     細い首から左右対称に広がる形は、斧ではなくラッパに読める。
+     ⭐**上を大きく下を小さく**+**背に小さな突起**を付けると一発で戦斧になる。
+     ⚠**刃を顔の高さに上げない**=角度を寝かせて胸〜腰に収める(嘴に見えるのと同じ穴)。 */
+  c.save();c.translate(4,-23);c.rotate(-.14+walk*.05);
   c.fillStyle='#9c7a4a';/* 柄(⚠太さのある帯。線だと黒フチに食われる) */
-  c.beginPath();c.moveTo(-2.6,3);c.lineTo(-2.6,-2.2);c.lineTo(19,-2.8);c.lineTo(19,2.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-8,3.2);c.lineTo(-8,-2);c.lineTo(19,-2.8);c.lineTo(19,2.4);c.closePath();c.fill();c.stroke();
   c.fillStyle='#5c4326';/* 握りの巻き革(手の来る所を暗くして手を目立たせる) */
   c.beginPath();c.moveTo(1.4,2.8);c.lineTo(1.4,-2.3);c.lineTo(11,-2.6);c.lineTo(11,2.6);c.closePath();c.fill();
-  c.fillStyle='#b7bcc4';/* 双刃(⚠上下で長さを変える=左右対称はハリボテに見える) */
-  c.beginPath();c.moveTo(14.4,-2.4);c.quadraticCurveTo(21,-4.6,24.6,-12.4);
-  c.quadraticCurveTo(28.4,-6.2,27.6,-.6);c.lineTo(15,1);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(15,-.4);c.lineTo(27.6,-1.4);
-  c.quadraticCurveTo(27.4,4.2,24.4,8.4);c.quadraticCurveTo(20.6,3.4,14.6,2.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#7e858e';c.fillRect(15.6,-2.2,3.4,4.6);/* 刃の付け根の輪 */
+  /* ⚠⚠**刃を上下2枚に割らない**(2026-08-01に撮って直した)=真ん中を黒フチが横切って
+     **葉っぱ2枚(蝶)**に見える。⭐**1枚のひげ斧**(上の角が大きく下が短い)にする */
+  c.fillStyle='#b7bcc4';
+  c.beginPath();c.moveTo(13.6,-3);c.lineTo(18.6,-11);
+  c.quadraticCurveTo(27.4,-8,28.4,-.6);
+  c.quadraticCurveTo(27.8,5.4,22.4,7.8);c.lineTo(14.4,3.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade('#b7bcc4',.74);/* 刃の付け根(⚠これが無いと1枚の板に見える) */
+  c.beginPath();c.moveTo(13.6,-3);c.lineTo(18.6,-11);c.lineTo(20.6,-8.2);
+  c.quadraticCurveTo(17.6,-1,20,4.6);c.lineTo(17.6,5.6);c.lineTo(14.4,3.2);c.closePath();c.fill();
+  c.fillStyle='#7e858e';/* 背の突起(⚠左右対称を崩して「斧」に見せる) */
+  c.beginPath();c.moveTo(13.8,-2.8);c.lineTo(8.2,-6.2);c.lineTo(9,-1);c.lineTo(13.8,.6);c.closePath();c.fill();c.stroke();
   c.restore();}
  else if(id==='smg'){uGun(c,5,-26,18,4.6,'#3f4a54',1);}
  else if(id==='pike'){c.fillStyle='#8a6a45';/* 柄 */
