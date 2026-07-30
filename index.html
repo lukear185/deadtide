@@ -8161,73 +8161,131 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
       クローラー=平たい / スライム=頭も脚も無い塊 / ブルート=逆三角形で腕を引きずる /
       ストーカー=背を水平にした前傾+長い爪 / レイス=脚が無く裾が霧に散る /
       重装兵=横に広い低い箱 / ジャガーノート=棘の肩当てと鉄球 */
- if(Z.id==='walk'){/* ⭐ウォーカー(2026-07-27 第96弾に描き直し・34px前提)。
-    ⭐**効いたのは「色の区分け」**=それまで頭も服も脚も Z.c 一色で、明暗1段しか無かった。
-      34pxあれば **肌 / シャツ / ズボン / 靴** の4色に分けられ、それだけで「服を着た人」に読める。
-      ⚠**形をいじるより先に色を分ける**。1回目(第94弾)は形だけ凝って一色のままだったので不採用になった。
-    ⚠**肌を出す所を作る**(頭・片腕の袖から先・裾から下)=全部服だと着ぐるみに見える。
-    ⚠片袖を破って**左右で腕の見た目を変える**。左右対称だと置物に見える。 */
-  const sw=walk*3.2;
-  const SKIN=Z.c,SHIRT=ZW.sh,PANTS=ZW.pa,SHOE=ZW.sho,BLOOD=ZW.bl;/* 色は ZW の表から引く */
-  /* ⭐**割り付け(ここが一番効く)**: 全高55のうち 頭13 / 胴17 / 脚24。
-     ⚠頭を全高の3割まで大きくすると人形に見える(2回踏んだ)。⚠逆に2割まで小さくすると顔が読めない。
-     ⚠**頭は肩より狭く**(頭12幅 vs 肩19幅)。同じ幅だと全身のうち頭だけが目に入る。 */
-  /* --- 脚(ズボン→靴)。奥の脚は暗く --- */
+ if(Z.id==='walk'){/* ⭐ウォーカー(2026-07-30に姿勢・関節・接地を作り直し。色の区分けは第96弾のまま)。
+    ⭐**大写しで並べて撮って分かった弱点4つ**を直した(`node test_shot.js out.png 1200 740 "pose=z:walk"`):
+      ①**首が長く頭が胴から浮いていた**(首4本ぶんの隙間) → 首を短くし、頭の顎を胴に食い込ませる
+      ②**脚が膝の無い1本の棒**で、靴がほとんど見えず地面に立っていなかった
+        → 膝で細くし、靴を**横に長く**して接地させる
+      ③**腕が一直線の板**(ハリボテ感の原因③そのもの) → 肘で折り、二の腕を太く前腕を細くする
+      ④**上体が固まって脚だけが開閉**していた → ⭐**上体を脚と位相をずらして傾ける**。
+        これが一番効いた=よろめいて見え、生気の無さが出る。
+    ⚠守ること: 割り付け(頭13/胴17/脚24) / 頭に明暗の段を入れない / 血は横に広く /
+      奥の腕は手前より短く低く / 髪は描かない(禿げ)。どれも過去に踏んで決めたもの。 */
+  const sw=walk*3.2;                /* 脚の振り */
+  const lean=Math.sin(t*8+ph+1.15); /* ⭐上体のよろめき(脚と位相をずらす=同じ位相だと機械に見える) */
+  /* ⚠**ズボンと靴は ZW より明るい値を使う**。`ZW.pa`(#4a3d2e)と `ZW.sho`(#2b2419)は
+     黒フチ `INK`(#241f19)とほぼ同じ明るさで、奥の脚を .56倍すると**塗りと黒フチの差が2**しかなく
+     大写しでも脚が1本しか無いように見えた(撮って実測して分かった)。
+     ⚠兵科側では第102弾に同じ直しを済ませてある(NOTES「ズボンを明るくしたのがいちばん効いた」)。
+     ⚠ここはウォーカーだけのローカル。`ZW` そのものを触ると他の12種の見え方まで変わる。 */
+  const SKIN=Z.c,SHIRT=ZW.sh,PANTS='#6a5945',SHOE='#453a2a',BLOOD=ZW.bl;
+  /* --- 脚(腰→膝→足首→靴)。⚠奥の脚は暗く。⚠膝で細くしないと段ボールの棒になる --- */
   const leg=(dx,dk)=>{
-   c.fillStyle=shade(PANTS,dk);
-   c.beginPath();c.moveTo(-3.4+dx*.3,-24);c.lineTo(3.4+dx*.3,-24);c.lineTo(3.1+dx,-6);c.lineTo(-3.1+dx,-6);c.closePath();c.fill();c.stroke();
-   c.fillStyle=shade(SHOE,dk);
-   c.beginPath();c.moveTo(-3.3+dx,-6);c.lineTo(3.3+dx,-6);c.lineTo(5.4+dx,-.6);c.lineTo(-3.5+dx,-.6);c.closePath();c.fill();c.stroke();};
-  leg(-3.6-sw*1.6,.72);leg(3.4+sw*1.6,1);
-  /* --- 奥の腕: 前に伸ばす(袖のまま・暗い)。⚠両腕を前に出す形がいちばん「ゾンビ」に読める。
-     ⚠**手前の腕より短く・低く**すること=長さと高さが揃うと1本の太い腕に見える(実際にそうなった) --- */
-  c.fillStyle=shade(SHIRT,.7);
-  c.beginPath();c.moveTo(1,-35);c.lineTo(5,-35.6);c.lineTo(11.6,-29.4+sw*.6);c.lineTo(11,-26+sw*.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade(SKIN,.66);/* 奥の手 */
-  c.beginPath();c.moveTo(10.8,-30+sw*.6);c.lineTo(14.2,-29.2+sw*.6);c.lineTo(14.6,-25.6+sw*.6);c.lineTo(10.6,-25.2+sw*.6);c.closePath();c.fill();c.stroke();
-  /* --- 胴(シャツ)。肩を落として裾を欠かす --- */
+   const kx=dx*.5,ax=dx;/* 膝は足首の半分だけ前後する=脚が折れて見える */
+   c.fillStyle=shade(PANTS,dk*1.18);
+   c.beginPath();/* 太もも(太い) */
+   c.moveTo(-4.4+dx*.18,-24.6);c.lineTo(3.8+dx*.18,-24.6);
+   c.lineTo(3.4+kx,-13.6);c.lineTo(-3.6+kx,-13.6);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(PANTS,dk*.92);
+   c.beginPath();/* すね(細い) */
+   c.moveTo(-3.5+kx,-14);c.lineTo(3.3+kx,-14);
+   c.lineTo(2.8+ax,-4.4);c.lineTo(-2.9+ax,-4.4);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(SHOE,dk*1.55);
+   c.beginPath();/* 靴。⚠**横に長く**しないと地面に立っているように見えない */
+   c.moveTo(-3.6+ax,-4.8);c.lineTo(3.1+ax,-4.8);c.lineTo(4.4+ax,-2.6);
+   c.lineTo(6.6+ax,-2);c.lineTo(6.8+ax,-.3);c.lineTo(-4+ax,-.3);c.closePath();c.fill();c.stroke();
+  };
+  /* ⚠⚠**基準のずれと振りを同符号で足さない**。`leg(-3.4-sw*1.7)` と `leg(3.2+sw*1.7)` は
+     sw>0 で 6.6+5.4=12 開くのに sw<0 では 6.6-5.4=1.2 しか開かない=**1周期に1歩しか出ず**、
+     半周期は脚が重なって「同じ脚が前後しているだけ」に見える(実寸の接地幅を測って分かった)。
+     ⭐**基準のずれをほぼ0にして、振りだけで前後させる**と左右が入れ替わって歩いて見える。 */
+  leg(-.9-sw*2.6,.80);leg(.9+sw*2.6,1);
+  /* --- ⭐ここから上体。脚とずらして傾ける(よろめき)。⚠必ず restore すること --- */
+  c.save();c.translate(1,-23);c.rotate(lean*.05);c.translate(-1,23);
+  /* 腕(肩→肘→手)。⚠**一直線の帯にしない**=肘で折り、前腕を細くし、手を別の塊にする */
+  const zarm=(sx,sy,ex,ey,hx,hy,w1,w2,cA,cB,cH)=>{
+   c.fillStyle=cA;/* 二の腕(太い) */
+   c.beginPath();c.moveTo(sx,sy-w1);c.lineTo(ex+w2*.35,ey-w2);
+   c.lineTo(ex+w2*.35,ey+w2);c.lineTo(sx,sy+w1);c.closePath();c.fill();c.stroke();
+   c.fillStyle=cB;/* 前腕(細い)。⚠**二の腕と十分に重ねる**=重なりが黒フチ2本ぶん未満だと
+      肘の所に太い黒帯ができて「鎖/芋虫」に見える */
+   c.beginPath();c.moveTo(ex-w2*1.05,ey-w2*.98);c.lineTo(hx,hy-w2*.8);
+   c.lineTo(hx,hy+w2*.8);c.lineTo(ex-w2*1.05,ey+w2*.98);c.closePath();c.fill();c.stroke();
+   c.fillStyle=cH;/* 手(⚠丸い玉にすると棒の先に球が付いて見える=角のある塊)。
+      ⚠**前腕と同じ長さにしない**=腕の先が太いまま伸びて1本の棒に見える */
+   c.beginPath();c.moveTo(hx-w2*.2,hy-w2*1.08);c.lineTo(hx+w2*1.05,hy-w2*.86);
+   c.lineTo(hx+w2*1.2,hy+w2*.5);c.lineTo(hx-w2*.15,hy+w2);c.closePath();c.fill();c.stroke();
+  };
+  /* 奥の腕(袖のまま・暗い)。⚠**手前より短く・低く**=長さと高さが揃うと1本の太い腕に潰れる。
+     ⚠**肘で必ず折る**=肩→肘と肘→手の傾きが同じだと、太い黒フチで区切られた帯が3枚
+       並ぶだけになり「スパナ/ものさし」に見える(3点の傾きを測って0.6°しか曲がっていなかった)。
+     ⚠**前腕は w2≧3.4**。2.5だと塗りが1.4しか残らず黒フチに食われて縞の階段になる。 */
+  zarm(1.4,-31.6, 7.6,-27+sw*.5, 13.6,-25.8+sw*.7, 3.3,3.4,
+       shade(SHIRT,.66),shade(SHIRT,.72),shade(SKIN,.62));
+  /* --- 胴(シャツ)。⚠肩の上を丸め、腰でくびれさせ、裾を不揃いに欠かす。
+     ⚠**肩の頂点は頭の顎より下**に置くこと=上に置くと首が丸ごと隠れて頭が肩にめり込む(撮って直した) --- */
   const body=()=>{c.beginPath();
-   c.moveTo(-10,-37);c.lineTo(7.4,-38.4);       /* 肩(前が少し高い) */
-   c.lineTo(9,-28);c.lineTo(8,-23);             /* 前の脇から腰 */
-   c.lineTo(4,-20);c.lineTo(1,-24);c.lineTo(-3,-19);c.lineTo(-6,-24);c.lineTo(-8.8,-22);/* 破れた裾 */
+   c.moveTo(-9.4,-33.8);
+   c.bezierCurveTo(-10.4,-37.6,-4.4,-39.2,1.4,-38.8); /* 背中〜肩の上(丸める) */
+   c.bezierCurveTo(6.4,-38.5,9.2,-36.8,9.4,-33.4);    /* 前の肩 */
+   c.bezierCurveTo(9.6,-29.6,8.2,-26,7.4,-22.8);      /* 前の脇→腰(⚠くびれさせないと樽に見える) */
+   c.lineTo(4.6,-20.4);c.lineTo(2.2,-22.8);c.lineTo(-1,-19.8);
+   c.lineTo(-4.2,-22);c.lineTo(-6.8,-20.6);           /* 破れた裾(⚠等間隔にしない・⚠深く裂くとスカートに見える) */
+   c.bezierCurveTo(-8.4,-25.4,-9.8,-29.6,-9.4,-33.8);
    c.closePath();};
-  c.fillStyle=SHIRT;body();c.fill();c.stroke();
-  c.save();c.beginPath();c.rect(-14,-29,30,26);c.clip();/* 腰側だけ暗く(1段) */
+  zFill(c,body,SHIRT,-26.5);
+  /* ⭐背中側(奥)をもう1段暗くする=光が右上から当たって見え、平たい図形が塊になる。
+     ⚠**矩形で切ってはいけない**=胴の中に縦の直線が出て「四角い帯を貼った」ように見えた(撮って直した)。
+     肩から腰へ**斜めに**切ると体の丸みに見える。 */
+  c.save();c.beginPath();c.moveTo(-14,-42);c.lineTo(-6.2,-39.4);
+  c.lineTo(-7.8,-18);c.lineTo(-14,-18);c.closePath();c.clip();
   c.fillStyle=shade(SHIRT,.8);body();c.fill();c.restore();
-  c.fillStyle=BLOOD;/* 肩の血。⚠**縦に長い形にするとネクタイに見える**(2回そうなった)=横に広く付ける */
-  c.beginPath();c.moveTo(-3,-36.4);c.lineTo(3.6,-37.4);c.lineTo(6,-35);c.lineTo(1,-33.4);
-  c.lineTo(2,-31);c.lineTo(-1.4,-33);c.lineTo(-3.6,-34);c.closePath();c.fill();
-  /* --- 手前の腕: 袖が破れて肌が出ている。前へ伸ばす --- */
-  c.fillStyle=shade(SHIRT,1.14);/* 二の腕(袖) */
-  c.beginPath();c.moveTo(2.4,-36.4);c.lineTo(7.4,-37);c.lineTo(11.4,-33.2);c.lineTo(6.4,-31.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle=SKIN;/* 前腕(肌) */
-  c.beginPath();c.moveTo(6.8,-33.4);c.lineTo(11.6,-34.4);c.lineTo(18.6,-31.6-sw*.6);c.lineTo(18,-27.8-sw*.6);c.closePath();c.fill();c.stroke();
-  /* 手=小さく角のある形(丸い玉にすると棒の先に球が付いて見える) */
-  c.beginPath();c.moveTo(18,-32.4-sw*.6);c.lineTo(21.6,-31.6-sw*.6);c.lineTo(22,-27.6-sw*.6);
-  c.lineTo(19,-26.4-sw*.6);c.lineTo(17.6,-28-sw*.6);c.closePath();c.fill();c.stroke();
-  /* --- 首(短く・暗く)。⚠長いと頭が体から浮く --- */
-  c.fillStyle=shade(SKIN,.7);
-  c.beginPath();c.moveTo(-1,-40);c.lineTo(4,-40);c.lineTo(4,-36.4);c.lineTo(-1,-36.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=BLOOD;/* 肩の血。⚠**縦に長い形にするとネクタイに見える**(3回そうなった)=横に広く付ける。
+     ⚠**首の真下に置かない**=胸の中央に縦の赤が来ると、どう描いてもネクタイにしか見えない。
+     ⭐**背中側の肩**に寄せると、手前の腕にも隠れず、暗い背中の中で赤が効く(撮って動かした) */
+  /* ⚠角の少ない多角形にすると**赤い矢印**に見える(撮って直した)。
+     頂点を増やして下へ2か所たらすと「染み」に読める */
+  c.beginPath();c.moveTo(-9.4,-34.8);c.lineTo(-6.8,-36.8);c.lineTo(-3.2,-36.4);
+  c.lineTo(-1,-34.6);c.lineTo(-2.4,-32.4);c.lineTo(-3,-29.8);c.lineTo(-4.6,-32.6);
+  c.lineTo(-6.4,-31);c.lineTo(-7,-33);c.lineTo(-9.4,-32.4);c.closePath();c.fill();
+  /* 手前の腕: 袖が破れて前腕から先は肌。⚠**肌を出す所を作る**=全部服だと着ぐるみに見える。
+     ⚠奥の腕と**高さを離す**こと(前は1.8しか違わず、コマによっては1本に見えた)。
+     ⚠**肩に丸みの楕円を足すのは駄目**だった=胴の上に黒フチの輪が乗って「肩章」に見える
+       (ハリボテ感の原因④そのもの)。
+     ⚠⚠かといって**付け根を胴の内側に置くのも駄目**=腕の根元の縦の黒フチが胸を上から下まで
+       横切って、胴が2〜3枚に割れて見える(NOTES「腕を胸の中央から生やすと黒フチが襷に見える」)。
+       **付け根は胴の右の輪郭に重ねる**(x≒5以上)のが正解。 */
+  zarm(5.2,-34.6, 11.8,-31.2-sw*.4, 18.6,-33-sw*.7, 3.7,3.8,
+       shade(SHIRT,1.12),SKIN,SKIN);
+  /* --- 首(短く・暗く)。⚠長いと頭が体から浮く(前はここが4本ぶんあった) --- */
+  c.fillStyle=shade(SKIN,.64);
+  c.beginPath();c.moveTo(.2,-42);c.lineTo(5.2,-42);c.lineTo(4.8,-37.6);c.lineTo(-.2,-37.6);c.closePath();c.fill();c.stroke();
   /* ⭐頭は**正面寄り**にする: 横顔の卵に描くと、正面向きの胴と噛み合わず
      「胴は正面・顔は横」の変な絵になる。⚠髪を側頭部まで回すと**頭巾/ヘルメット**に見えたので、
      この個体は**禿げ**にした(髪を描かないのが一番安全)。目は前の1つ+落ちくぼんだ穴。 */
   zFill(c,()=>{c.beginPath();
-   c.moveTo(-4.6,-45);
-   c.bezierCurveTo(-4.8,-50,-2.4,-52.4,1.4,-52.6);  /* 側頭部〜てっぺん */
-   c.bezierCurveTo(5.2,-52.8,7.6,-50.4,7.6,-46.2);  /* てっぺん〜こめかみ */
-   c.lineTo(6.8,-42);                                /* 頬(直線気味=角を作る) */
-   c.bezierCurveTo(5.8,-39.8,-2,-39.8,-3.4,-42);     /* あご(横に広い) */
+   c.moveTo(-4.9,-46);
+   c.bezierCurveTo(-6,-51.8,-2.8,-54.4,1.7,-54.4);    /* 側頭部〜てっぺん(⚠後頭部が平らだと角ばる) */
+   c.bezierCurveTo(6.1,-54.6,8.5,-51.8,8.3,-47.2);    /* てっぺん〜こめかみ */
+   c.lineTo(7.7,-43.6);                                /* 頬(直線気味=角を作る) */
+   c.bezierCurveTo(7.1,-40.2,-1.6,-40,-3.7,-42.8);     /* あご(⭐胴に食い込ませて浮きを消す) */
    /* ⚠**頭に明暗の段を入れない**(zFillの第4引数をあごの下に置いて効かなくする)。
       顔の途中で切ると**上半分が別の球に見えて「頭に瘤が乗っている」**絵になる。
       頭は一色+眉の影だけが正解だった(2回作り直して分かった) */
    c.closePath();},SKIN,-39.4);
   c.fillStyle=shade(SKIN,.72);/* 眉の下の影(目の上だけ・薄く)。⚠濃く広く入れると耳や穴に見える */
-  c.beginPath();c.moveTo(2,-47.6);c.lineTo(7.2,-47.2);c.lineTo(7,-45.8);c.lineTo(2.2,-46.2);c.closePath();c.fill();
-  zEye(c,4.6,-45.6,1.9);                             /* 前の目 */
-  c.fillStyle=shade(SKIN,.46);                       /* 奥の目=落ちくぼんだ穴(小さく・少し上) */
-  c.beginPath();c.ellipse(.4,-46.2,1.5,1.4,0,0,7);c.fill();
-  c.fillStyle=INK;/* 開いた口(横に広く・下寄り) */
-  c.beginPath();c.moveTo(.6,-42);c.lineTo(5.4,-42.2);c.lineTo(4.6,-40);c.lineTo(1.4,-40);c.closePath();c.fill();
+  c.beginPath();c.moveTo(2.2,-48.4);c.lineTo(7.8,-48);c.lineTo(7.6,-46.4);c.lineTo(2.4,-46.9);c.closePath();c.fill();
+  c.fillStyle=shade(SKIN,.8);/* ⭐頬のこけ(痩せ衰えて見える)。⚠濃くすると汚れにしか見えない */
+  c.beginPath();c.moveTo(5.6,-45.2);c.lineTo(7.9,-44.8);c.lineTo(7.2,-42.4);c.closePath();c.fill();
+  zEye(c,5,-46.2,1.95);                              /* 前の目 */
+  c.fillStyle=shade(SKIN,.44);                       /* 奥の目=落ちくぼんだ穴(小さく・少し上) */
+  c.beginPath();c.ellipse(.7,-46.8,1.55,1.45,0,0,7);c.fill();
+  c.fillStyle=INK;/* 開いた口(横に広く・下顎が落ちている) */
+  c.beginPath();c.moveTo(.8,-42.6);c.lineTo(6,-42.8);c.lineTo(5.2,-39.9);c.lineTo(1.6,-40.1);c.closePath();c.fill();
+  c.fillStyle=PANE;/* ⭐歯(不揃いに2本)=口が開いていることが実寸でも読める。
+     ⚠**大きくしない**=牙になって吸血鬼に見える(撮って下げた)。実寸では点として残ればよい */
+  c.fillRect(2.3,-42.4,.95,1.05);c.fillRect(4.1,-42.5,.75,.8);
+  c.restore();/* 上体の傾き */
   c.restore();return;}
  if(Z.id==='run'){/* ⭐ランナー(2026-07-27 第97弾に描き直し): 全力で走る人。**前傾**と大きく開いた脚が売り。
     ⚠胴を横に寝かせると四つ足の生き物に見える(一度そうなった)ので、胴は斜めに**立てる**。
@@ -10134,6 +10192,134 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   if(vid==='cerb'){head(14,-24,5.5);head(20,-15,5.5);head(16,-19,6.5);}
   else head(17,-18,vid==='fenr'?8:7);
   if(vid==='fenr'&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(27,-16,3+Math.sin(t*12)*1.5,0,7);c.fill();c.globalAlpha=1;}
+  c.restore();return;
+ }
+ if(id==='bat'){/* ⭐バット「基本の殴り屋」(2026-07-30に専用の姿へ描き直し)。
+    ⚠それまでは**共通の体+野球帽+前に突き出した棒**で、大写し(`pose=u:bat`)にすると5つ出た:
+      ①頭が全高の3割を超えて大きい ②帽子のつばが「顔から突き出た黄色い棒」
+      ③シャツもズボンも帽子も同じ黄土色で全身が塊 ④脚が暗くて1つの黒い棒
+      ⑤バットを握っておらず、腕の先に浮いている。
+    ⭐**バットを肩に担がせた**のが一番効いた=斜めの棒がシルエットに入り、実寸でも「殴り屋」と読める。
+    ⭐**前の開いたベスト**で胴に色の段を作った(全身が同じ色だと何をしても塊に見える)。
+    ⚠バットは**胴より奥**に描くこと=胴の上から描くと黒フチが体を横切って「櫛を乗せた」ように見える。 */
+  const sw=walk*3.2;
+  const blean=Math.sin(t*10+ph+1.2);/* ⭐上体のよろめき(脚と位相をずらす) */
+  /* ⚠**色は明るめに置くこと**。1回目は ベスト#4a5040・靴#2b2419・奥の腕を .68倍 にしたら
+     実寸で**黒い塊に黄色い線**にしかならなかった。
+     ⚠靴は `UW.sho`(#2b2419)を使わない=黒フチ `INK`(#241f19)とほぼ同色で、
+       腰から下が丸ごと1つの黒い塊になる(実測して分かった)。 */
+  const SK=U_SKIN,SH=U.c,VEST='#5f6b4e',PA=UW.pa,SHO='#4a4034';
+  const swing=(o.fireT>0)?clamp(o.fireT/.14,0,1):0;/* 撃った直後=1 → 振り抜いた姿 */
+  /* --- 脚(腰→膝→足首→靴)。⚠奥は暗く。⚠靴は横に長く=地面に立って見える --- */
+  const bleg=(dx,dk)=>{
+   const kx=dx*.5;
+   c.fillStyle=shade(PA,dk*1.34);
+   c.beginPath();c.moveTo(-4+dx*.2,-20.5);c.lineTo(3.6+dx*.2,-20.5);
+   c.lineTo(3.2+kx,-11);c.lineTo(-3.4+kx,-11);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(PA,dk*1.06);
+   c.beginPath();c.moveTo(-3.3+kx,-11.3);c.lineTo(3.1+kx,-11.3);
+   c.lineTo(2.7+dx,-4.2);c.lineTo(-2.8+dx,-4.2);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(SHO,dk*1.45);
+   c.beginPath();c.moveTo(-3.4+dx,-4.6);c.lineTo(3+dx,-4.6);c.lineTo(4.2+dx,-2.5);
+   c.lineTo(6.2+dx,-2);c.lineTo(6.4+dx,-.3);c.lineTo(-3.8+dx,-.3);c.closePath();c.fill();c.stroke();
+  };
+  /* ⚠⚠**基準のずれと振りを同符号で足さない**=sw>0 でしか開かず「1周期に1歩」になる
+     (実寸の接地幅を測って分かった)。基準をほぼ0にして振りだけで前後させる */
+  bleg(-.8-sw*2,.8);bleg(.8+sw*2,1);
+  /* --- ⭐ここから上体。脚とずらして傾ける。⚠これが無いと脚だけ開閉して
+     上体が板のまま平行移動し「台車に乗って滑っている」ように見える --- */
+  c.save();c.translate(1,-20);c.rotate(blean*.042);c.translate(-1,20);
+  /* --- 腕。⭐**袖なし**=腕が胴と同じ色だと肩から手まで1本の斜めの帯に見え、
+     胴の模様と区別が付かなくなる(撮って直した)。
+     ⚠**共通の `uArm` は使えない**=前腕が w*.32(=幅4.7)しかなく、黒フチ2.4に食われて
+       腕がまるごと黒い棒になる。バットは両手で握るので**前腕を太く**した専用の腕にする。
+     ⚠**肘で必ず折る**=肩→肘と肘→手の傾きが同じだと帯が3枚並ぶだけで芋虫に見える。 --- */
+  const barm=(sx,sy,ex,ey,hx,hy,w1,w2,cA,cH)=>{
+   c.fillStyle=cA;
+   c.beginPath();c.moveTo(sx,sy-w1);c.lineTo(ex+w2*.3,ey-w2);/* 二の腕 */
+   c.lineTo(ex+w2*.3,ey+w2);c.lineTo(sx,sy+w1);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(ex-w2*1.05,ey-w2*.98);c.lineTo(hx,hy-w2*.86);/* 前腕(⚠十分に重ねる) */
+   c.lineTo(hx,hy+w2*.86);c.lineTo(ex-w2*1.05,ey+w2*.98);c.closePath();c.fill();c.stroke();
+   c.fillStyle=cH;
+   c.beginPath();c.moveTo(hx-w2*.2,hy-w2*1.08);c.lineTo(hx+w2*1.1,hy-w2*.86);/* 手 */
+   c.lineTo(hx+w2*1.25,hy+w2*.55);c.lineTo(hx-w2*.15,hy+w2);c.closePath();c.fill();c.stroke();
+  };
+  /* ⚠**手を暗い手袋にしない**=両手が握りの所で1つの黒い塊になり、腕がそこで途切れて見える
+     (撮って素手に戻した)。握りの巻き革が暗いので、手は肌のままでも境目は出る。
+     ⚠両手の**高さを離す**こと=平行に並ぶと肋骨のように見える */
+  barm(-1.2,-29.6, 4.2,-26, 8.4,-27.2, 3.5,3.1, shade(SK,.74),shade(SK,.64));
+  /* --- ⭐釘バット。**体の前へ斜めに構える**=進行方向にはみ出すので実寸でも棒が読める。
+     ⚠肩に担がせるのは**駄目だった**=先端の太い所しか体の外に出ず、
+       「肩に乗った茶色い岩」にしか見えない(撮って前へ回した)。
+     ⚠先端を頭と同じ高さに置かないこと(嘴に見える)。 --- */
+  {const BA=-.52+swing*1.25-(o.chg>0?.8*o.chg:0)+walk*.08;
+   c.save();c.translate(9.5,-27.6);c.rotate(BA);
+   c.fillStyle='#b8894f';/* 木の胴。⚠一定の太さの棒は物干し竿に見える=先へ太くする。
+      ⚠**細いと黒フチ2.4に食われて黒いくさびになる**=先端の半幅は4以上いる。
+      ⚠**太くしすぎるとまな板に見える**=半幅5.4は行き過ぎだった(撮って戻した) */
+   c.beginPath();c.moveTo(4.4,-2.7);c.lineTo(17,-3.7);c.lineTo(24,-4.6);
+   c.lineTo(27.4,-3.1);c.lineTo(27.4,3.1);c.lineTo(24,4.6);c.lineTo(17,3.7);c.lineTo(4.4,2.7);
+   c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade('#b8894f',1.14);/* 木目(⚠**上の縁に明部**。暗い帯にすると残った塗りを潰す) */
+   c.beginPath();c.moveTo(5,-1.7);c.lineTo(17,-2.7);c.lineTo(24,-3.5);
+   c.lineTo(24,-4.6);c.lineTo(17,-3.7);c.lineTo(4.4,-2.7);c.closePath();c.fill();
+   c.fillStyle='#5c4326';/* 握りの巻き革 */
+   c.beginPath();c.moveTo(-3.4,-2.3);c.lineTo(5,-2.3);c.lineTo(5,2.3);c.lineTo(-3.4,2.7);c.closePath();c.fill();c.stroke();
+   c.fillStyle=PAPER3;/* 打ち付けた釘。⚠等間隔に並べない。
+      ⚠⚠**stroke を掛けてはいけない**=半径1.5の円に黒フチ2.4を掛けると芯が0.3しか残らず、
+        外径2.75の黒い円盤3枚がバットの幅を丸ごと覆って「穴の空いた黒い板」になる(実測して外した)。
+      ⚠丸を大きくするとボタンに見える=小さい点でよい */
+   for(const k of [[14,-1.5],[19.2,1.6],[22.4,-2.2]]){
+    c.beginPath();c.arc(k[0],k[1],1.05,0,7);c.fill();}
+   c.restore();}
+  /* --- 首。⚠**胴より先に描く**=あとから描くと胴の上に肌色の四角が乗って見える。
+     ⚠短く。⚠細いと黒フチに食われて黒く沈むので幅6以上いる --- */
+  c.fillStyle=shade(SK,.72);
+  c.beginPath();c.moveTo(-1,-37.4);c.lineTo(5.4,-37.4);c.lineTo(4.8,-31.6);c.lineTo(-.4,-31.6);c.closePath();c.fill();c.stroke();
+  /* --- 胴(シャツ)。⚠肩の上を丸め腰でくびれさせる=四角い胴は段ボールに見える。
+     ⚠**肩の頂点は頭の顎より下**に置く=上に置くと首が丸ごと隠れて頭が肩にめり込む --- */
+  const bbody=()=>{c.beginPath();
+   c.moveTo(-8.2,-30.6);
+   c.bezierCurveTo(-9.2,-33.4,-4,-34.8,1.2,-34.4);
+   c.bezierCurveTo(5.8,-34.1,8.4,-32.6,8.6,-29.6);
+   c.bezierCurveTo(8.8,-26.4,7.8,-23.4,7.2,-21);
+   c.lineTo(-6.4,-21);
+   c.bezierCurveTo(-7.2,-23.4,-8.6,-26.6,-8.2,-30.6);
+   c.closePath();};
+  c.fillStyle=SH;bbody();c.fill();
+  c.save();c.beginPath();c.rect(-14,-26.5,30,20);c.clip();
+  c.fillStyle=shade(SH,.86);bbody();c.fill();c.restore();
+  bbody();c.stroke();
+  /* ⭐胴の色を分ける。⚠**前開きのベスト(縦2枚)も下半分の腹当ても駄目だった**=
+     前者は腕に隠れて「黄色いネクタイ」、後者は黄土が肩の三角しか残らず何色の兵科か分からない。
+     ⭐**たすき1本だけ**にして、シャツ(兵科の色)の面積を最大に残す。 */
+  c.save();c.beginPath();bbody();c.clip();
+  c.fillStyle=shade(VEST,1.06);/* 肩から腰へのたすき。⚠2本たすと胸が格子になって潰れる */
+  c.beginPath();c.moveTo(-6.6,-33.8);c.lineTo(-3.4,-34.2);c.lineTo(5.6,-23.6);c.lineTo(2.4,-23.2);c.closePath();c.fill();
+  c.fillStyle=shade(VEST,.86);/* 襟。⚠無いと頭が胴に直接乗って見える */
+  c.beginPath();c.moveTo(-2.4,-34.2);c.lineTo(4,-34.2);c.lineTo(2.6,-30.8);c.lineTo(-1,-30.8);c.closePath();c.fill();
+  c.restore();
+  c.fillStyle=UW.blt;c.fillRect(-7.2,-23.9,14.4,2.9);c.strokeRect(-7.2,-23.9,14.4,2.9);/* 腰の帯 */
+  c.fillStyle=UW.bkl;c.fillRect(-1.6,-24.3,3.4,3.7);/* 留め金(ここだけ明るい=腰の位置が読める) */
+  /* --- 手前の腕(手がバットの握りに来る) --- */
+  barm(4.4,-31.4, 9.4,-27.6, 12.6,-29, 3.9,3.4, SK,shade(SK,.92));
+  /* --- 頭。⚠真円だと風船に見える=縦にすこし長い卵。
+     ⚠**全高の3割を超えると人形に見える**(割り付けは 頭13/胴17/脚24 が正解) --- */
+  c.fillStyle=SK;
+  c.beginPath();c.ellipse(1.8,-41.8,5.7,6.3,0,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(SK,.88);/* 鼻の影(⚠大きいと嘴に見える・⚠濃いと傷に見える) */
+  c.beginPath();c.moveTo(5.4,-41);c.lineTo(6.6,-40.4);c.lineTo(5.3,-39.8);c.closePath();c.fill();
+  /* 野球帽。⚠**つばを長く伸ばさない**=顔から棒が突き出た絵になる(頭の幅+1程度に収める)。
+     ⚠**つばは厚く**(4以上)=薄いと黒フチに食われて「顔の横の黒い箱」になる。
+     ⚠目の真上に重ねない=目が黒板に貼った丸に見える。 */
+  c.fillStyle=shade(SH,.88);
+  c.beginPath();c.arc(1.8,-44.2,5.75,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle=shade(SH,.98);
+  c.beginPath();c.moveTo(5.2,-46.8);c.lineTo(9.6,-46);c.lineTo(9.4,-43);c.lineTo(5.2,-43.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(SH,.66);c.fillRect(-.4,-48.4,3.8,1.2);/* 縫い目(1本だけ。増やすと汚れに見える) */
+  zEye(c,4.4,-41.8,1.8);
+  c.fillStyle=shade(SK,.6);c.fillRect(3.2,-38.4,2.8,1.1);/* 口。⚠太く暗いと口髭か傷に見える */
+  c.restore();/* 上体の傾き */
   c.restore();return;
  }
  /* 脚 ⭐第100弾に描き直し → 第102弾に色を分けた。⚠それまで**5x10の四角2つ**で履き物も無く、

@@ -34,6 +34,16 @@ const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)�
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
 const NOITR=OPT.indexOf('noitr')>=0;
+/* ⭐pose=z:walk / pose=u:bat = **1体だけを大写しにして絵を磨くための画面**(2026-07-30)。
+   ⚠⚠**オプション名に `t=`/`u=`/`z=`/`w数字` を含めてはいけない**。最初 `art=` にしたら
+     `/t=([A-Za-z0-9]+)/`(タワー指定)が **`art=z:walk` の中の `t=z` を拾って**タワー"z"を建てようとし、
+     撮影プロセスが固まって1枚も撮れなかった(`gtw2` で踏んだのと同じ罠。2度目)。
+   ⚠実寸だけでは細部が見えず、拡大だけでは実機での見え方が分からない=**同じ1枚に両方並べる**。
+   ⚠**明るい地面と暗い地面の両方に置く**こと=黒フチと色の効き方は背景で変わる
+     (💎召集の金色が「夜では見えて朝では消える」で実際に踏んだ)。
+   ⚠歩行の位相を4コマ並べる=止め絵1枚だけ見て直すと、動いた時に脚が入れ替わる不具合を見逃す。 */
+const ARTM=/pose=([zu]):([A-Za-z0-9]+)/.exec(OPT);
+const ARTCHG=(/posechg=([0-9.]+)/.exec(OPT)||[0,''])[1];/* 溜めの姿で並べる(部隊のみ) */
 const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=twup(タワー強化) / lab=unup(部隊強化) / lab=rec(記録) = 🔬研究所の指定タブ */
 const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
@@ -140,6 +150,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(RPGK==='s'?'RG.md={k:"stat"};':'')
        +'RG.fade=0;rgStep(0.02);')
      :SFXT?'openSfxTest();'
+     /* ⚠**pose= と grid= は戦闘を始めない**(タイトルのまま)。既定の `startSolo()` に落ちると
+        仮想時間ぶんの試合が丸ごと走って**撮影が1分以上終わらない**(実際に何度も固まった)。
+        どちらも canvas を全面に被せて絵を並べるだけなので盤面は要らない。 */
+     :(ARTM||GRID)?''
      /* gacha=10連の演出 / gacha5=★5を引いた状態で撮る(いちばん派手な絵を確かめる用) */
      :GC?('META.gem=200;'
        /* gowned=★5まで持っている状態(目玉が下のレア度に降りた時の絵を確かめる用) */
@@ -347,6 +361,52 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +' });});'
      +'PX_ON=true;'
      +'}catch(e){document.title="ERR9 "+e.message;}},1500);'):'')
+ /* ⭐art= の中身。⚠**撮る直前に resize が飛ぶ**(--screenshot が窓を作り直す)ので、
+    描画は関数にまとめて resize でも描き直すこと(でないと真っ白な絵が撮れる) */
+ +(ARTM?('setTimeout(function(){try{'
+     +'var s0=852/1600;'/* 実機(852px幅)と同じ縮尺 */
+     +'var cvv=document.createElement("canvas");document.body.appendChild(cvv);'
+     +'cvv.style.cssText="position:fixed;left:0;top:0;width:100%;height:100%;z-index:9999";'
+     +'var KD="'+ARTM[1]+'",ID="'+ARTM[2]+'";'
+     +'var LS=(KD==="z")?ZOMBIES:UNITS;'
+     +'var idx=LS.findIndex(function(q){return q.id===ID;});'
+     +'if(idx<0)throw new Error("art: "+ID+" が無い");'
+     +'var NM=LS[idx].n;'
+     /* ⚠歩行の周期は種類ごとに違う(ゾンビは速いほど速い/部隊は一定)。4コマに割るため周期から出す */
+     +'var PER=(KD==="z")?(6.2832/((LS[idx].sp>90)?14:8)):(6.2832/10);'
+     +(ARTCHG?('var OCHG={chg:'+ARTCHG+',ct:1};'):'var OCHG={};')
+     +'function put(px,py,mag,tt,dr){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
+     +'c.lineWidth=3;c.strokeStyle=INK;'
+     +'try{if(KD==="z")drawZombie(c,idx,0,0,dr,tt,0,{});else drawUnit(c,idx,0,0,dr,tt,0,OCHG);}catch(e){}'
+     +'c.restore();}'
+     +'var c=null,W2=0,H2=0;'
+     +'function render(){'
+     +'W2=window.innerWidth;H2=window.innerHeight;var DP=window.devicePixelRatio||1;'
+     +'cvv.width=W2*DP;cvv.height=H2*DP;c=cvv.getContext("2d");c.setTransform(DP,0,0,DP,0,0);'
+     /* 背景=夜の地面 / 昼の地面 / 図鑑の紙。⚠**3つとも実際に絵が置かれる背景**にする */
+     +'c.fillStyle="#2b2419";c.fillRect(0,0,W2,H2*.54);'
+     +'c.fillStyle="#6a6154";c.fillRect(0,H2*.54,W2,H2*.28);'
+     +'c.fillStyle=PAPER;c.fillRect(0,H2*.82,W2,H2*.18);'
+     +'c.textAlign="left";c.fillStyle=PAPER;c.font="900 15px "+FF;'
+     +'c.fillText(NM+"  ("+KD+":"+ID+")",14,26);'
+     +'c.font="900 11px "+FF;c.fillStyle="rgba(242,236,220,.6)";'
+     +'c.fillText("上=x6(暗い地面) / 中=x3(明るい地面) / 下=実寸x1(紙) ／ 左から歩行の4コマ・右端は反転",14,44);'
+     /* x6 を4コマ+反転1体。⚠ベースラインを揃える(絵の原点は足元) */
+     +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.50,6,k*PER/4,1);'
+     +'put(W2*.92,H2*.50,6,PER*.25,-1);'
+     /* x3 を4コマ */
+     +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.80,3,k*PER/4,1);'
+     +'put(W2*.92,H2*.80,3,PER*.25,-1);'
+     /* 実寸。⚠**ここで見分けが付くかが本番** */
+     +'for(var k=0;k<8;k++)put(W2*(.10+k*.055),H2*.96,1,k*PER/8,1);'
+     +'c.fillStyle="rgba(0,0,0,.55)";c.font="900 11px "+FF;'
+     +'c.fillText("実寸(実機での見え方)",14,H2*.99);'
+     +'}'
+     /* ⚠**setInterval で描き直し続けてはいけない**=`--virtual-time-budget` の仮想時間では
+        タイマーが積まれ続けて budget を食い切るまで進まず、撮影が終わらない(実際に固まった)。
+        撮る直前の resize には**リスナーだけ**で足りる。 */
+     +'render();window.addEventListener("resize",render);'
+     +'}catch(e){document.title="ERR11 "+e.message;}},1500);'):'')
  /* intro / intro=t|u|z = 新登場の紹介モーダルを出して撮る(姿が枠いっぱいに出るかの確認用) */
  +(INTRO?('setTimeout(function(){try{showIntro([{k:"'+INTROK+'",i:'+(INTROK==='t'?15:INTROK==='z'?12:20)+'}]);}'
      +'catch(e){document.title="ERR8 "+e.message;}},1400);'):'')
