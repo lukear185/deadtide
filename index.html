@@ -12087,37 +12087,61 @@ UBODY.chief=(c,U,walk,t,ph,o)=>{
  c.fillStyle=GOLD;c.fillRect(-4.4,-49.4,12.4,2.6);
  c.restore();
 };
-/* ---- タイタン「歩く城塞」= 大柄・全身の重装甲・面頬・巨大な肩甲・腕の盾 ---- */
+/* ---- タイタン「歩く城塞」= ⭐**城壁そのものを着た巨人**(2026-08-01に描き直し。
+     ユーザー指摘「タイタンと重装兵(重装盾)が見た目一緒すぎるからちゃんと変えて」)。
+   ⚠それまで**重装盾とほぼ同じ絵**だった=明るい鋼の全身鎧+四角い面頬+腕の四角い大盾で、
+     実寸では**盾の丸い飾りの色しか違わなかった**。
+   ⭐分けた4つ(どれか1つでも欠けると実寸でまた同じに見える):
+     ①**肩と兜のてっぺんが城の胸壁(凹凸)**=輪郭が唯一無二になる ②**盾をやめて巨大な鉄拳**
+     ③**背中の軍旗**(⚠中央から外して左後ろへ=★の印と喧嘩しない) ④**暗い鉄+青銅**
+     (重装盾は明るい鋼+金)。 ---- */
 UBODY.titan=(c,U,walk,t,ph,o,vt)=>{
- const SK=U_SKIN,C0=vt?U.c:'#8a8f96',PA='#4e545c',SHO='#3a3128',ST=STEEL;
- const sw=walk*3,LH=1,rc=bRc(o);
- c.save();c.scale(1.08,1.08);
- bLeg(c,-3.4-sw,.8,PA,SHO,-17.6+LH,1.14);bLeg(c,3.4+sw,1,PA,SHO,-17.6+LH,1.14);
+ /* ⚠**暗くしすぎない**=黒フチに食われて「黒い塊」になる(2026-08-01に一度やらかした)。
+    重装盾より暗いが、鉄だと分かる明るさは残すこと */
+ const SK=U_SKIN,C0=vt?U.c:'#6d7784',PA='#525a64',SHO='#3a3128',
+       IR='#7d8794',BR='#b07f3e',BR2='#d9a758',rc=bRc(o);
+ const sw=walk*3,LH=1;
+ /* 胸壁(凹凸の帯)。⚠左右で山の数を変える=等間隔・左右対称はハリボテの元 */
+ const merlon=(x0,x1,y,n,col)=>{c.fillStyle=col;
+  c.beginPath();c.moveTo(x0,y+9);c.lineTo(x0,y+3);
+  for(let k=0;k<n;k++){const w=(x1-x0)/n,a=x0+k*w;
+   c.lineTo(a,y);c.lineTo(a+w*.62,y);c.lineTo(a+w*.62,y+3);c.lineTo(a+w,y+3);}
+  c.lineTo(x1,y+9);c.closePath();c.fill();c.stroke();};
+ c.save();c.scale(1.12,1.12);
+ bLeg(c,-3.8-sw,.8,PA,SHO,-17.6+LH,1.22);bLeg(c,3.8+sw,1,PA,SHO,-17.6+LH,1.22);
  c.save();c.translate(0,LH);
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.028+uChgUp(o));c.translate(-1,20);
- bArm(c,-6,-31.4, 0,-29.6, 5.4,-27.4, 5.4,4.4, shade(C0,.72),shade(C0,.62));
- bTorso(c,C0,[12.4,9,-35.4,-20.2]);
- c.fillStyle=ST;/* 重装甲の胸板 */
- c.beginPath();c.moveTo(-10.4,-33.8);c.lineTo(10.8,-33.4);c.lineTo(9.4,-22.6);c.lineTo(-9.4,-23);c.closePath();c.fill();c.stroke();
- c.fillStyle=shade(ST,.72);c.fillRect(-10.2,-28.4,20.6,2.6);
- c.fillStyle=GOLD;c.fillRect(-10.4,-33.6,21.2,2.4);
- c.fillStyle=RUST;c.beginPath();c.arc(4.4,-30.4,3,0,7);c.fill();c.stroke();
- c.fillStyle=shade(C0,1.18);/* 巨大な肩甲(左右で大きさを変える) */
- c.beginPath();c.moveTo(-16.4,-37.4);c.lineTo(-2,-38);c.lineTo(-.6,-29.4);c.lineTo(-17.6,-28.6);c.closePath();c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
- c.beginPath();c.moveTo(2,-38);c.lineTo(15.4,-37.2);c.lineTo(16.6,-30);c.lineTo(1.4,-29.4);c.closePath();c.fill();c.stroke();
- c.fillStyle='#3a3128';c.fillRect(-9.4,-23,18.8,3.2);c.strokeRect(-9.4,-23,18.8,3.2);
- c.fillStyle=GOLD;c.fillRect(-2.2,-23.4,4.4,4);
+ c.fillStyle=SHO;/* 背中の軍旗(旗竿) */
+ c.fillRect(-15.4,-56,2.6,25);c.strokeRect(-15.4,-56,2.6,25);
+ c.fillStyle=BR;c.beginPath();c.moveTo(-13.4,-55.4);c.lineTo(-3.6-walk*1.2,-50.4);
+ c.lineTo(-13.4,-44);c.closePath();c.fill();c.stroke();
+ bArm(c,-6,-31.4, -1,-29.6, 4.4,-27.4, 5.6,4.6, shade(C0,.72),shade(C0,.62));
+ bTorso(c,C0,[13.4,9.6,-35.4,-20.2]);
+ c.fillStyle=IR;/* ⭐胸=城門(縦の落とし格子)。⚠重装盾の「明るい一枚板の胸当て」と必ず変える */
+ c.beginPath();c.moveTo(-11,-34);c.lineTo(11.4,-33.6);c.lineTo(10,-22.6);c.lineTo(-10,-23);c.closePath();c.fill();c.stroke();
+ /* ⚠格子は**明るい側**で引く=暗い線は黒フチに溶けて「ただの暗い胸板」に戻る */
+ c.fillStyle=shade(IR,1.3);for(let k=0;k<4;k++)c.fillRect(-8.4+k*4.7,-32.4,2.2,8.6);
+ c.fillStyle=BR;c.fillRect(-11,-34,22.4,2.6);c.fillRect(-10.4,-24.8,20.8,2.2);
+ merlon(-18.4,-1.4,-38,3,shade(C0,1.22));/* 左肩=胸壁3つ */
+ merlon(1.6,17.4,-38.6,2,shade(C0,1.34));/* 右肩=胸壁2つ */
+ c.fillStyle=SHO;c.fillRect(-10,-23,20,3.4);c.strokeRect(-10,-23,20,3.4);
+ c.fillStyle=BR2;c.fillRect(-2.4,-23.4,4.8,4.2);
  bNeck(c,1.6,-39.4,-34.4,SK);
- c.fillStyle=shade(C0,1.06);/* 分厚い面頬(横一文字の覗き穴+頭頂の稜) */
- rr(c,-5.6,-50.4,15.4,15.4,4);c.fill();c.stroke();
- c.fillStyle=GOLD;c.beginPath();c.moveTo(.6,-50.4);c.lineTo(3.4,-56.4);c.lineTo(6.2,-50.4);c.closePath();c.fill();c.stroke();
- c.fillStyle=INK;c.fillRect(-2.6,-44.6,12.4,3.4);
- /* 腕の大盾。⭐**溜め=盾を引きつけてから前へ突き出す構え**(2026-08-01) */
- {const g2=bHold(c,rc,6,-31.4,-.13,3.4,-1.2);
-  c.fillStyle=ST;rr(c,11.4,-38,14.4,26,4);c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
-  c.fillStyle=shade(ST,.74);c.fillRect(12.4,-33.4,12.4,2.6);c.fillRect(12.4,-19.4,12.4,2.6);
-  c.fillStyle=RUST;c.beginPath();c.arc(18.6,-26.4,3.6,0,7);c.fill();c.stroke();g2();}
- if(vt>=3){c.fillStyle=GOLD;for(let k=-1;k<=1;k++){c.beginPath();c.moveTo(k*8-2.6,-51.4);c.lineTo(k*8+1.6,-61.4);c.lineTo(k*8+4.6,-51.4);c.closePath();c.fill();c.stroke();}}
+ c.fillStyle=shade(C0,1.1);/* 兜(⚠覗き穴は**T字**=重装盾の横一文字と分ける) */
+ rr(c,-5.8,-50.6,15.8,15.6,3);c.fill();c.stroke();
+ merlon(-6,10.2,-53.4,3,shade(C0,1.26));/* 兜のてっぺんも胸壁 */
+ /* ⚠T字は**細く**引く=太いと黒フチと繋がって顔がただの黒い塊になる */
+ c.fillStyle=INK;c.fillRect(-3.4,-45.6,12.4,2.8);c.fillRect(2.6,-49.6,3,4.4);
+ c.fillStyle=BR2;c.fillRect(-5.4,-41.6,15,1.8);
+ /* ⭐巨大な鉄拳(盾は捨てた)。溜め=拳を引きつけて構える */
+ {const g2=bHold(c,rc,6,-31.4,-.10,-3.6,-1.4);
+  c.fillStyle=shade(C0,.94);/* 前腕 */
+  c.beginPath();c.moveTo(6,-33.4);c.lineTo(15,-34.4);c.lineTo(16.4,-24);c.lineTo(6.4,-23.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=IR;rr(c,14,-35.6,14.4,15.4,3.4);c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
+  c.fillStyle=BR;for(let k=0;k<3;k++){c.beginPath();c.arc(18.4+k*3.8,-32.4,2,0,7);c.fill();c.stroke();}
+  c.fillStyle=shade(IR,.68);c.fillRect(14.8,-26.6,12.6,2.8);
+  g2();}
+ if(vt>=3){c.fillStyle=BR2;for(let k=-1;k<=1;k++){c.beginPath();c.moveTo(k*8-2.6,-54.4);c.lineTo(k*8+1.6,-61.4);c.lineTo(k*8+4.6,-54.4);c.closePath();c.fill();c.stroke();}}
  c.restore();c.restore();
 };
 /* ⭐⭐**溜め(クールタイム)は体の動きで見せる**(2026-08-01ユーザー指示
