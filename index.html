@@ -10872,20 +10872,25 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=GOLD2;c.fillRect(-2,-24,4.4,3.6);
   /* --- ⭐⭐大斧。**柄を体の外へ長く斜めに出す**のが要(これが無いと斧に見えない) --- */
   c.save();c.translate(2,-33);c.rotate(.62+walk*.05);
-  c.fillStyle='#9c7a4a';/* 柄(⚠頭の先まで突き出させる=「柄に頭が嵌まっている」と読める) */
-  c.beginPath();c.moveTo(-6,2.8);c.lineTo(-6,-2.4);c.lineTo(28.4,-2.8);c.lineTo(28.4,2.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#9c7a4a';/* 柄 */
+  c.beginPath();c.moveTo(-6,2.8);c.lineTo(-6,-2.4);c.lineTo(23,-2.8);c.lineTo(23,2.4);c.closePath();c.fill();c.stroke();
   c.fillStyle='#5c4326';/* 握りの巻き革(両手の来る所) */
   c.beginPath();c.moveTo(1.6,2.7);c.lineTo(1.6,-2.5);c.lineTo(16,-2.7);c.lineTo(16,2.5);c.closePath();c.fill();
-  c.fillStyle=ST;/* 刃(⚠片側にだけ大きく張り出す。上下対称はメガホン) */
-  c.beginPath();c.moveTo(18.6,-2.6);c.lineTo(20.2,-15);
-  c.quadraticCurveTo(28.8,-13.4,30,-3.6);c.lineTo(26.4,-3);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade(ST,1.14);/* 刃先だけ明るく(鋼に見える) */
-  c.beginPath();c.moveTo(20.2,-15);c.quadraticCurveTo(28.8,-13.4,30,-3.6);
-  c.lineTo(27.6,-3.8);c.quadraticCurveTo(26.6,-11.6,20,-12.8);c.closePath();c.fill();
-  c.fillStyle=shade(ST,.86);/* 顎(下へ少しだけ)=上下の大きさを変えて対称を崩す */
-  c.beginPath();c.moveTo(19,2.4);c.lineTo(26.6,1.8);c.quadraticCurveTo(25,7,20.8,6.4);c.closePath();c.fill();c.stroke();
+  /* ⚠⚠**刃の向き**(2026-08-01ユーザー指摘「斧の向き逆だね 刃が」)。
+     ⭐**刃(丸い縁)は必ず柄の先=進行方向へ向ける**。柄の途中から上へ扇が生えていると、
+       刃が上や後ろを向いて見えて「逆」に読める。
+     ⭐**1本の三日月**にして、上の角を大きく下の角を小さくする(上下対称はメガホン)。
+       柄の先はこの三日月の中で終わらせる=「柄に頭が嵌まっている」形。 */
+  c.fillStyle=ST;
+  c.beginPath();c.moveTo(19.6,-3.2);c.lineTo(21.4,-15.2);
+  c.quadraticCurveTo(29.6,-13,32.4,-1.4);
+  c.quadraticCurveTo(30.4,5.6,24.6,7.4);c.lineTo(20.2,3.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(ST,1.16);/* 刃先(外の縁)だけ明るく=どちらが刃か一目で分かる */
+  c.beginPath();c.moveTo(21.4,-15.2);c.quadraticCurveTo(29.6,-13,32.4,-1.4);
+  c.quadraticCurveTo(30.4,5.6,24.6,7.4);c.lineTo(23.6,4.8);
+  c.quadraticCurveTo(28,3.6,29.6,-1.8);c.quadraticCurveTo(27.4,-10.6,21,-12.6);c.closePath();c.fill();
   c.fillStyle='#7e858e';/* 頭金(柄に嵌まった輪) */
-  c.beginPath();c.moveTo(16.6,-3.6);c.lineTo(21.6,-3.8);c.lineTo(21.6,3.4);c.lineTo(16.6,3.2);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(15.6,-3.6);c.lineTo(20.6,-3.8);c.lineTo(20.6,3.6);c.lineTo(15.6,3.4);c.closePath();c.fill();c.stroke();
   c.restore();
   /* --- 手前の腕(剥き出し・太い。手は柄の巻き革の上へ)。
      ⚠**節どうしを黒フチ2本ぶん以上重ねる**=離すと「肌色の塊が3つ並んだソーセージ」になる --- */
