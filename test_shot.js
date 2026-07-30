@@ -164,10 +164,17 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'if(ui9<0)throw new Error("兵科 '+ARN[1]+' が無い");'
        +'if(zi9<0)throw new Error("敵 '+ARN[2]+' が無い");'
        +'startTst(ui9,zi9);'
+       /* ⚠検証場は**押した時だけ出る**ようになった(2026-07-30)ので、撮影側で出してやる。
+          味方3体は最初に、敵6体は1.5秒おきに出す(自動で湧いていた頃と同じ絵になる) */
+       +'var U9=UNITS[ui9];'
+       +'window.tstPut9=function(q9){var m9=G.players[0];'
+       +'if(q9%45===0)tstSpawnZ(zi9);'                       /* 敵=1.5秒おき */
+       +'if(q9%33===0&&q9<99){if(U9&&U9.hro){if(!m9.hOut){m9.hUi=ui9;heroDeploy(m9);}}'
+       +'else{m9.ucd[ui9]=0;deployUnit(m9,ui9);}}};'          /* 味方=1.1秒おきに3体 */
        /* ⚠**ヘッドレスの仮想時間では rAF がほとんど回らない**(💎召集で踏んだのと同じ)。
           撮る前に tstStep を直に回して時間を進める。arn=秒数 で長さを変えられる */
        +'for(var q9=0;q9<'+Math.round((+((/arn=(\d+)/.exec(OPT)||[0,'14'])[1]))*30)+';q9++)'
-       +'{try{tstStep(1/30);}catch(e){document.title="TSTERR "+e.message;break;}}')
+       +'{try{tstPut9(q9);tstStep(1/30);}catch(e){document.title="TSTERR "+e.message;break;}}')
      :(ARTM||GRID)?''
      /* gacha=10連の演出 / gacha5=★5を引いた状態で撮る(いちばん派手な絵を確かめる用) */
      :GC?('META.gem=200;'

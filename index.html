@@ -203,6 +203,17 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #tideseg{flex:1 1 auto;display:flex;height:14px;border:2px solid var(--paper);border-radius:9px;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.4);background:var(--ink3)}
 #tideseg i{display:block;height:100%;font-size:9px;font-weight:900;color:var(--pane);text-align:center;line-height:11px;overflow:hidden;white-space:nowrap;text-shadow:1px 1px 0 rgba(0,0,0,.6)}
 #tidelbl{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--tech);text-shadow:1px 1px 0 #000;white-space:nowrap}
+/* 🧪検証場の敵デッキ(2026-07-30ユーザー指示「ゾンビも手動で出せるように、ユニットみたいに↑に出して」)。
+   ⚠味方のデッキは画面の下(#abar)なので、敵は**画面の上**に置いて左右で役割を分ける。
+   ⚠上のHUD(#topbar)の真下から始める。46種あるので横スクロールにする */
+#zbar{position:absolute;top:calc(max(8px,env(safe-area-inset-top)) + 44px);left:max(6px,env(safe-area-inset-left));
+ right:max(6px,env(safe-area-inset-right));z-index:6;display:flex;gap:4px;overflow-x:auto;padding-bottom:2px;
+ scrollbar-width:none}
+#zbar::-webkit-scrollbar{display:none}/* ⚠横スクロールの棒で帯が厚くなると盤面を覆う */
+#zbar .zk{flex:0 0 auto;padding:3px 8px;border-radius:8px;border:2px solid var(--paper);background:#5e211d;
+ color:var(--pane);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
+#zbar .zk.on{background:var(--rust);border-color:var(--gold)}
+@media (pointer:coarse){#zbar{top:calc(max(6px,env(safe-area-inset-top)) + 26px)}#zbar .zk{font-size:11px;padding:2px 6px}}
 /* 画面下の操作バー: 🚩集結旗・🎯航空支援・出撃デッキ・🌊押す を一列にまとめる。
    フィールドの上にボタンを浮かせないぶん、マップを画面いっぱいまで広げられる */
 #abar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
@@ -688,6 +699,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
   <div id="minis"></div>
   <div id="tidebar"><div id="tidelbl">🌊死潮</div><div id="tideseg"></div></div>
+  <!-- 🧪検証場の敵デッキ(⚠DEVの検証場でだけ出す)。ユニットのデッキと同じ「押したら出る」操作を敵にも -->
+  <div id="zbar" style="display:none"></div>
   <button id="pushtgt">→全員</button>
   <div id="strikehint">タップした地点に爆撃!(もう一度🎯で解除)</div>
   <div id="flaghint">タップした地点へ部隊が集結!(もう一度🚩で解除)</div>
@@ -14132,7 +14145,9 @@ function startSolo(){
 const TST_Y=560;                  /* 道の高さ(画面のほぼ中央) */
 const TST_SHORT=880,TST_LONG=1640;/* 道の長さ。⚠近接は短く=すぐぶつかる / 遠距離は長く=撃つ間がある */
 const TST_CX=860;                 /* ⚠道は**画面の横中央に置く**=右端で切ると絵として途中で途切れる */
-const TST_ZN=8,TST_UN=3;          /* 同時に出す敵/味方の数 */
+/* ⭐2026-07-30ユーザー指示で**自動で湧くのをやめた**=味方も敵も「押した時だけ出る」。
+   自動だと見たい組み合わせが作れず、画面が勝手に埋まって1体を見ていられない。
+   味方=画面下のデッキ(#deck) / 敵=画面上の敵デッキ(#zbar)。 */
 function tstPath(long){
  const L=long?TST_LONG:TST_SHORT,R=TST_CX+L/2,X0=TST_CX-L/2;
  /* ⚠**点は3つ以上にする**=2点だけの道は、道の描画や地形の処理が想定していない */
@@ -14162,7 +14177,7 @@ function startTst(ui,zi){
  tstPath((U.rng||0)>60);
  newGame([{name:'キミ',kind:'me'}],0);
  G.pve=1;G.pveDiff=1;G.tut=1;/* ⚠tut を立てて戦績を汚さない */
- G.tst={ui,zi,zt:.4,ut:0};
+ G.tst={ui,zi};
  const me=G.players[0];
  me.scrap=99999;me.up=me.upTotal=99999;
  me.coreMax=99999;me.core=me.coreMax;
@@ -14175,26 +14190,36 @@ function startTst(ui,zi){
  $('strikebtn').textContent='🎯';
  $('tidebar').style.display='none';$('pushbtn').style.display='none';
  $('pausebtn').style.display='inline-block';
- toast('🧪 検証場: '+(U?U.n:'?')+' × '+((ZOMBIES[zi]||{}).n||'?')+' / 道='+(((U.rng||0)>60)?'長い':'短い'),true);
+ buildZbar(zi);
+ toast('🧪 検証場: 下のデッキで味方・上の帯で敵を出す / 道='+(((U.rng||0)>60)?'長い':'短い'),true);
+}
+/* ⭐敵デッキ(検証場だけ)。⚠ZOMBIES は46種あるので**横スクロールの名前ボタン**にする
+   (味方のデッキのような絵札にすると焼き直しが要るうえ、上の帯が厚くなって盤面を覆う) */
+function buildZbar(zi){
+ const w=$('zbar');if(!w)return;
+ w.innerHTML='';w.style.display='flex';
+ ZOMBIES.forEach((Z,i)=>{if(!Z||!Z.n)return;
+  const b=document.createElement('button');
+  b.className='zk'+(i===zi?' on':'');b.textContent=Z.n;b.title=Z.n;b.dataset.zi=i;
+  b.onclick=()=>tstSpawnZ(i);
+  w.appendChild(b);});
+ /* ⚠選んだ敵が並びの奥にあると押しに行けない=最初にそこまで送っておく */
+ const on=w.querySelector('.zk.on');if(on)w.scrollLeft=Math.max(0,on.offsetLeft-40);
+}
+/* 1体だけ右端から出す。⚠**d は正の値**=負にすると「まだ来ていない」扱いで出てこない */
+function tstSpawnZ(zi){
+ if(!G||!G.tst)return;const me=G.players[0];if(!me)return;
+ me.zombies.push(mkZ(zSpec(zi,1,1),4+rnd(0,50)));
+ G.tst.zi=zi;
+ /* 最後に出した敵が分かるように印を移す */
+ const w=$('zbar');if(w)Array.prototype.forEach.call(w.children,b=>b.classList.toggle('on',+b.dataset.zi===zi));
 }
 function tstStep(dt){
  const me=G.players[0];if(!me)return;
- const T=G.tst;
  me.core=me.coreMax;me.scrap=99999;me.up=99999;me.dying=false;/* 拠点は落ちない */
- /* 敵を一定の間隔で湧かせる(右端から出る) */
- T.zt-=dt;
- if(T.zt<=0&&me.zombies.filter(z=>!z.dead).length<TST_ZN){T.zt=1.5;
-  /* ⚠**d は正の値で出す**=負にすると「まだ来ていない」扱いになり、
-     `mkZ` の `d||...` にも吸われて出てこない */
-  me.zombies.push(mkZ(zSpec(T.zi,1,1),4+rnd(0,50)));}
- /* 味方を補充する(倒れたら出し直す)。⚠英雄は1体だけ */
- T.ut-=dt;
- const U=UNITS[T.ui];
- if(T.ut<=0){T.ut=1.1;
-  try{
-   if(U&&U.hro){if(!me.hOut){me.hUi=T.ui;heroDeploy(me);}}
-   else if(me.units.filter(u=>!u.dead).length<TST_UN){me.ucd[T.ui]=0;deployUnit(me,T.ui);}
-  }catch(e){}}
+ /* ⚠**湧かせる処理はここに書かない**=味方も敵も押した時だけ出す(2026-07-30ユーザー指示)。
+    味方=デッキの `actDeploy` / 敵=`tstSpawnZ`。⚠クールダウンだけは待たずに済むよう毎フレーム0に戻す */
+ if(me.ucd)for(let i=0;i<me.ucd.length;i++)me.ucd[i]=0;
  campStep(me,dt,1);
 }
 /* 選ぶ画面。⚠味方は**射程を出す**=近接か遠距離かで道の長さが変わるため */
@@ -14220,6 +14245,7 @@ function startGameUI(others){
  buildDeck();
  try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}catch(e){}/* スマホのキーボードを閉じて画面高さを戻す */
  $('tidebar').style.display='';$('pushbtn').style.display='';
+ {const zb=$('zbar');if(zb){zb.style.display='none';zb.innerHTML='';}}/* 🧪検証場の敵デッキは普通の試合では出さない */
  $('strikebtn').textContent='🎯';
  if(MOBILE){
   try{const de=document.documentElement;if(de&&de.requestFullscreen){const p=de.requestFullscreen();p&&p.catch&&p.catch(()=>{});}}catch(e){}

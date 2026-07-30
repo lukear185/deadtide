@@ -1074,6 +1074,7 @@ node test_shot.js out.png 852 393 "gacha5+gtwist+gtwgib" # どんでん返しの
 node test_shot.js out.png 852 393 "gacha5+gmorn+gfc=0"  # 朝の背景 / gnight=夜 / gfc=0白 1赤 2虹
 node test_shot.js out.png 852 393 "gacha+gopen+gspin=1" # 召集画面(何人目を正面にするか)
 node test_shot.js out.png 852 393 "arena=bat:walk+arn=16" # ⭐🧪検証場(一本道)。arn=進める秒数
+  # ⚠検証場は**押した時だけ出る**(2026-07-30に自動湧きを廃止)=撮影側が味方3体と敵を出している(`tstPut9`)
                                                 #   ⚠**ヘッドレスの仮想時間では rAF がほとんど回らない**ので、
                                                 #     撮る前に `tstStep` を直に回して時間を進めている。
                                                 #     これをしないと「湧かない・動かない」に見えて原因を探し回る(実際に踏んだ)
