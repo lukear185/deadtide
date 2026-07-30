@@ -234,7 +234,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'var add9=function(){me.zombies.push(mkZ(zSpec(zi9,1,10),D9-160-Math.random()*80));};'
      +'me.zombies.length=0;for(var k9=0;k9<6;k9++)add9();'
      /* die= を付けない限りゾンビのHPを戻す(倒れると的が消えて攻撃の演出が撮れないため) */
-     +'setInterval(function(){try{me.units.forEach(function(u){u.cd=0;});'
+     /* ⭐uchg=0〜1 を付けると**溜めの途中で止めて撮れる**(2026-07-30の攻撃モーション用)。
+        ⚠付けないと撃った直後ばかり撮れて、溜めの絵が確かめられない */
+     +'setInterval(function(){try{me.units.forEach(function(u){u.cd=0;'
+     +((/uchg=([0-9.]+)/.exec(OPT))?('u.chg='+(/uchg=([0-9.]+)/.exec(OPT))[1]+';u.ct=1;'):'')
+     +'});'
      +(OPT.indexOf('die')>=0?'':'me.zombies.forEach(function(z){z.hp=z.mhp;});')
      +'while(me.zombies.length<6)add9();}catch(e){}},80);'
      +'}catch(e){document.title="ERR4 "+e.message;}},1200);'):'')

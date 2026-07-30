@@ -1596,7 +1596,8 @@ function checkGachaFx(){
  {const many=[{dud:GDUD[0],txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{dud:GDUD[1],txt:''}];
   gcStart(many);
   if(GC.best!==4){console.log('FAIL: 10連の示唆が一番いい結果になっていない '+GC.best);process.exit(1);}
-  if(GC.tw>2||GC.tw<1){console.log('FAIL: ★4の予告の段がおかしい '+GC.tw);process.exit(1);}
+  /* ⚠どんでん返し(twist)の時はわざと段0で見せるので、その時は見ない(2026-07-30) */
+  if(!GC.twist&&(GC.tw>2||GC.tw<1)){console.log('FAIL: ★4の予告の段がおかしい '+GC.tw);process.exit(1);}
   gcEnd();}
  /* 「まとめて見る」で途中でも閉じられること */
  gcStart(res);GC.ph='card';GC.sk=[10,10,90,20];

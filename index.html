@@ -2141,6 +2141,9 @@ const uTier=i=>i<6?1:i<14?2:i<22?3:4;
      ⚠持ち上げる倍率は**一律 CH_UP**(個体ごとの sc ではない)=元のコードも一律だったので、
        ここを個体ごとにすると今までの見え方が変わってしまう。 */
 const CH_UP=1.5,CH_P=.72;
+/* ⭐**歩きの振れ幅**(2026-07-30)。⚠それまで腕は±1.2pxしか振れておらず、数式は連続でも
+   実質ほぼ静止していた=「絵を差し替えても動いて見えない」の本当の原因。誇張して振らせる。 */
+const WALK_AMP=1.7;
 const chUp=sc=>CH_UP*Math.pow(sc||1,CH_P);
 for(const z of ZOMBIES)z.sc=chUp(z.sc);
 const TSCALE=[1,1.06,1.14,1.24].map(s=>chUp(s));
@@ -2411,6 +2414,53 @@ for(const h of HEROES)UNITS.push({id:h.id,n:h.n,cost:0,cd:9999,hp:h.hp,atk:h.atk
  rng:h.rng,sp:h.sp,type:h.ty,aoe:h.aoe||0,burn:h.burn||0,c:h.c,hro:h.rk,
  dsc:'英雄 — 必殺技『'+h.ult+'』'});
 const hUiOf=id=>{const k=HEROES.findIndex(h=>h.id===id);return k<0?-1:HERO_I0+k;};
+/* ============ ⭐攻撃モーションと固有演出(2026-07-30 第105弾) ============
+   きっかけ=ユーザー指摘「攻撃エフェクトが同じやつが多すぎる/ユニットが歩く以外に何もしない」。
+   ⭐土台は**攻撃を4段階(待機→溜め→発射→硬直)**にすること。溜めの進行度(u.chg 0→1)を
+     1か所で作れば、兵科32種+英雄18人の**50種すべてに一度に効く**。ここが一番安くて一番効く。
+   ⚠⚠**溜めを入れると実効DPSが落ちる**ので、1発の威力を uChgM で必ず戻す
+     (これを飛ばすと「格好よくなったが弱くなった」で終わる)。倍率は (rate+溜め)/rate =
+     **実効DPSは溜める前とぴったり同じ**。溜めが長い兵科ほど1発が重くなる=特大の一撃になる。
+   ⚠⚠**溜め中に対象が死んでも u.chg は消さない**(次の対象へ引き継ぐ)。
+     引き継ぎが無いと、前衛が敵を溶かすたびに溜め直しになって、溜めの長い兵科が1発も撃たない。
+   ⚠**0.9秒を超えると「反応が悪い」に変わる**。超えてよいのは特大枠(レール狙撃/終焉の騎士)だけ。 */
+const MOT0=['now',0];
+/* 型8種: cast=術者 / mag=磁力 / bolt=落雷 / snipe=狙撃 / spin=回転 / toss=投擲 / heat=炉熱 / now=即時 */
+const U_MOT={
+ /* --- 即時(テンポを担保する枠。近接と軽火器) --- */
+ bat:['now',0],hnd:['now',0],big:['now',0],shd:['now',0],spr:['now',0],gun:['now',.12],
+ chain:['now',.15],pike:['now',.18],gld:['now',0],saw:['now',0],tnk:['now',0],
+ ninja:['now',.12],chief:['now',.22],titan:['now',.5],
+ /* --- 投擲(腕を後ろへ引いて山なりに投げる) --- */
+ axe:['toss',.3],mol:['toss',.3],grn:['toss',.35],gren2:['toss',.45],
+ rkt:['toss',.55],mech:['toss',.5],mortarU:['toss',.8],
+ /* --- 術者(掲げる→足元に魔法陣→撃つ) --- */
+ med:['cast',.3],engi:['cast',.3],frz:['cast',.6],frost2:['cast',.9],valk:['cast',1],
+ /* --- 狙撃(構える→照準の線が伸びる→一拍止まって撃つ) --- */
+ snp:['snipe',.7],rail2:['snipe',1.2],
+ /* --- 回転(銃身が回り始めてから撃ち出す) --- */
+ smg:['spin',.2],mgn:['spin',.5],
+ /* --- 落雷 / 炉熱 --- */
+ elec:['bolt',.7],flm:['heat',.25],
+ /* --- 英雄18人 --- */
+ hCop:['now',.15],hPost:['now',0],hMech:['now',.2],hCmd:['now',.2],hDeal:['now',.2],
+ hFire:['heat',.3],hHunt:['snipe',.5],hSf:['snipe',.8],hBomb:['toss',.4],
+ hMed:['cast',.3],hSeer:['cast',.8],hVenom:['cast',.7],hMag:['mag',.7],
+ hGiant:['now',.6],hStorm:['bolt',.8],hReact:['heat',.9],
+ hNox:['snipe',1.2],hDawn:['cast',1]
+};
+const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
+const uMotK=ui=>uMot(ui)[0];
+const uChgT=ui=>uMot(ui)[1];
+const uChgM=ui=>{const U=UNITS[ui],ct=uChgT(ui);return (U&&U.rate>0&&ct>0)?(U.rate+ct)/U.rate:1;};
+/* ⭐**完全固有にする範囲**(ユーザー決定): 英雄は★4以上の5人 / 兵科は★が付く上級(uTier>=3)。
+   ⚠★3以下を固有にすると高レアの希少性が薄れる。★3以下は型のままでよい。
+   固有の中身=**溜め・銃口・弾・着弾の色をそのキャラ自身の色にする**+英雄★4以上は専用の溜め。 */
+const uUniq=ui=>{const U=UNITS[ui];if(!U)return false;return U.hro?(U.hro>=4):(uTier(ui)>=3);};
+const MOT_COL={cast:'#c58aff',mag:'#7fd2e0',bolt:'#bfe9ff',snipe:'#a0e1ff',
+ spin:'#ffcf6a',toss:'#ffb347',heat:'#ff8a3d',now:'#fff3c0'};
+const uMotCol=ui=>{const U=UNITS[ui];if(!U)return '#fff3c0';
+ return uUniq(ui)?(U.c||'#fff3c0'):(MOT_COL[uMotK(ui)]||'#fff3c0');};
 const heroAt=ui=>HEROES[ui-HERO_I0]||null;
 function varOf(bid){const vid=META.ld&&META.ld[bid];if(!vid)return null;
  if((META.uv||[]).indexOf(vid)<0)return null;
@@ -9929,12 +9979,16 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   if(VEC2_R>0)drawUnit(silLayer(c,VEC2_R,VEC2_RC),ui,x-.9,y-1.6,dr,t,ph,o1);
   drawUnit(flatLayer(c),ui,x,y,dr,t,ph,o1);return;}
  const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
- const walk=Math.sin(t*10+ph),bob=Math.abs(walk)*2;
+ /* ⭐**溜め中は足を止める**(o.chg>0)=歩行を止めて足を開いた構えにする。
+    ⚠止めるだけだと「固まった」に見えるので、溜めの光(drawUChg)と必ずセットで出すこと。 */
+ const walk=(o.chg>0)?.62:Math.sin(t*10+ph)*WALK_AMP,bob=(o.chg>0)?0:Math.abs(walk)*1.4;
  const tier=uTier(ui),tsc=TSCALE[tier-1];
  c.save();c.translate(x,y-bob);
  if(tier===4){c.fillStyle='rgba(232,163,61,'+(.16+.09*Math.sin(t*6))+')';c.beginPath();c.ellipse(0,2,30,11,0,0,7);c.fill();}
  c.scale(dr*tsc,tsc);
- if(o.fireT>0)c.translate(-2,0);
+ /* ⭐反動を大きく取る(撃った瞬間だけ後ろへ蹴る)。溜め中はわずかに後ろへ体重を乗せる */
+ if(o.fireT>0)c.translate(-(2+7*clamp(o.fireT/.14,0,1)),0);
+ else if(o.chg>0)c.translate(1.6*o.chg,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
  /* ⭐英雄の光は**レア度の色**にする(第91弾)。全員が同じ琥珀色だと、せっかく11人ぶん
     描き分けた色が光に飲まれて全部金色に見えた(並べて撮って気づいた) */
@@ -10633,6 +10687,130 @@ const UFX_T={};for(const e of VARLIST)UFX_T[e.v.id]=e.t+1;
 const UFX_COL=[PANE,'#ffe08a',TECH,'#e6b0ff'];
 const uFxTier=u=>u.hro?3:(UFX_T[(UNITS[u.ui]||{}).id]||0);
 /* 着弾の絵。⚠**装甲に通常弾が弾かれた時は跳ね返る火花にする**=相性が悪いのが目で分かる */
+/* ⭐**溜めが見えること**(2026-07-30ユーザー指定「光/線/粒のどれかを足元か体の周りに円で」)。
+   ⚠fxには積まない=溜めている間ずっと出るので、毎フレーム積むとすぐあふれる(塔の継続攻撃と同じ考え)。
+   ⚠**タワーと部品を共有しない**(設計の指示)。ここは部隊専用の描画。
+   lay=0: 体の後ろ(足元の輪・魔法陣) / lay=1: 体の前(銃口の光・粒・照準の線) */
+function drawUChg(c,u,t,lay){
+ const k=clamp(u.chg||0,0,1);if(k<=0)return;
+ const M=uMotK(u.ui),col=uMotCol(u.ui),U=UNITS[u.ui]||{};
+ const x=u.px,y=u.py,dr=(u.dr||-1);
+ /* ⚠**溜めの光は「敵のいる側」に出す**。u.dr は道の向きで決まるので、
+    そのまま使うと的が右にいるのに光が左へ出る(2026-07-30に撮って直した)。 */
+ const fx9=(u.tx!=null&&Math.abs(u.tx-x)>2)?(u.tx>x?1:-1):(dr<0?-1:1);
+ const mx=x+fx9*24*CH_UP,my=y-28*CH_UP;/* 武器の先あたり */
+ /* ⚠⚠**線の太さは世界座標**(SC=約0.39倍で縮む)=**画面では1/2.5になる**。
+    2pxで引くと実機で1px以下になって消える。ここは全部**太めに**引くこと(2026-07-30に撮って直した)。 */
+ c.save();c.lineWidth=6;c.strokeStyle=col;c.fillStyle=col;
+ if(!lay){
+  /* 足元の輪=どの型にも共通の土台。溜まるほど締まって濃くなる */
+  const R=(30-14*k)*CH_UP;
+  c.globalAlpha=(.10+.26*k);
+  c.beginPath();c.ellipse(x,y+2,R,R*.34,0,0,7);c.fill();
+  c.globalAlpha=.20+.55*k;
+  c.beginPath();c.ellipse(x,y+2,R,R*.34,0,0,7);c.stroke();
+  if(M==='cast'){/* 術者: 足元に回る魔法陣 */
+   c.globalAlpha=.22+.5*k;const r9=R*.82;
+   c.beginPath();
+   for(let i2=0;i2<3;i2++){const a2=t*2.2+i2*2.094;
+    const px2=x+Math.cos(a2)*r9,py2=y+2+Math.sin(a2)*r9*.34;
+    if(i2)c.lineTo(px2,py2);else c.moveTo(px2,py2);}
+   c.closePath();c.stroke();
+  }else if(M==='heat'){/* 炉/熱: 陽炎の輪が外へ広がる */
+   for(let i2=0;i2<3;i2++){const q=((t*1.1+i2/3)%1);
+    c.globalAlpha=(1-q)*.4*k;
+    c.beginPath();c.ellipse(x,y+2,R*(.5+q*1.1),R*(.5+q*1.1)*.32,0,0,7);c.stroke();}
+  }else if(M==='bolt'){/* 落雷: 頭上に雲 */
+   c.globalAlpha=.3+.45*k;
+   c.beginPath();c.ellipse(x,y-64*CH_UP,(10+16*k)*CH_UP,(4+5*k)*CH_UP,0,0,7);c.fill();
+  }
+  c.restore();return;
+ }
+ if(M==='snipe'){
+  /* 狙撃: 照準の線が伸びる。⚠**伸び切ったら点滅**=「一拍止まって撃つ」が読める */
+  const tx=(u.tx!=null?u.tx:x+fx9*200),ty=(u.ty!=null?u.ty:y)-18*CH_UP;
+  const q=Math.min(1,k*1.25);
+  c.globalAlpha=(k>.85?(.35+.55*Math.abs(Math.sin(t*26))):(.28+.32*k));
+  c.lineWidth=4;
+  c.beginPath();c.moveTo(mx,my);c.lineTo(mx+(tx-mx)*q,my+(ty-my)*q);c.stroke();
+  if(q>=1){c.lineWidth=5;
+   c.beginPath();c.arc(tx,ty,(9-3*k)*CH_UP,0,7);c.stroke();
+   c.beginPath();c.moveTo(tx-11,ty);c.lineTo(tx-5,ty);c.moveTo(tx+5,ty);c.lineTo(tx+11,ty);c.stroke();}
+ }else if(M==='spin'){
+  /* 回転: 銃身の周りで羽根が回り、溜まるほど速くなる */
+  const sp=t*(6+26*k);
+  c.globalAlpha=.35+.45*k;c.lineWidth=6.5;
+  for(let i2=0;i2<4;i2++){const a2=sp+i2*1.5708,r2=(8+7*k)*CH_UP;
+   c.beginPath();c.moveTo(mx+Math.cos(a2)*r2*.4,my+Math.sin(a2)*r2*.4);
+   c.lineTo(mx+Math.cos(a2)*r2,my+Math.sin(a2)*r2);c.stroke();}
+ }else if(M==='mag'){
+  /* 磁力: 周りの瓦礫や薬莢が磁石へ**吸い寄せられる粒**(線ではない) */
+  c.globalAlpha=.35+.5*k;
+  for(let i2=0;i2<7;i2++){const a2=t*1.6+i2*.898,d2=(34-24*((t*1.3+i2*.14)%1))*CH_UP;
+   c.beginPath();c.arc(mx+Math.cos(a2)*d2,my+Math.sin(a2)*d2*.7,(1.6+1.4*k)*2.8,0,7);c.fill();}
+ }else if(M==='toss'){
+  /* 投擲: 腕を後ろへ引く。引いた先の物が光り、弧の残りが出る */
+  c.globalAlpha=.3+.55*k;
+  const bx=x-fx9*(10+10*k)*CH_UP,by=y-(34+8*k)*CH_UP;
+  c.beginPath();c.arc(bx,by,(4+6*k)*CH_UP,0,7);c.fill();
+  c.lineWidth=5;c.globalAlpha=.22*k;
+  c.beginPath();c.arc(x,y-30*CH_UP,(16+8*k)*CH_UP,fx9<0?.4:2.2,fx9<0?2.2:4.0);c.stroke();
+ }else if(M==='cast'){
+  /* 術者: 杖の先に光が溜まる */
+  c.globalAlpha=.3+.6*k;
+  c.beginPath();c.arc(mx,my-8*CH_UP,(5+11*k)*CH_UP,0,7);c.fill();
+  c.globalAlpha=.9*k;c.fillStyle='#fff';
+  c.beginPath();c.arc(mx,my-8*CH_UP,(2+4.4*k)*CH_UP,0,7);c.fill();c.fillStyle=col;
+ }else if(M==='bolt'){
+  /* 落雷: 天へ掲げた先へ、上から細い筋が降りてくる */
+  c.globalAlpha=.35+.5*k;c.lineWidth=5;
+  for(let i2=0;i2<3;i2++){const ox=(i2-1)*7*CH_UP*(1+k);
+   c.beginPath();c.moveTo(x+ox,y-64*CH_UP);
+   c.lineTo(x+ox*.6,y-(50-6*Math.sin(t*20+i2))*CH_UP);
+   c.lineTo(x+ox*.2,y-40*CH_UP);c.stroke();}
+ }else if(M==='heat'){
+  /* 炉/熱: 体の周りに陽炎が立つ */
+  c.globalAlpha=.25+.4*k;c.lineWidth=5.5;
+  for(let i2=0;i2<4;i2++){const ox=(i2-1.5)*9*CH_UP,q=((t*1.6+i2*.25)%1);
+   c.beginPath();c.moveTo(x+ox,y);
+   c.quadraticCurveTo(x+ox+Math.sin(t*7+i2)*5,y-(20+q*20)*CH_UP,x+ox,y-(34+q*14)*CH_UP);c.stroke();}
+ }else{
+  /* 即時寄りの型: 体の周りの小さな光が内へ寄る(0秒の兵科はそもそも出ない) */
+  c.globalAlpha=.3+.5*k;
+  for(let i2=0;i2<5;i2++){const a2=t*3+i2*1.257,d2=(26-16*k)*CH_UP;
+   c.beginPath();c.arc(x+Math.cos(a2)*d2,y-28*CH_UP+Math.sin(a2)*d2*.6,(1.6+1.2*k)*2.8,0,7);c.fill();}
+ }
+ /* ⭐**英雄★4以上の5人だけ専用の溜め**(ユーザー決定=完全固有はここまで) */
+ if(U.hro>=4)drawUChgHero(c,u,t,k,col,U);
+ c.restore();
+}
+function drawUChgHero(c,u,t,k,col,U){
+ const x=u.px,y=u.py,dr=(u.dr||-1),id=U.id;
+ c.globalAlpha=.35+.5*k;c.strokeStyle=col;c.fillStyle=col;c.lineWidth=7;
+ if(id==='hGiant'){/* 鋼鉄の巨人: 足元の瓦礫が浮き上がる */
+  for(let i2=0;i2<5;i2++){const a2=i2*1.257+t*.4,d2=(16+14*k)*CH_UP;
+   const px2=x+Math.cos(a2)*d2,py2=y+2+Math.sin(a2)*d2*.3-(4+10*k)*CH_UP*(.4+.6*Math.abs(Math.sin(t*5+i2)));
+   c.beginPath();c.moveTo(px2-7,py2+5);c.lineTo(px2,py2-7);c.lineTo(px2+7,py2+5);c.closePath();c.fill();}
+ }else if(id==='hStorm'){/* 雷鳴の巫女: 頭上に雲が渦を巻く */
+  for(let i2=0;i2<3;i2++){c.globalAlpha=(.2+.35*k)*(1-i2*.25);
+   c.beginPath();c.ellipse(x+Math.sin(t*2+i2)*6,y-(68+i2*5)*CH_UP,(14+8*k+i2*4)*CH_UP,(5+2*k)*CH_UP,0,0,7);c.fill();}
+ }else if(id==='hReact'){/* 炉心の番人: 燃料棒を地面に刺して熱が溜まる */
+  c.lineWidth=10;const rx=x+dr*-14*CH_UP;
+  c.beginPath();c.moveTo(rx,y);c.lineTo(rx,y-(18+10*k)*CH_UP);c.stroke();
+  c.globalAlpha=.5*k;c.beginPath();c.arc(rx,y-(18+10*k)*CH_UP,(3+6*k)*CH_UP,0,7);c.fill();
+ }else if(id==='hNox'){/* 終焉の騎士: 背後に死の弧が開く */
+  c.lineWidth=9;c.globalAlpha=.3+.55*k;
+  c.beginPath();c.arc(x,y-30*CH_UP,(20+18*k)*CH_UP,-1.2,1.2);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=4;c.globalAlpha=.5*k;
+  c.beginPath();c.arc(x,y-30*CH_UP,(24+18*k)*CH_UP,-1,1);c.stroke();
+ }else if(id==='hDawn'){/* 暁の王: 後光が伸びる */
+  c.globalAlpha=.13+.24*k;
+  for(let i2=0;i2<8;i2++){const a2=t*.5+i2*.785,R2=(20+34*k)*CH_UP;
+   c.beginPath();c.moveTo(x,y-30*CH_UP);
+   c.lineTo(x+Math.cos(a2)*R2,y-30*CH_UP+Math.sin(a2)*R2*.7);
+   c.lineTo(x+Math.cos(a2+.16)*R2,y-30*CH_UP+Math.sin(a2+.16)*R2*.7);c.closePath();c.fill();}
+ }
+}
 function hitFx(C,z,ang,col,prc,type){
  if(FXLV<1||!z)return;
  if(z.armor&&!prc&&type==='bullet')addFx(C,'ric',z.px,z.py-18*CH_UP,'',{ang});
@@ -10985,6 +11163,10 @@ function heroUlt(C,wave){
  const u=C.units.find(x=>x.hro&&!x.dead);if(!u)return false;
  const H=heroAt(C.hUi);if(!H)return false;
  C.hCg=0;
+ /* ⭐**★4以上は必殺技に0.5秒の決めポーズを付ける**(2026-07-30・設計の5番目)。
+    ⚠それまでは押しても英雄は無反応で、fxだけが体から浮いて出ていた。
+    ⚠**効果は今までどおり即時**(遅らせると対象の一覧を取り直すことになり、挙動が変わる)。 */
+ if(H.rk>=4){u.ulT=.55;u.ct=0;u.chg=0;}
  const W=1+.13*(wave||1),live=C.zombies.filter(z=>!z.dead&&z.d>=0);
  /* 英雄の前方(=敵が来る側)にいる敵を距離順に拾う */
  const front=r=>live.filter(z=>{const g=u.d-z.d;return g>=-20&&g<=r;});
@@ -11248,12 +11430,14 @@ function campStep(C,dt,wave){
  /* ユニット */
  const MR=38;
  for(let ui2=0;ui2<UNITS.length;ui2++)if(C.ucd[ui2]>0)C.ucd[ui2]-=dt;
- for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;}
+ for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;}
  for(const u of C.units){
   if(u.dead)continue;
   const U=UNITS[u.ui];u.cd-=dt;
   /* 部隊レベル補正込み攻撃力。⚠**暁の号令**(uOv)はここと dmgU の2か所だけで効かせる */
-  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?2:1));
+  /* ⚠**溜めたぶんを1発に戻す**(uChgM)=実効DPSは溜めを入れる前とぴったり同じ。
+     ⚠ここを飛ばすと「格好よくなったが弱くなった」で終わる(設計の4番目) */
+  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?2:1)*uChgM(u.ui));
   let tg=null,best=-1;
   if(U.type==='heal'){
    if(u.cd<=0){let ta=null,br2=1;
@@ -11265,7 +11449,13 @@ function campStep(C,dt,wave){
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const gap=u.d-z.d;
    if(gap>=-10&&gap<=Math.max(U.rng,ENG_GAP+2)&&z.d>best){best=z.d;tg=z;}}
   if(tg){
-   if(u.cd<=0){u.cd=U.rate;
+   /* ⭐⭐**4段階(待機→溜め→発射→硬直)**。u.cd=硬直 / u.chg=溜めの進行度(0→1) / u.ct=いま溜めている印。
+      ⚠溜め中は狙っている座標を控える(照準の線を引くため)。 */
+   const cgT9=uChgT(u.ui);
+   if(u.cd<=0&&cgT9>0&&(u.chg||0)<1){
+    u.chg=Math.min(1,(u.chg||0)+dt/cgT9);u.ct=1;u.tx=tg.px;u.ty=tg.py;
+   }else if(u.cd>0)u.ct=0;
+   if(u.cd<=0&&(cgT9<=0||(u.chg||0)>=1)){u.cd=U.rate;u.chg=0;u.ct=0;
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
     if(U.type==='frost'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,ua,1);}}
      const tx9=tg.px,ty9=tg.py;
@@ -11290,8 +11480,60 @@ function campStep(C,dt,wave){
     else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
     else{dmgZ(C,tg,ua,pierce);
      /* ⭐進化段階が上がるほどエフェクトを豪華にする(ユーザー指示)。英雄は最大 */
-     const utl=uFxTier(u),ucl=UFX_COL[utl];
-     if(U.type==='fire'&&U.rng>60){
+     /* ⭐⭐**固有(uUniq)はそのキャラ自身の色で撃つ**(2026-07-30)=18種+英雄5人が一目で見分く */
+     const utl=uFxTier(u),ucl=uUniq(u.ui)?(U.c||UFX_COL[utl]):UFX_COL[utl];
+     const MK9=uMotK(u.ui),d5=(u.dr||-1),mx9=u.px+d5*30*CH_UP,my9=u.py-27*CH_UP;
+     const ang9=Math.atan2((tg.py-20*CH_UP)-my9,tg.px-mx9);
+     /* ⭐⭐**型ごとに弾・銃口・着弾を分ける**(2026-07-30ユーザー指摘
+          「攻撃エフェクトが同じやつが多すぎる/遠距離はほぼライフルタレット」)。
+        ⚠それまで分岐は3つ(炎の帯 / 曳光線 / 斬撃の弧)しか無く、50種が3通りで撃っていた。 */
+     if(MK9==='snipe'&&U.rng>60){
+      /* 狙撃: 細く白い一条+**敵の向こうへ抜ける貫通線**。銃口は大きく十字に光る */
+      u.fireT=.2;
+      addFx(C,'beam',mx9,my9,'',{x2:tg.px,y2:tg.py-18*CH_UP,
+       col:'rgba(190,232,255,',col2:'rgba(255,255,255,',w:2.6+utl*.7,lf:.2});
+      addFx(C,'tr',tg.px,tg.py-18*CH_UP,'',
+       {x2:tg.px+Math.cos(ang9)*120,y2:tg.py-18*CH_UP+Math.sin(ang9)*120,col:'rgba(190,232,255,',w:1.5});
+      if(FXLV>0){addFx(C,'mzl',mx9,my9,'',{ang:ang9,r:18+utl*4,col:ucl});
+       addP(C,1,u.px,u.py-24*CH_UP,{sp:70,a:d5<0?2.2:.9,spread:.3,up:45,g:600,life:.9,r:1.8,col:DIM,typ:'shell',gr:u.py});
+       hitFx(C,tg,ang9,ucl,1,U.type);}
+      C.shake=Math.max(C.shake||0,.09);
+      if(C.isMe)sfx.snipe?sfx.snipe():sfx.shot();}
+     else if(MK9==='bolt'){
+      /* 落雷: 上から折れた線が落ちてくる(必殺技の小型版)。曳光線は出さない */
+      u.fireT=.14;
+      const pz=[[tg.px+rnd(-16,16),tg.py-170*CH_UP],[tg.px+rnd(-9,9),tg.py-95*CH_UP],[tg.px,tg.py-16*CH_UP]];
+      addFx(C,'zap',pz[0][0],pz[0][1],'',{pts:pz,sd:rnd(0,9),wm:1.15});
+      if(FXLV>0){addFx(C,'ring',tg.px,tg.py,'',{r:34,col:ucl});
+       addP(C,5,tg.px,tg.py-16*CH_UP,{sp:130,g:220,life:.28,r:2,col:ucl});
+       hitFx(C,tg,ang9,ucl,1,U.type);}
+      if(C.isMe)sfx.zap?sfx.zap():sfx.shot();}
+     else if(MK9==='spin'&&U.rng>60){
+      /* 回転: 短い曳光線をばら撒き、薬莢が滝のように落ちる。銃口は小さく速い */
+      u.fireT=.07;
+      addFx(C,'tr',mx9,my9,'',{x2:tg.px+rnd(-11,11),y2:tg.py-20*CH_UP+rnd(-9,9),
+       col:'rgba(255,214,120,',w:1.7+utl*.3});
+      if(FXLV>0){addFx(C,'mzl',mx9,my9,'',{ang:ang9,r:7+utl*2,col:ucl});
+       addP(C,2,u.px,u.py-24*CH_UP,{sp:95,a:d5<0?2.1:1,spread:.55,up:50,g:650,life:.9,r:1.4,col:DIM,typ:'shell',gr:u.py});
+       hitFx(C,tg,ang9,ucl,pierce,U.type);}
+      if(C.isMe&&Math.random()<.34)sfx.shot();}
+     else if(MK9==='cast'&&U.rng>60){
+      /* 術者: 曳光線ではなく**光の珠**が飛んで、着弾で輪が開く */
+      u.fireT=.12;
+      addFx(C,'pel',mx9,my9-6*CH_UP,'',{x2:tg.px,y2:tg.py-20*CH_UP,lf:.18,col:ucl});
+      const tx9=tg.px,ty9=tg.py;
+      later(C,.18,()=>{addFx(C,'ring',tx9,ty9,'',{r:30+utl*8,col:ucl});
+       addP(C,6,tx9,ty9-18*CH_UP,{sp:95,g:130,life:.42,r:2.2,col:ucl});});
+      if(C.isMe&&Math.random()<.5)sfx.heal?sfx.heal():sfx.shot();}
+     else if(MK9==='mag'&&U.rng>60){
+      /* 磁力: 敵から自分へ**粒が吸われる**(線を引かない=他と混ざらない) */
+      u.fireT=.12;
+      if(FXLV>0){for(let i9=0;i9<6;i9++)
+        addP(C,1,tg.px+rnd(-10,10),tg.py-20*CH_UP,{sp:180,a:Math.atan2(my9-(tg.py-20*CH_UP),mx9-tg.px),spread:.25,g:0,life:.3,r:2.2,col:ucl});
+       addFx(C,'ring',tg.px,tg.py,'',{r:36,col:ucl});
+       hitFx(C,tg,ang9,ucl,pierce,U.type);}
+      if(C.isMe&&Math.random()<.4)sfx.net?sfx.net():sfx.shot();}
+     else if(U.type==='fire'&&U.rng>60){
       /* ⭐火炎放射兵は「弾道の線」ではなく炎の帯を吹く(2026-07-26 第65弾)。
          ⚠今まで銃と同じ曳光線だったので、何を撃っているのか分からなかった */
       u.fireT=.1;
@@ -11299,6 +11541,8 @@ function campStep(C,dt,wave){
       if(FXLV>0){addFx(C,'flame',u.px+Math.cos(aa)*16*CH_UP,u.py-28*CH_UP+Math.sin(aa)*16*CH_UP,'',
         {ang:aa,len:Math.max(70,U.rng*.95),col:U.c||'#ff9a3d',sd:rnd(0,9)});
        if(FXLV>1)addP(C,1,tg.px,tg.py-18*CH_UP,{sp:50,up:40,g:-60,life:.7,r:4.5,col:'#6e6354',typ:'smoke'});}
+      /* ⭐炉/熱の型は足元から熱波も出す(火炎放射兵と炉心の番人) */
+      if(MK9==='heat'&&FXLV>0)addFx(C,'shock',u.px,u.py+2,'',{r:36+U.rng*.22,col:ucl});
       if(C.isMe&&Math.random()<.3)sfx.flame();}
      else if(U.rng>60){u.fireT=.1;
       addFx(C,'tr',u.px,u.py-24*CH_UP,'',{x2:tg.px,y2:tg.py-20*CH_UP,col:U.id==='snp'?'rgba(160,225,255,':null,w:2.6+utl*.7});
@@ -11316,7 +11560,8 @@ function campStep(C,dt,wave){
       addFx(C,'slash',u.px,u.py-26*CH_UP,'',{ang:aa,r:(24+utl*7)*CH_UP,lv:utl,col:ucl});
       hitFx(C,tg,aa,ucl,pierce,U.type);}}
    }
-  }else{const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(fD+uStand(U),60,PLEN-40),df=goal-u.d;
+  }else{u.ct=0;/* ⚠**u.chg は消さない**=溜めの進行度は次の対象へ引き継ぐ(設計の3番目) */
+   const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(fD+uStand(U),60,PLEN-40),df=goal-u.d;
    if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;}else u.back=false;}
  }
  C.units=C.units.filter(u=>!u.dead);
@@ -12381,9 +12626,23 @@ function renderCamp(C,t){
  const us2=(C.units||[]).slice().sort((a,b)=>a.py-b.py);
  for(const u of us2){
   groundShadow(c,u.px,u.py,14*CH_UP);
-  if(!(u.hitT>0||u.fireT>0))
+  /* ⭐溜め中は焼いたコマ(歩いている)が使えないので、直に描く方へ回す */
+  const chg9=u.ct?clamp(u.chg||0,0,1):0,ul9=u.ulT>0?clamp(u.ulT/.55,0,1):0;
+  if(chg9>0&&FXLV>0)drawUChg(c,u,t,0);/* 足元の輪は体の後ろ */
+  /* ⭐必殺の決めポーズ(★4以上)=足元から光の輪が2枚立ち上がる */
+  if(ul9>0&&FXLV>0){const uc9=(UNITS[u.ui]&&UNITS[u.ui].hro)?(RARE[Math.min(4,UNITS[u.ui].hro-1)]||GOLD):GOLD;
+   c.save();c.strokeStyle=uc9;c.lineWidth=9;
+   for(let i9=0;i9<2;i9++){const q9=clamp(1-ul9+i9*.3,0,1);
+    c.globalAlpha=(1-q9)*.7;
+    c.beginPath();c.ellipse(u.px,u.py+2,(14+q9*76)*CH_UP,(14+q9*76)*CH_UP*.34,0,0,7);c.stroke();}
+   c.restore();}
+  if(!(u.hitT>0||u.fireT>0||chg9>0||ul9>0))
    drawSpr(c,bakeU(u.ui),sprFrame(t,u.ph,10),u.px,u.py,(u.dr||-1)<0);
-  else drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT});
+  else{
+   if(ul9>0){c.save();c.translate(u.px,u.py);c.scale(1+.14*ul9,1+.14*ul9);c.translate(-u.px,-u.py);}
+   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||(ul9>0?1:0)});
+   if(ul9>0)c.restore();}
+  if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
   if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64*CH_UP,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }
