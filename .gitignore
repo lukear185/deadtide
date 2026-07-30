@@ -3,3 +3,5 @@ sfx_out/
 px_src/
 px_prev/
 ui_src/ChatGPT*.png
+# Obsidian の端末ごとの表示状態(保管庫はリポジトリの根っこ)
+.obsidian/
