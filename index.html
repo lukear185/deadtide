@@ -10236,30 +10236,42 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
        ⭐`flen`=長さの倍率 / `fw`=太さの倍率 / `dyB`=上下のずれ(奥は上・手前は下)。
        ⚠短縮を入れないと、どれだけ軌道を凝っても「風車のように縦に回る棒」にしかならない。
        ⚠**構えとテイクバックは短縮しない**=本物もそこだけはバットを立てていて、円の面に乗っていない。 */
+  /* ⭐⭐**バットは「上から見た角度 TH」で持ち、画面上の見え方はそこから計算する**。
+     ⚠⚠画面の平面で回す設計(角度を1周させる)だと、短縮を足しても**めっちゃ縦振り**に見える
+       (2026-07-30ユーザー指摘。2回作り直した)。**横振りは回すのではなく、上から見た円を
+       真横から見た形に射影する**のが正解。
+     ⭐`TH`=上から見た角度(度。0=正面/右=投手方向、+=手前へ回る、-=奥)。
+       `lay`=スイングの円に寝ている度合い(0=構えでバットを立てている / 1=完全に円へ寝ている)。
+     ⭐射影: 画面のx=cos(TH) / 画面のy=sin(TH)*TZ。**TZ が小さいほど横振りに見える**
+       (TZ=1 だと完全な縦回転=これが「めっちゃ縦振り」の正体)。 */
   const bp=clamp(o.bsw||0,0,1);
-  let BAt,armR,twist,step,hip,flen,fw,dyB;
-  if(bp<=0){BAt=-1.75;armR=-.45;twist=-.06;step=0;hip=0;flen=1;fw=1;dyB=0;}
-  else if(bp<.14){const q=bp/.14;      /* 振り抜き(⭐手前を通る=短く・太く・低く) */
-   BAt=q*2.2;      armR=.4+q*.45;  twist=.14+q*.06; step=1;   hip=1;
-   flen=1-q*.55;   fw=1+q*.25;     dyB=q*2.4;}
-  else if(bp<.3){const q=(bp-.14)/.16; /* フォロースルー(左横へ抜けてまた長くなる) */
-   BAt=2.2+q*1.5;  armR=.85+q*.15; twist=.2-q*.04;  step=1;   hip=1-q*.3;
-   flen=.45+q*.5;  fw=1.25-q*.25;  dyB=2.4-q*2.4;}
-  else if(bp<.55){const q=(bp-.3)/.25; /* 構えへ戻す(⚠同じ向きに回し切る) */
-   BAt=3.7+q*.83;  armR=1-q*1.45;  twist=.16-q*.22; step=1-q; hip=.7-q*.7;
-   flen=.95+q*.05; fw=1;           dyB=0;}
+  let TH,lay,armR,twist,step,hip;
+  if(bp<=0){        TH=200;  lay=0;  armR=-.12;      twist=-.06;      step=0;    hip=0;}
+  else if(bp<.14){const q=bp/.14;      /* 振り抜き(手前へ回り込む) */
+   TH=q*70;         lay=1;   armR=.28+q*.1;  twist=.14+q*.06; step=1;    hip=1;}
+  else if(bp<.3){const q=(bp-.14)/.16; /* フォロースルー(手前を通って左へ抜ける) */
+   TH=70+q*90;      lay=1;   armR=.38-q*.18; twist=.2-q*.04;  step=1;    hip=1-q*.3;}
+  else if(bp<.55){const q=(bp-.3)/.25; /* 構えへ戻す(円から起こしてバットを立てる) */
+   TH=160+q*40;     lay=1-q; armR=.2-q*.32;  twist=.16-q*.22; step=1-q;  hip=.7-q*.7;}
   else if(bp<.72){                     /* 構え(バットを立てて肩の後ろ・手は耳の高さ) */
-   BAt=-1.75;      armR=-.45;      twist=-.06;      step=0;   hip=0;
-   flen=1;         fw=1;           dyB=0;}
-  else if(bp<.88){const q=(bp-.72)/.16,e=q*q;/* テイクバック(後ろ足に体重・少し奥へ) */
-   BAt=-1.75-e*.6; armR=-.45-e*.2; twist=-.06-e*.1; step=-e*.4; hip=-e*.25;
-   flen=1-e*.12;   fw=1-e*.08;     dyB=-e*1.2;}
-  else{const q=(bp-.88)/.12,eb=q*q,s9=Math.sin(q*Math.PI);/* ⭐振り出し=腰が先・バットが遅れる */
-   BAt=-2.35+eb*2.35;armR=-.65+eb*1.05;twist=-.16+eb*.3;step=-.4+q*1.4;hip=-.25+q*1.25;
-   /* ⭐**奥を通る所で一番短くする**=ここが「水平に回っている」に見える肝。
-      インパクト(q=1)で真横=最長に戻る */
-   flen=.88+q*.12-s9*.46; fw=.92+q*.08-s9*.16; dyB=-1.2+q*1.2-s9*2.2;}
-  const BA=BAt-armR;/* 手首の角度(肩の回転を差し引く) */
+   TH=200;          lay=0;   armR=-.12;      twist=-.06;      step=0;    hip=0;}
+  else if(bp<.88){const q=(bp-.72)/.16,e=q*q;/* テイクバック(後ろ足に体重。まだ立てたまま) */
+   TH=200+e*35;     lay=0;   armR=-.12-e*.15;twist=-.06-e*.1; step=-e*.4;hip=-e*.25;}
+  else{const q=(bp-.88)/.12,eb=q*q;    /* ⭐振り出し=腰が先(線形)・バットが遅れる(q*q) */
+   TH=235+eb*125;   lay=Math.min(1,q*2.6);
+   armR=-.27+eb*.55;twist=-.16+eb*.3;  step=-.4+q*1.4;  hip=-.25+q*1.25;}
+  /* ⚠**TZ を上げるほど縦振りに戻る**。0.34(=20°)で「横に薙いでいる」に見える */
+  const TZ=.34;
+  const th9=TH*Math.PI/180,cs9=Math.cos(th9),sn9=Math.sin(th9);
+  const lenC=Math.sqrt(cs9*cs9+sn9*sn9*TZ*TZ),angC=Math.atan2(sn9*TZ,cs9);
+  /* ⚠立てて構えた時の角度は **+2π 側**(4.533=-1.75と同じ)で持つ
+     =そうしないと戻りと振り出しの補間が±πを跨いで逆回転する */
+  const angU=5.0332;
+  const BA0=angU+((bp>=.88?angC+6.2832:angC)-angU)*lay;
+  const flen=1+(lenC-1)*lay;        /* 画面上の長さ(奥/手前を向く所で短い) */
+  const fw=1+(.32*(sn9*.5+.5)-.16)*lay;/* 手前ほど太い */
+  const dyB=-sn9*2.6*lay;           /* 奥は上・手前は下 */
+  const BA=BA0-armR;/* 手首の角度(肩の回転を差し引く) */
   /* ⭐腕とバットは**一体で回す**(実際のスイングも腕と得物は概ね一緒に回る)。
      ⚠肩を軸にすること=手首を軸にするとバットだけ回って腕が付いていかない */
   const swT=()=>{c.translate(4,-29);c.rotate(armR);c.translate(-4,29);};
