@@ -2401,6 +2401,20 @@ process.exit(0);
   if(sl<slm){console.log('FAIL: 🛠DEVで建設マスが全部開いていない '+sl+'/'+slm);process.exit(1);}
   if(st<stm){console.log('FAIL: 🛠DEVで砲撃が全部解放されていない '+st+'/'+stm);process.exit(1);}
   console.log('🛠DEVモード: タワー'+un+'種・兵科'+uu+'種・建設マス'+sl+'+工房'+ec+'+支援'+sp+'・砲撃'+st+'種 すべて最初から使える OK');
+  /* ⭐⭐**🛠DEVでは「見て欲しいもの」の確率が上がっていること**(2026-07-30ユーザー指示
+       「見て欲しいやつの確率は上げて欲しい。テストするときは毎回そうして」)。
+     ⚠素の確率のままでは★4以上が約1%で、どんでん返しも黄金のロブスターも確かめようがない。
+     ⚠**新しく珍しいものを足したら、ここの一覧にも足すこと**。 */
+  const d=new Function(js+String.fromCharCode(10)+'return {hi:G_RATE.filter(r=>r[0]==="r4"||r[0]==="r5").reduce((a,r)=>a+r[1],0),'
+   +'lob:lbRate(),rb:rbRate(),pl:GC_P_LOB,pt:GC_P_TW,sum:G_RATE.reduce((a,r)=>a+r[1],0)};')();
+  if(Math.abs(d.sum-100)>1e-9){console.log('FAIL: 🛠DEVの排出率の合計が100でない '+d.sum);process.exit(1);}
+  if(d.hi<10){console.log('FAIL: 🛠DEVで★4以上が出にくすぎる '+d.hi.toFixed(1)+'%(演出を確かめられない)');process.exit(1);}
+  if(d.lob<.2){console.log('FAIL: 🛠DEVで✨黄金のロブスターが出にくすぎる');process.exit(1);}
+  if(d.rb<.2){console.log('FAIL: 🛠DEVで🌈虹のゾンビが出にくすぎる');process.exit(1);}
+  if(Math.abs(d.pl-1/3)>1e-9||Math.abs(d.pt-1/3)>1e-9){
+   console.log('FAIL: 🛠DEVで召集の3通りが均等になっていない');process.exit(1);}
+  console.log('🛠DEVの底上げ: ★4以上 '+d.hi.toFixed(1)+'% / 召集の演出は3通り均等 / '
+   +'タイトルの✨金'+(d.lob*100)+'%・🌈虹'+(d.rb*100)+'% OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
  }finally{
