@@ -2282,7 +2282,13 @@ const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(
    ⚠**取った総数だけで上がる**形にしてある(派生の「段で跳ねる」形と分けた理由=
      タワーの進化は1種につき1段しか無いので、段で跳ねさせようが無い)。
    600 → 21個目で2,797🧬 / 全部で約33,000🧬。 */
-const LAB_TG=k=>Math.round(600*Math.pow(1.08,k||0));
+/* ⭐⭐**タレットの進化は「強いタレットほど高い」**(2026-08-01ユーザー指示
+     「強いタレットほど必要研究Pを多くして。ライフルが最弱で要塞砲が最強っていう認識で」)。
+   ⚠それまでは**取った総数だけ**で値段が決まっていて、どのタレットを進化させても同じだった。
+   ⭐`i`=素のタワーの添字(TOWERS は解放順=強さ順に並んでいる)。
+     ライフル(0)=380 → 要塞砲(18)=約2,400。取った総数でも少しだけ上がる(1.02^k)。
+   ⚠数字を触ったら `node test_headless.js`(checkLabSteps / checkLabMul)を必ず流すこと。 */
+const LAB_TG=(k,i)=>Math.round(380*Math.pow(1.085,i||0)*Math.pow(1.02,k||0));
 /* 上級兵科(titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
 const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&i<BASE_U+(META.nu||0);};
 /* ⚠**弾薬(AMMO)は2026-07-27に廃止した**(ユーザー指示)。
@@ -9618,15 +9624,15 @@ const H_LOOK={
  hMech :{cape:0,h:'hard',  w:'wrench', k:'tool',  c2:'#63636e'},/* 整備士: 作業帽+レンチ+工具袋 */
  hPost :{cape:1,h:'cap',   w:'bag',    k:'',      c2:'#5c4c3a'},/* 配達人: 帽子+鞄(軽装・短マント) */
  hSf   :{cape:0,h:'nvg',   w:'rifle',  k:'pack',  c2:'#42505c'},/* 特殊部隊員: 暗視装置+長い小銃 */
- hMed  :{cape:0,h:'nurse', w:'kit',    k:'medbag',c2:'#e8e4d8'},/* 軍医: 白帽+医療鞄 */
+ hMed  :{cape:0,h:'nurse', w:'kit',    k:'medbag',c2:'#e8e4d8',fem:1,hair:'#6b4a2a'},/* 軍医: 白帽+医療鞄 */
  hBomb :{cape:0,h:'goggle',w:'bomb',   k:'dyna',  c2:'#7a6240'},/* 爆破屋: ゴーグル+爆弾+ダイナマイト */
  hDeal :{cape:1,h:'hood',  w:'case',   k:'crate', c2:'#5a4a52'},/* 闇商人: 目深のフード+提げ鞄+木箱 */
  hSeer :{cape:1,h:'veil',  w:'staff',  k:'',      c2:'#54446b'},/* 預言者: 頭巾+杖(長い) */
- hVenom:{cape:1,h:'gasm',  w:'flask',  k:'canis', c2:'#4a6b52'},/* 毒霧の魔女: 防毒面+噴霧瓶+毒ボンベ */
+ hVenom:{cape:1,h:'gasm',  w:'flask',  k:'canis', c2:'#4a6b52',fem:1,hair:'#3a2c46'},/* 毒霧の魔女: 防毒面+噴霧瓶+毒ボンベ */
  hCmd  :{cape:0,h:'beret', w:'saber',  k:'radio', c2:'#5c6348'},/* 傭兵団長: ベレー帽+指揮刀+無線機 */
  hMag  :{cape:0,h:'welder',w:'magnet', k:'batt',  c2:'#41586b'},/* 磁力技師: 溶接面+U字磁石+電池 */
  hGiant:{cape:0,h:'ironm', w:'fist',   k:'',      c2:'#7a7a84'},/* 鋼鉄の巨人: 全身鉄+巨大な拳 */
- hStorm:{cape:1,h:'crown', w:'spear',  k:'coil',  c2:'#5a4f7a'},/* 雷鳴の巫女: 雷冠+雷槍+背中のコイル */
+ hStorm:{cape:1,h:'crown', w:'spear',  k:'coil',  c2:'#5a4f7a',fem:1,hair:'#e8d9a8'},/* 雷鳴の巫女: 雷冠+雷槍+背中のコイル */
  hReact:{cape:0,h:'hazmat',w:'rod',    k:'drum',  c2:'#6b6340'},/* 炉心の番人: 防護頭巾+燃料棒+ドラム缶 */
  hNox  :{cape:1,h:'skull', w:'scythe', k:'',      c2:'#3f2c38'},/* 終焉の騎士: 髑髏兜+大鎌 */
  /* ⚠暁の王は**マント無し**=マントも翼も金色なので、重ねると翼が消える(色が近い物を重ねない) */
@@ -9696,6 +9702,16 @@ function drawHeroBody(c,U,walk,o){
  uArm(c,-HS[0]*.3,HS[1]+1.5,HS[0]*1.5,3.5+walk*1.2,5.4,shade(L.c2,.66),shade(U_SKIN,.7));
  /* 胴(職ごとに色と形が違う)+肩当て。⭐角丸長方形をやめ、兵科と同じ「肩を落として腰でくびれる」形にした */
  if(big){uBody(c,'',L.c2,[-13,-44,26,30,7]);c.fillStyle=col;rr(c,-15,-45,30,9,3);c.fill();c.stroke();}
+ else if(L.fem){/* ⭐⭐**女性の英雄は一目で分かるようにする**(2026-08-01ユーザー指示)。
+   ⚠34pxで女性に見せる手は **①細身の体型 ②長い髪 ③腰から広がる裾** の3つだけ(ヴァルキリーで分かったこと)。
+   ⚠髪を大きく広げると翼やフードに見えるので、**背中へ真下に垂らす**こと。 */
+  c.fillStyle=L.hair||'#6b4a2a';/* 長い髪(胴より奥=背中に垂れる) */
+  c.beginPath();c.moveTo(-2,-49);c.quadraticCurveTo(-11.4,-44,-10.4,-20+walk*1.6);
+  c.quadraticCurveTo(-5,-25,-1.6,-40);c.closePath();c.fill();c.stroke();
+  uBody(c,'',L.c2,[-8.4,-41,16.8,26,6]);
+  c.fillStyle=shade(L.c2,1.16);/* 腰から広がる裾(⚠輪郭に出る=これが一番効く) */
+  c.beginPath();c.moveTo(-8,-19.4);c.lineTo(8,-19.4);c.lineTo(12.4,-4+walk*1.4);c.lineTo(-12,-4-walk*1.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=col;rr(c,-9.4,-42,19,7,3);c.fill();c.stroke();}
  else{uBody(c,'',L.c2,[-10,-41,20,26,5]);c.fillStyle=col;rr(c,-11,-42,22,7,3);c.fill();c.stroke();}
  /* 手前の腕(胴の後・武器の前=手が武器の握りに来る) */
  uArm(c,-HS[0]*.15,HS[1]+2.5,HS[0]*1.75,2-walk*1.2,5.8,L.c2,U_SKIN,1);
@@ -10840,8 +10856,19 @@ UBODY.flm=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(UNI,1.24);for(const k of[-26.4,-24])c.fillRect(-7.6,k,15.2,1.8);
  c.fillStyle='#3a3128';c.fillRect(-7.6,-23.6,15.2,2.8);c.strokeRect(-7.6,-23.6,15.2,2.8);
  uNoz(c,6,-27,20,'#8a4b28');
- c.fillStyle='#ffb347';c.beginPath();c.arc(29,-27,4.4+Math.sin(t*20)*2,0,7);c.fill();
- c.fillStyle=GLOW;c.beginPath();c.arc(28,-27,2.2+Math.sin(t*20),0,7);c.fill();
+ /* ⭐**常に火を噴いている**(2026-08-01ユーザー指示「火炎放射兵の火炎は常時火が出るように」)。
+    ⚠それまでは筒先に**種火の丸**が1つあるだけで、撃っていない時は火炎放射兵に見えなかった。
+    ⚠**丸を並べると炎に見えない**=根本が太く先が細い「舌」を3枚重ね、芯ほど明るくする。 */
+ {const fk=Math.sin(t*17),fk2=Math.sin(t*23+1.7);
+  c.fillStyle='#c9552e';
+  c.beginPath();c.moveTo(25.4,-30.6);c.quadraticCurveTo(38+fk*3,-31.8,47+fk*4,-27.2);
+  c.quadraticCurveTo(38+fk2*3,-22.4,25.4,-23.4);c.closePath();c.fill();
+  c.fillStyle='#ffb347';
+  c.beginPath();c.moveTo(26,-29.6);c.quadraticCurveTo(35+fk*2.4,-30.6,42+fk*3,-27.2);
+  c.quadraticCurveTo(35+fk2*2.4,-24,26,-24.8);c.closePath();c.fill();
+  c.fillStyle=GLOW;
+  c.beginPath();c.moveTo(26.4,-28.8);c.quadraticCurveTo(32+fk*1.6,-29.2,36+fk*2,-27.2);
+  c.quadraticCurveTo(32+fk2*1.6,-25.4,26.4,-25.6);c.closePath();c.fill();}
  bArm(c,4.6,-31.4, 7.6,-27.2, 8.6,-21.6, 5.2,4.2, shade(UNI,1.14),SK);
  bNeck(c,1.6,-39.8,-34.8,SK);
  c.fillStyle='#4c5648';/* ガスマスク(頭+濾過缶。⚠顔は出さない) */
@@ -11209,7 +11236,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
  /* ⭐**溜め中は足を止める**(o.chg>0)=歩行を止めて足を開いた構えにする。
     ⚠止めるだけだと「固まった」に見えるので、溜めの光(drawUChg)と必ずセットで出すこと。 */
- const walk=(o.chg>0)?.62:Math.sin(t*10+ph)*WALK_AMP,bob=(o.chg>0)?0:Math.abs(walk)*1.4;
+ /* ⭐**止まっている間は脚を止める**(2026-08-01ユーザー指示)。⚠o.mv===0 の時だけ止める
+    =印を持たない呼び出し(図鑑・プレビュー)は今までどおり歩かせる */
+ const walk=(o.chg>0)?.62:(o.mv===0?0:Math.sin(t*10+ph)*WALK_AMP),bob=(o.chg>0||o.mv===0)?0:Math.abs(walk)*1.4;
  const tier=uTier(ui),tsc=TSCALE[tier-1];
  c.save();c.translate(x,y-bob);
  if(tier===4){c.fillStyle='rgba(232,163,61,'+(.16+.09*Math.sin(t*6))+')';c.beginPath();c.ellipse(0,2,30,11,0,0,7);c.fill();}
@@ -13548,7 +13577,9 @@ function campStep(C,dt,wave){
       ⚠硬直中(u.cd>0)は溜めない=撃った直後に歩いても間隔は縮まらない。 */
    {const cg8=uChgT(u.ui);if(cg8>0&&u.cd<=0)u.chg=Math.min(1,(u.chg||0)+dt/cg8);}
    const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(fD+uStand(U),60,PLEN-40),df=goal-u.d;
-   if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;}else u.back=false;}
+   /* ⭐**歩いている印**(2026-08-01ユーザー指示「移動してないときは足を動かすのやめて」)。
+      ⚠止まっているのに脚が動くと、その場で足踏みしているように見える。 */
+   if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;u.mv=1;}else{u.back=false;u.mv=0;}}
  }
  C.units=C.units.filter(u=>!u.dead);
  /* 支援施設の効果をまとめる。⚠タワーの性能には一切触らない(情報/部隊/経済の3軸だけ) */
@@ -14627,10 +14658,11 @@ function renderCamp(C,t){
   const bsw9=uBatP(u);/* ⭐バットは振っている最中だけ直に描く(焼いたコマでは振れない) */
   const vsw9=uValkP(u);/* ⭐ヴァルキリーも同じ(剣を振っている間は焼いたコマを使えない) */
   if(!(u.hitT>0||u.fireT>0||chg9>0||ul9>0||bsw9>0||vsw9>0))
-   drawSpr(c,bakeU(u.ui),sprFrame(t,u.ph,10),u.px,u.py,(u.dr||-1)<0);
+   /* ⭐止まっている間は歩行の1コマ目で固定(2026-08-01)=その場で足踏みして見えるのを止める */
+   drawSpr(c,bakeU(u.ui),(u.mv===0?0:sprFrame(t,u.ph,10)),u.px,u.py,(u.dr||-1)<0);
   else{
    if(ul9>0){c.save();c.translate(u.px,u.py);c.scale(1+.14*ul9,1+.14*ul9);c.translate(-u.px,-u.py);}
-   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||(ul9>0?1:0),bsw:bsw9,vsw:vsw9,vcb:u.cmb||0});
+   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||(ul9>0?1:0),bsw:bsw9,vsw:vsw9,vcb:u.cmb||0,mv:u.mv});
    if(ul9>0)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
@@ -15634,7 +15666,9 @@ const parHP=zi=>{const h=(ZOMBIES[zi]||{}).hp||0;return h>=200?3:h>=110?2:1;};
    ⚠**必ず左から**出す(parNew は元から x=-60 で湧くので、湧く向きはそのまま)。
    ⚠**逃げられる**のが肝=速く歩かせて、倒すのに3発要る。だから当たると嬉しい。
    ⚠報酬はセーブに直で足すので、**タイトルでしか湧かせない**(paradeStep は SCR==='title' 限定)。 */
-const RB_RATE=.01,RB_GEM=10,RB_HP=3;
+/* ⚠**確率を下げた**(2026-08-01ユーザー指示)= 🌈虹犬 1%→**0.5%** / ✨金ロブ 0.1%→**0.05%** /
+   🐻🌈虹の熊(新設)**0.001%**。⚠🛠DEVでは3種を**均等33%ずつ**で出す(実機で全部確かめられるように)。 */
+const RB_RATE=.005,RB_GEM=10,RB_HP=3;
 /* ⚠🌈虹も🛠DEVでは出しやすくする(✨金と同じ扱い)。⚠金の方を先に判定するので金が食われることはない */
 const rbRate=()=>DEV?.5:RB_RATE;
 /* ⭐⭐**0.1%でキラキラ光る黄金のロブスター**(2026-07-28ユーザー指示
@@ -15644,14 +15678,27 @@ const rbRate=()=>DEV?.5:RB_RATE;
    ⚠5発要るので**虹より少し遅く歩かせる**=倒し切る前に逃げられると、0.1%が台無しになる。 */
 /* ⚠🛠DEV(`?dev=1`)では**50%**で出す(2026-07-28ユーザー指示)=0.1%では実機で見て確かめられないため。
    ⚠普通に遊ぶ側の確率は 0.1% のまま。 */
-const LB_RATE=.001,LB_GEM=30,LB_HP=5,LB_ZI=ZOMBIES.findIndex(z=>z.id==='sLob');
+const LB_RATE=.0005,LB_GEM=30,LB_HP=5,LB_ZI=ZOMBIES.findIndex(z=>z.id==='sLob');
 const lbRate=()=>DEV?.5:LB_RATE;
+/* ⭐⭐**0.001%で🌈虹の熊**(2026-08-01ユーザー指示)。一番珍しい=💎100個。
+   ⚠絵は**🌑ナイトメアの屍熊を使い回す**(新しく描かない)。虹の塗り分けは犬と同じ仕組み(`rb:1`)。
+   ⚠**8発当てないと倒せない**=当たっても取り逃がすことがある。だからこそ当たると嬉しい。 */
+const BR_ZI=ZOMBIES.findIndex(z=>z.id==='nmBear');
+const BR_RATE=.00001,BR_GEM=100,BR_HP=8;
+const brRate=()=>DEV?.5:BR_RATE;
 function parNew(){
- /* ⚠**珍しい方から順に判定する**=両方に当たった時に金が虹に食われないように */
- if(LB_ZI>=0&&Math.random()<lbRate())return {zi:LB_ZI,x:-60,sp:44,ph:rnd(0,9),ht:0,hp:LB_HP,kb:0,fl:0,lb:1};
- if(Math.random()<rbRate())return {zi:5,x:-60,sp:56,ph:rnd(0,9),ht:0,hp:RB_HP,kb:0,fl:0,rb:1};
+ const mk=(zi,sp,hp,ex)=>Object.assign({zi,x:-60,sp,ph:rnd(0,9),ht:0,hp,kb:0,fl:0},ex);
+ /* ⭐🛠DEVは**3種を均等(33%ずつ)**で出す=0.001%では実機で一度も見られないため */
+ if(DEV){const r=Math.random();
+  if(r<1/3&&BR_ZI>=0)return mk(BR_ZI,34,BR_HP,{rb:1,br:1});
+  if(r<2/3&&LB_ZI>=0)return mk(LB_ZI,44,LB_HP,{lb:1});
+  return mk(5,56,RB_HP,{rb:1});}
+ /* ⚠**珍しい方から順に判定する**=重なった時に珍しい方が食われないように */
+ if(BR_ZI>=0&&Math.random()<BR_RATE)return mk(BR_ZI,34,BR_HP,{rb:1,br:1});
+ if(LB_ZI>=0&&Math.random()<LB_RATE)return mk(LB_ZI,44,LB_HP,{lb:1});
+ if(Math.random()<RB_RATE)return mk(5,56,RB_HP,{rb:1});
  const zi=[0,0,1,2,3,4,5][ri(0,6)];
- return {zi,x:-60,sp:rnd(16,42),ph:rnd(0,9),ht:0,hp:parHP(zi),kb:0,fl:0};}
+ return mk(zi,rnd(16,42),parHP(zi),{});}
 function paradeInit(){PAR=[];for(let i=0;i<7;i++){const z=parNew();z.x=rnd(0,innerWidth);PAR.push(z);}}
 /* ⭐**タイトルのゾンビはタップで倒せる**(2026-07-27ユーザー指示
      「タイトルでゾンビタップして倒せるようにして、倒したときだけ撃破ボイス」)。
@@ -15685,6 +15732,12 @@ function paradeHit(cx,cy){
   {const g=parHP(best.zi);META.pts=(META.pts||0)+g;
    PARTX.push({x:best.x,y:h9-46,s:'+'+g+'🧬',t:0});
    try{saveMeta();updLabBtn();}catch(x){}}
+ if(best.br){/* ⭐⭐🌈虹の熊を倒した=💎魔石を100個(2026-08-01)。一番珍しい */
+  META.gem=(META.gem||0)+BR_GEM;try{saveMeta();updLabBtn();}catch(x){}
+  if(sfx.rainbow)sfx.rainbow();
+  PARTX.push({x:best.x,y:h9-70,s:'+'+BR_GEM+'💎',t:0,big:1});
+  try{toast('🌈 虹の熊を倒した! 💎魔石 +'+BR_GEM+'(計'+META.gem+')',true);}catch(x){}
+  return true;}
  if(best.lb){/* ⭐⭐黄金のロブスターを倒した=💎魔石を30個(2026-07-28) */
   META.gem=(META.gem||0)+LB_GEM;try{saveMeta();updLabBtn();}catch(x){}
   if(sfx.lobKill)sfx.lobKill();
@@ -16481,7 +16534,7 @@ function renderLab(){
    items.push({cat:'var',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
     tag:'進化 '+TOWERS[cur].n+' → '+NT.n,
     d:'盤面で強化を全部MAXにすると⚙️'+fmt(T_GCOST(cur))+'で建て替えられる — '+NT.dsc,
-    p:LAB_TG(tg.length)});
+    p:LAB_TG(tg.length,i)});
   }}
  /* ⭐砲撃は「次の1つ」だけを新種タブに出す(タワー/兵科と同じ形) */
  {const nk=stkNext();if(nk){const S=STRIKES[nk],ki=STK_ORDER.indexOf(nk);
