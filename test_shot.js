@@ -44,6 +44,9 @@ const NOITR=OPT.indexOf('noitr')>=0;
    ⚠歩行の位相を4コマ並べる=止め絵1枚だけ見て直すと、動いた時に脚が入れ替わる不具合を見逃す。 */
 const ARTM=/pose=([zu]):([A-Za-z0-9]+)/.exec(OPT);
 const ARTCHG=(/posechg=([0-9.]+)/.exec(OPT)||[0,''])[1];/* 溜めの姿で並べる(部隊のみ) */
+/* ⭐posesw = バットのスイングを**段階ごとに**並べる(2026-07-30)。
+   ⚠止め絵1枚では「振れているか」が分からないので、5コマを振り抜き〜振りかぶりに割り当てる。 */
+const ARTSW=OPT.indexOf('posesw')>=0;
 const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=twup(タワー強化) / lab=unup(部隊強化) / lab=rec(記録) = 🔬研究所の指定タブ */
 const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
@@ -375,9 +378,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠歩行の周期は種類ごとに違う(ゾンビは速いほど速い/部隊は一定)。4コマに割るため周期から出す */
      +'var PER=(KD==="z")?(6.2832/((LS[idx].sp>90)?14:8)):(6.2832/10);'
      +(ARTCHG?('var OCHG={chg:'+ARTCHG+',ct:1};'):'var OCHG={};')
-     +'function put(px,py,mag,tt,dr){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
+     /* ⚠スイングは**段階を並べないと振れているか分からない**=コマごとに bsw を変える */
+     /* ⚠**時間の順に並べる**=振りかぶり→振り出し→当たる瞬間→フォロースルー→構えへ */
+     +'var SWSEQ='+(ARTSW?'[.72,.9,.999,.07,.28]':'null')+';'
+     +'function put(px,py,mag,tt,dr,k){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
      +'c.lineWidth=3;c.strokeStyle=INK;'
-     +'try{if(KD==="z")drawZombie(c,idx,0,0,dr,tt,0,{});else drawUnit(c,idx,0,0,dr,tt,0,OCHG);}catch(e){}'
+     +'var oo=SWSEQ?{bsw:SWSEQ[k%SWSEQ.length]}:OCHG;'
+     +'try{if(KD==="z")drawZombie(c,idx,0,0,dr,tt,0,{});else drawUnit(c,idx,0,0,dr,tt,0,oo);}catch(e){}'
      +'c.restore();}'
      +'var c=null,W2=0,H2=0;'
      +'function render(){'
@@ -392,13 +399,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'c.font="900 11px "+FF;c.fillStyle="rgba(242,236,220,.6)";'
      +'c.fillText("上=x6(暗い地面) / 中=x3(明るい地面) / 下=実寸x1(紙) ／ 左から歩行の4コマ・右端は反転",14,44);'
      /* x6 を4コマ+反転1体。⚠ベースラインを揃える(絵の原点は足元) */
-     +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.50,6,k*PER/4,1);'
-     +'put(W2*.92,H2*.50,6,PER*.25,-1);'
+     +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.50,6,k*PER/4,1,k);'
+     +'put(W2*.92,H2*.50,6,PER*.25,SWSEQ?1:-1,4);'
      /* x3 を4コマ */
-     +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.80,3,k*PER/4,1);'
-     +'put(W2*.92,H2*.80,3,PER*.25,-1);'
+     +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.80,3,k*PER/4,1,k);'
+     +'put(W2*.92,H2*.80,3,PER*.25,SWSEQ?1:-1,4);'
      /* 実寸。⚠**ここで見分けが付くかが本番** */
-     +'for(var k=0;k<8;k++)put(W2*(.10+k*.055),H2*.96,1,k*PER/8,1);'
+     +'for(var k=0;k<8;k++)put(W2*(.10+k*.055),H2*.96,1,k*PER/8,1,k);'
      +'c.fillStyle="rgba(0,0,0,.55)";c.font="900 11px "+FF;'
      +'c.fillText("実寸(実機での見え方)",14,H2*.99);'
      +'}'
