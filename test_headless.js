@@ -1597,17 +1597,19 @@ function checkGachaFx(){
  if(!sawRifleLow){console.log('FAIL: レアでない時の見せ方を確かめられていない');process.exit(1);}
  if(!twN){console.log('FAIL: どんでん返しが一度も起きなかった');process.exit(1);}
  if(!lobN){console.log('FAIL: ✨黄金のロブスターが一度も出なかった');process.exit(1);}
- /* ⭐★4以上の3通り(ロブスター/どんでん返し/通常)が**均等**であること(2026-07-30ユーザー指示)。
-    ⚠別々に乱数を引くと確率が掛け算になって偏るので、1回の乱数を3等分している。 */
- {const tot=hiN[0]+hiN[1]+hiN[2];
+ /* ⭐★4以上の3通りが**ピラミッド**(✨黄金20% / どんでん返し35% / 通常45%)であること
+    (2026-07-30ユーザー指示「ピラミッドにしよう」)。⚠珍しい絵ほど出にくいこと=順番も見る。
+    ⚠別々に乱数を引くと確率が掛け算になって狙った比にならないので、1回の乱数を割っている。 */
+ {const tot=hiN[0]+hiN[1]+hiN[2],want=[GC_P_LOB,GC_P_TW,1-GC_P_LOB-GC_P_TW];
   for(let q=0;q<3;q++){const pc=hiN[q]/Math.max(1,tot);
-   if(Math.abs(pc-1/3)>.07){console.log('FAIL: ★4以上の演出が均等でない '+hiN.join('/')+' (計'+tot+')');process.exit(1);}}}
+   if(Math.abs(pc-want[q])>.07){console.log('FAIL: ★4以上の演出の割合がずれている '+hiN.join('/')+' (計'+tot+' 想定'+want.map(v=>Math.round(v*100)).join('/')+')');process.exit(1);}}
+  if(!(hiN[0]<hiN[1]&&hiN[1]<hiN[2])){console.log('FAIL: 珍しい演出ほど出にくくなっていない '+hiN.join('/'));process.exit(1);}}
  /* ⭐**夜の方が期待度が高い**=レアな時ほど夜が出やすいこと(逆になっていたら演出が嘘になる) */
  {const hi=nightN[1]/Math.max(1,nightN[1]+dayN[1]),lo=nightN[0]/Math.max(1,nightN[0]+dayN[0]);
   if(!(hi>lo+.2)){console.log('FAIL: 夜が期待度になっていない(レア時'+(hi*100|0)+'% / それ以外'+(lo*100|0)+'%)');process.exit(1);}}
  console.log('💎召集の予告: 下振れだけ / 虹の文字とレーザーは★4以上が確定 / '
   +'夜'+(nightN[1]/Math.max(1,nightN[1]+dayN[1])*100|0)+'% vs '+(nightN[0]/Math.max(1,nightN[0]+dayN[0])*100|0)+'% / '
-  +'★4以上の内訳 ✨黄金'+hiN[0]+'/どんでん返し'+hiN[1]+'/通常'+hiN[2]+'(均等) OK');
+  +'★4以上の内訳 ✨黄金'+hiN[0]+'/どんでん返し'+hiN[1]+'/通常'+hiN[2]+'(ピラミッド) OK');
  /* ⭐10連でも撃つ場面は1回だけ=示唆するのは「その回の一番いい結果」 */
  {const many=[{dud:GDUD[0],txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{dud:GDUD[1],txt:''}];
   gcStart(many);
@@ -1982,6 +1984,17 @@ function checkGacha(){
  const want={1:5,2:4,3:4,4:3,5:2};
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
+ /* ⭐**排出率は「1体あたり」で決まる**(2026-07-30ユーザー指示)=英雄を足すとその枠が太くなること。
+    ⚠それまではレア度の枠が固定で、足すほど狙った1人が出にくくなる逆の作りだった。 */
+ for(let rk=1;rk<=5;rk++){
+  const row=G_RATE.find(r=>r[0]==='r'+rk),n9=HEROES.filter(h=>h.rk===rk).length;
+  if(!row){console.log('FAIL: ★'+rk+'の枠が無い');process.exit(1);}
+  if(Math.abs(row[1]-RK_EACH[rk]*n9)>1e-9){
+   console.log('FAIL: ★'+rk+'の枠が「1体あたり×人数」になっていない '+row[1]+' vs '+(RK_EACH[rk]*n9));process.exit(1);}}
+ for(let rk=1;rk<5;rk++)if(!(RK_EACH[rk]>RK_EACH[rk+1])){console.log('FAIL: 1体あたりの確率がレア度順に下がっていない');process.exit(1);}
+ if(G_RATE[0][0]!=='dud'||G_RATE[0][1]<DUD_MIN){console.log('FAIL: はずれ枠が下限を割っている');process.exit(1);}
+ console.log('排出率: 1体あたり ★1 '+RK_EACH[1]+'% … ★5 '+RK_EACH[5]+'% / いまの枠 '
+  +G_RATE.map(r=>(r[0]==='dud'?'はずれ':RK_S[+r[0].slice(1)])+r[1].toFixed(1)).join(' ')+' OK');
  /* 魔石が足りない時は引けない */
  META.gem=0;META.hero={};META.hmat=0;META.pts=0;
  gcPull(1);
@@ -1994,7 +2007,8 @@ function checkGacha(){
  let dud=0,byRk={1:0,2:0,3:0,4:0,5:0};
  for(let i=0;i<20000;i++){const o=gcPick();if(o.dud)dud++;else byRk[o.hero.rk]++;}
  const dp=dud/200;
- if(Math.abs(dp-55)>3){console.log('FAIL: はずれ枠の率がずれている '+dp.toFixed(1)+'%');process.exit(1);}
+ /* ⚠**55固定で見ない**=はずれ枠は「残り全部」なので英雄を足すと動く(2026-07-30) */
+ if(Math.abs(dp-G_RATE[0][1])>3){console.log('FAIL: はずれ枠の率がずれている '+dp.toFixed(1)+'%(想定'+G_RATE[0][1].toFixed(1)+'%)');process.exit(1);}
  if(!byRk[5]){console.log('WARN: 2万回でギガトンレアが出なかった(確率0.1%なので稀にあり得る)');}
  /* 重複は鍛錬素材になる */
  META.hero={};META.hmat=0;
