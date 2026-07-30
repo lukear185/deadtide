@@ -9880,7 +9880,7 @@ const U_LOOK={
  frost2:{b:'norm',h:'ice',k:'tank2'},   chief:{b:'norm',h:'peak',k:'cloak'},
  tnk:{b:'norm',h:'',k:''},              mech:{b:'norm',h:'',k:''},
  titan:{b:'wide',h:'slit',k:''},        /* ⚠ヴァルキリーは**細身**(2026-07-31ユーザー指示「光の剣をもった女剣士」)=34pxでは体型と髪でしか出せない */
- valk:{b:'slim',h:'wingh',k:''}
+ valk:{b:'slim',h:'wingh',k:'vwing'}
 };
 const uLook=id=>U_LOOK[id]||{b:'norm',h:'helm',k:''};
 /* ⭐兵科32種の共通の色(2026-07-27 第102弾)。⚠ゾンビの `ZW` と同じ考え方=
@@ -10125,6 +10125,19 @@ function uBack0(c,k,U,walk){
   c.fillStyle='#5c5346';c.fillRect(-17,-25,7,2.4);}
  else if(k==='medbag'){c.fillStyle=PAPER;rr(c,-19,-29,11,14,3);c.fill();c.stroke();
   c.fillStyle=RUST;c.fillRect(-15,-25,4,1.6);c.fillRect(-13.8,-26.2,1.6,4);}
+ else if(k==='vwing'){/* ⭐⭐ヴァルキリーの翼(2026-07-31)。⚠**胴より奥**に置く=武器の分岐で描くと
+     頭の上に乗って『葉っぱを背負った人』になる(前がそれだった)。
+  ⚠**上向きに短く**=横へ長く伸ばすと剣と喧嘩して、どちらが得物か分からなくなる。
+  ⚠細い三角を並べると黒フチに食われて棘になる=**厚みのある羽**にする */
+  /* ⚠**細長い三角は棘にしかならない**(撮って直した)=**幅のある羽**を3枚、扇に開く */
+  const VW=[[-30,-50,-16,-38],[-36,-40,-18,-31],[-22,-58,-12,-44],[-38,-28,-18,-25]];
+  const nw9=Math.min(4,3+((U.vt||0)>=2?1:0));
+  for(let w9=0;w9<nw9;w9++){const g=VW[w9];
+   c.fillStyle=w9%2?'#f0cf85':(col||'#d9a13d');
+   c.beginPath();c.moveTo(-6,-38);
+   c.quadraticCurveTo(g[0]*.5,g[1]-9,g[0],g[1]);
+   c.quadraticCurveTo(g[2],g[3],-5,-28);
+   c.closePath();c.fill();c.stroke();}}
  else if(k==='cloak'){c.fillStyle=shade(col,.85);c.beginPath();c.moveTo(-8,-36);
   c.lineTo(-20,-6+walk*2);c.lineTo(-2,-11);c.closePath();c.fill();c.stroke();}
 }
@@ -10809,50 +10822,56 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=RUST;c.beginPath();c.arc(19,-30,3.4,0,7);c.fill();
   c.fillStyle=GOLD;c.fillRect(-16,-44,32,2.6);
   if(vt>=3){c.fillStyle=GOLD;for(let k=-1;k<=1;k++){c.beginPath();c.moveTo(k*8-2.5,-46);c.lineTo(k*8,-56);c.lineTo(k*8+2.5,-46);c.closePath();c.fill();c.stroke();}}}
- else if(id==='valk'){const WC=vt?U.c:'#d9a13d';
-  /* 段階が上がるほど翼が増える */
-  /* ⚠細い三角を並べると黒フチに食われて**棘**になる=前縁を反らせた**厚みのある翼**にする */
-  /* ⚠翼が1枚だと背中に剣を差しているように見える。⚠同じ形を平行に重ねても1枚に潰れる
-     =**向きの違う翼**を2枚から生やす(段が上がるとさらに増える) */
-  const WNG=[[-32,-52,-25,-40],[-35,-40,-23,-30],[-40,-62,-28,-49],[-43,-30,-26,-24]];
-  const wings=Math.min(4,2+vt);c.fillStyle=WC;c.lineWidth=2.4;
-  for(let w2=0;w2<wings;w2++){const g=WNG[w2];
-   c.beginPath();c.moveTo(-11,-38);
-   c.quadraticCurveTo(g[0]*.66,g[1]-3,g[0],g[1]);
-   c.quadraticCurveTo(g[2],g[3],-9,-29);
-   c.closePath();c.fill();c.stroke();}
-  /* ⭐**肩に載せた多連装の発射筒**(2026-07-31ユーザー指摘「円柱みたいな意味わからんやつ」)。
-     ⚠それまで**角丸の長方形1本**で、何の道具か一切読めなかった。
-     ⭐**筒の口を3つ見せる+弾頭を覗かせる**=『空爆支援を伴う精鋭』の道具だと分かる。 */
-  /* ⭐⭐**光の剣**(2026-07-31ユーザー指示「光の剣をもった女剣士にしたい」)。
-     ⚠発射筒は捨てた。射程340・範囲130はそのままで、**斬撃が飛んでいって敵の所で爆ぜる**。
-     ⚠**細い線で描かない**=黒フチ2.4に食われて黒い棒になる。刃は半幅3以上いる。
-     ⭐刃を2枚(芯=白 / 外=金)にして「光っている」を出す。⚠柄と鍔で剣だと分かる */
-  c.save();c.translate(9,-29.4);c.rotate(-.3+Math.sin(t*3)*.03);
-  c.fillStyle='#6b5a3a';/* 柄 */
-  c.beginPath();c.moveTo(-7.4,-2.6);c.lineTo(-.6,-2.6);c.lineTo(-.6,2.6);c.lineTo(-7.4,2.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle=GOLD;/* 鍔(横に張り出す=剣だと一目で分かる) */
-  c.beginPath();c.moveTo(-1.6,-6.2);c.lineTo(2.6,-6.2);c.lineTo(2.6,6.2);c.lineTo(-1.6,6.2);c.closePath();c.fill();c.stroke();
-  c.fillStyle=WC;/* 刃のふち(金)。⚠先へすぼめる=長方形だと定規に見える */
-  c.beginPath();c.moveTo(2.2,-4.6);c.lineTo(26,-3.4);c.lineTo(34,0);c.lineTo(26,3.4);c.lineTo(2.2,4.6);c.closePath();c.fill();c.stroke();
-  /* ⚠⚠**芯は白く太く**=翼と同じ金一色だと「4枚目の翼」にしか見えない(撮って直した)。
-     刃の面積の大半を白にして、金はふちだけに残す=これで『光の剣』に読める */
-  c.fillStyle='#fff6d8';
-  c.beginPath();c.moveTo(3.4,-2.9);c.lineTo(26,-2);c.lineTo(30.4,0);c.lineTo(26,2);c.lineTo(3.4,2.9);c.closePath();c.fill();
+ else if(id==='valk'){const WC=vt?U.c:'#d9a13d',WW='#f5efe0',WG='#c99a3e';
+  /* ⭐⭐**金と白の鎧の女剣士**(2026-07-31ユーザーの参考絵に寄せた)。
+     ⚠参考絵は**正面向き・目2つ**だが、ゲームの兵科は全部**真横向き・目1つ**なので
+       そこは寄せない(1体だけ正面にすると並んだ時に必ず浮く)。
+     ⭐34pxで効くのは**シルエットと色の面**だけ=金地に**白の面**を入れて「聖騎士」に振る。
+     ⚠この分岐は武器のまとめ縮小(WK)の中なので、**割り戻してから**体の座標で描く。 */
+  c.save();c.translate(0,-28);c.scale(1/WK,1/WK);c.translate(0,28);c.lineWidth=2.4;
+  /* --- 後ろ髪(長い金髪)。⚠翼(uBackで胴より奥)より前・体より前に出す --- */
+  /* ⚠**翼と同じ明るさにしない**=同じ形が4つ並んで髪だと分からない。
+     翼より濃い金にして、**細く長く腰まで**落とす=形で差を付ける(撮って直した) */
+  c.fillStyle=WG;
+  c.beginPath();c.moveTo(-2.2,-45.4);
+  c.quadraticCurveTo(-9.4,-41.4,-8.6,-21.4);
+  c.quadraticCurveTo(-4.6,-25.4,-2,-37.4);
+  c.closePath();c.fill();c.stroke();
+  /* --- 白の鎧(胸当て→腰の垂れ→脛当て)。⚠面で入れる=線で描くと黒フチに食われる --- */
+  c.fillStyle=WW;/* 胸当て */
+  c.beginPath();c.moveTo(-5.6,-32.6);c.lineTo(5.6,-32.6);c.lineTo(4.6,-24.4);
+  c.lineTo(0,-21.6);c.lineTo(-4.6,-24.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=WC;/* 胸の金の筋(1本だけ。増やすと汚れに見える) */
+  c.fillRect(-1.4,-31.6,2.8,7.4);
+  c.fillStyle=WW;/* 腰の垂れ(タセット2枚。⚠左右に分けると脚が動いて見える) */
+  c.beginPath();c.moveTo(-6,-20.4);c.lineTo(-1.2,-20.4);c.lineTo(-2,-13.6);c.lineTo(-6.6,-13.6);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(1.2,-20.4);c.lineTo(6,-20.4);c.lineTo(6.6,-13.6);c.lineTo(2,-13.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=WW;/* 脛当て(手前の脚だけ=奥にも入れると脚が1本に潰れる) */
+  c.beginPath();c.moveTo(1.4,-10.4);c.lineTo(5.6,-10.4);c.lineTo(5,-4.6);c.lineTo(1,-4.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=WC;/* 肩甲(金。⚠丸い輪にすると胸に黒い輪が出るので**外へ張り出す板**にする) */
+  c.beginPath();c.moveTo(-3.6,-34.6);c.lineTo(6.4,-33.6);c.lineTo(7.4,-28.6);c.lineTo(-3,-29.6);c.closePath();c.fill();c.stroke();
+  /* --- 兜の王冠(⚠3本の前立て。頭の上に立てる) --- */
+  c.fillStyle=WC;
+  /* ⚠3本だと★の印と混ざってごちゃつく=**2本・低め**にする(撮って減らした) */
+  for(const k9 of [[-2.4,-51.4],[5.4,-50.6]]){
+   c.beginPath();c.moveTo(k9[0]-2.6,-46.4);c.lineTo(k9[0],k9[1]);c.lineTo(k9[0]+2.6,-46.4);c.closePath();c.fill();c.stroke();}
+  /* ⚠**冠の輪(白い横棒)は入れない**=目の上に白い板が貼り付いて顔が消えた(撮って外した) */
+  /* ⚠**手前の髪は入れない**=顔の前に落ちて目と口が丸ごと隠れた(撮って外した)。
+     女性らしさは**後ろ髪の長さ+細身の体型**だけで出す */
+  /* --- ⭐光の剣。⚠**細く長く先を尖らせる**=太い板だと「翼」に見える(前に踏んだ) --- */
+  c.save();c.translate(9.6,-29.4);c.rotate(-.28+Math.sin(t*3)*.03);
+  c.fillStyle='#7a6636';/* 柄 */
+  c.beginPath();c.moveTo(-7.6,-2.4);c.lineTo(-.6,-2.4);c.lineTo(-.6,2.4);c.lineTo(-7.6,2.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=WC;/* 鍔(横に張り出す=剣だと一目で分かる) */
+  c.beginPath();c.moveTo(-1.8,-6.6);c.lineTo(2.4,-6.6);c.lineTo(2.4,6.6);c.lineTo(-1.8,6.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=WC;/* 刃のふち(金) */
+  c.beginPath();c.moveTo(2,-3.4);c.lineTo(19,-2.4);c.lineTo(29,0);c.lineTo(19,2.4);c.lineTo(2,3.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#fffaea';/* 刃の芯(白)=ここが『光の剣』の正体。面積の大半を白にする */
+  c.beginPath();c.moveTo(3.2,-1.9);c.lineTo(19,-1.2);c.lineTo(26,0);c.lineTo(19,1.2);c.lineTo(3.2,1.9);c.closePath();c.fill();
+  /* ⚠**刃の上に半透明の光を重ねない**=暗い地面では**灰色の帯**になって刃がぼやける(撮って外した) */
   c.restore();
-  /* ⭐**髪は翼の後**に描く=翼より前に出さないと隠れる。
-     ⚠武器の分岐は0.86倍の中なので、**割り戻してから**描かないと頭とずれる */
-  {c.save();c.translate(0,-28);c.scale(1/WK,1/WK);c.translate(0,28);
-   /* ⚠**翼と同じ金にしない**=同化して髪だと分からない。明るい金髪に振る(撮って直した) */
-   c.fillStyle='#f2d98f';c.lineWidth=2.4;
-   /* ⚠**大きく広げない**=翼が4枚あるようにしか見えない(撮って縮めた)。
-      頭の輪郭に沿わせて肩まで=これで髪だと読める */
-   c.beginPath();c.moveTo(-2.6,-46.4);
-   c.quadraticCurveTo(-9.6,-43.4,-9,-31.6);
-   c.quadraticCurveTo(-4.6,-33.6,-2,-39.4);
-   c.closePath();c.fill();c.stroke();c.restore();}
-  c.fillStyle=GOLD;c.beginPath();c.moveTo(-2,-50);c.lineTo(2,-58);c.lineTo(6,-50);c.closePath();c.fill();c.stroke();
-  if(vt>=3&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(16,-40,4+Math.sin(t*10)*2,0,7);c.fill();c.globalAlpha=1;}}
+  if(vt>=3&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(16,-40,4+Math.sin(t*10)*2,0,7);c.fill();c.globalAlpha=1;}
+  c.restore();}
  c.restore();/* 武器の縮小ここまで */
  c.lineWidth=2.4;
  /* 発砲マズルフラッシュ */
@@ -13403,10 +13422,15 @@ function renderCamp(C,t){
    const wa=Math.atan2(e.y2-e.y,e.x2-e.x);
    c.save();c.translate(wx,wy);c.rotate(wa);
    c.globalAlpha=.9-p9*.25;c.lineCap='round';
-   c.strokeStyle=e.col||'#ffe9a8';c.lineWidth=6.5;
-   c.beginPath();c.arc(-16,0,20,-1.05,1.05);c.stroke();
-   c.strokeStyle='rgba(255,255,255,.95)';c.lineWidth=2.4;
-   c.beginPath();c.arc(-16,0,20,-.78,.78);c.stroke();
+   /* ⚠**弧は大きく**=小さいと34pxでは点にしか見えない(参考絵に寄せて2026-07-31に拡大) */
+   c.strokeStyle=e.col||'#ffe9a8';c.lineWidth=8;
+   c.beginPath();c.arc(-24,0,30,-1.15,1.15);c.stroke();
+   c.strokeStyle='rgba(255,255,255,.95)';c.lineWidth=3.2;
+   c.beginPath();c.arc(-24,0,30,-.85,.85);c.stroke();
+   /* きらめき(⚠3粒まで=増やすと弧が埋まる) */
+   c.fillStyle='rgba(255,255,255,.9)';
+   for(let i9=0;i9<3;i9++){const aa9=(i9-1)*.8,rr9=30+((i9*13)%7)-3;
+    c.beginPath();c.arc(-24+Math.cos(aa9)*rr9,Math.sin(aa9)*rr9,1.8,0,7);c.fill();}
    c.lineCap='butt';c.globalAlpha=1;c.restore();}
   else if(e.k==='pel'){/* ⭐ドローンが撃つ小粒の弾(2026-07-26 第68弾)。短い尾を引いて飛ぶ */
    const lfP=fxLife('pel',e),p6=clamp(e.t/lfP,0,1);
