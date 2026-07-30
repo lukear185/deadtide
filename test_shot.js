@@ -47,6 +47,9 @@ const ARTCHG=(/posechg=([0-9.]+)/.exec(OPT)||[0,''])[1];/* 溜めの姿で並べ
 /* ⭐posesw = バットのスイングを**段階ごとに**並べる(2026-07-30)。
    ⚠止め絵1枚では「振れているか」が分からないので、5コマを振り抜き〜振りかぶりに割り当てる。 */
 const ARTSW=OPT.indexOf('posesw')>=0;
+/* ⭐arena=bat:walk = 🧪検証場(一本道)を開いて撮る(2026-07-30)。
+   ⚠オプション名に `t=`/`u=`/`z=` を含めないこと=`tst=` にすると **`t=` に食われて**タワーを建てにいく。 */
+const ARN=/arena=([A-Za-z0-9]+):([A-Za-z0-9]+)/.exec(OPT);
 const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=twup(タワー強化) / lab=unup(部隊強化) / lab=rec(記録) = 🔬研究所の指定タブ */
 const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
@@ -156,6 +159,15 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠**pose= と grid= は戦闘を始めない**(タイトルのまま)。既定の `startSolo()` に落ちると
         仮想時間ぶんの試合が丸ごと走って**撮影が1分以上終わらない**(実際に何度も固まった)。
         どちらも canvas を全面に被せて絵を並べるだけなので盤面は要らない。 */
+     :ARN?('var ui9=UNITS.findIndex(function(q){return q.id==="'+ARN[1]+'";});'
+       +'var zi9=ZOMBIES.findIndex(function(q){return q.id==="'+ARN[2]+'";});'
+       +'if(ui9<0)throw new Error("兵科 '+ARN[1]+' が無い");'
+       +'if(zi9<0)throw new Error("敵 '+ARN[2]+' が無い");'
+       +'startTst(ui9,zi9);'
+       /* ⚠**ヘッドレスの仮想時間では rAF がほとんど回らない**(💎召集で踏んだのと同じ)。
+          撮る前に tstStep を直に回して時間を進める。arn=秒数 で長さを変えられる */
+       +'for(var q9=0;q9<'+Math.round((+((/arn=(\d+)/.exec(OPT)||[0,'14'])[1]))*30)+';q9++)'
+       +'{try{tstStep(1/30);}catch(e){document.title="TSTERR "+e.message;break;}}')
      :(ARTM||GRID)?''
      /* gacha=10連の演出 / gacha5=★5を引いた状態で撮る(いちばん派手な絵を確かめる用) */
      :GC?('META.gem=200;'

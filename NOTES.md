@@ -1073,6 +1073,10 @@ node test_shot.js out.png 852 393 "gacha5+gtwist+ggold" # どんでん返し(跡
 node test_shot.js out.png 852 393 "gacha5+gtwist+gtwgib" # どんでん返しの手前(まず普通に爆散する所)
 node test_shot.js out.png 852 393 "gacha5+gmorn+gfc=0"  # 朝の背景 / gnight=夜 / gfc=0白 1赤 2虹
 node test_shot.js out.png 852 393 "gacha+gopen+gspin=1" # 召集画面(何人目を正面にするか)
+node test_shot.js out.png 852 393 "arena=bat:walk+arn=16" # ⭐🧪検証場(一本道)。arn=進める秒数
+                                                #   ⚠**ヘッドレスの仮想時間では rAF がほとんど回らない**ので、
+                                                #     撮る前に `tstStep` を直に回して時間を進めている。
+                                                #     これをしないと「湧かない・動かない」に見えて原因を探し回る(実際に踏んだ)
 node test_shot.js out.png 1200 740 "pose=z:walk"  # ⭐⭐**1体を大写しにして絵を磨く**(2026-07-30)。
                                                 #   pose=u:bat で兵科。posechg=0.8 で溜めの姿。
                                                 #   上=x6(暗い地面)/中=x3(明るい地面)/下=実寸x1(紙)を1枚に並べる

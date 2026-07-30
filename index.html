@@ -565,6 +565,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button class="btn sm" id="bt-sfx" style="display:none">🔊 音の確認</button>
     <!-- 📖ゾンビ図鑑: ⚠🛠DEVモード(?dev=1)の時だけ出す。絵の確認用なので全種そのまま見える -->
     <button class="btn sm" id="bt-zoo" style="display:none">📖 ゾンビ図鑑</button>
+    <!-- 🧪検証場: ⚠DEVモード(?dev=1)の時だけ出す。動きの確認だけをする一本道の場 -->
+    <button class="btn sm" id="bt-tst" style="display:none">🧪 検証場</button>
     <button class="btn" id="bt-opt">⚙ オプション</button>
     <p class="note" id="pwahint" style="display:none;text-align:center;margin-top:8px;max-width:340px">📲 ブラウザの共有メニュー→<b>「ホーム画面に追加」</b>すると、アプリみたいに全画面で遊べる!</p>
   </div>
@@ -847,6 +849,18 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="bphd"><b>📖 ゾンビ図鑑</b><span class="pt" id="zoo-cnt"></span><button class="xbtn" id="bt-zoo-close">✕</button></div>
     <div class="bphint" id="zoo-hint"></div>
     <div class="bpbody" id="zoo-list"></div>
+  </div>
+</div>
+
+<!-- 🧪検証場(2026-07-30ユーザー指示「ユニットとかゾンビとかヒーローの動きとかを確認するときの
+     専用ステージが欲しい。一本道で左からユニットがでて右から敵がでてきて、
+     近接ユニットの時は短い道、遠距離ユニットの時は遠い道で」)。⚠DEV専用 -->
+<div class="modal" id="md-tst">
+  <div class="panel bigpanel">
+    <div class="bphd"><b>🧪 検証場</b><button class="xbtn" id="bt-tst-close">✕</button></div>
+    <div class="bphint">一本道で動きだけを見る場。⚠波もクリアも無い。道の長さは味方の射程で決まる(近接=短い/遠距離=長い)</div>
+    <div class="bpbody" id="tst-body"></div>
+    <div class="bpfoot"><button class="btn red" id="bt-tst-go">▶ はじめる</button></div>
   </div>
 </div>
 
@@ -12522,6 +12536,8 @@ function nextWave(){
    検査 checkTut() が「操作の説明が tutSteps に揃っているか」を見る。 */
 function gameStep(dt){
  if(!G||G.over)return;
+ /* ⭐🧪検証場は**ここで丸ごと逸れる**=波・勝敗・戦績の処理を一切通さない */
+ if(G.tst){try{tstStep(dt);}catch(e){if(!G.tstE){G.tstE=1;try{toast('🧪 '+e.message,true);}catch(x){}}}return;}
  if(G.phase==='wave'){
   tideStep(dt);
   for(const C of G.players){if(!C.dead){campStep(C,dt,G.wave);if(C.kind==='cpu')cpuTick(C,dt);}}
@@ -14106,6 +14122,97 @@ function startSolo(){
  $('tidebar').style.display='none';$('pushbtn').style.display='none';
  $('pausebtn').style.display='inline-block';
 }
+/* ============ 🧪検証場(⚠🛠DEV専用・2026-07-30ユーザー指示) ============
+   「ユニットとかゾンビとかヒーローの動きとかを確認するときの専用ステージが欲しい。
+     一本道で左からユニットがでて右から敵がでてきて、
+     近接ユニットの時は短い道、遠距離ユニットの時は遠い道で」。
+   ⚠**波もクリアも研究ptも無い**=動きだけを見るための場。`G.tst` が立っている間は
+     `gameStep` が丸ごと `tstStep` に逸れるので、波・勝敗・戦績の処理は一切通らない。
+   ⚠拠点は落ちない(毎フレームHPを戻す)=眺め続けられるように。 */
+const TST_Y=560;                  /* 道の高さ(画面のほぼ中央) */
+const TST_SHORT=880,TST_LONG=1640;/* 道の長さ。⚠近接は短く=すぐぶつかる / 遠距離は長く=撃つ間がある */
+const TST_CX=860;                 /* ⚠道は**画面の横中央に置く**=右端で切ると絵として途中で途切れる */
+const TST_ZN=8,TST_UN=3;          /* 同時に出す敵/味方の数 */
+function tstPath(long){
+ const L=long?TST_LONG:TST_SHORT,R=TST_CX+L/2,X0=TST_CX-L/2;
+ /* ⚠**点は3つ以上にする**=2点だけの道は、道の描画や地形の処理が想定していない */
+ PATH=[[R,TST_Y],[(R+X0)/2,TST_Y],[X0,TST_Y]];
+ SEG.length=0;PLEN=0;
+ for(let i=0;i<PATH.length-1;i++){
+  const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);
+  SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
+ CORE=PATH[PATH.length-1].slice();
+ /* 建設マスは道の上下に少しだけ(タワーの動きも見たい時のため)。
+    ⚠**数は ECO_BASE(22)に合わせる**=足りないと工房と支援枠の番号がずれる。余りは画面外へ逃がす */
+ SLOTS=[];
+ const x0=TST_CX-L/2+120,dx=(L-240)/5;
+ for(let i=0;i<6;i++)SLOTS.push([x0+i*dx,TST_Y-152]);
+ for(let i=0;i<6;i++)SLOTS.push([x0+i*dx,TST_Y+152]);
+ while(SLOTS.length<ECO_BASE)SLOTS.push([-999,-999]);
+ for(const e of ECO_SLOTS)SLOTS.push(e.slice());
+ for(const e of SUP_SLOTS)SLOTS.push(e.slice());
+ AI_ORDER=SLOTS.map((s,i)=>i);SLOT_ORDER=AI_ORDER.slice();
+ PMAXX=MW;for(const p of PATH)PMAXX=Math.max(PMAXX,p[0]+59);
+ makeScenery();
+}
+function startTst(ui,zi){
+ MODE='solo';COOP=false;
+ loadStage(0);/* 先に普通のステージを読んでから道だけ差し替える(色や地面の設定を使うため) */
+ const U=UNITS[ui]||UNITS[0];
+ tstPath((U.rng||0)>60);
+ newGame([{name:'キミ',kind:'me'}],0);
+ G.pve=1;G.pveDiff=1;G.tut=1;/* ⚠tut を立てて戦績を汚さない */
+ G.tst={ui,zi,zt:.4,ut:0};
+ const me=G.players[0];
+ me.scrap=99999;me.up=me.upTotal=99999;
+ me.coreMax=99999;me.core=me.coreMax;
+ me.unlocked=TOWERS.length;me.uUn=UNITS.length;
+ me.stk=META.st&&META.st.length?META.st[0]:'air';
+ me.hUi=(U&&U.hro)?ui:-1;me.hOut=0;me.hCg=1;me.fallen=[];
+ me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
+ G.phase='wave';G.wave=1;G.tI=0;
+ startGameUI([]);
+ $('strikebtn').textContent='🎯';
+ $('tidebar').style.display='none';$('pushbtn').style.display='none';
+ $('pausebtn').style.display='inline-block';
+ toast('🧪 検証場: '+(U?U.n:'?')+' × '+((ZOMBIES[zi]||{}).n||'?')+' / 道='+(((U.rng||0)>60)?'長い':'短い'),true);
+}
+function tstStep(dt){
+ const me=G.players[0];if(!me)return;
+ const T=G.tst;
+ me.core=me.coreMax;me.scrap=99999;me.up=99999;me.dying=false;/* 拠点は落ちない */
+ /* 敵を一定の間隔で湧かせる(右端から出る) */
+ T.zt-=dt;
+ if(T.zt<=0&&me.zombies.filter(z=>!z.dead).length<TST_ZN){T.zt=1.5;
+  /* ⚠**d は正の値で出す**=負にすると「まだ来ていない」扱いになり、
+     `mkZ` の `d||...` にも吸われて出てこない */
+  me.zombies.push(mkZ(zSpec(T.zi,1,1),4+rnd(0,50)));}
+ /* 味方を補充する(倒れたら出し直す)。⚠英雄は1体だけ */
+ T.ut-=dt;
+ const U=UNITS[T.ui];
+ if(T.ut<=0){T.ut=1.1;
+  try{
+   if(U&&U.hro){if(!me.hOut){me.hUi=T.ui;heroDeploy(me);}}
+   else if(me.units.filter(u=>!u.dead).length<TST_UN){me.ucd[T.ui]=0;deployUnit(me,T.ui);}
+  }catch(e){}}
+ campStep(me,dt,1);
+}
+/* 選ぶ画面。⚠味方は**射程を出す**=近接か遠距離かで道の長さが変わるため */
+function openTst(){
+ const b=$('tst-body');if(!b)return;
+ const us=[];
+ for(let i=0;i<UNITS.length;i++){const U=UNITS[i];if(!U||!U.n)continue;
+  us.push('<option value="'+i+'"'+(i===(TSTSEL.u||0)?' selected':'')+'>'
+   +(U.hro?'🦸 ':'')+U.n+'(射程'+(U.rng||0)+')</option>');}
+ const zs=ZOMBIES.map((z,i)=>'<option value="'+i+'"'+(i===(TSTSEL.z||0)?' selected':'')+'>'+z.n+'</option>');
+ const ss='flex:1;font:inherit;font-weight:900;padding:7px 9px;border-radius:9px;border:2px solid '+INK+';background:'+PANE+';color:'+INK;
+ const ls='display:flex;align-items:center;gap:10px;font-weight:900;font-size:13px;margin-bottom:10px';
+ b.innerHTML='<div style="padding:6px 2px">'
+  +'<label style="'+ls+'">🛡 味方<select id="tst-u" style="'+ss+'">'+us.join('')+'</select></label>'
+  +'<label style="'+ls+'">🧟 敵<select id="tst-z" style="'+ss+'">'+zs.join('')+'</select></label></div>';
+ $('md-tst').classList.add('on');
+}
+const TSTSEL={u:0,z:0};/* 前に選んだものを覚えておく(何度も見比べるため) */
 function startGameUI(others){
  if(TUT&&!TUT.mv)tutEnd(false);/* 🎓チュートリアル中に普通の試合を始めたら畳む */
  gameActive=true;tipSt=false;ivLogs=[];PAUSED=false;SEL=-1;PUSHTGT=-1;setAim(false);setFlagAim(false);setSpec(-1);
@@ -17582,6 +17689,17 @@ try{
  if(zb){if(DEV)zb.style.display='block';
   zb.onclick=()=>{openZoo();};}
  const zc=$('bt-zoo-close');if(zc)zc.onclick=()=>$('md-zoo').classList.remove('on');
+ /* 🧪検証場(DEV専用) */
+ const tb=$('bt-tst');
+ if(tb){if(DEV)tb.style.display='block';tb.onclick=()=>{openTst();};}
+ const tc=$('bt-tst-close');if(tc)tc.onclick=()=>$('md-tst').classList.remove('on');
+ const tg=$('bt-tst-go');
+ if(tg)tg.onclick=()=>{
+  const us=$('tst-u'),zs=$('tst-z');
+  TSTSEL.u=us?(+us.value||0):0;TSTSEL.z=zs?(+zs.value||0):0;
+  $('md-tst').classList.remove('on');
+  try{startTst(TSTSEL.u,TSTSEL.z);}catch(e){toast('検証場でエラー: '+e.message,true);}
+ };
 }catch(e){}
 try{applyFrames();}catch(e){}/* ボタン/パネルの枠(素材が無ければ従来の見た目) */
 try{for(const k in ICO)icoImgFor(k);for(const k in ICN)icoImgFor(k);}catch(e){}/* canvas用に先読みしておく */
