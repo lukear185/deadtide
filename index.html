@@ -10199,39 +10199,86 @@ HBODY.hNox=(c,U,walk,t,ph,o,rk)=>{
   c.lineTo(1.6+s*15.4,HSK.fy-18);c.lineTo(1.6+s*11.4,HSK.fy-4.4);c.closePath();c.fill();c.stroke();}
  c.restore();
 };
-/* ---- 暁の王「暁の号令」= 金の鎧・光輪・光の翼・軍旗 ---- */
+/* ---- 暁の王「暁の号令」= ★5の格を出す(2026-08-01ユーザー指摘「暁の王がダサすぎる」)。
+   ⚠直す前は ①上着が**くすんだ茶**で18人中いちばん地味 ②翼が**細長い葉っぱ3枚**で羽根に見えない
+     ③頭が**茶色の半円+薄い金の楕円**=王冠が無い ④旗が細くて頭上のずっと上にあり読めない、だった。
+   ⭐直し方は4つ: **①白と金で塗る**(茶をやめる) **②翼は羽根の骨で割り後縁を扇形に欠く**
+     **③王冠(尖り不揃い)+頭の後ろに光輪** **④旗を短く太く**して体の横で読める大きさにする。
+   ⚠加算(lighter)の光は**細い芯だけ**(太い面を加算すると白い塊になる)。 ---- */
 HBODY.hDawn=(c,U,walk,t,ph,o)=>{
- const SK=U_SKIN,C1=U.c||GOLD2,C2='#8a7452',PA='#736853',SHO='#3a3128',rc=bRc(o);
+ const SK=U_SKIN,C1=U.c||GOLD2,WH='#f2ead6',GD=GOLD,GD2='#c9a13d',
+       OR='#d9793a',PA='#cfc4a8',SHO='#7a6440',rc=bRc(o);
  hLeg2(c,walk,PA,SHO,4.2,1.02);
  hTop(c,t,ph,-.03);
- c.fillStyle=shade(GOLD,1.02);/* 光の翼(左右非対称の羽根3枚) */
- for(const q of [[-40,-4],[-45,7],[-36,15]]){
-  c.beginPath();c.moveTo(-8,-42);c.quadraticCurveTo(-26,-48+q[1],q[0],-31+q[1]);
-  c.quadraticCurveTo(-24,-33+q[1],-8,-35);c.closePath();c.fill();c.stroke();}
- const g1=bHold(c,rc,4.6,-34.6,-.10,.6,-6);
- bArm(c,-4.6,-34.8, 4,-31.6, 12,-29, 5,4.1, shade(C2,.72),shade(SK,.74));
+ /* ⭐暁のマント(⚠翼と同じ金にしない=重ねると翼が消える。橙にして段を作る) */
+ c.fillStyle=OR;
+ c.beginPath();c.moveTo(-6,-41.4);c.lineTo(-14.4,-19+walk*2);
+ c.lineTo(-8.4,-8.4);c.lineTo(4,-11.4);c.lineTo(6.4,-39.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(OR,.74);c.beginPath();c.moveTo(-6,-41.4);c.lineTo(-14.4,-19+walk*2);
+ c.lineTo(-10.4,-13);c.lineTo(-4.4,-38);c.closePath();c.fill();
+ /* ⭐光の翼。⚠**平たい葉を並べても羽根に見えない**(蝙蝠の翼で分かったこと)=
+    **前縁を1本の弧で通し、後縁を扇形に欠く**。⚠奥の翼は暗く短く(左右対称に並べない) */
+ const wing=(L,dy,col)=>{
+  c.fillStyle=col;c.beginPath();
+  c.moveTo(-4,-38.4+dy);
+  c.quadraticCurveTo(-L*.44,-53+dy,-L,-46+dy);          /* 前縁(⚠後ろへ跳ね上げる=垂らすと蝙蝠) */
+  c.quadraticCurveTo(-L*.86,-38.4+dy,-L*.70,-40.4+dy);  /* 後縁は丸い羽根の先(⚠尖らせると蝙蝠) */
+  c.quadraticCurveTo(-L*.62,-31.4+dy,-L*.48,-35+dy);
+  c.quadraticCurveTo(-L*.42,-27.4+dy,-L*.28,-31.4+dy);
+  c.quadraticCurveTo(-L*.20,-25.4+dy,-4,-32+dy);
+  c.closePath();c.fill();c.stroke();};
+ wing(30,-6.4,shade(GD,.72));/* 奥の翼 */
+ wing(38,0,GD);              /* 手前の翼 */
+ c.fillStyle=GLOW;/* 羽根の骨(⚠3本を等間隔に引かない) */
+ for(const q of [[-32,-45.4],[-25,-40.4],[-17,-36.4]]){
+  c.beginPath();c.moveTo(-4,-37.4);c.lineTo(q[0],q[1]);c.lineTo(q[0]+3.4,q[1]+3.4);c.closePath();c.fill();}
+ const g1=bHold(c,rc,4.6,-34.6,-.10,.6,-5);
+ bArm(c,-4.6,-34.8, 4,-31.6, 12,-29, 5,4.1, shade(WH,.7),shade(SK,.74));
  g1();
- bTorso(c,C2,[10,7.4,HSK.y0,HSK.y1]);
- c.fillStyle=GOLD;/* 金の胸当て */
- c.beginPath();c.moveTo(-8.4,-36.8);c.lineTo(8.6,-36.4);c.lineTo(7.6,-25.8);c.lineTo(-7.6,-26.2);c.closePath();c.fill();c.stroke();
- c.fillStyle=shade(GOLD,.72);c.fillRect(-8.2,-31.4,16.6,2.4);
- c.fillStyle=GLOW;c.beginPath();c.arc(.6,-34,2.4,0,7);c.fill();
- c.fillStyle=shade(GOLD,1.06);/* 肩甲 */
- c.beginPath();c.moveTo(-14.4,-39.4);c.lineTo(-3,-40);c.lineTo(-2,-32.4);c.lineTo(-15.4,-31.6);c.closePath();c.fill();c.stroke();
- c.fillStyle=UW.blt;c.fillRect(-7.8,-25.4,15.6,2.8);c.strokeRect(-7.8,-25.4,15.6,2.8);
- c.fillStyle=GOLD;c.fillRect(-2,-25.8,4,3.6);
- {const g2=bHold(c,rc,4.6,-34.6,-.10,.6,-6);
-  c.fillStyle='#5c4a30';rr(c,7,-80,4.8,58,2);c.fill();c.stroke();/* 軍旗の竿 */
-  c.fillStyle=C1;c.beginPath();c.moveTo(11.4,-78);
-  c.quadraticCurveTo(31,-74,27,-63.4);c.quadraticCurveTo(31,-55,11.4,-58);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade(C1,.72);c.fillRect(14.4,-70,9.4,3.2);
-  c.fillStyle=GLOW;c.beginPath();c.arc(9.4,-82.4,3+1.6*rc,0,7);c.fill();c.stroke();
-  bArm(c,4.6,-34.6, 7.8,-33.4, 9.4,-36, 5.2,4.2, shade(C2,1.14),SK);g2();}
- hFc(c,SK);
- c.fillStyle=GOLD;c.beginPath();c.ellipse(1.6,HSK.fy-13.4,11.4,3.6,0,0,7);c.fill();c.stroke();/* 光輪 */
- c.fillStyle=GLOW;c.beginPath();c.ellipse(1.6,HSK.fy-13.4,7.4,1.9,0,0,7);c.fill();
- c.fillStyle=shade(GOLD,.85);rr(c,-6.4,HSK.fy-7.4,16,3.8,1.4);c.fill();c.stroke();
- c.fillStyle='#6b5530';c.beginPath();c.arc(1.6,HSK.fy-4.4,7.4,Math.PI,0);c.fill();c.stroke();
+ bTorso(c,WH,[10,7.4,HSK.y0,HSK.y1]);
+ c.fillStyle=GD;/* 金の胸当て(⚠白い上着の上に金=一番明るい所を作る) */
+ c.beginPath();c.moveTo(-8.4,-36.8);c.lineTo(8.6,-36.4);c.lineTo(7.6,-26.4);c.lineTo(-7.6,-26.8);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(GD,.72);c.fillRect(-8.2,-31.6,16.6,2.4);
+ c.fillStyle=OR;/* 胸の暁の印(⚠丸1つだと鋲に見える=昇る陽の形にする) */
+ c.beginPath();c.arc(.4,-32.4,3.6,Math.PI,0);c.fill();
+ c.fillStyle=GLOW;c.beginPath();c.arc(.4,-32.4,1.8,Math.PI,0);c.fill();
+ c.fillStyle=shade(GD,1.1);/* 肩甲(⚠左右で大きさを変える) */
+ c.beginPath();c.moveTo(-15,-40.4);c.lineTo(-2.6,-41);c.lineTo(-1.4,-31.4);c.lineTo(-16,-30.6);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(2.6,-40.6);c.lineTo(12.4,-40);c.lineTo(13.4,-32.4);c.lineTo(1.8,-31.6);c.closePath();c.fill();c.stroke();
+ c.fillStyle=GD2;c.fillRect(-7.8,-25.4,15.6,3);c.strokeRect(-7.8,-25.4,15.6,3);/* 帯 */
+ c.fillStyle=GD;c.fillRect(-2.2,-25.8,4.4,4);
+ c.fillStyle=WH;/* 前垂れ(⚠腰から下に白を残す=脚が金の塊に埋もれない) */
+ c.beginPath();c.moveTo(-5.4,-22.6);c.lineTo(5.4,-22.6);c.lineTo(6.4,-12+walk);c.lineTo(-6.4,-11.6-walk);c.closePath();c.fill();c.stroke();
+ {const g2=bHold(c,rc,4.6,-34.6,-.10,.6,-5);
+  /* ⭐軍旗。⚠**細くて長い竿は頭上に消える**=竿を短く太く、旗を大きく体の横に置く */
+  c.fillStyle='#6b5530';rr(c,6.4,-64,5.4,42,2.4);c.fill();c.stroke();
+  c.fillStyle=GD;c.beginPath();c.arc(9,-66.4,3.4+1.6*rc,0,7);c.fill();c.stroke();/* 竿頭 */
+  c.fillStyle=C1;/* 旗(⚠なびかせる=真四角だと看板に見える) */
+  c.beginPath();c.moveTo(11.4,-62);
+  c.quadraticCurveTo(30,-59+Math.sin(t*3)*1.6,34,-49);
+  c.quadraticCurveTo(28,-44,11.4,-42);c.closePath();c.fill();c.stroke();
+  c.fillStyle=OR;/* 旗の暁の印 */
+  c.beginPath();c.arc(20,-49.4,6.4,Math.PI,0);c.fill();
+  c.fillStyle=GLOW;c.beginPath();c.arc(20,-49.4,3,Math.PI,0);c.fill();
+  c.fillStyle=shade(C1,.72);c.fillRect(12.4,-48.4,16,2.4);
+  bArm(c,4.6,-34.6, 7.8,-33.4, 9.4,-36, 5.2,4.2, WH,SK);g2();}
+ bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
+ /* ⭐光輪は**頭の後ろ**に置く(⚠頭の上に楕円を1枚置くと金のバナナに見える)。
+    頭が真ん中を隠すので、両端だけが出て「輪」に読める */
+ bFace(c,1.6,HSK.fy,HSK.rx,HSK.ry,SK);
+ c.fillStyle='#f0dfa8';c.beginPath();c.arc(1.6,HSK.fy-2.6,6.6,Math.PI,0);c.fill();c.stroke();/* 白金の髪 */
+ c.fillStyle=GD;rr(c,-6,HSK.fy-8.4,15.4,4,1.5);c.fill();c.stroke();/* 額冠 */
+ for(const q of [[-3.4,-11.4],[1.6,-16.4],[7,-10.4]]){/* 王冠の尖り(⚠高さを不揃いに) */
+  c.beginPath();c.moveTo(q[0]-2.8,HSK.fy-7.4);c.lineTo(q[0],HSK.fy+q[1]);c.lineTo(q[0]+2.8,HSK.fy-7.4);c.closePath();c.fill();c.stroke();}
+ c.fillStyle=OR;c.beginPath();c.arc(1.6,HSK.fy-6.4,1.9,0,7);c.fill();
+ c.fillStyle=GD;c.beginPath();c.ellipse(1.6,HSK.fy-19.4,11,2.9,0,0,7);c.fill();c.stroke();/* 光輪(王冠の上に浮かせる) */
+ c.fillStyle=GLOW;c.beginPath();c.ellipse(1.6,HSK.fy-19.4,8.4,1.3,0,0,7);c.fill();
+ /* ⭐**光は加算で細い芯だけ**(太い面を加算すると背景と混ざって白い塊になる) */
+ c.save();c.globalCompositeOperation='lighter';c.globalAlpha=.5;
+ c.fillStyle=GLOW;
+ c.beginPath();c.ellipse(1.6,HSK.fy-19.4,9.4,1.2,0,0,7);c.fill();
+ c.beginPath();c.ellipse(.4,-32.4,3.4,1.4,0,0,7);c.fill();
+ c.restore();
  c.restore();
 };
 function drawHeroBody(c,U,walk,o,t,ph){
@@ -10244,7 +10291,7 @@ function drawHeroBody(c,U,walk,o,t,ph){
  if(o&&o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(26,-33,4+o.fireT*20,0,7);c.fill();}
  /* レア度の★ */
  c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px '+FF;c.textAlign='center';
- const st='★'.repeat(Math.min(5,rk)),sy=(U.id==='hGiant')?-72:-62;
+ const st='★'.repeat(Math.min(5,rk)),sy=(U.id==='hGiant')?-72:(U.id==='hDawn')?-71:-62;
  c.strokeText(st,1.6,sy);c.fillText(st,1.6,sy);
 }
 /* ============ 兵科の見た目(2026-07-26 第91弾) ============
