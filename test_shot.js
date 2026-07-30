@@ -402,7 +402,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'var SWSEQ='+(ARTSW?'[.65,.9,.999,.06,.22]':'null')+';'
      +'function put(px,py,mag,tt,dr,k){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
      +'c.lineWidth=3;c.strokeStyle=INK;'
-     +'var oo=SWSEQ?{bsw:SWSEQ[k%SWSEQ.length]}:OCHG;'
+     /* ⚠ヴァルキリーの斬りも同じ枠で撮る(vsw)。vcb=連撃の何発目か */
+     +'var oo=SWSEQ?{bsw:SWSEQ[k%SWSEQ.length],vsw:SWSEQ[k%SWSEQ.length],vcb:k%3}:OCHG;'
      +'try{if(KD==="z")drawZombie(c,idx,0,0,dr,tt,0,{});else drawUnit(c,idx,0,0,dr,tt,0,oo);}catch(e){}'
      +'c.restore();}'
      +'var c=null,W2=0,H2=0;'
