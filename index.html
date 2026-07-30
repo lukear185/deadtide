@@ -11771,7 +11771,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
      「フェンシングみたいに前に構えるんじゃなくて、剣が斜め↓前に傾いてる感じで持って欲しい」)。
      ⭐`VR`=構えの角度(+で画面の下向き)。0.52rad≒30°の**斜め下前**。
      ⚠腕は `sa-VR` ぶんだけ回すので、ここを変えると構えだけが変わり振りは変わらない。 */
-  const VR=.52;let sa=VR,vtw=0,flen=1,fw=1,thr=0,th9=0,cs9=1,sn9=0;
+  const VR=.42;let sa=VR,vtw=0,flen=1,fw=1,thr=0,th9=0,cs9=1,sn9=0;
   if(vp<=0){sa=VR+Math.sin(t*3)*.03;}
   else if(vcb===2){/* ③突き=回さない。腕ごと前へ突き出して引く */
    sa=PLANEv;
@@ -11861,7 +11861,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
      ⚠シルエットの層では描かない(silLayer は globalAlpha を捨てるので真っ黒な塊になる)。
      ⭐**光感**は加算(lighter)の白い芯で出す(2026-08-01ユーザー指摘「斬撃も全然光感ない」)。 */
   if(!o.sil&&vp>0&&(vp>=.84||vp<.24)){
-   c.save();c.translate(5,-30);c.rotate(PLANEv);c.globalCompositeOperation='lighter';
+   c.save();c.translate(6,-26.5);c.rotate(PLANEv);c.globalCompositeOperation='lighter';
    if(vcb===2){/* ③突き=前へ伸びる光の筋 */
     c.globalAlpha=.55;c.fillStyle='#ffedb4';
     c.beginPath();c.moveTo(8,-3.4);c.lineTo(46+thr,-1.2);c.lineTo(46+thr,1.2);c.lineTo(8,3.4);c.closePath();c.fill();
@@ -11878,18 +11878,23 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
     c.globalAlpha=.85;c.fillStyle='#fffdf4';arcp(31,.84);/* 芯 */
    }
    c.restore();}
-  c.save();c.translate(4,-31);c.rotate(sa-VR);c.translate(-4,31);
+  c.save();c.translate(6.4,-32);c.rotate(sa-VR);c.translate(-6.4,32);
   /* --- 手前の腕(肘で折る。⚠付け根は胴の前ぶちに置く)。
      ⚠⚠**突きの時は腕ごと動かさず「伸ばす」**(2026-08-01に撮って直した)=
        腕をまるごと前へ平行移動すると、肩から腕が離れて剣が宙に浮く。
        付け根は置いたまま、肘から先だけ `thr` ぶん前へ出すこと。 --- */
+  /* ⚠⚠**握りは腰の横・胸より下に置く**(2026-08-01ユーザー指摘「首から剣生えちゃってる」)。
+     ⚠胸の高さ(-29)で握らせると、鍔が肩〜首の高さに来て**首から剣が生えて見える**。
+     ⭐**肩から腕を下ろして腰の横(-21.5)で握る**=体の前に突き刺さっているのではなく「横で提げている」に見える。 */
+  /* ⚠**腕の付け根は胴の前ぶちに置く**=内側から生やすと二の腕が胸を横切り、
+     白い胸当てを覆って「胸に金の飾りが付いた人」に見える(2026-08-01に撮って直した) */
   c.fillStyle=shade(GA,1.08);
-  c.beginPath();c.moveTo(3.4,-32.6);c.lineTo(9.4+thr*.42,-31.4);c.lineTo(9.4+thr*.42,-27.4);c.lineTo(3.4,-28.4);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(8.2+thr*.42,-31.4);c.lineTo(13.4+thr,-30.6);c.lineTo(13.4+thr,-27);c.lineTo(8.2+thr*.42,-27.6);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(5.4,-30.6);c.lineTo(6.2+thr*.42,-25.4);c.lineTo(10.6,-26.2);c.lineTo(9.8,-31.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(6.4+thr*.42,-25.2);c.lineTo(7.8+thr,-20.9);c.lineTo(11.7+thr,-22.3);c.lineTo(10.3+thr*.42,-26.6);c.closePath();c.fill();c.stroke();
   c.fillStyle=SK;/* 手 */
-  c.beginPath();c.moveTo(12.4+thr,-31.4);c.lineTo(16+thr,-31);c.lineTo(16+thr,-27);c.lineTo(12.4+thr,-27.2);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(7.8+thr,-23.6);c.lineTo(11.8+thr,-23.2);c.lineTo(11.8+thr,-19.8);c.lineTo(7.8+thr,-20.2);c.closePath();c.fill();c.stroke();
   /* --- ⭐光の剣。⚠細く長く先を尖らせる=太い板だと翼に見える --- */
-  c.save();c.translate(13.6+thr,-29.2);c.rotate(VR);
+  c.save();c.translate(9.6+thr,-21.7);c.rotate(VR);
   /* ⚠遠近の短縮(奥/手前を向く所で短く太く)。⚠`lineWidth` は補正しない=補正すると片側だけ黒フチが残って歪む */
   if(flen!==1||fw!==1)c.scale(flen,fw);
   /* ⭐**細身の長剣に描き直した**(2026-08-01ユーザー指示「剣の感じもダサい。もっと刀身を細くしてかっこよく」)。
