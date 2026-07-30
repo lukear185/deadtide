@@ -1450,6 +1450,23 @@ const SFXSYN={
    nzHit(1600,300,1.0,.11,1);},650);
   [[0,880],[130,740],[270,988],[430,660]].forEach(b=>setTimeout(()=>{
    beep(b[1],b[1]*.99,.32,'triangle',.042);beep(b[1]*1.51,b[1]*1.5,.2,'triangle',.02);},700+b[0]));},
+ /* ⭐**🚌ゾンビバスを叩いた音**(2026-08-01)。⚠中身は鉄の箱なので**鈍い「ゴンッ」**にする。
+    ⚠金(lobHit)と同じ**倍音を整数比にしない**やり方だが、**基音を低く(210Hz)・擦れも低く**して
+      「鐘」ではなく「鉄板」に寄せた。⚠短く切る(伸ばすと禁止された高いキラキラ音になる)。 */
+ busHit:()=>{nzHit(2200,300,.06,.10,1);/* 鉄板の擦れ */
+  beep(120,86,.12,'triangle',.10);/* 芯(打撃感) */
+  [[1,.055,.30],[1.51,.038,.22],[2.31,.022,.14]].forEach(p=>
+   beep(210*p[0],210*p[0]*.985,p[2],'triangle',p[1]));},
+ /* ⭐⭐**🚌ゾンビバス撃破**(2026-08-01)。⚠**高い笛は禁止**なので豪華さは「和音の厚み」で出す
+    (虹・金と同じ考え方)。⭐**バスの警笛(二和音)から始める**=何を倒したのか音だけで分かる。
+    ⚠440Hzより上を使わない。⚠低い芯は sawtooth で出す(triangleの低音はスマホで鳴らない)。 */
+ busHorn:()=>{nzHit(800,150,.5,.24);
+  beep(146,146,1.1,'sawtooth',.13);beep(185,185,1.1,'sawtooth',.11);/* 警笛(二和音) */
+  setTimeout(()=>{beep(165,165,1.0,'sawtooth',.12);beep(220,220,1.0,'sawtooth',.10);
+   beep(277,277,1.0,'triangle',.07);},420);
+  setTimeout(()=>{beep(196,196,1.7,'sawtooth',.13);beep(262,262,1.7,'sawtooth',.10);
+   beep(330,330,1.7,'sawtooth',.08);beep(392,392,1.6,'triangle',.06);
+   nzHit(1300,260,1.0,.11,1);},760);},
  acidPop:()=>{nzHit(1500,180,.32,.26);beep(190,135,.3,'triangle',.12);
   setTimeout(()=>nzHit(2400,900,.3,.09,2),50);},/* 弾ける芯 → 溶ける「しゅわ」 */
  win:()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,f,.18,'square',.1),i*140));},
@@ -1565,6 +1582,8 @@ const SFX_LBL={
  rainbow:['🌈虹のゾンビ撃破','タイトルで虹のゾンビを倒した','ev'],
  lobHit:['✨黄金のロブスター(叩く)','タイトルで金の殻を叩いた(金属音)','ev'],
  lobKill:['✨黄金のロブスター撃破','タイトルで黄金のロブスターを倒した','ev'],
+ busHit:['🚌ゾンビバス(叩く)','タイトルでバスくんの鉄板を叩いた','ev'],
+ busHorn:['🚌ゾンビバス撃破','タイトルでバスくんを倒した(警笛→和音)','ev'],
  win:['勝利','クリア','ev'], lose:['敗北','コア陥落','ev']};
 const SFX_TAB=[['tw','🔫 タワー'],['z','🧟 ゾンビ'],['ui','🖥 UI・経済'],['ev','🏁 節目']];
 let SFXTAB='tw';
@@ -15653,6 +15672,10 @@ $('ivready').onclick=()=>{
 /* ============ パレード ============ */
 const pcv=$('paradecv'),pctx=pcv.getContext('2d');
 let RBC=null;/* 虹ゾンビを焼く使い回しcanvas */
+/* ⭐**🚌バスくんが居る間だけ行進canvasを高くする**ための入れ物(2026-08-01)。
+   ⚠素の高さ(parBaseH)は**CSSから測る**=決め打ちにすると、CSS側を直した時に中身が縦に潰れる。 */
+const BUS_TALL=80;
+let parBaseH=-1,parLastW=-1,parTall=-1;
 /* ⭐タイトルで倒した時に浮かぶ「+N🧬」(2026-07-27ユーザー指示「獲得表記もゲーム中みたいに」)。
    ⚠盤面の addFx とは別物=タイトルは G(試合)が無いので、ここだけの小さな入れ物で持つ。 */
 let PARTX=[];
@@ -15680,21 +15703,24 @@ const rbRate=()=>DEV?.5:RB_RATE;
    ⚠普通に遊ぶ側の確率は 0.1% のまま。 */
 const LB_RATE=.0005,LB_GEM=30,LB_HP=5,LB_ZI=ZOMBIES.findIndex(z=>z.id==='sLob');
 const lbRate=()=>DEV?.5:LB_RATE;
-/* ⭐⭐**0.001%で🌈虹の熊**(2026-08-01ユーザー指示)。一番珍しい=💎100個。
-   ⚠絵は**🌑ナイトメアの屍熊を使い回す**(新しく描かない)。虹の塗り分けは犬と同じ仕組み(`rb:1`)。
-   ⚠**8発当てないと倒せない**=当たっても取り逃がすことがある。だからこそ当たると嬉しい。 */
-const BR_ZI=ZOMBIES.findIndex(z=>z.id==='nmBear');
-const BR_RATE=.00001,BR_GEM=100,BR_HP=8;
-const brRate=()=>DEV?.5:BR_RATE;
+/* ⭐⭐**0.001%で🚌ゾンビバス(バスくん)**(2026-08-01ユーザー決定=案①でいく)。一番珍しい=💎100個。
+   ⭐**タイトル画面だけに出る巨大ゆるキャラ**。廃バスが脚を生やして のっそり歩き、
+     ヘッドライトが目・へこんだバンパーが口・窓からゾンビの手がわらわら振っている。
+   ⚠**ZOMBIES には足さない**(図鑑・波・冒険には出さない)ので、**絵は行進の描画側**に持つ(`drawBusKun`)。
+   ⚠**8発当てないと倒せない**=当たっても取り逃がすことがある。だからこそ当たると嬉しい。
+   ⚠**背が高いので居る間だけ行進canvasを高くする**(`BUS_TALL`。素の120pxでは上が切れる)。
+   ⚠**🐻🌈虹の熊(屍熊の使い回し)は廃止**=確率0.001%・💎100個・8発 の枠だけそのまま引き継いだ。 */
+const BUS_RATE=.00001,BUS_GEM=100,BUS_HP=8;
+const busRate=()=>DEV?.5:BUS_RATE;
 function parNew(){
  const mk=(zi,sp,hp,ex)=>Object.assign({zi,x:-60,sp,ph:rnd(0,9),ht:0,hp,kb:0,fl:0},ex);
  /* ⭐🛠DEVは**3種を均等(33%ずつ)**で出す=0.001%では実機で一度も見られないため */
  if(DEV){const r=Math.random();
-  if(r<1/3&&BR_ZI>=0)return mk(BR_ZI,34,BR_HP,{rb:1,br:1});
+  if(r<1/3)return mk(-1,26,BUS_HP,{bus:1});
   if(r<2/3&&LB_ZI>=0)return mk(LB_ZI,44,LB_HP,{lb:1});
   return mk(5,56,RB_HP,{rb:1});}
  /* ⚠**珍しい方から順に判定する**=重なった時に珍しい方が食われないように */
- if(BR_ZI>=0&&Math.random()<BR_RATE)return mk(BR_ZI,34,BR_HP,{rb:1,br:1});
+ if(Math.random()<BUS_RATE)return mk(-1,26,BUS_HP,{bus:1});
  if(LB_ZI>=0&&Math.random()<LB_RATE)return mk(LB_ZI,44,LB_HP,{lb:1});
  if(Math.random()<RB_RATE)return mk(5,56,RB_HP,{rb:1});
  const zi=[0,0,1,2,3,4,5][ri(0,6)];
@@ -15713,30 +15739,37 @@ function paradeHit(cx,cy){
  if(px<0||px>r.width||py<0||py>r.height)return false;
  let best=null,bd=1e9;
  /* ⚠**黄金のロブスターだけ当たり判定を広く取る**=横に長い絵で、しかも5発当てないと倒せないので、
-    普通と同じ34pxだと「押しているのに減らない」に見える */
- for(const p of PAR){if(p.ht>0)continue;const d=Math.abs(p.x-px);if(d<(p.lb?46:34)&&d<bd){bd=d;best=p;}}
+    普通と同じ34pxだと「押しているのに減らない」に見える。
+    ⚠**🚌ゾンビバスは絵そのものが横190pxある**ので、絵の幅に合わせて100取る(2026-08-01) */
+ for(const p of PAR){if(p.ht>0)continue;const d=Math.abs(p.x-px);if(d<(p.bus?100:p.lb?46:34)&&d<bd){bd=d;best=p;}}
  if(!best)return false;
  ensureAC();
  /* ⭐**打撃感**(2026-07-27ユーザー指示)。絵を足さずに**3つ**でそれらしくする:
     ①後ろへ**のけぞる**(kb) ②**白く光る**(fl) ③殴った音。
     ⚠倒れるのは最後の1発だけ=途中の発は「効いている」ことだけ伝える。 */
-  best.fl=1;best.kb=14;
+  best.fl=1;best.kb=best.bus?7:14;/* ⚠バスは重いのでのけぞりを浅く */
  /* ⚠**タイトルの音は小さめに鳴らす**(2026-07-27ユーザー指摘「倒れる音でかいわ」)。
     ⚠thunk は52種で一番大きい音(0.138)で、しかもタップのたびに鳴るので一番耳につく。
     ⚠sfx.xxx() は素の音量で鳴るので、**音量を指定できる sfxPlay を直に呼ぶ**。 */
  /* ⚠黄金のロブスターだけ**金属を叩いた音**にする(2026-07-28ユーザー指示) */
- if(--best.hp>0){if(best.lb)sfx.lobHit();else sfxAt('thunk',.34);return true;}
+ /* ⭐**🚌バスは叩くたびに窓のゾンビが1匹こぼれ落ちる**(2026-08-01)。
+    ⚠8発も要るので、体力の残りが**絵で減っていく**ようにしないと「押しても無反応」に見える
+    (窓の手の本数も hp から出している=`drawBusKun`)。 */
+ if(best.bus)parDrop(best.x,h9-20);
+ if(--best.hp>0){if(best.bus)sfx.busHit();else if(best.lb)sfx.lobHit();else sfxAt('thunk',.34);return true;}
   best.ht=.001;/* 倒れ始め */
   /* ⭐**強さに応じて研究ptが入る**(2026-07-27ユーザー指示)。
-     ⚠**倒すのに要る発数と同じ**にする=硬い奴ほど多い、が見て分かる(1〜3)。 */
-  {const g=parHP(best.zi);META.pts=(META.pts||0)+g;
+     ⚠**倒すのに要る発数と同じ**にする=硬い奴ほど多い、が見て分かる(1〜3)。
+     ⚠バスは ZOMBIES に居ない(zi=-1)ので parHP を通さず直に3を入れる。 */
+  {const g=best.bus?3:parHP(best.zi);META.pts=(META.pts||0)+g;
    PARTX.push({x:best.x,y:h9-46,s:'+'+g+'🧬',t:0});
    try{saveMeta();updLabBtn();}catch(x){}}
- if(best.br){/* ⭐⭐🌈虹の熊を倒した=💎魔石を100個(2026-08-01)。一番珍しい */
-  META.gem=(META.gem||0)+BR_GEM;try{saveMeta();updLabBtn();}catch(x){}
-  if(sfx.rainbow)sfx.rainbow();
-  PARTX.push({x:best.x,y:h9-70,s:'+'+BR_GEM+'💎',t:0,big:1});
-  try{toast('🌈 虹の熊を倒した! 💎魔石 +'+BR_GEM+'(計'+META.gem+')',true);}catch(x){}
+ if(best.bus){/* ⭐⭐🚌ゾンビバスを倒した=💎魔石を100個(2026-08-01)。一番珍しい */
+  META.gem=(META.gem||0)+BUS_GEM;try{saveMeta();updLabBtn();}catch(x){}
+  if(sfx.busHorn)sfx.busHorn();
+  for(let k=0;k<5;k++)parDrop(best.x+rnd(-70,60),h9-20);/* 窓のゾンビが総崩れになる */
+  PARTX.push({x:best.x,y:h9-70,s:'+'+BUS_GEM+'💎',t:0,big:1});
+  try{toast('🚌 ゾンビバスを倒した! 💎魔石 +'+BUS_GEM+'(計'+META.gem+')',true);}catch(x){}
   return true;}
  if(best.lb){/* ⭐⭐黄金のロブスターを倒した=💎魔石を30個(2026-07-28) */
   META.gem=(META.gem||0)+LB_GEM;try{saveMeta();updLabBtn();}catch(x){}
@@ -15776,10 +15809,195 @@ function parSpark(c,x,y,t){
   c.beginPath();c.moveTo(sx-L,sy);c.lineTo(sx+L,sy);c.moveTo(sx,sy-L);c.lineTo(sx,sy+L);c.stroke();}
  c.restore();
 }
+/* ============ 🚌ゾンビバス(バスくん) ============
+   ⭐タイトル画面だけに出る巨大ゆるキャラ(2026-08-01ユーザー決定)。
+   ⭐読ませたいのは4つ: ①**廃バスが脚を生やして のっそり歩く** ②**ヘッドライトが丸い目**
+     ③**へこんだバンパーが口** ④**窓からゾンビの手がわらわら振っている**。
+   ⚠掟どおり **太い黒フチ+べた塗り**。⚠**色は4段以上に分ける**(車体/屋根/窓/脚/錆)=
+     1色系でまとめると、形をどれだけ凝っても「黄色い箱」にしかならない(斧使いで踏んだのと同じ話)。
+   ⚠**同じ部品を等間隔に並べない**(窓の幅・錆・屋根の荷物は全部不揃いにしてある)。
+   ⚠**細い部品は黒フチに食われる**=アンテナも指の切れ込みも太さ3以上にすること。 */
+let PARDZ=[];/* 窓からこぼれ落ちたゾンビ */
+function parDrop(x,gy){
+ if(PARDZ.length>24)return;
+ PARDZ.push({x:x+rnd(-58,44),y:gy-rnd(52,72),vx:rnd(-26,34),gy,t:0,rt:rnd(0,6)});
+}
+function parDzStep(c){
+ for(let i=PARDZ.length-1;i>=0;i--){const d=PARDZ[i];d.t+=.016;
+  if(d.t>1.5){PARDZ.splice(i,1);continue;}
+  const yy=Math.min(d.gy,d.y-70*d.t+520*d.t*d.t),land=yy>=d.gy;
+  c.save();c.globalAlpha=Math.max(0,Math.min(1,(1.5-d.t)/.45));
+  c.translate(d.x+d.vx*d.t,yy);c.rotate(land?1.5:d.rt+d.t*7);
+  c.strokeStyle=INK;c.lineWidth=2.2;c.lineJoin='round';
+  c.fillStyle='#5c6b3a';/* 胴 */
+  rr(c,-4.4,-2,9,11,3);c.fill();c.stroke();
+  c.fillStyle='#7f9a4e';/* 頭 */
+  c.beginPath();c.arc(0,-5.4,5.4,0,7);c.fill();c.stroke();
+  c.fillStyle='#7f9a4e';/* 腕(⚠左右で長さを変える=同じ物を対称に並べない) */
+  rr(c,-9.4,-1.4,7,3.6,1.8);c.fill();c.stroke();
+  rr(c,3.2,1.4,8.4,3.6,1.8);c.fill();c.stroke();
+  c.fillStyle=INK;c.beginPath();c.arc(-1.8,-6,1.1,0,7);c.arc(1.8,-6,1.1,0,7);c.fill();
+  c.restore();}
+ c.globalAlpha=1;
+}
+function drawBusKun(c,x,y,t,ph,hp){
+ const S=1.15;
+ c.save();c.translate(x,y);c.scale(S,S);
+ c.lineJoin='round';c.lineCap='round';c.strokeStyle=INK;c.lineWidth=2.6/S;
+ const BC='#c2a03e',   /* 車体=くすんだスクールバスの黄 */
+       FC='#d9b551',   /* 前面(こちらを向いた面は明るく) */
+       RF='#b4ac97',   /* 屋根と腰帯 */
+       GL='#31424a',   /* 窓ガラス */
+       CH='#948d7e',   /* 鋼(バンパー・グリル) */
+       RS='#8a4526',   /* 錆 */
+       LG='#786a58',   /* 脚(⚠暗くすると腰から下が1つの黒い塊になる=共通の脚で踏んだのと同じ) */
+       SK='#7f9a4e';   /* ゾンビの肌 */
+ const wk=t*2.6+ph;    /* ⚠のっそり=歩幅の周期をゆっくりに */
+ /* 太い帯(腿・すね・腕)。⚠**膝と肘で本当に折る**=同じ傾きの帯を並べると芋虫になる */
+ const seg2=(x0,y0,x1,y1,w,col)=>{
+  const a=Math.atan2(y1-y0,x1-x0),L=Math.hypot(x1-x0,y1-y0);
+  c.save();c.translate(x0,y0);c.rotate(a);c.fillStyle=col;
+  rr(c,-w*.5,-w*.5,L+w,w,w*.42);c.fill();c.stroke();c.restore();};
+ /* 上半分/下半分で明暗を1段付ける(zFillの考え方。⚠バスは横に広いので切り抜きを広く取る) */
+ const half=(pathFn,col,yc)=>{c.fillStyle=col;pathFn();c.fill();
+  c.save();c.beginPath();c.rect(-140,yc,280,240);c.clip();
+  c.fillStyle=shade(col,.76);pathFn();c.fill();c.restore();
+  pathFn();c.stroke();};
+ /* 脚。⚠**基準をほぼ0にして振りだけで前後させる**(基準のずれと振りを同符号で足すと1周期に1歩になる) */
+ const legDraw=(lx,pz,col,sc2)=>{
+  const s1=Math.sin(wk+pz),lift=Math.max(0,Math.sin(wk+pz+1.3))*4.4;
+  const kx=lx+s1*7*sc2,fx=lx+s1*12*sc2,fy=-5-lift;
+  seg2(lx,-36,kx,-19,11.4*sc2,col);
+  seg2(kx,-19,fx,fy,8.6*sc2,shade(col,.86));
+  c.fillStyle=shade(col,.6);rr(c,fx-9.4*sc2,fy-1.4,19*sc2,7,2.6);c.fill();c.stroke();};
+ /* ⭐**当たり=珍しさの印**。虹でも金でもないので、**ヘッドライトの光**そのものを印にする */
+ c.globalAlpha=.12;c.fillStyle='#ffcf6a';
+ for(let k=0;k<3;k++){c.beginPath();c.ellipse(6,-62,100+k*15+Math.sin(t*2+k)*4,58+k*10,0,0,7);c.fill();}
+ c.globalAlpha=1;
+ /* 排気(⚠後ろへ流す。丸を等間隔に並べないよう位相をずらす) */
+ for(let k=0;k<3;k++){const q=((t*.5+k*.37)%1);
+  c.globalAlpha=.26*(1-q);c.fillStyle='#463f34';
+  c.beginPath();c.arc(-86-q*30,-46-q*30,5+q*12,0,7);c.fill();}
+ c.globalAlpha=1;
+ legDraw(-62,3.14,shade(LG,.66),.9);legDraw(14,0,shade(LG,.66),.9);/* 奥の脚 */
+ /* 車体の側面(⚠まっすぐな箱にしない=屋根をへたらせ、床を後ろへ垂らす) */
+ const body=()=>{c.beginPath();
+  c.moveTo(-76,-28);
+  c.lineTo(-80,-84);
+  c.quadraticCurveTo(-79,-97,-66,-98);
+  c.lineTo(-6,-101);
+  c.quadraticCurveTo(16,-102,26,-98);
+  c.lineTo(28,-34);
+  c.closePath();};
+ half(body,BC,-64);
+ /* 腰帯(バスの白帯)。⚠錆で途切れさせる=一直線に引くと段ボールに見える */
+ c.fillStyle=RF;c.fillRect(-79,-58,106,7);c.fillStyle=RS;c.fillRect(-36,-58,14,7);
+ c.strokeStyle=INK;c.lineWidth=2.6/S;
+ /* 錆(⚠大きさも位置も不揃いに) */
+ c.fillStyle=RS;
+ [[-64,-44,9,5.6],[-4,-46,6.4,4],[14,-84,5,3.4],[-40,-94,4.4,3]].forEach(r2=>{
+  c.beginPath();c.ellipse(r2[0],r2[1],r2[2],r2[3],.3,0,7);c.fill();});
+ /* 側板の継ぎ目と尾灯。⚠**間隔を揃えない**=等間隔だと方眼紙に見える。
+    ⚠これが無いと後ろ半分が「ただの黄色い面」になる */
+ c.fillStyle=shade(BC,.62);c.fillRect(-58,-50,2.6,20);c.fillRect(-19,-50,2.6,16);
+ c.fillStyle=RUST;rr(c,-79,-50,7,8,2);c.fill();c.stroke();
+ /* 窓(⚠幅も間隔も不揃い。1枚は割れて中が真っ暗) */
+ const WIN=[[-74,26],[-44,20],[-18,32],[16,8]];
+ WIN.forEach((v,i)=>{
+  c.fillStyle=GL;rr(c,v[0],-92,v[1],30,3);c.fill();c.stroke();
+  c.fillStyle='#4d6069';/* 映り込み(⚠斜めに1本だけ) */
+  c.beginPath();c.moveTo(v[0]+2,-62);c.lineTo(v[0]+v[1]*.55,-90);c.lineTo(v[0]+v[1]*.85,-90);
+  c.lineTo(v[0]+v[1]*.3,-62);c.closePath();c.fill();
+  if(i===1){c.fillStyle=INK;/* 割れて中が見えている窓 */
+   c.beginPath();c.moveTo(v[0]+1,-90);c.lineTo(v[0]+v[1]-1,-91);c.lineTo(v[0]+v[1]-4,-74);
+   c.lineTo(v[0]+9,-80);c.lineTo(v[0]+4,-68);c.closePath();c.fill();}});
+ /* ⭐**窓から出たゾンビの手**。⚠残りHPで本数が減る=叩くたびに1匹こぼれ落ちるのと辻褄が合う。
+    ⚠**窓の中に収める**=屋根より高く上げると、腕が屋根から生えているように見える。 */
+ const hand=(hx,pz,sc3,col)=>{
+  const a=Math.sin(t*3.4+pz)*.55;
+  c.save();c.translate(hx,-63);c.rotate(-.4+a);c.scale(sc3,sc3);
+  seg2(0,0,2.6,-11,7.6,ZW.sh);          /* 袖 */
+  seg2(2.6,-11,-2.6,-20,6.4,col);       /* 前腕(⚠肘で折る) */
+  c.fillStyle=col;rr(c,-8,-28.4,11.4,10,3.4);c.fill();c.stroke();
+  c.fillStyle=shade(col,.66);           /* 指の間(⚠太さ3以上=細いと黒フチに食われる) */
+  c.fillRect(-5,-28.4,3,5.6);c.fillRect(-.2,-28.4,3,4.2);
+  c.restore();};
+ [[-62,0,1,SK],[-36,2.1,.86,'#6c8641'],[-8,4.1,1.05,SK],[10,1.1,.8,'#6c8641']]
+  .forEach((v,i)=>{if(hp>i*2)hand(v[0],v[1],v[2],v[3]);});
+ /* 屋根の荷台と積み荷(⚠大きさを不揃いに)。
+    ⚠**タイトルの背景は暗い茶色**なので、荷物を茶系の暗い色で置くと背景に沈んで見えない(一度そうなった) */
+ c.fillStyle=RF;c.fillRect(-66,-105,62,4.6);c.strokeRect(-66,-105,62,4.6);
+ c.fillStyle='#9c8560';rr(c,-60,-116,17,11,2);c.fill();c.stroke();
+ c.fillStyle='#b3a07a';rr(c,-38,-111,11,6.4,2);c.fill();c.stroke();
+ c.fillStyle='#88996a';rr(c,-22,-119,21,14,3);c.fill();c.stroke();
+ /* 折れたアンテナ(⚠太さ3.4=これより細いと黒い棒になる)+ぼろ布 */
+ seg2(-72,-97,-78,-113,3.6,CH);seg2(-78,-113,-86,-125,3.4,CH);
+ c.fillStyle=ZW.rag;c.beginPath();c.moveTo(-86,-125);
+ c.lineTo(-100+Math.sin(t*2.2)*3,-122);c.lineTo(-87,-117);c.closePath();c.fill();c.stroke();
+ /* ⭐**前面**=ここが顔。⚠**側面より広く取る**(前を狭くすると目と口が潰れて顔に見えない。
+    最初そうして撮り直した)。こちらを向いた面なので明るい色を置く */
+ const face=()=>{c.beginPath();
+  c.moveTo(26,-98);c.lineTo(96,-92);c.lineTo(98,-24);c.lineTo(28,-34);c.closePath();};
+ half(face,FC,-60);
+ /* フロントガラス。⭐**中に運転手のゾンビと行先表示**を入れる=「バス」だと一目で分かる */
+ c.fillStyle=GL;c.beginPath();
+ c.moveTo(30,-95);c.lineTo(93,-89);c.lineTo(92,-74);c.lineTo(31,-81);c.closePath();c.fill();c.stroke();
+ c.fillStyle=SK;c.beginPath();c.arc(76,-83,6.4,0,7);c.fill();c.stroke();/* 運転手 */
+ c.fillStyle=INK;c.beginPath();c.arc(73.6,-84,1.3,0,7);c.arc(78.4,-83.6,1.3,0,7);c.fill();
+ c.fillStyle=INK4;rr(c,33,-93.6,28,10.4,2);c.fill();c.stroke();/* 行先表示 */
+ c.fillStyle=AMBER;c.font='900 9px '+FF;c.textAlign='center';c.textBaseline='middle';
+ try{c.fillText('墓地行',47,-88.2);}catch(e){}
+ c.textAlign='left';c.textBaseline='alphabetic';
+ /* ⭐**ヘッドライト=目**。⚠**細い円にstrokeを重ねない**(芯が残らず黒い円盤になる)=
+    縁は塗りの円を1枚下に敷いて作る。⚠まぶたを少し下ろすと「ゆるい顔」になる */
+ const eye=(ex,ey,r,pz)=>{
+  c.fillStyle=CH;c.beginPath();c.arc(ex,ey,r+2.8,0,7);c.fill();c.stroke();
+  c.fillStyle='#ffe9a8';c.beginPath();c.arc(ex,ey,r,0,7);c.fill();c.stroke();
+  c.fillStyle='#fffbe6';c.beginPath();c.arc(ex-r*.26,ey-r*.28,r*.52,0,7);c.fill();
+  c.fillStyle=INK;c.beginPath();c.arc(ex+r*.3+Math.sin(t*1.1+pz)*1.8,ey+r*.18,r*.4,0,7);c.fill();
+  c.fillStyle=shade(FC,.84);/* まぶた */
+  c.beginPath();c.moveTo(ex-r-2.8,ey-r*.44);c.lineTo(ex+r+2.8,ey-r*.68);
+  c.lineTo(ex+r+2.8,ey-r-3.4);c.lineTo(ex-r-2.8,ey-r-3.4);c.closePath();c.fill();c.stroke();};
+ eye(48,-62,13,0);eye(80,-58,12,1.7);
+ /* ⭐**へこんだバンパー=口**。中を暗く抜いて、下唇にバンパーの帯を通す。
+    ⚠歯は不揃いに(等間隔に並べると櫛に見える) */
+ c.fillStyle='#1b1712';c.beginPath();
+ c.moveTo(32,-42);c.lineTo(94,-37);c.lineTo(91,-26);
+ c.quadraticCurveTo(62,-19,33,-32);c.closePath();c.fill();c.stroke();
+ c.fillStyle='#e6ddc4';/* 歯 */
+ [[36,-40.6,7,5],[45,-40,9,7.4],[57,-39,6,4],[65,-38.6,8,6.4],[76,-38,5.4,3.6],[83,-37.6,6,5.4]]
+  .forEach(g=>{c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[0]+g[2],g[1]);
+   c.lineTo(g[0]+g[2]*.5,g[1]+g[3]);c.closePath();c.fill();});
+ c.fillStyle=CH;c.beginPath();/* バンパーの帯(⚠へこませる=まっすぐだと定規に見える) */
+ c.moveTo(29,-34);c.quadraticCurveTo(62,-20,95,-30);c.lineTo(96,-38);
+ c.quadraticCurveTo(62,-27,30,-41);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(CH,.55);/* へこみ(⚠左右対称に並べない) */
+ c.beginPath();c.ellipse(52,-29.4,6,2.6,.16,0,7);c.fill();
+ c.beginPath();c.ellipse(80,-29.6,3.4,1.8,-.1,0,7);c.fill();
+ /* 手前の脚(⚠車体より後に描く=体の外側に見える) */
+ legDraw(-50,0,LG,1);legDraw(26,3.14,LG,1);
+ /* ⭐ヘッドライトの光。⚠**加算で細く**=太い面を加算すると背景と混ざって白い塊になる */
+ c.globalCompositeOperation='lighter';
+ [[48,-62],[80,-58]].forEach(p2=>{
+  const g2=c.createLinearGradient(p2[0],p2[1],p2[0]+130,p2[1]+10);
+  g2.addColorStop(0,'rgba(255,226,150,.34)');g2.addColorStop(1,'rgba(255,226,150,0)');
+  c.fillStyle=g2;c.beginPath();c.moveTo(p2[0],p2[1]-8);c.lineTo(p2[0]+136,p2[1]-28);
+  c.lineTo(p2[0]+136,p2[1]+36);c.lineTo(p2[0],p2[1]+8);c.closePath();c.fill();});
+ c.globalCompositeOperation='source-over';
+ c.restore();
+}
 function paradeStep(t){
  if(SCR!=='title')return;
- const w=innerWidth,h=120;const dpr=Math.min(2,window.devicePixelRatio||1);
- if(pcv.width!==w*dpr){pcv.width=w*dpr;pcv.height=h*dpr;}
+ const w=innerWidth;const dpr=Math.min(2,window.devicePixelRatio||1);
+ /* ⭐⭐**🚌バスくんが居る間だけ canvas を高くする**(2026-08-01)。
+    ⚠行進canvasは高さ120pxしかなく、**大きい個体は上下が切れる**(屍熊で実際に切れた)。
+    ⚠**素の高さは決め打ちにせずCSSから測る**=中の寸法とCSSの見た目がずれると絵が縦に潰れる。 */
+ const tall=PAR.some(p=>p.bus&&p.ht<1)?BUS_TALL:0;
+ if(parBaseH<0||parLastW!==w){pcv.style.height='';parBaseH=pcv.clientHeight||120;parLastW=w;parTall=-1;}
+ if(parTall!==tall){parTall=tall;pcv.style.height=tall?(parBaseH+tall)+'px':'';}
+ const h=parBaseH+tall;
+ if(pcv.width!==Math.round(w*dpr)||pcv.height!==Math.round(h*dpr)){
+  pcv.width=Math.round(w*dpr);pcv.height=Math.round(h*dpr);}
  pctx.setTransform(dpr,0,0,dpr,0,0);pctx.clearRect(0,0,w,h);
  pctx.fillStyle='rgba(0,0,0,.35)';pctx.fillRect(0,h-24,w,24);
  /* ⭐浮かぶ獲得表記。⚠**ゾンビより先に描く**と足元に隠れるので、下のゾンビの後で描く */
@@ -15791,11 +16009,17 @@ function paradeStep(t){
    if(p.ht>=1){PAR[i]=parNew();continue;}
    const k=p.ht;
    pctx.save();pctx.globalAlpha=Math.max(0,1-k*k);
-   pctx.translate(p.x-p.kb,h-20);pctx.rotate(1.5*(1-Math.pow(1-k,3)));
-   drawZombie(pctx,p.zi,0,0,1,t,p.ph,{});
+   /* ⚠バスは重いので**倒れ方を浅く・ゆっくり**にする(1.5回すと横倒しの箱が転がって見える) */
+   pctx.translate(p.x-p.kb,h-20);pctx.rotate((p.bus?.5:1.5)*(1-Math.pow(1-k,3)));
+   if(p.bus)drawBusKun(pctx,0,0,t,p.ph,0);else drawZombie(pctx,p.zi,0,0,1,t,p.ph,{});
    pctx.restore();pctx.globalAlpha=1;continue;}
-  p.x+=p.sp*.016;if(p.x>w+60)PAR[i]=parNew();
+  p.x+=p.sp*.016;if(p.x>w+(p.bus?130:60))PAR[i]=parNew();
   const dx=p.x-p.kb;
+  /* ⭐🚌バスくん。⚠虹/金と違って**焼き直さず直に描く**=RBC(160px)には収まらない大きさなので */
+  if(p.bus){drawBusKun(pctx,dx,h-20,t,p.ph,p.hp);
+   if(p.fl>0){pctx.save();pctx.globalCompositeOperation='lighter';pctx.globalAlpha=p.fl*.8;
+    drawBusKun(pctx,dx,h-20,t,p.ph,p.hp);pctx.restore();}
+   continue;}
   /* ⭐⭐**虹色の塗り分け**(2026-07-27にユーザー報告「虹じゃなくて白い丸い点滅が背景にある犬だった」)。
      ⚠⚠**`ctx.filter` は iOS Safari で効かない**=hue-rotate は丸ごと無視され、後光だけが出ていた。
      ⭐**どこでも効くやり方**=別canvasに一度描いて、`source-atop` で虹のグラデを被せる。
@@ -15852,6 +16076,7 @@ function paradeStep(t){
   if(p.fl>0){pctx.save();pctx.globalCompositeOperation='lighter';pctx.globalAlpha=p.fl;
    drawZombie(pctx,p.zi,dx,h-20,1,t,p.ph,{});
    pctx.restore();}}
+ parDzStep(pctx);/* 窓からこぼれ落ちたゾンビ */
  /* 上へ流れて消える。⚠ゲーム中の「+N⚙️」と同じ動き方にして、見た瞬間に同じ物だと分かるようにする */
  for(let i=PARTX.length-1;i>=0;i--){const q=PARTX[i];q.t+=.016;
   if(q.t>.95){PARTX.splice(i,1);continue;}

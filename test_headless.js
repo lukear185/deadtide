@@ -1700,6 +1700,48 @@ function checkGachaFx(){
    ⚠色は見ない。色だけ違って形が同じ、を通してしまうため。
    ⚠数値も見ない。ゾンビごとに Z.sc と歩幅が違うので、数値を入れると
      「胴が丸ごと同じでも別物に見える」=必ず通る検査になってしまう。 */
+/* ⭐⭐**🚌ゾンビバス(バスくん)**=タイトル専用の巨大ゆるキャラ(2026-08-01)。
+   見るのは4つ:
+   ①**ZOMBIES に混ざっていないこと**(図鑑・波・冒険に出したら設計違反。zi=-1 で持っている)
+   ②**8発で倒れて 💎100 が入ること**(途中の発では入らない)
+   ③**叩くたびに窓のゾンビが1匹こぼれること**(手応え。残りHPで窓の手も減る)
+   ④**行進canvasが高くなること**(素の120pxのままだと上下が切れる=屍熊で実際に切れた)
+   ⚠絵そのものは見られない(ヘッドレス)。**見た目は node test_shot.js ... "title+bus" で撮る**。 */
+function checkBus(){
+ if(ZOMBIES.some(z=>z.id==='bus'||z.id==='zbus')){
+  console.log('FAIL: 🚌ゾンビバスが ZOMBIES に入っている(タイトル専用のはず)');process.exit(1);}
+ if(BUS_GEM!==100||BUS_HP!==8||Math.abs(BUS_RATE-.00001)>1e-12){
+  console.log('FAIL: 🚌ゾンビバスの枠(0.001%/💎100/8発)が変わっている');process.exit(1);}
+ const savedScr=SCR,savedPar=PAR.slice(),savedGem=META.gem||0,savedDz=PARDZ.length;
+ SCR='title';PAR.length=0;PARDZ.length=0;
+ const bus={zi:-1,x:400,sp:0,ph:1,ht:0,hp:BUS_HP,kb:0,fl:0,bus:1};PAR.push(bus);
+ try{paradeStep(2.4);}catch(e){
+  console.log('FAIL: 🚌ゾンビバスの描画で例外: '+e.message);process.exit(1);}
+ /* ④ バスが居る間だけ canvas が高い */
+ const tallH=pcv.height;
+ PAR.length=0;PAR.push({zi:0,x:400,sp:0,ph:1,ht:0,hp:1,kb:0,fl:0});
+ try{paradeStep(2.4);}catch(e){console.log('FAIL: 行進の描画で例外: '+e.message);process.exit(1);}
+ if(!(tallH>pcv.height)){
+  console.log('FAIL: 🚌バスが居ても行進canvasが高くならない(大きい個体は上下が切れる)');process.exit(1);}
+ /* ②③ 8発で倒れる。途中の発では💎が入らない */
+ PAR.length=0;PAR.push(bus);
+ for(let k=0;k<BUS_HP-1;k++){
+  if(!paradeHit(400,340)){console.log('FAIL: 🚌バスに当たり判定が無い('+(k+1)+'発目)');process.exit(1);}
+  if((META.gem||0)!==savedGem){console.log('FAIL: 🚌バスを倒し切る前に💎が入った');process.exit(1);}}
+ if(bus.hp!==1){console.log('FAIL: 🚌バスの残りHPが合わない '+bus.hp);process.exit(1);}
+ if(PARDZ.length<BUS_HP-1){
+  console.log('FAIL: 叩いても窓のゾンビがこぼれ落ちない '+PARDZ.length);process.exit(1);}
+ paradeHit(400,340);
+ if((META.gem||0)!==savedGem+BUS_GEM){
+  console.log('FAIL: 🚌バスを倒しても💎'+BUS_GEM+'が入らない');process.exit(1);}
+ if(!(bus.ht>0)){console.log('FAIL: 🚌バスが倒れない');process.exit(1);}
+ /* 倒れている最中の絵と、こぼれ落ちたゾンビの絵も一度通す(ここでしか通らない枝) */
+ try{for(let k=0;k<6;k++)paradeStep(2.4+k*.2);}catch(e){
+  console.log('FAIL: 🚌バスが倒れる所/落ちたゾンビの描画で例外: '+e.message);process.exit(1);}
+ META.gem=savedGem;SCR=savedScr;PAR.length=0;savedPar.forEach(p=>PAR.push(p));PARDZ.length=savedDz;
+ console.log('🚌ゾンビバス: 図鑑に混ざらない / '+BUS_HP+'発で💎'+BUS_GEM
+  +' / 叩くたびに窓のゾンビが落ちる / 居る間だけ行進canvasが高くなる OK');
+}
 function checkZLook(){
  /* (1) 静的: 全ゾンビが drawZombie の中に自分の枝を持っているか */
  const miss=ZOMBIES.filter(Z=>js.indexOf("Z.id==='"+Z.id+"'")<0).map(Z=>Z.n);
@@ -2333,6 +2375,7 @@ checkFx2();
 checkGachaFx();
 checkTwFx();
 checkZLook();
+checkBus();
 checkPixel();
 checkULook();
 checkHeroLook();
@@ -2430,15 +2473,16 @@ process.exit(0);
      ⚠素の確率のままでは★4以上が約1%で、どんでん返しも黄金のロブスターも確かめようがない。
      ⚠**新しく珍しいものを足したら、ここの一覧にも足すこと**。 */
   const d=new Function(js+String.fromCharCode(10)+'return {hi:G_RATE.filter(r=>r[0]==="r4"||r[0]==="r5").reduce((a,r)=>a+r[1],0),'
-   +'lob:lbRate(),rb:rbRate(),pl:GC_P_LOB,pt:GC_P_TW,sum:G_RATE.reduce((a,r)=>a+r[1],0)};')();
+   +'lob:lbRate(),rb:rbRate(),bus:busRate(),pl:GC_P_LOB,pt:GC_P_TW,sum:G_RATE.reduce((a,r)=>a+r[1],0)};')();
   if(Math.abs(d.sum-100)>1e-9){console.log('FAIL: 🛠DEVの排出率の合計が100でない '+d.sum);process.exit(1);}
   if(d.hi<10){console.log('FAIL: 🛠DEVで★4以上が出にくすぎる '+d.hi.toFixed(1)+'%(演出を確かめられない)');process.exit(1);}
   if(d.lob<.2){console.log('FAIL: 🛠DEVで✨黄金のロブスターが出にくすぎる');process.exit(1);}
   if(d.rb<.2){console.log('FAIL: 🛠DEVで🌈虹のゾンビが出にくすぎる');process.exit(1);}
+  if(d.bus<.2){console.log('FAIL: 🛠DEVで🚌ゾンビバスが出にくすぎる(0.001%では実機で一度も見られない)');process.exit(1);}
   if(Math.abs(d.pl-1/3)>1e-9||Math.abs(d.pt-1/3)>1e-9){
    console.log('FAIL: 🛠DEVで召集の3通りが均等になっていない');process.exit(1);}
   console.log('🛠DEVの底上げ: ★4以上 '+d.hi.toFixed(1)+'% / 召集の演出は3通り均等 / '
-   +'タイトルの✨金'+(d.lob*100)+'%・🌈虹'+(d.rb*100)+'% OK');
+   +'タイトルの✨金'+(d.lob*100)+'%・🌈虹'+(d.rb*100)+'%・🚌バス'+(d.bus*100)+'% OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
  }finally{
