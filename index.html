@@ -2139,7 +2139,7 @@ const UNITS=[
  {id:'tnk',n:'装甲車',cost:208,cd:16,hp:8500,atk:62,rate:.8,rng:44,sp:55,type:'melee',hook:6,c:STEEL,dsc:'走る要塞。すり抜ける敵も履帯で轢き潰す(6体)'},
  {id:'mech',n:'メカスーツ',cost:248,cd:18,hp:1855,atk:181,rate:1.1,rng:260,sp:48,type:'blast',aoe:80,c:'#6b7580',dsc:'肩部キャノンで範囲砲撃'},
  {id:'titan',n:'タイタン',cost:360,cd:22,hp:10500,atk:125,rate:1.3,rng:60,sp:44,type:'melee',c:'#8a8f96',dsc:'歩く城塞・全てを薙ぎ倒す'},
- {id:'valk',n:'ヴァルキリー',cost:328,cd:20,hp:1620,atk:351,rate:1.8,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'空爆支援を伴う精鋭'}
+ {id:'valk',n:'ヴァルキリー',cost:328,cd:20,hp:1620,atk:351,rate:1.8,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'光の剣で遠くを薙ぐ女剣士'}
 ];
 const BASE_U=8;/* 通常解放できる基本兵科数(これ以降は🔬研究所で解放) */
 /* 全兵科を価格順に並べ替え(前半=最初から使える/後半=研究所で解放)。ただし研究所専用の4種は必ず末尾 */
@@ -2482,7 +2482,9 @@ const U_MOT={
  axe:['toss',.3],mol:['toss',.3],grn:['toss',.35],gren2:['toss',.45],
  rkt:['toss',.55],mech:['toss',.5],mortarU:['toss',.8],
  /* --- 術者(掲げる→足元に魔法陣→撃つ) --- */
- med:['cast',.3],engi:['cast',.3],frz:['cast',.6],frost2:['cast',.9],valk:['cast',1],
+ med:['cast',.3],engi:['cast',.3],frz:['cast',.6],frost2:['cast',.9],
+ /* --- 斬撃(振りかぶって、飛ぶ光の刃を放つ) --- */
+ valk:['slash',.55],
  /* --- 狙撃(構える→照準の線が伸びる→一拍止まって撃つ) --- */
  snp:['snipe',.7],rail2:['snipe',1.2],
  /* --- 回転(銃身が回り始めてから撃ち出す) --- */
@@ -2514,7 +2516,7 @@ const uChgM=ui=>{const U=UNITS[ui],ct=uChgT(ui);return (U&&U.rate>0&&ct>0)?(U.ra
    固有の中身=**溜め・銃口・弾・着弾の色をそのキャラ自身の色にする**+英雄★4以上は専用の溜め。 */
 const uUniq=ui=>{const U=UNITS[ui];if(!U)return false;return U.hro?(U.hro>=4):(uTier(ui)>=3);};
 const MOT_COL={cast:'#c58aff',mag:'#7fd2e0',bolt:'#bfe9ff',snipe:'#a0e1ff',
- spin:'#ffcf6a',toss:'#ffb347',heat:'#ff8a3d',now:'#fff3c0'};
+ spin:'#ffcf6a',toss:'#ffb347',heat:'#ff8a3d',now:'#fff3c0',slash:'#ffe9a8'};
 const uMotCol=ui=>{const U=UNITS[ui];if(!U)return '#fff3c0';
  return uUniq(ui)?(U.c||'#fff3c0'):(MOT_COL[uMotK(ui)]||'#fff3c0');};
 const heroAt=ui=>HEROES[ui-HERO_I0]||null;
@@ -9877,7 +9879,8 @@ const U_LOOK={
  gren2:{b:'wide',h:'face',k:'nade'},    rail2:{b:'norm',h:'visor',k:'batt'},
  frost2:{b:'norm',h:'ice',k:'tank2'},   chief:{b:'norm',h:'peak',k:'cloak'},
  tnk:{b:'norm',h:'',k:''},              mech:{b:'norm',h:'',k:''},
- titan:{b:'wide',h:'slit',k:''},        valk:{b:'norm',h:'wingh',k:''}
+ titan:{b:'wide',h:'slit',k:''},        /* ⚠ヴァルキリーは**細身**(2026-07-31ユーザー指示「光の剣をもった女剣士」)=34pxでは体型と髪でしか出せない */
+ valk:{b:'slim',h:'wingh',k:''}
 };
 const uLook=id=>U_LOOK[id]||{b:'norm',h:'helm',k:''};
 /* ⭐兵科32種の共通の色(2026-07-27 第102弾)。⚠ゾンビの `ZW` と同じ考え方=
@@ -10037,7 +10040,9 @@ function uHead0(c,k,U,hy){
   for(const s of[-1,0,1]){c.beginPath();c.moveTo(2+s*6-2,y-7);c.lineTo(2+s*6,y-15);c.lineTo(2+s*6+2,y-7);c.closePath();c.fill();c.stroke();}}
  else if(k==='peak'){cap('#4a5560');c.fillStyle='#4a5560';rr(c,7,y-3.4,9,3.4,1.5);c.fill();c.stroke();
   c.fillStyle=GOLD;c.fillRect(-3,y-8,10,2.4);}/* 制帽+金の線 */
- else if(k==='wingh'){cap(GOLD2,8.6);c.fillStyle=PAPER2;/* 翼の付いた兜 */
+ else if(k==='wingh'){/* ⚠**髪はここに描かない**=翼(武器の分岐)が後から重なって隠れる。
+     ヴァルキリーの髪は翼の**後**に描いている(2026-07-31) */
+  cap(GOLD2,8.6);c.fillStyle=PAPER2;/* 翼の付いた兜 */
   for(const s of[-1,1]){c.beginPath();c.moveTo(2+s*7,y-6);c.lineTo(2+s*16,y-13);c.lineTo(2+s*7,y-11);c.closePath();c.fill();c.stroke();}}
  else cap(RUST);
  /* ⭐顔(第102弾)。⚠それまで**黒い点が1つ**だけで、目にも見えず向きも読めなかった。
@@ -10819,15 +10824,33 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   /* ⭐**肩に載せた多連装の発射筒**(2026-07-31ユーザー指摘「円柱みたいな意味わからんやつ」)。
      ⚠それまで**角丸の長方形1本**で、何の道具か一切読めなかった。
      ⭐**筒の口を3つ見せる+弾頭を覗かせる**=『空爆支援を伴う精鋭』の道具だと分かる。 */
-  c.fillStyle='#585e4c';/* 筒の束(本体) */
-  c.beginPath();c.moveTo(2,-46.4);c.lineTo(21,-45);c.lineTo(21,-33.6);c.lineTo(2,-32.2);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade('#585e4c',1.34);/* 肩に載る台 */
-  c.beginPath();c.moveTo(0,-38.6);c.lineTo(6,-38.2);c.lineTo(5.2,-30.6);c.lineTo(-.6,-31);c.closePath();c.fill();c.stroke();
-  for(let k9=0;k9<3;k9++){const yy=-44+k9*4.2;
-   c.fillStyle='#2c333a';/* 筒の口(⚠塗りだけ=小さい円に黒フチを掛けると黒い円盤になる) */
-   c.beginPath();c.ellipse(20.4,yy,2.1,1.9,0,0,7);c.fill();
-   c.fillStyle=GOLD;/* 覗いている弾頭 */
-   c.beginPath();c.moveTo(21.6,yy-1.5);c.lineTo(25.6,yy);c.lineTo(21.6,yy+1.5);c.closePath();c.fill();}
+  /* ⭐⭐**光の剣**(2026-07-31ユーザー指示「光の剣をもった女剣士にしたい」)。
+     ⚠発射筒は捨てた。射程340・範囲130はそのままで、**斬撃が飛んでいって敵の所で爆ぜる**。
+     ⚠**細い線で描かない**=黒フチ2.4に食われて黒い棒になる。刃は半幅3以上いる。
+     ⭐刃を2枚(芯=白 / 外=金)にして「光っている」を出す。⚠柄と鍔で剣だと分かる */
+  c.save();c.translate(9,-29.4);c.rotate(-.3+Math.sin(t*3)*.03);
+  c.fillStyle='#6b5a3a';/* 柄 */
+  c.beginPath();c.moveTo(-7.4,-2.6);c.lineTo(-.6,-2.6);c.lineTo(-.6,2.6);c.lineTo(-7.4,2.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GOLD;/* 鍔(横に張り出す=剣だと一目で分かる) */
+  c.beginPath();c.moveTo(-1.6,-6.2);c.lineTo(2.6,-6.2);c.lineTo(2.6,6.2);c.lineTo(-1.6,6.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=WC;/* 刃のふち(金)。⚠先へすぼめる=長方形だと定規に見える */
+  c.beginPath();c.moveTo(2.2,-4.6);c.lineTo(26,-3.4);c.lineTo(34,0);c.lineTo(26,3.4);c.lineTo(2.2,4.6);c.closePath();c.fill();c.stroke();
+  /* ⚠⚠**芯は白く太く**=翼と同じ金一色だと「4枚目の翼」にしか見えない(撮って直した)。
+     刃の面積の大半を白にして、金はふちだけに残す=これで『光の剣』に読める */
+  c.fillStyle='#fff6d8';
+  c.beginPath();c.moveTo(3.4,-2.9);c.lineTo(26,-2);c.lineTo(30.4,0);c.lineTo(26,2);c.lineTo(3.4,2.9);c.closePath();c.fill();
+  c.restore();
+  /* ⭐**髪は翼の後**に描く=翼より前に出さないと隠れる。
+     ⚠武器の分岐は0.86倍の中なので、**割り戻してから**描かないと頭とずれる */
+  {c.save();c.translate(0,-28);c.scale(1/WK,1/WK);c.translate(0,28);
+   /* ⚠**翼と同じ金にしない**=同化して髪だと分からない。明るい金髪に振る(撮って直した) */
+   c.fillStyle='#f2d98f';c.lineWidth=2.4;
+   /* ⚠**大きく広げない**=翼が4枚あるようにしか見えない(撮って縮めた)。
+      頭の輪郭に沿わせて肩まで=これで髪だと読める */
+   c.beginPath();c.moveTo(-2.6,-46.4);
+   c.quadraticCurveTo(-9.6,-43.4,-9,-31.6);
+   c.quadraticCurveTo(-4.6,-33.6,-2,-39.4);
+   c.closePath();c.fill();c.stroke();c.restore();}
   c.fillStyle=GOLD;c.beginPath();c.moveTo(-2,-50);c.lineTo(2,-58);c.lineTo(6,-50);c.closePath();c.fill();c.stroke();
   if(vt>=3&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(16,-40,4+Math.sin(t*10)*2,0,7);c.fill();c.globalAlpha=1;}}
  c.restore();/* 武器の縮小ここまで */
@@ -11138,7 +11161,7 @@ function awardWavePts(C,quit){
 /* エフェクトの持ち時間。⚠ここと描画側の割り算を必ず揃えること(ずれると途中で消える/残る) */
 const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slash:.26,shock:.5,
  toss:.3,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
- beam:.3,pel:.16,spread:.22,pboom:.55};
+ beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24};
 /* ⚠寿命が1つずつ違う演出は ex に `lf` を持たせる(投擲=飛ぶ距離で / 死体=大きさで変わる)。
    `d0` は「その秒数だけ待ってから始まる」=絨毯爆撃の時間差に使う */
 const fxLife=(k,e)=>(e&&e.lf!=null)?e.lf:(FX_LIFE[k]!==undefined?FX_LIFE[k]:.5);
@@ -11216,6 +11239,13 @@ function drawUChg(c,u,t,lay){
   c.beginPath();c.arc(bx,by,(4+6*k)*CH_UP,0,7);c.fill();
   c.lineWidth=5;c.globalAlpha=.22*k;
   c.beginPath();c.arc(x,y-30*CH_UP,(16+8*k)*CH_UP,fx9<0?.4:2.2,fx9<0?2.2:4.0);c.stroke();
+ }else if(M==='slash'){
+  /* ⭐斬撃: 剣の刃そのものに光が溜まり、振る先の弧が薄く出る */
+  c.globalAlpha=.28+.6*k;c.lineWidth=(4+7*k);c.lineCap='round';
+  c.beginPath();c.moveTo(mx-fx9*10*CH_UP,my-10*CH_UP);c.lineTo(mx+fx9*12*CH_UP,my-20*CH_UP);c.stroke();
+  c.globalAlpha=.18*k;c.lineWidth=7;
+  c.beginPath();c.arc(x,y-30*CH_UP,(20+10*k)*CH_UP,fx9<0?2.0:-0.9,fx9<0?4.2:1.3);c.stroke();
+  c.lineCap='butt';
  }else if(M==='cast'){
   /* 術者: 杖の先に光が溜まる */
   c.globalAlpha=.3+.6*k;
@@ -11935,6 +11965,25 @@ function campStep(C,dt,wave){
      if(f9>0)later(C,f9,im9);else im9();}
     else if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){dmgZ(C,z,ua,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}
      const tx9=tg.px,ty9=tg.py,fire9=U.type==='fire';
+     /* ⭐⭐**斬撃型(ヴァルキリー)は投げない=光の刃が飛んでいって斬り裂く**
+        (2026-07-31ユーザー指示「遠距離斬撃キャラにしよう」)。
+        ⚠射程340・範囲130はそのまま=遊びの数値は一切変えていない。見せ方だけ差し替える。 */
+     if(uMotK(u.ui)==='slash'){
+      const scl9=U.c||'#ffe9a8',sx9=u.px+(u.dr||-1)*26*CH_UP,sy9=u.py-30*CH_UP;
+      const sa9=Math.atan2((ty9-20*CH_UP)-sy9,tx9-sx9);
+      const lf9=clamp(dist(sx9,sy9,tx9,ty9)/1500,.1,.3);
+      u.fireT=.16;
+      if(FXLV>0)addFx(C,'wave',sx9,sy9,'',{x2:tx9,y2:ty9-16*CH_UP,lf:lf9,col:scl9});
+      const im8=()=>{
+       /* 着弾=十字に斬り裂く(爆風ではない)。⚠2本にすると「斬った」に見える */
+       addFx(C,'slash',tx9,ty9-16*CH_UP,'',{ang:sa9-.5,r:U.aoe*.52,lv:3,col:scl9});
+       addFx(C,'slash',tx9,ty9-16*CH_UP,'',{ang:sa9+2.3,r:U.aoe*.42,lv:2,col:'#fff6d8'});
+       addFx(C,'ring',tx9,ty9,'',{r:U.aoe,col:scl9});
+       addP(C,9,tx9,ty9-14*CH_UP,{sp:190,g:260,life:.35,r:2.2,col:scl9});
+       C.shake=Math.max(C.shake||0,.12);
+       if(C.isMe)sfx.boom();};
+      if(lf9>0&&FXLV>0)later(C,lf9,im8);else im8();
+     }else{
      const im9=()=>{addFx(C,U.type==='blast'?'boom':'ring',tx9,ty9,'',{r:U.aoe,col:'#ffb347'});
       addP(C,7,tx9,ty9-10,{sp:160,up:50,g:520,life:.4,r:2.6,col:'#ffb347'});
       addP(C,4,tx9,ty9-10,{sp:50,up:30,g:-30,life:.9,r:6,col:'#6e6354',typ:'smoke'});
@@ -11944,7 +11993,7 @@ function campStep(C,dt,wave){
       if(C.isMe&&U.type==='blast')sfx.boom();};
      const f9=tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c');
      if(f9>0)later(C,f9,im9);else im9();
-     if(U.aoe>=100)u.fireT=.14;}
+     if(U.aoe>=100)u.fireT=.14;}}
     else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
     else{dmgZ(C,tg,ua,pierce);
      /* ⭐進化段階が上がるほどエフェクトを豪華にする(ユーザー指示)。英雄は最大 */
@@ -13346,6 +13395,19 @@ function renderCamp(C,t){
      c.quadraticCurveTo(bx+w8*pass[0]*1.3,by-h8*pass[0]*.6,bx+w8*pass[0],by);
      c.closePath();c.fill();}}
    c.globalAlpha=1;c.restore();}
+  else if(e.k==='wave'){/* ⭐⭐飛ぶ光の斬撃(ヴァルキリー・2026-07-31)。
+     ⚠**丸い弾にしない**=それでは魔法弾に見える。**進行方向に対して開いた三日月**にすること。
+     ⚠細い線は黒フチの無い加算では消えるので、太い芯+細い白の2本で引く */
+   const lfW=fxLife('wave',e),p9=clamp(e.t/lfW,0,1);
+   const wx=e.x+(e.x2-e.x)*p9,wy=e.y+(e.y2-e.y)*p9;
+   const wa=Math.atan2(e.y2-e.y,e.x2-e.x);
+   c.save();c.translate(wx,wy);c.rotate(wa);
+   c.globalAlpha=.9-p9*.25;c.lineCap='round';
+   c.strokeStyle=e.col||'#ffe9a8';c.lineWidth=6.5;
+   c.beginPath();c.arc(-16,0,20,-1.05,1.05);c.stroke();
+   c.strokeStyle='rgba(255,255,255,.95)';c.lineWidth=2.4;
+   c.beginPath();c.arc(-16,0,20,-.78,.78);c.stroke();
+   c.lineCap='butt';c.globalAlpha=1;c.restore();}
   else if(e.k==='pel'){/* ⭐ドローンが撃つ小粒の弾(2026-07-26 第68弾)。短い尾を引いて飛ぶ */
    const lfP=fxLife('pel',e),p6=clamp(e.t/lfP,0,1);
    const bx=e.x+(e.x2-e.x)*p6,by=e.y+(e.y2-e.y)*p6;

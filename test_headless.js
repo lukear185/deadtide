@@ -1520,6 +1520,13 @@ function checkFx2(){
  {const k=run('flm',true);
   need(k,'flame','火炎放射兵の炎が出ていない');
   if(k.tr){console.log('FAIL: 火炎放射兵がまだ銃の曳光線を出している');process.exit(1);}}
+ /* ⭐ヴァルキリー=遠距離斬撃(2026-07-31ユーザー指示)。
+    飛ぶ光の刃(wave)が出て、着弾で斬撃(slash)になること。⚠爆発(boom)には**しない** */
+ {const k=run("valk",true,80);
+  need(k,"wave","ヴァルキリーの飛ぶ斬撃が出ていない");
+  need(k,"slash","ヴァルキリーの着弾の斬撃が出ていない");
+  if(k.toss){console.log("FAIL: ヴァルキリーがまだ物を投げている");process.exit(1);}
+  if(k.boom){console.log("FAIL: ヴァルキリーの着弾が爆発のままになっている");process.exit(1);}}
  /* 撃破: 敵が倒れる(死体が残る) */
  {const k=run('grn',false,40);
   need(k,'corpse','倒した敵の死体が出ていない');}
