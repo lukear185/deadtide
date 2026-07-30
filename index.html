@@ -14024,7 +14024,12 @@ function campStep(C,dt,wave){
       u.fireT=.07;
       addFx(C,'tr',mx9,my9,'',{x2:tg.px+rnd(-11,11),y2:tg.py-20*CH_UP+rnd(-9,9),
        col:'rgba(255,214,120,',w:1.7+utl*.3});
-      if(FXLV>0){addFx(C,'mzl',mx9,my9,'',{ang:ang9,r:7+utl*2,col:ucl});
+      /* ⭐⭐**連射の型は閃光を間引く**(2026-08-01ユーザー指摘
+         「短機関銃兵の攻撃時のフラッシュがキャラが見えなくなるレベル」)。
+         ⚠1秒に3〜6発撃つので、他の型と同じ大きさ・濃さで**毎発**出すと体が光に埋まる。
+         ⭐**2発に1回だけ・小さく(r半分)・薄く(al.5)・白い芯も小さく(core.24)**。
+         ⚠威力も間隔も触っていない=見せ方だけ。⚠ミニガンも同じ枝なので一緒に直る。 */
+      if(FXLV>0){if(Math.random()<.5)addFx(C,'mzl',mx9,my9,'',{ang:ang9,r:4.6+utl*1.1,col:ucl,al:.5,core:.24});
        addP(C,2,u.px,u.py-24*CH_UP,{sp:95,a:d5<0?2.1:1,spread:.55,up:50,g:650,life:.9,r:1.4,col:DIM,typ:'shell',gr:u.py});
        hitFx(C,tg,ang9,ucl,pierce,U.type);}
       if(C.isMe&&Math.random()<.34)sfx.shot();}
@@ -15284,13 +15289,14 @@ function renderCamp(C,t){
     c.beginPath();c.moveTo(e.x+Math.cos(a)*r0,e.y+Math.sin(a)*r0*.6);c.lineTo(e.x+Math.cos(a)*r1,e.y+Math.sin(a)*r1*.6);c.stroke();}c.globalAlpha=1;}
   else if(e.k==='mzl'){/* 銃口の閃光。⚠丸だけだと「撃った」感じが出ないので向き(ang)に扇形で出す */
    const a4=Math.max(0,1-e.t/fxLife('mzl')),r4=(e.r||14)*(.55+a4*.85);
-   c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);c.globalAlpha=a4;
+   /* ⚠`al`=濃さの上限 / `core`=白い芯の大きさ。**連射の型はここを下げて体が光に埋まらないようにする** */
+   c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);c.globalAlpha=a4*(e.al!=null?e.al:1);
    c.fillStyle=e.col||GLOW;
    c.beginPath();c.moveTo(0,0);c.lineTo(r4*1.7,-r4*.45);c.lineTo(r4*2.1,0);c.lineTo(r4*1.7,r4*.45);c.closePath();c.fill();
    c.strokeStyle=e.col||GLOW;c.lineWidth=2;
    for(let i4=0;i4<4;i4++){const aa=(i4-1.5)*.5;
     c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(aa)*r4*1.4,Math.sin(aa)*r4*1.4);c.stroke();}
-   c.fillStyle='#fff';c.beginPath();c.arc(0,0,r4*.45,0,7);c.fill();
+   c.fillStyle='#fff';c.beginPath();c.arc(0,0,r4*(e.core!=null?e.core:.45),0,7);c.fill();
    c.globalAlpha=1;c.restore();}
   else if(e.k==='hit'){/* 着弾。⚠飛来した向きの**逆へ**破片が散る(向きが合っていないと当たった感じにならない) */
    const a4=Math.max(0,1-e.t/fxLife('hit'));
