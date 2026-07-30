@@ -676,6 +676,33 @@ function checkLabSteps(){
 /* ⭐まとめ買い(×5)の検査。⚠**値段だけ合っていても駄目**で、
    「払った段数ぶん実際に上がるか」「残りが足りない時に縮むか」「表に無い項目は1回きりか」を見る。
    ⚠DOMを見ても分からない(ヘッドレスは差し込んだ要素を数えられない)ので LAB_ITEMS を見る */
+/* ⭐⭐**攻撃の溜め**の検査(2026-07-30)。⚠見るのは3つ:
+   ①溜めたぶんが1発の威力で戻っているか(実効DPSが表と一致するか)
+   ②**溜めが攻撃間隔に対して長すぎないか**(1発が重くなりすぎると、DPSが同じでも
+     数の多い相手に弱くなる=オーバーキルで威力がこぼれ、同時に相手できる敵も減る)
+   ③溜めが0.9秒を超えてよいのは間隔の長い砲だけか */
+function checkUChg(){
+ let mx=0,mxId='',n0=0,long=[];
+ for(let i=0;i<UNITS.length;i++){const U=UNITS[i],ct=uChgT(i),m=uChgM(i);
+  if(ct<0){console.log('FAIL: 溜めが負になっている '+U.id);process.exit(1);}
+  if(ct===0)n0++;
+  /* ①実効DPS=表の atk/rate と一致すること(test_balance が表で見ているので、ここがズレると嘘になる) */
+  const eff=(U.atk*m)/(U.rate+ct),paper=U.atk/U.rate;
+  if(Math.abs(eff-paper)>paper*1e-9){
+   console.log('FAIL: '+U.id+' の実効DPSが表とズレている '+eff.toFixed(2)+' vs '+paper.toFixed(2));process.exit(1);}
+  /* ②溜めは攻撃間隔の CHG_CAP 倍まで=1発の倍率は 1+CHG_CAP を超えない */
+  if(ct>U.rate*CHG_CAP+1e-9){
+   console.log('FAIL: '+U.id+' の溜めが攻撃間隔に対して長すぎる '+ct+'秒(間隔'+U.rate+'秒)');process.exit(1);}
+  if(m>mx){mx=m;mxId=U.id;}
+  if(ct>.9)long.push(U.id+'('+ct+'秒/間隔'+U.rate+'秒)');}
+ if(mx>1+CHG_CAP+1e-9){console.log('FAIL: 1発の倍率が上限を超えている '+mxId+' x'+mx.toFixed(2));process.exit(1);}
+ if(!n0){console.log('FAIL: 溜め0秒の兵科が1つも無い(テンポを担保する枠が必要)');process.exit(1);}
+ /* ③0.9秒を超える溜めは、間隔1.5秒以上の砲だけ */
+ for(const q of long){const id=q.split('(')[0],U=UNITS.find(u=>u.id===id);
+  if(U.rate<1.5){console.log('FAIL: '+id+' は間隔が短いのに溜めが0.9秒を超えている');process.exit(1);}}
+ console.log('攻撃の溜め: 溜め0秒'+n0+'種 / 1発の最大倍率 x'+mx.toFixed(2)+'('+mxId+')'
+  +' / 特大枠 '+(long.length?long.join('・'):'なし')+' / 実効DPSは表と一致 OK');
+}
 function checkLabMul(){
  const keep=META.pts;
  META.pts=999999;META.tw={};META.un={};META.st0=0;META.nt=3;META.nu=3;
@@ -2295,7 +2322,7 @@ checkResumeFarm();
 checkTwNew();
 checkPerUp();
 checkLabSteps();
-checkLabMul();
+checkLabMul();checkUChg();
 checkCryo();
 checkBeam();
 checkCoil();

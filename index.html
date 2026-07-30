@@ -2469,7 +2469,16 @@ const U_MOT={
 };
 const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
 const uMotK=ui=>uMot(ui)[0];
-const uChgT=ui=>uMot(ui)[1];
+/* ⭐⭐**溜めは「その兵科の攻撃間隔」に対して頭打ちにする**(2026-07-30ユーザー指摘
+     「前まで攻撃速度がある程度早かったキャラが遅くなって、数が多いときに押されやすくなってる」)。
+   ⚠⚠**DPSが同じでも、1発が重くなると数の多い相手には弱くなる**=雑魚1体に必要以上の威力が乗って
+     こぼれる(オーバーキル)。しかも撃つ回数が減るぶん、同時に相手できる敵の数も減る。
+     ミニガン(間隔0.16秒)に0.5秒の溜めを付けたら、**1発4.1倍・撃つ回数1/4**の別物になっていた。
+   ⭐直し方=**溜めは間隔の CHG_CAP 倍まで**。1発の倍率は必ず1.6倍以内に収まる。
+     間隔の長い砲(レール狙撃2.6秒・ヴァルキリー1.8秒)は表の値のまま=特大枠はちゃんと残る。 */
+const CHG_CAP=.6;
+const uChgT=ui=>{const U=UNITS[ui],t=uMot(ui)[1];
+ return (U&&U.rate>0)?Math.min(t,U.rate*CHG_CAP):t;};
 const uChgM=ui=>{const U=UNITS[ui],ct=uChgT(ui);return (U&&U.rate>0&&ct>0)?(U.rate+ct)/U.rate:1;};
 /* ⭐**完全固有にする範囲**(ユーザー決定): 英雄は★4以上の5人 / 兵科は★が付く上級(uTier>=3)。
    ⚠★3以下を固有にすると高レアの希少性が薄れる。★3以下は型のままでよい。
@@ -11579,6 +11588,12 @@ function campStep(C,dt,wave){
       hitFx(C,tg,aa,ucl,pierce,U.type);}}
    }
   }else{u.ct=0;/* ⚠**u.chg は消さない**=溜めの進行度は次の対象へ引き継ぐ(設計の3番目) */
+   /* ⭐⭐**歩いている間に構えておく**(2026-07-30ユーザー指摘)。
+      ⚠溜めを入れると**接敵した最初の1発が必ず遅れる**ので、波が当たった瞬間に押し込まれる。
+        持続DPSは戻してあっても、ぶつかった瞬間だけは戻っていなかった。
+      ⚠**絵は出さない**(u.ct=0)=歩きながら光らせると何が起きているのか分からない。
+      ⚠硬直中(u.cd>0)は溜めない=撃った直後に歩いても間隔は縮まらない。 */
+   {const cg8=uChgT(u.ui);if(cg8>0&&u.cd<=0)u.chg=Math.min(1,(u.chg||0)+dt/cg8);}
    const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(fD+uStand(U),60,PLEN-40),df=goal-u.d;
    if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;}else u.back=false;}
  }
