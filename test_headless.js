@@ -229,7 +229,16 @@ function checkFinalBoss(){
    const b=G.tide.pool.find(e=>e.boss);
    got.push(b?ZOMBIES[b.z.zi].n:'なし');
   }
-  console.log(nm+': WAVE15のボス='+got[0]+' / 最終WAVE20のボス='+got[1]);
+  /* ⭐**最終ウェーブの主(siege)**が1体だけ付いていること(2026-07-30)。
+     ⚠それまでは最終ボスに抜かれてもコアが残っていれば「クリア」になっていた。 */
+  {buildTide(20);const sg=G.tide.pool.filter(e=>e.z.siege);
+   if(sg.length!==1){console.log('FAIL: 最終ウェーブの主が1体になっていない('+nm+' '+sg.length+'体)');process.exit(1);}
+   if(!sg[0].boss){console.log('FAIL: ボスが出る波なのに主がボスでない('+nm+')');process.exit(1);}
+   /* 中盤の波には主を付けない */
+   buildTide(10);
+   if(G.tide.pool.some(e=>e.z.siege)){console.log('FAIL: 最終ウェーブでない波に主が付いている('+nm+')');process.exit(1);}
+   buildTide(20);}
+  console.log(nm+': WAVE15のボス='+got[0]+' / 最終WAVE20のボス='+got[1]+' / 最終波の主=1体 OK');
   if(!ZOMBIES[fi]||got[1]!==ZOMBIES[fi].n){console.log('FAIL: 最終ボスが出ていない('+nm+')');process.exit(1);}
   if(got[0]===got[1]){console.log('FAIL: 通常ボスと最終ボスが同じ('+nm+')');process.exit(1);}
   backTitle();
