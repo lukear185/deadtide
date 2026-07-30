@@ -2417,6 +2417,8 @@ const HEROES=[
  /* ⭐★5の3人目(2026-08-01ユーザーの絵から起こした)。**18人でただ1人の騎乗**。
     ⚠排出率は「1体あたり」なので数値表は触らない=★5の枠が 0.2%→0.3% に自動で太くなる。
     ⚠終焉の騎士と題材が近いので**速さと範囲**で役割を分ける=馬で駆けて薙ぎ払う。 */
+ {id:'hGeo',n:'狙撃王ジョルジ',rk:5,hp:5200,atk:1400,rate:1.9,sp:70,c:'#4e5b41',ty:'pierce',rng:520,uch:56,ult:'一撃必殺',udsc:'画面上のHPが高い敵5体を撃ち抜いて、しばらく足を止める'},
+ {id:'hPyro',n:'紅蓮の大魔導士',rk:5,hp:5600,atk:760,rate:1.2,sp:60,c:'#c8323c',ty:'fire',rng:300,aoe:120,burn:40,uch:58,ult:'紅蓮の柱',udsc:'道の3か所に業火の柱を立て、しばらく燃やし続ける'},
  {id:'hDark',n:'暗黒の騎士',rk:5,hp:7000,atk:1020,rate:1.1,sp:96,c:'#8f1f28',ty:'blast',rng:80,aoe:105,uch:56,ult:'漆黒の突撃',udsc:'道を端まで駆け抜けて、触れた敵を薙ぎ倒し暗黒の炎を残す'}
 ];
 const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
@@ -2542,7 +2544,7 @@ const U_MOT={
  hFire:['heat',.3],hHunt:['snipe',.5],hSf:['snipe',.8],hBomb:['toss',.4],
  hMed:['cast',.3],hSeer:['cast',.8],hVenom:['cast',.7],hMag:['mag',.7],
  hGiant:['now',.6],hStorm:['bolt',.8],hReact:['heat',.9],
- hNox:['snipe',1.2],hDawn:['cast',1],hDark:['now',.36]
+ hNox:['snipe',1.2],hDawn:['cast',1],hDark:['now',.36],hGeo:['snipe',1.3],hPyro:['cast',.9]
 };
 const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
 const uMotK=ui=>uMot(ui)[0];
@@ -9673,8 +9675,10 @@ const H_LOOK={
  hReact:{cape:0,h:'hazmat',w:'rod',    k:'drum',  c2:'#6b6340'},/* 炉心の番人: 防護頭巾+燃料棒+ドラム缶 */
  hNox  :{cape:1,h:'skull', w:'scythe', k:'',      c2:'#3f2c38'},/* 終焉の騎士: 髑髏兜+大鎌 */
  /* ⚠暁の王は**マント無し**=マントも翼も金色なので、重ねると翼が消える(色が近い物を重ねない) */
- hDawn :{cape:0,h:'halo',  w:'banner', k:'wing',  c2:'#8a7452'},/* 暁の王: 光輪+軍旗+光の翼 */
- hDark :{cape:1,h:'horn',  w:'gsword', k:'steed', c2:'#3a3440'} /* 暗黒の騎士: 角兜+大剣+黒馬(騎乗) */
+ hDawn :{cape:1,h:'halo',  w:'sceptre',k:'wing',  c2:'#2b2620'},/* 暁の王: 光輪+軍旗+光の翼 */
+ hDark :{cape:1,h:'horn',  w:'gsword', k:'steed', c2:'#3a3440'},/* 暗黒の騎士: 角兜+大剣+黒馬(騎乗) */
+ hGeo  :{cape:1,h:'plume', w:'lrifle', k:'cape2', c2:'#3f4a35'},/* 狙撃王: 羽根つば広帽+白い丸眼鏡+長銃 */
+ hPyro :{cape:1,h:'darkh', w:'fstaff', k:'robe',  c2:'#5c1f24'} /* 紅蓮の大魔導士: 深紅の頭巾+炎の杖 */
 };
 /* ============ 🦸英雄18人の「専用の体」(2026-08-01) ============
    ⭐ユーザー指示「英雄18人」。⚠それまで英雄は**全員が同じ胴・同じ脚・同じ腕**で、
@@ -10178,123 +10182,289 @@ HBODY.hReact=(c,U,walk,t,ph,o)=>{
  c.strokeStyle=INK;c.lineWidth=2.4;
  c.restore();
 };
-/* ---- 終焉の騎士「死の宣告」= 黒鎧と赤いマント・髑髏兜・大鎌 ---- */
+/* ---- ★5 終焉の騎士 = ユーザーが「理想」の絵を出してくれたので描き直した(2026-08-01)。
+   ⭐絵の要点6つ: ①**頭巾から尖った耳が2本**(黒・内側が赤) ②**白い髑髏の顔**(黒い眼窩2つ+**牙2本**)
+     ③黒紫の装甲と**段になった肩当て**(2枚重ね・左右で大きさが違う)
+     ④胸の**赤い菱形**と**帯の赤い四角の宝石** ⑤**大きな赤い前垂れ(タバード)**
+     ⑥ぼろぼろの暗赤のマント+**赤い刃の大鎌**。
+   ⚠直す前は「丸い髑髏に角2本」で、耳の内側の赤・肩の段・前垂れ・牙が無かった=安っぽさの正体。
+   ⚠暗黒の騎士(角兜+大剣+騎乗)と必ず分ける=**こちらは髑髏の顔と大鎌**。 ---- */
 HBODY.hNox=(c,U,walk,t,ph,o,rk)=>{
- const SK=U_SKIN,C1=U.c||DANGER,C2='#3f2c38',PA='#4a3e4a',SHO='#241f19',rc=bRc(o);
+ const SK=U_SKIN,C1=U.c||DANGER,AR='#332c3c',AR2='#463c52',AR3='#574a63',
+       RD='#c8202c',RD2='#8f1f28',BN='#e8e4d8',PA='#4a3e4a',SHO='#241f19',rc=bRc(o);
  hLeg2(c,walk,PA,SHO,4,1.06);
  hTop(c,t,ph,-.02);
- hCape(c,C1,rk||5,walk);
+ /* ぼろぼろのマント(⚠裾を破る=ただの三角だと布に見えない) */
+ c.fillStyle=RD2;c.beginPath();c.moveTo(-6,-40.4);c.lineTo(-15.4-rk*.6,-16+walk*2.2);
+ for(let i=0;i<4;i++)c.lineTo(-13+i*4.6,-6+((i%2)?7:1));
+ c.lineTo(6,-6);c.lineTo(7,-38.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(RD2,.66);c.beginPath();c.moveTo(-6,-40.4);c.lineTo(-15.4-rk*.6,-16+walk*2.2);
+ c.lineTo(-9.4,-8);c.lineTo(-4.4,-38);c.closePath();c.fill();
  const g1=bHold(c,rc,4.8,-34.6,-.34,-2,-1);
- bArm(c,-4.8,-34.8, 3.4,-32.4, 10.4,-29.4, 5.2,4.2, shade(C2,.72),shade(C2,.6));
+ bArm(c,-4.8,-34.8, 3.4,-32.4, 10.4,-29.4, 5.2,4.2, shade(AR,.72),shade(AR,.6));
  g1();
- bTorso(c,C2,[10.4,7.6,HSK.y0,HSK.y1]);
- c.fillStyle=shade(C2,1.4);/* 黒鎧の胸板 */
+ bTorso(c,AR,[10.4,7.6,HSK.y0,HSK.y1]);
+ c.fillStyle=AR2;/* 黒紫の胸板 */
  c.beginPath();c.moveTo(-8.4,-36.8);c.lineTo(8.6,-36.4);c.lineTo(7.6,-25.4);c.lineTo(-7.6,-25.8);c.closePath();c.fill();c.stroke();
- c.fillStyle=C1;c.beginPath();c.moveTo(-3.4,-34.4);c.lineTo(1.6,-30.4);c.lineTo(6.6,-34.4);
- c.lineTo(1.6,-27.4);c.closePath();c.fill();/* 胸の印 */
- c.fillStyle=shade(C2,1.6);/* 肩甲(左右で大きさを変える) */
- c.beginPath();c.moveTo(-14.4,-39.4);c.lineTo(-3,-40);c.lineTo(-2,-32.4);c.lineTo(-15.4,-31.6);c.closePath();c.fill();c.stroke();
- c.fillStyle=UW.blt;c.fillRect(-8,-25.2,16,2.8);c.strokeRect(-8,-25.2,16,2.8);
- c.fillStyle=C1;c.fillRect(-2,-25.6,4,3.6);
+ c.fillStyle=shade(AR2,.78);c.fillRect(-8.2,-31.4,16.4,1.8);
+ c.fillStyle=RD;/* 胸の赤い菱形 */
+ c.beginPath();c.moveTo(.6,-34.4);c.lineTo(3.6,-30.4);c.lineTo(.6,-26.4);c.lineTo(-2.4,-30.4);c.closePath();c.fill();c.stroke();
+ /* ⭐段になった肩当て(2枚重ね・⚠左右で大きさを変える=対称だとハリボテ) */
+ c.fillStyle=AR3;
+ c.beginPath();c.moveTo(-15.4,-39.4);c.lineTo(-2.6,-40.4);c.lineTo(-1.6,-34.4);c.lineTo(-16.4,-33.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=AR2;
+ c.beginPath();c.moveTo(-14.4,-34.6);c.lineTo(-2,-35.4);c.lineTo(-1.4,-29.4);c.lineTo(-15.4,-28.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=AR3;
+ c.beginPath();c.moveTo(2.6,-40.4);c.lineTo(13.4,-39.4);c.lineTo(14.4,-34);c.lineTo(1.8,-34.8);c.closePath();c.fill();c.stroke();
+ /* 帯+赤い四角の宝石 */
+ c.fillStyle=SHO;c.fillRect(-8.4,-25.4,16.8,3.4);c.strokeRect(-8.4,-25.4,16.8,3.4);
+ c.fillStyle=RD;c.fillRect(-2.4,-25.8,4.8,4.2);c.strokeRect(-2.4,-25.8,4.8,4.2);
+ /* ⭐大きな赤い前垂れ(⚠これが輪郭で一番効く。膝の上で切る=脚が消えない) */
+ c.fillStyle=RD;
+ c.beginPath();c.moveTo(-5.4,-22.4);c.lineTo(5.6,-22.4);c.lineTo(6.4,-11.4+walk);
+ c.lineTo(.6,-7.4);c.lineTo(-5.6,-11-walk);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(RD,.78);c.beginPath();c.moveTo(-5.4,-22.4);c.lineTo(.6,-22.4);c.lineTo(.6,-7.6);c.lineTo(-5.6,-11);c.closePath();c.fill();
  {const g2=bHold(c,rc,4.8,-34.6,-.34,-2,-1);
-  c.fillStyle='#3a3128';c.save();c.translate(9,-38);c.rotate(-.16);/* 大鎌の柄 */
+  c.fillStyle='#2b2630';c.save();c.translate(9,-38);c.rotate(-.16);/* 大鎌の柄 */
   rr(c,-3.2,-30,6.4,58,2);c.fill();c.stroke();c.restore();
-  c.fillStyle=DIM;/* 大きく反った刃 */
+  c.fillStyle=AR3;/* 大きく反った刃 */
   c.beginPath();c.moveTo(6.4,-70);c.quadraticCurveTo(31,-64,27,-43);
   c.quadraticCurveTo(25,-58,4.4,-63);c.closePath();c.fill();c.stroke();
-  c.fillStyle=C1;c.globalAlpha=.5+.5*rc;
+  c.fillStyle=RD;/* ⭐赤い刃(⚠内側の縁だけ赤くする=全部赤くすると板に見える) */
+  c.globalAlpha=.85+.15*rc;
   c.beginPath();c.moveTo(7.4,-68.4);c.quadraticCurveTo(27,-63,24,-48);
   c.quadraticCurveTo(23,-58,6,-62.4);c.closePath();c.fill();c.globalAlpha=1;
-  bArm(c,4.8,-34.6, 7.8,-33.4, 9.4,-36.4, 5.4,4.3, shade(C2,1.3),shade(C2,.9));g2();}
- bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
- c.fillStyle=PAPER2;c.beginPath();c.arc(1.6,HSK.fy-1.4,8.8,0,7);c.fill();c.stroke();/* 髑髏兜 */
- c.fillStyle=INK;c.beginPath();c.arc(-1.4,HSK.fy-1.4,2.1,0,7);c.fill();
- c.beginPath();c.arc(5.4,HSK.fy-1.4,2.1,0,7);c.fill();
- c.fillRect(-.8,HSK.fy+4.4,5,3.2);
- c.fillStyle=C1;for(const s of[-1,1]){c.beginPath();c.moveTo(1.6+s*6.4,HSK.fy-6.4);
-  c.lineTo(1.6+s*15.4,HSK.fy-18);c.lineTo(1.6+s*11.4,HSK.fy-4.4);c.closePath();c.fill();c.stroke();}
+  bArm(c,4.8,-34.6, 7.8,-33.4, 9.4,-36.4, 5.4,4.3, shade(AR,1.3),shade(AR,.9));g2();}
+ bNeck(c,1.6,HSK.nk0,HSK.nk1,shade(SK,.5));
+ /* ⭐頭巾から尖った耳2本(⚠内側を赤くする=これが無いとただの角に見える) */
+ c.fillStyle=AR;
+ for(const s of[-1,1]){const L=s<0?17.4:19.4;/* ⚠左右で長さを変える */
+  c.beginPath();c.moveTo(1.6+s*4.4,HSK.fy-6);
+  c.lineTo(1.6+s*7.4,HSK.fy-L);c.lineTo(1.6+s*10.4,HSK.fy-3.4);c.closePath();c.fill();c.stroke();}
+ c.fillStyle=RD;
+ for(const s of[-1,1]){const L=s<0?12.4:14;
+  c.beginPath();c.moveTo(1.6+s*6.4,HSK.fy-6.4);
+  c.lineTo(1.6+s*7.6,HSK.fy-L);c.lineTo(1.6+s*8.8,HSK.fy-5);c.closePath();c.fill();}
+ c.fillStyle=AR;/* 頭巾の本体 */
+ c.beginPath();c.arc(1.6,HSK.fy-1.4,9.4,Math.PI,0);c.lineTo(10.4,HSK.fy+7);c.lineTo(-7.2,HSK.fy+7);c.closePath();c.fill();c.stroke();
+ /* ⭐白い髑髏の顔(⚠黒い眼窩2つ+**牙2本**。牙が無いと「白い丸」で終わる) */
+ c.fillStyle=BN;c.beginPath();c.ellipse(1.6,HSK.fy-.4,6.6,7,0,0,7);c.fill();c.stroke();
+ c.fillStyle=INK;
+ c.beginPath();c.ellipse(-1.2,HSK.fy-1.4,2.3,2.6,0,0,7);c.fill();
+ c.beginPath();c.ellipse(4.4,HSK.fy-1.4,2.3,2.6,0,0,7);c.fill();
+ c.fillStyle=BN;/* 牙2本(⚠長さを変える) */
+ c.beginPath();c.moveTo(-.4,HSK.fy+4.2);c.lineTo(1,HSK.fy+4.2);c.lineTo(.6,HSK.fy+7.4);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(2.4,HSK.fy+4.2);c.lineTo(3.8,HSK.fy+4.2);c.lineTo(3.4,HSK.fy+6.6);c.closePath();c.fill();c.stroke();
  c.restore();
 };
-/* ---- 暁の王「暁の号令」= ★5の格を出す(2026-08-01ユーザー指摘「暁の王がダサすぎる」)。
-   ⚠直す前は ①上着が**くすんだ茶**で18人中いちばん地味 ②翼が**細長い葉っぱ3枚**で羽根に見えない
-     ③頭が**茶色の半円+薄い金の楕円**=王冠が無い ④旗が細くて頭上のずっと上にあり読めない、だった。
-   ⭐直し方は4つ: **①白と金で塗る**(茶をやめる) **②翼は羽根の骨で割り後縁を扇形に欠く**
-     **③王冠(尖り不揃い)+頭の後ろに光輪** **④旗を短く太く**して体の横で読める大きさにする。
-   ⚠加算(lighter)の光は**細い芯だけ**(太い面を加算すると白い塊になる)。 ---- */
+/* ---- ★5 暁の王 = ユーザーが「理想」の絵を出してくれたので描き直した(2026-08-01・2回目)。
+   ⭐絵の要点7つ: ①頭上に浮く**輪郭のはっきりした金の光輪**(輪であって板ではない)
+     ②**金の王冠**(尖り3本+額の橙の菱形)+黒い髪  ③**金と白の翼**(上段が金・下段が白)
+     ④黒地に**金縁**の鎧+**胸の金の四芒星**  ⑤**白と金のマント**(内側は赤)
+     ⑥白い前垂れ+**赤い縦帯**に金の菱形  ⑦**黒い柄+金の星の穂先の錫杖**。
+   ⚠1回目は軍旗と葉っぱの翼で「くすんだ茶の王」だった。⭐**黒地+金縁+白**の3段にすると格が出る。
+   ⚠光輪は**中を抜いた輪**にする=塗り潰した楕円だと金のバナナに見える(1回目に踏んだ)。 ---- */
 HBODY.hDawn=(c,U,walk,t,ph,o)=>{
- const SK=U_SKIN,C1=U.c||GOLD2,WH='#f2ead6',GD=GOLD,GD2='#c9a13d',
-       OR='#d9793a',PA='#cfc4a8',SHO='#7a6440',rc=bRc(o);
+ const SK=U_SKIN,GD=GOLD,GD2='#c9a13d',WH='#f4eeda',BK='#2b2620',BK2='#3d372e',
+       OR='#d9793a',RD='#b0332e',PA='#3a352c',SHO='#241f19',rc=bRc(o);
  hLeg2(c,walk,PA,SHO,4.2,1.02);
  hTop(c,t,ph,-.03);
- /* ⭐暁のマント(⚠翼と同じ金にしない=重ねると翼が消える。橙にして段を作る) */
- c.fillStyle=OR;
- c.beginPath();c.moveTo(-6,-41.4);c.lineTo(-14.4,-19+walk*2);
- c.lineTo(-8.4,-8.4);c.lineTo(4,-11.4);c.lineTo(6.4,-39.4);c.closePath();c.fill();c.stroke();
- c.fillStyle=shade(OR,.74);c.beginPath();c.moveTo(-6,-41.4);c.lineTo(-14.4,-19+walk*2);
- c.lineTo(-10.4,-13);c.lineTo(-4.4,-38);c.closePath();c.fill();
- /* ⭐光の翼。⚠**平たい葉を並べても羽根に見えない**(蝙蝠の翼で分かったこと)=
-    **前縁を1本の弧で通し、後縁を扇形に欠く**。⚠奥の翼は暗く短く(左右対称に並べない) */
+ /* ⭐白と金のマント(⚠内側を赤にして段を作る=白1色だと紙に見える) */
+ c.fillStyle=RD;
+ c.beginPath();c.moveTo(-5,-41.4);c.lineTo(-13.4,-18+walk*2);c.lineTo(-7.4,-8.4);c.lineTo(3,-11.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=WH;
+ c.beginPath();c.moveTo(-6,-41.4);c.lineTo(-16.4,-20+walk*2);c.lineTo(-10.4,-9.4);
+ c.lineTo(-2.4,-13.4);c.lineTo(-1,-39.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=GD2;c.beginPath();c.moveTo(-16.4,-20+walk*2);c.lineTo(-10.4,-9.4);c.lineTo(-8.4,-11.4);c.lineTo(-14.4,-21.4);c.closePath();c.fill();
+ /* ⭐金と白の翼(上段=金・下段=白。⚠前縁を後ろへ跳ね上げ、後縁は丸い羽根の先で欠く) */
  const wing=(L,dy,col)=>{
   c.fillStyle=col;c.beginPath();
   c.moveTo(-4,-38.4+dy);
-  c.quadraticCurveTo(-L*.44,-53+dy,-L,-46+dy);          /* 前縁(⚠後ろへ跳ね上げる=垂らすと蝙蝠) */
-  c.quadraticCurveTo(-L*.86,-38.4+dy,-L*.70,-40.4+dy);  /* 後縁は丸い羽根の先(⚠尖らせると蝙蝠) */
+  c.quadraticCurveTo(-L*.44,-53+dy,-L,-46+dy);
+  c.quadraticCurveTo(-L*.86,-38.4+dy,-L*.70,-40.4+dy);
   c.quadraticCurveTo(-L*.62,-31.4+dy,-L*.48,-35+dy);
   c.quadraticCurveTo(-L*.42,-27.4+dy,-L*.28,-31.4+dy);
   c.quadraticCurveTo(-L*.20,-25.4+dy,-4,-32+dy);
   c.closePath();c.fill();c.stroke();};
- wing(30,-6.4,shade(GD,.72));/* 奥の翼 */
- wing(38,0,GD);              /* 手前の翼 */
+ wing(32,-7.4,WH);  /* 奥=白い羽根 */
+ wing(40,0,GD);     /* 手前=金の羽根 */
  c.fillStyle=GLOW;/* 羽根の骨(⚠3本を等間隔に引かない) */
- for(const q of [[-32,-45.4],[-25,-40.4],[-17,-36.4]]){
+ for(const q of [[-34,-45.4],[-26,-40.4],[-17,-36.4]]){
   c.beginPath();c.moveTo(-4,-37.4);c.lineTo(q[0],q[1]);c.lineTo(q[0]+3.4,q[1]+3.4);c.closePath();c.fill();}
- const g1=bHold(c,rc,4.6,-34.6,-.10,.6,-5);
- bArm(c,-4.6,-34.8, 4,-31.6, 12,-29, 5,4.1, shade(WH,.7),shade(SK,.74));
+ const g1=bHold(c,rc,4.6,-34.6,-.14,.8,-5);
+ bArm(c,-4.6,-34.8, 4,-31.6, 12,-29, 5,4.1, BK,shade(BK,1.5));
  g1();
- bTorso(c,WH,[10,7.4,HSK.y0,HSK.y1]);
- c.fillStyle=GD;/* 金の胸当て(⚠白い上着の上に金=一番明るい所を作る) */
- c.beginPath();c.moveTo(-8.4,-36.8);c.lineTo(8.6,-36.4);c.lineTo(7.6,-26.4);c.lineTo(-7.6,-26.8);c.closePath();c.fill();c.stroke();
- c.fillStyle=shade(GD,.72);c.fillRect(-8.2,-31.6,16.6,2.4);
- c.fillStyle=OR;/* 胸の暁の印(⚠丸1つだと鋲に見える=昇る陽の形にする) */
- c.beginPath();c.arc(.4,-32.4,3.6,Math.PI,0);c.fill();
- c.fillStyle=GLOW;c.beginPath();c.arc(.4,-32.4,1.8,Math.PI,0);c.fill();
- c.fillStyle=shade(GD,1.1);/* 肩甲(⚠左右で大きさを変える) */
- c.beginPath();c.moveTo(-15,-40.4);c.lineTo(-2.6,-41);c.lineTo(-1.4,-31.4);c.lineTo(-16,-30.6);c.closePath();c.fill();c.stroke();
- c.beginPath();c.moveTo(2.6,-40.6);c.lineTo(12.4,-40);c.lineTo(13.4,-32.4);c.lineTo(1.8,-31.6);c.closePath();c.fill();c.stroke();
- c.fillStyle=GD2;c.fillRect(-7.8,-25.4,15.6,3);c.strokeRect(-7.8,-25.4,15.6,3);/* 帯 */
- c.fillStyle=GD;c.fillRect(-2.2,-25.8,4.4,4);
- c.fillStyle=WH;/* 前垂れ(⚠腰から下に白を残す=脚が金の塊に埋もれない) */
- c.beginPath();c.moveTo(-5.4,-22.6);c.lineTo(5.4,-22.6);c.lineTo(6.4,-12+walk);c.lineTo(-6.4,-11.6-walk);c.closePath();c.fill();c.stroke();
- {const g2=bHold(c,rc,4.6,-34.6,-.10,.6,-5);
-  /* ⭐軍旗。⚠**細くて長い竿は頭上に消える**=竿を短く太く、旗を大きく体の横に置く */
-  c.fillStyle='#6b5530';rr(c,6.4,-64,5.4,42,2.4);c.fill();c.stroke();
-  c.fillStyle=GD;c.beginPath();c.arc(9,-66.4,3.4+1.6*rc,0,7);c.fill();c.stroke();/* 竿頭 */
-  c.fillStyle=C1;/* 旗(⚠なびかせる=真四角だと看板に見える) */
-  c.beginPath();c.moveTo(11.4,-62);
-  c.quadraticCurveTo(30,-59+Math.sin(t*3)*1.6,34,-49);
-  c.quadraticCurveTo(28,-44,11.4,-42);c.closePath();c.fill();c.stroke();
-  c.fillStyle=OR;/* 旗の暁の印 */
-  c.beginPath();c.arc(20,-49.4,6.4,Math.PI,0);c.fill();
-  c.fillStyle=GLOW;c.beginPath();c.arc(20,-49.4,3,Math.PI,0);c.fill();
-  c.fillStyle=shade(C1,.72);c.fillRect(12.4,-48.4,16,2.4);
-  bArm(c,4.6,-34.6, 7.8,-33.4, 9.4,-36, 5.2,4.2, WH,SK);g2();}
+ bTorso(c,BK,[10,7.4,HSK.y0,HSK.y1]);
+ c.fillStyle=GD;/* 金縁の胸当て(⚠黒地に金の縁=これが「格」の正体) */
+ c.beginPath();c.moveTo(-8.6,-37);c.lineTo(8.8,-36.6);c.lineTo(7.8,-25.4);c.lineTo(-7.8,-25.8);c.closePath();c.fill();c.stroke();
+ c.fillStyle=BK2;
+ c.beginPath();c.moveTo(-6.6,-34.8);c.lineTo(6.8,-34.4);c.lineTo(6,-27.4);c.lineTo(-6,-27.8);c.closePath();c.fill();
+ c.fillStyle=GD;/* ⭐胸の金の四芒星(⚠丸い宝石だと他の英雄と被る) */
+ {const S=5.4,cx=.6,cy=-31;c.beginPath();
+  c.moveTo(cx,cy-S);c.quadraticCurveTo(cx+S*.22,cy-S*.22,cx+S,cy);
+  c.quadraticCurveTo(cx+S*.22,cy+S*.22,cx,cy+S);
+  c.quadraticCurveTo(cx-S*.22,cy+S*.22,cx-S,cy);
+  c.quadraticCurveTo(cx-S*.22,cy-S*.22,cx,cy-S);c.closePath();c.fill();c.stroke();}
+ c.fillStyle=GD;/* 金の肩甲(⚠左右で大きさを変える) */
+ c.beginPath();c.moveTo(-15.4,-40.4);c.lineTo(-2.6,-41);c.lineTo(-1.4,-31.4);c.lineTo(-16.4,-30.6);c.closePath();c.fill();c.stroke();
+ c.fillStyle=WH;c.beginPath();c.moveTo(-13.4,-38.4);c.lineTo(-4,-38.8);c.lineTo(-3.4,-33);c.lineTo(-14.4,-32.4);c.closePath();c.fill();
+ c.fillStyle=GD;
+ c.beginPath();c.moveTo(2.6,-41);c.lineTo(12.4,-40.4);c.lineTo(13.4,-32.4);c.lineTo(1.8,-31.8);c.closePath();c.fill();c.stroke();
+ /* 白い帯+金の菱形 */
+ c.fillStyle=WH;c.fillRect(-8,-25.6,16,3.4);c.strokeRect(-8,-25.6,16,3.4);
+ c.fillStyle=GD;c.beginPath();c.moveTo(.6,-27.4);c.lineTo(3.6,-23.9);c.lineTo(.6,-20.4);c.lineTo(-2.4,-23.9);c.closePath();c.fill();c.stroke();
+ /* ⭐白い前垂れ+赤い縦帯(⚠脚が金の塊に埋もれないよう膝の上で切る) */
+ c.fillStyle=WH;
+ c.beginPath();c.moveTo(-6.4,-22.4);c.lineTo(6.6,-22.4);c.lineTo(7.4,-10.4+walk);
+ c.lineTo(.6,-7.4);c.lineTo(-6.6,-10-walk);c.closePath();c.fill();c.stroke();
+ c.fillStyle=RD;
+ c.beginPath();c.moveTo(-2.4,-22.4);c.lineTo(3.4,-22.4);c.lineTo(3.4,-10.4);c.lineTo(.6,-7.8);c.lineTo(-2.4,-10.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=GD;c.beginPath();c.moveTo(.6,-18.4);c.lineTo(2.2,-16);c.lineTo(.6,-13.6);c.lineTo(-1,-16);c.closePath();c.fill();
+ {const g2=bHold(c,rc,4.6,-34.6,-.14,.8,-5);
+  /* ⭐黒い柄+金の星の穂先の錫杖(⚠軍旗はやめた=旗は頭上に消えて読めなかった) */
+  c.fillStyle='#3a352c';rr(c,6.4,-62,5.2,44,2.4);c.fill();c.stroke();
+  c.fillStyle=GD;c.fillRect(6.4,-42,5.2,3.4);
+  c.beginPath();c.moveTo(9,-20.4);c.lineTo(12.4,-16.4);c.lineTo(9,-12.4);c.lineTo(5.6,-16.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=WH;/* 穂先の羽根(左右に開く) */
+  c.beginPath();c.moveTo(9,-64);c.quadraticCurveTo(22,-72,20.4,-58);c.quadraticCurveTo(14,-58,9,-60);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GD;
+  c.beginPath();c.moveTo(9,-64);c.quadraticCurveTo(-4,-72,-2.4,-58);c.quadraticCurveTo(4,-58,9,-60);c.closePath();c.fill();c.stroke();
+  {const S=7+2.6*rc,cx=9,cy=-64;c.fillStyle=GD;c.beginPath();/* 金の星 */
+   c.moveTo(cx,cy-S);c.quadraticCurveTo(cx+S*.24,cy-S*.24,cx+S,cy);
+   c.quadraticCurveTo(cx+S*.24,cy+S*.24,cx,cy+S);
+   c.quadraticCurveTo(cx-S*.24,cy+S*.24,cx-S,cy);
+   c.quadraticCurveTo(cx-S*.24,cy-S*.24,cx,cy-S);c.closePath();c.fill();c.stroke();
+   c.fillStyle=OR;c.beginPath();c.moveTo(cx,cy-S*.5);c.lineTo(cx+S*.34,cy);c.lineTo(cx,cy+S*.5);c.lineTo(cx-S*.34,cy);c.closePath();c.fill();}
+  bArm(c,4.6,-34.6, 7.8,-33.4, 9.4,-32, 5.2,4.2, BK,shade(BK,1.5));g2();}
  bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
- /* ⭐光輪は**頭の後ろ**に置く(⚠頭の上に楕円を1枚置くと金のバナナに見える)。
-    頭が真ん中を隠すので、両端だけが出て「輪」に読める */
  bFace(c,1.6,HSK.fy,HSK.rx,HSK.ry,SK);
- c.fillStyle='#f0dfa8';c.beginPath();c.arc(1.6,HSK.fy-2.6,6.6,Math.PI,0);c.fill();c.stroke();/* 白金の髪 */
- c.fillStyle=GD;rr(c,-6,HSK.fy-8.4,15.4,4,1.5);c.fill();c.stroke();/* 額冠 */
- for(const q of [[-3.4,-11.4],[1.6,-16.4],[7,-10.4]]){/* 王冠の尖り(⚠高さを不揃いに) */
-  c.beginPath();c.moveTo(q[0]-2.8,HSK.fy-7.4);c.lineTo(q[0],HSK.fy+q[1]);c.lineTo(q[0]+2.8,HSK.fy-7.4);c.closePath();c.fill();c.stroke();}
- c.fillStyle=OR;c.beginPath();c.arc(1.6,HSK.fy-6.4,1.9,0,7);c.fill();
- c.fillStyle=GD;c.beginPath();c.ellipse(1.6,HSK.fy-19.4,11,2.9,0,0,7);c.fill();c.stroke();/* 光輪(王冠の上に浮かせる) */
- c.fillStyle=GLOW;c.beginPath();c.ellipse(1.6,HSK.fy-19.4,8.4,1.3,0,0,7);c.fill();
- /* ⭐**光は加算で細い芯だけ**(太い面を加算すると背景と混ざって白い塊になる) */
- c.save();c.globalCompositeOperation='lighter';c.globalAlpha=.5;
- c.fillStyle=GLOW;
- c.beginPath();c.ellipse(1.6,HSK.fy-19.4,9.4,1.2,0,0,7);c.fill();
- c.beginPath();c.ellipse(.4,-32.4,3.4,1.4,0,0,7);c.fill();
+ c.fillStyle=BK;c.beginPath();c.arc(1.6,HSK.fy-2.6,6.8,Math.PI,0);c.fill();c.stroke();/* 黒い髪 */
+ c.fillStyle=GD;rr(c,-6.4,HSK.fy-8.6,16,4.2,1.5);c.fill();c.stroke();/* 額冠 */
+ for(const q of [[-4,-12.4],[1.6,-17.4],[7.4,-11.4]]){/* 王冠の尖り(⚠高さを不揃いに) */
+  c.beginPath();c.moveTo(q[0]-2.8,HSK.fy-7.6);c.lineTo(q[0],HSK.fy+q[1]);c.lineTo(q[0]+2.8,HSK.fy-7.6);c.closePath();c.fill();c.stroke();}
+ c.fillStyle=OR;c.beginPath();c.moveTo(1.6,HSK.fy-9.4);c.lineTo(3.2,HSK.fy-6.6);c.lineTo(1.6,HSK.fy-3.8);c.lineTo(0,HSK.fy-6.6);c.closePath();c.fill();
+ /* ⭐光輪(⚠**中を抜いた輪**にする。塗り潰した楕円は金のバナナに見える) */
+ c.save();c.lineWidth=3.2;c.strokeStyle=INK;
+ c.fillStyle=GD;c.beginPath();c.ellipse(1.6,HSK.fy-21.4,11.4,3.4,0,0,7);
+ c.ellipse(1.6,HSK.fy-21.4,7.6,1.5,0,0,7);c.fill('evenodd');
+ c.beginPath();c.ellipse(1.6,HSK.fy-21.4,11.4,3.4,0,0,7);c.stroke();
+ c.beginPath();c.ellipse(1.6,HSK.fy-21.4,7.6,1.5,0,0,7);c.stroke();
  c.restore();
+ c.save();c.globalCompositeOperation='lighter';c.globalAlpha=.42;c.fillStyle=GLOW;
+ c.beginPath();c.ellipse(1.6,HSK.fy-21.4,10,1.3,0,0,7);c.fill();c.restore();
+ c.restore();
+};
+/* ---- ★5 狙撃王ジョルジ「静かな死神」= ユーザーの絵から起こした(2026-08-01)。
+   ⭐絵の要点6つ: ①**白い羽根を挿したつば広帽**(金のバンド) ②**白髪** ③**顔の右に大きな白い丸の照準眼鏡**
+     ④深緑の長いコート+金の縁+斜めの革帯 ⑤**茶色のケープ**が背中から流れる
+     ⑥**二脚と照準器の付いた長い狙撃銃**を構える。
+   ⚠既存の特殊部隊員(暗視装置+小銃)と役割が近いので、**帽子・白髪・白い丸眼鏡**で必ず分ける。 ---- */
+HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
+ const SK=U_SKIN,CO='#3f4a35',CO2='#4e5b41',CP='#5c4a38',PA='#5f5a44',SHO='#3a3128',
+       GM='#4a4a44',GD='#c9a13d',HR='#d8d2c4',rc=bRc(o);
+ hLeg2(c,walk,PA,SHO,3.8,.96,1.2);
+ hTop(c,t,ph,.10);c.translate(0,1.2);
+ c.fillStyle=CP;/* ケープ(⚠歩きに合わせて後ろへ流す=狙撃手なのに動いて見える) */
+ c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
+ c.lineTo(-10.4,-6);c.lineTo(2,-9.4);c.lineTo(5,-38.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(CP,.74);c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
+ c.lineTo(-12.4,-12);c.lineTo(-3.4,-38);c.closePath();c.fill();
+ const g1=bHold(c,rc,4.6,-34.6,-.19,1.4,-1.2);
+ bArm(c,-4.6,-34.8, 6,-31.4, 20,-28.4, 5,4.1, shade(CO,.72),shade(SK,.74));
+ g1();
+ bTorso(c,CO,[9.6,7.2,HSK.y0,HSK.y1]);
+ c.fillStyle=CO2;/* 長いコート(⚠膝まで垂れる=輪郭がまるごと変わる) */
+ c.beginPath();c.moveTo(-8,-35.4);c.lineTo(8.2,-35);c.lineTo(10,-9.4+walk*1.4);
+ c.lineTo(-9.6,-9-walk*1.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=GD;c.fillRect(-1,-35.2,2.2,25);/* 金の前合わせ */
+ c.fillStyle='#6b5530';/* 斜めの革帯 */
+ c.beginPath();c.moveTo(-8,-33.4);c.lineTo(-4.4,-34.6);c.lineTo(8,-23.4);c.lineTo(4.4,-22.2);c.closePath();c.fill();
+ c.fillStyle=GD;c.fillRect(-1.4,-28.4,3.4,3.4);
+ {const g2=bHold(c,rc,4.6,-34.6,-.19,1.4,-1.2);
+  uGun(c,3.4,-30,34,4.4,GM,0);/* 長い狙撃銃 */
+  c.fillStyle='#2f3742';rr(c,7,-38.6,15,4.6,1.6);c.fill();c.stroke();/* 照準器 */
+  c.fillStyle=TECH;c.beginPath();c.arc(20.4,-36.3,1.9+rc,0,7);c.fill();
+  c.fillStyle='#3a3128';/* 二脚(⚠溜めの間だけ前へ開く) */
+  c.beginPath();c.moveTo(27,-30.4);c.lineTo(31+3.4*rc,-21);c.lineTo(28.4+3.4*rc,-20.6);c.lineTo(25,-29.4);c.closePath();c.fill();c.stroke();
+  bArm(c,4.6,-34.6, 8,-30.4, 9.4,-25, 5.2,4.2, shade(CO,1.14),SK);g2();}
+ bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
+ c.fillStyle=HR;/* 白髪(⚠横に流す=帽子の下から出す) */
+ c.beginPath();c.moveTo(-6.4,HSK.fy-2);c.lineTo(-12.4,HSK.fy+4.4);c.lineTo(-2.4,HSK.fy+3.4);c.closePath();c.fill();c.stroke();
+ bFace(c,1.6,HSK.fy,HSK.rx,HSK.ry,SK,1);
+ c.fillStyle='#e8e0ce';/* ⭐顔の右に大きな白い丸の照準眼鏡(これが一番の目印) */
+ c.beginPath();c.arc(4.4,HSK.fy-.4,5.2,0,7);c.fill();c.stroke();
+ c.fillStyle=INK;c.beginPath();c.arc(5.4,HSK.fy-.4,2.2,0,7);c.fill();
+ c.fillStyle=shade(SK,.6);c.fillRect(-1.4,HSK.fy+4,3.4,1.2);/* 口 */
+ c.fillStyle='#4a3f30';/* つば広帽 */
+ c.beginPath();c.arc(1.6,HSK.fy-4.4,7.2,Math.PI,0);c.fill();c.stroke();
+ c.beginPath();c.ellipse(1.6,HSK.fy-4.4,15,3.8,-.06,0,7);c.fill();c.stroke();
+ c.fillStyle=GD;c.fillRect(-5.4,HSK.fy-8.4,14,2.6);/* 金のバンド */
+ c.fillStyle=HR;/* ⭐白い羽根飾り(⚠帽子から斜め後ろへ突き出す) */
+ c.beginPath();c.moveTo(-4.4,HSK.fy-9);c.quadraticCurveTo(-13.4,HSK.fy-20,-8.4,HSK.fy-24.4);
+ c.quadraticCurveTo(-6.4,HSK.fy-16,-1.4,HSK.fy-10);c.closePath();c.fill();c.stroke();
+ c.restore();
+};
+/* ---- ★5 紅蓮の大魔導士「業火の主」= ユーザーの絵から起こした(2026-08-01)。
+   ⭐絵の要点5つ: ①深紅〜暗赤のフードとローブ+**金の縁取り** ②フードの中は**真っ黒**で
+     **赤く光る2つの目** ③額と胸に**金で縁取った赤い菱形** ④裾が大きく広がる
+     ⑤**先に赤い炎の結晶が載った長い杖**。
+   ⚠死潮の預言者(紫の頭巾+杖)と輪郭が近いので、**金の縁取り・目が2つ・炎の結晶**で必ず分ける。 ---- */
+HBODY.hPyro=(c,U,walk,t,ph,o,rk)=>{
+ const SK=U_SKIN,RB='#5c1f24',RB2='#7a2a2e',DKR='#3a1418',GD='#c9a13d',
+       FL='#ff6a2a',FL2='#ffd24a',PA='#4a2226',SHO='#2b1a1a',rc=bRc(o);
+ hLeg2(c,walk,PA,SHO,3.4,.94);
+ hTop(c,t,ph,0);
+ c.fillStyle=DKR;/* 背中のマント(⚠ローブより暗くして段を作る) */
+ c.beginPath();c.moveTo(-5,-41.4);c.lineTo(-16.4,-18+walk*2.2);
+ c.lineTo(-9.4,-2.4);c.lineTo(4,-5.4);c.lineTo(6,-39.4);c.closePath();c.fill();c.stroke();
+ const g1=bHold(c,rc,4.4,-34.4,-.13,1,-7);
+ bArm(c,-4.4,-34.6, 3.4,-32, 10.4,-29, 4.8,3.9, shade(RB,.72),shade(RB,.6));
+ g1();
+ bTorso(c,RB,[9.2,7,HSK.y0,HSK.y1]);
+ c.fillStyle=RB2;/* ⭐大きく広がる裾(⚠これが輪郭で一番効く) */
+ c.beginPath();c.moveTo(-8.6,-30.4);c.lineTo(8.6,-30);c.lineTo(14.4,-2.4+walk*1.2);
+ c.lineTo(-13.4,-2-walk*1.2);c.closePath();c.fill();c.stroke();
+ c.fillStyle=GD;/* 金の縁取り(裾と前合わせ) */
+ c.fillRect(-1.6,-30.2,3.4,28);
+ c.beginPath();c.moveTo(-13.4,-6.4);c.lineTo(14.4,-6.8);c.lineTo(14.4,-2.4);c.lineTo(-13.4,-2);c.closePath();c.fill();
+ /* 裾の金の縁(⚠細いと実寸で消える) */
+ c.beginPath();c.moveTo(-8.6,-30.4);c.lineTo(-13.4,-4);c.lineTo(-10.4,-3.6);c.lineTo(-6.4,-30.2);c.closePath();c.fill();
+ c.beginPath();c.moveTo(8.6,-30);c.lineTo(14.4,-4.4);c.lineTo(11.4,-4);c.lineTo(6.4,-29.8);c.closePath();c.fill();
+ c.fillStyle=DKR;/* 肩の垂れ布(段になった襟) */
+ c.beginPath();c.moveTo(-10.4,-38.4);c.lineTo(10.4,-38);c.lineTo(8.4,-27.4);
+ c.lineTo(2.6,-31.4);c.lineTo(-3.4,-27);c.lineTo(-9.4,-31.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=GD;/* 胸の菱形(金の縁+赤い芯) */
+ c.beginPath();c.moveTo(.6,-36.4);c.lineTo(4.4,-32);c.lineTo(.6,-27.6);c.lineTo(-3.2,-32);c.closePath();c.fill();c.stroke();
+ c.fillStyle=FL;c.beginPath();c.moveTo(.6,-34.4);c.lineTo(2.6,-32);c.lineTo(.6,-29.6);c.lineTo(-1.4,-32);c.closePath();c.fill();
+ {const g2=bHold(c,rc,4.4,-34.4,-.13,1,-7);
+  c.fillStyle=DKR;rr(c,6,-74,5.4,54,2.4);c.fill();c.stroke();/* 長い杖 */
+  c.fillStyle=GD;c.fillRect(6,-52,5.4,3.4);
+  c.fillStyle=DKR;/* 杖の頭(2本の牙で結晶を挟む) */
+  c.beginPath();c.moveTo(3.4,-74);c.lineTo(1.4,-88.4);c.lineTo(6.4,-78.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(13.4,-74.4);c.lineTo(16,-88.4);c.lineTo(10.4,-78.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=FL;/* ⭐赤い炎の結晶(菱形。⚠丸だと魔法の珠になって預言者と被る) */
+  const fk=1+.14*Math.sin(t*7)+.5*rc;
+  c.save();c.translate(8.7,-79);c.scale(fk,fk);
+  c.beginPath();c.moveTo(0,-9.4);c.lineTo(4.4,0);c.lineTo(0,8.4);c.lineTo(-4.4,0);c.closePath();c.fill();c.stroke();
+  c.fillStyle=FL2;c.beginPath();c.moveTo(0,-5.4);c.lineTo(2.2,0);c.lineTo(0,4.4);c.lineTo(-2.2,0);c.closePath();c.fill();
+  c.restore();
+  bArm(c,4.4,-34.4, 7.4,-33, 8.6,-36.4, 5,4.1, shade(RB,1.16),shade(RB,.62));g2();}
+ bNeck(c,1.6,HSK.nk0,HSK.nk1,shade(SK,.5));
+ c.fillStyle=RB;/* 深いフード(顔は真っ黒。⚠尖らせると魔導士に読める) */
+ c.beginPath();c.moveTo(-9.4,HSK.fy+7.4);
+ c.quadraticCurveTo(-10.4,HSK.fy-7,1.6,HSK.fy-13.4);
+ c.quadraticCurveTo(13.4,HSK.fy-7,12.4,HSK.fy+7.4);
+ c.lineTo(6.4,HSK.fy+3.4);c.lineTo(1.6,HSK.fy+7);c.lineTo(-3.4,HSK.fy+3.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=INK;c.beginPath();c.ellipse(1.6,HSK.fy-.4,6.4,4.6,0,0,7);c.fill();
+ c.fillStyle=FL;/* ⭐赤く光る2つの目(⚠1つだと預言者と同じになる) */
+ c.beginPath();c.moveTo(-3.8,HSK.fy-3);c.lineTo(.6,HSK.fy-.6);c.lineTo(-3.8,HSK.fy+2.2);c.closePath();c.fill();
+ c.beginPath();c.moveTo(6.8,HSK.fy-3);c.lineTo(2.6,HSK.fy-.6);c.lineTo(6.8,HSK.fy+2.2);c.closePath();c.fill();
+ c.save();c.globalCompositeOperation="lighter";c.globalAlpha=.5;c.fillStyle=FL2;
+ c.beginPath();c.ellipse(-1.6,HSK.fy-.4,2.4,1.2,0,0,7);c.fill();
+ c.beginPath();c.ellipse(4.6,HSK.fy-.4,2.4,1.2,0,0,7);c.fill();c.restore();
+ c.fillStyle=GD;/* 額の菱形(金の縁+赤い芯) */
+ c.beginPath();c.moveTo(1.6,HSK.fy-14.4);c.lineTo(4.4,HSK.fy-10);c.lineTo(1.6,HSK.fy-5.6);c.lineTo(-1.2,HSK.fy-10);c.closePath();c.fill();c.stroke();
+ c.fillStyle=FL;c.beginPath();c.moveTo(1.6,HSK.fy-12.4);c.lineTo(3,HSK.fy-10);c.lineTo(1.6,HSK.fy-7.6);c.lineTo(.2,HSK.fy-10);c.closePath();c.fill();
  c.restore();
 };
 /* ---- ★5 暗黒の騎士「漆黒の突撃」= **18人でただ1人の騎乗**(2026-08-01ユーザーの絵から起こした)。
@@ -10430,7 +10600,7 @@ function drawHeroBody(c,U,walk,o,t,ph){
  /* レア度の★ */
  c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px '+FF;c.textAlign='center';
  /* ⚠背の高い英雄は★を上げる=頭飾りに食い込む(騎乗の暗黒の騎士は特に高い) */
- const st='★'.repeat(Math.min(5,rk)),sy=(U.id==='hGiant')?-72:(U.id==='hDawn')?-71:(U.id==='hDark')?-84:-62;
+ const st='★'.repeat(Math.min(5,rk)),sy=(U.id==='hGiant')?-72:(U.id==='hDawn')?-78:(U.id==='hDark')?-84:-62;
  c.strokeText(st,1.6,sy);c.fillText(st,1.6,sy);
 }
 /* ============ 兵科の見た目(2026-07-26 第91弾) ============
@@ -13386,6 +13556,26 @@ const H_FX={
   if(C.isMe)sfx.lslash?sfx.lslash():sfx.shot();},
  /* 暁の王: **暁の光柱**。敵の真上から金の極太の光が落ち、足元に光の輪が二重に開く。
     ⚠これだけは**上から降ってくる**=他の17人と重ならない */
+ /* 狙撃王ジョルジ: **超長距離の一条**。⚠白ではなく**淡い緑**にして特殊部隊員と分ける。
+    ⚠敵の向こうへ長く抜ける線+薬莢=「遠くから抜いた」が伝わる */
+ hGeo:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.24;
+  addFx(C,"beam",mx,my,"",{x2:tg.px,y2:tg.py-18*CH_UP,
+   col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:2.8,lf:.2});
+  addFx(C,"tr",tg.px,tg.py-18*CH_UP,"",
+   {x2:tg.px+Math.cos(ang)*220,y2:tg.py-18*CH_UP+Math.sin(ang)*220,col:"rgba(196,222,150,",w:1.5});
+  if(FXLV>0){addP(C,1,u.px,u.py-24*CH_UP,{sp:70,a:d5<0?2.2:.9,spread:.3,up:48,g:600,life:.9,r:1.9,col:DIM,typ:"shell",gr:u.py});
+   hitFx(C,tg,ang,"#c4de96",1,U.type);}
+  C.shake=Math.max(C.shake||0,.14);
+  if(C.isMe)sfx.snipe?sfx.snipe():sfx.shot();},
+ /* 紅蓮の大魔導士: **敵の足元から業火の柱が立つ**+魔法陣。⚠飛び道具を出さない=術者だと分かる */
+ hPyro:(C,u,U,tg,mx,my,ang,col,utl)=>{u.fireT=.16;
+  if(FXLV>0){addFx(C,"ring",tg.px,tg.py,"",{r:(U.aoe||100)*.8,col:"#ff6a2a"});
+   addFx(C,"flame",tg.px,tg.py-4,"",{ang:-1.5708,len:78,col:"#ff6a2a",sd:rnd(0,9)});
+   addFx(C,"flame",tg.px+rnd(-9,9),tg.py-4,"",{ang:-1.5708,len:54,col:"#ffd24a",sd:rnd(0,9)});
+   addP(C,7,tg.px,tg.py-6,{sp:34,up:120,g:-60,life:.7,r:2.4,col:"#ff6a2a"});
+   hitFx(C,tg,ang,"#ff6a2a",1,U.type);}
+  C.shake=Math.max(C.shake||0,.12);
+  if(C.isMe&&Math.random()<.5)sfx.flame();},
  /* 暗黒の騎士: **馬ごと踏み込んで大剣で薙ぐ**。⚠光を出さない=赤黒い斬撃と土煙だけで「暗黒」に読める */
  hDark:(C,u,U,tg,mx,my,ang,col,utl)=>{u.fireT=.2;
   if(FXLV>0){addFx(C,"slash",tg.px,tg.py-20*CH_UP,"",{ang:ang-.62,r:(30+utl*7)*CH_UP,lv:3,col:"#c8323c"});
@@ -14096,6 +14286,31 @@ function heroUlt(C,wave){
   for(let k=0;k<4;k++){const p=pathPos(clamp(PLEN*(.2+k*.2),0,PLEN));addFx(C,'boomL',p[0],p[1],'',{d0:.06*k});}
   addFx(C,'ring',u.px,u.py,'',{r:420,col:GOLD2});
   C.shake=Math.max(C.shake||0,.6);if(C.isMe)sfx.boom&&sfx.boom();
+ }else if(id==='hGeo'){/* 一撃必殺: HPの高い5体を撃ち抜いて足を止める */
+  const ls=live.slice().sort((a,b)=>b.hp-a.hp).slice(0,5);
+  ls.forEach((z,k)=>later(C,k*.12,()=>{if(z.dead)return;
+   dmgZ(C,z,z.hp*(z.boss?.22:.5)+1400*W,1);
+   if(!z.dead)z.frzT=Math.max(z.frzT||0,2.4);
+   addFx(C,"beam",u.px,u.py-30*CH_UP,"",{x2:z.px,y2:z.py-18*CH_UP,
+    col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:3.4,lf:.22});
+   addFx(C,"spark",z.px,z.py-18*CH_UP,"",{sd:rnd(0,9),col:"#c4de96",big:1});
+   C.shake=Math.max(C.shake||0,.2);if(C.isMe)sfx.snipe&&sfx.snipe();}));
+  /* ⚠**1発目はその場で効かせる**=全部 later に回すと押した瞬間に何も起きず「不発」に見える */
+  if(ls.length&&!ls[0].dead){dmgZ(C,ls[0],900*W,1);if(!ls[0].dead)ls[0].frzT=Math.max(ls[0].frzT||0,2.4);}
+  addFx(C,"txt",u.px,u.py-84*CH_UP,"一撃必殺");
+ }else if(id==='hPyro'){/* 紅蓮の柱: 道の3か所に業火の柱を立てて燃やし続ける。
+     ⚠自分の居る所から前方へ置く=道の決め打ちだと当たらないことがある(暗黒の騎士で踏んだ) */
+  const q0=clamp(u.d||0,0,PLEN);
+  const pillar=(k)=>{const q=clamp(q0+k*(PLEN-q0)/3,0,PLEN),p=pathPos(q);/* ⚠1本目は自分の足元に立てる */
+   for(const z of C.zombies){if(z.dead)continue;if(Math.abs(z.d-q)>150)continue;
+    dmgZ(C,z,700*W,1);if(!z.dead)z.burnT=Math.max(z.burnT||0,5);}
+   addFx(C,"ring",p[0],p[1],"",{r:150,col:"#ff6a2a"});
+   addFx(C,"flame",p[0],p[1]-4,"",{ang:-1.5708,len:130,col:"#ff6a2a",sd:rnd(0,9)});
+   addP(C,10,p[0],p[1],{sp:40,up:190,g:-70,life:.9,r:3.2,col:"#ffd24a"});
+   C.shake=Math.max(C.shake||0,.24);if(C.isMe)sfx.flame&&sfx.flame();};
+  for(let k=0;k<3;k++)pillar(k);
+  for(let r=1;r<4;r++)for(let k=0;k<3;k++)later(C,r*.9,()=>pillar(k));
+  addFx(C,"txt",u.px,u.py-84*CH_UP,"紅蓮の柱");
  }else if(id==='hDark'){/* 漆黒の突撃: 道を端まで駆け抜けて薙ぎ倒し、通った跡に暗黒の炎を残す */
   /* ⚠**1発目はその場で出す**=全部 later に回すと押した瞬間に何も起きず「不発」に見える(雷嵐で踏んだ) */
   /* ⚠**自分の居る所から敵の湧く側へ駆ける**=道の決め打ちだと、英雄が前に出ている時に
@@ -19107,7 +19322,9 @@ const RG_HERO={
  hGiant:{b:{hp:70,mp:9,st:19,df:19,sp:6}, g:{hp:12.5,mp:2.2,st:3.4,df:3.4,sp:1.0},sk:[[1,'s_guard'],[12,'s_quake']]},
  hStorm:{b:{hp:52,mp:20,st:20,df:13,sp:15},g:{hp:9.4,mp:4.6,st:3.6,df:2.3,sp:2.4},sk:[[1,'s_bolt'],[14,'s_storm']]},
  hNox :{b:{hp:62,mp:15,st:24,df:15,sp:14},g:{hp:11.0,mp:3.4,st:4.4,df:2.6,sp:2.3},sk:[[1,'s_doom'],[24,'s_end']]},
- hDark:{b:{hp:64,mp:13,st:25,df:16,sp:20},g:{hp:11.4,mp:3.0,st:4.6,df:2.8,sp:3.2},sk:[[1,'s_doom'],[22,'s_end']]}
+ hDark:{b:{hp:64,mp:13,st:25,df:16,sp:20},g:{hp:11.4,mp:3.0,st:4.6,df:2.8,sp:3.2},sk:[[1,'s_doom'],[22,'s_end']]},
+ hGeo :{b:{hp:52,mp:14,st:27,df:12,sp:18},g:{hp:9.4,mp:3.2,st:5.0,df:2.2,sp:2.9},sk:[[1,'s_snip'],[20,'s_burst']]},
+ hPyro:{b:{hp:54,mp:22,st:26,df:13,sp:13},g:{hp:9.8,mp:4.6,st:4.8,df:2.4,sp:2.1},sk:[[1,'s_flame'],[20,'s_end']]}
 };
 /* ---- どうぐ ---- */
 const RG_IT=[
