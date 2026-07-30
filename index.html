@@ -9676,7 +9676,9 @@ const H_LOOK={
  hNox  :{cape:1,h:'skull', w:'scythe', k:'',      c2:'#3f2c38'},/* 終焉の騎士: 髑髏兜+大鎌 */
  /* ⚠暁の王は**マント無し**=マントも翼も金色なので、重ねると翼が消える(色が近い物を重ねない) */
  hDawn :{cape:1,h:'halo',  w:'sceptre',k:'wing',  c2:'#2b2620'},/* 暁の王: 光輪+軍旗+光の翼 */
- hDark :{cape:1,h:'horn',  w:'gsword', k:'steed', c2:'#3a3440'},/* 暗黒の騎士: 角兜+大剣+黒馬(騎乗) */
+ /* ⚠暗黒の騎士の得物は**騎槍**(2026-08-01に大剣から替えた)。w:'gsword' は共通の絵の古い枝で、
+    HBODY に登録済みのこの人は一切通らない=**値は札としてそのまま**(消すと台帳の重複検査が壊れる) */
+ hDark :{cape:1,h:'horn',  w:'gsword', k:'steed', c2:'#3a3440'},/* 暗黒の騎士: 角兜+騎槍+黒馬(騎乗) */
  hGeo  :{cape:1,h:'plume', w:'lrifle', k:'cape2', c2:'#3f4a35'},/* 狙撃王: 羽根つば広帽+白い丸眼鏡+長銃 */
  hPyro :{cape:1,h:'darkh', w:'fstaff', k:'robe',  c2:'#5c1f24'} /* 紅蓮の大魔導士: 深紅の頭巾+炎の杖 */
 };
@@ -10504,10 +10506,11 @@ HBODY.hPyro=(c,U,walk,t,ph,o,rk)=>{
    ⭐渡された絵の要点は6つ:
      ①角が2本生えた黒い兜+**額の赤い菱形**+**赤く光る2本の目のスリット**
      ②黒紫の甲冑(肩当て・胸の赤い宝石)  ③**ぼろぼろの裾の赤いマント**
-     ④肩から斜めに担いだ**巨大な黒い大剣**  ⑤鎧を着けた黒い馬(赤い目・深紅のたてがみ・赤い房)
+     ④脇に抱えた**騎槍(ランス)**(⚠2026-08-01に大剣から替えた=ユーザー指示「突き攻撃ね」)
+     ⑤鎧を着けた黒い馬(赤い目・深紅のたてがみ・赤い房)
      ⑥色は黒紫〜暗い灰の1系統+**差し色は深い赤だけ**。
    ⚠**騎乗は輪郭がまるごと違う**=これが他の17人との一番の差になる。⚠終焉の騎士(髑髏兜+大鎌+赤マント)と
-     題材が近いので、**兜(角) / 得物(大剣) / 馬**の3つで必ず分ける。
+     題材が近いので、**兜(角) / 得物(騎槍) / 馬**の3つで必ず分ける。
    ⚠焼き箱に収まるのは |x|≦54・y≧-105。馬は横に長いので**尾も鼻も±52まで**に収めてある。 ---- */
 HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
  const SK=U_SKIN,C1=U.c||'#8f1f28',AR='#3a3440',AR2='#4b4454',HS='#443e4c',HS2='#544d5e',
@@ -10590,19 +10593,33 @@ HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
  c.fillStyle=AR2;/* 肩当て(左右で大きさを変える) */
  c.beginPath();c.moveTo(-13.4,-24.4);c.lineTo(-2,-25);c.lineTo(-.8,-17);c.lineTo(-14.4,-16.2);c.closePath();c.fill();c.stroke();
  c.beginPath();c.moveTo(2.4,-25);c.lineTo(12.4,-24.4);c.lineTo(13.4,-17.4);c.lineTo(1.6,-16.8);c.closePath();c.fill();c.stroke();
- /* ⭐巨大な大剣(肩から斜めに担ぐ=絵と同じ向き。⚠溜めの間は振りかぶる) */
- {const g2=bHold(c,rc,4.6,-20,-.30,-1.4,-2);
-  c.fillStyle=HF;/* 柄と鍔 */
-  c.beginPath();c.moveTo(-9,-27.4);c.lineTo(-4.4,-31.4);c.lineTo(0,-25.4);c.lineTo(-4.6,-21.4);c.closePath();c.fill();c.stroke();
-  c.fillStyle=AR2;c.beginPath();c.moveTo(-3.4,-30);c.lineTo(2.6,-33.4);c.lineTo(6,-27.4);c.lineTo(0,-24);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade(HF,1.5);/* 刀身(⚠先へ細らせる。同じ幅だと板に見える) */
-  c.beginPath();c.moveTo(2.6,-31.4);c.lineTo(8,-34.4);
-  c.lineTo(40,-2);c.lineTo(34.4,-1.4);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade(HF,2.1);c.beginPath();c.moveTo(5.4,-31.4);c.lineTo(7.4,-32.6);c.lineTo(36,-4.4);c.lineTo(34,-3.6);c.closePath();c.fill();
-  if(rc>0){c.globalAlpha=.35+.5*rc;c.fillStyle=RD2;/* 溜めると刃が赤く燃える */
-   c.beginPath();c.moveTo(3.4,-31.4);c.lineTo(8,-34.4);c.lineTo(40,-2);c.lineTo(35,-1.4);c.closePath();c.fill();c.globalAlpha=1;}
-  /* 手前の腕(⚠武器の後に描く=手が武器の裏に消えない) */
-  bArm(c,4.6,-20, 6.4,-24.4, 1.4,-27.4, 4.8,3.9, AR2,shade(AR,.62));g2();}
+ /* ⭐⭐**騎槍(ランス)を脇に抱えて構える**(2026-08-01ユーザー指示
+      「持ってる槍をしっかり突き出して攻撃。突き攻撃ね」)。
+    ⚠それまでは**肩に担いだ大剣を薙ぐ**作りだった=「突く」に読めないので得物ごと槍に替えた。
+    ⭐**突きは回転ではなく槍の軸に沿った平行移動**で見せる(`bHold` は使わない)=
+      溜めで後ろへ引き、撃った瞬間(fireT)に大きく前へ出る。
+      ⚠肩を軸に回すと穂先が上下に泳いで「薙ぎ」に戻る。 */
+ {const ft=clamp((o&&o.fireT||0)/.2,0,1),TX=-6*rc+26*ft,TY=1.4*rc-2*ft;
+  c.save();c.translate(TX,TY);
+  c.fillStyle=HF;/* 石突(後ろの端。⚠出さないと槍が体から生えて見える) */
+  c.beginPath();c.moveTo(-19,-19.6);c.lineTo(-14,-20.4);c.lineTo(-14,-15.2);c.lineTo(-19,-16.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(HF,1.35);/* 柄(⚠先へ細らせる=同じ幅だと物干し竿に見える) */
+  /* ⚠**穂先は馬の鼻面(x≒56)より前まで出す**=手前で終わると馬の頭に埋もれて「突き出した」に読めない。
+     ⚠焼き箱は |x|≦54(この体は .86 倍なので局所62まで)=先端はここまでに収めること。 */
+  c.beginPath();c.moveTo(-15,-20.6);c.lineTo(39,-19.2);c.lineTo(39,-15.6);c.lineTo(-15,-15.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=AR2;/* ⭐手を守る円錐の鍔(ランスの一番の目印。無いと「ただの棒」) */
+  c.beginPath();c.moveTo(-2.4,-24);c.lineTo(7.4,-19.8);c.lineTo(7.4,-15);c.lineTo(-2.4,-11);c.closePath();c.fill();c.stroke();
+  c.fillStyle=RD2;c.fillRect(34.6,-20.6,3.6,5.4);/* 穂先の付け根の赤い環 */
+  c.fillStyle=shade(HF,1.9);/* 穂先(⚠長く鋭く=短いと槌に見える) */
+  c.beginPath();c.moveTo(37.4,-21.6);c.lineTo(60,-17.6);c.lineTo(37.4,-13.6);c.closePath();c.fill();c.stroke();
+  if(rc>0){c.globalAlpha=.26+.42*rc;c.fillStyle=RD2;
+   /* 溜めると穂先が赤く燃える。⚠**穂先より内側に描く**=はみ出すと赤い三角旗になり、
+      馬の頭まで覆って「槍」が消える(2026-08-01に一度やらかした) */
+   c.beginPath();c.moveTo(39.4,-19.8);c.lineTo(57.4,-17.6);c.lineTo(39.4,-15.4);c.closePath();c.fill();c.globalAlpha=1;}
+  c.restore();
+  /* 手前の腕(⚠武器の後に描く=手が武器の裏に消えない)。脇で挟んで握る形。
+     ⚠肩は動かさず肘と手だけ槍に付いていく=突いた時に腕が伸びる */
+  bArm(c,4.6,-20, 1.4+TX*.34,-15.4+TY, 8+TX*.82,-18.2+TY, 4.8,3.9, AR2,shade(AR,.62));}
  /* 首と角の兜(⚠顔は出さない=赤い目のスリットだけで「暗黒」に読める) */
  c.fillStyle=shade(AR,.7);c.fillRect(-2.6,-27.4,6,4.4);
  c.fillStyle=AR2;
@@ -13649,11 +13666,20 @@ const H_FX={
    if(C.isMe&&Math.random()<.5)sfx.flame();};
   later(C,fl,im);},
  /* 暗黒の騎士: **馬ごと踏み込んで大剣で薙ぐ**。⚠光を出さない=赤黒い斬撃と土煙だけで「暗黒」に読める */
- hDark:(C,u,U,tg,mx,my,ang,col,utl)=>{u.fireT=.2;
-  if(FXLV>0){addFx(C,"slash",tg.px,tg.py-20*CH_UP,"",{ang:ang-.62,r:(30+utl*7)*CH_UP,lv:3,col:"#c8323c"});
-   addFx(C,"slash",tg.px,tg.py-16*CH_UP,"",{ang:ang+2.4,r:(22+utl*5)*CH_UP,lv:2,col:"#3a3440"});
+ /* ⭐⭐**騎槍で突く**(2026-08-01ユーザー指示「突き攻撃ね」)。⚠**薙ぎの弧(slash)は使わない**
+    =弧を1本でも描いた瞬間に「薙いだ」に読める。突きは**穂先から的へ真っすぐ抜ける一条**で見せる。
+    ⚠出どころは穂先(局所x≒60)の世界座標=体の中心から出すと「突いた」に見えない。 */
+ hDark:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.2;
+  const dd=(d5||u.dr||-1),sx=u.px+dd*82,sy=u.py-92;
+  const tx=tg.px,ty=tg.py-18*CH_UP,aw=Math.atan2(ty-sy,tx-sx);
+  addFx(C,"tr",sx,sy,"",{x2:tx+Math.cos(aw)*40,y2:ty+Math.sin(aw)*40,col:"rgba(200,50,60,",w:5.4});
+  if(FXLV>0){
+   /* 突き抜けた風の筋(⚠細く2本=太いと薙ぎに戻る) */
+   for(let i=0;i<2;i++){const oy=(i?7:-7);
+    addFx(C,"tr",sx,sy+oy,"",{x2:tx+Math.cos(aw)*58,y2:ty+Math.sin(aw)*58+oy,col:"rgba(120,100,110,",w:2.2});}
    addFx(C,"shock",tg.px,tg.py+2,"",{r:(U.aoe||90)*.85,col:"#8f1f28"});
-   addP(C,7,tg.px,tg.py,{sp:130,up:40,g:520,life:.5,r:2.6,col:"#5a4a52",typ:"smoke"});
+   addFx(C,"spark",tg.px,tg.py-18*CH_UP,"",{sd:rnd(0,9),col:"#c8323c"});
+   addP(C,7,tg.px,tg.py,{sp:130,a:aw,spread:.4,up:40,g:520,life:.5,r:2.6,col:"#5a4a52",typ:"smoke"});
    hitFx(C,tg,ang,"#c8323c",1,U.type);}
   C.shake=Math.max(C.shake||0,.18);
   if(C.isMe)sfx.lslash?sfx.lslash():sfx.shot();},
@@ -14414,8 +14440,16 @@ function heroUlt(C,wave){
    for(const z of C.zombies){if(z.dead)continue;if(Math.abs(z.d-q)>150)continue;
     dmgZ(C,z,620*W,1);if(!z.dead){z.d=Math.max(0,z.d-90);z.frzT=Math.max(z.frzT||0,1.1);}}
    addFx(C,"shock",p[0],p[1]+2,"",{r:150,col:"#8f1f28"});
-   addFx(C,"slash",p[0],p[1]-24*CH_UP,"",{ang:0,r:70,lv:3,col:"#c8323c"});
-   addP(C,8,p[0],p[1],{sp:150,up:60,g:520,life:.6,r:3.2,col:"#5a4a52",typ:"smoke"});
+   /* ⭐⭐**薙ぎの弧ではなく「槍で風を切って進む」**(2026-08-01ユーザー指示
+      「馬ごと突進して貫く系で風を切ってやりで進んでるエフェクト」)。
+      ⚠進む向きは道で決まる=前後の経路の点から向きを出す(x決め打ちだと道が折れた所で逆を向く)。
+      ⭐**進む向きへ後ろに尾を引く細い筋**を3本+穂先の高さに太い一条=「貫いて走った跡」に読める。 */
+   const pn=pathPos(clamp(q+70,0,PLEN)),aw=Math.atan2(pn[1]-p[1],pn[0]-p[0]);
+   for(let i=0;i<3;i++){const oy=-(14+i*13)*CH_UP,L=170+i*50,w9=i?2.4:5.4;
+    addFx(C,"tr",p[0]-Math.cos(aw)*L,p[1]+oy-Math.sin(aw)*L,"",
+     {x2:p[0]+Math.cos(aw)*80,y2:p[1]+oy+Math.sin(aw)*80,
+      col:i?"rgba(120,100,110,":"rgba(200,50,60,",w:w9});}
+   addP(C,8,p[0],p[1],{sp:150,a:aw+Math.PI,spread:.5,up:60,g:520,life:.6,r:3.2,col:"#5a4a52",typ:"smoke"});
    C.shake=Math.max(C.shake||0,.3);
    if(C.isMe&&k%2===0)sfx.lslash&&sfx.lslash();};
   run(0);for(let k=1;k<7;k++)later(C,k*.11,()=>run(k));
