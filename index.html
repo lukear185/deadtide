@@ -13855,6 +13855,39 @@ function drawUChgHero(c,u,t,k,col,U){
    c.lineTo(x+Math.cos(a2+.16)*R2,y-30*CH_UP+Math.sin(a2+.16)*R2*.7);c.closePath();c.fill();}
  }
 }
+/* ⭐⭐**必殺技には必ず前置きのモーションを置く**(2026-08-01ユーザー指示
+     「ヒーローの必殺技が全体的にボタン押した瞬間攻撃しちゃって味気ない。全ての技に前置きの
+       モーションが欲しい。暗黒の騎士だったら馬と一緒に一旦下がって溜めてから突進とか。
+       低レアのやつはそういうの短めで」)。
+   ⭐**長さはレア度で決める**=★1〜2は .34秒(テンポ優先)/★3 .5 /★4 .74 /★5 .95。
+   ⭐**溜めの間の体は各英雄の「溜めの構え」をそのまま使う**(o.chg=1 を渡す)=21人ぶん
+     すでに描き分けてあるので、ここで新しくポーズを書く必要はない。
+   ⭐**動きで見せる英雄は実際に後ろへ退がる**(`H_ULW_BACK`)=下がる→溜める→加速して出る。
+     ⚠退がるのは**絵の位置(px/py)だけ**で `u.d` は動かさない=当たり判定と技の起点が
+       ずれると「下がった所から技が出る」になる(実際に一度そうなった)。
+   ⚠**効果の判定は溜めが終わってから**=対象の一覧も撃つ瞬間に取り直す(溜め中に死んだ敵を殴らない)。
+   ⚠**溜めの間は通常攻撃をしない**=撃ちながら溜めると「何をしているのか」が読めない。
+   ⚠**音は足していない**(NOTESの掟「音を足す前に画だけで足りていないか先に確かめる」)。 */
+const H_ULW_RK=[.34,.34,.5,.74,.95];
+const H_ULW_BACK={hDark:150,hPost:90};/* 下がってから出る英雄(値=退がる距離) */
+const hUltWind=H=>H_ULW_RK[clamp((H&&H.rk||1)-1,0,4)];
+/* 溜めの絵。⚠**輪は外へ開かず内へ閉じる**=外へ開く輪は「もう出た」に見えて前置きにならない */
+function drawUltWind(c,u,t){
+ const w0=u.ulW0||.5,q=clamp(1-(u.ulW||0)/w0,0,1);
+ const U=UNITS[u.ui]||{},col=RARE[Math.min(4,(U.hro||1)-1)]||GOLD;
+ const x=u.px,y=u.py;
+ c.save();c.strokeStyle=col;c.fillStyle=col;c.lineWidth=7;
+ for(let i=0;i<2;i++){const p=clamp(q+i*.32,0,1),R=(92-70*p)*CH_UP;
+  c.globalAlpha=(.10+.40*q)*(1-i*.4);
+  c.beginPath();c.ellipse(x,y+2,R,R*.32,0,0,7);c.stroke();}
+ c.globalAlpha=.30+.5*q;/* 吸い寄せられる光の粒(外→内) */
+ for(let i=0;i<8;i++){const a=t*2.2+i*.785,d=(66-46*((t*1.7+i*.125)%1))*CH_UP*(1-q*.34);
+  c.beginPath();c.arc(x+Math.cos(a)*d,y-26*CH_UP+Math.sin(a)*d*.5,(1.4+1.6*q)*2.6,0,7);c.fill();}
+ if(q>.55){/* 溜まりきる直前だけ体が光を帯びる */
+  c.globalAlpha=(q-.55)/.45*.34;
+  c.beginPath();c.ellipse(x,y-30*CH_UP,(10+14*q)*CH_UP,(32+16*q)*CH_UP,0,0,7);c.fill();}
+ c.restore();
+}
 function hitFx(C,z,ang,col,prc,type){
  if(FXLV<1||!z)return;
  if(z.armor&&!prc&&type==='bullet')addFx(C,'ric',z.px,z.py-18*CH_UP,'',{ang});
@@ -14225,10 +14258,12 @@ function heroUlt(C,wave){
  const u=C.units.find(x=>x.hro&&!x.dead);if(!u)return false;
  const H=heroAt(C.hUi);if(!H)return false;
  C.hCg=0;
- /* ⭐**★4以上は必殺技に0.5秒の決めポーズを付ける**(2026-07-30・設計の5番目)。
-    ⚠それまでは押しても英雄は無反応で、fxだけが体から浮いて出ていた。
-    ⚠**効果は今までどおり即時**(遅らせると対象の一覧を取り直すことになり、挙動が変わる)。 */
- if(H.rk>=4){u.ulT=.55;u.ct=0;u.chg=0;}
+ /* ⭐⭐**前置きのモーション**(2026-08-01)。掟と長さの表は `H_ULW_RK` の所。
+    ⚠2026-07-30の「★4以上だけ0.5秒の決めポーズ」はこれに置き換えた(全員に付く)。 */
+ const wd=hUltWind(H);
+ u.ulW=wd;u.ulW0=wd;u.ulBk=H_ULW_BACK[H.id]||0;u.ulT=wd+.55;u.ct=0;u.chg=0;
+ const fire=()=>{
+ u.ulW=0;u.ulBk=0;
  const W=1+.13*(wave||1),live=C.zombies.filter(z=>!z.dead&&z.d>=0);
  /* 英雄の前方(=敵が来る側)にいる敵を距離順に拾う */
  const front=r=>live.filter(z=>{const g=u.d-z.d;return g>=-20&&g<=r;});
@@ -14421,7 +14456,9 @@ function heroUlt(C,wave){
  }else if(id==='hPyro'){/* 紅蓮の柱: 道の3か所に業火の柱を立てて燃やし続ける。
      ⚠自分の居る所から前方へ置く=道の決め打ちだと当たらないことがある(暗黒の騎士で踏んだ) */
   const q0=clamp(u.d||0,0,PLEN);
-  const pillar=(k)=>{const q=clamp(q0+k*(PLEN-q0)/3,0,PLEN),p=pathPos(q);/* ⚠1本目は自分の足元に立てる */
+  /* ⚠⚠**前方は d が減る向き**(2026-08-01に直した)=敵は d=0 の湧き口から来て PLEN のコアへ歩く。
+     `q0+k*(PLEN-q0)/3` と書いてあったので、**柱がコア側=敵の居ない後方に立っていた**。 */
+  const pillar=(k)=>{const q=clamp(q0-k*q0/3,0,PLEN),p=pathPos(q);/* ⚠1本目は自分の足元に立てる */
    for(const z of C.zombies){if(z.dead)continue;if(Math.abs(z.d-q)>150)continue;
     dmgZ(C,z,700*W,1);if(!z.dead)z.burnT=Math.max(z.burnT||0,5);}
    addFx(C,"ring",p[0],p[1],"",{r:150,col:"#ff6a2a"});
@@ -14436,7 +14473,9 @@ function heroUlt(C,wave){
   /* ⚠**自分の居る所から敵の湧く側へ駆ける**=道の決め打ちだと、英雄が前に出ている時に
      1歩目が誰にも当たらず「不発」に見える(検査 checkHero もそこを見ている) */
   const q0=clamp(u.d||0,0,PLEN);
-  const run=(k)=>{const q=clamp(q0+k*(PLEN-q0)/6,0,PLEN),p=pathPos(q);
+  /* ⚠⚠**前方は d が減る向き**(2026-08-01に直した)=`q0+k*(PLEN-q0)/6` と書いてあったので、
+     **コア側(敵の居ない後方)へ駆けていた**。1歩目しか当たらないので気づきにくい。 */
+  const run=(k)=>{const q=clamp(q0-k*q0/6,0,PLEN),p=pathPos(q);
    for(const z of C.zombies){if(z.dead)continue;if(Math.abs(z.d-q)>150)continue;
     dmgZ(C,z,620*W,1);if(!z.dead){z.d=Math.max(0,z.d-90);z.frzT=Math.max(z.frzT||0,1.1);}}
    addFx(C,"shock",p[0],p[1]+2,"",{r:150,col:"#8f1f28"});
@@ -14444,7 +14483,7 @@ function heroUlt(C,wave){
       「馬ごと突進して貫く系で風を切ってやりで進んでるエフェクト」)。
       ⚠進む向きは道で決まる=前後の経路の点から向きを出す(x決め打ちだと道が折れた所で逆を向く)。
       ⭐**進む向きへ後ろに尾を引く細い筋**を3本+穂先の高さに太い一条=「貫いて走った跡」に読める。 */
-   const pn=pathPos(clamp(q+70,0,PLEN)),aw=Math.atan2(pn[1]-p[1],pn[0]-p[0]);
+   const pn=pathPos(clamp(q-70,0,PLEN)),aw=Math.atan2(pn[1]-p[1],pn[0]-p[0]);
    for(let i=0;i<3;i++){const oy=-(14+i*13)*CH_UP,L=170+i*50,w9=i?2.4:5.4;
     addFx(C,"tr",p[0]-Math.cos(aw)*L,p[1]+oy-Math.sin(aw)*L,"",
      {x2:p[0]+Math.cos(aw)*80,y2:p[1]+oy+Math.sin(aw)*80,
@@ -14462,6 +14501,10 @@ function heroUlt(C,wave){
   addFx(C,'txt',u.px,u.py-84*CH_UP,'死の宣告');
   C.shake=Math.max(C.shake||0,.5);if(C.isMe)sfx.win&&sfx.win();
  }
+ };
+ /* ⚠押した瞬間に必ず何か起きること=溜めの絵(drawUltWind)と構えがその場で出る。
+    ⚠**溜めの待ち行列は campStep が回す**(later)。0秒なら今までどおりその場で撃つ */
+ if(wd>0)later(C,wd,fire);else fire();
  if(C.isMe)toast('⚡ 必殺技『'+H.ult+'』!');
  return true;
 }
@@ -14551,9 +14594,18 @@ function campStep(C,dt,wave){
  /* ユニット */
  const MR=38;
  for(let ui2=0;ui2<UNITS.length;ui2++)if(C.ucd[ui2]>0)C.ucd[ui2]-=dt;
- for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;}
+ for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=(Math.cos(p[2])>=-.05?-1:1)*(u.back?-1:1);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;
+  /* ⭐必殺技の前置き。⚠退がるのは**絵の位置だけ**で u.d は動かさない(技の起点をずらさない) */
+  if(u.ulW>0){u.ulW-=dt;
+   if(u.ulBk>0){const q=clamp(1-u.ulW/(u.ulW0||1),0,1);
+    /* 下がる(0→.66で目一杯)→加速して戻る(.66→1で0へ)。
+       ⚠**退がるのは d を増やす向き**=敵は d の小さい側から来る(d=0が湧き口・PLENがコア) */
+    const e=q<.66?Math.sin(q/.66*1.5708):Math.pow(1-(q-.66)/.34,2);
+    const pb=pathPos(clamp(u.d+u.ulBk*e,0,PLEN));u.px=pb[0];u.py=pb[1];}}}
  for(const u of C.units){
   if(u.dead)continue;
+  /* ⚠溜めの間は通常攻撃をしない=撃ちながら溜めると何をしているのか読めない */
+  if(u.ulW>0){u.ct=0;u.chg=0;continue;}
   const U=UNITS[u.ui];u.cd-=dt;
   /* 部隊レベル補正込み攻撃力。⚠**暁の号令**(uOv)はここと dmgU の2か所だけで効かせる */
   /* ⚠**溜めたぶんを1発に戻す**(uChgM)=実効DPSは溜めを入れる前とぴったり同じ。
@@ -15835,6 +15887,8 @@ function renderCamp(C,t){
   /* ⭐溜め中は焼いたコマ(歩いている)が使えないので、直に描く方へ回す */
   const chg9=u.ct?clamp(u.chg||0,0,1):0,ul9=u.ulT>0?clamp(u.ulT/.55,0,1):0;
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,0);/* 足元の輪は体の後ろ */
+  /* ⭐必殺技の前置き(2026-08-01)=溜めている間だけ光を内へ集める */
+  if(u.ulW>0&&FXLV>0)drawUltWind(c,u,t);
   /* ⭐必殺の決めポーズ(★4以上)=足元から光の輪が2枚立ち上がる */
   if(ul9>0&&FXLV>0){const uc9=(UNITS[u.ui]&&UNITS[u.ui].hro)?(RARE[Math.min(4,UNITS[u.ui].hro-1)]||GOLD):GOLD;
    c.save();c.strokeStyle=uc9;c.lineWidth=9;

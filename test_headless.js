@@ -2163,11 +2163,22 @@ function checkHero(){
   campStep(me,.001,5);/* ⚠画面上の座標(px/py)はcampStepでしか入らない=範囲判定の必殺技が空振りする */
   const snap=()=>[me.zombies.reduce((a,z)=>a+z.hp,0),me.core,me.units.length,
    me.zombies.reduce((a,z)=>a+(z.frzT||0)+(z.slowT||0),0),me.zombies.reduce((a,z)=>a+z.d,0)];
-  const s0=snap();
   let ok=false;
   try{ok=heroUlt(me,5);}catch(e){console.log('FAIL: 必殺技『'+h.ult+'』で例外: '+e.message);process.exit(1);}
   if(!ok){console.log('FAIL: 必殺技が発動しない '+h.id);process.exit(1);}
   if((me.hCg||0)!==0){console.log('FAIL: 必殺技のチャージが戻っていない '+h.id);process.exit(1);}
+  /* ⭐⭐**必殺技には前置きのモーションがある**(2026-08-01ユーザー指示)=押した瞬間には効かない。
+     ⚠低レアは短め・★5は長めだが、**0秒の英雄が居てはいけない**(それが「味気ない」の正体) */
+  if(!((hu.ulW||0)>0)){console.log('FAIL: 必殺技に前置きのモーションが無い '+h.id);process.exit(1);}
+  frames(2,.016);/* 溜め中の描画を1回通す(drawUltWindで例外が出ないか) */
+  /* ⚠**効果の前後を測るのはここから**=溜めの間に敵が歩くぶんを s0 に含める */
+  const s0=snap();
+  /* ⚠**campStepで待たない**=敵が歩いてしまい「効果が出たのか敵が動いただけか」を見分けられなくなる。
+     待ち行列(dly)だけを直に進める。⚠campStepと違い例外を握り潰さないので不具合も出る */
+  for(let k=0;k<80;k++){
+   if(!me.dly||!me.dly.length)break;
+   for(const q of me.dly.slice()){q.t-=.05;if(q.t<=0&&!q.done){q.done=1;q.fn();}}
+   me.dly=me.dly.filter(q=>!q.done);}
   const s1=snap();
   if(s0.every((v,i)=>Math.abs(v-s1[i])<1e-6)){console.log('FAIL: 必殺技『'+h.ult+'』に何の効果も無い');process.exit(1);}
   if(s1[0]<s0[0])dmgN++;
