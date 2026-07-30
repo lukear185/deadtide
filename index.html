@@ -10159,7 +10159,15 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(o.hitT>0)c.filter='brightness(2.1)';
  /* ⭐英雄の光は**レア度の色**にする(第91弾)。全員が同じ琥珀色だと、せっかく11人ぶん
     描き分けた色が光に飲まれて全部金色に見えた(並べて撮って気づいた) */
- if(tier===4){c.shadowColor=U.hro?(RARE[Math.min(4,U.hro-1)]||AMBER):AMBER;c.shadowBlur=10;}
+ /* ⭐★4の光は**影(shadowBlur)ではなく背面の輪**にする(2026-07-31ユーザー指摘
+    「金色の光が絵にかぶって色がぜんぶ濁っている」)。
+    ⚠⚠ は**描く図形1つ1つに掛かる**ので、体・腕・武器の重なった所が光で埋まり、
+      塗り分けが飛んで金色の塊になる。⚠シルエットの層では描かない(真っ黒な塊になる) */
+ if(tier===4&&!o.sil){const gc9=U.hro?(RARE[Math.min(4,U.hro-1)]||AMBER):AMBER;
+  c.save();c.fillStyle=gc9;
+  for(let g9=0;g9<3;g9++){c.globalAlpha=.10-g9*.028;
+   c.beginPath();c.ellipse(0,-26,19+g9*8,29+g9*10,0,0,7);c.fill();}
+  c.restore();}
  c.lineWidth=2.4;c.strokeStyle=INK;/* ⚠部隊側は c.scale(tsc) の中なので、これで既に絵の大きさに比例している */
  if(U.hro){drawHeroBody(c,U,walk,o);c.restore();return;}/* 🦸英雄は専用の姿 */
  if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
@@ -10640,7 +10648,14 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=INK;/* 歯(⚠等間隔に並べない) */
   for(const k of [16.4,20.6,25,29.4])c.fillRect(k,-33,2.2,2.6);
   for(const k of [18.4,23.4,28])c.fillRect(k,-24.6,2,2.4);}
- else if(id==='med'){c.fillStyle='#e8e4d8';rr(c,9,-30,10,8,2);c.fill();c.lineWidth=2.4;c.stroke();c.fillStyle=RUST;c.fillRect(12.5,-28.6,3,1.4);c.fillRect(13.3,-29.4,1.4,3);}
+ else if(id==='med'){/* ⚠**左右に白い箱が対称に並んで「スーツケース2つ」**に見えていた(2026-07-31)。
+    ⭐前は**注射器**にする=背中の薬袋と形が違うので、同じ物が2つ並ばない。 */
+  c.fillStyle='#cfd5da';/* 筒 */
+  c.beginPath();c.moveTo(6,-30.4);c.lineTo(19,-30.4);c.lineTo(19,-25.6);c.lineTo(6,-25.6);c.closePath();c.fill();c.lineWidth=2.4;c.stroke();
+  c.fillStyle=LIFE;c.fillRect(8,-29.2,8,2.6);/* 中の薬(緑=回復だと分かる) */
+  c.fillStyle='#8a8f96';/* 押し子と針 */
+  c.beginPath();c.moveTo(3.4,-31.6);c.lineTo(6,-31.6);c.lineTo(6,-24.4);c.lineTo(3.4,-24.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#cfd5da';c.fillRect(19,-28.8,7,1.8);}
  else if(id==='snp'){uGun(c,3,-26.4,30,4.2,'#3a3128',0);
   c.fillStyle='#4a5560';/* 照準器(これが狙撃銃の決め手) */
   c.beginPath();c.moveTo(6,-36.4);c.lineTo(20,-36.4);c.lineTo(20,-32.2);c.lineTo(6,-32.2);c.closePath();c.fill();c.stroke();
@@ -10699,24 +10714,28 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.restore();}
  else if(id==='smg'){uGun(c,5,-26,18,4.6,'#3f4a54',1);}
  else if(id==='pike'){c.fillStyle='#8a6a45';/* 柄 */
-  c.beginPath();c.moveTo(-8,-19.6);c.lineTo(-7.2,-23.6);c.lineTo(31,-35.2);c.lineTo(31.8,-31.2);c.closePath();c.fill();c.stroke();
+  /* ⚠**斜め上に振り上げていた**(2026-07-31)=『間合いの外から刺す』兵に見えない。
+     ⭐ほぼ水平に前へ構える。⚠わずかに下げると突き出している感じが出る */
+  c.beginPath();c.moveTo(-9,-25.6);c.lineTo(-9,-29.6);c.lineTo(33,-31.4);c.lineTo(33,-27.4);c.closePath();c.fill();c.stroke();
   c.fillStyle='#5c4326';/* 握りの巻き */
-  c.beginPath();c.moveTo(5,-25.4);c.lineTo(4.2,-29.4);c.lineTo(13,-32);c.lineTo(13.8,-28);c.closePath();c.fill();
+  c.beginPath();c.moveTo(4,-28.2);c.lineTo(4,-30.4);c.lineTo(13,-30.8);c.lineTo(13,-28.6);c.closePath();c.fill();
   c.fillStyle='#cfd5da';/* 穂先(木の葉形。⚠二等辺三角形だと矢印に見える) */
-  c.beginPath();c.moveTo(29.6,-38.6);
-  c.quadraticCurveTo(40,-38,46,-33);
-  c.quadraticCurveTo(38.6,-31,30.4,-30.2);
-  c.quadraticCurveTo(32.6,-34.4,29.6,-38.6);c.closePath();c.fill();c.stroke();}
+  c.beginPath();c.moveTo(32,-33.4);
+  c.quadraticCurveTo(41,-33.4,47,-29.4);
+  c.quadraticCurveTo(41,-25.4,32,-25.4);
+  c.quadraticCurveTo(34.4,-29.4,32,-33.4);c.closePath();c.fill();c.stroke();}
  else if(id==='flm'){c.fillStyle='#5c5c66';rr(c,-18,-38,9,22,4);c.fill();c.stroke();/* 背中の燃料タンク */
   uNoz(c,7,-28,19,'#8a4b28');
   c.fillStyle='#ffb347';c.beginPath();c.arc(30,-28,4+Math.sin(t*20)*2,0,7);c.fill();
   c.fillStyle=GLOW;c.beginPath();c.arc(29,-28,2+Math.sin(t*20),0,7);c.fill();}
  else if(id==='gld'){/* 鋼鉄の大盾(縁+中央の鋲+鋲打ち) */
   c.fillStyle='#8a8f96';
-  c.beginPath();c.moveTo(9,-47.4);c.lineTo(22.4,-44.4);c.lineTo(22.4,-9.6);c.lineTo(9,-6.6);c.closePath();c.fill();c.lineWidth=2.6;c.stroke();c.lineWidth=2.4;
-  c.fillStyle=shade('#8a8f96',.72);c.fillRect(9.8,-42.4,12,3);c.fillRect(9.8,-14.6,12,3);
-  c.fillStyle=GOLD;c.beginPath();c.arc(15.6,-26,4.6,0,7);c.fill();c.stroke();
-  c.fillStyle='#5c6068';for(const k of [-37,-31,-21,-19.4]){c.beginPath();c.arc(20,k,1.5,0,7);c.fill();}}
+  /* ⚠**盾が大きすぎて何者か読めなかった**(2026-07-31)=顔も脚も隠れて「鉄の板」だけになる。
+     ⭐上を胸まで下げ、下は膝の上で止める=顔と脚が出るぶん「盾を構えた兵」に読める */
+  c.beginPath();c.moveTo(9,-41.6);c.lineTo(22.4,-38.8);c.lineTo(22.4,-13.6);c.lineTo(9,-10.8);c.closePath();c.fill();c.lineWidth=2.6;c.stroke();c.lineWidth=2.4;
+  c.fillStyle=shade('#8a8f96',.72);c.fillRect(9.8,-37.4,12,2.6);c.fillRect(9.8,-17.4,12,2.6);
+  c.fillStyle=GOLD;c.beginPath();c.arc(15.6,-26,4,0,7);c.fill();c.stroke();
+  c.fillStyle='#5c6068';for(const k of [-33,-30,-21.4,-19.8]){c.beginPath();c.arc(20,k,1.5,0,7);c.fill();}}
  else if(id==='elec'){/* 電磁銃(本体+加速コイル3輪+放電) */
   c.fillStyle='#3f4a54';
   c.beginPath();c.moveTo(3,-31.6);c.lineTo(15,-31.6);c.lineTo(15,-23.6);c.lineTo(3,-23.6);c.closePath();c.fill();c.stroke();
@@ -10797,7 +10816,18 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
    c.quadraticCurveTo(g[0]*.66,g[1]-3,g[0],g[1]);
    c.quadraticCurveTo(g[2],g[3],-9,-29);
    c.closePath();c.fill();c.stroke();}
-  c.fillStyle='#585e4c';rr(c,4,-42,24,7,3);c.fill();c.stroke();
+  /* ⭐**肩に載せた多連装の発射筒**(2026-07-31ユーザー指摘「円柱みたいな意味わからんやつ」)。
+     ⚠それまで**角丸の長方形1本**で、何の道具か一切読めなかった。
+     ⭐**筒の口を3つ見せる+弾頭を覗かせる**=『空爆支援を伴う精鋭』の道具だと分かる。 */
+  c.fillStyle='#585e4c';/* 筒の束(本体) */
+  c.beginPath();c.moveTo(2,-46.4);c.lineTo(21,-45);c.lineTo(21,-33.6);c.lineTo(2,-32.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade('#585e4c',1.34);/* 肩に載る台 */
+  c.beginPath();c.moveTo(0,-38.6);c.lineTo(6,-38.2);c.lineTo(5.2,-30.6);c.lineTo(-.6,-31);c.closePath();c.fill();c.stroke();
+  for(let k9=0;k9<3;k9++){const yy=-44+k9*4.2;
+   c.fillStyle='#2c333a';/* 筒の口(⚠塗りだけ=小さい円に黒フチを掛けると黒い円盤になる) */
+   c.beginPath();c.ellipse(20.4,yy,2.1,1.9,0,0,7);c.fill();
+   c.fillStyle=GOLD;/* 覗いている弾頭 */
+   c.beginPath();c.moveTo(21.6,yy-1.5);c.lineTo(25.6,yy);c.lineTo(21.6,yy+1.5);c.closePath();c.fill();}
   c.fillStyle=GOLD;c.beginPath();c.moveTo(-2,-50);c.lineTo(2,-58);c.lineTo(6,-50);c.closePath();c.fill();c.stroke();
   if(vt>=3&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(16,-40,4+Math.sin(t*10)*2,0,7);c.fill();c.globalAlpha=1;}}
  c.restore();/* 武器の縮小ここまで */
