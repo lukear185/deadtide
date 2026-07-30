@@ -11754,14 +11754,40 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   const GA=vt?U.c:'#d9a13d',GD='#a8762a',WH='#f5efe0',HR='#e8c366',SK=U_SKIN;
   const sw=walk*3.2;
   const blean=Math.sin(t*10+ph+1.2);/* 上体のよろめき(脚と位相をずらす) */
-  /* ⭐剣を振る進み(表の中身と段の意味は下の「剣を振る」の所に書いてある) */
-  const vp=clamp(o.vsw||0,0,1),VS=[[-2.35,.35,.95],[1.25,-1.10,-1.65],[-3.05,-.15,.45]][(o.vcb||0)%3];
-  const VR=-.24;let sa,vtw=0;
+  /* ⭐⭐⭐**縦振りにしない**(2026-08-01ユーザー指摘「バットの時もいったけど縦振りだけになるのなんなの?」)。
+     ⚠⚠**画面の平面で角度を1周させると、必ず風車のように縦に回る棒に見える**
+       (バットで3回踏んで、4回目にやっと通った掟。剣でも同じ)。
+     ⭐**上から見た角度 TH で持ち、画面上の見え方はそこから計算する**:
+       画面x = cos(TH) / 画面y = sin(TH)*TZ (**TZ=スイング面の傾き。小さいほど水平**)
+       画面上の角度は **必ず ±TILT に収める**=真上・真下を向く瞬間を作らない。
+       奥/手前を向く所は角度ではなく「**短く・太く**」(flen/fw)で表す。
+     ⭐**TH は1周期で -200°→+160° と一方向にだけ回る**(戻らない)。
+     ⭐**3種は「面の傾き(TZ)と面そのものの角度(PLANE)」で分ける**:
+       ①水平の薙ぎ(面は寝ている) ②斜めの袈裟(面を29°倒す) ③**突き**(回さない=腕ごと前へ出す)。
+       ⚠3種とも**縦には回さない**。 */
+  const vp=clamp(o.vsw||0,0,1),vcb=(o.vcb||0)%3;
+  const VC=[[.16,.26,0],[.34,.34,-.52],[0,0,-.10]][vcb],TZv=VC[0],TILTv=VC[1],PLANEv=VC[2];
+  const VR=-.24;let sa=VR,vtw=0,flen=1,fw=1,thr=0,th9=0,cs9=1,sn9=0;
   if(vp<=0){sa=VR+Math.sin(t*3)*.03;}
-  else if(vp<.20){const q=vp/.20;sa=VS[1]+(VS[2]-VS[1])*(q*(2-q));vtw=.15*(1-q);}
-  else if(vp<.60){const q=(vp-.20)/.40,e=q*q*(3-2*q);sa=VS[2]+(VR-VS[2])*e;}
-  else if(vp<.86){const q=(vp-.60)/.26,e=q*q*(3-2*q);sa=VR+(VS[0]-VR)*e;vtw=-.13*e;}
-  else{const q=(vp-.86)/.14,e=q*q;sa=VS[0]+(VS[1]-VS[0])*e;vtw=-.13+.28*e;}
+  else if(vcb===2){/* ③突き=回さない。腕ごと前へ突き出して引く */
+   sa=PLANEv;
+   if(vp<.20){const q=vp/.20;thr=13-5*q;vtw=.13*(1-q);}
+   else if(vp<.60){const q=(vp-.20)/.40,e=q*q*(3-2*q);thr=8-8*e;}
+   else if(vp<.86){const q=(vp-.60)/.26,e=q*q*(3-2*q);thr=-7*e;vtw=-.12*e;}
+   else{const q=(vp-.86)/.14,e=q*q;thr=-7+20*e;vtw=-.12+.25*e;}
+  }else{
+   let TH;
+   if(vp<.20){const q=vp/.20;TH=-10+65*(q*(2-q));vtw=.14*(1-q);}
+   else if(vp<.60){const q=(vp-.20)/.40;TH=55+75*(q*q*(3-2*q));}
+   else if(vp<.86){const q=(vp-.60)/.26,e=q*q*(3-2*q);TH=130+30*e;vtw=-.13*e;}
+   else{const q=(vp-.86)/.14,e=q*q;TH=-200+190*e;vtw=-.13+.27*e;}
+   th9=TH*Math.PI/180;cs9=Math.cos(th9);sn9=Math.sin(th9);
+   const tilt=clamp(Math.atan2(sn9*TZv,Math.abs(cs9)),-TILTv,TILTv);
+   sa=(cs9<0?Math.PI-tilt:tilt)+PLANEv;
+   /* ⚠**0まで潰さない**=潰し切ると奥を通る区間で剣が消えて見える */
+   flen=.42+.58*Math.sqrt(cs9*cs9+sn9*sn9*TZv*TZv);
+   fw=1+.55*(1-Math.abs(cs9));
+  }
   /* --- 翼(いちばん奥)。⚠**幅のある羽**を扇に。細い三角は黒フチに食われて棘になる --- */
   /* ⚠**大きくしすぎない**=顔にかぶって何者か読めなくなる(撮って縮めた)。
      根元は肩の後ろ、先は頭より少し上まで */
@@ -11827,15 +11853,28 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
      ⭐**3種を順に出す**(`o.vcb`)= ①袈裟斬り ②逆袈裟(下から) ③水平の薙ぎ。連撃に見える。
      ⚠**腕と剣は一体で肩を軸に回す**(手首だけ回すと腕が付いてこない)。
      ⚠**上体の捻り**も一緒に動かす=これが無いと腕だけ回って体が板のまま。 --- */
-  /* 掃いた跡(⚠振っている間だけ・シルエットの層では描かない=真っ黒な塊になる) */
-  if(!o.sil&&vp>0&&(vp>=.86||vp<.18)){
-   const a1v=sa,a0v=sa-(VS[1]-VS[0])*.30;
-   c.save();c.globalAlpha=.34;c.fillStyle='#fff6d8';
-   c.beginPath();
-   for(let i=0;i<=10;i++){const a=a0v+(a1v-a0v)*i/10;c.lineTo(6+Math.cos(a)*34,-30+Math.sin(a)*34);}
-   for(let i=10;i>=0;i--){const a=a0v+(a1v-a0v)*i/10;c.lineTo(6+Math.cos(a)*15,-30+Math.sin(a)*15);}
-   c.closePath();c.fill();c.restore();}
-  c.save();c.translate(4,-31);c.rotate(sa-VR);c.translate(-4,31);
+  /* ⭐⭐掃いた跡=**平たい楕円の弧**(水平の円を横から見た形そのもの)。これ1枚で「横薙ぎ」が伝わる。
+     ⚠シルエットの層では描かない(silLayer は globalAlpha を捨てるので真っ黒な塊になる)。
+     ⭐**光感**は加算(lighter)の白い芯で出す(2026-08-01ユーザー指摘「斬撃も全然光感ない」)。 */
+  if(!o.sil&&vp>0&&(vp>=.84||vp<.24)){
+   c.save();c.translate(5,-30);c.rotate(PLANEv);c.globalCompositeOperation='lighter';
+   if(vcb===2){/* ③突き=前へ伸びる光の筋 */
+    c.globalAlpha=.55;c.fillStyle='#ffedb4';
+    c.beginPath();c.moveTo(8,-3.4);c.lineTo(46+thr,-1.2);c.lineTo(46+thr,1.2);c.lineTo(8,3.4);c.closePath();c.fill();
+    c.globalAlpha=.8;c.fillStyle='#fffdf2';
+    c.beginPath();c.moveTo(10,-1.4);c.lineTo(44+thr,-.5);c.lineTo(44+thr,.5);c.lineTo(10,1.4);c.closePath();c.fill();
+   }else{
+    const a1v=th9,a0v=th9+1.05;
+    const arcp=(R,f)=>{c.beginPath();
+     for(let i=0;i<=12;i++){const a=a0v+(a1v-a0v)*i/12;c.lineTo(Math.cos(a)*R,Math.sin(a)*R*TZv);}
+     for(let i=12;i>=0;i--){const a=a0v+(a1v-a0v)*i/12;c.lineTo(Math.cos(a)*(R*f),Math.sin(a)*(R*f)*TZv);}
+     c.closePath();c.fill();};
+    c.globalAlpha=.34;c.fillStyle='#ffd98a';arcp(36,.40);/* 外の金の光 */
+    c.globalAlpha=.62;c.fillStyle='#fff6d8';arcp(33,.62);/* 中の白 */
+    c.globalAlpha=.85;c.fillStyle='#fffdf4';arcp(31,.84);/* 芯 */
+   }
+   c.restore();}
+  c.save();c.translate(4,-31);c.rotate(sa-VR);c.translate(-4,31);c.translate(thr,0);
   /* --- 手前の腕(肘で折る。⚠付け根は胴の前ぶちに置く) --- */
   c.fillStyle=shade(GA,1.08);
   c.beginPath();c.moveTo(3.4,-32.6);c.lineTo(9.4,-31.4);c.lineTo(9.4,-27.4);c.lineTo(3.4,-28.4);c.closePath();c.fill();c.stroke();
@@ -11844,6 +11883,8 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.beginPath();c.moveTo(12.4,-31.4);c.lineTo(16,-31);c.lineTo(16,-27);c.lineTo(12.4,-27.2);c.closePath();c.fill();c.stroke();
   /* --- ⭐光の剣。⚠細く長く先を尖らせる=太い板だと翼に見える --- */
   c.save();c.translate(13.6,-29.2);c.rotate(VR);
+  /* ⚠遠近の短縮(奥/手前を向く所で短く太く)。⚠`lineWidth` は補正しない=補正すると片側だけ黒フチが残って歪む */
+  if(flen!==1||fw!==1)c.scale(flen,fw);
   c.fillStyle='#7a6636';/* 柄 */
   c.beginPath();c.moveTo(-8,-2.2);c.lineTo(-1,-2.2);c.lineTo(-1,2.2);c.lineTo(-8,2.2);c.closePath();c.fill();c.stroke();
   c.fillStyle=GA;/* 鍔(横に張り出す=剣だと一目で分かる) */
@@ -11852,6 +11893,14 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.beginPath();c.moveTo(1.8,-3.4);c.lineTo(18,-2.4);c.lineTo(28,0);c.lineTo(18,2.4);c.lineTo(1.8,3.4);c.closePath();c.fill();c.stroke();
   c.fillStyle='#fffaea';/* 刃の芯(白)=ここが『光の剣』の正体 */
   c.beginPath();c.moveTo(3,-1.9);c.lineTo(18,-1.2);c.lineTo(25,0);c.lineTo(18,1.2);c.lineTo(3,1.9);c.closePath();c.fill();
+  /* ⭐**刃の発光**(2026-08-01ユーザー指摘「光感がない」)。⚠加算で**細い芯だけ**光らせる
+     =広い面を加算すると明るい地面と混ざって白い塊になる(爆発で踏んだのと同じ穴) */
+  if(!o.sil){c.save();c.globalCompositeOperation='lighter';
+   c.globalAlpha=.34;c.fillStyle='#fff3cf';
+   c.beginPath();c.moveTo(2,-3.1);c.lineTo(18,-2.1);c.lineTo(29,0);c.lineTo(18,2.1);c.lineTo(2,3.1);c.closePath();c.fill();
+   c.globalAlpha=.7;c.fillStyle='#ffffff';
+   c.beginPath();c.moveTo(4,-.9);c.lineTo(18,-.55);c.lineTo(26,0);c.lineTo(18,.55);c.lineTo(4,.9);c.closePath();c.fill();
+   c.restore();}
   c.restore();
   c.restore();/* ⭐腕と剣をまとめて肩で回すここまで */
   /* --- 首 → 頭。⚠首は胴より先に描く --- */
@@ -14723,6 +14772,13 @@ function renderCamp(C,t){
    c.beginPath();c.arc(0,0,rr,sw-.85,sw+.85);c.stroke();
    if(lv>=2){c.strokeStyle='rgba(255,255,255,'+(a4*.75).toFixed(2)+')';c.lineWidth=1.6;
     c.beginPath();c.arc(0,0,rr*1.2,sw-.62,sw+.62);c.stroke();}
+   /* ⭐**光の斬撃は加算で芯を光らせる**(2026-08-01)。⚠lv3(ヴァルキリー・英雄)だけ=乱発しない */
+   if(lv>=3){c.globalCompositeOperation='lighter';
+    c.strokeStyle='rgba(255,244,214,'+(a4*.55).toFixed(2)+')';c.lineWidth=9;
+    c.beginPath();c.arc(0,0,rr,sw-.7,sw+.7);c.stroke();
+    c.strokeStyle='rgba(255,255,255,'+(a4*.9).toFixed(2)+')';c.lineWidth=2.4;
+    c.beginPath();c.arc(0,0,rr,sw-.5,sw+.5);c.stroke();
+    c.globalCompositeOperation='source-over';}
    c.lineCap='butt';c.globalAlpha=1;c.restore();}
   else if(e.k==='rkt'){/* ⭐ロケット弾(⚠**山なりにしない**=筒の先からまっすぐ速く飛ぶ) */
    const lfR=fxLife('rkt',e),pR=clamp((e.t-(e.d0||0))/lfR,0,1);
@@ -14816,16 +14872,30 @@ function renderCamp(C,t){
    const wx=e.x+(e.x2-e.x)*p9,wy=e.y+(e.y2-e.y)*p9;
    const wa=Math.atan2(e.y2-e.y,e.x2-e.x);
    c.save();c.translate(wx,wy);c.rotate(wa);
-   c.globalAlpha=.9-p9*.25;c.lineCap='round';
+   c.lineCap='round';
    /* ⚠**弧は大きく**=小さいと34pxでは点にしか見えない(参考絵に寄せて2026-07-31に拡大) */
-   c.strokeStyle=e.col||'#ffe9a8';c.lineWidth=8;
-   c.beginPath();c.arc(-24,0,30,-1.15,1.15);c.stroke();
-   c.strokeStyle='rgba(255,255,255,.95)';c.lineWidth=3.2;
-   c.beginPath();c.arc(-24,0,30,-.85,.85);c.stroke();
+   /* ⭐⭐**光感は加算(lighter)の重ねで出す**(2026-08-01ユーザー指摘「斬撃も全然光感ない」)。
+      ⚠通常合成の帯を1本引いても「黄色い紙のリボン」にしかならない。
+      ⭐**外の広いにじみ(薄い金)→中の光(白金)→細い白い芯**の3枚を加算で重ねると刃の光になる。
+      ⚠芯だけ細く=太い面を加算すると明るい地面と混ざって白い塊になる(爆発で踏んだ穴)。 */
+   c.globalCompositeOperation='lighter';
+   const fade=1-p9*.3;
+   c.globalAlpha=.26*fade;c.strokeStyle=e.col||'#ffe9a8';c.lineWidth=17;
+   c.beginPath();c.arc(-24,0,30,-1.25,1.25);c.stroke();
+   c.globalAlpha=.55*fade;c.strokeStyle='#fff0c2';c.lineWidth=8;
+   c.beginPath();c.arc(-24,0,30,-1.12,1.12);c.stroke();
+   c.globalAlpha=.95*fade;c.strokeStyle='#ffffff';c.lineWidth=3;
+   c.beginPath();c.arc(-24,0,30,-.86,.86);c.stroke();
+   /* 尾を引く残光(⚠後ろへ薄く=飛んでいるのが分かる) */
+   c.globalAlpha=.30*fade;c.strokeStyle='#ffe9a8';c.lineWidth=5;
+   c.beginPath();c.arc(-36,0,30,-.7,.7);c.stroke();
+   c.globalAlpha=.16*fade;c.lineWidth=3;
+   c.beginPath();c.arc(-48,0,30,-.5,.5);c.stroke();
    /* きらめき(⚠3粒まで=増やすと弧が埋まる) */
-   c.fillStyle='rgba(255,255,255,.9)';
+   c.globalAlpha=.9*fade;c.fillStyle='#ffffff';
    for(let i9=0;i9<3;i9++){const aa9=(i9-1)*.8,rr9=30+((i9*13)%7)-3;
-    c.beginPath();c.arc(-24+Math.cos(aa9)*rr9,Math.sin(aa9)*rr9,1.8,0,7);c.fill();}
+    c.beginPath();c.arc(-24+Math.cos(aa9)*rr9,Math.sin(aa9)*rr9,2.2,0,7);c.fill();}
+   c.globalCompositeOperation='source-over';
    c.lineCap='butt';c.globalAlpha=1;c.restore();}
   else if(e.k==='pel'){/* ⭐ドローンが撃つ小粒の弾(2026-07-26 第68弾)。短い尾を引いて飛ぶ */
    const lfP=fxLife('pel',e),p6=clamp(e.t/lfP,0,1);
