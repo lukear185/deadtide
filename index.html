@@ -2733,11 +2733,17 @@ function pathPos(d){d=clamp(d,0,PLEN);for(const s of SEG){if(d<=s.s+s.l){const t
      実機では**敵が右上に居るのに部隊が全員左を向いて撃っていた**。
    ⭐**少し先の道の点まで見に行って左右を決める**。近くで差が出なければ順に遠くを見る。
    sign=+1 → d が増える側(コア側) / sign=-1 → d が減る側(敵の湧く側)を向く。 */
-const PF_L=[90,200,380];
+/* ⚠⚠**遠くまで見に行く段を用意すること**(2026-08-01ユーザー指摘「一番長い通路だけ左向いちゃう」)。
+   ステージ1の右端は**505も続く真縦の道**で、90/200/380 では最後まで縦のまま=左右が決まらず
+   古い分岐(左)に落ちていた。⭐**道の一番長い直線より長い段**(700/1200)まで置く。 */
+const PF_L=[90,200,380,700,1200];
 function pathFace(d,px,sign,ang){
- for(let i=0;i<3;i++){const q=pathPos(clamp(d+sign*PF_L[i],0,PLEN)),dx=q[0]-px;
+ for(let i=0;i<PF_L.length;i++){const q=pathPos(clamp(d+sign*PF_L[i],0,PLEN)),dx=q[0]-px;
   if(Math.abs(dx)>8)return dx>0?1:-1;}
- return (Math.cos(ang)>=-.05?1:-1)*sign;/* 道が真縦のまま=今までどおり道の向きで決める */
+ /* それでも差が出ない=道が端まで真縦。最後は経路の端(湧き口/コア)の側を向く */
+ const e=pathPos(sign<0?0:PLEN),ex=e[0]-px;
+ if(Math.abs(ex)>8)return ex>0?1:-1;
+ return (Math.cos(ang)>=-.05?1:-1)*sign;
 }
 /* 部隊の向き: ①狙っている敵が居ればその敵の側 ②後退中は進む向き ③それ以外は敵の来る側。
    ⚠真上・真下の敵(横の差が小さい)では①を使わない=左右にちらつく */
@@ -14450,12 +14456,18 @@ function heroUlt(C,wave){
   for(let k=0;k<4;k++){const p=pathPos(clamp(PLEN*(.2+k*.2),0,PLEN));addFx(C,'boomL',p[0],p[1],'',{d0:.06*k});}
   addFx(C,'ring',u.px,u.py,'',{r:420,col:GOLD2});
   C.shake=Math.max(C.shake||0,.6);if(C.isMe)sfx.boom&&sfx.boom();
- }else if(id==='hGeo'){/* ⭐撃墜: 構えて**10発を連続で撃ち込む**(2026-08-01ユーザー指示)。
+ }else if(id==='hGeo'){/* ⭐撃墜: 構えて**9発を連続で撃ち込み、短く溜めてから貫通弾で締める**
+     (2026-08-01ユーザー指示「必殺中はずっとしゃがみ。最後の一発は短い溜めのあと貫通弾
+       (少しでかめで軌道が見える)」)。
      ⚠**撃つ→コッキング→撃つ**の繰り返しに見せる=1発ごとに 反動(fireT)+薬莢+銃口の煙 を出し、
      0.28秒の間隔を空ける(間を詰めると機関銃に見える)。
-     ⚠**構えは自動で出る**=必殺の間は chg=1 が渡るので、しゃがんでスコープを覗く姿になる。 */
+     ⚠⚠**しゃがみは `u.ulT` が残っている間しか出ない**=技が3秒近く続くのに ulT が1.5秒で切れて
+       **途中から立って撃っていた**(ユーザー指摘)。1発ごとに ulT を継ぎ足すこと。
+     ⚠最後の溜めは `u.ulW` を立て直して見せる(前置きと同じ絵と同じ「通常攻撃をしない」扱いが乗る)。 */
   const d5g=(u.dr||-1);
+  const hold=()=>{u.ulT=Math.max(u.ulT||0,.62);};/* ⚠これがしゃがみを保つ */
   const shoot=(k)=>{
+   hold();
    const ls=C.zombies.filter(z=>!z.dead&&z.d>=0);if(!ls.length)return;
    ls.sort((a,b)=>b.hp-a.hp);
    const z=ls[Math.min(ls.length-1,(Math.random()*2)|0)];
@@ -14469,8 +14481,33 @@ function heroUlt(C,wave){
    geoSpent(C,u,mx,my,d5g);
    C.shake=Math.max(C.shake||0,.18);
    if(C.isMe)sfx.snipe&&sfx.snipe();};
+  /* ⭐締めの貫通弾=**前方の敵を並びごと撃ち抜く**。
+     ⚠「軌道が見える」ようにする=①太い曳光線を `sus`(撃ちっぱなし)で残す
+       ②**大きめの弾が実際に飛ぶ**(fball を揺らさない設定で撃つ)
+       ③抜けた先まで線を伸ばす=止まらずに通り抜けたことが分かる。 */
+  const bigShot=()=>{
+   u.ulW=0;u.ulT=Math.max(u.ulT||0,.86);
+   const mx=u.px+d5g*30*CH_UP,my=u.py-27*CH_UP;
+   u.fireT=.3;
+   const ls=C.zombies.filter(z=>!z.dead&&z.d>=0&&(u.d-z.d)>=-20);
+   let far=null;for(const z of ls){if(!far||z.d<far.d)far=z;}
+   for(const z of ls){dmgZ(C,z,z.hp*(z.boss?.14:.34)+1900*W,1);
+    addFx(C,"spark",z.px,z.py-18*CH_UP,"",{sd:rnd(0,9),col:"#e4ffb0"});}
+   const ex=far?far.px:(u.px+d5g*640),ey=far?(far.py-18*CH_UP):my;
+   const ag=Math.atan2(ey-my,ex-mx),fl=clamp(dist(mx,my,ex,ey)/1500,.10,.34);
+   addFx(C,"beam",mx,my,"",{x2:ex+Math.cos(ag)*260,y2:ey+Math.sin(ag)*260,
+    col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:6.6,lf:.5,sus:1});
+   addFx(C,"fball",mx,my,"",{x2:ex+Math.cos(ag)*260,y2:ey+Math.sin(ag)*260,
+    r:7.4,lf:fl,col:"#c4de96",col2:"#ffffec",sd:0,wob:0});
+   addFx(C,"mzl",mx,my,"",{ang:ag,r:26,col:"#e4ffb0"});
+   geoSpent(C,u,mx,my,d5g);
+   C.shake=Math.max(C.shake||0,.34);
+   if(C.isMe)sfx.rail?sfx.rail():(sfx.snipe&&sfx.snipe());};
   shoot(0);/* ⚠1発目はその場で撃つ=全部 later に回すと「不発」に見える */
-  for(let k=1;k<10;k++)later(C,k*.28,()=>shoot(k));
+  for(let k=1;k<9;k++)later(C,k*.28,()=>shoot(k));
+  /* 9発目のあと短く溜める→貫通弾 */
+  later(C,9*.28,()=>{u.ulW=.42;u.ulW0=.42;u.ulT=Math.max(u.ulT||0,.42+.86);});
+  later(C,9*.28+.42,bigShot);
   addFx(C,"txt",u.px,u.py-84*CH_UP,"撃墜");
  }else if(id==='hPyro'){/* 紅蓮の柱: 道の3か所に業火の柱を立てて燃やし続ける。
      ⚠自分の居る所から前方へ置く=道の決め打ちだと当たらないことがある(暗黒の騎士で踏んだ) */
@@ -15929,7 +15966,8 @@ function renderCamp(C,t){
    else drawSpr(c,bakeU(u.ui),sprFrame(t,u.ph,10),u.px,u.py,(u.dr||-1)<0);
   else{
    if(ul9>0){c.save();c.translate(u.px,u.py);c.scale(1+.14*ul9,1+.14*ul9);c.translate(-u.px,-u.py);}
-   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||(ul9>0?1:0),bsw:bsw9,vsw:vsw9,vcb:u.cmb||0,mv:u.mv});
+   /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
+   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||ul9,bsw:bsw9,vsw:vsw9,vcb:u.cmb||0,mv:u.mv});
    if(ul9>0)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
@@ -16228,7 +16266,8 @@ function renderCamp(C,t){
    c.fillStyle='#fff';c.beginPath();c.arc(bx,by,1.2,0,7);c.fill();}
   else if(e.k==='fball'){/* ⭐紅蓮の大魔導士が杖の頭から放つ火の玉(2026-08-01)。
     ⚠**真円で飛ばさない**=輪郭を揺らして火の粉の尾を引かないと「光の珠」になり、術者の型と同じ絵になる */
-   const lfB=fxLife('fball',e),p7=clamp(e.t/lfB,0,1),r7=e.r||14,sd7=e.sd||0;
+   /* ⚠wob=0 を渡すと**揺れない丸い弾**になる(狙撃王の貫通弾はこちら。炎は既定の .22) */
+   const lfB=fxLife('fball',e),p7=clamp(e.t/lfB,0,1),r7=e.r||14,sd7=e.sd||0,wb7=(e.wob==null?.22:e.wob);
    const bx=e.x+(e.x2-e.x)*p7,by=e.y+(e.y2-e.y)*p7;
    c.save();c.globalCompositeOperation='lighter';/* 尾=後ろへ小さくなる火の玉 */
    for(let i7=1;i7<=4;i7++){const q7=Math.max(0,p7-i7*.06);
@@ -16237,7 +16276,7 @@ function renderCamp(C,t){
    c.globalAlpha=.34;c.fillStyle=e.col2||'#ffd24a';
    c.beginPath();c.arc(bx,by,r7*1.6,0,7);c.fill();c.restore();
    c.fillStyle=e.col||'#ff6a2a';c.beginPath();
-   for(let i7=0;i7<10;i7++){const a7=i7*.6283,rr7=r7*(1+.22*Math.sin(sd7+i7*2.1+e.t*30));
+   for(let i7=0;i7<10;i7++){const a7=i7*.6283,rr7=r7*(1+wb7*Math.sin(sd7+i7*2.1+e.t*30));
     const px7=bx+Math.cos(a7)*rr7,py7=by+Math.sin(a7)*rr7;i7?c.lineTo(px7,py7):c.moveTo(px7,py7);}
    c.closePath();c.fill();
    c.fillStyle=e.col2||'#ffd24a';c.beginPath();c.arc(bx,by,r7*.46,0,7);c.fill();}
