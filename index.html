@@ -10377,14 +10377,20 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
         L(xB,-10.4),L(-4.4,-4.6), PA,SHO,.8,.96,1-2*kn);/* 奥=膝を地面に突いてすねを後ろへ流す */
  bLegP(c,L(xF*.2,2.4),L(-19.4,-10.4), L(xF*.5,10.6),L(-10.9,-11.8),
         L(xF,11.8),L(-4.4,-4.4), PA,SHO,1,.96,1);/* 手前=足を前へ出して膝を立てる */
- hTop(c,t,ph,.10+.26*kn);c.translate(0,LH);
+ /* ⚠**しゃがむ時に上体を前へ倒しすぎない**(2026-08-01ユーザー指摘「斜め下向いて撃ってる」)。
+    傾きは頭ごと回るので、.36 も倒すと**顔が下を向いた狙撃手**になる。前を見せるならごく浅く。 */
+ hTop(c,t,ph,.10+.04*kn);c.translate(0,LH);
  c.fillStyle=CP;/* ケープ(⚠歩きに合わせて後ろへ流す=狙撃手なのに動いて見える) */
  c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
  c.lineTo(-10.4,-6-9.6*kn);c.lineTo(2,-9.4-9.6*kn);c.lineTo(5,-38.4);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(CP,.74);c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
  c.lineTo(-12.4,-12-7.4*kn);c.lineTo(-3.4,-38);c.closePath();c.fill();
- const g1=bHold(c,rc,4.6,-34.6,-.19,1.4,-1.2);
- bArm(c,-4.6,-34.8, 6,-31.4, 20,-28.4, 5,4.1, shade(CO,.72),shade(SK,.74));
+ /* ⭐⭐**構えると銃を眼前まで持ち上げる**(2026-08-01ユーザー指摘「眼前にスコープが来るように」)。
+    ⚠肩を軸に回して上げると**銃口が空を向く**=狙えていない。**平行に持ち上げて**、
+      腕は肘と手の位置を差し替える(GY=持ち上げる量。照準器が目とほぼ同じ高さに来る値)。 */
+ const GY=-10.4*kn;
+ const g1=bHold(c,rc,4.6,-34.6,-.05,.5,-.4);
+ bArm(c,-4.6,-34.8, L(6,4.4),L(-31.4,-37.4), 20,-28.4+GY, 5,4.1, shade(CO,.72),shade(SK,.74));
  g1();
  bTorso(c,CO,[9.6,7.2,HSK.y0,HSK.y1]);
  c.fillStyle=CO2;/* 長いコート(⚠膝まで垂れる=輪郭がまるごと変わる) */
@@ -10395,13 +10401,13 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
  c.fillStyle='#6b5530';/* 斜めの革帯 */
  c.beginPath();c.moveTo(-8,-33.4);c.lineTo(-4.4,-34.6);c.lineTo(8,-23.4);c.lineTo(4.4,-22.2);c.closePath();c.fill();
  c.fillStyle=GD;c.fillRect(-1.4,-28.4,3.4,3.4);
- {const g2=bHold(c,rc,4.6,-34.6,-.19,1.4,-1.2);
-  uGun(c,3.4,-30,34,4.4,GM,0);/* 長い狙撃銃 */
-  c.fillStyle='#2f3742';rr(c,7,-38.6,15,4.6,1.6);c.fill();c.stroke();/* 照準器 */
-  c.fillStyle=TECH;c.beginPath();c.arc(20.4,-36.3,1.9+rc,0,7);c.fill();
+ {const g2=bHold(c,rc,4.6,-34.6,-.05,.5,-.4);
+  uGun(c,3.4,-30+GY,34,4.4,GM,0);/* 長い狙撃銃 */
+  c.fillStyle='#2f3742';rr(c,7,-38.6+GY,15,4.6,1.6);c.fill();c.stroke();/* 照準器 */
+  c.fillStyle=TECH;c.beginPath();c.arc(20.4,-36.3+GY,1.9+rc,0,7);c.fill();
   c.fillStyle='#3a3128';/* 二脚(⚠しゃがみと一緒に開く=据えてから狙う順になる) */
-  c.beginPath();c.moveTo(27,-30.4);c.lineTo(31+3.4*kn,-21);c.lineTo(28.4+3.4*kn,-20.6);c.lineTo(25,-29.4);c.closePath();c.fill();c.stroke();
-  bArm(c,4.6,-34.6, 8,-30.4, 9.4,-25, 5.2,4.2, shade(CO,1.14),SK);g2();}
+  c.beginPath();c.moveTo(27,-30.4+GY);c.lineTo(31+3.4*kn,-21+GY);c.lineTo(28.4+3.4*kn,-20.6+GY);c.lineTo(25,-29.4+GY);c.closePath();c.fill();c.stroke();
+  bArm(c,4.6,-34.6, L(8,9.2),L(-30.4,-29.6), L(9.4,8.6),-25+GY, 5.2,4.2, shade(CO,1.14),SK);g2();}
  bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
  c.fillStyle=HR;/* 白髪(⚠横に流す=帽子の下から出す) */
  c.beginPath();c.moveTo(-6.4,HSK.fy-2);c.lineTo(-12.4,HSK.fy+4.4);c.lineTo(-2.4,HSK.fy+3.4);c.closePath();c.fill();c.stroke();
