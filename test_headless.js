@@ -1105,12 +1105,18 @@ function checkTwNew(){
    /* 発射音の割り当てが無いと無音になる */
    if(!TW_SFX[E.id]){console.log('FAIL: '+E.n+' に発射音が割り当てられていない');process.exit(1);}}
   /* ②③実際に建てて、MAXにするまで進化できず、進化したら強化Lvが残ること */
+  /* ⭐2026-07-30: 進化先は🔬研究所で解放してから使える(META.tg)。まず未解放で試す */
+  META.tg=[];
   const ti=TOWERS.findIndex(t=>t.id==='rifle');
   me.scrap=9999999;me.towers[si]=null;me.unlocked=Math.max(me.unlocked,ti+1);
   buildTower(me,si,ti);
   const tw=me.towers[si];
   if(canGrade(me,tw)){console.log('FAIL: 強化していないのに進化できてしまう');process.exit(1);}
   for(const st of twStats(ti))for(let k=0;k<USTAT_MAX;k++)upTower(me,si,st);
+  /* ⭐研究所で解放していないうちは、全部MAXでも進化できないこと */
+  if(canGrade(me,tw)){console.log('FAIL: 研究所で解放していないのに進化できてしまう');process.exit(1);}
+  META.tg=TG_ALL.slice();
+  if(TG_ALL.length!==TOWERS.filter(T=>T.grd).length||!TG_ALL.length){console.log('FAIL: 進化先の一覧(TG_ALL)がおかしい');process.exit(1);}
   if(!canGrade(me,tw)){console.log('FAIL: 全部MAXにしても進化できない');process.exit(1);}
   /* ⚠**引き継ぎは「外す前の一覧(twStatsRaw)」で見る**=進化すると⏩連射が買えなくなるので、
      twStats どうしで比べると数が合わず、消えていないのに落ちる(2026-07-27) */
@@ -1550,20 +1556,42 @@ function checkGachaFx(){
  if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
  /* ⭐展開が読めること: タレット/ゾンビは予告で**下振れだけ**(上振れしない)
     → レーザー(段2)が出たら★4以上が確定 / レアでない時は基本ライフル+通常ゾンビ */
- let sawRifleLow=0;
- for(let k=0;k<400;k++){
+ let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0];
+ for(let k=0;k<1200;k++){
   const rk=k%6;
   const one=[rk===0?{dud:GDUD[0],txt:''}:{hero:HEROES.find(h=>h.rk===rk),txt:''}];
   if(!one[0].dud&&!one[0].hero)continue;
   gcStart(one);const r=gcRank(one[0]),base=r>=4?2:r>=2?1:0;
+  /* ⭐2026-07-30に**どんでん返し(twist)**を足した=★4以上の時だけ、わざと一番しょぼい見せ方をする。
+     ⚠twist の時は上の「★5ならレーザー」が成り立たないので、先に切り分ける。 */
+  if(GC.twist){
+   if(r<4){console.log('FAIL: ★4未満でどんでん返しが起きている(レア度'+r+')');process.exit(1);}
+   if(GC.tw!==0||GC.zk!==0||GC.fc!==0||GC.night!==false||GC.lob){
+    console.log('FAIL: どんでん返しなのに見た目がしょぼくない');process.exit(1);}
+   twN++;gcEnd();continue;}
+  if(GC.lob&&r<5){console.log('FAIL: ★5未満なのに黄金のロブスターが出た(レア度'+r+')');process.exit(1);}
+  if(GC.lob)lobN++;
   if(GC.tw>base){console.log('FAIL: 予告が上振れしている(レア度'+r+' 予告'+GC.tw+' 上限'+base+')');process.exit(1);}
   if(GC.tw===2&&r<4){console.log('FAIL: レーザーが出たのに★4未満(レア度'+r+')');process.exit(1);}
   if(r===5&&GC.tw!==2){console.log('FAIL: ★5なのにレーザーで見せていない');process.exit(1);}
   if(GC.zk!==GC.tw){console.log('FAIL: ゾンビの種類がタレットの段と揃っていない');process.exit(1);}
+  /* ⭐「撃て!」の文字色も**下振れだけ**(虹=fc2 が出たら★4以上が確定) */
+  if(GC.fc>base){console.log('FAIL: 文字色が上振れしている(レア度'+r+' 色'+GC.fc+')');process.exit(1);}
+  if(GC.fc===2&&r<4){console.log('FAIL: 虹の文字なのに★4未満(レア度'+r+')');process.exit(1);}
+  if(typeof GC.night!=='boolean'){console.log('FAIL: 背景の朝夜が決まっていない');process.exit(1);}
+  if(GC.night)nightN[r>=3?1:0]++;else dayN[r>=3?1:0]++;
   if(r<=1){if(GC.tw!==0){console.log('FAIL: レアでないのにライフル以外が出ている(レア度'+r+')');process.exit(1);}sawRifleLow=1;}
   gcEnd();
  }
  if(!sawRifleLow){console.log('FAIL: レアでない時の見せ方を確かめられていない');process.exit(1);}
+ if(!twN){console.log('FAIL: どんでん返しが一度も起きなかった');process.exit(1);}
+ if(!lobN){console.log('FAIL: ✨黄金のロブスターが一度も出なかった');process.exit(1);}
+ /* ⭐**夜の方が期待度が高い**=レアな時ほど夜が出やすいこと(逆になっていたら演出が嘘になる) */
+ {const hi=nightN[1]/Math.max(1,nightN[1]+dayN[1]),lo=nightN[0]/Math.max(1,nightN[0]+dayN[0]);
+  if(!(hi>lo+.2)){console.log('FAIL: 夜が期待度になっていない(レア時'+(hi*100|0)+'% / それ以外'+(lo*100|0)+'%)');process.exit(1);}}
+ console.log('💎召集の予告: 下振れだけ / 虹の文字とレーザーは★4以上が確定 / '
+  +'夜'+(nightN[1]/Math.max(1,nightN[1]+dayN[1])*100|0)+'% vs '+(nightN[0]/Math.max(1,nightN[0]+dayN[0])*100|0)+'% / '
+  +'どんでん返し'+twN+'回 / ✨黄金'+lobN+'回 OK');
  /* ⭐10連でも撃つ場面は1回だけ=示唆するのは「その回の一番いい結果」 */
  {const many=[{dud:GDUD[0],txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{dud:GDUD[1],txt:''}];
   gcStart(many);
@@ -1957,8 +1985,12 @@ function checkGacha(){
  gcApply({hero:h5});const m0=META.hmat;gcApply({hero:h5});
  if(META.hero[h5.id]!==2){console.log('FAIL: 所持数が増えていない');process.exit(1);}
  if(META.hmat<=m0){console.log('FAIL: 重複が鍛錬素材になっていない');process.exit(1);}
- /* ボス撃破の💎付与(通常1/最終3)が定義されているか */
- if(!(GEM_BOSS===2&&GEM_FIN===6)){console.log('FAIL: ボスの魔石量が想定と違う');process.exit(1);}
+ /* ボス撃破の💎付与。⭐2026-07-30に大幅増(タイトルのロブスター/虹が主な取得源になっていたため)。
+    難易度で増える(gemBoss)=新兵5/18 → 🌑ナイトメア12/43 */
+ if(!(GEM_BOSS===5&&GEM_FIN===18)){console.log('FAIL: ボスの魔石量が想定と違う');process.exit(1);}
+ if(typeof gemBoss==='function'){
+  const g0=gemBoss(false),g1=gemBoss(true);
+  if(!(g0>=GEM_BOSS&&g1>=GEM_FIN&&g1>g0)){console.log('FAIL: gemBossの計算がおかしい '+g0+'/'+g1);process.exit(1);}}
  console.log('ガチャ: 英雄'+HEROES.length+'種(★1x5/★2x4/★3x4/★4x3/★5x2)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
  META.gem=0;META.hero={};META.hmat=0;
 }

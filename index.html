@@ -355,6 +355,20 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:4px 6px;font-size:11px;color:var(--paper);text-align:left}
 .hgrid .hb.own{border-color:var(--paper)}
 .hgrid .hb .hq{font-size:10px;opacity:.75}
+/* ⭐🦸英雄ステータス(2026-07-30)。⚠横画面は高さ393pxしか無いので**左=姿・右=数値**の横並び。
+   縦に積むと数値が画面外へ出る(研究所のカードで同じ失敗をしている) */
+.hstop{display:flex;gap:8px;align-items:stretch;margin-bottom:6px}
+.hsshow{flex:0 0 132px;height:158px;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void)}
+.hsshow canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+.hsinfo{flex:1 1 auto;min-width:0}
+.hsinfo .hsn{font-weight:900;font-size:16px;line-height:1.2}
+/* ⚠パネルの地は明るいので **--paper(明色)を文字色にしない**=読めなくなる(撮って直した) */
+.hsinfo .hsr{font-weight:900;font-size:11px;color:var(--ink);opacity:.8;margin:1px 0 3px}
+.hsinfo table.stats{margin:3px 0;font-size:12px}
+.hsinfo table.stats td{padding:2px 8px}
+.hsul{font-size:12px;font-weight:800;color:var(--gold);line-height:1.35}
+.hgrid .hb.pick{cursor:pointer}
+.hgrid .hb.sel{outline:3px solid var(--gold);outline-offset:1px}
 /* ⭐召集画面の骨格(2026-07-27 第93弾): 左2/3=目玉の英雄 / 右1/3=💎と大きなボタン。
    ⚠**横画面は高さ393pxしか無い**=参考にした本物の召集画面は縦画面なので、縦に積むと画面外に出る。
      ここは必ず**横に2つ並べる**こと。 */
@@ -587,7 +601,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <div class="stcol">
       <p class="note nlbl">装備砲撃(研究所で新型を解放)</p>
       <div class="seg" id="seg-stk"></div>
-      <p class="note nlbl">🦸 連れて行く英雄(💎英雄召集で入手・1ゲーム1回だけ出撃できる)</p>
+      <p class="note nlbl">🦸 連れて行く英雄(💎英雄召集で入手・1ゲーム1回だけ出撃できる)<button class="btn sm" id="bt-hstat" style="margin-left:6px;padding:1px 8px;font-size:11px">📋 性能</button></p>
       <div class="seg" id="seg-hero"></div>
       </div>
       </div>
@@ -755,7 +769,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
             <button class="btn sm" id="gc-dex">📖 図鑑</button>
             <button class="btn sm" id="gc-rate">確率</button>
           </div>
-          <div class="gchint" id="gc-hint">💎はボス撃破のみ(通常+1 / 最終+3)</div>
+          <div class="gchint" id="gc-hint">💎はソロ作戦のボス撃破で入る(難易度が高いほど多い)</div>
         </div>
       </div>
       <!-- ⚠図鑑と確率は畳んでおく(常時出すと目玉の英雄より図鑑の方が目立つ) -->
@@ -777,6 +791,21 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="bpfoot">
       <div class="grdet" id="gr-det"></div>
       <button class="btn gold" id="bt-gcres-ok">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🦸英雄ステータス(2026-07-30ユーザー指示「ヒーローのステータスを見れる画面を用意して」)。
+     ⚠数値は UNITS 側(実際に戦う値)から引く=HEROESの表だけ見ると派生や鍛錬が抜ける -->
+<div class="modal" id="md-hstat">
+  <div class="panel bigpanel">
+    <div class="bphd"><b>🦸 英雄ステータス</b><span class="pt" id="hs-own"></span><button class="xbtn" id="bt-hstat-close">✕</button></div>
+    <div class="bpbody">
+      <div class="hstop">
+        <div class="hsshow"><canvas id="hs-cv" width="264" height="316"></canvas></div>
+        <div class="hsinfo" id="hs-info"></div>
+      </div>
+      <div class="hgrid" id="hs-grid"></div>
     </div>
   </div>
 </div>
@@ -996,13 +1025,13 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4.5秒止めて中ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を5秒燃やし続ける。総ダメージが大きい'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{}};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{}};
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
 try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
- if(!Array.isArray(META.uv))META.uv=[];if(!META.ld||typeof META.ld!=='object')META.ld={};delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
+ if(!Array.isArray(META.uv))META.uv=[];if(!Array.isArray(META.tg))META.tg=[];if(!META.ld||typeof META.ld!=='object')META.ld={};delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0'])META[k]=META[k]||0;
  if(!META.hlv||typeof META.hlv!=='object')META.hlv={};/* 英雄の鍛錬Lv id→Lv */
  if(!META.hxp||typeof META.hxp!=='object')META.hxp={};/* 次のLvまでの経験 id→pt */
@@ -1027,7 +1056,7 @@ const META_RESET=2;
    (難易度とステージの解放は消したくない)。2026-07-27ユーザー指示。 */
 function metaResetLab(){
  META.pts=0;META.nt=0;META.nu=0;META.st=['air'];META.eq='air';
- META.uv=[];META.ld={};
+ META.uv=[];META.tg=[];META.ld={};
  META.tw={};META.un={};META.st0=0;
  for(const k of ['sc0','hp0','up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=0;
 }
@@ -1739,7 +1768,7 @@ const TOWERS=[
  {id:'flame',n:'火炎放射塔',cost:280,up2:'flame2',gc:2240,rng:145,dmg:8,rate:.14,type:'fire',cont:1,burn:14,fspl:62,c:'#c96b35',dsc:'炎を吹き続ける。装甲に特効(約1.9倍)・継続燃焼・周りにも1/4'},
  {id:'tesla',n:'テスラコイル',cost:340,up2:'tesla2',gc:2720,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:TECH2,dsc:'電撃が連鎖する(強化で連鎖数+)'},
  {id:'mortar',n:'迫撃砲',cost:430,up2:'mortar2',gc:3440,rng:470,minr:160,dmg:85,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
- {id:'sniper',n:'スナイパー塔',cost:540,up2:'sniper2',gc:4320,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い'},
+ {id:'sniper',n:'スナイパー塔',cost:540,up2:'sniper2',gc:4320,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,vsB:2.4,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い。💀ボスと👁オーラ持ちには2.4倍'},
  /* ↓ここまでと次の冷却塔までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
  /* frz=完全凍結の秒数(動けず殴れもしない)。⭐**凍っていない敵は必ず凍る**(2026-07-27に再凍結の耐性を廃止) */
  /* frzN=同じ敵を凍らせられる回数(❄冷却回数の強化で+1/段・最大10)。使い切った敵はもう凍らない */
@@ -1804,7 +1833,7 @@ const TOWERS=[
  {id:'flame2',n:'業火放射塔',base:'flame',grd:1,cost:840,rng:162,dmg:16,rate:.14,type:'fire',cont:1,burn:27,fspl:78,c:'#e08a3a',dsc:'二又の火口が業火を吐き続ける。装甲に特効・強い継続燃焼'},
  {id:'tesla2',n:'雷神コイル',base:'tesla',grd:1,cost:1020,rng:218,dmg:88,rate:.81,type:'elec',chain:6,c:'#7fd0ef',dsc:'太い巻線から6体へ跳ぶ雷'},
  {id:'mortar2',n:'重迫撃砲',base:'mortar',grd:1,cost:1290,rng:526,minr:160,dmg:170,rate:2.2,type:'blast',aoe:106,c:'#949c80',dsc:'重い弾を遠くへ。爆発範囲も広い'},
- {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'bullet',prio:1,pierce:1,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。最大HPの敵を一撃で'},
+ {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'bullet',prio:1,pierce:1,vsB:3,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。💀ボスと👁オーラ持ちには3倍'},
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:76,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
  {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
@@ -1822,6 +1851,17 @@ const SUP_N=3;/* 支援施設の数(末尾のグレードアップ専用の手�
 const GRD_N=20;/* ↑末尾のグレードアップ専用の数(工房の2段+タレットの進化18種)。⚠段を足したらここも増やす */
 const T_GRD=ti=>{const u=TOWERS[ti]&&TOWERS[ti].up2;return u?TOWERS.findIndex(t=>t.id===u):-1;};/* その段の「次」 */
 const T_GCOST=ti=>(TOWERS[ti]&&TOWERS[ti].gc)||700;/* その段からの建て替え費用(⚙️) */
+/* ⭐⭐**進化先は🔬研究所で解放する**(2026-07-30ユーザー指示
+     「ユニットと同様にタレットの進化も研究所で解放することにしよう。廃品工房も」)。
+   ⚠それまでは**盤面で強化をMAXにして⚙️を払えば誰でも進化できた**ので、
+     兵科の派生(META.uv)だけが研究所で買う形になっていて筋が通っていなかった。
+   ⭐持ち方は派生と同じ=**進化先タワーのidを META.tg に積む**。
+   ⚠工房の3段も同じ扱い(上級廃品工房/廃品プラント)。⚠支援施設は元から進化しない。 */
+const TG_ALL=TOWERS.filter(T=>T.grd).map(T=>T.id);/* 進化先(grd:1)のid一覧 */
+const tgOK=ti=>{const T=TOWERS[ti];if(!T)return false;
+ return DEV||(META.tg||[]).indexOf(T.id)>=0;};
+/* その素のタワーの「次の段」が解放済みか(-1=次が無い) */
+const tgNext=ti=>{const nx=T_GRD(ti);return nx>=0&&tgOK(nx)?nx:-1;};
 const T_PLAY=TOWERS.length-SUP_N-GRD_N;/* 解放チェーン/研究所に出るタワーの数 */
 const BASE_T=10;/* 通常解放できる基本タワー数(これ以降は🔬研究所で解放) */
 /* ⭐レールガンの充填時間(2026-07-26ユーザー指示=「きゅいーんとチャージしてから超電磁砲を放つ」)。
@@ -1907,8 +1947,14 @@ const TW_DSTEP=.20,TW_DSTEP_G=.40;
 const twLostRate=ti=>{const T=TOWERS[ti];if(!T||!T.grd||T.type==='eco')return false;
  const b=TOWERS.findIndex(z=>z.up2===T.id);return b>=0&&twStatsRaw(b).indexOf('r')>=0;};
 const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
-/* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに13%短くなる(Lv5で20発→9発) */
-const twHeatN=(T,tw)=>Math.max(3,Math.round((T.heatN||0)*(1-.13*usEff((tw&&tw.us&&tw.us.h)||0))));
+/* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに15.5%短くなる。
+   ⭐⭐**掛け算にした**(2026-07-30ユーザー指摘「レーザー砲の進化後の昇温時間が0.3から上がらず無駄強化」)。
+   ⚠それまでは `20*(1-.13*段)` の**引き算**だったので、進化後(最大10段=usEff 7.5)は
+     20*(1-.975)=0.5 → 下限の3に張り付き、**8段目から先が1秒も縮まない死んだ強化**だった。
+   ⭐掛け算なら段が増えるほど効きは緩むが**必ず縮む**。⚠**丸めない**=丸めると同じ値が並んで
+     やはり死んだ段ができる(表示は小数1桁なので端数のままでよい)。
+   素20発(2.0秒) → Lv5で8.6発(0.9秒) → 進化後MAXで5.7発(0.6秒)。 */
+const twHeatN=(T,tw)=>Math.max(2,(T.heatN||0)*Math.pow(.845,usEff((tw&&tw.us&&tw.us.h)||0)));
 /* ⭐**同じ敵を凍らせられる回数は、進化しても増えない**(2026-07-27ユーザー指示
      「冷却塔は進化後も含めて凍らせれる回数は共有して。じゃないと無限に凍らせられちゃうから」)。
    ⚠それまでは極低温塔の素が7回で、しかも❄冷却回数を進化後の10段まで積めたので、
@@ -1959,14 +2005,14 @@ const RNG_STEP=.13;/* 📡射程強化1段あたりの拡大率(2026-07-25: .08�
 const twRngM=tw=>1+RNG_STEP*usEff(tw.us?tw.us.g:0);
 const twRngMlv=g=>1+RNG_STEP*usEff(g);/* 指定Lvでの射程倍率(強化前プレビュー用) */
 const ZOMBIES=[
- {id:'walk',n:'ウォーカー',hp:72,sp:78,bt:12,dmg:1,mw:1,sc:1,atk:20,ar:.8,c:'#7a8f5f'},
- {id:'run',n:'ランナー',hp:46,sp:170,bt:14,dmg:1,mw:2,sc:.9,atk:14,ar:.6,c:'#a5b04a'},
- {id:'arm',n:'アーマード',hp:185,sp:57,bt:26,dmg:2,mw:3,armor:1,sc:1.1,atk:34,ar:1,c:STEEL},
- {id:'blo',n:'ブローター',hp:265,sp:50,bt:30,dmg:2,mw:4,split:2,sc:1.35,atk:42,ar:1.2,c:'#8f6fae',dsc:'倒すと弾けて周りの部隊を巻き込み、中から小型が出る'},
- {id:'scr',n:'スクリーマー',hp:100,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:17,ar:.9,c:'#d67ba8'},
- {id:'dog',n:'感染ハウンド',hp:62,sp:215,bt:20,dmg:1,mw:8,sc:.85,atk:13,ar:.45,c:'#b0713d'},
- {id:'crwl',n:'クローラー',hp:125,sp:52,bt:40,dmg:2,mw:6,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
- {id:'ooze',n:'スライム状体',hp:255,sp:44,bt:62,dmg:3,mw:10,noblock:1,armor:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
+ {id:'walk',n:'ウォーカー',hp:96,sp:78,bt:12,dmg:1,mw:1,sc:1,atk:20,ar:.8,c:'#7a8f5f'},
+ {id:'run',n:'ランナー',hp:62,sp:170,bt:14,dmg:1,mw:2,sc:.9,atk:14,ar:.6,c:'#a5b04a'},
+ {id:'arm',n:'アーマード',hp:245,sp:57,bt:26,dmg:2,mw:3,armor:1,sc:1.1,atk:34,ar:1,c:STEEL},
+ {id:'blo',n:'ブローター',hp:335,sp:50,bt:30,dmg:2,mw:4,split:2,sc:1.35,atk:42,ar:1.2,c:'#8f6fae',dsc:'倒すと弾けて周りの部隊を巻き込み、中から小型が出る'},
+ {id:'scr',n:'スクリーマー',hp:130,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:17,ar:.9,c:'#d67ba8'},
+ {id:'dog',n:'感染ハウンド',hp:82,sp:215,bt:20,dmg:1,mw:8,sc:.85,atk:13,ar:.45,c:'#b0713d'},
+ {id:'crwl',n:'クローラー',hp:160,sp:52,bt:40,dmg:2,mw:6,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
+ {id:'ooze',n:'スライム状体',hp:320,sp:44,bt:62,dmg:3,mw:10,noblock:1,armor:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
  /* ↓中盤以降の強敵 */
  {id:'brut',n:'ブルート',hp:420,sp:74,bt:74,dmg:3,mw:8,armor:1,w:.5,sc:1.3,aoe:2,atk:59,ar:.9,c:'#8a4a3a',dsc:'太い腕で2体まとめて薙ぎ払う'},
  {id:'stlk',n:'ストーカー',hp:190,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
@@ -2205,6 +2251,11 @@ for(let t=0;t<3;t++)for(const b of FVBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARL
      「研究所の必要ptがまだ低い」というユーザー判断で全タブごと1.8倍にした(最後の1つは約1,900🧬)。 */
 const UV_TIER=[180,540,900];/* ⚠2026-07-27に全タブを上げた時に1.8倍(最後の1つは約1,900🧬) */
 const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(1.022,k||0));
+/* ⭐タレット/工房の進化の解放価格(2026-07-30)。k=すでに取った進化の総数。
+   ⚠**取った総数だけで上がる**形にしてある(派生の「段で跳ねる」形と分けた理由=
+     タワーの進化は1種につき1段しか無いので、段で跳ねさせようが無い)。
+   600 → 21個目で2,797🧬 / 全部で約33,000🧬。 */
+const LAB_TG=k=>Math.round(600*Math.pow(1.08,k||0));
 /* 上級兵科(tnk/mech/titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
 const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&i<BASE_U+(META.nu||0);};
 /* ⚠**弾薬(AMMO)は2026-07-27に廃止した**(ユーザー指示)。
@@ -2313,7 +2364,16 @@ const GDUD=[
 /* 排出率(%)。はずれ55 / 弱35 / レア8 / 激レア1.5 / ウルトラ0.4 / ギガトン0.1 */
 const G_RATE=[['dud',55],['r1',35],['r2',8],['r3',1.5],['r4',.4],['r5',.1]];
 const G_COST1=3,G_COST10=25;/* 単発/10連の💎 */
-const GEM_BOSS=2,GEM_FIN=6;/* 通常ボス/最終ボスを倒した時の💎(2026-07-27ユーザー指示で1/3→2倍) */
+/* 通常ボス/最終ボスを倒した時の💎。⭐2026-07-30ユーザー指示で**大幅に増やした**
+   (「タイトル画面で獲得できるガチャ石が主な取得源になっちゃってるから、ボス撃破時の獲得数を増加させて」)。
+   ⚠タイトルの🌈虹=10個・✨金ロブスター=30個に対し、ボスが2個/6個では**戦う理由が無かった**。
+   ⭐**難易度で増える**(gemBoss)=素5/18に「1+0.35×難易度」を掛ける。
+     新兵(0)で5/18 → 🌑ナイトメア(4)で12/43。1周(通常ボス3+最終1)で20〜79個入る。 */
+const GEM_BOSS=5,GEM_FIN=18;
+/* ⭐**最終ウェーブの主が拠点に取り付く位置**(コアの手前)。⚠部隊が立てる限界は PLEN-40 なので、
+   それより奥(46)に置いて**部隊の攻撃が届く**ようにしてある。PLENちょうどだと誰も殴れない詰みになる。 */
+const SIEGE_D=46;
+const gemBoss=fin=>Math.round((fin?GEM_FIN:GEM_BOSS)*(1+.35*((G&&G.pveDiff!=null)?G.pveDiff:0)));
 const heroOf=id=>HEROES.find(h=>h.id===id);
 const heroOwned=id=>((META.hero||{})[id]||0)>0;
 /* ⚠2026-07-26(第56弾): **🏋鍛錬所は一旦しまってある**(ユーザー決定=「あとから作りこむ」)。
@@ -10409,6 +10469,14 @@ function buildTide(wave){
   for(let k=0;k<ne;k++){const e=pool[ri(Math.floor(pool.length*.35),pool.length-1)];
    if(!e||e.boss||e.z.elite)continue;
    e.z.elite=1;e.z.hp*=2.6;e.z.mhp*=2.6;e.z.bt=Math.round(e.z.bt*3);e.z.atk*=1.4;e.z.sp*=.92;}}
+ /* ⭐⭐**最終ウェーブの一番強い個体は「主」にする**(2026-07-30ユーザー指示)。
+    ボスが出るウェーブならそのボス、出ないウェーブ(新兵/兵長など)ならHPが一番高い個体。
+    ⚠印(siege)は spec に付ける=mkZ が Object.assign するので、そのまま実体まで届く。 */
+ if(G.pve&&wave>=(D.w||20)&&pool.length){
+  let sgI=-1,sgS=-1;
+  for(let i=0;i<pool.length;i++){const e=pool[i];const sc9=(e.boss?1e9:0)+(e.z.hp||0);
+   if(sc9>sgS){sgS=sc9;sgI=i;}}
+  if(sgI>=0)pool[sgI].z.siege=1;}
  if(G.pve&&D.sp!==1)for(const e of pool)e.z.sp*=D.sp;
  for(let pi=0;pi<G.players.length;pi++){const P=G.players[pi];
   for(const s of P.inc.sent){for(let i=0;i<s.cnt;i++)pool.splice(ri(0,pool.length),0,{dl:.4,z:zSpec(s.zi,mul,wave,1,s.from),tgt:pi});}}
@@ -10599,7 +10667,7 @@ function killZ(C,z){
  else{C.scrap+=g;C.enTotal+=g;}
  addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');
  /* 💎魔石: ボス級を倒した時だけ落ちる(英雄召集の通貨)。ソロのみ */
- if(z.boss&&soloMeta()&&C.isMe){const gm=z.fin?GEM_FIN:GEM_BOSS;
+ if(z.boss&&soloMeta()&&C.isMe){const gm=gemBoss(z.fin);
   META.gem=(META.gem||0)+gm;G.gemGain=(G.gemGain||0)+gm;saveMeta();
   addFx(C,'txt',z.px,z.py-58*CH_UP,'💎+'+gm);
   addP(C,14,z.px,z.py-30*CH_UP,{sp:170,up:80,g:420,life:.9,r:3,col:TECH});
@@ -10785,6 +10853,7 @@ function canGrade(C,tw){
  if(!tw)return false;const T=TOWERS[tw.ti];
  if(!T||T.type==='sup')return false;/* 支援施設は進化しない */
  if(T_GRD(tw.ti)<0)return false;/* 次の段が無い(最終段)なら建て替えられない */
+ if(!tgOK(T_GRD(tw.ti)))return false;/* ⭐🔬研究所でその進化先を解放していない */
  if(!tw.us)return false;
  return twStats(tw.ti).every(st=>(tw.us[st]||0)>=usCap(tw.ti,st));
 }
@@ -10956,7 +11025,10 @@ function heroUlt(C,wave){
   C.shake=Math.max(C.shake||0,.2);if(C.isMe)sfx.thunk&&sfx.thunk();
  }else if(id==='hSf'){/* 精密狙撃: 一番HPの高い敵に必殺の一撃 */
   let tg=null,bh=-1;for(const z of live)if(z.hp>bh){bh=z.hp;tg=z;}
-  if(tg){const dm=tg.hp*.45+2600*W;
+  /* ⭐**💀ボスへの効きを落とした**(2026-07-30ユーザー指摘「特殊部隊員の必殺がボスもワンパンで強すぎる」)。
+     ⚠それまでは相手を問わず「**今のHPの45%**+固定」だったので、★2の英雄1人で最終ボスが消えていた。
+     ⭐ボスだけ「**最大HPの12%**+固定」に置き換える=大きく削れるが決して1発では落ちない。雑魚への効きは据え置き。 */
+  if(tg){const dm=tg.boss?((tg.mhp||tg.hp)*.12+2200*W):(tg.hp*.45+2600*W);
    addFx(C,'tr',u.px,u.py-26*CH_UP,'',{x2:tg.px,y2:tg.py-20*CH_UP,col:'rgba(160,225,255,'});
    addFx(C,'txt',tg.px,tg.py-70*CH_UP,'必殺!');
    dmgZ(C,tg,dm,1);addFx(C,'boom',tg.px,tg.py,'');}
@@ -11151,6 +11223,22 @@ function campStep(C,dt,wave){
    continue;
   }
   z.d+=z.sp*z.sm*slow*dt;
+  /* ⭐⭐**最終ウェーブの主(siege)は素通りせず、拠点に取り付いて何度も殴る**(2026-07-30ユーザー指示)。
+     ⚠それまでは**どんな敵も拠点へ触れた瞬間に消えて1回ぶんのダメージ**だったので、
+       最終ボスに抜かれてもコアHPが残っていれば「クリア」になっていた(ほぼ負けているのに)。
+     ⭐1回の痛みは通り抜けの半分にして、代わりに何度も入る=拠点が持つ間に倒し切れば逆転できる。
+     ⚠取り付く場所は門の手前(SIEGE_D)=**部隊も届く**ので、旗を引いて総力戦にできる。 */
+  if(z.siege&&z.d>=PLEN-SIEGE_D){
+   z.d=PLEN-SIEGE_D;z.sgT=(z.sgT||0)-dt;
+   if(z.sgT<=0){z.sgT=(z.ar||1.2)*1.6;
+    const sd=Math.max(1,Math.round(z.dmg*.5));
+    C.core-=sd;C.shake=Math.max(C.shake||0,.3);
+    addFx(C,'leak',CORE[0],CORE[1],'');
+    addFx(C,'txt',CORE[0],CORE[1]-72*CH_UP,'-'+sd+'🏕');
+    addP(C,12,CORE[0],CORE[1]-10,{sp:200,up:70,g:600,life:.6,r:3,col:RUST});
+    if(C.isMe){sfx.leak();dmgFlash();}
+    if(C.core<=0){C.core=0;C.dying=true;addFx(C,'boomL',CORE[0],CORE[1],'');}}
+   continue;}
   if(z.d>=PLEN){z.dead=true;z.leaked=true;C.core-=z.dmg;C.shake=.25;addFx(C,'leak',CORE[0],CORE[1],'');
    addP(C,10,CORE[0],CORE[1]-10,{sp:180,up:60,g:600,life:.6,r:3,col:RUST});
    addP(C,4,CORE[0],CORE[1]-16,{sp:50,up:40,g:-40,life:1,r:7,col:'#5c5148',typ:'smoke'});
@@ -11397,7 +11485,11 @@ function campStep(C,dt,wave){
  /* ⚠ローカル名を TT にしてはいけない=**グローバルの TT(ゲーム時刻)を隠してしまう**。
     実際に droneOff(…,TT) が undefined を受けて弾の座標が NaN になり、ドローンの弾が消えていた(2026-07-26) */
  const TL=twlv(twKey(T)),TRT=TW_TRAIT[T.type];
-  const dm=T.dmg*m*aB*(1+TW_DMG_STEP*TL);/* 威力+15%/段(型ごとだった頃は+10%) */
+  /* ⭐**特攻**(vsB)=💀ボス級と👁オーラ持ちにだけ倍率が乗る(2026-07-30ユーザー指示
+     「スナイパータレットはオーラ纏ってる敵とボスに特攻にする」)。
+     ⚠狙いは1体なので、ここで tg を見て掛けてしまってよい(貫通しても線上は同じ倍率になる)。 */
+  const vsB=(T.vsB&&tg&&(tg.boss||tg.aura))?T.vsB:1;
+  const dm=T.dmg*m*aB*(1+TW_DMG_STEP*TL)*vsB;/* 威力+15%/段(型ごとだった頃は+10%) */
   /* 銃口の火花・煙・薬莢 */
   const [mzx,mzy]=twMzPt(T,sx,sy,tw.ang);/* ⭐ここから撃つ(塔ごとに違う) */
   if(FXLV>0&&T.type!=='eco'){const mx2=mzx,my2=mzy;
@@ -12696,7 +12788,12 @@ function updHUD(){const m=meV();if(!m)return;
   if(gw&&gw.style)gw.style.display=on?'inline-block':'none';
   if(on)gw.textContent='🏳 諦める -'+giveUpDmg(m);}
  const sb=$('strikebtn');sb.style.background=`conic-gradient(var(--rust) ${m.charge*100}%,#4a4034 0)`;sb.classList.toggle('rdy',m.charge>=1&&!AIM);
- if(!tipSt&&m.charge>=1&&inW){tipSt=true;toast('🎯 エアストライク準備完了!ボタン→地点タップで爆撃!');}
+ /* ⚠**編成で選んでいる砲撃の名前を出す**(2026-07-30ユーザー指摘
+      「どの砲撃をセットしててもエアストライク準備完了って出る」)。
+    ⚠クライアントは自分の砲撃idを持っていないので、その時は編成の選択(META.eq)を見る */
+ if(!tipSt&&m.charge>=1&&inW){tipSt=true;
+  const S9=STRIKES[m.stk||META.eq]||STRIKES.air;
+  toast(S9.ic+' '+S9.n+' 準備完了!ボタン→地点タップで撃て!');}
  /* 死潮ゲージ */
  const shares=MODE==='client'?(CS.ts||[]):(G?G.tide.shares:[]);
  const myI=MODE==='client'?CS.myJ:(G?G.myIdx:0);
@@ -12906,8 +13003,10 @@ function openBM(si){
   /* ⭐**進化の予告を出す**(2026-07-27)。全部MAXにするまで⬆ボタンは出ないので、
      出ていない間は「何を目指しているのか」を1行で見せる=強化を積む理由になる */
   const nx9=T_GRD(tw.ti),gp=canGrade(m,tw)?T_GCOST(tw.ti):0;
+  /* ⚠進化先が🔬研究所で未解放なら、MAXにしても建て替えられないことを先に伝える(2026-07-30) */
   const grd=gp?`<div class="bm-row"><button class="btn gold sm" id="bm-grd" data-p="${gp}" ${m.scrap>=gp?'':'disabled'}>⬆ ${TOWERS[nx9].n}へ ⚙️${fmt(gp)}</button></div>`
-   :(nx9>=0?`<div class="cdsc" style="font-size:12px;color:var(--gold)">⬆ 強化を全部MAXにすると『${TOWERS[nx9].n}』へ進化できる(⚙️${fmt(T_GCOST(tw.ti))})</div>`:'');
+   :(nx9<0?'':!tgOK(nx9)?`<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所の🧬派生タブで『${TOWERS[nx9].n}』を解放すると進化できる</div>`
+   :`<div class="cdsc" style="font-size:12px;color:var(--gold)">⬆ 強化を全部MAXにすると『${TOWERS[nx9].n}』へ進化できる(⚙️${fmt(T_GCOST(tw.ti))})</div>`);
   h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div>${grd}<div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
  }
  /* ⭐**必ず閉じられる✕を付ける**(2026-07-27ユーザー指摘
@@ -13192,10 +13291,14 @@ function actBuy(kind){
  if(kind==='uup'){buyUnitLevel();ivRender();return;}
  const opt={zi:ivS.zi,cnt:ivS.cnt,tgt:kind==='big'?ivS.tB:kind==='jam'?ivS.tJ:kind==='send'?ivS.tS:null};
  const label={unlock:'🔓 新タワー解放!',uun:'🪖 新部隊解放!',uup:'⬆ 部隊強化!',atk:'🔧 火力増強!',repair:'🛠 コア修理!',big:'🌊 大押し流しを仕掛けた!',tide:'🌊 潮位を引き上げた!',jam:'⚡ 妨害工作を仕掛けた',send:'🧟 変異体を送った'}[kind];
- if(MODE==='client'){const m=meV(),p=priceOf(m,kind,opt);if(m.scrap<p)return;
-  if((kind==='unlock'||kind==='uun')&&(CS.w||0)<3)return;
+ if(MODE==='client'){const m=meV(),p=priceOf(m,kind,opt);
+  /* ⚠払う財布は種類で違う。⚙️の物だけ所持⚙️を見る(🔩の物をここで弾くと押せなくなる) */
+  const byUp=(kind==='uup'||kind==='atk'||kind==='repair'||kind==='stkup');
+  if(byUp?((m.up||0)<p):(m.scrap<p))return;
+  /* ⚠**WAVE3までの解放ロックはホスト側で廃止済み**(2026-07-27)。ここだけ残っていたので
+     2人目は序盤に🔓新タワー解放/🪖新部隊解放を押しても無反応だった(2026-07-30ユーザー報告) */
   sendCmd({t:'c',a:'buy',k:kind,o:opt});
-  if(kind==='uup'||kind==='atk'||kind==='repair')m.up=(m.up||0)-p;else m.scrap-=p;
+  if(byUp)m.up=(m.up||0)-p;else m.scrap-=p;
   if(kind==='uup')m.uLv=(m.uLv||0)+1;
   if(kind==='unlock')m.unlocked++;if(kind==='uun')m.uUn=(m.uUn!=null?m.uUn:2)+1;if(kind==='atk')m.atkLv++;if(kind==='stkup')m.stkLv=(m.stkLv||0)+1;if(kind==='repair'){m.repairs++;m.core=Math.min(m.coreMax,m.core+12);}if(kind==='big')m.boosts++;if(kind==='tide')CS.tu=(CS.tu||0)+1;if(kind==='jam')m.jams++;
   sfx.buy();ivLog(label);ivRender();return;}
@@ -13290,7 +13393,9 @@ function paradeHit(cx,cy){
 document.addEventListener('pointerdown',e=>{
  if(SCR!=='title')return;
  /* ⚠ボタン・入力の上は素通りさせる=タイトルの操作を邪魔しない */
- if(e.target&&e.target.closest&&e.target.closest('button,.btn,input,select,a,.tb,label'))return;
+ /* ⚠**開いているウィンドウの中は素通りさせる**(2026-07-30に召集画面をスワイプ操作にした時に踏んだ)。
+    そうしないと、ウィンドウの上をなぞっただけで裏の行進ゾンビを殴ってしまう */
+ if(e.target&&e.target.closest&&e.target.closest('button,.btn,input,select,a,.tb,label,.modal,.scr:not(#scr-title)'))return;
  paradeHit(e.clientX,e.clientY);
 },true);
 /* ⭐きらめき(黄金のロブスター)。⚠**絵は増やさない**=十字に伸びる線を数個、位相をずらして瞬かせるだけ。
@@ -13900,7 +14005,7 @@ function renderHeroSeg(){
 /* ic=タブのアイコン素材名 / em=素材が無い時の絵文字 / t=タブの文字 */
 const LAB_CATS=[
  {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'タワー/兵科/🎯砲撃を1つずつ順番に解放する'},
- {k:'var',ic:'ic-tab-var',em:'🧬',t:'派生',d:'🎖編成の画面で入れ替えて使う'},
+ {k:'var',ic:'ic-tab-var',em:'🧬',t:'派生',d:'兵科の派生(🎖編成で入れ替え)と、タレット/工房の進化先'},
  {k:'twup',ic:'ic-tab-line',em:'🗼',t:'タワー',d:'タワー1種ずつ鍛える(解放したものだけ並ぶ)'},
  {k:'unup',ic:'ic-tab-line',em:'🪖',t:'部隊',d:'兵科1種ずつ鍛える(派生キャラにも同じだけ効く)'},
  {k:'start',ic:'ic-tab-start',em:'🚀',t:'開始',d:'1波目から効く。序盤の立ち上がりが楽になる'},
@@ -13948,6 +14053,23 @@ function renderLab(){
     d:'HP×'+(nx.hp||1)+' 攻撃×'+(nx.atk||1)+' 費用×'+(nx.cm||1.2)+' — '+nx.dsc,
     p:LAB_UV(t-1,uv.length)});
   }}
+ /* ⭐⭐**タレット/工房の進化**(2026-07-30ユーザー指示で研究所の解放制にした)。
+    ⚠出すのは「素のタワーを持っていて、その次の段をまだ取っていない物」だけ。
+    ⚠工房は3段なので、上級を取るまでプラントは出さない(段飛ばしを作らない)。 */
+ {const tg=META.tg||[];
+  for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];
+   if(!T||T.type==='sup'||T.grd)continue;/* 素のタワーだけを起点にする */
+   if(i>=BASE_T&&(i-BASE_T)>=(META.nt||0))continue;/* 研究所でまだ解放していない新型 */
+   /* その系統の「まだ解放していない一番手前の段」を探す */
+   let cur=i,nx=T_GRD(cur);
+   while(nx>=0&&tg.indexOf(TOWERS[nx].id)>=0){cur=nx;nx=T_GRD(cur);}
+   if(nx<0)continue;
+   const NT=TOWERS[nx],eco=NT.type==='eco';
+   items.push({cat:'var',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
+    tag:'進化 '+TOWERS[cur].n+' → '+NT.n,
+    d:'盤面で強化を全部MAXにすると⚙️'+fmt(T_GCOST(cur))+'で建て替えられる — '+NT.dsc,
+    p:LAB_TG(tg.length)});
+  }}
  /* ⭐砲撃は「次の1つ」だけを新種タブに出す(タワー/兵科と同じ形) */
  {const nk=stkNext();if(nk){const S=STRIKES[nk],ki=STK_ORDER.indexOf(nk);
   items.push({cat:'new',k:'stk',id:nk,ic:S.ic,t:S.n,tag:'砲撃 '+(ki+1)+'/'+STK_ORDER.length,d:S.dsc,p:LAB_STK[ki]});}}
@@ -13993,6 +14115,7 @@ function renderLab(){
   doneU=UNITS.slice(BASE_U,BASE_U+META.nu).map(u=>'🤖'+u.n),
   doneS=META.st.filter(k=>k!=='air').map(k=>STRIKES[k].ic+STRIKES[k].n),
   doneV=(META.uv||[]).map(id=>{const e=VARLIST.find(x=>x.v.id===id);return e?'🧬'+e.v.n:'';}).filter(Boolean),
+  doneG=(META.tg||[]).map(id=>{const T=TOWERS.find(t=>t.id===id);return T?(T.type==='eco'?'🏭':'🗼')+T.n:'';}).filter(Boolean),
   doneX=[].concat(META.sc0?['⚙️初期資金+'+(META.sc0*40)]:[],META.hp0?['🏕コアHP+'+(META.hp0*5)]:[],
    META.up0?[PT+'開始+'+(META.up0*6)]:[],META.uu0?['🤝部隊枠+'+META.uu0]:[],META.sl0?['🧱建設枠+'+META.sl0]:[],
    META.py0?['💰報酬+'+(META.py0*6)+'%']:[],META.ec0?['🏭産出+'+(META.ec0*12)+'%']:[],META.cd0?['⏱待ち-'+(META.cd0*6)+'%']:[],
@@ -14013,7 +14136,7 @@ function renderLab(){
   it.n=n;it.p=p;it.tag='Lv'+lv+'→'+(lv+n)+'/'+S[0];
  }
  LAB_ITEMS=items;
- const done=[].concat(doneT,doneU,doneV,doneS,doneX);
+ const done=[].concat(doneT,doneU,doneV,doneG,doneS,doneX);
  /* ---- タブ(買える数をバッジで出す=どこに何が残っているか一目で分かる) ---- */
  if(!LAB_CATS.some(c=>c.k===LABTAB))LABTAB='new';
  const tb=$('lab-tabs');
@@ -14086,6 +14209,7 @@ function renderLab(){
   META.pts-=it.p;
   if(it.k==='nt')META.nt++;else if(it.k==='nu')META.nu++;else if(it.k==='stk')META.st.push(it.id);
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);}
+  else if(it.k==='tg'){if(!Array.isArray(META.tg))META.tg=[];META.tg.push(it.id);}
   else if(it.k==='sc0')META.sc0+=n;else if(it.k==='hp0')META.hp0+=n;
   else if(['up0','uu0','sl0','py0','ec0','cd0','ec1','tr0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+n;
   else if(it.k==='st0')META.st0=(META.st0||0)+n;
@@ -14294,11 +14418,58 @@ function gcStarList(){
 function gcStarHero(){return gcStarList()[0]||HEROES[HEROES.length-1];}
 function gcDexHtml(){
  const own=HEROES.filter(h=>heroOwned(h.id)).length;
+ /* ⚠押すと🦸ステータス画面が開く(2026-07-30)。図鑑は名前と必殺技だけなので、数値はそちらで見せる */
  return '<div class="labdone" style="margin-top:6px"><b>英雄図鑑 '+own+'/'+HEROES.length+'</b>'
+  +'<button class="btn sm" id="gc-dexst" style="float:right;padding:1px 8px;font-size:11px">📋 ステータス</button>'
   +'<div class="hgrid">'+HEROES.map(h=>{const c=(META.hero||{})[h.id]||0;
    return '<div class="hb'+(c?' own':'')+'">'+(c?RK_S[h.rk]+' '+h.n:'??? '+RK_S[h.rk])
     +'<div class="hq">'+(c?'所持'+c+' / 必殺『'+h.ult+'』':RK_N[h.rk]+'枠')+'</div></div>';}).join('')
   +'</div></div>';
+}
+/* ============ 🦸英雄ステータス画面(2026-07-30ユーザー指示) ============
+   ⚠それまで英雄の数値を見る場所が**どこにも無かった**(📖図鑑は名前と必殺技の一言だけ)。
+   ⭐数値は **UNITS 側**から引く=そこが実際に戦う値。HEROESの表だけ見ると取りこぼす。
+   ⚠🔧鍛錬Lvは鍛錬所をしまっている間(TR_OPEN=false)は必ず0なので、その時は行を出さない。 */
+const HS_TYN={melee:'近接',bullet:'実弾',fire:'火炎',pierce:'貫通',blast:'爆発',frost:'冷気',heal:'回復'};
+let HSSEL='';
+function hsList(){return HEROES;}
+function openHStat(id){
+ const own=HEROES.find(h=>heroOwned(h.id));
+ HSSEL=id||(heroOwned(HSSEL)?HSSEL:'')||(META.hsel&&heroOwned(META.hsel)?META.hsel:'')||(own?own.id:HEROES[0].id);
+ $('md-hstat').classList.add('on');renderHStat();
+}
+function closeHStat(){$('md-hstat').classList.remove('on');try{renderHeroSeg();}catch(e){}}
+const hsRow=(a,b)=>'<tr><td>'+a+'</td><td>'+b+'</td></tr>';
+function renderHStat(){
+ const H=HEROES.find(h=>h.id===HSSEL)||HEROES[0];HSSEL=H.id;
+ const ownN=HEROES.filter(h=>heroOwned(h.id)).length;
+ const oe=$('hs-own');if(oe)oe.innerHTML=IC('所持 '+ownN+'/'+HEROES.length+'　💎'+(META.gem||0));
+ const ui=hUiOf(H.id),U=UNITS[ui]||H,cnt=(META.hero||{})[H.id]||0;
+ const tl=TR_OPEN?((META.hlv||{})[H.id]||0):0,tm=1+.08*tl;
+ const col=RARE[H.rk-1]||RARE[0];
+ const dps=(U.rate>0)?Math.round((U.atk||0)*tm/U.rate):0;
+ const inf=$('hs-info');
+ if(inf)inf.innerHTML=IC('<div class="hsn" style="color:'+col+'">'+RK_S[H.rk]+' '+H.n+'</div>'
+  +'<div class="hsr">'+RK_N[H.rk]+'枠'+(cnt?('　所持 '+cnt+'体'):'　<b style="color:var(--danger2)">未所持</b>')
+   +(tl?('　🔧鍛錬Lv'+tl+'(HPと攻撃+'+(tl*8)+'%)'):'')+'</div>'
+  +'<table class="stats">'
+  +hsRow('❤ HP',fmt(Math.round((U.hp||0)*tm)))
+  +hsRow('⚔ 攻撃',fmt(Math.round((U.atk||0)*tm))+'　(毎秒 '+fmt(dps)+')')
+  +hsRow('⏩ 攻撃間隔',(U.rate||0).toFixed(2)+'秒')
+  +hsRow('📡 射程',(U.rng>=100?U.rng:'近接 '+(U.rng||0)))
+  +hsRow('👟 移動',Math.round(U.sp||0)+(U.aoe?('　💥範囲 '+U.aoe):'')+(U.hook?('　🪝足止め '+U.hook+'体'):''))
+  +hsRow('💥 攻撃の型',(HS_TYN[U.type]||U.type)+(U.multi?('　同時 '+U.multi+'体'):''))
+  +hsRow('⚡ 必殺チャージ',(H.uch||0)+'秒(出撃してから溜まる)')
+  +'</table>'
+  +'<div class="hsul">必殺『'+H.ult+'』— '+H.udsc+'</div>');
+ /* 姿。⚠fitDraw は canvas の中の寸法に合わせて収める(CSSと食い違うと潰れる=第93弾の失敗) */
+ try{const cv=$('hs-cv');if(cv&&cv.getContext&&ui>=0)fitDraw(cv,cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),10);}catch(e){}
+ const g=$('hs-grid');
+ if(g){g.innerHTML=HEROES.map(h=>{const c2=(META.hero||{})[h.id]||0;
+   return '<div class="hb pick'+(c2?' own':'')+(h.id===HSSEL?' sel':'')+'" data-hs="'+h.id+'">'
+    +RK_S[h.rk]+' '+(c2?h.n:'???')
+    +'<div class="hq">'+(c2?('所持'+c2+' / '+h.ult):RK_N[h.rk]+'枠 — 未所持')+'</div></div>';}).join('');
+  g.querySelectorAll('[data-hs]').forEach(b=>{b.onclick=()=>{HSSEL=b.dataset.hs;if(sfx.buy)sfx.buy();renderHStat();};});}
 }
 function gcView(v){
  GCV=v;
@@ -14308,6 +14479,7 @@ function gcView(v){
  /* ⚠結果の一覧は**別ウィンドウ(#md-gcres)**に移した(第73弾)。ここは確率/図鑑の置き場 */
  $('gc-res').innerHTML=(v==='rate')?IC(gcRateHtml()):'';
  $('gc-list').innerHTML=(v==='dex')?gcDexHtml():'';
+ {const b=$('gc-dexst');if(b)b.onclick=()=>openHStat('');}
  const st=$('gc-subt');if(st)st.textContent=(v==='rate')?'1回ごとに抽選する(天井は無い)':(v==='dex')?'引いた英雄がここに載る':'';
  /* ⚠開いた直後は clientWidth が0のことがあるので、次のフレームで測り直してから描く */
  if(v==='home')requestAnimationFrame(()=>{gcHomeFit();gcHomeDraw();});
@@ -14323,8 +14495,14 @@ function renderGacha(res){
  gcView(GCV);
 }
 /* 目玉の英雄を見せる面(毎フレーム描く)。⚠背景と光条は演出(gcBg/gcRays)と同じものを使い回す */
-const GCH={t:0,w:0,h:0,dpr:1};
+/* ⭐**回りっぱなしをやめて、スワイプで入れ替える**(2026-07-30ユーザー指示
+     「スワイプで前後を入れ替えて、スワイプするまでは中央で止めてほしい」)。
+   ⚠自動で回っていると**名札が勝手に入れ替わって読めない**し、狙った英雄を見られない。
+   idx=いま正面に居る英雄 / a=いまの角度 / dg=指でつかんでいる間の情報。 */
+const GCH={t:0,w:0,h:0,dpr:1,idx:0,a:0,n:0,dg:null};
 const gcOpen=()=>{try{return $('md-gacha').classList.contains('on');}catch(e){return false;}};
+/* 指の移動1pxあたり何ラジアン回すか。⚠大きいと少し触っただけで飛ぶ */
+const GC_SWIPE=.0065;
 function gcHomeFit(){
  const cv=$('gc-hcv');if(!cv)return;
  const w=cv.clientWidth||480,h=cv.clientHeight||300;
@@ -14336,8 +14514,31 @@ function gcHomeStep(dt){
  GCH.t+=dt;
  const cv=$('gc-hcv');
  if(cv&&(cv.clientWidth!==GCH.w||cv.clientHeight!==GCH.h))gcHomeFit();
+ /* ⚠人数が変わったら(引いて手に入れた等)正面を先頭へ戻す=そうしないと居ない英雄を指し続ける */
+ const n=Math.max(1,gcStarList().length);
+ if(GCH.n!==n){GCH.n=n;GCH.idx=0;GCH.a=0;}
+ if(GCH.idx>=n)GCH.idx=0;
+ /* 指を離したら、いちばん近い正面へすっと寄る(角度は±πに畳んでから詰める) */
+ if(!GCH.dg){const tgt=-GCH.idx*Math.PI*2/n;
+  let d=tgt-GCH.a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;
+  GCH.a+=d*Math.min(1,dt*9);}
  gcHomeDraw();
 }
+/* スワイプで前後を入れ替える。⚠**演出中(GCがある間)は触らない**=上を #gc-cv が覆っている */
+{const cv=$('gc-hcv');
+ if(cv&&cv.addEventListener){
+  const px=e=>(e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX)||0;
+  const dn=e=>{if(GC||(GCH.n||1)<2)return;GCH.dg={x0:px(e),dx:0};};
+  const mv=e=>{if(!GCH.dg)return;GCH.dg.dx=px(e)-GCH.dg.x0;
+   if(Math.abs(GCH.dg.dx)>6&&e.cancelable)e.preventDefault();};
+  const up=()=>{if(!GCH.dg)return;const dx=GCH.dg.dx,n=Math.max(1,GCH.n||1);
+   GCH.a+=dx*GC_SWIPE;GCH.dg=null;
+   /* ⚠**しきい値を置く**=軽く触れただけで入れ替わると、押したい単発/10連が押せなくなる */
+   if(n>1&&Math.abs(dx)>36){GCH.idx=((GCH.idx+(dx<0?1:-1))%n+n)%n;if(sfx.buy)sfx.buy();}};
+  cv.addEventListener('pointerdown',dn);cv.addEventListener('pointermove',mv,{passive:false});
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  cv.addEventListener('pointerleave',up);
+ }}
 function gcHomeDraw(){
  const cv=$('gc-hcv'),c=cv&&cv.getContext&&cv.getContext('2d');if(!c)return;
  const w=GCH.w||cv.clientWidth||480,h=GCH.h||cv.clientHeight||300,t=GCH.t;
@@ -14345,7 +14546,9 @@ function gcHomeDraw(){
  /* ⭐**円を描いて前後が入れ替わる**(2026-07-28ユーザー指示)。
     ⚠奥行きは **z=cos(角度)** だけで作る=1で手前・-1で奥。大きさ・上下・薄さを全部 z から出せば
       「回っている」に見える。⚠**必ず奥から描く**(並べ替えを忘れると奥の者が手前に出て崩れる)。 */
- const LIST=gcStarList(),n=Math.max(1,LIST.length),spin=t*.5;
+ const LIST=gcStarList(),n=Math.max(1,LIST.length);
+ /* ⚠指でつかんでいる間はその場で回す(離した時に一番近い正面へ寄る) */
+ const spin=GCH.a+(GCH.dg?GCH.dg.dx*GC_SWIPE:0);
  const items=LIST.map((hh,i)=>{const a=spin+i*Math.PI*2/n;
   return {h:hh,z:n>1?Math.cos(a):1,sx:n>1?Math.sin(a):0};});
  items.sort((p,q)=>p.z-q.z);
@@ -14378,10 +14581,12 @@ function gcHomeDraw(){
   /* 手前ほど大きく・低く・はっきり。⚠1人しかいない時は今までどおり枠いっぱい */
   /* ⚠**上下の差を大きく取る**=真円だと手前と奥が同時に中央へ来る瞬間があり、
      横のずれだけだと**奥の者が完全に隠れる**(撮って気づいた)。奥ほど高く小さく薄く。 */
-  const sc=(n>1)?(.60+.40*(it.z+1)/2):1;
+  /* ⚠**奥ほど高く小さく**。2人しか居ない時は真後ろ(sx=0)に重なるので、
+     上下の差を大きめに取らないと後ろの1人が完全に消える(2026-07-30に撮って詰めた) */
+  const sc=(n>1)?(.56+.44*(it.z+1)/2):1;
   const ww=bw0*(n>1?.60:1)*sc,hh2=bh0*(n>1?.74:1)*sc;
   const bx=cx0+it.sx*w*(n>1?.24:0)-ww/2;
-  const by=h*.015+bob+(bh0-hh2)*(n>1?.5:0)+(n>1?it.z*h*.075:0);
+  const by=h*.015+bob+(bh0-hh2)*(n>1?.5:0)+(n>1?it.z*h*.115:0);
   const R=fitRect(key,drw,bx,by,ww,hh2,2),rw=R[2]-R[0],rh=R[3]-R[1];
   const fade=(n>1)?(.45+.55*(it.z+1)/2):1;
   /* 後光(レア度の色) */
@@ -14403,6 +14608,18 @@ function gcHomeDraw(){
  c.lineWidth=3;c.strokeStyle=INK;rr(c,6,6,bw,bh,7);c.stroke();
  c.textAlign='center';c.fillStyle=INK;c.font='900 12px '+FF;
  c.fillText(heroOwned(H.id)?'ぜんぶ揃った':'いま狙える最上位',6+bw/2,6+14);
+ /* ⭐**スワイプで入れ替えられることを出す**(2026-07-30)。⚠出さないと止まっている絵にしか見えない。
+    ⚠1人しか居ない時は出さない(入れ替える先が無いのに案内するのは嘘) */
+ if(n>1){
+  c.textAlign='center';c.fillStyle='rgba(242,236,220,.72)';c.font='900 11px '+FF;
+  c.fillText('◀ スワイプで入れ替え ▶',w*.5,6+14);
+  /* いま何人目か(点で出す) */
+  const dn2=n,dw=9,x0=w*.5-(dn2-1)*dw/2,dy=h-60;
+  for(let k=0;k<dn2;k++){
+   c.globalAlpha=(k===((GCH.idx%dn2)+dn2)%dn2)?1:.35;
+   c.fillStyle=(k===((GCH.idx%dn2)+dn2)%dn2)?col:PANE;
+   c.beginPath();c.arc(x0+k*dw,dy,3,0,7);c.fill();}
+  c.globalAlpha=1;}
  /* 名札(レア度・名前・必殺技)。⚠canvasの文字は必ず FF を通す。
     ⚠**★は描かない**=drawHeroBody が頭の上に★を描くので、名札にも入れると同じ画面に★が2組並ぶ */
  const ny=h-52;
@@ -14444,7 +14661,30 @@ const GC_TWC=[['#cfd6dd','#ffffff'],[AMBER,'#ffdd66'],['#c96b9f','#f0a8d8']];
 let GC=null;
 const gcRank=o=>o.dud?0:o.hero.rk;
 const gcTi=k=>TOWERS.findIndex(T=>T.id===GC_TW[k]);
-const gcZi=k=>{const i=ZOMBIES.findIndex(z=>z.id===GC_ZM[k]);return i<0?0:i;};
+/* ⭐★5を引いた回だけ、的が✨黄金のロブスターになることがある(2026-07-30ユーザー指示) */
+const gcZi=k=>{if(GC&&GC.lob&&LB_ZI>=0)return LB_ZI;
+ const i=ZOMBIES.findIndex(z=>z.id===GC_ZM[k]);return i<0?0:i;};
+/* ⭐金色に焼く共通処理。⚠**ctx.filter は iOS で効かない**ので、別canvasに一度描いてから
+   source-atop で金のグラデを被せる(タイトルの黄金ロブスターと同じやり方)。
+   ⚠べた塗りで潰さない=明るい所だけ濃く乗せないと黒フチも陰影も消える。 */
+let GLDC=null;
+function goldCv(drawFn,SZ,t,oy){
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ if(!GLDC)GLDC=document.createElement('canvas');
+ if(GLDC.width!==Math.round(SZ*dpr)){GLDC.width=GLDC.height=Math.round(SZ*dpr);}
+ const rc=GLDC.getContext('2d');if(!rc)return null;
+ rc.setTransform(dpr,0,0,dpr,0,0);rc.clearRect(0,0,SZ,SZ);
+ rc.save();rc.translate(SZ/2,oy);try{drawFn(rc);}catch(e){}rc.restore();
+ rc.globalCompositeOperation='source-atop';
+ try{const g2=rc.createLinearGradient(SZ*.18,SZ*.2,SZ*.86,SZ*.96);
+  for(let k=0;k<=8;k++){const b=.5+.5*Math.sin((k/8*1.6+t*.6)*6.283);
+   /* ⚠**濃く乗せすぎない**=黒フチまで金色に潰れて「白い塊」になる(2026-07-30に撮って下げた) */
+  g2.addColorStop(k/8,'rgba('+Math.round(208+47*b)+','+Math.round(162+86*b)+','
+    +Math.round(56+150*b)+','+(.50+.26*b).toFixed(2)+')');}
+  rc.fillStyle=g2;rc.fillRect(0,0,SZ,SZ);}catch(e){}
+ rc.globalCompositeOperation='source-over';
+ return GLDC;
+}
 function gcFit(){
  const cv=$('gc-cv');if(!cv)return;
  const w=cv.clientWidth||760,h=cv.clientHeight||360;
@@ -14462,7 +14702,22 @@ function gcStart(res){
  /* たまに1段下がる=下振れだけ。★5は必ず最上段で見せる
     → レーザーが出たら★4以上が確定。レアでない時は基本ライフル+通常ゾンビになる */
  const tw=(best<5&&Math.random()<.35)?Math.max(0,base-1):base;
- GC={res,i:0,ph:'aim',t:0,best,tw,zk:tw,hit:0,w:760,h:360,dpr:1,sk:null};
+ /* ⭐⭐**期待度の見せ方を3つ足した**(2026-07-30ユーザー指示)。
+    ⚠**どれも下振れだけ**=タレットと同じ約束(上振れさせると読みが崩れて演出が嘘になる)。
+    ①**背景**: 朝=ふつう / 夜=期待度が高い
+    ②**「撃て!」の文字色**: 白 → 赤 → 虹(虹が出たら★4以上が確定)
+    ③**的**: ★5を引いた回だけ、たまに✨黄金のロブスターが出てくる */
+ const night=(best>=3)?(Math.random()<.82):(Math.random()<.18);
+ const fcB=best>=4?2:best>=2?1:0;
+ const fc=(best<5&&Math.random()<.35)?Math.max(0,fcB-1):fcB;
+ const lob=!!(best>=5&&LB_ZI>=0&&Math.random()<.55);
+ /* ⭐⭐**どんでん返し**(2026-07-30ユーザー指示)。わざと**一番しょぼい見た目**
+      (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、弾が当たっても敵が死なず、
+      **金色に変わって大爆発**する。★4以上を引いた回だけ、たまに起きる。
+    ⚠これがあるので「ライフル+通常ゾンビ=はずれ」と決め打ちできなくなる=毎回タップする理由になる。 */
+ const twist=(!lob&&best>=4&&Math.random()<.4);
+ GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,w:760,h:360,dpr:1,sk:null,
+  night:twist?false:night,fc:twist?0:fc,lob:lob?1:0,twist:twist?1:0};
  cv.classList.add('on');gcFit();
  if(sfx.heal)sfx.heal();
 }
@@ -14509,7 +14764,7 @@ function gcCam(w,h,TX,TY,ZX,ZY){
    /* 発射の反動(最初の0.12秒だけ強く蹴る) */
    const r=Math.max(0,1-ft/.12);sx=Math.sin(ft*90)*11*r;sy=Math.cos(ft*77)*7*r;
   }else{
-   const hk=clamp((ft-GC_FLY-GC_HOLD)/1.05,0,1);
+   const hk=clamp((ft-GC_FLY-GC_HOLD-(GC.twist?GC_TWIST:0))/1.05,0,1);
    /* 着弾で一気に寄ってから、ゆっくり引いて跡地を見せる */
    const e=hk*hk*(3-2*hk);
    z=1.46-e*.43;x=ZX+(( (TX+ZX)/2 )-ZX)*e;y=(ZY-30)+(((TY+ZY)/2-20)-(ZY-30))*e;
@@ -14523,8 +14778,12 @@ function gcCam(w,h,TX,TY,ZX,ZY){
 /* 傷が出た瞬間の音(木っ端みじんが一番派手) */
 function gcHitSfx(){
  if(sfx.boom)sfx.boom();
- if(sfx.eliteKill)sfx.eliteKill();
+ /* ⚠✨黄金のロブスターだけ豪華な撃破音(タイトルと同じ音を使い回す=素材を増やさない) */
+ if(GC&&GC.lob&&sfx.lobKill)sfx.lobKill();
+ else if(sfx.eliteKill)sfx.eliteKill();
 }
+/* ⭐どんでん返しで「金色に変わる」までの秒数。⚠短いと何が起きたか読めない */
+const GC_TWIST=.95;
 function gcStep(dt){
  if(!GC)return;
  /* ⚠パネルの寸法は開いた直後に確定していないことがある(文字や画像の読み込みで動く)。
@@ -14536,8 +14795,12 @@ function gcStep(dt){
  /* 溜め切ったら撃つ */
  if(GC.ph==='chg'&&GC.t>=GC_CHG){gcShoot();}
  /* 撃った弾が当たる瞬間に音を鳴らす(1発だけ) */
- if(GC.ph==='fire'&&!GC.hit&&GC.t>=GC_FLY){GC.hit=1;gcHitSfx();}
- if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_HOLD+GC_BANG){GC.ph='card';GC.t=0;}
+ if(GC.ph==='fire'&&!GC.hit&&GC.t>=GC_FLY){GC.hit=1;
+  /* ⚠どんでん返しの時は**まだ倒していない**ので、ここでは軽い当たり音だけ */
+  if(GC.twist){if(sfx.thunk)sfx.thunk();}else gcHitSfx();}
+ /* どんでん返し: 金色になり切った瞬間に大爆発 */
+ if(GC.ph==='fire'&&GC.twist&&!GC.hit2&&GC.t>=GC_FLY+GC_HOLD+GC_TWIST){GC.hit2=1;gcHitSfx();}
+ if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_HOLD+GC_BANG+(GC.twist?GC_TWIST:0)){GC.ph='card';GC.t=0;}
  try{gcDraw();}catch(e){}
 }
 /* 押した時: 「撃て!」なら撃つ / 撃った後の余韻は飛ばす / カードなら次の1枚へ */
@@ -14549,7 +14812,7 @@ function gcTap(mx,my){
  if(GC.ph==='chg')return;
  if(GC.ph==='fire'){
   /* 弾が飛んでいる間は飛ばさない(当たる前に結果へ行くと何が起きたか分からない) */
-  if(GC.t<GC_FLY+GC_HOLD+.35)return;
+  if(GC.t<GC_FLY+GC_HOLD+.35+(GC.twist?GC_TWIST:0))return;
   GC.ph='card';GC.t=0;return;}
  GC.i++;
  if(GC.i>=GC.res.length){gcEnd();return;}
@@ -14624,37 +14887,46 @@ const gcLcg=(seed,n,f)=>{let s=seed,a=[];
  for(let i=0;i<n;i++)a.push(f(rnd,i));return a;};
 const GC_BLD=gcLcg(20260727,28,r=>({x:r(),w:.03+r()*.05,h:.10+r()*.30,f:r()}));
 const GC_EMB=gcLcg(7771,36,r=>({x:r(),y:r(),sp:.25+r()*.8,r:1+Math.round(r()*2)}));
-function gcBg(c,w,h,hz,t){
- /* 空=地平線のあたりだけ赤く焼けている */
+/* ⭐**朝と夜の2つ**にした(2026-07-30ユーザー指示「背景の色(朝か夜かで夜が期待度高い)」)。
+   ⚠night を省くと今までどおり夜(目玉の英雄を見せる面はいつも夜のまま)。
+   ⚠朝は「明るくて何も起きなさそう」に見せるのが役目=火も血の月も出さない。 */
+function gcBg(c,w,h,hz,t,night){
+ const NG=(night!==false);
+ /* 空。夜=地平線のあたりだけ赤く焼けている / 朝=白んだ空に低い陽 */
  let g=null;
  try{g=c.createRadialGradient&&c.createRadialGradient(w*.72,hz,10,w*.72,hz,h*1.6);}catch(e){}
- if(g){g.addColorStop(0,'#43211a');g.addColorStop(.42,'#1e1315');g.addColorStop(1,'#0b0a0c');c.fillStyle=g;}
- else c.fillStyle='#141110';
+ if(g){if(NG){g.addColorStop(0,'#43211a');g.addColorStop(.42,'#1e1315');g.addColorStop(1,'#0b0a0c');}
+  else{g.addColorStop(0,'#e8b56a');g.addColorStop(.34,'#a98a72');g.addColorStop(1,'#5d6f84');}
+  c.fillStyle=g;}
+ else c.fillStyle=NG?'#141110':'#8a94a4';
  c.fillRect(-w,-h,w*3,hz+h);
- /* 血の月 */
- c.globalAlpha=.9;c.fillStyle='#c14b3e';c.beginPath();c.arc(w*.28,hz-h*.44,h*.075,0,7);c.fill();
- c.globalAlpha=.15;c.beginPath();c.arc(w*.28,hz-h*.44,h*.16,0,7);c.fill();c.globalAlpha=1;
- /* 廃墟の輪郭(奥と手前の2列。奥は薄く小さく) */
+ /* 夜=血の月 / 朝=低い太陽 */
+ if(NG){c.globalAlpha=.9;c.fillStyle='#c14b3e';c.beginPath();c.arc(w*.28,hz-h*.44,h*.075,0,7);c.fill();
+  c.globalAlpha=.15;c.beginPath();c.arc(w*.28,hz-h*.44,h*.16,0,7);c.fill();c.globalAlpha=1;}
+ else{c.globalAlpha=.95;c.fillStyle='#fff1c4';c.beginPath();c.arc(w*.72,hz-h*.16,h*.085,0,7);c.fill();
+  c.globalAlpha=.22;c.fillStyle='#ffe08a';c.beginPath();c.arc(w*.72,hz-h*.16,h*.24,0,7);c.fill();c.globalAlpha=1;}
+ /* 廃墟の輪郭(奥と手前の2列。奥は薄く小さく)。⚠朝は霞ませる=シルエットが強いと夜と見分けが付かない */
  for(let L=1;L>=0;L--){
-  const base=L?'#181316':'#241b1b',sc=L?.72:1;
+  const base=NG?(L?'#181316':'#241b1b'):(L?'#8f8e92':'#6b6a70'),sc=L?.72:1;
   for(const b of GC_BLD){
    if((b.f<.5)!==(L===1))continue;
    const bw=w*b.w*sc,bh=h*b.h*sc,bx=-w*.2+b.x*w*1.4,by=hz-bh;
    c.fillStyle=base;c.fillRect(bx,by,bw,bh);
-   if(b.f>.74){/* 窓の灯り */
+   if(NG&&b.f>.74){/* 窓の灯り(夜だけ) */
     c.fillStyle='rgba(232,163,61,.45)';
     for(let k=0;k<3;k++)c.fillRect(bx+bw*.26,by+bh*(.18+k*.24),bw*.18,bh*.06);}
   }}
- /* 遠くの火(ゆらぐ) */
- for(let i=0;i<3;i++){const fx=w*(.16+i*.32),fl=.55+Math.sin(t*(2.6+i*.7)+i)*.45;
+ /* 遠くの火(ゆらぐ)。⚠朝は出さない=「何も起きなさそうな朝」を作るのが役目 */
+ if(NG)for(let i=0;i<3;i++){const fx=w*(.16+i*.32),fl=.55+Math.sin(t*(2.6+i*.7)+i)*.45;
   c.globalAlpha=.26*fl;c.fillStyle='#e8a33d';
   c.beginPath();c.ellipse(fx,hz-1,w*.055,h*.055,0,0,7);c.fill();}
  c.globalAlpha=1;
- /* 舞い上がる火の粉 */
+ /* 舞い上がる火の粉(朝は白い綿ぼこりにして数を減らす) */
  for(const e of GC_EMB){
+  if(!NG&&e.r<2)continue;
   const ex=(((e.x+t*e.sp*.02)%1.3)-.15)*w;
   const ey=hz-((e.y*h*.5+t*e.sp*22)%(h*.62));
-  c.globalAlpha=.5;c.fillStyle=(e.r>2?'#e8a33d':'#b8ae96');
+  c.globalAlpha=NG?.5:.28;c.fillStyle=NG?(e.r>2?'#e8a33d':'#b8ae96'):'#efe7d2';
   c.fillRect(ex,ey,e.r,e.r);}
  c.globalAlpha=1;
 }
@@ -14688,16 +14960,21 @@ function gcDraw(){
   const zidx=gcZi(GC.zk),Z=ZOMBIES[zidx]||{sc:1,c:'#7a8f5f'};
   /* ⭐着弾したら GC_HOLD 秒だけ画を止める(ヒットストップ)。hk はそのあとから進む。
      ⚠止めている間も**ゾンビは立ったまま**にする=消すと0.14秒の穴が空いて手応えが消える */
-  const hit=fire&&ft>=GC_FLY,hk=hit?clamp((ft-GC_FLY-GC_HOLD)/1.05,0,1):0;
+  /* ⭐どんでん返しの間(GC_TWIST秒)は**まだ倒れていない**ので、跡地の進行(hk)をその分うしろへずらす */
+  const dly=GC.twist?GC_TWIST:0;
+  const hit=fire&&ft>=GC_FLY,hk=hit?clamp((ft-GC_FLY-GC_HOLD-dly)/1.05,0,1):0;
   const stop=hit&&ft<GC_FLY+GC_HOLD;
+  /* 金化の進み(0→1)。どんでん返しでなくても、✨黄金のロブスターは最初から金 */
+  const twK=GC.twist?clamp((ft-GC_FLY-GC_HOLD)/dly,0,1):0;
+  const alive9=(!hit||stop||(GC.twist&&ft<GC_FLY+GC_HOLD+dly));
   const mx=TX+64,my=TY-64,ex=ZX,ey=ZY-26;/* 銃口 → 的 */
   /* ⭐ここからカメラを掛ける。⚠**文字と閃光には掛けない**ので、あとで必ず restore する */
   const CAM=gcCam(w,h,TX,TY,ZX,ZY);
   c.save();
   c.translate(cx+CAM.sx,cy+CAM.sy);c.scale(CAM.z,CAM.z);c.translate(-CAM.x,-CAM.y);
   /* ---- 奥行きのある地面(消失点へ収束させる)。⚠寄せるので**画面より広く**描く(端に隙間が出る) ---- */
-  gcBg(c,w,h,hz,GC.t);
-  c.fillStyle='#2b2419';c.fillRect(-w,hz,w*3,h*2);
+  gcBg(c,w,h,hz,GC.t,GC.night);
+  c.fillStyle=GC.night===false?'#6a6154':'#2b2419';c.fillRect(-w,hz,w*3,h*2);
   {const vx=w*.62;
    c.strokeStyle='rgba(242,236,220,.09)';c.lineWidth=2;
    for(let i=-5;i<=7;i++){c.beginPath();c.moveTo(vx+i*w*.24,h+60);c.lineTo(vx,hz);c.stroke();}
@@ -14706,10 +14983,35 @@ function gcDraw(){
    c.strokeStyle='rgba(242,236,220,.22)';
    c.beginPath();c.moveTo(-w,hz);c.lineTo(w*2,hz);c.stroke();c.lineWidth=3;}
   /* ---- ゾンビ(奥)。⚠手前のタレットより先に描く=奥行きの順番 ---- */
-  if(!hit||stop){
-   c.save();c.translate(ZX,ZY);c.scale(ZS/(Z.sc||1),ZS/(Z.sc||1));
-   try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
-   c.restore();
+  if(alive9){
+   const gk9=GC.lob?1:twK;/* どれだけ金色か */
+   const zsc=ZS/(Z.sc||1);
+   if(gk9>0){
+    /* ⭐金色に光る的。⚠**別canvasに焼いて source-atop**(ctx.filter は iOS で効かない)。
+       ⚠焼いた絵をもう1枚 lighter で重ねないと、暗い背景に沈んで「くすんだ茶色」に見える */
+    /* ⚠✨黄金のロブスターは**この回の主役**なので一回り大きく見せる */
+    const SZ9=300,zs9=zsc*(GC.lob?1.5:1);
+    const cvg=goldCv(cc=>{cc.scale(zs9,zs9);try{drawZombie(cc,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}},SZ9,GC.t,SZ9*.78);
+    /* 後光。⚠濃くすると絵まで白く飛ぶので薄く */
+    for(let k=0;k<3;k++){c.globalAlpha=(.20-k*.06)*gk9;
+     c.fillStyle=['#fff3bd','#ffcf52','#ffa41c'][k];
+     c.beginPath();c.arc(ZX,ZY-24,30+k*16+Math.sin(GC.t*5+k)*4,0,7);c.fill();}
+    c.globalAlpha=1;
+    if(gk9<1){/* 変わっていく途中は元の絵も出す(いきなり金になると何が起きたか読めない) */
+     c.save();c.translate(ZX,ZY);c.scale(zsc,zsc);
+     try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
+     c.restore();}
+    if(cvg){c.globalAlpha=gk9;c.drawImage(cvg,ZX-SZ9/2,ZY-SZ9*.78,SZ9,SZ9);
+     /* ⚠lighter を強く重ねると真っ白になる=**うっすら**で足りる */
+     c.globalCompositeOperation='lighter';c.globalAlpha=.16*gk9;
+     c.drawImage(cvg,ZX-SZ9/2,ZY-SZ9*.78,SZ9,SZ9);
+     c.globalCompositeOperation='source-over';c.globalAlpha=1;}
+    /* きらめき(タイトルの黄金ロブスターと同じ十字の線) */
+    try{parSpark(c,ZX,ZY-14,GC.t);}catch(e){}
+   }else{
+    c.save();c.translate(ZX,ZY);c.scale(zsc,zsc);
+    try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
+    c.restore();}
   }else{
    /* ⭐倒し方は確定で木っ端みじん。⚠肉片は落ちたら地面に転がしておく(消すと跡が残らない) */
    c.strokeStyle='rgba(255,180,120,'+Math.max(0,1-hk*2.4).toFixed(3)+')';c.lineWidth=6*(1-hk)+1;
@@ -14798,7 +15100,10 @@ function gcDraw(){
   /* ⭐ここでカメラを外す。これより下は画面にべた張り(寄せると読めない/端に隙間が出る) */
   c.restore();
   /* 着弾の閃光。⚠**止めている間は白を出しっぱなし**にして、そのあと一気に引く */
-  if(hit){const fl=stop?1:Math.max(0,1-hk/.22);
+  /* ⚠**閃光は「当たった実時間」で引く**=hk で引くと、どんでん返しの間ずっと真っ白になる。
+     ⭐金色が砕ける瞬間にもう一度光らせる(ここが一番の見せ場) */
+  if(hit){let fl=stop?1:Math.max(0,1-(ft-GC_FLY-GC_HOLD)/.22);
+   if(GC.twist&&hk>0)fl=Math.max(fl,Math.max(0,1-hk/.2));
    if(fl>0){c.globalAlpha=fl*.85;c.fillStyle='#fff';c.fillRect(0,0,w,h);c.globalAlpha=1;}}
   /* ⭐溜めている間は画面の四隅を暗く締める(視線が中央に集まって「来るぞ」という感じが出る) */
   if(chg){const k=clamp(ft/GC_CHG,0,1);
@@ -14811,15 +15116,33 @@ function gcDraw(){
   if(!fire&&!chg){c.fillStyle=COL[0];c.font='900 13px '+FF;c.fillText(GC_TWN[GC.tw],TX,TY+16);}
   if(!fire&&!chg){
    const bl=.55+Math.abs(Math.sin(t*7))*.45;
-   c.globalAlpha=bl;c.fillStyle=COL[1];c.font='900 42px '+FF;
-   c.fillText('撃て！',cx,h*.22);c.globalAlpha=1;
+   /* ⭐**文字色が期待度**(2026-07-30ユーザー指示): 白=ふつう / 赤 / 虹=★4以上が確定。
+      ⚠虹はグラデを回して作る(色を1つ置くだけだと「黄色い字」にしか見えない)。
+      ⚠**必ず黒フチを付ける**=明るい色は朝の空に溶ける */
+   let fcol='#ffffff';
+   if(GC.fc===1)fcol=DANGER;
+   else if(GC.fc===2){try{const g7=c.createLinearGradient(cx-96,0,cx+96,0);
+     for(let k=0;k<=5;k++)g7.addColorStop(k/5,'hsl('+Math.round((t*160+k*66)%360)+',95%,60%)');
+     fcol=g7;}catch(e){fcol=GOLD;}}
+   c.globalAlpha=bl;c.font='900 42px '+FF;
+   c.lineWidth=7;c.strokeStyle=INK;c.strokeText('撃て！',cx,h*.22);
+   c.fillStyle=fcol;c.fillText('撃て！',cx,h*.22);c.globalAlpha=1;c.lineWidth=3;
    c.fillStyle='rgba(242,236,220,.85)';c.font='900 13px '+FF;
    c.fillText('▶ タップで発射',cx,h*.22+24);
+  }else if(GC.twist&&hit&&twK<1){
+   /* ⭐どんでん返しの最中: 「効いてない…?」で一拍おいてから金色に変わり切る */
+   c.globalAlpha=Math.min(1,twK*4);
+   c.fillStyle=twK>.5?GOLD:PANE;c.font='900 30px '+FF;
+   c.lineWidth=7;c.strokeStyle=INK;
+   const ms=twK>.5?'金色に変わった…!?':'…倒れない!?';
+   c.strokeText(ms,cx,h*.17);c.fillText(ms,cx,h*.17);c.globalAlpha=1;c.lineWidth=3;
   }else if(hit&&hk<.36){
    /* ⚠出しっぱなしにすると、あとから立ち上る★の気配と重なって両方読めなくなる=先に消す */
    c.globalAlpha=Math.min(1,hk*8)*Math.min(1,(.36-hk)/.07);
-   c.fillStyle=DANGER;c.font='900 34px '+FF;
-   c.fillText('木っ端みじん!!',cx,h*.16);c.globalAlpha=1;
+   c.fillStyle=GC.twist?GOLD:DANGER;c.font='900 34px '+FF;
+   c.lineWidth=7;c.strokeStyle=INK;
+   const bm=GC.twist?'大 逆 転!!':(GC.lob?'黄金が砕けた!!':'木っ端みじん!!');
+   c.strokeText(bm,cx,h*.16);c.fillText(bm,cx,h*.16);c.globalAlpha=1;c.lineWidth=3;
   }
   c.fillStyle='rgba(242,236,220,.75)';c.font='900 12px '+FF;
   c.fillText(GC.res.length>1?(GC.res.length+'連'):'単発',cx,h-12);
@@ -14897,6 +15220,9 @@ $('gc-10').onclick=()=>gcPull(10);
 $('gc-rate').onclick=()=>gcView('rate');
 $('gc-dex').onclick=()=>gcView('dex');
 $('gc-back').onclick=()=>gcView('home');
+/* 🦸英雄ステータス: ソロ設定の「📋 性能」と、召集画面の📖図鑑の下から開ける */
+$('bt-hstat').onclick=()=>openHStat('');
+$('bt-hstat-close').onclick=closeHStat;
 /* ============ 🏋 鍛錬所 と 📖ゾンビ図鑑 ============
    ⚠2026-07-26(第53弾)に**洞窟をまるごと廃止した**。
      『ゆうしゃのくせになまいきだ。』式の「土を掘って生態系を育て、自律ユニットに戦わせる」防衛戦を
@@ -16336,7 +16662,11 @@ function sendCmd(o){o.j=CS.myJ;safeSend(NET.conn,o);}
 function code4(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=A[ri(0,A.length-1)];return s;}
 function packLane(C){
  const F=G&&G.coop?G.players[0]:C;
- const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,sk:C.stkLv||0,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
+ /* ⚠⚠**キー名がぶつかっていた**(2026-07-30ユーザー報告「2人目の準備タイムの画面が0100010みたいになってた」)。
+    砲撃強化Lv と スロット解放の文字列(下の行)がどちらも `sk` で、後から書く方が勝っていたため
+    クライアント側の 砲撃強化Lv に "0100010…" が入って、そのまま画面に出ていた。
+    砲撃強化Lvは `stl` に改名した。⚠**同じ物の入れ物を2つ作らない**=1つのオブジェクトに同じキーを2度書かない。 */
+ const o={dd:F.dead?1:0,en:Math.round(C.scrap),core:Math.ceil(F.core),mx:F.coreMax,un:C.unlocked,atk:C.atkLv,stl:C.stkLv||0,rp:C.repairs,bo:C.boosts,jm:C.jams,ch:+C.charge.toFixed(2),pu:C.pushUses,wd:F.waveDone?1:0,kw:F.killsWave,tw:F.totalWave,kl:F.kills,sent:C.sentCount,pl:C.place,
  fd:Math.round(C.flagD),uu:C.uUn,ul:C.uLv||0,dp:C.dep,ec:F.ecoN||1,up:Math.round(C.up||0),sk:(F.slk||[]).map(v=>v?1:0).join(''),
  tws:F.towers.map(t2=>t2?[t2.ti,t2.jamT>0?1:0,t2.own||0,t2.us.d,t2.us.r,t2.us.g,t2.us.c||0,t2.us.f||0,Math.round((t2.chg||0)*100),Math.round((t2.ang||0)*50),Math.round(t2.spent||0),t2.us.h||0,t2.us.b||0,t2.us.m||0,t2.ct?Math.round(t2.ct.px):0,t2.ct?Math.round(t2.ct.py):0,t2.us.n||0,(t2.dr||[]).map(d=>[Math.round(d.x),Math.round(d.y),d.rl>0?1:0]),t2.us.a||0]:0),
  us:F.units.filter(u=>!u.dead).map(u=>[u.ui,Math.round(u.d),Math.round(clamp(u.hp/u.mhp,0,1)*100),u.eid,u.own||0]),
@@ -16364,7 +16694,7 @@ function normMe(m){const old=CS.meN;
  if(old){const o5=old.uLv||0,n5=m.ul||0;
   if((o5<10&&n5>=10)||(o5<5&&n5>=5)){UI.banner('⚡ 部隊がさらに強くなった!!');sfx.elite();}
   else if(o5<3&&n5>=3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}}
- CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,stkLv:m.sk||0,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
+ CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,stkLv:m.stl||0,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
   uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ecoN:m.ec||1,up:m.up||0,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
   towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0,a:x[18]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0,rl:p[2]?1:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
@@ -16584,6 +16914,9 @@ if(DEV){try{
   const k2=twKey(T);if((META.tw[k2]||0)<LINE_MAX)META.tw[k2]=LINE_MAX;}
  for(let i=0;i<U_N;i++){const U=UBASE[i];if((META.un[U.id]||0)<LINE_MAX)META.un[U.id]=LINE_MAX;}
  META.st0=Math.max(META.st0||0,STK_MAX);
+ /* ⭐タレット/工房の**進化先も全部開ける**(2026-07-30に研究所の解放制にしたため) */
+ if(!Array.isArray(META.tg))META.tg=[];
+ for(const id of TG_ALL)if(META.tg.indexOf(id)<0)META.tg.push(id);
  saveMeta();
 }catch(e){}}
 makeThumbs();paradeInit();updLabBtn();/* 🏋鍛錬所ボタンの表示/💎🔧の残数を起動時に合わせる */

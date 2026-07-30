@@ -86,6 +86,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
     タイトルや研究所の撮影が全部チュートリアルの絵になる(tut オプションは自分で呼ぶので影響なし) */
  +'META.tut=1;'
+ /* ⭐タレット/工房の進化先は🔬研究所の解放制になった(2026-07-30)。撮影用は全部開けておく
+    (でないと t=fort2 などの「進化先を撮る」オプションが gradeTower で止まる) */
+ +'try{META.tg=TG_ALL.slice();}catch(e){}'
  /* tut2 = 2回目以降のチュートリアル(やめるボタンが出て、💎とガチャの段が無い状態)を撮る */
  +(/tut2/.test(OPT)?'META.tutOk=1;':'')
  /* pxon = 🧪ドット絵の試作を有効にして撮る(既定は切ってある) */
@@ -109,6 +112,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
          +'}catch(e){}':''))
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
+     /* hstat=🦸英雄ステータス。hs=英雄id を足すとその1人を選んだ状態で撮る */
+     :(OPT.indexOf('hstat')>=0)?('META.hero={hNox:1,hSf:2,hCop:1,hDawn:1,hStorm:1};META.gem=17;'
+       +'openHStat("'+((/hs=([A-Za-z0-9]+)/.exec(OPT)||[0,''])[1])+'");')
      :STP?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.nmOK=1;META.st=["air","mgun","frost","napalm"];'
        +'META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.hero={hNox:1,hSf:1,hCop:1};'
        +'renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show("setup");')
@@ -143,10 +149,21 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(OPT.indexOf('gdex')>=0?'gcView("dex");':'')
        +(OPT.indexOf('grate')>=0?'gcView("rate");':'')
        +((OPT.indexOf('gopen')>=0||OPT.indexOf('gdex')>=0||OPT.indexOf('grate')>=0)
-         /* ⚠gt=秒数を渡すと目玉の回転をその時刻で止めて撮れる(前後が入れ替わる所を見るため) */
-         ?('if(GCV==="home"){gcHomeFit();gcHomeStep('+((/gspin=([0-9.]+)/.exec(OPT)||[0,'0.5'])[1])+');}'):'gcPull(10);')+''
+         /* ⚠gspin=N は**何人目を正面にするか**(2026-07-30にスワイプ操作へ作り替えたので秒数ではない) */
+         ?('if(GCV==="home"){gcHomeFit();gcHomeStep(0.016);GCH.idx='+((/gspin=(\d+)/.exec(OPT)||[0,'0'])[1])
+           +';for(var q9=0;q9<40;q9++)gcHomeStep(0.05);}'):'gcPull(10);')+''
        +(OPT.indexOf('gacha5')>=0
          ?'if(GC){GC.res[0]={hero:HEROES[HEROES.length-1],txt:"NEW!"};GC.best=5;}':'')
+       /* ⭐期待度の演出を狙って撮る(2026-07-30)。
+          gnight/gmorn=背景の朝夜 / gfc=0..2 で「撃て!」の文字色(白/赤/虹) /
+          glob=的が✨黄金のロブスター / gtwist=どんでん返し(しょぼい見た目から始まる) /
+          ggold=金色に変わっていく途中 */
+       +(OPT.indexOf('gtwist')>=0?'if(GC){GC.twist=1;GC.lob=0;GC.tw=GC.zk=0;GC.fc=0;GC.night=false;GC.best=Math.max(4,GC.best);}':'')
+       +(OPT.indexOf('glob')>=0?'if(GC){GC.lob=1;GC.twist=0;GC.tw=GC.zk=2;GC.fc=2;GC.night=true;GC.best=5;}':'')
+       +(OPT.indexOf('gnight')>=0?'if(GC){GC.night=true;}':'')
+       +(OPT.indexOf('gmorn')>=0?'if(GC){GC.night=false;}':'')
+       +((/gfc=(\d)/.exec(OPT))?('if(GC){GC.fc='+(/gfc=(\d)/.exec(OPT))[1]+';}'):'')
+       +(OPT.indexOf('ggold')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+GC_TWIST*.8;GC.hit=1;}':'')
        /* ⚠ヘッドレスの仮想時間ではrAFがほとんど回らず、いつまでも魔法陣のまま。
           カードの絵を撮りたい時は段階を直に進める(gcard=カード / gburst=炸裂) */
        +(OPT.indexOf('gcard')>=0?'if(GC){GC.ph="card";GC.t=.42;}':'')
@@ -155,7 +172,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(OPT.indexOf('gres')>=0?'gcEnd();':'')
        /* gfly=弾が飛んでいる途中 / gbang=木っ端みじん+跡地の示唆 */
        +(OPT.indexOf('gfly')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY*.55;}':'')
-       +(OPT.indexOf('gbang')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+.75;GC.hit=1;}':'')
+       +(OPT.indexOf('gbang')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+.75+(GC.twist?GC_TWIST:0);GC.hit=1;GC.hit2=1;}':'')
        /* gchg=溜め(押してから撃つまで) / ghold=着弾で止めている一瞬 */
        +(OPT.indexOf('gchg')>=0?'if(GC){GC.ph="chg";GC.t=GC_CHG*.8;}':'')
        +(OPT.indexOf('ghold')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD*.5;GC.hit=1;}':'')
