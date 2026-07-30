@@ -10099,13 +10099,15 @@ function uBack(c,k,U,walk){
 function uBatP(u){
  const U=UNITS[u.ui];if(!U||(U.base||U.id)!=='bat'||!(u.cd>0)||!(U.rate>0))return 0;
  const p=clamp(1-u.cd/U.rate,0,1);
- return (p>=.42&&p<.6)?0:Math.max(p,.001);
+ return (p>=.54&&p<.72)?0:Math.max(p,.001);/* ⚠この区間=構えの真ん中(焼いたコマと同じ姿) */
 }
 function drawUnit(c,ui,x,y,dr,t,ph,o){
  o=o||{};
- if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
-  drawUnit(silLayer(c,VEC2_W,INK),ui,x,y,dr,t,ph,o1);
-  if(VEC2_R>0)drawUnit(silLayer(c,VEC2_R,VEC2_RC),ui,x-.9,y-1.6,dr,t,ph,o1);
+ if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1}),os=Object.assign({},o1,{sil:1});
+  /* ⚠**シルエットの層だけ印を付ける**(o.sil)=半透明の残像はシルエットでは真っ黒な塊になるので、
+     その層では描かせない(silLayer は globalAlpha を捨てる作り) */
+  drawUnit(silLayer(c,VEC2_W,INK),ui,x,y,dr,t,ph,os);
+  if(VEC2_R>0)drawUnit(silLayer(c,VEC2_R,VEC2_RC),ui,x-.9,y-1.6,dr,t,ph,os);
   drawUnit(flatLayer(c),ui,x,y,dr,t,ph,o1);return;}
  const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
  /* ⭐**溜め中は足を止める**(o.chg>0)=歩行を止めて足を開いた構えにする。
@@ -10271,33 +10273,48 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
        `lay`=スイングの円に寝ている度合い(0=構えでバットを立てている / 1=完全に円へ寝ている)。
      ⭐射影: 画面のx=cos(TH) / 画面のy=sin(TH)*TZ。**TZ が小さいほど横振りに見える**
        (TZ=1 だと完全な縦回転=これが「めっちゃ縦振り」の正体)。 */
+  /* ⭐⭐**4度目の作り直し**(2026-07-30ユーザー指摘「全然横振りに見えない。根本的に変えて」)。
+     ⚠⚠**本当の原因は構えだった**=構えとテイクバック(1周期の約6割)で**バットを立てていた**ので、
+       そこから水平へ振ると目には「縦 → 横」= **振り下ろし**にしか映らない。
+       射影(TZ)をどれだけ寝かせても、**立った絵が半分以上ある限り縦振りに見える**。
+     ⭐**根本の変更 = 1周期のどこでもバットを立てない**。構えも「後ろへ寝かせて構える」にした。
+       ⚠本物の野球は構えでバットを立てるが、34pxでは**写実より読めることを採る**。
+     ⭐**画面上の角度は必ず水平から ±TILT(約17°)に収める**=真上・真下を向く瞬間が無い。
+       奥/手前を向く所は角度ではなく「**短く・太く**」で表す(遠近で潰れる)。
+       ⚠ここが3度目までとの違い=前は atan2 をそのまま使っていたので、
+         奥/手前を向く一瞬に**バットが真下を向いて**風車に見えていた。
+     ⭐`TH`=上から見た角度(度)。0=右(攻撃する向き)/ ±180=後ろ。+sin=手前・-sin=奥。
+       **1周期で 0° → -360° と一方向にだけ回る**(戻らない)。
+     ⭐**残像(掃いた跡)を平たい楕円の弧で置く**=「水平の円を横から見た形」そのものなので、
+       1枚で横振りだと分かる。⚠シルエットの層では描かない(o.sil)。 */
   const bp=clamp(o.bsw||0,0,1);
-  let TH,lay,armR,twist,step,hip;
-  if(bp<=0){        TH=200;  lay=0;  armR=-.12;      twist=-.06;      step=0;    hip=0;}
-  else if(bp<.14){const q=bp/.14;      /* 振り抜き(手前へ回り込む) */
-   TH=q*70;         lay=1;   armR=.28+q*.1;  twist=.14+q*.06; step=1;    hip=1;}
-  else if(bp<.3){const q=(bp-.14)/.16; /* フォロースルー(手前を通って左へ抜ける) */
-   TH=70+q*90;      lay=1;   armR=.38-q*.18; twist=.2-q*.04;  step=1;    hip=1-q*.3;}
-  else if(bp<.55){const q=(bp-.3)/.25; /* 構えへ戻す(円から起こしてバットを立てる) */
-   TH=160+q*40;     lay=1-q; armR=.2-q*.32;  twist=.16-q*.22; step=1-q;  hip=.7-q*.7;}
-  else if(bp<.72){                     /* 構え(バットを立てて肩の後ろ・手は耳の高さ) */
-   TH=200;          lay=0;   armR=-.12;      twist=-.06;      step=0;    hip=0;}
-  else if(bp<.88){const q=(bp-.72)/.16,e=q*q;/* テイクバック(後ろ足に体重。まだ立てたまま) */
-   TH=200+e*35;     lay=0;   armR=-.12-e*.15;twist=-.06-e*.1; step=-e*.4;hip=-e*.25;}
-  else{const q=(bp-.88)/.12,eb=q*q;    /* ⭐振り出し=腰が先(線形)・バットが遅れる(q*q) */
-   TH=235+eb*125;   lay=Math.min(1,q*2.6);
-   armR=-.27+eb*.55;twist=-.16+eb*.3;  step=-.4+q*1.4;  hip=-.25+q*1.25;}
-  /* ⚠**TZ を上げるほど縦振りに戻る**。0.34(=20°)で「横に薙いでいる」に見える */
-  const TZ=.34;
+  let TH,armR,twist,step,hip;
+  if(bp<=0){        TH=-182;         armR=-.06;       twist=-.05;      step=0;      hip=0;}
+  else if(bp<.16){const q=bp/.16;       /* 振り抜き(右へ抜けて、そのまま奥へ回り込む) */
+   TH=-q*85;        armR=.30-q*.06;  twist=.20-q*.03; step=1;      hip=1-q*.15;}
+  else if(bp<.34){const q=(bp-.16)/.18; /* 巻き付き(背中側を回って左を向く) */
+   TH=-85-q*90;     armR=.24-q*.16;  twist=.17-q*.10; step=1-q*.5; hip=.85-q*.55;}
+  else if(bp<.5){const q=(bp-.34)/.16;  /* 構えへ戻す(⚠起こさない=寝かせたまま) */
+   TH=-175-q*7;     armR=.08-q*.14;  twist=.07-q*.12; step=.5-q*.5;hip=.3-q*.3;}
+  else if(bp<.74){                      /* 構え(バットを後ろへ寝かせて担ぐ) */
+   TH=-182;         armR=-.06;       twist=-.05;      step=0;      hip=0;}
+  else if(bp<.88){const q=(bp-.74)/.14,e=q*q;/* テイクバック(後ろ足に体重・さらに後ろへ引く) */
+   TH=-182-e*23;    armR=-.06-e*.16; twist=-.05-e*.12;step=-e*.45; hip=-e*.3;}
+  else{const q=(bp-.88)/.12,eb=q*q;     /* ⭐振り出し=腰が先(線形)・バットが遅れる(q*q) */
+   TH=-205-eb*155;  armR=-.22+eb*.52;twist=-.17+eb*.37;step=-.45+q*1.45;hip=-.3+q*1.3;}
+  const TZ=.20;   /* スイング面の傾き(小さいほど寝ている) */
+  const TILT=.30; /* ⭐画面上で水平から離れてよい上限(ラジアン≒17°)。⚠上げるほど縦振りへ戻る */
   const th9=TH*Math.PI/180,cs9=Math.cos(th9),sn9=Math.sin(th9);
-  const lenC=Math.sqrt(cs9*cs9+sn9*sn9*TZ*TZ),angC=Math.atan2(sn9*TZ,cs9);
-  /* ⚠立てて構えた時の角度は **+2π 側**(4.533=-1.75と同じ)で持つ
-     =そうしないと戻りと振り出しの補間が±πを跨いで逆回転する */
-  const angU=5.0332;
-  const BA0=angU+((bp>=.88?angC+6.2832:angC)-angU)*lay;
-  const flen=1+(lenC-1)*lay;        /* 画面上の長さ(奥/手前を向く所で短い) */
-  const fw=1+(.32*(sn9*.5+.5)-.16)*lay;/* 手前ほど太い */
-  const dyB=-sn9*2.6*lay;           /* 奥は上・手前は下 */
+  const back=cs9<0;/* バットが体の後ろ(左)を向いているか */
+  const tilt=clamp(Math.atan2(sn9*TZ,Math.abs(cs9)),-TILT,TILT);
+  const BA0=back?Math.PI-tilt:tilt;
+  /* 画面上の長さ(奥/手前を向く所で潰れる)と太さ(潰れるほど太い=こちらへ向いている) */
+  const flen=.34+.66*Math.sqrt(cs9*cs9+sn9*sn9*TZ*TZ);/* ⚠**0まで潰さない**=潰し切ると奥を通る区間でバットが胴に丸ごと隠れて「消えた」に見える */
+  const fw=1+.75*(1-Math.abs(cs9));
+  /* ⭐**握り(手)も体の周りを水平に回す**=握りが1点に止まっているとバットだけが回って風車に戻る */
+  /* ⚠上下の振れは**大きめに取る**=小さいと、奥を通る区間(巻き付き)でバットが胴に丸ごと隠れて
+     「バットが消えた」に見える。奥は肩の上へ・手前は腰へ抜ける */
+  const gx=cs9*5,gy=sn9>0?sn9*5.2:sn9*6.6;
   const BA=BA0-armR;/* 手首の角度(肩の回転を差し引く) */
   /* ⭐腕とバットは**一体で回す**(実際のスイングも腕と得物は概ね一緒に回る)。
      ⚠肩を軸にすること=手首を軸にするとバットだけ回って腕が付いていかない */
@@ -10350,14 +10367,28 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
      (撮って素手に戻した)。握りの巻き革が暗いので、手は肌のままでも境目は出る。
      ⚠両手の**高さを離す**こと=平行に並ぶと肋骨のように見える */
   c.save();swT();
-  barm(-1.2,-29.6, 4.4,-27.4, 9,-29.5, 3.5,3.1, shade(SK,.74),shade(SK,.64));
+  barm(-1.2,-29.6, 4.4+gx*.5,-27.4+gy*.5, 9+gx,-29.5+gy, 3.5,3.1, shade(SK,.74),shade(SK,.64));
   c.restore();
+  /* --- ⭐掃いた跡(平たい楕円の弧)。⚠**これが「横振り」を一枚で伝える**=
+     水平の円を横から見ると必ずこの形になる。⚠振っている間だけ・シルエットでは描かない --- */
+  if(!o.sil&&bp>0&&(bp>=.88||bp<.32)){
+   const a1=th9,a0=th9+.85;/* 0.85rad≒49°ぶん後ろを引きずる */
+   c.save();c.globalAlpha=.30;c.fillStyle=PAPER;
+   c.beginPath();
+   for(let i=0;i<=10;i++){const a=a0+(a1-a0)*i/10;
+    c.lineTo(2+Math.cos(a)*36,-30+Math.sin(a)*36*TZ);}
+   for(let i=10;i>=0;i--){const a=a0+(a1-a0)*i/10;
+    c.lineTo(2+Math.cos(a)*15,-30+Math.sin(a)*15*TZ);}
+   c.closePath();c.fill();c.restore();}
   /* --- ⭐釘バット。**体の前へ斜めに構える**=進行方向にはみ出すので実寸でも棒が読める。
      ⚠肩に担がせるのは**駄目だった**=先端の太い所しか体の外に出ず、
        「肩に乗った茶色い岩」にしか見えない(撮って前へ回した)。
      ⚠先端を頭と同じ高さに置かないこと(嘴に見える)。 --- */
-  /* ⚠**握りを手の位置に置く**=離すと、振り抜いた所でバットだけが体から離れて飛んで見える */
-  {c.save();swT();c.translate(10.5,-30.5+dyB);c.rotate(BA+(bp>0?0:walk*.06));
+  /* ⚠**握りを手の位置に置く**=離すと、振り抜いた所でバットだけが体から離れて飛んで見える。
+     ⭐⭐**手前(sn9>0)を通る間は胴より前に描く**=振り出しはまるごと手前を通るので、
+       いつも胴の奥に描いていると**振っている最中だけバットが体に隠れる**。
+       奥(sn9<=0)を通る間は今までどおり胴の奥=これで前後の入れ替わりが深さに見える。 */
+  const drawBat=()=>{c.save();swT();c.translate(9.6+gx,-30.4+gy);c.rotate(BA+(bp>0?0:walk*.06));
    /* ⭐**遠近の短縮**。⚠`lineWidth` は補正しない=補正すると細くなった側だけ黒フチが残って歪む */
    if(flen!==1||fw!==1)c.scale(flen,fw);
    c.fillStyle='#b8894f';/* 木の胴。⚠一定の太さの棒は物干し竿に見える=先へ太くする。
@@ -10377,7 +10408,10 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
       ⚠丸を大きくするとボタンに見える=小さい点でよい */
    for(const k of [[14,-1.5],[19.2,1.6],[22.4,-2.2]]){
     c.beginPath();c.arc(k[0],k[1],1.05,0,7);c.fill();}
-   c.restore();}
+   c.restore();};
+  /* ⚠**しきい値は0ではなく0.30**=真横に近い所(構え)で前に出すと、
+     胸の前を横切る茶色い板になって胴の色分けが丸ごと消える(撮って上げた) */
+  if(!(sn9>.55))drawBat();/* 奥〜真横を通る間=胴より奥 */
   /* --- 首。⚠**胴より先に描く**=あとから描くと胴の上に肌色の四角が乗って見える。
      ⚠短く。⚠細いと黒フチに食われて黒く沈むので幅6以上いる --- */
   c.fillStyle=shade(SK,.72);
@@ -10409,8 +10443,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=UW.bkl;c.fillRect(-1.6,-24.3,3.4,3.7);/* 留め金(ここだけ明るい=腰の位置が読める) */
   /* --- 手前の腕(手がバットの握りに来る) --- */
   c.save();swT();
-  barm(4.4,-31.4, 9,-29.4, 12.4,-31.2, 3.9,3.4, SK,shade(SK,.92));
+  barm(4.4,-31.4, 9+gx*.5,-29.4+gy*.5, 12.4+gx,-31.2+gy, 3.9,3.4, SK,shade(SK,.92));
   c.restore();
+  if(sn9>.55)drawBat();/* 手前を通る間=胴より前 */
   /* --- 頭。⚠真円だと風船に見える=縦にすこし長い卵。
      ⚠**全高の3割を超えると人形に見える**(割り付けは 頭13/胴17/脚24 が正解) --- */
   c.fillStyle=SK;
