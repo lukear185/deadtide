@@ -442,6 +442,16 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +(INTRO?('setTimeout(function(){try{showIntro([{k:"'+INTROK+'",i:'+(INTROK==='t'?15:INTROK==='z'?12:20)+'}]);}'
      +'catch(e){document.title="ERR8 "+e.message;}},1400);'):'')
  +(INTRO?'':'setTimeout(function(){try{var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<40)introNext();}catch(e){}},900);')
+ /* ⭐bmenu = 🔨建設メニューを**タワーを全部解放した状態**で開いて撮る(2026-08-01)。
+    ⚠これが無いと「解放が進むとパネルが画面より高くなる」不具合を撮って確かめられない。
+    ⚠resize で closeBM されるので、tutbm と同じく開き直し続ける。 */
+ +(OPT.indexOf('bmenu')>=0?('setTimeout(function(){try{var m9=G.players[0];'
+     +'m9.scrap=99999;m9.unlocked=TOWERS.length;'
+     +'var s9=-1;for(var k9=0;k9<ECO_BASE;k9++){if(!m9.towers[k9]){s9=k9;break;}}'
+     +'if(s9<0)s9=0;if(m9.slk)m9.slk[s9]=true;'
+     +'openBM(s9);window.addEventListener("resize",function(){try{openBM(s9);}catch(e){}});'
+     +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e){}},120);'
+     +'}catch(e){document.title="ERR12 "+e.message;}},1300);'):'')
  +'},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));

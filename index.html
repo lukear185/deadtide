@@ -283,6 +283,17 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* 建設メニュー */
 #buildmenu{position:absolute;z-index:8;display:none;background:rgba(36,31,25,.94);border:3px solid var(--paper);border-radius:14px;padding:8px;box-shadow:0 6px 0 #000;max-width:270px}
 #buildmenu{padding-top:8px}
+/* ⭐⭐**中身だけスクロールさせる**(2026-08-01ユーザー指摘
+     「タレットの数が増えて、設置の時に下にスクロールすると画面ごと動いてやりづらい」)。
+   ⚠原因=パネルに高さの上限が無く、解放が進むと**画面より高くなって下が見えない**。
+     指で動かしても中身は動かないので、**代わりにページごと動いていた**。
+   ⚠**スクロールは中身(#bm-body)に持たせる**=パネル自身に overflow を付けると
+     枠の外に置いた✕(right:-10px/top:-12px)が切り落とされて閉じられなくなる。
+   ⚠`overscroll-behavior:contain` を必ず付ける=端まで来た時にページへ流れる(それが今回の症状)。 */
+#buildmenu #bm-body{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;touch-action:pan-y}
+#buildmenu #bm-body::-webkit-scrollbar{width:6px}
+#buildmenu #bm-body::-webkit-scrollbar-thumb{background:var(--paper3);border-radius:3px}
 /* ⭐閉じる✕(2026-07-27)。⚠パネルは狭いので中身を押し下げず**右上に重ねる**。
    ⚠指で押せる大きさ(32px)を確保する=小さいと閉じられないのと同じ */
 #buildmenu #bm-x{position:absolute;right:-10px;top:-12px;width:34px;height:34px;line-height:1;padding:0;
@@ -15863,7 +15874,8 @@ function openBM(si){
     ⚠それまで閉じる手段は**盤面の何も無い所をタップする**だけだった。
       チュートリアル中は光っているマス以外を押させない作りなので、**閉じる術が無くなっていた**。
     ⚠✕は下の TUT_FREE にも入れてある=チュートリアル中でも必ず押せる。 */
- bm.innerHTML='<button id="bm-x" class="xbtn" aria-label="閉じる">✕</button>'+IC(h);
+ /* ⚠✕は**スクロールする箱の外**に置く=中に入れると一緒に流れて、下まで送ると押せなくなる */
+ bm.innerHTML='<button id="bm-x" class="xbtn" aria-label="閉じる">✕</button><div id="bm-body">'+IC(h)+'</div>';
  bm.querySelectorAll('[data-th]').forEach(cc=>{cc.getContext('2d').drawImage(THUMBS[+cc.dataset.th],0,0);});
  bm.querySelectorAll('[data-bd]').forEach(b=>{b.onclick=()=>{actBuild(si,+b.dataset.bd);closeBM();};});
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
@@ -15875,6 +15887,11 @@ function openBM(si){
  const bx=$('bm-x');if(bx)bx.onclick=()=>{closeBM();};
  const [px,py]=mapToClient(SLOTS[si][0],SLOTS[si][1]);
  bm.style.display='block';
+ /* ⭐**画面に収まる高さで切る**(2026-08-01)。⚠切らないと下がはみ出して、
+    指で動かした時にページごと動く(ユーザー指摘の症状)。中身は #bm-body がスクロールする。
+    ⚠上下の余白6px×2 + パネルの padding 8px×2 + 下の操作バーぶん を引く */
+ {const bd=$('bm-body');
+  if(bd){bd.style.maxHeight=Math.max(96,innerHeight-12-16-barBandPx())+'px';}}
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
  bm.style.left=clamp(px-bw/2,6,innerWidth-bw-6)+'px';
  /* 下の操作バーには絶対に被せない(被るとデッキが押せなくなる) */
