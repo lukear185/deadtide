@@ -10733,6 +10733,112 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.restore();/* 上体の傾き */
   c.restore();return;
  }
+ if(id==='axe'){/* ⭐⭐斧使い専用の姿(2026-08-01ユーザー指示「斧が斧に見えない」+「専用の体に」)。
+    ⚠**斧が斧に見えなかった原因は柄**=柄が胴と腕の裏に隠れて、刃の塊だけが宙に浮いていた。
+      刃をどう凝っても、柄が見えない限り「シャベル/うちわ」にしか読めない。
+    ⭐直し方=**柄を体の外へ長く斜めに出す**(肩口→腰の前)。
+      刃は柄の先で**片側にだけ**大きく張り出させ、反対側は小さな顎と背の突起にする
+      (上下対称に開くとメガホンになる=2026-08-01に一度踏んだ)。
+    ⭐体は**蛮族の戦士**にした=肩が広く腕が剥き出し・毛皮の肩掛け・革のズボン。
+      共通の体(兵隊の制服)のままでは、角の兜と毛皮だけ浮いていた。 */
+  /* ⚠**全身を茶色でまとめない**(2026-08-01に撮って直した)=毛皮・上着・ズボン・靴が
+     全部同じ茶色だと、どれだけ形を凝っても「茶色い塊」にしか見えない(色の区分けの掟)。
+     ⭐**毛皮は灰みの明るい茶 / 上着は兵科の橙 / ズボンは冷たい灰茶 / 靴は暗い革**で4段に分ける */
+  const SK=U_SKIN,TU=U.c||'#a0623a',FUR='#b0a184',PA='#575142',BO='#42392c',ST='#b7bcc4';
+  const sw=walk*4.4;
+  const blean=Math.sin(t*10+ph+1.2);
+  /* --- 脚(革のズボン→ブーツ)。⚠基準はほぼ0にして振りだけで前後 --- */
+  const aleg=(dx,dk)=>{
+   const kx=dx*.5;
+   c.fillStyle=shade(PA,dk*1.36);
+   c.beginPath();c.moveTo(-5+dx*.2,-19.6);c.lineTo(4.6+dx*.2,-19.6);
+   c.lineTo(4+kx,-11.4);c.lineTo(-4.2+kx,-11.4);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(PA,dk*1.1);
+   c.beginPath();c.moveTo(-4+kx,-11.7);c.lineTo(3.8+kx,-11.7);
+   c.lineTo(3.2+dx,-6);c.lineTo(-3.4+dx,-6);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(BO,dk*1.24);/* ブーツ(⚠丈を高く=蛮族に見える) */
+   c.beginPath();c.moveTo(-4.2+dx,-6.4);c.lineTo(3.8+dx,-6.4);c.lineTo(4.8+dx,-2.6);
+   c.lineTo(7+dx,-2);c.lineTo(7.2+dx,-.3);c.lineTo(-4.6+dx,-.3);c.closePath();c.fill();c.stroke();
+  };
+  aleg(-1.6-sw,.8);aleg(1.6+sw,1);
+  /* --- ここから上体(脚と位相をずらして傾ける+前傾) --- */
+  c.save();c.translate(1,-20);c.rotate(blean*.04+.07);c.translate(-1,20);
+  /* 奥の腕(⚠**剥き出しの太い腕**=制服の袖だと蛮族に見えない) */
+  c.fillStyle=shade(SK,.70);
+  c.beginPath();c.moveTo(-6,-32.6);c.lineTo(.6,-31.6);c.lineTo(.6,-26.4);c.lineTo(-6,-27.2);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(-.6,-31.8);c.lineTo(6.6,-30.4);c.lineTo(6.6,-25.6);c.lineTo(-.6,-26.6);c.closePath();c.fill();c.stroke();
+  /* --- 胴。⭐**肩を大きく張らせ腰で絞る**=これが「戦士の体」 --- */
+  const abody=()=>{c.beginPath();
+   c.moveTo(-11.4,-30.4);
+   c.bezierCurveTo(-12.6,-35.6,-6,-37.4,.6,-37.2);
+   c.bezierCurveTo(7,-37,12,-35.4,11.4,-30.4);
+   c.bezierCurveTo(11,-26.6,8,-24,7.4,-21.2);
+   c.lineTo(-7.4,-21.2);
+   c.bezierCurveTo(-8,-24,-11,-26.6,-11.4,-30.4);
+   c.closePath();};
+  c.fillStyle=TU;abody();c.fill();
+  c.save();c.beginPath();c.rect(-18,-27,36,22);c.clip();
+  c.fillStyle=shade(TU,.84);abody();c.fill();c.restore();
+  abody();c.stroke();
+  /* 毛皮の肩掛け(⚠ぎざぎざの輪郭=野蛮に見える)。
+     ⚠⚠**肩より外へ広げない**(2026-08-01に撮って縮めた)=肩から外へ跳ね上げると
+       背中に**蝙蝠の襟**が立っているように見えて、何を着ているのか読めない。
+     ⚠**胴の上3割まで**=広く覆うと上着(兵科の色)が消える */
+  c.fillStyle=FUR;
+  c.beginPath();c.moveTo(-10.8,-33.4);
+  for(let i=0;i<6;i++)c.lineTo(-10.8+i*4.3,-36.6-((i%2)?0:1.4));
+  c.lineTo(10.8,-33.2);c.lineTo(-10.4,-32);c.closePath();c.fill();c.stroke();
+  /* 革の帯+留め金(⚠細く=太いと上着の橙が残らない) */
+  c.fillStyle='#4a3a26';c.fillRect(-8.4,-23.6,16.8,2.8);c.strokeRect(-8.4,-23.6,16.8,2.8);
+  c.fillStyle=GOLD2;c.fillRect(-2,-24,4.4,3.6);
+  /* --- ⭐⭐大斧。**柄を体の外へ長く斜めに出す**のが要(これが無いと斧に見えない) --- */
+  c.save();c.translate(2,-33);c.rotate(.62+walk*.05);
+  c.fillStyle='#9c7a4a';/* 柄(⚠頭の先まで突き出させる=「柄に頭が嵌まっている」と読める) */
+  c.beginPath();c.moveTo(-6,2.8);c.lineTo(-6,-2.4);c.lineTo(28.4,-2.8);c.lineTo(28.4,2.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#5c4326';/* 握りの巻き革(両手の来る所) */
+  c.beginPath();c.moveTo(1.6,2.7);c.lineTo(1.6,-2.5);c.lineTo(16,-2.7);c.lineTo(16,2.5);c.closePath();c.fill();
+  c.fillStyle=ST;/* 刃(⚠片側にだけ大きく張り出す。上下対称はメガホン) */
+  c.beginPath();c.moveTo(18.6,-2.6);c.lineTo(20.2,-15);
+  c.quadraticCurveTo(28.8,-13.4,30,-3.6);c.lineTo(26.4,-3);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(ST,1.14);/* 刃先だけ明るく(鋼に見える) */
+  c.beginPath();c.moveTo(20.2,-15);c.quadraticCurveTo(28.8,-13.4,30,-3.6);
+  c.lineTo(27.6,-3.8);c.quadraticCurveTo(26.6,-11.6,20,-12.8);c.closePath();c.fill();
+  c.fillStyle=shade(ST,.86);/* 顎(下へ少しだけ)=上下の大きさを変えて対称を崩す */
+  c.beginPath();c.moveTo(19,2.4);c.lineTo(26.6,1.8);c.quadraticCurveTo(25,7,20.8,6.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#7e858e';/* 頭金(柄に嵌まった輪) */
+  c.beginPath();c.moveTo(16.6,-3.6);c.lineTo(21.6,-3.8);c.lineTo(21.6,3.4);c.lineTo(16.6,3.2);c.closePath();c.fill();c.stroke();
+  c.restore();
+  /* --- 手前の腕(剥き出し・太い。手は柄の巻き革の上へ)。
+     ⚠**節どうしを黒フチ2本ぶん以上重ねる**=離すと「肌色の塊が3つ並んだソーセージ」になる --- */
+  c.fillStyle=SK;
+  c.beginPath();c.moveTo(4.6,-34.4);c.lineTo(11.6,-32.4);c.lineTo(10.4,-26.8);c.lineTo(4,-28.8);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(9,-32.4);c.lineTo(15.6,-29.2);c.lineTo(13.6,-24.6);c.lineTo(7.8,-27.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(SK,.92);/* 手(角のある塊。⚠前腕にしっかり重ねる) */
+  c.beginPath();c.moveTo(12.2,-28.6);c.lineTo(17.4,-26.4);c.lineTo(15.8,-22.6);c.lineTo(11,-25);c.closePath();c.fill();c.stroke();
+  /* --- 首 → 頭(⚠首は胴より先に描く) --- */
+  c.fillStyle=shade(SK,.72);
+  c.beginPath();c.moveTo(-1.4,-40.4);c.lineTo(5.2,-40.4);c.lineTo(4.6,-35.4);c.lineTo(-1,-35.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=SK;/* 顔(⚠真円だと風船=縦にすこし長い卵) */
+  c.beginPath();c.ellipse(1.6,-44.4,6,6.4,0,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(SK,.88);
+  c.beginPath();c.moveTo(5.4,-44.2);c.lineTo(6.8,-43.6);c.lineTo(5.3,-43);c.closePath();c.fill();
+  c.fillStyle='#8f7a5c';/* 髭(⚠**あごの先だけ**。上へ伸ばすと兜と挟んで顔が帯になる) */
+  c.beginPath();c.moveTo(-1,-39.6);c.lineTo(5.4,-39.6);c.lineTo(4.4,-35.6);c.lineTo(-.4,-36.2);c.closePath();c.fill();c.stroke();
+  /* 兜(⚠⚠**浅い椀**にして顔を出す。深くかぶせると「暗い塊に目が1つ乗っただけ」になる
+     =2026-08-01に一度そうなった。**素肌が縦7以上残る位置**に置くこと) */
+  c.fillStyle='#5c4a35';
+  c.beginPath();c.arc(1.6,-48.6,6.1,Math.PI,0);c.fill();c.stroke();
+  c.fillStyle='#6b5740';c.fillRect(-4.6,-49.6,12.4,2.6);c.strokeRect(-4.6,-49.6,12.4,2.6);
+  c.fillStyle=PAPER3;/* 角(⚠横に太く。細く上へ伸ばすと兎の耳に見える) */
+  for(const s of[-1,1]){c.beginPath();c.moveTo(1.6+s*4.6,-51.6);
+   c.lineTo(1.6+s*10.4,-54.4);c.lineTo(1.6+s*11.6,-50.4);c.lineTo(1.6+s*8,-50.4);
+   c.lineTo(1.6+s*4.6,-48.6);c.closePath();c.fill();c.stroke();}
+  zEye(c,4.2,-43.6,1.9);
+  c.restore();/* 上体の傾き */
+  if(tier>=3){c.shadowBlur=0;c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 12px '+FF;c.textAlign='center';
+   const st9=tier===4?'★★':'★';c.strokeText(st9,2,-58);c.fillText(st9,2,-58);}
+  c.restore();return;
+ }
  if(id==='valk'){/* ⭐⭐ヴァルキリー専用の姿(2026-07-31・参考絵に寄せた2回目)。
     ⚠1回目は**共通の体に白い板を貼っただけ**だった=鎧はシルエット自体が違う
       (肩が外へ張り出し、腰が絞れ、脚が細い)ので、共通の体のままでは出ない。
@@ -11045,31 +11151,8 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.quadraticCurveTo(hx2+11,hy2+7.8,hx2+5,hy2+6.2);
   c.quadraticCurveTo(hx2+8.6,hy2+2.6,hx2+7,hy2-.6);
   c.lineTo(hx2-2,hy2+.6);c.closePath();c.fill();c.stroke();}
- else if(id==='axe'){/* ⭐大斧を**両手で前へ構える**(2026-08-01に描き直し)。
-    ⚠それまでは斜め上へ振り上げていて、刃が**顔と同じ高さ**に来て「開いた嘴」に見えた
-      (ゾンビで踏んだのと同じ穴)。⭐刃はあごより下に置く。
-    ⚠三日月1枚だと鎌になる=**上下2枚の刃(双刃)**にすると「重い斧」に読める。 */
-  /* ⚠⚠**上下に同じ大きさの刃を開くと「メガホン」になる**(2026-08-01に撮って直した)。
-     細い首から左右対称に広がる形は、斧ではなくラッパに読める。
-     ⭐**上を大きく下を小さく**+**背に小さな突起**を付けると一発で戦斧になる。
-     ⚠**刃を顔の高さに上げない**=角度を寝かせて胸〜腰に収める(嘴に見えるのと同じ穴)。 */
-  c.save();c.translate(4,-23);c.rotate(-.14+walk*.05);
-  c.fillStyle='#9c7a4a';/* 柄(⚠太さのある帯。線だと黒フチに食われる) */
-  c.beginPath();c.moveTo(-8,3.2);c.lineTo(-8,-2);c.lineTo(19,-2.8);c.lineTo(19,2.4);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#5c4326';/* 握りの巻き革(手の来る所を暗くして手を目立たせる) */
-  c.beginPath();c.moveTo(1.4,2.8);c.lineTo(1.4,-2.3);c.lineTo(11,-2.6);c.lineTo(11,2.6);c.closePath();c.fill();
-  /* ⚠⚠**刃を上下2枚に割らない**(2026-08-01に撮って直した)=真ん中を黒フチが横切って
-     **葉っぱ2枚(蝶)**に見える。⭐**1枚のひげ斧**(上の角が大きく下が短い)にする */
-  c.fillStyle='#b7bcc4';
-  c.beginPath();c.moveTo(13.6,-3);c.lineTo(18.6,-11);
-  c.quadraticCurveTo(27.4,-8,28.4,-.6);
-  c.quadraticCurveTo(27.8,5.4,22.4,7.8);c.lineTo(14.4,3.2);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade('#b7bcc4',.74);/* 刃の付け根(⚠これが無いと1枚の板に見える) */
-  c.beginPath();c.moveTo(13.6,-3);c.lineTo(18.6,-11);c.lineTo(20.6,-8.2);
-  c.quadraticCurveTo(17.6,-1,20,4.6);c.lineTo(17.6,5.6);c.lineTo(14.4,3.2);c.closePath();c.fill();
-  c.fillStyle='#7e858e';/* 背の突起(⚠左右対称を崩して「斧」に見せる) */
-  c.beginPath();c.moveTo(13.8,-2.8);c.lineTo(8.2,-6.2);c.lineTo(9,-1);c.lineTo(13.8,.6);c.closePath();c.fill();c.stroke();
-  c.restore();}
+ /* ⚠**斧使いの武器の分岐は廃止した**(2026-08-01)=専用の姿(drawUnit の冒頭)で
+    体も斧もまとめて描いている。⚠同じidの枝を2つ書かないこと(先に書いた方だけが当たる) */
  else if(id==='smg'){uGun(c,5,-26,18,4.6,'#3f4a54',1);}
  else if(id==='pike'){c.fillStyle='#8a6a45';/* 柄 */
   /* ⚠**斜め上に振り上げていた**(2026-07-31)=『間合いの外から刺す』兵に見えない。
@@ -11148,8 +11231,10 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle='#5c5c66';
   c.beginPath();c.moveTo(7,-33);c.lineTo(36,-33);c.lineTo(36,-28.6);c.lineTo(7,-28.6);c.closePath();c.fill();c.stroke();
   c.beginPath();c.moveTo(7,-27);c.lineTo(33.6,-27);c.lineTo(33.6,-22.8);c.lineTo(7,-22.8);c.closePath();c.fill();c.stroke();
-  c.globalAlpha=.8;c.fillStyle=HEROC;c.fillRect(9,-28.4,25,1.4);c.globalAlpha=1;
-  c.beginPath();c.arc(6.4,-27.8,2.8+Math.sin(t*12),0,7);c.fill();}
+  /* ⭐**溜めるほどレールの間が光る**(2026-08-01)=撃つ物が「超電磁砲」だと撃つ前に分かる */
+  const rc9=clamp(o.chg||0,0,1);
+  c.globalAlpha=.55+.45*rc9;c.fillStyle=HEROC;c.fillRect(9,-28.6,25,1.4+1.6*rc9);c.globalAlpha=1;
+  c.fillStyle='#e6ccff';c.beginPath();c.arc(6.4,-27.8,2.4+2.6*rc9+Math.sin(t*16)*(.4+rc9),0,7);c.fill();}
  else if(id==='frost2'){c.fillStyle='#5f8fa3';rr(c,-17,-38,9,22,4);c.fill();c.stroke();
   uNoz(c,6,-28,21,'#3f6f8a');
   c.globalAlpha=.6;c.fillStyle=FROST;c.beginPath();c.arc(31,-28,5+Math.sin(t*12)*2,0,7);c.fill();c.globalAlpha=1;}
@@ -12270,6 +12355,9 @@ function campStep(C,dt,wave){
       ⚠溜め中は狙っている座標を控える(照準の線を引くため)。 */
    const cgT9=uChgT(u.ui);
    if(u.cd<=0&&cgT9>0&&(u.chg||0)<1){
+    /* ⭐レール狙撃だけ**充填の「きゅいーん」**を鳴らす(タワーのレールガンと同じ音)。
+       ⚠溜め始めの1回だけ=毎フレーム鳴らすと唸りっぱなしになる */
+    if(!((u.chg||0)>0)&&(UNITS[u.ui].base||UNITS[u.ui].id)==='rail2'&&C.isMe&&sfx.railChg)sfx.railChg();
     u.chg=Math.min(1,(u.chg||0)+dt/cgT9);u.ct=1;u.tx=tg.px;u.ty=tg.py;
    }else if(u.cd>0)u.ct=0;
    if(u.cd<=0&&(cgT9<=0||(u.chg||0)>=1)){u.cd=U.rate;u.chg=0;u.ct=0;u.fired=1;
@@ -12323,7 +12411,28 @@ function campStep(C,dt,wave){
      /* ⭐⭐**型ごとに弾・銃口・着弾を分ける**(2026-07-30ユーザー指摘
           「攻撃エフェクトが同じやつが多すぎる/遠距離はほぼライフルタレット」)。
         ⚠それまで分岐は3つ(炎の帯 / 曳光線 / 斬撃の弧)しか無く、50種が3通りで撃っていた。 */
-     if(MK9==='snipe'&&U.rng>60){
+     if(MK9==='snipe'&&U.rng>60&&(U.base||U.id)==='rail2'){
+      /* ⭐⭐**レール狙撃は「超電磁砲」で撃つ**(2026-08-01ユーザー指示
+         「レールガン兵の弾をレールガンらしいビームにして音も合わせて」)。
+         ⚠それまで狙撃塔と同じ**細い白い一条**で、名前だけレールガンだった。
+         ⭐タワーのレールガンと同じ語彙をそのまま使う=**紫の極太ビームが射程いっぱいまで走り、
+           `sus`(撃ちっぱなし)で太いまま残ってから一気に消える**。音も同じ `rail`(超電磁砲)。
+         ⚠**数値(威力・射程・間隔・貫通)は1つも触っていない**=見せ方と音だけ。 */
+      u.fireT=.24;
+      const rl9=Math.min(U.rng*1.06,dist(mx9,my9,tg.px,tg.py)+240);
+      const ex9=mx9+Math.cos(ang9)*rl9,ey9=my9+Math.sin(ang9)*rl9;
+      addFx(C,'beam',mx9,my9,'',{x2:ex9,y2:ey9,col:'rgba(180,120,255,',col2:'rgba(230,200,255,',
+       w:5.4+utl*1.1,lf:RAIL_BEAM,sus:1});
+      if(FXLV>0){
+       /* 砲口=輪と、床を薙ぐ衝撃(タワーのレールガンと同じ組み立て) */
+       addFx(C,'mzl',mx9,my9,'',{ang:ang9,r:20+utl*4,col:'#d8b4ff'});
+       addFx(C,'shock',u.px,u.py+2,'',{r:52,col:'#d8b4ff'});
+       addP(C,7,mx9,my9,{sp:170,a:ang9,spread:.2,g:40,life:.28,r:2.2,col:'#e6ccff'});
+       addP(C,3,mx9,my9,{sp:120,a:ang9+Math.PI,spread:.5,g:180,life:.3,r:1.8,col:'#b282ff'});
+       hitFx(C,tg,ang9,'#d8b4ff',1,U.type);}
+      C.shake=Math.max(C.shake||0,.18);
+      if(C.isMe)sfx.rail?sfx.rail():sfx.shot();}
+     else if(MK9==='snipe'&&U.rng>60){
       /* 狙撃: 細く白い一条+**敵の向こうへ抜ける貫通線**。銃口は大きく十字に光る */
       u.fireT=.2;
       addFx(C,'beam',mx9,my9,'',{x2:tg.px,y2:tg.py-18*CH_UP,
