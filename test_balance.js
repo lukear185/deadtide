@@ -4,7 +4,7 @@
 
    【兵科】戦力 = (実DPS)^0.6 × (HP)^0.4 × 役割ボーナス
        実DPS = 攻撃力÷攻撃間隔 ×(複数同時攻撃の割引) ×(範囲攻撃の加点) + 燃焼
-       役割ボーナス = 凍結2.2 / 回復2.0 / 壁(shd,gld,tnk,titan)1.45
+       役割ボーナス = 凍結2.2 / 回復2.0 / 壁(shd,gld,titan)1.45
      ※凍結・回復・壁は数値に出ない価値があるので加点している
      ・目標曲線 = バット(2番目)から末尾まで1段ごとに約+7%の等比
      ・強さの調整は index.html の UNITS の hp/atk を直接いじる(一括倍率はもう無い)
@@ -40,13 +40,13 @@ if(!ms||!ts){console.log('取得できず(ブラウザが動かなかった)');p
 const U=ms[ms.length-1].replace(/%%/g,'').split(' ## ').map(l=>{const a=l.split('|');
  return {i:+a[0],id:a[1],n:a[2],hp:+a[3],atk:+a[4],rate:+a[5],rng:+a[6],aoe:+a[7],
   burn:+a[8],multi:+a[9],type:a[10],cost:+a[11],up:+a[12]};});
-const TANK=['big','shd','gld','tnk','titan'];
+const TANK=['big','shd','gld','titan'];
 const dpsOf=u=>u.atk/u.rate*(1+((u.multi||1)-1)*.6)*(1+u.aoe/220)+(u.burn?u.burn*.8:0);
 const roleOf=u=>u.type==='frost'?2.2:u.type==='heal'?2:TANK.indexOf(u.id)>=0?1.45:1;
 const scoreOf=u=>Math.pow(dpsOf(u),.6)*Math.pow(u.hp,.4)*roleOf(u);
 const sc=U.map(scoreOf);
 const ANCHOR=1,g=Math.pow(sc[U.length-1]/sc[ANCHOR],1/(U.length-1-ANCHOR));
-console.log('=== 🪖兵科32種 === 目標の伸び=1段ごとに約+'+Math.round((g-1)*100)+'%');
+console.log('=== 🪖兵科30種 === 目標の伸び=1段ごとに約+'+Math.round((g-1)*100)+'%');
 console.log('番 兵科          HP    攻  出撃  解放費   DPS  戦力  目標   ずれ');
 let bad=0,prev=-1,prevHp=-1,wallBad=0;
 for(let i=0;i<U.length;i++){

@@ -2136,14 +2136,14 @@ const UNITS=[
  {id:'frost2',n:'絶対零度',cost:192,cd:13,hp:715,atk:51,rate:1.2,rng:180,sp:46,type:'frost',aoe:150,c:TECH,dsc:'広範囲を長時間凍結'},
  {id:'chief',n:'隊長',cost:224,cd:15,hp:1290,atk:170,rate:1.2,rng:230,sp:54,type:'bullet',multi:2,c:'#d8d2c4',dsc:'精鋭を率いる歴戦の兵'},
  /* ↓研究所限定の新兵科 */
- {id:'tnk',n:'装甲車',cost:208,cd:16,hp:8500,atk:62,rate:.8,rng:44,sp:55,type:'melee',hook:6,c:STEEL,dsc:'走る要塞。すり抜ける敵も履帯で轢き潰す(6体)'},
- {id:'mech',n:'メカスーツ',cost:248,cd:18,hp:1855,atk:181,rate:1.1,rng:260,sp:48,type:'blast',aoe:80,c:'#6b7580',dsc:'肩部キャノンで範囲砲撃'},
+ /* ⚠**装甲車(tnk)とメカスーツ(mech)は2026-08-01に削除**(ユーザー指示)。
+    ⚠書き戻さないこと。進化(VAR)・見た目(U_LOOK/U_MOT)・専用の絵もまとめて外してある */
  {id:'titan',n:'タイタン',cost:360,cd:22,hp:10500,atk:125,rate:1.3,rng:60,sp:44,type:'melee',c:'#8a8f96',dsc:'歩く城塞・全てを薙ぎ倒す'},
  {id:'valk',n:'ヴァルキリー',cost:328,cd:20,hp:1620,atk:351,rate:1.8,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'光の剣で遠くを薙ぐ女剣士'}
 ];
 const BASE_U=8;/* 通常解放できる基本兵科数(これ以降は🔬研究所で解放) */
 /* 全兵科を価格順に並べ替え(前半=最初から使える/後半=研究所で解放)。ただし研究所専用の4種は必ず末尾 */
-{const LAST=['tnk','mech','titan','valk'];
+{const LAST=['titan','valk'];
  const norm=UNITS.filter(u=>LAST.indexOf(u.id)<0).sort((a,b)=>a.cost-b.cost);
  const last=LAST.map(id=>UNITS.find(u=>u.id===id)).filter(Boolean);
  UNITS.length=0;for(const u of norm)UNITS.push(u);for(const u of last)UNITS.push(u);}
@@ -2197,7 +2197,7 @@ function twMzPt(T,sx,sy,ang){const m=TW_MZ[(T&&T.id)||'']||{};
    UNITSに書いてある数値が そのままゲーム内の値になる=強さの調整はUNITSを直接いじること。
    並び順(=解放順)に戦力が1段ごとに約+7%ずつ上がるよう設計してある。
    戦力の目安=(実DPS)^0.6×(HP)^0.4×役割ボーナス(凍結2.2/回復2.0/壁1.45) */
-const UNITP=[0,0,160,250,370,520,720,960,1260,1620,2050,2560,3150,3850,4650,5600,6700,7950,9400,11000,12900,15000,17400,20100,23200,26700,30600,35000];
+const UNITP=[0,0,160,250,370,520,720,960,1260,1620,2050,2560,3150,3850,4650,5600,6700,7950,9400,11000,12900,15000,17400,20100,23200,26700,30600,35000,40200,46200];/* ⚠**兵科の数だけ用意する**=足りないと最後の1〜2枠の値段が undefined になる */
 while(UNITP.length<UNITS.length+2)UNITP.push(Math.round(UNITP[UNITP.length-1]*1.15/10)*10);/* 兵科が増えても価格表が尽きないように */
 /* ============ 派生兵科(研究所で解放 → 編成画面で基本兵科と入れ替え) ============
  基本兵科(作戦タイムで解放できる7種)それぞれに、役割が同じで格上の3種を用意する。
@@ -2237,14 +2237,6 @@ const UVAR={
   {id:'iron',n:'鉄壁',cm:1.45,hp:2,atk:1.45,c:'#8a8f96',dsc:'鋼板を並べた動く壁'},
   {id:'fortr',n:'城塞兵',cm:1.75,hp:2.8,atk:1.75,c:GOLD2,dsc:'決して抜かれぬ人間城塞'}],
  /* ↓研究所限定の上級4種にも、姿が変わる3段階アップグレードを用意(2026-07-25) */
- tnk:[
-  {id:'tnk2',n:'重戦車',cm:1.25,hp:1.4,atk:1.4,c:'#4a5560',dsc:'装甲を増した重戦車'},
-  {id:'tnk3',n:'陸上戦艦',cm:1.5,hp:1.9,atk:1.7,c:'#3f4a54',dsc:'主砲を備えた陸上戦艦'},
-  {id:'tnk4',n:'地響き',cm:1.85,hp:2.7,atk:2.3,c:'#5a4a3a',dsc:'全てを踏み潰す鋼鉄の要塞'}],
- mech:[
-  {id:'mech2',n:'強襲メカ',cm:1.25,hp:1.4,atk:1.4,c:'#5c7d8a',dsc:'装甲を張った強襲機'},
-  {id:'mech3',n:'砲撃メカ',cm:1.5,hp:1.8,atk:1.8,c:'#6b7580',dsc:'両肩に重キャノンを積む'},
-  {id:'mech4',n:'決戦兵器',cm:1.85,hp:2.5,atk:2.4,c:'#8f6fae',dsc:'人類最後の切り札'}],
  titan:[
   {id:'titan2',n:'鋼の巨兵',cm:1.25,hp:1.4,atk:1.4,c:'#8a8f96',dsc:'鋼を纏った巨兵'},
   {id:'titan3',n:'破城巨兵',cm:1.5,hp:1.9,atk:1.8,c:'#a0623a',dsc:'城壁すら砕く巨兵'},
@@ -2254,7 +2246,7 @@ const UVAR={
   {id:'valk3',n:'雷光ヴァルキリー',cm:1.5,hp:1.8,atk:1.8,c:TECH,dsc:'雷光を纏う戦乙女'},
   {id:'valk4',n:'戦乙女の長',cm:1.85,hp:2.5,atk:2.5,c:GOLD,dsc:'戦乙女を率いる黄金の長'}]
 };
-const FVBASE=['tnk','mech','titan','valk'];/* 上級(研究所解放)の派生対象 */
+const FVBASE=['titan','valk'];/* 上級(研究所解放)の派生対象 */
 const ALLVB=VBASE.concat(FVBASE);
 /* 進化は「大幅に強くなる」代わりに研究ptも高い(2026-07-25ユーザー指示)。
    33個の数値を手で書き換えず、定義値の「1からの伸び」をまとめて増幅する=設計の比率が崩れない。
@@ -2280,7 +2272,7 @@ const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(
      タワーの進化は1種につき1段しか無いので、段で跳ねさせようが無い)。
    600 → 21個目で2,797🧬 / 全部で約33,000🧬。 */
 const LAB_TG=k=>Math.round(600*Math.pow(1.08,k||0));
-/* 上級兵科(tnk/mech/titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
+/* 上級兵科(titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
 const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&i<BASE_U+(META.nu||0);};
 /* ⚠**弾薬(AMMO)は2026-07-27に廃止した**(ユーザー指示)。
    実弾タワーの威力に一律で乗るだけの数値だったので、**盤面のタワーを進化させる**方に置き換えた。
@@ -2476,11 +2468,11 @@ const MOT0=['now',0];
 const U_MOT={
  /* --- 即時(テンポを担保する枠。近接と軽火器) --- */
  bat:['now',0],hnd:['now',0],big:['now',0],shd:['now',0],spr:['now',0],gun:['now',.12],
- chain:['now',.15],pike:['now',.18],gld:['now',0],saw:['now',0],tnk:['now',0],
+ chain:['now',.15],pike:['now',.18],gld:['now',0],saw:['now',0],
  ninja:['now',.12],chief:['now',.22],titan:['now',.5],
  /* --- 投擲(腕を後ろへ引いて山なりに投げる) --- */
  axe:['toss',.3],mol:['toss',.3],grn:['toss',.35],gren2:['toss',.45],
- rkt:['toss',.55],mech:['toss',.5],mortarU:['toss',.8],
+ rkt:['toss',.55],mortarU:['toss',.8],
  /* --- 術者(掲げる→足元に魔法陣→撃つ) --- */
  med:['cast',.3],engi:['cast',.3],frz:['cast',.6],frost2:['cast',.9],
  /* --- 斬撃(振りかぶって、飛ぶ光の刃を放つ) --- */
@@ -9878,7 +9870,6 @@ const U_LOOK={
  ninja:{b:'slim',h:'hood',k:'sword'},   rkt:{b:'norm',h:'helm',k:'rock'},
  gren2:{b:'wide',h:'face',k:'nade'},    rail2:{b:'norm',h:'visor',k:'batt'},
  frost2:{b:'norm',h:'ice',k:'tank2'},   chief:{b:'norm',h:'peak',k:'cloak'},
- tnk:{b:'norm',h:'',k:''},              mech:{b:'norm',h:'',k:''},
  titan:{b:'wide',h:'slit',k:''},        /* ⚠ヴァルキリーは**細身**(2026-07-31ユーザー指示「光の剣をもった女剣士」)=34pxでは体型と髪でしか出せない */
  valk:{b:'slim',h:'wingh',k:'vwing'}
 };
@@ -11206,44 +11197,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  c.lineWidth=2.4;c.strokeStyle=INK;/* ⚠部隊側は c.scale(tsc) の中なので、これで既に絵の大きさに比例している */
  if(U.hro){drawHeroBody(c,U,walk,o);c.restore();return;}/* 🦸英雄は専用の姿 */
  if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
- if(id==='tnk'){/* 装甲車(研究所限定)／派生=重戦車→陸上戦艦→地響き */
-  const C0=vt?U.c:STEEL;c.scale(1.15*(1+.06*vt),1.15*(1+.06*vt));
-  if(vt>=3){c.shadowColor=GOLD;c.shadowBlur=9;}
-  c.fillStyle=C0;rr(c,-22,-26,44,18,5);c.fill();c.stroke();
-  c.fillStyle='#3f4a54';rr(c,-14,-36,22,11,4);c.fill();c.stroke();
-  c.fillStyle='#2c333a';rr(c,6,-33,22,5,2);c.fill();c.stroke();
-  if(vt>=2){c.fillStyle='#2c333a';rr(c,6,-28,26,4,2);c.fill();c.stroke();}/* 第2主砲 */
-  if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(31,-30,4+o.fireT*20,0,7);c.fill();}
-  c.fillStyle=INK;
-  for(const wx of[-15,-5,5,15]){c.beginPath();c.arc(wx,-6,5,0,7);c.fill();c.stroke();}
-  c.fillStyle=GOLD;c.fillRect(-20,-25,40,2.5);
-  if(vt>=3){c.fillStyle=GOLD;for(let k=-1;k<=1;k++){c.beginPath();c.moveTo(k*11-3,-36);c.lineTo(k*11,-45);c.lineTo(k*11+3,-36);c.closePath();c.fill();c.stroke();}}
-  c.restore();return;
- }
- if(id==='mech'){/* メカスーツ(研究所限定)／派生=強襲→砲撃→決戦兵器 */
-  const C0=vt?U.c:'#6b7580';c.scale(1.2*(1+.05*vt),1.2*(1+.05*vt));
-  if(vt>=3){c.shadowColor=U.c;c.shadowBlur=9;}
-  c.fillStyle='#4a4034';
-  c.fillRect(-10+walk*3,-12,7,12);c.strokeRect(-10+walk*3,-12,7,12);
-  c.fillRect(4-walk*3,-12,7,12);c.strokeRect(4-walk*3,-12,7,12);
-  c.fillStyle=C0;rr(c,-14,-40,28,30,8);c.fill();c.stroke();
-  c.fillStyle=shade(C0,.7);rr(c,-11,-20,22,7,3);c.fill();/* 腰の帯 */
-  c.fillStyle=TECH;rr(c,-7,-35,14,9,3);c.fill();c.stroke();/* 胸の窓 */
-  /* ⭐操縦席の頭(第102弾)。⚠それまで**頭が1つも無く**、胴の上を金の帯が横切っているだけだった */
-  c.fillStyle=shade(C0,1.14);rr(c,-8,-52,17,13,4);c.fill();c.stroke();
-  c.fillStyle=INK;c.fillRect(-4.4,-48.4,14,3.6);
-  c.fillStyle=TECH;c.fillRect(-3.4,-47.8,11,2.2);
-  c.fillStyle='#3f4a54';rr(c,-21,-42,10,15,3);c.fill();c.stroke();
-  c.fillStyle='#585e4c';rr(c,8,-49,10,21,3);c.fill();c.stroke();
-  if(vt>=2){c.fillStyle='#585e4c';rr(c,-31,-40,10,17,3);c.fill();c.stroke();c.fillStyle=RUST;c.beginPath();c.arc(-26,-42,3,0,7);c.fill();}/* 左肩キャノン */
-  c.fillStyle=RUST;c.beginPath();c.arc(13,-51,3,0,7);c.fill();
-  if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(13,-56,4+o.fireT*22,0,7);c.fill();}
-  /* ⚠金の帯を胴の上端に横一文字で引くと、操縦席の頭が帯で切られて**棒**に見える(第102弾)。
-     肩の縁だけを短く光らせる */
-  c.fillStyle=GOLD;c.fillRect(-13,-39.6,7,2.4);c.fillRect(6,-39.6,7,2.4);
-  if(vt>=3){c.fillStyle=GOLD;c.beginPath();c.arc(0,-46,2.6,0,7);c.fill();}
-  c.restore();return;
- }
+ /* ⚠**装甲車とメカスーツの絵は2026-08-01に削除**(ユーザー指示で兵科ごと廃止) */
  if(id==='hnd'){
   /* 猟犬(Lv3+は金の首輪)／派生=狼・ケルベロス・フェンリル */
   const BC=U.c||'#8a6a45';
@@ -12634,7 +12588,10 @@ function tossFly(C,u,U,tx,ty,kind,col){
 }
 /* ⭐「少し後で起こすもの」の待ち行列(2026-07-26 第65弾)。
    投げた物が飛んでいる間に爆発の絵が出てしまうと当たった感じにならないので、着弾に合わせて遅らせる。
-   ⚠ダメージ計算はここに入れないこと=当たり判定は今までどおり即時のままにして、遊びの数値は一切変えない。
+   ⭐⭐**2026-08-01から当たり判定もここに入れる**(ユーザー指摘「爆発物が着弾していないのに敵が倒れる」)。
+     ⚠**中心は投げた瞬間の狙い先で固定する**=着弾時に取り直すと「追尾する爆弾」になる。
+     ⚠**威力・範囲・間隔は変えない**=当たるのが飛行時間(0.16〜0.42秒)ぶん遅れるだけ。
+     ⚠演出オフ(FXLV=0)では tossFly が0を返すので今までどおり即時に当たる。
    ⚠中身が関数なのでセーブには乗らない(saveRunは項目を並べて書き出す方式なので問題ない)。 */
 function later(C,sec,fn){if(!C)return;(C.dly=C.dly||[]).push({t:sec,fn});}
 function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{}));
@@ -13274,16 +13231,27 @@ function campStep(C,dt,wave){
    }else if(u.cd>0)u.ct=0;
    if(u.cd<=0&&(cgT9<=0||(u.chg||0)>=1)){u.cd=U.rate;u.chg=0;u.ct=0;u.fired=1;
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
-    if(U.type==='frost'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,ua,1);}}
+    /* ⭐⭐**投げた物は「着弾してから」当てる**(2026-08-01ユーザー指摘
+       「攻撃モーションに入った瞬間に相手にダメージが入っていて、爆発物が着弾していないのに敵が倒れる」)。
+       ⚠それまでは**当たり判定は即時・見た目だけ `later` で遅らせる**作りだった(前はそれが正だと書いてあった)。
+       ⭐**当たり判定ごと `later` の中へ移した**。⚠中心は投げた瞬間の狙い先(tx9,ty9)で固定する
+         =飛んでいる間に敵が歩くので、着弾時の敵の位置で取り直すと「追尾する爆弾」になる。
+       ⚠威力・範囲・間隔は1つも触っていない=当たるのが飛行時間(0.1〜0.4秒)ぶん遅れるだけ。 */
+    if(U.type==='frost'){
      const tx9=tg.px,ty9=tg.py;
-     const im9=()=>{addFx(C,'ring',tx9,ty9,'',{r:U.aoe,col:TECH});
+     const im9=()=>{
+      for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tx9,ty9)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,ua,1);}}
+      addFx(C,'ring',tx9,ty9,'',{r:U.aoe,col:TECH});
       addFx(C,'ice',tx9,ty9-12,'',{sd:rnd(0,9),r:U.aoe*.55});
       addP(C,8,tx9,ty9-14,{sp:110,g:180,life:.5,r:2.2,col:FROST});
       if(C.isMe)sfx.frost();};
      const f9=tossFly(C,u,U,tx9,ty9,'ice',FROST);
      if(f9>0)later(C,f9,im9);else im9();}
-    else if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){dmgZ(C,z,ua,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}
+    else if(U.aoe){
      const tx9=tg.px,ty9=tg.py,fire9=U.type==='fire';
+     /* ⭐着弾の瞬間に当てる(⚠中心は投げた瞬間の狙い先で固定) */
+     const hit9=()=>{for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tx9,ty9)<=U.aoe){
+      dmgZ(C,z,ua,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}};
      /* ⭐⭐**斬撃型(ヴァルキリー)は投げない=光の刃が飛んでいって斬り裂く**
         (2026-07-31ユーザー指示「遠距離斬撃キャラにしよう」)。
         ⚠射程340・範囲130はそのまま=遊びの数値は一切変えていない。見せ方だけ差し替える。 */
@@ -13294,6 +13262,7 @@ function campStep(C,dt,wave){
       u.fireT=.16;
       if(FXLV>0)addFx(C,'wave',sx9,sy9,'',{x2:tx9,y2:ty9-16*CH_UP,lf:lf9,col:scl9});
       const im8=()=>{
+       hit9();/* ⭐光の刃が届いてから斬る */
        /* 着弾=十字に斬り裂く(爆風ではない)。⚠2本にすると「斬った」に見える */
        addFx(C,'slash',tx9,ty9-16*CH_UP,'',{ang:sa9-.5,r:U.aoe*.52,lv:3,col:scl9});
        addFx(C,'slash',tx9,ty9-16*CH_UP,'',{ang:sa9+2.3,r:U.aoe*.42,lv:2,col:'#fff6d8'});
@@ -13303,7 +13272,8 @@ function campStep(C,dt,wave){
        if(C.isMe)sfx.boom();};
       if(lf9>0&&FXLV>0)later(C,lf9,im8);else im8();
      }else{
-     const im9=()=>{addFx(C,U.type==='blast'?'boom':'ring',tx9,ty9,'',{r:U.aoe,col:'#ffb347'});
+     const im9=()=>{hit9();/* ⭐爆発物が着いてから爆ぜる */
+      addFx(C,U.type==='blast'?'boom':'ring',tx9,ty9,'',{r:U.aoe,col:'#ffb347'});
       addP(C,7,tx9,ty9-10,{sp:160,up:50,g:520,life:.4,r:2.6,col:'#ffb347'});
       addP(C,4,tx9,ty9-10,{sp:50,up:30,g:-30,life:.9,r:6,col:'#6e6354',typ:'smoke'});
       /* 火炎瓶は割れて燃え広がる=火の海が少し残る */
