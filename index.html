@@ -2472,7 +2472,10 @@ const U_MOT={
  ninja:['now',.12],chief:['now',.22],titan:['now',.5],
  /* --- 投擲(腕を後ろへ引いて山なりに投げる) --- */
  axe:['toss',.3],mol:['toss',.3],grn:['toss',.35],gren2:['toss',.45],
- rkt:['toss',.55],mortarU:['toss',.8],
+ mortarU:['toss',.8],
+ /* ⚠ロケランは「投げる」ではなく**狙って撃つ**(2026-08-01)=溜めの見せ方だけ狙撃側へ移した。
+    溜めの秒数(.55)は据え置き=遊びの数値は変えていない */
+ rkt:['snipe',.55],
  /* --- 術者(掲げる→足元に魔法陣→撃つ) --- */
  med:['cast',.3],engi:['cast',.3],frz:['cast',.6],frost2:['cast',.9],
  /* --- 斬撃(振りかぶって、飛ぶ光の刃を放つ) --- */
@@ -12430,7 +12433,7 @@ function awardWavePts(C,quit){
 }
 /* エフェクトの持ち時間。⚠ここと描画側の割り算を必ず揃えること(ずれると途中で消える/残る) */
 const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slash:.26,shock:.5,
- toss:.3,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
+ toss:.3,rkt:.26,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
  beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24};
 /* ⚠寿命が1つずつ違う演出は ex に `lf` を持たせる(投擲=飛ぶ距離で / 死体=大きさで変わる)。
    `d0` は「その秒数だけ待ってから始まる」=絨毯爆撃の時間差に使う */
@@ -12579,6 +12582,21 @@ function hitFx(C,z,ang,col,prc,type){
 /* ⭐投げた物が山なりに飛ぶ絵(2026-07-26 第65弾)。飛んでいる秒数を返す(0=飛ばさずその場で発動)。
    ⚠当たり判定は今までどおり即時のまま=数値のバランスには一切触っていない。
    見た目だけ「投げる→飛ぶ→着弾して爆発」の順に並べ替えている(爆発は later() で遅らせる) */
+/* ⭐⭐**ロケランは山なりに投げない**(2026-08-01ユーザー指摘「筒の先からロケットを撃つんだよ?」)。
+   ⚠それまで爆弾兵と同じ `toss`(山なりに放物線)で飛ばしていたので、擲弾を放り投げているように見えた。
+   ⭐**筒の先(肩の上)から、まっすぐ・速く飛ばす**。噴射の炎と白い煙の尾を引く。
+   ⚠迫撃兵と擲弾兵は山なりのままでよい(本物も曲射・投擲)。 */
+function rktFly(C,u,U,tx,ty){
+ if(FXLV<1)return 0;
+ const d5=(u.dr||-1),ox=u.px+d5*27*CH_UP,oy=u.py-37*CH_UP,ds=dist(ox,oy,tx,ty);
+ const lf=clamp(ds/1400,.10,.30);/* ⚠山なりより速い=ロケットに見える */
+ addFx(C,'rkt',ox,oy,'',{x2:tx,y2:ty-14*CH_UP,lf});
+ /* 筒の先の閃光と、**後ろへ吹く後方噴射**(⚠これが無いと「ただ弾が出た」で終わる) */
+ const aR=Math.atan2((ty-14*CH_UP)-oy,tx-ox);
+ addFx(C,'mzl',ox,oy,'',{ang:aR,r:16,col:'#ffb347'});
+ addP(C,6,u.px-d5*16*CH_UP,oy,{sp:150,a:aR+Math.PI,spread:.45,g:60,life:.34,r:3.4,col:'#8a8578',typ:'smoke'});
+ return lf;
+}
 function tossFly(C,u,U,tx,ty,kind,col){
  if(FXLV<1||!U||U.rng<=60)return 0;
  const ox=u.px,oy=u.py-30*CH_UP,ds=dist(ox,oy,tx,ty);
@@ -13280,7 +13298,9 @@ function campStep(C,dt,wave){
       if(fire9&&FXLV>0)addFx(C,'pool',tx9,ty9+2,'',{r:U.aoe*.8,sd:rnd(0,9),lf:1.6});
       if(U.aoe>=100){addFx(C,'dust',tx9,ty9+2,'',{r:U.aoe*.9});C.shake=Math.max(C.shake||0,.14);}
       if(C.isMe&&U.type==='blast')sfx.boom();};
-     const f9=tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c');
+     /* ⭐ロケランだけ**筒の先からまっすぐ**飛ばす(2026-08-01)。他は山なりのまま */
+     const f9=((U.base||U.id)==='rkt')?rktFly(C,u,U,tx9,ty9)
+      :tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c');
      if(f9>0)later(C,f9,im9);else im9();
      if(U.aoe>=100)u.fireT=.14;}}
     else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
@@ -14641,7 +14661,28 @@ function renderCamp(C,t){
    if(lv>=2){c.strokeStyle='rgba(255,255,255,'+(a4*.75).toFixed(2)+')';c.lineWidth=1.6;
     c.beginPath();c.arc(0,0,rr*1.2,sw-.62,sw+.62);c.stroke();}
    c.lineCap='butt';c.globalAlpha=1;c.restore();}
-  else if(e.k==='toss'){/* ⭐投げた物が山なりに飛ぶ(爆弾兵・火炎瓶・冷凍弾)。⚠絵だけ=当たり判定は投げた瞬間に済んでいる */
+  else if(e.k==='rkt'){/* ⭐ロケット弾(⚠**山なりにしない**=筒の先からまっすぐ速く飛ぶ) */
+   const lfR=fxLife('rkt',e),pR=clamp((e.t-(e.d0||0))/lfR,0,1);
+   const dxR=e.x2-e.x,dyR=e.y2-e.y,angR=Math.atan2(dyR,dxR);
+   /* 白い煙の尾(⚠後ろへ太く残す=速さが出る。これがロケットの一番の目印) */
+   c.globalAlpha=.30;c.fillStyle='#b8b2a4';
+   for(let i6=1;i6<=6;i6++){const q6=Math.max(0,pR-i6*.05);
+    c.beginPath();c.arc(e.x+dxR*q6,e.y+dyR*q6,1.8+i6*1.1,0,7);c.fill();}
+   c.globalAlpha=1;
+   c.save();c.translate(e.x+dxR*pR,e.y+dyR*pR);c.rotate(angR);c.scale(1.3,1.3);
+   c.lineWidth=1.2;c.strokeStyle=INK;
+   c.fillStyle='#ffb347';/* 噴射の炎(尾) */
+   c.beginPath();c.moveTo(-6,-2.4);c.lineTo(-13-Math.abs(Math.sin(e.t*70))*4,0);c.lineTo(-6,2.4);c.closePath();c.fill();
+   c.fillStyle=GLOW;c.beginPath();c.moveTo(-6,-1.2);c.lineTo(-10.4,0);c.lineTo(-6,1.2);c.closePath();c.fill();
+   c.fillStyle='#585e4c';/* 尾翼 */
+   c.beginPath();c.moveTo(-6.4,-4);c.lineTo(-2.6,-1.8);c.lineTo(-2.6,1.8);c.lineTo(-6.4,4);c.closePath();c.fill();c.stroke();
+   c.fillStyle='#7a8068';/* 弾体 */
+   c.beginPath();c.moveTo(-6.4,-2.4);c.lineTo(4,-2.4);c.lineTo(4,2.4);c.lineTo(-6.4,2.4);c.closePath();c.fill();c.stroke();
+   c.fillStyle=RUST;/* 弾頭(⚠赤くする=ロケットだと一目で分かる) */
+   c.beginPath();c.moveTo(3.6,-2.8);c.lineTo(9.6,0);c.lineTo(3.6,2.8);c.closePath();c.fill();c.stroke();
+   c.restore();}
+  else if(e.k==='toss'){/* ⭐投げた物が山なりに飛ぶ(爆弾兵・火炎瓶・冷凍弾)。
+     ⚠2026-08-01から**当たり判定は着弾の瞬間**(この絵が終わる時)に起きる */
    const lfT=fxLife('toss',e),p6=clamp((e.t-(e.d0||0))/lfT,0,1),hi=e.hi||60;
    const at=q=>[e.x+(e.x2-e.x)*q,e.y+(e.y2-e.y)*q-Math.sin(Math.PI*q)*hi];
    const b6=at(p6);
