@@ -14978,6 +14978,7 @@ const gcZi=k=>{if(GC&&GC.lob&&LB_ZI>=0)return LB_ZI;
    source-atop で金のグラデを被せる(タイトルの黄金ロブスターと同じやり方)。
    ⚠べた塗りで潰さない=明るい所だけ濃く乗せないと黒フチも陰影も消える。 */
 let GLDC=null;
+const GLD_W=3.4;/* 金色に焼いた絵に描き足す黒フチの太さ(局所座標) */
 function goldCv(drawFn,SZ,t,oy){
  const dpr=Math.min(2,window.devicePixelRatio||1);
  if(!GLDC)GLDC=document.createElement('canvas');
@@ -14988,10 +14989,21 @@ function goldCv(drawFn,SZ,t,oy){
  rc.globalCompositeOperation='source-atop';
  try{const g2=rc.createLinearGradient(SZ*.18,SZ*.2,SZ*.86,SZ*.96);
   for(let k=0;k<=8;k++){const b=.5+.5*Math.sin((k/8*1.6+t*.6)*6.283);
-   /* ⚠**濃く乗せすぎない**=黒フチまで金色に潰れて「白い塊」になる(2026-07-30に撮って下げた) */
-  g2.addColorStop(k/8,'rgba('+Math.round(208+47*b)+','+Math.round(162+86*b)+','
-    +Math.round(56+150*b)+','+(.50+.26*b).toFixed(2)+')');}
+   /* ⚠**濃く乗せすぎない**=黒フチまで金色に潰れて「白い塊」になる(2026-07-30に撮って下げた)。
+      ⚠**青を上げすぎない**=明るい所が白に寄って、金ではなく「発光した白」に見える(同日に下げた) */
+  g2.addColorStop(k/8,'rgba('+Math.round(214+41*b)+','+Math.round(158+80*b)+','
+    +Math.round(48+104*b)+','+(.52+.26*b).toFixed(2)+')');}
   rc.fillStyle=g2;rc.fillRect(0,0,SZ,SZ);}catch(e){}
+ /* ⭐⭐**黒フチを描き直す**(2026-07-30ユーザー指摘「ロブスタの姿が見えない」)。
+    ⚠金のグラデを source-atop で乗せると**黒フチまで金色に潰れる**ので、
+      朝の明るい背景では輪郭が消えて「金色の靄」にしか見えなくなっていた(撮って再現した)。
+    ⭐`destination-over` で太らせた黒シルエットを**背面**に置くと外周だけ黒が戻る
+      (2度描き `silLayer` の仕組みをそのまま使う=絵は1つも描き直さない)。
+    ⚠**太さは VEC2_W(7.0) では太すぎる**=脚の間が埋まって塊になる(撮って下げた)。 */
+ rc.globalCompositeOperation='destination-over';
+ rc.save();rc.translate(SZ/2,oy);
+ try{drawFn(silLayer(rc,GLD_W,INK));}catch(e){}
+ rc.restore();
  rc.globalCompositeOperation='source-over';
  return GLDC;
 }
@@ -15030,11 +15042,11 @@ function gcStart(res){
  const rl9=Math.random();
  const lob=!!(best>=4&&LB_ZI>=0&&rl9<GC_P_LOB);
  /* ⭐⭐**どんでん返し**(2026-07-30ユーザー指示)。わざと**一番しょぼい見た目**
-      (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、弾が当たっても敵が死なず、
-      **金色に変わって大爆発**する。★4以上を引いた回だけ、たまに起きる。
+      (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、**当たった所までは通常演出と同じ**に見せ、
+      爆散した跡から**金色の個体が現れて**もう一度砕ける。★4以上を引いた回だけ、たまに起きる。
     ⚠これがあるので「ライフル+通常ゾンビ=はずれ」と決め打ちできなくなる=毎回タップする理由になる。 */
  const twist=(best>=4&&rl9>=GC_P_LOB&&rl9<GC_P_LOB+GC_P_TW);
- GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,w:760,h:360,dpr:1,sk:null,
+ GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,
   night:twist?false:night,fc:twist?0:fc,lob:lob?1:0,twist:twist?1:0};
  cv.classList.add('on');gcFit();
  if(sfx.heal)sfx.heal();
@@ -15049,7 +15061,7 @@ function gcFire(){
 /* 溜め切って実際に撃つ。タレットの種類で音を変える */
 function gcShoot(){
  if(!GC)return;
- GC.ph='fire';GC.t=0;GC.hit=0;
+ GC.ph='fire';GC.t=0;GC.hit=0;GC.hit2=0;GC.hit3=0;
  const tw=GC.tw;
  if(tw===2&&sfx.laser)sfx.laser();
  else if(tw===1&&sfx.shotgun)sfx.shotgun();
@@ -15086,8 +15098,12 @@ function gcCam(w,h,TX,TY,ZX,ZY){
    /* 着弾で一気に寄ってから、ゆっくり引いて跡地を見せる */
    const e=hk*hk*(3-2*hk);
    z=1.46-e*.43;x=ZX+(( (TX+ZX)/2 )-ZX)*e;y=(ZY-30)+(((TY+ZY)/2-20)-(ZY-30))*e;
-   /* 揺れは着弾直後だけ。⚠**長く揺らすと酔う**ので0.35で消す */
-   const q=Math.max(0,1-hk/.35);
+   /* 揺れは着弾直後だけ。⚠**長く揺らすと酔う**ので0.35で消す。
+      ⚠**着弾からの実時間で引く**こと=hkで引くと、どんでん返しの1.5秒がまるごと hk=0 なので
+        その間ずっと最大で揺れ続ける(2026-07-30に尺を伸ばして踏んだ)。2回目の爆発でもう一度揺らす */
+   const s1=clamp(1-(ft-GC_FLY-GC_HOLD)/.35,0,1);
+   const s2=GC.twist?clamp(1-(ft-GC_FLY-GC_HOLD-GC_TWIST)/.35,0,1):0;
+   const q=Math.max(s1,s2);
    sx=Math.sin(ft*73)*20*q*q;sy=Math.cos(ft*97)*14*q*q;
   }
  }
@@ -15100,8 +15116,13 @@ function gcHitSfx(){
  if(GC&&GC.lob&&sfx.lobKill)sfx.lobKill();
  else if(sfx.eliteKill)sfx.eliteKill();
 }
-/* ⭐どんでん返しで「金色に変わる」までの秒数。⚠短いと何が起きたか読めない */
-const GC_TWIST=.95;
+/* ⭐どんでん返しの尺(秒)。⚠短いと何が起きたか読めない。
+   ⭐**中身を作り替えた**(2026-07-30ユーザー指示「弾がゾンビに当たるまでは通常演出と同じで、
+     当たったらゾンビが爆発して金色のゾンビが現れる感じで」)。
+   ⚠それまでは「当たっても倒れず、その場で金色に変色する」だった=**当たった手応えが無かった**。
+   前半 GC_TW_R = 普通に木っ端みじん(通常演出と見分けが付かない) / 後半 = その跡から金色の個体がせり上がる */
+const GC_TWIST=1.5;
+const GC_TW_R=.45;/* 爆発から「金色が現れる」へ切り替わる所(0〜1) */
 /* ⭐★4以上を引いた回の内訳(2026-07-30ユーザー指示「ピラミッドにしよう」)。
    ✨黄金のロブスター20% / どんでん返し35% / 通常の最上位演出45%。
    ⚠**珍しい絵ほど出にくい**のが演出の基本=均等にすると「派手=当たり」の情報価値が消え、
@@ -15122,8 +15143,12 @@ function gcStep(dt){
  if(GC.ph==='chg'&&GC.t>=GC_CHG){gcShoot();}
  /* 撃った弾が当たる瞬間に音を鳴らす(1発だけ) */
  if(GC.ph==='fire'&&!GC.hit&&GC.t>=GC_FLY){GC.hit=1;
-  /* ⚠どんでん返しの時は**まだ倒していない**ので、ここでは軽い当たり音だけ */
-  if(GC.twist){if(sfx.thunk)sfx.thunk();}else gcHitSfx();}
+  /* ⚠どんでん返しも**1回目でちゃんと爆発する**(2026-07-30)ので、ここは普通の撃破音。
+     豪華な方(eliteKill/lobKill)は2回目に取っておく */
+  if(GC.twist){if(sfx.boom)sfx.boom();}else gcHitSfx();}
+ /* どんでん返し: 爆発の跡から金色の個体が現れ始める瞬間 */
+ if(GC.ph==='fire'&&GC.twist&&!GC.hit3&&GC.t>=GC_FLY+GC_HOLD+GC_TWIST*GC_TW_R){GC.hit3=1;
+  if(sfx.heal)sfx.heal();}
  /* どんでん返し: 金色になり切った瞬間に大爆発 */
  if(GC.ph==='fire'&&GC.twist&&!GC.hit2&&GC.t>=GC_FLY+GC_HOLD+GC_TWIST){GC.hit2=1;gcHitSfx();}
  if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_HOLD+GC_BANG+(GC.twist?GC_TWIST:0)){GC.ph='card';GC.t=0;}
@@ -15263,6 +15288,45 @@ function gcRays(c,cx,cy,R,n,rot,col,a){
   c.beginPath();c.moveTo(0,0);c.lineTo(R,-R*.055);c.lineTo(R,R*.055);c.closePath();c.fill();}
  c.restore();c.globalAlpha=1;
 }
+/* ⭐木っ端みじん(衝撃の輪+肉片+地面の染み)。⚠肉片は落ちたら地面に転がしておく(消すと跡が残らない)。
+   ⭐**どんでん返しでも同じ絵を使う**(2026-07-30)=「1回目=普通に爆散 / 2回目=金色のまま砕ける」で
+     見た目の筋が通る。gold=1 で肉片と染みが金になる */
+function gcGib(c,ZX,ZY,hk,Z,gold){
+ c.strokeStyle=(gold?'rgba(255,224,138,':'rgba(255,180,120,')+Math.max(0,1-hk*2.4).toFixed(3)+')';
+ c.lineWidth=6*(1-hk)+1;
+ c.beginPath();c.ellipse(ZX,ZY-18,26+hk*180,(26+hk*180)*.42,0,0,7);c.stroke();c.lineWidth=3;
+ for(let i=0;i<18;i++){
+  const a=-.15-i*.35,sp=90+((i*57)%80);
+  const px=ZX+Math.cos(a)*sp*hk*1.4;
+  let py=ZY-30+Math.sin(a)*sp*hk*1.1+300*hk*hk;
+  if(py>ZY-2)py=ZY-2;
+  c.save();c.translate(px,py);c.rotate(i*1.1+hk*11);
+  c.fillStyle=gold?((i%3===0)?'#ffe08a':'#e8a33d'):((i%3===0)?'#8a2f2f':(Z.c||'#7a8f5f'));
+  c.strokeStyle=INK;c.lineWidth=1.6;
+  rr(c,-4,-3,8,6,2.5);c.fill();c.stroke();c.restore();}
+ c.lineWidth=3;
+ c.globalAlpha=Math.min(1,hk*2.5)*.55;c.fillStyle=gold?'#6b5a24':'#4a5a2e';
+ c.beginPath();c.ellipse(ZX,ZY+2,44*Math.min(1,hk*2),12*Math.min(1,hk*2),0,0,7);c.fill();c.globalAlpha=1;
+}
+/* ⭐金色に光る個体を1体描く。a=見え具合(0→1) / big=一回り大きく見せる倍率。
+   ⚠**別canvasに焼いて source-atop**(ctx.filter は iOS で効かない)。
+   ⚠焼いた絵をもう1枚 lighter で重ねないと、暗い背景に沈んで「くすんだ茶色」に見える */
+function gcGold(c,zidx,zsc,ZX,ZY,a,big){
+ const SZ9=300,zs9=zsc*(big||1);
+ const cvg=goldCv(cc=>{cc.scale(zs9,zs9);try{drawZombie(cc,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}},SZ9,GC.t,SZ9*.78);
+ /* 後光。⚠濃くすると絵まで白く飛ぶので薄く */
+ for(let k=0;k<3;k++){c.globalAlpha=(.20-k*.06)*a;
+  c.fillStyle=['#fff3bd','#ffcf52','#ffa41c'][k];
+  c.beginPath();c.arc(ZX,ZY-24,30+k*16+Math.sin(GC.t*5+k)*4,0,7);c.fill();}
+ c.globalAlpha=1;
+ if(cvg){c.globalAlpha=a;c.drawImage(cvg,ZX-SZ9/2,ZY-SZ9*.78,SZ9,SZ9);
+  /* ⚠lighter を強く重ねると真っ白になる=**うっすら**で足りる */
+  c.globalCompositeOperation='lighter';c.globalAlpha=.16*a;
+  c.drawImage(cvg,ZX-SZ9/2,ZY-SZ9*.78,SZ9,SZ9);
+  c.globalCompositeOperation='source-over';c.globalAlpha=1;}
+ /* きらめき。⚠**出かかりでは出さない**=まだ形が無いのに光だけ散ると何が起きたか読めない */
+ if(a>.55){try{parSpark(c,ZX,ZY-14,GC.t);}catch(e){}}
+}
 function gcDraw(){
  const cv=$('gc-cv'),c=cv&&cv.getContext&&cv.getContext('2d');if(!c||!GC)return;
  const w=GC.w,h=GC.h;
@@ -15286,13 +15350,18 @@ function gcDraw(){
   const zidx=gcZi(GC.zk),Z=ZOMBIES[zidx]||{sc:1,c:'#7a8f5f'};
   /* ⭐着弾したら GC_HOLD 秒だけ画を止める(ヒットストップ)。hk はそのあとから進む。
      ⚠止めている間も**ゾンビは立ったまま**にする=消すと0.14秒の穴が空いて手応えが消える */
-  /* ⭐どんでん返しの間(GC_TWIST秒)は**まだ倒れていない**ので、跡地の進行(hk)をその分うしろへずらす */
+  /* ⭐どんでん返しの間(GC_TWIST秒)は**まだ決着していない**ので、跡地の進行(hk)をその分うしろへずらす */
   const dly=GC.twist?GC_TWIST:0;
   const hit=fire&&ft>=GC_FLY,hk=hit?clamp((ft-GC_FLY-GC_HOLD-dly)/1.05,0,1):0;
   const stop=hit&&ft<GC_FLY+GC_HOLD;
-  /* 金化の進み(0→1)。どんでん返しでなくても、✨黄金のロブスターは最初から金 */
+  /* どんでん返しの進み(0→1)。前半=普通に爆散 / 後半=その跡から金色の個体が現れる */
   const twK=GC.twist?clamp((ft-GC_FLY-GC_HOLD)/dly,0,1):0;
-  const alive9=(!hit||stop||(GC.twist&&ft<GC_FLY+GC_HOLD+dly));
+  const rz9=GC.twist?clamp((twK-GC_TW_R)/(.85-GC_TW_R),0,1):0;/* 金色がせり上がる分 */
+  /* ⚠**どんでん返しでも一度はちゃんと爆散する**(2026-07-30ユーザー指示)ので、
+     立っているのは「当たる前」と「止めている一瞬」だけ */
+  const alive9=(!hit||stop);
+  /* 肉片の散り方。⚠どんでん返しの1回目は途中で止める=跡が残っていないと出現の土台が無い */
+  const bk9=(GC.twist&&twK<1)?Math.min(.5,twK/GC_TW_R*.5):hk;
   const mx=TX+64,my=TY-64,ex=ZX,ey=ZY-26;/* 銃口 → 的 */
   /* ⭐ここからカメラを掛ける。⚠**文字と閃光には掛けない**ので、あとで必ず restore する */
   const CAM=gcCam(w,h,TX,TY,ZX,ZY);
@@ -15309,50 +15378,31 @@ function gcDraw(){
    c.strokeStyle='rgba(242,236,220,.22)';
    c.beginPath();c.moveTo(-w,hz);c.lineTo(w*2,hz);c.stroke();c.lineWidth=3;}
   /* ---- ゾンビ(奥)。⚠手前のタレットより先に描く=奥行きの順番 ---- */
+  const zsc=ZS/(Z.sc||1);
   if(alive9){
-   const gk9=GC.lob?1:twK;/* どれだけ金色か */
-   const zsc=ZS/(Z.sc||1);
-   if(gk9>0){
-    /* ⭐金色に光る的。⚠**別canvasに焼いて source-atop**(ctx.filter は iOS で効かない)。
-       ⚠焼いた絵をもう1枚 lighter で重ねないと、暗い背景に沈んで「くすんだ茶色」に見える */
-    /* ⚠✨黄金のロブスターは**この回の主役**なので一回り大きく見せる */
-    const SZ9=300,zs9=zsc*(GC.lob?1.5:1);
-    const cvg=goldCv(cc=>{cc.scale(zs9,zs9);try{drawZombie(cc,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}},SZ9,GC.t,SZ9*.78);
-    /* 後光。⚠濃くすると絵まで白く飛ぶので薄く */
-    for(let k=0;k<3;k++){c.globalAlpha=(.20-k*.06)*gk9;
-     c.fillStyle=['#fff3bd','#ffcf52','#ffa41c'][k];
-     c.beginPath();c.arc(ZX,ZY-24,30+k*16+Math.sin(GC.t*5+k)*4,0,7);c.fill();}
-    c.globalAlpha=1;
-    if(gk9<1){/* 変わっていく途中は元の絵も出す(いきなり金になると何が起きたか読めない) */
-     c.save();c.translate(ZX,ZY);c.scale(zsc,zsc);
-     try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
-     c.restore();}
-    if(cvg){c.globalAlpha=gk9;c.drawImage(cvg,ZX-SZ9/2,ZY-SZ9*.78,SZ9,SZ9);
-     /* ⚠lighter を強く重ねると真っ白になる=**うっすら**で足りる */
-     c.globalCompositeOperation='lighter';c.globalAlpha=.16*gk9;
-     c.drawImage(cvg,ZX-SZ9/2,ZY-SZ9*.78,SZ9,SZ9);
-     c.globalCompositeOperation='source-over';c.globalAlpha=1;}
-    /* きらめき(タイトルの黄金ロブスターと同じ十字の線) */
-    try{parSpark(c,ZX,ZY-14,GC.t);}catch(e){}
-   }else{
+   /* ⚠✨黄金のロブスターだけ**最初から金色**(この回の主役なので一回り大きく見せる)。
+      ⚠どんでん返しは**当たるまで普通の姿**=見た目で先に割れてはいけない */
+   if(GC.lob)gcGold(c,zidx,zsc,ZX,ZY,1,1.5);
+   else{
     c.save();c.translate(ZX,ZY);c.scale(zsc,zsc);
     try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
     c.restore();}
   }else{
-   /* ⭐倒し方は確定で木っ端みじん。⚠肉片は落ちたら地面に転がしておく(消すと跡が残らない) */
-   c.strokeStyle='rgba(255,180,120,'+Math.max(0,1-hk*2.4).toFixed(3)+')';c.lineWidth=6*(1-hk)+1;
-   c.beginPath();c.ellipse(ZX,ZY-18,26+hk*180,(26+hk*180)*.42,0,0,7);c.stroke();c.lineWidth=3;
-   for(let i=0;i<18;i++){
-    const a=-.15-i*.35,sp=90+((i*57)%80);
-    const px=ZX+Math.cos(a)*sp*hk*1.4;
-    let py=ZY-30+Math.sin(a)*sp*hk*1.1+300*hk*hk;
-    if(py>ZY-2)py=ZY-2;
-    c.save();c.translate(px,py);c.rotate(i*1.1+hk*11);
-    c.fillStyle=(i%3===0)?'#8a2f2f':(Z.c||'#7a8f5f');c.strokeStyle=INK;c.lineWidth=1.6;
-    rr(c,-4,-3,8,6,2.5);c.fill();c.stroke();c.restore();}
-   c.lineWidth=3;
-   c.globalAlpha=Math.min(1,hk*2.5)*.55;c.fillStyle='#4a5a2e';
-   c.beginPath();c.ellipse(ZX,ZY+2,44*Math.min(1,hk*2),12*Math.min(1,hk*2),0,0,7);c.fill();c.globalAlpha=1;
+   /* ⭐倒し方は確定で木っ端みじん。⚠どんでん返しの2回目は**金色のまま砕ける** */
+   gcGib(c,ZX,ZY,bk9,Z,(GC.lob||(GC.twist&&twK>=1))?1:0);
+   /* ⭐⭐どんでん返し: 爆発の跡から**金色の個体がせり上がる**(2026-07-30ユーザー指示
+      「当たったらゾンビが爆発して金色のゾンビが現れる感じで」)。 */
+   if(GC.twist&&rz9>0&&twK<1){
+    /* 地面から立ち上る金の光=**どこから出てくるのか**を先に見せる */
+    c.globalAlpha=rz9*.32;c.fillStyle=GOLD;
+    c.beginPath();c.moveTo(ZX-18*rz9,ZY+2);c.lineTo(ZX-7*rz9,hz-40);
+    c.lineTo(ZX+7*rz9,hz-40);c.lineTo(ZX+18*rz9,ZY+2);c.closePath();c.fill();c.globalAlpha=1;
+    /* ⚠**地面から生えてくる**ように、下からせり上げながら少しずつ大きくする */
+    const sc9=.74+rz9*.26;
+    c.save();c.translate(ZX,ZY+(1-rz9)*26);c.scale(sc9,sc9);c.translate(-ZX,-ZY);
+    gcGold(c,zidx,zsc,ZX,ZY,rz9,1);
+    c.restore();
+   }
    /* ---- ⭐跡地に残る「示唆」= この召集の一番いい結果を教える ---- */
    /* ⭐**一度に全部出さない**。まず「木っ端みじん!!」を見せ、それが消えてから気配が立ち上る
       (同時に出すと★と文字が重なって、どちらも読めなくなっていた) */
@@ -15456,12 +15506,15 @@ function gcDraw(){
    c.fillStyle='rgba(242,236,220,.85)';c.font='900 13px '+FF;
    c.fillText('▶ タップで発射',cx,h*.22+24);
   }else if(GC.twist&&hit&&twK<1){
-   /* ⭐どんでん返しの最中: 「効いてない…?」で一拍おいてから金色に変わり切る */
-   c.globalAlpha=Math.min(1,twK*4);
-   c.fillStyle=twK>.5?GOLD:PANE;c.font='900 30px '+FF;
+   /* ⭐どんでん返しの最中(2026-07-30に作り替え): 前半は**通常と同じ「木っ端みじん!!」**。
+      ⚠ここで違う文字を出すと当たった瞬間に仕掛けが割れる=通常演出と見分けが付かないのが肝。
+        後半で跡から金色が出てきて初めて「え?」となる */
+   const gm=twK>=GC_TW_R;
+   c.globalAlpha=gm?Math.min(1,(twK-GC_TW_R)*7):Math.min(1,twK*8);
+   c.fillStyle=gm?GOLD:DANGER;c.font='900 '+(gm?29:34)+'px '+FF;
    c.lineWidth=7;c.strokeStyle=INK;
-   const ms=twK>.5?'金色に変わった…!?':'…倒れない!?';
-   c.strokeText(ms,cx,h*.17);c.fillText(ms,cx,h*.17);c.globalAlpha=1;c.lineWidth=3;
+   const ms=gm?'金色の個体が現れた…!?':'木っ端みじん!!';
+   c.strokeText(ms,cx,h*.16);c.fillText(ms,cx,h*.16);c.globalAlpha=1;c.lineWidth=3;
   }else if(hit&&hk<.36){
    /* ⚠出しっぱなしにすると、あとから立ち上る★の気配と重なって両方読めなくなる=先に消す */
    c.globalAlpha=Math.min(1,hk*8)*Math.min(1,(.36-hk)/.07);

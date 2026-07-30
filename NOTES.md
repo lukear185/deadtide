@@ -137,6 +137,12 @@ aliases: [作業ノート, 落とし穴]
     色ごとに不透明度(`rgba`)を持たせ、**明るい所だけ濃く**乗せる。
   ②**明るい側に振る**=金の暗い側を茶色にすると、タイトルの暗い背景に沈んで「くすんだ茶色」に見える。
   ③**もう1枚 `lighter` で重ねて発光させる**。①②だけでは虹に比べて地味。
+  ④⭐⭐**黒フチを描き直す**(2026-07-30ユーザー指摘「ロブスタの姿が見えない」)。①で薄めに乗せても
+    source-atop は黒フチにも乗るので輪郭がじわじわ痩せ、**朝(明るい背景)の召集演出では絵が丸ごと
+    「金色の靄」になって的が何なのか読めなかった**。夜の背景では見えていたので気づけなかった。
+    ⭐直し方=金を乗せたあと `destination-over` で **`silLayer` の太らせた黒シルエットを背面に置く**
+    (2度描きの仕組みの流用。絵は1つも描き直さない)。⚠太さは `VEC2_W`(7.0)では太すぎて脚の間が
+    埋まる=**`GLD_W`(3.4)**。⚠**明るい背景で撮って確かめる**こと(`+gmorn`)。
 - ⚠⚠⭐**スマホのスピーカーは200Hz以下をほとんど鳴らせない**(2026-07-27に実機で踏んだ)。
   「どぅーん」を 26〜95Hz で作ったら**一切聞こえなかった**。重低音が欲しい時は**周波数を下げない**で、
   **倍音の多い波形(sawtooth)を中音域(900→130Hz)でゆっくり下降させる**。それで「低く重い」に聞こえる。
@@ -1005,7 +1011,8 @@ node test_shot.js out.png 852 393 rpg            # ⚔冒険の拠点の町 / rp
 node test_shot.js out.png 852 393 "u=snp+uchg=0.8"  # ⭐溜めの途中で止めて撮る(攻撃モーション用)
 node test_shot.js out.png 852 393 hstat          # 🦸英雄ステータス(hs=hNox でその1人を選んだ状態)
 node test_shot.js out.png 852 393 "gacha5+glob+gaim"   # ✨黄金のロブスターが的(★4以上で1/3)
-node test_shot.js out.png 852 393 "gacha5+gtwist+ggold" # どんでん返し(金色に変わっていく途中)
+node test_shot.js out.png 852 393 "gacha5+gtwist+ggold" # どんでん返し(跡から金色の個体が現れる所)
+node test_shot.js out.png 852 393 "gacha5+gtwist+gtwgib" # どんでん返しの手前(まず普通に爆散する所)
 node test_shot.js out.png 852 393 "gacha5+gmorn+gfc=0"  # 朝の背景 / gnight=夜 / gfc=0白 1赤 2虹
 node test_shot.js out.png 852 393 "gacha+gopen+gspin=1" # 召集画面(何人目を正面にするか)
 node tool_slice.js ui_src/sheet-a.png --list     # 1枚のシート画像からアイコンを自動で切り出す(まず数と並びを確認)

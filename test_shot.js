@@ -163,7 +163,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(OPT.indexOf('gnight')>=0?'if(GC){GC.night=true;}':'')
        +(OPT.indexOf('gmorn')>=0?'if(GC){GC.night=false;}':'')
        +((/gfc=(\d)/.exec(OPT))?('if(GC){GC.fc='+(/gfc=(\d)/.exec(OPT))[1]+';}'):'')
+       /* ggold=金色の個体がせり上がった所 / gtwgib=その手前(まず普通に爆散する所) */
        +(OPT.indexOf('ggold')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+GC_TWIST*.8;GC.hit=1;}':'')
+       +(OPT.indexOf('gtwgib')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+GC_TWIST*.3;GC.hit=1;}':'')
        /* ⚠ヘッドレスの仮想時間ではrAFがほとんど回らず、いつまでも魔法陣のまま。
           カードの絵を撮りたい時は段階を直に進める(gcard=カード / gburst=炸裂) */
        +(OPT.indexOf('gcard')>=0?'if(GC){GC.ph="card";GC.t=.42;}':'')
