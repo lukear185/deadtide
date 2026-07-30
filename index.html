@@ -9657,6 +9657,21 @@ const H_LOOK={
  /* ⚠暁の王は**マント無し**=マントも翼も金色なので、重ねると翼が消える(色が近い物を重ねない) */
  hDawn :{cape:0,h:'halo',  w:'banner', k:'wing',  c2:'#8a7452'} /* 暁の王: 光輪+軍旗+光の翼 */
 };
+/* ⭐⭐**英雄も溜めの間は装備そのものを動かす**(2026-08-01ユーザー指示・兵科と同じ扱い)。
+   ⭐**得物ごとに [肩を軸の回転, ずらしx, ずらしy]**。⚠**画面のyは下が正**=負が振り上げ。
+   ⚠**手前の腕と得物をまとめて肩を軸に回す**=得物だけ動かすと手から離れる(兵科で確立した掟)。
+   ⚠奥の腕と背中の物は動かさない(胴が覆うので付け根のずれは見えない)。
+   ⚠**大きく回せるのは片手の物だけ**。長い物(杖・軍旗・大鎌)は持ち上げ寄りにする=
+     回すと得物が頭を横切って輪郭が読めなくなる(火炎瓶で2回踏んだ)。 */
+const H_CHG={
+ pistol:[-.20,1.4,-1],rifle:[-.17,1.2,-1],bow:[0,-4.2,0],           /* 構え上げる / 弓は引き絞る */
+ hose:[.24,1.6,.6],rod:[.30,1.2,2.6],                               /* 噴射口・燃料棒は下げる */
+ staff:[-.13,1,-7],banner:[-.10,.6,-6],spear:[-.30,-1.6,-7],        /* 掲げる(長い物) */
+ scythe:[-.34,-2,-1],saber:[-.42,-1.4,-2],                          /* 振りかぶる */
+ bomb:[-.42,-.6,1],flask:[-.46,-.6,-1],kit:[-.44,-.4,-1],           /* 片手の物は大きく */
+ bag:[-.44,-.4,-1],case:[-.44,-.4,-1],wrench:[-.38,-1,0],
+ magnet:[-.12,5.4,-1.4],fist:[-.10,-5,0]                            /* 突き出す / 引く */
+};
 function drawHeroBody(c,U,walk,o){
  const col=U.c,rk=U.hro||1,L=H_LOOK[U.id]||{cape:1,h:'peak',w:'rifle',k:'',c2:'#2f3742'};
  const big=L.h==='ironm';/* 鋼鉄の巨人だけ体格が違う */
@@ -9732,8 +9747,11 @@ function drawHeroBody(c,U,walk,o){
   c.beginPath();c.moveTo(-8,-19.4);c.lineTo(8,-19.4);c.lineTo(12.4,-4+walk*1.4);c.lineTo(-12,-4-walk*1.4);c.closePath();c.fill();c.stroke();
   c.fillStyle=col;rr(c,-9.4,-42,19,7,3);c.fill();c.stroke();}
  else{uBody(c,'',L.c2,[-10,-41,20,26,5]);c.fillStyle=col;rr(c,-11,-42,22,7,3);c.fill();c.stroke();}
- /* 手前の腕(胴の後・武器の前=手が武器の握りに来る) */
- uArm(c,-HS[0]*.15,HS[1]+2.5,HS[0]*1.75,2-walk*1.2,5.8,L.c2,U_SKIN,1);
+ /* 手前の腕(胴の後・武器の前=手が武器の握りに来る)。
+    ⭐溜めの間は**この腕と得物をまとめて肩を軸に動かす**(表 H_CHG) */
+ const hrc=bRc(o),hcg=H_CHG[L.w]||null,hsx=-HS[0]*.15,hsy=HS[1]+2.5;
+ {const g=hcg?bHold(c,hrc,hsx,hsy,hcg[0],hcg[1],hcg[2]):B_NOP;
+  uArm(c,hsx,hsy,HS[0]*1.75,2-walk*1.2,5.8,L.c2,U_SKIN,1);g();}
  /* 頭 */
  const hy=big?-52:-48;
  c.fillStyle=shade('#d9b28a',.72);/* 首(⚠無いと頭が胴に直接乗って見える) */
@@ -9814,6 +9832,7 @@ function drawHeroBody(c,U,walk,o){
   zEye(c,4,hy+.2,2.1);
   c.fillStyle=shade('#d9b28a',.66);c.fillRect(1.6,hy+4.2,3.4,1.3);}
  /* 武器(11人ぶん別々。⚠腕の先の小さな棒は消えるので、輪郭が変わる大きさで描く) */
+ const hgw=hcg?bHold(c,hrc,hsx,hsy,hcg[0],hcg[1],hcg[2]):B_NOP;
  c.fillStyle='#3a3128';
  if(L.w==='pistol'){rr(c,4,-36,14,5,2);c.fill();c.stroke();
   c.fillStyle='#4a5560';rr(c,-16,-40,9,20,2);c.fill();c.stroke();}/* 拳銃+盾 */
@@ -9893,6 +9912,7 @@ function drawHeroBody(c,U,walk,o){
   c.quadraticCurveTo(24,-58,4,-63);c.closePath();c.fill();c.stroke();}
  else{c.fillStyle=DIM;c.beginPath();c.moveTo(6,-34);c.lineTo(11,-36);c.lineTo(13,-64);c.lineTo(8,-66);c.closePath();c.fill();c.stroke();}
  if(o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,-35,4+o.fireT*20,0,7);c.fill();}
+ hgw();/* 得物の溜めの動きはここまで(★の印は動かさない) */
  /* レア度の★ */
  c.shadowBlur=0;c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px '+FF;c.textAlign='center';
  const st='★'.repeat(Math.min(5,rk));c.strokeText(st,1,big?-70:-61);c.fillText(st,1,big?-70:-61);
@@ -10435,26 +10455,47 @@ function bFace(c,x,y,rx,ry,sk,noMouth){
  zEye(c,x+2.6,y,1.9);
  if(!noMouth){c.fillStyle=shade(sk,.6);c.fillRect(x+1.4,y+ry*.60,2.8,1.1);}
 }
+/* ⭐⭐**溜めの間、装備そのものを動かす**(2026-08-01ユーザー指示「杖を動かしたり剣を振ったり
+     ガトリングが回ったり、身体の動きじゃなくて装備もしっかり違和感なく動くように」)。
+   ⭐**腕と装備は一体で肩を軸に回す**=手だけ動かすと装備が手から離れる(ヴァルキリーで確立した掟)。
+   使い方: const g=bHold(c,rc,肩x,肩y,角度,ずれx,ずれy); …装備と手前の腕を描く…; g();
+   ⚠**画面のyは下が正**=**負の角度が「振り上げる」**。
+   ⚠**両手で持つ装備は奥の腕にも同じ g を掛ける**(奥の腕は胴より先に描くので、
+     付け根が多少ずれても**胴が覆って見えない**。ただし付け根が胴からはみ出す角度まで回さないこと)。
+   ⚠rc=0 の時は save/restore ごと省く(毎フレーム32体ぶん通る所なので) */
+function bHold(c,rc,px,py,ang,dx,dy){
+ if(!(rc>0))return B_NOP;
+ c.save();c.translate(px+(dx||0)*rc,py+(dy||0)*rc);
+ if(ang)c.rotate(ang*rc);
+ c.translate(-px,-py);
+ return ()=>c.restore();
+}
+const B_NOP=()=>{};
+const bRc=o=>clamp(o&&o.chg||0,0,1);
 /* ⭐専用の体を持つ兵科の表。⚠ここに登録した id は共通の体を一切通らない。
    ⚠★の印と後始末は呼び出し側(drawUnit)でやるので、各関数は「体を描く」だけでよい */
 const UBODY={};
 /* ---- ガンナー「基本の射撃手」= 制式の歩兵。鉄帽・防弾チョッキ・背嚢・小銃 ---- */
 UBODY.gun=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#5c7d8a',PA='#4d5661',SHO='#3a3128',HEL='#57633f',GM='#5a5044';
- const sw=walk*5;
+ const sw=walk*5,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.8);bLeg(c,1+sw,1,PA,SHO,-18.8);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.045+uChgUp(o));c.translate(-1,20);
  c.fillStyle='#5c5346';rr(c,-17,-34.4,9.4,15.6,3);c.fill();c.stroke();/* 背嚢 */
  c.fillStyle=GOLD2;c.fillRect(-16,-30,7.4,2.4);
+ /* ⭐溜め=**小銃を肩に付けて銃口を上げる**(両手で持っているので奥の腕も一緒に回す) */
+ const g1=bHold(c,rc,4.4,-31.4,-.13,.8,-.6);
  bArm(c,-4.4,-31.6, 6,-28.2, 17,-23.4, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[9.4,7,-35.4,-21]);
  c.fillStyle=shade(UNI,1.3);/* 防弾チョッキ */
  c.beginPath();c.moveTo(-7.4,-33.6);c.lineTo(7.6,-33.2);c.lineTo(7,-25.4);c.lineTo(-7,-25.8);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(UNI,.7);c.fillRect(-5.8,-28.4,4.6,3.2);c.fillRect(1.4,-28.6,4.6,3.2);/* 雑嚢2つ */
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.8);c.strokeRect(-7.2,-23.8,14.4,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.6,-24.2,3.4,3.6);
- uGun(c,4.4,-25.6,23,4.4,GM,1);
- bArm(c,4.4,-31.4, 8.4,-26.6, 8.8,-20.4, 5,4.1, shade(UNI,1.14),SK);
+ {const g2=bHold(c,rc,4.4,-31.4,-.13,.8,-.6);
+  uGun(c,4.4,-25.6,23,4.4,GM,1);
+  bArm(c,4.4,-31.4, 8.4,-26.6, 8.8,-20.4, 5,4.1, shade(UNI,1.14),SK);g2();}
  bNeck(c,1.6,-39.8,-34.6,SK);
  bFace(c,1.6,-43.6,5.8,6.2,SK);
  c.fillStyle=HEL;c.beginPath();c.arc(1.6,-47.4,6.4,Math.PI,0);c.fill();c.stroke();
@@ -10536,20 +10577,26 @@ UBODY.chain=(c,U,walk,t,ph,o)=>{
 /* ---- 短機関銃「手数で押す連射手」= 細身・前傾・ヘッドセット・胸の予備弾倉 ---- */
 UBODY.smg=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#7a8a5c',PA='#525a44',SHO='#3f3a30',GM='#4f5a63';
- const sw=walk*5.6;
+ const sw=walk*5.6,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.4,.94);bLeg(c,1+sw,1,PA,SHO,-18.4,.94);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.05+.08+uChgUp(o));c.translate(-1,20);
  c.fillStyle='#3f4a54';c.beginPath();c.arc(-13.4,-27.4,6.4,0,7);c.fill();c.stroke();/* 背中の弾倉入れ */
  c.fillStyle='#6b7580';c.beginPath();c.arc(-13.4,-27.4,2.6,0,7);c.fill();
+ /* ⭐溜め=**銃を構え上げる**(両手持ちなので奥の腕も一緒に) */
+ const g1=bHold(c,rc,4,-31.2,-.17,1,-.8);
  bArm(c,-4,-31.4, 4,-28.6, 15,-24.6, 4.4,3.6, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[8.2,6.2,-35,-21.2]);
  c.fillStyle=shade(UNI,1.3);/* 胸の予備弾倉(⚠大きさを不揃いに) */
  c.fillRect(-6.4,-32.4,4.6,6.4);c.fillRect(-.6,-33,4.2,5.6);c.fillRect(4.4,-32.2,3.6,5.2);
  c.fillStyle=shade(UNI,.66);c.fillRect(-6.6,-26.4,14.6,2);
  c.fillStyle='#3f3a30';c.fillRect(-6.6,-23.8,13.4,2.6);c.strokeRect(-6.6,-23.8,13.4,2.6);
  c.fillStyle=GOLD2;c.fillRect(-1.4,-24.2,3.2,3.4);
- uGun(c,4.4,-26,17,4.6,GM,1);
- bArm(c,4,-31.2, 7.4,-27, 8.8,-20.8, 4.6,3.8, shade(UNI,1.14),SK);
+ {const g2=bHold(c,rc,4,-31.2,-.17,1,-.8);
+  uGun(c,4.4,-26,17,4.6,GM,1);
+  /* 遊底(⚠溜めの間だけ後ろへ引かれる=「これから撃つ」が装備で分かる) */
+  c.fillStyle='#8a8f96';c.fillRect(13-4.6*rc,-28.6,4.4,2.2);c.strokeRect(13-4.6*rc,-28.6,4.4,2.2);
+  bArm(c,4,-31.2, 7.4,-27, 8.8,-20.8, 4.6,3.8, shade(UNI,1.14),SK);g2();}
  bNeck(c,1.6,-39.4,-34.4,SK);
  bFace(c,1.6,-43.4,5.7,6.1,SK);
  c.fillStyle='#6f7a52';c.beginPath();c.arc(1.6,-46.2,6.1,Math.PI,0);c.fill();c.stroke();/* 略帽 */
@@ -10564,7 +10611,7 @@ UBODY.smg=(c,U,walk,t,ph,o)=>{
 /* ---- 火炎瓶「範囲燃焼」= 鉢巻・耐熱の襷・背中の瓶3本・瓶を掲げて投げる直前 ---- */
 UBODY.mol=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#c96b35',PA='#5a5044',SHO='#42392c',GL='#6f9c8f';
- const sw=walk*5.4;const fk=Math.sin(t*18);
+ const sw=walk*5.4,rc=bRc(o);const fk=Math.sin(t*18);
  bLeg(c,-1-sw,.8,PA,SHO,-18.4,.94);bLeg(c,1+sw,1,PA,SHO,-18.4,.94);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.05+.06+uChgUp(o));c.translate(-1,20);
  for(let i=0;i<3;i++){c.fillStyle=i===1?GL:'#8a6a45';/* 背中の予備の瓶(⚠高さを不揃いに) */
@@ -10576,7 +10623,9 @@ UBODY.mol=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(UNI,1.3);c.fillRect(-6.8,-32.6,5,4.6);
  c.fillStyle='#4a4034';c.fillRect(-6.8,-23.8,13.6,2.6);c.strokeRect(-6.8,-23.8,13.6,2.6);
  c.fillStyle=GOLD2;c.fillRect(-1.4,-24.2,3.2,3.4);
- /* ⭐火炎瓶を掲げる(⚠実寸で読めるまで大きく) */
+ /* ⭐火炎瓶を掲げる(⚠実寸で読めるまで大きく)。
+    ⭐**溜め=瓶ごと後ろへ振りかぶる**(2026-08-01)。⚠片手で持つ物なので大きく回してよい */
+ const g2=bHold(c,rc,4.2,-31.4,-.16,2.8,-3);
  c.fillStyle=GL;
  c.beginPath();c.moveTo(9.6,-30.4);c.lineTo(9.6,-40.4);c.lineTo(12.4,-44.4);c.lineTo(17.6,-44.4);
  c.lineTo(20.4,-40.4);c.lineTo(20.4,-30.4);c.closePath();c.fill();c.stroke();
@@ -10588,10 +10637,10 @@ UBODY.mol=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(13.2,-47.4);c.lineTo(16.8,-47.4);c.lineTo(17.8,-51.4);c.lineTo(12.4,-51.4);c.closePath();c.fill();c.stroke();
  c.fillStyle='#ffb347';/* 炎(⚠根本が太く先が細い舌。丸を並べると炎に見えない) */
  c.beginPath();c.moveTo(12.2,-51);c.lineTo(17.8,-51);
- c.quadraticCurveTo(16.4,-56.4-fk,15,-59.4-fk*2);c.quadraticCurveTo(13.4,-55.4,12.2,-51);c.closePath();c.fill();
+ c.quadraticCurveTo(16.4,-56.4-fk-2.4*rc,15,-59.4-fk*2-7*rc);c.quadraticCurveTo(13.4,-55.4-2*rc,12.2,-51);c.closePath();c.fill();
  c.fillStyle=GLOW;c.beginPath();c.moveTo(13.6,-51);c.lineTo(16.4,-51);
- c.quadraticCurveTo(15.6,-54.4,14.8,-56.4-fk);c.quadraticCurveTo(14,-54,13.6,-51);c.closePath();c.fill();
- bArm(c,4.2,-31.4, 9.4,-33.6, 12.6,-38.4, 4.6,3.8, shade(UNI,1.14),SK);
+ c.quadraticCurveTo(15.6,-54.4-1.6*rc,14.8,-56.4-fk-5*rc);c.quadraticCurveTo(14,-54-1.4*rc,13.6,-51);c.closePath();c.fill();
+ bArm(c,4.2,-31.4, 9.4,-33.6, 12.6,-38.4, 4.6,3.8, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.4,-34.4,SK);
  bFace(c,1.6,-43.4,5.7,6.1,SK);
  c.fillStyle='#3a3128';c.beginPath();c.arc(1.6,-46.6,6,Math.PI,0);c.fill();c.stroke();/* ぼさぼさ頭 */
@@ -10602,7 +10651,7 @@ UBODY.mol=(c,U,walk,t,ph,o)=>{
 /* ---- 爆弾兵「山なり範囲爆撃」= 鉄帽・手榴弾のハーネス・手榴弾を構える ---- */
 UBODY.grn=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#7d8a5c',PA='#4f5644',SHO='#3a3128',HEL='#57633f',NA='#5c6a4c';
- const sw=walk*5;
+ const sw=walk*5,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.8);bLeg(c,1+sw,1,PA,SHO,-18.8);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.045+.05+uChgUp(o));c.translate(-1,20);
  for(let i=0;i<3;i++){c.fillStyle=NA;/* 背中の手榴弾(⚠等間隔に並べない) */
@@ -10615,7 +10664,9 @@ UBODY.grn=(c,U,walk,t,ph,o)=>{
   c.beginPath();c.arc(k[0],k[1],k[2],0,7);c.fill();c.stroke();}
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.8);c.strokeRect(-7.2,-23.8,14.4,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.6,-24.2,3.4,3.6);
- /* ⭐手榴弾(⚠格子の溝を入れると一目で分かる。丸のままだと果物) */
+ /* ⭐手榴弾(⚠格子の溝を入れると一目で分かる。丸のままだと果物)。
+    ⭐**溜め=腕ごと肩の後ろへ振りかぶる**(2026-08-01)。⚠片手なので大きく回してよい */
+ const g2=bHold(c,rc,4.4,-31.4,-.62,-.8,1);
  c.fillStyle=NA;
  c.beginPath();c.ellipse(16.4,-29.4,6.4,7.4,0,0,7);c.fill();c.stroke();
  c.fillStyle=shade(NA,.60);
@@ -10624,7 +10675,7 @@ UBODY.grn=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#8a8f96';
  c.beginPath();c.moveTo(14.2,-38.4);c.lineTo(20.4,-38.4);c.lineTo(20.4,-35.6);c.lineTo(14.2,-35.6);c.closePath();c.fill();c.stroke();
  c.strokeStyle=GOLD2;c.lineWidth=1.8;c.beginPath();c.arc(23.4,-37.6,2.8,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=2.4;
- bArm(c,4.4,-31.4, 8.4,-27.4, 12.4,-24.4, 5,4.1, shade(UNI,1.14),SK);
+ bArm(c,4.4,-31.4, 8.4,-27.4, 12.4,-24.4, 5,4.1, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.8,-34.6,SK);
  bFace(c,1.6,-43.6,5.8,6.2,SK);
  c.fillStyle=HEL;c.beginPath();c.arc(1.6,-47.4,6.4,Math.PI,0);c.fill();c.stroke();
@@ -10675,7 +10726,7 @@ UBODY.saw=(c,U,walk,t,ph,o)=>{
 /* ---- 医療兵「周囲の部隊を回復」= 細身・白衣・ナース帽・薬袋・注射器 ---- */
 UBODY.med=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#d8d2c4',PA='#6b6252',SHO='#4a4034',WH=PAPER;
- const sw=walk*5.2;
+ const sw=walk*5.2,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.4,.92);bLeg(c,1+sw,1,PA,SHO,-18.4,.92);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.05+uChgUp(o));c.translate(-1,20);
  c.fillStyle=WH;rr(c,-16.4,-31.6,9.4,13.4,3);c.fill();c.stroke();/* 薬袋 */
@@ -10687,14 +10738,16 @@ UBODY.med=(c,U,walk,t,ph,o)=>{
  c.lineTo(-8.6,-11-walk*1.2);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(WH,.9);c.fillRect(-.8,-33.4,1.8,22);/* 前合わせ */
  c.fillStyle=RUST;c.fillRect(2.4,-31.4,5.6,1.9);c.fillRect(4.2,-33.2,1.9,5.6);/* 赤十字 */
- /* 注射器 */
+ /* 注射器。⭐**溜め=注射器を高く掲げる**(2026-08-01。術者の型はこれが決め手)
+    ⚠押し子(ピストン)も一緒に押し込まれる=装備そのものが動いて見える */
+ const g2=bHold(c,rc,4,-31,-1.02,-1,.6);
  c.fillStyle='#cfd5da';
  c.beginPath();c.moveTo(9,-30.4);c.lineTo(22,-30.4);c.lineTo(22,-25.6);c.lineTo(9,-25.6);c.closePath();c.fill();c.stroke();
- c.fillStyle=LIFE;c.fillRect(11,-29.2,8,2.6);
+ c.fillStyle=LIFE;c.fillRect(11,-29.2,8-4.4*rc,2.6);
  c.fillStyle='#8a8f96';
- c.beginPath();c.moveTo(6.4,-31.6);c.lineTo(9,-31.6);c.lineTo(9,-24.4);c.lineTo(6.4,-24.4);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(6.4+4.4*rc,-31.6);c.lineTo(9+4.4*rc,-31.6);c.lineTo(9+4.4*rc,-24.4);c.lineTo(6.4+4.4*rc,-24.4);c.closePath();c.fill();c.stroke();
  c.fillStyle='#cfd5da';c.fillRect(22,-28.8,7,1.8);
- bArm(c,4,-31, 6.6,-28.6, 8.6,-27.4, 4.4,3.6, shade(UNI,1.14),SK);
+ bArm(c,4,-31, 6.6,-28.6, 8.6,-27.4, 4.4,3.6, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.4,-34.4,SK);
  bFace(c,1.6,-43.2,5.6,6,SK);
  c.fillStyle=WH;c.beginPath();c.arc(1.6,-46.4,6.1,Math.PI,0);c.fill();c.stroke();/* ナース帽 */
@@ -10705,12 +10758,15 @@ UBODY.med=(c,U,walk,t,ph,o)=>{
 /* ---- 冷凍兵「範囲を凍らせ減速」= 防寒コート・バイザー・背中の冷却タンク・噴射器 ---- */
 UBODY.frz=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#7fb6c9',PA='#4d5661',SHO='#3a3128';
- const sw=walk*4.6;
+ const sw=walk*4.6,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.6);bLeg(c,1+sw,1,PA,SHO,-18.6);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.045+uChgUp(o));c.translate(-1,20);
  c.fillStyle='#5f8fa3';rr(c,-17,-35,9.4,20,4);c.fill();c.stroke();/* 冷却タンク */
  c.fillStyle=FROST;c.fillRect(-15.6,-31.4,6.6,2.4);
+ /* ⭐溜め=**噴射器を斜め上へ掲げる**(両手持ちなので奥の腕も一緒に) */
+ const g1=bHold(c,rc,4.4,-31.4,-.52,-.6,.4);
  bArm(c,-4.4,-31.6, 4,-29, 14,-26, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[9.4,7,-35.4,-21]);
  c.fillStyle=shade(UNI,1.32);/* 防寒の畝(横に3本) */
  for(const k of[-32.4,-29.2,-26])c.fillRect(-7.6,k,15.2,2.2);
@@ -10718,9 +10774,10 @@ UBODY.frz=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.ellipse(.6,-35.4,8.4,3.2,0,0,7);c.fill();c.stroke();
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.8);c.strokeRect(-7.2,-23.8,14.4,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.6,-24.2,3.4,3.6);
- uNoz(c,6,-27,20,'#4a7a8a');
- c.globalAlpha=.55;c.fillStyle=FROST;c.beginPath();c.arc(29,-27,4.4+Math.sin(t*14)*2,0,7);c.fill();c.globalAlpha=1;
- bArm(c,4.4,-31.4, 7.6,-27.2, 8.6,-21.4, 5,4.1, shade(UNI,1.14),SK);
+ {const g2=bHold(c,rc,4.4,-31.4,-.52,-.6,.4);
+  uNoz(c,6,-27,20,'#4a7a8a');
+  c.globalAlpha=.55;c.fillStyle=FROST;c.beginPath();c.arc(29,-27,4.4+3.4*rc+Math.sin(t*14)*2,0,7);c.fill();c.globalAlpha=1;
+  bArm(c,4.4,-31.4, 7.6,-27.2, 8.6,-21.4, 5,4.1, shade(UNI,1.14),SK);g2();}
  bNeck(c,1.6,-40.4,-35.4,SK);
  c.fillStyle='#3f4a54';/* 密閉頭巾+バイザー(⚠顔は出さない=寒冷装備に見える) */
  c.beginPath();c.ellipse(1.6,-44.2,6.4,6.8,0,0,7);c.fill();c.stroke();
@@ -10731,24 +10788,28 @@ UBODY.frz=(c,U,walk,t,ph,o)=>{
 /* ---- スナイパー「超射程・装甲貫通」= 腰を落として構える・ギリースーツ・照準器と二脚 ---- */
 UBODY.snp=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#4a5560',PA='#4a4a3c',SHO='#3a3128',GH='#5c6648',GM='#4f4a3e';
- const sw=walk*3.4,LH=3.2;/* ⚠腰を落とすぶん、上の体ぜんぶを同じだけ下げる */
+ const sw=walk*3.4,LH=3.2,rc=bRc(o);/* ⚠腰を落とすぶん、上の体ぜんぶを同じだけ下げる */
  bLeg(c,-2.4-sw,.8,PA,SHO,-18.8+LH);bLeg(c,2.4+sw,1,PA,SHO,-18.8+LH);
  c.save();c.translate(0,LH);
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.035+.13+uChgUp(o));c.translate(-1,20);
+ /* ⭐溜め=**銃を頬付けして銃口を上げる**(⚠狙撃なので動きは小さく。大きく回すと構えが崩れる) */
+ const g1=bHold(c,rc,4.4,-31.4,-.20,1.4,-1.2);
  bArm(c,-4.4,-31.6, 6,-28.4, 19,-25.4, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[9.2,7,-35.2,-21]);
  c.fillStyle=GH;/* ギリー(布の切れ端。⚠等間隔に並べない) */
  for(const k of[[-9.4,-33.4,8],[-3.4,-35.4,10],[3.4,-33,7],[8,-34.6,9]]){
   c.beginPath();c.moveTo(k[0],k[1]);c.lineTo(k[0]+5.4,k[1]-1.4);
   c.lineTo(k[0]+3.6,k[1]+k[2]);c.lineTo(k[0]-1,k[1]+k[2]*.68);c.closePath();c.fill();c.stroke();}
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.6);c.strokeRect(-7.2,-23.8,14.4,2.6);
- uGun(c,3,-26.4,30,4.2,GM,0);
- c.fillStyle='#4a5560';/* 照準器(これが狙撃銃の決め手) */
- c.beginPath();c.moveTo(6,-36.4);c.lineTo(20,-36.4);c.lineTo(20,-32.2);c.lineTo(6,-32.2);c.closePath();c.fill();c.stroke();
- c.fillStyle=TECH;c.beginPath();c.arc(19,-34.3,1.7,0,7);c.fill();
- c.fillStyle='#3a3128';/* 二脚 */
- c.beginPath();c.moveTo(25,-27.4);c.lineTo(29,-19);c.lineTo(26.6,-18.6);c.lineTo(23.2,-26.4);c.closePath();c.fill();c.stroke();
- bArm(c,4.4,-31.4, 8,-27, 8.4,-21, 5,4.1, shade(UNI,1.14),SK);
+ {const g2=bHold(c,rc,4.4,-31.4,-.20,1.4,-1.2);
+  uGun(c,3,-26.4,30,4.2,GM,0);
+  c.fillStyle='#4a5560';/* 照準器(これが狙撃銃の決め手) */
+  c.beginPath();c.moveTo(6,-36.4);c.lineTo(20,-36.4);c.lineTo(20,-32.2);c.lineTo(6,-32.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=TECH;c.beginPath();c.arc(19,-34.3,1.7+rc,0,7);c.fill();
+  c.fillStyle='#3a3128';/* 二脚(⚠溜めの間だけ前へ開く=構えたことが装備で分かる) */
+  c.beginPath();c.moveTo(25,-27.4);c.lineTo(29+3.4*rc,-19);c.lineTo(26.6+3.4*rc,-18.6);c.lineTo(23.2,-26.4);c.closePath();c.fill();c.stroke();
+  bArm(c,4.4,-31.4, 8,-27, 8.4,-21, 5,4.1, shade(UNI,1.14),SK);g2();}
  bNeck(c,1.6,-39.8,-34.6,SK);
  bFace(c,1.6,-43.6,5.8,6.2,SK,1);
  c.fillStyle=GH;/* 布をかぶった狙撃手=輪郭がぎざぎざ */
@@ -10760,13 +10821,16 @@ UBODY.snp=(c,U,walk,t,ph,o)=>{
 /* ---- ミニガン「弾幕をばら撒く」= 大柄・踏ん張る・溶接面・腰の弾薬箱 ---- */
 UBODY.mgn=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#6b7580',PA='#4a5058',SHO='#3a3128',BX='#3f4a54';
- const sw=walk*3.4,LH=1.4;
+ const sw=walk*3.4,LH=1.4,rc=bRc(o);
  bLeg(c,-3-sw,.8,PA,SHO,-18.4+LH,1.1);bLeg(c,3+sw,1,PA,SHO,-18.4+LH,1.1);
  c.save();c.translate(0,LH);
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.035+.06+uChgUp(o));c.translate(-1,20);
  c.fillStyle=BX;rr(c,-18,-31.4,10.4,14,3);c.fill();c.stroke();/* 背中の給弾箱 */
  c.fillStyle=GOLD2;c.fillRect(-16.6,-27.4,7.4,2.2);
+ /* ⭐溜め=**銃身を上げて踏ん張る**(⚠回転そのものは下の銃身束でやる) */
+ const g1=bHold(c,rc,5,-31.4,-.11,1.2,-.8);
  bArm(c,-5.4,-31.6, 8,-28.4, 24,-22.4, 5.2,4.2, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[11.4,8.4,-35.4,-20.6]);
  c.fillStyle=shade(UNI,1.3);/* 分厚い胸当て */
  c.beginPath();c.moveTo(-9,-33.6);c.lineTo(9.4,-33.2);c.lineTo(8.6,-24.4);c.lineTo(-8.6,-24.8);c.closePath();c.fill();c.stroke();
@@ -10775,18 +10839,22 @@ UBODY.mgn=(c,U,walk,t,ph,o)=>{
  c.fillStyle=GOLD2;for(const k of[[-5.4,-29.4],[-.4,-26.4],[4.4,-23.4]])c.fillRect(k[0],k[1],3.2,2.2);
  c.fillStyle=BX;rr(c,-11,-21.4,22,9,4);c.fill();c.stroke();/* 腰の弾薬箱 */
  /* ミニガン */
+ const g2=bHold(c,rc,5,-31.4,-.11,1.2,-.8);
  c.fillStyle='#4a5560';
  c.beginPath();c.moveTo(4.4,-23);c.lineTo(9.6,-23);c.lineTo(8.6,-16.4);c.lineTo(5.4,-16.4);c.closePath();c.fill();c.stroke();
  c.beginPath();c.moveTo(21,-24.4);c.lineTo(26.4,-24.4);c.lineTo(25.4,-18.6);c.lineTo(22,-18.6);c.closePath();c.fill();c.stroke();
  c.fillStyle=BX;rr(c,3,-34,15,12,3);c.fill();c.stroke();
  c.fillStyle='#2c333a';
  c.beginPath();c.moveTo(16,-33.4);c.lineTo(41,-33.4);c.lineTo(41,-23.6);c.lineTo(16,-23.6);c.closePath();c.fill();c.stroke();
- c.strokeStyle='#6b7580';c.lineWidth=1.4;
- c.beginPath();c.moveTo(18,-30.4);c.lineTo(41,-30.4);c.stroke();
- c.beginPath();c.moveTo(18,-26.8);c.lineTo(41,-26.8);c.stroke();
- c.strokeStyle=INK;c.lineWidth=2.4;
+ /* ⭐⭐**銃身が回る**(2026-08-01ユーザー指示)。⚠横線を2本置いただけでは「溝」にしか見えない=
+    **4本の銃身を軸の周りに回して、上下に動かす**。手前(sin>0)ほど明るく太く=回っていると読める。
+    ⚠回すのは**溜めている間と撃った直後だけ**(止まっている時に回すと常時うるさい)。 */
+ {const spn=(rc>0||(o&&o.fireT>0))?t*17:.6;/* ⚠止まっている時も見栄えのする位相で置く */
+  for(let k=0;k<4;k++){const a9=spn+k*1.5708,sn=Math.sin(a9);
+   c.fillStyle=sn>0?'#8a93a0':'#4a5058';
+   c.fillRect(17,-28.4+sn*3.9-(sn>0?1.1:.8),24,sn>0?2.2:1.6);}}
  c.fillStyle='#6b7580';c.beginPath();c.arc(17,-28.4,4.2,0,7);c.fill();c.stroke();
- bArm(c,5,-31.4, 8,-27, 7.4,-21.4, 5.4,4.3, shade(UNI,1.14),SK);
+ bArm(c,5,-31.4, 8,-27, 7.4,-21.4, 5.4,4.3, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.6,-34.6,SK);
  c.fillStyle='#4a5560';/* 溶接面(四角い面=一目で分かる) */
  rr(c,-5.4,-49.6,15.4,14.4,3);c.fill();c.stroke();
@@ -10797,19 +10865,23 @@ UBODY.mgn=(c,U,walk,t,ph,o)=>{
 /* ---- ロケラン「範囲爆撃」= 踏ん張る・肩に担いだ筒・背中の予備弾 ---- */
 UBODY.rkt=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#7a7f6a',PA='#4f5644',SHO='#3a3128',TB='#585e4c',HEL='#57633f';
- const sw=walk*3.8,LH=.8;
+ const sw=walk*3.8,LH=.8,rc=bRc(o);
  bLeg(c,-2.6-sw,.8,PA,SHO,-18.6+LH,1.04);bLeg(c,2.6+sw,1,PA,SHO,-18.6+LH,1.04);
  c.save();c.translate(0,LH);
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04-.03+uChgUp(o));c.translate(-1,20);
  for(let i=0;i<2;i++){c.fillStyle=TB;rr(c,-19+i*6,-35,5.4,20,2.4);c.fill();c.stroke();/* 予備弾 */
   c.fillStyle=RUST;c.beginPath();c.arc(-16.4+i*6,-35,2.8,0,7);c.fill();}
+ /* ⭐溜め=**担いだ筒の先を持ち上げて狙う**(⚠肩に乗った物なので動かしすぎない) */
+ const g1=bHold(c,rc,4.6,-31.4,-.15,.6,-.8);
  bArm(c,-4.6,-31.6, 3,-32.4, 9,-33.4, 4.8,3.9, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[10.2,7.6,-35.4,-20.8]);
  c.fillStyle=shade(UNI,1.28);c.fillRect(-6.8,-34.6,3.6,13.6);c.fillRect(2.8,-34.4,3.6,13.4);
  c.fillStyle=shade(UNI,.68);c.fillRect(-8.6,-27.4,5.6,4.2);
  c.fillStyle='#3a3128';c.fillRect(-7.6,-23.6,15.2,2.8);c.strokeRect(-7.6,-23.6,15.2,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.8,-24,3.6,3.6);
  /* ⭐肩に担いだ発射筒(⚠肩の上に乗せる=これが輪郭で一番効く) */
+ const g2=bHold(c,rc,4.6,-31.4,-.15,.6,-.8);
  c.fillStyle=shade(TB,.7);
  c.beginPath();c.moveTo(-7,-42.6);c.lineTo(-15.4,-45.4);c.lineTo(-15.4,-30.4);c.lineTo(-7,-33);c.closePath();c.fill();c.stroke();
  c.fillStyle=TB;
@@ -10818,8 +10890,8 @@ UBODY.rkt=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(TB,.78);
  c.beginPath();c.moveTo(6,-33.6);c.lineTo(11,-33.6);c.lineTo(10,-25.6);c.lineTo(6.6,-25.6);c.closePath();c.fill();c.stroke();
  c.fillStyle='#3f4a54';c.fillRect(3,-45.6,7,4.2);c.strokeRect(3,-45.6,7,4.2);/* 照準器 */
- c.fillStyle=RUST;c.beginPath();c.arc(24.4,-37.4,3.8,0,7);c.fill();c.stroke();
- bArm(c,4.6,-31.4, 8,-30.4, 8.6,-27.4, 5,4.1, shade(UNI,1.14),SK);
+ c.fillStyle=RUST;c.beginPath();c.arc(24.4,-37.4,3.8+1.2*rc,0,7);c.fill();c.stroke();/* 弾頭が出てくる */
+ bArm(c,4.6,-31.4, 8,-30.4, 8.6,-27.4, 5,4.1, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.8,-34.6,SK);
  bFace(c,1.6,-43.6,5.8,6.2,SK);
  c.fillStyle=HEL;c.beginPath();c.arc(1.6,-47.4,6.4,Math.PI,0);c.fill();c.stroke();
@@ -10829,10 +10901,13 @@ UBODY.rkt=(c,U,walk,t,ph,o)=>{
 /* ---- 長槍兵「間合いの外から刺す」= のっぽ・前立ての兜・陣羽織・水平に構えた長槍 ---- */
 UBODY.pike=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#6f8a8f',PA='#4d5450',SHO='#3a3128',HEL='#6f8a8f';
- const sw=walk*4.2;
+ const sw=walk*4.2,rc=bRc(o);
  bLeg(c,-1.6-sw,.8,PA,SHO,-19.6,.96);bLeg(c,1.6+sw,1,PA,SHO,-19.6,.96);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04+uChgUp(o));c.translate(-1,20);
+ /* ⭐溜め=**槍を後ろへ引き絞る**(突きの溜め)。⚠回さず引く=角度を付けると「刺す兵」に見えなくなる */
+ const g1=bHold(c,rc,4.2,-32.4,-.05,-5.6,0);
  bArm(c,-4,-32.6, 3,-30.4, 9,-28.4, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[8.6,6.6,-36.6,-21.6]);
  c.fillStyle=shade(UNI,1.26);/* 陣羽織(⚠膝上まで垂れる=のっぽの輪郭が出る) */
  c.beginPath();c.moveTo(-6.4,-34.6);c.lineTo(7,-34.2);c.lineTo(8.4,-14.4+walk);
@@ -10840,6 +10915,7 @@ UBODY.pike=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(UNI,.74);c.fillRect(-.4,-34.4,2.6,20);
  c.fillStyle='#3a3128';c.fillRect(-6.6,-24,13.2,2.6);c.strokeRect(-6.6,-24,13.2,2.6);
  /* 長槍(⚠ほぼ水平に前へ。斜め上だと『刺す兵』に見えない) */
+ const g2=bHold(c,rc,4.2,-32.4,-.05,-5.6,0);
  c.fillStyle='#8a6a45';
  c.beginPath();c.moveTo(-10,-27.6);c.lineTo(-10,-31.6);c.lineTo(34,-33.4);c.lineTo(34,-29.4);c.closePath();c.fill();c.stroke();
  c.fillStyle='#5c4326';
@@ -10849,7 +10925,7 @@ UBODY.pike=(c,U,walk,t,ph,o)=>{
  c.quadraticCurveTo(42,-35.4,48,-31.4);
  c.quadraticCurveTo(42,-27.4,33,-27.4);
  c.quadraticCurveTo(35.4,-31.4,33,-35.4);c.closePath();c.fill();c.stroke();
- bArm(c,4.2,-32.4, 8.4,-30.4, 13.4,-30.4, 4.8,3.9, shade(UNI,1.14),SK);
+ bArm(c,4.2,-32.4, 8.4,-30.4, 13.4,-30.4, 4.8,3.9, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-41,-35.8,SK);
  bFace(c,1.6,-44.8,5.8,6.2,SK);
  c.fillStyle=HEL;c.beginPath();c.arc(1.6,-48.6,6.4,Math.PI,0);c.fill();c.stroke();
@@ -10861,19 +10937,23 @@ UBODY.pike=(c,U,walk,t,ph,o)=>{
 /* ---- 火炎放射兵「前方を焼き払う」= 踏ん張る・ガスマスク・背中の燃料タンク2本・噴射器 ---- */
 UBODY.flm=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#c9552e',PA='#4e4a3e',SHO='#3a3128',TK='#5c5c66';
- const sw=walk*4,LH=.8;
+ const sw=walk*4,LH=.8,rc=bRc(o);
  bLeg(c,-2.6-sw,.8,PA,SHO,-18.6+LH,1.04);bLeg(c,2.6+sw,1,PA,SHO,-18.6+LH,1.04);
  c.save();c.translate(0,LH);
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04+.07+uChgUp(o));c.translate(-1,20);
  c.fillStyle=shade(TK,.86);rr(c,-19,-35.4,9,21,4);c.fill();c.stroke();/* 燃料タンク2本 */
  c.fillStyle=shade(TK,1.16);rr(c,-11.4,-33.4,8,19,4);c.fill();c.stroke();
  c.fillStyle=GOLD2;c.fillRect(-17.6,-30.4,6.2,2);
+ /* ⭐溜め=**噴射口を下げて前へ突き出す**(炉熱の型。⚠上げると火が体に掛かる) */
+ const g1=bHold(c,rc,4.6,-31.4,.27,1.6,.6);
  bArm(c,-4.6,-31.6, 5,-28.6, 15,-25.6, 4.8,3.9, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[10.2,7.6,-35.4,-20.8]);
  c.fillStyle='#8a8f96';/* 耐熱の当て布(⚠明るい別色) */
  c.beginPath();c.moveTo(-7.6,-34);c.lineTo(8.4,-33.6);c.lineTo(7.6,-27.4);c.lineTo(-7.4,-27.8);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(UNI,1.24);for(const k of[-26.4,-24])c.fillRect(-7.6,k,15.2,1.8);
  c.fillStyle='#3a3128';c.fillRect(-7.6,-23.6,15.2,2.8);c.strokeRect(-7.6,-23.6,15.2,2.8);
+ const g2=bHold(c,rc,4.6,-31.4,.27,1.6,.6);
  uNoz(c,6,-27,20,'#8a4b28');
  /* ⭐**常に火を噴いている**(2026-08-01ユーザー指示「火炎放射兵の火炎は常時火が出るように」)。
     ⚠それまでは筒先に**種火の丸**が1つあるだけで、撃っていない時は火炎放射兵に見えなかった。
@@ -10888,7 +10968,7 @@ UBODY.flm=(c,U,walk,t,ph,o)=>{
   c.fillStyle=GLOW;
   c.beginPath();c.moveTo(26.4,-28.8);c.quadraticCurveTo(32+fk*1.6,-29.2,36+fk*2,-27.2);
   c.quadraticCurveTo(32+fk2*1.6,-25.4,26.4,-25.6);c.closePath();c.fill();}
- bArm(c,4.6,-31.4, 7.6,-27.2, 8.6,-21.6, 5.2,4.2, shade(UNI,1.14),SK);
+ bArm(c,4.6,-31.4, 7.6,-27.2, 8.6,-21.6, 5.2,4.2, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.8,-34.8,SK);
  c.fillStyle='#4c5648';/* ガスマスク(頭+濾過缶。⚠顔は出さない) */
  c.beginPath();c.ellipse(1.6,-44,6.4,6.8,0,0,7);c.fill();c.stroke();
@@ -10933,12 +11013,15 @@ UBODY.gld=(c,U,walk,t,ph,o)=>{
 /* ---- 電磁兵「雷撃が3体を貫く」= 背中のバッテリー・胸の発光パネル・アンテナ・電磁銃 ---- */
 UBODY.elec=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||TECH2,PA='#454e58',SHO='#3a3128';
- const sw=walk*4.8;
+ const sw=walk*4.8,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.8);bLeg(c,1+sw,1,PA,SHO,-18.8);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.045+uChgUp(o));c.translate(-1,20);
  c.fillStyle='#3f4a54';rr(c,-17.4,-34,10.4,16,3);c.fill();c.stroke();/* バッテリー */
  c.fillStyle=TECH;c.fillRect(-15.8,-30.4,7.4,2.4);c.fillRect(-15.8,-25.4,7.4,2.4);
+ /* ⭐溜め=**電磁銃を天へ掲げる**(落雷の型)。⚠両手持ちなので奥の腕も一緒に回す */
+ const g1=bHold(c,rc,4.4,-31.4,-.86,-1.6,.6);
  bArm(c,-4.4,-31.6, 6,-28.4, 19,-24.6, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[9.4,7,-35.4,-21]);
  c.fillStyle=shade(UNI,.66);/* 発光パネル */
  c.beginPath();c.moveTo(-7.4,-33.4);c.lineTo(7.6,-33);c.lineTo(7,-25);c.lineTo(-7,-25.4);c.closePath();c.fill();c.stroke();
@@ -10947,6 +11030,7 @@ UBODY.elec=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.8);c.strokeRect(-7.2,-23.8,14.4,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.6,-24.2,3.4,3.6);
  /* 電磁銃(本体+加速コイル3輪+放電) */
+ const g2=bHold(c,rc,4.4,-31.4,-.86,-1.6,.6);
  c.fillStyle='#3f4a54';
  c.beginPath();c.moveTo(3,-31.6);c.lineTo(15,-31.6);c.lineTo(15,-23.6);c.lineTo(3,-23.6);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade('#3f4a54',.76);
@@ -10955,10 +11039,10 @@ UBODY.elec=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(14,-30.4);c.lineTo(26,-30.4);c.lineTo(26,-25.4);c.lineTo(14,-25.4);c.closePath();c.fill();c.stroke();
  c.fillStyle=TECH;for(const k of [[16.4,3.2],[20.4,3.8],[24,3]]){
   c.beginPath();c.ellipse(k[0],-27.9,1.6,k[1],0,0,7);c.fill();c.stroke();}
- c.fillStyle=TECH;c.beginPath();c.arc(28.4,-27.9,3.2+Math.sin(t*18),0,7);c.fill();
- c.strokeStyle=FROST;c.lineWidth=1.6;c.beginPath();c.moveTo(28.4,-27.9);c.lineTo(34,-33+Math.sin(t*14)*3);c.stroke();
+ c.fillStyle=TECH;c.beginPath();c.arc(28.4,-27.9,3.2+2.6*rc+Math.sin(t*18),0,7);c.fill();
+ c.strokeStyle=FROST;c.lineWidth=1.6+1.4*rc;c.beginPath();c.moveTo(28.4,-27.9);c.lineTo(34+6*rc,-33+Math.sin(t*14)*3);c.stroke();
  c.strokeStyle=INK;c.lineWidth=2.4;
- bArm(c,4.4,-31.4, 7.6,-27, 7.4,-21, 5,4.1, shade(UNI,1.14),SK);
+ bArm(c,4.4,-31.4, 7.6,-27, 7.4,-21, 5,4.1, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.8,-34.6,SK);
  bFace(c,1.6,-43.6,5.8,6.2,SK);
  c.fillStyle='#3f4a54';c.beginPath();c.arc(1.6,-47.4,6.3,Math.PI,0);c.fill();c.stroke();
@@ -10970,7 +11054,7 @@ UBODY.elec=(c,U,walk,t,ph,o)=>{
 /* ---- 迫撃兵「後方から曲射」= 腰を落とす・イヤマフ・肩に担いだ砲身・背中の砲弾筒 ---- */
 UBODY.mortarU=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#7d7a5c',PA='#4e4c3e',SHO='#3a3128',TB='#585e4c';
- const sw=walk*3.8,LH=2.2;
+ const sw=walk*3.8,LH=2.2,rc=bRc(o);
  bLeg(c,-2.2-sw,.8,PA,SHO,-18.6+LH);bLeg(c,2.2+sw,1,PA,SHO,-18.6+LH);
  c.save();c.translate(0,LH);
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04+.09+uChgUp(o));c.translate(-1,20);
@@ -10985,11 +11069,15 @@ UBODY.mortarU=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#3c4136';/* 二脚(長さを変える) */
  c.beginPath();c.moveTo(11,-31);c.lineTo(14.4,-31.6);c.lineTo(19.4,-13);c.lineTo(16,-12.6);c.closePath();c.fill();c.stroke();
  c.beginPath();c.moveTo(8.4,-30);c.lineTo(11.4,-30.6);c.lineTo(8,-14.6);c.lineTo(5,-14.2);c.closePath();c.fill();c.stroke();
- c.save();c.translate(9,-28);c.rotate(-.8);
+ /* ⭐溜め=**砲身そのものが起き上がる**(2026-08-01)。⚠曲射なので上げるのが正しい。
+    ⚠腕ではなく砲身の角度を動かす=迫撃砲は据えて撃つ物なので、腕ごと回すと二脚が浮く */
+ c.save();c.translate(9,-28);c.rotate(-.8-.34*rc);
  c.fillStyle=TB;
  c.beginPath();c.moveTo(-4,-5);c.lineTo(21,-5.8);c.lineTo(21,5.4);c.lineTo(-4,4.6);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(TB,1.3);
  c.beginPath();c.moveTo(15.6,-6.2);c.lineTo(21.4,-6.2);c.lineTo(21.4,5.8);c.lineTo(15.6,5.8);c.closePath();c.fill();c.stroke();
+ /* 装填する砲弾(⚠溜めの間だけ砲口の上に現れて落ちていく) */
+ if(rc>0){c.fillStyle='#5c6a4c';c.beginPath();c.ellipse(20,-13+13*rc,3,4.4,1.57,0,7);c.fill();c.stroke();}
  c.restore();
  c.fillStyle=TB;c.fillRect(4,-14.4,17,3.6);c.strokeRect(4,-14.4,17,3.6);/* 底板 */
  bArm(c,4.4,-31.4, 7.6,-27.4, 7,-22.6, 5,4.1, shade(UNI,1.14),SK);
@@ -11005,7 +11093,7 @@ UBODY.mortarU=(c,U,walk,t,ph,o)=>{
 /* ---- 工兵「仲間を修理する」= 工事ヘルメット・反射帯の作業着・工具袋・溶接トーチ ---- */
 UBODY.engi=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||GOLD2,PA='#5a5344',SHO='#3f3a30';
- const sw=walk*4.8;
+ const sw=walk*4.8,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.6);bLeg(c,1+sw,1,PA,SHO,-18.6);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.045+.06+uChgUp(o));c.translate(-1,20);
  c.fillStyle=shade(UNI,.8);rr(c,-16.4,-30.4,10.4,12.4,2.4);c.fill();c.stroke();/* 工具袋 */
@@ -11016,14 +11104,15 @@ UBODY.engi=(c,U,walk,t,ph,o)=>{
  c.fillRect(-7.4,-31.6,14.8,2.4);c.fillRect(-7.4,-26.6,14.8,2.4);
  c.fillStyle=shade(UNI,.66);c.fillRect(-7,-24.4,6.4,3);
  c.fillStyle='#4a4034';c.fillRect(-7.2,-23.6,14.4,2.6);c.strokeRect(-7.2,-23.6,14.4,2.6);
- /* 溶接トーチ(握り+首+火口) */
+ /* 溶接トーチ(握り+首+火口)。⭐**溜め=トーチを掲げて火口を強く燃やす**(2026-08-01) */
+ const g2=bHold(c,rc,4.4,-31.4,-.82,-1,.6);
  c.fillStyle=shade(UNI,1.2);
  c.beginPath();c.moveTo(4,-29.4);c.lineTo(15,-29.4);c.lineTo(15,-23.4);c.lineTo(4,-23.4);c.closePath();c.fill();c.stroke();
  c.fillStyle='#8a8f96';
  c.beginPath();c.moveTo(14,-30.4);c.lineTo(24,-35.4);c.lineTo(26,-32);c.lineTo(15.6,-26.4);c.closePath();c.fill();c.stroke();
- c.fillStyle=TECH;c.beginPath();c.arc(26.4,-33.4,2.8+Math.sin(t*20)*.8,0,7);c.fill();
- c.fillStyle=GLOW;c.beginPath();c.arc(26.4,-33.4,1.3,0,7);c.fill();
- bArm(c,4.4,-31.4, 7.4,-28.6, 8,-26.4, 5,4.1, shade(UNI,1.14),SK);
+ c.fillStyle=TECH;c.beginPath();c.arc(26.4,-33.4,2.8+2.6*rc+Math.sin(t*20)*.8,0,7);c.fill();
+ c.fillStyle=GLOW;c.beginPath();c.arc(26.4,-33.4,1.3+1.6*rc,0,7);c.fill();
+ bArm(c,4.4,-31.4, 7.4,-28.6, 8,-26.4, 5,4.1, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.6,-34.6,SK);
  bFace(c,1.6,-43.6,5.8,6.2,SK);
  c.fillStyle=GOLD;c.beginPath();c.arc(1.6,-47.2,6.4,Math.PI,0);c.fill();c.stroke();/* 工事用ヘルメット */
@@ -11034,7 +11123,7 @@ UBODY.engi=(c,U,walk,t,ph,o)=>{
 /* ---- 影「神速の暗殺者」= 細身・前傾・フード・長いコート・背中の鞘・抜いた刀 ---- */
 UBODY.ninja=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#3f4a54',PA='#3a4148',SHO='#2c333a';
- const sw=walk*6,LH=.8;
+ const sw=walk*6,LH=.8,rc=bRc(o);
  bLeg(c,-1-sw,.8,PA,SHO,-18.4+LH,.92);bLeg(c,1+sw,1,PA,SHO,-18.4+LH,.92);
  c.save();c.translate(0,LH);
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.05+.14+uChgUp(o));c.translate(-1,20);
@@ -11047,14 +11136,16 @@ UBODY.ninja=(c,U,walk,t,ph,o)=>{
  c.lineTo(-10,-8.8-walk*1.6);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(UNI,1.16);c.fillRect(-.8,-31.2,2.2,21);
  c.fillStyle=RUST;c.fillRect(-7.4,-24.4,15.2,2.6);c.strokeRect(-7.4,-24.4,15.2,2.6);/* 赤い帯 */
- /* 刀(⚠線1本だと黒フチに食われる=厚みのある刀身) */
+ /* 刀(⚠線1本だと黒フチに食われる=厚みのある刀身)。
+    ⭐**溜め=刀を引いて上段に構える**(2026-08-01)。⚠片手なので大きめに回してよい */
+ const g2=bHold(c,rc,4,-31,-.62,-2.2,.6);
  c.fillStyle='#2c333a';
  c.beginPath();c.moveTo(3,-25.4);c.lineTo(2,-29.8);c.lineTo(9.4,-32);c.lineTo(10.4,-27.6);c.closePath();c.fill();c.stroke();
  c.fillStyle=GOLD2;c.fillRect(8.6,-32.8,2.8,6);c.strokeRect(8.6,-32.8,2.8,6);
  c.fillStyle='#cfd5da';
  c.beginPath();c.moveTo(11,-32.8);c.lineTo(30.6,-38.4);c.lineTo(33,-36);c.lineTo(11.6,-28.8);c.closePath();c.fill();c.stroke();
  c.fillStyle=PAPER;c.beginPath();c.moveTo(12,-31.6);c.lineTo(29.6,-36.6);c.lineTo(30.6,-35.6);c.lineTo(12.4,-30.4);c.closePath();c.fill();
- bArm(c,4,-31, 7.4,-29.4, 9.4,-30, 4.4,3.6, shade(UNI,1.14),SK);
+ bArm(c,4,-31, 7.4,-29.4, 9.4,-30, 4.4,3.6, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.4,-34.4,SK);
  c.fillStyle='#2f363e';/* フード(後ろに垂れる) */
  c.beginPath();c.arc(1.6,-45.4,7,Math.PI,0);
@@ -11067,7 +11158,7 @@ UBODY.ninja=(c,U,walk,t,ph,o)=>{
 /* ---- 重爆弾兵「束ねた爆薬を投げ込む」= ずんぐり・面頬・重いハーネス・導火線 ---- */
 UBODY.gren2=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#6b7550',PA='#4d5442',SHO='#3a3128',DY='#8a4b28';
- const sw=walk*4.2;
+ const sw=walk*4.2,rc=bRc(o);
  bLeg(c,-2.4-sw,.8,PA,SHO,-18.6,1.08);bLeg(c,2.4+sw,1,PA,SHO,-18.6,1.08);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04+.06+uChgUp(o));c.translate(-1,20);
  for(let i=0;i<3;i++){c.fillStyle='#4c5648';
@@ -11078,6 +11169,8 @@ UBODY.gren2=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(UNI,.68);c.fillRect(-9,-27.4,6.4,4.4);c.fillRect(4.4,-26.4,5,3.6);
  c.fillStyle='#3a3128';c.fillRect(-8,-23.6,16,2.8);c.strokeRect(-8,-23.6,16,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.8,-24,3.6,3.6);
+ /* ⭐**溜め=束ねた爆薬ごと後ろへ振りかぶる**(2026-08-01) */
+ const g2=bHold(c,rc,5,-31.4,-.58,-.6,1);
  for(const k of [[16.4,-30.6,5],[21.6,-34,4.2],[17.6,-37,3.4]]){/* 束ねた爆薬 */
   c.fillStyle=DY;c.beginPath();c.arc(k[0],k[1],k[2],0,7);c.fill();c.stroke();}
  c.fillStyle=shade(DY,.66);c.fillRect(13.6,-33.6,10,2.8);
@@ -11085,7 +11178,7 @@ UBODY.gren2=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(17.6,-40);c.quadraticCurveTo(24,-45,21.6,-49.4);c.stroke();
  c.strokeStyle=INK;c.lineWidth=2.4;
  c.fillStyle=DANGER;c.beginPath();c.arc(21.4,-50.4,2.4,0,7);c.fill();
- bArm(c,5,-31.4, 9,-29.4, 13.4,-28.4, 5.2,4.2, shade(UNI,1.14),SK);
+ bArm(c,5,-31.4, 9,-29.4, 13.4,-28.4, 5.2,4.2, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.8,-34.6,SK);
  bFace(c,1.6,-43.6,5.9,6.3,SK,1);
  c.fillStyle='#3f4a54';rr(c,-3.4,-41.4,13.4,6.4,2);c.fill();c.stroke();/* 面頬(あご側) */
@@ -11101,7 +11194,10 @@ UBODY.rail2=(c,U,walk,t,ph,o)=>{
  c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04+.05+uChgUp(o));c.translate(-1,20);
  c.fillStyle='#3f4a54';rr(c,-17.4,-34,10.4,16,3);c.fill();c.stroke();
  c.fillStyle=HEROC;c.fillRect(-15.8,-30.4,7.4,2.4);c.fillRect(-15.8,-25.4,7.4,2.4);
+ /* ⭐溜め=**レール銃を構え上げる**(充填の光は下で強くなる。⚠狙撃なので動きは小さく) */
+ const g1=bHold(c,rc,4.4,-31.4,-.19,1.2,-1.2);
  bArm(c,-4.4,-31.6, 6,-28.6, 18,-23.4, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[9.4,7,-35.4,-21]);
  c.fillStyle=shade(UNI,.68);
  c.beginPath();c.moveTo(-7.4,-33.4);c.lineTo(7.6,-33);c.lineTo(7,-25);c.lineTo(-7,-25.4);c.closePath();c.fill();c.stroke();
@@ -11109,6 +11205,7 @@ UBODY.rail2=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.8);c.strokeRect(-7.2,-23.8,14.4,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.6,-24.2,3.4,3.6);
  /* レール銃(台尻→機関部→2本のレール→間で光る) */
+ const g2=bHold(c,rc,4.4,-31.4,-.19,1.2,-1.2);
  c.fillStyle=shade(RG,.76);
  c.beginPath();c.moveTo(-10,-28.4);c.lineTo(-2,-29.6);c.lineTo(-2,-24.4);c.lineTo(-9,-22.8);c.closePath();c.fill();c.stroke();
  c.beginPath();c.moveTo(0,-24.8);c.lineTo(4.8,-24.8);c.lineTo(4,-18.4);c.lineTo(.6,-18.4);c.closePath();c.fill();c.stroke();
@@ -11119,7 +11216,7 @@ UBODY.rail2=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(7,-27);c.lineTo(33.6,-27);c.lineTo(33.6,-22.8);c.lineTo(7,-22.8);c.closePath();c.fill();c.stroke();
  c.globalAlpha=.55+.45*rc;c.fillStyle=HEROC;c.fillRect(9,-28.6,25,1.4+1.6*rc);c.globalAlpha=1;
  c.fillStyle='#e6ccff';c.beginPath();c.arc(6.4,-27.8,2.4+2.6*rc+Math.sin(t*16)*(.4+rc),0,7);c.fill();
- bArm(c,4.4,-31.4, 6.6,-26.8, 2.4,-21.4, 5,4.1, shade(UNI,1.14),SK);
+ bArm(c,4.4,-31.4, 6.6,-26.8, 2.4,-21.4, 5,4.1, shade(UNI,1.14),SK);g2();
  bNeck(c,1.6,-39.8,-34.6,SK);
  c.fillStyle='#3f4a54';
  c.beginPath();c.ellipse(1.6,-44,6.3,6.7,0,0,7);c.fill();c.stroke();
@@ -11130,20 +11227,24 @@ UBODY.rail2=(c,U,walk,t,ph,o)=>{
 /* ---- 絶対零度「広範囲を長時間凍結」= 厚い防寒・氷の冠・二連タンク・大型の冷凍砲 ---- */
 UBODY.frost2=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||TECH,PA='#48525c',SHO='#3a3128';
- const sw=walk*4.2;
+ const sw=walk*4.2,rc=bRc(o);
  bLeg(c,-1.6-sw,.8,PA,SHO,-18.6,1.02);bLeg(c,1.6+sw,1,PA,SHO,-18.6,1.02);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04+uChgUp(o));c.translate(-1,20);
  c.fillStyle='#3f6f8a';rr(c,-19,-36,9,22,4);c.fill();c.stroke();
  c.fillStyle='#5f8fa3';rr(c,-11.4,-34,8,20,4);c.fill();c.stroke();
  c.fillStyle=FROST;c.fillRect(-17.6,-31.4,6,2.2);
+ /* ⭐溜め=**大型の冷凍砲を掲げる**(両手持ちなので奥の腕も一緒に) */
+ const g1=bHold(c,rc,4.6,-31.4,-.56,-.8,.4);
  bArm(c,-4.6,-31.6, 5,-29, 16,-25.6, 4.8,3.9, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[10,7.4,-35.4,-20.8]);
  c.fillStyle=shade(UNI,1.3);for(const k of[-32.6,-29.4,-26.2])c.fillRect(-8,k,16,2.2);
  c.fillStyle=FROST;c.beginPath();c.ellipse(.6,-35.4,9,3.4,0,0,7);c.fill();c.stroke();/* 襟 */
  c.fillStyle='#3a3128';c.fillRect(-7.6,-23.6,15.2,2.8);c.strokeRect(-7.6,-23.6,15.2,2.8);
- uNoz(c,5,-27,23,'#3f6f8a');
- c.globalAlpha=.6;c.fillStyle=FROST;c.beginPath();c.arc(32,-27,5.4+Math.sin(t*12)*2,0,7);c.fill();c.globalAlpha=1;
- bArm(c,4.6,-31.4, 7.6,-27.2, 7.4,-21.4, 5.2,4.2, shade(UNI,1.14),SK);
+ {const g2=bHold(c,rc,4.6,-31.4,-.56,-.8,.4);
+  uNoz(c,5,-27,23,'#3f6f8a');
+  c.globalAlpha=.6;c.fillStyle=FROST;c.beginPath();c.arc(32,-27,5.4+4.4*rc+Math.sin(t*12)*2,0,7);c.fill();c.globalAlpha=1;
+  bArm(c,4.6,-31.4, 7.6,-27.2, 7.4,-21.4, 5.2,4.2, shade(UNI,1.14),SK);g2();}
  bNeck(c,1.6,-40.4,-35.4,SK);
  bFace(c,1.6,-44.2,5.9,6.3,SK);
  c.fillStyle=FROST;c.beginPath();c.arc(1.6,-47.6,6.4,Math.PI,0);c.fill();c.stroke();
@@ -11155,7 +11256,7 @@ UBODY.frost2=(c,U,walk,t,ph,o)=>{
 /* ---- 隊長「精鋭を率いる歴戦の兵」= 制帽・濃い外套・階級章・小銃 ---- */
 UBODY.chief=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,UNI=U.c||'#d8d2c4',PA='#5c5748',SHO='#3a3128',CL='#5c4a3a',GM='#544736';
- const sw=walk*4.6;
+ const sw=walk*4.6,rc=bRc(o);
  bLeg(c,-1.2-sw,.8,PA,SHO,-18.8);bLeg(c,1.2+sw,1,PA,SHO,-18.8);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04-.04+uChgUp(o));c.translate(-1,20);
  c.fillStyle=CL;/* 外套(⚠幅を広げすぎない=背中に帆が立って見える) */
@@ -11163,7 +11264,10 @@ UBODY.chief=(c,U,walk,t,ph,o)=>{
  c.bezierCurveTo(-13,-29,-15,-19,-14.4,-8+walk*2);
  c.lineTo(-6.4,-11);c.lineTo(-2.6,-12.4);
  c.bezierCurveTo(-3.4,-23,-3.4,-30,-3.4,-35.4);c.closePath();c.fill();c.stroke();
+ /* ⭐溜め=**小銃を肩に付けて銃口を上げる**(両手持ちなので奥の腕も一緒に) */
+ const g1=bHold(c,rc,4.4,-31.4,-.15,1,-.8);
  bArm(c,-4.4,-31.6, 6,-28.4, 20,-25.8, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
+ g1();
  bTorso(c,UNI,[9.4,7,-35.4,-21]);
  c.fillStyle=shade(UNI,.74);/* 軍衣の前合わせ+階級章 */
  c.fillRect(-.8,-34.6,2.2,12.4);
@@ -11172,8 +11276,9 @@ UBODY.chief=(c,U,walk,t,ph,o)=>{
  c.fillStyle=GOLD;c.beginPath();c.arc(-6.6,-35.4,2.2,0,7);c.fill();c.stroke();/* 外套の留め金 */
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.8);c.strokeRect(-7.2,-23.8,14.4,2.8);
  c.fillStyle=GOLD;c.fillRect(-1.6,-24.2,3.4,3.6);
- uGun(c,4,-27,25,4.6,GM,1);
- bArm(c,4.4,-31.4, 8,-27.4, 8.4,-21.4, 5,4.1, shade(UNI,1.14),SK);
+ {const g2=bHold(c,rc,4.4,-31.4,-.15,1,-.8);
+  uGun(c,4,-27,25,4.6,GM,1);
+  bArm(c,4.4,-31.4, 8,-27.4, 8.4,-21.4, 5,4.1, shade(UNI,1.14),SK);g2();}
  bNeck(c,1.6,-39.8,-34.6,SK);
  bFace(c,1.6,-43.6,5.8,6.2,SK);
  c.fillStyle='#4a5560';c.beginPath();c.arc(1.6,-47,6.3,Math.PI,0);c.fill();c.stroke();/* 制帽 */
@@ -11184,7 +11289,7 @@ UBODY.chief=(c,U,walk,t,ph,o)=>{
 /* ---- タイタン「歩く城塞」= 大柄・全身の重装甲・面頬・巨大な肩甲・腕の盾 ---- */
 UBODY.titan=(c,U,walk,t,ph,o,vt)=>{
  const SK=U_SKIN,C0=vt?U.c:'#8a8f96',PA='#4e545c',SHO='#3a3128',ST=STEEL;
- const sw=walk*3,LH=1;
+ const sw=walk*3,LH=1,rc=bRc(o);
  c.save();c.scale(1.08,1.08);
  bLeg(c,-3.4-sw,.8,PA,SHO,-17.6+LH,1.14);bLeg(c,3.4+sw,1,PA,SHO,-17.6+LH,1.14);
  c.save();c.translate(0,LH);
@@ -11206,10 +11311,11 @@ UBODY.titan=(c,U,walk,t,ph,o,vt)=>{
  rr(c,-5.6,-50.4,15.4,15.4,4);c.fill();c.stroke();
  c.fillStyle=GOLD;c.beginPath();c.moveTo(.6,-50.4);c.lineTo(3.4,-56.4);c.lineTo(6.2,-50.4);c.closePath();c.fill();c.stroke();
  c.fillStyle=INK;c.fillRect(-2.6,-44.6,12.4,3.4);
- /* 腕の大盾 */
- c.fillStyle=ST;rr(c,11.4,-38,14.4,26,4);c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
- c.fillStyle=shade(ST,.74);c.fillRect(12.4,-33.4,12.4,2.6);c.fillRect(12.4,-19.4,12.4,2.6);
- c.fillStyle=RUST;c.beginPath();c.arc(18.6,-26.4,3.6,0,7);c.fill();c.stroke();
+ /* 腕の大盾。⭐**溜め=盾を引きつけてから前へ突き出す構え**(2026-08-01) */
+ {const g2=bHold(c,rc,6,-31.4,-.13,3.4,-1.2);
+  c.fillStyle=ST;rr(c,11.4,-38,14.4,26,4);c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
+  c.fillStyle=shade(ST,.74);c.fillRect(12.4,-33.4,12.4,2.6);c.fillRect(12.4,-19.4,12.4,2.6);
+  c.fillStyle=RUST;c.beginPath();c.arc(18.6,-26.4,3.6,0,7);c.fill();c.stroke();g2();}
  if(vt>=3){c.fillStyle=GOLD;for(let k=-1;k<=1;k++){c.beginPath();c.moveTo(k*8-2.6,-51.4);c.lineTo(k*8+1.6,-61.4);c.lineTo(k*8+4.6,-51.4);c.closePath();c.fill();c.stroke();}}
  c.restore();c.restore();
 };
