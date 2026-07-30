@@ -1565,7 +1565,7 @@ function checkGachaFx(){
  if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
  /* ⭐展開が読めること: タレット/ゾンビは予告で**下振れだけ**(上振れしない)
     → レーザー(段2)が出たら★4以上が確定 / レアでない時は基本ライフル+通常ゾンビ */
- let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0];
+ let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0],hiN=[0,0,0];
  for(let k=0;k<1200;k++){
   const rk=k%6;
   const one=[rk===0?{dud:GDUD[0],txt:''}:{hero:HEROES.find(h=>h.rk===rk),txt:''}];
@@ -1577,9 +1577,11 @@ function checkGachaFx(){
    if(r<4){console.log('FAIL: ★4未満でどんでん返しが起きている(レア度'+r+')');process.exit(1);}
    if(GC.tw!==0||GC.zk!==0||GC.fc!==0||GC.night!==false||GC.lob){
     console.log('FAIL: どんでん返しなのに見た目がしょぼくない');process.exit(1);}
-   twN++;gcEnd();continue;}
-  if(GC.lob&&r<5){console.log('FAIL: ★5未満なのに黄金のロブスターが出た(レア度'+r+')');process.exit(1);}
+   twN++;hiN[1]++;gcEnd();continue;}
+  /* ⭐2026-07-30: ロブスターは★4以上に広げ、3通り(ロブ/どんでん返し/通常)を**均等**にした */
+  if(GC.lob&&r<4){console.log('FAIL: ★4未満なのに黄金のロブスターが出た(レア度'+r+')');process.exit(1);}
   if(GC.lob)lobN++;
+  if(r>=4)hiN[GC.lob?0:2]++;
   if(GC.tw>base){console.log('FAIL: 予告が上振れしている(レア度'+r+' 予告'+GC.tw+' 上限'+base+')');process.exit(1);}
   if(GC.tw===2&&r<4){console.log('FAIL: レーザーが出たのに★4未満(レア度'+r+')');process.exit(1);}
   if(r===5&&GC.tw!==2){console.log('FAIL: ★5なのにレーザーで見せていない');process.exit(1);}
@@ -1595,12 +1597,17 @@ function checkGachaFx(){
  if(!sawRifleLow){console.log('FAIL: レアでない時の見せ方を確かめられていない');process.exit(1);}
  if(!twN){console.log('FAIL: どんでん返しが一度も起きなかった');process.exit(1);}
  if(!lobN){console.log('FAIL: ✨黄金のロブスターが一度も出なかった');process.exit(1);}
+ /* ⭐★4以上の3通り(ロブスター/どんでん返し/通常)が**均等**であること(2026-07-30ユーザー指示)。
+    ⚠別々に乱数を引くと確率が掛け算になって偏るので、1回の乱数を3等分している。 */
+ {const tot=hiN[0]+hiN[1]+hiN[2];
+  for(let q=0;q<3;q++){const pc=hiN[q]/Math.max(1,tot);
+   if(Math.abs(pc-1/3)>.07){console.log('FAIL: ★4以上の演出が均等でない '+hiN.join('/')+' (計'+tot+')');process.exit(1);}}}
  /* ⭐**夜の方が期待度が高い**=レアな時ほど夜が出やすいこと(逆になっていたら演出が嘘になる) */
  {const hi=nightN[1]/Math.max(1,nightN[1]+dayN[1]),lo=nightN[0]/Math.max(1,nightN[0]+dayN[0]);
   if(!(hi>lo+.2)){console.log('FAIL: 夜が期待度になっていない(レア時'+(hi*100|0)+'% / それ以外'+(lo*100|0)+'%)');process.exit(1);}}
  console.log('💎召集の予告: 下振れだけ / 虹の文字とレーザーは★4以上が確定 / '
   +'夜'+(nightN[1]/Math.max(1,nightN[1]+dayN[1])*100|0)+'% vs '+(nightN[0]/Math.max(1,nightN[0]+dayN[0])*100|0)+'% / '
-  +'どんでん返し'+twN+'回 / ✨黄金'+lobN+'回 OK');
+  +'★4以上の内訳 ✨黄金'+hiN[0]+'/どんでん返し'+hiN[1]+'/通常'+hiN[2]+'(均等) OK');
  /* ⭐10連でも撃つ場面は1回だけ=示唆するのは「その回の一番いい結果」 */
  {const many=[{dud:GDUD[0],txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{dud:GDUD[1],txt:''}];
   gcStart(many);

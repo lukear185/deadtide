@@ -14920,7 +14920,7 @@ const GC_TWC=[['#cfd6dd','#ffffff'],[AMBER,'#ffdd66'],['#c96b9f','#f0a8d8']];
 let GC=null;
 const gcRank=o=>o.dud?0:o.hero.rk;
 const gcTi=k=>TOWERS.findIndex(T=>T.id===GC_TW[k]);
-/* ⭐★5を引いた回だけ、的が✨黄金のロブスターになることがある(2026-07-30ユーザー指示) */
+/* ⭐★4以上を引いた回の1/3で、的が✨黄金のロブスターになる(2026-07-30ユーザー指示) */
 const gcZi=k=>{if(GC&&GC.lob&&LB_ZI>=0)return LB_ZI;
  const i=ZOMBIES.findIndex(z=>z.id===GC_ZM[k]);return i<0?0:i;};
 /* ⭐金色に焼く共通処理。⚠**ctx.filter は iOS で効かない**ので、別canvasに一度描いてから
@@ -14965,16 +14965,24 @@ function gcStart(res){
     ⚠**どれも下振れだけ**=タレットと同じ約束(上振れさせると読みが崩れて演出が嘘になる)。
     ①**背景**: 朝=ふつう / 夜=期待度が高い
     ②**「撃て!」の文字色**: 白 → 赤 → 虹(虹が出たら★4以上が確定)
-    ③**的**: ★5を引いた回だけ、たまに✨黄金のロブスターが出てくる */
+    ③**的**: ★4以上を引いた回の1/3で✨黄金のロブスターが出てくる */
  const night=(best>=3)?(Math.random()<.82):(Math.random()<.18);
  const fcB=best>=4?2:best>=2?1:0;
  const fc=(best<5&&Math.random()<.35)?Math.max(0,fcB-1):fcB;
- const lob=!!(best>=5&&LB_ZI>=0&&Math.random()<.55);
+ /* ⭐★4以上を引いた回は**3通りを均等(1/3ずつ)**に振る(2026-07-30ユーザー指示
+      「全部均等な割合にしてほしい、ウルトラレアも同様に」)。
+    ⚠それまでは★5の55%がロブスター・18%がどんでん返しで、**通常の最上位演出**
+      (レーザー+虹の文字+夜)が27%しか出なかった。★4にはロブスターが出なかった。
+    ⚠**1回の乱数を3等分する**こと=別々に引くと確率が掛け算になって均等にならない。
+    ⭐これで✨黄金のロブスターは「★5確定」ではなく**「★4以上確定」**の合図になる
+      (レーザー・虹の文字と同じ段=約束は崩れていない)。 */
+ const rl9=Math.random();
+ const lob=!!(best>=4&&LB_ZI>=0&&rl9<1/3);
  /* ⭐⭐**どんでん返し**(2026-07-30ユーザー指示)。わざと**一番しょぼい見た目**
       (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、弾が当たっても敵が死なず、
       **金色に変わって大爆発**する。★4以上を引いた回だけ、たまに起きる。
     ⚠これがあるので「ライフル+通常ゾンビ=はずれ」と決め打ちできなくなる=毎回タップする理由になる。 */
- const twist=(!lob&&best>=4&&Math.random()<.4);
+ const twist=(best>=4&&rl9>=1/3&&rl9<2/3);
  GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,w:760,h:360,dpr:1,sk:null,
   night:twist?false:night,fc:twist?0:fc,lob:lob?1:0,twist:twist?1:0};
  cv.classList.add('on');gcFit();

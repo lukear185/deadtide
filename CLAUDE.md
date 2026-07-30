@@ -112,7 +112,7 @@ CLAUDE.md に「続きをやるのに毎回は要らないもの」が溜まっ�
 8. ✅対戦の2人目=準備タイムが「0100010」になる不具合(スナップショットの `sk` キー衝突)と
    ⚙️の解放カードが押せない不具合(WAVE3ロックがクライアント側に残っていた)
 9. ✅💎召集の演出を増やした=**背景の朝夜**(夜が期待度高) / **「撃て!」の白・赤・虹** /
-   ★5の時だけ**✨黄金のロブスターが的**になる / ★4以上で**どんでん返し**(しょぼい見た目→金色→大爆発)
+   **★4以上を引いた回は3通りを均等(1/3ずつ)**=①✨黄金のロブスターが的 ②どんでん返し(しょぼい見た目→金色→大爆発) ③通常の最上位演出
    ⚠**どれも下振れだけ**(上振れは絶対にしない)=検査が実際に1200回引いて見張っている
 10. ✅特殊部隊員の必殺を**ボスだけ最大HPの12%**に(ワンパンしていた)
 11. ✅**最終ウェーブの主は拠点に取り付いて何度も殴る**(`z.siege` / `SIEGE_D`)。素通り即クリアをやめた
@@ -207,7 +207,7 @@ node test_shot.js out.png 852 393 trhome         # 🏋鍛錬所(既定=⚔冒�
 node test_shot.js out.png 852 393 rpg            # ⚔冒険の拠点の町 / rpgf=エリア / rpgb=戦闘 / rpgg=門 / rpgs=つよさ
 node test_shot.js out.png 852 393 "u=snp+uchg=0.8"  # ⭐溜めの途中で止めて撮る(攻撃モーション用)
 node test_shot.js out.png 852 393 hstat          # 🦸英雄ステータス(hs=hNox でその1人を選んだ状態)
-node test_shot.js out.png 852 393 "gacha5+glob+gaim"   # ✨黄金のロブスターが的(★5の時だけ出る)
+node test_shot.js out.png 852 393 "gacha5+glob+gaim"   # ✨黄金のロブスターが的(★4以上で1/3)
 node test_shot.js out.png 852 393 "gacha5+gtwist+ggold" # どんでん返し(金色に変わっていく途中)
 node test_shot.js out.png 852 393 "gacha5+gmorn+gfc=0"  # 朝の背景 / gnight=夜 / gfc=0白 1赤 2虹
 node test_shot.js out.png 852 393 "gacha+gopen+gspin=1" # 召集画面(何人目を正面にするか)
