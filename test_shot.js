@@ -380,7 +380,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +(ARTCHG?('var OCHG={chg:'+ARTCHG+',ct:1};'):'var OCHG={};')
      /* ⚠スイングは**段階を並べないと振れているか分からない**=コマごとに bsw を変える */
      /* ⚠**時間の順に並べる**=振りかぶり→振り出し→当たる瞬間→フォロースルー→構えへ */
-     +'var SWSEQ='+(ARTSW?'[.72,.9,.999,.07,.28]':'null')+';'
+     +'var SWSEQ='+(ARTSW?'[.65,.93,.999,.08,.24]':'null')+';'
      +'function put(px,py,mag,tt,dr,k){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
      +'c.lineWidth=3;c.strokeStyle=INK;'
      +'var oo=SWSEQ?{bsw:SWSEQ[k%SWSEQ.length]}:OCHG;'
