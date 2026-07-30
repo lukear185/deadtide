@@ -703,6 +703,23 @@ function checkUChg(){
  console.log('攻撃の溜め: 溜め0秒'+n0+'種 / 1発の最大倍率 x'+mx.toFixed(2)+'('+mxId+')'
   +' / 特大枠 '+(long.length?long.join('・'):'なし')+' / 実効DPSは表と一致 OK');
 }
+/* ⭐攻撃モーションは「交戦している時」だけ動くこと(2026-07-30ユーザー指摘
+   「出した途端に振る」「敵がいないのに振る」)。⚠u.cd は出撃直後にも倒した後にも残っている。
+   ⚠他のキャラに攻撃モーションを付けた時もここに1件足すこと。 */
+function checkAtkMotion(){
+ const ui=UNITS.findIndex(u=>u.id==="bat"),U=UNITS[ui];
+ if(ui<0){console.log("FAIL: バットが無い");process.exit(1);}
+ const mk=(o)=>Object.assign({ui,cd:0,eng:0,fired:0},o);
+ if(uBatP(mk({cd:0.25}))!==0){
+  console.log("FAIL: 出撃直後(交戦していない)なのに振っている");process.exit(1);}
+ if(uBatP(mk({cd:U.rate*0.5,fired:1}))!==0){
+  console.log("FAIL: 敵が居ないのに振りかぶっている");process.exit(1);}
+ if(!(uBatP(mk({cd:U.rate*0.5,eng:1}))>0)){
+  console.log("FAIL: 交戦中なのに振っていない");process.exit(1);}
+ if(!(uBatP(mk({cd:U.rate*0.9,fired:1}))>0)){
+  console.log("FAIL: 倒した直後の振り抜きが途切れている");process.exit(1);}
+ console.log("攻撃モーション: 出撃直後=振らない / 敵なし=振らない / 交戦中=振る / 倒した直後の振り抜きは続く OK");
+}
 function checkLabMul(){
  const keep=META.pts;
  META.pts=999999;META.tw={};META.un={};META.st0=0;META.nt=3;META.nu=3;
@@ -2322,7 +2339,7 @@ checkResumeFarm();
 checkTwNew();
 checkPerUp();
 checkLabSteps();
-checkLabMul();checkUChg();
+checkLabMul();checkUChg();checkAtkMotion();
 checkCryo();
 checkBeam();
 checkCoil();

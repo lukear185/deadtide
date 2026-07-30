@@ -10093,6 +10093,11 @@ function uBack(c,k,U,walk){
 function uBatP(u){
  const U=UNITS[u.ui];if(!U||(U.base||U.id)!=='bat'||!(u.cd>0)||!(U.rate>0))return 0;
  const p=clamp(1-u.cd/U.rate,0,1);
+ /* ⭐⭐**交戦していない時は振らない**(2026-07-30ユーザー指摘)。⚠`u.cd` は
+    出撃した瞬間にも最後の1体を倒した後にも残っているので、cd だけで振らせてはいけない。
+    ⭐**振り抜き〜巻き付き(p<.34)だけは続ける**=倒した瞬間に構えへ飛ぶとカクつく。
+    ⚠その区間も `u.fired`(一度でも攻撃したか)を見る=出撃直後に振らないため。 */
+ if(!u.eng&&!(u.fired&&p<.34))return 0;
  return (p>=.54&&p<.72)?0:Math.max(p,.001);/* ⚠この区間=構えの真ん中(焼いたコマと同じ姿) */
 }
 function drawUnit(c,ui,x,y,dr,t,ph,o){
@@ -11822,13 +11827,20 @@ function campStep(C,dt,wave){
   for(const z of C.zombies){if(z.dead||z.d<0)continue;const gap=u.d-z.d;
    if(gap>=-10&&gap<=Math.max(U.rng,ENG_GAP+2)&&z.d>best){best=z.d;tg=z;}}
   if(tg){
+   /* ⭐⭐**交戦中の印**(2026-07-30ユーザー指摘「敵がいないのにバットを振る」)。
+      ⚠攻撃モーションは `u.cd`(硬直)から進行度を出しているが、cd は
+        **出撃した瞬間**(cd=rnd(0,.3))にも**最後の1体を倒した後**にも残っている。
+        だから cd だけで振らせると「出した途端に振る」「誰も居ないのに振る」の2つが起きる。
+      ⭐**この印と `u.fired`(一度でも攻撃したか)の両方を見ること**。
+        ⚠他のキャラに攻撃モーションを付ける時も必ず同じようにする。 */
+   u.eng=1;
    /* ⭐⭐**4段階(待機→溜め→発射→硬直)**。u.cd=硬直 / u.chg=溜めの進行度(0→1) / u.ct=いま溜めている印。
       ⚠溜め中は狙っている座標を控える(照準の線を引くため)。 */
    const cgT9=uChgT(u.ui);
    if(u.cd<=0&&cgT9>0&&(u.chg||0)<1){
     u.chg=Math.min(1,(u.chg||0)+dt/cgT9);u.ct=1;u.tx=tg.px;u.ty=tg.py;
    }else if(u.cd>0)u.ct=0;
-   if(u.cd<=0&&(cgT9<=0||(u.chg||0)>=1)){u.cd=U.rate;u.chg=0;u.ct=0;
+   if(u.cd<=0&&(cgT9<=0||(u.chg||0)>=1)){u.cd=U.rate;u.chg=0;u.ct=0;u.fired=1;
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
     if(U.type==='frost'){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,ua,1);}}
      const tx9=tg.px,ty9=tg.py;
@@ -11933,7 +11945,7 @@ function campStep(C,dt,wave){
       addFx(C,'slash',u.px,u.py-26*CH_UP,'',{ang:aa,r:(24+utl*7)*CH_UP,lv:utl,col:ucl});
       hitFx(C,tg,aa,ucl,pierce,U.type);}}
    }
-  }else{u.ct=0;/* ⚠**u.chg は消さない**=溜めの進行度は次の対象へ引き継ぐ(設計の3番目) */
+  }else{u.ct=0;u.eng=0;/* ⚠**u.chg は消さない**=溜めの進行度は次の対象へ引き継ぐ(設計の3番目) */
    /* ⭐⭐**歩いている間に構えておく**(2026-07-30ユーザー指摘)。
       ⚠溜めを入れると**接敵した最初の1発が必ず遅れる**ので、波が当たった瞬間に押し込まれる。
         持続DPSは戻してあっても、ぶつかった瞬間だけは戻っていなかった。
