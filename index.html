@@ -1397,6 +1397,25 @@ const SFXSYN={
  lslash:()=>{nzHit(4200,700,.15,.09,1);
   beep(392,392,.12,'triangle',.05);beep(592,592,.11,'triangle',.034);beep(905,905,.09,'triangle',.02);
   beep(155,110,.09,'sine',.07);},
+ /* ⭐**貫通弾**(2026-08-01ユーザー指示「貫通弾はビームじゃないから、なにかいい感じの音。他と被らないやつ」)。
+    ⚠被らせない相手=レールガン(rail・電磁のビーム音)/狙撃(snipe・短い一発)/要塞砲(fort)/爆発(boom)。
+    ⭐**対物ライフルの重い一撃**に寄せて4層を重ねる:
+      ①**ノイズを高→低へ強く閉じる**=銃口の炸裂「ドパンッ」(⚠オシレータでは絶対に生音にならない)
+      ②**中音域を下降させる芯**(sawtooth 560→170)=重さ。⚠これ以上下げない(スマホは200Hz以下が鳴らない)
+      ③**金属の比(1 : 1.51 : 2.31)の短い和音**=機関部が跳ねる音。⚠整数比だと笛になる・必ず短く切る
+      ④**遠くへ転がる残響**=貫いて抜けたことが分かる。⚠高く伸ばさない(高いキラキラ音は禁止) */
+ /* ⭐**鋭い突き**(2026-08-01ユーザー指示「暗黒騎士の攻撃が爆撃になってる。鋭い突き攻撃の音に」)。
+    ⚠被らせない相手=光の斬撃(lslash・振り抜く音)/爆発(boom)/近接の当たり(thunk)。
+    ⭐斬るのではなく**刺す**なので ①空気を切る音を**短く速く**閉じる「シュッ」
+      ②**当たった芯**を1本(sawtooth 330→150)=刺さった重さ ③**穂先が鳴る低めの金属和音**
+      (1 : 1.51 : 2.31。斬撃より1オクターブ低くして聞き分ける)。⚠全体で0.12秒=長いと突きに聞こえない。 */
+ thrust:()=>{nzHit(9000,1500,.07,.075,1);
+  beep(330,150,.11,'sawtooth',.10);
+  beep(247,247,.06,'triangle',.042);beep(373,373,.05,'triangle',.026);beep(570,570,.04,'triangle',.015);},
+ pierce:()=>{nzHit(7000,700,.10,.115,1);
+  beep(560,170,.20,'sawtooth',.10);
+  beep(300,300,.07,'triangle',.045);beep(453,453,.06,'triangle',.03);beep(693,693,.05,'triangle',.018);
+  setTimeout(()=>nzHit(1100,240,.34,.05,1),70);},
  net:()=>beep(500,240,.08,'triangle',.06), build:()=>{beep(300,520,.07,'square',.08);setTimeout(()=>beep(520,760,.08,'square',.08),60);},
  sell:()=>beep(520,240,.12,'triangle',.08), coin:()=>beep(880,1350,.08,'triangle',.07),
  buy:()=>{beep(600,900,.08,'square',.08);setTimeout(()=>beep(900,1300,.1,'square',.08),70);},
@@ -1570,6 +1589,8 @@ const SFX_LBL={
  net:['ネット砲','発射','tw'],
  boom:['爆発','砲弾の着弾・砲撃','tw'], thunk:['命中','近接の当たり','tw'],
  lslash:['光の斬撃','ヴァルキリーの斬撃','tw'],
+ pierce:['貫通弾','狙撃王ジョルジの必殺の締め(対物ライフルの重い一撃)','tw'],
+ thrust:['鋭い突き','暗黒の騎士の騎槍(斬撃より低く・短く)','tw'],
  moan:['ゾンビの呻き①','徘徊中・撃破時','z'], moan2:['ゾンビの呻き②','同上','z'],
  moan3:['ゾンビの呻き③','同上','z'], moanW:['水棲の呻き','②沈んだ港','z'],
  moanN:['蟲の呻き','🌑ナイトメア','z'],
@@ -13707,7 +13728,7 @@ const H_FX={
    addP(C,7,tg.px,tg.py,{sp:130,a:aw,spread:.4,up:40,g:520,life:.5,r:2.6,col:"#5a4a52",typ:"smoke"});
    hitFx(C,tg,ang,"#c8323c",1,U.type);}
   C.shake=Math.max(C.shake||0,.18);
-  if(C.isMe)sfx.lslash?sfx.lslash():sfx.shot();},
+  if(C.isMe)sfx.thrust?sfx.thrust():sfx.shot();},
  hDawn:(C,u,U,tg,mx,my,ang)=>{u.fireT=.16;
   addFx(C,'beam',tg.px,tg.py-200*CH_UP,'',{x2:tg.px,y2:tg.py-6,
    col:'rgba(255,205,90,',col2:'rgba(255,250,220,',w:7,lf:.26});
@@ -14502,7 +14523,7 @@ function heroUlt(C,wave){
    addFx(C,"mzl",mx,my,"",{ang:ag,r:26,col:"#e4ffb0"});
    geoSpent(C,u,mx,my,d5g);
    C.shake=Math.max(C.shake||0,.34);
-   if(C.isMe)sfx.rail?sfx.rail():(sfx.snipe&&sfx.snipe());};
+   if(C.isMe)sfx.pierce?sfx.pierce():(sfx.snipe&&sfx.snipe());};
   shoot(0);/* ⚠1発目はその場で撃つ=全部 later に回すと「不発」に見える */
   for(let k=1;k<9;k++)later(C,k*.28,()=>shoot(k));
   /* 9発目のあと短く溜める→貫通弾 */
@@ -14722,7 +14743,21 @@ function campStep(C,dt,wave){
      /* ⭐⭐**斬撃型(ヴァルキリー)は投げない=光の刃が飛んでいって斬り裂く**
         (2026-07-31ユーザー指示「遠距離斬撃キャラにしよう」)。
         ⚠射程340・範囲130はそのまま=遊びの数値は一切変えていない。見せ方だけ差し替える。 */
-     if(uMotK(u.ui)==='slash'){
+     /* ⭐⭐**専用の攻撃を持つ英雄(H_FX)を共通の「投げて爆発」に落とさない**(2026-08-01ユーザー指摘
+        「暗黒騎士の攻撃が爆撃になってる」)。⚠**範囲(aoe)を持つ英雄7人**(消防士・爆破屋・
+          毒霧の魔女・磁力技師・鋼鉄の巨人・炉心の番人・暗黒の騎士)はこの枝に入るので、
+          `H_FX` に書いた専用の演出が**一度も使われていなかった**(擲弾を投げて爆発する絵のまま)。
+        ⚠**当たり判定・範囲・威力・間隔は1つも触らない**=見せ方だけ差し替える。
+        ⚠投擲の型(toss=爆破屋)だけは飛んでいる間を残す=「着弾してから当てる」を壊さない。 */
+     if(U.hro&&H_FX[U.id]){
+      const utl7=uFxTier(u),ucl7=uUniq(u.ui)?(U.c||UFX_COL[utl7]):UFX_COL[utl7];
+      const d57=(u.dr||-1),mx7=u.px+d57*30*CH_UP,my7=u.py-27*CH_UP;
+      const ang7=Math.atan2((ty9-20*CH_UP)-my7,tx9-mx7);
+      const im7=()=>{hit9();H_FX[U.id](C,u,U,tg,mx7,my7,ang7,ucl7,utl7,d57,pierce);};
+      const f7=(uMotK(u.ui)==='toss')?tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c'):0;
+      if(f7>0)later(C,f7,im7);else im7();
+     }
+     else if(uMotK(u.ui)==='slash'){
       const scl9=U.c||'#ffe9a8',sx9=u.px+(u.dr||-1)*26*CH_UP,sy9=u.py-30*CH_UP;
       const sa9=Math.atan2((ty9-20*CH_UP)-sy9,tx9-sx9);
       const lf9=clamp(dist(sx9,sy9,tx9,ty9)/1500,.1,.3);
