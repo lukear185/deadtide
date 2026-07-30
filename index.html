@@ -9883,6 +9883,178 @@ const U_LOOK={
  valk:{b:'slim',h:'wingh',k:'vwing'}
 };
 const uLook=id=>U_LOOK[id]||{b:'norm',h:'helm',k:''};
+/* ============ ⭐兵科ごとの「構え」と「装い」(2026-08-01) ============
+   ⚠それまでは**体型(b)/かぶり物(h)/背負い物(k)** の3つしか兵科ごとの差が無く、
+     首から下は32種すべて**同じ立ち姿・同じ服・同じ手の位置**だった。
+     武器だけが手の届かない所に浮いていて、実機では「色違いの兵隊+小さな棒」に見える。
+   ⭐ここで足すのは3つ。どれも**輪郭に出る**もの(25pxで効くのは輪郭・明暗・色だけ):
+     ①**構え**(腰の高さ・脚の開き・上体の前傾)=シルエットがまるごと変わる
+     ②**両手の位置**=武器の握りに手が行く(uArmTo)
+     ③**装い**(uCos)=胴の上に兵科固有の物を重ねる
+   ⚠**数値(hp/atk/射程)には一切触らない**=見せ方だけ。
+   欄: ls=歩幅 lw=脚の開き lh=腰の落とし lk=膝の送り tl=上体の前傾
+       hb=[奥の手] hf=[手前の手] cs=装い(uCos) */
+const U_PZ={
+ big  :{ls:4.2,lw:1.8},
+ spr  :{ls:6.4,lh:-.6,tl:.10,hb:[11,-23.6],hf:[6.8,-23.4],cs:'scarf'},
+ chain:{ls:4.6,lw:1.2,tl:.05,hb:[10,-24.4],hf:[4.4,-28],cs:'harn'},
+ gun  :{ls:5.0,lw:.6,hb:[19,-24.2],hf:[9.4,-19.4],cs:'vest'},
+ axe  :{ls:4.4,lw:1.8,tl:.09,hb:[6.9,-26.9],hf:[13.4,-28.8],cs:'pelt'},
+ shd  :{ls:3.6,lw:1.6,lh:1.2,tl:-.04,hh:0,hb:[10.5,-24.6],hf:[11.5,-29.6],cs:'plate'},
+ smg  :{ls:5.6,hb:[16,-25],hf:[9.4,-20],cs:'bando'},
+ mol  :{ls:5.4,tl:.06,hb:[9.4,-24],hf:[12.4,-36.6],cs:'heat'},
+ pike :{ls:4.2,lw:1.0,hb:[1,-27.8],hf:[14,-29.4],cs:'tabard'},
+ grn  :{ls:5.0,tl:.05,hb:[9,-25.4],hf:[13.6,-24.4],cs:'harn'},
+ frz  :{ls:4.6,hb:[16,-25.4],hf:[8.4,-22.4],cs:'parka'},
+ flm  :{ls:4.0,lw:2.0,lh:.8,tl:.07,hb:[16,-25.4],hf:[8.4,-22.4],cs:'heat'},
+ saw  :{ls:4.2,lw:1.8,lh:.9,tl:.11,hb:[16.4,-34.4],hf:[2,-28],cs:'apronL'},
+ engi :{ls:4.8,tl:.06,hb:[13,-27.6],hf:[7.4,-25],cs:'work'},
+ med  :{ls:5.2,hb:[15,-27.6],hf:[6,-27.4],cs:'apron'},
+ gld  :{ls:3.2,lw:2.0,lh:1.6,tl:-.05,hh:0,hb:[11,-24],hf:[11,-30.6],cs:'plate'},
+ snp  :{ls:3.4,lw:1.4,lh:3.2,tl:.13,hb:[20,-24.6],hf:[7.4,-20.4],cs:'ghil'},
+ elec :{ls:4.8,hb:[20,-24.4],hf:[6.4,-20.6],cs:'tech'},
+ mortarU:{ls:3.8,lw:1.4,lh:2.2,tl:.09,hb:[12,-24.6],hf:[6,-22.6],cs:'work'},
+ mgn  :{ls:3.4,lw:2.6,lh:1.4,tl:.06,hb:[24,-22.4],hf:[7,-21.4],cs:'bando'},
+ ninja:{ls:6.0,lh:.8,tl:.14,hb:[10,-27.2],hf:[14,-29.4],cs:'coat'},
+ rkt  :{ls:3.8,lw:2.0,lh:.8,tl:-.03,hb:[15,-40.4],hf:[8.4,-34.4],cs:'harn'},
+ gren2:{ls:4.2,lw:1.6,tl:.06,hb:[10,-25.4],hf:[15.4,-30.4],cs:'harn'},
+ rail2:{ls:4.2,lw:1.0,lh:.6,tl:.05,hb:[18,-21.6],hf:[2.4,-21.4],cs:'tech'},
+ frost2:{ls:4.2,lw:1.2,hb:[18,-25.4],hf:[7.4,-22.4],cs:'parka'},
+ chief:{ls:4.6,lw:.8,tl:-.04,hb:[20,-25.8],hf:[8.4,-21],cs:'vest'},
+ titan:{ls:3.0,lw:2.8,lh:1.0,hh:0,cs:'plate'}
+};
+const uPz=id=>U_PZ[id]||{};
+/* ⭐手の位置を決めて腕を描く(2026-08-01)。⚠共通の `uArm` は「肩から長さと下がり」でしか
+   置けないので、**どの兵科も手が同じ所**にあり、武器だけが手の届かない所に浮いていた。
+   ⭐手の座標を直に渡す=兵科ごとに握りへ手が行く。⚠肘は必ず折る(帯が3枚並ぶと芋虫に見える)。 */
+function uArmTo(c,sx,sy,hx,hy,w,col,hand){
+ const dx=hx-sx,dy=hy-sy,L=Math.max(1.5,Math.hypot(dx,dy));
+ /* 肘=中点から腕に垂直な「下向き」へ逃がす。⚠折れ角が足りないと板に見える */
+ const k=w*.52,ex=(sx+hx)/2-dy/L*k,ey=(sy+hy)/2+dx/L*k;
+ c.fillStyle=col;
+ c.beginPath();/* 二の腕(太い) */
+ c.moveTo(sx-1.2,sy-w*.5);c.lineTo(ex+w*.2,ey-w*.44);
+ c.lineTo(ex+w*.2,ey+w*.44);c.lineTo(sx-1.2,sy+w*.54);c.closePath();c.fill();c.stroke();
+ c.beginPath();/* 前腕(細い。⚠黒フチ2本ぶん以上重ねる) */
+ c.moveTo(ex-w*.30,ey-w*.40);c.lineTo(hx-w*.05,hy-w*.32);
+ c.lineTo(hx-w*.05,hy+w*.32);c.lineTo(ex-w*.30,ey+w*.42);c.closePath();c.fill();c.stroke();
+ c.fillStyle=hand;
+ c.beginPath();/* 手(⚠丸い玉にすると棒の先に球が付いて見える) */
+ c.moveTo(hx-w*.26,hy-w*.5);c.lineTo(hx+w*.62,hy-w*.4);
+ c.lineTo(hx+w*.72,hy+w*.3);c.lineTo(hx-w*.22,hy+w*.5);c.closePath();c.fill();c.stroke();
+}
+/* ⭐脚(共通部品・構えつき)。⚠腰を落とすと**その上の体ぜんぶ**が下がるので、
+   drawUnit 側で同じ `lh` を translate すること(片方だけだと腰と胴が離れる)。
+   ⚠明るさはバットに揃えてある(1.34/1.06/1.45)=素のままだと腰から下が1つの黒い塊になる。 */
+function uLegs(c,pz,walk){
+ const ls=pz.ls==null?5.2:pz.ls,lw=pz.lw||0,lh=pz.lh||0;
+ const usw=walk*ls;
+ const uleg=(dx,dk)=>{
+  const kx=dx*.5;
+  c.fillStyle=shade(UW.pa,dk*1.34);/* 太もも(腰→膝) */
+  c.beginPath();c.moveTo(-4.4+dx*.2,-18.8+lh);c.lineTo(4.2+dx*.2,-18.8+lh);
+  c.lineTo(3.6+kx,-10.8+lh*.45);c.lineTo(-3.8+kx,-10.8+lh*.45);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(UW.pa,dk*1.06);/* すね(膝→足首。⚠少し細く) */
+  c.beginPath();c.moveTo(-3.7+kx,-11.1+lh*.45);c.lineTo(3.5+kx,-11.1+lh*.45);
+  c.lineTo(3+dx,-4.2);c.lineTo(-3.1+dx,-4.2);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(UW.sho,dk*1.45);/* 靴(⚠横に長く=地面に立って見える) */
+  c.beginPath();c.moveTo(-3.7+dx,-4.6);c.lineTo(3.3+dx,-4.6);c.lineTo(4.5+dx,-2.5);
+  c.lineTo(6.6+dx,-2);c.lineTo(6.8+dx,-.3);c.lineTo(-4.1+dx,-.3);c.closePath();c.fill();c.stroke();
+ };
+ uleg(-1-lw-usw,.8);uleg(1+lw+usw,1);
+}
+/* ⭐兵科固有の装い(2026-08-01)。⚠胴(uBody)の上に重ねる。P=uBody が返す箱[x0,y0,w,h,r]。
+   ⚠**明るい方へ振る**=暗い模様を足すと胴が黒く潰れて兵科の色が消える(2026-07-31の教訓)。
+   ⚠**胴からはみ出す物(コート・前掛け)は輪郭に出るので一番効く**。 */
+function uCos(c,cs,U,P,walk){
+ if(!cs)return;
+ const x0=P[0],y0=P[1],w=P[2],h=P[3],x1=x0+w,y1=y0+h,mx=x0+w/2,col=U.c;
+ const clip=f=>{c.save();c.beginPath();c.rect(x0-1,y0-1,w+2,h+2);c.clip();f();c.restore();};
+ if(cs==='vest'){/* 防弾チョッキ(胸の板+雑嚢2つ) */
+  clip(()=>{c.fillStyle=shade(col,1.3);
+   c.beginPath();c.moveTo(x0+w*.14,y0+h*.14);c.lineTo(x1-w*.10,y0+h*.10);
+   c.lineTo(x1-w*.12,y1-h*.30);c.lineTo(x0+w*.16,y1-h*.26);c.closePath();c.fill();
+   c.fillStyle=shade(col,.70);
+   c.fillRect(x0+w*.20,y1-h*.52,w*.24,h*.20);c.fillRect(x0+w*.54,y1-h*.50,w*.24,h*.20);});
+ }else if(cs==='plate'){/* 鋼の胸当て(⚠一番明るくする=鉄だと分かる) */
+  clip(()=>{c.fillStyle='#a8adb5';
+   c.beginPath();c.moveTo(x0+w*.10,y0+h*.10);c.lineTo(x1-w*.06,y0+h*.06);
+   c.lineTo(x1-w*.16,y1-h*.22);c.lineTo(x0+w*.20,y1-h*.18);c.closePath();c.fill();
+   c.fillStyle='#6b7580';c.fillRect(x0+w*.14,y0+h*.42,w*.76,h*.09);
+   c.fillStyle='#cfd5da';for(const k of[[.24,.22],[.74,.18]]){
+    c.beginPath();c.arc(x0+w*k[0],y0+h*k[1],1.7,0,7);c.fill();}});
+ }else if(cs==='coat'){/* ⭐長いコート(⚠腿まで垂れる=輪郭がまるごと変わる) */
+  c.fillStyle=shade(col,.80);
+  c.beginPath();c.moveTo(x0+w*.02,y0+h*.44);
+  c.lineTo(x1-w*.02,y0+h*.44);c.lineTo(x1+w*.16,y1+h*.62+walk*1.4);
+  c.lineTo(x0-w*.16,y1+h*.58-walk*1.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(col,1.12);c.fillRect(mx-1.5,y0+h*.46,3,h*1.0);
+ }else if(cs==='apron'){/* 白い前掛け(医療) */
+  c.fillStyle=PAPER;
+  c.beginPath();c.moveTo(x0+w*.16,y0+h*.16);c.lineTo(x1-w*.10,y0+h*.12);
+  c.lineTo(x1-w*.02,y1+h*.42);c.lineTo(x0+w*.10,y1+h*.46);c.closePath();c.fill();c.stroke();
+  c.fillStyle=RUST;c.fillRect(mx-.4,y0+h*.30,5.6,1.9);c.fillRect(mx+1.6,y0+h*.20,1.9,5.6);
+ }else if(cs==='apronL'){/* 革の前掛け(前線の破砕機。⚠白だと医療に見える) */
+  c.fillStyle='#7a5a34';
+  c.beginPath();c.moveTo(x0+w*.18,y0+h*.30);c.lineTo(x1-w*.06,y0+h*.26);
+  c.lineTo(x1-w*.02,y1+h*.34);c.lineTo(x0+w*.12,y1+h*.38);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#a8adb5';for(const k of[.30,.62,.86]){c.beginPath();c.arc(x0+w*.30,y0+h*k,1.6,0,7);c.fill();}
+ }else if(cs==='bando'){/* 弾帯(⚠明るい帯+弾を不揃いに) */
+  clip(()=>{c.fillStyle='#8a6a45';
+   c.beginPath();c.moveTo(x0+w*.02,y0+h*.10);c.lineTo(x0+w*.30,y0+h*.02);
+   c.lineTo(x1+w*.06,y1-h*.10);c.lineTo(x1-w*.20,y1-h*.02);c.closePath();c.fill();
+   c.fillStyle=GOLD2;for(const k of[[.20,.26],[.40,.46],[.62,.66]]){
+    c.fillRect(x0+w*k[0],y0+h*k[1],3.4,2.2);}});
+ }else if(cs==='harn'){/* 装備ハーネス(投擲兵。⚠雑嚢を左右不揃いに) */
+  clip(()=>{c.fillStyle=shade(col,1.26);
+   c.fillRect(x0+w*.16,y0+h*.06,w*.16,h*.92);c.fillRect(x0+w*.62,y0+h*.04,w*.16,h*.92);
+   c.fillStyle=shade(col,.72);c.fillRect(x0+w*.10,y1-h*.46,w*.34,h*.24);
+   c.fillRect(x0+w*.56,y1-h*.38,w*.28,h*.20);});
+ }else if(cs==='heat'){/* 耐熱スーツ(厚い襟+横の畝) */
+  clip(()=>{c.fillStyle=shade(col,1.34);
+   c.fillRect(x0+w*.08,y0+h*.02,w*.86,h*.18);
+   c.fillStyle=shade(col,1.14);
+   for(const k of[.36,.54,.72])c.fillRect(x0+w*.14,y0+h*k,w*.74,h*.08);});
+ }else if(cs==='parka'){/* 防寒(⚠襟のふさふさを明るく=氷の兵だと読める) */
+  clip(()=>{c.fillStyle=shade(col,1.30);
+   for(const k of[.16,.42])c.fillRect(x0+w*.06,y0+h*k,w*.90,h*.14);});
+  c.fillStyle=FROST;
+  c.beginPath();c.ellipse(mx,y0+h*.04,w*.52,h*.16,0,0,7);c.fill();c.stroke();
+ }else if(cs==='tech'){/* 発光パネル(電気系) */
+  clip(()=>{c.fillStyle=shade(col,.72);
+   c.fillRect(x0+w*.14,y0+h*.16,w*.70,h*.54);
+   c.fillStyle=TECH;c.fillRect(x0+w*.22,y0+h*.24,w*.24,h*.14);
+   c.fillRect(x0+w*.54,y0+h*.24,w*.24,h*.14);
+   c.fillStyle=FROST;c.fillRect(x0+w*.22,y0+h*.46,w*.56,h*.08);});
+ }else if(cs==='work'){/* 作業着(反射帯2本。⚠1本だと帯と区別が付かない) */
+  clip(()=>{c.fillStyle=PAPER2;
+   c.fillRect(x0+w*.06,y0+h*.26,w*.90,h*.11);c.fillRect(x0+w*.06,y0+h*.52,w*.90,h*.11);});
+ }else if(cs==='scarf'){/* ⭐マフラー(⚠首に巻いてから後ろへなびかせる。
+    肩を斜めに横切る帯にすると『たすき』と区別が付かなかった) */
+  c.fillStyle=shade(RUST,1.1);
+  c.beginPath();c.moveTo(mx-w*.30,y0-h*.10);c.lineTo(mx+w*.30,y0-h*.12);
+  c.lineTo(mx+w*.26,y0+h*.10);c.lineTo(mx-w*.32,y0+h*.12);c.closePath();c.fill();c.stroke();
+  c.beginPath();/* なびく尾(⚠歩きに合わせて揺らす=速そうに見える) */
+  c.moveTo(mx-w*.28,y0-h*.06);c.lineTo(x0-w*.70,y0+h*.16+walk*2.2);
+  c.lineTo(x0-w*.62,y0+h*.44+walk*2.6);c.lineTo(mx-w*.26,y0+h*.14);c.closePath();c.fill();c.stroke();
+ }else if(cs==='tabard'){/* 陣羽織(長槍兵。膝上まで垂れる) */
+  c.fillStyle=shade(col,1.24);
+  c.beginPath();c.moveTo(x0+w*.14,y0+h*.16);c.lineTo(x1-w*.14,y0+h*.14);
+  c.lineTo(x1-w*.06,y1+h*.50);c.lineTo(x0+w*.06,y1+h*.54);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(col,.74);c.fillRect(mx-1.6,y0+h*.20,3.2,h*1.2);
+ }else if(cs==='ghil'){/* ギリースーツ(布の切れ端。⚠等間隔に並べない) */
+  c.fillStyle='#5c6648';
+  for(const k of[[-.10,.20,7],[.26,.06,9],[.62,.24,6],[.92,.10,8]]){
+   c.beginPath();c.moveTo(x0+w*k[0],y0+h*k[1]);c.lineTo(x0+w*k[0]+5.2,y0+h*k[1]-1.4);
+   c.lineTo(x0+w*k[0]+3.4,y0+h*k[1]+k[2]);c.lineTo(x0+w*k[0]-1,y0+h*k[1]+k[2]*.7);c.closePath();c.fill();c.stroke();}
+ }else if(cs==='pelt'){/* 毛皮の肩掛け(斧使い。⚠輪郭をぎざぎざに=野蛮に見える)。
+    ⚠**胴の3割まで**にする=広く掛けると兵科の色が丸ごと隠れて胴が茶色い塊になる */
+  c.fillStyle='#8a6540';
+  c.beginPath();c.moveTo(x0-w*.10,y0+h*.20);
+  for(let i=0;i<5;i++)c.lineTo(x0-w*.10+i*w*.26,y0+h*(i%2?-.04:.08));
+  c.lineTo(x1+w*.08,y0+h*.22);c.lineTo(x0-w*.06,y0+h*.28);c.closePath();c.fill();c.stroke();
+ }
+}
 /* ⭐兵科32種の共通の色(2026-07-27 第102弾)。⚠ゾンビの `ZW` と同じ考え方=
    胴の色(U.c)だけで全身を塗ると「色の付いた塊」になる。
    ⚠**ズボンと靴が両方とも暗かった**ため、実機では**脚が1つの黒い塊**に見えていた
@@ -9891,7 +10063,7 @@ const uLook=id=>U_LOOK[id]||{b:'norm',h:'helm',k:''};
    ズボンと合わせて腰から下が1つの黒い塊になっていた(ゾンビで踏んだのと同じ穴) */
 const UW={pa:'#6b6252',sho:'#4a4034',glv:'#3f3a30',blt:'#4a4034',bkl:'#b08d4a',sash:'#6b7550'};
 /* 胴。⚠**上を明るく下を暗く1段だけ**(twBase/zFillと同じ理屈)=平たい図形が塊に見える */
-function uBody(c,b,col,P0){
+function uBody(c,b,col,P0,nosash){
  /* ⚠P0 を渡すと寸法を上書きできる(🦸英雄が使う。英雄は兵科より背が高いので箱が違う) */
  /* ⚠⚠**丈(h)を2026-07-30に詰めた**=胴が全高の半分近くを占めていて、脚が10pxしか残らず
     「頭でっかちで足が黒い塊」だった。胴の下端を約-18にして脚に18pxを譲る。
@@ -9911,7 +10083,7 @@ function uBody(c,b,col,P0){
   c.closePath();};
  c.fillStyle=col;path();c.fill();
  c.save();c.beginPath();c.rect(-30,y0+h*.45,60,40);c.clip();
- c.fillStyle=shade(col,.76);path();c.fill();c.restore();
+ c.fillStyle=shade(col,.84);path();c.fill();c.restore();/* ⚠.76 は暗すぎた=胴の下半分が黒く沈む */
  path();c.stroke();
  /* ⭐第102弾に足したもの。⚠それまで胴は「1色+帯1本」だけで、実機では**色の付いた箱**だった。
     襟と負い革を足すと**兵隊**に読める。⚠これ以上足すと25pxでは模様が潰れてただの汚れになる */
@@ -9923,9 +10095,11 @@ function uBody(c,b,col,P0){
  c.fillStyle=shade(col,.62);/* 襟(首元を1段暗く)。⚠無いと頭が胴に直接乗って見える */
  c.beginPath();c.moveTo(mx-w*.22,y0-h*.01);c.lineTo(mx+w*.22,y0-h*.01);
  c.lineTo(mx+w*.13,y0+h*.16);c.lineTo(mx-w*.13,y0+h*.16);c.closePath();c.fill();
- c.fillStyle=UW.sash;/* たすき1本(⚠明るい別色。2本たすと胸が格子になって潰れる) */
+ /* ⚠**装い(uCos)を持つ兵科ではたすきを描かない**(2026-08-01)=たすき+装い+帯+襟で
+    胴が模様だらけになり、兵科の色が残らなかった。装いの無い兵科だけ従来どおり */
+ if(!nosash){c.fillStyle=UW.sash;/* たすき1本(⚠明るい別色。2本たすと胸が格子になって潰れる) */
  c.beginPath();c.moveTo(x0+w*.16,y0+h*.06);c.lineTo(x0+w*.36,y0+h*.01);
- c.lineTo(x1-w*.08,y1-h*.34);c.lineTo(x1-w*.28,y1-h*.29);c.closePath();c.fill();
+ c.lineTo(x1-w*.08,y1-h*.34);c.lineTo(x1-w*.28,y1-h*.29);c.closePath();c.fill();}
  /* 腰の帯(胴の塊を割る)。⚠これが無いと胴が一枚板に見える */
  c.fillStyle=UW.blt;
  c.beginPath();c.moveTo(x0+w*.06,y1-h*.26);c.lineTo(x1-w*.06,y1-h*.26);
@@ -9988,17 +10162,19 @@ function uHead0(c,k,U,hy){
  /* ⚠つばを長く伸ばすと**顔から棒が突き出た絵**になる(実機で撮って気づいた)=頭の幅ぶんに収める */
  else if(k==='cap'){cap(GOLD2);c.fillStyle=GOLD2;rr(c,8,-3.4+y,8,3.4,1.5);c.fill();c.stroke();}/* 野球帽のつば */
  else if(k==='beret'){c.fillStyle='#6b7550';c.beginPath();c.ellipse(1,y-5,10,5,-.2,0,7);c.fill();c.stroke();}
- else if(k==='helm'){cap('#5c6648',9);c.fillStyle='#5c6648';rr(c,-7,y-2,18,3.4,1.6);c.fill();c.stroke();}
- else if(k==='hard'){cap(GOLD,8.6);c.fillStyle=GOLD;rr(c,-6,y-3,19,3.6,1.6);c.fill();c.stroke();}/* 工事用ヘルメット */
+ /* ⚠⚠**つばを目の高さに置かない**(2026-08-01に撮って直した)=目(y+.2)の上に暗い帯が乗って
+    **目隠しをした兵**に見えていた。helm/hard/bowl/face は帽体の下ぶち(y-5前後)まで上げる。 */
+ else if(k==='helm'){cap('#5c6648',9);c.fillStyle='#5c6648';rr(c,-7.4,y-5.6,19,3.6,1.6);c.fill();c.stroke();}
+ else if(k==='hard'){cap(GOLD,8.6);c.fillStyle=GOLD;rr(c,-6.4,y-6.2,20,3.8,1.6);c.fill();c.stroke();}/* 工事用ヘルメット */
  else if(k==='horn'){cap('#8a6a45');c.fillStyle=PAPER3;
   /* ⚠角は**横に太く**張り出させる。細く上へ伸ばすと兎の耳に見えた(実機で撮って直した) */
   for(const s of[-1,1]){c.beginPath();c.moveTo(2+s*5,y-8);
    c.lineTo(2+s*13,y-9.4);c.lineTo(2+s*14.6,y-4.4);c.lineTo(2+s*10.4,y-4.6);c.lineTo(2+s*5,y-1);
    c.closePath();c.fill();c.stroke();}}
  else if(k==='bowl'){/* 丸い鉄帽(浅い椀)。ふちが横に広い */
-  cap('#4a5560',8.4);c.fillStyle='#4a5560';rr(c,-9,y-3,22,4,2);c.fill();c.stroke();}
+  cap('#4a5560',8.4);c.fillStyle='#4a5560';rr(c,-9.4,y-6.4,23,4.2,2);c.fill();c.stroke();}
  else if(k==='earmuff'){cap('#5c6648',8.4);c.fillStyle='#3f4a54';
-  for(const s of[-1,1]){c.beginPath();c.arc(2+s*8,y-1,4.2,0,7);c.fill();c.stroke();}}
+  for(const s of[-1,1]){c.beginPath();c.arc(2+s*9,y-3.6,4,0,7);c.fill();c.stroke();}}
  else if(k==='hood'){/* 布のフード(後ろに垂れる) */
   c.fillStyle='#3a3f48';c.beginPath();c.arc(2,y-2,9.6,Math.PI,0);
   c.lineTo(11.6,y+3);c.lineTo(-9,y+4);c.closePath();c.fill();c.stroke();
@@ -10016,7 +10192,7 @@ function uHead0(c,k,U,hy){
  else if(k==='great'){/* 全面兜(目の隙間だけ) */
   c.fillStyle='#8a8f96';rr(c,-7,y-10,18,19,5);c.fill();c.stroke();
   c.fillStyle=INK;c.fillRect(-4,y-3,15,3);return;}
- else if(k==='face'){cap('#5c6648',9);c.fillStyle='#3f4a54';rr(c,-4,y-2,14,7,2);c.fill();c.stroke();}/* 面頬 */
+ else if(k==='face'){cap('#5c6648',9);c.fillStyle='#3f4a54';rr(c,-4,y+1.4,14,6.4,2);c.fill();c.stroke();}/* 面頬(⚠あご側。目にかぶせない) */
  else if(k==='gas'){cap('#4c5648');c.fillStyle='#3f4a54';c.beginPath();c.arc(4,y+2,6.4,0,7);c.fill();c.stroke();
   c.fillStyle='#6b7580';c.beginPath();c.arc(7,y+4,3.4,0,7);c.fill();c.stroke();return;}/* 濾過缶 */
  else if(k==='visor'){cap('#3f4a54');c.fillStyle=TECH;rr(c,-5,y-2,15,5,2);c.fill();c.stroke();return;}
@@ -10059,13 +10235,19 @@ function uGun(c,x,y,len,cal,col,mag){
  /* ⚠⚠**銃は明るく置く**(2026-07-30)=渡ってくる色(#3a3128)は黒フチ(#241f19)とほぼ同色なので、
     素のまま塗ると銃身がまるごと黒い棒になる。**倍率を全部1より大きく**して持ち上げる。
     ⚠shade() は**16進の文字列しか受け取れない**(rgb()を渡すと NaN で真っ黒になる。ここで踏んだ) */
- const st=col||'#3a3128';
+ /* ⚠**素の色を明るくした(2026-08-01)**=#3a3128 は倍率を掛けても黒フチに近く、
+    銃が胸の前を横切る大きな暗い塊になって兵科の色を丸ごと消していた */
+ const st=col||'#544736';
  c.fillStyle=shade(st,1.2);
  c.beginPath();/* 台尻(肩に当てる方) */
  /* ⚠台尻は短く=長いと胸を丸ごと覆って兵科の色が消える(2026-07-31に詰めた) */
  c.moveTo(x-7.4,y-1.2);c.lineTo(x-2,y-2.6);c.lineTo(x-2,y+2.8);c.lineTo(x-6.6,y+4.2);c.closePath();c.fill();c.stroke();
+ /* ⭐**握り(2026-08-01に追加)**=これが無いと手を置く所が銃の裏しか無く、
+    どの兵科も「銃の後ろで手が消える」絵になっていた。⚠機関部の下へ出す */
+ c.fillStyle=shade(st,.92);
+ c.beginPath();c.moveTo(x+2,y+2.4);c.lineTo(x+6.6,y+2.4);c.lineTo(x+5.6,y+9.8);c.lineTo(x+2.4,y+9.8);c.closePath();c.fill();c.stroke();
  if(mag){c.fillStyle=shade(st,1.05);/* 弾倉(下へ) */
-  c.beginPath();c.moveTo(x+1,y+2);c.lineTo(x+6,y+2);c.lineTo(x+5.2,y+9.6);c.lineTo(x+1.4,y+9.6);c.closePath();c.fill();c.stroke();}
+  c.beginPath();c.moveTo(x+7.4,y+2);c.lineTo(x+12.4,y+2);c.lineTo(x+11.6,y+9.6);c.lineTo(x+7.8,y+9.6);c.closePath();c.fill();c.stroke();}
  c.fillStyle=shade(st,1.95);
  c.beginPath();/* 機関部(いちばん明るい=ここが銃だと分かる) */
  c.moveTo(x-2.6,y-3.6);c.lineTo(x+8,y-3.6);c.lineTo(x+8,y+3);c.lineTo(x-2.6,y+3);c.closePath();c.fill();c.stroke();
@@ -10138,8 +10320,11 @@ function uBack0(c,k,U,walk){
    c.quadraticCurveTo(g[0]*.5,g[1]-9,g[0],g[1]);
    c.quadraticCurveTo(g[2],g[3],-5,-28);
    c.closePath();c.fill();c.stroke();}}
- else if(k==='cloak'){c.fillStyle=shade(col,.85);c.beginPath();c.moveTo(-8,-36);
-  c.lineTo(-20,-6+walk*2);c.lineTo(-2,-11);c.closePath();c.fill();c.stroke();}
+ else if(k==='cloak'){/* ⚠**兵科の色で塗らない**(2026-08-01)=隊長は白っぽい色なので、
+    そのまま塗ると背中に**白い帆**が立っているように見えた。外套は必ず濃い色にする */
+  c.fillStyle='#5c4a3a';c.beginPath();c.moveTo(-8,-37);
+  c.lineTo(-21,-5+walk*2);c.lineTo(-1,-11);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GOLD;c.beginPath();c.arc(-7.4,-35.4,2.2,0,7);c.fill();c.stroke();}/* 留め金 */
 }
 /* ⭐バットのスイングの進み(0=構え / >0=振っている最中)。0=いま振った直後 → 1=次に振る直前。
    ⚠攻撃していない(cd<=0)時は0=構え。
@@ -10660,29 +10845,25 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
       ②**腿とすねの区別が無い**=膝で折れず、まっすぐな台形が1枚あるだけだった。
       ③**脚が短すぎた**(全高50のうち10px)。胴の丈を詰めて**脚を18pxに伸ばした**
         (割り付けの掟=頭13/胴17/脚24)。 */
- {const usw=walk*5.2;
-  const uleg=(dx,dk)=>{
-   const kx=dx*.5;
-   c.fillStyle=shade(UW.pa,dk*1.08);/* 太もも(腰→膝) */
-   c.beginPath();c.moveTo(-4.4+dx*.2,-18.8);c.lineTo(4.2+dx*.2,-18.8);
-   c.lineTo(3.6+kx,-10.8);c.lineTo(-3.8+kx,-10.8);c.closePath();c.fill();c.stroke();
-   c.fillStyle=shade(UW.pa,dk*.86);/* すね(膝→足首。⚠少し細く=まっすぐな台形は段ボールに見える) */
-   c.beginPath();c.moveTo(-3.7+kx,-11.1);c.lineTo(3.5+kx,-11.1);
-   c.lineTo(3+dx,-4.2);c.lineTo(-3.1+dx,-4.2);c.closePath();c.fill();c.stroke();
-   c.fillStyle=shade(UW.sho,dk);/* 靴(⚠横に長く=地面に立って見える) */
-   c.beginPath();c.moveTo(-3.7+dx,-4.6);c.lineTo(3.3+dx,-4.6);c.lineTo(4.5+dx,-2.5);
-   c.lineTo(6.6+dx,-2);c.lineTo(6.8+dx,-.3);c.lineTo(-4.1+dx,-.3);c.closePath();c.fill();c.stroke();
-  };
-  uleg(-1-usw,.8);uleg(1+usw,1);}
+ const PZ=uPz(id);
+ uLegs(c,PZ,walk);
+ /* ⭐**腰から上をまとめて構えに合わせる**(2026-08-01)=腰を落とす(lh)と前傾(tl)は
+    脚だけでなく胴・腕・頭・武器ぜんぶに掛からないと、腰と胴が離れて絵が割れる。
+    ⚠★の印と派生の装いもこの中に入れる(外に出すと頭だけ下がって印が浮く) */
+ c.save();
+ if(PZ.lh||PZ.tl){c.translate(0,PZ.lh||0);
+  if(PZ.tl){c.translate(2,-20);c.rotate(PZ.tl);c.translate(-2,20);}}
  /* 背負い物(胴より奥)。⭐兵科ごとに違う物を背負わせて**背中の輪郭**で見分ける(第91弾) */
  if(vt>=3){/* 派生3段目=マント */
   c.fillStyle=U.c;c.beginPath();c.moveTo(-8,-36);c.lineTo(-22,-4+walk*2);c.lineTo(-2,-10);c.closePath();c.fill();c.stroke();}
  const LK=uLook(id);
  uBack(c,LK.k,U,walk);
- /* 奥の腕(胴より先=根元が胴に隠れる) */
- if(id!=='big'&&id!=='hnd'){const S=uShoulder(LK.b);
-  /* ⚠奥の腕は**もっと遠くから出す**=根元が胴に隠れて、手だけが武器の所に浮いていた */
-  uArm(c,-S[0]*.55,S[1]+1.5,S[0]*2.05,3.6+walk*1.2,5.2,shade(U.c,.72),shade(U_SKIN,.74));}
+ /* ⭐**手の座標は「武器の座標」で書く**(2026-08-01)=武器は胸(0,-28)を軸に0.86倍して描くので、
+    同じ数字を書けるように手も同じ変換を通す。⚠これをしないと握りと手が必ずずれる */
+ const wkp=p=>[p[0]*.86,-28+(p[1]+28)*.86];
+ /* 奥の腕(胴より先=根元が胴に隠れる)。⭐手は**その兵科の武器の握り**へ持って行く */
+ if(id!=='big'&&id!=='hnd'){const S=uShoulder(LK.b),HB=wkp(PZ.hb||[16,-24.6]);
+  uArmTo(c,-S[0]*.55,S[1]+1.8,HB[0],HB[1]+walk*1.1,5.2,shade(U.c,.72),shade(U_SKIN,.74));}
  /* 胴体 */
  if(id==='big'){/* ⭐巨漢(第102弾に描き直し): 素手の壁。**分厚い胸板と地面まで垂れる太い腕**が売り。
     ⚠それまで**角丸の四角+三角の腕+丸い拳**で、実機では茶色い箱にしか見えなかった。
@@ -10713,14 +10894,13 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=shade(U.c,1.1);
   c.beginPath();c.moveTo(15.2,-11-sw);c.lineTo(22.6,-11.6-sw);c.lineTo(23,-4-sw);c.lineTo(15,-3.4-sw);c.closePath();c.fill();c.stroke();
   c.fillStyle=shade(U.c,.68);c.fillRect(16.2,-8.8-sw,6.4,1.7);/* 指の割れ目 */
- }else{uBody(c,LK.b,U.c);}/* ⭐体型も兵科ごと(細身/普通/ずんぐり/のっぽ/前傾) */
- if(id==='med'){c.fillStyle=RUST;c.fillRect(-4,-28,8,3);c.fillRect(-1.5,-30.5,3,8);}
+ }else{const PB=uBody(c,LK.b,U.c,null,!!PZ.cs);uCos(c,PZ.cs,U,PB,walk);}/* ⭐体型+装いも兵科ごと */
  if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,-10,-20,20,10,4);c.fill();c.stroke();}
- /* 手前の腕(胴の後・武器の前=手が武器の握りに来る)。⭐肩の丸みを付ける(pad) */
- if(id!=='big'&&id!=='hnd'){const S=uShoulder(LK.b);
+ /* 手前の腕(胴の後・武器の前=手が武器の握りに来る) */
+ if(id!=='big'&&id!=='hnd'){const S=uShoulder(LK.b),HF=wkp(PZ.hf||[9,-19.8]);
   /* ⚠⚠**手前の腕の付け根は胴の前ぶちに置く**(2026-07-31)=胴の内側から生やしていたので、
      二の腕の黒フチが胸を横切って**胴が上下に割れて**見えていた(ハリボテ感の原因④と同じ) */
-  uArm(c,S[0]*.42,S[1]+2.6,S[0]*1.3,2-walk*1.2,5.6,shade(U.c,1.14),U_SKIN,0);}
+  uArmTo(c,S[0]*.42,S[1]+2.6,HF[0],HF[1]-walk*1.1,5.6,shade(U.c,1.14),U_SKIN);}
  /* 頭+かぶり物(⭐兵科ごとに形を変える。25pxで見分けが付く数少ない場所) */
  uHead(c,LK.h,U,LK.b==='tall'?-46:LK.b==='crouch'?-39:LK.b==='wide'?-43:-42);
  /* 武器。⭐第102弾に「棒+三角」をやめた。⚠線で描いた武器は黒フチに食われて**ただの黒い棒**になる */
@@ -10747,36 +10927,59 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=shade('#7c7466',.7);c.fillRect(11.6,-39.4,9.2,2.8);c.fillRect(11.6,-16.4,9.2,2.8);/* 上下の帯 */
   c.fillStyle='#a8adb5';c.beginPath();c.arc(16.4,-26,4.2,0,7);c.fill();c.stroke();/* 中央の鋲 */
   c.fillStyle='#5c5346';for(const k of [-35,-20.6]){c.beginPath();c.arc(19,k,1.5,0,7);c.fill();}}
- else if(id==='mol'){/* 火炎瓶(瓶+燃える布)。⚠角丸長方形だと薬缶に見える */
+ else if(id==='mol'){/* ⭐火炎瓶(2026-08-01に大きくした)。⚠それまで瓶が幅8しかなく、
+    実寸では**手の先の点**にしか見えなかった(ユーザー指摘「手の物が小さくて読めない」)。
+    ⭐**掲げて持たせる**+瓶を一回り大きく+炎を太い舌の形に。⚠角丸長方形だと薬缶に見える */
   c.fillStyle='#6f9c8f';
-  c.beginPath();c.moveTo(9,-23.4);c.lineTo(9,-30);c.lineTo(11.6,-33.6);c.lineTo(14.6,-33.6);
-  c.lineTo(17,-30);c.lineTo(17,-23.4);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade('#6f9c8f',1.3);c.fillRect(10.2,-29.4,2.4,5);/* 瓶の照り */
+  c.beginPath();c.moveTo(8.6,-21.6);c.lineTo(8.6,-31.4);c.lineTo(11.4,-35.4);c.lineTo(16.6,-35.4);
+  c.lineTo(19.4,-31.4);c.lineTo(19.4,-21.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade('#6f9c8f',1.34);c.fillRect(10.2,-30.4,2.8,7);/* 瓶の照り */
+  c.fillStyle='#c96b35';c.fillRect(9.4,-27,9.2,3.4);/* ラベル(⚠無いとただの緑の箱) */
+  c.fillStyle='#8f8a72';/* 首 */
+  c.beginPath();c.moveTo(11.8,-35.2);c.lineTo(16.2,-35.2);c.lineTo(15.6,-38.6);c.lineTo(12.4,-38.6);c.closePath();c.fill();c.stroke();
   c.fillStyle=PAPER2;/* 口に詰めた布 */
-  c.beginPath();c.moveTo(11.6,-33.4);c.lineTo(14.6,-33.4);c.lineTo(15.4,-38);c.lineTo(11,-38);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#ffb347';c.beginPath();c.arc(13.2,-40,3+Math.sin(t*18)*1.5,0,7);c.fill();
-  c.fillStyle=GLOW;c.beginPath();c.arc(13.2,-40,1.4+Math.sin(t*18)*.6,0,7);c.fill();}
- else if(id==='grn'){/* 手榴弾(手の位置に持たせる)。⚠頭の横に丸を浮かべると風船に見える */
-  c.fillStyle='#4c5648';
-  c.beginPath();c.ellipse(16.4,-29.6,4.8,5.6,0,0,7);c.fill();c.stroke();
-  c.fillStyle=shade('#4c5648',.62);/* 溝(高さ違いに2本) */
-  c.fillRect(12.2,-31.2,8.4,1.6);c.fillRect(12.6,-28,7.6,1.6);
+  c.beginPath();c.moveTo(12.2,-38.4);c.lineTo(15.8,-38.4);c.lineTo(16.8,-42.4);c.lineTo(11.4,-42.4);c.closePath();c.fill();c.stroke();
+  /* 炎(⚠丸を並べると炎に見えない=根本が太く先が細い舌) */
+  const fk=Math.sin(t*18);
+  c.fillStyle='#ffb347';c.beginPath();c.moveTo(11.2,-42);c.lineTo(16.8,-42);
+  c.quadraticCurveTo(15.4,-47.4-fk,14,-50.4-fk*2);c.quadraticCurveTo(12.4,-46.4,11.2,-42);c.closePath();c.fill();
+  c.fillStyle=GLOW;c.beginPath();c.moveTo(12.6,-42);c.lineTo(15.4,-42);
+  c.quadraticCurveTo(14.6,-45.4,13.8,-47.4-fk);c.quadraticCurveTo(13,-45,12.6,-42);c.closePath();c.fill();}
+ else if(id==='grn'){/* ⭐手榴弾(2026-08-01に大きくした)。⚠実寸では点にしか見えなかった。
+    ⚠頭の横に丸を浮かべると風船に見える=**手の位置に持たせる**。
+    ⭐**格子の溝**を入れると「手榴弾」だと一目で分かる(丸のままだと果物) */
+  c.fillStyle='#5c6a4c';
+  c.beginPath();c.ellipse(16.4,-29.4,6.4,7.4,0,0,7);c.fill();c.stroke();
+  c.fillStyle=shade('#5c6a4c',.60);/* 溝(横3本+縦1本。⚠等間隔にしない) */
+  c.fillRect(10.6,-32.4,11.6,1.8);c.fillRect(10.4,-29.4,12,1.8);c.fillRect(11,-26,11,1.8);
+  c.fillRect(15.6,-36,1.8,13);
   c.fillStyle='#8a8f96';/* 安全レバー */
-  c.beginPath();c.moveTo(14.6,-35.4);c.lineTo(19.6,-35.4);c.lineTo(19.6,-33.4);c.lineTo(14.6,-33.4);c.closePath();c.fill();c.stroke();
-  c.strokeStyle=GOLD2;c.lineWidth=1.6;c.beginPath();c.arc(21.8,-35.4,2.4,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=2.4;}
+  c.beginPath();c.moveTo(14.2,-38.4);c.lineTo(20.4,-38.4);c.lineTo(20.4,-35.6);c.lineTo(14.2,-35.6);c.closePath();c.fill();c.stroke();
+  c.strokeStyle=GOLD2;c.lineWidth=1.8;c.beginPath();c.arc(23.4,-37.6,2.8,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=2.4;}
  else if(id==='frz'){uNoz(c,7,-28,19,'#4a7a8a');
   c.globalAlpha=.55;c.fillStyle=FROST;c.beginPath();c.arc(29,-28,4+Math.sin(t*14)*2,0,7);c.fill();c.globalAlpha=1;}
- else if(id==='saw'){/* チェーンソー(機関部+ガイドバー+不揃いの歯) */
-  c.fillStyle='#c96b35';
-  c.beginPath();c.moveTo(4,-33.4);c.lineTo(15,-33.4);c.lineTo(15,-22.6);c.lineTo(4,-22.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade('#c96b35',.7);/* 握り */
-  c.beginPath();c.moveTo(2.6,-34.4);c.lineTo(6,-35.4);c.lineTo(6,-21.6);c.lineTo(2.6,-22.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#8a8f96';/* ガイドバー(先が丸い) */
-  c.beginPath();c.moveTo(14,-31.4);c.lineTo(30,-30.8);c.quadraticCurveTo(34,-30.2,34,-28);
-  c.quadraticCurveTo(34,-25.6,30,-25.2);c.lineTo(14,-24.6);c.closePath();c.fill();c.stroke();
+ else if(id==='saw'){/* ⭐チェーンソー(2026-08-01に描き直し)。
+    ⚠それまで刃が**灰色の板一枚**で、何の道具か読めなかった(ユーザー指摘)。
+    ⭐足したのは3つ: ①**前の握り(ループ)**=両手で持っていると分かる
+      ②ガイドバーの**溝(暗い筋)**と明るいふち=板ではなく「レール」に見える
+      ③**歯を上下に不揃いに**+先端を尖らせる。 */
+  c.fillStyle='#8a8f96';/* ガイドバー(先が尖る。⚠丸いと棒に見える) */
+  c.beginPath();c.moveTo(13,-31.6);c.lineTo(30,-31);c.lineTo(35.6,-28.2);
+  c.lineTo(30,-25.2);c.lineTo(13,-24.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#4f555c';/* 溝(⚠これが無いと灰色の板のまま) */
+  c.beginPath();c.moveTo(15,-29.4);c.lineTo(29.4,-29);c.lineTo(31.4,-28.1);
+  c.lineTo(29.4,-27.2);c.lineTo(15,-26.8);c.closePath();c.fill();
   c.fillStyle=INK;/* 歯(⚠等間隔に並べない) */
-  for(const k of [16.4,20.6,25,29.4])c.fillRect(k,-33,2.2,2.6);
-  for(const k of [18.4,23.4,28])c.fillRect(k,-24.6,2,2.4);}
+  for(const k of [15.4,19.6,24,28.4])c.fillRect(k,-33.2,2.2,2.6);
+  for(const k of [17.4,22.4,27])c.fillRect(k,-24.6,2,2.4);
+  c.fillStyle='#c96b35';/* 機関部 */
+  c.beginPath();c.moveTo(2.6,-33.8);c.lineTo(14.6,-33.2);c.lineTo(14.6,-22.6);c.lineTo(2.6,-22);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade('#c96b35',1.3);c.fillRect(4.4,-31.6,7.4,2.6);/* 天面の照り */
+  c.fillStyle='#3f4a54';c.beginPath();c.arc(9,-25.6,2.6,0,7);c.fill();/* 始動索の輪 */
+  c.fillStyle=shade('#c96b35',.66);/* 後ろの握り(手の来る所) */
+  c.beginPath();c.moveTo(.6,-31.4);c.lineTo(5,-31.4);c.lineTo(5,-24.6);c.lineTo(.6,-24.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade('#c96b35',.66);/* ⭐前の握り(ループ)=両手持ちだと分かる */
+  c.beginPath();c.moveTo(9.6,-33.6);c.lineTo(21.4,-37.4);c.lineTo(23,-34.4);c.lineTo(12.4,-31);c.closePath();c.fill();c.stroke();}
  else if(id==='med'){/* ⚠**左右に白い箱が対称に並んで「スーツケース2つ」**に見えていた(2026-07-31)。
     ⭐前は**注射器**にする=背中の薬袋と形が違うので、同じ物が2つ並ばない。 */
   c.fillStyle='#cfd5da';/* 筒 */
@@ -10792,6 +10995,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle='#3a3128';/* 二脚 */
   c.beginPath();c.moveTo(25,-27.4);c.lineTo(29,-19);c.lineTo(26.6,-18.6);c.lineTo(23.2,-26.4);c.closePath();c.fill();c.stroke();}
  else if(id==='mgn'){/* ミニガン(機関部+束ねた銃身)。⚠細い銃身を並べると黒フチに食われて棒3本になる */
+  c.fillStyle='#4a5560';/* ⭐握りと前方の支え(2026-08-01)=無いと両手が銃の裏で消える */
+  c.beginPath();c.moveTo(4.4,-23);c.lineTo(9.6,-23);c.lineTo(8.6,-16.4);c.lineTo(5.4,-16.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(21,-24.4);c.lineTo(26.4,-24.4);c.lineTo(25.4,-18.6);c.lineTo(22,-18.6);c.closePath();c.fill();c.stroke();
   c.fillStyle='#3f4a54';rr(c,3,-34,15,12,3);c.fill();c.stroke();
   c.fillStyle='#2c333a';
   c.beginPath();c.moveTo(16,-33.4);c.lineTo(41,-33.4);c.lineTo(41,-23.6);c.lineTo(16,-23.6);c.closePath();c.fill();c.stroke();
@@ -10810,12 +11016,14 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle='#3f4a54';c.fillRect(3,-50.6,7,4.2);c.strokeRect(3,-50.6,7,4.2);/* 照準器 */
   c.fillStyle=RUST;c.beginPath();c.arc(23.4,-42.4,3.6,0,7);c.fill();c.stroke();}
  /* ---- 拡張兵科 ---- */
- else if(id==='spr'){/* 拳銃(スライド+握り+引き金の輪) */
-  c.fillStyle='#3a3128';
-  c.beginPath();c.moveTo(4,-31);c.lineTo(19,-31);c.lineTo(19,-27);c.lineTo(10.4,-27);
-  c.lineTo(9.4,-20.6);c.lineTo(4.6,-20.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#5c4326';c.fillRect(5.2,-25.6,3.6,4.4);/* 握りの木 */
-  c.fillStyle=shade('#3a3128',1.35);c.fillRect(5,-30.4,12,1.6);}
+ else if(id==='spr'){/* ⭐拳銃(2026-08-01に厚くした)。⚠スライドの高さが4しかなく、
+    黒フチ2.4に食われて**ただの黒い棒**になっていた。⭐高さ6以上・明るい鋼にする */
+  c.fillStyle='#6b6154';
+  c.beginPath();c.moveTo(3.6,-32);c.lineTo(21,-31.6);c.lineTo(21,-26);c.lineTo(11,-26);
+  c.lineTo(9.8,-19.6);c.lineTo(4.2,-19.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade('#6b6154',1.32);c.fillRect(5,-31,13.6,2.2);/* スライドの照り */
+  c.fillStyle='#5c4326';c.fillRect(4.8,-25.2,4.4,5.2);/* 握りの木 */
+  c.strokeStyle=INK;c.lineWidth=1.8;c.beginPath();c.arc(11.4,-24.4,2.6,-.4,3.4);c.stroke();c.lineWidth=2.4;/* 引き金の輪 */}
  else if(id==='chain'){/* 鎖使い: 鎖と鉤爪を振り回す。
     ⚠**同じ大きさの丸を等間隔に並べる**と数珠に見えた=向きを交互に変えた**輪**を重ねる */
   const sw=Math.sin(t*6+ph);
@@ -10831,15 +11039,21 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.quadraticCurveTo(hx2+11,hy2+7.8,hx2+5,hy2+6.2);
   c.quadraticCurveTo(hx2+8.6,hy2+2.6,hx2+7,hy2-.6);
   c.lineTo(hx2-2,hy2+.6);c.closePath();c.fill();c.stroke();}
- else if(id==='axe'){c.save();c.translate(10,-30);c.rotate(.35+walk*.4);
-  c.fillStyle='#8a6a45';/* 柄(⚠線で引くと黒フチに食われて棒になる=太さのある帯で) */
-  c.beginPath();c.moveTo(-3.4,2.6);c.lineTo(-1.6,-1.4);c.lineTo(16,-11.6);c.lineTo(17.8,-7.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#a8adb5';/* 斧刃(⚠細い三日月にすると鎌に見える=刃を厚く取る) */
-  c.beginPath();c.moveTo(10.6,-16.4);
-  c.quadraticCurveTo(23.6,-17.6,25.4,-3.6);
-  c.quadraticCurveTo(16.4,-6.6,9.6,-7.6);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#6b7580';/* 刃の付け根の輪 */
-  c.beginPath();c.moveTo(10.4,-14.6);c.lineTo(15.4,-11.6);c.lineTo(13.4,-7.6);c.lineTo(9,-9.6);c.closePath();c.fill();
+ else if(id==='axe'){/* ⭐大斧を**両手で前へ構える**(2026-08-01に描き直し)。
+    ⚠それまでは斜め上へ振り上げていて、刃が**顔と同じ高さ**に来て「開いた嘴」に見えた
+      (ゾンビで踏んだのと同じ穴)。⭐刃はあごより下に置く。
+    ⚠三日月1枚だと鎌になる=**上下2枚の刃(双刃)**にすると「重い斧」に読める。 */
+  c.save();c.translate(4,-26);c.rotate(-.30+walk*.06);
+  c.fillStyle='#9c7a4a';/* 柄(⚠太さのある帯。線だと黒フチに食われる) */
+  c.beginPath();c.moveTo(-2.6,3);c.lineTo(-2.6,-2.2);c.lineTo(19,-2.8);c.lineTo(19,2.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#5c4326';/* 握りの巻き革(手の来る所を暗くして手を目立たせる) */
+  c.beginPath();c.moveTo(1.4,2.8);c.lineTo(1.4,-2.3);c.lineTo(11,-2.6);c.lineTo(11,2.6);c.closePath();c.fill();
+  c.fillStyle='#b7bcc4';/* 双刃(⚠上下で長さを変える=左右対称はハリボテに見える) */
+  c.beginPath();c.moveTo(14.4,-2.4);c.quadraticCurveTo(21,-4.6,24.6,-12.4);
+  c.quadraticCurveTo(28.4,-6.2,27.6,-.6);c.lineTo(15,1);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(15,-.4);c.lineTo(27.6,-1.4);
+  c.quadraticCurveTo(27.4,4.2,24.4,8.4);c.quadraticCurveTo(20.6,3.4,14.6,2.6);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#7e858e';c.fillRect(15.6,-2.2,3.4,4.6);/* 刃の付け根の輪 */
   c.restore();}
  else if(id==='smg'){uGun(c,5,-26,18,4.6,'#3f4a54',1);}
  else if(id==='pike'){c.fillStyle='#8a6a45';/* 柄 */
@@ -10937,6 +11151,13 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
     翼も剣もまとめて描いている。⚠同じidの枝を2つ書かないこと(先に書いた方だけが当たる) */
  c.restore();/* 武器の縮小ここまで */
  c.lineWidth=2.4;
+ /* ⭐⭐**握っている手を武器の上にもう一度描く**(2026-08-01)。⚠武器は腕より**後**に描くので、
+    そのままだと手が武器の裏に消えて、また「腕の先に浮いた武器」に戻る。
+    ⚠盾のように面で持つ物(shd/gld/titan)は手を出さない=盾の上に手が乗って見える(hh:0)。 */
+ if(PZ.hf&&PZ.hh!==0&&id!=='big'&&id!=='hnd'){const H2=wkp(PZ.hf),hy2=H2[1]-walk*1.1;
+  c.fillStyle=U_SKIN;c.beginPath();
+  c.moveTo(H2[0]-1.5,hy2-2.9);c.lineTo(H2[0]+3.6,hy2-2.3);
+  c.lineTo(H2[0]+4.1,hy2+1.7);c.lineTo(H2[0]-1.2,hy2+2.9);c.closePath();c.fill();c.stroke();}
  /* 発砲マズルフラッシュ */
  if(o.fireT>0&&FXLV>0){const mzy=id==='rkt'?-42:id==='mgn'?-27:id==='snp'?-30:-28,mzx=id==='rkt'?26:id==='mgn'?32:id==='snp'?33:27;
   c.fillStyle='#ffdd66';c.beginPath();c.arc(mzx,mzy,4.5+o.fireT*22,0,7);c.fill();
@@ -10955,6 +11176,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  /* ティア章: 終盤=金星・切り札=二つ星 */
  if(tier>=3){c.shadowBlur=0;c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 12px '+FF;c.textAlign='center';
   const st=tier===4?'★★':'★';c.strokeText(st,2,-51);c.fillText(st,2,-51);}/* ⚠頭を小さくしたぶん印も下げる(2026-07-31) */
+ c.restore();/* ⭐構え(腰の落とし・前傾)ここまで */
  c.restore();
 }
 function drawCar(c,x,y,rot,col){c.save();c.translate(x,y);c.rotate(rot);c.lineWidth=3;c.strokeStyle=INK;c.fillStyle=col;rr(c,-34,-16,68,32,8);c.fill();c.stroke();c.fillStyle='#2c2c33';rr(c,-14,-12,26,24,5);c.fill();c.stroke();c.restore();}
