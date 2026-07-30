@@ -10365,27 +10365,33 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
  /* ⭐⭐**溜めの間は片膝を突いて構える**(2026-08-01ユーザー指摘「全然しゃがんでない」で作り直し)。
     ⚠**腰を下げるだけでは「絵が丸ごと下へ動いた」にしか見えない**。要るのは3つ=
       ①膝を折った脚の形(`bLegP`=関節の位置で引く) ②長いコートとケープの裾を持ち上げて脚を見せる
-      ③腰の落とし(LH)を脚と上体の両方に足す(片方だけだと腰と胴が離れて絵が割れる)。 */
- const LH=1.2+9*rc,L=(a,b)=>a+(b-a)*rc,sw=walk*3.8*(1-rc),xB=-1.6-sw,xF=1.6+sw;
+      ③腰の落とし(LH)を脚と上体の両方に足す(片方だけだと腰と胴が離れて絵が割れる)。
+    ⭐⭐**しゃがみは溜めの前半で終わらせて、あとは静止したまま撃つ**(2026-08-01ユーザー指摘
+      「しゃがんでる最中に撃ってる感じになってる」)。溜め(rc)にそのまま比例させると
+      **撃つ瞬間にちょうど沈み切る**=ずっと動いている狙撃手になる。
+      ⭐`kn`=溜めの**最初の35%で1に達する**しゃがみ具合(なめらかに詰める)。
+      ⚠**体の姿勢(脚・腰・傾き・裾・二脚)は kn / 狙いの詰め(銃の振り上げ・照準の光)は rc** と分ける。 */
+ const kn=(x=>x*x*(3-2*x))(clamp(rc/.35,0,1));
+ const LH=1.2+9*kn,L=(a,b)=>a+(b-a)*kn,sw=walk*3.8*(1-kn),xB=-1.6-sw,xF=1.6+sw;
  bLegP(c,L(xB*.2,-2.6),L(-19.4,-10.6), L(xB*.5,-5.4),L(-10.9,-3.4),
-        L(xB,-10.4),L(-4.4,-4.6), PA,SHO,.8,.96,1-2*rc);/* 奥=膝を地面に突いてすねを後ろへ流す */
+        L(xB,-10.4),L(-4.4,-4.6), PA,SHO,.8,.96,1-2*kn);/* 奥=膝を地面に突いてすねを後ろへ流す */
  bLegP(c,L(xF*.2,2.4),L(-19.4,-10.4), L(xF*.5,10.6),L(-10.9,-11.8),
         L(xF,11.8),L(-4.4,-4.4), PA,SHO,1,.96,1);/* 手前=足を前へ出して膝を立てる */
- hTop(c,t,ph,.10+.26*rc);c.translate(0,LH);
+ hTop(c,t,ph,.10+.26*kn);c.translate(0,LH);
  c.fillStyle=CP;/* ケープ(⚠歩きに合わせて後ろへ流す=狙撃手なのに動いて見える) */
  c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
- c.lineTo(-10.4,-6-9.6*rc);c.lineTo(2,-9.4-9.6*rc);c.lineTo(5,-38.4);c.closePath();c.fill();c.stroke();
+ c.lineTo(-10.4,-6-9.6*kn);c.lineTo(2,-9.4-9.6*kn);c.lineTo(5,-38.4);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(CP,.74);c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
- c.lineTo(-12.4,-12-7.4*rc);c.lineTo(-3.4,-38);c.closePath();c.fill();
+ c.lineTo(-12.4,-12-7.4*kn);c.lineTo(-3.4,-38);c.closePath();c.fill();
  const g1=bHold(c,rc,4.6,-34.6,-.19,1.4,-1.2);
  bArm(c,-4.6,-34.8, 6,-31.4, 20,-28.4, 5,4.1, shade(CO,.72),shade(SK,.74));
  g1();
  bTorso(c,CO,[9.6,7.2,HSK.y0,HSK.y1]);
  c.fillStyle=CO2;/* 長いコート(⚠膝まで垂れる=輪郭がまるごと変わる) */
  /* ⚠**しゃがむ時は裾を持ち上げる**=そのままだと裾が地面にめり込み、折った脚を丸ごと隠す */
- c.beginPath();c.moveTo(-8,-35.4);c.lineTo(8.2,-35);c.lineTo(10-3*rc,-9.4+walk*1.4-7.6*rc);
- c.lineTo(-9.6-1.6*rc,-9-walk*1.4-7.6*rc);c.closePath();c.fill();c.stroke();
- c.fillStyle=GD;c.fillRect(-1,-35.2,2.2,25-7.4*rc);/* 金の前合わせ(⚠裾と一緒に縮める) */
+ c.beginPath();c.moveTo(-8,-35.4);c.lineTo(8.2,-35);c.lineTo(10-3*kn,-9.4+walk*1.4-7.6*kn);
+ c.lineTo(-9.6-1.6*kn,-9-walk*1.4-7.6*kn);c.closePath();c.fill();c.stroke();
+ c.fillStyle=GD;c.fillRect(-1,-35.2,2.2,25-7.4*kn);/* 金の前合わせ(⚠裾と一緒に縮める) */
  c.fillStyle='#6b5530';/* 斜めの革帯 */
  c.beginPath();c.moveTo(-8,-33.4);c.lineTo(-4.4,-34.6);c.lineTo(8,-23.4);c.lineTo(4.4,-22.2);c.closePath();c.fill();
  c.fillStyle=GD;c.fillRect(-1.4,-28.4,3.4,3.4);
@@ -10393,8 +10399,8 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
   uGun(c,3.4,-30,34,4.4,GM,0);/* 長い狙撃銃 */
   c.fillStyle='#2f3742';rr(c,7,-38.6,15,4.6,1.6);c.fill();c.stroke();/* 照準器 */
   c.fillStyle=TECH;c.beginPath();c.arc(20.4,-36.3,1.9+rc,0,7);c.fill();
-  c.fillStyle='#3a3128';/* 二脚(⚠溜めの間だけ前へ開く) */
-  c.beginPath();c.moveTo(27,-30.4);c.lineTo(31+3.4*rc,-21);c.lineTo(28.4+3.4*rc,-20.6);c.lineTo(25,-29.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3a3128';/* 二脚(⚠しゃがみと一緒に開く=据えてから狙う順になる) */
+  c.beginPath();c.moveTo(27,-30.4);c.lineTo(31+3.4*kn,-21);c.lineTo(28.4+3.4*kn,-20.6);c.lineTo(25,-29.4);c.closePath();c.fill();c.stroke();
   bArm(c,4.6,-34.6, 8,-30.4, 9.4,-25, 5.2,4.2, shade(CO,1.14),SK);g2();}
  bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
  c.fillStyle=HR;/* 白髪(⚠横に流す=帽子の下から出す) */
