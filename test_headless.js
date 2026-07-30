@@ -1707,6 +1707,19 @@ function checkGachaFx(){
    ③**叩くたびに窓のゾンビが1匹こぼれること**(手応え。残りHPで窓の手も減る)
    ④**行進canvasが高くなること**(素の120pxのままだと上下が切れる=屍熊で実際に切れた)
    ⚠絵そのものは見られない(ヘッドレス)。**見た目は node test_shot.js ... "title+bus" で撮る**。 */
+/* ⭐英雄18人の攻撃が1人ずつ固有か(2026-08-01ユーザー指示「全ヒーロー完璧に固有に」)。
+ ⚠見るのは ①全員が H_FX に居るか ②中身が使い回されていないか の2つ。
+ ⚠絵そのものは見られない=撮るのは node test_shot.js ... "arena=<id>:walk+arn=13"。 */
+function checkHeroFx(){
+ const miss=HEROES.filter(h=>!H_FX[h.id]).map(h=>h.n);
+ if(miss.length){console.log("FAIL: 攻撃が型の使い回しのままの英雄: "+miss.join("/"));process.exit(1);}
+ const fp={};
+ for(const h of HEROES){const k=String(H_FX[h.id]).replace(/s+/g,"");
+  (fp[k]||(fp[k]=[])).push(h.n);}
+ const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join("="));
+ if(dup.length){console.log("FAIL: 攻撃の中身が同じ英雄: "+dup.join(" / "));process.exit(1);}
+ console.log("英雄の攻撃: "+HEROES.length+"人すべてが専用の演出 OK");
+}
 function checkBus(){
  if(ZOMBIES.some(z=>z.id==='bus'||z.id==='zbus')){
   console.log('FAIL: 🚌ゾンビバスが ZOMBIES に入っている(タイトル専用のはず)');process.exit(1);}
@@ -2376,6 +2389,7 @@ checkGachaFx();
 checkTwFx();
 checkZLook();
 checkBus();
+checkHeroFx();
 checkPixel();
 checkULook();
 checkHeroLook();
