@@ -952,7 +952,7 @@ CLAUDE.md には結論だけ置いてある。手順と落とし穴はこちら�
 ### ⚠**「珍しいもの」を足したら、同じ回に 🛠DEV の底上げも足す**(2026-07-30ユーザー指示)
 「見て欲しいやつの確率は上げて欲しい。テストするときは毎回そうして」。
 ★4以上は素で約1.1%しかないので、どんでん返しも黄金のロブスターも**実機で一度も見られないまま公開**になる。
-⭐底上げの一覧は [[CLAUDE#🛠 実機テストのための底上げ(DEVモード) ※2026-07-30ユーザー指示]]。
+⭐底上げの一覧は下の「🛠 実機テストのための底上げ」。
 検査 `checkDevLoad()` が見張っているので、消すと落ちる。
 
 ### ⚠⚠**`git checkout -- .` は「戻したいファイル」以外も巻き添えにする**(2026-07-30に実際に踏んだ)
@@ -960,3 +960,80 @@ Obsidianでフォルダを作ってファイルが移動された時、`git chec
 **同じ回に書いていた未コミットの変更(index.html / test_headless.js)まで消えた**。
 ⭐**戻す前に `git stash` するか、`git checkout -- <戻したいパスだけ>` にすること**。
 ⚠git管理外(.gitignore)のフォルダは checkout では戻らない=**手で mv して戻す**(px_src / sfx_src / ui_src の画像)。
+
+
+---
+
+## 🛠 確認用の道具(2026-07-30に CLAUDE.md から移した)
+
+> ⚠CLAUDE.md は毎回まるごと読まれるので、**撮る時にしか要らない物はここに置く**。
+
+### 撮影(test_shot.js)のオプション一覧
+必要な時に流すもの:
+```
+node test_balance.js             # 兵科の強さが解放順に上がっているか(数値を触ったら必ず)
+node test_layout.js              # マス/道路/死潮ゲージがHUDや操作バーと重なっていないか(寸法を触ったら必ず)
+node test_shot.js out.png 852 393        # 実画面のスクショ(スマホ用CSSを強制適用)
+node test_shot.js out.png 852 393 st2    # ステージ2を撮る / pc=PC表示 / w30000=時間を進める
+node test_shot.js out.png 852 393 vs     # 対戦(空き枠はCPU)を撮る
+node test_shot.js out.png 852 393 "nmboss+z=fBeast,nmHorr"   # ナイトメアで、指定した敵だけ経路に並べて撮る
+node test_shot.js out.png 852 393 "st2+nmboss+noitr+z=dWhal,fLevi" # ⚠🌑深海のナイトメアは **st2 も付ける**
+                                                #   (nmboss だけだとステージ1のまま=獣プールになる)
+                                                # ⭐noitr =「新種のゾンビが現れる!」の紹介モーダルを出さない
+                                                #   ⚠新しい敵の絵を撮る時は必ず付ける(画面を覆って邪魔になる)
+node test_shot.js out.png 852 393 u=grn          # その兵科を3体出して撃たせ続ける(攻撃の演出用。+die=倒れるまで放置)
+node test_shot.js out.png 852 393 stk=napalm     # その砲撃の着弾を撮る(air/mgun/carpet/frost/napalm)
+node test_shot.js out.png 852 393 fxdemo         # 新しい演出を1つずつ並べて、寿命の途中で止めて撮る
+node test_shot.js out.png 852 393 dev            # 🛠DEVモード(全開放)の画面を撮る
+node test_shot.js out.png 1400 800 grid=tw       # 素のタワーを並べる(grid=tg で進化先だけ)
+node test_shot.js out.png 852 393 t=fort2        # 進化先のタワーを実戦で撮る(素を建てて自動で進化させる)
+node test_shot.js out.png 852 393 iv             # 作戦タイム(準備画面)の強化カード
+node test_shot.js out.png 852 393 re2            # 一度タイトルへ戻ってから2回目の出撃(2回目でしか出ない不具合用)
+node test_shot.js out.png 852 393 "tut=3+tutbm"  # 🎓チュートリアル(数字=進める段数。tutbm=塔を建てて強化ウィンドウも開く)
+node test_shot.js out.png 852 393 hero=all        # 英雄18人を経路に並べて撮る(見た目の確認)
+node test_shot.js out.png 852 393 hero=hNox       # その英雄を出撃させて撮る(+nodep=出撃前のボタンだけ見る)
+node test_shot.js out.png 852 393 "title+opt"    # ⚙オプション(音量バー+演出の強さ)
+node test_shot.js out.png 852 393 "title+lob"    # ✨黄金のロブスター(0.1%・5発・💎30) / rbz=🌈虹のゾンビ
+node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=twup lab=unup 記録は lab=rec
+node test_shot.js out.png 852 393 load           # 🎖編成
+node test_shot.js out.png 852 393 "gacha5+gbang" # 💎召集(gacha=撃て! / +gfly=弾が飛ぶ / +gbang=木っ端みじん+示唆 /
+                                                #   +gcard=結果カード / +gres=結果ウィンドウ / gacha5=★5 / +gt0/1/2=タレットの段)
+node test_shot.js out.png 852 393 "gacha+gopen"   # 💎召集画面(引く前・目玉の英雄)。+gdex=📖図鑑 / +grate=確率
+node test_shot.js out.png 852 393 "gacha+gopen+gowned" # 目玉が下のレア度に降りた時の絵(★5まで持っている状態)
+node test_shot.js out.png 852 393 trhome         # 🏋鍛錬所(既定=⚔冒険タブ。trzoo=図鑑 / trhero=🔧鍛える)
+node test_shot.js out.png 852 393 rpg            # ⚔冒険の拠点の町 / rpgf=エリア / rpgb=戦闘 / rpgg=門 / rpgs=つよさ
+node test_shot.js out.png 852 393 "u=snp+uchg=0.8"  # ⭐溜めの途中で止めて撮る(攻撃モーション用)
+node test_shot.js out.png 852 393 hstat          # 🦸英雄ステータス(hs=hNox でその1人を選んだ状態)
+node test_shot.js out.png 852 393 "gacha5+glob+gaim"   # ✨黄金のロブスターが的(★4以上で1/3)
+node test_shot.js out.png 852 393 "gacha5+gtwist+ggold" # どんでん返し(金色に変わっていく途中)
+node test_shot.js out.png 852 393 "gacha5+gmorn+gfc=0"  # 朝の背景 / gnight=夜 / gfc=0白 1赤 2虹
+node test_shot.js out.png 852 393 "gacha+gopen+gspin=1" # 召集画面(何人目を正面にするか)
+node tool_slice.js ui_src/sheet-a.png --list     # 1枚のシート画像からアイコンを自動で切り出す(まず数と並びを確認)
+node tool_slice.js ui_src/sheet-a.png ic-scrap,ic-up,ic-res,ic-gem,ic-mat   # 名前を付けて書き出す
+```
+合格基準: 試合が over=true / シェア合計100±2 / FAILが出ない。
+※ ヘッドレスはDOM/Canvasをスタブしているため見た目は検証できない。**見た目は`test_shot.js`で撮って目視**し、最終確認は永井さんが実機で行う(画面下部に赤いエラー帯が出る仕組みあり=window.onerror)。
+
+### 🛠 実機テストのための底上げ(DEVモード) ※2026-07-30ユーザー指示
+⭐**「見て欲しいやつの確率は上げて欲しい。テストするときは毎回そうして」**。
+⚠⚠**新しく「珍しいもの」を足したら、必ず同じ回に `?dev=1` の底上げも足すこと**。
+素の確率のままでは実機で一度も見られず、**確かめずに公開する**ことになる。
+
+| もの | 本番 | 🛠DEV |
+|---|---|---|
+| 💎召集の★4以上 | 1.1% | **約31%**(`RK_EACH_DEV`) |
+| 召集の演出の内訳 | ✨金20/どんでん返し35/通常45 | **均等(1/3ずつ)**(`GC_P_LOB`/`GC_P_TW`) |
+| タイトルの✨黄金のロブスター | 0.1% | **50%**(`lbRate()`) |
+| タイトルの🌈虹のゾンビ | 1% | **50%**(`rbRate()`) |
+| タワー/兵科/砲撃/マス/進化 | 解放制 | **最初から全部**(`devTop()` ほか) |
+
+⚠**普通に遊ぶ側の確率は1ミリも変えない**。DEVはセーブも別枠(`dt_meta_dev`)。
+⚠確率の画面(💎召集→確率)にはDEVの時だけ「本番はこの数字ではない」と出る。
+⭐検査 `checkDevLoad()` がこの底上げを見張っている(消すと落ちる)。
+
+### 🎨 見た目で効くと分かっている3つ(2026-07-27に判明)
+1. **大きさ**(第95弾): ゾンビ22.7px→**34px**。`CH_UP`(1.5)と`CH_P`(.72)で、小さいものほど効く累乗。
+   ⚠これが「絵が安っぽい」の本当の原因だった。**演出の高さも同じだけ持ち上げる**(`*CH_UP`)。
+2. **色の区分け**(第96弾): 肌 / シャツ / ズボン / 靴 の4色に分ける。1色+明暗1段では何をしても塊に見える。
+3. **ハリボテ感の正体**(第97弾): ①同じ部品を等間隔・左右対称に並べる ②直線の台形 ③一直線の腕
+   ④棘を胴の上から描く ——この4つ。
