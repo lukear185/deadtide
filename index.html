@@ -2417,7 +2417,7 @@ const HEROES=[
  /* ⭐★5の3人目(2026-08-01ユーザーの絵から起こした)。**18人でただ1人の騎乗**。
     ⚠排出率は「1体あたり」なので数値表は触らない=★5の枠が 0.2%→0.3% に自動で太くなる。
     ⚠終焉の騎士と題材が近いので**速さと範囲**で役割を分ける=馬で駆けて薙ぎ払う。 */
- {id:'hGeo',n:'狙撃王ジョルジ',rk:5,hp:5200,atk:1400,rate:1.9,sp:70,c:'#4e5b41',ty:'pierce',rng:520,uch:56,ult:'一撃必殺',udsc:'画面上のHPが高い敵5体を撃ち抜いて、しばらく足を止める'},
+ {id:'hGeo',n:'狙撃王ジョルジ',rk:5,hp:5200,atk:1400,rate:1.9,sp:70,c:'#4e5b41',ty:'pierce',rng:520,uch:56,ult:'撃墜',udsc:'構えて10発を連続で撃ち込む(撃つ→コッキングの繰り返し)'},
  {id:'hPyro',n:'紅蓮の大魔導士',rk:5,hp:5600,atk:760,rate:1.2,sp:60,c:'#c8323c',ty:'fire',rng:300,aoe:120,burn:40,uch:58,ult:'紅蓮の柱',udsc:'道の3か所に業火の柱を立て、しばらく燃やし続ける'},
  {id:'hDark',n:'暗黒の騎士',rk:5,hp:7000,atk:1020,rate:1.1,sp:96,c:'#8f1f28',ty:'blast',rng:80,aoe:105,uch:56,ult:'漆黒の突撃',udsc:'道を端まで駆け抜けて、触れた敵を薙ぎ倒し暗黒の炎を残す'}
 ];
@@ -10362,8 +10362,11 @@ HBODY.hDawn=(c,U,walk,t,ph,o)=>{
 HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
  const SK=U_SKIN,CO='#3f4a35',CO2='#4e5b41',CP='#5c4a38',PA='#5f5a44',SHO='#3a3128',
        GM='#4a4a44',GD='#c9a13d',HR='#d8d2c4',rc=bRc(o);
- hLeg2(c,walk,PA,SHO,3.8,.96,1.2);
- hTop(c,t,ph,.10);c.translate(0,1.2);
+ /* ⭐**溜めの間はしゃがんでスコープを覗く**(2026-08-01ユーザー指示・絵の3列目の右のポーズ)。
+    ⚠**腰の落とし(LH)は脚と上体の両方に足す**=片方だけだと腰と胴が離れて絵が割れる(掟)。 */
+ const LH=1.2+6.4*rc;
+ hLeg2(c,walk*(1-.7*rc),PA,SHO,3.8,.96,LH);
+ hTop(c,t,ph,.10+.26*rc);c.translate(0,LH);
  c.fillStyle=CP;/* ケープ(⚠歩きに合わせて後ろへ流す=狙撃手なのに動いて見える) */
  c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
  c.lineTo(-10.4,-6);c.lineTo(2,-9.4);c.lineTo(5,-38.4);c.closePath();c.fill();c.stroke();
@@ -13411,6 +13414,13 @@ function awardWavePts(C,quit){
    ⚠受け取るもの: (C,u,U,tg,mx,my,ang,col,utl,d5,pierce)
      mx,my=銃口の位置 / ang=敵への向き / col=その英雄の色 / d5=向き(±1)。
    ⚠**FXLV>0 の中に入れる**(演出オフの人には出さない)。⚠音は鳴らしすぎない。 */
+/* ⭐狙撃王の「1発撃った跡」=**薬莢が飛ぶ+銃口から煙**(2026-08-01ユーザー指示)。
+   ⚠通常攻撃と必殺技の**両方**で呼ぶ。⚠煙は上へゆっくり(typ:"smoke")=体を覆わない。 */
+function geoSpent(C,u,mx,my,d5){
+ if(!(FXLV>0))return;
+ addP(C,1,u.px,u.py-24*CH_UP,{sp:74,a:(d5||-1)<0?2.2:.9,spread:.3,up:48,g:600,life:.9,r:1.9,col:GOLD2,typ:"shell",gr:u.py});
+ addP(C,2,mx,my,{sp:16,up:34,g:-46,life:.62,r:2.2,col:"#b8b2a4",typ:"smoke"});
+}
 const H_FX={
  /* 元警官: 拳銃の速射。⚠1発が細いので**2本まとめて**撃つ+薬莢を落とす */
  hCop:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.09;
@@ -13563,7 +13573,9 @@ const H_FX={
    col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:2.8,lf:.2});
   addFx(C,"tr",tg.px,tg.py-18*CH_UP,"",
    {x2:tg.px+Math.cos(ang)*220,y2:tg.py-18*CH_UP+Math.sin(ang)*220,col:"rgba(196,222,150,",w:1.5});
-  if(FXLV>0){addP(C,1,u.px,u.py-24*CH_UP,{sp:70,a:d5<0?2.2:.9,spread:.3,up:48,g:600,life:.9,r:1.9,col:DIM,typ:"shell",gr:u.py});
+  /* ⭐**1発ごとに薬莢が飛んで銃口から煙が出る**(2026-08-01ユーザー指示)。
+     ⚠煙は typ:"smoke" で上へゆっくり=閃光と違って体を覆わない */
+  if(FXLV>0){geoSpent(C,u,mx,my,d5);
    hitFx(C,tg,ang,"#c4de96",1,U.type);}
   C.shake=Math.max(C.shake||0,.14);
   if(C.isMe)sfx.snipe?sfx.snipe():sfx.shot();},
@@ -14286,18 +14298,28 @@ function heroUlt(C,wave){
   for(let k=0;k<4;k++){const p=pathPos(clamp(PLEN*(.2+k*.2),0,PLEN));addFx(C,'boomL',p[0],p[1],'',{d0:.06*k});}
   addFx(C,'ring',u.px,u.py,'',{r:420,col:GOLD2});
   C.shake=Math.max(C.shake||0,.6);if(C.isMe)sfx.boom&&sfx.boom();
- }else if(id==='hGeo'){/* 一撃必殺: HPの高い5体を撃ち抜いて足を止める */
-  const ls=live.slice().sort((a,b)=>b.hp-a.hp).slice(0,5);
-  ls.forEach((z,k)=>later(C,k*.12,()=>{if(z.dead)return;
-   dmgZ(C,z,z.hp*(z.boss?.22:.5)+1400*W,1);
-   if(!z.dead)z.frzT=Math.max(z.frzT||0,2.4);
-   addFx(C,"beam",u.px,u.py-30*CH_UP,"",{x2:z.px,y2:z.py-18*CH_UP,
-    col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:3.4,lf:.22});
-   addFx(C,"spark",z.px,z.py-18*CH_UP,"",{sd:rnd(0,9),col:"#c4de96",big:1});
-   C.shake=Math.max(C.shake||0,.2);if(C.isMe)sfx.snipe&&sfx.snipe();}));
-  /* ⚠**1発目はその場で効かせる**=全部 later に回すと押した瞬間に何も起きず「不発」に見える */
-  if(ls.length&&!ls[0].dead){dmgZ(C,ls[0],900*W,1);if(!ls[0].dead)ls[0].frzT=Math.max(ls[0].frzT||0,2.4);}
-  addFx(C,"txt",u.px,u.py-84*CH_UP,"一撃必殺");
+ }else if(id==='hGeo'){/* ⭐撃墜: 構えて**10発を連続で撃ち込む**(2026-08-01ユーザー指示)。
+     ⚠**撃つ→コッキング→撃つ**の繰り返しに見せる=1発ごとに 反動(fireT)+薬莢+銃口の煙 を出し、
+     0.28秒の間隔を空ける(間を詰めると機関銃に見える)。
+     ⚠**構えは自動で出る**=必殺の間は chg=1 が渡るので、しゃがんでスコープを覗く姿になる。 */
+  const d5g=(u.dr||-1);
+  const shoot=(k)=>{
+   const ls=C.zombies.filter(z=>!z.dead&&z.d>=0);if(!ls.length)return;
+   ls.sort((a,b)=>b.hp-a.hp);
+   const z=ls[Math.min(ls.length-1,(Math.random()*2)|0)];
+   const mx=u.px+d5g*30*CH_UP,my=u.py-27*CH_UP;
+   u.fireT=.16;/* 1発ごとの反動 */
+   dmgZ(C,z,z.hp*(z.boss?.10:.24)+780*W,1);
+   if(!z.dead)z.frzT=Math.max(z.frzT||0,.9);
+   addFx(C,"beam",mx,my,"",{x2:z.px,y2:z.py-18*CH_UP,
+    col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:3.2,lf:.2});
+   addFx(C,"spark",z.px,z.py-18*CH_UP,"",{sd:rnd(0,9),col:"#c4de96"});
+   geoSpent(C,u,mx,my,d5g);
+   C.shake=Math.max(C.shake||0,.18);
+   if(C.isMe)sfx.snipe&&sfx.snipe();};
+  shoot(0);/* ⚠1発目はその場で撃つ=全部 later に回すと「不発」に見える */
+  for(let k=1;k<10;k++)later(C,k*.28,()=>shoot(k));
+  addFx(C,"txt",u.px,u.py-84*CH_UP,"撃墜");
  }else if(id==='hPyro'){/* 紅蓮の柱: 道の3か所に業火の柱を立てて燃やし続ける。
      ⚠自分の居る所から前方へ置く=道の決め打ちだと当たらないことがある(暗黒の騎士で踏んだ) */
   const q0=clamp(u.d||0,0,PLEN);
