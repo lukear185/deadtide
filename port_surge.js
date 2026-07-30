@@ -1,219 +1,188 @@
 /* ============================================================================
-   ⚡雷光(SURGE) — 別プロジェクトの見た目デモから持ち込む用の一式
-   出どころ: Claude Games/Game/index.html（魔法4番）。2026-07-31。
+   ⚡雷光(SURGE) — 🎯砲撃の6番目として入れる一式  2026-07-31
+   出どころ: Claude Games/Game/index.html の魔法4番（溜めて放つ雷の柱）。
 
-   ⚠これは**貼り付け元の置き場**であって、読み込まれるファイルではない。
-     DEADTIDE は単一HTML(index.html)で完結の約束なので、下の①〜④を index.html へ移して
-     このファイルは消してよい。node --check だけ通してある（構文の保証用）。
+   ⚠これは**貼り付け元の置き場**。DEADTIDE は単一HTMLの約束なので、下の①〜④を
+     index.html へ移したらこのファイルは消してよい。node --check は通してある。
 
-   何をするものか:
-     押している間ためて、離すと**太い雷の柱を直線に撃つ**。溜め具合(0〜1)で
-     長さ・太さ・威力が伸びる。線上の敵を全部撃つ（貫通）。
+   ── どういう砲撃か ────────────────────────────────────────────────
+   タップした地点を中心に、**道に沿って前後450を一瞬で貫く一条の雷**。
+   装甲貫通・燃焼なし・ノックバックあり。
+   ⭐既存5種との違い＝**一瞬で決まる**こと。絨毯は広く燃やして時間で効くが、
+     こちらは押した瞬間に終わる＝**抜かれる直前の1波を止める**ための最後の札。
 
-   DEADTIDE に合わせて直したところ（元のデモとの違い）:
-     ・演出は **addFx に1件だけ積む**。ギザギザの折れ線は毎フレーム乱数で作らず、
-       **種(sd)から sin/cos で生成**する＝既存の 'zap' と同じ作り。
-       ⭐これでホストが配信した fxq をクライアントが再生しても**同じ形**になる。
-     ・寿命は FX_LIFE を触らずに **e.lf** で指定（fxLife が e.lf を優先して見るため）。
-     ・当たり判定と**ダメージは呼び出し側に任せた**（onHit コールバック）。
-       ⚠ホスト権威なので、**dmg を入れてよいのはホストだけ**。演出は両方で出す。
-     ・溜め中は fx に積まない（毎フレーム積むと即あふれる。塔の継続攻撃と同じ考え）。
-
-   ★数値はデモのまま＝**DEADTIDEの数値体系では意味がない**。必ず調整して
-     `node test_balance.js` を通すこと。触るのは SURGE の4行だけ。
+   ── 前回から直したところ ──────────────────────────────────────────
+   ・⭐**直線ではなく道なりに撃つ**ようにした。元のデモは真っ直ぐな柱だったが、
+     DEADTIDEの道は曲がっているので、直線だと曲がり角で当たらず絵も浮く。
+     判定は絨毯爆撃と同じ **`z.d` の差**で取り、絵も `pathPos()` で道をなぞる。
+   ・⭐**数値をDEADTIDEの尺度で置き直した**（検算は⑤）。
+   ・ダメージは `dmgZ(...,1)` を通す＝装甲/鱗の扱いが既存と揃う。
+   ・演出は `addFx` に1件だけ。形は**種(sd)から生成**するので、ホストが配信した
+     ものをクライアントが再生しても同じ雷が出る（既存の 'zap' と同じ作り）。
+   ・寿命は FX_LIFE を触らず **e.lf** で指定（fxLife が e.lf を優先して見る）。
 ============================================================================ */
 
-/* ── 調整ノブ（ここだけ触ればよい） ───────────────────────────────── */
+
+/* ============================================================================
+   ① 表に3行足す
+   ============================================================================
+   STRIKES（1042行あたり）に1行:
+       surge:{n:'雷光',ic:'⚡',ch:52,dsc:'道に沿って前後450を一瞬で貫く一条の雷。装甲を無視する'},
+
+   STK_ORDER（1186行）と LAB_STK（1187行）を差し替え:
+       const STK_ORDER=['mgun','frost','napalm','carpet','surge'];
+       const LAB_STK=[300,600,1000,1600,2400];
+
+   ⚠この2行は必ず同時に直す（LAB_STK[ki] を STK_ORDER の位置で引いているため、
+     片方だけ足すと価格が undefined になる）。
+   ⚠DEVの全解放は STK_ORDER を回しているので、そこは直さなくてよい。
+*/
+
+
+/* ============================================================================
+   ② 効き目 —— airstrikeHit に分岐を1つ足す（13023行 carpet の隣）
+   ============================================================================
+   下の中身を  else if(stk==='surge'){ … }  として入れる。
+*/
 const SURGE = {
-  T: 1.25,          // 最大まで溜まる秒数
-  LEN: [300, 900],  // 射程（溜め0→1）
-  W: [20, 56],      // 柱の太さ
-  DMG: [26, 150],   // 威力  ⚠DEADTIDEの体力に合わせて要調整
-  LIFE: .34,        // 柱が消えるまで
-  COL: '150,120,255',   // 外側の紫
-  COL2: '235,220,255'   // 芯の白紫
+  HALF: 450,   // 道に沿って前後どこまで届くか（絨毯は330）
+  DM: 340,     // 1体あたりの基礎威力（絨毯は240）。⚠ここを触ったら⑤の検算をやり直す
+  KB: 190      // 吹き飛ばし
 };
+function surgeHit(F, x, y, wave, SP) {
+  const cd0 = projPath(x, y), dm = SURGE.DM * (1 + .15 * wave) * SP;
+  for (const z of F.zombies) {
+    if (z.dead || Math.abs(z.d - cd0) > SURGE.HALF) continue;
+    kbZ(z, x, y, SURGE.KB);
+    dmgZ(F, z, dm, 1);              /* 1=装甲貫通 */
+  }
+  /* 演出は1件。d0 で持つので**クライアントでも同じ道の上に出る** */
+  addFx(F, 'surge', x, y, '', { d0: cd0, hf: SURGE.HALF, sd: Math.random() * 999, lf: .38 });
+}
+
 
 /* ============================================================================
-   ① 発射   —— campStep 側（ロジック）に置く
+   ③ 描画 —— fxの描画チェーンに足す（14694行 else if(e.k==='zap') の直前）
    ============================================================================
-   x,y   撃つ位置（杖の先／砲口）
-   ang   撃つ向き（ラジアン）
-   pw    溜め具合 0〜1
-   onHit(z,dmg,qx,qy) … 当たった敵ごとに呼ぶ。⚠ホストのみ dmg を入れること
+   1行だけ足せば済むようにしてある:
+       else if(e.k==='surge'){drawSurge(c,e);}
 */
-function surgeFire(C, x, y, ang, pw, onHit) {
-  pw = Math.max(.25, Math.min(1, pw));
-  const lp = a => a[0] + (a[1] - a[0]) * pw;
-  const len = lp(SURGE.LEN), w = lp(SURGE.W), dmg = lp(SURGE.DMG);
-  const ex = x + Math.cos(ang) * len, ey = y + Math.sin(ang) * len;
-
-  /* 線分と敵の距離で判定＝柱の上に居る敵は全部撃つ（貫通） */
-  const dx = ex - x, dy = ey - y, l2 = dx * dx + dy * dy || 1;
-  for (const z of (C.zombies || [])) {
-    if (z.dead) continue;
-    let t = ((z.px - x) * dx + (z.py - y) * dy) / l2;
-    t = t < 0 ? 0 : t > 1 ? 1 : t;
-    const qx = x + dx * t, qy = y + dy * t;
-    if (Math.hypot(z.px - qx, z.py - qy) < w * .5 + (z.r || 12)) {
-      if (onHit) onHit(z, dmg, qx, qy);
-      /* 柱から敵へ枝分かれ（既存の zap を借りる＝形が揃う） */
-      addFx(C, 'zap', qx, qy, '', { pts: [[qx, qy], [z.px, z.py]], sd: Math.random() * 99, lf: .18 });
-      addP(C, 6, z.px, z.py, { sp: 210, r: 2.6, life: .34, col: 'rgba(' + SURGE.COL2 + ',1)' });
+function drawSurge(c, e) {
+  const k = Math.max(0, 1 - e.t / (e.lf || .38));      // 1→0
+  const a = Math.pow(k, 1.5);
+  /* 道をなぞる点を作る（絵も判定も同じ道の上に乗る） */
+  const N = 26, pts = [];
+  for (let i = 0; i <= N; i++) pts.push(pathPos(e.d0 - e.hf + (e.hf * 2) * (i / N)));
+  c.save(); c.globalCompositeOperation = 'lighter';
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  /* 太い紫 → 細い白の3枚重ね。道路の描き方と同じ考え方 */
+  for (const p of [[54, '150,120,255', .34], [26, '200,175,255', .55], [9, '255,255,255', .95]]) {
+    c.strokeStyle = 'rgba(' + p[1] + ',' + (a * p[2]) + ')';
+    c.lineWidth = p[0] * (.45 + k * .55);
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i <= N; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.stroke();
+  }
+  /* まとわりつく稲妻。⚠乱数ではなく sd と t から作る＝参加側でも同じ形 */
+  for (let b = 0; b < 3; b++) {
+    c.strokeStyle = 'rgba(' + (b ? '210,190,255' : '255,255,255') + ',' + (a * (b ? .6 : .9)) + ')';
+    c.lineWidth = (b ? 2.6 : 1.6) * (.5 + k * .5);
+    c.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const q = pts[i], ang = q[2] + Math.PI / 2;
+      const j = (i === 0 || i === N) ? 0 : Math.sin(e.sd + b * 2.3 + i * 2.1 + e.t * 24) * 30;
+      const px = q[0] + Math.cos(ang) * j, py = q[1] + Math.sin(ang) * j;
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
     }
+    c.stroke();
   }
-
-  /* 演出は1件だけ。⚠形は sd から作るのでクライアントでも同じものが出る */
-  addFx(C, 'surge', x, y, '', { ex, ey, w, pw, sd: Math.random() * 999, lf: SURGE.LIFE });
-  addP(C, 22, x, y, { sp: 380, a: ang, spread: .5, r: 3.4, life: .45, col: 'rgba(' + SURGE.COL2 + ',1)' });
-  return { len, w, dmg, ex, ey };
+  /* 中心の閃光＝どこを撃ったかが分かる */
+  const g = c.createRadialGradient(e.x, e.y, 0, e.x, e.y, 150);
+  g.addColorStop(0, 'rgba(255,255,255,' + (a * .9) + ')');
+  g.addColorStop(1, 'rgba(150,120,255,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(e.x, e.y, 150, 0, 7); c.fill();
+  c.restore();
 }
+
 
 /* ============================================================================
-   ② 溜め   —— 押している間、毎フレーム呼ぶ（ロジック側）
+   ④ 明かり —— ライティングのパスに足す（15035行 zap の行の直後）
    ============================================================================
-   ⚠fx には積まない。粒だけ。粒は PMAX/FXLV で自動的に間引かれる。
-*/
-function surgeCharge(C, x, y, chg, dt) {
-  const n = Math.random() < dt * (6 + chg * 26) ? 1 + (chg * 3 | 0) : 0;
-  for (let i = 0; i < n; i++) {
-    const a = Math.random() * 6.283, d = (34 + Math.random() * 56) * (1.2 - chg * .4);
-    /* 外から中心へ吸い込まれる＝溜まっているのが目で分かる */
-    addP(C, 1, x + Math.cos(a) * d, y + Math.sin(a) * d, {
-      a: a + Math.PI, spread: .12, sp: d * 3.2, g: 0, r: 2.2, life: .3,
-      col: 'rgba(' + SURGE.COL2 + ',1)'
-    });
-  }
-  /* 満タンになったら手元で弾ける */
-  if (chg >= 1 && Math.random() < dt * 9)
-    addFx(C, 'zap', x, y, '', {
-      pts: [[x, y], [x + rnd(-46, 46), y + rnd(-46, 46)]], sd: Math.random() * 99, lf: .12
-    });
-}
+     else if(e.k==='surge'&&e.t<.26){
+      for(let i=0;i<=8;i++){const q=pathPos(e.d0-e.hf+(e.hf*2)*(i/8));
+       lite(q[0],q[1],150,.95);glow.push([q[0],q[1],140,.55,'175,150,255']);}}
 
-/* 溜めの光そのもの（砲口の球と足元の輪）。⚠fxではないので**描画側から直接**呼ぶ。
-   c=ctx / x,y=砲口 / chg=0〜1 / t=経過秒(演出の回転用) */
+   ⚠これが無いと威力が伝わらない。デモで一番効いていたのは柱そのものより
+     「画面が白く飛ぶ」方だった。夜のステージだと差が大きく出る。
+============================================================================ */
+
+
+/* ============================================================================
+   ⑤ 数値の検算（なぜ DM=340 なのか）
+   ============================================================================
+   検査（test_headless.js ⑥）は**1回撃った時の総ダメージ**で順番を見張る。
+   道に沿って14体を40間隔（±260）に並べ、真ん中を撃って
+   `(削れたHP)＋(burnD×burnT)` を全部足す、という測り方。
+
+   絨毯爆撃で逆算すると測定時の wave が出る:
+       240×(1+.15w) ＋ 燃焼40×2秒 = 1体あたり
+       これ×14体 = 9520（DESIGN.mdの実測値）
+       → 1体あたり680 → 240×(1+.15w)=600 → **w=10**
+   ⭐DESIGNに載っている 9520 とぴったり一致したので、この式で合っている。
+
+   同じ条件で雷光:
+       340×2.5 = 850／体（燃焼なし・14体とも射程内）
+       850×14 = **11900**  >  絨毯 9520
+   刻み幅は +25%。既存の刻み（+14.5% / +21% / +26% / +64%）の真ん中あたりに収まる。
+
+   ⚠**DM を触ったらこの計算をやり直すこと**。9520 を下回ると検査が即FAILする。
+   ⚠射程(HALF)を広げても検査の総量は増えない（テストの14体は±260にしか居ないため）。
+     効くのは DM だけ。射程は実戦での使い勝手の方に効く。
+============================================================================ */
+
+
+/* ============================================================================
+   ⑥ 入れたあとにやること
+   ============================================================================
+   node test_undef.js       文法と未定義
+   node test_headless.js    ⭐砲撃の順番（air→…→surge）がここで測られる
+   node test_balance.js     数値を触ったので必ず
+   node test_shot.js out.png 852 393    ⭐見た目は必ず撮って目視
+
+   ⚠**新しく「珍しいもの」を足したので `?dev=1` の底上げも同じ回に足す**（NOTES.md）。
+     雷光はDEVの全解放（STK_ORDER を回す所）で自動的に開くので、
+     あとは**装備が雷光になった状態で始まる**ようにしておくと実機で一度で見られる。
+   ⚠DESIGN.md の砲撃の節（総ダメージの並び）に surge を書き足す。
+     `air 3320 < 掃射 3802 < 凍結 4600 < ナパーム 5810 < 絨毯 9520 < 雷光 11900`
+============================================================================ */
+
+
+/* ── おまけ：溜めの光 ────────────────────────────────────────────────
+   元のデモは「押している間ためて離すと威力が変わる」形だった。砲撃は ch 秒の
+   チャージ制なのでその仕組みは要らないが、**砲撃ボタンが満タンになった時の光**
+   として使えるので残しておく。使わないなら持って行かなくてよい。
+   c=ctx / x,y=光らせたい位置 / chg=0〜1 / t=経過秒 */
 function drawSurgeCharge(c, x, y, chg, t) {
   if (chg <= .01) return;
   const R = 5 + chg * 14;
   c.save(); c.globalCompositeOperation = 'lighter';
   const g = c.createRadialGradient(x, y, 0, x, y, R * 4.4);
-  g.addColorStop(0, 'rgba(' + SURGE.COL2 + ',' + (.5 + chg * .45) + ')');
-  g.addColorStop(.34, 'rgba(' + SURGE.COL + ',' + (.22 * chg) + ')');
-  g.addColorStop(1, 'rgba(' + SURGE.COL + ',0)');
+  g.addColorStop(0, 'rgba(235,220,255,' + (.5 + chg * .45) + ')');
+  g.addColorStop(.34, 'rgba(150,120,255,' + (.22 * chg) + ')');
+  g.addColorStop(1, 'rgba(150,120,255,0)');
   c.fillStyle = g; c.beginPath(); c.arc(x, y, R * 4.4, 0, 7); c.fill();
-  c.fillStyle = 'rgba(' + SURGE.COL2 + ',.95)';
-  c.beginPath(); c.arc(x, y, R * .5, 0, 7); c.fill();
-  /* 回る環＝溜まっている最中だと分かる印 */
-  c.strokeStyle = 'rgba(' + SURGE.COL2 + ',' + (.4 + chg * .5) + ')'; c.lineWidth = 1.6;
+  c.fillStyle = 'rgba(235,220,255,.95)'; c.beginPath(); c.arc(x, y, R * .5, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(235,220,255,' + (.4 + chg * .5) + ')'; c.lineWidth = 1.6;
   c.save(); c.translate(x, y); c.rotate(t * 3.4); c.scale(1, .4);
   c.beginPath(); c.arc(0, 0, R * 2.1, 0, 7); c.stroke(); c.restore();
-  if (chg >= .999) { /* 満タンの合図 */
+  if (chg >= .999) {
     c.strokeStyle = 'rgba(255,255,255,' + (.7 + Math.sin(t * 22) * .3) + ')'; c.lineWidth = 2;
     c.beginPath(); c.arc(x, y, R * 2.8 + Math.sin(t * 18) * 2, 0, 7); c.stroke();
   }
   c.restore();
 }
 
-/* ============================================================================
-   ③ 柱の描画   —— fx の描画チェーンに1本足す
-   ============================================================================
-   貼る場所: index.html の  else if(e.k==='zap'){   の**直前**（14694行あたり）。
-   下の中身をそのまま  else if(e.k==='surge'){ … }  として入れる。
-   ⚠この関数のまま呼んでもよい（引数 c,e）。その場合は
-       else if(e.k==='surge'){drawSurge(c,e);}
-   の1行だけ足せば済む。
-*/
-function drawSurge(c, e) {
-  const k = Math.max(0, 1 - e.t / (e.lf || SURGE.LIFE));  // 1→0
-  const a = Math.pow(k, 1.6);
-  const ang = Math.atan2(e.ey - e.y, e.ex - e.x);
-  const len = Math.hypot(e.ex - e.x, e.ey - e.y);
-  const w = e.w * (.45 + k * .55);
-  c.save(); c.globalCompositeOperation = 'lighter';
-  c.translate(e.x, e.y); c.rotate(ang);
 
-  /* 外側の帯：根本が濃く、先へ行くほど薄く細く */
-  let g = c.createLinearGradient(0, 0, len, 0);
-  g.addColorStop(0, 'rgba(' + SURGE.COL2 + ',' + (a * .95) + ')');
-  g.addColorStop(.35, 'rgba(' + SURGE.COL + ',' + (a * .8) + ')');
-  g.addColorStop(1, 'rgba(' + SURGE.COL + ',0)');
-  c.fillStyle = g;
-  c.beginPath();
-  c.moveTo(0, -w * .5); c.lineTo(len, -w * .18); c.lineTo(len, w * .18); c.lineTo(0, w * .5);
-  c.closePath(); c.fill();
-
-  /* 白い芯 */
-  g = c.createLinearGradient(0, 0, len, 0);
-  g.addColorStop(0, 'rgba(255,255,255,' + a + ')');
-  g.addColorStop(.7, 'rgba(255,255,255,' + (a * .5) + ')');
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  c.fillStyle = g;
-  c.beginPath();
-  c.moveTo(0, -w * .16); c.lineTo(len, -w * .05); c.lineTo(len, w * .05); c.lineTo(0, w * .16);
-  c.closePath(); c.fill();
-
-  /* まとわりつく稲妻。⚠乱数ではなく sd と t から作る＝クライアントでも同じ形 */
-  c.lineCap = 'round'; c.lineJoin = 'round';
-  for (let b = 0; b < 3; b++) {
-    c.strokeStyle = 'rgba(' + (b ? SURGE.COL2 : '255,255,255') + ',' + (a * (b ? .6 : .9)) + ')';
-    c.lineWidth = (b ? 2.2 : 1.4) * (.5 + k * .5);
-    c.beginPath(); c.moveTo(0, 0);
-    for (let i = 1; i <= 12; i++) {
-      const f = i / 12;
-      const j = Math.sin(e.sd + b * 2.3 + i * 2.7 + e.t * 26) * w * .42 * (1 - f * .55);
-      c.lineTo(len * f, i === 12 ? 0 : j);
-    }
-    c.stroke();
-  }
-
-  /* 根本の閃光 */
-  c.rotate(-ang); c.translate(-e.x, -e.y);
-  const fg = c.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.w * 2.4);
-  fg.addColorStop(0, 'rgba(255,255,255,' + (a * .9) + ')');
-  fg.addColorStop(1, 'rgba(' + SURGE.COL + ',0)');
-  c.fillStyle = fg; c.beginPath(); c.arc(e.x, e.y, e.w * 2.4, 0, 7); c.fill();
-  c.restore();
-}
-
-/* ============================================================================
-   ④ 明かり   —— ライティングのパスに1行足す
-   ============================================================================
-   貼る場所: index.html の
-       else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){…}
-   の**直後**（15035行あたり）。下を続けて書く:
-
-     else if(e.k==='surge'&&e.t<.24){
-      const st=6;for(let i=0;i<=st;i++){const f=i/st,lx=e.x+(e.ex-e.x)*f,ly=e.y+(e.ey-e.y)*f;
-       lite(lx,ly,e.w*2.2,.9*(1-f*.5));glow.push([lx,ly,e.w*2.0,.5*(1-f*.5),'170,150,255']);}}
-
-   ⚠これが無いと「画面が光っていない」＝威力が伝わらない。夜のステージだと特に差が出る。
-============================================================================ */
-
-/* ============================================================================
-   ⑤ 繋ぎ込みの手順（ゲーム側）
-   ============================================================================
-   どこに載せるかは決めていない（設計はチャット側の判断）。載せ先の候補と要る作業:
-
-   A. 🎯砲撃の新種として足す
-      STK_ORDER に1つ足す／LAB_STK に価格を1つ足す／砲撃のチャージ秒を SURGE.T にする。
-      ⭐**並びがそのまま強さの順**の約束があるので、1発の総ダメージが
-        絨毯爆撃(9520)より上か下かを決めてから数値を置くこと。検査が実際に測って見張る。
-
-   B. 🦸英雄の必殺技として足す
-      heroUlt() に1本足す。⚠**押した瞬間に何か起きること**（雷嵐と同じ落とし穴：
-      全部 later() に回すと不発に見える）。この柱は即着弾なので元から問題ない。
-
-   C. タワーの進化先の攻撃として足す
-      ⚠タワーの性能に触る話になるので、支援施設の約束（情報/部隊/経済の3軸）とは別枠。
-
-   どれでも、共通で要るもの:
-     ・撃つ位置は塔なら twMzPt()、部隊なら銃口。⚠**塔の中心から出さない**（2026-07-27の指摘）。
-     ・ダメージは装甲/鱗の判定を通すこと（onHit の中で既存の dmgZ を呼ぶ）。
-     ・数値を触ったので `node test_undef.js` → `node test_headless.js` → `node test_balance.js`。
-     ・⭐見た目は必ず撮る: `node test_shot.js out.png 852 393 …`
-     ・⚠新しく「珍しいもの」を足したら、同じ回に `?dev=1` の底上げも足す（NOTES.md）。
-============================================================================ */
-
-/* このファイル単体で node --check を通すためのダミー（貼り付け時は持って行かない） */
-function addFx() { } function addP() { } function rnd(a, b) { return a + Math.random() * (b - a); }
+/* このファイル単体で node --check を通すためのダミー。貼り付け時は持って行かない */
+function projPath() { return 0; } function pathPos() { return [0, 0, 0]; }
+function kbZ() { } function dmgZ() { } function addFx() { }
