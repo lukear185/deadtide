@@ -11767,7 +11767,11 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
        ⚠3種とも**縦には回さない**。 */
   const vp=clamp(o.vsw||0,0,1),vcb=(o.vcb||0)%3;
   const VC=[[.16,.26,0],[.34,.34,-.52],[0,0,-.10]][vcb],TZv=VC[0],TILTv=VC[1],PLANEv=VC[2];
-  const VR=-.24;let sa=VR,vtw=0,flen=1,fw=1,thr=0,th9=0,cs9=1,sn9=0;
+  /* ⚠**構えは「前へ水平」にしない**(2026-08-01ユーザー指示
+     「フェンシングみたいに前に構えるんじゃなくて、剣が斜め↓前に傾いてる感じで持って欲しい」)。
+     ⭐`VR`=構えの角度(+で画面の下向き)。0.52rad≒30°の**斜め下前**。
+     ⚠腕は `sa-VR` ぶんだけ回すので、ここを変えると構えだけが変わり振りは変わらない。 */
+  const VR=.52;let sa=VR,vtw=0,flen=1,fw=1,thr=0,th9=0,cs9=1,sn9=0;
   if(vp<=0){sa=VR+Math.sin(t*3)*.03;}
   else if(vcb===2){/* ③突き=回さない。腕ごと前へ突き出して引く */
    sa=PLANEv;
@@ -11874,32 +11878,43 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
     c.globalAlpha=.85;c.fillStyle='#fffdf4';arcp(31,.84);/* 芯 */
    }
    c.restore();}
-  c.save();c.translate(4,-31);c.rotate(sa-VR);c.translate(-4,31);c.translate(thr,0);
-  /* --- 手前の腕(肘で折る。⚠付け根は胴の前ぶちに置く) --- */
+  c.save();c.translate(4,-31);c.rotate(sa-VR);c.translate(-4,31);
+  /* --- 手前の腕(肘で折る。⚠付け根は胴の前ぶちに置く)。
+     ⚠⚠**突きの時は腕ごと動かさず「伸ばす」**(2026-08-01に撮って直した)=
+       腕をまるごと前へ平行移動すると、肩から腕が離れて剣が宙に浮く。
+       付け根は置いたまま、肘から先だけ `thr` ぶん前へ出すこと。 --- */
   c.fillStyle=shade(GA,1.08);
-  c.beginPath();c.moveTo(3.4,-32.6);c.lineTo(9.4,-31.4);c.lineTo(9.4,-27.4);c.lineTo(3.4,-28.4);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(8.2,-31.4);c.lineTo(13.4,-30.6);c.lineTo(13.4,-27);c.lineTo(8.2,-27.6);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(3.4,-32.6);c.lineTo(9.4+thr*.42,-31.4);c.lineTo(9.4+thr*.42,-27.4);c.lineTo(3.4,-28.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(8.2+thr*.42,-31.4);c.lineTo(13.4+thr,-30.6);c.lineTo(13.4+thr,-27);c.lineTo(8.2+thr*.42,-27.6);c.closePath();c.fill();c.stroke();
   c.fillStyle=SK;/* 手 */
-  c.beginPath();c.moveTo(12.4,-31.4);c.lineTo(16,-31);c.lineTo(16,-27);c.lineTo(12.4,-27.2);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(12.4+thr,-31.4);c.lineTo(16+thr,-31);c.lineTo(16+thr,-27);c.lineTo(12.4+thr,-27.2);c.closePath();c.fill();c.stroke();
   /* --- ⭐光の剣。⚠細く長く先を尖らせる=太い板だと翼に見える --- */
-  c.save();c.translate(13.6,-29.2);c.rotate(VR);
+  c.save();c.translate(13.6+thr,-29.2);c.rotate(VR);
   /* ⚠遠近の短縮(奥/手前を向く所で短く太く)。⚠`lineWidth` は補正しない=補正すると片側だけ黒フチが残って歪む */
   if(flen!==1||fw!==1)c.scale(flen,fw);
-  c.fillStyle='#7a6636';/* 柄 */
-  c.beginPath();c.moveTo(-8,-2.2);c.lineTo(-1,-2.2);c.lineTo(-1,2.2);c.lineTo(-8,2.2);c.closePath();c.fill();c.stroke();
-  c.fillStyle=GA;/* 鍔(横に張り出す=剣だと一目で分かる) */
-  c.beginPath();c.moveTo(-2,-6.4);c.lineTo(2.2,-6.4);c.lineTo(2.2,6.4);c.lineTo(-2,6.4);c.closePath();c.fill();c.stroke();
-  c.fillStyle=GA;/* 刃のふち(金) */
-  c.beginPath();c.moveTo(1.8,-3.4);c.lineTo(18,-2.4);c.lineTo(28,0);c.lineTo(18,2.4);c.lineTo(1.8,3.4);c.closePath();c.fill();c.stroke();
+  /* ⭐**細身の長剣に描き直した**(2026-08-01ユーザー指示「剣の感じもダサい。もっと刀身を細くしてかっこよく」)。
+     ⚠それまでは長さ28・半幅3.4の**ずんぐりした短剣**だった。⭐**長さ36・半幅2.9**へ(細長さ8→12)。
+     ⚠**これ以上細くできない**=黒フチが局所座標で2.4あるので、半幅2.9(全幅5.8)でも塗りは3.4しか残らない。
+       細さは「幅を削る」のではなく**長くする**ことで出すこと。 */
+  c.fillStyle='#5c4a2a';/* 握り(細く) */
+  c.beginPath();c.moveTo(-8.4,-1.9);c.lineTo(-1.4,-1.9);c.lineTo(-1.4,1.9);c.lineTo(-8.4,1.9);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GA;/* 柄頭(丸=剣の重心が読める) */
+  c.beginPath();c.arc(-9.6,0,2.5,0,7);c.fill();c.stroke();
+  c.fillStyle=GA;/* 鍔(⚠前へ反らせる=真四角だと十字の板に見える) */
+  c.beginPath();c.moveTo(-2.2,-4.8);c.lineTo(2.2,-7);c.lineTo(2.2,7);c.lineTo(-2.2,4.8);c.closePath();c.fill();c.stroke();
+  c.fillStyle=GA;/* 刃のふち(金)=細く長く、先を鋭く */
+  c.beginPath();c.moveTo(1.6,-2.9);c.lineTo(12,-2.7);c.lineTo(26,-1.7);c.lineTo(36,0);
+  c.lineTo(26,1.7);c.lineTo(12,2.7);c.lineTo(1.6,2.9);c.closePath();c.fill();c.stroke();
   c.fillStyle='#fffaea';/* 刃の芯(白)=ここが『光の剣』の正体 */
-  c.beginPath();c.moveTo(3,-1.9);c.lineTo(18,-1.2);c.lineTo(25,0);c.lineTo(18,1.2);c.lineTo(3,1.9);c.closePath();c.fill();
+  c.beginPath();c.moveTo(3,-1.5);c.lineTo(12,-1.4);c.lineTo(26,-.85);c.lineTo(32,0);
+  c.lineTo(26,.85);c.lineTo(12,1.4);c.lineTo(3,1.5);c.closePath();c.fill();
   /* ⭐**刃の発光**(2026-08-01ユーザー指摘「光感がない」)。⚠加算で**細い芯だけ**光らせる
      =広い面を加算すると明るい地面と混ざって白い塊になる(爆発で踏んだのと同じ穴) */
   if(!o.sil){c.save();c.globalCompositeOperation='lighter';
    c.globalAlpha=.34;c.fillStyle='#fff3cf';
-   c.beginPath();c.moveTo(2,-3.1);c.lineTo(18,-2.1);c.lineTo(29,0);c.lineTo(18,2.1);c.lineTo(2,3.1);c.closePath();c.fill();
+   c.beginPath();c.moveTo(2,-2.7);c.lineTo(24,-1.8);c.lineTo(39,0);c.lineTo(24,1.8);c.lineTo(2,2.7);c.closePath();c.fill();
    c.globalAlpha=.7;c.fillStyle='#ffffff';
-   c.beginPath();c.moveTo(4,-.9);c.lineTo(18,-.55);c.lineTo(26,0);c.lineTo(18,.55);c.lineTo(4,.9);c.closePath();c.fill();
+   c.beginPath();c.moveTo(4,-.8);c.lineTo(24,-.5);c.lineTo(34,0);c.lineTo(24,.5);c.lineTo(4,.8);c.closePath();c.fill();
    c.restore();}
   c.restore();
   c.restore();/* ⭐腕と剣をまとめて肩で回すここまで */
