@@ -168,6 +168,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'if(ui9<0)throw new Error("兵科 '+ARN[1]+' が無い");'
        +'if(zi9<0)throw new Error("敵 '+ARN[2]+' が無い");'
        +'startTst();'
+       /* ⭐arnh を付けると上の帯を🦸英雄側にして撮る(2026-08-01に切り替えを足した) */
+       +(OPT.indexOf('arnh')>=0?'TSTBAR="h";buildZbar();':'')
        /* ⚠検証場は**押した時だけ出る**ようになった(2026-07-30)ので、撮影側で出してやる。
           味方は1.1秒おきに3体、敵は1.5秒おきに出す(自動で湧いていた頃と同じ絵になる) */
        +'var U9=UNITS[ui9];'

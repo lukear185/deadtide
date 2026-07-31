@@ -213,6 +213,15 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #zbar .zk{flex:0 0 auto;padding:3px 8px;border-radius:8px;border:2px solid var(--paper);background:#5e211d;
  color:var(--pane);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
 #zbar .zk.on{background:var(--rust);border-color:var(--gold)}
+/* ⭐**帯の左端に貼り付く切り替え**(2026-08-01ユーザー指摘「試験場でヒーローも出せるように」)。
+   ⚠原因=敵46種のボタンを先に並べていたので、🦸英雄21人は**右へ長くスクロールしないと届かなかった**。
+   ⭐左端に固定した🧟/🦸で中身を切り替える=どちらも1タップで届く。
+   ⚠`position:sticky` は横スクロールの中でも効く。背景を必ず敷く(下のボタンが透ける) */
+#zbar .zsw{position:sticky;left:0;z-index:2;flex:0 0 auto;display:flex;gap:3px;padding-right:5px;
+ background:linear-gradient(90deg,var(--void) 78%,transparent)}
+#zbar .zsw button{flex:0 0 auto;padding:3px 9px;border-radius:8px;border:2px solid var(--paper);
+ background:var(--pane);color:var(--ink);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
+#zbar .zsw button.on{background:var(--gold);border-color:var(--gold2)}
 #zbar .hk{flex:0 0 auto;padding:3px 8px;border-radius:8px;border:2px solid var(--paper);background:#6b4a8a;
  color:var(--pane);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
 @media (pointer:coarse){#zbar{top:calc(max(6px,env(safe-area-inset-top)) + 26px)}
@@ -17793,26 +17802,47 @@ function startTst(){
      ここが唯一の出し口(選ぶ画面を廃止したぶんの受け皿)。
    ⚠ZOMBIES は46種あるので**横スクロールの名前ボタン**にする
      (下のデッキのような絵札にすると焼き直しが要るうえ、帯が厚くなって盤面を覆う) */
+let TSTBAR='z';/* 帯の中身: z=🧟敵 / h=🦸英雄 */
 function buildZbar(){
  const w=$('zbar');if(!w)return;
  w.innerHTML='';w.style.display='flex';
- /* ⚠**敵を先に置く**=帯は左端から出るので、よく使う方を手前に。英雄はその後ろ */
+ /* ⚠⚠**英雄を敵46種の後ろに並べない**(2026-08-01ユーザー指摘「試験場でヒーローも出せるように」)。
+    右へ長くスクロールしないと届かず、事実上「出せない」状態だった。
+    ⭐左端に貼り付く切り替えを置いて、どちらも1タップで届くようにする。 */
+ {const sw=document.createElement('div');sw.className='zsw';
+  for(const [k,lb] of [['z','🧟 敵'],['h','🦸 英雄']]){
+   const b=document.createElement('button');
+   b.textContent=lb;if(TSTBAR===k)b.classList.add('on');
+   b.onclick=()=>{TSTBAR=k;buildZbar();};
+   sw.appendChild(b);}
+  w.appendChild(sw);}
+ if(TSTBAR==='h'){
+  for(let i=HERO_I0;i<UNITS.length;i++){const U=UNITS[i];if(!U||!U.n)continue;
+   const b=document.createElement('button');
+   b.className='hk';b.textContent='🦸'+U.n;b.title=U.n+' — 押すたびに出し直せる';
+   b.onclick=()=>tstHero(i);
+   w.appendChild(b);}
+  return;}
  ZOMBIES.forEach((Z,i)=>{if(!Z||!Z.n)return;
   const b=document.createElement('button');
   b.className='zk';b.textContent=Z.n;b.title=Z.n;b.dataset.zi=i;
   b.onclick=()=>tstSpawnZ(i);
   w.appendChild(b);});
- for(let i=HERO_I0;i<UNITS.length;i++){const U=UNITS[i];if(!U||!U.n)continue;
-  const b=document.createElement('button');
-  b.className='hk';b.textContent='🦸'+U.n;b.title=U.n;
-  b.onclick=()=>tstHero(i);
-  w.appendChild(b);}
 }
 /* 🦸英雄を出す。⚠**出し直せるようにする**=見比べる場なので、出ていても差し替える */
 function tstHero(ui){
  if(!G||!G.tst)return;const me=G.players[0];if(!me)return;
+ /* ⚠⚠**前に出した英雄を先に片づける**=出し直せるのが検証場の売り。
+    ⚠さらに `heroDeploy` は**部隊の上限(MAXU)に当たると黙って false を返す**ので、
+      味方を並べたあとに英雄を押すと「押しても出ない」になる(2026-08-01ユーザー指摘の正体)。
+      検証場では古い部隊を1体ずつ捨てて必ず枠を空ける。 */
+ for(const u of me.units)if(u.hro)u.dead=true;
+ me.units=me.units.filter(u=>!u.dead);
+ while(me.units.length>=MAXU)me.units.shift();
  me.hUi=ui;me.hOut=0;me.hCg=1;
- try{heroDeploy(me);}catch(e){}
+ let ok=false;try{ok=heroDeploy(me);}catch(e){}
+ if(!ok)toast('🧪 英雄を出せなかった('+((UNITS[ui]||{}).n||ui)+')',true);
+ me.hCg=1;/* ⭐必殺技をすぐ試せるようにチャージ満タンで置く */
 }
 /* 1体だけ右端から出す。⚠**d は正の値**=負にすると「まだ来ていない」扱いで出てこない */
 function tstSpawnZ(zi){
@@ -17827,6 +17857,9 @@ function tstStep(dt){
  /* ⚠**湧かせる処理はここに書かない**=味方も敵も押した時だけ出す(2026-07-30ユーザー指示)。
     味方=デッキの `actDeploy` / 敵=`tstSpawnZ`。⚠クールダウンだけは待たずに済むよう毎フレーム0に戻す */
  if(me.ucd)for(let i=0;i<me.ucd.length;i++)me.ucd[i]=0;
+ /* ⭐英雄が出ている間は必殺技のチャージを満タンで置く=前置きのモーションを何度でも見比べられる
+    (2026-08-01。⚠普通の試合には一切影響しない=ここは検証場だけを通る道) */
+ if(me.hOut===1)me.hCg=1;
  campStep(me,dt,1);
 }
 /* ⚠**選ぶ画面は廃止した**(2026-07-30ユーザー指示「選ぶ画面いらない」)=
