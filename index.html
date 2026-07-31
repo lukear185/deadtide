@@ -12586,7 +12586,12 @@ const U_ULM={
  bolt :{ln:-.12,ri:-5.2,fw:-0.4,sx:.91, sy:1.13,rc:1.32,ha:-.08,hx:1.2,hy:-7.5,tr:.6},/* 槍を突き上げる */
  slash:{ln:-.34,ri: 1.2,fw:-4.2,sx:1.07,sy:.95, rc:1.30,ha:-.28,hx:-1,hy:-1.4,tr:.7},/* 大きく振りかぶる */
  toss :{ln:-.40,ri:  .2,fw:-4.6,sx:.92, sy:1.00,rc:1.34,ha:-.30,hx:-2,hy:-1.0,tr:.5},/* 腕を引き絞る */
- snipe:{ln: .10,ri: 1.4,fw:-1.6,sx:1.02,sy:.96, rc:1.16,ha:0,   hx:0, hy:0,   tr:.35},/* 据えて狙う */
+ /* ⚠⚠**狙撃(snipe)だけは体を動かさない**(2026-08-02ユーザー指示「ジョルジは構えてるとき
+    体は動かさないように」)。狙撃の英雄3人は `hold9` で**敵が居ない間もずっと構えたまま待つ**ので、
+    詠唱で体を振ると「据えた狙撃手が急にもぞもぞ動く」になる。⭐`still:1` で体の動きを丸ごと外し、
+    通常の溜めの傾き(uChgUp)にそのまま任せる=**待機の姿勢から一切ぶれない**。
+    ⭐`r0`=詠唱の始まりの rc。**1=もう構えている所から始める**(0だと押した瞬間に立ち上がって構え直す)。 */
+ snipe:{ln:0,   ri:0,   fw:0,   sx:1,   sy:1,   rc:1.16,ha:0,   hx:0, hy:0,   tr:0,still:1,r0:1},/* 据えたまま狙いだけ詰める */
  heat :{ln: .17,ri: 2.2,fw: 1.4,sx:1.08,sy:.93, rc:1.22,ha:.22, hx:1, hy:2.2, tr:.9},/* 炉を地へ押し付ける */
  mag  :{ln:-.06,ri: -.6,fw: 3.6,sx:1.03,sy:1.00,rc:1.30,ha:-.12,hx:3.4,hy:-1, tr:.6},/* 磁石を突き出す */
  spin :{ln: .12,ri: 1.0,fw:-1.0,sx:1.05,sy:.97, rc:1.24,ha:0,   hx:0, hy:0,   tr:1.1},/* 銃身が唸る */
@@ -12641,10 +12646,13 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  /* ⭐必殺の詠唱=型ごとの動き(o.um)と姿勢の完成度(o.uk)をここで1回だけ出す。
     ⚠**VEC2 の写しより先に置く**=シルエットの層と本体で姿勢がずれると輪郭が二重にぶれる。
     ⚠得物(rc)もここで押す=各体は bRc(o) を見るだけでよい。 */
+ /* ⚠得物は `r0`(始まりの構え)から `rc` へ動かす=**もう構えている型(狙撃)を
+    押した瞬間に立ち上がらせない**。r0=0 の型は今までどおり0から立ち上がる。 */
  if(o.ulm&&o.um==null){const U9=UNITS[ui]||{};
   o.um=ulMotOf(o,U9.base||U9.id);
-  if(o.ulp>=0){o.uk=ulKof(o.ulp);o.chg=o.um.rc*o.uk;}
-  else o.chg=(o.chg||0)*o.um.rc;/* 発射の余韻=得物が下りてくる */
+  const r9=o.um.r0||0;
+  if(o.ulp>=0){o.uk=ulKof(o.ulp);o.chg=r9+(o.um.rc-r9)*o.uk;}
+  else o.chg=r9+(o.um.rc-r9)*clamp(o.chg||0,0,1);/* 発射の余韻=得物が構えへ戻る */
  }
  if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1}),os=Object.assign({},o1,{sil:1});
   /* ⚠**シルエットの層だけ印を付ける**(o.sil)=半透明の残像はシルエットでは真っ黒な塊になるので、
@@ -12685,8 +12693,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.restore();}
  c.lineWidth=2.4;c.strokeStyle=INK;/* ⚠部隊側は c.scale(tsc) の中なので、これで既に絵の大きさに比例している */
  /* 🦸英雄は専用の姿。⭐溜めの間は上体を型ごとに傾ける(2026-08-01・兵科と同じ扱い) */
- /* ⭐必殺の詠唱中は型ごとの動き(bUlt)が通常の溜めの傾き(uChgUp)を丸ごと引き受ける */
- if(U.hro){const ue=o.ulm?bUlt(c,o,t):null;
+ /* ⭐必殺の詠唱中は型ごとの動き(bUlt)が通常の溜めの傾き(uChgUp)を丸ごと引き受ける。
+    ⚠**`still` の型(狙撃)だけは bUlt を通さない**=通常の溜めの傾きのまま=待機の構えからぶれない */
+ if(U.hro){const ue=(o.ulm&&!(o.um&&o.um.still))?bUlt(c,o,t):null;
   if(!ue){const hl=uChgUp(o);if(hl){c.translate(1,-20);c.rotate(hl);c.translate(-1,20);}}
   drawHeroBody(c,U,walk,o,t,ph);if(ue)ue();c.restore();return;}
  if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
@@ -16662,12 +16671,14 @@ function renderCamp(C,t){
   else{
    /* ⚠**膨らみも詠唱の進みに合わせる**(2026-08-02)=押した瞬間に一段大きくなると、
       そこで動きが終わったように見えて前置きが「始まり」に読めない */
-   const ug9=ulp9>=0?ulk9:ul9;
-   if(ul9>0){c.save();c.translate(u.px,u.py);c.scale(1+.14*ug9,1+.14*ug9);c.translate(-u.px,-u.py);}
+   /* ⚠**据える型(狙撃)は膨らませない**(2026-08-02ユーザー指示「構えてるとき体は動かさない」)
+      =14%の伸縮も「体が動いている」ことに変わりない */
+   const ug9=ulp9>=0?ulk9:ul9,ust9=(U_ULM[uMotK(u.ui)]||{}).still;
+   if(ul9>0&&!ust9){c.save();c.translate(u.px,u.py);c.scale(1+.14*ug9,1+.14*ug9);c.translate(-u.px,-u.py);}
    /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
    drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
     ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0});
-   if(ul9>0)c.restore();}
+   if(ul9>0&&!ust9)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
   if(ulp9>=0&&FXLV>0)drawUChg(c,u,t,1,ulk9);/* 詠唱の照準線・粒も体の前 */
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}

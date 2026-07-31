@@ -2473,7 +2473,14 @@ function checkUltMot(){
   const ui=hUiOf(h.id);if(ui<0){console.log('FAIL: 英雄が UNITS に無い '+h.id);process.exit(1);}
   const M=ulMotOf({mk:uMotK(ui)},h.id);
   const bd=Math.abs(M.ln)*12+Math.abs(M.ri)+Math.abs(M.fw);
-  if(!(bd>2)){console.log('FAIL: 詠唱で体が動かない '+h.id);process.exit(1);}
+  /* ⚠**据える型(狙撃)は動かないのが正解**(2026-08-02ユーザー指示「ジョルジは構えてるとき
+     体は動かさないように」)=ここだけ逆向きに見る。⚠r0=1 も一緒に見る
+     (0だと押した瞬間に構えを解いて立ち上がる) */
+  if(M.still){
+   if(bd!==0||M.sx!==1||M.sy!==1||M.tr){console.log('FAIL: 据える型なのに体が動く '+h.id);process.exit(1);}
+   if(!(M.r0>=1)){console.log('FAIL: 据える型が構えを解いてしまう '+h.id);process.exit(1);}
+  }
+  else if(!(bd>2)){console.log('FAIL: 詠唱で体が動かない '+h.id);process.exit(1);}
   if(!(M.rc>1.05||Math.abs(M.ha||0)>.05||Math.abs(M.hy||0)>1)){
    console.log('FAIL: 詠唱で得物が動かない '+h.id);process.exit(1);}
  }
@@ -2497,13 +2504,17 @@ function checkUltMot(){
   drawUnit(rec(L),hUiOf(id),0,0,1,0,0,{ulm:1,ulp:p,ulr:r||0,chg:r||0,ct:1,mv:0});
   if(UL_HA||UL_HX||UL_HY){console.log('FAIL: 詠唱の腕の上乗せが戻っていない '+id);process.exit(1);}
   return L.join('|');};
+ let still=0;
  for(const h of HEROES){
+  const M=ulMotOf({mk:uMotK(hUiOf(h.id))},h.id);
+  if(M.still){still++;continue;}/* ⚠据える型は「変わらない」のが正解なので姿勢の比べ方が逆になる */
   const a=sig(h.id,0),b=sig(h.id,.5),c=sig(h.id,1),d=sig(h.id,-1,.9);
   if(a===b||b===c){console.log('FAIL: 詠唱の途中で姿勢が変わらない '+h.id);process.exit(1);}
   if(c===d){console.log('FAIL: 発射で姿勢が抜けていない '+h.id);process.exit(1);}
   if(sig(h.id,.9)!==sig(h.id,1)){console.log('FAIL: タメの間に姿勢が動いている '+h.id);process.exit(1);}
  }
- console.log('必殺技の詠唱モーション: 型'+need.length+'種 / 英雄'+HEROES.length+'人が「構え→タメ→発射」で姿勢が変わる OK');
+ console.log('必殺技の詠唱モーション: 型'+need.length+'種 / 英雄'+(HEROES.length-still)+'人が「構え→タメ→発射」で姿勢が変わる'
+  +' / 据える型(狙撃)'+still+'人は構えたまま動かない OK');
 }
 /* ---- 🏋鍛錬所(🔧で英雄を鍛える)と 📖ゾンビ図鑑 ----
    ⚠2026-07-26(第53弾)に洞窟(掘って生態系を育てる防衛戦)をまるごと廃止した。
