@@ -2674,6 +2674,29 @@ function checkRice(){
      「何もない所で止められた」にはならない。 */
   if(!(BUS_R-BUS_CL>=26)){
    console.log('FAIL: 木の手前で見えない壁に当たる(BUS_R'+BUS_R+' - BUS_CL'+BUS_CL+')');process.exit(1);}
+  /* ⚠⚠**掟の検査=「地面が見えている所は必ず走れる」**(2026-08-02(11)ユーザー「この2箇所で突っかかる」)。
+     木も建物も無いのにバスが入れない場所があると、それが全部「変な判定」になる。
+     ⚠バスの体(半径 BUS_R)が覆う範囲までは許す=中心が入れなくても絵の上では届いている。 */
+  {let bad9=0,bx9=0,by9=0;
+   const near9=(x,y)=>{
+    if(!TRE_CELL)return false;
+    const i=clamp(Math.floor(x/TRE_CS),0,TRE_GX-1),j=clamp(Math.floor(y/TRE_CS),0,TRE_GY-1);
+    for(let jj=Math.max(0,j-1);jj<=Math.min(TRE_GY-1,j+1);jj++)
+     for(let ii=Math.max(0,i-1);ii<=Math.min(TRE_GX-1,i+1);ii++){
+      const cl=TRE_CELL[ii+jj*TRE_GX];if(!cl)continue;
+      /* ⚠**「この1点が緑か」ではなく「この辺りが森か」で見る**=木と木の間には必ず小さな隙間があり、
+         そこを1つずつ拾うと本物の空き地と区別が付かない(実際に隅の隙間で落ちた) */
+      for(const t of cl){const dx=t.x-x,dy=t.y-y,r9=t.r+50;if(dx*dx+dy*dy<r9*r9)return true;}}
+    return false;};
+   for(let x=220;x<MAPW-220&&!bad9;x+=140)for(let y=220;y<MAPH-220&&!bad9;y+=140){
+    if(near9(x,y))continue;
+    let inb=0;
+    for(const b of BBLD){const dx=b.x-x,dy=b.y-y,r8=b.rr+50;if(dx*dx+dy*dy<r8*r8){inb=1;break;}}
+    if(inb)continue;
+    const f9=bnsRoadFit(x,y,BUS_CL);
+    if(f9&&dist(x,y,f9[0],f9[1])>BUS_R){bad9=1;bx9=x;by9=y;}
+   }
+   if(bad9){console.log('FAIL: 木も建物も無いのにバスが入れない所がある ('+Math.round(bx9)+','+Math.round(by9)+')');process.exit(1);}}
   {const b5=m5.bus;
    b5.x=400;b5.y=400;b5.vx=0;b5.vy=0;bnsStick(0,0);
    bnsBusStep(m5,.05);

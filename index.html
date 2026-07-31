@@ -18811,14 +18811,10 @@ function bnsTreeGrid(){
   (TRE_CELL[i]||(TRE_CELL[i]=[])).push(t);
  }
 }
-/* 位置から決まるノイズ(0〜1)。⚠**乱数を順に引かない**=引く順で決めると帯状のムラになる。
-   ⚠粗い格子(560)で引いて、林と空き地の塊を作る。 */
-function bnsNz(x,y){
- const a=Math.floor(x/560),b=Math.floor(y/560);
- let n=(a*73856093)^(b*19349663);
- n=(n^(n>>13))*1274126177;
- return ((n^(n>>16))>>>0)/4294967296;
-}
+/* ⚠**位置ノイズで空き地を散らす `bnsNz` は 2026-08-02(11) に廃止した**=
+   木の無い空き地がそのまま「バスが入れないのに何も無い場所」になっていた(ユーザー報告の2箇所)。
+   ⭐掟=**地面が見えている所は必ず走れる**。空き地を作りたくなったら、
+     その空き地も走れる範囲(`bnsOpenW`/`bnsClr`)の側に足すこと。書き戻さないこと。 */
 /* その場所が通路の外か。⚠**道ごとに「その位置での通路の幅」で見る**
    =一番近い道までの距離(`bnsLaneD`)だけでは、関所で細い所と広い所を区別できない。 */
 function bnsFreeAt(x,y,r){
@@ -18841,7 +18837,10 @@ function bldPush(x,y,a,L,W,rd,rf){
  const t0=Math.cos(a),t1=Math.sin(a),n0=-t1,n1=t0;
  const qq=(l,w)=>[x+t0*l+n0*w,y+t1*l+n1*w, x+t0*l-n0*w,y+t1*l-n1*w,
                   x-t0*l-n0*w,y-t1*l-n1*w, x-t0*l+n0*w,y-t1*l+n1*w];
- BBLD.push({x:x,y:y,q:qq(L,W),k:qq(L*(rf?.74:.66),W*(rf?.70:.62)),rf:rf?1:0,
+ /* ⚠`rr`=**この建物の周りだけ木を生やさない半径**。⚠⚠**建物より大きく取らないこと**
+    (2026-08-02(11)ユーザー「この2箇所で突っかかる」)=大きく取ると建物の周りに
+    **木の無い空き地**ができ、そこは走れないので「何もないのに止まる」場所になる。 */
+ BBLD.push({x:x,y:y,q:qq(L,W),k:qq(L*(rf?.74:.66),W*(rf?.70:.62)),rf:rf?1:0,rr:Math.max(L,W)+16,
   c:(rd()*BLD_W.length)|0,rc:(rd()*BLD_R.length)|0});
 }
 /* ⭐⭐**森と建物でマップを埋め尽くす**(2026-08-02(5)ユーザーの参考画像
@@ -18914,16 +18913,20 @@ function bnsMap(){
       木の半径が間隔より大きくなるように置く**=枝が重なって**面**になる。
     ⚠空き地は**位置から決まるノイズ**で作る(乱数を順に引くと帯状のムラになる)。
     ⚠重さのノブは `BNS_TSP`(間隔)=上げれば軽くなるが、上げすぎると点々に戻る。 */
- const bx0=BBLD.map(b=>b);/* 建物の上には木を生やさない */
+ /* ⚠⚠**空き地を作らない**(2026-08-02(11)ユーザー「この2箇所で突っかかる」)=
+    ①位置ノイズで2割を空き地にしていた ②建物の周りを半径141も空けていた——この2つが、
+    **木が1本も無いのにバスが入れない場所**を作っていた(=「変な判定」の正体)。
+    ⭐**掟=「地面が見えている所は必ず走れる」**。空き地を作りたくなったら、
+      その空き地も**走れる範囲(`bnsOpenW`/`bnsClr`)の側に足す**こと。片方だけ空けない。
+    ⚠木の大きさだけは散らす(揃うと絨毯に見えるので)。 */
+ const bx0=BBLD;
  for(let x=60;x<MAPW-60;x+=BNS_TSP)for(let y=60;y<MAPH-60;y+=BNS_TSP){
-  const nz=bnsNz(x,y);
-  if(nz>.80)continue;/* ⚠2割は空き地(全部埋めると「緑の絨毯」になって地形が読めない) */
   const jx=x+rr2(-BNS_TSP*.42,BNS_TSP*.42),jy=y+rr2(-BNS_TSP*.42,BNS_TSP*.42);
   if(!bnsFreeAt(jx,jy,22))continue;
   let on=0;
-  for(const b of bx0){const dx9=b.x-jx,dy9=b.y-jy;if(dx9*dx9+dy9*dy9<20000){on=1;break;}}
+  for(const b of bx0){const dx9=b.x-jx,dy9=b.y-jy;if(dx9*dx9+dy9*dy9<b.rr*b.rr){on=1;break;}}
   if(on)continue;
-  BTREE.push({x:jx,y:jy,r:rr2(32,58)});
+  BTREE.push({x:jx,y:jy,r:rr2(30,58)});
  }
  bnsTreeGrid();/* ⚠**最後に必ず作る**=これが無いと毎フレーム全部の木を舐める */
 }
