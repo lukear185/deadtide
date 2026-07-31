@@ -113,7 +113,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +(/v2on/.test(OPT)?'VEC2=true;':'')
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
  +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
- +(LAB?('META.pts=99999;META.nt=2;META.nu=3;META.sc0=1;META.tg=[];/* ⚠研究所を撮る時は進化の解放を戻す(上で全部開けているため) */META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");')
+ +(LAB?('META.pts=99999;META.nt=2;META.nu=3;META.sc0=1;META.tg=[];/* ⚠研究所を撮る時は進化の解放を戻す(上で全部開けているため) */META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");'
+     /* ⭐tmtip = 初めて兵科を解放した時に1回だけ出る「🎒編成のはなし」(2026-08-02)。
+        ⚠1回きりの案内なので、こうしないと撮る機会が無い */
+     +(/tmtip/.test(OPT)?'META.tmTip=0;META.team=[];teamTip(UBASE[BASE_U].id,"add");':''))
      :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
      /* tutauto=はじめての人の入り口(タイトルで「🎓あそびかた」を光らせる段)から撮る */
      /* tutbm = その段のまま塔を建てて強化ウィンドウを開いて撮る(帯と被っていないかを見る) */

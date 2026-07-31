@@ -1345,7 +1345,7 @@ function checkProgress(){
 /* ---- セーブの1回だけのリセットが、消してはいけないものを消していないか(2026-07-26) ---- */
 function checkMetaReset(){
  META.gem=7;META.hero={hNox:1};META.hmat=5;META.zdex={walk:1};META.hlv={hNox:2};META.hxp={hNox:30};
- META.rpg={gold:99};META.hsel='hNox';META.tr0=1;
+ META.rpg={gold:99};META.hsel='hNox';META.tr0=1;META.tmTip=1;
  META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;/* タワー/兵科の個別強化と砲撃威力 */
  META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
@@ -1363,7 +1363,9 @@ function checkMetaReset(){
   ['🔧鍛錬素材',(META.hmat||0)===0],['📖図鑑',Object.keys(META.zdex||{}).length===0],
   ['鍛錬Lv',Object.keys(META.hlv||{}).length===0],['鍛錬経験',Object.keys(META.hxp||{}).length===0],
   ['⚔冒険',Object.keys(META.rpg||{}).length===0],['連れて行く英雄',!META.hsel],
-  ['鍛錬所の解放',!META.tr0],['選んでいたステージ',!META.stg]];
+  ['鍛錬所の解放',!META.tr0],['選んでいたステージ',!META.stg],
+  /* ⚠🎒編成の案内は「1回だけ出す」印=消し忘れると初期化した人に案内が出ない(2026-08-02) */
+  ['🎒編成の案内の印',!META.tmTip]];
  for(const [n,ok] of gone2)if(!ok){console.log('FAIL: 初期化しても '+n+' が残っている');process.exit(1);}
  const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
   ['派生',META.uv.length===0],['経済強化',META.py0===0],
@@ -2175,8 +2177,25 @@ function checkTeam(){
   if(t9.length!==BASE_U||t9.some(i=>i>=BASE_U)){console.log('FAIL: タイトルの編成に未解放の兵科が入っている '+t9.join(','));process.exit(1);}
   META.nu=3;
   if(metaUnitCap()!==BASE_U+3){console.log('FAIL: 研究所で解放したぶんがタイトルの編成に出ない '+metaUnitCap());process.exit(1);}}
+ /* ⑥ ⭐**研究所で解放した兵科は、空きがあれば自動で編成に入る**(2026-08-02ユーザー指示) */
+ {backTitle();
+  META.nu=0;META.team=null;
+  if(teamAutoAdd(UBASE[BASE_U].id)!=='auto'){
+   console.log('FAIL: 編成を触っていない人の team を勝手に配列にしている(以後の自動補充が止まる)');process.exit(1);}
+  if(META.team!=null){console.log('FAIL: teamAutoAdd が未設定の編成を書き換えた');process.exit(1);}
+  /* 触った状態で空きがある=入る */
+  META.nu=1;META.team=[];
+  if(teamAutoAdd(UBASE[BASE_U].id)!=='add'){console.log('FAIL: 解放した兵科が編成に自動で入らない');process.exit(1);}
+  if(teamIdx().indexOf(BASE_U)<0){console.log('FAIL: 自動で入れた兵科が編成に居ない');process.exit(1);}
+  /* 満杯なら入れない(何を外すかはプレイヤーが決める) */
+  META.nu=U_N-BASE_U;META.team=[];
+  for(let i=TEAM_FIX.length;i<TEAM_N;i++)META.team.push(UBASE[i].id);
+  if(teamIdx().length!==TEAM_N){console.log('FAIL: 検査の前提が崩れている(編成が'+teamIdx().length+'体)');process.exit(1);}
+  if(teamAutoAdd(UBASE[TEAM_N].id)!=='full'){console.log('FAIL: 編成が満杯なのに押し込んでいる');process.exit(1);}
+  if(teamIdx().indexOf(TEAM_N)>=0){console.log('FAIL: 満杯の編成に'+TEAM_N+'体を超えて入っている');process.exit(1);}
+  META.team=null;META.nu=0;}
  META.team=keep;META.nu=0;
- console.log('🎒編成: 未設定なら安い順に'+TEAM_N+'体・触った後は自動で埋めない・解放費は元のコスト・上限'+TEAM_N+'体・タイトルでも解放済みだけ OK');
+ console.log('🎒編成: 未設定なら安い順に'+TEAM_N+'体・触った後は自動で埋めない・解放費は元のコスト・上限'+TEAM_N+'体・タイトルでも解放済みだけ・解放した兵科は空きがあれば自動で入る OK');
 }
 /* ---- 💎英雄召集(ガチャ): 排出率・重複・魔石の増減 ---- */
 function checkGacha(){

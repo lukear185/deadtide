@@ -123,6 +123,13 @@ aliases: [作業ノート, 落とし穴]
   - ⚠**検査で `deployUnit(me,ri(0,me.uUn-1))` と書かない**=team の添字に読み替えないと
     出撃が全部失敗して**落ちずに素通りする**。実走ログの `dep=` が0でないことを必ず見る。
   - ⚠**CPUの「盾役」は `SHD_I`(findIndex)で引く**=直書きの3は斥候を指していて**元から壊れていた**。
+  - ⭐**研究所で解放した兵科は、空きがあれば自動で編成に入る**(2026-08-02ユーザー指示)=`teamAutoAdd`。
+    ⚠**まだ編成を触っていない人(`META.team==null`)には何もしない**=teamIdx が元から自動で埋めるので、
+      ここで配列にすると「触った」扱いになり以後の自動補充が止まる。
+    ⚠**満杯(10体)なら入れない**=何を外すかはプレイヤーが決めること(トーストで入れ替えを促す)。
+    ⚠**必ず `META.nu` を増やした後に呼ぶ**(teamIdx は持っている兵科しか通さない)。
+    ⭐**初めて兵科を解放した時だけ**「🎒編成のはなし」を1回出す(`META.tmTip` / `md-tmtip` / `teamTip`)。
+    ⚠印は `metaResetAll` にも書く(書き忘れると初期化した人に案内が出ない)。撮る=`lab+tmtip`。
   - ⚠⚠⭐**`soloMeta()` は G を見るので、タイトルでは必ず false(=対戦扱い)になる**
     (2026-08-01に実機で発覚「巨漢も何も解放してないのに編成に巨漢〜火炎瓶が居る」)。
     🎖編成も🔬研究所も**タイトルからしか開けない**ので、上限が `PVP_U`(10)側に落ちて
@@ -1386,6 +1393,7 @@ node test_shot.js out.png 852 393 "title+lob"    # ✨黄金のロブスター(0
 node test_shot.js out.png 852 393 "title+bus"    # 🚌ゾンビバス(0.001%・8発・💎250)。+busn=2 で残りHPを指定
                                                 #   ⚠バスが居る間だけ行進canvasが高くなる=上が切れていないか見る
 node test_shot.js out.png 852 393 title          # タイトル画面 / lab lab=twup lab=unup 記録は lab=rec
+node test_shot.js out.png 852 393 "lab+tmtip"    # 🎒編成のはなし(初めて兵科を解放した時に1回だけ出る案内)
 node test_shot.js out.png 852 393 load           # 🎖編成
 node test_shot.js out.png 852 393 "gacha5+gbang" # 💎召集(gacha=撃て! / +gfly=弾が飛ぶ / +gbang=木っ端みじん+示唆 /
                                                 #   +gcard=結果カード / +gres=結果ウィンドウ / gacha5=★5 / +gt0/1/2=タレットの段)

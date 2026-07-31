@@ -943,6 +943,24 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
+<!-- ⭐初めて🔬研究所で兵科を解放した時だけ1回出す「🎒編成のはなし」(2026-08-02ユーザー指示)。
+     ⚠1回きり=`META.tmTip`。⚠**閉じる手が2つとも要る**(見に行く/あとで)。 -->
+<div class="modal" id="md-tmtip">
+  <div class="panel center" style="max-width:420px;width:min(92vw,420px)">
+    <h2 class="hd" style="font-size:17px;margin:0 0 2px">🎒 出撃に連れて行く部隊</h2>
+    <div id="tmt-n" style="font-size:14px;font-weight:900;color:var(--rust2);margin:0 0 5px"></div>
+    <div style="font-size:12px;font-weight:700;text-align:left;line-height:1.55;margin:0 2px 8px">
+      ・連れて行けるのは <b>10体まで</b>。<br>
+      ・戦闘中は<b>連れて行った中の安い順</b>に、⚙️を払って1体ずつ解放する。<br>
+      ・<b>高い兵科ばかりだと後ろの番号は出せない</b>。入れ替えはタイトルの <b>🎖編成</b> から。
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn gold" id="bt-tmt-go" style="flex:1">🎖 編成を見る</button>
+      <button class="btn" id="bt-tmt-ok" style="flex:1">あとで</button>
+    </div>
+  </div>
+</div>
+
 <!-- ⭐オプション(2026-07-27ユーザー指示「タイトル画面にオプションを追加して、
      いろんな種類の音量をスワイプでバーで調整できるように。演出弱中強もオプションの中に」)。
      ⚠バーは <input type="range">=iOSでもそのままスワイプで動く(自前で作らない)。 -->
@@ -1099,7 +1117,7 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4.5秒止めて中ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を5秒燃やし続ける。総ダメージが大きい'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{}};
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
 try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
@@ -1154,6 +1172,7 @@ function metaResetAll(){
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
  META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
+ META.tmTip=0;                                 /* 🎒編成の案内(初めて兵科を解放した時に1回) */
 }
 /* ⚠⚠**3への上げは「難易度と研究所だけ」戻す**(2026-08-01ユーザー選択)。
    理由=初期解放を2種に絞ったので `META.nt`/`META.nu`(BASE_T/BASE_U から数えた相対値)が
@@ -2305,6 +2324,22 @@ function teamIdx(){
     ⭐編成を1回でも触ったら(`META.team` が配列になったら)その選択をそのまま尊重する。 */
  if(raw==null)for(let i=0;i<own&&t.length<TEAM_N;i++)if(t.indexOf(i)<0)t.push(i);
  return t.sort((a,b)=>a-b);
+}
+/* ⭐**研究所で新しい兵科を解放したら、空きがあれば自動で編成に入れる**(2026-08-02ユーザー指示)。
+   ⚠**まだ編成を触っていない人(`META.team==null`)には何もしない**=teamIdx が元から自動で埋めるので、
+     ここで配列にすると「触った」扱いになり、以後の自動補充が止まる。
+   ⚠**満杯(TEAM_N)なら入れない**=何を外すかはプレイヤーが決めること。呼び出し側が案内を出せるよう
+     'add'(入れた) / 'auto'(元から入る) / 'full'(満杯) / 'have'(もう居る) を返す。
+   ⚠**必ず META.nu を増やした後に呼ぶ**=teamIdx は metaUnitCap() で持っている兵科しか通さない。 */
+function teamAutoAdd(bid){
+ const i=UBASE.findIndex(u=>u.id===bid);
+ if(i<0)return 'no';
+ if(META.team==null)return 'auto';
+ const cur=teamIdx();
+ if(cur.indexOf(i)>=0)return 'have';
+ if(cur.length>=TEAM_N)return 'full';
+ META.team=cur.filter(x=>TEAM_FIX.indexOf(x)<0).map(x=>UBASE[x].id).concat([bid]);
+ return 'add';
 }
 /* 全兵科を価格順に並べ替え(前半=最初から使える/後半=研究所で解放)。ただし研究所専用の4種は必ず末尾 */
 {const LAST=['titan','valk'];
@@ -18555,7 +18590,12 @@ function renderLab(){
   /* ⭐まとめ買いの段数。⚠**表に無い種類は必ず1**(「次の1つ」を買う形の項目を複数回進めない) */
   const n=(LAB_MSTEP[it.k]&&it.n>1)?it.n:1;
   META.pts-=it.p;
-  if(it.k==='nt')META.nt++;else if(it.k==='nu')META.nu++;else if(it.k==='stk')META.st.push(it.id);
+  /* ⭐新しい兵科を解放したら**空きがあれば自動で編成に入れる**+初回だけ案内を出す(2026-08-02ユーザー指示)。
+     ⚠**id は増やす前に控える**(it.pv.def=UBASE[BASE_U+META.nu] を指しているため)。
+     ⚠**teamAutoAdd は META.nu を増やした後**に呼ぶ=持っていない兵科は編成に入れないため。 */
+  let tmId9='',tmHow9='';
+  if(it.k==='nu')tmId9=(it.pv&&it.pv.def&&it.pv.def.id)||'';
+  if(it.k==='nt')META.nt++;else if(it.k==='nu'){META.nu++;tmHow9=teamAutoAdd(tmId9);}else if(it.k==='stk')META.st.push(it.id);
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);}
   else if(it.k==='tg'){if(!Array.isArray(META.tg))META.tg=[];META.tg.push(it.id);}
   else if(it.k==='sc0')META.sc0+=n;else if(it.k==='hp0')META.hp0+=n;
@@ -18563,7 +18603,8 @@ function renderLab(){
   else if(it.k==='st0')META.st0=(META.st0||0)+n;
   else if(it.k==='tw'){if(!META.tw)META.tw={};META.tw[it.id]=(META.tw[it.id]||0)+n;}
   else if(it.k==='un'){if(!META.un)META.un={};META.un[it.id]=(META.un[it.id]||0)+n;}
-  saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();};});
+  saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();
+  if(tmHow9)teamTip(tmId9,tmHow9);};});
  if(scEl)scEl.scrollTop=keepTop;
 }
 /* ---- 新登場の紹介(ウェーブ開始前に止めて説明する) ---- */
@@ -18756,6 +18797,24 @@ function renderLoad(){
 }
 $('bt-load').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
 $('bt-load-close').onclick=()=>$('md-load').classList.remove('on');
+/* ⭐**新しい兵科を解放した時の案内**(2026-08-02ユーザー指示)。
+   ①空きがあれば自動で編成に入れた ②満杯なら入れ替えを促す ③**初回だけ**編成の説明を出す。 */
+function teamTip(bid,how){
+ const U=UBASE.find(u=>u.id===bid)||{n:'新しい兵科'};
+ if(how==='full')toast('⚠ 編成が'+TEAM_N+'体で埋まっている=🎖編成で入れ替えると『'+U.n+'』を連れて行ける',true);
+ else if(how==='add'||how==='auto')toast('🎒 『'+U.n+'』を編成に入れた(次の出撃から連れて行く)');
+ if(META.tmTip)return;/* 説明は1回きり */
+ META.tmTip=1;saveMeta();
+ const el=$('md-tmtip');if(!el)return;
+ const n9=$('tmt-n');
+ if(n9)n9.textContent=(how==='full')
+  ?('⚠『'+U.n+'』は編成に入らなかった(すでに'+TEAM_N+'体)')
+  :('『'+U.n+'』を編成に入れました');
+ el.classList.add('on');
+}
+$('bt-tmt-ok').onclick=()=>{sfx.buy&&sfx.buy();$('md-tmtip').classList.remove('on');};
+$('bt-tmt-go').onclick=()=>{sfx.buy&&sfx.buy();$('md-tmtip').classList.remove('on');
+ LDTAB='team';renderLoad();$('md-load').classList.add('on');};
 $('bt-gu-yes').onclick=()=>{$('md-giveup').classList.remove('on');giveUpWave();};
 $('bt-gu-no').onclick=()=>$('md-giveup').classList.remove('on');
 /* ============ 💎 英雄召集(ガチャ) ============
