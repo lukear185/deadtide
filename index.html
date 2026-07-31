@@ -1974,6 +1974,14 @@ try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serv
 $('mutebtn').onclick=()=>{muted=!muted;$('mutebtn').textContent=muted?'🔇':'🔊';};
 /* ============ データ ============ */
 const MW=1600,MH=760;
+/* ⭐**いま遊んでいる面の広さ**(2026-08-02)。⚠**いつもの面では MW/MH と同じ**=1pxも変わらない。
+   🚌開拓便だけ広くして、🎥カメラで持ち歩く。⚠**倍率の基準は MW のまま**にしてあるので、
+   マップを広げても「画面に見える広さ」は変わらない(寄り具合が面ごとに変わらない)。 */
+let MAPW=MW,MAPH=MH;
+/* 🚌開拓便に散らす廃墟。⚠⚠**宣言はここ(ファイルの上の方)に置くこと**=loadStage が
+   読み込みの途中で呼ばれるので、下の方で const にすると**初期化前アクセスで例外**になり、
+   スクリプトごと止まる(2026-08-02に実際に踏んだ。NOTESの「const の TDZ」と同じ穴で2度目)。 */
+const BPROP=[];
 const TOWERS=[
  /* ⚠威力は2026-08-02に **22→28**(ユーザー実機判断「ショットガンは3体いけるのにライフルは1体で威力も弱い」)。
     ⭐直した理由は**1枠あたりの火力**=建設マスが8枠しかないので、DPS23では枠を使う価値が無かった
@@ -2977,7 +2985,9 @@ const D5=[
       既存プレイヤーの「クリア済み」が別の難易度を指す(0が有効な値の事故と同じ形)。
       **画面に並べる順と解放の鎖は `D_ORD` が持つ**。
     ⚠1波だけ(w:1)。小粒が大量に来るので hp は薄く cnt は厚く。⚙️は最初に潤沢に渡す。 */
- {n:'🚌 バスの日',w:1,hp:.62,cnt:2.6,sp:1.12,boss:1,scrap:1500,pay:1.15}
+ /* ⚠**cnt が大きいのは「小粒が大量に群れる面」だから**(2026-08-02ユーザー「ゾンビの群れはもっと
+    密度があってたくさんいる感じがいい」)。⚠1体は薄い(hp)ので総量としては暴れない。 */
+ {n:'🚌 バスの日',w:1,hp:.30,cnt:15,sp:1.12,boss:1,scrap:1500,pay:1.15}
 ];
 /* ⭐ボーナス面の難易度番号と、画面に並べる順(=解放の鎖)。
    ⚠**新兵→兵長→🚌→古参→…**。ボーナスは「遊べば次が開く」=クリアしなくても古参へ進める
@@ -3064,7 +3074,8 @@ const SEG=[];let PLEN=0;
 let PMAXX=MW;
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
- LANES=null;camOff();/* ⚠🚌ボーナス面のレーンとカメラを必ず外す(残すと普通の面が別物になる) */
+ /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
+ LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
@@ -14004,7 +14015,9 @@ function buildTide(wave){
  if(isBns()&&LANES){
   for(let i=0;i<pool.length;i++){const e=pool[i];
    e.ln=i%LANES.length;
-   if(!e.boss)e.dl=Math.min(e.dl,.16);}
+   /* ⚠**間隔をぐっと詰める**=群れに見せるには「かたまりで湧く」必要がある。
+      ⚠1体ずつ等間隔だと、いくら数を増やしても**行列**にしかならない(参考画像は塊)。 */
+   if(!e.boss)e.dl=(i%5===0)?.20:.012;}
  }
  for(let pi=0;pi<G.players.length;pi++){const P=G.players[pi];
   for(const s of P.inc.sent){for(let i=0;i<s.cnt;i++)pool.splice(ri(0,pool.length),0,{dl:.4,z:zSpec(s.zi,mul,wave,1,s.from),tgt:pi});}}
@@ -14070,10 +14083,12 @@ function tideStep(dt){
    for(const i of alive){r-=T.shares[i];if(r<=0){ti2=i;break;}}
   }
   const C=G.players[ti2];
-  if(C.zombies.length>=(G.coop?110:80)){T.qt+=.3;break;}
+  /* ⚠盤面に出せる上限。🚌開拓便は**小粒の群れが売り**なので上限を上げる
+     (1体が薄いぶん総量は暴れない。⚠重さは実機で確かめること) */
+  if(C.zombies.length>=(G.coop?110:(isBns()?260:80))){T.qt+=.3;break;}
   T.pool.shift();
   /* ⚠レーン(🚌ボーナス面)は**湧かせる時に実体へ移す**=spec 側に持たせると zSpec の写しに乗らない */
-  {const z9=mkZ(e.z);if(e.ln!=null)z9.ln=e.ln;C.zombies.push(z9);}
+  {const z9=mkZ(e.z);if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-150,150);z9.d-=rnd(0,120);}C.zombies.push(z9);}
   C.totalWave++;
   if(e.boss){ev(ti2,'💀 ジャガーノートがこっちに来た!',true);C.shake=.4;
    addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:RUST});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
@@ -15295,8 +15310,15 @@ function campStep(C,dt,wave){
  /* 位置・オーラ */
  const scrs=[];
  /* ⚠向きは `pathFace` で決める(道が真縦の所で左右がおかしくなるため。掟は pathFace の所) */
- /* ⚠レーン(z.ln)は🚌ボーナス面だけ入っている。いつもの面では undefined=今までどおり1本道 */
+ /* ⚠レーン(z.ln)は🚌ボーナス面だけ入っている。いつもの面では undefined=今までどおり1本道。
+    ⭐⭐**横のずれ(z.off)で群れにする**(2026-08-02ユーザー「もっと密度があってたくさんいる感じ」)。
+      ⚠敵は道の上の距離(d)しか持っていないので、そのままだと**何百体居ても一列の行列**になる。
+      道の法線方向へばらけさせると、同じ仕組みのまま「塊で押し寄せる」絵になる。
+      ⚠**拠点の手前ではずれを絞る**=最後は1点に吸い込ませないと、拠点の周りをすり抜けて見える。 */
  for(const z of C.zombies){const p=pathPos(Math.max(0,z.d),z.ln);z.px=p[0];z.py=p[1];
+  if(z.off){const pl=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
+   const k9=z.off*clamp((pl-z.d)/300,0,1);
+   z.px+=-Math.sin(p[2])*k9;z.py+=Math.cos(p[2])*k9;}
   z.dr=(z.ln!=null)?((BNS_CX-p[0])>=0?1:-1):pathFace(Math.max(0,z.d),p[0],1,p[2]);
   z.vw=pxVw(p[2]);if(z.aura)scrs.push(z);}
  if(C.bus)bnsBusStep(C,dt);/* 🚌ボーナス面の轢き殺し */
@@ -16382,7 +16404,8 @@ function camStep(dt){
 function camApply(){
  if(!CAM||!(SC0>0))return;
  SC=SC0*(CAM.zm||1);
- const mw=MW*SC,mh=MH*SC;
+ /* ⚠**寄せの範囲はいま遊んでいる面の広さ(MAPW/MAPH)**=MW/MH で切ると広い面の端まで行けない */
+ const mw=MAPW*SC,mh=MAPH*SC;
  OX=(mw<=VW)?(VW-mw)/2:clamp(VW/2-CAM.x*SC,VW-mw,0);
  OY=(mh<=VH)?(VH-mh)/2:clamp(VH/2-CAM.y*SC,VH-mh,0);
 }
@@ -16508,6 +16531,12 @@ function renderCamp(C,t){
  /* 装飾 */
  for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
+ /* 🚌開拓便の廃墟(⚠**画面に入っている物だけ描く**=数百個あるので全部描くと重い。
+    ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは**本当の画面の範囲**を出し直す) */
+ if(BPROP.length){const m9=90,
+  wx0=(-OX-shx)/SC-m9,wx1=(cv.width-OX-shx)/SC+m9,wy0=(-OY-shy)/SC-m9,wy1=(cv.height-OY-shy)/SC+m9;
+  for(const p of BPROP){if(p.x<wx0||p.x>wx1||p.y<wy0||p.y>wy1)continue;
+   try{drawProp(c,p);}catch(e){}}}
  /* 協力: 出撃レーンと自軍テント */
  if(COOP){const np=G?G.np:Math.min(3,((CS.ot||[]).length+1));
   for(let i=0;i<np;i++){const [bx,by]=BRANCH[i%BRANCH.length];
@@ -16539,8 +16568,8 @@ function renderCamp(C,t){
  const htx='🏕 '+Math.ceil(C.core)+' / '+C.coreMax;
  c.fillStyle='#fff';c.strokeStyle=INK;c.lineWidth=4;c.textAlign='center';
  drawIcoText(c,htx,cx+4,cy-112,22);c.lineWidth=3;
- /* 工房エリアの看板 */
- {const [ex0,ey0]=SLOTS[ECO_BASE];
+ /* 工房エリアの看板。⚠🚌開拓便では工房を使わないので出さない(盤面の真ん中に札が残って邪魔だった) */
+ if(!LANES){const [ex0,ey0]=SLOTS[ECO_BASE];
   /* 看板は枠の下に置く(マップ上端が画面上部のHUDに隠れるため) */
   c.fillStyle='rgba(36,31,25,.5)';rr(c,ex0-46,ey0+44,300,26,8);c.fill();
   c.fillStyle=AMBER;c.font='900 18px '+FF;c.textAlign='left';c.fillText('🏭 廃品工房エリア',ex0-38,ey0+63);}
@@ -17262,6 +17291,43 @@ function renderCamp(C,t){
  if(C.dead){c.fillStyle='rgba(30,16,12,.62)';c.fillRect(0,0,MW,MH);c.fillStyle=PANE;c.font='900 60px '+FF;c.textAlign='center';c.fillText('💀 拠点陥落…',800,MH*.44);c.font='900 28px '+FF;c.fillText('観戦モード',800,MH*.44+50);}
  if(SPEC>=0){c.fillStyle='rgba(36,31,25,.78)';rr(c,MW/2-360,178,720,56,16);c.fill();c.strokeStyle=PANE;c.lineWidth=3;c.stroke();
   c.fillStyle=PANE;c.font='900 30px '+FF;c.textAlign='center';c.fillText('👁 '+specName()+' の拠点を観戦中 — 画面タップで戻る',MW/2,215);}
+ if(CAM)drawMiniMap(c,C);/* 🗺カメラが動く面だけ(いま自分がどこに居るか) */
+}
+/* ⭐🗺**ミニマップ**(2026-08-02ユーザーの参考画像)。**カメラが動く面だけ**出す
+   =画面に全部映っている面では要らない(場所を食うだけ)。
+   ⚠**画面の座標で描く**=世界の変換を戻してから描くこと(でないとカメラと一緒に動いてしまう)。
+   ⚠右上のHUD(⚙️や🤝の帯)より下に置く。 */
+function drawMiniMap(c,C){
+ const dpr=DPR||1,W=cv.width,pad=8*dpr;
+ const w=Math.min(190*dpr,W*.24),h=w*(MAPH/MAPW);
+ const x0=W-w-pad,y0=52*dpr+pad;
+ const sx=w/MAPW,sy=h/MAPH;
+ c.save();c.setTransform(1,0,0,1,0,0);
+ c.fillStyle='rgba(28,23,18,.72)';rr(c,x0-3,y0-3,w+6,h+6,7*dpr);c.fill();
+ c.strokeStyle='rgba(242,236,220,.65)';c.lineWidth=2*dpr;c.stroke();
+ c.fillStyle='rgba(178,162,120,.30)';c.fillRect(x0,y0,w,h);
+ /* 道 */
+ c.strokeStyle='rgba(60,56,50,.85)';c.lineWidth=Math.max(1.5,4*dpr*sx*8);
+ c.beginPath();
+ for(const L of (LANES||[])){c.moveTo(x0+L.seg[0].a[0]*sx,y0+L.seg[0].a[1]*sy);
+  for(const s of L.seg)c.lineTo(x0+s.b[0]*sx,y0+s.b[1]*sy);}
+ c.stroke();
+ /* 廃墟(点だけ・間引く) */
+ c.fillStyle='rgba(120,108,88,.7)';
+ for(let i=0;i<BPROP.length;i+=4){const p=BPROP[i];c.fillRect(x0+p.x*sx-1,y0+p.y*sy-1,2,2);}
+ /* 敵(⚠**多いので点で**。1体ずつ丸を描くと数百個ぶんの塗りになる) */
+ c.fillStyle='#8f3a2c';
+ for(const z of (C.zombies||[])){if(z.dead||z.d<0)continue;
+  c.fillRect(x0+z.px*sx-1.5*dpr,y0+z.py*sy-1.5*dpr,3*dpr,3*dpr);}
+ /* 拠点とバス */
+ c.fillStyle=AMBER;c.beginPath();c.arc(x0+CORE[0]*sx,y0+CORE[1]*sy,3.4*dpr,0,7);c.fill();
+ if(C.bus){c.fillStyle='#e8e2c8';c.beginPath();c.arc(x0+C.bus.x*sx,y0+C.bus.y*sy,3.4*dpr,0,7);c.fill();
+  c.strokeStyle=INK;c.lineWidth=1.4*dpr;c.stroke();}
+ /* いま見ている範囲 */
+ {const vw=(cv.width/SC)*sx,vh=(cv.height/SC)*sy;
+  c.strokeStyle='rgba(242,236,220,.9)';c.lineWidth=1.6*dpr;
+  c.strokeRect(x0+(CAM.x*sx-vw/2),y0+(CAM.y*sy-vh/2),vw,vh);}
+ c.restore();
 }
 /* ---- HUD ---- */
 function updHUD(){const m=meV();if(!m)return;
@@ -18331,7 +18397,7 @@ function startSolo(){
   me.unlocked=metaTowerCap();
   me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
   bnsBusInit(me);
-  camOn(me.bus.x,me.bus.y,2.2);/* 🎥カメラ追従はこの面の中だけ */
+  camOn(me.bus.x,me.bus.y,1.15);/* 🎥カメラ追従はこの面の中だけ */
   bnsEnter();/* 遊べば次の難易度が開く */
  }
  document.body.classList.toggle('bns',isBns());
@@ -18355,7 +18421,13 @@ function startSolo(){
    ⚠報酬は**初回クリアだけ** 🧬研究pt と 💎50。何度でも入れる面なので2回目からは配らない。 */
 const BNS_GEM=50;                 /* 初回クリアの💎 */
 const BNS_PTS=[600,1100];         /* 初回クリアの🧬(ステージごと) */
-const BNS_CX=800,BNS_CY=400;      /* 拠点は画面のまんなか */
+/* ⭐**開拓便のマップは広い**(2026-08-02ユーザーの参考画像)=画面の2倍角。🎥カメラで持ち歩く。
+   ⚠**広げても寄り具合は変わらない**(倍率の基準は MW のまま)。 */
+const BNS_W=3200,BNS_H=1520;
+const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 拠点はマップのまんなか */
+/* 廃墟の散らばり(開拓便だけ)。⚠**決め打ちで並べない**=種から散らすと広い面でも密度が保てる。
+   参考画像から拾った物=廃車 / タイヤ / ドラム缶 / 木箱 / 瓦礫 / コンクリのバリア / 枯れ木。
+   ⚠**表そのものはファイルの上の方で宣言してある**(loadStage が読み込み中に触るため)。 */
 /* 道。⚠**必ず3点以上**(2点だけの道は地形の処理が想定していない)。⚠4本とも長さを揃えること */
 const BNS_LANE=[
  /* ①廃線ハイウェイ=四隅からまっすぐ突っ込んでくる(引きで広い X 字) */
@@ -18381,7 +18453,11 @@ const BNS_SLOT=[
 ];
 function loadBonus(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
- const LN=BNS_LANE[STAGE]||BNS_LANE[0];
+ MAPW=BNS_W;MAPH=BNS_H;
+ /* ⚠道の表は「画面1枚ぶんの座標」で書いてある=**マップの広さに合わせて引き伸ばす**
+    (表を広い座標で書き直すより、形が読めるまま倍率だけ変えられる) */
+ const K=BNS_W/MW;
+ const LN=(BNS_LANE[STAGE]||BNS_LANE[0]).map(pts=>pts.map(p=>[p[0]*K,p[1]*K]));
  LANES=LN.map(pts=>{const seg=[];let len=0;
   for(let i=0;i<pts.length-1;i++){const l=dist(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);
    seg.push({a:pts[i],b:pts[i+1],l,s:len});len+=l;}
@@ -18401,9 +18477,58 @@ function loadBonus(si){
  SLOTS.length=ECO_BASE;
  for(const e of ECO_SLOTS)SLOTS.push(e.slice());
  for(const e of SUP_SLOTS)SLOTS.push(e.slice());
+ /* ⚠**工房と支援枠は開拓便では使わない**(解放もしていない)ので画面の外へ逃がす。
+    ⚠数は減らさない=ECO_BASE から後ろの番号がずれると工房と支援枠の判定が壊れる。 */
+ for(let i=ECO_BASE;i<SLOTS.length;i++)SLOTS[i]=[-9999,-9999];
  AI_ORDER=SLOTS.map((s,i)=>i);SLOT_ORDER=AI_ORDER.slice();
- PMAXX=MW;
+ PMAXX=MAPW;
  makeScenery();
+ bnsProps();
+}
+/* 道の中心線までの距離(一番近いレーン)。⚠廃墟を道の上に置かないため */
+function bnsLaneD(x,y){
+ let bd=1e9;
+ for(const L of (LANES||[]))for(const s of L.seg){
+  const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1],l2=vx*vx+vy*vy;
+  const t=l2?clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/l2,0,1):0;
+  const d=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(d<bd)bd=d;}
+ return bd;
+}
+/* ⭐**廃墟を種から散らす**(2026-08-02ユーザーの参考画像=「歩いていて何か見つかりそう」な密度)。
+   ⚠**決め打ちで並べない**=広い面では手で置くと密度が保てないし、面ごとに配置を変えられない。
+   ⚠道の上と拠点の周りには置かない(道は通り道・拠点はタレットを置く場所)。
+   ⚠乱数は**種から回す**=毎回同じ配置になる(撮り直した時に絵が変わらない)。 */
+function bnsProps(){
+ BPROP.length=0;
+ let s9=8191+STAGE*7919;
+ const rd=()=>{s9=(s9*1103515245+12345)&0x7fffffff;return s9/0x7fffffff;};
+ const KIND=['car','car','tire','tire','drum','box','rub','rub','barr','tree'];
+ for(let i=0;i<520;i++){
+  const x=rd()*(MAPW-140)+70,y=rd()*(MAPH-140)+70;
+  if(bnsLaneD(x,y)<86)continue;                 /* 道の上 */
+  if(dist(x,y,BNS_CX,BNS_CY)<300)continue;      /* 拠点の周り(タレットの置き場) */
+  BPROP.push({k:KIND[(rd()*KIND.length)|0],x:x,y:y,a:rd()*6.283,s:.72+rd()*.66,c:(rd()*4)|0});
+ }
+}
+/* 廃墟1つ。⚠**細かく描かない**=数百個出るので、輪郭が読める最小限にする */
+const BPC=['#7b4a3a','#4a5a6b','#6b6b4a','#8a6a45'];
+function drawProp(c,p){
+ const S=p.s;
+ if(p.k==='car'){drawCar(c,p.x,p.y,p.a,BPC[p.c%4]);return;}
+ if(p.k==='tree'){drawTree(c,p.x,p.y);return;}
+ c.save();c.translate(p.x,p.y);c.rotate(p.a);c.scale(S,S);
+ c.strokeStyle=INK;c.lineWidth=2.6;
+ if(p.k==='tire'){c.fillStyle='#2f2b26';c.beginPath();c.ellipse(0,0,13,9,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#54504a';c.beginPath();c.ellipse(0,0,5.4,3.6,0,0,7);c.fill();}
+ else if(p.k==='drum'){c.fillStyle='#7a6a3f';rr(c,-9,-13,18,26,4);c.fill();c.stroke();
+  c.fillStyle='#98863f';c.fillRect(-9,-4,18,3.4);}
+ else if(p.k==='box'){c.fillStyle='#8a6a45';rr(c,-11,-9,22,18,3);c.fill();c.stroke();
+  c.strokeStyle='#5f4830';c.lineWidth=2;c.beginPath();c.moveTo(-11,0);c.lineTo(11,0);c.stroke();}
+ else if(p.k==='barr'){c.fillStyle='#9a958a';rr(c,-20,-8,40,16,3);c.fill();c.stroke();
+  c.fillStyle='#c25b3a';c.fillRect(-14,-8,5,16);c.fillRect(9,-8,5,16);}
+ else{/* 瓦礫 */c.fillStyle='#8d8478';
+  c.beginPath();c.moveTo(-12,6);c.lineTo(-5,-7);c.lineTo(4,-4);c.lineTo(12,7);c.closePath();c.fill();c.stroke();}
+ c.restore();
 }
 /* 「遊べば次が開く」=**入った時点**で記録を立てる。⚠クリアを条件にすると、
    爽快感優先の面が本編への関所になって抜けられない人が出る(ユーザー決定 2026-08-02)。 */
@@ -18444,7 +18569,7 @@ function bnsBusStep(C,dt){
  const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*Math.max(.4,im||1);
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
- B.x=clamp(B.x+B.vx*dt,70,MW-70);B.y=clamp(B.y+B.vy*dt,170,MH-30);
+ B.x=clamp(B.x+B.vx*dt,70,MAPW-70);B.y=clamp(B.y+B.vy*dt,70,MAPH-30);
  if(Math.abs(B.vx)>16)B.dr=B.vx>0?1:-1;
  /* 轢く=重なっている間ずっと削る+外へ弾く。⚠**押し出しは経路上の距離(z.d)で戻す**
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */

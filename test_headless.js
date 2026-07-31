@@ -2474,8 +2474,9 @@ function checkHero(){
 function checkCam(){
  /* 画面に地図の外が入っていないか(収まっている向きは中央寄せ)を見る */
  const inv=(tag)=>{
-  const okX=(MW*SC<=VW)?Math.abs(OX-(VW-MW*SC)/2)<.02:(OX<=.02&&OX>=VW-MW*SC-.02);
-  const okY=(MH*SC<=VH)?Math.abs(OY-(VH-MH*SC)/2)<.02:(OY<=.02&&OY>=VH-MH*SC-.02);
+  /* ⚠**いま遊んでいる面の広さ(MAPW/MAPH)で見る**=開拓便は MW/MH より広い */
+  const okX=(MAPW*SC<=VW)?Math.abs(OX-(VW-MAPW*SC)/2)<.02:(OX<=.02&&OX>=VW-MAPW*SC-.02);
+  const okY=(MAPH*SC<=VH)?Math.abs(OY-(VH-MAPH*SC)/2)<.02:(OY<=.02&&OY>=VH-MAPH*SC-.02);
   if(!okX||!okY){console.log('FAIL: カメラが地図の外を映している '+tag+' OX='+OX.toFixed(1)+' OY='+OY.toFixed(1));process.exit(1);}
  };
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.stg=0;setDiff=2;startSolo();
@@ -2487,8 +2488,9 @@ function checkCam(){
  META.stg=0;setDiff=BNS_D;startSolo();
  if(!CAM){console.log('FAIL: 開拓便でカメラが入らない');process.exit(1);}
  fitCanvas();
- if(!(SC>sc0*1.5)){console.log('FAIL: カメラが寄っていない '+SC+' vs '+sc0);process.exit(1);}
- for(const p of [[0,0],[MW,0],[0,MH],[MW,MH],[MW/2,MH/2],[-500,-500],[MW+900,MH+900]]){
+ /* ⚠寄り具合(zm)は面ごとに変わるので、ここは「全景より寄っている」ことだけ見る */
+ if(!(SC>sc0*1.05)){console.log('FAIL: カメラが寄っていない '+SC+' vs '+sc0);process.exit(1);}
+ for(const p of [[0,0],[MAPW,0],[0,MAPH],[MAPW,MAPH],[MAPW/2,MAPH/2],[-500,-500],[MAPW+900,MAPH+900]]){
   camOn(p[0],p[1],2.2);fitCanvas();inv('('+p[0]+','+p[1]+')');}
  camOn(400,400,2.2);camTo(1200,400);camStep(.016);
  if(!(CAM.x>400&&CAM.x<1200)){console.log('FAIL: カメラの追従が一気に飛ぶか動かない '+CAM.x);process.exit(1);}
