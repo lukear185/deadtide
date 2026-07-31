@@ -1571,6 +1571,21 @@ const SFXSYN={
  moanBig:()=>groan(52,1.6,.07),
  bite:()=>{beep(150,60,.06,'sawtooth',.08);if(Math.random()<.4)groan(rnd(80,120),.5,.04);},
  splat:()=>beep(190,60,.09,'triangle',.06),
+ /* ⭐⭐**轢いた音「ゴシャッ」**(2026-08-02(3)ユーザー「音と演出がちゃっちい」)。
+    ⚠それまで轢殺に使っていたのは `splat`(triangle 190→60Hz)=**オシレータ1本**なので、
+      NOTESの結論どおり何をしても電子音の「ピッ」にしかならなかった。
+    ⭐**ノイズを低く閉じる**(骨と肉の潰れ)+**中音域の芯を1本**(車体が食い込む重さ)の2層だけ。
+    ⚠⚠**短く・薄く**(0.09秒/音量控えめ)=毎秒10回以上鳴る音なので、派手にすると必ず雑音になる。
+      派手にしてよいのは段が上がる瞬間(`cmbUp`)の方。 */
+ crush:()=>{nzHit(520,150,.09,.10,1.1);beep(210,90,.07,'sawtooth',.05);},
+ /* ⭐⭐**連続轢殺の段が上がった時**(同日)。⚠**高い音は禁止**(NOTES)なので、
+    高揚は音の高さではなく**低い和音が厚くなること**で出す。段(1〜4)ほど声部を増やす。
+    ⚠1試合で数回しか鳴らないので、ここは思い切り鳴らしてよい。 */
+ cmbUp:(tier)=>{const T=Math.max(1,Math.min(4,tier||1));
+  nzHit(760,170,.26,.13,1);
+  const CH=[147,196,247,294,370];/* D2 G2 B2 D3 F#3=低い和音。⚠440より上を使わない */
+  for(let i=0;i<1+T;i++)beep(CH[i],CH[i],.34+T*.06,i?'triangle':'sawtooth',.085-i*.012);
+  if(T>=3)setTimeout(()=>{for(let i=0;i<3;i++)beep(CH[i+1],CH[i+1],.4,'triangle',.05);},160);},
  push:()=>{beep(170,70,.24,'sawtooth',.13);setTimeout(()=>beep(120,55,.2,'sawtooth',.1),90);},
  dep:()=>{beep(340,540,.07,'square',.08);setTimeout(()=>beep(240,240,.06,'square',.06),60);},
  heal:()=>{beep(660,990,.09,'sine',.06);setTimeout(()=>beep(880,1320,.09,'sine',.05),70);},
@@ -1742,6 +1757,8 @@ const SFX_LBL={
  growl:['ボスの唸り(死の笛)','ボス出現','z'], growl2:['ボスの唸り(人狼)','ボス出現','z'],
  die:['断末魔','撃破','z'], bite:['噛みつき①','部隊への攻撃','z'], bite2:['噛みつき②','同上','z'],
  splat:['血しぶき','撃破','z'], scratch:['爪で壁を掻く','🌑ナイトメアのBGM','z'],
+ crush:['🚌轢いた(ゴシャッ)','開拓便でバスが轢き殺した(ノイズを低く閉じた潰れ+食い込む芯)','z'],
+ cmbUp:['🚌連続轢殺の段が上がった','轢殺→大轢殺→蹂躙→地獄のバス(低い和音が厚くなる)','ev'],
  tap:['ボタンを押した','タイトル・研究所・編成などのボタン全部','ui'],
  back:['閉じる/戻る','✕ボタン・やめる','ui'],
  build:['建設','タワーを建てる','ui'], sell:['売却','タワーを売る','ui'],
@@ -1982,6 +1999,10 @@ let MAPW=MW,MAPH=MH;
    読み込みの途中で呼ばれるので、下の方で const にすると**初期化前アクセスで例外**になり、
    スクリプトごと止まる(2026-08-02に実際に踏んだ。NOTESの「const の TDZ」と同じ穴で2度目)。 */
 const BPROP=[];
+/* 🚌開拓便の**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。
+   道の両脇に置く廃車とコンクリのバリア。⚠**宣言はここ(上の方)**=理由は BPROP と同じ(TDZ)。
+   ⚠⚠**絵と挙動を必ず同じ式から出すこと**(`bnsCorrW`)=別々に持つと「壁の外を歩く」が必ず出る。 */
+const BWALL=[];
 const TOWERS=[
  /* ⚠威力は2026-08-02に **22→28**(ユーザー実機判断「ショットガンは3体いけるのにライフルは1体で威力も弱い」)。
     ⭐直した理由は**1枠あたりの火力**=建設マスが8枠しかないので、DPS23では枠を使う価値が無かった
@@ -3010,7 +3031,31 @@ const isBns=()=>!!(G&&G.pveDiff===BNS_D);
 const BNS_CAP=560;    /* 盤面に同時に出せる上限。⚠実機が重ければここを下げる */
 const BNS_GAP=.0175;  /* 次の1体までの秒数(=濃さ)。⚠小さいほど濃い */
 const BNS_GAP2=.14;   /* 9体に1回だけ入れる息継ぎ(塊と塊の切れ目) */
-const BNS_OFF=230;    /* 道の横へのばらけ幅。⚠広げるほど「行列」から「塊」になる */
+/* ⚠**230→150に絞った**(2026-08-02(3)ユーザー「四方八方すぎて対応できない」)=
+   広げるほど塊にはなるが、**道から溢れて「どこからでも来る」**になり、迎え撃つ場所が決まらない。
+   ⭐いまは道幅の外に**導線(壁)**を置いてあるので、この値が**通路の幅**そのものになる。 */
+const BNS_OFF=150;
+/* ⭐⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。
+   道に沿って**3か所で通路が絞れる(関所)**。⚠**壁の絵はこの式から生やす**ので必ず一致する。
+   ⭐関所は「バスで待ち構える場所」=群れが勝手に密集するので、そこを轢くのが一番おいしい。 */
+const BNS_GATE=[.28,.55,.80];/* 関所の位置(道に沿った割合) */
+const BNS_GATW=62;           /* 関所での通路の幅(半分) */
+const BNS_GATR=.085;         /* 関所の前後どれだけかけて絞るか */
+function bnsCorrW(u){
+ let w=BNS_OFF;
+ for(let i=0;i<BNS_GATE.length;i++){
+  const q=Math.abs(u-BNS_GATE[i])/BNS_GATR;
+  if(q<1){const v=BNS_GATW+(BNS_OFF-BNS_GATW)*q*q;if(v<w)w=v;}
+ }
+ return w;
+}
+/* その道が拠点から見てどちらか(予告の文言用)。⚠面ごとに道の向きが違うので決め打ちにしない */
+function bnsDirN(ln){
+ const L=LANES&&LANES[ln];if(!L)return '';
+ const a=L.seg[0].a,dx=a[0]-BNS_CX,dy=a[1]-BNS_CY;
+ return ((Math.abs(dy)>Math.abs(dx)*.45)?(dy<0?'北':'南'):'')
+      + ((Math.abs(dx)>Math.abs(dy)*.45)?(dx<0?'西':'東'):'');
+}
 function D5v(){return D5[(G&&G.pveDiff!=null?G.pveDiff:2)]||D5[2];}
 const COOP_PAY=[1,.65,.5];
 const COOP_MAXU=20;
@@ -3091,7 +3136,7 @@ let PMAXX=MW;
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
- LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;
+ LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BWALL.length=0;
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
@@ -14033,8 +14078,17 @@ function buildTide(wave){
     ⚠**1体ずつ順ぐりに配る**=乱数で配ると片側だけ厚くなって「四方から来る」に見えない。
     ⚠**間隔(dl)も詰める**=小粒がなだれ込む面なので、いつもの間隔だと待ち時間ばかりになる。 */
  if(isBns()&&LANES){
+  /* ⭐⭐**一度に濃く来るのは1方向だけ**(2026-08-02(3)ユーザー「四方八方すぎて対応できない」)。
+     ⚠それまでは1体ずつ4本へ均等に配っていたので、**バス1台では原理的に間に合わない**
+       (4か所で同時に起きていることに、1か所にしか居られない乗り物で応えろという形だった)。
+     ⭐**波を「区」に割って、濃い道を順に回す**=バスの仕事が「いま来ている方へ迎えに行く」になる。
+     ⚠**四方から来る絵は残す**=5体に1体は他の道へ流す(全部1本にすると残りの道が死んで見える)。
+     ⚠区の長さは**8秒前後**にする=短いと予告が間に合わず、長いと退屈になる。 */
+  const LN=LANES.length,BLK=Math.max(60,Math.round(pool.length/7));
   for(let i=0;i<pool.length;i++){const e=pool[i];
-   e.ln=i%LANES.length;
+   const hot=Math.floor(i/BLK)%LN;
+   if(i%5===4&&LN>1){e.ln=(hot+1+(((i/5)|0)%(LN-1)))%LN;e.hot=0;}
+   else{e.ln=hot;e.hot=1;}
    /* ⚠**間隔をぐっと詰める**=群れに見せるには「かたまりで湧く」必要がある。
       ⚠1体ずつ等間隔だと、いくら数を増やしても**行列**にしかならない(参考画像は塊)。
       ⭐間隔は表(BNS_GAP/BNS_GAP2)から引く=濃さを1か所で調整できるようにした */
@@ -14055,6 +14109,7 @@ function buildTide(wave){
 if(pool.length)pool[0].dl=1.1;
  /* ウェーブ開始からLEAD秒は敵が出ない=タワーを建てる時間(2026-07-25ユーザー指示) */
  T.pool=pool;T.lead=WAVE_LEAD;T.qt=(pool.length?pool[0].dl:0)+WAVE_LEAD;T.total=pool.length;T.up=0;
+ T.hotLn=null;/* ⚠🚌開拓便の「いま濃く来ている道」。波を作り直したら必ず消す(前の波の赤が残る) */
  /* 📻電波塔: この波の顔ぶれと総数を先に読む(設置猶予の5秒で対策を決められる) */
  try{const me9=G.players[G.myIdx];
   if(me9&&me9.supRadio&&!me9.dead){
@@ -14114,6 +14169,12 @@ function tideStep(dt){
      ⭐2026-08-02(2): 体数を15倍にしたのでばらけ幅も広げた(150→BNS_OFF / 120→320)
        =広げないと道の上に敵が積み重なって**1本の帯**にしか見えない。 */
   {const z9=mkZ(e.z);if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-BNS_OFF,BNS_OFF);z9.d-=rnd(0,320);}C.zombies.push(z9);}
+  /* ⭐**濃い道が変わったら予告する**(2026-08-02(3))=見せないとただの当たり外れになる。
+     ⚠**濃い側の1体が湧いた時にだけ見る**=薄く流している1体で切り替わると予告が嘘になる。 */
+  if(e.hot&&T.hotLn!==e.ln){T.hotLn=e.ln;
+   if(C.isMe&&G.wave>0){const dn=bnsDirN(e.ln);
+    toast('⚠ '+(dn?dn+'から':'')+'大群が来る! バスで迎え撃て',true);
+    if(sfx.horn)sfx.horn();}}
   C.totalWave++;
   if(e.boss){ev(ti2,'💀 ジャガーノートがこっちに来た!',true);C.shake=.4;
    addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:RUST});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
@@ -14736,7 +14797,7 @@ function killZ(C,z){
  /* ⚠⚠**米粒は音を間引く**(2026-08-02(2))=毎秒数十体倒れる面なので、1体ずつ鳴らすと
     同じ音が何十も重なって**割れた雑音**になる(音を足す話ではなく、既にある音を減らす話)。
     ⭐0.075秒に1回まで=最大でも毎秒13発。⚠⚙️の音(coin)は出さない(まとめて1回にしたため)。 */
- if(rice){if(C.isMe&&C.tm-(C.zsfxT||-9)>=.075){C.zsfxT=C.tm;sfx.splat();}}
+ if(rice){if(C.isMe&&C.tm-(C.zsfxT||-9)>=.075){C.zsfxT=C.tm;(sfx.crush||sfx.splat)();}}
  else if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
   if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
  /* 大物撃破の特別演出 */
@@ -15363,6 +15424,12 @@ function campStep(C,dt,wave){
       ⚠**拠点の手前ではずれを絞る**=最後は1点に吸い込ませないと、拠点の周りをすり抜けて見える。 */
  for(const z of C.zombies){const p=pathPos(Math.max(0,z.d),z.ln);z.px=p[0];z.py=p[1];
   if(z.off){const pl=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
+   /* ⭐⭐**導線**(2026-08-02(3))=道の両脇の壁で横のずれを挟む。**関所で通路が絞れる**ので
+      群れが勝手に密集する=そこがバスの狩り場になる。⚠壁の絵も同じ `bnsCorrW` から生えている。
+      ⚠**z.off そのものを切る**(描く時だけ切ってはいけない)=バスに押された分を覚えたままだと、
+        関所を抜けた瞬間に**壁の外へ飛び出す**。 */
+   if(C.bus){const w9=bnsCorrW(clamp(z.d/pl,0,1));
+    if(z.off>w9)z.off=w9;else if(z.off<-w9)z.off=-w9;}
    const k9=z.off*clamp((pl-z.d)/300,0,1);
    /* ⚠**法線を実体にも書いておく**(2026-08-02(2))=🚌バスが横へ押しのける時に要る。
       ここで出した sin/cos をそのまま使い回す(バス側で出し直さない)。 */
@@ -16587,11 +16654,23 @@ function renderCamp(C,t){
   c.restore();c.lineCap='round';}
  c.strokeStyle='rgba(190,182,158,.5)';c.lineWidth=4;c.setLineDash([24,30]);
  roadPath();c.stroke();c.setLineDash([]);
+ /* ⭐⭐**いま大群が来ている道を赤く脈打たせる**(2026-08-02(3))=一度に濃く来るのは1方向なので、
+    **どこへ迎えに行けばいいか**が画面のどこに居ても分かる必要がある(道は端まで伸びているので、
+    バスがどこに居ても必ず視界に入る)。⚠予告の言葉(トースト)だけでは流れて消える。 */
+ if(C.bus&&LANES&&G&&G.tide&&G.tide.hotLn!=null&&LANES[G.tide.hotLn]){
+  const L9=LANES[G.tide.hotLn],pu=.5+.5*Math.sin(t*3.2);
+  c.save();c.lineCap='round';
+  c.strokeStyle='rgba(226,80,52,'+(.16+.14*pu).toFixed(3)+')';c.lineWidth=96;
+  c.beginPath();c.moveTo(L9.seg[0].a[0],L9.seg[0].a[1]);
+  for(const s of L9.seg)c.lineTo(s.b[0],s.b[1]);
+  c.stroke();c.restore();}
  /* 装飾 */
  for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
  /* 🛞轍と🩸血だまり(🚌開拓便)。⚠**地面の上・廃墟の下**=踏まれている物なので一番下に敷く */
  if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
+ /* 🚧導線の壁(⚠血だまりの上・廃墟と同じ層) */
+ if(BWALL.length)try{drawBnsWalls(c);}catch(e){}
  /* 🚌開拓便の廃墟(⚠**画面に入っている物だけ描く**=数百個あるので全部描くと重い。
     ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは**本当の画面の範囲**を出し直す) */
  if(BPROP.length){const m9=90,
@@ -17388,12 +17467,16 @@ function drawMiniMap(c,C){
  c.fillStyle='rgba(28,23,18,.72)';rr(c,x0-3,y0-3,w+6,h+6,7*dpr);c.fill();
  c.strokeStyle='rgba(242,236,220,.65)';c.lineWidth=2*dpr;c.stroke();
  c.fillStyle='rgba(178,162,120,.30)';c.fillRect(x0,y0,w,h);
- /* 道 */
- c.strokeStyle='rgba(60,56,50,.85)';c.lineWidth=Math.max(1.5,4*dpr*sx*8);
- c.beginPath();
- for(const L of (LANES||[])){c.moveTo(x0+L.seg[0].a[0]*sx,y0+L.seg[0].a[1]*sy);
-  for(const s of L.seg)c.lineTo(x0+s.b[0]*sx,y0+s.b[1]*sy);}
- c.stroke();
+ /* 道。⚠**いま大群が来ている道だけ赤く**する(2026-08-02(3))=地図でも迎え撃つ先が読めるように */
+ {const hot=(G&&G.tide&&G.tide.hotLn!=null)?G.tide.hotLn:-1,lw=Math.max(1.5,4*dpr*sx*8);
+  for(let pass=0;pass<2;pass++){
+   c.strokeStyle=pass?'rgba(226,80,52,.95)':'rgba(60,56,50,.85)';
+   c.lineWidth=pass?lw*1.6:lw;
+   c.beginPath();let any=0;
+   (LANES||[]).forEach((L,li)=>{if((li===hot?1:0)!==pass)return;
+    c.moveTo(x0+L.seg[0].a[0]*sx,y0+L.seg[0].a[1]*sy);
+    for(const s of L.seg)c.lineTo(x0+s.b[0]*sx,y0+s.b[1]*sy);any=1;});
+   if(any)c.stroke();}}
  /* 廃墟(点だけ・間引く) */
  c.fillStyle='rgba(120,108,88,.7)';
  for(let i=0;i<BPROP.length;i+=4){const p=BPROP[i];c.fillRect(x0+p.x*sx-1,y0+p.y*sy-1,2,2);}
@@ -18593,7 +18676,79 @@ function loadBonus(si){
  AI_ORDER=SLOTS.map((s,i)=>i);SLOT_ORDER=AI_ORDER.slice();
  PMAXX=MAPW;
  makeScenery();
+ bnsWalls();/* ⚠**先に導線(壁)を作る**=廃墟は壁の上に置かないよう避けるため */
  bnsProps();
+}
+/* ⭐⭐**導線の壁**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。
+   道の両脇に**廃車とコンクリのバリアを列で置く**=群れがどこを通るのかが絵で読める。
+   ⭐**位置は `bnsCorrW` から生やす**ので、敵が歩ける幅と壁が必ず一致する
+     (別々に持つと「壁の外を歩いている」が必ず出る)。
+   ⚠**バスは壁を止めない**=止めると運転が窮屈になる(バスは廃車をなぎ倒して走る大きさ)。
+   ⚠**四隅は角を落として並べる**=四角を1本のパスに積んでまとめて塗るため、向きは作る時に焼いておく。 */
+const BW_C=['#9a958a','#8a8071','#7b4a3a','#4a5a6b','#6b6b4a'];/* 0-1=コンクリ 2-4=廃車 */
+const BW_VIS=[];/* 画面に入っている壁の置き場(毎フレーム作り直さない) */
+function bnsWalls(){
+ BWALL.length=0;
+ if(!LANES)return;
+ let s9=104729+STAGE*7919;
+ const rd=()=>{s9=(s9*1103515245+12345)&0x7fffffff;return s9/0x7fffffff;};
+ for(let li=0;li<LANES.length;li++){
+  const len=LANES[li].len;
+  for(let d=len*.05;d<len-260;d+=78){
+   const u=d/len,w=bnsCorrW(u),p=pathPos(d,li);
+   /* 関所のすぐ脇は**必ずコンクリ**+大きめ=「ここが狭まっている」と一目で分かるように */
+   const gate=w<BNS_OFF*.8;
+   for(let sg=-1;sg<=1;sg+=2){
+    if(!gate&&rd()<.16)continue;/* ⚠たまに抜く=途切れない壁は「柵」に見えて廃墟感が消える */
+    const s=(gate?1.15:.82+rd()*.5);
+    const car=!gate&&rd()<.42;
+    const L=(car?44:40)*s,W=(car?18:12)*s;
+    /* ⚠**向きと距離を少しだけ散らす**=きっちり2本の線に並べるとサーキットの柵に見える。
+       ⚠**散らすのは外側だけ**(gate は散らさない)=内側へずれると通路が狭まり、
+         「壁の中を歩いている」になる(絵と挙動がずれる原因になる)。 */
+    const ja=gate?0:(rd()-.5)*.44,jd=gate?0:rd()*30;
+    const a2=p[2]+ja,t0=Math.cos(a2),t1=Math.sin(a2),n0=-Math.sin(p[2]),n1=Math.cos(p[2]);
+    const x=p[0]+n0*(w+W*1.5+jd)*sg,y=p[1]+n1*(w+W*1.5+jd)*sg;
+    BWALL.push({x:x,y:y,ci:gate?0:(car?2+((rd()*3)|0):1),
+     q:[x+t0*L+n0*W,y+t1*L+n1*W, x+t0*L-n0*W,y+t1*L-n1*W,
+        x-t0*L-n0*W,y-t1*L-n1*W, x-t0*L+n0*W,y-t1*L+n1*W],
+     r:Math.max(L,W)+6});
+   }
+  }
+ }
+}
+/* 導線の壁を描く。⚠**画面に入っている物だけ**+**色ごとに1回だけ塗る**(米粒と同じ作法) */
+function drawBnsWalls(c){
+ if(!BWALL.length)return;
+ const m9=120,
+  wx0=(-OX)/SC-m9,wx1=(cv.width-OX)/SC+m9,wy0=(-OY)/SC-m9,wy1=(cv.height-OY)/SC+m9;
+ const vis=BW_VIS;vis.length=0;
+ for(const b of BWALL){if(b.x<wx0||b.x>wx1||b.y<wy0||b.y>wy1)continue;vis.push(b);}
+ if(!vis.length)return;
+ const put=(b,g)=>{const q=b.q,e=g||0;
+  c.moveTo(q[0]+(q[0]-b.x)*e,q[1]+(q[1]-b.y)*e);
+  c.lineTo(q[2]+(q[2]-b.x)*e,q[3]+(q[3]-b.y)*e);
+  c.lineTo(q[4]+(q[4]-b.x)*e,q[5]+(q[5]-b.y)*e);
+  c.lineTo(q[6]+(q[6]-b.x)*e,q[7]+(q[7]-b.y)*e);c.closePath();};
+ /* 影 */
+ c.fillStyle='rgba(0,0,0,.20)';c.beginPath();
+ for(const b of vis){const q=b.q;c.moveTo(q[0],q[1]+9);c.lineTo(q[2],q[3]+9);c.lineTo(q[4],q[5]+9);c.lineTo(q[6],q[7]+9);c.closePath();}
+ c.fill();
+ /* 黒フチ(まとめて1回=少し太らせた同じ形) */
+ c.fillStyle=INK;c.beginPath();for(const b of vis)put(b,.16);c.fill();
+ /* 本体(色ごとに1回) */
+ for(let ci=0;ci<BW_C.length;ci++){
+  let any=0;c.fillStyle=BW_C[ci];c.beginPath();
+  for(const b of vis){if(b.ci!==ci)continue;put(b,0);any=1;}
+  if(any)c.fill();}
+ /* 関所の赤白のしま(⚠コンクリだけ・小さく1本) */
+ c.fillStyle='#c25b3a';c.beginPath();let anyS=0;
+ for(const b of vis){if(b.ci!==0)continue;const q=b.q;
+  c.moveTo((q[0]+q[6])/2,(q[1]+q[7])/2);c.lineTo((q[2]+q[4])/2,(q[3]+q[5])/2);
+  c.lineTo((q[2]+q[4])/2+(b.x-(q[2]+q[4])/2)*.34,(q[3]+q[5])/2+(b.y-(q[3]+q[5])/2)*.34);
+  c.lineTo((q[0]+q[6])/2+(b.x-(q[0]+q[6])/2)*.34,(q[1]+q[7])/2+(b.y-(q[1]+q[7])/2)*.34);
+  c.closePath();anyS=1;}
+ if(anyS)c.fill();
 }
 /* 道の中心線までの距離(一番近いレーン)。⚠廃墟を道の上に置かないため */
 function bnsLaneD(x,y){
@@ -18617,7 +18772,9 @@ function bnsProps(){
     広い面に敷き詰めると画面が瓦礫だらけで、何が拾える物なのか読めない */
  for(let i=0;i<900;i++){
   const x=rd()*(MAPW-140)+70,y=rd()*(MAPH-140)+70;
-  if(bnsLaneD(x,y)<86)continue;                 /* 道の上 */
+  /* ⚠**導線の外側にだけ置く**(2026-08-02(3))=通路の中に瓦礫があると
+     「どこをゾンビが通るのか」が読めなくなる(壁で挟んだ意味が消える) */
+  if(bnsLaneD(x,y)<BNS_OFF+52)continue;
   if(dist(x,y,BNS_CX,BNS_CY)<300)continue;      /* 拠点の周り(タレットの置き場) */
   BPROP.push({k:KIND[(rd()*KIND.length)|0],x:x,y:y,a:rd()*6.283,s:.72+rd()*.66,c:(rd()*4)|0});
  }
@@ -18769,12 +18926,17 @@ function bnsReward(){
 const BUS_SP=310;    /* 最高速 */
 const BUS_ACC=760;   /* 加速。⚠上げすぎると軽い車になる */
 const BUS_FRIC=2.4;  /* 離した時の減速(1秒あたり) */
-const BUS_R=62,BUS_DPS=520,BUS_KB=190;
+/* ⭐⭐**バスを大きくした**(2026-08-02(3)ユーザー「バスがちっちゃい」)= 62→140。
+   ⚠**遊びの主役はバス**なので、画面で一番大きい物でなければ話にならない(米粒7体ぶんの背丈)。
+   ⚠**絵と当たりの大きさを必ず揃えること**=前は当たり(半径62=幅124)の方が絵(幅71)より広く、
+     「当たっていないのに死ぬ」状態だった。いまは 絵の全長≒2×BUS_R に合わせてある(`BUS_DRAW`)。 */
+const BUS_R=140,BUS_DPS=520,BUS_KB=260;
+const BUS_DRAW=1.9;  /* 絵の倍率。⚠BUS_R を動かしたらここも動かす(全長≒131*1.15*これ) */
 const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当たった手応え */
 /* ⭐**横へ押しのける速さ**(2026-08-02(2))=前へ押し込むだけだと「道の上で潰した」に見えない。
    ⚠押すのは世界座標ではなく **`z.off`(道の法線方向へのずれ)**=世界座標で押すと道から外れて、
      次のフレームで道の上へ瞬間移動する(前へ押す時と同じ理屈)。 */
-const BUS_SIDE=300;
+const BUS_SIDE=420;
 const BNS_CMB_T=1.5; /* 連続轢殺が途切れるまでの秒数 */
 const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
 function bnsBusInit(C){
@@ -18813,15 +18975,38 @@ function bnsBusStep(C,dt){
   dmgZ(C,z,BUS_DPS*dt,1,true);
   if(z.dead)kil++;
   else{z.d=Math.max(0,z.d-BUS_KB*dt);z.stnT=Math.max(z.stnT||0,.12);
-   /* ⭐**横へ押しのける**=法線(z.nx,z.ny)はいまの位置を出す時に書いてある */
+   /* ⭐**横へ押しのける**=法線(z.nx,z.ny)はいまの位置を出す時に書いてある。
+      ⚠**押した先も導線(壁)の内側で止める**=止めないと壁の外へ押し出せてしまい、
+        「絵と挙動が一致している」という導線の前提が1フレームだけ崩れる。 */
    if(z.nx!=null){const s9=(dx*z.nx+dy*z.ny)>=0?1:-1;
-    z.off=clamp((z.off||0)+s9*BUS_SIDE*dt,-BNS_OFF*1.8,BNS_OFF*1.8);}}
+    const pl9=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
+    const w9=bnsCorrW(clamp(z.d/pl9,0,1));
+    z.off=clamp((z.off||0)+s9*BUS_SIDE*dt,-w9,w9);}}
   hit++;
  }
  /* ⭐**連続轢殺**(2026-08-02(2)ユーザー①「連続で気持ちいい」)。
     ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
- if(kil){B.cmb=(B.cmb||0)+kil;B.cmbT=BNS_CMB_T;B.cmbP=1;B.kill=(B.kill||0)+kil;
-  if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;}
+ if(kil){
+  const tb=bnsCmbT(B.cmb||0);
+  B.cmb=(B.cmb||0)+kil;B.cmbT=BNS_CMB_T;B.cmbP=1;B.kill=(B.kill||0)+kil;
+  if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
+  /* ⭐⭐**段が上がった瞬間だけ鳴らす+光らせる**(2026-08-02(3)ユーザー「音と演出がちゃっちい」)。
+     ⚠**1体ごとに鳴らす音を派手にしてはいけない**=毎秒何十体なので必ず雑音になる。
+       派手にしてよいのは**段が上がる瞬間**(1試合で数回)。NOTESの「まとまって起きる瞬間に置く」。 */
+  const ta=bnsCmbT(B.cmb);
+  if(ta>tb){B.cmbP=1.9;B.tierT=.5;
+   if(C.isMe&&sfx.cmbUp)sfx.cmbUp(ta);
+   if(FXLV>0)C.shake=Math.max(C.shake||0,.22+.06*ta);}
+ }
+ if(B.tierT>0)B.tierT-=dt;
+ /* ⭐**轢いている間ずっと前へ噴き出す血**(2026-08-02(3))=倒れた1体ごとの粒だけだと
+    「何かが散った」で終わる。**バスの鼻先から絶えず飛沫が出ている**と轢いている実感が続く。
+    ⚠バスが動いている時だけ・数は抑える(輪の中で使い回すので増えても伸びない)。 */
+ if(hit&&FXLV>0){const mv=Math.hypot(B.vx,B.vy);
+  if(mv>40){const tx=B.vx/mv,ty=B.vy/mv,gz=bnsGz(),n=Math.min(3,1+(hit>>2));
+   for(let i=0;i<n;i++){const a=Math.atan2(ty,tx)+rnd(-.55,.55),sp=rnd(180,430);
+    bnsRing(C,'bchk',BNS_CHK,{x:B.x+tx*BUS_R*.8,y:B.y+ty*BUS_R*.8,
+     vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(60,190),t:0,lf:rnd(.24,.44),r:rnd(2.6,5.4)*gz});}}}
  if(B.cmbT>0){B.cmbT-=dt;if(B.cmbT<=0)B.cmb=0;}
  if(B.cmbP>0)B.cmbP=Math.max(0,B.cmbP-dt*4.5);
  /* ⭐⚙️は**まとめて1回**出す。⚠1体ずつ出すと毎秒何十枚も文字が湧いて画面が読めなくなる */
@@ -18870,14 +19055,17 @@ function bnsSplat(C,z){
  {const l=Math.hypot(ax,ay)||1;ax/=l;ay/=l;
   const bl=B?Math.hypot(B.vx,B.vy):0;
   if(bl>20){ax=ax*.5+(B.vx/bl)*.85;ay=ay*.5+(B.vy/bl)*.85;}}
- const a0=Math.atan2(ay,ax),n=FXLV===2?4:2;
+ /* ⚠**数と初速を上げた**(2026-08-02(3)ユーザー「演出がちゃっちい」)=2〜4個では
+    「何かが散った」で終わる。⚠輪の中で使い回すので、増やしても配列は伸びない。 */
+ const a0=Math.atan2(ay,ax),n=FXLV===2?7:3;
  for(let i=0;i<n;i++){
-  const a=a0+rnd(-.95,.95),sp=rnd(110,300);
-  bnsRing(C,'bchk',BNS_CHK,{x:z.px,y:z.py-14,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(40,150),
-   t:0,lf:rnd(.30,.55),r:rnd(3,6)*gz});
+  const a=a0+rnd(-1.0,1.0),sp=rnd(150,470);
+  bnsRing(C,'bchk',BNS_CHK,{x:z.px,y:z.py-14,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(60,220),
+   t:0,lf:rnd(.30,.60),r:rnd(3,7.5)*gz});
  }
- /* 地面に残る血だまり(=跡) */
- bnsRing(C,'bstn',BNS_STN,{x:z.px+rnd(-8,8),y:z.py+rnd(-4,4),r:rnd(6,11)*gz,t:0});
+ /* 地面に残る血だまり(=跡)。⚠**大きめの1枚+飛び散った小さいの1枚**=1枚だけだと丸い点に見える */
+ bnsRing(C,'bstn',BNS_STN,{x:z.px+rnd(-8,8),y:z.py+rnd(-4,4),r:rnd(9,16)*gz,t:0});
+ bnsRing(C,'bstn',BNS_STN,{x:z.px+ax*rnd(20,70)+rnd(-14,14),y:z.py+ay*rnd(10,34)+rnd(-8,8),r:rnd(4,8)*gz,t:0});
 }
 function bnsFxStep(C,dt){
  const ck=C.bchk;if(ck)for(let i=0;i<ck.length;i++){const p=ck[i];
@@ -18922,29 +19110,42 @@ function drawBnsMarks(c,C){
    if(any)c.fill();}
  }
 }
-/* 🩸弾け飛んだ肉片=**敵より手前**に描く(飛んでいる物なので上) */
+/* 🩸弾け飛んだ肉片=**敵より手前**に描く(飛んでいる物なので上)。
+   ⚠**2段に塗り分ける**(2026-08-02(3))=飛び始めは明るい鮮血・終わりは暗い肉片。
+     1色だけだと「茶色い四角が飛んだ」に見えてちゃっちい。⚠色ごとに1回ずつしか塗らない。 */
 function drawBnsGore(c,C){
  const ck=C.bchk;if(!ck||!ck.length)return;
- c.fillStyle='rgba(122,26,20,.9)';
- c.beginPath();let any=0;
- for(let i=0;i<ck.length;i++){const p=ck[i];if(p.t>=p.lf)continue;
-  const k=1-p.t/p.lf,r=p.r*(.45+k*.55);
-  c.rect(p.x-r,p.y-r,r*2,r*2);any=1;}
- if(any)c.fill();
+ for(let b=0;b<2;b++){
+  c.fillStyle=b?'rgba(96,20,16,.92)':'rgba(196,44,32,.95)';
+  c.beginPath();let any=0;
+  for(let i=0;i<ck.length;i++){const p=ck[i];if(p.t>=p.lf)continue;
+   const k=1-p.t/p.lf;if((k>.55?0:1)!==b)continue;
+   const r=p.r*(.45+k*.55);
+   c.rect(p.x-r,p.y-r,r*2,r*2);any=1;}
+  if(any)c.fill();}
 }
-/* ⭐**連なりの表示**=バスの上に大きく出す。⚠**寄り具合で割る**(でないと文字が1画素になる) */
+/* ⭐**連なりの表示**=バスの上に大きく出す。⚠**寄り具合で割る**(でないと文字が1画素になる)。
+   ⚠**段の名前は「札」に載せる**(2026-08-02(3))=白い縁取り文字だけだと背景に溶けて安っぽい。
+   ⭐段が上がった瞬間(`tierT`)は**札から光の輪が広がる**=1試合で数回しか出ないので盛ってよい。 */
 function drawBnsCombo(c,C,t){
  const B=C.bus;if(!B||!(B.cmb>=5))return;
- const tier=bnsCmbT(B.cmb),gz=bnsGz();
+ const tier=bnsCmbT(B.cmb),gz=bnsGz(),col=BNS_CMB_C[tier]||PAPER;
  c.save();
- c.translate(B.x,B.y-96*gz);
- c.scale(gz*(1+B.cmbP*.4),gz*(1+B.cmbP*.4));
- c.textAlign='center';c.lineJoin='round';
- c.strokeStyle=INK;c.lineWidth=7;c.fillStyle=BNS_CMB_C[tier]||PAPER;
- c.font='900 34px '+FF;
+ c.translate(B.x,B.y-118*gz);
+ /* 段が上がった瞬間の輪(⚠世界座標なので gz を掛ける) */
+ if(B.tierT>0){const q=1-clamp(B.tierT/.5,0,1);
+  c.save();c.globalAlpha=(1-q)*.85;c.strokeStyle=col;c.lineWidth=7*gz;
+  c.beginPath();c.ellipse(0,118*gz,(40+q*260)*gz,(40+q*260)*gz*.4,0,0,7);c.stroke();c.restore();}
+ const k=gz*(1+B.cmbP*.34);
+ c.scale(k,k);
+ c.textAlign='center';c.lineJoin='round';c.textBaseline='alphabetic';
+ if(tier){/* 段の札 */
+  c.fillStyle=INK;rr(c,-46,7,92,23,7);c.fill();
+  c.fillStyle=col;rr(c,-44,9,88,19,6);c.fill();
+  c.fillStyle=INK;c.font='900 15px '+FF;c.fillText(BNS_CMB_N[tier],0,24);}
+ c.strokeStyle=INK;c.lineWidth=8;c.fillStyle=col;
+ c.font='900 40px '+FF;
  c.strokeText('×'+B.cmb,0,0);c.fillText('×'+B.cmb,0,0);
- if(tier){c.font='900 16px '+FF;c.lineWidth=5;
-  c.strokeText(BNS_CMB_N[tier],0,19);c.fillText(BNS_CMB_N[tier],0,19);}
  c.restore();
 }
 /* ============ 🧟 米粒ゾンビ(2026-08-02(2)ユーザー①)============
@@ -19025,10 +19226,22 @@ function drawZRice(c,C,t){
 function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy=dy;}
 function drawBus(c,C,t){
  const B=C.bus;if(!B)return;
- groundShadow(c,B.x,B.y,44);
- c.save();c.translate(B.x,B.y);c.scale(B.dr<0?-.62:.62,.62);
- if(B.hitT>0)c.filter='brightness(1.5)';
- try{drawBusKun(c,0,0,t,0,8);}catch(e){}
+ const S=BUS_DRAW;
+ groundShadow(c,B.x,B.y,BUS_R*.86);
+ /* ⭐**進む向きへ血のしぶきを噴く鼻先**(2026-08-02(3))。⚠絵は毎フレーム同じ物を描くだけ(重さゼロ)。
+    ⚠**当たり判定より内側**に描く=外へはみ出すと「当たっていない所が光る」になる。 */
+ if(B.hitT>0&&FXLV>0){const mv=Math.hypot(B.vx,B.vy)||1,tx=B.vx/mv,ty=B.vy/mv,k=clamp(B.hitT/.12,0,1);
+  c.save();c.translate(B.x+tx*BUS_R*.62,B.y+ty*BUS_R*.62);c.rotate(Math.atan2(ty,tx));
+  c.globalAlpha=.55*k;c.fillStyle='#b2261c';
+  c.beginPath();c.moveTo(BUS_R*.34,0);c.lineTo(-BUS_R*.1,-BUS_R*.5);c.lineTo(-BUS_R*.1,BUS_R*.5);c.closePath();c.fill();
+  c.globalAlpha=.5*k;c.fillStyle='#ffd9a0';
+  c.beginPath();c.ellipse(0,0,BUS_R*.2,BUS_R*.4,0,0,7);c.fill();
+  c.restore();c.globalAlpha=1;}
+ /* ⚠**絵は当たり判定の丸の真ん中に置く**(2026-08-02(3))=足元を B.y に合わせると
+    絵が丸から上へ大きくはみ出し、「車体は乗っているのに当たらない」になる。
+    ⚠33/54 は drawBusKun の絵の中心(内側で1.15倍しているので実測でこの値)。 */
+ c.save();c.translate(B.x,B.y);c.scale(B.dr<0?-S:S,S);
+ try{drawBusKun(c,33,54,t,0,8);}catch(e){}
  c.restore();
 }
 /* ============ 🧪検証場(⚠🛠DEV専用・2026-07-30ユーザー指示) ============

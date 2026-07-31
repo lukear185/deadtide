@@ -2626,10 +2626,58 @@ function checkRice(){
  if(B.cmb!==0){console.log('FAIL: 連なりが途切れない ×'+B.cmb);process.exit(1);}
  if(B.cmbMx!==mx){console.log('FAIL: 最高連続が消えている');process.exit(1);}
  backTitle();
+ /* ⑨⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。見るのは3つ:
+    a)関所で通路が本当に絞れている b)敵が通路からはみ出さない c)壁が通路の中に立っていない
+    ⚠ c)が壊れると「壁の中をゾンビが歩く」=絵と挙動がずれる(別々に持つと必ず起きる) */
+ let nwall=0;
+ META.stg=0;setDiff=BNS_D;startSolo();
+ {const m5=G.players[0];
+  nwall=BWALL.length;/* ⚠タイトルへ戻すと消えるので、ここで控えておく */
+  if(!BWALL.length){console.log('FAIL: 導線の壁が1つも無い');process.exit(1);}
+  for(const g of BNS_GATE)if(!(bnsCorrW(g)<BNS_OFF*.6)){
+   console.log('FAIL: 関所で通路が絞れていない '+g+'→'+bnsCorrW(g));process.exit(1);}
+  if(!(bnsCorrW(.005)>BNS_OFF*.95)){console.log('FAIL: 関所以外まで絞れている');process.exit(1);}
+  for(const b of BWALL){const d5=bnsLaneD(b.x,b.y);
+   if(d5<BNS_GATW){console.log('FAIL: 壁が通路の中に立っている(道から'+Math.round(d5)+')');process.exit(1);}}
+  nextWave();
+  for(let k=0;k<1200&&G.tide.pool.length&&m5.zombies.length<300;k++)tideStep(.05);
+  for(let k=0;k<60;k++)campStep(m5,.05,1);
+  /* ⚠**最後に「ほぼ止まった1コマ」を1回入れてから測る**=歩いた分だけ関所が狭まるので、
+     0.05秒ぶん歩いた直後の横ずれは最大6ほど古い値のまま(次のコマで必ず切られる)。
+     ⚠**画面に出る位置は切ったあとの値で出している**ので、見えている絵は常に通路の中。
+     ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。 */
+  campStep(m5,.001,1);
+  let wo=0;for(const z of m5.zombies){if(z.dead||z.ln==null)continue;
+   const pl=LANES[z.ln].len,w5=bnsCorrW(clamp(z.d/pl,0,1));
+   if(Math.abs(z.off||0)>w5+1)wo++;}
+  if(wo){console.log('FAIL: 通路からはみ出した敵が'+wo+'体');process.exit(1);}}
+ backTitle();
+ /* ⑩⭐**一度に濃く来るのは1方向だけ**=バス1台で対応できるようにするための肝 */
+ META.stg=0;setDiff=BNS_D;startSolo();
+ {nextWave();
+  const P=G.tide.pool;
+  if(P.length<200){console.log('FAIL: 波が短すぎて濃さを測れない');process.exit(1);}
+  const win=P.slice(80,180),cn={};
+  for(const e of win)cn[e.ln]=(cn[e.ln]||0)+1;
+  const top=Math.max.apply(null,Object.keys(cn).map(k=>cn[k]));
+  if(top<win.length*.7){console.log('FAIL: 濃い道が1本に寄っていない '+JSON.stringify(cn));process.exit(1);}
+  if(Object.keys(cn).length<2){console.log('FAIL: 他の道に1体も流れていない(四方から来る絵が死ぬ)');process.exit(1);}
+  const lns={};for(const e of P)lns[e.ln]=1;
+  if(Object.keys(lns).length!==4){console.log('FAIL: 波の中で4本すべてが濃くなっていない');process.exit(1);}
+  /* 予告(hotLn)が立つか */
+  const m6=G.players[0];
+  for(let k=0;k<400&&G.tide.hotLn==null;k++)tideStep(.05);
+  if(G.tide.hotLn==null){console.log('FAIL: 濃い道の予告(hotLn)が立たない');process.exit(1);}
+  if(!bnsDirN(G.tide.hotLn)){console.log('FAIL: 予告の方角が出ない');process.exit(1);}
+  if(!m6){console.log('FAIL: 拠点が無い');process.exit(1);}}
+ backTitle();
  /* ⑦⚠**漏れの知らせは間引く**=数百体が拠点へ届く面なので、1体ずつ音と揺れを出すと鳴りっぱなしになる。
     ⚠**コアの減りは1体ずつそのまま**(知らせを間引いただけで手加減はしていないこと) */
  META.stg=0;setDiff=BNS_D;startSolo();
+ /* ⚠**バスを遠ざけてから見る**=バスは拠点のすぐ脇から始まるので、そのままだと
+    拠点に届いた敵をバスが先に轢いてしまい、漏れが1件も起きない(実際に踏んだ) */
  {const m4=G.players[0];m4.fx.length=0;m4.zlkT=-9;m4.zombies.length=0;
+  m4.bus.x=Math.min(MAPW-70,BNS_CX+2500);m4.bus.y=BNS_CY;
   for(let k=0;k<20;k++)m4.zombies.push(mkZ(zSpec(0,.02,1),PLEN+10));
   const c4=m4.core;
   campStep(m4,.05,1);
@@ -2667,6 +2715,7 @@ function checkRice(){
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;FXLV=fx0;
  console.log('🧟米粒ゾンビ: 盤面'+live.length+'体(上限'+BNS_CAP+')/描画は例外なし/跡は上限どまり(血'+me.bstn.length+'・肉'+me.bchk.length+'・轍'+me.btrk.length+')/'
   +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
+ console.log('  (🚧導線: 壁'+nwall+'個・関所3か所で通路'+BNS_OFF+'→'+BNS_GATW+'/敵は通路の外へ出ない/濃い道は一度に1本+予告あり)');
  console.log('  (🚌開拓便の尺: 全'+bkil+'体を放っておいて '+Math.round(bsec)+'秒 で片が付く)');
 }
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
