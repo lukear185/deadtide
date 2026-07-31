@@ -3056,7 +3056,9 @@ const BNS_LEAD=30;    /* 🚌開拓便だけ設置の猶予を長く(屋上に�
 const BNS_GATE=[.28,.55,.80];/* 関所の位置(道に沿った割合) */
 /* ⚠関所も広げる(80→200)=**バスが通れない関所を作らない**。
    ⭐バス(幅280)が関所(幅400)の7割を塞ぐので、「停めて蓋をする」がちょうど成立する。 */
-const BNS_GATW=200;          /* 関所での通路の幅(半分) */
+/* ⚠関所は 190 のまま(2026-08-02(10)に240へ広げかけたが戻した)=絞りが効かなくなる。
+   ⭐**バスが詰まる問題は `BUS_CL` を緩めて解いた**=関所でもバスの中心は±175動ける。 */
+const BNS_GATW=190;          /* 関所での通路の幅(半分) */
 const BNS_GATR=.085;         /* 関所の前後どれだけかけて絞るか */
 function bnsCorrW(u){
  let w=BNS_OFF;
@@ -3066,6 +3068,15 @@ function bnsCorrW(u){
  }
  return w;
 }
+/* ⭐⭐**「木も建物も無い範囲」はここ1本から出す**(2026-08-02(10)ユーザー
+   「→の道と左下の道に変な判定ある」)。
+   ⚠⚠**地形を置かない範囲**と**バスが走れる範囲**を別々の式で書いていたのが「変な判定」の温床だった
+     (通路は corrW+16、拠点まわりは OUT_R+150、バスは corrW-95 と OUT_R+120-95…と食い違っていた)。
+   ⭐**空き地の形は `bnsOpenW`/`bnsClr` の2本だけ**が決める。バスはそこから `BUS_CL` だけ内側まで。
+     ⚠この2本を触ったら、地形もバスの当たりも自動で一致する。片方だけ直さないこと。 */
+const bnsOpenW=u=>bnsCorrW(u)+40;/* 街路の空き地の半幅(木の中心はここより外) */
+const BNS_CLRO=170;              /* 拠点の周りの空き地=OUT_R + これ */
+const bnsClr=()=>OUT_R+BNS_CLRO;
 /* その道が拠点から見てどちらか(予告の文言用)。⚠面ごとに道の向きが違うので決め打ちにしない */
 function bnsDirN(ln){
  const L=LANES&&LANES[ln];if(!L)return '';
@@ -18818,9 +18829,9 @@ function bnsFreeAt(x,y,r){
    const t=l2?clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/l2,0,1):0;
    const d=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);
    if(d<bd){bd=d;bu=(s.s+t*s.l)/L.len;}}
-  if(bd-r<bnsCorrW(bu)+16)return false;
+  if(bd-r<bnsOpenW(bu))return false;
  }
- return dist(x,y,BNS_CX,BNS_CY)>OUT_R+150+r;/* 拠点の周りも空けておく */
+ return dist(x,y,BNS_CX,BNS_CY)>bnsClr()+r;/* 拠点の周りも空けておく */
 }
 /* 建物1つ。⚠**四隅は作る時に焼いておく**=毎フレーム三角関数を回さず、まとめて塗れる。
    ⭐**2種類ある**: `rf`無し=**廃墟**(壁だけ残った枠。屋根は落ちている)/
@@ -18851,9 +18862,11 @@ function bnsMap(){
   const len=LANES[li].len;
   for(let d=len-1500;d<len-240;d+=300){
    if(d<0)continue;
-   const u=d/len,w=bnsCorrW(u),p=pathPos(d,li);
+   const u=d/len,p=pathPos(d,li);
    for(let sg=-1;sg<=1;sg+=2){
-    const L=74,W=64,off=w+W+34;
+    /* ⚠**空き地の縁(`bnsOpenW`)から置く**=通路の幅(`bnsCorrW`)から置くと、
+       同じ式で弾いている `bnsFreeAt` に自分で引っ掛かって1棟も建たない(実際にそうなった) */
+    const L=74,W=64,off=bnsOpenW(u)+Math.max(L,W)+8;
     const bx=p[0]-Math.sin(p[2])*off*sg,by=p[1]+Math.cos(p[2])*off*sg;
     if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
     bldPush(bx,by,p[2],L,W,rd,1);
@@ -18870,7 +18883,7 @@ function bnsMap(){
    for(let sg=-1;sg<=1;sg+=2){
     if(!gate&&rd()<.55)continue;/* ⚠ここは空けてよい=③の森が勝手に埋める */
     const L=gate?54:rr2(38,66),W=gate?34:rr2(26,42);
-    const off=w+W+18;
+    const off=bnsOpenW(u)+Math.max(L,W)+6;/* ⚠空き地の縁から置く(理由は①と同じ) */
     const bx=p[0]-Math.sin(p[2])*off*sg,by=p[1]+Math.cos(p[2])*off*sg;
     if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
     bldPush(bx,by,p[2]+(gate?0:rr2(-.16,.16)),L,W,rd,0);
@@ -19172,9 +19185,16 @@ function bnsReward(){
      ⚠スティックの向きへ**瞬間移動させない**=倒した向きへ加速し、離しても惰性で流れる。
      ⚠曲がる時も同じ理屈で外へ膨らむ(専用の旋回処理は要らない)。
    ⚠バスは道の上を走らない(自由移動)ので `u.d` は持たない。部隊の仕組みには一切乗せない。 */
-const BUS_SP=310;    /* 最高速 */
-const BUS_ACC=760;   /* 加速。⚠上げすぎると軽い車になる */
-const BUS_FRIC=2.4;  /* 離した時の減速(1秒あたり) */
+/* ⚠⚠**2026-08-02(10)に速く・効くようにした**(ユーザー「バスの操作性が悪すぎる。そして遅すぎる」)。
+   ⭐**「重い車」を捨てたわけではない**=速度を持って加速・惰性で流れるのはそのまま。
+     変えたのは ①最高速と加速を上げた ②**横滑りを抑える(グリップ)**の3つ目を足した。
+   ⚠⚠**操作性の正体は最高速ではなく「曲がらないこと」だった**=前は倒した向きへ力を足すだけなので、
+     曲がろうとしても前の勢いで真っ直ぐ滑り続け、「入力が効いていない」ように感じていた。
+     ⭐スティックと**直角の速さを落とす**と、重さを残したまま素直に曲がる。 */
+const BUS_SP=560;    /* 最高速 */
+const BUS_ACC=1400;  /* 加速。⚠上げすぎると軽い車になる */
+const BUS_FRIC=3.0;  /* 離した時の減速(1秒あたり) */
+const BUS_GRIP=4.2;  /* 横滑りの抑え。⚠上げすぎるとレールの上を走っているようになる */
 /* ⭐⭐**バスを大きくした**(2026-08-02(3)ユーザー「バスがちっちゃい」)= 62→140。
    ⚠**遊びの主役はバス**なので、画面で一番大きい物でなければ話にならない(米粒7体ぶんの背丈)。
    ⚠**絵と当たりの大きさを必ず揃えること**=前は当たり(半径62=幅124)の方が絵(幅71)より広く、
@@ -19193,10 +19213,13 @@ const BUS_SIDE=420;
    ⚠**拠点の周り(木も建物も置いていない円)も走れる**ようにすること=でないと拠点で身動きが取れない。
    ⚠`BUS_CL` は**バスの見た目の半分(140)より小さく**する=木を少しかすめるくらいが自然で、
      きっちり合わせると「見えない壁」に見える。 */
-const BUS_CL=95;
+/* ⚠**空き地の縁からこれだけ内側**までしかバスの中心は入れない(=絵とのズレの唯一のノブ)。
+   ⚠⚠**95は締めすぎだった**(2026-08-02(10)ユーザー「変な判定ある」)=木がまだ無い所で見えない壁に
+     当たっていた。⭐**55に緩めた**=バスの端が木を少し食う=「森の縁をこすりながら走る」に見える。 */
+const BUS_CL=55;
 function bnsRoadFit(x,y,cl){
  if(!LANES)return null;
- const rc=Math.max(40,OUT_R+120-cl),dc=dist(x,y,BNS_CX,BNS_CY);
+ const rc=Math.max(40,bnsClr()-cl),dc=dist(x,y,BNS_CX,BNS_CY);
  if(dc<=rc)return null;/* 拠点の中は自由 */
  let bx=0,by=0,bd=1e9,inside=0;
  for(const L of LANES){
@@ -19204,7 +19227,7 @@ function bnsRoadFit(x,y,cl){
    const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1],l2=vx*vx+vy*vy;
    const t=l2?clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/l2,0,1):0;
    const px=s.a[0]+vx*t,py=s.a[1]+vy*t,d=dist(x,y,px,py);
-   const w=Math.max(30,bnsCorrW((s.s+t*s.l)/L.len)-cl);
+   const w=Math.max(30,bnsOpenW((s.s+t*s.l)/L.len)-cl);
    if(d<=w){inside=1;break;}
    const ov=d-w;
    /* ⚠**縁のぴったり上ではなく少し内側へ戻す**=ぴったりだと丸め誤差で「まだ外」と判定され、
@@ -19230,8 +19253,15 @@ function bnsBusInit(C){
 function bnsBusStep(C,dt){
  const B=C.bus;if(!B)return;
  B.t+=dt;
- const ix=B.ix||0,iy=B.iy||0,im=Math.min(1,Math.hypot(ix,iy));
- if(im>.06){B.vx+=ix*BUS_ACC*dt;B.vy+=iy*BUS_ACC*dt;}
+ const ix=B.ix||0,iy=B.iy||0,il=Math.hypot(ix,iy),im=Math.min(1,il);
+ if(im>.06){
+  B.vx+=ix*BUS_ACC*dt;B.vy+=iy*BUS_ACC*dt;
+  /* ⭐**横滑りを抑える**=スティックと直角の速さを落とす。これが「曲がる」の正体。
+     ⚠**前後の成分は触らない**(触ると重さが消えて、瞬間移動する乗り物になる)。 */
+  const ux=ix/il,uy=iy/il,nx9=-uy,ny9=ux;
+  const vn=B.vx*nx9+B.vy*ny9,g=Math.min(1,BUS_GRIP*dt);
+  B.vx-=nx9*vn*g;B.vy-=ny9*vn*g;
+ }
  else{const f=Math.max(0,1-BUS_FRIC*dt);B.vx*=f;B.vy*=f;}
  const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*Math.max(.4,im||1);
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
@@ -19243,6 +19273,11 @@ function bnsBusStep(C,dt){
    const ox=nx2-f[0],oy=ny2-f[1],ol=Math.hypot(ox,oy);
    if(ol>1e-4){const ux=ox/ol,uy=oy/ol,vn=B.vx*ux+B.vy*uy;
     if(vn>0){B.vx-=ux*vn;B.vy-=uy*vn;}}/* ⚠壁へ向かう分だけ殺す=沿って滑る */
+   /* ⭐**当たった所を見せる**(2026-08-02(10))=「変な判定がある」と感じる一番の原因は
+      **何に止められたのか見えないこと**。木の葉を散らして、境目をその場で読ませる。 */
+   B.wx=f[0];B.wy=f[1];
+   if(FXLV>0&&Math.hypot(B.vx,B.vy)>60&&Math.random()<dt*24)
+    addP(C,2,f[0],f[1],{sp:150,up:60,g:420,life:.5,r:5*bnsGz()*.35,col:'#4a6b2e',jx:14,jy:10});
    nx2=f[0];ny2=f[1];B.wallT=.14;
   }}
  B.x=nx2;B.y=ny2;

@@ -2669,6 +2669,11 @@ function checkRice(){
      ③街路の真ん中は押し戻されない(=見えない壁が通路の中に無い) */
   if(!(BNS_GATW-BUS_CL>40)){
    console.log('FAIL: 関所がバスの通れない狭さ('+BNS_GATW+'/'+BUS_CL+')');process.exit(1);}
+  /* ⚠⚠**見えない壁を作らない**=バスが止まる所より手前に木が生えていること。
+     バスの端(中心+BUS_R)が木の生え際(空き地の縁+木の半径)を越えていれば、
+     「何もない所で止められた」にはならない。 */
+  if(!(BUS_R-BUS_CL>=26)){
+   console.log('FAIL: 木の手前で見えない壁に当たる(BUS_R'+BUS_R+' - BUS_CL'+BUS_CL+')');process.exit(1);}
   {const b5=m5.bus;
    b5.x=400;b5.y=400;b5.vx=0;b5.vy=0;bnsStick(0,0);
    bnsBusStep(m5,.05);
