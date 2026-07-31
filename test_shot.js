@@ -315,6 +315,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'}render();window.addEventListener("resize",render);'
      +'}catch(e){document.title="ERR16 "+e.message;}},1500);'):'')
  /* 🚌ボーナス面は仮想時間で rAF が回らないので、撮る前に自分で時間を進める */
+ /* ⚠⚠**撮る間はコアを落とさない**(2026-08-02(7)に踏んだ)=撮影は読み込みから実際に1分以上かかるので、
+    その間に rAF が回って**リザルト画面になってしまい、盤面が1枚も撮れない**
+    (bnsn を小さくしても直らない=進んでいるのは仮想時間ではなく実時間の方)。 */
+ +(BNS?'setInterval(function(){try{var m9=G&&G.players[0];if(m9){m9.core=m9.coreMax;}}catch(e){}},150);':'')
  +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';for(var k=0;k<n;k++){'
      /* ⚠**群れの中を往復させる**=中央で回らせても敵に当たらず、片道だけだと**マップの端まで
         走り去って**群れも血だまりも画面から消える(どちらも実際に撮って気づいた)。

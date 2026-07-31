@@ -2003,6 +2003,12 @@ const BPROP=[];
    ⚠**宣言はここ(上の方)**=理由は BPROP と同じ(loadStage が読み込みの途中で触るのでTDZに落ちる)。
    ⚠⚠**通路(`bnsCorrW`)の外にしか置かない**=同じ式から生やしているので「壁の中を歩く」が起きない。 */
 const BBLD=[],BTREE=[];
+/* 森の升目(木は数万本あるので、画面に掛かる升だけを描くための索引)。
+   ⚠⚠**宣言はここ**=`loadStage` が読み込みの途中で `TRE_CELL=null` を触るので、
+     下の方で `let` にすると**初期化前アクセスでスクリプトごと止まる**(TDZの穴で3度目)。 */
+const TRE_CS=1000;let TRE_GX=0,TRE_GY=0,TRE_CELL=null;
+/* 焼いた地形の置き場(⚠同じ理由でここに宣言する=`loadStage` が読み込みの途中で捨てに来る) */
+const TBK={};let TBK_SC=0,TBK_N=0;
 const TOWERS=[
  /* ⚠威力は2026-08-02に **22→28**(ユーザー実機判断「ショットガンは3体いけるのにライフルは1体で威力も弱い」)。
     ⭐直した理由は**1枠あたりの火力**=建設マスが8枠しかないので、DPS23では枠を使う価値が無かった
@@ -3138,7 +3144,7 @@ let PMAXX=MW;
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
- LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;
+ LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;TRE_CELL=null;terrClear();
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
@@ -16674,11 +16680,12 @@ function renderCamp(C,t){
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
  /* 🛞轍と🩸血だまり(🚌開拓便)。⚠**地面の上・廃墟の下**=踏まれている物なので一番下に敷く */
  if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
- /* 🏚🌲地形の建物と森(⚠血だまりの上・廃車の下)。⚠これが導線そのもの */
+ /* 🏚🌲地形(建物と森と廃車)。⚠**焼いた画を貼るだけ**=中身は `drawTerrIn`。これが導線そのもの */
  if(BBLD.length||BTREE.length)try{drawBnsTown(c);}catch(e){}
  /* 🚌開拓便の廃墟(⚠**画面に入っている物だけ描く**=数百個あるので全部描くと重い。
-    ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは**本当の画面の範囲**を出し直す) */
- if(BPROP.length){const m9=90,
+    ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは**本当の画面の範囲**を出し直す)
+    ⚠開拓便は上の焼き込みに入っているのでここでは描かない */
+ if(BPROP.length&&!C.bus){const m9=90,
   wx0=(-OX-shx)/SC-m9,wx1=(cv.width-OX-shx)/SC+m9,wy0=(-OY-shy)/SC-m9,wy1=(cv.height-OY-shy)/SC+m9;
   for(const p of BPROP){if(p.x<wx0||p.x>wx1||p.y<wy0||p.y>wy1)continue;
    try{drawProp(c,p);}catch(e){}}}
@@ -18768,6 +18775,30 @@ const BLD_W=['#8a8072','#9a7256','#a2916f','#6f6a5e','#7d5f4a','#95897a'];/* 壁
 /* ⚠**屋上は明るくする**=ここが唯一の置ける場所なので、廃墟(暗い瓦礫)とはっきり分ける */
 const BLD_R=['#a89b84','#b3a68d','#9d9280','#aa9c80'];/* 屋上(平らな面) */
 const BLD_VIS=[],TRE_VIS=[];/* 画面に入っている物の置き場(毎フレーム作り直さない) */
+/* ⭐**森の濃さのノブ**(2026-08-02(7))=木を置く間隔。⚠**木の半径(26〜48)より小さくする**こと
+   =半径より広いと枝が重ならず、どれだけ本数を増やしても「点々」に戻る。
+   ⚠重ければここを上げる(52→60で本数が3割減る)。 */
+const BNS_TSP=62;
+/* ⚠⚠**木は数万本になるので、画面の外を毎フレーム舐めない**(2026-08-02(7))=
+   粗い格子に振り分けておき、**画面に掛かる升だけ**を見る。これが無いと
+   毎フレーム3万件の当たり外れ判定が走る。⚠索引の変数はファイルの上の方で宣言してある(TDZ)。 */
+function bnsTreeGrid(){
+ TRE_GX=Math.max(1,Math.ceil(MAPW/TRE_CS));TRE_GY=Math.max(1,Math.ceil(MAPH/TRE_CS));
+ TRE_CELL=new Array(TRE_GX*TRE_GY);
+ for(let i=0;i<TRE_CELL.length;i++)TRE_CELL[i]=null;
+ for(const t of BTREE){
+  const i=clamp(Math.floor(t.x/TRE_CS),0,TRE_GX-1)+clamp(Math.floor(t.y/TRE_CS),0,TRE_GY-1)*TRE_GX;
+  (TRE_CELL[i]||(TRE_CELL[i]=[])).push(t);
+ }
+}
+/* 位置から決まるノイズ(0〜1)。⚠**乱数を順に引かない**=引く順で決めると帯状のムラになる。
+   ⚠粗い格子(560)で引いて、林と空き地の塊を作る。 */
+function bnsNz(x,y){
+ const a=Math.floor(x/560),b=Math.floor(y/560);
+ let n=(a*73856093)^(b*19349663);
+ n=(n^(n>>13))*1274126177;
+ return ((n^(n>>16))>>>0)/4294967296;
+}
 /* その場所が通路の外か。⚠**道ごとに「その位置での通路の幅」で見る**
    =一番近い道までの距離(`bnsLaneD`)だけでは、関所で細い所と広い所を区別できない。 */
 function bnsFreeAt(x,y,r){
@@ -18820,20 +18851,16 @@ function bnsMap(){
    }
   }
  }
- /* ② 街路の両脇=**廃墟の壁面と並木**。これが導線そのもの */
+ /* ② 街路の両脇の廃墟。⚠**2026-08-02(7)に減らして小さくした**(ユーザー
+    「建物はでっかい感じでたくさん立てるのではない」)=縁は基本**森**で、廃墟はたまに挟むだけ。 */
  for(let li=0;li<LANES.length;li++){
   const len=LANES[li].len;
-  for(let d=len*.03;d<len-230;d+=96){
+  for(let d=len*.03;d<len-230;d+=210){
    const u=d/len,w=bnsCorrW(u),p=pathPos(d,li);
-   const gate=w<BNS_OFF*.8;/* 関所のすぐ脇=建物を寄せて「狭まっている」と一目で分かるように */
+   const gate=w<BNS_OFF*.8;/* 関所のすぐ脇=廃墟を寄せて「狭まっている」と一目で分かるように */
    for(let sg=-1;sg<=1;sg+=2){
-    if(!gate&&rd()<.34){/* 並木(建物ばかりだと街になりすぎる) */
-     const off=w+62+rr2(0,50);
-     const cx=p[0]-Math.sin(p[2])*off*sg,cy=p[1]+Math.cos(p[2])*off*sg;
-     for(let k=0;k<6;k++){const tx=cx+rr2(-58,58),ty=cy+rr2(-52,52);
-      if(bnsFreeAt(tx,ty,20))BTREE.push({x:tx,y:ty,r:rr2(19,35)});}
-     continue;}
-    const L=gate?58:rr2(64,116),W=gate?38:rr2(30,54);
+    if(!gate&&rd()<.55)continue;/* ⚠ここは空けてよい=③の森が勝手に埋める */
+    const L=gate?54:rr2(38,66),W=gate?34:rr2(26,42);
     const off=w+W+18;
     const bx=p[0]-Math.sin(p[2])*off*sg,by=p[1]+Math.cos(p[2])*off*sg;
     if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
@@ -18841,43 +18868,109 @@ function bnsMap(){
    }
   }
  }
- /* ③ 残りの土地=**格子で埋め尽くす**。⚠空き地は1割だけ(空けすぎると荒野に戻る) */
- const CS=430;
+ /* ③ ⭐**小さな廃墟をまばらに**(2026-08-02(7))。⚠**大きい建物をたくさん**は違う=
+    参考画像の主役は森で、廃墟は森に埋もれてぽつぽつ見える。 */
+ const CS=900;
  for(let gx=CS*.5;gx<MAPW;gx+=CS)for(let gy=CS*.5;gy<MAPH;gy+=CS){
-  const kind=rd(),jx=gx+rr2(-70,70),jy=gy+rr2(-70,70);
-  if(kind<.52){/* 🌲森 */
-   const n=16+((rd()*14)|0);
-   for(let k=0;k<n;k++){
-    const tx=jx+rr2(-CS*.52,CS*.52),ty=jy+rr2(-CS*.52,CS*.52);
-    if(tx<50||ty<50||tx>MAPW-50||ty>MAPH-50)continue;
-    if(bnsFreeAt(tx,ty,20))BTREE.push({x:tx,y:ty,r:rr2(18,38)});}
-  }else if(kind<.92){/* 🏚街区(向きを揃えると「区画」に見える) */
-   const n=2+((rd()*3)|0),ang=rd()*3.1416;
-   for(let k=0;k<n;k++){
-    const bx=jx+rr2(-CS*.4,CS*.4),by=jy+rr2(-CS*.4,CS*.4);
-    const L=rr2(58,140),W=rr2(40,88);
-    if(bx<80||by<80||bx>MAPW-80||by>MAPH-80)continue;
-    if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
-    bldPush(bx,by,ang+rr2(-.12,.12),L,W,rd,0);}
-   /* 街区の隅に木を数本(建物だけだと「積み木」に見える) */
-   for(let k=0;k<5;k++){
-    const tx=jx+rr2(-CS*.5,CS*.5),ty=jy+rr2(-CS*.5,CS*.5);
-    if(bnsFreeAt(tx,ty,20))BTREE.push({x:tx,y:ty,r:rr2(18,32)});}
-   /* 廃車は少しだけ(⚠**撒きすぎない**=2026-08-02の「瓦礫が多すぎる」と同じ話) */
-   {const px=jx+rr2(-CS*.44,CS*.44),py=jy+rr2(-CS*.44,CS*.44);
-    if(bnsFreeAt(px,py,44))
-     BPROP.push({k:['car','drum','box','rub'][(rd()*4)|0],x:px,y:py,a:rd()*6.283,s:.9+rd()*.7,c:(rd()*4)|0});}
-  }
+  if(rd()>.34)continue;/* 街区にするのは3分の1だけ */
+  const jx=gx+rr2(-140,140),jy=gy+rr2(-140,140),ang=rd()*3.1416;
+  const n=1+((rd()*2)|0);
+  for(let k=0;k<n;k++){
+   const bx=jx+rr2(-190,190),by=jy+rr2(-190,190);
+   const L=rr2(38,72),W=rr2(28,48);/* ⚠小さく(前は58〜140) */
+   if(bx<80||by<80||bx>MAPW-80||by>MAPH-80)continue;
+   if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
+   bldPush(bx,by,ang+rr2(-.2,.2),L,W,rd,0);}
+  /* 廃車は少しだけ(⚠**撒きすぎない**=2026-08-02の「瓦礫が多すぎる」と同じ話) */
+  {const px=jx+rr2(-300,300),py=jy+rr2(-300,300);
+   if(bnsFreeAt(px,py,44))
+    BPROP.push({k:['car','drum','box','rub'][(rd()*4)|0],x:px,y:py,a:rd()*6.283,s:.9+rd()*.7,c:(rd()*4)|0});}
+ }
+ /* ④ ⭐⭐⭐**森で塗り潰す**(2026-08-02(7)ユーザー「森が点々としてるからもっと完全に密度を濃くして」)。
+    ⚠⚠**区画ごとに何本か撒く**やり方では、どれだけ数を増やしても**点々**にしかならない
+      (塊と塊の間に必ず地面が残る)。⭐**マップ全体を細かい格子で舐めて、
+      木の半径が間隔より大きくなるように置く**=枝が重なって**面**になる。
+    ⚠空き地は**位置から決まるノイズ**で作る(乱数を順に引くと帯状のムラになる)。
+    ⚠重さのノブは `BNS_TSP`(間隔)=上げれば軽くなるが、上げすぎると点々に戻る。 */
+ const bx0=BBLD.map(b=>b);/* 建物の上には木を生やさない */
+ for(let x=60;x<MAPW-60;x+=BNS_TSP)for(let y=60;y<MAPH-60;y+=BNS_TSP){
+  const nz=bnsNz(x,y);
+  if(nz>.80)continue;/* ⚠2割は空き地(全部埋めると「緑の絨毯」になって地形が読めない) */
+  const jx=x+rr2(-BNS_TSP*.42,BNS_TSP*.42),jy=y+rr2(-BNS_TSP*.42,BNS_TSP*.42);
+  if(!bnsFreeAt(jx,jy,22))continue;
+  let on=0;
+  for(const b of bx0){const dx9=b.x-jx,dy9=b.y-jy;if(dx9*dx9+dy9*dy9<20000){on=1;break;}}
+  if(on)continue;
+  BTREE.push({x:jx,y:jy,r:rr2(32,58)});
+ }
+ bnsTreeGrid();/* ⚠**最後に必ず作る**=これが無いと毎フレーム全部の木を舐める */
+}
+/* ============ 🧱**地形は焼いて貼る**(2026-08-02(7)) ============
+   ⚠⚠**木を2万本にしたら描画が詰まった**=1画面に約3600本×3枚の円で毎フレーム1万回以上の弧を打つ。
+     実際に**撮影1枚に5分**かかって気づいた(実機なら数fpsまで落ちる)。
+   ⭐**地形は1ミリも動かない**ので、升目(1500)ごとに**一度だけ焼いて**、以後は `drawImage` 1回で貼る。
+     これで「森をどれだけ濃くしても重くならない」状態になる(濃さのノブが自由に回せる)。
+   ⚠**焼く倍率はいまの SC そのもの**=貼る時に伸ばさないのでボケない。
+   ⚠**画面の大きさが変わったら焼き直す**(SC が変わるため)。
+   ⚠**1フレームに焼くのは数枚まで**=まとめて焼くとその瞬間に固まる。
+   ⚠**持っておく枚数に上限**を置く(遠くへ行ったら捨てる)=広いマップなので全部持つと画が増え続ける。 */
+const TB_W=1500,TB_PAD=110,TB_MAX=44;
+function terrClear(){for(const k in TBK)delete TBK[k];TBK_N=0;}
+function terrTile(ix,iy,budget){
+ const key=ix+'_'+iy;
+ const t=TBK[key];if(t)return t;
+ if(budget&&budget.n<=0)return null;
+ if(TBK_N>=TB_MAX)terrClear();
+ const s=SC,W=Math.ceil((TB_W+TB_PAD*2)*s);
+ let cv2;
+ try{cv2=document.createElement('canvas');cv2.width=W;cv2.height=W;}catch(e){return null;}
+ const c2=cv2.getContext('2d');if(!c2)return null;
+ const x0=ix*TB_W-TB_PAD,y0=iy*TB_W-TB_PAD;
+ c2.setTransform(s,0,0,s,-x0*s,-y0*s);
+ c2.lineJoin='round';c2.lineCap='round';
+ try{drawTerrIn(c2,x0,y0,x0+TB_W+TB_PAD*2,y0+TB_W+TB_PAD*2);}catch(e){}
+ const o={cv:cv2,x:x0,y:y0,w:TB_W+TB_PAD*2};
+ TBK[key]=o;TBK_N++;if(budget)budget.n--;
+ return o;
+}
+function drawBnsTown(c){
+ if(!(SC>0)||!cv.width)return;
+ /* ⚠⚠**倍率が「ぴったり同じ」でないと捨てる、にしてはいけない**(2026-08-02(7)に踏んだ)=
+    SC は毎フレーム測り直していて 0.0001 単位で揺れることがある。そのたびに全部捨てると
+    **1フレームに焼ける枚数(数枚)しか画に残らず、地形が虫食いになる**(実際にそうなった)。
+    ⭐0.4%を超えて変わった時だけ焼き直す。 */
+ if(!(Math.abs(TBK_SC-SC)<=SC*.004)){terrClear();TBK_SC=SC;}
+ const wx0=(-OX)/SC,wx1=(cv.width-OX)/SC,wy0=(-OY)/SC,wy1=(cv.height-OY)/SC;
+ const i0=Math.floor(wx0/TB_W),i1=Math.floor(wx1/TB_W);
+ const j0=Math.floor(wy0/TB_W),j1=Math.floor(wy1/TB_W);
+ /* ⚠⚠**1枚目は全部焼く**(2026-08-02(7)に踏んだ)=「1フレーム数枚まで」だけにすると、
+    描き直しの回数が少ない環境(撮影・低fps)では**地形が虫食いのまま**になる。
+    ⭐画がまだ無い時は上限を外し、2枚目以降(=動いて新しく要る分)だけ小出しにする。 */
+ const bud={n:TBK_N?6:80};
+ for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){
+  const t=terrTile(i,j,bud);
+  /* ⚠**焼けなかった升はその場で直に描く**=穴が開くくらいなら1フレームだけ重い方がまし。
+     これで「地形が抜ける」という不具合そのものが起きなくなる。 */
+  if(!t){const x0=i*TB_W-TB_PAD,y0=j*TB_W-TB_PAD;
+   try{drawTerrIn(c,x0,y0,x0+TB_W+TB_PAD*2,y0+TB_W+TB_PAD*2);}catch(e){}
+   continue;}
+  c.drawImage(t.cv,t.x,t.y,t.w,t.w);
  }
 }
-/* 建物と森を描く。⚠**画面に入っている物だけ**+**色ごとに1回だけ塗る**(米粒と同じ作法)。
+/* 焼き込みの中身=**その範囲の建物と森と廃車**。⚠画面ではなく**渡された枠**で切ること。
+   ⚠**色ごとに1回だけ塗る**(米粒と同じ作法)。
    ⚠木は `arc` で描くので**1つずつ `moveTo` を打つ**(打たないと前の円から線が繋がる)。 */
-function drawBnsTown(c){
- const m9=220,
-  wx0=(-OX)/SC-m9,wx1=(cv.width-OX)/SC+m9,wy0=(-OY)/SC-m9,wy1=(cv.height-OY)/SC+m9;
+function drawTerrIn(c,wx0,wy0,wx1,wy1){
  /* --- 🌲森(建物の下に敷く) --- */
+ /* ⚠**画面に掛かる升の中だけ**を見る(木は数万本あるので全部は舐めない) */
  const tv=TRE_VIS;tv.length=0;
- for(const t of BTREE){if(t.x<wx0||t.x>wx1||t.y<wy0||t.y>wy1)continue;tv.push(t);}
+ if(TRE_CELL){
+  const i0=clamp(Math.floor(wx0/TRE_CS),0,TRE_GX-1),i1=clamp(Math.floor(wx1/TRE_CS),0,TRE_GX-1);
+  const j0=clamp(Math.floor(wy0/TRE_CS),0,TRE_GY-1),j1=clamp(Math.floor(wy1/TRE_CS),0,TRE_GY-1);
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){
+   const cl=TRE_CELL[i+j*TRE_GX];if(!cl)continue;
+   for(const t of cl){if(t.x<wx0||t.x>wx1||t.y<wy0||t.y>wy1)continue;tv.push(t);}}
+ }else for(const t of BTREE){if(t.x<wx0||t.x>wx1||t.y<wy0||t.y>wy1)continue;tv.push(t);}
  if(tv.length){
   c.fillStyle='rgba(0,0,0,.17)';c.beginPath();
   for(const t of tv){c.moveTo(t.x+7+t.r*.92,t.y+9);c.arc(t.x+7,t.y+9,t.r*.92,0,7);}c.fill();
@@ -18910,6 +19003,9 @@ function drawBnsTown(c){
   for(const b of bv){if(!b.rf)continue;put(b.k,0,-4);any=1;}if(any)c.fill();}
  for(let i=0;i<BLD_R.length;i++){let any=0;c.fillStyle=BLD_R[i];c.beginPath();
   for(const b of bv){if(!b.rf||b.rc!==i)continue;put(b.k,0,-10);any=1;}if(any)c.fill();}
+ /* --- 🚗廃車など(⚠焼き込みに含める=毎フレーム描き直さない) --- */
+ for(const p of BPROP){if(p.x<wx0||p.x>wx1||p.y<wy0||p.y>wy1)continue;
+  try{drawProp(c,p);}catch(e){}}
 }
 /* 道の中心線までの距離(一番近いレーン)。⚠廃墟を道の上に置かないため */
 function bnsLaneD(x,y){

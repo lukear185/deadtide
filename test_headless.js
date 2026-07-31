@@ -2709,13 +2709,16 @@ function checkRice(){
  backTitle();
  /* ⑧⚠⚠**波が必ず終わる**=体数を15倍にしたので「いつまでも決着しない」が一番怖い。
     コアを落とさずに放っておいても、湧き切って歩き切って必ず片が付くか(尺の目安もここで出す) */
- let bsec=0,bkil=0;
+ let bsec=0,bkil=0,bdie=0;
  META.stg=0;setDiff=BNS_D;startSolo();
  {const m3=G.players[0];
   nextWave();
-  let done=0;
+  let done=0,dmg9=0;
   for(let k=0;k<5000;k++){
-   m3.core=m3.coreMax;/* ⚠尺だけ見たいのでコアは落とさない */
+   /* ⚠尺だけ見たいのでコアは落とさない。⭐ただし**受けた量は数えておく**
+      =「無防備なら何秒でコアが尽きるか」が立ち上がりのきつさの目安になる */
+   dmg9+=(m3.coreMax-m3.core);m3.core=m3.coreMax;
+   if(!bdie&&dmg9>=m3.coreMax)bdie=bsec;
    try{gameStep(.05);}catch(e){console.log('FAIL: 🚌開拓便の実走で例外 '+e.message);process.exit(1);}
    bsec+=.05;
    if(!G.tide.pool.length&&!m3.zombies.length){done=1;break;}
@@ -2739,7 +2742,8 @@ function checkRice(){
   +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
  console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所3か所で通路'+BNS_OFF+'→'+BNS_GATW
   +'/敵は通路の外へ出ない/濃い道は一度に1本+予告あり/置き場は建物の屋上)');
- console.log('  (🚌開拓便の尺: 全'+bkil+'体を放っておいて '+Math.round(bsec)+'秒 で片が付く)');
+ console.log('  (🚌開拓便の尺: 全'+bkil+'体を放っておいて '+Math.round(bsec)+'秒 で片が付く / '
+  +'⚠無防備(タレット0・バスは止めたまま)だと '+(bdie?Math.round(bdie)+'秒':'最後まで')+' でコアが尽きる)');
 }
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
    見るのは4つ: ①型が21人ぶん全部あって、体も得物も動く値が入っているか
