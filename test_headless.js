@@ -2629,16 +2629,28 @@ function checkRice(){
  /* ⑨⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。見るのは3つ:
     a)関所で通路が本当に絞れている b)敵が通路からはみ出さない c)壁が通路の中に立っていない
     ⚠ c)が壊れると「壁の中をゾンビが歩く」=絵と挙動がずれる(別々に持つと必ず起きる) */
- let nwall=0;
+ let nwall=0,ntree=0;
  META.stg=0;setDiff=BNS_D;startSolo();
  {const m5=G.players[0];
-  nwall=BWALL.length;/* ⚠タイトルへ戻すと消えるので、ここで控えておく */
-  if(!BWALL.length){console.log('FAIL: 導線の壁が1つも無い');process.exit(1);}
+  nwall=BBLD.length;ntree=BTREE.length;/* ⚠タイトルへ戻すと消えるので、ここで控えておく */
+  if(BBLD.length<60){console.log('FAIL: 建物が少なすぎる '+BBLD.length);process.exit(1);}
+  if(BTREE.length<300){console.log('FAIL: 森が少なすぎる '+BTREE.length);process.exit(1);}
   for(const g of BNS_GATE)if(!(bnsCorrW(g)<BNS_OFF*.6)){
    console.log('FAIL: 関所で通路が絞れていない '+g+'→'+bnsCorrW(g));process.exit(1);}
   if(!(bnsCorrW(.005)>BNS_OFF*.95)){console.log('FAIL: 関所以外まで絞れている');process.exit(1);}
-  for(const b of BWALL){const d5=bnsLaneD(b.x,b.y);
-   if(d5<BNS_GATW){console.log('FAIL: 壁が通路の中に立っている(道から'+Math.round(d5)+')');process.exit(1);}}
+  /* ⚠**建物も木も通路の中に立っていないこと**=ここが崩れると「壁の中をゾンビが歩く」 */
+  for(const b of BBLD)if(!bnsFreeAt(b.x,b.y,0)){
+   console.log('FAIL: 建物が通路の中に立っている');process.exit(1);}
+  for(const t of BTREE)if(!bnsFreeAt(t.x,t.y,0)){
+   console.log('FAIL: 木が通路の中に立っている');process.exit(1);}
+  /* ⚠**タレットは拠点が自動で据える**=始まった時点で何基か立っていること+置き場の操作が無いこと */
+  {let nt=0;for(let i=0;i<ECO_BASE;i++)if(m5.towers[i])nt++;
+   if(nt<3){console.log('FAIL: 拠点にタレットが自動で据わっていない '+nt+'基');process.exit(1);}
+   const sc0=m5.scrap;m5.scrap=99999;m5.atT=0;
+   const ok9=bnsPlaceTower(m5);
+   if(!ok9){console.log('FAIL: 拠点が自分でタレットを増やせない');process.exit(1);}
+   if(!(m5.scrap<99999)){console.log('FAIL: 自動増設が⚙️を払っていない');process.exit(1);}
+   m5.scrap=sc0;}
   nextWave();
   for(let k=0;k<1200&&G.tide.pool.length&&m5.zombies.length<300;k++)tideStep(.05);
   for(let k=0;k<60;k++)campStep(m5,.05,1);
@@ -2715,7 +2727,8 @@ function checkRice(){
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;FXLV=fx0;
  console.log('🧟米粒ゾンビ: 盤面'+live.length+'体(上限'+BNS_CAP+')/描画は例外なし/跡は上限どまり(血'+me.bstn.length+'・肉'+me.bchk.length+'・轍'+me.btrk.length+')/'
   +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
- console.log('  (🚧導線: 壁'+nwall+'個・関所3か所で通路'+BNS_OFF+'→'+BNS_GATW+'/敵は通路の外へ出ない/濃い道は一度に1本+予告あり)');
+ console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所3か所で通路'+BNS_OFF+'→'+BNS_GATW
+  +'/敵は通路の外へ出ない/濃い道は一度に1本+予告あり/タレットは拠点が自動で据える)');
  console.log('  (🚌開拓便の尺: 全'+bkil+'体を放っておいて '+Math.round(bsec)+'秒 で片が付く)');
 }
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
