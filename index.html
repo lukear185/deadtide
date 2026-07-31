@@ -18407,7 +18407,7 @@ function startSolo(){
   bnsBusInit(me);
   /* ⚠**寄りすぎると小粒感が出ない**(2026-08-02ユーザー「画面近すぎ。もっと小粒のゾンビに」)=
      1を切ると全景より引いた絵になる。マップが広いのでこれで十分に持ち歩ける。 */
-  camOn(me.bus.x,me.bus.y,.78);/* 🎥カメラ追従はこの面の中だけ */
+  camOn(me.bus.x,me.bus.y,.26);/* 🎥カメラ追従はこの面の中だけ */
   bnsEnter();/* 遊べば次の難易度が開く */
  }
  document.body.classList.toggle('bns',isBns());
@@ -18433,7 +18433,7 @@ const BNS_GEM=50;                 /* 初回クリアの💎 */
 const BNS_PTS=[600,1100];         /* 初回クリアの🧬(ステージごと) */
 /* ⭐**開拓便のマップは広い**(2026-08-02ユーザーの参考画像)=画面の2倍角。🎥カメラで持ち歩く。
    ⚠**広げても寄り具合は変わらない**(倍率の基準は MW のまま)。 */
-const BNS_W=3200,BNS_H=1520;
+const BNS_W=9600,BNS_H=4560;
 const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 拠点はマップのまんなか */
 /* 廃墟の散らばり(開拓便だけ)。⚠**決め打ちで並べない**=種から散らすと広い面でも密度が保てる。
    参考画像から拾った物=廃車 / タイヤ / ドラム缶 / 木箱 / 瓦礫 / コンクリのバリア / 枯れ木。
@@ -18473,8 +18473,11 @@ function loadBonus(si){
  MAPW=BNS_W;MAPH=BNS_H;
  /* ⚠道の表は「画面1枚ぶんの座標」で書いてある=**マップの広さに合わせて引き伸ばす**
     (表を広い座標で書き直すより、形が読めるまま倍率だけ変えられる) */
- const K=BNS_W/MW;
- const LN=(BNS_LANE[STAGE]||BNS_LANE[0]).map(pts=>pts.map(p=>[p[0]*K,p[1]*K]));
+ /* ⚠⚠**道は「拠点からの相対」で置く**=マップの広さで引き伸ばすと、
+    マップを広げた時に道が長くなりすぎて敵が何十秒も歩いてこない。
+    ⭐**道の長さは拠点まわりの戦いの尺**、マップの広さは**探索の広さ**=別物として持つ。 */
+ const K=2;
+ const LN=(BNS_LANE[STAGE]||BNS_LANE[0]).map(pts=>pts.map(p=>[BNS_CX+(p[0]-800)*K,BNS_CY+(p[1]-400)*K]));
  LANES=LN.map(pts=>{const seg=[];let len=0;
   for(let i=0;i<pts.length-1;i++){const l=dist(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);
    seg.push({a:pts[i],b:pts[i+1],l,s:len});len+=l;}
@@ -18518,8 +18521,10 @@ function bnsProps(){
  BPROP.length=0;
  let s9=8191+STAGE*7919;
  const rd=()=>{s9=(s9*1103515245+12345)&0x7fffffff;return s9/0x7fffffff;};
- const KIND=['car','car','tire','tire','drum','box','rub','rub','barr','tree'];
- for(let i=0;i<520;i++){
+ const KIND=['car','tire','drum','box','rub','barr','tree','tree'];/* ⚠車を減らした */
+ /* ⚠**数は控えめに**(2026-08-02ユーザー「車の残骸とか多すぎるからもっとさっぱりして」)=
+    広い面に敷き詰めると画面が瓦礫だらけで、何が拾える物なのか読めない */
+ for(let i=0;i<900;i++){
   const x=rd()*(MAPW-140)+70,y=rd()*(MAPH-140)+70;
   if(bnsLaneD(x,y)<86)continue;                 /* 道の上 */
   if(dist(x,y,BNS_CX,BNS_CY)<300)continue;      /* 拠点の周り(タレットの置き場) */
