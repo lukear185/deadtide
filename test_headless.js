@@ -2743,7 +2743,9 @@ function checkRice(){
   }
   bkil=m3.totalWave||0;
   if(!done){console.log('FAIL: 🚌開拓便の波が終わらない('+Math.round(bsec)+'秒 残り pool='+G.tide.pool.length+' 盤面='+m3.zombies.length+')');process.exit(1);}
-  if(bsec>200){console.log('FAIL: 🚌開拓便が長すぎる '+Math.round(bsec)+'秒');process.exit(1);}}
+  /* ⚠ここは**「決着しない」を捕まえるための番人**であって、尺の good/bad を決める線ではない
+     ([[CLAUDE]]の「1試合が長いことは問題ではない」)。足の速さを戻して178秒になったので余裕を持たせた。 */
+  if(bsec>260){console.log('FAIL: 🚌開拓便が長すぎる(決着しない疑い) '+Math.round(bsec)+'秒');process.exit(1);}}
  backTitle();
  /* ⑥ 本編は今までどおり(米粒の細工が漏れていないこと) */
  META.stg=0;setDiff=2;startSolo();
