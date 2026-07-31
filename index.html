@@ -267,8 +267,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  /* ⚠基本兵科8種+🚩🎯+諦める+🔊 が横に収まる幅にしてある(兵科を増やしたら要再計算) */
  #abar{gap:5px;padding:3px max(4px,env(safe-area-inset-right)) max(3px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
  #deck{gap:3px}
- #deck .dk{width:54px;height:72px}
- #deck .dk canvas{width:48px;height:36px}
+ #deck .dk{width:48px;height:72px}
+ #deck .dk canvas{width:42px;height:36px}
  #deck .dk .dn{font-size:12px;line-height:15px;height:15px;bottom:14px}
  #deck .dk .dc{font-size:11px;line-height:14px;height:14px}
  #flagbtn,#strikebtn,#pushbtn,#herobtn{width:52px;height:52px}
@@ -1081,21 +1081,24 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
    ⚠⚠**この2からは「全部消す」**=💎魔石・英雄・🔧鍛錬素材・📖図鑑・⚔冒険の進捗まで消える
      (それまでの1では残していた)。⚠**引いた英雄は戻らない**。
    ⚠🛠DEVモードのセーブは別枠(dt_meta_dev)なので、テスト用のデータは関係なく残る。 */
-const META_RESET=2;
+const META_RESET=3;
 /* ⚠**関数に分けてある**=検査(checkMetaReset)から呼んで「消してはいけないものを消していないか」を見るため */
 /* 研究所で買ったもの(🆕新しい種類 / 🧬派生 / 🎯砲撃 / 📈系統 / 🚀開始ブースト / 💰経済)と研究pt。
    ⚠**分けてある理由**: 🛠DEVの「研究をリセット」から研究所ぶんだけを戻すため
    (難易度とステージの解放は消したくない)。2026-07-27ユーザー指示。 */
 function metaResetLab(){
  META.pts=0;META.nt=0;META.nu=0;META.st=['air'];META.eq='air';
- META.uv=[];META.tg=[];META.ld={};
+ META.uv=[];META.tg=[];META.ld={};META.team=[];
  META.tw={};META.un={};META.st0=0;
  for(const k of ['sc0','hp0','up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=0;
 }
-function metaReset(){
- /* 難易度とステージの解放 */
+/* ⭐**難易度・ステージの解放と研究所だけ戻す**(💎英雄🔧図鑑⚔冒険は残す) */
+function metaResetProgress(){
  META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;
  metaResetLab();
+}
+function metaReset(){
+ metaResetProgress();
  metaResetAll();
 }
 /* ⭐**残りも全部消す**(2026-07-27ユーザー指示「初期化して最初からに」)。
@@ -1109,7 +1112,13 @@ function metaResetAll(){
  META.rpg={};                                  /* ⚔冒険の進捗 */
  META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
 }
-try{if((META.rst|0)<META_RESET){META.rst=META_RESET;metaReset();saveMeta();}}catch(e){}
+/* ⚠⚠**3への上げは「難易度と研究所だけ」戻す**(2026-08-01ユーザー選択)。
+   理由=初期解放を2種に絞ったので `META.nt`/`META.nu`(BASE_T/BASE_U から数えた相対値)が
+   **同じ数字で別のタワー/兵科を指す**ようになった。💎魔石・引いた英雄・🔧鍛錬素材・
+   📖図鑑・⚔冒険の進捗は**残す**(2では全部消していた。今回は残す判断)。 */
+try{if((META.rst|0)<META_RESET){META.rst=META_RESET;
+ if(META_RESET>=3)metaResetProgress();else metaReset();
+ saveMeta();}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
 function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;}
 devTop();
@@ -1120,19 +1129,19 @@ function saveMeta(){devTop();try{localStorage.setItem(META_KEY,JSON.stringify(ME
  ウェーブの区切りごとに自動保存する。中断した場合、そのウェーブは最初からやり直しになる。
  敵の位置までは保存しない=「ウェーブ開始直前の状態」に戻す方式。 */
 const RUN_KEY=DEV?'dt_run_dev':'dt_run';
-function loadRun(){try{const d=JSON.parse(localStorage.getItem(RUN_KEY)||'null');return (d&&d.v===1)?d:null;}catch(e){return null;}}
+function loadRun(){try{const d=JSON.parse(localStorage.getItem(RUN_KEY)||'null');return (d&&d.v===2)?d:null;}catch(e){return null;}}
 function clearRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}try{refreshRunUI();}catch(e){}}
 /* ⚠**中身を作るだけ**の関数に分けてある=ウェーブが始まった瞬間の写しを取るため(下の saveRun) */
 function runData(){
  if(!(MODE==='solo'&&G&&G.pve&&!G.coop&&!G.over)||G.tut)return null;/* 🎓チュートリアルは中断保存しない */
  const m=G.players[0];if(!m||m.dead)return null;
- const d={v:1,stg:STAGE,dif:G.pveDiff==null?2:G.pveDiff,
+ const d={v:2,stg:STAGE,dif:G.pveDiff==null?2:G.pveDiff,
   wave:G.phase==='wave'?Math.max(0,G.wave-1):G.wave,
   core:m.core,coreMax:m.coreMax,scrap:Math.round(m.scrap),unlocked:m.unlocked,atkLv:m.atkLv,stkLv:m.stkLv||0,
   /* ⚠supN(支援枠をいくつ開いたか)を保存し忘れると、再開したときに建ててあった支援施設が
      「未解放の枠に建っている」状態になって消える(2026-07-26に発覚) */
   repairs:m.repairs||0,boosts:m.boosts||0,ecoN:m.ecoN||1,supN:m.supN||0,up:Math.round(m.up||0),upTotal:Math.round(m.upTotal||0),
-  uUn:m.uUn,uLv:m.uLv||0,kills:m.kills||0,enTotal:Math.round(m.enTotal||0),charge:m.charge||0,
+  uUn:m.uUn,team:(m.team||[]).slice(),uLv:m.uLv||0,kills:m.kills||0,enTotal:Math.round(m.enTotal||0),charge:m.charge||0,
   stk:m.stk||'air',flagD:Math.round(m.flagD||0),
   hsel:(m.hUi>=0&&heroAt(m.hUi))?heroAt(m.hUi).id:'',hOut:m.hOut||0,
   slk:(m.slk||[]).map(v=>v?1:0),
@@ -1162,7 +1171,7 @@ function resumeRun(){
  G.wave=d.wave||0;
  m.core=d.core;m.coreMax=d.coreMax;m.scrap=d.scrap;m.unlocked=d.unlocked;m.atkLv=d.atkLv||0;m.stkLv=d.stkLv||0;
  m.repairs=d.repairs||0;m.boosts=d.boosts||0;m.ecoN=d.ecoN||1;m.supN=d.supN||0;m.up=d.up||0;m.upTotal=d.upTotal||0;
- m.uUn=d.uUn||2;m.uLv=d.uLv||0;m.kills=d.kills||0;m.enTotal=d.enTotal||0;m.charge=d.charge||0;
+ m.uUn=d.uUn||2;if(d.team&&d.team.length)m.team=d.team.slice();m.uLv=d.uLv||0;m.kills=d.kills||0;m.enTotal=d.enTotal||0;m.charge=d.charge||0;
  if(d.stk&&STRIKES[d.stk])m.stk=d.stk;
  /* 🦸英雄: ウェーブの区切りで保存するので「出撃中」は未出撃に戻す(盤面に実体が残らないため)。
     ただし戦死(2)はそのまま引き継ぐ=1ゲーム1回の約束を再開で覆せないようにする */
@@ -1170,7 +1179,7 @@ function resumeRun(){
  if(d.flagD)m.flagD=clamp(d.flagD,0,PLEN);
  if(d.slk&&d.slk.length)m.slk=m.slk.map((v,i)=>!!d.slk[i]);
  /* ⚠🛠DEVは「最初から全開放」なので、中断前のセーブで巻き戻さない */
- if(DEV){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.uUn=Math.max(m.uUn||0,metaUnitCap());
+ if(DEV){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.team=teamIdx();m.uUn=Math.max(m.uUn||0,m.team.length);
   m.ecoN=ECO_MAX;m.supN=SUP_MAX;m.slk=m.slk.map((v,i)=>i<ECO_BASE?true:v);}
  if(d.tw&&d.tw.length)m.towers=m.towers.map((t,i)=>{const s=d.tw[i];
   return s?{ti:s.ti,us:Object.assign(newUs(),s.us||{}),cd:rnd(.1,.5),ang:-.6,jamT:0,fireT:0,spent:s.spent||0,own:0}:null;});
@@ -1182,15 +1191,22 @@ const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
 /* ⚠🛠DEVは**モードを問わず全種類**を上限にする(実機テスト用・2026-07-26ユーザー指示)。
    soloMeta()はGを見るので、拠点を作る瞬間(newCamp)はまだ false になり得る=ここでDEVを見るのが確実 */
+/* ⚠**ソロ以外(対戦/協力)は研究所を持たない**ので PVP_T/PVP_U の固定数を返す。
+   ⚠**チュートリアルは上限を外す**=2種しか建てられないと🔓解放カードの段が死ぬ(2026-08-01)。 */
 const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;
- return DEV?TP:(soloMeta()?BT+clamp(META.nt||0,0,TP-BT):BT);};
+ const PT=(typeof PVP_T!=='undefined')?PVP_T:10;
+ return (DEV||(typeof G!=='undefined'&&G&&G.tut))?TP:(soloMeta()?BT+clamp(META.nt||0,0,TP-BT):PT);};
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN=(typeof U_N!=='undefined')?U_N:UNITS.length;
- return DEV?UN:(soloMeta()?BU+clamp(META.nu||0,0,UN-BU):BU);};
+ const PU=(typeof PVP_U!=='undefined')?PVP_U:10;
+ return (DEV||(typeof G!=='undefined'&&G&&G.tut))?UN:(soloMeta()?BU+clamp(META.nu||0,0,UN-BU):PU);};
 /* ⭐2026-07-27ユーザー指示で**研究所の値段を全体的に上げた**(1.5倍→さらに1.8倍=素の2.7倍)。
    さらに同日、**タワー/部隊タブだけ1段ごとの伸び方を x1.13→x1.20 に**した(LAB_TW/LAB_UN)。
    ⚠検査 checkLabSteps() は「1本フルが20,000🧬を超えない/全部取りが60,000🧬を下回らない」を見ている。 */
-const LAB_NT=k=>Math.round(430*Math.pow(1.2707,k));/* k個目のタワー解放価格 430/546/694…3,715 */
-const LAB_NU=k=>Math.round(200*Math.pow(1.1726,k));/* k個目の兵科解放価格 200/235/275…4,123 */
+/* ⚠⚠**2026-08-01に解放対象が増えたのでカーブを引き直した**(BASE_T 10→2 / BASE_U 8→2)。
+   タワー 9→17種 / 兵科 22→28種。旧式のままだと17個目が19,868🧬(最終の約7倍)になって破綻する。
+   ⭐**最終額はほぼ据え置きで、立ち上がりだけ安くする**=1個目は1回の出撃で届く額にする。 */
+const LAB_NT=k=>Math.round(120*Math.pow(1.2166,k));/* k個目のタワー解放価格 120/146/178/216…2,764 */
+const LAB_NU=k=>Math.round(90*Math.pow(1.165,k));/* k個目の兵科解放価格 90/105/122/142…5,560 */
 /* ⭐**砲撃は順番に解放する**(2026-07-27ユーザー指示「砲撃のタブは新種タブに移動して順番に開放に、順番に強さも変えて」)。
    ⚠**並び=強さの順**。1つ前より必ず強くなるように数値も置き直してある(airstrikeHit)。
    air(初期から持っている) → 掃射 → 凍結 → ナパーム → 絨毯。 */
@@ -1833,8 +1849,11 @@ const MW=1600,MH=760;
 const TOWERS=[
  {id:'rifle',n:'ライフル台',cost:120,up2:'rifle2',gc:960,rng:230,dmg:22,rate:.55,type:'bullet',c:'#8a97a5',dsc:'基本の単発銃座'},
  {id:'shot',n:'ショットガン台',cost:200,up2:'shot2',gc:1600,rng:175,dmg:26,rate:.9,type:'bullet',multi:3,c:'#a5875c',dsc:'3体同時撃ち'},
- {id:'net',n:'ネット砲',cost:160,up2:'net2',gc:1280,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
+ /* ⚠⚠**廃品工房は必ずネット砲より前**(2026-08-01)。初期解放を2種に絞ったので、
+    ここの並びがそのまま「🔬研究所で解放する順番」になる。工房が後ろだと**序盤の経済が死ぬ**
+    (⚙️の産出が無いまま数戦する)。⭐研究所の1個目=工房=120🧬=初回の出撃で届く額。 */
  {id:'scrap',n:'廃品工房',cost:145,rng:0,dmg:0,rate:3,type:'eco',inc:8,up2:'scrap2',gc:700,c:'#b08d4f',dsc:'時間で⚙️を生産'},
+ {id:'net',n:'ネット砲',cost:160,up2:'net2',gc:1280,rng:180,dmg:2,rate:1.2,type:'net',slow:.45,slowT:1.7,c:'#6f9c8f',dsc:'範囲の敵を減速'},
  /* ⭐**爆裂砲台はここ**(2026-07-27ユーザー指示「爆裂砲台は順番前にしよう」)。
     ⚠それまでは迫撃砲・スナイパー塔より**後**(9番目・1800⚙️)に解放されていたが、
       建設費300・実戦DPS34と**同じ爆発型の迫撃砲(50)より弱い**ので、解放順が逆立ちしていた。
@@ -1943,7 +1962,13 @@ const tgOK=ti=>{const T=TOWERS[ti];if(!T)return false;
 /* その素のタワーの「次の段」が解放済みか(-1=次が無い) */
 const tgNext=ti=>{const nx=T_GRD(ti);return nx>=0&&tgOK(nx)?nx:-1;};
 const T_PLAY=TOWERS.length-SUP_N-GRD_N;/* 解放チェーン/研究所に出るタワーの数 */
-const BASE_T=10;/* 通常解放できる基本タワー数(これ以降は🔬研究所で解放) */
+/* ⭐⭐**初期に建てられるのはライフル台とショットガン台の2種だけ**(2026-08-01ユーザー指示
+     「そもそもユニットとタレットは初期は猟犬とバット、ライフルとショットガンしか使えなくして
+      順番に研究所で解放するようにする」)。⚠以前は10種が⚙️(作戦タイム)で開いていた。
+   ⚠**対戦と協力は別枠(PVP_T/PVP_U)**=研究所を持たないモードなので、ここを2にすると
+     全員が2種しか建てられなくなり遊びが成立しない。 */
+const BASE_T=2;/* ソロで最初から建てられるタワー数(これ以降は🔬研究所で解放) */
+const PVP_T=10,PVP_U=10;/* 対戦/協力で使える数(研究所が無いモードなので固定) */
 /* ⭐レールガンの充填時間(2026-07-26ユーザー指示=「きゅいーんとチャージしてから超電磁砲を放つ」)。
    ⚠**見た目と音だけ**の演出。撃つ間隔(T.rate)も威力も変えていない=
      `tw.cd` がこの秒数を切ったところから 0→1 で溜まり、0に達した瞬間に撃つ。
@@ -2091,11 +2116,11 @@ const ZOMBIES=[
  {id:'blo',n:'ブローター',hp:335,sp:50,bt:30,dmg:2,mw:4,split:2,sc:1.35,atk:42,ar:1.2,c:'#8f6fae',dsc:'倒すと弾けて周りの部隊を巻き込み、中から小型が出る'},
  {id:'scr',n:'スクリーマー',hp:130,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:17,ar:.9,c:'#d67ba8'},
  {id:'dog',n:'感染ハウンド',hp:82,sp:215,bt:20,dmg:1,mw:8,sc:.85,atk:13,ar:.45,c:'#b0713d'},
- {id:'crwl',n:'クローラー',hp:160,sp:52,bt:40,dmg:2,mw:6,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
+ {id:'crwl',n:'クローラー',hp:300,sp:52,bt:40,dmg:2,mw:6,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
  {id:'ooze',n:'スライム状体',hp:320,sp:44,bt:62,dmg:3,mw:10,noblock:1,armor:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
  /* ↓中盤以降の強敵 */
  {id:'brut',n:'ブルート',hp:420,sp:74,bt:74,dmg:3,mw:8,armor:1,w:.5,sc:1.3,aoe:2,atk:59,ar:.9,c:'#8a4a3a',dsc:'太い腕で2体まとめて薙ぎ払う'},
- {id:'stlk',n:'ストーカー',hp:190,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
+ {id:'stlk',n:'ストーカー',hp:560,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
  {id:'wrth',n:'レイス',hp:300,sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
  {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,aoe:3,atk:78,ar:1.1,c:'#39424c',dsc:'重い盾で3体まとめて薙ぎ払う'},
  {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:84,ar:1.2,aoe:5,c:'#c14b3e'},
@@ -2203,7 +2228,30 @@ const UNITS=[
     1周期 2.35秒 → **1.3秒**。⚠数値を触ったら `node test_balance.js` を必ず流すこと */
  {id:'valk',n:'ヴァルキリー',cost:328,cd:20,hp:1620,atk:200,rate:1.0,rng:340,sp:58,type:'blast',aoe:130,c:'#d9a13d',dsc:'光の剣で連続で薙ぐ女剣士'}
 ];
-const BASE_U=8;/* 通常解放できる基本兵科数(これ以降は🔬研究所で解放) */
+const BASE_U=2;/* ソロで最初から使える兵科数=猟犬とバット(これ以降は🔬研究所で解放。2026-08-01) */
+/* ⭐⭐**本当の意味の編成制**(2026-08-01ユーザー指示「連れていくユニット10体まで選ぶ。
+     ゲーム中の解放はそのまま健在で、**選んだユニットのコスト順に解放していく**。
+     だから高コストばっかり連れて行くと全然解放できない」)。
+   ⭐**価格は元の解放コストのまま**(`UNITP[元の添字]`)=そうしないと
+     「高い兵科ばかり選ぶと進まない」が成立しない。UNITS は出撃費の安い順に並べてあるので
+     **元の添字の昇順=元の解放コストの安い順**。
+   ⚠**猟犬(0)とバット(1)は固定枠**=外せない。外せると「開始時に無料で2枠開く」を使って
+     タイタンとヴァルキリーを無料で持って始められてしまう。実質「固定2+選ぶ8」。
+   ⚠**保存は UBASE の id で持つ**=`UNITS[i]` は applyLoadout で派生キャラ(狼など)に
+     差し替わるので、UNITS の id で保存すると素に戻した時に編成が消える。 */
+const TEAM_N=10,TEAM_FIX=[0,1];
+const PVP_TEAM=()=>{const a=[];for(let i=0;i<PVP_U;i++)a.push(i);return a;};
+function teamIdx(){
+ /* ⚠🛠DEVは今までどおり**全兵科**を連れて行く(実機テストで全部触るため。デッキは横スクロール) */
+ if(DEV){const a=[];for(let i=0;i<U_N;i++)a.push(i);return a;}
+ if(typeof soloMeta==='function'&&!soloMeta())return PVP_TEAM();
+ const own=metaUnitCap();
+ let t=((META.team)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&i<own);
+ t=Array.from(new Set(TEAM_FIX.concat(t))).sort((a,b)=>a-b).slice(0,TEAM_N);
+ /* 選んでいない枠は**安い順に自動で埋める**(編成を触らない人でも今までどおり遊べる) */
+ for(let i=0;i<own&&t.length<TEAM_N;i++)if(t.indexOf(i)<0)t.push(i);
+ return t.sort((a,b)=>a-b);
+}
 /* 全兵科を価格順に並べ替え(前半=最初から使える/後半=研究所で解放)。ただし研究所専用の4種は必ず末尾 */
 {const LAST=['titan','valk'];
  const norm=UNITS.filter(u=>LAST.indexOf(u.id)<0).sort((a,b)=>a.cost-b.cost);
@@ -2691,7 +2739,7 @@ const prJam=u=>Math.round(210*Math.pow(1.45,u));
 const prPush=u=>Math.round(45*Math.pow(1.15,u));
 const prBig=u=>Math.round(160*Math.pow(1.42,u));
 const prTide=u=>Math.round(190*Math.pow(1.42,u));
-const uupCost=C=>C.uUn<metaUnitCap()?UNITP[C.uUn]:1e9;
+const uupCost=C=>{const T=(C&&C.team)||[];return C.uUn<T.length?UNITP[T[C.uUn]]:1e9;};
 const ULV_MAX=10;
 const prUup=lv=>Math.round(6*Math.pow(1.45,lv));/* 部隊強化(🔩) */
 const uDepCost=(C,ui)=>Math.round(UNITS[ui].cost*(1+.1*(C&&C.uLv||0)));/* 出撃費はレベルに比例 */
@@ -2805,6 +2853,9 @@ const prSup=n=>[600,1500][n]||1e9;/* n=現在の解放数 → 次の枠の価格
 const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
 const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
 const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
+/* ⚠CPUが「盾役を1体は出す」ために使う添字。**直書きの3は間違っていた**(3は斥候)。
+   2026-08-01に findIndex へ直した=並べ替えても追従する */
+const SHD_I=UBASE.findIndex(u=>u.id==='shd');
 /* 解放順(=最初のSLOT0枠)とCPUの建設優先順。ステージごとにSTAGES[].orderで持つ。
    先頭7つは道なりに散らして、初期から全域を守れるようにしてある */
 let AI_ORDER=[],SLOT_ORDER=[];
@@ -13418,7 +13469,7 @@ function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,d
  core:50,coreMax:50,scrap:250,unlocked:DEV?metaTowerCap():2,atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,
  towers:SLOTS.map(()=>null),ecoN:DEV?ECO_MAX:1,supN:DEV?SUP_MAX:0,up:12,upTotal:12,
  slk:SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0)),
- zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),uUn:DEV?metaUnitCap():2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.5,waveMul:1,
+ zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:DEV?teamIdx().length:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
  hUi:-1,hOut:0,hCg:0,fallen:[],/* 英雄: 連れて行く英雄のUNITS添字 / 0=未出撃 1=出撃中 2=戦死 / 必殺チャージ / 戦死した部隊(蘇生用) */
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
@@ -13438,8 +13489,14 @@ function buildTide(wave){
     ②その上で**1〜6波だけ**体力を底上げする(earlyX)。中盤以降(7波〜)は1に戻るので
       今までのバランスを動かさない。⚠中盤・終盤を触りたい時は midX/lateX の方を見ること。
     結果(古参・体力の倍率): W1 0.60→1.17 / W2 0.72→1.24 / W3 0.84→1.23 / W4 0.94→1.17 / W5 1→1.11 */
- const warm=G.pve&&wave<=4?[.9,.96,1,1][wave-1]:1;
- const earlyX=(G.pve&&wave<=6)?1.30-(wave-1)*.05:1;
+ /* ⚠⚠**序盤の慣らしを廃止した**(2026-08-01ユーザー指示「初期ゾンビたちを強くする」)。
+    旧=[.9,.96,1,1]でW1はhpも数も九割に削られていた。 */
+ const warm=1;
+ /* ⭐序盤の体力の底上げ。W1=2.20倍からW8でちょうど1に着地する(段差が出ない)。
+    ⚠旧は 1.30→1(W6)で、ショットガン１台＋砦撃だけで通っていた。 */
+ /* ⚠**W1とW2は同じ値にする**=W1だけ跳ね上げると W1>W2 の逆転が出る(実際に一度出した)。
+    W3から毎波 .175 ずつ薄れて W8 でちょうど1に着地する(段差なし)。 */
+ const earlyX=(G.pve&&wave<=8)?2.05-Math.max(0,wave-2)*.175:1;
  /* 中盤(W8〜)から一段、終盤(W14〜)からもう一段きつくする */
  /* 2026-07-25: 終盤は「数を減らして1体を強く」。lateXを厚くし、下のnを絞る */
  const midX=wave>=8?Math.pow(1.03,wave-7):1,lateX=wave>=14?Math.pow(1.055,wave-13):1;
@@ -13450,7 +13507,12 @@ function buildTide(wave){
  const laneN=G.coop?1:alive;
  /* 終盤(W12〜)は増え方を鈍らせる=画面が敵で埋まらないように */
  const taper=wave>=12?Math.max(0,(wave-11)*.5):0;
- const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1));
+ /* ⭐⭐**終盤は「数を割って1体を厚く」する**(2026-08-01ユーザー指示
+    「ゾンビ一体一体が弱くて終盤数でごまかそうとするから数が多すぎてぐちゃぐちゃしてるし重くなる」)。
+    ⚠**総HPを動かさない**ため、n を割ったのと同じ値を雑魚の mul に掛ける。
+    ⚠⚠**ボスには掛けない**=掛けるとボスだけ 1.6倍になる。 */
+ const cut=wave>=12?Math.min(1.62,1+(wave-11)*.07):1;
+ const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1)/cut);
  /* ⭐敵の顔ぶれは**4つの完全別プール**(2026-07-27に「🌑×ステージ2」を足した)。
     ①廃線=ゾンビ / ②沈んだ港=海の亡骸 / ③ナイトメア=獣 / ④🌑×②=変異した深海の生き物。
     ⚠それまでは**ナイトメアならステージを問わず獣**だったので、沈んだ港で陸の獣が出ていた。 */
@@ -13470,7 +13532,7 @@ function buildTide(wave){
  const pickZ=()=>{let r2=Math.random()*zwSum;for(let i=0;i<zp.length;i++){r2-=zwt[i];if(r2<=0)return zp[i];}return zp[zp.length-1];};
  for(let k=0;k<n;k++){let pick=pickZ();
   if(wave>=4&&Math.random()<Math.min(.4,wave*.03))pick=zp[zp.length-1];
-  pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul,wave)});}
+  pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul*cut,wave)});}
  /* ボスの出るウェーブ: 通常ボスは10と15だけ。最終ウェーブはステージ専用の特別なボス
     (2026-07-25ユーザー指示。以前は5波ごとに毎回ジャガーノートが出ていた) */
  /* 通常ボス=WAVE10と15 / 特別な最終ボス=WAVE20。新兵(5)・兵長(7)にはボスが出ない */
@@ -14228,7 +14290,8 @@ function deployUnit(C,ui){
  const U=UNITS[ui];
  const F=G&&G.coop?G.players[0]:C;
  const dc=uDepCost(C,ui);
- if(C.dead||F.dead||ui>=C.uUn||C.ucd[ui]>0||C.scrap<dc)return false;
+ {const sl9=((C.team||[]).indexOf(ui));if(sl9<0||sl9>=C.uUn)return false;}
+ if(C.dead||F.dead||C.ucd[ui]>0||C.scrap<dc)return false;
  const cnt=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:C.units.length;
  const cap=G&&G.coop?COOP_MAXU:MAXU;
  if(cnt>=cap){if(C.isMe)toast('⚠ 部隊上限('+cap+'体)!',true);return false;}
@@ -14376,8 +14439,10 @@ function airstrikeHit(C,x,y,wave,stk,mine){
   if(isMine&&FXLV>0){F.flash=.12;F.flashC='255,244,214';F.shake=Math.max(F.shake||0,.34);}
   return true;
  }else{/* 標準エアストライク */
-  const dm=150*(1+.15*wave)*SP;
-  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){kbZ(z,x,y,155);dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=20*SP;}}}
+  /* ⚠序盤が「ショットガン１台＋砦撃」で通ってしまう原因の半分。
+     ⭐**終盤は据え置きで序盤だけ落とす**=初期の傾きを寝かせて後半で追いつく形にした。 */
+  const dm=105*(1+.24*wave)*SP;
+  for(const z of F.zombies){if(!z.dead&&dist(z.px,z.py,x,y)<=135){kbZ(z,x,y,155);dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=14*SP;}}}
   F.shake=.3;addFx(F,'boomL',x,y,'');
   /* ⭐床を押す衝撃波+土煙+短い残り火。⚠爆発の丸だけだと「重さ」が出ない */
   if(FXLV>0){addFx(F,'shock',x,y+4,'',{r:92,col:'#ffdd66'});
@@ -14564,7 +14629,7 @@ function heroUlt(C,wave){
  }else if(id==='hCmd'){/* 増援要請: いま出せる中で一番高い兵科を4体、その場に呼ぶ */
   const F=(G&&G.coop)?G.players[0]:C;
   let bi=-1,bc=-1;
-  for(let k=0;k<Math.min(C.uUn||0,U_N);k++){const UU=UNITS[k];if(UU&&UU.cost>bc){bc=UU.cost;bi=k;}}
+  {const T9=(C.team||[]);for(let k=0;k<Math.min(C.uUn||0,T9.length);k++){const i9=T9[k],UU=UNITS[i9];if(UU&&UU.cost>bc){bc=UU.cost;bi=i9;}}}
   const room=(G&&G.coop?COOP_MAXU:MAXU)-F.units.length;
   let n=0;
   if(bi>=0)for(let k=0;k<Math.min(4,room);k++){
@@ -15495,7 +15560,7 @@ function doPurchase(C,kind,opt){
  else if(C.scrap<p)return false;
  /* ⚠**WAVE3まで解放を禁じる門は廃止した**(2026-07-27ユーザー指示)。序盤から自由に解放してよい */
  if(kind==='unlock'&&C.unlocked>=metaTowerCap())return false;/* ソロは研究所の解放枠まで */
- if(kind==='uun'&&C.uUn>=metaUnitCap())return false;
+ if(kind==='uun'&&C.uUn>=((C.team||[]).length))return false;
  if(kind==='uup'&&(C.uLv||0)>=ULV_MAX)return false;
  if(kind==='ecoslot'&&(((G&&G.coop)?G.players[0]:C).ecoN||1)>=ECO_MAX)return false;
  if(kind==='supslot'&&(((G&&G.coop)?G.players[0]:C).supN||0)>=SUP_MAX)return false;
@@ -15515,7 +15580,7 @@ function doPurchase(C,kind,opt){
   case 'unlock':C.unlocked++;
    if(C.isMe&&G){G.introQ=G.introQ||[];G.introQ.push({k:'t',i:C.unlocked-1});}break;
   case 'uun':C.uUn++;
-   if(C.isMe&&G){G.introQ=G.introQ||[];G.introQ.push({k:'u',i:C.uUn-1});}break;
+   if(C.isMe&&G){G.introQ=G.introQ||[];G.introQ.push({k:'u',i:(C.team||[])[C.uUn-1]});}break;
   case 'slot':{const F2=(G&&G.coop)?G.players[0]:C,si2=opt.si|0;
    if(si2<0||si2>=ECO_BASE||!F2.slk||F2.slk[si2]){C.scrap+=p;return false;}
    F2.slk[si2]=true;
@@ -15556,9 +15621,9 @@ function cpuTick(C,dt){
  const cnt=[0,0,0,0,0,0,0,0];for(const t of C.towers)if(t)cnt[t.ti]++;
  let want=-1;
  if(built<2)want=0;
- else if(!cnt[3]&&C.unlocked>3&&wave<14)want=3;
+ else if(!cnt[ECO_TI]&&C.unlocked>ECO_TI&&wave<14)want=ECO_TI;/* ⚠添字の直書きをやめた(2026-08-01に並びを変えた) */
  else if(armored>=2&&C.unlocked>4&&cnt[4]+cnt[5]<2)want=C.unlocked>5?5:4;
- else{for(let i=C.unlocked-1;i>=0;i--){if(i===3)continue;if(i===0&&cnt[0]>=3)continue;if(C.scrap>=TOWERS[i].cost*res){want=i;break;}}}
+ else{for(let i=C.unlocked-1;i>=0;i--){if(i===ECO_TI)continue;if(i===0&&cnt[0]>=3)continue;if(C.scrap>=TOWERS[i].cost*res){want=i;break;}}}
  if(want>=0&&C.scrap>=TOWERS[want].cost*res){
   if(TOWERS[want].type==='eco'){/* 工房は専用スロットへ */
    for(let k=0;k<ECO_MAX;k++){const si=ECO_BASE+k;if(!C.towers[si]&&ecoUnlocked(C,si)){if(buildTower(C,si,want))return;}}
@@ -15575,12 +15640,13 @@ function cpuTick(C,dt){
    if(t2&&t2.ti===0&&C.scrap>=TOWERS[want].cost*res){sellTower(C,si);if(buildTower(C,si,want))return;}}}
  }
  /* 出撃(盾1+近接2+射撃2を維持、waveで増員)。新部隊解放費は貯金(rsv)として残す */
- const rsv=C.uUn<U_N&&wave>=2?Math.min(260,uupCost(C)):0;
+ const rsv=C.uUn<((C.team||[]).length)&&wave>=2?Math.min(260,uupCost(C)):0;
  {let sh3=0,ml=0,rg=0;for(const u of C.units){if(u.dead)continue;if(u.ui===3)sh3++;else if(UNITS[u.ui].rng>60)rg++;else ml++;}
   const ex=Math.floor(wave/5);let uw=-1;
-  if(C.uUn>3&&sh3<1)uw=3;
-  else if(ml<2+ex){for(let i=C.uUn-1;i>=0;i--)if(i!==3&&UNITS[i].rng<=60){uw=i;break;}}
-  else if(rg<2+ex){for(let i=C.uUn-1;i>=0;i--)if(UNITS[i].rng>60&&UNITS[i].type!=='heal'){uw=i;break;}}
+  {const T9=(C.team||[]),sp9=T9.indexOf(SHD_I);
+  if(sp9>=0&&sp9<C.uUn&&sh3<1)uw=SHD_I;
+  else if(ml<2+ex){for(let k=C.uUn-1;k>=0;k--){const i=T9[k];if(i!==SHD_I&&UNITS[i]&&UNITS[i].rng<=60){uw=i;break;}}}
+  else if(rg<2+ex){for(let k=C.uUn-1;k>=0;k--){const i=T9[k];if(UNITS[i]&&UNITS[i].rng>60&&UNITS[i].type!=='heal'){uw=i;break;}}}}
   if(uw>=0&&C.ucd[uw]<=0&&C.scrap-rsv>=UNITS[uw].cost*res&&deployUnit(C,uw))return;}
  let bi=-1,bst=null,bp=1e9;
  /* ⭐CPUも廃品工房を育てる(2026-07-26ユーザー指示)。以前は工房を強化対象から外していたため、
@@ -15609,7 +15675,7 @@ function cpuPlan(C){
    if(pts?((C.up||0)>=pp):(C.scrap>=pp))opts.push({k,w,o:o||{}});};
   if(C.core<C.coreMax*.45&&(C.up||0)>=prRe(C.repairs))push('repair',6);
   if(C.unlocked<metaTowerCap()&&C.scrap>=UNLOCK_P[C.unlocked]*1.05)push('unlock',3.2);
-  if(C.uUn<metaUnitCap()&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
+  if(C.uUn<((C.team||[]).length)&&C.scrap>=uupCost(C)*1.05)push('uun',2.8);
   if((C.up||0)>=prAtk(C.atkLv))push('atk',2.2);
   if((C.up||0)>=prStk(C.stkLv||0))push('stkup',1.5);
   if((C.uLv||0)<ULV_MAX&&(C.up||0)>=prUup(C.uLv||0))push('uup',2.0);
@@ -15655,7 +15721,7 @@ function awardMeta(){
     0が有効な値の変数に `||` の既定値を使わないこと。 */
  const d9=G.pveDiff==null?2:clamp(G.pveDiff|0,0,D5.length-1);
  const mult=[.7,.85,1,1.3,1.6,2.1][d9]||1;
- const gain=Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.2)*mult));
+ const gain=Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.4)*mult));
  META.pts+=gain;G.metaGain=gain;
  /* クリア記録: ステージ×難易度。1つ上の難易度と、ナイトメアなら次のステージが開く */
  if(G.winner===0){
@@ -15801,7 +15867,7 @@ function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remov
  if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}/* ⭐ゲームに入ったらタイトルBGMを切り、出たら戻す(2026-07-27ユーザー指示)。
     ⚠戦闘中のBGM(bgmOn)は**ゲーム以外の画面すべてで止める**=以前はタイトルでしか止めていなかった。 */
  if(id==='game'){tbgmOff();bgmOn();}else{bgmOff();tbgmOn();}}
-function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,uLv:0,ucd:[],atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
+function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,team:[0,1],uLv:0,ucd:[],atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
 /* 地面の模様はマップの外(画面端まで伸ばす裁ち落とし部分)にも撒く=境目が見えないように */
 const DOTS=[],PATCHES=[],TUFTS=[],CRACKS=[],SKID=[];
@@ -16674,15 +16740,16 @@ function updHUD(){const m=meV();if(!m)return;
  pb.innerHTML='🌊押す<br>⚙️'+pc;
  pb.disabled=!inW||m.dead||m.scrap<pc||mySh<=8.2;
  /* 出撃デッキ */
+ /* ⚠**枠の番号 k と兵科の添字 i は別物**(2026-08-01の編成制)。鍵は「枠が k 番目まで解放済みか」 */
  const uun=m.uUn!=null?m.uUn:2;
- for(let i=0;i<DECKB.length;i++){const b=DECKB[i],U=UNITS[i];
+ for(let k9=0;k9<DECKB.length;k9++){const b=DECKB[k9],i=DECKI[k9],U=UNITS[i];if(!U)continue;
   const cd=m.ucd?Math.max(0,m.ucd[i]||0):0;
   const dc2=uDepCost(m,i);
   b.classList.toggle('poor',m.scrap<dc2);
   const dcEl=b.querySelector('.dc');if(dcEl)dcEl.innerHTML=IC('⚙️')+dc2;
-  const lkOn=i>=uun;b.querySelector('.lk').style.display=lkOn?'flex':'none';b.classList.toggle('lkon',lkOn);
+  const lkOn=k9>=uun;b.querySelector('.lk').style.display=lkOn?'flex':'none';b.classList.toggle('lkon',lkOn);
   b.querySelector('.cdov').style.background=cd>0?`conic-gradient(rgba(10,9,8,.74) ${cd/U.cd*100}%,transparent 0)`:'none';
-  b.disabled=m.dead||i>=uun||cd>0||m.scrap<dc2;
+  b.disabled=m.dead||k9>=uun||cd>0||m.scrap<dc2;
  }
  /* 対象チップ */
  const os=aliveOthers();
@@ -16764,8 +16831,8 @@ function showResultA(){
  $('res-sub').textContent=G.pve?(win?'WAVE '+curW()+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
  $('res-stats').innerHTML=(G.pve
   ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),
-    ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+metaUnitCap()],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv],['砲撃強化','Lv'+(me.stkLv||0)]]
-  :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+BASE_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+    ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+((me.team||[]).length)],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv],['砲撃強化','Lv'+(me.stkLv||0)]]
+  :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+PVP_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
  show('result');
 }
@@ -16775,7 +16842,7 @@ function showResultC(sn){
  $('res-title').textContent=COOP?(win?'🏆 ステージ1 クリア!':'💀 拠点陥落…'):(win?'🏆 最後の生存者!':'💀 '+sn.me.pl+'位…');
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=COOP?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+sn.w+' で陥落…'):((sn.wn?('生存: '+sn.wn+' / '):'')+'WAVE '+sn.w+' まで到達');
- $('res-stats').innerHTML=[['ゾンビ撃破',sn.me.kl],['部隊出撃',(sn.me.dp||0)+'体'],['送った変異体',sn.me.sent+'体'],['解放タワー',sn.me.un+'/'+BASE_T]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+ $('res-stats').innerHTML=[['ゾンビ撃破',sn.me.kl],['部隊出撃',(sn.me.dp||0)+'体'],['送った変異体',sn.me.sent+'体'],['解放タワー',sn.me.un+'/'+PVP_T]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();show('result');
 }
 /* ---- 建設メニュー・入力 ---- */
@@ -16822,7 +16889,7 @@ function openBM(si){
    else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
    h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
-  if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">作戦タイムで『廃品工房』を解放すると建てられる</div>';
+  if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所で『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
   if(!tw.us)tw.us=newUs();
   const rows=twStats(tw.ti).map(st=>{
@@ -17028,16 +17095,20 @@ function actDeploy(ui){
   if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<dc)return;
   sendCmd({t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
-let DECKB=[];
-function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];
- const dl=metaUnitCap();
+let DECKB=[],DECKI=[];
+function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKI=[];
+ /* ⭐**デッキに並ぶのは「連れて行くと決めた10体」だけ**(2026-08-01の編成制)。
+    ⚠枠の番号 k と兵科の添字 i は別物=`DECKI[k]=i` で対応を持つ。
+      uTier / UTHUMBS / actDeploy は**兵科の添字 i** で引くこと。 */
+ const T9=(meV()&&meV().team&&meV().team.length)?meV().team:teamIdx();
  /* ⚠デッキの長押し=部隊レベルアップ は廃止済み(2026-07-25ユーザー指示)。
     部隊レベルは作戦タイムの強化カードだけで上げる。デッキは「押したら出撃」だけの単純な操作にする */
- for(let i=0;i<dl;i++){const U=UNITS[i],b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
+ for(let k9=0;k9<T9.length;k9++){const i=T9[k9];const U=UNITS[i];if(!U)continue;
+  const b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
   b.innerHTML=`<canvas width="${UTHW}" height="${UTHH}"></canvas><span class="dn">${U.n}</span><span class="dc">⚙️${U.cost}</span><i class="cdov"></i><span class="lk">🔒</span>`;
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
   b.onclick=()=>actDeploy(i);
-  w.appendChild(b);DECKB.push(b);}}
+  w.appendChild(b);DECKB.push(b);DECKI.push(i);}}
 /* ソロ限定: ウェーブ放棄=残敵+出現予定分のコアダメージを受けて即・作戦タイムへ */
 function giveUpDmg(me){let d=0;for(const z of me.zombies)if(!z.dead)d+=z.dmg;if(G)for(const e of G.tide.pool)d+=e.z.dmg;return d;}
 /* 放棄しても工房の取りこぼしが出ないよう、残り時間ぶんの生産を先に精算する */
@@ -17101,9 +17172,12 @@ function ivRender(){
  /* ⚠**WAVE3までの解放ロックは廃止した**(2026-07-27ユーザー指示)。最初の作戦タイムから解放できる */
  let h='';
  h+=`<div class="card"><div class="ci">🔓</div><div class="ct">新タワー解放</div><div class="cdsc">${nx?('次:『'+nx.n+'』— '+nx.dsc):labT?'🔬研究所で解放するとここに出る':'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${nx&&can('unlock')?'':'disabled'}>${nx?'⚙️'+pc('unlock'):'-'}</button></div>`;
- const uu2=m.uUn!=null?m.uUn:2,nu=uu2<ucap?UNITS[uu2]:null;
+ /* ⚠**次に開くのは「連れて行くと決めた10体」の次の1体**(2026-08-01の編成制)。
+    ⚠全部開き切ったら「編成で選び直す」を促す=研究所待ちとは意味が違う */
+ const T8=(m.team&&m.team.length)?m.team:teamIdx();
+ const uu2=m.uUn!=null?m.uUn:2,nu=uu2<T8.length?UNITS[T8[uu2]]:null;
  const labU=!nu&&ucap<U_N;
- h+=`<div class="card"><div class="ci">🪖</div><div class="ct">新部隊解放</div><div class="cdsc">${nu?('次:『'+nu.n+'』— '+nu.dsc):labU?'🔬研究所で解放するとここに出る':'全部隊解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${nu&&can('uun')?'':'disabled'}>${nu?'⚙️'+pc('uun'):'-'}</button></div>`;
+ h+=`<div class="card"><div class="ci">🪖</div><div class="ct">新部隊解放</div><div class="cdsc">${nu?('次:『'+nu.n+'』— '+nu.dsc):labU?'🔬研究所で解放するとここに出る':'連れて来た部隊は全部解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${nu&&can('uun')?'':'disabled'}>${nu?'⚙️'+pc('uun'):'-'}</button></div>`;
  h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${(m.up||0)>=pc('atk')?'':'disabled'}>${PT}${pc('atk')}</button></div>`;
  {const ul2=m.uLv||0,umx=ul2>=ULV_MAX;
  h+=`<div class="card"><div class="ci">⬆</div><div class="ct">部隊強化 Lv${ul2}</div><div class="cdsc">全部隊のHPと攻撃+10%(出撃費も比例) — ${PT}払い(所持 ${PT}${m.up||0})</div><button class="btn gold sm buy" data-buy="uup" ${!umx&&(m.up||0)>=pc('uup')?'':'disabled'}>${umx?'MAX':PT+pc('uup')}</button></div>`;}
@@ -17608,7 +17682,7 @@ function startSolo(){
  /* 研究所の序盤系ボーナス */
  me.up=me.upTotal=12+6*(META.up0||0);
  /* ⚠🛠DEVは newCamp で全開放してあるので、ここの「開始時ボーナス」で巻き戻さない */
- me.uUn=DEV?metaUnitCap():2+(META.uu0||0);
+ me.team=teamIdx();me.uUn=DEV?me.team.length:Math.min(me.team.length,2+(META.uu0||0));
  {const s0=SLOT0+(META.sl0||0);
   me.slk=SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<s0));}
  if(META.ec1){/* 廃品工房を建てた状態で開始 */
@@ -17666,7 +17740,7 @@ function startTst(){
  const me=G.players[0];
  me.scrap=99999;me.up=me.upTotal=99999;
  me.coreMax=99999;me.core=me.coreMax;
- me.unlocked=TOWERS.length;me.uUn=UNITS.length;
+ me.unlocked=TOWERS.length;me.team=UNITS.map((u,i)=>i);me.uUn=me.team.length;
  me.stk=META.st&&META.st.length?META.st[0]:'air';
  me.hUi=-1;me.hOut=0;me.hCg=1;me.fallen=[];
  me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
@@ -18499,8 +18573,12 @@ function drawUnitAs(c,i,def){
 /* ---- 編成UI ---- */
 function ldPrev(cvv,i,def){fitDraw(cvv,c=>drawUnitAs(c,i,def),3);}
 /* 編成もタブ制。⚠13行を縦に積むと横画面(高さ393px)で1行半しか見えない */
-let LDTAB='base';
-const LD_TABS=[{k:'base',n:'🪖 基本の枠',d:'作戦タイムで解放できる8つの枠に、どのキャラを入れるか決める'},
+let LDTAB='team';
+const LD_TABS=[
+ /* ⭐2026-08-01に**連れて行く10体を選ぶタブ**を先頭に足した(ユーザー指示の編成制) */
+ /* ⚠**の記法は使わない=そのまま文字として出る(2026-08-01に撮って気づいた) */
+ {k:'team',n:'🎒 連れて行く',d:'戦場へ連れて行く兵科を'+TEAM_N+'体まで選ぶ。⚠戦闘中は「選んだ中の安い順」に解放される=高い兵科ばかり選ぶと解放が進まない'},
+ {k:'base',n:'🪖 基本の枠',d:'解放した兵科それぞれに、どのキャラを入れるか決める'},
  {k:'adv',n:'⭐ 上級',d:'🔬研究所で解放する上級ユニット(3段階で姿が変わる)'}];
 /* ⚠**弾薬タブは2026-07-27に廃止**(タワーの進化に置き換えた)。書き戻さないこと */
 function renderLoad(){
@@ -18521,6 +18599,36 @@ function renderLoad(){
     /* ⭐姿は枠いっぱいに描く(第91弾)。56pxだと何を選ぶのか分からなかった */
     +'<canvas width="76" height="76"></canvas><span>'+(lock?'🔒':'')+o.def.n+'<br><span class="lds">⚙️'+o.def.cost+' HP'+o.def.hp+' 攻'+o.def.atk+'</span></span></button>';});
   h+='</div></div>';};
+ if(LDTAB==='team'){
+  /* ⭐**連れて行く兵科を選ぶ**。⚠猟犬とバットは固定枠(外せない)。
+     ⚠**解放費の合計を必ず出す**=これが無いと「高い兵科ばかり選ぶと進まない」が
+       プレイヤーに見えず、ただ理不尽なだけになる。 */
+  const own=metaUnitCap(),T9=teamIdx();
+  const sum=T9.reduce((a,i)=>a+(UNITP[i]||0),0);
+  h+='<div class="bphint">選択 '+T9.length+'/'+TEAM_N+' — この編成を全部解放するのに <b>⚙️'+sum.toLocaleString()+'</b></div>';
+  h+='<div class="lgrid">';
+  for(let i=0;i<own;i++){
+   const U=UBASE[i];if(!U)continue;
+   const fix=TEAM_FIX.indexOf(i)>=0,on=T9.indexOf(i)>=0;
+   h+='<button class="lc'+(on?' sel':'')+(fix?' lock':'')+'" data-team="'+i+'"'+(fix?' disabled':'')+'>'
+    +'<canvas width="76" height="76"></canvas><span>'+(fix?'🔒':on?'✅':'')+U.n
+    +'<br><span class="lds">解放⚙️'+(UNITP[i]||0)+' / 出撃⚙️'+U.cost+'</span></span></button>';}
+  h+='</div>';
+  box.innerHTML=IC(h);
+  box.querySelectorAll('[data-team]').forEach(b=>{
+   const i=+b.dataset.team;
+   ldPrev(b.querySelector('canvas'),i,null);
+   b.onclick=()=>{
+    const cur=((META.team)||[]).slice();
+    const id=UBASE[i].id,k=cur.indexOf(id);
+    if(k>=0)cur.splice(k,1);
+    else{
+     /* ⚠固定枠のぶんを引いた残りが上限 */
+     if(teamIdx().length>=TEAM_N){toast('⚠ 連れて行けるのは'+TEAM_N+'体まで',true);return;}
+     cur.push(id);}
+    META.team=cur;saveMeta();sfx.buy&&sfx.buy();renderLoad();};});
+  return;
+ }
  if(LDTAB==='base')VBASE.forEach((bid,n)=>row(bid,(n+1)+'つ目の枠 — 基本『'+((UBASE.find(u=>u.id===bid))||{}).n+'』'));
  else FVBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'上級『'+B.n+'』');});
  box.innerHTML=IC(h);
@@ -20960,7 +21068,7 @@ function normMe(m){const old=CS.meN;
   if((o5<10&&n5>=10)||(o5<5&&n5>=5)){UI.banner('⚡ 部隊がさらに強くなった!!');sfx.elite();}
   else if(o5<3&&n5>=3){UI.banner('🛡 部隊が強化装備を入手!');sfx.buy();}}
  CS.meN={dead:!!m.dd,scrap:m.en,core:m.core,coreMax:m.mx||50,unlocked:m.un,atkLv:m.atk,stkLv:m.stl||0,repairs:m.rp,boosts:m.bo,jams:m.jm,charge:m.ch,pushUses:m.pu||0,waveDone:!!m.wd,killsWave:m.kw,totalWave:m.tw,ready:old?!!old.ready:false,
-  uUn:m.uu!=null?m.uu:2,uLv:m.ul||0,ecoN:m.ec||1,up:m.up||0,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
+  uUn:m.uu!=null?m.uu:2,team:(old&&old.team&&old.team.length?old.team:PVP_TEAM()),uLv:m.ul||0,ecoN:m.ec||1,up:m.up||0,slk:(m.sk||'').split('').map(v=>v==='1'),ucd:old&&old.ucd?old.ucd:UNITS.map(()=>0),
   towers:m.tws.map(x=>x?{ti:x[0],jamT:x[1]?1:0,own:x[2]||0,us:{d:x[3]||0,r:x[4]||0,g:x[5]||0,c:x[6]||0,f:x[7]||0,h:x[11]||0,b:x[12]||0,m:x[13]||0,n:x[16]||0,a:x[18]||0},ct:x[14]?{px:x[14],py:x[15]}:null,dr:(x[17]||[]).map(p=>({x:p[0],y:p[1],cd:0,rl:p[2]?1:0})),chg:(x[8]||0)/100,fireT:0,ang:(x[9]||0)/50,spent:x[10]||TOWERS[x[0]].cost}:null)};}
 function applySnap(d){
  if(d.w!==CS.w&&d.ph===1){UI.banner('WAVE '+d.w+(d.w%5===0?' 💀BOSS':''));sfx.horn();}

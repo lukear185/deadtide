@@ -59,7 +59,7 @@ function runPvE(diff,tag,cheat){
   frames(1,.033);
   const me=G.players[0];
   if(!struck&&me.charge>=1&&me.zombies.length){const z=me.zombies[0];airstrike(me,z.px,z.py,G.wave);struck=true;}
-  if(G.phase==='wave'&&Math.random()<.02){if(deployUnit(me,ri(0,me.uUn-1)))dep++;}
+  if(G.phase==='wave'&&Math.random()<.02){if(deployUnit(me,me.team[ri(0,me.uUn-1)]))dep++;}
   if(guard%1400===700&&G.phase==='wave'){me.flagD=clamp(projPath(ri(150,1450),ri(150,700)),PLEN*.1,PLEN*.9);}
   if(cheat&&G.phase==='wave'&&guard%90===0){
    for(let si=0;si<SLOTS.length;si++){if(!me.towers[si]){const ti=me.unlocked-1;if(me.scrap>=TOWERS[ti].cost){buildTower(me,si,ti);}break;}}
@@ -97,7 +97,7 @@ function runPvP(tag){
   if(guard%500===0)chkShares(tag+'@'+guard);
   if(!struck&&G.players[0].charge>=1&&G.players[0].zombies.length){const z=G.players[0].zombies[0];airstrike(G.players[0],z.px,z.py,G.wave);struck=true;}
   if(pushed<5&&G.phase==='wave'&&G.players[0].scrap>200&&Math.random()<.01){if(pushTide(G.players[0],-1))pushed++;}
-  if(G.phase==='wave'&&Math.random()<.02){if(deployUnit(G.players[0],ri(0,G.players[0].uUn-1)))dep++;}
+  if(G.phase==='wave'&&Math.random()<.02){if(deployUnit(G.players[0],G.players[0].team[ri(0,G.players[0].uUn-1)]))dep++;}
   if(guard%1400===700&&G.phase==='wave'){G.players[0].flagD=clamp(projPath(ri(150,1450),ri(150,700)),PLEN*.1,PLEN*.9);}
   if(G.phase==='interval'&&!G.players[0].ready){
    const me=G.players[0];
@@ -133,7 +133,7 @@ function runCoop(tag){
   const F=G.players[0];
   if(G.phase==='wave'){
    for(let pi=0;pi<3;pi++){const P=G.players[pi];
-    if(Math.random()<.02&&deployUnit(P,ri(0,P.uUn-1)))dep[pi]++;
+    if(Math.random()<.02&&deployUnit(P,P.team[ri(0,P.uUn-1)]))dep[pi]++;
     if(guard%(1100+pi*300)===500)P.flagD=clamp(projPath(ri(150,1450),ri(150,700)),PLEN*.1,PLEN*.9);}
    if(guard%120===0){for(let pi=0;pi<3;pi++){const P=G.players[pi];
     for(let si=0;si<SLOTS.length;si++){if(!F.towers[si]&&P.unlocked>0&&P.scrap>=TOWERS[P.unlocked-1].cost){buildTower(P,si,P.unlocked-1);break;}}
@@ -167,7 +167,7 @@ function runStage2(){
   frames(1,.033);
   const me=G.players[0];
   for(const z of me.zombies)seen[ZOMBIES[z.zi].n]=1;
-  if(G.phase==='wave'&&Math.random()<.02)deployUnit(me,ri(0,me.uUn-1));
+  if(G.phase==='wave'&&Math.random()<.02)deployUnit(me,me.team[ri(0,me.uUn-1)]);
   if(G.phase==='interval'&&!me.ready){doPurchase(me,'unlock',{});doPurchase(me,'uun',{});me.ready=true;}
  }
  const names=Object.keys(seen);
@@ -189,6 +189,23 @@ function checkEarly(){
  const hp=[1,2,3,4,5,6].map(tot);
  if(!(hp[0]<hp[2]&&hp[2]<hp[5])){
   console.log('FAIL: 波が進んでも総HPが増えていない '+hp.map(v=>Math.round(v)).join('/'));process.exit(1);}
+ /* ⭐⭐**W1→最終波まで総HPが一度も下がらないこと**(2026-08-01に足した)。
+    ⚠2026-08-01に序盤の底上げ(earlyX)と終盤の間引き(cut)を入れた時、
+      **W1>W2 / W5>W6 / W10>W11 の逆転**が実際に出た。原因は
+      「末尾バイアスで引かれる敵(プールの最後)が波によって軽くなる」こと。
+    ⚠隣どうしは乱数で前後するので**8回の平均**で見る。 */
+ /* ⚠⚠**隣どうしを直に比べない**(NOTESの掟)=顔ぶれは毎回引き直すので、
+    末尾バイアス(1400HPのジャガーノートを最大40%で引く)だけで±10%は普通に振れる。
+    ⭐**3波ぶんの移動平均**にしてから比べる=乱数に強く、本物の逆転だけ捕まえる。 */
+ {const tot8=w=>{let t=0;for(let k=0;k<12;k++){buildTide(w);t+=G.tide.pool.reduce((a,e)=>a+(e.z.mhp||0),0);}return t/12;};
+  const ws=[];for(let w=1;w<=20;w++)ws.push(tot8(w));
+  const sm=ws.map((v,i)=>{const a=ws.slice(Math.max(0,i-1),Math.min(ws.length,i+2));return a.reduce((x,y)=>x+y,0)/a.length;});
+  for(let w=1;w<20;w++)if(sm[w]<sm[w-1]*.97){
+   console.log('FAIL: 総HP(3波の移動平均)がW'+w+'→W'+(w+1)+'で下がっている '+Math.round(sm[w-1])+'→'+Math.round(sm[w]));process.exit(1);}
+  /* ⭐**終盤に数が増えすぎないこと**(2026-08-01ユーザー指摘「数が多すぎてぐちゃぐちゃ・重い」) */
+  buildTide(20);const n20=G.tide.pool.length;
+  if(n20>34){console.log('FAIL: 最終波の敵が多すぎる '+n20+'体');process.exit(1);}
+  console.log('  (総HPは W1='+Math.round(ws[0])+' → W20='+Math.round(ws[19])+' で単調増加 / W20の体数='+n20+')');}
  /* ⭐**1波目の体力倍率が1を下回らない**=「慣らし」で最初の数波を空気にしない。
     ⚠総HPの比では見ないこと=序盤は**出る敵の顔ぶれ(mw)**が軽いので、どう調整しても4波目とは開く。
     見るべきは**倍率そのもの**(2026-07-27に 0.60 → 1.17 へ上げた)。 */
@@ -290,7 +307,7 @@ function runNightmare(){
   frames(1,.033);
   const me=G.players[0];
   for(const z of me.zombies)seen[ZOMBIES[z.zi].n]=1;
-  if(G.phase==='wave'&&Math.random()<.02)deployUnit(me,ri(0,me.uUn-1));
+  if(G.phase==='wave'&&Math.random()<.02)deployUnit(me,me.team[ri(0,me.uUn-1)]);
   if(G.phase==='interval'&&!me.ready){doPurchase(me,'unlock',{});doPurchase(me,'uun',{});me.ready=true;}
  }
  const names=Object.keys(seen);
@@ -571,7 +588,7 @@ function checkResume(){
  frames(20,.016);
  const m=G.players[0];
  /* 一通り「進んだ状態」を作る=枠を開け、支援施設を建て、工房を上級化し、冷却塔を強化する */
- m.scrap=99999;m.unlocked=T_PLAY;m.uUn=U_N;m.up=77;m.upTotal=120;m.uLv=4;m.atkLv=2;
+ m.scrap=99999;m.unlocked=T_PLAY;m.team=UNITS.map((u,i)=>i);m.uUn=U_N;m.up=77;m.upTotal=120;m.uLv=4;m.atkLv=2;
  m.core=41;m.kills=123;m.enTotal=4567;m.charge=.7;m.flagD=PLEN*.4;
  m.ecoN=ECO_MAX;m.supN=SUP_MAX;m.slk=m.slk.map(()=>true);
  /* 支援施設3種のうち2つを支援枠へ */
@@ -584,7 +601,7 @@ function checkResume(){
  const cti=TOWERS.findIndex(t=>t.id==='cryo'),csi=AI_ORDER[0];
  m.towers[csi]=null;buildTower(m,csi,cti);m.towers[csi].us.f=3;m.towers[csi].us.r=2;
  G.wave=7;G.phase='iv';
- const want={supN:m.supN,ecoN:m.ecoN,unlocked:m.unlocked,uUn:m.uUn,uLv:m.uLv,up:Math.round(m.up),
+ const want={supN:m.supN,ecoN:m.ecoN,unlocked:m.unlocked,uUn:m.uUn,team:(m.team||[]).join(','),uLv:m.uLv,up:Math.round(m.up),
   atkLv:m.atkLv,core:m.core,kills:m.kills,slk:m.slk.filter(v=>v).length,
   ecoTi:m.towers[ECO_BASE].ti,cryoF:m.towers[csi].us.f,cryoR:m.towers[csi].us.r,
   sup:m.towers.slice(SUP_BASE).filter(t=>t).length,stk:m.stk};
@@ -592,7 +609,7 @@ function checkResume(){
  backTitle();
  if(!resumeRun()){console.log('FAIL: 中断したのに再開できない');process.exit(1);}
  const n=G.players[0];
- const got={supN:n.supN,ecoN:n.ecoN,unlocked:n.unlocked,uUn:n.uUn,uLv:n.uLv,up:Math.round(n.up),
+ const got={supN:n.supN,ecoN:n.ecoN,unlocked:n.unlocked,uUn:n.uUn,team:(n.team||[]).join(','),uLv:n.uLv,up:Math.round(n.up),
   atkLv:n.atkLv,core:n.core,kills:n.kills,slk:n.slk.filter(v=>v).length,
   ecoTi:n.towers[ECO_BASE]?n.towers[ECO_BASE].ti:-1,
   cryoF:n.towers[csi]?n.towers[csi].us.f:-1,cryoR:n.towers[csi]?n.towers[csi].us.r:-1,
@@ -846,7 +863,7 @@ function checkPerUp(){
  /* --- ⑤ 兵科1種ごと。派生キャラは元の兵科の枠を共有する --- */
  META.un={};
  {const ui=0,U=UNITS[ui];
-  me.units.length=0;me.scrap=999999;me.ucd=UNITS.map(()=>0);me.uUn=U_N;
+  me.units.length=0;me.scrap=999999;me.ucd=UNITS.map(()=>0);me.team=UNITS.map((u,i)=>i);me.uUn=U_N;
   deployUnit(me,ui);const u0=me.units[me.units.length-1];const a0=u0.am,h0=u0.mhp;
   META.un={[U.id]:LINE_MAX};
   me.units.length=0;me.ucd=UNITS.map(()=>0);deployUnit(me,ui);
@@ -930,7 +947,7 @@ function checkPerUp(){
    META.un={};META.un[U0.id]=LINE_MAX;
    META.stg=0;setDiff=2;startSolo();frames(10,.016);
    const me2=G.players[0];
-   me2.scrap=999999;me2.ucd=UNITS.map(()=>0);me2.uUn=U_N;me2.units.length=0;
+   me2.scrap=999999;me2.ucd=UNITS.map(()=>0);me2.team=UNITS.map((u,i)=>i);me2.uUn=U_N;me2.units.length=0;
    deployUnit(me2,0);
    const uu=me2.units[me2.units.length-1];
    const st2=UN_STEP(UNITS[0].type),wantA=1+st2.a*LINE_MAX;
@@ -2033,7 +2050,7 @@ function checkHook(){
  for(const ui of hooks){
   const N=UNITS[ui].hook;
   me.units.length=0;me.zombies.length=0;
-  me.uUn=Math.max(me.uUn,ui+1);me.ucd[ui]=0;me.scrap=999999;
+  me.team=UNITS.map((u,i)=>i);me.uUn=Math.max(me.uUn,ui+1);me.ucd[ui]=0;me.scrap=999999;
   if(!deployUnit(me,ui)){console.log('FAIL: '+UNITS[ui].n+' が出せない');process.exit(1);}
   const u=me.units[me.units.length-1];u.d=PLEN*.5;u.hp=u.mhp=1e9;
   /* ⚠**上限ぴったり**を重ねて、1体も素通りしないこと */
@@ -2052,7 +2069,7 @@ function checkHook(){
  }
  /* 普通の兵科ではすり抜け敵を止められないこと(hookの意味が消えていないか) */
  {const ni=UNITS.findIndex(u=>!u.hook&&u.type==='melee');
-  me.units.length=0;me.zombies.length=0;me.uUn=Math.max(me.uUn,ni+1);me.ucd[ni]=0;me.scrap=999999;
+  me.units.length=0;me.zombies.length=0;me.team=UNITS.map((u,i)=>i);me.uUn=Math.max(me.uUn,ni+1);me.ucd[ni]=0;me.scrap=999999;
   deployUnit(me,ni);const u=me.units[me.units.length-1];u.d=PLEN*.5;u.hp=u.mhp=1e9;
   const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);const d0=z.d;
   for(let k=0;k<40;k++)campStep(me,.03,G.wave);
@@ -2490,7 +2507,7 @@ process.exit(0);
      ⚠soloMeta()はGを見るので、ソロを1戦始めてから拠点の状態を測る */
   const g=new Function(js+'\n;META.stg=0;setDiff=2;startSolo();'
    +'const m=G.players[0];'
-   +'return [m.unlocked,T_PLAY,m.uUn,U_N,m.ecoN,ECO_MAX,m.supN,SUP_MAX,'
+   +'return [m.unlocked,T_PLAY,m.team.length,U_N,m.ecoN,ECO_MAX,m.supN,SUP_MAX,'
    +'m.slk.slice(0,ECO_BASE).filter(v=>v).length,ECO_BASE,META.st.length,Object.keys(STRIKES).length];')();
   const [un,tp,uu,un2,ec,ecm,sp,spm,sl,slm,st,stm]=g;
   if(un<tp){console.log('FAIL: 🛠DEVでタワーが全解放されていない '+un+'/'+tp);process.exit(1);}
