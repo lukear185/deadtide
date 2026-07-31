@@ -30,6 +30,14 @@ function coarseCSS(s){
 const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連した状態で撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
+/* ⭐bns = 🚌ボーナス面「バスの日」(四方から+バス)。⚠st2 と併せるとステージ2の面になる */
+const BNS=/(^|\+)bns(\+|$)/.test(OPT);
+/* ⭐dbg = 画面の中の状態をトーストで出す(「絵は出るのに中が止まっている」を切り分ける用) */
+const DBG=/(^|\+)dbg(\+|$)/.test(OPT);
+/* ⭐bnsn=12 = ボーナス面を何秒ぶん進めてから撮るか。
+   ⚠⚠**ヘッドレスの仮想時間では rAF がほとんど回らない**ので、放っておくと敵が1体も湧かない絵になる
+     (検証場で踏んだのと同じ罠。「敵が湧かない不具合」だと勘違いして半日溶かしかけた)。 */
+const BNM=/bnsn=(\d+)/.exec(OPT),BNSN=BNM?+BNM[1]:12;
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
@@ -238,6 +246,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +((/gt(\d)/.exec(OPT))?('if(GC){GC.tw=GC.zk='+(/gt(\d)/.exec(OPT))[1]+';}'):''))
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
+     /* ⭐bns = 🚌ボーナス面「バスの日」を撮る(st2 と併せるとステージ2の面) */
+     :BNS?'setDiff=BNS_D;startSolo();'
      :'setDiff=2;startSolo();')+(NOITR?'showIntro=function(){};':'')+'}catch(e){document.title="ERR "+e.message;}'
  /* ⚠以前は `ZIDS.length` を条件にしていたため、**`t=` を単体で指定すると丸ごと無視されていた**
       (敵を並べずにタワーだけ撮りたい時に、何も建たないまま撮れてしまう)。`t=` だけでも走らせる */
@@ -281,6 +291,15 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         +(OPT.indexOf('nodep')>=0?''/* nodep=出撃させずにボタンだけ見る */
           :'heroDeploy(me);me.hCg=1;var hu=me.units.filter(function(u){return u.hro;})[0];if(hu)hu.d=PLEN*.62;'))
      +'updHUD();}catch(e){document.title="ERR3 "+e.message;}},1000);'):'')
+ /* 🚌ボーナス面は仮想時間で rAF が回らないので、撮る前に自分で時間を進める */
+ +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';for(var k=0;k<n;k++)gameStep(.05);'
+     +'}catch(e){document.title="ERR15 "+e.message;}},1200);'):'')
+ +(DBG?('var _gs=gameStep,_ge=null;gameStep=function(d){try{_gs(d);}catch(e){if(!_ge){_ge=e;}throw e;}};'
+     +'setInterval(function(){try{if(_ge){toast("STEPERR "+_ge.message+" @ "+String(_ge.stack).split("\\n")[1]);}}catch(x){}},1600);'
+     +'setInterval(function(){try{if(!G){toast("DBG G=null");return;}'
+     +'toast("ph="+G.phase+" w="+G.wave+" pool="+G.tide.pool.length+" z="+G.players[0].zombies.length'
+     +'+" lead="+Math.round(G.tide.lead)+" P="+PAUSED+" act="+gameActive+" over="+G.over);'
+     +'}catch(e){try{toast("DBGERR "+e.message);}catch(x){}}},1500);'):'')
  +((HID&&ULP)?('setTimeout(function(){try{var me=G.players[0];me.hCg=1;'
      +'me.zombies.length=0;for(var k9=0;k9<5;k9++)me.zombies.push(mkZ(zSpec(0,1,10),PLEN*.62-150-k9*40));'
      +'heroUlt(me,10);'

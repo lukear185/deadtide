@@ -1373,29 +1373,34 @@ function checkProgress(){
  if(!stageOK(1)){console.log('FAIL: ナイトメアをクリアしても港が開かない');process.exit(1);}
  /* 難易度ごとの最終ウェーブ */
  const ws=D5.map(d=>d.w).join('/');
- if(ws!=='5/7/10/15/20/20'){console.log('FAIL: 難易度ごとの最終ウェーブが違う '+ws);process.exit(1);}
+ /* ⚠末尾の1は🚌ボーナス面(1波だけ)。⚠**並びの真ん中に差し込まない**=META.sc の添字がずれる */
+ if(ws!=='5/7/10/15/20/20/1'){console.log('FAIL: 難易度ごとの最終ウェーブが違う '+ws);process.exit(1);}
  /* 港は廃線ハイウェイより重い */
  if(!((STAGES[1].hpM||1)>(STAGES[0].hpM||1))){console.log('FAIL: 港がステージ1より重くない');process.exit(1);}
  /* ⭐**クリアした難易度がそのまま記録されるか**を awardMeta() を通して見る(2026-07-26に追加)。
     ⚠ここを scArr(0)[d]=1 と直に書く検査だけにしていたため、
       G.pveDiff||2(新兵=0 が古参=2 として記録される)というバグを長く見逃していた。
       症状は「新兵をクリアしても兵長が開かない・鬼軍曹が勝手に開く」。 */
- for(let d=0;d<D5.length;d++){
-  META.sc=[[0,0,0,0,0,0],[0,0,0,0,0,0]];META.sclr=[];META.clr=[0,0,0,0,0,0];META.pts=0;
+ /* ⚠⚠**解放の鎖は添字の順ではなく D_ORD の並び**(2026-08-02に🚌ボーナス面を挟んだ)。
+    ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。
+    D5 の末尾(6)に置いてあるので、d+1 で見ると「ナイトメアの次がボーナス」という別物を検査してしまう。 */
+ for(let oi=0;oi<D_ORD.length;oi++){const d=D_ORD[oi];
+  META.sc=[D5.map(()=>0),D5.map(()=>0)];META.sclr=[];META.clr=[0,0,0,0,0,0];META.pts=0;META.bcl=[];
   META.stg=0;setDiff=d;startSolo();
   G.winner=0;G.over=true;G.wave=D5[d].w;
   awardMeta();
   const got=scArr(0).map((v,i)=>v?i:-1).filter(i=>i>=0);
   if(got.length!==1||got[0]!==d){
    console.log('FAIL: '+D5[d].n+'(難易度'+d+')をクリアしたのに、記録されたのは難易度 ['+got.join(',')+']');process.exit(1);}
-  if(d+1<D5.length&&!diffOK(0,d+1)){
-   console.log('FAIL: '+D5[d].n+'をクリアしても次の'+D5[d+1].n+'が開かない');process.exit(1);}
-  if(d+2<D5.length&&diffOK(0,d+2)){
-   console.log('FAIL: '+D5[d].n+'をクリアしただけで'+D5[d+2].n+'まで開いている(飛び越し)');process.exit(1);}
+  const nx=D_ORD[oi+1],nx2=D_ORD[oi+2];
+  if(nx!=null&&!diffOK(0,nx)){
+   console.log('FAIL: '+D5[d].n+'をクリアしても次の'+D5[nx].n+'が開かない');process.exit(1);}
+  if(nx2!=null&&diffOK(0,nx2)){
+   console.log('FAIL: '+D5[d].n+'をクリアしただけで'+D5[nx2].n+'まで開いている(飛び越し)');process.exit(1);}
   backTitle();
  }
  console.log('進行: 難易度は順に解放(最終W='+ws+')/クリアした難易度がそのまま記録される/港はナイトメアクリアで解放/港の重さx'+STAGES[1].hpM+' OK');
- META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];
 }
 /* ---- セーブの1回だけのリセットが、消してはいけないものを消していないか(2026-07-26) ---- */
 function checkMetaReset(){
@@ -2461,6 +2466,66 @@ function checkHero(){
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  META.hero={};META.hsel='';
 }
+/* ⭐⭐⭐**🚌ボーナス面「バスの日」**(2026-08-02ユーザー決定)。
+   見るのは6つ: ①四方の道が4本あって長さが揃っているか(揃っていないとコア到達がレーンごとにずれる)
+   ②敵が4本すべてに散るか ③兵科・英雄・集結旗が無く、バスが居るか
+   ④**遊べば次の難易度が開く**(クリア不要) ⑤報酬は初回だけ(2回クリアしても増えない)
+   ⑥**中断の記録を残さない**(残すと再開で何度も入り直せて報酬の周回になる)
+   ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。 */
+function checkBonus(){
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
+ for(let si=0;si<STAGES.length;si++){
+  META.bcl=[];META.gem=0;META.pts=0;
+  scArr(si)[BNS_D]=0;
+  META.stg=si;setDiff=BNS_D;startSolo();
+  const me=G.players[0];
+  if(!LANES||LANES.length!==4){console.log('FAIL: ボーナス面の道が4本ない');process.exit(1);}
+  for(const L of LANES)if(Math.abs(L.len-LANES[0].len)>1){
+   console.log('FAIL: ボーナス面のレーンの長さが揃っていない');process.exit(1);}
+  if(diffW(BNS_D)!==1){console.log('FAIL: ボーナス面が1波で終わらない');process.exit(1);}
+  if(me.uUn!==0){console.log('FAIL: ボーナス面で兵科が出せる');process.exit(1);}
+  /* team は空にしない(空配列だと作戦タイムの強化カードが undefined を触って止まる) */
+  if(!(me.team||[]).length){console.log('FAIL: ボーナス面で team を空にしている');process.exit(1);}
+  if(me.hUi>=0){console.log('FAIL: ボーナス面に英雄が居る');process.exit(1);}
+  if(!me.bus){console.log('FAIL: ボーナス面にバスが居ない');process.exit(1);}
+  /* ④遊べば次(古参)が開く=クリアしていなくても */
+  if(!scArr(si)[BNS_D]){console.log('FAIL: ボーナス面に入っても記録が立たない');process.exit(1);}
+  if(!diffOK(si,2)){console.log('FAIL: ボーナス面を遊んでも次の難易度が開かない');process.exit(1);}
+  /* ⑥中断の記録を残さない */
+  try{localStorage.removeItem(RUN_KEY);}catch(e){}
+  saveRun();
+  if(localStorage.getItem(RUN_KEY)){console.log('FAIL: ボーナス面が中断できてしまう(再開で周回できる)');process.exit(1);}
+  /* ②敵が4本すべてに散る */
+  nextWave();
+  for(let k=0;k<400&&G.tide.pool.length;k++)tideStep(.05);
+  const lns={};for(const z of me.zombies)lns[z.ln]=(lns[z.ln]||0)+1;
+  if(Object.keys(lns).length!==4){
+   console.log('FAIL: 敵が四方に散っていない レーン別='+JSON.stringify(lns));process.exit(1);}
+  /* ③バスがタップした所へ走って敵を轢く */
+  /* 湧いた直後の敵は d が負(道の手前)。少し歩かせてから見る=画面の座標もここで入る */
+  for(let k=0;k<20;k++)campStep(me,.05,1);
+  const z0=me.zombies.find(z=>!z.dead&&z.d>=0);
+  if(!z0){console.log('FAIL: ボーナス面に敵が湧いていない');process.exit(1);}
+  me.bus.x=z0.px;me.bus.y=z0.py;me.bus.tx=z0.px;me.bus.ty=z0.py;
+  const hp0=z0.hp;bnsBusStep(me,.2);
+  if(!(z0.hp<hp0||z0.dead)){console.log('FAIL: バスが敵を轢いていない');process.exit(1);}
+  bnsTap(BNS_CX+200,BNS_CY);
+  if(me.bus.tx!==BNS_CX+200){console.log('FAIL: バスの行き先が変わらない');process.exit(1);}
+  /* ⑤報酬は初回だけ */
+  G.winner=0;G.over=true;G.wave=1;awardMeta();
+  const gm1=META.gem,pt1=META.pts;
+  if(gm1!==BNS_GEM){console.log('FAIL: 初回クリアの💎が'+gm1);process.exit(1);}
+  if(!(pt1>0)){console.log('FAIL: 初回クリアの🧬が入らない');process.exit(1);}
+  backTitle();
+  META.stg=si;setDiff=BNS_D;startSolo();
+  G.winner=0;G.over=true;G.wave=1;awardMeta();
+  if(META.gem!==gm1){console.log('FAIL: 2回目のクリアでも💎が増える(周回で稼げる)');process.exit(1);}
+  backTitle();
+  if(LANES){console.log('FAIL: ボーナス面を出てもレーンが残っている');process.exit(1);}
+ }
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;
+ console.log('🚌ボーナス面: ステージ'+STAGES.length+'面ぶん(四方4本・長さ揃い/兵科と英雄なし/バスで轢ける/遊べば次が開く/報酬は初回だけ/中断できない) OK');
+}
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
    見るのは4つ: ①型が21人ぶん全部あって、体も得物も動く値が入っているか
    ②進みの曲線が「0から始まり・戻らず・.82で完成し・そこから先は止まる(タメ)」か
@@ -2713,6 +2778,7 @@ checkTeam();
 checkGacha();
 checkHero();
 checkUltMot();
+checkBonus();
 checkTrain();
 checkRpg();
 checkProgress();
