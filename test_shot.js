@@ -407,7 +407,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'function put(px,py,mag,tt,dr,k){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
      +'c.lineWidth=3;c.strokeStyle=INK;'
      /* ⚠ヴァルキリーの斬りも同じ枠で撮る(vsw)。vcb=連撃の何発目か */
-     +'var oo=SWSEQ?{bsw:SWSEQ[k%SWSEQ.length],vsw:SWSEQ[k%SWSEQ.length],vcb:k%3}:OCHG;'
+     /* ⚠汎用の振り(bSwing)は sw と chg が別物なので**専用の並び**で撮る。
+        ⚠bSwing は sw>0 の間 chg を見ない=振りかぶりのコマは sw=0 にすること */
+     +'var SW2=[[0,.55],[0,1],[.001,0],[.18,0],[.36,0]];'
+     +'var oo=SWSEQ?{bsw:SWSEQ[k%5],vsw:SWSEQ[k%5],sw:SW2[k%5][0],chg:SW2[k%5][1],ct:1,vcb:k%3}:OCHG;'
      +'try{if(KD==="z")drawZombie(c,idx,0,0,dr,tt,0,{});else drawUnit(c,idx,0,0,dr,tt,0,oo);}catch(e){}'
      +'c.restore();}'
      +'var c=null,W2=0,H2=0;'

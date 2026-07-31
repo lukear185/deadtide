@@ -2565,7 +2565,11 @@ const U_MOT={
  hFire:['heat',.3],hHunt:['snipe',.5],hSf:['snipe',.8],hBomb:['toss',.4],
  hMed:['cast',.3],hSeer:['cast',.8],hVenom:['cast',.7],hMag:['mag',.7],
  hGiant:['now',.6],hStorm:['bolt',.8],hReact:['heat',.9],
- hNox:['snipe',1.2],hDawn:['cast',1],hDark:['now',.36],hGeo:['snipe',1.3],hPyro:['cast',.9]
+ /* ⚠⚠終焉の騎士は**近接の大鎌**(ty:'melee' / rng:48)なのに型が 'snipe' だった(2026-08-01に直した)。
+    'snipe' は「構える→照準線が伸びる→一拍止まって撃つ」型なので、鎌に照準線が伸び、
+    上体も前かがみ(CHG_LEAN.snipe=+.13)になっていた。正しくは振りかぶる 'slash'(-.30)。
+    ⚠**秒数(1.2)は動かしていない**=遊びの数値は据え置き。 */
+ hNox:['slash',1.2],hDawn:['cast',1],hDark:['now',.36],hGeo:['snipe',1.3],hPyro:['cast',.9]
 };
 const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
 const uMotK=ui=>uMot(ui)[0];
@@ -9854,14 +9858,14 @@ HBODY.hMech=(c,U,walk,t,ph,o)=>{
  hTop(c,t,ph,.04);
  c.fillStyle=GOLD2;rr(c,-18,-33.4,11,14.4,2.6);c.fill();c.stroke();/* 工具袋 */
  c.fillStyle='#5c5346';c.fillRect(-16.2,-30,7.4,2.4);
- const g1=bHold(c,rc,4.6,-34.6,-.38,-1,0);
+ const g1=bSwing(c,o,4.6,-34.6,-.38,.85,-1,0);
  bArm(c,-4.6,-34.8, 4,-31.6, 12,-29, 5,4.1, shade(C2,.72),shade(SK,.74));
  g1();
  bTorso(c,C2,[9.8,7.2,HSK.y0,HSK.y1]);
  c.fillStyle=PAPER2;c.fillRect(-7.8,-34.6,15.6,2.4);c.fillRect(-7.8,-29,15.6,2.4);/* 反射帯 */
  c.fillStyle=shade(C1,1.1);c.fillRect(-.9,-37.4,2.2,13.4);/* つなぎの前合わせ */
  c.fillStyle=UW.blt;c.fillRect(-7.6,-25.2,15.2,2.8);c.strokeRect(-7.6,-25.2,15.2,2.8);
- {const g2=bHold(c,rc,4.6,-34.6,-.38,-1,0);
+ {const g2=bSwing(c,o,4.6,-34.6,-.38,.85,-1,0);
   c.fillStyle='#a8adb5';c.save();c.translate(9,-32);c.rotate(-.48);/* レンチ */
   rr(c,-2.4,-17.4,6,26,2.4);c.fill();c.stroke();
   c.beginPath();c.arc(.6,-18.4,5.4,0,7);c.fill();c.stroke();
@@ -9879,14 +9883,14 @@ HBODY.hPost=(c,U,walk,t,ph,o)=>{
  hTop(c,t,ph,.14);/* ⚠前傾=速そうに見える */
  c.fillStyle=C1;/* 短いマント(⚠歩きに合わせて後ろへなびく) */
  c.beginPath();c.moveTo(-5,-38.4);c.lineTo(-16-walk*1.6,-26+walk*2.4);c.lineTo(-6.4,-20);c.closePath();c.fill();c.stroke();
- const g1=bHold(c,rc,4.4,-34.4,-.42,-.4,-1);
+ const g1=bSwing(c,o,4.4,-34.4,0,.90,-.4,-1);
  bArm(c,-4.4,-34.6, 3.4,-32, 10.4,-29.4, 4.8,3.9, shade(C2,.72),shade(SK,.74));
  g1();
  bTorso(c,C2,[9,6.8,HSK.y0,HSK.y1]);
  c.fillStyle=C1;/* 斜めの肩帯 */
  c.beginPath();c.moveTo(-8,-35.6);c.lineTo(-4.4,-36.8);c.lineTo(7.6,-25.4);c.lineTo(4,-24.2);c.closePath();c.fill();
  c.fillStyle=UW.blt;c.fillRect(-7.4,-25.4,14.8,2.6);c.strokeRect(-7.4,-25.4,14.8,2.6);
- {const g2=bHold(c,rc,4.4,-34.4,-.42,-.4,-1);
+ {const g2=bSwing(c,o,4.4,-34.4,0,.90,-.4,-1);
   c.fillStyle=GOLD2;rr(c,7,-33.4,16,14,3);c.fill();c.stroke();/* 郵便鞄 */
   c.fillStyle='#8a6a45';c.fillRect(10.4,-33.4,3.4,14);
   c.fillStyle=PAPER;c.fillRect(12.6,-36.4,7.4,4.4);c.strokeRect(12.6,-36.4,7.4,4.4);/* はみ出た手紙 */
@@ -9955,7 +9959,7 @@ HBODY.hBomb=(c,U,walk,t,ph,o)=>{
  hTop(c,t,ph,.05);
  for(let i=0;i<3;i++){c.fillStyle=RUST;/* ダイナマイト(⚠高さを不揃いに) */
   rr(c,-19.4+i*4.4,-37.4+i*1.8,4.6,14,1.8);c.fill();c.stroke();}
- const g1=bHold(c,rc,4.6,-34.6,-.44,-.6,1);
+ const g1=bSwing(c,o,4.6,-34.6,-.44,.95,-.6,1);
  bArm(c,-4.6,-34.8, 3.4,-32, 10,-28.4, 5,4.1, shade(C2,.72),shade(SK,.74));
  g1();
  bTorso(c,C2,[10,7.4,HSK.y0,HSK.y1]);
@@ -9963,7 +9967,7 @@ HBODY.hBomb=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(-7.6,-36.8);c.lineTo(7.8,-36.4);c.lineTo(7.2,-29.4);c.lineTo(-7.2,-29.8);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(C1,.7);c.fillRect(-7.4,-28.4,15,2.2);
  c.fillStyle=UW.blt;c.fillRect(-7.6,-25.2,15.2,2.8);c.strokeRect(-7.6,-25.2,15.2,2.8);
- {const g2=bHold(c,rc,4.6,-34.6,-.44,-.6,1);
+ {const g2=bSwing(c,o,4.6,-34.6,-.44,.95,-.6,1);
   c.fillStyle='#3a3128';c.beginPath();c.arc(16,-31.4,8.4,0,7);c.fill();c.stroke();/* 丸い爆弾 */
   c.fillStyle=shade('#3a3128',1.6);c.beginPath();c.arc(13,-34.4,2.6,0,7);c.fill();
   c.strokeStyle=GOLD2;c.lineWidth=2.2;
@@ -10080,7 +10084,7 @@ HBODY.hCmd=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#4c4436';/* 外套(⚠幅を広げすぎない=背中に帆が立つ) */
  c.beginPath();c.moveTo(-7.4,-38.4);c.bezierCurveTo(-13,-31,-15,-20,-14.4,-8+walk*2);
  c.lineTo(-6.4,-11);c.lineTo(-2.6,-12.4);c.bezierCurveTo(-3.4,-24,-3.4,-32,-3.4,-37.4);c.closePath();c.fill();c.stroke();
- const g1=bHold(c,rc,4.6,-34.6,-.42,-1.4,-2);
+ const g1=bSwing(c,o,4.6,-34.6,-.42,1.00,-1.4,-2);
  bArm(c,-4.6,-34.8, 4,-31.6, 12,-29, 5,4.1, shade(C2,.72),shade(SK,.74));
  g1();
  bTorso(c,C2,[9.8,7.2,HSK.y0,HSK.y1]);
@@ -10088,7 +10092,7 @@ HBODY.hCmd=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(C2,1.24);c.fillRect(2.4,-36.4,5.6,4.6);
  c.fillStyle=UW.blt;c.fillRect(-7.6,-25.2,15.2,2.8);c.strokeRect(-7.6,-25.2,15.2,2.8);
  c.fillStyle=GOLD;c.fillRect(-1.8,-25.6,3.6,3.6);
- {const g2=bHold(c,rc,4.6,-34.6,-.42,-1.4,-2);
+ {const g2=bSwing(c,o,4.6,-34.6,-.42,1.00,-1.4,-2);
   c.fillStyle=GOLD2;c.beginPath();c.arc(9,-33.4,3.4,0,7);c.fill();c.stroke();/* 護拳 */
   c.fillStyle='#cfd5da';/* 指揮刀(細く反った刃) */
   c.beginPath();c.moveTo(10,-35.4);c.quadraticCurveTo(24,-46,32,-58);
@@ -10139,7 +10143,7 @@ HBODY.hGiant=(c,U,walk,t,ph,o)=>{
  c.save();c.scale(1.2,1.2);
  hLeg2(c,walk,PA,SHO,3,1.2,1.4);
  hTop(c,t,ph,0);c.translate(0,1.4);
- const g1=bHold(c,rc,5.4,-34.6,-.10,-5,0);
+ const g1=bSwing(c,o,5.4,-34.6,-.10,.46,-5,0);
  bArm(c,-6,-34.8, 1,-32.4, 6.4,-30, 5.6,4.6, shade(C2,.72),shade(C2,.62));
  g1();
  bTorso(c,C2,[12.4,9.2,HSK.y0,HSK.y1]);
@@ -10153,7 +10157,7 @@ HBODY.hGiant=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(2,-41);c.lineTo(15.4,-40.2);c.lineTo(16.6,-32);c.lineTo(1.4,-31.4);c.closePath();c.fill();c.stroke();
  c.fillStyle=UW.blt;c.fillRect(-9.4,-24.4,18.8,3.2);c.strokeRect(-9.4,-24.4,18.8,3.2);
  c.fillStyle=C1;c.fillRect(-2.2,-24.8,4.4,4);
- {const g2=bHold(c,rc,5.4,-34.6,-.10,-5,0);
+ {const g2=bSwing(c,o,5.4,-34.6,-.10,.46,-5,0);
   c.fillStyle=STEEL;c.beginPath();c.arc(19.4,-30.4,10.2,0,7);c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
   c.fillStyle=shade(STEEL,.74);for(const q of[[16.4,-38.4],[22.4,-37.4],[25.4,-32.4]]){
    c.beginPath();c.arc(q[0],q[1],2.6,0,7);c.fill();}/* 拳の指の節 */
@@ -10174,14 +10178,14 @@ HBODY.hStorm=(c,U,walk,t,ph,o,rk)=>{
  hHair(c,'#e8d9a8',walk);
  c.fillStyle='#4a5560';rr(c,-19,-44.4,9.4,24,3);c.fill();c.stroke();/* 放電コイル */
  c.fillStyle=TECH;for(let i=0;i<3;i++){c.beginPath();c.ellipse(-14.3,-40+i*7.4,5.6,2,0,0,7);c.fill();c.stroke();}
- const g1=bHold(c,rc,4.2,-34.2,-.30,-1.6,-7);
+ const g1=bSwing(c,o,4.2,-34.2,-.30,.82,-1.6,-7);
  bArm(c,-4.2,-34.4, 3.4,-31.6, 10.4,-28.4, 4.6,3.8, shade(C2,.72),shade(SK,.74));
  g1();
  bTorso(c,C2,[8.4,6.2,HSK.y0,HSK.y1]);
  hSkirt(c,shade(C2,1.22),walk,8.4,13.4);/* 広がる裾 */
  c.fillStyle=C1;c.fillRect(-1,-37,2.2,16.4);
  c.fillStyle=GOLD2;c.beginPath();c.arc(.2,-33.4,2.4,0,7);c.fill();c.stroke();
- {const g2=bHold(c,rc,4.2,-34.2,-.30,-1.6,-7);
+ {const g2=bSwing(c,o,4.2,-34.2,-.30,.82,-1.6,-7);
   c.fillStyle='#5c4a30';c.save();c.translate(10,-34);c.rotate(.12);/* 雷槍の柄 */
   rr(c,-2.8,-38,5.6,68,2.4);c.fill();c.stroke();c.restore();
   c.fillStyle=FROST;/* 光る穂先(木の葉形) */
@@ -10248,7 +10252,12 @@ HBODY.hNox=(c,U,walk,t,ph,o,rk)=>{
  c.lineTo(6,-6);c.lineTo(7,-38.4);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(RD2,.66);c.beginPath();c.moveTo(-6,-40.4);c.lineTo(-15.4-rk*.6,-16+walk*2.2);
  c.lineTo(-9.4,-8);c.lineTo(-4.4,-38);c.closePath();c.fill();
- const g1=bHold(c,rc,4.8,-34.6,-.34,-2,-1);
+ /* ⭐⭐**大鎌を実際に振る**(2026-08-01ユーザー指示「しっかり鎌を振ってほしい」)。
+    ⚠それまでは `bHold` で**溜めの間 0.34rad 持ち上げるだけ**=振り抜きが無く、
+      撃った瞬間に構えへ戻るので実機では「鎌を担いだまま敵が減る」絵だった。
+    ⭐`bSwing`=振りかぶり(-.34)→**撃った直後に +1.05 まで振り抜く**→硬直の間に構えへ戻る。
+    ⚠奥の腕にも同じ g を掛ける(両手持ちの掟)。 */
+ const g1=bSwing(c,o,4.8,-34.6,-.34,1.05,-2,-1);
  bArm(c,-4.8,-34.8, 3.4,-32.4, 10.4,-29.4, 5.2,4.2, shade(AR,.72),shade(AR,.6));
  g1();
  bTorso(c,AR,[10.4,7.6,HSK.y0,HSK.y1]);
@@ -10272,7 +10281,7 @@ HBODY.hNox=(c,U,walk,t,ph,o,rk)=>{
  c.beginPath();c.moveTo(-5.4,-22.4);c.lineTo(5.6,-22.4);c.lineTo(6.4,-11.4+walk);
  c.lineTo(.6,-7.4);c.lineTo(-5.6,-11-walk);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(RD,.78);c.beginPath();c.moveTo(-5.4,-22.4);c.lineTo(.6,-22.4);c.lineTo(.6,-7.6);c.lineTo(-5.6,-11);c.closePath();c.fill();
- {const g2=bHold(c,rc,4.8,-34.6,-.34,-2,-1);
+ {const g2=bSwing(c,o,4.8,-34.6,-.34,1.05,-2,-1);
   c.fillStyle='#2b2630';c.save();c.translate(9,-38);c.rotate(-.16);/* 大鎌の柄 */
   rr(c,-3.2,-30,6.4,58,2);c.fill();c.stroke();c.restore();
   c.fillStyle=AR3;/* 大きく反った刃 */
@@ -11354,12 +11363,16 @@ UBODY.chain=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(UNI,.68);c.fillRect(-8.4,-27.4,5.6,4);c.fillRect(4,-26.6,4.4,3.4);
  c.fillStyle='#3a3128';c.fillRect(-7.6,-23.8,15.2,2.8);c.strokeRect(-7.6,-23.8,15.2,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.8,-24.2,3.6,3.6);
+ /* ⭐⭐**鎖と鉤爪を実際に撃ち出す**(2026-08-01ユーザー指示「飾りになってるやつはちゃんと機能させて」)。
+    ⚠それまで鎖も鉤爪も `sin(t)` で**攻撃と無関係にゆらいでいるだけ**だった。
+    ⭐撃った瞬間に前へ伸び、硬直の間に引き戻る。⚠鎖は伸びるほど間隔も広げる=巻き取りに見える。 */
+ const chEx=(o&&o.sw>0)?(1-Math.min(1,o.sw/SWG_W)):0;
  /* 鎖(⚠同じ大きさの丸を等間隔に並べると数珠に見える=向きを交互に変えた輪) */
- for(let k=0;k<5;k++){const cx=10+k*5.6,cy=-27+Math.sin(t*8+ph+k*.8)*4;
+ for(let k=0;k<5;k++){const cx=10+k*(5.6+chEx*3.4),cy=-27+Math.sin(t*8+ph+k*.8)*4*(1-chEx*.7);
   c.fillStyle=k%2?IR:shade(IR,.82);c.lineWidth=1.8;
   c.beginPath();c.ellipse(cx,cy,4,3,k%2?.55:-.55,0,7);c.fill();c.stroke();}
  c.lineWidth=2.4;
- {const hx=36,hy=-27+Math.sin(t*6+ph)*3;/* 鉤爪(⚠尖った三角1枚だと矢尻) */
+ {const hx=36+chEx*20,hy=-27+Math.sin(t*6+ph)*3*(1-chEx*.7);/* 鉤爪(⚠尖った三角1枚だと矢尻) */
   c.fillStyle='#cfd5da';
   c.beginPath();c.moveTo(hx-2,hy-3.8);c.lineTo(hx+6.6,hy-5);
   c.quadraticCurveTo(hx+13.4,hy-4.2,hx+12.4,hy+3);
@@ -11426,7 +11439,7 @@ UBODY.mol=(c,U,walk,t,ph,o)=>{
  c.fillStyle=GOLD2;c.fillRect(-1.4,-24.2,3.2,3.4);
  /* ⭐火炎瓶を掲げる(⚠実寸で読めるまで大きく)。
     ⭐**溜め=瓶ごと後ろへ振りかぶる**(2026-08-01)。⚠片手で持つ物なので大きく回してよい */
- const g2=bHold(c,rc,4.2,-31.4,-.16,2.8,-3);
+ const g2=bSwing(c,o,4.2,-31.4,-.16,.80,2.8,-3);
  c.fillStyle=GL;
  c.beginPath();c.moveTo(9.6,-30.4);c.lineTo(9.6,-40.4);c.lineTo(12.4,-44.4);c.lineTo(17.6,-44.4);
  c.lineTo(20.4,-40.4);c.lineTo(20.4,-30.4);c.closePath();c.fill();c.stroke();
@@ -11467,7 +11480,7 @@ UBODY.grn=(c,U,walk,t,ph,o)=>{
  c.fillStyle=GOLD2;c.fillRect(-1.6,-24.2,3.4,3.6);
  /* ⭐手榴弾(⚠格子の溝を入れると一目で分かる。丸のままだと果物)。
     ⭐**溜め=腕ごと肩の後ろへ振りかぶる**(2026-08-01)。⚠片手なので大きく回してよい */
- const g2=bHold(c,rc,4.4,-31.4,-.62,-.8,1);
+ const g2=bSwing(c,o,4.4,-31.4,-.62,1.00,-.8,1);
  c.fillStyle=NA;
  c.beginPath();c.ellipse(16.4,-29.4,6.4,7.4,0,0,7);c.fill();c.stroke();
  c.fillStyle=shade(NA,.60);
@@ -11496,6 +11509,11 @@ UBODY.saw=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(-6.6,-32.4);c.lineTo(8.4,-32);c.lineTo(9.6,-13.4);c.lineTo(-6.4,-13);c.closePath();c.fill();c.stroke();
  c.fillStyle='#a8adb5';for(const k of[-28.4,-22.6,-16.4]){c.beginPath();c.arc(-3.4,k,1.7,0,7);c.fill();}
  c.fillStyle=shade(AP,1.3);c.fillRect(-6.4,-31.6,15.2,2.4);
+ /* ⭐⭐**チェーンソーを振り込む**(2026-08-01ユーザー指示「飾りになってるやつはちゃんと機能させて」)。
+    ⚠それまで刃も歯も完全に固定で、**攻撃中に1ドットも動かなかった**(溜め0なので bHold も効かない)。
+    ⭐溜め0なので振りかぶりは0=**構えから前へ押し込んで戻る**だけにする。
+    ⚠長い得物なので回しすぎない(掟)=0.42rad まで。 */
+ {const gS=bSwing(c,o,5,-31.4,0,.42,0,0);
  /* チェーンソー */
  c.fillStyle='#8a8f96';
  c.beginPath();c.moveTo(13,-31.6);c.lineTo(30,-31);c.lineTo(35.6,-28.2);
@@ -11504,8 +11522,10 @@ UBODY.saw=(c,U,walk,t,ph,o)=>{
  c.beginPath();c.moveTo(15,-29.4);c.lineTo(29.4,-29);c.lineTo(31.4,-28.1);
  c.lineTo(29.4,-27.2);c.lineTo(15,-26.8);c.closePath();c.fill();
  c.fillStyle=INK;
- for(const k of [15.4,19.6,24,28.4])c.fillRect(k,-33.2,2.2,2.6);
- for(const k of [17.4,22.4,27])c.fillRect(k,-24.6,2,2.4);
+ /* ⭐歯は交戦中だけ流れる(⚠常に回すと止まっている時も唸って見える) */
+ {const fl=((o&&(o.sw>0||o.fireT>0))?(t*46)%4.2:0);
+  for(const k of [15.4,19.6,24,28.4])c.fillRect(k+fl,-33.2,2.2,2.6);
+  for(const k of [17.4,22.4,27])c.fillRect(k-fl,-24.6,2,2.4);}
  c.fillStyle=OR;
  c.beginPath();c.moveTo(2.6,-33.8);c.lineTo(14.6,-33.2);c.lineTo(14.6,-22.6);c.lineTo(2.6,-22);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade(OR,1.3);c.fillRect(4.4,-31.6,7.4,2.6);
@@ -11513,7 +11533,7 @@ UBODY.saw=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(OR,.66);
  c.beginPath();c.moveTo(.6,-31.4);c.lineTo(5,-31.4);c.lineTo(5,-24.6);c.lineTo(.6,-24.6);c.closePath();c.fill();c.stroke();
  c.beginPath();c.moveTo(9.6,-33.6);c.lineTo(21.4,-37.4);c.lineTo(23,-34.4);c.lineTo(12.4,-31);c.closePath();c.fill();c.stroke();
- bArm(c,5,-31.4, 10.6,-33.4, 16.4,-35.4, 5.2,4.2, SK,shade(SK,.92));
+ bArm(c,5,-31.4, 10.6,-33.4, 16.4,-35.4, 5.2,4.2, SK,shade(SK,.92));gS();}
  bNeck(c,1.6,-39.6,-34.4,SK);
  bFace(c,1.6,-43.6,5.9,6.3,SK,1);
  c.fillStyle='#3f4a54';/* 防塵マスク(⚠あご側) */
@@ -11706,7 +11726,7 @@ UBODY.pike=(c,U,walk,t,ph,o)=>{
  bLeg(c,-1.6-sw,.8,PA,SHO,-19.6,.96);bLeg(c,1.6+sw,1,PA,SHO,-19.6,.96);
  c.save();c.translate(1,-20);c.rotate(Math.sin(t*10+ph+1.15)*.04+uChgUp(o));c.translate(-1,20);
  /* ⭐溜め=**槍を後ろへ引き絞る**(突きの溜め)。⚠回さず引く=角度を付けると「刺す兵」に見えなくなる */
- const g1=bHold(c,rc,4.2,-32.4,-.05,-5.6,0);
+ const g1=bSwing(c,o,4.2,-32.4,-.05,.06,-7.4,0);
  bArm(c,-4,-32.6, 3,-30.4, 9,-28.4, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
  g1();
  bTorso(c,UNI,[8.6,6.6,-36.6,-21.6]);
@@ -11716,7 +11736,7 @@ UBODY.pike=(c,U,walk,t,ph,o)=>{
  c.fillStyle=shade(UNI,.74);c.fillRect(-.4,-34.4,2.6,20);
  c.fillStyle='#3a3128';c.fillRect(-6.6,-24,13.2,2.6);c.strokeRect(-6.6,-24,13.2,2.6);
  /* 長槍(⚠ほぼ水平に前へ。斜め上だと『刺す兵』に見えない) */
- const g2=bHold(c,rc,4.2,-32.4,-.05,-5.6,0);
+ const g2=bSwing(c,o,4.2,-32.4,-.05,.06,-7.4,0);
  c.fillStyle='#8a6a45';
  c.beginPath();c.moveTo(-10,-27.6);c.lineTo(-10,-31.6);c.lineTo(34,-33.4);c.lineTo(34,-29.4);c.closePath();c.fill();c.stroke();
  c.fillStyle='#5c4326';
@@ -11801,7 +11821,10 @@ UBODY.gld=(c,U,walk,t,ph,o)=>{
  rr(c,-5.4,-50.4,15,15.4,4);c.fill();c.stroke();
  c.fillStyle=INK;c.fillRect(-2.6,-44.4,12.4,3.2);
  c.fillStyle=shade(ST,1.2);c.beginPath();c.moveTo(.6,-50.4);c.lineTo(3,-55.4);c.lineTo(5.4,-50.4);c.closePath();c.fill();c.stroke();
- /* ⭐鋼鉄の大盾(いちばん手前)。⚠顔と脚が出る大きさに留める */
+ /* ⭐鋼鉄の大盾(いちばん手前)。⚠顔と脚が出る大きさに留める。
+    ⭐⭐**盾で殴る**(2026-08-01)=それまで盾は完全に固定で、殴っているのに絵が無反応だった。
+    ⚠長くて大きい物なので回さない=**前へ突き出して戻る**だけ(掟)。溜め0なので振りかぶりも0。 */
+ {const gS=bSwing(c,o,4.6,-31.4,0,.14,-3.4,0);
  c.fillStyle=ST;
  c.beginPath();c.moveTo(10,-41.6);c.lineTo(24.4,-38.4);c.lineTo(24.4,-12.6);c.lineTo(10,-9.6);c.closePath();
  c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
@@ -11809,6 +11832,7 @@ UBODY.gld=(c,U,walk,t,ph,o)=>{
  c.fillStyle=GOLD;c.beginPath();c.ellipse(17.2,-25.4,4.6,5,0,0,7);c.fill();c.stroke();
  c.fillStyle=shade(GOLD,.7);c.beginPath();c.ellipse(17.2,-25.4,1.8,2,0,0,7);c.fill();
  c.fillStyle='#5c6068';for(const k of[[12.4,-32.6],[22,-29.4],[13,-19.4]]){c.beginPath();c.arc(k[0],k[1],1.6,0,7);c.fill();}
+ gS();}
  c.restore();
 };
 /* ---- 電磁兵「雷撃が3体を貫く」= 背中のバッテリー・胸の発光パネル・アンテナ・電磁銃 ---- */
@@ -11820,7 +11844,7 @@ UBODY.elec=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#3f4a54';rr(c,-17.4,-34,10.4,16,3);c.fill();c.stroke();/* バッテリー */
  c.fillStyle=TECH;c.fillRect(-15.8,-30.4,7.4,2.4);c.fillRect(-15.8,-25.4,7.4,2.4);
  /* ⭐溜め=**電磁銃を天へ掲げる**(落雷の型)。⚠両手持ちなので奥の腕も一緒に回す */
- const g1=bHold(c,rc,4.4,-31.4,-.86,-1.6,.6);
+ const g1=bSwing(c,o,4.4,-31.4,-.86,.55,-1.6,.6);
  bArm(c,-4.4,-31.6, 6,-28.4, 19,-24.6, 4.6,3.8, shade(UNI,.72),shade(SK,.74));
  g1();
  bTorso(c,UNI,[9.4,7,-35.4,-21]);
@@ -11831,7 +11855,7 @@ UBODY.elec=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#3a3128';c.fillRect(-7.2,-23.8,14.4,2.8);c.strokeRect(-7.2,-23.8,14.4,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.6,-24.2,3.4,3.6);
  /* 電磁銃(本体+加速コイル3輪+放電) */
- const g2=bHold(c,rc,4.4,-31.4,-.86,-1.6,.6);
+ const g2=bSwing(c,o,4.4,-31.4,-.86,.55,-1.6,.6);
  c.fillStyle='#3f4a54';
  c.beginPath();c.moveTo(3,-31.6);c.lineTo(15,-31.6);c.lineTo(15,-23.6);c.lineTo(3,-23.6);c.closePath();c.fill();c.stroke();
  c.fillStyle=shade('#3f4a54',.76);
@@ -11939,7 +11963,7 @@ UBODY.ninja=(c,U,walk,t,ph,o)=>{
  c.fillStyle=RUST;c.fillRect(-7.4,-24.4,15.2,2.6);c.strokeRect(-7.4,-24.4,15.2,2.6);/* 赤い帯 */
  /* 刀(⚠線1本だと黒フチに食われる=厚みのある刀身)。
     ⭐**溜め=刀を引いて上段に構える**(2026-08-01)。⚠片手なので大きめに回してよい */
- const g2=bHold(c,rc,4,-31,-.62,-2.2,.6);
+ const g2=bSwing(c,o,4,-31,-.62,1.10,-2.2,.6);
  c.fillStyle='#2c333a';
  c.beginPath();c.moveTo(3,-25.4);c.lineTo(2,-29.8);c.lineTo(9.4,-32);c.lineTo(10.4,-27.6);c.closePath();c.fill();c.stroke();
  c.fillStyle=GOLD2;c.fillRect(8.6,-32.8,2.8,6);c.strokeRect(8.6,-32.8,2.8,6);
@@ -11971,7 +11995,7 @@ UBODY.gren2=(c,U,walk,t,ph,o)=>{
  c.fillStyle='#3a3128';c.fillRect(-8,-23.6,16,2.8);c.strokeRect(-8,-23.6,16,2.8);
  c.fillStyle=GOLD2;c.fillRect(-1.8,-24,3.6,3.6);
  /* ⭐**溜め=束ねた爆薬ごと後ろへ振りかぶる**(2026-08-01) */
- const g2=bHold(c,rc,5,-31.4,-.58,-.6,1);
+ const g2=bSwing(c,o,5,-31.4,-.58,1.00,-.6,1);
  for(const k of [[16.4,-30.6,5],[21.6,-34,4.2],[17.6,-37,3.4]]){/* 束ねた爆薬 */
   c.fillStyle=DY;c.beginPath();c.arc(k[0],k[1],k[2],0,7);c.fill();c.stroke();}
  c.fillStyle=shade(DY,.66);c.fillRect(13.6,-33.6,10,2.8);
@@ -12134,7 +12158,7 @@ UBODY.titan=(c,U,walk,t,ph,o,vt)=>{
  c.fillStyle=INK;c.fillRect(-3.4,-45.6,12.4,2.8);c.fillRect(2.6,-49.6,3,4.4);
  c.fillStyle=BR2;c.fillRect(-5.4,-41.6,15,1.8);
  /* ⭐巨大な鉄拳(盾は捨てた)。溜め=拳を引きつけて構える */
- {const g2=bHold(c,rc,6,-31.4,-.10,-3.6,-1.4);
+ {const g2=bSwing(c,o,6,-31.4,-.10,.40,-3.6,-1.4);
   c.fillStyle=shade(C0,.94);/* 前腕 */
   c.beginPath();c.moveTo(6,-33.4);c.lineTo(15,-34.4);c.lineTo(16.4,-24);c.lineTo(6.4,-23.4);c.closePath();c.fill();c.stroke();
   c.fillStyle=IR;rr(c,14,-35.6,14.4,15.4,3.4);c.fill();c.lineWidth=2.8;c.stroke();c.lineWidth=2.4;
@@ -12162,6 +12186,54 @@ function uValkP(u){
  else return 0;
  if(!u.eng&&!(u.fired&&p<.34))return 0;
  return Math.max(p,.001);
+}
+/* ⭐⭐**得物を実際に振る**(2026-08-01ユーザー指示「終焉の騎士の攻撃でしっかり鎌を振ってほしい。
+     ほかのキャラやヒーローもこういう武器があるのに振ってなかったり飾りになってるやつはちゃんと機能させて」)。
+   ⚠それまで武器を動かす道具は `bHold` だけで、これは**溜めている間しか動かない**=
+     ①溜め0の兵科は**一度も武器が動かない** ②溜めがあるキャラも「振りかぶったまま撃って、
+     次の瞬間ぱっと構えへ戻る」だけで**振り抜きが無い**(=飾りに見える正体)。
+   ⭐`uSwP(u)` が硬直(u.cd)から**振り抜きの進行度**を出し、`bSwing` が
+     振りかぶり(溜め)と振り抜きを1つの回転にまとめる。バット/ヴァルキリーの作りの一般化。
+   ⚠⚠**振っている間は焼いたコマ(bakeU)が使えない**=drawUnits の条件に sw を足してある。
+     だから**振りの窓は硬直の前半 SWG_W だけ**にし、表 `U_SWG` に載せた id しか対象にしない
+     (全員を直描きにすると「1か所に固めると重い」が再発する)。
+   ⚠交戦していない時は振らない(バットと同じ掟)=出した直後・敵がいない時に振らせない。 */
+const SWG_W=.45;
+/* ⭐**振りを持つ id の表**。⚠ここに載せた id だけが「振っている間だけ直描き」になる
+   (全員を直描きにすると『1か所に固めると重い』が再発する)。`U.base||U.id` で引くので進化系も一括。
+   ⚠**銃は入れない**=銃は振る物ではない(反動と銃口の閃光で足りている)。 */
+const U_SWG=new Set([
+ /* 兵科(近接・投擲) */
+ 'axe','saw','chain','pike','ninja','gld','mol','grn','gren2','elec','titan',
+ /* 英雄(近接・投擲) */
+ 'hNox','hCmd','hStorm','hGiant','hMech','hBomb','hPost']);
+function uSwP(u){
+ const U=UNITS[u.ui];if(!U||!(U.rate>0)||!(u.cd>0))return 0;
+ if(!U_SWG.has(U.base||U.id))return 0;
+ const p=clamp(1-u.cd/U.rate,0,1);
+ if(p>=SWG_W)return 0;/* 振り抜きが終わったら焼いたコマへ戻す(重さ対策) */
+ if(!u.eng&&!(u.fired&&p<.34))return 0;
+ return Math.max(p,.001);
+}
+/* 使い方: const g=bSwing(c,o,肩x,肩y,振りかぶりの角度,振り抜きの角度,ずれx,ずれy);
+     …装備と手前の腕を描く…; g();
+   ⚠**画面のyは下が正**=負が振り上げ / 正が振り下ろし。
+   ⚠腕と装備は一体で肩を軸に回すこと(bHold と同じ掟)=手だけ動かすと武器が手から離れる。 */
+const SWG_S=.16;/* 振り出しに使う割合。⚠0にすると1フレームで反対側へ飛んで「瞬間移動」に見える */
+function bSwing(c,o,px,py,up,dn,dx,dy){
+ const rc=bRc(o),sw=clamp((o&&o.sw)||0,0,1);
+ let a=0,ox=0,oy=0;
+ if(sw>0){
+  /* ⚠**振りかぶりの角度から振り抜きの角度へ「通す」**=いきなり振り抜きの姿から始めると
+     1フレームで得物が反対側へ飛ぶ。溜め0の兵科は up に0を渡すこと(構えから振り出す) */
+  if(sw<SWG_S){const k=sw/SWG_S,e=k*k*(3-2*k);
+   a=(up||0)+((dn||0)-(up||0))*e;ox=(dx||0)*(1-e);oy=(dy||0)*(1-e);}
+  else{const q=1-Math.min(1,(sw-SWG_S)/(SWG_W-SWG_S));a=(dn||0)*q;ox=(dx||0)*-.5*q;oy=(dy||0)*-.5*q;}
+ }
+ else if(rc>0){a=(up||0)*rc;ox=(dx||0)*rc;oy=(dy||0)*rc;}
+ if(!a&&!ox&&!oy)return B_NOP;
+ c.save();c.translate(px+ox,py+oy);if(a)c.rotate(a);c.translate(-px,-py);
+ return ()=>c.restore();
 }
 function uBatP(u){
  const U=UNITS[u.ui];if(!U||(U.base||U.id)!=='bat'||!(u.cd>0)||!(U.rate>0))return 0;
@@ -12194,7 +12266,11 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(tier===4){c.fillStyle='rgba(232,163,61,'+(.16+.09*Math.sin(t*6))+')';c.beginPath();c.ellipse(0,2,30,11,0,0,7);c.fill();}
  c.scale(dr*tsc,tsc);
  /* ⭐反動を大きく取る(撃った瞬間だけ後ろへ蹴る)。溜め中はわずかに後ろへ体重を乗せる */
- if(o.fireT>0)c.translate(-(2+7*clamp(o.fireT/.14,0,1)),0);
+ /* ⚠⚠**振っている間は反動を掛けない**(2026-08-01)=殴った瞬間に体が後ろへ9px下がるので、
+    「振り抜いているのに退がる」相反した絵になる。振りの時は逆に**前へ踏み込ませる**。
+    ⚠バットは 12428 で自前に打ち消している(この枝は通らない=bsw は o.sw ではない)。 */
+ if(o.sw>0)c.translate(4.4*(1-Math.min(1,o.sw/SWG_W)),0);
+ else if(o.fireT>0)c.translate(-(2+7*clamp(o.fireT/.14,0,1)),0);
  else if(o.chg>0)c.translate(1.6*o.chg,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
  /* ⭐英雄の光は**レア度の色**にする(第91弾)。全員が同じ琥珀色だと、せっかく11人ぶん
@@ -12674,6 +12750,11 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle='#4a3a26';c.fillRect(-8.4,-23.6,16.8,2.8);c.strokeRect(-8.4,-23.6,16.8,2.8);
   c.fillStyle=GOLD2;c.fillRect(-2,-24,4.4,3.6);
   /* --- ⭐⭐大斧。**柄を体の外へ長く斜めに出す**のが要(これが無いと斧に見えない) --- */
+  /* ⭐⭐**斧を実際に振り出す**(2026-08-01ユーザー指示)。⚠それまで斧は `walk` で微かに揺れるだけで、
+     溜めで動くのは上体(uChgUp)だけ=**得物そのものは一度も動いていなかった**。
+     ⚠この兵科は投擲の型(U_MOT axe:['toss'])なので、振りかぶって**前へ投げ出す**動きにする。
+     ⚠奥の腕は胴より先に描いてあるので、ここでは斧と手前の腕だけを一体で回す。 */
+  const axS=bSwing(c,o,4.6,-33,-.44,1.00,-1.6,.6);
   c.save();c.translate(2,-33);c.rotate(.62+walk*.05);
   c.fillStyle='#9c7a4a';/* 柄 */
   c.beginPath();c.moveTo(-6,2.8);c.lineTo(-6,-2.4);c.lineTo(23,-2.8);c.lineTo(23,2.4);c.closePath();c.fill();c.stroke();
@@ -12702,6 +12783,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.beginPath();c.moveTo(9,-32.4);c.lineTo(15.6,-29.2);c.lineTo(13.6,-24.6);c.lineTo(7.8,-27.6);c.closePath();c.fill();c.stroke();
   c.fillStyle=shade(SK,.92);/* 手(角のある塊。⚠前腕にしっかり重ねる) */
   c.beginPath();c.moveTo(12.2,-28.6);c.lineTo(17.4,-26.4);c.lineTo(15.8,-22.6);c.lineTo(11,-25);c.closePath();c.fill();c.stroke();
+  axS();
   /* --- 首 → 頭(⚠首は胴より先に描く) --- */
   c.fillStyle=shade(SK,.72);
   c.beginPath();c.moveTo(-1.4,-40.4);c.lineTo(5.2,-40.4);c.lineTo(4.6,-35.4);c.lineTo(-1,-35.4);c.closePath();c.fill();c.stroke();
@@ -14534,7 +14616,11 @@ function heroUlt(C,wave){
    u.ulW=0;u.ulT=Math.max(u.ulT||0,.86);
    const mx=u.px+d5g*30*CH_UP,my=u.py-27*CH_UP;
    u.fireT=.3;
-   const ls=C.zombies.filter(z=>!z.dead&&z.d>=0&&(u.d-z.d)>=-20);
+   /* ⚠⚠**射程で切る**(2026-08-01の総点検で見つけた不具合)=前は「前方に居る敵ぜんぶ」で
+      **盤面の端まで全員に当たっていた**。狙撃銃の一条なので射程(520)の中だけにする。
+      ⚠**貫通の上限も置く**=並びごと撃ち抜く技だが、無制限だと必殺技1発で波が消える。 */
+   const ls=C.zombies.filter(z=>!z.dead&&z.d>=0&&(u.d-z.d)>=-20&&(u.d-z.d)<=U.rng)
+    .sort((a,b)=>b.d-a.d).slice(0,6);
    let far=null;for(const z of ls){if(!far||z.d<far.d)far=z;}
    for(const z of ls){dmgZ(C,z,z.hp*(z.boss?.14:.34)+1900*W,1);
     addFx(C,"spark",z.px,z.py-18*CH_UP,"",{sd:rnd(0,9),col:"#e4ffb0"});}
@@ -14712,7 +14798,13 @@ function campStep(C,dt,wave){
   /* 部隊レベル補正込み攻撃力。⚠**暁の号令**(uOv)はここと dmgU の2か所だけで効かせる */
   /* ⚠**溜めたぶんを1発に戻す**(uChgM)=実効DPSは溜めを入れる前とぴったり同じ。
      ⚠ここを飛ばすと「格好よくなったが弱くなった」で終わる(設計の4番目) */
-  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?2:1)*uChgM(u.ui));
+  /* ⚠⚠**回復役に溜めの倍率を掛けない**(2026-08-01の総点検で見つけた不具合)。
+     `uChgM` は「溜めたぶん1発を重くして実効DPSを保つ」ための倍率だが、
+     **回復の枝(下)は `u.chg` を一度も見ずに `u.cd` だけで発動する**ので、
+     溜めを払わないまま倍率だけ受け取っていた=医療兵 71→86(+21%)・工兵 54→66(+22%)。
+     ⚠`test_balance.js` は atk/rate で測るのでこの狂いを捕まえられない。 */
+  const chgM9=(U.type==='heal')?1:uChgM(u.ui);
+  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?2:1)*chgM9);
   let tg=null,best=-1;
   if(U.type==='heal'){
    if(u.cd<=0){let ta=null,br2=1;
@@ -16014,7 +16106,8 @@ function renderCamp(C,t){
    c.restore();}
   const bsw9=uBatP(u);/* ⭐バットは振っている最中だけ直に描く(焼いたコマでは振れない) */
   const vsw9=uValkP(u);/* ⭐ヴァルキリーも同じ(剣を振っている間は焼いたコマを使えない) */
-  if(!(u.hitT>0||u.fireT>0||chg9>0||ul9>0||bsw9>0||vsw9>0))
+  const sw9=uSwP(u);/* ⭐得物を振る兵科・英雄(表 U_SWG)。⚠同じ理由で直描きになる */
+  if(!(u.hitT>0||u.fireT>0||chg9>0||ul9>0||bsw9>0||vsw9>0||sw9>0))
    /* ⭐止まっている間は歩行の1コマ目で固定(2026-08-01)=その場で足踏みして見えるのを止める。
       ⚠⚠**ただし完全には止めない**(2026-08-01ユーザー指示「完全硬直だと味気ない」)=
         焼いたコマのまま**呼吸の上下**と**わずかな傾き**を掛ける。⚠脚は動かさない(足踏みに戻るため)。
@@ -16026,7 +16119,7 @@ function renderCamp(C,t){
   else{
    if(ul9>0){c.save();c.translate(u.px,u.py);c.scale(1+.14*ul9,1+.14*ul9);c.translate(-u.px,-u.py);}
    /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
-   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||ul9,bsw:bsw9,vsw:vsw9,vcb:u.cmb||0,mv:u.mv});
+   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv});
    if(ul9>0)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
