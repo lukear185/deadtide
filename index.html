@@ -13826,14 +13826,17 @@ const H_FX={
    addFx(C,'ring',tg.px,tg.py,'',{r:34,col:LIFE});});
    hitFx(C,tg,ang,LIFE,1,U.type);}
   if(C.isMe&&Math.random()<.4)sfx.heal?sfx.heal():sfx.shot();},
- /* 爆破屋: **爆弾を山なりに投げる**。導火線の火花を引きながら飛び、着弾で爆発 */
+ /* 爆破屋: **着弾した爆弾が爆ぜる**。
+    ⚠⚠**ここは「投げる所」ではなく「着弾した瞬間」に呼ばれる**(2026-08-02にユーザー実機で発覚
+      「エフェクトと着弾のタイミングが合ってない。2回爆弾投げてる?」)。
+      飛ばすのは呼び出し側の `tossFly` なので、ここでもう1回 `toss` を積むと
+      **爆弾が2個飛び、爆発だけがさらに0.34秒遅れて**出ていた。⚠投げる絵をここに書き戻さないこと。 */
  hBomb:(C,u,U,tg,mx,my,ang)=>{u.fireT=.16;
-  const ds=dist(mx,my,tg.px,tg.py);
-  addFx(C,'toss',mx,my-6*CH_UP,'',{x2:tg.px,y2:tg.py-10,lf:.34,kind:'bomb',col:'#3a3128',hi:44+ds*.22,sd:rnd(0,9)});
-  if(FXLV>0)later(C,.34,()=>{
+  if(FXLV>0){
    addFx(C,'boomL',tg.px,tg.py-8,'');
    addFx(C,'ring',tg.px,tg.py,'',{r:(U.aoe||80)*1.05,col:'#ffb347'});
-   addP(C,8,tg.px,tg.py-14*CH_UP,{sp:200,g:360,life:.45,r:2.4,col:'#ffb347'});});
+   addP(C,8,tg.px,tg.py-14*CH_UP,{sp:200,g:360,life:.45,r:2.4,col:'#ffb347'});
+   addP(C,4,tg.px,tg.py-10,{sp:50,up:30,g:-30,life:.9,r:6,col:'#6e6354',typ:'smoke'});}
   C.shake=Math.max(C.shake||0,.16);
   if(C.isMe)sfx.boom?sfx.boom():sfx.shot();},
  /* 闇商人: **硬貨を投げつける**。金貨が回りながら飛び、着弾で金の粒が散る */
@@ -15011,7 +15014,10 @@ function campStep(C,dt,wave){
       const utl7=uFxTier(u),ucl7=uUniq(u.ui)?(U.c||UFX_COL[utl7]):UFX_COL[utl7];
       const d57=(u.dr||-1),mx7=u.px+d57*30*CH_UP,my7=u.py-27*CH_UP;
       const ang7=Math.atan2((ty9-20*CH_UP)-my7,tx9-mx7);
-      const im7=()=>{hit9();H_FX[U.id](C,u,U,tg,mx7,my7,ang7,ucl7,utl7,d57,pierce);};
+      /* ⚠**投げた物が飛んでいる間に敵が動くので、爆発は「投げた瞬間の狙い先」で出す**
+         (2026-08-02。当たり判定 hit9 も同じ点で見ているので、これを合わせないと
+          爆風の絵だけ敵について行って「当たっていない所で爆発する」ように見える)。 */
+      const im7=()=>{hit9();H_FX[U.id](C,u,U,f7>0?{px:tx9,py:ty9,dead:0,mhp:tg.mhp,hp:tg.hp}:tg,mx7,my7,ang7,ucl7,utl7,d57,pierce);};
       const f7=(uMotK(u.ui)==='toss')?tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c'):0;
       if(f7>0)later(C,f7,im7);else im7();
      }
@@ -17323,7 +17329,8 @@ const rbRate=()=>DEV?.5:RB_RATE;
    ⚠5発要るので**虹より少し遅く歩かせる**=倒し切る前に逃げられると、0.1%が台無しになる。 */
 /* ⚠🛠DEV(`?dev=1`)では**50%**で出す(2026-07-28ユーザー指示)=0.1%では実機で見て確かめられないため。
    ⚠普通に遊ぶ側の確率は 0.1% のまま。 */
-const LB_RATE=.0005,LB_GEM=30,LB_HP=5,LB_ZI=ZOMBIES.findIndex(z=>z.id==='sLob');
+/* ⚠💎の数は2026-08-02にユーザー指示で ロブ30→**50** / バス100→**250** にした */
+const LB_RATE=.0005,LB_GEM=50,LB_HP=5,LB_ZI=ZOMBIES.findIndex(z=>z.id==='sLob');
 const lbRate=()=>DEV?.5:LB_RATE;
 /* ⭐⭐**0.001%で🚌ゾンビバス(バスくん)**(2026-08-01ユーザー決定=案①でいく)。一番珍しい=💎100個。
    ⭐**タイトル画面だけに出る巨大ゆるキャラ**。廃バスが脚を生やして のっそり歩き、
@@ -17331,8 +17338,9 @@ const lbRate=()=>DEV?.5:LB_RATE;
    ⚠**ZOMBIES には足さない**(図鑑・波・冒険には出さない)ので、**絵は行進の描画側**に持つ(`drawBusKun`)。
    ⚠**8発当てないと倒せない**=当たっても取り逃がすことがある。だからこそ当たると嬉しい。
    ⚠**背が高いので居る間だけ行進canvasを高くする**(`BUS_TALL`。素の120pxでは上が切れる)。
-   ⚠**🐻🌈虹の熊(屍熊の使い回し)は廃止**=確率0.001%・💎100個・8発 の枠だけそのまま引き継いだ。 */
-const BUS_RATE=.00001,BUS_GEM=100,BUS_HP=8;
+   ⚠**🐻🌈虹の熊(屍熊の使い回し)は廃止**=確率0.001%・8発 の枠だけそのまま引き継いだ
+     (💎は100個で始めて、2026-08-02にユーザー指示で**250個**にした)。 */
+const BUS_RATE=.00001,BUS_GEM=250,BUS_HP=8;
 const busRate=()=>DEV?.5:BUS_RATE;
 function parNew(){
  const mk=(zi,sp,hp,ex)=>Object.assign({zi,x:-60,sp,ph:rnd(0,9),ht:0,hp,kb:0,fl:0},ex);

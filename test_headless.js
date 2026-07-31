@@ -1735,13 +1735,45 @@ function checkHeroFx(){
   (fp[k]||(fp[k]=[])).push(h.n);}
  const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join("="));
  if(dup.length){console.log("FAIL: 攻撃の中身が同じ英雄: "+dup.join(" / "));process.exit(1);}
- console.log("英雄の攻撃: "+HEROES.length+"人すべてが専用の演出 OK");
+ /* ⚠⚠**投擲型(toss)の英雄は H_FX で投げてはいけない**(2026-08-02にユーザー実機で発覚
+    「2回爆弾投げてる?」)=飛ばすのは呼び出し側の tossFly で、H_FX は**着弾の瞬間**に呼ばれる。
+    両方で投げると爆弾が2個飛び、爆発だけがさらに遅れて出る。 */
+ {const bad=HEROES.filter(h=>((U_MOT[h.id]||[])[0]==='toss')&&/'toss'/.test(String(H_FX[h.id]))).map(h=>h.n);
+  if(bad.length){console.log("FAIL: 着弾時に呼ばれる H_FX がもう一度投げている: "+bad.join("/"));process.exit(1);}}
+ /* ⭐**実際に1発撃たせて見る**=静的検査だけだと、呼び出し側で2重に飛ばす作りに戻っても気づけない。
+    見るのは ①飛んだ物が1個だけ ②爆発の絵と当たり判定が同じコマで起きること。 */
+ {META.stg=0;setDiff=2;META.hero={};META.hero.hBomb=1;META.hsel='hBomb';
+  startSolo();frames(20,.016);
+  const me=G.players[0];
+  if(!heroDeploy(me)){console.log('FAIL: 爆破屋が出撃できない');process.exit(1);}
+  const hu=me.units.filter(u=>u.hro)[0];
+  if(!hu){console.log('FAIL: 爆破屋の実体が居ない');process.exit(1);}
+  me.zombies.length=0;me.fx.length=0;
+  const z9=mkZ(zSpec(0,1,20),Math.max(20,hu.d-120));z9.hp=z9.mhp=1e9;z9.sp=0;me.zombies.push(z9);
+  let toss=0,boomK=-1,dmgK=-1;
+  const hp1=z9.hp;
+  for(let k=0;k<90;k++){
+   campStep(me,.02,3);
+   for(const e of me.fx){if(e.chk)continue;e.chk=1;
+    if(e.k==='toss')toss++;
+    else if(e.k==='boomL'&&boomK<0)boomK=k;}
+   if(dmgK<0&&z9.hp<hp1)dmgK=k;}
+  if(toss!==1){console.log('FAIL: 爆破屋が1発で'+toss+'個の爆弾を投げている(1個のはず)');process.exit(1);}
+  if(boomK<0||dmgK<0){console.log('FAIL: 爆破屋の攻撃が出ていない(爆発'+boomK+'/命中'+dmgK+')');process.exit(1);}
+  if(Math.abs(boomK-dmgK)>1){console.log('FAIL: 爆発の絵と着弾がずれている(爆発'+boomK+'コマ目/命中'+dmgK+'コマ目)');process.exit(1);}
+  backTitle();META.hero={};META.hsel='';}
+ console.log("英雄の攻撃: "+HEROES.length+"人すべてが専用の演出 / 投擲型は投げ直さない OK");
 }
 function checkBus(){
  if(ZOMBIES.some(z=>z.id==='bus'||z.id==='zbus')){
   console.log('FAIL: 🚌ゾンビバスが ZOMBIES に入っている(タイトル専用のはず)');process.exit(1);}
- if(BUS_GEM!==100||BUS_HP!==8||Math.abs(BUS_RATE-.00001)>1e-12){
-  console.log('FAIL: 🚌ゾンビバスの枠(0.001%/💎100/8発)が変わっている');process.exit(1);}
+ /* ⚠💎は2026-08-02にユーザー指示で 100→250(ロブスターは30→50)。確率と発数は据え置き */
+ if(BUS_GEM!==250||BUS_HP!==8||Math.abs(BUS_RATE-.00001)>1e-12){
+  console.log('FAIL: 🚌ゾンビバスの枠(0.001%/💎250/8発)が変わっている');process.exit(1);}
+ if(LB_GEM!==50||LB_HP!==5||Math.abs(LB_RATE-.0005)>1e-12){
+  console.log('FAIL: ✨黄金のロブスターの枠(0.05%/💎50/5発)が変わっている');process.exit(1);}
+ /* ⭐**バスはロブスターより明らかに旨い**(珍しさの順=虹<ロブ<バス) */
+ if(!(BUS_GEM>LB_GEM)){console.log('FAIL: 🚌バスの💎が✨ロブスター以下になっている');process.exit(1);}
  const savedScr=SCR,savedPar=PAR.slice(),savedGem=META.gem||0,savedDz=PARDZ.length;
  SCR='title';PAR.length=0;PARDZ.length=0;
  const bus={zi:-1,x:400,sp:0,ph:1,ht:0,hp:BUS_HP,kb:0,fl:0,bus:1};PAR.push(bus);
