@@ -3034,12 +3034,13 @@ const BNS_GAP2=.14;   /* 9体に1回だけ入れる息継ぎ(塊と塊の切れ�
 /* ⚠**230→150に絞った**(2026-08-02(3)ユーザー「四方八方すぎて対応できない」)=
    広げるほど塊にはなるが、**道から溢れて「どこからでも来る」**になり、迎え撃つ場所が決まらない。
    ⭐いまは道幅の外に**導線(壁)**を置いてあるので、この値が**通路の幅**そのものになる。 */
-const BNS_OFF=150;
+const BNS_OFF=200;
+const BNS_LEAD=30;    /* 🚌開拓便だけ設置の猶予を長く(屋上に自分で建てるため) */
 /* ⭐⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。
    道に沿って**3か所で通路が絞れる(関所)**。⚠**壁の絵はこの式から生やす**ので必ず一致する。
    ⭐関所は「バスで待ち構える場所」=群れが勝手に密集するので、そこを轢くのが一番おいしい。 */
 const BNS_GATE=[.28,.55,.80];/* 関所の位置(道に沿った割合) */
-const BNS_GATW=62;           /* 関所での通路の幅(半分) */
+const BNS_GATW=80;           /* 関所での通路の幅(半分) */
 const BNS_GATR=.085;         /* 関所の前後どれだけかけて絞るか */
 function bnsCorrW(u){
  let w=BNS_OFF;
@@ -14108,7 +14109,10 @@ function buildTide(wave){
    for(let k=1;k<sn;k++){const e=pool[k*step];if(e&&!e.boss)e.dl=subGap(wave);}}}
 if(pool.length)pool[0].dl=1.1;
  /* ウェーブ開始からLEAD秒は敵が出ない=タワーを建てる時間(2026-07-25ユーザー指示) */
- T.pool=pool;T.lead=WAVE_LEAD;T.qt=(pool.length?pool[0].dl:0)+WAVE_LEAD;T.total=pool.length;T.up=0;
+ /* ⚠🚌開拓便は**設置の猶予を長く取る**(2026-08-02(5))=屋上に自分で建てる方式に戻したので、
+    5秒では広い町を回って置く時間が無い。⚠**探索フェーズ(未実装)が入ったらここは要らなくなる**。 */
+ const lead9=isBns()?BNS_LEAD:WAVE_LEAD;
+ T.pool=pool;T.lead=lead9;T.qt=(pool.length?pool[0].dl:0)+lead9;T.total=pool.length;T.up=0;
  T.hotLn=null;/* ⚠🚌開拓便の「いま濃く来ている道」。波を作り直したら必ず消す(前の波の赤が残る) */
  /* 📻電波塔: この波の顔ぶれと総数を先に読む(設置猶予の5秒で対策を決められる) */
  try{const me9=G.players[G.myIdx];
@@ -16731,12 +16735,19 @@ function renderCamp(C,t){
  /* スロットとタワー */
  for(let si=0;si<SLOTS.length;si++){const [sx,sy]=SLOTS[si],tw=C.towers[si];
   const eco=isEcoSlot(si),sup=isSupSlot(si),lock=!slotUnlocked(C,si);
-  /* ⭐⭐**🚌開拓便は置き場の枠を1つも描かない**(2026-08-02(4)ユーザー
-     「タレット置き場はいらない / タレットは置き場を選択する方式じゃなくて拠点に自動的に置かれる形」)。
-     ⚠**灰色の四角が拠点の周りに並んでいるのがTDの盤面に見える正体**だった。
-     ⭐据わったタレットだけを描く=プレイヤーは何も置かない(拠点が勝手に増設する)。 */
+  /* ⭐⭐⭐**🚌開拓便の置き場は「建物の屋上」**(2026-08-02(5)ユーザー
+     「建物の屋上が平面であってそこにタレット置き場を作ろう」)。
+     ⚠**灰色の四角は描かない**=それがTDの盤面に見える正体だった。屋上はもう地形として描いてあるので、
+       ここでは**空いている屋上に細い印を置くだけ**。⚠選んだ時だけはっきり光らせる。 */
   if(C.bus){
-   if(!tw)continue;
+   if(!tw){
+    if(SEL===si){c.strokeStyle=AMBER;c.lineWidth=4;rr(c,sx-30,sy-28,60,56,8);c.stroke();c.lineWidth=3;c.strokeStyle=INK;}
+    else{c.save();c.globalAlpha=.5;c.strokeStyle='rgba(242,236,220,.85)';c.lineWidth=2.4;
+     c.setLineDash([7,7]);rr(c,sx-26,sy-24,52,48,7);c.stroke();c.setLineDash([]);
+     c.globalAlpha=.62;c.fillStyle=PANE;c.font='900 26px '+FF;c.textAlign='center';c.fillText('+',sx,sy+9);
+     c.restore();c.lineWidth=3;c.strokeStyle=INK;}
+    continue;
+   }
    c.save();c.translate(sx,sy);c.scale(TW_SC,TW_SC);
    drawTower(c,tw.ti,twPips(tw),0,0,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
    c.restore();
@@ -17876,10 +17887,6 @@ cv.addEventListener('pointerdown',e=>{
  }
  if(AIM){const m=meV();if(m&&m.charge>=1&&my>115){actStrike(mx,my);}setAim(false);return;}
  if(FLAGAIM){if(my>115)actFlag(mx,my);setFlagAim(false);return;}
- /* ⭐🚌開拓便は**建設メニューを開かせない**(2026-08-02(4)ユーザー
-    「タレットは置き場を選択する方式じゃなくて拠点に自動的に置かれる形」)。
-    ⚠枠を描かなくなったので、押せてしまうと**見えない物にメニューが出る**ことになる。 */
- {const m9=meV();if(m9&&m9.bus){closeBM();return;}}
  const hit=slotHit(mx,my);
  if(hit>=0){openBM(hit);return;}
  closeBM();
@@ -18606,10 +18613,6 @@ function startSolo(){
   me.unlocked=metaTowerCap();
   me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
   bnsBusInit(me);
-  /* ⭐**始まった時点で拠点に何基か据わっている**(2026-08-02(4))=
-     自動増設に任せると最初の十数秒が丸腰になり、立ち上がりで陥落する。
-     ⚠置くのは自動増設と同じ道具(`bnsPlaceTower`)=値段も選び方も1か所のまま。 */
-  for(let k=0;k<5;k++)if(!bnsPlaceTower(me))break;
   /* ⚠**寄りすぎると小粒感が出ない**(2026-08-02ユーザー「画面近すぎ。もっと小粒のゾンビに」)=
      1を切ると全景より引いた絵になる。マップが広いのでこれで十分に持ち歩ける。 */
   camOn(me.bus.x,me.bus.y,.26);/* 🎥カメラ追従はこの面の中だけ */
@@ -18643,34 +18646,39 @@ const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 拠点はマップのまんなか */
 /* 廃墟の散らばり(開拓便だけ)。⚠**決め打ちで並べない**=種から散らすと広い面でも密度が保てる。
    参考画像から拾った物=廃車 / タイヤ / ドラム缶 / 木箱 / 瓦礫 / コンクリのバリア / 枯れ木。
    ⚠**表そのものはファイルの上の方で宣言してある**(loadStage が読み込み中に触るため)。 */
-/* 道。⚠**必ず3点以上**(2点だけの道は地形の処理が想定していない)。⚠4本とも長さを揃えること */
-const BNS_LANE=[
- /* ①廃線ハイウェイ=四隅からまっすぐ突っ込んでくる(引きで広い X 字) */
- [[[120,80],[460,240],[800,400]],[[1480,80],[1140,240],[800,400]],
-  [[120,720],[460,560],[800,400]],[[1480,720],[1140,560],[800,400]]],
- /* ②沈んだ港=外周を回ってから4方向へ折れて入ってくる(四角い囲い) */
- [[[140,80],[400,80],[400,400],[800,400]],[[140,720],[400,720],[400,400],[800,400]],
-  [[1460,80],[1200,80],[1200,400],[800,400]],[[1460,720],[1200,720],[1200,400],[800,400]]]
-];
-/* 建設マス=道の隙間に置く([向きの角度,拠点からの距離])。
-   ⚠⚠**道の中心線から95以上離すこと**(道路の半幅49+マスの半分28)。
-     ⭐**斜めの道(X字)では、拠点に近いほど道と道の隙間が狭い**=近い所に置けるのは
-       道と直角に近い向きだけ。①は左右の軸を240から、上下の軸を120から始めている(撮って詰めた)。
-   ⚠②は**左右の軸そのものが道**なので、左右には1つも置かない。 */
-/* ⭐⭐**建設マスは拠点(建物)の上に置く**(2026-08-02ユーザー指示)。
-   ①**壁の角の櫓台**(八角の頂点) ②**司令部の屋上** ③**中庭** ④**壁の外の前庭**。
-   ⚠**道の上と門の前には置かない**=面ごとに道の向きが違うので、決め打ちの表ではなく
-     道からの距離で弾く(`bnsLaneD`)。⚠数は ECO_BASE(22)に満たなければ画面外で埋める。 */
+/* ⭐⭐**通りは「曲がった街路」にする**(2026-08-02(5)ユーザー
+   「今みたいにクロスになってる端から出るんじゃなくて、この画像みたいに森と建物でマップをかなり埋めて、
+     明らかな導線の先からどんどんくる感じ」)。
+   ⚠⚠**四隅から拠点へ一直線のX字**は、地形が薄いと**盤面に描いた線**にしか見えない。
+   ⭐直し方は2つセット=①**街路を折れさせる**(まっすぐ来ない) ②**街路以外を建物と森で埋め尽くす**。
+     ⚠②が無いと①だけでは効かない(「空き地に引いた線」のままなので)。
+   ⚠⚠**4本の長さは必ず同じ**(`z.d>=PLEN` のコア到達判定が全レーン共通のため)=
+     **同じ半径・同じ折れ角で作る**ことで、形を不揃いに見せながら長さは厳密に揃う。
+   ⚠向きは**90度刻みにしない**=等間隔だと折れていてもX字に見える。 */
+const BNS_LR=1700;                        /* 街路の長さ(拠点からの半径。世界座標) */
+const BNS_LA=[-0.30,1.42,2.92,4.52];      /* 入ってくる向き(⚠等間隔にしない) */
+const BNS_LB=0.46;                        /* 折れの深さ(大きいほど大きく曲がる) */
+function bnsLanePts(i){
+ const a=BNS_LA[i%BNS_LA.length],sg=(i%2)?1:-1;
+ const bx=BNS_CX+Math.cos(a+sg*BNS_LB)*BNS_LR*.5,by=BNS_CY+Math.sin(a+sg*BNS_LB)*BNS_LR*.5;
+ return [[BNS_CX+Math.cos(a)*BNS_LR,BNS_CY+Math.sin(a)*BNS_LR],[bx,by],[BNS_CX,BNS_CY]];
+}
+/* ⭐⭐⭐**タレット置き場=「建物の屋上」**(2026-08-02(5)ユーザー
+   「配置もできるようにしよう。建物の屋上が平面であってそこにタレット置き場を作ろう」)。
+   ⚠それまでの2つはどちらも違った=①地面に浮いた灰色の四角(TDの盤面に見える)
+     ②置き場という概念を無くして全自動(**何を置くかまで選べなくなった**)。
+   ⭐正解は**屋根のある建物を街路沿いに建てて、その屋上を枠にする**=
+     置き場は「そこにある物」になり、何を建てるかはいつもどおりプレイヤーが選ぶ。
+   ⚠**枠は屋上の中心**。⚠数は ECO_BASE(22)。足りない時だけ画面外で埋める。
+   ⚠**拠点(司令部)の屋上も枠**にする=一番内側の最後の砦。 */
 function bnsSlots(){
- const out=[],add=(a,r)=>{
-  const x=BNS_CX+Math.cos(a)*r,y=BNS_CY+Math.sin(a)*r;
-  if(bnsLaneD(x,y)<92)return;/* 道の上 */
-  out.push([Math.round(x),Math.round(y)]);};
- for(let i=0;i<8;i++)add(i*.7854,OUT_R);        /* ①壁の角の櫓台 */
- for(let i=0;i<4;i++)add(.7854+i*1.5708,74);    /* ②司令部の屋上 */
- for(let i=0;i<8;i++)add(i*.7854,165);          /* ③中庭 */
- for(let i=0;i<8;i++)add(i*.7854,350);          /* ④前庭 */
- for(let i=0;i<8;i++)add(i*.7854,440);
+ /* 屋上つきの建物(`rf`)を拠点に近い順に。⚠射程の届かない遠くの屋上を先に取らない */
+ const rs=BBLD.filter(b=>b.rf).map(b=>({b,d:dist(b.x,b.y,BNS_CX,BNS_CY)}));
+ rs.sort((p,q)=>p.d-q.d);
+ const out=[];
+ for(let i=0;i<4;i++){const a=.7854+i*1.5708;/* 司令部の屋上4枠 */
+  out.push([Math.round(BNS_CX+Math.cos(a)*74),Math.round(BNS_CY+Math.sin(a)*74)]);}
+ for(const r of rs){if(out.length>=ECO_BASE)break;out.push([Math.round(r.b.x),Math.round(r.b.y)]);}
  return out;
 }
 function loadBonus(si){
@@ -18681,8 +18689,7 @@ function loadBonus(si){
  /* ⚠⚠**道は「拠点からの相対」で置く**=マップの広さで引き伸ばすと、
     マップを広げた時に道が長くなりすぎて敵が何十秒も歩いてこない。
     ⭐**道の長さは拠点まわりの戦いの尺**、マップの広さは**探索の広さ**=別物として持つ。 */
- const K=2;
- const LN=(BNS_LANE[STAGE]||BNS_LANE[0]).map(pts=>pts.map(p=>[BNS_CX+(p[0]-800)*K,BNS_CY+(p[1]-400)*K]));
+ const LN=[0,1,2,3].map(i=>bnsLanePts(i));
  LANES=LN.map(pts=>{const seg=[];let len=0;
   for(let i=0;i<pts.length-1;i++){const l=dist(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);
    seg.push({a:pts[i],b:pts[i+1],l,s:len});len+=l;}
@@ -18696,6 +18703,9 @@ function loadBonus(si){
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
  CORE=[BNS_CX,BNS_CY];
+ /* ⚠⚠**地形を先に作る**(2026-08-02(5))=タレット置き場は**建物の屋上**なので、
+    建物が建っていないと枠の座標が決まらない。順番を入れ替えないこと。 */
+ bnsMap();
  SLOTS=bnsSlots();
  while(SLOTS.length<ECO_BASE)SLOTS.push([-999,-999]);/* ⚠数は ECO_BASE に合わせる(工房と支援枠の番号がずれる) */
  SLOTS.length=ECO_BASE;
@@ -18707,7 +18717,6 @@ function loadBonus(si){
  AI_ORDER=SLOTS.map((s,i)=>i);SLOT_ORDER=AI_ORDER.slice();
  PMAXX=MAPW;
  makeScenery();
- bnsMap();/* 🏚🌲地形(建物と森)。⚠導線もここで作る=通路の縁は「街区の壁面」そのもの */
 }
 /* ============ 🏚🌲 開拓便の地形=「建物と森」(2026-08-02(4)ユーザー指示) ============
    ⭐ユーザー「**TDの時の道路みたいなのとタレット置き場はいらない。しっかり建物とか森で
@@ -18722,7 +18731,8 @@ function loadBonus(si){
 /* ⚠**壁の色を1系統にしない**=灰色だけだと「石を並べただけ」に見える。
    煉瓦・土壁・コンクリ・板張りを混ぜると、同じ形のまま「町の跡」に見える。 */
 const BLD_W=['#8a8072','#9a7256','#a2916f','#6f6a5e','#7d5f4a','#95897a'];/* 壁 */
-const BLD_R=['#5a5142','#6b4f3c','#4f4a3e','#66594a'];                    /* 屋根 */
+/* ⚠**屋上は明るくする**=ここが唯一の置ける場所なので、廃墟(暗い瓦礫)とはっきり分ける */
+const BLD_R=['#a89b84','#b3a68d','#9d9280','#aa9c80'];/* 屋上(平らな面) */
 const BLD_VIS=[],TRE_VIS=[];/* 画面に入っている物の置き場(毎フレーム作り直さない) */
 /* その場所が通路の外か。⚠**道ごとに「その位置での通路の幅」で見る**
    =一番近い道までの距離(`bnsLaneD`)だけでは、関所で細い所と広い所を区別できない。 */
@@ -18738,64 +18748,91 @@ function bnsFreeAt(x,y,r){
  }
  return dist(x,y,BNS_CX,BNS_CY)>OUT_R+150+r;/* 拠点の周りも空けておく */
 }
-/* 建物1つ。⚠**四隅は作る時に焼いておく**=毎フレーム三角関数を回さず、まとめて塗れる */
-function bldPush(x,y,a,L,W,rd){
+/* 建物1つ。⚠**四隅は作る時に焼いておく**=毎フレーム三角関数を回さず、まとめて塗れる。
+   ⭐**2種類ある**: `rf`無し=**廃墟**(壁だけ残った枠。屋根は落ちている)/
+     `rf`有り=**屋根の残った建物**=**その屋上がタレット置き場**。
+   ⚠この見分けが付かないと「どこに置けるのか」が読めない=屋根つきだけ色を明るく・parapet を描く。 */
+function bldPush(x,y,a,L,W,rd,rf){
  const t0=Math.cos(a),t1=Math.sin(a),n0=-t1,n1=t0;
  const qq=(l,w)=>[x+t0*l+n0*w,y+t1*l+n1*w, x+t0*l-n0*w,y+t1*l-n1*w,
                   x-t0*l-n0*w,y-t1*l-n1*w, x-t0*l+n0*w,y-t1*l+n1*w];
- BBLD.push({x:x,y:y,q:qq(L,W),k:qq(L*.6,W*.56),
+ BBLD.push({x:x,y:y,q:qq(L,W),k:qq(L*(rf?.74:.66),W*(rf?.70:.62)),rf:rf?1:0,
   c:(rd()*BLD_W.length)|0,rc:(rd()*BLD_R.length)|0});
 }
+/* ⭐⭐**森と建物でマップを埋め尽くす**(2026-08-02(5)ユーザーの参考画像
+   「森と建物でマップをかなり埋めて、明らかな導線の先からどんどんくる感じ」)。
+   ⚠⚠**密度が足りないと街路が「空き地に引いた線」に見える**=前回はここが薄すぎた。
+     街路の外は**ほぼ隙間なく**埋めること(空いた地面が広く残っていたら密度不足)。
+   ⚠**通路(`bnsCorrW`)の中には何も置かない**(`bnsFreeAt`)。 */
 function bnsMap(){
  BBLD.length=0;BTREE.length=0;BPROP.length=0;
  if(!LANES)return;
  let s9=104729+STAGE*7919;
  const rd=()=>{s9=(s9*1103515245+12345)&0x7fffffff;return s9/0x7fffffff;};
  const rr2=(a,b)=>a+(b-a)*rd();/* ⚠`rnd` は Math.random なので使わない(地形が毎回変わる) */
- /* ① 通路の両脇=**街区の壁面と並木**。これが導線そのもの */
+ /* ① ⭐**街路沿いの「屋根の残った建物」=タレット置き場**。
+    ⚠**拠点に近い側から並べる**=射程の届かない遠くの屋上ばかりになると置く意味が無い。
+    ⚠数は ECO_BASE(22)より多めに作る(bnsSlots が近い順に22取る)。 */
  for(let li=0;li<LANES.length;li++){
   const len=LANES[li].len;
-  for(let d=len*.04;d<len-230;d+=116){
+  for(let d=len-1500;d<len-240;d+=300){
+   if(d<0)continue;
    const u=d/len,w=bnsCorrW(u),p=pathPos(d,li);
-   const gate=w<BNS_OFF*.8;/* 関所のすぐ脇=建物を寄せて「狭まっている」と一目で分かるように */
    for(let sg=-1;sg<=1;sg+=2){
-    if(!gate&&rd()<.30){/* 並木(建物ばかりだと街になりすぎる) */
-     const off=w+64+rr2(0,44);
-     const cx=p[0]-Math.sin(p[2])*off*sg,cy=p[1]+Math.cos(p[2])*off*sg;
-     for(let k=0;k<5;k++){const tx=cx+rr2(-54,54),ty=cy+rr2(-48,48);
-      if(bnsFreeAt(tx,ty,20))BTREE.push({x:tx,y:ty,r:rr2(19,35)});}
-     continue;}
-    const L=gate?54:rr2(64,110),W=gate?36:rr2(30,52);
-    const off=w+W+20;
+    const L=74,W=64,off=w+W+34;
     const bx=p[0]-Math.sin(p[2])*off*sg,by=p[1]+Math.cos(p[2])*off*sg;
     if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
-    bldPush(bx,by,p[2]+(gate?0:rr2(-.16,.16)),L,W,rd);
+    bldPush(bx,by,p[2],L,W,rd,1);
    }
   }
  }
- /* ② 残りの土地=格子で「森 / 街区 / 空き地」を決める */
- const CS=620;
+ /* ② 街路の両脇=**廃墟の壁面と並木**。これが導線そのもの */
+ for(let li=0;li<LANES.length;li++){
+  const len=LANES[li].len;
+  for(let d=len*.03;d<len-230;d+=96){
+   const u=d/len,w=bnsCorrW(u),p=pathPos(d,li);
+   const gate=w<BNS_OFF*.8;/* 関所のすぐ脇=建物を寄せて「狭まっている」と一目で分かるように */
+   for(let sg=-1;sg<=1;sg+=2){
+    if(!gate&&rd()<.34){/* 並木(建物ばかりだと街になりすぎる) */
+     const off=w+62+rr2(0,50);
+     const cx=p[0]-Math.sin(p[2])*off*sg,cy=p[1]+Math.cos(p[2])*off*sg;
+     for(let k=0;k<6;k++){const tx=cx+rr2(-58,58),ty=cy+rr2(-52,52);
+      if(bnsFreeAt(tx,ty,20))BTREE.push({x:tx,y:ty,r:rr2(19,35)});}
+     continue;}
+    const L=gate?58:rr2(64,116),W=gate?38:rr2(30,54);
+    const off=w+W+18;
+    const bx=p[0]-Math.sin(p[2])*off*sg,by=p[1]+Math.cos(p[2])*off*sg;
+    if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
+    bldPush(bx,by,p[2]+(gate?0:rr2(-.16,.16)),L,W,rd,0);
+   }
+  }
+ }
+ /* ③ 残りの土地=**格子で埋め尽くす**。⚠空き地は1割だけ(空けすぎると荒野に戻る) */
+ const CS=430;
  for(let gx=CS*.5;gx<MAPW;gx+=CS)for(let gy=CS*.5;gy<MAPH;gy+=CS){
-  const kind=rd(),jx=gx+rr2(-90,90),jy=gy+rr2(-90,90);
-  if(kind<.46){/* 🌲森 */
-   const n=12+((rd()*15)|0);
+  const kind=rd(),jx=gx+rr2(-70,70),jy=gy+rr2(-70,70);
+  if(kind<.52){/* 🌲森 */
+   const n=16+((rd()*14)|0);
    for(let k=0;k<n;k++){
-    const tx=jx+rr2(-CS*.46,CS*.46),ty=jy+rr2(-CS*.46,CS*.46);
-    if(tx<60||ty<60||tx>MAPW-60||ty>MAPH-60)continue;
-    if(bnsFreeAt(tx,ty,22))BTREE.push({x:tx,y:ty,r:rr2(19,38)});}
-  }else if(kind<.84){/* 🏚街区(向きを揃えると「区画」に見える) */
+    const tx=jx+rr2(-CS*.52,CS*.52),ty=jy+rr2(-CS*.52,CS*.52);
+    if(tx<50||ty<50||tx>MAPW-50||ty>MAPH-50)continue;
+    if(bnsFreeAt(tx,ty,20))BTREE.push({x:tx,y:ty,r:rr2(18,38)});}
+  }else if(kind<.92){/* 🏚街区(向きを揃えると「区画」に見える) */
    const n=2+((rd()*3)|0),ang=rd()*3.1416;
    for(let k=0;k<n;k++){
-    const bx=jx+rr2(-CS*.34,CS*.34),by=jy+rr2(-CS*.34,CS*.34);
-    const L=rr2(64,158),W=rr2(42,98);
-    if(bx<90||by<90||bx>MAPW-90||by>MAPH-90)continue;
+    const bx=jx+rr2(-CS*.4,CS*.4),by=jy+rr2(-CS*.4,CS*.4);
+    const L=rr2(58,140),W=rr2(40,88);
+    if(bx<80||by<80||bx>MAPW-80||by>MAPH-80)continue;
     if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
-    bldPush(bx,by,ang+rr2(-.12,.12),L,W,rd);}
-   /* 街区の空き地に廃車を少しだけ(⚠**撒きすぎない**=2026-08-02の「瓦礫が多すぎる」と同じ話) */
-   for(let k=0;k<2;k++){
-    const px=jx+rr2(-CS*.4,CS*.4),py=jy+rr2(-CS*.4,CS*.4);
-    if(!bnsFreeAt(px,py,44))continue;
-    BPROP.push({k:['car','drum','box','rub'][(rd()*4)|0],x:px,y:py,a:rd()*6.283,s:.9+rd()*.7,c:(rd()*4)|0});}
+    bldPush(bx,by,ang+rr2(-.12,.12),L,W,rd,0);}
+   /* 街区の隅に木を数本(建物だけだと「積み木」に見える) */
+   for(let k=0;k<5;k++){
+    const tx=jx+rr2(-CS*.5,CS*.5),ty=jy+rr2(-CS*.5,CS*.5);
+    if(bnsFreeAt(tx,ty,20))BTREE.push({x:tx,y:ty,r:rr2(18,32)});}
+   /* 廃車は少しだけ(⚠**撒きすぎない**=2026-08-02の「瓦礫が多すぎる」と同じ話) */
+   {const px=jx+rr2(-CS*.44,CS*.44),py=jy+rr2(-CS*.44,CS*.44);
+    if(bnsFreeAt(px,py,44))
+     BPROP.push({k:['car','drum','box','rub'][(rd()*4)|0],x:px,y:py,a:rd()*6.283,s:.9+rd()*.7,c:(rd()*4)|0});}
   }
  }
 }
@@ -18810,9 +18847,10 @@ function drawBnsTown(c){
  if(tv.length){
   c.fillStyle='rgba(0,0,0,.17)';c.beginPath();
   for(const t of tv){c.moveTo(t.x+7+t.r*.92,t.y+9);c.arc(t.x+7,t.y+9,t.r*.92,0,7);}c.fill();
-  c.fillStyle='#3d5030';c.beginPath();
+  /* ⚠**濃い緑にする**(2026-08-02(5))=明るい緑だと「低木の茂み」に見えて、森の塊にならない */
+  c.fillStyle='#31421f';c.beginPath();
   for(const t of tv){c.moveTo(t.x+t.r,t.y);c.arc(t.x,t.y,t.r,0,7);}c.fill();
-  c.fillStyle='#57703e';c.beginPath();
+  c.fillStyle='#465c2b';c.beginPath();
   for(const t of tv){const r=t.r*.62,ox=t.x-t.r*.22,oy=t.y-t.r*.24;c.moveTo(ox+r,oy);c.arc(ox,oy,r,0,7);}c.fill();
  }
  /* --- 🏚建物 --- */
@@ -18829,8 +18867,15 @@ function drawBnsTown(c){
  c.fill();
  for(let i=0;i<BLD_W.length;i++){let any=0;c.fillStyle=BLD_W[i];c.beginPath();
   for(const b of bv){if(b.c!==i)continue;put(b.q,0,0);any=1;}if(any)c.fill();}
+ /* ⭐**廃墟は「壁だけ」にする**(2026-08-02(5))=中を暗い瓦礫で抜くと、
+    塗り潰した箱ではなく**屋根の落ちた廃墟**に見える。⚠塗りは1回のまま。 */
+ {let any=0;c.fillStyle='#5c5346';c.beginPath();
+  for(const b of bv){if(b.rf)continue;put(b.k,0,0);any=1;}if(any)c.fill();}
+ /* ⭐**屋根の残った建物=タレット置き場**。⚠平らな屋上に見せる(明るい面+奥に一段の陰) */
+ {let any=0;c.fillStyle='rgba(0,0,0,.30)';c.beginPath();
+  for(const b of bv){if(!b.rf)continue;put(b.k,0,-4);any=1;}if(any)c.fill();}
  for(let i=0;i<BLD_R.length;i++){let any=0;c.fillStyle=BLD_R[i];c.beginPath();
-  for(const b of bv){if(b.rc!==i)continue;put(b.k,0,-7);any=1;}if(any)c.fill();}
+  for(const b of bv){if(!b.rf||b.rc!==i)continue;put(b.k,0,-10);any=1;}if(any)c.fill();}
 }
 /* 道の中心線までの距離(一番近いレーン)。⚠廃墟を道の上に置かないため */
 function bnsLaneD(x,y){
@@ -19085,53 +19130,12 @@ function bnsBusStep(C,dt){
   if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.30,.05+.025*hit+.05*bnsCmbT(B.cmb)));}
  if(B.hitT>0)B.hitT-=dt;
  bnsFxStep(C,dt);
- bnsAutoTower(C,dt);
 }
-/* ⭐⭐**タレットは拠点が自分で据える**(2026-08-02(4)ユーザー
-   「タレットは置き場を選択する方式じゃなくて拠点に自動的に置かれる形」)。
-   ⚠**この面でプレイヤーがやることは運転だけ**にする=置き場を選ぶ操作はもう無い。
-   ⭐⚙️が貯まるたびに拠点が1基ずつ増設し、置く所が無くなったら**据えた砲を強化していく**
-     =轢いて稼ぐほど拠点が育つので、運転と拠点の防衛が1本の線でつながる。
-   ⚠**解放済みの塔しか据えない**(研究所の積み上げがそのまま効く)。
-   ⚠**⚙️を全部は使わない**(残り半分まで)=1基の高い砲で使い切ると枠が埋まらない。 */
-const BNS_AT=2.0;/* 何秒ごとに1基ぶん考えるか */
-function bnsPlaceTower(C){
- let si=-1;
- for(let i=0;i<ECO_BASE;i++){const s=SLOTS[i];
-  if(!C.towers[i]&&s&&s[0]>-9000){si=i;break;}}
- if(si>=0){
-  /* 買える中で一番高い塔=一番強い塔。⚠所持の半分までで選ぶ(使い切らない) */
-  let ti=-1,best=-1,cheap=-1,cp=1e9;
-  const bud=C.scrap*.55;
-  for(let i=0;i<Math.min(C.unlocked,TOWERS.length);i++){const T=TOWERS[i];
-   if(T.type==='eco'||T.type==='sup')continue;
-   if(T.cost<=bud&&T.cost>best){best=T.cost;ti=i;}
-   if(T.cost<=C.scrap&&T.cost<cp){cp=T.cost;cheap=i;}}
-  if(ti<0)ti=cheap;
-  if(ti<0)return false;
-  C.scrap-=TOWERS[ti].cost;
-  C.towers[si]={ti,us:newUs(),cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:TOWERS[ti].cost,own:0};
-  if(FXLV>0)addFx(C,'ring',SLOTS[si][0],SLOTS[si][1],'',{r:110,col:AMBER});
-  if(C.isMe)sfx.build();
-  return true;
- }
- /* 枠が埋まったら**強化と進化**へ回す。
-    ⚠**いつもと同じ道具(`upTower`/`gradeTower`)を通す**=値段も上限も進化の条件も1か所のまま
-      (ここで自前に計算し直すと、本編を触った時に必ず食い違う)。 */
- const built=[];for(let i=0;i<ECO_BASE;i++)if(C.towers[i])built.push(i);
- if(!built.length)return false;
- const s2=built[ri(0,built.length-1)],tw=C.towers[s2];
- if(canGrade(C,tw)&&C.scrap>=T_GCOST(tw.ti))return gradeTower(C,s2);
- const sts=twStats(tw.ti);
- if(!sts||!sts.length)return false;
- return upTower(C,s2,sts[ri(0,sts.length-1)]);
-}
-function bnsAutoTower(C,dt){
- C.atT=(C.atT||0)-dt;
- if(C.atT>0)return;
- C.atT=BNS_AT;
- bnsPlaceTower(C);
-}
+/* ⚠**「拠点が全自動でタレットを据える」は 2026-08-02(5) に取り消した**(ユーザー
+   「配置もできるようにしよう。建物の屋上が平面であってそこにタレット置き場を作ろう」)。
+   ⭐**何を建てるかも、どの屋上に建てるかも、いつもどおりプレイヤーが選ぶ**。
+     置き場が「地面に浮いた四角」ではなく**建物の屋上**になったのが、この件の答え。
+   ⚠書き戻さないこと(自動にすると、何を置くかまで選べなくなる)。 */
 /* ============ 🩸 轢き応え(2026-08-02(2)ユーザー①「弾け飛ぶ/跡が残る/連続で気持ちいい」)============
    ⭐**3つとも「使い回しの輪(リングバッファ)」で持つ**=何百体轢いても配列は伸びない
      (古い物から上書きされる)。毎フレームの `filter` もゴミも出ない。

@@ -2535,7 +2535,8 @@ function checkBonus(){
   if(localStorage.getItem(RUN_KEY)){console.log('FAIL: ボーナス面が中断できてしまう(再開で周回できる)');process.exit(1);}
   /* ②敵が4本すべてに散る */
   nextWave();
-  for(let k=0;k<400&&G.tide.pool.length;k++)tideStep(.05);
+  /* ⚠**設置の猶予(BNS_LEAD=30秒)を回し切ってから見る**=短いと1体も湧かないまま「四方に散っていない」で落ちる */
+  for(let k=0;k<1400&&G.tide.pool.length;k++)tideStep(.05);
   const lns={};for(const z of me.zombies)lns[z.ln]=(lns[z.ln]||0)+1;
   if(Object.keys(lns).length!==4){
    console.log('FAIL: 敵が四方に散っていない レーン別='+JSON.stringify(lns));process.exit(1);}
@@ -2643,14 +2644,23 @@ function checkRice(){
    console.log('FAIL: 建物が通路の中に立っている');process.exit(1);}
   for(const t of BTREE)if(!bnsFreeAt(t.x,t.y,0)){
    console.log('FAIL: 木が通路の中に立っている');process.exit(1);}
-  /* ⚠**タレットは拠点が自動で据える**=始まった時点で何基か立っていること+置き場の操作が無いこと */
-  {let nt=0;for(let i=0;i<ECO_BASE;i++)if(m5.towers[i])nt++;
-   if(nt<3){console.log('FAIL: 拠点にタレットが自動で据わっていない '+nt+'基');process.exit(1);}
-   const sc0=m5.scrap;m5.scrap=99999;m5.atT=0;
-   const ok9=bnsPlaceTower(m5);
-   if(!ok9){console.log('FAIL: 拠点が自分でタレットを増やせない');process.exit(1);}
-   if(!(m5.scrap<99999)){console.log('FAIL: 自動増設が⚙️を払っていない');process.exit(1);}
-   m5.scrap=sc0;}
+  /* ⭐⭐**タレット置き場=建物の屋上**(2026-08-02(5))。見るのは3つ:
+     ①枠が ECO_BASE ぶんあること ②枠が**屋根つきの建物か拠点の上**にあること
+     ③そこにいつもどおり建てられること(何を建てるかはプレイヤーが選ぶ) */
+  {if(BBLD.filter(b=>b.rf).length<14){
+    console.log('FAIL: 屋根つきの建物(タレット置き場)が足りない '+BBLD.filter(b=>b.rf).length);process.exit(1);}
+   let out9=0;
+   for(let i=0;i<ECO_BASE;i++){const s=SLOTS[i];if(!s||s[0]<-9000)continue;
+    if(dist(s[0],s[1],BNS_CX,BNS_CY)<OUT_R)continue;/* 拠点(司令部)の屋上 */
+    if(!BBLD.some(b=>b.rf&&Math.abs(b.x-s[0])<2&&Math.abs(b.y-s[1])<2))out9++;}
+   if(out9){console.log('FAIL: 建物の屋上に乗っていない枠が'+out9+'個');process.exit(1);}
+   /* 屋上の枠に普通に建てられるか(=自動ではなくプレイヤーが選ぶ形に戻っていること) */
+   m5.scrap=99999;
+   let si9=-1;for(let i=0;i<ECO_BASE;i++)if(!m5.towers[i]&&SLOTS[i]&&SLOTS[i][0]>-9000){si9=i;break;}
+   if(si9<0){console.log('FAIL: 空いている屋上が無い');process.exit(1);}
+   if(!buildTower(m5,si9,0)){console.log('FAIL: 屋上にタレットを建てられない');process.exit(1);}
+   if(!m5.towers[si9]){console.log('FAIL: 建てたのに屋上に乗っていない');process.exit(1);}
+   m5.towers[si9]=null;}
   nextWave();
   for(let k=0;k<1200&&G.tide.pool.length&&m5.zombies.length<300;k++)tideStep(.05);
   for(let k=0;k<60;k++)campStep(m5,.05,1);
@@ -2678,7 +2688,7 @@ function checkRice(){
   if(Object.keys(lns).length!==4){console.log('FAIL: 波の中で4本すべてが濃くなっていない');process.exit(1);}
   /* 予告(hotLn)が立つか */
   const m6=G.players[0];
-  for(let k=0;k<400&&G.tide.hotLn==null;k++)tideStep(.05);
+  for(let k=0;k<1400&&G.tide.hotLn==null;k++)tideStep(.05);/* ⚠設置の猶予ぶんを回し切る */
   if(G.tide.hotLn==null){console.log('FAIL: 濃い道の予告(hotLn)が立たない');process.exit(1);}
   if(!bnsDirN(G.tide.hotLn)){console.log('FAIL: 予告の方角が出ない');process.exit(1);}
   if(!m6){console.log('FAIL: 拠点が無い');process.exit(1);}}
@@ -2728,7 +2738,7 @@ function checkRice(){
  console.log('🧟米粒ゾンビ: 盤面'+live.length+'体(上限'+BNS_CAP+')/描画は例外なし/跡は上限どまり(血'+me.bstn.length+'・肉'+me.bchk.length+'・轍'+me.btrk.length+')/'
   +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
  console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所3か所で通路'+BNS_OFF+'→'+BNS_GATW
-  +'/敵は通路の外へ出ない/濃い道は一度に1本+予告あり/タレットは拠点が自動で据える)');
+  +'/敵は通路の外へ出ない/濃い道は一度に1本+予告あり/置き場は建物の屋上)');
  console.log('  (🚌開拓便の尺: 全'+bkil+'体を放っておいて '+Math.round(bsec)+'秒 で片が付く)');
 }
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
