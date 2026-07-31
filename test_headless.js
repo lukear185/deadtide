@@ -2507,7 +2507,9 @@ process.exit(0);
      ⚠soloMeta()はGを見るので、ソロを1戦始めてから拠点の状態を測る */
   const g=new Function(js+'\n;META.stg=0;setDiff=2;startSolo();'
    +'const m=G.players[0];'
-   +'return [m.unlocked,T_PLAY,m.team.length,U_N,m.ecoN,ECO_MAX,m.supN,SUP_MAX,'
+   /* ⚠🛠DEVで見るのは「**持っている**兵科が全部か」(metaUnitCap)。
+      連れて行けるのは編成制の10体なので team.length で見てはいけない(2026-08-01) */
+   +'return [m.unlocked,T_PLAY,metaUnitCap(),U_N,m.ecoN,ECO_MAX,m.supN,SUP_MAX,'
    +'m.slk.slice(0,ECO_BASE).filter(v=>v).length,ECO_BASE,META.st.length,Object.keys(STRIKES).length];')();
   const [un,tp,uu,un2,ec,ecm,sp,spm,sl,slm,st,stm]=g;
   if(un<tp){console.log('FAIL: 🛠DEVでタワーが全解放されていない '+un+'/'+tp);process.exit(1);}

@@ -453,15 +453,25 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
    ⚠これが一番伝えたい情報=**選んだ10体が安い順に解放される**。文章で書くより並べて見せる。
    ⚠横に流す(overflow-x)=縦に積むと横画面(高さ393px)で下の一覧が画面外へ出る。 */
 .tmord{display:flex;gap:4px;overflow-x:auto;padding:2px 0 5px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.tmo{flex:0 0 auto;display:flex;align-items:center;gap:4px;background:var(--pane);border:2px solid var(--ink);
- border-radius:8px;padding:3px 7px;font-size:11.5px;font-weight:900;color:var(--ink);white-space:nowrap}
+.tmo{flex:0 0 auto;display:flex;align-items:center;gap:4px;background:var(--gold);border:2px solid var(--ink);
+ border-radius:9px;padding:3px 7px 3px 4px;font-size:11.5px;font-weight:900;color:var(--ink);white-space:nowrap}
+.tmo canvas{width:26px;height:26px;display:block;background:var(--paper3);border-radius:5px}
 .tmo b{background:var(--ink);color:var(--paper);border-radius:5px;padding:0 4px;font-size:10.5px}
 .tmo i{font-style:normal;font-size:10px;font-weight:800;color:var(--rust2)}
-.tmo.fix{background:var(--gold)}
+.tmo em{font-style:normal;font-size:12px;opacity:.7;margin-left:1px}
+.tmo.fix{background:var(--paper3);opacity:.75}
 .tmsum{font-size:12px;font-weight:900;color:var(--ink);text-align:left;margin:0 2px 2px}
 .tmsum b{color:var(--rust2)}
-.lc.sel{background:var(--gold);box-shadow:0 0 0 2px var(--gold2) inset}
-.lc.lock{opacity:.55;filter:saturate(.35)}
+/* ⭐編成の「入れる兵科」の一覧(2026-08-01ユーザー指摘「つぶれてる。でも絵は小さくていい」)。
+   ⚠研究所の .lgrid.tight を流用すると**あちらの寸法まで動く**ので専用に持つ。
+   ⚠絵は34pxで足りる=名前と値段が潰れない方が大事。 */
+.tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:5px}
+.tmc{display:flex;flex-direction:column;align-items:stretch;gap:3px;border:2px solid var(--ink);
+ border-radius:9px;background:var(--pane);padding:5px 5px 6px;text-align:left}
+.tmc canvas{width:100%;height:34px;display:block;background:var(--paper3);border-radius:6px}
+.tmc .nm{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmc .tg{font-size:9.5px;font-weight:800;color:var(--rust2);line-height:1.15}
+.tmc.on{opacity:.42;filter:saturate(.35)}
 #seg-stk{flex-wrap:wrap}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
@@ -2255,9 +2265,10 @@ const BASE_U=2;/* ソロで最初から使える兵科数=猟犬とバット(こ
 const TEAM_N=10,TEAM_FIX=[0,1];
 const PVP_TEAM=()=>{const a=[];for(let i=0;i<PVP_U;i++)a.push(i);return a;};
 function teamIdx(){
- /* ⚠🛠DEVは今までどおり**全兵科**を連れて行く(実機テストで全部触るため。デッキは横スクロール) */
- if(DEV){const a=[];for(let i=0;i<U_N;i++)a.push(i);return a;}
- if(typeof soloMeta==='function'&&!soloMeta())return PVP_TEAM();
+ /* ⚠🛠DEVは**全兵科を持っている**状態にするだけ(metaUnitCap=30)。
+    連れて行けるのは同じ10体=そうしないと編成画面が「30/10」と壊れて出る(2026-08-01に踏んだ)。
+    ⚠DEVで別の兵科を試したい時は編成で選び直す。 */
+ if(typeof soloMeta==='function'&&!soloMeta()&&!DEV)return PVP_TEAM();
  const own=metaUnitCap();
  let t=((META.team)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&i<own);
  t=Array.from(new Set(TEAM_FIX.concat(t))).sort((a,b)=>a-b).slice(0,TEAM_N);
@@ -18620,40 +18631,46 @@ function renderLoad(){
        スクロールしないと分からなかった。
      ⭐上に**解放される順番の帯**(番号+名前+その1体を出すのに要る⚙️)、下に一覧。
      ⚠猟犬とバットは固定枠(外せない)。 */
+  /* ⭐**上=いま連れて行く編成(押すと外す) / 下=入れる兵科(押すと入れる)**
+     (2026-08-01ユーザー指示「今選んでるユニットを上部に出して、下から選んで入れる形式に」)。 */
   const own=metaUnitCap(),T9=teamIdx();
   let sum=0;
   h='<div class="ldhdr" style="border-top:0;padding-top:0;margin:2px 2px 3px">'
-   +'🎒 連れて行く '+T9.length+'/'+TEAM_N+' — 戦闘中はこの順に解放される</div>';
+   +'🎒 連れて行く '+T9.length+'/'+TEAM_N+' — 戦闘中はこの順に解放される(押すと外す)</div>';
   h+='<div class="tmord">';
-  T9.forEach((i,k)=>{const p=UNITP[i]||0;sum+=p;
-   h+='<span class="tmo'+(TEAM_FIX.indexOf(i)>=0?' fix':'')+'"><b>'+(k+1)+'</b>'
-    +((UBASE[i]||{}).n||'?')+'<i>⚙️'+p+'</i></span>';});
+  T9.forEach((i,k)=>{const p=UNITP[i]||0;sum+=p;const fx=TEAM_FIX.indexOf(i)>=0;
+   h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'"'+(fx?' disabled':'')+'>'
+    +'<canvas width="52" height="52"></canvas><b>'+(k+1)+'</b>'
+    +((UBASE[i]||{}).n||'?')+'<i>⚙️'+p+'</i>'+(fx?'<em>🔒</em>':'<em>✕</em>')+'</button>';});
   h+='</div>';
   h+='<div class="tmsum">10体ぜんぶ出すのに <b>⚙️'+sum.toLocaleString()+'</b>'
    +' — 高い兵科ばかり連れて行くと、後ろの番号は最後まで出せない</div>';
-  h+='<div class="ldhdr">🪖 持っている兵科 '+own+'種(押して入れ替える)</div>';
-  h+='<div class="lgrid tight">';
+  h+='<div class="ldhdr">🪖 入れる兵科(持っている '+own+'種)</div>';
+  h+='<div class="tmgrid">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
-   const fix=TEAM_FIX.indexOf(i)>=0,on=T9.indexOf(i)>=0;
-   h+='<button class="lc'+(on?' sel':'')+(fix?' lock':'')+'" data-team="'+i+'"'+(fix?' disabled':'')+'>'
-    +'<canvas class="pvc" width="76" height="76"></canvas>'
-    +'<span class="nm">'+(fix?'🔒':on?'✅':'')+U.n+'</span>'
+   const on=T9.indexOf(i)>=0;
+   h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'"'+(on?' disabled':'')+'>'
+    +'<canvas width="76" height="76"></canvas>'
+    +'<span class="nm">'+(on?'✅':'')+U.n+'</span>'
     +'<span class="tg">解放⚙️'+(UNITP[i]||0)+'</span></button>';}
   h+='</div>';
   box.innerHTML=IC(h);
+  const pick=(i,add)=>{
+   const cur=((META.team)||[]).slice();
+   const id=UBASE[i].id,k=cur.indexOf(id);
+   if(!add){if(k>=0)cur.splice(k,1);}
+   else{
+    if(k>=0)return;
+    if(teamIdx().length>=TEAM_N){toast('⚠ 連れて行けるのは'+TEAM_N+'体まで(上から誰かを外す)',true);return;}
+    cur.push(id);}
+   META.team=cur;saveMeta();sfx.buy&&sfx.buy();renderLoad();};
+  box.querySelectorAll('[data-out]').forEach(b=>{
+   const i=+b.dataset.out;ldPrev(b.querySelector('canvas'),i,null);
+   b.onclick=()=>pick(i,false);});
   box.querySelectorAll('[data-team]').forEach(b=>{
-   const i=+b.dataset.team;
-   ldPrev(b.querySelector('canvas'),i,null);
-   b.onclick=()=>{
-    const cur=((META.team)||[]).slice();
-    const id=UBASE[i].id,k=cur.indexOf(id);
-    if(k>=0)cur.splice(k,1);
-    else{
-     /* ⚠固定枠のぶんを引いた残りが上限 */
-     if(teamIdx().length>=TEAM_N){toast('⚠ 連れて行けるのは'+TEAM_N+'体まで(誰かを外す)',true);return;}
-     cur.push(id);}
-    META.team=cur;saveMeta();sfx.buy&&sfx.buy();renderLoad();};});
+   const i=+b.dataset.team;ldPrev(b.querySelector('canvas'),i,null);
+   b.onclick=()=>pick(i,true);});
   return;
  }
  /* ⭐派生の割り当て。⚠基本と上級を**1つのタブ**にまとめた(2026-08-01)=分ける意味が無かった */
