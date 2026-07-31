@@ -2171,6 +2171,80 @@ function checkHook(){
  console.log('すり抜けを止める兵科: '+names.join(' / ')+' — 上限ぴったりまで足止め・超過分は素通り・他の兵科は素通り OK');
  backTitle();
 }
+/* ⭐⭐**出撃枠は「体数」ではなく「重さ」で数える**(2026-08-02ユーザー決定)。見るのは4つ:
+   ①タイタン級(4枠)は5体で止まる ②雑魚(1枠)は今までどおり20体まで
+   ③重い兵科は「残り枠が足りない」で弾かれる(=体数ではなく重さで見ている証拠)
+   ④倒れた部隊は枠を食わない。 */
+function checkSlotWt(){
+ META.stg=0;setDiff=2;META.nu=U_N-BASE_U;META.team=null;startSolo();
+ const me=G.players[0];
+ const fill=(id)=>{const i=UBASE.findIndex(u=>u.id===id);
+  me.units.length=0;me.team=[i];me.uUn=1;me.scrap=1e9;
+  let n=0;for(let k=0;k<60;k++){me.ucd[i]=0;if(!deployUnit(me,i))break;n++;}
+  return {i,n};};
+ const T=fill('titan');
+ if(uWt(T.i)!==4){console.log('FAIL: タイタンの枠が4でない '+uWt(T.i));process.exit(1);}
+ if(T.n!==Math.floor(MAXU/4)){console.log('FAIL: タイタンが'+T.n+'体出せる(4枠なので'+Math.floor(MAXU/4)+'体のはず)');process.exit(1);}
+ /* ③満杯(20)の時に、1枠の兵科すら入らないこと=重さで見ている */
+ {const h=UBASE.findIndex(u=>u.id==='hnd');me.team=[T.i,h];me.uUn=2;me.ucd[h]=0;
+  if(deployUnit(me,h)){console.log('FAIL: 枠が満杯なのに猟犬が入った');process.exit(1);}}
+ /* ④倒れた部隊は枠を食わない */
+ {me.units[0].dead=1;const h=UBASE.findIndex(u=>u.id==='hnd');me.ucd[h]=0;
+  if(!deployUnit(me,h)){console.log('FAIL: 倒れた部隊が枠を食い続けている');process.exit(1);}}
+ const H=fill('hnd');
+ if(H.n!==MAXU){console.log('FAIL: 猟犬が'+H.n+'体しか出せない(1枠なので'+MAXU+'体のはず)');process.exit(1);}
+ /* ⑤ ⭐**まだ出していない英雄のぶんは予約される**=枠を埋め切っても英雄が出せる(詰み防止) */
+ {const h=UBASE.findIndex(u=>u.id==='hnd');
+  me.units.length=0;me.team=[h];me.uUn=1;me.scrap=1e9;
+  me.hUi=HERO_I0;me.hOut=0;/* 英雄を連れている状態 */
+  let n=0;for(let k=0;k<60;k++){me.ucd[h]=0;if(!deployUnit(me,h))break;n++;}
+  if(n!==MAXU-uWt(HERO_I0)){console.log('FAIL: 英雄のぶんの枠が予約されていない(部隊が'+n+'体入った)');process.exit(1);}
+  if(!heroDeploy(me)){console.log('FAIL: 枠を埋め切ると英雄が出せない(詰み)');process.exit(1);}
+  me.hUi=-1;me.hOut=0;}
+ me.units.length=0;me.team=null;META.nu=0;/* ⚠**解放数を戻す**=戻さないと後の検査が全兵科ありで走る */
+ backTitle();
+ console.log('出撃枠(重さ制): タイタン4枠='+T.n+'体 / 猟犬1枠='+H.n+'体 / 満杯なら1枠も入らない / 戦死した枠は空く / 英雄のぶんは予約される OK');
+}
+/* ⭐⭐**波ごとに「物量」と「重厚」が振れる**(2026-08-02ユーザー決定)。⚠見るのは3つ:
+   ①W1〜4は振らない ②物量の波と重厚の波が両方ちゃんとある
+   ③**総HPを変えずに**体数と1体あたりのHPが逆に振れる(=難易度カーブを動かしていない証拠)。
+   ⚠顔ぶれは毎回ランダムなので**何回かの平均**で見ること(1回だと普通に前後する)。 */
+function checkTideKind(){
+ for(let w=1;w<=4;w++)if(tideKof(w)!==1){console.log('FAIL: W'+w+' で波の性格が振れている(序盤は振らない約束)');process.exit(1);}
+ let mass=0,heavy=0;
+ for(let w=5;w<=20;w++){const k=tideKof(w);if(k>1.05)mass++;else if(k<.95)heavy++;}
+ if(mass<3||heavy<3){console.log('FAIL: 物量'+mass+'波/重厚'+heavy+'波=偏りすぎ');process.exit(1);}
+ /* ⚠**ボス波(5の倍数)は振らない**=振ると①漏らした時のコア被害が減ってボス波が一番安く諦められる
+    ②cut と掛け算になって1体が厚くなりすぎる(2026-08-02の検証で判明) */
+ for(let w=5;w<=20;w+=5)if(tideKof(w)!==1){console.log('FAIL: W'+w+'(ボス波)で波の性格が振れている');process.exit(1);}
+ /* ⚠W12以降は cut の狙いを潰さないよう振れ幅を薄める */
+ if(!(Math.abs(tideKof(13)-1)<Math.abs(tideKof(7)-1))){console.log('FAIL: 終盤の振れ幅が薄まっていない');process.exit(1);}
+ /* ⚠**作戦タイムに出す文言**も見る=振れているのに見せないと「ただの当たり外れ」になる */
+ if(tideKind(7).t.indexOf('物量')<0){console.log('FAIL: W7が物量の波として案内されない');process.exit(1);}
+ if(tideKind(8).t.indexOf('重厚')<0){console.log('FAIL: W8が重厚の波として案内されない');process.exit(1);}
+ if(tideKind(15).d){console.log('FAIL: ボス波(W15)にも波の性格の案内が出ている');process.exit(1);}
+ if(tideKind(2).d){console.log('FAIL: 序盤(W2)にも波の性格の案内が出ている');process.exit(1);}
+ META.stg=0;setDiff=2;startSolo();
+ const meas=(w)=>{let n=0,hp=0,bt=0;
+  for(let r=0;r<12;r++){G.wave=w;buildTide(w);
+   const p=G.tide.pool.filter(e=>!e.boss);
+   n+=p.length;hp+=p.reduce((a,e)=>a+e.z.hp,0);bt+=p.reduce((a,e)=>a+e.z.bt,0);}
+  return {n:n/12,hp:hp/12,bt:bt/12};};
+ const A=meas(7),B=meas(8);/* W7=物量 / W8=重厚(隣どうしで比べる=波の重さがほぼ同じ) */
+ if(!(A.n>B.n*1.2)){console.log('FAIL: 物量の波の体数が増えていない '+A.n.toFixed(1)+' vs '+B.n.toFixed(1));process.exit(1);}
+ if(!(A.hp/A.n<B.hp/B.n*.9)){console.log('FAIL: 重厚の波の1体が厚くなっていない');process.exit(1);}
+ /* ⚠**⚙️の総額は振らない**=物量の波だけ稼ぎやすい、を作らない。
+    ⚠**波をまたいで比べない**(顔ぶれも成長率も違うので比較にならない)。
+      1体あたりの報酬が「体数に掛けた値の逆数」でちゃんと割り戻されているかを直に見る。
+    ⚠総HPが動いていないことは checkEarly(3波の移動平均)が見ている。 */
+ for(const w of [7,8,13,14]){const k=tideKof(w);
+  const b1=zSpec(0,1,w,0,'',1).bt,b2=zSpec(0,1,w,0,'',1/k).bt;
+  if(Math.abs((b2/b1)-(1/k))>.06){
+   console.log('FAIL: W'+w+' の報酬が体数ぶん割り戻されていない x'+(b2/b1).toFixed(3)+'(想定 x'+(1/k).toFixed(3)+')');process.exit(1);}}
+ backTitle();
+ console.log('波の性格: 物量'+mass+'波/重厚'+heavy+'波 / W7(物量)は'+A.n.toFixed(0)+'体(1体'+Math.round(A.hp/A.n)
+  +') → W8(重厚)は'+B.n.toFixed(0)+'体(1体'+Math.round(B.hp/B.n)+') / 総HPと⚙️は据え置き OK');
+}
 /* ---- 研究所の進化: どの兵科からでも選べるか / 大幅に強くなるか ---- */
 function checkEvo(){
  /* ⚠⚠**2026-08-01に「未解放の兵科は進化も出さない」に変えた**(実機で
@@ -2609,7 +2683,7 @@ checkResumeFarm();
 checkTwNew();
 checkPerUp();
 checkLabSteps();
-checkStart0();checkLabMul();checkUChg();checkAtkMotion();
+checkStart0();checkLabMul();checkUChg();checkAtkMotion();checkSlotWt();checkTideKind();
 checkCryo();
 checkBeam();
 checkCoil();

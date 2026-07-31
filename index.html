@@ -160,6 +160,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #corelbl{font-size:13px;color:var(--life);min-width:22px;text-align:right}
 #energybox{font-size:15px;color:var(--gold)}
 #ptbox{font-size:15px;color:var(--tech);border-color:var(--tech2)}
+#ubox{font-size:15px;color:var(--life)}
 #pausebtn,#ffbtn,#mutebtn,#ffwave{background:linear-gradient(var(--ink2),var(--ink));border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:13px;padding:5px 10px;font-weight:900;display:none;box-shadow:0 3px 0 rgba(0,0,0,.45)}
 #ffwave{border-color:var(--rust);color:var(--danger2);white-space:nowrap}
 #mutebtn{display:inline-block}
@@ -184,7 +185,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  #wprog{width:42px;height:7px}
  #corebar{width:38px;height:7px}
  #corepanel,#corelbl{font-size:11px}
- #energybox,#ptbox{font-size:12px}
+ #energybox,#ptbox,#ubox{font-size:12px}
  #pausebtn,#ffbtn,#mutebtn,#ffwave{font-size:11px;padding:3px 7px}
  /* 死潮ゲージも上のHUDに合わせて詰める(建設マスの上端=画面y55より上に収める) */
  #tidebar{top:calc(max(6px,env(safe-area-inset-top)) + 27px);width:min(200px,25vw);gap:4px}
@@ -750,6 +751,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="hudpanel" id="corepanel"><span>🏕</span><div id="corebar"><i></i></div><span id="corelbl">50</span></div>
     <div class="hudpanel" id="energybox">⚙️ 0</div>
     <div class="hudpanel" id="ptbox">🔩 0</div>
+    <!-- ⭐部隊の枠(重さ)。2026-08-02に「体数」から「重さ」に変えたので、見えないと理屈が伝わらない -->
+    <div class="hudpanel" id="ubox">🤝 0/20</div>
     <button id="pausebtn">⏸</button>
     <button id="ffbtn">⏩ ×1</button>
   </div>
@@ -2448,6 +2451,17 @@ function teamAutoAdd(bid){
  UNITS.length=0;for(const u of norm)UNITS.push(u);for(const u of last)UNITS.push(u);}
 /* ティア: 序盤/中盤/終盤/切り札(見た目の大きさとデッキ枠の色に使う) */
 const uTier=i=>i<6?1:i<14?2:i<22?3:4;
+/* ⭐⭐⭐**出撃枠は「体数」ではなく「重さ」で数える**(2026-08-02ユーザー決定)。
+   ⚠それまでは20"体"の枠だったので、**1枠に安い兵科を入れる理由が無く、
+     上位兵科だけで盤面を埋めるのが常に最適**=終盤の遊びが単調だった(ユーザー指摘)。
+   ⭐重さ=`uTier`(1〜4)。タイタン/ヴァルキリー級は4枠→**同時5体まで** /
+     雑魚は1枠→今までどおり20体まで。「厚い数体 か 薄い大勢か」の配分が毎回の判断になる。
+   ⚠**英雄も枠を使う**(UNITSの末尾に居るので uTier=4)。
+   ⚠**倒れた部隊(u.dead)は数えない**=枠がすぐ空くようにする。 */
+const uWt=ui=>uTier(ui|0);
+const unitsWt=(arr,own)=>{let w=0;if(!arr)return 0;
+ for(const u of arr){if(u.dead)continue;if(own!=null&&(u.own||0)!==own)continue;w+=uWt(u.ui);}
+ return w;};
 /* ============ ⭐キャラの表示を大きくする(2026-07-27 第95弾ユーザー指示「でかくしよ」) ============
    ⚠実測(852x393・SC=0.392): ウォーカーは**画面で22.7px**しかなかった。
      この画素数では造形の差が出ない=見た目の作り直しを3回捨てた本当の原因はここ。
@@ -2864,7 +2878,9 @@ function applyLoadout(on){
  try{if(typeof makeThumbs==='function')makeThumbs();}catch(e){}/* 見た目(デッキの絵)も入れ替える */
 }
 const uName=ui=>UNITS[ui]?UNITS[ui].n:'';
-const MAXU=20;/* 部隊の同時出撃上限(2026-07-27ユーザー指示で40→20)。⚠協力は COOP_MAXU が別にある */
+/* 部隊の同時出撃上限。⚠**2026-08-02から「体数」ではなく `uWt`(1〜4)の合計**=
+   雑魚なら20体・タイタン級なら5体。⚠協力は COOP_MAXU が別にある */
+const MAXU=20;
 const STAGE_W=20;/* 協力/対戦(難易度で長さが変わらない側)の最終ウェーブ */
 /* ソロは難易度ごとに最終ウェーブが違う。⚠ソロの判定は必ず curW() を使うこと */
 const diffW=d=>(D5[d]||D5[2]).w;
@@ -10717,9 +10733,15 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
     ⚠肩を軸に回して上げると**銃口が空を向く**=狙えていない。**平行に持ち上げて**、
       腕は肘と手の位置を差し替える(GY=持ち上げる量。照準器が目とほぼ同じ高さに来る値)。 */
  const GY=-10.4*kn;
- const g1=bHold(c,rc,4.6,-34.6,-.05,.5,-.4);
- bArm(c,-4.6,-34.8, L(6,4.4),L(-31.4,-37.4), 20,-28.4+GY, 5,4.1, shade(CO,.72),shade(SK,.74));
- g1();
+ /* ⭐⭐**銃も水平に戻す**(2026-08-02ユーザー指摘「まだ↓向いてる」)。
+    ⚠頭だけ TLC で戻していたので、**構えの傾き(TL)が銃にだけ残って銃口が下を向いていた**。
+    ⚠**肩(4.6,-34.6)を軸に**戻すこと=胴の途中で戻すと腕が肩から外れる。
+    ⚠腕と銃は2か所に分かれて描くので**両方**戻す(片方だけだと腕と銃がねじれる)。 */
+ const gunFix=()=>{c.save();c.translate(4.6,-34.6);c.rotate(TLC);c.translate(-4.6,34.6);return ()=>c.restore();};
+ {const gf=gunFix();
+  const g1=bHold(c,rc,4.6,-34.6,-.05,.5,-.4);
+  bArm(c,-4.6,-34.8, L(6,4.4),L(-31.4,-37.4), 20,-28.4+GY, 5,4.1, shade(CO,.72),shade(SK,.74));
+  g1();gf();}
  bTorso(c,CO,[9.6,7.2,HSK.y0,HSK.y1]);
  c.fillStyle=CO2;/* 長いコート(⚠膝まで垂れる=輪郭がまるごと変わる) */
  /* ⚠**しゃがむ時は裾を持ち上げる**=そのままだと裾が地面にめり込み、折った脚を丸ごと隠す */
@@ -10729,13 +10751,14 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
  c.fillStyle='#6b5530';/* 斜めの革帯 */
  c.beginPath();c.moveTo(-8,-33.4);c.lineTo(-4.4,-34.6);c.lineTo(8,-23.4);c.lineTo(4.4,-22.2);c.closePath();c.fill();
  c.fillStyle=GD;c.fillRect(-1.4,-28.4,3.4,3.4);
- {const g2=bHold(c,rc,4.6,-34.6,-.05,.5,-.4);
+ {const gf=gunFix();
+  const g2=bHold(c,rc,4.6,-34.6,-.05,.5,-.4);
   uGun(c,3.4,-30+GY,34,4.4,GM,0);/* 長い狙撃銃 */
   c.fillStyle='#2f3742';rr(c,7,-38.6+GY,15,4.6,1.6);c.fill();c.stroke();/* 照準器 */
   c.fillStyle=TECH;c.beginPath();c.arc(20.4,-36.3+GY,1.9+rc,0,7);c.fill();
   c.fillStyle='#3a3128';/* 二脚(⚠しゃがみと一緒に開く=据えてから狙う順になる) */
   c.beginPath();c.moveTo(27,-30.4+GY);c.lineTo(31+3.4*kn,-21+GY);c.lineTo(28.4+3.4*kn,-20.6+GY);c.lineTo(25,-29.4+GY);c.closePath();c.fill();c.stroke();
-  bArm(c,4.6,-34.6, L(8,9.2),L(-30.4,-29.6), L(9.4,8.6),-25+GY, 5.2,4.2, shade(CO,1.14),SK);g2();}
+  bArm(c,4.6,-34.6, L(8,9.2),L(-30.4,-29.6), L(9.4,8.6),-25+GY, 5.2,4.2, shade(CO,1.14),SK);g2();gf();}
  bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
  /* ⭐**ここから頭だけ水平に戻す**(TLC)=スコープを覗いて真正面を見る姿になる。
     ⚠首の付け根(1.6, nk0)を軸に回すこと。胴の途中を軸にすると首が伸びて見える */
@@ -13682,11 +13705,35 @@ function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,d
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
 const ZHPM=.85;/* ゾンビHP全体倍率 */
 const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示) */
-function zSpec(zi,mul,wave,sent,from){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
+/* ⚠`bk`=**1体あたりの報酬の補正**(2026-08-02)。体数を振った波(物量/重厚)で
+   ⚙️の総額が動かないように、体数に掛けた値の逆数をここへ渡す。⚠省略したら1(今までどおり)。 */
+function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 /* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
 function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,frzUsed:0,burnT:0,burnD:0,acdT:0,acdD:0,acdX:0,acdR:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
+/* ⭐⭐⭐**波ごとに「物量」と「重厚」が振れる**(2026-08-02ユーザー決定)。
+   ⚠狙いは**毎波の最適解を変えること**=それまで20波ぜんぶ「強い兵科で20枠を埋める」が答えだった。
+     出撃枠を重さ制(`uWt`)にしたので、**物量の波は薄く広く・重厚の波は厚く少なく**が効くようになる。
+   ⚠⚠**総HPは変えない**=`n` に掛けた値の逆数を**雑魚の mul にだけ**掛ける(`cut` と同じ作法)。
+     ボスには掛けない=掛けるとボスだけ倍率が乗る。
+   ⚠**W1〜4は振らない**(覚える前に振らせない)。⚠**5の倍数の波は必ず重厚**=読みやすさのため。
+   ⚠この値を触ったら `node test_balance.js` ではなく `node test_headless.js` の checkEarly を見ること
+     (総HPの3波移動平均で見ているので、総量が保たれていれば通る)。 */
+/* ⚠**波の番号だけで決まる純粋な関数にしておく**(Gを見ない)=UIからも検査からも同じ値が引ける。
+   ⚠**ソロPvEにだけ掛ける**判断は呼ぶ側でやる(対戦/協力は同期の都合で振らせない)。 */
+/* ⭐**覚えられる規則にする**=「**奇数の波は物量 / 偶数の波は重厚 / 5の倍数(ボスと最終)は振らない**」。
+   ⚠⚠**ボス波を重厚にしてはいけない**(2026-08-02の検証で判明)=体数が減るぶん
+     ①漏らした時のコア被害が2〜3割減って**ボス波が一番安く諦められる波**になる
+     ②`cut`(W12から数を割る)と掛け算になって1体が2.2倍まで厚くなる。ボス波は素のまま味わわせる。
+   ⚠**W12以降は振れ幅を6割に薄める**=`cut` の狙い(終盤は数を減らして1体を厚く)を打ち消さないため。
+   ⚠振れ幅は 1.34/0.74 → **1.25/0.85** に落としてある(総攻撃力と報酬のブレを抑えるため)。 */
+const tideKof=w=>{if(w<5||w%5===0)return 1;
+ const k=(w%2===1)?1.25:.85;
+ return w>=12?1+(k-1)*.6:k;};
+const tideKind=w=>{const k=tideKof(w);
+ return k>1.05?{t:'🐜 物量の波',d:'数が多く、1体は薄い'}
+  :(k<.95?{t:'🗿 重厚の波',d:'数は少なく、1体が厚い'}:{t:'⚖ 普通の波',d:''});};
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
@@ -13719,7 +13766,9 @@ function buildTide(wave){
     ⚠**総HPを動かさない**ため、n を割ったのと同じ値を雑魚の mul に掛ける。
     ⚠⚠**ボスには掛けない**=掛けるとボスだけ 1.6倍になる。 */
  const cut=wave>=12?Math.min(1.62,1+(wave-11)*.07):1;
- const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1)/cut);
+ /* ⭐波の性格(物量/重厚)。⚠**総HPを変えない**ため、下の雑魚の mul で必ず割り戻すこと */
+ const tideK=(G.pve&&!G.coop)?tideKof(wave):1;
+ const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1)*tideK/cut);
  /* ⭐敵の顔ぶれは**4つの完全別プール**(2026-07-27に「🌑×ステージ2」を足した)。
     ①廃線=ゾンビ / ②沈んだ港=海の亡骸 / ③ナイトメア=獣 / ④🌑×②=変異した深海の生き物。
     ⚠それまでは**ナイトメアならステージを問わず獣**だったので、沈んだ港で陸の獣が出ていた。 */
@@ -13739,7 +13788,8 @@ function buildTide(wave){
  const pickZ=()=>{let r2=Math.random()*zwSum;for(let i=0;i<zp.length;i++){r2-=zwt[i];if(r2<=0)return zp[i];}return zp[zp.length-1];};
  for(let k=0;k<n;k++){let pick=pickZ();
   if(wave>=4&&Math.random()<Math.min(.4,wave*.03))pick=zp[zp.length-1];
-  pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul*cut,wave)});}
+  /* ⚠報酬(bt)も体数の逆数で割り戻す=物量の波だけ稼ぎやすい/重厚の波だけ稼げない、を作らない */
+  pool.push({dl:rnd(.18,Math.max(.22,.78-wave*.022)),z:zSpec(pick,mul*cut/tideK,wave,0,'',1/tideK)});}
  /* ボスの出るウェーブ: 通常ボスは10と15だけ。最終ウェーブはステージ専用の特別なボス
     (2026-07-25ユーザー指示。以前は5波ごとに毎回ジャガーノートが出ていた) */
  /* 通常ボス=WAVE10と15 / 特別な最終ボス=WAVE20。新兵(5)・兵長(7)にはボスが出ない */
@@ -13771,7 +13821,10 @@ function buildTide(wave){
  if(EDIT){T.pool=[];T.total=0;T.qt=1e9;T.lead=0;T.up=0;return;}/* leadを大きくするとHUDの🔨に桁が出るので0 */
  /* ⭐小波に割る。⚠**ボスと送り込まれた変異体を並べ終えた後**に置くこと
     (先に置くと splice で位置がずれて、区切りが妙な所に来る) */
- {const sn=subN(wave);
+ /* ⚠⚠**小波の数は「波の番号」だけでなく「実際の体数」でも決める**(2026-08-02)。
+    物量の波は体数が1.25倍になるので、番号だけで割ると**1回に湧く塊がそのぶん膨らむ**
+    (=重さ対策で入れた仕組みが物量の波でだけ効かない)。1塊あたり11体を目安に増やす。 */
+ {const sn=Math.min(6,Math.max(subN(wave),wave<SUB_W?1:Math.round(pool.length/11)));
   if(sn>1&&pool.length>=sn*3){const step=Math.floor(pool.length/sn);
    for(let k=1;k<sn;k++){const e=pool[k*step];if(e&&!e.boss)e.dl=subGap(wave);}}}
 if(pool.length)pool[0].dl=1.1;
@@ -14366,6 +14419,29 @@ function tossFly(C,u,U,tx,ty,kind,col){
      ⚠演出オフ(FXLV=0)では tossFly が0を返すので今までどおり即時に当たる。
    ⚠中身が関数なのでセーブには乗らない(saveRunは項目を並べて書き出す方式なので問題ない)。 */
 function later(C,sec,fn){if(!C)return;(C.dly=C.dly||[]).push({t:sec,fn});}
+/* ⭐⭐**待ち行列は「作戦タイム」でも進める**(2026-08-02ユーザー指摘
+     「必殺技の最後の一発を撃たなくなってる」の正体)。
+   ⚠`campStep` は**ウェーブ中しか回らない**ので、狙撃王ジョルジの『撃墜』のように
+     **締めの1発が3.9秒後**に来る技は、その技で波を終わらせると最後だけ宙に浮いていた
+     (次の波が始まった瞬間に遅れて出るので「撃たなかった」に見える)。
+   ⚠**進めるのは待ち行列と演出だけ**=敵も部隊も動かさない(作戦タイムの意味を壊さない)。 */
+function stepDly(C,dt){
+ if(!C||!C.dly||!C.dly.length)return;
+ for(const q of C.dly){q.t-=dt;if(q.t<=0){q.done=1;if(typeof q.fn==='function'){try{q.fn();}catch(e){}}}}
+ C.dly=C.dly.filter(q=>!q.done);
+}
+function stepIdle(C,dt){
+ if(!C||C.dead)return;
+ stepDly(C,dt);
+ for(const e of C.fx)e.t+=dt;
+ C.fx=C.fx.filter(e=>e.t<((e.d0||0)+fxLife(e.k,e)));
+ try{stepP(C,dt);}catch(e){}
+ for(const u of C.units)if(u.fireT>0)u.fireT-=dt;
+ for(const u of C.units)if(u.ulW>0)u.ulW-=dt;
+ for(const u of C.units)if(u.ulT>0)u.ulT-=dt;
+ if(C.shake>0)C.shake-=dt;
+ if(C.flash>0)C.flash-=dt;
+}
 function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{}));
  /* ホストは演出イベントをクライアントへも配信(参加側で見えない問題の対策) */
  if(MODE==='host'&&G){
@@ -14502,9 +14578,14 @@ function deployUnit(C,ui){
  const dc=uDepCost(C,ui);
  {const sl9=((C.team||[]).indexOf(ui));if(sl9<0||sl9>=C.uUn)return false;}
  if(C.dead||F.dead||C.ucd[ui]>0||C.scrap<dc)return false;
- const cnt=G&&G.coop?F.units.filter(u=>!u.dead&&(u.own||0)===C.gi).length:C.units.length;
- const cap=G&&G.coop?COOP_MAXU:MAXU;
- if(cnt>=cap){if(C.isMe)toast('⚠ 部隊上限('+cap+'体)!',true);return false;}
+ /* ⭐**枠は重さで数える**(2026-08-02)。⚠**その兵科の重さぶんの空きが要る**=
+    残り1枠にタイタン(4枠)は入らない。 */
+ const cnt=G&&G.coop?unitsWt(F.units,C.gi||0):unitsWt(C.units),wt=uWt(ui);
+ /* ⚠⚠**まだ出していない英雄のぶんを予約しておく**(2026-08-02)。
+    予約しないと**部隊で枠を埋め切った時点で英雄を一生出せない**(部隊を下げる操作は無い・
+    作戦タイムは敵が居ないので枠が空かない)=NOTES「塞いだ先に詰む物が無いか洗う」に該当。 */
+ const cap=(G&&G.coop?COOP_MAXU:MAXU)-((C.hUi>=0&&C.hOut===0)?uWt(C.hUi):0);
+ if(cnt+wt>cap){if(C.isMe)toast('⚠ 部隊枠が足りない('+cnt+'/'+cap+' ・'+U.n+'は'+wt+'枠'+((C.hUi>=0&&C.hOut===0)?' /🦸に'+uWt(C.hUi)+'枠を確保中':'')+')',true);return false;}
  C.scrap-=dc;C.ucd[ui]=U.cd*metaCd()*(C.supCd||1);C.dep++;/* 🏥野戦病院ぶんCD短縮 */
  /* ⭐研究所の個別強化(その兵科1種ぶん)。⚠部隊レベル(全兵科+10%/Lv)とは別枠で掛け算 */
  const UL=unlv(unKey(U)),US=UN_STEP(U.type);
@@ -14682,7 +14763,8 @@ function airstrikeHit(C,x,y,wave,stk,mine){
    見分けは u.hro(=1)。倒れたら復活しない(hOut=2)。 */
 function heroDeploy(C){
  if(!C||C.dead||C.hUi<0||C.hOut!==0)return false;
- if(C.units.length>=MAXU){if(C.isMe)toast('⚠ 部隊上限('+MAXU+'体)! 空きを作ってから',true);return false;}
+ /* ⚠英雄も枠(4)を使う。⚠**黙って false を返さない**=なぜ出せないかを必ず出す */
+ if(unitsWt(C.units)+uWt(C.hUi)>MAXU){if(C.isMe)toast('⚠ 部隊枠が足りない(英雄は'+uWt(C.hUi)+'枠)! 空きを作ってから',true);return false;}
  const U=UNITS[C.hUi],H=heroAt(C.hUi);if(!U||!H)return false;
  const lvM=(1+.1*(C.uLv||0))*hBoost(H.id);/* 部隊レベル+🏋鍛錬レベルが乗る */
  const hp0=Math.round(U.hp*lvM);
@@ -14757,9 +14839,12 @@ function heroUlt(C,wave){
    dmgZ(C,tg,dm,1);addFx(C,'boom',tg.px,tg.py,'');}
   if(C.isMe)sfx.shot&&sfx.shot();
  }else if(id==='hMed'){/* 蘇生: 戦死した部隊を呼び戻す+生存部隊を全回復 */
-  let n=0;const room=MAXU-C.units.length;
-  while(C.fallen&&C.fallen.length&&n<Math.min(4,room)){
-   const f=C.fallen.pop();
+  /* ⚠**枠は重さで見る**(2026-08-02)=蘇る兵科の重さぶんの空きが要る */
+  let n=0;
+  while(C.fallen&&C.fallen.length&&n<4){
+   const f=C.fallen[C.fallen.length-1];
+   if(unitsWt(C.units)+uWt(f.ui)>MAXU)break;
+   C.fallen.pop();
    C.units.push({eid:EID++,ui:f.ui,own:C.gi||0,am:f.am,d:clamp(u.d-10-n*12,60,PLEN-40),hp:f.mhp,mhp:f.mhp,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
    n++;}
   for(const u2 of C.units)if(!u2.dead)u2.hp=u2.mhp;
@@ -14840,9 +14925,11 @@ function heroUlt(C,wave){
   const F=(G&&G.coop)?G.players[0]:C;
   let bi=-1,bc=-1;
   {const T9=(C.team||[]);for(let k=0;k<Math.min(C.uUn||0,T9.length);k++){const i9=T9[k],UU=UNITS[i9];if(UU&&UU.cost>bc){bc=UU.cost;bi=i9;}}}
-  const room=(G&&G.coop?COOP_MAXU:MAXU)-F.units.length;
+  /* ⚠**枠は重さで見る**(2026-08-02)=呼ぶ兵科の重さぶんの空きが要る */
+  const cap9=(G&&G.coop?COOP_MAXU:MAXU);
   let n=0;
-  if(bi>=0)for(let k=0;k<Math.min(4,room);k++){
+  if(bi>=0)for(let k=0;k<4;k++){
+   if(unitsWt(F.units,G&&G.coop?(C.gi||0):null)+uWt(bi)>cap9)break;
    const UU=UNITS[bi],UL=unlv(unKey(UU)),US=UN_STEP(UU.type);
    const lvM=(1+.1*(C.uLv||0))*(1+US.a*UL),hp0=Math.round(UU.hp*(1+.1*(C.uLv||0))*(1+US.h*UL));
    F.units.push({eid:EID++,ui:bi,own:C.gi||0,am:lvM,d:clamp(u.d-8-k*15,60,PLEN-40),
@@ -15731,9 +15818,7 @@ function campStep(C,dt,wave){
   if(C.mg.t<=0)C.mg=null;
  }
  /* 遅らせておいた演出(投擲の着弾など)を起こす */
- if(C.dly&&C.dly.length){
-  for(const q of C.dly){q.t-=dt;if(q.t<=0){q.done=1;if(typeof q.fn==='function'){try{q.fn();}catch(e){}}}}
-  C.dly=C.dly.filter(q=>!q.done);}
+ stepDly(C,dt);
  stepP(C,dt);
  /* エフェクト整理 */
  for(const e of C.fx)e.t+=dt;
@@ -16029,6 +16114,8 @@ function gameStep(dt){
    if(G.clearT<=0){G.clearT=null;startInterval();}
   }
  }else if(G.phase==='interval'){
+  /* ⭐**遅らせておいた演出の続きだけは進める**(2026-08-02)=必殺技の締めの1発が宙に浮かないように */
+  for(const C of G.players)stepIdle(C,dt);
   if(!tutHold())G.tI-=dt;/* 🎓チュートリアル中は時間で波が始まらないようにする */
   for(const C of G.players){if(C.kind==='cpu'&&!C.dead&&!C.planned){C.aiPlanT-=dt;if(C.aiPlanT<=0){C.planned=true;cpuPlan(C);}}}
   let allr=true;for(const C of G.players)if(!C.dead&&!C.ready)allr=false;
@@ -16911,6 +16998,14 @@ function updHUD(){const m=meV();if(!m)return;
   const cl=$('corelbl');cl.textContent=Math.ceil(m.core);if(cl.style)cl.style.color=cr>.4?LIFE:DANGER2;}
  $('energybox').innerHTML=IC('⚙️ ')+fmt(m.scrap);
  $('ptbox').innerHTML=IC('🔩 ')+fmt(m.up||0);
+ /* ⭐部隊の枠(重さ)。⚠**満杯に近いと赤くする**=出せない理由が一目で分かるように */
+ {const ub=$('ubox');
+  if(ub){const cap9=(G&&G.coop?COOP_MAXU:MAXU);
+   /* ⚠参加側の自分の番号は `CS.myJ`(CS.meN は gi を持っていない) */
+   const w9=MODE==='client'?unitsWt((CC&&CC.units)||[],CS.myJ||0)
+    :unitsWt(G&&G.coop?G.players[0].units:m.units,G&&G.coop?(m.gi||0):null);
+   ub.textContent='🤝 '+w9+'/'+cap9;
+   if(ub.style)ub.style.color=w9>=cap9?DANGER2:(w9>=cap9-3?AMBER:LIFE);}}
  /* ウェーブ放棄ボタン(ソロPvE・ウェーブ中のみ) */
  {const gw=$('ffwave');
   const on=!!(G&&G.pve&&!G.coop&&MODE!=='client'&&G.phase==='wave'&&!m.dead&&!m.waveDone&&gameActive);
@@ -17308,6 +17403,11 @@ function actStrike(x,y){if(MODE==='client'){sendCmd({t:'c',a:'st',x:Math.round(x
 function actDeploy(ui){
  if(MODE==='client'){const m=meV();if(!m||m.dead)return;const U=UNITS[ui],dc=uDepCost(m,ui);
   if(ui>=(m.uUn!=null?m.uUn:2)||(m.ucd&&m.ucd[ui]>0)||m.scrap<dc)return;
+  /* ⚠**参加側でも枠を見る**(2026-08-02)=見ないと⚙️だけ引かれてホスト側で弾かれる(ズレる)。
+     ⚠⚠**参加側の自分の番号は `CS.myJ`**=`meV()`(CS.meN)は gi を持っていないので
+       `m.gi||0` と書くと常に0(=ホスト)を数えてしまう。 */
+  if(CC&&CC.units&&unitsWt(CC.units,CS.myJ||0)+uWt(ui)>(COOP?COOP_MAXU:MAXU)){
+   toast('⚠ 部隊枠が足りない',true);return;}
   sendCmd({t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
 let DECKB=[],DECKI=[];
@@ -17386,6 +17486,12 @@ function ivRender(){
  const labT=!nx&&tcap<TOWERS.length,labU0=tcap<TOWERS.length;
  /* ⚠**WAVE3までの解放ロックは廃止した**(2026-07-27ユーザー指示)。最初の作戦タイムから解放できる */
  let h='';
+ /* ⭐⭐**次の波の性格を先に見せる**(2026-08-02)。⚠見せないと「ただの当たり外れ」になり、
+    出撃枠を重さ制にした意味(薄く広く/厚く少なく の選択)が伝わらない。 */
+ if(G&&G.pve&&!G.coop){const w9=(G.wave||0)+1,k9=tideKind(w9);
+  /* ⚠**カードは grid で並ぶ**ので、`grid-column:1/-1` を付けないと1枚ぶんの枠に収まって
+     カードの1枚のように見える(2026-08-02に撮って気づいた) */
+  if(k9.d)h+=`<div class="bphint" style="grid-column:1/-1;margin:0 2px 2px">次の WAVE ${w9} は <b>${k9.t}</b> — ${k9.d}</div>`;}
  h+=`<div class="card"><div class="ci">🔓</div><div class="ct">新タワー解放</div><div class="cdsc">${nx?('次:『'+nx.n+'』— '+nx.dsc):labT?'🔬研究所で解放するとここに出る':'全タワー解放済み!'}</div><button class="btn gold sm buy" data-buy="unlock" ${nx&&can('unlock')?'':'disabled'}>${nx?'⚙️'+pc('unlock'):'-'}</button></div>`;
  /* ⚠**次に開くのは「連れて行くと決めた10体」の次の1体**(2026-08-01の編成制)。
     ⚠全部開き切ったら「編成で選び直す」を促す=研究所待ちとは意味が違う */
@@ -17958,7 +18064,9 @@ function startTst(){
  const me=G.players[0];
  me.scrap=99999;me.up=me.upTotal=99999;
  me.coreMax=99999;me.core=me.coreMax;
- me.unlocked=TOWERS.length;me.team=UNITS.map((u,i)=>i);me.uUn=me.team.length;
+ /* ⚠⚠**下のデッキに英雄を載せない**(2026-08-02ユーザー指示「検証場の下のユニット欄のヒーローは削除、
+    上の帯の切り替えに一本化」)。UNITS の末尾(HERO_I0以降)は英雄なので `U_N` で切ること。 */
+ me.unlocked=TOWERS.length;me.team=UNITS.map((u,i)=>i).filter(i=>i<U_N);me.uUn=me.team.length;
  me.stk=META.st&&META.st.length?META.st[0]:'air';
  me.hUi=-1;me.hOut=0;me.hCg=1;me.fallen=[];
  me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
@@ -18010,7 +18118,10 @@ function tstHero(ui){
       検証場では古い部隊を1体ずつ捨てて必ず枠を空ける。 */
  for(const u of me.units)if(u.hro)u.dead=true;
  me.units=me.units.filter(u=>!u.dead);
- while(me.units.length>=MAXU)me.units.shift();
+ /* ⚠⚠**枠は「重さ」で見る**(2026-08-02)。`units.length>=MAXU` のままだと、
+    タイタン5体(重さ20)でも length=5 なので1体も捨てず、英雄が出せない状態に戻る。
+    ⚠`me.units.length` を空ループ防止の番人として必ず残すこと。 */
+ while(me.units.length&&unitsWt(me.units)+uWt(ui)>MAXU)me.units.shift();
  me.hUi=ui;me.hOut=0;me.hCg=1;
  let ok=false;try{ok=heroDeploy(me);}catch(e){}
  if(!ok)toast('🧪 英雄を出せなかった('+((UNITS[ui]||{}).n||ui)+')',true);

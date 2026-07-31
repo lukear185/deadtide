@@ -92,7 +92,9 @@ const PXM=/pxcmp(?:=([A-Za-z0-9]+))?/.exec(OPT),PXC=!!PXM,PXID=(PXM&&PXM[1])||'w
 /* intro=t|u|z = 新登場の紹介モーダル(タワー/兵科/ゾンビ) */
 const IRM=/intro(?:=([tuz]))?/.exec(OPT),INTRO=!!IRM,INTROK=(IRM&&IRM[1])||'u';
 /* iv = 作戦タイム(準備画面)の強化カードを撮る。⚠🔩と⚙️を潤沢にして全部のカードを押せる状態にする */
-const IV=/(^|\+)iv(\+|$)/.test(OPT);
+const IV=/(^|\+)iv(=\d+)?(\+|$)/.test(OPT);
+/* ⭐iv=12 でそのウェーブの作戦タイムとして撮る(次の波の性格の行を見るため。2026-08-02) */
+const IVW=(/(^|\+)iv=(\d+)/.exec(OPT)||[])[2]||0;
 /* re2 = 一度タイトルへ戻ってから**もう一度出撃**して撮る。
    ⚠2回目でしか出ない不具合(DOMを作り直す所で要素が消える等)を捕まえるための撮り方。
    画面下に赤いエラー帯が出ていないかを見る。 */
@@ -308,6 +310,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +(RE2?('setTimeout(function(){try{backTitle();startSolo();'
      +'}catch(e){document.title="ERR10 "+e.message;}},1000);'):'')
  +(IV?('setTimeout(function(){try{var mI=G.players[0];mI.up=9999;mI.scrap=99999;'
+     /* ⭐iv=12 のように数字を付けると、そのウェーブの作戦タイムとして撮る(2026-08-02)。
+        次の波の性格(🐜物量/🗿重厚)の行はW5以降しか出ないので、これが無いと一生撮れない */
+     +(IVW?('G.wave='+IVW+';'):'')
      /* ⚠新登場の紹介モーダル(PAUSED)が上に乗るので、待ってから畳んで開く */
      +'INTROQ.length=0;G.introQ=[];document.getElementById("md-intro").classList.remove("on");PAUSED=false;ivOpen();'
      +'}catch(e){document.title="ERR6 "+e.message;}},1200);'):'')
