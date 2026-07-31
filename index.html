@@ -3014,7 +3014,8 @@ const D5=[
       **盤面に常時500体前後・尺は1分強**になる勘定。⚠数字の詰めは実機待ち。
     ⚠**pay を 1.15→.45 に下げてある**=体数が15倍になったので、そのままだと⚙️が2万を超えて
       置ける物を全部置いても余る(建設マスは22枠しかない)。実入りは約7千=今までの4倍。 */
- {n:'🚌 バスの日',w:1,hp:.30,cnt:230,sp:1.12,boss:1,scrap:1500,pay:.45}
+ /* ⚠`sp` は 2026-08-02(6) に 1.12→1.75(街路を画面の外まで伸ばしたぶん歩く時間が延びたため) */
+ {n:'🚌 バスの日',w:1,hp:.30,cnt:230,sp:1.75,boss:1,scrap:1500,pay:.45}
 ];
 /* ⭐ボーナス面の難易度番号と、画面に並べる順(=解放の鎖)。
    ⚠**新兵→兵長→🚌→古参→…**。ボーナスは「遊べば次が開く」=クリアしなくても古参へ進める
@@ -16646,15 +16647,12 @@ function renderCamp(C,t){
   if(LANES){for(const L of LANES){c.moveTo(L.seg[0].a[0],L.seg[0].a[1]);for(const s of L.seg)c.lineTo(s.b[0],s.b[1]);}return;}
   c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);};
  c.lineJoin='round';c.lineCap='round';
- /* ⭐⭐**🚌開拓便はTDの舗装路を引かない**(2026-08-02(4)ユーザー「TDの時の道路みたいなのはいらない」)。
-    ⚠縁石・白線・タイヤ痕は**どう描いてもタワーディフェンスの盤面に見える**。
-    ⭐代わりに**踏み固められた土**を2枚だけ薄く敷く=道の形は**両脇の建物と森**が語る。 */
- if(C.bus){
-  c.save();
-  c.strokeStyle='rgba(72,64,50,.26)';c.lineWidth=BNS_OFF*2+40;roadPath();c.stroke();
-  c.strokeStyle='rgba(96,85,64,.24)';c.lineWidth=BNS_OFF*1.05;roadPath();c.stroke();
-  c.restore();
- }else{
+ /* ⭐⭐⭐**🚌開拓便は道を1本も描かない**(2026-08-02(6)ユーザー「今Xになってる道みたいなの消して」)。
+    ⚠舗装路をやめて「踏み固めた土」に変えてもダメだった=**拠点から4方向へ伸びる帯**である限り、
+      何色で塗ってもX字の記号に見える。⭐**通れる所は建物と森の隙間**だけで語らせる。
+    ⚠代わりに「どこから来るか」は**画面の縁の矢印**(`drawBnsWarn`)とミニマップで見せる。 */
+ if(C.bus){/* 何も描かない */}
+ else{
  c.strokeStyle='rgba(0,0,0,.22)';c.lineWidth=104;roadPath();c.stroke();/* 路肩の影 */
  c.strokeStyle=mix('#6b6459','#39362f',dk*.5);c.lineWidth=98;roadPath();c.stroke();/* 縁石 */
  c.strokeStyle=mix('#57524a','#2f2d29',dk*.4);c.lineWidth=92;roadPath();c.stroke();/* 舗装 */
@@ -16668,16 +16666,9 @@ function renderCamp(C,t){
  c.strokeStyle='rgba(190,182,158,.5)';c.lineWidth=4;c.setLineDash([24,30]);
  roadPath();c.stroke();c.setLineDash([]);
  }
- /* ⭐⭐**いま大群が来ている道を赤く脈打たせる**(2026-08-02(3))=一度に濃く来るのは1方向なので、
-    **どこへ迎えに行けばいいか**が画面のどこに居ても分かる必要がある(道は端まで伸びているので、
-    バスがどこに居ても必ず視界に入る)。⚠予告の言葉(トースト)だけでは流れて消える。 */
- if(C.bus&&LANES&&G&&G.tide&&G.tide.hotLn!=null&&LANES[G.tide.hotLn]){
-  const L9=LANES[G.tide.hotLn],pu=.5+.5*Math.sin(t*3.2);
-  c.save();c.lineCap='round';
-  c.strokeStyle='rgba(226,80,52,'+(.16+.14*pu).toFixed(3)+')';c.lineWidth=96;
-  c.beginPath();c.moveTo(L9.seg[0].a[0],L9.seg[0].a[1]);
-  for(const s of L9.seg)c.lineTo(s.b[0],s.b[1]);
-  c.stroke();c.restore();}
+ /* ⚠**赤く光る道の帯は 2026-08-02(6) に廃止**(ユーザー「道みたいなの消して」)=
+    あれも結局「拠点から伸びる帯」なのでX字に見える原因そのものだった。
+    ⭐予告は**画面の縁の矢印**(`drawBnsWarn`)とミニマップへ移した。書き戻さないこと。 */
  /* 装飾 */
  for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
@@ -17486,7 +17477,43 @@ function renderCamp(C,t){
  if(C.dead){c.fillStyle='rgba(30,16,12,.62)';c.fillRect(0,0,MW,MH);c.fillStyle=PANE;c.font='900 60px '+FF;c.textAlign='center';c.fillText('💀 拠点陥落…',800,MH*.44);c.font='900 28px '+FF;c.fillText('観戦モード',800,MH*.44+50);}
  if(SPEC>=0){c.fillStyle='rgba(36,31,25,.78)';rr(c,MW/2-360,178,720,56,16);c.fill();c.strokeStyle=PANE;c.lineWidth=3;c.stroke();
   c.fillStyle=PANE;c.font='900 30px '+FF;c.textAlign='center';c.fillText('👁 '+specName()+' の拠点を観戦中 — 画面タップで戻る',MW/2,215);}
+ if(C.bus)try{drawBnsWarn(c,C);}catch(e){}/* ⚠ミニマップより先(縁の矢印が地図の下に潜らないように) */
  if(CAM)drawMiniMap(c,C);/* 🗺カメラが動く面だけ(いま自分がどこに居るか) */
+}
+/* ⭐⭐**大群が来る向きを画面の縁で知らせる**(2026-08-02(6))。
+   ⚠道を1本も描かなくなったので、**どこから来るかを地面で語れない**。
+     しかも湧く所は画面の外にあるので、来ていることに気づけないまま拠点が削られる。
+   ⭐**画面の縁に矢印と方角を出す**=世界のどこを見ていても必ず目に入る。
+   ⚠**画面の座標で描く**(世界の変換を戻してから)。⚠ミニマップより先に描くこと。 */
+function drawBnsWarn(c,C){
+ if(!G||!G.tide||G.tide.hotLn==null||!LANES||!LANES[G.tide.hotLn])return;
+ if(!(SC>0))return;
+ const L=LANES[G.tide.hotLn],a0=L.seg[0].a,dpr=DPR||1,W=cv.width,H=cv.height;
+ const cx=W/2,cy=H/2;
+ let dx=(OX+a0[0]*SC)-cx,dy=(OY+a0[1]*SC)-cy;
+ const l=Math.hypot(dx,dy);if(!(l>1))return;dx/=l;dy/=l;
+ /* 画面の枠から少し内側に置く */
+ const mx=W*.5-52*dpr,my=H*.5-52*dpr;
+ const k=Math.min(Math.abs(mx/(Math.abs(dx)<1e-4?1e-4:dx)),Math.abs(my/(Math.abs(dy)<1e-4?1e-4:dy)));
+ const px=cx+dx*k,py=cy+dy*k;
+ const pu=.5+.5*Math.sin(((C.bus&&C.bus.t)||0)*4.2);
+ c.save();c.setTransform(1,0,0,1,0,0);
+ c.translate(px,py);
+ c.save();c.rotate(Math.atan2(dy,dx));
+ c.globalAlpha=.5+.4*pu;
+ c.fillStyle='#e25034';c.strokeStyle=INK;c.lineWidth=3*dpr;c.lineJoin='round';
+ const s=18*dpr;
+ c.beginPath();c.moveTo(s*1.45,0);c.lineTo(-s*.55,-s);c.lineTo(-s*.05,0);c.lineTo(-s*.55,s);c.closePath();
+ c.fill();c.stroke();
+ c.restore();
+ /* 方角の文字(⚠矢印の内側=画面の中心寄りに置く) */
+ c.globalAlpha=.9;c.textAlign='center';c.textBaseline='middle';
+ c.font='900 '+Math.round(13*dpr)+'px '+FF;
+ c.fillStyle=PANE;c.strokeStyle=INK;c.lineWidth=4*dpr;
+ const tx=-dx*30*dpr,ty=-dy*30*dpr;
+ const nm=bnsDirN(G.tide.hotLn)+'から';
+ c.strokeText(nm,tx,ty);c.fillText(nm,tx,ty);
+ c.restore();
 }
 /* ⭐🗺**ミニマップ**(2026-08-02ユーザーの参考画像)。**カメラが動く面だけ**出す
    =画面に全部映っている面では要らない(場所を食うだけ)。
@@ -18641,7 +18668,10 @@ const BNS_GEM=50;                 /* 初回クリアの💎 */
 const BNS_PTS=[600,1100];         /* 初回クリアの🧬(ステージごと) */
 /* ⭐**開拓便のマップは広い**(2026-08-02ユーザーの参考画像)=画面の2倍角。🎥カメラで持ち歩く。
    ⚠**広げても寄り具合は変わらない**(倍率の基準は MW のまま)。 */
-const BNS_W=9600,BNS_H=4560;
+/* ⚠**2026-08-02(6)に広げた**(ユーザー「画面外からゾンビが来る感じにして」)=
+   街路の端(=湧く所)を画面の外へ出すには、街路を3600まで伸ばす必要があり、
+   縦にはみ出すのでマップごと大きくした。 */
+const BNS_W=11000,BNS_H=8000;
 const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 拠点はマップのまんなか */
 /* 廃墟の散らばり(開拓便だけ)。⚠**決め打ちで並べない**=種から散らすと広い面でも密度が保てる。
    参考画像から拾った物=廃車 / タイヤ / ドラム缶 / 木箱 / 瓦礫 / コンクリのバリア / 枯れ木。
@@ -18655,7 +18685,11 @@ const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 拠点はマップのまんなか */
    ⚠⚠**4本の長さは必ず同じ**(`z.d>=PLEN` のコア到達判定が全レーン共通のため)=
      **同じ半径・同じ折れ角で作る**ことで、形を不揃いに見せながら長さは厳密に揃う。
    ⚠向きは**90度刻みにしない**=等間隔だと折れていてもX字に見える。 */
-const BNS_LR=1700;                        /* 街路の長さ(拠点からの半径。世界座標) */
+/* ⚠⚠**街路は画面の外まで伸ばす**(2026-08-02(6)ユーザー「画面外からゾンビが来る感じにして」)。
+   ⚠前は1700しかなく、**画面に映る範囲(中心から横3076・縦1418)の内側で湧いていた**ので、
+     何もない所にゾンビが**ぽんと現れていた**。⭐3600まで伸ばして、必ず画面の外から歩いてこさせる。
+   ⚠伸ばしたぶん歩く時間が延びるので、この面の足の速さ(`D5` の🚌行 `sp`)も上げてある。 */
+const BNS_LR=3600;                        /* 街路の長さ(拠点からの半径。世界座標) */
 const BNS_LA=[-0.30,1.42,2.92,4.52];      /* 入ってくる向き(⚠等間隔にしない) */
 const BNS_LB=0.46;                        /* 折れの深さ(大きいほど大きく曲がる) */
 function bnsLanePts(i){
