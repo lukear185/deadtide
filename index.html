@@ -449,6 +449,19 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .ldc.lock{opacity:.42;filter:saturate(.3)}
 .ldc .lds{font-size:10px;font-weight:800;opacity:.75}
 .ldhdr{font-size:12px;font-weight:900;color:var(--rust2);margin:8px 2px 4px;text-align:left;border-top:2px dashed rgba(147,56,30,.4);padding-top:8px}
+/* ⭐**編成の「解放される順番」の帯**(2026-08-01ユーザー指摘「編成の画面がわかりずらい」)。
+   ⚠これが一番伝えたい情報=**選んだ10体が安い順に解放される**。文章で書くより並べて見せる。
+   ⚠横に流す(overflow-x)=縦に積むと横画面(高さ393px)で下の一覧が画面外へ出る。 */
+.tmord{display:flex;gap:4px;overflow-x:auto;padding:2px 0 5px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.tmo{flex:0 0 auto;display:flex;align-items:center;gap:4px;background:var(--pane);border:2px solid var(--ink);
+ border-radius:8px;padding:3px 7px;font-size:11.5px;font-weight:900;color:var(--ink);white-space:nowrap}
+.tmo b{background:var(--ink);color:var(--paper);border-radius:5px;padding:0 4px;font-size:10.5px}
+.tmo i{font-style:normal;font-size:10px;font-weight:800;color:var(--rust2)}
+.tmo.fix{background:var(--gold)}
+.tmsum{font-size:12px;font-weight:900;color:var(--ink);text-align:left;margin:0 2px 2px}
+.tmsum b{color:var(--rust2)}
+.lc.sel{background:var(--gold);box-shadow:0 0 0 2px var(--gold2) inset}
+.lc.lock{opacity:.55;filter:saturate(.35)}
 #seg-stk{flex-wrap:wrap}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
@@ -18574,12 +18587,13 @@ function drawUnitAs(c,i,def){
 function ldPrev(cvv,i,def){fitDraw(cvv,c=>drawUnitAs(c,i,def),3);}
 /* 編成もタブ制。⚠13行を縦に積むと横画面(高さ393px)で1行半しか見えない */
 let LDTAB='team';
+/* ⚠⚠**タブは2つまで**(2026-08-01ユーザー指摘「編成の画面がわかりずらい」)。
+   ⚠それまで3つあり、しかも「基本の枠」と「上級」は**同じこと(派生キャラの割り当て)を
+     カテゴリで割っただけ**だった=何が違うのか読めない。1つに畳んだ。
+   ⚠**の記法は使わない=そのまま文字として出る(2026-08-01に撮って気づいた) */
 const LD_TABS=[
- /* ⭐2026-08-01に**連れて行く10体を選ぶタブ**を先頭に足した(ユーザー指示の編成制) */
- /* ⚠**の記法は使わない=そのまま文字として出る(2026-08-01に撮って気づいた) */
- {k:'team',n:'🎒 連れて行く',d:'戦場へ連れて行く兵科を'+TEAM_N+'体まで選ぶ。⚠戦闘中は「選んだ中の安い順」に解放される=高い兵科ばかり選ぶと解放が進まない'},
- {k:'base',n:'🪖 基本の枠',d:'解放した兵科それぞれに、どのキャラを入れるか決める'},
- {k:'adv',n:'⭐ 上級',d:'🔬研究所で解放する上級ユニット(3段階で姿が変わる)'}];
+ {k:'team',n:'🎒 連れて行く',d:''},
+ {k:'var', n:'⭐ 派生を選ぶ',d:'解放した兵科それぞれに、どの派生キャラを入れるか決める(強さも変わる)'}];
 /* ⚠**弾薬タブは2026-07-27に廃止**(タワーの進化に置き換えた)。書き戻さないこと */
 function renderLoad(){
  const box=$('load-items');if(!box)return;
@@ -18600,19 +18614,32 @@ function renderLoad(){
     +'<canvas width="76" height="76"></canvas><span>'+(lock?'🔒':'')+o.def.n+'<br><span class="lds">⚙️'+o.def.cost+' HP'+o.def.hp+' 攻'+o.def.atk+'</span></span></button>';});
   h+='</div></div>';};
  if(LDTAB==='team'){
-  /* ⭐**連れて行く兵科を選ぶ**。⚠猟犬とバットは固定枠(外せない)。
-     ⚠**解放費の合計を必ず出す**=これが無いと「高い兵科ばかり選ぶと進まない」が
-       プレイヤーに見えず、ただ理不尽なだけになる。 */
+  /* ⭐⭐**「選んだ10体が安い順に解放される」を文章ではなく並びで見せる**
+     (2026-08-01ユーザー指摘「編成の画面がわかりずらい」で作り直し)。
+     ⚠前の形=長い注意書き1行+特大カード30枚。何を選んでいるのか・何が起きるのかが
+       スクロールしないと分からなかった。
+     ⭐上に**解放される順番の帯**(番号+名前+その1体を出すのに要る⚙️)、下に一覧。
+     ⚠猟犬とバットは固定枠(外せない)。 */
   const own=metaUnitCap(),T9=teamIdx();
-  const sum=T9.reduce((a,i)=>a+(UNITP[i]||0),0);
-  h+='<div class="bphint">選択 '+T9.length+'/'+TEAM_N+' — この編成を全部解放するのに <b>⚙️'+sum.toLocaleString()+'</b></div>';
-  h+='<div class="lgrid">';
+  let sum=0;
+  h='<div class="ldhdr" style="border-top:0;padding-top:0;margin:2px 2px 3px">'
+   +'🎒 連れて行く '+T9.length+'/'+TEAM_N+' — 戦闘中はこの順に解放される</div>';
+  h+='<div class="tmord">';
+  T9.forEach((i,k)=>{const p=UNITP[i]||0;sum+=p;
+   h+='<span class="tmo'+(TEAM_FIX.indexOf(i)>=0?' fix':'')+'"><b>'+(k+1)+'</b>'
+    +((UBASE[i]||{}).n||'?')+'<i>⚙️'+p+'</i></span>';});
+  h+='</div>';
+  h+='<div class="tmsum">10体ぜんぶ出すのに <b>⚙️'+sum.toLocaleString()+'</b>'
+   +' — 高い兵科ばかり連れて行くと、後ろの番号は最後まで出せない</div>';
+  h+='<div class="ldhdr">🪖 持っている兵科 '+own+'種(押して入れ替える)</div>';
+  h+='<div class="lgrid tight">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
    const fix=TEAM_FIX.indexOf(i)>=0,on=T9.indexOf(i)>=0;
    h+='<button class="lc'+(on?' sel':'')+(fix?' lock':'')+'" data-team="'+i+'"'+(fix?' disabled':'')+'>'
-    +'<canvas width="76" height="76"></canvas><span>'+(fix?'🔒':on?'✅':'')+U.n
-    +'<br><span class="lds">解放⚙️'+(UNITP[i]||0)+' / 出撃⚙️'+U.cost+'</span></span></button>';}
+    +'<canvas class="pvc" width="76" height="76"></canvas>'
+    +'<span class="nm">'+(fix?'🔒':on?'✅':'')+U.n+'</span>'
+    +'<span class="tg">解放⚙️'+(UNITP[i]||0)+'</span></button>';}
   h+='</div>';
   box.innerHTML=IC(h);
   box.querySelectorAll('[data-team]').forEach(b=>{
@@ -18624,13 +18651,14 @@ function renderLoad(){
     if(k>=0)cur.splice(k,1);
     else{
      /* ⚠固定枠のぶんを引いた残りが上限 */
-     if(teamIdx().length>=TEAM_N){toast('⚠ 連れて行けるのは'+TEAM_N+'体まで',true);return;}
+     if(teamIdx().length>=TEAM_N){toast('⚠ 連れて行けるのは'+TEAM_N+'体まで(誰かを外す)',true);return;}
      cur.push(id);}
     META.team=cur;saveMeta();sfx.buy&&sfx.buy();renderLoad();};});
   return;
  }
- if(LDTAB==='base')VBASE.forEach((bid,n)=>row(bid,(n+1)+'つ目の枠 — 基本『'+((UBASE.find(u=>u.id===bid))||{}).n+'』'));
- else FVBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'上級『'+B.n+'』');});
+ /* ⭐派生の割り当て。⚠基本と上級を**1つのタブ**にまとめた(2026-08-01)=分ける意味が無かった */
+ VBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'基本『'+B.n+'』');});
+ FVBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'⭐上級『'+B.n+'』');});
  box.innerHTML=IC(h);
  box.querySelectorAll('[data-v]').forEach(b=>{
   const i=+b.dataset.i,k=+b.dataset.k,bid=b.dataset.b,B=UBASE[i];
