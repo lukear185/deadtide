@@ -347,8 +347,14 @@ body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint{display:no
 /* 🔬研究所のタブは2段(上=4枚のグループ / 下=その中身)。⚠外側だけ縦並びにする */
 #lab-tabs{display:flex;flex-direction:column;gap:3px;overflow:visible}
 #lab-tabs .tabs{width:100%}
-.tabs.t2 .tb{font-size:11px;padding:3px 8px;background:var(--paper)}
+/* ⚠⚠**色だけで段を分けない**(2026-08-02ユーザー指摘「一段目と二段目がわかりづらい」)=
+   選ばれていないボタンは上下でほぼ同じ見た目になる。⭐**①左へ寄せる ②帯で囲う ③形を丸くする**
+   の3つで差を付ける(形と位置は選択状態に関係なく効くので、どのタブを選んでいても段が分かる)。 */
+.tabs.t2{margin-left:18px;padding:3px 6px;background:rgba(0,0,0,.07);
+ border-radius:0 10px 10px 0;border-left:4px solid var(--rust)}
+.tabs.t2 .tb{font-size:11px;padding:3px 11px;border-radius:999px;background:var(--paper)}
 .tabs.t2 .tb.on{background:var(--amber);color:var(--ink)}
+.tabs.t2 .tb i{font-size:9px}
 .bpbody{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .bpfoot{flex:0 0 auto}
 .bprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:0 0 auto}
