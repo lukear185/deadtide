@@ -2011,8 +2011,12 @@ const TOWERS=[
    ⚠**強化Lvは引き継ぐ**(工房だけは0に戻る)。射程や連射が下がって見えると「進化したのに弱くなった」になるため。
    ⚠**base=元のタワーのid**。研究所の個別強化(twKey)は元のタワーと同じ枠を共有する
      =進化しても研究所で積んだLvが無駄にならない。
-   数値の決まり: 威力×2.0 / 間隔×0.85 / 射程×1.12 / 持ち味(範囲・燃焼・連鎖・凍結など)も一段上。
-   費用の決まり: gc = 素のタワーの値段 × 8。 */
+   ⭐⭐**2026-08-02から進化は2段になった**(ユーザー指示「進化を2回できるようにして2段目を弱くする」)。
+     素 →(中段=下で機械的に作る)→ **ここに並んでいるのが最終形態**。
+     ⚠**ここの数値・id・名前・絵は1つも動かしていない**=セーブ(META.tg)も検査もそのまま生きる。
+     きつかった「素からいきなり3.1倍」は、間に1.55倍の段が入ることで解消している。
+   数値の決まり(最終形態): 威力×2.0 / 間隔×0.85 / 射程×1.12 / 持ち味(範囲・燃焼・連鎖・凍結など)も一段上。
+   費用の決まり: gc = 素のタワーの値段 × 8(中段から最終形態への建て替え費)。 */
  {id:'rifle2',n:'連装ライフル',base:'rifle',grd:1,cost:360,rng:258,dmg:44,rate:.47,type:'bullet',c:'#9fb0c2',dsc:'二連の砲身が交互に吠える。ライフル台の完成形'},
  {id:'shot2',n:'散弾要塞',base:'shot',grd:1,cost:600,rng:196,dmg:52,rate:.77,type:'bullet',multi:4,c:'#c4a06b',dsc:'四つ口から浴びせる散弾。4体同時'},
  {id:'net2',n:'鋼糸射出砲',base:'net',grd:1,cost:480,rng:202,dmg:4,rate:1,type:'net',slowT:2.6,c:'#8ac2b0',dsc:'鋼の糸で範囲の敵を強く縛る'},
@@ -2033,8 +2037,62 @@ const TOWERS=[
  {id:'fort2',n:'超弩級要塞砲',base:'fort',grd:1,cost:2700,rng:426,dmg:300,rate:.6,type:'bullet',multi:5,pierce:1,spl:62,c:'#a3a8b0',dsc:'三連の巨砲が5体を同時に貫く。最終形態'},
  {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'}
 ];
+/* ===== ⭐⭐**進化の中段(2026-08-02ユーザー指示「進化を2回できるようにして2段目を弱くする」)** =====
+   ⚠**素のタワーから機械的に作る**。手で18行書くと `pz`(プラズマ球)・`drn`(ドローン)・`cont`(継続攻撃)・
+     `heatN`・`beam`・`frzN` のような**見えない印を写し忘れて塔が壊れる**(印の写し忘れは過去に実際に踏んでいる)。
+   ⭐⭐決まり= **素と最終形態の「相乗平均(√)」**。威力・間隔・射程を1つずつ中間に置く。
+     ⚠**固定倍率(×1.45など)にしてはいけない**=火炎放射塔やレーザー塔のように
+       **最終形態で間隔を縮めていない塔**があり、そこだけ中段が最終形態に並んでしまう(実際に検査で落ちた)。
+     ⚠**持ち味(multi・chain・aoe・燃焼など)は素のまま据え置き**=最終形態の「+1」を最後の一歩に残す。
+     建設費×2 / 建て替え費 gc は「素×4で中段へ」「素×8で最終形態へ」。
+   ⚠**最終形態の数値は1つも触っていない**=中段は「素(1.0)と最終(3.1倍)の間の1.55倍」の踊り場。
+   ⚠⚠**絵はまだ無い**=いまは素のタワーの絵を流用している(`gmid` の印で drawTower が読み替える)。
+     18種ぶんの専用の絵は次の回に描く。⚠描いたら drawTower の読み替えを外すこと。
+   ⚠廃品工房(eco)は元から3段あるので対象外。 */
+const GRD_MID={
+ rifle:['速射ライフル台','銃身を替えて手数を増やした改良型'],
+ shot:['重ショットガン台','薬室を広げた重装の散弾銃座'],
+ net:['粘着ネット砲','網の目を詰めた改良型'],
+ gren:['改良爆裂砲','装填を早めた改良型'],
+ flame:['重火炎放射塔','燃料タンクを積み増した改良型'],
+ tesla:['二重コイル','巻線を二重にしたコイル'],
+ mortar:['長距離迫撃砲','砲身を伸ばした改良型'],
+ sniper:['精密狙撃塔','照準を組み直した改良型'],
+ cryo:['凍結塔','冷媒を増やした改良型'],
+ laser:['増幅レーザー塔','発振器を積み増した改良型'],
+ acid:['強酸噴射砲','濃度を上げた改良型'],
+ /* ⚠⚠**ドローン基地(drone)だけは中段を作らない**=機数が DR_MAX(5機)で頭打ちなので、
+    中段に置ける「伸ばせる強化枠」が作れない(🛩機体数は素で上限・🔫弾数は母艦の特典)。
+    無理に挟むと「買えるのに何も起きない枠」だけの段になる。⚠ここに drone を書き戻さないこと。 */
+ arty:['長砲身重砲','砲身を伸ばした改良型'],
+ coil:['高圧テスラ','電圧を上げた改良型'],
+ rail:['磁気加速砲','レールを長くした改良型'],
+ gat:['速射ガトリング','冷却装置を足して回し続ける改良型'],
+ plasma:['高圧プラズマ砲','炉圧を上げた改良型'],
+ fort:['多連要塞砲','砲を増やした改良型']
+};
+{const add=[];
+ for(const B of TOWERS){
+  const e=GRD_MID[B.id];if(!e||!B.up2)continue;
+  const F=TOWERS.find(t=>t.id===B.up2);/* 最終形態(色を借りる=素より明るく見える) */
+  const M=Object.assign({},B);/* ⭐まず丸ごと写す=印を落とさない */
+  M.id=B.id+'M';M.n=e[0];M.dsc=e[1];M.base=B.id;M.grd=1;M.gmid=1;
+  const gm=(a,b)=>Math.sqrt((a||0)*(b||0));
+  /* ⚠威力は**必ず素より1以上大きくする**=小さい数(ネット砲2・冷却塔6)は丸めで素と同じになる */
+  M.dmg=Math.max(B.dmg+(F.dmg>B.dmg?1:0),Math.round(gm(B.dmg,F.dmg)));
+  M.rate=Math.round(gm(B.rate,F.rate)*1000)/1000;
+  M.rng=Math.max(B.rng+(F.rng>B.rng?1:0),Math.round(gm(B.rng,F.rng)));
+  M.cost=Math.round(B.cost*2);M.gc=Math.round(B.cost*8);/* 中段→最終形態の建て替え費 */
+  M.up2=B.up2;if(F&&F.c)M.c=F.c;
+  B.up2=M.id;B.gc=Math.round(B.cost*4);/* 素→中段の建て替え費 */
+  /* ⚠**発射音は素と同じものを割り当てる**(割り当てが無いと無音になる) */
+  if(TW_SFX[B.id])TW_SFX[M.id]=TW_SFX[B.id];
+  add.push(M);}
+ for(const M of add)TOWERS.push(M);}
 const SUP_N=3;/* 支援施設の数(末尾のグレードアップ専用の手前まで) */
-const GRD_N=20;/* ↑末尾のグレードアップ専用の数(工房の2段+タレットの進化18種)。⚠段を足したらここも増やす */
+/* ↑末尾のグレードアップ専用の数(工房の2段+タレットの最終形態18種+**中段18種**)。⚠段を足したらここも増やす。
+   ⚠**中段は TOWERS の一番後ろに push している**ので、素のタワーの添字は1つも動いていない(セーブと解放順が無事) */
+const GRD_N=20+17;/* ⚠ドローン基地だけ中段が無いので17 */
 const T_GRD=ti=>{const u=TOWERS[ti]&&TOWERS[ti].up2;return u?TOWERS.findIndex(t=>t.id===u):-1;};/* その段の「次」 */
 const T_GCOST=ti=>(TOWERS[ti]&&TOWERS[ti].gc)||700;/* その段からの建て替え費用(⚙️) */
 /* ⭐⭐**進化先は🔬研究所で解放する**(2026-07-30ユーザー指示
@@ -2407,6 +2465,9 @@ const TW_MZ={
  gat:{g:31},gat2:{g:31},plasma:{g:29},plasma2:{g:31},fort:{g:34},fort2:{g:36},
  cryo:{b:[0,-36]},cryo2:{b:[-1,-46]}
 };
+/* ⚠**進化の中段は素の絵を流用している**(2026-08-02)ので、撃つ位置も**素と同じ値をそのまま写す**。
+   ⭐18種の絵を描いたら、この写しをやめて中段ごとの砲口の位置を採寸すること。 */
+for(const T of TOWERS)if(T.gmid&&TW_MZ[T.base])TW_MZ[T.id]=TW_MZ[T.base];
 /* その塔が実際に撃つ点(世界座標) */
 function twMzPt(T,sx,sy,ang){const m=TW_MZ[(T&&T.id)||'']||{};
  if(m.b)return [sx+m.b[0]*TW_SC,sy+m.b[1]*TW_SC];
@@ -2495,7 +2556,11 @@ const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(
    ⭐`i`=素のタワーの添字(TOWERS は解放順=強さ順に並んでいる)。
      ライフル(0)=380 → 要塞砲(18)=約2,400。取った総数でも少しだけ上がる(1.02^k)。
    ⚠数字を触ったら `node test_headless.js`(checkLabSteps / checkLabMul)を必ず流すこと。 */
-const LAB_TG=(k,i)=>Math.round(380*Math.pow(1.085,i||0)*Math.pow(1.02,k||0));
+/* ⭐⭐**最終形態は中段の2.6倍の値段**(2026-08-02に進化を2段にした時に足した)。
+   ⚠これが無いと、初期から建てられるショットガン台の最終形態が**412🧬**で買えてしまう
+     (=8番目のタワー相当の火力が研究所の2〜3個目で手に入る。実機で「鬼軍曹が余裕」の正体)。
+   ⭐印は「次が無い段=最終形態」(`!T.up2`)で見る。 */
+const LAB_TG=(k,i,fin)=>Math.round(380*Math.pow(1.085,i||0)*Math.pow(1.02,k||0)*(fin?2.6:1));
 /* 上級兵科(titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
 const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&i<BASE_U+(META.nu||0);};
 /* ⚠**弾薬(AMMO)は2026-07-27に廃止した**(ユーザー指示)。
@@ -9362,7 +9427,11 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   drawTower(silLayer(c,VEC2_W,INK),ti,lv,x,y,ang,t,o1);
   if(VEC2_R>0)drawTower(silLayer(c,VEC2_R,VEC2_RC),ti,lv,x-.9,y-1.6,ang,t,o1);
   drawTower(flatLayer(c),ti,lv,x,y,ang,t,o1);return;}
- const T=TOWERS[ti],tid=T.id;
+ const T=TOWERS[ti];
+ /* ⚠⚠**進化の中段(gmid)はまだ専用の絵が無い**(2026-08-02に段を足した)。
+    素のタワーの絵を借りて描く=色だけ最終形態のものが乗るので「同じ塔の上位」には読める。
+    ⭐18種ぶんの絵を描いたらこの読み替えを外すこと(検査 checkTwLook の GRD_TODO も空にする)。 */
+ const tid=T.gmid?T.base:T.id;
  c.save();c.translate(x,y);
  if(o.jam)c.filter='grayscale(1) brightness(.75)';
  c.lineWidth=3;c.strokeStyle=INK;
@@ -18474,11 +18543,11 @@ function renderLab(){
    let cur=i,nx=T_GRD(cur);
    while(nx>=0&&tg.indexOf(TOWERS[nx].id)>=0){cur=nx;nx=T_GRD(cur);}
    if(nx<0)continue;
-   const NT=TOWERS[nx],eco=NT.type==='eco';
+   const NT=TOWERS[nx],eco=NT.type==='eco',fin=!NT.up2;/* 次が無い段=最終形態(値段が上がる) */
    items.push({cat:'var',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
-    tag:'進化 '+TOWERS[cur].n+' → '+NT.n,
+    tag:(fin?'最終進化 ':'進化 ')+TOWERS[cur].n+' → '+NT.n,
     d:'盤面で強化を全部MAXにすると⚙️'+fmt(T_GCOST(cur))+'で建て替えられる — '+NT.dsc,
-    p:LAB_TG(tg.length,i)});
+    p:LAB_TG(tg.length,i,fin)});
   }}
  /* ⭐砲撃は「次の1つ」だけを新種タブに出す(タワー/兵科と同じ形) */
  {const nk=stkNext();if(nk){const S=STRIKES[nk],ki=STK_ORDER.indexOf(nk);

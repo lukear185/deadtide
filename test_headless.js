@@ -1200,18 +1200,35 @@ function checkTwNew(){
   /* ④どの進化先も、素のタワーを全部MAXにした時より強いこと(1秒あたりの威力で見る) */
   const mx={us:Object.assign(newUs(),{d:USTAT_MAX,r:USTAT_MAX,g:USTAT_MAX,c:USTAT_MAX,f:USTAT_MAX,h:USTAT_MAX,b:USTAT_MAX,m:USTAT_MAX})};
   const dps=(T,tw)=>T.rate>0?(T.dmg*twDmgM(tw))/(T.rate*(T.cont?1:twRateM(tw))):0;
-  for(let i=0;i<T_PLAY;i++){const T=TOWERS[i],g=T_GRD(i);
-   if(g<0||T.type==='eco'||T.type==='sup')continue;
-   const E=TOWERS[g];
-   if(!(dps(E,mx)>dps(T,mx)*1.4)){
-    console.log('FAIL: '+E.n+' が '+T.n+'(全部MAX)より十分強くない '+dps(E,mx).toFixed(1)+' vs '+dps(T,mx).toFixed(1));process.exit(1);}
-   /* ⚠射程は**強化Lvを引き継ぐ**ので素の値どうしで比べる(実効値は両方に同じ倍率が乗る) */
-   if(E.rng>0&&!(E.rng>=T.rng*1.1)){
-    console.log('FAIL: '+E.n+' の射程が '+T.n+' より広くない '+E.rng+' vs '+T.rng);process.exit(1);}
-   /* ⭐研究所の枠は元のタワーと共有する=進化しても積んだLvが無駄にならない */
-   if(twKey(E)!==twKey(T)){console.log('FAIL: '+E.n+' の研究所の枠が '+T.n+' と別になっている');process.exit(1);}
-   /* 発射音の割り当てが無いと無音になる */
-   if(!TW_SFX[E.id]){console.log('FAIL: '+E.n+' に発射音が割り当てられていない');process.exit(1);}}
+  /* ⚠⚠**2026-08-02から進化は2段**(素→中段→最終形態)。**鎖を1段ずつ見ること**=
+     素と次の1つだけを見ていると、最終形態が野放しになる。 */
+  for(let i=0;i<T_PLAY;i++){const T0=TOWERS[i];
+   if(T_GRD(i)<0||T0.type==='eco'||T0.type==='sup')continue;
+   let cur=i,step=0;
+   while(T_GRD(cur)>=0){const g=T_GRD(cur),T=TOWERS[cur],E=TOWERS[g];step++;
+    if(step>4){console.log('FAIL: 進化の鎖が長すぎる(輪になっている?) '+T0.n);process.exit(1);}
+    /* ⚠1段あたりの下限は**1.15倍**=2段に割ったぶん1段は小さくなる(素→最終の総量は下で見る)。
+       火炎放射塔・レーザー塔は最終形態でも間隔が縮まないので、1段ぶんは威力の伸びだけになる。 */
+    if(!(dps(E,mx)>dps(T,mx)*1.15)){
+     console.log('FAIL: '+E.n+' が '+T.n+'(全部MAX)より十分強くない '+dps(E,mx).toFixed(1)+' vs '+dps(T,mx).toFixed(1));process.exit(1);}
+    /* ⚠射程は**強化Lvを引き継ぐ**ので素の値どうしで比べる(実効値は両方に同じ倍率が乗る) */
+    if(E.rng>0&&!(E.rng>T.rng)){
+     console.log('FAIL: '+E.n+' の射程が '+T.n+' より広くない '+E.rng+' vs '+T.rng);process.exit(1);}
+    /* ⭐研究所の枠は元のタワーと共有する=進化しても積んだLvが無駄にならない */
+    if(twKey(E)!==twKey(T)){console.log('FAIL: '+E.n+' の研究所の枠が '+T.n+' と別になっている');process.exit(1);}
+    /* 発射音の割り当てが無いと無音になる */
+    if(!TW_SFX[E.id]){console.log('FAIL: '+E.n+' に発射音が割り当てられていない');process.exit(1);}
+    cur=g;}
+   /* ⚠ドローン基地だけ1段(機数がDR_MAXで頭打ち=中段に置ける強化枠が作れない。index.htmlのGRD_MID参照) */
+   const want9=(T0.id==='drone')?1:2;
+   if(step!==want9){console.log('FAIL: '+T0.n+' の進化が'+want9+'段になっていない('+step+'段)');process.exit(1);}
+   /* 素から最終形態までで、射程は1.1倍以上・威力は2.5倍以上 */
+   const F=TOWERS[cur];
+   if(F.rng>0&&!(F.rng>=T0.rng*1.1)){
+    console.log('FAIL: '+F.n+' の射程が素の1.1倍に届かない '+F.rng+' vs '+T0.rng);process.exit(1);}
+   /* ⚠**素→最終形態の総量は作り替える前と同じ1.4倍以上**(最終形態の数値は1つも触っていない) */
+   if(!(dps(F,mx)>dps(T0,mx)*1.4)){
+    console.log('FAIL: '+F.n+' が素より十分強くない x'+(dps(F,mx)/dps(T0,mx)).toFixed(2));process.exit(1);}}
   /* ②③実際に建てて、MAXにするまで進化できず、進化したら強化Lvが残ること */
   /* ⭐2026-07-30: 進化先は🔬研究所で解放してから使える(META.tg)。まず未解放で試す */
   META.tg=[];
@@ -1961,6 +1978,11 @@ function checkTwLook(){
   const key=rec.join(',');(fp[key]||(fp[key]=[])).push(TOWERS[i].n);}
  const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join('='));
  if(dup.length){console.log('FAIL: 同じ形で描かれているタワー: '+dup.join(' / '));process.exit(1);}
+ /* ⚠⚠**進化の中段(gmid)はまだ専用の絵が無い**=素の絵を色だけ変えて流用している(2026-08-02)。
+    ⭐17種の絵を描いたらこの一覧が0件になる。0件にしたら drawTower の読み替え(T.gmid なら T.base)も外すこと。
+    ⚠形が同じでも色が違うのでこの検査は通ってしまう=**通ったからといって絵があるとは限らない**。 */
+ {const todo=TOWERS.filter(T=>T.gmid).map(T=>T.n);
+  if(todo.length)console.log('TODO: 進化の中段'+todo.length+'種は素の絵を流用中(色だけ違う)= '+todo.slice(0,4).join('/')+'…');}
  console.log('タワーの絵: '+TOWERS.length+'種すべてが違う砲身/特徴パーツを持つ OK');
 }
 /* ---- 姿のプレビュー(第91弾) ----
@@ -2175,6 +2197,19 @@ function checkEvo(){
  for(const b of ALLVB){const list=UVAR[b]||[];if(!list.length)continue;
   const top=list[list.length-1];worst=Math.min(worst,Math.max(top.hp||1,top.atk||1));}
  if(worst<2.5){console.log('FAIL: 最終進化の伸びが小さい(最小'+worst+'倍)');process.exit(1);}
+ /* ⭐⭐**タレットの進化は2段**(2026-08-02)=研究所には**中段が先に出て、最終形態はその後**。
+    ⚠値段も別(最終形態は中段の2.6倍)。ここが逆になると「初期のタワーの最終形態が数百🧬で買える」に戻る。 */
+ {const nt0=META.nt,tg0=META.tg;
+  META.tg=[];META.nt=T_PLAY-BASE_T;renderLab();
+  const t1=LAB_ITEMS.filter(o=>o.k==='tg'),r1=t1.find(o=>o.id==='rifleM');
+  if(!r1){console.log('FAIL: 進化の中段(速射ライフル台)が研究所に出ない');process.exit(1);}
+  if(t1.some(o=>o.id==='rifle2')){console.log('FAIL: 中段を取る前に最終形態が研究所に出ている');process.exit(1);}
+  META.tg=['rifleM'];renderLab();
+  const r2=LAB_ITEMS.filter(o=>o.k==='tg').find(o=>o.id==='rifle2');
+  if(!r2){console.log('FAIL: 中段を取っても最終形態が出ない');process.exit(1);}
+  if(!(r2.p>r1.p*2)){console.log('FAIL: 最終形態の値段が中段と大差ない '+r2.p+' vs '+r1.p);process.exit(1);}
+  console.log('タレットの進化(研究所): 中段'+r1.p+'🧬 → 最終形態'+r2.p+'🧬 の順にだけ出る OK');
+  META.tg=tg0;META.nt=nt0;}
  console.log('進化: 解放した兵科だけ出る(未解放0件) / 全解放で'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
  META.uv=[];META.nu=0;
 }
