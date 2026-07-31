@@ -2506,11 +2506,20 @@ function checkBonus(){
   for(let k=0;k<20;k++)campStep(me,.05,1);
   const z0=me.zombies.find(z=>!z.dead&&z.d>=0);
   if(!z0){console.log('FAIL: ボーナス面に敵が湧いていない');process.exit(1);}
-  me.bus.x=z0.px;me.bus.y=z0.py;me.bus.tx=z0.px;me.bus.ty=z0.py;
+  /* ⚠バスの位置は盤面の内側へ丸められるので、**敵の方をバスに寄せて**当てる */
+  z0.px=me.bus.x;z0.py=me.bus.y;
   const hp0=z0.hp;bnsBusStep(me,.2);
   if(!(z0.hp<hp0||z0.dead)){console.log('FAIL: バスが敵を轢いていない');process.exit(1);}
-  bnsTap(BNS_CX+200,BNS_CY);
-  if(me.bus.tx!==BNS_CX+200){console.log('FAIL: バスの行き先が変わらない');process.exit(1);}
+  /* スティックを右へ倒したら、加速して右へ動くか(重い車=すぐ最高速にはならない) */
+  me.bus.vx=0;me.bus.vy=0;bnsStick(1,0);
+  const bx0=me.bus.x;bnsBusStep(me,.2);
+  if(!(me.bus.vx>0&&me.bus.x>bx0)){console.log('FAIL: スティックで走り出さない');process.exit(1);}
+  if(me.bus.vx>BUS_SP){console.log('FAIL: 最高速を超えている');process.exit(1);}
+  /* 離したら惰性で流れてから止まる(その場で止まらない) */
+  bnsStick(0,0);const v1=me.bus.vx;bnsBusStep(me,.05);
+  if(!(me.bus.vx>0&&me.bus.vx<v1)){console.log('FAIL: 離した時に惰性が無い');process.exit(1);}
+  for(let k=0;k<200;k++)bnsBusStep(me,.05);
+  if(Math.abs(me.bus.vx)>4){console.log('FAIL: いつまでも止まらない');process.exit(1);}
   /* ⑤報酬は初回だけ */
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   const gm1=META.gem,pt1=META.pts;

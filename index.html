@@ -175,6 +175,14 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .spec #deck,.spec #strikebtn,.spec #flagbtn,.spec #pushbtn,.spec #herobtn,.spec #pushtgt,.spec #strikehint,.spec #flaghint{display:none!important}
 /* 🚌ボーナス面の難易度ボタン(バスの黄色)。⚠色はここに書く=HTML本文に直書きすると検査が落ちる */
 .btn.dif-bns{background:#6b5a2f;border-color:#c2a03e}
+/* 🚌バスのバーチャルスティック。⚠**下の操作バーと重ならない左下**に置く。
+   ⚠touch-action:none を付けないと、指を滑らせた時にページごとスクロールする */
+#bstick{position:fixed;left:12px;bottom:12px;width:124px;height:124px;border-radius:50%;
+ background:rgba(22,17,12,.40);border:3px solid rgba(242,236,220,.55);display:none;
+ touch-action:none;z-index:60}
+#bstick i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
+ border-radius:50%;background:#c2a03e;border:3px solid #1b1713;box-shadow:0 3px 0 #000}
+body.bns #bstick{display:block}
 /* 🚌ボーナス面=兵科も英雄も集結旗も無い(押せるのは建設と🎯砲撃と🚌バスだけ) */
 body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint{display:none!important}
 /* 横852pxのスマホでも小窓を詰める(既定の152px幅だと右上の侵入口を覆い隠す) */
@@ -769,6 +777,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <button id="pushtgt">→全員</button>
   <div id="strikehint">タップした地点に爆撃!(もう一度🎯で解除)</div>
   <div id="flaghint">タップした地点へ部隊が集結!(もう一度🚩で解除)</div>
+  <!-- 🚌ボーナス面のバーチャルスティック(body.bns の時だけ出る) -->
+  <div id="bstick"><i></i></div>
   <div id="abar">
     <button id="flagbtn">🚩</button>
     <button id="strikebtn">🎯</button>
@@ -17558,9 +17568,6 @@ cv.addEventListener('pointerdown',e=>{
  const hit=slotHit(mx,my);
  if(hit>=0){openBM(hit);return;}
  closeBM();
- /* ⭐🚌ボーナス面=**建設マス以外を押したらバスがそこへ走る**(🚩集結旗と同じ操作感)。
-    ⚠HUDの帯(上115px)は押させない=誤操作でバスが画面外へ向かう */
- if(isBns()&&my>115)bnsTap(mx,my);
 });
 /* 押した点に一番近い建設マス(範囲外は-1)。⚠🎓チュートリアルの「このマスだけ押させる」判定でも使うので
    **ここ1か所に置く**(2つに分けると片方だけ直して食い違う)。
@@ -17575,6 +17582,23 @@ function slotHit(mx,my){
  return hit;
 }
 cv.addEventListener('pointermove',e=>{if(AIM||FLAGAIM)aimPos=evtToMap(e);});
+/* ⭐🚌バスのバーチャルスティック(2026-08-02)。
+   ⚠**指を離したら必ず0へ戻す**(pointerleave/cancel も拾う)=入れっぱなしだと壁に貼り付く。
+   ⚠**setPointerCapture** を使う=枠の外まで指を動かしても追従する(スティックの外で止まらない)。
+   ⚠押した瞬間は中心からのずれが0=いきなり最大で走り出さない。 */
+(function(){
+ const el=$('bstick');if(!el||!el.addEventListener)return;
+ const kn=el.firstElementChild,R=46;let pid=null;
+ const put=(dx,dy)=>{const d=Math.hypot(dx,dy),k=d>R?R/d:1;
+  if(kn&&kn.style)kn.style.transform='translate('+(dx*k)+'px,'+(dy*k)+'px)';
+  const n=Math.min(1,d/R);bnsStick(d?dx/d*n:0,d?dy/d*n:0);};
+ const rel=()=>{if(kn&&kn.style)kn.style.transform='';bnsStick(0,0);pid=null;};
+ const at=e=>{const r=el.getBoundingClientRect();return [e.clientX-(r.left+r.width/2),e.clientY-(r.top+r.height/2)];};
+ el.addEventListener('pointerdown',e=>{pid=e.pointerId;try{el.setPointerCapture(pid);}catch(x){}
+  const p=at(e);put(p[0],p[1]);e.preventDefault();e.stopPropagation();});
+ el.addEventListener('pointermove',e=>{if(pid!==e.pointerId)return;const p=at(e);put(p[0],p[1]);e.preventDefault();});
+ ['pointerup','pointercancel','pointerleave'].forEach(k=>el.addEventListener(k,e=>{if(pid===e.pointerId)rel();}));
+})();
 function setAim(on){if(on)setFlagAim(false);AIM=on;aimPos=null;$('strikebtn').classList.toggle('aim',on);$('strikehint').style.display=on?'block':'none';}
 $('strikebtn').onclick=()=>{const m=meV();if(!m||m.dead||m.charge<1){setAim(false);return;}setAim(!AIM);};
 function setFlagAim(on){if(on)setAim(false);FLAGAIM=on;aimPos=null;$('flagbtn').classList.toggle('aim',on);$('flaghint').style.display=on?'block':'none';}
@@ -18351,29 +18375,46 @@ function bnsReward(){
  saveMeta();
 }
 /* ---- 🚌 走らせるバス ----
-   ⭐操作は**🚩集結旗と同じ「押した所へ行く」**=新しい操作を覚えさせない。
+   ⭐⭐**操作は画面左下のバーチャルスティック**(2026-08-02ユーザー決定)。
+     ⚠最初は「押した所へ走る」(集結旗と同じ)で作ったが**全然違う**と却下=
+       あれは指示を出す操作で、これは**自分で運転する**遊び。書き戻さないこと。
+   ⭐⭐**手触りは「重い車らしく」**(同ユーザー決定)=**速度を持たせて加速・減速させる**。
+     ⚠スティックの向きへ**瞬間移動させない**=倒した向きへ加速し、離しても惰性で流れる。
+     ⚠曲がる時も同じ理屈で外へ膨らむ(専用の旋回処理は要らない)。
    ⚠バスは道の上を走らない(自由移動)ので `u.d` は持たない。部隊の仕組みには一切乗せない。 */
-const BUS_SP=250,BUS_R=62,BUS_DPS=520,BUS_KB=190;
-function bnsBusInit(C){C.bus={x:BNS_CX,y:BNS_CY+120,tx:BNS_CX,ty:BNS_CY+120,dr:-1,t:0,hitT:0};}
+const BUS_SP=310;    /* 最高速 */
+const BUS_ACC=760;   /* 加速。⚠上げすぎると軽い車になる */
+const BUS_FRIC=2.4;  /* 離した時の減速(1秒あたり) */
+const BUS_R=62,BUS_DPS=520,BUS_KB=190;
+const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当たった手応え */
+function bnsBusInit(C){C.bus={x:BNS_CX,y:BNS_CY+150,vx:0,vy:0,ix:0,iy:0,dr:-1,t:0,hitT:0};}
 function bnsBusStep(C,dt){
  const B=C.bus;if(!B)return;
  B.t+=dt;
- const dx=B.tx-B.x,dy=B.ty-B.y,dd=Math.hypot(dx,dy);
- if(dd>6){const sp=BUS_SP*dt;const k=Math.min(1,sp/dd);
-  B.x+=dx*k;B.y+=dy*k;
-  if(Math.abs(dx)>10)B.dr=dx>0?1:-1;}
+ const ix=B.ix||0,iy=B.iy||0,im=Math.min(1,Math.hypot(ix,iy));
+ if(im>.06){B.vx+=ix*BUS_ACC*dt;B.vy+=iy*BUS_ACC*dt;}
+ else{const f=Math.max(0,1-BUS_FRIC*dt);B.vx*=f;B.vy*=f;}
+ const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*Math.max(.4,im||1);
+ if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
+ /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
+ B.x=clamp(B.x+B.vx*dt,70,MW-70);B.y=clamp(B.y+B.vy*dt,170,MH-30);
+ if(Math.abs(B.vx)>16)B.dr=B.vx>0?1:-1;
  /* 轢く=重なっている間ずっと削る+外へ弾く。⚠**押し出しは経路上の距離(z.d)で戻す**
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */
+ let hit=0;
  for(const z of C.zombies){
   if(z.dead||z.d<0)continue;
   if(dist(z.px,z.py,B.x,B.y)>BUS_R+(z.sc||1)*10)continue;
   dmgZ(C,z,BUS_DPS*dt,1);
   if(!z.dead){z.d=Math.max(0,z.d-BUS_KB*dt);z.stnT=Math.max(z.stnT||0,.12);}
-  B.hitT=.12;
+  hit++;
  }
+ if(hit){B.hitT=.12;B.vx*=BUS_DRAG;B.vy*=BUS_DRAG;
+  if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.22,.05+.03*hit));}
  if(B.hitT>0)B.hitT-=dt;
 }
-function bnsTap(mx,my){const m=meV();if(!m||!m.bus)return;m.bus.tx=mx;m.bus.ty=my;}
+/* スティックの入力(-1〜1)。⚠**画面側から呼ぶのはここだけ**にする */
+function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy=dy;}
 function drawBus(c,C,t){
  const B=C.bus;if(!B)return;
  groundShadow(c,B.x,B.y,44);
