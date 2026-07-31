@@ -2466,6 +2466,41 @@ function checkHero(){
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  META.hero={};META.hsel='';
 }
+/* ⭐⭐🎥**カメラ追従**(2026-08-02)。開拓便のための土台。見るのは4つ:
+   ①**いつもの面ではカメラを持たない**(全景のまま=既存の見え方を1pxも変えない)
+   ②開拓便では寄る ③**マップの外を映さない**(収まっている向きは中央寄せ)
+   ④追従は一気に飛ばず、いつかは目標に着く
+   ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。 */
+function checkCam(){
+ /* 画面に地図の外が入っていないか(収まっている向きは中央寄せ)を見る */
+ const inv=(tag)=>{
+  const okX=(MW*SC<=VW)?Math.abs(OX-(VW-MW*SC)/2)<.02:(OX<=.02&&OX>=VW-MW*SC-.02);
+  const okY=(MH*SC<=VH)?Math.abs(OY-(VH-MH*SC)/2)<.02:(OY<=.02&&OY>=VH-MH*SC-.02);
+  if(!okX||!okY){console.log('FAIL: カメラが地図の外を映している '+tag+' OX='+OX.toFixed(1)+' OY='+OY.toFixed(1));process.exit(1);}
+ };
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.stg=0;setDiff=2;startSolo();
+ if(CAM){console.log('FAIL: いつもの面でカメラが入っている');process.exit(1);}
+ fitCanvas();const sc0=SC,ox0=OX,oy0=OY;
+ fitCanvas();
+ if(SC!==sc0||OX!==ox0||OY!==oy0){console.log('FAIL: カメラ無しなのに毎フレーム値が変わる');process.exit(1);}
+ backTitle();
+ META.stg=0;setDiff=BNS_D;startSolo();
+ if(!CAM){console.log('FAIL: 開拓便でカメラが入らない');process.exit(1);}
+ fitCanvas();
+ if(!(SC>sc0*1.5)){console.log('FAIL: カメラが寄っていない '+SC+' vs '+sc0);process.exit(1);}
+ for(const p of [[0,0],[MW,0],[0,MH],[MW,MH],[MW/2,MH/2],[-500,-500],[MW+900,MH+900]]){
+  camOn(p[0],p[1],2.2);fitCanvas();inv('('+p[0]+','+p[1]+')');}
+ camOn(400,400,2.2);camTo(1200,400);camStep(.016);
+ if(!(CAM.x>400&&CAM.x<1200)){console.log('FAIL: カメラの追従が一気に飛ぶか動かない '+CAM.x);process.exit(1);}
+ for(let k=0;k<400;k++)camStep(.016);
+ if(Math.abs(CAM.x-1200)>1){console.log('FAIL: カメラが目標にたどり着かない '+CAM.x);process.exit(1);}
+ backTitle();
+ if(CAM){console.log('FAIL: 面を出てもカメラが残っている');process.exit(1);}
+ fitCanvas();
+ if(Math.abs(SC-sc0)>1e-9){console.log('FAIL: 面を出ても全景の倍率に戻らない');process.exit(1);}
+ META.stg=0;setDiff=2;
+ console.log('🎥カメラ: いつもの面は全景のまま/開拓便だけ寄る/地図の外を映さない/追従はなめらか OK');
+}
 /* ⭐⭐⭐**🚌ボーナス面「バスの日」**(2026-08-02ユーザー決定)。
    見るのは6つ: ①四方の道が4本あって長さが揃っているか(揃っていないとコア到達がレーンごとにずれる)
    ②敵が4本すべてに散るか ③兵科・英雄・集結旗が無く、バスが居るか
@@ -2788,6 +2823,7 @@ checkGacha();
 checkHero();
 checkUltMot();
 checkBonus();
+checkCam();
 checkTrain();
 checkRpg();
 checkProgress();

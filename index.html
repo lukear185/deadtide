@@ -344,6 +344,11 @@ body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint{display:no
 .tabs .tb i{display:inline-block;font-style:normal;background:var(--ink);color:var(--paper);border-radius:7px;
  font-size:10px;padding:0 4px;margin-left:4px}
 .tabs .tb.on i{background:var(--pane);color:var(--rust)}
+/* 🔬研究所のタブは2段(上=4枚のグループ / 下=その中身)。⚠外側だけ縦並びにする */
+#lab-tabs{display:flex;flex-direction:column;gap:3px;overflow:visible}
+#lab-tabs .tabs{width:100%}
+.tabs.t2 .tb{font-size:11px;padding:3px 8px;background:var(--paper)}
+.tabs.t2 .tb.on{background:var(--amber);color:var(--ink)}
 .bpbody{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .bpfoot{flex:0 0 auto}
 .bprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:0 0 auto}
@@ -3047,7 +3052,7 @@ const SEG=[];let PLEN=0;
 let PMAXX=MW;
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
- LANES=null;/* ⚠🚌ボーナス面のレーンを必ず外す(残すと普通の面で敵が別の道を歩く) */
+ LANES=null;camOff();/* ⚠🚌ボーナス面のレーンとカメラを必ず外す(残すと普通の面が別物になる) */
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
@@ -16339,7 +16344,36 @@ function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||
  OX=Math.min((availW-MW*SC)/2,availW-wantW*SC);
  let oy=availH-MH*SC;/* 地面の下端を操作バーの上端にぴったり付ける */
  if(oy>0)oy*=.5;/* 縦に余る画面(PC等)では中央へ */
- OY=oy;}
+ OY=oy;
+ /* 🎥カメラ(下の節)が使う値を控えておく。⚠CAM が null の間は何も起きない */
+ SC0=SC;VW=availW;VH=availH;camApply();}
+/* ============ 🎥 カメラ(見ている点に追従してマップを見せる) ============
+   ⭐⭐**🚌開拓便のための土台**(2026-08-02ユーザー指示で先に作った)。
+   ⚠⚠**本編は今までどおり「マップ全体が必ず画面に収まる」**=`CAM` が null の間は
+     `SC/OX/OY` に一切触らないので、既存の面の見え方は1pxも変わらない。
+   ⭐**画面と世界の変換は fitCanvas の SC/OX/OY の1か所しか無い**ので、そこを上書きするだけで
+     **建設マスのタップ判定・🎯砲撃の照準・敵と部隊の描画が全部そのまま追従する**
+     (`evtToMap` も同じ値を使っているため)。⚠**別の座標変換を新しく作らないこと**。
+   ⚠**マップの外を映さない**=端まで来たら寄せを止める(画面の外に何も無い帯を見せない)。
+   ⚠**画面に収まってしまう向きは中央寄せに戻す**=でないと端でカメラが震える。 */
+let CAM=null;        /* {x,y,zm,sx,sy}=いま見ている点 / 倍率 / 追いかける先。null=全景(いつもの面) */
+let SC0=1,VW=0,VH=0; /* fitCanvas が出した「全景に収める」倍率と、使える画面の大きさ(デバイスpx) */
+const CAM_LERP=6;    /* 追従の速さ(1秒あたり)。⚠速すぎると酔う/遅すぎると置いていかれる */
+function camOn(x,y,zm){CAM={x:x,y:y,zm:zm||2.2,sx:x,sy:y};}
+function camOff(){CAM=null;}
+function camTo(x,y){if(CAM){CAM.sx=x;CAM.sy=y;}}
+function camStep(dt){
+ if(!CAM)return;
+ const k=Math.min(1,dt*CAM_LERP);
+ CAM.x+=(CAM.sx-CAM.x)*k;CAM.y+=(CAM.sy-CAM.y)*k;
+}
+function camApply(){
+ if(!CAM||!(SC0>0))return;
+ SC=SC0*(CAM.zm||1);
+ const mw=MW*SC,mh=MH*SC;
+ OX=(mw<=VW)?(VW-mw)/2:clamp(VW/2-CAM.x*SC,VW-mw,0);
+ OY=(mh<=VH)?(VH-mh)/2:clamp(VH/2-CAM.y*SC,VH-mh,0);
+}
 const SKYH=108,SKYKEEP=36;/* マップ上端の空の帯/そのうち画面に必ず残す高さ(地平線と廃墟の足元) */
 /* 画面下端から操作バーの上端までの高さ(CSSpx)。実測できない時は既定値 */
 let BARBAND=70,BARBT=-9,MINIRES=0,MINIT=-9;
@@ -18285,6 +18319,7 @@ function startSolo(){
   me.unlocked=metaTowerCap();
   me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
   bnsBusInit(me);
+  camOn(me.bus.x,me.bus.y,2.2);/* 🎥カメラ追従はこの面の中だけ */
   bnsEnter();/* 遊べば次の難易度が開く */
  }
  document.body.classList.toggle('bns',isBns());
@@ -18409,6 +18444,7 @@ function bnsBusStep(C,dt){
   if(!z.dead){z.d=Math.max(0,z.d-BUS_KB*dt);z.stnT=Math.max(z.stnT||0,.12);}
   hit++;
  }
+ camTo(B.x,B.y);/* 🎥カメラはバスを追う(⚠開拓便を作り直したら主人公を追わせる) */
  if(hit){B.hitT=.12;B.vx*=BUS_DRAG;B.vy*=BUS_DRAG;
   if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.22,.05+.03*hit));}
  if(B.hitT>0)B.hitT-=dt;
@@ -18948,7 +18984,7 @@ function tutEnd(done){
 function backTitle(){
  if(TUT&&!TUT.mv)tutEnd(false);/* ⚠TUT.mv=チュートリアル自身が画面を移している最中=畳まない */
  gameActive=false;G=null;PAUSED=false;COOP=false;closeBM();setAim(false);setFlagAim(false);setSpec(-1);
- LANES=null;try{document.body.classList.remove('bns');}catch(e){}/* 🚌ボーナス面の後始末 */
+ LANES=null;camOff();try{document.body.classList.remove('bns');}catch(e){}/* 🚌ボーナス面の後始末 */
  try{document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen().catch(()=>{});}catch(e){}
  $('interv').classList.remove('on');$('pausebtn').style.display='none';$('ffbtn').style.display='none';
  try{if(NET.peer){NET.peer.destroy();}}catch(e){}
@@ -19024,13 +19060,30 @@ function renderHeroSeg(){
 /* ic=タブのアイコン素材名 / em=素材が無い時の絵文字 / t=タブの文字 */
 const LAB_CATS=[
  {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'タワー/兵科/🎯砲撃を1つずつ順番に解放する'},
- {k:'var',ic:'ic-tab-var',em:'🧬',t:'派生',d:'兵科の派生(🎖編成で入れ替え)と、タレット/工房の進化先'},
+ /* ⚠**派生は兵科とタレットに分けてある**(2026-08-02ユーザー指摘「派生タブにユニットとタレットが
+    まとめて入ってるけど、選んだらその中に分岐があったほうがいい」)=下の LAB_TOP の2段目で切り替える */
+ {k:'varu',ic:'ic-tab-var',em:'🧬',t:'兵科',d:'兵科の派生(🎖編成で入れ替える)'},
+ {k:'vart',ic:'ic-tab-var',em:'🗼',t:'タレット',d:'タレットと廃品工房の進化先'},
  {k:'twup',ic:'ic-tab-line',em:'🗼',t:'タワー',d:'タワー1種ずつ鍛える(解放したものだけ並ぶ)'},
  {k:'unup',ic:'ic-tab-line',em:'🪖',t:'部隊',d:'兵科1種ずつ鍛える(派生キャラにも同じだけ効く)'},
  {k:'start',ic:'ic-tab-start',em:'🚀',t:'開始',d:'1波目から効く。序盤の立ち上がりが楽になる'},
  {k:'eco',ic:'ic-tab-eco',em:'💰',t:'経済',d:'⚙️の稼ぎや出撃の回転が良くなる'},
  {k:'rec',ic:'ic-tab-rec',em:'📖',t:'記録',d:'クリア状況と、今までに解放したもの'}
 ];
+/* ⭐⭐**タブは2段にする**(2026-08-02ユーザー決定)。
+   ⚠それまでは7枚が横一列で、しかも**分け方の軸が混ざっていた**
+     (「新種/派生」は目的で、「タワー/部隊」は対象)。派生タブに兵科とタレットが同居していたのはその症状。
+   ⭐上段4枚=🔓解放 / 💪強化 / 🏕拠点 / 📖記録。**選ぶと2段目が出る**。
+   ⚠⚠**「新種」だけは対象で割らない**=あのタブは**解放の順番そのもの**で、
+     「廃品工房はネット砲より前」といった設計がその並びに乗っている(割ると序盤の経済が死ぬ)。
+   ⚠`LABTAB` は今までどおり**下段の名前**を入れておく=撮影の `lab=twup` などがそのまま生きる。 */
+const LAB_TOP=[
+ {k:'unlock',em:'🔓',t:'解放',subs:['new','varu','vart']},
+ {k:'up',    em:'💪',t:'強化',subs:['twup','unup']},
+ {k:'base',  em:'🏕',t:'拠点',subs:['start','eco']},
+ {k:'rec',   em:'📖',t:'記録',subs:['rec']}
+];
+const labTopOf=k=>(LAB_TOP.find(g=>g.subs.indexOf(k)>=0)||LAB_TOP[0]);
 let LABTAB='new';
 /* ⭐まとめ買いの倍率(2026-07-27ユーザー指示)。20段に刻んだので1本フルに**20タップ**要った。
    ⚠**カードにボタンを増やす余地は無い**(横画面は高さ393pxで、.lgrid.tightは6列=1枚60px)。
@@ -19070,7 +19123,7 @@ function renderLab(){
    if(!uvBaseOK(b))continue;
    const B=UBASE.find(u=>u.id===b)||{n:'?'},t=list.indexOf(nx)+1;
    const bi=UBASE.findIndex(u=>u.id===b);
-   items.push({cat:'var',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
+   items.push({cat:'varu',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
     tag:(adv?'上級進化 ':'進化 ')+B.n+' 第'+t+'段階/'+list.length,
     d:'HP×'+(nx.hp||1)+' 攻撃×'+(nx.atk||1)+' 費用×'+(nx.cm||1.2)+' — '+nx.dsc,
     p:LAB_UV(t-1,uv.length)});
@@ -19087,7 +19140,7 @@ function renderLab(){
    while(nx>=0&&tg.indexOf(TOWERS[nx].id)>=0){cur=nx;nx=T_GRD(cur);}
    if(nx<0)continue;
    const NT=TOWERS[nx],eco=NT.type==='eco',fin=!NT.up2;/* 次が無い段=最終形態(値段が上がる) */
-   items.push({cat:'var',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
+   items.push({cat:'vart',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
     tag:(fin?'最終進化 ':'進化 ')+TOWERS[cur].n+' → '+NT.n,
     d:'盤面で強化を全部MAXにすると⚙️'+fmt(T_GCOST(cur))+'で建て替えられる — '+NT.dsc,
     p:LAB_TG(tg.length,i,fin)});
@@ -19164,10 +19217,24 @@ function renderLab(){
  /* ---- タブ(買える数をバッジで出す=どこに何が残っているか一目で分かる) ---- */
  if(!LAB_CATS.some(c=>c.k===LABTAB))LABTAB='new';
  const tb=$('lab-tabs');
- if(tb){tb.innerHTML=LAB_CATS.map(c=>{
-   const n=c.k==='rec'?0:items.filter(it=>(it.cat||'new')===c.k&&it.k).length;
-   return '<button class="tb'+(LABTAB===c.k?' on':'')+'" data-tab="'+c.k+'">'
+ if(tb){
+  const cnt=k=>k==='rec'?0:items.filter(it=>(it.cat||'new')===k&&it.k).length;
+  const top=labTopOf(LABTAB);
+  /* 上段=4枚。⚠バッジは**そのグループの合計**を出す(どこに何が残っているか一目で分かる) */
+  const row1=LAB_TOP.map(g=>{
+   const n=g.subs.reduce((a,k)=>a+cnt(k),0);
+   return '<button class="tb'+(top.k===g.k?' on':'')+'" data-top="'+g.k+'">'
+    +g.em+' '+g.t+(n?'<i>'+n+'</i>':'')+'</button>';}).join('');
+  /* 下段=選んだグループの中身。⚠1枚しか無いグループ(記録)では出さない */
+  const row2=top.subs.length<2?'':top.subs.map(k=>{
+   const c=LAB_CATS.find(x=>x.k===k)||{t:k,em:'🔬'},n=cnt(k);
+   return '<button class="tb sub'+(LABTAB===k?' on':'')+'" data-tab="'+k+'">'
     +icoImg(c.ic,c.em)+' '+c.t+(n?'<i>'+n+'</i>':'')+'</button>';}).join('');
+  tb.innerHTML='<div class="tabs">'+row1+'</div>'+(row2?'<div class="tabs t2">'+row2+'</div>':'');
+  /* ⚠上段を押したら**そのグループの先頭**へ移る(下段の選択が別グループのまま残ると中身が食い違う) */
+  tb.querySelectorAll('[data-top]').forEach(b=>{b.onclick=()=>{
+   const g=LAB_TOP.find(x=>x.k===b.dataset.top);if(!g)return;
+   if(g.subs.indexOf(LABTAB)<0)LABTAB=g.subs[0];renderLab();};});
   tb.querySelectorAll('[data-tab]').forEach(b=>{b.onclick=()=>{LABTAB=b.dataset.tab;renderLab();};});}
  /* ---- 中身は選んだタブのぶんだけ(全部積むと縦が足りない) ---- */
  let body='';
@@ -22170,7 +22237,8 @@ function loopBody(now){
    if(G&&G.hitStopT>0){G.hitStopT-=dt0;sl=.3;}/* ボス撃破 */
    if(G&&G.clearT>0)sl=Math.min(sl,CLEAR_SLOW);/* ⭐ウェーブ制圧の余韻 */
    step*=sl;
-   for(let k=0;k<sp;k++)gameStep(step);}
+   for(let k=0;k<sp;k++)gameStep(step);
+   camStep(dt0);/* 🎥カメラの追従(⚠実時間で寄せる=スローの影響を受けない) */}
   else{clientCamp(dt0);
    /* ホストからの更新が途切れたら黙って固まらずに知らせる */
    if(TT-CLSNAP>4&&TT-CLWARN>8){CLWARN=TT;toast('📶 ホストからの更新が届いていません…',true);
