@@ -1290,15 +1290,34 @@ const stkNext=()=>STK_ORDER.find(k=>(META.st||[]).indexOf(k)<0)||'';
      189〜486🧬もあり、**20段刻みのタワー個別強化(81🧬で威力+5%)より1段が3〜6倍高かった**。
      「弱いものが高い」の正体はこれ。1段目は効果の強さ順に 90〜330🧬 へ揃えてある。
    ⚠数字を触ったら **node test_headless.js**(checkLabSteps/checkLabMul)を必ず流すこと。 */
-const LAB_SC=lv=>Math.round(96*Math.pow(1.8373,lv));  /* 初期⚙️+40(最大5) 96/176/324/595/1094 */
-const LAB_HP=lv=>Math.round(110*Math.pow(1.8776,lv)); /* コアHP+5(最大5) 110/207/388/728/1367 */
+/* ⭐⭐**開始タブは「段を増やして、1段ごとの効き目も増やす」**(2026-08-02ユーザー指示
+     「開始タブのアップグレードをもっと段階増やして。上げてくごとに数値増やそう。
+       例で初期スクラップ 40→120→360→720→1200→2000」)。
+   ⭐**表は累計**(そのLvでの合計の増分)。先頭の0=Lv0(素の状態)。
+   ⚠⚠**効き目も値段も表示も、必ずこの表から引く**=他所に 40 や 6 を直に書かない(表示とズレる)。
+   ⚠**段を足したら `LAB_MSTEP` のまとめ買い上限も一緒に直す**(古い数字のままだと途中で買えなくなる)。
+   ⚠値段は「1段の効き目に比例 × 段が上がるほど割高(x1.35)」で出す=効き目の大きい上の段だけ重くなる。 */
+const SC0_V=[0,40,120,360,720,1200,2000];/* ⚙️初期スクラップ(累計) */
+const HP0_V=[0,5,12,24,40,62,90];        /* 🏕コアHP(累計・素の50に足す) */
+const UP0_V=[0,6,15,28,45,68,100];       /* 🔩開始の強化pt(累計・素の12に足す) */
+const SC0_MAX=SC0_V.length-1,HP0_MAX=HP0_V.length-1,UP0_MAX=UP0_V.length-1;
+/* ⚠部隊枠と建設スロットは「1段=+1枠」なので刻めない=**段数だけ増やした**(2→4 / 4→6) */
+const UU0_MAX=4,SL0_MAX=6;
+/* ⚠名前は `labClamp`=`labLv` は研究所の「項目→いまの段」で既に使っている(2026-08-02に踏みかけた) */
+const labClamp=(v,mx)=>{const n=v|0;return n<0?0:(n>mx?mx:n);};
+const labNx=(T,lv)=>T[Math.min((lv|0)+1,T.length-1)]-T[Math.min(lv|0,T.length-1)];/* 次の1段で増える量 */
+const sc0V=()=>SC0_V[labClamp(META.sc0,SC0_MAX)];
+const hp0V=()=>HP0_V[labClamp(META.hp0,HP0_MAX)];
+const up0V=()=>UP0_V[labClamp(META.up0,UP0_MAX)];
+const LAB_SC=lv=>Math.round(96*(labNx(SC0_V,lv)/SC0_V[1])*Math.pow(1.35,lv));  /* 96/259/1049/2125/3824/8607 */
+const LAB_HP=lv=>Math.round(110*(labNx(HP0_V,lv)/HP0_V[1])*Math.pow(1.35,lv)); /* 110/208/481/866/1607/2760 */
 /* ---- 序盤・中盤から効く永久強化(安く・すぐ効く) ---- */
-const LAB_UP0=lv=>Math.round(90*Math.pow(1.7453,lv)); /* 開始🔩+6(最大5) 90/157/274/478/835 */
+const LAB_UP0=lv=>Math.round(90*(labNx(UP0_V,lv)/UP0_V[1])*Math.pow(1.35,lv)); /* 90/182/355/627/1145/2150 */
 const LAB_CD0=lv=>Math.round(105*Math.pow(1.85,lv));  /* 出撃の待ち時間-6%(最大5) 105/194/359/665/1230 */
 const LAB_EC0=lv=>Math.round(100*Math.pow(1.8471,lv));  /* 廃品工房の産出+12%(最大5) 100/185/341/630/1164 */
-const LAB_SL0=lv=>Math.round(150*Math.pow(2.1243,lv)); /* 建設スロット初期+1(最大4) 150/319/677/1438 */
+const LAB_SL0=lv=>Math.round(150*Math.pow(2.1243,lv)); /* 建設スロット初期+1(最大6) 150/319/677/1438/3055/6490 */
 const LAB_PY0=lv=>Math.round(130*Math.pow(1.9055,lv));/* 撃破報酬+6%(最大5) 130/248/472/899/1714 */
-const LAB_UU0=lv=>Math.round(330*Math.pow(2.6515,lv)); /* 開始時の部隊枠+1(最大2) 330/875 */
+const LAB_UU0=lv=>Math.round(330*Math.pow(2.6515,lv)); /* 開始時の部隊枠+1(最大4) 330/875/2320/6152 */
 const metaPay=()=>soloMeta()?1+.06*(META.py0||0):1;
 const metaCd=()=>soloMeta()?1-.06*(META.cd0||0):1;
 const metaEco=()=>soloMeta()?1+.12*(META.ec0||0):1;
@@ -2590,8 +2609,9 @@ const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
 const GDUD=[
  {id:'gpt',n:'🧬 研究pt',w:22,dsc:'研究ptがまとまって手に入る'},
  {id:'gmat',n:'🔧 鍛錬素材',w:20,dsc:'英雄の鍛錬に使う素材(鍛錬所で消費)'},
- {id:'gsc',n:'⚙️ 初期資金アップ',w:7,dsc:'出撃時の所持⚙️が永久に+40'},
- {id:'gup',n:'🔩 開始強化ptアップ',w:6,dsc:'出撃時の🔩が永久に+6'}
+ /* ⚠伸びる量は研究所の表(SC0_V/UP0_V)と同じ=段が上がるほど1回の重みも増える(2026-08-02) */
+ {id:'gsc',n:'⚙️ 初期資金アップ',w:7,dsc:'出撃時の所持⚙️が永久に増える(研究所の初期スクラップが1段進む)'},
+ {id:'gup',n:'🔩 開始強化ptアップ',w:6,dsc:'出撃時の🔩が永久に増える(研究所の開始強化ptが1段進む)'}
 ];
 /* ⭐⭐**排出率は「英雄1体あたり」で決める**(2026-07-30ユーザー指示
      「★5のキャラ1体1体が0.1%で出るようにしたい。つまりキャラ数を増やすごとに出る確率は増えていく」)。
@@ -17770,14 +17790,15 @@ function startSolo(){
  newGame([{name:'キミ',kind:'me'}],0);
  G.pve=1;G.pveDiff=setDiff;
  const me=G.players[0];
- me.scrap=D5v().scrap+40*(META.sc0||0);
- me.coreMax=50+5*(META.hp0||0);me.core=me.coreMax;
+ /* ⚠**開始タブの効き目は表から引く**(2026-08-02に段ごとの伸びを変えた。直に 40/5/6 と書かない) */
+ me.scrap=D5v().scrap+sc0V();
+ me.coreMax=50+hp0V();me.core=me.coreMax;
  me.stk=META.st.indexOf(META.eq)>=0?META.eq:'air';
  /* 🦸連れて行く英雄(ソロ専用・所持していない英雄が選ばれていたら連れて行かない) */
  me.hUi=(META.hsel&&(DEV||heroOwned(META.hsel)))?hUiOf(META.hsel):-1;
  me.hOut=0;me.hCg=0;me.fallen=[];
  /* 研究所の序盤系ボーナス */
- me.up=me.upTotal=12+6*(META.up0||0);
+ me.up=me.upTotal=12+up0V();
  /* ⚠🛠DEVは newCamp で全開放してあるので、ここの「開始時ボーナス」で巻き戻さない */
  me.team=teamIdx();me.uUn=DEV?me.team.length:Math.min(me.team.length,2+(META.uu0||0));
  {const s0=SLOT0+(META.sl0||0);
@@ -18402,7 +18423,7 @@ let LABMUL=1;
 const LAB_MULS=[1,5];
 /* まとめ買いが効く項目の表 = {種類: [最大段, 値段の式]}。
    ⚠**ここに無い種類は常に×1**。項目を足した時にここへ書き忘れても、まとめ買いが効かないだけで壊れない。 */
-const LAB_MSTEP={sc0:[5,LAB_SC],hp0:[5,LAB_HP],up0:[5,LAB_UP0],uu0:[2,LAB_UU0],sl0:[4,LAB_SL0],
+const LAB_MSTEP={sc0:[SC0_MAX,LAB_SC],hp0:[HP0_MAX,LAB_HP],up0:[UP0_MAX,LAB_UP0],uu0:[UU0_MAX,LAB_UU0],sl0:[SL0_MAX,LAB_SL0],
  py0:[5,LAB_PY0],ec0:[5,LAB_EC0],cd0:[5,LAB_CD0],
  tw:[LINE_MAX,LAB_TW],un:[LINE_MAX,LAB_UN],st0:[STK_MAX,LAB_ST0]};
 /* その項目の今の段(タワー/兵科はidごと、それ以外は META[種類]) */
@@ -18456,12 +18477,14 @@ function renderLab(){
  /* ⭐砲撃は「次の1つ」だけを新種タブに出す(タワー/兵科と同じ形) */
  {const nk=stkNext();if(nk){const S=STRIKES[nk],ki=STK_ORDER.indexOf(nk);
   items.push({cat:'new',k:'stk',id:nk,ic:S.ic,t:S.n,tag:'砲撃 '+(ki+1)+'/'+STK_ORDER.length,d:S.dsc,p:LAB_STK[ki]});}}
- if(META.sc0<5)items.push({cat:'start',k:'sc0',ic:'⚙️',t:'初期スクラップ+40',tag:'Lv'+META.sc0+'/5',d:'開始資金が増える',p:LAB_SC(META.sc0)});
- if(META.hp0<5)items.push({cat:'start',k:'hp0',ic:'🏕',t:'コアHP+5',tag:'Lv'+META.hp0+'/5',d:'拠点の耐久が増える',p:LAB_HP(META.hp0)});
+ /* ⚠**見出しの数字は「次の1段で増える量」・説明に「いまの合計」**(2026-08-02に段ごとの伸びを変えた)。
+    ⚠決め打ちの +40 / +5 / +6 を書き戻さないこと=表(SC0_V/HP0_V/UP0_V)とズレる。 */
+ if(META.sc0<SC0_MAX)items.push({cat:'start',k:'sc0',ic:'⚙️',t:'初期スクラップ+'+labNx(SC0_V,META.sc0),tag:'Lv'+META.sc0+'/'+SC0_MAX,d:'開始資金が増える(いま+'+sc0V()+' → +'+SC0_V[META.sc0+1]+')',p:LAB_SC(META.sc0)});
+ if(META.hp0<HP0_MAX)items.push({cat:'start',k:'hp0',ic:'🏕',t:'コアHP+'+labNx(HP0_V,META.hp0),tag:'Lv'+META.hp0+'/'+HP0_MAX,d:'拠点の耐久が増える(いま+'+hp0V()+' → +'+HP0_V[META.hp0+1]+')',p:LAB_HP(META.hp0)});
  /* ---- 1波目から効く強化(序盤・中盤向け) ---- */
- if((META.up0||0)<5)items.push({cat:'start',k:'up0',ic:PT,t:'開始の強化pt+6',tag:'Lv'+(META.up0||0)+'/5',d:'最初の作戦タイムから強化を回せる',p:LAB_UP0(META.up0||0)});
- if((META.uu0||0)<2)items.push({cat:'start',k:'uu0',ic:'🤝',t:'開始の部隊枠+1',tag:'Lv'+(META.uu0||0)+'/2',d:'最初から使える兵科が増える(2種→最大4種)',p:LAB_UU0(META.uu0||0)});
- if((META.sl0||0)<4)items.push({cat:'start',k:'sl0',ic:'🧱',t:'建設スロット+1',tag:'Lv'+(META.sl0||0)+'/4',d:'開幕から置けるタワーの数が増える',p:LAB_SL0(META.sl0||0)});
+ if((META.up0||0)<UP0_MAX)items.push({cat:'start',k:'up0',ic:PT,t:'開始の強化pt+'+labNx(UP0_V,META.up0||0),tag:'Lv'+(META.up0||0)+'/'+UP0_MAX,d:'最初の作戦タイムから強化を回せる(いま+'+up0V()+' → +'+UP0_V[(META.up0||0)+1]+')',p:LAB_UP0(META.up0||0)});
+ if((META.uu0||0)<UU0_MAX)items.push({cat:'start',k:'uu0',ic:'🤝',t:'開始の部隊枠+1',tag:'Lv'+(META.uu0||0)+'/'+UU0_MAX,d:'最初から使える兵科が増える(2種→最大'+(2+UU0_MAX)+'種)',p:LAB_UU0(META.uu0||0)});
+ if((META.sl0||0)<SL0_MAX)items.push({cat:'start',k:'sl0',ic:'🧱',t:'建設スロット+1',tag:'Lv'+(META.sl0||0)+'/'+SL0_MAX,d:'開幕から置けるタワーの数が増える('+SLOT0+'→最大'+(SLOT0+SL0_MAX)+')',p:LAB_SL0(META.sl0||0)});
  if((META.py0||0)<5)items.push({cat:'eco',k:'py0',ic:'💰',t:'撃破報酬+6%',tag:'Lv'+(META.py0||0)+'/5',d:'ゾンビを倒した時の⚙️が増える(全ウェーブ)',p:LAB_PY0(META.py0||0)});
  if((META.ec0||0)<5)items.push({cat:'eco',k:'ec0',ic:'🏭',t:'工房の産出+12%',tag:'Lv'+(META.ec0||0)+'/5',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({cat:'eco',k:'cd0',ic:'⏱',t:'出撃の待ち-6%',tag:'Lv'+(META.cd0||0)+'/5',d:'部隊を続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
@@ -18499,8 +18522,8 @@ function renderLab(){
   doneS=META.st.filter(k=>k!=='air').map(k=>STRIKES[k].ic+STRIKES[k].n),
   doneV=(META.uv||[]).map(id=>{const e=VARLIST.find(x=>x.v.id===id);return e?'🧬'+e.v.n:'';}).filter(Boolean),
   doneG=(META.tg||[]).map(id=>{const T=TOWERS.find(t=>t.id===id);return T?(T.type==='eco'?'🏭':'🗼')+T.n:'';}).filter(Boolean),
-  doneX=[].concat(META.sc0?['⚙️初期資金+'+(META.sc0*40)]:[],META.hp0?['🏕コアHP+'+(META.hp0*5)]:[],
-   META.up0?[PT+'開始+'+(META.up0*6)]:[],META.uu0?['🤝部隊枠+'+META.uu0]:[],META.sl0?['🧱建設枠+'+META.sl0]:[],
+  doneX=[].concat(META.sc0?['⚙️初期資金+'+sc0V()]:[],META.hp0?['🏕コアHP+'+hp0V()]:[],
+   META.up0?[PT+'開始+'+up0V()]:[],META.uu0?['🤝部隊枠+'+META.uu0]:[],META.sl0?['🧱建設枠+'+META.sl0]:[],
    META.py0?['💰報酬+'+(META.py0*6)+'%']:[],META.ec0?['🏭産出+'+(META.ec0*12)+'%']:[],META.cd0?['⏱待ち-'+(META.cd0*6)+'%']:[],
    META.ec1?['🏭工房つき開始']:[],
    META.st0?['🎯砲撃威力+'+Math.round(META.st0*STK_STEP*100)+'%']:[],
@@ -18837,8 +18860,12 @@ function gcApply(o){
   const d=o.dud;
   if(d.id==='gpt'){const v=ri(80,200);META.pts+=v;o.txt='🧬 研究pt +'+v;}
   else if(d.id==='gmat'){const v=ri(2,5);META.hmat=(META.hmat||0)+v;o.txt='🔧 鍛錬素材 +'+v;}
-  else if(d.id==='gsc'){META.sc0=(META.sc0||0)+1;o.txt='⚙️ 初期資金 +40 (永久)';}
-  else{META.up0=(META.up0||0)+1;o.txt='🔩 開始強化pt +6 (永久)';}
+  /* ⚠**増える量は表から引く**(2026-08-02に段ごとの伸びを変えた)。
+     ⚠**もう最大段まで取っている時は研究ptに振り替える**=「+0」を渡さない(はずれ枠が本当の無駄になる) */
+  else if(d.id==='gsc'){const b=sc0V();META.sc0=Math.min((META.sc0||0)+1,SC0_MAX);const g=sc0V()-b;
+   if(g>0)o.txt='⚙️ 初期資金 +'+g+' (永久)';else{const v=ri(80,200);META.pts+=v;o.txt='🧬 研究pt +'+v;}}
+  else{const b=up0V();META.up0=Math.min((META.up0||0)+1,UP0_MAX);const g=up0V()-b;
+   if(g>0)o.txt='🔩 開始強化pt +'+g+' (永久)';else{const v=ri(80,200);META.pts+=v;o.txt='🧬 研究pt +'+v;}}
   return o;
  }
  const h=o.hero;

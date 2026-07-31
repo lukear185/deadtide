@@ -737,6 +737,44 @@ function checkAtkMotion(){
   console.log("FAIL: 倒した直後の振り抜きが途切れている");process.exit(1);}
  console.log("攻撃モーション: 出撃直後=振らない / 敵なし=振らない / 交戦中=振る / 倒した直後の振り抜きは続く OK");
 }
+/* ⭐⭐**開始タブの段**(2026-08-02ユーザー指示「もっと段階増やして。上げてくごとに数値増やそう。
+   例で初期スクラップ 40→120→360→720→1200→2000」)。見るのは4つ:
+   ①累計が増え続ける ②**1段の伸びが前の段以上**(これが指示の本体) ③値段も上がる
+   ④実際に出撃に効く(表を作っても startSolo が拾っていなければ意味がない)。 */
+function checkStart0(){
+ const tbl=[['⚙️初期スクラップ',SC0_V,LAB_SC],['🏕コアHP',HP0_V,LAB_HP],['🔩開始の強化pt',UP0_V,LAB_UP0]];
+ const line=[];
+ for(const t of tbl){const n=t[0],V=t[1],F=t[2];
+  if(V[0]!==0){console.log('FAIL: '+n+' の表がLv0=0で始まっていない');process.exit(1);}
+  if(V.length-1<6){console.log('FAIL: '+n+' の段が少ない('+(V.length-1)+'段)');process.exit(1);}
+  let pStep=0,pPrice=0,sum=0;
+  for(let lv=0;lv<V.length-1;lv++){
+   const step=V[lv+1]-V[lv],p=F(lv);
+   if(!(step>0)){console.log('FAIL: '+n+' のLv'+(lv+1)+'で累計が増えていない');process.exit(1);}
+   if(step<pStep){console.log('FAIL: '+n+' のLv'+(lv+1)+'で1段の伸びが減っている(+'+step+' < +'+pStep+')');process.exit(1);}
+   if(!(p>pPrice)){console.log('FAIL: '+n+' のLv'+(lv+1)+'の値段が上がっていない('+p+')');process.exit(1);}
+   pStep=step;pPrice=p;sum+=p;}
+  if(sum>20000){console.log('FAIL: '+n+' を伸ばし切るのが高すぎる('+sum+'🧬)');process.exit(1);}
+  line.push(n+' +'+V[V.length-1]+'/'+(V.length-1)+'段/'+sum+'🧬');}
+ /* まとめ買いの上限が段数と揃っているか(古い数字が残ると途中で買えなくなる) */
+ const cap=[['sc0',SC0_MAX],['hp0',HP0_MAX],['up0',UP0_MAX],['uu0',UU0_MAX],['sl0',SL0_MAX]];
+ for(const c of cap)if(LAB_MSTEP[c[0]][0]!==c[1]){
+  console.log('FAIL: まとめ買いの上限が段数と違う '+c[0]+' '+LAB_MSTEP[c[0]][0]+'/'+c[1]);process.exit(1);}
+ /* ④ 全部取り切った状態で出撃して、実際に効いているか */
+ const kp=[META.sc0,META.hp0,META.up0,META.uu0,META.sl0,META.nu];
+ META.sc0=SC0_MAX;META.hp0=HP0_MAX;META.up0=UP0_MAX;META.uu0=UU0_MAX;META.sl0=SL0_MAX;META.nu=U_N-BASE_U;
+ META.stg=0;setDiff=2;startSolo();
+ const me=G.players[0];
+ if(me.scrap!==D5v().scrap+SC0_V[SC0_MAX]){console.log('FAIL: 初期スクラップが効いていない '+me.scrap);process.exit(1);}
+ if(me.coreMax!==50+HP0_V[HP0_MAX]){console.log('FAIL: コアHPが効いていない '+me.coreMax);process.exit(1);}
+ if(me.upTotal!==12+UP0_V[UP0_MAX]){console.log('FAIL: 開始の強化ptが効いていない '+me.upTotal);process.exit(1);}
+ if(me.uUn!==Math.min(me.team.length,2+UU0_MAX)){console.log('FAIL: 開始の部隊枠が効いていない '+me.uUn);process.exit(1);}
+ const sl=me.slk.filter(Boolean).length;
+ if(sl!==SLOT0+SL0_MAX){console.log('FAIL: 建設スロットが効いていない '+sl+'(想定'+(SLOT0+SL0_MAX)+')');process.exit(1);}
+ backTitle();
+ META.sc0=kp[0];META.hp0=kp[1];META.up0=kp[2];META.uu0=kp[3];META.sl0=kp[4];META.nu=kp[5];
+ console.log('開始タブ: '+line.join(' / ')+' / 🤝部隊枠'+UU0_MAX+'段・🧱建設枠'+SL0_MAX+'段 / 出撃に反映 OK');
+}
 function checkLabMul(){
  const keep=META.pts;
  META.pts=999999;META.tw={};META.un={};META.st0=0;META.nt=3;META.nu=3;
@@ -2536,7 +2574,7 @@ checkResumeFarm();
 checkTwNew();
 checkPerUp();
 checkLabSteps();
-checkLabMul();checkUChg();checkAtkMotion();
+checkStart0();checkLabMul();checkUChg();checkAtkMotion();
 checkCryo();
 checkBeam();
 checkCoil();
