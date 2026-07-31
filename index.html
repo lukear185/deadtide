@@ -2434,7 +2434,12 @@ const HEROES=[
  {id:'hReact',n:'炉心の番人',rk:4,hp:4400,atk:520,rate:1.3,sp:52,c:'#c9d94a',ty:'fire',rng:150,aoe:80,burn:30,uch:50,ult:'炉心解放',udsc:'12秒間すべてのタワーの攻撃が+60%。発動時に熱波で焼く'},
  /* ★5 ギガトンレア(2種)。⚠2026-07-28ユーザー指示で1人足した(暁の王) */
  {id:'hNox',n:'終焉の騎士',rk:5,hp:6800,atk:980,rate:.9,sp:74,c:DANGER,ty:'melee',rng:48,uch:52,ult:'死の宣告',udsc:'画面上の敵すべてに致命傷を刻む'},
- {id:'hDawn',n:'暁の王',rk:5,hp:6200,atk:880,rate:1,sp:76,c:GOLD,ty:'bullet',rng:320,uch:54,ult:'暁の号令',udsc:'12秒間すべての部隊の攻撃2倍・被ダメージ半減。発動時に全回復'},
+ /* ⚠⚠**暁の王は2026-08-01に★5→★4へ降格**(ユーザー指示)。数値も★4の並びへ落とした。
+    ⚠rk を変えると**ガチャの枠が自動で太る/細る**(1体あたり方式なので排出率の表は触らない)。
+    ⚠★4のまま=固有の攻撃(uUniq は hro>=4)・専用の体・必殺の前置き(H_ULW_RK[3]=.74秒)は維持。
+    ⭐並べた先: 鋼鉄の巨人 hp5200/atk560(DPS373) / 炉心の番人 hp4400/atk520(400) /
+      雷鳴の巫女 hp3900/atk640(533) → 暁の王 hp4600/atk500 rate1.05(DPS476)。 */
+ {id:'hDawn',n:'暁の王',rk:4,hp:4600,atk:500,rate:1.05,sp:74,c:GOLD,ty:'bullet',rng:320,uch:50,ult:'暁の号令',udsc:'8秒間すべての部隊の攻撃1.6倍・被ダメージ35%減。発動時にHPを6割回復'},
  /* ⭐★5の3人目(2026-08-01ユーザーの絵から起こした)。**18人でただ1人の騎乗**。
     ⚠排出率は「1体あたり」なので数値表は触らない=★5の枠が 0.2%→0.3% に自動で太くなる。
     ⚠終焉の騎士と題材が近いので**速さと範囲**で役割を分ける=馬で駆けて薙ぎ払う。 */
@@ -2581,6 +2586,9 @@ const uMotK=ui=>uMot(ui)[0];
    ⭐直し方=**溜めは間隔の CHG_CAP 倍まで**。1発の倍率は必ず1.6倍以内に収まる。
      間隔の長い砲(レール狙撃2.6秒・ヴァルキリー1.8秒)は表の値のまま=特大枠はちゃんと残る。 */
 const CHG_CAP=.6;
+/* ⭐暁の王『暁の号令』の効き目。⚠**効かせる所は2か所だけ**=部隊の攻撃力(ua)と dmgU の被ダメージ。
+   2026-08-01に★5→★4へ降格したので 2倍/半減 → 1.6倍/35%減 に落とした。 */
+const UOV_ATK=1.6,UOV_DMG=.65;
 const uChgT=ui=>{const U=UNITS[ui],t=uMot(ui)[1];
  return (U&&U.rate>0)?Math.min(t,U.rate*CHG_CAP):t;};
 const uChgM=ui=>{const U=UNITS[ui],ct=uChgT(ui);return (U&&U.rate>0&&ct>0)?(U.rate+ct)/U.rate:1;};
@@ -14245,7 +14253,7 @@ function deployUnit(C,ui){
 }
 function dmgU(C,u,d2){
  if(u.dead)return;
- if((C.uOv||0)>0)d2*=.5;/* ⭐暁の王『暁の号令』=部隊の被ダメージ半減(英雄も含む) */
+ if((C.uOv||0)>0)d2*=UOV_DMG;/* ⭐暁の王『暁の号令』=部隊の被ダメージを減らす(英雄も含む) */
  u.hp-=d2;u.hitT=.1;
  if(u.hp<=0){u.dead=true;addFx(C,'splat',u.px,u.py,'',{gray:1});
   addP(C,8,u.px,u.py-22*CH_UP,{sp:130,up:50,g:520,life:.5,r:2.6,col:'#8a2f2f',jx:5,jy:7});
@@ -14522,11 +14530,14 @@ function heroUlt(C,wave){
   addFx(C,'txt',u.px,u.py-84*CH_UP,'炉心解放! 塔の火力+60%');
   addP(C,22,u.px,u.py-28*CH_UP,{sp:190,up:70,g:-20,life:1,r:3.2,col:'#e8f57a'});
   C.shake=Math.max(C.shake||0,.3);if(C.isMe)sfx.flame&&sfx.flame();
- }else if(id==='hDawn'){/* 暁の号令: 12秒間 部隊の攻撃2倍・被ダメ半減。発動時に全回復 */
-  C.uOv=Math.max(C.uOv||0,12);
-  for(const u2 of C.units)if(!u2.dead){u2.hp=u2.mhp;
+ }else if(id==='hDawn'){/* 暁の号令: 8秒間 部隊の攻撃1.6倍・被ダメ35%減。発動時にHPを6割回復。
+     ⚠⚠**★4へ降格したぶん、必殺技も落としてある**(2026-08-01)=
+       12秒→8秒 / 攻撃2倍→1.6倍(UOV_ATK) / 被ダメ半減→35%減(UOV_DMG) / 全回復→6割回復。
+     ⚠倍率は表(UOV_ATK/UOV_DMG)に出してある=効かせる所は2か所だけ(掟)。 */
+  C.uOv=Math.max(C.uOv||0,8);
+  for(const u2 of C.units)if(!u2.dead){u2.hp=Math.min(u2.mhp,u2.hp+u2.mhp*.6);
    addFx(C,'ring',u2.px,u2.py,'',{r:44,col:GOLD});}
-  for(const z of live)z.slowT=Math.max(z.slowT||0,3.2);/* 光に怯む */
+  for(const z of live)z.slowT=Math.max(z.slowT||0,2.4);/* 光に怯む */
   addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:GOLD});
   addFx(C,'txt',u.px,u.py-84*CH_UP,'暁の号令!');
   addP(C,26,u.px,u.py-30*CH_UP,{sp:170,up:110,g:-50,life:1.3,r:3.4,col:GLOW,jx:12,jy:9});
@@ -14813,7 +14824,7 @@ function campStep(C,dt,wave){
      溜めを払わないまま倍率だけ受け取っていた=医療兵 71→86(+21%)・工兵 54→66(+22%)。
      ⚠`test_balance.js` は atk/rate で測るのでこの狂いを捕まえられない。 */
   const chgM9=(U.type==='heal')?1:uChgM(u.ui);
-  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?2:1)*chgM9);
+  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?UOV_ATK:1)*chgM9);
   let tg=null,best=-1;
   if(U.type==='heal'){
    /* ⭐**回復する相手は「HPの割合」ではなく「減った量」で選ぶ**(2026-08-01ユーザー指示)。

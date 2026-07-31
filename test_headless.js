@@ -2088,7 +2088,8 @@ function checkGacha(){
     ⚠2026-08-01に★5の暗黒の騎士を足して19種。⭐排出率は『1体あたり』なので数値表は触らない */
  if(HEROES.length!==21){console.log('FAIL: 英雄が21種でない '+HEROES.length);process.exit(1);}
  const cnt={};for(const h of HEROES)cnt[h.rk]=(cnt[h.rk]||0)+1;
- const want={1:5,2:4,3:4,4:3,5:5};/* ⚠2026-08-01に★5へ暗黒の騎士を足した */
+ /* ⚠2026-08-01に★5へ暗黒の騎士を足し、同日に**暁の王を★5→★4へ降格**した(ユーザー指示) */
+ const want={1:5,2:4,3:4,4:4,5:4};
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
  /* ⭐**排出率は「1体あたり」で決まる**(2026-07-30ユーザー指示)=英雄を足すとその枠が太くなること。
@@ -2129,7 +2130,11 @@ function checkGacha(){
  if(typeof gemBoss==='function'){
   const g0=gemBoss(false),g1=gemBoss(true);
   if(!(g0>=GEM_BOSS&&g1>=GEM_FIN&&g1>g0)){console.log('FAIL: gemBossの計算がおかしい '+g0+'/'+g1);process.exit(1);}}
- console.log('ガチャ: 英雄'+HEROES.length+'種(★1x5/★2x4/★3x4/★4x3/★5x2)・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');
+ /* ⚠内訳は**実際に数える**(2026-08-01)=前は決め打ちの文字列で、暁の王を★4へ降格しても
+    表示が変わらないどころか、元から実際の人数と合っていなかった */
+ {const rkN=[0,0,0,0,0];for(const h of HEROES)rkN[clamp((h.rk||1)-1,0,4)]++;
+  const brk=rkN.map((n,i)=>'★'.repeat(i+1)+'x'+n).join('/');
+  console.log('ガチャ: 英雄'+HEROES.length+'種('+brk+')・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');}
  META.gem=0;META.hero={};META.hmat=0;
 }
 /* ---- 🦸英雄: 出撃(1ゲーム1回)と必殺技11種 ----
