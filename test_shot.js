@@ -47,6 +47,10 @@ const ARTCHG=(/posechg=([0-9.]+)/.exec(OPT)||[0,''])[1];/* 溜めの姿で並べ
 /* ⭐posesw = バットのスイングを**段階ごとに**並べる(2026-07-30)。
    ⚠止め絵1枚では「振れているか」が分からないので、5コマを振り抜き〜振りかぶりに割り当てる。 */
 const ARTSW=OPT.indexOf('posesw')>=0;
+/* ⭐poseult = 必殺技の詠唱モーションを**段階ごとに**並べる(2026-08-02)。
+   ⚠posechg(通常の溜め)では詠唱の枝を1コマも通らない=型ごとの動きを目で見られない。
+   5コマ= 押した直後 → 構え → 詰め → **一拍のタメ** → 発射の抜け。 */
+const ARTUL=OPT.indexOf('poseult')>=0;
 /* ⭐arena=bat:walk = 🧪検証場(一本道)を開いて撮る(2026-07-30)。
    ⚠オプション名に `t=`/`u=`/`z=` を含めないこと=`tst=` にすると **`t=` に食われて**タワーを建てにいく。 */
 const ARN=/arena=([A-Za-z0-9]+):([A-Za-z0-9]+)/.exec(OPT);
@@ -71,6 +75,10 @@ const TM=/t=([A-Za-z0-9]+)/.exec(OPT),TID=TM?TM[1]:'';/* ⚠数字も拾うこ�
 const RPM=/rpg([a-z]?)/.exec(OPT),RPG=!!RPM,RPGK=RPM?RPM[1]:'';
 /* 例 hero=hNox = その英雄を出撃させて撮る / hero=all = 英雄11人を経路上に並べて撮る */
 const HM=/hero=([A-Za-z]+)/.exec(OPT),HID=HM?HM[1]:'';
+/* ⭐ult=0.7 = hero= と一緒に渡すと、**必殺技の詠唱をその進み具合で止めて盤面ごと撮る**(2026-08-02)。
+   ⚠pose= の並べ撮りでは体の動きしか見えない=足元の紋章や照準線(drawUChg)は盤面でしか出ない。
+   ⚠止め方=毎回 ulW を書き戻す(発射そのものは待ち行列で進むが、絵は詠唱のまま残る)。 */
+const ULM=/ult=([0-9.]+)/.exec(OPT),ULP=ULM?ULM[1]:'';
 /* 例 u=grn = その兵科を3体出して、目の前にゾンビを湧かせ続ける(攻撃と撃破の演出を撮るため)
    ⚠ゾンビは倒されたら補充されるので、投擲の軌道・炎・死体がいつでも画面に出ている状態になる */
 const UM=/u=([A-Za-z0-9]+)/.exec(OPT),UID=UM?UM[1]:'';
@@ -273,6 +281,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         +(OPT.indexOf('nodep')>=0?''/* nodep=出撃させずにボタンだけ見る */
           :'heroDeploy(me);me.hCg=1;var hu=me.units.filter(function(u){return u.hro;})[0];if(hu)hu.d=PLEN*.62;'))
      +'updHUD();}catch(e){document.title="ERR3 "+e.message;}},1000);'):'')
+ +((HID&&ULP)?('setTimeout(function(){try{var me=G.players[0];me.hCg=1;'
+     +'me.zombies.length=0;for(var k9=0;k9<5;k9++)me.zombies.push(mkZ(zSpec(0,1,10),PLEN*.62-150-k9*40));'
+     +'heroUlt(me,10);'
+     +'var pin=function(){var hu=(G.players[0].units||[]).filter(function(u){return u.hro;})[0];'
+     +'if(hu&&hu.ulW0){hu.ulW=hu.ulW0*(1-'+ULP+');hu.ulT=hu.ulW+.55;}};'
+     +'pin();setInterval(pin,60);'
+     +'}catch(e){document.title="ERR14 "+e.message;}},1400);'):'')
  +(UID?('setTimeout(function(){try{var me=G.players[0];me.scrap=999999;'
      +'var ui9=UNITS.findIndex(function(q){return q.id==="'+UID+'";});'
      +'if(ui9<0)throw new Error("兵科 '+UID+' が無い");'
@@ -414,13 +429,18 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠スイングは**段階を並べないと振れているか分からない**=コマごとに bsw を変える */
      /* ⚠**時間の順に並べる**=振りかぶり→振り出し→当たる瞬間→フォロースルー→構えへ */
      +'var SWSEQ='+(ARTSW?'[.65,.9,.999,.06,.22]':'null')+';'
+     /* ⚠必殺の詠唱は [詠唱の進み, 発射の余韻]。進み<0 が「もう撃った」の印。
+        ⚠⚠**put の外に置くこと**=中で var 宣言すると外の `(SWSEQ||ULSEQ)` が
+          未定義の名前になり、**render がそこで止まって x3 と実寸の段が丸ごと出ない**(実際に踏んだ) */
+     +'var ULSEQ='+(ARTUL?'[[.06,0],[.38,0],[.72,0],[1,0],[-1,.88]]':'null')+';'
      +'function put(px,py,mag,tt,dr,k){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
      +'c.lineWidth=3;c.strokeStyle=INK;'
      /* ⚠ヴァルキリーの斬りも同じ枠で撮る(vsw)。vcb=連撃の何発目か */
      /* ⚠汎用の振り(bSwing)は sw と chg が別物なので**専用の並び**で撮る。
         ⚠bSwing は sw>0 の間 chg を見ない=振りかぶりのコマは sw=0 にすること */
      +'var SW2=[[0,.55],[0,1],[.001,0],[.18,0],[.36,0]];'
-     +'var oo=SWSEQ?{bsw:SWSEQ[k%5],vsw:SWSEQ[k%5],sw:SW2[k%5][0],chg:SW2[k%5][1],ct:1,vcb:k%3}:OCHG;'
+     +'var oo=ULSEQ?{ulm:1,ulp:ULSEQ[k%5][0],ulr:ULSEQ[k%5][1],chg:ULSEQ[k%5][1],ct:1,mv:0}'
+     +':SWSEQ?{bsw:SWSEQ[k%5],vsw:SWSEQ[k%5],sw:SW2[k%5][0],chg:SW2[k%5][1],ct:1,vcb:k%3}:OCHG;'
      +'try{if(KD==="z")drawZombie(c,idx,0,0,dr,tt,0,{});else drawUnit(c,idx,0,0,dr,tt,0,oo);}catch(e){}'
      +'c.restore();}'
      +'var c=null,W2=0,H2=0;'
@@ -437,10 +457,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'c.fillText("上=x6(暗い地面) / 中=x3(明るい地面) / 下=実寸x1(紙) ／ 左から歩行の4コマ・右端は反転",14,44);'
      /* x6 を4コマ+反転1体。⚠ベースラインを揃える(絵の原点は足元) */
      +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.50,6,k*PER/4,1,k);'
-     +'put(W2*.92,H2*.50,6,PER*.25,SWSEQ?1:-1,4);'
+     +'put(W2*.92,H2*.50,6,PER*.25,(SWSEQ||ULSEQ)?1:-1,4);'
      /* x3 を4コマ */
      +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.80,3,k*PER/4,1,k);'
-     +'put(W2*.92,H2*.80,3,PER*.25,SWSEQ?1:-1,4);'
+     +'put(W2*.92,H2*.80,3,PER*.25,(SWSEQ||ULSEQ)?1:-1,4);'
      /* 実寸。⚠**ここで見分けが付くかが本番** */
      +'for(var k=0;k<8;k++)put(W2*(.10+k*.055),H2*.96,1,k*PER/8,1,k);'
      +'c.fillStyle="rgba(0,0,0,.55)";c.font="900 11px "+FF;'

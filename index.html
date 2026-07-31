@@ -11571,15 +11571,28 @@ function bFace(c,x,y,rx,ry,sk,noMouth){
    ⚠**両手で持つ装備は奥の腕にも同じ g を掛ける**(奥の腕は胴より先に描くので、
      付け根が多少ずれても**胴が覆って見えない**。ただし付け根が胴からはみ出す角度まで回さないこと)。
    ⚠rc=0 の時は save/restore ごと省く(毎フレーム32体ぶん通る所なので) */
+/* ⭐⭐**必殺技の詠唱の間だけ、腕ごと余分に回す上乗せ**(2026-08-02)。
+   ⚠**なぜ引数ではなく箱(グローバル)なのか**=bHold/bSwing は50か所から呼ばれていて、
+     しかも呼び出し側は `rc` しか持っていない(`o` を渡していない)。
+     ⭐**この3つを差すだけで21人ぶんの得物が「掲げる/突き上げる/振りかぶる」に化ける**=
+       型ごとのポーズを21体ぶん書き直さずに済む唯一の口。
+   ⚠必ず `bUlt` が返す後始末で0へ戻すこと(戻し忘れると次のキャラの腕まで曲がる)。
+   ⚠**bHold の呼び出しは50か所すべて肩(4.x,-34.x)**なので、上乗せしてよい(頭や脚には使われていない)。 */
+let UL_HA=0,UL_HX=0,UL_HY=0;
 function bHold(c,rc,px,py,ang,dx,dy){
- if(!(rc>0))return B_NOP;
- c.save();c.translate(px+(dx||0)*rc,py+(dy||0)*rc);
- if(ang)c.rotate(ang*rc);
+ if(!(rc>0)&&!UL_HA&&!UL_HX&&!UL_HY)return B_NOP;
+ c.save();c.translate(px+(dx||0)*rc+UL_HX,py+(dy||0)*rc+UL_HY);
+ const a=(ang||0)*rc+UL_HA;if(a)c.rotate(a);
  c.translate(-px,-py);
  return ()=>c.restore();
 }
 const B_NOP=()=>{};
-const bRc=o=>clamp(o&&o.chg||0,0,1);
+/* ⭐**必殺技の詠唱中だけ 1 を超えられる**(2026-08-02)=21人ぶんポーズを書き直さずに
+   「通常の溜めより一段大きい振りかぶり/掲げ」を出すための唯一の口。⚠上限は RC_UL。
+   ⚠各体は rc を「角度・ずれ・光の大きさ」に掛けているだけなので 1 を少し超えても壊れない
+     (globalAlpha に直に入れている所だけ 0.7*rc=最大0.93 で収まることを確認済み)。 */
+const RC_UL=1.34;
+const bRc=o=>clamp(o&&o.chg||0,0,(o&&o.ulm)?RC_UL:1);
 /* ⭐専用の体を持つ兵科の表。⚠ここに登録した id は共通の体を一切通らない。
    ⚠★の印と後始末は呼び出し側(drawUnit)でやるので、各関数は「体を描く」だけでよい */
 const UBODY={};
@@ -12529,6 +12542,7 @@ function bSwing(c,o,px,py,up,dn,dx,dy){
   else{const q=1-Math.min(1,(sw-SWG_S)/(SWG_W-SWG_S));a=(dn||0)*q;ox=(dx||0)*-.5*q;oy=(dy||0)*-.5*q;}
  }
  else if(rc>0){a=(up||0)*rc;ox=(dx||0)*rc;oy=(dy||0)*rc;}
+ a+=UL_HA;ox+=UL_HX;oy+=UL_HY;/* ⭐必殺の詠唱の上乗せ(bHold と同じ) */
  if(!a&&!ox&&!oy)return B_NOP;
  c.save();c.translate(px+ox,py+oy);if(a)c.rotate(a);c.translate(-px,-py);
  return ()=>c.restore();
@@ -12543,10 +12557,95 @@ function uBatP(u){
  if(!u.eng&&!(u.fired&&p<.34))return 0;
  return (p>=.54&&p<.72)?0:Math.max(p,.001);/* ⚠この区間=構えの真ん中(焼いたコマと同じ姿) */
 }
+/* ============ ⭐⭐⭐必殺技の詠唱モーション(2026-08-02ユーザー決定) ============
+   きっかけ=ユーザー「のけぞるだけだと安っぽい」。それまでの前置きは
+   **光(drawUltWind)+「下がる」(H_ULW_BACK)+通常の溜めの構え**だけで、しかも
+   **押した瞬間に完成形の姿へ飛ぶ**ので、21人がほぼ同じ絵に見えていた。
+   ⭐**型ごと(U_MOT の9種)に体の動きを1つずつ持たせる**=1つ書けば同じ型の英雄すべてに効く
+     (21人ぶん個別に書かない。それが「案Aのガチ版」の意味)。
+   ⭐**3つで1組**(どれか欠けると安っぽさが戻る):
+     ①**体の動き**(ここ・主役)=傾き・上下・踏み込み・潰し伸び+得物(rc)を通常より押す
+     ②**型ごとの光**(脇役)=詠唱の進みで `drawUChg` を呼ぶ(照準線・魔法陣・陽炎・雷・
+       ★4以上6人の専用の溜めまでそのまま効く)。汎用の `drawUltWind` は薄くした
+     ③**溜め終わりの一拍**=`ulKof` は p=.82 で完成し、**最後の18%は姿勢を止めて震えるだけ**。
+       止めが無いと出だしが軽い(「押す→止め→発射」の止めがこれ)。
+   ⚠**得物は各英雄が自分の bHold/bSwing で動かす**=ここは rc(o.chg)を RC_UL まで押すだけ。
+     NOTESの掟「腕と装備は一体で肩を軸に回す」をそのまま使い回している。
+   ⚠**傾き(ln)は腰(1,-20)を軸に体ごと回す**=脚も一緒に回るので **.42rad を超えないこと**
+     (足が地面から離れて見える)。⚠潰し伸び(sx/sy)は**足元が軸**なので浮かない。
+   ⚠**兵科には効かない**(必殺技は英雄だけ)。 */
+const U_ULM={
+ /* ln=腰から上の傾き(−で反る) / ri=体の上下(−で伸び上がる) / fw=前後(＋で前へ)
+    sx,sy=潰し伸び / rc=得物の押し / ha=腕ごと余分に回す角(−で振り上げ) / hx,hy=肩のずれ
+    tr=一拍の震え。⭐**体(ln/ri/fw/sx/sy)と得物(rc/ha/hx/hy)を必ず両方書く**
+    =体だけだと「のけぞるだけ」に戻り、得物だけだと腕しか動かない絵になる */
+ /* ⚠⚠**縦に構えている得物(杖・槍)を大きく回してはいけない**(2026-08-02に撮って気づいた)=
+    肩を軸に -.5rad も回すと**杖の先が後ろへ倒れて頭の横まで落ちる**(掲げるの逆)。
+    ⭐**縦の得物は「回さずに持ち上げる」**(hy を大きく・ha はほぼ0)+**体ごと伸び上がる**で見せる。 */
+ cast :{ln:-.16,ri:-4.4,fw:-0.6,sx:.93, sy:1.11,rc:1.30,ha:-.10,hx:1.6,hy:-6.5,tr:.5},/* 杖を天へ掲げる */
+ bolt :{ln:-.12,ri:-5.2,fw:-0.4,sx:.91, sy:1.13,rc:1.32,ha:-.08,hx:1.2,hy:-7.5,tr:.6},/* 槍を突き上げる */
+ slash:{ln:-.34,ri: 1.2,fw:-4.2,sx:1.07,sy:.95, rc:1.30,ha:-.28,hx:-1,hy:-1.4,tr:.7},/* 大きく振りかぶる */
+ toss :{ln:-.40,ri:  .2,fw:-4.6,sx:.92, sy:1.00,rc:1.34,ha:-.30,hx:-2,hy:-1.0,tr:.5},/* 腕を引き絞る */
+ snipe:{ln: .10,ri: 1.4,fw:-1.6,sx:1.02,sy:.96, rc:1.16,ha:0,   hx:0, hy:0,   tr:.35},/* 据えて狙う */
+ heat :{ln: .17,ri: 2.2,fw: 1.4,sx:1.08,sy:.93, rc:1.22,ha:.22, hx:1, hy:2.2, tr:.9},/* 炉を地へ押し付ける */
+ mag  :{ln:-.06,ri: -.6,fw: 3.6,sx:1.03,sy:1.00,rc:1.30,ha:-.12,hx:3.4,hy:-1, tr:.6},/* 磁石を突き出す */
+ spin :{ln: .12,ri: 1.0,fw:-1.0,sx:1.05,sy:.97, rc:1.24,ha:0,   hx:0, hy:0,   tr:1.1},/* 銃身が唸る */
+ now  :{ln:-.13,ri:  .4,fw:-2.6,sx:1.04,sy:.97, rc:1.24,ha:-.20,hx:-1,hy:-1.4,tr:.5},/* 即時=引き絞る */
+ nowS :{ln:-.26,ri:  .8,fw:-3.6,sx:1.05,sy:.97, rc:1.30,ha:-.34,hx:-1,hy:-1.6,tr:.6},/* 即時+得物=振りかぶる */
+ nowB :{ln: .16,ri: 1.2,fw:-1.0,sx:1.06,sy:.95, rc:1.20,ha:-.16,hx:0, hy:-1,  tr:1.0}/* 即時+退がる=踏ん張る */
+};
+/* ⚠**即時(now)は英雄7人と一番多い**ので、そのままだと7人が同じ動きになる。
+   ⭐**得物を振る英雄(U_SWG)と、退がってから突っ込む英雄(H_ULW_BACK)だけ枝を分ける**
+     =表を増やさずに3通りへ割れる(hCmd/hGiant/hMech=振りかぶり・hPost/hDark=突撃・hCop/hDeal=引き絞り)。 */
+/* ⚠**退がる印は `u.ulBk` ではなく表 `H_ULW_BACK` を引く**=u.ulBk は撃った瞬間に0へ戻るので、
+   そちらを見ると**発射の瞬間だけ別の型に化けて姿勢が飛ぶ**(詠唱と余韻で型が変わってはいけない)。 */
+function ulMotOf(o,id){
+ let k=(o&&o.mk)||'now';
+ if(k==='now')k=H_ULW_BACK[id]?'nowB':(U_SWG.has(id)?'nowS':'now');
+ return U_ULM[k]||U_ULM.now;
+}
+/* 詠唱の進み p(0→1) → 姿勢の完成度。⚠**押した瞬間に速く構え、.82で止まる**(残りは一拍のタメ) */
+function ulKof(p){
+ const x=clamp(p/.56,0,1),a=1-(1-x)*(1-x);
+ const y=clamp((p-.56)/.26,0,1);
+ /* ⚠**7割で構え・残り3割で詰める**=前半に寄せすぎると「押した瞬間に完成して固まる」に見え、
+    後半に寄せすぎると押した手応えが無い。⚠合計が1になること(タメで止まる位置がずれる) */
+ return clamp(a*.72+(y*y*(3-2*y))*.28,0,1);
+}
+const ulHold=p=>clamp((p-.82)/.18,0,1);
+/* 使い方: const g=bUlt(c,o,t); …体を描く…; g();
+   ⚠**発射(o.ulr)では姿勢が反対側へ抜ける**=詠唱で溜めた向きの逆へ打ち出して戻る。
+     一拍のタメがあっても、抜けが無いと「止まったまま技だけ出た」に見える。
+   ⚠打ち出しは**押した直後の12%で立ち上げる**=1フレームで反対の姿へ飛ぶとワープに見える。 */
+function bUlt(c,o,t){
+ const M=(o&&o.um)||U_ULM.now,wind=(o&&o.ulp>=0);
+ let k=(o&&o.uk)||0,e=0;
+ if(!wind){const r=clamp((o&&o.ulr)||0,0,1);k=r;e=(r>.88)?(1-r)/.12:r/.88;}
+ const hd=wind?ulHold(o.ulp):0;
+ const tr=(M.tr||0)*hd*Math.sin((t||0)*44)*.9;/* 溜まりきって耐えている震え */
+ const q=k-1.3*e;/* 詠唱で溜めた向き(＋)と、発射で抜ける向き(−) */
+ const ln=M.ln*q,ri=M.ri*(k-.9*e),fw=M.fw*(k-1.9*e)+tr;
+ const sx=1+(M.sx-1)*(k-e),sy=1+(M.sy-1)*(k-e);
+ /* ⭐得物は各英雄の bHold/bSwing に上乗せして動かす(21人ぶんポーズを書かないための約束) */
+ UL_HA=(M.ha||0)*q;UL_HX=(M.hx||0)*q;UL_HY=(M.hy||0)*q;
+ c.save();
+ if(fw||ri)c.translate(fw,ri);
+ if(sx!==1||sy!==1)c.scale(sx,sy);
+ if(ln){c.translate(1,-20);c.rotate(ln);c.translate(-1,20);}
+ return ()=>{UL_HA=UL_HX=UL_HY=0;c.restore();};
+}
 function drawUnit(c,ui,x,y,dr,t,ph,o){
  o=o||{};
  /* ⭐溜めの構えを型ごとに変えるため、攻撃の型を o に載せて各体へ渡す(uChgUp が読む) */
  if(o.mk==null)o.mk=uMotK(ui);
+ /* ⭐必殺の詠唱=型ごとの動き(o.um)と姿勢の完成度(o.uk)をここで1回だけ出す。
+    ⚠**VEC2 の写しより先に置く**=シルエットの層と本体で姿勢がずれると輪郭が二重にぶれる。
+    ⚠得物(rc)もここで押す=各体は bRc(o) を見るだけでよい。 */
+ if(o.ulm&&o.um==null){const U9=UNITS[ui]||{};
+  o.um=ulMotOf(o,U9.base||U9.id);
+  if(o.ulp>=0){o.uk=ulKof(o.ulp);o.chg=o.um.rc*o.uk;}
+  else o.chg=(o.chg||0)*o.um.rc;/* 発射の余韻=得物が下りてくる */
+ }
  if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1}),os=Object.assign({},o1,{sil:1});
   /* ⚠**シルエットの層だけ印を付ける**(o.sil)=半透明の残像はシルエットでは真っ黒な塊になるので、
      その層では描かせない(silLayer は globalAlpha を捨てる作り) */
@@ -12558,7 +12657,8 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
     ⚠止めるだけだと「固まった」に見えるので、溜めの光(drawUChg)と必ずセットで出すこと。 */
  /* ⭐**止まっている間は脚を止める**(2026-08-01ユーザー指示)。⚠o.mv===0 の時だけ止める
     =印を持たない呼び出し(図鑑・プレビュー)は今までどおり歩かせる */
- const walk=(o.chg>0)?.62:(o.mv===0?0:Math.sin(t*10+ph)*WALK_AMP),bob=(o.chg>0||o.mv===0)?0:Math.abs(walk)*1.4;
+ /* ⚠**詠唱は o.chg が0から立ち上がる**=`o.chg>0` だけで見ると出だしの1コマだけ歩いてしまう */
+ const walk=(o.chg>0||o.ulm)?.62:(o.mv===0?0:Math.sin(t*10+ph)*WALK_AMP),bob=(o.chg>0||o.ulm||o.mv===0)?0:Math.abs(walk)*1.4;
  const tier=uTier(ui),tsc=TSCALE[tier-1];
  c.save();c.translate(x,y-bob);
  if(tier===4){c.fillStyle='rgba(232,163,61,'+(.16+.09*Math.sin(t*6))+')';c.beginPath();c.ellipse(0,2,30,11,0,0,7);c.fill();}
@@ -12569,7 +12669,8 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
     ⚠バットは 12428 で自前に打ち消している(この枝は通らない=bsw は o.sw ではない)。 */
  if(o.sw>0)c.translate(4.4*(1-Math.min(1,o.sw/SWG_W)),0);
  else if(o.fireT>0)c.translate(-(2+7*clamp(o.fireT/.14,0,1)),0);
- else if(o.chg>0)c.translate(1.6*o.chg,0);
+ /* ⚠詠唱中は掛けない=bUlt の踏み込み(fw)と二重になる */
+ else if(o.chg>0&&!o.ulm)c.translate(1.6*o.chg,0);
  if(o.hitT>0)c.filter='brightness(2.1)';
  /* ⭐英雄の光は**レア度の色**にする(第91弾)。全員が同じ琥珀色だと、せっかく11人ぶん
     描き分けた色が光に飲まれて全部金色に見えた(並べて撮って気づいた) */
@@ -12584,8 +12685,10 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.restore();}
  c.lineWidth=2.4;c.strokeStyle=INK;/* ⚠部隊側は c.scale(tsc) の中なので、これで既に絵の大きさに比例している */
  /* 🦸英雄は専用の姿。⭐溜めの間は上体を型ごとに傾ける(2026-08-01・兵科と同じ扱い) */
- if(U.hro){const hl=uChgUp(o);if(hl){c.translate(1,-20);c.rotate(hl);c.translate(-1,20);}
-  drawHeroBody(c,U,walk,o,t,ph);c.restore();return;}
+ /* ⭐必殺の詠唱中は型ごとの動き(bUlt)が通常の溜めの傾き(uChgUp)を丸ごと引き受ける */
+ if(U.hro){const ue=o.ulm?bUlt(c,o,t):null;
+  if(!ue){const hl=uChgUp(o);if(hl){c.translate(1,-20);c.rotate(hl);c.translate(-1,20);}}
+  drawHeroBody(c,U,walk,o,t,ph);if(ue)ue();c.restore();return;}
  if(id==='big'){c.scale(1.22,1.22);c.lineWidth=2;}/* 巨漢は一回り大きい体格 */
  /* ⚠**装甲車とメカスーツの絵は2026-08-01に削除**(ユーザー指示で兵科ごと廃止) */
  if(id==='hnd'){
@@ -14204,9 +14307,12 @@ const uFxTier=u=>u.hro?3:(UFX_T[(UNITS[u.ui]||{}).id]||0);
 /* ⭐**溜めが見えること**(2026-07-30ユーザー指定「光/線/粒のどれかを足元か体の周りに円で」)。
    ⚠fxには積まない=溜めている間ずっと出るので、毎フレーム積むとすぐあふれる(塔の継続攻撃と同じ考え)。
    ⚠**タワーと部品を共有しない**(設計の指示)。ここは部隊専用の描画。
-   lay=0: 体の後ろ(足元の輪・魔法陣) / lay=1: 体の前(銃口の光・粒・照準の線) */
-function drawUChg(c,u,t,lay){
- const k=clamp(u.chg||0,0,1);if(k<=0)return;
+   lay=0: 体の後ろ(足元の輪・魔法陣) / lay=1: 体の前(銃口の光・粒・照準の線)
+   ⭐**k0=溜まり具合を外から渡す**(2026-08-02)=必殺技の詠唱でもここを使い回すため。
+     ⚠これが無いと詠唱中は `u.chg` が0に伏せられていて(通常攻撃をさせないため)
+       **型ごとの光が1つも出ず、21人が同じ汎用の光だけ**になっていた。 */
+function drawUChg(c,u,t,lay,k0){
+ const k=clamp(k0!=null?k0:(u.chg||0),0,1);if(k<=0)return;
  const M=uMotK(u.ui),col=uMotCol(u.ui),U=UNITS[u.ui]||{};
  const x=u.px,y=u.py,dr=(u.dr||-1);
  /* ⚠**溜めの光は「敵のいる側」に出す**。u.dr は道の向きで決まるので、
@@ -14367,20 +14473,23 @@ function drawUChgHero(c,u,t,k,col,U){
 const H_ULW_RK=[.34,.34,.5,.74,.95];
 const H_ULW_BACK={hDark:150,hPost:90};/* 下がってから出る英雄(値=退がる距離) */
 const hUltWind=H=>H_ULW_RK[clamp((H&&H.rk||1)-1,0,4)];
-/* 溜めの絵。⚠**輪は外へ開かず内へ閉じる**=外へ開く輪は「もう出た」に見えて前置きにならない */
+/* 溜めの絵。⚠**輪は外へ開かず内へ閉じる**=外へ開く輪は「もう出た」に見えて前置きにならない。
+   ⚠⚠**2026-08-02に薄くした**(ユーザー「のけぞるだけだと安っぽい」→ 主役を体の動きへ移した)=
+     ここは「必殺技の詠唱だ」と分かる印だけに留め、型ごとの見せ場は drawUChg 側に任せる。 */
 function drawUltWind(c,u,t){
  const w0=u.ulW0||.5,q=clamp(1-(u.ulW||0)/w0,0,1);
  const U=UNITS[u.ui]||{},col=RARE[Math.min(4,(U.hro||1)-1)]||GOLD;
  const x=u.px,y=u.py;
- c.save();c.strokeStyle=col;c.fillStyle=col;c.lineWidth=7;
+ c.save();c.strokeStyle=col;c.fillStyle=col;c.lineWidth=6;
  for(let i=0;i<2;i++){const p=clamp(q+i*.32,0,1),R=(92-70*p)*CH_UP;
-  c.globalAlpha=(.10+.40*q)*(1-i*.4);
+  c.globalAlpha=(.06+.22*q)*(1-i*.4);
   c.beginPath();c.ellipse(x,y+2,R,R*.32,0,0,7);c.stroke();}
- c.globalAlpha=.30+.5*q;/* 吸い寄せられる光の粒(外→内) */
- for(let i=0;i<8;i++){const a=t*2.2+i*.785,d=(66-46*((t*1.7+i*.125)%1))*CH_UP*(1-q*.34);
-  c.beginPath();c.arc(x+Math.cos(a)*d,y-26*CH_UP+Math.sin(a)*d*.5,(1.4+1.6*q)*2.6,0,7);c.fill();}
- if(q>.55){/* 溜まりきる直前だけ体が光を帯びる */
-  c.globalAlpha=(q-.55)/.45*.34;
+ c.globalAlpha=.16+.28*q;/* 吸い寄せられる光の粒(外→内) */
+ for(let i=0;i<6;i++){const a=t*2.2+i*1.047,d=(66-46*((t*1.7+i*.167)%1))*CH_UP*(1-q*.34);
+  c.beginPath();c.arc(x+Math.cos(a)*d,y-26*CH_UP+Math.sin(a)*d*.5,(1.4+1.6*q)*2.4,0,7);c.fill();}
+ /* ⭐**溜まりきった一拍だけ体が光を帯びる**=タメ(ulHold)と同じ所で強くする=「来るぞ」が伝わる */
+ if(q>.72){
+  c.globalAlpha=(q-.72)/.28*.30;
   c.beginPath();c.ellipse(x,y-30*CH_UP,(10+14*q)*CH_UP,(32+16*q)*CH_UP,0,0,7);c.fill();}
  c.restore();
 }
@@ -16523,7 +16632,12 @@ function renderCamp(C,t){
      ⚠歩いている間(mv)は構えない=移動しながらしゃがむと絵が壊れる。 */
   const hold9=u.hro&&u.mv===0&&uMotK(u.ui)==='snipe';
   const chg9=(u.ct||hold9)?clamp(u.chg||0,0,1):0,ul9=u.ulT>0?clamp(u.ulT/.55,0,1):0;
+  /* ⭐必殺の詠唱(2026-08-02)=進み(0→1)と、姿勢の完成度(一拍のタメ込み)を出す。
+     ⚠**詠唱していない時は -1**=発射後の余韻(ulr)と見分けるため */
+  const ulp9=(u.ulW>0)?clamp(1-u.ulW/(u.ulW0||1),0,1):-1,ulk9=ulp9>=0?ulKof(ulp9):0;
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,0);/* 足元の輪は体の後ろ */
+  /* ⭐詠唱でも**型ごとの溜めの光**を出す(2026-08-02)=魔法陣・陽炎・雲・★4以上の専用の溜めまで効く */
+  if(ulp9>=0&&FXLV>0)drawUChg(c,u,t,0,ulk9);
   /* ⭐必殺技の前置き(2026-08-01)=溜めている間だけ光を内へ集める */
   if(u.ulW>0&&FXLV>0)drawUltWind(c,u,t);
   /* ⭐必殺の決めポーズ(★4以上)=足元から光の輪が2枚立ち上がる */
@@ -16546,11 +16660,16 @@ function renderCamp(C,t){
     drawSpr(c,bakeU(u.ui),0,u.px,u.py,(u.dr||-1)<0);c.restore();}
    else drawSpr(c,bakeU(u.ui),sprFrame(t,u.ph,10),u.px,u.py,(u.dr||-1)<0);
   else{
-   if(ul9>0){c.save();c.translate(u.px,u.py);c.scale(1+.14*ul9,1+.14*ul9);c.translate(-u.px,-u.py);}
+   /* ⚠**膨らみも詠唱の進みに合わせる**(2026-08-02)=押した瞬間に一段大きくなると、
+      そこで動きが終わったように見えて前置きが「始まり」に読めない */
+   const ug9=ulp9>=0?ulk9:ul9;
+   if(ul9>0){c.save();c.translate(u.px,u.py);c.scale(1+.14*ug9,1+.14*ug9);c.translate(-u.px,-u.py);}
    /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
-   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv});
+   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
+    ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0});
    if(ul9>0)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
+  if(ulp9>=0&&FXLV>0)drawUChg(c,u,t,1,ulk9);/* 詠唱の照準線・粒も体の前 */
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
   if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64*CH_UP,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }

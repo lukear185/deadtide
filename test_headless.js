@@ -2461,6 +2461,50 @@ function checkHero(){
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  META.hero={};META.hsel='';
 }
+/* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
+   見るのは4つ: ①型が21人ぶん全部あって、体も得物も動く値が入っているか
+   ②進みの曲線が「0から始まり・戻らず・.82で完成し・そこから先は止まる(タメ)」か
+   ③実際に姿勢が変わるか(変換を記録する偽の画布で測る=**表の値だけ見ても動いた証拠にならない**)
+   ④腕の上乗せ(UL_HA)が描き終わりに0へ戻っているか(戻し忘れると次のキャラの腕が曲がる) */
+function checkUltMot(){
+ const need=['now','heat','snipe','cast','slash','toss','bolt','mag','spin','nowS','nowB'];
+ for(const k of need)if(!U_ULM[k]){console.log('FAIL: 詠唱モーションの型が無い '+k);process.exit(1);}
+ for(const h of HEROES){
+  const ui=hUiOf(h.id);if(ui<0){console.log('FAIL: 英雄が UNITS に無い '+h.id);process.exit(1);}
+  const M=ulMotOf({mk:uMotK(ui)},h.id);
+  const bd=Math.abs(M.ln)*12+Math.abs(M.ri)+Math.abs(M.fw);
+  if(!(bd>2)){console.log('FAIL: 詠唱で体が動かない '+h.id);process.exit(1);}
+  if(!(M.rc>1.05||Math.abs(M.ha||0)>.05||Math.abs(M.hy||0)>1)){
+   console.log('FAIL: 詠唱で得物が動かない '+h.id);process.exit(1);}
+ }
+ if(ulKof(0)!==0){console.log('FAIL: 詠唱の進みが0から始まっていない');process.exit(1);}
+ let pv=-1;
+ for(let i=0;i<=100;i++){const v=ulKof(i/100);
+  if(v<pv-1e-9){console.log('FAIL: 詠唱の進みが戻っている p='+(i/100));process.exit(1);}
+  pv=v;}
+ if(Math.abs(ulKof(.82)-1)>1e-6){console.log('FAIL: 詠唱が .82 で完成していない '+ulKof(.82));process.exit(1);}
+ if(ulKof(.9)!==ulKof(1)){console.log('FAIL: 溜め終わりの一拍(タメ)で姿勢が止まっていない');process.exit(1);}
+ /* 変換だけを記録する偽の画布 */
+ const rec=L=>new Proxy({},{get:(t,k)=>{
+  if(k==='canvas')return {};
+  if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});
+  if(k==='measureText')return ()=>({width:10});
+  if(k==='translate')return (x,y)=>{L.push('t'+(+x).toFixed(3)+','+(+y).toFixed(3));};
+  if(k==='rotate')return a=>{L.push('r'+(+a).toFixed(4));};
+  if(k==='scale')return (x,y)=>{L.push('s'+(+x).toFixed(4)+','+(+y).toFixed(4));};
+  return typeof k==='string'?()=>{}:undefined;},set:()=>true});
+ const sig=(id,p,r)=>{const L=[];
+  drawUnit(rec(L),hUiOf(id),0,0,1,0,0,{ulm:1,ulp:p,ulr:r||0,chg:r||0,ct:1,mv:0});
+  if(UL_HA||UL_HX||UL_HY){console.log('FAIL: 詠唱の腕の上乗せが戻っていない '+id);process.exit(1);}
+  return L.join('|');};
+ for(const h of HEROES){
+  const a=sig(h.id,0),b=sig(h.id,.5),c=sig(h.id,1),d=sig(h.id,-1,.9);
+  if(a===b||b===c){console.log('FAIL: 詠唱の途中で姿勢が変わらない '+h.id);process.exit(1);}
+  if(c===d){console.log('FAIL: 発射で姿勢が抜けていない '+h.id);process.exit(1);}
+  if(sig(h.id,.9)!==sig(h.id,1)){console.log('FAIL: タメの間に姿勢が動いている '+h.id);process.exit(1);}
+ }
+ console.log('必殺技の詠唱モーション: 型'+need.length+'種 / 英雄'+HEROES.length+'人が「構え→タメ→発射」で姿勢が変わる OK');
+}
 /* ---- 🏋鍛錬所(🔧で英雄を鍛える)と 📖ゾンビ図鑑 ----
    ⚠2026-07-26(第53弾)に洞窟(掘って生態系を育てる防衛戦)をまるごと廃止した。
      ここで見るのは「🔧が減る/経験が入る/Lv上限/鍛錬LvがTD側の英雄のHPに乗る/図鑑がソロの撃破で埋まる」だけ */
@@ -2657,6 +2701,7 @@ checkSup();
 checkTeam();
 checkGacha();
 checkHero();
+checkUltMot();
 checkTrain();
 checkRpg();
 checkProgress();
