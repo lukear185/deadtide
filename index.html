@@ -3041,13 +3041,18 @@ const BNS_GAP2=.14;   /* 9体に1回だけ入れる息継ぎ(塊と塊の切れ�
 /* ⚠**230→150に絞った**(2026-08-02(3)ユーザー「四方八方すぎて対応できない」)=
    広げるほど塊にはなるが、**道から溢れて「どこからでも来る」**になり、迎え撃つ場所が決まらない。
    ⭐いまは道幅の外に**導線(壁)**を置いてあるので、この値が**通路の幅**そのものになる。 */
-const BNS_OFF=200;
+/* ⚠**2026-08-02(8)に 200→340 へ広げた**(ユーザー「もうちょい道を広くして、森はバスも通れなくするから」)
+   =森がバスを止めるようになったので、**通路の幅がそのまま運転できる幅**になる。
+   ⚠バスの幅は約280。通路680なら左右に200ずつ余裕があり、切り返しができる。 */
+const BNS_OFF=340;
 const BNS_LEAD=30;    /* 🚌開拓便だけ設置の猶予を長く(屋上に自分で建てるため) */
 /* ⭐⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。
    道に沿って**3か所で通路が絞れる(関所)**。⚠**壁の絵はこの式から生やす**ので必ず一致する。
    ⭐関所は「バスで待ち構える場所」=群れが勝手に密集するので、そこを轢くのが一番おいしい。 */
 const BNS_GATE=[.28,.55,.80];/* 関所の位置(道に沿った割合) */
-const BNS_GATW=80;           /* 関所での通路の幅(半分) */
+/* ⚠関所も広げる(80→200)=**バスが通れない関所を作らない**。
+   ⭐バス(幅280)が関所(幅400)の7割を塞ぐので、「停めて蓋をする」がちょうど成立する。 */
+const BNS_GATW=200;          /* 関所での通路の幅(半分) */
 const BNS_GATR=.085;         /* 関所の前後どれだけかけて絞るか */
 function bnsCorrW(u){
  let w=BNS_OFF;
@@ -19177,6 +19182,39 @@ const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当�
    ⚠押すのは世界座標ではなく **`z.off`(道の法線方向へのずれ)**=世界座標で押すと道から外れて、
      次のフレームで道の上へ瞬間移動する(前へ押す時と同じ理屈)。 */
 const BUS_SIDE=420;
+/* ⭐⭐**森はバスも通れない**(2026-08-02(8)ユーザー決定)=バスが走れるのは**街路と拠点の中だけ**。
+   ⚠⚠**木や建物1つ1つと当たりを取らない**=木は2万本あるので現実的でないし、
+     地形は `bnsCorrW` から生やしてあるので**通路の縁で止めれば絵と必ず一致する**(1か所で済む)。
+   ⚠**止めるのではなく滑らせる**=壁へ向かう速さだけ殺す。正面から突っ込んでも張り付かない。
+   ⚠**拠点の周り(木も建物も置いていない円)も走れる**ようにすること=でないと拠点で身動きが取れない。
+   ⚠`BUS_CL` は**バスの見た目の半分(140)より小さく**する=木を少しかすめるくらいが自然で、
+     きっちり合わせると「見えない壁」に見える。 */
+const BUS_CL=95;
+function bnsRoadFit(x,y,cl){
+ if(!LANES)return null;
+ const rc=Math.max(40,OUT_R+120-cl),dc=dist(x,y,BNS_CX,BNS_CY);
+ if(dc<=rc)return null;/* 拠点の中は自由 */
+ let bx=0,by=0,bd=1e9,inside=0;
+ for(const L of LANES){
+  for(const s of L.seg){
+   const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1],l2=vx*vx+vy*vy;
+   const t=l2?clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/l2,0,1):0;
+   const px=s.a[0]+vx*t,py=s.a[1]+vy*t,d=dist(x,y,px,py);
+   const w=Math.max(30,bnsCorrW((s.s+t*s.l)/L.len)-cl);
+   if(d<=w){inside=1;break;}
+   const ov=d-w;
+   /* ⚠**縁のぴったり上ではなく少し内側へ戻す**=ぴったりだと丸め誤差で「まだ外」と判定され、
+      次のフレームでまた押し戻される(判定が毎フレーム揺れる)。 */
+   if(ov<bd){bd=ov;const k=(w-.5)/(d||1);bx=px+(x-px)*k;by=py+(y-py)*k;}
+  }
+  if(inside)break;
+ }
+ if(inside)return null;
+ /* 拠点の円の方が近ければそちらへ寄せる */
+ if(dc-rc<bd){const k=(rc-.5)/(dc||1);return [BNS_CX+(x-BNS_CX)*k,BNS_CY+(y-BNS_CY)*k];}
+ if(bd>=1e9)return null;
+ return [bx,by];
+}
 const BNS_CMB_T=1.5; /* 連続轢殺が途切れるまでの秒数 */
 const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
 function bnsBusInit(C){
@@ -19194,7 +19232,17 @@ function bnsBusStep(C,dt){
  const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*Math.max(.4,im||1);
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
- B.x=clamp(B.x+B.vx*dt,70,MAPW-70);B.y=clamp(B.y+B.vy*dt,70,MAPH-30);
+ let nx2=clamp(B.x+B.vx*dt,70,MAPW-70),ny2=clamp(B.y+B.vy*dt,70,MAPH-30);
+ /* ⭐**森と建物の中へは入れない**(2026-08-02(8))=通路の縁で押し戻し、壁沿いに滑らせる */
+ {const f=bnsRoadFit(nx2,ny2,BUS_CL);
+  if(f){
+   const ox=nx2-f[0],oy=ny2-f[1],ol=Math.hypot(ox,oy);
+   if(ol>1e-4){const ux=ox/ol,uy=oy/ol,vn=B.vx*ux+B.vy*uy;
+    if(vn>0){B.vx-=ux*vn;B.vy-=uy*vn;}}/* ⚠壁へ向かう分だけ殺す=沿って滑る */
+   nx2=f[0];ny2=f[1];B.wallT=.14;
+  }}
+ B.x=nx2;B.y=ny2;
+ if(B.wallT>0)B.wallT-=dt;
  if(Math.abs(B.vx)>16)B.dr=B.vx>0?1:-1;
  /* 🛞**轍(跡が残る)**。⚠**進んだ距離で置く**=毎フレーム置くと止まっている間に同じ所へ積もり、
     速く走るほど点がまばらになる。⚠轢いた直後は**血の轍**にする(跡がやったことを語る)。 */

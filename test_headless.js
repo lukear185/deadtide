@@ -2549,7 +2549,10 @@ function checkBonus(){
   z0.px=me.bus.x;z0.py=me.bus.y;
   const hp0=z0.hp;bnsBusStep(me,.2);
   if(!(z0.hp<hp0||z0.dead)){console.log('FAIL: バスが敵を轢いていない');process.exit(1);}
-  /* スティックを右へ倒したら、加速して右へ動くか(重い車=すぐ最高速にはならない) */
+  /* スティックを右へ倒したら、加速して右へ動くか(重い車=すぐ最高速にはならない)
+     ⚠**拠点の真ん中に置いてから見る**=森はバスが通れないので、街路から外れた所だと
+       通路の縁で押し戻されて「走り出さない」に見える */
+  me.bus.x=BNS_CX;me.bus.y=BNS_CY;
   me.bus.vx=0;me.bus.vy=0;bnsStick(1,0);
   const bx0=me.bus.x;bnsBusStep(me,.2);
   if(!(me.bus.vx>0&&me.bus.x>bx0)){console.log('FAIL: スティックで走り出さない');process.exit(1);}
@@ -2661,6 +2664,19 @@ function checkRice(){
    if(!buildTower(m5,si9,0)){console.log('FAIL: 屋上にタレットを建てられない');process.exit(1);}
    if(!m5.towers[si9]){console.log('FAIL: 建てたのに屋上に乗っていない');process.exit(1);}
    m5.towers[si9]=null;}
+  /* ⭐**森はバスも通れない**(2026-08-02(8))。見るのは3つ:
+     ①関所でもバスが通れる幅がある ②森の中に置いたバスが街路へ押し戻される
+     ③街路の真ん中は押し戻されない(=見えない壁が通路の中に無い) */
+  if(!(BNS_GATW-BUS_CL>40)){
+   console.log('FAIL: 関所がバスの通れない狭さ('+BNS_GATW+'/'+BUS_CL+')');process.exit(1);}
+  {const b5=m5.bus;
+   b5.x=400;b5.y=400;b5.vx=0;b5.vy=0;bnsStick(0,0);
+   bnsBusStep(m5,.05);
+   if(bnsRoadFit(b5.x,b5.y,BUS_CL)){console.log('FAIL: バスが森の中に居座れる');process.exit(1);}
+   const p5=pathPos(LANES[0].len*.5,0);b5.x=p5[0];b5.y=p5[1];b5.vx=0;b5.vy=0;
+   if(bnsRoadFit(b5.x,b5.y,BUS_CL)){console.log('FAIL: 街路の真ん中なのに通れない扱いになる');process.exit(1);}
+   b5.x=BNS_CX;b5.y=BNS_CY;
+   if(bnsRoadFit(b5.x,b5.y,BUS_CL)){console.log('FAIL: 拠点の中なのに通れない扱いになる');process.exit(1);}}
   nextWave();
   for(let k=0;k<1200&&G.tide.pool.length&&m5.zombies.length<300;k++)tideStep(.05);
   for(let k=0;k<60;k++)campStep(m5,.05,1);
@@ -2698,8 +2714,10 @@ function checkRice(){
  META.stg=0;setDiff=BNS_D;startSolo();
  /* ⚠**バスを遠ざけてから見る**=バスは拠点のすぐ脇から始まるので、そのままだと
     拠点に届いた敵をバスが先に轢いてしまい、漏れが1件も起きない(実際に踏んだ) */
+ /* ⚠バスは**街路の上**へ逃がすこと=森はバスが通れないので、適当な座標に置くと
+    次の一歩で通路の縁へ引き戻され、拠点のすぐ脇に戻ってきてしまう */
  {const m4=G.players[0];m4.fx.length=0;m4.zlkT=-9;m4.zombies.length=0;
-  m4.bus.x=Math.min(MAPW-70,BNS_CX+2500);m4.bus.y=BNS_CY;
+  {const p4=pathPos(200,0);m4.bus.x=p4[0];m4.bus.y=p4[1];m4.bus.vx=0;m4.bus.vy=0;}
   for(let k=0;k<20;k++)m4.zombies.push(mkZ(zSpec(0,.02,1),PLEN+10));
   const c4=m4.core;
   campStep(m4,.05,1);
