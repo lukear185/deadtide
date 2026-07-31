@@ -2099,6 +2099,36 @@ function checkEvo(){
  console.log('進化: 同時に'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
  META.uv=[];
 }
+/* ---- 🎒編成(連れて行く10体)。2026-08-01ユーザー指示で入れた仕組み ----
+   ⚠画面のボタンからしか触らない所なので、放っておくと**検査が一度も通らない**。 */
+function checkTeam(){
+ /* ⚠**ソロを1戦始めてから測る**=teamIdx は soloMeta() を見ており、
+    タイトルのままだと対戦扱い(PVP_TEAM の10体固定)になって何を変えても動かない */
+ META.stg=0;setDiff=2;META.nu=U_N-BASE_U;startSolo();
+ const keep=META.team;
+ /* ① 一度も触っていない(null)=安い順に自動で10体そろう */
+ META.team=null;
+ let t=teamIdx();
+ if(t.length!==TEAM_N){console.log('FAIL: 未設定の編成が'+TEAM_N+'体そろわない '+t.length);process.exit(1);}
+ for(const f of TEAM_FIX)if(t.indexOf(f)<0){console.log('FAIL: 固定枠('+f+')が編成に入っていない');process.exit(1);}
+ for(let k=1;k<t.length;k++)if(t[k]<=t[k-1]){console.log('FAIL: 編成が安い順に並んでいない');process.exit(1);}
+ /* ② 触った後(配列)=**自動で埋めない**。埋めると「外したのに戻る」になる */
+ META.team=[UBASE[2].id];
+ t=teamIdx();
+ if(t.length!==TEAM_FIX.length+1){console.log('FAIL: 編成を触った後も自動で埋まっている '+t.length);process.exit(1);}
+ /* ③ 解放費は「元の添字の UNITP」で引く=高い兵科ばかり選ぶと進まない */
+ {const hi=UBASE.length-1;META.team=[UBASE[hi].id];
+  const C={team:teamIdx(),uUn:TEAM_FIX.length};
+  const p=uupCost(C);
+  if(p!==UNITP[hi]){console.log('FAIL: 解放費が元のコストになっていない '+p+'(想定'+UNITP[hi]+')');process.exit(1);}
+  C.uUn=C.team.length;
+  if(uupCost(C)<1e8){console.log('FAIL: 連れて来た全員を解放した後も買えてしまう');process.exit(1);}}
+ /* ④ 上限を超えない */
+ {const all=[];for(let i=0;i<U_N;i++)all.push(UBASE[i].id);META.team=all;
+  if(teamIdx().length>TEAM_N){console.log('FAIL: 編成が'+TEAM_N+'体を超える');process.exit(1);}}
+ META.team=keep;META.nu=0;
+ console.log('🎒編成: 未設定なら安い順に'+TEAM_N+'体・触った後は自動で埋めない・解放費は元のコスト・上限'+TEAM_N+'体 OK');
+}
 /* ---- 💎英雄召集(ガチャ): 排出率・重複・魔石の増減 ---- */
 function checkGacha(){
  /* ⚠2026-07-28ユーザー指示で★3x2・★4x1(→14種)、さらに★2〜★5を1人ずつ(→18種)足した。
@@ -2409,6 +2439,7 @@ function checkSup(){
 }
 checkStrikes();
 checkSup();
+checkTeam();
 checkGacha();
 checkHero();
 checkTrain();

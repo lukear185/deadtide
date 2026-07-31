@@ -468,7 +468,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:5px}
 .tmc{display:flex;flex-direction:column;align-items:stretch;gap:3px;border:2px solid var(--ink);
  border-radius:9px;background:var(--pane);padding:5px 5px 6px;text-align:left}
-.tmc canvas{width:100%;height:34px;display:block;background:var(--paper3);border-radius:6px}
+/* ⚠⚠**canvasは「中の寸法(属性)」と「CSSの見た目の寸法」を必ず合わせる**(NOTESの掟)。
+   `width:100%;height:34px` に 76x76 の絵を流し込んでいたので**横に伸びて縦に潰れていた**
+   (2026-08-01ユーザー指摘「つぶれてる」の正体)。⭐固定px・中央寄せにする。 */
+.tmc canvas{width:76px;height:38px;display:block;margin:0 auto;background:var(--paper3);border-radius:6px}
 .tmc .nm{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tmc .tg{font-size:9.5px;font-weight:800;color:var(--rust2);line-height:1.15}
 .tmc.on{opacity:.42;filter:saturate(.35)}
@@ -1111,7 +1114,8 @@ const META_RESET=3;
    (難易度とステージの解放は消したくない)。2026-07-27ユーザー指示。 */
 function metaResetLab(){
  META.pts=0;META.nt=0;META.nu=0;META.st=['air'];META.eq='air';
- META.uv=[];META.tg=[];META.ld={};META.team=[];
+ /* ⚠**team は null で戻す**=空配列だと「触った結果、固定の2体だけ」の意味になってしまう */
+ META.uv=[];META.tg=[];META.ld={};META.team=null;
  META.tw={};META.un={};META.st0=0;
  for(const k of ['sc0','hp0','up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=0;
 }
@@ -2269,11 +2273,13 @@ function teamIdx(){
     連れて行けるのは同じ10体=そうしないと編成画面が「30/10」と壊れて出る(2026-08-01に踏んだ)。
     ⚠DEVで別の兵科を試したい時は編成で選び直す。 */
  if(typeof soloMeta==='function'&&!soloMeta()&&!DEV)return PVP_TEAM();
- const own=metaUnitCap();
- let t=((META.team)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&i<own);
+ const own=metaUnitCap(),raw=META.team;
+ let t=((raw)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&i<own);
  t=Array.from(new Set(TEAM_FIX.concat(t))).sort((a,b)=>a-b).slice(0,TEAM_N);
- /* 選んでいない枠は**安い順に自動で埋める**(編成を触らない人でも今までどおり遊べる) */
- for(let i=0;i<own&&t.length<TEAM_N;i++)if(t.indexOf(i)<0)t.push(i);
+ /* ⚠⚠**自動で埋めるのは「一度も編成を触っていない人」だけ**(2026-08-01に踏んだ)。
+    いつも埋めると、外した瞬間に次の安い兵科が入ってきて**外れていないように見える**。
+    ⭐編成を1回でも触ったら(`META.team` が配列になったら)その選択をそのまま尊重する。 */
+ if(raw==null)for(let i=0;i<own&&t.length<TEAM_N;i++)if(t.indexOf(i)<0)t.push(i);
  return t.sort((a,b)=>a-b);
 }
 /* 全兵科を価格順に並べ替え(前半=最初から使える/後半=研究所で解放)。ただし研究所専用の4種は必ず末尾 */
@@ -18640,7 +18646,7 @@ function renderLoad(){
   h+='<div class="tmord">';
   T9.forEach((i,k)=>{const p=UNITP[i]||0;sum+=p;const fx=TEAM_FIX.indexOf(i)>=0;
    h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'"'+(fx?' disabled':'')+'>'
-    +'<canvas width="52" height="52"></canvas><b>'+(k+1)+'</b>'
+    +'<canvas width="26" height="26"></canvas><b>'+(k+1)+'</b>'
     +((UBASE[i]||{}).n||'?')+'<i>⚙️'+p+'</i>'+(fx?'<em>🔒</em>':'<em>✕</em>')+'</button>';});
   h+='</div>';
   h+='<div class="tmsum">10体ぜんぶ出すのに <b>⚙️'+sum.toLocaleString()+'</b>'
@@ -18651,13 +18657,16 @@ function renderLoad(){
    const U=UBASE[i];if(!U)continue;
    const on=T9.indexOf(i)>=0;
    h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'"'+(on?' disabled':'')+'>'
-    +'<canvas width="76" height="76"></canvas>'
+    +'<canvas width="76" height="38"></canvas>'
     +'<span class="nm">'+(on?'✅':'')+U.n+'</span>'
     +'<span class="tg">解放⚙️'+(UNITP[i]||0)+'</span></button>';}
   h+='</div>';
   box.innerHTML=IC(h);
   const pick=(i,add)=>{
-   const cur=((META.team)||[]).slice();
+   /* ⚠⚠**まず「いまの編成」を確定させる**(2026-08-01に踏んだ)。
+      `META.team` が空(自動で埋めた状態)のままだと、外そうとしても中身が無いので
+      **何も起きない**ように見える。固定枠は入れない(常に先頭に付く)。 */
+   let cur=teamIdx().filter(x=>TEAM_FIX.indexOf(x)<0).map(x=>UBASE[x].id);
    const id=UBASE[i].id,k=cur.indexOf(id);
    if(!add){if(k>=0)cur.splice(k,1);}
    else{
