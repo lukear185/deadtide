@@ -13711,7 +13711,9 @@ function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
  return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 /* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
-function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,frzUsed:0,burnT:0,burnD:0,acdT:0,acdD:0,acdX:0,acdR:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
+/* ⚠`stnT`=気絶の**見せ方**だけのタイマー(★が頭上を回る)。止める仕組みは `frzT` の方。
+   ⚠**凍結と気絶を分けるために持つ**=罠・引力場・時間停止・落雷を氷漬けで見せない(2026-08-02) */
+function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,stnT:0,frzUsed:0,burnT:0,burnD:0,acdT:0,acdD:0,acdX:0,acdR:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 /* ⭐⭐⭐**波ごとに「物量」と「重厚」が振れる**(2026-08-02ユーザー決定)。
    ⚠狙いは**毎波の最適解を変えること**=それまで20波ぜんぶ「強い兵科で20枠を埋める」が答えだった。
      出撃枠を重さ制(`uWt`)にしたので、**物量の波は薄く広く・重厚の波は厚く少なく**が効くようになる。
@@ -14810,7 +14812,8 @@ function heroUlt(C,wave){
   if(C.isMe)sfx.frost&&sfx.frost();
  }else if(id==='hHunt'){/* 一斉罠: 踏んだ敵を拘束(完全停止) */
   const ts=front(440);
-  for(const z of ts){dmgZ(C,z,150*W,1);if(!z.dead)z.frzT=Math.max(z.frzT||0,3.2);}
+  /* ⚠**止めるのは frzT・見せ方は stnT**(2026-08-02)=罠に掛かったのに氷漬けでは意味が通らない */
+  for(const z of ts){dmgZ(C,z,150*W,1);if(!z.dead){z.frzT=Math.max(z.frzT||0,3.2);z.stnT=Math.max(z.stnT||0,3.2);}}
   for(let k=0;k<5;k++){const p=pathPos(clamp(u.d-k*90,0,PLEN));addFx(C,'ring',p[0],p[1],'',{r:52,col:GOLD2});}
   if(C.isMe)sfx.net&&sfx.net();
  }else if(id==='hMech'){/* 応急修理: コア回復+タワーの妨害解除+部隊を回復 */
@@ -14874,7 +14877,7 @@ function heroUlt(C,wave){
  }else if(id==='hMag'){/* 引力場: 前方の敵を1か所へ引き寄せて足止め */
   /* ⚠**すり抜ける敵(noblock)も掴む**=引力なので足の有無に関係ない、が売り */
   const cd0=Math.max(40,u.d-190),ts=live.filter(z=>Math.abs(z.d-cd0)<=420);
-  for(const z of ts){z.d=cd0+rnd(-26,26);z.frzT=Math.max(z.frzT||0,2.6);dmgZ(C,z,210*W,1);}
+  for(const z of ts){z.d=cd0+rnd(-26,26);z.frzT=Math.max(z.frzT||0,2.6);z.stnT=Math.max(z.stnT||0,2.6);dmgZ(C,z,210*W,1);}
   const p=pathPos(clamp(cd0,0,PLEN));
   for(let k=0;k<3;k++)addFx(C,'ring',p[0],p[1],'',{r:150-k*40,col:TECH});
   addFx(C,'shock',p[0],p[1]-8,'',{r:150,col:'#bfe4f5'});
@@ -14903,7 +14906,7 @@ function heroUlt(C,wave){
   addP(C,26,u.px,u.py-30*CH_UP,{sp:170,up:110,g:-50,life:1.3,r:3.4,col:GLOW,jx:12,jy:9});
   C.shake=Math.max(C.shake||0,.24);if(C.isMe)sfx.win&&sfx.win();
  }else if(id==='hSeer'){/* 時間停止: 盤面の敵を完全停止 */
-  for(const z of live)z.frzT=Math.max(z.frzT||0,4.5);
+  for(const z of live){z.frzT=Math.max(z.frzT||0,4.5);z.stnT=Math.max(z.stnT||0,4.5);}
   addFx(C,'ring',CORE[0],CORE[1],'',{r:900,col:'#8f6fae'});
   addFx(C,'txt',u.px,u.py-84*CH_UP,'時間停止');
   addP(C,26,u.px,u.py-30*CH_UP,{sp:180,up:70,g:-40,life:1.2,r:3,col:'#c9a1ff',jx:12,jy:9});
@@ -14949,7 +14952,7 @@ function heroUlt(C,wave){
    const z=ls[Math.min(ls.length-1,(Math.random()*3)|0)];
    const tx=z.px,ty=z.py;
    for(const z2 of C.zombies){if(z2.dead)continue;if(dist(z2.px,z2.py,tx,ty)>110)continue;
-    dmgZ(C,z2,430*W,1);if(!z2.dead)z2.frzT=Math.max(z2.frzT||0,1.8);}
+    dmgZ(C,z2,430*W,1);if(!z2.dead){z2.frzT=Math.max(z2.frzT||0,1.8);z2.stnT=Math.max(z2.stnT||0,1.8);}}
    addFx(C,'tr',tx+rnd(-14,14),ty-250,'',{x2:tx,y2:ty-16*CH_UP,col:'rgba(190,225,255,',w:5});
    addFx(C,'shock',tx,ty-10,'',{r:110,col:'#cfeaff'});
    addP(C,10,tx,ty-14,{sp:190,up:50,g:400,life:.4,r:2.4,col:'#cfeaff'});
@@ -15113,6 +15116,7 @@ function campStep(C,dt,wave){
   if(z.dead)continue;
   /* 凍結中は完全停止(移動も攻撃もできない)。永久ロックは**凍らせられる回数の上限**が止める */
   if(z.frzT>0)z.frzT-=dt;
+  if(z.stnT>0)z.stnT-=dt;/* ⭐気絶の見せ方(★が回る)。⚠止める仕組みは frzT の方=これは演出だけ */
   const slow=z.frzT>0?0:(z.slowT>0?.55:1);if(z.slowT>0)z.slowT-=dt;
   let blk=null,bd2=1e9;
   for(const u of C.units){if(u.dead)continue;
@@ -16455,7 +16459,9 @@ function renderCamp(C,t){
  const zs=C.zombies.slice().sort((a,b)=>a.py-b.py);
  for(const z of zs){if(z.d<0)continue;
   groundShadow(c,z.px,z.py,15*ZOMBIES[z.zi].sc*(z.boss?1.8:z.elite?1.3:1));
-  if(z.slowT>0||z.frzT>0){c.fillStyle=z.frzT>0?'rgba(205,241,255,.6)':'rgba(159,220,245,.45)';
+  /* ⚠**気絶(z.stnT)は凍結と別物**として見せる=❄の輪も氷漬けも出さない(2026-08-02ユーザー指示
+     「気絶させるやつが凍ってるエフェクト一本だから安っぽい。頭の上に★を回して気絶感を出そう」) */
+  if((z.slowT>0||z.frzT>0)&&!(z.stnT>0)){c.fillStyle=z.frzT>0?'rgba(205,241,255,.6)':'rgba(159,220,245,.45)';
    c.beginPath();c.ellipse(z.px,z.py+4,z.frzT>0?26:20,z.frzT>0?11:9,0,0,7);c.fill();
    c.font='900 16px '+FF;c.textAlign='center';c.globalAlpha=.85;c.fillText('❄',z.px,z.py-64*ZOMBIES[z.zi].sc);c.globalAlpha=1;}
   /* 通常時は焼き込みスプライト・特殊状態のみ直接描画 */
@@ -16464,8 +16470,21 @@ function renderCamp(C,t){
    drawSpr(c,bakeZ(z.zi,z.elite?1:0),sprFrame(t,z.ph,ZOMBIES[z.zi].sp>90?14:8),z.px,z.py,(z.dr||1)<0);
   /* ⚠**d(進んだ距離)を渡す**=ドット絵のコマ送りを距離で回すため(足が滑らない) */
   else drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent,lg:z.lgT,elite:z.elite,d:z.d,vw:z.vw});
-  /* 完全凍結: 氷漬けにして「止まっている」と一目で分かるようにする */
-  if(z.frzT>0){const zc=ZOMBIES[z.zi].sc,bw=30*zc,bh=64*zc;
+  /* ⭐⭐**気絶**(2026-08-02ユーザー指示)。凍結の使い回しをやめて、
+     **頭の上を★が円を描いて回る**+目の高さで小さくよろける。⚠氷漬けは出さない。
+     ⚠★は3つ・**奥に回った時は小さく暗く**する=平面に並べると回って見えない。 */
+  if(z.stnT>0){const zc=ZOMBIES[z.zi].sc,hy=z.py-58*zc,rx=17*zc,ry=6*zc;
+   c.save();c.textAlign='center';c.textBaseline='middle';
+   for(let k=0;k<3;k++){const a=t*4.4+k*2.094,dp=Math.sin(a);/* dp>0=手前 */
+    const sx=z.px+Math.cos(a)*rx,sy=hy-8*zc+dp*ry;
+    const sc9=.78+.34*dp;
+    c.globalAlpha=.55+.45*((dp+1)/2);
+    c.font='900 '+Math.round(15*zc*sc9)+'px '+FF;
+    c.fillStyle=dp>0?'#ffe08a':'#c9a13d';
+    c.fillText('★',sx,sy);}
+   c.restore();c.globalAlpha=1;c.textBaseline='alphabetic';}
+  /* 完全凍結: 氷漬けにして「止まっている」と一目で分かるようにする。⚠気絶の時は出さない */
+  if(z.frzT>0&&!(z.stnT>0)){const zc=ZOMBIES[z.zi].sc,bw=30*zc,bh=64*zc;
    c.save();c.globalAlpha=.5;c.fillStyle='#bfe8ff';
    rr(c,z.px-bw,z.py-bh-6,bw*2,bh+14,7*zc);c.fill();
    c.globalAlpha=.85;c.strokeStyle='#eafaff';c.lineWidth=2;c.stroke();
@@ -16495,7 +16514,15 @@ function renderCamp(C,t){
  for(const u of us2){
   groundShadow(c,u.px,u.py,14*CH_UP);
   /* ⭐溜め中は焼いたコマ(歩いている)が使えないので、直に描く方へ回す */
-  const chg9=u.ct?clamp(u.chg||0,0,1):0,ul9=u.ulT>0?clamp(u.ulT/.55,0,1):0;
+  /* ⭐⭐**狙撃の英雄は敵が居なくても構えたまま待つ**(2026-08-02ユーザー指示
+       「ジョルジは敵がいなくてもしゃがみで撃つのを待機して、射程に入ったら撃つように」)。
+     ⚠溜め(u.chg)は敵が居なくても満タンまで溜まっている(15413行)ので、
+       **見せる条件(u.ct)だけを緩める**=撃つ側の仕組みは何も変えていない。
+     ⚠⚠**英雄だけ**にすること=兵科のスナイパーまで常時ポーズにすると、
+       焼いたコマを使えない体が増えて「1か所に固めると重い」が再発する(盤面に英雄は1人だけ)。
+     ⚠歩いている間(mv)は構えない=移動しながらしゃがむと絵が壊れる。 */
+  const hold9=u.hro&&u.mv===0&&uMotK(u.ui)==='snipe';
+  const chg9=(u.ct||hold9)?clamp(u.chg||0,0,1):0,ul9=u.ulT>0?clamp(u.ulT/.55,0,1):0;
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,0);/* 足元の輪は体の後ろ */
   /* ⭐必殺技の前置き(2026-08-01)=溜めている間だけ光を内へ集める */
   if(u.ulW>0&&FXLV>0)drawUltWind(c,u,t);
@@ -19723,6 +19750,13 @@ function gcGold(c,zidx,zsc,ZX,ZY,a,big){
   c.fillStyle=['#fff3bd','#ffcf52','#ffa41c'][k];
   c.beginPath();c.arc(ZX,ZY-24,30+k*16+Math.sin(GC.t*5+k)*4,0,7);c.fill();}
  c.globalAlpha=1;
+ /* ⚠⚠**まず素の姿を描いておく**(2026-08-02ユーザー指摘「金のロブスターがまだ見えない」)。
+    金に焼く別canvas(`GLDC`)が空で返ると、**後光と照準だけが残って的が消えて見える**
+    (焼く側は try/catch で握り潰しているので、失敗しても何も言わない)。
+    ⭐素の絵を下に敷いておけば、金が乗らなかった時でも必ず姿は見える。 */
+ c.save();c.globalAlpha=a;c.translate(ZX,ZY);c.scale(zs9,zs9);
+ try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
+ c.restore();c.globalAlpha=1;
  if(cvg){c.globalAlpha=a;c.drawImage(cvg,ZX-SZ9/2,ZY-SZ9*.78,SZ9,SZ9);
   /* ⚠lighter を強く重ねると真っ白になる=**うっすら**で足りる */
   c.globalCompositeOperation='lighter';c.globalAlpha=.16*a;
