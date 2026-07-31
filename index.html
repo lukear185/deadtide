@@ -350,11 +350,15 @@ body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint{display:no
 /* ⚠⚠**色だけで段を分けない**(2026-08-02ユーザー指摘「一段目と二段目がわかりづらい」)=
    選ばれていないボタンは上下でほぼ同じ見た目になる。⭐**①左へ寄せる ②帯で囲う ③形を丸くする**
    の3つで差を付ける(形と位置は選択状態に関係なく効くので、どのタブを選んでいても段が分かる)。 */
-.tabs.t2{margin-left:18px;padding:3px 6px;background:rgba(0,0,0,.07);
- border-radius:0 10px 10px 0;border-left:4px solid var(--rust)}
-.tabs.t2 .tb{font-size:11px;padding:3px 11px;border-radius:999px;background:var(--paper)}
+#lab-tabs>.tabs:first-child .tb{font-size:13px;padding:5px 12px}
+.tabs.t2{margin-left:30px;padding:4px 8px;background:rgba(36,31,25,.16);
+ border-radius:0 12px 12px 0;border-left:7px solid var(--rust);position:relative}
+/* 上段の「中身」だと分かるように、左へ伸びる横棒で繋ぐ */
+.tabs.t2::before{content:'';position:absolute;left:-30px;top:50%;width:30px;height:3px;
+ background:var(--rust);opacity:.45}
+.tabs.t2 .tb{font-size:10.5px;padding:2px 11px;border-radius:999px;background:var(--paper);border-width:2px}
 .tabs.t2 .tb.on{background:var(--amber);color:var(--ink)}
-.tabs.t2 .tb i{font-size:9px}
+.tabs.t2 .tb i{font-size:9px;padding:0 3px}
 .bpbody{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .bpfoot{flex:0 0 auto}
 .bprow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:0 0 auto}
@@ -377,8 +381,10 @@ body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint{display:no
 .lgrid.tight .lc .pvc{height:38px}
 .lc .nm{font-size:13px;font-weight:900;line-height:1.25}
 .lc .tg{font-size:10px;font-weight:800;color:var(--rust2);line-height:1.2}
+/* ⚠**3行だと進化カードの説明が切れる**(2026-08-02ユーザー指摘)。4行に伸ばした。
+   ⚠伸ばしすぎるとカードが縦に育って1画面に入る枚数が減るので、4行まで。 */
 .lc .ds{font-size:10.5px;font-weight:700;opacity:.7;line-height:1.32;
- display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+ display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 /* ⭐タワー/兵科の個別強化は項目が20〜32枚並ぶ。普通のカード(4列・説明3行)だと
    1画面に8枚しか入らず探せないので、**小さいカードで6列**にする(1画面に18枚)。
    ⚠説明は .tg の1行に収める(.ds を出さない) */
@@ -19148,7 +19154,10 @@ function renderLab(){
    const NT=TOWERS[nx],eco=NT.type==='eco',fin=!NT.up2;/* 次が無い段=最終形態(値段が上がる) */
    items.push({cat:'vart',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
     tag:(fin?'最終進化 ':'進化 ')+TOWERS[cur].n+' → '+NT.n,
-    d:'盤面で強化を全部MAXにすると⚙️'+fmt(T_GCOST(cur))+'で建て替えられる — '+NT.dsc,
+    /* ⚠⚠**説明は「その塔が何か」を先に書く**(2026-08-02ユーザー指摘「上級廃品工房の説明文が
+       最後....になってて読めない」)=建て替えの条件は**どの進化カードにも同じ文**が付くので、
+       先に置くと2行を食い潰して**肝心の説明が3行目で切れる**。 */
+    d:NT.dsc+' — 盤面で強化を全部MAXにすると⚙️'+fmt(T_GCOST(cur))+'で建て替えられる',
     p:LAB_TG(tg.length,i,fin)});
   }}
  /* ⭐砲撃は「次の1つ」だけを新種タブに出す(タワー/兵科と同じ形) */
