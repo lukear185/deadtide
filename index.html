@@ -10435,8 +10435,13 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
  bLegP(c,L(xF*.2,2.4),L(-19.4,-10.4), L(xF*.5,10.6),L(-10.9,-11.8),
         L(xF,11.8),L(-4.4,-4.4), PA,SHO,1,.96,1);/* 手前=足を前へ出して膝を立てる */
  /* ⚠**しゃがむ時に上体を前へ倒しすぎない**(2026-08-01ユーザー指摘「斜め下向いて撃ってる」)。
-    傾きは頭ごと回るので、.36 も倒すと**顔が下を向いた狙撃手**になる。前を見せるならごく浅く。 */
- hTop(c,t,ph,.10+.04*kn);c.translate(0,LH);
+    傾きは頭ごと回るので、.36 も倒すと**顔が下を向いた狙撃手**になる。前を見せるならごく浅く。
+    ⚠⚠**それでも若干下を向いていた**(2026-08-01ユーザー再指摘)=上体を少しでも倒すと
+      頭も同じだけ回るので、帽子のつばが下がって「うつむいて撃つ」に見える。
+    ⭐直し方=**上体の傾きを首で打ち消して、頭だけ水平に保つ**(TLC)。歩きの揺れは残す
+      =打ち消すのは「構えの傾き」だけ。これでスコープが真正面を向く。 */
+ const TL=.10+.02*kn,TLC=-TL;
+ hTop(c,t,ph,TL);c.translate(0,LH);
  c.fillStyle=CP;/* ケープ(⚠歩きに合わせて後ろへ流す=狙撃手なのに動いて見える) */
  c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
  c.lineTo(-10.4,-6-9.6*kn);c.lineTo(2,-9.4-9.6*kn);c.lineTo(5,-38.4);c.closePath();c.fill();c.stroke();
@@ -10466,6 +10471,9 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
   c.beginPath();c.moveTo(27,-30.4+GY);c.lineTo(31+3.4*kn,-21+GY);c.lineTo(28.4+3.4*kn,-20.6+GY);c.lineTo(25,-29.4+GY);c.closePath();c.fill();c.stroke();
   bArm(c,4.6,-34.6, L(8,9.2),L(-30.4,-29.6), L(9.4,8.6),-25+GY, 5.2,4.2, shade(CO,1.14),SK);g2();}
  bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
+ /* ⭐**ここから頭だけ水平に戻す**(TLC)=スコープを覗いて真正面を見る姿になる。
+    ⚠首の付け根(1.6, nk0)を軸に回すこと。胴の途中を軸にすると首が伸びて見える */
+ c.save();c.translate(1.6,HSK.nk0);c.rotate(TLC);c.translate(-1.6,-HSK.nk0);
  c.fillStyle=HR;/* 白髪(⚠横に流す=帽子の下から出す) */
  c.beginPath();c.moveTo(-6.4,HSK.fy-2);c.lineTo(-12.4,HSK.fy+4.4);c.lineTo(-2.4,HSK.fy+3.4);c.closePath();c.fill();c.stroke();
  bFace(c,1.6,HSK.fy,HSK.rx,HSK.ry,SK,1);
@@ -10480,6 +10488,7 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
  c.fillStyle=HR;/* ⭐白い羽根飾り(⚠帽子から斜め後ろへ突き出す) */
  c.beginPath();c.moveTo(-4.4,HSK.fy-9);c.quadraticCurveTo(-13.4,HSK.fy-20,-8.4,HSK.fy-24.4);
  c.quadraticCurveTo(-6.4,HSK.fy-16,-1.4,HSK.fy-10);c.closePath();c.fill();c.stroke();
+ c.restore();/* 頭の水平戻し(TLC)ここまで */
  c.restore();
 };
 /* ---- ★5 紅蓮の大魔導士「業火の主」= ユーザーの絵から起こした(2026-08-01)。
@@ -14807,8 +14816,11 @@ function campStep(C,dt,wave){
   const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?2:1)*chgM9);
   let tg=null,best=-1;
   if(U.type==='heal'){
+   /* ⭐**回復する相手は「HPの割合」ではなく「減った量」で選ぶ**(2026-08-01ユーザー指示)。
+      ⚠割合で選ぶと、最大HPの大きい英雄や壁役が「まだ8割ある」で後回しになり、
+        最大HPの小さい猟犬ばかり治していた。⚠英雄も C.units に居るので同じ式で拾える。 */
    if(u.cd<=0){let ta=null,br2=1;
-    for(const a of C.units){if(a.dead||a===u||a.hp>=a.mhp)continue;const r5=a.hp/a.mhp;if(r5<br2&&Math.abs(u.d-a.d)<=U.rng){br2=r5;ta=a;}}
+    for(const a of C.units){if(a.dead||a===u||a.hp>=a.mhp)continue;const r5=a.mhp-a.hp;if(r5>br2&&Math.abs(u.d-a.d)<=U.rng){br2=r5;ta=a;}}
     if(ta){u.cd=U.rate;ta.hp=Math.min(ta.mhp,ta.hp+ua);addFx(C,'txt',ta.px,ta.py-52*CH_UP,'+'+ua+'♥');addFx(C,'ring',ta.px,ta.py,'',{r:36,col:LIFE});if(C.isMe)sfx.heal();}}
   }else
   /* ⚠**噛みついてくる相手には必ず届くようにする**。射程が噛みつきの窓(ENG_GAP)より短い近接兵科は、
@@ -15023,7 +15035,18 @@ function campStep(C,dt,wave){
       ⚠**絵は出さない**(u.ct=0)=歩きながら光らせると何が起きているのか分からない。
       ⚠硬直中(u.cd>0)は溜めない=撃った直後に歩いても間隔は縮まらない。 */
    {const cg8=uChgT(u.ui);if(cg8>0&&u.cd<=0)u.chg=Math.min(1,(u.chg||0)+dt/cg8);}
-   const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD,goal=clamp(fD+uStand(U),60,PLEN-40),df=goal-u.d;
+   const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD;
+   let goal=clamp(fD+uStand(U),60,PLEN-40);
+   /* ⭐⭐**回復役は傷ついた味方の所へ歩いて行く**(2026-08-01ユーザー指示
+      「医療兵は絶対ダメージを食らってるユニットやヒーローのところにいくように」)。
+      ⚠それまでは旗の位置に立ったまま、たまたま射程に入った相手だけを回復していた=
+        後ろで傷ついた味方が居ても一生近寄らなかった。
+      ⚠**優先は「HPの割合」ではなく「減った量」**(同指示)=英雄や壁役のような
+        最大HPの大きい相手が後回しにならない。⚠英雄も普通に C.units に居るので同じ式で拾える。 */
+   if(U.type==='heal'){let ta=null,bm=1;
+    for(const a of C.units){if(a.dead||a===u)continue;const ms=a.mhp-a.hp;if(ms>bm){bm=ms;ta=a;}}
+    if(ta)goal=clamp(ta.d,60,PLEN-40);}
+   const df=goal-u.d;
    /* ⭐**歩いている印**(2026-08-01ユーザー指示「移動してないときは足を動かすのやめて」)。
       ⚠止まっているのに脚が動くと、その場で足踏みしているように見える。 */
    if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;u.mv=1;}else{u.back=false;u.mv=0;}}
