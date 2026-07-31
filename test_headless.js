@@ -2488,8 +2488,9 @@ function checkCam(){
  META.stg=0;setDiff=BNS_D;startSolo();
  if(!CAM){console.log('FAIL: 開拓便でカメラが入らない');process.exit(1);}
  fitCanvas();
- /* ⚠寄り具合(zm)は面ごとに変わるので、ここは「全景より寄っている」ことだけ見る */
- if(!(SC>sc0*1.05)){console.log('FAIL: カメラが寄っていない '+SC+' vs '+sc0);process.exit(1);}
+ /* ⚠**寄り具合(zm)は面ごとに変わる**(開拓便はマップが広いので1を切る=全景より引く)。
+    ここで見るのは「カメラが効いていること」だけ=倍率が全景と違うこと。 */
+ if(Math.abs(SC-sc0)<1e-6){console.log('FAIL: カメラが効いていない '+SC+' vs '+sc0);process.exit(1);}
  for(const p of [[0,0],[MAPW,0],[0,MAPH],[MAPW,MAPH],[MAPW/2,MAPH/2],[-500,-500],[MAPW+900,MAPH+900]]){
   camOn(p[0],p[1],2.2);fitCanvas();inv('('+p[0]+','+p[1]+')');}
  camOn(400,400,2.2);camTo(1200,400);camStep(.016);

@@ -16554,6 +16554,8 @@ function renderCamp(C,t){
  rr(c,-24,-86,48,40,6);c.fill();c.stroke();
  c.fillStyle=INK;c.font='900 26px '+FF;c.textAlign='center';c.fillText('☣',0,-56);
  c.restore();
+ /* 🚌開拓便は**拠点が建物**=タレットはその壁と屋上に据える(2026-08-02ユーザー指示) */
+ if(LANES)drawOutpost(c,CORE[0],CORE[1],t);
  /* シェルター(コア) */
  const [cx,cy]=CORE;
  c.fillStyle='rgba(232,163,61,'+(0.16+0.07*Math.sin(t*6))+')';c.beginPath();c.arc(cx,cy,68,0,7);c.fill();
@@ -16839,6 +16841,12 @@ function renderCamp(C,t){
  }
  /* 🚌ボーナス面の走るバス(⚠敵と部隊の後=一番大きいので手前に置く) */
  if(C.bus)drawBus(c,C,t);
+ /* 🧍主人公(⚠いまは拠点の前に立っているだけ=探索パートを作ったらここが操作の主役になる) */
+ if(LANES){const hx=CORE[0]-96,hy=CORE[1]+112;
+  groundShadow(c,hx,hy,13);
+  c.save();c.translate(hx,hy);c.scale(TSCALE[1],TSCALE[1]);
+  try{drawHero0(c,t,0,Math.sin(t*2)*.1);}catch(e){}
+  c.restore();}
  /* パーティクル(キャラの下=地面の染み → 上=火花や煙) */
  drawP(c,C);
  /* エフェクト */
@@ -18397,7 +18405,9 @@ function startSolo(){
   me.unlocked=metaTowerCap();
   me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
   bnsBusInit(me);
-  camOn(me.bus.x,me.bus.y,1.15);/* 🎥カメラ追従はこの面の中だけ */
+  /* ⚠**寄りすぎると小粒感が出ない**(2026-08-02ユーザー「画面近すぎ。もっと小粒のゾンビに」)=
+     1を切ると全景より引いた絵になる。マップが広いのでこれで十分に持ち歩ける。 */
+  camOn(me.bus.x,me.bus.y,.78);/* 🎥カメラ追従はこの面の中だけ */
   bnsEnter();/* 遊べば次の難易度が開く */
  }
  document.body.classList.toggle('bns',isBns());
@@ -18442,15 +18452,22 @@ const BNS_LANE=[
      ⭐**斜めの道(X字)では、拠点に近いほど道と道の隙間が狭い**=近い所に置けるのは
        道と直角に近い向きだけ。①は左右の軸を240から、上下の軸を120から始めている(撮って詰めた)。
    ⚠②は**左右の軸そのものが道**なので、左右には1つも置かない。 */
-const BNS_SLOT=[
- /* ①X字の隙間=上下(近くてもよい)と左右(遠くから) */
- [[270,120],[270,200],[270,280],[90,120],[90,200],[90,280],
-  [0,240],[0,330],[0,420],[0,510],[180,240],[180,330],[180,420],[180,510]],
- /* ②四角い囲いの内側=上下の軸と斜め4方向 */
- [[270,140],[270,220],[270,300],[90,140],[90,220],[90,300],
-  [45,150],[45,240],[45,310],[135,150],[135,240],[135,310],
-  [225,150],[225,240],[225,310],[315,150],[315,240],[315,310]]
-];
+/* ⭐⭐**建設マスは拠点(建物)の上に置く**(2026-08-02ユーザー指示)。
+   ①**壁の角の櫓台**(八角の頂点) ②**司令部の屋上** ③**中庭** ④**壁の外の前庭**。
+   ⚠**道の上と門の前には置かない**=面ごとに道の向きが違うので、決め打ちの表ではなく
+     道からの距離で弾く(`bnsLaneD`)。⚠数は ECO_BASE(22)に満たなければ画面外で埋める。 */
+function bnsSlots(){
+ const out=[],add=(a,r)=>{
+  const x=BNS_CX+Math.cos(a)*r,y=BNS_CY+Math.sin(a)*r;
+  if(bnsLaneD(x,y)<92)return;/* 道の上 */
+  out.push([Math.round(x),Math.round(y)]);};
+ for(let i=0;i<8;i++)add(i*.7854,OUT_R);        /* ①壁の角の櫓台 */
+ for(let i=0;i<4;i++)add(.7854+i*1.5708,74);    /* ②司令部の屋上 */
+ for(let i=0;i<8;i++)add(i*.7854,165);          /* ③中庭 */
+ for(let i=0;i<8;i++)add(i*.7854,350);          /* ④前庭 */
+ for(let i=0;i<8;i++)add(i*.7854,440);
+ return out;
+}
 function loadBonus(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  MAPW=BNS_W;MAPH=BNS_H;
@@ -18471,8 +18488,7 @@ function loadBonus(si){
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
  CORE=[BNS_CX,BNS_CY];
- SLOTS=(BNS_SLOT[STAGE]||BNS_SLOT[0]).map(p=>{const a=p[0]*Math.PI/180;
-  return [Math.round(BNS_CX+Math.cos(a)*p[1]),Math.round(BNS_CY+Math.sin(a)*p[1])];});
+ SLOTS=bnsSlots();
  while(SLOTS.length<ECO_BASE)SLOTS.push([-999,-999]);/* ⚠数は ECO_BASE に合わせる(工房と支援枠の番号がずれる) */
  SLOTS.length=ECO_BASE;
  for(const e of ECO_SLOTS)SLOTS.push(e.slice());
@@ -18509,6 +18525,106 @@ function bnsProps(){
   if(dist(x,y,BNS_CX,BNS_CY)<300)continue;      /* 拠点の周り(タレットの置き場) */
   BPROP.push({k:KIND[(rd()*KIND.length)|0],x:x,y:y,a:rd()*6.283,s:.72+rd()*.66,c:(rd()*4)|0});
  }
+}
+/* ============ 🧍 主人公(2026-08-02ユーザーの参考画像から起こした) ============
+   ⭐**英雄を呼べる能力者**=物語の主人公。⚠**開拓便にしか出ない**(本編のTDには出さない)。
+   参考画像=**髭の男・オリーブドラブの戦闘服・キャップ・プレートキャリア・無線機・アサルトライフル**。
+   ⚠**骨格は兵科と同じ割り付け**(頭12.6/胴16/脚18.8)にしてある=同じ盤面に並んでも背丈が揃う。
+   ⚠武器は段で差し替わる(素手→バット→…→レールガン)ので、**体と装備だけをここで描く**。 */
+const H0_SK='#e8c9a0',H0_UNI='#4e5a3a',H0_UNI2='#5d6a45',H0_PA='#47513a',H0_SHO='#2f2a22',
+      H0_VST='#3f4830',H0_CAP='#55613c',H0_GUN='#4a4a44',H0_BRD='#6b543a';
+function drawHero0(c,t,ph,walk){
+ const sw=(walk||0)*5;
+ c.lineWidth=2.4;c.strokeStyle=INK;c.lineJoin='round';
+ bLeg(c,-1-sw,.9,H0_PA,H0_SHO,-18.8);bLeg(c,1+sw,1,H0_PA,H0_SHO,-18.8);
+ c.save();c.translate(1,-20);c.rotate(Math.sin((t||0)*10+(ph||0)+1.15)*.045);c.translate(-1,20);
+ c.fillStyle='#454f36';rr(c,-16.4,-35,9.6,16.4,3);c.fill();c.stroke();/* 背嚢 */
+ bArm(c,-4.4,-31.6, 4.4,-28.6, 13.4,-25.4, 4.6,3.8, shade(H0_UNI,.72),shade(H0_SK,.74));
+ bTorso(c,H0_UNI,[10.2,7.4,-34.6,-20]);
+ c.fillStyle=H0_VST;rr(c,-8.4,-33.4,16.8,13.4,3);c.fill();c.stroke();/* プレートキャリア */
+ c.fillStyle=shade(H0_VST,1.18);c.fillRect(-8.4,-28.4,16.8,2.2);
+ c.fillStyle='#6a7048';rr(c,-7.4,-22.4,6.4,4.4,1.6);c.fill();c.stroke();/* ポーチ */
+ rr(c,1.4,-22.4,6.4,4.4,1.6);c.fill();c.stroke();
+ /* 無線機のアンテナ(⚠参考画像の目印。細いので明るい側で引く) */
+ c.strokeStyle='#8a8f96';c.lineWidth=2.2;
+ c.beginPath();c.moveTo(7.4,-33);c.lineTo(9.4,-46.4);c.stroke();
+ c.strokeStyle=INK;c.lineWidth=2.4;
+ /* ライフル(⚠武器の段で差し替える前提=ここは既定の1本) */
+ c.save();c.translate(6.4,-27.4);c.rotate(-.14);
+ c.fillStyle=H0_GUN;rr(c,-9,-2.6,27,5.2,1.6);c.fill();c.stroke();
+ c.fillStyle=shade(H0_GUN,1.3);rr(c,10,-1.4,10,2.6,1);c.fill();
+ c.fillStyle='#7a6b4a';rr(c,-13.4,-2.2,6,6.4,2);c.fill();c.stroke();/* 銃床 */
+ c.fillStyle=H0_GUN;rr(c,-1,1.4,4.4,7,1.4);c.fill();c.stroke();/* 弾倉 */
+ c.restore();
+ /* 手前の腕(⚠武器の上に描く=手が銃の裏に隠れない) */
+ bArm(c,4.4,-31.6, 8.4,-28.4, 13.4,-26.4, 4.8,3.9, H0_UNI2,shade(H0_SK,.9));
+ c.fillStyle=shade(H0_SK,.9);c.beginPath();c.arc(13.6,-26.4,2.9,0,7);c.fill();c.stroke();
+ c.restore();
+ bNeck(c,1.6,-36.4,-33.4,shade(H0_SK,.62));
+ c.fillStyle=H0_SK;c.beginPath();c.ellipse(1.6,-42.4,6.6,7,0,0,7);c.fill();c.stroke();
+ /* 髭(⚠参考画像の一番の目印。あご全体を覆う) */
+ c.fillStyle=H0_BRD;c.beginPath();c.moveTo(-4.6,-42.4);
+ c.quadraticCurveTo(-4.4,-34.4,1.6,-34.4);c.quadraticCurveTo(7.6,-34.4,7.8,-42.4);
+ c.quadraticCurveTo(4.4,-39.4,1.6,-39.6);c.quadraticCurveTo(-1.4,-39.4,-4.6,-42.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle='#fff';c.beginPath();c.ellipse(-1.4,-44.4,2,2.2,0,0,7);c.fill();
+ c.beginPath();c.ellipse(4.6,-44.4,2,2.2,0,0,7);c.fill();
+ c.fillStyle=INK;c.beginPath();c.arc(-1.2,-44,1.1,0,7);c.fill();
+ c.beginPath();c.arc(4.8,-44,1.1,0,7);c.fill();
+ c.fillRect(-3.6,-47.4,4.4,1.8);c.fillRect(2.8,-47.4,4.4,1.8);/* 太い眉 */
+ /* キャップ(⚠つばは目の高さより上=目隠しにしない) */
+ c.fillStyle=H0_CAP;c.beginPath();c.arc(1.6,-48.4,7,Math.PI,0);c.lineTo(8.6,-47.4);c.lineTo(-5.4,-47.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(H0_CAP,1.16);rr(c,-1.4,-53.4,6,4.4,1.4);c.fill();
+ c.fillStyle=H0_CAP;rr(c,1.6,-49.4,12.4,3.4,1.6);c.fill();c.stroke();/* つば */
+}
+/* ⭐⭐**拠点は「建物」として描く**(2026-08-02ユーザー指示「タレット置き場は拠点がもう建物として
+   あって、そこの各場所に設置する感じ」)。⚠それまでは地面に枠が浮いているだけで、
+   「拠点を守っている」に見えなかった。
+   形=**八角の外壁+四隅の櫓台+中庭+司令部**。⚠道が入ってくる4方向(斜め)は**門**にして壁を切る
+   =壁で塞ぐと「どこから入られるのか」が読めない。
+   ⚠建設マスはこの上に載る(BNS_SLOTの半径は壁と屋上に合わせてある)。 */
+const OUT_R=250;/* 外壁の半径。⚠建設マスの距離と必ず揃えること(bnsSlots) */
+/* その向きに道が通っているか(=門にする)。⚠面ごとに道の角度が違うので決め打ちにしない */
+const outGate=(cx,cy,a)=>bnsLaneD(cx+Math.cos(a)*OUT_R,cy+Math.sin(a)*OUT_R)<86;
+function drawOutpost(c,cx,cy,t){
+ c.save();c.translate(cx,cy);
+ c.lineWidth=3;c.strokeStyle=INK;c.lineJoin='round';
+ /* 中庭(土をならした地面) */
+ c.fillStyle='#9a8f76';c.beginPath();c.arc(0,0,OUT_R-6,0,7);c.fill();
+ c.fillStyle='rgba(0,0,0,.07)';c.beginPath();c.arc(0,0,OUT_R-46,0,7);c.fill();
+ /* 外壁=八角。⚠道の入る斜め4方向は門にするので、辺を1つ飛ばして描く */
+ const P=[];for(let i=0;i<8;i++){const a=i*.7854;P.push([Math.cos(a)*OUT_R,Math.sin(a)*OUT_R]);}
+ c.lineCap='round';
+ for(let i=0;i<8;i++){
+  /* ⚠**道が通っている辺は門にして壁を切る**=壁で塞ぐと「どこから入られるのか」が読めない。
+     ⚠門の位置は道の実際の角度で決める(面ごとに道の向きが違うので決め打ちにしない) */
+  if(outGate(cx,cy,(i+.5)*.7854))continue;
+  const a=P[i],b=P[(i+1)%8];
+  c.strokeStyle='#6f6455';c.lineWidth=22;c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();
+ }
+ /* 門=土嚢を左右に積む */
+ for(let i=0;i<8;i++){
+  if(!outGate(cx,cy,(i+.5)*.7854))continue;
+  const a=(i+.5)*.7854,gx=Math.cos(a)*OUT_R,gy=Math.sin(a)*OUT_R;
+  c.save();c.translate(gx,gy);c.rotate(a+1.5708);
+  c.fillStyle='#8a7d5e';rr(c,-56,-9,26,18,7);c.fill();c.stroke();
+  rr(c,30,-9,26,18,7);c.fill();c.stroke();
+  c.restore();}
+ /* 壁の角の櫓台(タレットを載せる台。⚠道の上には出さない) */
+ for(let i=0;i<8;i++){const a=i*.7854,px=Math.cos(a)*OUT_R,py=Math.sin(a)*OUT_R;
+  if(bnsLaneD(cx+px,cy+py)<70)continue;
+  c.fillStyle='#8a8071';c.beginPath();c.arc(px,py,30,0,7);c.fill();c.stroke();
+  c.fillStyle='rgba(0,0,0,.12)';c.beginPath();c.arc(px,py,20,0,7);c.fill();}
+ /* 司令部(中の建物)=屋上にもタレットを置く */
+ c.fillStyle='#7a6f5c';rr(c,-96,-70,192,140,14);c.fill();c.stroke();
+ c.fillStyle='#8d8270';rr(c,-96,-70,192,34,12);c.fill();c.stroke();
+ c.fillStyle='#5d5446';rr(c,-70,-24,52,44,6);c.fill();c.stroke();/* 搬入口 */
+ c.fillStyle='#9aa07f';rr(c,26,-22,46,28,5);c.fill();c.stroke();/* 屋根の設備 */
+ c.fillStyle='#c2a03e';c.beginPath();c.arc(78,52,9,0,7);c.fill();c.stroke();/* 発電機の灯 */
+ /* アンテナ */
+ c.strokeStyle='#8a8f96';c.lineWidth=4;c.beginPath();c.moveTo(-62,-70);c.lineTo(-74,-118);c.stroke();
+ c.strokeStyle=INK;c.lineWidth=3;
+ c.restore();
 }
 /* 廃墟1つ。⚠**細かく描かない**=数百個出るので、輪郭が読める最小限にする */
 const BPC=['#7b4a3a','#4a5a6b','#6b6b4a','#8a6a45'];

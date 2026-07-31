@@ -32,6 +32,8 @@ const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連�
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
 /* ⭐bns = 🚌ボーナス面「バスの日」(四方から+バス)。⚠st2 と併せるとステージ2の面になる */
 const BNS=/(^|\+)bns(\+|$)/.test(OPT);
+/* ⭐h0 = 🧍主人公を大写しで撮る(UNITSに居ないので pose= では撮れない) */
+const H0=/(^|\+)h0(\+|$)/.test(OPT);
 /* ⭐dbg = 画面の中の状態をトーストで出す(「絵は出るのに中が止まっている」を切り分ける用) */
 const DBG=/(^|\+)dbg(\+|$)/.test(OPT);
 /* ⭐bnsn=12 = ボーナス面を何秒ぶん進めてから撮るか。
@@ -291,6 +293,23 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         +(OPT.indexOf('nodep')>=0?''/* nodep=出撃させずにボタンだけ見る */
           :'heroDeploy(me);me.hCg=1;var hu=me.units.filter(function(u){return u.hro;})[0];if(hu)hu.d=PLEN*.62;'))
      +'updHUD();}catch(e){document.title="ERR3 "+e.message;}},1000);'):'')
+ /* 🧍主人公の大写し(⚠実寸でも並べる=25pxで何を持っているか読めるかが本番) */
+ +(H0?('setTimeout(function(){try{'
+     +'var cvv=document.createElement("canvas");document.body.appendChild(cvv);'
+     +'cvv.style.cssText="position:fixed;left:0;top:0;width:100%;height:100%;z-index:9999";'
+     +'var c=null;function render(){var W2=window.innerWidth,H2=window.innerHeight,DP=window.devicePixelRatio||1;'
+     +'cvv.width=W2*DP;cvv.height=H2*DP;c=cvv.getContext("2d");c.setTransform(DP,0,0,DP,0,0);'
+     +'c.fillStyle="#2b2419";c.fillRect(0,0,W2,H2*.54);'
+     +'c.fillStyle="#b2a278";c.fillRect(0,H2*.54,W2,H2*.28);'
+     +'c.fillStyle=PAPER;c.fillRect(0,H2*.82,W2,H2*.18);'
+     +'c.textAlign="left";c.fillStyle=PAPER;c.font="900 15px "+FF;c.fillText("🧍主人公",14,26);'
+     +'function put(px,py,mag,tt){c.save();c.translate(px,py);c.scale(mag,mag);'
+     +'c.lineWidth=3;c.strokeStyle=INK;try{drawHero0(c,tt,0,Math.sin(tt*10)*.34);}catch(e){}c.restore();}'
+     +'for(var k=0;k<4;k++)put(W2*(.14+k*.20),H2*.50,3.2,k*.157);'
+     +'for(var k=0;k<4;k++)put(W2*(.14+k*.20),H2*.80,1.6,k*.157);'
+     +'for(var k=0;k<8;k++)put(W2*(.12+k*.05),H2*.96,.52,k*.08);'
+     +'}render();window.addEventListener("resize",render);'
+     +'}catch(e){document.title="ERR16 "+e.message;}},1500);'):'')
  /* 🚌ボーナス面は仮想時間で rAF が回らないので、撮る前に自分で時間を進める */
  +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';for(var k=0;k<n;k++)gameStep(.05);'
      +'}catch(e){document.title="ERR15 "+e.message;}},1200);'):'')
