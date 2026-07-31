@@ -2079,14 +2079,21 @@ function checkHook(){
 }
 /* ---- 研究所の進化: どの兵科からでも選べるか / 大幅に強くなるか ---- */
 function checkEvo(){
+ /* ⚠⚠**2026-08-01に「未解放の兵科は進化も出さない」に変えた**(実機で
+    「巨漢も何も解放していないのに進化が並ぶ」と指摘)。nu=0 で出るのは初期解放の2種ぶんだけ。 */
  META.uv=[];META.nu=0;META.pts=1e9;
  renderLab();
+ {const vs0=LAB_ITEMS.filter(o=>o.k==='uv');
+  const base0=VBASE.filter(b=>UBASE.findIndex(u=>u.id===b)<BASE_U).length;
+  if(vs0.length!==base0){console.log('FAIL: 未解放の兵科の進化が出ている(出たのは'+vs0.length+'件・解放済みは'+base0+'種)');process.exit(1);}
+  /* 上級兵科の進化は、本体が未解放なら出ないこと */
+  /* ⚠以前は o.t(名前)を見ていたが '上級進化' は o.tag 側にあるため**常に0件=何も検査していなかった**(2026-07-26に修正) */
+  const adv0=vs0.filter(o=>/上級進化/.test(o.tag||''));
+  if(adv0.length){console.log('FAIL: 本体未解放の上級兵科の進化が出ている '+adv0.length+'件');process.exit(1);}}
+ /* 全部解放すれば基本8種+上級2種ぶん選べる */
+ META.nu=U_N-BASE_U;renderLab();
  const vs=LAB_ITEMS.filter(o=>o.k==='uv');
- if(vs.length<VBASE.length){console.log('FAIL: 進化の選択肢が'+vs.length+'件しか出ていない(基本兵科'+VBASE.length+'種ぶん出るはず)');process.exit(1);}
- /* 上級兵科の進化は、本体が未解放なら出ないこと */
- /* ⚠以前は o.t(名前)を見ていたが '上級進化' は o.tag 側にあるため**常に0件=何も検査していなかった**(2026-07-26に修正) */
- const adv=vs.filter(o=>/上級進化/.test(o.tag||''));
- if(adv.length){console.log('FAIL: 本体未解放の上級兵科の進化が出ている '+adv.length+'件');process.exit(1);}
+ if(vs.length<ALLVB.length){console.log('FAIL: 進化の選択肢が'+vs.length+'件しか出ていない(全解放なら'+ALLVB.length+'種ぶん出るはず)');process.exit(1);}
  /* 1つ買っても「次の段階」が同じ兵科で出る=段階は飛ばせない */
  const first=vs[0];META.uv.push(first.id);renderLab();
  const again=LAB_ITEMS.filter(o=>o.k==='uv');
@@ -2096,8 +2103,8 @@ function checkEvo(){
  for(const b of ALLVB){const list=UVAR[b]||[];if(!list.length)continue;
   const top=list[list.length-1];worst=Math.min(worst,Math.max(top.hp||1,top.atk||1));}
  if(worst<2.5){console.log('FAIL: 最終進化の伸びが小さい(最小'+worst+'倍)');process.exit(1);}
- console.log('進化: 同時に'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
- META.uv=[];
+ console.log('進化: 解放した兵科だけ出る(未解放0件) / 全解放で'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
+ META.uv=[];META.nu=0;
 }
 /* ---- 🎒編成(連れて行く10体)。2026-08-01ユーザー指示で入れた仕組み ----
    ⚠画面のボタンからしか触らない所なので、放っておくと**検査が一度も通らない**。 */
@@ -2126,8 +2133,18 @@ function checkTeam(){
  /* ④ 上限を超えない */
  {const all=[];for(let i=0;i<U_N;i++)all.push(UBASE[i].id);META.team=all;
   if(teamIdx().length>TEAM_N){console.log('FAIL: 編成が'+TEAM_N+'体を超える');process.exit(1);}}
+ /* ⑤ ⭐⭐**タイトル(試合が始まっていない時)もソロの上限で見る**(2026-08-01に実機で発覚)。
+    soloMeta() は G を見るので**タイトルでは必ず対戦扱い**になり、研究所で1つも解放していないのに
+    編成へ10体(巨漢〜火炎瓶)が並んでいた。 */
+ {META.team=null;backTitle();META.nu=0;
+  if(metaUnitCap()!==BASE_U){console.log('FAIL: タイトルの兵科上限が解放済みの数にならない '+metaUnitCap()+'(想定'+BASE_U+')');process.exit(1);}
+  if(metaTowerCap()!==BASE_T){console.log('FAIL: タイトルのタワー上限が解放済みの数にならない '+metaTowerCap()+'(想定'+BASE_T+')');process.exit(1);}
+  const t9=teamIdx();
+  if(t9.length!==BASE_U||t9.some(i=>i>=BASE_U)){console.log('FAIL: タイトルの編成に未解放の兵科が入っている '+t9.join(','));process.exit(1);}
+  META.nu=3;
+  if(metaUnitCap()!==BASE_U+3){console.log('FAIL: 研究所で解放したぶんがタイトルの編成に出ない '+metaUnitCap());process.exit(1);}}
  META.team=keep;META.nu=0;
- console.log('🎒編成: 未設定なら安い順に'+TEAM_N+'体・触った後は自動で埋めない・解放費は元のコスト・上限'+TEAM_N+'体 OK');
+ console.log('🎒編成: 未設定なら安い順に'+TEAM_N+'体・触った後は自動で埋めない・解放費は元のコスト・上限'+TEAM_N+'体・タイトルでも解放済みだけ OK');
 }
 /* ---- 💎英雄召集(ガチャ): 排出率・重複・魔石の増減 ---- */
 function checkGacha(){

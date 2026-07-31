@@ -1231,6 +1231,12 @@ function resumeRun(){
  return true;
 }
 const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
+/* ⭐⭐**タイトル(試合が始まっていない時)はソロの上限で見る**(2026-08-01・実機で発覚)。
+   soloMeta() は G を見るので、**タイトルでは必ず false=対戦扱い**になり、
+   🎖編成が PVP_U(10)種を「持っている」ものとして並べていた
+   (研究所で1つも解放していないのに巨漢〜火炎瓶が出る)。
+   ⚠ロビー(MODE='host'/'client')は対戦のままにする=タイトルだけを solo と見なす。 */
+const soloUI=()=>(G?soloMeta():(MODE==='solo'&&!COOP));
 /* 基本タワー/兵科は従来通り誰でもゲーム内解放可。研究所は「完全新規」を追加解放する */
 /* ⚠🛠DEVは**モードを問わず全種類**を上限にする(実機テスト用・2026-07-26ユーザー指示)。
    soloMeta()はGを見るので、拠点を作る瞬間(newCamp)はまだ false になり得る=ここでDEVを見るのが確実 */
@@ -1238,10 +1244,10 @@ const soloMeta=()=>!!(G&&G.pve&&!G.coop&&MODE!=='client');
    ⚠**チュートリアルは上限を外す**=2種しか建てられないと🔓解放カードの段が死ぬ(2026-08-01)。 */
 const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;
  const PT=(typeof PVP_T!=='undefined')?PVP_T:10;
- return (DEV||(typeof G!=='undefined'&&G&&G.tut))?TP:(soloMeta()?BT+clamp(META.nt||0,0,TP-BT):PT);};
+ return (DEV||(typeof G!=='undefined'&&G&&G.tut))?TP:(soloUI()?BT+clamp(META.nt||0,0,TP-BT):PT);};
 const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN=(typeof U_N!=='undefined')?U_N:UNITS.length;
  const PU=(typeof PVP_U!=='undefined')?PVP_U:10;
- return (DEV||(typeof G!=='undefined'&&G&&G.tut))?UN:(soloMeta()?BU+clamp(META.nu||0,0,UN-BU):PU);};
+ return (DEV||(typeof G!=='undefined'&&G&&G.tut))?UN:(soloUI()?BU+clamp(META.nu||0,0,UN-BU):PU);};
 /* ⭐2026-07-27ユーザー指示で**研究所の値段を全体的に上げた**(1.5倍→さらに1.8倍=素の2.7倍)。
    さらに同日、**タワー/部隊タブだけ1段ごとの伸び方を x1.13→x1.20 に**した(LAB_TW/LAB_UN)。
    ⚠検査 checkLabSteps() は「1本フルが20,000🧬を超えない/全部取りが60,000🧬を下回らない」を見ている。 */
@@ -2288,7 +2294,9 @@ function teamIdx(){
  /* ⚠🛠DEVは**全兵科を持っている**状態にするだけ(metaUnitCap=30)。
     連れて行けるのは同じ10体=そうしないと編成画面が「30/10」と壊れて出る(2026-08-01に踏んだ)。
     ⚠DEVで別の兵科を試したい時は編成で選び直す。 */
- if(typeof soloMeta==='function'&&!soloMeta()&&!DEV)return PVP_TEAM();
+ /* ⚠**タイトルでは soloUI()**=G が無い時に対戦扱いになると、編成の🎒が
+    「持っていない10体」で埋まる(2026-08-01に実機で発覚)。 */
+ if(typeof soloUI==='function'&&!soloUI()&&!DEV)return PVP_TEAM();
  const own=metaUnitCap(),raw=META.team;
  let t=((raw)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&i<own);
  t=Array.from(new Set(TEAM_FIX.concat(t))).sort((a,b)=>a-b).slice(0,TEAM_N);
@@ -18374,7 +18382,10 @@ function renderLab(){
    const list=UVAR[b]||[],nx=list.find(v=>uv.indexOf(v.id)<0);
    if(!nx)continue;
    const adv=FVBASE.indexOf(b)>=0;
-   if(adv&&!uvBaseOK(b))continue;/* 本体が未解放の上級兵科は出さない */
+   /* ⚠**本体が未解放の兵科は進化も出さない**(2026-08-01に実機で発覚)。
+      それまで上級(FVBASE)だけを見ていたので、研究所で1つも解放していないのに
+      巨漢・斥候・鎖使い…の進化カードが並んでいた。タワーの進化(下)と同じ扱いに揃えた。 */
+   if(!uvBaseOK(b))continue;
    const B=UBASE.find(u=>u.id===b)||{n:'?'},t=list.indexOf(nx)+1;
    const bi=UBASE.findIndex(u=>u.id===b);
    items.push({cat:'var',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
@@ -18655,7 +18666,7 @@ const LD_TABS=[
 function renderLoad(){
  const box=$('load-items');if(!box)return;
  const uv=META.uv||[];if(!META.ld)META.ld={};
- if(!LD_TABS.some(t=>t.k===LDTAB))LDTAB='base';
+ if(!LD_TABS.some(t=>t.k===LDTAB))LDTAB='team';/* ⚠既定は'team'('base'はもう無いタブ名=どのタブも光らない) */
  const tb=$('load-tabs');
  if(tb){tb.innerHTML=LD_TABS.map(t=>'<button class="tb'+(LDTAB===t.k?' on':'')+'" data-ldt="'+t.k+'">'+t.n+'</button>').join('');
   tb.querySelectorAll('[data-ldt]').forEach(b=>{b.onclick=()=>{LDTAB=b.dataset.ldt;renderLoad();};});}
@@ -18690,7 +18701,7 @@ function renderLoad(){
     +'<span class="nm2">'+((UBASE[i]||{}).n||'?')+'</span>'
     +'<i>⚙️'+p+'</i>'+(fx?'<em>🔒</em>':'<em>✕</em>')+'</button>';});
   h+='</div>';
-  h+='<div class="tmsum">10体ぜんぶ出すのに <b>⚙️'+sum.toLocaleString()+'</b>'
+  h+='<div class="tmsum">'+T9.length+'体ぜんぶ出すのに <b>⚙️'+sum.toLocaleString()+'</b>'/* ⚠10体と決め打ちしない=解放が進むまで2体しか居ない */
    +' — 高い兵科ばかり連れて行くと、後ろの番号は最後まで出せない</div>';
   h+='<div class="ldhdr">🪖 入れる兵科(持っている '+own+'種)</div>';
   h+='<div class="tmgrid">';
@@ -18724,8 +18735,10 @@ function renderLoad(){
   return;
  }
  /* ⭐派生の割り当て。⚠基本と上級を**1つのタブ**にまとめた(2026-08-01)=分ける意味が無かった */
- VBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'基本『'+B.n+'』');});
- FVBASE.forEach(bid=>{const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'⭐上級『'+B.n+'』');});
+ /* ⚠**まだ解放していない兵科の行は出さない**(2026-08-01に実機で発覚)=
+    研究所で1つも解放していないのに巨漢〜盾持ちの派生が並んでいた。 */
+ VBASE.forEach(bid=>{if(!uvBaseOK(bid))return;const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'基本『'+B.n+'』');});
+ FVBASE.forEach(bid=>{if(!uvBaseOK(bid))return;const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'⭐上級『'+B.n+'』');});
  box.innerHTML=IC(h);
  box.querySelectorAll('[data-v]').forEach(b=>{
   const i=+b.dataset.i,k=+b.dataset.k,bid=b.dataset.b,B=UBASE[i];
