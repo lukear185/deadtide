@@ -40,6 +40,10 @@ const DBG=/(^|\+)dbg(\+|$)/.test(OPT);
    ⚠⚠**ヘッドレスの仮想時間では rAF がほとんど回らない**ので、放っておくと敵が1体も湧かない絵になる
      (検証場で踏んだのと同じ罠。「敵が湧かない不具合」だと勘違いして半日溶かしかけた)。 */
 const BNM=/bnsn=(\d+)/.exec(OPT),BNSN=BNM?+BNM[1]:12;
+/* ⭐bnsdrv = 進めている間**バスを勝手に走らせる**(スティックをぐるっと回す)。
+   ⚠これが無いとバスは中央に止まったままなので、**轢き応え(血だまり・轍・連なりの数字)が
+     1つも写らない**(2026-08-02(2)に足した)。⚠bns と併せて使う。 */
+const BDRV=/(^|\+)bnsdrv(\+|$)/.test(OPT);
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
@@ -311,7 +315,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'}render();window.addEventListener("resize",render);'
      +'}catch(e){document.title="ERR16 "+e.message;}},1500);'):'')
  /* 🚌ボーナス面は仮想時間で rAF が回らないので、撮る前に自分で時間を進める */
- +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';for(var k=0;k<n;k++)gameStep(.05);'
+ +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';for(var k=0;k<n;k++){'
+     /* ⚠**群れの中を往復させる**=中央で回らせても敵に当たらず、片道だけだと**マップの端まで
+        走り去って**群れも血だまりも画面から消える(どちらも実際に撮って気づいた)。
+        敵が湧いてから(k>110=約5.5秒)左上のレーンを3秒ごとに行き来する */
+     +(BDRV?'try{if(k>110){var f9=(Math.floor((k-110)/60)%2)?1:-1;bnsStick(f9*-.8,f9*-.6);}}catch(e9){}':'')
+     +'gameStep(.05);}'
      +'}catch(e){document.title="ERR15 "+e.message;}},1200);'):'')
  +(DBG?('var _gs=gameStep,_ge=null;gameStep=function(d){try{_gs(d);}catch(e){if(!_ge){_ge=e;}throw e;}};'
      +'setInterval(function(){try{if(_ge){toast("STEPERR "+_ge.message+" @ "+String(_ge.stack).split("\\n")[1]);}}catch(x){}},1600);'

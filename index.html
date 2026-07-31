@@ -2986,8 +2986,14 @@ const D5=[
       **画面に並べる順と解放の鎖は `D_ORD` が持つ**。
     ⚠1波だけ(w:1)。小粒が大量に来るので hp は薄く cnt は厚く。⚙️は最初に潤沢に渡す。 */
  /* ⚠**cnt が大きいのは「小粒が大量に群れる面」だから**(2026-08-02ユーザー「ゾンビの群れはもっと
-    密度があってたくさんいる感じがいい」)。⚠1体は薄い(hp)ので総量としては暴れない。 */
- {n:'🚌 バスの日',w:1,hp:.30,cnt:15,sp:1.12,boss:1,scrap:1500,pay:1.15}
+    密度があってたくさんいる感じがいい」)。⚠1体は薄い(hp)ので総量としては暴れない。
+    ⭐⭐**2026-08-02(2)に 15→230 へ上げた**(ユーザー①「米粒ゾンビを超大量に」)=
+      専用の描き方(`drawZRice`)にして1体あたりの重さを消したので、桁ごと増やせるようになった。
+      総数 ≒ 6.9×cnt ≒ **1580体**。湧く間隔(`BNS_GAP`)と盤面の上限(`BNS_CAP`)と併せて、
+      **盤面に常時500体前後・尺は1分強**になる勘定。⚠数字の詰めは実機待ち。
+    ⚠**pay を 1.15→.45 に下げてある**=体数が15倍になったので、そのままだと⚙️が2万を超えて
+      置ける物を全部置いても余る(建設マスは22枠しかない)。実入りは約7千=今までの4倍。 */
+ {n:'🚌 バスの日',w:1,hp:.30,cnt:230,sp:1.12,boss:1,scrap:1500,pay:.45}
 ];
 /* ⭐ボーナス面の難易度番号と、画面に並べる順(=解放の鎖)。
    ⚠**新兵→兵長→🚌→古参→…**。ボーナスは「遊べば次が開く」=クリアしなくても古参へ進める
@@ -2995,6 +3001,16 @@ const D5=[
 const BNS_D=6;
 const D_ORD=[0,1,BNS_D,2,3,4,5];
 const isBns=()=>!!(G&&G.pveDiff===BNS_D);
+/* ⭐⭐**開拓便の「超大量」を決める3つのノブ**(2026-08-02(2)ユーザー①)。
+   ⚠⚠**宣言をファイルの下の方に置かないこと**=`tideStep` は上の方にあるので、
+     下で const にすると読み込み順によっては初期化前アクセスになる(NOTESの TDZ の穴)。
+   ⭐盤面の体数 ≒ **湧く速さ × 道を歩き切る時間(約17秒)**。BNS_GAP を詰めるほど濃くなる。
+   ⚠**上限(BNS_CAP)は安全弁**=ここに当たると `tideStep` が湧かせるのを休むので、
+     重くなりすぎる前に勝手に頭打ちになる。重ければまずここを下げる。 */
+const BNS_CAP=560;    /* 盤面に同時に出せる上限。⚠実機が重ければここを下げる */
+const BNS_GAP=.0175;  /* 次の1体までの秒数(=濃さ)。⚠小さいほど濃い */
+const BNS_GAP2=.14;   /* 9体に1回だけ入れる息継ぎ(塊と塊の切れ目) */
+const BNS_OFF=230;    /* 道の横へのばらけ幅。⚠広げるほど「行列」から「塊」になる */
 function D5v(){return D5[(G&&G.pveDiff!=null?G.pveDiff:2)]||D5[2];}
 const COOP_PAY=[1,.65,.5];
 const COOP_MAXU=20;
@@ -14003,7 +14019,11 @@ function buildTide(wave){
  /* ⭐⭐**最終ウェーブの一番強い個体は「主」にする**(2026-07-30ユーザー指示)。
     ボスが出るウェーブならそのボス、出ないウェーブ(新兵/兵長など)ならHPが一番高い個体。
     ⚠印(siege)は spec に付ける=mkZ が Object.assign するので、そのまま実体まで届く。 */
- if(G.pve&&wave>=(D.w||20)&&pool.length){
+ /* ⚠⚠**🚌開拓便には「主」を置かない**(2026-08-02(2)に検査で判明)=この面は1波しか無いので
+    「最終ウェーブ」の条件に**必ず当たってしまい**、米粒と見分けの付かないウォーカーが1体
+    **拠点の手前に居座って延々とコアを削り続ける**(主は漏れずに死なない)。
+    ⚠見た目が他の1580体と同じなので**どれが犯人か分からないまま試合が終わらない**。 */
+ if(G.pve&&wave>=(D.w||20)&&pool.length&&!isBns()){
   let sgI=-1,sgS=-1;
   for(let i=0;i<pool.length;i++){const e=pool[i];const sc9=(e.boss?1e9:0)+(e.z.hp||0);
    if(sc9>sgS){sgS=sc9;sgI=i;}}
@@ -14016,8 +14036,9 @@ function buildTide(wave){
   for(let i=0;i<pool.length;i++){const e=pool[i];
    e.ln=i%LANES.length;
    /* ⚠**間隔をぐっと詰める**=群れに見せるには「かたまりで湧く」必要がある。
-      ⚠1体ずつ等間隔だと、いくら数を増やしても**行列**にしかならない(参考画像は塊)。 */
-   if(!e.boss)e.dl=(i%5===0)?.20:.012;}
+      ⚠1体ずつ等間隔だと、いくら数を増やしても**行列**にしかならない(参考画像は塊)。
+      ⭐間隔は表(BNS_GAP/BNS_GAP2)から引く=濃さを1か所で調整できるようにした */
+   if(!e.boss)e.dl=(i%9===0)?BNS_GAP2:BNS_GAP;}
  }
  for(let pi=0;pi<G.players.length;pi++){const P=G.players[pi];
   for(const s of P.inc.sent){for(let i=0;i<s.cnt;i++)pool.splice(ri(0,pool.length),0,{dl:.4,z:zSpec(s.zi,mul,wave,1,s.from),tgt:pi});}}
@@ -14084,11 +14105,15 @@ function tideStep(dt){
   }
   const C=G.players[ti2];
   /* ⚠盤面に出せる上限。🚌開拓便は**小粒の群れが売り**なので上限を上げる
-     (1体が薄いぶん総量は暴れない。⚠重さは実機で確かめること) */
-  if(C.zombies.length>=(G.coop?110:(isBns()?260:80))){T.qt+=.3;break;}
+     (1体が薄いぶん総量は暴れない。⚠重さは実機で確かめること)
+     ⭐2026-08-02(2): 米粒専用の描き方にしたので 260→BNS_CAP(560)。⚠重ければ BNS_CAP を下げる */
+  if(C.zombies.length>=(G.coop?110:(isBns()?BNS_CAP:80))){T.qt+=.3;break;}
   T.pool.shift();
   /* ⚠レーン(🚌ボーナス面)は**湧かせる時に実体へ移す**=spec 側に持たせると zSpec の写しに乗らない */
-  {const z9=mkZ(e.z);if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-150,150);z9.d-=rnd(0,120);}C.zombies.push(z9);}
+  /* ⚠**横のずれ(off)と前後のずれ(d)は湧く時に決める**=群れを「行列」から「塊」にする唯一の値。
+     ⭐2026-08-02(2): 体数を15倍にしたのでばらけ幅も広げた(150→BNS_OFF / 120→320)
+       =広げないと道の上に敵が積み重なって**1本の帯**にしか見えない。 */
+  {const z9=mkZ(e.z);if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-BNS_OFF,BNS_OFF);z9.d-=rnd(0,320);}C.zombies.push(z9);}
   C.totalWave++;
   if(e.boss){ev(ti2,'💀 ジャガーノートがこっちに来た!',true);C.shake=.4;
    addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:RUST});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
@@ -14664,12 +14689,21 @@ function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{})
  }}
 function killZ(C,z){
  z.dead=true;C.kills++;C.killsWave++;
+ /* ⭐⭐**米粒(🚌開拓便の雑魚)は撃破の演出を丸ごと専用のものに差し替える**(2026-08-02(2)ユーザー①)。
+    ⚠**1体ぶんの演出が全部そのまま掛かるのが「超大量にできない」正体だった**=
+      1体倒すごとに 血の粒9+染み3+死体(焼いた絵をもう1枚描く)+「+12⚙️」の文字+断末魔の音。
+      毎秒何十体も倒す面では、これが**そのまま毎秒何百件**になる。
+    ⭐差し替えたのは4つ: ①⚙️の文字は**足し込んで0.7秒に1回だけ**バスの上に出す
+      ②血の粒と染みは専用の軽い物(`bnsSplat`)へ ③死体は出さない(跡は血だまりが持つ)
+      ④音は**0.075秒に1回まで**に間引く(でないと数十重なって割れる)。 */
+ const rice=!!(C.bus&&!z.boss&&!z.elite);
  const pay=(G&&G.pve?D5v().pay:1)*metaPay();
  let g=Math.max(0,Math.round(z.bt*pay)-(z.bpaid||0));/* 削って先払いした分を差し引く */
  if(G&&G.coop){g=Math.max(0,Math.ceil((z.bt*pay-(z.bpaid||0))*COOP_PAY[Math.min(G.np,3)-1]));
   for(const P of G.players){P.scrap+=g;P.enTotal+=g;}}
  else{C.scrap+=g;C.enTotal+=g;}
- addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');
+ if(rice)C.bus.gain=(C.bus.gain||0)+g;/* ⭐まとめて出す(1体ずつ出すと文字で画面が埋まる) */
+ else{addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');}
  /* 💎魔石: ボス級を倒した時だけ落ちる(英雄召集の通貨)。ソロのみ */
  if(z.boss&&soloMeta()&&C.isMe){const gm=gemBoss(z.fin);
   META.gem=(META.gem||0)+gm;G.gemGain=(G.gemGain||0)+gm;saveMeta();
@@ -14682,12 +14716,15 @@ function killZ(C,z){
   addP(C,8,z.px,z.py-26*CH_UP,{sp:150,up:70,g:400,life:.8,r:2.6,col:LIFE});}
  /* 血しぶきと地面の染み */
  const bsc=z.boss?2.4:z.elite?1.5:1;
+ if(rice)bnsSplat(C,z);/* ⭐米粒=弾け飛ぶ肉片+地面に残る血だまり(専用の軽いもの) */
+ else{
  addP(C,Math.round(9*bsc),z.px,z.py-22*CH_UP,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
  addP(C,Math.round(3*bsc),z.px,z.py,{sp:0,g:0,life:6,r:11*bsc,col:'#2f3a1c',typ:'stain',jx:12*bsc,jy:5});
  /* ⭐倒れる死体(2026-07-26 第65弾)。大きいほど長く残り、雑魚はさっと消える */
  if(FXLV>0)addFx(C,'corpse',z.px,z.py,'',{zi:z.zi,el:z.elite?1:0,dr:z.dr||1,
   lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1),
   kb:z.kbp||0,kx:z.kbx||0,ky:z.kby||0});/* ⭐爆風で吹き飛ぶ(kbZで書かれていた時だけ) */
+ }
  /* 大物が倒れると足元に土煙が広がる。⚠雑魚には出さない(画面が埋まる) */
  if(FXLV>0&&(z.boss||z.elite))addFx(C,'dust',z.px,z.py+2,'',{r:z.boss?120:66});
  /* ⚠**雑魚撃破の「間」(ヒットストップ)は2026-07-27に入れて、同日に外した**。
@@ -14696,7 +14733,11 @@ function killZ(C,z){
     敵が小さく・数が多く・1体ずつ狙って倒す作りではないので、**1体ぶんの間は埋もれる**。
     ⚠**書き戻さないこと**。手応えを足すならウェーブ単位(制圧のスロー)の方に寄せる。 */
  /* ⚠断末魔は「呻き」ではなく専用の声(die)を混ぜる。同じ呻きだけだと倒した手応えが出ない */
- if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
+ /* ⚠⚠**米粒は音を間引く**(2026-08-02(2))=毎秒数十体倒れる面なので、1体ずつ鳴らすと
+    同じ音が何十も重なって**割れた雑音**になる(音を足す話ではなく、既にある音を減らす話)。
+    ⭐0.075秒に1回まで=最大でも毎秒13発。⚠⚙️の音(coin)は出さない(まとめて1回にしたため)。 */
+ if(rice){if(C.isMe&&C.tm-(C.zsfxT||-9)>=.075){C.zsfxT=C.tm;sfx.splat();}}
+ else if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
   if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
  /* 大物撃破の特別演出 */
  if(z.boss){
@@ -14782,7 +14823,12 @@ function dmgZ(C,z,d,armorPierce,quiet){
    if(G&&G.coop){const cg=Math.ceil(owe*COOP_PAY[Math.min(G.np,3)-1]);for(const P of G.players){P.scrap+=cg;P.enTotal+=cg;}}
    else{C.scrap+=owe;C.enTotal+=owe;}
    if(owe>=3)addFx(C,'txt',z.px+rnd(-10,10),z.py-58*CH_UP,'+'+owe+'⚙️');}}
- if(!quiet&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)));
+ /* ⚠⚠**米粒(🚌開拓便の雑魚)にはダメージ数字も血しぶきも出さない**(2026-08-02(2))=
+    ①寄り具合が .26 なので**数字が1〜2画素**にしかならず読めない
+    ②数百体を同時に削るので `C.fx` が数字だけで埋まり、**他の演出が一切出なくなる**
+    (上限70に当たる)。手応えは専用の轢き演出(`bnsSplat`)の方で出す。 */
+ const rice0=!!(C.bus&&!z.boss&&!z.elite);
+ if(!quiet&&!rice0&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)));
   if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28*CH_UP,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
@@ -15318,7 +15364,10 @@ function campStep(C,dt,wave){
  for(const z of C.zombies){const p=pathPos(Math.max(0,z.d),z.ln);z.px=p[0];z.py=p[1];
   if(z.off){const pl=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
    const k9=z.off*clamp((pl-z.d)/300,0,1);
-   z.px+=-Math.sin(p[2])*k9;z.py+=Math.cos(p[2])*k9;}
+   /* ⚠**法線を実体にも書いておく**(2026-08-02(2))=🚌バスが横へ押しのける時に要る。
+      ここで出した sin/cos をそのまま使い回す(バス側で出し直さない)。 */
+   z.nx=-Math.sin(p[2]);z.ny=Math.cos(p[2]);
+   z.px+=z.nx*k9;z.py+=z.ny*k9;}
   z.dr=(z.ln!=null)?((BNS_CX-p[0])>=0?1:-1):pathFace(Math.max(0,z.d),p[0],1,p[2]);
   z.vw=pxVw(p[2]);if(z.aura)scrs.push(z);}
  if(C.bus)bnsBusStep(C,dt);/* 🚌ボーナス面の轢き殺し */
@@ -15382,10 +15431,18 @@ function campStep(C,dt,wave){
     if(C.isMe){sfx.leak();dmgFlash();}
     if(C.core<=0){C.core=0;C.dying=true;addFx(C,'boomL',CORE[0],CORE[1],'');}}
    continue;}
-  if(z.d>=PLEN){z.dead=true;z.leaked=true;C.core-=z.dmg;C.shake=.25;addFx(C,'leak',CORE[0],CORE[1],'');
-   addP(C,10,CORE[0],CORE[1]-10,{sp:180,up:60,g:600,life:.6,r:3,col:RUST});
-   addP(C,4,CORE[0],CORE[1]-16,{sp:50,up:40,g:-40,life:1,r:7,col:'#5c5148',typ:'smoke'});
-   if(C.isMe){sfx.leak();dmgFlash();}
+  if(z.d>=PLEN){z.dead=true;z.leaked=true;C.core-=z.dmg;
+   /* ⚠⚠**米粒(🚌開拓便の雑魚)は「漏れた時の知らせ」も間引く**(2026-08-02(2))=
+      この面は数百体が拠点へ届く前提なので、1体ずつ **音+赤い明滅+画面揺れ+粒14個+輪** を出すと
+      **鳴りっぱなし・揺れっぱなし**になって、何が起きているのか一切読めなくなる。
+      ⭐**0.4秒に1回だけ**知らせる。⚠**コアの減りは1体ずつそのまま通す**(手加減はしていない)。 */
+   const rl9=!!(C.bus&&!z.boss&&!z.elite);
+   if(!rl9||C.tm-(C.zlkT||-9)>=.4){
+    if(rl9)C.zlkT=C.tm;
+    C.shake=.25;addFx(C,'leak',CORE[0],CORE[1],'');
+    addP(C,10,CORE[0],CORE[1]-10,{sp:180,up:60,g:600,life:.6,r:3,col:RUST});
+    addP(C,4,CORE[0],CORE[1]-16,{sp:50,up:40,g:-40,life:1,r:7,col:'#5c5148',typ:'smoke'});
+    if(C.isMe){sfx.leak();dmgFlash();}}
    if(C.core<=0){C.core=0;C.dying=true;addFx(C,'boomL',CORE[0],CORE[1],'');}}
  }
  /* ユニット */
@@ -16050,7 +16107,9 @@ function campStep(C,dt,wave){
  /* エフェクト整理 */
  for(const e of C.fx)e.t+=dt;
  C.fx=C.fx.filter(e=>e.t<((e.d0||0)+fxLife(e.k,e)));
- C.zombies=C.zombies.filter(z=>!z.dead);
+ /* ⚠**その場で詰める**(2026-08-02(2))=`filter` は毎フレーム新しい配列を作るので、
+    開拓便のように500体を毎フレーム回す面ではゴミが積もる。並びも同一性も変わらない。 */
+ {const zz=C.zombies;let w9=0;for(let i9=0;i9<zz.length;i9++){if(!zz[i9].dead)zz[w9++]=zz[i9];}zz.length=w9;}
  C.shells=C.shells.filter(s=>!s.dead);
  /* ゾンビ環境音: 数に応じてうめき */
  if(C.isMe&&C.zombies.length&&Math.random()<dt*Math.min(.45,.06+C.zombies.length*.012))sfx.moan();
@@ -16531,6 +16590,8 @@ function renderCamp(C,t){
  /* 装飾 */
  for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
+ /* 🛞轍と🩸血だまり(🚌開拓便)。⚠**地面の上・廃墟の下**=踏まれている物なので一番下に敷く */
+ if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
  /* 🚌開拓便の廃墟(⚠**画面に入っている物だけ描く**=数百個あるので全部描くと重い。
     ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは**本当の画面の範囲**を出し直す) */
  if(BPROP.length){const m9=90,
@@ -16729,7 +16790,11 @@ function renderCamp(C,t){
    c.globalCompositeOperation='source-over';}
   c.restore();c.globalAlpha=1;}
  /* ゾンビ */
- const zs=C.zombies.slice().sort((a,b)=>a.py-b.py);
+ /* ⭐🚌開拓便は**米粒の群れ専用の描き方**へ丸ごと逸らす(2026-08-02(2)ユーザー①)。
+    ⚠ここを通るのは**ボスとエリートだけ**になる=下の並べ替えも2〜3体しか回らない。 */
+ const rice9=!!C.bus;
+ if(rice9)try{drawZRice(c,C,t);}catch(e){}
+ const zs=(rice9?C.zombies.filter(z=>z.boss||z.elite):C.zombies.slice()).sort((a,b)=>a.py-b.py);
  for(const z of zs){if(z.d<0)continue;
   groundShadow(c,z.px,z.py,15*ZOMBIES[z.zi].sc*(z.boss?1.8:z.elite?1.3:1));
   /* ⚠**気絶(z.stnT)は凍結と別物**として見せる=❄の輪も氷漬けも出さない(2026-08-02ユーザー指示
@@ -16839,8 +16904,12 @@ function renderCamp(C,t){
   if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
   if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64*CH_UP,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }
+ /* 🩸弾け飛んだ肉片(⚠敵より手前=飛んでいる物なので上に置く) */
+ if(C.bus)try{drawBnsGore(c,C);}catch(e){}
  /* 🚌ボーナス面の走るバス(⚠敵と部隊の後=一番大きいので手前に置く) */
  if(C.bus)drawBus(c,C,t);
+ /* ⭐連なりの数字(⚠バスの上=目が行っている所に出す) */
+ if(C.bus)try{drawBnsCombo(c,C,t);}catch(e){}
  /* 🧍主人公(⚠いまは拠点の前に立っているだけ=探索パートを作ったらここが操作の主役になる) */
  if(LANES){const hx=CORE[0]-96,hy=CORE[1]+112;
   groundShadow(c,hx,hy,13);
@@ -17192,7 +17261,12 @@ function renderCamp(C,t){
    for(let k3=0;k3<5;k3++){const a=(e.sd||0)+k3*1.256;const bx=e.x+Math.cos(a)*e.t*170,by=e.y+Math.sin(a)*e.t*70+e.t*e.t*300;
     c.beginPath();c.arc(bx,by,Math.max(.5,3.4-e.t*4),0,7);c.fill();}c.globalAlpha=1;}
   else if(e.k==='txt'){c.globalAlpha=Math.max(0,1-e.t);c.fillStyle=TOXIC;c.strokeStyle=INK;c.lineWidth=4;c.textAlign='center';
-   drawIcoText(c,e.s,e.x,e.y-e.t*46,26);c.globalAlpha=1;c.lineWidth=3;}
+   /* ⚠⚠**寄り具合(CAM.zm)で割る**(2026-08-02(2))=🚌開拓便は .26 まで引いているので、
+      26pxのまま描くと**画面では3〜4画素**にしかならず「+○⚙️」が一度も読めていなかった。
+      ⚠CAMが無い面(=本編)では zk9=1 なので今までと1画素も変わらない。 */
+   const zk9=(CAM&&CAM.zm)?1/CAM.zm:1;
+   c.lineWidth=4*zk9;
+   drawIcoText(c,e.s,e.x,e.y-e.t*46*zk9,26*zk9);c.globalAlpha=1;c.lineWidth=3;}
   else if(e.k==='dmg'){c.globalAlpha=Math.max(0,1-e.t/.5);c.fillStyle=PANE;c.strokeStyle=INK;c.lineWidth=3;c.font='900 20px '+FF;c.textAlign='center';const ty=e.y-e.t*40;c.strokeText(e.s,e.x,ty);c.fillText(e.s,e.x,ty);c.globalAlpha=1;}
   else if(e.k==='leak'){c.strokeStyle='rgba(232,72,50,'+Math.max(0,1-e.t*2)+')';c.lineWidth=8;c.beginPath();c.arc(CORE[0],CORE[1],40+e.t*140,0,7);c.stroke();}
  }
@@ -17323,18 +17397,26 @@ function drawMiniMap(c,C){
  /* 廃墟(点だけ・間引く) */
  c.fillStyle='rgba(120,108,88,.7)';
  for(let i=0;i<BPROP.length;i+=4){const p=BPROP[i];c.fillRect(x0+p.x*sx-1,y0+p.y*sy-1,2,2);}
- /* 敵(⚠**多いので点で**。1体ずつ丸を描くと数百個ぶんの塗りになる) */
+ /* 敵(⚠**多いので点で**。1体ずつ丸を描くと数百個ぶんの塗りになる)
+    ⚠⚠**四角も1本のパスに積んでまとめて塗る**(2026-08-02(2))=fillRect を1体ずつ呼ぶと
+      500体で毎フレーム500回の塗りになる。積んで最後に1回だけ塗れば1回で済む。 */
  c.fillStyle='#8f3a2c';
- for(const z of (C.zombies||[])){if(z.dead||z.d<0)continue;
-  c.fillRect(x0+z.px*sx-1.5*dpr,y0+z.py*sy-1.5*dpr,3*dpr,3*dpr);}
+ {const r9=1.5*dpr;c.beginPath();let any9=0;
+  for(const z of (C.zombies||[])){if(z.dead||z.d<0)continue;
+   c.rect(x0+z.px*sx-r9,y0+z.py*sy-r9,r9*2,r9*2);any9=1;}
+  if(any9)c.fill();}
  /* 拠点とバス */
  c.fillStyle=AMBER;c.beginPath();c.arc(x0+CORE[0]*sx,y0+CORE[1]*sy,3.4*dpr,0,7);c.fill();
  if(C.bus){c.fillStyle='#e8e2c8';c.beginPath();c.arc(x0+C.bus.x*sx,y0+C.bus.y*sy,3.4*dpr,0,7);c.fill();
   c.strokeStyle=INK;c.lineWidth=1.4*dpr;c.stroke();}
- /* いま見ている範囲 */
+ /* いま見ている範囲。
+    ⚠⚠**CAM.x を中心にして描いてはいけない**(2026-08-02(2)に撮って気づいた)=
+      カメラはマップの端で止まる(camApply が OX/OY を切っている)のに、枠だけ中心を追い続けるので、
+      端まで走ると**枠がミニマップの外へはみ出す**。⭐**いま本当に描いている OX/OY から出す**。 */
  {const vw=(cv.width/SC)*sx,vh=(cv.height/SC)*sy;
+  const vx=clamp(-OX/SC,0,Math.max(0,MAPW-cv.width/SC)),vy=clamp(-OY/SC,0,Math.max(0,MAPH-cv.height/SC));
   c.strokeStyle='rgba(242,236,220,.9)';c.lineWidth=1.6*dpr;
-  c.strokeRect(x0+(CAM.x*sx-vw/2),y0+(CAM.y*sy-vh/2),vw,vh);}
+  c.strokeRect(x0+vx*sx,y0+vy*sy,vw,vh);}
  c.restore();
 }
 /* ---- HUD ---- */
@@ -17500,6 +17582,9 @@ function showResultA(){
   ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),
     /* ⭐🚌ボーナス面の初回クリア報酬(2回目からは出ない=配っていないので) */
     ...(G.bnsPts?[['🚌 初回クリア報酬','🧬+'+fmt(G.bnsPts)+' / 💎+'+(G.bnsGem||0)]]:[]),
+    /* ⭐🚌轢き殺した数と最高連続(2026-08-02(2))=「連続で気持ちいい」の締めをここで見せる。
+       ⚠バスの居る面(開拓便)でしか出さない */
+    ...(me.bus?[['🚌 轢き殺した数',(me.bus.kill||0)+'体'],['🔥 最高連続','×'+(me.bus.cmbMx||0)]]:[]),
     ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+((me.team||[]).length)],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv],['砲撃強化','Lv'+(me.stkLv||0)]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+PVP_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
@@ -18402,6 +18487,12 @@ function startSolo(){
      出せなくするのは `uUn=0`(解放0種)+ 下の body.bns で欄ごと隠すことでやる。 */
   me.hUi=-1;me.uUn=0;
   me.up=me.upTotal=60+up0V();
+  /* ⭐⭐**拠点は厚くする**(2026-08-02(2))=敵が15倍になったので、コア50のままだと
+     **全体の3%漏らしただけで陥落**する(=轢く爽快感より漏らさない我慢の面になってしまう)。
+     ⚠1580体のうち**4分の1まで通してよい**厚さ。負けるのは「1本の道を長く放っておいた時」であって
+       始まって15秒の立ち上がりであってはいけない。
+     ⚠⚠**楽すぎ/きつすぎならまずこの400を動かす**(難易度表の hp/cnt より先にここ)。 */
+  me.coreMax=400+hp0V();me.core=me.coreMax;
   me.unlocked=metaTowerCap();
   me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
   bnsBusInit(me);
@@ -18680,7 +18771,18 @@ const BUS_ACC=760;   /* 加速。⚠上げすぎると軽い車になる */
 const BUS_FRIC=2.4;  /* 離した時の減速(1秒あたり) */
 const BUS_R=62,BUS_DPS=520,BUS_KB=190;
 const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当たった手応え */
-function bnsBusInit(C){C.bus={x:BNS_CX,y:BNS_CY+150,vx:0,vy:0,ix:0,iy:0,dr:-1,t:0,hitT:0};}
+/* ⭐**横へ押しのける速さ**(2026-08-02(2))=前へ押し込むだけだと「道の上で潰した」に見えない。
+   ⚠押すのは世界座標ではなく **`z.off`(道の法線方向へのずれ)**=世界座標で押すと道から外れて、
+     次のフレームで道の上へ瞬間移動する(前へ押す時と同じ理屈)。 */
+const BUS_SIDE=300;
+const BNS_CMB_T=1.5; /* 連続轢殺が途切れるまでの秒数 */
+const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
+function bnsBusInit(C){
+ C.bus={x:BNS_CX,y:BNS_CY+150,vx:0,vy:0,ix:0,iy:0,dr:-1,t:0,hitT:0,
+  /* ⭐連続轢殺(cmb=いま何連 / cmbT=途切れるまで / cmbP=数字が跳ねる勢い / cmbMx=最高記録) */
+  cmb:0,cmbT:0,cmbP:0,cmbMx:0,kill:0,gain:0,gainT:0,trkD:0};
+ bnsFxInit(C);
+}
 function bnsBusStep(C,dt){
  const B=C.bus;if(!B)return;
  B.t+=dt;
@@ -18692,20 +18794,232 @@ function bnsBusStep(C,dt){
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
  B.x=clamp(B.x+B.vx*dt,70,MAPW-70);B.y=clamp(B.y+B.vy*dt,70,MAPH-30);
  if(Math.abs(B.vx)>16)B.dr=B.vx>0?1:-1;
+ /* 🛞**轍(跡が残る)**。⚠**進んだ距離で置く**=毎フレーム置くと止まっている間に同じ所へ積もり、
+    速く走るほど点がまばらになる。⚠轢いた直後は**血の轍**にする(跡がやったことを語る)。 */
+ {const mv=Math.hypot(B.vx,B.vy);
+  B.trkD=(B.trkD||0)+mv*dt;
+  if(mv>26&&B.trkD>=BTRK_GAP){B.trkD=0;
+   const tx=B.vx/mv,ty=B.vy/mv;
+   bnsRing(C,'btrk',BNS_TRK,{x:B.x,y:B.y,tx:tx,ty:ty,nx:-ty,ny:tx,t:0,b:(B.cmbT>0)?1:0});}}
  /* 轢く=重なっている間ずっと削る+外へ弾く。⚠**押し出しは経路上の距離(z.d)で戻す**
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */
- let hit=0;
+ let hit=0,kil=0;
+ const rr9=BUS_R;
  for(const z of C.zombies){
   if(z.dead||z.d<0)continue;
-  if(dist(z.px,z.py,B.x,B.y)>BUS_R+(z.sc||1)*10)continue;
-  dmgZ(C,z,BUS_DPS*dt,1);
-  if(!z.dead){z.d=Math.max(0,z.d-BUS_KB*dt);z.stnT=Math.max(z.stnT||0,.12);}
+  const dx=z.px-B.x,dy=z.py-B.y,rz=rr9+(z.sc||1)*10;
+  if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
+  /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
+  dmgZ(C,z,BUS_DPS*dt,1,true);
+  if(z.dead)kil++;
+  else{z.d=Math.max(0,z.d-BUS_KB*dt);z.stnT=Math.max(z.stnT||0,.12);
+   /* ⭐**横へ押しのける**=法線(z.nx,z.ny)はいまの位置を出す時に書いてある */
+   if(z.nx!=null){const s9=(dx*z.nx+dy*z.ny)>=0?1:-1;
+    z.off=clamp((z.off||0)+s9*BUS_SIDE*dt,-BNS_OFF*1.8,BNS_OFF*1.8);}}
   hit++;
  }
+ /* ⭐**連続轢殺**(2026-08-02(2)ユーザー①「連続で気持ちいい」)。
+    ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
+ if(kil){B.cmb=(B.cmb||0)+kil;B.cmbT=BNS_CMB_T;B.cmbP=1;B.kill=(B.kill||0)+kil;
+  if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;}
+ if(B.cmbT>0){B.cmbT-=dt;if(B.cmbT<=0)B.cmb=0;}
+ if(B.cmbP>0)B.cmbP=Math.max(0,B.cmbP-dt*4.5);
+ /* ⭐⚙️は**まとめて1回**出す。⚠1体ずつ出すと毎秒何十枚も文字が湧いて画面が読めなくなる */
+ B.gainT=(B.gainT||0)+dt;
+ /* ⚠**連なりの数字より上に出す**(連なりは -96*gz)=重なると両方読めなくなる。
+    ⚠寄り具合で割る=世界座標の110は画面では15画素しかない(バスに被る)。 */
+ if(B.gain>0&&B.gainT>=BNS_GAIN_T){addFx(C,'txt',B.x,B.y-150*bnsGz(),'+'+B.gain+'⚙️');B.gain=0;B.gainT=0;}
  camTo(B.x,B.y);/* 🎥カメラはバスを追う(⚠開拓便を作り直したら主人公を追わせる) */
  if(hit){B.hitT=.12;B.vx*=BUS_DRAG;B.vy*=BUS_DRAG;
-  if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.22,.05+.03*hit));}
+  /* ⚠揺れは**連なりが伸びるほど強く**する(上限あり)=轢き続けている実感 */
+  if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.30,.05+.025*hit+.05*bnsCmbT(B.cmb)));}
  if(B.hitT>0)B.hitT-=dt;
+ bnsFxStep(C,dt);
+}
+/* ============ 🩸 轢き応え(2026-08-02(2)ユーザー①「弾け飛ぶ/跡が残る/連続で気持ちいい」)============
+   ⭐**3つとも「使い回しの輪(リングバッファ)」で持つ**=何百体轢いても配列は伸びない
+     (古い物から上書きされる)。毎フレームの `filter` もゴミも出ない。
+   ⭐**描くのは色ごとに1回だけ**=四角を1本のパスに積んで最後にまとめて塗る。
+     ⚠**濃さ(globalAlpha)は塗るたびに1つしか持てない**ので、薄れは
+       「時間で小さくする」か「2〜3段に分けて塗る」で表す(1件ずつ濃さを変えない)。
+   ⚠⚠**大きさは寄り具合(CAM.zm=.26)で割る**=そのままの数値で描くと**1画素未満**になって
+     何も見えない(いまの血しぶきの粒 r2.8 が実際そうなっている)。 */
+const BNS_STN=280,BNS_CHK=320,BNS_TRK=190;/* それぞれの上限(=画面に残る数) */
+const BSTN_LF=13,BCHK_G=760,BTRK_LF=9;    /* 血だまりの寿命 / 肉片の重力 / 轍の寿命(秒) */
+const BTRK_GAP=26;                        /* 轍を1点置くごとに進む距離 */
+/* ⚠寄り具合の逆数=「画面での見え方」で大きさを書けるようにする道具 */
+const bnsGz=()=>1/((CAM&&CAM.zm)||1);
+/* 連なりの段(0〜4)。⚠**数字ではなく段で見せる**=何連目で何が変わるかが分かる */
+const bnsCmbT=n=>n>=80?4:n>=40?3:n>=18?2:n>=5?1:0;
+const BNS_CMB_N=['','轢殺','大轢殺','蹂躙','地獄のバス'];
+const BNS_CMB_C=['',PAPER,GOLD,AMBER,RUST];
+function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;}
+/* 使い回しの輪へ1件積む。⚠**上限に達したら一番古い物を上書きする**(伸ばさない) */
+function bnsRing(C,k,cap,o){
+ let a=C[k];if(!a)a=C[k]=[];
+ if(a.length<cap){a.push(o);return;}
+ const ik=k+'I',i=C[ik]||0;a[i]=o;C[ik]=(i+1)%cap;
+}
+/* 1体ぶんの「弾け飛ぶ」。⚠`killZ` から米粒の時だけ呼ばれる */
+function bnsSplat(C,z){
+ if(FXLV===0)return;
+ const B=C.bus,gz=bnsGz();
+ /* ⭐**飛ぶ向きはバスの進む向き寄り**=外へ均等に散らすと「爆発」に見えて轢いた感じが出ない。
+    ⚠バスから離れた所(タレットで倒した時)は外向きだけになる */
+ let ax=z.px-(B?B.x:z.px),ay=z.py-(B?B.y:z.py);
+ {const l=Math.hypot(ax,ay)||1;ax/=l;ay/=l;
+  const bl=B?Math.hypot(B.vx,B.vy):0;
+  if(bl>20){ax=ax*.5+(B.vx/bl)*.85;ay=ay*.5+(B.vy/bl)*.85;}}
+ const a0=Math.atan2(ay,ax),n=FXLV===2?4:2;
+ for(let i=0;i<n;i++){
+  const a=a0+rnd(-.95,.95),sp=rnd(110,300);
+  bnsRing(C,'bchk',BNS_CHK,{x:z.px,y:z.py-14,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(40,150),
+   t:0,lf:rnd(.30,.55),r:rnd(3,6)*gz});
+ }
+ /* 地面に残る血だまり(=跡) */
+ bnsRing(C,'bstn',BNS_STN,{x:z.px+rnd(-8,8),y:z.py+rnd(-4,4),r:rnd(6,11)*gz,t:0});
+}
+function bnsFxStep(C,dt){
+ const ck=C.bchk;if(ck)for(let i=0;i<ck.length;i++){const p=ck[i];
+  if(p.t>=p.lf)continue;p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=BCHK_G*dt;}
+ const st=C.bstn;if(st)for(let i=0;i<st.length;i++){if(st[i].t<BSTN_LF)st[i].t+=dt;}
+ const tk=C.btrk;if(tk)for(let i=0;i<tk.length;i++){if(tk[i].t<BTRK_LF)tk[i].t+=dt;}
+}
+/* 🛞轍と🩸血だまり=**地面の上・廃墟の下**に描く(踏まれている物なので一番下) */
+function drawBnsMarks(c,C){
+ const gz=bnsGz();
+ const tk=C.btrk;
+ if(tk&&tk.length){
+  const L=9*gz,W=2.6*gz,SEP=9*gz;/* 長さ / 太さ / 左右の間隔 */
+  for(let b=0;b<2;b++){/* 0=土の轍 / 1=血の轍 */
+   c.fillStyle=b?'rgba(104,26,20,.44)':'rgba(30,25,20,.30)';
+   c.beginPath();let any=0;
+   for(let i=0;i<tk.length;i++){const s=tk[i];if((s.b?1:0)!==b)continue;
+    const k=1-s.t/BTRK_LF;if(k<=0)continue;
+    /* ⚠**薄れは「細くなる」で表す**=1件ずつ濃さを変えるとまとめて塗れない */
+    const w=W*k,l=L;
+    for(let sg=-1;sg<=1;sg+=2){
+     const bx=s.x+s.nx*SEP*sg,by=s.y+s.ny*SEP*sg;
+     c.moveTo(bx+s.tx*l+s.nx*w,by+s.ty*l+s.ny*w);
+     c.lineTo(bx+s.tx*l-s.nx*w,by+s.ty*l-s.ny*w);
+     c.lineTo(bx-s.tx*l-s.nx*w,by-s.ty*l-s.ny*w);
+     c.lineTo(bx-s.tx*l+s.nx*w,by-s.ty*l+s.ny*w);
+     c.closePath();any=1;}}
+   if(any)c.fill();}
+ }
+ const st=C.bstn;
+ if(st&&st.length){
+  /* ⚠濃さは**3段**だけ持つ(1件ずつ変えると数百回の塗りになる) */
+  const AL=[.42,.28,.14];
+  for(let b=0;b<3;b++){
+   c.fillStyle='rgba(88,22,18,'+AL[b]+')';
+   c.beginPath();let any=0;
+   for(let i=0;i<st.length;i++){const s=st[i];const k=s.t/BSTN_LF;
+    if(k>=1||((k*3)|0)!==b)continue;
+    /* ⚠**楕円ではなく四角**=arc/ellipse は前の部分パスから線が繋がるので moveTo が要る。
+       この大きさ(画面で数画素)では形の差は出ない。 */
+    c.rect(s.x-s.r,s.y-s.r*.42,s.r*2,s.r*.84);any=1;}
+   if(any)c.fill();}
+ }
+}
+/* 🩸弾け飛んだ肉片=**敵より手前**に描く(飛んでいる物なので上) */
+function drawBnsGore(c,C){
+ const ck=C.bchk;if(!ck||!ck.length)return;
+ c.fillStyle='rgba(122,26,20,.9)';
+ c.beginPath();let any=0;
+ for(let i=0;i<ck.length;i++){const p=ck[i];if(p.t>=p.lf)continue;
+  const k=1-p.t/p.lf,r=p.r*(.45+k*.55);
+  c.rect(p.x-r,p.y-r,r*2,r*2);any=1;}
+ if(any)c.fill();
+}
+/* ⭐**連なりの表示**=バスの上に大きく出す。⚠**寄り具合で割る**(でないと文字が1画素になる) */
+function drawBnsCombo(c,C,t){
+ const B=C.bus;if(!B||!(B.cmb>=5))return;
+ const tier=bnsCmbT(B.cmb),gz=bnsGz();
+ c.save();
+ c.translate(B.x,B.y-96*gz);
+ c.scale(gz*(1+B.cmbP*.4),gz*(1+B.cmbP*.4));
+ c.textAlign='center';c.lineJoin='round';
+ c.strokeStyle=INK;c.lineWidth=7;c.fillStyle=BNS_CMB_C[tier]||PAPER;
+ c.font='900 34px '+FF;
+ c.strokeText('×'+B.cmb,0,0);c.fillText('×'+B.cmb,0,0);
+ if(tier){c.font='900 16px '+FF;c.lineWidth=5;
+  c.strokeText(BNS_CMB_N[tier],0,19);c.fillText(BNS_CMB_N[tier],0,19);}
+ c.restore();
+}
+/* ============ 🧟 米粒ゾンビ(2026-08-02(2)ユーザー①)============
+   ⭐⭐**焼いた絵を1体ずつ貼るのをやめた**。⚠それが「超大量にできない」正体だった=
+     米粒の大きさでも**1体あたり drawImage 1回+影の楕円1枚+HPバー2枚**が必ず掛かるので、
+     体数がそのまま重さになっていた(260体で頭打ち)。
+   ⭐**数色の小さい四角を1本のパスに積んで、色ごとに1回だけ塗る**=
+     500体でも塗りは**6回前後**で済む。1体あたりの重さがほぼ消える。
+   ⚠**rect() を使う**=arc/ellipse は前の部分パスから線が繋がるので都度 moveTo が要る。
+     rect は毎回独立した部分パスになるので、ただ積むだけでよい。
+   ⚠**前後の重なり(py順の並べ替え)は捨てている**=この大きさでは読めないし、
+     並べ替えとパスの分割を数百体ぶんやる方がずっと高くつく。
+   ⚠**ボスとエリートは今までどおり焼いた絵**(数が少なく大きいので、粒では何か読めない)。
+   ⚠**HPバーも出さない**=米粒の上に幅36pxの帯を載せると体より帯の方が大きい。 */
+const RICE_S=1;      /* 米粒の大きさ。⚠上げると1体が大きく見えるぶん群れの密度は下がる */
+const RICE_G=[],RICE_C=[];
+function riceCol(zi){
+ let q=RICE_C[zi];if(q)return q;
+ const col=(ZOMBIES[zi]&&ZOMBIES[zi].c)||'#7a8f5f';
+ return RICE_C[zi]=[shade(col,.46),col,shade(col,1.34)];/* 脚(暗) / 胴 / 頭(明) */
+}
+function drawZRice(c,C,t){
+ const zs=C.zombies;if(!zs||!zs.length)return;
+ /* ⚠**画面に入っている物だけ**(道は画面の何倍も長いので、枠外を弾くだけで大きく効く)。
+    ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは本当の画面の範囲を出し直す */
+ const m9=80,
+  wx0=(-OX)/SC-m9,wx1=(cv.width-OX)/SC+m9,wy0=(-OY)/SC-m9,wy1=(cv.height-OY)/SC+m9;
+ let any=0;
+ for(let i=0;i<RICE_G.length;i++)if(RICE_G[i])RICE_G[i].length=0;
+ for(const z of zs){
+  if(z.dead||z.d<0||z.boss||z.elite)continue;
+  if(z.px<wx0||z.px>wx1||z.py<wy0||z.py>wy1)continue;
+  (RICE_G[z.zi]||(RICE_G[z.zi]=[])).push(z);any=1;
+ }
+ if(!any)return;
+ const NG=RICE_G.length;
+ /* ①影(全種まとめて1回) */
+ c.fillStyle='rgba(0,0,0,.20)';c.beginPath();
+ for(let zi=0;zi<NG;zi++){const L=RICE_G[zi];if(!L||!L.length)continue;
+  const s=(ZOMBIES[zi].sc||1)*RICE_S;
+  for(const z of L)c.rect(z.px-8*s,z.py-2*s,16*s,5*s);}
+ c.fill();
+ /* ②黒フチ(全種まとめて1回)=地面と道の上で輪郭が立つ。⚠これが無いと色の点にしか見えない */
+ c.fillStyle=INK;c.beginPath();
+ for(let zi=0;zi<NG;zi++){const L=RICE_G[zi];if(!L||!L.length)continue;
+  const s=(ZOMBIES[zi].sc||1)*RICE_S;
+  for(const z of L){const w=Math.sin(t*8+z.ph),bb=-Math.abs(w)*1.2*s;
+   c.rect(z.px-8.1*s,z.py-35.6*s+bb,16.2*s,21.6*s);
+   c.rect(z.px-6.1*s+(z.dr||1)*1.1*s,z.py-46.6*s+bb,12.2*s,13.6*s);}}
+ c.fill();
+ /* ③〜⑤ 種類ごと(脚→胴→頭)。⚠色ごとに1回ずつしか塗らない */
+ for(let zi=0;zi<NG;zi++){
+  const L=RICE_G[zi];if(!L||!L.length)continue;
+  const s=(ZOMBIES[zi].sc||1)*RICE_S,CO=riceCol(zi);
+  c.fillStyle=CO[0];c.beginPath();
+  for(const z of L){const w=Math.sin(t*8+z.ph)*2.4*s;
+   c.rect(z.px-4.8*s+w,z.py-15*s,3.8*s,15*s);
+   c.rect(z.px+1*s-w,z.py-15*s,3.8*s,15*s);}
+  c.fill();
+  c.fillStyle=CO[1];c.beginPath();
+  for(const z of L){const bb=-Math.abs(Math.sin(t*8+z.ph))*1.2*s;
+   c.rect(z.px-6.5*s,z.py-34*s+bb,13*s,19*s);}
+  c.fill();
+  c.fillStyle=CO[2];c.beginPath();
+  for(const z of L){const bb=-Math.abs(Math.sin(t*8+z.ph))*1.2*s;
+   c.rect(z.px-4.5*s+(z.dr||1)*1.1*s,z.py-45*s+bb,9*s,11*s);}
+  c.fill();
+ }
+ /* ⑥被弾の光り(まとめて1回)。⚠焼いた絵の brightness は iOS で効かないので、白を1枚重ねる */
+ c.fillStyle='rgba(255,255,255,.72)';c.beginPath();let hz=0;
+ for(let zi=0;zi<NG;zi++){const L=RICE_G[zi];if(!L||!L.length)continue;
+  const s=(ZOMBIES[zi].sc||1)*RICE_S;
+  for(const z of L){if(!(z.hitT>0))continue;
+   c.rect(z.px-6.5*s,z.py-45*s,13*s,30*s);hz=1;}}
+ if(hz)c.fill();
 }
 /* スティックの入力(-1〜1)。⚠**画面側から呼ぶのはここだけ**にする */
 function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy=dy;}

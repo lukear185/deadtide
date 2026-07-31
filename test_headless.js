@@ -2573,6 +2573,102 @@ function checkBonus(){
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;
  console.log('🚌ボーナス面: ステージ'+STAGES.length+'面ぶん(四方4本・長さ揃い/兵科と英雄なし/バスで轢ける/遊べば次が開く/報酬は初回だけ/中断できない) OK');
 }
+/* ⭐⭐**米粒ゾンビと轢き応え**(2026-08-02(2)ユーザー①)。見るのは6つ:
+   ①数百体が盤面に乗ること+米粒の描き方が例外を出さずに通ること
+   ②轢いた跡(血だまり/肉片/轍)が**上限を超えて増えない**こと(使い回しの輪。ここが伸びると青天井)
+   ③連なりが増える・途切れて0に戻る・最高記録は残る
+   ④⚙️の文字が**1体ずつ湧かない**(まとめて出す)
+   ⑤米粒は**死体(corpse)を残さない**=これが「1体あたりの重さ」の正体だった
+   ⑥⚠**本編(普通の面)では今までどおり死体も文字も出る**=米粒の細工が漏れていないこと */
+function checkRice(){
+ const fx0=FXLV;FXLV=2;
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
+ META.stg=0;setDiff=BNS_D;startSolo();
+ const me=G.players[0];
+ fitCanvas();
+ nextWave();
+ for(let k=0;k<3000&&G.tide.pool.length&&me.zombies.length<BNS_CAP-20;k++)tideStep(.05);
+ for(let k=0;k<40;k++)campStep(me,.05,1);
+ const live=me.zombies.filter(z=>!z.dead&&z.d>=0);
+ /* ① 数百体が盤面に乗る(⚠**以前の上限は260**=そこを超えられていなければ意味が無い) */
+ if(me.zombies.length<=260){console.log('FAIL: 以前の上限(260)を超えられていない '+me.zombies.length+'体');process.exit(1);}
+ if(live.length<250){console.log('FAIL: 米粒が盤面に乗っていない '+live.length+'体');process.exit(1);}
+ if(me.zombies.length>BNS_CAP){console.log('FAIL: 盤面の上限を超えている '+me.zombies.length);process.exit(1);}
+ try{drawZRice(ctx,me,1.2);}catch(e){console.log('FAIL: 米粒の描画で例外 '+e.message);process.exit(1);}
+ try{drawBnsMarks(ctx,me);drawBnsGore(ctx,me);drawBnsCombo(ctx,me,1.2);}catch(e){
+  console.log('FAIL: 轢き応えの描画で例外 '+e.message);process.exit(1);}
+ /* ② 使い回しの輪が伸びない */
+ for(let k=0;k<900;k++)bnsSplat(me,{px:BNS_CX+k,py:BNS_CY,zi:0});
+ for(let k=0;k<900;k++)bnsRing(me,'btrk',BNS_TRK,{x:0,y:0,tx:1,ty:0,nx:0,ny:1,t:0,b:0});
+ if(me.bstn.length>BNS_STN||me.bchk.length>BNS_CHK||me.btrk.length>BNS_TRK){
+  console.log('FAIL: 轢いた跡が上限を超えて増える 血'+me.bstn.length+'/肉'+me.bchk.length+'/轍'+me.btrk.length);process.exit(1);}
+ /* ④⑤ 米粒を倒しても文字と死体が湧かない */
+ me.fx.length=0;me.bus.gain=0;me.bus.gainT=0;
+ let n5=0;
+ for(const z of me.zombies){if(z.dead||z.boss||z.elite)continue;killZ(me,z);if(++n5>=100)break;}
+ if(n5<50){console.log('FAIL: 倒せる米粒が足りない '+n5);process.exit(1);}
+ const nCp=me.fx.filter(e=>e.k==='corpse').length;
+ if(nCp){console.log('FAIL: 米粒が死体を残している(重さの正体) '+nCp+'件');process.exit(1);}
+ const nTx=me.fx.filter(e=>e.k==='txt').length;
+ if(nTx>2){console.log('FAIL: ⚙️の文字が1体ずつ湧いている '+nTx+'件');process.exit(1);}
+ if(!(me.bus.gain>0)){console.log('FAIL: ⚙️が足し込まれていない');process.exit(1);}
+ /* ③ 連なり */
+ const B=me.bus;
+ me.zombies.length=0;B.cmb=0;B.cmbT=0;B.cmbMx=0;B.kill=0;
+ for(let k=0;k<12;k++){const z9=mkZ(zSpec(0,.02,1),200);z9.ln=0;z9.px=B.x;z9.py=B.y;me.zombies.push(z9);}
+ for(let k=0;k<8;k++){for(const z of me.zombies){z.px=B.x;z.py=B.y;}bnsBusStep(me,.05);}
+ if(!(B.cmb>=5)){console.log('FAIL: 連続轢殺が数えられていない ×'+B.cmb);process.exit(1);}
+ if(!(B.kill>=5)){console.log('FAIL: 轢き殺した数が数えられていない '+B.kill);process.exit(1);}
+ const mx=B.cmbMx;
+ if(mx<B.cmb){console.log('FAIL: 最高連続が更新されていない');process.exit(1);}
+ me.zombies.length=0;
+ for(let k=0;k<Math.ceil((BNS_CMB_T+.4)/.05);k++)bnsBusStep(me,.05);
+ if(B.cmb!==0){console.log('FAIL: 連なりが途切れない ×'+B.cmb);process.exit(1);}
+ if(B.cmbMx!==mx){console.log('FAIL: 最高連続が消えている');process.exit(1);}
+ backTitle();
+ /* ⑦⚠**漏れの知らせは間引く**=数百体が拠点へ届く面なので、1体ずつ音と揺れを出すと鳴りっぱなしになる。
+    ⚠**コアの減りは1体ずつそのまま**(知らせを間引いただけで手加減はしていないこと) */
+ META.stg=0;setDiff=BNS_D;startSolo();
+ {const m4=G.players[0];m4.fx.length=0;m4.zlkT=-9;m4.zombies.length=0;
+  for(let k=0;k<20;k++)m4.zombies.push(mkZ(zSpec(0,.02,1),PLEN+10));
+  const c4=m4.core;
+  campStep(m4,.05,1);
+  const nl=m4.fx.filter(e=>e.k==='leak').length;
+  if(nl>1){console.log('FAIL: 漏れの知らせが1体ずつ出ている '+nl+'件');process.exit(1);}
+  if(c4-m4.core<20){console.log('FAIL: 知らせを間引いたらコアの減りまで減った '+(c4-m4.core));process.exit(1);}}
+ backTitle();
+ /* ⑧⚠⚠**波が必ず終わる**=体数を15倍にしたので「いつまでも決着しない」が一番怖い。
+    コアを落とさずに放っておいても、湧き切って歩き切って必ず片が付くか(尺の目安もここで出す) */
+ let bsec=0,bkil=0;
+ META.stg=0;setDiff=BNS_D;startSolo();
+ {const m3=G.players[0];
+  nextWave();
+  let done=0;
+  for(let k=0;k<5000;k++){
+   m3.core=m3.coreMax;/* ⚠尺だけ見たいのでコアは落とさない */
+   try{gameStep(.05);}catch(e){console.log('FAIL: 🚌開拓便の実走で例外 '+e.message);process.exit(1);}
+   bsec+=.05;
+   if(!G.tide.pool.length&&!m3.zombies.length){done=1;break;}
+  }
+  bkil=m3.totalWave||0;
+  if(!done){console.log('FAIL: 🚌開拓便の波が終わらない('+Math.round(bsec)+'秒 残り pool='+G.tide.pool.length+' 盤面='+m3.zombies.length+')');process.exit(1);}
+  if(bsec>200){console.log('FAIL: 🚌開拓便が長すぎる '+Math.round(bsec)+'秒');process.exit(1);}}
+ backTitle();
+ /* ⑥ 本編は今までどおり(米粒の細工が漏れていないこと) */
+ META.stg=0;setDiff=2;startSolo();
+ {const m2=G.players[0];
+  if(m2.bus){console.log('FAIL: 普通の面にバスが居る');process.exit(1);}
+  m2.fx.length=0;
+  const z2=mkZ(zSpec(0,1,3),200);m2.zombies.push(z2);
+  killZ(m2,z2);
+  if(!m2.fx.some(e=>e.k==='corpse')){console.log('FAIL: 普通の面で死体が出なくなっている');process.exit(1);}
+  if(!m2.fx.some(e=>e.k==='txt')){console.log('FAIL: 普通の面で⚙️の文字が出なくなっている');process.exit(1);}}
+ backTitle();
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;FXLV=fx0;
+ console.log('🧟米粒ゾンビ: 盤面'+live.length+'体(上限'+BNS_CAP+')/描画は例外なし/跡は上限どまり(血'+me.bstn.length+'・肉'+me.bchk.length+'・轍'+me.btrk.length+')/'
+  +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
+ console.log('  (🚌開拓便の尺: 全'+bkil+'体を放っておいて '+Math.round(bsec)+'秒 で片が付く)');
+}
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
    見るのは4つ: ①型が21人ぶん全部あって、体も得物も動く値が入っているか
    ②進みの曲線が「0から始まり・戻らず・.82で完成し・そこから先は止まる(タメ)」か
@@ -2826,6 +2922,7 @@ checkGacha();
 checkHero();
 checkUltMot();
 checkBonus();
+checkRice();
 checkCam();
 checkTrain();
 checkRpg();
