@@ -132,6 +132,12 @@ const REC=[
        {f:'ice, crack, ice block snapping',t:0,d:.12,g:-8,r:.90,dl:5}]},
  {k:'crush3',  d:.12, g:-5, r:1.0, af:'lowpass=f=2200,equalizer=f=200:t=q:w=1.0:g=6',
   mix:[{f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.12,g:-3,r:.72}]},
+ /* ⭐**採用案(③)に「車体に当たる芯」を1枚だけ足したもの**(2026-08-02(30)ユーザー
+    「ゾンビに当たるときになりそうな音」)。⚠鉄は**-17dB**=聞こえないくらいでよい。
+    ⚠**主役は湿った潰れのまま**(鉄を上げると「どっと音」に逆戻りする)。 */
+ {k:'crush4',  d:.14, g:-5, r:1.0, af:'lowpass=f=2400,equalizer=f=190:t=q:w=1.0:g=6',
+  mix:[{f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.14,g:-3,r:.72},
+       {f:'Metal Hit Thud Thump Low Ring',t:0,d:.12,g:-17,r:1.25,dl:0}]},
  /* ⭐🚌**まとめて轢いた瞬間の「ゴシャアッ」**(2026-08-02(25)ユーザー「もっと轢いてる感が欲しい。
     SEとかVFXってもういい感じのないかな?」)。⚠**1体ずつの音(`crush`)とは別**=
     こちらは1試合で数十回しか鳴らない見せ場用なので、素材を使って厚く鳴らしてよい。
