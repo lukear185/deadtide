@@ -16819,13 +16819,28 @@ let CAM=null;        /* {x,y,zm,sx,sy}=いま見ている点 / 倍率 / 追い�
 let SC0=1,VW=0,VH=0; /* fitCanvas が出した「全景に収める」倍率と、使える画面の大きさ(デバイスpx) */
 const CAM_LERP=6;    /* 追従の速さ(1秒あたり)。⚠速すぎると酔う/遅すぎると置いていかれる */
 /* ⚠**sq=縦だけの潰し**(1=潰さない)。⚠**走行中に動かさない**(SCが変わると焼いた地形を全部捨てる) */
-function camOn(x,y,zm,sq){CAM={x:x,y:y,zm:zm||2.2,sq:sq||1,sx:x,sy:y};}
+function camOn(x,y,zm,sq){CAM={x:x,y:y,zm:zm||2.2,sq:sq||1,sx:x,sy:y,lvx:0,lvy:0};}
 function camOff(){CAM=null;}
 function camTo(x,y){if(CAM){CAM.sx=x;CAM.sy=y;}}
+/* ⭐⭐**追う相手の速さと、離れてよい範囲を教える**(2026-08-02(35))=下の「遅れの打ち消し」に使う。
+   ay=追う相手のy / dLo〜dHi=カメラが相手より前(上)へ出てよい世界距離。⚠使わない面は 0 のまま。 */
+function camLead(vx,vy,ay,dLo,dHi){if(!CAM)return;
+ CAM.lvx=vx||0;CAM.lvy=vy||0;CAM.lay=ay;CAM.ldL=dLo||0;CAM.ldH=dHi||0;}
 function camStep(dt){
  if(!CAM)return;
  const k=Math.min(1,dt*CAM_LERP);
- CAM.x+=(CAM.sx-CAM.x)*k;CAM.y+=(CAM.sy-CAM.y)*k;
+ /* ⚠⚠⭐**1次の遅れは「動いている相手」を必ず後ろから追う**=速いほど置いていかれるので、
+    「速いほど前を見せる」を目標側でいくら足しても**そっくり打ち消される**(ニトロ中は逆に狭くなっていた)。
+    ⭐**目標に「相手の速さ×遅れ」を足す**と、落ち着いた所がちょうど狙った位置になる。
+    ⚠⚠**係数は必ず dt から出すこと**=`1/CAM_LERP` の決め打ちにすると、
+      **fps が落ちた時だけ行き過ぎる**。 */
+ const lg=(k>0&&k<1)?dt*(1-k)/k:0;
+ CAM.x+=(CAM.sx+(CAM.lvx||0)*lg-CAM.x)*k;
+ CAM.y+=(CAM.sy+(CAM.lvy||0)*lg-CAM.y)*k;
+ /* ⚠⚠**最後に「離れてよい範囲」で必ず切る**=打ち消しは「camStep と gameStep が同じ回数だけ回る」前提。
+    撮影やfpsの揺れでカメラだけ多く回ると行き過ぎて、**追う相手が画面の外へ出る**(撮って気づいた)。
+    ⭐位置そのものを切っておけば、前提が崩れても絶対に外へ出ない。 */
+ if(CAM.ldH>CAM.ldL)CAM.y=clamp(CAM.y,CAM.lay-CAM.ldH,CAM.lay-CAM.ldL);
 }
 function camApply(){
  if(!CAM||!(SC0>0))return;
@@ -19866,13 +19881,17 @@ const BUS_R=140,BUS_DPS=520,BUS_KB=260;
 /* ⚠**2026-08-02(31)に耐久ごと外した**(ユーザー「耐久力とかいらないね ダメージエフェクトもなし」)。
    ⚠この値はもう効いていない(戻す時のために残してある)。 */
 const BUS_ZDPS=0;
-/* ⭐**バスを画面のどこに置くか**(0=中央 / 大きいほど下)。⚠0.5を超えると画面の外へ出る。
+/* ⭐**バスを画面のどこに置くか**=**画面の上端からの割合**(0.5=中央 / 大きいほど下)。
    ⭐**下に寄せるほど進む先が広く見える**=この面はそれが手触りそのもの。
    ⭐⭐**2026-08-02(35)に速度で可変にした**(ユーザー「道路の先があまり見えない」)=
-     止まっている時 BUS_CAM_Y / 全速で BUS_CAM_Y2。⚠**上げすぎるとバスの尻が画面の外**へ出る。
-     絵の半分は画面の高さの約13%なので、**0.42 あたりが限界**。 */
-const BUS_CAM_Y=.28,BUS_CAM_Y2=.42;
-/* ⭐**横の先読み**=切り返した側を広く見せる(秒数。速さに掛ける)。⚠大きいと画面が横に振られて酔う */
+     止まっている時 BUS_CAM_P / 全速で BUS_CAM_P2。
+   ⚠⚠**「中央からのズレ」ではなく「画面のどこに座るか」で持つこと**=ズレで持つと、
+     `camApply` が VH(操作バーを除いた高さ)で中央を取るのに対して**バーの高さぶん下へずれる**
+     (実際にずれていた。0.42 は既に安全上限を超えていて、バスの尻が操作バーの帯に入っていた)。
+   ⚠上限は絵の大きさから毎フレーム出しているので、ここを上げすぎても画面の外へは出ない。 */
+const BUS_CAM_P=.72,BUS_CAM_P2=.85;
+/* ⭐**横の先読み**=切り返した側を広く見せる(秒数。速さに掛ける)。⚠大きいと画面が横に振られて酔う。
+   ⚠**追従の遅れ(1/CAM_LERP)を足してから使う**=足さないと遅れに食われてほぼ効かない。 */
 const BUS_CAM_X=.14;
 const BUS_DRAW=1.9;  /* 絵の倍率。⚠BUS_R を動かしたらここも動かす(全長≒131*1.15*これ) */
 const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当たった手応え */
@@ -20062,7 +20081,9 @@ function bnsBusStep(C,dt){
  B.gainT=(B.gainT||0)+dt;
  /* ⚠**連なりの数字より上に出す**(連なりは -96*gz)=重なると両方読めなくなる。
     ⚠寄り具合で割る=世界座標の110は画面では15画素しかない(バスに被る)。 */
- if(B.gain>0&&B.gainT>=BNS_GAIN_T){addFx(C,'txt',B.x,B.y-150*bnsGz(),'+'+B.gain+'⚙️');B.gain=0;B.gainT=0;}
+ /* ⚠⚠**縦の潰し(SCY)を打ち消してから浮かせる**(2026-08-02(35))=打ち消さないと画面では2割低くなり、
+    **連なりの「×N」(打ち消し済み)とぴったり重なって両方読めなくなる**(片方だけ直すと必ずこうなる)。 */
+ if(B.gain>0&&B.gainT>=BNS_GAIN_T){addFx(C,'txt',B.x,B.y-185*bnsGz()*camIvY(),'+'+B.gain+'⚙️');B.gain=0;B.gainT=0;}
  if(B.flashT>0)B.flashT-=dt;
  if(B.flashCd>0)B.flashCd-=dt;
  /* 🛞**土埃**=速く走っている間だけ後ろへ吐く。⚠**跡の輪を使い回す**ので数は増えない。
@@ -20080,13 +20101,22 @@ function bnsBusStep(C,dt){
       毎フレーム地形が作り直しになって固まる(`drawBnsTown` の 0.4% 判定)。
     ⭐⭐**2026-08-02(35)に「速いほど前へ出る」ようにした**(ユーザー「道路の先があまり見えない」)=
       止まっている時は今までどおり、全速では画面のほぼ下端まで下がる。
-      ⚠**割合で頭打ちにする**(BUS_CAM_Y2)=これを超えるとバスの尻が画面の外へ出る。
+      ⚠**上限は絵の大きさから毎フレーム出す**(pMx)=これを超えるとバスの尻が画面の外へ出る。
       ⚠**速さで動かしてよいのはここだけ**(寄りを動かすと地形の焼き直しで固まる)。
     ⭐**横にも先読みする**=切り返した側が広く見えるので、関所を避ける線が読める。 */
- {const vh=(cv&&cv.height&&SCY>0)?cv.height/SCY:0;
+ if(cv&&cv.height&&SCY>0&&SC>0){
   const sp9=clamp(Math.hypot(B.vx,B.vy)/BUS_SP,0,1);
-  const fy9=Math.min(BUS_CAM_Y2,BUS_CAM_Y+(BUS_CAM_Y2-BUS_CAM_Y)*sp9*(nz9?1.2:1));
-  camTo(B.x+B.vx*BUS_CAM_X,B.y-vh*fy9);}
+  /* ⚠**バスの尻が画面の外へ出ない上限**を絵の大きさから出す(寸法が変わっても勝手に合う) */
+  const pMx=1-(BUS_R*1.16*SC)/cv.height;
+  const py9=Math.min(pMx,BUS_CAM_P+(BUS_CAM_P2-BUS_CAM_P)*Math.min(1,sp9*(nz9?1.25:1)));
+  /* ⚠⚠**camApply は VH(操作バーを除いた高さ)で中央を取るのに、こちらは cv.height で数える**。
+     ⭐だから割合から**世界の距離を引き算1回で出す**=決め打ちの割合を掛けるとバーの高さぶんずれる。 */
+  const dy9=(cv.height*py9-VH/2)/SCY;
+  /* ⚠⚠⭐**追従の遅れの打ち消しと、外へ出さない切り取りは `camLead` に任せる**(中身と理由は camStep)=
+     これが無いと「速いほど前へ出す」が遅れに食われ、**後退するとバスが画面の下へ落ちて消える**。
+     ⚠切り取りの範囲=バスが**画面の真ん中(下限)から pMx(下端の手前)まで**に必ず収まる距離。 */
+  camTo(B.x+B.vx*BUS_CAM_X,B.y-dy9);
+  camLead(B.vx,B.vy,B.y,(cv.height*.5-VH/2)/SCY,(cv.height*pMx-VH/2)/SCY);}
  /* ⚠**轢いている間の抵抗は「体数ぶん」効かせる**(2026-08-02(29))=一定だと群れに突っ込んでも
     素通りしているようにしか感じない。⭐**厚い所ほど減速する**と、押しのけている手応えが出る。
     ⚠止まってしまわないように下限を置く。 */
@@ -20497,7 +20527,10 @@ function drawBus(c,C,t){
  if(FXLV>0&&prtImg('glow')&&prtImg('glow').width){
   const a9=busAng(B),tx=Math.cos(a9),ty=Math.sin(a9);
   c.save();c.globalCompositeOperation='lighter';
-  prtDraw(c,'glow','#ffe6a8',B.x+tx*BUS_R*1.15,B.y+ty*BUS_R*1.15,BUS_R*1.25,.30,0);
+  /* ⚠**丸い光も縦の潰しを打ち消す**=打ち消さないとここだけ横長の楕円になり、
+     すぐ隣の閃光(打ち消し済み)と形が食い違う。 */
+  {c.save();c.translate(B.x+tx*BUS_R*1.15,B.y+ty*BUS_R*1.15);c.scale(1,iv9);
+   prtDraw(c,'glow','#ffe6a8',0,0,BUS_R*1.25,.30,0);c.restore();}
   if(B.flashT>0){const q=clamp(B.flashT/.16,0,1);
    c.save();c.translate(B.x+tx*BUS_R*.7,B.y+ty*BUS_R*.7);c.scale(1,iv9);
    prtDraw(c,'flar','#fff0d0',0,0,BUS_R*(1.5+(1-q)*1.2),q*.8,a9);c.restore();}
