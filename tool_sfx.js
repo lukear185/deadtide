@@ -138,6 +138,25 @@ const REC=[
  {k:'crush4',  d:.14, g:-5, r:1.0, af:'lowpass=f=2400,equalizer=f=190:t=q:w=1.0:g=6',
   mix:[{f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.14,g:-3,r:.72},
        {f:'Metal Hit Thud Thump Low Ring',t:0,d:.12,g:-17,r:1.25,dl:0}]},
+ /* ⭐⭐⭐**本物のゴア素材に差し替え**(2026-08-02(33)ユーザー「商用OKで無料なら使ってもいいよ」)。
+    ⚠⚠**それまでは氷で骨を、小さな爆発で肉を代用していた**=バンドル本体(5つのzip・347本)を
+      開いていなかったのが原因。**そのものずばりの素材が入っていた**:
+      `GORESplt_Gore Designed Heavy Impact Smash` / `WOODImpt_Hit Blood Spill Splat ... Squelch`
+      / `FGHTImpt_4 x Punch, Body`(肉を殴る音)。
+    ⭐**1体ずつ=血しぶきの潰れ+肉を殴る芯**。**まとめ=ゴアのスマッシュ**。
+    ⚠**素材は sfx_src に取り出してある**(zipから必要な物だけ。生WAVはリポジトリに入れない)。 */
+ {k:'crush5',  d:.17, g:-4, r:1.0, af:'lowpass=f=3200,equalizer=f=210:t=q:w=1.0:g=4',
+  mix:[{f:'Blood Spill Splat Wood Impact',t:0,d:.17,g:-2,r:.95},
+       {f:'4 x Punch, Body',t:0,d:.14,g:-8,r:1.10,dl:0}]},
+ {k:'crush6',  d:.18, g:-4, r:1.0, af:'lowpass=f=2800,equalizer=f=180:t=q:w=1.0:g=5',
+  mix:[{f:'Blood Spill Splat Wood Impact',t:0,d:.18,g:-3,r:1.18},
+       {f:'4 x Punch, Body',t:2,d:.16,g:-7,r:.85,dl:4}]},
+ /* まとめ轢き=**本物のゴア・スマッシュ**(1試合で数十回しか鳴らないので厚く鳴らしてよい) */
+ {k:'smash4',  d:.55, g:-2, r:1.0, af:'highpass=f=45:p=2,lowpass=f=6000',
+  mix:[{f:'Gore Designed Transient Heavy Impact Smash',t:0,d:.55,g:-1,r:.92},
+       {f:'4 x Punch, Body',t:1,d:.30,g:-8,r:.80,dl:0}]},
+ /* ⭐**本物のタイヤのきしみ**(急に曲がった時だけ1回)。⚠長い素材なので頭を0.85秒だけ切る */
+ {k:'skid',    f:'Tire Skids on Gravel', t:0, d:.85, g:-6, r:1.0},
  /* ⭐🚌**まとめて轢いた瞬間の「ゴシャアッ」**(2026-08-02(25)ユーザー「もっと轢いてる感が欲しい。
     SEとかVFXってもういい感じのないかな?」)。⚠**1体ずつの音(`crush`)とは別**=
     こちらは1試合で数十回しか鳴らない見せ場用なので、素材を使って厚く鳴らしてよい。
