@@ -2517,9 +2517,16 @@ function checkBonus(){
   scArr(si)[BNS_D]=0;
   META.stg=si;setDiff=BNS_D;startSolo();
   const me=G.players[0];
-  if(!LANES||LANES.length!==4){console.log('FAIL: ボーナス面の道が4本ない');process.exit(1);}
-  for(const L of LANES)if(Math.abs(L.len-LANES[0].len)>1){
-   console.log('FAIL: ボーナス面のレーンの長さが揃っていない');process.exit(1);}
+  /* ⭐**道は「ほぼ縦の一直線」1本**(2026-08-02(24)ユーザー決定) */
+  if(!LANES||LANES.length!==1){console.log('FAIL: 道中の道が1本ではない');process.exit(1);}
+  if(!(LANES[0].len>MAPH*.9)){console.log('FAIL: 道がマップの縦を貫いていない '+Math.round(LANES[0].len));process.exit(1);}
+  for(const s of LANES[0].seg)if(Math.abs(s.b[0]-s.a[0])>Math.abs(s.b[1]-s.a[1])*.25){
+   console.log('FAIL: 道が縦になっていない(横に振れすぎ)');process.exit(1);}
+  /* ⚠**進む向き**=道に沿った距離が増えるほど下(=ゾンビは上から下りてくる) */
+  if(!(LANES[0].seg[0].a[1]<LANES[0].seg[LANES[0].seg.length-1].b[1])){
+   console.log('FAIL: 道の向きが逆(ゾンビが後ろから来る)');process.exit(1);}
+  /* ⚠**タレット置き場は1つも無い**(拠点防衛を外した面) */
+  for(const s of SLOTS)if(s[0]>-9000){console.log('FAIL: 道中にタレット置き場が残っている');process.exit(1);}
   if(diffW(BNS_D)!==1){console.log('FAIL: ボーナス面が1波で終わらない');process.exit(1);}
   if(me.uUn!==0){console.log('FAIL: ボーナス面で兵科が出せる');process.exit(1);}
   /* team は空にしない(空配列だと作戦タイムの強化カードが undefined を触って止まる) */
@@ -2533,13 +2540,17 @@ function checkBonus(){
   try{localStorage.removeItem(RUN_KEY);}catch(e){}
   saveRun();
   if(localStorage.getItem(RUN_KEY)){console.log('FAIL: ボーナス面が中断できてしまう(再開で周回できる)');process.exit(1);}
-  /* ②敵が4本すべてに散る */
+  /* ②⭐**敵はバスの少し先に湧く**(2026-08-02(24))=走っても密度が落ちない形になっていること */
   nextWave();
-  /* ⚠**設置の猶予(BNS_LEAD=30秒)を回し切ってから見る**=短いと1体も湧かないまま「四方に散っていない」で落ちる */
-  for(let k=0;k<1400&&G.tide.pool.length;k++)tideStep(.05);
-  const lns={};for(const z of me.zombies)lns[z.ln]=(lns[z.ln]||0)+1;
-  if(Object.keys(lns).length!==4){
-   console.log('FAIL: 敵が四方に散っていない レーン別='+JSON.stringify(lns));process.exit(1);}
+  for(let k=0;k<1400&&me.zombies.length<60;k++)tideStep(.05);
+  if(me.zombies.length<20){console.log('FAIL: 道中に敵が湧かない '+me.zombies.length);process.exit(1);}
+  {const bd=projPath(me.bus.x,me.bus.y);let bad=0;
+   for(const z of me.zombies){if(z.d>bd-BNS_AHEAD+400||z.d<bd-BNS_AHEAD2-400)bad++;}
+   if(bad>me.zombies.length*.1){
+    console.log('FAIL: 敵がバスの先に湧いていない '+bad+'/'+me.zombies.length);process.exit(1);}}
+  /* ⚠**後ろへ抜けた敵は耐久を削らない**(すれ違っただけ) */
+  {const c0=me.core;const z9=me.zombies[0];z9.d=PLEN+10;campStep(me,.05,1);
+   if(me.core<c0){console.log('FAIL: すれ違った敵でバスの耐久が減る');process.exit(1);}}
   /* ③バスがタップした所へ走って敵を轢く */
   /* 湧いた直後の敵は d が負(道の手前)。少し歩かせてから見る=画面の座標もここで入る */
   for(let k=0;k<20;k++)campStep(me,.05,1);
@@ -2550,9 +2561,9 @@ function checkBonus(){
   const hp0=z0.hp;bnsBusStep(me,.2);
   if(!(z0.hp<hp0||z0.dead)){console.log('FAIL: バスが敵を轢いていない');process.exit(1);}
   /* スティックを右へ倒したら、加速して右へ動くか(重い車=すぐ最高速にはならない)
-     ⚠**拠点の真ん中に置いてから見る**=森はバスが通れないので、街路から外れた所だと
+     ⚠**道の真ん中に置いてから見る**=森はバスが通れないので、道から外れた所だと
        通路の縁で押し戻されて「走り出さない」に見える */
-  me.bus.x=BNS_CX;me.bus.y=BNS_CY;
+  me.bus.x=BNS_CX;me.bus.y=BNS_CY;me.bus.arr=0;
   me.bus.vx=0;me.bus.vy=0;bnsStick(1,0);
   const bx0=me.bus.x;bnsBusStep(me,.2);
   if(!(me.bus.vx>0&&me.bus.x>bx0)){console.log('FAIL: スティックで走り出さない');process.exit(1);}
@@ -2562,6 +2573,15 @@ function checkBonus(){
   if(!(me.bus.vx>0&&me.bus.vx<v1)){console.log('FAIL: 離した時に惰性が無い');process.exit(1);}
   for(let k=0;k<200;k++)bnsBusStep(me,.05);
   if(Math.abs(me.bus.vx)>4){console.log('FAIL: いつまでも止まらない');process.exit(1);}
+  /* ⭐**到着=クリア**(2026-08-02(24))=上の到着線に触れたら、残りの敵と湧く予定が消えて試合が終わる */
+  {me.bus.arr=0;me.bus.x=BNS_CX;me.bus.y=BNS_GOALY+100;me.bus.vx=0;me.bus.vy=0;
+   bnsBusStep(me,.05);
+   if(!me.bus.arr){console.log('FAIL: 到着線に着いても到着にならない');process.exit(1);}
+   if(G.tide.pool.length){console.log('FAIL: 到着したのに湧く予定が残っている');process.exit(1);}
+   if(me.zombies.some(z=>!z.dead)){console.log('FAIL: 到着したのに敵が残っている');process.exit(1);}
+   G.tide.bnsTpl=null;
+   campStep(me,.05,1);
+   if(!me.waveDone){console.log('FAIL: 到着しても制圧にならない(試合が終わらない)');process.exit(1);}}
   /* ⑤報酬は初回だけ */
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   const gm1=META.gem,pt1=META.pts;
@@ -2575,7 +2595,7 @@ function checkBonus(){
   if(LANES){console.log('FAIL: ボーナス面を出てもレーンが残っている');process.exit(1);}
  }
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;
- console.log('🚌ボーナス面: ステージ'+STAGES.length+'面ぶん(四方4本・長さ揃い/兵科と英雄なし/バスで轢ける/遊べば次が開く/報酬は初回だけ/中断できない) OK');
+ console.log('🚌道中: ステージ'+STAGES.length+'面ぶん(縦一直線1本/置き場なし/バスの先に湧く/すれ違いは無傷/到着でクリア/遊べば次が開く/報酬は初回だけ/中断できない) OK');
 }
 /* ⭐⭐**米粒ゾンビと轢き応え**(2026-08-02(2)ユーザー①)。見るのは6つ:
    ①数百体が盤面に乗ること+米粒の描き方が例外を出さずに通ること
@@ -2694,23 +2714,10 @@ function checkRice(){
    console.log('FAIL: 建物が通路の中に立っている');process.exit(1);}
   for(const t of BTREE)if(!bnsFreeAt(t.x,t.y,0)){
    console.log('FAIL: 木が通路の中に立っている');process.exit(1);}
-  /* ⭐⭐**タレット置き場=建物の屋上**(2026-08-02(5))。見るのは3つ:
-     ①枠が ECO_BASE ぶんあること ②枠が**屋根つきの建物か拠点の上**にあること
-     ③そこにいつもどおり建てられること(何を建てるかはプレイヤーが選ぶ) */
-  {if(BBLD.filter(b=>b.rf).length<14){
-    console.log('FAIL: 屋根つきの建物(タレット置き場)が足りない '+BBLD.filter(b=>b.rf).length);process.exit(1);}
-   let out9=0;
-   for(let i=0;i<ECO_BASE;i++){const s=SLOTS[i];if(!s||s[0]<-9000)continue;
-    if(dist(s[0],s[1],BNS_CX,BNS_CY)<OUT_R)continue;/* 拠点(司令部)の屋上 */
-    if(!BBLD.some(b=>b.rf&&Math.abs(b.x-s[0])<2&&Math.abs(b.y-s[1])<2))out9++;}
-   if(out9){console.log('FAIL: 建物の屋上に乗っていない枠が'+out9+'個');process.exit(1);}
-   /* 屋上の枠に普通に建てられるか(=自動ではなくプレイヤーが選ぶ形に戻っていること) */
-   m5.scrap=99999;
-   let si9=-1;for(let i=0;i<ECO_BASE;i++)if(!m5.towers[i]&&SLOTS[i]&&SLOTS[i][0]>-9000){si9=i;break;}
-   if(si9<0){console.log('FAIL: 空いている屋上が無い');process.exit(1);}
-   if(!buildTower(m5,si9,0)){console.log('FAIL: 屋上にタレットを建てられない');process.exit(1);}
-   if(!m5.towers[si9]){console.log('FAIL: 建てたのに屋上に乗っていない');process.exit(1);}
-   m5.towers[si9]=null;}
+  /* ⚠⚠**タレット置き場は 2026-08-02(24) に丸ごと外した**(走り抜ける面になったため)。
+     ⭐**1つも残っていないこと**を見る(書き戻しの検出)。 */
+  {for(const s of SLOTS)if(s[0]>-9000){
+    console.log('FAIL: 道中にタレット置き場が残っている');process.exit(1);}}
   /* ⑪ 🏚⭐**入れる廃墟**(2026-08-02(12))。見るのは5つ:
      ①数がある ②通路の中に立っていない ③タレット置き場を兼ねていない(=枠に化けていない)
      ④入口の前に立つ点が建物の外で、街路の側を向いている ⑤棟どうしが重なっていない */
@@ -2791,62 +2798,58 @@ function checkRice(){
    if(Math.abs(z.off||0)>w5+1)wo++;}
   if(wo){console.log('FAIL: 通路からはみ出した敵が'+wo+'体');process.exit(1);}}
  backTitle();
- /* ⑩⭐**一度に濃く来るのは1方向だけ**=バス1台で対応できるようにするための肝 */
+ /* ⑩⭐**着くまで湧きが絶えない**(2026-08-02(24))=距離で終わる面なので、
+    用意した体数が尽きても写し(bnsTpl)から積み直されること。⚠着いたら積まないこと。 */
  META.stg=0;setDiff=BNS_D;startSolo();
  {nextWave();
-  const P=G.tide.pool;
-  if(P.length<200){console.log('FAIL: 波が短すぎて濃さを測れない');process.exit(1);}
-  const win=P.slice(80,180),cn={};
-  for(const e of win)cn[e.ln]=(cn[e.ln]||0)+1;
-  const top=Math.max.apply(null,Object.keys(cn).map(k=>cn[k]));
-  if(top<win.length*.7){console.log('FAIL: 濃い道が1本に寄っていない '+JSON.stringify(cn));process.exit(1);}
-  if(Object.keys(cn).length<2){console.log('FAIL: 他の道に1体も流れていない(四方から来る絵が死ぬ)');process.exit(1);}
-  const lns={};for(const e of P)lns[e.ln]=1;
-  if(Object.keys(lns).length!==4){console.log('FAIL: 波の中で4本すべてが濃くなっていない');process.exit(1);}
-  /* 予告(hotLn)が立つか */
-  const m6=G.players[0];
-  for(let k=0;k<1400&&G.tide.hotLn==null;k++)tideStep(.05);/* ⚠設置の猶予ぶんを回し切る */
-  if(G.tide.hotLn==null){console.log('FAIL: 濃い道の予告(hotLn)が立たない');process.exit(1);}
-  if(!bnsDirN(G.tide.hotLn)){console.log('FAIL: 予告の方角が出ない');process.exit(1);}
-  if(!m6){console.log('FAIL: 拠点が無い');process.exit(1);}}
+  const T=G.tide,m6=G.players[0];
+  if(!T.bnsTpl||T.bnsTpl.length<50){console.log('FAIL: 湧きの写しが用意されていない');process.exit(1);}
+  T.pool.length=0;T.lead=0;
+  tideStep(.05);
+  if(!T.pool.length){console.log('FAIL: 体数が尽きたのに補充されない(道が空になる)');process.exit(1);}
+  m6.bus.arr=1;T.pool.length=0;
+  tideStep(.05);
+  if(T.pool.length){console.log('FAIL: 到着した後も湧きが積まれる');process.exit(1);}}
  backTitle();
- /* ⑦⚠**漏れの知らせは間引く**=数百体が拠点へ届く面なので、1体ずつ音と揺れを出すと鳴りっぱなしになる。
-    ⚠**コアの減りは1体ずつそのまま**(知らせを間引いただけで手加減はしていないこと) */
+ /* ⑦⭐**負けるのはバスが潰される時だけ**(2026-08-02(24))。見るのは2つ:
+    a)すれ違って後ろへ抜けた敵は**1も削らない** b)群れに埋もれると耐久が減る */
  META.stg=0;setDiff=BNS_D;startSolo();
- /* ⚠**バスを遠ざけてから見る**=バスは拠点のすぐ脇から始まるので、そのままだと
-    拠点に届いた敵をバスが先に轢いてしまい、漏れが1件も起きない(実際に踏んだ) */
- /* ⚠バスは**街路の上**へ逃がすこと=森はバスが通れないので、適当な座標に置くと
-    次の一歩で通路の縁へ引き戻され、拠点のすぐ脇に戻ってきてしまう */
- {const m4=G.players[0];m4.fx.length=0;m4.zlkT=-9;m4.zombies.length=0;
-  {const p4=pathPos(200,0);m4.bus.x=p4[0];m4.bus.y=p4[1];m4.bus.vx=0;m4.bus.vy=0;}
+ {const m4=G.players[0];m4.fx.length=0;m4.zombies.length=0;
+  {const p4=pathPos(PLEN*.5,0);m4.bus.x=p4[0];m4.bus.y=p4[1];m4.bus.vx=0;m4.bus.vy=0;}
   for(let k=0;k<20;k++)m4.zombies.push(mkZ(zSpec(0,.02,1),PLEN+10));
   const c4=m4.core;
   campStep(m4,.05,1);
-  const nl=m4.fx.filter(e=>e.k==='leak').length;
-  if(nl>1){console.log('FAIL: 漏れの知らせが1体ずつ出ている '+nl+'件');process.exit(1);}
-  if(c4-m4.core<20){console.log('FAIL: 知らせを間引いたらコアの減りまで減った '+(c4-m4.core));process.exit(1);}}
+  if(m4.core!==c4){console.log('FAIL: すれ違った敵で耐久が減る '+(c4-m4.core));process.exit(1);}
+  /* b)埋もれる=バスの真上に大量に置いて時間を進める */
+  m4.zombies.length=0;
+  for(let k=0;k<40;k++){const z4=mkZ(zSpec(0,4,1),PLEN*.5);z4.ln=0;z4.hp=z4.mhp=99999;
+   z4.px=m4.bus.x;z4.py=m4.bus.y;m4.zombies.push(z4);}
+  const c5=m4.core;
+  for(let k=0;k<40;k++){for(const z of m4.zombies){z.px=m4.bus.x;z.py=m4.bus.y;}bnsBusStep(m4,.05);}
+  if(!(m4.core<c5)){console.log('FAIL: 群れに埋もれても耐久が減らない');process.exit(1);}
+  console.log('🚌耐久: すれ違いは無傷 / 40体に埋もれて2秒で '+(c5-m4.core)+' 減る(全'+m4.coreMax+') OK');}
  backTitle();
- /* ⑧⚠⚠**波が必ず終わる**=体数を15倍にしたので「いつまでも決着しない」が一番怖い。
-    コアを落とさずに放っておいても、湧き切って歩き切って必ず片が付くか(尺の目安もここで出す) */
- let bsec=0,bkil=0,bdie=0;
+ /* ⑧⚠⚠**走れば必ず着く**(2026-08-02(24))=距離で終わる面なので、
+    「いつまでも着かない」「途中で勝手に終わる」の両方が怖い。⭐上へ倒し続けて実走する。 */
+ let bsec=0,bkil=0,bdmg=0;
  META.stg=0;setDiff=BNS_D;startSolo();
  {const m3=G.players[0];
   nextWave();
-  let done=0,dmg9=0;
-  for(let k=0;k<5000;k++){
-   /* ⚠尺だけ見たいのでコアは落とさない。⭐ただし**受けた量は数えておく**
-      =「無防備なら何秒でコアが尽きるか」が立ち上がりのきつさの目安になる */
-   dmg9+=(m3.coreMax-m3.core);m3.core=m3.coreMax;
-   if(!bdie&&dmg9>=m3.coreMax)bdie=bsec;
-   try{gameStep(.05);}catch(e){console.log('FAIL: 🚌開拓便の実走で例外 '+e.message);process.exit(1);}
+  let done=0;
+  for(let k=0;k<8000;k++){
+   /* ⚠尺だけ見たいので耐久は落とさない。⭐**受けた量は数えておく**=きつさの目安 */
+   bdmg+=(m3.coreMax-m3.core);m3.core=m3.coreMax;
+   bnsStick(0,-1);/* 上(次の拠点)へ倒しっぱなし */
+   try{gameStep(.05);}catch(e){console.log('FAIL: 🚌道中の実走で例外 '+e.message);process.exit(1);}
    bsec+=.05;
-   if(!G.tide.pool.length&&!m3.zombies.length){done=1;break;}
+   if(m3.bus.arr&&m3.waveDone){done=1;break;}
   }
-  bkil=m3.totalWave||0;
-  if(!done){console.log('FAIL: 🚌開拓便の波が終わらない('+Math.round(bsec)+'秒 残り pool='+G.tide.pool.length+' 盤面='+m3.zombies.length+')');process.exit(1);}
-  /* ⚠ここは**「決着しない」を捕まえるための番人**であって、尺の good/bad を決める線ではない
-     ([[CLAUDE]]の「1試合が長いことは問題ではない」)。足の速さを戻して178秒になったので余裕を持たせた。 */
-  if(bsec>260){console.log('FAIL: 🚌開拓便が長すぎる(決着しない疑い) '+Math.round(bsec)+'秒');process.exit(1);}}
+  bkil=m3.bus.kill||0;
+  bnsStick(0,0);
+  if(!done){console.log('FAIL: 上へ走り続けても次の拠点に着かない('+Math.round(bsec)+'秒 残り '
+   +Math.round((m3.bus.y-BNS_GOALY)/10)+'m)');process.exit(1);}
+  /* ⚠ここは**「終わらない」を捕まえるための番人**であって、尺の good/bad を決める線ではない */
+  if(bsec>400){console.log('FAIL: 🚌道中が長すぎる '+Math.round(bsec)+'秒');process.exit(1);}}
  backTitle();
  /* ⑥ 本編は今までどおり(米粒の細工が漏れていないこと) */
  META.stg=0;setDiff=2;startSolo();
@@ -2861,10 +2864,10 @@ function checkRice(){
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;FXLV=fx0;
  console.log('🧟米粒ゾンビ: 盤面'+live.length+'体(上限'+BNS_CAP+')/描画は例外なし/跡は上限どまり(血'+me.bstn.length+'・肉'+me.bchk.length+'・轍'+me.btrk.length+')/'
   +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
- console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所3か所で通路'+BNS_OFF+'→'+BNS_GATW
-  +'/敵は通路の外へ出ない/濃い道は一度に1本+予告あり/置き場は建物の屋上)');
- console.log('  (🚌開拓便の尺: 全'+bkil+'体を放っておいて '+Math.round(bsec)+'秒 で片が付く / '
-  +'⚠無防備(タレット0・バスは止めたまま)だと '+(bdie?Math.round(bdie)+'秒':'最後まで')+' でコアが尽きる)');
+ console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所'+BNS_GATE.length+'か所で道幅'+BNS_OFF+'→'+BNS_GATW
+  +'/敵は道の外へ出ない/タレット置き場は無し)');
+ console.log('  (🚌道中の尺: 上へ倒しっぱなしで '+Math.round(bsec)+'秒 で到着 / 轢いた数 '+bkil+'体 / '
+  +'受けた傷 '+Math.round(bdmg)+'(耐久400))');
 }
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
    見るのは4つ: ①型が21人ぶん全部あって、体も得物も動く値が入っているか

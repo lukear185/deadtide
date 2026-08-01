@@ -794,7 +794,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
   <div id="topbar">
     <div class="hudpanel" id="wavepanel"><span id="wavebadge">WAVE 1</span><div id="wprog"><i></i></div></div>
-    <div class="hudpanel" id="corepanel"><span>🏕</span><div id="corebar"><i></i></div><span id="corelbl">50</span></div>
+    <div class="hudpanel" id="corepanel"><span id="coreico">🏕</span><div id="corebar"><i></i></div><span id="corelbl">50</span></div>
     <div class="hudpanel" id="energybox">⚙️ 0</div>
     <div class="hudpanel" id="ptbox">🔩 0</div>
     <!-- ⭐部隊の枠(重さ)。2026-08-02に「体数」から「重さ」に変えたので、見えないと理屈が伝わらない -->
@@ -3065,27 +3065,44 @@ const isBns=()=>!!(G&&G.pveDiff===BNS_D);
    ⭐盤面の体数 ≒ **湧く速さ × 道を歩き切る時間(約17秒)**。BNS_GAP を詰めるほど濃くなる。
    ⚠**上限(BNS_CAP)は安全弁**=ここに当たると `tideStep` が湧かせるのを休むので、
      重くなりすぎる前に勝手に頭打ちになる。重ければまずここを下げる。 */
-const BNS_CAP=560;    /* 盤面に同時に出せる上限。⚠実機が重ければここを下げる */
-const BNS_GAP=.0175;  /* 次の1体までの秒数(=濃さ)。⚠小さいほど濃い */
-const BNS_GAP2=.14;   /* 9体に1回だけ入れる息継ぎ(塊と塊の切れ目) */
+/* ⚠⚠**2026-08-02(24)に 560→900 へ上げた**(ユーザー「ゾンビががっつりいる感じ」)=
+   道1本を走り抜ける形になったので、**進む先が埋まっていない**と面が成立しない。
+   ⚠**実機が重ければ一番先に下げるのはここ**。次が `BNS_GAP`(湧く間隔)。 */
+const BNS_CAP=900;    /* 盤面に同時に出せる上限。⚠実機が重ければここを下げる */
+/* ⭐**バスの何px先に湧かせるか**(2026-08-02(24))。⚠**画面の外**にすること
+   (寄り .42 で画面の縦半分は約470px。余裕を見て1500〜4200)。 */
+const BNS_AHEAD=1100,BNS_AHEAD2=2900;
+/* ⭐**バスの後ろこれだけ下がったら消す**=盤面の上限を「進む先」に使い切るための線。
+   ⚠画面の外(縦半分=約470)より十分後ろにすること。 */
+const BNS_BEHIND=1600;
+/* ⚠⚠**2026-08-02(24)に大きく詰めた**(.0175→.005)=走って進む面では、
+   **湧く速さがそのまま道の埋まり具合**になる(バスが進むぶん、前を埋め直し続ける必要がある)。
+   ⭐盤面が上限に達したら勝手に休むので、詰めても暴走はしない。 */
+const BNS_GAP=.005;   /* 次の1体までの秒数(=濃さ)。⚠小さいほど濃い */
+const BNS_GAP2=.05;   /* 9体に1回だけ入れる息継ぎ(塊と塊の切れ目) */
 /* ⚠**230→150に絞った**(2026-08-02(3)ユーザー「四方八方すぎて対応できない」)=
    広げるほど塊にはなるが、**道から溢れて「どこからでも来る」**になり、迎え撃つ場所が決まらない。
    ⭐いまは道幅の外に**導線(壁)**を置いてあるので、この値が**通路の幅**そのものになる。 */
 /* ⚠**2026-08-02(8)に 200→340 へ広げた**(ユーザー「もうちょい道を広くして、森はバスも通れなくするから」)
    =森がバスを止めるようになったので、**通路の幅がそのまま運転できる幅**になる。
    ⚠バスの幅は約280。通路680なら左右に200ずつ余裕があり、切り返しができる。 */
-const BNS_OFF=340;
-const BNS_LEAD=30;    /* 🚌開拓便だけ設置の猶予を長く(屋上に自分で建てるため) */
+/* ⚠⚠**2026-08-02(24)に道を1本の縦線にしたので大きく広げた**(340→1050)=
+   道が画面の主役になったので、**画面の幅の半分以上を道が占める**必要がある。
+   ⭐バス(幅280)が7台並ぶ幅=避ける/回り込む/塞ぐの全部が成立する。 */
+const BNS_OFF=1050;
+const BNS_LEAD=3;     /* 🚌道中は走り出すまでの間だけ(⚠建てる物が無いので長い猶予は要らない) */
 /* ⭐⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。
    道に沿って**3か所で通路が絞れる(関所)**。⚠**壁の絵はこの式から生やす**ので必ず一致する。
    ⭐関所は「バスで待ち構える場所」=群れが勝手に密集するので、そこを轢くのが一番おいしい。 */
-const BNS_GATE=[.28,.55,.80];/* 関所の位置(道に沿った割合) */
+/* ⚠**道が長くなったので数を増やした**(2026-08-02(24))=3か所だと1万px以上ただの直線が続く。
+   ⭐**4000pxおきくらいに絞り**があると、走っていて「次の関所で溜まっている」が生まれる。 */
+const BNS_GATE=[.12,.27,.42,.57,.72,.87];/* 関所の位置(道に沿った割合) */
 /* ⚠関所も広げる(80→200)=**バスが通れない関所を作らない**。
    ⭐バス(幅280)が関所(幅400)の7割を塞ぐので、「停めて蓋をする」がちょうど成立する。 */
 /* ⚠関所は 190 のまま(2026-08-02(10)に240へ広げかけたが戻した)=絞りが効かなくなる。
    ⭐**バスが詰まる問題は `BUS_CL` を緩めて解いた**=関所でもバスの中心は±175動ける。 */
-const BNS_GATW=190;          /* 関所での通路の幅(半分) */
-const BNS_GATR=.085;         /* 関所の前後どれだけかけて絞るか */
+const BNS_GATW=520;          /* 関所での通路の幅(半分)。⚠道幅を広げたぶん比を保って広げてある */
+const BNS_GATR=.05;          /* 関所の前後どれだけかけて絞るか(⚠数を増やしたぶん短くした) */
 function bnsCorrW(u){
  let w=BNS_OFF;
  for(let i=0;i<BNS_GATE.length;i++){
@@ -3100,9 +3117,12 @@ function bnsCorrW(u){
      (通路は corrW+16、拠点まわりは OUT_R+150、バスは corrW-95 と OUT_R+120-95…と食い違っていた)。
    ⭐**空き地の形は `bnsOpenW`/`bnsClr` の2本だけ**が決める。バスはそこから `BUS_CL` だけ内側まで。
      ⚠この2本を触ったら、地形もバスの当たりも自動で一致する。片方だけ直さないこと。 */
-const bnsOpenW=u=>bnsCorrW(u)+40;/* 街路の空き地の半幅(木の中心はここより外) */
-const BNS_CLRO=170;              /* 拠点の周りの空き地=OUT_R + これ */
-const bnsClr=()=>OUT_R+BNS_CLRO;
+const bnsOpenW=u=>bnsCorrW(u)+40;/* 道の空き地の半幅(木の中心はここより外) */
+/* ⚠**拠点まわりの円は 2026-08-02(24) に「道の両端の広場」へ置き換えた**(拠点が無くなったため)。
+   ⭐**出発点と到着点だけ道幅より広く開ける**=バスが向きを変えられる/到着が「広場に着いた」に見える。
+   ⚠**空き地の形を決める式はここと `bnsOpenW` の2本だけ**(地形もバスの当たりも必ずここから出す)。 */
+const BNS_ENDR=1500;
+const bnsEndD=(x,y)=>Math.min(Math.hypot(x-BNS_CX,y-BNS_GOALY),Math.hypot(x-BNS_CX,y-BNS_STARTY));
 /* その道が拠点から見てどちらか(予告の文言用)。⚠面ごとに道の向きが違うので決め打ちにしない */
 function bnsDirN(ln){
  const L=LANES&&LANES[ln];if(!L)return '';
@@ -14131,22 +14151,19 @@ function buildTide(wave){
  /* ⭐🚌ボーナス面=**四方の4本へ順に振り分ける**(2026-08-02)。
     ⚠**1体ずつ順ぐりに配る**=乱数で配ると片側だけ厚くなって「四方から来る」に見えない。
     ⚠**間隔(dl)も詰める**=小粒がなだれ込む面なので、いつもの間隔だと待ち時間ばかりになる。 */
+ T.bnsTpl=null;/* ⚠前の波の写しを残さない */
  if(isBns()&&LANES){
-  /* ⭐⭐**一度に濃く来るのは1方向だけ**(2026-08-02(3)ユーザー「四方八方すぎて対応できない」)。
-     ⚠それまでは1体ずつ4本へ均等に配っていたので、**バス1台では原理的に間に合わない**
-       (4か所で同時に起きていることに、1か所にしか居られない乗り物で応えろという形だった)。
-     ⭐**波を「区」に割って、濃い道を順に回す**=バスの仕事が「いま来ている方へ迎えに行く」になる。
-     ⚠**四方から来る絵は残す**=5体に1体は他の道へ流す(全部1本にすると残りの道が死んで見える)。
-     ⚠区の長さは**8秒前後**にする=短いと予告が間に合わず、長いと退屈になる。 */
-  const LN=LANES.length,BLK=Math.max(60,Math.round(pool.length/7));
+  /* ⭐**道は1本**(2026-08-02(24))=「どの道から来るか」は無くなった。
+     ⚠**間隔をぐっと詰める**=群れに見せるには「かたまりで湧く」必要がある。
+     ⚠1体ずつ等間隔だと、いくら数を増やしても**行列**にしかならない。
+     ⭐間隔は表(BNS_GAP/BNS_GAP2)から引く=濃さを1か所で調整できるようにした。 */
   for(let i=0;i<pool.length;i++){const e=pool[i];
-   const hot=Math.floor(i/BLK)%LN;
-   if(i%5===4&&LN>1){e.ln=(hot+1+(((i/5)|0)%(LN-1)))%LN;e.hot=0;}
-   else{e.ln=hot;e.hot=1;}
-   /* ⚠**間隔をぐっと詰める**=群れに見せるには「かたまりで湧く」必要がある。
-      ⚠1体ずつ等間隔だと、いくら数を増やしても**行列**にしかならない(参考画像は塊)。
-      ⭐間隔は表(BNS_GAP/BNS_GAP2)から引く=濃さを1か所で調整できるようにした */
+   e.ln=0;e.hot=0;
    if(!e.boss)e.dl=(i%9===0)?BNS_GAP2:BNS_GAP;}
+  /* ⭐⭐**着くまで湧きを絶やさないための写し**(2026-08-02(24))=道中は**距離で終わる面**なので、
+     用意した体数が尽きると**残りの道が空っぽ**になる(走るだけの時間ができる)。
+     ⚠ボスは写さない(何度も出てしまう)。⚠使うのは `tideStep` の補充だけ。 */
+  T.bnsTpl=pool.filter(e=>!e.boss).slice(-240).map(e=>({dl:e.dl,z:e.z,ln:0}));
  }
  for(let pi=0;pi<G.players.length;pi++){const P=G.players[pi];
   for(const s of P.inc.sent){for(let i=0;i<s.cnt;i++)pool.splice(ri(0,pool.length),0,{dl:.4,z:zSpec(s.zi,mul,wave,1,s.from),tgt:pi});}}
@@ -14203,6 +14220,13 @@ function tideStep(dt){
  if(!G.pve&&alive.length>1){const eq=100/alive.length;
   for(const i of alive){const d=eq-T.shares[i];T.shares[i]+=clamp(d,-1,1)*.45*dt;}
   normShares();}
+ /* ⭐🚌**道中は着くまで湧きを絶やさない**(2026-08-02(24))=距離で終わる面なので、
+    用意した体数が尽きたら写し(`bnsTpl`)から積み直す。⚠**着いたら積まない**(そこで終わり)。 */
+ if(!T.pool.length&&T.bnsTpl&&T.bnsTpl.length){
+  const m9=G.players[0];
+  if(m9&&m9.bus&&!m9.bus.arr&&!m9.dead)
+   for(const e of T.bnsTpl)T.pool.push({dl:e.dl,z:e.z,ln:e.ln});
+ }
  if(!T.pool.length)return;
  if(T.lead>0)T.lead=Math.max(0,T.lead-dt);/* 設置タイムの残り */
  T.qt-=dt;let guard=0;
@@ -14225,7 +14249,15 @@ function tideStep(dt){
   /* ⚠**横のずれ(off)と前後のずれ(d)は湧く時に決める**=群れを「行列」から「塊」にする唯一の値。
      ⭐2026-08-02(2): 体数を15倍にしたのでばらけ幅も広げた(150→BNS_OFF / 120→320)
        =広げないと道の上に敵が積み重なって**1本の帯**にしか見えない。 */
-  {const z9=mkZ(e.z);if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-BNS_OFF,BNS_OFF);z9.d-=rnd(0,320);}C.zombies.push(z9);}
+  /* ⭐⭐⭐**道中は「バスの少し先」に湧かせる**(2026-08-02(24))。
+     ⚠道の端から湧かせると、走っている本人の周りが**空っぽ**になる(進むほど置いていかれる)。
+     ⭐**いつも進行方向の少し外**に湧かせると、走り続けても密度が変わらない。
+     ⚠**画面の外で湧かせる**(1500以上先)=目の前で湧くと「ぽんと現れた」になる。 */
+  {const z9=mkZ(e.z);
+   if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-BNS_OFF,BNS_OFF);z9.d-=rnd(0,320);}
+   if(C.bus&&LANES){const bd9=projPath(C.bus.x,C.bus.y);
+    z9.d=clamp(bd9-rnd(BNS_AHEAD,BNS_AHEAD2),0,PLEN);}
+   C.zombies.push(z9);}
   /* ⭐**濃い道が変わったら予告する**(2026-08-02(3))=見せないとただの当たり外れになる。
      ⚠**濃い側の1体が湧いた時にだけ見る**=薄く流している1体で切り替わると予告が嘘になる。 */
   if(e.hot&&T.hotLn!==e.ln){T.hotLn=e.ln;
@@ -15555,6 +15587,10 @@ function campStep(C,dt,wave){
     if(C.isMe){sfx.leak();dmgFlash();}
     if(C.core<=0){C.core=0;C.dying=true;addFx(C,'boomL',CORE[0],CORE[1],'');}}
    continue;}
+  /* ⭐⭐**道中(バスの面)は「後ろへ抜けた敵」は何もしない**(2026-08-02(24))=
+     守る拠点が無いので漏れという概念が無い。**すれ違って置き去りにしただけ**なので静かに消す。
+     ⚠ここを通すと道の下端に着いた敵が耐久を削り、走っているだけで負ける面になる。 */
+  if(C.bus&&z.d>=PLEN){z.dead=true;continue;}
   if(z.d>=PLEN){z.dead=true;z.leaked=true;C.core-=z.dmg;
    /* ⚠⚠**米粒(🚌開拓便の雑魚)は「漏れた時の知らせ」も間引く**(2026-08-02(2))=
       この面は数百体が拠点へ届く前提なので、1体ずつ **音+赤い明滅+画面揺れ+粒14個+輪** を出すと
@@ -16238,7 +16274,9 @@ function campStep(C,dt,wave){
  /* ゾンビ環境音: 数に応じてうめき */
  if(C.isMe&&C.zombies.length&&Math.random()<dt*Math.min(.45,.06+C.zombies.length*.012))sfx.moan();
  /* 🛠編集モードは敵が1体も出ないので、ウェーブが即終了して波だけ進むのを止める */
- if(!EDIT&&!C.zombies.length&&G&&!G.tide.pool.length&&!C.waveDone&&!C.dying){C.waveDone=true;awardWavePts(C,false);
+ /* ⚠⚠**道中は「着くまで終わらない」**(2026-08-02(24))=盤面が空になっただけで制圧にすると、
+    敵を倒し切った瞬間に道の途中でクリアになる(=走り抜ける面として成立しない)。 */
+ if(!EDIT&&!C.zombies.length&&G&&!G.tide.pool.length&&!C.waveDone&&!C.dying&&!(C.bus&&!C.bus.arr)){C.waveDone=true;awardWavePts(C,false);
   if(C.isMe){sfx.clearJ();UI.banner('🛡 WAVE '+(G?G.wave:'')+' 制圧!');}}
 }
 /* ============ 購入 ============ */
@@ -16703,7 +16741,11 @@ function renderCamp(C,t){
     ⚠舗装路をやめて「踏み固めた土」に変えてもダメだった=**拠点から4方向へ伸びる帯**である限り、
       何色で塗ってもX字の記号に見える。⭐**通れる所は建物と森の隙間**だけで語らせる。
     ⚠代わりに「どこから来るか」は**画面の縁の矢印**(`drawBnsWarn`)とミニマップで見せる。 */
- if(C.bus){/* 何も描かない */}
+ /* ⭐⭐**2026-08-02(24)から道中は「道路」を描く**(ユーザー「道路はほぼ縦の一直線」)。
+    ⚠**2026-08-02(6)に道を消したのは「拠点から四方へ伸びる帯」がX字の記号に見えたから**であって、
+      道そのものが悪かったわけではない。**走る道が1本だけ**なら、それは記号ではなく舞台になる。
+    ⭐**幅は `bnsCorrW` から出す**=関所で道が細くなるのが絵でそのまま読める(1か所で済む)。 */
+ if(C.bus){try{drawBnsRoad(c,C);}catch(e){}}
  else{
  c.strokeStyle='rgba(0,0,0,.22)';c.lineWidth=104;roadPath();c.stroke();/* 路肩の影 */
  c.strokeStyle=mix('#6b6459','#39362f',dk*.5);c.lineWidth=98;roadPath();c.stroke();/* 縁石 */
@@ -16746,14 +16788,18 @@ function renderCamp(C,t){
    c.beginPath();c.moveTo(bx-28,by);c.lineTo(bx,by-32);c.lineTo(bx+28,by);c.closePath();c.fill();c.stroke();
    c.fillStyle=PANE;c.font='900 20px '+FF;c.textAlign='center';c.fillText('P'+(i+1),bx,by-6);
   }}
- /* 侵入口 */
+ /* 侵入口(⚠🚌道中は出さない=道の上端は「次の拠点」なので☣の札は嘘になる) */
+ if(!C.bus){
  c.save();c.translate(PATH[0][0]-45,PATH[0][1]);
  c.fillStyle=GOLD2;c.lineWidth=3;c.strokeStyle=INK;
  rr(c,-24,-86,48,40,6);c.fill();c.stroke();
  c.fillStyle=INK;c.font='900 26px '+FF;c.textAlign='center';c.fillText('☣',0,-56);
  c.restore();
- /* 🚌開拓便は**拠点が建物**=タレットはその壁と屋上に据える(2026-08-02ユーザー指示) */
- if(LANES)drawOutpost(c,CORE[0],CORE[1],t);
+ }
+ /* ⭐🚌**道中は拠点もコアも描かない**(2026-08-02(24))=守る物はバスだけ。
+    代わりに**出発点と到着点(次の拠点)**を描く。 */
+ if(C.bus){try{drawBnsEnds(c,C,t);}catch(e){}}
+ else{
  /* シェルター(コア) */
  const [cx,cy]=CORE;
  c.fillStyle='rgba(232,163,61,'+(0.16+0.07*Math.sin(t*6))+')';c.beginPath();c.arc(cx,cy,68,0,7);c.fill();
@@ -16768,6 +16814,7 @@ function renderCamp(C,t){
  const htx='🏕 '+Math.ceil(C.core)+' / '+C.coreMax;
  c.fillStyle='#fff';c.strokeStyle=INK;c.lineWidth=4;c.textAlign='center';
  drawIcoText(c,htx,cx+4,cy-112,22);c.lineWidth=3;
+ }
  /* 工房エリアの看板。⚠🚌開拓便では工房を使わないので出さない(盤面の真ん中に札が残って邪魔だった) */
  if(!LANES){const [ex0,ey0]=SLOTS[ECO_BASE];
   /* 看板は枠の下に置く(マップ上端が画面上部のHUDに隠れるため) */
@@ -17441,7 +17488,9 @@ function renderCamp(C,t){
   const lite=(x,y,r,a)=>{const g2=c.createRadialGradient(x,y,0,x,y,r);
    g2.addColorStop(0,'rgba(0,0,0,'+a+')');g2.addColorStop(.55,'rgba(0,0,0,'+(a*.45)+')');g2.addColorStop(1,'rgba(0,0,0,0)');
    c.fillStyle=g2;c.beginPath();c.arc(x,y,r,0,7);c.fill();};
-  lite(cx,cy,150,.95);/* 拠点の灯り */
+  /* 拠点の灯り(⚠🚌道中は拠点が無いので**バスのヘッドライト**を灯りにする) */
+  if(C.bus)lite(C.bus.x,C.bus.y,300,.95);
+  else lite(CORE[0],CORE[1],150,.95);
   if(FXLV>0){
    for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
     lite(SLOTS[si][0],SLOTS[si][1],62,.35);/* 常夜灯 */
@@ -17532,7 +17581,10 @@ function renderCamp(C,t){
   c.fillStyle=PANE;c.font='900 30px '+FF;c.textAlign='center';c.fillText('👁 '+specName()+' の拠点を観戦中 — 画面タップで戻る',MW/2,215);}
  if(C.bus)try{drawBnsRush(c,C);}catch(e){}/* ⚠速度線は矢印より先(矢印を薄めないように) */
  if(C.bus)try{drawBnsWarn(c,C);}catch(e){}/* ⚠ミニマップより先(縁の矢印が地図の下に潜らないように) */
- if(CAM)drawMiniMap(c,C);/* 🗺カメラが動く面だけ(いま自分がどこに居るか) */
+ /* 🗺カメラが動く面だけ。⚠⚠**🚌道中では出さない**(2026-08-02(24))=縦26000のマップだと
+    地図が細長い帯になって画面の右側を丸ごと潰すうえ、道が1本なので**見て分かることが何も無い**
+    (どこまで来たかは HUD の「あと○m」で足りる)。 */
+ if(CAM&&!C.bus)drawMiniMap(c,C);
 }
 /* ⭐⭐⭐**走っている感じ**(2026-08-02(23)「圧倒的爽快感」)。⚠**画面の座標で描く**。
    ⭐入れたのは3つだけ=①速さに応じた**流れる線** ②ニトロ中の**縁の橙**
@@ -17586,6 +17638,72 @@ function bnsHud(C){
  if(st!==BNIT_R){BNIT_R=st;
   el.classList.toggle('rdy',st===1);el.classList.toggle('on',st===2);
   const u=el.lastElementChild;if(u)u.textContent=st===2?'噴射中':st===1?'押せる!':'ニトロ';}
+}
+/* ⭐**道路そのもの**(2026-08-02(24))。⚠**幅は `bnsCorrW` から出す**=絵と当たりが必ず一致する。
+   ⚠**画面に掛かる範囲だけ**を刻む(道は2万px以上あるので全部刻むと無駄)。
+   ⚠毎フレーム描くが、点は60個ほどなので重さは無視できる(地形の焼き込みには入れない=道は幅が可変)。 */
+function drawBnsRoad(c,C){
+ const L=LANES&&LANES[0];if(!L)return;
+ const wy0=(-OY)/SC-300,wy1=(cv.height-OY)/SC+300;
+ /* 画面に掛かる u の範囲(道はほぼ縦なので y から出せる) */
+ const u0=clamp((wy0-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1);
+ const u1=clamp((wy1-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1);
+ if(!(u1>u0))return;
+ const N=48,PT=[];
+ for(let i=0;i<=N;i++){
+  const u=u0+(u1-u0)*i/N,p=pathPos(L.len*u,0),w=bnsCorrW(u);
+  PT.push([p[0],p[1],w]);
+ }
+ const band=(k,st)=>{c.fillStyle=st;c.beginPath();
+  c.moveTo(PT[0][0]-PT[0][2]*k,PT[0][1]);
+  for(let i=1;i<PT.length;i++)c.lineTo(PT[i][0]-PT[i][2]*k,PT[i][1]);
+  for(let i=PT.length-1;i>=0;i--)c.lineTo(PT[i][0]+PT[i][2]*k,PT[i][1]);
+  c.closePath();c.fill();};
+ band(1.13,'rgba(0,0,0,.20)');      /* 路肩の影 */
+ band(1.00,'#8d8371');              /* 踏み固めた路肩 */
+ band(.90,'#6f6a60');               /* 舗装 */
+ band(.62,'rgba(120,116,106,.55)'); /* 轍で摩耗した真ん中 */
+ /* 中央線(⚠**破線**にする=進んでいる感じが出る) */
+ c.strokeStyle='rgba(214,204,168,.42)';c.lineWidth=14;c.setLineDash([190,230]);
+ c.beginPath();c.moveTo(PT[0][0],PT[0][1]);
+ for(let i=1;i<PT.length;i++)c.lineTo(PT[i][0],PT[i][1]);
+ c.stroke();c.setLineDash([]);
+ c.lineWidth=3;c.strokeStyle=INK;
+}
+/* ⭐⭐**道の両端**(2026-08-02(24))=下が**出発した拠点**・上が**次の拠点(到着=クリア)**。
+   ⚠**遠くからでも「あそこが終点だ」と分かる形**にする=横いっぱいの壁+門+旗。
+   ⚠絵は世界座標(地形と同じ)。⚠画面に入っている時だけ描く。 */
+function drawBnsEnds(c,C,t){
+ const wy0=(-OY)/SC-400,wy1=(cv.height-OY)/SC+400;
+ c.lineJoin='round';c.lineWidth=6;c.strokeStyle=INK;
+ /* --- 上=次の拠点(到着) --- */
+ if(BNS_GOALY>wy0-900&&BNS_GOALY<wy1+900){
+  const gy=BNS_GOALY-120,x0=BNS_CX-BNS_OFF-500,x1=BNS_CX+BNS_OFF+500;
+  c.fillStyle='#6b6459';c.fillRect(x0,gy-180,x1-x0,190);/* 壁 */
+  c.fillStyle='#8a8072';c.fillRect(x0,gy-180,x1-x0,34);
+  c.fillStyle=INK;for(let x=x0;x<x1;x+=220)c.fillRect(x,gy-214,90,40);/* 胸壁 */
+  /* 門(道の幅ぶん開ける) */
+  c.fillStyle='#3a3128';c.fillRect(BNS_CX-320,gy-160,640,170);
+  c.fillStyle=GOLD;c.fillRect(BNS_CX-320,gy+2,640,22);
+  /* 旗 */
+  for(const sx of [-1,1]){
+   c.fillStyle='#4a443a';c.fillRect(BNS_CX+sx*430-8,gy-420,16,250);
+   c.fillStyle=AMBER;c.beginPath();c.moveTo(BNS_CX+sx*430,gy-420);
+   c.lineTo(BNS_CX+sx*430+sx*150,gy-380);c.lineTo(BNS_CX+sx*430,gy-330);c.closePath();c.fill();}
+  /* 到着線 */
+  c.fillStyle='rgba(232,163,61,.30)';c.fillRect(x0,BNS_GOALY+240,x1-x0,26);
+  c.fillStyle=PANE;c.font='900 '+Math.round(120*1)+'px '+FF;c.textAlign='center';
+  c.strokeStyle=INK;c.lineWidth=10;
+  c.strokeText('🏁 次の拠点',BNS_CX,BNS_GOALY+430);c.fillText('🏁 次の拠点',BNS_CX,BNS_GOALY+430);
+ }
+ /* --- 下=出発した拠点 --- */
+ if(BNS_STARTY>wy0-900&&BNS_STARTY<wy1+900){
+  const sy=BNS_STARTY+420,x0=BNS_CX-BNS_OFF-500,x1=BNS_CX+BNS_OFF+500;
+  c.fillStyle='#5c5346';c.fillRect(x0,sy,x1-x0,170);
+  c.fillStyle='#6f6a5e';c.fillRect(x0,sy,x1-x0,30);
+  c.fillStyle='#3a3128';c.fillRect(BNS_CX-320,sy-10,640,150);
+ }
+ c.lineWidth=3;
 }
 /* ⭐⭐**大群が来る向きを画面の縁で知らせる**(2026-08-02(6))。
    ⚠道を1本も描かなくなったので、**どこから来るかを地面で語れない**。
@@ -17680,16 +17798,27 @@ function updHUD(){const m=meV();if(!m)return;
  const zc=MODE==='client'?(CC?CC.zombies.length:0):(G?G.players[G.myIdx].zombies.length:0);
  const pr=MODE==='client'?(CS.pr||0):(G?G.tide.pool.length:0);
  const lead=MODE==='client'?0:(G&&G.tide&&inW?G.tide.lead||0:0);
+ /* ⭐🚌**道中は「波」ではなく「あと何m」**(2026-08-02(24))=この面の目的は走り抜けること。
+    ⚠**距離はマップの縦の残り**から出す(道はほぼ縦なので y だけで足りる)。 */
+ if(m.bus){
+  const rest=Math.max(0,Math.round((m.bus.y-BNS_GOALY)/10));
+  $('wavebadge').textContent=m.bus.arr?'🏁 到着!':('🚌 あと '+rest+'m'+(inW&&zc?'  🧟'+zc:''));
+  const p9=clamp(1-(m.bus.y-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1);
+  const wp=$('wprog').querySelector('i');if(wp&&wp.style)wp.style.width=Math.round(p9*100)+'%';
+ }else{
  $('wavebadge').textContent='WAVE '+Math.max(1,wv)+((G&&G.pve)||COOP?'/'+(G&&G.pve?curW():STAGE_W):'')+(inW&&(wv===10||wv===15||wv===20)?' 💀':'')
   +(lead>0?' 🔨'+Math.ceil(lead):(inW&&!m.waveDone?' 🧟'+zc+(pr>0?'+':''):''));
  /* 波進捗バー: 撃破率(概算) */
  {const totalW=(m.totalWave||0)+pr;
   const pct=inW?(totalW>0?clamp((totalW-pr-zc)/totalW,0,1):(m.waveDone?1:0)):0;
   const wp=$('wprog').querySelector('i');if(wp&&wp.style)wp.style.width=Math.round(pct*100)+'%';}
+ }
  /* コアHPバー */
  {const cr=clamp(m.core/m.coreMax,0,1),cb=$('corebar').querySelector('i');
   if(cb&&cb.style){cb.style.width=Math.round(cr*100)+'%';cb.style.background=cr>.4?'linear-gradient(90deg,#7ba33f,#b7e07a)':'linear-gradient(90deg,#93381E,#C1502E)';}
-  const cl=$('corelbl');cl.textContent=Math.ceil(m.core);if(cl.style)cl.style.color=cr>.4?LIFE:DANGER2;}
+  const cl=$('corelbl');cl.textContent=Math.ceil(m.core);if(cl.style)cl.style.color=cr>.4?LIFE:DANGER2;
+  /* ⭐🚌道中は同じバーが**バスの耐久**になる(2026-08-02(24))=印だけ差し替える */
+  const ci=$('coreico');if(ci)ci.textContent=m.bus?'🚌':'🏕';}
  $('energybox').innerHTML=IC('⚙️ ')+fmt(m.scrap);
  $('ptbox').innerHTML=IC('🔩 ')+fmt(m.up||0);
  /* ⭐部隊の枠(重さ)。⚠**満杯に近いと赤くする**=出せない理由が一目で分かるように */
@@ -18750,18 +18879,18 @@ function startSolo(){
      出せなくするのは `uUn=0`(解放0種)+ 下の body.bns で欄ごと隠すことでやる。 */
   me.hUi=-1;me.uUn=0;
   me.up=me.upTotal=60+up0V();
-  /* ⭐⭐**拠点は厚くする**(2026-08-02(2))=敵が15倍になったので、コア50のままだと
-     **全体の3%漏らしただけで陥落**する(=轢く爽快感より漏らさない我慢の面になってしまう)。
-     ⚠1580体のうち**4分の1まで通してよい**厚さ。負けるのは「1本の道を長く放っておいた時」であって
-       始まって15秒の立ち上がりであってはいけない。
-     ⚠⚠**楽すぎ/きつすぎならまずこの400を動かす**(難易度表の hp/cnt より先にここ)。 */
+  /* ⭐⭐⭐**コアHPは「バスの耐久」として使う**(2026-08-02(24))=守る拠点が無くなったので、
+     0になったら負けるという仕組みだけそのまま流用する(HUD・被弾の明滅・敗北の流れが全部効く)。
+     ⚠⚠**楽すぎ/きつすぎならまずこの400を動かす**(難易度表の hp/cnt より先にここ)。
+     ⭐**将来は探索で拾った物資でここを伸ばす**(ユーザー決定=拾って強化して突き進む)。 */
   me.coreMax=400+hp0V();me.core=me.coreMax;
-  me.unlocked=metaTowerCap();
-  me.slk=SLOTS.map((_,i)=>i<ECO_BASE);
+  me.unlocked=0;/* ⚠タレットは建てない面(枠も全部画面の外) */
+  me.slk=SLOTS.map(()=>false);
   bnsBusInit(me);
-  /* ⚠**寄りすぎると小粒感が出ない**(2026-08-02ユーザー「画面近すぎ。もっと小粒のゾンビに」)=
-     1を切ると全景より引いた絵になる。マップが広いのでこれで十分に持ち歩ける。 */
-  camOn(me.bus.x,me.bus.y,.26);/* 🎥カメラ追従はこの面の中だけ */
+  /* ⚠⚠**道が画面の主役になったので寄りを上げた**(2026-08-02(24)。.26→.42)=
+     道幅2100が画面の半分以上を占める寄り。⚠これ以上引くと道が画面の帯にしか見えない。
+     ⚠**寄りは走行中に動かさない**(焼いた地形を全部捨てることになる=`drawBnsTown`)。 */
+  camOn(me.bus.x,me.bus.y,.42);/* 🎥カメラ追従はこの面の中だけ */
   bnsEnter();/* 遊べば次の難易度が開く */
  }
  document.body.classList.toggle('bns',isBns());
@@ -18790,83 +18919,65 @@ const BNS_PTS=[600,1100];         /* 初回クリアの🧬(ステージごと) 
 /* ⚠**2026-08-02(6)に広げた**(ユーザー「画面外からゾンビが来る感じにして」)=
    街路の端(=湧く所)を画面の外へ出すには、街路を3600まで伸ばす必要があり、
    縦にはみ出すのでマップごと大きくした。 */
-const BNS_W=11000,BNS_H=8000;
-const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 拠点はマップのまんなか */
+/* ⭐⭐⭐**2026-08-02(24)ユーザー決定で作り替えた**=「あくまで次の場所への移動。バスで次拠点に移動する感じ。
+   **道路はほぼ縦の一直線でゾンビががっつりいる感じでゾンビをひき殺す**」。
+   ⚠⚠**それまでの「中央の拠点を4本の道から守る」形は全部外した**(拠点もタレット置き場も無し)。
+     守る物はバスだけ=遊びが1本に絞れる。⚠書き戻さないこと。
+   ⭐**縦長のマップを下から上へ走り抜ける**=上の端が次の拠点(到着=クリア)。 */
+const BNS_W=4400,BNS_H=26000;
+const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 道の中心線(x)とマップの中心 */
+const BNS_GOALY=900;         /* 到着線(マップの上) */
+const BNS_STARTY=BNS_H-1200; /* 出発点(マップの下) */
 /* 廃墟の散らばり(開拓便だけ)。⚠**決め打ちで並べない**=種から散らすと広い面でも密度が保てる。
    参考画像から拾った物=廃車 / タイヤ / ドラム缶 / 木箱 / 瓦礫 / コンクリのバリア / 枯れ木。
    ⚠**表そのものはファイルの上の方で宣言してある**(loadStage が読み込み中に触るため)。 */
-/* ⭐⭐**通りは「曲がった街路」にする**(2026-08-02(5)ユーザー
-   「今みたいにクロスになってる端から出るんじゃなくて、この画像みたいに森と建物でマップをかなり埋めて、
-     明らかな導線の先からどんどんくる感じ」)。
-   ⚠⚠**四隅から拠点へ一直線のX字**は、地形が薄いと**盤面に描いた線**にしか見えない。
-   ⭐直し方は2つセット=①**街路を折れさせる**(まっすぐ来ない) ②**街路以外を建物と森で埋め尽くす**。
-     ⚠②が無いと①だけでは効かない(「空き地に引いた線」のままなので)。
-   ⚠⚠**4本の長さは必ず同じ**(`z.d>=PLEN` のコア到達判定が全レーン共通のため)=
-     **同じ半径・同じ折れ角で作る**ことで、形を不揃いに見せながら長さは厳密に揃う。
-   ⚠向きは**90度刻みにしない**=等間隔だと折れていてもX字に見える。 */
-/* ⚠⚠**街路は画面の外まで伸ばす**(2026-08-02(6)ユーザー「画面外からゾンビが来る感じにして」)。
-   ⚠前は1700しかなく、**画面に映る範囲(中心から横3076・縦1418)の内側で湧いていた**ので、
-     何もない所にゾンビが**ぽんと現れていた**。⭐3600まで伸ばして、必ず画面の外から歩いてこさせる。
-   ⚠伸ばしたぶん歩く時間が延びるので、この面の足の速さ(`D5` の🚌行 `sp`)も上げてある。 */
-const BNS_LR=3600;                        /* 街路の長さ(拠点からの半径。世界座標) */
-const BNS_LA=[-0.30,1.42,2.92,4.52];      /* 入ってくる向き(⚠等間隔にしない) */
-const BNS_LB=0.46;                        /* 折れの深さ(大きいほど大きく曲がる) */
-function bnsLanePts(i){
- const a=BNS_LA[i%BNS_LA.length],sg=(i%2)?1:-1;
- const bx=BNS_CX+Math.cos(a+sg*BNS_LB)*BNS_LR*.5,by=BNS_CY+Math.sin(a+sg*BNS_LB)*BNS_LR*.5;
- return [[BNS_CX+Math.cos(a)*BNS_LR,BNS_CY+Math.sin(a)*BNS_LR],[bx,by],[BNS_CX,BNS_CY]];
+/* ⭐**道は「ほぼ縦の一直線」1本だけ**(2026-08-02(24)ユーザー指示)。
+   ⚠⚠**道の向き=`d` が増える向き**は「上→下」にしてある=ゾンビは上(次の拠点の方)から**下りてくる**。
+     バスは逆に下から上へ走る。⭐これで「進む先がびっしり埋まっている」形になる。
+   ⚠**完全な直線にはしない**=定規で引いた線に見える。**±140ほど蛇行**させて道らしく見せる。
+   ⚠**横に振りすぎない**=振ると道が斜めになり、縦スクロールの気持ちよさが消える。 */
+const BNS_WOB=140;/* 蛇行の幅 */
+function bnsLanePts(){
+ const pts=[],N=7;
+ for(let i=0;i<=N;i++){
+  const u=i/N;
+  /* ⚠位置から決める(乱数を順に引くと面ごとに形が変わる) */
+  const w=Math.sin(u*7.4)*BNS_WOB+Math.sin(u*17.3)*BNS_WOB*.4;
+  pts.push([BNS_CX+w,BNS_GOALY+(BNS_STARTY-BNS_GOALY)*u]);
+ }
+ return pts;
 }
-/* ⭐⭐⭐**タレット置き場=「建物の屋上」**(2026-08-02(5)ユーザー
-   「配置もできるようにしよう。建物の屋上が平面であってそこにタレット置き場を作ろう」)。
-   ⚠それまでの2つはどちらも違った=①地面に浮いた灰色の四角(TDの盤面に見える)
-     ②置き場という概念を無くして全自動(**何を置くかまで選べなくなった**)。
-   ⭐正解は**屋根のある建物を街路沿いに建てて、その屋上を枠にする**=
-     置き場は「そこにある物」になり、何を建てるかはいつもどおりプレイヤーが選ぶ。
-   ⚠**枠は屋上の中心**。⚠数は ECO_BASE(22)。足りない時だけ画面外で埋める。
-   ⚠**拠点(司令部)の屋上も枠**にする=一番内側の最後の砦。 */
-function bnsSlots(){
- /* 屋上つきの建物(`rf`)を拠点に近い順に。⚠射程の届かない遠くの屋上を先に取らない */
- const rs=BBLD.filter(b=>b.rf).map(b=>({b,d:dist(b.x,b.y,BNS_CX,BNS_CY)}));
- rs.sort((p,q)=>p.d-q.d);
- const out=[];
- for(let i=0;i<4;i++){const a=.7854+i*1.5708;/* 司令部の屋上4枠 */
-  out.push([Math.round(BNS_CX+Math.cos(a)*74),Math.round(BNS_CY+Math.sin(a)*74)]);}
- for(const r of rs){if(out.length>=ECO_BASE)break;out.push([Math.round(r.b.x),Math.round(r.b.y)]);}
- return out;
-}
+/* ⚠⚠**タレット置き場は 2026-08-02(24) に丸ごと外した**(ユーザー「拠点防衛は全部外して走り抜ける面に」)。
+   守る物はバスだけなので、据え置きの塔を建てる相手が居ない。
+   ⭐**塔を積むならバス自体の武装として**(=次にやること)。⚠屋上の枠を書き戻さないこと。
+   ⚠**枠の数は減らさずに全部画面の外へ逃がす**=工房と支援枠の番号がずれると別の物を指す。 */
+function bnsSlots(){return [];}
 function loadBonus(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  MAPW=BNS_W;MAPH=BNS_H;
- /* ⚠道の表は「画面1枚ぶんの座標」で書いてある=**マップの広さに合わせて引き伸ばす**
-    (表を広い座標で書き直すより、形が読めるまま倍率だけ変えられる) */
- /* ⚠⚠**道は「拠点からの相対」で置く**=マップの広さで引き伸ばすと、
-    マップを広げた時に道が長くなりすぎて敵が何十秒も歩いてこない。
-    ⭐**道の長さは拠点まわりの戦いの尺**、マップの広さは**探索の広さ**=別物として持つ。 */
- const LN=[0,1,2,3].map(i=>bnsLanePts(i));
+ /* ⭐**道は1本だけ**(2026-08-02(24))=上(到着)から下(出発)へ引く。
+    ⚠**`d` が増える向き=上→下**なので、ゾンビは進行方向の先から下りてくる。 */
+ const LN=[bnsLanePts()];
  LANES=LN.map(pts=>{const seg=[];let len=0;
   for(let i=0;i<pts.length-1;i++){const l=dist(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);
    seg.push({a:pts[i],b:pts[i+1],l,s:len});len+=l;}
   return {seg,len};});
- /* ⚠⚠**4本の長さは必ず揃っていること**=揃っていないと `z.d>=PLEN` のコア到達判定が
-    レーンによってずれる(短いレーンの敵が手前で消える/長いレーンの敵が拠点を通り抜ける)。 */
- const L0=LANES[0].len;
- for(const L of LANES)if(Math.abs(L.len-L0)>1)L.len=L0;
- /* 1本目を「いつもの道」として登録する=地形・砲撃AI・ミニ盤面など道を見る処理がそのまま動く */
+ /* 道を「いつもの道」としても登録する=地形・砲撃AI・ミニ盤面など道を見る処理がそのまま動く */
  PATH=LN[0].map(p=>p.slice());
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
- CORE=[BNS_CX,BNS_CY];
- /* ⚠⚠**地形を先に作る**(2026-08-02(5))=タレット置き場は**建物の屋上**なので、
-    建物が建っていないと枠の座標が決まらない。順番を入れ替えないこと。 */
+ /* ⚠**コアは道の下端(出発点の後ろ)**=この面に守る拠点は無いが、
+    `CORE` を見ている処理(演出の座標など)が落ちないように置いておく。 */
+ CORE=[BNS_CX,BNS_STARTY+300];
  bnsMap();
  SLOTS=bnsSlots();
  while(SLOTS.length<ECO_BASE)SLOTS.push([-999,-999]);/* ⚠数は ECO_BASE に合わせる(工房と支援枠の番号がずれる) */
  SLOTS.length=ECO_BASE;
  for(const e of ECO_SLOTS)SLOTS.push(e.slice());
  for(const e of SUP_SLOTS)SLOTS.push(e.slice());
- /* ⚠**工房と支援枠は開拓便では使わない**(解放もしていない)ので画面の外へ逃がす。
-    ⚠数は減らさない=ECO_BASE から後ろの番号がずれると工房と支援枠の判定が壊れる。 */
- for(let i=ECO_BASE;i<SLOTS.length;i++)SLOTS[i]=[-9999,-9999];
+ /* ⚠⚠**枠は1つも使わない**(2026-08-02(24)=タレットを建てない面になった)ので全部画面の外へ。
+    ⚠**数は減らさない**=ECO_BASE から後ろの番号がずれると工房と支援枠の判定が壊れる。 */
+ for(let i=0;i<SLOTS.length;i++)SLOTS[i]=[-9999,-9999];
  AI_ORDER=SLOTS.map((s,i)=>i);SLOT_ORDER=AI_ORDER.slice();
  PMAXX=MAPW;
  makeScenery();
@@ -18919,7 +19030,7 @@ function bnsFreeAt(x,y,r){
    if(d<bd){bd=d;bu=(s.s+t*s.l)/L.len;}}
   if(bd-r<bnsOpenW(bu))return false;
  }
- return dist(x,y,BNS_CX,BNS_CY)>bnsClr()+r;/* 拠点の周りも空けておく */
+ return bnsEndD(x,y)>BNS_ENDR+r;/* 出発点と到着点の広場も空けておく */
 }
 /* 建物1つ。⚠**四隅は作る時に焼いておく**=毎フレーム三角関数を回さず、まとめて塗れる。
    ⭐**2種類ある**: `rf`無し=**廃墟**(壁だけ残った枠。屋根は落ちている)/
@@ -18998,17 +19109,16 @@ function bnsMap(){
  let s9=104729+STAGE*7919;
  const rd=()=>{s9=(s9*1103515245+12345)&0x7fffffff;return s9/0x7fffffff;};
  const rr2=(a,b)=>a+(b-a)*rd();/* ⚠`rnd` は Math.random なので使わない(地形が毎回変わる) */
- /* ① ⭐**街路沿いの「屋根の残った建物」=タレット置き場**。
-    ⚠**拠点に近い側から並べる**=射程の届かない遠くの屋上ばかりになると置く意味が無い。
-    ⚠数は ECO_BASE(22)より多めに作る(bnsSlots が近い順に22取る)。 */
+ /* ① ⭐**道沿いの屋根つきの建物**(2026-08-02(24)から**ただの町並み**=タレット置き場ではない)。
+    ⚠**廃墟だけだと町に見えない**ので、屋根の残った家を混ぜて「人が住んでいた道」に見せる。
+    ⚠**空き地の縁(`bnsOpenW`)から置く**=通路の幅(`bnsCorrW`)から置くと、
+      同じ式で弾いている `bnsFreeAt` に自分で引っ掛かって1棟も建たない(実際にそうなった)。 */
  for(let li=0;li<LANES.length;li++){
   const len=LANES[li].len;
-  for(let d=len-1500;d<len-240;d+=300){
-   if(d<0)continue;
+  for(let d=len*.02;d<len*.99;d+=470){
    const u=d/len,p=pathPos(d,li);
    for(let sg=-1;sg<=1;sg+=2){
-    /* ⚠**空き地の縁(`bnsOpenW`)から置く**=通路の幅(`bnsCorrW`)から置くと、
-       同じ式で弾いている `bnsFreeAt` に自分で引っ掛かって1棟も建たない(実際にそうなった) */
+    if(rd()<.45)continue;
     const L=74,W=64,off=bnsOpenW(u)+Math.max(L,W)+8;
     const bx=p[0]-Math.sin(p[2])*off*sg,by=p[1]+Math.cos(p[2])*off*sg;
     if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
@@ -19026,8 +19136,9 @@ function bnsMap(){
  for(let li=0;li<LANES.length;li++){
   const len=LANES[li].len;
   let nk=0;
-  /* 拠点寄り〜中ほどに3か所(⚠**湧く側の端には置かない**=群れの真ん中で降りることになる) */
-  for(const q of [.30,.48,.66]){
+  /* ⭐**道沿いに等間隔で12棟**(2026-08-02(24))=長い道なので、走っていて次々に見えてくるようにする。
+     ⚠**出発点のすぐ隣と到着点の直前には置かない**(端の広場に食い込む)。 */
+  for(const q of [.08,.16,.24,.32,.40,.48,.56,.64,.72,.80,.88,.94]){
    /* ⚠**種類の番号に `li*3` を使わない**=3で割り切れて全レーン同じ物になる(実際にそうなった) */
    const ki=(li+nk)%ENT_K.length,K=ENT_K[ki],R=Math.max(K.L,K.W);
    let done=0;
@@ -19035,7 +19146,7 @@ function bnsMap(){
       ⚠奥へ下げるのは最後(街路から遠いほど降りてから歩く距離が伸びる)。 */
    for(let ri=0;ri<2&&!done;ri++)for(let k=0;k<5&&!done;k++)for(let sd=0;sd<2&&!done;sd++){
     const d=len*q+(k?((k+1)>>1)*180*((k%2)?1:-1):0);
-    if(d<len*.12||d>len*.92)continue;
+    if(d<len*.05||d>len*.96)continue;
     const u=d/len,p=pathPos(d,li),s9=sd?-1:1;
     const off=bnsOpenW(u)+R+30+ri*180;
     const bx=p[0]-Math.sin(p[2])*off*s9,by=p[1]+Math.cos(p[2])*off*s9;
@@ -19449,6 +19560,10 @@ const BUS_GRIP=4.2;  /* 横滑りの抑え。⚠上げすぎるとレールの�
    ⚠**絵と当たりの大きさを必ず揃えること**=前は当たり(半径62=幅124)の方が絵(幅71)より広く、
      「当たっていないのに死ぬ」状態だった。いまは 絵の全長≒2×BUS_R に合わせてある(`BUS_DRAW`)。 */
 const BUS_R=140,BUS_DPS=520,BUS_KB=260;
+/* ⭐**取り付かれている間バスが受ける傷**(2026-08-02(24))=1体が1秒あたり削る量。
+   ⚠**走っていればほぼ効かない**(接触が一瞬で終わる)=止まって埋もれた時だけ効く数値にしてある。
+   ⭐きつすぎ/楽すぎならここか `startSolo` の耐久400を動かす。 */
+const BUS_ZDPS=2.6;
 const BUS_DRAW=1.9;  /* 絵の倍率。⚠BUS_R を動かしたらここも動かす(全長≒131*1.15*これ) */
 const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当たった手応え */
 /* ⭐**横へ押しのける速さ**(2026-08-02(2))=前へ押し込むだけだと「道の上で潰した」に見えない。
@@ -19485,8 +19600,8 @@ const BUS_FLASH_N=6,BUS_FLASH_CD=.55;
 const BUS_CL=55;
 function bnsRoadFit(x,y,cl){
  if(!LANES)return null;
- const rc=Math.max(40,bnsClr()-cl),dc=dist(x,y,BNS_CX,BNS_CY);
- if(dc<=rc)return null;/* 拠点の中は自由 */
+ const rc=Math.max(40,BNS_ENDR-cl),dc=bnsEndD(x,y);
+ if(dc<=rc)return null;/* 出発点と到着点の広場の中は自由 */
  let bx=0,by=0,bd=1e9,inside=0;
  for(const L of LANES){
   for(const s of L.seg){
@@ -19503,15 +19618,18 @@ function bnsRoadFit(x,y,cl){
   if(inside)break;
  }
  if(inside)return null;
- /* 拠点の円の方が近ければそちらへ寄せる */
- if(dc-rc<bd){const k=(rc-.5)/(dc||1);return [BNS_CX+(x-BNS_CX)*k,BNS_CY+(y-BNS_CY)*k];}
+ /* 端の広場の方が近ければそちらへ寄せる。⚠**近い方の広場の中心**へ寄せること */
+ if(dc-rc<bd){
+  const cy9=(Math.abs(y-BNS_GOALY)<Math.abs(y-BNS_STARTY))?BNS_GOALY:BNS_STARTY;
+  const k=(rc-.5)/(dc||1);return [BNS_CX+(x-BNS_CX)*k,cy9+(y-cy9)*k];}
  if(bd>=1e9)return null;
  return [bx,by];
 }
 const BNS_CMB_T=1.5; /* 連続轢殺が途切れるまでの秒数 */
 const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
 function bnsBusInit(C){
- C.bus={x:BNS_CX,y:BNS_CY+150,vx:0,vy:0,ix:0,iy:0,dr:-1,t:0,hitT:0,
+ /* ⚠**出発点はマップの下**(2026-08-02(24))=ここから上(次の拠点)へ走り抜ける */
+ C.bus={x:BNS_CX,y:BNS_STARTY,vx:0,vy:0,ix:0,iy:0,dr:-1,t:0,hitT:0,arr:0,dmgA:0,
   /* ⭐連続轢殺(cmb=いま何連 / cmbT=途切れるまで / cmbP=数字が跳ねる勢い / cmbMx=最高記録) */
   cmb:0,cmbT:0,cmbP:0,cmbMx:0,kill:0,gain:0,gainT:0,trkD:0,
   /* 🔥ニトロ(nit=溜まり 0〜1 / nitT=残り秒 / nitN=使った回数) */
@@ -19566,8 +19684,13 @@ function bnsBusStep(C,dt){
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */
  let hit=0,kil=0;
  const rr9=BUS_R*(nz9?BUS_NIT_R:1);
+ /* ⭐⭐**通り過ぎた敵は消す**(2026-08-02(24))=これが無いと**盤面の上限が後ろの敵で埋まり**、
+    進む先がすかすかになる(実走で42秒走って81体しか轢けなかった原因)。
+    ⚠画面の外まで下がってから消すこと(見えている所で消えると「勝手に居なくなった」になる)。 */
+ const bd9=LANES?projPath(B.x,B.y):0;
  for(const z of C.zombies){
   if(z.dead||z.d<0)continue;
+  if(LANES&&z.d>bd9+BNS_BEHIND){z.dead=true;continue;}
   const dx=z.px-B.x,dy=z.py-B.y,rz=rr9+(z.sc||1)*10;
   if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
@@ -19634,8 +19757,27 @@ function bnsBusStep(C,dt){
  camTo(B.x+B.vx*(nz9?.30:.22),B.y+B.vy*(nz9?.30:.22));
  if(hit){B.hitT=.12;B.vx*=BUS_DRAG;B.vy*=BUS_DRAG;
   /* ⚠揺れは**連なりが伸びるほど強く**する(上限あり)=轢き続けている実感 */
-  if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.30,.05+.025*hit+.05*bnsCmbT(B.cmb)));}
+  if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.30,.05+.025*hit+.05*bnsCmbT(B.cmb)));
+  /* ⭐⭐**群れに埋もれると耐久が削れる**(2026-08-02(24))=守る拠点が無くなったぶん、
+     **負けるのはバスが潰される時だけ**になった。⚠速く走り抜けている間はほとんど減らない
+     (1体との接触が一瞬で終わるため)=**止まると死ぬ**という形。
+     ⚠**削りは整数で通す**=コアHPは表示も判定も整数前提。 */
+  if(!C.dying){
+   B.dmgA=(B.dmgA||0)+BUS_ZDPS*hit*dt*(B.nitT>0?.5:1);/* 🔥ニトロ中は轢き飛ばすので半分 */
+   if(B.dmgA>=1){const dm=Math.floor(B.dmgA);B.dmgA-=dm;C.core-=dm;
+    if(C.isMe&&C.tm-(C.bhtT||-9)>=.5){C.bhtT=C.tm;sfx.leak&&sfx.leak();dmgFlash();}
+    if(C.core<=0){C.core=0;C.dying=true;addFx(C,'boomL',B.x,B.y,'');}}}
+ }
  if(B.hitT>0)B.hitT-=dt;
+ /* ⭐⭐**到着=クリア**(2026-08-02(24))。⚠**残っている敵と湧く予定を捨ててから**印を立てる
+    =そうしないと「盤面が空になったら制圧」の判定が回らず、試合が終わらない。 */
+ if(!B.arr&&B.y<=BNS_GOALY+260){
+  B.arr=1;
+  try{G.tide.pool.length=0;}catch(e){}
+  for(const z of C.zombies)z.dead=true;
+  if(C.isMe){toast('🏁 次の拠点に着いた!',true);if(sfx.clearJ)sfx.clearJ();}
+  if(FXLV>0)addFx(C,'ring',B.x,B.y,'',{r:520,col:GOLD});
+ }
  bnsFxStep(C,dt);
 }
 /* ⚠**「拠点が全自動でタレットを据える」は 2026-08-02(5) に取り消した**(ユーザー

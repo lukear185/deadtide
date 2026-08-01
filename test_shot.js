@@ -336,7 +336,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠**群れの中を往復させる**=中央で回らせても敵に当たらず、片道だけだと**マップの端まで
         走り去って**群れも血だまりも画面から消える(どちらも実際に撮って気づいた)。
         敵が湧いてから(k>110=約5.5秒)左上のレーンを3秒ごとに行き来する */
-     +(BDRV?'try{if(k>110){var f9=(Math.floor((k-110)/60)%2)?1:-1;bnsStick(f9*-.8,f9*-.6);}}catch(e9){}':'')
+     /* ⚠**2026-08-02(24)から道は縦一直線**=上(次の拠点)へ倒しっぱなしにして、
+        少しだけ左右に振る(群れの中を突っ切る絵になる)。 */
+     +(BDRV?'try{if(k>40)bnsStick(Math.sin(k/26)*.5,-1);}catch(e9){}':'')
      /* 🔥ニトロ=群れの中を走らせて、終わりの2秒前に撃つ(炎と速度線が乗った所を撮る) */
      /* ⚠bnsdrv と併せた時は**運転を上書きしない**(往復させたまま撃つ) */
      /* ⚠**大群が来ている道へ向かって走らせる**=適当な向きに走らせると群れと一度も出会わず、
@@ -345,7 +347,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'b7=G.players[0].bus,dx7=a7[0]-b7.x,dy7=a7[1]-b7.y,l7=Math.hypot(dx7,dy7)||1;'
        +'bnsStick(dx7/l7,dy7/l7);}')
        +'if(k===n-40){var m7=G.players[0];m7.bus.nit=1;bnsNitro();}}catch(e7){}'):'')
-     +'gameStep(.05);}'
+     /* ⚠⚠**カメラは rAF の中で動く**(gameStep には入っていない)ので、
+        自分で時間を進める撮影では**camStep も一緒に回さないとカメラが置いていかれる**
+        (バスが画面の外にいる絵になる。2026-08-02(24)に撮って気づいた)。 */
+     +'gameStep(.05);try{camStep(.05);}catch(e6){}}'
      +'}catch(e){document.title="ERR15 "+e.message;}},1200);'):'')
  +(DBG?('var _gs=gameStep,_ge=null;gameStep=function(d){try{_gs(d);}catch(e){if(!_ge){_ge=e;}throw e;}};'
      +'setInterval(function(){try{if(_ge){toast("STEPERR "+_ge.message+" @ "+String(_ge.stack).split("\\n")[1]);}}catch(x){}},1600);'
