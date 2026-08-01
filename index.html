@@ -205,6 +205,12 @@ body.bns #bnitro{display:block}
 body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint,
 body.bns #strikebtn,body.bns #strikehint,
 body.bns #corepanel,body.bns #ffwave{display:none!important}
+/* 🎒**走る前の流れ(①選択→②ミニゲーム→③乗り込み→④強化)の間は運転の物を全部引っ込める**
+   (2026-08-02(43))。⚠**残り時間の札も出さない**=まだ1秒も減っていないのに締め切りが見えると嘘になる。
+   ⚠**#abar そのものは消さない**(この帯の高さが盤面の倍率を決めている。既出の掟)。 */
+body.bnspre #bstick,body.bnspre #bnitro,body.bnspre #wavepanel,
+body.bnspre #energybox,body.bnspre #ptbox,body.bnspre #ubox,
+body.bnspre #pausebtn,body.bnspre #buildmenu{display:none!important}
 /* ⚠⚠**🔊は画面下の中央から どける**(2026-08-02(35))=道中でバスが張り付く場所がちょうどそこで、
    **一番見たい「バスの真下と進む先」をボタンが潰していた**(撮って気づいた)。
    ⚠**#abar そのものは消さない**=この帯の高さが盤面の倍率(fitCanvas の availH)を決めているので、
@@ -1489,7 +1495,7 @@ function busSndStep(B){
  if(!BUSA||!AC||!B)return;
  try{
   const t=AC.currentTime;
-  const mv=Math.hypot(B.vx,B.vy),k=Math.min(1.3,mv/BUS_SP);
+  const mv=Math.hypot(B.vx,B.vy),k=Math.min(1.3,mv/(B.spMx||BUS_SP));
   const thr=Math.min(1,Math.hypot(B.ix||0,B.iy||0));
   const on=(!muted&&!PAUSED&&gameActive)?1:0;
   const vol=on*VOL.all*VOL.bt;
@@ -1501,7 +1507,7 @@ function busSndStep(B){
   BUSA.out.gain.setTargetAtTime(vol*(.05+.045*thr+.03*k),t,.09);
   /* タイヤ=速さで大きくなる。⭐**横滑りしているほど明るく**=曲がるときの「キュッ」 */
   const a9=(B.ang==null)?-1.5708:B.ang,nx=-Math.sin(a9),ny=Math.cos(a9);
-  const sl=Math.min(.7,Math.abs(B.vx*nx+B.vy*ny)/BUS_SP);
+  const sl=Math.min(.7,Math.abs(B.vx*nx+B.vy*ny)/(B.spMx||BUS_SP));
   BUSA.tg.gain.setTargetAtTime(vol*(.018+.085*k+.20*sl),t,.08);
   BUSA.bp.frequency.setTargetAtTime(560+k*700+sl*2600,t,.08);
  }catch(e){}
@@ -1961,7 +1967,7 @@ const SFX_CRUSH='crush5';/* 1体ずつ轢いた音(=本物の血しぶきの潰�
    ⚠**鳴らし方(くじ引き・高さ・音量・間隔のばらつき)はそのまま**=あれが無いと素材を変えても機械の音に戻る。 */
 const SFX_CRUSHES=['crush5','crush6','crush5','crush3'];
 function busCrushSfx(C){
- const B=C.bus,mv=B?Math.hypot(B.vx,B.vy):0,k=Math.min(1,mv/(BUS_SP||1));
+ const B=C.bus,mv=B?Math.hypot(B.vx,B.vy):0,k=Math.min(1,mv/((B&&B.spMx)||BUS_SP||1));
  const key=SFX_CRUSHES[(Math.random()*SFX_CRUSHES.length)|0];
  sfxAt(key,(.66+Math.random()*.5)*(.78+.45*k));
 }
@@ -3356,6 +3362,31 @@ const BNS_ENDR=1500;
    ⚠⚠**空き地の形を決める式はここ1本のまま**=別の式で「探索場だけ広い」を作ると、
      「木が1本も無いのに入れない場所」が必ず出る(乗り物を地形で止める面の掟。3回踏んだ)。 */
 const BNS_EXP_R=3000;
+/* ============ 🎒⭐⭐⭐**1試合の流れ**(2026-08-02(43)ユーザー決定) ============
+   ①ミニゲーム選択 → ②3回遊ぶ → ③乗り込みムービー → ④強化画面 → ⑤運転75秒 → ⑥到着
+   ⚠**⑤⑥は先に入っていた**ので、ここで足すのは①〜④。中身は下の「走る前の流れ」の節。
+   ⚠⚠**宣言をここ(上の方)に置く**=`bnsMap` は読み込みの途中(`loadStage`)からも呼ばれるので、
+     下で const にすると初期化前アクセスでスクリプトごと止まる(NOTESのTDZの穴)。 */
+/* 🎒**物資は3種**=⛽燃料 / 🏭鉄材 / 🏠食料(2026-08-02(43)ユーザー決定)。
+   ⚠⚠**並びは `ENT_K`(棟の種類)と必ず同じにする**=「その棟で多くもらえる物」を添字1本で引くため。 */
+const BRES=[{ic:'⛽',n:'燃料'},{ic:'🏭',n:'鉄材'},{ic:'🏠',n:'食料'}];
+/* 🎮**1面に並ぶミニゲームの数**(ユーザー「1ステージ目のバスの時間だから3個だけでOK」)。
+   ⚠面が進むと増える(ステージごとの表)。⚠**棟の数そのもの**=選択肢の場は広場の廃墟。 */
+const BNS_MG_N=[3,4];
+const bnsMgN=()=>BNS_MG_N[STAGE]||BNS_MG_N[0];
+/* 🎮**遊ぶ回数**。⚠⚠**選んだ棟は消えない**(2026-08-02(43)ユーザー決定)=
+   1面は3種しかないので、消える形にすると「3種を1回ずつ」に固定されて**選ぶ意味が丸ごと消える**。 */
+const BNS_MG_T=3;
+/* 🏚⭐⭐⭐**選択肢の棟の並べ方**。⚠⚠**3棟が画面に同時に入ること**が第一条件=
+   2026-08-02(39)は 1500〜2400 に9棟並べたので**出発点から1棟も見えなかった**(選べない)。
+   ⚠⚠**出発点の「真上」と「真下」には置けない**=真上は道の通路(`bnsCorrFree` が
+     空き地820+建物の外接230=1050を要求する)/真下は**出てきた拠点の閉まった門**(`BNS_WALLY`)。
+   ⭐だから**左右の翼へ交互に振り分けて、道沿いに1棟ずつ奥へずらす**=
+     「門から出て、道の両脇に廃墟が点々と並んでいる」という素直な絵になる。
+   ⚠`_R` は**道の蛇行(±140)を引いても 1050 を切らない**こと。 */
+const BNS_MG_R=1320;
+const BNS_MG_Y0=180;   /* 1棟目の前後(出発点から見て+=手前) */
+const BNS_MG_YS=440;   /* 1棟ごとに奥へずらす量 */
 /* 端の広場から**どれだけはみ出しているか**(≤0なら広場の中)。⚠出発側と到着側で半径が違う */
 const bnsEndOut=(x,y)=>Math.min(
  Math.hypot(x-BNS_CX,y-BNS_GOALY)-BNS_ENDR,
@@ -16824,6 +16855,10 @@ function gameStep(dt){
  if(!G||G.over)return;
  /* ⭐🧪検証場は**ここで丸ごと逸れる**=波・勝敗・戦績の処理を一切通さない */
  if(G.tst){try{tstStep(dt);}catch(e){if(!G.tstE){G.tstE=1;try{toast('🧪 '+e.message,true);}catch(x){}}}return;}
+ /* 🎒⭐⭐**🚌道中の「走る前の流れ」もここで丸ごと逸れる**(2026-08-02(43))=
+    ①選択 ②ミニゲーム ③乗り込み ④強化 の間は**敵も残り時間もスコアも1つも動かない**。
+    ⚠**例外で止めない**=ここが落ちると走り出せずに詰むので、落ちたら流れを畳んで走らせる。 */
+ if(G.bpre){try{bnsPreStep(dt);}catch(e){try{bnsPreGo();}catch(x){G.bpre=null;}}return;}
  if(G.phase==='wave'){
   tideStep(dt);
   for(const C of G.players){if(!C.dead){campStep(C,dt,G.wave);if(C.kind==='cpu')cpuTick(C,dt);}}
@@ -17914,6 +17949,8 @@ function renderCamp(C,t){
     地図が細長い帯になって画面の右側を丸ごと潰すうえ、道が1本なので**見て分かることが何も無い**
     (どこまで来たかは HUD の「あと○m」で足りる)。 */
  if(CAM&&!C.bus)drawMiniMap(c,C);
+ /* 🎒⭐**走る前の流れの絵は一番上**(2026-08-02(43))=速度線や霞の下に潜ると札が読めない */
+ if(C.bus&&G&&G.bpre)try{drawBnsPre(c,C,t);}catch(e){}
 }
 /* ⭐⭐⭐**走っている感じ**(2026-08-02(23)「圧倒的爽快感」)。⚠**画面の座標で描く**。
    ⭐入れたのは3つだけ=①速さに応じた**流れる線** ②ニトロ中の**縁の橙**
@@ -17939,7 +17976,8 @@ function drawBnsRush(c,C){
  /* ① 流れる線。⚠**毎フレーム乱数を引かない**=線がちらついて汚くなる(位置は i と時間で決める) */
  /* ⚠**2026-08-02(35)に効き始めを早め・本数を増やした**=縦を潰して先を広く見せたぶん、
     **同じ速さでも画面の流れは2割ゆっくりになる**。速さは寸法ではなく画面の効果で取り戻す。 */
- const k=clamp((sp-BUS_SP*.28)/(BUS_SP*.72),0,1)*(nz?1:.78);
+ const mx9=B.spMx||BUS_SP;
+ const k=clamp((sp-mx9*.28)/(mx9*.72),0,1)*(nz?1:.78);
  if(k>.04&&FXLV>0){
   const cx=W/2,cy=H/2,R=Math.hypot(W,H)*.5;
   const tx=sp>1?B.vx/sp:1,ty=sp>1?B.vy/sp:0;
@@ -17958,7 +17996,7 @@ function drawBnsRush(c,C){
  }
  /* ② ニトロ中は画面の縁が橙に焼ける(⚠中央は抜く=盤面が読めなくならないように) */
  if(nz&&FXLV>0){
-  const q=clamp(B.nitT/BUS_NIT_T,0,1),a=.16+.16*q;
+  const q=clamp(B.nitT/(B.nitT0||BUS_NIT_T),0,1),a=.16+.16*q;
   try{const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.30,W/2,H/2,Math.hypot(W,H)*.55);
    g.addColorStop(0,'rgba(255,150,60,0)');g.addColorStop(1,'rgba(226,90,30,'+a.toFixed(3)+')');
    c.fillStyle=g;c.fillRect(0,0,W,H);}catch(e){}
@@ -18030,12 +18068,15 @@ function bnsHud(C){
  const el=$('bnitro'),B=C.bus;if(!el||!B)return;
  /* 🏁⭐**到着のムービー中は操作の物を引っ込める**(2026-08-02(42))=
     出したままだと「黒帯の付いた運転画面」にしか見えない(押せてしまうのも困る)。 */
+ /* ⚠⚠**走る前の流れ(`G.bpre`)はここで隠さない**(2026-08-02(43)に撮って気づいた)=
+    あちらは `body.bnspre` のCSSで隠している。ここで**インラインの display:none を書くと、
+    出発した後もCSSでは戻せず、スティックとニトロが消えたまま走ることになる**。 */
  {const mv=B.mov?1:0;
   if(mv!==(BNIT_M||0)){BNIT_M=mv;
    el.style.display=mv?'none':'';
    const sk=$('bstick');if(sk&&sk.style)sk.style.display=mv?'none':'';}
   if(mv)return;}
- const p=B.nitT>0?Math.round(B.nitT/BUS_NIT_T*100):Math.round((B.nit||0)*100);
+ const p=B.nitT>0?Math.round(B.nitT/(B.nitT0||BUS_NIT_T)*100):Math.round((B.nit||0)*100);
  const st=B.nitT>0?2:((B.nit||0)>=1?1:0);
  if(p!==BNIT_P){BNIT_P=p;const b=el.firstElementChild;if(b&&b.style)b.style.height=p+'%';}
  if(st!==BNIT_R){BNIT_R=st;
@@ -18616,6 +18657,12 @@ cv.addEventListener('pointerdown',e=>{
  if(!gameActive)return;
  if(SPEC>=0){setSpec(-1);return;}
  const [mx,my]=evtToMap(e);
+ /* 🎒⭐**走る前の流れ(選択/ミニゲーム/強化)は盤面のタップを丸ごと横取りする**(2026-08-02(43))。
+    ⚠**建設メニューへ渡さない**=この面に建てる物は無いし、渡すと札の裏で別の物が開く。
+    ⚠**画面座標も渡す**=札は画面の割合で置いてあるので、世界座標では当たりが出せない。 */
+ if(G&&G.bpre){const r9=cv.getBoundingClientRect();
+  try{bnsPreTap((e.clientX-r9.left)*DPR,(e.clientY-r9.top)*DPR,mx,my);}catch(x){}
+  return;}
  if(EDIT){/* 編集モード: マスを掴んで動かす。建設メニューは開かない */
   edPanel();closeBM();
   let h=-1,bd=1e9;
@@ -19378,7 +19425,13 @@ function startSolo(){
  /* ⚠**例外で止まらないように包む**=nextWave は音(sfx.horn)や案内モーダルまで触るので、
     まだ AudioContext が作られていない経路(撮影・自動テスト)だと途中で落ちる。
     落ちても**波は必ず始める**=phase を後から立て直す(でないと「敵が湧かない」で固まる)。 */
- if(isBns()){G.wave=0;G.tI=0;try{nextWave();}catch(e){}G.phase='wave';}
+ /* 🎒⭐⭐⭐**波を始めるのは「走る前の流れ」が終わってから**(2026-08-02(43))=
+    ①ミニゲーム選択 → ②3回遊ぶ → ③乗り込み → ④強化 → **ここで初めて `nextWave()`**(`bnsPreGo`)。
+    ⚠**廃墟が1棟も建っていない時は流れごと飛ばす**=選択肢の無い画面で詰むより走らせる方がまし。 */
+ if(isBns()){G.wave=0;G.tI=0;G.phase='wave';
+  let pre=false;
+  if(BENT.length)try{bnsPreInit(me);pre=true;}catch(e){G.bpre=null;pre=false;}
+  if(!pre)try{nextWave();}catch(e){}}
  $('strikebtn').textContent=STRIKES[me.stk].ic;
  $('tidebar').style.display='none';$('pushbtn').style.display='none';
  $('pausebtn').style.display='inline-block';
@@ -19555,9 +19608,11 @@ function bldPush(x,y,a,L,W,rd,rf){
    ⚠⚠**細かい絵を描いても読めない**=この面の寄りは .26 なので、**40px未満の意匠は1px以下**になる。
      ⭐**大きな塊と色**だけで語ること(キャノピー・のこぎり屋根の帯・切妻の棟・シャッター)。
    ⚠**タレット置き場にはしない**(`rf`=0)=屋上に登るのではなく中へ入る建物。 */
-/* 🏚**出発地点の広場に並べる棟数**(2026-08-02(39))。⚠制限時間内に**全部は回れない**数にする
-   =「どれを漁るか」の選択が生まれる(全部回れると作業になる)。 */
-const ENT_N=9;
+/* 🏚**出発地点の広場に並べる棟数**=`bnsMgN()`(面ごと。1面は3棟)。
+   ⚠⚠**2026-08-02(43)に9棟から3棟へ減らした**(ユーザー決定「1ステージ目だから3個だけでOK」)=
+     ①9棟だと**画面に入らない**(選択肢が見えないと選べない) ②**選んだ棟は消えない**形にしたので、
+     「9棟のうち3棟しか回れない」という当初の選択の作り方そのものが無くなった。
+   ⚠**棟数の表は上の `BNS_MG_N`**(TDZの穴を避けてファイルの上の方に置いてある)。 */
 /* 🏚⭐**壁の当たりの寸法**(2026-08-02(40))。`ENT_TH`=壁の厚み / `ENT_DOOR`=入口の半幅。
    ⚠⚠**`ENT_DOOR` はバスの当たり(`BUS_CL`=55)より小さくすること**=大きいと
      バスが倉庫のシャッターから中へ入れてしまい、**屋根の下で画面から消える**。 */
@@ -19696,7 +19751,10 @@ function bnsMap(){
     道沿いに散らすと**歩いて行けない**(バスに乗る前に4万px先の廃墟へは行けない)。
     ⚠**輪の上に等間隔で並べる**=広場の中心(出発点)から見てどれも同じ距離=どこから回ってもよい。
     ⚠**入口は必ず広場の中心を向ける**=外を向いていると入口を探して裏へ回ることになる。 */
- {const cx=BNS_CX,cy=BNS_STARTY,N=ENT_N;
+ /* ⭐⭐⭐**2026-08-02(43)に「広い輪に9棟」から「近い弧に3棟」へ寄せた**=
+    ①**選択肢は見えないと選べない**(一番近い棟でも1320px先=画面のほぼ外だった)
+    ②1面のミニゲームは3個(ユーザー決定)。⚠**半径は `BNS_MG_R`**(道の空き地から離せる最小より外)。 */
+ {const cx=BNS_CX,cy=BNS_STARTY,N=bnsMgN();
   for(let i=0;i<N;i++){
    const ki=i%ENT_K.length,K=ENT_K[ki],R=Math.max(K.L,K.W);
    let done=0;
@@ -19709,12 +19767,13 @@ function bnsMap(){
       (2026-08-02(40)に数えたら**9棟中8棟しか建っていなかった**。外の輪の一番端が毎回落ちる)。
       ⭐**角度は±45°まで大きく振る**(±7°では横へ逃げ切れない)。
       ⚠**半径は内と外の両方へ振る**=外へだけ振ると、はみ出している棟がさらに外へ行って永久に入らない。 */
-   const a0=.28+(i/Math.max(1,N-1))*2.58;/* 16°〜164°(画面では出発点の下と左右) */
-   const r0=.50+(i%3)*.15;
-   for(let k=0;k<13&&!done;k++)for(let ri=0;ri<5&&!done;ri++){
-    const a=a0+((k+1)>>1)*.13*((k%2)?1:-1);
-    const rad=BNS_EXP_R*(r0+((ri+1)>>1)*.06*((ri%2)?1:-1));
-    const bx=cx+Math.cos(a)*rad,by=cy+Math.sin(a)*rad;
+   const sd=(i%2)?1:-1;/* ⭐左右の翼へ交互に振り分ける */
+   for(let k=0;k<9&&!done;k++)for(let ri=0;ri<5&&!done;ri++){
+    /* ⚠**横は外へだけ逃がす**(内へ寄せると道の通路に食い込んで必ず弾かれる)。
+       ⚠**前後は両方へ振る**=1棟目が入らなかった時に手前へも戻れるように。 */
+    const bx=cx+sd*BNS_MG_R*(1+ri*.07);
+    const by=cy+BNS_MG_Y0-i*BNS_MG_YS+((k+1)>>1)*150*((k%2)?1:-1);
+    const a=Math.atan2(by-cy,bx-cx);/* 入口は必ず出発点の側を向ける */
     if(bx<300||by<300||bx>MAPW-300||by>MAPH-300)continue;
     /* ⚠⚠**道の通路の中には置かない**=出発点から上へ伸びる道を塞ぐと走り出せない。
        ⭐**判定は `bnsCorrFree` から引く**(2026-08-02(40))=自前の式で近似すると
@@ -20306,7 +20365,7 @@ function bnsArrStart(C){
    ⭐だから運転の枝から切り出して、両方から呼ぶ形にしてある。 */
 function bnsCamFollow(B,nz9){
  if(!(cv&&cv.height&&SCY>0&&SC>0))return;
- const sp9=clamp(Math.hypot(B.vx,B.vy)/BUS_SP,0,1);
+ const sp9=clamp(Math.hypot(B.vx,B.vy)/(B.spMx||BUS_SP),0,1);
  /* ⚠**バスの尻が画面の外へ出ない上限**を絵の大きさから出す(寸法が変わっても勝手に合う) */
  const pMx=1-(BUS_R*1.16*SC)/cv.height;
  const py9=Math.min(pMx,BUS_CAM_P+(BUS_CAM_P2-BUS_CAM_P)*Math.min(1,sp9*(nz9?1.25:1)));
@@ -20376,6 +20435,9 @@ function bnsBusInit(C){
   mov:0,movT:0,movGY:null,movP:0,
   /* ⏱残り時間 / ⚡スコア(=連なりの段の倍率で積む) */
   left:BNS_TIME,score:0};
+ /* 🔧⭐**強化の効き目は必ずバスの持ち物に入れる**(2026-08-02(43))=定数を書き換えると次の試合に残る。
+    ⚠**素の値もここで入れておく**=1つも買わなかった時に undefined を掛けないため。 */
+ bupApply(C.bus,null);
  BNIT_P=-1;BNIT_R=-1;BNIT_M=0;/* ⚠ボタンの表示を必ず1回書き直させる(前の試合の値が残る) */
  /* ⚠**引っ込めたままにしない**=ムービー中に隠した物を、次の試合で必ず出し直す */
  try{const e9=$('bnitro');if(e9&&e9.style)e9.style.display='';
@@ -20393,11 +20455,12 @@ function bnsBusStep(C,dt){
  if(B.nitT>0)B.nitT=Math.max(0,B.nitT-dt);
  const ix=B.ix||0,iy=B.iy||0,il=Math.hypot(ix,iy),im=Math.min(1,il);
  if(im>.06){
-  B.vx+=ix*BUS_ACC*(nz9?BUS_NIT_ACC:1)*dt;B.vy+=iy*BUS_ACC*(nz9?BUS_NIT_ACC:1)*dt;
+  const ac9=BUS_ACC*(B.accX||1);
+  B.vx+=ix*ac9*(nz9?BUS_NIT_ACC:1)*dt;B.vy+=iy*ac9*(nz9?BUS_NIT_ACC:1)*dt;
   /* ⭐**横滑りを抑える**=スティックと直角の速さを落とす。これが「曲がる」の正体。
      ⚠**前後の成分は触らない**(触ると重さが消えて、瞬間移動する乗り物になる)。 */
   const ux=ix/il,uy=iy/il,nx9=-uy,ny9=ux;
-  const vn=B.vx*nx9+B.vy*ny9,g=Math.min(1,BUS_GRIP*dt);
+  const vn=B.vx*nx9+B.vy*ny9,g=Math.min(1,BUS_GRIP*(B.gripX||1)*dt);
   B.vx-=nx9*vn*g;B.vy-=ny9*vn*g;
  }
  else{const f=Math.max(0,1-BUS_FRIC*dt);B.vx*=f;B.vy*=f;}
@@ -20409,7 +20472,7 @@ function bnsBusStep(C,dt){
     ⭐🔥**ニトロで一発で振り払える**=ニトロに「脱出」という2つ目の使い道が付く。 */
  if(nz9)B.grip=0;
  const gp9=clamp(B.grip||0,0,1);
- const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*(nz9?BUS_NIT_SP:1)*Math.max(.4,im||1)*(1-gp9*BUS_GRIP_S);
+ const sp=Math.hypot(B.vx,B.vy),mx=(B.spMx||BUS_SP)*(nz9?BUS_NIT_SP:1)*Math.max(.4,im||1)*(1-gp9*BUS_GRIP_S);
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
  let nx2=clamp(B.x+B.vx*dt,70,MAPW-70),ny2=clamp(B.y+B.vy*dt,70,MAPH-30);
@@ -20452,7 +20515,7 @@ function bnsBusStep(C,dt){
   const dx=z.px-B.x,dy=z.py-B.y,rz=rr9+(z.sc||1)*10*((z.boss||z.elite)?1:RICE_K);
   if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
-  dmgZ(C,z,BUS_DPS*(nz9?BUS_NIT_DPS:1)*dt,1,true);
+  dmgZ(C,z,BUS_DPS*(B.dpsX||1)*(nz9?BUS_NIT_DPS:1)*dt,1,true);
   if(z.dead)kil++;
   /* 🔥ニトロ中は**跳ね飛ばす力も上がる**=速いだけでは「化けた」に見えない */
   else{z.d=Math.max(0,z.d-BUS_KB*(nz9?1.8:1)*dt);z.stnT=Math.max(z.stnT||0,.12);
@@ -20486,7 +20549,7 @@ function bnsBusStep(C,dt){
  if(kil){
   const tb=bnsCmbT(B.cmb||0);
   /* 🔥**ニトロは轢いた時だけ溜まる**(⚠使っている間は溜めない=撃ちっぱなしにしない) */
-  if(!nz9)B.nit=Math.min(1,(B.nit||0)+kil*BUS_NIT_K);
+  if(!nz9)B.nit=Math.min(1,(B.nit||0)+kil*(B.nitK||BUS_NIT_K));
   /* ⭐**一度にたくさん轢いた瞬間だけ画面を抜く**=「群れをまとめて薙いだ」を画で言い切る */
   if(kil>=BUS_FLASH_N&&(B.flashCd||0)<=0&&FXLV>0){B.flashT=.16;B.flashCd=BUS_FLASH_CD;
    /* ⭐⭐**一瞬だけ時間を止める**(2026-08-02(28))=**手応えの正体はこれ**。
@@ -20500,7 +20563,7 @@ function bnsBusStep(C,dt){
    for(let i9=0;i9<3;i9++)bnsRing(C,'bscr',BNS_SCR,
     {x:rnd(.06,.94),y:rnd(.06,.86),r:rnd(.03,.085),a:rnd(0,6.28),t:0,lf:rnd(1.1,2.0)});
    if(C.isMe&&sfx[SFX_SMASH])sfx[SFX_SMASH]();}
-  B.cmb=(B.cmb||0)+kil;B.cmbT=BNS_CMB_T;B.cmbP=1;B.kill=(B.kill||0)+kil;
+  B.cmb=(B.cmb||0)+kil;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;B.kill=(B.kill||0)+kil;
   if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
   bnsScore(B,kil);
   /* ⭐⭐**段が上がった瞬間だけ鳴らす+光らせる**(2026-08-02(3)ユーザー「音と演出がちゃっちい」)。
@@ -20535,7 +20598,7 @@ function bnsBusStep(C,dt){
  /* 🛞**土埃**=速く走っている間だけ後ろへ吐く。⚠**跡の輪を使い回す**ので数は増えない。
     ⚠進んだ距離で置く(毎フレーム置くと止まっている間に足元へ積もる)。 */
  if(FXLV>0){const mv=Math.hypot(B.vx,B.vy);
-  if(mv>BUS_SP*.45){B.dustD=(B.dustD||0)+mv*dt;
+  if(mv>(B.spMx||BUS_SP)*.45){B.dustD=(B.dustD||0)+mv*dt;
    if(B.dustD>=46){B.dustD=0;const gz=bnsGz(),tx=B.vx/mv,ty=B.vy/mv;
     bnsRing(C,'bdst',BNS_DST,{x:B.x-tx*BUS_R*.7+rnd(-18,18),y:B.y-ty*BUS_R*.7+rnd(-12,12),
      r:rnd(10,17)*gz,vx:-tx*rnd(20,70),vy:-ty*rnd(20,70),t:0,lf:rnd(.5,.9)});}}
@@ -20571,9 +20634,9 @@ function bnsBusStep(C,dt){
     ⚠**鳴らしっぱなしのタイヤ音とは別**=あれは路面の「ゴーッ」、これは「キュッ」の一発。
     ⚠**間を空ける**(1.1秒に1回まで)=曲がるたびに連発すると安っぽくなる。 */
  {const mv2=Math.hypot(B.vx,B.vy);
-  if(mv2>BUS_SP*.45){
+  if(mv2>(B.spMx||BUS_SP)*.45){
    const a8=(B.ang==null)?-1.5708:B.ang,nx8=-Math.sin(a8),ny8=Math.cos(a8);
-   const sl8=Math.abs(B.vx*nx8+B.vy*ny8)/BUS_SP;
+   const sl8=Math.abs(B.vx*nx8+B.vy*ny8)/(B.spMx||BUS_SP);
    if(sl8>.34&&C.isMe&&C.tm-(B.skT||-9)>1.1){B.skT=C.tm;if(sfx.skid)sfxAt('skid',.8);}
   }}
  /* ⭐⭐**到着=クリア**(2026-08-02(24))。⚠**残っている敵と湧く予定を捨ててから**印を立てる
@@ -20649,7 +20712,7 @@ function bnsNitro(){
  const B=C.bus;
  if(B.nitT>0)return false;/* 使っている最中は二度押ししない */
  if((B.nit||0)<1){if(sfx.warn)sfx.warn();return false;}
- B.nit=0;B.nitT=BUS_NIT_T;B.nitN=(B.nitN||0)+1;
+ B.nit=0;B.nitT=(B.nitT0||BUS_NIT_T);B.nitN=(B.nitN||0)+1;
  if(sfx.nitro)sfx.nitro();
  if(FXLV>0){C.shake=Math.max(C.shake||0,.34);
   /* 足元から輪が1枚(⚠1試合で数回しか出ないので盛ってよい=NOTESの「まとまった瞬間」) */
@@ -21046,10 +21109,10 @@ function bnsSmash(C,o){
    if(ax*ax+ay*ay>BOBJ_BOOM*BOBJ_BOOM)continue;
    dmgZ(C,z,BOBJ_BDMG,1,true);if(z.dead)kb++;}
   /* ⚠**爆発で倒した数も連なりに乗せる**=乗せないと「爆発させると連なりが切れる」逆の遊びになる */
-  if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=BNS_CMB_T;B.cmbP=1;
+  if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;
    if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
    bnsScore(B,kb);
-   if(!nz)B.nit=Math.min(1,(B.nit||0)+kb*BUS_NIT_K);}
+   if(!nz)B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));}
   if(C.isMe)try{sfxAt('boom',.9);}catch(e){}
  }else if(C.isMe)try{sfxAt(SFX_SMASH,.5);}catch(e){}
 }
@@ -21077,6 +21140,411 @@ function drawBnsObj(c,C){
 }
 /* スティックの入力(-1〜1)。⚠**画面側から呼ぶのはここだけ**にする */
 function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy=dy;}
+/* ============ 🎒⭐⭐⭐**走る前の流れ**(①選択 → ②ミニゲーム3回 → ③乗り込み → ④強化) ============
+   (2026-08-02(43)ユーザー決定「ミニゲーム選択画面で3回やったらバスに乗り込む軽いムービーから
+     強化画面で準備OKでバス運転」)
+   ⚠⚠**入っていなかったのは①〜④**(⑤運転と⑥到着だけが先に入っていた)。
+   ⭐**土台はもう全部あった**=広場の廃墟(`BENT`)・壁の当たり(`bnsEntFit`)・🎥カメラ(`camOn`)。
+     ここで足すのは**状態(`G.bpre`)と3枚の絵とタップの受け口**だけ。
+   ⚠⚠**波を始めるのは④が終わってから**=`startSolo` から `nextWave()` を外し、
+     `gameStep` の頭で丸ごと逸れる(=敵も残り時間もスコアも1つも動かない)。
+   ⚠⚠**UIはDOMで作らない**=盤面の上に**画面座標で描く**。DOMにすると寄り・安全域・向きの話が
+     全部ついて回るうえ、絵の語彙が本編とずれる(この面はもともと canvas 一枚で語っている)。
+   ⚠**この面かぎりの強化**=永久強化にすると🔬研究所と役割がぶつかる(ユーザー決定は「集めた物資で」)。 */
+/* 🔧**バスの強化**(この試合かぎり)。`r`=どの物資で買うか(0⛽/1🏭/2🏠)。
+   ⚠⚠**効き目は必ずバスの持ち物にする**(`B.spMx` など)=定数を書き換えると次の試合に残る。
+   ⚠**轢く範囲(`BUS_R`)は強化に入れない**=絵と当たりの大きさは必ず揃える掟(NOTES)を破るため。 */
+const BUP=[
+ {k:'sp', r:0,ic:'🏎',n:'エンジン',d:'最高速 +7%',        mx:5,c:[25,45,75,115,165]},
+ {k:'nt', r:0,ic:'🔥',n:'増槽',    d:'ニトロ +0.6秒',      mx:4,c:[30,55,90,140]},
+ {k:'ram',r:1,ic:'🛡',n:'排障器',  d:'轢く力 +20%',        mx:5,c:[25,45,75,115,165]},
+ {k:'tir',r:1,ic:'🛞',n:'タイヤ',  d:'加速 +12% / よく曲がる',mx:3,c:[40,75,120]},
+ {k:'crw',r:2,ic:'👥',n:'乗員',    d:'連なりの猶予 +0.3秒',mx:4,c:[30,55,90,140]},
+ {k:'kit',r:2,ic:'🍖',n:'炊き出し',d:'ニトロの溜まり +18%',mx:4,c:[30,55,90,140]}
+];
+/* ⚠**素の値もここで入れる**=強化を1つも買わなかった時に undefined を掛けないため */
+function bupApply(B,up){
+ up=up||{};
+ B.spMx =BUS_SP   *(1+.07*(up.sp|0));
+ B.nitT0=BUS_NIT_T+ .60*(up.nt|0);
+ B.dpsX =1+.20*(up.ram|0);
+ B.accX =1+.12*(up.tir|0);
+ B.gripX=1+.10*(up.tir|0);
+ B.cmbT0=BNS_CMB_T+.30*(up.crw|0);
+ B.nitK =BUS_NIT_K*(1+.18*(up.kit|0));
+}
+/* 次の1段の値段(買えなければ null) */
+function bupCost(U,i){const u=BUP[i],lv=(U&&U[u.k])|0;return lv>=u.mx?null:u.c[lv];}
+/* 🎒**走る前の状態**。⚠**G に持つ**=面(=1試合)の状態であってバスの持ち物ではない */
+function bnsPreInit(C){
+ const P=BENT.slice().sort((a,b)=>a.x-b.x);/* 左から順=画面の並びと添字が一致する */
+ G.bpre={st:'sel',left:BNS_MG_T,res:[0,0,0],up:{},pick:P,t:0,mg:null,
+         selI:-1,selT:0,got:null,gotT:0,bt:0,bp:0};
+ document.body.classList.add('bnspre');
+ bnsSelCam();
+}
+/* 🎥⭐**選択画面の寄り**=**3棟とバスが全部入る**ように毎回出す。
+   ⚠⚠**決め打ちにしない**=画面の縦横比で見える広さが倍以上変わる(横長の実機と縦長の実機)。
+   ⚠**運転の寄り(.62)とは別物**=ここは「広場を見下ろす」絵なので**縦は潰さない**(sq=1)。 */
+function bnsSelCam(){
+ const P=(G&&G.bpre&&G.bpre.pick)||[];
+ try{fitCanvas();}catch(e){}
+ /* ⚠**バスと「出てきた拠点の門」(`BNS_WALLY`)も必ず入れる**=門が見えていないと
+    「拠点を出た所に居る」が読めず、ただの空き地に札が浮いている絵になる。 */
+ let x0=BNS_CX-320,x1=BNS_CX+320,y0=BNS_STARTY-260,y1=BNS_WALLY+120;
+ for(const b of P){const r=b.rr;
+  x0=Math.min(x0,b.x-r);x1=Math.max(x1,b.x+r);y0=Math.min(y0,b.y-r);y1=Math.max(y1,b.y+r);}
+ /* ⚠⚠**上の帯と下の案内のぶんを先に除ける**(2026-08-02(43)に撮って気づいた)=
+    画面いっぱいに収める計算だと、**一番奥の棟が上の帯の裏に隠れて光の輪が見えなかった**。
+    ⭐使ってよいのは画面の縦の `SEL_T`〜(1-`SEL_B`) だけ、と決めてから寄りを出す。 */
+ const SEL_T=.21,SEL_B=.07;
+ let zm=.42;
+ if(SC0>0&&VW>0&&VH>0){
+  const zw=(VW/SC0)/Math.max(400,(x1-x0)*1.08);
+  const zh=(VH*(1-SEL_T-SEL_B)/SC0)/Math.max(400,(y1-y0)*1.06);
+  zm=clamp(Math.min(zw,zh),.16,1.0);}
+ /* ⭐**中身の真ん中が「使ってよい帯」の真ん中に来る**ようにカメラをずらす。
+    ⚠`camApply` は VH の中央を基準にするので、そこからのズレを世界の距離で足す。 */
+ const cy9=(y0+y1)/2,sy9=SC0*zm;
+ camOn((x0+x1)/2,cy9-(VH*((SEL_T-SEL_B)/2))/(sy9||1),zm,1);
+ try{camApply();}catch(e){}
+}
+/* 走る前の1コマ。⚠**ここでは敵も時間もスコアも動かない**(`gameStep` の頭で逸れている) */
+function bnsPreStep(dt){
+ const Q=G&&G.bpre;if(!Q)return;
+ const C=G.players[0];
+ Q.t+=dt;
+ if(Q.selT>0)Q.selT=Math.max(0,Q.selT-dt);
+ if(Q.gotT>0)Q.gotT=Math.max(0,Q.gotT-dt);
+ if(Q.st==='mini')bnsMgStep(Q,dt);
+ else if(Q.st==='board')bnsBoardStep(C,Q,dt);
+}
+/* ============ ⛽⭐⭐**ミニゲーム①「給油」**(2026-08-02(43)) ============
+   ⭐**中毒性の条件はユーザー決定で2つ**=**1回が短いこと** と **上手いと明らかに増えること**。
+   ⚠⚠**コメントの中で「星2つ」の直後に「斜線」を書かない**(2026-08-02(43)に踏んだ)=
+     **その2文字がコメントの終わりの記号そのもの**なので、コメントがそこで切れて
+     **スクリプト全体が文法エラー**になる(`test_undef` が捕まえた)。
+     ①8回タップで終わる(20秒かからない) ②**連続で当てるほど倍率が伸びる**
+     ③外すと倍率だけ落ちる(回数は減らない)=取り返せるので「もう1回」が続く。
+   ⚠**運だけにしない**=目標の帯は**止める前から見えている**(反射ではなく狙って止める遊び)。
+   ⭐**回を追うごとに針が速く・帯が狭くなる**=同じ8回でも後半ほど価値が上がる。
+   ⚠⚠**残り2種(🏭荷下ろし/🏠物色)はまだ作っていない**(ユーザー決定「まず1種だけ作って手触りを見る」)=
+     **3棟ともこの給油を遊ぶ**が、**もらえる物資は棟の種類で変わる**ので選ぶ理由は先に成立している。 */
+const BMG_N=8;            /* 1回のミニゲームで給油する本数 */
+const BMG_SP=[1.05,.16];  /* 針の速さ(初回 / 1本ごとの増え) */
+const BMG_W=[.22,-.016];  /* 目標の帯の幅(初回 / 1本ごとの狭まり) */
+const BMG_PT=[5,3,0];     /* ✨会心 / ⭕成功 / ❌失敗 */
+const BMG_MUL=[1,1.2,1.5,1.9,2.4];/* 連続の倍率(1連目から) */
+const BMG_SUB=.35;        /* ⚠**主でない物資も少しは入る**=1種類しか貯まらないと強化が1本道になる */
+function bnsMgRound(M){
+ M.sp=BMG_SP[0]+BMG_SP[1]*M.i;
+ M.w=Math.max(.075,BMG_W[0]+BMG_W[1]*M.i);
+ /* ⚠**端に寄せすぎない**=折り返しの直後に当たってしまい「狙った」感が消える */
+ M.tgt=.20+Math.random()*.60;
+ M.pos=M.dir>0?.02:.98;
+}
+function bnsMgStart(Q,b){
+ Q.st='mini';Q.got=null;Q.gotT=0;
+ Q.mg={ek:b.ek|0,i:0,pos:.02,dir:1,sp:BMG_SP[0],w:BMG_W[0],tgt:.5,
+       t:0,pts:0,run:0,runMx:0,msg:'',msgT:0,endT:0,fl:0,lastG:-1};
+ bnsMgRound(Q.mg);
+}
+function bnsMgStep(Q,dt){
+ const M=Q.mg;if(!M)return;
+ M.t+=dt;
+ if(M.msgT>0)M.msgT=Math.max(0,M.msgT-dt);
+ if(M.fl>0)M.fl=Math.max(0,M.fl-dt);
+ if(M.endT>0){M.endT-=dt;if(M.endT<=0)bnsMgDone(Q);return;}
+ M.pos+=M.dir*M.sp*dt;
+ if(M.pos>1){M.pos=1;M.dir=-1;}else if(M.pos<0){M.pos=0;M.dir=1;}
+}
+/* 1本ぶんの判定。⚠**外しても本数は進める**=進まないと「当たるまで押す」で終わらなくなる */
+function bnsMgTap(Q){
+ const M=Q.mg;if(!M||M.endT>0)return;
+ const h=M.w/2,d=Math.abs(M.pos-M.tgt);
+ const g=d<=h*.36?0:(d<=h?1:2);
+ if(g<2)M.run++;else M.run=0;
+ M.runMx=Math.max(M.runMx,M.run);
+ const mul=g<2?BMG_MUL[Math.min(BMG_MUL.length-1,M.run-1)]:0;
+ const add=g<2?Math.round(BMG_PT[g]*mul):0;
+ M.pts+=add;M.lastG=g;
+ M.msg=g===0?'✨会心! +'+add:(g===1?'⭕給油 +'+add:'❌こぼした');
+ M.msgT=.75;M.fl=g===0?.28:0;
+ try{if(g===0){if(sfx.cmbUp)sfx.cmbUp();}else if(g===1){if(sfx.tap)sfx.tap();}else if(sfx.back)sfx.back();}catch(e){}
+ M.i++;
+ if(M.i>=BMG_N)M.endT=1.1;else bnsMgRound(M);
+}
+/* 終わり=物資を積んで選択画面へ戻る。⚠**3回終わったら乗り込みへ**(回数は棟ではなく回で数える) */
+function bnsMgDone(Q){
+ const M=Q.mg;if(!M)return;
+ const main=Math.max(1,M.pts),sub=Math.round(main*BMG_SUB);
+ const got=[0,0,0];
+ for(let i=0;i<3;i++){got[i]=(i===M.ek)?main:sub;Q.res[i]+=got[i];}
+ Q.got=got;Q.gotT=2.4;Q.mg=null;
+ Q.left=Math.max(0,Q.left-1);
+ try{if(sfx.clearJ)sfx.clearJ();}catch(e){}
+ if(Q.left<=0)bnsBoardStart();
+ else{Q.st='sel';bnsSelCam();}
+}
+/* ============ 🚌⭐**乗り込みのムービー**(③・2026-08-02(43)ユーザー「軽いムービー」) ============
+   ⚠⚠**寄りの切り替えはここで1回だけ**=`camOn` を跨ぐと焼いた地形を全部捨てる(`drawBnsTown`)。
+     **黒帯で隠れているこの一瞬にまとめてやる**=走り出してからでは毎フレーム焼き直しになって固まる。
+   ⚠**ムービーの間に寄りを動かさない**(同じ理由)。⭐動かすのはバスの位置だけ。 */
+const BNS_BRD_T=2.6;
+function bnsBoardStart(){
+ const Q=G&&G.bpre;if(!Q)return;
+ const C=G.players[0],B=C&&C.bus;if(!B)return;
+ Q.st='board';Q.bt=0;Q.bp=0;
+ camOn(B.x,B.y,.62,BNS_SQ);
+ try{camApply();}catch(e){}
+ try{if(sfx.busHorn)sfx.busHorn();}catch(e){}
+}
+function bnsBoardStep(C,Q,dt){
+ const B=C&&C.bus;if(!B)return;
+ Q.bt=(Q.bt||0)+dt;
+ /* ⭐**扉が閉まってから少しだけ前へ出る**=「乗った・動き出した」が絵で読める(前照灯も点く) */
+ if(Q.bt>1.15){
+  const v=Math.min(200,(Q.bt-1.15)*560);
+  B.y-=v*dt;B.vx=0;B.vy=-v*.4;B.dr=-1;
+  if(!Q.bp){Q.bp=1;try{if(sfx.nitro)sfx.nitro();}catch(e){}}
+ }else{B.vx=0;B.vy=0;}
+ bnsCamFollow(B,0);
+ if(Q.bt>=BNS_BRD_T){B.vx=0;B.vy=0;Q.st='up';}
+}
+/* ============ 🔧**強化画面**(④)============ */
+/* ⭐**札の位置は1か所で出す**=絵とタップが必ず一致する(2つに分けると必ず食い違う) */
+function bnsUpRects(W,H){
+ const dp=DPR||1,R=[],mx=W*.045,gp=12*dp,gy=H*.235;
+ const cw=(W-mx*2-gp*2)/3,ch=(H*.50-gp)/2;
+ for(let i=0;i<BUP.length;i++)
+  R.push({x:mx+(i%3)*(cw+gp),y:gy+((i/3)|0)*(ch+gp),w:cw,h:ch,i:i});
+ R.go={x:W*.28,y:gy+ch*2+gp+10*dp,w:W*.44,h:H*.115};
+ return R;
+}
+function bnsUpTap(Q,sx,sy){
+ const R=bnsUpRects(cv.width,cv.height);
+ const g=R.go;
+ if(sx>=g.x&&sx<=g.x+g.w&&sy>=g.y&&sy<=g.y+g.h){bnsPreGo();return;}
+ for(const r of R){
+  if(sx<r.x||sx>r.x+r.w||sy<r.y||sy>r.y+r.h)continue;
+  const u=BUP[r.i],p=bupCost(Q.up,r.i);
+  if(p==null){try{if(sfx.back)sfx.back();}catch(e){}return;}
+  if(Q.res[u.r]<p){try{if(sfx.warn)sfx.warn();}catch(e){}
+   try{toast(BRES[u.r].ic+BRES[u.r].n+'が足りない');}catch(e){}return;}
+  Q.res[u.r]-=p;Q.up[u.k]=((Q.up[u.k])|0)+1;
+  try{if(sfx.buy)sfx.buy();}catch(e){}
+  return;
+ }
+}
+/* ✅**準備OK**=ここで初めて波が始まる。⚠**強化を先に反映してから**波を作ること */
+function bnsPreGo(){
+ const C=G&&G.players&&G.players[0];if(!C)return;
+ const Q=G.bpre;
+ if(C.bus)bupApply(C.bus,Q?Q.up:null);
+ /* 🎥⚠⚠**運転の寄りに必ず戻す**(2026-08-02(43))=普通は③乗り込みで切り替わっているが、
+    検査と撮影は流れを途中から飛ばすので、**広場を見下ろしたままの寄りで走り出す**ことがある。
+    ⚠**同じ値なら camOn を呼ばない**=焼いた地形を捨てて1フレーム固まる。 */
+ if(C.bus&&(!CAM||Math.abs((CAM.zm||0)-.62)>1e-6||Math.abs((CAM.sq||0)-BNS_SQ)>1e-6)){
+  camOn(C.bus.x,C.bus.y,.62,BNS_SQ);try{camApply();}catch(e){}}
+ G.bpre=null;
+ document.body.classList.remove('bnspre');
+ BNIT_P=-1;BNIT_R=-1;/* ⚠ニトロの溜まりを1回書き直させる(隠していた間の値が残る) */
+ G.wave=0;G.tI=0;try{nextWave();}catch(e){}G.phase='wave';
+ try{if(sfx.horn)sfx.horn();}catch(e){}
+}
+/* ⚠**撮影と検査から丸ごと飛ばす口**=これが無いと `bns` の撮影で敵が1体も湧かない */
+function bnsPreSkip(){if(G&&G.bpre)bnsPreGo();}
+/* ============ 🖌**走る前の3枚の絵**(⚠全部画面座標。世界の変換は使わない)============ */
+function bnsPreTap(sx,sy,mx,my){
+ const Q=G&&G.bpre;if(!Q)return;
+ if(Q.st==='sel'){
+  let h=-1,bd=1e9;
+  for(let i=0;i<Q.pick.length;i++){const b=Q.pick[i],d=dist(mx,my,b.x,b.y);
+   if(d<b.rr+180&&d<bd){bd=d;h=i;}}
+  if(h>=0){Q.selI=h;Q.selT=.22;bnsMgStart(Q,Q.pick[h]);}
+  return;}
+ if(Q.st==='mini'){bnsMgTap(Q);return;}
+ if(Q.st==='up'){bnsUpTap(Q,sx,sy);return;}
+}
+/* 走る前の帯(上下)。⚠**画面の割合で持つ**=どの寸法でも同じ見え方になる */
+function bnsPanel(c,x,y,w,h,a){
+ c.fillStyle='rgba(24,20,15,'+(a==null?.86:a)+')';rr(c,x,y,w,h,10*(DPR||1));c.fill();
+ c.strokeStyle='rgba(242,236,220,.55)';c.lineWidth=2.4*(DPR||1);c.stroke();
+}
+/* 🎒所持している物資(3種)を1行で。⚠**どの画面にも同じ形で出す**=貯まっている実感が続く */
+function bnsResBar(c,Q,W,y,dp){
+ c.textAlign='center';c.font='900 '+Math.round(17*dp)+'px '+FF;
+ for(let i=0;i<3;i++){
+  const x=W*(.30+i*.20);
+  c.fillStyle=PANE;c.fillText(BRES[i].ic+BRES[i].n+' '+Math.round(Q.res[i]),x,y);}
+}
+function drawBnsPre(c,C,t){
+ const Q=G&&G.bpre;if(!Q||!cv.width)return;
+ const W=cv.width,H=cv.height,dp=DPR||1;
+ c.save();c.setTransform(1,0,0,1,0,0);
+ try{
+  if(Q.st==='sel')bnsDrawSel(c,Q,W,H,dp,t);
+  else if(Q.st==='mini')bnsDrawMg(c,Q,W,H,dp,t);
+  else if(Q.st==='board')bnsDrawBoard(c,Q,W,H,dp);
+  else if(Q.st==='up')bnsDrawUp(c,Q,W,H,dp,t);
+ }catch(e){}
+ c.restore();
+}
+/* ①🏚**選択画面**=広場を見下ろして、選べる棟を光らせる(2026-08-02(43)ユーザー決定)。
+   ⚠⚠**棟の絵だけでは何がもらえるか読めない**(この寄りでは40px前後)ので、
+     **棟の上に札を出して「⛽燃料が多い」を文字で言う**。⭐光の輪は「押せる」の合図。 */
+function bnsDrawSel(c,Q,W,H,dp,t){
+ /* 上の帯=何をする画面か+残り回数 */
+ bnsPanel(c,W*.02,H*.03,W*.96,H*.155);
+ c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(21*dp)+'px '+FF;
+ c.fillText('🏚 どこを漁る?',W*.045,H*.085);
+ c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
+ c.fillText('残り '+Q.left+' 回',W*.955,H*.085);
+ bnsResBar(c,Q,W,H*.152,dp);
+ /* 棟ごとの光の輪 */
+ const bw=Math.min(W*.30,190*dp),bh=54*dp,LAY=[];
+ for(let i=0;i<Q.pick.length;i++){
+  const b=Q.pick[i],px=OX+b.x*SC,py=OY+b.y*SCY;
+  const on=(Q.selI===i&&Q.selT>0)?1:0;
+  const pl=.5+.5*Math.sin(t*3.4+i*1.1);
+  const r=Math.max(26*dp,b.rr*SC*.92),ry=r*(SCY/(SC||1));
+  c.lineWidth=(on?5:3)*dp;
+  c.strokeStyle=on?'rgba(255,246,226,.95)':'rgba(255,207,106,'+(.42+.34*pl).toFixed(2)+')';
+  c.beginPath();c.ellipse(px,py,r,ry,0,0,7);c.stroke();
+  /* 札の置き場。⚠**上に置けない時は下へ回す**(2026-08-02(43)に撮って気づいた)=
+     上の帯に押し戻すと**札が自分の光の輪に重なって、どの棟の札か読めなくなる**。 */
+  let by=py-ry-bh-10*dp;
+  if(by<H*.20)by=py+ry+10*dp;
+  LAY.push({b:b,px:px,py:py,ry:ry,x:clamp(px-bw/2,4*dp,W-bw-4*dp),y:by});
+ }
+ /* ⚠⚠**札どうしの重なりを必ず外す**(2026-08-02(43)に撮って気づいた)=同じ側に2棟並ぶと
+    **2枚の札が完全に重なって両方読めなくなる**。⭐上の札から順に、重なったぶんだけ下へ落とす。 */
+ LAY.sort((a,b9)=>a.y-b9.y);
+ for(let i=0;i<LAY.length;i++){
+  for(let j=0;j<i;j++){
+   const A=LAY[j],B=LAY[i];
+   if(B.x>A.x+bw||A.x>B.x+bw)continue;/* 横がずれていれば重ならない */
+   if(B.y<A.y+bh+6*dp)B.y=A.y+bh+6*dp;
+  }
+  LAY[i].y=clamp(LAY[i].y,H*.20,H-bh-26*dp);
+ }
+ for(const L of LAY){
+  /* ⭐**札と輪を細い線で繋ぐ**=3棟が近い時にどの札がどの棟か迷わない */
+  c.strokeStyle='rgba(255,207,106,.55)';c.lineWidth=2*dp;
+  c.beginPath();c.moveTo(L.x+bw/2,L.y+(L.y<L.py?bh:0));
+  c.lineTo(L.px,L.py+(L.y<L.py?-L.ry:L.ry));c.stroke();
+  bnsPanel(c,L.x,L.y,bw,bh,.88);
+  c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(17*dp)+'px '+FF;
+  c.fillText((ENT_K[L.b.ek]||ENT_K[0]).n,L.x+bw/2,L.y+22*dp);
+  c.fillStyle=GOLD;c.font='900 '+Math.round(16*dp)+'px '+FF;
+  c.fillText(BRES[L.b.ek].ic+BRES[L.b.ek].n+' が多い',L.x+bw/2,L.y+43*dp);
+ }
+ /* 直前にもらった物資(戻ってきた時だけ) */
+ if(Q.got&&Q.gotT>0){
+  const a=clamp(Q.gotT/.6,0,1);
+  c.globalAlpha=a;
+  const pw=W*.46,ph=44*dp,px=W/2-pw/2,py=H*.205;
+  bnsPanel(c,px,py,pw,ph,.9);
+  c.textAlign='center';c.fillStyle=GOLD;c.font='900 '+Math.round(18*dp)+'px '+FF;
+  c.fillText('🎒 '+BRES.map((r9,i)=>r9.ic+'+'+Q.got[i]).join('  '),W/2,py+29*dp);
+  c.globalAlpha=1;
+ }
+ c.textAlign='center';c.fillStyle='rgba(242,236,220,.82)';c.font='900 '+Math.round(15*dp)+'px '+FF;
+ c.fillText('光っている廃墟をタップ',W/2,H-14*dp);
+}
+/* ②⛽**給油**。⚠**画面のどこを押しても止まる**=運転前の軽い遊びに狙いを付けさせない */
+function bnsDrawMg(c,Q,W,H,dp,t){
+ const M=Q.mg;if(!M)return;
+ c.fillStyle='rgba(12,9,6,.74)';c.fillRect(0,0,W,H);
+ if(M.fl>0){c.fillStyle='rgba(255,246,226,'+(.22*clamp(M.fl/.28,0,1)).toFixed(3)+')';c.fillRect(0,0,W,H);}
+ /* 見出し */
+ c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(22*dp)+'px '+FF;
+ c.fillText('⛽ 給油 — 目盛りで止めろ',W*.05,H*.115);
+ c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
+ c.fillText(Math.min(BMG_N,M.i+1)+' / '+BMG_N+' 本目',W*.95,H*.115);
+ /* 目盛り */
+ const gx=W*.09,gw=W*.82,gy=H*.44,gh=42*dp;
+ c.fillStyle='rgba(30,25,19,.92)';rr(c,gx,gy,gw,gh,gh*.5);c.fill();
+ c.strokeStyle='rgba(242,236,220,.7)';c.lineWidth=3*dp;c.stroke();
+ /* 目標の帯(⚠**外側と芯の2段**=どこが会心か読めないと狙えない) */
+ {const w=M.w*gw,x0=gx+M.tgt*gw-w/2;
+  c.fillStyle='rgba(110,168,72,.72)';rr(c,x0,gy+4*dp,w,gh-8*dp,8*dp);c.fill();
+  const w2=w*.36,x2=gx+M.tgt*gw-w2/2;
+  c.fillStyle='rgba(255,207,106,.92)';rr(c,x2,gy+4*dp,w2,gh-8*dp,7*dp);c.fill();}
+ /* 針 */
+ {const nx=gx+M.pos*gw;
+  c.strokeStyle='#f2ecdc';c.lineWidth=5*dp;
+  c.beginPath();c.moveTo(nx,gy-11*dp);c.lineTo(nx,gy+gh+11*dp);c.stroke();
+  c.fillStyle='#c2453a';c.beginPath();
+  c.moveTo(nx,gy-13*dp);c.lineTo(nx-9*dp,gy-26*dp);c.lineTo(nx+9*dp,gy-26*dp);c.closePath();c.fill();}
+ /* 連なりと得点 */
+ c.textAlign='center';
+ c.fillStyle=M.run>=2?GOLD:PANE;
+ c.font='900 '+Math.round(20*dp)+'px '+FF;
+ c.fillText('🔥 '+M.run+'連  ×'+BMG_MUL[Math.min(BMG_MUL.length-1,Math.max(0,M.run-1))].toFixed(2)
+            +'    ⛽ '+M.pts,W/2,H*.30);
+ if(M.msgT>0){c.globalAlpha=clamp(M.msgT/.4,0,1);
+  c.fillStyle=M.lastG===0?GOLD:(M.lastG===1?LIFE:DANGER2);
+  c.font='900 '+Math.round(26*dp)+'px '+FF;c.fillText(M.msg,W/2,H*.63);c.globalAlpha=1;}
+ if(M.endT>0){
+  c.fillStyle=GOLD;c.font='900 '+Math.round(28*dp)+'px '+FF;
+  c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' +'+Math.max(1,M.pts),W/2,H*.80);
+ }else{
+  const bw=W*.42,bh=H*.15,bx=W/2-bw/2,by=H*.72;
+  bnsPanel(c,bx,by,bw,bh,.72);
+  c.fillStyle=PANE;c.font='900 '+Math.round(22*dp)+'px '+FF;
+  c.fillText('タップして止める',W/2,by+bh*.62);}
+}
+/* ③🚌**乗り込み**。⚠**黒帯だけで語る**=ここで凝ると「軽いムービー」でなくなる */
+function bnsDrawBoard(c,Q,W,H,dp){
+ const e=clamp((Q.bt||0)/.45,0,1),o=clamp((BNS_BRD_T-(Q.bt||0))/.4,0,1);
+ const k=Math.min(e,o);
+ c.fillStyle='rgba(10,8,6,'+(.18*k).toFixed(3)+')';c.fillRect(0,0,W,H);
+ const bh=Math.round(H*.16*k);
+ c.fillStyle='rgba(10,8,6,.93)';c.fillRect(0,0,W,bh);c.fillRect(0,H-bh,W,bh);
+ if(k<.25)return;
+ c.textAlign='center';c.fillStyle=PANE;c.globalAlpha=k;
+ c.font='900 '+Math.round(24*dp)+'px '+FF;
+ c.fillText((Q.bt||0)<1.15?'🚌 バスに乗り込む':'🔑 エンジン始動',W/2,H*.5-6*dp);
+ c.font='900 '+Math.round(16*dp)+'px '+FF;c.fillStyle='rgba(242,236,220,.8)';
+ c.fillText((Q.bt||0)<1.15?'集めた物資を積み込んでいる…':'次の拠点へ向かう',W/2,H*.5+22*dp);
+ c.globalAlpha=1;
+}
+/* ④🔧**強化画面**。⚠**買えるかどうかが札の色で読めること**(値段だけ書いても押してみるまで分からない) */
+function bnsDrawUp(c,Q,W,H,dp,t){
+ c.fillStyle='rgba(12,9,6,.80)';c.fillRect(0,0,W,H);
+ c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(22*dp)+'px '+FF;
+ c.fillText('🔧 出発前の強化',W*.05,H*.085);
+ bnsResBar(c,Q,W,H*.165,dp);
+ const R=bnsUpRects(W,H);
+ for(const r of R){
+  const u=BUP[r.i],lv=(Q.up[u.k])|0,p=bupCost(Q.up,r.i),ok=p!=null&&Q.res[u.r]>=p;
+  c.fillStyle=p==null?'rgba(52,64,40,.92)':(ok?'rgba(38,32,24,.94)':'rgba(30,26,21,.72)');
+  rr(c,r.x,r.y,r.w,r.h,10*dp);c.fill();
+  c.strokeStyle=p==null?'rgba(150,200,120,.8)':(ok?'rgba(255,207,106,.9)':'rgba(242,236,220,.28)');
+  c.lineWidth=(ok?3:2)*dp;c.stroke();
+  c.textAlign='left';
+  c.fillStyle=ok||p==null?PANE:'rgba(242,236,220,.55)';
+  c.font='900 '+Math.round(18*dp)+'px '+FF;
+  c.fillText(u.ic+' '+u.n,r.x+11*dp,r.y+25*dp);
+  c.font='900 '+Math.round(13*dp)+'px '+FF;
+  c.fillStyle=ok||p==null?'rgba(242,236,220,.85)':'rgba(242,236,220,.45)';
+  c.fillText(u.d,r.x+11*dp,r.y+44*dp);
+  /* 段(◆の数)=いくつ積んだかが数字より速く読める */
+  c.fillStyle=GOLD;c.font='900 '+Math.round(13*dp)+'px '+FF;
+  let dm='';for(let k=0;k<u.mx;k++)dm+=(k<lv?'◆':'◇');
+  c.fillText(dm,r.x+11*dp,r.y+62*dp);
+  c.textAlign='right';
+  c.font='900 '+Math.round(16*dp)+'px '+FF;
+  c.fillStyle=p==null?LIFE:(ok?GOLD:'rgba(242,236,220,.45)');
+  c.fillText(p==null?'MAX':(BRES[u.r].ic+p),r.x+r.w-11*dp,r.y+r.h-11*dp);
+ }
+ const g=R.go,pl=.5+.5*Math.sin(t*4);
+ c.fillStyle='rgba(122,42,30,.95)';rr(c,g.x,g.y,g.w,g.h,12*dp);c.fill();
+ c.strokeStyle='rgba(255,207,106,'+(.6+.4*pl).toFixed(2)+')';c.lineWidth=4*dp;c.stroke();
+ c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(22*dp)+'px '+FF;
+ c.fillText('✅ 準備OK — 出発!',W/2,g.y+g.h*.64);
+}
 /* ⭐⭐**縦の潰し(SCY)を打ち消す倍率**。⚠**回す物は必ずこれを掛けてから回す**=
    縦横の倍率が違う変換の下で `rotate` すると、絵が斜めにひしゃげる(剪断)。
    ⭐回す前に世界のy方向を 1/sq 伸ばしておくと、合成が「等方の拡大×回転」に戻るので、
@@ -21091,7 +21559,7 @@ function drawBus(c,C,t){
  if(B.nitT>0&&FXLV>0){
   /* ⚠**止まっていても向きが要る**=進行方向が無い時は車体の向きに噴く(でないと炎が消える) */
   const mv=Math.hypot(B.vx,B.vy),tx=mv>8?B.vx/mv:(B.dr<0?-1:1),ty=mv>8?B.vy/mv:0;
-  const f=(.86+.14*Math.sin(t*38))*BUS_R*(1.5+.7*clamp(mv/BUS_SP,0,1.6));
+  const f=(.86+.14*Math.sin(t*38))*BUS_R*(1.5+.7*clamp(mv/(B.spMx||BUS_SP),0,1.6));
   c.save();c.translate(B.x-tx*BUS_R*.66,B.y-ty*BUS_R*.66);c.scale(1,iv9);c.rotate(Math.atan2(ty,tx));
   c.globalAlpha=.55;c.fillStyle='#a83218';
   c.beginPath();c.moveTo(0,-BUS_R*.62);c.lineTo(-f*1.15,0);c.lineTo(0,BUS_R*.62);c.closePath();c.fill();
@@ -21142,7 +21610,7 @@ function drawBus(c,C,t){
     ⚠**縦の潰し(SCY)を打ち消してから回す**=でないと光が斜めにひしゃげる。
     ⚠**濃さは控えめ**(昼の路面に強い加算を乗せると白飛びして道が消える)。 */
  if(FXLV>0){
-  const a9=busAng(B),sp9=clamp(Math.hypot(B.vx,B.vy)/BUS_SP,0,1),nt9=B.nitT>0?1:0;
+  const a9=busAng(B),sp9=clamp(Math.hypot(B.vx,B.vy)/(B.spMx||BUS_SP),0,1),nt9=B.nitT>0?1:0;
   const x0=BUS_R*.66,ln=BUS_R*(2.1+4.2*sp9)*(nt9?1.5:1);
   const w0=BUS_R*.60,w1=BUS_R*(1.05+.55*sp9);
   c.save();c.globalCompositeOperation='lighter';
@@ -21734,7 +22202,7 @@ function tutEnd(done){
 function backTitle(){
  if(TUT&&!TUT.mv)tutEnd(false);/* ⚠TUT.mv=チュートリアル自身が画面を移している最中=畳まない */
  gameActive=false;G=null;PAUSED=false;COOP=false;closeBM();setAim(false);setFlagAim(false);setSpec(-1);
- LANES=null;camOff();try{document.body.classList.remove('bns');}catch(e){}/* 🚌ボーナス面の後始末 */
+ LANES=null;camOff();try{document.body.classList.remove('bns');document.body.classList.remove('bnspre');}catch(e){}/* 🚌ボーナス面の後始末 */
  try{busSndOff();}catch(e){}/* ⚠走行音を必ず止める(鳴りっぱなしはバグそのもの) */
  try{document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen().catch(()=>{});}catch(e){}
  $('interv').classList.remove('on');$('pausebtn').style.display='none';$('ffbtn').style.display='none';

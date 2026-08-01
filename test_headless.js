@@ -2485,7 +2485,7 @@ function checkCam(){
  fitCanvas();
  if(SC!==sc0||OX!==ox0||OY!==oy0){console.log('FAIL: カメラ無しなのに毎フレーム値が変わる');process.exit(1);}
  backTitle();
- META.stg=0;setDiff=BNS_D;startSolo();
+ META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  if(!CAM){console.log('FAIL: 開拓便でカメラが入らない');process.exit(1);}
  fitCanvas();
  /* ⚠**寄り具合(zm)は面ごとに変わる**(開拓便はマップが広いので1を切る=全景より引く)。
@@ -2515,7 +2515,7 @@ function checkBonus(){
  for(let si=0;si<STAGES.length;si++){
   META.bcl=[];META.gem=0;META.pts=0;
   scArr(si)[BNS_D]=0;
-  META.stg=si;setDiff=BNS_D;startSolo();
+  META.stg=si;setDiff=BNS_D;startSolo();bnsPreSkip();
   const me=G.players[0];
   /* ⭐**道は「ほぼ縦の一直線」1本**(2026-08-02(24)ユーザー決定) */
   if(!LANES||LANES.length!==1){console.log('FAIL: 道中の道が1本ではない');process.exit(1);}
@@ -2597,7 +2597,7 @@ function checkBonus(){
   if(gm1!==BNS_GEM){console.log('FAIL: 初回クリアの💎が'+gm1);process.exit(1);}
   if(!(pt1>0)){console.log('FAIL: 初回クリアの🧬が入らない');process.exit(1);}
   backTitle();
-  META.stg=si;setDiff=BNS_D;startSolo();
+  META.stg=si;setDiff=BNS_D;startSolo();bnsPreSkip();
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   if(META.gem!==gm1){console.log('FAIL: 2回目のクリアでも💎が増える(周回で稼げる)');process.exit(1);}
   backTitle();
@@ -2616,7 +2616,7 @@ function checkBonus(){
 function checkRice(){
  const fx0=FXLV;FXLV=2;
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
- META.stg=0;setDiff=BNS_D;startSolo();
+ META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  const me=G.players[0];
  fitCanvas();
  nextWave();
@@ -2812,7 +2812,7 @@ function checkRice(){
     a)関所で通路が本当に絞れている b)敵が通路からはみ出さない c)壁が通路の中に立っていない
     ⚠ c)が壊れると「壁の中をゾンビが歩く」=絵と挙動がずれる(別々に持つと必ず起きる) */
  let nwall=0,ntree=0;
- META.stg=0;setDiff=BNS_D;startSolo();
+ META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  {const m5=G.players[0];
   nwall=BBLD.length;ntree=BTREE.length;/* ⚠タイトルへ戻すと消えるので、ここで控えておく */
   if(BBLD.length<60){console.log('FAIL: 建物が少なすぎる '+BBLD.length);process.exit(1);}
@@ -2837,9 +2837,10 @@ function checkRice(){
      ①数がある ②**道の通路**の中に立っていない ③タレット置き場を兼ねていない(=枠に化けていない)
      ④入口の前に立つ点が建物の外で、**広場の中心(探索場)の側**を向いている ⑤棟どうしが重なっていない
      ⭐⑥**壁に当たる**(すり抜けない) ⑦**中は空洞で、入口からだけ入れる**(⚠バスは入れない) */
-  /* ⚠**ENT_N 棟ぴったり建っていること**(2026-08-02(40)に「8以上」から締めた)=
-     「8以上」で見ていたせいで**毎回1棟建っていないのに気づけなかった**。 */
-  {if(BENT.length<ENT_N){console.log('FAIL: 入れる廃墟が少なすぎる '+BENT.length+'/'+ENT_N+'棟');process.exit(1);}
+  /* ⚠**bnsMgN() 棟ぴったり建っていること**(2026-08-02(40)に「8以上」から締めた)=
+     「8以上」で見ていたせいで**毎回1棟建っていないのに気づけなかった**。
+     ⚠**棟数は面ごと**(2026-08-02(43)に9→3)=1面はミニゲーム3個。 */
+  {if(BENT.length<bnsMgN()){console.log('FAIL: 入れる廃墟が少なすぎる '+BENT.length+'/'+bnsMgN()+'棟');process.exit(1);}
    const kn={};for(const b of BENT)kn[b.ek]=(kn[b.ek]||0)+1;
    if(Object.keys(kn).length<ENT_K.length){
     console.log('FAIL: 入れる廃墟の種類が偏っている '+JSON.stringify(kn));process.exit(1);}
@@ -2966,7 +2967,7 @@ function checkRice(){
  backTitle();
  /* ⑩⭐**着くまで湧きが絶えない**(2026-08-02(24))=距離で終わる面なので、
     用意した体数が尽きても写し(bnsTpl)から積み直されること。⚠着いたら積まないこと。 */
- META.stg=0;setDiff=BNS_D;startSolo();
+ META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  {nextWave();
   const T=G.tide,m6=G.players[0];
   if(!T.bnsTpl||T.bnsTpl.length<50){console.log('FAIL: 湧きの写しが用意されていない');process.exit(1);}
@@ -2979,7 +2980,7 @@ function checkRice(){
  backTitle();
  /* ⑦⭐⭐**この面に負けは無い**(2026-08-02(31)ユーザー「耐久力とかいらないね ダメージエフェクトもなし」)。
     見るのは2つ: a)すれ違っても b)群れに埋もれても**1も削られない**+**被弾の演出も出ない** */
- META.stg=0;setDiff=BNS_D;startSolo();
+ META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  {const m4=G.players[0];m4.fx.length=0;m4.zombies.length=0;
   {const p4=pathPos(PLEN*.5,0);m4.bus.x=p4[0];m4.bus.y=p4[1];m4.bus.vx=0;m4.bus.vy=0;}
   for(let k=0;k<20;k++)m4.zombies.push(mkZ(zSpec(0,.02,1),PLEN+10));
@@ -3001,7 +3002,7 @@ function checkRice(){
     ⚠時間制なので怖いのは「終わらない」方だけ。⭐上へ倒し続けて実走し、締め切りで締まることを見る。
     ⚠**道は走り切れない長さ**にしたので、端に着いて終わったら**それは道が短すぎる**(それも捕まえる)。 */
  let bsec=0,bkil=0,bdmg=0;
- META.stg=0;setDiff=BNS_D;startSolo();
+ META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  {const m3=G.players[0];
   nextWave();
   let done=0;
@@ -3292,6 +3293,95 @@ function checkSup(){
  console.log('支援施設: 枠は⚙️解放制・専用枠のみ・同じ物は1つまで・野戦病院と物資投下所の効果OK');
  backTitle();
 }
+/* 🎒⭐⭐⭐**走る前の流れ**(2026-08-02(43)ユーザー決定の1試合の流れ①〜④)。見るのは8つ:
+   ①startSolo の直後は「走る前」で止まっていて、**敵も残り時間も波も1つも動かない**
+   ②選択画面に棟がミニゲームの数だけ並ぶ ③**選んでも棟は消えない**(1面は3種しかないため)
+   ④棟を押すとミニゲームが始まり、撃ち切ると物資が入って回数が1つ減る
+   ⑤3回で乗り込みムービー→強化画面へ必ず進む(**ムービーは必ず終わる**)
+   ⑥強化は物資が足りる時だけ買えて、上限で止まる
+   ⑦準備OKで**初めて波が始まり**、寄りが運転用(.62)に戻る
+   ⑧強化は**この試合かぎり**(次の試合に残らない=定数ではなくバスの持ち物に入れてある)
+   ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。 */
+function checkBnsFlow(){
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
+ META.stg=0;setDiff=BNS_D;startSolo();
+ const me=G.players[0];
+ if(!G.bpre){console.log('FAIL: 走る前の流れに入っていない');process.exit(1);}
+ if(G.bpre.st!=='sel'){console.log('FAIL: 最初が選択画面でない '+G.bpre.st);process.exit(1);}
+ /* ① 何も動かない */
+ {const t0=me.bus.left;
+  for(let k=0;k<40;k++)gameStep(.05);
+  if(me.zombies.length){console.log('FAIL: 走る前なのに敵が湧いている '+me.zombies.length);process.exit(1);}
+  if(me.bus.left!==t0){console.log('FAIL: 走る前なのに残り時間が減っている');process.exit(1);}
+  if(G.wave>0){console.log('FAIL: 走る前なのに波が始まっている');process.exit(1);}}
+ /* ② 選択肢 */
+ if(G.bpre.pick.length!==bnsMgN()){
+  console.log('FAIL: 選択肢の棟数が違う '+G.bpre.pick.length+'/'+bnsMgN());process.exit(1);}
+ fitCanvas();
+ try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 選択画面の描画で例外 '+e.message);process.exit(1);}
+ /* ③④ 3回遊ぶ(⚠毎回**同じ棟**を選ぶ=消えないことをここで見る) */
+ let tot=0;
+ for(let r=0;r<BNS_MG_T;r++){
+  const b=G.bpre.pick[0];
+  bnsPreTap(0,0,b.x,b.y);
+  if(G.bpre.st!=='mini'){console.log('FAIL: 棟を押してもミニゲームが始まらない');process.exit(1);}
+  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: ミニゲームの描画で例外 '+e.message);process.exit(1);}
+  /* ⚠**帯のど真ん中で止める**=会心で通す(当てるほど増えることを下で見る) */
+  for(let n=0;n<BMG_N;n++){const M=G.bpre.mg;if(!M)break;M.pos=M.tgt;bnsMgTap(G.bpre);}
+  if(!G.bpre.mg){console.log('FAIL: 本数を撃ち切る前にミニゲームが消えている');process.exit(1);}
+  if(!(G.bpre.mg.pts>0)){console.log('FAIL: 会心で止めても点が入らない');process.exit(1);}
+  for(let k=0;k<60&&G.bpre.st==='mini';k++)gameStep(.05);
+  if(G.bpre.st==='mini'){console.log('FAIL: ミニゲームが終わらない');process.exit(1);}
+  const t2=G.bpre.res[0]+G.bpre.res[1]+G.bpre.res[2];
+  if(!(t2>tot)){console.log('FAIL: 遊んでも物資が増えない '+t2);process.exit(1);}
+  tot=t2;
+  if(G.bpre.left!==BNS_MG_T-1-r){
+   console.log('FAIL: 残り回数が減っていない '+G.bpre.left);process.exit(1);}
+  if(G.bpre.pick.length!==bnsMgN()){console.log('FAIL: 選んだ棟が消えている');process.exit(1);}
+  /* ⚠**主の物資が一番多いこと**=そうでないと「どこを漁るか」を選ぶ理由が消える */
+  if(r===BNS_MG_T-1){const k0=b.ek|0;
+   for(let i=0;i<3;i++)if(i!==k0&&G.bpre.res[i]>=G.bpre.res[k0]){
+    console.log('FAIL: 選んだ棟の物資が一番多くない '+JSON.stringify(G.bpre.res));process.exit(1);}}
+ }
+ /* ⑤ 乗り込みムービー */
+ if(G.bpre.st!=='board'){console.log('FAIL: 3回終わっても乗り込みへ進まない '+G.bpre.st);process.exit(1);}
+ try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 乗り込みの描画で例外 '+e.message);process.exit(1);}
+ for(let k=0;k<200&&G.bpre&&G.bpre.st==='board';k++)gameStep(.05);
+ if(!G.bpre||G.bpre.st!=='up'){
+  console.log('FAIL: 乗り込みムービーが強化画面で終わらない');process.exit(1);}
+ try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 強化画面の描画で例外 '+e.message);process.exit(1);}
+ /* ⑥ 強化 */
+ {const Q=G.bpre,R=bnsUpRects(cv.width,cv.height);
+  Q.res=[9999,0,9999];
+  bnsUpTap(Q,R[0].x+4,R[0].y+4);
+  if((Q.up.sp|0)!==1){console.log('FAIL: 強化が買えていない');process.exit(1);}
+  if(Q.res[0]>=9999){console.log('FAIL: 買っても物資が減らない');process.exit(1);}
+  for(let k=0;k<12;k++)bnsUpTap(Q,R[0].x+4,R[0].y+4);
+  if((Q.up.sp|0)!==BUP[0].mx){console.log('FAIL: 強化の段が上限で止まらない '+Q.up.sp);process.exit(1);}
+  bnsUpTap(Q,R[2].x+4,R[2].y+4);
+  if((Q.up.ram|0)!==0){console.log('FAIL: 物資が足りないのに強化が買える');process.exit(1);}
+  bnsUpTap(Q,R.go.x+4,R.go.y+4);}
+ /* ⑦ 出発 */
+ if(G.bpre){console.log('FAIL: 準備OKでも走る前の流れが終わらない');process.exit(1);}
+ if(!(G.wave>0)){console.log('FAIL: 準備OKで波が始まらない');process.exit(1);}
+ if(!(me.bus.spMx>BUS_SP)){console.log('FAIL: 強化が最高速に効いていない '+me.bus.spMx);process.exit(1);}
+ if(!(CAM&&Math.abs(CAM.zm-.62)<1e-6)){
+  console.log('FAIL: 運転の寄りに戻っていない '+(CAM?CAM.zm:'なし'));process.exit(1);}
+ /* ⚠**設置猶予(BNS_LEAD)ぶんは湧かない**ので、3秒では足りない(実際に落ちた) */
+ for(let k=0;k<200;k++){bnsStick(0,-1);gameStep(.05);}
+ bnsStick(0,0);
+ if(!me.zombies.length){console.log('FAIL: 走り出しても敵が湧かない');process.exit(1);}
+ const sp1=me.bus.spMx;
+ backTitle();
+ /* ⑧ 次の試合に残らない */
+ META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
+ if(Math.abs(G.players[0].bus.spMx-BUS_SP)>1e-6){
+  console.log('FAIL: 強化が次の試合に残っている '+G.players[0].bus.spMx);process.exit(1);}
+ backTitle();
+ META.stg=0;setDiff=2;
+ console.log('🎒走る前の流れ: 選択'+bnsMgN()+'棟 → ⛽給油'+BNS_MG_T+'回(物資 計'+tot
+  +') → 乗り込み → 強化(最高速 '+BUS_SP+'→'+Math.round(sp1)+') → 出発 OK');
+}
 checkStrikes();
 checkSup();
 checkTeam();
@@ -3301,6 +3391,7 @@ checkUltMot();
 checkBonus();
 checkRice();
 checkCam();
+checkBnsFlow();
 checkTrain();
 checkRpg();
 checkProgress();

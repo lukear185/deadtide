@@ -55,6 +55,12 @@ const BNIT=/(^|\+)bnsnit(\+|$)/.test(OPT);
    ⚠**自分で始める**=締め切りは75秒なので、待っていると撮影が終わらない。
    ⭐秒=ムービーを何秒進めた所を撮るか(既定2.2=門をくぐる瞬間)。 */
 const BAM=/(^|\+)bnsarr(=([0-9.]+))?(\+|$)/.exec(OPT),BARR=BAM?(+(BAM[3]||2.2)):-1;
+/* 🎒⭐**走る前の流れ**(2026-08-02(43))を撮る。⚠bns と併せて使う。
+   `bnssel`=①ミニゲーム選択画面(広場を見下ろして棟が光る)
+   `bnsmg`=②⛽給油のミニゲーム(3本目まで進めた所)
+   `bnsbrd`=③乗り込みのムービー / `bnsup`=④強化画面(物資を持たせた状態)
+   ⚠⚠**どれも指定しなければ流れは丸ごと飛ばす**(`bnsPreSkip`)=でないと敵が1体も湧かない絵になる。 */
+const BPRE=(/(^|\+)bns(sel|mg|brd|up)(\+|$)/.exec(OPT)||[])[2]||'';
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
@@ -330,7 +336,19 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
     その間に rAF が回って**リザルト画面になってしまい、盤面が1枚も撮れない**
     (bnsn を小さくしても直らない=進んでいるのは仮想時間ではなく実時間の方)。 */
  +(BNS?'setInterval(function(){try{var m9=G&&G.players[0];if(m9){m9.core=m9.coreMax;}}catch(e){}},150);':'')
- +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';'
+ /* 🎒⭐**走る前の流れ**(2026-08-02(43))。⚠**指定が無ければ丸ごと飛ばす**=
+    そうしないと `bns` の撮影が選択画面で止まって、敵も血だまりも1枚も写らない。 */
+ +((BNS&&!BPRE)?'setTimeout(function(){try{bnsPreSkip();}catch(e){}},1100);':'')
+ +((BNS&&BPRE)?('setTimeout(function(){try{var Q=G.bpre;if(!Q)throw new Error("bpre なし");'
+     +(BPRE==='mg'?'bnsMgStart(Q,Q.pick[0]);for(var k=0;k<2;k++){Q.mg.pos=Q.mg.tgt;bnsMgTap(Q);}'
+       +'for(var k2=0;k2<24;k2++)bnsPreStep(.02);':'')
+     +(BPRE==='brd'?'Q.res=[120,90,80];Q.left=0;bnsBoardStart();'
+       +'for(var k=0;k<70;k++)bnsPreStep(.02);':'')
+     /* ⚠**強化画面は物資を持たせて撮る**=素寒貧だと全部灰色の札しか写らない */
+     +(BPRE==='up'?'Q.res=[150,110,95];Q.left=0;Q.st="up";Q.up={sp:2,ram:1};'
+       +'if(G.players[0].bus){var B7=G.players[0].bus;camOn(B7.x,B7.y,.62,BNS_SQ);camApply();}':'')
+     +'}catch(e){document.title="ERR17 "+e.message;}},1200);'):'')
+ +((BNS&&!BPRE)?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';'
      /* 🏚入れる廃墟の前へバスごと移す(⚠カメラはバスを追うので、バスを動かすのが一番確実) */
      +(BENTI>=0?('try{var mB=G.players[0],e8=BENT['+BENTI+'%BENT.length];'
        +'var f8=bnsRoadFit(e8.dx,e8.dy,BUS_CL);'
