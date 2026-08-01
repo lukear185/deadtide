@@ -2765,6 +2765,25 @@ function checkRice(){
   B7.nitT=0;m7.zombies.length=0;
   for(let k=0;k<40;k++)bnsBusStep(m7,.05);
   if(B7.grip>.02){console.log('FAIL: 離れてもしがみつきが戻らない');process.exit(1);}}
+ /* ⑮ ⛓⭐**関所を抜けた一幕**(2026-08-02(41))。見るのは4つ:
+    ①抜けると出る ②同じ関所で二度出ない ③次の関所ではまた出る ④道の途中に置かれても誤爆しない */
+ {const m8=G.players[0],B8=m8.bus;
+  /* ⚠**道の距離は上(ゴール)ほど小さい**=進む=u が減る。関所のすぐ手前(u が少し大きい方)に置く */
+  const gi=BNS_GATE.length-1,gu=BNS_GATE[gi];
+  const put=u=>{const p=pathPos(clamp(u,0,1)*PLEN,0);B8.x=p[0];B8.y=p[1];B8.vx=0;B8.vy=0;};
+  B8.gpN=null;B8.gpT=0;B8.arr=0;m8.zombies.length=0;
+  put(gu+.02);bnsBusStep(m8,.02);/* ⚠1コマ目は「次に抜ける関所」を決めるだけ=出てはいけない */
+  if(B8.gpT>0){console.log('FAIL: 道の途中に置いただけで関所の一幕が出た');process.exit(1);}
+  if(B8.gpN!==gi){console.log('FAIL: 次に抜ける関所の番号が違う '+B8.gpN+'/'+gi);process.exit(1);}
+  put(gu-.01);bnsBusStep(m8,.02);
+  if(!(B8.gpT>0)){console.log('FAIL: 関所を抜けても一幕が出ない');process.exit(1);}
+  const t8=B8.gpT;bnsBusStep(m8,.02);
+  if(B8.gpT>=t8){console.log('FAIL: 関所の一幕が消えない(同じ関所で出続けている)');process.exit(1);}
+  B8.gpT=0;put(gu-.02);for(let k=0;k<3;k++)bnsBusStep(m8,.02);
+  if(B8.gpT>0){console.log('FAIL: 同じ関所で二度出る');process.exit(1);}
+  put(BNS_GATE[gi-1]-.01);bnsBusStep(m8,.02);
+  if(!(B8.gpT>0)){console.log('FAIL: 次の関所で一幕が出ない');process.exit(1);}
+  console.log('⛓関所の一幕: '+BNS_GATE.length+'か所・抜けた時だけ'+BNS_GP_T+'秒(⚠手前の文字の予告は廃止) OK');}
  backTitle();
  /* ⑨⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。見るのは3つ:
     a)関所で通路が本当に絞れている b)敵が通路からはみ出さない c)壁が通路の中に立っていない
