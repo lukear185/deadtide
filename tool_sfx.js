@@ -117,15 +117,36 @@ const REC=[
        {f:'Electricity Hum, Lightbulb',t:0,d:.90,g:-8,r:.70,dl:25},
        {f:'EffectiveTrailer_Booms_Vol2_214',t:0,d:.90,g:-3,r:1.0,dl:15}]},
  {k:'thunk',   f:'METAL SWING HIT',              t:0, d:.26, g:-3, r:1.0},
+ /* ⭐⭐🚌**轢いた音**(2026-08-02(26)ユーザー「轢いた音というかどっと音にしか聞こえない」)。
+    ⚠⚠**鉄の衝撃を主役にすると必ず「ドッ」になる**=それは「ぶつかった音」であって「轢いた音」ではない。
+    ⭐**轢いた音の正体は ①骨が砕ける ②肉が潰れる**の2つ。鉄は隠し味にとどめる。
+    ⭐**骨=氷を割る音**(音づくりの定石)。**潰れ=クランチ系を落として濁らせる**。
+    ⚠**候補を並べて ?sfx=1 で選んでもらう**(音は言葉で詰めても収束しない)。 */
+ /* 1体ずつ(⚠0.075秒に1回まで鳴る=**短く薄く**。長いと重なって濁る) */
+ {k:'crush',   d:.13, g:-5, r:1.0,
+  af:'lowpass=f=2600,equalizer=f=260:t=q:w=1.0:g=5',
+  mix:[{f:'ice, crack, ice block snapping',t:0,d:.13,g:-3,r:.78},
+       {f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.11,g:-10,r:1.35,dl:6}]},
+ {k:'crush2',  d:.14, g:-5, r:1.0, af:'lowpass=f=3000',
+  mix:[{f:'Whoosh Glass Crystal Fragments',t:0,d:.14,g:-4,r:.62},
+       {f:'ice, crack, ice block snapping',t:0,d:.12,g:-8,r:.90,dl:5}]},
+ {k:'crush3',  d:.12, g:-5, r:1.0, af:'lowpass=f=2200,equalizer=f=200:t=q:w=1.0:g=6',
+  mix:[{f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.12,g:-3,r:.72}]},
  /* ⭐🚌**まとめて轢いた瞬間の「ゴシャアッ」**(2026-08-02(25)ユーザー「もっと轢いてる感が欲しい。
     SEとかVFXってもういい感じのないかな?」)。⚠**1体ずつの音(`crush`)とは別**=
     こちらは1試合で数十回しか鳴らない見せ場用なので、素材を使って厚く鳴らしてよい。
     ①車体の鉄が食い込む鈍い衝撃 ②潰れる音(小さい爆発のクランチ) ③飛び散る破片。 */
- {k:'smash',   d:.52, g:-3, r:1.0,
-  af:'highpass=f=52:p=2,equalizer=f=180:t=q:w=1.0:g=6,treble=g=-5:f=5200',
-  mix:[{f:'Metal Hit Thud Thump Low Ring',t:0,d:.52,g:-3,r:.86},
-       {f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.42,g:-5,r:1.15,dl:12},
-       {f:'Woosh Debris',t:0,d:.36,g:-11,r:1.0,dl:60}]},
+ /* ⚠⚠**鉄(Metal Thud)を主役にしていたのが「どっと音」の正体**だった=**-13dBまで下げて隠し味に**し、
+    骨(氷を割る)と潰れ(クランチ)を前に出した。 */
+ {k:'smash',   d:.42, g:-3, r:1.0,
+  af:'highpass=f=48:p=2,lowpass=f=5200,equalizer=f=220:t=q:w=1.0:g=5',
+  mix:[{f:'ice, crack, ice block snapping',t:0,d:.42,g:-2,r:.55},
+       {f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.36,g:-6,r:.82,dl:10},
+       {f:'Metal Hit Thud Thump Low Ring',t:0,d:.30,g:-13,r:.90,dl:0}]},
+ {k:'smash3',  d:.44, g:-3, r:1.0, af:'lowpass=f=4200',
+  mix:[{f:'Whoosh Glass Crystal Fragments',t:0,d:.44,g:-3,r:.50},
+       {f:'ice, crack, ice block snapping',t:0,d:.34,g:-6,r:.70,dl:8},
+       {f:'Metal Hit Thud Thump Low Ring',t:0,d:.28,g:-15,r:.85,dl:4}]},
  /* ⭐候補②=金属寄り(タイヤレバーの打撃)。⚠?sfx=1 で聴き比べて選んでもらう用 */
  {k:'smash2',  d:.46, g:-3, r:1.0,
   af:'highpass=f=52:p=2,equalizer=f=210:t=q:w=1.0:g=5',
