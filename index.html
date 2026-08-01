@@ -1235,6 +1235,19 @@ function metaResetLab(){
  META.tw={};META.un={};META.st0=0;
  for(const k of ['sc0','hp0','up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=0;
 }
+/* 🚌⭐**バス強化だけ戻す**(2026-08-02(60)ユーザー指示・🛠DEVの「バス強化」から呼ぶ)。
+   ⚠**バス強化は永続**なので、一度買うと**段階解放の並びも初回3倍の報酬も二度と確かめられない**。
+   ⚠**自己ベスト(`brec`)と今日の回数(`bday`/`bnum`)は消さない**=強化とは別の記録なので混ぜない。
+   ⚠新しくバス側の永続を足したら**ここと `metaResetAll` の両方**に書くこと。 */
+/* 🐞⚠**中身を空にする(入れ替えない)**=強化画面は `META.bres`/`bup`/`beq` を**参照で持つ**ので、
+   別の物を代入すると繋がりが切れて「画面では増えているのに保存されない」に戻る(NOTESの既出の穴)。 */
+function metaResetBus(){
+ if(!Array.isArray(META.bres))META.bres=[0,0,0];
+ for(let i=0;i<3;i++)META.bres[i]=0;              /* 🎒物資 */
+ if(!META.bup)META.bup={};for(const k in META.bup)delete META.bup[k];/* 🔧性能の段 */
+ if(!META.beq)META.beq={};for(const k in META.beq)delete META.beq[k];/* ⚔装備 */
+ META.bcl=[];                                     /* 初回クリアの印(=初回3倍をもう一度受け取れる) */
+}
 /* ⭐**難易度・ステージの解放と研究所だけ戻す**(💎英雄🔧図鑑⚔冒険は残す) */
 function metaResetProgress(){
  META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;
@@ -16867,8 +16880,8 @@ function awardMeta(){
     倒した数に比例させると**1走2400〜2700🧬**(本編の古参クリア1500🧬を1分ちょっとで超える)。
     ⭐**配るのは初回クリアの分だけ**(`bnsReward`)=**周回する動機はもう「永続の物資」が担っている**ので、
       🧬は本編の難易度を進めた報酬に戻す。⚠NOTESの掟「何度でもやり直せるもので報酬を配らない」の3度目。 */
- /* 🚌⭐**道中は⚡スコア割の少額+上限**(2026-08-02(52))。⭐初回はこれに `bnsReward` の豪華な分が乗る。
-    ⚠⚠**初回だけ0にしない**(2026-08-02(53)に直した)=走っている間ずっと「🧬 20/120」と出しておいて
+ /* 🚌⭐**道中は「轢いた数」+上限**(2026-08-02(60)ユーザー決定)。⭐初回はこれが `bnsReward` で3倍になる。
+    ⚠⚠**初回だけ0にしない**(2026-08-02(53)に直した)=走っている間ずっと「🧬 20/3000」と出しておいて
       入るのが0だと嘘になる。**画面の数字と実際に入る量は必ず同じにする**。 */
  const gain=(d9===BNS_D)?bnsRptPts()
   :Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.4)*mult));
@@ -18560,7 +18573,7 @@ function showResultA(){
  $('res-stats').innerHTML=(G.pve
   ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),
     /* ⭐🚌ボーナス面の初回クリア報酬(2回目からは出ない=配っていないので) */
-    ...(G.bnsPts?[['🚌 初回クリア報酬','🧬+'+fmt(G.bnsPts)+' / 💎+'+(G.bnsGem||0)]]:[]),
+    ...(G.bnsPts?[['🚌 初回クリア報酬(🧬'+BNS_FIRST_X+'倍)','🧬+'+fmt(G.bnsPts)+' / 💎+'+(G.bnsGem||0)]]:[]),
     /* ⭐🚌轢き殺した数と最高連続(2026-08-02(2))=「連続で気持ちいい」の締めをここで見せる。
        ⚠バスの居る面(開拓便)でしか出さない */
     /* ⭐**自己ベストを併記する**(2026-08-02(37))=更新した時だけ 🎉 を付ける。
@@ -19538,30 +19551,32 @@ function startSolo(){
    ⚠**4本のレーンは長さを揃えてある**(掟は LANES の所)。
    ⚠報酬は**初回クリアだけ** 🧬研究pt と 💎50。何度でも入れる面なので2回目からは配らない。 */
 const BNS_GEM=50;                 /* 初回クリアの💎(⚠2回目からは配らない) */
-/* 🚌⭐⭐**2回目以降の🧬**(2026-08-02(52)ユーザー「初回報酬は豪華でいいけど2回目以降は報酬少な目」)。
-   ⚠⚠**倒した数に比例させない**=この面は負けが無く75秒で終わるので、比例させると必ず稼ぎ場になる
-     (実際に1走2400〜2700🧬になっていた)。⭐**⚡スコアを割って、上限で頭打ちにする**。
-   ⚠⚠**2026-08-02(56)にユーザー決定で 120→5000 へ上げた**(「5000。これぐらいないと誰もやらん」)=
-     ⭐**1セッションは約3分**(ミニゲーム3回+乗り込み+強化+運転75秒)なので、120では **40🧬/分** で
-     本編(古参クリア=10分1500🧬=150🧬/分)より**4倍近く割が悪かった**=遊ぶだけ損だった。
-   ⭐**割り算を1にした**=**⚡スコアがそのまま🧬**になる(画面の数字が2つとも同じで、繋がりが読める)。
-   📌1走で **100〜5000🧬**。⚠**研究所を全部開けるのに 57,040🧬**なので、**12〜20走ぶん**の見当。
-   ⚠⚠**この面が研究ptの主な稼ぎ場になる**(本編の10倍/分)=**それを承知の上でのユーザー決定**。
-     ⭐増やしすぎ/少なすぎは `_MAX` の1か所で動かせる。 */
-const BNS_RPT_D=1,BNS_RPT_MIN=100,BNS_RPT_MAX=3000;/* ⚠2026-08-02(58)に 5000→3000(1日5回にしたため) */
-/* 🧬⭐**走っている間に貯まる研究pt**(2026-08-02(53))=⚡スコアから出して**上限で止める**。
+/* 🚌⭐⭐⭐**🧬は「轢いた数」そのもの**(2026-08-02(60)ユーザー決定
+   「研究Pのゲットできる数はシンプルにゾンビ倒した数だけもらえるようにしよう」)。
+   ⚠⚠**⚡スコア割はやめた**=スコアは**連なりの段の倍率**が乗るので、
+     **同じ体数でも上手いと3倍**になり、「何をすればいくら入るか」が読めなかった。
+     ⭐**1体=1🧬**なら、走りながら見えている「轢いた数」がそのまま報酬になる。
+   ⚠⚠**上限(`_MAX`)は残す**=これが稼ぎ場にしない歯止めの本体(2026-08-02(58)ユーザー決定)。
+     ⚠倍率が消えたぶん頭打ちには当たりにくい(1走2000〜2450体)。
+   📌1走で **100〜3000🧬**。⚠**研究所を全部開けるのに 57,040🧬**なので、**20〜25走ぶん**の見当。
+   ⭐増やしすぎ/少なすぎは `_K`(1体あたり)か `_MAX` の1か所で動かせる。 */
+const BNS_RPT_K=1,BNS_RPT_MIN=100,BNS_RPT_MAX=3000;/* ⚠2026-08-02(58)に 5000→3000(1日5回にしたため) */
+/* 🧬⭐**走っている間に貯まる研究pt**(2026-08-02(53))=轢いた数から出して**上限で止める**。
    ⚠⚠**awardMeta と同じ式にすること**=画面の数字と実際に入る量が食い違うと、一番不信になる。
-   ⚠**下限(`_MIN`)はここでは掛けない**=走り出した瞬間に20が出ていると「何もしていないのに増えた」になる。 */
+   ⚠**下限(`_MIN`)はここでは掛けない**=走り出した瞬間に100が出ていると「何もしていないのに増えた」になる。 */
 function bnsGainPts(B){
- return Math.min(BNS_RPT_MAX,Math.round(((B&&B.score)||0)/BNS_RPT_D));
+ return Math.min(BNS_RPT_MAX,Math.round(((B&&B.kill)|0)*BNS_RPT_K));
 }
 function bnsRptPts(){
- let sc=0;try{sc=(G&&G.players[0]&&G.players[0].bus&&G.players[0].bus.score)||0;}catch(e){}
- return clamp(Math.round(sc/BNS_RPT_D),BNS_RPT_MIN,BNS_RPT_MAX);
+ let kl=0;try{kl=(G&&G.players[0]&&G.players[0].bus&&G.players[0].bus.kill)|0;}catch(e){}
+ return clamp(Math.round(kl*BNS_RPT_K),BNS_RPT_MIN,BNS_RPT_MAX);
 }
-/* ⚠**1走の上限(5000)に見合う額にする**(2026-08-02(56))=600のままだと
-   **初回の「豪華な報酬」が普通の1走より軽くなる**(嬉しくない)。 */
-const BNS_PTS=[3000,5000];        /* 初回クリアの🧬(ステージごと。⚠1走ぶんに上乗せされる) */
+/* 🚌⭐⭐**初回クリアだけ3倍**(2026-08-02(60)ユーザー決定「初回だけ３倍分もらえるってことで」)。
+   ⚠⚠**決め打ちの額(3000/5000)はやめた**=1走の実入りと別々に動く数字が2つあると、
+     手を入れるたびに**初回の方が普通の1走より軽い/重い**が起きた(実際に2回直している)。
+   ⭐**倍率にしておけば、1体あたりを動かしても初回だけが勝手にずれることはない**。
+   ⚠**上乗せは (倍率-1) 倍**=普通の1走ぶんは `awardMeta` 側ですでに入っている。 */
+const BNS_FIRST_X=3;              /* 初回クリアの🧬の倍率(⚠ステージ共通) */
 /* ⭐**開拓便のマップは広い**(2026-08-02ユーザーの参考画像)=画面の2倍角。🎥カメラで持ち歩く。
    ⚠**広げても寄り具合は変わらない**(倍率の基準は MW のまま)。 */
 /* ⚠**2026-08-02(6)に広げた**(ユーザー「画面外からゾンビが来る感じにして」)=
@@ -20328,7 +20343,8 @@ function bnsReward(){
  if(!Array.isArray(META.bcl))META.bcl=[];
  if(META.bcl[STAGE])return;
  META.bcl[STAGE]=1;
- const pt=BNS_PTS[STAGE]||BNS_PTS[0];
+ /* ⚠**上乗せは (倍率-1) 倍**=1走ぶんは `awardMeta` ですでに入っている(足すと二重になる) */
+ const pt=Math.max(0,Math.round(bnsRptPts()*(BNS_FIRST_X-1)));
  META.pts+=pt;META.gem=(META.gem||0)+BNS_GEM;
  G.bnsPts=pt;G.bnsGem=BNS_GEM;
  saveMeta();
@@ -20630,6 +20646,13 @@ function bnsBusStep(C,dt){
   if(mv>26&&B.trkD>=BTRK_GAP){B.trkD=0;
    const tx=B.vx/mv,ty=B.vy/mv;
    bnsRing(C,'btrk',BNS_TRK,{x:B.x,y:B.y,tx:tx,ty:ty,nx:-ty,ny:tx,t:0,b:(B.cmbT>0)?1:0});}}
+ /* 🛢**火炎オイル**=**ずっと前へ**まく(⚠後ろは画面の外=見えない)。轍と同じで**進んだ距離**で置く。
+    ⚠**止まっている間はまかない**=同じ所へ積もって火柱になり、何をしているか読めなくなる。 */
+ if(B.slick){const mv=Math.hypot(B.vx,B.vy);
+  if(mv>40){B.oilD=(B.oilD||0)+mv*dt;
+   if(B.oilD>=EQ_OIL_GAP){B.oilD=0;const tx=B.vx/mv,ty=B.vy/mv;
+    bnsRing(C,'boil',BNS_OIL,{x:B.x+tx*EQ_OIL_F,y:B.y+ty*EQ_OIL_F,t:0,sd:Math.random()*6.28});}}
+  else B.oilD=0;}
  /* 轢く=重なっている間ずっと削る+外へ弾く。⚠**押し出しは経路上の距離(z.d)で戻す**
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */
  let hit=0,kil=0;
@@ -20637,12 +20660,22 @@ function bnsBusStep(C,dt){
     見えていない所で当たると「当たっていないのに死ぬ」に逆戻りする(この面で一度踏んだ)。 */
  const rr9=BUS_R*(nz9?BUS_NIT_R:1)*(B.rX||1);
  const bl9=B.bladeR||0,fl9=B.flame?1:0,sr9=B.siren?1:0;
+ const sl9=B.slick?1:0,bm9=B.boom?1:0,gn9=B.gun?1:0;
+ if(bm9)B.bmT=(B.bmT||0)+dt;/* 🪃刃の周期を進める(⚠絵もこの1つから出す) */
  /* 🔊サイレンが引き寄せる先=**バスが道のどこに居るか**(横のずれ)。⚠1フレームに1回だけ出す */
  let boff9=0;
  if(sr9&&LANES){try{const p9=pathPos(bd9,0),n0=-Math.sin(p9[2]),n1=Math.cos(p9[2]);
   boff9=(B.x-p9[0])*n0+(B.y-p9[1])*n1;}catch(e){}}
  /* 進む向き(止まっている時は車体の向き)=ノコも炎もこの向きに付いている */
  const mv9=Math.hypot(B.vx,B.vy),tx9=mv9>8?B.vx/mv9:0,ty9=mv9>8?B.vy/mv9:-1;
+ /* 🪃**飛んでいる刃の位置**(世界座標)。⚠**ループの外で1回だけ出す**=中で出すと数百回になる。 */
+ let bmx0=0,bmy0=0,bmx1=0,bmy1=0;
+ if(bm9){const p9=eqBoomPt(B);
+  bmx0=tx9*p9[0]-ty9*p9[1];bmy0=ty9*p9[0]+tx9*p9[1];
+  bmx1=tx9*p9[0]+ty9*p9[1];bmy1=ty9*p9[0]-tx9*p9[1];}
+ /* 🔫**ルーフガンの的**=前方で一番近い1体。⚠**ループのついでに拾う**(別に舐め直さない) */
+ let gtZ=null,gtD=EQ_GUN_R*EQ_GUN_R;
+ const oil9=(sl9&&C.boil&&C.boil.length)?C.boil:null;
  /* ⭐⭐**通り過ぎた敵は消す**(2026-08-02(24))=これが無いと**盤面の上限が後ろの敵で埋まり**、
     進む先がすかすかになる(実走で42秒走って81体しか轢けなかった原因)。
     ⚠画面の外まで下がってから消すこと(見えている所で消えると「勝手に居なくなった」になる)。 */
@@ -20673,6 +20706,24 @@ function bnsBusStep(C,dt){
    if(fw>rz*.4&&fw<EQ_FLM_L&&Math.abs(sw)<EQ_FLM_W*(.34+.66*fw/EQ_FLM_L)){
     dmgZ(C,z,EQ_FLM_D*(B.dpsX||1)*dt,1,true);
     if(z.dead){kil++;continue;}}}
+  /* 🛢**火炎オイル**=まいた油だまりの上に居る間ずっと焼く。⚠**轢いた扱いにはしない**。
+     ⚠**先に「油の帯に居るか」で弾く**=敵は2100〜4800px先に湧くので、ここで大半が落ちて輪を舐めずに済む。
+     ⚠**重ねて焼かない**=1枚見つけたら抜ける(重なった所だけ倍の傷になると読めない)。 */
+  if(oil9&&dx*dx+dy*dy<EQ_OIL_RNG*EQ_OIL_RNG){
+   for(let i9=0;i9<oil9.length;i9++){const o9=oil9[i9];if(o9.t>=EQ_OIL_LF)continue;
+    const ax=z.px-o9.x,ay=z.py-o9.y;if(ax*ax+ay*ay>EQ_OIL_R*EQ_OIL_R)continue;
+    dmgZ(C,z,EQ_OIL_D*(B.dpsX||1)*dt,1,true);break;}
+   if(z.dead){kil++;continue;}}
+  /* 🪃**ブーメラン刃**=飛んでいる2枚の丸に当たった敵を斬る。⚠**絵と同じ位置**(`eqBoomPt`)。
+     ⚠**押しのけない**=飛び道具なので、轢いた時のような押し出しは付けない(何に当たったか読めなくなる)。 */
+  if(bm9){const r9=EQ_BM_R+(rz-rr9);
+   const a1=dx-bmx0,b1=dy-bmy0,a2=dx-bmx1,b2=dy-bmy1;
+   if(a1*a1+b1*b1<=r9*r9||a2*a2+b2*b2<=r9*r9){
+    dmgZ(C,z,EQ_BM_D2*(B.dpsX||1)*dt,1,true);
+    if(z.dead){kil++;continue;}}}
+  /* 🔫**ルーフガンの的を拾う**=**前方だけ**。⚠**撃つのはループの後**(1フレーム1発なので) */
+  if(gn9){const fw=dx*tx9+dy*ty9;
+   if(fw>rz){const dd=dx*dx+dy*dy;if(dd<gtD){gtD=dd;gtZ=z;}}}
   /* ⚙**回転ノコ**=**丸ノコの円そのもの**が当たり(絵と1pxもずれない)。
      ⚠**外接の丸で先に弾く**=装備していない時は今までどおり平方の比較1回で済む
      (数百体を毎フレーム見るので、ここを重くすると面ごと重くなる)。 */
@@ -20713,6 +20764,18 @@ function bnsBusStep(C,dt){
    const ox9=o.x-B.x,rz9=rb9+o.r;
    if(ox9*ox9+oy9*oy9>rz9*rz9)continue;
    try{bnsSmash(C,o);}catch(e){o.dead=1;}
+  }}
+ /* 🔫**ルーフガンを撃つ**(⚠しがみつきを出した後)=**倒した分は必ず連なりと同じ道を通す**(既出の掟)。
+    ⚠**音は鳴らさない**=毎秒4発なので必ず雑音になる(1体ごとに派手にしない、の掟)。
+    ⚠**的が居ない時は溜めない**=溜めると次に敵が出た瞬間に何発も出る。 */
+ if(gn9){
+  B.gunCd=(B.gunCd||0)-dt;
+  if(B.gunCd<0)B.gunCd=0;
+  if(gtZ&&B.gunCd<=0){
+   B.gunCd=EQ_GUN_CD;
+   dmgZ(C,gtZ,EQ_GUN_D*(B.dpsX||1),1,true);
+   if(gtZ.dead)kil++;
+   B.gunT=.09;B.gunX=gtZ.px;B.gunY=gtZ.py;/* 曳光弾の絵(⚠世界座標のまま持つ) */
   }}
  /* ⭐**連続轢殺**(2026-08-02(2)ユーザー①「連続で気持ちいい」)。
     ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
@@ -20881,7 +20944,8 @@ const BNS_CMB_C=['',PAPER,GOLD,AMBER,RUST];
 function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;C.bdst=[];C.bdstI=0;
  C.bscr=[];C.bscrI=0;/* 画面に貼り付く血 */
  C.bcps=[];C.bcpsI=0;/* 路面に残る死体 */
- C.bbod=[];C.bbodI=0;/* ⭐吹き飛んで転がる体(高さを持つ) */}
+ C.bbod=[];C.bbodI=0;/* ⭐吹き飛んで転がる体(高さを持つ) */
+ C.boil=[];C.boilI=0;/* 🛢火炎オイル(⚔⛽⑤) */}
 /* 🔥⭐**ニトロを使う**(2026-08-02(23))。⚠**呼ぶのはボタンからだけ**にする(スティックと同じ作法)。
    ⚠満タンでない時は撃たせない=「押したのに何も起きない」を避けるため音で断る。 */
 function bnsNitro(){
@@ -20986,6 +21050,7 @@ function bnsFxStep(C,dt){
  const ds=C.bdst;if(ds)for(let i=0;i<ds.length;i++){const p=ds[i];
   if(p.t>=p.lf)continue;p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;}
  const sc=C.bscr;if(sc)for(let i=0;i<sc.length;i++){if(sc[i].t<sc[i].lf)sc[i].t+=dt;}
+ const ol=C.boil;if(ol)for(let i=0;i<ol.length;i++){if(ol[i].t<EQ_OIL_LF)ol[i].t+=dt;}
 }
 /* 🛞轍と🩸血だまり=**地面の上・廃墟の下**に描く(踏まれている物なので一番下) */
 function drawBnsMarks(c,C){
@@ -21070,6 +21135,34 @@ function drawBnsMarks(c,C){
     const k=p.t/p.lf;if((k>.45?1:0)!==b)continue;
     const r=p.r*(.6+k*1.5);c.rect(p.x-r,p.y-r*.5,r*2,r);any=1;}
    if(any)c.fill();}
+ }
+ /* 🛢⭐**火炎オイル**(⚔⛽⑤)=**一番上に描く**(死体と血の上で燃えている)。
+    ⚠⚠**当たりと同じ半径(`EQ_OIL_R`)から出す**=見えていない所で焼くと「当たっていないのに死ぬ」に戻る。
+    ⚠**加算(lighter)は薄く**=濃いと路面ごと白飛びして道が消える(この面で既出の掟)。
+    ⚠**塗りは3回だけ**=油の染み → 炎の内 → 炎の芯。1枚ずつ濃さを変えない(数十回の塗りになる)。 */
+ const ol=C.boil;
+ if(ol&&ol.length){
+  const tt=TT;/* ⚠揺らぎの時計は全体の時計を使う(この関数は t を受け取らない) */
+  /* ① 黒い油の染み(⚠加算にしない=これは暗い物)。⚠**四角で描かない**=撮ったら
+     「路面に灰色の板が置いてある」に見えた(2026-08-02(60))。丸だと油だまりに読める。 */
+  c.fillStyle='rgba(22,16,10,.44)';c.beginPath();let anyO=0;
+  for(let i=0;i<ol.length;i++){const s=ol[i];const k=s.t/EQ_OIL_LF;if(k>=1)continue;
+   const r=EQ_OIL_R*(1-k*.35);
+   c.moveTo(s.x+r,s.y);c.ellipse(s.x,s.y,r,r*.62,0,0,6.2832);anyO=1;}
+  if(anyO)c.fill();
+  /* ② 炎(3段)。⚠**揺らぎは種(sd)から出す**=毎フレーム乱数を引くと震えて汚い。
+     ⚠**芯を持たせる**=薄い色1枚だと加算で路面と混ざって「砂の丸」に見える(撮って直した)。 */
+  c.save();c.globalCompositeOperation='lighter';
+  const CO=[['rgba(210,80,16,.30)',1.0],['rgba(255,176,56,.30)',.58],['rgba(255,238,186,.26)',.24]];
+  for(let b=0;b<3;b++){
+   c.fillStyle=CO[b][0];c.beginPath();let any=0;
+   for(let i=0;i<ol.length;i++){const s=ol[i];const k=s.t/EQ_OIL_LF;if(k>=1)continue;
+    /* ⚠**消え際は小さくする**=1件ずつ濃さを変えられないので、薄れは大きさで表す(既出の作法) */
+    const fl=.82+.18*Math.sin(tt*14+s.sd);
+    const r=EQ_OIL_R*CO[b][1]*(1-k*.45)*fl;
+    c.moveTo(s.x+r,s.y);c.ellipse(s.x,s.y,r,r*.62,0,0,6.2832);any=1;}
+   if(any)c.fill();}
+  c.restore();
  }
 }
 /* 🩸弾け飛んだ肉片=**敵より手前**に描く(飛んでいる物なので上)。
@@ -21359,23 +21452,31 @@ const BUP=[
    ⭐**1系統=1つの物資**にしてある=札は**3列(系統)×4行(段)**で、**上から下へ段が上がる**のがそのまま見える。
    ⭐**下の段は安い**(45〜60)=**走り出しでも必ず1つは買える**。
    ⚠**前の段の効き目は消えない**(積み上がる)=「乗り換え」ではなく「増設」。 */
-const BEQ_ST=4;/* 1系統あたりの段数(⚠絵の並びもこれで決まる) */
+/* ⭐⭐**5段目を足した**(2026-08-02(60)ユーザー「装備をもっと増やす」)。
+   ⚠⚠**系統(列)は増やさない**=1系統=1つの物資という約束(NOTESの掟)なので、
+     物資が3種のうちは**4列目を作れない**(作ると1列に2つの通貨が混ざって分けた意味が消える)。
+   ⭐**増やすなら段(行)**=梯子が1段伸びるだけなので、並びも買い方も何も変わらない。
+   ⚠**5段目は「終わりの1個」**=どれも**前の段の延長**にして、系統の性格を最後まで通す。 */
+const BEQ_ST=5;/* 1系統あたりの段数(⚠絵の並びもこれで決まる) */
 const BEQ=[
  /* ⛽燃料=**走り(噴かす)** */
  {k:'blast',r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを吹き飛ばす',      c:60},
  {k:'boost',r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
  {k:'nit2', r:0,ic:'🔋',n:'二段ニトロ',      d:'切れても3分の1だけ残る',      c:220},
  {k:'flame',r:0,ic:'🔥',n:'前方火炎放射',    d:'鼻先の炎で走りながら焼く',    c:340},
+ {k:'slick',r:0,ic:'🛢',n:'火炎オイル',      d:'ずっと前に油をまいて燃やす',  c:540},
  /* 🏭鉄材=**前まわり(轢く物)** */
  {k:'tire', r:1,ic:'🛞',n:'スパイクタイヤ',  d:'障害物で減速しない',          c:45},
  {k:'wire', r:1,ic:'🪤',n:'鉄条網バンパー',  d:'前に張り出して当たりが広い',  c:100},
  {k:'spike',r:1,ic:'🔩',n:'スパイクローラー',d:'ひいた体が高く舞う',          c:180},
  {k:'blade',r:1,ic:'⚙',n:'回転ノコ',        d:'左右の丸ノコで横も薙ぐ',      c:300},
+ {k:'boom', r:1,ic:'🪃',n:'ブーメラン刃',    d:'刃が前へ飛んで戻る',          c:480},
  /* 🏠食料=**乗員がやること** */
  {k:'plate',r:2,ic:'🛡',n:'内張り装甲',      d:'しがみつかれても遅くならない',c:50},
  {k:'horn', r:2,ic:'📢',n:'拡声器',          d:'近くのゾンビが寄ってくる',    c:110},
  {k:'siren',r:2,ic:'🔊',n:'サイレン',        d:'遠くまで群がってくる',        c:200},
- {k:'zap',  r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320}
+ {k:'zap',  r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320},
+ {k:'gun',  r:2,ic:'🔫',n:'ルーフガン',      d:'屋根の銃が前を自動で撃つ',    c:520}
 ];
 /* ⚔装備の効き目の数値。⚠**1か所にまとめる**=あちこちに散らすと必ず食い違う */
 const EQ_BLADE=86;   /* 回転ノコの横への張り出し(px) */
@@ -21401,6 +21502,37 @@ const EQ_SIREN_V=2.4; /* バスの横位置へ寄る速さ(1秒あたり) */
 const EQ_SIREN_F=1.0; /* バスの前後へ詰める速さ(1秒あたり) */
 const EQ_SIREN_J=190; /* 個体ごとの横のばらつき(⚠これが無いと整列する) */
 const EQ_ZAP_R=300,EQ_ZAP_D=90,EQ_ZAP_P=.22;/* 感電の半径/傷/1回轢くごとに起きる率 */
+/* 🛢⭐⭐**火炎オイル**(⛽⑤)=**ずっと前へ油をまいて燃やす**=**着く前に群れを焼いておく**。
+   ⚠⚠**後ろに落とす形で作って捨てた**(2026-08-02(60)に撮って気づいた)=
+     **バスは画面の下に張り付いている**ので、**後ろに置いた物は画面の外**=一度も見られない。
+     ⭐**この面で「跡を残す」遊びは成立しない**。置くなら**進む先**。⚠書き戻さないこと。
+   ⚠🔥前方火炎放射との違いは**距離**=あちらは鼻先310pxの扇(いま当たっている物を焼く)、
+     こちらは**900px先**(これから当たる群れを先に焼く)。仕事が分かれていれば重ねて付ける意味が出る。
+   ⚠**進んだ距離でまく**(毎フレームではない)=止まっている間に同じ所へ積もらない(轍と同じ作法)。
+   ⚠**寿命は短め**=長いと道が火の海になって路面も敵も読めなくなる。 */
+const BNS_OIL=22;    /* 同時に燃えていられる数(⚠上限つきの輪=配列は伸びない) */
+const EQ_OIL_F=900;  /* どれだけ前へまくか */
+const EQ_OIL_GAP=260;/* 1枚まくごとに進む距離 */
+const EQ_OIL_R=210;  /* 燃える半径 */
+const EQ_OIL_LF=4.0; /* 燃えている秒数 */
+const EQ_OIL_D=240;  /* 1秒あたりの傷 */
+/* ⚠**バスからこれより遠い敵は油の輪を舐めない**(=先に弾く枠)。
+   ⚠**向きで弾かない**=上へ走るとは限らないので、素直に「バスからの距離」で切る。 */
+const EQ_OIL_RNG=EQ_OIL_F+EQ_OIL_R+400;
+/* 🪃⭐**ブーメラン刃**(🏭⑤)=**前へ飛んで戻ってくる刃**。⚙回転ノコ(横だけ)の次の段なので、
+   **届かなかった前方**を担当する。⚠**左右2枚**が対称に飛ぶ(1枚だと何が起きたか読めない)。
+   ⚠⚠**絵と当たりは `eqBoomPt` の1か所から出す**=2か所に持つとこの面は必ず食い違う(既出の掟)。 */
+const EQ_BM_T=1.45;  /* 行って戻るまでの秒数 */
+const EQ_BM_D=680;   /* 一番遠くまで行った時の距離(バスの鼻先から) */
+const EQ_BM_W=300;   /* 一番外へ膨らんだ時の左右への張り出し */
+const EQ_BM_R=76;    /* 刃の当たりの半径(⚠絵の丸と同じ) */
+const EQ_BM_D2=760;  /* 1秒あたりの傷 */
+/* 🔫⭐**ルーフガン**(🏠⑤)=**屋根の銃が前方の1体を自動で撃つ**。
+   ⚠**1体ずつ**=群れを薙ぐのは轢く仕事なので、こちらは**遠くの1体を先に落とす**役に分ける。
+   ⚠**狙うのは前だけ**=後ろを撃つと何を撃ったのか画面の外で分からない。 */
+const EQ_GUN_CD=.26;/* 次の1発までの秒数 */
+const EQ_GUN_R=1450;/* 届く距離 */
+const EQ_GUN_D=520; /* 1発の傷(⚠素のゾンビは1発) */
 /* ⚠**素の値もここで入れる**=強化を1つも買っていない時に undefined を掛けないため。
    ⚠**装備は `B.eq` にそのまま持たせる**=描く側(`drawBusEq`)も同じ物を見る。 */
 function bupApply(B,up,eq){
@@ -21426,6 +21558,19 @@ function bupApply(B,up,eq){
  /* 🔊引き寄せの強さ=**0=無 / 1=📢拡声器(近く・弱い) / 2=🔊サイレン(遠く・強い)** */
  B.siren  =eq.siren?2:(eq.horn?1:0);
  B.zap    =eq.zap?1:0;
+ B.slick  =eq.slick?1:0;            /* 🛢後ろに燃える油 */
+ B.boom   =eq.boom ?1:0;            /* 🪃前へ飛んで戻る刃 */
+ B.gun    =eq.gun  ?1:0;            /* 🔫屋根の自動射撃 */
+}
+/* 🪃**刃の位置**(バスの局所座標=+xが進む向き)。⚠⚠**当たりも絵もここから出す**。
+   ⭐往きは外へ膨らんで、戻りは内へ畳む=**輪を描いて帰ってくる**ように見える。
+   ⚠**返すのは使い回しの配列**=毎フレーム2回呼ぶので new しない(この面の掟)。 */
+const EQ_BM_P=[0,0];
+function eqBoomPt(B){
+ const q=((B&&B.bmT)||0)/EQ_BM_T%1;      /* 0=出る 〜 1=戻った */
+ EQ_BM_P[0]=BUS_R*.7+Math.sin(q*Math.PI)*EQ_BM_D;   /* 前へ(行って戻る) */
+ EQ_BM_P[1]=Math.sin(q*Math.PI*2)*EQ_BM_W;          /* 横へ(往き=外 / 帰り=内) */
+ return EQ_BM_P;
 }
 /* ⚡**電磁バンパー**=轢いた瞬間にたまに周りへ感電させる。
    ⚠⚠**倒した分は必ず連なりとスコアとニトロの同じ道を通す**(NOTESの掟)=
@@ -22142,7 +22287,7 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.fillStyle=(ok||p==null)?PANE:(lk?'rgba(242,236,220,.34)':'rgba(242,236,220,.55)');
   c.font='900 '+Math.round(16*dp)+'px '+FF;
   /* ⚔段の数字(①②③④)=どこまで来たかが一目で分かる */
-  c.fillText((tab?'①②③④'.charAt(r.i%BEQ_ST)+' ':'')+u.ic+' '+u.n,r.x+9*dp,r.y+22*dp);
+  c.fillText((tab?'①②③④⑤'.charAt(r.i%BEQ_ST)+' ':'')+u.ic+' '+u.n,r.x+9*dp,r.y+22*dp);
   c.font='900 '+Math.round(12*dp)+'px '+FF;
   c.fillStyle=(ok||p==null)?'rgba(242,236,220,.85)':(lk?'rgba(242,236,220,.3)':'rgba(242,236,220,.45)');
   c.fillText(u.d,r.x+9*dp,r.y+39*dp);
@@ -22241,6 +22386,13 @@ function drawBusEq(c,B,t){
   c.fillStyle=q9>=1?'#ffcf6a':'#8fbf4d';
   if(q9>0){rr(c,-R*.88,R*.16-R*.32*q9,R*.22,R*.32*q9,R*.05);c.fill();}
  }
+ /* 🛢火炎オイル(⛽⑤)=後ろの油タンク+**前へ向いた撒き口**。⚠**まく向きが絵で分かること**
+    (後ろ向きに描くと「跡を残す装備」に読めてしまう)。⚠油だまりは路面側(`drawBnsMarks`)に描く */
+ if(E.slick){c.fillStyle='#3d3a2e';
+  rr(c,-R*.86,-R*.42,R*.26,R*.84,R*.07);c.fill();c.stroke();
+  c.fillStyle='#8a6a2a';c.beginPath();c.rect(-R*.84,-R*.30,R*.22,R*.10);c.fill();
+  for(const s9 of [-1,1]){c.fillStyle='#2a2620';
+   c.beginPath();c.rect(R*.68,s9*R*.40-5,R*.30,10);c.fill();c.stroke();}}
  /* 📢拡声器(🏠②)=屋根の上の小さなラッパ(サイレンの前の段) */
  if(E.horn&&!E.siren){c.fillStyle='#7a6a4a';
   c.beginPath();c.moveTo(-R*.02,-R*.09);c.lineTo(-R*.02,R*.09);
@@ -22264,6 +22416,36 @@ function drawBusEq(c,B,t){
     c.moveTo(Math.cos(a)*R*.9,Math.sin(a)*R*.9);
     c.lineTo(Math.cos(a+.18)*R*1.7,Math.sin(a+.18)*R*1.7);}
    c.stroke();c.globalAlpha=1;c.lineWidth=3.2;c.strokeStyle=INK;}}
+ /* 🔫ルーフガン(🏠⑤)=屋根の上の回る銃座。⚠**撃った的の方を向く**(向かないと自動で撃っているのが読めない) */
+ if(E.gun){
+  /* ⚠**的は世界座標で持っている**ので、ここ(バスの局所座標)へ戻してから角度を出す。
+     ⚠**縦の潰しは呼ぶ側で打ち消し済み**=戻す時も同じ量(`camIvY`)で割ること。 */
+  let ga=0;
+  if(B.gunX!=null){const iv8=camIvY()||1,ux=B.gunX-B.x,uy=(B.gunY-B.y)/iv8;
+   if(ux*ux+uy*uy>1)ga=Math.atan2(uy,ux)-busAng(B);}
+  c.save();c.translate(-R*.06,0);
+  c.fillStyle='#4b4f56';c.beginPath();c.arc(0,0,R*.17,0,7);c.fill();c.stroke();
+  c.rotate(ga);
+  const kb=(B.gunT||0)>0?1:0;/* 撃った瞬間だけ少し後ろへ下がる(反動) */
+  c.fillStyle='#6e737a';c.beginPath();c.rect(-R*.04-kb*R*.03,-R*.05,R*.42,R*.10);c.fill();c.stroke();
+  if(kb&&FXLV>0){c.fillStyle='#ffe6a8';c.beginPath();
+   c.moveTo(R*.38,0);c.lineTo(R*.50,-R*.09);c.lineTo(R*.62,0);c.lineTo(R*.50,R*.09);c.closePath();c.fill();}
+  c.restore();
+ }
+ /* 🪃ブーメラン刃(🏭⑤)=前へ飛んで戻る2枚。⚠⚠**位置は当たりと同じ `eqBoomPt` から出す**。
+    ⚠**バスの外に居る物**なので、車体より後(=上)に描く=飛んでいるのが分かる。 */
+ if(E.boom){const p8=eqBoomPt(B),ph=t*26;
+  for(const s8 of [-1,1]){
+   c.save();c.translate(p8[0],p8[1]*s8);c.rotate(ph*s8);
+   c.fillStyle='#b9c0c8';c.beginPath();
+   /* ⚠**への字**=丸だと回転ノコと見分けが付かない。ブーメランは「く」の形で語る */
+   for(let i=0;i<3;i++){const a=i*2.0944;
+    c.moveTo(0,0);
+    c.lineTo(Math.cos(a)*EQ_BM_R,Math.sin(a)*EQ_BM_R);
+    c.lineTo(Math.cos(a+.62)*EQ_BM_R*.72,Math.sin(a+.62)*EQ_BM_R*.72);}
+   c.closePath();c.fill();c.stroke();
+   c.fillStyle='#5b6169';c.beginPath();c.arc(0,0,EQ_BM_R*.22,0,7);c.fill();
+   c.restore();}}
  /* 🔥前方火炎放射=鼻先から前へ広がる扇。⚠**当たりの寸法(`EQ_FLM_*`)と必ず同じ形にする** */
  if(E.flame&&FXLV>0){
   const x0=R*.72,ln=EQ_FLM_L,w1=EQ_FLM_W,fl=.86+.14*Math.sin(t*30);
@@ -22278,6 +22460,7 @@ function drawBusEq(c,B,t){
 function drawBus(c,C,t){
  const B=C.bus;if(!B)return;
  if(B.zapT>0)B.zapT=Math.max(0,B.zapT-.016);/* ⚠絵の側で減らす(描かない時は要らない) */
+ if(B.gunT>0)B.gunT=Math.max(0,B.gunT-.016);/* 🔫曳光弾と発砲炎(同上) */
  const S=BUS_DRAW,iv9=camIvY();
  groundShadow(c,B.x,B.y,BUS_R*.86);
  /* 🔥**ニトロ中は後ろから炎を噴く**(2026-08-02(23))=画面の効果だけだと「速いのか?」で終わる。
@@ -22318,6 +22501,13 @@ function drawBus(c,C,t){
     見えていない所で当たると「当たっていないのに死ぬ」に逆戻りする。 */
  try{drawBusEq(c,B,t);}catch(e){}
  c.restore();
+ /* 🔫**曳光弾**(⚔🏠⑤)=撃った的まで1本。⚠**世界座標のまま引く**=線は縦の潰しが掛かって正しい
+    (打ち消すと道路や敵と向きが食い違う)。⚠**細く短命に**=毎秒4発なので太いと画面が埋まる。 */
+ if((B.gunT||0)>0&&B.gunX!=null&&FXLV>0){
+  const q8=clamp(B.gunT/.09,0,1);
+  c.save();c.globalAlpha=q8*.85;c.strokeStyle='#ffe6a8';c.lineWidth=3.4;c.lineCap='round';
+  c.beginPath();c.moveTo(B.x,B.y);c.lineTo(B.gunX,B.gunY);c.stroke();
+  c.restore();}
  /* ⭐⭐**前照灯の光と、まとめ轢きの閃光**(2026-08-02(34)=粒の絵)。⚠**加算(lighter)で乗せる**。
     ⚠車体の後(=上)に描く=光が車体を薄く覆って「点いている」に見える。 */
  if(FXLV>0&&prtImg('glow')&&prtImg('glow').width){
@@ -23207,7 +23397,12 @@ function renderLab(){
      開けてしまうので、**研究所の画面が空になって見た目を確かめられない**。
      ⚠押しても**再読み込みすれば元に戻る**(起動時にまた全開放されるため)=消える心配は無い。
      ⚠セーブはDEV専用の枠(dt_meta_dev)なので、普通に遊ぶ時のデータには触れない。 */
-  const tools=(DEV?'<button data-labrst>🛠リセット</button>':'')
+  /* 🚌⭐**🛠DEVの「バス強化リセット」**(2026-08-02(60)ユーザー指示
+     「テストモードでバスの強化もリセットできるようにして そっちで確認する」)。
+     ⚠**バス強化は永続**なので、一度買うと**段階解放の並びを二度と確かめられない**。
+     ⭐**初回クリアの印(`bcl`)も一緒に戻す**=初回3倍の報酬も何度でも確かめられる。
+     ⚠🛠DEVは物資が99999なので、押した直後から全部買い直せる。 */
+  const tools=(DEV?'<button data-labrst>🛠リセット</button><button data-busrst>🛠バス強化</button>':'')
    +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
   body='<div class="bphint">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
     +cat.d+'</div>'
@@ -23245,6 +23440,10 @@ function renderLab(){
  $('lab-items').querySelectorAll('[data-labrst]').forEach(b=>{b.onclick=()=>{
   metaResetLab();devTop();saveMeta();renderLab();renderStkSeg();updLabBtn();
   toast('🛠 研究所をリセットした(再読み込みで全開放に戻る)');};});
+ /* 🚌🛠DEVのバス強化リセット。⚠**物資と段と装備と初回クリアの印**を戻す(自己ベストは残す) */
+ $('lab-items').querySelectorAll('[data-busrst]').forEach(b=>{b.onclick=()=>{
+  metaResetBus();devTop();saveMeta();renderLab();
+  toast('🛠 バス強化(🔧段・⚔装備・🎒物資・初回クリア)を全部リセットした');};});
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
   /* ⭐まとめ買いの段数。⚠**表に無い種類は必ず1**(「次の1つ」を買う形の項目を複数回進めない) */
   const n=(LAB_MSTEP[it.k]&&it.n>1)?it.n:1;

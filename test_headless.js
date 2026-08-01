@@ -2696,14 +2696,18 @@ function checkRice(){
  {const sc0=me.scrap;
   for(const z of me.zombies){if(z.dead||z.boss||z.elite)continue;killZ(me,z);break;}
   if(me.scrap!==sc0){console.log('FAIL: 道中でスクラップが増えている +'+(me.scrap-sc0));process.exit(1);}}
- /* 🧬**走っている間に貯まる研究pt**=⚡スコアから出て、上限で止まること */
- {const B9=me.bus;B9.score=0;
-  if(bnsGainPts(B9)!==0){console.log('FAIL: スコア0なのに🧬が入っている');process.exit(1);}
-  B9.score=BNS_RPT_D*40;
-  if(bnsGainPts(B9)!==40){console.log('FAIL: 🧬がスコアから出ていない '+bnsGainPts(B9));process.exit(1);}
+ /* 🧬**走っている間に貯まる研究pt**=**轢いた数**から出て、上限で止まること
+    (2026-08-02(60)ユーザー決定でスコア割から「1体=1🧬」に変えた) */
+ {const B9=me.bus;const kl0=B9.kill|0;B9.kill=0;
+  if(bnsGainPts(B9)!==0){console.log('FAIL: 0体なのに🧬が入っている');process.exit(1);}
+  B9.kill=40;
+  if(bnsGainPts(B9)!==40*BNS_RPT_K){console.log('FAIL: 🧬が轢いた数から出ていない '+bnsGainPts(B9));process.exit(1);}
+  /* ⚠**スコアでは動かないこと**=前は⚡スコア割だったので、取り違えるとまた倍率が乗る */
   B9.score=999999;
+  if(bnsGainPts(B9)!==40*BNS_RPT_K){console.log('FAIL: 🧬がスコアに引きずられている '+bnsGainPts(B9));process.exit(1);}
+  B9.kill=999999;
   if(bnsGainPts(B9)!==BNS_RPT_MAX){console.log('FAIL: 🧬が上限で止まらない '+bnsGainPts(B9));process.exit(1);}
-  B9.score=0;}
+  B9.kill=kl0;B9.score=0;}
  /* ③ 連なり */
  const B=me.bus;
  me.zombies.length=0;B.cmb=0;B.cmbT=0;B.cmbMx=0;B.kill=0;
