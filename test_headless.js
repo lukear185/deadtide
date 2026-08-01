@@ -2598,13 +2598,31 @@ function checkBonus(){
   if(!(pt1>0)){console.log('FAIL: 初回クリアの🧬が入らない');process.exit(1);}
   backTitle();
   META.stg=si;setDiff=BNS_D;startSolo();bnsPreSkip();
+  /* ⚠⚠**倒した数で🧬を配らない**(2026-08-02(50)ユーザー「無限プレイで研究ptを無限獲得できちゃう」)=
+     この面は**負けが無く75秒で終わる**ので、キルに比例させると1走で本編クリア1回ぶんを超える。
+     ⭐**2000体轢いた状態で awardMeta を通しても🧬が1も増えないこと**を見る。 */
+  G.players[0].kills=2000;
+  const pt2=META.pts;
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   if(META.gem!==gm1){console.log('FAIL: 2回目のクリアでも💎が増える(周回で稼げる)');process.exit(1);}
+  if(META.pts!==pt2){console.log('FAIL: 道中の周回で🧬が増える(稼ぎ場になる) +'+(META.pts-pt2));process.exit(1);}
   backTitle();
+  /* 🚌⚠⚠**現実の1日に1回だけ**(2026-08-02(50)ユーザー決定)=**入った時点で今日の印**が立ち、
+     もう選べなくなる。⚠🛠DEVは無制限(ヘッドレスは DEV=false なのでここで測れる)。 */
+  if(!bnsToday(si)){console.log('FAIL: 道中に入っても「今日は走った」の印が立たない');process.exit(1);}
+  if(diffOK(si,BNS_D)){console.log('FAIL: 同じ日にもう一度 道中を選べてしまう');process.exit(1);}
+  if(!bnsUnl(si)){console.log('FAIL: 1日1回の印で「未解放」になっている(🔒と✅の書き分けが壊れる)');process.exit(1);}
+  /* 日が変われば また走れる */
+  META.bday[si]='1999-1-1';
+  if(!diffOK(si,BNS_D)){console.log('FAIL: 日が変わっても道中を選べない');process.exit(1);}
+  /* ⚠**ステージごとに数える**=片方を走った日でも、もう片方は走れる */
+  META.bday[si]=bnsDayKey();
+  if(STAGES[1-si]&&!diffOK(1-si,BNS_D)){console.log('FAIL: 別のステージの道中まで塞がっている');process.exit(1);}
+  META.bday=[];
   if(LANES){console.log('FAIL: ボーナス面を出てもレーンが残っている');process.exit(1);}
  }
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;
- console.log('🚌道中: ステージ'+STAGES.length+'面ぶん(縦一直線1本/置き場なし/バスの先に湧く/すれ違いは無傷/到着でクリア/遊べば次が開く/報酬は初回だけ/中断できない) OK');
+ console.log('🚌道中: ステージ'+STAGES.length+'面ぶん(縦一直線1本/置き場なし/バスの先に湧く/すれ違いは無傷/到着でクリア/遊べば次が開く/報酬は初回だけ/🧬は周回で増えない/1日1回/中断できない) OK');
 }
 /* ⭐⭐**米粒ゾンビと轢き応え**(2026-08-02(2)ユーザー①)。見るのは6つ:
    ①数百体が盤面に乗ること+米粒の描き方が例外を出さずに通ること
