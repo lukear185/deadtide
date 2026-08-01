@@ -2633,7 +2633,10 @@ function checkRice(){
  if(n5<50){console.log('FAIL: 倒せる米粒が足りない '+n5);process.exit(1);}
  const nCp=me.fx.filter(e=>e.k==='corpse').length;
  if(nCp){console.log('FAIL: 米粒が死体を残している(重さの正体) '+nCp+'件');process.exit(1);}
- const nTx=me.fx.filter(e=>e.k==='txt').length;
+ /* ⚠⚠**「txtが何件あるか」で測ってはいけない**(2026-08-02(40)に直した)=
+    📖図鑑に初めて登録された種類ぶんの txt が混ざるので、**どのゾンビを引いたかで普通に落ちる**
+    (無関係な変更で何度も「3件」で落ちた)。⭐見たいのは**⚙️の文字だけ**。 */
+ const nTx=me.fx.filter(e=>e.k==='txt'&&e.s.indexOf('⚙️')>=0).length;
  if(nTx>2){console.log('FAIL: ⚙️の文字が1体ずつ湧いている '+nTx+'件');process.exit(1);}
  if(!(me.bus.gain>0)){console.log('FAIL: ⚙️が足し込まれていない');process.exit(1);}
  /* ③ 連なり */
@@ -2661,9 +2664,15 @@ function checkRice(){
   /* ⭐**体そのものが吹き飛ぶ**(轢殺に見せる主役)=肉片とは別の輪(bbod)に1体1つ積まれること。
      ⚠2026-08-02(36)に「bchk」の bd 印から専用の輪へ移した(高さ z を持たせて本物の弾道にしたため) */
   if(!(me.bbod||[]).length){console.log('FAIL: 轢いた体が吹き飛んでいない');process.exit(1);}
-  /* ⭐**高さ(z)を持って飛んでいること**=これが無いと着地も跳ねも転がりも起きない(偽物の弾道に戻っている) */
-  if(!me.bbod.some(p=>p.vz>0&&p.rv!==undefined)){
-   console.log('FAIL: 吹き飛んだ体が高さ(z)と回りを持っていない');process.exit(1);}
+  /* ⭐**高さ(z)を持って飛んでいること**=これが無いと着地も跳ねも転がりも起きない(偽物の弾道に戻っている)。
+     ⚠⚠**盤面の体を見て「どれかが vz>0」で測ってはいけない**(2026-08-02(40)に直した)=
+       上がっているのは初速150/重力1750の**0.09秒だけ**なので、
+       「最後のコマで死んだ個体が居るか」=**どのゾンビを引いたか**で決まり、**普通に落ちる**
+       (無関係な変更で4回中3回落ちた)。⭐**その場で1体飛ばして、その体を見る**=意味は同じで引きに左右されない。 */
+  {me.bbod.length=0;me.bbodI=0;
+   bnsSplat(me,{px:B.x,py:B.y,zi:0});
+   if(!me.bbod.some(p=>p.vz>0&&p.rv!==undefined)){
+    console.log('FAIL: 吹き飛んだ体が高さ(z)と回りを持っていない');process.exit(1);}}
   /* ⭐**バスが速いほど遠くへ高く飛ぶ**=初速がバスの速さから出ていること(固定の乱数に戻っていないか) */
   {const sv=B.vx,sv2=B.vy;
    me.bbod.length=0;me.bbodI=0;B.vx=0;B.vy=0;
@@ -2769,41 +2778,93 @@ function checkRice(){
   for(const g of BNS_GATE)if(!(bnsCorrW(g)<BNS_OFF*.6)){
    console.log('FAIL: 関所で通路が絞れていない '+g+'→'+bnsCorrW(g));process.exit(1);}
   if(!(bnsCorrW(.005)>BNS_OFF*.95)){console.log('FAIL: 関所以外まで絞れている');process.exit(1);}
-  /* ⚠**建物も木も通路の中に立っていないこと**=ここが崩れると「壁の中をゾンビが歩く」 */
-  for(const b of BBLD)if(!bnsFreeAt(b.x,b.y,0)){
-   console.log('FAIL: 建物が通路の中に立っている');process.exit(1);}
+  /* ⚠**建物も木も通路の中に立っていないこと**=ここが崩れると「壁の中をゾンビが歩く」。
+     ⚠⚠**建物は「道の通路」だけで見る**(2026-08-02(40))=探索場(出発点の広場)には
+       **わざと廃墟を建てる**ので、広場まで混ぜると正しい配置が落ちる。
+       ⭐木は広場にも生やさない(bnsFreeAt)ので今までどおり。⚠この検査ファイルは丸ごと
+       テンプレート文字列なので、コメントにバッククォートを書かないこと(3度目)。 */
+  for(const b of BBLD)if(!bnsCorrFree(b.x,b.y,0)){
+   console.log('FAIL: 建物が道の通路の中に立っている');process.exit(1);}
   for(const t of BTREE)if(!bnsFreeAt(t.x,t.y,0)){
    console.log('FAIL: 木が通路の中に立っている');process.exit(1);}
   /* ⚠⚠**タレット置き場は 2026-08-02(24) に丸ごと外した**(走り抜ける面になったため)。
      ⭐**1つも残っていないこと**を見る(書き戻しの検出)。 */
   {for(const s of SLOTS)if(s[0]>-9000){
     console.log('FAIL: 道中にタレット置き場が残っている');process.exit(1);}}
-  /* ⑪ 🏚⭐**入れる廃墟**(2026-08-02(12))。見るのは5つ:
-     ①数がある ②通路の中に立っていない ③タレット置き場を兼ねていない(=枠に化けていない)
-     ④入口の前に立つ点が建物の外で、街路の側を向いている ⑤棟どうしが重なっていない */
-  {if(BENT.length<8){console.log('FAIL: 入れる廃墟が少なすぎる '+BENT.length+'棟');process.exit(1);}
+  /* ⑪ 🏚⭐**入れる廃墟**(2026-08-02(12) / 壁の当たりは(40))。見るのは7つ:
+     ①数がある ②**道の通路**の中に立っていない ③タレット置き場を兼ねていない(=枠に化けていない)
+     ④入口の前に立つ点が建物の外で、**広場の中心(探索場)の側**を向いている ⑤棟どうしが重なっていない
+     ⭐⑥**壁に当たる**(すり抜けない) ⑦**中は空洞で、入口からだけ入れる**(⚠バスは入れない) */
+  /* ⚠**ENT_N 棟ぴったり建っていること**(2026-08-02(40)に「8以上」から締めた)=
+     「8以上」で見ていたせいで**毎回1棟建っていないのに気づけなかった**。 */
+  {if(BENT.length<ENT_N){console.log('FAIL: 入れる廃墟が少なすぎる '+BENT.length+'/'+ENT_N+'棟');process.exit(1);}
    const kn={};for(const b of BENT)kn[b.ek]=(kn[b.ek]||0)+1;
    if(Object.keys(kn).length<ENT_K.length){
     console.log('FAIL: 入れる廃墟の種類が偏っている '+JSON.stringify(kn));process.exit(1);}
+   /* 局所座標(l=長さ方向 / w=幅方向。⚠ds を畳んだ後=入口は必ず +w 側)から世界の点を出す */
+   const eLoc=(b,l,w)=>[b.x+b.ca*l-b.sa*w*b.ds, b.y+b.sa*l+b.ca*w*b.ds];
+   const PW=14;/* 歩く人くらいの当たり(⚠次の段=主人公が入る時の目安) */
    for(const b of BENT){
     if(!b.en||b.rf){console.log('FAIL: 入れる廃墟がタレット置き場を兼ねている');process.exit(1);}
-    if(!bnsFreeAt(b.x,b.y,0)){console.log('FAIL: 入れる廃墟が通路の中に立っている');process.exit(1);}
+    if(!bnsCorrFree(b.x,b.y,0)){
+     console.log('FAIL: 入れる廃墟が道の通路の中に立っている');process.exit(1);}
     for(let i=0;i<ECO_BASE;i++){const s=SLOTS[i];if(!s||s[0]<-9000)continue;
      if(Math.abs(s[0]-b.x)<2&&Math.abs(s[1]-b.y)<2){
       console.log('FAIL: 入れる廃墟が建設マスになっている');process.exit(1);}}
     /* ⚠**入口の前の点は建物の外**=壁の上だと近づいたかの判定に使えない */
     if(dist(b.dx,b.dy,b.x,b.y)<=b.W){console.log('FAIL: 入口の前の点が建物の中');process.exit(1);}
-    /* ⚠**街路の側を向いていること**=裏を向いていたら「入れる」が読めない */
-    if(!(bnsLaneD(b.dx,b.dy)<bnsLaneD(b.x,b.y))){
-     console.log('FAIL: 入れる廃墟の入口が街路と反対を向いている');process.exit(1);}
+    /* ⚠⚠**広場の中心の側を向いていること**(2026-08-02(40)に「街路の側」から入れ替えた)=
+       探索場は出発点の広場なので、入口が外を向いていると裏へ回らされる。 */
+    if(!(dist(b.dx,b.dy,BNS_CX,BNS_STARTY)<dist(b.x,b.y,BNS_CX,BNS_STARTY))){
+     console.log('FAIL: 入れる廃墟の入口が広場の中心と反対を向いている');process.exit(1);}
+    /* ⭐⑥⑦**壁の当たり**。⚠**この4つが揃って初めて「入る」が成立する** */
+    const cb=b.cb,lc=(cb[0]+cb[1])/2,wc=(cb[2]+cb[3])/2;
+    const pWall=eLoc(b,lc,cb[2]+ENT_TH/2);/* 奥の壁のど真ん中 */
+    const pIn=eLoc(b,lc,wc);              /* 中(空洞) */
+    const pDoor=eLoc(b,b.ex,cb[3]);       /* 入口の面のど真ん中 */
+    if(!bnsEntFit(pWall[0],pWall[1],PW)){
+     console.log('FAIL: 廃墟の壁をすり抜ける('+ENT_K[b.ek].n+')');process.exit(1);}
+    if(bnsEntFit(pIn[0],pIn[1],PW)){
+     console.log('FAIL: 廃墟の中が空洞になっていない('+ENT_K[b.ek].n+')');process.exit(1);}
+    if(bnsEntFit(pDoor[0],pDoor[1],PW)){
+     console.log('FAIL: 入口が開いていない('+ENT_K[b.ek].n+')');process.exit(1);}
+    if(bnsEntFit(b.dx,b.dy,PW)){
+     console.log('FAIL: 入口の前に立てない('+ENT_K[b.ek].n+')');process.exit(1);}
+    /* ⭐⭐**「入る」が本当に成立するか**=入口の前の点から中まで**歩かせてみる**。
+       ⚠点を1つずつ見るだけでは足りない=入口が開いていても、そこへ至る途中で
+       壁の角に引っかかると入れない(押し戻しは滑らせるので、詰まったら止まる)。 */
+    {let px9=b.dx,py9=b.dy,stuck=0;
+     for(let k=0;k<400;k++){
+      const ddx=pIn[0]-px9,ddy=pIn[1]-py9,dd9=Math.hypot(ddx,ddy);
+      if(dd9<8)break;
+      const st9=Math.min(8,dd9);
+      let nx9=px9+ddx/dd9*st9,ny9=py9+ddy/dd9*st9;
+      const f9=bnsEntFit(nx9,ny9,PW);if(f9){nx9=f9[0];ny9=f9[1];}
+      if(Math.hypot(nx9-px9,ny9-py9)<.5){stuck=1;break;}
+      px9=nx9;py9=ny9;}
+     if(stuck||dist(px9,py9,pIn[0],pIn[1])>20){
+      console.log('FAIL: 入口から中へ歩いて入れない('+ENT_K[b.ek].n+')');process.exit(1);}}
+    /* ⚠⚠**バスは入口をくぐれないし中にも居られない**=くぐれると屋根の下で画面から消える */
+    if(!bnsEntFit(pDoor[0],pDoor[1],BUS_CL)){
+     console.log('FAIL: バスが廃墟の入口をくぐれてしまう('+ENT_K[b.ek].n+')');process.exit(1);}
+    if(!bnsEntFit(pIn[0],pIn[1],BUS_CL)){
+     console.log('FAIL: バスが廃墟の中に居られる('+ENT_K[b.ek].n+')');process.exit(1);}
+    /* ⭐**当たりが bnsRoadFit(=バスが使う唯一の入口)から引けていること**。
+       ⚠ここが繋がっていないと、当たりを作っただけで**バスは今までどおりすり抜ける**。 */
+    if(!bnsRoadFit(pIn[0],pIn[1],BUS_CL)){
+     console.log('FAIL: バスが広場の廃墟をすり抜ける('+ENT_K[b.ek].n+')');process.exit(1);}
     try{drawEntBld(ctx,b);}catch(e){
      console.log('FAIL: 入れる廃墟の描画で例外 '+e.message);process.exit(1);}}
+   /* ⚠**広場のうち廃墟の無い所は今までどおり自由**=当たりを足したせいで
+      「何も無いのに走れない広場」になっていないか(乗り物を地形で止める面の掟) */
+   if(bnsRoadFit(BNS_CX,BNS_STARTY,BUS_CL)){
+    console.log('FAIL: 出発点の広場の真ん中が走れない');process.exit(1);}
    for(let i=0;i<BENT.length;i++)for(let j=i+1;j<BENT.length;j++)
     if(dist(BENT[i].x,BENT[i].y,BENT[j].x,BENT[j].y)<220){
      console.log('FAIL: 入れる廃墟どうしが重なっている');process.exit(1);}
    if(!bnsEntNear(BENT[0].dx,BENT[0].dy,300)){
     console.log('FAIL: bnsEntNear が一番近い廃墟を返さない');process.exit(1);}
-   console.log('🏚入れる廃墟: '+BENT.length+'棟 '+ENT_K.map(k=>k.n+'x'+(kn[ENT_K.indexOf(k)]||0)).join('/')+' OK');}
+   console.log('🏚入れる廃墟: '+BENT.length+'棟 '+ENT_K.map(k=>k.n+'x'+(kn[ENT_K.indexOf(k)]||0)).join('/')+' 壁の当たりOK');}
   /* ⭐**森はバスも通れない**(2026-08-02(8))。見るのは3つ:
      ①関所でもバスが通れる幅がある ②森の中に置いたバスが街路へ押し戻される
      ③街路の真ん中は押し戻されない(=見えない壁が通路の中に無い) */
