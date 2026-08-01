@@ -3330,12 +3330,14 @@ function checkBnsFlow(){
    const M=G.bpre.mg;if(!M||M.endT>0)break;
    if(M.kind===1){M.bx=M.cx;bnsMgTap(G.bpre,0,0);}
    else if(M.kind===2){
-    const R=bnsMfRects(cv.width,cv.height);
-    let h=-1;for(let i=0;i<M.items.length;i++)if(M.items[i]===M.tgt){h=i;break;}
-    if(h<0){console.log('FAIL: 🏠物色でお題が盤面に無い');process.exit(1);}
-    M.rt=0;bnsMgTap(G.bpre,R[h].x+4,R[h].y+4);
-    /* ⚠時間で終わる遊びなので、押すだけでは終わらない=時間も進める */
-    bnsMgStep(G.bpre,.35);
+    /* 🏠記憶=**見せている間は押せない**ので、まず見せ終わるまで時間を進めてから順に押す */
+    for(let g=0;g<200&&M.ph!=='in';g++)bnsMgStep(G.bpre,.05);
+    if(M.ph!=='in'){console.log('FAIL: 🏠記憶が押す番にならない');process.exit(1);}
+    const R=bnsMmRects(cv.width,cv.height);
+    const sq=M.seq.slice();
+    for(const v of sq){bnsMgTap(G.bpre,R[v].x+4,R[v].y+4);}
+    /* 段が上がる間(ok)も時間で進む */
+    for(let g=0;g<40&&M.ph==='ok'&&!(M.endT>0);g++)bnsMgStep(G.bpre,.05);
    }else{M.pos=M.tgt;bnsMgTap(G.bpre,0,0);}
   }
  };

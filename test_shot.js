@@ -357,7 +357,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'bnsMgStart(Q,bb);'
        +'if(kk===0){for(var k=0;k<2;k++){Q.mg.pos=Q.mg.tgt;bnsMgTap(Q,0,0);}}'
        +'else if(kk===1){for(var k=0;k<3;k++){Q.mg.bx=Q.mg.cx+(k?0.03:0);bnsMgTap(Q,0,0);}}'
-       +'else{Q.mg.i=2;Q.mg.pts=14;Q.mg.run=2;}'
+       +'else{Q.mg.pts=14;Q.mg.run=2;for(var k3=0;k3<3;k3++)bnsMmRound(Q.mg,1);'
+        +'for(var k4=0;k4<200&&Q.mg.ph!=="in";k4++)bnsMgStep(Q,.05);'
+        +'bnsMgTap(Q,0,0);var R9=bnsMmRects(cv.width,cv.height);'
+        +'bnsMgTap(Q,R9[Q.mg.seq[0]].x+4,R9[Q.mg.seq[0]].y+4);}'
        +'for(var k2=0;k2<24;k2++)bnsPreStep(.02);'):'')
      +(BPRE==='brd'?'Q.res=[120,90,80];Q.left=0;bnsBoardStart();'
        +'for(var k=0;k<70;k++)bnsPreStep(.02);':'')

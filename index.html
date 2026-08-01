@@ -21355,7 +21355,7 @@ const BMG_SUB=.35;                /* ⚠主でない物資も少しは入る=1�
    何の遊びか読めないと「どこを漁るか」が物資だけの選択になってしまう。 */
 const BMG_K=[{ic:'⛽',n:'給油',   d:'緑の帯でタップ!'},
              {ic:'🏭',n:'荷積み', d:'荷台の真上でタップ!'},
-             {ic:'🏠',n:'物色',   d:'お題の物を見つけてタップ!'}];
+             {ic:'🏠',n:'物色',   d:'光った棚を同じ順に押す!'}];
 /* --- ⛽**給油**=動く針を目標の帯で止める(タイミング)。⚠帯は止める前から見えている --- */
 const BMG_N=8;            /* 給油する本数 */
 const BMG_SP=[1.05,.16];  /* 針の速さ(初回 / 1本ごとの増え) */
@@ -21368,18 +21368,19 @@ const BML_W0=.34;         /* 1段目の幅(画面の割合) */
 const BML_SP=[.62,.10];   /* 荷が左右に動く速さ(初段 / 1段ごとの増え) */
 const BML_HIT=.012;       /* これ以内なら✨ピッタリ */
 const BML_BACK=.022;      /* ✨ピッタリで戻る幅(⚠戻しすぎると失敗が痛くなくなる) */
-/* --- 🏠**物色**=お題の物を素早く見つけてタップ(視覚探索)。
-   ⚠**速いほど得**(素早く見つけると✨)=時間で待つだけの遊びにしない。
-   ⚠**間違えると時間が減る**=当てずっぽうの連打を封じる。 --- */
-/* ⚠⚠**問題数の上限を必ず置く**(2026-08-02(45)に検査で気づいた)=時間だけで区切ると
-   上手い人ほど何問でも解けてしまい、**3種の実入りが揃わない**(⛽8本/🏭7段に対して30問解けた)。 */
-const BMF_N=9;            /* 何個見つけたら終わりか */
-const BMF_T=11;           /* 制限時間(秒) */
-const BMF_PEN=.9;         /* 間違えた時に減る秒数 */
-const BMF_FAST=1.0;       /* この秒数より速く見つけたら✨ */
-const BMF_C=4,BMF_R=3;    /* 棚の列と段 */
-const BMF_ITEM=[{n:'缶詰',c:'#c2703a'},{n:'瓶',c:'#6f9c8f'},{n:'木箱',c:'#8a6a45'},
-                {n:'薬',c:'#cfc7b4'},{n:'パン',c:'#c49a5a'},{n:'電池',c:'#4f6a86'}];
+/* --- 🏠**物色**=**光った棚を同じ順に押す**(記憶)。
+   ⚠⚠**2026-08-02(47)に「お題の物を探す」から作り替えた**(ユーザー「物色はちょっと厳しいな
+     絵がわかりづらいから」)=**小さい品物の絵を見分けさせる遊びは、この画面の寸法では成立しない**
+     (棚1つが実機で40px前後。缶と薬と電池が同じ縦長の塊に見える)。
+   ⭐**場所と順番だけで遊ばせる**と、絵の見分けがゼロになって⛽⛽🏭とも違う頭を使う遊びになる。
+   ⚠**棚は3×2の6マス**にした(4×3=12マスだと順番が覚えられない=理不尽になる)。
+   ⚠**間違いは2回まで許す**=1回で終わりだと🏭荷積みと同じ緊張の作りになって重い。 --- */
+const BMM_N=7;            /* 何段まで(段が進むごとに1つ長くなる) */
+const BMM_C=3,BMM_R=2;    /* 棚の列と段 */
+const BMM_L0=2;           /* 1段目の長さ */
+const BMM_SH=.42;         /* 1つを光らせる秒数 */
+const BMM_GAP=.14;        /* 光と光の間 */
+const BMM_MISS=2;         /* 間違えてよい回数(これを超えたら終わり) */
 /* 3種で共通の採点。⚠**倍率は連続でしか伸びない**=1回ごとの手応えではなく「切らさない」に値段を付ける */
 function bnsMgHit(M,g,base){
  if(g<2)M.run++;else M.run=0;
@@ -21404,14 +21405,13 @@ function bnsMlRound(M){
  M.dir=(M.n%2)?-1:1;
  M.bx=M.dir>0?M.w/2:1-M.w/2;
 }
-/* 🏠1問ぶんの支度。⚠**お題が盤面に必ず1つある**ようにする(無いと探しても見つからない) */
-function bnsMfRound(M){
- const n=BMF_C*BMF_R;
- M.items=[];
- for(let i=0;i<n;i++)M.items.push((Math.random()*BMF_ITEM.length)|0);
- M.tgt=(Math.random()*BMF_ITEM.length)|0;
- M.items[(Math.random()*n)|0]=M.tgt;
- M.rt=0;/* この問に掛かった秒数(速いと✨) */
+/* 🏠1段ぶんの支度。⚠**同じ棚を続けて光らせない**=2回続くと「1回だった気がする」になって理不尽 */
+function bnsMmRound(M,grow){
+ const n=BMM_C*BMM_R;
+ if(grow){let v=(Math.random()*n)|0;
+  if(M.seq.length&&v===M.seq[M.seq.length-1])v=(v+1+((Math.random()*(n-1))|0))%n;
+  M.seq.push(v);}
+ M.ph='show';M.shT=0;M.si=0;M.lit=-1;M.clean=1;
 }
 function bnsMgStart(Q,b){
  const k=b.ek|0;
@@ -21419,9 +21419,9 @@ function bnsMgStart(Q,b){
  Q.mg={ek:k,kind:k,i:0,t:0,pts:0,run:0,runMx:0,msg:'',msgT:0,endT:0,fl:0,lastG:-1,
   /* ⛽ */pos:.02,dir:1,sp:BMG_SP[0],w:BMG_W[0],tgt:.5,
   /* 🏭 */n:0,cx:.5,bx:.5,stack:[],
-  /* 🏠 */left:BMF_T,items:[],rt:0};
+  /* 🏠 */seq:[],si:0,ph:'show',shT:0,lit:-1,miss:0,clean:1};
  if(k===1){Q.mg.w=BML_W0;Q.mg.cx=.5;Q.mg.stack=[{x:.5,w:BML_W0}];Q.mg.n=1;bnsMlRound(Q.mg);}
- else if(k===2)bnsMfRound(Q.mg);
+ else if(k===2){Q.mg.seq=[];for(let q=0;q<BMM_L0;q++)bnsMmRound(Q.mg,1);bnsMmRound(Q.mg,0);}
  else bnsMgRound(Q.mg);
 }
 function bnsMgStep(Q,dt){
@@ -21434,9 +21434,21 @@ function bnsMgStep(Q,dt){
   const lo=M.w/2,hi=1-M.w/2;
   M.bx+=M.dir*M.sp*dt;
   if(M.bx>hi){M.bx=hi;M.dir=-1;}else if(M.bx<lo){M.bx=lo;M.dir=1;}
- }else if(M.kind===2){/* 🏠時間で終わる */
-  M.rt+=dt;M.left-=dt;
-  if(M.left<=0){M.left=0;M.msg='⏱ 時間切れ';M.msgT=1;M.endT=1.1;}
+ }else if(M.kind===2){/* 🏠光る順を見せる → 押す番 */
+  if(M.ph==='show'){
+   M.shT+=dt;
+   const u=BMM_SH+BMM_GAP,k9=Math.floor(M.shT/u);
+   if(k9>=M.seq.length){M.ph='in';M.lit=-1;M.shT=0;}
+   else M.lit=((M.shT-k9*u)<BMM_SH)?M.seq[k9]:-1;
+  }else if(M.ph==='ok'||M.ph==='ng'){
+   M.shT-=dt;
+   if(M.shT<=0){
+    if(M.ph==='ok'){if(M.seq.length-BMM_L0+1>=BMM_N){M.msg='🏠 全部覚えきった!';M.endT=1.2;}
+     else bnsMmRound(M,1);}
+    else bnsMmRound(M,0);/* ⚠**間違えた時は同じ段をもう一度**(伸ばさない) */
+   }
+  }
+  if(M.lit>=0)M.litT=(M.litT||0)+dt;
  }else{/* ⛽針が左右に流れる */
   M.pos+=M.dir*M.sp*dt;
   if(M.pos>1){M.pos=1;M.dir=-1;}else if(M.pos<0){M.pos=0;M.dir=1;}
@@ -21446,7 +21458,7 @@ function bnsMgStep(Q,dt){
 function bnsMgTap(Q,sx,sy){
  const M=Q.mg;if(!M||M.endT>0)return;
  if(M.kind===1)return bnsMlTap(M);
- if(M.kind===2)return bnsMfTap(M,sx,sy);
+ if(M.kind===2)return bnsMmTap(M,sx,sy);
  /* ⛽ ⚠**外しても本数は進める**=進まないと「当たるまで押す」で終わらなくなる */
  const h=M.w/2,d=Math.abs(M.pos-M.tgt);
  const g=d<=h*.36?0:(d<=h?1:2);
@@ -21471,51 +21483,38 @@ function bnsMlTap(M){
  else if(M.n>=BML_N){M.msg='🏭 積み切った!';M.endT=1.2;}
  else bnsMlRound(M);
 }
-/* 🏠見つける。⚠**間違えたら時間が減る**=当てずっぽうの連打を封じる */
-function bnsMfTap(M,sx,sy){
- const R=bnsMfRects(cv.width,cv.height);
+/* 🏠押す。⚠**見せている間は受け付けない**(押せてしまうと順番が飛ぶ) */
+function bnsMmTap(M,sx,sy){
+ if(M.ph!=='in')return;
+ const R=bnsMmRects(cv.width,cv.height);
  let h=-1;
  for(const r of R)if(sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h){h=r.i;break;}
  if(h<0)return;
- if(M.items[h]===M.tgt){
-  const g=M.rt<=BMF_FAST?0:1;
-  const add=bnsMgHit(M,g);
-  M.msg=g===0?'✨みつけた! +'+add:'⭕みつけた +'+add;
-  M.i++;
-  if(M.i>=BMF_N){M.msg='🏠 漁り尽くした!';M.endT=1.2;}else bnsMfRound(M);
+ M.lit=h;M.litT=0;/* 押した所を一瞬光らせる=押せた手応え */
+ if(M.seq[M.si]===h){
+  M.si++;
+  try{if(sfx.tap)sfx.tap();}catch(e){}
+  if(M.si>=M.seq.length){
+   const add=bnsMgHit(M,M.clean?0:1);
+   M.msg=(M.clean?'✨ぴったり! +':'⭕そろえた +')+add;
+   M.ph='ok';M.shT=.45;
+  }
  }else{
+  M.miss++;M.clean=0;
   bnsMgHit(M,2);
-  M.msg='❌ 違う… -'+BMF_PEN.toFixed(1)+'秒';
-  M.left=Math.max(0,M.left-BMF_PEN);
-  M.items[h]=M.tgt<0?0:M.items[h];/* ⚠盤面は変えない(探し直しの手掛かりを消さない) */
+  if(M.miss>BMM_MISS){M.msg='💥 思い出せない…';M.endT=1.3;M.ph='end';}
+  else{M.msg='❌ 違う('+(BMM_MISS-M.miss+1)+'回まで)';M.ph='ng';M.shT=.55;}
  }
 }
 /* 🏠棚の枠。⭐**絵とタップで必ず同じ物を使う**(2つに分けると必ず食い違う) */
-function bnsMfRects(W,H){
- const dp=DPR||1,mx=W*.10,my=H*.34,gp=8*dp;
- const gw=W-mx*2,gh=H*.44;
- const cw=(gw-gp*(BMF_C-1))/BMF_C,ch=(gh-gp*(BMF_R-1))/BMF_R;
+function bnsMmRects(W,H){
+ const dp=DPR||1,mx=W*.14,my=H*.32,gp=10*dp;
+ const gw=W-mx*2,gh=H*.46;
+ const cw=(gw-gp*(BMM_C-1))/BMM_C,ch=(gh-gp*(BMM_R-1))/BMM_R;
  const R=[];
- for(let i=0;i<BMF_C*BMF_R;i++)
-  R.push({x:mx+(i%BMF_C)*(cw+gp),y:my+((i/BMF_C)|0)*(ch+gp),w:cw,h:ch,i:i});
+ for(let i=0;i<BMM_C*BMM_R;i++)
+  R.push({x:mx+(i%BMM_C)*(cw+gp),y:my+((i/BMM_C)|0)*(ch+gp),w:cw,h:ch,i:i});
  return R;
-}
-/* 🏠品物の絵。⚠**絵で見分けさせる遊び**なので、形も色も混ざらないようにする(全部プロシージャル) */
-function bnsMfItem(c,k,x,y,s){
- const IT=BMF_ITEM[k]||BMF_ITEM[0];
- c.save();c.translate(x,y);c.scale(s,s);
- c.lineWidth=2.6;c.strokeStyle=INK;c.fillStyle=IT.c;
- if(k===0){rr(c,-9,-14,18,28,3);c.fill();c.stroke();c.fillStyle=PAPER;c.fillRect(-9,-5,18,7);}
- else if(k===1){c.beginPath();c.moveTo(-3,-18);c.lineTo(3,-18);c.lineTo(3,-8);c.lineTo(8,-2);
-  c.lineTo(8,14);c.lineTo(-8,14);c.lineTo(-8,-2);c.lineTo(-3,-8);c.closePath();c.fill();c.stroke();}
- else if(k===2){rr(c,-13,-11,26,22,2);c.fill();c.stroke();
-  c.strokeStyle='#5f4830';c.beginPath();c.moveTo(-13,0);c.lineTo(13,0);c.stroke();}
- else if(k===3){rr(c,-8,-7,16,20,3);c.fill();c.stroke();
-  c.fillStyle='#b03428';rr(c,-6,-14,12,8,2);c.fill();c.stroke();}
- else if(k===4){c.beginPath();c.ellipse(0,0,14,10,0,0,7);c.fill();c.stroke();
-  c.strokeStyle='#8a6a3a';c.beginPath();for(let q=-1;q<=1;q++){c.moveTo(q*6-3,-5);c.lineTo(q*6+2,5);}c.stroke();}
- else{rr(c,-7,-13,14,26,2);c.fill();c.stroke();c.fillStyle=PAPER2;c.fillRect(-3,-17,6,4);}
- c.restore();
 }
 /* 終わり=物資を積んで選択画面へ戻る。⚠**3回終わったら乗り込みへ**(回数は棟ではなく回で数える) */
 function bnsMgDone(Q){
@@ -21722,11 +21721,11 @@ function bnsDrawMg(c,Q,W,H,dp,t){
  c.fillText(K.ic+' '+K.n+' — '+K.d,W*.05,H*.115);
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
  c.fillText(M.kind===1?('あと '+Math.max(0,BML_N-M.n)+' 段')
-           :M.kind===2?('あと '+Math.max(0,BMF_N-M.i)+' 個 / '+M.left.toFixed(1)+'秒')
+           :M.kind===2?((M.seq.length-BMM_L0+1)+' / '+BMM_N+' 段  ♥'+Math.max(0,BMM_MISS-M.miss+1))
                       :('あと '+Math.max(0,BMG_N-M.i)+' 本'),W*.95,H*.115);
  /* 遊び場 */
  if(M.kind===1)bnsDrawMl(c,M,W,H,dp);
- else if(M.kind===2)bnsDrawMf(c,M,W,H,dp,t);
+ else if(M.kind===2)bnsDrawMm(c,M,W,H,dp,t);
  else bnsDrawMgas(c,M,W,H,dp);
  /* 連なりと得点。⚠⚠**遊び場の空いている所は3種で違う**(2026-08-02(45)に撮って直した)=
     同じ y に置いたら🏠は「お題」の上に、🏭は荷台の上に重なって両方読めなかった。
@@ -21794,28 +21793,34 @@ function bnsDrawMl(c,M,W,H,dp){
   c.fillStyle='#c9a13d';rr(c,bx,by,M.w*gw,rh-3*dp,3*dp);c.fill();
   c.strokeStyle=INK;c.lineWidth=2.6*dp;c.stroke();}
 }
-/* 🏠物色=お題を出して、棚から探させる。⚠**暗くする**=「暗い部屋を漁っている」が絵で伝わる */
-function bnsDrawMf(c,M,W,H,dp,t){
- /* お題 */
- const IT=BMF_ITEM[M.tgt]||BMF_ITEM[0];
- {const pw=W*.42,ph=52*dp,px=W/2-pw/2,py=H*.145;
+/* 🏠物色=**光った棚を同じ順に押す**。⚠⚠**絵の見分けはゼロ**にしてある(2026-08-02(47))=
+   小さい品物を見分けさせる遊びは、棚1つが実機で40px前後のこの画面では成立しなかった。
+   ⭐**いま何をする番か**を大きく出す=「よく見て」と「同じ順に押す!」が読めないと遊びが始まらない。 */
+function bnsDrawMm(c,M,W,H,dp,t){
+ const inp=(M.ph==='in');
+ /* いま何をする番か */
+ {const pw=W*.46,ph=50*dp,px=W/2-pw/2,py=H*.155;
   bnsPanel(c,px,py,pw,ph,.9);
-  c.textAlign='left';c.fillStyle=PANE;c.font='900 '+Math.round(20*dp)+'px '+FF;
-  c.fillText('探せ: '+IT.n,px+58*dp,py+34*dp);
-  bnsMfItem(c,M.tgt,px+30*dp,py+ph/2,dp*.72);}
- /* のこり時間の帯 */
- {const bx=W*.10,bw=W*.80,by=H*.295,bh=8*dp;
-  c.fillStyle='rgba(30,25,19,.9)';rr(c,bx,by,bw,bh,bh/2);c.fill();
-  c.fillStyle=M.left<3?DANGER2:LIFE;
-  rr(c,bx,by,bw*clamp(M.left/BMF_T,0,1),bh,bh/2);c.fill();}
- /* 棚 */
- const R=bnsMfRects(W,H);
+  c.textAlign='center';c.fillStyle=inp?GOLD:PANE;
+  c.font='900 '+Math.round(21*dp)+'px '+FF;
+  c.fillText(inp?('同じ順に押す!  '+M.si+' / '+M.seq.length):'👀 よく見て…',W/2,py+33*dp);}
+ /* 棚(⚠**光っている所だけ明るく**=それ以外は同じ見た目に保つ) */
+ const R=bnsMmRects(W,H);
  for(const r of R){
-  c.fillStyle='rgba(34,29,23,.94)';rr(c,r.x,r.y,r.w,r.h,7*dp);c.fill();
-  c.strokeStyle='rgba(242,236,220,.22)';c.lineWidth=2*dp;c.stroke();
-  const s=Math.min(r.w,r.h)/dp/62*dp;
-  bnsMfItem(c,M.items[r.i],r.x+r.w/2,r.y+r.h/2,s);
+  const on=(M.lit===r.i)&&((M.litT||0)<.30);
+  c.fillStyle=on?'rgba(255,207,106,.95)':'rgba(38,32,25,.94)';
+  rr(c,r.x,r.y,r.w,r.h,9*dp);c.fill();
+  c.strokeStyle=on?PANE:'rgba(242,236,220,.24)';
+  c.lineWidth=(on?4:2)*dp;c.stroke();
+  /* 棚らしさ(引き出しの取っ手)=同じ絵を全部に付ける。⚠見分けの手掛かりにはしない */
+  c.fillStyle=on?'rgba(60,44,20,.55)':'rgba(242,236,220,.16)';
+  c.fillRect(r.x+r.w*.34,r.y+r.h*.52,r.w*.32,6*dp);
  }
+ /* 押した数の丸(⚠数字だけだと押せたか読めない) */
+ {const n=M.seq.length,gp=13*dp,x0=W/2-(n-1)*gp/2,y0=H*.82;/* ⚠下の連なりの行(H*.90)と重ねない */
+  for(let i=0;i<n;i++){
+   c.fillStyle=(i<M.si)?GOLD:'rgba(242,236,220,.28)';
+   c.beginPath();c.arc(x0+i*gp,y0,5*dp,0,7);c.fill();}}
 }
 /* ③🚌**乗り込み**。⚠**黒帯だけで語る**=ここで凝ると「軽いムービー」でなくなる */
 function bnsDrawBoard(c,Q,W,H,dp){
