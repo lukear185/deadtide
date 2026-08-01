@@ -1237,6 +1237,7 @@ function metaResetAll(){
  META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
  META.tmTip=0;                                 /* 🎒編成の案内(初めて兵科を解放した時に1回) */
  META.bcl=[];                                  /* 🚌ボーナス面の初回クリア(ステージごと。報酬は1回だけ) */
+ META.brec=[];                                 /* 🚌道中の自己ベスト(ステージごと。タイム/轢いた数/最高連続) */
 }
 /* ⚠⚠**3への上げは「難易度と研究所だけ」戻す**(2026-08-01ユーザー選択)。
    理由=初期解放を2種に絞ったので `META.nt`/`META.nu`(BASE_T/BASE_U から数えた相対値)が
@@ -2190,6 +2191,14 @@ const BPROP=[];
    ⚠**宣言はここ(上の方)**=理由は BPROP と同じ(loadStage が読み込みの途中で触るのでTDZに落ちる)。
    ⚠⚠**通路(`bnsCorrW`)の外にしか置かない**=同じ式から生やしているので「壁の中を歩く」が起きない。 */
 const BBLD=[],BTREE=[];
+/* 🚗⭐⭐⭐**道の上の壊せる障害物**(2026-08-02(37)ユーザー「足りないもの全部」)。
+   ⚠⚠それまで道の上には**何も置いていなかった**=道は1本・やることは上に倒すだけで、
+     **ハンドルを切る理由が「濃い群れを狙う」しか無かった**。
+   ⭐**避けるか壊すか**の判断を1つ足すだけで、同じ道が別物になる。
+   ⚠**バスは止めない**(壊れて減速するだけ)=`bnsRoadFit` には入れない。
+     入れると「地面が見えている所は必ず走れる」の掟を破り、検査(checkRice⑨')にも落ちる。
+   ⚠**宣言はここ(上の方)**=`loadStage` が読み込みの途中で触るので、下で const にするとTDZに落ちる。 */
+const BOBJ=[];
 /* 🏚⭐**入れる廃墟**(2026-08-02(12))=探索フェーズで中へ入る建物。⚠**BBLD の中の一部を指しているだけ**
    (地形の焼き込み・木のよけ・当たりの扱いを二重に持たないため)。⚠宣言がここなのは BBLD と同じ理由(TDZ)。 */
 const BENT=[];
@@ -3244,6 +3253,45 @@ const BNS_AHEAD=2100,BNS_AHEAD2=4800;
    ⚠**寄り(CAM.zm)と役割が違う**=寄りは縦横とも縮む(物が小さくなる)/これは縦だけ(先が伸びる)。
    ⭐0.80 で前方の可視が **790→約1290px(0.63秒→1.03秒)** になる。⚠0.75 より下げると森が横長に見える。 */
 const BNS_SQ=.80;
+/* ⭐⭐⭐**道中の難易度カーブ**(2026-08-02(37)ユーザー「足りないもの全部」)。
+   ⚠⚠それまで道中は**1波きり(`w:1`)**だったので、顔ぶれを決める `zp` の `mw>wave` に弾かれて
+     **実質1種類しか出ず**、エリートもボスも出ず、**4000mずっと同じ濃さ・同じ硬さ**だった。
+   ⭐**「進み具合(0→1)」で顔ぶれ・硬さ・濃さを開けていく**=走るほど濃く硬くなる。
+   ⚠**弱い個体を必ず混ぜる**(全部が強敵になると轢けなくなって手応えが消える)。 */
+/* ⚠⚠**1.6→.5 に落とした**(2026-08-02(37)に検査で気づいた)=**顔ぶれを開けるだけで既に硬くなる**ので、
+   その上に体力の倍率まで掛けると**二重取り**になり、轢いた数が 800→307体に落ちた(ニトロも溜まらない)。
+   ⭐**硬さの主役は顔ぶれの方**にして、倍率は仕上げの薄味にする。 */
+const BNS_HARD=.5;    /* 到着時の体力の上乗せ(.5=1.5倍)。⚠上げすぎると轢けずに押すだけの面になる */
+const BNS_SPX=.18;    /* 到着時の足の速さの上乗せ */
+const BNS_DENS=.6;    /* 到着時の塊の大きさの上乗せ */
+const BNS_ELT=.055;   /* 終盤にエリート(👑・でかい・硬い)が混ざる率。⚠序盤は出さない */
+const BNS_MIX0=.07,BNS_MIXP=.26;/* 別の顔ぶれが混ざる率(出発時=7% → 到着時=33%)。⚠上げすぎると轢けなくなる */
+/* 🚗**壊せる障害物の種類**。r=当たりの半径 / sl=当たった時に残る速さ / c=色 / n=名前。
+   ⚠**ドラム缶だけ爆発する**=周りのゾンビを巻き込む=**狙って当てる価値**が生まれる(これが選択の芯)。
+   ⚠**バリケードが一番重い**=関所の近くに置くと「速度を捨てて壊すか、避けて曲がるか」になる。 */
+/* ⚠**寸法はバス(全長300)を物差しにする**(2026-08-02(37)に撮って上げた)=
+   最初は廃車を96にしたら**画面で読めない小さな板**にしかならなかった。廃車はバスの半分。 */
+const BOBJ_K=[
+ {n:'廃車',   r:98,sl:.58,c:'#6e4a3c',c2:'#8f6248',w:152,h:72,bl:0},
+ {n:'ドラム缶',r:54,sl:.88,c:'#b8562a',c2:'#e08a3c',w:58,h:58,bl:1},
+ {n:'木箱',   r:50,sl:.94,c:'#8a6a3a',c2:'#a98a52',w:60,h:60,bl:0},
+ {n:'バリケード',r:92,sl:.52,c:'#9a9a86',c2:'#c2c2ac',w:144,h:38,bl:0}
+];
+/* ⚠**道幅(半幅780)の半分を超えない**=超えると「当てれば道が空く」になって轢く遊びが消える。
+   ⚠2026-08-02(37)に 420→340(検査で轢いた数が 635→904体に跳ねたため。爆発は"ご褒美"止まりにする) */
+const BOBJ_BOOM=340;  /* ドラム缶の爆風の半径 */
+const BOBJ_BDMG=9999; /* 爆風の威力(⚠米粒は薄いので、範囲に入った物は確実に消す) */
+/* ⭐**進み具合で顔ぶれを開ける**=弱い順に並べた表の、前から「開いた範囲」だけを引く。
+   ⚠**引きは前(弱い方)に偏らせる**=強敵は「たまに混ざる」から役割が読める。 */
+function bnsPickZi(T,pg){
+ const L=T&&T.bnsZp;if(!L||!L.length)return -1;
+ /* ⚠⚠**大半は元のプールのまま返す**(-1)=顔ぶれを丸ごと入れ替えると硬い個体ばかりになり、
+    **轢いた数が 800→280体に落ちて押しのけるだけの面になった**(実際にそうなって直した)。
+    ⭐**役割は「たまに混ざる」から読める**=混ざる率だけを進み具合で上げる。 */
+ if(Math.random()>(BNS_MIX0+pg*BNS_MIXP))return -1;
+ const open=Math.max(1,Math.round(L.length*(.30+pg*.60)));
+ return L[Math.min(open-1,Math.floor(Math.pow(Math.random(),1.5)*open))];
+}
 /* ⭐**塊(かたまり)の作り**=1つの塊に入れる体数と、塊の広がり(半径)。
    ⚠**広げると薄くなる**=「まばら」の正体は広がりが大きすぎたこと。⭐濃くしたければ半径を下げる。 */
 const BNS_CL_N=34,BNS_CL_N2=80;   /* 1つの塊の体数 */
@@ -3391,7 +3439,7 @@ let PMAXX=MW;
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
- LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;BENT.length=0;TRE_CELL=null;terrClear();
+ LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;BENT.length=0;BOBJ.length=0;TRE_CELL=null;terrClear();
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
@@ -14333,7 +14381,19 @@ function buildTide(wave){
     ⚠**1体ずつ順ぐりに配る**=乱数で配ると片側だけ厚くなって「四方から来る」に見えない。
     ⚠**間隔(dl)も詰める**=小粒がなだれ込む面なので、いつもの間隔だと待ち時間ばかりになる。 */
  T.bnsTpl=null;/* ⚠前の波の写しを残さない */
+ T.bnsZp=null;
  if(isBns()&&LANES){
+  /* ⭐⭐**道中の顔ぶれ**(2026-08-02(37))=その面のゾンビを**弱い順に全部**並べておく。
+     ⚠⚠**`mw`(何波目から出るか)で弾かない**=道中は1波きりなので、弾くと**1種類しか出ない**
+       (これが「敵が全部同じに見える」の正体だった)。⚠ボスはここに入れない(別枠)。
+     ⭐実際に何が出るかは湧く瞬間に `bnsPickZi` が進み具合で決める。 */
+  T.bnsZp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
+   if(Z.boss)return false;
+   if(nm2)return !!Z.nm&&Z.st===2;
+   if(nmOn)return !!Z.nm&&!Z.st;
+   if(st2)return Z.st===2&&!Z.nm;
+   return !Z.nm&&!Z.st;})
+   .sort((a,b)=>((ZOMBIES[a].mw||0)-(ZOMBIES[b].mw||0))||((ZOMBIES[a].hp||0)-(ZOMBIES[b].hp||0)));
   /* ⭐**道は1本**(2026-08-02(24))=「どの道から来るか」は無くなった。
      ⚠**間隔をぐっと詰める**=群れに見せるには「かたまりで湧く」必要がある。
      ⚠1体ずつ等間隔だと、いくら数を増やしても**行列**にしかならない。
@@ -14434,7 +14494,26 @@ function tideStep(dt){
      ⚠道の端から湧かせると、走っている本人の周りが**空っぽ**になる(進むほど置いていかれる)。
      ⭐**いつも進行方向の少し外**に湧かせると、走り続けても密度が変わらない。
      ⚠**画面の外で湧かせる**(1500以上先)=目の前で湧くと「ぽんと現れた」になる。 */
-  {const z9=mkZ(e.z);
+  /* ⭐⭐**道中は湧く瞬間に「進み具合」で作り直す**(2026-08-02(37))=
+     プールを作る時点では**どこまで走っているか分からない**ので、顔ぶれも硬さもここで決める。
+     ⚠プールと同じ倍率の掛け方をなぞること(`T.mul` と難易度の足の速さ)。 */
+  let sp9=e.z,pg9=-1;
+  if(C.bus&&LANES&&T.bnsZp&&T.bnsZp.length){
+   pg9=clamp(1-projPath(C.bus.x,C.bus.y)/(PLEN||1),0,1);
+   const zi9=bnsPickZi(T,pg9);
+   /* ⚠**難易度の足の速さはここで掛け直す**=プールを作る側(buildTide)でしか掛かっていないので、
+      作り直した個体には乗らない(`D` は buildTide のローカルなので `D5v()` から引く)。 */
+   if(zi9>=0){sp9=zSpec(zi9,(T.mul||1),1,0,'',1);sp9.sp*=((D5v()||{}).sp||1);}
+  }
+  {const z9=mkZ(sp9);
+   /* ⭐⭐**進むほど硬く・速く**(2026-08-02(37))。⚠**入れ替えた個体だけでなく全員に掛ける**
+      =一部だけ硬くすると「たまに硬いのが混ざる」で終わり、**道が進むほどきつくなる**にならない。
+      ⭐**終盤だけエリート(👑・一回り大きい)を混ぜる**=「そろそろ本気」を絵で言う。
+      ⚠序盤には出さない(最初から硬いと轢く手応えが立たない)。 */
+   if(pg9>0){const hx9=1+pg9*BNS_HARD;
+    z9.hp*=hx9;z9.mhp*=hx9;z9.sp*=1+pg9*BNS_SPX;
+    if(pg9>.35&&Math.random()<BNS_ELT*(pg9-.35)/.65){
+     z9.elite=1;z9.hp*=2.6;z9.mhp*=2.6;z9.bt=Math.round(z9.bt*3);z9.sp*=.92;}}
    if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-BNS_OFF,BNS_OFF);z9.d-=rnd(0,320);}
    /* ⭐⭐**かたまりで湧かせる**(2026-08-02(25)ユーザー「ゾンビの密度がまばらになってるから
       **ある程度まとまった個所で今よりもっと密度を増して**」)。
@@ -14443,8 +14522,11 @@ function tideStep(dt){
         「あの群れに突っ込む」という判断が生まれる。⚠塊が尽きたら次の中心を引き直す。 */
    if(C.bus&&LANES){const bd9=projPath(C.bus.x,C.bus.y);
     let K=T.bnsK;
-    if(!K||K.n<=0)K=T.bnsK={n:ri(BNS_CL_N,BNS_CL_N2),d:rnd(BNS_AHEAD,BNS_AHEAD2),
-      o:rnd(-BNS_OFF*.72,BNS_OFF*.72),r:rnd(BNS_CL_R,BNS_CL_R2)};
+    /* ⭐**進むほど塊を大きく・少し詰める**(2026-08-02(37))=終盤ほど「壁のような群れ」になる */
+    const pd9=pg9>=0?pg9:0;
+    if(!K||K.n<=0)K=T.bnsK={n:Math.round(ri(BNS_CL_N,BNS_CL_N2)*(1+pd9*BNS_DENS)),
+      d:rnd(BNS_AHEAD,BNS_AHEAD2),
+      o:rnd(-BNS_OFF*.72,BNS_OFF*.72),r:rnd(BNS_CL_R,BNS_CL_R2)*(1-pd9*.18)};
     K.n--;
     z9.d=clamp(bd9-K.d+rnd(-K.r,K.r),0,PLEN);
     z9.off=clamp(K.o+rnd(-K.r,K.r),-BNS_OFF,BNS_OFF);}
@@ -16994,6 +17076,8 @@ function renderCamp(C,t){
  if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
  /* 🏚🌲地形(建物と森と廃車)。⚠**焼いた画を貼るだけ**=中身は `drawTerrIn`。これが導線そのもの */
  if(BBLD.length||BTREE.length)try{drawBnsTown(c);}catch(e){}
+ /* 🚗**壊せる障害物**(2026-08-02(37))=地形の上・ゾンビの下。⚠焼き込みに入れない(壊れて消えるので) */
+ if(C.bus&&BOBJ.length)try{drawBnsObj(c,C);}catch(e){}
  /* 🚌開拓便の廃墟(⚠**画面に入っている物だけ描く**=数百個あるので全部描くと重い。
     ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは**本当の画面の範囲**を出し直す)
     ⚠開拓便は上の焼き込みに入っているのでここでは描かない */
@@ -17868,6 +17952,32 @@ function drawBnsRush(c,C){
    g.addColorStop(0,'rgba(255,150,60,0)');g.addColorStop(1,'rgba(226,90,30,'+a.toFixed(3)+')');
    c.fillStyle=g;c.fillRect(0,0,W,H);}catch(e){}
  }
+ /* ⑤ 🧟⭐**しがみつかれている**(2026-08-02(37))=画面の縁が**緑がかって**締まる。
+    ⚠**ニトロの縁(②橙)と色を変える**=「化けている」と「沈んでいる」を取り違えさせない。
+    ⚠**中央は抜く**(盤面が読めなくならないように)。⭐溜まったら促しを出す=**逃げ道を教える**。 */
+ if(FXLV>0&&(B.grip||0)>.12&&!nz){
+  const g9=clamp(B.grip,0,1),a9=.08+.32*g9;
+  try{const gr=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.26,W/2,H/2,Math.hypot(W,H)*.55);
+   gr.addColorStop(0,'rgba(24,44,16,0)');gr.addColorStop(1,'rgba(22,46,14,'+a9.toFixed(3)+')');
+   c.fillStyle=gr;c.fillRect(0,0,W,H);}catch(e){}
+  if(g9>.62&&(B.nit||0)>=1){
+   c.textAlign='center';c.font='900 '+Math.round(19*dpr)+'px '+FF;
+   c.strokeStyle=INK;c.lineWidth=5*dpr;c.fillStyle=GOLD;
+   const ty9=Math.round(H*.28);
+   c.strokeText('🔥 ニトロで振り払え!',W/2,ty9);c.fillText('🔥 ニトロで振り払え!',W/2,ty9);}
+ }
+ /* ⑥ ⛓**関所の予告**(2026-08-02(37))=画面の上に一度だけ短く出す。
+    ⚠**画面の座標**なので寄りに関係なく必ず読める。⚠HUDの札には足さない(幅が決め打ちで溢れる)。 */
+ if((B.gateT||0)>0){
+  const q9=clamp(B.gateT/BNS_GATE_T,0,1);
+  c.save();c.globalAlpha=Math.min(1,q9*2.4);
+  c.textAlign='center';c.font='900 '+Math.round(20*dpr)+'px '+FF;
+  c.strokeStyle=INK;c.lineWidth=6*dpr;c.fillStyle=AMBER;
+  const ty8=Math.round(H*.17);
+  c.strokeText('この先 関所 — 群れが溜まる',W/2,ty8);
+  c.fillText('この先 関所 — 群れが溜まる',W/2,ty8);
+  c.restore();
+ }
  /* ③ まとめて轢いた瞬間の白抜き(⚠**短く薄く**=長いと画面が白飛びして何も読めない) */
  if(B.flashT>0){c.fillStyle='rgba(255,246,226,'+(.20*clamp(B.flashT/.16,0,1)).toFixed(3)+')';
   c.fillRect(0,0,W,H);}
@@ -18095,6 +18205,8 @@ function updHUD(){const m=meV();if(!m)return;
     ⚠**距離はマップの縦の残り**から出す(道はほぼ縦なので y だけで足りる)。 */
  if(m.bus){
   const rest=Math.max(0,Math.round((m.bus.y-BNS_GOALY)/10));
+  /* ⚠**関所の予告は HUD に足さない**(2026-08-02(37)に撮って戻した)=この札は幅が決め打ち(154px)なので、
+     項目を足すと**実機で溢れる**。⭐予告は画面の中に一度だけ出す(`drawBnsRush` の⑥)。 */
   $('wavebadge').textContent=m.bus.arr?'🏁 到着!':('🚌 あと '+rest+'m'+(inW&&zc?'  🧟'+zc:''));
   const p9=clamp(1-(m.bus.y-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1);
   const wp=$('wprog').querySelector('i');if(wp&&wp.style)wp.style.width=Math.round(p9*100)+'%';
@@ -18248,6 +18360,13 @@ const UI={
  closeInterval(){$('interv').classList.remove('on');},
  showResult(){showResultA();}
 };
+/* 🚌自己ベストの印。更新したら 🎉 / していなければ前のベストを添える。⚠道中でしか呼ばない */
+function bnsBadge(k,u){
+ const R=G&&G.bnsRec;if(!R)return '';
+ if(R.nb[k])return ' 🎉自己ベスト!';
+ const b=k==='t'?bnsSec(R.bt):(k==='k'?(R.bk+u):('×'+R.bc));
+ return ' (best '+b+')';
+}
 function showResultA(){
  gameActive=false;$('interv').classList.remove('on');closeBM();
  const me=G.players[G.myIdx],win=G.pve?G.winner===0:me.place===1;
@@ -18261,8 +18380,12 @@ function showResultA(){
     ...(G.bnsPts?[['🚌 初回クリア報酬','🧬+'+fmt(G.bnsPts)+' / 💎+'+(G.bnsGem||0)]]:[]),
     /* ⭐🚌轢き殺した数と最高連続(2026-08-02(2))=「連続で気持ちいい」の締めをここで見せる。
        ⚠バスの居る面(開拓便)でしか出さない */
-    ...(me.bus?[['🚌 轢き殺した数',(me.bus.kill||0)+'体'],['🔥 最高連続','×'+(me.bus.cmbMx||0)],
-      ['🔥 ニトロ',(me.bus.nitN||0)+'回']]:[]),
+    /* ⭐**自己ベストを併記する**(2026-08-02(37))=更新した時だけ 🎉 を付ける。
+       ⚠**更新していない時は前のベストを見せる**=次に走る目標がその場で分かる。 */
+    ...(me.bus?[['🚌 轢き殺した数',(me.bus.kill||0)+'体'+bnsBadge('k','体')],
+      ['🔥 最高連続','×'+(me.bus.cmbMx||0)+bnsBadge('c','')],
+      ['🔥 ニトロ',(me.bus.nitN||0)+'回'],
+      ...((G.bnsRec)?[['🏁 タイム',bnsSec(G.bnsRec.t)+bnsBadge('t','')]]:[])]:[]),
     ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+((me.team||[]).length)],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv],['砲撃強化','Lv'+(me.stkLv||0)]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+PVP_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
@@ -19518,6 +19641,24 @@ function bnsMap(){
   if(on)continue;
   BTREE.push({x:jx,y:jy,r:rr2(30,58)});
  }
+ /* ⑤ 🚗⭐⭐**壊せる障害物を道の上に置く**(2026-08-02(37))。
+    ⚠**道の真ん中に置ききらない**=通れる隙間を必ず残す(壊せるとはいえ、全部塞ぐと運転が消える)。
+    ⚠**進むほど数を増やす**=難易度カーブと同じ向きに効かせる。
+    ⚠**乱数は `rd`(自前LCG)**=`Math.random` を使うと入り直すたびに配置が変わる。 */
+ BOBJ.length=0;
+ {const len=LANES[0].len;
+  for(let d=len*.03;d<len*.985;d+=rr2(160,300)){
+   const u=d/len,pg=1-u;/* ⚠d は上(ゴール)が0なので、進み具合は 1-u */
+   if(rd()>(.46+pg*.32))continue;
+   const p=pathPos(d,0),w=bnsCorrW(u);
+   const n=1+((rd()<(.22+pg*.28))?1:0);
+   for(let q=0;q<n;q++){
+    const ki=Math.min(BOBJ_K.length-1,Math.floor(rd()*BOBJ_K.length)),K=BOBJ_K[ki];
+    const off=(rd()*2-1)*Math.max(0,w-K.r-60);
+    BOBJ.push({x:p[0]-Math.sin(p[2])*off,y:p[1]+Math.cos(p[2])*off,
+     k:ki,a:p[2]+(rd()*2-1)*.5,r:K.r,dead:0});
+   }
+  }}
  bnsTreeGrid();/* ⚠**最後に必ず作る**=これが無いと毎フレーム全部の木を舐める */
 }
 /* ============ 🧱**地形は焼いて貼る**(2026-08-02(7)) ============
@@ -19831,6 +19972,28 @@ function bnsEnter(){
  const a=scArr(STAGE);
  if(!a[BNS_D]){a[BNS_D]=1;saveMeta();}
 }
+/* ⭐⭐⭐**道中の自己ベスト**(2026-08-02(37))=**「上手さが何にも繋がらない」を直すための土台**。
+   ⚠⚠それまで残っていたのは `META.bcl`(初回クリアしたかの1bit)だけで、
+     轢いた数も最高連続もリザルトに出るだけで消えていた=**2周目以降に走る理由がゼロ**だった。
+   ⭐残すのは3つ=**タイム(短いほど良い) / 轢いた数 / 最高連続**。⚠ステージごとに持つ。
+   ⚠**`META_RESET` は上げない**(鍵を足すだけ)。⚠**`metaResetAll` にも必ず書く**(でないと初期化しても残る)。 */
+function bnsRecord(C){
+ const B=C&&C.bus;if(!B||!C.isMe)return;
+ if(!Array.isArray(META.brec))META.brec=[];
+ const r=META.brec[STAGE]||(META.brec[STAGE]={});
+ const t=Math.round((B.t||0)*10)/10,k=B.kill|0,c=B.cmbMx|0;
+ const nb={t:0,k:0,c:0};
+ if(!(r.t>0)||t<r.t){r.t=t;nb.t=1;}
+ if(k>(r.k|0)){r.k=k;nb.k=1;}
+ if(c>(r.c|0)){r.c=c;nb.c=1;}
+ try{G.bnsRec={t:t,k:k,c:c,bt:r.t,bk:r.k,bc:r.c,nb:nb};}catch(e){}
+ saveMeta();
+}
+/* 秒を「1分23秒」の形に。⚠1分未満は小数1桁まで出す(タイムを詰める遊びなので) */
+function bnsSec(s){const m=Math.floor(s/60);
+ return m?(m+'分'+String(Math.round(s%60)).padStart(2,'0')+'秒'):((Math.round(s*10)/10)+'秒');}
+/* 自己ベストの読み出し(タイトルの難易度ボタンにも出す)。⚠まだ走っていなければ null */
+function bnsBestOf(si){const a=META.brec;return (Array.isArray(a)&&a[si])?a[si]:null;}
 /* 初回クリアの報酬。⚠**2回目からは配らない**(何度でも入れる面で配ると回すだけ増える) */
 function bnsReward(){
  if(!Array.isArray(META.bcl))META.bcl=[];
@@ -19895,6 +20058,10 @@ const BUS_CAM_P=.72,BUS_CAM_P2=.85;
 const BUS_CAM_X=.14;
 const BUS_DRAW=1.9;  /* 絵の倍率。⚠BUS_R を動かしたらここも動かす(全長≒131*1.15*これ) */
 const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当たった手応え */
+/* 🧟**しがみつき**(2026-08-02(37))=倒しきれない個体に当たり続けると最高速が落ちる。
+   ⚠**負けは無い**は守る=削るのは速さだけ。⭐🔥ニトロで一発で振り払える(脱出という2つ目の使い道)。
+   ⚠`_S` を上げすぎると厚い群れで止まって面が進まなくなる。⚠`_D`(戻り)は`_U`(溜まり)より速くする。 */
+const BUS_GRIP_S=.42,BUS_GRIP_U=.10,BUS_GRIP_D=1.15;
 /* ⭐**横へ押しのける速さ**(2026-08-02(2))=前へ押し込むだけだと「道の上で潰した」に見えない。
    ⚠押すのは世界座標ではなく **`z.off`(道の法線方向へのずれ)**=世界座標で押すと道から外れて、
      次のフレームで道の上へ瞬間移動する(前へ押す時と同じ理屈)。 */
@@ -19954,6 +20121,9 @@ function bnsRoadFit(x,y,cl){
  if(bd>=1e9)return null;
  return [bx,by];
 }
+/* ⛓**関所の予告**(2026-08-02(37))=何m手前で出すか / 何秒出すか。
+   ⚠**HUDの札には足さない**=あの札は幅が決め打ち(154px)なので、項目を足すと実機で溢れる。 */
+const BNS_GATE_W=1700,BNS_GATE_T=2.0;
 const BNS_CMB_T=1.5; /* 連続轢殺が途切れるまでの秒数 */
 const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
 function bnsBusInit(C){
@@ -19962,7 +20132,11 @@ function bnsBusInit(C){
   /* ⭐連続轢殺(cmb=いま何連 / cmbT=途切れるまで / cmbP=数字が跳ねる勢い / cmbMx=最高記録) */
   cmb:0,cmbT:0,cmbP:0,cmbMx:0,kill:0,gain:0,gainT:0,trkD:0,
   /* 🔥ニトロ(nit=溜まり 0〜1 / nitT=残り秒 / nitN=使った回数) */
-  nit:0,nitT:0,nitN:0,flashT:0,flashCd:0,dustD:0};
+  nit:0,nitT:0,nitN:0,flashT:0,flashCd:0,dustD:0,
+  /* 🧟しがみつき(0〜1)=倒しきれずに当たり続けた個体の数で溜まり、最高速を削る */
+  grip:0,
+  /* ⛓関所の予告(gateI=どの関所まで知らせたか / gateT=出している残り秒) */
+  gateI:-1,gateT:0};
  BNIT_P=-1;BNIT_R=-1;/* ⚠ボタンの表示を必ず1回書き直させる(前の試合の値が残る) */
  bnsFxInit(C);
 }
@@ -19982,7 +20156,15 @@ function bnsBusStep(C,dt){
   B.vx-=nx9*vn*g;B.vy-=ny9*vn*g;
  }
  else{const f=Math.max(0,1-BUS_FRIC*dt);B.vx*=f;B.vy*=f;}
- const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*(nz9?BUS_NIT_SP:1)*Math.max(.4,im||1);
+ /* 🧟⭐⭐**しがみつき**(2026-08-02(37)ユーザー「足りないもの全部」)。
+    ⚠⚠それまで**敵はバスに何もしてこなかった**(すれ違いも埋もれも無傷)=**動く的**でしかなかった。
+    ⭐**倒しきれずに当たり続けた個体の数**でバスの最高速が落ちる=
+      「厚い所へ突っ込むと沈む」が生まれ、**どこを走るかの判断**ができる。
+    ⚠**負けは無い**の決定は守る=削られるのは**速さだけ**(耐久もダメージ演出も出さない)。
+    ⭐🔥**ニトロで一発で振り払える**=ニトロに「脱出」という2つ目の使い道が付く。 */
+ if(nz9)B.grip=0;
+ const gp9=clamp(B.grip||0,0,1);
+ const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*(nz9?BUS_NIT_SP:1)*Math.max(.4,im||1)*(1-gp9*BUS_GRIP_S);
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
  let nx2=clamp(B.x+B.vx*dt,70,MAPW-70),ny2=clamp(B.y+B.vy*dt,70,MAPH-30);
@@ -20038,6 +20220,32 @@ function bnsBusStep(C,dt){
     z.off=clamp((z.off||0)+s9*BUS_SIDE*(nz9?1.8:1)*dt,-w9,w9);}}
   hit++;
  }
+ /* ⛓⭐**関所の予告**(2026-08-02(37))=関所は**群れが溜まる所**なので、身構える合図を1回だけ出す。
+    ⚠**同じ関所で何度も出さない**(`gateI` で「どこまで知らせたか」を覚える)。
+    ⚠道の距離 `d` は上(ゴール)ほど小さいので、**関所は自分より小さい `u` の方**にある。 */
+ if(B.gateT>0)B.gateT=Math.max(0,B.gateT-dt);
+ if(LANES&&PLEN>0&&!B.arr){
+  const u9=clamp(bd9/PLEN,0,1);let gi9=-1,gd9=-1;
+  for(let i=0;i<BNS_GATE.length;i++){const g=BNS_GATE[i];
+   if(g<u9){const dd=(u9-g)*PLEN;if(gd9<0||dd<gd9){gd9=dd;gi9=i;}}}
+  if(gi9>=0&&gd9<BNS_GATE_W&&B.gateI!==gi9){B.gateI=gi9;B.gateT=BNS_GATE_T;}
+ }
+ /* 🧟**しがみつきの溜まり**=「当たったが倒しきれなかった数」で増え、離れると戻る。
+    ⚠**倒せた分は数えない**=薙ぎ倒している間は沈まない(気持ちよさを削らない)。 */
+ /* ⚠**ニトロ中は溜めない**=溜めてから消すと、その1フレームぶんが残って
+    「振り払ったのに0にならない」になる(検査で捕まえた)。⭐ニトロ中は掴まれない、が正しい。 */
+ {const st9=nz9?0:Math.max(0,hit-kil);
+  B.grip=nz9?0:clamp((B.grip||0)+(st9?st9*dt*BUS_GRIP_U:-dt*BUS_GRIP_D),0,1);}
+ /* 🚗⭐**壊せる障害物に当たったか**(2026-08-02(37))。⚠**先にyで弾く**=道は4万px以上あるので、
+    全部に平方距離を取ると無駄が大きい。⚠壊れた物は `dead` で飛ばす(配列は縮めない=添字が動かない)。 */
+ if(BOBJ.length){const rb9=rr9;
+  for(let i=0;i<BOBJ.length;i++){const o=BOBJ[i];
+   if(o.dead)continue;
+   const oy9=o.y-B.y;if(oy9>700||oy9<-700)continue;
+   const ox9=o.x-B.x,rz9=rb9+o.r;
+   if(ox9*ox9+oy9*oy9>rz9*rz9)continue;
+   try{bnsSmash(C,o);}catch(e){o.dead=1;}
+  }}
  /* ⭐**連続轢殺**(2026-08-02(2)ユーザー①「連続で気持ちいい」)。
     ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
  if(kil){
@@ -20148,10 +20356,19 @@ function bnsBusStep(C,dt){
     =そうしないと「盤面が空になったら制圧」の判定が回らず、試合が終わらない。 */
  if(!B.arr&&B.y<=BNS_GOALY+260){
   B.arr=1;
+  /* ⭐**記録は残っている敵を消す前に取る**(消した敵は轢いた数に入らないので順番はどちらでもよいが、
+     B.t を止める前に取ること)。⚠自分の盤面だけ(`C.isMe`)。 */
+  try{bnsRecord(C);}catch(e){}
   try{G.tide.pool.length=0;}catch(e){}
   for(const z of C.zombies)z.dead=true;
   if(C.isMe){toast('🏁 次の拠点に着いた!',true);if(sfx.clearJ)sfx.clearJ();}
-  if(FXLV>0)addFx(C,'ring',B.x,B.y,'',{r:520,col:GOLD});
+  /* ⭐⭐**到着の締め**(2026-08-02(37))=**門を突き破った瞬間だけ時間を落とす**。
+     ⚠それまでは HUD が「🏁到着!」に変わってリザルトへ行くだけで、**走り切った実感が無かった**。
+     ⚠**まとめ轢きの0.07秒とは別物**=ここは1試合に1回しか来ないので長く取ってよい。 */
+  if(FXLV>0){addFx(C,'ring',B.x,B.y,'',{r:520,col:GOLD});
+   addFx(C,'ring',B.x,B.y,'',{r:900,col:AMBER});
+   C.shake=Math.max(C.shake||0,.6);B.flashT=.34;
+   try{if(G)G.hitStopT=Math.max(G.hitStopT||0,.55);}catch(e){}}
  }
  bnsFxStep(C,dt);
 }
@@ -20420,9 +20637,17 @@ function drawBnsGore(c,C){
       ⚠回転の軸は**体の真ん中**(米粒は足元が原点なので半分ぶん下げてから回す)。 */
    for(let i=0;i<bd.length;i++){const p=bd[i];if(p.t>=p.lf)continue;
     if(p.x<V[0]||p.x>V[1]||p.y<V[2]||p.y>V[3])continue;
-    const s=p.s,fd=clamp((p.lf-p.t)/.55,0,1),CO=riceCol(p.zi|0);
+    const s=p.s,fd=clamp((p.lf-p.t)/.55,0,1);
     c.save();if(fd<1)c.globalAlpha=fd;
-    c.translate(p.x,p.y-p.z*iv);c.scale(1,iv);c.rotate(p.rot);c.translate(0,23.3*s);
+    c.translate(p.x,p.y-p.z*iv);c.scale(1,iv);c.rotate(p.rot);
+    /* 🚗**壊した物の破片**(2026-08-02(37))=同じ弾道の仕組みに乗せて、絵だけ差し替える */
+    if(p.dbr){const w9=17*s,h9=12*s;
+     c.fillStyle=INK;c.fillRect(-w9-2.2,-h9-2.2,w9*2+4.4,h9*2+4.4);
+     c.fillStyle=p.dc||'#7a6a4a';c.fillRect(-w9,-h9,w9*2,h9*2);
+     c.fillStyle=p.dc2||'#9a8a6a';c.fillRect(-w9+3,-h9+3,w9*2-6,h9*.8);
+     c.restore();continue;}
+    const CO=riceCol(p.zi|0);
+    c.translate(0,23.3*s);
     c.fillStyle=INK;
     c.fillRect(-8.1*s,-35.6*s,16.2*s,21.6*s);c.fillRect(-6.1*s,-46.6*s,12.2*s,13.6*s);
     c.fillStyle=CO[0];c.fillRect(-4.8*s,-15*s,3.8*s,15*s);c.fillRect(1*s,-15*s,3.8*s,15*s);
@@ -20566,6 +20791,63 @@ function drawZRice(c,C,t){
   for(const z of L){if(!(z.hitT>0))continue;
    c.rect(z.px-6.5*s,z.py-45*v,13*s,30*v);hz=1;}}
  if(hz)c.fill();
+}
+/* 🚗⭐⭐⭐**壊せる障害物を壊す**(2026-08-02(37))。
+   ⚠**バスは止めない**=速さを削るだけ。止めると「地面が見えている所は必ず走れる」の掟が崩れる。
+   ⭐**ドラム缶だけ爆発して周りのゾンビを巻き込む**=**狙って当てる価値**が生まれ、
+     「上に倒すだけ」だった運転に**狙いを付ける理由**ができる(これがこの面に足りなかった芯)。 */
+function bnsSmash(C,o){
+ const B=C.bus;if(!B)return;
+ const K=BOBJ_K[o.k]||BOBJ_K[0],gz=bnsGz(),nz=(B.nitT>0)?1:0;
+ o.dead=1;
+ /* ⭐**速さを削る**=壊した代償。⚠ニトロ中は削りを半分にする(化けている間の気持ちよさを守る) */
+ const sl=nz?(K.sl+(1-K.sl)*.5):K.sl;
+ B.vx*=sl;B.vy*=sl;B.bump=1;
+ if(FXLV>0)C.shake=Math.max(C.shake||0,(1-K.sl)*.55);
+ /* 破片=体と同じ弾道の仕組みに乗せる(⚠絵だけ差し替える印 `dbr`) */
+ if(FXLV>0){const bl=Math.hypot(B.vx,B.vy),n=FXLV===2?7:4;
+  for(let q=0;q<n;q++){
+   const a=Math.atan2(o.y-B.y,o.x-B.x)+rnd(-1.1,1.1),sp=(90+bl*.5)*rnd(.6,1.3);
+   bnsRing(C,'bbod',BNS_BOD,{x:o.x+rnd(-14,14),y:o.y+rnd(-10,10),
+    vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,z:rnd(4,26),vz:rnd(180,520)*gz,
+    rot:rnd(0,6.28),rv:rnd(-11,11),t:0,lf:BBOD_LF,
+    dbr:1,dc:K.c,dc2:K.c2,s:rnd(.5,1)*(K.r/60)*RICE_S,nb:0});}}
+ if(K.bl){
+  /* 💥爆発。⚠**米粒は薄い**ので範囲に入った物は確実に消す(半端に残ると爆発に見えない) */
+  if(FXLV>0){try{addFx(C,'boomL',o.x,o.y,'');}catch(e){}C.shake=Math.max(C.shake||0,.55);}
+  let kb=0;
+  for(const z of C.zombies){if(z.dead||z.d<0)continue;
+   const ax=z.px-o.x,ay=z.py-o.y;
+   if(ax*ax+ay*ay>BOBJ_BOOM*BOBJ_BOOM)continue;
+   dmgZ(C,z,BOBJ_BDMG,1,true);if(z.dead)kb++;}
+  /* ⚠**爆発で倒した数も連なりに乗せる**=乗せないと「爆発させると連なりが切れる」逆の遊びになる */
+  if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=BNS_CMB_T;B.cmbP=1;
+   if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
+   if(!nz)B.nit=Math.min(1,(B.nit||0)+kb*BUS_NIT_K);}
+  if(C.isMe)try{sfxAt('boom',.9);}catch(e){}
+ }else if(C.isMe)try{sfxAt(SFX_SMASH,.5);}catch(e){}
+}
+/* 🚗**画面に入っている壊れていない障害物を描く**。⚠地形の上・ゾンビの下。
+   ⚠**縦の潰しを打ち消してから回す**(でないと向きによってひしゃげる)。 */
+function drawBnsObj(c,C){
+ if(!BOBJ.length)return;
+ const V=prtView(160),iv=camIvY();
+ for(let i=0;i<BOBJ.length;i++){const o=BOBJ[i];
+  if(o.dead)continue;
+  if(o.x<V[0]||o.x>V[1]||o.y<V[2]||o.y>V[3])continue;
+  const K=BOBJ_K[o.k]||BOBJ_K[0],w=K.w,h=K.h;
+  c.save();c.translate(o.x,o.y);c.scale(1,iv);c.rotate(o.a);
+  c.fillStyle='rgba(0,0,0,.26)';c.fillRect(-w*.5+7,-h*.5+9,w,h);
+  c.fillStyle=INK;c.fillRect(-w*.5-4,-h*.5-4,w+8,h+8);
+  c.fillStyle=K.c;c.fillRect(-w*.5,-h*.5,w,h);
+  c.fillStyle=K.c2;c.fillRect(-w*.5+6,-h*.5+6,w-12,h*.40);
+  /* 種類が一目で読めるように、印を1つだけ足す(⚠塗りを増やしすぎない) */
+  if(o.k===0){c.fillStyle='#2b3a44';c.fillRect(-w*.16,-h*.5+5,w*.30,h-10);}      /* 廃車=窓の帯 */
+  else if(o.k===1){c.fillStyle=INK;c.fillRect(-w*.5,-h*.20,w,h*.12);c.fillRect(-w*.5,h*.10,w,h*.12);} /* ドラム缶=たが */
+  else if(o.k===2){c.fillStyle=K.c2;c.fillRect(-w*.5+4,-3,w-8,6);}                /* 木箱=横木 */
+  else{c.fillStyle='#c8452a';for(let q=-1;q<=1;q++)c.fillRect(q*w*.28-w*.07,-h*.5+3,w*.14,h-6);} /* バリケード=赤い縞 */
+  c.restore();
+ }
 }
 /* スティックの入力(-1〜1)。⚠**画面側から呼ぶのはここだけ**にする */
 function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy=dy;}
@@ -24122,8 +24404,12 @@ function refreshDiffUI(){
   const v=+x.dataset.v,D=D5[v];if(!D)return;
   const ok=diffOK(si,v);if(ok)best=Math.max(best,v);
   x.style.display=(v===NM_DIFF&&!ok)?'none':'inline-block';/* ナイトメアだけは未解放なら隠す */
-  /* ⚠🚌ボーナス面は「W1」と出しても意味が無いので、報酬の有無を出す(初回だけ💎が付く) */
-  x.textContent=(v===BNS_D)?(D.n+(ok?((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎'):' 🔒')):(D.n+(ok?' W'+D.w:' 🔒'));
+  /* ⚠🚌ボーナス面は「W1」と出しても意味が無いので、報酬の有無を出す(初回だけ💎が付く)。
+     ⭐**自己ベストのタイムをここに出す**(2026-08-02(37))=**走る前に目標が見えていないと記録は効かない**
+       (リザルトに出すだけでは、次に入る時には忘れている)。 */
+  if(v===BNS_D){const bs=ok?bnsBestOf(si):null;
+   x.textContent=D.n+(ok?(((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎')+((bs&&bs.t>0)?' 🏁'+bnsSec(bs.t):'')):' 🔒');}
+  else x.textContent=D.n+(ok?' W'+D.w:' 🔒');
   x.disabled=!ok;x.style.opacity=ok?'':'.45';});
  if(!diffOK(si,setDiff))setDiff=best;
  document.querySelectorAll('#seg-diff .btn').forEach(x=>x.classList.toggle('sel',+x.dataset.v===setDiff));

@@ -2722,6 +2722,40 @@ function checkRice(){
    console.log('FAIL: 走っている感じの描画で例外 '+e.message);process.exit(1);}
   console.log('🔥ニトロ: 轢いて溜まる/満タンだけ撃てる/速さ'+Math.round(spN)+'→'+Math.round(spB)
    +'/使用中は溜まらない/まとめ轢きで白抜き OK');}
+ /* ⑬ 🚗**壊せる障害物**(2026-08-02(37))=置いてある/道の外にはみ出さない/当たると壊れて減速する */
+ if(BOBJ.length<30){console.log('FAIL: 壊せる障害物が足りない '+BOBJ.length+'個');process.exit(1);}
+ {let outN=0;
+  for(const o of BOBJ){const u8=clamp(projPath(o.x,o.y)/LANES[0].len,0,1);
+   const w8=bnsCorrW(u8),dd8=Math.abs(bnsLaneD(o.x,o.y));
+   if(dd8>w8+10)outN++;}
+  if(outN){console.log('FAIL: 障害物が道の外にはみ出している '+outN+'個');process.exit(1);}}
+ {const m8=G.players[0],B8=m8.bus,o8=BOBJ.find(o=>!o.dead);
+  B8.x=o8.x;B8.y=o8.y;B8.vx=0;B8.vy=-BUS_SP;m8.bbod.length=0;m8.bbodI=0;
+  const sp0=Math.hypot(B8.vx,B8.vy);
+  bnsBusStep(m8,.02);
+  if(!o8.dead){console.log('FAIL: 障害物に当たっても壊れない');process.exit(1);}
+  if(!(Math.hypot(B8.vx,B8.vy)<sp0)){console.log('FAIL: 障害物を壊しても減速しない');process.exit(1);}
+  if(!m8.bbod.some(p=>p.dbr)){console.log('FAIL: 障害物を壊しても破片が飛ばない');process.exit(1);}
+  /* ⭐ドラム缶は爆発して周りのゾンビを巻き込む */
+  const di=BOBJ_K.findIndex(k=>k.bl),o9=BOBJ.find(o=>!o.dead&&o.k===di);
+  if(di>=0&&o9){m8.zombies.length=0;
+   for(let k=0;k<10;k++){const z8=mkZ(zSpec(0,.02,1),200);z8.ln=0;z8.px=o9.x+k*4;z8.py=o9.y;m8.zombies.push(z8);}
+   B8.x=o9.x;B8.y=o9.y;B8.vx=0;B8.vy=-BUS_SP;
+   bnsBusStep(m8,.02);
+   if(!o9.dead){console.log('FAIL: ドラム缶が壊れない');process.exit(1);}
+   if(m8.zombies.filter(z=>!z.dead).length>2){console.log('FAIL: ドラム缶が爆発して巻き込んでいない');process.exit(1);}}
+  B8.vx=0;B8.vy=0;m8.zombies.length=0;}
+ /* ⑭ 🧟**しがみつき**=倒しきれない敵に当たり続けると最高速が落ち、ニトロで振り払える */
+ {const m7=G.players[0],B7=m7.bus;
+  B7.grip=0;B7.nitT=0;B7.x=BNS_CX;B7.y=BNS_CY;B7.vx=0;B7.vy=0;m7.zombies.length=0;
+  for(let k=0;k<14;k++){const z7=mkZ(zSpec(0,60,1),200);z7.ln=0;z7.px=B7.x;z7.py=B7.y;m7.zombies.push(z7);}
+  for(let k=0;k<30;k++){for(const z of m7.zombies){z.px=B7.x;z.py=B7.y;}bnsBusStep(m7,.05);}
+  if(!(B7.grip>.2)){console.log('FAIL: 倒しきれない敵に当たっても沈まない grip='+B7.grip.toFixed(2));process.exit(1);}
+  B7.nitT=1;bnsBusStep(m7,.02);
+  if(B7.grip!==0){console.log('FAIL: ニトロでしがみつきを振り払えない');process.exit(1);}
+  B7.nitT=0;m7.zombies.length=0;
+  for(let k=0;k<40;k++)bnsBusStep(m7,.05);
+  if(B7.grip>.02){console.log('FAIL: 離れてもしがみつきが戻らない');process.exit(1);}}
  backTitle();
  /* ⑨⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。見るのは3つ:
     a)関所で通路が本当に絞れている b)敵が通路からはみ出さない c)壁が通路の中に立っていない
