@@ -199,9 +199,12 @@ body.bns #bnitro{display:block}
 #bnitro.rdy{border-color:#ffcf6a;animation:nitpulse 1s infinite}
 #bnitro.on{border-color:#ffcf6a;background:rgba(120,44,18,.5)}
 /* 🚌ボーナス面=兵科も英雄も集結旗も無い(押せるのは建設と🎯砲撃と🚌バスだけ) */
-/* ⚠🎯**砲撃も出さない**(2026-08-02(25)ユーザー「砲撃は無し」)=道中は轢く一本の面。 */
+/* ⚠🎯**砲撃も出さない**(2026-08-02(25)ユーザー「砲撃は無し」)=道中は轢く一本の面。
+   ⚠🚌**耐久のバーと「諦める」も出さない**(2026-08-02(31)ユーザー「耐久力とかいらないね」)=
+     削られる物が無いのだから、減らないバーを出しておく意味が無い。 */
 body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint,
-body.bns #strikebtn,body.bns #strikehint{display:none!important}
+body.bns #strikebtn,body.bns #strikehint,
+body.bns #corepanel,body.bns #ffwave{display:none!important}
 /* 横852pxのスマホでも小窓を詰める(既定の152px幅だと右上の侵入口を覆い隠す) */
 @media (max-width:900px){.mini{min-width:100px;max-width:112px;font-size:10px;padding:3px 6px}.mini .st{font-size:9px}}
 @media (pointer:coarse){
@@ -15677,6 +15680,8 @@ function campStep(C,dt,wave){
        最終ボスに抜かれてもコアHPが残っていれば「クリア」になっていた(ほぼ負けているのに)。
      ⭐1回の痛みは通り抜けの半分にして、代わりに何度も入る=拠点が持つ間に倒し切れば逆転できる。
      ⚠取り付く場所は門の手前(SIEGE_D)=**部隊も届く**ので、旗を引いて総力戦にできる。 */
+  /* ⚠🚌道中は**取り付いて殴る敵も居ない**(耐久が無いので殴る相手が無い)=素通りさせる */
+  if(z.siege&&C.bus){z.siege=0;}
   if(z.siege&&z.d>=PLEN-SIEGE_D){
    z.d=PLEN-SIEGE_D;z.sgT=(z.sgT||0)-dt;
    if(z.sgT<=0){z.sgT=(z.ar||1.2)*1.6;
@@ -19016,10 +19021,9 @@ function startSolo(){
      出せなくするのは `uUn=0`(解放0種)+ 下の body.bns で欄ごと隠すことでやる。 */
   me.hUi=-1;me.uUn=0;
   me.up=me.upTotal=60+up0V();
-  /* ⭐⭐⭐**コアHPは「バスの耐久」として使う**(2026-08-02(24))=守る拠点が無くなったので、
-     0になったら負けるという仕組みだけそのまま流用する(HUD・被弾の明滅・敗北の流れが全部効く)。
-     ⚠⚠**楽すぎ/きつすぎならまずこの400を動かす**(難易度表の hp/cnt より先にここ)。
-     ⭐**将来は探索で拾った物資でここを伸ばす**(ユーザー決定=拾って強化して突き進む)。 */
+  /* ⚠⚠**耐久は 2026-08-02(31) に外した**(ユーザー「耐久力とかいらないね ダメージエフェクトもなし」)=
+     **この面に負けは無い**(着けば勝ち)。⭐コアHPは**減らさないまま**置いてあるだけ
+     (勝敗の仕組みが `core>0` を前提にしているため)。⚠HUDのバーと「諦める」はCSSで隠してある。 */
   me.coreMax=400+hp0V();me.core=me.coreMax;
   me.unlocked=0;/* ⚠タレットは建てない面(枠も全部画面の外) */
   me.slk=SLOTS.map(()=>false);
@@ -19713,7 +19717,9 @@ const BUS_R=140,BUS_DPS=520,BUS_KB=260;
 /* ⭐**取り付かれている間バスが受ける傷**(2026-08-02(24))=1体が1秒あたり削る量。
    ⚠**走っていればほぼ効かない**(接触が一瞬で終わる)=止まって埋もれた時だけ効く数値にしてある。
    ⭐きつすぎ/楽すぎならここか `startSolo` の耐久400を動かす。 */
-const BUS_ZDPS=2.6;
+/* ⚠**2026-08-02(31)に耐久ごと外した**(ユーザー「耐久力とかいらないね ダメージエフェクトもなし」)。
+   ⚠この値はもう効いていない(戻す時のために残してある)。 */
+const BUS_ZDPS=0;
 /* ⭐**バスを画面のどこに置くか**(0=中央 / 大きいほど下)。⚠0.5を超えると画面の外へ出る。
    ⭐**下に寄せるほど進む先が広く見える**=この面はそれが手触りそのもの。 */
 const BUS_CAM_Y=.30;
@@ -19931,15 +19937,9 @@ function bnsBusStep(C,dt){
   B.vx*=dg;B.vy*=dg;
   /* ⚠揺れは**連なりが伸びるほど強く**する(上限あり)=轢き続けている実感 */
   if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.30,.05+.025*hit+.05*bnsCmbT(B.cmb)));
-  /* ⭐⭐**群れに埋もれると耐久が削れる**(2026-08-02(24))=守る拠点が無くなったぶん、
-     **負けるのはバスが潰される時だけ**になった。⚠速く走り抜けている間はほとんど減らない
-     (1体との接触が一瞬で終わるため)=**止まると死ぬ**という形。
-     ⚠**削りは整数で通す**=コアHPは表示も判定も整数前提。 */
-  if(!C.dying){
-   B.dmgA=(B.dmgA||0)+BUS_ZDPS*hit*dt*(B.nitT>0?.5:1);/* 🔥ニトロ中は轢き飛ばすので半分 */
-   if(B.dmgA>=1){const dm=Math.floor(B.dmgA);B.dmgA-=dm;C.core-=dm;
-    if(C.isMe&&C.tm-(C.bhtT||-9)>=.5){C.bhtT=C.tm;sfx.leak&&sfx.leak();dmgFlash();}
-    if(C.core<=0){C.core=0;C.dying=true;addFx(C,'boomL',B.x,B.y,'');}}}
+  /* ⚠⚠**耐久(バスが削れる)は 2026-08-02(31) に丸ごと外した**(ユーザー「耐久力とかいらないね
+     ダメージエフェクトもなし」)=この面は**走って轢く一本**。止められる理由を作らない。
+     ⭐**赤い明滅も被弾音も出さない**。⚠書き戻さないこと。 */
  }
  if(B.hitT>0)B.hitT-=dt;
  /* 🔊走行音(⚠**ここでしか触らない**。AudioContext が無い環境では黙って何もしない) */

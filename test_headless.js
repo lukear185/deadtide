@@ -2812,8 +2812,8 @@ function checkRice(){
   tideStep(.05);
   if(T.pool.length){console.log('FAIL: 到着した後も湧きが積まれる');process.exit(1);}}
  backTitle();
- /* ⑦⭐**負けるのはバスが潰される時だけ**(2026-08-02(24))。見るのは2つ:
-    a)すれ違って後ろへ抜けた敵は**1も削らない** b)群れに埋もれると耐久が減る */
+ /* ⑦⭐⭐**この面に負けは無い**(2026-08-02(31)ユーザー「耐久力とかいらないね ダメージエフェクトもなし」)。
+    見るのは2つ: a)すれ違っても b)群れに埋もれても**1も削られない**+**被弾の演出も出ない** */
  META.stg=0;setDiff=BNS_D;startSolo();
  {const m4=G.players[0];m4.fx.length=0;m4.zombies.length=0;
   {const p4=pathPos(PLEN*.5,0);m4.bus.x=p4[0];m4.bus.y=p4[1];m4.bus.vx=0;m4.bus.vy=0;}
@@ -2822,13 +2822,15 @@ function checkRice(){
   campStep(m4,.05,1);
   if(m4.core!==c4){console.log('FAIL: すれ違った敵で耐久が減る '+(c4-m4.core));process.exit(1);}
   /* b)埋もれる=バスの真上に大量に置いて時間を進める */
-  m4.zombies.length=0;
+  m4.zombies.length=0;m4.fx.length=0;
   for(let k=0;k<40;k++){const z4=mkZ(zSpec(0,4,1),PLEN*.5);z4.ln=0;z4.hp=z4.mhp=99999;
    z4.px=m4.bus.x;z4.py=m4.bus.y;m4.zombies.push(z4);}
   const c5=m4.core;
   for(let k=0;k<40;k++){for(const z of m4.zombies){z.px=m4.bus.x;z.py=m4.bus.y;}bnsBusStep(m4,.05);}
-  if(!(m4.core<c5)){console.log('FAIL: 群れに埋もれても耐久が減らない');process.exit(1);}
-  console.log('🚌耐久: すれ違いは無傷 / 40体に埋もれて2秒で '+(c5-m4.core)+' 減る(全'+m4.coreMax+') OK');}
+  if(m4.core!==c5){console.log('FAIL: 群れに埋もれて耐久が減っている '+(c5-m4.core));process.exit(1);}
+  if(m4.dying||m4.dead){console.log('FAIL: 道中でバスが潰される');process.exit(1);}
+  if(m4.fx.some(e=>e.k==='leak')){console.log('FAIL: 被弾の演出が出ている');process.exit(1);}
+  console.log('🚌道中に負けは無い: すれ違いも埋もれも無傷 / 被弾の演出なし OK');}
  backTitle();
  /* ⑧⚠⚠**走れば必ず着く**(2026-08-02(24))=距離で終わる面なので、
     「いつまでも着かない」「途中で勝手に終わる」の両方が怖い。⭐上へ倒し続けて実走する。 */
@@ -2867,8 +2869,8 @@ function checkRice(){
   +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
  console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所'+BNS_GATE.length+'か所で道幅'+BNS_OFF+'→'+BNS_GATW
   +'/敵は道の外へ出ない/タレット置き場は無し)');
- console.log('  (🚌道中の尺: 上へ倒しっぱなしで '+Math.round(bsec)+'秒 で到着 / 轢いた数 '+bkil+'体 / '
-  +'受けた傷 '+Math.round(bdmg)+'(耐久400))');
+ console.log('  (🚌道中の尺: 上へ倒しっぱなしで '+Math.round(bsec)+'秒 で到着 / 轢いた数 '+bkil+'体'
+  +'/ ⚠負けは無い面(耐久もダメージ演出も外した))');
 }
 /* ⭐⭐**必殺技の詠唱モーション**(2026-08-02)。⚠画面のボタンからしか動かないので直に呼んで見る。
    見るのは4つ: ①型が21人ぶん全部あって、体も得物も動く値が入っているか
