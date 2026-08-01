@@ -2658,9 +2658,21 @@ function checkRice(){
  /* ⚠⚠**「txtが何件あるか」で測ってはいけない**(2026-08-02(40)に直した)=
     📖図鑑に初めて登録された種類ぶんの txt が混ざるので、**どのゾンビを引いたかで普通に落ちる**
     (無関係な変更で何度も「3件」で落ちた)。⭐見たいのは**⚙️の文字だけ**。 */
+ /* ⚠⚠**2026-08-02(53)に⚙️→🧬へ差し替えた**=道中はタワーを建てられないので⚙️は使い道がゼロ。
+    ⭐**⚙️の文字が1つも湧かないこと**と、**⚙️スクラップが1も増えないこと**を見る。 */
  const nTx=me.fx.filter(e=>e.k==='txt'&&e.s.indexOf('⚙️')>=0).length;
- if(nTx>2){console.log('FAIL: ⚙️の文字が1体ずつ湧いている '+nTx+'件');process.exit(1);}
- if(!(me.bus.gain>0)){console.log('FAIL: ⚙️が足し込まれていない');process.exit(1);}
+ if(nTx>0){console.log('FAIL: 道中で⚙️の文字が出ている '+nTx+'件');process.exit(1);}
+ {const sc0=me.scrap;
+  for(const z of me.zombies){if(z.dead||z.boss||z.elite)continue;killZ(me,z);break;}
+  if(me.scrap!==sc0){console.log('FAIL: 道中でスクラップが増えている +'+(me.scrap-sc0));process.exit(1);}}
+ /* 🧬**走っている間に貯まる研究pt**=⚡スコアから出て、上限で止まること */
+ {const B9=me.bus;B9.score=0;
+  if(bnsGainPts(B9)!==0){console.log('FAIL: スコア0なのに🧬が入っている');process.exit(1);}
+  B9.score=BNS_RPT_D*40;
+  if(bnsGainPts(B9)!==40){console.log('FAIL: 🧬がスコアから出ていない '+bnsGainPts(B9));process.exit(1);}
+  B9.score=999999;
+  if(bnsGainPts(B9)!==BNS_RPT_MAX){console.log('FAIL: 🧬が上限で止まらない '+bnsGainPts(B9));process.exit(1);}
+  B9.score=0;}
  /* ③ 連なり */
  const B=me.bus;
  me.zombies.length=0;B.cmb=0;B.cmbT=0;B.cmbMx=0;B.kill=0;
@@ -3054,7 +3066,7 @@ function checkRice(){
  backTitle();
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;FXLV=fx0;
  console.log('🧟米粒ゾンビ: 盤面'+live.length+'体(上限'+BNS_CAP+')/描画は例外なし/跡は上限どまり(血'+me.bstn.length+'・肉'+me.bchk.length+'・轍'+me.btrk.length+')/'
-  +'死体と1体ずつの文字と漏れの音を出さない/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
+  +'死体と⚙️を出さない(🧬に差し替え)/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
  console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所'+BNS_GATE.length+'か所で道幅'+BNS_OFF+'→'+BNS_GATW
   +'/敵は道の外へ出ない/タレット置き場は無し)');
  console.log('  (🚌道中の尺: 上へ倒しっぱなしで '+Math.round(bsec)+'秒 で到着 / 轢いた数 '+bkil+'体'

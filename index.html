@@ -204,7 +204,10 @@ body.bns #bnitro{display:block}
      削られる物が無いのだから、減らないバーを出しておく意味が無い。 */
 body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint,
 body.bns #strikebtn,body.bns #strikehint,
-body.bns #corepanel,body.bns #ffwave{display:none!important}
+body.bns #corepanel,body.bns #ffwave,
+/* ⚠🔩強化ptと🤝部隊枠も出さない(2026-08-02(53))=作戦タイムも兵科も無い面なので、
+   出しても**一度も動かない数字**が2つ並ぶだけになる。⚙️は🧬に差し替えて残す。 */
+body.bns #ptbox,body.bns #ubox{display:none!important}
 /* 🎒**走る前の流れ(①選択→②ミニゲーム→③乗り込み→④強化)の間は運転の物を全部引っ込める**
    (2026-08-02(43))。⚠**残り時間の札も出さない**=まだ1秒も減っていないのに締め切りが見えると嘘になる。
    ⚠**#abar そのものは消さない**(この帯の高さが盤面の倍率を決めている。既出の掟)。 */
@@ -15186,11 +15189,15 @@ function killZ(C,z){
  const rice=!!(C.bus&&!z.boss&&!z.elite);
  const pay=(G&&G.pve?D5v().pay:1)*metaPay();
  let g=Math.max(0,Math.round(z.bt*pay)-(z.bpaid||0));/* 削って先払いした分を差し引く */
- if(G&&G.coop){g=Math.max(0,Math.ceil((z.bt*pay-(z.bpaid||0))*COOP_PAY[Math.min(G.np,3)-1]));
-  for(const P of G.players){P.scrap+=g;P.enTotal+=g;}}
+ if(G&&G.coop)g=Math.max(0,Math.ceil((z.bt*pay-(z.bpaid||0))*COOP_PAY[Math.min(G.np,3)-1]));
+ /* 🚌⚠⚠**道中では⚙️スクラップを配らない**(2026-08-02(53)ユーザー
+    「バスの時間の時 ゾンビ轢くとスクラップが増えてるよね それなしで研究ポイントにして」)=
+    **この面はタワーを1つも建てられない**ので、⚙️は増えても**使い道がゼロ**だった。
+    ⭐**代わりに🧬研究pt**(⚡スコアから出す)を貯める。 */
+ if(C.bus){/* ⚙️は入れない */}
+ else if(G&&G.coop){for(const P of G.players){P.scrap+=g;P.enTotal+=g;}}
  else{C.scrap+=g;C.enTotal+=g;}
- if(rice)C.bus.gain=(C.bus.gain||0)+g;/* ⭐まとめて出す(1体ずつ出すと文字で画面が埋まる) */
- else{addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');}
+ if(!rice&&!C.bus){addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');}
  /* 💎魔石: ボス級を倒した時だけ落ちる(英雄召集の通貨)。ソロのみ */
  if(z.boss&&soloMeta()&&C.isMe){const gm=gemBoss(z.fin);
   META.gem=(META.gem||0)+gm;G.gemGain=(G.gemGain||0)+gm;saveMeta();
@@ -16816,9 +16823,10 @@ function awardMeta(){
     倒した数に比例させると**1走2400〜2700🧬**(本編の古参クリア1500🧬を1分ちょっとで超える)。
     ⭐**配るのは初回クリアの分だけ**(`bnsReward`)=**周回する動機はもう「永続の物資」が担っている**ので、
       🧬は本編の難易度を進めた報酬に戻す。⚠NOTESの掟「何度でもやり直せるもので報酬を配らない」の3度目。 */
- /* 🚌⭐**2回目からは⚡スコアに応じた少額**(2026-08-02(52))=初回は下の `bnsReward` が豪華に配る */
- const gain=(d9===BNS_D)
-  ?((Array.isArray(META.bcl)&&META.bcl[STAGE])?bnsRptPts():0)
+ /* 🚌⭐**道中は⚡スコア割の少額+上限**(2026-08-02(52))。⭐初回はこれに `bnsReward` の豪華な分が乗る。
+    ⚠⚠**初回だけ0にしない**(2026-08-02(53)に直した)=走っている間ずっと「🧬 20/120」と出しておいて
+      入るのが0だと嘘になる。**画面の数字と実際に入る量は必ず同じにする**。 */
+ const gain=(d9===BNS_D)?bnsRptPts()
   :Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.4)*mult));
  META.pts+=gain;G.metaGain=gain;
  /* クリア記録: ステージ×難易度。1つ上の難易度と、ナイトメアなら次のステージが開く。
@@ -18348,7 +18356,10 @@ function updHUD(){const m=meV();if(!m)return;
   const cl=$('corelbl');cl.textContent=Math.ceil(m.core);if(cl.style)cl.style.color=cr>.4?LIFE:DANGER2;
   /* ⭐🚌道中は同じバーが**バスの耐久**になる(2026-08-02(24))=印だけ差し替える */
   const ci=$('coreico');if(ci)ci.textContent=m.bus?'🚌':'🏕';}
- $('energybox').innerHTML=IC('⚙️ ')+fmt(m.scrap);
+ /* 🚌⭐**道中は⚙️ではなく🧬**(2026-08-02(53))=**この面で増える物だけを出す**。
+    ⚠**上限も一緒に出す**(120)=止まった時に「壊れた」と思われないため。 */
+ $('energybox').innerHTML=m.bus?(IC('🧬 ')+bnsGainPts(m.bus)+' / '+BNS_RPT_MAX)
+                               :(IC('⚙️ ')+fmt(m.scrap));
  $('ptbox').innerHTML=IC('🔩 ')+fmt(m.up||0);
  /* ⭐部隊の枠(重さ)。⚠**満杯に近いと赤くする**=出せない理由が一目で分かるように */
  {const ub=$('ubox');
@@ -19482,6 +19493,12 @@ const BNS_GEM=50;                 /* 初回クリアの💎(⚠2回目からは�
      (実際に1走2400〜2700🧬になっていた)。⭐**⚡スコアを割って、上限で頭打ちにする**。
    📌1走で **20〜120🧬**。⚠**上限がこの仕組みの本体**なので、増やすならまず `_MAX` を疑う。 */
 const BNS_RPT_D=40,BNS_RPT_MIN=20,BNS_RPT_MAX=120;
+/* 🧬⭐**走っている間に貯まる研究pt**(2026-08-02(53))=⚡スコアから出して**上限で止める**。
+   ⚠⚠**awardMeta と同じ式にすること**=画面の数字と実際に入る量が食い違うと、一番不信になる。
+   ⚠**下限(`_MIN`)はここでは掛けない**=走り出した瞬間に20が出ていると「何もしていないのに増えた」になる。 */
+function bnsGainPts(B){
+ return Math.min(BNS_RPT_MAX,Math.round(((B&&B.score)||0)/BNS_RPT_D));
+}
 function bnsRptPts(){
  let sc=0;try{sc=(G&&G.players[0]&&G.players[0].bus&&G.players[0].bus.score)||0;}catch(e){}
  return clamp(Math.round(sc/BNS_RPT_D),BNS_RPT_MIN,BNS_RPT_MAX);
@@ -20663,7 +20680,12 @@ function bnsBusStep(C,dt){
     ⚠寄り具合で割る=世界座標の110は画面では15画素しかない(バスに被る)。 */
  /* ⚠⚠**縦の潰し(SCY)を打ち消してから浮かせる**(2026-08-02(35))=打ち消さないと画面では2割低くなり、
     **連なりの「×N」(打ち消し済み)とぴったり重なって両方読めなくなる**(片方だけ直すと必ずこうなる)。 */
- if(B.gain>0&&B.gainT>=BNS_GAIN_T){addFx(C,'txt',B.x,B.y-185*bnsGz()*camIvY(),'+'+B.gain+'⚙️');B.gain=0;B.gainT=0;}
+ /* 🧬⭐**貯まった研究ptをまとめて1回出す**(2026-08-02(53)に⚙️から差し替えた)。
+    ⚠**上限に届いたら出さない**=増えていないのに「+0🧬」が飛ぶと嘘になる。 */
+ {const p9=bnsGainPts(B);
+  if(p9>(B.ptsShown||0)&&B.gainT>=BNS_GAIN_T){
+   addFx(C,'txt',B.x,B.y-185*bnsGz()*camIvY(),'+'+(p9-(B.ptsShown||0))+'🧬');
+   B.ptsShown=p9;B.gainT=0;}}
  if(B.flashT>0)B.flashT-=dt;
  if(B.flashCd>0)B.flashCd-=dt;
  /* 🛞**土埃**=速く走っている間だけ後ろへ吐く。⚠**跡の輪を使い回す**ので数は増えない。
