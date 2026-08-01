@@ -1799,7 +1799,12 @@ const SFX_GAIN={
 };
 /* 連射・多発する音はピッチを少し揺らす(同じ波形が続くと耳が疲れる) */
 const SFX_VAR={shot:.10,shotgun:.08,bite:.14,bite2:.12,splat:.12,thunk:.10,zap:.08,coin:.08,
- moan:.18,moan2:.18,moan3:.16,moanW:.16,moanN:.16,die:.14};
+ moan:.18,moan2:.18,moan3:.16,moanW:.16,moanN:.16,die:.14,
+ /* ⚠⚠🚌**轢く音は毎秒13回鳴る**(2026-08-02(32)ユーザー「音は 轢く音 以外はいいと思う」)=
+    **同じ音を同じ高さで連発すると、衝撃ではなく「機械の音」に聞こえる**。これが直らなかった正体。
+    ⭐**高さを大きくばらす**(±24%)。⚠音そのものの作りは何度も差し替えて収束しなかったので、
+      ここから先は**素材ではなく鳴らし方**で直すこと。 */
+ crush:.24,crush2:.24,crush3:.24,crush4:.24,smash:.10,smash2:.10,smash3:.10};
 /* ⭐ゾンビの声は**同じ音が繰り返されると怖くない**。何種類か用意して毎回くじを引く。
    さらに**ステージで声が変わる**: ①廃線=人型 / ②沈んだ港=水棲 / 🌑ナイトメア=獣・蟲。
    ⚠ここは sfx を組み立てる時点では isNM も STAGE もまだ無いので、**鳴らす瞬間に** try/catch で見る
@@ -1883,6 +1888,16 @@ const SFX_LBL={
    ⚠**残りの案も鳴らせるまま残してある**(`?sfx=1`)=選び直しはこの2つを書き換えるだけで済む。
    ⚠**呼び出し側に `sfx.crush` と直に書かない**こと(選び直すたびに探し回ることになる)。 */
 const SFX_CRUSH='crush4';/* 1体ずつ轢いた音(=③に車体の芯を薄く足したもの) */
+/* ⭐⭐**轢く音は「毎回ちがう音」にする**(2026-08-02(32))。⚠**1つの音を等間隔で連発しない**=
+   どんなに良い素材でも、同じ高さで13回/秒鳴らせば**ラチェット(機械)の音**になる。
+   ⭐**種類・高さ・音量の3つを毎回ばらす**+**速いほど太く鳴らす**。
+   ⚠鳴らす間隔も少しずらす(等間隔だと拍が揃って機械に戻る)。 */
+const SFX_CRUSHES=['crush4','crush3','crush'];
+function busCrushSfx(C){
+ const B=C.bus,mv=B?Math.hypot(B.vx,B.vy):0,k=Math.min(1,mv/(BUS_SP||1));
+ const key=SFX_CRUSHES[(Math.random()*SFX_CRUSHES.length)|0];
+ sfxAt(key,(.66+Math.random()*.5)*(.78+.45*k));
+}
 const SFX_SMASH='smash3';/* まとめ轢き(6体以上)の音 */
 const SFX_TAB=[['tw','🔫 タワー'],['z','🧟 ゾンビ'],['ui','🖥 UI・経済'],['ev','🏁 節目']];
 let SFXTAB='tw';
@@ -14990,7 +15005,9 @@ function killZ(C,z){
  /* ⚠⚠**米粒は音を間引く**(2026-08-02(2))=毎秒数十体倒れる面なので、1体ずつ鳴らすと
     同じ音が何十も重なって**割れた雑音**になる(音を足す話ではなく、既にある音を減らす話)。
     ⭐0.075秒に1回まで=最大でも毎秒13発。⚠⚙️の音(coin)は出さない(まとめて1回にしたため)。 */
- if(rice){if(C.isMe&&C.tm-(C.zsfxT||-9)>=.075){C.zsfxT=C.tm;(sfx[SFX_CRUSH]||sfx.crush||sfx.splat)();}}
+ /* ⚠**間隔も毎回ずらす**(2026-08-02(32))=きっかり0.075秒ごとだと拍が揃って機械の音になる */
+ if(rice){if(C.isMe&&C.tm-(C.zsfxT||-9)>=.058+Math.random()*.05){C.zsfxT=C.tm;
+  try{busCrushSfx(C);}catch(e){(sfx[SFX_CRUSH]||sfx.splat)();}}}
  else if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
   if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
  /* 大物撃破の特別演出 */
