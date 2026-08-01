@@ -44,6 +44,10 @@ const BNM=/bnsn=(\d+)/.exec(OPT),BNSN=BNM?+BNM[1]:12;
    ⚠これが無いとバスは中央に止まったままなので、**轢き応え(血だまり・轍・連なりの数字)が
      1つも写らない**(2026-08-02(2)に足した)。⚠bns と併せて使う。 */
 const BDRV=/(^|\+)bnsdrv(\+|$)/.test(OPT);
+/* ⭐bnsent[=番号] = 🏚**入れる廃墟**の前へバスを移して撮る(番号=BENTの何棟目。既定0)。
+   ⚠**カメラはバスを追う**ので、これが無いと拠点まわりしか写らず、入れる廃墟が一度も画に出ない。
+   ⚠bns と併せて使う。⚠**bnsdrv とは併用しない**(走らせると寄せた場所から離れていく)。 */
+const BEM=/(^|\+)bnsent(=(\d+))?(\+|$)/.exec(OPT),BENTI=BEM?(+(BEM[3]||0)):-1;
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
@@ -319,7 +323,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
     その間に rAF が回って**リザルト画面になってしまい、盤面が1枚も撮れない**
     (bnsn を小さくしても直らない=進んでいるのは仮想時間ではなく実時間の方)。 */
  +(BNS?'setInterval(function(){try{var m9=G&&G.players[0];if(m9){m9.core=m9.coreMax;}}catch(e){}},150);':'')
- +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';for(var k=0;k<n;k++){'
+ +(BNS?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';'
+     /* 🏚入れる廃墟の前へバスごと移す(⚠カメラはバスを追うので、バスを動かすのが一番確実) */
+     +(BENTI>=0?('try{var mB=G.players[0],e8=BENT['+BENTI+'%BENT.length];'
+       +'var f8=bnsRoadFit(e8.dx,e8.dy,BUS_CL);'
+       +'mB.bus.x=f8?f8[0]:e8.dx;mB.bus.y=f8?f8[1]:e8.dy;mB.bus.vx=0;mB.bus.vy=0;'
+       +'if(CAM){CAM.x=CAM.sx=mB.bus.x;CAM.y=CAM.sy=mB.bus.y;}}catch(e8b){}'):'')
+     +'for(var k=0;k<n;k++){'
      /* ⚠**群れの中を往復させる**=中央で回らせても敵に当たらず、片道だけだと**マップの端まで
         走り去って**群れも血だまりも画面から消える(どちらも実際に撮って気づいた)。
         敵が湧いてから(k>110=約5.5秒)左上のレーンを3秒ごとに行き来する */

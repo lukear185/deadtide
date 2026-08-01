@@ -2003,6 +2003,9 @@ const BPROP=[];
    ⚠**宣言はここ(上の方)**=理由は BPROP と同じ(loadStage が読み込みの途中で触るのでTDZに落ちる)。
    ⚠⚠**通路(`bnsCorrW`)の外にしか置かない**=同じ式から生やしているので「壁の中を歩く」が起きない。 */
 const BBLD=[],BTREE=[];
+/* 🏚⭐**入れる廃墟**(2026-08-02(12))=探索フェーズで中へ入る建物。⚠**BBLD の中の一部を指しているだけ**
+   (地形の焼き込み・木のよけ・当たりの扱いを二重に持たないため)。⚠宣言がここなのは BBLD と同じ理由(TDZ)。 */
+const BENT=[];
 /* 森の升目(木は数万本あるので、画面に掛かる升だけを描くための索引)。
    ⚠⚠**宣言はここ**=`loadStage` が読み込みの途中で `TRE_CELL=null` を触るので、
      下の方で `let` にすると**初期化前アクセスでスクリプトごと止まる**(TDZの穴で3度目)。 */
@@ -3164,7 +3167,7 @@ let PMAXX=MW;
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
- LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;TRE_CELL=null;terrClear();
+ LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;BENT.length=0;TRE_CELL=null;terrClear();
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
@@ -17568,6 +17571,10 @@ function drawMiniMap(c,C){
  /* 廃墟(点だけ・間引く) */
  c.fillStyle='rgba(120,108,88,.7)';
  for(let i=0;i<BPROP.length;i+=4){const p=BPROP[i];c.fillRect(x0+p.x*sx-1,y0+p.y*sy-1,2,2);}
+ /* 🏚⭐**入れる廃墟**は地図にも出す(2026-08-02(12))=探索の行き先なので、
+    ⚠**地面の廃墟と同じ色にしない**(埋もれて探せない)。⚠塗りは1回にまとめる。 */
+ if(BENT.length){c.fillStyle='#e0c98a';const r8=2.2*dpr;c.beginPath();
+  for(const b of BENT)c.rect(x0+b.x*sx-r8,y0+b.y*sy-r8,r8*2,r8*2);c.fill();}
  /* 敵(⚠**多いので点で**。1体ずつ丸を描くと数百個ぶんの塗りになる)
     ⚠⚠**四角も1本のパスに積んでまとめて塗る**(2026-08-02(2))=fillRect を1体ずつ呼ぶと
       500体で毎フレーム500回の塗りになる。積んで最後に1回だけ塗れば1回で済む。 */
@@ -18843,13 +18850,65 @@ function bldPush(x,y,a,L,W,rd,rf){
  BBLD.push({x:x,y:y,q:qq(L,W),k:qq(L*(rf?.74:.66),W*(rf?.70:.62)),rf:rf?1:0,rr:Math.max(L,W)+16,
   c:(rd()*BLD_W.length)|0,rc:(rd()*BLD_R.length)|0});
 }
+/* ============ 🏚⭐**入れる廃墟**(2026-08-02(12)) ============
+   ⭐**探索フェーズ(①)で中へ入る建物**=物資を漁る目的地。⚠いま入れているのは**外側の建物だけ**
+     (中身は次の段)。⚠**「入れそうに見えること」がこの段の仕事**。
+   ⚠⚠**タレット置き場(屋根つき)と見分けが付く形にすること**(TODOの指示)=見分けは3つで付けている:
+     ①**大きい**(街路沿いの小屋の2〜3倍) ②**屋根が金属色**(赤錆・青灰・苔緑。置き場は明るいベージュ)
+     ③**街路を向いた黒い入口**と、その前の**踏み固めた土**。
+   ⚠⚠**細かい絵を描いても読めない**=この面の寄りは .26 なので、**40px未満の意匠は1px以下**になる。
+     ⭐**大きな塊と色**だけで語ること(キャノピー・のこぎり屋根の帯・切妻の棟・シャッター)。
+   ⚠**タレット置き場にはしない**(`rf`=0)=屋上に登るのではなく中へ入る建物。 */
+const ENT_K=[
+ /* ⛽ガソリンスタンド=**張り出したキャノピー**が目印(遠くからでも一目で分かる形)。
+    ⚠**倉庫と同じ青灰にしない**(1回そうして撮ったら見分けが付かなかった)=キャノピーは
+      **白っぽいコンクリ+街路側に赤い帯**。色だけで倉庫と別物に見える。 */
+ /* ⚠`ex`=**入口の局所座標(長さ方向)**。⚠**キャノピーの下に入口を置かない**=真上から見た絵なので
+    屋根に隠れて「入れる」が消える。売店を端に寄せて、入口だけ屋根の外に出してある。 */
+ {id:'gas',n:'ガソリンスタンド',L:154,W:96,ex:-100,rf:'#b9b2a0',rf2:'#d8d1bc'},
+ /* 🏭倉庫=長い箱+**のこぎり屋根**+大きなシャッター */
+ {id:'ware',n:'倉庫',L:190,W:112,ex:0,rf:'#4f5c66',rf2:'#6d7c86'},
+ /* 🏠民家=**切妻屋根**(棟が1本通る)+ポーチ+煙突 */
+ {id:'house',n:'民家',L:112,W:88,ex:0,rf:'#7a4432',rf2:'#96604a'}];
+/* 入れる廃墟を1棟置く。⚠**入口は必ず街路側**(`ds`=局所座標でどちらが街路か)=
+   裏を向いていると「入れる」が読めないし、探索で回り込む手間だけが増える。 */
+function entPush(x,y,a,ki,ds){
+ const K=ENT_K[ki],L=K.L,W=K.W;
+ const t0=Math.cos(a),t1=Math.sin(a),n0=-t1,n1=t0;
+ const qq=(l,w)=>[x+t0*l+n0*w,y+t1*l+n1*w, x+t0*l-n0*w,y+t1*l-n1*w,
+                  x-t0*l-n0*w,y-t1*l-n1*w, x-t0*l+n0*w,y-t1*l+n1*w];
+ const b={x:x,y:y,a:a,q:qq(L,W),k:qq(L*.72,W*.68),rf:0,en:1,ek:ki,L:L,W:W,ds:ds<0?-1:1,
+  rr:Math.max(L,W)+16,c:(ki+2)%BLD_W.length,rc:0,
+  /* ⭐**入口の前に立つ点**(⚠次の段=中へ入る判定と主人公の行き先がここを使う)。
+     ⚠**壁の面そのものではなく少し外**に取る=壁の上だと「建物の中の点」になり、
+       近づいたかの判定にも道案内にも使えない。 */
+  /* ⚠**長さ方向(`ex`)には `ds` を掛けない**=絵は `scale(1,ds)` で y だけ畳んでいるので、
+     x は向きに関わらずそのまま(掛けると入口の点だけ反対の端へ飛ぶ)。 */
+  dx:x+t0*(K.ex||0)+n0*(W+46)*(ds<0?-1:1),
+  dy:y+t1*(K.ex||0)+n1*(W+46)*(ds<0?-1:1),
+  da:Math.atan2(n1*(ds<0?-1:1),n0*(ds<0?-1:1))};
+ BBLD.push(b);BENT.push(b);
+ return b;
+}
+/* 一番近い「入れる廃墟」。⚠**次の段(探索)の受け口**=いまは検査と撮影だけが使う */
+function bnsEntNear(x,y,r){
+ let bb=null,bd=(r||1e9);
+ for(const b of BENT){const d=dist(x,y,b.dx,b.dy);if(d<bd){bd=d;bb=b;}}
+ return bb;
+}
+/* すでに建っている物と重なっていないか。⚠**入れる廃墟は大きい**ので、置く前に必ず通すこと */
+function bldClear(x,y,r,list){
+ for(const b of (list||BBLD)){const dx9=b.x-x,dy9=b.y-y,r9=r+(b.rr||60);
+  if(dx9*dx9+dy9*dy9<r9*r9)return false;}
+ return true;
+}
 /* ⭐⭐**森と建物でマップを埋め尽くす**(2026-08-02(5)ユーザーの参考画像
    「森と建物でマップをかなり埋めて、明らかな導線の先からどんどんくる感じ」)。
    ⚠⚠**密度が足りないと街路が「空き地に引いた線」に見える**=前回はここが薄すぎた。
      街路の外は**ほぼ隙間なく**埋めること(空いた地面が広く残っていたら密度不足)。
    ⚠**通路(`bnsCorrW`)の中には何も置かない**(`bnsFreeAt`)。 */
 function bnsMap(){
- BBLD.length=0;BTREE.length=0;BPROP.length=0;
+ BBLD.length=0;BTREE.length=0;BPROP.length=0;BENT.length=0;
  if(!LANES)return;
  let s9=104729+STAGE*7919;
  const rd=()=>{s9=(s9*1103515245+12345)&0x7fffffff;return s9/0x7fffffff;};
@@ -18872,6 +18931,37 @@ function bnsMap(){
    }
   }
  }
+ /* ①' ⭐⭐**入れる廃墟**(2026-08-02(12))=探索の目的地。**街路沿いに置く**。
+    ⚠**森の奥に隠さない**=バスは街路しか走れないので、奥に置くと降りてから森を延々歩くことになる
+      (探索は制限時間つきにする決まりなので、移動だけで時間が溶ける形にしない)。
+    ⚠⚠**置く順番はここ**=①タレット置き場の後・②小さな廃墟の前。
+      先に置くと屋上の枠が足りなくなり、後に置くと**大きいので必ず場所が無くなる**(実際に0棟になった)。
+    ⚠**種類は順ぐりに出す**=同じ物ばかり並ぶと「地形の模様」に見える。
+    ⚠**空き地の縁(`bnsOpenW`)+建物の外接半径**から置く=①②と同じ理由(自分の判定で消える)。 */
+ for(let li=0;li<LANES.length;li++){
+  const len=LANES[li].len;
+  let nk=0;
+  /* 拠点寄り〜中ほどに3か所(⚠**湧く側の端には置かない**=群れの真ん中で降りることになる) */
+  for(const q of [.30,.48,.66]){
+   /* ⚠**種類の番号に `li*3` を使わない**=3で割り切れて全レーン同じ物になる(実際にそうなった) */
+   const ki=(li+nk)%ENT_K.length,K=ENT_K[ki],R=Math.max(K.L,K.W);
+   let done=0;
+   /* ⚠**前後・左右・奥行きにずらして探す**=1点だけ見て諦めると、混んでいる街路では1棟も建たない。
+      ⚠奥へ下げるのは最後(街路から遠いほど降りてから歩く距離が伸びる)。 */
+   for(let ri=0;ri<2&&!done;ri++)for(let k=0;k<5&&!done;k++)for(let sd=0;sd<2&&!done;sd++){
+    const d=len*q+(k?((k+1)>>1)*180*((k%2)?1:-1):0);
+    if(d<len*.12||d>len*.92)continue;
+    const u=d/len,p=pathPos(d,li),s9=sd?-1:1;
+    const off=bnsOpenW(u)+R+30+ri*180;
+    const bx=p[0]-Math.sin(p[2])*off*s9,by=p[1]+Math.cos(p[2])*off*s9;
+    if(bx<300||by<300||bx>MAPW-300||by>MAPH-300)continue;
+    if(!bnsFreeAt(bx,by,R))continue;
+    if(!bldClear(bx,by,R+40))continue;
+    /* ⚠**入口は街路側**=建物の中心から見て道のある方(`-s9`)に開ける */
+    entPush(bx,by,p[2],ki,-s9);nk++;done=1;
+   }
+  }
+ }
  /* ② 街路の両脇の廃墟。⚠**2026-08-02(7)に減らして小さくした**(ユーザー
     「建物はでっかい感じでたくさん立てるのではない」)=縁は基本**森**で、廃墟はたまに挟むだけ。 */
  for(let li=0;li<LANES.length;li++){
@@ -18885,6 +18975,7 @@ function bnsMap(){
     const off=bnsOpenW(u)+Math.max(L,W)+6;/* ⚠空き地の縁から置く(理由は①と同じ) */
     const bx=p[0]-Math.sin(p[2])*off*sg,by=p[1]+Math.cos(p[2])*off*sg;
     if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
+    if(!bldClear(bx,by,Math.max(L,W)+10,BENT))continue;/* ⚠入れる廃墟の前を塞がない */
     bldPush(bx,by,p[2]+(gate?0:rr2(-.16,.16)),L,W,rd,0);
    }
   }
@@ -18901,6 +18992,7 @@ function bnsMap(){
    const L=rr2(38,72),W=rr2(28,48);/* ⚠小さく(前は58〜140) */
    if(bx<80||by<80||bx>MAPW-80||by>MAPH-80)continue;
    if(!bnsFreeAt(bx,by,Math.max(L,W)))continue;
+   if(!bldClear(bx,by,Math.max(L,W)+20,BENT))continue;/* ⚠入れる廃墟に食い込ませない */
    bldPush(bx,by,ang+rr2(-.2,.2),L,W,rd,0);}
   /* 廃車は少しだけ(⚠**撒きすぎない**=2026-08-02の「瓦礫が多すぎる」と同じ話) */
   {const px=jx+rr2(-300,300),py=jy+rr2(-300,300);
@@ -19018,19 +19110,88 @@ function drawTerrIn(c,wx0,wy0,wx1,wy1){
   c.lineTo(q[4]+(q[4]-b.x)*e,q[5]+(q[5]-b.y)*e);c.lineTo(q[6]+(q[6]-b.x)*e,q[7]+(q[7]-b.y)*e);c.closePath();}
  c.fill();
  for(let i=0;i<BLD_W.length;i++){let any=0;c.fillStyle=BLD_W[i];c.beginPath();
-  for(const b of bv){if(b.c!==i)continue;put(b.q,0,0);any=1;}if(any)c.fill();}
+  for(const b of bv){if(b.c!==i||b.en)continue;put(b.q,0,0);any=1;}if(any)c.fill();}
  /* ⭐**廃墟は「壁だけ」にする**(2026-08-02(5))=中を暗い瓦礫で抜くと、
     塗り潰した箱ではなく**屋根の落ちた廃墟**に見える。⚠塗りは1回のまま。 */
  {let any=0;c.fillStyle='#5c5346';c.beginPath();
-  for(const b of bv){if(b.rf)continue;put(b.k,0,0);any=1;}if(any)c.fill();}
+  for(const b of bv){if(b.rf||b.en)continue;put(b.k,0,0);any=1;}if(any)c.fill();}
  /* ⭐**屋根の残った建物=タレット置き場**。⚠平らな屋上に見せる(明るい面+奥に一段の陰) */
  {let any=0;c.fillStyle='rgba(0,0,0,.30)';c.beginPath();
   for(const b of bv){if(!b.rf)continue;put(b.k,0,-4);any=1;}if(any)c.fill();}
  for(let i=0;i<BLD_R.length;i++){let any=0;c.fillStyle=BLD_R[i];c.beginPath();
   for(const b of bv){if(!b.rf||b.rc!==i)continue;put(b.k,0,-10);any=1;}if(any)c.fill();}
+ /* --- 🏚⭐**入れる廃墟**(⚠1棟ずつ描く=十数棟しかない。焼き込みなので重さは1回きり) --- */
+ for(const b of bv){if(!b.en)continue;try{drawEntBld(c,b);}catch(e){}}
  /* --- 🚗廃車など(⚠焼き込みに含める=毎フレーム描き直さない) --- */
  for(const p of BPROP){if(p.x<wx0||p.x>wx1||p.y<wy0||p.y>wy1)continue;
   try{drawProp(c,p);}catch(e){}}
+}
+/* 🏚⭐**入れる廃墟の絵**(2026-08-02(12))。⚠**焼き込みの中で1回だけ呼ばれる**(毎フレームではない)。
+   ⚠⚠**寄りは .26**=画面では建物の全長ですら40px程度しかない。**40px未満の意匠は消える**ので、
+     読ませたい物は「大きな塊+色」で描くこと(キャノピー・のこぎり屋根の帯・切妻の棟・シャッター)。
+   ⭐**局所座標に直してから描く**=`ds`(街路がどちら側か)を y の向きに畳んでしまうので、
+     どの向きの建物でも**+y が必ず街路側**になり、入口の場所を1通りだけ書けばよい。
+   ⚠**背の高さ(屋根)は世界座標で上へずらす**=回した座標でずらすと、向きによって影の出る側が変わる。 */
+function drawEntBld(c,b){
+ const K=ENT_K[b.ek]||ENT_K[0],L=b.L,W=b.W,s=b.ds;
+ const loc=(lift)=>{c.save();c.translate(b.x,b.y-(lift||0));c.rotate(b.a);c.scale(1,s);};
+ const ex=K.ex||0;
+ /* ① 入口の前の**踏み固めた土**(⚠一番下に敷く)=「ここから人が出入りしていた」の合図 */
+ loc(0);
+ c.fillStyle='#9a8f76';c.fillRect(ex-58,W-8,116,74);
+ c.fillStyle='rgba(0,0,0,.10)';c.fillRect(ex-58,W+50,116,24);
+ c.restore();
+ /* ② 壁(⚠**まわりの廃墟より濃い色**にする=大きさだけでなく色でも「別の建物」に見せる) */
+ loc(0);
+ c.fillStyle=shade(BLD_W[b.c],.86);
+ /* ⛽だけは売店が端に寄る(残りはキャノピーの下=屋根しか無い) */
+ if(b.ek===0)c.fillRect(-L,-W,L*.72,W*1.62);
+ else c.fillRect(-L,-W,L*2,W*2);
+ c.restore();
+ if(b.ek===0){
+  /* ⛽ガソリンスタンド=**端の売店+張り出したキャノピー**。
+     ⚠⚠**入口をキャノピーの下に置かない**=真上から見た絵なので屋根に隠れて消える(1回そう描いた)。
+     ⚠給油機もキャノピーの前(街路側)に出す。 */
+  loc(0);
+  c.fillStyle='#241f19';c.fillRect(ex-40,W*.62-34,80,34);/* 売店の入口(⚠大きく=寄りが .26 なので) */
+  c.fillStyle='#c8bda4';c.fillRect(ex-40,W*.62-2,80,9);/* 敷居(明るく=入口が沈まない) */
+  c.fillStyle='#3a352c';c.fillRect(-L*.04,W*.60,38,48);c.fillRect(L*.56,W*.60,38,48);/* 給油機 */
+  c.fillStyle='#6a6256';/* 柱 */
+  c.fillRect(-L*.20,-W*.50,24,24);c.fillRect(L*.94-24,-W*.50,24,24);
+  c.fillRect(-L*.20,W*.44,24,24);c.fillRect(L*.94-24,W*.44,24,24);
+  c.restore();
+  loc(12);
+  c.fillStyle=K.rf;c.fillRect(-L*.22,-W*.56,L*1.18,W*1.14);
+  c.fillStyle=K.rf2;c.fillRect(-L*.22+14,-W*.56+14,L*1.18-28,W*1.14-28);
+  /* ⚠**街路側の縁に赤い帯**=ガソリンスタンドの看板の色。倉庫との見分けはここで付く */
+  c.fillStyle='#a8402e';c.fillRect(-L*.22,W*.58-18,L*1.18,18);
+  c.restore();
+ }else if(b.ek===1){
+  /* 🏭倉庫=**のこぎり屋根**(帯3本)+大きなシャッター */
+  loc(0);
+  c.fillStyle='#241f19';c.fillRect(-L*.46,W-46,L*.92,46);/* シャッター(=入口。⚠大きく) */
+  c.fillStyle='#b9b0a0';c.fillRect(-L*.46,W-46,L*.92,16);
+  c.fillStyle='#c8bda4';c.fillRect(-L*.46,W-4,L*.92,10);/* 敷居 */
+  c.restore();
+  loc(12);
+  c.fillStyle=K.rf;c.fillRect(-L*.96,-W*.94,L*1.92,W*1.62);
+  c.fillStyle=K.rf2;
+  for(let i=0;i<3;i++)c.fillRect(-L*.96,-W*.94+W*.30+i*W*.52,L*1.92,W*.20);
+  c.restore();
+ }else{
+  /* 🏠民家=**切妻屋根**(棟が1本通る)+ポーチ+煙突 */
+  loc(0);
+  c.fillStyle='#8d8471';c.fillRect(-46,W-6,92,32);/* ポーチの床 */
+  c.fillStyle='#4a443a';c.fillRect(-46,W+14,16,16);c.fillRect(30,W+14,16,16);/* ポーチの柱 */
+  c.fillStyle='#241f19';c.fillRect(-24,W-32,48,32);/* 玄関(⚠大きく) */
+  c.fillStyle='#c8bda4';c.fillRect(-24,W-2,48,8);
+  c.restore();
+  loc(12);
+  c.fillStyle=K.rf;c.fillRect(-L*.98,-W*.98,L*1.96,W*1.96);
+  c.fillStyle=K.rf2;c.fillRect(-L*.98,-11,L*1.96,22);/* 棟 */
+  c.fillStyle='#5a5044';c.fillRect(-L*.62,-W*.62,30,30);/* 煙突 */
+  c.restore();
+ }
 }
 /* 道の中心線までの距離(一番近いレーン)。⚠廃墟を道の上に置かないため */
 function bnsLaneD(x,y){

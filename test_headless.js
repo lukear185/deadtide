@@ -2664,6 +2664,32 @@ function checkRice(){
    if(!buildTower(m5,si9,0)){console.log('FAIL: 屋上にタレットを建てられない');process.exit(1);}
    if(!m5.towers[si9]){console.log('FAIL: 建てたのに屋上に乗っていない');process.exit(1);}
    m5.towers[si9]=null;}
+  /* ⑪ 🏚⭐**入れる廃墟**(2026-08-02(12))。見るのは5つ:
+     ①数がある ②通路の中に立っていない ③タレット置き場を兼ねていない(=枠に化けていない)
+     ④入口の前に立つ点が建物の外で、街路の側を向いている ⑤棟どうしが重なっていない */
+  {if(BENT.length<8){console.log('FAIL: 入れる廃墟が少なすぎる '+BENT.length+'棟');process.exit(1);}
+   const kn={};for(const b of BENT)kn[b.ek]=(kn[b.ek]||0)+1;
+   if(Object.keys(kn).length<ENT_K.length){
+    console.log('FAIL: 入れる廃墟の種類が偏っている '+JSON.stringify(kn));process.exit(1);}
+   for(const b of BENT){
+    if(!b.en||b.rf){console.log('FAIL: 入れる廃墟がタレット置き場を兼ねている');process.exit(1);}
+    if(!bnsFreeAt(b.x,b.y,0)){console.log('FAIL: 入れる廃墟が通路の中に立っている');process.exit(1);}
+    for(let i=0;i<ECO_BASE;i++){const s=SLOTS[i];if(!s||s[0]<-9000)continue;
+     if(Math.abs(s[0]-b.x)<2&&Math.abs(s[1]-b.y)<2){
+      console.log('FAIL: 入れる廃墟が建設マスになっている');process.exit(1);}}
+    /* ⚠**入口の前の点は建物の外**=壁の上だと近づいたかの判定に使えない */
+    if(dist(b.dx,b.dy,b.x,b.y)<=b.W){console.log('FAIL: 入口の前の点が建物の中');process.exit(1);}
+    /* ⚠**街路の側を向いていること**=裏を向いていたら「入れる」が読めない */
+    if(!(bnsLaneD(b.dx,b.dy)<bnsLaneD(b.x,b.y))){
+     console.log('FAIL: 入れる廃墟の入口が街路と反対を向いている');process.exit(1);}
+    try{drawEntBld(ctx,b);}catch(e){
+     console.log('FAIL: 入れる廃墟の描画で例外 '+e.message);process.exit(1);}}
+   for(let i=0;i<BENT.length;i++)for(let j=i+1;j<BENT.length;j++)
+    if(dist(BENT[i].x,BENT[i].y,BENT[j].x,BENT[j].y)<220){
+     console.log('FAIL: 入れる廃墟どうしが重なっている');process.exit(1);}
+   if(!bnsEntNear(BENT[0].dx,BENT[0].dy,300)){
+    console.log('FAIL: bnsEntNear が一番近い廃墟を返さない');process.exit(1);}
+   console.log('🏚入れる廃墟: '+BENT.length+'棟 '+ENT_K.map(k=>k.n+'x'+(kn[ENT_K.indexOf(k)]||0)).join('/')+' OK');}
   /* ⭐**森はバスも通れない**(2026-08-02(8))。見るのは3つ:
      ①関所でもバスが通れる幅がある ②森の中に置いたバスが街路へ押し戻される
      ③街路の真ん中は押し戻されない(=見えない壁が通路の中に無い) */
