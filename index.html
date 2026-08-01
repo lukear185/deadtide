@@ -2926,9 +2926,19 @@ const TW_TRAIT={
 /* 一覧に出す絵文字。⚠タワー20枚・兵科32枚が全部同じ絵だと見分けられないので型で変える */
 const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡'};
 const UN_IC={melee:'⚔',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚'};
-const TW_DMG_STEP=.05;/* タワーの威力(1段あたり)=20段で+100%。⚠工房(eco)は威力を使わないので産出だけ */
+const TW_DMG_STEP=.05;/* タワーの威力(1段あたりの素の刻み)。⚠伸びは `lineAcc` を通す(後半ほど大きい) */
 /* 兵科は近接だけHP寄り、それ以外は攻撃寄り(型ごと強化の時の配分をそのまま引き継ぐ) */
-const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 20段で 近接+60%/+60% それ以外+80%/+40% */
+const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 1段あたりの素の刻み */
+/* ⭐⭐⭐**中盤〜後半ほど1段の伸びが大きくなる**(2026-08-02(57)ユーザー
+   「強化タブの必要経験Pと、ステータスの伸びを中盤〜後半にかけて増やして」)。
+   ⚠⚠**それまでは「刻み×段数」の一直線**だったので、**19段目も1段目も同じ伸び**=
+     上の段を積む理由が「値段が高くなるだけ」になっていた。
+   ⭐**k段目の刻みを (1+`LINE_ACC`×(k-1)) 倍**にする=1段目は今までどおり・20段目は約2.1倍。
+     📐合計は **Lv + LINE_ACC×Lv×(Lv-1)/2** 倍(20段で 20→31.4=**1.57倍**)。
+   ⚠**1段目を据え置く**のが肝=序盤の手触りは1つも変えずに、後半だけ伸びる。
+   ⚠⚠**使う所は必ずこの関数を通す**(素の `step*Lv` を書かない)=片方だけ直すと表と実物が食い違う。 */
+const LINE_ACC=.06;
+const lineAcc=(step,lv)=>step*(lv+LINE_ACC*lv*(lv-1)/2);
 /* 価格。⚠**1段が安く・段数が多い**形にしてある(x1.5だと20段目が天文学的になるので x1.20)。
    ⭐**2026-07-27に1段ごとの伸び方を x1.13 → x1.20 にした**(ユーザー指示
      「タワーと部隊タブの必要研究ptが少なすぎる。レベルが上がるごとにもっと必要数を増やして」)。
@@ -2938,8 +2948,11 @@ const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 20段で 近接+60
    1種フル= タワー約15,123🧬 / 兵科約11,014🧬(1回の出撃で入るのが約2,500〜6,600🧬)。
    ⚠**全部取ると約50万🧬**=**全部埋める前提の数字ではない**。何を伸ばすか選ぶこと。
    ⚠⚠**値段を変えたら test_headless.js の checkLabSteps() の上限も一緒に直す**(片方だけだと落ちる)。 */
-const LAB_TW=lv=>Math.round(48*Math.pow(1.2335,lv));/* 48/59/73/90…2,588 = 1種フル約13,465 */
-const LAB_UN=lv=>Math.round(35*Math.pow(1.2334,lv));/* 35/43/53/66…1,885 = 1種フル約9,809 */
+/* ⭐**2026-08-02(57)に傾きを x1.2335 → x1.28 へ立てた**(ユーザー「必要経験Pを中盤〜後半にかけて増やして」)。
+   ⚠**1段目の値段は据え置き**(48/35)=序盤は今までどおり気軽に踏める。上げたのは**傾きだけ**。
+   📌20段目 2,588→**5,330** / 1種フル 13,465→**23,700**(タワー)・9,809→**17,300**(兵科)。 */
+const LAB_TW=lv=>Math.round(48*Math.pow(1.28,lv));/* 48/61/79/101…5,330 = 1種フル約23,700 */
+const LAB_UN=lv=>Math.round(35*Math.pow(1.28,lv));/* 35/45/57/74…3,886 = 1種フル約17,300 */
 /* ⭐🎯砲撃の威力(2026-07-26ユーザー指示)。今までは砲撃だけ**研究所で一切強化できなかった** */
 const STK_MAX=20,STK_STEP=.04;/* 20段・+4%/段 = 最大×1.80(タワー/兵科と同じ刻みに揃えた) */
 /* ⚠2026-07-27に x1.13→**x1.15**(ユーザー指示「砲撃の威力の必要Pは**少しだけ**増やして」)。
@@ -15345,8 +15358,8 @@ function deployUnit(C,ui){
  C.scrap-=dc;C.ucd[ui]=U.cd*metaCd()*(C.supCd||1);C.dep++;/* 🏥野戦病院ぶんCD短縮 */
  /* ⭐研究所の個別強化(その兵科1種ぶん)。⚠部隊レベル(全兵科+10%/Lv)とは別枠で掛け算 */
  const UL=unlv(unKey(U)),US=UN_STEP(U.type);
- const lvM=(1+.1*(C.uLv||0))*(1+US.a*UL);/* 部隊レベル+訓練 */
- const hpM=(1+.1*(C.uLv||0))*(1+US.h*UL);
+ const lvM=(1+.1*(C.uLv||0))*(1+lineAcc(US.a,UL));/* 部隊レベル+訓練(⚠後半ほど伸びる) */
+ const hpM=(1+.1*(C.uLv||0))*(1+lineAcc(US.h,UL));
  const d0=G&&G.coop?branchD(C.gi||0)-rnd(0,20):PLEN-70-rnd(0,26);
  const hp0=Math.round(U.hp*hpM);
  F.units.push({eid:EID++,ui,own:C.gi||0,am:lvM,d:d0,hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
@@ -15688,7 +15701,7 @@ function heroUlt(C,wave){
   if(bi>=0)for(let k=0;k<4;k++){
    if(unitsWt(F.units,G&&G.coop?(C.gi||0):null)+uWt(bi)>cap9)break;
    const UU=UNITS[bi],UL=unlv(unKey(UU)),US=UN_STEP(UU.type);
-   const lvM=(1+.1*(C.uLv||0))*(1+US.a*UL),hp0=Math.round(UU.hp*(1+.1*(C.uLv||0))*(1+US.h*UL));
+   const lvM=(1+.1*(C.uLv||0))*(1+lineAcc(US.a,UL)),hp0=Math.round(UU.hp*(1+.1*(C.uLv||0))*(1+lineAcc(US.h,UL)));
    F.units.push({eid:EID++,ui:bi,own:C.gi||0,am:lvM,d:clamp(u.d-8-k*15,60,PLEN-40),
     hp:hp0,mhp:hp0,cd:rnd(0,.3),hitT:0,ph:rnd(0,9),px:0,py:0});
    n++;}
@@ -16288,7 +16301,7 @@ function campStep(C,dt,wave){
    while(tw.dr.length<n9)tw.dr.push({x:sx+rnd(-24,24),y:sy+rnd(-24,24),cd:rnd(0,T.rate),am:MAG,rl:0});
    if(tw.dr.length>n9)tw.dr.length=n9;
    const TLd=twlv(twKey(T));
-   const dmd=T.dmg*m*aB*(1+TW_DMG_STEP*TLd);
+   const dmd=T.dmg*m*aB*(1+lineAcc(TW_DMG_STEP,TLd));
    const prc9=T.pierce?1:0,tt9=twTier(tw),trC9=TR_COL[tt9],hitC9=HIT_COL[tt9];
    const taken=[];
    for(let di=0;di<tw.dr.length;di++){const d=tw.dr[di];
@@ -16345,7 +16358,7 @@ function campStep(C,dt,wave){
    if(!tg){tw.hz=null;tw.hs=0;tw.chg=0;tw.fireT=0;continue;}
    tw.fireT=.12;
    const TLc=twlv(twKey(T)),TRTc=TW_TRAIT[T.type];
-   const dps=(T.dmg/T.rate)*m*aB*(1+TW_DMG_STEP*TLc);
+   const dps=(T.dmg/T.rate)*m*aB*(1+lineAcc(TW_DMG_STEP,TLc));
    /* ⚠**ダメージ数字は毎フレーム出さない**(継続攻撃は1フレーム1回当たるので、そのままだと
         数字と血が画面を埋めて「重い」が直らない)。0.35秒ぶんためて1つにまとめて出す。 */
    const acc=(z0,dd)=>{tw.dacc=(tw.dacc||0)+dd;tw.dnT=(tw.dnT||0)-dt;
@@ -16389,7 +16402,7 @@ function campStep(C,dt,wave){
      「スナイパータレットはオーラ纏ってる敵とボスに特攻にする」)。
      ⚠狙いは1体なので、ここで tg を見て掛けてしまってよい(貫通しても線上は同じ倍率になる)。 */
   const vsB=(T.vsB&&tg&&(tg.boss||tg.aura))?T.vsB:1;
-  const dm=T.dmg*m*aB*(1+TW_DMG_STEP*TL)*vsB;/* 威力+15%/段(型ごとだった頃は+10%) */
+  const dm=T.dmg*m*aB*(1+lineAcc(TW_DMG_STEP,TL))*vsB;/* ⚠伸びは後半ほど大きい(lineAcc) */
   /* 銃口の火花・煙・薬莢 */
   const [mzx,mzy]=twMzPt(T,sx,sy,tw.ang);/* ⭐ここから撃つ(塔ごとに違う) */
   if(FXLV>0&&T.type!=='eco'){const mx2=mzx,my2=mzy;
@@ -19491,8 +19504,14 @@ const BNS_GEM=50;                 /* 初回クリアの💎(⚠2回目からは�
 /* 🚌⭐⭐**2回目以降の🧬**(2026-08-02(52)ユーザー「初回報酬は豪華でいいけど2回目以降は報酬少な目」)。
    ⚠⚠**倒した数に比例させない**=この面は負けが無く75秒で終わるので、比例させると必ず稼ぎ場になる
      (実際に1走2400〜2700🧬になっていた)。⭐**⚡スコアを割って、上限で頭打ちにする**。
-   📌1走で **20〜120🧬**。⚠**上限がこの仕組みの本体**なので、増やすならまず `_MAX` を疑う。 */
-const BNS_RPT_D=40,BNS_RPT_MIN=20,BNS_RPT_MAX=120;
+   ⚠⚠**2026-08-02(56)にユーザー決定で 120→5000 へ上げた**(「5000。これぐらいないと誰もやらん」)=
+     ⭐**1セッションは約3分**(ミニゲーム3回+乗り込み+強化+運転75秒)なので、120では **40🧬/分** で
+     本編(古参クリア=10分1500🧬=150🧬/分)より**4倍近く割が悪かった**=遊ぶだけ損だった。
+   ⭐**割り算を1にした**=**⚡スコアがそのまま🧬**になる(画面の数字が2つとも同じで、繋がりが読める)。
+   📌1走で **100〜5000🧬**。⚠**研究所を全部開けるのに 57,040🧬**なので、**12〜20走ぶん**の見当。
+   ⚠⚠**この面が研究ptの主な稼ぎ場になる**(本編の10倍/分)=**それを承知の上でのユーザー決定**。
+     ⭐増やしすぎ/少なすぎは `_MAX` の1か所で動かせる。 */
+const BNS_RPT_D=1,BNS_RPT_MIN=100,BNS_RPT_MAX=5000;
 /* 🧬⭐**走っている間に貯まる研究pt**(2026-08-02(53))=⚡スコアから出して**上限で止める**。
    ⚠⚠**awardMeta と同じ式にすること**=画面の数字と実際に入る量が食い違うと、一番不信になる。
    ⚠**下限(`_MIN`)はここでは掛けない**=走り出した瞬間に20が出ていると「何もしていないのに増えた」になる。 */
@@ -19503,7 +19522,9 @@ function bnsRptPts(){
  let sc=0;try{sc=(G&&G.players[0]&&G.players[0].bus&&G.players[0].bus.score)||0;}catch(e){}
  return clamp(Math.round(sc/BNS_RPT_D),BNS_RPT_MIN,BNS_RPT_MAX);
 }
-const BNS_PTS=[600,1100];         /* 初回クリアの🧬(ステージごと) */
+/* ⚠**1走の上限(5000)に見合う額にする**(2026-08-02(56))=600のままだと
+   **初回の「豪華な報酬」が普通の1走より軽くなる**(嬉しくない)。 */
+const BNS_PTS=[3000,5000];        /* 初回クリアの🧬(ステージごと。⚠1走ぶんに上乗せされる) */
 /* ⭐**開拓便のマップは広い**(2026-08-02ユーザーの参考画像)=画面の2倍角。🎥カメラで持ち歩く。
    ⚠**広げても寄り具合は変わらない**(倍率の基準は MW のまま)。 */
 /* ⚠**2026-08-02(6)に広げた**(ユーザー「画面外からゾンビが来る感じにして」)=

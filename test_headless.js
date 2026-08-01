@@ -676,7 +676,9 @@ function checkLabSteps(){
     ⚠上限は2026-07-27に4,000→9,000→**20,000**へ上げた=ユーザー判断「研究所の必要ptが少なすぎる」で
       ①全タブを1.5倍→さらに1.8倍(素の2.7倍) ②タワー/部隊は1段ごとの伸びを x1.13→x1.20
       と2回上げたため。**安くしたい時はここも一緒に下げること** */
- if(tw1>20000||un1>20000){console.log('FAIL: 1本を伸ばし切るのが高すぎる(タワー'+tw1+'/兵科'+un1+'🧬)');process.exit(1);}
+ /* ⚠2026-08-02(57)に 20,000→**28,000** へ上げた=ユーザー指示で傾きを x1.2335→x1.28 にしたため。
+    ⚠**安くしたい時はここも一緒に下げること**(片方だけだと落ちる)。 */
+ if(tw1>28000||un1>28000){console.log('FAIL: 1本を伸ばし切るのが高すぎる(タワー'+tw1+'/兵科'+un1+'🧬)');process.exit(1);}
  if(tw1<800||un1<800){console.log('FAIL: 1本を伸ばし切るのが安すぎる(タワー'+tw1+'/兵科'+un1+'🧬)=すぐ終わる');process.exit(1);}
  /* 全部取りは手が届かないこと=何を伸ばすか選ばせるための本丸 */
  const seenT={};let nT=0;
@@ -685,7 +687,9 @@ function checkLabSteps(){
  const all=tw1*nT+un1*U_N+st1;
  if(all<60000){console.log('FAIL: 全部取りが安すぎる('+all+'🧬)=結局すべてマックスになる');process.exit(1);}
  /* 1段の伸びが細かいこと(段数だけ増やして1段を据え置くと、伸び切った時に壊れる) */
- if(TW_DMG_STEP*LINE_MAX>1.5){console.log('FAIL: 伸び切ったタワーが強すぎる(x'+(1+TW_DMG_STEP*LINE_MAX).toFixed(2)+')');process.exit(1);}
+ /* ⚠⚠**伸びは lineAcc を通す**(2026-08-02(57)に後半ほど大きくした)=素の刻み×段数では測れない。
+    ⚠上限は 1.5→**2.0** へ上げた(20段で x2.57)。⭐ここを触ったら test_balance も必ず流す。 */
+ if(lineAcc(TW_DMG_STEP,LINE_MAX)>2.0){console.log('FAIL: 伸び切ったタワーが強すぎる(x'+(1+lineAcc(TW_DMG_STEP,LINE_MAX)).toFixed(2)+')');process.exit(1);}
  for(const ty in TW_TRAIT){const v=TW_TRAIT[ty].v*LINE_MAX;
   if(TW_TRAIT[ty].k!=='chain'&&v>2){console.log('FAIL: 伸び切った持ち味が強すぎる '+ty+' +'+Math.round(v*100)+'%');process.exit(1);}}
  console.log('研究所の刻み: '+LINE_MAX+'段 / 1本フル タワー'+tw1+'・兵科'+un1+'🧬 / 全部取り'+all+'🧬(=選ばせる) OK');
@@ -814,7 +818,8 @@ function checkPerUp(){
  if(!(base>0)){console.log('FAIL: ライフル台が当たっていない');process.exit(1);}
  META.tw={rifle:LINE_MAX};
  const up=hit1('rifle');
- const want=1+TW_DMG_STEP*LINE_MAX;
+ /* ⚠**伸びは lineAcc を通す**(2026-08-02(57)に後半ほど大きくした)=素の刻み×段数では合わない */
+ const want=1+lineAcc(TW_DMG_STEP,LINE_MAX);
  if(Math.abs(up/base-want)>.03){console.log('FAIL: タワー個別強化Lv'+LINE_MAX+'で威力が'+want.toFixed(2)+'倍にならない ('+(up/base).toFixed(2)+'倍)');process.exit(1);}
  /* 別のタワー(ショットガン台)には乗らない=個別であること */
  META.tw={};
@@ -907,8 +912,13 @@ function checkPerUp(){
   me.units.length=0;me.ucd=UNITS.map(()=>0);deployUnit(me,ui);
   const u1=me.units[me.units.length-1];
   const st=UN_STEP(U.type);
-  if(Math.abs(u1.am/a0-(1+st.a*LINE_MAX))>.03){console.log('FAIL: 兵科強化で攻撃が上がらない '+(u1.am/a0).toFixed(2)+'倍');process.exit(1);}
-  if(Math.abs(u1.mhp/h0-(1+st.h*LINE_MAX))>.03){console.log('FAIL: 兵科強化でHPが上がらない '+(u1.mhp/h0).toFixed(2)+'倍');process.exit(1);}
+  /* ⚠**伸びは lineAcc を通す**(2026-08-02(57)に後半ほど大きくした)=素の刻み×段数では合わない */
+  if(Math.abs(u1.am/a0-(1+lineAcc(st.a,LINE_MAX)))>.03){console.log('FAIL: 兵科強化で攻撃が上がらない '+(u1.am/a0).toFixed(2)+'倍');process.exit(1);}
+  if(Math.abs(u1.mhp/h0-(1+lineAcc(st.h,LINE_MAX)))>.03){console.log('FAIL: 兵科強化でHPが上がらない '+(u1.mhp/h0).toFixed(2)+'倍');process.exit(1);}
+  /* ⭐⭐**後半ほど1段の伸びが大きいこと**(2026-08-02(57)ユーザー指示の本体)=
+     **上の1段(19→20)が下の1段(0→1)より必ず大きい**。⚠これが崩れたら一直線に戻っている。 */
+  {const lo=lineAcc(st.a,1)-lineAcc(st.a,0),hi=lineAcc(st.a,LINE_MAX)-lineAcc(st.a,LINE_MAX-1);
+   if(!(hi>lo*1.8)){console.log('FAIL: 後半の1段が大きくなっていない 下'+lo.toFixed(4)+'/上'+hi.toFixed(4));process.exit(1);}}
   /* 派生キャラ(進化)が元の兵科の強化を継承するか */
   const vb=(typeof UVAR==='object'&&UVAR[U.id])?UVAR[U.id][0]:null;
   if(vb){const V=mkVar(U,vb);
@@ -988,7 +998,8 @@ function checkPerUp(){
    me2.scrap=999999;me2.ucd=UNITS.map(()=>0);me2.team=UNITS.map((u,i)=>i);me2.uUn=U_N;me2.units.length=0;
    deployUnit(me2,0);
    const uu=me2.units[me2.units.length-1];
-   const st2=UN_STEP(UNITS[0].type),wantA=1+st2.a*LINE_MAX;
+   /* ⚠**伸びは lineAcc を通す**(2026-08-02(57)) */
+   const st2=UN_STEP(UNITS[0].type),wantA=1+lineAcc(st2.a,LINE_MAX);
    if(Math.abs((uu.am||1)-wantA)>.03){
     console.log('FAIL: 派生キャラに元の兵科の強化が乗っていない 期待x'+wantA.toFixed(2)+' 実際x'+(uu.am||1).toFixed(2));process.exit(1);}
    console.log('派生キャラ: 「'+UNITS[0].n+'」を装備しても研究所は素のid('+uns.length+'件すべて)で登録し、強化x'+(uu.am||1).toFixed(2)+'が乗る OK');
@@ -2591,7 +2602,9 @@ function checkBonus(){
    G.tide.bnsTpl=null;
    campStep(me,.05,1);
    if(!me.waveDone){console.log('FAIL: 到着しても制圧にならない(試合が終わらない)');process.exit(1);}}
-  /* ⑤報酬は初回だけ */
+  /* ⑤報酬は初回だけ。⚠**初回と2回目は同じスコアで比べる**(2026-08-02(56))=
+     🧬は⚡スコア割りなので、スコアが違うと「初回の方が少ない」が普通に起きて意味の無い検査になる。 */
+  if(me.bus)me.bus.score=999999;
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   const gm1=META.gem,pt1=META.pts;
   if(gm1!==BNS_GEM){console.log('FAIL: 初回クリアの💎が'+gm1);process.exit(1);}
@@ -2610,6 +2623,7 @@ function checkBonus(){
   {const d2=META.pts-pt2;
    if(d2>BNS_RPT_MAX){console.log('FAIL: 2回目の🧬が上限を超える +'+d2+'(上限'+BNS_RPT_MAX+')');process.exit(1);}
    if(d2<BNS_RPT_MIN){console.log('FAIL: 2回目の🧬が少なすぎる +'+d2);process.exit(1);}
+   /* ⚠**初回は「1走ぶん+初回クリア報酬」**なので、必ず2回目より多いこと */
    if(d2>=pt1){console.log('FAIL: 2回目の🧬が初回と同じかそれ以上 +'+d2+' vs 初回'+pt1);process.exit(1);}}
   backTitle();
   /* ⚠**何度でも入れること**(2026-08-02(52)に1日1回をやめた) */
