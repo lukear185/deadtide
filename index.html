@@ -18201,14 +18201,18 @@ function updHUD(){const m=meV();if(!m)return;
  const zc=MODE==='client'?(CC?CC.zombies.length:0):(G?G.players[G.myIdx].zombies.length:0);
  const pr=MODE==='client'?(CS.pr||0):(G?G.tide.pool.length:0);
  const lead=MODE==='client'?0:(G&&G.tide&&inW?G.tide.lead||0:0);
- /* ⭐🚌**道中は「波」ではなく「あと何m」**(2026-08-02(24))=この面の目的は走り抜けること。
-    ⚠**距離はマップの縦の残り**から出す(道はほぼ縦なので y だけで足りる)。 */
+ /* ⏱⭐🚌**道中は「波」でも「あと何m」でもなく「残り時間とスコア」**(2026-08-02(38)ユーザー決定)。
+    ⚠⚠**あと○m は捨てた**=道は走り切れない長さになったので、残りmを出すと
+      **一生終わらない数字**を見せることになる(締め切りは時間の方)。
+    ⚠**札の幅は決め打ち(154px)**なので、出すのは**残り時間とスコアの2つだけ**。 */
  if(m.bus){
-  const rest=Math.max(0,Math.round((m.bus.y-BNS_GOALY)/10));
-  /* ⚠**関所の予告は HUD に足さない**(2026-08-02(37)に撮って戻した)=この札は幅が決め打ち(154px)なので、
-     項目を足すと**実機で溢れる**。⭐予告は画面の中に一度だけ出す(`drawBnsRush` の⑥)。 */
-  $('wavebadge').textContent=m.bus.arr?'🏁 到着!':('🚌 あと '+rest+'m'+(inW&&zc?'  🧟'+zc:''));
-  const p9=clamp(1-(m.bus.y-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1);
+  const lf=Math.max(0,m.bus.left==null?BNS_TIME:m.bus.left);
+  const mm=Math.floor(lf/60),ss=Math.floor(lf%60);
+  const sc=Math.round(m.bus.score||0);
+  $('wavebadge').textContent=m.bus.arr?'🏁 到着!  ⚡'+fmt(sc)
+   :('⏱ '+mm+':'+String(ss).padStart(2,'0')+'   ⚡'+fmt(sc));
+  /* ⚠**バーは残り時間**(減っていく)=「あとどれだけ稼げるか」が体で分かるように */
+  const p9=clamp(lf/BNS_TIME,0,1);
   const wp=$('wprog').querySelector('i');if(wp&&wp.style)wp.style.width=Math.round(p9*100)+'%';
  }else{
  $('wavebadge').textContent='WAVE '+Math.max(1,wv)+((G&&G.pve)||COOP?'/'+(G&&G.pve?curW():STAGE_W):'')+(inW&&(wv===10||wv===15||wv===20)?' 💀':'')
@@ -18364,7 +18368,7 @@ const UI={
 function bnsBadge(k,u){
  const R=G&&G.bnsRec;if(!R)return '';
  if(R.nb[k])return ' 🎉自己ベスト!';
- const b=k==='t'?bnsSec(R.bt):(k==='k'?(R.bk+u):('×'+R.bc));
+ const b=k==='s'?fmt(R.bs):(k==='k'?(R.bk+u):('×'+R.bc));
  return ' (best '+b+')';
 }
 function showResultA(){
@@ -18382,10 +18386,12 @@ function showResultA(){
        ⚠バスの居る面(開拓便)でしか出さない */
     /* ⭐**自己ベストを併記する**(2026-08-02(37))=更新した時だけ 🎉 を付ける。
        ⚠**更新していない時は前のベストを見せる**=次に走る目標がその場で分かる。 */
-    ...(me.bus?[['🚌 轢き殺した数',(me.bus.kill||0)+'体'+bnsBadge('k','体')],
+    /* ⚡**スコアが主役**(2026-08-02(38))=時間制なので、勝ち負けではなく**どれだけ効率よく稼いだか**。 */
+    ...(me.bus?[['⚡ スコア',fmt(Math.round(me.bus.score||0))+bnsBadge('s','')],
+      ['🚌 轢き殺した数',(me.bus.kill||0)+'体'+bnsBadge('k','体')],
       ['🔥 最高連続','×'+(me.bus.cmbMx||0)+bnsBadge('c','')],
       ['🔥 ニトロ',(me.bus.nitN||0)+'回'],
-      ...((G.bnsRec)?[['🏁 タイム',bnsSec(G.bnsRec.t)+bnsBadge('t','')]]:[])]:[]),
+      ['🛣 進んだ距離',Math.round((BNS_STARTY-me.bus.y)/10)+'m']]:[]),
     ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+((me.team||[]).length)],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv],['砲撃強化','Lv'+(me.stkLv||0)]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+PVP_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
@@ -19349,7 +19355,12 @@ const BNS_PTS=[600,1100];         /* 初回クリアの🧬(ステージごと) 
      守る物はバスだけ=遊びが1本に絞れる。⚠書き戻さないこと。
    ⭐**縦長のマップを下から上へ走り抜ける**=上の端が次の拠点(到着=クリア)。 */
 /* ⚠**速さを2.7倍にしたぶん道も伸ばす**(2026-08-02(28))=でないと十数秒で着いてしまう */
-const BNS_W=3400,BNS_H=42000;
+/* ⭐⭐⭐**道は「走り切れない長さ」にする**(2026-08-02(38)ユーザー決定=時間制へ作り替え)。
+   ⚠⚠**到着でクリア**だった頃は42000(34秒で着く長さ)だった。**締め切りは時間の方**になったので、
+     道は**時間内に絶対に端まで行けない長さ**にする(端が見えると「あと少し」が嘘になる)。
+   📐最高速1250×制限時間なら理屈の上限は約94000。実際は障害物・しがみつき・群れで7割前後まで落ちる。
+   ⚠**長くすると木も建物も障害物も比例して増える**(生成の時間とメモリ)=伸ばす時は必ず実測すること。 */
+const BNS_W=3400,BNS_H=118000;
 const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 道の中心線(x)とマップの中心 */
 const BNS_GOALY=900;         /* 到着線(マップの上) */
 const BNS_STARTY=BNS_H-1200; /* 出発点(マップの下) */
@@ -19977,21 +19988,20 @@ function bnsEnter(){
      轢いた数も最高連続もリザルトに出るだけで消えていた=**2周目以降に走る理由がゼロ**だった。
    ⭐残すのは3つ=**タイム(短いほど良い) / 轢いた数 / 最高連続**。⚠ステージごとに持つ。
    ⚠**`META_RESET` は上げない**(鍵を足すだけ)。⚠**`metaResetAll` にも必ず書く**(でないと初期化しても残る)。 */
+/* ⚠**2026-08-02(38)に「タイム」をやめて「スコア」を主役にした**=時間制になり、
+   誰が走っても同じ秒数で終わるのでタイムは記録にならない。⭐残すのは **⚡スコア / 轢いた数 / 最高連続**。 */
 function bnsRecord(C){
  const B=C&&C.bus;if(!B||!C.isMe)return;
  if(!Array.isArray(META.brec))META.brec=[];
  const r=META.brec[STAGE]||(META.brec[STAGE]={});
- const t=Math.round((B.t||0)*10)/10,k=B.kill|0,c=B.cmbMx|0;
- const nb={t:0,k:0,c:0};
- if(!(r.t>0)||t<r.t){r.t=t;nb.t=1;}
+ const s=Math.round(B.score||0),k=B.kill|0,c=B.cmbMx|0;
+ const nb={s:0,k:0,c:0};
+ if(s>(r.s|0)){r.s=s;nb.s=1;}
  if(k>(r.k|0)){r.k=k;nb.k=1;}
  if(c>(r.c|0)){r.c=c;nb.c=1;}
- try{G.bnsRec={t:t,k:k,c:c,bt:r.t,bk:r.k,bc:r.c,nb:nb};}catch(e){}
+ try{G.bnsRec={s:s,k:k,c:c,bs:r.s|0,bk:r.k|0,bc:r.c|0,nb:nb};}catch(e){}
  saveMeta();
 }
-/* 秒を「1分23秒」の形に。⚠1分未満は小数1桁まで出す(タイムを詰める遊びなので) */
-function bnsSec(s){const m=Math.floor(s/60);
- return m?(m+'分'+String(Math.round(s%60)).padStart(2,'0')+'秒'):((Math.round(s*10)/10)+'秒');}
 /* 自己ベストの読み出し(タイトルの難易度ボタンにも出す)。⚠まだ走っていなければ null */
 function bnsBestOf(si){const a=META.brec;return (Array.isArray(a)&&a[si])?a[si]:null;}
 /* 初回クリアの報酬。⚠**2回目からは配らない**(何度でも入れる面で配ると回すだけ増える) */
@@ -20124,6 +20134,16 @@ function bnsRoadFit(x,y,cl){
 /* ⛓**関所の予告**(2026-08-02(37))=何m手前で出すか / 何秒出すか。
    ⚠**HUDの札には足さない**=あの札は幅が決め打ち(154px)なので、項目を足すと実機で溢れる。 */
 const BNS_GATE_W=1700,BNS_GATE_T=2.0;
+/* ⏱⭐⭐⭐**制限時間**(2026-08-02(38)ユーザー決定「時間制にしない? ゾンビを効率よくたくさん倒すのが目標」)。
+   ⚠⚠**到着でクリアだった形は捨てた**=道は走り切れない長さにして、**締め切りは時間**にする。
+   ⚠**負けは無い**は守る=時間切れは「失敗」ではなく**締め切り**(そこまでの成果で終わり)。
+   ⭐時間切れに**「次の拠点に着いた」の軽いイベント**を出す(ユーザー決定)=物語の役割は保つ。 */
+const BNS_TIME=75;
+/* ⭐⭐**スコア=Σ(1体 × 連なりの段の倍率)**(2026-08-02(38))。
+   ⚠⚠**ただの総キル数にしない**=濃い所を走れば誰でも同じ数になり、**上手い下手がほぼ出ない**。
+   ⭐**段を上げて切らさない**ことに値段を付けると、「濃い所をどう繋ぐか」が上手さになる。
+   ⚠段は `bnsCmbT`(5/18/40/80)。⚠倍率を上げすぎると1回の大連なりで全部決まる。 */
+const BNS_CMB_X=[1,1.25,1.6,2.1,3.0];
 const BNS_CMB_T=1.5; /* 連続轢殺が途切れるまでの秒数 */
 const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
 function bnsBusInit(C){
@@ -20136,7 +20156,9 @@ function bnsBusInit(C){
   /* 🧟しがみつき(0〜1)=倒しきれずに当たり続けた個体の数で溜まり、最高速を削る */
   grip:0,
   /* ⛓関所の予告(gateI=どの関所まで知らせたか / gateT=出している残り秒) */
-  gateI:-1,gateT:0};
+  gateI:-1,gateT:0,
+  /* ⏱残り時間 / ⚡スコア(=連なりの段の倍率で積む) */
+  left:BNS_TIME,score:0};
  BNIT_P=-1;BNIT_R=-1;/* ⚠ボタンの表示を必ず1回書き直させる(前の試合の値が残る) */
  bnsFxInit(C);
 }
@@ -20267,6 +20289,7 @@ function bnsBusStep(C,dt){
    if(C.isMe&&sfx[SFX_SMASH])sfx[SFX_SMASH]();}
   B.cmb=(B.cmb||0)+kil;B.cmbT=BNS_CMB_T;B.cmbP=1;B.kill=(B.kill||0)+kil;
   if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
+  bnsScore(B,kil);
   /* ⭐⭐**段が上がった瞬間だけ鳴らす+光らせる**(2026-08-02(3)ユーザー「音と演出がちゃっちい」)。
      ⚠**1体ごとに鳴らす音を派手にしてはいけない**=毎秒何十体なので必ず雑音になる。
        派手にしてよいのは**段が上がる瞬間**(1試合で数回)。NOTESの「まとまって起きる瞬間に置く」。 */
@@ -20354,7 +20377,12 @@ function bnsBusStep(C,dt){
   }}
  /* ⭐⭐**到着=クリア**(2026-08-02(24))。⚠**残っている敵と湧く予定を捨ててから**印を立てる
     =そうしないと「盤面が空になったら制圧」の判定が回らず、試合が終わらない。 */
- if(!B.arr&&B.y<=BNS_GOALY+260){
+ /* ⏱**締め切りを進める**(2026-08-02(38))。⚠**着いた後は止める**(リザルトを見ている間に減らさない) */
+ if(!B.arr)B.left=Math.max(0,(B.left==null?BNS_TIME:B.left)-dt);
+ /* ⭐⭐**時間切れ=締め切り**(ユーザー決定)。⚠**負けではない**=そこまでの成果で終わり、
+    「次の拠点に着いた」の軽いイベントを出す。⚠道の端に着く方も残してあるが、
+    道は走り切れない長さ(BNS_H)なので普通は起きない(念のための保険)。 */
+ if(!B.arr&&(B.left<=0||B.y<=BNS_GOALY+260)){
   B.arr=1;
   /* ⭐**記録は残っている敵を消す前に取る**(消した敵は轢いた数に入らないので順番はどちらでもよいが、
      B.t を止める前に取ること)。⚠自分の盤面だけ(`C.isMe`)。 */
@@ -20414,6 +20442,11 @@ const BTRK_GAP=26;                        /* 轍を1点置くごとに進む距�
 const bnsGz=()=>1/((CAM&&CAM.zm)||1);
 /* 連なりの段(0〜4)。⚠**数字ではなく段で見せる**=何連目で何が変わるかが分かる */
 const bnsCmbT=n=>n>=80?4:n>=40?3:n>=18?2:n>=5?1:0;
+/* ⚡⭐**スコアを積む**(2026-08-02(38))=**倒した数 × いまの段の倍率**。
+   ⚠**段を上げた「後」で積む**=上げた瞬間から新しい倍率が乗る(繋いだご褒美をその場で返す)。
+   ⚠爆発で倒した分も同じ道を通す(通さないと「爆発させると損」という逆の遊びになる)。 */
+function bnsScore(B,n){if(!B||!(n>0))return;
+ B.score=(B.score||0)+n*(BNS_CMB_X[bnsCmbT(B.cmb||0)]||1);}
 const BNS_CMB_N=['','轢殺','大轢殺','蹂躙','地獄のバス'];
 const BNS_CMB_C=['',PAPER,GOLD,AMBER,RUST];
 function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;C.bdst=[];C.bdstI=0;
@@ -20697,10 +20730,11 @@ function drawBnsCombo(c,C,t){
  const k=gz*(1+B.cmbP*.34);
  c.scale(k,k);
  c.textAlign='center';c.lineJoin='round';c.textBaseline='alphabetic';
- if(tier){/* 段の札 */
-  c.fillStyle=INK;rr(c,-46,7,92,23,7);c.fill();
-  c.fillStyle=col;rr(c,-44,9,88,19,6);c.fill();
-  c.fillStyle=INK;c.font='900 15px '+FF;c.fillText(BNS_CMB_N[tier],0,24);}
+ if(tier){/* 段の札。⭐**倍率も出す**(2026-08-02(38))=スコアが段で伸びることが札で読める */
+  c.fillStyle=INK;rr(c,-62,7,124,23,7);c.fill();
+  c.fillStyle=col;rr(c,-60,9,120,19,6);c.fill();
+  c.fillStyle=INK;c.font='900 15px '+FF;
+  c.fillText(BNS_CMB_N[tier]+' ×'+(BNS_CMB_X[tier]||1).toFixed(1),0,24);}
  c.strokeStyle=INK;c.lineWidth=8;c.fillStyle=col;
  c.font='900 40px '+FF;
  c.strokeText('×'+B.cmb,0,0);c.fillText('×'+B.cmb,0,0);
@@ -20823,6 +20857,7 @@ function bnsSmash(C,o){
   /* ⚠**爆発で倒した数も連なりに乗せる**=乗せないと「爆発させると連なりが切れる」逆の遊びになる */
   if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=BNS_CMB_T;B.cmbP=1;
    if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
+   bnsScore(B,kb);
    if(!nz)B.nit=Math.min(1,(B.nit||0)+kb*BUS_NIT_K);}
   if(C.isMe)try{sfxAt('boom',.9);}catch(e){}
  }else if(C.isMe)try{sfxAt(SFX_SMASH,.5);}catch(e){}
@@ -24408,7 +24443,7 @@ function refreshDiffUI(){
      ⭐**自己ベストのタイムをここに出す**(2026-08-02(37))=**走る前に目標が見えていないと記録は効かない**
        (リザルトに出すだけでは、次に入る時には忘れている)。 */
   if(v===BNS_D){const bs=ok?bnsBestOf(si):null;
-   x.textContent=D.n+(ok?(((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎')+((bs&&bs.t>0)?' 🏁'+bnsSec(bs.t):'')):' 🔒');}
+   x.textContent=D.n+(ok?(((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎')+((bs&&bs.s>0)?' ⚡'+fmt(bs.s):'')):' 🔒');}
   else x.textContent=D.n+(ok?' W'+D.w:' 🔒');
   x.disabled=!ok;x.style.opacity=ok?'':'.45';});
  if(!diffOK(si,setDiff))setDiff=best;

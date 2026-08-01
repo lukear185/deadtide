@@ -2891,8 +2891,9 @@ function checkRice(){
   if(m4.fx.some(e=>e.k==='leak')){console.log('FAIL: 被弾の演出が出ている');process.exit(1);}
   console.log('🚌道中に負けは無い: すれ違いも埋もれも無傷 / 被弾の演出なし OK');}
  backTitle();
- /* ⑧⚠⚠**走れば必ず着く**(2026-08-02(24))=距離で終わる面なので、
-    「いつまでも着かない」「途中で勝手に終わる」の両方が怖い。⭐上へ倒し続けて実走する。 */
+ /* ⑧⚠⚠**時間切れで必ず終わる**(2026-08-02(38)に「距離で終わる」から作り替え)。
+    ⚠時間制なので怖いのは「終わらない」方だけ。⭐上へ倒し続けて実走し、締め切りで締まることを見る。
+    ⚠**道は走り切れない長さ**にしたので、端に着いて終わったら**それは道が短すぎる**(それも捕まえる)。 */
  let bsec=0,bkil=0,bdmg=0;
  META.stg=0;setDiff=BNS_D;startSolo();
  {const m3=G.players[0];
@@ -2908,10 +2909,18 @@ function checkRice(){
   }
   bkil=m3.bus.kill||0;
   bnsStick(0,0);
-  if(!done){console.log('FAIL: 上へ走り続けても次の拠点に着かない('+Math.round(bsec)+'秒 残り '
-   +Math.round((m3.bus.y-BNS_GOALY)/10)+'m)');process.exit(1);}
-  /* ⚠ここは**「終わらない」を捕まえるための番人**であって、尺の good/bad を決める線ではない */
-  if(bsec>400){console.log('FAIL: 🚌道中が長すぎる '+Math.round(bsec)+'秒');process.exit(1);}}
+  if(!done){console.log('FAIL: 時間切れになっても終わらない('+Math.round(bsec)+'秒)');process.exit(1);}
+  /* ⚠**締め切りの前後で終わっていること**=長さは BNS_TIME で決まる(実走の刻みぶんの余裕を見る) */
+  if(bsec<BNS_TIME-2||bsec>BNS_TIME+6){
+   console.log('FAIL: 締め切りで終わっていない '+Math.round(bsec)+'秒(制限'+BNS_TIME+'秒)');process.exit(1);}
+  /* ⚠⚠**道の端に着いてしまったら道が短すぎる**=「あと少しで着く」が見えると時間制の意味が消える */
+  if(m3.bus.y<=BNS_GOALY+400){
+   console.log('FAIL: 制限時間内に道の端まで着いてしまう(道が短すぎる) 残り'
+    +Math.round((m3.bus.y-BNS_GOALY)/10)+'m');process.exit(1);}
+  /* ⚡**スコアが積まれていること**=倒した数より必ず多い(段の倍率が乗るので) */
+  if(!(m3.bus.score>0)){console.log('FAIL: スコアが積まれていない');process.exit(1);}
+  if(!(m3.bus.score>=bkil)){console.log('FAIL: スコアが倒した数を下回っている '
+   +Math.round(m3.bus.score)+'<'+bkil);process.exit(1);}}
  backTitle();
  /* ⑥ 本編は今までどおり(米粒の細工が漏れていないこと) */
  META.stg=0;setDiff=2;startSolo();
