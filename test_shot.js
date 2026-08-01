@@ -51,9 +51,10 @@ const BEM=/(^|\+)bnsent(=(\d+))?(\+|$)/.exec(OPT),BENTI=BEM?(+(BEM[3]||0)):-1;
 /* ⭐bnsnit = 🔥**ニトロを撃った直後**を撮る(群れの中を走らせながら、終わりの2秒前に発動)。
    ⚠これが無いと炎・速度線・縁の橙・ゲージが1枚も写らない。⚠bns と併せて使う。 */
 const BNIT=/(^|\+)bnsnit(\+|$)/.test(OPT);
-/* ⭐bnsgate = ⛓**関所を抜けた一幕**(上下の黒帯+輪+土煙)を撮る。⚠bns と併せて使う。
-   ⚠**自分で出す**=関所は道の何千pxも先にあるので、走らせて通過を待つと撮れる保証が無い。 */
-const BGT=/(^|\+)bnsgate(\+|$)/.test(OPT);
+/* ⭐bnsarr[=秒] = 🏁**到着のムービー**(拠点の入り口を通過する所)を撮る。⚠bns と併せて使う。
+   ⚠**自分で始める**=締め切りは75秒なので、待っていると撮影が終わらない。
+   ⭐秒=ムービーを何秒進めた所を撮るか(既定2.2=門をくぐる瞬間)。 */
+const BAM=/(^|\+)bnsarr(=([0-9.]+))?(\+|$)/.exec(OPT),BARR=BAM?(+(BAM[3]||2.2)):-1;
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
@@ -353,8 +354,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠⚠**カメラは rAF の中で動く**(gameStep には入っていない)ので、
         自分で時間を進める撮影では**camStep も一緒に回さないとカメラが置いていかれる**
         (バスが画面の外にいる絵になる。2026-08-02(24)に撮って気づいた)。 */
-     /* ⛓関所を抜けた一幕=**終わりの0.15秒前に出す**(帯が一番開いている所で撮る) */
-     +(BGT?'try{if(k===n-3){var m6=G.players[0];bnsGatePass(m6,m6.bus);}}catch(e5){}':'')
+     /* 🏁到着のムービー=**終わりの指定秒ぶん前に始める**(門をくぐる所で撮れる) */
+     +(BARR>=0?('try{if(k===Math.max(0,n-'+Math.round(BARR/.05)+')){var m6=G.players[0];bnsArrStart(m6);}}catch(e5){}'):'')
      +'gameStep(.05);try{camStep(.05);}catch(e6){}}'
      +'}catch(e){document.title="ERR15 "+e.message;}},1200);'):'')
  +(DBG?('var _gs=gameStep,_ge=null;gameStep=function(d){try{_gs(d);}catch(e){if(!_ge){_ge=e;}throw e;}};'

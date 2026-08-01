@@ -2574,11 +2574,20 @@ function checkBonus(){
   for(let k=0;k<200;k++)bnsBusStep(me,.05);
   if(Math.abs(me.bus.vx)>4){console.log('FAIL: いつまでも止まらない');process.exit(1);}
   /* ⭐**到着=クリア**(2026-08-02(24))=上の到着線に触れたら、残りの敵と湧く予定が消えて試合が終わる */
-  {me.bus.arr=0;me.bus.x=BNS_CX;me.bus.y=BNS_GOALY+100;me.bus.vx=0;me.bus.vy=0;
+  /* ⚠⚠**2026-08-02(42)から、到着はまず「拠点の入り口を通過するムービー」になる**=
+     この場では arr は立たない(立てるとリザルトが即出てムービーが1コマも見えない)。
+     ⭐湧く予定と敵はムービーの開始で消す(門の前で群れに詰まらせないため)。 */
+  {me.bus.arr=0;me.bus.mov=0;me.bus.movT=0;me.bus.movP=0;me.bus.movGY=null;
+   me.bus.x=BNS_CX;me.bus.y=BNS_GOALY+100;me.bus.vx=0;me.bus.vy=0;
    bnsBusStep(me,.05);
-   if(!me.bus.arr){console.log('FAIL: 到着線に着いても到着にならない');process.exit(1);}
+   if(!me.bus.mov){console.log('FAIL: 到着線に着いてもムービーが始まらない');process.exit(1);}
+   /* ⚠**道の端で始まった時は本物の門を使う**=自前の門を2つ目に出さない */
+   if(me.bus.movOwn){console.log('FAIL: 到着線の目の前なのに門をもう1つ出している');process.exit(1);}
    if(G.tide.pool.length){console.log('FAIL: 到着したのに湧く予定が残っている');process.exit(1);}
    if(me.zombies.some(z=>!z.dead)){console.log('FAIL: 到着したのに敵が残っている');process.exit(1);}
+   for(let k=0;k<400&&me.bus.mov;k++)bnsBusStep(me,.05);
+   if(!me.bus.arr){console.log('FAIL: ムービーが終わっても到着にならない');process.exit(1);}
+   if(!(me.bus.y>0)){console.log('FAIL: ムービーでマップの外まで走り抜けている y='+Math.round(me.bus.y));process.exit(1);}
    G.tide.bnsTpl=null;
    campStep(me,.05,1);
    if(!me.waveDone){console.log('FAIL: 到着しても制圧にならない(試合が終わらない)');process.exit(1);}}
@@ -2765,25 +2774,39 @@ function checkRice(){
   B7.nitT=0;m7.zombies.length=0;
   for(let k=0;k<40;k++)bnsBusStep(m7,.05);
   if(B7.grip>.02){console.log('FAIL: 離れてもしがみつきが戻らない');process.exit(1);}}
- /* ⑮ ⛓⭐**関所を抜けた一幕**(2026-08-02(41))。見るのは4つ:
-    ①抜けると出る ②同じ関所で二度出ない ③次の関所ではまた出る ④道の途中に置かれても誤爆しない */
+ /* ⑮ 🏁⭐⭐**到着のムービー**(2026-08-02(42))。見るのは6つ:
+    ①締め切りでムービーが始まる ②**その間はリザルトが出ない**(arr が立たない)
+    ③門が必ず前に出る ④門を通り抜ける ⑤必ず終わって arr が立つ ⑥終わってから二度始まらない */
  {const m8=G.players[0],B8=m8.bus;
-  /* ⚠**道の距離は上(ゴール)ほど小さい**=進む=u が減る。関所のすぐ手前(u が少し大きい方)に置く */
-  const gi=BNS_GATE.length-1,gu=BNS_GATE[gi];
-  const put=u=>{const p=pathPos(clamp(u,0,1)*PLEN,0);B8.x=p[0];B8.y=p[1];B8.vx=0;B8.vy=0;};
-  B8.gpN=null;B8.gpT=0;B8.arr=0;m8.zombies.length=0;
-  put(gu+.02);bnsBusStep(m8,.02);/* ⚠1コマ目は「次に抜ける関所」を決めるだけ=出てはいけない */
-  if(B8.gpT>0){console.log('FAIL: 道の途中に置いただけで関所の一幕が出た');process.exit(1);}
-  if(B8.gpN!==gi){console.log('FAIL: 次に抜ける関所の番号が違う '+B8.gpN+'/'+gi);process.exit(1);}
-  put(gu-.01);bnsBusStep(m8,.02);
-  if(!(B8.gpT>0)){console.log('FAIL: 関所を抜けても一幕が出ない');process.exit(1);}
-  const t8=B8.gpT;bnsBusStep(m8,.02);
-  if(B8.gpT>=t8){console.log('FAIL: 関所の一幕が消えない(同じ関所で出続けている)');process.exit(1);}
-  B8.gpT=0;put(gu-.02);for(let k=0;k<3;k++)bnsBusStep(m8,.02);
-  if(B8.gpT>0){console.log('FAIL: 同じ関所で二度出る');process.exit(1);}
-  put(BNS_GATE[gi-1]-.01);bnsBusStep(m8,.02);
-  if(!(B8.gpT>0)){console.log('FAIL: 次の関所で一幕が出ない');process.exit(1);}
-  console.log('⛓関所の一幕: '+BNS_GATE.length+'か所・抜けた時だけ'+BNS_GP_T+'秒(⚠手前の文字の予告は廃止) OK');}
+  B8.arr=0;B8.mov=0;B8.movT=0;B8.movP=0;B8.movGY=null;
+  B8.x=BNS_CX;B8.y=BNS_CY;B8.vx=0;B8.vy=0;m8.zombies.length=0;
+  B8.left=.01;bnsBusStep(m8,.05);
+  if(!B8.mov){console.log('FAIL: 締め切りが来てもムービーが始まらない');process.exit(1);}
+  if(B8.arr){console.log('FAIL: ムービーの前にリザルトへ行っている(arr が立っている)');process.exit(1);}
+  if(!(B8.movGY<B8.y)){console.log('FAIL: 拠点の門がバスの前に出ていない');process.exit(1);}
+  /* ⚠**必ず終わること**=物理ではなくスクリプトで走らせているので、止まる要素があってはいけない */
+  let n8=0;
+  while(B8.mov&&n8<400){bnsBusStep(m8,.05);n8++;}
+  if(B8.mov){console.log('FAIL: 到着のムービーが終わらない');process.exit(1);}
+  if(!B8.movP){console.log('FAIL: 門を通り抜けていない');process.exit(1);}
+  if(!B8.arr){console.log('FAIL: ムービーが終わっても到着になっていない');process.exit(1);}
+  if(!(B8.y<B8.movGY)){console.log('FAIL: 門の手前で止まっている');process.exit(1);}
+  const y8=B8.y;bnsBusStep(m8,.05);
+  if(B8.mov){console.log('FAIL: 到着の後にムービーがまた始まる');process.exit(1);}
+  if(B8.y!==y8){console.log('FAIL: 到着の後もバスが動いている');process.exit(1);}
+  console.log('🏁到着のムービー: '+BNS_ARR_T+'秒・門は'+BNS_ARR_D+'px先・通過してからリザルト OK');}
+ /* ⑯ 🧱⭐**出発点の後ろは壁**(2026-08-02(42)ユーザー「バスで行けないように普通に壁にして」)。
+    ⚠**絵(drawBnsEnds)と当たり(bnsRoadFit)が同じ BNS_WALLY から出ていること**=別々だと見えない壁になる。 */
+ {if(!(BNS_WALLY>BNS_STARTY)){console.log('FAIL: 壁が出発点より前にある');process.exit(1);}
+  const f8=bnsRoadFit(BNS_CX,BNS_WALLY+300,BUS_CL);
+  if(!f8){console.log('FAIL: 出発点の後ろへバスで行けてしまう');process.exit(1);}
+  if(!(f8[1]<BNS_WALLY)){console.log('FAIL: 壁の押し戻し先が壁の中');process.exit(1);}
+  /* ⚠**端も塞がっていること**=道幅ぶんだけ塞ぐと森の縁を回り込んで裏へ出られる */
+  for(const x8 of [120,MAPW-120])if(!bnsRoadFit(x8,BNS_WALLY+300,BUS_CL)){
+   console.log('FAIL: 壁の端(x='+x8+')から裏へ回り込める');process.exit(1);}
+  /* ⚠**手前(出発点そのもの)は今までどおり自由** */
+  if(bnsRoadFit(BNS_CX,BNS_STARTY,BUS_CL)){console.log('FAIL: 出発点が走れなくなった');process.exit(1);}
+  console.log('🧱出発点の後ろの壁: y='+BNS_WALLY+'(出発点の'+(BNS_WALLY-BNS_STARTY)+'px後ろ)・幅いっぱい OK');}
  backTitle();
  /* ⑨⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。見るのは3つ:
     a)関所で通路が本当に絞れている b)敵が通路からはみ出さない c)壁が通路の中に立っていない
@@ -2908,7 +2931,10 @@ function checkRice(){
          そこを1つずつ拾うと本物の空き地と区別が付かない(実際に隅の隙間で落ちた) */
       for(const t of cl){const dx=t.x-x,dy=t.y-y,r9=t.r+50;if(dx*dx+dy*dy<r9*r9)return true;}}
     return false;};
-   for(let x=220;x<MAPW-220&&!bad9;x+=140)for(let y=220;y<MAPH-220&&!bad9;y+=140){
+   /* ⚠**出発点の後ろ(壁の向こう)は見ない**(2026-08-02(42))=そこは**絵でも壁**なので
+      「何も無いのに走れない」には当たらない。⭐掟は「地面が見えている所は必ず走れる」であって、
+      壁が描いてある所まで走れという話ではない。 */
+   for(let x=220;x<MAPW-220&&!bad9;x+=140)for(let y=220;y<Math.min(MAPH-220,BNS_WALLY)&&!bad9;y+=140){
     if(near9(x,y))continue;
     let inb=0;
     for(const b of BBLD){const dx=b.x-x,dy=b.y-y,r8=b.rr+50;if(dx*dx+dy*dy<r8*r8){inb=1;break;}}

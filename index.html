@@ -14472,9 +14472,11 @@ function tideStep(dt){
   normShares();}
  /* ⭐🚌**道中は着くまで湧きを絶やさない**(2026-08-02(24))=距離で終わる面なので、
     用意した体数が尽きたら写し(`bnsTpl`)から積み直す。⚠**着いたら積まない**(そこで終わり)。 */
+ /* ⚠⚠**到着のムービー中も積まない**(2026-08-02(42))=積み続けると門の前で群れが湧き直し、
+    ムービーが終わっても盤面が空にならず**リザルトが出ない**(実走が75→85秒になって気づいた)。 */
  if(!T.pool.length&&T.bnsTpl&&T.bnsTpl.length){
   const m9=G.players[0];
-  if(m9&&m9.bus&&!m9.bus.arr&&!m9.dead)
+  if(m9&&m9.bus&&!m9.bus.arr&&!m9.bus.mov&&!m9.dead)
    for(const e of T.bnsTpl)T.pool.push({dl:e.dl,z:e.z,ln:e.ln});
  }
  if(!T.pool.length)return;
@@ -17975,29 +17977,24 @@ function drawBnsRush(c,C){
    const ty9=Math.round(H*.28);
    c.strokeText('🔥 ニトロで振り払え!',W/2,ty9);c.fillText('🔥 ニトロで振り払え!',W/2,ty9);}
  }
- /* ⑥ ⛓⭐⭐**関所を抜けた時の一幕**(2026-08-02(41)ユーザー「関所みたいなところを通過する
-    軽いムービーが欲しい / この先関所 とか文字いらない」)。
-    ⚠⚠**文字の予告は捨てた**(「この先 関所 — 群れが溜まる」)。**書き戻さないこと**。
-      予告で身構えさせるのではなく、**抜けた瞬間を見せ場にする**という決定。
-    ⭐**「ムービー」の記号は黒帯**=これ1つで画が一段締まる。塗りは3回・重さはゼロ。
-    ⚠**短く**(1試合に4回通る)=`BNS_GP_T`。長いと運転の邪魔になる。
+ /* ⑥ 🏁⭐⭐**到着のムービーの黒帯**(2026-08-02(42)ユーザー「拠点の入り口みたいなところを
+    通過するムービーが欲しい」)。⭐**「ムービー」の記号は黒帯**=これ1つで画が一段締まる。
     ⚠⚠**下は「帯」にしてはいけない**(撮って直した)=**バスは画面の下(85%)に張り付く**ので、
       下から帯を出すと**主役が隠れる**。⭐**下だけ薄いグラデにする**=締まるがバスは読めたまま。
     ⚠**上の帯は HUD の段(高さ約60px)より厚くする**=薄いとHUDの黒に溶けて何も起きて見えない。
     ⚠**画面全体もわずかに落とす**=NOTESの「速さだけでは気づけない」と同じで、
       暗転が1枚入るだけで「いま何か起きた」に変わる。⚠濃くしない(道が読めなくなる)。
+    ⚠**引かない**=ムービーの後はそのままリザルトへ行くので、出したら最後まで置いておく。
     ⚠**寄り(CAM.zm)は絶対に動かさない**=`drawBnsTown` が焼いた地形を全部捨てて固まる(既出)。 */
- if((B.gpT||0)>0&&FXLV>0){
-  /* 出て・留まって・引く(台形)。⚠**入りと引きだけ速く**=ぬるっと出ると邪魔にしか見えない */
-  const q9=1-clamp(B.gpT/BNS_GP_T,0,1);
-  const e9=Math.min(1,Math.sin(Math.PI*q9)*2.6);
+ if(B.mov&&FXLV>0){
+  const e9=clamp((B.movT||0)/.45,0,1);
   if(e9>.01){
-   c.fillStyle='rgba(10,8,6,'+(.13*e9).toFixed(3)+')';c.fillRect(0,0,W,H);
-   const bh=Math.round(H*.14*e9);
-   c.fillStyle='rgba(10,8,6,.90)';c.fillRect(0,0,W,bh);
-   try{const gb=c.createLinearGradient(0,H-H*.16*e9,0,H);
-    gb.addColorStop(0,'rgba(10,8,6,0)');gb.addColorStop(1,'rgba(10,8,6,'+(.62*e9).toFixed(3)+')');
-    c.fillStyle=gb;c.fillRect(0,H-H*.16*e9,W,H*.16*e9);}catch(e){}
+   c.fillStyle='rgba(10,8,6,'+(.15*e9).toFixed(3)+')';c.fillRect(0,0,W,H);
+   const bh=Math.round(H*.15*e9);
+   c.fillStyle='rgba(10,8,6,.92)';c.fillRect(0,0,W,bh);
+   try{const gb=c.createLinearGradient(0,H-H*.17*e9,0,H);
+    gb.addColorStop(0,'rgba(10,8,6,0)');gb.addColorStop(1,'rgba(10,8,6,'+(.64*e9).toFixed(3)+')');
+    c.fillStyle=gb;c.fillRect(0,H-H*.17*e9,W,H*.17*e9);}catch(e){}
   }
  }
  /* ③ まとめて轢いた瞬間の白抜き(⚠**短く薄く**=長いと画面が白飛びして何も読めない) */
@@ -18028,9 +18025,16 @@ function drawBnsRush(c,C){
 }
 /* 🔥ニトロのボタンの表示(溜まり/使用中/満タン)。⚠**変わった時だけ書き換える**
    =毎フレーム style を触ると DOM の再計算が入って重くなる。 */
-let BNIT_P=-1,BNIT_R=-1;
+let BNIT_P=-1,BNIT_R=-1,BNIT_M=0;
 function bnsHud(C){
  const el=$('bnitro'),B=C.bus;if(!el||!B)return;
+ /* 🏁⭐**到着のムービー中は操作の物を引っ込める**(2026-08-02(42))=
+    出したままだと「黒帯の付いた運転画面」にしか見えない(押せてしまうのも困る)。 */
+ {const mv=B.mov?1:0;
+  if(mv!==(BNIT_M||0)){BNIT_M=mv;
+   el.style.display=mv?'none':'';
+   const sk=$('bstick');if(sk&&sk.style)sk.style.display=mv?'none':'';}
+  if(mv)return;}
  const p=B.nitT>0?Math.round(B.nitT/BUS_NIT_T*100):Math.round((B.nit||0)*100);
  const st=B.nitT>0?2:((B.nit||0)>=1?1:0);
  if(p!==BNIT_P){BNIT_P=p;const b=el.firstElementChild;if(b&&b.style)b.style.height=p+'%';}
@@ -18096,23 +18100,35 @@ function drawBnsRoad(c,C){
 /* ⭐⭐**道の両端**(2026-08-02(24))=下が**出発した拠点**・上が**次の拠点(到着=クリア)**。
    ⚠**遠くからでも「あそこが終点だ」と分かる形**にする=横いっぱいの壁+門+旗。
    ⚠絵は世界座標(地形と同じ)。⚠画面に入っている時だけ描く。 */
+/* 🏰⭐**拠点の入り口を1つ描く**(`gy`=門の底の y)。⚠**到着の門とムービーの門で同じ物を使う**=
+   別々に描くと「さっき見たのと違う所に着いた」になる(拠点の顔は1つ)。
+   ⚠`op`=門が開いているか(0=閉じている=出てきた拠点)。 */
+function drawBnsGateBld(c,gy,op){
+ const x0=BNS_CX-BNS_OFF-500,x1=BNS_CX+BNS_OFF+500;
+ c.fillStyle='#6b6459';c.fillRect(x0,gy-180,x1-x0,190);/* 壁 */
+ c.fillStyle='#8a8072';c.fillRect(x0,gy-180,x1-x0,34);
+ c.fillStyle=INK;for(let x=x0;x<x1;x+=220)c.fillRect(x,gy-214,90,40);/* 胸壁 */
+ /* 門(道の幅ぶん開ける)。⚠**閉じている時は扉を描く**=同じ黒い穴だと入れそうに見える */
+ c.fillStyle='#3a3128';c.fillRect(BNS_CX-320,gy-160,640,170);
+ if(!op){
+  c.fillStyle='#6a5a44';c.fillRect(BNS_CX-320,gy-160,316,170);c.fillRect(BNS_CX+4,gy-160,316,170);
+  c.fillStyle='#54462f';for(let i=0;i<4;i++)c.fillRect(BNS_CX-320,gy-150+i*42,640,10);/* 横木 */
+  c.fillStyle=INK;c.fillRect(BNS_CX-8,gy-160,16,170);/* 合わせ目 */
+ }
+ c.fillStyle=op?GOLD:'#7a6a52';c.fillRect(BNS_CX-320,gy+2,640,22);
+ /* 旗(⚠門の左右。拠点の顔として一番遠くまで見える物) */
+ for(const sx of [-1,1]){
+  c.fillStyle='#4a443a';c.fillRect(BNS_CX+sx*430-8,gy-420,16,250);
+  c.fillStyle=AMBER;c.beginPath();c.moveTo(BNS_CX+sx*430,gy-420);
+  c.lineTo(BNS_CX+sx*430+sx*150,gy-380);c.lineTo(BNS_CX+sx*430,gy-330);c.closePath();c.fill();}
+}
 function drawBnsEnds(c,C,t){
  const wy0=(-OY)/SCY-400,wy1=(cv.height-OY)/SCY+400;
  c.lineJoin='round';c.lineWidth=6;c.strokeStyle=INK;
  /* --- 上=次の拠点(到着) --- */
  if(BNS_GOALY>wy0-900&&BNS_GOALY<wy1+900){
   const gy=BNS_GOALY-120,x0=BNS_CX-BNS_OFF-500,x1=BNS_CX+BNS_OFF+500;
-  c.fillStyle='#6b6459';c.fillRect(x0,gy-180,x1-x0,190);/* 壁 */
-  c.fillStyle='#8a8072';c.fillRect(x0,gy-180,x1-x0,34);
-  c.fillStyle=INK;for(let x=x0;x<x1;x+=220)c.fillRect(x,gy-214,90,40);/* 胸壁 */
-  /* 門(道の幅ぶん開ける) */
-  c.fillStyle='#3a3128';c.fillRect(BNS_CX-320,gy-160,640,170);
-  c.fillStyle=GOLD;c.fillRect(BNS_CX-320,gy+2,640,22);
-  /* 旗 */
-  for(const sx of [-1,1]){
-   c.fillStyle='#4a443a';c.fillRect(BNS_CX+sx*430-8,gy-420,16,250);
-   c.fillStyle=AMBER;c.beginPath();c.moveTo(BNS_CX+sx*430,gy-420);
-   c.lineTo(BNS_CX+sx*430+sx*150,gy-380);c.lineTo(BNS_CX+sx*430,gy-330);c.closePath();c.fill();}
+  drawBnsGateBld(c,gy,1);
   /* 到着線 */
   c.fillStyle='rgba(232,163,61,.30)';c.fillRect(x0,BNS_GOALY+240,x1-x0,26);
   c.fillStyle=PANE;c.font='900 '+Math.round(120*1)+'px '+FF;c.textAlign='center';
@@ -18121,13 +18137,23 @@ function drawBnsEnds(c,C,t){
   {const iv8=camIvY();c.save();if(iv8!==1){c.translate(0,BNS_GOALY+430);c.scale(1,iv8);c.translate(0,-(BNS_GOALY+430));}
    c.strokeText('🏁 次の拠点',BNS_CX,BNS_GOALY+430);c.fillText('🏁 次の拠点',BNS_CX,BNS_GOALY+430);c.restore();}
  }
- /* --- 下=出発した拠点 --- */
- if(BNS_STARTY>wy0-900&&BNS_STARTY<wy1+900){
-  const sy=BNS_STARTY+420,x0=BNS_CX-BNS_OFF-500,x1=BNS_CX+BNS_OFF+500;
-  c.fillStyle='#5c5346';c.fillRect(x0,sy,x1-x0,170);
-  c.fillStyle='#6f6a5e';c.fillRect(x0,sy,x1-x0,30);
-  c.fillStyle='#3a3128';c.fillRect(BNS_CX-320,sy-10,640,150);
+ /* --- 下=出発した拠点の**閉まった門と壁**(2026-08-02(42)) --- */
+ /* ⚠⚠**マップの幅いっぱいに引く**=道幅ぶんだけだと森の縁を回り込んで裏へ出られる。
+    ⭐**当たりは `BNS_WALLY` から出す**(`bnsRoadFit` と同じ値)=絵と挙動が必ず一致する。 */
+ if(BNS_WALLY>wy0-900&&BNS_WALLY<wy1+900){
+  c.fillStyle='#5c5346';c.fillRect(0,BNS_WALLY,MAPW,210);/* 壁(幅いっぱい) */
+  c.fillStyle='#6f6a5e';c.fillRect(0,BNS_WALLY,MAPW,34);/* 上端の明るい面=手前に立っていると分かる */
+  c.fillStyle=INK;for(let x=0;x<MAPW;x+=220)c.fillRect(x,BNS_WALLY-40,90,40);/* 胸壁 */
+  /* 閉まった門(=出てきた拠点。⚠開いていると戻れそうに見える) */
+  c.fillStyle='#3a3128';c.fillRect(BNS_CX-320,BNS_WALLY-10,640,190);
+  c.fillStyle='#6a5a44';c.fillRect(BNS_CX-320,BNS_WALLY-10,316,190);c.fillRect(BNS_CX+4,BNS_WALLY-10,316,190);
+  c.fillStyle='#54462f';for(let i=0;i<4;i++)c.fillRect(BNS_CX-320,BNS_WALLY+6+i*44,640,10);
+  c.fillStyle=INK;c.fillRect(BNS_CX-8,BNS_WALLY-10,16,190);
  }
+ /* --- 🏁**到着のムービーの門**(2026-08-02(42))=時間切れの少し先に出す --- */
+ /* ⚠`movOwn`=自前の門を出しているか(道の端で始まった時は本物の門を使うので描かない) */
+ if(C&&C.bus&&C.bus.mov&&C.bus.movOwn&&C.bus.movGY!=null&&C.bus.movGY>wy0-900&&C.bus.movGY<wy1+900)
+  drawBnsGateBld(c,C.bus.movGY,1);
  c.lineWidth=3;
 }
 /* ⭐⭐**大群が来る向きを画面の縁で知らせる**(2026-08-02(6))。
@@ -19388,6 +19414,12 @@ const BNS_GOALY=900;         /* 到着線(マップの上) */
 /* ⚠⚠**2026-08-02(39)に 1200→3800**=出発点の広場が**探索場**になり半径3000まで広がったので、
    1200のままだとマップの下端をはみ出して**廃墟が9棟中2棟しか建たなかった**(数えて気づいた)。 */
 const BNS_STARTY=BNS_H-3800; /* 出発点(マップの下) */
+/* 🧱⭐⭐**出発点のすぐ後ろは壁**(2026-08-02(42)ユーザー「出発地点の後ろにバスで行けないように
+   普通に壁にして」)=**出てきた拠点の門が閉まっている**という形。
+   ⚠⚠**必ず絵の壁と当たりを同じ値から出す**(`bnsRoadFit` と `drawBnsEnds` の両方がこれを見る)=
+     別々に持つと「何も無いのに走れない」がまた出る(乗り物を地形で止める面の掟)。
+   ⚠**マップの幅いっぱいに引く**=道幅ぶんだけだと森の縁を回り込んで裏へ出られる。 */
+const BNS_WALLY=BNS_STARTY+420;
 /* 廃墟の散らばり(開拓便だけ)。⚠**決め打ちで並べない**=種から散らすと広い面でも密度が保てる。
    参考画像から拾った物=廃車 / タイヤ / ドラム缶 / 木箱 / 瓦礫 / コンクリのバリア / 枯れ木。
    ⚠**表そのものはファイルの上の方で宣言してある**(loadStage が読み込み中に触るため)。 */
@@ -20207,6 +20239,10 @@ const BUS_FLASH_N=6,BUS_FLASH_CD=.55;
 const BUS_CL=55;
 function bnsRoadFit(x,y,cl){
  if(!LANES)return null;
+ /* 🧱⭐**出発点のすぐ後ろは壁**(2026-08-02(42))=出てきた拠点の門が閉まっている。
+    ⚠**絵(`drawBnsEnds`)と同じ `BNS_WALLY` から出す**=別々に持つと見えない壁になる。
+    ⚠**一番外側で見る**=道の縁より優先(壁は道も広場もまたいで幅いっぱいに立っている)。 */
+ if(y>BNS_WALLY-cl)return [x,BNS_WALLY-cl-.5];
  /* ⚠**空き地を決める式(`bnsEndOut`)と同じ物から出す**=別々に持つと
     「木が1本も無いのに入れない場所」が必ず出る(乗り物を地形で止める面の掟)。
     ⚠**出発側(探索場)と到着側で半径が違う**ので、近い方とその半径を先に決める。 */
@@ -20238,26 +20274,82 @@ function bnsRoadFit(x,y,cl){
  if(bd>=1e9)return null;
  return [bx,by];
 }
-/* ⛓⭐⭐**関所を抜けた時の一幕**(2026-08-02(41)ユーザー「関所みたいなところを通過する
-   軽いムービーが欲しい / この先関所 とか文字いらない」)。
-   ⚠⚠**手前で出していた文字の予告は捨てた**(`BNS_GATE_W`/`BNS_GATE_T`)=**書き戻さないこと**。
-     予告で身構えさせるのではなく、**抜けた瞬間を見せ場にする**という決定。
-   ⚠**短くする**=道中では1試合に**4回**通る(75秒で道の7割・関所は6か所)。長いと運転の邪魔。
-   ⭐中身は3つだけ=**上下の黒帯(ムービーの記号)/短いスロー/門柱の土煙と輪**。⚠音は付けない。 */
-const BNS_GP_T=.62,BNS_GP_SLOW=.26;
-/* ⛓関所を1つ抜けた。⚠**操作は塞がない**=帯とスローだけで、運転はそのまま効く。 */
-function bnsGatePass(C,B){
- B.gpT=BNS_GP_T;
- if(FXLV<=0)return;/* ⚠演出オフでは何も出さない(帯もスローも) */
- /* ⭐**輪はいま抜けた所に置く**=バスの後ろへ流れていくので「通り抜けた」に見える */
- addFx(C,'ring',B.x,B.y,'',{r:420,col:AMBER});
- addFx(C,'ring',B.x,B.y,'',{r:760,col:GOLD});
- C.shake=Math.max(C.shake||0,.34);
- /* ⚠**スローは到着(0.55)より短く**=あちらは1試合に1回、こちらは4回来る */
- try{if(G)G.hitStopT=Math.max(G.hitStopT||0,BNS_GP_SLOW);}catch(e){}
- /* ⭐**門柱の土煙**=左右の壁の位置から。⚠**寄りで割る**(`bnsGz`)=そのままだと1画素未満になる */
- for(const s9 of [-1,1])
-  addP(C,7,B.x+BNS_GATW*s9,B.y,{sp:230,up:130,g:640,life:.7,r:7*bnsGz()*.4,col:'#9a8f76',jx:26,jy:20});
+/* 🏁⭐⭐⭐**到着のムービー**(2026-08-02(42)ユーザー「時間が1分ぐらい経ってバスの時間終了したら
+   拠点の入り口みたいなところ通過するムービーが欲しい」)。
+   ⚠⚠**門まで走らせない**=時間切れになるのは道の途中(7割地点)なので、
+     **その場の少し先に拠点の入り口を出して、そこを通り抜けさせる**。
+     ⭐これは2026-08-02(38)の決定どおり(「門まで行かなくても着いたことにしてよい」)。
+   ⚠⚠**運転はスクリプトで動かす**=物理のまま走らせると障害物・しがみつき・群れで
+     **門に届かないことがある**(ムービーは必ず終わらなければならない)。
+   ⚠**ムービーが終わるまでリザルトを出さない**=`arr` を立てるのを最後まで待つ
+     (`campStep` の「盤面が空=制圧」は `bus.arr` を見ている)。
+   ⚠⚠**2026-08-02(41)に作った「関所を抜けた時の一幕」は外した**(ユーザー「ムービーはこういう
+     ことじゃなくて」)=**関所では何も出さない**。書き戻さないこと。帯の作りだけここへ持ってきた。 */
+const BNS_ARR_T=3.0;   /* ムービー全体の秒数 */
+const BNS_ARR_D=2100;  /* 時間切れの地点から門までの距離(=2.1秒ぶん) */
+const BNS_ARR_SP=1000; /* ムービー中に走る速さ */
+/* 🏁ムービーを始める。⚠**残っている敵と湧く予定はここで捨てる**(門の前で群れに詰まらせない) */
+function bnsArrStart(C){
+ const B=C.bus;if(!B||B.mov||B.arr)return;
+ B.mov=1;B.movT=0;B.movP=0;B.movV=BNS_ARR_SP;
+ /* ⚠**道の端まで来ていたら本物の門をそのまま使う**=自前の門を2つ目に出さない。
+    ⚠この枝は普通は通らない(道は時間内に走り切れない長さ)=念のための保険。 */
+ const gy9=BNS_GOALY-120;
+ B.movOwn=(B.y-BNS_ARR_D>gy9+400)?1:0;
+ B.movGY=B.movOwn?(B.y-BNS_ARR_D):gy9;
+ try{G.tide.pool.length=0;}catch(e){}
+ for(const z of C.zombies)z.dead=true;
+ B.grip=0;B.nitT=0;B.ix=0;B.iy=0;
+}
+/* 📷⭐**カメラをバスに付ける**。⚠⚠**到着のムービー中もこれを回すこと**(2026-08-02(42)に踏んだ)=
+   ムービーの枝でこれを飛ばしたら、**カメラが置いていかれてバスが画面の上端で切れた**(撮って気づいた)。
+   ⭐だから運転の枝から切り出して、両方から呼ぶ形にしてある。 */
+function bnsCamFollow(B,nz9){
+ if(!(cv&&cv.height&&SCY>0&&SC>0))return;
+ const sp9=clamp(Math.hypot(B.vx,B.vy)/BUS_SP,0,1);
+ /* ⚠**バスの尻が画面の外へ出ない上限**を絵の大きさから出す(寸法が変わっても勝手に合う) */
+ const pMx=1-(BUS_R*1.16*SC)/cv.height;
+ const py9=Math.min(pMx,BUS_CAM_P+(BUS_CAM_P2-BUS_CAM_P)*Math.min(1,sp9*(nz9?1.25:1)));
+ /* ⚠⚠**camApply は VH(操作バーを除いた高さ)で中央を取るのに、こちらは cv.height で数える**。
+    ⭐だから割合から**世界の距離を引き算1回で出す**=決め打ちの割合を掛けるとバーの高さぶんずれる。 */
+ const dy9=(cv.height*py9-VH/2)/SCY;
+ /* ⚠⚠⭐**追従の遅れの打ち消しと、外へ出さない切り取りは `camLead` に任せる**(中身と理由は camStep)=
+    これが無いと「速いほど前へ出す」が遅れに食われ、**後退するとバスが画面の下へ落ちて消える**。
+    ⚠切り取りの範囲=バスが**画面の真ん中(下限)から pMx(下端の手前)まで**に必ず収まる距離。 */
+ camTo(B.x+B.vx*BUS_CAM_X,B.y-dy9);
+ camLead(B.vx,B.vy,B.y,(cv.height*.5-VH/2)/SCY,(cv.height*pMx-VH/2)/SCY);
+}
+/* 🏁ムービーを1コマ進める。⚠**ここでは当たりも轢きも見ない**(門まで一直線に走らせるだけ) */
+function bnsArrStep(C,dt){
+ const B=C.bus;
+ B.movT=(B.movT||0)+dt;
+ /* ⭐**門をくぐったら惰性で止まる**=「着いて停まった」で締まる。
+    ⚠**走り続けさせない**=道の端の近くで始まった時に**マップの外まで抜けてしまう**。 */
+ if(B.movP)B.movV=Math.max(0,(B.movV==null?BNS_ARR_SP:B.movV)-BNS_ARR_SP*dt/.9);
+ B.y-=B.movV*dt;
+ /* ⭐**道の真ん中へ寄せる**=門の正面から入ると「通過した」が読める(端から入ると壁にめり込む) */
+ B.x+=(BNS_CX-B.x)*Math.min(1,dt*2.2);
+ /* ⚠**速さは持たせたまま**=速度線・土埃・カメラの先読みが全部これを見ている */
+ B.vx=0;B.vy=-B.movV;B.dr=-1;
+ bnsCamFollow(B,0);
+ /* 門を抜けた瞬間 */
+ if(!B.movP&&B.y<=B.movGY){B.movP=1;
+  if(C.isMe){toast('🏁 次の拠点に着いた!',true);if(sfx.clearJ)sfx.clearJ();}
+  if(FXLV>0){addFx(C,'ring',BNS_CX,B.movGY,'',{r:560,col:GOLD});
+   addFx(C,'ring',BNS_CX,B.movGY,'',{r:980,col:AMBER});
+   C.shake=Math.max(C.shake||0,.5);B.flashT=.32;
+   /* ⭐門柱の土煙=左右の壁の所から。⚠**寄りで割る**(`bnsGz`)=そのままだと1画素未満 */
+   for(const s9 of [-1,1])
+    addP(C,8,BNS_CX+s9*340,B.movGY,{sp:240,up:140,g:640,life:.8,r:7*bnsGz()*.4,col:'#9a8f76',jx:28,jy:22});
+   try{if(G)G.hitStopT=Math.max(G.hitStopT||0,.45);}catch(e){}}
+ }
+ /* ⚠**終わる時に速さを0へ**=残しておくと、ムービーの後も惰性でバスが流れ続ける */
+ if(B.movT>=BNS_ARR_T){B.mov=0;B.arr=1;B.vx=0;B.vy=0;B.movV=0;B.ix=0;B.iy=0;
+  /* ⚠**もう一度だけ盤面を掃く**=ムービーの1コマ目で湧きかけていた分が残っていると、
+     「盤面が空=制圧」が回らず**リザルトが出ない**。 */
+  try{G.tide.pool.length=0;}catch(e){}
+  for(const z of C.zombies)z.dead=true;
+  try{bnsRecord(C);}catch(e){}}
 }
 /* ⏱⭐⭐⭐**制限時間**(2026-08-02(38)ユーザー決定「時間制にしない? ゾンビを効率よくたくさん倒すのが目標」)。
    ⚠⚠**到着でクリアだった形は捨てた**=道は走り切れない長さにして、**締め切りは時間**にする。
@@ -20280,17 +20372,22 @@ function bnsBusInit(C){
   nit:0,nitT:0,nitN:0,flashT:0,flashCd:0,dustD:0,
   /* 🧟しがみつき(0〜1)=倒しきれずに当たり続けた個体の数で溜まり、最高速を削る */
   grip:0,
-  /* ⛓関所を抜けた一幕(gpN=次に抜ける関所の番号 / gpT=出している残り秒)。
-     ⚠**gpN は null で始める**=最初の1コマで**いまの位置から**決める(途中に置かれても誤爆しない)。 */
-  gpN:null,gpT:0,
+  /* 🏁到着のムービー(mov=流している / movT=経った秒 / movGY=門のy / movP=門を抜けたか) */
+  mov:0,movT:0,movGY:null,movP:0,
   /* ⏱残り時間 / ⚡スコア(=連なりの段の倍率で積む) */
   left:BNS_TIME,score:0};
- BNIT_P=-1;BNIT_R=-1;/* ⚠ボタンの表示を必ず1回書き直させる(前の試合の値が残る) */
+ BNIT_P=-1;BNIT_R=-1;BNIT_M=0;/* ⚠ボタンの表示を必ず1回書き直させる(前の試合の値が残る) */
+ /* ⚠**引っ込めたままにしない**=ムービー中に隠した物を、次の試合で必ず出し直す */
+ try{const e9=$('bnitro');if(e9&&e9.style)e9.style.display='';
+  const s9=$('bstick');if(s9&&s9.style)s9.style.display='';}catch(e){}
  bnsFxInit(C);
 }
 function bnsBusStep(C,dt){
  const B=C.bus;if(!B)return;
  B.t+=dt;
+ /* 🏁⭐**到着のムービー中は運転も当たりも轢きも止める**(2026-08-02(42))=
+    門まで一直線に走らせるだけ。⚠**跡と粒(`bnsFxStep`)は回す**=止めると土埃も輪も動かない。 */
+ if(B.mov){if(B.flashT>0)B.flashT-=dt;bnsArrStep(C,dt);bnsFxStep(C,dt);return;}
  /* 🔥ニトロ中は速さも轢く力も化ける。⚠**倍率は1か所で出す**(あちこちで掛けると必ずずれる) */
  const nz9=B.nitT>0?1:0;
  if(B.nitT>0)B.nitT=Math.max(0,B.nitT-dt);
@@ -20367,19 +20464,6 @@ function bnsBusStep(C,dt){
     const w9=bnsCorrW(clamp(z.d/pl9,0,1));
     z.off=clamp((z.off||0)+s9*BUS_SIDE*(nz9?1.8:1)*dt,-w9,w9);}}
   hit++;
- }
- /* ⛓⭐⭐**関所を抜けた一幕**(2026-08-02(41))=関所は**群れが溜まる所**なので、
-    抜けた瞬間が一番の見せ場になる。⚠**手前の予告(文字)は捨てた**=ユーザー決定。
-    ⚠道の距離 `d` は上(ゴール)ほど小さいので、**進む=`u` が減る**。だから「抜けた」は `u<関所`。
-    ⚠**1コマに1つだけ**=まとめて抜けた時に帯が二重に走らない。 */
- if(B.gpT>0)B.gpT=Math.max(0,B.gpT-dt);
- if(LANES&&PLEN>0&&!B.arr){
-  const u9=clamp(bd9/PLEN,0,1);
-  /* ⚠**最初の1コマで「次に抜ける関所」を今の位置から決める**=撮影や検査で道の途中へ
-     置かれた時に、後ろの関所を一度に全部「抜けた」ことにしないため。 */
-  if(B.gpN==null){B.gpN=-1;
-   for(let i=BNS_GATE.length-1;i>=0;i--)if(u9>BNS_GATE[i]){B.gpN=i;break;}}
-  else if(B.gpN>=0&&u9<BNS_GATE[B.gpN]){B.gpN--;try{bnsGatePass(C,B);}catch(e){}}
  }
  /* 🧟**しがみつきの溜まり**=「当たったが倒しきれなかった数」で増え、離れると戻る。
     ⚠**倒せた分は数えない**=薙ぎ倒している間は沈まない(気持ちよさを削らない)。 */
@@ -20466,19 +20550,7 @@ function bnsBusStep(C,dt){
       ⚠**上限は絵の大きさから毎フレーム出す**(pMx)=これを超えるとバスの尻が画面の外へ出る。
       ⚠**速さで動かしてよいのはここだけ**(寄りを動かすと地形の焼き直しで固まる)。
     ⭐**横にも先読みする**=切り返した側が広く見えるので、関所を避ける線が読める。 */
- if(cv&&cv.height&&SCY>0&&SC>0){
-  const sp9=clamp(Math.hypot(B.vx,B.vy)/BUS_SP,0,1);
-  /* ⚠**バスの尻が画面の外へ出ない上限**を絵の大きさから出す(寸法が変わっても勝手に合う) */
-  const pMx=1-(BUS_R*1.16*SC)/cv.height;
-  const py9=Math.min(pMx,BUS_CAM_P+(BUS_CAM_P2-BUS_CAM_P)*Math.min(1,sp9*(nz9?1.25:1)));
-  /* ⚠⚠**camApply は VH(操作バーを除いた高さ)で中央を取るのに、こちらは cv.height で数える**。
-     ⭐だから割合から**世界の距離を引き算1回で出す**=決め打ちの割合を掛けるとバーの高さぶんずれる。 */
-  const dy9=(cv.height*py9-VH/2)/SCY;
-  /* ⚠⚠⭐**追従の遅れの打ち消しと、外へ出さない切り取りは `camLead` に任せる**(中身と理由は camStep)=
-     これが無いと「速いほど前へ出す」が遅れに食われ、**後退するとバスが画面の下へ落ちて消える**。
-     ⚠切り取りの範囲=バスが**画面の真ん中(下限)から pMx(下端の手前)まで**に必ず収まる距離。 */
-  camTo(B.x+B.vx*BUS_CAM_X,B.y-dy9);
-  camLead(B.vx,B.vy,B.y,(cv.height*.5-VH/2)/SCY,(cv.height*pMx-VH/2)/SCY);}
+ bnsCamFollow(B,nz9);
  /* ⚠**轢いている間の抵抗は「体数ぶん」効かせる**(2026-08-02(29))=一定だと群れに突っ込んでも
     素通りしているようにしか感じない。⭐**厚い所ほど減速する**と、押しのけている手応えが出る。
     ⚠止まってしまわないように下限を置く。 */
@@ -20511,22 +20583,10 @@ function bnsBusStep(C,dt){
  /* ⭐⭐**時間切れ=締め切り**(ユーザー決定)。⚠**負けではない**=そこまでの成果で終わり、
     「次の拠点に着いた」の軽いイベントを出す。⚠道の端に着く方も残してあるが、
     道は走り切れない長さ(BNS_H)なので普通は起きない(念のための保険)。 */
- if(!B.arr&&(B.left<=0||B.y<=BNS_GOALY+260)){
-  B.arr=1;
-  /* ⭐**記録は残っている敵を消す前に取る**(消した敵は轢いた数に入らないので順番はどちらでもよいが、
-     B.t を止める前に取ること)。⚠自分の盤面だけ(`C.isMe`)。 */
-  try{bnsRecord(C);}catch(e){}
-  try{G.tide.pool.length=0;}catch(e){}
-  for(const z of C.zombies)z.dead=true;
-  if(C.isMe){toast('🏁 次の拠点に着いた!',true);if(sfx.clearJ)sfx.clearJ();}
-  /* ⭐⭐**到着の締め**(2026-08-02(37))=**門を突き破った瞬間だけ時間を落とす**。
-     ⚠それまでは HUD が「🏁到着!」に変わってリザルトへ行くだけで、**走り切った実感が無かった**。
-     ⚠**まとめ轢きの0.07秒とは別物**=ここは1試合に1回しか来ないので長く取ってよい。 */
-  if(FXLV>0){addFx(C,'ring',B.x,B.y,'',{r:520,col:GOLD});
-   addFx(C,'ring',B.x,B.y,'',{r:900,col:AMBER});
-   C.shake=Math.max(C.shake||0,.6);B.flashT=.34;
-   try{if(G)G.hitStopT=Math.max(G.hitStopT||0,.55);}catch(e){}}
- }
+ /* ⭐⭐**締め切りが来たら「拠点の入り口を通過するムービー」を流す**(2026-08-02(42))。
+    ⚠**ここで `arr` を立てない**=立てるとリザルトが即出てムービーが1コマも見えない。
+    立てるのは `bnsArrStep` の最後(=ムービーが終わった時)。 */
+ if(!B.arr&&!B.mov&&(B.left<=0||B.y<=BNS_GOALY+260))try{bnsArrStart(C);}catch(e){B.arr=1;}
  bnsFxStep(C,dt);
 }
 /* ⚠**「拠点が全自動でタレットを据える」は 2026-08-02(5) に取り消した**(ユーザー
@@ -20844,7 +20904,9 @@ function drawBnsGore(c,C){
    ⚠**段の名前は「札」に載せる**(2026-08-02(3))=白い縁取り文字だけだと背景に溶けて安っぽい。
    ⭐段が上がった瞬間(`tierT`)は**札から光の輪が広がる**=1試合で数回しか出ないので盛ってよい。 */
 function drawBnsCombo(c,C,t){
- const B=C.bus;if(!B||!(B.cmb>=5))return;
+ /* ⚠**到着のムービー中は出さない**(2026-08-02(42))=もう轢いていないのに札だけ残ると、
+    ムービーではなく「黒帯の付いた運転画面」に見える。 */
+ const B=C.bus;if(!B||B.mov||!(B.cmb>=5))return;
  const tier=bnsCmbT(B.cmb),gz=bnsGz(),col=BNS_CMB_C[tier]||PAPER;
  c.save();
  /* ⚠**縦の潰し(SCY)を打ち消す**=打ち消さないと札も数字も平たく潰れる。
