@@ -3433,6 +3433,32 @@ function checkBnsFlow(){
   if((Q.up.sp|0)!==BUP[0].mx){console.log('FAIL: 強化の段が上限で止まらない '+Q.up.sp);process.exit(1);}
   bnsUpTap(Q,R[2].x+4,R[2].y+4);
   if((Q.up.ram|0)!==0){console.log('FAIL: 物資が足りないのに強化が買える');process.exit(1);}
+  /* ⚔⭐**装備は「3系統×4段」の段階解放**(2026-08-02(55))=**前の段を買うまで次は買えない** */
+  {Q.tab=1;Q.eq={};Q.res=[9999,9999,9999];
+   const RE=bnsUpRects(cv.width,cv.height,1);
+   if(BEQ.length%BEQ_ST!==0){console.log('FAIL: 装備の数が段数で割り切れない '+BEQ.length);process.exit(1);}
+   /* ①段目は買える / ③段目はまだ買えない */
+   if(beqCost(Q.eq,0)!==BEQ[0].c){console.log('FAIL: 1段目が買えない');process.exit(1);}
+   if(beqCost(Q.eq,2)!==-1){console.log('FAIL: 前の段を飛ばして買えてしまう');process.exit(1);}
+   bnsUpTap(Q,RE[2].x+4,RE[2].y+4);
+   if(Q.eq[BEQ[2].k]){console.log('FAIL: 段を飛ばして装備が付いた');process.exit(1);}
+   /* 順に買えば通る */
+   for(let q=0;q<BEQ_ST;q++)bnsUpTap(Q,RE[q].x+4,RE[q].y+4);
+   for(let q=0;q<BEQ_ST;q++)if(!Q.eq[BEQ[q].k]){
+    console.log('FAIL: 順に買っても'+(q+1)+'段目が付かない');process.exit(1);}
+   /* ⚠**列=系統・行=段**に並んでいること(絵とタップが同じ物を見る) */
+   for(let q=0;q<BEQ.length;q++){
+    const cx=(q/BEQ_ST)|0,ry=q%BEQ_ST;
+    if(ry>0&&!(RE[q].y>RE[q-1].y)){
+     console.log('FAIL: 段が上から下へ並んでいない '+q);process.exit(1);}
+    if(cx>0&&!(RE[q].x>RE[q-BEQ_ST].x)){
+     console.log('FAIL: 系統が左から右へ並んでいない '+q);process.exit(1);}}
+   /* ⚠**1系統=1つの物資**(混ざっていると並びの意味が消える) */
+   for(let q=0;q<BEQ.length;q++)if(BEQ[q].r!==BEQ[((q/BEQ_ST)|0)*BEQ_ST].r){
+    console.log('FAIL: 同じ系統に別の物資が混ざっている '+BEQ[q].n);process.exit(1);}
+   /* ⚠**入れ替えずに中身だけ消す**= は META.beq そのものなので、代入すると繋がりが切れる */
+   for(const k9 in Q.eq)delete Q.eq[k9];
+   Q.tab=0;Q.res[0]=9999;Q.res[1]=0;Q.res[2]=9999;}
   /* ⚔装備の枠=つまみで切り替わる/買い切り/2度は買えない/絵が例外なく描ける */
   bnsUpTap(Q,R.tab[1].x+4,R.tab[1].y+4);
   if((Q.tab|0)!==1){console.log('FAIL: ⚔装備の枠に切り替わらない');process.exit(1);}

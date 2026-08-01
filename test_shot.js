@@ -367,7 +367,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠**強化画面は物資を持たせて撮る**=素寒貧だと全部灰色の札しか写らない。
         ⭐bnsup=🔧性能の枠 / bnseqp=⚔装備の枠 */
      +((BPRE==='up'||BPRE==='eqp')?'Q.res[0]=150;Q.res[1]=110;Q.res[2]=95;Q.left=0;Q.st="up";'
-       +'Q.tab='+(BPRE==='eqp'?1:0)+';Q.up.sp=2;Q.up.ram=1;Q.eq.spike=1;Q.eq.blade=1;'
+       +'Q.tab='+(BPRE==='eqp'?1:0)+';Q.up.sp=2;Q.up.ram=1;Q.eq.tire=1;Q.eq.wire=1;Q.eq.blast=1;Q.eq.plate=1;'
        +'if(G.players[0].bus){var B7=G.players[0].bus;bupApply(B7,Q.up,Q.eq);camOn(B7.x,B7.y,.62,BNS_SQ);camApply();}':'')
      +'}catch(e){document.title="ERR17 "+e.message;}},1200);'):'')
  +((BNS&&!BPRE)?('setTimeout(function(){try{var n='+Math.round(BNSN/.05)+';'
