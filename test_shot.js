@@ -60,9 +60,12 @@ const BAM=/(^|\+)bnsarr(=([0-9.]+))?(\+|$)/.exec(OPT),BARR=BAM?(+(BAM[3]||2.2)):
    `bnsmg`=②⛽給油のミニゲーム(3本目まで進めた所)
    `bnsbrd`=③乗り込みのムービー / `bnsup`=④強化画面(物資を持たせた状態)
    ⚠⚠**どれも指定しなければ流れは丸ごと飛ばす**(`bnsPreSkip`)=でないと敵が1体も湧かない絵になる。 */
-const BPRE=(/(^|\+)bns(sel|mg|brd|up|eqp)(\+|$)/.exec(OPT)||[])[2]||'';
+const BPRE=(/(^|\+)bns(sel|mg|brd|up|eqp)(=\d)?(\+|$)/.exec(OPT)||[])[2]||'';
 /* ⚔bnseq = **装備を全部付けたバス**で走らせて撮る(2026-08-02(44))。⚠bnsdrv と併せて使う */
 const BEQA=/(^|\+)bnseq(\+|$)/.test(OPT);
+/* ⭐bnsmg[=0/1/2] = どのミニゲームを撮るか(0=⛽給油 / 1=🏭荷積み / 2=🏠物色)。
+   ⚠**棟の種類でゲームが変わる**ので、番号でその棟を選んでから始めている。 */
+const MGK=+((/(^|\+)bnsmg=(\d)/.exec(OPT)||[])[2]||0);
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
@@ -349,8 +352,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +(BEQA?'if(G.players[0].bus)bupApply(G.players[0].bus,META.bup,META.beq);':'')
      +'}catch(e){document.title="ERR18 "+e.message;}},1100);'):'')
  +((BNS&&BPRE)?('setTimeout(function(){try{var Q=G.bpre;if(!Q)throw new Error("bpre なし");'
-     +(BPRE==='mg'?'bnsMgStart(Q,Q.pick[0]);for(var k=0;k<2;k++){Q.mg.pos=Q.mg.tgt;bnsMgTap(Q);}'
-       +'for(var k2=0;k2<24;k2++)bnsPreStep(.02);':'')
+     /* ⭐bnsmg=⛽給油 / bnsmg2=🏭荷積み / bnsmg3=🏠物色(⚠棟の種類でゲームが変わる) */
+     +(BPRE==='mg'?('var kk='+MGK+';var bb=Q.pick.filter(function(q){return (q.ek|0)===kk;})[0]||Q.pick[0];'
+       +'bnsMgStart(Q,bb);'
+       +'if(kk===0){for(var k=0;k<2;k++){Q.mg.pos=Q.mg.tgt;bnsMgTap(Q,0,0);}}'
+       +'else if(kk===1){for(var k=0;k<3;k++){Q.mg.bx=Q.mg.cx+(k?0.03:0);bnsMgTap(Q,0,0);}}'
+       +'else{Q.mg.i=2;Q.mg.pts=14;Q.mg.run=2;}'
+       +'for(var k2=0;k2<24;k2++)bnsPreStep(.02);'):'')
      +(BPRE==='brd'?'Q.res=[120,90,80];Q.left=0;bnsBoardStart();'
        +'for(var k=0;k<70;k++)bnsPreStep(.02);':'')
      /* ⚠**強化画面は物資を持たせて撮る**=素寒貧だと全部灰色の札しか写らない。

@@ -3322,18 +3322,39 @@ function checkBnsFlow(){
   console.log('FAIL: 選択肢の棟数が違う '+G.bpre.pick.length+'/'+bnsMgN());process.exit(1);}
  fitCanvas();
  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 選択画面の描画で例外 '+e.message);process.exit(1);}
- /* ③④ 3回遊ぶ(⚠毎回**同じ棟**を選ぶ=消えないことをここで見る) */
- let tot=0;
+ /* ③④⭐**3回遊ぶ**。⚠⚠**3種とも別の遊び**なので、種類ごとに上手く遊んでやること
+    (2026-08-02(45)ユーザー「全部同じミニゲームはやめて」)。⭐棟は左から順に選ぶ=3種とも通る。 */
+ /* 1回ぶんを上手にこなす。⚠**盤面(mg)が消えるまで押し切らない**=締めの一拍を見たいので */
+ const mgPlay=()=>{
+  for(let n=0;n<80;n++){
+   const M=G.bpre.mg;if(!M||M.endT>0)break;
+   if(M.kind===1){M.bx=M.cx;bnsMgTap(G.bpre,0,0);}
+   else if(M.kind===2){
+    const R=bnsMfRects(cv.width,cv.height);
+    let h=-1;for(let i=0;i<M.items.length;i++)if(M.items[i]===M.tgt){h=i;break;}
+    if(h<0){console.log('FAIL: 🏠物色でお題が盤面に無い');process.exit(1);}
+    M.rt=0;bnsMgTap(G.bpre,R[h].x+4,R[h].y+4);
+    /* ⚠時間で終わる遊びなので、押すだけでは終わらない=時間も進める */
+    bnsMgStep(G.bpre,.35);
+   }else{M.pos=M.tgt;bnsMgTap(G.bpre,0,0);}
+  }
+ };
+ let tot=0,kinds=[];
  for(let r=0;r<BNS_MG_T;r++){
-  const b=G.bpre.pick[0];
+  const b=G.bpre.pick[r%G.bpre.pick.length];
   bnsPreTap(0,0,b.x,b.y);
   if(G.bpre.st!=='mini'){console.log('FAIL: 棟を押してもミニゲームが始まらない');process.exit(1);}
-  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: ミニゲームの描画で例外 '+e.message);process.exit(1);}
-  /* ⚠**帯のど真ん中で止める**=会心で通す(当てるほど増えることを下で見る) */
-  for(let n=0;n<BMG_N;n++){const M=G.bpre.mg;if(!M)break;M.pos=M.tgt;bnsMgTap(G.bpre);}
-  if(!G.bpre.mg){console.log('FAIL: 本数を撃ち切る前にミニゲームが消えている');process.exit(1);}
-  if(!(G.bpre.mg.pts>0)){console.log('FAIL: 会心で止めても点が入らない');process.exit(1);}
-  for(let k=0;k<60&&G.bpre.st==='mini';k++)gameStep(.05);
+  if((G.bpre.mg.kind|0)!==(b.ek|0)){
+   console.log('FAIL: 棟の種類とミニゲームが食い違う');process.exit(1);}
+  kinds.push(BMG_K[G.bpre.mg.kind].n);
+  try{drawBnsPre(ctx,me,1.2);}catch(e){
+   console.log('FAIL: ミニゲームの描画で例外('+BMG_K[G.bpre.mg.kind].n+') '+e.message);process.exit(1);}
+  mgPlay();
+  if(!G.bpre.mg){console.log('FAIL: 締めの前にミニゲームが消えている');process.exit(1);}
+  if(!(G.bpre.mg.pts>0)){
+   console.log('FAIL: 上手く遊んでも点が入らない('+BMG_K[G.bpre.mg.kind].n+')');process.exit(1);}
+  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 締めの描画で例外 '+e.message);process.exit(1);}
+  for(let k=0;k<120&&G.bpre.st==='mini';k++)gameStep(.05);
   if(G.bpre.st==='mini'){console.log('FAIL: ミニゲームが終わらない');process.exit(1);}
   const t2=G.bpre.res[0]+G.bpre.res[1]+G.bpre.res[2];
   if(!(t2>tot)){console.log('FAIL: 遊んでも物資が増えない '+t2);process.exit(1);}
@@ -3341,11 +3362,10 @@ function checkBnsFlow(){
   if(G.bpre.left!==BNS_MG_T-1-r){
    console.log('FAIL: 残り回数が減っていない '+G.bpre.left);process.exit(1);}
   if(G.bpre.pick.length!==bnsMgN()){console.log('FAIL: 選んだ棟が消えている');process.exit(1);}
-  /* ⚠**主の物資が一番多いこと**=そうでないと「どこを漁るか」を選ぶ理由が消える */
-  if(r===BNS_MG_T-1){const k0=b.ek|0;
-   for(let i=0;i<3;i++)if(i!==k0&&G.bpre.res[i]>=G.bpre.res[k0]){
-    console.log('FAIL: 選んだ棟の物資が一番多くない '+JSON.stringify(G.bpre.res));process.exit(1);}}
  }
+ /* ⚠**3種とも別の遊びであること**(同じ物を3つ並べない=ユーザー決定) */
+ if(new Set(kinds).size!==bnsMgN()){
+  console.log('FAIL: 3棟のミニゲームが同じ物になっている '+kinds.join('/'));process.exit(1);}
  /* ⑤ 乗り込みムービー */
  if(G.bpre.st!=='board'){console.log('FAIL: 3回終わっても乗り込みへ進まない '+G.bpre.st);process.exit(1);}
  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 乗り込みの描画で例外 '+e.message);process.exit(1);}
@@ -3408,7 +3428,7 @@ function checkBnsFlow(){
    console.log('FAIL: 初期化してもバスの強化が残っている');process.exit(1);}}
  bnsPreSkip();backTitle();
  META.stg=0;setDiff=2;
- console.log('🎒走る前の流れ: 選択'+bnsMgN()+'棟 → ⛽給油'+BNS_MG_T+'回(物資 計'+tot
+ console.log('🎒走る前の流れ: 選択'+bnsMgN()+'棟 → '+kinds.join('/')+'(物資 計'+tot
   +') → 乗り込み → 🔧性能'+BUP.length+'項目/⚔装備'+BEQ.length+'種(最高速 '+BUS_SP+'→'+Math.round(sp1)
   +') → 出発 / 永続で持ち越す OK');
 }

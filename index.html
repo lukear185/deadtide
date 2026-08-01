@@ -21338,23 +21338,59 @@ function bnsPreStep(dt){
  if(Q.st==='mini')bnsMgStep(Q,dt);
  else if(Q.st==='board')bnsBoardStep(C,Q,dt);
 }
-/* ============ ⛽⭐⭐**ミニゲーム①「給油」**(2026-08-02(43)) ============
+/* ============ 🎮⭐⭐⭐**ミニゲーム3種**(⛽は2026-08-02(43) / 🏭🏠は(45)) ============
    ⭐**中毒性の条件はユーザー決定で2つ**=**1回が短いこと** と **上手いと明らかに増えること**。
+   ⚠⚠**3種は「別の腕前」を測ること**(2026-08-02(45)ユーザー「全部同じミニゲームはやめて」)=
+     ⛽**タイミング**(動く針を止める) / 🏭**目測**(流れる荷を真上で落として積む) /
+     🏠**視覚探索**(お題の物を素早く見つける)。
+     ⚠同じ形の遊びを3つ並べると、棟を選ぶ理由が「物資」だけになって**選択が薄くなる**。
+   ⚠**運だけの物は入れない**=3種とも狙って当てる/見て探すで腕前が出る形にしてある。
    ⚠⚠**コメントの中で「星2つ」の直後に「斜線」を書かない**(2026-08-02(43)に踏んだ)=
      **その2文字がコメントの終わりの記号そのもの**なので、コメントがそこで切れて
-     **スクリプト全体が文法エラー**になる(`test_undef` が捕まえた)。
-     ①8回タップで終わる(20秒かからない) ②**連続で当てるほど倍率が伸びる**
-     ③外すと倍率だけ落ちる(回数は減らない)=取り返せるので「もう1回」が続く。
-   ⚠**運だけにしない**=目標の帯は**止める前から見えている**(反射ではなく狙って止める遊び)。
-   ⭐**回を追うごとに針が速く・帯が狭くなる**=同じ8回でも後半ほど価値が上がる。
-   ⚠⚠**残り2種(🏭荷下ろし/🏠物色)はまだ作っていない**(ユーザー決定「まず1種だけ作って手触りを見る」)=
-     **3棟ともこの給油を遊ぶ**が、**もらえる物資は棟の種類で変わる**ので選ぶ理由は先に成立している。 */
-const BMG_N=8;            /* 1回のミニゲームで給油する本数 */
+     **スクリプト全体が文法エラー**になる(`test_undef` が捕まえた)。 */
+const BMG_MUL=[1,1.2,1.5,1.9,2.4];/* 連続の倍率(1連目から。⚠3種で共通) */
+const BMG_PT=[5,3,0];             /* ✨ピッタリ / ⭕成功 / ❌失敗(⚠3種で共通) */
+const BMG_SUB=.35;                /* ⚠主でない物資も少しは入る=1種類しか貯まらないと強化が1本道になる */
+/* ⚠**並びは `ENT_K`(棟の種類)と同じ**。⭐**選択画面の札にもこの名前を出す**=
+   何の遊びか読めないと「どこを漁るか」が物資だけの選択になってしまう。 */
+const BMG_K=[{ic:'⛽',n:'給油',   d:'緑の帯でタップ!'},
+             {ic:'🏭',n:'荷積み', d:'荷台の真上でタップ!'},
+             {ic:'🏠',n:'物色',   d:'お題の物を見つけてタップ!'}];
+/* --- ⛽**給油**=動く針を目標の帯で止める(タイミング)。⚠帯は止める前から見えている --- */
+const BMG_N=8;            /* 給油する本数 */
 const BMG_SP=[1.05,.16];  /* 針の速さ(初回 / 1本ごとの増え) */
 const BMG_W=[.22,-.016];  /* 目標の帯の幅(初回 / 1本ごとの狭まり) */
-const BMG_PT=[5,3,0];     /* ✨会心 / ⭕成功 / ❌失敗 */
-const BMG_MUL=[1,1.2,1.5,1.9,2.4];/* 連続の倍率(1連目から) */
-const BMG_SUB=.35;        /* ⚠**主でない物資も少しは入る**=1種類しか貯まらないと強化が1本道になる */
+/* --- 🏭**荷積み**=左右に流れる荷を荷台の真上で落として積む(目測)。
+   ⚠⚠**ズレたぶんだけ荷が細くなる**=**自分の失敗が次の難しさになる**のがこの遊びの背骨。
+   ⚠**幅が尽きたらそこで終わり**=8段まで積めるかどうかが腕前。 --- */
+const BML_N=8;            /* 何段まで積むか */
+const BML_W0=.34;         /* 1段目の幅(画面の割合) */
+const BML_SP=[.62,.10];   /* 荷が左右に動く速さ(初段 / 1段ごとの増え) */
+const BML_HIT=.012;       /* これ以内なら✨ピッタリ */
+const BML_BACK=.022;      /* ✨ピッタリで戻る幅(⚠戻しすぎると失敗が痛くなくなる) */
+/* --- 🏠**物色**=お題の物を素早く見つけてタップ(視覚探索)。
+   ⚠**速いほど得**(素早く見つけると✨)=時間で待つだけの遊びにしない。
+   ⚠**間違えると時間が減る**=当てずっぽうの連打を封じる。 --- */
+/* ⚠⚠**問題数の上限を必ず置く**(2026-08-02(45)に検査で気づいた)=時間だけで区切ると
+   上手い人ほど何問でも解けてしまい、**3種の実入りが揃わない**(⛽8本/🏭7段に対して30問解けた)。 */
+const BMF_N=9;            /* 何個見つけたら終わりか */
+const BMF_T=11;           /* 制限時間(秒) */
+const BMF_PEN=.9;         /* 間違えた時に減る秒数 */
+const BMF_FAST=1.0;       /* この秒数より速く見つけたら✨ */
+const BMF_C=4,BMF_R=3;    /* 棚の列と段 */
+const BMF_ITEM=[{n:'缶詰',c:'#c2703a'},{n:'瓶',c:'#6f9c8f'},{n:'木箱',c:'#8a6a45'},
+                {n:'薬',c:'#cfc7b4'},{n:'パン',c:'#c49a5a'},{n:'電池',c:'#4f6a86'}];
+/* 3種で共通の採点。⚠**倍率は連続でしか伸びない**=1回ごとの手応えではなく「切らさない」に値段を付ける */
+function bnsMgHit(M,g,base){
+ if(g<2)M.run++;else M.run=0;
+ M.runMx=Math.max(M.runMx,M.run);
+ const mul=g<2?BMG_MUL[Math.min(BMG_MUL.length-1,M.run-1)]:0;
+ const add=g<2?Math.max(1,Math.round((base==null?BMG_PT[g]:base)*mul)):0;
+ M.pts+=add;M.lastG=g;M.msgT=.75;M.fl=g===0?.28:0;
+ try{if(g===0){if(sfx.cmbUp)sfx.cmbUp();}else if(g===1){if(sfx.tap)sfx.tap();}else if(sfx.back)sfx.back();}catch(e){}
+ return add;
+}
+/* ⛽1本ぶんの支度 */
 function bnsMgRound(M){
  M.sp=BMG_SP[0]+BMG_SP[1]*M.i;
  M.w=Math.max(.075,BMG_W[0]+BMG_W[1]*M.i);
@@ -21362,11 +21398,31 @@ function bnsMgRound(M){
  M.tgt=.20+Math.random()*.60;
  M.pos=M.dir>0?.02:.98;
 }
+/* 🏭1段ぶんの支度。⚠**向きを段ごとに変える**=同じ側からばかり来ると覚えゲーになる */
+function bnsMlRound(M){
+ M.sp=BML_SP[0]+BML_SP[1]*M.n;
+ M.dir=(M.n%2)?-1:1;
+ M.bx=M.dir>0?M.w/2:1-M.w/2;
+}
+/* 🏠1問ぶんの支度。⚠**お題が盤面に必ず1つある**ようにする(無いと探しても見つからない) */
+function bnsMfRound(M){
+ const n=BMF_C*BMF_R;
+ M.items=[];
+ for(let i=0;i<n;i++)M.items.push((Math.random()*BMF_ITEM.length)|0);
+ M.tgt=(Math.random()*BMF_ITEM.length)|0;
+ M.items[(Math.random()*n)|0]=M.tgt;
+ M.rt=0;/* この問に掛かった秒数(速いと✨) */
+}
 function bnsMgStart(Q,b){
+ const k=b.ek|0;
  Q.st='mini';Q.got=null;Q.gotT=0;
- Q.mg={ek:b.ek|0,i:0,pos:.02,dir:1,sp:BMG_SP[0],w:BMG_W[0],tgt:.5,
-       t:0,pts:0,run:0,runMx:0,msg:'',msgT:0,endT:0,fl:0,lastG:-1};
- bnsMgRound(Q.mg);
+ Q.mg={ek:k,kind:k,i:0,t:0,pts:0,run:0,runMx:0,msg:'',msgT:0,endT:0,fl:0,lastG:-1,
+  /* ⛽ */pos:.02,dir:1,sp:BMG_SP[0],w:BMG_W[0],tgt:.5,
+  /* 🏭 */n:0,cx:.5,bx:.5,stack:[],
+  /* 🏠 */left:BMF_T,items:[],rt:0};
+ if(k===1){Q.mg.w=BML_W0;Q.mg.cx=.5;Q.mg.stack=[{x:.5,w:BML_W0}];Q.mg.n=1;bnsMlRound(Q.mg);}
+ else if(k===2)bnsMfRound(Q.mg);
+ else bnsMgRound(Q.mg);
 }
 function bnsMgStep(Q,dt){
  const M=Q.mg;if(!M)return;
@@ -21374,24 +21430,92 @@ function bnsMgStep(Q,dt){
  if(M.msgT>0)M.msgT=Math.max(0,M.msgT-dt);
  if(M.fl>0)M.fl=Math.max(0,M.fl-dt);
  if(M.endT>0){M.endT-=dt;if(M.endT<=0)bnsMgDone(Q);return;}
- M.pos+=M.dir*M.sp*dt;
- if(M.pos>1){M.pos=1;M.dir=-1;}else if(M.pos<0){M.pos=0;M.dir=1;}
+ if(M.kind===1){/* 🏭荷が左右に流れる */
+  const lo=M.w/2,hi=1-M.w/2;
+  M.bx+=M.dir*M.sp*dt;
+  if(M.bx>hi){M.bx=hi;M.dir=-1;}else if(M.bx<lo){M.bx=lo;M.dir=1;}
+ }else if(M.kind===2){/* 🏠時間で終わる */
+  M.rt+=dt;M.left-=dt;
+  if(M.left<=0){M.left=0;M.msg='⏱ 時間切れ';M.msgT=1;M.endT=1.1;}
+ }else{/* ⛽針が左右に流れる */
+  M.pos+=M.dir*M.sp*dt;
+  if(M.pos>1){M.pos=1;M.dir=-1;}else if(M.pos<0){M.pos=0;M.dir=1;}
+ }
 }
-/* 1本ぶんの判定。⚠**外しても本数は進める**=進まないと「当たるまで押す」で終わらなくなる */
-function bnsMgTap(Q){
+/* 押した時。⚠**画面座標も受け取る**=🏠物色は「どこを押したか」で当たりが決まる */
+function bnsMgTap(Q,sx,sy){
  const M=Q.mg;if(!M||M.endT>0)return;
+ if(M.kind===1)return bnsMlTap(M);
+ if(M.kind===2)return bnsMfTap(M,sx,sy);
+ /* ⛽ ⚠**外しても本数は進める**=進まないと「当たるまで押す」で終わらなくなる */
  const h=M.w/2,d=Math.abs(M.pos-M.tgt);
  const g=d<=h*.36?0:(d<=h?1:2);
- if(g<2)M.run++;else M.run=0;
- M.runMx=Math.max(M.runMx,M.run);
- const mul=g<2?BMG_MUL[Math.min(BMG_MUL.length-1,M.run-1)]:0;
- const add=g<2?Math.round(BMG_PT[g]*mul):0;
- M.pts+=add;M.lastG=g;
+ const add=bnsMgHit(M,g);
  M.msg=g===0?'✨ピッタリ! +'+add:(g===1?'⭕成功 +'+add:'❌こぼした…');
- M.msgT=.75;M.fl=g===0?.28:0;
- try{if(g===0){if(sfx.cmbUp)sfx.cmbUp();}else if(g===1){if(sfx.tap)sfx.tap();}else if(sfx.back)sfx.back();}catch(e){}
  M.i++;
  if(M.i>=BMG_N)M.endT=1.1;else bnsMgRound(M);
+}
+/* 🏭落とす。⚠**完全に外したら崩れてそこで終わり**=積み上げの緊張がこれで生まれる */
+function bnsMlTap(M){
+ const d=Math.abs(M.bx-M.cx);
+ if(d>=M.w){M.msg='💥 崩れた…';bnsMgHit(M,2);M.endT=1.3;return;}
+ const g=d<=BML_HIT?0:1;
+ const add=bnsMgHit(M,g);
+ M.msg=g===0?'✨ピッタリ! +'+add:'⭕積んだ +'+add;
+ const l=Math.max(M.cx-M.w/2,M.bx-M.w/2),r=Math.min(M.cx+M.w/2,M.bx+M.w/2);
+ /* ⚠**ピッタリの時だけ幅が少し戻る**=詰めるほど長く積めるので、精度がそのまま点になる */
+ M.cx=(l+r)/2;M.w=g===0?Math.min(BML_W0,(r-l)+BML_BACK):(r-l);
+ M.stack.push({x:M.cx,w:M.w});
+ M.n++;
+ if(M.w<.025){M.msg='💥 荷台が尽きた…';M.endT=1.3;}
+ else if(M.n>=BML_N){M.msg='🏭 積み切った!';M.endT=1.2;}
+ else bnsMlRound(M);
+}
+/* 🏠見つける。⚠**間違えたら時間が減る**=当てずっぽうの連打を封じる */
+function bnsMfTap(M,sx,sy){
+ const R=bnsMfRects(cv.width,cv.height);
+ let h=-1;
+ for(const r of R)if(sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h){h=r.i;break;}
+ if(h<0)return;
+ if(M.items[h]===M.tgt){
+  const g=M.rt<=BMF_FAST?0:1;
+  const add=bnsMgHit(M,g);
+  M.msg=g===0?'✨みつけた! +'+add:'⭕みつけた +'+add;
+  M.i++;
+  if(M.i>=BMF_N){M.msg='🏠 漁り尽くした!';M.endT=1.2;}else bnsMfRound(M);
+ }else{
+  bnsMgHit(M,2);
+  M.msg='❌ 違う… -'+BMF_PEN.toFixed(1)+'秒';
+  M.left=Math.max(0,M.left-BMF_PEN);
+  M.items[h]=M.tgt<0?0:M.items[h];/* ⚠盤面は変えない(探し直しの手掛かりを消さない) */
+ }
+}
+/* 🏠棚の枠。⭐**絵とタップで必ず同じ物を使う**(2つに分けると必ず食い違う) */
+function bnsMfRects(W,H){
+ const dp=DPR||1,mx=W*.10,my=H*.34,gp=8*dp;
+ const gw=W-mx*2,gh=H*.44;
+ const cw=(gw-gp*(BMF_C-1))/BMF_C,ch=(gh-gp*(BMF_R-1))/BMF_R;
+ const R=[];
+ for(let i=0;i<BMF_C*BMF_R;i++)
+  R.push({x:mx+(i%BMF_C)*(cw+gp),y:my+((i/BMF_C)|0)*(ch+gp),w:cw,h:ch,i:i});
+ return R;
+}
+/* 🏠品物の絵。⚠**絵で見分けさせる遊び**なので、形も色も混ざらないようにする(全部プロシージャル) */
+function bnsMfItem(c,k,x,y,s){
+ const IT=BMF_ITEM[k]||BMF_ITEM[0];
+ c.save();c.translate(x,y);c.scale(s,s);
+ c.lineWidth=2.6;c.strokeStyle=INK;c.fillStyle=IT.c;
+ if(k===0){rr(c,-9,-14,18,28,3);c.fill();c.stroke();c.fillStyle=PAPER;c.fillRect(-9,-5,18,7);}
+ else if(k===1){c.beginPath();c.moveTo(-3,-18);c.lineTo(3,-18);c.lineTo(3,-8);c.lineTo(8,-2);
+  c.lineTo(8,14);c.lineTo(-8,14);c.lineTo(-8,-2);c.lineTo(-3,-8);c.closePath();c.fill();c.stroke();}
+ else if(k===2){rr(c,-13,-11,26,22,2);c.fill();c.stroke();
+  c.strokeStyle='#5f4830';c.beginPath();c.moveTo(-13,0);c.lineTo(13,0);c.stroke();}
+ else if(k===3){rr(c,-8,-7,16,20,3);c.fill();c.stroke();
+  c.fillStyle='#b03428';rr(c,-6,-14,12,8,2);c.fill();c.stroke();}
+ else if(k===4){c.beginPath();c.ellipse(0,0,14,10,0,0,7);c.fill();c.stroke();
+  c.strokeStyle='#8a6a3a';c.beginPath();for(let q=-1;q<=1;q++){c.moveTo(q*6-3,-5);c.lineTo(q*6+2,5);}c.stroke();}
+ else{rr(c,-7,-13,14,26,2);c.fill();c.stroke();c.fillStyle=PAPER2;c.fillRect(-3,-17,6,4);}
+ c.restore();
 }
 /* 終わり=物資を積んで選択画面へ戻る。⚠**3回終わったら乗り込みへ**(回数は棟ではなく回で数える) */
 function bnsMgDone(Q){
@@ -21497,7 +21621,7 @@ function bnsPreTap(sx,sy,mx,my){
    if(d<b.rr+180&&d<bd){bd=d;h=i;}}
   if(h>=0){Q.selI=h;Q.selT=.22;bnsMgStart(Q,Q.pick[h]);}
   return;}
- if(Q.st==='mini'){bnsMgTap(Q);return;}
+ if(Q.st==='mini'){bnsMgTap(Q,sx,sy);return;}
  if(Q.st==='up'){bnsUpTap(Q,sx,sy);return;}
 }
 /* 走る前の帯(上下)。⚠**画面の割合で持つ**=どの寸法でも同じ見え方になる */
@@ -21569,7 +21693,7 @@ function bnsDrawSel(c,Q,W,H,dp,t){
   c.lineTo(L.px,L.py+(L.y<L.py?-L.ry:L.ry));c.stroke();
   bnsPanel(c,L.x,L.y,bw,bh,.88);
   c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(17*dp)+'px '+FF;
-  c.fillText((ENT_K[L.b.ek]||ENT_K[0]).n,L.x+bw/2,L.y+22*dp);
+  c.fillText((BMG_K[L.b.ek]||BMG_K[0]).ic+' '+(BMG_K[L.b.ek]||BMG_K[0]).n,L.x+bw/2,L.y+22*dp);
   c.fillStyle=GOLD;c.font='900 '+Math.round(16*dp)+'px '+FF;
   c.fillText(BRES[L.b.ek].ic+BRES[L.b.ek].n+' がたくさん',L.x+bw/2,L.y+43*dp);
  }
@@ -21586,48 +21710,112 @@ function bnsDrawSel(c,Q,W,H,dp,t){
  c.textAlign='center';c.fillStyle='rgba(242,236,220,.82)';c.font='900 '+Math.round(15*dp)+'px '+FF;
  c.fillText('光っている廃墟をタップ → ミニゲームで物資を集める',W/2,H-14*dp);
 }
-/* ②⛽**給油**。⚠**画面のどこを押しても止まる**=運転前の軽い遊びに狙いを付けさせない */
+/* ②🎮**ミニゲームの絵**。⚠**枠(見出し・連なり・お知らせ・締め)は3種で共通**にして、
+   真ん中の遊び場だけ差し替える=3つ作っても文言と手触りがばらけない。 */
 function bnsDrawMg(c,Q,W,H,dp,t){
  const M=Q.mg;if(!M)return;
+ const K=BMG_K[M.kind]||BMG_K[0];
  c.fillStyle='rgba(12,9,6,.74)';c.fillRect(0,0,W,H);
  if(M.fl>0){c.fillStyle='rgba(255,246,226,'+(.22*clamp(M.fl/.28,0,1)).toFixed(3)+')';c.fillRect(0,0,W,H);}
  /* 見出し */
  c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(22*dp)+'px '+FF;
- c.fillText('⛽ 給油 — 緑の帯でタップ!',W*.05,H*.115);
+ c.fillText(K.ic+' '+K.n+' — '+K.d,W*.05,H*.115);
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
- c.fillText('あと '+Math.max(0,BMG_N-M.i)+' 本',W*.95,H*.115);
- /* 目盛り */
+ c.fillText(M.kind===1?('あと '+Math.max(0,BML_N-M.n)+' 段')
+           :M.kind===2?('あと '+Math.max(0,BMF_N-M.i)+' 個 / '+M.left.toFixed(1)+'秒')
+                      :('あと '+Math.max(0,BMG_N-M.i)+' 本'),W*.95,H*.115);
+ /* 遊び場 */
+ if(M.kind===1)bnsDrawMl(c,M,W,H,dp);
+ else if(M.kind===2)bnsDrawMf(c,M,W,H,dp,t);
+ else bnsDrawMgas(c,M,W,H,dp);
+ /* 連なりと得点。⚠⚠**遊び場の空いている所は3種で違う**(2026-08-02(45)に撮って直した)=
+    同じ y に置いたら🏠は「お題」の上に、🏭は荷台の上に重なって両方読めなかった。
+    ⭐**⛽だけ真ん中が空いている**ので、そこにお知らせを大きく出す。
+    ⭐**🏭🏠はお知らせと連なりを同じ行で入れ替える**=1行しか空いていないので重ねようがない。 */
+ const iy=M.kind===1?H*.175:(M.kind===2?H*.90:H*.245);
+ c.textAlign='center';
+ if(!(M.msgT>0&&M.kind!==0)){
+  c.fillStyle=M.run>=2?GOLD:PANE;
+  c.font='900 '+Math.round(20*dp)+'px '+FF;
+  c.fillText('🔥 '+M.run+'連続 ×'+BMG_MUL[Math.min(BMG_MUL.length-1,Math.max(0,M.run-1))].toFixed(2)
+             +'     いま '+BRES[M.ek].ic+' '+M.pts,W/2,iy);}
+ if(M.msgT>0){c.globalAlpha=clamp(M.msgT/.4,0,1);
+  c.fillStyle=M.lastG===0?GOLD:(M.lastG===1?LIFE:DANGER2);
+  c.font='900 '+Math.round((M.kind===0?26:22)*dp)+'px '+FF;
+  c.fillText(M.msg,W/2,M.kind===0?H*.63:iy);c.globalAlpha=1;}
+ if(M.endT>0){
+  c.fillStyle='rgba(12,9,6,.72)';c.fillRect(0,H*.40,W,H*.22);
+  c.fillStyle=GOLD;c.font='900 '+Math.round(28*dp)+'px '+FF;
+  c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' を '+Math.max(1,M.pts)+' 手に入れた!',W/2,H*.545);
+ }else if(M.kind===0){
+  const bw=W*.42,bh=H*.15,bx=W/2-bw/2,by=H*.72;
+  bnsPanel(c,bx,by,bw,bh,.72);
+  c.fillStyle=PANE;c.font='900 '+Math.round(22*dp)+'px '+FF;
+  c.fillText('タップ!',W/2,by+bh*.62);}
+}
+/* ⛽給油=動く針と目標の帯。⚠**画面のどこを押しても止まる**(軽い遊びに狙いを付けさせない) */
+function bnsDrawMgas(c,M,W,H,dp){
  const gx=W*.09,gw=W*.82,gy=H*.44,gh=42*dp;
  c.fillStyle='rgba(30,25,19,.92)';rr(c,gx,gy,gw,gh,gh*.5);c.fill();
  c.strokeStyle='rgba(242,236,220,.7)';c.lineWidth=3*dp;c.stroke();
- /* 目標の帯(⚠**外側と芯の2段**=どこが会心か読めないと狙えない) */
+ /* 目標の帯(⚠**外側と芯の2段**=どこがピッタリか読めないと狙えない) */
  {const w=M.w*gw,x0=gx+M.tgt*gw-w/2;
   c.fillStyle='rgba(110,168,72,.72)';rr(c,x0,gy+4*dp,w,gh-8*dp,8*dp);c.fill();
   const w2=w*.36,x2=gx+M.tgt*gw-w2/2;
   c.fillStyle='rgba(255,207,106,.92)';rr(c,x2,gy+4*dp,w2,gh-8*dp,7*dp);c.fill();}
  /* 針 */
  {const nx=gx+M.pos*gw;
-  c.strokeStyle='#f2ecdc';c.lineWidth=5*dp;
+  c.strokeStyle=PANE;c.lineWidth=5*dp;
   c.beginPath();c.moveTo(nx,gy-11*dp);c.lineTo(nx,gy+gh+11*dp);c.stroke();
   c.fillStyle='#c2453a';c.beginPath();
   c.moveTo(nx,gy-13*dp);c.lineTo(nx-9*dp,gy-26*dp);c.lineTo(nx+9*dp,gy-26*dp);c.closePath();c.fill();}
- /* 連なりと得点 */
- c.textAlign='center';
- c.fillStyle=M.run>=2?GOLD:PANE;
- c.font='900 '+Math.round(20*dp)+'px '+FF;
- c.fillText('🔥 '+M.run+'連続 ×'+BMG_MUL[Math.min(BMG_MUL.length-1,Math.max(0,M.run-1))].toFixed(2)
-            +'     いま '+BRES[M.ek].ic+' '+M.pts,W/2,H*.30);
- if(M.msgT>0){c.globalAlpha=clamp(M.msgT/.4,0,1);
-  c.fillStyle=M.lastG===0?GOLD:(M.lastG===1?LIFE:DANGER2);
-  c.font='900 '+Math.round(26*dp)+'px '+FF;c.fillText(M.msg,W/2,H*.63);c.globalAlpha=1;}
- if(M.endT>0){
-  c.fillStyle=GOLD;c.font='900 '+Math.round(28*dp)+'px '+FF;
-  c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' を '+Math.max(1,M.pts)+' 手に入れた!',W/2,H*.80);
- }else{
-  const bw=W*.42,bh=H*.15,bx=W/2-bw/2,by=H*.72;
-  bnsPanel(c,bx,by,bw,bh,.72);
-  c.fillStyle=PANE;c.font='900 '+Math.round(22*dp)+'px '+FF;
-  c.fillText('タップ!',W/2,by+bh*.62);}
+}
+/* 🏭荷積み=下から積み上がる荷と、上を流れる荷。⚠**ズレが目で見えること**が遊びの全部。
+   ⭐**積んだ荷の縁を残す**=どこまで細くなったかが一目で分かる。 */
+function bnsDrawMl(c,M,W,H,dp){
+ const x0=W*.10,gw=W*.80,bot=H*.90,rh=H*.058;
+ /* 荷台(地面) */
+ c.fillStyle='rgba(52,46,38,.95)';c.fillRect(x0,bot,gw,10*dp);
+ c.strokeStyle='rgba(242,236,220,.5)';c.lineWidth=2.4*dp;c.strokeRect(x0,bot,gw,10*dp);
+ /* 積んだ荷 */
+ for(let i=0;i<M.stack.length;i++){
+  const q=M.stack[i],bx=x0+(q.x-q.w/2)*gw,by=bot-(i+1)*rh;
+  c.fillStyle=(i%2)?'#8a6a45':'#9c7a4f';
+  rr(c,bx,by,q.w*gw,rh-3*dp,3*dp);c.fill();
+  c.strokeStyle=INK;c.lineWidth=2.6*dp;c.stroke();
+  c.strokeStyle='rgba(95,72,48,.9)';c.lineWidth=2*dp;
+  c.beginPath();c.moveTo(bx,by+(rh-3*dp)/2);c.lineTo(bx+q.w*gw,by+(rh-3*dp)/2);c.stroke();
+ }
+ if(M.endT>0)return;
+ /* 流れている荷(⚠**真下に縦の線**を出す=どこに落ちるかが読めないと目測にならない) */
+ {const by=bot-(M.stack.length+1)*rh-6*dp,bx=x0+(M.bx-M.w/2)*gw;
+  c.strokeStyle='rgba(255,207,106,.55)';c.lineWidth=2*dp;
+  c.beginPath();c.moveTo(x0+M.bx*gw,by);c.lineTo(x0+M.bx*gw,bot);c.stroke();
+  c.fillStyle='#c9a13d';rr(c,bx,by,M.w*gw,rh-3*dp,3*dp);c.fill();
+  c.strokeStyle=INK;c.lineWidth=2.6*dp;c.stroke();}
+}
+/* 🏠物色=お題を出して、棚から探させる。⚠**暗くする**=「暗い部屋を漁っている」が絵で伝わる */
+function bnsDrawMf(c,M,W,H,dp,t){
+ /* お題 */
+ const IT=BMF_ITEM[M.tgt]||BMF_ITEM[0];
+ {const pw=W*.42,ph=52*dp,px=W/2-pw/2,py=H*.145;
+  bnsPanel(c,px,py,pw,ph,.9);
+  c.textAlign='left';c.fillStyle=PANE;c.font='900 '+Math.round(20*dp)+'px '+FF;
+  c.fillText('探せ: '+IT.n,px+58*dp,py+34*dp);
+  bnsMfItem(c,M.tgt,px+30*dp,py+ph/2,dp*.72);}
+ /* のこり時間の帯 */
+ {const bx=W*.10,bw=W*.80,by=H*.295,bh=8*dp;
+  c.fillStyle='rgba(30,25,19,.9)';rr(c,bx,by,bw,bh,bh/2);c.fill();
+  c.fillStyle=M.left<3?DANGER2:LIFE;
+  rr(c,bx,by,bw*clamp(M.left/BMF_T,0,1),bh,bh/2);c.fill();}
+ /* 棚 */
+ const R=bnsMfRects(W,H);
+ for(const r of R){
+  c.fillStyle='rgba(34,29,23,.94)';rr(c,r.x,r.y,r.w,r.h,7*dp);c.fill();
+  c.strokeStyle='rgba(242,236,220,.22)';c.lineWidth=2*dp;c.stroke();
+  const s=Math.min(r.w,r.h)/dp/62*dp;
+  bnsMfItem(c,M.items[r.i],r.x+r.w/2,r.y+r.h/2,s);
+ }
 }
 /* ③🚌**乗り込み**。⚠**黒帯だけで語る**=ここで凝ると「軽いムービー」でなくなる */
 function bnsDrawBoard(c,Q,W,H,dp){
