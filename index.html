@@ -20020,7 +20020,9 @@ function bnsBusStep(C,dt){
  for(const z of C.zombies){
   if(z.dead||z.d<0)continue;
   if(LANES&&z.d>bd9+BNS_BEHIND){z.dead=true;continue;}
-  const dx=z.px-B.x,dy=z.py-B.y,rz=rr9+(z.sc||1)*10;
+  /* ⚠⚠**当たりは絵の大きさ(`RICE_S`)に連動させる**(2026-08-02(36))=
+     絵だけ大きくすると「当たっていないのに死ぬ」になる。⚠ボスとエリートは米粒ではないので据え置き。 */
+  const dx=z.px-B.x,dy=z.py-B.y,rz=rr9+(z.sc||1)*10*((z.boss||z.elite)?1:RICE_K);
   if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
   dmgZ(C,z,BUS_DPS*(nz9?BUS_NIT_DPS:1)*dt,1,true);
@@ -20174,6 +20176,22 @@ const BNS_STN=280,BNS_CHK=420,BNS_TRK=190,BNS_DST=90,BNS_SCR=14;/* それぞれ�
    ⚠上限に当たったら古い物から上書き(=配列は伸びない)。⚠消える時はもう画面の外(速いので)。 */
 const BNS_CPS=260;
 const BSTN_LF=13,BCHK_G=760,BTRK_LF=9;    /* 血だまりの寿命 / 肉片の重力 / 轍の寿命(秒) */
+/* ⭐⭐⭐**吹き飛んだ体は「本物の弾道」で飛ばす**(2026-08-02(36)ユーザー「物理演算でゾンビ吹っ飛ぶように」)。
+   ⚠⚠**それまでは高さを持っていなかった**=画面のyを上へずらして重力で戻すだけの偽物だったので、
+     **着地しない・跳ねない・転がらない・回らない**うえ、**バスの速さと無関係**に同じ飛び方をしていた
+     (時速いくつで突っ込んでも同じ)。これが「物理に見えない」の正体。
+   ⭐**高さ z を別に持たせる**=地面の位置(x,y)と上下(z)が分かれるので、
+     着地・バウンド・転がり・落ちる影が全部素直に書ける。⚠上限つきの輪なので配列は伸びない。
+   ⚠**肉片とは別の輪にする**=肉片は1体につき7個も出るので、同じ輪に入れると
+     **体が飛んでいる途中で上書きされて消える**(体は轢殺に見せる主役なので消してはいけない)。 */
+const BNS_BOD=110;    /* 同時に飛んでいられる体の数。⚠超えたら古い物から上書き */
+const BBOD_G=1750;    /* 体にかかる重力(高さ方向)。⚠肉片(760)より強い=もっさり浮かせない */
+const BBOD_BNC=.42;   /* 地面で跳ね返る割合 */
+const BBOD_NB=2;      /* 跳ねる回数。⚠増やすと死体がいつまでも跳ねて安っぽい */
+const BBOD_FRI=.62;   /* 跳ねた時に横の速さが落ちる割合 */
+const BBOD_ROLL=.86;  /* 転がっている間の減速(1フレームあたり) */
+const BBOD_AIR=.45;   /* 飛んでいる間の空気抵抗(1秒あたりに残る割合)。⚠無いと森の奥まで飛んでいく */
+const BBOD_LF=2.6;    /* 消えるまでの秒数(⚠止まってからしばらく残す=飛んだ先に体が見える) */
 const BTRK_GAP=26;                        /* 轍を1点置くごとに進む距離 */
 /* ⚠寄り具合の逆数=「画面での見え方」で大きさを書けるようにする道具 */
 const bnsGz=()=>1/((CAM&&CAM.zm)||1);
@@ -20183,7 +20201,8 @@ const BNS_CMB_N=['','轢殺','大轢殺','蹂躙','地獄のバス'];
 const BNS_CMB_C=['',PAPER,GOLD,AMBER,RUST];
 function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;C.bdst=[];C.bdstI=0;
  C.bscr=[];C.bscrI=0;/* 画面に貼り付く血 */
- C.bcps=[];C.bcpsI=0;/* 路面に残る死体 */}
+ C.bcps=[];C.bcpsI=0;/* 路面に残る死体 */
+ C.bbod=[];C.bbodI=0;/* ⭐吹き飛んで転がる体(高さを持つ) */}
 /* 🔥⭐**ニトロを使う**(2026-08-02(23))。⚠**呼ぶのはボタンからだけ**にする(スティックと同じ作法)。
    ⚠満タンでない時は撃たせない=「押したのに何も起きない」を避けるため音で断る。 */
 function bnsNitro(){
@@ -20217,29 +20236,71 @@ function bnsSplat(C,z){
   if(bl>20){ax=ax*.5+(B.vx/bl)*.85;ay=ay*.5+(B.vy/bl)*.85;}}
  /* ⚠**数と初速を上げた**(2026-08-02(3)ユーザー「演出がちゃっちい」)=2〜4個では
     「何かが散った」で終わる。⚠輪の中で使い回すので、増やしても配列は伸びない。 */
+ /* ⚠**跡の大きさは体の大きさに連動させる**(2026-08-02(36))=`RICE_S` を上げた時に
+    跡だけ小さいままだと、体と跡の大きさがちぐはぐになる。 */
+ const ks=RICE_K;
  const a0=Math.atan2(ay,ax),n=FXLV===2?7:3;
  for(let i=0;i<n;i++){
   const a=a0+rnd(-1.0,1.0),sp=rnd(150,470);
   bnsRing(C,'bchk',BNS_CHK,{x:z.px,y:z.py-14,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(60,220),
-   t:0,lf:rnd(.30,.60),r:rnd(3,7.5)*gz});
+   t:0,lf:rnd(.30,.60),r:rnd(3,7.5)*gz*ks});
  }
  /* ⭐⭐**体そのものが吹き飛ぶ**(2026-08-02(23)「圧倒的爽快感」)。⚠**肉片だけでは「何かが散った」**で、
     **轢き殺した**にならない。⭐**大きくて黒フチのある塊を1つ、高く飛ばす**と一気に轢殺に見える。
-    ⚠1体につき1つだけ(数を増やすと肉片と混ざって粥になる)。⚠輪は使い回しなので配列は伸びない。 */
- {const a=a0+rnd(-.42,.42),sp=rnd(300,680);
-  bnsRing(C,'bchk',BNS_CHK,{x:z.px,y:z.py-16,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(300,560),
-   t:0,lf:rnd(.7,1.05),r:rnd(12,17)*gz,bd:1});}
+    ⚠1体につき1つだけ(数を増やすと肉片と混ざって粥になる)。⚠輪は使い回しなので配列は伸びない。
+    ⭐⭐**2026-08-02(36)に本物の弾道にした**(ユーザー「物理演算でゾンビ吹っ飛ぶように」)=
+      **速さも高さもバスの速さから出す**(速いほど遠くへ高く飛ぶ)+**高さ z を別に持つ**ので着地して跳ねる。
+    ⚠⚠**当たった位置で左右へ振り分ける**=バスの左に当たった体は左前へ飛ぶ。
+      これが無いと何体轢いても同じ向きへ散って、置き物が湧いているようにしか見えない。 */
+ {const bl=B?Math.hypot(B.vx,B.vy):0,nz=(B&&B.nitT>0)?1:0;
+  /* 進む向きと、その直角(=当たった位置が右か左かを測る軸)。⚠止まっている時は上向き扱い */
+  const fx=bl>20?B.vx/bl:0,fy=bl>20?B.vy/bl:-1;
+  const sw=B?clamp(((z.px-B.x)*(-fy)+(z.py-B.y)*fx)/(BUS_R*.9),-1,1):0;
+  const a=Math.atan2(fy+fx*sw*.85,fx+(-fy)*sw*.85)+rnd(-.22,.22);
+  /* ⚠**頭打ちを置く**(2026-08-02(36)に撮って直した)=速さにそのまま比例させると、ニトロ中に
+     **体が森の奥まで飛んでいって画面から消える**うえ**高く上がりすぎて画面の上へ抜ける**。
+     ⚠⚠コメントに「**」と「/」を続けて書かない=`*` と `/` が並んでコメントが途中で閉じる(実際に踏んだ)。 */
+  const sp=(90+bl*.42)*(nz?1.2:1)*rnd(.8,1.2);              /* 地面を滑っていく速さ */
+  const up=Math.min(620,150+bl*.30)*(nz?1.25:1)*rnd(.85,1.2);/* 跳ね上がる速さ(⚠寄りで割って見え方を揃える) */
+  /* ⚠**大きさは米粒と同じ式から出す**(`RICE_S`)=**飛ぶのは「さっきまで歩いていたその体」**なので、
+     別の寸法で描くと「板が飛んだ」に見える(実際にそう見えて描き直した)。 */
+  bnsRing(C,'bbod',BNS_BOD,{x:z.px,y:z.py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+   z:0,vz:up*gz,rot:rnd(0,6.28),rv:rnd(5,11)*(sw>=0?1:-1)*rnd(.7,1.3),
+   t:0,lf:BBOD_LF,zi:z.zi|0,s:((ZOMBIES[z.zi]&&ZOMBIES[z.zi].sc)||1)*RICE_S,nb:0});}
  /* ⭐⭐**潰れた体を路面に敷く**(2026-08-02(29))=**これが「轢いた証拠」**。
     ⚠**血の染みだけでは何も残らない**(画面では数pxの点)。⚠1体につき1つだけ。 */
  bnsRing(C,'bcps',BNS_CPS,{x:z.px+rnd(-6,6),y:z.py+rnd(-4,4),
-  w:rnd(15,23)*gz,h:rnd(8,12)*gz,ox:rnd(-11,11)*gz,oy:rnd(-7,7)*gz,ow:rnd(7,12)*gz});
+  w:rnd(15,23)*gz*ks,h:rnd(8,12)*gz*ks,ox:rnd(-11,11)*gz*ks,oy:rnd(-7,7)*gz*ks,ow:rnd(7,12)*gz*ks});
  /* 地面に残る血だまり(=跡)。⚠**大きめの1枚+飛び散った小さいの1枚**=1枚だけだと丸い点に見える */
- bnsRing(C,'bstn',BNS_STN,{x:z.px+rnd(-8,8),y:z.py+rnd(-4,4),r:rnd(14,26)*gz,t:0});
- bnsRing(C,'bstn',BNS_STN,{x:z.px+ax*rnd(20,70)+rnd(-14,14),y:z.py+ay*rnd(10,34)+rnd(-8,8),r:rnd(7,13)*gz,t:0});
+ bnsRing(C,'bstn',BNS_STN,{x:z.px+rnd(-8,8),y:z.py+rnd(-4,4),r:rnd(14,26)*gz*ks,t:0});
+ bnsRing(C,'bstn',BNS_STN,{x:z.px+ax*rnd(20,70)+rnd(-14,14),y:z.py+ay*rnd(10,34)+rnd(-8,8),r:rnd(7,13)*gz*ks,t:0});
 }
 function bnsFxStep(C,dt){
  const ck=C.bchk;if(ck)for(let i=0;i<ck.length;i++){const p=ck[i];
   if(p.t>=p.lf)continue;p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=BCHK_G*dt;}
+ /* ⭐⭐**吹き飛んだ体**(2026-08-02(36))=**地面の位置(x,y)と高さ(z)を別々に進める**。
+    ⚠これが「物理に見えるか」の全部=①重力で落ちる ②地面で跳ねる ③転がって止まる ④回る。
+    ⚠**重力も寄りで割る**(`bnsGz`)=大きさを寄りで割っているので、揃えないと跳ね方だけ寸法が合わない。
+    ⚠**跳ねるのは弱くなったら止める**=閾値を置かないと**その場で細かく震え続ける**。 */
+ const bd=C.bbod;
+ if(bd&&bd.length){const g9=BBOD_G*bnsGz();
+  /* ⚠**空気抵抗は1フレームに1回だけ出す**(体ごとに `Math.pow` を呼ばない)。
+     ⚠これが無いと**飛んだ体が減速せず森の奥まで飛んでいく**(撮って気づいた)。 */
+  const air=Math.pow(BBOD_AIR,dt);
+  for(let i=0;i<bd.length;i++){const p=bd[i];
+   if(p.t>=p.lf)continue;p.t+=dt;
+   p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.rv*dt;
+   if(p.z>0||p.vz>0){
+    p.vx*=air;p.vy*=air;
+    p.z+=p.vz*dt;p.vz-=g9*dt;
+    if(p.z<=0){p.z=0;
+     if(p.nb<BBOD_NB&&p.vz<-g9*.06){
+      p.vz=-p.vz*BBOD_BNC;p.nb++;p.vx*=BBOD_FRI;p.vy*=BBOD_FRI;p.rv*=.55;
+      /* ⭐**落ちた所にも血を1枚**=飛んだ先に跡が残ると「そこまで飛んだ」が画で分かる */
+      if(p.nb===1)bnsRing(C,'bstn',BNS_STN,{x:p.x,y:p.y,r:12*p.s,t:0});
+     }else p.vz=0;}
+   }else{p.vx*=BBOD_ROLL;p.vy*=BBOD_ROLL;p.rv*=BBOD_ROLL;}
+  }}
  const st=C.bstn;if(st)for(let i=0;i<st.length;i++){if(st[i].t<BSTN_LF)st[i].t+=dt;}
  const tk=C.btrk;if(tk)for(let i=0;i<tk.length;i++){if(tk[i].t<BTRK_LF)tk[i].t+=dt;}
  const ds=C.bdst;if(ds)for(let i=0;i<ds.length;i++){const p=ds[i];
@@ -20338,16 +20399,38 @@ function drawBnsMarks(c,C){
 function prtView(m){const q=m||60;
  return [(-OX)/SC-q,(cv.width-OX)/SC+q,(-OY)/SCY-q,(cv.height-OY)/SCY+q];}
 function drawBnsGore(c,C){
+ /* ⭐⭐⭐**吹き飛んだ体**(2026-08-02(36))=**落ちる影 → 体**の順で描く。
+    ⚠⚠**影が要る**=影が無いと「高く飛んだ」が読めず、ただ画面を横切っただけに見える。
+      高いほど影は小さく薄くなる=これだけで滞空が伝わる。
+    ⚠**回すので1体ずつ描く**(まとめて塗れない)。数は `BNS_BOD` で頭打ちなので増えない。
+    ⚠**縦の潰し(SCY)を打ち消してから回す**=でないと回った体だけひしゃげる。
+    ⚠**高さも打ち消した量で持ち上げる**=横に飛ぶ量と上に飛ぶ量の見え方が揃う。 */
+ {const bd=C.bbod;
+  if(bd&&bd.length){
+   const V=prtView(110),iv=camIvY();
+   /* ① 落ちる影(まとめて1回)。⚠高いほど小さくする=これだけで滞空が読める */
+   c.fillStyle='rgba(0,0,0,.22)';c.beginPath();let anyS=0;
+   for(let i=0;i<bd.length;i++){const p=bd[i];if(p.t>=p.lf)continue;
+    if(p.x<V[0]||p.x>V[1]||p.y<V[2]||p.y>V[3])continue;
+    const h=clamp(1-p.z/280,.34,1),rw=9*p.s*h,rh=4.4*p.s*h;
+    c.rect(p.x-rw,p.y-rh,rw*2,rh*2);anyS=1;}
+   if(anyS)c.fill();
+   /* ② 体そのもの。⚠⚠**米粒と同じ形・同じ色で描く**=飛んでいるのは
+      **さっきまで歩いていたその体**なので、別の絵にすると「板が飛んだ」に見える(実際そうなった)。
+      ⚠回転の軸は**体の真ん中**(米粒は足元が原点なので半分ぶん下げてから回す)。 */
+   for(let i=0;i<bd.length;i++){const p=bd[i];if(p.t>=p.lf)continue;
+    if(p.x<V[0]||p.x>V[1]||p.y<V[2]||p.y>V[3])continue;
+    const s=p.s,fd=clamp((p.lf-p.t)/.55,0,1),CO=riceCol(p.zi|0);
+    c.save();if(fd<1)c.globalAlpha=fd;
+    c.translate(p.x,p.y-p.z*iv);c.scale(1,iv);c.rotate(p.rot);c.translate(0,23.3*s);
+    c.fillStyle=INK;
+    c.fillRect(-8.1*s,-35.6*s,16.2*s,21.6*s);c.fillRect(-6.1*s,-46.6*s,12.2*s,13.6*s);
+    c.fillStyle=CO[0];c.fillRect(-4.8*s,-15*s,3.8*s,15*s);c.fillRect(1*s,-15*s,3.8*s,15*s);
+    c.fillStyle=CO[1];c.fillRect(-6.5*s,-34*s,13*s,19*s);
+    c.fillStyle=CO[2];c.fillRect(-4.5*s,-45*s,9*s,11*s);
+    c.restore();}
+  }}
  const ck=C.bchk;if(!ck||!ck.length)return;
- /* ⭐**吹き飛んだ体は先に描く**(肉片の下)=黒フチ→肉体の2回塗り。
-    ⚠**四角のまま**=この寄り(.26)では回しても読めないうえ、回すとまとめて塗れない。 */
- for(let b=0;b<2;b++){
-  c.fillStyle=b?'#5b6b41':INK;
-  c.beginPath();let any=0;
-  for(let i=0;i<ck.length;i++){const p=ck[i];if(!p.bd||p.t>=p.lf)continue;
-   const k=1-p.t/p.lf,r=p.r*(.55+k*.45)*(b?.72:1);
-   c.rect(p.x-r,p.y-r*1.15,r*2,r*2.3);any=1;}
-  if(any)c.fill();}
  /* ⭐⭐**飛沫は粒の絵で描く**(2026-08-02(34))=**四角をどれだけ散らしても「飛沫」にはならない**。
     ⚠**画面に入っている物だけ**+出しすぎの安全弁。⚠素材が無い時は下の四角に落ちる。 */
  if(prtImg('puff')&&prtImg('puff').width){
@@ -20410,7 +20493,15 @@ function drawBnsCombo(c,C,t){
      並べ替えとパスの分割を数百体ぶんやる方がずっと高くつく。
    ⚠**ボスとエリートは今までどおり焼いた絵**(数が少なく大きいので、粒では何か読めない)。
    ⚠**HPバーも出さない**=米粒の上に幅36pxの帯を載せると体より帯の方が大きい。 */
-const RICE_S=1.15;   /* 米粒の大きさ。⚠上げると1体が大きく見えるぶん群れの密度は下がる */
+/* ⚠**2026-08-02(36)に 1.15→1.35**(ユーザー「ゾンビを少しでかくするのもあり」)=
+   吹っ飛びを物理にしたので、**飛ぶ体が小さいままだと「米粒が散った」で終わる**。画面で15px→18px。
+   ⚠**1.6 まで上げると重なりがべたっとして「群れ」ではなく「面」に見える**。 */
+const RICE_S=1.35;   /* 米粒の大きさ。⚠上げると1体が大きく見えるぶん群れの密度は下がる */
+/* ⚠⚠**当たり判定と、跡(肉片・血だまり・路面の死体)は必ずここから連動させる**(2026-08-02(36))=
+   絵だけ大きくすると**「当たっていないのに死ぬ」**になり(掟=絵と当たりは必ず揃える)、
+   跡だけ小さいままだと体と跡の大きさがちぐはぐになる。⭐**元の値からの比**で持つので、
+   `RICE_S` を1つ動かせば当たりも跡も全部付いてくる。 */
+const RICE_S0=1.15,RICE_K=RICE_S/RICE_S0;
 const RICE_G=[],RICE_C=[];
 function riceCol(zi){
  let q=RICE_C[zi];if(q)return q;

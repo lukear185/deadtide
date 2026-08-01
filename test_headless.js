@@ -2624,8 +2624,8 @@ function checkRice(){
  /* ② 使い回しの輪が伸びない */
  for(let k=0;k<900;k++)bnsSplat(me,{px:BNS_CX+k,py:BNS_CY,zi:0});
  for(let k=0;k<900;k++)bnsRing(me,'btrk',BNS_TRK,{x:0,y:0,tx:1,ty:0,nx:0,ny:1,t:0,b:0});
- if(me.bstn.length>BNS_STN||me.bchk.length>BNS_CHK||me.btrk.length>BNS_TRK){
-  console.log('FAIL: 轢いた跡が上限を超えて増える 血'+me.bstn.length+'/肉'+me.bchk.length+'/轍'+me.btrk.length);process.exit(1);}
+ if(me.bstn.length>BNS_STN||me.bchk.length>BNS_CHK||me.btrk.length>BNS_TRK||me.bbod.length>BNS_BOD){
+  console.log('FAIL: 轢いた跡が上限を超えて増える 血'+me.bstn.length+'/肉'+me.bchk.length+'/轍'+me.btrk.length+'/体'+me.bbod.length);process.exit(1);}
  /* ④⑤ 米粒を倒しても文字と死体が湧かない */
  me.fx.length=0;me.bus.gain=0;me.bus.gainT=0;
  let n5=0;
@@ -2658,8 +2658,33 @@ function checkRice(){
   for(let k=0;k<12;k++){const z9=mkZ(zSpec(0,.02,1),200);z9.ln=0;z9.px=B.x;z9.py=B.y;me.zombies.push(z9);}
   for(let k=0;k<8;k++){for(const z of me.zombies){z.px=B.x;z.py=B.y;}bnsBusStep(me,.05);}
   if(!(B.nit>0)){console.log('FAIL: 轢いてもニトロが溜まらない');process.exit(1);}
-  /* ⭐**体そのものが吹き飛ぶ**(轢殺に見せる主役)=肉片とは別の印(bd)で1体1つ積まれること */
-  if(!(me.bchk||[]).some(p=>p.bd)){console.log('FAIL: 轢いた体が吹き飛んでいない');process.exit(1);}
+  /* ⭐**体そのものが吹き飛ぶ**(轢殺に見せる主役)=肉片とは別の輪(bbod)に1体1つ積まれること。
+     ⚠2026-08-02(36)に「bchk」の bd 印から専用の輪へ移した(高さ z を持たせて本物の弾道にしたため) */
+  if(!(me.bbod||[]).length){console.log('FAIL: 轢いた体が吹き飛んでいない');process.exit(1);}
+  /* ⭐**高さ(z)を持って飛んでいること**=これが無いと着地も跳ねも転がりも起きない(偽物の弾道に戻っている) */
+  if(!me.bbod.some(p=>p.vz>0&&p.rv!==undefined)){
+   console.log('FAIL: 吹き飛んだ体が高さ(z)と回りを持っていない');process.exit(1);}
+  /* ⭐**バスが速いほど遠くへ高く飛ぶ**=初速がバスの速さから出ていること(固定の乱数に戻っていないか) */
+  {const sv=B.vx,sv2=B.vy;
+   me.bbod.length=0;me.bbodI=0;B.vx=0;B.vy=0;
+   for(let k=0;k<12;k++)bnsSplat(me,{px:B.x,py:B.y,zi:0});
+   const slow=Math.max.apply(null,me.bbod.map(p=>p.vz));
+   me.bbod.length=0;me.bbodI=0;B.vx=0;B.vy=-BUS_SP;
+   for(let k=0;k<12;k++)bnsSplat(me,{px:B.x,py:B.y-30,zi:0});
+   const fast=Math.max.apply(null,me.bbod.map(p=>p.vz));
+   B.vx=sv;B.vy=sv2;
+   if(!(fast>slow*1.25)){
+    console.log('FAIL: 速く走っても体の飛び方が変わらない 止='+Math.round(slow)+' 全速='+Math.round(fast));process.exit(1);}}
+  /* ⭐**着地して跳ねて止まること**=飛び続けない・地面をすり抜けない・いつまでも震えない */
+  {me.bbod.length=0;me.bbodI=0;B.vx=0;B.vy=-BUS_SP;
+   bnsSplat(me,{px:B.x,py:B.y-30,zi:0});
+   for(let k=0;k<Math.round(BBOD_LF/.02);k++)bnsFxStep(me,.02);
+   const p9=me.bbod[0];
+   if(!(p9&&p9.z===0)){console.log('FAIL: 吹き飛んだ体が着地しない z='+(p9?p9.z:'なし'));process.exit(1);}
+   if(!(p9.nb>0)){console.log('FAIL: 吹き飛んだ体が一度も跳ねていない');process.exit(1);}
+   if(!(Math.hypot(p9.vx,p9.vy)<50)){
+    console.log('FAIL: 吹き飛んだ体が転がり止まらない v='+Math.round(Math.hypot(p9.vx,p9.vy)));process.exit(1);}
+   B.vx=0;B.vy=0;}
   B.nit=.5;
   if(bnsNitro()!==false){console.log('FAIL: 満タンでないのにニトロが撃てる');process.exit(1);}
   B.nit=1;
