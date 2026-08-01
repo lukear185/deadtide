@@ -1186,7 +1186,7 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4.5秒止めて中ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を5秒燃やし続ける。総ダメージが大きい'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0,bcl:[],bres:[0,0,0],bup:{},beq:{},bday:[]};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0,bcl:[],bres:[0,0,0],bup:{},beq:{}};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
 /* 🎒🚌**バス強化は永続**(2026-08-02(44)ユーザー決定「この強化は永続だから」)=
    `bres`=持っている物資[⛽燃料,🏭鉄材,🏠食料] / `bup`=性能の段 / `beq`=付けた装備。
    ⚠**遊ぶたびに積み上がる**ので、値段は「1試合ぶんの稼ぎ×何試合ぶんか」で決めること。 */
@@ -1201,7 +1201,6 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!Array.isArray(META.bres))META.bres=[0,0,0];while(META.bres.length<3)META.bres.push(0);
  if(!META.bup||typeof META.bup!=='object')META.bup={};
  if(!META.beq||typeof META.beq!=='object')META.beq={};
- if(!Array.isArray(META.bday))META.bday=[];/* 🚌最後に道中を走った現実の日(ステージごと) */
  if(!META.hlv||typeof META.hlv!=='object')META.hlv={};/* 英雄の鍛錬Lv id→Lv */
  if(!META.hxp||typeof META.hxp!=='object')META.hxp={};/* 次のLvまでの経験 id→pt */
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
@@ -1253,7 +1252,6 @@ function metaResetAll(){
  META.bcl=[];                                  /* 🚌ボーナス面の初回クリア(ステージごと。報酬は1回だけ) */
  META.brec=[];                                 /* 🚌道中の自己ベスト(ステージごと。タイム/轢いた数/最高連続) */
  META.bres=[0,0,0];META.bup={};META.beq={};    /* 🚌バスの物資と永続強化(2026-08-02(44)) */
- META.bday=[];                                 /* 🚌道中を走った日(1日1回の印) */
 }
 /* ⚠⚠**3への上げは「難易度と研究所だけ」戻す**(2026-08-01ユーザー選択)。
    理由=初期解放を2種に絞ったので `META.nt`/`META.nu`(BASE_T/BASE_U から数えた相対値)が
@@ -3478,34 +3476,17 @@ function scArr(si){if(!Array.isArray(META.sc))META.sc=[];
 /* 難易度は1つ下をクリアしないと選べない(新兵から順に)。⚠🛠DEVモードは全部選べる。
    ⚠⚠**添字の順ではなく `D_ORD` の並びで1つ前を見る**=🚌ボーナスは D5 の末尾(6)に置いてあるので、
      `d-1` で見ると「ナイトメアをクリアしないと開かない」になる(2026-08-02)。 */
-/* 🚌⭐⭐⭐**道中は現実の1日に1回だけ**(2026-08-02(50)ユーザー決定
-   「配らないしできないようにしよう 一日一回とかにできる? 現実の一日に一回まで」)。
-   ⚠⚠**この面は負けが無く・75秒で終わり・1走で2000体轢く**ので、
-     **回数を絞らないと何を配っても必ず稼ぎ場になる**(🧬は同じ回に配るのをやめた)。
-   ⭐**印を立てるのは「入った時点」**(`bnsEnter`)=途中で抜けて入り直す抜け道も同時に塞げる。
-   ⚠**ステージごとに数える**=①廃線と②港は別の道中なので、片方を走った日でももう片方は走れる。
-   ⚠**端末の時計を変えれば回避できる**=そこまでは追わない(遊びを壊さない範囲の歯止め)。
-   ⚠⚠**🛠DEVは無制限**(でないと実機で1日1回しか試せない)。 */
-function bnsDayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
-function bnsToday(si){
- if(DEV)return false;
- const a=META.bday;
- return Array.isArray(a)&&a[clamp(si|0,0,STAGES.length-1)]===bnsDayKey();
-}
-/* 次に走れるまでの残り(ボタンとお知らせに出す)。⚠**日付が変わるまで**なので、分まで出す。
-   ⚠⚠**「あと24時間」ではない**=次の0時までであって、走った時刻からの24時間ではない。 */
-function bnsNextS(){
- const d=new Date();
- let m=(23-d.getHours())*60+(60-d.getMinutes());
- if(m<1)m=1;
- const h=(m/60)|0,mm=m%60;
- return (h>0?h+'時間':'')+mm+'分';
-}
-/* 🚌が解放されているか(=1日1回の判定を混ぜない素の解放) */
+/* 🚌⭐⭐⭐**回数制限はしない。代わりに2回目以降の報酬を減らす**(2026-08-02(52)ユーザー決定
+   「一日一回は少なすぎた。ある程度何回かはプレイさせたいから回数制限はやめて報酬を減らそう。
+     初回報酬は豪華でいいけど2回目以降は報酬少な目とか」)。
+   ❌**「現実の1日に1回」は入れて外した**(2026-08-02(50)→(52))。書き戻さないこと。
+   ⭐**稼ぎ場にしない歯止めは「1走あたりの上限」**=🧬は**初回だけ豪華**(`BNS_PTS`)で、
+     **2回目からは⚡スコアに応じた少額+上限**(下の `bnsRptPts`)。
+   📌**目安**=1走(75秒)で最大120🧬。本編の古参クリア(約10分)が1500🧬なので、
+     **1分あたりで見ると本編より割が悪い**=周回する理由が「稼ぎ」にならない。 */
 function bnsUnl(si){if(DEV)return true;
  const i=D_ORD.indexOf(BNS_D);return i<=0||!!scArr(si)[D_ORD[i-1]];}
 const diffOK=(si,d)=>{if(DEV)return true;
- if(d===BNS_D&&bnsToday(si))return false;/* 🚌**今日はもう走った** */
  const i=D_ORD.indexOf(d);if(i<=0)return true;
  return !!scArr(si)[D_ORD[i-1]];};
 /* 次のステージは「前のステージを🌑ナイトメアでクリア」すると開く。
@@ -16835,7 +16816,10 @@ function awardMeta(){
     倒した数に比例させると**1走2400〜2700🧬**(本編の古参クリア1500🧬を1分ちょっとで超える)。
     ⭐**配るのは初回クリアの分だけ**(`bnsReward`)=**周回する動機はもう「永続の物資」が担っている**ので、
       🧬は本編の難易度を進めた報酬に戻す。⚠NOTESの掟「何度でもやり直せるもので報酬を配らない」の3度目。 */
- const gain=(d9===BNS_D)?0:Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.4)*mult));
+ /* 🚌⭐**2回目からは⚡スコアに応じた少額**(2026-08-02(52))=初回は下の `bnsReward` が豪華に配る */
+ const gain=(d9===BNS_D)
+  ?((Array.isArray(META.bcl)&&META.bcl[STAGE])?bnsRptPts():0)
+  :Math.max(1,Math.round((G.wave*25+G.players[0].kills*1.4)*mult));
  META.pts+=gain;G.metaGain=gain;
  /* クリア記録: ステージ×難易度。1つ上の難易度と、ナイトメアなら次のステージが開く。
     ⚠**次に開くのは `D_ORD` で1つ後ろの難易度**(🚌ボーナスは D5 の末尾に置いてあるため)。
@@ -16949,8 +16933,6 @@ function gameStep(dt){
  }
 }
 /* ============ 画面状態・描画 ============ */
-/* ⏳🚌タイトルで「あと○時間○分」を書き直すまでの秒(2026-08-02(51)) */
-let BNSDT=0;
 let SCR='title',MODE='solo',TT=0,hudT=0,gameActive=false,tipSt=false,PAUSED=false,SEL=-1,AIM=false,FLAGAIM=false,aimPos=null,PUSHTGT=-1,SPEC=-1,COOP=false;
 function setSpec(j){SPEC=j;document.body.classList.toggle('spec',SPEC>=0);if(SPEC>=0){closeBM();setAim(false);setFlagAim(false);}}
 function specCamp(j){if(MODE==='client')return (CS.oc||{})[j]||null;return G&&G.players[j]&&j!==G.myIdx?G.players[j]:null;}
@@ -19405,11 +19387,7 @@ function paradeStep(t){
 /* ============ 画面遷移 ============ */
 let setCpu=1,setDiff=2,setLMode=0,setLDiff=2;
 function segInit(id,cb){$(id).querySelectorAll('.btn').forEach(b=>{b.onclick=()=>{$(id).querySelectorAll('.btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');cb(+b.dataset.v);};});}
-segInit('seg-diff',v=>{if(!diffOK(META.stg||0,v)){
- /* ⚠**なぜ押せないかを言う**=🔒(未解放)と✅(今日は済)で理由が違う */
- if(v===BNS_D&&bnsUnl(META.stg||0))
-  try{toast('🚌 今日はもうプレイできません。次に走れるまで あと '+bnsNextS(),true);}catch(e){}
- refreshDiffUI();return;}setDiff=v;});
+segInit('seg-diff',v=>{if(!diffOK(META.stg||0,v)){refreshDiffUI();return;}setDiff=v;});
 segInit('seg-stage',v=>{if(!stageOK(v)){refreshStageUI();return;}META.stg=v;saveMeta();refreshDiffUI();});
 segInit('lb-mode',v=>{setLMode=v;$('lb-diffwrap').style.display=v?'block':'none';});
 segInit('lb-diff',v=>setLDiff=v);
@@ -19498,7 +19476,16 @@ function startSolo(){
      差し替えるのは ①道(四方から4本) ②ルール(兵科なし+バス) ③波の中身 の3つだけ。
    ⚠**4本のレーンは長さを揃えてある**(掟は LANES の所)。
    ⚠報酬は**初回クリアだけ** 🧬研究pt と 💎50。何度でも入れる面なので2回目からは配らない。 */
-const BNS_GEM=50;                 /* 初回クリアの💎 */
+const BNS_GEM=50;                 /* 初回クリアの💎(⚠2回目からは配らない) */
+/* 🚌⭐⭐**2回目以降の🧬**(2026-08-02(52)ユーザー「初回報酬は豪華でいいけど2回目以降は報酬少な目」)。
+   ⚠⚠**倒した数に比例させない**=この面は負けが無く75秒で終わるので、比例させると必ず稼ぎ場になる
+     (実際に1走2400〜2700🧬になっていた)。⭐**⚡スコアを割って、上限で頭打ちにする**。
+   📌1走で **20〜120🧬**。⚠**上限がこの仕組みの本体**なので、増やすならまず `_MAX` を疑う。 */
+const BNS_RPT_D=40,BNS_RPT_MIN=20,BNS_RPT_MAX=120;
+function bnsRptPts(){
+ let sc=0;try{sc=(G&&G.players[0]&&G.players[0].bus&&G.players[0].bus.score)||0;}catch(e){}
+ return clamp(Math.round(sc/BNS_RPT_D),BNS_RPT_MIN,BNS_RPT_MAX);
+}
 const BNS_PTS=[600,1100];         /* 初回クリアの🧬(ステージごと) */
 /* ⭐**開拓便のマップは広い**(2026-08-02ユーザーの参考画像)=画面の2倍角。🎥カメラで持ち歩く。
    ⚠**広げても寄り具合は変わらない**(倍率の基準は MW のまま)。 */
@@ -20228,10 +20215,7 @@ function drawProp(c,p){
    爽快感優先の面が本編への関所になって抜けられない人が出る(ユーザー決定 2026-08-02)。 */
 function bnsEnter(){
  const a=scArr(STAGE);
- if(!a[BNS_D])a[BNS_D]=1;
- /* 🚌**1日1回の印**(2026-08-02(50))=**入った時点**で立てる(途中で抜けても消費) */
- if(!DEV){if(!Array.isArray(META.bday))META.bday=[];META.bday[STAGE]=bnsDayKey();}
- saveMeta();
+ if(!a[BNS_D]){a[BNS_D]=1;saveMeta();}
 }
 /* ⭐⭐⭐**道中の自己ベスト**(2026-08-02(37))=**「上手さが何にも繋がらない」を直すための土台**。
    ⚠⚠それまで残っていたのは `META.bcl`(初回クリアしたかの1bit)だけで、
@@ -25663,12 +25647,9 @@ function refreshDiffUI(){
   /* ⚠🚌ボーナス面は「W1」と出しても意味が無いので、報酬の有無を出す(初回だけ💎が付く)。
      ⭐**自己ベストのタイムをここに出す**(2026-08-02(37))=**走る前に目標が見えていないと記録は効かない**
        (リザルトに出すだけでは、次に入る時には忘れている)。 */
-  /* 🚌**1日1回**(2026-08-02(50))=「未解放(🔒)」と「今日はもう走った(✅)」を必ず書き分ける
-     =どちらも押せないので、同じ見た目だと**開いていないのかと思われる**。 */
-  if(v===BNS_D){const unl=bnsUnl(si),bs=unl?bnsBestOf(si):null;
-   x.textContent=D.n+(!unl?' 🔒'
-    :bnsToday(si)?(' ✅今日は済 あと'+bnsNextS())
-    :(((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎')+((bs&&bs.s>0)?' ⚡'+fmt(bs.s):'')));}
+  /* 🚌**何度でも入れる**(2026-08-02(52)に1日1回をやめた)。💎は初回だけ付く印。 */
+  if(v===BNS_D){const bs=ok?bnsBestOf(si):null;
+   x.textContent=D.n+(ok?(((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎')+((bs&&bs.s>0)?' ⚡'+fmt(bs.s):'')):' 🔒');}
   else x.textContent=D.n+(ok?' W'+D.w:' 🔒');
   x.disabled=!ok;x.style.opacity=ok?'':'.45';});
  if(!diffOK(si,setDiff))setDiff=best;
@@ -26044,10 +26025,7 @@ function loopBody(now){
  }
  if(TUT&&!PAUSED)tutStep(dt0);/* ⚠タイトルの段(ガチャ)もあるので gameActive では絞らない */
  if(TUT)tutPtr();/* ⚠止まっている間も置き直す(中で引っ込める)ので PAUSED では絞らない */
- if(SCR==='title'){paradeStep(TT);
-  /* ⏳**残り時間の表示を出しっぱなしにしない**=タイトルに居る間は時々書き直す(20秒ごと) */
-  BNSDT-=dt0;if(BNSDT<=0){BNSDT=20;try{refreshDiffUI();}catch(e){}}
- }
+ if(SCR==='title')paradeStep(TT);
  if(SCR==='rpg')rgStep(dt0);
  if(GC)gcStep(dt0);/* 💎英雄召集の演出 */
  else if(GCV==='home'&&gcOpen())gcHomeStep(dt0);/* 💎召集画面(目玉の英雄を見せる面) */
