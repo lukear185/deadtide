@@ -3322,6 +3322,25 @@ function checkBnsFlow(){
   console.log('FAIL: 選択肢の棟数が違う '+G.bpre.pick.length+'/'+bnsMgN());process.exit(1);}
  fitCanvas();
  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 選択画面の描画で例外 '+e.message);process.exit(1);}
+ /* 🏠⚠⚠**光が段のたびに出ること**(2026-08-02(48)ユーザー「光が見えなかった。しかも初回の1回以降
+    光が何も見えない」)=**押した時の光の時計(litT)を、見せる光にも使っていた**のが原因だった。
+    ⭐**1段目と2段目の両方で、順番の数だけ光ること**を数える。 */
+ {const hb=(G.bpre.pick.filter(b=>(b.ek|0)===2))[0];
+  if(hb){
+   bnsMgStart(G.bpre,hb);
+   const M=G.bpre.mg;
+   const cnt=()=>{let n=0,pv=-1;
+    for(let k=0;k<600&&M.ph==='show';k++){bnsMgStep(G.bpre,.02);if(M.lit>=0&&M.lit!==pv)n++;pv=M.lit;}
+    return n;};
+   const a1=cnt();
+   if(a1<M.seq.length){console.log('FAIL: 🏠記憶の1段目で光る回数が足りない '+a1+'/'+M.seq.length);process.exit(1);}
+   const R=bnsMmRects(cv.width,cv.height);
+   for(const v of M.seq)bnsMgTap(G.bpre,R[v].x+4,R[v].y+4);
+   for(let k=0;k<60&&M.ph!=='show';k++)bnsMgStep(G.bpre,.05);
+   const a2=cnt();
+   if(a2<M.seq.length){console.log('FAIL: 🏠記憶の2段目で光らない '+a2+'(1段目は'+a1+')');process.exit(1);}
+  }
+  G.bpre.mg=null;G.bpre.st='sel';}
  /* ③④⭐**3回遊ぶ**。⚠⚠**3種とも別の遊び**なので、種類ごとに上手く遊んでやること
     (2026-08-02(45)ユーザー「全部同じミニゲームはやめて」)。⭐棟は左から順に選ぶ=3種とも通る。 */
  /* 1回ぶんを上手にこなす。⚠**盤面(mg)が消えるまで押し切らない**=締めの一拍を見たいので */

@@ -18348,7 +18348,9 @@ function updHUD(){const m=meV();if(!m)return;
  /* ⚠**編成で選んでいる砲撃の名前を出す**(2026-07-30ユーザー指摘
       「どの砲撃をセットしててもエアストライク準備完了って出る」)。
     ⚠クライアントは自分の砲撃idを持っていないので、その時は編成の選択(META.eq)を見る */
- if(!tipSt&&m.charge>=1&&inW){tipSt=true;
+ /* ⚠🚌**道中では出さない**(2026-08-02(48)ユーザー「運転中に砲撃のメッセージ残ってる」)=
+    この面に砲撃は無い(ボタンもCSSで隠してある)のに、チャージだけ溜まって案内が出ていた。 */
+ if(!tipSt&&m.charge>=1&&inW&&!m.bus){tipSt=true;
   const S9=STRIKES[m.stk||META.eq]||STRIKES.air;
   toast(S9.ic+' '+S9.n+' 準備完了!ボタン→地点タップで撃て!');}
  /* 死潮ゲージ */
@@ -21291,7 +21293,9 @@ function bupCost(U,i){const u=BUP[i],lv=(U&&U[u.k])|0;return lv>=u.mx?null:u.c[l
 function beqCost(E,i){const q=BEQ[i];return (E&&E[q.k])?null:q.c;}
 /* 🎒**走る前の状態**。⚠**G に持つ**=面(=1試合)の状態であってバスの持ち物ではない */
 function bnsPreInit(C){
- const P=BENT.slice().sort((a,b)=>a.x-b.x);/* 左から順=画面の並びと添字が一致する */
+ /* ⚠**奥(y小)から手前へ番号を振る**=札も上から順に並ぶので、ピンの数字と札の数字が同じ流れで読める。
+    ⚠**x だけで並べない**(2026-08-02(48))=左右の翼に置くので**同じ x の棟が2つある**=順番が決まらない。 */
+ const P=BENT.slice().sort((a,b)=>(a.y-b.y)||(a.x-b.x));
  /* 🎒⚠⚠**物資も強化も META から読む**(2026-08-02(44)ユーザー決定=永続)。
     ⚠**`res` は META.bres そのものを持つ**(写しにすると買った時に保存されない)。 */
  if(!Array.isArray(META.bres))META.bres=[0,0,0];
@@ -21378,8 +21382,11 @@ const BML_BACK=.022;      /* ✨ピッタリで戻る幅(⚠戻しすぎると�
 const BMM_N=7;            /* 何段まで(段が進むごとに1つ長くなる) */
 const BMM_C=3,BMM_R=2;    /* 棚の列と段 */
 const BMM_L0=2;           /* 1段目の長さ */
-const BMM_SH=.42;         /* 1つを光らせる秒数 */
-const BMM_GAP=.14;        /* 光と光の間 */
+const BMM_SH=.46;         /* 1つを光らせる秒数 */
+const BMM_GAP=.16;        /* 光と光の間 */
+/* ⚠⚠**見せ始めに一拍置く**(2026-08-02(48)ユーザー「光が見えなかった」)=
+   段が始まった瞬間に光ると、目が棚へ移る前に1つ目が終わっている。 */
+const BMM_LEAD=.55;
 const BMM_MISS=2;         /* 間違えてよい回数(これを超えたら終わり) */
 /* 3種で共通の採点。⚠**倍率は連続でしか伸びない**=1回ごとの手応えではなく「切らさない」に値段を付ける */
 function bnsMgHit(M,g,base){
@@ -21437,9 +21444,16 @@ function bnsMgStep(Q,dt){
  }else if(M.kind===2){/* 🏠光る順を見せる → 押す番 */
   if(M.ph==='show'){
    M.shT+=dt;
-   const u=BMM_SH+BMM_GAP,k9=Math.floor(M.shT/u);
-   if(k9>=M.seq.length){M.ph='in';M.lit=-1;M.shT=0;}
-   else M.lit=((M.shT-k9*u)<BMM_SH)?M.seq[k9]:-1;
+   const pv=M.lit;
+   const e9=M.shT-BMM_LEAD;
+   if(e9<0)M.lit=-1;
+   else{
+    const u=BMM_SH+BMM_GAP,k9=Math.floor(e9/u);
+    if(k9>=M.seq.length){M.ph='in';M.lit=-1;M.shT=0;}
+    else M.lit=((e9-k9*u)<BMM_SH)?M.seq[k9]:-1;
+   }
+   /* ⭐**光るたびに音も出す**=目を離していても「いま光った」が分かる(見落としの保険) */
+   if(M.lit>=0&&M.lit!==pv)try{if(sfx.tap)sfx.tap();}catch(e){}
   }else if(M.ph==='ok'||M.ph==='ng'){
    M.shT-=dt;
    if(M.shT<=0){
@@ -21448,7 +21462,11 @@ function bnsMgStep(Q,dt){
     else bnsMmRound(M,0);/* ⚠**間違えた時は同じ段をもう一度**(伸ばさない) */
    }
   }
-  if(M.lit>=0)M.litT=(M.litT||0)+dt;
+  /* ⚠⚠**押した時の光だけ時間で消す**(2026-08-02(48)に踏んだ)=
+     以前は `litT` を**光が変わっても0に戻さず**、絵の側で `litT<.30` を見ていたので、
+     **最初の0.3秒を過ぎたら二度と光らなかった**(ユーザー「初回の1回以降光が何も見えない」)。
+     ⭐見せている間の光は `ph==='show'` の時計が持つので、ここでは触らない。 */
+  if(M.ph==='in'&&M.lit>=0){M.litT=(M.litT||0)+dt;if(M.litT>.26)M.lit=-1;}
  }else{/* ⛽針が左右に流れる */
   M.pos+=M.dir*M.sp*dt;
   if(M.pos>1){M.pos=1;M.dir=-1;}else if(M.pos<0){M.pos=0;M.dir=1;}
@@ -21651,6 +21669,10 @@ function drawBnsPre(c,C,t){
    ⚠⚠**棟の絵だけでは何がもらえるか読めない**(この寄りでは40px前後)ので、
      **棟の上に札を出して「⛽燃料が多い」を文字で言う**。⭐光の輪は「押せる」の合図。 */
 function bnsDrawSel(c,Q,W,H,dp,t){
+ /* ⚠⚠**盤面を一段暗く落とす**(2026-08-02(48)ユーザー「廃墟選ぶ画面もっと見やすくして」)=
+    明るい土の上に細い輪と札を置いても沈む。**先に暗くしてから光らせる**と一気に読めるようになる。
+    ⚠**真っ暗にしない**=どこに居るか(門・道・バス)が読めなくなる。 */
+ c.fillStyle='rgba(10,8,6,.42)';c.fillRect(0,0,W,H);
  /* 上の帯=何をする画面か+残り回数 */
  bnsPanel(c,W*.02,H*.03,W*.96,H*.155);
  c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(21*dp)+'px '+FF;
@@ -21658,25 +21680,37 @@ function bnsDrawSel(c,Q,W,H,dp,t){
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
  c.fillText('あと '+Q.left+' 回 漁れる',W*.955,H*.085);
  bnsResBar(c,Q,W,H*.152,dp);
- /* 棟ごとの光の輪 */
- const bw=Math.min(W*.30,190*dp),bh=54*dp,LAY=[];
+ /* 棟ごとの目印。⭐**丸を塗る → 輪を回す → ピンを立てる**の3つ重ねで「ここが押せる」を出す */
+ const bw=Math.min(W*.34,220*dp),bh=62*dp,LAY=[];
  for(let i=0;i<Q.pick.length;i++){
   const b=Q.pick[i],px=OX+b.x*SC,py=OY+b.y*SCY;
   const on=(Q.selI===i&&Q.selT>0)?1:0;
-  const pl=.5+.5*Math.sin(t*3.4+i*1.1);
-  const r=Math.max(26*dp,b.rr*SC*.92),ry=r*(SCY/(SC||1));
-  c.lineWidth=(on?5:3)*dp;
-  c.strokeStyle=on?'rgba(255,246,226,.95)':'rgba(255,207,106,'+(.42+.34*pl).toFixed(2)+')';
+  const pl=.5+.5*Math.sin(t*3.0+i*1.1);
+  const r=Math.max(34*dp,b.rr*SC*1.05),ry=r*(SCY/(SC||1));
+  /* ①**下に敷く丸**=棟そのものを明るく浮かせる(暗く落とした盤面から抜き出す) */
+  c.fillStyle=on?'rgba(255,246,226,.34)':'rgba(255,207,106,'+(.13+.07*pl).toFixed(2)+')';
+  c.beginPath();c.ellipse(px,py,r,ry,0,0,7);c.fill();
+  /* ②**脈打つ輪**(⚠太くする=細い線はこの寸法だと1〜2pxで消える) */
+  c.lineWidth=(on?7:4)*dp;
+  c.strokeStyle=on?'rgba(255,246,226,.98)':'rgba(255,207,106,'+(.62+.34*pl).toFixed(2)+')';
   c.beginPath();c.ellipse(px,py,r,ry,0,0,7);c.stroke();
+  /* ③**外へ広がる輪**=「押せる」の合図(1本だけ・薄く) */
+  {const q=(t*.7+i*.33)%1;
+   c.lineWidth=3*dp;c.strokeStyle='rgba(255,207,106,'+(.45*(1-q)).toFixed(2)+')';
+   c.beginPath();c.ellipse(px,py,r*(1+q*.7),ry*(1+q*.7),0,0,7);c.stroke();}
   /* 札の置き場。⚠**上に置けない時は下へ回す**(2026-08-02(43)に撮って気づいた)=
      上の帯に押し戻すと**札が自分の光の輪に重なって、どの棟の札か読めなくなる**。 */
-  let by=py-ry-bh-10*dp;
-  if(by<H*.20)by=py+ry+10*dp;
-  LAY.push({b:b,px:px,py:py,ry:ry,x:clamp(px-bw/2,4*dp,W-bw-4*dp),y:by});
+  /* ⚠⚠**札は必ず輪の「下」に置く**(2026-08-02(48)に撮って直した)=上に置ける棟と置けない棟が
+     混ざると、**同じ側に並んだ2棟で線が交差**して、どの札がどの棟か逆に読めなくなる。
+     ⭐下に置けない時(画面の外へ出る時)だけ上へ回す。 */
+  let by=py+ry+14*dp;
+  if(by>H-bh-26*dp)by=py-ry-bh-14*dp;
+  LAY.push({b:b,i:i,px:px,py:py,ry:ry,x:clamp(px-bw/2,4*dp,W-bw-4*dp),y:by});
  }
  /* ⚠⚠**札どうしの重なりを必ず外す**(2026-08-02(43)に撮って気づいた)=同じ側に2棟並ぶと
     **2枚の札が完全に重なって両方読めなくなる**。⭐上の札から順に、重なったぶんだけ下へ落とす。 */
- LAY.sort((a,b9)=>a.y-b9.y);
+ /* ⚠**並べ替えは「棟の位置(py)」で**=札のyで並べると、押し下げた結果が棟の並びと入れ替わる */
+ LAY.sort((a,b9)=>a.py-b9.py);
  for(let i=0;i<LAY.length;i++){
   for(let j=0;j<i;j++){
    const A=LAY[j],B=LAY[i];
@@ -21686,15 +21720,33 @@ function bnsDrawSel(c,Q,W,H,dp,t){
   LAY[i].y=clamp(LAY[i].y,H*.20,H-bh-26*dp);
  }
  for(const L of LAY){
-  /* ⭐**札と輪を細い線で繋ぐ**=3棟が近い時にどの札がどの棟か迷わない */
-  c.strokeStyle='rgba(255,207,106,.55)';c.lineWidth=2*dp;
+  /* ⭐**札と輪を線で繋ぐ**=3棟が近い時にどの札がどの棟か迷わない */
+  c.strokeStyle='rgba(255,207,106,.7)';c.lineWidth=2.6*dp;
   c.beginPath();c.moveTo(L.x+bw/2,L.y+(L.y<L.py?bh:0));
   c.lineTo(L.px,L.py+(L.y<L.py?-L.ry:L.ry));c.stroke();
-  bnsPanel(c,L.x,L.y,bw,bh,.88);
-  c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(17*dp)+'px '+FF;
-  c.fillText((BMG_K[L.b.ek]||BMG_K[0]).ic+' '+(BMG_K[L.b.ek]||BMG_K[0]).n,L.x+bw/2,L.y+22*dp);
-  c.fillStyle=GOLD;c.font='900 '+Math.round(16*dp)+'px '+FF;
-  c.fillText(BRES[L.b.ek].ic+BRES[L.b.ek].n+' がたくさん',L.x+bw/2,L.y+43*dp);
+  /* 札。⚠**枠を金にする**=「押せる物」だと分かる(ただの説明書きに見せない) */
+  c.fillStyle='rgba(24,20,15,.94)';rr(c,L.x,L.y,bw,bh,11*dp);c.fill();
+  c.strokeStyle='rgba(255,207,106,.9)';c.lineWidth=3*dp;c.stroke();
+  /* 番号(ピンと同じ数字)=どの棟の札かを線に頼らず読める */
+  c.fillStyle=GOLD;c.beginPath();c.arc(L.x+17*dp,L.y+bh/2,12*dp,0,7);c.fill();
+  c.strokeStyle=INK;c.lineWidth=2.2*dp;c.stroke();
+  c.textAlign='center';c.fillStyle=INK;c.font='900 '+Math.round(15*dp)+'px '+FF;
+  c.fillText(String(L.i+1),L.x+17*dp,L.y+bh/2+5*dp);
+  c.textAlign='left';c.fillStyle=PANE;c.font='900 '+Math.round(18*dp)+'px '+FF;
+  c.fillText((BMG_K[L.b.ek]||BMG_K[0]).ic+' '+(BMG_K[L.b.ek]||BMG_K[0]).n,L.x+35*dp,L.y+25*dp);
+  c.fillStyle=GOLD;c.font='900 '+Math.round(17*dp)+'px '+FF;
+  c.fillText(BRES[L.b.ek].ic+BRES[L.b.ek].n+' がたくさん',L.x+35*dp,L.y+48*dp);
+ }
+ /* ⑤**番号の丸は札より後に描く**(2026-08-02(48)に撮って気づいた)=
+    先に描くと**札の下に潜って見えない**。⚠**輪の右上に小さく**=棟の絵を隠さない。 */
+ for(const L of LAY){
+  /* ⚠**札は輪の下にあるので、番号は輪の上に置く**(重なる物が無い) */
+  const bx9=clamp(L.px,18*dp,W-18*dp);
+  const by9=clamp(L.py-L.ry-2*dp,H*.20+18*dp,H-18*dp);
+  c.fillStyle=GOLD;c.beginPath();c.arc(bx9,by9,15*dp,0,7);c.fill();
+  c.strokeStyle=INK;c.lineWidth=2.6*dp;c.stroke();
+  c.textAlign='center';c.fillStyle=INK;c.font='900 '+Math.round(18*dp)+'px '+FF;
+  c.fillText(String(L.i+1),bx9,by9+6*dp);
  }
  /* 直前にもらった物資(戻ってきた時だけ) */
  if(Q.got&&Q.gotT>0){
@@ -21706,7 +21758,7 @@ function bnsDrawSel(c,Q,W,H,dp,t){
   c.fillText('🎒 '+BRES.map((r9,i)=>r9.ic+'+'+Q.got[i]).join('  '),W/2,py+29*dp);
   c.globalAlpha=1;
  }
- c.textAlign='center';c.fillStyle='rgba(242,236,220,.82)';c.font='900 '+Math.round(15*dp)+'px '+FF;
+ c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(16*dp)+'px '+FF;
  c.fillText('光っている廃墟をタップ → ミニゲームで物資を集める',W/2,H-14*dp);
 }
 /* ②🎮**ミニゲームの絵**。⚠**枠(見出し・連なり・お知らせ・締め)は3種で共通**にして、
@@ -21803,17 +21855,25 @@ function bnsDrawMm(c,M,W,H,dp,t){
   bnsPanel(c,px,py,pw,ph,.9);
   c.textAlign='center';c.fillStyle=inp?GOLD:PANE;
   c.font='900 '+Math.round(21*dp)+'px '+FF;
-  c.fillText(inp?('同じ順に押す!  '+M.si+' / '+M.seq.length):'👀 よく見て…',W/2,py+33*dp);}
- /* 棚(⚠**光っている所だけ明るく**=それ以外は同じ見た目に保つ) */
+  const k8=Math.max(0,Math.floor((M.shT-BMM_LEAD)/(BMM_SH+BMM_GAP)));
+  c.fillText(inp?('同じ順に押す!  '+M.si+' / '+M.seq.length)
+                :('👀 よく見て…  '+Math.min(M.seq.length,k8+1)+' / '+M.seq.length),W/2,py+33*dp);}
+ /* 棚。⚠⚠**光っている所は思い切り目立たせる**(2026-08-02(48)ユーザー「光が見えなかった」)=
+    薄い色替えでは、暗い盤面の上に小さく並んだ升の1つが光っても目に入らない。
+    ⭐**中を白く抜く+外へ光の輪を広げる+一回り大きくする**の3つを重ねる。 */
  const R=bnsMmRects(W,H);
  for(const r of R){
-  const on=(M.lit===r.i)&&((M.litT||0)<.30);
-  c.fillStyle=on?'rgba(255,207,106,.95)':'rgba(38,32,25,.94)';
-  rr(c,r.x,r.y,r.w,r.h,9*dp);c.fill();
-  c.strokeStyle=on?PANE:'rgba(242,236,220,.24)';
-  c.lineWidth=(on?4:2)*dp;c.stroke();
+  const on=(M.lit===r.i);
+  if(on){/* 外へ広がる光(⚠加算にしない=昼の路面でも白飛びしない) */
+   c.fillStyle='rgba(255,207,106,.30)';
+   rr(c,r.x-10*dp,r.y-10*dp,r.w+20*dp,r.h+20*dp,14*dp);c.fill();}
+  const ex=on?4*dp:0;
+  c.fillStyle=on?'rgba(255,240,200,.98)':'rgba(38,32,25,.94)';
+  rr(c,r.x-ex,r.y-ex,r.w+ex*2,r.h+ex*2,9*dp);c.fill();
+  c.strokeStyle=on?'#ffcf6a':'rgba(242,236,220,.24)';
+  c.lineWidth=(on?6:2)*dp;c.stroke();
   /* 棚らしさ(引き出しの取っ手)=同じ絵を全部に付ける。⚠見分けの手掛かりにはしない */
-  c.fillStyle=on?'rgba(60,44,20,.55)':'rgba(242,236,220,.16)';
+  c.fillStyle=on?'rgba(60,44,20,.75)':'rgba(242,236,220,.16)';
   c.fillRect(r.x+r.w*.34,r.y+r.h*.52,r.w*.32,6*dp);
  }
  /* 押した数の丸(⚠数字だけだと押せたか読めない) */
