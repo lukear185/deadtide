@@ -3492,8 +3492,15 @@ function bnsToday(si){
  const a=META.bday;
  return Array.isArray(a)&&a[clamp(si|0,0,STAGES.length-1)]===bnsDayKey();
 }
-/* 次に走れるまでのおよその時間(ボタンに出す) */
-function bnsNextH(){const d=new Date();return Math.max(1,24-d.getHours());}
+/* 次に走れるまでの残り(ボタンとお知らせに出す)。⚠**日付が変わるまで**なので、分まで出す。
+   ⚠⚠**「あと24時間」ではない**=次の0時までであって、走った時刻からの24時間ではない。 */
+function bnsNextS(){
+ const d=new Date();
+ let m=(23-d.getHours())*60+(60-d.getMinutes());
+ if(m<1)m=1;
+ const h=(m/60)|0,mm=m%60;
+ return (h>0?h+'時間':'')+mm+'分';
+}
 /* 🚌が解放されているか(=1日1回の判定を混ぜない素の解放) */
 function bnsUnl(si){if(DEV)return true;
  const i=D_ORD.indexOf(BNS_D);return i<=0||!!scArr(si)[D_ORD[i-1]];}
@@ -16942,6 +16949,8 @@ function gameStep(dt){
  }
 }
 /* ============ 画面状態・描画 ============ */
+/* ⏳🚌タイトルで「あと○時間○分」を書き直すまでの秒(2026-08-02(51)) */
+let BNSDT=0;
 let SCR='title',MODE='solo',TT=0,hudT=0,gameActive=false,tipSt=false,PAUSED=false,SEL=-1,AIM=false,FLAGAIM=false,aimPos=null,PUSHTGT=-1,SPEC=-1,COOP=false;
 function setSpec(j){SPEC=j;document.body.classList.toggle('spec',SPEC>=0);if(SPEC>=0){closeBM();setAim(false);setFlagAim(false);}}
 function specCamp(j){if(MODE==='client')return (CS.oc||{})[j]||null;return G&&G.players[j]&&j!==G.myIdx?G.players[j]:null;}
@@ -19398,7 +19407,8 @@ let setCpu=1,setDiff=2,setLMode=0,setLDiff=2;
 function segInit(id,cb){$(id).querySelectorAll('.btn').forEach(b=>{b.onclick=()=>{$(id).querySelectorAll('.btn').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');cb(+b.dataset.v);};});}
 segInit('seg-diff',v=>{if(!diffOK(META.stg||0,v)){
  /* ⚠**なぜ押せないかを言う**=🔒(未解放)と✅(今日は済)で理由が違う */
- if(v===BNS_D&&bnsUnl(META.stg||0))try{toast('🚌 バスの日は1日1回。また明日!',true);}catch(e){}
+ if(v===BNS_D&&bnsUnl(META.stg||0))
+  try{toast('🚌 今日はもうプレイできません。次に走れるまで あと '+bnsNextS(),true);}catch(e){}
  refreshDiffUI();return;}setDiff=v;});
 segInit('seg-stage',v=>{if(!stageOK(v)){refreshStageUI();return;}META.stg=v;saveMeta();refreshDiffUI();});
 segInit('lb-mode',v=>{setLMode=v;$('lb-diffwrap').style.display=v?'block':'none';});
@@ -21389,6 +21399,15 @@ function bnsPreStep(dt){
 const BMG_MUL=[1,1.2,1.5,1.9,2.4];/* 連続の倍率(1連目から。⚠3種で共通) */
 const BMG_PT=[5,3,0];             /* ✨ピッタリ / ⭕成功 / ❌失敗(⚠3種で共通) */
 const BMG_SUB=.35;                /* ⚠主でない物資も少しは入る=1種類しか貯まらないと強化が1本道になる */
+/* ⏱⭐⭐⭐**3種とも制限時間つき+早く終えるほど得**(2026-08-02(51)ユーザー決定
+   「各ミニゲームは制限時間があって早くやればやるほど報酬が増えるようにして」)。
+   ⚠⚠**時計は「自分が操作できる間」だけ動かす**=🏠記憶の「見せている間」は待たされているだけなので、
+     そこを数えると**上手い下手と関係なく損をする**(理不尽になる)。
+   ⭐**早得は残り秒に比例**=**急ぐ理由**が入って、狙う⇄急ぐの綱引きが生まれる。
+   ⚠**時間切れは失敗ではない**=そこまでの点は残す(この面の「負けは無い」に揃える)。 */
+const BMG_TIME=30;   /* 1回の制限時間(秒) */
+const BMG_FAST=2.0;  /* 残り1秒あたりの早得 */
+const bmgBonus=M=>Math.round(Math.max(0,M.left||0)*BMG_FAST);
 /* ⚠**並びは `ENT_K`(棟の種類)と同じ**。⭐**選択画面の札にもこの名前を出す**=
    何の遊びか読めないと「どこを漁るか」が物資だけの選択になってしまう。 */
 const BMG_K=[{ic:'⛽',n:'給油',   d:'緑の帯でタップ!'},
@@ -21460,7 +21479,8 @@ function bnsMgStart(Q,b){
  Q.mg={ek:k,kind:k,i:0,t:0,pts:0,run:0,runMx:0,msg:'',msgT:0,endT:0,fl:0,lastG:-1,
   /* ⛽ */pos:.02,dir:1,sp:BMG_SP[0],w:BMG_W[0],tgt:.5,
   /* 🏭 */n:0,cx:.5,bx:.5,stack:[],
-  /* 🏠 */seq:[],si:0,ph:'show',shT:0,lit:-1,miss:0,clean:1};
+  /* 🏠 */seq:[],si:0,ph:'show',shT:0,lit:-1,miss:0,clean:1,
+  /* ⏱残り時間(3種で共通) */left:BMG_TIME};
  if(k===1){Q.mg.w=BML_W0;Q.mg.cx=.5;Q.mg.stack=[{x:.5,w:BML_W0}];Q.mg.n=1;bnsMlRound(Q.mg);}
  else if(k===2){Q.mg.seq=[];for(let q=0;q<BMM_L0;q++)bnsMmRound(Q.mg,1);bnsMmRound(Q.mg,0);}
  else bnsMgRound(Q.mg);
@@ -21471,6 +21491,11 @@ function bnsMgStep(Q,dt){
  if(M.msgT>0)M.msgT=Math.max(0,M.msgT-dt);
  if(M.fl>0)M.fl=Math.max(0,M.fl-dt);
  if(M.endT>0){M.endT-=dt;if(M.endT<=0)bnsMgDone(Q);return;}
+ /* ⏱**時計**。⚠**🏠記憶は「押す番」の間だけ数える**(見せている間は待たされているだけ) */
+ if(M.kind!==2||M.ph==='in'){
+  M.left=(M.left==null?BMG_TIME:M.left)-dt;
+  if(M.left<=0){M.left=0;M.msg='⏱ 時間切れ';M.msgT=1;M.endT=1.2;return;}
+ }
  if(M.kind===1){/* 🏭荷が左右に流れる */
   const lo=M.w/2,hi=1-M.w/2;
   M.bx+=M.dir*M.sp*dt;
@@ -21571,7 +21596,8 @@ function bnsMmRects(W,H){
 /* 終わり=物資を積んで選択画面へ戻る。⚠**3回終わったら乗り込みへ**(回数は棟ではなく回で数える) */
 function bnsMgDone(Q){
  const M=Q.mg;if(!M)return;
- const main=Math.max(1,M.pts),sub=Math.round(main*BMG_SUB);
+ /* ⏱**早得**=残り時間ぶんを上乗せする(2026-08-02(51)) */
+ const main=Math.max(1,M.pts+bmgBonus(M)),sub=Math.round(main*BMG_SUB);
  const got=[0,0,0];
  for(let i=0;i<3;i++){got[i]=(i===M.ek)?main:sub;Q.res[i]+=got[i];}
  Q.got=got;Q.gotT=2.4;Q.mg=null;
@@ -21806,9 +21832,15 @@ function bnsDrawMg(c,Q,W,H,dp,t){
  c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(22*dp)+'px '+FF;
  c.fillText(K.ic+' '+K.n+' — '+K.d,W*.05,H*.115);
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
- c.fillText(M.kind===1?('あと '+Math.max(0,BML_N-M.n)+' 段')
-           :M.kind===2?((M.seq.length-BMM_L0+1)+' / '+BMM_N+' 段  ♥'+Math.max(0,BMM_MISS-M.miss+1))
-                      :('あと '+Math.max(0,BMG_N-M.i)+' 本'),W*.95,H*.115);
+ c.fillText((M.kind===1?('あと '+Math.max(0,BML_N-M.n)+' 段')
+            :M.kind===2?((M.seq.length-BMM_L0+1)+' / '+BMM_N+' 段 ♥'+Math.max(0,BMM_MISS-M.miss+1))
+                       :('あと '+Math.max(0,BMG_N-M.i)+' 本'))
+            +'  ⏱'+Math.max(0,M.left||0).toFixed(1),W*.95,H*.115);
+ /* ⏱**残り時間の帯**(⚠3種で同じ場所)=**早く終えるほど得**なので、減り方が見えていないと急げない */
+ {const bx=W*.06,bw=W*.88,by=H*.135,bh=9*dp,q=clamp((M.left||0)/BMG_TIME,0,1);
+  c.fillStyle='rgba(30,25,19,.9)';rr(c,bx,by,bw,bh,bh/2);c.fill();
+  c.fillStyle=q<.25?DANGER2:(q<.5?GOLD:LIFE);
+  if(q>0){rr(c,bx,by,bw*q,bh,bh/2);c.fill();}}
  /* 遊び場 */
  if(M.kind===1)bnsDrawMl(c,M,W,H,dp);
  else if(M.kind===2)bnsDrawMm(c,M,W,H,dp,t);
@@ -21817,7 +21849,7 @@ function bnsDrawMg(c,Q,W,H,dp,t){
     同じ y に置いたら🏠は「お題」の上に、🏭は荷台の上に重なって両方読めなかった。
     ⭐**⛽だけ真ん中が空いている**ので、そこにお知らせを大きく出す。
     ⭐**🏭🏠はお知らせと連なりを同じ行で入れ替える**=1行しか空いていないので重ねようがない。 */
- const iy=M.kind===1?H*.175:(M.kind===2?H*.90:H*.245);
+ const iy=M.kind===1?H*.215:(M.kind===2?H*.90:H*.245);
  c.textAlign='center';
  if(!(M.msgT>0&&M.kind!==0)){
   c.fillStyle=M.run>=2?GOLD:PANE;
@@ -21829,9 +21861,14 @@ function bnsDrawMg(c,Q,W,H,dp,t){
   c.font='900 '+Math.round((M.kind===0?26:22)*dp)+'px '+FF;
   c.fillText(M.msg,W/2,M.kind===0?H*.63:iy);c.globalAlpha=1;}
  if(M.endT>0){
-  c.fillStyle='rgba(12,9,6,.72)';c.fillRect(0,H*.40,W,H*.22);
-  c.fillStyle=GOLD;c.font='900 '+Math.round(28*dp)+'px '+FF;
-  c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' を '+Math.max(1,M.pts)+' 手に入れた!',W/2,H*.545);
+  c.fillStyle='rgba(12,9,6,.78)';c.fillRect(0,H*.36,W,H*.28);
+  /* ⏱**早得は別の行で見せる**=上乗せがあったことが分からないと「急ぐ理由」が伝わらない */
+  {const bn=bmgBonus(M);
+   c.fillStyle=GOLD;c.font='900 '+Math.round(26*dp)+'px '+FF;
+   c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' を '+Math.max(1,M.pts+bn)+' 手に入れた!',W/2,H*.50);
+   c.font='900 '+Math.round(18*dp)+'px '+FF;
+   c.fillStyle=bn>0?LIFE:'rgba(242,236,220,.6)';
+   c.fillText(bn>0?('⏱ 早得 +'+bn+'  (のこり '+M.left.toFixed(1)+'秒)'):'⏱ 早得なし',W/2,H*.585);}
  }else if(M.kind===0){
   const bw=W*.42,bh=H*.15,bx=W/2-bw/2,by=H*.72;
   bnsPanel(c,bx,by,bw,bh,.72);
@@ -21885,7 +21922,7 @@ function bnsDrawMl(c,M,W,H,dp){
 function bnsDrawMm(c,M,W,H,dp,t){
  const inp=(M.ph==='in');
  /* いま何をする番か */
- {const pw=W*.46,ph=50*dp,px=W/2-pw/2,py=H*.155;
+ {const pw=W*.46,ph=50*dp,px=W/2-pw/2,py=H*.175;
   bnsPanel(c,px,py,pw,ph,.9);
   c.textAlign='center';c.fillStyle=inp?GOLD:PANE;
   c.font='900 '+Math.round(21*dp)+'px '+FF;
@@ -25630,7 +25667,7 @@ function refreshDiffUI(){
      =どちらも押せないので、同じ見た目だと**開いていないのかと思われる**。 */
   if(v===BNS_D){const unl=bnsUnl(si),bs=unl?bnsBestOf(si):null;
    x.textContent=D.n+(!unl?' 🔒'
-    :bnsToday(si)?(' ✅今日は済 あと'+bnsNextH()+'h')
+    :bnsToday(si)?(' ✅今日は済 あと'+bnsNextS())
     :(((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎')+((bs&&bs.s>0)?' ⚡'+fmt(bs.s):'')));}
   else x.textContent=D.n+(ok?' W'+D.w:' 🔒');
   x.disabled=!ok;x.style.opacity=ok?'':'.45';});
@@ -26007,7 +26044,10 @@ function loopBody(now){
  }
  if(TUT&&!PAUSED)tutStep(dt0);/* ⚠タイトルの段(ガチャ)もあるので gameActive では絞らない */
  if(TUT)tutPtr();/* ⚠止まっている間も置き直す(中で引っ込める)ので PAUSED では絞らない */
- if(SCR==='title')paradeStep(TT);
+ if(SCR==='title'){paradeStep(TT);
+  /* ⏳**残り時間の表示を出しっぱなしにしない**=タイトルに居る間は時々書き直す(20秒ごと) */
+  BNSDT-=dt0;if(BNSDT<=0){BNSDT=20;try{refreshDiffUI();}catch(e){}}
+ }
  if(SCR==='rpg')rgStep(dt0);
  if(GC)gcStep(dt0);/* 💎英雄召集の演出 */
  else if(GCV==='home'&&gcOpen())gcHomeStep(dt0);/* 💎召集画面(目玉の英雄を見せる面) */
