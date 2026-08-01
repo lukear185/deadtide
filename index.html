@@ -1186,7 +1186,10 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4.5秒止めて中ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を5秒燃やし続ける。総ダメージが大きい'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0,bcl:[]};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0,bcl:[],bres:[0,0,0],bup:{},beq:{}};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
+/* 🎒🚌**バス強化は永続**(2026-08-02(44)ユーザー決定「この強化は永続だから」)=
+   `bres`=持っている物資[⛽燃料,🏭鉄材,🏠食料] / `bup`=性能の段 / `beq`=付けた装備。
+   ⚠**遊ぶたびに積み上がる**ので、値段は「1試合ぶんの稼ぎ×何試合ぶんか」で決めること。 */
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
 try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
@@ -1194,6 +1197,10 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
  if(!Array.isArray(META.uv))META.uv=[];if(!Array.isArray(META.tg))META.tg=[];if(!META.ld||typeof META.ld!=='object')META.ld={};delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0'])META[k]=META[k]||0;
+ /* 🚌バスの物資と永続強化(2026-08-02(44))。⚠古いセーブには無いので必ず作り直す */
+ if(!Array.isArray(META.bres))META.bres=[0,0,0];while(META.bres.length<3)META.bres.push(0);
+ if(!META.bup||typeof META.bup!=='object')META.bup={};
+ if(!META.beq||typeof META.beq!=='object')META.beq={};
  if(!META.hlv||typeof META.hlv!=='object')META.hlv={};/* 英雄の鍛錬Lv id→Lv */
  if(!META.hxp||typeof META.hxp!=='object')META.hxp={};/* 次のLvまでの経験 id→pt */
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
@@ -1244,6 +1251,7 @@ function metaResetAll(){
  META.tmTip=0;                                 /* 🎒編成の案内(初めて兵科を解放した時に1回) */
  META.bcl=[];                                  /* 🚌ボーナス面の初回クリア(ステージごと。報酬は1回だけ) */
  META.brec=[];                                 /* 🚌道中の自己ベスト(ステージごと。タイム/轢いた数/最高連続) */
+ META.bres=[0,0,0];META.bup={};META.beq={};    /* 🚌バスの物資と永続強化(2026-08-02(44)) */
 }
 /* ⚠⚠**3への上げは「難易度と研究所だけ」戻す**(2026-08-01ユーザー選択)。
    理由=初期解放を2種に絞ったので `META.nt`/`META.nu`(BASE_T/BASE_U から数えた相対値)が
@@ -1253,7 +1261,11 @@ try{if((META.rst|0)<META_RESET){META.rst=META_RESET;
  if(META_RESET>=3)metaResetProgress();else metaReset();
  saveMeta();}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
-function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;}
+/* ⚠**新しく足した物は必ずDEVの底上げにも足す**(でないと実機で一度も見られない)=
+   🚌バスの物資は3種とも潤沢に(装備9個と性能25段を一度に見比べられる額)。 */
+function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;
+ if(!Array.isArray(META.bres))META.bres=[0,0,0];
+ for(let i=0;i<3;i++)META.bres[i]=99999;}
 devTop();
 /* DEVモードだと分かるようにタイトル右上の版数へ印を付ける(付け忘れ/外し忘れ防止) */
 if(DEV)try{const e=document.getElementById('vertag');if(e)e.textContent='v2.0 β 🛠DEV';}catch(e){}
@@ -20437,7 +20449,7 @@ function bnsBusInit(C){
   left:BNS_TIME,score:0};
  /* 🔧⭐**強化の効き目は必ずバスの持ち物に入れる**(2026-08-02(43))=定数を書き換えると次の試合に残る。
     ⚠**素の値もここで入れておく**=1つも買わなかった時に undefined を掛けないため。 */
- bupApply(C.bus,null);
+ bupApply(C.bus,META.bup,META.beq);
  BNIT_P=-1;BNIT_R=-1;BNIT_M=0;/* ⚠ボタンの表示を必ず1回書き直させる(前の試合の値が残る) */
  /* ⚠**引っ込めたままにしない**=ムービー中に隠した物を、次の試合で必ず出し直す */
  try{const e9=$('bnitro');if(e9&&e9.style)e9.style.display='';
@@ -20472,7 +20484,9 @@ function bnsBusStep(C,dt){
     ⭐🔥**ニトロで一発で振り払える**=ニトロに「脱出」という2つ目の使い道が付く。 */
  if(nz9)B.grip=0;
  const gp9=clamp(B.grip||0,0,1);
- const sp=Math.hypot(B.vx,B.vy),mx=(B.spMx||BUS_SP)*(nz9?BUS_NIT_SP:1)*Math.max(.4,im||1)*(1-gp9*BUS_GRIP_S);
+ /* ⚔🛡増加装甲=しがみつかれても遅くならない / 🚀ブースター=ニトロ中がさらに速い */
+ const gs9=(B.gripS==null?BUS_GRIP_S:B.gripS);
+ const sp=Math.hypot(B.vx,B.vy),mx=(B.spMx||BUS_SP)*(nz9?BUS_NIT_SP*(B.nitSpX||1):1)*Math.max(.4,im||1)*(1-gp9*gs9);
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
  let nx2=clamp(B.x+B.vx*dt,70,MAPW-70),ny2=clamp(B.y+B.vy*dt,70,MAPH-30);
@@ -20502,7 +20516,12 @@ function bnsBusStep(C,dt){
  /* 轢く=重なっている間ずっと削る+外へ弾く。⚠**押し出しは経路上の距離(z.d)で戻す**
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */
  let hit=0,kil=0;
- const rr9=BUS_R*(nz9?BUS_NIT_R:1);
+ /* ⚔⭐**装備で当たりの形が変わる**(2026-08-02(44))。⚠**絵(`drawBusEq`)と同じ数値から出す**=
+    見えていない所で当たると「当たっていないのに死ぬ」に逆戻りする(この面で一度踏んだ)。 */
+ const rr9=BUS_R*(nz9?BUS_NIT_R:1)*(B.rX||1);
+ const bl9=B.bladeR||0,fl9=B.flame?1:0,sr9=B.siren?1:0;
+ /* 進む向き(止まっている時は車体の向き)=ノコも炎もこの向きに付いている */
+ const mv9=Math.hypot(B.vx,B.vy),tx9=mv9>8?B.vx/mv9:0,ty9=mv9>8?B.vy/mv9:-1;
  /* ⭐⭐**通り過ぎた敵は消す**(2026-08-02(24))=これが無いと**盤面の上限が後ろの敵で埋まり**、
     進む先がすかすかになる(実走で42秒走って81体しか轢けなかった原因)。
     ⚠画面の外まで下がってから消すこと(見えている所で消えると「勝手に居なくなった」になる)。 */
@@ -20513,7 +20532,27 @@ function bnsBusStep(C,dt){
   /* ⚠⚠**当たりは絵の大きさ(`RICE_S`)に連動させる**(2026-08-02(36))=
      絵だけ大きくすると「当たっていないのに死ぬ」になる。⚠ボスとエリートは米粒ではないので据え置き。 */
   const dx=z.px-B.x,dy=z.py-B.y,rz=rr9+(z.sc||1)*10*((z.boss||z.elite)?1:RICE_K);
-  if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
+  /* 🔊**サイレン**=前のゾンビを道の真ん中へ寄せる。⚠**自分より前だけ**=通り過ぎた敵を引き戻さない。
+     ⚠`z.off`(道からの横ずれ)を0へ寄せるだけ=世界座標で引っ張ると道の外へ出る(既出の掟)。 */
+  if(sr9&&z.off&&dy<0&&dy>-EQ_SIREN_D){const o9=z.off,ab9=Math.abs(o9);
+   if(ab9>EQ_SIREN_K)z.off=o9-(o9<0?-1:1)*Math.min(EQ_SIREN_V*dt,ab9-EQ_SIREN_K);}
+  /* 🔥**前方火炎放射**=鼻先から前へ広がる扇。⚠**轢いた扱いにはしない**(轢く前に削るだけ)。
+     ⚠これで倒れた分も `kil` に数える=数えないと「焼くと連なりが切れる」逆の遊びになる。 */
+  if(fl9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9;
+   if(fw>rz*.4&&fw<EQ_FLM_L&&Math.abs(sw)<EQ_FLM_W*(.34+.66*fw/EQ_FLM_L)){
+    dmgZ(C,z,EQ_FLM_D*(B.dpsX||1)*dt,1,true);
+    if(z.dead){kil++;continue;}}}
+  /* ⚙**回転ノコ**=**丸ノコの円そのもの**が当たり(絵と1pxもずれない)。
+     ⚠**外接の丸で先に弾く**=装備していない時は今までどおり平方の比較1回で済む
+     (数百体を毎フレーム見るので、ここを重くすると面ごと重くなる)。 */
+  if(bl9){const ro9=EQ_BL_OUT+(rz-rr9);
+   if(dx*dx+dy*dy>ro9*ro9)continue;
+   let ok9=dx*dx+dy*dy<=rz*rz;
+   if(!ok9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9,rb9=EQ_BL_R+(rz-rr9);
+    for(let s9=-1;s9<=1&&!ok9;s9+=2){const ux=fw-EQ_BL_X,uy=sw-EQ_BL_Y*s9;
+     if(ux*ux+uy*uy<=rb9*rb9)ok9=1;}}
+   if(!ok9)continue;}
+  else if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
   dmgZ(C,z,BUS_DPS*(B.dpsX||1)*(nz9?BUS_NIT_DPS:1)*dt,1,true);
   if(z.dead)kil++;
@@ -20525,7 +20564,7 @@ function bnsBusStep(C,dt){
    if(z.nx!=null){const s9=(dx*z.nx+dy*z.ny)>=0?1:-1;
     const pl9=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
     const w9=bnsCorrW(clamp(z.d/pl9,0,1));
-    z.off=clamp((z.off||0)+s9*BUS_SIDE*(nz9?1.8:1)*dt,-w9,w9);}}
+    z.off=clamp((z.off||0)+s9*BUS_SIDE*(B.sideX||1)*(nz9?1.8:1)*dt,-w9,w9);}}
   hit++;
  }
  /* 🧟**しがみつきの溜まり**=「当たったが倒しきれなかった数」で増え、離れると戻る。
@@ -20566,6 +20605,8 @@ function bnsBusStep(C,dt){
   B.cmb=(B.cmb||0)+kil;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;B.kill=(B.kill||0)+kil;
   if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
   bnsScore(B,kil);
+  /* ⚡**電磁バンパー**=轢いた時にたまに周りへ感電。⚠**毎回出さない**(毎秒何十回になる) */
+  if(B.zap&&Math.random()<EQ_ZAP_P)try{bnsZap(C,B,nz9);}catch(e){}
   /* ⭐⭐**段が上がった瞬間だけ鳴らす+光らせる**(2026-08-02(3)ユーザー「音と演出がちゃっちい」)。
      ⚠**1体ごとに鳴らす音を派手にしてはいけない**=毎秒何十体なので必ず雑音になる。
        派手にしてよいのは**段が上がる瞬間**(1試合で数回)。NOTESの「まとまって起きる瞬間に置く」。 */
@@ -20763,7 +20804,8 @@ function bnsSplat(C,z){
      **体が森の奥まで飛んでいって画面から消える**うえ**高く上がりすぎて画面の上へ抜ける**。
      ⚠⚠コメントに「**」と「/」を続けて書かない=`*` と `/` が並んでコメントが途中で閉じる(実際に踏んだ)。 */
   const sp=(90+bl*.42)*(nz?1.2:1)*rnd(.8,1.2);              /* 地面を滑っていく速さ */
-  const up=Math.min(620,150+bl*.30)*(nz?1.25:1)*rnd(.85,1.2);/* 跳ね上がる速さ(⚠寄りで割って見え方を揃える) */
+  /* ⚔🔩**スパイクローラー**=巻き込んで打ち上げる=**高さだけ**伸ばす(飛距離は伸ばさない=画面外へ消える) */
+  const up=Math.min(760,(150+bl*.30)*((B&&B.upX)||1))*(nz?1.25:1)*rnd(.85,1.2);/* 跳ね上がる速さ(⚠寄りで割って見え方を揃える) */
   /* ⚠**大きさは米粒と同じ式から出す**(`RICE_S`)=**飛ぶのは「さっきまで歩いていたその体」**なので、
      別の寸法で描くと「板が飛んだ」に見える(実際にそう見えて描き直した)。 */
   bnsRing(C,'bbod',BNS_BOD,{x:z.px,y:z.py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
@@ -21089,7 +21131,8 @@ function bnsSmash(C,o){
  const K=BOBJ_K[o.k]||BOBJ_K[0],gz=bnsGz(),nz=(B.nitT>0)?1:0;
  o.dead=1;
  /* ⭐**速さを削る**=壊した代償。⚠ニトロ中は削りを半分にする(化けている間の気持ちよさを守る) */
- const sl=nz?(K.sl+(1-K.sl)*.5):K.sl;
+ /* ⚔💨**サイドブラスト**=障害物に当たっても減速しない(爆風で吹き飛ばしている扱い) */
+ const sl=B.noDrag?1:(nz?(K.sl+(1-K.sl)*.5):K.sl);
  B.vx*=sl;B.vy*=sl;B.bump=1;
  if(FXLV>0)C.shake=Math.max(C.shake||0,(1-K.sl)*.55);
  /* 破片=体と同じ弾道の仕組みに乗せる(⚠絵だけ差し替える印 `dbr`) */
@@ -21151,20 +21194,62 @@ function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy
    ⚠⚠**UIはDOMで作らない**=盤面の上に**画面座標で描く**。DOMにすると寄り・安全域・向きの話が
      全部ついて回るうえ、絵の語彙が本編とずれる(この面はもともと canvas 一枚で語っている)。
    ⚠**この面かぎりの強化**=永久強化にすると🔬研究所と役割がぶつかる(ユーザー決定は「集めた物資で」)。 */
-/* 🔧**バスの強化**(この試合かぎり)。`r`=どの物資で買うか(0⛽/1🏭/2🏠)。
-   ⚠⚠**効き目は必ずバスの持ち物にする**(`B.spMx` など)=定数を書き換えると次の試合に残る。
-   ⚠**轢く範囲(`BUS_R`)は強化に入れない**=絵と当たりの大きさは必ず揃える掟(NOTES)を破るため。 */
+/* 🔧⭐⭐⭐**バスの強化は永続**(2026-08-02(44)ユーザー決定「この強化は永続だから それ込みで数値調整」)。
+   ⚠⚠**段も余った物資も次の試合へ持ち越す**(`META.bup`/`META.beq`/`META.bres`)=
+     **遊ぶたびに積み上がるメタ**。⚠だから値段は「1試合の稼ぎ×何試合ぶんか」で決めること。
+   📌**1試合の稼ぎの目安**=主の物資 140前後(全部会心で231)/他の2種は35%。合計 240前後。
+     ⭐**全部揃えるのに20試合前後**になるように値段を組んである(合計 ⛽1985 / 🏭1450 / 🏠1570)。
+   ⚠**文言は「何が起きるか」で書く**(2026-08-02(44)ユーザー「全体的にわかりやすく」)=
+     「連なりの猶予」のような内輪の言い方を出さない。
+   ⭐**枠は2つ**=🔧性能(数値が伸びる)と ⚔装備(**見た目が変わって挙動が増える**)。
+   ⚠**轢く範囲を数値だけで広げない**=絵と当たりは必ず揃える掟(NOTES)。広げる物は装備として絵を足す。 */
 const BUP=[
- {k:'sp', r:0,ic:'🏎',n:'エンジン',d:'最高速 +7%',        mx:5,c:[25,45,75,115,165]},
- {k:'nt', r:0,ic:'🔥',n:'増槽',    d:'ニトロ +0.6秒',      mx:4,c:[30,55,90,140]},
- {k:'ram',r:1,ic:'🛡',n:'排障器',  d:'轢く力 +20%',        mx:5,c:[25,45,75,115,165]},
- {k:'tir',r:1,ic:'🛞',n:'タイヤ',  d:'加速 +12% / よく曲がる',mx:3,c:[40,75,120]},
- {k:'crw',r:2,ic:'👥',n:'乗員',    d:'連なりの猶予 +0.3秒',mx:4,c:[30,55,90,140]},
- {k:'kit',r:2,ic:'🍖',n:'炊き出し',d:'ニトロの溜まり +18%',mx:4,c:[30,55,90,140]}
+ {k:'sp', r:0,ic:'🏎',n:'エンジン',  d:'スピード +7%',           mx:5,c:[30,60,110,190,300]},
+ {k:'nt', r:0,ic:'🔥',n:'ニトロ増槽',d:'ニトロが 0.6秒 長い',     mx:4,c:[45,90,170,290]},
+ {k:'ram',r:1,ic:'🛡',n:'排障器',    d:'ひき殺す力 +20%',         mx:5,c:[30,60,110,190,300]},
+ {k:'tir',r:1,ic:'🛞',n:'タイヤ',    d:'加速が速い / よく曲がる', mx:3,c:[55,110,210]},
+ {k:'crw',r:2,ic:'👥',n:'乗員',      d:'コンボが切れるまで +0.3秒',mx:4,c:[40,80,150,260]},
+ {k:'kit',r:2,ic:'🍖',n:'炊き出し',  d:'ニトロが早く溜まる +18%', mx:4,c:[40,80,150,260]}
 ];
-/* ⚠**素の値もここで入れる**=強化を1つも買わなかった時に undefined を掛けないため */
-function bupApply(B,up){
- up=up||{};
+/* ⚔⭐⭐⭐**装備**(2026-08-02(44)ユーザー「バスの前面に回るのこぎりブレードみたいなやつとか、
+   そういう爽快感がまずバス強化がほしい 別枠のUIで」)。
+   ⚠⚠**「どれか1つを選ぶ」ではない**(ユーザー明言)=**買った物がどんどん増えていく**。
+     ⭐だから**買い切り(段は無い)**にして、**安いしょぼい物から高い派手な物まで並べる**。
+   ⚠**全部「絵が付く」こと**=数値だけの強化は上の🔧性能の役目。ここは**見て分かる爽快感**が仕事。 */
+const BEQ=[
+ {k:'spike',r:1,ic:'🔩',n:'スパイクローラー',d:'ひいた体が高く舞う',        c:45},
+ {k:'wire', r:1,ic:'🪤',n:'鉄条網バンパー',  d:'前に張り出して当たりが広い',c:70},
+ {k:'plate',r:1,ic:'🛡',n:'増加装甲',        d:'しがみつかれても遅くならない',c:110},
+ {k:'blade',r:1,ic:'⚙',n:'回転ノコ',        d:'左右の丸ノコで横も薙ぐ',    c:160},
+ {k:'blast',r:0,ic:'💨',n:'サイドブラスト',  d:'障害物に当たっても減速しない',c:180},
+ {k:'boost',r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',      c:220},
+ {k:'flame',r:0,ic:'🔥',n:'前方火炎放射',    d:'鼻先の炎で走りながら焼く',  c:300},
+ {k:'siren',r:2,ic:'🔊',n:'サイレン',        d:'前のゾンビを道の真ん中へ集める',c:240},
+ {k:'zap',  r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',c:270}
+];
+/* ⚔装備の効き目の数値。⚠**1か所にまとめる**=あちこちに散らすと必ず食い違う */
+const EQ_BLADE=86;   /* 回転ノコの横への張り出し(px) */
+/* ⚙**丸ノコの位置と大きさ**。⚠⚠**当たりも絵もこの3本から出す**(2026-08-02(44)に撮って直した)=
+   最初は当たりを楕円、絵を小さい円で描いたので、**絵の外で当たる**状態になっていた
+   (この面で一度潰した「当たっていないのに死ぬ」がそのまま戻っていた)。
+   ⭐**車体の横(R*.5)から R+張り出し まで**をちょうど埋める円にしてある。 */
+const EQ_BL_X=BUS_R*.42;
+const EQ_BL_Y=(BUS_R*.50+BUS_R+EQ_BLADE)/2;
+const EQ_BL_R=(BUS_R+EQ_BLADE-BUS_R*.50)/2;
+const EQ_BL_OUT=Math.hypot(EQ_BL_X,EQ_BL_Y)+EQ_BL_R;/* ノコまで含めた外接半径 */
+const EQ_WIRE=1.07;  /* 鉄条網で当たりが何倍になるか(⚠絵も同じだけ前へ出す) */
+const EQ_UP=1.5;     /* スパイクローラーで体が何倍高く舞うか */
+const EQ_FLM_L=310,EQ_FLM_W=150,EQ_FLM_D=260;/* 火炎放射の長さ/半幅/1秒あたりの傷 */
+/* 🔊サイレン=前のゾンビを道の中央へ寄せる。⚠⚠**0まで寄せてはいけない**(2026-08-02(44)に撮って気づいた)=
+   全部が中央へ吸い込まれて**1本の縦線**になり、群れが群れに見えなくなる(遊びごと壊れる)。
+   ⭐**残す幅(`EQ_SIREN_K`)まで px/秒 で寄せる**=濃い帯ができるだけで塊の形は残る。
+   ⚠**効く範囲も近くだけ**にする(遠くまで効くと着く頃には整列し終わっている)。 */
+const EQ_SIREN_D=1500,EQ_SIREN_V=420,EQ_SIREN_K=170;
+const EQ_ZAP_R=300,EQ_ZAP_D=90,EQ_ZAP_P=.22;/* 感電の半径/傷/1回轢くごとに起きる率 */
+/* ⚠**素の値もここで入れる**=強化を1つも買っていない時に undefined を掛けないため。
+   ⚠**装備は `B.eq` にそのまま持たせる**=描く側(`drawBusEq`)も同じ物を見る。 */
+function bupApply(B,up,eq){
+ up=up||{};eq=eq||{};
  B.spMx =BUS_SP   *(1+.07*(up.sp|0));
  B.nitT0=BUS_NIT_T+ .60*(up.nt|0);
  B.dpsX =1+.20*(up.ram|0);
@@ -21172,14 +21257,48 @@ function bupApply(B,up){
  B.gripX=1+.10*(up.tir|0);
  B.cmbT0=BNS_CMB_T+.30*(up.crw|0);
  B.nitK =BUS_NIT_K*(1+.18*(up.kit|0));
+ B.eq=eq;
+ B.rX     =eq.wire ?EQ_WIRE:1;      /* 🪤当たりが広がる(⚠絵も同じだけ前へ出す) */
+ B.bladeR =eq.blade?EQ_BLADE:0;     /* ⚙横への張り出し */
+ B.upX    =eq.spike?EQ_UP:1;        /* 🔩打ち上げ */
+ B.gripS  =eq.plate?0:BUS_GRIP_S;   /* 🛡しがみつきで落ちる最高速(0=落ちない) */
+ B.noDrag =eq.blast?1:0;            /* 💨障害物で減速しない */
+ B.sideX  =(eq.blade?1.7:1)*(eq.blast?1.5:1);/* 横へ弾く強さ */
+ B.nitSpX =eq.boost?1.18:1;         /* 🚀ニトロ中の最高速 */
+ B.flame  =eq.flame?1:0;
+ B.siren  =eq.siren?1:0;
+ B.zap    =eq.zap?1:0;
 }
-/* 次の1段の値段(買えなければ null) */
+/* ⚡**電磁バンパー**=轢いた瞬間にたまに周りへ感電させる。
+   ⚠⚠**倒した分は必ず連なりとスコアとニトロの同じ道を通す**(NOTESの掟)=
+     通さないと「装備を付けるとコンボが切れる」という逆の遊びになる(爆発で一度踏んだ)。 */
+function bnsZap(C,B,nz){
+ let kb=0;
+ for(const z of C.zombies){if(z.dead||z.d<0)continue;
+  const ax=z.px-B.x,ay=z.py-B.y;
+  if(ax*ax+ay*ay>EQ_ZAP_R*EQ_ZAP_R)continue;
+  dmgZ(C,z,EQ_ZAP_D*(B.dpsX||1),1,true);if(z.dead)kb++;}
+ if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;
+  if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
+  bnsScore(B,kb);
+  if(!nz)B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));}
+ B.zapT=.22;/* 絵(青い輪)を出す秒数 */
+ if(FXLV>0)try{addFx(C,'ring',B.x,B.y,'',{r:EQ_ZAP_R*1.1,col:TECH});}catch(e){}
+}
+/* 次の1段の値段(買えなければ null=MAX) */
 function bupCost(U,i){const u=BUP[i],lv=(U&&U[u.k])|0;return lv>=u.mx?null:u.c[lv];}
+/* 装備の値段(すでに付けていれば null=所持) */
+function beqCost(E,i){const q=BEQ[i];return (E&&E[q.k])?null:q.c;}
 /* 🎒**走る前の状態**。⚠**G に持つ**=面(=1試合)の状態であってバスの持ち物ではない */
 function bnsPreInit(C){
  const P=BENT.slice().sort((a,b)=>a.x-b.x);/* 左から順=画面の並びと添字が一致する */
- G.bpre={st:'sel',left:BNS_MG_T,res:[0,0,0],up:{},pick:P,t:0,mg:null,
-         selI:-1,selT:0,got:null,gotT:0,bt:0,bp:0};
+ /* 🎒⚠⚠**物資も強化も META から読む**(2026-08-02(44)ユーザー決定=永続)。
+    ⚠**`res` は META.bres そのものを持つ**(写しにすると買った時に保存されない)。 */
+ if(!Array.isArray(META.bres))META.bres=[0,0,0];
+ if(!META.bup||typeof META.bup!=='object')META.bup={};
+ if(!META.beq||typeof META.beq!=='object')META.beq={};
+ G.bpre={st:'sel',left:BNS_MG_T,res:META.bres,up:META.bup,eq:META.beq,pick:P,t:0,mg:null,
+         tab:0,selI:-1,selT:0,got:null,gotT:0,bt:0,bp:0};
  document.body.classList.add('bnspre');
  bnsSelCam();
 }
@@ -21268,7 +21387,7 @@ function bnsMgTap(Q){
  const mul=g<2?BMG_MUL[Math.min(BMG_MUL.length-1,M.run-1)]:0;
  const add=g<2?Math.round(BMG_PT[g]*mul):0;
  M.pts+=add;M.lastG=g;
- M.msg=g===0?'✨会心! +'+add:(g===1?'⭕給油 +'+add:'❌こぼした');
+ M.msg=g===0?'✨ピッタリ! +'+add:(g===1?'⭕成功 +'+add:'❌こぼした…');
  M.msgT=.75;M.fl=g===0?.28:0;
  try{if(g===0){if(sfx.cmbUp)sfx.cmbUp();}else if(g===1){if(sfx.tap)sfx.tap();}else if(sfx.back)sfx.back();}catch(e){}
  M.i++;
@@ -21282,6 +21401,7 @@ function bnsMgDone(Q){
  for(let i=0;i<3;i++){got[i]=(i===M.ek)?main:sub;Q.res[i]+=got[i];}
  Q.got=got;Q.gotT=2.4;Q.mg=null;
  Q.left=Math.max(0,Q.left-1);
+ saveMeta();/* ⚠**稼いだ物資は永続**=ここで必ず保存する(2026-08-02(44)) */
  try{if(sfx.clearJ)sfx.clearJ();}catch(e){}
  if(Q.left<=0)bnsBoardStart();
  else{Q.st='sel';bnsSelCam();}
@@ -21312,26 +21432,40 @@ function bnsBoardStep(C,Q,dt){
  if(Q.bt>=BNS_BRD_T){B.vx=0;B.vy=0;Q.st='up';}
 }
 /* ============ 🔧**強化画面**(④)============ */
-/* ⭐**札の位置は1か所で出す**=絵とタップが必ず一致する(2つに分けると必ず食い違う) */
-function bnsUpRects(W,H){
- const dp=DPR||1,R=[],mx=W*.045,gp=12*dp,gy=H*.235;
- const cw=(W-mx*2-gp*2)/3,ch=(H*.50-gp)/2;
- for(let i=0;i<BUP.length;i++)
+/* ⭐**札の位置は1か所で出す**=絵とタップが必ず一致する(2つに分けると必ず食い違う)。
+   ⭐**枠は2つ**(`tab` 0=🔧性能 / 1=⚔装備)=性能は3x2・装備は3x3。⚠**行数は中身から出す**。 */
+function bnsUpRects(W,H,tab){
+ const dp=DPR||1,R=[],mx=W*.035,gp=9*dp;
+ const N=tab?BEQ.length:BUP.length,rows=Math.ceil(N/3);
+ const ty=H*.145,th=H*.085;/* 枠のつまみ */
+ const gy=ty+th+10*dp,gh=H*.965-H*.135-gy;/* 札の置ける高さ(下に「準備OK」を残す) */
+ const cw=(W-mx*2-gp*2)/3,ch=(gh-gp*(rows-1))/rows;
+ for(let i=0;i<N;i++)
   R.push({x:mx+(i%3)*(cw+gp),y:gy+((i/3)|0)*(ch+gp),w:cw,h:ch,i:i});
- R.go={x:W*.28,y:gy+ch*2+gp+10*dp,w:W*.44,h:H*.115};
+ R.tab=[{x:W*.035,y:ty,w:W*.22,h:th,i:0},{x:W*.035+W*.23,y:ty,w:W*.22,h:th,i:1}];
+ R.go={x:W*.56,y:ty,w:W*.405,h:th};
  return R;
 }
 function bnsUpTap(Q,sx,sy){
- const R=bnsUpRects(cv.width,cv.height);
- const g=R.go;
- if(sx>=g.x&&sx<=g.x+g.w&&sy>=g.y&&sy<=g.y+g.h){bnsPreGo();return;}
+ const hit=(r)=>sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h;
+ const R=bnsUpRects(cv.width,cv.height,Q.tab|0);
+ if(hit(R.go)){bnsPreGo();return;}
+ for(const tb of R.tab)if(hit(tb)){
+  if((Q.tab|0)!==tb.i){Q.tab=tb.i;try{if(sfx.tap)sfx.tap();}catch(e){}}return;}
  for(const r of R){
-  if(sx<r.x||sx>r.x+r.w||sy<r.y||sy>r.y+r.h)continue;
-  const u=BUP[r.i],p=bupCost(Q.up,r.i);
+  if(!hit(r))continue;
+  /* ⚔装備は買い切り(段が無い) / 🔧性能は段を1つ積む */
+  const eqm=(Q.tab|0)===1;
+  const u=eqm?BEQ[r.i]:BUP[r.i];
+  const p=eqm?beqCost(Q.eq,r.i):bupCost(Q.up,r.i);
   if(p==null){try{if(sfx.back)sfx.back();}catch(e){}return;}
-  if(Q.res[u.r]<p){try{if(sfx.warn)sfx.warn();}catch(e){}
+  if((Q.res[u.r]|0)<p){try{if(sfx.warn)sfx.warn();}catch(e){}
    try{toast(BRES[u.r].ic+BRES[u.r].n+'が足りない');}catch(e){}return;}
-  Q.res[u.r]-=p;Q.up[u.k]=((Q.up[u.k])|0)+1;
+  Q.res[u.r]-=p;
+  if(eqm)Q.eq[u.k]=1;else Q.up[u.k]=((Q.up[u.k])|0)+1;
+  /* ⚠**買った瞬間から効かせる**=強化画面でもバスの絵に装備が付く(付けた実感がその場で出る) */
+  try{const B9=G.players[0].bus;if(B9)bupApply(B9,Q.up,Q.eq);}catch(e){}
+  saveMeta();/* ⚠**永続**=買った時点で必ず保存する */
   try{if(sfx.buy)sfx.buy();}catch(e){}
   return;
  }
@@ -21340,7 +21474,7 @@ function bnsUpTap(Q,sx,sy){
 function bnsPreGo(){
  const C=G&&G.players&&G.players[0];if(!C)return;
  const Q=G.bpre;
- if(C.bus)bupApply(C.bus,Q?Q.up:null);
+ if(C.bus)bupApply(C.bus,Q?Q.up:META.bup,Q?Q.eq:META.beq);
  /* 🎥⚠⚠**運転の寄りに必ず戻す**(2026-08-02(43))=普通は③乗り込みで切り替わっているが、
     検査と撮影は流れを途中から飛ばすので、**広場を見下ろしたままの寄りで走り出す**ことがある。
     ⚠**同じ値なら camOn を呼ばない**=焼いた地形を捨てて1フレーム固まる。 */
@@ -21372,10 +21506,10 @@ function bnsPanel(c,x,y,w,h,a){
  c.strokeStyle='rgba(242,236,220,.55)';c.lineWidth=2.4*(DPR||1);c.stroke();
 }
 /* 🎒所持している物資(3種)を1行で。⚠**どの画面にも同じ形で出す**=貯まっている実感が続く */
-function bnsResBar(c,Q,W,y,dp){
+function bnsResBar(c,Q,W,y,dp,x0){
  c.textAlign='center';c.font='900 '+Math.round(17*dp)+'px '+FF;
  for(let i=0;i<3;i++){
-  const x=W*(.30+i*.20);
+  const x=W*((x0||.30)+i*.20);
   c.fillStyle=PANE;c.fillText(BRES[i].ic+BRES[i].n+' '+Math.round(Q.res[i]),x,y);}
 }
 function drawBnsPre(c,C,t){
@@ -21397,9 +21531,9 @@ function bnsDrawSel(c,Q,W,H,dp,t){
  /* 上の帯=何をする画面か+残り回数 */
  bnsPanel(c,W*.02,H*.03,W*.96,H*.155);
  c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(21*dp)+'px '+FF;
- c.fillText('🏚 どこを漁る?',W*.045,H*.085);
+ c.fillText('🏚 どの廃墟を漁る?',W*.045,H*.085);
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
- c.fillText('残り '+Q.left+' 回',W*.955,H*.085);
+ c.fillText('あと '+Q.left+' 回 漁れる',W*.955,H*.085);
  bnsResBar(c,Q,W,H*.152,dp);
  /* 棟ごとの光の輪 */
  const bw=Math.min(W*.30,190*dp),bh=54*dp,LAY=[];
@@ -21437,7 +21571,7 @@ function bnsDrawSel(c,Q,W,H,dp,t){
   c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(17*dp)+'px '+FF;
   c.fillText((ENT_K[L.b.ek]||ENT_K[0]).n,L.x+bw/2,L.y+22*dp);
   c.fillStyle=GOLD;c.font='900 '+Math.round(16*dp)+'px '+FF;
-  c.fillText(BRES[L.b.ek].ic+BRES[L.b.ek].n+' が多い',L.x+bw/2,L.y+43*dp);
+  c.fillText(BRES[L.b.ek].ic+BRES[L.b.ek].n+' がたくさん',L.x+bw/2,L.y+43*dp);
  }
  /* 直前にもらった物資(戻ってきた時だけ) */
  if(Q.got&&Q.gotT>0){
@@ -21450,7 +21584,7 @@ function bnsDrawSel(c,Q,W,H,dp,t){
   c.globalAlpha=1;
  }
  c.textAlign='center';c.fillStyle='rgba(242,236,220,.82)';c.font='900 '+Math.round(15*dp)+'px '+FF;
- c.fillText('光っている廃墟をタップ',W/2,H-14*dp);
+ c.fillText('光っている廃墟をタップ → ミニゲームで物資を集める',W/2,H-14*dp);
 }
 /* ②⛽**給油**。⚠**画面のどこを押しても止まる**=運転前の軽い遊びに狙いを付けさせない */
 function bnsDrawMg(c,Q,W,H,dp,t){
@@ -21459,9 +21593,9 @@ function bnsDrawMg(c,Q,W,H,dp,t){
  if(M.fl>0){c.fillStyle='rgba(255,246,226,'+(.22*clamp(M.fl/.28,0,1)).toFixed(3)+')';c.fillRect(0,0,W,H);}
  /* 見出し */
  c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(22*dp)+'px '+FF;
- c.fillText('⛽ 給油 — 目盛りで止めろ',W*.05,H*.115);
+ c.fillText('⛽ 給油 — 緑の帯でタップ!',W*.05,H*.115);
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
- c.fillText(Math.min(BMG_N,M.i+1)+' / '+BMG_N+' 本目',W*.95,H*.115);
+ c.fillText('あと '+Math.max(0,BMG_N-M.i)+' 本',W*.95,H*.115);
  /* 目盛り */
  const gx=W*.09,gw=W*.82,gy=H*.44,gh=42*dp;
  c.fillStyle='rgba(30,25,19,.92)';rr(c,gx,gy,gw,gh,gh*.5);c.fill();
@@ -21481,19 +21615,19 @@ function bnsDrawMg(c,Q,W,H,dp,t){
  c.textAlign='center';
  c.fillStyle=M.run>=2?GOLD:PANE;
  c.font='900 '+Math.round(20*dp)+'px '+FF;
- c.fillText('🔥 '+M.run+'連  ×'+BMG_MUL[Math.min(BMG_MUL.length-1,Math.max(0,M.run-1))].toFixed(2)
-            +'    ⛽ '+M.pts,W/2,H*.30);
+ c.fillText('🔥 '+M.run+'連続 ×'+BMG_MUL[Math.min(BMG_MUL.length-1,Math.max(0,M.run-1))].toFixed(2)
+            +'     いま '+BRES[M.ek].ic+' '+M.pts,W/2,H*.30);
  if(M.msgT>0){c.globalAlpha=clamp(M.msgT/.4,0,1);
   c.fillStyle=M.lastG===0?GOLD:(M.lastG===1?LIFE:DANGER2);
   c.font='900 '+Math.round(26*dp)+'px '+FF;c.fillText(M.msg,W/2,H*.63);c.globalAlpha=1;}
  if(M.endT>0){
   c.fillStyle=GOLD;c.font='900 '+Math.round(28*dp)+'px '+FF;
-  c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' +'+Math.max(1,M.pts),W/2,H*.80);
+  c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' を '+Math.max(1,M.pts)+' 手に入れた!',W/2,H*.80);
  }else{
   const bw=W*.42,bh=H*.15,bx=W/2-bw/2,by=H*.72;
   bnsPanel(c,bx,by,bw,bh,.72);
   c.fillStyle=PANE;c.font='900 '+Math.round(22*dp)+'px '+FF;
-  c.fillText('タップして止める',W/2,by+bh*.62);}
+  c.fillText('タップ!',W/2,by+bh*.62);}
 }
 /* ③🚌**乗り込み**。⚠**黒帯だけで語る**=ここで凝ると「軽いムービー」でなくなる */
 function bnsDrawBoard(c,Q,W,H,dp){
@@ -21505,53 +21639,154 @@ function bnsDrawBoard(c,Q,W,H,dp){
  if(k<.25)return;
  c.textAlign='center';c.fillStyle=PANE;c.globalAlpha=k;
  c.font='900 '+Math.round(24*dp)+'px '+FF;
- c.fillText((Q.bt||0)<1.15?'🚌 バスに乗り込む':'🔑 エンジン始動',W/2,H*.5-6*dp);
+ c.fillText((Q.bt||0)<1.15?'🚌 バスに乗り込む':'🔑 エンジン始動!',W/2,H*.5-6*dp);
  c.font='900 '+Math.round(16*dp)+'px '+FF;c.fillStyle='rgba(242,236,220,.8)';
- c.fillText((Q.bt||0)<1.15?'集めた物資を積み込んでいる…':'次の拠点へ向かう',W/2,H*.5+22*dp);
+ c.fillText((Q.bt||0)<1.15?'集めた物資を積み込んでいる…':'次の拠点へ向かって走り出す',W/2,H*.5+22*dp);
  c.globalAlpha=1;
 }
-/* ④🔧**強化画面**。⚠**買えるかどうかが札の色で読めること**(値段だけ書いても押してみるまで分からない) */
+/* ④🔧**強化画面**。⚠**買えるかどうかが札の色で読めること**(値段だけ書いても押してみるまで分からない)。
+   ⚠**「ずっと残る」と必ず書く**(2026-08-02(44)から永続)=そう書かないと使い惜しみされる。 */
 function bnsDrawUp(c,Q,W,H,dp,t){
- c.fillStyle='rgba(12,9,6,.80)';c.fillRect(0,0,W,H);
- c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(22*dp)+'px '+FF;
- c.fillText('🔧 出発前の強化',W*.05,H*.085);
- bnsResBar(c,Q,W,H*.165,dp);
- const R=bnsUpRects(W,H);
+ const tab=Q.tab|0;
+ c.fillStyle='rgba(12,9,6,.84)';c.fillRect(0,0,W,H);
+ c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(20*dp)+'px '+FF;
+ c.fillText('🔧 バス強化',W*.035,H*.072);
+ c.fillStyle='rgba(242,236,220,.72)';c.font='900 '+Math.round(13*dp)+'px '+FF;
+ c.fillText('買った物はずっと残る',W*.035+118*dp,H*.072);
+ /* ⚠**見出しの右から始める**(2026-08-02(44)に撮って気づいた)=既定の位置だと
+    「買った物はずっと残る」の上に物資が重なって両方読めない。 */
+ bnsResBar(c,Q,W,H*.072,dp,.44);
+ const R=bnsUpRects(W,H,tab);
+ /* 枠のつまみ(🔧性能 / ⚔装備) */
+ for(const tb of R.tab){
+  const on=tb.i===tab;
+  c.fillStyle=on?'rgba(70,58,36,.96)':'rgba(28,24,19,.8)';
+  rr(c,tb.x,tb.y,tb.w,tb.h,9*dp);c.fill();
+  c.strokeStyle=on?'rgba(255,207,106,.95)':'rgba(242,236,220,.30)';
+  c.lineWidth=(on?3:2)*dp;c.stroke();
+  c.textAlign='center';c.fillStyle=on?GOLD:'rgba(242,236,220,.6)';
+  c.font='900 '+Math.round(17*dp)+'px '+FF;
+  const own=tb.i?BEQ.filter(q=>Q.eq[q.k]).length+'/'+BEQ.length
+                :BUP.reduce((a,u)=>a+((Q.up[u.k])|0),0)+'/'+BUP.reduce((a,u)=>a+u.mx,0);
+  c.fillText((tb.i?'⚔ 装備 ':'🔧 性能 ')+own,tb.x+tb.w/2,tb.y+tb.h*.66);
+ }
  for(const r of R){
-  const u=BUP[r.i],lv=(Q.up[u.k])|0,p=bupCost(Q.up,r.i),ok=p!=null&&Q.res[u.r]>=p;
-  c.fillStyle=p==null?'rgba(52,64,40,.92)':(ok?'rgba(38,32,24,.94)':'rgba(30,26,21,.72)');
-  rr(c,r.x,r.y,r.w,r.h,10*dp);c.fill();
-  c.strokeStyle=p==null?'rgba(150,200,120,.8)':(ok?'rgba(255,207,106,.9)':'rgba(242,236,220,.28)');
+  const u=tab?BEQ[r.i]:BUP[r.i];
+  const p=tab?beqCost(Q.eq,r.i):bupCost(Q.up,r.i);
+  const lv=tab?((Q.eq[u.k])?1:0):((Q.up[u.k])|0);
+  const ok=p!=null&&(Q.res[u.r]|0)>=p;
+  c.fillStyle=p==null?'rgba(52,64,40,.94)':(ok?'rgba(38,32,24,.94)':'rgba(30,26,21,.72)');
+  rr(c,r.x,r.y,r.w,r.h,9*dp);c.fill();
+  c.strokeStyle=p==null?'rgba(150,200,120,.85)':(ok?'rgba(255,207,106,.9)':'rgba(242,236,220,.26)');
   c.lineWidth=(ok?3:2)*dp;c.stroke();
   c.textAlign='left';
-  c.fillStyle=ok||p==null?PANE:'rgba(242,236,220,.55)';
-  c.font='900 '+Math.round(18*dp)+'px '+FF;
-  c.fillText(u.ic+' '+u.n,r.x+11*dp,r.y+25*dp);
-  c.font='900 '+Math.round(13*dp)+'px '+FF;
-  c.fillStyle=ok||p==null?'rgba(242,236,220,.85)':'rgba(242,236,220,.45)';
-  c.fillText(u.d,r.x+11*dp,r.y+44*dp);
-  /* 段(◆の数)=いくつ積んだかが数字より速く読める */
-  c.fillStyle=GOLD;c.font='900 '+Math.round(13*dp)+'px '+FF;
-  let dm='';for(let k=0;k<u.mx;k++)dm+=(k<lv?'◆':'◇');
-  c.fillText(dm,r.x+11*dp,r.y+62*dp);
-  c.textAlign='right';
+  c.fillStyle=(ok||p==null)?PANE:'rgba(242,236,220,.55)';
   c.font='900 '+Math.round(16*dp)+'px '+FF;
+  c.fillText(u.ic+' '+u.n,r.x+9*dp,r.y+22*dp);
+  c.font='900 '+Math.round(12*dp)+'px '+FF;
+  c.fillStyle=(ok||p==null)?'rgba(242,236,220,.85)':'rgba(242,236,220,.45)';
+  c.fillText(u.d,r.x+9*dp,r.y+39*dp);
+  /* 🔧性能は段(◆の数)=いくつ積んだかが数字より速く読める。⚔装備は付いているかだけ */
+  if(!tab){c.fillStyle=GOLD;c.font='900 '+Math.round(12*dp)+'px '+FF;
+   let dm='';for(let k=0;k<u.mx;k++)dm+=(k<lv?'◆':'◇');
+   c.fillText(dm,r.x+9*dp,r.y+55*dp);}
+  c.textAlign='right';
+  c.font='900 '+Math.round(15*dp)+'px '+FF;
   c.fillStyle=p==null?LIFE:(ok?GOLD:'rgba(242,236,220,.45)');
-  c.fillText(p==null?'MAX':(BRES[u.r].ic+p),r.x+r.w-11*dp,r.y+r.h-11*dp);
+  c.fillText(p==null?(tab?'✅装備ずみ':'MAX'):(BRES[u.r].ic+p),r.x+r.w-9*dp,r.y+r.h-9*dp);
  }
  const g=R.go,pl=.5+.5*Math.sin(t*4);
- c.fillStyle='rgba(122,42,30,.95)';rr(c,g.x,g.y,g.w,g.h,12*dp);c.fill();
+ c.fillStyle='rgba(122,42,30,.96)';rr(c,g.x,g.y,g.w,g.h,10*dp);c.fill();
  c.strokeStyle='rgba(255,207,106,'+(.6+.4*pl).toFixed(2)+')';c.lineWidth=4*dp;c.stroke();
- c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(22*dp)+'px '+FF;
- c.fillText('✅ 準備OK — 出発!',W/2,g.y+g.h*.64);
+ c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(18*dp)+'px '+FF;
+ c.fillText('✅ 出発!',g.x+g.w/2,g.y+g.h*.66);
 }
 /* ⭐⭐**縦の潰し(SCY)を打ち消す倍率**。⚠**回す物は必ずこれを掛けてから回す**=
    縦横の倍率が違う変換の下で `rotate` すると、絵が斜めにひしゃげる(剪断)。
    ⭐回す前に世界のy方向を 1/sq 伸ばしておくと、合成が「等方の拡大×回転」に戻るので、
      **どの向きを向いていても絵は1pxも歪まない**。⚠**translate の後・rotate の前**に置くこと。 */
 function camIvY(){return (SCY>0&&SC>0)?SC/SCY:1;}
+/* ⚔⭐⭐⭐**装備の絵**(2026-08-02(44)ユーザー「前面に円で回るのこぎりブレードみたいなやつ」)。
+   ⚠**呼ばれる場所はバスの座標系の中**=**+x が進む向き**・y が横(すでに縦の潰しは打ち消してある)。
+   ⚠⚠**当たりの数値(`EQ_*`)からそのまま描く**=絵と当たりを2か所に持つとこの面は必ず食い違う。
+   ⚠**塗りは少なく**=毎フレーム描く物なので、円と多角形だけで作る(粒も影も足さない)。 */
+function drawBusEq(c,B,t){
+ const E=B.eq;if(!E)return;
+ const R=BUS_R,sp=Math.hypot(B.vx,B.vy),mv=clamp(sp/(B.spMx||BUS_SP),0,1);
+ c.lineWidth=3.2;c.strokeStyle=INK;
+ /* 🪤鉄条網バンパー=前に張り出した格子。⚠**張り出す量は当たりと同じ(`EQ_WIRE`)** */
+ if(E.wire){const x0=R*.86,x1=R*EQ_WIRE,hw=R*.52;
+  c.fillStyle='#7d7466';c.beginPath();c.rect(x0,-hw,x1-x0,hw*2);c.fill();c.stroke();
+  c.strokeStyle='#c9c2b2';c.lineWidth=2.2;c.beginPath();
+  for(let i=-3;i<=3;i++){c.moveTo(x0,i*hw/3.2);c.lineTo(x1,i*hw/3.2+hw*.22);
+   c.moveTo(x1,i*hw/3.2);c.lineTo(x0,i*hw/3.2+hw*.22);}
+  c.stroke();c.lineWidth=3.2;c.strokeStyle=INK;}
+ /* 🔩スパイクローラー=鼻先で回るトゲ付きの筒。⚠**回転は速さに連れる**(止まると止まる) */
+ if(E.spike){const cx=R*.80,rr9=R*.20,ph=t*(3+mv*26);
+  c.fillStyle='#57514a';c.beginPath();c.rect(cx-rr9*.5,-R*.46,rr9,R*.92);c.fill();c.stroke();
+  c.fillStyle='#b9b0a0';
+  for(let i=0;i<9;i++){const a=ph+i*.7,y=-R*.42+i*R*.105,dx=Math.cos(a)*rr9*.9;
+   c.beginPath();c.moveTo(cx+dx,y-5);c.lineTo(cx+dx+rr9*.85,y);c.lineTo(cx+dx,y+5);c.closePath();c.fill();}}
+ /* ⚙回転ノコ=左右の丸ノコ。⚠**半径は当たり(`EQ_BLADE`)から出す**=見た目より外で当たらない */
+ if(E.blade){const bx=EQ_BL_X,by=EQ_BL_Y,rb=EQ_BL_R,ph=t*(9+mv*34);
+  for(const s9 of [-1,1]){
+   c.save();c.translate(bx,by*s9);c.rotate(ph*s9);
+   c.fillStyle='#9aa2ab';c.beginPath();c.arc(0,0,rb,0,7);c.fill();c.stroke();
+   c.fillStyle='#d9dee4';c.beginPath();
+   for(let i=0;i<10;i++){const a=i*.6283;
+    c.moveTo(Math.cos(a)*rb,Math.sin(a)*rb);
+    c.lineTo(Math.cos(a+.20)*rb*1.22,Math.sin(a+.20)*rb*1.22);
+    c.lineTo(Math.cos(a+.40)*rb,Math.sin(a+.40)*rb);}
+   c.fill();
+   c.fillStyle='#4a443c';c.beginPath();c.arc(0,0,rb*.30,0,7);c.fill();c.stroke();
+   c.restore();}}
+ /* 🛡増加装甲=車体の横に厚い板 */
+ if(E.plate){c.fillStyle='#6f6a60';
+  for(const s9 of [-1,1]){c.beginPath();c.rect(-R*.62,s9*R*.50-6,R*1.30,12);c.fill();c.stroke();}}
+ /* 💨サイドブラスト=横の噴射口。走っている時だけ噴く */
+ if(E.blast){c.fillStyle='#5a5550';
+  for(const s9 of [-1,1]){c.beginPath();c.rect(R*.10,s9*R*.52-9,R*.26,18);c.fill();c.stroke();}
+  if(mv>.25&&FXLV>0){c.globalAlpha=.35+.35*mv;c.fillStyle='#cfd6dc';
+   for(const s9 of [-1,1]){const l=R*(.35+.75*mv)*(.8+.2*Math.sin(t*22+s9));
+    c.beginPath();c.moveTo(R*.36,s9*R*.60);c.lineTo(R*.36+l*.5,s9*(R*.60+l));
+    c.lineTo(R*.10,s9*(R*.58+l*.4));c.closePath();c.fill();}
+   c.globalAlpha=1;}}
+ /* 🚀追加ブースター=後ろの噴射器。ニトロ中だけ火を噴く */
+ if(E.boost){c.fillStyle='#4f4a44';
+  for(const s9 of [-1,1]){c.beginPath();c.rect(-R*1.02,s9*R*.30-11,R*.20,22);c.fill();c.stroke();}
+  if(B.nitT>0&&FXLV>0){const f=R*(.5+.3*Math.sin(t*40));
+   c.fillStyle='#ffd479';
+   for(const s9 of [-1,1]){c.beginPath();c.moveTo(-R*1.02,s9*R*.30-8);
+    c.lineTo(-R*1.02-f,s9*R*.30);c.lineTo(-R*1.02,s9*R*.30+8);c.closePath();c.fill();}}}
+ /* 🔊サイレン=屋根の上のラッパ+広がる輪(⚠加算にしない=昼の路面で白飛びする) */
+ if(E.siren){c.fillStyle='#b03428';c.beginPath();c.arc(-R*.10,0,R*.13,0,7);c.fill();c.stroke();
+  if(FXLV>0){c.strokeStyle='rgba(216,86,64,.5)';c.lineWidth=3;
+   for(let i=0;i<2;i++){const q=((t*.9+i*.5)%1),rr8=R*(.4+q*2.6);
+    c.globalAlpha=.5*(1-q);c.beginPath();c.arc(0,0,rr8,0,7);c.stroke();}
+   c.globalAlpha=1;c.lineWidth=3.2;c.strokeStyle=INK;}}
+ /* ⚡電磁バンパー=前のコイル。感電した瞬間だけ稲妻 */
+ if(E.zap){c.fillStyle='#5f6a74';c.beginPath();c.arc(R*.86,0,R*.15,0,7);c.fill();c.stroke();
+  c.fillStyle=TECH;c.beginPath();c.arc(R*.86,0,R*.07,0,7);c.fill();
+  if((B.zapT||0)>0&&FXLV>0){c.strokeStyle=TECH;c.lineWidth=4;c.globalAlpha=clamp(B.zapT/.22,0,1);
+   c.beginPath();
+   for(let i=0;i<7;i++){const a=i*.897+t*4;
+    c.moveTo(Math.cos(a)*R*.9,Math.sin(a)*R*.9);
+    c.lineTo(Math.cos(a+.18)*R*1.7,Math.sin(a+.18)*R*1.7);}
+   c.stroke();c.globalAlpha=1;c.lineWidth=3.2;c.strokeStyle=INK;}}
+ /* 🔥前方火炎放射=鼻先から前へ広がる扇。⚠**当たりの寸法(`EQ_FLM_*`)と必ず同じ形にする** */
+ if(E.flame&&FXLV>0){
+  const x0=R*.72,ln=EQ_FLM_L,w1=EQ_FLM_W,fl=.86+.14*Math.sin(t*30);
+  c.save();c.globalCompositeOperation='lighter';
+  /* ⚠**薄くする**=加算なので濃いと路面ごと白飛びして道が読めなくなる(既出の掟) */
+  const cols=[['rgba(176,52,20,.30)',1],['rgba(226,100,28,.32)',.72],['rgba(255,212,121,.34)',.42]];
+  for(const [col,k] of cols){c.fillStyle=col;c.beginPath();
+   c.moveTo(x0,-R*.16*k);c.lineTo(x0+ln*fl*k,-w1*k);c.lineTo(x0+ln*fl*k,w1*k);c.lineTo(x0,R*.16*k);
+   c.closePath();c.fill();}
+  c.restore();}
+}
 function drawBus(c,C,t){
  const B=C.bus;if(!B)return;
+ if(B.zapT>0)B.zapT=Math.max(0,B.zapT-.016);/* ⚠絵の側で減らす(描かない時は要らない) */
  const S=BUS_DRAW,iv9=camIvY();
  groundShadow(c,B.x,B.y,BUS_R*.86);
  /* 🔥**ニトロ中は後ろから炎を噴く**(2026-08-02(23))=画面の効果だけだと「速いのか?」で終わる。
@@ -21588,6 +21823,9 @@ function drawBus(c,C,t){
     ⚠1フレームの絵の変形だけ(当たりも速さも触らない)。 */
  if(B.bump>0){const q=B.bump;c.scale(1-.10*q,1+.07*q);}
  try{drawBusTop(c,B,t);}catch(e){}
+ /* ⚔**装備の絵**(2026-08-02(44))。⚠**当たりと同じ数値から出す**(`EQ_*`)=
+    見えていない所で当たると「当たっていないのに死ぬ」に逆戻りする。 */
+ try{drawBusEq(c,B,t);}catch(e){}
  c.restore();
  /* ⭐⭐**前照灯の光と、まとめ轢きの閃光**(2026-08-02(34)=粒の絵)。⚠**加算(lighter)で乗せる**。
     ⚠車体の後(=上)に描く=光が車体を薄く覆って「点いている」に見える。 */

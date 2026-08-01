@@ -3304,6 +3304,9 @@ function checkSup(){
    ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。 */
 function checkBnsFlow(){
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
+ /* ⚠**永続の分は先にまっさらに戻す**(2026-08-02(44))=前の検査で買った物が残っていると
+    「買えていない」「値段が減らない」が全部すり抜ける。 */
+ META.bres=[0,0,0];META.bup={};META.beq={};
  META.stg=0;setDiff=BNS_D;startSolo();
  const me=G.players[0];
  if(!G.bpre){console.log('FAIL: 走る前の流れに入っていない');process.exit(1);}
@@ -3350,16 +3353,34 @@ function checkBnsFlow(){
  if(!G.bpre||G.bpre.st!=='up'){
   console.log('FAIL: 乗り込みムービーが強化画面で終わらない');process.exit(1);}
  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: 強化画面の描画で例外 '+e.message);process.exit(1);}
- /* ⑥ 強化 */
- {const Q=G.bpre,R=bnsUpRects(cv.width,cv.height);
-  Q.res=[9999,0,9999];
+ /* ⑥ 強化(🔧性能の枠)。⚠**鉄材だけ0にして「足りないと買えない」も一緒に見る** */
+ {const Q=G.bpre;
+  if((Q.tab|0)!==0){console.log('FAIL: 最初が🔧性能の枠でない');process.exit(1);}
+  const R=bnsUpRects(cv.width,cv.height,0);
+  Q.res[0]=9999;Q.res[1]=0;Q.res[2]=9999;
   bnsUpTap(Q,R[0].x+4,R[0].y+4);
   if((Q.up.sp|0)!==1){console.log('FAIL: 強化が買えていない');process.exit(1);}
   if(Q.res[0]>=9999){console.log('FAIL: 買っても物資が減らない');process.exit(1);}
+  /* ⚠**買った瞬間からバスに効くこと**(強化画面でも絵と当たりが変わる) */
+  if(!(me.bus.spMx>BUS_SP)){console.log('FAIL: 買っても その場でバスに効かない');process.exit(1);}
   for(let k=0;k<12;k++)bnsUpTap(Q,R[0].x+4,R[0].y+4);
   if((Q.up.sp|0)!==BUP[0].mx){console.log('FAIL: 強化の段が上限で止まらない '+Q.up.sp);process.exit(1);}
   bnsUpTap(Q,R[2].x+4,R[2].y+4);
   if((Q.up.ram|0)!==0){console.log('FAIL: 物資が足りないのに強化が買える');process.exit(1);}
+  /* ⚔装備の枠=つまみで切り替わる/買い切り/2度は買えない/絵が例外なく描ける */
+  bnsUpTap(Q,R.tab[1].x+4,R.tab[1].y+4);
+  if((Q.tab|0)!==1){console.log('FAIL: ⚔装備の枠に切り替わらない');process.exit(1);}
+  {const R2=bnsUpRects(cv.width,cv.height,1);
+   if(R2.length!==BEQ.length){console.log('FAIL: 装備の札の数が違う '+R2.length);process.exit(1);}
+   for(let i=0;i<BEQ.length;i++){Q.res[BEQ[i].r]=9999;bnsUpTap(Q,R2[i].x+4,R2[i].y+4);}
+   for(const q of BEQ)if(!Q.eq[q.k]){console.log('FAIL: 装備が買えていない '+q.k);process.exit(1);}
+   const r0=Q.res[BEQ[0].r];bnsUpTap(Q,R2[0].x+4,R2[0].y+4);
+   if(Q.res[BEQ[0].r]!==r0){console.log('FAIL: 同じ装備を2度買える');process.exit(1);}}
+  /* ⚠装備の効き目がバスに入っていること(絵と当たりの両方がこれを見る) */
+  if(!(me.bus.bladeR>0&&me.bus.flame&&me.bus.zap&&me.bus.siren)){
+   console.log('FAIL: 装備の効き目がバスに入っていない');process.exit(1);}
+  try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: ⚔装備の枠の描画で例外 '+e.message);process.exit(1);}
+  try{drawBus(ctx,me,1.2);}catch(e){console.log('FAIL: 装備を付けたバスの描画で例外 '+e.message);process.exit(1);}
   bnsUpTap(Q,R.go.x+4,R.go.y+4);}
  /* ⑦ 出発 */
  if(G.bpre){console.log('FAIL: 準備OKでも走る前の流れが終わらない');process.exit(1);}
@@ -3371,16 +3392,25 @@ function checkBnsFlow(){
  for(let k=0;k<200;k++){bnsStick(0,-1);gameStep(.05);}
  bnsStick(0,0);
  if(!me.zombies.length){console.log('FAIL: 走り出しても敵が湧かない');process.exit(1);}
- const sp1=me.bus.spMx;
+ const sp1=me.bus.spMx,res1=META.bres.slice();
  backTitle();
- /* ⑧ 次の試合に残らない */
- META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
- if(Math.abs(G.players[0].bus.spMx-BUS_SP)>1e-6){
-  console.log('FAIL: 強化が次の試合に残っている '+G.players[0].bus.spMx);process.exit(1);}
- backTitle();
+ /* ⑧⭐⭐**永続**(2026-08-02(44)ユーザー決定)=段も装備も余った物資も次の試合へ持ち越す */
+ META.stg=0;setDiff=BNS_D;startSolo();
+ {const b2=G.players[0].bus;
+  if(Math.abs(b2.spMx-sp1)>1e-6){
+   console.log('FAIL: 強化の段が次の試合に残っていない '+b2.spMx+'/'+sp1);process.exit(1);}
+  if(!(b2.bladeR>0)){console.log('FAIL: 装備が次の試合に残っていない');process.exit(1);}
+  for(let i=0;i<3;i++)if(META.bres[i]!==res1[i]){
+   console.log('FAIL: 余った物資が次の試合に残っていない');process.exit(1);}
+  /* ⚠**初期化した人には残らないこと**(metaResetAll に書き忘れると残る) */
+  metaResetAll();
+  if((META.bres[0]|0)||Object.keys(META.bup).length||Object.keys(META.beq).length){
+   console.log('FAIL: 初期化してもバスの強化が残っている');process.exit(1);}}
+ bnsPreSkip();backTitle();
  META.stg=0;setDiff=2;
  console.log('🎒走る前の流れ: 選択'+bnsMgN()+'棟 → ⛽給油'+BNS_MG_T+'回(物資 計'+tot
-  +') → 乗り込み → 強化(最高速 '+BUS_SP+'→'+Math.round(sp1)+') → 出発 OK');
+  +') → 乗り込み → 🔧性能'+BUP.length+'項目/⚔装備'+BEQ.length+'種(最高速 '+BUS_SP+'→'+Math.round(sp1)
+  +') → 出発 / 永続で持ち越す OK');
 }
 checkStrikes();
 checkSup();
