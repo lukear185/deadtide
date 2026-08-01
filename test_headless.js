@@ -2626,12 +2626,29 @@ function checkBonus(){
    /* ⚠**初回は「1走ぶん+初回クリア報酬」**なので、必ず2回目より多いこと */
    if(d2>=pt1){console.log('FAIL: 2回目の🧬が初回と同じかそれ以上 +'+d2+' vs 初回'+pt1);process.exit(1);}}
   backTitle();
-  /* ⚠**何度でも入れること**(2026-08-02(52)に1日1回をやめた) */
-  if(!diffOK(si,BNS_D)){console.log('FAIL: 2回走ったら道中が選べなくなっている');process.exit(1);}
+  /* 🚌⚠⚠**現実の1日に5回まで**(2026-08-02(58)ユーザー決定)=**入った時点で1回使う**。
+     ⚠🛠DEVは無制限(ヘッドレスは DEV=false なのでここで測れる)。 */
+  {META.bday=[];META.bnum=[];
+   if(bnsLeftT(si)!==BNS_DAY_N){console.log('FAIL: 走る前なのに回数が減っている');process.exit(1);}
+   for(let q=0;q<BNS_DAY_N;q++){
+    backTitle();META.stg=si;setDiff=BNS_D;startSolo();bnsPreSkip();
+    if(bnsLeftT(si)!==BNS_DAY_N-1-q){
+     console.log('FAIL: 残り回数が減っていない '+bnsLeftT(si)+'/'+BNS_DAY_N);process.exit(1);}}
+   if(diffOK(si,BNS_D)){console.log('FAIL: 使い切っても選べてしまう');process.exit(1);}
+   if(!bnsUnl(si)){console.log('FAIL: 使い切ると「未解放」扱いになっている');process.exit(1);}
+   /* 日が変われば満タンに戻る */
+   META.bday[si]='1999-1-1';
+   if(bnsLeftT(si)!==BNS_DAY_N){console.log('FAIL: 日が変わっても戻らない');process.exit(1);}
+   if(!diffOK(si,BNS_D)){console.log('FAIL: 日が変わっても選べない');process.exit(1);}
+   /* ⚠**ステージごとに数える** */
+   META.bday=[];META.bnum=[];META.bday[si]=bnsDayKey();META.bnum[si]=BNS_DAY_N;
+   if(STAGES[1-si]&&bnsLeftT(1-si)!==BNS_DAY_N){console.log('FAIL: 別のステージまで減っている');process.exit(1);}
+   META.bday=[];META.bnum=[];}
+  backTitle();
   if(LANES){console.log('FAIL: ボーナス面を出てもレーンが残っている');process.exit(1);}
  }
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;
- console.log('🚌道中: ステージ'+STAGES.length+'面ぶん(縦一直線1本/置き場なし/バスの先に湧く/すれ違いは無傷/到着でクリア/遊べば次が開く/報酬は初回だけ/2回目からは🧬が少額+上限/中断できない) OK');
+ console.log('🚌道中: ステージ'+STAGES.length+'面ぶん(縦一直線1本/置き場なし/バスの先に湧く/すれ違いは無傷/到着でクリア/遊べば次が開く/報酬は初回だけ/🧬は上限つき/1日5回まで/中断できない) OK');
 }
 /* ⭐⭐**米粒ゾンビと轢き応え**(2026-08-02(2)ユーザー①)。見るのは6つ:
    ①数百体が盤面に乗ること+米粒の描き方が例外を出さずに通ること
