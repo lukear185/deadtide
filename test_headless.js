@@ -2629,6 +2629,53 @@ function checkRice(){
  for(let k=0;k<Math.ceil((BNS_CMB_T+.4)/.05);k++)bnsBusStep(me,.05);
  if(B.cmb!==0){console.log('FAIL: 連なりが途切れない ×'+B.cmb);process.exit(1);}
  if(B.cmbMx!==mx){console.log('FAIL: 最高連続が消えている');process.exit(1);}
+ /* ⑫ 🔥⭐**ニトロ**(2026-08-02(23))。見るのは5つ:
+    ①轢くと溜まる ②満タンでないと撃てない ③撃つと速さが跳ねる ④切れたら元に戻る
+    ⑤使っている間は溜まらない(撃ちっぱなしにできない) */
+ {const B=me.bus;
+  B.nit=0;B.nitT=0;B.vx=B.vy=0;B.x=BNS_CX;B.y=BNS_CY;
+  me.zombies.length=0;
+  for(let k=0;k<12;k++){const z9=mkZ(zSpec(0,.02,1),200);z9.ln=0;z9.px=B.x;z9.py=B.y;me.zombies.push(z9);}
+  for(let k=0;k<8;k++){for(const z of me.zombies){z.px=B.x;z.py=B.y;}bnsBusStep(me,.05);}
+  if(!(B.nit>0)){console.log('FAIL: 轢いてもニトロが溜まらない');process.exit(1);}
+  /* ⭐**体そのものが吹き飛ぶ**(轢殺に見せる主役)=肉片とは別の印(bd)で1体1つ積まれること */
+  if(!(me.bchk||[]).some(p=>p.bd)){console.log('FAIL: 轢いた体が吹き飛んでいない');process.exit(1);}
+  B.nit=.5;
+  if(bnsNitro()!==false){console.log('FAIL: 満タンでないのにニトロが撃てる');process.exit(1);}
+  B.nit=1;
+  if(bnsNitro()!==true){console.log('FAIL: 満タンなのにニトロが撃てない');process.exit(1);}
+  if(!(B.nitT>0)){console.log('FAIL: ニトロが効いていない');process.exit(1);}
+  if(bnsNitro()!==false){console.log('FAIL: ニトロを二重に撃てる');process.exit(1);}
+  if(B.nit!==0){console.log('FAIL: 撃ったのにゲージが減っていない');process.exit(1);}
+  /* ③速さ=同じ入力・同じ秒数で、素の最高速を超えること */
+  me.zombies.length=0;B.vx=B.vy=0;B.x=BNS_CX;B.y=BNS_CY;bnsStick(1,0);
+  for(let k=0;k<12;k++)bnsBusStep(me,.05);
+  const spN=Math.hypot(B.vx,B.vy);
+  if(!(spN>BUS_SP*1.3)){console.log('FAIL: ニトロで速くなっていない '+Math.round(spN));process.exit(1);}
+  /* ⑤使用中は溜まらない */
+  const n0=B.nit;
+  me.zombies.length=0;
+  for(let k=0;k<10;k++){const z9=mkZ(zSpec(0,.02,1),200);z9.ln=0;z9.px=B.x;z9.py=B.y;me.zombies.push(z9);}
+  for(let k=0;k<6;k++){for(const z of me.zombies){z.px=B.x;z.py=B.y;}bnsBusStep(me,.05);}
+  if(B.nit!==n0){console.log('FAIL: ニトロ中なのにゲージが溜まる');process.exit(1);}
+  /* ④切れたら戻る */
+  me.zombies.length=0;
+  for(let k=0;k<Math.ceil(BUS_NIT_T/.05)+4;k++)bnsBusStep(me,.05);
+  if(B.nitT!==0){console.log('FAIL: ニトロが切れない');process.exit(1);}
+  B.vx=B.vy=0;B.x=BNS_CX;B.y=BNS_CY;
+  for(let k=0;k<12;k++)bnsBusStep(me,.05);
+  const spB=Math.hypot(B.vx,B.vy);
+  if(!(spB<=BUS_SP+1)){console.log('FAIL: ニトロが切れても速いまま '+Math.round(spB));process.exit(1);}
+  bnsStick(0,0);
+  /* まとめて轢いた時だけ光る */
+  B.flashT=0;B.flashCd=0;me.zombies.length=0;
+  for(let k=0;k<20;k++){const z9=mkZ(zSpec(0,.02,1),200);z9.ln=0;z9.px=B.x;z9.py=B.y;z9.hp=1;me.zombies.push(z9);}
+  for(let k=0;k<3;k++){for(const z of me.zombies){z.px=B.x;z.py=B.y;}bnsBusStep(me,.05);}
+  if(!(B.flashT>0)){console.log('FAIL: まとめて轢いても画面が抜けない');process.exit(1);}
+  try{drawBnsRush(ctx,me);}catch(e){
+   console.log('FAIL: 走っている感じの描画で例外 '+e.message);process.exit(1);}
+  console.log('🔥ニトロ: 轢いて溜まる/満タンだけ撃てる/速さ'+Math.round(spN)+'→'+Math.round(spB)
+   +'/使用中は溜まらない/まとめ轢きで白抜き OK');}
  backTitle();
  /* ⑨⭐**導線**(2026-08-02(3)ユーザー「障害物というかゾンビの導線が欲しい」)。見るのは3つ:
     a)関所で通路が本当に絞れている b)敵が通路からはみ出さない c)壁が通路の中に立っていない

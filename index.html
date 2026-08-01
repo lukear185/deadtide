@@ -183,6 +183,21 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #bstick i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
  border-radius:50%;background:#c2a03e;border:3px solid #1b1713;box-shadow:0 3px 0 #000}
 body.bns #bstick{display:block}
+/* 🔥ニトロのボタン(2026-08-02(23))。⚠**スティックの反対側**=両手で持った時に親指が届く。
+   ⚠溜まりは**下から満ちる帯**で見せる(数字より速く読める)。満タンは縁が脈打つ。 */
+#bnitro{position:fixed;right:12px;bottom:12px;width:104px;height:104px;border-radius:50%;
+ background:rgba(22,17,12,.42);border:3px solid rgba(242,236,220,.5);display:none;
+ touch-action:none;z-index:60;padding:0;overflow:hidden;color:#f2ecdc}
+body.bns #bnitro{display:block}
+#bnitro b{position:absolute;left:0;right:0;bottom:0;height:0;
+ background:linear-gradient(180deg,#e8873a,#a8321a);transition:height .12s linear}
+#bnitro span{position:absolute;left:0;right:0;top:26px;text-align:center;
+ font:900 30px system-ui;text-shadow:0 2px 0 #1b1713}
+#bnitro u{position:absolute;left:0;right:0;bottom:12px;text-align:center;
+ font:900 12px system-ui;text-decoration:none;text-shadow:0 2px 0 #1b1713}
+@keyframes nitpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,180,71,.6)}50%{box-shadow:0 0 0 11px rgba(255,180,71,0)}}
+#bnitro.rdy{border-color:#ffcf6a;animation:nitpulse 1s infinite}
+#bnitro.on{border-color:#ffcf6a;background:rgba(120,44,18,.5)}
 /* 🚌ボーナス面=兵科も英雄も集結旗も無い(押せるのは建設と🎯砲撃と🚌バスだけ) */
 body.bns #deck,body.bns #flagbtn,body.bns #herobtn,body.bns #flaghint{display:none!important}
 /* 横852pxのスマホでも小窓を詰める(既定の152px幅だと右上の侵入口を覆い隠す) */
@@ -796,6 +811,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div id="flaghint">タップした地点へ部隊が集結!(もう一度🚩で解除)</div>
   <!-- 🚌ボーナス面のバーチャルスティック(body.bns の時だけ出る) -->
   <div id="bstick"><i></i></div>
+  <!-- 🔥ニトロ(body.bns の時だけ出る。溜まりは下から満ちる帯) -->
+  <div id="bnitro"><b></b><span>🔥</span><u>ニトロ</u></div>
   <div id="abar">
     <button id="flagbtn">🚩</button>
     <button id="strikebtn">🎯</button>
@@ -1586,6 +1603,11 @@ const SFXSYN={
   const CH=[147,196,247,294,370];/* D2 G2 B2 D3 F#3=低い和音。⚠440より上を使わない */
   for(let i=0;i<1+T;i++)beep(CH[i],CH[i],.34+T*.06,i?'triangle':'sawtooth',.085-i*.012);
   if(T>=3)setTimeout(()=>{for(let i=0;i<3;i++)beep(CH[i+1],CH[i+1],.4,'triangle',.05);},160);},
+ /* 🔥⭐**ニトロ**(2026-08-02(23))=**噴き出し(ノイズを閉じる)+エンジンの唸りが上がる**の2層。
+    ⚠**高い音を使わない**(NOTES)=上がるのは 110→190Hz だけ。速さは音の高さではなく
+      **倍音の厚み(sawtooth)**で出す。⚠鳴っている長さは効いている長さ(3秒)に合わせる。 */
+ nitro:()=>{nzHit(1500,240,.5,.15,1.1);beep(110,190,2.8,'sawtooth',.05);
+  setTimeout(()=>beep(147,196,2.4,'triangle',.03),70);},
  push:()=>{beep(170,70,.24,'sawtooth',.13);setTimeout(()=>beep(120,55,.2,'sawtooth',.1),90);},
  dep:()=>{beep(340,540,.07,'square',.08);setTimeout(()=>beep(240,240,.06,'square',.06),60);},
  heal:()=>{beep(660,990,.09,'sine',.06);setTimeout(()=>beep(880,1320,.09,'sine',.05),70);},
@@ -1759,6 +1781,7 @@ const SFX_LBL={
  splat:['血しぶき','撃破','z'], scratch:['爪で壁を掻く','🌑ナイトメアのBGM','z'],
  crush:['🚌轢いた(ゴシャッ)','開拓便でバスが轢き殺した(ノイズを低く閉じた潰れ+食い込む芯)','z'],
  cmbUp:['🚌連続轢殺の段が上がった','轢殺→大轢殺→蹂躙→地獄のバス(低い和音が厚くなる)','ev'],
+ nitro:['🔥ニトロ','開拓便でニトロを撃った時(噴き出し+エンジンの唸りが上がる)','ev'],
  tap:['ボタンを押した','タイトル・研究所・編成などのボタン全部','ui'],
  back:['閉じる/戻る','✕ボタン・やめる','ui'],
  build:['建設','タワーを建てる','ui'], sell:['売却','タワーを売る','ui'],
@@ -17507,8 +17530,62 @@ function renderCamp(C,t){
  if(C.dead){c.fillStyle='rgba(30,16,12,.62)';c.fillRect(0,0,MW,MH);c.fillStyle=PANE;c.font='900 60px '+FF;c.textAlign='center';c.fillText('💀 拠点陥落…',800,MH*.44);c.font='900 28px '+FF;c.fillText('観戦モード',800,MH*.44+50);}
  if(SPEC>=0){c.fillStyle='rgba(36,31,25,.78)';rr(c,MW/2-360,178,720,56,16);c.fill();c.strokeStyle=PANE;c.lineWidth=3;c.stroke();
   c.fillStyle=PANE;c.font='900 30px '+FF;c.textAlign='center';c.fillText('👁 '+specName()+' の拠点を観戦中 — 画面タップで戻る',MW/2,215);}
+ if(C.bus)try{drawBnsRush(c,C);}catch(e){}/* ⚠速度線は矢印より先(矢印を薄めないように) */
  if(C.bus)try{drawBnsWarn(c,C);}catch(e){}/* ⚠ミニマップより先(縁の矢印が地図の下に潜らないように) */
  if(CAM)drawMiniMap(c,C);/* 🗺カメラが動く面だけ(いま自分がどこに居るか) */
+}
+/* ⭐⭐⭐**走っている感じ**(2026-08-02(23)「圧倒的爽快感」)。⚠**画面の座標で描く**。
+   ⭐入れたのは3つだけ=①速さに応じた**流れる線** ②ニトロ中の**縁の橙**
+     ③**まとめて轢いた瞬間の白抜き**。⚠どれも**塗り数回**なので重さはほぼ増えない。
+   ⚠⚠**寄り(CAM.zm)は絶対に動かさない**(=焼いた地形を全部捨てることになる)ので、
+     速さは**画面の効果だけ**で出している。⚠演出オフ(FXLV=0)では①②を出さない。 */
+function drawBnsRush(c,C){
+ const B=C.bus;if(!B||!cv.width)return;
+ const dpr=DPR||1,W=cv.width,H=cv.height;
+ const sp=Math.hypot(B.vx,B.vy),nz=B.nitT>0?1:0;
+ c.save();c.setTransform(1,0,0,1,0,0);
+ /* ① 流れる線。⚠**毎フレーム乱数を引かない**=線がちらついて汚くなる(位置は i と時間で決める) */
+ const k=clamp((sp-BUS_SP*.42)/(BUS_SP*.85),0,1)*(nz?1:.7);
+ if(k>.04&&FXLV>0){
+  const cx=W/2,cy=H/2,R=Math.hypot(W,H)*.5;
+  const tx=sp>1?B.vx/sp:1,ty=sp>1?B.vy/sp:0;
+  c.strokeStyle=nz?'rgba(255,206,140,'+(.10+.28*k).toFixed(3)+')'
+                 :'rgba(238,232,214,'+(.05+.15*k).toFixed(3)+')';
+  c.lineWidth=Math.max(1,2.2*dpr);c.lineCap='round';
+  c.beginPath();
+  const n=nz?20:13;
+  for(let i=0;i<n;i++){
+   const a=i*2.3999+B.t*1.6;/* 黄金角で散らす=偏らずに散る */
+   const rr9=(.44+((i*.37+B.t*.62)%1)*.60)*R;
+   const px=cx+Math.cos(a)*rr9,py=cy+Math.sin(a)*rr9*.66;
+   const ln=(34+150*k)*dpr;
+   c.moveTo(px,py);c.lineTo(px-tx*ln,py-ty*ln);}
+  c.stroke();
+ }
+ /* ② ニトロ中は画面の縁が橙に焼ける(⚠中央は抜く=盤面が読めなくならないように) */
+ if(nz&&FXLV>0){
+  const q=clamp(B.nitT/BUS_NIT_T,0,1),a=.16+.16*q;
+  try{const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.30,W/2,H/2,Math.hypot(W,H)*.55);
+   g.addColorStop(0,'rgba(255,150,60,0)');g.addColorStop(1,'rgba(226,90,30,'+a.toFixed(3)+')');
+   c.fillStyle=g;c.fillRect(0,0,W,H);}catch(e){}
+ }
+ /* ③ まとめて轢いた瞬間の白抜き(⚠**短く薄く**=長いと画面が白飛びして何も読めない) */
+ if(B.flashT>0){c.fillStyle='rgba(255,246,226,'+(.20*clamp(B.flashT/.16,0,1)).toFixed(3)+')';
+  c.fillRect(0,0,W,H);}
+ c.restore();
+ try{bnsHud(C);}catch(e){}
+}
+/* 🔥ニトロのボタンの表示(溜まり/使用中/満タン)。⚠**変わった時だけ書き換える**
+   =毎フレーム style を触ると DOM の再計算が入って重くなる。 */
+let BNIT_P=-1,BNIT_R=-1;
+function bnsHud(C){
+ const el=$('bnitro'),B=C.bus;if(!el||!B)return;
+ const p=B.nitT>0?Math.round(B.nitT/BUS_NIT_T*100):Math.round((B.nit||0)*100);
+ const st=B.nitT>0?2:((B.nit||0)>=1?1:0);
+ if(p!==BNIT_P){BNIT_P=p;const b=el.firstElementChild;if(b&&b.style)b.style.height=p+'%';}
+ if(st!==BNIT_R){BNIT_R=st;
+  el.classList.toggle('rdy',st===1);el.classList.toggle('on',st===2);
+  const u=el.lastElementChild;if(u)u.textContent=st===2?'噴射中':st===1?'押せる!':'ニトロ';}
 }
 /* ⭐⭐**大群が来る向きを画面の縁で知らせる**(2026-08-02(6))。
    ⚠道を1本も描かなくなったので、**どこから来るかを地面で語れない**。
@@ -17762,7 +17839,8 @@ function showResultA(){
     ...(G.bnsPts?[['🚌 初回クリア報酬','🧬+'+fmt(G.bnsPts)+' / 💎+'+(G.bnsGem||0)]]:[]),
     /* ⭐🚌轢き殺した数と最高連続(2026-08-02(2))=「連続で気持ちいい」の締めをここで見せる。
        ⚠バスの居る面(開拓便)でしか出さない */
-    ...(me.bus?[['🚌 轢き殺した数',(me.bus.kill||0)+'体'],['🔥 最高連続','×'+(me.bus.cmbMx||0)]]:[]),
+    ...(me.bus?[['🚌 轢き殺した数',(me.bus.kill||0)+'体'],['🔥 最高連続','×'+(me.bus.cmbMx||0)],
+      ['🔥 ニトロ',(me.bus.nitN||0)+'回']]:[]),
     ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+((me.team||[]).length)],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv],['砲撃強化','Lv'+(me.stkLv||0)]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+PVP_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();$('ffbtn').style.display='none';
@@ -17981,6 +18059,13 @@ cv.addEventListener('pointermove',e=>{if(AIM||FLAGAIM)aimPos=evtToMap(e);});
   const p=at(e);put(p[0],p[1]);e.preventDefault();e.stopPropagation();});
  el.addEventListener('pointermove',e=>{if(pid!==e.pointerId)return;const p=at(e);put(p[0],p[1]);e.preventDefault();});
  ['pointerup','pointercancel','pointerleave'].forEach(k=>el.addEventListener(k,e=>{if(pid===e.pointerId)rel();}));
+})();
+/* 🔥ニトロのボタン。⚠**盤面へ抜けさせない**(stopPropagation)=抜けると砲撃の照準や建設マスに当たる。
+   ⚠pointerdown で撃つ=タップの遅れを入れない(押した瞬間に出るのが手応え)。 */
+(function(){
+ const el=$('bnitro');if(!el||!el.addEventListener)return;
+ el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{bnsNitro();}catch(x){}});
+ el.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();});
 })();
 function setAim(on){if(on)setFlagAim(false);AIM=on;aimPos=null;$('strikebtn').classList.toggle('aim',on);$('strikehint').style.display=on?'block':'none';}
 $('strikebtn').onclick=()=>{const m=meV();if(!m||m.dead||m.charge<1){setAim(false);return;}setAim(!AIM);};
@@ -19370,6 +19455,23 @@ const BUS_DRAG=.986; /* 轢いている間だけ食い込んで減速する=当�
    ⚠押すのは世界座標ではなく **`z.off`(道の法線方向へのずれ)**=世界座標で押すと道から外れて、
      次のフレームで道の上へ瞬間移動する(前へ押す時と同じ理屈)。 */
 const BUS_SIDE=420;
+/* ============ 🔥⭐⭐**ニトロ**(2026-08-02(23)ユーザー「バスの時間をプロ仕様に。楽しさと圧倒的爽快感重視」)
+   ⭐**この面に足りなかったのは「いま押す」という山場**だった=走って轢くだけだと、どれだけ数を増やしても
+     手応えは平らなまま。⭐**轢いた数で溜まり、押すと一気に化ける**にすると、
+     「溜める→撃つ」の波ができて、群れに突っ込む理由が生まれる。
+   ⚠**溜まるのは轢いた時だけ**=待っていても溜まらない(攻めるほど強い、が遊びの筋)。
+   ⚠NOTESの掟どおり**まとまって起きる瞬間に寄せている**(1体ごとの手応えは埋もれるので触らない)。 */
+/* ⚠⚠**溜まる速さが遊びの尺そのもの**=速すぎると撃ちっぱなしになって山場が消える。
+   1試合の轢殺は1000体前後なので、110体で1回=**1試合で10回前後**の見当。
+   ⭐実機で「なかなか溜まらない/溜まりすぎ」ならここだけ動かす。 */
+const BUS_NIT_K=1/110;  /* 1体轢くごとに溜まる量(=110体で満タン) */
+const BUS_NIT_T=3.0;    /* 続く秒数 */
+const BUS_NIT_SP=1.8;   /* 最高速の倍率 */
+const BUS_NIT_ACC=1.7;  /* 加速の倍率 */
+const BUS_NIT_DPS=2.4;  /* 轢く力の倍率 */
+const BUS_NIT_R=1.14;   /* 轢く範囲の倍率(⚠絵より広げすぎない=「当たっていないのに死ぬ」になる) */
+/* ⭐**一度にたくさん轢いた瞬間だけ**画面を白く抜く。⚠**1体ごとには出さない**(毎秒何十回になる) */
+const BUS_FLASH_N=6,BUS_FLASH_CD=.55;
 /* ⭐⭐**森はバスも通れない**(2026-08-02(8)ユーザー決定)=バスが走れるのは**街路と拠点の中だけ**。
    ⚠⚠**木や建物1つ1つと当たりを取らない**=木は2万本あるので現実的でないし、
      地形は `bnsCorrW` から生やしてあるので**通路の縁で止めれば絵と必ず一致する**(1か所で済む)。
@@ -19411,15 +19513,21 @@ const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
 function bnsBusInit(C){
  C.bus={x:BNS_CX,y:BNS_CY+150,vx:0,vy:0,ix:0,iy:0,dr:-1,t:0,hitT:0,
   /* ⭐連続轢殺(cmb=いま何連 / cmbT=途切れるまで / cmbP=数字が跳ねる勢い / cmbMx=最高記録) */
-  cmb:0,cmbT:0,cmbP:0,cmbMx:0,kill:0,gain:0,gainT:0,trkD:0};
+  cmb:0,cmbT:0,cmbP:0,cmbMx:0,kill:0,gain:0,gainT:0,trkD:0,
+  /* 🔥ニトロ(nit=溜まり 0〜1 / nitT=残り秒 / nitN=使った回数) */
+  nit:0,nitT:0,nitN:0,flashT:0,flashCd:0,dustD:0};
+ BNIT_P=-1;BNIT_R=-1;/* ⚠ボタンの表示を必ず1回書き直させる(前の試合の値が残る) */
  bnsFxInit(C);
 }
 function bnsBusStep(C,dt){
  const B=C.bus;if(!B)return;
  B.t+=dt;
+ /* 🔥ニトロ中は速さも轢く力も化ける。⚠**倍率は1か所で出す**(あちこちで掛けると必ずずれる) */
+ const nz9=B.nitT>0?1:0;
+ if(B.nitT>0)B.nitT=Math.max(0,B.nitT-dt);
  const ix=B.ix||0,iy=B.iy||0,il=Math.hypot(ix,iy),im=Math.min(1,il);
  if(im>.06){
-  B.vx+=ix*BUS_ACC*dt;B.vy+=iy*BUS_ACC*dt;
+  B.vx+=ix*BUS_ACC*(nz9?BUS_NIT_ACC:1)*dt;B.vy+=iy*BUS_ACC*(nz9?BUS_NIT_ACC:1)*dt;
   /* ⭐**横滑りを抑える**=スティックと直角の速さを落とす。これが「曲がる」の正体。
      ⚠**前後の成分は触らない**(触ると重さが消えて、瞬間移動する乗り物になる)。 */
   const ux=ix/il,uy=iy/il,nx9=-uy,ny9=ux;
@@ -19427,7 +19535,7 @@ function bnsBusStep(C,dt){
   B.vx-=nx9*vn*g;B.vy-=ny9*vn*g;
  }
  else{const f=Math.max(0,1-BUS_FRIC*dt);B.vx*=f;B.vy*=f;}
- const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*Math.max(.4,im||1);
+ const sp=Math.hypot(B.vx,B.vy),mx=BUS_SP*(nz9?BUS_NIT_SP:1)*Math.max(.4,im||1);
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
  let nx2=clamp(B.x+B.vx*dt,70,MAPW-70),ny2=clamp(B.y+B.vy*dt,70,MAPH-30);
@@ -19457,28 +19565,33 @@ function bnsBusStep(C,dt){
  /* 轢く=重なっている間ずっと削る+外へ弾く。⚠**押し出しは経路上の距離(z.d)で戻す**
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */
  let hit=0,kil=0;
- const rr9=BUS_R;
+ const rr9=BUS_R*(nz9?BUS_NIT_R:1);
  for(const z of C.zombies){
   if(z.dead||z.d<0)continue;
   const dx=z.px-B.x,dy=z.py-B.y,rz=rr9+(z.sc||1)*10;
   if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
-  dmgZ(C,z,BUS_DPS*dt,1,true);
+  dmgZ(C,z,BUS_DPS*(nz9?BUS_NIT_DPS:1)*dt,1,true);
   if(z.dead)kil++;
-  else{z.d=Math.max(0,z.d-BUS_KB*dt);z.stnT=Math.max(z.stnT||0,.12);
+  /* 🔥ニトロ中は**跳ね飛ばす力も上がる**=速いだけでは「化けた」に見えない */
+  else{z.d=Math.max(0,z.d-BUS_KB*(nz9?1.8:1)*dt);z.stnT=Math.max(z.stnT||0,.12);
    /* ⭐**横へ押しのける**=法線(z.nx,z.ny)はいまの位置を出す時に書いてある。
       ⚠**押した先も導線(壁)の内側で止める**=止めないと壁の外へ押し出せてしまい、
         「絵と挙動が一致している」という導線の前提が1フレームだけ崩れる。 */
    if(z.nx!=null){const s9=(dx*z.nx+dy*z.ny)>=0?1:-1;
     const pl9=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
     const w9=bnsCorrW(clamp(z.d/pl9,0,1));
-    z.off=clamp((z.off||0)+s9*BUS_SIDE*dt,-w9,w9);}}
+    z.off=clamp((z.off||0)+s9*BUS_SIDE*(nz9?1.8:1)*dt,-w9,w9);}}
   hit++;
  }
  /* ⭐**連続轢殺**(2026-08-02(2)ユーザー①「連続で気持ちいい」)。
     ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
  if(kil){
   const tb=bnsCmbT(B.cmb||0);
+  /* 🔥**ニトロは轢いた時だけ溜まる**(⚠使っている間は溜めない=撃ちっぱなしにしない) */
+  if(!nz9)B.nit=Math.min(1,(B.nit||0)+kil*BUS_NIT_K);
+  /* ⭐**一度にたくさん轢いた瞬間だけ画面を抜く**=「群れをまとめて薙いだ」を画で言い切る */
+  if(kil>=BUS_FLASH_N&&(B.flashCd||0)<=0&&FXLV>0){B.flashT=.16;B.flashCd=BUS_FLASH_CD;}
   B.cmb=(B.cmb||0)+kil;B.cmbT=BNS_CMB_T;B.cmbP=1;B.kill=(B.kill||0)+kil;
   if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
   /* ⭐⭐**段が上がった瞬間だけ鳴らす+光らせる**(2026-08-02(3)ユーザー「音と演出がちゃっちい」)。
@@ -19505,7 +19618,20 @@ function bnsBusStep(C,dt){
  /* ⚠**連なりの数字より上に出す**(連なりは -96*gz)=重なると両方読めなくなる。
     ⚠寄り具合で割る=世界座標の110は画面では15画素しかない(バスに被る)。 */
  if(B.gain>0&&B.gainT>=BNS_GAIN_T){addFx(C,'txt',B.x,B.y-150*bnsGz(),'+'+B.gain+'⚙️');B.gain=0;B.gainT=0;}
- camTo(B.x,B.y);/* 🎥カメラはバスを追う(⚠開拓便を作り直したら主人公を追わせる) */
+ if(B.flashT>0)B.flashT-=dt;
+ if(B.flashCd>0)B.flashCd-=dt;
+ /* 🛞**土埃**=速く走っている間だけ後ろへ吐く。⚠**跡の輪を使い回す**ので数は増えない。
+    ⚠進んだ距離で置く(毎フレーム置くと止まっている間に足元へ積もる)。 */
+ if(FXLV>0){const mv=Math.hypot(B.vx,B.vy);
+  if(mv>BUS_SP*.45){B.dustD=(B.dustD||0)+mv*dt;
+   if(B.dustD>=46){B.dustD=0;const gz=bnsGz(),tx=B.vx/mv,ty=B.vy/mv;
+    bnsRing(C,'bdst',BNS_DST,{x:B.x-tx*BUS_R*.7+rnd(-18,18),y:B.y-ty*BUS_R*.7+rnd(-12,12),
+     r:rnd(10,17)*gz,vx:-tx*rnd(20,70),vy:-ty*rnd(20,70),t:0,lf:rnd(.5,.9)});}}
+  else B.dustD=0;}
+ /* 🎥カメラはバスを追う。⭐**速いほど少し先を見る**=同じ速さでも「走っている」感じが跳ね上がる。
+    ⚠**寄り(CAM.zm)は絶対に動かさない**=SC が変わると焼いた地形を全部捨てて焼き直すので、
+      毎フレーム地形が作り直しになって固まる(`drawBnsTown` の 0.4% 判定)。 */
+ camTo(B.x+B.vx*(nz9?.30:.22),B.y+B.vy*(nz9?.30:.22));
  if(hit){B.hitT=.12;B.vx*=BUS_DRAG;B.vy*=BUS_DRAG;
   /* ⚠揺れは**連なりが伸びるほど強く**する(上限あり)=轢き続けている実感 */
   if(FXLV>0)C.shake=Math.max(C.shake||0,Math.min(.30,.05+.025*hit+.05*bnsCmbT(B.cmb)));}
@@ -19525,7 +19651,7 @@ function bnsBusStep(C,dt){
        「時間で小さくする」か「2〜3段に分けて塗る」で表す(1件ずつ濃さを変えない)。
    ⚠⚠**大きさは寄り具合(CAM.zm=.26)で割る**=そのままの数値で描くと**1画素未満**になって
      何も見えない(いまの血しぶきの粒 r2.8 が実際そうなっている)。 */
-const BNS_STN=280,BNS_CHK=320,BNS_TRK=190;/* それぞれの上限(=画面に残る数) */
+const BNS_STN=280,BNS_CHK=420,BNS_TRK=190,BNS_DST=90;/* それぞれの上限(=画面に残る数) */
 const BSTN_LF=13,BCHK_G=760,BTRK_LF=9;    /* 血だまりの寿命 / 肉片の重力 / 轍の寿命(秒) */
 const BTRK_GAP=26;                        /* 轍を1点置くごとに進む距離 */
 /* ⚠寄り具合の逆数=「画面での見え方」で大きさを書けるようにする道具 */
@@ -19534,7 +19660,22 @@ const bnsGz=()=>1/((CAM&&CAM.zm)||1);
 const bnsCmbT=n=>n>=80?4:n>=40?3:n>=18?2:n>=5?1:0;
 const BNS_CMB_N=['','轢殺','大轢殺','蹂躙','地獄のバス'];
 const BNS_CMB_C=['',PAPER,GOLD,AMBER,RUST];
-function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;}
+function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;C.bdst=[];C.bdstI=0;}
+/* 🔥⭐**ニトロを使う**(2026-08-02(23))。⚠**呼ぶのはボタンからだけ**にする(スティックと同じ作法)。
+   ⚠満タンでない時は撃たせない=「押したのに何も起きない」を避けるため音で断る。 */
+function bnsNitro(){
+ const C=meV();if(!C||!C.bus||!gameActive||PAUSED)return false;
+ const B=C.bus;
+ if(B.nitT>0)return false;/* 使っている最中は二度押ししない */
+ if((B.nit||0)<1){if(sfx.warn)sfx.warn();return false;}
+ B.nit=0;B.nitT=BUS_NIT_T;B.nitN=(B.nitN||0)+1;
+ if(sfx.nitro)sfx.nitro();
+ if(FXLV>0){C.shake=Math.max(C.shake||0,.34);
+  /* 足元から輪が1枚(⚠1試合で数回しか出ないので盛ってよい=NOTESの「まとまった瞬間」) */
+  addFx(C,'ring',B.x,B.y,'',{r:BUS_R*1.6,col:'#ffb347'});}
+ toast('🔥 ニトロ!',true);
+ return true;
+}
 /* 使い回しの輪へ1件積む。⚠**上限に達したら一番古い物を上書きする**(伸ばさない) */
 function bnsRing(C,k,cap,o){
  let a=C[k];if(!a)a=C[k]=[];
@@ -19559,6 +19700,12 @@ function bnsSplat(C,z){
   bnsRing(C,'bchk',BNS_CHK,{x:z.px,y:z.py-14,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(60,220),
    t:0,lf:rnd(.30,.60),r:rnd(3,7.5)*gz});
  }
+ /* ⭐⭐**体そのものが吹き飛ぶ**(2026-08-02(23)「圧倒的爽快感」)。⚠**肉片だけでは「何かが散った」**で、
+    **轢き殺した**にならない。⭐**大きくて黒フチのある塊を1つ、高く飛ばす**と一気に轢殺に見える。
+    ⚠1体につき1つだけ(数を増やすと肉片と混ざって粥になる)。⚠輪は使い回しなので配列は伸びない。 */
+ {const a=a0+rnd(-.42,.42),sp=rnd(230,520);
+  bnsRing(C,'bchk',BNS_CHK,{x:z.px,y:z.py-16,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.5-rnd(220,420),
+   t:0,lf:rnd(.55,.85),r:rnd(8,12)*gz,bd:1});}
  /* 地面に残る血だまり(=跡)。⚠**大きめの1枚+飛び散った小さいの1枚**=1枚だけだと丸い点に見える */
  bnsRing(C,'bstn',BNS_STN,{x:z.px+rnd(-8,8),y:z.py+rnd(-4,4),r:rnd(9,16)*gz,t:0});
  bnsRing(C,'bstn',BNS_STN,{x:z.px+ax*rnd(20,70)+rnd(-14,14),y:z.py+ay*rnd(10,34)+rnd(-8,8),r:rnd(4,8)*gz,t:0});
@@ -19568,6 +19715,8 @@ function bnsFxStep(C,dt){
   if(p.t>=p.lf)continue;p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=BCHK_G*dt;}
  const st=C.bstn;if(st)for(let i=0;i<st.length;i++){if(st[i].t<BSTN_LF)st[i].t+=dt;}
  const tk=C.btrk;if(tk)for(let i=0;i<tk.length;i++){if(tk[i].t<BTRK_LF)tk[i].t+=dt;}
+ const ds=C.bdst;if(ds)for(let i=0;i<ds.length;i++){const p=ds[i];
+  if(p.t>=p.lf)continue;p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;}
 }
 /* 🛞轍と🩸血だまり=**地面の上・廃墟の下**に描く(踏まれている物なので一番下) */
 function drawBnsMarks(c,C){
@@ -19605,16 +19754,37 @@ function drawBnsMarks(c,C){
     c.rect(s.x-s.r,s.y-s.r*.42,s.r*2,s.r*.84);any=1;}
    if(any)c.fill();}
  }
+ /* 🛞**土埃**(2026-08-02(23))=速く走っている間だけ後ろに立つ。⚠**地面の物なので敵より下**。
+    ⚠濃さは2段だけ持つ(1件ずつ変えるとまとめて塗れない)。 */
+ const ds=C.bdst;
+ if(ds&&ds.length){
+  for(let b=0;b<2;b++){
+   c.fillStyle=b?'rgba(150,134,102,.16)':'rgba(168,152,116,.30)';
+   c.beginPath();let any=0;
+   for(let i=0;i<ds.length;i++){const p=ds[i];if(p.t>=p.lf)continue;
+    const k=p.t/p.lf;if((k>.45?1:0)!==b)continue;
+    const r=p.r*(.6+k*1.5);c.rect(p.x-r,p.y-r*.5,r*2,r);any=1;}
+   if(any)c.fill();}
+ }
 }
 /* 🩸弾け飛んだ肉片=**敵より手前**に描く(飛んでいる物なので上)。
    ⚠**2段に塗り分ける**(2026-08-02(3))=飛び始めは明るい鮮血・終わりは暗い肉片。
      1色だけだと「茶色い四角が飛んだ」に見えてちゃっちい。⚠色ごとに1回ずつしか塗らない。 */
 function drawBnsGore(c,C){
  const ck=C.bchk;if(!ck||!ck.length)return;
+ /* ⭐**吹き飛んだ体は先に描く**(肉片の下)=黒フチ→肉体の2回塗り。
+    ⚠**四角のまま**=この寄り(.26)では回しても読めないうえ、回すとまとめて塗れない。 */
+ for(let b=0;b<2;b++){
+  c.fillStyle=b?'#5b6b41':INK;
+  c.beginPath();let any=0;
+  for(let i=0;i<ck.length;i++){const p=ck[i];if(!p.bd||p.t>=p.lf)continue;
+   const k=1-p.t/p.lf,r=p.r*(.55+k*.45)*(b?.72:1);
+   c.rect(p.x-r,p.y-r*1.15,r*2,r*2.3);any=1;}
+  if(any)c.fill();}
  for(let b=0;b<2;b++){
   c.fillStyle=b?'rgba(96,20,16,.92)':'rgba(196,44,32,.95)';
   c.beginPath();let any=0;
-  for(let i=0;i<ck.length;i++){const p=ck[i];if(p.t>=p.lf)continue;
+  for(let i=0;i<ck.length;i++){const p=ck[i];if(p.bd||p.t>=p.lf)continue;
    const k=1-p.t/p.lf;if((k>.55?0:1)!==b)continue;
    const r=p.r*(.45+k*.55);
    c.rect(p.x-r,p.y-r,r*2,r*2);any=1;}
@@ -19724,6 +19894,22 @@ function drawBus(c,C,t){
  const B=C.bus;if(!B)return;
  const S=BUS_DRAW;
  groundShadow(c,B.x,B.y,BUS_R*.86);
+ /* 🔥**ニトロ中は後ろから炎を噴く**(2026-08-02(23))=画面の効果だけだと「速いのか?」で終わる。
+    ⚠**車体より後ろにだけ**出す(前に出すと轢いている所が読めなくなる)。⚠塗り2回だけ。 */
+ if(B.nitT>0&&FXLV>0){
+  /* ⚠**止まっていても向きが要る**=進行方向が無い時は車体の向きに噴く(でないと炎が消える) */
+  const mv=Math.hypot(B.vx,B.vy),tx=mv>8?B.vx/mv:(B.dr<0?-1:1),ty=mv>8?B.vy/mv:0;
+  const f=(.86+.14*Math.sin(t*38))*BUS_R*(1.5+.7*clamp(mv/BUS_SP,0,1.6));
+  c.save();c.translate(B.x-tx*BUS_R*.66,B.y-ty*BUS_R*.66);c.rotate(Math.atan2(ty,tx));
+  c.globalAlpha=.55;c.fillStyle='#a83218';
+  c.beginPath();c.moveTo(0,-BUS_R*.62);c.lineTo(-f*1.15,0);c.lineTo(0,BUS_R*.62);c.closePath();c.fill();
+  c.globalAlpha=.85;c.fillStyle='#e2641c';
+  c.beginPath();c.moveTo(0,-BUS_R*.42);c.lineTo(-f,0);c.lineTo(0,BUS_R*.42);c.closePath();c.fill();
+  c.globalAlpha=.95;c.fillStyle='#ffd479';
+  c.beginPath();c.moveTo(0,-BUS_R*.22);c.lineTo(-f*.56,0);c.lineTo(0,BUS_R*.22);c.closePath();c.fill();
+  c.fillStyle='#fff6e0';
+  c.beginPath();c.moveTo(0,-BUS_R*.11);c.lineTo(-f*.26,0);c.lineTo(0,BUS_R*.11);c.closePath();c.fill();
+  c.restore();c.globalAlpha=1;}
  /* ⭐**進む向きへ血のしぶきを噴く鼻先**(2026-08-02(3))。⚠絵は毎フレーム同じ物を描くだけ(重さゼロ)。
     ⚠**当たり判定より内側**に描く=外へはみ出すと「当たっていない所が光る」になる。 */
  if(B.hitT>0&&FXLV>0){const mv=Math.hypot(B.vx,B.vy)||1,tx=B.vx/mv,ty=B.vy/mv,k=clamp(B.hitT/.12,0,1);

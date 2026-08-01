@@ -48,6 +48,9 @@ const BDRV=/(^|\+)bnsdrv(\+|$)/.test(OPT);
    ⚠**カメラはバスを追う**ので、これが無いと拠点まわりしか写らず、入れる廃墟が一度も画に出ない。
    ⚠bns と併せて使う。⚠**bnsdrv とは併用しない**(走らせると寄せた場所から離れていく)。 */
 const BEM=/(^|\+)bnsent(=(\d+))?(\+|$)/.exec(OPT),BENTI=BEM?(+(BEM[3]||0)):-1;
+/* ⭐bnsnit = 🔥**ニトロを撃った直後**を撮る(群れの中を走らせながら、終わりの2秒前に発動)。
+   ⚠これが無いと炎・速度線・縁の橙・ゲージが1枚も写らない。⚠bns と併せて使う。 */
+const BNIT=/(^|\+)bnsnit(\+|$)/.test(OPT);
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
    ⚠このモーダルは PAUSED=true で画面を覆うので、**新しい敵の絵を撮ろうとすると必ず邪魔になる**
      (深海のナイトメアのボス2体が3回撮り直しても撮れなかった)。⚠st2+nmboss と併用すること。 */
@@ -334,6 +337,14 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         走り去って**群れも血だまりも画面から消える(どちらも実際に撮って気づいた)。
         敵が湧いてから(k>110=約5.5秒)左上のレーンを3秒ごとに行き来する */
      +(BDRV?'try{if(k>110){var f9=(Math.floor((k-110)/60)%2)?1:-1;bnsStick(f9*-.8,f9*-.6);}}catch(e9){}':'')
+     /* 🔥ニトロ=群れの中を走らせて、終わりの2秒前に撃つ(炎と速度線が乗った所を撮る) */
+     /* ⚠bnsdrv と併せた時は**運転を上書きしない**(往復させたまま撃つ) */
+     /* ⚠**大群が来ている道へ向かって走らせる**=適当な向きに走らせると群れと一度も出会わず、
+        轢き応え(肉片・吹き飛ぶ体・血だまり)が1つも写らない。 */
+     +(BNIT?('try{'+(BDRV?'':'if(k>110){var L7=LANES[(G.tide.hotLn!=null?G.tide.hotLn:0)],a7=L7.seg[0].a,'
+       +'b7=G.players[0].bus,dx7=a7[0]-b7.x,dy7=a7[1]-b7.y,l7=Math.hypot(dx7,dy7)||1;'
+       +'bnsStick(dx7/l7,dy7/l7);}')
+       +'if(k===n-40){var m7=G.players[0];m7.bus.nit=1;bnsNitro();}}catch(e7){}'):'')
      +'gameStep(.05);}'
      +'}catch(e){document.title="ERR15 "+e.message;}},1200);'):'')
  +(DBG?('var _gs=gameStep,_ge=null;gameStep=function(d){try{_gs(d);}catch(e){if(!_ge){_ge=e;}throw e;}};'
