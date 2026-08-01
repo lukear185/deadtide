@@ -117,6 +117,20 @@ const REC=[
        {f:'Electricity Hum, Lightbulb',t:0,d:.90,g:-8,r:.70,dl:25},
        {f:'EffectiveTrailer_Booms_Vol2_214',t:0,d:.90,g:-3,r:1.0,dl:15}]},
  {k:'thunk',   f:'METAL SWING HIT',              t:0, d:.26, g:-3, r:1.0},
+ /* ⭐🚌**まとめて轢いた瞬間の「ゴシャアッ」**(2026-08-02(25)ユーザー「もっと轢いてる感が欲しい。
+    SEとかVFXってもういい感じのないかな?」)。⚠**1体ずつの音(`crush`)とは別**=
+    こちらは1試合で数十回しか鳴らない見せ場用なので、素材を使って厚く鳴らしてよい。
+    ①車体の鉄が食い込む鈍い衝撃 ②潰れる音(小さい爆発のクランチ) ③飛び散る破片。 */
+ {k:'smash',   d:.52, g:-3, r:1.0,
+  af:'highpass=f=52:p=2,equalizer=f=180:t=q:w=1.0:g=6,treble=g=-5:f=5200',
+  mix:[{f:'Metal Hit Thud Thump Low Ring',t:0,d:.52,g:-3,r:.86},
+       {f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.42,g:-5,r:1.15,dl:12},
+       {f:'Woosh Debris',t:0,d:.36,g:-11,r:1.0,dl:60}]},
+ /* ⭐候補②=金属寄り(タイヤレバーの打撃)。⚠?sfx=1 で聴き比べて選んでもらう用 */
+ {k:'smash2',  d:.46, g:-3, r:1.0,
+  af:'highpass=f=52:p=2,equalizer=f=210:t=q:w=1.0:g=5',
+  mix:[{f:'Metal Old File Impact Tap Against Tire Iron',t:0,d:.46,g:-2,r:.72},
+       {f:'Explosion Small Blast Enemy Death Crunchy',t:0,d:.40,g:-6,r:.92,dl:8}]},
  {k:'boom',    f:'Booms_Vol2_011',               t:0, d:.85, g:-1, r:1.0},
  {k:'net',     f:'Whoosh Glass Crystal',         t:0, d:.36, g:-3, r:1.0},
  {k:'frost',   f:'Skill Freeze Whoosh Break',    t:0, d:.60, g:-2, r:1.0},
