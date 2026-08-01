@@ -2667,8 +2667,9 @@ function checkRice(){
   if(!(B.nitT>0)){console.log('FAIL: ニトロが効いていない');process.exit(1);}
   if(bnsNitro()!==false){console.log('FAIL: ニトロを二重に撃てる');process.exit(1);}
   if(B.nit!==0){console.log('FAIL: 撃ったのにゲージが減っていない');process.exit(1);}
-  /* ③速さ=同じ入力・同じ秒数で、素の最高速を超えること */
-  me.zombies.length=0;B.vx=B.vy=0;B.x=BNS_CX;B.y=BNS_CY;bnsStick(1,0);
+  /* ③速さ=同じ入力・同じ秒数で、素の最高速を超えること。
+     ⚠**道に沿って(上へ)走らせる**=横へ倒すと道幅の端で押し戻されて速さが出ない(2026-08-02(28)に踏んだ) */
+  me.zombies.length=0;B.vx=B.vy=0;B.x=BNS_CX;B.y=BNS_CY;bnsStick(0,-1);
   for(let k=0;k<12;k++)bnsBusStep(me,.05);
   const spN=Math.hypot(B.vx,B.vy);
   if(!(spN>BUS_SP*1.3)){console.log('FAIL: ニトロで速くなっていない '+Math.round(spN));process.exit(1);}
