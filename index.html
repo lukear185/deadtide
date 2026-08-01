@@ -25979,7 +25979,10 @@ function loopBody(now){
    const tI=MODE==='client'?CS.tI:(G?G.tI:0);
    $('ivtimer').textContent=Math.ceil(Math.max(0,tI));
    $('ivtimer').style.background=`conic-gradient(var(--rust) ${clamp(tI/15,0,1)*100}%,#d8cfba 0)`;
-   const m=meV();if(m)$('iven').innerHTML=IC('⚙️ ')+fmt(m.scrap);
+   /* ⚠⚠**🔩強化ptも出す**(2026-08-02(49)ユーザー「タレットの攻撃力8%UPとかに使う方も表示してくれ」)=
+      ivRender は両方出していたのに、**0.12秒ごとのこの書き換えが⚙️だけで上書きしていた**
+      ので、作戦タイムに入った次の瞬間には🔩が消えていた。⭐**表示を作る所は必ず同じ形にする**。 */
+   const m=meV();if(m)$('iven').innerHTML=IC('⚙️ '+fmt(m.scrap)+'　'+PT+fmt(m.up||0));
   }
  }
  if(MODE==='host'&&G&&gameActive){G.netT=(G.netT||0)-dt0;if(G.netT<=0){G.netT=.1;hostNetTick();}}
