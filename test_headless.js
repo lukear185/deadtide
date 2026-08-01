@@ -3504,8 +3504,16 @@ function checkBnsFlow(){
    const r0=Q.res[BEQ[0].r];bnsUpTap(Q,R2[0].x+4,R2[0].y+4);
    if(Q.res[BEQ[0].r]!==r0){console.log('FAIL: 同じ装備を2度買える');process.exit(1);}}
   /* ⚠装備の効き目がバスに入っていること(絵と当たりの両方がこれを見る) */
-  if(!(me.bus.bladeR>0&&me.bus.flame&&me.bus.zap&&me.bus.siren)){
+  if(!(me.bus.bladeR>0&&me.bus.zap&&me.bus.siren&&me.bus.gun)){
    console.log('FAIL: 装備の効き目がバスに入っていない');process.exit(1);}
+  /* 🚌⭐**大型車体/二階建て**=**当たりと絵が同じ倍率**であること(2026-08-02(62))。
+     ⚠**掛け忘れが一番怖い装備**なので、①倍率が入っている ②轢く丸に乗っている ③ノコの寸法にも乗る、を見る */
+  if(!(me.bus.bigX>1.4)){console.log('FAIL: 二階建てでバスが大きくなっていない '+me.bus.bigX);process.exit(1);}
+  if(!(me.bus.rX>=me.bus.bigX)){console.log('FAIL: 大型車体が轢く当たりに乗っていない '+me.bus.rX);process.exit(1);}
+  /* 🪚**四連ノコ**=前後2組になっていること(素は1組) */
+  if(!(Array.isArray(me.bus.blXs)&&me.bus.blXs.length===2)){
+   console.log('FAIL: 四連ノコが2組になっていない');process.exit(1);}
+  if(!(me.bus.blOut>EQ_BL_OUT)){console.log('FAIL: 四連ノコで外接半径が伸びていない');process.exit(1);}
   try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: ⚔装備の枠の描画で例外 '+e.message);process.exit(1);}
   try{drawBus(ctx,me,1.2);}catch(e){console.log('FAIL: 装備を付けたバスの描画で例外 '+e.message);process.exit(1);}
   bnsUpTap(Q,R.go.x+4,R.go.y+4);}

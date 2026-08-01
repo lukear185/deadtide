@@ -20652,21 +20652,14 @@ function bnsBusStep(C,dt){
  /* ⚔⭐**装備で当たりの形が変わる**(2026-08-02(44))。⚠**絵(`drawBusEq`)と同じ数値から出す**=
     見えていない所で当たると「当たっていないのに死ぬ」に逆戻りする(この面で一度踏んだ)。 */
  const rr9=BUS_R*(nz9?BUS_NIT_R:1)*(B.rX||1);
- const bl9=B.bladeR||0,fl9=B.flame?1:0,sr9=B.siren?1:0;
- const fa9=B.flail?1:0,gn9=B.gun?1:0,bg9=B.bigX||1;
- if(fa9)B.flT=(B.flT||0)+dt;/* ⛓鉄球の回りを進める(⚠絵もこの1つから出す) */
+ const bl9=B.bladeR||0,sr9=B.siren?1:0;
+ const gn9=B.gun?1:0,bg9=B.bigX||1;
  /* 🔊サイレンが引き寄せる先=**バスが道のどこに居るか**(横のずれ)。⚠1フレームに1回だけ出す */
  let boff9=0;
  if(sr9&&LANES){try{const p9=pathPos(bd9,0),n0=-Math.sin(p9[2]),n1=Math.cos(p9[2]);
   boff9=(B.x-p9[0])*n0+(B.y-p9[1])*n1;}catch(e){}}
  /* 進む向き(止まっている時は車体の向き)=ノコも炎もこの向きに付いている */
  const mv9=Math.hypot(B.vx,B.vy),tx9=mv9>8?B.vx/mv9:0,ty9=mv9>8?B.vy/mv9:-1;
- /* ⛓**振り回している鉄球の位置**(世界座標)。⚠**ループの外で1回だけ出す**=中で出すと数百回になる。 */
- let fax0=0,fay0=0,fax1=0,fay1=0,faR=0;
- if(fa9){const mvq=clamp(mv9/(B.spMx||BUS_SP),0,1);
-  {const p9=eqFlailPt(B,-1,mvq);fax0=tx9*p9[2]-ty9*p9[3];fay0=ty9*p9[2]+tx9*p9[3];}
-  {const p9=eqFlailPt(B, 1,mvq);fax1=tx9*p9[2]-ty9*p9[3];fay1=ty9*p9[2]+tx9*p9[3];}
-  faR=EQ_FL_R*bg9;}
  /* 🔫**ルーフガンの的**=前方で一番近い1体。⚠**ループのついでに拾う**(別に舐め直さない) */
  let gtZ=null,gtD=EQ_GUN_R*EQ_GUN_R;
  /* ⭐⭐**通り過ぎた敵は消す**(2026-08-02(24))=これが無いと**盤面の上限が後ろの敵で埋まり**、
@@ -20693,35 +20686,19 @@ function bnsBusStep(C,dt){
    z.off=(z.off||0)+(t8-(z.off||0))*Math.min(1,dt*EQ_SIREN_V*k8);
    z.d+=(bd9-z.d)*Math.min(1,dt*EQ_SIREN_F*k8);
   }
-  /* 🔥**前方火炎放射**=鼻先から前へ広がる扇。⚠**轢いた扱いにはしない**(轢く前に削るだけ)。
-     ⚠これで倒れた分も `kil` に数える=数えないと「焼くと連なりが切れる」逆の遊びになる。 */
-  if(fl9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9,fL=EQ_FLM_L*bg9,fW=EQ_FLM_W*bg9;
-   if(fw>rz*.4&&fw<fL&&Math.abs(sw)<fW*(.34+.66*fw/fL)){
-    dmgZ(C,z,EQ_FLM_D*(B.dpsX||1)*dt,1,true);
-    if(z.dead){kil++;continue;}}}
-  /* ⛓**鉄球チェーン**=振り回している2つの丸に当たった敵を潰す。⚠**絵と同じ位置**(`eqFlailPt`)。
-     ⚠**押しのける**=車体に付いている物なので、轢いた時と同じように外へ弾く(飛び道具ではない)。 */
-  if(fa9){const r9=faR+(rz-rr9);
-   const a1=dx-fax0,b1=dy-fay0,a2=dx-fax1,b2=dy-fay1;
-   if(a1*a1+b1*b1<=r9*r9||a2*a2+b2*b2<=r9*r9){
-    dmgZ(C,z,EQ_FL_D*(B.dpsX||1)*dt,1,true);
-    if(z.dead){kil++;continue;}
-    if(z.nx!=null){const s9=(dx*z.nx+dy*z.ny)>=0?1:-1;
-     const pl9=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
-     const w9=bnsCorrW(clamp(z.d/pl9,0,1));
-     z.off=clamp((z.off||0)+s9*BUS_SIDE*1.4*dt,-w9,w9);}}}
   /* 🔫**ルーフガンの的を拾う**=**前方だけ**。⚠**撃つのはループの後**(1フレーム1発なので) */
   if(gn9){const fw=dx*tx9+dy*ty9;
    if(fw>rz){const dd=dx*dx+dy*dy;if(dd<gtD){gtD=dd;gtZ=z;}}}
   /* ⚙**回転ノコ**=**丸ノコの円そのもの**が当たり(絵と1pxもずれない)。
      ⚠**外接の丸で先に弾く**=装備していない時は今までどおり平方の比較1回で済む
      (数百体を毎フレーム見るので、ここを重くすると面ごと重くなる)。 */
-  if(bl9){const ro9=EQ_BL_OUT*bg9+(rz-rr9);
+  if(bl9){const ro9=(B.blOut||EQ_BL_OUT)*bg9+(rz-rr9);
    if(dx*dx+dy*dy>ro9*ro9)continue;
    let ok9=dx*dx+dy*dy<=rz*rz;
-   if(!ok9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9,rb9=EQ_BL_R*bg9+(rz-rr9);
-    for(let s9=-1;s9<=1&&!ok9;s9+=2){const ux=fw-EQ_BL_X*bg9,uy=sw-EQ_BL_Y*bg9*s9;
-     if(ux*ux+uy*uy<=rb9*rb9)ok9=1;}}
+   if(!ok9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9,rb9=B.blR*bg9+(rz-rr9),XS=B.blXs;
+    for(let bi=0;bi<XS.length&&!ok9;bi++)
+     for(let s9=-1;s9<=1&&!ok9;s9+=2){const ux=fw-XS[bi]*bg9,uy=sw-B.blY*bg9*s9;
+      if(ux*ux+uy*uy<=rb9*rb9)ok9=1;}}
    if(!ok9)continue;}
   else if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
@@ -21433,14 +21410,14 @@ const BEQ=[
  {k:'blast',r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを吹き飛ばす',      c:60},
  {k:'boost',r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
  {k:'nit2', r:0,ic:'🔋',n:'二段ニトロ',      d:'切れても3分の1だけ残る',      c:220},
- {k:'flame',r:0,ic:'🔥',n:'前方火炎放射',    d:'鼻先の炎で走りながら焼く',    c:340},
- {k:'big',  r:0,ic:'🚌',n:'大型車体',        d:'バスが一回りでかくなる',      c:540},
+ {k:'big',  r:0,ic:'🚌',n:'大型車体',        d:'バスが一回りでかくなる',      c:340},
+ {k:'trail',r:0,ic:'🚎',n:'二階建て化',      d:'バスがもう一段でかくなる',    c:540},
  /* 🏭鉄材=**前まわり(轢く物)** */
  {k:'tire', r:1,ic:'🛞',n:'スパイクタイヤ',  d:'障害物で減速しない',          c:45},
  {k:'wire', r:1,ic:'🪤',n:'鉄条網バンパー',  d:'前に張り出して当たりが広い',  c:100},
  {k:'spike',r:1,ic:'🔩',n:'スパイクローラー',d:'ひいた体が高く舞う',          c:180},
  {k:'blade',r:1,ic:'⚙',n:'回転ノコ',        d:'左右の丸ノコで横も薙ぐ',      c:300},
- {k:'flail',r:1,ic:'⛓',n:'鉄球チェーン',    d:'左右で鉄球を振り回す',        c:480},
+ {k:'saw2', r:1,ic:'🪚',n:'四連ノコ',        d:'丸ノコが前後4枚・もっと外まで',c:480},
  /* 🏠食料=**乗員がやること** */
  {k:'plate',r:2,ic:'🛡',n:'内張り装甲',      d:'しがみつかれても遅くならない',c:50},
  {k:'horn', r:2,ic:'📢',n:'拡声器',          d:'近くのゾンビが寄ってくる',    c:110},
@@ -21448,6 +21425,13 @@ const BEQ=[
  {k:'zap',  r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320},
  {k:'gun',  r:2,ic:'🔫',n:'ルーフガン',      d:'前を撃ち抜く(並んだ敵ごと)',  c:520}
 ];
+/* ⚔⭐⭐⭐**装備は「車体に固定された物」だけ**(2026-08-02(62)ユーザー決定
+   「**明らかに動くやつはなし。いまの丸鋸みたいな動きはいいけど、自立してるやつは現実的じゃないからなし。
+     あと火炎放射もなし**」)。⚠⚠**この掟で3つ外した**:
+   ❌🪃ブーメラン刃(飛んで戻る) ❌⛓鉄球チェーン(鎖でぶら下がって振り回る) ❌🔥前方火炎放射。
+   ⭐**OKなのは**=**その場で回る物**(丸ノコ・ローラー・タイヤ)/**ただ付いている物**(バンパー・装甲・
+     ラッパ・コイル・銃座)/**車体そのものが変わる物**(大型車体・連結トレーラー)。
+   ⚠**新しく足す時は必ずこの3つのどれかに収まるか確かめる**。書き戻さないこと。 */
 /* ⚔装備の効き目の数値。⚠**1か所にまとめる**=あちこちに散らすと必ず食い違う */
 const EQ_BLADE=86;   /* 回転ノコの横への張り出し(px) */
 /* ⚙**丸ノコの位置と大きさ**。⚠⚠**当たりも絵もこの3本から出す**(2026-08-02(44)に撮って直した)=
@@ -21457,10 +21441,20 @@ const EQ_BLADE=86;   /* 回転ノコの横への張り出し(px) */
 const EQ_BL_X=BUS_R*.42;
 const EQ_BL_Y=(BUS_R*.50+BUS_R+EQ_BLADE)/2;
 const EQ_BL_R=(BUS_R+EQ_BLADE-BUS_R*.50)/2;
-const EQ_BL_OUT=Math.hypot(EQ_BL_X,EQ_BL_Y)+EQ_BL_R;/* ノコまで含めた外接半径 */
+const EQ_BL_OUT=Math.hypot(EQ_BL_X,EQ_BL_Y)+EQ_BL_R;/* ノコまで含めた外接半径(⚠素の1組ぶん) */
+/* 🪚⭐**四連ノコ**(🏭⑤・2026-08-02(62))=**⚙回転ノコを「前後2組・もっと外まで」にした物**。
+   ⚠⚠**⛓鉄球チェーンと差し替えた**(ユーザー「明らかに動くやつはなし。**いまの丸鋸みたいな動きはいい**けど、
+     自立してるやつは現実的じゃないからなし」)=**その場で回るだけ**なら固定された装備に見える。
+   ⭐**同じ物を増やす**のは、新しい形を足すより**段が上がった感じ**が確実に出る(張り出しも伸ばす)。
+   ⚠**位置と大きさは④と同じ作り方**(車体の横から張り出しの先までをちょうど埋める円)。 */
+/* ⚠**張り出しを欲張らない**(2026-08-02(62)に撮って下げた・152→118)=大きくすると
+   **ノコが車体より大きくなって、バスが4枚の円盤の後ろに隠れる**。⭐4枚に増えるだけで段は上がって見える。 */
+const EQ_BLADE2=118; /* 四連ノコの横への張り出し(px)。⚠④(86)より少し外まで */
+const EQ_BL2_Y=(BUS_R*.50+BUS_R+EQ_BLADE2)/2;
+const EQ_BL2_R=(BUS_R+EQ_BLADE2-BUS_R*.50)/2;
+const EQ_BL2_X=-BUS_R*.62;/* 後ろ側の組(前は EQ_BL_X をそのまま使う)。⚠近すぎると2枚が重なって1枚に見える */
 const EQ_WIRE=1.07;  /* 鉄条網で当たりが何倍になるか(⚠絵も同じだけ前へ出す) */
 const EQ_UP=1.5;     /* スパイクローラーで体が何倍高く舞うか */
-const EQ_FLM_L=310,EQ_FLM_W=150,EQ_FLM_D=260;/* 火炎放射の長さ/半幅/1秒あたりの傷 */
 /* 🔊**サイレン**=⚠⚠**道の中央へ寄せてはいけない**(2026-08-02(54)ユーザー「ゾンビが整列しちゃってて
    違和感あるから、うわっとバスに引き寄せられる感じにして」)=中央へ寄せると、幅を残しても
    **道に沿った1本の帯**になって「整列した」ようにしか見えない(2度目の作り直し)。
@@ -21472,26 +21466,19 @@ const EQ_SIREN_V=2.4; /* バスの横位置へ寄る速さ(1秒あたり) */
 const EQ_SIREN_F=1.0; /* バスの前後へ詰める速さ(1秒あたり) */
 const EQ_SIREN_J=190; /* 個体ごとの横のばらつき(⚠これが無いと整列する) */
 const EQ_ZAP_R=300,EQ_ZAP_D=90,EQ_ZAP_P=.22;/* 感電の半径/傷/1回轢くごとに起きる率 */
-/* 🚌⭐⭐⭐**大型車体**(⛽⑤)=**バスそのものが一回り大きくなる**(2026-08-02(61)ユーザー
-   「**あとバス自体がでかくなるとか**」)。⚠⚠**🛢火炎オイルと差し替えた**(ユーザー「火炎も微妙」
-   「何がどうなってるのか全くわからなかった」)=**路面に置く物はこの寄りでは何が起きたか読めない**。
+/* 🚌⭐⭐⭐**大型車体(④)と連結トレーラー(⑤)**=**バスそのものが2段階で大きくなる**
+   (2026-08-02(61)ユーザー「**あとバス自体がでかくなるとか**」→(62)に⑤も車体側へ寄せた)。
+   ⚠⚠**🔥前方火炎放射と🛢火炎オイルを外した跡地**(ユーザー「火炎放射もなし」
+     「何がどうなってるのか全くわからなかった」)。
    ⭐**主役そのものが大きくなる**のは、この面で一番読みやすい強化(轢ける幅がそのまま広がる)。
    ⚠⚠**当たりも絵も同じ倍率で大きくする**=`B.bigX` を**掛け忘れた所が1つでもあると**
-     「当たっていないのに死ぬ」に戻る。⭐掛ける所=**轢く丸 / 装備の寸法(ノコ・鎖・炎) / 絵の縮尺 / 影**。
-   ⚠**地形の当たり(`BUS_CL`)は広げない**=広げると森の隙間に入れなくなり「変な判定」に逆戻りする。 */
-const EQ_BIG=1.34;   /* でかくなる倍率 */
-/* ⛓⭐**鉄球チェーン**(🏭⑤)=**左右に吊るした鉄球が、走ると遠心力で外へ振り回される**。
-   ⚠⚠**2026-08-02(61)に🪃ブーメラン刃と差し替えた**(ユーザー「ブーメランはバス関係ないからやめよ」)=
-     **飛んで行って戻る物はバスの改造に見えない**。⭐**車体に付いたまま動く物**にすること。書き戻さないこと。
-   ⭐⚙回転ノコ(車体のすぐ横)の次の段なので、**もっと外**を薙ぐ=段が上がった感じが出る。
-   ⚠**鎖は速いほど伸びる**=止まると垂れ下がる(遠心力が絵で読める)。
-   ⚠⚠**絵と当たりは `eqFlailPt` の1か所から出す**=2か所に持つとこの面は必ず食い違う(既出の掟)。 */
-const EQ_FL_PY=.52;  /* 吊るす位置(車体の横。BUS_R に対する割合) */
-const EQ_FL_L=280;   /* 鎖の長さ(全速の時)。⚠短いと⚙回転ノコの上に重なって別の物に見えない */
-const EQ_FL_L0=.34;  /* 止まっている時に残る割合 */
-const EQ_FL_R=54;    /* 鉄球の当たりの半径(⚠絵の丸と同じ) */
-const EQ_FL_SP=7.0;  /* 振り回す速さ(1秒あたりの回転) */
-const EQ_FL_D=900;   /* 1秒あたりの傷 */
+     「当たっていないのに死ぬ」に戻る。⭐掛ける所=**轢く丸 / 装備の寸法(ノコ) / 絵の縮尺 / 影**。
+   ⚠**地形の当たり(`BUS_CL`)は広げない**=広げると森の隙間に入れなくなり「変な判定」に逆戻りする。
+   ⚠**段は積み上がる**ので⑤を持っていれば④も持っている=**倍率は置き換え**(掛け算にしない)。 */
+const EQ_BIG=1.26;   /* 🚌大型車体(④)の倍率 */
+const EQ_BIG2=1.52;  /* 🚎二階建て化(⑤)の倍率。⚠道幅780に対して車体は約425
+   ⚠**「連結トレーラー」で作りかけて捨てた**=後ろに繋いだ物は**画面の外**(バスは画面の下に張り付いている)
+     ので一度も見えない。⭐**真上から見て大きくなる理由**にすること(二階建て/装甲増し)。 */
 /* 🔫⭐**ルーフガン**(🏠⑤)=**屋根の銃が前方へ撃ち抜く**。
    ⚠⚠**「一番近い1体だけ」で作ったら弱すぎた**(2026-08-02(61)ユーザー「ルーフなんとかも弱すぎる」)=
      この面は**画面に数百体**居るので、**1体ずつ落としても群れの中で埋もれて何も起きていないように見える**。
@@ -21513,41 +21500,29 @@ function bupApply(B,up,eq){
  B.cmbT0=BNS_CMB_T+.30*(up.crw|0);
  B.nitK =BUS_NIT_K*(1+.18*(up.kit|0));
  B.eq=eq;
- /* 🚌**大型車体**=⚠⚠**当たりも絵も装備の寸法も、全部この1つを掛ける**(掛け忘れると絵と当たりがずれる) */
- B.bigX   =eq.big  ?EQ_BIG:1;
+ /* 🚌**大型車体/🚛連結トレーラー**=⚠⚠**当たりも絵も装備の寸法も、全部この1つを掛ける**
+    (掛け忘れると絵と当たりがずれる)。⚠**段は積み上がるので置き換え**(掛け算にしない)。 */
+ B.bigX   =eq.trail?EQ_BIG2:(eq.big?EQ_BIG:1);
  B.rX     =(eq.wire?EQ_WIRE:1)*B.bigX;/* 🪤当たりが広がる(⚠絵も同じだけ前へ出す) */
- B.bladeR =eq.blade?EQ_BLADE:0;     /* ⚙横への張り出し */
+ /* ⚙🪚**丸ノコ**=⚠⚠**位置と大きさを1か所に持つ**(絵も当たりもここを見る)。
+    ⚠**配列はここで1回だけ作る**=毎フレーム作ると輪の中で new することになる(この面の掟)。 */
+ B.bladeR =eq.blade?(eq.saw2?EQ_BLADE2:EQ_BLADE):0;/* ⚙横への張り出し */
+ B.blY    =eq.saw2?EQ_BL2_Y:EQ_BL_Y;
+ B.blR    =eq.saw2?EQ_BL2_R:EQ_BL_R;
+ B.blXs   =eq.saw2?[EQ_BL_X,EQ_BL2_X]:[EQ_BL_X];
+ B.blOut  =0;
+ for(const bx9 of B.blXs)B.blOut=Math.max(B.blOut,Math.hypot(bx9,B.blY)+B.blR);
  B.upX    =eq.spike?EQ_UP:1;        /* 🔩打ち上げ */
  B.gripS  =eq.plate?0:BUS_GRIP_S;   /* 🛡しがみつきで落ちる最高速(0=落ちない) */
  B.noDrag =eq.tire ?1:0;            /* 🛞障害物で減速しない */
  B.gripX *=eq.tire ?1.15:1;         /* 🛞よく曲がる */
- B.sideX  =(eq.blade?1.7:1)*(eq.blast?1.6:1);/* 横へ弾く強さ */
+ B.sideX  =(eq.blade?(eq.saw2?2.2:1.7):1)*(eq.blast?1.6:1);/* 横へ弾く強さ */
  B.nitSpX =eq.boost?1.18:1;         /* 🚀ニトロ中の最高速 */
  B.nit2   =eq.nit2 ?1:0;            /* 🔋切れても3分の1残る */
- B.flame  =eq.flame?1:0;
  /* 🔊引き寄せの強さ=**0=無 / 1=📢拡声器(近く・弱い) / 2=🔊サイレン(遠く・強い)** */
  B.siren  =eq.siren?2:(eq.horn?1:0);
  B.zap    =eq.zap?1:0;
- B.flail  =eq.flail?1:0;            /* ⛓左右で振り回す鉄球 */
  B.gun    =eq.gun  ?1:0;            /* 🔫屋根の自動射撃 */
-}
-/* ⛓**鉄球の位置**(バスの局所座標=+xが進む向き・**大型車体を掛けた後**)。
-   ⚠⚠**当たりも絵もここから出す**。⭐鎖は**速いほど伸びて外へ流れる**=遠心力が絵で読める。
-   ⚠**返すのは使い回しの配列**=毎フレーム4回呼ぶので new しない(この面の掟)。
-   ⚠`s`=-1/+1(左右)。返すのは [吊るす点x, 吊るす点y, 鉄球x, 鉄球y, 鎖の長さ]。 */
-const EQ_FL_P=[0,0,0,0,0];
-function eqFlailPt(B,s,mv){
- const bg=B.bigX||1,py=BUS_R*EQ_FL_PY*bg*s;
- const ln=EQ_FL_L*bg*(EQ_FL_L0+(1-EQ_FL_L0)*clamp(mv,0,1));
- const a=((B&&B.flT)||0)*EQ_FL_SP*s;
- EQ_FL_P[0]=0;EQ_FL_P[1]=py;
- /* ⚠⚠**回る輪を「外」と「前」の両方へずらす**=素直に吊るす点の周りを回すと
-    ①内側では車体に埋もれ ②後ろ半分は**画面の外**(バスは画面の下に張り付けてある)になり、
-    **半分の時間、何も見えない**。⭐前へ ln*.45・外へ ln*.55 ずらすと、常に前と横だけを舐める。 */
- EQ_FL_P[2]=ln*.45+Math.cos(a)*ln*.72;
- EQ_FL_P[3]=py+s*ln*.55+Math.sin(a)*ln*.45;
- EQ_FL_P[4]=ln;
- return EQ_FL_P;
 }
 /* ⚡**電磁バンパー**=轢いた瞬間にたまに周りへ感電させる。
    ⚠⚠**倒した分は必ず連なりとスコアとニトロの同じ道を通す**(NOTESの掟)=
@@ -22332,10 +22307,12 @@ function drawBusEq(c,B,t){
   c.fillStyle='#b9b0a0';
   for(let i=0;i<9;i++){const a=ph+i*.7,y=-R*.42+i*R*.105,dx=Math.cos(a)*rr9*.9;
    c.beginPath();c.moveTo(cx+dx,y-5);c.lineTo(cx+dx+rr9*.85,y);c.lineTo(cx+dx,y+5);c.closePath();c.fill();}}
- /* ⚙回転ノコ=左右の丸ノコ。⚠**半径は当たり(`EQ_BLADE`)から出す**=見た目より外で当たらない */
- if(E.blade){const bx=EQ_BL_X,by=EQ_BL_Y,rb=EQ_BL_R,ph=t*(9+mv*34);
-  for(const s9 of [-1,1]){
-   c.save();c.translate(bx,by*s9);c.rotate(ph*s9);
+ /* ⚙回転ノコ / 🪚四連ノコ=丸ノコ。⚠⚠**位置も半径も当たりと同じ物(`B.blXs`/`blY`/`blR`)から出す**
+    =見た目より外で当たらない。⭐四連ノコは**前後2組**になるだけ(絵の作り方は同じ)。 */
+ if(E.blade){const by=B.blY||EQ_BL_Y,rb=B.blR||EQ_BL_R,ph=t*(9+mv*34);
+  const XS=B.blXs||[EQ_BL_X];
+  for(let bi=0;bi<XS.length;bi++)for(const s9 of [-1,1]){
+   c.save();c.translate(XS[bi],by*s9);c.rotate(ph*s9*(bi?-1:1));
    c.fillStyle='#9aa2ab';c.beginPath();c.arc(0,0,rb,0,7);c.fill();c.stroke();
    c.fillStyle='#d9dee4';c.beginPath();
    for(let i=0;i<10;i++){const a=i*.6283;
@@ -22422,41 +22399,6 @@ function drawBusEq(c,B,t){
    c.moveTo(R*.38,0);c.lineTo(R*.50,-R*.09);c.lineTo(R*.62,0);c.lineTo(R*.50,R*.09);c.closePath();c.fill();}
   c.restore();
  }
- /* ⛓鉄球チェーン(🏭⑤)=左右に吊るした鉄球。⚠⚠**位置は当たりと同じ `eqFlailPt` から出す**。
-    ⚠⚠**ここは「大型車体を掛けた後」の座標系**(呼ぶ側で `bigX` を掛けてある)ので、
-      `eqFlailPt` が返す値を**そのまま使わず素の寸法へ戻す**=でないと二重に掛かる。
-    ⚠**鎖を必ず描く**=鉄球だけだと「何かが浮いている」に見えて、車体に付いた物に読めない。 */
- if(E.flail){const bg8=B.bigX||1,r8=EQ_FL_R;
-  for(const s8 of [-1,1]){
-   const p8=eqFlailPt(B,s8,mv),px8=p8[0]/bg8,py8=p8[1]/bg8,bx8=p8[2]/bg8,by8=p8[3]/bg8;
-   /* ⚠**鎖は太い黒地+明るい芯の2本**=1本の細線だと「何かが浮いている」に見えて、
-      車体と繋がっているのが読めない(この寄りでは細い線は消える)。 */
-   c.strokeStyle=INK;c.lineWidth=10;
-   c.beginPath();c.moveTo(px8,py8);c.lineTo(bx8,by8);c.stroke();
-   c.strokeStyle='#9aa2ab';c.lineWidth=5;
-   c.beginPath();c.moveTo(px8,py8);c.lineTo(bx8,by8);c.stroke();
-   c.strokeStyle=INK;c.lineWidth=3.2;
-   /* 吊るす金具 */
-   c.fillStyle='#4b4f56';c.beginPath();c.arc(px8,py8,R*.10,0,7);c.fill();c.stroke();
-   /* 鉄球(トゲ付き)。⚠**当たりの半径と同じ丸**にする */
-   c.fillStyle='#cfd6dc';c.beginPath();
-   for(let i=0;i<8;i++){const a=i*.7854+t*3;
-    c.moveTo(bx8+Math.cos(a-.4)*r8*.9,by8+Math.sin(a-.4)*r8*.9);
-    c.lineTo(bx8+Math.cos(a)*r8*1.55,by8+Math.sin(a)*r8*1.55);
-    c.lineTo(bx8+Math.cos(a+.4)*r8*.9,by8+Math.sin(a+.4)*r8*.9);}
-   c.fill();c.stroke();
-   c.fillStyle='#7c838b';c.beginPath();c.arc(bx8,by8,r8,0,7);c.fill();c.stroke();
-   c.fillStyle='#4a4f55';c.beginPath();c.arc(bx8-r8*.22,by8-r8*.22,r8*.34,0,7);c.fill();}}
- /* 🔥前方火炎放射=鼻先から前へ広がる扇。⚠**当たりの寸法(`EQ_FLM_*`)と必ず同じ形にする** */
- if(E.flame&&FXLV>0){
-  const x0=R*.72,ln=EQ_FLM_L,w1=EQ_FLM_W,fl=.86+.14*Math.sin(t*30);
-  c.save();c.globalCompositeOperation='lighter';
-  /* ⚠**薄くする**=加算なので濃いと路面ごと白飛びして道が読めなくなる(既出の掟) */
-  const cols=[['rgba(176,52,20,.30)',1],['rgba(226,100,28,.32)',.72],['rgba(255,212,121,.34)',.42]];
-  for(const [col,k] of cols){c.fillStyle=col;c.beginPath();
-   c.moveTo(x0,-R*.16*k);c.lineTo(x0+ln*fl*k,-w1*k);c.lineTo(x0+ln*fl*k,w1*k);c.lineTo(x0,R*.16*k);
-   c.closePath();c.fill();}
-  c.restore();}
 }
 function drawBus(c,C,t){
  const B=C.bus;if(!B)return;
