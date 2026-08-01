@@ -20646,13 +20646,6 @@ function bnsBusStep(C,dt){
   if(mv>26&&B.trkD>=BTRK_GAP){B.trkD=0;
    const tx=B.vx/mv,ty=B.vy/mv;
    bnsRing(C,'btrk',BNS_TRK,{x:B.x,y:B.y,tx:tx,ty:ty,nx:-ty,ny:tx,t:0,b:(B.cmbT>0)?1:0});}}
- /* 🛢**火炎オイル**=**ずっと前へ**まく(⚠後ろは画面の外=見えない)。轍と同じで**進んだ距離**で置く。
-    ⚠**止まっている間はまかない**=同じ所へ積もって火柱になり、何をしているか読めなくなる。 */
- if(B.slick){const mv=Math.hypot(B.vx,B.vy);
-  if(mv>40){B.oilD=(B.oilD||0)+mv*dt;
-   if(B.oilD>=EQ_OIL_GAP){B.oilD=0;const tx=B.vx/mv,ty=B.vy/mv;
-    bnsRing(C,'boil',BNS_OIL,{x:B.x+tx*EQ_OIL_F,y:B.y+ty*EQ_OIL_F,t:0,sd:Math.random()*6.28});}}
-  else B.oilD=0;}
  /* 轢く=重なっている間ずっと削る+外へ弾く。⚠**押し出しは経路上の距離(z.d)で戻す**
     =世界座標で押すと道から外れて、次のフレームで道の上へ瞬間移動する */
  let hit=0,kil=0;
@@ -20660,22 +20653,22 @@ function bnsBusStep(C,dt){
     見えていない所で当たると「当たっていないのに死ぬ」に逆戻りする(この面で一度踏んだ)。 */
  const rr9=BUS_R*(nz9?BUS_NIT_R:1)*(B.rX||1);
  const bl9=B.bladeR||0,fl9=B.flame?1:0,sr9=B.siren?1:0;
- const sl9=B.slick?1:0,bm9=B.boom?1:0,gn9=B.gun?1:0;
- if(bm9)B.bmT=(B.bmT||0)+dt;/* 🪃刃の周期を進める(⚠絵もこの1つから出す) */
+ const fa9=B.flail?1:0,gn9=B.gun?1:0,bg9=B.bigX||1;
+ if(fa9)B.flT=(B.flT||0)+dt;/* ⛓鉄球の回りを進める(⚠絵もこの1つから出す) */
  /* 🔊サイレンが引き寄せる先=**バスが道のどこに居るか**(横のずれ)。⚠1フレームに1回だけ出す */
  let boff9=0;
  if(sr9&&LANES){try{const p9=pathPos(bd9,0),n0=-Math.sin(p9[2]),n1=Math.cos(p9[2]);
   boff9=(B.x-p9[0])*n0+(B.y-p9[1])*n1;}catch(e){}}
  /* 進む向き(止まっている時は車体の向き)=ノコも炎もこの向きに付いている */
  const mv9=Math.hypot(B.vx,B.vy),tx9=mv9>8?B.vx/mv9:0,ty9=mv9>8?B.vy/mv9:-1;
- /* 🪃**飛んでいる刃の位置**(世界座標)。⚠**ループの外で1回だけ出す**=中で出すと数百回になる。 */
- let bmx0=0,bmy0=0,bmx1=0,bmy1=0;
- if(bm9){const p9=eqBoomPt(B);
-  bmx0=tx9*p9[0]-ty9*p9[1];bmy0=ty9*p9[0]+tx9*p9[1];
-  bmx1=tx9*p9[0]+ty9*p9[1];bmy1=ty9*p9[0]-tx9*p9[1];}
+ /* ⛓**振り回している鉄球の位置**(世界座標)。⚠**ループの外で1回だけ出す**=中で出すと数百回になる。 */
+ let fax0=0,fay0=0,fax1=0,fay1=0,faR=0;
+ if(fa9){const mvq=clamp(mv9/(B.spMx||BUS_SP),0,1);
+  {const p9=eqFlailPt(B,-1,mvq);fax0=tx9*p9[2]-ty9*p9[3];fay0=ty9*p9[2]+tx9*p9[3];}
+  {const p9=eqFlailPt(B, 1,mvq);fax1=tx9*p9[2]-ty9*p9[3];fay1=ty9*p9[2]+tx9*p9[3];}
+  faR=EQ_FL_R*bg9;}
  /* 🔫**ルーフガンの的**=前方で一番近い1体。⚠**ループのついでに拾う**(別に舐め直さない) */
  let gtZ=null,gtD=EQ_GUN_R*EQ_GUN_R;
- const oil9=(sl9&&C.boil&&C.boil.length)?C.boil:null;
  /* ⭐⭐**通り過ぎた敵は消す**(2026-08-02(24))=これが無いと**盤面の上限が後ろの敵で埋まり**、
     進む先がすかすかになる(実走で42秒走って81体しか轢けなかった原因)。
     ⚠画面の外まで下がってから消すこと(見えている所で消えると「勝手に居なくなった」になる)。 */
@@ -20702,36 +20695,32 @@ function bnsBusStep(C,dt){
   }
   /* 🔥**前方火炎放射**=鼻先から前へ広がる扇。⚠**轢いた扱いにはしない**(轢く前に削るだけ)。
      ⚠これで倒れた分も `kil` に数える=数えないと「焼くと連なりが切れる」逆の遊びになる。 */
-  if(fl9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9;
-   if(fw>rz*.4&&fw<EQ_FLM_L&&Math.abs(sw)<EQ_FLM_W*(.34+.66*fw/EQ_FLM_L)){
+  if(fl9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9,fL=EQ_FLM_L*bg9,fW=EQ_FLM_W*bg9;
+   if(fw>rz*.4&&fw<fL&&Math.abs(sw)<fW*(.34+.66*fw/fL)){
     dmgZ(C,z,EQ_FLM_D*(B.dpsX||1)*dt,1,true);
     if(z.dead){kil++;continue;}}}
-  /* 🛢**火炎オイル**=まいた油だまりの上に居る間ずっと焼く。⚠**轢いた扱いにはしない**。
-     ⚠**先に「油の帯に居るか」で弾く**=敵は2100〜4800px先に湧くので、ここで大半が落ちて輪を舐めずに済む。
-     ⚠**重ねて焼かない**=1枚見つけたら抜ける(重なった所だけ倍の傷になると読めない)。 */
-  if(oil9&&dx*dx+dy*dy<EQ_OIL_RNG*EQ_OIL_RNG){
-   for(let i9=0;i9<oil9.length;i9++){const o9=oil9[i9];if(o9.t>=EQ_OIL_LF)continue;
-    const ax=z.px-o9.x,ay=z.py-o9.y;if(ax*ax+ay*ay>EQ_OIL_R*EQ_OIL_R)continue;
-    dmgZ(C,z,EQ_OIL_D*(B.dpsX||1)*dt,1,true);break;}
-   if(z.dead){kil++;continue;}}
-  /* 🪃**ブーメラン刃**=飛んでいる2枚の丸に当たった敵を斬る。⚠**絵と同じ位置**(`eqBoomPt`)。
-     ⚠**押しのけない**=飛び道具なので、轢いた時のような押し出しは付けない(何に当たったか読めなくなる)。 */
-  if(bm9){const r9=EQ_BM_R+(rz-rr9);
-   const a1=dx-bmx0,b1=dy-bmy0,a2=dx-bmx1,b2=dy-bmy1;
+  /* ⛓**鉄球チェーン**=振り回している2つの丸に当たった敵を潰す。⚠**絵と同じ位置**(`eqFlailPt`)。
+     ⚠**押しのける**=車体に付いている物なので、轢いた時と同じように外へ弾く(飛び道具ではない)。 */
+  if(fa9){const r9=faR+(rz-rr9);
+   const a1=dx-fax0,b1=dy-fay0,a2=dx-fax1,b2=dy-fay1;
    if(a1*a1+b1*b1<=r9*r9||a2*a2+b2*b2<=r9*r9){
-    dmgZ(C,z,EQ_BM_D2*(B.dpsX||1)*dt,1,true);
-    if(z.dead){kil++;continue;}}}
+    dmgZ(C,z,EQ_FL_D*(B.dpsX||1)*dt,1,true);
+    if(z.dead){kil++;continue;}
+    if(z.nx!=null){const s9=(dx*z.nx+dy*z.ny)>=0?1:-1;
+     const pl9=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
+     const w9=bnsCorrW(clamp(z.d/pl9,0,1));
+     z.off=clamp((z.off||0)+s9*BUS_SIDE*1.4*dt,-w9,w9);}}}
   /* 🔫**ルーフガンの的を拾う**=**前方だけ**。⚠**撃つのはループの後**(1フレーム1発なので) */
   if(gn9){const fw=dx*tx9+dy*ty9;
    if(fw>rz){const dd=dx*dx+dy*dy;if(dd<gtD){gtD=dd;gtZ=z;}}}
   /* ⚙**回転ノコ**=**丸ノコの円そのもの**が当たり(絵と1pxもずれない)。
      ⚠**外接の丸で先に弾く**=装備していない時は今までどおり平方の比較1回で済む
      (数百体を毎フレーム見るので、ここを重くすると面ごと重くなる)。 */
-  if(bl9){const ro9=EQ_BL_OUT+(rz-rr9);
+  if(bl9){const ro9=EQ_BL_OUT*bg9+(rz-rr9);
    if(dx*dx+dy*dy>ro9*ro9)continue;
    let ok9=dx*dx+dy*dy<=rz*rz;
-   if(!ok9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9,rb9=EQ_BL_R+(rz-rr9);
-    for(let s9=-1;s9<=1&&!ok9;s9+=2){const ux=fw-EQ_BL_X,uy=sw-EQ_BL_Y*s9;
+   if(!ok9){const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9,rb9=EQ_BL_R*bg9+(rz-rr9);
+    for(let s9=-1;s9<=1&&!ok9;s9+=2){const ux=fw-EQ_BL_X*bg9,uy=sw-EQ_BL_Y*bg9*s9;
      if(ux*ux+uy*uy<=rb9*rb9)ok9=1;}}
    if(!ok9)continue;}
   else if(dx*dx+dy*dy>rz*rz)continue;/* ⚠平方で比べる=数百体を毎フレーム見るので √ を通さない */
@@ -20766,16 +20755,27 @@ function bnsBusStep(C,dt){
    try{bnsSmash(C,o);}catch(e){o.dead=1;}
   }}
  /* 🔫**ルーフガンを撃つ**(⚠しがみつきを出した後)=**倒した分は必ず連なりと同じ道を通す**(既出の掟)。
-    ⚠**音は鳴らさない**=毎秒4発なので必ず雑音になる(1体ごとに派手にしない、の掟)。
-    ⚠**的が居ない時は溜めない**=溜めると次に敵が出た瞬間に何発も出る。 */
+    ⚠⚠**「一番近い1体だけ」では弱すぎた**(2026-08-02(61)ユーザー指摘)=画面に数百体居る面なので、
+      **狙った先まで一直線に並んでいる敵をまとめて撃ち抜く**。⭐曳光弾1本ぶんの穴が群れに開く。
+    ⚠**音は鳴らさない**=毎秒5発なので必ず雑音になる(1体ごとに派手にしない、の掟)。
+    ⚠**的が居ない時は溜めない**=溜めると次に敵が出た瞬間に何発も出る。
+    ⚠**撃つ時だけ舐め直す**(0.2秒に1回)=毎フレームではないので重くならない。 */
  if(gn9){
   B.gunCd=(B.gunCd||0)-dt;
   if(B.gunCd<0)B.gunCd=0;
   if(gtZ&&B.gunCd<=0){
    B.gunCd=EQ_GUN_CD;
-   dmgZ(C,gtZ,EQ_GUN_D*(B.dpsX||1),1,true);
-   if(gtZ.dead)kil++;
-   B.gunT=.09;B.gunX=gtZ.px;B.gunY=gtZ.py;/* 曳光弾の絵(⚠世界座標のまま持つ) */
+   const gl=Math.hypot(gtZ.px-B.x,gtZ.py-B.y)||1;
+   const ux=(gtZ.px-B.x)/gl,uy=(gtZ.py-B.y)/gl;
+   const dmg=EQ_GUN_D*(B.dpsX||1);
+   for(const z of C.zombies){
+    if(z.dead||z.d<0)continue;
+    const ax=z.px-B.x,ay=z.py-B.y;
+    const fw=ax*ux+ay*uy;if(fw<0||fw>EQ_GUN_R)continue;   /* 前だけ・届く所だけ */
+    const sw=-ax*uy+ay*ux;if(sw>EQ_GUN_W||sw<-EQ_GUN_W)continue;/* 帯からはみ出す物は撃たない */
+    dmgZ(C,z,dmg,1,true);if(z.dead)kil++;
+   }
+   B.gunT=.09;B.gunX=B.x+ux*EQ_GUN_R;B.gunY=B.y+uy*EQ_GUN_R;/* 曳光弾の絵(⚠世界座標のまま持つ) */
   }}
  /* ⭐**連続轢殺**(2026-08-02(2)ユーザー①「連続で気持ちいい」)。
     ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
@@ -20944,8 +20944,7 @@ const BNS_CMB_C=['',PAPER,GOLD,AMBER,RUST];
 function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;C.bdst=[];C.bdstI=0;
  C.bscr=[];C.bscrI=0;/* 画面に貼り付く血 */
  C.bcps=[];C.bcpsI=0;/* 路面に残る死体 */
- C.bbod=[];C.bbodI=0;/* ⭐吹き飛んで転がる体(高さを持つ) */
- C.boil=[];C.boilI=0;/* 🛢火炎オイル(⚔⛽⑤) */}
+ C.bbod=[];C.bbodI=0;/* ⭐吹き飛んで転がる体(高さを持つ) */}
 /* 🔥⭐**ニトロを使う**(2026-08-02(23))。⚠**呼ぶのはボタンからだけ**にする(スティックと同じ作法)。
    ⚠満タンでない時は撃たせない=「押したのに何も起きない」を避けるため音で断る。 */
 function bnsNitro(){
@@ -21050,7 +21049,6 @@ function bnsFxStep(C,dt){
  const ds=C.bdst;if(ds)for(let i=0;i<ds.length;i++){const p=ds[i];
   if(p.t>=p.lf)continue;p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;}
  const sc=C.bscr;if(sc)for(let i=0;i<sc.length;i++){if(sc[i].t<sc[i].lf)sc[i].t+=dt;}
- const ol=C.boil;if(ol)for(let i=0;i<ol.length;i++){if(ol[i].t<EQ_OIL_LF)ol[i].t+=dt;}
 }
 /* 🛞轍と🩸血だまり=**地面の上・廃墟の下**に描く(踏まれている物なので一番下) */
 function drawBnsMarks(c,C){
@@ -21135,34 +21133,6 @@ function drawBnsMarks(c,C){
     const k=p.t/p.lf;if((k>.45?1:0)!==b)continue;
     const r=p.r*(.6+k*1.5);c.rect(p.x-r,p.y-r*.5,r*2,r);any=1;}
    if(any)c.fill();}
- }
- /* 🛢⭐**火炎オイル**(⚔⛽⑤)=**一番上に描く**(死体と血の上で燃えている)。
-    ⚠⚠**当たりと同じ半径(`EQ_OIL_R`)から出す**=見えていない所で焼くと「当たっていないのに死ぬ」に戻る。
-    ⚠**加算(lighter)は薄く**=濃いと路面ごと白飛びして道が消える(この面で既出の掟)。
-    ⚠**塗りは3回だけ**=油の染み → 炎の内 → 炎の芯。1枚ずつ濃さを変えない(数十回の塗りになる)。 */
- const ol=C.boil;
- if(ol&&ol.length){
-  const tt=TT;/* ⚠揺らぎの時計は全体の時計を使う(この関数は t を受け取らない) */
-  /* ① 黒い油の染み(⚠加算にしない=これは暗い物)。⚠**四角で描かない**=撮ったら
-     「路面に灰色の板が置いてある」に見えた(2026-08-02(60))。丸だと油だまりに読める。 */
-  c.fillStyle='rgba(22,16,10,.44)';c.beginPath();let anyO=0;
-  for(let i=0;i<ol.length;i++){const s=ol[i];const k=s.t/EQ_OIL_LF;if(k>=1)continue;
-   const r=EQ_OIL_R*(1-k*.35);
-   c.moveTo(s.x+r,s.y);c.ellipse(s.x,s.y,r,r*.62,0,0,6.2832);anyO=1;}
-  if(anyO)c.fill();
-  /* ② 炎(3段)。⚠**揺らぎは種(sd)から出す**=毎フレーム乱数を引くと震えて汚い。
-     ⚠**芯を持たせる**=薄い色1枚だと加算で路面と混ざって「砂の丸」に見える(撮って直した)。 */
-  c.save();c.globalCompositeOperation='lighter';
-  const CO=[['rgba(210,80,16,.30)',1.0],['rgba(255,176,56,.30)',.58],['rgba(255,238,186,.26)',.24]];
-  for(let b=0;b<3;b++){
-   c.fillStyle=CO[b][0];c.beginPath();let any=0;
-   for(let i=0;i<ol.length;i++){const s=ol[i];const k=s.t/EQ_OIL_LF;if(k>=1)continue;
-    /* ⚠**消え際は小さくする**=1件ずつ濃さを変えられないので、薄れは大きさで表す(既出の作法) */
-    const fl=.82+.18*Math.sin(tt*14+s.sd);
-    const r=EQ_OIL_R*CO[b][1]*(1-k*.45)*fl;
-    c.moveTo(s.x+r,s.y);c.ellipse(s.x,s.y,r,r*.62,0,0,6.2832);any=1;}
-   if(any)c.fill();}
-  c.restore();
  }
 }
 /* 🩸弾け飛んだ肉片=**敵より手前**に描く(飛んでいる物なので上)。
@@ -21464,19 +21434,19 @@ const BEQ=[
  {k:'boost',r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
  {k:'nit2', r:0,ic:'🔋',n:'二段ニトロ',      d:'切れても3分の1だけ残る',      c:220},
  {k:'flame',r:0,ic:'🔥',n:'前方火炎放射',    d:'鼻先の炎で走りながら焼く',    c:340},
- {k:'slick',r:0,ic:'🛢',n:'火炎オイル',      d:'ずっと前に油をまいて燃やす',  c:540},
+ {k:'big',  r:0,ic:'🚌',n:'大型車体',        d:'バスが一回りでかくなる',      c:540},
  /* 🏭鉄材=**前まわり(轢く物)** */
  {k:'tire', r:1,ic:'🛞',n:'スパイクタイヤ',  d:'障害物で減速しない',          c:45},
  {k:'wire', r:1,ic:'🪤',n:'鉄条網バンパー',  d:'前に張り出して当たりが広い',  c:100},
  {k:'spike',r:1,ic:'🔩',n:'スパイクローラー',d:'ひいた体が高く舞う',          c:180},
  {k:'blade',r:1,ic:'⚙',n:'回転ノコ',        d:'左右の丸ノコで横も薙ぐ',      c:300},
- {k:'boom', r:1,ic:'🪃',n:'ブーメラン刃',    d:'刃が前へ飛んで戻る',          c:480},
+ {k:'flail',r:1,ic:'⛓',n:'鉄球チェーン',    d:'左右で鉄球を振り回す',        c:480},
  /* 🏠食料=**乗員がやること** */
  {k:'plate',r:2,ic:'🛡',n:'内張り装甲',      d:'しがみつかれても遅くならない',c:50},
  {k:'horn', r:2,ic:'📢',n:'拡声器',          d:'近くのゾンビが寄ってくる',    c:110},
  {k:'siren',r:2,ic:'🔊',n:'サイレン',        d:'遠くまで群がってくる',        c:200},
  {k:'zap',  r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320},
- {k:'gun',  r:2,ic:'🔫',n:'ルーフガン',      d:'屋根の銃が前を自動で撃つ',    c:520}
+ {k:'gun',  r:2,ic:'🔫',n:'ルーフガン',      d:'前を撃ち抜く(並んだ敵ごと)',  c:520}
 ];
 /* ⚔装備の効き目の数値。⚠**1か所にまとめる**=あちこちに散らすと必ず食い違う */
 const EQ_BLADE=86;   /* 回転ノコの横への張り出し(px) */
@@ -21502,37 +21472,35 @@ const EQ_SIREN_V=2.4; /* バスの横位置へ寄る速さ(1秒あたり) */
 const EQ_SIREN_F=1.0; /* バスの前後へ詰める速さ(1秒あたり) */
 const EQ_SIREN_J=190; /* 個体ごとの横のばらつき(⚠これが無いと整列する) */
 const EQ_ZAP_R=300,EQ_ZAP_D=90,EQ_ZAP_P=.22;/* 感電の半径/傷/1回轢くごとに起きる率 */
-/* 🛢⭐⭐**火炎オイル**(⛽⑤)=**ずっと前へ油をまいて燃やす**=**着く前に群れを焼いておく**。
-   ⚠⚠**後ろに落とす形で作って捨てた**(2026-08-02(60)に撮って気づいた)=
-     **バスは画面の下に張り付いている**ので、**後ろに置いた物は画面の外**=一度も見られない。
-     ⭐**この面で「跡を残す」遊びは成立しない**。置くなら**進む先**。⚠書き戻さないこと。
-   ⚠🔥前方火炎放射との違いは**距離**=あちらは鼻先310pxの扇(いま当たっている物を焼く)、
-     こちらは**900px先**(これから当たる群れを先に焼く)。仕事が分かれていれば重ねて付ける意味が出る。
-   ⚠**進んだ距離でまく**(毎フレームではない)=止まっている間に同じ所へ積もらない(轍と同じ作法)。
-   ⚠**寿命は短め**=長いと道が火の海になって路面も敵も読めなくなる。 */
-const BNS_OIL=22;    /* 同時に燃えていられる数(⚠上限つきの輪=配列は伸びない) */
-const EQ_OIL_F=900;  /* どれだけ前へまくか */
-const EQ_OIL_GAP=260;/* 1枚まくごとに進む距離 */
-const EQ_OIL_R=210;  /* 燃える半径 */
-const EQ_OIL_LF=4.0; /* 燃えている秒数 */
-const EQ_OIL_D=240;  /* 1秒あたりの傷 */
-/* ⚠**バスからこれより遠い敵は油の輪を舐めない**(=先に弾く枠)。
-   ⚠**向きで弾かない**=上へ走るとは限らないので、素直に「バスからの距離」で切る。 */
-const EQ_OIL_RNG=EQ_OIL_F+EQ_OIL_R+400;
-/* 🪃⭐**ブーメラン刃**(🏭⑤)=**前へ飛んで戻ってくる刃**。⚙回転ノコ(横だけ)の次の段なので、
-   **届かなかった前方**を担当する。⚠**左右2枚**が対称に飛ぶ(1枚だと何が起きたか読めない)。
-   ⚠⚠**絵と当たりは `eqBoomPt` の1か所から出す**=2か所に持つとこの面は必ず食い違う(既出の掟)。 */
-const EQ_BM_T=1.45;  /* 行って戻るまでの秒数 */
-const EQ_BM_D=680;   /* 一番遠くまで行った時の距離(バスの鼻先から) */
-const EQ_BM_W=300;   /* 一番外へ膨らんだ時の左右への張り出し */
-const EQ_BM_R=76;    /* 刃の当たりの半径(⚠絵の丸と同じ) */
-const EQ_BM_D2=760;  /* 1秒あたりの傷 */
-/* 🔫⭐**ルーフガン**(🏠⑤)=**屋根の銃が前方の1体を自動で撃つ**。
-   ⚠**1体ずつ**=群れを薙ぐのは轢く仕事なので、こちらは**遠くの1体を先に落とす**役に分ける。
+/* 🚌⭐⭐⭐**大型車体**(⛽⑤)=**バスそのものが一回り大きくなる**(2026-08-02(61)ユーザー
+   「**あとバス自体がでかくなるとか**」)。⚠⚠**🛢火炎オイルと差し替えた**(ユーザー「火炎も微妙」
+   「何がどうなってるのか全くわからなかった」)=**路面に置く物はこの寄りでは何が起きたか読めない**。
+   ⭐**主役そのものが大きくなる**のは、この面で一番読みやすい強化(轢ける幅がそのまま広がる)。
+   ⚠⚠**当たりも絵も同じ倍率で大きくする**=`B.bigX` を**掛け忘れた所が1つでもあると**
+     「当たっていないのに死ぬ」に戻る。⭐掛ける所=**轢く丸 / 装備の寸法(ノコ・鎖・炎) / 絵の縮尺 / 影**。
+   ⚠**地形の当たり(`BUS_CL`)は広げない**=広げると森の隙間に入れなくなり「変な判定」に逆戻りする。 */
+const EQ_BIG=1.34;   /* でかくなる倍率 */
+/* ⛓⭐**鉄球チェーン**(🏭⑤)=**左右に吊るした鉄球が、走ると遠心力で外へ振り回される**。
+   ⚠⚠**2026-08-02(61)に🪃ブーメラン刃と差し替えた**(ユーザー「ブーメランはバス関係ないからやめよ」)=
+     **飛んで行って戻る物はバスの改造に見えない**。⭐**車体に付いたまま動く物**にすること。書き戻さないこと。
+   ⭐⚙回転ノコ(車体のすぐ横)の次の段なので、**もっと外**を薙ぐ=段が上がった感じが出る。
+   ⚠**鎖は速いほど伸びる**=止まると垂れ下がる(遠心力が絵で読める)。
+   ⚠⚠**絵と当たりは `eqFlailPt` の1か所から出す**=2か所に持つとこの面は必ず食い違う(既出の掟)。 */
+const EQ_FL_PY=.52;  /* 吊るす位置(車体の横。BUS_R に対する割合) */
+const EQ_FL_L=280;   /* 鎖の長さ(全速の時)。⚠短いと⚙回転ノコの上に重なって別の物に見えない */
+const EQ_FL_L0=.34;  /* 止まっている時に残る割合 */
+const EQ_FL_R=54;    /* 鉄球の当たりの半径(⚠絵の丸と同じ) */
+const EQ_FL_SP=7.0;  /* 振り回す速さ(1秒あたりの回転) */
+const EQ_FL_D=900;   /* 1秒あたりの傷 */
+/* 🔫⭐**ルーフガン**(🏠⑤)=**屋根の銃が前方へ撃ち抜く**。
+   ⚠⚠**「一番近い1体だけ」で作ったら弱すぎた**(2026-08-02(61)ユーザー「ルーフなんとかも弱すぎる」)=
+     この面は**画面に数百体**居るので、**1体ずつ落としても群れの中で埋もれて何も起きていないように見える**。
+   ⭐**線で撃ち抜く**=狙った先まで**並んでいる敵をまとめて**倒す=曳光弾1本ぶんの穴が群れに開く。
    ⚠**狙うのは前だけ**=後ろを撃つと何を撃ったのか画面の外で分からない。 */
-const EQ_GUN_CD=.26;/* 次の1発までの秒数 */
+const EQ_GUN_CD=.20;/* 次の1発までの秒数 */
 const EQ_GUN_R=1450;/* 届く距離 */
-const EQ_GUN_D=520; /* 1発の傷(⚠素のゾンビは1発) */
+const EQ_GUN_D=620; /* 1発の傷(⚠素のゾンビは1発) */
+const EQ_GUN_W=80;  /* 撃ち抜く帯の半幅(⚠曳光弾の見た目とだいたい合わせる) */
 /* ⚠**素の値もここで入れる**=強化を1つも買っていない時に undefined を掛けないため。
    ⚠**装備は `B.eq` にそのまま持たせる**=描く側(`drawBusEq`)も同じ物を見る。 */
 function bupApply(B,up,eq){
@@ -21545,7 +21513,9 @@ function bupApply(B,up,eq){
  B.cmbT0=BNS_CMB_T+.30*(up.crw|0);
  B.nitK =BUS_NIT_K*(1+.18*(up.kit|0));
  B.eq=eq;
- B.rX     =eq.wire ?EQ_WIRE:1;      /* 🪤当たりが広がる(⚠絵も同じだけ前へ出す) */
+ /* 🚌**大型車体**=⚠⚠**当たりも絵も装備の寸法も、全部この1つを掛ける**(掛け忘れると絵と当たりがずれる) */
+ B.bigX   =eq.big  ?EQ_BIG:1;
+ B.rX     =(eq.wire?EQ_WIRE:1)*B.bigX;/* 🪤当たりが広がる(⚠絵も同じだけ前へ出す) */
  B.bladeR =eq.blade?EQ_BLADE:0;     /* ⚙横への張り出し */
  B.upX    =eq.spike?EQ_UP:1;        /* 🔩打ち上げ */
  B.gripS  =eq.plate?0:BUS_GRIP_S;   /* 🛡しがみつきで落ちる最高速(0=落ちない) */
@@ -21558,19 +21528,26 @@ function bupApply(B,up,eq){
  /* 🔊引き寄せの強さ=**0=無 / 1=📢拡声器(近く・弱い) / 2=🔊サイレン(遠く・強い)** */
  B.siren  =eq.siren?2:(eq.horn?1:0);
  B.zap    =eq.zap?1:0;
- B.slick  =eq.slick?1:0;            /* 🛢後ろに燃える油 */
- B.boom   =eq.boom ?1:0;            /* 🪃前へ飛んで戻る刃 */
+ B.flail  =eq.flail?1:0;            /* ⛓左右で振り回す鉄球 */
  B.gun    =eq.gun  ?1:0;            /* 🔫屋根の自動射撃 */
 }
-/* 🪃**刃の位置**(バスの局所座標=+xが進む向き)。⚠⚠**当たりも絵もここから出す**。
-   ⭐往きは外へ膨らんで、戻りは内へ畳む=**輪を描いて帰ってくる**ように見える。
-   ⚠**返すのは使い回しの配列**=毎フレーム2回呼ぶので new しない(この面の掟)。 */
-const EQ_BM_P=[0,0];
-function eqBoomPt(B){
- const q=((B&&B.bmT)||0)/EQ_BM_T%1;      /* 0=出る 〜 1=戻った */
- EQ_BM_P[0]=BUS_R*.7+Math.sin(q*Math.PI)*EQ_BM_D;   /* 前へ(行って戻る) */
- EQ_BM_P[1]=Math.sin(q*Math.PI*2)*EQ_BM_W;          /* 横へ(往き=外 / 帰り=内) */
- return EQ_BM_P;
+/* ⛓**鉄球の位置**(バスの局所座標=+xが進む向き・**大型車体を掛けた後**)。
+   ⚠⚠**当たりも絵もここから出す**。⭐鎖は**速いほど伸びて外へ流れる**=遠心力が絵で読める。
+   ⚠**返すのは使い回しの配列**=毎フレーム4回呼ぶので new しない(この面の掟)。
+   ⚠`s`=-1/+1(左右)。返すのは [吊るす点x, 吊るす点y, 鉄球x, 鉄球y, 鎖の長さ]。 */
+const EQ_FL_P=[0,0,0,0,0];
+function eqFlailPt(B,s,mv){
+ const bg=B.bigX||1,py=BUS_R*EQ_FL_PY*bg*s;
+ const ln=EQ_FL_L*bg*(EQ_FL_L0+(1-EQ_FL_L0)*clamp(mv,0,1));
+ const a=((B&&B.flT)||0)*EQ_FL_SP*s;
+ EQ_FL_P[0]=0;EQ_FL_P[1]=py;
+ /* ⚠⚠**回る輪を「外」と「前」の両方へずらす**=素直に吊るす点の周りを回すと
+    ①内側では車体に埋もれ ②後ろ半分は**画面の外**(バスは画面の下に張り付けてある)になり、
+    **半分の時間、何も見えない**。⭐前へ ln*.45・外へ ln*.55 ずらすと、常に前と横だけを舐める。 */
+ EQ_FL_P[2]=ln*.45+Math.cos(a)*ln*.72;
+ EQ_FL_P[3]=py+s*ln*.55+Math.sin(a)*ln*.45;
+ EQ_FL_P[4]=ln;
+ return EQ_FL_P;
 }
 /* ⚡**電磁バンパー**=轢いた瞬間にたまに周りへ感電させる。
    ⚠⚠**倒した分は必ず連なりとスコアとニトロの同じ道を通す**(NOTESの掟)=
@@ -21971,6 +21948,12 @@ function bnsPreSkip(){if(G&&G.bpre)bnsPreGo();}
 function bnsPreTap(sx,sy,mx,my){
  const Q=G&&G.bpre;if(!Q)return;
  if(Q.st==='sel'){
+  /* ⏭**飛ばす**=⚠**棟の判定より先に見る**(棟の当たりは広いのでボタンを飲み込む) */
+  {const r=bnsSelSkipR(cv.width,cv.height,DPR||1);
+   if(sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h){
+    Q.left=0;try{if(sfx.tap)sfx.tap();}catch(e){}
+    try{bnsBoardStart();}catch(e){}
+    return;}}
   let h=-1,bd=1e9;
   for(let i=0;i<Q.pick.length;i++){const b=Q.pick[i],d=dist(mx,my,b.x,b.y);
    if(d<b.rr+180&&d<bd){bd=d;h=i;}}
@@ -21979,6 +21962,12 @@ function bnsPreTap(sx,sy,mx,my){
  if(Q.st==='mini'){bnsMgTap(Q,sx,sy);return;}
  if(Q.st==='up'){bnsUpTap(Q,sx,sy);return;}
 }
+/* ⏭⭐**廃墟あさりを飛ばすボタン**(2026-08-02(61)ユーザー「廃墟あさりスキップ機能は通常版にも欲しい」)。
+   ⚠**それまでDEV/撮影用の口(`bnsPreSkip`)しか無かった**=普通に遊ぶ側は毎回3回やるしかなかった。
+   ⭐**飛ばす先は「乗り込みムービー」**=③④⑤の流れはそのまま通す(⚠強化画面まで飛ばすと
+     持ち越した物資を使う機会が消える)。⚠**貯めた物資はそのまま残る**(永続なので損はしない)。
+   ⚠⚠**位置は札とぶつからない所**=札は画面の下半分まで降りてくるので、**上の帯の中**に置く。 */
+function bnsSelSkipR(W,H,dp){return {x:W*.735,y:H*.100,w:W*.225,h:H*.070};}
 /* 走る前の帯(上下)。⚠**画面の割合で持つ**=どの寸法でも同じ見え方になる */
 function bnsPanel(c,x,y,w,h,a){
  c.fillStyle='rgba(24,20,15,'+(a==null?.86:a)+')';rr(c,x,y,w,h,10*(DPR||1));c.fill();
@@ -22017,7 +22006,15 @@ function bnsDrawSel(c,Q,W,H,dp,t){
  c.fillText('🏚 どの廃墟を漁る?',W*.045,H*.085);
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
  c.fillText('あと '+Q.left+' 回 漁れる',W*.955,H*.085);
- bnsResBar(c,Q,W,H*.152,dp);
+ /* ⚠**物資の行を左へ寄せる**=右に⏭ボタンを置いたので、既定(.30)のままだと3つ目と重なる */
+ bnsResBar(c,Q,W,H*.152,dp,.20);
+ /* ⏭**飛ばすボタン**。⚠**目立たせすぎない**=主役は棟を選ぶことなので、枠だけの控えめな札にする */
+ {const r=bnsSelSkipR(W,H,dp);
+  c.fillStyle='rgba(28,24,19,.92)';rr(c,r.x,r.y,r.w,r.h,9*dp);c.fill();
+  c.strokeStyle='rgba(242,236,220,.45)';c.lineWidth=2.4*dp;c.stroke();
+  c.textAlign='center';c.fillStyle='rgba(242,236,220,.82)';
+  c.font='900 '+Math.round(15*dp)+'px '+FF;
+  c.fillText('⏭ 漁らずに出発',r.x+r.w/2,r.y+r.h*.66);}
  /* 棟ごとの目印。⭐**丸を塗る → 輪を回す → ピンを立てる**の3つ重ねで「ここが押せる」を出す */
  const bw=Math.min(W*.34,220*dp),bh=62*dp,LAY=[];
  for(let i=0;i<Q.pick.length;i++){
@@ -22386,13 +22383,6 @@ function drawBusEq(c,B,t){
   c.fillStyle=q9>=1?'#ffcf6a':'#8fbf4d';
   if(q9>0){rr(c,-R*.88,R*.16-R*.32*q9,R*.22,R*.32*q9,R*.05);c.fill();}
  }
- /* 🛢火炎オイル(⛽⑤)=後ろの油タンク+**前へ向いた撒き口**。⚠**まく向きが絵で分かること**
-    (後ろ向きに描くと「跡を残す装備」に読めてしまう)。⚠油だまりは路面側(`drawBnsMarks`)に描く */
- if(E.slick){c.fillStyle='#3d3a2e';
-  rr(c,-R*.86,-R*.42,R*.26,R*.84,R*.07);c.fill();c.stroke();
-  c.fillStyle='#8a6a2a';c.beginPath();c.rect(-R*.84,-R*.30,R*.22,R*.10);c.fill();
-  for(const s9 of [-1,1]){c.fillStyle='#2a2620';
-   c.beginPath();c.rect(R*.68,s9*R*.40-5,R*.30,10);c.fill();c.stroke();}}
  /* 📢拡声器(🏠②)=屋根の上の小さなラッパ(サイレンの前の段) */
  if(E.horn&&!E.siren){c.fillStyle='#7a6a4a';
   c.beginPath();c.moveTo(-R*.02,-R*.09);c.lineTo(-R*.02,R*.09);
@@ -22432,20 +22422,31 @@ function drawBusEq(c,B,t){
    c.moveTo(R*.38,0);c.lineTo(R*.50,-R*.09);c.lineTo(R*.62,0);c.lineTo(R*.50,R*.09);c.closePath();c.fill();}
   c.restore();
  }
- /* 🪃ブーメラン刃(🏭⑤)=前へ飛んで戻る2枚。⚠⚠**位置は当たりと同じ `eqBoomPt` から出す**。
-    ⚠**バスの外に居る物**なので、車体より後(=上)に描く=飛んでいるのが分かる。 */
- if(E.boom){const p8=eqBoomPt(B),ph=t*26;
+ /* ⛓鉄球チェーン(🏭⑤)=左右に吊るした鉄球。⚠⚠**位置は当たりと同じ `eqFlailPt` から出す**。
+    ⚠⚠**ここは「大型車体を掛けた後」の座標系**(呼ぶ側で `bigX` を掛けてある)ので、
+      `eqFlailPt` が返す値を**そのまま使わず素の寸法へ戻す**=でないと二重に掛かる。
+    ⚠**鎖を必ず描く**=鉄球だけだと「何かが浮いている」に見えて、車体に付いた物に読めない。 */
+ if(E.flail){const bg8=B.bigX||1,r8=EQ_FL_R;
   for(const s8 of [-1,1]){
-   c.save();c.translate(p8[0],p8[1]*s8);c.rotate(ph*s8);
-   c.fillStyle='#b9c0c8';c.beginPath();
-   /* ⚠**への字**=丸だと回転ノコと見分けが付かない。ブーメランは「く」の形で語る */
-   for(let i=0;i<3;i++){const a=i*2.0944;
-    c.moveTo(0,0);
-    c.lineTo(Math.cos(a)*EQ_BM_R,Math.sin(a)*EQ_BM_R);
-    c.lineTo(Math.cos(a+.62)*EQ_BM_R*.72,Math.sin(a+.62)*EQ_BM_R*.72);}
-   c.closePath();c.fill();c.stroke();
-   c.fillStyle='#5b6169';c.beginPath();c.arc(0,0,EQ_BM_R*.22,0,7);c.fill();
-   c.restore();}}
+   const p8=eqFlailPt(B,s8,mv),px8=p8[0]/bg8,py8=p8[1]/bg8,bx8=p8[2]/bg8,by8=p8[3]/bg8;
+   /* ⚠**鎖は太い黒地+明るい芯の2本**=1本の細線だと「何かが浮いている」に見えて、
+      車体と繋がっているのが読めない(この寄りでは細い線は消える)。 */
+   c.strokeStyle=INK;c.lineWidth=10;
+   c.beginPath();c.moveTo(px8,py8);c.lineTo(bx8,by8);c.stroke();
+   c.strokeStyle='#9aa2ab';c.lineWidth=5;
+   c.beginPath();c.moveTo(px8,py8);c.lineTo(bx8,by8);c.stroke();
+   c.strokeStyle=INK;c.lineWidth=3.2;
+   /* 吊るす金具 */
+   c.fillStyle='#4b4f56';c.beginPath();c.arc(px8,py8,R*.10,0,7);c.fill();c.stroke();
+   /* 鉄球(トゲ付き)。⚠**当たりの半径と同じ丸**にする */
+   c.fillStyle='#cfd6dc';c.beginPath();
+   for(let i=0;i<8;i++){const a=i*.7854+t*3;
+    c.moveTo(bx8+Math.cos(a-.4)*r8*.9,by8+Math.sin(a-.4)*r8*.9);
+    c.lineTo(bx8+Math.cos(a)*r8*1.55,by8+Math.sin(a)*r8*1.55);
+    c.lineTo(bx8+Math.cos(a+.4)*r8*.9,by8+Math.sin(a+.4)*r8*.9);}
+   c.fill();c.stroke();
+   c.fillStyle='#7c838b';c.beginPath();c.arc(bx8,by8,r8,0,7);c.fill();c.stroke();
+   c.fillStyle='#4a4f55';c.beginPath();c.arc(bx8-r8*.22,by8-r8*.22,r8*.34,0,7);c.fill();}}
  /* 🔥前方火炎放射=鼻先から前へ広がる扇。⚠**当たりの寸法(`EQ_FLM_*`)と必ず同じ形にする** */
  if(E.flame&&FXLV>0){
   const x0=R*.72,ln=EQ_FLM_L,w1=EQ_FLM_W,fl=.86+.14*Math.sin(t*30);
@@ -22462,7 +22463,7 @@ function drawBus(c,C,t){
  if(B.zapT>0)B.zapT=Math.max(0,B.zapT-.016);/* ⚠絵の側で減らす(描かない時は要らない) */
  if(B.gunT>0)B.gunT=Math.max(0,B.gunT-.016);/* 🔫曳光弾と発砲炎(同上) */
  const S=BUS_DRAW,iv9=camIvY();
- groundShadow(c,B.x,B.y,BUS_R*.86);
+ groundShadow(c,B.x,B.y,BUS_R*.86*(B.bigX||1));/* 🚌影も大型車体で大きくする */
  /* 🔥**ニトロ中は後ろから炎を噴く**(2026-08-02(23))=画面の効果だけだと「速いのか?」で終わる。
     ⚠**車体より後ろにだけ**出す(前に出すと轢いている所が読めなくなる)。⚠塗り2回だけ。 */
  if(B.nitT>0&&FXLV>0){
@@ -22493,6 +22494,9 @@ function drawBus(c,C,t){
     ⚠**タイトルのゆるキャラ(`drawBusKun`)はここでは使わない**=あれは横から見た顔つきの絵なので、
       真上から見下ろす道路の上では「寝ている絵」にしか見えない。⚠書き戻さないこと。 */
  c.save();c.translate(B.x,B.y);c.scale(1,iv9);c.rotate(busAng(B));
+ /* 🚌⭐**大型車体**(⚔⛽⑤)=**ここで一度だけ拡げる**=車体も装備の絵も丸ごと大きくなる。
+    ⚠⚠**当たり側(`bnsBusStep`)も同じ `B.bigX` を掛けてある**=片方だけ直すと必ずずれる。 */
+ if(B.bigX&&B.bigX!==1)c.scale(B.bigX,B.bigX);
  /* ⭐**当たった瞬間につんのめる**(2026-08-02(28))=進む向きに縮んで横に膨らむ。
     ⚠1フレームの絵の変形だけ(当たりも速さも触らない)。 */
  if(B.bump>0){const q=B.bump;c.scale(1-.10*q,1+.07*q);}
