@@ -130,29 +130,47 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #scr-setup .stcols{display:grid;grid-template-columns:1fr 1fr;gap:2px 22px;align-items:start}
 #scr-setup .stcol{min-width:0}
 #scr-setup .nlbl{margin:8px 0 5px}
-/* 🏠シングルプレイのホーム(2026-08-03(93)・(94)に作り込み)=左に英雄の一枚絵/右に出撃と機能パネル。
-   ⭐(94)ユーザー「もっと上手く作れない?」=①縦を使い切る ②パネルに**いまの中身**を出す
-   (編成の顔ぶれ/連れて行く英雄/装備中の砲撃) ③絵はゲームのアイコン(ICN)を使う。 */
-#scr-home{display:none;align-items:center;justify-content:center}
+/* 🏠シングルプレイのホーム(2026-08-03(96)に全面作り替え=「配置からなにからなにまで」)。
+   ⭐型=**アークナイツ式**: ①全画面の情景(夕暮れの廃墟)の上に ②左=英雄の立ち姿(枠に入れない) /
+   ③右上=資源のピル ④右=大きな出撃バナー ⑤下=暗いガラス板の機能タイル。
+   ⚠情景は #homebg(プロシージャル)。タイルは紙の枠を貼らない(applyFramesで除外)。 */
+#scr-home{display:none;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--ink4)}
 #scr-home.on{display:flex}
-.homewrap{display:flex;gap:12px;width:min(97vw,880px);height:min(88vh,470px);align-items:stretch}
-.homeleft{flex:0 0 32%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
- background:radial-gradient(ellipse at 50% 72%,#3d362d 0%,#241f19 70%);border:3px solid var(--ink);border-radius:14px;overflow:hidden;box-shadow:0 4px 0 #000}
-#homecv{width:100%;height:100%;display:block}
-.homehn{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-weight:900;font-size:13px;color:var(--pane);text-shadow:0 2px 0 #000}
-.homehsub{position:absolute;left:0;right:0;top:6px;text-align:center;font-weight:900;font-size:10.5px;color:var(--paper3)}
-.homeright{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-width:0}
-.homeres{font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:6px;justify-content:flex-end;align-items:center}
-.homeres span{background:rgba(0,0,0,.35);border:2px solid var(--ink2);border-radius:20px;padding:3px 12px}
-.homego{width:100%;padding:13px 12px;font-size:17px}
-.homego i{display:block;font-style:normal;font-size:10.5px;opacity:.85;font-weight:700}
-.homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1 1 auto}
-.homebt{height:100%;min-height:56px;font-size:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px}
-.homebt .hic{font-size:20px;line-height:1}
-.homebt .hic .ico{height:1.5em;width:1.5em;vertical-align:-.35em}
-.homebt b{font-size:12.5px}
-.homebt i{font-style:normal;font-size:10.5px;opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.homebt .hth{display:flex;gap:2px;align-items:center;justify-content:center}
+#homebg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.homewrap{position:relative;z-index:1;display:flex;gap:14px;width:min(97vw,900px);height:min(94vh,480px);align-items:stretch;padding:8px 0}
+/* 英雄は「箱の中の絵」ではなく情景の上に立たせる(枠・背景なし) */
+.homeleft{flex:0 0 33%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+ background:transparent;border:0;box-shadow:none;overflow:visible}
+#homecv{width:100%;height:100%;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+.homehn{position:absolute;left:4%;right:4%;bottom:4px;text-align:center;font-weight:900;font-size:15px;color:var(--pane);text-shadow:0 2px 0 #000;
+ background:linear-gradient(90deg,rgba(16,13,10,0),rgba(16,13,10,.85) 16%,rgba(16,13,10,.85) 84%,rgba(16,13,10,0));
+ border-top:2px solid rgba(255,210,61,.6);border-bottom:2px solid rgba(255,210,61,.22);padding:5px 6px}
+.homehsub{position:absolute;left:0;right:0;top:auto;bottom:42px;text-align:center;font-weight:900;font-size:10.5px;
+ letter-spacing:4px;color:var(--paper3);text-shadow:0 2px 0 #000;opacity:.9}
+.homeright{flex:1 1 auto;display:flex;flex-direction:column;gap:9px;min-width:0}
+.homeres{font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:7px;justify-content:flex-end;align-items:center}
+.homeres span{background:rgba(12,10,8,.66);border:2px solid rgba(242,236,220,.24);border-radius:20px;padding:3px 12px;
+ box-shadow:inset 0 1px 0 rgba(242,236,220,.08)}
+/* 出撃=この画面の主役。文字を大きく+光が周期的に走る */
+.homego{position:relative;overflow:hidden;width:100%;font-size:22px;letter-spacing:5px}
+.homego i{display:block;font-style:normal;font-size:11px;opacity:.92;font-weight:800;letter-spacing:1px;margin-top:1px}
+.homego::after{content:'';position:absolute;top:-45%;bottom:-45%;width:36px;left:-70px;
+ background:rgba(255,243,192,.30);transform:rotate(16deg);animation:hsheen 3.4s ease-in-out infinite;pointer-events:none}
+@keyframes hsheen{0%,58%{left:-80px}88%,100%{left:115%}}
+.homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;flex:1 1 auto}
+/* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
+.homebt{height:100%;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;
+ background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:14px;color:var(--pane);
+ box-shadow:0 4px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(242,236,220,.08)}
+.homebt:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.5)}
+.homebt b{font-size:13px;color:var(--pane)}
+.homebt i{font-style:normal;font-size:10.5px;color:var(--paper3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* アイコンは小さな台座に載せる(タイルの目印が揃う) */
+.homebt .hic{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:21px;line-height:1;
+ background:rgba(0,0,0,.42);border:2px solid rgba(242,236,220,.15);border-radius:11px}
+.homebt .hic .ico{height:1.4em;width:1.4em;vertical-align:-.3em}
+.homebt .hth{display:flex;gap:3px;align-items:center;justify-content:center;min-height:40px;
+ background:rgba(0,0,0,.42);border:2px solid rgba(242,236,220,.15);border-radius:11px;padding:3px 6px}
 /* ⚠サムネ(UTHUMBS)は104x78=4:3。縦長の箱に入れると胴が潰れる(撮って直した) */
 .homebt .hth canvas{width:32px;height:24px}
 /* 🗺エリアマップ(2026-08-03(93))=canvasの地図+右下の拠点カード */
@@ -160,7 +178,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #scr-map.on{display:block}
 #mapcv{position:absolute;inset:0;width:100%;height:100%;display:block}
 .mapcard{position:absolute;right:10px;bottom:10px;width:min(42vw,290px);padding:9px 12px}
-.mapcard b{font-size:15px}
+/* ⭐(96)拠点名は墨の帯で(窓の見出しと同じ型) */
+.mapcard b{display:block;font-size:15px;background:var(--ink);color:var(--pane);
+ margin:-9px -12px 7px;padding:7px 12px;border-radius:10px 10px 0 0;border-left:6px solid var(--gold)}
 .mapback{position:absolute;left:10px;bottom:10px;padding:11px 16px}
 /* 下のボタンも1列に積まず横に並べる。⚠「防衛開始」だけ広く取って押し間違えを防ぐ */
 #scr-setup .btnrow{display:flex;gap:8px;flex-wrap:wrap}
@@ -289,15 +309,24 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .hpc{flex:0 0 104px;height:196px;position:relative;border:3px solid var(--ink);border-radius:12px;
  box-shadow:0 5px 0 var(--ink);background:var(--ink3);cursor:pointer;overflow:hidden;
- scroll-snap-align:start;padding:0}
-.hpc.sel{border-color:var(--gold);border-width:4px}
+ scroll-snap-align:start;padding:0;transition:transform .12s}
+/* ⭐(96)選んだ札は少し浮かせて金の光を回す(色だけで言わない) */
+.hpc.sel{border-color:var(--gold);border-width:4px;transform:translateY(-5px);
+ box-shadow:0 9px 0 rgba(0,0,0,.35),0 0 16px rgba(255,210,61,.5)}
+/* ⭐レア度の後光=キャラの後ろに置く(::beforeは子要素より奥に描かれる) */
+.hpc::before{content:'';position:absolute;inset:0;pointer-events:none}
+.hpc[data-rk="3"]::before{background:radial-gradient(ellipse at 50% 60%,rgba(176,122,208,.26),rgba(176,122,208,0) 66%)}
+.hpc[data-rk="4"]::before{background:radial-gradient(ellipse at 50% 60%,rgba(255,210,61,.30),rgba(255,210,61,0) 68%)}
+.hpc[data-rk="5"]::before{background:radial-gradient(ellipse at 50% 60%,rgba(255,90,74,.34),rgba(255,90,74,0) 68%)}
 .hpc .st{position:absolute;left:0;right:0;top:0;height:19px;display:flex;align-items:center;
- justify-content:center;font-size:10px;font-weight:900;letter-spacing:1px;background:rgba(255,255,255,.09)}
+ justify-content:center;font-size:10.5px;font-weight:900;letter-spacing:2px;background:rgba(0,0,0,.38)}
 .hpc canvas{position:absolute;left:8px;top:22px;width:88px;height:112px}
-.hpc .nm{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:13px;
- font-weight:900;color:var(--pane);text-shadow:0 2px 0 rgba(0,0,0,.5);padding:0 3px;
+/* 名前は下からの黒グラデの上に(絵と字が喧嘩しない) */
+.hpc .nm{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:13px;
+ font-weight:900;color:var(--pane);text-shadow:0 2px 0 rgba(0,0,0,.5);padding:16px 3px 8px;
+ background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.62) 55%,rgba(0,0,0,.78));
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hpc.sel .nm{bottom:26px}
+.hpc.sel .nm{bottom:22px;padding-bottom:2px}
 .hpc .chk{position:absolute;left:0;right:0;bottom:0;height:22px;background:var(--gold);
  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--ink)}
 .hpc.none{background:var(--paper2);border-style:dashed;display:flex;flex-direction:column;
@@ -327,7 +356,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  border-radius:7px;padding:0 6px;font-size:10.5px;font-weight:900;color:var(--ink)}
 /* ⚠列が最小幅(174px)まで縮んだ時、長い砲撃名がバッジの下へ潜らないように */
 .stkc.sel .t b{padding-right:62px}
-.stkc .e{font-size:24px;flex:0 0 auto}
+/* ⭐(96)砲撃の絵は台座に載せる(アイコンの目印が揃う) */
+.stkc .e{width:46px;height:46px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:24px;
+ background:rgba(36,31,25,.08);border:2px solid var(--ink);border-radius:11px}
+.stkc .e .ico{height:1.3em;width:1.3em}
 .stkc .t{min-width:0}
 .stkc .t b{display:block;font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stkc .t i{display:block;font-style:normal;font-size:11px;font-weight:800;opacity:.72;line-height:1.35}
@@ -534,10 +566,14 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ヘッダとタブは固定・中身だけスクロール・項目はカードのグリッド、という形に統一すること */
 .modal .panel.bigpanel{width:min(96vw,760px);max-width:none;height:min(94vh,var(--appH,94vh));max-height:none;
  display:flex;flex-direction:column;gap:5px;padding:8px 9px;overflow:hidden}
-.bphd{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+/* ⭐(96)窓の見出し=**墨の帯+左に金の背骨**(全部の窓で共通のソシャゲ型。紙の上で見出しが立つ) */
+.bphd{display:flex;align-items:center;gap:8px;flex:0 0 auto;position:relative;background:var(--ink);color:var(--pane);
+ border-radius:10px;padding:6px 8px 6px 15px;box-shadow:0 3px 0 rgba(0,0,0,.22)}
+.bphd::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:5px;border-radius:3px;background:var(--gold)}
 /* ⚠見出しに flex:1 を持たせて右の要素を端へ寄せる(pt が無いパネルでも✕が右端に来る) */
-.bphd b{flex:1 1 auto;font-size:16px;font-weight:900}
-.bphd .pt{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--rust2);white-space:nowrap}
+.bphd b{flex:1 1 auto;font-size:16px;font-weight:900;color:var(--pane)}
+.bphd .pt{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--gold);white-space:nowrap}
+.bphd .bphint2{color:var(--paper3)}
 .xbtn{flex:0 0 auto;border:2px solid var(--ink);border-radius:9px;background:var(--pane);color:var(--ink);
  font-size:14px;font-weight:900;width:30px;height:28px;box-shadow:0 3px 0 var(--ink)}
 .xbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
@@ -734,8 +770,8 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ⚠**絵を大きく**(44x24→62x34)=何の兵科か読めないと選び直せない。 */
 .tmord{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;padding:2px 0 4px}
 .tmo{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;overflow:hidden;
- background:var(--gold);border:2px solid var(--ink);border-radius:9px;padding:3px 2px;
- font-size:11px;font-weight:900;color:var(--ink)}
+ background:linear-gradient(180deg,var(--gold),var(--amber));border:2px solid var(--ink);border-radius:9px;padding:3px 2px;
+ font-size:11px;font-weight:900;color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.25)}
 /* 空き枠=同じ大きさの破線+＋(⚠空白にしない=総数が読めなくなる) */
 .tmo.emp{background:transparent;border-style:dashed;border-color:var(--paper3);color:var(--paper3);
  font-size:22px;align-items:center;justify-content:center;min-height:74px}
@@ -747,10 +783,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  border:2px solid var(--ink);border-radius:8px;padding:1px 8px}
 .ldsum b{color:var(--rust2)}
 .tmo .nm2{width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
-.tmo b{position:absolute;left:2px;top:2px;background:var(--ink);color:var(--paper);border-radius:5px;padding:0 3px;font-size:10.5px;line-height:1.3}
+.tmo b{position:absolute;left:0;top:0;background:var(--ink);color:var(--gold);border-radius:7px 0 7px 0;padding:0 5px;font-size:10.5px;line-height:1.4}
 .tmo i{font-style:normal;font-size:10.5px;font-weight:800;color:var(--rust2);line-height:1.1}
 .tmo em{position:absolute;right:3px;top:1px;font-style:normal;font-size:11px;opacity:.75}
-.tmo.fix{background:var(--paper3);opacity:.8}
+.tmo.fix{background:linear-gradient(180deg,var(--paper2),var(--paper3));opacity:.9}
 .tmsum{font-size:12px;font-weight:900;color:var(--ink);text-align:left;margin:0 2px 2px}
 .tmsum b{color:var(--rust2)}
 /* ⭐編成の「入れる兵科」の一覧(2026-08-01ユーザー指摘「つぶれてる。でも絵は小さくていい」)。
@@ -938,6 +974,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
      押したらソシャゲのホーム画面(参考=アークナイツ等)を参考に新UIで」)。
      ⭐型=**左に英雄の一枚絵 / 右に大きな出撃 / 下に機能のパネル**。1画面1目的の掟はそのまま。 -->
 <div class="scr" id="scr-home">
+  <!-- 🌆(96)背景=夕暮れの廃墟のスカイライン(プロシージャル。homeBgが毎フレーム描く) -->
+  <canvas id="homebg"></canvas>
   <div class="homewrap">
     <div class="homeleft">
       <canvas id="homecv" width="300" height="330"></canvas>
@@ -24817,7 +24855,8 @@ function applyFrames(){
  try{
   if(!ICN['fr-btn'])return;
   const css=[];
-  css.push('.btn:not(.sm){border-style:solid;border-width:10px 14px;border-radius:0;'
+  /* ⚠🏠ホームの機能タイル(.homebt)は暗いガラス板の意匠なので紙の枠を貼らない(2026-08-03(96)) */
+  css.push('.btn:not(.sm):not(.homebt){border-style:solid;border-width:10px 14px;border-radius:0;'
    +'border-image-source:url('+ICN['fr-btn']+');border-image-slice:24% 11%;border-image-repeat:stretch;'
    /* ⚠枠のぶん上下に10pxずつ増えるので、その分パディングを削らないとボタンが背高になって
       タイトルのメニューが画面からはみ出す(2026-07-26に実際にそうなった) */
@@ -24929,6 +24968,7 @@ function renderHeroPick(){
   const col=RARE[h.rk-1]||RARE[0],sel=META.hsel===h.id;
   const b=document.createElement("button");
   b.className="hpc"+(sel?" sel":"");b.dataset.h=h.id;
+  b.dataset.rk=h.rk;/* レア度の後光(CSSの[data-rk]) */
   b.style.borderColor=sel?GOLD:col;
   b.style.background=RK_BG[h.rk-1]||RK_BG[0];
   b.innerHTML="<span class=\"st\" style=\"color:"+col+"\">"+RK_S[h.rk]+"</span>"
@@ -28188,7 +28228,60 @@ function renderHome(){
    rb.textContent='▶ 続きから — '+(nd9?nd9.n:(STAGES[d.stg||0]||STAGES[0]).n)+' WAVE '+((d.wave||0)+1);}}
 }
 let HOMEH='';
+/* 🌆(96)ホームの情景=夕暮れの廃墟(全部プロシージャル)。
+   空のグラデ→沈む太陽→廃墟のスカイライン(座標は決め打ち=毎フレーム同じ絵)→
+   バリケードの塀→漂う塵(ゆっくり流れる)→ビネット。⚠文字が乗る右側はうるさくしない */
+function homeBg(t){
+ const cv9=$('homebg');if(!cv9)return;
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ const w=cv9.clientWidth*dpr,h=cv9.clientHeight*dpr;
+ if(!w||!h)return;
+ if(cv9.width!==Math.round(w))cv9.width=Math.round(w);
+ if(cv9.height!==Math.round(h))cv9.height=Math.round(h);
+ const c=cv9.getContext('2d');if(!c)return;
+ c.setTransform(1,0,0,1,0,0);
+ const g=c.createLinearGradient(0,0,0,h);
+ g.addColorStop(0,'#4a4034');g.addColorStop(.52,'#2f2b22');g.addColorStop(1,'#120f0b');
+ c.fillStyle=g;c.fillRect(0,0,w,h);
+ /* 沈む太陽(薄い円盤を2重) */
+ c.fillStyle='rgba(232,163,61,.09)';c.beginPath();c.arc(w*.60,h*.36,h*.34,0,7);c.fill();
+ c.fillStyle='rgba(232,163,61,.08)';c.beginPath();c.arc(w*.60,h*.36,h*.20,0,7);c.fill();
+ /* 地平線の残照(スカイラインの後ろに琥珀の帯=奥行きが出る) */
+ {const hg=c.createLinearGradient(0,h*.52,0,h*.74);
+  hg.addColorStop(0,'rgba(232,163,61,0)');hg.addColorStop(.85,'rgba(232,163,61,.14)');hg.addColorStop(1,'rgba(232,163,61,.05)');
+  c.fillStyle=hg;c.fillRect(0,h*.52,w,h*.22);}
+ /* 遠景=廃墟のスカイライン(壊れた頭のビル) */
+ const RB=[[0,.34,.055],[.06,.46,.05],[.12,.28,.065],[.20,.52,.04],[.25,.36,.06],[.32,.24,.05],
+  [.38,.46,.075],[.47,.32,.05],[.53,.52,.038],[.59,.38,.065],[.67,.26,.055],[.74,.44,.05],
+  [.80,.32,.065],[.88,.48,.045],[.93,.30,.06]];
+ c.fillStyle='rgba(18,14,10,.88)';
+ for(const b of RB){const bx=b[0]*w,bw=b[2]*w,bh=b[1]*h*.62,by=h*.74-bh;
+  c.fillRect(bx,by+h*.012,bw,bh);
+  c.beginPath();c.moveTo(bx,by+h*.012);c.lineTo(bx+bw*.26,by-h*.008);c.lineTo(bx+bw*.5,by+h*.012);
+  c.lineTo(bx+bw*.74,by-h*.004);c.lineTo(bx+bw,by+h*.012);
+  c.lineTo(bx+bw,by+h*.03);c.lineTo(bx,by+h*.03);c.closePath();c.fill();}
+ /* 窓の残り火(まばらに) */
+ c.fillStyle='rgba(232,163,61,.32)';
+ for(const q of [[.135,.62],[.40,.50],[.415,.56],[.60,.55],[.61,.60],[.815,.58],[.895,.66]])
+  c.fillRect(q[0]*w,q[1]*h,2.2*dpr,3*dpr);
+ /* 中景=バリケードの塀(有刺鉄線の柱) */
+ c.fillStyle='rgba(12,9,6,.94)';c.fillRect(0,h*.74,w,h*.26);
+ c.strokeStyle='rgba(232,163,61,.09)';c.lineWidth=2*dpr;
+ for(let i=0;i<18;i++){const x=(i+.5)/18*w;
+  c.beginPath();c.moveTo(x,h*.74);c.lineTo(x,h*.70);c.stroke();}
+ c.beginPath();c.moveTo(0,h*.715);c.lineTo(w,h*.705);c.stroke();
+ /* 漂う塵(ゆっくり右へ流れる+上下にゆれる) */
+ for(let i=0;i<26;i++){const s=((i*2654435761)>>>0)%1000/1000;
+  const dx=((s*w)+t*(5+s*9)*dpr)%w, dy=h*(.12+((i*97)%68)/100)+Math.sin(t*.7+i)*5*dpr;
+  c.fillStyle='rgba(232,163,61,'+(0.05+s*.10).toFixed(3)+')';
+  c.fillRect(dx,dy,2*dpr,2*dpr);}
+ /* ビネット(縁を落として主役へ目を寄せる) */
+ const v=c.createRadialGradient(w*.5,h*.44,h*.22,w*.5,h*.5,w*.60);
+ v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.44)');
+ c.fillStyle=v;c.fillRect(0,0,w,h);
+}
 function homeDraw(t){
+ try{homeBg(t);}catch(e){}
  const cv9=$('homecv');if(!cv9)return;
  const dpr=Math.min(2,window.devicePixelRatio||1);
  const w=cv9.clientWidth*dpr,h=cv9.clientHeight*dpr;
@@ -28201,10 +28294,14 @@ function homeDraw(t){
  /* 背中のレア度の後光+足元の光+一枚絵(ゆっくり待機で揺れる)。⭐(94)後光で「主役の一枚」に見せる */
  const H=HEROES.find(x=>x.id===HOMEH);
  const gc9=H?(RARE[H.rk-1]||GOLD):GOLD;
- c.globalAlpha=.10+Math.sin(t*1.6)*.02;c.fillStyle=gc9;
- c.beginPath();c.ellipse(w/2,h*.52,w*.42,h*.42,0,0,7);c.fill();
- c.globalAlpha=.14;c.beginPath();c.ellipse(w/2,h*.55,w*.28,h*.32,0,0,7);c.fill();
- c.globalAlpha=1;
+ /* ⭐後光=レア色のラジアルグラデ(縁の固いだ円をやめた=情景の上で泥っぽく見えていた) */
+ {const r16=parseInt(gc9.slice(1,3),16),g16=parseInt(gc9.slice(3,5),16),b16=parseInt(gc9.slice(5,7),16);
+  const a9=.20+Math.sin(t*1.6)*.03;
+  const rg=c.createRadialGradient(w/2,h*.55,h*.06,w/2,h*.55,h*.52);
+  rg.addColorStop(0,'rgba('+r16+','+g16+','+b16+','+a9.toFixed(3)+')');
+  rg.addColorStop(.55,'rgba('+r16+','+g16+','+b16+','+(a9*.45).toFixed(3)+')');
+  rg.addColorStop(1,'rgba('+r16+','+g16+','+b16+',0)');
+  c.fillStyle=rg;c.fillRect(0,0,w,h);}
  c.fillStyle='rgba(232,163,61,.14)';
  c.beginPath();c.ellipse(w/2,h*.88,w*.30,h*.05,0,0,7);c.fill();
  const s9=Math.min(w,h)/118;/* ⚠英雄の全高は約53×CH_UP=枠に収まる倍率にする(最初/70で頭が切れた) */
