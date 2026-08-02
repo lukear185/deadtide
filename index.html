@@ -102,6 +102,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .lc .zth{width:64px;height:64px;align-self:center;display:block}
 .lc .tbar{height:7px;border:2px solid var(--ink);border-radius:6px;background:var(--paper2);overflow:hidden;margin-top:3px}
 .lc .tbar i{display:block;height:100%;background:linear-gradient(90deg,var(--life2),var(--life))}
+/* ⭐冒険の「力量」の横棒(2026-08-02(66))=名前 / 棒 / 数字 の3列。⚠**数字も残す** */
+.lc .rgb{display:grid;grid-template-columns:52px 1fr 26px;align-items:center;gap:4px;margin-top:2px}
+.lc .rgb span{font-size:9px;font-weight:800;opacity:.8}
+.lc .rgb em{font-style:normal;font-size:9.5px;font-weight:900;text-align:right}
+.lc .rgb i{display:block;height:6px;border:1.5px solid var(--ink);border-radius:4px;background:var(--paper2);overflow:hidden}
+.lc .rgb i b{display:block;height:100%}
 .ver{position:fixed;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--paper);opacity:.6}
 /* ---- セットアップ/ロビー ---- */
 .setwrap{width:min(430px,92vw);display:flex;flex-direction:column;gap:12px}
@@ -139,8 +145,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  /* ⚠**横画面(高さ393px)は1画面に収める**=収まらないと英雄の行が画面の外へ出る(撮って直した)。
     ⭐削るのは「読まなくても困らない物」から=ステージの一言 → 要点の帯の余白 → 札の高さ。 */
  #scr-setup #stg-sub{display:none}
- #scr-setup .chips{margin:2px 0 0}
- #scr-setup .chips span{font-size:9.5px;padding:1px 5px}
+ #scr-setup .ichips{margin:2px 0 0}
+ #scr-setup .ichips span{font-size:9.5px;padding:1px 5px}
  #scr-setup #seg-stage .btn,#scr-setup #seg-diff .btn{min-height:38px;padding:4px 7px}
  #scr-setup #seg-stage .btn b,#scr-setup #seg-diff .btn b{font-size:13px}
  /* ⚠**説明の1行**は狭い画面では畳む(札の並びの方が先に見えるべき) */
@@ -207,10 +213,14 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .chipseg .btn .rk{font-size:10px;font-weight:900;margin-right:3px}
 /* 見出しの右に置く小さな注記(⚠見出しを2行にしない=横画面は高さが足りない) */
 .nlbl .nsub{font-size:10px;font-weight:800;opacity:.6;margin-left:6px}
-/* ステージの要点を並べる帯(⚠長い説明文の代わり) */
-.chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px}
-.chips span{display:inline-block;background:var(--paper2);border:2px solid var(--ink);border-radius:8px;
+/* 要点を並べる帯(⚠長い説明文の代わり)。⚠⚠**`.chips` は作戦タイムの既存クラス**なので別名にする
+   (同じ名前にすると後ろの定義に上書きされて、片方だけ崩れる) */
+.ichips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px}
+.ichips span{display:inline-block;background:var(--paper2);border:2px solid var(--ink);border-radius:8px;
  padding:2px 7px;font-size:10.5px;font-weight:800}
+.ichips span b{font-weight:900}
+/* 見出しの後ろに続ける小さな注記(⚠見出しと同じ大きさで書くと、どれが見出しか分からなくなる) */
+.lsub{font-size:10px;font-weight:800;opacity:.62;margin-left:7px}
 .sethd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .sethd .hd{margin-bottom:0}
 .sethd #seg-stage{flex:1 1 240px;max-width:340px}
@@ -503,6 +513,17 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hsinfo .hsr{font-weight:900;font-size:11px;color:var(--ink);opacity:.8;margin:1px 0 3px}
 .hsinfo table.stats{margin:3px 0;font-size:12px}
 .hsinfo table.stats td{padding:2px 8px}
+/* ⭐**数値の棒**(2026-08-02(66))=名前 / 数字 / 棒 の3列。⚠**幅は割合**にする(px決め打ちは溢れる) */
+.hsinfo .sbr{display:grid;grid-template-columns:66px minmax(64px,84px) 1fr;align-items:center;gap:7px;
+ font-size:11.5px;font-weight:900;margin:4px 0}
+.hsinfo .sbr .sv{text-align:right;white-space:nowrap}
+.hsinfo .sbr .sv small{font-size:9.5px;font-weight:800;opacity:.65}
+.hsinfo .sbr .sb{display:block;height:10px;border:2px solid var(--ink);border-radius:6px;
+ background:var(--paper2);overflow:hidden}
+.hsinfo .sbr .sb b{display:block;height:100%}
+.hchips{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0 3px}
+.hchips span{background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
+ padding:1px 6px;font-size:10px;font-weight:800}
 .hsul{font-size:12px;font-weight:800;color:var(--gold);line-height:1.35}
 .hgrid .hb.pick{cursor:pointer}
 .hgrid .hb.sel{outline:3px solid var(--gold);outline-offset:1px}
@@ -724,7 +745,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="logo-wrap">
     <div class="logo-sub">SURVIVORS' LAST STAND</div>
     <div class="logo">DEAD<em>TIDE</em></div>
-    <div class="logo-jp">— 死の潮を押し付け合え。最後まで立っていた拠点が勝つ —</div>
+    <!-- ⚠**「死潮」は文章では使わない**(2026-08-02ユーザー決定)=遊びの仕組みはそのまま残すが、
+         表に出る文章は物語(ゾンビアポカリプス/拠点の解放)に合わせる -->
+    <div class="logo-jp">— 人が住める拠点を、ひとつずつ取り返す —</div>
   </div>
   <div class="menu">
     <button class="btn red" id="bt-solo">🛡 ソロ作戦 — ステージ1</button>
@@ -758,7 +781,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       </div>
       <p class="note" id="stg-sub" style="margin:4px 0 0"></p>
       <!-- ⭐**長い説明文の代わりに要点の帯**=読まなくても分かる(2026-08-02(66)) -->
-      <div class="chips" id="stg-tips"></div>
+      <div class="ichips" id="stg-tips"></div>
       <!-- ⭐横画面は幅が余っていたので**2列**にした(2026-07-27ユーザー指示
            「この画面を画面を大きく使って見やすくわかりやすい感じにして」)。
            ⚠縦画面と狭い画面では1列に戻る(CSS側のメディアクエリ)。 -->
@@ -3530,7 +3553,7 @@ const STAGES=[
      ⚠後ろの並びは⚙️で買う順とCPUの建設優先順。21を抜いた分だけ後ろが1つずつ繰り上がる。 */
   order:[0,1,2,3,4,5,6,21,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
   pal:{g0:'#C4AE84',g1:'#A8925F',tuft:'#8a7d4e',bld:'#8a7a5e',patch:['#6b5a37','#d8c79b']}},
- {n:'沈んだ港',sub:'死潮が運んできた海の亡骸',zs:2,
+ {n:'沈んだ港',sub:'海の底から這い上がってきた亡骸の巣',zs:2,
   path:[[1660,700],[1150,700],[1150,480],[1480,480],[1480,200],[700,200],[700,430],[380,430],[380,660],[110,660]],
   /* 2026-07-25: 実機の🛠編集モード(?edit=1)でユーザーが直接置いた配置。全25マス条件OKを検算済み */
   slots:[[1248,590],[1378,295],[798,298],[602,332],[478,528],[282,562],
@@ -24190,8 +24213,10 @@ function renderLoad(){
      (2026-08-01ユーザー指示「今選んでるユニットを上部に出して、下から選んで入れる形式に」)。 */
   const own=metaUnitCap(),T9=teamIdx();
   let sum=0;
+  /* ⭐**見出しは「何をする所か」だけ**にして、細かい決まりは下の札で言う(2026-08-02(66)) */
   h='<div class="ldhdr" style="border-top:0;padding-top:0;margin:2px 2px 3px">'
-   +'🎒 連れて行く '+T9.length+'/'+TEAM_N+' — 戦闘中はこの順に解放される(押すと外す)</div>';
+   +'🎒 連れて行く <b>'+T9.length+'/'+TEAM_N+'</b>'
+   +'<span class="lsub">この順に解放される・押すと外す</span></div>';
   h+='<div class="tmord">';
   T9.forEach((i,k)=>{const p=UNITP[i]||0;sum+=p;const fx=TEAM_FIX.indexOf(i)>=0;
    h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'"'+(fx?' disabled':'')+'>'
@@ -24199,9 +24224,11 @@ function renderLoad(){
     +'<span class="nm2">'+((UBASE[i]||{}).n||'?')+'</span>'
     +'<i>⚙️'+p+'</i>'+(fx?'<em>🔒</em>':'<em>✕</em>')+'</button>';});
   h+='</div>';
-  h+='<div class="tmsum">'+T9.length+'体ぜんぶ出すのに <b>⚙️'+sum.toLocaleString()+'</b>'/* ⚠10体と決め打ちしない=解放が進むまで2体しか居ない */
-   +' — 高い兵科ばかり連れて行くと、後ろの番号は最後まで出せない</div>';
-  h+='<div class="ldhdr">🪖 入れる兵科(持っている '+own+'種)</div>';
+  /* ⭐**合計は札で**=文字の1行に混ぜると数字が埋もれる。⚠10体と決め打ちしない(解放が進むまで2体) */
+  h+='<div class="ichips" style="margin:3px 2px 5px">'
+   +'<span>⚙️ ぜんぶ出すのに <b>'+sum.toLocaleString()+'</b></span>'
+   +'<span>💡 高い兵科ばかりだと後ろの番号は最後まで出せない</span></div>';
+  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる</span></div>';
   h+='<div class="tmgrid">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
@@ -24369,6 +24396,24 @@ function openHStat(id){
 }
 function closeHStat(){$('md-hstat').classList.remove('on');try{renderHeroSeg();}catch(e){}}
 const hsRow=(a,b)=>'<tr><td>'+a+'</td><td>'+b+'</td></tr>';
+/* ⭐⭐**数字だけの表をやめて「棒」で見せる**(2026-08-02(66)ユーザー「文字とかだけ並んでるとこを
+   わかりやすく」)=**HP900と書いても、それが強いのか弱いのかは他と比べないと分からない**。
+   ⭐**英雄21人の中での位置**を棒の長さで出す=一目で「硬い/速い/遠い」が読める。
+   ⚠**数字も必ず残す**(棒だけにすると細かい比較ができなくなる)。 */
+let HS_MX=null;
+function hsMax(){
+ if(HS_MX)return HS_MX;
+ const m={hp:1,atk:1,rng:1,sp:1};
+ for(const h of HEROES){const u=UNITS[hUiOf(h.id)];if(!u)continue;
+  m.hp=Math.max(m.hp,u.hp||0);m.atk=Math.max(m.atk,u.atk||0);
+  m.rng=Math.max(m.rng,u.rng||0);m.sp=Math.max(m.sp,u.sp||0);}
+ HS_MX=m;return m;
+}
+/* 1本ぶんの棒。⚠**幅は割合**(px決め打ちにしない=狭い実機で溢れる) */
+function hsBar(lb,txt,q,col){
+ return '<div class="sbr"><span class="sl">'+lb+'</span><span class="sv">'+txt+'</span>'
+  +'<i class="sb"><b style="width:'+Math.round(clamp(q,0,1)*100)+'%;background:'+col+'"></b></i></div>';
+}
 function renderHStat(){
  const H=HEROES.find(h=>h.id===HSSEL)||HEROES[0];HSSEL=H.id;
  const ownN=HEROES.filter(h=>heroOwned(h.id)).length;
@@ -24381,15 +24426,18 @@ function renderHStat(){
  if(inf)inf.innerHTML=IC('<div class="hsn" style="color:'+col+'">'+RK_S[H.rk]+' '+H.n+'</div>'
   +'<div class="hsr">'+RK_N[H.rk]+'枠'+(cnt?('　所持 '+cnt+'体'):'　<b style="color:var(--danger2)">未所持</b>')
    +(tl?('　🔧鍛錬Lv'+tl+'(HPと攻撃+'+(tl*8)+'%)'):'')+'</div>'
-  +'<table class="stats">'
-  +hsRow('❤ HP',fmt(Math.round((U.hp||0)*tm)))
-  +hsRow('⚔ 攻撃',fmt(Math.round((U.atk||0)*tm))+'　(毎秒 '+fmt(dps)+')')
-  +hsRow('⏩ 攻撃間隔',(U.rate||0).toFixed(2)+'秒')
-  +hsRow('📡 射程',(U.rng>=100?U.rng:'近接 '+(U.rng||0)))
-  +hsRow('👟 移動',Math.round(U.sp||0)+(U.aoe?('　💥範囲 '+U.aoe):'')+(U.hook?('　🪝足止め '+U.hook+'体'):''))
-  +hsRow('💥 攻撃の型',(HS_TYN[U.type]||U.type)+(U.multi?('　同時 '+U.multi+'体'):''))
-  +hsRow('⚡ 必殺チャージ',(H.uch||0)+'秒(出撃してから溜まる)')
-  +'</table>'
+  /* ⭐**4つの数値は棒で**(21人の中での位置が一目で分かる) */
+  +hsBar('❤ HP',fmt(Math.round((U.hp||0)*tm)),(U.hp||0)/hsMax().hp,'var(--life2)')
+  +hsBar('⚔ 攻撃',fmt(Math.round((U.atk||0)*tm))+' <small>毎秒'+fmt(dps)+'</small>',(U.atk||0)/hsMax().atk,'var(--rust)')
+  +hsBar('📡 射程',(U.rng>=100?U.rng:'近接 '+(U.rng||0)),(U.rng||0)/hsMax().rng,'var(--tech2)')
+  +hsBar('👟 移動',Math.round(U.sp||0),(U.sp||0)/hsMax().sp,'var(--amber)')
+  /* ⭐**棒にならない物は小さな札で**(⚠表に混ぜると結局「文字の並び」に戻る) */
+  +'<div class="hchips"><span>⏩ 間隔 '+(U.rate||0).toFixed(2)+'秒</span>'
+   +'<span>💥 '+(HS_TYN[U.type]||U.type)+'</span>'
+   +(U.multi?('<span>🎯 同時'+U.multi+'体</span>'):'')
+   +(U.aoe?('<span>💥 範囲'+U.aoe+'</span>'):'')
+   +(U.hook?('<span>🪝 足止め'+U.hook+'体</span>'):'')
+   +'<span>⚡ 必殺まで'+(H.uch||0)+'秒</span></div>'
   +'<div class="hsul">必殺『'+H.ult+'』— '+H.udsc+'</div>');
  /* 姿。⚠fitDraw は canvas の中の寸法に合わせて収める(CSSと食い違うと潰れる=第93弾の失敗) */
  try{const cv=$('hs-cv');if(cv&&cv.getContext&&ui>=0)fitDraw(cv,cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),10);}catch(e){}
@@ -25303,26 +25351,40 @@ function trainGrind(hid){
 /* ---------------- ⚔ 冒険(育成RPG)への入口 ---------------- */
 function renderAdv(box){
  const hint=$('tr-hint');
- if(hint)hint.innerHTML='英雄たちが共通の世界を冒険する<b>育成RPG</b>。'
-  +'<b>ここで上げたレベルの半分がTD側の鍛錬Lvになる</b>(最大'+TR_MAX+')。'
-  +'⚠<b>ソロ作戦でクリアした ステージ×難易度 のエリアにしか行けない</b>。';
+ /* ⚠**長い説明は1行に切る**(2026-08-02(66))=残りは下の札(チップ)で言う */
+ if(hint)hint.innerHTML='英雄を連れて歩く<b>育成RPG</b>。上げたLvの半分が🔧鍛錬Lvになる(最大'+TR_MAX+')。';
  const R=rgMeta();
  const own=DEV?HEROES.map(h=>h.id):HEROES.filter(h=>heroOwned(h.id)).map(h=>h.id);
  if(!own.length){
   box.innerHTML=IC('<div class="labdone">まだ英雄がいない。💎英雄召集で仲間にしよう</div>');return;}
  const okN=RG_AREAS.filter(A=>rgAreaOK(A)||DEV).length;
  const clN=RG_AREAS.filter(A=>R.cl[A.k]).length;
- box.innerHTML='<div class="bphint" style="margin:0 0 5px">'
-  +'行けるエリア '+okN+'／'+RG_AREAS.length+'　踏破 '+clN+'　所持金 '+fmt(R.gold)+'G</div>'
+ /* ⭐**要点は札(チップ)で**(2026-08-02(66))=「行けるエリア9／12 踏破2 所持金1,240G」のような
+    **文字だけの1行**は、数字が3つ並ぶと何がどれだか読めない。 */
+ box.innerHTML='<div class="ichips" style="margin:0 0 6px">'
+  +'<span>🗺 行けるエリア '+okN+'／'+RG_AREAS.length+'</span>'
+  +'<span>🏁 踏破 '+clN+'</span>'
+  +'<span>💰 '+fmt(R.gold)+'G</span>'
+  +'<span>🦸 パーティ '+R.pt.length+'人</span>'
+  +'<span>⚠ 行けるのはソロ作戦でクリアした ステージ×難易度 だけ</span></div>'
   +'<button class="btn red" id="bt-rg-go" style="width:100%;margin-bottom:6px">▶ 冒険に出る</button>'
+  /* ⭐**1人ぶんの札**=★ / 名前 / レベルの棒 / 力量を横棒4本。⚠数字も残す(比較ができなくなるため) */
   +'<div class="lgrid">'+own.map(id=>{
    const H=heroOf(id),lv=rgLv(id),s=rgStat(id),inp=R.pt.indexOf(id)>=0;
+   const nd=(lv>=RG_LVMAX)?0:Math.max(0,rgNeed(lv)-rgXp(id));
+   const pct=(lv>=RG_LVMAX)?100:Math.round(clamp(1-nd/Math.max(1,rgNeed(lv)),0,1)*100);
+   const bar=(lb,v,mx,col)=>'<div class="rgb"><span>'+lb+'</span><i><b style="width:'
+     +Math.round(clamp(v/mx,0,1)*100)+'%;background:'+col+'"></b></i><em>'+v+'</em></div>';
    return '<div class="lc'+(inp?' sel':'')+'">'
-    +'<div class="tg">'+RK_S[H.rk]+(inp?'　パーティ':'　ひかえ')+'</div>'
+    +'<div class="tg" style="color:'+(RARE[H.rk-1]||RARE[0])+'">'+RK_S[H.rk]+(inp?'　パーティ':'　ひかえ')+'</div>'
     +'<div class="nm">'+H.n+'</div>'
-    +'<div class="tg">レベル '+lv+'／'+RG_LVMAX+'　→ 鍛錬Lv'+rgTrLv(lv)+'</div>'
-    +'<div class="ds">HP'+s.hp+'・MP'+s.mp+'・ちから'+s.st+'<br>まもり'+s.df+'・すばやさ'+s.sp
-      +'<br>つぎまで '+(lv>=RG_LVMAX?'—':Math.max(0,rgNeed(lv)-rgXp(id)))+'</div></div>';
+    +'<div class="tg">Lv '+lv+'／'+RG_LVMAX+'　→ 🔧鍛錬Lv'+rgTrLv(lv)+'</div>'
+    +'<div class="tbar"><i style="width:'+pct+'%"></i></div>'
+    +'<div class="tg">'+(lv>=RG_LVMAX?'これ以上は上がらない':('つぎまで '+nd))+'</div>'
+    +bar('❤HP',s.hp,260,'var(--life2)')+bar('💧MP',s.mp,90,'var(--tech2)')
+    +bar('⚔ちから',s.st,110,'var(--rust)')+bar('🛡まもり',s.df,70,'var(--gold2)')
+    +bar('👟すばやさ',s.sp,60,'var(--amber)')
+    +'</div>';
   }).join('')+'</div>';
  const g=$('bt-rg-go');
  if(g)g.onclick=()=>{if(rgOpen())$('md-train').classList.remove('on');};
