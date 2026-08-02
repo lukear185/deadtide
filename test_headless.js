@@ -3814,6 +3814,26 @@ process.exit(0);
    console.log('FAIL: 🛠DEVで召集の3通りが均等になっていない');process.exit(1);}
   console.log('🛠DEVの底上げ: ★4以上 '+d.hi.toFixed(1)+'% / 召集の演出は3通り均等 / '
    +'タイトルの✨金'+(d.lob*100)+'%・🌈虹'+(d.rb*100)+'%・🚌バス'+(d.bus*100)+'% OK');
+  /* 🚌⭐⭐**まっさらな状態でも「2面の開拓便」まで手が届くこと**(2026-08-02(66)ユーザー
+     「これだと2面解放されてないからテストできん」)=**新しく作った物へ実機で行けなければ
+     作っていないのと同じ**。⚠見るのは3つ: ①ステージ2が選べる ②2面の🚌拠点開拓が選べる
+     ③実際に入れて海と4棟が出る。
+     ⚠⚠**ボタンが押せるかは、この検査では見られない**(DOMは張りぼてで `querySelectorAll` が常に空)。
+       ⭐**見た目は撮って確かめる**=`node test_shot.js out.png 852 393 "dev+setup"`。 */
+  const v9=new Function(js+String.fromCharCode(10)
+   +'META.sc=[];META.sclr=[];META.stg=0;'/* まっさら(1面すらクリアしていない状態) */
+   +'const sOK=stageOK(1),dOK=diffOK(1,BNS_D);'
+   +'META.stg=1;refreshStageUI();refreshDiffUI();'
+   +'setDiff=BNS_D;startSolo();'
+   +'const q=G.bpre;'
+   +'return {sOK:sOK,dOK:dOK,stg:STAGE,sea:BSEA,pick:q?q.pick.length:0,'
+   +'kinds:q?q.pick.map(function(b){return b.ek;}).sort().join(""):""};')();
+  if(!v9.sOK){console.log('FAIL: 🛠DEVでもステージ2が解放されない');process.exit(1);}
+  if(!v9.dOK){console.log('FAIL: 🛠DEVでも2面の🚌拠点開拓が選べない');process.exit(1);}
+  if(v9.stg!==1||!v9.sea){console.log('FAIL: 🛠DEVで2面の開拓便に入れない(STAGE'+v9.stg+'/海'+v9.sea+')');process.exit(1);}
+  if(v9.pick!==4||v9.kinds!=='0123'){
+   console.log('FAIL: 🛠DEVの2面で選択肢が4棟(⛽🏭🏠⚓)にならない '+v9.pick+'棟 ['+v9.kinds+']');process.exit(1);}
+  console.log('🛠DEVで2面の🚌拠点開拓: まっさらでもステージ2と拠点開拓が押せる / 海あり / 選択肢4棟(⛽🏭🏠⚓) OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
  }finally{
