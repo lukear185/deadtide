@@ -641,6 +641,8 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .card .ci{font-size:22px}
 .card .ct{font-weight:900;font-size:13px}
 .card .cdsc{font-size:10px;line-height:1.45;opacity:.85;min-height:30px}
+/* ⭐**効き目の数字だけ太く**(2026-08-02(66))=説明文の中で「何がどれだけ上がるか」が真っ先に目に入る */
+.card .cdsc b{font-weight:900;opacity:1;font-size:11.5px}
 .card .buy{margin-top:auto}
 .card.atk{background:#EBD6C8}
 .tgt{display:flex;gap:4px;flex-wrap:wrap}
@@ -19068,12 +19070,12 @@ function ivRender(){
  const uu2=m.uUn!=null?m.uUn:2,nu=uu2<T8.length?UNITS[T8[uu2]]:null;
  const labU=!nu&&ucap<U_N;
  h+=`<div class="card"><div class="ci">🪖</div><div class="ct">新部隊解放</div><div class="cdsc">${nu?('次:『'+nu.n+'』— '+nu.dsc):labU?'🔬研究所で解放するとここに出る':'連れて来た部隊は全部解放済み!'}</div><button class="btn gold sm buy" data-buy="uun" ${nu&&can('uun')?'':'disabled'}>${nu?'⚙️'+pc('uun'):'-'}</button></div>`;
- h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力+8%(累積)</div><button class="btn gold sm buy" data-buy="atk" ${(m.up||0)>=pc('atk')?'':'disabled'}>${PT}${pc('atk')}</button></div>`;
+ h+=`<div class="card"><div class="ci">🔧</div><div class="ct">火力増強 Lv${m.atkLv}</div><div class="cdsc">全タワーの攻撃力 <b>+8%</b>(累積)</div><button class="btn gold sm buy" data-buy="atk" ${(m.up||0)>=pc('atk')?'':'disabled'}>${PT}${pc('atk')}</button></div>`;
  {const ul2=m.uLv||0,umx=ul2>=ULV_MAX;
- h+=`<div class="card"><div class="ci">⬆</div><div class="ct">部隊強化 Lv${ul2}</div><div class="cdsc">全部隊のHPと攻撃+10%(出撃費も比例) — ${PT}払い(所持 ${PT}${m.up||0})</div><button class="btn gold sm buy" data-buy="uup" ${!umx&&(m.up||0)>=pc('uup')?'':'disabled'}>${umx?'MAX':PT+pc('uup')}</button></div>`;}
+ h+=`<div class="card"><div class="ci">⬆</div><div class="ct">部隊強化 Lv${ul2}</div><div class="cdsc">全部隊のHPと攻撃 <b>+10%</b>(出撃費も比例)</div><button class="btn gold sm buy" data-buy="uup" ${!umx&&(m.up||0)>=pc('uup')?'':'disabled'}>${umx?'MAX':PT+pc('uup')}</button></div>`;}
  {const sl2=m.stkLv||0;
- h+=`<div class="card"><div class="ci">🎯</div><div class="ct">砲撃強化 Lv${sl2}</div><div class="cdsc">砲撃の威力と燃焼+12%(累積・現在×${(1+STK_RUN*sl2).toFixed(2)})</div><button class="btn gold sm buy" data-buy="stkup" ${(m.up||0)>=pc('stkup')?'':'disabled'}>${PT}${pc('stkup')}</button></div>`;}
- h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP+12(現在 ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${(m.up||0)>=pc('repair')&&m.core<m.coreMax?'':'disabled'}>${PT}${pc('repair')}</button></div>`;
+ h+=`<div class="card"><div class="ci">🎯</div><div class="ct">砲撃強化 Lv${sl2}</div><div class="cdsc">砲撃の威力と燃焼 <b>+12%</b>(いま ×${(1+STK_RUN*sl2).toFixed(2)})</div><button class="btn gold sm buy" data-buy="stkup" ${(m.up||0)>=pc('stkup')?'':'disabled'}>${PT}${pc('stkup')}</button></div>`;}
+ h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP <b>+12</b>(いま ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${(m.up||0)>=pc('repair')&&m.core<m.coreMax?'':'disabled'}>${PT}${pc('repair')}</button></div>`;
  if(!((G&&G.pve)||COOP)){
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">大押し流し</div><div class="cdsc">死潮の取り分を一気に15%相手へ押し付ける</div><div class="tgt">${tgtBtns('tB')}</div><button class="btn red sm buy" data-buy="big" ${can('big')&&ivS.tB>=0?'':'disabled'}>⚙️${pc('big')}</button></div>`;
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">潮位上昇</div><div class="cdsc">次の波【全体】を大きく強くする。押し勝ってる時の追い打ちに</div><button class="btn red sm buy" data-buy="tide" ${can('tide')?'':'disabled'}>⚙️${pc('tide')}</button></div>`;
