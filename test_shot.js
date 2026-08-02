@@ -185,7 +185,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
      /* 🏠home=シングルプレイのホーム / 🗺worldmap=エリアマップ(2026-08-03(93)) */
      :(OPT.indexOf('home')>=0)?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.hero={hNox:1};META.hsel="hNox";'
-       +'renderHome();show("home");for(var q9=0;q9<8;q9++)homeDraw(q9*.1);')
+       +'renderHome();show("home");for(var q9=0;q9<8;q9++)homeDraw(q9*.1);'
+       /* hteam=ホームの上に🎖編成の窓を開いた状態(パネルの中身がちゃんと開くかの確認) */
+       +(OPT.indexOf('hteam')>=0?'renderLoad();document.getElementById("md-load").classList.add("on");':''))
      :(OPT.indexOf('worldmap')>=0)?('META.tr0=1;'
        +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
        +'MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')

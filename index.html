@@ -130,27 +130,35 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #scr-setup .stcols{display:grid;grid-template-columns:1fr 1fr;gap:2px 22px;align-items:start}
 #scr-setup .stcol{min-width:0}
 #scr-setup .nlbl{margin:8px 0 5px}
-/* 🏠シングルプレイのホーム(2026-08-03(93))=左に英雄の一枚絵/右に出撃と機能パネル */
+/* 🏠シングルプレイのホーム(2026-08-03(93)・(94)に作り込み)=左に英雄の一枚絵/右に出撃と機能パネル。
+   ⭐(94)ユーザー「もっと上手く作れない?」=①縦を使い切る ②パネルに**いまの中身**を出す
+   (編成の顔ぶれ/連れて行く英雄/装備中の砲撃) ③絵はゲームのアイコン(ICN)を使う。 */
 #scr-home{display:none;align-items:center;justify-content:center}
 #scr-home.on{display:flex}
-.homewrap{display:flex;gap:14px;width:min(96vw,860px);align-items:stretch}
-.homeleft{flex:0 0 34%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
- background:radial-gradient(ellipse at 50% 72%,#3d362d 0%,#241f19 70%);border:3px solid var(--ink);border-radius:14px;overflow:hidden}
+.homewrap{display:flex;gap:12px;width:min(97vw,880px);height:min(88vh,470px);align-items:stretch}
+.homeleft{flex:0 0 32%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+ background:radial-gradient(ellipse at 50% 72%,#3d362d 0%,#241f19 70%);border:3px solid var(--ink);border-radius:14px;overflow:hidden;box-shadow:0 4px 0 #000}
 #homecv{width:100%;height:100%;display:block}
 .homehn{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-weight:900;font-size:13px;color:var(--pane);text-shadow:0 2px 0 #000}
+.homehsub{position:absolute;left:0;right:0;top:6px;text-align:center;font-weight:900;font-size:10.5px;color:var(--paper3)}
 .homeright{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-width:0}
-.homeres{font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:14px;justify-content:flex-end;align-items:center}
-.homego{width:100%;padding:14px 12px;font-size:17px}
+.homeres{font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.homeres span{background:rgba(0,0,0,.35);border:2px solid var(--ink2);border-radius:20px;padding:3px 12px}
+.homego{width:100%;padding:13px 12px;font-size:17px}
 .homego i{display:block;font-style:normal;font-size:10.5px;opacity:.85;font-weight:700}
-.homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.homebt{min-height:56px;font-size:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px}
-.homebt b{font-size:12px}
-.homebt i{font-style:normal;font-size:10.5px;opacity:.8}
+.homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1 1 auto}
+.homebt{height:100%;min-height:56px;font-size:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px}
+.homebt .hic{font-size:20px;line-height:1}
+.homebt .hic .ico{height:1.5em;width:1.5em;vertical-align:-.35em}
+.homebt b{font-size:12.5px}
+.homebt i{font-style:normal;font-size:10.5px;opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.homebt .hth{display:flex;gap:2px;align-items:center;justify-content:center}
+.homebt .hth canvas{width:22px;height:26px}
 /* 🗺エリアマップ(2026-08-03(93))=canvasの地図+右下の拠点カード */
 #scr-map{display:none;position:relative}
 #scr-map.on{display:block}
 #mapcv{position:absolute;inset:0;width:100%;height:100%;display:block}
-.mapcard{position:absolute;right:10px;bottom:10px;width:min(46vw,300px);padding:10px 12px}
+.mapcard{position:absolute;right:10px;bottom:10px;width:min(42vw,290px);padding:9px 12px}
 .mapcard b{font-size:15px}
 .mapback{position:absolute;left:10px;bottom:10px;padding:11px 16px}
 /* 下のボタンも1列に積まず横に並べる。⚠「防衛開始」だけ広く取って押し間違えを防ぐ */
@@ -904,6 +912,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="homewrap">
     <div class="homeleft">
       <canvas id="homecv" width="300" height="330"></canvas>
+      <div class="homehsub">連れて行く英雄</div>
       <div id="home-hname" class="homehn"></div>
     </div>
     <div class="homeright">
@@ -911,12 +920,12 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <button class="btn red homego" id="bt-map">🗺 出撃 <i>エリア1 — 生存圏の地図</i></button>
       <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
       <div class="homegrid">
-        <button class="btn homebt" id="hm-team">🎖<b>編成</b></button>
-        <button class="btn homebt" id="hm-hero">🦸<b>英雄</b></button>
-        <button class="btn homebt" id="hm-stk">🎯<b>砲撃</b></button>
-        <button class="btn homebt" id="hm-lab">🔬<b>研究所</b><i id="hm-lab-pts"></i></button>
-        <button class="btn homebt" id="hm-gacha">💎<b>英雄召集</b><i id="hm-gem"></i></button>
-        <button class="btn homebt" id="hm-back">←<b>タイトル</b></button>
+        <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><b>編成</b><i id="hm-team-i"></i></button>
+        <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><b>英雄</b><i id="hm-hero-i"></i></button>
+        <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><b>砲撃</b><i id="hm-stk-i"></i></button>
+        <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><b>研究所</b><i id="hm-lab-pts"></i></button>
+        <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><b>英雄召集</b><i id="hm-gem"></i></button>
+        <button class="btn homebt" id="hm-back"><span class="hic">←</span><b>タイトル</b></button>
       </div>
     </div>
   </div>
@@ -27881,22 +27890,24 @@ $('bt-back1').onclick=()=>show('title');
    ⭐「難易度」という言葉と選択UIをやめ、**道沿いの「拠点」**に読み替えた(にゃんこ大戦争の地図の型)。
    ⚠中身は今までの ステージ×難易度 そのまま=セーブ(META.sc)も解放の鎖(diffOK/D_ORD)も1つも触らない。
    ⚠scr-setup(旧・出撃準備)は残してある(検査と撮影が使う)が、ソロの動線からは外れた。 */
+/* ⚠⚠**右下の一角(x>.60かつy>.58)には拠点を置かない**(2026-08-03(94)ユーザー「マップの右下
+   被ってるから修正」)=そこは拠点カードの置き場。道は右下を避けて左下の???へ抜ける。 */
 const MAPND=[
- {stg:0,d:0,n:'砂の関門',      s:'埋もれた検問を抜ける最初の戦い',x:.09,y:.30},
- {stg:0,d:1,n:'錆びた高架',    s:'車の骸が積み上がる登り道',      x:.21,y:.17},
- {stg:0,d:2,n:'廃線ハイウェイ',s:'砂に埋もれた最終防衛拠点',      x:.34,y:.30},
- {stg:0,d:6,n:'森の道',        s:'🚌開拓便=轢いて稼ぐボーナス',   x:.45,y:.15,bns:1},
- {stg:0,d:3,n:'検問所跡',      s:'鬼軍曹いわく「ここからが本番」',x:.56,y:.28},
- {stg:0,d:4,n:'崩れた立体交差',s:'悪夢のような物量が来る',        x:.67,y:.15},
- {stg:0,d:5,n:'終末の廃線',    s:'🌑生態系が一新される。獣の群れ',x:.79,y:.25,nm:1},
- {stg:1,d:0,n:'防波堤の入り江',s:'潮の匂い。海の拠点の入り口',    x:.89,y:.42},
- {stg:1,d:1,n:'錆びた桟橋',    s:'桟橋の下から何かが見ている',    x:.79,y:.56},
- {stg:1,d:2,n:'沈んだ港',      s:'ゾンビ化した海の生き物の巣',    x:.67,y:.68},
- {stg:1,d:6,n:'海沿いの道',    s:'🚌開拓便=🌊高潮の走り屋コース', x:.56,y:.55,bns:1},
- {stg:1,d:3,n:'塩漬けの市場',  s:'高波が押し寄せる市場跡',        x:.45,y:.68},
- {stg:1,d:4,n:'深潮の埠頭',    s:'悪夢の物量が水浸しの道を走る',  x:.33,y:.57},
- {stg:1,d:5,n:'海淵の底',      s:'🌑深海のナイトメアが孵る場所',  x:.21,y:.69,nm:1},
- {stg:2,d:-1,n:'???',          s:'第3の拠点(これから作る)',       x:.09,y:.60,lock3:1}
+ {stg:0,d:0,n:'砂の関門',      s:'埋もれた検問を抜ける最初の戦い',x:.07,y:.22},
+ {stg:0,d:1,n:'錆びた高架',    s:'車の骸が積み上がる登り道',      x:.19,y:.09},
+ {stg:0,d:2,n:'廃線ハイウェイ',s:'砂に埋もれた最終防衛拠点',      x:.32,y:.21},
+ {stg:0,d:6,n:'森の道',        s:'🚌開拓便=轢いて稼ぐボーナス',   x:.44,y:.08,bns:1},
+ {stg:0,d:3,n:'検問所跡',      s:'鬼軍曹いわく「ここからが本番」',x:.56,y:.19},
+ {stg:0,d:4,n:'崩れた立体交差',s:'悪夢のような物量が来る',        x:.68,y:.08},
+ {stg:0,d:5,n:'終末の廃線',    s:'🌑生態系が一新される。獣の群れ',x:.80,y:.17,nm:1},
+ {stg:1,d:0,n:'防波堤の入り江',s:'潮の匂い。海の拠点の入り口',    x:.90,y:.33},
+ {stg:1,d:1,n:'錆びた桟橋',    s:'桟橋の下から何かが見ている',    x:.78,y:.45},
+ {stg:1,d:2,n:'沈んだ港',      s:'ゾンビ化した海の生き物の巣',    x:.64,y:.52},
+ {stg:1,d:6,n:'海沿いの道',    s:'🚌開拓便=🌊高潮の走り屋コース', x:.51,y:.42,bns:1},
+ {stg:1,d:3,n:'塩漬けの市場',  s:'高波が押し寄せる市場跡',        x:.38,y:.54},
+ {stg:1,d:4,n:'深潮の埠頭',    s:'悪夢の物量が水浸しの道を走る',  x:.25,y:.44},
+ {stg:1,d:5,n:'海淵の底',      s:'🌑深海のナイトメアが孵る場所',  x:.13,y:.56,nm:1},
+ {stg:2,d:-1,n:'???',          s:'第3の拠点(これから作る)',       x:.06,y:.72,lock3:1}
 ];
 let MSEL=-1,MBUS=null;
 const ndOpen=nd=>!nd.lock3&&stageOK(nd.stg)&&diffOK(nd.stg,nd.d);
@@ -28021,9 +28032,21 @@ $('bt-map-back').onclick=()=>{renderHome();show('home');};
 /* ---- 🏠ホーム ---- */
 function renderHome(){
  const hr=$('home-res');
- if(hr)hr.innerHTML=IC('🧬'+fmt(META.pts||0)+'　💎'+(META.gem||0)+'　🔧'+(META.hmat||0));
- const lp=$('hm-lab-pts');if(lp)lp.textContent='🧬'+fmt(META.pts||0);
- const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0);
+ if(hr)hr.innerHTML='<span>'+IC('🧬')+fmt(META.pts||0)+'</span><span>'+IC('💎')+(META.gem||0)+'</span><span>'+IC('🔧')+(META.hmat||0)+'</span>';
+ /* ⭐(94)パネルに「いまの中身」を出す=押す前に何が入っているか読める(1行=1つの物の掟) */
+ {const T=teamIdx(),w9=$('hm-team-th');
+  if(w9){w9.innerHTML='';T.slice(0,4).forEach(i=>{const c9=pickTh(i);if(c9)w9.appendChild(c9);});}
+  const ti=$('hm-team-i');if(ti)ti.textContent='兵科 '+teamIdx().length+'種';}
+ {const hi=$('hm-hero-ic');if(hi)hi.innerHTML=icoImg('ic-hero','🦸');
+  const H9=HEROES.find(x=>x.id===META.hsel);
+  const t9=$('hm-hero-i');if(t9)t9.textContent=H9?H9.n:'連れて行かない';}
+ {const k9=META.eq||(META.st&&META.st[0]);
+  const si=$('hm-stk-ic');if(si)si.innerHTML=(k9&&STRIKES[k9])?icoImg('ic-stk-'+k9,STRIKES[k9].ic):'🎯';
+  const t9=$('hm-stk-i');if(t9)t9.textContent=(k9&&STRIKES[k9])?STRIKES[k9].n:'まだ無い';}
+ {const li=$('hm-lab-ic');if(li)li.innerHTML=icoImg('ic-lab','🔬');
+  const lp=$('hm-lab-pts');if(lp)lp.innerHTML=IC('🧬')+fmt(META.pts||0);}
+ {const gi=$('hm-gacha-ic');if(gi)gi.innerHTML=icoImg('ic-gem','💎');
+  const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0);}
  const H=HEROES.find(x=>x.id===META.hsel&&heroOwned(x.id))||HEROES.find(x=>heroOwned(x.id))||HEROES[0];
  const hn=$('home-hname');
  if(hn&&H)hn.innerHTML='<span style="color:'+(RARE[H.rk-1]||RARE[0])+'">'+RK_S[H.rk]+'</span> '+H.n;
@@ -28043,8 +28066,13 @@ function homeDraw(t){
  const c=cv9.getContext('2d');if(!c)return;
  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
  const ui=hUiOf(HOMEH);if(ui<0)return;
- /* 足元の光(レア度の色)+一枚絵(ゆっくり待機で揺れる) */
+ /* 背中のレア度の後光+足元の光+一枚絵(ゆっくり待機で揺れる)。⭐(94)後光で「主役の一枚」に見せる */
  const H=HEROES.find(x=>x.id===HOMEH);
+ const gc9=H?(RARE[H.rk-1]||GOLD):GOLD;
+ c.globalAlpha=.10+Math.sin(t*1.6)*.02;c.fillStyle=gc9;
+ c.beginPath();c.ellipse(w/2,h*.52,w*.42,h*.42,0,0,7);c.fill();
+ c.globalAlpha=.14;c.beginPath();c.ellipse(w/2,h*.55,w*.28,h*.32,0,0,7);c.fill();
+ c.globalAlpha=1;
  c.fillStyle='rgba(232,163,61,.14)';
  c.beginPath();c.ellipse(w/2,h*.88,w*.30,h*.05,0,0,7);c.fill();
  const s9=Math.min(w,h)/118;/* ⚠英雄の全高は約53×CH_UP=枠に収まる倍率にする(最初/70で頭が切れた) */
