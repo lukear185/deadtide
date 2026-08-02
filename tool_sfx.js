@@ -373,6 +373,38 @@ const REC=[
  {k:'dwnE', d:.55, g:-4.5, af:'highpass=f=140',
    mix:[{f:'Collect Scifi Futuristic Electronic Bass Burst',t:0,d:.45,g:-2,r:.90},
         {f:'Shimmer Loop Small Bell',t:0,d:.26,g:-14,r:1.05,dl:55}]},
+ /* ===== 必殺技の音の総点検(2026-08-03(91)ユーザー「死の宣告の音がダサい。こういうの全部見直して。確実に」)=====
+    ❌ダサかった正体=**死の宣告と暁の号令が「勝利ジングル(win)」を鳴らしていた**。
+      他にも 漆黒の突撃=素材の無い合成音(lslash) / 放水と時間停止=冷凍砲(frost) /
+      雷嵐=テスラ(zap) / 地響き=ただの爆発(boom) / 速達=金属の単発(thunk) の使い回し。
+    ⭐必殺技は1試合に数回しか鳴らない=**長め・重め**でよい(連撃の掟の逆)。 */
+ /* ☠死の宣告(終焉の騎士)=鎌の金属の頭→暗いブラームの胴(ホラーの誇張) */
+ {k:'ultDoom', d:1.25, g:-2, af:'highpass=f=85',
+   mix:[{f:'Sword Slide Cuts',t:4,d:.34,g:-5,r:.70},
+        {f:'Transition Braam Slow Dark',t:0,d:1.20,g:-1,r:1.30,dl:70}]},
+ /* 👑暁の号令(暁の王)=王の角笛。エピックなホーンブラームを短く+薄い鐘 */
+ {k:'ultDawn', d:1.15, g:-3, af:'highpass=f=110',
+   mix:[{f:'Cinematic Horn Braam',t:0,d:1.10,g:-1,r:1.30},
+        {f:'Shimmer Loop Small Bell',t:0,d:.45,g:-14,r:1.0,dl:90}]},
+ /* 🚒放水(消防士)=本物の水の重い塊+風の押し出し */
+ {k:'ultHose', d:.80, g:-3, af:'highpass=f=120',
+   mix:[{f:'Impact Water Deep Submerge',t:0,d:.75,g:-1,r:1.25},
+        {f:'Wind, Rush, Whoosh',t:0,o:.06,d:.22,g:-9,r:1.25}]},
+ /* ⏳時間停止(死潮の預言者)=低いバーストを逆さ寄りに沈める+薄い鐘(世界が止まる「ドゥン…」) */
+ {k:'ultTime', d:.95, g:-3, af:'highpass=f=95',
+   mix:[{f:'Collect Scifi Futuristic Electronic Bass Burst',t:0,d:.90,g:-1,r:.60},
+        {f:'Shimmer Loop Small Bell',t:0,d:.40,g:-15,r:.85,dl:80}]},
+ /* ⚡雷嵐(雷鳴の巫女)=本物の雷鳴のクラップ。1本ずつ落ちるたびに鳴るので短く */
+ {k:'ultBolt', d:.60, g:-5, af:'highpass=f=110',
+   mix:[{f:'Texas Rain Thunder',t:3,d:.55,g:-1,r:1.30}]},
+ /* 🥊地響き(鋼鉄の巨人)=低い胴鳴り+飛び散る破片(150〜300Hzを盛る=スマホで重く) */
+ {k:'ultQuake', d:1.10, g:-12, af:'equalizer=f=210:width_type=o:width=1.4:g=5',
+   mix:[{f:'EffectiveTrailer_Booms_Vol2_214',t:0,d:1.05,g:-1,r:.70},
+        {f:'Woosh Debris',t:0,d:.85,g:-8,r:.85,dl:130}]},
+ /* 📦速達(配達人)=走り出しの風→重い体当たり */
+ {k:'ultRush', d:.70, g:-3, af:'highpass=f=120',
+   mix:[{f:'Wind, Rush, Whoosh',t:0,o:.04,d:.22,g:-4,r:1.10},
+        {f:'4 x Punch, Body',t:3,d:.32,g:-2,r:.88,dl:200}]},
 ];
 
 const SRC=process.argv[3]||path.join(__dirname,'sfx_src');
