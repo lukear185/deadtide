@@ -100,12 +100,18 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* 鍛錬所の英雄カード(研究所と同じ .lc グリッドに乗せる) */
 .lc.trc.sel{border-color:var(--rust);box-shadow:0 0 0 3px rgba(193,80,46,.4)}
 .lc .zth{width:64px;height:64px;align-self:center;display:block}
+/* ⭐**段の棒**(2026-08-02(68))=Lv / 棒 / 上限 の3列。⚠数字も残す(棒だけだと細かく比べられない) */
+.lc .lvb{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:5px;margin:3px 0 1px}
+.lc .lvb .l{font-size:10.5px;font-weight:900;opacity:.72}
+.lc .lvb .m{font-size:10px;font-weight:800;opacity:.5}
+.lc .lvb i{display:block;height:8px;border:2px solid var(--ink);border-radius:5px;background:var(--paper2);overflow:hidden}
+.lc .lvb i b{display:block;height:100%;background:linear-gradient(90deg,var(--life2),var(--life))}
 .lc .tbar{height:7px;border:2px solid var(--ink);border-radius:6px;background:var(--paper2);overflow:hidden;margin-top:3px}
 .lc .tbar i{display:block;height:100%;background:linear-gradient(90deg,var(--life2),var(--life))}
 /* ⭐冒険の「力量」の横棒(2026-08-02(66))=名前 / 棒 / 数字 の3列。⚠**数字も残す** */
 .lc .rgb{display:grid;grid-template-columns:52px 1fr 26px;align-items:center;gap:4px;margin-top:2px}
 .lc .rgb span{font-size:9px;font-weight:800;opacity:.8}
-.lc .rgb em{font-style:normal;font-size:9.5px;font-weight:900;text-align:right}
+.lc .rgb em{font-style:normal;font-size:10.5px;font-weight:900;text-align:right}
 .lc .rgb i{display:block;height:6px;border:1.5px solid var(--ink);border-radius:4px;background:var(--paper2);overflow:hidden}
 .lc .rgb i b{display:block;height:100%}
 .ver{position:fixed;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--paper);opacity:.6}
@@ -144,13 +150,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  #scr-setup .btnrow .btn{padding:8px 10px;font-size:15px}
  /* ⚠**横画面(高さ393px)は1画面に収める**=収まらないと英雄の行が画面の外へ出る(撮って直した)。
     ⭐削るのは「読まなくても困らない物」から=ステージの一言 → 要点の帯の余白 → 札の高さ。 */
- #scr-setup #stg-sub{display:none}
- #scr-setup .ichips{margin:2px 0 0}
- #scr-setup .ichips span{font-size:9.5px;padding:1px 5px}
+ #scr-setup #stg-sub{font-size:10.5px;margin:1px 0 0}
  #scr-setup #seg-stage .btn,#scr-setup #seg-diff .btn{min-height:38px;padding:4px 7px}
  #scr-setup #seg-stage .btn b,#scr-setup #seg-diff .btn b{font-size:13px}
  /* ⚠**説明の1行**は狭い画面では畳む(札の並びの方が先に見えるべき) */
- #scr-setup .chipseg .note{display:none}
 }
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .codebig{font-size:44px;font-weight:900;letter-spacing:8px;text-align:center;background:var(--pane);border:3px dashed var(--ink);border-radius:14px;padding:8px}
@@ -208,11 +211,82 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #seg-diff .btn.sel .ok{color:var(--ink)}
 .btn.dif-bns i{opacity:.9}
 /* 🎯砲撃・🦸英雄=**チップ**(小さい札)。⚠★の色で強さが読めるようにする */
-.chipseg{display:flex;flex-wrap:wrap;gap:5px}
-.chipseg .btn{padding:5px 9px;font-size:12.5px;border-width:2px;box-shadow:0 3px 0 var(--ink);border-radius:9px}
-.chipseg .btn .rk{font-size:10px;font-weight:900;margin-right:3px}
 /* 見出しの右に置く小さな注記(⚠見出しを2行にしない=横画面は高さが足りない) */
 .nlbl .nsub{font-size:10px;font-weight:800;opacity:.6;margin-left:6px}
+/* ⭐⭐**難易度は「横に送る大きな札」**(2026-08-02(68))=調べた型「難易度は横1列で常時見せる」。
+   ⚠**縦に積むと、高さ393pxの横画面では選択肢が2段しか見えない**。 */
+#seg-diff.difrail{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;
+ padding:2px 2px 7px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+#seg-diff.difrail::-webkit-scrollbar{height:5px}
+#seg-diff.difrail::-webkit-scrollbar-thumb{background:var(--paper3);border-radius:3px}
+#seg-diff.difrail .btn{flex:0 0 112px;height:116px;display:flex;flex-direction:column;
+ justify-content:space-between;align-items:flex-start;padding:8px;text-align:left;
+ scroll-snap-align:start;line-height:1.15;overflow:hidden}
+#seg-diff.difrail .btn b{display:block;width:100%;font-size:14px;font-weight:900;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#seg-diff.difrail .btn .w{font-size:25px;font-weight:900;line-height:1}
+#seg-diff.difrail .btn .w s{font-size:12px;font-weight:800;opacity:.72;text-decoration:none}
+#seg-diff.difrail .btn i{display:block;width:100%;font-style:normal;font-size:11px;font-weight:800;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#seg-diff.difrail .btn .ok{color:var(--life2)}
+#seg-diff.difrail .btn.sel .ok{color:var(--ink)}
+/* ⭐⭐**「持って行く物」の行**=絵+名前+›。押すと専用の窓が開く */
+.pickrow{display:flex;align-items:center;gap:8px;width:100%;height:56px;margin-bottom:8px;
+ background:var(--pane);border:3px solid var(--ink);border-radius:12px;box-shadow:0 4px 0 var(--ink);
+ padding:0 10px;font-family:inherit;color:var(--ink);cursor:pointer;font-weight:800;
+ transition:transform .05s}
+.pickrow:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.pickrow .pk{flex:0 0 46px;font-size:12px;font-weight:900;text-align:left}
+.pickrow .pv{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;
+ font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden}
+.pickrow .pv canvas{width:40px;height:30px;background:var(--paper2);border-radius:5px;flex:0 0 auto}
+.pickrow .pv .rk{font-size:10px;font-weight:900}
+.pickrow .pv .sub{font-size:11px;font-weight:800;opacity:.6}
+.pickrow .pa{font-size:19px;opacity:.55;flex:0 0 auto}
+/* 🦸**英雄を選ぶ窓**=顔の札を横に送る。⚠札は 104x196(押す所は44pxより十分大きい) */
+.bphint2{font-size:11px;font-weight:800;opacity:.62;margin-left:10px}
+.hprail::-webkit-scrollbar{height:5px}
+.hprail::-webkit-scrollbar-thumb{background:var(--paper3);border-radius:3px}
+.hprail{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:8px 2px 10px;
+ scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.hpc{flex:0 0 104px;height:196px;position:relative;border:3px solid var(--ink);border-radius:12px;
+ box-shadow:0 5px 0 var(--ink);background:var(--ink3);cursor:pointer;overflow:hidden;
+ scroll-snap-align:start;padding:0}
+.hpc.sel{border-color:var(--gold);border-width:4px}
+.hpc .st{position:absolute;left:0;right:0;top:0;height:19px;display:flex;align-items:center;
+ justify-content:center;font-size:10px;font-weight:900;letter-spacing:1px;background:rgba(255,255,255,.09)}
+.hpc canvas{position:absolute;left:8px;top:22px;width:88px;height:112px}
+.hpc .nm{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:13px;
+ font-weight:900;color:var(--pane);text-shadow:0 2px 0 rgba(0,0,0,.5);padding:0 3px;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hpc.sel .nm{bottom:26px}
+.hpc .chk{position:absolute;left:0;right:0;bottom:0;height:22px;background:var(--gold);
+ display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:var(--ink)}
+.hpc.none{background:var(--paper2);border-style:dashed;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:6px;color:var(--ink)}
+.hpc.none .e{font-size:26px}
+.hpc.none .t{font-size:12px;font-weight:900;line-height:1.35;text-align:center}
+.hpfoot{display:flex;align-items:center;gap:10px;background:var(--paper2);border:3px solid var(--ink);
+ border-radius:12px;padding:7px 12px;font-size:12.5px;font-weight:800;min-height:48px}
+.hpfoot .ul{font-size:13px;font-weight:900;color:var(--rust2);white-space:nowrap}
+.hpfoot .sp{margin-left:auto;display:flex;gap:6px;flex:0 0 auto}
+.hpfoot .sp span{border:2px solid var(--ink);border-radius:8px;padding:2px 9px;font-size:11px;
+ font-weight:900;background:var(--pane);white-space:nowrap}
+.hpfoot .sp button{border:2px solid var(--ink);border-radius:8px;padding:2px 9px;font-size:11px;
+ font-weight:900;background:var(--pane);font-family:inherit;color:var(--ink);cursor:pointer}
+/* 🎯**砲撃を選ぶ窓** */
+/* ⚠**中身が4件しかないのに全画面の板を出さない**=下半分が空っぽの窓になる */
+#md-stk .panel{height:auto;max-height:calc(100dvh - 20px)}
+#md-hpick .panel{height:auto;max-height:calc(100dvh - 20px)}
+.stkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(174px,1fr));gap:8px;padding:6px 2px}
+.stkc{display:flex;align-items:center;gap:9px;background:var(--pane);border:3px solid var(--ink);
+ border-radius:12px;box-shadow:0 4px 0 var(--ink);padding:8px 10px;min-height:60px;
+ font-family:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.stkc.sel{background:var(--amber);outline:3px solid var(--ink);outline-offset:-6px}
+.stkc .e{font-size:24px;flex:0 0 auto}
+.stkc .t{min-width:0}
+.stkc .t b{display:block;font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stkc .t i{display:block;font-style:normal;font-size:11px;font-weight:800;opacity:.72;line-height:1.35}
 /* 要点を並べる帯(⚠長い説明文の代わり)。⚠⚠**`.chips` は作戦タイムの既存クラス**なので別名にする
    (同じ名前にすると後ろの定義に上書きされて、片方だけ崩れる) */
 .ichips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px}
@@ -589,15 +663,25 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    いいようにしてほしい」)。⚠横に流す形だと10体のうち5体しか見えず、
    「いま誰を連れているか」が一目で分からなかった。
    ⚠`minmax(0,1fr)` にしないと長い名前で列が広がって溢れる(…で切るために必要)。 */
-.tmord{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:2px 0 4px}
+/* ⭐⭐**枠は上限ぶん1列に並べる**(2026-08-02(68))=10個ぜんぶ見えるので「あと何体」が数えなくても分かる。
+   ⚠**絵を大きく**(44x24→62x34)=何の兵科か読めないと選び直せない。 */
+.tmord{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;padding:2px 0 4px}
 .tmo{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;overflow:hidden;
- background:var(--gold);border:2px solid var(--ink);border-radius:9px;padding:4px 2px 3px;
- font-size:10.5px;font-weight:900;color:var(--ink)}
+ background:var(--gold);border:2px solid var(--ink);border-radius:9px;padding:3px 2px;
+ font-size:11px;font-weight:900;color:var(--ink)}
+/* 空き枠=同じ大きさの破線+＋(⚠空白にしない=総数が読めなくなる) */
+.tmo.emp{background:transparent;border-style:dashed;border-color:var(--paper3);color:var(--paper3);
+ font-size:22px;align-items:center;justify-content:center;min-height:74px}
 /* ⚠canvasは属性とCSSの寸法を必ず合わせる(合わないと絵が潰れる。NOTESの掟) */
-.tmo canvas{width:44px;height:24px;display:block;background:var(--paper3);border-radius:5px}
+.tmo canvas{width:62px;height:34px;display:block;background:var(--paper3);border-radius:5px}
+/* 見出しの右に合計を置く(⚠1行に混ぜず、右端で揃える) */
+.ldhdr{display:flex;align-items:center;gap:8px}
+.ldsum{margin-left:auto;font-size:11px;font-weight:900;color:var(--ink);background:var(--paper2);
+ border:2px solid var(--ink);border-radius:8px;padding:1px 8px}
+.ldsum b{color:var(--rust2)}
 .tmo .nm2{width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
-.tmo b{position:absolute;left:2px;top:2px;background:var(--ink);color:var(--paper);border-radius:5px;padding:0 3px;font-size:9.5px;line-height:1.35}
-.tmo i{font-style:normal;font-size:9.5px;font-weight:800;color:var(--rust2);line-height:1.1}
+.tmo b{position:absolute;left:2px;top:2px;background:var(--ink);color:var(--paper);border-radius:5px;padding:0 3px;font-size:10.5px;line-height:1.3}
+.tmo i{font-style:normal;font-size:10.5px;font-weight:800;color:var(--rust2);line-height:1.1}
 .tmo em{position:absolute;right:3px;top:1px;font-style:normal;font-size:11px;opacity:.75}
 .tmo.fix{background:var(--paper3);opacity:.8}
 .tmsum{font-size:12px;font-weight:900;color:var(--ink);text-align:left;margin:0 2px 2px}
@@ -605,17 +689,22 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ⭐編成の「入れる兵科」の一覧(2026-08-01ユーザー指摘「つぶれてる。でも絵は小さくていい」)。
    ⚠研究所の .lgrid.tight を流用すると**あちらの寸法まで動く**ので専用に持つ。
    ⚠絵は34pxで足りる=名前と値段が潰れない方が大事。 */
-.tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:5px}
+/* ⚠⚠**スクロールするのは一覧だけ**(2026-08-02(68))=全部まとめて流れると、
+   開いた瞬間に「入れる兵科」が上の数十pxしか見えず、**押せる選択肢が画面に無い**状態になる。
+   ⭐上の「連れて行く枠」は固定して、下の一覧だけを流す(調べた型)。 */
+#md-load .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
+#md-load .tmord,#md-load .ldhdr{flex:0 0 auto}
+.tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;
+ overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0;padding-bottom:4px}
 .tmc{display:flex;flex-direction:column;align-items:stretch;gap:3px;border:2px solid var(--ink);
  border-radius:9px;background:var(--pane);padding:5px 5px 6px;text-align:left}
 /* ⚠⚠**canvasは「中の寸法(属性)」と「CSSの見た目の寸法」を必ず合わせる**(NOTESの掟)。
    `width:100%;height:34px` に 76x76 の絵を流し込んでいたので**横に伸びて縦に潰れていた**
    (2026-08-01ユーザー指摘「つぶれてる」の正体)。⭐固定px・中央寄せにする。 */
-.tmc canvas{width:76px;height:38px;display:block;margin:0 auto;background:var(--paper3);border-radius:6px}
-.tmc .nm{font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tmc .tg{font-size:9.5px;font-weight:800;color:var(--rust2);line-height:1.15}
+.tmc canvas{width:92px;height:46px;display:block;margin:0 auto;background:var(--paper3);border-radius:6px}
+.tmc .nm{font-size:12px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmc .tg{font-size:10.5px;font-weight:800;color:var(--rust2);line-height:1.15}
 .tmc.on{opacity:.42;filter:saturate(.35)}
-#seg-stk{flex-wrap:wrap}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
@@ -781,16 +870,16 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
           <button class="btn sm" data-v="1" id="stg-b1"><b>2 沈んだ港</b><i>—</i></button>
         </div>
       </div>
-      <p class="note" id="stg-sub" style="margin:4px 0 0"></p>
-      <!-- ⭐**長い説明文の代わりに要点の帯**=読まなくても分かる(2026-08-02(66)) -->
-      <div class="ichips" id="stg-tips"></div>
-      <!-- ⭐横画面は幅が余っていたので**2列**にした(2026-07-27ユーザー指示
-           「この画面を画面を大きく使って見やすくわかりやすい感じにして」)。
-           ⚠縦画面と狭い画面では1列に戻る(CSS側のメディアクエリ)。 -->
+      <!-- ⚠⚠**説明文と要点の帯はここに置かない**(2026-08-02(68))=
+           **横画面(高さ393px)で「見出し→説明文→情報の帯→一覧」と縦に積むのは、
+           調べた中でも名指しのアンチパターン**(肝心の選択肢が1つも見えなくなる)。
+           ⭐ステージの一言は見出しの下に1行だけ。要点は難易度の札そのものが語る。 -->
+      <p class="note" id="stg-sub" style="margin:2px 0 0;font-size:11px"></p>
+      <!-- ⭐**左=えらぶ / 右=きめる**の2枚割り(調べた型)。⚠縦画面では1列に戻る -->
       <div class="stcols">
       <div class="stcol">
-      <p class="note nlbl">🎯 敵の強さ<span class="nsub">1つ下をクリアすると開く</span></p>
-      <div class="seg" id="seg-diff">
+      <p class="note nlbl">🎯 敵の強さ<span class="nsub">横に送る</span></p>
+      <div class="seg difrail" id="seg-diff">
         <button class="btn sm" data-v="0"><b>新兵</b><i>—</i></button>
         <button class="btn sm" data-v="1"><b>兵長</b><i>—</i></button>
         <!-- 🚌ボーナス面。⚠data-v は D5 の末尾(6)=セーブの添字を動かさないため。並びだけ真ん中に置く -->
@@ -800,21 +889,25 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <button class="btn sm" data-v="4"><b>悪夢</b><i>—</i></button>
         <button class="btn sm" id="dif-nm" data-v="5" style="display:none;background:var(--nm);color:var(--danger2);border-color:var(--nm2)"><b>🌑 ナイトメア</b><i>—</i></button>
       </div>
-      <p class="note" id="nm-note" style="margin:6px 0 0;font-size:11px;color:var(--danger2);display:none">🌑 敵の生態系が一新される。獣の群れが来る。</p>
+      <p class="note" id="nm-note" style="margin:4px 0 0;font-size:11px;color:var(--danger2);display:none">🌑 敵の生態系が一新される。獣の群れが来る。</p>
       </div>
       <div class="stcol">
-      <p class="note nlbl">🎯 装備砲撃<span class="nsub">研究所で新型を解放</span></p>
-      <div class="seg chipseg" id="seg-stk"></div>
-      <p class="note nlbl">🦸 連れて行く英雄<span class="nsub">1ゲーム1回だけ出撃</span><button class="btn sm" id="bt-hstat" style="margin-left:6px;padding:1px 8px;font-size:11px">📋 性能</button></p>
-      <div class="seg chipseg" id="seg-hero"></div>
+      <!-- ⭐⭐**「持って行く物」は3行にまとめる**(2026-08-02(68))=
+           砲撃も英雄もこの画面では**見るだけ**。押すと専用の窓が開く(1画面1目的)。
+           ⚠**行の中身は絵+名前**=文字だけのチップをやめた(ゲームは絵を持っている)。 -->
+      <p class="note nlbl">🎒 持って行く物<span class="nsub">押すと選び直せる</span></p>
+      <button class="pickrow" id="row-team"><span class="pk">🎖編成</span><span class="pv" id="pv-team"></span><span class="pa">›</span></button>
+      <button class="pickrow" id="row-stk"><span class="pk">🎯砲撃</span><span class="pv" id="pv-stk"></span><span class="pa">›</span></button>
+      <button class="pickrow" id="row-hero"><span class="pk">🦸英雄</span><span class="pv" id="pv-hero"></span><span class="pa">›</span></button>
       </div>
       </div>
     </div>
+    <!-- ⚠**中断の記録がある時だけ出す**=普段は無い行なので、下のボタン列には混ぜない -->
+    <button class="btn gold" id="bt-run-resume" style="display:none;width:100%">▶ 続きから</button>
+    <!-- ⭐**出撃ボタンだけを画面の主役にする**(調べた型=同じ大きさの色付きボタンを2つ作らない) -->
     <div class="btnrow">
-    <button class="btn" id="bt-load">🎖 編成</button>
-    <button class="btn gold" id="bt-lab">🔬 研究所 <span id="lab-pts"></span></button>
-    <button class="btn gold" id="bt-run-resume" style="display:none">▶ 続きから</button>
-    <button class="btn red" id="bt-start-solo">🧟 防衛開始!</button>
+    <button class="btn" id="bt-lab">🔬 研究所 <span id="lab-pts"></span></button>
+    <button class="btn red" id="bt-start-solo">🧟 出撃!</button>
     <button class="btn" id="bt-back1">← もどる</button>
     </div>
   </div>
@@ -1009,6 +1102,23 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 
 <!-- 🦸英雄ステータス(2026-07-30ユーザー指示「ヒーローのステータスを見れる画面を用意して」)。
      ⚠数値は UNITS 側(実際に戦う値)から引く=HEROESの表だけ見ると派生や鍛錬が抜ける -->
+<!-- 🦸⭐⭐**連れて行く英雄を選ぶ窓**(2026-08-02(68))=**顔の札を横に送って選ぶ**。
+     ⚠それまでは出撃準備に**文字のチップが折り返して並んでいた**(★も名前も同じ大きさ)。
+     ⭐★は**枠の色+地の色+上の帯**で出す(色は RARE の表=ゲームが既に持っている物)。 -->
+<div class="modal" id="md-hpick">
+  <div class="panel bigpanel">
+    <div class="bphd"><b>🦸 連れて行く英雄</b><span class="bphint2">1ゲームに1回だけ出撃できる</span><span class="pt" id="hp-own"></span><button class="xbtn" id="bt-hpick-close">✕</button></div>
+    <div class="hprail" id="hp-rail"></div>
+    <div class="hpfoot" id="hp-foot"></div>
+  </div>
+</div>
+<!-- 🎯**装備砲撃を選ぶ窓**(2026-08-02(68))=絵と効き目を出して選ぶ -->
+<div class="modal" id="md-stk">
+  <div class="panel bigpanel">
+    <div class="bphd"><b>🎯 装備砲撃</b><span class="bphint2">研究所で新型を解放する</span><button class="xbtn" id="bt-stk-close">✕</button></div>
+    <div class="stkgrid" id="stk-grid"></div>
+  </div>
+</div>
 <div class="modal" id="md-hstat">
   <div class="panel bigpanel">
     <div class="bphd"><b>🦸 英雄ステータス</b><span class="pt" id="hs-own"></span><button class="xbtn" id="bt-hstat-close">✕</button></div>
@@ -23834,25 +23944,103 @@ function updLabBtn(){const e=$('lab-pts');if(e)e.innerHTML=IC('🧬')+fmt(META.p
 function refreshTrainBtn(){const b=$('bt-train');if(!b||!b.style)return;
  b.style.display=(TR_OPEN&&(META.tr0||DEV))?'block':'none';
  const m=$('tr-mat');if(m)m.innerHTML=IC('🔧')+fmt(META.hmat||0);}
-function renderStkSeg(){
- const w=$('seg-stk');if(!w||!w.querySelectorAll)return;
- /* ⭐**選んでいる物の説明を下に1行**=名前だけ並べても何が違うのか読めない(2026-08-02(66)) */
- w.innerHTML=META.st.map(k=>`<button class="btn sm ${META.eq===k?'sel':''}" data-stk="${k}">${STRIKES[k].ic}${STRIKES[k].n}</button>`).join('')
-  +`<div class="note" style="flex:1 1 100%;margin-top:2px;font-size:10.5px">${(STRIKES[META.eq]||STRIKES[META.st[0]]||{}).dsc||''}</div>`;
- w.querySelectorAll('[data-stk]').forEach(b=>{b.onclick=()=>{META.eq=b.dataset.stk;saveMeta();renderStkSeg();};});
+/* ============ 🎒⭐⭐**出撃準備の「持って行く物」3行**(2026-08-02(68)) ============
+   ⚠⚠**それまでは砲撃5個と英雄N人が、文字のチップで折り返して並んでいた**=
+     1画面に押せる物が20個あり、目がどこへ行けばいいか決まらなかった(ユーザー「むしろ見づらい」)。
+   ⭐調べた型=**左=えらぶ/右=きめる**・**1画面1目的**・**1画面の選択肢は6±1個**。
+     この画面では「いま何を持って行くか」を**見せるだけ**にして、選び直しは専用の窓へ逃がす。
+   ⚠**行の中身は必ず絵を出す**=ゲームは全部の兵科・英雄の絵をすでに焼いてある(UTHUMBS)。 */
+/* 焼いてあるサムネを1枚貼る(⚠その場で描き直さない) */
+function pickTh(ui){
+ if(ui==null||ui<0||!UTHUMBS[ui])return null;
+ const c=document.createElement("canvas");c.width=UTHW;c.height=UTHH;
+ try{c.getContext("2d").drawImage(UTHUMBS[ui],0,0);}catch(e){}
+ return c;
 }
-/* 🦸 連れて行く英雄を選ぶ(所持している英雄だけ並べる) */
-function renderHeroSeg(){
- const w=$('seg-hero');if(!w||!w.querySelectorAll)return;
+/* 3行ぶんの中身を書き直す。⚠**画面を開いた時と、窓を閉じた時に呼ぶ** */
+function renderPickRows(){
+ /* 🎖編成=先頭3体の絵+連れて行く数 */
+ {const w=$("pv-team");
+  if(w){w.innerHTML="";
+   const T=teamIdx();
+   T.slice(0,3).forEach(i=>{const c=pickTh(i);if(c)w.appendChild(c);});
+   const sp=document.createElement("span");
+   sp.className="sub";sp.textContent=T.length+"体"+(T.length>3?" (+"+(T.length-3)+")":"");
+   w.appendChild(sp);}}
+ /* 🎯砲撃 */
+ {const w=$("pv-stk"),k=META.eq||(META.st&&META.st[0]);
+  if(w)w.innerHTML=(k&&STRIKES[k])?("<span style=\"font-size:19px\">"+STRIKES[k].ic+"</span>"+STRIKES[k].n)
+   :"<span class=\"sub\">まだ無い</span>";}
+ /* 🦸英雄 */
+ {const w=$("pv-hero");
+  if(w){w.innerHTML="";
+   const h=HEROES.find(x=>x.id===META.hsel);
+   if(!h){const sp=document.createElement("span");sp.className="sub";sp.textContent="連れて行かない";w.appendChild(sp);}
+   else{const c=pickTh(hUiOf(h.id));if(c)w.appendChild(c);
+    const sp=document.createElement("span");
+    sp.innerHTML="<span class=\"rk\" style=\"color:"+(RARE[h.rk-1]||RARE[0])+"\">"+RK_S[h.rk]+"</span> "+h.n;
+    w.appendChild(sp);}}}
+}
+/* ⚠**古い名前も残す**=呼んでいる所(bt-solo など)を全部書き換えないため */
+function renderStkSeg(){renderPickRows();}
+function renderHeroSeg(){renderPickRows();}
+/* 🎯**装備砲撃を選ぶ窓**=絵+名前+効き目の1行。⚠**選んだら閉じる**(1画面1目的) */
+function renderStkPick(){
+ const w=$("stk-grid");if(!w)return;
+ w.innerHTML=META.st.map(k=>{const S=STRIKES[k];
+  return "<button class=\"stkc"+(META.eq===k?" sel":"")+"\" data-stk=\""+k+"\">"
+   +"<span class=\"e\">"+S.ic+"</span><span class=\"t\"><b>"+S.n+"</b><i>"+S.dsc+"</i></span></button>";}).join("");
+ w.querySelectorAll("[data-stk]").forEach(b=>{b.onclick=()=>{
+  META.eq=b.dataset.stk;saveMeta();try{if(sfx.tap)sfx.tap();}catch(e){}
+  renderStkPick();renderPickRows();
+  setTimeout(()=>{const m=$("md-stk");if(m)m.classList.remove("on");},140);};});
+}
+/* 🦸⭐⭐**連れて行く英雄を選ぶ窓**(2026-08-02(68))=**顔の札を横に送って選ぶ**。
+   ⭐★は**枠の色+地の色+上の帯**で出す(色は RARE=CSSの --r1〜--r5 と同じ値)。
+   ⚠**持っている英雄だけ並べる**=「???」を21枚並べてもできる事は増えない。 */
+/* ⚠⚠**札の地は暗い色**(2026-08-02(68)に撮って直した)=薄い地に明色の名前を置いたら読めなかった。
+   ⚠**値はCSSの --dudbg / --r2bg〜--r5bg と同じ**(片方だけ直すと色がずれる)。 */
+const RK_BG=["#26241e","#26333a","#312640","#3d3218","#43201a"];
+function renderHeroPick(){
+ const w=$("hp-rail");if(!w)return;
  const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));/* 🛠DEVは全員選べる */
- if(!DEV&&META.hsel&&!heroOwned(META.hsel))META.hsel='';
- if(!own.length){w.innerHTML='<span class="note" style="font-size:11px">まだ英雄がいない。💎英雄召集で仲間にしよう</span>';return;}
- /* ⭐**★の色を枠に出す**(2026-08-02(66))=名前だけ並べても強さが読めない。
-    ⚠**色は `RARE` の表から出す**(CSSの --r1〜--r5 と同じ値)=直に書かない。 */
- w.innerHTML='<button class="btn sm '+(META.hsel?'':'sel')+'" data-h="">🚫 連れて行かない</button>'
-  +own.map(h=>`<button class="btn sm ${META.hsel===h.id?'sel':''}" data-h="${h.id}" style="border-color:${RARE[h.rk-1]||RARE[0]}" title="必殺技『${h.ult}』— ${h.udsc}"><span class="rk" style="color:${RARE[h.rk-1]||RARE[0]}">${RK_S[h.rk]}</span>${h.n}</button>`).join('')
-  +`<div class="note" style="flex:1 1 100%;margin-top:2px;font-size:10.5px">${META.hsel?('⚡ 必殺『'+((HEROES.find(h=>h.id===META.hsel)||{}).ult||'')+'』— '+((HEROES.find(h=>h.id===META.hsel)||{}).udsc||'')):'英雄は1ゲームに1回だけ出撃できる。倒れたらそれまで'}</div>`;
- w.querySelectorAll('[data-h]').forEach(b=>{b.onclick=()=>{META.hsel=b.dataset.h;saveMeta();renderHeroSeg();};});
+ if(!DEV&&META.hsel&&!heroOwned(META.hsel))META.hsel="";
+ const oe=$("hp-own");if(oe)oe.textContent="所持 "+HEROES.filter(h=>heroOwned(h.id)).length+" / "+HEROES.length;
+ w.innerHTML="";
+ /* 連れて行かない(先頭) */
+ {const b=document.createElement("button");
+  b.className="hpc none"+(META.hsel?"":" sel");b.dataset.h="";
+  b.innerHTML="<span class=\"e\">🚫</span><span class=\"t\">連れて<br>行かない</span>";
+  w.appendChild(b);}
+ if(!own.length){
+  const p=document.createElement("div");p.className="note";p.style.cssText="padding:16px;font-size:13px";
+  p.textContent="まだ英雄がいない。💎英雄召集で仲間にしよう";w.appendChild(p);}
+ for(const h of own){
+  const col=RARE[h.rk-1]||RARE[0],sel=META.hsel===h.id;
+  const b=document.createElement("button");
+  b.className="hpc"+(sel?" sel":"");b.dataset.h=h.id;
+  b.style.borderColor=sel?GOLD:col;
+  b.style.background=RK_BG[h.rk-1]||RK_BG[0];
+  b.innerHTML="<span class=\"st\" style=\"color:"+col+"\">"+RK_S[h.rk]+"</span>"
+   +"<span class=\"nm\">"+h.n+"</span>"+(sel?"<span class=\"chk\">✓ 連れて行く</span>":"");
+  const c=pickTh(hUiOf(h.id));
+  if(c){c.style.cssText="position:absolute;left:8px;top:22px;width:88px;height:112px";b.appendChild(c);}
+  w.appendChild(b);}
+ w.querySelectorAll("[data-h]").forEach(b=>{b.onclick=()=>{
+  META.hsel=b.dataset.h;saveMeta();try{if(sfx.tap)sfx.tap();}catch(e){}
+  renderHeroPick();renderPickRows();};});
+ /* ⚠**選んでいる札が帯の外だと「どれを選んだか」が見えない**=開いた時に寄せる */
+ try{const e=w.querySelector(".hpc.sel");
+  if(e&&e.scrollIntoView)e.scrollIntoView({block:"nearest",inline:"center"});}catch(e){}
+ /* 下の帯=選んでいる英雄の必殺技と素の力(⚠ここで比べられるので別画面へ行かなくて済む) */
+ const f=$("hp-foot");
+ if(f){const h=HEROES.find(x=>x.id===META.hsel);
+  if(!h)f.innerHTML="<span class=\"ul\">🚫 連れて行かない</span><span>英雄は1ゲームに1回だけ出撃できる。倒れたらそれまで</span>";
+  else{const U=UNITS[hUiOf(h.id)]||h,bo=hBoost(h.id);
+   f.innerHTML="<span class=\"ul\">⚡ 必殺『"+h.ult+"』</span><span>"+h.udsc+"</span>"
+    +"<span class=\"sp\"><span>❤"+fmt(Math.round((U.hp||0)*bo))+"</span><span>⚔"+fmt(Math.round((U.atk||0)*bo))+"</span>"
+    +"<button id=\"hp-more\">📋 くわしく</button></span>";
+   const mb=$("hp-more");if(mb)mb.onclick=()=>{const m=$("md-hpick");if(m)m.classList.remove("on");openHStat(h.id);};}}
 }
 /* 研究所のタブ=この順で固定。値段では並べ替えない(買うと値段が上がって順が入れ替わるため)。
    n=タブの短い名前 / d=そのタブの1行説明 */
@@ -24069,11 +24257,20 @@ function renderLab(){
     +cat.d+'</div>'
    +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=META.pts>=it.p;
      /* ⭐姿があるものは絵文字ではなく**実物**を描く(第91弾)。何を解放/強化するのか一目で分かる */
+     /* ⭐⭐**段のある物は「棒」で見せる**(2026-08-02(68))=調べた型「行そのものを進捗計にする」。
+        ⚠**"Lv3/20" という数字だけでは、あと何段あるのかが読み取れない**。
+        ⚠**足す側(items.push)は1行も触らない**=tag の形から拾うだけにしてある。 */
+     const lvm=/^Lv(\d+)\s*\/\s*(\d+)(.*)$/.exec(it.tag||'');
+     const rest=lvm?(lvm[3]||'').trim():(it.tag||'');
+     const bar=lvm?('<div class="lvb"><span class="l">Lv '+lvm[1]+'</span>'
+       +'<i><b style="width:'+Math.round(Math.min(1,(+lvm[1])/Math.max(1,+lvm[2]))*100)+'%"></b></i>'
+       +'<span class="m">'+lvm[2]+'</span></div>'):'';
      return '<div class="lc'+(can?' can':'')+'">'
       +(it.pv?('<canvas class="pvc'+(it.sm?' sm':'')+'" width="120" height="104" data-pv="'+o.i+'"></canvas>')
              :('<div class="ic">'+(it.ic||'🔬')+'</div>'))
       +'<div class="nm">'+it.t+'</div>'
-      +(it.tag?'<div class="tg">'+it.tag+(it.sm&&it.d?' '+it.d:'')+'</div>':'')
+      +((rest||(it.sm&&it.d))?'<div class="tg">'+rest+(it.sm&&it.d?(rest?' ':'')+it.d:'')+'</div>':'')
+      +bar
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
       +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')+'</button></div>';}).join('')+'</div>')
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
@@ -24264,29 +24461,34 @@ function renderLoad(){
   h='<div class="ldhdr" style="border-top:0;padding-top:0;margin:2px 2px 3px">'
    +'🎒 連れて行く <b>'+T9.length+'/'+TEAM_N+'</b>'
    +'<span class="lsub">この順に解放される・押すと外す</span></div>';
+  /* ⭐⭐**枠は上限ぶん全部出す**(2026-08-02(68))=調べた型「空き枠は空白にせず、実枠と同じ大きさの
+     点線＋＋。総数を最初から見せる」。⚠**あと何体入るかを数えさせない**。 */
   h+='<div class="tmord">';
   T9.forEach((i,k)=>{const p=UNITP[i]||0;sum+=p;const fx=TEAM_FIX.indexOf(i)>=0;
    h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'"'+(fx?' disabled':'')+'>'
-    +'<canvas width="44" height="24"></canvas><b>'+(k+1)+'</b>'
+    +'<b>'+(k+1)+'</b><canvas width="62" height="34"></canvas>'
     +'<span class="nm2">'+((UBASE[i]||{}).n||'?')+'</span>'
     +'<i>⚙️'+p+'</i>'+(fx?'<em>🔒</em>':'<em>✕</em>')+'</button>';});
+  for(let k=T9.length;k<TEAM_N;k++)h+='<div class="tmo emp">＋</div>';
   h+='</div>';
-  /* ⭐**合計は札で**=文字の1行に混ぜると数字が埋もれる。⚠10体と決め打ちしない(解放が進むまで2体) */
-  h+='<div class="ichips" style="margin:3px 2px 5px">'
-   +'<span>⚙️ ぜんぶ出すのに <b>'+sum.toLocaleString()+'</b></span>'
-   +'<span>💡 高い兵科ばかりだと後ろの番号は最後まで出せない</span></div>';
-  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる</span></div>';
-  h+='<div class="tmgrid">';
+  /* ⚠**注意書きは消した**(2026-08-02(68))=毎回読む物ではないのに毎回場所を取っていた。
+     ⭐**合計だけ見出しの右に置く**(下の「入れる兵科」の見出し行に同居させる)。 */
+  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる</span>'
+   +'<span class="ldsum">⚙️ ぜんぶ出すのに <b>'+sum.toLocaleString()+'</b></span></div>';
+  h+='<div class="tmgrid" id="tm-grid">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
    const on=T9.indexOf(i)>=0;
    h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'"'+(on?' disabled':'')+'>'
-    +'<canvas width="76" height="38"></canvas>'
-    +'<span class="nm">'+(on?'✅':'')+U.n+'</span>'
-    +'<span class="tg">解放⚙️'+(UNITP[i]||0)+'</span></button>';}
+    +'<canvas width="92" height="46"></canvas>'
+    +'<span class="nm">'+(on?'✅ ':'')+U.n+'</span>'
+    +'<span class="tg">⚙️'+(UNITP[i]||0)+'</span></button>';}
   h+='</div>';
   box.innerHTML=IC(h);
+  /* ⚠**一覧のスクロール位置を保つ**(2026-08-02(68))=1体入れるたび先頭へ戻ると、
+     下の方の兵科は事実上選べない(調べた型「押した所がその場で書き変わる」)。 */
   const pick=(i,add)=>{
+   const sv=(()=>{const g=$('tm-grid');return g?g.scrollTop:0;})();
    /* ⚠⚠**まず「いまの編成」を確定させる**(2026-08-01に踏んだ)。
       `META.team` が空(自動で埋めた状態)のままだと、外そうとしても中身が無いので
       **何も起きない**ように見える。固定枠は入れない(常に先頭に付く)。 */
@@ -24297,7 +24499,9 @@ function renderLoad(){
     if(k>=0)return;
     if(teamIdx().length>=TEAM_N){toast('⚠ 連れて行けるのは'+TEAM_N+'体まで(上から誰かを外す)',true);return;}
     cur.push(id);}
-   META.team=cur;saveMeta();sfx.buy&&sfx.buy();renderLoad();};
+   META.team=cur;saveMeta();sfx.buy&&sfx.buy();renderLoad();
+   /* ⚠**書き直した後に位置を戻す**=戻さないと1体ごとに一覧が先頭へ飛ぶ */
+   try{const g=$("tm-grid");if(g)g.scrollTop=sv;}catch(e){}};
   box.querySelectorAll('[data-out]').forEach(b=>{
    const i=+b.dataset.out;ldPrev(b.querySelector('canvas'),i,null);
    b.onclick=()=>pick(i,false);});
@@ -24318,8 +24522,13 @@ function renderLoad(){
   ldPrev(b.querySelector('canvas'),i,def);
   b.onclick=()=>{META.ld[bid]=b.dataset.v;saveMeta();sfx.buy&&sfx.buy();renderLoad();};});
 }
-$('bt-load').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
-$('bt-load-close').onclick=()=>$('md-load').classList.remove('on');
+/* 🎒**「持って行く物」の3行**(2026-08-02(68))=押すと専用の窓が開く */
+$('row-team').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
+$('row-stk').onclick=()=>{renderStkPick();$('md-stk').classList.add('on');};
+$('row-hero').onclick=()=>{renderHeroPick();$('md-hpick').classList.add('on');};
+$('bt-stk-close').onclick=()=>{$('md-stk').classList.remove('on');renderPickRows();};
+$('bt-hpick-close').onclick=()=>{$('md-hpick').classList.remove('on');renderPickRows();};
+$('bt-load-close').onclick=()=>{$('md-load').classList.remove('on');try{renderPickRows();}catch(e){}};
 /* ⭐**新しい兵科を解放した時の案内**(2026-08-02ユーザー指示)。
    ①空きがあれば自動で編成に入れた ②満杯なら入れ替えを促す ③**初回だけ**編成の説明を出す。 */
 function teamTip(bid,how){
@@ -24441,7 +24650,7 @@ function openHStat(id){
  HSSEL=id||(heroOwned(HSSEL)?HSSEL:'')||(META.hsel&&heroOwned(META.hsel)?META.hsel:'')||(own?own.id:HEROES[0].id);
  $('md-hstat').classList.add('on');renderHStat();
 }
-function closeHStat(){$('md-hstat').classList.remove('on');try{renderHeroSeg();}catch(e){}}
+function closeHStat(){$('md-hstat').classList.remove('on');try{renderPickRows();}catch(e){}}
 const hsRow=(a,b)=>'<tr><td>'+a+'</td><td>'+b+'</td></tr>';
 /* ⭐⭐**数字だけの表をやめて「棒」で見せる**(2026-08-02(66)ユーザー「文字とかだけ並んでるとこを
    わかりやすく」)=**HP900と書いても、それが強いのか弱いのかは他と比べないと分からない**。
@@ -25321,7 +25530,7 @@ $('gc-rate').onclick=()=>gcView('rate');
 $('gc-dex').onclick=()=>gcView('dex');
 $('gc-back').onclick=()=>gcView('home');
 /* 🦸英雄ステータス: ソロ設定の「📋 性能」と、召集画面の📖図鑑の下から開ける */
-$('bt-hstat').onclick=()=>openHStat('');
+/* ⚠**📋性能は英雄を選ぶ窓の中(「くわしく」)へ移した**(2026-08-02(68)) */
 $('bt-hstat-close').onclick=closeHStat;
 /* ============ 🏋 鍛錬所 と 📖ゾンビ図鑑 ============
    ⚠2026-07-26(第53弾)に**洞窟をまるごと廃止した**。
@@ -26732,19 +26941,28 @@ function refreshDiffUI(){
   /* 🚌**残り回数をそのまま出す**(2026-08-02(58))=**3/5** のように減っていくのが押す前に読める。
      ⚠**「未解放(🔒)」と「今日は使い切った」を書き分ける**=どちらも押せないので、
        同じ見た目だと**まだ開いていないのだと思われる**。 */
-  /* ⭐**1枚に「名前」と「状態」を上下で入れる**(2026-08-02(66))=横並びの文字列より読める。
+  /* ⭐⭐**1枚の札=「名前 / 数 / 状態」の3段**(2026-08-02(68))=調べた型「1行に載せる情報は3つまで」。
      ⚠**押せない理由は必ず書き分ける**(🔒未解放 / 今日は使い切った)=同じ見た目だと壊れて見える。 */
   const cl=!!scArr(si)[v];/* クリア済みか */
   if(v===BNS_D){const unl=bnsUnl(si),lf=bnsLeftT(si),bs=unl?bnsBestOf(si):null;
-   x.innerHTML='<b>'+D.n+'</b><i>'+(!unl?'🔒 まだ'
+   x.innerHTML='<b>'+D.n+'</b>'
+    +'<span class="w">'+(unl?(lf+'<s>/'+BNS_DAY_N+'</s>'):'<s>🔒</s>')+'</span>'
+    /* ⚠**1つだけ言う**(2026-08-02(68)に撮って直した)=3つ並べると札の幅で切れる。
+       ⭐優先は 初回ボーナス > 自己ベスト > きょうの残り。 */
+    +'<i>'+(!unl?'まだ開かない'
     :(lf<=0?('あと'+bnsNextS())
-           :(lf+'/'+BNS_DAY_N
-             +((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎初回')
-             +((bs&&bs.s>0)?' ⚡'+fmt(bs.s):''))))+'</i>';}
-  else x.innerHTML='<b>'+D.n+'</b><i>'+(ok?('WAVE '+D.w+(cl?' <span class="ok">✅</span>':'')):'🔒 まだ')+'</i>';
+           :((Array.isArray(META.bcl)&&META.bcl[si])?((bs&&bs.s>0)?('⚡'+fmt(bs.s)):'きょう走れる')
+                                                    :'💎 初回ボーナス')))+'</i>';}
+  else x.innerHTML='<b>'+D.n+'</b>'
+    +'<span class="w">'+(ok?(D.w+'<s> 波</s>'):'<s>🔒</s>')+'</span>'
+    +'<i>'+(ok?(cl?'<span class="ok">✅ クリア</span>':'はじめて'):'まだ開かない')+'</i>';
   x.disabled=!ok;x.style.opacity=ok?'':'.45';});
  if(!diffOK(si,setDiff))setDiff=best;
  document.querySelectorAll('#seg-diff .btn').forEach(x=>x.classList.toggle('sel',+x.dataset.v===setDiff));
+ /* ⚠**横に送る形にしたので、選んでいる札が画面の外だと「どれを選んだか」が見えない**=寄せる */
+ try{const e=document.querySelector('#seg-diff .btn.sel');
+  if(e&&e.scrollIntoView)e.scrollIntoView({block:'nearest',inline:'center'});}catch(e){}
+ try{renderPickRows();}catch(e){}
  if($('nm-note')&&$('nm-note').style)$('nm-note').style.display=diffOK(si,NM_DIFF)?'block':'none';
  refreshStageUI();
 }
@@ -26754,24 +26972,21 @@ function refreshStageUI(){
  document.querySelectorAll('#seg-stage .btn').forEach(x=>{
   const v=+x.dataset.v,ok=stageOK(v),S=STAGES[v];
   if(!S){x.style.display='none';return;}
-  /* ⭐**クリア済みの印を出す**=どこまで解放したかが一目で分かる(ソシャゲの章立てと同じ) */
-  const cl=ok&&(scArr(v)||[]).some((q,i)=>q&&i!==BNS_D);
-  x.innerHTML='<b>'+(v+1)+' '+S.n+'</b><i>'+(ok?(cl?'<span class="ok">✅ 到達ずみ</span>':'未クリア'):'🔒 前を🌑でクリアで開く')+'</i>';
+  /* ⭐**見出しの中の小さなチップ**(2026-08-02(68))=ステージは2つしかないので、
+     ここで場所を取らない。⚠**未解放は🔒だけ**(長い条件文は出さない=毎回読む物ではない)。 */
+  x.innerHTML='<b>'+(v+1)+' '+S.n+'</b>'+(ok?'':'<i>🔒</i>');
   x.disabled=!ok;x.style.opacity=ok?'':'.5';
   x.classList.toggle('sel',v===(META.stg||0));});
  const S=STAGES[META.stg||0]||STAGES[0];
- if($('stg-hd'))$('stg-hd').textContent='🏕 ステージ'+((META.stg||0)+1)+' — '+S.n;
- /* ⚠**長い説明文を1本の帯にしない**(2026-08-02(66))=ステージの一言だけ残して、
-    遊び方の要点は下の「札」に分ける(読まなくても形で分かる)。 */
- if($('stg-sub'))$('stg-sub').textContent=S.sub+'。';
- if($('stg-tips'))$('stg-tips').innerHTML=
-   '<span>🏁 難易度ごとの最終WAVEまで守り切ればクリア</span>'
-  +'<span>👑 WAVE10・15にボス</span>'
-  +'<span>💀 WAVE20は専用の大物</span>'
-  +'<span>🧬 負けても研究ptは貯まる</span>';
+ /* ⚠**見出しでステージ名を繰り返さない**(2026-08-02(68))=右のチップが言っている。
+     ⭐見出しは**画面の名前**にする(いまどの画面に居るかが分かる)。 */
+ if($('stg-hd'))$('stg-hd').textContent='🏕 出撃準備';
+ /* ⚠⚠**説明は1行だけ**(2026-08-02(68))=横画面(高さ393px)で見出しの下に帯を積むと、
+    肝心の選択肢が画面から押し出される(調べた中で名指しのアンチパターン)。 */
+ if($('stg-sub'))$('stg-sub').textContent=S.sub+' ─ 最終WAVEまで守り切ればクリア。負けても🧬は貯まる';
  if($('bt-solo'))$('bt-solo').textContent='🛡 ソロ作戦 — ステージ'+((META.stg||0)+1);
 }
-$('bt-solo').onclick=()=>{ensureAC();renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show('setup');};
+$('bt-solo').onclick=()=>{ensureAC();updLabBtn();refreshDiffUI();refreshRunUI();renderPickRows();show('setup');};
 /* ⚠ここでclearRun()はしない=押し間違いで中断記録が消えるため。
    新しく始めた側が最初の作戦タイムで上書きするので実害はない */
 $('bt-start-solo').onclick=()=>{ensureAC();startSolo();};
