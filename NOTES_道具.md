@@ -363,3 +363,7 @@ node test_shot.js out.png 1200 740 "pose=u:hGeo+posefire"
 - 🖼**アイコンの生成→取り込み**=プロンプトは `ui_src/PROMPTS.md`(シートG〜Lが生成待ち)。
   取り込みは `tool_slice.js`→`tool_embed.js`。⚠canvasの文字に出す絵文字は ICO_RE の対象なら
   `drawIcoText`/`IC()` が勝手に画像へ差し替える(✅🔒💀📖⚙️🔩🧬💎🔧)。
+- 📷**(99)さらに追加**=`bns+bnstut`(🚌開拓便の初回チュートリアルの札)。⚠bnsの撮影は既定で
+  `META.bnsTut=1` を立てて札を出さない(付けた時だけ出す)。
+- ⚠⚠**test_shot のオプション正規表現は必ず「(^|\+)…(\+|$)」で区切る**(2026-08-03(99)に踏んだ)=
+  裸の `/tut/` が `bnstut` に一致して、🚌の撮影に🎓が勝手に始まった(「w+数字」の罠と同じ形)。

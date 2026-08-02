@@ -130,7 +130,9 @@ const SKM=/stk=([a-z]+)/.exec(OPT),SKID=SKM?SKM[1]:'';
    ⚠一瞬しか出ない演出は実戦の撮影ではまず捉えられないので、こうして並べて見る */
 const FXD=OPT.indexOf('fxdemo')>=0;
 /* tut / tut=3 = 🎓チュートリアルを撮る(数字はその段まで進めてから撮る) */
-const TUM=/tut(?:auto)?(?:=([0-9]+))?/.exec(OPT),TUT=!!TUM,TUTI=TUM&&TUM[1]?+TUM[1]:0;
+/* ⚠(99)区切りを必ず見る=裸の /tut/ だと bnstut(開拓便の案内)まで一致して🎓が勝手に始まる
+   (「w+数字」の罠と同じ形。実際に踏んだ) */
+const TUM=/(^|\+)tut(?:auto|2)?(?:=([0-9]+))?(\+|$)/.exec(OPT),TUT=!!TUM,TUTI=TUM&&TUM[2]?+TUM[2]:0;
 /* ⭐grid=tw|u|hero|z = 見た目を**実機と同じ大きさで並べて**撮る(2026-07-26 第91弾)。
    ⚠絵を直す作業は「撮る→直す→また撮る」の繰り返しになるので、1種ずつ実戦で撮っていては回らない。
    ⚠**実機の大きさ(タワー35px・キャラ25px前後)で見ること**。大きく描いて満足すると実機で潰れる。
@@ -295,7 +297,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      /* ⭐bns = 🚌ボーナス面「バスの日」を撮る(st2 と併せるとステージ2の面) */
-     :BNS?'setDiff=BNS_D;startSolo();'
+     /* ⚠(99)初回チュートリアルの札で画面が覆われないよう既定は済んだ印を立てる。
+        撮りたい時だけ bnstut を付ける(例: "bns+bnstut") */
+     :BNS?((OPT.indexOf('bnstut')>=0?'META.bnsTut=0;':'META.bnsTut=1;')+'setDiff=BNS_D;startSolo();')
      :'setDiff=2;startSolo();')+(NOITR?'showIntro=function(){};':'')+'}catch(e){document.title="ERR "+e.message;}'
  /* ⚠以前は `ZIDS.length` を条件にしていたため、**`t=` を単体で指定すると丸ごと無視されていた**
       (敵を並べずにタワーだけ撮りたい時に、何も建たないまま撮れてしまう)。`t=` だけでも走らせる */

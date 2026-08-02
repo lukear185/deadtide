@@ -900,6 +900,26 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    左右とかに反復しながら案内印」)。⚠**枠を光らせるだけでは気づかれない**=動く印を横に添える。
    ⚠絵は左向き。向きは回転で作り、**指している方向に往復させる**(押す所へ吸い寄せる動き)。
    ⚠pointer-events:none=印そのものがタップを食わないこと(押せる所を隠したら本末転倒)。 */
+/* 🚌(99)開拓便の初回チュートリアル=画面を暗く落として1枚ずつ(タップで進む)。
+   ⚠z58=チュートリアルの帯(60)より下・盤面より上。走る前(bpre)は時間が止まっているので急かされない */
+#bnstut{position:fixed;inset:0;z-index:58;display:none;background:rgba(10,8,6,.62);
+ align-items:center;justify-content:center;cursor:pointer}
+#bnstut.on{display:flex}
+#bnstut .btcard{width:min(92vw,480px);background:var(--pane);border:3px solid var(--ink);border-radius:16px;
+ box-shadow:0 6px 0 rgba(0,0,0,.5);padding:0 0 12px;overflow:hidden;text-align:center}
+#bnstut .btcard b{display:block;background:var(--ink);color:var(--pane);font-size:16px;padding:9px 12px;
+ border-left:6px solid var(--gold);text-align:left}
+#bnstut .btcard p{margin:10px 14px 8px;font-size:13.5px;font-weight:800;line-height:1.7;text-align:left}
+#bnstut .btcard i{display:inline-block;font-style:normal;font-size:12px;font-weight:900;color:var(--rust2);
+ animation:btblink 1s infinite}
+@keyframes btblink{0%,100%{opacity:1}50%{opacity:.35}}
+/* 🦸(99)盤面の英雄タップ→必殺の詳細。⚠pointer-events:none=盤面の操作を邪魔しない(時間で消える) */
+#heroinfo{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:24;display:none;
+ max-width:min(92vw,560px);background:rgba(20,16,12,.94);border:3px solid var(--gold);border-radius:14px;
+ padding:9px 14px;color:var(--pane);box-shadow:0 5px 0 rgba(0,0,0,.5);pointer-events:none}
+#heroinfo.on{display:block}
+#heroinfo b{display:block;font-size:14px;color:var(--gold);margin-bottom:2px}
+#heroinfo p{margin:0;font-size:12px;font-weight:700;line-height:1.5}
 /* 🔦スポットライト=光らせている所以外を暗く落とす(2026-08-03(98)ユーザー指示の根治)。
    ⚠帯(#tut=z60)と矢印(z61)より下・盤面や窓より上。pointer-events:none=押す邪魔はしない */
 #tutspot{position:fixed;display:none;z-index:54;pointer-events:none;border:4px solid var(--gold);border-radius:12px;
@@ -1216,6 +1236,10 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 </div>
 <!-- 「ここだ」の矢印(第89弾)。⚠絵は**左向き**で置いてあり、向きはCSSの回転で作る。
      置き場所と向きは tutPtrPos() が決める(DOMを触らない関数=検査できる) -->
+<!-- 🚌(99)開拓便の初回チュートリアル(初めて入った時だけ。タップで進む) -->
+<div id="bnstut"><div class="btcard"><b id="bnstut-t"></b><p id="bnstut-m"></p><i id="bnstut-n"></i></div></div>
+<!-- 🦸(99)盤面の英雄をタップすると出る必殺の詳細(hoverのtitleはスマホで見えないので廃止) -->
+<div id="heroinfo"><b id="hi-n"></b><p id="hi-d"></p></div>
 <div id="tutspot"></div>
 <div id="tutptr"><svg viewBox="0 0 40 40"><polygon points="2,20 24,4 24,13 38,13 38,27 24,27 24,36"/></svg></div>
 
@@ -19622,11 +19646,13 @@ function updHUD(){const m=meV();if(!m)return;
    else{hb.style.display='inline-block';/* ⚠''にするとCSSのdisplay:noneに戻ってしまう */
     const st=m.hOut||0,cg=clamp(m.hCg||0,0,1);
     if(st===0){hb.innerHTML=icoImg('ic-hero','🦸')+'<br>出撃';hb.style.background='#6b4a8a';hb.disabled=!!m.dead;hb.classList.remove('rdy');}
-    else if(st===1){hb.innerHTML='⚡<br>'+H.ult.slice(0,4);
+    /* ⚡(99)技名は出さない(ユーザー指示「途切れてて見えない」)。詳細は盤面の英雄をタップ */
+    else if(st===1){hb.innerHTML='<span style="font-size:24px;line-height:1">⚡</span>';
      hb.style.background=`conic-gradient(#c9a1ff ${cg*100}%,#3a2f4a 0)`;
      hb.disabled=!!m.dead||cg<1;hb.classList.toggle('rdy',cg>=1);}
     else{hb.innerHTML='💀<br>戦死';hb.style.background='#4a4034';hb.disabled=true;hb.classList.remove('rdy');}
-    hb.title=H.n+' — 必殺技『'+H.ult+'』'+H.udsc;}}}
+    /* ⚠(99)title(カーソルを合わせると出る説明)は廃止=スマホでは一生見えない(ユーザー指摘) */
+    hb.removeAttribute('title');}}}
  /* 押すボタン */
  const pb=$('pushbtn'),pc=prPush(m.pushUses||0);
  pb.innerHTML='🌊押す<br>⚙️'+pc;
@@ -19948,10 +19974,33 @@ cv.addEventListener('pointerdown',e=>{
  }
  if(AIM){const m=meV();if(m&&m.charge>=1&&my>115){actStrike(mx,my);}setAim(false);return;}
  if(FLAGAIM){if(my>115)actFlag(mx,my);setFlagAim(false);return;}
+ /* 🦸(99)英雄をタップ=必殺の詳細(ユーザー指示。hoverのtitleはスマホで見えない)。
+    ⚠どこかをタップしたらまず畳む=出しっぱなしで盤面に被り続けない */
+ try{const e9=$('heroinfo');if(e9)e9.classList.remove('on');}catch(x){}
+ {const m9=meV();
+  if(m9&&m9.units){let hu9=null,hb9=1e9;
+   for(const u of m9.units){if(u.dead||!u.hro)continue;const d9=dist(mx,my,u.px,u.py);
+    if(d9<52&&d9<hb9){hb9=d9;hu9=u;}}
+   if(hu9){showHeroInfo(m9,hu9);closeBM();return;}}}
  const hit=slotHit(mx,my);
  if(hit>=0){openBM(hit);return;}
  closeBM();
 });
+/* 🦸(99)必殺の詳細パネル(名前+充填+説明)。時間で消える(pointer-events:noneなので閉じる操作は要らない) */
+let HINFOT=null;
+function showHeroInfo(m,u){
+ const H=heroAt(u.ui);if(!H)return;
+ const el=$('heroinfo');if(!el)return;
+ const cg=clamp(m.hCg||0,0,1);
+ const n9=$('hi-n'),d9=$('hi-d');
+ if(n9)n9.innerHTML=IC('🦸 '+H.n+' — ⚡必殺『'+H.ult+'』'
+  +((m.hOut||0)===1?(cg>=1?'(撃てる!)':'(充填 '+Math.round(cg*100)+'%)'):''));
+ if(d9)d9.textContent=H.udsc;
+ el.classList.add('on');
+ try{if(sfx.tap)sfx.tap();}catch(e){}
+ if(HINFOT)clearTimeout(HINFOT);
+ HINFOT=setTimeout(()=>{try{el.classList.remove('on');}catch(e){}},6500);
+}
 /* 押した点に一番近い建設マス(範囲外は-1)。⚠🎓チュートリアルの「このマスだけ押させる」判定でも使うので
    **ここ1か所に置く**(2つに分けると片方だけ直して食い違う)。
    ⚠「範囲内で最初に見つかったマス」ではなく「一番近いマス」を選ぶ。
@@ -21656,7 +21705,36 @@ function bnsEnter(){
   META.bnum[STAGE]=((META.bnum[STAGE])|0)+1;
  }
  saveMeta();
+ try{bnsTutShow();}catch(e){}/* 🚌(99)初めての人にだけ、走る前のかんたんな案内 */
 }
+/* 🚌(99)⭐**開拓便の初回チュートリアル**(2026-08-03ユーザー指示「開拓便まで行ったらね」)=
+   **初めて開拓便に入った時だけ**、走る前に3枚の札をタップで送る。
+   ⚠TD側の🎓(tutSteps)には混ぜない=あちらはタイトル→戦場の動線で、ここへは来ない。
+   ⚠bpre(走る前)は時間が止まっているので、読んでいる間に何かが進むことはない。 */
+const BNSTUT_ST=[
+ {t:'🚌 開拓便へようこそ',m:'ここは拠点と拠点をつなぐボーナス便だ。守るのはこのバスだけ。負けは無い、気楽に走れ。'},
+ {t:'🕹 操作はかんたん',m:'左下のスティックでバスを動かす。道のゾンビを轢けば⚡スコア、連続で轢くとコンボで跳ね上がる。右下の🔥ニトロで一気に加速だ。'},
+ {t:'⏱ 締め切りは時間だ',m:'時間いっぱい走って⚡スコアを稼げ。走った稼ぎの🎒物資は🚌ガレージの強化に使える。遊べば次の拠点が開く。行ってこい!'}];
+let BNSTUTI=-1;
+function bnsTutShow(){
+ if(META.bnsTut)return;/* 1回きり */
+ const el=$('bnstut');if(!el)return;
+ BNSTUTI=0;bnsTutStep();
+ el.classList.add('on');
+}
+function bnsTutStep(){
+ const s=BNSTUT_ST[BNSTUTI];if(!s)return;
+ const t9=$('bnstut-t'),m9=$('bnstut-m'),n9=$('bnstut-n');
+ if(t9)t9.textContent=s.t;
+ if(m9)m9.textContent=s.m;
+ if(n9)n9.textContent=(BNSTUTI<BNSTUT_ST.length-1)?'▶ タップで次へ':'🚌 タップして走る!';
+}
+{const el=$('bnstut');
+ if(el&&el.addEventListener)el.addEventListener('pointerdown',e=>{
+  e.stopPropagation();try{if(sfx.tap)sfx.tap();}catch(x){}
+  BNSTUTI++;
+  if(BNSTUTI>=BNSTUT_ST.length){el.classList.remove('on');META.bnsTut=1;saveMeta();return;}
+  bnsTutStep();});}
 /* ⭐⭐⭐**道中の自己ベスト**(2026-08-02(37))=**「上手さが何にも繋がらない」を直すための土台**。
    ⚠⚠それまで残っていたのは `META.bcl`(初回クリアしたかの1bit)だけで、
      轢いた数も最高連続もリザルトに出るだけで消えていた=**2周目以降に走る理由がゼロ**だった。
@@ -24926,6 +25004,7 @@ function tutEnd(done){
 function backTitle(){
  if(TUT&&!TUT.mv)tutEnd(false);/* ⚠TUT.mv=チュートリアル自身が画面を移している最中=畳まない */
  gameActive=false;G=null;PAUSED=false;COOP=false;closeBM();setAim(false);setFlagAim(false);setSpec(-1);
+ try{const e9=$('heroinfo');if(e9)e9.classList.remove('on');}catch(e2){}/* 🦸(99)必殺の詳細も畳む */
  LANES=null;camOff();try{document.body.classList.remove('bns');document.body.classList.remove('bnspre');}catch(e){}/* 🚌ボーナス面の後始末 */
  try{busSndOff();}catch(e){}/* ⚠走行音を必ず止める(鳴りっぱなしはバグそのもの) */
  try{document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen().catch(()=>{});}catch(e){}
