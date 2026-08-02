@@ -136,6 +136,15 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  #scr-setup .seg{gap:5px}
  #scr-setup .seg .btn.sm{padding:5px 10px;font-size:13px;box-shadow:0 3px 0 var(--ink)}
  #scr-setup .btnrow .btn{padding:8px 10px;font-size:15px}
+ /* ⚠**横画面(高さ393px)は1画面に収める**=収まらないと英雄の行が画面の外へ出る(撮って直した)。
+    ⭐削るのは「読まなくても困らない物」から=ステージの一言 → 要点の帯の余白 → 札の高さ。 */
+ #scr-setup #stg-sub{display:none}
+ #scr-setup .chips{margin:2px 0 0}
+ #scr-setup .chips span{font-size:9.5px;padding:1px 5px}
+ #scr-setup #seg-stage .btn,#scr-setup #seg-diff .btn{min-height:38px;padding:4px 7px}
+ #scr-setup #seg-stage .btn b,#scr-setup #seg-diff .btn b{font-size:13px}
+ /* ⚠**説明の1行**は狭い画面では畳む(札の並びの方が先に見えるべき) */
+ #scr-setup .chipseg .note{display:none}
 }
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .codebig{font-size:44px;font-weight:900;letter-spacing:8px;text-align:center;background:var(--pane);border:3px dashed var(--ink);border-radius:14px;padding:8px}
@@ -174,7 +183,37 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .mini:active{transform:scale(.97)}
 .spec #deck,.spec #strikebtn,.spec #flagbtn,.spec #pushbtn,.spec #herobtn,.spec #pushtgt,.spec #strikehint,.spec #flaghint{display:none!important}
 /* 🚌ボーナス面の難易度ボタン(バスの黄色)。⚠色はここに書く=HTML本文に直書きすると検査が落ちる */
-.btn.dif-bns{background:#6b5a2f;border-color:#c2a03e}
+.btn.dif-bns{background:#6b5a2f;border-color:#c2a03e;color:var(--pane)}
+/* ⭐⭐**出撃準備の「札(カード)」**(2026-08-02(66)ユーザー「本当にあるソシャゲみたいな感じで。
+   雰囲気は崩さず」)=**文字だけの横並び**をやめて、**1枚に「名前+状態」が入った札**にする。
+   ⚠**紙とインクの見た目はそのまま**(色も枠も既存の物だけ)=雰囲気を変えずに読みやすくする。 */
+#seg-stage,#seg-diff{display:grid;gap:6px}
+/* ⚠⚠**`minmax(0,1fr)` にする**(2026-08-02(66)に撮って直した)=既定の `1fr` は中身の最小幅を守るので、
+   **札の文字が長いと列が伸びて隣のカラムへはみ出す**(実際に難易度の札が右のカラムを踏んだ)。 */
+#seg-stage{grid-template-columns:repeat(2,minmax(0,1fr))}
+#seg-diff{grid-template-columns:repeat(3,minmax(0,1fr))}
+#seg-stage .btn,#seg-diff .btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+ gap:1px;padding:6px 9px;text-align:left;line-height:1.15;min-height:42px;overflow:hidden}
+/* ⚠⚠**`width:100%` を必ず付ける**(2026-08-02(66)に撮って直した)=付けないと、
+   短い名前の札だけ**名前と状態が同じ行に並んで**しまう(縦に積んだつもりが揃わない)。 */
+#seg-stage .btn b,#seg-diff .btn b{display:block;width:100%;font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#seg-stage .btn i,#seg-diff .btn i{display:block;width:100%;font-style:normal;font-size:10.5px;font-weight:800;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#seg-diff .btn .ok{color:var(--life2);opacity:1}
+#seg-diff .btn.sel .ok{color:var(--ink)}
+.btn.dif-bns i{opacity:.9}
+/* 🎯砲撃・🦸英雄=**チップ**(小さい札)。⚠★の色で強さが読めるようにする */
+.chipseg{display:flex;flex-wrap:wrap;gap:5px}
+.chipseg .btn{padding:5px 9px;font-size:12.5px;border-width:2px;box-shadow:0 3px 0 var(--ink);border-radius:9px}
+.chipseg .btn .rk{font-size:10px;font-weight:900;margin-right:3px}
+/* 見出しの右に置く小さな注記(⚠見出しを2行にしない=横画面は高さが足りない) */
+.nlbl .nsub{font-size:10px;font-weight:800;opacity:.6;margin-left:6px}
+/* ステージの要点を並べる帯(⚠長い説明文の代わり) */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 2px}
+.chips span{display:inline-block;background:var(--paper2);border:2px solid var(--ink);border-radius:8px;
+ padding:2px 7px;font-size:10.5px;font-weight:800}
+.sethd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sethd .hd{margin-bottom:0}
+.sethd #seg-stage{flex:1 1 240px;max-width:340px}
 /* 🚌バスのバーチャルスティック。⚠**下の操作バーと重ならない左下**に置く。
    ⚠touch-action:none を付けないと、指を滑らせた時にページごとスクロールする */
 #bstick{position:fixed;left:12px;bottom:12px;width:124px;height:124px;border-radius:50%;
@@ -708,36 +747,41 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <div class="scr" id="scr-setup">
   <div class="setwrap">
     <div class="panel">
-      <h2 class="hd" id="stg-hd">🏕 ステージ1 — 廃線ハイウェイ</h2>
-      <p class="note" id="stg-sub" style="margin-bottom:6px">押し寄せる死潮からWAVE20を守り切ればクリア。5波ごとにボスが来る。</p>
+      <!-- ⭐**見出しの右にステージの切り替えを置く**(2026-08-02(66))=
+           「いまどこか」と「どこへ行くか」が1行で読める(前は左カラムの中で沈んでいた) -->
+      <div class="sethd">
+        <h2 class="hd" id="stg-hd">🏕 ステージ1 — 廃線ハイウェイ</h2>
+        <div class="seg" id="seg-stage">
+          <button class="btn sm sel" data-v="0"><b>1 廃線ハイウェイ</b><i>—</i></button>
+          <button class="btn sm" data-v="1" id="stg-b1"><b>2 沈んだ港</b><i>—</i></button>
+        </div>
+      </div>
+      <p class="note" id="stg-sub" style="margin:4px 0 0"></p>
+      <!-- ⭐**長い説明文の代わりに要点の帯**=読まなくても分かる(2026-08-02(66)) -->
+      <div class="chips" id="stg-tips"></div>
       <!-- ⭐横画面は幅が余っていたので**2列**にした(2026-07-27ユーザー指示
            「この画面を画面を大きく使って見やすくわかりやすい感じにして」)。
            ⚠縦画面と狭い画面では1列に戻る(CSS側のメディアクエリ)。 -->
       <div class="stcols">
       <div class="stcol">
-      <p class="note nlbl">ステージ</p>
-      <div class="seg" id="seg-stage">
-        <button class="btn sm sel" data-v="0">1 廃線ハイウェイ</button>
-        <button class="btn sm" data-v="1" id="stg-b1">2 沈んだ港</button>
-      </div>
-      <p class="note nlbl">敵の強さ</p>
+      <p class="note nlbl">🎯 敵の強さ<span class="nsub">1つ下をクリアすると開く</span></p>
       <div class="seg" id="seg-diff">
-        <button class="btn sm" data-v="0">新兵</button>
-        <button class="btn sm" data-v="1">兵長</button>
+        <button class="btn sm" data-v="0"><b>新兵</b><i>—</i></button>
+        <button class="btn sm" data-v="1"><b>兵長</b><i>—</i></button>
         <!-- 🚌ボーナス面。⚠data-v は D5 の末尾(6)=セーブの添字を動かさないため。並びだけ真ん中に置く -->
-        <button class="btn sm dif-bns" id="dif-bns" data-v="6">🚌 拠点開拓</button>
-        <button class="btn sm sel" data-v="2">古参</button>
-        <button class="btn sm" data-v="3">鬼軍曹</button>
-        <button class="btn sm" data-v="4">悪夢</button>
-        <button class="btn sm" id="dif-nm" data-v="5" style="display:none;background:var(--nm);color:var(--danger2);border-color:var(--nm2)">🌑ナイトメア</button>
+        <button class="btn sm dif-bns" id="dif-bns" data-v="6"><b>🚌 拠点開拓</b><i>—</i></button>
+        <button class="btn sm sel" data-v="2"><b>古参</b><i>—</i></button>
+        <button class="btn sm" data-v="3"><b>鬼軍曹</b><i>—</i></button>
+        <button class="btn sm" data-v="4"><b>悪夢</b><i>—</i></button>
+        <button class="btn sm" id="dif-nm" data-v="5" style="display:none;background:var(--nm);color:var(--danger2);border-color:var(--nm2)"><b>🌑 ナイトメア</b><i>—</i></button>
       </div>
       <p class="note" id="nm-note" style="margin:6px 0 0;font-size:11px;color:var(--danger2);display:none">🌑 敵の生態系が一新される。獣の群れが来る。</p>
       </div>
       <div class="stcol">
-      <p class="note nlbl">装備砲撃(研究所で新型を解放)</p>
-      <div class="seg" id="seg-stk"></div>
-      <p class="note nlbl">🦸 連れて行く英雄(1ゲーム1回だけ出撃)<button class="btn sm" id="bt-hstat" style="margin-left:6px;padding:1px 8px;font-size:11px">📋 性能</button></p>
-      <div class="seg" id="seg-hero"></div>
+      <p class="note nlbl">🎯 装備砲撃<span class="nsub">研究所で新型を解放</span></p>
+      <div class="seg chipseg" id="seg-stk"></div>
+      <p class="note nlbl">🦸 連れて行く英雄<span class="nsub">1ゲーム1回だけ出撃</span><button class="btn sm" id="bt-hstat" style="margin-left:6px;padding:1px 8px;font-size:11px">📋 性能</button></p>
+      <div class="seg chipseg" id="seg-hero"></div>
       </div>
       </div>
     </div>
@@ -23722,7 +23766,9 @@ function refreshTrainBtn(){const b=$('bt-train');if(!b||!b.style)return;
  const m=$('tr-mat');if(m)m.innerHTML=IC('🔧')+fmt(META.hmat||0);}
 function renderStkSeg(){
  const w=$('seg-stk');if(!w||!w.querySelectorAll)return;
- w.innerHTML=META.st.map(k=>`<button class="btn sm ${META.eq===k?'sel':''}" data-stk="${k}">${STRIKES[k].ic}${STRIKES[k].n}</button>`).join('');
+ /* ⭐**選んでいる物の説明を下に1行**=名前だけ並べても何が違うのか読めない(2026-08-02(66)) */
+ w.innerHTML=META.st.map(k=>`<button class="btn sm ${META.eq===k?'sel':''}" data-stk="${k}">${STRIKES[k].ic}${STRIKES[k].n}</button>`).join('')
+  +`<div class="note" style="flex:1 1 100%;margin-top:2px;font-size:10.5px">${(STRIKES[META.eq]||STRIKES[META.st[0]]||{}).dsc||''}</div>`;
  w.querySelectorAll('[data-stk]').forEach(b=>{b.onclick=()=>{META.eq=b.dataset.stk;saveMeta();renderStkSeg();};});
 }
 /* 🦸 連れて行く英雄を選ぶ(所持している英雄だけ並べる) */
@@ -23731,8 +23777,11 @@ function renderHeroSeg(){
  const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));/* 🛠DEVは全員選べる */
  if(!DEV&&META.hsel&&!heroOwned(META.hsel))META.hsel='';
  if(!own.length){w.innerHTML='<span class="note" style="font-size:11px">まだ英雄がいない。💎英雄召集で仲間にしよう</span>';return;}
- w.innerHTML='<button class="btn sm '+(META.hsel?'':'sel')+'" data-h="">連れて行かない</button>'
-  +own.map(h=>`<button class="btn sm ${META.hsel===h.id?'sel':''}" data-h="${h.id}" title="必殺技『${h.ult}』— ${h.udsc}">${RK_S[h.rk]}${h.n}</button>`).join('');
+ /* ⭐**★の色を枠に出す**(2026-08-02(66))=名前だけ並べても強さが読めない。
+    ⚠**色は `RARE` の表から出す**(CSSの --r1〜--r5 と同じ値)=直に書かない。 */
+ w.innerHTML='<button class="btn sm '+(META.hsel?'':'sel')+'" data-h="">🚫 連れて行かない</button>'
+  +own.map(h=>`<button class="btn sm ${META.hsel===h.id?'sel':''}" data-h="${h.id}" style="border-color:${RARE[h.rk-1]||RARE[0]}" title="必殺技『${h.ult}』— ${h.udsc}"><span class="rk" style="color:${RARE[h.rk-1]||RARE[0]}">${RK_S[h.rk]}</span>${h.n}</button>`).join('')
+  +`<div class="note" style="flex:1 1 100%;margin-top:2px;font-size:10.5px">${META.hsel?('⚡ 必殺『'+((HEROES.find(h=>h.id===META.hsel)||{}).ult||'')+'』— '+((HEROES.find(h=>h.id===META.hsel)||{}).udsc||'')):'英雄は1ゲームに1回だけ出撃できる。倒れたらそれまで'}</div>`;
  w.querySelectorAll('[data-h]').forEach(b=>{b.onclick=()=>{META.hsel=b.dataset.h;saveMeta();renderHeroSeg();};});
 }
 /* 研究所のタブ=この順で固定。値段では並べ替えない(買うと値段が上がって順が入れ替わるため)。
@@ -26574,12 +26623,16 @@ function refreshDiffUI(){
   /* 🚌**残り回数をそのまま出す**(2026-08-02(58))=**3/5** のように減っていくのが押す前に読める。
      ⚠**「未解放(🔒)」と「今日は使い切った」を書き分ける**=どちらも押せないので、
        同じ見た目だと**まだ開いていないのだと思われる**。 */
+  /* ⭐**1枚に「名前」と「状態」を上下で入れる**(2026-08-02(66))=横並びの文字列より読める。
+     ⚠**押せない理由は必ず書き分ける**(🔒未解放 / 今日は使い切った)=同じ見た目だと壊れて見える。 */
+  const cl=!!scArr(si)[v];/* クリア済みか */
   if(v===BNS_D){const unl=bnsUnl(si),lf=bnsLeftT(si),bs=unl?bnsBestOf(si):null;
-   x.textContent=D.n+(!unl?' 🔒'
-    :(' '+lf+'/'+BNS_DAY_N
-      +(lf<=0?(' あと'+bnsNextS())
-             :(((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎')+((bs&&bs.s>0)?' ⚡'+fmt(bs.s):'')))));}
-  else x.textContent=D.n+(ok?' W'+D.w:' 🔒');
+   x.innerHTML='<b>'+D.n+'</b><i>'+(!unl?'🔒 まだ'
+    :(lf<=0?('あと'+bnsNextS())
+           :(lf+'/'+BNS_DAY_N
+             +((Array.isArray(META.bcl)&&META.bcl[si])?'':' 💎初回')
+             +((bs&&bs.s>0)?' ⚡'+fmt(bs.s):''))))+'</i>';}
+  else x.innerHTML='<b>'+D.n+'</b><i>'+(ok?('WAVE '+D.w+(cl?' <span class="ok">✅</span>':'')):'🔒 まだ')+'</i>';
   x.disabled=!ok;x.style.opacity=ok?'':'.45';});
  if(!diffOK(si,setDiff))setDiff=best;
  document.querySelectorAll('#seg-diff .btn').forEach(x=>x.classList.toggle('sel',+x.dataset.v===setDiff));
@@ -26592,12 +26645,21 @@ function refreshStageUI(){
  document.querySelectorAll('#seg-stage .btn').forEach(x=>{
   const v=+x.dataset.v,ok=stageOK(v),S=STAGES[v];
   if(!S){x.style.display='none';return;}
-  x.textContent=(v+1)+' '+S.n+(ok?'':' 🔒');
+  /* ⭐**クリア済みの印を出す**=どこまで解放したかが一目で分かる(ソシャゲの章立てと同じ) */
+  const cl=ok&&(scArr(v)||[]).some((q,i)=>q&&i!==BNS_D);
+  x.innerHTML='<b>'+(v+1)+' '+S.n+'</b><i>'+(ok?(cl?'<span class="ok">✅ 到達ずみ</span>':'未クリア'):'🔒 前を🌑でクリアで開く')+'</i>';
   x.disabled=!ok;x.style.opacity=ok?'':'.5';
   x.classList.toggle('sel',v===(META.stg||0));});
  const S=STAGES[META.stg||0]||STAGES[0];
  if($('stg-hd'))$('stg-hd').textContent='🏕 ステージ'+((META.stg||0)+1)+' — '+S.n;
- if($('stg-sub'))$('stg-sub').textContent=S.sub+'。難易度ごとの最終WAVEまで守り切ればクリア(新兵5→兵長7→古参10→鬼軍曹15→悪夢20→🌑20)。WAVE10と15にボス、WAVE20には専用の大物が来る。';
+ /* ⚠**長い説明文を1本の帯にしない**(2026-08-02(66))=ステージの一言だけ残して、
+    遊び方の要点は下の「札」に分ける(読まなくても形で分かる)。 */
+ if($('stg-sub'))$('stg-sub').textContent=S.sub+'。';
+ if($('stg-tips'))$('stg-tips').innerHTML=
+   '<span>🏁 難易度ごとの最終WAVEまで守り切ればクリア</span>'
+  +'<span>👑 WAVE10・15にボス</span>'
+  +'<span>💀 WAVE20は専用の大物</span>'
+  +'<span>🧬 負けても研究ptは貯まる</span>';
  if($('bt-solo'))$('bt-solo').textContent='🛡 ソロ作戦 — ステージ'+((META.stg||0)+1);
 }
 $('bt-solo').onclick=()=>{ensureAC();renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show('setup');};
