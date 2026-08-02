@@ -86,6 +86,9 @@ const ARTCHG=(/posechg=([0-9.]+)/.exec(OPT)||[0,''])[1];/* 溜めの姿で並べ
 /* ⭐posesw = バットのスイングを**段階ごとに**並べる(2026-07-30)。
    ⚠止め絵1枚では「振れているか」が分からないので、5コマを振り抜き〜振りかぶりに割り当てる。 */
 const ARTSW=OPT.indexOf('posesw')>=0;
+/* ⭐posefire = 「撣った直後→遬底を引く→戻る」の5コマを並べる(2026-08-02(70))。
+   ⚠構え(chg=1)のまま fireT だけを振る=狙撃のコッキングを目で見るための唯一の口。 */
+const ARTFR=OPT.indexOf('posefire')>=0;
 /* ⭐poseult = 必殺技の詠唱モーションを**段階ごとに**並べる(2026-08-02)。
    ⚠posechg(通常の溜め)では詠唱の枝を1コマも通らない=型ごとの動きを目で見られない。
    5コマ= 押した直後 → 構え → 詰め → **一拍のタメ** → 発射の抜け。 */
@@ -569,13 +572,15 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         ⚠⚠**put の外に置くこと**=中で var 宣言すると外の `(SWSEQ||ULSEQ)` が
           未定義の名前になり、**render がそこで止まって x3 と実寸の段が丸ごと出ない**(実際に踏んだ) */
      +'var ULSEQ='+(ARTUL?'[[.06,0],[.38,0],[.72,0],[1,0],[-1,.88]]':'null')+';'
+     +'var FRSEQ='+(ARTFR?'[.26,.20,.14,.08,.02]':'null')+';'
      +'function put(px,py,mag,tt,dr,k){c.save();c.translate(px,py);c.scale(s0*mag,s0*mag);'
      +'c.lineWidth=3;c.strokeStyle=INK;'
      /* ⚠ヴァルキリーの斬りも同じ枠で撮る(vsw)。vcb=連撃の何発目か */
      /* ⚠汎用の振り(bSwing)は sw と chg が別物なので**専用の並び**で撮る。
         ⚠bSwing は sw>0 の間 chg を見ない=振りかぶりのコマは sw=0 にすること */
      +'var SW2=[[0,.55],[0,1],[.001,0],[.18,0],[.36,0]];'
-     +'var oo=ULSEQ?{ulm:1,ulp:ULSEQ[k%5][0],ulr:ULSEQ[k%5][1],chg:ULSEQ[k%5][1],ct:1,mv:0}'
+     +'var oo=FRSEQ?{chg:1,ct:1,fireT:FRSEQ[k%5]}'
+     +':ULSEQ?{ulm:1,ulp:ULSEQ[k%5][0],ulr:ULSEQ[k%5][1],chg:ULSEQ[k%5][1],ct:1,mv:0}'
      +':SWSEQ?{bsw:SWSEQ[k%5],vsw:SWSEQ[k%5],sw:SW2[k%5][0],chg:SW2[k%5][1],ct:1,vcb:k%3}:OCHG;'
      +'try{if(KD==="z")drawZombie(c,idx,0,0,dr,tt,0,{});else drawUnit(c,idx,0,0,dr,tt,0,oo);}catch(e){}'
      +'c.restore();}'
@@ -593,10 +598,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'c.fillText("上=x6(暗い地面) / 中=x3(明るい地面) / 下=実寸x1(紙) ／ 左から歩行の4コマ・右端は反転",14,44);'
      /* x6 を4コマ+反転1体。⚠ベースラインを揃える(絵の原点は足元) */
      +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.50,6,k*PER/4,1,k);'
-     +'put(W2*.92,H2*.50,6,PER*.25,(SWSEQ||ULSEQ)?1:-1,4);'
+     +'put(W2*.92,H2*.50,6,PER*.25,(SWSEQ||ULSEQ||FRSEQ)?1:-1,4);'
      /* x3 を4コマ */
      +'for(var k=0;k<4;k++)put(W2*(.12+k*.20),H2*.80,3,k*PER/4,1,k);'
-     +'put(W2*.92,H2*.80,3,PER*.25,(SWSEQ||ULSEQ)?1:-1,4);'
+     +'put(W2*.92,H2*.80,3,PER*.25,(SWSEQ||ULSEQ||FRSEQ)?1:-1,4);'
      /* 実寸。⚠**ここで見分けが付くかが本番** */
      +'for(var k=0;k<8;k++)put(W2*(.10+k*.055),H2*.96,1,k*PER/8,1,k);'
      +'c.fillStyle="rgba(0,0,0,.55)";c.font="900 11px "+FF;'

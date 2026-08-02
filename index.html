@@ -1873,8 +1873,12 @@ function sfxLoad(){
   }catch(e){SFXDEC[k]=0;}}}
 /* ⚠同じ音が一度に重なると耳が痛い。ガトリングのような連射で20発ぶん同時に鳴るのを止める */
 const SFXLAST={},SFX_MIN=.045;
-/* 素材を1回鳴らす。v=音量倍率 / p=ピッチのゆらぎ幅(連射音が単調にならないように) */
-function sfxPlay(k,v,p){
+/* 素材を1回鳴らす。v=音量倍率 / p=ピッチのゆらぎ幅(連射音が単調にならないように)
+   / rt=高さの決め打ち倍率(⚠2026-08-02(70)に追加=**同じ素材を別の音として使い回す**ための口。
+     例: 命中音(thunk)を1.7倍の高さ・小音量で鳴らすと「遊底のカチャッ」に聞こえる。
+     ⚠**新しい素材を足すより先にこれを試す**=生WAVはリポジトリに入れない決まりなので、
+       素材を1本増やすたびに base64 が増えて重くなる。) */
+function sfxPlay(k,v,p,rt){
  const b=SFXBUF[k];if(!b||!AC||muted)return false;
  const now=AC.currentTime;
  if(SFXLAST[k]!==undefined&&now-SFXLAST[k]<SFX_MIN)return true;/* 鳴らさないが「素材あり」扱い */
@@ -1882,7 +1886,7 @@ function sfxPlay(k,v,p){
  try{
   const s=AC.createBufferSource(),g=AC.createGain();
   s.buffer=b;
-  s.playbackRate.value=(SFXB[k][1]||1)*(p?(1+(Math.random()*2-1)*p):1);
+  s.playbackRate.value=(SFXB[k][1]||1)*(rt||1)*(p?(1+(Math.random()*2-1)*p):1);
   g.gain.value=volOf(k)*(v||1);/* ⭐種類ごとの音量(全体x区分) */
   s.connect(g).connect(AC.destination);s.start();
   return true;}catch(e){return false;}}
@@ -2239,6 +2243,9 @@ function twSfx(C,T){
 /* ⭐**音量を指定して鳴らす**(2026-07-27・タイトルの控えめな音用)。
    ⚠sfxPlay を直に呼ぶと SFX_GAIN(音量の表)を素通りするので、必ずここを通すこと。 */
 const sfxAt=(k,v)=>{if(!sfxPlay(k,(SFX_GAIN[k]||1)*(v||1),SFX_VAR[k]||0)&&SFXSYN[k])SFXSYN[k]();};
+/* ⭐**高さを決め打ちして鳴らす**(2026-08-02(70))=素材を増やさずに別の音として使い回す口。
+   ⚠合成音の控え(SFXSYN)には高さを渡せないので、素材が無い時は素の音で鳴る(ヘッドレスはこちら)。 */
+const sfxAtR=(k,v,rt)=>{if(!sfxPlay(k,(SFX_GAIN[k]||1)*(v||1),SFX_VAR[k]||0,rt)&&SFXSYN[k])SFXSYN[k]();};
 const sfx={};
 for(const k of Object.keys(SFXSYN).concat(Object.keys(SFXB)))if(!sfx[k]){
  const kk=k,syn=SFXSYN[kk],set=SFX_SET[kk];
@@ -10795,8 +10802,13 @@ function hLeg2(c,walk,pa,sho,amp,bw,lh){
  const sw=walk*(amp||4.6),h=HSK.hip+(lh||0);
  bLeg(c,-1.6-sw,.8,pa,sho,h,bw||1);bLeg(c,1.6+sw,1,pa,sho,h,bw||1);
 }
-/* 上体(⚠歩きと**位相をずらして**傾ける=これが無いと台車に乗って滑って見える) */
-function hTop(c,t,ph,tilt){c.save();c.translate(1,-22);c.rotate(Math.sin(t*10+ph+1.15)*.042+(tilt||0));c.translate(-1,22);}
+/* 上体(⚠歩きと**位相をずらして**傾ける=これが無いと台車に乗って滑って見える)。
+   ⭐第5引数 `swy`=**揺れの倍率**(既定1)。⚠**据えて狙う体は0へ落とす**
+     (2026-08-02(70)ユーザー「ジョルジ…しゃがんだときぐらつきすぎ」)=
+     常時±.042radの揺れが入っているので、しゃがんでも上体が呼吸のように揺れ続けて
+     「狙いすましている」に見えない。⚠**歩いている間は必ず残す**(止めると台車に戻る)。 */
+function hTop(c,t,ph,tilt,swy){c.save();c.translate(1,-22);
+ c.rotate(Math.sin(t*10+ph+1.15)*.042*(swy==null?1:swy)+(tilt||0));c.translate(-1,22);}
 /* 首+顔(かぶり物は各体で描く) */
 function hFc(c,sk,noMouth){bNeck(c,1.6,HSK.nk0,HSK.nk1,sk);bFace(c,1.6,HSK.fy,HSK.rx,HSK.ry,sk,noMouth);}
 /* 帽体(半円)。brim=[x,y,w,h] を渡すとつばも引く。⚠つばは**目より上**(帽体の下ぶち)に置く */
@@ -10815,6 +10827,12 @@ function hHair(c,col,walk){c.fillStyle=col;
  c.beginPath();c.moveTo(-2,-48.4);c.quadraticCurveTo(-12,-42,-11,-18+walk*1.6);
  c.quadraticCurveTo(-5.4,-24,-1.6,-40);c.closePath();c.fill();c.stroke();}
 const HBODY={};
+/* ⭐**「銃口の閃光は自分で描く」体の印**(2026-08-02(70))。
+   ⚠⚠共通の閃光は **(26,-33) の決め打ち**なので、しゃがんで銃を前へ差し出す狙撃王だと
+     **顔と照準器の上に巨大な橙の丸が乗る**(実寸だと体がまるごと消える)。
+   ⭐体の中で描けば、銃と同じ変換(傾き戻し・反動・銃口の向き)の上に乗るので必ず銃口に出る。
+   ⚠使う側は**呼ぶ前に0へ戻す**こと(戻し忘れると次の英雄の閃光まで消える)。 */
+let H_MZOFF=0;
 /* ---- 元警官「制圧射撃」= 紺の制服・制帽・防弾ベスト・拳銃・腕に小盾 ---- */
 HBODY.hCop=(c,U,walk,t,ph,o)=>{
  const SK=U_SKIN,C1=U.c||'#4a6b8a',C2='#46596b',PA='#59606d',SHO='#2f2b22',rc=bRc(o);
@@ -11466,6 +11484,7 @@ HBODY.hDawn=(c,U,walk,t,ph,o)=>{
      ⑥**二脚と照準器の付いた長い狙撃銃**を構える。
    ⚠既存の特殊部隊員(暗視装置+小銃)と役割が近いので、**帽子・白髪・白い丸眼鏡**で必ず分ける。 ---- */
 HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
+ H_MZOFF=1;/* ⚠銃口の閃光は下で自分で描く(共通の決め打ち位置だと顔の上に出る) */
  const SK=U_SKIN,CO='#3f4a35',CO2='#4e5b41',CP='#5c4a38',PA='#5f5a44',SHO='#3a3128',
        GM='#4a4a44',GD='#c9a13d',HR='#d8d2c4',rc=bRc(o);
  /* ⭐⭐**溜めの間は片膝を突いて構える**(2026-08-01ユーザー指摘「全然しゃがんでない」で作り直し)。
@@ -11475,10 +11494,17 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
     ⭐⭐**しゃがみは溜めの前半で終わらせて、あとは静止したまま撃つ**(2026-08-01ユーザー指摘
       「しゃがんでる最中に撃ってる感じになってる」)。溜め(rc)にそのまま比例させると
       **撃つ瞬間にちょうど沈み切る**=ずっと動いている狙撃手になる。
-      ⭐`kn`=溜めの**最初の35%で1に達する**しゃがみ具合(なめらかに詰める)。
-      ⚠**体の姿勢(脚・腰・傾き・裾・二脚)は kn / 狙いの詰め(銃の振り上げ・照準の光)は rc** と分ける。 */
- const kn=(x=>x*x*(3-2*x))(clamp(rc/.35,0,1));
- const LH=1.2+9*kn,L=(a,b)=>a+(b-a)*kn,sw=walk*3.8*(1-kn),xB=-1.6-sw,xF=1.6+sw;
+      ⭐`kn`=溜めの**出だしで一気に1へ達する**しゃがみ具合。
+      ⚠**体の姿勢(脚・腰・傾き・裾・二脚)は kn / 狙いの詰め(銃の振り上げ・照準の光)は rc** と分ける。
+    ⭐⭐**2026-08-02(70)に「スッとしゃがんで、そこで止まる」へ作り直した**
+      (ユーザー「しゃがんだときぐらつきすぎだからスッとしゃがんで狙いすましてる感じだして」)。直したのは3つ:
+      ①**35%→18%**+滑らかなS字(smoothstep)ではなく**出だしが速く末で減速する曲線**(ease-out)
+        =S字は出だしが遅いので「よいしょ」と沈んで見えた。
+      ②**上体の常時の揺れ(hTop の±.042rad)をしゃがみに反比例して消す**=これが「ぐらつき」の本体。
+      ③**ケープの揺れも一緒に消す**(据えているのに背中だけ泳いでいた)。 */
+ const kn=(x=>1-(1-x)*(1-x)*(1-x))(clamp(rc/.18,0,1));
+ const wk=walk*(1-kn);/* ⚠据えたら歩きの揺れは全部殺す */
+ const LH=1.2+9*kn,L=(a,b)=>a+(b-a)*kn,sw=wk*3.8,xB=-1.6-sw,xF=1.6+sw;
  bLegP(c,L(xB*.2,-2.6),L(-19.4,-10.6), L(xB*.5,-5.4),L(-10.9,-3.4),
         L(xB,-10.4),L(-4.4,-4.6), PA,SHO,.8,.96,1-2*kn);/* 奥=膝を地面に突いてすねを後ろへ流す */
  bLegP(c,L(xF*.2,2.4),L(-19.4,-10.4), L(xF*.5,10.6),L(-10.9,-11.8),
@@ -11490,11 +11516,11 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
     ⭐直し方=**上体の傾きを首で打ち消して、頭だけ水平に保つ**(TLC)。歩きの揺れは残す
       =打ち消すのは「構えの傾き」だけ。これでスコープが真正面を向く。 */
  const TL=.10+.02*kn,TLC=-TL;
- hTop(c,t,ph,TL);c.translate(0,LH);
- c.fillStyle=CP;/* ケープ(⚠歩きに合わせて後ろへ流す=狙撃手なのに動いて見える) */
- c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
+ hTop(c,t,ph,TL,1-kn);c.translate(0,LH);/* ⚠第5引数=揺れの倍率。据えたら0(ぐらつきの本体) */
+ c.fillStyle=CP;/* ケープ(⚠歩きに合わせて後ろへ流す。据えたら止める) */
+ c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-wk*1.4,-22+wk*2.4);
  c.lineTo(-10.4,-6-9.6*kn);c.lineTo(2,-9.4-9.6*kn);c.lineTo(5,-38.4);c.closePath();c.fill();c.stroke();
- c.fillStyle=shade(CP,.74);c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-walk*1.4,-22+walk*2.4);
+ c.fillStyle=shade(CP,.74);c.beginPath();c.moveTo(-5,-40.4);c.lineTo(-17-wk*1.4,-22+wk*2.4);
  c.lineTo(-12.4,-12-7.4*kn);c.lineTo(-3.4,-38);c.closePath();c.fill();
  /* ⭐⭐**構えると銃を眼前まで持ち上げる**(2026-08-01ユーザー指摘「眼前にスコープが来るように」)。
     ⚠肩を軸に回して上げると**銃口が空を向く**=狙えていない。**平行に持ち上げて**、
@@ -11520,11 +11546,35 @@ HBODY.hGeo=(c,U,walk,t,ph,o,rk)=>{
  c.fillStyle=GD;c.fillRect(-1.4,-28.4,3.4,3.4);
  {const gf=gunFix();
   const g2=bHold(c,rc,4.6,-34.6,-.05,.5,-.4);
+  /* ⭐⭐**1発ごとに「反動 → ボルトを引く → 戻す」**(2026-08-02(70)ユーザー指示
+     「一発撃つごとにコッキングと薬莢が落ちるように」)。⚠**単発の狙撃銃**だと分かる唯一の見せ場。
+     ⭐`ft`=撃った直後1→0(`GEO_FT`秒で切れる)。**前半=反動 / 後半=遊底の往復**と役割を分ける。
+     ⚠**銃だけ動かす**(腕は動かさない)=二脚に据えているので銃が滑る方が自然。
+       腕まで一緒に引くと肩から外れて見える。 */
+  const ft=clamp((o&&o.fireT||0)/GEO_FT,0,1);
+  const rec=clamp((ft-.62)/.38,0,1);            /* 反動=撃った瞬間だけ後ろへ */
+  const blt=ft>0?Math.sin(Math.PI*clamp((.62-ft)/.56,0,1)):0;/* 遊底=後半に1往復 */
+  /* ⚠⚠**実寸(約30px)では小さな部品は1つも読めない**=コッキングを伝えるのは
+     ①**銃そのものが後ろへ滑って銃口が下がる**(輪郭が動く) ②薬莢 ③音 の3つ。
+     レバーは「大きく撮った時に何をしているか分かる」ための添え物と割り切る。 */
+  c.save();c.translate(-5.2*rec,-.8*rec);
+  c.translate(3.4,-28+GY);c.rotate(.10*blt-.05*rec);c.translate(-3.4,28-GY);/* 銃口が下がる=遊底を起こしている */
   uGun(c,3.4,-30+GY,34,4.4,GM,0);/* 長い狙撃銃 */
   c.fillStyle='#2f3742';rr(c,7,-38.6+GY,15,4.6,1.6);c.fill();c.stroke();/* 照準器 */
   c.fillStyle=TECH;c.beginPath();c.arc(20.4,-36.3+GY,1.9+rc,0,7);c.fill();
   c.fillStyle='#3a3128';/* 二脚(⚠しゃがみと一緒に開く=据えてから狙う順になる) */
   c.beginPath();c.moveTo(27,-30.4+GY);c.lineTo(31+3.4*kn,-21+GY);c.lineTo(28.4+3.4*kn,-20.6+GY);c.lineTo(25,-29.4+GY);c.closePath();c.fill();c.stroke();
+  /* ⭐遊底のレバー(⚠**照準器より後ろ・銃身より上**に出す=胴と腕に隠れない唯一の隙間。
+     ⚠**最後に描く**=先に描くと照準器の裏に消える。⚠**明るい金属色**にしないと
+       黒フチに食われて「小さな黒い塊」になる(3.4x2.8で試して読めなかった)。 */
+  c.fillStyle='#b9bcae';
+  rr(c,4.2-8.4*blt,-35.4+GY-3.4*blt,5.4,3.6,1.4);c.fill();c.stroke();
+  /* ⭐⭐**銃口の閃光はここで描く**(共通の決め打ち位置だと顔の上に出る=`H_MZOFF`)。
+     ⚠**丸ではなく横長**にする=長い銃身の先から前へ抜ける火にする。⚠銃身の中心線に乗せる。 */
+  if(ft>0&&FXLV>0){const mz=37.4,mzy=-27.8+GY;
+   c.fillStyle='#ffdd66';c.beginPath();c.ellipse(mz+3.4*ft,mzy,4.2+8*ft,2.4+3.4*ft,0,0,7);c.fill();
+   c.fillStyle=GLOW;c.beginPath();c.arc(mz+1.4*ft,mzy,1.4+3.4*ft,0,7);c.fill();}
+  c.restore();
   bArm(c,4.6,-34.6, L(8,9.2),L(-30.4,-29.6), L(9.4,8.6),-25+GY, 5.2,4.2, shade(CO,1.14),SK);g2();gf();}
  bNeck(c,1.6,HSK.nk0,HSK.nk1,SK);
  /* ⭐**ここから頭だけ水平に戻す**(TLC)=スコープを覗いて真正面を見る姿になる。
@@ -11764,9 +11814,10 @@ function drawHeroBody(c,U,walk,o,t,ph){
  /* ⚠**shadowBlur は使わない**(2026-07-31ユーザー指摘「色がぜんぶ濁っている」)。
     ★4の光は drawUnit 側が背面の輪で出している。 */
  const f=HBODY[U.id];
+ H_MZOFF=0;
  if(f)f(c,U,walk,t||0,ph||0,o||{},rk);
- /* 撃った瞬間の閃光(⚠武器の先あたり) */
- if(o&&o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(26,-33,4+o.fireT*20,0,7);c.fill();}
+ /* 撃った瞬間の閃光(⚠武器の先あたり)。⚠`H_MZOFF=1` を立てた体は**自分で銃口に描いている** */
+ if(!H_MZOFF&&o&&o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(26,-33,4+o.fireT*20,0,7);c.fill();}
  /* レア度の★ */
  c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px '+FF;c.textAlign='center';
  /* ⚠背の高い英雄は★を上げる=頭飾りに食い込む(騎乗の暗黒の騎士は特に高い) */
@@ -14956,12 +15007,29 @@ function awardWavePts(C,quit){
    ⚠受け取るもの: (C,u,U,tg,mx,my,ang,col,utl,d5,pierce)
      mx,my=銃口の位置 / ang=敵への向き / col=その英雄の色 / d5=向き(±1)。
    ⚠**FXLV>0 の中に入れる**(演出オフの人には出さない)。⚠音は鳴らしすぎない。 */
-/* ⭐狙撃王の「1発撃った跡」=**薬莢が飛ぶ+銃口から煙**(2026-08-01ユーザー指示)。
-   ⚠通常攻撃と必殺技の**両方**で呼ぶ。⚠煙は上へゆっくり(typ:"smoke")=体を覆わない。 */
+/* ⭐狙撃王の「1発撃った跡」=**煙 → コッキング → 薬莢が落ちる**(2026-08-01→2026-08-02(70)に作り直し)。
+   ⚠通常攻撃と必殺技の**両方**で呼ぶ。⚠煙は上へゆっくり(typ:"smoke")=体を覆わない。
+   ⭐⭐**2026-08-02(70)ユーザー指示「一発撃つごとにコッキングと薬莢が落ちるように(音もしっかり)」**:
+     ①薬莢は**撃った瞬間ではなく遊底を引いた時に出す**(0.10秒後)=絵(`HBODY.hGeo` の `blt`)と揃える。
+       ⚠同時に出すと「撃つ前から排莢している」=単発の狙撃銃に見えない。
+     ②**音は3つ**=撃発(呼び出し側の snipe)/ **カチャッ(遊底)** / **チャリン(薬莢が地面へ)**。
+       ⚠**新しい素材は足していない**=`thunk`(命中)と `coin` を**高さを変えて**流用する(`sfxAtR`)。
+       生WAVは持ち込まない決まりなので、素材1本ぶんの base64 を増やさずに済ませる。
+     ③**音は FXLV に関係なく鳴らす**=演出オフでも「撃った手応え」は残す。
+   ⚠`GEO_FT`=1発ぶんの動きの長さ。**絵と `u.fireT` の両方がこれを見る**(片方だけ変えるとずれる)。 */
+const GEO_FT=.26;
 function geoSpent(C,u,mx,my,d5){
- if(!(FXLV>0))return;
- addP(C,1,u.px,u.py-24*CH_UP,{sp:74,a:(d5||-1)<0?2.2:.9,spread:.3,up:48,g:600,life:.9,r:1.9,col:GOLD2,typ:"shell",gr:u.py});
- addP(C,2,mx,my,{sp:16,up:34,g:-46,life:.62,r:2.2,col:"#b8b2a4",typ:"smoke"});
+ const me=!!(C&&C.isMe);
+ if(FXLV>0)addP(C,2,mx,my,{sp:16,up:34,g:-46,life:.62,r:2.2,col:"#b8b2a4",typ:"smoke"});
+ /* 遊底を引く(カチャッ)+そこで薬莢が飛ぶ */
+ later(C,.10,()=>{
+  if(FXLV>0)addP(C,1,u.px,u.py-24*CH_UP,{sp:74,a:(d5||-1)<0?2.2:.9,spread:.3,up:48,g:600,life:.9,r:1.9,col:GOLD2,typ:"shell",gr:u.py});
+  if(me)sfxAtR('thunk',.30,1.85);
+ });
+ /* 薬莢が地面に落ちる(チャリン)。⚠**小さく**=1発ごとに鳴るので、大きいと撃発を食う。
+    ⚠**耳で判定できるのは永井さんだけ**(Claudeは音を聴けない)=つまみはこの2行の
+      音量と高さだけ。うるさければ音量を、甲高ければ高さを下げる。 */
+ later(C,.46,()=>{if(me)sfxAtR('coin',.20,1.35);});
 }
 const H_FX={
  /* 元警官: 拳銃の速射。⚠1発が細いので**2本まとめて**撃つ+薬莢を落とす */
@@ -15113,7 +15181,7 @@ const H_FX={
     ⚠これだけは**上から降ってくる**=他の17人と重ならない */
  /* 狙撃王ジョルジ: **超長距離の一条**。⚠白ではなく**淡い緑**にして特殊部隊員と分ける。
     ⚠敵の向こうへ長く抜ける線+薬莢=「遠くから抜いた」が伝わる */
- hGeo:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.24;
+ hGeo:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=GEO_FT;
   addFx(C,"beam",mx,my,"",{x2:tg.px,y2:tg.py-18*CH_UP,
    col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:2.8,lf:.2});
   addFx(C,"tr",tg.px,tg.py-18*CH_UP,"",
@@ -16000,7 +16068,7 @@ function heroUlt(C,wave){
    ls.sort((a,b)=>b.hp-a.hp);
    const z=ls[Math.min(ls.length-1,(Math.random()*2)|0)];
    const mx=u.px+d5g*30*CH_UP,my=u.py-27*CH_UP;
-   u.fireT=.16;/* 1発ごとの反動 */
+   u.fireT=GEO_FT;/* 1発ごとの反動+コッキング */
    dmgZ(C,z,z.hp*(z.boss?.10:.24)+780*W,1);
    if(!z.dead)z.frzT=Math.max(z.frzT||0,.9);
    addFx(C,"beam",mx,my,"",{x2:z.px,y2:z.py-18*CH_UP,
@@ -16016,12 +16084,17 @@ function heroUlt(C,wave){
   const bigShot=()=>{
    u.ulW=0;u.ulT=Math.max(u.ulT||0,.86);
    const mx=u.px+d5g*30*CH_UP,my=u.py-27*CH_UP;
-   u.fireT=.3;
-   /* ⚠⚠**射程で切る**(2026-08-01の総点検で見つけた不具合)=前は「前方に居る敵ぜんぶ」で
-      **盤面の端まで全員に当たっていた**。狙撃銃の一条なので射程(520)の中だけにする。
-      ⚠**貫通の上限も置く**=並びごと撃ち抜く技だが、無制限だと必殺技1発で波が消える。 */
-   const ls=C.zombies.filter(z=>!z.dead&&z.d>=0&&(u.d-z.d)>=-20&&(u.d-z.d)<=U.rng)
-    .sort((a,b)=>b.d-a.d).slice(0,6);
+   u.fireT=GEO_FT*1.3;/* ⚠締めだけ反動を長く=重い一撃に見せる */
+   /* ⚠⚠⚠**必殺技は射程無限**(2026-08-02(70)ユーザー指示「必殺技は射程無限にして」)。
+      ❌**2026-08-01に入れた「射程(520)で切る」は外した**。書き戻さないこと。
+      ⭐**これが「締めの1発が出ない」の正体**=前の9発は盤面のどこの敵でも撃てるのに、
+        締めだけ**前方520以内**に限っていたので、9発で近場を掃除すると**撃つ相手がゼロ**になり、
+        誰も居ない方へ線が飛んで「最後の攻撃が出ていない」に見えていた。
+      ⚠**貫通の上限(6体)は残す**=無制限だと必殺技1発で波が消える。射程とは別の歯止め。
+      ⚠**前方が空なら盤面のどこでも狙う**=「必ず誰かに当たる」ことを絵で見せる方が大事。 */
+   let ls=C.zombies.filter(z=>!z.dead&&z.d>=0&&(u.d-z.d)>=-20).sort((a,b)=>b.d-a.d).slice(0,6);
+   if(!ls.length)ls=C.zombies.filter(z=>!z.dead&&z.d>=0)
+    .sort((a,b)=>Math.abs(a.d-u.d)-Math.abs(b.d-u.d)).slice(0,6);
    let far=null;for(const z of ls){if(!far||z.d<far.d)far=z;}
    for(const z of ls){dmgZ(C,z,z.hp*(z.boss?.14:.34)+1900*W,1);
     addFx(C,"spark",z.px,z.py-18*CH_UP,"",{sd:rnd(0,9),col:"#e4ffb0"});}

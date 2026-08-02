@@ -2485,6 +2485,44 @@ function checkHero(){
  }
  if(dmgN<8){console.log('FAIL: 敵にダメージを与える必殺技が少なすぎる '+dmgN);process.exit(1);}
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
+ /* ⭐⭐**狙撃王ジョルジ『撃墜』の締めの1発は射程無限**(2026-08-02(70)ユーザー指示)。
+    ⚠⚠**これが「必殺技の最後の攻撃が出ない」の正体だった**=前の9発は盤面のどこの敵でも撃つのに、
+      締めの貫通弾だけ**前方520以内**に限っていたので、9発で近場を掃除すると撃つ相手がゼロになり、
+      誰も居ない方へ線が飛んで「撃たなかった」に見えていた。
+    ⚠上の総当たりでは敵を hu.d-40〜-460 に置いている=**520の中に収まるので不具合が出ない**。
+      ここでは**わざと射程の外(-900)だけに置いて**、締めが届くことを見る。 */
+ {const h9=HEROES.find(x=>x.id==='hGeo');
+  META.stg=0;setDiff=2;META.hero={};META.hero.hGeo=1;META.hsel='hGeo';
+  startSolo();frames(20,.016);
+  const me=G.players[0];
+  me.waveDone=false;heroDeploy(me);
+  const hu=me.units.filter(u=>u.hro)[0];
+  campStep(me,h9.uch,3);
+  me.zombies.length=0;
+  /* ⚠**射程(rng)より確実に遠く**。⚠d は 0(湧き口)→PLEN(コア) なので前方は d が小さい側 */
+  const far=Math.max(10,hu.d-(h9.rng+380));
+  for(let k=0;k<3;k++)me.zombies.push(mkZ(zSpec(0,1,20),far-k*20));
+  /* ⚠⚠**9発では死なない体力にする**=途中で全滅すると「締めが出たか」を測れない。
+     ⚠**hp を測るのは9発が終わったあと**=前の9発は射程を見ないので、
+       合計だけ見ると**不具合があっても減っていて素通りする**(実際にそう書いて素通りした)。 */
+  for(const z of me.zombies){z.hp=4e6;z.mhp=4e6;}
+  campStep(me,.001,5);/* px/py を入れる */
+  if(!heroUlt(me,5)){console.log('FAIL: ジョルジの必殺技が発動しない');process.exit(1);}
+  const drain=(until)=>{for(let k=0;k<400;k++){
+   if(drain.t>=until||!me.dly||!me.dly.length)break;
+   drain.t+=.05;
+   for(const q of me.dly.slice()){q.t-=.05;if(q.t<=0&&!q.done){q.done=1;q.fn();}}
+   me.dly=me.dly.filter(q=>!q.done);}};
+  drain.t=0;
+  /* ⚠⚠**前置きのモーション(ulW0)ぶん全部が後ろへずれる**=これを足さないと
+     「9発の途中」で測ってしまい、**締めが出ていなくても hp が減っていて素通りする**。 */
+  drain((hu.ulW0||0)+2.80);/* 9発目(8x0.28=2.24)は済み・締め(2.94)はまだ */
+  const hp0=me.zombies.reduce((a,z)=>a+z.hp,0);
+  drain(9e9);
+  const hp1=me.zombies.reduce((a,z)=>a+z.hp,0);
+  if(!(hp1<hp0)){console.log('FAIL: 射程の外だけに敵が居ると『撃墜』の締めの1発が当たらない(射程で切られている)');process.exit(1);}
+  console.log('狙撃王『撃墜』: 射程('+h9.rng+')の外だけに敵が居ても締めの1発が届く OK');
+  backTitle();META.hero={};META.hsel='';}
  META.hero={};META.hsel='';
 }
 /* ⭐⭐🎥**カメラ追従**(2026-08-02)。開拓便のための土台。見るのは4つ:
