@@ -130,6 +130,29 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #scr-setup .stcols{display:grid;grid-template-columns:1fr 1fr;gap:2px 22px;align-items:start}
 #scr-setup .stcol{min-width:0}
 #scr-setup .nlbl{margin:8px 0 5px}
+/* 🏠シングルプレイのホーム(2026-08-03(93))=左に英雄の一枚絵/右に出撃と機能パネル */
+#scr-home{display:none;align-items:center;justify-content:center}
+#scr-home.on{display:flex}
+.homewrap{display:flex;gap:14px;width:min(96vw,860px);align-items:stretch}
+.homeleft{flex:0 0 34%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+ background:radial-gradient(ellipse at 50% 72%,#3d362d 0%,#241f19 70%);border:3px solid var(--ink);border-radius:14px;overflow:hidden}
+#homecv{width:100%;height:100%;display:block}
+.homehn{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-weight:900;font-size:13px;color:var(--pane);text-shadow:0 2px 0 #000}
+.homeright{flex:1 1 auto;display:flex;flex-direction:column;gap:8px;min-width:0}
+.homeres{font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:14px;justify-content:flex-end;align-items:center}
+.homego{width:100%;padding:14px 12px;font-size:17px}
+.homego i{display:block;font-style:normal;font-size:10.5px;opacity:.85;font-weight:700}
+.homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.homebt{min-height:56px;font-size:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px}
+.homebt b{font-size:12px}
+.homebt i{font-style:normal;font-size:10.5px;opacity:.8}
+/* 🗺エリアマップ(2026-08-03(93))=canvasの地図+右下の拠点カード */
+#scr-map{display:none;position:relative}
+#scr-map.on{display:block}
+#mapcv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.mapcard{position:absolute;right:10px;bottom:10px;width:min(46vw,300px);padding:10px 12px}
+.mapcard b{font-size:15px}
+.mapback{position:absolute;left:10px;bottom:10px;padding:11px 16px}
 /* 下のボタンも1列に積まず横に並べる。⚠「防衛開始」だけ広く取って押し間違えを防ぐ */
 #scr-setup .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 #scr-setup .btnrow .btn{flex:1 1 150px;padding:11px 12px}
@@ -857,7 +880,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="logo-jp">— 人が住める拠点を、ひとつずつ取り返す —</div>
   </div>
   <div class="menu">
-    <button class="btn red" id="bt-solo">🛡 ソロ作戦 — ステージ1</button>
+    <button class="btn red" id="bt-solo">🛡 シングルプレイ</button>
     <button class="btn gold" id="bt-gacha">💎 英雄召集 <span id="gem-cnt"></span></button>
     <button class="btn gold" id="bt-train" style="display:none">🏋 鍛錬所 <span id="tr-mat"></span></button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
@@ -874,6 +897,43 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <canvas id="paradecv"></canvas>
 </div>
 
+<!-- 🏠⭐⭐**シングルプレイのホーム**(2026-08-03(93)ユーザー指示「ソロ作戦じゃなくてシングルプレイ。
+     押したらソシャゲのホーム画面(参考=アークナイツ等)を参考に新UIで」)。
+     ⭐型=**左に英雄の一枚絵 / 右に大きな出撃 / 下に機能のパネル**。1画面1目的の掟はそのまま。 -->
+<div class="scr" id="scr-home">
+  <div class="homewrap">
+    <div class="homeleft">
+      <canvas id="homecv" width="300" height="330"></canvas>
+      <div id="home-hname" class="homehn"></div>
+    </div>
+    <div class="homeright">
+      <div class="homeres" id="home-res"></div>
+      <button class="btn red homego" id="bt-map">🗺 出撃 <i>エリア1 — 生存圏の地図</i></button>
+      <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
+      <div class="homegrid">
+        <button class="btn homebt" id="hm-team">🎖<b>編成</b></button>
+        <button class="btn homebt" id="hm-hero">🦸<b>英雄</b></button>
+        <button class="btn homebt" id="hm-stk">🎯<b>砲撃</b></button>
+        <button class="btn homebt" id="hm-lab">🔬<b>研究所</b><i id="hm-lab-pts"></i></button>
+        <button class="btn homebt" id="hm-gacha">💎<b>英雄召集</b><i id="hm-gem"></i></button>
+        <button class="btn homebt" id="hm-back">←<b>タイトル</b></button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 🗺⭐⭐**エリアマップ**(2026-08-03(93)ユーザー指示「にゃんこ大戦争みたいにマップ移動方式。
+     難易度選択っていう概念は消そう」)。⭐**難易度=道沿いの「拠点」**に読み替えた=
+     ①廃線の6拠点→🚌→②港の6拠点→🚌→③???と1本の道で繋がる。バスが選んだ拠点へ走る。 -->
+<div class="scr" id="scr-map">
+  <canvas id="mapcv"></canvas>
+  <div id="map-card" class="panel mapcard">
+    <b id="mc-name">—</b>
+    <p class="note" id="mc-sub" style="margin:2px 0"></p>
+    <p class="note" id="mc-st" style="margin:2px 0"></p>
+    <button class="btn red" id="bt-map-go" style="width:100%">🧟 いざ出撃!!</button>
+  </div>
+  <button class="btn mapback" id="bt-map-back">← もどる</button>
+</div>
 <div class="scr" id="scr-setup">
   <div class="setwrap">
     <div class="panel">
@@ -12145,7 +12205,8 @@ function drawHeroBody(c,U,walk,o,t,ph){
  if(f)f(c,U,walk,t||0,ph||0,o||{},rk);
  /* 撃った瞬間の閃光(⚠武器の先あたり)。⚠`H_MZOFF=1` を立てた体は**自分で銃口に描いている** */
  if(!H_MZOFF&&o&&o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(26,-33,4+o.fireT*20,0,7);c.fill();}
- /* レア度の★ */
+ /* レア度の★。⚠🏠ホームの一枚絵は★を出さない(o.nost)=下の名前に★が付いている+拡大すると巨大になる */
+ if(o&&o.nost)return;
  c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px '+FF;c.textAlign='center';
  /* ⚠背の高い英雄は★を上げる=頭飾りに食い込む(騎乗の暗黒の騎士は特に高い) */
  const st='★'.repeat(Math.min(5,rk)),sy=(U.id==='hGiant')?-72:(U.id==='hDawn')?-78:(U.id==='hDark')?-84:-62;
@@ -27798,9 +27859,11 @@ function refreshStageUI(){
  /* ⚠⚠**説明は1行だけ**(2026-08-02(68))=横画面(高さ393px)で見出しの下に帯を積むと、
     肝心の選択肢が画面から押し出される(調べた中で名指しのアンチパターン)。 */
  if($('stg-sub'))$('stg-sub').textContent=S.sub+' ─ 最終WAVEまで守り切ればクリア。負けても🧬は貯まる';
- if($('bt-solo'))$('bt-solo').textContent='🛡 ソロ作戦 — ステージ'+((META.stg||0)+1);
+ /* ⭐(93)「ソロ作戦—ステージN」→**シングルプレイ**(どこへ行くかは🗺マップが持つ) */
+ if($('bt-solo'))$('bt-solo').textContent='🛡 シングルプレイ';
 }
-$('bt-solo').onclick=()=>{ensureAC();updLabBtn();refreshDiffUI();refreshRunUI();renderPickRows();show('setup');};
+/* ⭐(93)シングルプレイ=旧・出撃準備(setup)ではなく🏠ホームへ */
+$('bt-solo').onclick=()=>{ensureAC();updLabBtn();renderPickRows();renderHome();show('home');};
 /* ⚠ここでclearRun()はしない=押し間違いで中断記録が消えるため。
    新しく始めた側が最初の作戦タイムで上書きするので実害はない */
 $('bt-start-solo').onclick=()=>{ensureAC();startSolo();};
@@ -27814,6 +27877,189 @@ function refreshRunUI(){
 }
 $('bt-run-resume').onclick=()=>{ensureAC();if(!resumeRun())refreshRunUI();};
 $('bt-back1').onclick=()=>show('title');
+/* ============ 🏠シングルプレイのホーム + 🗺エリアマップ(2026-08-03(93)ユーザー指示) ============
+   ⭐「難易度」という言葉と選択UIをやめ、**道沿いの「拠点」**に読み替えた(にゃんこ大戦争の地図の型)。
+   ⚠中身は今までの ステージ×難易度 そのまま=セーブ(META.sc)も解放の鎖(diffOK/D_ORD)も1つも触らない。
+   ⚠scr-setup(旧・出撃準備)は残してある(検査と撮影が使う)が、ソロの動線からは外れた。 */
+const MAPND=[
+ {stg:0,d:0,n:'砂の関門',      s:'埋もれた検問を抜ける最初の戦い',x:.09,y:.30},
+ {stg:0,d:1,n:'錆びた高架',    s:'車の骸が積み上がる登り道',      x:.21,y:.17},
+ {stg:0,d:2,n:'廃線ハイウェイ',s:'砂に埋もれた最終防衛拠点',      x:.34,y:.30},
+ {stg:0,d:6,n:'森の道',        s:'🚌開拓便=轢いて稼ぐボーナス',   x:.45,y:.15,bns:1},
+ {stg:0,d:3,n:'検問所跡',      s:'鬼軍曹いわく「ここからが本番」',x:.56,y:.28},
+ {stg:0,d:4,n:'崩れた立体交差',s:'悪夢のような物量が来る',        x:.67,y:.15},
+ {stg:0,d:5,n:'終末の廃線',    s:'🌑生態系が一新される。獣の群れ',x:.79,y:.25,nm:1},
+ {stg:1,d:0,n:'防波堤の入り江',s:'潮の匂い。海の拠点の入り口',    x:.89,y:.42},
+ {stg:1,d:1,n:'錆びた桟橋',    s:'桟橋の下から何かが見ている',    x:.79,y:.56},
+ {stg:1,d:2,n:'沈んだ港',      s:'ゾンビ化した海の生き物の巣',    x:.67,y:.68},
+ {stg:1,d:6,n:'海沿いの道',    s:'🚌開拓便=🌊高潮の走り屋コース', x:.56,y:.55,bns:1},
+ {stg:1,d:3,n:'塩漬けの市場',  s:'高波が押し寄せる市場跡',        x:.45,y:.68},
+ {stg:1,d:4,n:'深潮の埠頭',    s:'悪夢の物量が水浸しの道を走る',  x:.33,y:.57},
+ {stg:1,d:5,n:'海淵の底',      s:'🌑深海のナイトメアが孵る場所',  x:.21,y:.69,nm:1},
+ {stg:2,d:-1,n:'???',          s:'第3の拠点(これから作る)',       x:.09,y:.60,lock3:1}
+];
+let MSEL=-1,MBUS=null;
+const ndOpen=nd=>!nd.lock3&&stageOK(nd.stg)&&diffOK(nd.stg,nd.d);
+const ndClr=nd=>!nd.lock3&&!!scArr(nd.stg)[nd.d];
+function mapDefSel(){
+ let last=0;
+ for(let i=0;i<MAPND.length;i++){const nd=MAPND[i];
+  if(nd.lock3)continue;
+  if(ndOpen(nd)){last=i;if(!ndClr(nd))return i;}}
+ return last;/* 全部クリア済みなら一番先の拠点 */
+}
+function mapSel(i){
+ const nd=MAPND[i];if(!nd)return;
+ MSEL=i;
+ $('mc-name').innerHTML=(nd.nm?'🌑 ':nd.bns?'🚌 ':'')+nd.n;
+ const open=ndOpen(nd);
+ let sub=nd.s;
+ if(!nd.lock3&&nd.d!==BNS_D)sub+=' — '+D5[nd.d].w+'波';
+ if(nd.bns)sub+='(今日あと'+(typeof bnsLeftT==='function'?bnsLeftT(nd.stg):'-')+'回)';
+ $('mc-sub').textContent=sub;
+ $('mc-st').innerHTML=nd.lock3?'⚠ まだ作っていない'
+  :!open?IC('🔒')+' 手前の拠点を解放すると開く'
+  :ndClr(nd)?IC('✅')+' 解放済み(何度でも遊べる)'
+  :(nd.d!==BNS_D&&CLR_GEM[nd.d]?IC('⭐初回解放で 💎'+CLR_GEM[nd.d]):'⭐初めての拠点');
+ $('bt-map-go').style.display=(open&&!nd.lock3)?'':'none';
+ try{if(sfx.tap)sfx.tap();}catch(e){}
+}
+/* 🚌バスの位置。⚠選ぶたびに走らせる=「バスで拠点へ向かう」物語の絵 */
+function mapXY(nd,w,h){return[nd.x*w,(0.08+nd.y*.78)*h];}
+function mapDraw(t){
+ const cv9=$('mapcv');if(!cv9)return;
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ const w=cv9.clientWidth*dpr,h=cv9.clientHeight*dpr;
+ if(!w||!h)return;
+ if(cv9.width!==Math.round(w))cv9.width=Math.round(w);
+ if(cv9.height!==Math.round(h))cv9.height=Math.round(h);
+ const c=cv9.getContext('2d');if(!c)return;
+ c.setTransform(1,0,0,1,0,0);
+ /* ---- 地図の紙。⚠DEADTIDEの雰囲気=セピアの紙+荒野と海(参考の地図の「型」だけ借りる) ---- */
+ c.fillStyle='#ddd3bc';c.fillRect(0,0,w,h);
+ /* 海(②の帯=右上から下半分へ)。紙の上の水彩っぽく薄く2段 */
+ c.fillStyle='rgba(95,138,156,.20)';
+ c.beginPath();c.moveTo(w,0.18*h);c.quadraticCurveTo(.72*w,.52*h,.30*w,.88*h);
+ c.lineTo(w*1.2,h*1.2);c.closePath();c.fill();
+ c.fillStyle='rgba(95,138,156,.13)';
+ c.beginPath();c.moveTo(w,0.30*h);c.quadraticCurveTo(.70*w,.62*h,.38*w,.98*h);
+ c.lineTo(w*1.2,h*1.2);c.closePath();c.fill();
+ /* 荒野の模様=ひび・クレーター(⚠等間隔に並べない) */
+ c.strokeStyle='rgba(74,64,52,.18)';c.lineWidth=2*dpr;
+ const cr=[[.15,.48,.05],[.48,.40,.033],[.30,.82,.04],[.62,.40,.026],[.86,.20,.03]];
+ for(const q of cr){c.beginPath();c.arc(q[0]*w,q[1]*h,q[2]*w,0,7);c.stroke();
+  c.beginPath();c.arc(q[0]*w,q[1]*h,q[2]*w*.55,0,7);c.stroke();}
+ /* 波の記号(海側) */
+ c.strokeStyle='rgba(63,90,107,.35)';
+ for(const q of [[.84,.62],[.90,.75],[.74,.80],[.94,.55]]){
+  c.beginPath();c.moveTo(q[0]*w-14*dpr,q[1]*h);
+  c.quadraticCurveTo(q[0]*w-7*dpr,q[1]*h-6*dpr,q[0]*w,q[1]*h);
+  c.quadraticCurveTo(q[0]*w+7*dpr,q[1]*h-6*dpr,q[0]*w+14*dpr,q[1]*h);c.stroke();}
+ /* ---- 道=拠点を順に繋ぐ点線(にゃんこの型)。⚠③へは薄く引く ---- */
+ c.lineCap='round';
+ for(let i=0;i<MAPND.length-1;i++){
+  const a=mapXY(MAPND[i],w,h),b=mapXY(MAPND[i+1],w,h);
+  const open=ndOpen(MAPND[i+1]);
+  c.strokeStyle=MAPND[i+1].lock3?'rgba(74,64,52,.25)':open?'#4a4034':'rgba(74,64,52,.45)';
+  c.setLineDash([2.5*dpr,7*dpr]);c.lineWidth=4*dpr;
+  c.beginPath();c.moveTo(a[0],a[1]);
+  c.quadraticCurveTo((a[0]+b[0])/2,(a[1]+b[1])/2-14*dpr,b[0],b[1]);c.stroke();}
+ c.setLineDash([]);
+ /* ---- 拠点 ---- */
+ for(let i=0;i<MAPND.length;i++){const nd=MAPND[i];
+  const p=mapXY(nd,w,h),open=ndOpen(nd),clr=ndClr(nd),r=15*dpr;
+  if(i===MSEL){c.strokeStyle='#e8a33d';c.lineWidth=4*dpr;
+   c.beginPath();c.arc(p[0],p[1],r+5*dpr+Math.sin(t*5)*1.5*dpr,0,7);c.stroke();}
+  c.fillStyle=nd.lock3?'#b9b0a0':!open?'#9a9284':clr?'#8fbf4d':nd.nm?'#3a3440':nd.bns?'#e8a33d':'#f2ecdc';
+  c.strokeStyle='#241f19';c.lineWidth=3*dpr;
+  c.beginPath();c.arc(p[0],p[1],r,0,7);c.fill();c.stroke();
+  /* 中の印=✅解放済み/🔒まだ/★いま行ける */
+  const im=(!open||nd.lock3)?icoImgFor('🔒'):clr?icoImgFor('✅'):null;
+  if(im){const s9=r*1.15;try{c.drawImage(im,p[0]-s9/2,p[1]-s9/2,s9,s9);}catch(e){}}
+  else if(open){c.fillStyle=nd.nm?DANGER:INK;c.font='900 '+(11*dpr)+'px '+FF;
+   c.textAlign='center';c.fillText(nd.bns?'🚌':'★',p[0],p[1]+4*dpr);}
+  /* 名前の札(⚠文字10.5px以上の掟) */
+  c.font='900 '+(11*dpr)+'px '+FF;c.textAlign='center';
+  const tw9=c.measureText(nd.n).width+10*dpr;
+  c.fillStyle=i===MSEL?'#f2ecdc':'rgba(242,236,220,.82)';
+  c.strokeStyle='#241f19';c.lineWidth=2*dpr;
+  rr(c,p[0]-tw9/2,p[1]+r+4*dpr,tw9,16*dpr,4*dpr);c.fill();c.stroke();
+  c.fillStyle=INK;c.fillText(nd.n,p[0],p[1]+r+16*dpr);
+ }
+ /* ---- 🚌バス=選んだ拠点へ走る ---- */
+ {const tgP=mapXY(MAPND[Math.max(0,MSEL)],w,h),ty=tgP[1]-22*dpr;
+  if(!MBUS)MBUS={x:tgP[0],y:ty};
+  MBUS.x+=(tgP[0]-MBUS.x)*.12;MBUS.y+=(ty-MBUS.y)*.12;
+  const bx=MBUS.x,by=MBUS.y,s9=dpr,fl=(tgP[0]-MBUS.x<-1)?-1:1;
+  c.save();c.translate(bx,by);c.scale(fl*s9,s9);
+  c.strokeStyle='#241f19';c.lineWidth=2.6;
+  c.fillStyle='#c9a13d';rr(c,-16,-9,32,15,4);c.fill();c.stroke();/* 車体 */
+  c.fillStyle='#8fdcf5';for(let k=0;k<3;k++){c.fillRect(-11+k*8,-6,6,5);c.strokeRect(-11+k*8,-6,6,5);}
+  c.fillStyle='#241f19';
+  c.beginPath();c.arc(-8,7,3.4,0,7);c.fill();c.beginPath();c.arc(9,7,3.4,0,7);c.fill();
+  c.restore();}
+}
+/* タップ=一番近い拠点を選ぶ(押す所44pxの掟=判定は半径26) */
+$('mapcv').addEventListener('pointerdown',e=>{
+ const cv9=$('mapcv'),rc9=cv9.getBoundingClientRect();
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ const px=(e.clientX-rc9.left)*dpr,py=(e.clientY-rc9.top)*dpr;
+ const w=cv9.width,h=cv9.height;
+ let bi=-1,bd=1e9;
+ for(let i=0;i<MAPND.length;i++){const p=mapXY(MAPND[i],w,h);
+  const dd=Math.hypot(p[0]-px,p[1]-py);if(dd<26*dpr&&dd<bd){bd=dd;bi=i;}}
+ if(bi>=0)mapSel(bi);
+});
+$('bt-map-go').onclick=()=>{
+ const nd=MAPND[MSEL];if(!nd||nd.lock3)return;
+ if(!ndOpen(nd)){
+  if(nd.d===BNS_D)try{toast('🚌 今日はもう'+BNS_DAY_N+'回走りました。次は あと '+bnsNextS(),true);}catch(e){}
+  return;}
+ ensureAC();META.stg=nd.stg;saveMeta();setDiff=nd.d;startSolo();
+};
+$('bt-map-back').onclick=()=>{renderHome();show('home');};
+/* ---- 🏠ホーム ---- */
+function renderHome(){
+ const hr=$('home-res');
+ if(hr)hr.innerHTML=IC('🧬'+fmt(META.pts||0)+'　💎'+(META.gem||0)+'　🔧'+(META.hmat||0));
+ const lp=$('hm-lab-pts');if(lp)lp.textContent='🧬'+fmt(META.pts||0);
+ const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0);
+ const H=HEROES.find(x=>x.id===META.hsel&&heroOwned(x.id))||HEROES.find(x=>heroOwned(x.id))||HEROES[0];
+ const hn=$('home-hname');
+ if(hn&&H)hn.innerHTML='<span style="color:'+(RARE[H.rk-1]||RARE[0])+'">'+RK_S[H.rk]+'</span> '+H.n;
+ HOMEH=H?H.id:'';
+ const rb=$('bt-home-resume');
+ if(rb){const d=loadRun();rb.style.display=d?'':'none';
+  if(d)rb.textContent='▶ 続きから — '+(STAGES[d.stg||0]||STAGES[0]).n+' WAVE '+((d.wave||0)+1);}
+}
+let HOMEH='';
+function homeDraw(t){
+ const cv9=$('homecv');if(!cv9)return;
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ const w=cv9.clientWidth*dpr,h=cv9.clientHeight*dpr;
+ if(!w||!h)return;
+ if(cv9.width!==Math.round(w)){cv9.width=Math.round(w);}
+ if(cv9.height!==Math.round(h)){cv9.height=Math.round(h);}
+ const c=cv9.getContext('2d');if(!c)return;
+ c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,w,h);
+ const ui=hUiOf(HOMEH);if(ui<0)return;
+ /* 足元の光(レア度の色)+一枚絵(ゆっくり待機で揺れる) */
+ const H=HEROES.find(x=>x.id===HOMEH);
+ c.fillStyle='rgba(232,163,61,.14)';
+ c.beginPath();c.ellipse(w/2,h*.88,w*.30,h*.05,0,0,7);c.fill();
+ const s9=Math.min(w,h)/118;/* ⚠英雄の全高は約53×CH_UP=枠に収まる倍率にする(最初/70で頭が切れた) */
+ c.save();c.translate(w/2,h*.88);c.scale(s9,s9);c.lineWidth=2.4/s9*dpr;
+ try{drawUnit(c,ui,0,0,1,t*.35,0,{nost:1});}catch(e){}
+ c.restore();
+}
+$('bt-map').onclick=()=>{MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show('map');};
+$('bt-home-resume').onclick=()=>{ensureAC();if(!resumeRun())renderHome();};
+$('hm-team').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
+$('hm-hero').onclick=()=>{renderHeroPick();$('md-hpick').classList.add('on');};
+$('hm-stk').onclick=()=>{renderStkPick();$('md-stk').classList.add('on');};
+$('hm-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
+$('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');};
+$('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
 $('bt-back2').onclick=()=>show('title');
 $('bt-howto').onclick=()=>tutOpen();
@@ -28181,6 +28427,8 @@ function loopBody(now){
  }
  if(TUT&&!PAUSED)tutStep(dt0);/* ⚠タイトルの段(ガチャ)もあるので gameActive では絞らない */
  if(TUT)tutPtr();/* ⚠止まっている間も置き直す(中で引っ込める)ので PAUSED では絞らない */
+ if(SCR==='map')try{mapDraw(TT);}catch(e){}
+ if(SCR==='home')try{homeDraw(TT);}catch(e){}
  if(SCR==='title'){paradeStep(TT);
   /* ⏳**残り時間の表示を出しっぱなしにしない**=タイトルに居る間は時々書き直す(20秒ごと) */
   BNSDT-=dt0;if(BNSDT<=0){BNSDT=20;try{refreshDiffUI();}catch(e){}}

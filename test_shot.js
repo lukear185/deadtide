@@ -183,6 +183,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
          +'}catch(e){}':''))
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
+     /* 🏠home=シングルプレイのホーム / 🗺worldmap=エリアマップ(2026-08-03(93)) */
+     :(OPT.indexOf('home')>=0)?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.hero={hNox:1};META.hsel="hNox";'
+       +'renderHome();show("home");for(var q9=0;q9<8;q9++)homeDraw(q9*.1);')
+     :(OPT.indexOf('worldmap')>=0)?('META.tr0=1;'
+       +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
+       +'MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')
      /* hstat=🦸英雄ステータス。hs=英雄id を足すとその1人を選んだ状態で撮る */
      :(OPT.indexOf('hstat')>=0)?('META.hero={hNox:1,hSf:2,hCop:1,hDawn:1,hStorm:1};META.gem=17;'
        +'openHStat("'+((/hs=([A-Za-z0-9]+)/.exec(OPT)||[0,''])[1])+'");')
