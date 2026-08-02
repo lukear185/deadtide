@@ -2483,6 +2483,48 @@ function checkHero(){
   if(heroDeploy(me)){console.log('FAIL: 戦死した英雄が再出撃できる '+h.id);process.exit(1);}
   backTitle();
  }
+ /* ⭐⭐**近接英雄の連撃**(2026-08-03(78)〜(79)ユーザー
+    「近接ヒーローは全部ヴァルキリーみたいに固有のモーションで連続攻撃してほしい」
+    →「3連撃で固定せずキャラごとに変えて欲しい」)。見るのは3つ:
+    ①**表(H_CMB)に手数が入っている** ②**手数がキャラごとに違う**(全部3手なら「固定」のまま)
+    ③**実際に撃つと u.cmb がその手数で回る**(回らないと1手目しか出ない)。
+    ⚠⚠**絵は検査で見られない**=ここで見るのは「仕組みが回っているか」だけ。
+      見た目は撮る: node test_shot.js out.png 1200 740 "pose=u:hNox+posesw" */
+ {const ids=Object.keys(H_CMB);
+  if(ids.length<4){console.log('FAIL: 連撃の表が少なすぎる '+ids.length+'体');process.exit(1);}
+  const lens={};
+  for(const id of ids){
+   const A=H_CMB[id];
+   if(!Array.isArray(A)||A.length<2){console.log('FAIL: '+id+' の連撃が2手未満');process.exit(1);}
+   for(const r of A){
+    if(!Array.isArray(r)||r.length!==4){console.log('FAIL: '+id+' の1手が[振りかぶり,振り抜き,ずれx,ずれy]になっていない');process.exit(1);}
+    if(Math.abs(r[0])>1.25||Math.abs(r[1])>1.25){console.log('FAIL: '+id+' の振りが1.25radを超えている(腕が背中側へ回る)');process.exit(1);}
+    if(Math.abs(r[2])>14||Math.abs(r[3])>10){console.log('FAIL: '+id+' のずれが大きすぎる(肩から武器が離れる)');process.exit(1);}}
+   /* ⚠**同じ手が2つ入っていないこと**=連撃に見えない */
+   const seen={};
+   for(const r of A){const k=r.join(',');if(seen[k]){console.log('FAIL: '+id+' に同じ振りが2回入っている');process.exit(1);}seen[k]=1;}
+   lens[id]=A.length;
+   /* ⚠**振る英雄の表にも載っていること**(片方だけだと武器が1ミリも動かない) */
+   if(!U_SWG.has(id)){console.log('FAIL: '+id+' が U_SWG に無い(武器が動かない)');process.exit(1);}}
+  const uniq=Object.keys(lens).map(k=>lens[k]).filter((v,i,a)=>a.indexOf(v)===i);
+  if(uniq.length<2){console.log('FAIL: 全員が同じ手数(キャラごとに変わっていない)');process.exit(1);}
+  /* ③実際に回るか=撃たせて u.cmb の通った値を数える */
+  {const h9=HEROES.find(x=>x.id==='hNox');
+   META.stg=0;setDiff=2;META.hero={};META.hero.hNox=1;META.hsel='hNox';
+   startSolo();frames(20,.016);
+   const me=G.players[0];me.waveDone=false;heroDeploy(me);
+   const hu=me.units.filter(u=>u.hro)[0];
+   me.flagD=PLEN*.5;hu.d=PLEN*.5;
+   for(let k=0;k<400&&(k<6||hu.mv);k++)campStep(me,.05,3);
+   me.zombies.length=0;
+   for(let k=0;k<4;k++)me.zombies.push(mkZ(zSpec(0,1,20),Math.max(10,hu.d-20-k*10)));
+   for(const z of me.zombies){z.hp=9e6;z.mhp=9e6;}
+   const seen2={};
+   for(let k=0;k<600;k++){campStep(me,.05,3);seen2[hu.cmb|0]=1;}
+   const n9=uCmbN(hu.ui),got=Object.keys(seen2).length;
+   if(got!==n9){console.log('FAIL: 終焉の騎士の連撃が'+n9+'手のはずが'+got+'通りしか出ていない');process.exit(1);}
+   console.log('近接英雄の連撃: '+ids.map(k=>k+' '+lens[k]+'手').join(' / ')+' / 実走で'+got+'手ぶん回った OK');
+   backTitle();META.hero={};META.hsel='';}}
  if(dmgN<8){console.log('FAIL: 敵にダメージを与える必殺技が少なすぎる '+dmgN);process.exit(1);}
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  /* ⭐⭐**狙撃王ジョルジ『撃墜』の締めの1発は射程無限**(2026-08-02(70)ユーザー指示)。

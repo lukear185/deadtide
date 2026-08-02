@@ -13478,17 +13478,37 @@ const U_SWG=new Set([
    ⚠**振り抜きの角は 1.2rad を超えない**=腕が背中側まで回って外れて見える。
    ⚠**ずれ(dx,dy)を大きくしすぎない**=肩から武器が離れる(±8まで)。 */
 const H_CMB={
- /* 終焉の騎士(大鎌)=①袈裟斬り ②下から掬い上げ ③水平の薙ぎ */
- hNox :[[-.34,1.05,-2,-1],[ .62,-.86,-1,4],[-.10, .30,-7,-1]],
- /* 暗黒の騎士(騎槍)=①突き ②振り下ろし ③引き戻しの薙ぎ。⚠槍は回しすぎない(NOTESの掟) */
- hDark:[[-.06, .10,-9, 0],[-.30, .72,-2,-2],[ .16,-.34,-5, 3]],
- /* 鋼鉄の巨人(鉄拳)=①叩きつけ ②横薙ぎ ③踏み込みの一撃 */
- hGiant:[[-.10,.46,-5,0],[ .34,-.52,-7,2],[-.44,.92,-2,-3]],
- /* 整備士(レンチ)=①横殴り ②振り下ろし ③返し */
- hMech:[[-.38,.85,-1,0],[-.05,.34,-6,1],[ .48,-.70,-2,3]],
- /* 配達人(荷物)=①振り下ろし ②下から放り上げ ③体ごとぶちかまし */
- hPost:[[0,.90,-.4,-1],[ .55,-.78,-1,3],[-.14,.26,-8,0]],
+ /* 終焉の騎士(大鎌)=**4手**。①袈裟斬り ②下から掬い上げ ③水平の薙ぎ ④大回転の締め */
+ hNox :[[-.52,1.15,-3,-2],[ .78,-1.00,-2, 6],[-.06, .26,-9,-1],[-.95,1.18,-1,-5]],
+ /* 暗黒の騎士(騎槍)=**2手**。①深い突き ②引き戻しの薙ぎ。⚠槍は回しすぎない(既知の掟) */
+ hDark:[[-.04, .08,-13, 0],[ .30,-.46,-4, 5]],
+ /* 鋼鉄の巨人(鉄拳)=**3手**。①叩きつけ ②横薙ぎ ③両手で振り下ろす締め */
+ hGiant:[[-.16,.58,-6,-1],[ .52,-.72,-9, 3],[-.62,1.10,-2,-5]],
+ /* 整備士(レンチ)=**5手**の速い連打。⚠1手が小さいので、向きを毎回変えて手数で見せる */
+ hMech:[[-.44,.92,-2,0],[ .40,-.62,-6, 2],[-.10,.34,-8,-1],[ .58,-.80,-3, 4],[-.70,1.05,-1,-3]],
+ /* 配達人(荷物)=**2手**。①振り下ろし ②下から放り上げ */
+ hPost:[[-.10,1.02,-1,-2],[ .72,-.92,-2, 5]],
 };
+/* ⭐**その体の手数**(2026-08-03(79)ユーザー「3連撃で固定せずキャラごとに変えて欲しい」)。
+   ⚠表に無い体は3のまま(ヴァルキリーの専用の枝が %3 で書かれているため)。 */
+const uCmbN=ui=>{const U=UNITS[ui];const A=U&&H_CMB[U.base||U.id];return (A&&A.length)||3;};
+/* ⭐⭐**連撃の「手ごとの当たりの絵」**(2026-08-03(79))。
+   ⚠⚠**腕の振りを変えただけでは実機で連撃に見えない**(ユーザー「★5のやつ見てみたけど誰もなってない」)=
+     ①実寸だと腕の角度の差は数pxしかない ②**当たった時の絵が毎回同じ**だと、目は「同じ攻撃の繰り返し」と読む。
+   ⭐**斬撃の向きを手ごとに回し、最後の1手だけ大きくする**(=1,2,3,決め の拍が出る)。
+     これがヴァルキリーが連撃に見えていた本当の理由。 */
+function hCmbFx(C,u,tg,ang,col){
+ if(!(FXLV>0))return;
+ const n=uCmbN(u.ui),k=((u.cmb||0)+n-1)%n;/* ⚠cmb は撃つ前に進むので1つ戻して「いま出した手」を見る */
+ const fin=(k===n-1);/* 最後の1手=締め */
+ const a0=ang+(k%2?2.2:-.55)+k*.42;
+ addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:a0,r:(fin?34:22)*CH_UP,lv:fin?3:2,col});
+ if(fin){
+  addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:a0+2.4,r:26*CH_UP,lv:2,col:'#fff6d8'});
+  addFx(C,'ring',tg.px,tg.py,'',{r:56,col});
+  C.shake=Math.max(C.shake||0,.30);
+ }
+}
 /* ⚠**いま描いている体の id**=bSwing は o しか受け取らないので、ここで渡す。
    ⚠**drawUnit の入口で必ず入れ直すこと**(前のキャラの id が残ると別人の連撃になる)。 */
 let SWG_ID='';
@@ -15232,6 +15252,7 @@ const H_FX={
  hMech:(C,u,U,tg,mx,my,ang,col,utl)=>{u.fireT=.12;
   if(FXLV>0){addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang-.6,r:(20+utl*5)*CH_UP,lv:2,col:'#cfd5da'});
    addP(C,6,tg.px,tg.py-18*CH_UP,{sp:160,a:ang,spread:1.1,g:420,life:.3,r:1.6,col:'#ffdd66'});
+   hCmbFx(C,u,tg,ang,'#cfd5da');
    hitFx(C,tg,ang,'#cfd5da',1,U.type);}
   C.shake=Math.max(C.shake||0,.07);
   if(C.isMe&&Math.random()<.5)sfx.thunk?sfx.thunk():sfx.shot();},
@@ -15239,6 +15260,7 @@ const H_FX={
  hPost:(C,u,U,tg,mx,my,ang)=>{u.fireT=.1;
   if(FXLV>0){addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang+.2,r:22*CH_UP,lv:1,col:GOLD2});
    addP(C,5,tg.px,tg.py-22*CH_UP,{sp:60,a:ang+Math.PI,spread:1.2,up:30,g:90,life:.75,r:2.2,col:PAPER});
+   hCmbFx(C,u,tg,ang,GOLD2);
    hitFx(C,tg,ang,GOLD2,1,U.type);}
   if(C.isMe&&Math.random()<.45)sfx.shot();},
  /* 特殊部隊員: **精密狙撃**。白い一条が敵の向こうへ抜ける+薬莢 */
@@ -15320,6 +15342,7 @@ const H_FX={
   if(FXLV>0){addFx(C,'shock',tg.px,tg.py+2,'',{r:(U.aoe||90)*1.1,col:'#d8d2c4'});
    addFx(C,'ring',tg.px,tg.py,'',{r:(U.aoe||90)*.7,col:GOLD2});
    addP(C,9,tg.px,tg.py,{sp:150,up:60,g:520,life:.55,r:3,col:'#c9bfa4',typ:'smoke'});
+   hCmbFx(C,u,tg,ang,GOLD2);/* ⭐手ごとに殴る向きが変わる+3手目は締め */
    hitFx(C,tg,ang,GOLD2,1,U.type);}
   C.shake=Math.max(C.shake||0,.26);
   if(C.isMe)sfx.quake?sfx.quake():(sfx.boom?sfx.boom():sfx.shot());},
@@ -15349,6 +15372,7 @@ const H_FX={
    addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang-.55,r:(26+utl*6)*CH_UP,lv:3,col:DANGER});
    addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang+2.2,r:(20+utl*5)*CH_UP,lv:2,col:'#3f2c38'});
    addP(C,7,tg.px,tg.py-18*CH_UP,{sp:150,a:ang,spread:.9,g:300,life:.42,r:2.2,col:DANGER2});});
+  hCmbFx(C,u,tg,ang,DANGER);/* ⭐手ごとに斬撃の向きが変わる+最後の1手は大きい */
   if(FXLV>0)hitFx(C,tg,ang,DANGER,1,U.type);
   C.shake=Math.max(C.shake||0,.12);
   if(C.isMe)sfx.lslash?sfx.lslash():sfx.shot();},
@@ -15402,6 +15426,7 @@ const H_FX={
    addFx(C,"shock",tg.px,tg.py+2,"",{r:(U.aoe||90)*.85,col:"#8f1f28"});
    addFx(C,"spark",tg.px,tg.py-18*CH_UP,"",{sd:rnd(0,9),col:"#c8323c"});
    addP(C,7,tg.px,tg.py,{sp:130,a:aw,spread:.4,up:40,g:520,life:.5,r:2.6,col:"#5a4a52",typ:"smoke"});
+   hCmbFx(C,u,tg,ang,"#c8323c");
    hitFx(C,tg,ang,"#c8323c",1,U.type);}
   C.shake=Math.max(C.shake||0,.18);
   if(C.isMe)sfx.thrust?sfx.thrust():sfx.shot();},
@@ -16537,7 +16562,7 @@ function campStep(C,dt,wave){
     u.chg=Math.min(1,(u.chg||0)+dt/cgT9);u.ct=1;u.tx=tg.px;u.ty=tg.py;
    }else if(u.cd>0)u.ct=0;
    if(u.cd<=0&&(cgT9<=0||(u.chg||0)>=1)){u.cd=U.rate;u.chg=0;u.ct=0;u.fired=1;
-    u.cmb=((u.cmb||0)+1)%3;/* ⭐連撃の番号(ヴァルキリーの斬り方を1発ごとに変える) */
+    u.cmb=((u.cmb||0)+1)%uCmbN(u.ui);/* ⭐連撃の番号。⚠手数は体ごと(uCmbN) */
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
     /* ⭐⭐**投げた物は「着弾してから」当てる**(2026-08-01ユーザー指摘
        「攻撃モーションに入った瞬間に相手にダメージが入っていて、爆発物が着弾していないのに敵が倒れる」)。
