@@ -2498,15 +2498,39 @@ function checkHero(){
   me.waveDone=false;heroDeploy(me);
   const hu=me.units.filter(u=>u.hro)[0];
   campStep(me,h9.uch,3);
-  me.zombies.length=0;
-  /* ⚠**射程(rng)より確実に遠く**。⚠d は 0(湧き口)→PLEN(コア) なので前方は d が小さい側 */
-  const far=Math.max(10,hu.d-(h9.rng+380));
-  for(let k=0;k<3;k++)me.zombies.push(mkZ(zSpec(0,1,20),far-k*20));
+  /* ⚠⚠**英雄の d は出撃位置しだいで負にもなる**(この土台では -965 だった)=そのままだと
+     **前方に敵を置けず1発も撃たない**ので、検査が成立しない。道の真ん中へ置き直す。
+     ⚠d は 0(湧き口)→PLEN(コア)。**前方は d が小さい側**。 */
+  /* ⚠⚠**旗の所まで歩き終わるのを待つ**=立ち位置は旗+その兵科の間合い(uStand)で決まるので、
+     d を手で入れただけでは歩き出してしまう。「歩いている間は構えない」の決まりがあるため、
+     **止まる(mv=0)まで進めてから**測る。⚠敵は止まった後の位置を基準に置く。 */
+  me.flagD=PLEN*.5;hu.d=PLEN*.5;
+  for(let k=0;k<400&&(k<6||hu.mv);k++)campStep(me,.05,3);
+  if(hu.mv){console.log('FAIL: ジョルジが立ち止まらない(検査が成立していない)');process.exit(1);}
   /* ⚠⚠**9発では死なない体力にする**=途中で全滅すると「締めが出たか」を測れない。
      ⚠**hp を測るのは9発が終わったあと**=前の9発は射程を見ないので、
        合計だけ見ると**不具合があっても減っていて素通りする**(実際にそう書いて素通りした)。 */
-  for(const z of me.zombies){z.hp=4e6;z.mhp=4e6;}
-  campStep(me,.001,5);/* px/py を入れる */
+  const put9=(d9)=>{me.zombies.length=0;
+   for(let k=0;k<3;k++)me.zombies.push(mkZ(zSpec(0,1,20),Math.max(10,d9-k*20)));
+   for(const z of me.zombies){z.hp=4e6;z.mhp=4e6;}
+   campStep(me,.001,5);/* px/py を入れる */};
+  /* ⚠**射程(rng)より確実に遠く** */
+  const far=Math.max(10,hu.d-(h9.rng+380));
+  put9(hu.d-120);/* まずは射程の中=普通に撃てる配置 */
+  /* ⭐⭐**1発撃つたびに立ち上がらないこと**(2026-08-03(71)ユーザー
+     「完全に敵が射程にいるときは一発一発立たずにしゃがんだまま次の弾うってコッキングしてまた撃つ」)。
+     ⚠しゃがみの深さは u.chg から出していたが、u.chg は撃つたびに0へ戻る=立ち座りしていた。
+     ⭐**u.aimH が1のまま下がらない**ことを、実際に何発か撃たせて見る。
+     ⚠この検査はテンプレート文字列の中=バッククォートはコメントでも書けない。 */
+  {let lo=9,fired=0,c0=0;
+   for(let k=0;k<400;k++){
+    campStep(me,.05,5);
+    if((hu.chg||0)<c0)fired++;c0=hu.chg||0;
+    if(k>6)lo=Math.min(lo,hu.aimH||0);}
+   if(!fired){console.log('FAIL: ジョルジが1発も撃っていない(検査が成立していない)');process.exit(1);}
+   if(lo<1){console.log('FAIL: 撃つたびに構えが解けている(しゃがみが '+lo.toFixed(2)+' まで落ちた)');process.exit(1);}
+   console.log('狙撃王の構え: '+fired+'発撃つ間ずっとしゃがんだまま(立ち座りしない) OK');}
+  put9(far);/* ここから先は射程の外だけに敵が居る配置 */
   if(!heroUlt(me,5)){console.log('FAIL: ジョルジの必殺技が発動しない');process.exit(1);}
   const drain=(until)=>{for(let k=0;k<400;k++){
    if(drain.t>=until||!me.dly||!me.dly.length)break;

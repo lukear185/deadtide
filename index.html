@@ -645,6 +645,12 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .grdet b{font-size:13px}
 .labdone .lchip{display:inline-block;background:var(--pane);color:var(--ink);border-radius:8px;padding:1px 7px;margin:3px 4px 0 0;font-size:11px}
 /* 編成画面 */
+/* ⚠⚠**⭐派生を選ぶタブは自前で流す箱を持つ**(2026-08-03(71)ユーザー「派生を選ぶ画面で下にスクロールできない」)。
+   ⭐原因=`#md-load .bpbody` を `overflow:hidden` にした(2026-08-02(68)に
+     「連れて行く」タブで**上の枠を固定して一覧だけ流す**ため)。
+     連れて行くタブは `.tmgrid` が流れるので無事だったが、**派生タブは流れる箱が無く、
+     下の行に一生たどり着けなかった**。⚠**タブを足す時は必ず流す箱を持たせること**。 */
+.ldscroll{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0;padding-bottom:4px}
 .ldrow{background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:6px 8px;margin-bottom:6px;text-align:left}
 .ldrow .lhd{font-size:12px;font-weight:900;color:var(--ink);opacity:.7;margin-bottom:4px}
 .ldpick{display:flex;gap:5px;flex-wrap:wrap}
@@ -1890,8 +1896,37 @@ function sfxPlay(k,v,p,rt){
   g.gain.value=volOf(k)*(v||1);/* ⭐種類ごとの音量(全体x区分) */
   s.connect(g).connect(AC.destination);s.start();
   return true;}catch(e){return false;}}
+/* ⭐**素材を「層」として重ねるための素の口**(2026-08-03(71))。
+   ⚠⚠**45msの間引き(`SFX_MIN`)を通さない**=同じ素材を高さ違いで2枚重ねたい時に片方が消えるため。
+     その代わり**呼ぶ側が鳴らしすぎないこと**(1発ごとの音だけに使う)。
+   ⭐`dl`=遅らせる秒数。⚠**setTimeout ではなく `start(now+dl)`**=音の時間軸で正確に並ぶ。
+   ⭐⭐**これがあると「新しい素材を足す」前に、既にある素材の重ね方で作れる**
+     (生WAVは持ち込まない決まり=素材1本ごとに base64 が数十KB増える)。 */
+function sfxRaw(k,v,rt,dl){
+ const b=SFXBUF[k];if(!b||!AC||muted)return false;
+ try{
+  const s=AC.createBufferSource(),g=AC.createGain();
+  s.buffer=b;
+  s.playbackRate.value=(SFXB[k][1]||1)*(rt||1);
+  g.gain.value=volOf(k)*(v||1);
+  s.connect(g).connect(AC.destination);s.start(AC.currentTime+(dl||0));
+  return true;}catch(e){return false;}}
 /* 合成音(素材が無い時のフォールバック。ヘッドレスはこちらを通る) */
 const SFXSYN={
+ /* ============ 🎯狙撃王ジョルジの3つの音(2026-08-03(71)ユーザー指示) ============
+    ユーザー「必殺技の最後の攻撃の音が安っぽい/コッキングの音をもっと銃の機構音に/薬莢の音もリアルに」。
+    ⚠⚠**素材は1本も足していない**=`SFXB` に入っている物の**高さと重ね方**だけで作る(`sfxRaw`)。
+    ❌**やめた物**=①締めの `pierce`(ノイズ1発の合成音=これが「安っぽい」の正体)
+      ②薬莢の `coin`(⚙️入手のジングル=金属というより効果音のピコン)。
+    ⚠**`SFXSYN` に置いてあるのは、`?sfx=1` の一覧に出して永井さんが押し比べられるようにするため**
+      (Claudeは音を聴けない=つまみを1か所に集めて、耳のある人が回せる形にするしかない)。 */
+ /* 🔩コッキング=**建設音(金属を組む音)を2枚**。引く→戻すの2拍にすると「機構」に聞こえる */
+ geoCock:()=>{sfxRaw('build',.30,1.22,0);sfxRaw('build',.22,1.58,.085);},
+ /* 🥉薬莢=**命中音を高く・ごく小さく**。⚠大きいと撃発を食う(1発ごとに鳴る) */
+ geoShell:()=>{sfxRaw('thunk',.17,2.40,0);sfxRaw('thunk',.10,3.10,.055);},
+ /* 💥必殺の締め=**要塞砲(閂→巨砲→尾)を主役に、重砲と爆発を下へ重ねる**。
+    ⚠**全部を同時に鳴らさない**=頭が団子になって「バン」で終わる。少しずつずらして尾を作る。 */
+ geoBig:()=>{sfxRaw('fort',1.00,.90,0);sfxRaw('cannon',.62,.84,.025);sfxRaw('boom',.80,.78,.11);},
  /* ⭐ボタンを押した時の音(2026-07-26ユーザー指示=タイトル等が無音だった)。
     ⚠「買えた/建った」の音とは役割が違う=**押したことの手応え**なので、短く控えめにして重なっても邪魔にならないようにする。
     tap=進む(高い) / back=閉じる・戻る(低い) の2つだけ。耳で「進んだのか戻ったのか」が分かる */
@@ -2127,7 +2162,10 @@ const SFX_LBL={
  net:['ネット砲','発射','tw'],
  boom:['爆発','砲弾の着弾・砲撃','tw'], thunk:['命中','近接の当たり','tw'],
  lslash:['光の斬撃','ヴァルキリーの斬撃','tw'],
- pierce:['貫通弾','狙撃王ジョルジの必殺の締め(対物ライフルの重い一撃)','tw'],
+ pierce:['貫通弾','⚠もう使っていない(2026-08-03(71)に geoBig へ差し替え)','tw'],
+ geoBig:['🎯撃墜の締め','狙撃王の必殺の最後の一撃(要塞砲+重砲+爆発を重ねた重い一発)','tw'],
+ geoCock:['🔩コッキング','狙撃王が1発撃つたびの遊底(引く→戻すの2拍)','tw'],
+ geoShell:['🥉薬莢が落ちる','1発ごと。⚠小さく=大きいと撃発を食う','tw'],
  thrust:['鋭い突き','暗黒の騎士の騎槍(斬撃より低く・短く)','tw'],
  moan:['ゾンビの呻き①','徘徊中・撃破時','z'], moan2:['ゾンビの呻き②','同上','z'],
  moan3:['ゾンビの呻き③','同上','z'], moanW:['水棲の呻き','②沈んだ港','z'],
@@ -15024,13 +15062,27 @@ function geoSpent(C,u,mx,my,d5){
  /* 遊底を引く(カチャッ)+そこで薬莢が飛ぶ */
  later(C,.10,()=>{
   if(FXLV>0)addP(C,1,u.px,u.py-24*CH_UP,{sp:74,a:(d5||-1)<0?2.2:.9,spread:.3,up:48,g:600,life:.9,r:1.9,col:GOLD2,typ:"shell",gr:u.py});
-  if(me)sfxAtR('thunk',.30,1.85);
+  if(me&&sfx.geoCock)sfx.geoCock();
  });
- /* 薬莢が地面に落ちる(チャリン)。⚠**小さく**=1発ごとに鳴るので、大きいと撃発を食う。
-    ⚠**耳で判定できるのは永井さんだけ**(Claudeは音を聴けない)=つまみはこの2行の
-      音量と高さだけ。うるさければ音量を、甲高ければ高さを下げる。 */
- later(C,.46,()=>{if(me)sfxAtR('coin',.20,1.35);});
+ /* 薬莢が地面に落ちる。⚠**耳で判定できるのは永井さんだけ**(Claudeは音を聴けない)=
+    つまみは `SFXSYN.geoCock`/`geoShell` の1行ずつ。`?sfx=1` で押し比べられる。 */
+ later(C,.46,()=>{if(me&&sfx.geoShell)sfx.geoShell();});
 }
+/* ⭐⭐⭐**飛び道具で殴る英雄は「当たり判定も飛行時間ぶん遅らせる」**(2026-08-03(71)ユーザー
+     「紅蓮の大魔導士も通常攻撃のエフェクトと着弾のタイミング合ってないから修正」)。
+   ⚠⚠**通常攻撃のダメージは `H_FX` を呼ぶ**より前**に即時で入っている**。
+     一条の光(狙撃・銃)なら見た目も一瞬なので合っているが、
+     **玉が飛ぶ英雄は玉が届く前に敵が倒れる**=「エフェクトと着弾が合っていない」の正体。
+   ⚠**爆破屋で踏んだのは「投げる絵が2回出る」別の穴**([[NOTES_絵]])。こちらは**当たる時刻**の話。
+   ⭐ここに登録した英雄だけ、`dmgZ` をその秒数だけ遅らせる。⚠**威力・射程・間隔は1つも触らない**。
+   ⚠**飛行時間は `H_FX` の中の式と必ず同じにする**(別々に書くと絵と当たりがまたずれる)。 */
+const H_FLY={
+ /* 紅蓮の大魔導士=杖の頭から的まで(H_FX.hPyro の `fl` と同じ式) */
+ hPyro:(C,u,U,tg)=>{const ts=TSCALE[3],dd=(u.dr||-1);
+  return clamp(dist(u.px+dd*ts*8.7,u.py-ts*79,tg.px,tg.py-20*CH_UP)/1000,.08,.32);},
+ /* 軍医=緑の光弾(H_FX.hMed の `lf` と同じ) */
+ hMed:()=>.16,
+};
 const H_FX={
  /* 元警官: 拳銃の速射。⚠1発が細いので**2本まとめて**撃つ+薬莢を落とす */
  hCop:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.09;
@@ -16048,7 +16100,9 @@ function heroUlt(C,wave){
   addFx(C,'ring',u.px,u.py,'',{r:300,col:TECH});
  }else if(id==='hGiant'){/* 地響き: 全域を吹き飛ばして気絶させる */
   for(const z of live){dmgZ(C,z,560*W,1);if(z.dead)continue;
-   z.d=Math.max(0,z.d-150);z.frzT=Math.max(z.frzT||0,2.2);}
+   /* ⚠⭐**止めるのは frzT・見せ方は stnT(★)**(2026-08-03(71)にこの3か所を直した)=
+      stnT を入れないと**氷漬けの絵**になる。氷は**本物の冷気だけ**(冷凍兵・絶対零度・冷却塔・凍結爆弾)。 */
+   z.d=Math.max(0,z.d-150);z.frzT=Math.max(z.frzT||0,2.2);z.stnT=Math.max(z.stnT||0,2.2);}
   for(let k=0;k<4;k++){const p=pathPos(clamp(PLEN*(.2+k*.2),0,PLEN));addFx(C,'boomL',p[0],p[1],'',{d0:.06*k});}
   addFx(C,'ring',u.px,u.py,'',{r:420,col:GOLD2});
   C.shake=Math.max(C.shake||0,.6);if(C.isMe)sfx.boom&&sfx.boom();
@@ -16070,7 +16124,8 @@ function heroUlt(C,wave){
    const mx=u.px+d5g*30*CH_UP,my=u.py-27*CH_UP;
    u.fireT=GEO_FT;/* 1発ごとの反動+コッキング */
    dmgZ(C,z,z.hp*(z.boss?.10:.24)+780*W,1);
-   if(!z.dead)z.frzT=Math.max(z.frzT||0,.9);
+   /* ⚠**見せ方は★**(2026-08-03(71)ユーザー「気絶エフェクトもまだ凍結になってるから★にして」) */
+   if(!z.dead){z.frzT=Math.max(z.frzT||0,.9);z.stnT=Math.max(z.stnT||0,.9);}
    addFx(C,"beam",mx,my,"",{x2:z.px,y2:z.py-18*CH_UP,
     col:"rgba(196,222,150,",col2:"rgba(255,255,236,",w:3.2,lf:.2});
    addFx(C,"spark",z.px,z.py-18*CH_UP,"",{sd:rnd(0,9),col:"#c4de96"});
@@ -16106,8 +16161,10 @@ function heroUlt(C,wave){
     r:7.4,lf:fl,col:"#c4de96",col2:"#ffffec",sd:0,wob:0});
    addFx(C,"mzl",mx,my,"",{ang:ag,r:26,col:"#e4ffb0"});
    geoSpent(C,u,mx,my,d5g);
-   C.shake=Math.max(C.shake||0,.34);
-   if(C.isMe)sfx.pierce?sfx.pierce():(sfx.snipe&&sfx.snipe());};
+   C.shake=Math.max(C.shake||0,.46);/* ⚠締めだけ揺れも大きく=重い一撃に見せる */
+   /* 💥**締めの音は専用の重ね音**(2026-08-03(71)ユーザー「安っぽいからもっと豪華な重厚感のある音に」)。
+      ❌`pierce`(ノイズ1発の合成音)はやめた。⚠つまみは `SFXSYN.geoBig` の1行。 */
+   if(C.isMe){if(sfx.geoBig)sfx.geoBig();else if(sfx.cannon)sfx.cannon();}};
   shoot(0);/* ⚠1発目はその場で撃つ=全部 later に回すと「不発」に見える */
   for(let k=1;k<9;k++)later(C,k*.28,()=>shoot(k));
   /* 9発目のあと短く溜める→貫通弾 */
@@ -16138,7 +16195,8 @@ function heroUlt(C,wave){
      **コア側(敵の居ない後方)へ駆けていた**。1歩目しか当たらないので気づきにくい。 */
   const run=(k)=>{const q=clamp(q0-k*q0/6,0,PLEN),p=pathPos(q);
    for(const z of C.zombies){if(z.dead)continue;if(Math.abs(z.d-q)>150)continue;
-    dmgZ(C,z,620*W,1);if(!z.dead){z.d=Math.max(0,z.d-90);z.frzT=Math.max(z.frzT||0,1.1);}}
+    /* ⚠**見せ方は★**=騎槍で突き飛ばされて氷漬けになるのはおかしい */
+    dmgZ(C,z,620*W,1);if(!z.dead){z.d=Math.max(0,z.d-90);z.frzT=Math.max(z.frzT||0,1.1);z.stnT=Math.max(z.stnT||0,1.1);}}
    addFx(C,"shock",p[0],p[1]+2,"",{r:150,col:"#8f1f28"});
    /* ⭐⭐**薙ぎの弧ではなく「槍で風を切って進む」**(2026-08-01ユーザー指示
       「馬ごと突進して貫く系で風を切ってやりで進んでるエフェクト」)。
@@ -16292,6 +16350,16 @@ function campStep(C,dt,wave){
  const MR=38;
  for(let ui2=0;ui2<UNITS.length;ui2++)if(C.ucd[ui2]>0)C.ucd[ui2]-=dt;
  for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=uFace(u,p);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;
+  /* ⭐⭐⭐**据える型(狙撃)の英雄は「構え」を保つ**(2026-08-03(71)ユーザー
+     「完全に敵が射程にいるときは一発一発立たずにしゃがんだまま次の弾うってコッキングしてまた撃つ」)。
+     ⚠⚠**しゃがみの深さは `u.chg`(溜め)から出していた**が、`u.chg` は**1発撃つたびに0へ戻る**
+       ので、撃つたびに立ち上がって座り直していた。⚠2026-08-02の「敵が居なくても構えたまま待つ」は
+       **見せる条件(`u.ct`)を緩めただけ**で、値そのものが0に落ちるのは直っていなかった。
+     ⭐**別の値(`u.aimH`)で保つ**=止まっている間は1へ上がって**下がらない**。
+       これで①立ち座りが消え ②中腰の一瞬(体が傾いて見える)も消える。
+     ⚠**歩き出したら即0**=移動しながらしゃがむと絵が壊れる(既知)。 */
+  {const sn9=u.hro&&uMotK(u.ui)==='snipe';
+   u.aimH=(sn9&&!u.mv&&!u.dead)?Math.min(1,(u.aimH||0)+dt*6):0;}
   /* ⭐必殺技の前置き。⚠退がるのは**絵の位置だけ**で u.d は動かさない(技の起点をずらさない) */
   if(u.ulW>0){u.ulW-=dt;
    if(u.ulBk>0){const q=clamp(1-u.ulW/(u.ulW0||1),0,1);
@@ -16420,7 +16488,12 @@ function campStep(C,dt,wave){
      if(f9>0)later(C,f9,im9);else im9();
      if(U.aoe>=100)u.fireT=.14;}}
     else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
-    else{dmgZ(C,tg,ua,pierce);
+    else{
+     /* ⭐**飛び道具の英雄だけ、当たるのを飛行時間ぶん遅らせる**(2026-08-03(71))。
+        ⚠`tg` はそのまま持つ=途中で倒れていれば `dmgZ` が頭で弾く(追尾にはならない)。 */
+     {const fly9=(U.hro&&H_FLY[U.id])?H_FLY[U.id](C,u,U,tg):0;
+      if(fly9>0&&FXLV>0)later(C,fly9,()=>dmgZ(C,tg,ua,pierce));
+      else dmgZ(C,tg,ua,pierce);}
      /* ⭐進化段階が上がるほどエフェクトを豪華にする(ユーザー指示)。英雄は最大 */
      /* ⭐⭐**固有(uUniq)はそのキャラ自身の色で撃つ**(2026-07-30)=18種+英雄5人が一目で見分く */
      const utl=uFxTier(u),ucl=uUniq(u.ui)?(U.c||UFX_COL[utl]):UFX_COL[utl];
@@ -17803,6 +17876,11 @@ function renderCamp(C,t){
      ⚠歩いている間(mv)は構えない=移動しながらしゃがむと絵が壊れる。 */
   const hold9=u.hro&&u.mv===0&&uMotK(u.ui)==='snipe';
   const chg9=(u.ct||hold9)?clamp(u.chg||0,0,1):0,ul9=u.ulT>0?clamp(u.ulT/.55,0,1):0;
+  /* ⭐⭐**体の姿勢は `chg9` ではなく `pose9`**(2026-08-03(71))=
+     `chg9` は1発撃つたびに0へ戻るので、狙撃の英雄が**撃つたびに立ち上がっていた**。
+     ⚠**足元の輪・照準線(`drawUChg`)は `chg9` のまま**=あれは「次の1発の溜まり具合」を出す物なので、
+       1発ごとに0へ戻るのが正しい。⭐**姿勢だけ**を `u.aimH` で保つ。 */
+  const pose9=Math.max(chg9,u.aimH||0);
   /* ⭐必殺の詠唱(2026-08-02)=進み(0→1)と、姿勢の完成度(一拍のタメ込み)を出す。
      ⚠**詠唱していない時は -1**=発射後の余韻(ulr)と見分けるため */
   const ulp9=(u.ulW>0)?clamp(1-u.ulW/(u.ulW0||1),0,1):-1,ulk9=ulp9>=0?ulKof(ulp9):0;
@@ -17821,7 +17899,7 @@ function renderCamp(C,t){
   const bsw9=uBatP(u);/* ⭐バットは振っている最中だけ直に描く(焼いたコマでは振れない) */
   const vsw9=uValkP(u);/* ⭐ヴァルキリーも同じ(剣を振っている間は焼いたコマを使えない) */
   const sw9=uSwP(u);/* ⭐得物を振る兵科・英雄(表 U_SWG)。⚠同じ理由で直描きになる */
-  if(!(u.hitT>0||u.fireT>0||chg9>0||ul9>0||bsw9>0||vsw9>0||sw9>0))
+  if(!(u.hitT>0||u.fireT>0||pose9>0||ul9>0||bsw9>0||vsw9>0||sw9>0))
    /* ⭐止まっている間は歩行の1コマ目で固定(2026-08-01)=その場で足踏みして見えるのを止める。
       ⚠⚠**ただし完全には止めない**(2026-08-01ユーザー指示「完全硬直だと味気ない」)=
         焼いたコマのまま**呼吸の上下**と**わずかな傾き**を掛ける。⚠脚は動かさない(足踏みに戻るため)。
@@ -17838,7 +17916,7 @@ function renderCamp(C,t){
    const ug9=ulp9>=0?ulk9:ul9,ust9=(U_ULM[uMotK(u.ui)]||{}).still;
    if(ul9>0&&!ust9){c.save();c.translate(u.px,u.py);c.scale(1+.14*ug9,1+.14*ug9);c.translate(-u.px,-u.py);}
    /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
-   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:chg9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
+   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:pose9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
     ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0});
    if(ul9>0&&!ust9)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
@@ -19874,8 +19952,18 @@ const BNS_FIRST_X=3;              /* 初回クリアの🧬の倍率(⚠ステ�
    ⚠⚠**到着でクリア**だった頃は42000(34秒で着く長さ)だった。**締め切りは時間の方**になったので、
      道は**時間内に絶対に端まで行けない長さ**にする(端が見えると「あと少し」が嘘になる)。
    📐最高速1250×制限時間なら理屈の上限は約94000。実際は障害物・しがみつき・群れで7割前後まで落ちる。
-   ⚠**長くすると木も建物も障害物も比例して増える**(生成の時間とメモリ)=伸ばす時は必ず実測すること。 */
-const BNS_W=3400,BNS_H=118000;
+   ⚠**長くすると木も建物も障害物も比例して増える**(生成の時間とメモリ)=伸ばす時は必ず実測すること。
+   ⭐⭐**2026-08-03(71)に 118000→174650(走る距離を1.5倍)**(ユーザー
+     「ニトロを使うと時間前にクリアしちゃって**ニトロを使わないほうがゾンビを多く倒せる**ようになってる」)。
+     ⚠⚠**これは数値の微調整ではなく遊びが逆立ちしていた**=速く走る道具を使うと早く終わって損をする。
+       ⭐**道が時間内に走り切れない長さである限り、ニトロは「同じ時間でより多く轢く」ための道具**になる。
+     ⚠**体数は増やしていない**=尽きたら写し(`bnsTpl`)から積み直す作りなので、道が伸びたぶん自動で増える。
+     📐走る距離 = BNS_H - BNS_STARTY の余白(3800) - BNS_GOALY(900)。118000→113300 / 174650→169950。
+     📌⚠**実測した代償**(PC・Chrome)=`startSolo()` が **約2.2秒**(木 84,784本 / 建物 2,049)。
+       伸ばす前は木が約57,000本=**約1.5秒**だった。⚠**実機(スマホ)はこの3〜5倍**と見ておく。
+       ⭐重くて待てない時のノブは **`BNS_TSP`(木の間隔)**=上げれば本数が減って軽くなる
+       (⚠上げすぎると森が点々に戻る)。**道の長さは遊びの根幹なので先に削るのはこちら**。 */
+const BNS_W=3400,BNS_H=174650;
 const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 道の中心線(x)とマップの中心 */
 const BNS_GOALY=900;         /* 到着線(マップの上) */
 /* ⚠⚠**2026-08-02(39)に 1200→3800**=出発点の広場が**探索場**になり半径3000まで広がったので、
@@ -24586,8 +24674,12 @@ function renderLoad(){
  /* ⭐派生の割り当て。⚠基本と上級を**1つのタブ**にまとめた(2026-08-01)=分ける意味が無かった */
  /* ⚠**まだ解放していない兵科の行は出さない**(2026-08-01に実機で発覚)=
     研究所で1つも解放していないのに巨漢〜盾持ちの派生が並んでいた。 */
+ /* ⚠**行は流れる箱に入れる**=`#md-load .bpbody` は overflow:hidden なので、
+    直に並べると下の行に一生たどり着けない(2026-08-03(71)に実機で発覚)。 */
+ h+='<div class="ldscroll">';
  VBASE.forEach(bid=>{if(!uvBaseOK(bid))return;const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'基本『'+B.n+'』');});
  FVBASE.forEach(bid=>{if(!uvBaseOK(bid))return;const B=UBASE.find(u=>u.id===bid)||{n:'?'};row(bid,'⭐上級『'+B.n+'』');});
+ h+='</div>';
  box.innerHTML=IC(h);
  box.querySelectorAll('[data-v]').forEach(b=>{
   const i=+b.dataset.i,k=+b.dataset.k,bid=b.dataset.b,B=UBASE[i];
@@ -24606,15 +24698,18 @@ $('bt-load-close').onclick=()=>{$('md-load').classList.remove('on');try{renderPi
    ①空きがあれば自動で編成に入れた ②満杯なら入れ替えを促す ③**初回だけ**編成の説明を出す。 */
 function teamTip(bid,how){
  const U=UBASE.find(u=>u.id===bid)||{n:'新しい兵科'};
- if(how==='full')toast('⚠ 編成が'+TEAM_N+'体で埋まっている=🎖編成で入れ替えると『'+U.n+'』を連れて行ける',true);
- else if(how==='add'||how==='auto')toast('🎒 『'+U.n+'』を編成に入れた(次の出撃から連れて行く)');
+ /* ⚠⚠**編成が満杯の時は何も出さない**(2026-08-03(71)ユーザー
+    「研究所で部隊の解放をしたとき すでに10人編成にいるときにでる警告要らない」)。
+    ⭐**解放は「持ち物が増えた」だけの良い出来事**なのに、⚠付きの警告を被せると
+      **買った瞬間に叱られたように見える**。入れ替えたい人は自分で🎖編成へ行く。
+    ❌**書き戻さない**=満杯の時のトーストと `md-tmtip` の「入らなかった」文言。 */
+ if(how==='full')return;
+ if(how==='add'||how==='auto')toast('🎒 『'+U.n+'』を編成に入れた(次の出撃から連れて行く)');
  if(META.tmTip)return;/* 説明は1回きり */
  META.tmTip=1;saveMeta();
  const el=$('md-tmtip');if(!el)return;
  const n9=$('tmt-n');
- if(n9)n9.textContent=(how==='full')
-  ?('⚠『'+U.n+'』は編成に入らなかった(すでに'+TEAM_N+'体)')
-  :('『'+U.n+'』を編成に入れました');
+ if(n9)n9.textContent='『'+U.n+'』を編成に入れました';
  el.classList.add('on');
 }
 $('bt-tmt-ok').onclick=()=>{sfx.buy&&sfx.buy();$('md-tmtip').classList.remove('on');};
