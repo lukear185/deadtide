@@ -256,6 +256,24 @@ const REC=[
    mix:[{f:'powerful explosions_multiples',t:0,d:.28,g:-1,r:1.05},
         {f:'powerful explosions_multiples',t:4,d:.55,g:-4,r:.72,dl:30},
         {f:'Texas Rain Thunder',t:8,d:1.10,g:-11,r:.70,dl:170}]},
+ /* 🥉薬莢(第2陣・2026-08-03(74)ユーザー「薬莢はダメ」)。
+    ❌**ボツにした形**=バネ線のカチャつき/金属やすりのタップ=**「跳ねて転がる真鍮」に聞こえない**。
+    ⭐**真鍮の薬莢はコインとほぼ同じ音**(明るい"チン"+短い跳ね)=素材はコイン系に切り替えた。
+    ⚠**300Hz以下を切る**=低音が残ると「重い物が落ちた」になる。⚠短く=1発ごとに鳴る。 */
+ {k:'geoShC', d:.46, g:-9, af:'highpass=f=380',
+   mix:[{f:'Ting Coins',t:0,d:.46,g:-1,r:1.15}]},
+ {k:'geoShD', d:.44, g:-9, af:'highpass=f=380',
+   mix:[{f:'Foley Coin Flip Single Fast',t:0,d:.44,g:-1,r:1.05}]},
+ {k:'geoShE', d:.50, g:-9, af:'highpass=f=340',
+   mix:[{f:'Fall Bounce',t:0,d:.20,g:-2,r:1.20},
+        {f:'Ting Coins',t:0,d:.44,g:-5,r:1.30,dl:60}]},
+ {k:'geoShF', d:.40, g:-9, af:'highpass=f=400',
+   mix:[{f:'Keys In Out',t:1,d:.16,g:-1,r:1.35},
+        {f:'Ting Coins',t:0,d:.34,g:-7,r:1.45,dl:70}]},
+ /* 🔩コッキングの別案(⭐**採用は geoCkC**。これは押さえの4本目) */
+ {k:'geoCkD', d:.34, g:-4, af:'highpass=f=180',
+   mix:[{f:'Latch Button Nearfield',t:0,d:.13,g:-1,r:1.05},
+        {f:'Tinkering Antique Lock',t:3,d:.20,g:-4,r:1.0,dl:100}]},
  {k:'geoBigH', d:1.05,g:-1, af:'equalizer=f=200:width_type=o:width=1.4:g=4',
    mix:[{f:'powerful explosions_multiples',t:1,d:.12,g:-2,r:1.10},
         {f:'METAL SWING HIT Weapon Swing',t:0,d:1.00,g:-2,r:.78,dl:18}]},
