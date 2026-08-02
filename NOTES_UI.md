@@ -335,6 +335,14 @@ aliases: [UI]
 - ⭐**解放は「持ち物が増えた」だけの良い出来事**。そこに⚠を出すと**買った瞬間に叱られたように見える**。
   入れ替えたい人は自分で🎖編成へ行く。❌満杯時のトーストと `md-tmtip` の「入らなかった」文言は書き戻さない。
 
+### ⚠⚠**スクロールするgridの札に `overflow:hidden` を付けない**(2026-08-03(96c)に踏んだ)
+- 編成の一覧(`.tmgrid`=overflow-y:auto+flex:1)の札に overflow:hidden を付けたら、
+  **行の高さが中身(canvas 58px)を無視して14pxまで潰れた**(Chromeは overflow≠visible の
+  grid item を「0まで縮んでよい」と扱い、枠の高さに合わせて行ごと潰す)。
+- ⭐札の角を丸で切りたいだけなら overflow は要らない。付けるなら height を明示する。
+- 📌症状=「札が全部ぺったんこの帯になる」。CSSもHTMLも一見正しいので、実物のDOMで
+  `getBoundingClientRect` を見るまで原因が分からなかった。
+
 ### ⚠⚠**auto-fill の grid では `grid-column:1/-1` が効かない**(2026-08-03(95)に踏んだ)
 - 編成の空状態の案内を `.tmgrid`(`repeat(auto-fill,minmax(110px,1fr))`)の中に
   `grid-column:1/-1` で入れたら、**-1が「明示の列」しか数えないので1列ぶんに潰れて**見えなかった。

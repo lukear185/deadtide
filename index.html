@@ -742,20 +742,24 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ⭐⭐**派生の札は幅を固定して、HP/攻は棒で見せる**(2026-08-03 UI総監査)。
    ⚠幅が中身なりだと4枚目が折り返して右に大穴が空く(撮って直した)。
    ⚠棒は**その行(基本+派生)の中での割合**=どれだけ強くなるかが一目で読める。数字も必ず残す(掟)。 */
-.ldc{position:relative;flex:0 0 160px;min-width:0;display:flex;align-items:center;gap:5px;background:var(--pane);border:2px solid var(--ink);border-radius:9px;padding:4px 6px;font-size:12px;font-weight:900;color:var(--ink);font-family:inherit;text-align:left;cursor:pointer}
+/* ⭐(96c)派生の札も暗い札に統一。**選択中=金の枠+薄い光**(編成・英雄窓と同じ言い方) */
+.ldc{position:relative;flex:0 0 160px;min-width:0;display:flex;align-items:center;gap:5px;
+ background:linear-gradient(180deg,var(--ink2),var(--ink4));border:2px solid var(--ink);border-radius:9px;
+ padding:4px 6px;font-size:12px;font-weight:900;color:var(--pane);font-family:inherit;text-align:left;cursor:pointer;
+ box-shadow:0 3px 0 rgba(0,0,0,.3)}
 .ldc .lkk{position:absolute;left:8px;top:6px;font-size:13px;line-height:1}
 /* ⭐姿は「何を選ぶのか分かる大きさ」で出す(2026-07-26 第91弾ユーザー指示)。
    26pxでは色の点にしかならなかった。中身は fitDraw が枠いっぱいに描く */
-.ldc canvas{width:42px;height:42px;flex:0 0 auto;display:block;background:var(--paper3);border-radius:6px}
-.ldc.sel{background:var(--gold);box-shadow:0 0 0 2px var(--gold2) inset}
-.ldc.lock{opacity:.42;filter:saturate(.3)}
+.ldc canvas{width:42px;height:42px;flex:0 0 auto;display:block;background:rgba(0,0,0,.32);border-radius:6px}
+.ldc.sel{border-color:var(--gold);box-shadow:0 0 10px rgba(255,210,61,.4),0 3px 0 rgba(0,0,0,.3)}
+.ldc.lock{opacity:.45;filter:saturate(.3)}
 .ldt{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 auto}
 .ldn{display:flex;align-items:baseline;gap:4px;font-size:12px;font-weight:900;min-width:0;white-space:nowrap}
 .ldn .nm9{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.ldn i{font-style:normal;margin-left:auto;font-size:10.5px;font-weight:800;color:var(--rust2);flex:0 0 auto}
+.ldn i{font-style:normal;margin-left:auto;font-size:10.5px;font-weight:800;color:var(--gold);flex:0 0 auto}
 .ldb{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;line-height:1.25}
-.ldb em{font-style:normal;flex:0 0 auto;width:20px;opacity:.7}
-.ldb .bb{flex:1 1 auto;min-width:20px;height:4px;background:var(--paper3);border-radius:2px;overflow:hidden}
+.ldb em{font-style:normal;flex:0 0 auto;width:20px;opacity:.75}
+.ldb .bb{flex:1 1 auto;min-width:20px;height:4px;background:rgba(0,0,0,.42);border-radius:2px;overflow:hidden}
 .ldb .bb b{display:block;height:100%;background:var(--life2)}
 .ldb.atk .bb b{background:var(--rust)}
 .ldb i{font-style:normal;flex:0 0 auto;min-width:30px;text-align:right}
@@ -770,24 +774,28 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ⭐⭐**枠は上限ぶん1列に並べる**(2026-08-02(68))=10個ぜんぶ見えるので「あと何体」が数えなくても分かる。
    ⚠**絵を大きく**(44x24→62x34)=何の兵科か読めないと選び直せない。 */
 .tmord{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px;padding:2px 0 4px}
+/* ⭐(96c)編成の札は英雄窓と同じ「暗い札」。**金の枠=編成に入っている**の印で統一 */
 .tmo{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;overflow:hidden;
- background:linear-gradient(180deg,var(--gold),var(--amber));border:2px solid var(--ink);border-radius:9px;padding:3px 2px;
- font-size:11px;font-weight:900;color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+ background:linear-gradient(180deg,var(--ink2),var(--ink4));border:2px solid var(--gold);border-radius:9px;padding:3px 2px;
+ font-size:11px;font-weight:900;color:var(--pane);box-shadow:0 3px 0 rgba(0,0,0,.35)}
 /* 空き枠=同じ大きさの破線+＋(⚠空白にしない=総数が読めなくなる) */
 .tmo.emp{background:transparent;border-style:dashed;border-color:var(--paper3);color:var(--paper3);
  font-size:22px;align-items:center;justify-content:center;min-height:74px}
 /* ⚠canvasは属性とCSSの寸法を必ず合わせる(合わないと絵が潰れる。NOTESの掟) */
-.tmo canvas{width:62px;height:34px;display:block;background:var(--paper3);border-radius:5px}
+.tmo canvas{width:62px;height:34px;display:block;background:rgba(0,0,0,.32);border-radius:5px}
 /* 見出しの右に合計を置く(⚠1行に混ぜず、右端で揃える) */
 .ldhdr{display:flex;align-items:center;gap:8px}
 .ldsum{margin-left:auto;font-size:11px;font-weight:900;color:var(--ink);background:var(--paper2);
  border:2px solid var(--ink);border-radius:8px;padding:1px 8px}
 .ldsum b{color:var(--rust2)}
 .tmo .nm2{width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
-.tmo b{position:absolute;left:0;top:0;background:var(--ink);color:var(--gold);border-radius:7px 0 7px 0;padding:0 5px;font-size:10.5px;line-height:1.4}
-.tmo i{font-style:normal;font-size:10.5px;font-weight:800;color:var(--rust2);line-height:1.1}
-.tmo em{position:absolute;right:3px;top:1px;font-style:normal;font-size:11px;opacity:.75}
-.tmo.fix{background:linear-gradient(180deg,var(--paper2),var(--paper3));opacity:.9}
+.tmo b{position:absolute;left:0;top:0;background:var(--gold);color:var(--ink);border-radius:7px 0 7px 0;padding:0 5px;font-size:10.5px;line-height:1.4}
+.tmo i{font-style:normal;font-size:10.5px;font-weight:800;color:var(--gold);line-height:1.1}
+.tmo em{position:absolute;right:3px;top:1px;font-style:normal;font-size:11px;opacity:.85;color:var(--pane)}
+/* 固定枠=鋼色の枠(金=選んだ、鋼=外せない、の描き分け) */
+.tmo.fix{border-color:var(--steel)}
+.tmo.fix b{background:var(--steel);color:var(--pane)}
+.tmo.fix i{color:var(--paper3)}
 .tmsum{font-size:12px;font-weight:900;color:var(--ink);text-align:left;margin:0 2px 2px}
 .tmsum b{color:var(--rust2)}
 /* ⭐編成の「入れる兵科」の一覧(2026-08-01ユーザー指摘「つぶれてる。でも絵は小さくていい」)。
@@ -805,18 +813,21 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-hstat .hgrid{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0}
 .tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;
  overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0;padding-bottom:4px}
-.tmc{display:flex;flex-direction:column;align-items:stretch;gap:3px;border:2px solid var(--ink);
- border-radius:9px;background:var(--pane);padding:5px 5px 6px;text-align:left}
+/* ⭐(96c)一覧の札=英雄窓と同じ暗い札。**金の枠+✅=編成に入っている(押すと外す)** */
+/* ⚠⚠overflow:hiddenを付けない=スクロールするgridの札に付けると、行の高さが中身を無視して
+   潰れる(2026-08-03(96c)に踏んだ。Chromeはoverflow≠visibleの札を0まで縮めて枠の高さに合わせる) */
+.tmc{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:2px;border:2px solid var(--ink);
+ border-radius:11px;background:linear-gradient(180deg,var(--ink2),var(--ink4));padding:5px 5px 5px;text-align:center;
+ color:var(--pane);box-shadow:0 3px 0 rgba(0,0,0,.3)}
 /* ⚠⚠**canvasは「中の寸法(属性)」と「CSSの見た目の寸法」を必ず合わせる**(NOTESの掟)。
    `width:100%;height:34px` に 76x76 の絵を流し込んでいたので**横に伸びて縦に潰れていた**
    (2026-08-01ユーザー指摘「つぶれてる」の正体)。⭐固定px・中央寄せにする。 */
-.tmc canvas{width:92px;height:46px;display:block;margin:0 auto;background:var(--paper3);border-radius:6px}
-.tmc .nm{font-size:12px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tmc .tg{font-size:10.5px;font-weight:800;color:var(--rust2);line-height:1.15}
-/* ⭐編成に入っている札=**押すと外すトグル**(2026-08-03 UI総監査)。
-   ⚠以前は disabled+薄化=一覧の先頭が「押せない札」だらけだった。
-   選択中の見た目は派生の .ldc.sel と同じ金(=このゲームの「選んでいる」の型)。 */
-.tmc.on{background:var(--gold);box-shadow:0 0 0 2px var(--gold2) inset}
+.tmc canvas{width:96px;height:58px;display:block;margin:0 auto;background:rgba(0,0,0,.32);border-radius:7px}
+.tmc .nm{font-size:12px;font-weight:900;line-height:1.2;color:var(--pane);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmc .tg{font-size:10.5px;font-weight:800;color:var(--gold);line-height:1.15}
+/* ⭐編成に入っている札=**押すと外すトグル**(2026-08-03 UI総監査)。金の枠+✅バッジ+薄い光 */
+.tmc.on{border-color:var(--gold);box-shadow:0 0 10px rgba(255,210,61,.4),0 3px 0 rgba(0,0,0,.3)}
+.tmc .onb{position:absolute;left:4px;top:4px;font-size:13px;line-height:1}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
@@ -25462,10 +25473,12 @@ function renderLoad(){
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
    const on=T9.indexOf(i)>=0,fx=TEAM_FIX.indexOf(i)>=0;
-   /* ⭐編成に入っている札も押せる=**押すと外すトグル**(disabledの死に札が一覧の先頭を埋めていた) */
+   /* ⭐編成に入っている札も押せる=**押すと外すトグル**(disabledの死に札が一覧の先頭を埋めていた)。
+      ⚠✅は名前に混ぜず左上のバッジに(名前の幅を食わない) */
    h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'" data-on="'+(on?1:0)+'">'
-    +'<canvas width="92" height="46"></canvas>'
-    +'<span class="nm">'+(on?IC('✅')+' ':'')+(uEff(i)||U).n+'</span>'
+    +(on?'<span class="onb">'+IC('✅')+'</span>':'')
+    +'<canvas width="96" height="58"></canvas>'
+    +'<span class="nm">'+(uEff(i)||U).n+'</span>'
     +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))+'</span></button>';}
   h+='</div>';
   /* ⭐持っているのが固定2種だけの時は「押せる物ゼロ」で故障に見える=次にやる事を1行だけ。
