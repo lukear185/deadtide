@@ -513,6 +513,8 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* 未解放の印は右上の小さなバッジだけにする(全面に被せると兵科の姿が見えなくなるため)。
    絵は灰色にして「まだ使えない」と分かるようにする */
 #deck .dk .lk{position:absolute;right:1px;top:1px;width:19px;height:19px;display:flex;align-items:center;justify-content:center;font-size:12px;background:rgba(10,9,8,.8);border-radius:7px}
+/* 🛡すり抜けを足止めできる印(hook持ち。🔒と反対の左上) */
+#deck .dk .hk{position:absolute;left:1px;top:1px;font-size:11px;line-height:1;text-shadow:0 1px 0 rgba(0,0,0,.5)}
 #deck .dk.lkon canvas{filter:grayscale(1) brightness(.72)}
 #deck .dk.lkon{background:var(--paper3)}
 #deck .dk.poor{opacity:.55}
@@ -575,6 +577,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .bphd b{flex:1 1 auto;font-size:16px;font-weight:900;color:var(--pane)}
 .bphd .pt{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--gold);white-space:nowrap}
 .bphd .bphint2{color:var(--paper3)}
+/* 💎(98)召集の演出中=見出しの帯を透明にして✕だけ残す(黒帯が演出に被っていた) */
+#md-gacha.fx .bphd{background:transparent;box-shadow:none}
+#md-gacha.fx .bphd::before{display:none}
+#md-gacha.fx .bphd b,#md-gacha.fx .bphd .pt{visibility:hidden}
 .xbtn{flex:0 0 auto;border:2px solid var(--ink);border-radius:9px;background:var(--pane);color:var(--ink);
  font-size:14px;font-weight:900;width:30px;height:28px;box-shadow:0 3px 0 var(--ink)}
 .xbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
@@ -828,6 +834,7 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ⭐編成に入っている札=**押すと外すトグル**(2026-08-03 UI総監査)。金の枠+✅バッジ+薄い光 */
 .tmc.on{border-color:var(--gold);box-shadow:0 0 10px rgba(255,210,61,.4),0 3px 0 rgba(0,0,0,.3)}
 .tmc .onb{position:absolute;left:4px;top:4px;font-size:13px;line-height:1}
+.tmc .hkb{position:absolute;right:4px;top:4px;font-size:13px;line-height:1;text-shadow:0 1px 0 rgba(0,0,0,.5)}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
@@ -879,7 +886,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #tut .tm{font-size:12px;font-weight:700;line-height:1.5;margin-top:2px}
 #tut .btn{pointer-events:auto;flex:0 0 auto}
 /* 光らせる印。⚠!important=各ボタンが持っている枠より強くする必要がある */
-.tuthi{outline:4px solid var(--gold)!important;outline-offset:2px;animation:tutp .9s infinite}
+/* ⭐(98)強調を全面強化(ユーザー「黄色の丸が薄くてだいぶわかりずらい」)=
+   ①押す所は白フチ+金の太枠+光 ②#tutspot が**まわりを暗く落とすスポットライト**(下のCSS) */
+.tuthi{outline:5px solid var(--gold)!important;outline-offset:2px;animation:tutp .9s infinite;
+ box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 22px 7px rgba(255,210,61,.85)!important}
 @keyframes tutp{0%,100%{outline-color:var(--gold)}50%{outline-color:var(--rust)}}
 /* ⭐光っていない所を押した時=帯を左右に揺らす(2026-07-26 第89弾)。
    ⚠**無反応にしない**。押しても何も起きないだけだと「固まった」に見える。 */
@@ -890,7 +900,13 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    左右とかに反復しながら案内印」)。⚠**枠を光らせるだけでは気づかれない**=動く印を横に添える。
    ⚠絵は左向き。向きは回転で作り、**指している方向に往復させる**(押す所へ吸い寄せる動き)。
    ⚠pointer-events:none=印そのものがタップを食わないこと(押せる所を隠したら本末転倒)。 */
-#tutptr{position:fixed;z-index:61;width:34px;height:34px;display:none;pointer-events:none;
+/* 🔦スポットライト=光らせている所以外を暗く落とす(2026-08-03(98)ユーザー指示の根治)。
+   ⚠帯(#tut=z60)と矢印(z61)より下・盤面や窓より上。pointer-events:none=押す邪魔はしない */
+#tutspot{position:fixed;display:none;z-index:54;pointer-events:none;border:4px solid var(--gold);border-radius:12px;
+ box-shadow:0 0 0 9999px rgba(10,8,6,.45),0 0 22px 5px rgba(255,210,61,.8);animation:tsp .9s infinite}
+#tutspot.on{display:block}
+@keyframes tsp{0%,100%{border-color:var(--gold)}50%{border-color:var(--glow)}}
+#tutptr{position:fixed;z-index:61;width:44px;height:44px;display:none;pointer-events:none;
  filter:drop-shadow(0 3px 2px rgba(0,0,0,.45))}
 #tutptr.on{display:block}
 #tutptr svg{width:100%;height:100%;display:block;overflow:visible}
@@ -1200,6 +1216,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 </div>
 <!-- 「ここだ」の矢印(第89弾)。⚠絵は**左向き**で置いてあり、向きはCSSの回転で作る。
      置き場所と向きは tutPtrPos() が決める(DOMを触らない関数=検査できる) -->
+<div id="tutspot"></div>
 <div id="tutptr"><svg viewBox="0 0 40 40"><polygon points="2,20 24,4 24,13 38,13 38,27 24,27 24,36"/></svg></div>
 
 <div class="scr" id="scr-result">
@@ -1372,7 +1389,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div style="font-size:12px;font-weight:700;text-align:left;line-height:1.55;margin:0 2px 8px">
       ・連れて行けるのは <b>10体まで</b>。<br>
       ・戦闘中は<b>連れて行った中の安い順</b>に、⚙️を払って1体ずつ解放する。<br>
-      ・<b>高い兵科ばかりだと後ろの番号は出せない</b>。入れ替えはタイトルの <b>🎖編成</b> から。
+      ・<b>高い兵科ばかりだと後ろの番号は出せない</b>。入れ替えはホームの <b>🎖編成</b> から。
     </div>
     <div style="display:flex;gap:6px">
       <button class="btn gold" id="bt-tmt-go" style="flex:1">🎖 編成を見る</button>
@@ -3594,7 +3611,7 @@ const HEROES=[
     ⭐**必殺=ゴムボール3発、跳ねるたびに威力が上がる(最大10連鎖)**。
     ⚠威力は「平均3回当たる」前提で1発を軽くしてある(群れに強く、1体だけ(ボス)には並)。
     ⚠絵は掟どおり全部プロシージャル(HBODY.hLupi)。仕組みは lupiBall(跳弾の共通処理)。 */
- {id:'hLupi',n:'跳弾姫ルピナ',rk:5,hp:5400,atk:480,rate:1.1,sp:76,c:'#ff7fb8',ty:'bullet',rng:300,uch:56,ult:'虹彩の跳弾',udsc:'弾むゴムボールを3発撃ち込む。敵から敵へ跳ねるたびに威力が上がる(最大10連鎖)'}
+ {id:'hLupi',n:'跳弾姫ルピナ',rk:5,hp:5400,atk:480,rate:1.1,sp:76,c:'#ff7fb8',ty:'bullet',rng:300,uch:56,ult:'バブルガム・ボム',udsc:'巨大なバブルガムをふわりと放つ。大破裂が広範囲を巻き込み、ガムがべたついた敵は10秒間かなり遅くなり、受けるダメージが2倍になる'}
 ];
 const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
 const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
@@ -15889,6 +15906,10 @@ const H_FX={
    cur=いまの敵 / dl0=最初の跳ねまでの秒。⚠**次の敵が居なければそこで止まる**
    (敵間で跳ねる技=1体しか居ない時は弱い、がこのキャラの性格)。 */
 const LUPI_HOP=170,LUPI_COLS=['#ff7fb8','#7fc8ff','#ffd23d'];
+/* 🫧(98)ルピナの新必殺「バブルガム・ボム」(2026-08-03ユーザー指示)。
+   GUM_T=べたつく秒数 / GUM_SLOW=足の倍率(かなり遅く) / GUM_DEF=「防御力半分」の実装(受けるダメージ×2) /
+   GUM_RNG=破裂の届く道のり(かなり広め。他の必殺は±150) / GUM_FLY=ふわふわ飛ぶ秒数(ゆっくり) */
+const GUM_T=10,GUM_SLOW=.3,GUM_DEF=2,GUM_RNG=280,GUM_FLY=2.1;
 function lupiHop(C,x1,y1,z2,col,big){
  if(!(FXLV>0))return;
  addFx(C,'tr',x1,y1,'',{x2:z2.px,y2:z2.py-16*CH_UP,col:'rgba('+(col==='#7fc8ff'?'127,200,255,':col==='#ffd23d'?'255,210,61,':'255,127,184,'),w:big?3.4:2.2});
@@ -16323,6 +16344,7 @@ function dmgZ(C,z,d,armorPierce,quiet){
     ⚠**検証場(G.tst)でしか作れない**=普通の試合には出てこない。 */
  /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する */
  if((z.armor||z.scl)&&!armorPierce)d*=.45;
+ if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
  z.hp-=d;z.hitT=.1;
  if(z.dummy&&z.hp<=0)z.hp=z.mhp;/* 🎯ダミーは何発当てても倒れない */
  /* ボスは削った分だけ報酬を先払い(倒しきれなくても取り分が残る) */
@@ -16846,23 +16868,45 @@ function heroUlt(C,wave){
   run(0);for(let k=1;k<7;k++)later(C,k*.11,()=>run(k));
   addFx(C,"txt",u.px,u.py-84*CH_UP,"漆黒の突撃");
   addFx(C,"ring",u.px,u.py,"",{r:340,col:"#8f1f28"});
- }else if(id==='hLupi'){/* 🌈虹彩の跳弾: ゴムボール3発。跳ねるたびに威力+30%(最大10連鎖) */
-  addFx(C,'txt',u.px,u.py-84*CH_UP,'虹彩の跳弾');
-  for(let b9=0;b9<3;b9++){later(C,.14+b9*.36,()=>{
-   if(u.dead)return;
-   /* 的=一番近い敵(⚠必殺は射程を見ない=遠くまで投げ込む。3発それぞれで選び直す) */
-   let tg9=null,bd9=1e9;
-   for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;const gp=Math.abs(u.d-z.d);
-    if(gp<bd9){bd9=gp;tg9=z;}}
-   if(!tg9)return;
-   const mx9=u.px+(u.dr||-1)*30*CH_UP,my9=u.py-27*CH_UP;
-   lupiHop(C,mx9,my9,tg9,LUPI_COLS[b9%3],1);
-   const bd0=Math.round(300*W);
-   dmgZ(C,tg9,bd0,1);
-   if(C.isMe)(sfx.gren||sfx.shot)();
-   lupiBall(C,u,bd0,.3,9,tg9,.14,1);/* 残り9跳ね=合計10連鎖まで */
+ }else if(id==='hLupi'){/* 🫧(98)バブルガム・ボム(2026-08-03ユーザー指示で跳弾3発から作り替え)=
+    ①巨大なバブルガムを1つ放つ ②**ゆっくり**敵へ近づく ③大破裂(ダメージ・かなり広い範囲)
+    ④ガムが敵にくっつく(カラフルな絵=描く方は18580台) ⑤10秒間かなり遅く+防御力半分(GUM_DEF)。 */
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'バブルガム・ボム');
+  /* 的=いちばん近い敵(居なければ前方の道の先)。⚠破裂は「道のり」で効かせる=経路が折れていても届く */
+  let tg9=null,bd9=1e9;
+  for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;const gp=Math.abs(u.d-z.d);
+   if(gp<bd9){bd9=gp;tg9=z;}}
+  const qf9=tg9?tg9.d:Math.max(0,(u.d||0)-260);
+  const sx9=u.px+(u.dr||-1)*26*CH_UP,sy9=u.py-30*CH_UP;
+  const NB9=Math.round(GUM_FLY/.09);
+  /* 🫧飛んでいる間の絵=大きな桃色の泡(0.09秒ごとに置き直す)。的が生きていれば追いかける */
+  for(let k9=0;k9<=NB9;k9++){later(C,k9*.09,()=>{
+   if(!C)return;if(!(FXLV>0))return;
+   const p9=(tg9&&!tg9.dead)?[tg9.px,tg9.py-16*CH_UP]:pathPos(clamp(qf9,0,PLEN));
+   const t9=k9/NB9,ex=sx9+(p9[0]-sx9)*t9,ey=sy9+(p9[1]-sy9)*t9-Math.sin(t9*Math.PI)*70-Math.sin(k9*.8)*4;
+   addP(C,1,ex,ey,{sp:0,up:0,g:0,life:.12,r:26,col:'#ff9fc8'});
+   addP(C,1,ex-8,ey-9,{sp:0,up:0,g:0,life:.12,r:7,col:'#ffe3f0'});/* 泡のハイライト */
+   if(k9%3===0)addP(C,1,ex,ey+16,{sp:20,up:-30,g:60,life:.5,r:2,col:LUPI_COLS[k9%3]});
   });}
-  C.shake=Math.max(C.shake||0,.2);
+  /* 💥大破裂 */
+  later(C,GUM_FLY+.02,()=>{
+   if(!C)return;
+   const alive9=tg9&&!tg9.dead;
+   const qd9=alive9?tg9.d:qf9;
+   const p9=alive9?[tg9.px,tg9.py]:pathPos(clamp(qf9,0,PLEN));
+   for(const z of C.zombies){if(z.dead||z.dvT>0)continue;if(Math.abs(z.d-qd9)>GUM_RNG)continue;
+    dmgZ(C,z,Math.round(760*W),1);
+    if(!z.dead)z.gumT=GUM_T;/* 🫧べたつき=10秒かなり遅く+受けるダメージ×GUM_DEF(dmgZ側) */}
+   addFx(C,'shock',p9[0],p9[1],'',{r:250,col:'#ff7fb8'});
+   addFx(C,'ring',p9[0],p9[1],'',{r:320,col:'#ff9fc8'});
+   for(let i=0;i<3;i++)addFx(C,'ring',p9[0],p9[1],'',{r:130+i*75,col:LUPI_COLS[i]});
+   addP(C,24,p9[0],p9[1],{sp:230,up:130,g:340,life:.8,r:3.4,col:'#ff7fb8'});
+   addP(C,12,p9[0],p9[1],{sp:180,up:100,g:300,life:.7,r:2.6,col:'#7fc8ff'});
+   addP(C,12,p9[0],p9[1],{sp:180,up:100,g:300,life:.7,r:2.6,col:'#ffd23d'});
+   C.shake=Math.max(C.shake||0,.34);
+   if(C.isMe)(sfx.gren||sfx.shot)();
+  });
+  C.shake=Math.max(C.shake||0,.15);
  }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
   for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
    addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:DANGER});}
@@ -16935,7 +16979,8 @@ function campStep(C,dt,wave){
   if(z.frzT>0)z.frzT-=dt;
   if(z.stnT>0)z.stnT-=dt;/* ⭐気絶の見せ方(★が回る)。⚠止める仕組みは frzT の方=これは演出だけ */
   /* 🌊水浸し中は敵の足が1.5倍(②の高波ギミック。G.flood は②のTDでしか立たない)。🐢こもり中は完全停止 */
-  const slow=(z.frzT>0||z.shT>0?0:(z.slowT>0?.55:1))*((G&&G.flood>0&&!C.bus)?FLOOD_SP:1);if(z.slowT>0)z.slowT-=dt;
+  const slow=(z.frzT>0||z.shT>0?0:(z.slowT>0?.55:1))*((G&&G.flood>0&&!C.bus)?FLOOD_SP:1)*(z.gumT>0?GUM_SLOW:1);
+  if(z.slowT>0)z.slowT-=dt;if(z.gumT>0)z.gumT-=dt;/* 🫧ガム=かなり遅く(ルピナの必殺) */
   /* 🐟**潜る**(dv:1の魚系だけ・②のギミック)。潜っている間は狙えず(targeting)・当たらず(dmgZ)・
      止められない(下のblkを丸ごと飛ばす)。⚠凍結中と拠点際(d>PLEN-90)では潜らない=
      取り付き際に消えると「攻撃が当たらないままコアを削られる」理不尽になる。 */
@@ -18580,6 +18625,23 @@ function renderCamp(C,t){
    c.globalAlpha=.7;c.fillStyle='#eafaff';
    c.beginPath();c.moveTo(z.px-bw*.5,z.py-bh-6);c.lineTo(z.px-bw*.1,z.py-bh-16*zc);c.lineTo(z.px+bw*.2,z.py-bh-6);c.closePath();c.fill();
    c.restore();}
+  /* 🫧(98)ガムがべたつく(ルピナの必殺)=**カラフルな粘つき**を体に貼る+足元へ伸びる糸。
+     ⚠色の点だけだと汚れに見える=白いハイライトを乗せて「ガム」に読ませる */
+  if(z.gumT>0&&!(z.stnT>0)){const zc=ZOMBIES[z.zi].sc,gs=(((z.eid||1)*2654435761)>>>0);
+   c.save();
+   for(let k=0;k<3;k++){
+    const a9=((gs>>(k*5))&255)/255*6.283,rr9=(4.5+((gs>>(k*3))&3))*zc;
+    const gx=z.px+Math.cos(a9)*11*zc,gy=z.py-(22+((gs>>(k*4))&15))*zc+Math.sin(t*5+k*2.1)*1.5;
+    c.globalAlpha=.9;c.fillStyle=LUPI_COLS[k%3];
+    c.beginPath();c.ellipse(gx,gy,rr9,rr9*.8,0,0,7);c.fill();
+    c.globalAlpha=.8;c.fillStyle='#fff7fb';
+    c.beginPath();c.arc(gx-rr9*.3,gy-rr9*.3,rr9*.28,0,7);c.fill();}
+   c.globalAlpha=.55;c.strokeStyle='#ff9fc8';c.lineWidth=2.5;
+   c.beginPath();c.moveTo(z.px-8*zc,z.py-12*zc);
+   c.quadraticCurveTo(z.px-11*zc,z.py-4,z.px-6*zc,z.py+3);c.stroke();
+   c.beginPath();c.moveTo(z.px+9*zc,z.py-18*zc);
+   c.quadraticCurveTo(z.px+12*zc,z.py-4,z.px+8*zc,z.py+3);c.stroke();
+   c.restore();c.globalAlpha=1;}
   if(z.elite){c.font='900 15px '+FF;c.textAlign='center';c.fillStyle=HEROC;c.fillText('👑',z.px,z.py-72*ZOMBIES[z.zi].sc);}
   if(z.hp<z.mhp){const w=36*(z.boss?1.7:z.elite?1.35:1),r2=clamp(z.hp/z.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(z.px-w/2,z.py-58*ZOMBIES[z.zi].sc,w,6);c.fillStyle=z.sent?'#ff6a5a':z.elite?HEROC:TOXIC;c.fillRect(z.px-w/2,z.py-58*ZOMBIES[z.zi].sc,w*r2,6);}
   if(ivz9!==1)c.restore();
@@ -20008,7 +20070,8 @@ function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKI=[];
     部隊レベルは作戦タイムの強化カードだけで上げる。デッキは「押したら出撃」だけの単純な操作にする */
  for(let k9=0;k9<T9.length;k9++){const i=T9[k9];const U=UNITS[i];if(!U)continue;
   const b=document.createElement('button');b.className='dk'+(uTier(i)===4?' t4':uTier(i)===3?' t3':'');b.title=U.n+' — '+U.dsc;
-  b.innerHTML=`<canvas width="${UTHW}" height="${UTHH}"></canvas><span class="dn">${U.n}</span><span class="dc">${IC('⚙️')}${U.cost}</span><i class="cdov"></i><span class="lk">${IC('🔒')}</span>`;
+  /* 🛡(98)すり抜けを足止めできる兵科(hook持ち)は左上に盾マーク(ユーザー指示) */
+  b.innerHTML=`<canvas width="${UTHW}" height="${UTHH}"></canvas><span class="dn">${U.n}</span><span class="dc">${IC('⚙️')}${U.cost}</span><i class="cdov"></i><span class="lk">${IC('🔒')}</span>`+(U.hook?'<span class="hk">🛡</span>':'');
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
   b.onclick=()=>actDeploy(i);
   w.appendChild(b);DECKB.push(b);DECKI.push(i);}}
@@ -20055,7 +20118,7 @@ $('bt-resume').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');};
 /* 中断=いまの状態を保存してタイトルへ(そのウェーブの初めから再開できる) */
 /* ⚠戦闘中の中断は**そのウェーブの初めの状態**が保存される(稼ぎ直しの穴を塞ぐため)。そう言い切る */
 $('bt-suspend').onclick=()=>{const mid=!!(G&&G.phase==='wave');saveRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();
- toast(mid?'💾 中断した。このウェーブの初めから再開する(戦闘中のぶんは持ち越さない)':'💾 中断した。タイトルの「続きから」で再開できる');};
+ toast(mid?'💾 中断した。このウェーブの初めから再開する(戦闘中のぶんは持ち越さない)':'💾 中断した。ホームの「▶続きから」で再開できる');};
 $('bt-quit').onclick=()=>{clearRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();};
 $('bt-rothide').onclick=()=>$('rotatehint').classList.add('off');
 $('ffbtn').onclick=()=>{if(!G)return;const SP=[1,2,8];G.spd=SP[(SP.indexOf(G.spd||1)+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
@@ -24573,7 +24636,12 @@ function tutSteps(){return[
   hi:{k:'dom',s:'#interv'},al:'#deck,#flagbtn,#strikebtn',sl:2,
   ok:()=>!!(G&&G.phase==='interval'&&G.wave>=1)},
  {id:'lab',scr:'game',t:'負けても強くなる',
-  m:'出撃の結果で🧬研究ptが貯まる。タイトルの🔬研究所で新型タワーや兵科を永久に解放できる。',hi:null},
+  m:'出撃の結果で🧬研究ptが貯まる。ホームの🔬研究所で新型タワーや兵科を永久に解放できる。',hi:null},
+ /* 🗺(98)新しい動線(ホーム→マップ)を教える段(ユーザー指示「必要なとこはしっかり丁寧に」)。
+    ⚠読むだけの段=▶で進む。実際に押させると本編が始まってしまうので、ここでは場所だけ示す */
+ {id:'home9',scr:'title',t:'出撃は🗺マップから',
+  m:'「🛡シングルプレイ」を押すとホームだ。🎖編成・🔬研究所・💎召集はそこに揃っている。ホームの「出撃」で地図が開き、道沿いの拠点を1つずつ解放していく。',
+  hi:{k:'dom',s:'#bt-solo'}},
  /* ⭐ここから先はタイトルへ戻って続ける(2026-07-26ユーザー指示
     「チュートリアルクリアしたらガチャ石3個プレゼントして、一回ガチャするまでがチュートリアル」)。
     ⚠**💎はこの段に入った時点で渡す**=ここで抜けても手元に残る。 */
@@ -24684,14 +24752,21 @@ function tutPtrPos(r,W,H,S,G){
    ⚠**止まっている間(PAUSED)は引っ込める**=紹介モーダルの上に浮いて残るため。 */
 function tutPtr(){
  const p=$('tutptr');if(!p||!p.classList)return;
+ const s9=$('tutspot');
  const hi=TUT&&TUT.on&&TUT.hi;
  let el=null;
  try{if(hi&&hi.k==='dom'&&!PAUSED)el=document.querySelector(hi.s);}catch(e){}
  let r=null;try{r=el&&el.getBoundingClientRect();}catch(e){}
- if(!r||(!r.width&&!r.height)){p.classList.remove('on');return;}
+ if(!r||(!r.width&&!r.height)){p.classList.remove('on');
+  if(s9&&s9.classList)s9.classList.remove('on');return;}
  const q=tutPtrPos(r,window.innerWidth||852,window.innerHeight||393);
  p.style.left=Math.round(q.x)+'px';p.style.top=Math.round(q.y)+'px';
  p.className='on '+q.k;
+ /* 🔦(98)スポットライト=押す所だけ明るく、まわりを暗く落とす(毎フレーム置き直す) */
+ if(s9&&s9.style){
+  s9.style.left=Math.round(r.left-6)+'px';s9.style.top=Math.round(r.top-6)+'px';
+  s9.style.width=Math.round(r.width+12)+'px';s9.style.height=Math.round(r.height+12)+'px';
+  s9.classList.add('on');}
 }
 /* 押せない所を押した時の反応。⚠無反応だと「固まった」に見えるので帯を揺らす */
 function tutNope(){
@@ -24781,13 +24856,7 @@ function tutHi(hi){
  try{const p=$('tutptr');if(p&&p.classList&&!(hi&&hi.k==='dom'))p.classList.remove('on');}catch(e){}
  if(hi&&hi.k==='dom'){try{const el=document.querySelector(hi.s);if(el)el.classList.add('tuthi');}catch(e){}}
 }
-function tutEnd(done){
- tutHi(null);
- const e=$('tut');if(e)e.classList.remove('on');
- TUT=null;
- META.tut=1;saveMeta();
- if(done)toast('🎓 チュートリアル終了!ソロ作戦で腕を試せ');
-}
+/* ⚠(98)ここに古い tutEnd が残っていた=**同じ名前の関数は後勝ち**で一生呼ばれない死にコードだった。削除。 */
 /* 盤面に出す印。⚠マップ座標のまま描く(renderCamp の変換の中で呼ばれる)。
    ⚠**dir(向き)を持たない**=時刻だけで形が決まるので、どこから描いても同じに見える。 */
 function tutMark(c,C,t){
@@ -24804,7 +24873,13 @@ function tutMark(c,C,t){
  if(!p)return;
  const pu=(Math.sin(t*4)+1)*.5,r=(hi.k==='core'?86:52)+pu*10;
  c.save();
- c.strokeStyle=GOLD;c.lineWidth=6;c.globalAlpha=.5+pu*.5;
+ /* ⭐(98)まわりを暗く落として輪を主役に(「黄色の丸が薄い」対策=DOM側のスポットライトと同じ言い方) */
+ {const dg=c.createRadialGradient(p[0],p[1],r+8,p[0],p[1],r+360);
+  dg.addColorStop(0,'rgba(10,8,6,0)');dg.addColorStop(.3,'rgba(10,8,6,.32)');dg.addColorStop(1,'rgba(10,8,6,.32)');
+  c.fillStyle=dg;c.fillRect(p[0]-1200,p[1]-1200,2400,2400);}
+ c.strokeStyle='rgba(255,243,192,.95)';c.lineWidth=13;c.globalAlpha=.5+pu*.3;
+ c.beginPath();c.arc(p[0],p[1],r,0,7);c.stroke();
+ c.strokeStyle=GOLD;c.lineWidth=7;c.globalAlpha=.85+pu*.15;
  c.beginPath();c.arc(p[0],p[1],r,0,7);c.stroke();
  c.strokeStyle=INK;c.lineWidth=2;c.globalAlpha=.9;
  c.beginPath();c.arc(p[0],p[1],r,0,7);c.stroke();
@@ -24837,13 +24912,16 @@ function tutStep(dt){
 function tutEnd(done){
  tutHi(null);
  const e=$('tut');if(e)e.classList.remove('on');
+ /* 🔦(98)スポットライトと矢印も必ず消す(TUTが消えると誰も消さなくなる) */
+ try{const s9=$('tutspot');if(s9)s9.classList.remove('on');
+  const p9=$('tutptr');if(p9)p9.classList.remove('on');}catch(e2){}
  TUT=null;
  META.tut=1;
  /* ⭐**最後まで通した印**(2026-07-28)。これが立つと2回目以降=💎とガチャの段が消え、やめるボタンが出る。
     ⚠`META.tut` は始めた時点で立つので済んだ印にはならない。⚠**途中でやめた時(done=false)は立てない**。 */
  if(done)META.tutOk=1;
  saveMeta();
- if(done){backTitle();toast('🎓 チュートリアル終了!ソロ作戦で腕を試せ');}
+ if(done){backTitle();toast('🎓 チュートリアル終了!シングルプレイで腕を試せ');}
 }
 function backTitle(){
  if(TUT&&!TUT.mv)tutEnd(false);/* ⚠TUT.mv=チュートリアル自身が画面を移している最中=畳まない */
@@ -25496,6 +25574,7 @@ function renderLoad(){
       ⚠✅は名前に混ぜず左上のバッジに(名前の幅を食わない) */
    h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'" data-on="'+(on?1:0)+'">'
     +(on?'<span class="onb">'+IC('✅')+'</span>':'')
+    +(((uEff(i)||U).hook)?'<span class="hkb">🛡</span>':'')/* 🛡すり抜けを足止めできる印(98) */
     +'<canvas width="96" height="58"></canvas>'
     +'<span class="nm">'+(uEff(i)||U).n+'</span>'
     +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))+'</span></button>';}
@@ -25983,6 +26062,8 @@ function gcFit(){
 function gcStart(res){
  const cv=$('gc-cv');
  if(!cv||!cv.getContext||!res||!res.length){renderGacha(res);return;}
+ /* ⚠(98)演出中は見出しの帯を消す(黒帯が「撃て!」に被さったまま=ユーザー写真)。✕だけ残す */
+ try{$('md-gacha').classList.add('fx');}catch(e){}
  /* ⚠演出用の値は**結果の中(res)に混ぜない**。混ぜると「演出が結果を書き換えていないか」を見られなくなる。
     ⭐撃つ場面は**1回の召集につき1回だけ**。10連でも1回で、その1回が「10連全体の一番いい結果」を示唆する */
  const best=res.reduce((a,o)=>Math.max(a,gcRank(o)),0);
@@ -26136,6 +26217,7 @@ function gcTap(mx,my){
 }
 function gcEnd(){
  const cv=$('gc-cv');if(cv)cv.classList.remove('on');
+ try{$('md-gacha').classList.remove('fx');}catch(e){}/* 見出しの帯を戻す */
  const r=GC?GC.res:null;GC=null;
  try{renderGacha(null);}catch(e){}/* 💎の残数と英雄図鑑を最新にする */
  try{if(r&&r.length)openGcRes(r);}catch(e){}
