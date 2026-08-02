@@ -256,6 +256,31 @@ const REC=[
    mix:[{f:'powerful explosions_multiples',t:0,d:.28,g:-1,r:1.05},
         {f:'powerful explosions_multiples',t:4,d:.55,g:-4,r:.72,dl:30},
         {f:'Texas Rain Thunder',t:8,d:1.10,g:-11,r:.70,dl:170}]},
+ /* ===== ⚔近接英雄の攻撃音(2026-08-03(84)ユーザー「攻撃音全員微妙だわ」) =====
+    ❌**微妙だった正体**=lslash / thrust / quake などは**素材が無く合成音のフォールバック**で鳴っていた。
+    ⭐**バンドルに中世武器のパックがある**(Medieval Weapons Vol 2 / MWP2)=
+      剣の金属斬り・槍と棒の木の当たり・重い武器の風切り→ドスッ。これを層にする。
+    ⚠**連撃で毎秒何発も鳴る**ので**短く・薄く**(0.20〜0.30秒)。長いと重なって濁る。 */
+ /* 🗡大鎌(終焉の騎士)=刃の風切り→金属の斬り当て */
+ {k:'mLong', d:.30, g:-5, af:'highpass=f=140',
+   mix:[{f:'SWING SCRAPE Swift Melee',t:0,d:.16,g:-6,r:1.30},
+        {f:'Sword Slide Cuts',t:1,d:.30,g:-1,r:1.05,dl:35}]},
+ /* 🏇騎槍(暗黒の騎士)=木の柄の突き→鈍い芯 */
+ {k:'mSpear', d:.26, g:-4, af:'highpass=f=120',
+   mix:[{f:'Spear And Stick Impact',t:6,d:.26,g:-1,r:.92},
+        {f:'SWING IMPACTS Quick Heavy',t:4,d:.26,g:-8,r:1.15,dl:20}]},
+ /* 🥊鉄拳(鋼鉄の巨人)=重い風切り→肉と鉄の打撃 */
+ {k:'mHeavy', d:.34, g:0, af:'equalizer=f=200:width_type=o:width=1.4:g=4',
+   mix:[{f:'SWING IMPACTS Quick Heavy',t:0,d:.34,g:-1,r:.86},
+        {f:'4 x Punch, Body',t:1,d:.28,g:-5,r:.80,dl:40}]},
+ /* 🔧レンチ(整備士)=金属の軽いタップ(連打なので一番短く薄く) */
+ {k:'mTool', d:.24, g:-2, af:'highpass=f=220',
+   mix:[{f:'METLImpt_METAL SWING HIT',t:0,d:.24,g:-1,r:1.45},
+        {f:'METLImpt_Metal Old File Impact',t:0,d:.18,g:-4,r:1.25,dl:10}]},
+ /* 📦鈍器(配達人)=木と体の鈍い当たり */
+ {k:'mBlunt', d:.26, g:-3, af:'lowpass=f=4200',
+   mix:[{f:'4 x Punch, Body',t:2,d:.26,g:-1,r:1.0},
+        {f:'Spear And Stick Impact',t:13,d:.22,g:-8,r:.85,dl:25}]},
  /* 🥉薬莢(第2陣・2026-08-03(74)ユーザー「薬莢はダメ」)。
     ❌**ボツにした形**=バネ線のカチャつき/金属やすりのタップ=**「跳ねて転がる真鍮」に聞こえない**。
     ⭐**真鍮の薬莢はコインとほぼ同じ音**(明るい"チン"+短い跳ね)=素材はコイン系に切り替えた。
