@@ -154,3 +154,23 @@ aliases: [音]
 - ⭐**候補の作り分けは「①立ち上がり ②胴 ③尾」の3層で考える**=
   📌**重い一発が「大砲の爆発」に聞こえる時は、①の鋭い頭が無い**。これが(71)の「微妙」の正体だった。
 - ⚠この枠は**音以外にも使える形にしてある**(タグを増やすだけ)。迷ったら候補を並べて聞く/見る。
+
+### ⭐⭐⭐**手持ちのバンドルの棚卸し**(2026-08-03(73)に初めてちゃんと調べた)
+- 📌**Sonniss GDC2026 バンドルは Downloads に5本・6.45GB**、中身は **WAV 347本**。
+  **取り出してあったのは23本(7%)**。⚠「余り18本で音を作っていた」は本当だった。
+- ⭐**展開せずに中身の名前だけ読める**(PowerShell の `System.IO.Compression.ZipFile.OpenRead` →
+  `Entries` の `FullName`)。⚠**6.45GBを展開しない**=これをやる前に解凍しようとしないこと。
+- ⚠⚠**銃声は1本も無い**(gun/rifle/sniper/bolt/cartridge/shell/firearm で総当たり=該当ゼロ)。
+  ⭐だから**銃らしさは「至近の花火の破裂(頭)+雷鳴のクラップ(胴)」で組む**。これが唯一の道。
+- ⭐⭐**逆に、機構音と小さな金属音は本物がある**=`METLMvmt_ Tinkering Antique Lock` /
+  `Opening Lid Of Antique Blowtorch` / `Antique Measuring Tape`(骨董の小金物)、
+  `METLTonl_ Spring Wire Impact Flick Top Clatter`(バネ線が跳ねて転がる)。
+  **コッキングと薬莢はこれで作れる**。⚠合成音で代用していたのがもったいなかった。
+- ⭐他に未使用で使い出のある物=`STORM_Texas Rain Thunder ... Clap Lightning`(72MB・
+  本物の雷鳴=**鋭い頭と長い自然な尾**)、`EffectiveTrailer_Booms_Vol2_011`、
+  `13 Fireworks_powerful explosions ... near`。
+- ⚠`tool_sfx.js scan` は**`mix`(層で作る音)を渡すと落ちていた**(`R.f` が無いため)。直した。
+  ⭐**素材名を直に渡して調べられるようにした**=`node tool_sfx.js scan sfx_src "Antique Lock,Spring Wire"`
+  (これが無いと「レシピを書くのに番号が要るが、番号を知るにはレシピが要る」の堂々巡りになる)。
+- ⚠**新しいレシピを足す時は、直前の行の末尾にカンマがあるか確かめる**(REC の最後の行は
+  カンマ無しで終わっていて、そのまま足して構文エラーになった)。

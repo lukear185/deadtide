@@ -222,7 +222,43 @@ const REC=[
  {k:'bossKill', f:'Booms_Vol2_214',                t:0, d:1.3, g:-1, r:.95},
  {k:'clearJ',   f:'Power Up Bright Positive',      t:0, d:.85, g:-3, r:1.0},
  {k:'win',      f:'Game Entry Happy Short',        t:0, d:1.3, g:-3, r:1.0},
- {k:'lose',     f:'Transition Braam Slow Dark',    t:0, d:1.5, g:-2, r:1.0}
+ {k:'lose',     f:'Transition Braam Slow Dark',    t:0, d:1.5, g:-2, r:1.0},
+
+ /* ===== 🎯狙撃王ジョルジ(2026-08-03(73)) =====
+    ⭐⭐**バンドルを漁って作り直した候補**(ユーザー「①②いいよ」)。
+    ⚠それまでは**タワー用の合成音を重ねただけ**で、本物の素材は1本も使っていなかった。
+    ⚠⚠**バンドルに銃声は1本も無い**(347本を名前で総当たりして確認)=
+      「銃らしさ」は**至近の花火の破裂(頭)+雷鳴のクラップ(胴)**で作る。
+    ⭐**機構音(コッキング)と薬莢は本物がある**=骨董の小金物(錠前・ブロートーチの蓋・巻尺)と
+      バネ線のカチャつき。⚠ここが今回の一番の収穫。 */
+ /* 🔩コッキング=「引く→戻す」の2拍。⚠1拍だと機構に聞こえない */
+ {k:'geoCkA', d:.34, g:-4, af:'highpass=f=180,equalizer=f=2600:width_type=o:width=1.6:g=4',
+   mix:[{f:'Tinkering Antique Lock',t:1,d:.16,g:-2,r:1.15},
+        {f:'Tinkering Antique Lock',t:3,d:.20,g:-3,r:1.05,dl:95}]},
+ {k:'geoCkB', d:.34, g:-4, af:'highpass=f=180',
+   mix:[{f:'Opening Lid Of Antique Blowtorch',t:1,d:.16,g:-2,r:1.00},
+        {f:'Tinkering Antique Lock',t:2,d:.22,g:-4,r:.92,dl:100}]},
+ {k:'geoCkC', d:.40, g:-4, af:'highpass=f=180',
+   mix:[{f:'Antique Measuring Tape',t:0,d:.24,g:-3,r:.90},
+        {f:'Tinkering Antique Lock',t:0,d:.10,g:-5,r:1.20,dl:120}]},
+ /* 🥉薬莢=**高い所だけ**残す(300Hz以下を切る)。⚠低音が残ると「落ちた物」が重く聞こえる */
+ {k:'geoShA', d:.42, g:-8, af:'highpass=f=300',
+   mix:[{f:'Spring Wire Impact Flick',t:0,d:.40,g:-2,r:1.25}]},
+ {k:'geoShB', d:.40, g:-8, af:'highpass=f=300',
+   mix:[{f:'METLImpt_Metal Old File Impact',t:0,d:.16,g:-2,r:1.50},
+        {f:'Spring Wire Impact Flick',t:0,d:.32,g:-6,r:1.10,dl:70}]},
+ /* 💥締めの一撃=①頭(破裂)②胴(雷鳴/爆発)③尾。⚠**150〜300Hzを持ち上げる**(スマホで「重い」を出す唯一の帯域) */
+ {k:'geoBigF', d:1.30,g:-1, af:'equalizer=f=220:width_type=o:width=1.4:g=4',
+   mix:[{f:'powerful explosions_multiples',t:1,d:.14,g:-1,r:.95},
+        {f:'Texas Rain Thunder',t:3,d:.85,g:-3,r:.80,dl:22},
+        {f:'Booms_Vol2_011',t:0,d:1.30,g:-9,r:.75,dl:150}]},
+ {k:'geoBigG', d:1.10,g:-1, af:'equalizer=f=240:width_type=o:width=1.4:g=3',
+   mix:[{f:'powerful explosions_multiples',t:0,d:.28,g:-1,r:1.05},
+        {f:'powerful explosions_multiples',t:4,d:.55,g:-4,r:.72,dl:30},
+        {f:'Texas Rain Thunder',t:8,d:1.10,g:-11,r:.70,dl:170}]},
+ {k:'geoBigH', d:1.05,g:-1, af:'equalizer=f=200:width_type=o:width=1.4:g=4',
+   mix:[{f:'powerful explosions_multiples',t:1,d:.12,g:-2,r:1.10},
+        {f:'METAL SWING HIT Weapon Swing',t:0,d:1.00,g:-2,r:.78,dl:18}]},
 ];
 
 const SRC=process.argv[3]||path.join(__dirname,'sfx_src');
@@ -252,12 +288,33 @@ function segs(file){
  segCache[file]=out;return out;}
 
 if(process.argv[2]==='scan'){
+ /* ⭐**素材名を直に渡して調べられるようにした**(2026-08-03(73))=
+      node tool_sfx.js scan sfx_src "Antique Lock,Spring Wire"
+    ⚠これが無いと**レシピに書く前のかたまり番号が分からない**(先に番号が要るのに、
+      番号を知るにはレシピが要る、というにわとり卵になっていた)。 */
+ const frags=(process.argv[4]||'').split(',').map(s=>s.trim()).filter(Boolean);
+ if(frags.length){
+  for(const fr of frags){
+   const f=findSrc(fr);
+   if(!f){console.log('× 素材なし: "'+fr+'"');continue;}
+   const s=segs(f);
+   console.log('■ '+path.basename(f)+'  かたまり'+s.length+'個');
+   s.slice(0,24).forEach((q,i)=>console.log('   '+i+': 開始'+q[0].toFixed(2)+'s 長さ'+q[1].toFixed(2)+'s'));
+  }
+  process.exit(0);
+ }
  for(const R of REC){
-  const f=findSrc(R.f);
-  if(!f){console.log('× 素材なし: '+R.k+'  ("'+R.f+'")');continue;}
-  const s=segs(f);
-  console.log('['+R.k+'] '+path.basename(f)+'  かたまり'+s.length+'個');
-  s.slice(0,10).forEach((q,i)=>console.log('   '+(i===R.t?'→':'  ')+i+': 開始'+q[0].toFixed(2)+'s 長さ'+q[1].toFixed(2)+'s'));
+  /* ⚠**`mix`(層で作る音)は `R.f` を持たない**=そのまま回すと undefined で落ちる
+     (2026-08-03(73)に踏んだ。scan は全部 `f` を持っていた頃のまま止まっていた)。 */
+  const layers=R.mix?R.mix:[{f:R.f,t:R.t}];
+  console.log('['+R.k+']'+(R.mix?' ('+R.mix.length+'層)':''));
+  for(const L of layers){
+   const f=L.f?findSrc(L.f):null;
+   if(!f){console.log('  × 素材なし: "'+(L.f||'(未指定)')+'"');continue;}
+   const s=segs(f);
+   console.log('  '+path.basename(f)+'  かたまり'+s.length+'個');
+   s.slice(0,10).forEach((q,i)=>console.log('     '+(i===(L.t||0)?'→':'  ')+i+': 開始'+q[0].toFixed(2)+'s 長さ'+q[1].toFixed(2)+'s'));
+  }
  }
  process.exit(0);
 }
