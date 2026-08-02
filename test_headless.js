@@ -2499,7 +2499,16 @@ function checkHero(){
    for(const r of A){
     if(!Array.isArray(r)||r.length!==4){console.log('FAIL: '+id+' の1手が[振りかぶり,振り抜き,ずれx,ずれy]になっていない');process.exit(1);}
     if(Math.abs(r[0])>1.25||Math.abs(r[1])>1.25){console.log('FAIL: '+id+' の振りが1.25radを超えている(腕が背中側へ回る)');process.exit(1);}
-    if(Math.abs(r[2])>14||Math.abs(r[3])>10){console.log('FAIL: '+id+' のずれが大きすぎる(肩から武器が離れる)');process.exit(1);}}
+    /* ⚠**騎槍(hDark)だけは意味が違う**=3つ目は肩からのずれではなく**突き出す深さ**なので広く取る。
+       ⭐騎槍は肩を軸に回さない(既知の掟)ので、同じ表に別の意味で乗せてある。 */
+    const LIM=(id==='hDark')?30:14;
+    if(Math.abs(r[2])>LIM||Math.abs(r[3])>10){console.log('FAIL: '+id+' のずれが大きすぎる(肩から武器が離れる)');process.exit(1);}}
+   /* ⚠⚠**振り抜き(dn=2つ目)がどの2手も0.25以上離れていること**(2026-08-03(81)に実測)=
+      画面に長く映るのは振り抜きの側で、振りかぶりは16%の一瞬しか映らない。
+      ⭐**dnが近い2手は実機でまったく同じ振りに見える**(終焉の騎士の1手目と4手目で実際にそうなっていた)。 */
+   for(let i9=0;i9<A.length;i9++)for(let j9=i9+1;j9<A.length;j9++){
+    if(Math.abs(A[i9][1]-A[j9][1])<.25){
+     console.log('FAIL: '+id+' の'+(i9+1)+'手目と'+(j9+1)+'手目の振り抜きが近すぎる('+A[i9][1]+' と '+A[j9][1]+')=同じ振りに見える');process.exit(1);}}
    /* ⚠**同じ手が2つ入っていないこと**=連撃に見えない */
    const seen={};
    for(const r of A){const k=r.join(',');if(seen[k]){console.log('FAIL: '+id+' に同じ振りが2回入っている');process.exit(1);}seen[k]=1;}
