@@ -7,6 +7,8 @@ tags: [deadtide, home]
 このノートは**永井さん(人間)が読むための入口**。Claude Code が毎回読むのは [[CLAUDE]] の方。
 
 - 公開URL: https://lukear185.github.io/deadtide/
+- 🏷**開発者名=NAKIGARA(ナキガラ/亡骸)**。Xのアイコンとヘッダーは
+  https://lukear185.github.io/deadtide/brand/ から**スマホで落とせる**(作り直しは `node tool_brand.js`)。
 - 実機テスト用: https://lukear185.github.io/deadtide/?dev=1 (🛠全開放)
   ⚠⚠**テストは必ずこちら**=素のURLだと2面もナイトメアも開かず、新しく作った物にたどり着けない。
 - 音の確認: `?sfx=1` ／ マス編集: `?edit=1`
