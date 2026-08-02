@@ -356,6 +356,8 @@ node test_shot.js out.png 1200 740 "pose=u:hGeo+posefire"
 
 - 📷**test_shot の追加オプション**(2026-08-03(93)(94))=`home`(🏠ホーム) / `home+hteam`(ホーム+編成の窓) /
   `worldmap`(🗺エリアマップ) / `worldmap+mapmid`(①を途中まで進めた状態)。
+- 📷**(95)さらに追加**=`dev+load+ldsel`(⭐派生を選んだ状態の編成=連れて行くタブに派生が映るかの確認) /
+  `home+hpick`(🦸英雄を選ぶ窓) / `home+hstk`(🎯砲撃の窓)。
 - 🔊**tool_sfx.js に `peak`**=かたまりの中の音量を0.04秒刻みで棒グラフ表示(当たりの位置を探す)。
   レシピの **`o:`=かたまり内のずらし**とセットで使う。詳しくは [[NOTES_音]]。
 - 🖼**アイコンの生成→取り込み**=プロンプトは `ui_src/PROMPTS.md`(シートG〜Lが生成待ち)。

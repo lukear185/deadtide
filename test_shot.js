@@ -169,7 +169,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⭐tmtip = 初めて兵科を解放した時に1回だけ出る「🎒編成のはなし」(2026-08-02)。
         ⚠1回きりの案内なので、こうしないと撮る機会が無い */
      +(/tmtip/.test(OPT)?'META.tmTip=0;META.team=[];teamTip(UBASE[BASE_U].id,"add");':''))
-     :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
+     /* ldsel = ⭐派生を選んだ状態で撮る(連れて行くタブに派生の絵と名前が映るかの確認・2026-08-03) */
+     :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;'
+       +(OPT.indexOf('ldsel')>=0?'META.ld={};VARLIST.slice(0,10).forEach(function(x){META.ld[x.b]=x.v.id;});':'')
+       +'LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
      /* tutauto=はじめての人の入り口(タイトルで「🎓あそびかた」を光らせる段)から撮る */
      /* tutbm = その段のまま塔を建てて強化ウィンドウを開いて撮る(帯と被っていないかを見る) */
      :TUT?((OPT.indexOf('tutauto')>=0?'tutAuto();':'tutStart();')+'for(var q=0;q<'+TUTI+';q++)tutGo(TUT.i+1);'
@@ -187,7 +190,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :(OPT.indexOf('home')>=0)?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.hero={hNox:1};META.hsel="hNox";'
        +'renderHome();show("home");for(var q9=0;q9<8;q9++)homeDraw(q9*.1);'
        /* hteam=ホームの上に🎖編成の窓を開いた状態(パネルの中身がちゃんと開くかの確認) */
-       +(OPT.indexOf('hteam')>=0?'renderLoad();document.getElementById("md-load").classList.add("on");':''))
+       +(OPT.indexOf('hteam')>=0?'renderLoad();document.getElementById("md-load").classList.add("on");':'')
+       /* hpick=🦸英雄を選ぶ窓 / hstk=🎯砲撃の窓(2026-08-03。今まで撮る口が無かった) */
+       +(OPT.indexOf('hpick')>=0?'META.hero={hNox:1,hSf:2,hCop:1};renderHeroPick();document.getElementById("md-hpick").classList.add("on");':'')
+       +(OPT.indexOf('hstk')>=0?'META.st=["air","mgun","frost"];renderStkPick();document.getElementById("md-stk").classList.add("on");':''))
      :(OPT.indexOf('worldmap')>=0)?('META.tr0=1;'
        +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
        +'MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')

@@ -153,7 +153,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homebt b{font-size:12.5px}
 .homebt i{font-style:normal;font-size:10.5px;opacity:.85;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .homebt .hth{display:flex;gap:2px;align-items:center;justify-content:center}
-.homebt .hth canvas{width:22px;height:26px}
+/* ⚠サムネ(UTHUMBS)は104x78=4:3。縦長の箱に入れると胴が潰れる(撮って直した) */
+.homebt .hth canvas{width:32px;height:24px}
 /* 🗺エリアマップ(2026-08-03(93))=canvasの地図+右下の拠点カード */
 #scr-map{display:none;position:relative}
 #scr-map.on{display:block}
@@ -309,17 +310,23 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .hpfoot .sp{margin-left:auto;display:flex;gap:6px;flex:0 0 auto}
 .hpfoot .sp span{border:2px solid var(--ink);border-radius:8px;padding:2px 9px;font-size:11px;
  font-weight:900;background:var(--pane);white-space:nowrap}
-.hpfoot .sp button{border:2px solid var(--ink);border-radius:8px;padding:2px 9px;font-size:11px;
+/* ⚠「📋くわしく」は一番押されるボタンなのに約22pxしか無かった=押す所44pxの掟に合わせる */
+.hpfoot .sp button{border:2px solid var(--ink);border-radius:8px;padding:2px 12px;min-height:44px;font-size:11px;
  font-weight:900;background:var(--pane);font-family:inherit;color:var(--ink);cursor:pointer}
 /* 🎯**砲撃を選ぶ窓** */
 /* ⚠**中身が4件しかないのに全画面の板を出さない**=下半分が空っぽの窓になる */
 #md-stk .panel{height:auto;max-height:calc(100dvh - 20px)}
 #md-hpick .panel{height:auto;max-height:calc(100dvh - 20px)}
 .stkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(174px,1fr));gap:8px;padding:6px 2px}
-.stkc{display:flex;align-items:center;gap:9px;background:var(--pane);border:3px solid var(--ink);
+.stkc{position:relative;display:flex;align-items:center;gap:9px;background:var(--pane);border:3px solid var(--ink);
  border-radius:12px;box-shadow:0 4px 0 var(--ink);padding:8px 10px;min-height:60px;
  font-family:inherit;color:var(--ink);cursor:pointer;text-align:left}
 .stkc.sel{background:var(--amber);outline:3px solid var(--ink);outline-offset:-6px}
+/* ⭐「装備中」は色だけでなく文字でも言う(英雄窓の「✓連れて行く」と同じ型。状態は形で言う=掟) */
+.stkc .chk2{position:absolute;right:8px;top:8px;background:var(--gold);border:2px solid var(--ink);
+ border-radius:7px;padding:0 6px;font-size:10.5px;font-weight:900;color:var(--ink)}
+/* ⚠列が最小幅(174px)まで縮んだ時、長い砲撃名がバッジの下へ潜らないように */
+.stkc.sel .t b{padding-right:62px}
 .stkc .e{font-size:24px;flex:0 0 auto}
 .stkc .t{min-width:0}
 .stkc .t b{display:block;font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -331,7 +338,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  padding:2px 7px;font-size:10.5px;font-weight:800}
 .ichips span b{font-weight:900}
 /* 見出しの後ろに続ける小さな注記(⚠見出しと同じ大きさで書くと、どれが見出しか分からなくなる) */
-.lsub{font-size:10px;font-weight:800;opacity:.62;margin-left:7px}
+.lsub{font-size:10.5px;font-weight:800;opacity:.62;margin-left:7px}
 .sethd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .sethd .hd{margin-bottom:0}
 .sethd #seg-stage{flex:1 1 240px;max-width:340px}
@@ -487,7 +494,7 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  #abar{gap:5px;padding:3px max(4px,env(safe-area-inset-right)) max(3px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
  #deck{gap:3px}
  #deck .dk{width:48px;height:72px}
- #deck .dk canvas{width:42px;height:36px}
+ #deck .dk canvas{width:42px;height:32px}/* ⚠サムネは104x78=4:3。36pxだと縦に伸びる */
  #deck .dk .dn{font-size:12px;line-height:15px;height:15px;bottom:14px}
  #deck .dk .dc{font-size:11px;line-height:14px;height:14px}
  #flagbtn,#strikebtn,#pushbtn,#herobtn{width:52px;height:52px}
@@ -615,7 +622,7 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:5px;margin-top:6px}
 .hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:4px 6px;font-size:11px;color:var(--paper);text-align:left}
 .hgrid .hb.own{border-color:var(--paper)}
-.hgrid .hb .hq{font-size:10px;opacity:.75}
+.hgrid .hb .hq{font-size:10.5px;opacity:.75}
 /* ⭐🦸英雄ステータス(2026-07-30)。⚠横画面は高さ393pxしか無いので**左=姿・右=数値**の横並び。
    縦に積むと数値が画面外へ出る(研究所のカードで同じ失敗をしている) */
 .hstop{display:flex;gap:8px;align-items:stretch;margin-bottom:6px}
@@ -631,14 +638,15 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hsinfo .sbr{display:grid;grid-template-columns:66px minmax(64px,84px) 1fr;align-items:center;gap:7px;
  font-size:11.5px;font-weight:900;margin:4px 0}
 .hsinfo .sbr .sv{text-align:right;white-space:nowrap}
-.hsinfo .sbr .sv small{font-size:9.5px;font-weight:800;opacity:.65}
+.hsinfo .sbr .sv small{font-size:10.5px;font-weight:800;opacity:.65}
 .hsinfo .sbr .sb{display:block;height:10px;border:2px solid var(--ink);border-radius:6px;
  background:var(--paper2);overflow:hidden}
 .hsinfo .sbr .sb b{display:block;height:100%}
 .hchips{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0 3px}
 .hchips span{background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
- padding:1px 6px;font-size:10px;font-weight:800}
-.hsul{font-size:12px;font-weight:800;color:var(--gold);line-height:1.35}
+ padding:1px 6px;font-size:10.5px;font-weight:800}
+/* ⚠金色は紙色の地では読めない(コントラスト不足)。必殺の行は英雄窓の .ul と同じ濃い錆色に揃える */
+.hsul{font-size:12px;font-weight:900;color:var(--rust2);line-height:1.35}
 .hgrid .hb.pick{cursor:pointer}
 .hgrid .hb.sel{outline:3px solid var(--gold);outline-offset:1px}
 /* ⭐召集画面の骨格(2026-07-27 第93弾): 左2/3=目玉の英雄 / 右1/3=💎と大きなボタン。
@@ -694,13 +702,26 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .ldrow{background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:6px 8px;margin-bottom:6px;text-align:left}
 .ldrow .lhd{font-size:12px;font-weight:900;color:var(--ink);opacity:.7;margin-bottom:4px}
 .ldpick{display:flex;gap:5px;flex-wrap:wrap}
-.ldc{flex:0 0 auto;display:flex;align-items:center;gap:5px;background:var(--pane);border:2px solid var(--ink);border-radius:9px;padding:3px 8px;font-size:12px;font-weight:900;color:var(--ink)}
+/* ⭐⭐**派生の札は幅を固定して、HP/攻は棒で見せる**(2026-08-03 UI総監査)。
+   ⚠幅が中身なりだと4枚目が折り返して右に大穴が空く(撮って直した)。
+   ⚠棒は**その行(基本+派生)の中での割合**=どれだけ強くなるかが一目で読める。数字も必ず残す(掟)。 */
+.ldc{position:relative;flex:0 0 160px;min-width:0;display:flex;align-items:center;gap:5px;background:var(--pane);border:2px solid var(--ink);border-radius:9px;padding:4px 6px;font-size:12px;font-weight:900;color:var(--ink);font-family:inherit;text-align:left;cursor:pointer}
+.ldc .lkk{position:absolute;left:8px;top:6px;font-size:13px;line-height:1}
 /* ⭐姿は「何を選ぶのか分かる大きさ」で出す(2026-07-26 第91弾ユーザー指示)。
    26pxでは色の点にしかならなかった。中身は fitDraw が枠いっぱいに描く */
-.ldc canvas{width:42px;height:42px;display:block;background:var(--paper3);border-radius:6px}
+.ldc canvas{width:42px;height:42px;flex:0 0 auto;display:block;background:var(--paper3);border-radius:6px}
 .ldc.sel{background:var(--gold);box-shadow:0 0 0 2px var(--gold2) inset}
 .ldc.lock{opacity:.42;filter:saturate(.3)}
-.ldc .lds{font-size:10px;font-weight:800;opacity:.75}
+.ldt{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 auto}
+.ldn{display:flex;align-items:baseline;gap:4px;font-size:12px;font-weight:900;min-width:0;white-space:nowrap}
+.ldn .nm9{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ldn i{font-style:normal;margin-left:auto;font-size:10.5px;font-weight:800;color:var(--rust2);flex:0 0 auto}
+.ldb{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;line-height:1.25}
+.ldb em{font-style:normal;flex:0 0 auto;width:20px;opacity:.7}
+.ldb .bb{flex:1 1 auto;min-width:20px;height:4px;background:var(--paper3);border-radius:2px;overflow:hidden}
+.ldb .bb b{display:block;height:100%;background:var(--life2)}
+.ldb.atk .bb b{background:var(--rust)}
+.ldb i{font-style:normal;flex:0 0 auto;min-width:30px;text-align:right}
 .ldhdr{font-size:12px;font-weight:900;color:var(--rust2);margin:8px 2px 4px;text-align:left;border-top:2px dashed rgba(147,56,30,.4);padding-top:8px}
 /* ⭐**編成の「解放される順番」の帯**(2026-08-01ユーザー指摘「編成の画面がわかりずらい」)。
    ⚠これが一番伝えたい情報=**選んだ10体が安い順に解放される**。文章で書くより並べて見せる。
@@ -740,6 +761,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ⭐上の「連れて行く枠」は固定して、下の一覧だけを流す(調べた型)。 */
 #md-load .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #md-load .tmord,#md-load .ldhdr{flex:0 0 auto}
+/* 🦸英雄ステータスも同じ型=上の情報は固定して、一覧だけ流す(2026-08-03 UI総監査。
+   ⚠丸ごと流れると、下の英雄を押しても情報欄が画面外のままで「何も起きない」ように見える) */
+#md-hstat .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
+#md-hstat .hstop{flex:0 0 auto}
+#md-hstat .hgrid{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0}
 .tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;
  overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0;padding-bottom:4px}
 .tmc{display:flex;flex-direction:column;align-items:stretch;gap:3px;border:2px solid var(--ink);
@@ -750,7 +776,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .tmc canvas{width:92px;height:46px;display:block;margin:0 auto;background:var(--paper3);border-radius:6px}
 .tmc .nm{font-size:12px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tmc .tg{font-size:10.5px;font-weight:800;color:var(--rust2);line-height:1.15}
-.tmc.on{opacity:.42;filter:saturate(.35)}
+/* ⭐編成に入っている札=**押すと外すトグル**(2026-08-03 UI総監査)。
+   ⚠以前は disabled+薄化=一覧の先頭が「押せない札」だらけだった。
+   選択中の見た目は派生の .ldc.sel と同じ金(=このゲームの「選んでいる」の型)。 */
+.tmc.on{background:var(--gold);box-shadow:0 0 0 2px var(--gold2) inset}
 #buildmenu .bm-us{text-align:left;font-size:13px}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
@@ -941,7 +970,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <p class="note" id="mc-st" style="margin:2px 0"></p>
     <button class="btn red" id="bt-map-go" style="width:100%">🧟 いざ出撃!!</button>
   </div>
-  <button class="btn mapback" id="bt-map-back">← もどる</button>
+  <button class="btn mapback" id="bt-map-back">← ホーム</button>
 </div>
 <div class="scr" id="scr-setup">
   <div class="setwrap">
@@ -24855,6 +24884,10 @@ function renderPickRows(){
     const sp=document.createElement("span");
     sp.innerHTML="<span class=\"rk\" style=\"color:"+(RARE[h.rk-1]||RARE[0])+"\">"+RK_S[h.rk]+"</span> "+h.n;
     w.appendChild(sp);}}}
+ /* 🏠⭐ホームのパネル・残高・一枚絵も同じタイミングで書き直す(2026-08-03 UI総監査)=
+    窓(英雄/砲撃/編成/召集)を閉じてもホームが古いままだった。ホームが出ていない間も
+    隠れたDOMを書くだけで無害。⚠renderHomeはrenderPickRowsを呼ばない(往復しない)こと */
+ try{if(typeof renderHome==='function')renderHome();}catch(e){}
 }
 /* ⚠**古い名前も残す**=呼んでいる所(bt-solo など)を全部書き換えないため */
 function renderStkSeg(){renderPickRows();}
@@ -24862,9 +24895,11 @@ function renderHeroSeg(){renderPickRows();}
 /* 🎯**装備砲撃を選ぶ窓**=絵+名前+効き目の1行。⚠**選んだら閉じる**(1画面1目的) */
 function renderStkPick(){
  const w=$("stk-grid");if(!w)return;
+ /* ⭐装備中は色だけでなく文字でも言う(英雄窓の「✓連れて行く」と同じ型) */
  w.innerHTML=META.st.map(k=>{const S=STRIKES[k];
   return "<button class=\"stkc"+(META.eq===k?" sel":"")+"\" data-stk=\""+k+"\">"
-   +"<span class=\"e\">"+icoImg('ic-stk-'+k,S.ic)+"</span><span class=\"t\"><b>"+S.n+"</b><i>"+S.dsc+"</i></span></button>";}).join("");
+   +"<span class=\"e\">"+icoImg('ic-stk-'+k,S.ic)+"</span><span class=\"t\"><b>"+S.n+"</b><i>"+S.dsc+"</i></span>"
+   +(META.eq===k?"<span class=\"chk2\">✓ 装備中</span>":"")+"</button>";}).join("");
  w.querySelectorAll("[data-stk]").forEach(b=>{b.onclick=()=>{
   META.eq=b.dataset.stk;saveMeta();try{if(sfx.tap)sfx.tap();}catch(e){}
   renderStkPick();renderPickRows();
@@ -24898,24 +24933,33 @@ function renderHeroPick(){
   b.style.background=RK_BG[h.rk-1]||RK_BG[0];
   b.innerHTML="<span class=\"st\" style=\"color:"+col+"\">"+RK_S[h.rk]+"</span>"
    +"<span class=\"nm\">"+h.n+"</span>"+(sel?"<span class=\"chk\">✓ 連れて行く</span>":"");
-  const c=pickTh(hUiOf(h.id));
-  if(c){c.style.cssText="position:absolute;left:8px;top:22px;width:88px;height:112px";b.appendChild(c);}
+  /* ⚠サムネ(UTHUMBS=104x78)を88x112の箱に流すと縦1.7倍に歪む(2026-08-03 UI総監査で撮って発覚)。
+     ⭐**88x112のcanvasへ直に描き直す**(属性とCSSが同寸=歪まない。掟) */
+  {const ui9=hUiOf(h.id);
+   if(ui9>=0){const c=document.createElement("canvas");c.width=88;c.height=112;
+    /* ⚠キーで寸法を覚える=毎タップ全札の200x200画素走査(fitMeasure)をしない */
+    fitDraw(c,cc=>drawUnitAs(cc,ui9,null),3,"hp:"+h.id);
+    c.style.cssText="position:absolute;left:8px;top:22px;width:88px;height:112px";b.appendChild(c);}}
   w.appendChild(b);}
  w.querySelectorAll("[data-h]").forEach(b=>{b.onclick=()=>{
   META.hsel=b.dataset.h;saveMeta();try{if(sfx.tap)sfx.tap();}catch(e){}
   renderHeroPick();renderPickRows();};});
- /* ⚠**選んでいる札が帯の外だと「どれを選んだか」が見えない**=開いた時に寄せる */
- try{const e=w.querySelector(".hpc.sel");
-  if(e&&e.scrollIntoView)e.scrollIntoView({block:"nearest",inline:"center"});}catch(e){}
+ /* ⚠**選んでいる札が帯の外だと「どれを選んだか」が見えない**=開いた時に寄せる。
+    ⚠⚠**rAFで1フレーム遅らせる**(2026-08-03 UI総監査)=開く経路では .modal がまだ
+    display:none のまま呼ばれるので、即時の scrollIntoView は無効で毎回左端から始まっていた
+    (「開いた直後は寸法が確定していない→次のフレームでもう一度」の掟と同じ形)。 */
+ try{requestAnimationFrame(()=>{const e=w.querySelector(".hpc.sel");
+  if(e&&e.scrollIntoView)e.scrollIntoView({block:"nearest",inline:"center"});});}catch(e){}
  /* 下の帯=選んでいる英雄の必殺技と素の力(⚠ここで比べられるので別画面へ行かなくて済む) */
  const f=$("hp-foot");
+ /* ⚠innerHTMLはIC()を通す(掟)=闇商人の必殺説明に⚙️があり、生絵文字のまま出ていた */
  if(f){const h=HEROES.find(x=>x.id===META.hsel);
-  if(!h)f.innerHTML="<span class=\"ul\">🚫 連れて行かない</span><span>英雄は1ゲームに1回だけ出撃できる。倒れたらそれまで</span>";
+  if(!h)f.innerHTML=IC("<span class=\"ul\">🚫 連れて行かない</span><span>英雄は1ゲームに1回だけ出撃できる。倒れたらそれまで</span>");
   else{const U=UNITS[hUiOf(h.id)]||h,bo=hBoost(h.id);
-   f.innerHTML="<span class=\"ul\">⚡ 必殺『"+h.ult+"』</span><span>"+h.udsc+"</span>"
+   f.innerHTML=IC("<span class=\"ul\">⚡ 必殺『"+h.ult+"』</span><span>"+h.udsc+"</span>"
     +"<span class=\"sp\"><span>❤"+fmt(Math.round((U.hp||0)*bo))+"</span><span>⚔"+fmt(Math.round((U.atk||0)*bo))+"</span>"
-    +"<button id=\"hp-more\">📋 くわしく</button></span>";
-   const mb=$("hp-more");if(mb)mb.onclick=()=>{const m=$("md-hpick");if(m)m.classList.remove("on");openHStat(h.id);};}}
+    +"<button id=\"hp-more\">📋 くわしく</button></span>");
+   const mb=$("hp-more");if(mb)mb.onclick=()=>{try{if(sfx.tap)sfx.tap();}catch(e){}const m=$("md-hpick");if(m)m.classList.remove("on");openHStat(h.id);};}}
 }
 /* 研究所のタブ=この順で固定。値段では並べ替えない(買うと値段が上がって順が入れ替わるため)。
    n=タブの短い名前 / d=そのタブの1行説明 */
@@ -24986,7 +25030,9 @@ function renderLab(){
    const B=UBASE.find(u=>u.id===b)||{n:'?'},t=list.indexOf(nx)+1;
    const bi=UBASE.findIndex(u=>u.id===b);
    items.push({cat:'varu',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
-    tag:(adv?'上級進化 ':'進化 ')+B.n+' 第'+t+'段階/'+list.length,
+    /* ⚠呼び方は🎖編成側と同じ「派生」に統一(進化/派生の2語が混ざって繋がらなかった。
+       ⚠タレットの方の「進化」は別物なので触らない) */
+    tag:(adv?'上級派生 ':'派生 ')+B.n+' 第'+t+'段階/'+list.length,
     d:'HP×'+(nx.hp||1)+' 攻撃×'+(nx.atk||1)+' 費用×'+(nx.cm||1.2)+' — '+nx.dsc,
     p:LAB_UV(t-1,uv.length)});
   }}
@@ -25187,7 +25233,9 @@ function renderLab(){
   let tmId9='',tmHow9='';
   if(it.k==='nu')tmId9=(it.pv&&it.pv.def&&it.pv.def.id)||'';
   if(it.k==='nt')META.nt++;else if(it.k==='nu'){META.nu++;tmHow9=teamAutoAdd(tmId9);}else if(it.k==='stk')META.st.push(it.id);
-  else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);}
+  else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);
+   /* ⭐買っただけでは装着されない(仕様)ので、どこで着けるかをその場で言う(2026-08-03 UI総監査) */
+   toast('⭐『'+it.t+'』を解放した(🎖編成 → 派生を選ぶ で装着)');}
   else if(it.k==='tg'){if(!Array.isArray(META.tg))META.tg=[];META.tg.push(it.id);}
   else if(it.k==='sc0')META.sc0+=n;else if(it.k==='hp0')META.hp0+=n;
   else if(['up0','uu0','sl0','py0','ec0','cd0','ec1','tr0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+n;
@@ -25278,12 +25326,12 @@ function fitDrawIn(c,drawFn,x,y,w,h,pad,key){
  try{drawFn(c);}catch(e){}
  c.restore();
 }
-function fitDraw(cvv,drawFn,pad){
+function fitDraw(cvv,drawFn,pad,key){
  if(!cvv)return;
  const c=cvv.getContext&&cvv.getContext('2d');if(!c)return;
  const W=cvv.width||56,H=cvv.height||56;
  if(c.clearRect)c.clearRect(0,0,W,H);
- fitDrawIn(c,drawFn,0,0,W,H,pad,null);
+ fitDrawIn(c,drawFn,0,0,W,H,pad,key||null);
 }
 /* 兵科を「別の中身」で描く(派生キャラのプレビュー用)。⚠必ず元に戻すこと */
 function drawUnitAs(c,i,def){
@@ -25293,6 +25341,11 @@ function drawUnitAs(c,i,def){
 }
 /* ---- 編成UI ---- */
 function ldPrev(cvv,i,def){fitDraw(cvv,c=>drawUnitAs(c,i,def),3);}
+/* ⭐**「その兵科のいまの中身」**(⭐派生を選んでいれば派生)を返す(2026-08-03 UI総監査)。
+   ⚠編成の絵と名前は必ずこれで引く=素のUNITS頼みだと、起動直後は素の絵・ソロを1戦した後は
+   派生の絵(applyLoadoutの残り)と**開くたびに変わる**うえ、派生を選んだのに猟犬のまま=選んだ実感が消える。
+   戦闘のデッキ(applyLoadout後)と同じ姿になる。 */
+function uEff(i){const B=UBASE[i];if(!B)return null;const v=varOf(B.id);return v?mkVar(B,v):B;}
 /* 編成もタブ制。⚠13行を縦に積むと横画面(高さ393px)で1行半しか見えない */
 let LDTAB='team';
 /* ⚠⚠**タブは2つまで**(2026-08-01ユーザー指摘「編成の画面がわかりずらい」)。
@@ -25301,7 +25354,8 @@ let LDTAB='team';
    ⚠**の記法は使わない=そのまま文字として出る(2026-08-01に撮って気づいた) */
 const LD_TABS=[
  {k:'team',n:'🎒 連れて行く',d:''},
- {k:'var', n:'⭐ 派生を選ぶ',d:'解放した兵科それぞれに、どの派生キャラを入れるか決める(強さも変わる)'}];
+ /* ⚠🔒の入手経路はここで言う(2026-08-03 UI総監査)=どこにも書いておらず「壊れた画面」に見えた */
+ {k:'var', n:'⭐ 派生を選ぶ',d:'どの派生キャラで出すか決める。🔒は🔬研究所の兵科タブで解放できる'}];
 /* ⚠**弾薬タブは2026-07-27に廃止**(タワーの進化に置き換えた)。書き戻さないこと */
 function renderLoad(){
  const box=$('load-items');if(!box)return;
@@ -25314,12 +25368,19 @@ function renderLoad(){
  const row=(bid,label)=>{
   const i=UBASE.findIndex(u=>u.id===bid);if(i<0)return;
   const B=UBASE[i],cur=META.ld[bid]||'',opts=[{v:null,def:B}].concat((UVAR[bid]||[]).map(v=>({v,def:mkVar(B,v)})));
+  /* ⭐HP/攻は**その行の中での割合の棒**で出す(数字だけの表は棒にする=掟。数字も残す) */
+  const mx=opts.reduce((m,o)=>({hp:Math.max(m.hp,o.def.hp||1),atk:Math.max(m.atk,o.def.atk||1)}),{hp:1,atk:1});
   h+='<div class="ldrow"><div class="lhd">'+label+'</div><div class="ldpick">';
   opts.forEach((o,k)=>{
    const vid=o.v?o.v.id:'',lock=o.v&&uv.indexOf(vid)<0,sel=cur===vid;
    h+='<button class="ldc'+(sel?' sel':'')+(lock?' lock':'')+'" data-b="'+bid+'" data-v="'+vid+'" data-i="'+i+'" data-k="'+k+'"'+(lock?' disabled':'')+'>'
     /* ⭐姿は枠いっぱいに描く(第91弾)。56pxだと何を選ぶのか分からなかった */
-    +'<canvas width="76" height="76"></canvas><span>'+(lock?'🔒':'')+o.def.n+'<br><span class="lds">⚙️'+o.def.cost+' HP'+o.def.hp+' 攻'+o.def.atk+'</span></span></button>';});
+    /* ⚠🔒は名前の中に入れない(4文字の名前が「フェン…」に切れる)=絵の上に重ねる */
+    +'<canvas width="76" height="76"></canvas>'+(lock?'<span class="lkk">🔒</span>':'')+'<span class="ldt">'
+    +'<span class="ldn"><span class="nm9">'+o.def.n+'</span><i>⚙️'+o.def.cost+'</i></span>'
+    +'<span class="ldb"><em>HP</em><span class="bb"><b style="width:'+Math.round((o.def.hp||0)/mx.hp*100)+'%"></b></span><i>'+o.def.hp+'</i></span>'
+    +'<span class="ldb atk"><em>攻</em><span class="bb"><b style="width:'+Math.round((o.def.atk||0)/mx.atk*100)+'%"></b></span><i>'+o.def.atk+'</i></span>'
+    +'</span></button>';});
   h+='</div></div>';};
  if(LDTAB==='team'){
   /* ⭐⭐**「選んだ10体が安い順に解放される」を文章ではなく並びで見せる**
@@ -25331,34 +25392,42 @@ function renderLoad(){
   /* ⭐**上=いま連れて行く編成(押すと外す) / 下=入れる兵科(押すと入れる)**
      (2026-08-01ユーザー指示「今選んでるユニットを上部に出して、下から選んで入れる形式に」)。 */
   const own=metaUnitCap(),T9=teamIdx();
-  let sum=0;
-  /* ⭐**見出しは「何をする所か」だけ**にして、細かい決まりは下の札で言う(2026-08-02(66)) */
+  const sum=T9.reduce((s,x)=>s+(UNITP[x]||0),0);
+  /* ⭐**見出しは「何をする所か」だけ**にして、細かい決まりは下の札で言う(2026-08-02(66))。
+     ⚠タブ名「🎒 連れて行く」の真下に同じ文字を繰り返さない(2026-08-03 UI総監査)。
+     ⭐**合計は上の帯の見出しに置く**=帯(選んだ10体)の話なのに、下の「入れる兵科」の行に
+       置いてあって30種の合計に読めた。0の時は出さない(素の状態で赤い0が意味不明だった)。 */
   h='<div class="ldhdr" style="border-top:0;padding-top:0;margin:2px 2px 3px">'
-   +'🎒 連れて行く <b>'+T9.length+'/'+TEAM_N+'</b>'
-   +'<span class="lsub">この順に解放される・押すと外す</span></div>';
+   +'🎒 <b>'+T9.length+'/'+TEAM_N+'</b>'
+   +'<span class="lsub">この順に解放される・✕で外す</span>'
+   +(sum>0?'<span class="ldsum">⚙️ 全員の解放に <b>'+sum.toLocaleString()+'</b></span>':'')
+   +'</div>';
   /* ⭐⭐**枠は上限ぶん全部出す**(2026-08-02(68))=調べた型「空き枠は空白にせず、実枠と同じ大きさの
      点線＋＋。総数を最初から見せる」。⚠**あと何体入るかを数えさせない**。 */
+  /* ⚠絵と名前は uEff(派生を反映した中身)で出す。🔒は「未解放」と紛らわしいので固定枠は「固定」の字 */
   h+='<div class="tmord">';
-  T9.forEach((i,k)=>{const p=UNITP[i]||0;sum+=p;const fx=TEAM_FIX.indexOf(i)>=0;
-   h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'"'+(fx?' disabled':'')+'>'
+  T9.forEach((i,k)=>{const p=UNITP[i]||0;const fx=TEAM_FIX.indexOf(i)>=0;
+   h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'">'
     +'<b>'+(k+1)+'</b><canvas width="62" height="34"></canvas>'
-    +'<span class="nm2">'+((UBASE[i]||{}).n||'?')+'</span>'
-    +'<i>⚙️'+p+'</i>'+(fx?'<em>🔒</em>':'<em>✕</em>')+'</button>';});
+    +'<span class="nm2">'+((uEff(i)||{}).n||'?')+'</span>'
+    +'<i>⚙️'+p+'</i>'+(fx?'<em>固定</em>':'<em>✕</em>')+'</button>';});
   for(let k=T9.length;k<TEAM_N;k++)h+='<div class="tmo emp">＋</div>';
   h+='</div>';
-  /* ⚠**注意書きは消した**(2026-08-02(68))=毎回読む物ではないのに毎回場所を取っていた。
-     ⭐**合計だけ見出しの右に置く**(下の「入れる兵科」の見出し行に同居させる)。 */
-  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる</span>'
-   +'<span class="ldsum">⚙️ ぜんぶ出すのに <b>'+sum.toLocaleString()+'</b></span></div>';
+  /* ⚠**注意書きは消した**(2026-08-02(68))=毎回読む物ではないのに毎回場所を取っていた。 */
+  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる/外す</span></div>';
   h+='<div class="tmgrid" id="tm-grid">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
-   const on=T9.indexOf(i)>=0;
-   h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'"'+(on?' disabled':'')+'>'
+   const on=T9.indexOf(i)>=0,fx=TEAM_FIX.indexOf(i)>=0;
+   /* ⭐編成に入っている札も押せる=**押すと外すトグル**(disabledの死に札が一覧の先頭を埋めていた) */
+   h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'" data-on="'+(on?1:0)+'">'
     +'<canvas width="92" height="46"></canvas>'
-    +'<span class="nm">'+(on?IC('✅')+' ':'')+U.n+'</span>'
-    +'<span class="tg">⚙️'+(UNITP[i]||0)+'</span></button>';}
+    +'<span class="nm">'+(on?IC('✅')+' ':'')+(uEff(i)||U).n+'</span>'
+    +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))+'</span></button>';}
   h+='</div>';
+  /* ⭐持っているのが固定2種だけの時は「押せる物ゼロ」で故障に見える=次にやる事を1行だけ。
+     ⚠auto-fillのgridでは grid-column:1/-1 が1列ぶんに潰れる=**箱の外**に置く */
+  if(own<=TEAM_FIX.length)h+='<div class="note" style="font-size:12px;font-weight:800;padding:6px 4px 2px">🔬 研究所で兵科を解放すると、ここから選べる</div>';
   box.innerHTML=IC(h);
   /* ⚠**一覧のスクロール位置を保つ**(2026-08-02(68))=1体入れるたび先頭へ戻ると、
      下の方の兵科は事実上選べない(調べた型「押した所がその場で書き変わる」)。 */
@@ -25372,17 +25441,21 @@ function renderLoad(){
    if(!add){if(k>=0)cur.splice(k,1);}
    else{
     if(k>=0)return;
-    if(teamIdx().length>=TEAM_N){toast('⚠ 連れて行けるのは'+TEAM_N+'体まで(上から誰かを外す)',true);return;}
+    /* ⚠満杯は音でも「進めなかった」と言う(無音だと固まったように見える。back=低い音の語彙) */
+    if(teamIdx().length>=TEAM_N){sfx.back&&sfx.back();toast('⚠ 連れて行けるのは'+TEAM_N+'体まで(✅の札か上の帯の✕で外してから)',true);return;}
     cur.push(id);}
    META.team=cur;saveMeta();sfx.buy&&sfx.buy();renderLoad();
    /* ⚠**書き直した後に位置を戻す**=戻さないと1体ごとに一覧が先頭へ飛ぶ */
    try{const g=$("tm-grid");if(g)g.scrollTop=sv;}catch(e){}};
+  /* ⚠絵は必ず uEff を渡す(nullだと素のUNITS頼み=開くたびに絵が変わる)。
+     ⚠固定枠は disabled にしない=押したら**理由をtoastで返す**(無反応は壊れて見える。掟) */
+  const fixMsg=()=>{sfx.back&&sfx.back();toast('🎒 猟犬とバットは固定枠(外せない)');};
   box.querySelectorAll('[data-out]').forEach(b=>{
-   const i=+b.dataset.out;ldPrev(b.querySelector('canvas'),i,null);
-   b.onclick=()=>pick(i,false);});
+   const i=+b.dataset.out;ldPrev(b.querySelector('canvas'),i,uEff(i));
+   b.onclick=()=>{if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,false);};});
   box.querySelectorAll('[data-team]').forEach(b=>{
-   const i=+b.dataset.team;ldPrev(b.querySelector('canvas'),i,null);
-   b.onclick=()=>pick(i,true);});
+   const i=+b.dataset.team;ldPrev(b.querySelector('canvas'),i,uEff(i));
+   b.onclick=()=>{if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,b.dataset.on!=='1');};});
   return;
  }
  /* ⭐派生の割り当て。⚠基本と上級を**1つのタブ**にまとめた(2026-08-01)=分ける意味が無かった */
@@ -25399,7 +25472,13 @@ function renderLoad(){
   const i=+b.dataset.i,k=+b.dataset.k,bid=b.dataset.b,B=UBASE[i];
   const def=k===0?B:mkVar(B,UVAR[bid][k-1]);
   ldPrev(b.querySelector('canvas'),i,def);
-  b.onclick=()=>{META.ld[bid]=b.dataset.v;saveMeta();sfx.buy&&sfx.buy();renderLoad();};});
+  /* ⚠**書き直したらスクロール位置を戻す**(掟)=連れて行くタブは対策済みなのに、こちらだけ
+     1つ選ぶたびに先頭へ飛んでいた(一覧は約6画面ぶんある)。選択済みの札の再タップは何もしない */
+  b.onclick=()=>{
+   if((META.ld[bid]||'')===b.dataset.v)return;
+   const sv=(()=>{const g=box.querySelector('.ldscroll');return g?g.scrollTop:0;})();
+   META.ld[bid]=b.dataset.v;saveMeta();sfx.buy&&sfx.buy();renderLoad();
+   try{const g=box.querySelector('.ldscroll');if(g)g.scrollTop=sv;}catch(e){}};});
 }
 /* 🎒**「持って行く物」の3行**(2026-08-02(68))=押すと専用の窓が開く */
 $('row-team').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
@@ -25531,6 +25610,9 @@ function openHStat(id){
  const own=HEROES.find(h=>heroOwned(h.id));
  HSSEL=id||(heroOwned(HSSEL)?HSSEL:'')||(META.hsel&&heroOwned(META.hsel)?META.hsel:'')||(own?own.id:HEROES[0].id);
  $('md-hstat').classList.add('on');renderHStat();
+ /* ⭐開いた時は選択中の札まで一覧を寄せる(⚠rAFで1フレーム遅らせる=開いた直後は寸法が無い) */
+ try{requestAnimationFrame(()=>{const e9=document.querySelector('#hs-grid .hb.sel');
+  if(e9&&e9.scrollIntoView)e9.scrollIntoView({block:'nearest'});});}catch(e){}
 }
 function closeHStat(){$('md-hstat').classList.remove('on');try{renderPickRows();}catch(e){}}
 const hsRow=(a,b)=>'<tr><td>'+a+'</td><td>'+b+'</td></tr>';
@@ -25580,10 +25662,12 @@ function renderHStat(){
  /* 姿。⚠fitDraw は canvas の中の寸法に合わせて収める(CSSと食い違うと潰れる=第93弾の失敗) */
  try{const cv=$('hs-cv');if(cv&&cv.getContext&&ui>=0)fitDraw(cv,cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),10);}catch(e){}
  const g=$('hs-grid');
- if(g){g.innerHTML=HEROES.map(h=>{const c2=(META.hero||{})[h.id]||0;
+ if(g){const sv9=g.scrollTop;/* ⚠書き直したらスクロール位置を戻す(掟)=一覧が自前で流れる箱になった */
+  g.innerHTML=HEROES.map(h=>{const c2=(META.hero||{})[h.id]||0;
    return '<div class="hb pick'+(c2?' own':'')+(h.id===HSSEL?' sel':'')+'" data-hs="'+h.id+'">'
     +RK_S[h.rk]+' '+(c2?h.n:'???')
     +'<div class="hq">'+(c2?('所持'+c2+' / '+h.ult):RK_N[h.rk]+'枠 — 未所持')+'</div></div>';}).join('');
+  g.scrollTop=sv9;
   g.querySelectorAll('[data-hs]').forEach(b=>{b.onclick=()=>{HSSEL=b.dataset.hs;if(sfx.buy)sfx.buy();renderHStat();};});}
 }
 function gcView(v){
@@ -27810,7 +27894,8 @@ $('bt-sfx-all').onclick=()=>{
  const ks=Object.keys(SFXB).filter(k=>((SFX_LBL[k]||[])[2]||'ui')===SFXTAB);
  ks.forEach((k,i)=>setTimeout(()=>sfxTry(k),i*620));};
 $('bt-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
-$('bt-lab-close').onclick=()=>$('md-lab').classList.remove('on');
+/* ⚠研究所は🧬残高・兵科・砲撃を変える窓なのに、閉じてもどの再描画も呼んでいなかった(唯一の漏れ) */
+$('bt-lab-close').onclick=()=>{$('md-lab').classList.remove('on');try{renderPickRows();}catch(e){}};
 /* 難易度は「1つ下をクリアするまで押せない」。未解放は🔒つきで無効にする(2026-07-25) */
 function refreshDiffUI(){
  const si=META.stg||0;
@@ -27922,18 +28007,31 @@ function mapDefSel(){
 function mapSel(i){
  const nd=MAPND[i];if(!nd)return;
  MSEL=i;
- $('mc-name').innerHTML=(nd.nm?'🌑 ':nd.bns?'🚌 ':'')+nd.n;
+ $('mc-name').innerHTML=IC((nd.nm?'🌑 ':nd.bns?'🚌 ':'')+nd.n);
  const open=ndOpen(nd);
  let sub=nd.s;
  if(!nd.lock3&&nd.d!==BNS_D)sub+=' — '+D5[nd.d].w+'波';
- if(nd.bns)sub+='(今日あと'+(typeof bnsLeftT==='function'?bnsLeftT(nd.stg):'-')+'回)';
+ /* ⚠「(今日あとN回)」をsubに足さない=説明が2行に折り返してカードが伸び、下のピンを隠していた。
+    回数は下の状態行が言う。 */
  $('mc-sub').textContent=sub;
+ /* ⭐🚌の状態は嘘をつかない(2026-08-03 UI総監査)=
+    ①使い切り: 以前は診断が!openに流れて「🔒手前の拠点を解放すると開く」と嘘が出ていた
+    ②クリア済み: 「何度でも遊べる」は回数制の🚌では嘘(TD拠点にだけ残す)
+    ③「初回解放で」→貰えるのは初回**クリア**時 */
+ const ex9=nd.bns&&(typeof bnsUnl==='function'&&bnsUnl(nd.stg))&&(typeof bnsLeftT==='function'&&bnsLeftT(nd.stg)<=0);
+ const b9=nd.bns?(typeof bnsBestOf==='function'?bnsBestOf(nd.stg):null):null;
+ /* ⚠どの分岐もIC()を通す=通さない枝があると、拠点を切り替えた時に✅が画像↔絵文字で揺れる */
  $('mc-st').innerHTML=nd.lock3?'⚠ まだ作っていない'
-  :!open?IC('🔒')+' 手前の拠点を解放すると開く'
-  :ndClr(nd)?IC('✅')+' 解放済み(何度でも遊べる)'
-  :(nd.d!==BNS_D&&CLR_GEM[nd.d]?IC('⭐初回解放で 💎'+CLR_GEM[nd.d]):'⭐初めての拠点');
+  :ex9?IC('🚌 今日は走り切った — 次は あと'+bnsNextS())
+  :!open?IC('🔒 手前の拠点を解放すると開く')
+  :nd.bns?((!Array.isArray(META.bcl)||!META.bcl[nd.stg])?IC('⭐初回クリアで 💎'+BNS_GEM)
+    :((b9&&b9.s>0)?IC('⚡自己ベスト '+fmt(b9.s)+' ・ 今日あと'+bnsLeftT(nd.stg)+'回')
+      :IC('✅ 今日あと'+bnsLeftT(nd.stg)+'回 走れる')))
+  :ndClr(nd)?IC('✅ 解放済み(何度でも遊べる)')
+  :(CLR_GEM[nd.d]?IC('⭐初回クリアで 💎'+CLR_GEM[nd.d]):'⭐初めての拠点');
  $('bt-map-go').style.display=(open&&!nd.lock3)?'':'none';
- try{if(sfx.tap)sfx.tap();}catch(e){}
+ /* ⚠タップ音はここで鳴らさない(🗺出撃ボタン経由だと一括リスナーと二重に鳴っていた)。
+    ピンを押した側(pointerdown)が鳴らす。 */
 }
 /* 🚌バスの位置。⚠選ぶたびに走らせる=「バスで拠点へ向かう」物語の絵 */
 function mapXY(nd,w,h){return[nd.x*w,(0.08+nd.y*.78)*h];}
@@ -27978,17 +28076,28 @@ function mapDraw(t){
  c.setLineDash([]);
  /* ---- 拠点 ---- */
  for(let i=0;i<MAPND.length;i++){const nd=MAPND[i];
-  const p=mapXY(nd,w,h),open=ndOpen(nd),clr=ndClr(nd),r=15*dpr;
-  if(i===MSEL){c.strokeStyle='#e8a33d';c.lineWidth=4*dpr;
+  /* ⚠🔒のピンは一回り小さく薄く(未解放の建設マスと同じ理屈=錠前だらけで現役が読めない)。
+     ⚠タップ判定は座標からの距離なので押しやすさは変わらない */
+  const p=mapXY(nd,w,h),open=ndOpen(nd),clr=ndClr(nd),r=((open||clr)?15:12)*dpr;
+  if(i===MSEL){
+   /* ⚠リングの色=🚌ピンの塗りと同じ金だと同化する→🚌だけ紙色のリングにする */
+   c.strokeStyle=nd.bns?'#f2ecdc':'#e8a33d';c.lineWidth=4*dpr;
    c.beginPath();c.arc(p[0],p[1],r+5*dpr+Math.sin(t*5)*1.5*dpr,0,7);c.stroke();}
-  c.fillStyle=nd.lock3?'#b9b0a0':!open?'#9a9284':clr?'#8fbf4d':nd.nm?'#3a3440':nd.bns?'#e8a33d':'#f2ecdc';
+  if(!open&&!clr)c.globalAlpha=.72;
+  /* ⚠✅(クリア済み)を🔒より先に判定する=🚌の1日回数を使い切ると clr&&!open になり、
+     進行が巻き戻ったような灰色🔒が出ていた(2026-08-03 UI総監査)。
+     ⚠一度も勝たずに5回使い切った🚌も🔒にしない(ex9=カードの「今日は走り切った」と揃える) */
+  const ex9=nd.bns&&(typeof bnsUnl==='function'&&bnsUnl(nd.stg))&&(typeof bnsLeftT==='function'&&bnsLeftT(nd.stg)<=0);
+  c.fillStyle=nd.lock3?'#b9b0a0':clr?'#8fbf4d':ex9?'#e8a33d':!open?'#9a9284':nd.nm?'#3a3440':nd.bns?'#e8a33d':'#f2ecdc';
   c.strokeStyle='#241f19';c.lineWidth=3*dpr;
   c.beginPath();c.arc(p[0],p[1],r,0,7);c.fill();c.stroke();
   /* 中の印=✅解放済み/🔒まだ/★いま行ける */
-  const im=(!open||nd.lock3)?icoImgFor('🔒'):clr?icoImgFor('✅'):null;
+  const im=nd.lock3?icoImgFor('🔒'):clr?icoImgFor('✅'):ex9?null:!open?icoImgFor('🔒'):null;
+  if(!im&&ex9){c.fillStyle=INK;c.font='900 '+(11*dpr)+'px '+FF;c.textAlign='center';c.fillText('🚌',p[0],p[1]+4*dpr);}
   if(im){const s9=r*1.15;try{c.drawImage(im,p[0]-s9/2,p[1]-s9/2,s9,s9);}catch(e){}}
   else if(open){c.fillStyle=nd.nm?DANGER:INK;c.font='900 '+(11*dpr)+'px '+FF;
    c.textAlign='center';c.fillText(nd.bns?'🚌':'★',p[0],p[1]+4*dpr);}
+  c.globalAlpha=1;
   /* 名前の札(⚠文字10.5px以上の掟) */
   c.font='900 '+(11*dpr)+'px '+FF;c.textAlign='center';
   const tw9=c.measureText(nd.n).width+10*dpr;
@@ -27999,9 +28108,15 @@ function mapDraw(t){
  }
  /* ---- 🚌バス=選んだ拠点へ走る ---- */
  {const tgP=mapXY(MAPND[Math.max(0,MSEL)],w,h),ty=tgP[1]-22*dpr;
-  if(!MBUS)MBUS={x:tgP[0],y:ty};
-  MBUS.x+=(tgP[0]-MBUS.x)*.12;MBUS.y+=(ty-MBUS.y)*.12;
-  const bx=MBUS.x,by=MBUS.y,s9=dpr,fl=(tgP[0]-MBUS.x<-1)?-1:1;
+  if(!MBUS)MBUS={x:tgP[0],y:ty,t:t,fl:1};
+  /* ⚠フレームレート依存にしない(毎rAFで×.12だと120Hz端末で2倍速)=時間で減衰させる。
+     0.0005^dt ≒ 60fpsで1コマ12%(今までと同じ速さ) */
+  const dt9=Math.min(.1,Math.max(0,t-(MBUS.t==null?t:MBUS.t)));MBUS.t=t;
+  const k9=1-Math.pow(.0005,dt9);
+  MBUS.x+=(tgP[0]-MBUS.x)*k9;MBUS.y+=(ty-MBUS.y)*k9;
+  /* ⚠向きは「十分離れている間」だけ更新=到着の瞬間にパッと反転するのを防ぐ */
+  if(Math.abs(tgP[0]-MBUS.x)>1.5*dpr)MBUS.fl=(tgP[0]-MBUS.x<0)?-1:1;
+  const bx=MBUS.x,by=MBUS.y,s9=dpr,fl=MBUS.fl||1;
   c.save();c.translate(bx,by);c.scale(fl*s9,s9);
   c.strokeStyle='#241f19';c.lineWidth=2.6;
   c.fillStyle='#c9a13d';rr(c,-16,-9,32,15,4);c.fill();c.stroke();/* 車体 */
@@ -28019,7 +28134,7 @@ $('mapcv').addEventListener('pointerdown',e=>{
  let bi=-1,bd=1e9;
  for(let i=0;i<MAPND.length;i++){const p=mapXY(MAPND[i],w,h);
   const dd=Math.hypot(p[0]-px,p[1]-py);if(dd<26*dpr&&dd<bd){bd=dd;bi=i;}}
- if(bi>=0)mapSel(bi);
+ if(bi>=0){mapSel(bi);try{if(sfx.tap)sfx.tap();}catch(e){}}
 });
 $('bt-map-go').onclick=()=>{
  const nd=MAPND[MSEL];if(!nd||nd.lock3)return;
@@ -28037,8 +28152,14 @@ function renderHome(){
  {const T=teamIdx(),w9=$('hm-team-th');
   if(w9){w9.innerHTML='';T.slice(0,4).forEach(i=>{const c9=pickTh(i);if(c9)w9.appendChild(c9);});}
   const ti=$('hm-team-i');if(ti)ti.textContent='兵科 '+teamIdx().length+'種';}
- {const hi=$('hm-hero-ic');if(hi)hi.innerHTML=icoImg('ic-hero','🦸');
-  const H9=HEROES.find(x=>x.id===META.hsel);
+ {const hi=$('hm-hero-ic');
+  /* ⚠所持していない英雄は出さない(左の名札と同じ条件に揃える。DEVは全員可) */
+  const H9=HEROES.find(x=>x.id===META.hsel&&(DEV||heroOwned(x.id)));
+  /* ⭐選んだ英雄が居ればその顔を出す(隣の編成パネルが実物サムネなので型を揃える)。⚠28x21=4:3 */
+  if(hi){hi.innerHTML='';
+   const c9=H9?pickTh(hUiOf(H9.id)):null;
+   if(c9){c9.style.cssText='width:28px;height:21px;display:block';hi.appendChild(c9);}
+   else hi.innerHTML=icoImg('ic-hero','🦸');}
   const t9=$('hm-hero-i');if(t9)t9.textContent=H9?H9.n:'連れて行かない';}
  {const k9=META.eq||(META.st&&META.st[0]);
   const si=$('hm-stk-ic');if(si)si.innerHTML=(k9&&STRIKES[k9])?icoImg('ic-stk-'+k9,STRIKES[k9].ic):'🎯';
@@ -28047,13 +28168,24 @@ function renderHome(){
   const lp=$('hm-lab-pts');if(lp)lp.innerHTML=IC('🧬')+fmt(META.pts||0);}
  {const gi=$('hm-gacha-ic');if(gi)gi.innerHTML=icoImg('ic-gem','💎');
   const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0);}
- const H=HEROES.find(x=>x.id===META.hsel&&heroOwned(x.id))||HEROES.find(x=>heroOwned(x.id))||HEROES[0];
+ /* 🗺⭐出撃ボタンの小文字=**次の拠点**を出す(静的な「エリア1」の書き殴りだと一生そのままだった) */
+ {const g9=$('bt-map')&&$('bt-map').querySelector('i');
+  if(g9){const nd9=MAPND[mapDefSel()];
+   g9.textContent=(nd9&&!ndClr(nd9))?('次の拠点 — '+nd9.n):'生存圏の地図';}}
+ const H=HEROES.find(x=>x.id===META.hsel&&(DEV||heroOwned(x.id)))||HEROES.find(x=>heroOwned(x.id))||HEROES[0];
  const hn=$('home-hname');
- if(hn&&H)hn.innerHTML='<span style="color:'+(RARE[H.rk-1]||RARE[0])+'">'+RK_S[H.rk]+'</span> '+H.n;
+ /* ⚠名札=状態を正しく言う(2026-08-03 UI総監査)。連れて行かない設定なのに勝手に誰かの名前が
+    出ていた/未所持でもHEROES[0]の名前が出ていた。一枚絵は飾りとして残す(未所持は影絵になる) */
+ const anyOwn9=DEV||HEROES.some(x=>heroOwned(x.id));
+ if(hn&&H)hn.innerHTML=IC((META.hsel&&H.id===META.hsel)
+  ?('<span style="color:'+(RARE[H.rk-1]||RARE[0])+'">'+RK_S[H.rk]+'</span> '+H.n)
+  :anyOwn9?'🚫 連れて行かない':'まだ居ない — 💎英雄召集で仲間に');
  HOMEH=H?H.id:'';
  const rb=$('bt-home-resume');
  if(rb){const d=loadRun();rb.style.display=d?'':'none';
-  if(d)rb.textContent='▶ 続きから — '+(STAGES[d.stg||0]||STAGES[0]).n+' WAVE '+((d.wave||0)+1);}
+  /* ⭐「どこの続きか」は拠点名で言う(難易度をUIから消した(93)の読み替えに揃える) */
+  if(d){const nd9=MAPND.find(n9=>n9.stg===(d.stg||0)&&n9.d===(d.dif==null?2:d.dif));
+   rb.textContent='▶ 続きから — '+(nd9?nd9.n:(STAGES[d.stg||0]||STAGES[0]).n)+' WAVE '+((d.wave||0)+1);}}
 }
 let HOMEH='';
 function homeDraw(t){
@@ -28076,10 +28208,28 @@ function homeDraw(t){
  c.fillStyle='rgba(232,163,61,.14)';
  c.beginPath();c.ellipse(w/2,h*.88,w*.30,h*.05,0,0,7);c.fill();
  const s9=Math.min(w,h)/118;/* ⚠英雄の全高は約53×CH_UP=枠に収まる倍率にする(最初/70で頭が切れた) */
+ /* ⚠まだ1人も持っていない時は**影絵**にする(未所持の英雄をフルカラーで出すと嘘になる)。
+    ⚠ctx.filterはSafariで効かないので、別canvasに描いてsource-atopで塗りつぶす */
+ const sil9=!DEV&&!heroOwned(HOMEH);
+ if(sil9){
+  if(!HOMEOC)HOMEOC=document.createElement('canvas');
+  if(HOMEOC.width!==cv9.width)HOMEOC.width=cv9.width;
+  if(HOMEOC.height!==cv9.height)HOMEOC.height=cv9.height;
+  const c2=HOMEOC.getContext('2d');
+  c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,w,h);
+  c2.translate(w/2,h*.88);c2.scale(s9,s9);c2.lineWidth=2.4/s9*dpr;
+  try{drawUnit(c2,ui,0,0,1,t*.35,0,{nost:1});}catch(e){}
+  c2.setTransform(1,0,0,1,0,0);
+  c2.globalCompositeOperation='source-atop';c2.fillStyle='rgba(12,10,8,.9)';c2.fillRect(0,0,w,h);
+  c2.globalCompositeOperation='source-over';
+  try{c.drawImage(HOMEOC,0,0);}catch(e){}
+  return;
+ }
  c.save();c.translate(w/2,h*.88);c.scale(s9,s9);c.lineWidth=2.4/s9*dpr;
  try{drawUnit(c,ui,0,0,1,t*.35,0,{nost:1});}catch(e){}
  c.restore();
 }
+let HOMEOC=null;/* 影絵用の使い回しcanvas(毎フレーム作らない) */
 $('bt-map').onclick=()=>{MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show('map');};
 $('bt-home-resume').onclick=()=>{ensureAC();if(!resumeRun())renderHome();};
 $('hm-team').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
