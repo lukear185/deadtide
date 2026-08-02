@@ -15838,9 +15838,15 @@ function kbZ(z,cx,cy,pw){if(!z||z.dead)return;
 /* quiet=ダメージ数字と血を出さない(継続攻撃はまとめて1つ出すので毎フレーム湧かせない) */
 function dmgZ(C,z,d,armorPierce,quiet){
  if(z.dead)return;
+ /* 🎯⭐**訓練用のダミーは死なない**(2026-08-03(80)ユーザー
+    「訓練場用の攻撃力0で体力無限のダミーみたいなの用意して」)。
+    ⚠**削る処理はそのまま通す**=ダメージの数字も被弾の白光りも普通に出る(手応えを見る場なので)。
+      ⭐**0を割ったところで満タンへ戻すだけ**にしてある=1点で済み、他の枝を1つも触らない。
+    ⚠**検証場(G.tst)でしか作れない**=普通の試合には出てこない。 */
  /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する */
  if((z.armor||z.scl)&&!armorPierce)d*=.45;
  z.hp-=d;z.hitT=.1;
+ if(z.dummy&&z.hp<=0)z.hp=z.mhp;/* 🎯ダミーは何発当てても倒れない */
  /* ボスは削った分だけ報酬を先払い(倒しきれなくても取り分が残る) */
  if(z.boss&&z.mhp>0&&z.hp>0){
   const pay0=(G&&G.pve?D5v().pay:1)*metaPay();
@@ -23768,6 +23774,12 @@ function buildZbar(){
    b.textContent=lb;if(TSTBAR===k)b.classList.add('on');
    b.onclick=()=>{TSTBAR=k;buildZbar();};
    sw.appendChild(b);}
+  /* 🎯**ダミーは切り替えの隣に置く**=どちらのタブを開いていても1タップで届く。
+     ⚠**帯の奥へ置かない**(スクロールしないと届かない物は「無い」のと同じ=検証場で実際に踏んだ)。 */
+  {const b=document.createElement('button');
+   b.textContent='🎯 ダミー';b.title='攻撃力0・体力無限・その場から動かない。攻撃を見比べる用';
+   b.onclick=()=>tstDummy();
+   sw.appendChild(b);}
   w.appendChild(sw);}
  if(TSTBAR==='h'){
   /* ⚠⚠**21人を1列に並べると右端の数人に届かない**(2026-08-03(77)ユーザー
@@ -23820,6 +23832,22 @@ function tstHero(ui){
  me.hCg=1;/* ⭐必殺技をすぐ試せるようにチャージ満タンで置く */
 }
 /* 1体だけ右端から出す。⚠**d は正の値**=負にすると「まだ来ていない」扱いで出てこない */
+/* 🎯⭐**訓練用のダミー**(2026-08-03(80))。**攻撃力0・体力無限・その場から動かない**。
+   ⭐**何のためか**=攻撃モーションと当たりの絵を**何度でも同じ条件で見比べる**ため
+     (普通の敵はすぐ死ぬか、こちらを殴って位置がずれる)。
+   ⚠**素の敵を1体作ってから性質を上書きする**=専用の種類を ZOMBIES に足さない
+     (図鑑・波・冒険に出てしまう。バスくんで踏んだのと同じ穴)。
+   ⚠**dmg も atk も0にする**=部隊が削られると立ち位置が動いて見比べにならない。
+   ⚠**sp=0**=歩かないので、置いた所に居続ける。 */
+function tstDummy(){
+ if(!G||!G.tst)return;const me=G.players[0];if(!me)return;
+ const z=mkZ(zSpec(0,1,1),4+rnd(0,26));
+ z.dummy=1;z.n='🎯ダミー';
+ z.hp=z.mhp=1e12;z.atk=0;z.dmg=0;z.sp=0;z.bt=0;
+ z.armor=0;z.scl=0;z.noblock=0;z.aoe=0;
+ me.zombies.push(z);
+ toast('🎯 ダミーを出した(倒れない・殴ってこない)');
+}
 function tstSpawnZ(zi){
  if(!G||!G.tst)return;const me=G.players[0];if(!me)return;
  me.zombies.push(mkZ(zSpec(zi,1,1),4+rnd(0,50)));

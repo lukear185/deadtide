@@ -2525,6 +2525,31 @@ function checkHero(){
    if(got!==n9){console.log('FAIL: 終焉の騎士の連撃が'+n9+'手のはずが'+got+'通りしか出ていない');process.exit(1);}
    console.log('近接英雄の連撃: '+ids.map(k=>k+' '+lens[k]+'手').join(' / ')+' / 実走で'+got+'手ぶん回った OK');
    backTitle();META.hero={};META.hsel='';}}
+ /* 🎯⭐**訓練用のダミー**(2026-08-03(80)ユーザー「訓練場用の攻撃力0で体力無限のダミー」)。
+    見るのは4つ: ①出せる ②**どれだけ殴っても倒れない** ③**こちらを削らない** ④**その場から動かない**。
+    ⚠**普通の試合には出てこないこと**も見る(ZOMBIES に足していない=図鑑や波に混ざらない)。 */
+ {backTitle();startTst();
+  const me=G.players[0];
+  const n0=me.zombies.length;
+  tstDummy();
+  if(me.zombies.length!==n0+1){console.log('FAIL: 🎯ダミーが出ない');process.exit(1);}
+  const z=me.zombies[me.zombies.length-1];
+  if(!z.dummy){console.log('FAIL: 🎯ダミーの印が付いていない');process.exit(1);}
+  if(z.atk!==0||z.dmg!==0){console.log('FAIL: 🎯ダミーの攻撃力が0でない atk='+z.atk+' dmg='+z.dmg);process.exit(1);}
+  if(z.sp!==0){console.log('FAIL: 🎯ダミーが歩く sp='+z.sp);process.exit(1);}
+  /* ②とんでもない一撃を何度当てても倒れないこと */
+  for(let k=0;k<50;k++)dmgZ(me,z,1e18,1);
+  if(z.dead){console.log('FAIL: 🎯ダミーが倒れた');process.exit(1);}
+  if(!(z.hp>0)){console.log('FAIL: 🎯ダミーのHPが0以下のまま '+z.hp);process.exit(1);}
+  /* ④時間を進めても位置が変わらないこと */
+  const d0=z.d;
+  for(let k=0;k<60;k++)tstStep(.05);
+  if(Math.abs(z.d-d0)>1){console.log('FAIL: 🎯ダミーが動いた '+d0+'→'+z.d);process.exit(1);}
+  if(z.dead){console.log('FAIL: 🎯ダミーが時間で消えた');process.exit(1);}
+  /* ⑤図鑑や波に混ざっていないこと(専用の種類を足していない) */
+  if(ZOMBIES.some(q=>q&&q.dummy)){console.log('FAIL: ダミーが ZOMBIES に混ざっている(図鑑や波に出る)');process.exit(1);}
+  console.log('🎯ダミー: 出せる/倒れない(1e18を50発)/攻撃力0/その場から動かない/図鑑に混ざらない OK');
+  backTitle();}
  if(dmgN<8){console.log('FAIL: 敵にダメージを与える必殺技が少なすぎる '+dmgN);process.exit(1);}
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  /* ⭐⭐**狙撃王ジョルジ『撃墜』の締めの1発は射程無限**(2026-08-02(70)ユーザー指示)。
