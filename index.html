@@ -240,6 +240,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .pickrow .pv{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;
  font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden}
 .pickrow .pv canvas{width:40px;height:30px;background:var(--paper2);border-radius:5px;flex:0 0 auto}
+/* ⭐**連れて行く全員を並べる時は隙間を詰める**(2026-08-03(82))=10体でも1行に収まる。
+   ⚠**大きさはJS側が行の実幅から出す**(ここで決め打ちにすると機種で溢れる) */
+.pickrow .pv.many{gap:3px}
+/* ⭐**入り切らなければ縮む**=10体でも絶対に切れない。⚠JSで幅を測って決めるのは当てにならない
+   (画面が組み上がる前に呼ばれると実幅と違う値が返り、最後の1体が › の下で切れた) */
+.pickrow .pv.many canvas{width:34px;height:26px;flex:0 1 auto;min-width:0}
 .pickrow .pv .rk{font-size:10px;font-weight:900}
 .pickrow .pv .sub{font-size:11px;font-weight:800;opacity:.6}
 .pickrow .pa{font-size:19px;opacity:.55;flex:0 0 auto}
@@ -13509,6 +13515,40 @@ const H_CMB={
 /* ⭐**その体の手数**(2026-08-03(79)ユーザー「3連撃で固定せずキャラごとに変えて欲しい」)。
    ⚠表に無い体は3のまま(ヴァルキリーの専用の枝が %3 で書かれているため)。 */
 const uCmbN=ui=>{const U=UNITS[ui];const A=U&&H_CMB[U.base||U.id];return (A&&A.length)||3;};
+/* ⭐⭐⭐**1回の攻撃で何発殴るか**(2026-08-03(83)ユーザー
+     「今の状態だと連撃じゃなくて 単発攻撃のモーションが違うだけになってる」)。
+   ⚠⚠(78)〜(81)でやったのは**1発ごとに振りを変える**だけだった=「違う単発攻撃」にしか見えない。
+   ⭐**本当の連撃は「1回の攻撃の中で短い間隔でN回殴る」**こと。
+   ⭐**並びは攻撃ごとに循環**する=[1,2,3] なら 単発→二連→三連→単発…。[2] ならずっと二連。
+   ⚠⚠**強さは1ミリも変えない**=1発の威力を N で割るので、攻撃の合計は全く同じ。 */
+const H_HITS={
+ hNox :[1,2,3],/* 終焉の騎士(大鎌)=だんだん激しくなる。三連が見せ場 */
+ hDark:[2],    /* 暗黒の騎士(騎槍)=突き→引き薙ぎの二連ずっと */
+ hGiant:[1,3], /* 鋼鉄の巨人(鉄拳)=重い一撃→三連打 */
+ hMech:[3],    /* 整備士(レンチ)=カンカンカンの三連ずっと */
+ hPost:[2],    /* 配達人(荷物)=振り下ろし→放り上げの二連 */
+};
+const SWG_SUB=.16;/* 1発ぶんの振りの長さ(秒)。⚠短いほど連打に見えるが、.12を切ると残像になる */
+function uHitsN(u){const U=UNITS[u.ui];const A=U&&H_HITS[U.base||U.id];
+ return A?A[((u.hcy||0))%A.length]:1;}
+/* ⭐**2発目以降の一撃**。⚠最初の1発は普段の枝がそのまま打つ(枝を書き写さないため)。
+   ⚠**近接の英雄だけ**が通る=飛び道具・投げる型は H_HITS に載せないこと。 */
+function hCmbStrike(C,u,U,ua,k,n){
+ if(!C||u.dead)return;
+ u.cmb=((u.cmb||0)+1)%uCmbN(u.ui);
+ u.swT=u.swD=SWG_SUB;u.mhFin=(k===n-1)?1:0;
+ let tg=null,best=1e9;
+ for(const z of C.zombies){if(z.dead||z.d<0)continue;const gp=u.d-z.d;
+  if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)&&gp<best){best=gp;tg=z;}}
+ if(!tg)return;
+ const d5=(u.dr||-1),mx=u.px+d5*30*CH_UP,my=u.py-27*CH_UP;
+ const ang=Math.atan2((tg.py-20*CH_UP)-my,tg.px-mx);
+ const utl=uFxTier(u),ucl=uUniq(u.ui)?(U.c||UFX_COL[utl]):UFX_COL[utl];
+ if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){
+   dmgZ(C,z,ua,1);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}}
+ else dmgZ(C,tg,ua,1);
+ if(H_FX[U.id])H_FX[U.id](C,u,U,tg,mx,my,ang,ucl,utl,d5,1);
+}
 /* ⭐⭐**連撃の「手ごとの当たりの絵」**(2026-08-03(79))。
    ⚠⚠**腕の振りを変えただけでは実機で連撃に見えない**(ユーザー「★5のやつ見てみたけど誰もなってない」)=
      ①実寸だと腕の角度の差は数pxしかない ②**当たった時の絵が毎回同じ**だと、目は「同じ攻撃の繰り返し」と読む。
@@ -13517,7 +13557,9 @@ const uCmbN=ui=>{const U=UNITS[ui];const A=U&&H_CMB[U.base||U.id];return (A&&A.l
 function hCmbFx(C,u,tg,ang,col){
  if(!(FXLV>0))return;
  const n=uCmbN(u.ui),k=((u.cmb||0)+n-1)%n;/* ⚠cmb は撃つ前に進むので1つ戻して「いま出した手」を見る */
- const fin=(k===n-1);/* 最後の1手=締め */
+ /* ⭐**締めは「その攻撃の最後の一撃」**(2026-08-03(83))=連撃の中で1回だけ大きくする。
+    ⚠`cmb` の折り返しで見ると、連撃の途中で締めが出て拍が壊れる。 */
+ const fin=!!u.mhFin;
  const a0=ang+(k%2?2.2:-.55)+k*.42;
  addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:a0,r:(fin?34:22)*CH_UP,lv:fin?3:2,col});
  if(fin){
@@ -13530,8 +13572,11 @@ function hCmbFx(C,u,tg,ang,col){
    ⚠**drawUnit の入口で必ず入れ直すこと**(前のキャラの id が残ると別人の連撃になる)。 */
 let SWG_ID='';
 function uSwP(u){
- const U=UNITS[u.ui];if(!U||!(U.rate>0)||!(u.cd>0))return 0;
+ const U=UNITS[u.ui];if(!U||!(U.rate>0))return 0;
  if(!U_SWG.has(U.base||U.id))return 0;
+ /* ⭐**連撃中は1発ごとの時計を使う**(2026-08-03(83))=硬直から出すと1回の攻撃で1振りしかできない */
+ if(u.swT>0&&u.swD>0)return Math.max(.001,(1-u.swT/u.swD)*SWG_W);
+ if(!(u.cd>0))return 0;
  const p=clamp(1-u.cd/U.rate,0,1);
  if(p>=SWG_W)return 0;/* 振り抜きが終わったら焼いたコマへ戻す(重さ対策) */
  if(!u.eng&&!(u.fired&&p<.34))return 0;
@@ -16530,6 +16575,7 @@ function campStep(C,dt,wave){
      ⭐**別の値(`u.aimH`)で保つ**=止まっている間は1へ上がって**下がらない**。
        これで①立ち座りが消え ②中腰の一瞬(体が傾いて見える)も消える。
      ⚠**歩き出したら即0**=移動しながらしゃがむと絵が壊れる(既知)。 */
+  if(u.swT>0)u.swT-=dt;/* ⭐連撃の1発ぶんの振り(2026-08-03(83)) */
   {const sn9=u.hro&&uMotK(u.ui)==='snipe';
    u.aimH=(sn9&&!u.mv&&!u.dead)?Math.min(1,(u.aimH||0)+dt*6):0;}
   /* ⭐必殺技の前置き。⚠退がるのは**絵の位置だけ**で u.d は動かさない(技の起点をずらさない) */
@@ -16553,7 +16599,9 @@ function campStep(C,dt,wave){
      溜めを払わないまま倍率だけ受け取っていた=医療兵 71→86(+21%)・工兵 54→66(+22%)。
      ⚠`test_balance.js` は atk/rate で測るのでこの狂いを捕まえられない。 */
   const chgM9=(U.type==='heal')?1:uChgM(u.ui);
-  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?UOV_ATK:1)*chgM9);
+  /* ⭐**連撃は1発の威力を頭数で割る**(2026-08-03(83))=攻撃の合計は1ミリも変わらない */
+  const nh9=uHitsN(u);
+  const ua=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?UOV_ATK:1)*chgM9/nh9);
   let tg=null,best=-1;
   if(U.type==='heal'){
    /* ⭐**回復する相手は「HPの割合」ではなく「減った量」で選ぶ**(2026-08-01ユーザー指示)。
@@ -16586,6 +16634,10 @@ function campStep(C,dt,wave){
    }else if(u.cd>0)u.ct=0;
    if(u.cd<=0&&(cgT9<=0||(u.chg||0)>=1)){u.cd=U.rate;u.chg=0;u.ct=0;u.fired=1;
     u.cmb=((u.cmb||0)+1)%uCmbN(u.ui);/* ⭐連撃の番号。⚠手数は体ごと(uCmbN) */
+    /* ⭐⭐**1回の攻撃で N 回殴る**(2026-08-03(83))。1発目はこの下の普段の枝が打ち、
+       2発目以降を短い間隔で予約する。⚠**次の攻撃で並びが1つ進む**(単発→二連→三連…)。 */
+    u.swT=u.swD=SWG_SUB;u.mhFin=(nh9<=1)?1:0;u.hcy=((u.hcy||0)+1)%64;
+    if(nh9>1)for(let k9=1;k9<nh9;k9++)later(C,k9*SWG_SUB*1.05,()=>hCmbStrike(C,u,U,ua,k9,nh9));
     const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
     /* ⭐⭐**投げた物は「着弾してから」当てる**(2026-08-01ユーザー指摘
        「攻撃モーションに入った瞬間に相手にダメージが入っていて、爆発物が着弾していないのに敵が倒れる」)。
@@ -24354,14 +24406,24 @@ function pickTh(ui){
 }
 /* 3行ぶんの中身を書き直す。⚠**画面を開いた時と、窓を閉じた時に呼ぶ** */
 function renderPickRows(){
- /* 🎖編成=先頭3体の絵+連れて行く数 */
+ /* 🎖編成=**連れて行く全員の絵**+数(2026-08-03(82)ユーザー
+    「ここちゃんと3体だけじゃなくて全員見えるようにしたい」)。
+    ⚠**先頭3体+「2体」だった**=**誰を連れて行くのかが分からない**うえ、
+      3体しか居ない時も「(+0)」の理屈が要る中途半端な出し方だった。
+    ⭐**入る大きさは行の実幅から出す**=決め打ちにすると機種で溢れる(NOTES_UIの掟)。
+      ⚠画面が閉じている間は幅が0で返るので、その時だけ300で置く。 */
  {const w=$("pv-team");
   if(w){w.innerHTML="";
    const T=teamIdx();
-   T.slice(0,3).forEach(i=>{const c=pickTh(i);if(c)w.appendChild(c);});
-   const sp=document.createElement("span");
-   sp.className="sub";sp.textContent=T.length+"体"+(T.length>3?" (+"+(T.length-3)+")":"");
-   w.appendChild(sp);}}
+   w.classList.toggle("many",T.length>3);
+   /* ⚠**「N体」の文字はやめた**=全員の絵が並ぶなら数は数えれば分かる。
+      入れると絵が1つぶん小さくなり、しかも幅が足りずに文字の方が切れて消えていた(撮って気づいた)。 */
+   /* ⚠⚠**大きさをJSで測って決めるのをやめた**(2026-08-03(82)に2回はみ出した)=
+      `clientWidth` は**画面がまだ組み上がっていない時に呼ばれると当てにならない**ので、
+      何px余らせても最後の1体が › の下で切れた。
+      ⭐**CSSの縮みに任せる**(`flex:0 1 auto`+`min-width:0`)=入り切らなければ勝手に縮むので**絶対に切れない**。 */
+   T.forEach(i=>{const c=pickTh(i);if(c)w.appendChild(c);});
+   if(!T.length){const sp=document.createElement("span");sp.className="sub";sp.textContent="まだ居ない";w.appendChild(sp);}}}
  /* 🎯砲撃 */
  {const w=$("pv-stk"),k=META.eq||(META.st&&META.st[0]);
   if(w)w.innerHTML=(k&&STRIKES[k])?("<span style=\"font-size:19px\">"+STRIKES[k].ic+"</span>"+STRIKES[k].n)
