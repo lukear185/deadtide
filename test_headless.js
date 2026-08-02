@@ -1716,30 +1716,30 @@ function checkGachaFx(){
  if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
  /* ⭐展開が読めること: タレット/ゾンビは予告で**下振れだけ**(上振れしない)
     → レーザー(段2)が出たら★4以上が確定 / レアでない時は基本ライフル+通常ゾンビ */
- let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0],hiN=[0,0,0];
+ let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0],hi5N=[0,0,0],tw4=0,n4=0;
  for(let k=0;k<1200;k++){
   const rk=k%6;
   const one=[rk===0?{dud:GDUD[0],txt:''}:{hero:HEROES.find(h=>h.rk===rk),txt:''}];
   if(!one[0].dud&&!one[0].hero)continue;
   gcStart(one);const r=gcRank(one[0]),base=r>=4?2:r>=2?1:0;
-  /* ⭐2026-07-30に**どんでん返し(twist)**を足した=★4以上の時だけ、わざと一番しょぼい見せ方をする。
-     ⚠twist の時は上の「★5ならレーザー」が成り立たないので、先に切り分ける。 */
+  /* ⭐⭐2026-08-03(92)ユーザー指示「虹とか金のロブスターとかは★5以上確定にして」=
+     **虹の文字(fc2)と✨黄金のロブスターは★5確定**へ。レーザーとどんでん返しは★4以上のまま。 */
+  if(r===4)n4++;
   if(GC.twist){
    if(r<4){console.log('FAIL: ★4未満でどんでん返しが起きている(レア度'+r+')');process.exit(1);}
    if(GC.tw!==0||GC.zk!==0||GC.fc!==0||GC.night!==false||GC.lob){
     console.log('FAIL: どんでん返しなのに見た目がしょぼくない');process.exit(1);}
-   twN++;hiN[1]++;gcEnd();continue;}
-  /* ⭐2026-07-30: ロブスターは★4以上に広げ、3通り(ロブ/どんでん返し/通常)を**均等**にした */
-  if(GC.lob&&r<4){console.log('FAIL: ★4未満なのに黄金のロブスターが出た(レア度'+r+')');process.exit(1);}
+   twN++;if(r===5)hi5N[1]++;else tw4++;gcEnd();continue;}
+  if(GC.lob&&r<5){console.log('FAIL: ★5未満なのに黄金のロブスターが出た(レア度'+r+')');process.exit(1);}
   if(GC.lob)lobN++;
-  if(r>=4)hiN[GC.lob?0:2]++;
+  if(r===5)hi5N[GC.lob?0:2]++;
   if(GC.tw>base){console.log('FAIL: 予告が上振れしている(レア度'+r+' 予告'+GC.tw+' 上限'+base+')');process.exit(1);}
   if(GC.tw===2&&r<4){console.log('FAIL: レーザーが出たのに★4未満(レア度'+r+')');process.exit(1);}
   if(r===5&&GC.tw!==2){console.log('FAIL: ★5なのにレーザーで見せていない');process.exit(1);}
   if(GC.zk!==GC.tw){console.log('FAIL: ゾンビの種類がタレットの段と揃っていない');process.exit(1);}
-  /* ⭐「撃て!」の文字色も**下振れだけ**(虹=fc2 が出たら★4以上が確定) */
-  if(GC.fc>base){console.log('FAIL: 文字色が上振れしている(レア度'+r+' 色'+GC.fc+')');process.exit(1);}
-  if(GC.fc===2&&r<4){console.log('FAIL: 虹の文字なのに★4未満(レア度'+r+')');process.exit(1);}
+  /* ⭐「撃て!」の文字色も**下振れだけ**(虹=fc2 が出たら**★5確定**) */
+  if(GC.fc>Math.min(base,r>=5?2:1)){console.log('FAIL: 文字色が上振れしている(レア度'+r+' 色'+GC.fc+')');process.exit(1);}
+  if(GC.fc===2&&r<5){console.log('FAIL: 虹の文字なのに★5未満(レア度'+r+')');process.exit(1);}
   if(typeof GC.night!=='boolean'){console.log('FAIL: 背景の朝夜が決まっていない');process.exit(1);}
   if(GC.night)nightN[r>=3?1:0]++;else dayN[r>=3?1:0]++;
   if(r<=1){if(GC.tw!==0){console.log('FAIL: レアでないのにライフル以外が出ている(レア度'+r+')');process.exit(1);}sawRifleLow=1;}
@@ -1748,19 +1748,19 @@ function checkGachaFx(){
  if(!sawRifleLow){console.log('FAIL: レアでない時の見せ方を確かめられていない');process.exit(1);}
  if(!twN){console.log('FAIL: どんでん返しが一度も起きなかった');process.exit(1);}
  if(!lobN){console.log('FAIL: ✨黄金のロブスターが一度も出なかった');process.exit(1);}
- /* ⭐★4以上の3通りが**ピラミッド**(✨黄金20% / どんでん返し35% / 通常45%)であること
-    (2026-07-30ユーザー指示「ピラミッドにしよう」)。⚠珍しい絵ほど出にくいこと=順番も見る。
-    ⚠別々に乱数を引くと確率が掛け算になって狙った比にならないので、1回の乱数を割っている。 */
- {const tot=hiN[0]+hiN[1]+hiN[2],want=[GC_P_LOB,GC_P_TW,1-GC_P_LOB-GC_P_TW];
-  for(let q=0;q<3;q++){const pc=hiN[q]/Math.max(1,tot);
-   if(Math.abs(pc-want[q])>.07){console.log('FAIL: ★4以上の演出の割合がずれている '+hiN.join('/')+' (計'+tot+' 想定'+want.map(v=>Math.round(v*100)).join('/')+')');process.exit(1);}}
-  if(!(hiN[0]<hiN[1]&&hiN[1]<hiN[2])){console.log('FAIL: 珍しい演出ほど出にくくなっていない '+hiN.join('/'));process.exit(1);}}
+ /* ⭐★5は3通り(✨ロブ/どんでん返し/通常の最上位)を**1/3ずつ**(2026-08-03(92))。
+    ★4は どんでん返しが GC_P_TW、残りは通常。⚠1回の乱数を割っているので比は安定する。 */
+ {const tot=hi5N[0]+hi5N[1]+hi5N[2];
+  for(let q=0;q<3;q++){const pc=hi5N[q]/Math.max(1,tot);
+   if(Math.abs(pc-1/3)>.09){console.log('FAIL: ★5の演出の割合がずれている '+hi5N.join('/')+' (計'+tot+' 想定33/33/33)');process.exit(1);}}}
+ {const pc4=tw4/Math.max(1,n4);
+  if(Math.abs(pc4-GC_P_TW)>.07){console.log('FAIL: ★4のどんでん返しの割合がずれている '+tw4+'/'+n4+' (想定'+Math.round(GC_P_TW*100)+'%)');process.exit(1);}}
  /* ⭐**夜の方が期待度が高い**=レアな時ほど夜が出やすいこと(逆になっていたら演出が嘘になる) */
  {const hi=nightN[1]/Math.max(1,nightN[1]+dayN[1]),lo=nightN[0]/Math.max(1,nightN[0]+dayN[0]);
   if(!(hi>lo+.2)){console.log('FAIL: 夜が期待度になっていない(レア時'+(hi*100|0)+'% / それ以外'+(lo*100|0)+'%)');process.exit(1);}}
  console.log('💎召集の予告: 下振れだけ / 虹の文字とレーザーは★4以上が確定 / '
   +'夜'+(nightN[1]/Math.max(1,nightN[1]+dayN[1])*100|0)+'% vs '+(nightN[0]/Math.max(1,nightN[0]+dayN[0])*100|0)+'% / '
-  +'★4以上の内訳 ✨黄金'+hiN[0]+'/どんでん返し'+hiN[1]+'/通常'+hiN[2]+'(ピラミッド) OK');
+  +'★5の内訳 ✨黄金'+hi5N[0]+'/どんでん返し'+hi5N[1]+'/通常'+hi5N[2]+'(1/3ずつ・虹文字と✨は★5確定) OK');
  /* ⭐10連でも撃つ場面は1回だけ=示唆するのは「その回の一番いい結果」 */
  {const many=[{dud:GDUD[0],txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{dud:GDUD[1],txt:''}];
   gcStart(many);
@@ -2374,10 +2374,12 @@ function checkTeam(){
 function checkGacha(){
  /* ⚠2026-07-28ユーザー指示で★3x2・★4x1(→14種)、さらに★2〜★5を1人ずつ(→18種)足した。
     ⚠2026-08-01に★5の暗黒の騎士を足して19種。⭐排出率は『1体あたり』なので数値表は触らない */
- if(HEROES.length!==21){console.log('FAIL: 英雄が21種でない '+HEROES.length);process.exit(1);}
+ /* ⭐2026-08-03(92)に跳弾姫ルピナを足して22人 */
+ if(HEROES.length!==22){console.log('FAIL: 英雄が22種でない '+HEROES.length);process.exit(1);}
  const cnt={};for(const h of HEROES)cnt[h.rk]=(cnt[h.rk]||0)+1;
- /* ⚠2026-08-01に★5へ暗黒の騎士を足し、同日に**暁の王を★5→★4へ降格**した(ユーザー指示) */
- const want={1:5,2:4,3:4,4:4,5:4};
+ /* ⚠2026-08-01に★5へ暗黒の騎士を足し、同日に**暁の王を★5→★4へ降格**。
+    ⭐2026-08-03(92)に★5へ**跳弾姫ルピナ**を足して5人 */
+ const want={1:5,2:4,3:4,4:4,5:5};
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
  /* ⭐**排出率は「1体あたり」で決まる**(2026-07-30ユーザー指示)=英雄を足すとその枠が太くなること。
