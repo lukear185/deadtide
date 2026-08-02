@@ -331,6 +331,23 @@ const REC=[
  {k:'mSprE', d:.30, g:-4.8, af:'highpass=f=140',
    mix:[{f:'Wind, Rush, Whoosh',t:0,o:.06,d:.10,g:-10,r:1.60},
         {f:'Gore Designed',t:0,d:.22,g:-3,r:1.15,dl:45}]},
+ /* ===== 🏇騎槍・第3陣(2026-08-03(87)ユーザー「もっと風を切るような音ない?そのあとにAをつける感じがいい」)=
+    **風切りの頭を先に立てて→Aの中身(肉の潰れ+鈍い芯)**。風の材質だけ3種で作り分け。 */
+ /* F 剣の風切り(デザイン済みのシュッ。一番「風を切ってる」が立つ) */
+ {k:'mSprF', d:.38, g:-5, af:'highpass=f=130',
+   mix:[{f:'Sword Slice Special',t:0,o:.16,d:.14,g:-7,r:1.30},
+        {f:'Blood Spill Splat',t:0,d:.20,g:-1,r:.85,dl:115},
+        {f:'SWING IMPACTS Quick Heavy',t:9,o:.17,d:.18,g:-7,r:.80,dl:140}]},
+ /* G 刃の擦過(金属のヒュンッ。長物を振った時の鉄の鳴りが乗る) */
+ {k:'mSprG', d:.38, g:-5, af:'highpass=f=130',
+   mix:[{f:'SWING SCRAPE Swift Melee',t:0,o:.02,d:.16,g:-8,r:1.25},
+        {f:'Blood Spill Splat',t:0,d:.20,g:-1,r:.85,dl:120},
+        {f:'SWING IMPACTS Quick Heavy',t:9,o:.17,d:.18,g:-7,r:.80,dl:145}]},
+ /* H 空気の風(武器スイングの生の風だけ。素朴で速い) */
+ {k:'mSprH', d:.36, g:-5, af:'highpass=f=130',
+   mix:[{f:'SWING IMPACTS Quick Heavy',t:15,o:.02,d:.13,g:-6,r:1.35},
+        {f:'Blood Spill Splat',t:0,d:.20,g:-1,r:.85,dl:105},
+        {f:'SWING IMPACTS Quick Heavy',t:9,o:.17,d:.18,g:-7,r:.80,dl:130}]},
 ];
 
 const SRC=process.argv[3]||path.join(__dirname,'sfx_src');
