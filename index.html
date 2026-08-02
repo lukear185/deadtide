@@ -22139,7 +22139,7 @@ const bmgBonus=M=>Math.round(Math.max(0,M.left||0)*BMG_FAST);
 const BMG_K=[{ic:'⛽',n:'給油',   d:'緑の帯でタップ!',rs:0,d2:'⏱ タイミング'},
              {ic:'🏭',n:'荷積み', d:'荷台の真上でタップ!',rs:1,d2:'📏 目測'},
              {ic:'🏠',n:'物色',   d:'光った棚を同じ順に押す!',rs:2,d2:'🧠 記憶'},
-             {ic:'⚓',n:'引き揚げ',d:'沈む前に物資をタップ! 🧟は押すな',rs:1,d2:'⚡ 反応'}];
+             {ic:'⚓',n:'引き揚げ',d:'沈む前に📦をタップ!',rs:1,d2:'⚡ 反応'}];
 /* その棟(=ミニゲーム)で多くもらえる物資の番号 */
 const bmgRs=k=>((BMG_K[k]||BMG_K[0]).rs)|0;
 /* --- ⛽**給油**=動く針を目標の帯で止める(タイミング)。⚠帯は止める前から見えている --- */
@@ -22239,7 +22239,7 @@ function bnsMgStart(Q,b){
   /* ⛽ */pos:.02,dir:1,sp:BMG_SP[0],w:BMG_W[0],tgt:.5,
   /* 🏭 */n:0,cx:.5,bx:.5,stack:[],
   /* 🏠 */seq:[],si:0,ph:'show',shT:0,lit:-1,miss:0,clean:1,
-  /* ⚓ */sv:[],got:0,spT:.35,
+  /* ⚓ */sv:[],got:0,spT:.35,bad:0,
   /* ⏱残り時間(共通) */left:BMG_TIME};
  if(k===1){Q.mg.w=BML_W0;Q.mg.cx=.5;Q.mg.stack=[{x:.5,w:BML_W0}];Q.mg.n=1;bnsMlRound(Q.mg);}
  else if(k===2){Q.mg.seq=[];for(let q=0;q<BMM_L0;q++)bnsMmRound(Q.mg,1);bnsMmRound(Q.mg,0);}
@@ -22251,6 +22251,7 @@ function bnsMgStep(Q,dt){
  M.t+=dt;
  if(M.msgT>0)M.msgT=Math.max(0,M.msgT-dt);
  if(M.fl>0)M.fl=Math.max(0,M.fl-dt);
+ if(M.bad>0)M.bad=Math.max(0,M.bad-dt);
  if(M.endT>0){M.endT-=dt;if(M.endT<=0)bnsMgDone(Q);return;}
  /* ⏱**時計**。⚠**🏠記憶は「押す番」の間だけ数える**(見せている間は待たされているだけ) */
  if(M.kind!==2||M.ph==='in'){
@@ -22371,7 +22372,8 @@ function bnsSvTap(M,sx,sy){
   const f=M.sv[i];
   if(Math.hypot(sx-f.x,sy-f.y)>f.r*1.12)continue;
   M.sv.splice(i,1);
-  if(f.k){bnsMgHit(M,2);M.msg='🧟 掴まれた!';return;}
+  /* ⚠**やってはいけない事をした時は赤く光らせる**=文字だけだと押した本人が気づかない */
+  if(f.k){bnsMgHit(M,2);M.msg='🧟 掴まれた! 押すな';M.bad=.34;return;}
   const g=(f.t/f.lf<BSV_FAST)?0:1;
   const add=bnsMgHit(M,g);
   M.msg=(g===0?'✨ 素早い! +':'⭕ 引き揚げた +')+add;
@@ -22688,15 +22690,24 @@ function bnsDrawMg(c,Q,W,H,dp,t){
  const K=BMG_K[M.kind]||BMG_K[0];
  c.fillStyle='rgba(12,9,6,.74)';c.fillRect(0,0,W,H);
  if(M.fl>0){c.fillStyle='rgba(255,246,226,'+(.22*clamp(M.fl/.28,0,1)).toFixed(3)+')';c.fillRect(0,0,W,H);}
- /* 見出し */
- c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(22*dp)+'px '+FF;
- c.fillText(K.ic+' '+K.n+' — '+K.d,W*.05,H*.115);
- c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
- c.fillText((M.kind===1?('あと '+Math.max(0,BML_N-M.n)+' 段')
+ if(M.bad>0){c.fillStyle='rgba(200,60,45,'+(.30*clamp(M.bad/.34,0,1)).toFixed(3)+')';c.fillRect(0,0,W,H);}
+ /* 見出し。⚠⚠**右の残り数とぶつかったら左を縮める**(2026-08-02(67)ユーザー
+    「ゾンビをタップしちゃいけないっていう説明がどこにもない」=**実機では遊び方の一文が
+    右の数字に食われて消えていた**)。⭐**測ってから書く**=どの寸法でも最後まで読める。 */
+ const rtx=(M.kind===1?('あと '+Math.max(0,BML_N-M.n)+' 段')
             :M.kind===2?((M.seq.length-BMM_L0+1)+' / '+BMM_N+' 段 ♥'+Math.max(0,BMM_MISS-M.miss+1))
             :M.kind===3?('あと '+Math.max(0,BSV_N-M.got)+' 個')
                        :('あと '+Math.max(0,BMG_N-M.i)+' 本'))
-            +'  ⏱'+Math.max(0,M.left||0).toFixed(1),W*.95,H*.115);
+            +'  ⏱'+Math.max(0,M.left||0).toFixed(1);
+ c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
+ let rw=0;try{rw=c.measureText(rtx).width;}catch(e){rw=W*.28;}
+ c.fillText(rtx,W*.95,H*.115);
+ {const ltx=K.ic+' '+K.n+' — '+K.d,av=Math.max(40*dp,W*.90-rw-16*dp);
+  let ts=22*dp;
+  c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(ts)+'px '+FF;
+  let lw=0;try{lw=c.measureText(ltx).width;}catch(e){lw=0;}
+  if(lw>av){ts=Math.max(12*dp,ts*av/lw);c.font='900 '+Math.round(ts)+'px '+FF;}
+  c.fillText(ltx,W*.05,H*.115);}
  /* ⏱**残り時間の帯**(⚠3種で同じ場所)=**早く終えるほど得**なので、減り方が見えていないと急げない */
  {const bx=W*.06,bw=W*.88,by=H*.135,bh=9*dp,q=clamp((M.left||0)/BMG_TIME,0,1);
   c.fillStyle='rgba(30,25,19,.9)';rr(c,bx,by,bw,bh,bh/2);c.fill();
@@ -22711,7 +22722,9 @@ function bnsDrawMg(c,Q,W,H,dp,t){
     同じ y に置いたら🏠は「お題」の上に、🏭は荷台の上に重なって両方読めなかった。
     ⭐**⛽だけ真ん中が空いている**ので、そこにお知らせを大きく出す。
     ⭐**🏭🏠はお知らせと連なりを同じ行で入れ替える**=1行しか空いていないので重ねようがない。 */
- const iy=M.kind===1?H*.215:(M.kind===2?H*.90:H*.245);
+ /* ⚠⚠**⚓は下へ回す**(2026-08-02(67))=上に遊び方の凡例を出したので、
+    同じ帯に連なりを置くと**2行が1つの塊に見えて両方読めない**(撮って直した)。 */
+ const iy=M.kind===1?H*.215:((M.kind===2||M.kind===3)?H*.92:H*.245);
  c.textAlign='center';
  if(!(M.msgT>0&&M.kind!==0)){
   c.fillStyle=M.run>=2?GOLD:PANE;
@@ -22800,24 +22813,56 @@ function bnsDrawSv(c,M,W,H,dp,t){
   /* 水面の輪(残り時間)=細くなっていくほど沈む合図 */
   c.strokeStyle='rgba(216,230,228,.55)';c.lineWidth=3*dp;
   c.beginPath();c.ellipse(0,r*.5,r*1.25,r*.42,0,0,7);c.stroke();
-  c.lineWidth=5*dp;c.strokeStyle=k>.7?'rgba(200,80,60,.9)':'rgba(255,207,106,.85)';
-  c.beginPath();c.arc(0,0,r*1.18,-1.5708,-1.5708+6.2832*(1-k));c.stroke();
-  if(f.k){
-   /* 🧟=**緑の丸い頭**(⚠押してはいけない物なので、形も色も物資と正反対にする) */
-   c.fillStyle=INK;c.beginPath();c.arc(0,0,r*.82,0,7);c.fill();
-   c.fillStyle='#6f8a44';c.beginPath();c.arc(0,0,r*.70,0,7);c.fill();
-   c.fillStyle=INK;
-   c.beginPath();c.arc(-r*.26,-r*.10,r*.13,0,7);c.fill();
-   c.beginPath();c.arc(r*.26,-r*.10,r*.13,0,7);c.fill();
-   c.fillRect(-r*.30,r*.28,r*.60,r*.12);
-  }else{
-   /* 物資=**茶色い四角の木箱** */
-   c.fillStyle=INK;rr(c,-r*.80,-r*.80,r*1.60,r*1.60,r*.18);c.fill();
-   c.fillStyle='#9c7a4f';rr(c,-r*.68,-r*.68,r*1.36,r*1.36,r*.14);c.fill();
-   c.fillStyle='#7b5f3c';c.fillRect(-r*.68,-r*.14,r*1.36,r*.28);
-   c.fillRect(-r*.14,-r*.68,r*.28,r*1.36);
-  }
+  /* ⚠⚠**🧟には残り時間の輪を出さない**=あれは「早く取れ」の合図なので、
+     押してはいけない物に付けると**取れと言っている**ことになる(誤解の元)。 */
+  if(!f.k){
+   c.lineWidth=5*dp;c.strokeStyle=k>.7?'rgba(200,80,60,.9)':'rgba(255,207,106,.85)';
+   c.beginPath();c.arc(0,0,r*1.18,-1.5708,-1.5708+6.2832*(1-k));c.stroke();}
+  bnsSvIcon(c,f.k,r,dp);
   c.restore();
+ }
+ /* 🧾⭐⭐**遊び方の凡例を出しっぱなしにする**(2026-08-02(67)ユーザー「ゾンビをタップしちゃ
+    いけないっていう説明がどこにもないからわかりづらい」)=**見出しの一文は読み飛ばされる**し、
+    実機では右の数字に食われて消えていた。⭐**本物と同じ絵**を並べて「○/✕」で言う=文章を読まなくていい。 */
+ /* ⚠**置き場所は「時間の帯」と「連なりの行」の間**=遊び場に置くと浮いてきた物に隠れる */
+ {const iy=H*.205,ir=13*dp,x0=W*.07;
+  c.textAlign='left';
+  c.save();c.translate(x0+ir,iy);bnsSvIcon(c,0,ir,dp);c.restore();
+  c.fillStyle=LIFE;c.font='900 '+Math.round(14*dp)+'px '+FF;
+  c.fillText('○ とる',x0+ir*2+8*dp,iy+5*dp);
+  const x2=x0+ir*2+8*dp+66*dp;
+  c.save();c.translate(x2+ir,iy);bnsSvIcon(c,1,ir,dp);c.restore();
+  c.fillStyle=DANGER2;c.font='900 '+Math.round(14*dp)+'px '+FF;
+  c.fillText('✕ 押すな!',x2+ir*2+8*dp,iy+5*dp);}
+}
+/* ⚓浮いている物1つの絵。⭐**凡例と遊び場で必ず同じ物を描く**(2つに分けると必ず食い違う)。
+   ⚠⚠**🧟は「押してはいけない物」だと絵だけで分かること**=**赤い縁と✕**を重ねる
+   (色と形が正反対なだけでは「珍しい当たり」に見える人がいる)。 */
+function bnsSvIcon(c,k,r,dp){
+ if(k){
+  /* 🧟=緑の丸い頭+**赤い輪と✕** */
+  c.fillStyle=INK;c.beginPath();c.arc(0,0,r*.86,0,7);c.fill();
+  c.fillStyle='#6f8a44';c.beginPath();c.arc(0,0,r*.72,0,7);c.fill();
+  c.fillStyle=INK;
+  c.beginPath();c.arc(-r*.26,-r*.10,r*.13,0,7);c.fill();
+  c.beginPath();c.arc(r*.26,-r*.10,r*.13,0,7);c.fill();
+  c.fillRect(-r*.30,r*.28,r*.60,r*.12);
+  /* ⚠⚠**✕を顔の上に大きく重ねない**(撮って直した)=**ただの禁止マーク**になって
+     「ゾンビが混ざっている」が読めなくなる。⭐**赤い縁+右上の小さな✕の印**にする。 */
+  c.strokeStyle=DANGER;c.lineWidth=Math.max(2,r*.17);c.lineJoin='round';
+  c.beginPath();c.arc(0,0,r*1.02,0,7);c.stroke();
+  {const bx=r*.80,by=-r*.80,br=r*.46;
+   c.fillStyle=DANGER;c.beginPath();c.arc(bx,by,br,0,7);c.fill();
+   c.strokeStyle=INK;c.lineWidth=Math.max(1.5,r*.10);c.stroke();
+   c.strokeStyle=PANE;c.lineWidth=Math.max(1.5,r*.13);
+   c.beginPath();c.moveTo(bx-br*.42,by-br*.42);c.lineTo(bx+br*.42,by+br*.42);
+   c.moveTo(bx+br*.42,by-br*.42);c.lineTo(bx-br*.42,by+br*.42);c.stroke();}
+ }else{
+  /* 物資=茶色い四角の木箱 */
+  c.fillStyle=INK;rr(c,-r*.80,-r*.80,r*1.60,r*1.60,r*.18);c.fill();
+  c.fillStyle='#9c7a4f';rr(c,-r*.68,-r*.68,r*1.36,r*1.36,r*.14);c.fill();
+  c.fillStyle='#7b5f3c';c.fillRect(-r*.68,-r*.14,r*1.36,r*.28);
+  c.fillRect(-r*.14,-r*.68,r*.28,r*1.36);
  }
 }
 /* 🏠物色=**光った棚を同じ順に押す**。⚠⚠**絵の見分けはゼロ**にしてある(2026-08-02(47))=
