@@ -389,6 +389,9 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ⚠`position:sticky` は横スクロールの中でも効く。背景を必ず敷く(下のボタンが透ける) */
 #zbar .zsw{position:sticky;left:0;z-index:2;flex:0 0 auto;display:flex;gap:3px;padding-right:5px;
  background:linear-gradient(90deg,var(--void) 78%,transparent)}
+/* ⭐★の絞り込みは本体の切り替えの右隣に貼り付く。⚠地を少し変えて役割の違いを出す */
+#zbar .zsw2{left:96px}
+#zbar .zsw2 button{padding:3px 7px;font-size:11px;background:#3a2f22}
 #zbar .zsw button{flex:0 0 auto;padding:3px 9px;border-radius:8px;border:2px solid var(--paper);
  background:var(--pane);color:var(--ink);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
 #zbar .zsw button.on{background:var(--gold);border-color:var(--gold2)}
@@ -13461,7 +13464,34 @@ const U_SWG=new Set([
  /* 兵科(近接・投擲) */
  'axe','saw','chain','pike','ninja','gld','mol','grn','gren2','elec','titan',
  /* 英雄(近接・投擲) */
- 'hNox','hCmd','hStorm','hGiant','hMech','hBomb','hPost']);
+ 'hNox','hCmd','hStorm','hGiant','hMech','hBomb','hPost',
+ /* ⭐2026-08-03(78)ユーザー「近接ヒーローは全部ヴァルキリーみたいに固有のモーションで連続攻撃してほしい」
+    =暗黒の騎士(騎槍)を足した。⚠それまで**槍が1ミリも動かない**まま突きの線だけ出ていた。 */
+ 'hDark']);
+/* ⭐⭐⭐**近接英雄の連撃**(2026-08-03(78))。ヴァルキリーの3連撃(袈裟→逆袈裟→突き)の一般化。
+   ⚠⚠**ヴァルキリーだけ専用の枝で書かれていた**ので、他の近接英雄は
+     **何発撃っても同じ一振り**=「連続攻撃」に見えなかった。
+   ⭐**1手ぶん=[振りかぶり, 振り抜き, ずれx, ずれy]**(bSwing と同じ引数)。3手で1周する。
+     ⚠**呼び出し側の値は「素の一振り」として残す**=表に載っていない体は今までどおり。
+   ⭐**3手は必ず「別の面」を通す**=同じ弧を強弱だけ変えても連撃に見えない。
+     ①振り下ろし(縦) ②切り上げ/返し(逆から) ③突き or 薙ぎ(横) が読みやすい組み合わせ。
+   ⚠**振り抜きの角は 1.2rad を超えない**=腕が背中側まで回って外れて見える。
+   ⚠**ずれ(dx,dy)を大きくしすぎない**=肩から武器が離れる(±8まで)。 */
+const H_CMB={
+ /* 終焉の騎士(大鎌)=①袈裟斬り ②下から掬い上げ ③水平の薙ぎ */
+ hNox :[[-.34,1.05,-2,-1],[ .62,-.86,-1,4],[-.10, .30,-7,-1]],
+ /* 暗黒の騎士(騎槍)=①突き ②振り下ろし ③引き戻しの薙ぎ。⚠槍は回しすぎない(NOTESの掟) */
+ hDark:[[-.06, .10,-9, 0],[-.30, .72,-2,-2],[ .16,-.34,-5, 3]],
+ /* 鋼鉄の巨人(鉄拳)=①叩きつけ ②横薙ぎ ③踏み込みの一撃 */
+ hGiant:[[-.10,.46,-5,0],[ .34,-.52,-7,2],[-.44,.92,-2,-3]],
+ /* 整備士(レンチ)=①横殴り ②振り下ろし ③返し */
+ hMech:[[-.38,.85,-1,0],[-.05,.34,-6,1],[ .48,-.70,-2,3]],
+ /* 配達人(荷物)=①振り下ろし ②下から放り上げ ③体ごとぶちかまし */
+ hPost:[[0,.90,-.4,-1],[ .55,-.78,-1,3],[-.14,.26,-8,0]],
+};
+/* ⚠**いま描いている体の id**=bSwing は o しか受け取らないので、ここで渡す。
+   ⚠**drawUnit の入口で必ず入れ直すこと**(前のキャラの id が残ると別人の連撃になる)。 */
+let SWG_ID='';
 function uSwP(u){
  const U=UNITS[u.ui];if(!U||!(U.rate>0)||!(u.cd>0))return 0;
  if(!U_SWG.has(U.base||U.id))return 0;
@@ -13477,6 +13507,10 @@ function uSwP(u){
 const SWG_S=.16;/* 振り出しに使う割合。⚠0にすると1フレームで反対側へ飛んで「瞬間移動」に見える */
 function bSwing(c,o,px,py,up,dn,dx,dy){
  const rc=bRc(o),sw=clamp((o&&o.sw)||0,0,1);
+ /* ⭐**連撃の型があれば、その手の振りに差し替える**(2026-08-03(78))。
+    ⚠**呼び出し側の値は素の一振りとして残す**=表に載っていない体は今までどおり動く。 */
+ {const CB=H_CMB[SWG_ID];
+  if(CB){const r=CB[((o&&o.vcb)||0)%CB.length];if(r){up=r[0];dn=r[1];dx=r[2];dy=r[3];}}}
  let a=0,ox=0,oy=0;
  if(sw>0){
   /* ⚠**振りかぶりの角度から振り抜きの角度へ「通す」**=いきなり振り抜きの姿から始めると
@@ -13609,6 +13643,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   if(VEC2_R>0)drawUnit(silLayer(c,VEC2_R,VEC2_RC),ui,x-.9,y-1.6,dr,t,ph,os);
   drawUnit(flatLayer(c),ui,x,y,dr,t,ph,o1);return;}
  const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
+ SWG_ID=id;/* ⭐連撃の型を引くため(bSwing が読む)。⚠毎回入れ直す */
  /* ⭐**溜め中は足を止める**(o.chg>0)=歩行を止めて足を開いた構えにする。
     ⚠止めるだけだと「固まった」に見えるので、溜めの光(drawUChg)と必ずセットで出すこと。 */
  /* ⭐**止まっている間は脚を止める**(2026-08-01ユーザー指示)。⚠o.mv===0 の時だけ止める
@@ -16541,9 +16576,26 @@ function campStep(C,dt,wave){
       /* ⚠**投げた物が飛んでいる間に敵が動くので、爆発は「投げた瞬間の狙い先」で出す**
          (2026-08-02。当たり判定 hit9 も同じ点で見ているので、これを合わせないと
           爆風の絵だけ敵について行って「当たっていない所で爆発する」ように見える)。 */
-      const im7=()=>{hit9();H_FX[U.id](C,u,U,f7>0?{px:tx9,py:ty9,dead:0,mhp:tg.mhp,hp:tg.hp}:tg,mx7,my7,ang7,ucl7,utl7,d57,pierce);};
+      const tgF7=()=>({px:tx9,py:ty9,dead:0,mhp:tg.mhp,hp:tg.hp});
       const f7=(uMotK(u.ui)==='toss')?tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c'):0;
-      if(f7>0)later(C,f7,im7);else im7();
+      if(f7>0){
+       /* 投擲(爆破屋)=物が飛んでいる間は絵も当たりも出さない。着いてから両方 */
+       later(C,f7,()=>{hit9();H_FX[U.id](C,u,U,tgF7(),mx7,my7,ang7,ucl7,utl7,d57,pierce);});
+      }else{
+       /* ⭐⭐⭐**自前で玉を飛ばす英雄は「絵は今すぐ・当たりだけ飛行時間ぶん遅らせる」**
+          (2026-08-03(76)ユーザー「紅蓮の魔導士は合ってない 射程に入った瞬間的が死んで
+            そのあとに炎の弾が飛んでく」)。
+          ⚠⚠**(71)で入れた `H_FLY` は "範囲を持たない英雄"の枝にしか刺さっていなかった**=
+            紅蓮は `aoe:120` を持つのでこちらの枝に入り、**一度も効いていなかった**。
+            ⭐**枝を1つ直すのではなく、H_FX を呼ぶ枝すべてに同じ扱いを入れること**。
+          ⚠**H_FX を遅らせてはいけない**=紅蓮の `H_FX` は**玉を飛ばす所から着弾までを自分で持っている**
+            ので、丸ごと遅らせると「撃つのが遅れて、着弾はさらに遅れる」で二重にずれる。
+          ⚠**狙い先は投げた瞬間で固定する**(`tgF7`)=飛んでいる間に敵が歩くので、
+            固定しないと当たり(hit9)と絵が別の場所になる。 */
+       const fl7=(H_FLY[U.id]&&FXLV>0)?H_FLY[U.id](C,u,U,tg):0;
+       H_FX[U.id](C,u,U,fl7>0?tgF7():tg,mx7,my7,ang7,ucl7,utl7,d57,pierce);
+       if(fl7>0)later(C,fl7,hit9);else hit9();
+      }
      }
      else if(uMotK(u.ui)==='slash'){
       const scl9=U.c||'#ffe9a8',sx9=u.px+(u.dr||-1)*26*CH_UP,sy9=u.py-30*CH_UP;
@@ -23678,6 +23730,7 @@ function startTst(){
    ⚠ZOMBIES は46種あるので**横スクロールの名前ボタン**にする
      (下のデッキのような絵札にすると焼き直しが要るうえ、帯が厚くなって盤面を覆う) */
 let TSTBAR='z';/* 帯の中身: z=🧟敵 / h=🦸英雄 */
+let TSTRK=5;/* 🦸英雄の帯で出す★(2026-08-03(77))。⚠既定は★5=いちばん見たい人を最初に出す */
 function buildZbar(){
  const w=$('zbar');if(!w)return;
  w.innerHTML='';w.style.display='flex';
@@ -23692,11 +23745,30 @@ function buildZbar(){
    sw.appendChild(b);}
   w.appendChild(sw);}
  if(TSTBAR==='h'){
+  /* ⚠⚠**21人を1列に並べると右端の数人に届かない**(2026-08-03(77)ユーザー
+     「検証場で暗黒の騎士が画面外に行っててクリックできず出せない」)。
+     ⚠**2026-08-01に「敵46種の後ろ」から切り替え式にしたが、英雄21人だけでもまだ長かった**
+       (★5は並びの最後=いちばん見たい人がいちばん遠い、という最悪の並びになっていた)。
+     ⭐**★で絞る**=1画面に4〜6人しか出ないので**スクロールせずに全員に届く**。
+       ⚠切り替えと同じく左端に貼り付ける(横に流れていかない)。 */
+  const rks=[1,2,3,4,5];
+  {const sw=document.createElement('div');sw.className='zsw zsw2';
+   for(const r of rks){
+    const b=document.createElement('button');
+    b.textContent='★'+r;if(TSTRK===r)b.classList.add('on');
+    b.onclick=()=>{TSTRK=r;buildZbar();};
+    sw.appendChild(b);}
+   w.appendChild(sw);}
+  let n9=0;
   for(let i=HERO_I0;i<UNITS.length;i++){const U=UNITS[i];if(!U||!U.n)continue;
+   if((U.hro||1)!==TSTRK)continue;
    const b=document.createElement('button');
    b.className='hk';b.textContent='🦸'+U.n;b.title=U.n+' — 押すたびに出し直せる';
    b.onclick=()=>tstHero(i);
-   w.appendChild(b);}
+   w.appendChild(b);n9++;}
+  /* ⚠その★に誰も居ない時は空の帯になる=何が起きたのか分からないので必ず言う */
+  if(!n9){const e=document.createElement('span');e.className='hk';e.style.opacity='.6';
+   e.textContent='★'+TSTRK+'の英雄は居ない';w.appendChild(e);}
   return;}
  ZOMBIES.forEach((Z,i)=>{if(!Z||!Z.n)return;
   const b=document.createElement('button');
