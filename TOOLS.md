@@ -196,6 +196,7 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 | 道具 | 何をする | 実現方法とライセンス | 手間 | 効き目 |
 |---|---|---|---|---|
 | 道具のSkill化＋hooksで強制 | 11本の道具の使い方を1か所にまとめ、「編集したら必ず検査が走る」を仕組みで強制 | Claude Code の Agent Skills(`.claude/skills/deadtide-tools/SKILL.md`・必要な時だけ読み込まれる)＋hooks(PreToolUse/Stop)。⚠**MCPサーバは作らない** | 小 | 大 |
+| ⭐Superpowers を**手本として読む** | スキルの書き方・「終わったと言う前に確かめる」の言語化を借りる | [obra/superpowers](https://github.com/obra/superpowers/)(**MIT**)。⚠**丸ごと入れない**(下の❌参照)。読むのは `writing-skills` / `verification-before-completion` / `systematic-debugging` の3本 | 小 | 中 |
 | `test_shot.js` に `--help` とオプション表 | 50以上のオプションを一覧化し、`w+数字` が時間指定に食われる等の名前衝突を明示 | ソース内に表を1つ持たせて印字するだけ | 小 | 中 |
 | デバッグモードの入口を画面に出す | `?dev=1` `?edit=1` `?sfx=1` `?v2=1` `?px=1` をURL直打ちせず切り替える | DEVタイトルの🔊📖🧪と同じ場所にトグルを足す | 小 | 中 |
 | **[UE5]** 「起動して測る」を1本のバッチに | エディタPython実行・自動スクショ・自動テストを1コマンドにまとめ、Claude は結果テキストだけ読む | `-run=pythonscript -script=…`／`take_high_res_screenshot`(`is_task_done()` で完了待ち)／`-ExecCmds="Automation RunTests …"`／Gauntlet。既存 Unreal MCP は軽い操作用に残す | 大 | 大 |
@@ -239,6 +240,19 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 - ❌**カバレッジ率・スクショ差分ゼロを「目標値」にする** … 数字を守るためのテストが増え、面白さには1ミリも効かない。
 - ❌**自動プレイボットの成績を見て難易度を下げる** … ボットの腕≠人間の腕。使えるのは**変更前後の差分**だけ(`CLAUDE.md` の既存の警告と同じ)。
 - ❌**AI の講評を合否判定に使う** … 2026時点でも VLM は密なグリッド・細い境界・小さい要素を取り違え、UIアニメの意図理解は最良モデルでも精度0.64、同一試験で文字89.5%に対し画像66.0%。落とすべき不具合は必ず数値側で落とす。
+- ❌**Superpowers を丸ごとプラグインとして入れる**(2026-08-02 調査)…
+  [obra/superpowers](https://github.com/obra/superpowers/)(MIT)は
+  **ブレスト→worktree→計画→サブエージェント実行→TDD→レビュー→ブランチを畳む**の7段階を
+  「Mandatory workflows, not suggestions」として**自動発火で強制**する。この案件では3点で噛み合わない:
+  ①**単一 index.html なので worktree と並行エージェントが空回り**(7段階のうち4つがこれ)
+  ②**TDD の強制が「検査が通った=完成」という一番危ない誤解を強める**
+    (2026-08-02(65)の🪤鉄条網=**検査は全部通っていたのに手応えがゼロ**だった件がまさにそれ)
+  ③**`CLAUDE.md` の「聞かれたら答えるだけ。勝手に着手しない」と正面から競合する**
+    (向こうはスキルが自動で発火して計画を書き始める)。
+  ⭐**MITなので中身を読んで掟に混ぜるのが一番安い**=読む価値があるのは
+  `writing-skills`(スキルの書き方の手本)/`verification-before-completion`(この保管庫の
+  「撮って目視するまで報告しない」と同じ思想の言語化)/`systematic-debugging`
+  (`NOTES_道具` の「直しに行く前に確認経路を疑う」の一般形)の3本。
 - ❌**週1回も使わない道具を作る/残す** … 道具の保守が本体より重くなる典型的負債。追加時に「どれを消すか」を同時に決める。
 - **[UE5]** ❌**Niagara を Python で一から組む**(`NiagaraEmitterConversionContext` 等) … UE5.6でも Experimental＋変換プラグイン付属でドキュメントが薄い。テンプレ複製＋User Parameters 差し替えに留める。
 - **[UE5]** ❌**Remote Control を配布ビルドに残す** … Beta かつ**認証なしのローカルHTTPサーバ**が開く。
