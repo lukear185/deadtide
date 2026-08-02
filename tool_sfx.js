@@ -348,6 +348,31 @@ const REC=[
    mix:[{f:'SWING IMPACTS Quick Heavy',t:15,o:.02,d:.13,g:-6,r:1.35},
         {f:'Blood Spill Splat',t:0,d:.20,g:-1,r:.85,dl:105},
         {f:'SWING IMPACTS Quick Heavy',t:9,o:.17,d:.18,g:-7,r:.80,dl:130}]},
+ /* ===== 👑暁の王の攻撃音(2026-08-03(88)ユーザー「暁の王の攻撃音終わってるから変えて」)=====
+    ❌それまで**60%の確率で虹ゾンビ用の合成音かライフルの銃声**が鳴っていた(専用の音が1本も無かった)。
+    ⭐攻撃=**天から金の光柱が落ちる**。①空気/光の頭 ②重い胴 ③薄い鐘の尾。
+    ⚠**高いキラキラ音は禁止**(既知の掟)=鐘は-13dB以下・0.3秒まで。毎秒1回鳴るので0.6秒まで。 */
+ /* A 光の柱=ジェットの空気の頭→低い胴。「空気が裂けて落ちた」寄り */
+ {k:'dwnA', d:.55, g:-5.5, af:'highpass=f=150',
+   mix:[{f:'Blast Off Clean',t:0,d:.28,g:-5,r:1.70},
+        {f:'Booms_Vol2_011',t:0,d:.50,g:-7,r:1.35,dl:40},
+        {f:'Shimmer Loop Small Bell',t:0,d:.28,g:-14,r:1.05,dl:70}]},
+ /* B 天罰=雷鳴のクラップを主役に。「裁きが落ちた」寄り */
+ {k:'dwnB', d:.55, g:-1.5, af:'highpass=f=140',
+   mix:[{f:'Texas Rain Thunder',t:3,d:.48,g:-1,r:1.10},
+        {f:'Shimmer Loop Small Bell',t:0,d:.28,g:-13,r:1.0,dl:60}]},
+ /* C 魔法の光=本物の光魔法の素材を低めに。「魔法」寄り */
+ {k:'dwnC', d:.55, g:-8.5, af:'highpass=f=150',
+   mix:[{f:'Magic Light Spell',t:0,o:.70,d:.34,g:-2,r:.82},
+        {f:'Booms_Vol2_011',t:0,d:.45,g:-9,r:1.40,dl:30}]},
+ /* D 号砲=破裂の頭を高くして光の弾けに。「まばゆい一発」寄り */
+ {k:'dwnD', d:.50, g:-2.5, af:'highpass=f=160',
+   mix:[{f:'powerful explosions_multiples',t:4,d:.30,g:-4,r:1.55},
+        {f:'Shimmer Loop Small Bell',t:0,d:.30,g:-12,r:1.15,dl:45}]},
+ /* E エネルギー=低いバーストを主役に。「重い光」寄り */
+ {k:'dwnE', d:.55, g:-4.5, af:'highpass=f=140',
+   mix:[{f:'Collect Scifi Futuristic Electronic Bass Burst',t:0,d:.45,g:-2,r:.90},
+        {f:'Shimmer Loop Small Bell',t:0,d:.26,g:-14,r:1.05,dl:55}]},
 ];
 
 const SRC=process.argv[3]||path.join(__dirname,'sfx_src');
