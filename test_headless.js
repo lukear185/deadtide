@@ -2531,8 +2531,32 @@ function checkBonus(){
   /* ⭐**道は「ほぼ縦の一直線」1本**(2026-08-02(24)ユーザー決定) */
   if(!LANES||LANES.length!==1){console.log('FAIL: 道中の道が1本ではない');process.exit(1);}
   if(!(LANES[0].len>MAPH*.9)){console.log('FAIL: 道がマップの縦を貫いていない '+Math.round(LANES[0].len));process.exit(1);}
-  for(const s of LANES[0].seg)if(Math.abs(s.b[0]-s.a[0])>Math.abs(s.b[1]-s.a[1])*.25){
-   console.log('FAIL: 道が縦になっていない(横に振れすぎ)');process.exit(1);}
+  /* ⚠⚠**2面(海沿い)はうねる**(2026-08-02(66)ユーザー「走るとこは直線じゃなくていい感じに」)=
+     見たいのは**斜めの帯になっていないこと**なので、2面だけ緩める(それでも画面では約13°)。 */
+  {const tilt=(si===1)?.34:.25;
+   for(const s of LANES[0].seg)if(Math.abs(s.b[0]-s.a[0])>Math.abs(s.b[1]-s.a[1])*tilt){
+    console.log('FAIL: 道が縦になっていない(横に振れすぎ) st'+(si+1));process.exit(1);}}
+  /* 🌊⭐**2面は海沿いの道**(2026-08-02(66))。見るのは4つ:
+     ①海の旗が立っている ②海の上に木も建物も無い ③海が道の通路より必ず外(海の上を走らない)
+     ④うねっている(=1面より明らかに横へ動く) */
+  if(si===1){
+   if(!BSEA){console.log('FAIL: 2面の開拓便に海が無い');process.exit(1);}
+   let sea9=0,seab=0;
+   for(const t of BTREE)if(bnsSeaAt(t.x,t.y,0))sea9++;
+   for(const b of BBLD)if(bnsSeaAt(b.x,b.y,0))seab++;
+   if(sea9||seab){console.log('FAIL: 海の上に木'+sea9+'本/建物'+seab+'棟が乗っている');process.exit(1);}
+   /* ③海岸線は「道の中心+通路の半幅+バスの体」より必ず外 */
+   for(let y=BNS_SEA_Y0();y<BNS_SEA_Y1();y+=1700){
+    const u=clamp((y-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1);
+    const cx=BNS_CX+bnsWobAt(u,1),w=bnsCorrW(u);
+    if(!(bnsSeaX(y)>cx+w+BUS_R*.5)){
+     console.log('FAIL: 海が道に近すぎる(海の上を走れてしまう) y='+Math.round(y));process.exit(1);}}
+   /* ④うねり=道の中心の横のブレ幅 */
+   let mnx=1e9,mxx=-1e9;
+   for(const s of LANES[0].seg){mnx=Math.min(mnx,s.a[0]);mxx=Math.max(mxx,s.a[0]);}
+   if(!(mxx-mnx>600)){console.log('FAIL: 2面の道がうねっていない '+Math.round(mxx-mnx));process.exit(1);}
+   console.log('🌊2面=海沿いのうねる道: 横のブレ'+Math.round(mxx-mnx)+'px / 海の上に木も建物も無い OK');
+  }
   /* ⚠**進む向き**=道に沿った距離が増えるほど下(=ゾンビは上から下りてくる) */
   if(!(LANES[0].seg[0].a[1]<LANES[0].seg[LANES[0].seg.length-1].b[1])){
    console.log('FAIL: 道の向きが逆(ゾンビが後ろから来る)');process.exit(1);}
@@ -2902,7 +2926,9 @@ function checkRice(){
      ⚠**棟数は面ごと**(2026-08-02(43)に9→3)=1面はミニゲーム3個。 */
   {if(BENT.length<bnsMgN()){console.log('FAIL: 入れる廃墟が少なすぎる '+BENT.length+'/'+bnsMgN()+'棟');process.exit(1);}
    const kn={};for(const b of BENT)kn[b.ek]=(kn[b.ek]||0)+1;
-   if(Object.keys(kn).length<ENT_K.length){
+   /* ⚠**種類は「その面に並ぶ棟数」まで**(2026-08-02(66))=4種目(⚓波止場)は2面から出るので、
+      1面(3棟)で ENT_K の全種類は並ばない。 */
+   if(Object.keys(kn).length<Math.min(bnsMgN(),ENT_K.length)){
     console.log('FAIL: 入れる廃墟の種類が偏っている '+JSON.stringify(kn));process.exit(1);}
    /* 局所座標(l=長さ方向 / w=幅方向。⚠ds を畳んだ後=入口は必ず +w 側)から世界の点を出す */
    const eLoc=(b,l,w)=>[b.x+b.ca*l-b.sa*w*b.ds, b.y+b.sa*l+b.ca*w*b.ds];
@@ -3585,6 +3611,41 @@ function checkBnsFlow(){
   if((META.bres[0]|0)||Object.keys(META.bup).length||Object.keys(META.beq).length){
    console.log('FAIL: 初期化してもバスの強化が残っている');process.exit(1);}}
  bnsPreSkip();backTitle();
+ /* ⚓⭐⭐**4種目(2面だけ)**(2026-08-02(66)ユーザー「ミニゲームももう一種類だけ追加」)。見るのは5つ:
+    ①2面には⚓波止場が並ぶ ②浮いた物資を押すと点が入る ③🧟を押すと失敗(連打よけ)
+    ④🧟は見送っても失敗にしない ⑤もらえる物資は rs(=🏭鉄材)の方が多い
+    ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと(4度目) */
+ META.stg=1;setDiff=BNS_D;startSolo();
+ {const Q=G.bpre,me2=G.players[0];
+  fitCanvas();
+  if(Q.pick.length!==bnsMgN()){console.log('FAIL: 2面の選択肢が4棟でない '+Q.pick.length);process.exit(1);}
+  const db=Q.pick.filter(b=>(b.ek|0)===3)[0];
+  if(!db){console.log('FAIL: 2面に⚓波止場が並んでいない');process.exit(1);}
+  bnsMgStart(Q,db);
+  const M=Q.mg;
+  for(let k=0;k<200&&!M.sv.length;k++)bnsMgStep(Q,.05);
+  if(!M.sv.length){console.log('FAIL: ⚓引き揚げで何も浮いてこない');process.exit(1);}
+  try{drawBnsPre(ctx,me2,1.2);}catch(e){console.log('FAIL: ⚓引き揚げの描画で例外 '+e.message);process.exit(1);}
+  /* ③🧟を押すと失敗する */
+  {M.run=3;M.sv.push({x:100,y:100,r:40,k:1,t:0,lf:2});
+   bnsSvTap(M,100,100);
+   if(M.lastG!==2||M.run!==0){console.log('FAIL: ⚓で🧟を押しても失敗にならない');process.exit(1);}}
+  /* ④🧟は見送っても失敗にしない */
+  {const g0=M.got,r0=(M.run=2);M.sv.push({x:120,y:120,r:40,k:1,t:0,lf:.04});
+   bnsMgStep(Q,.05);
+   if(M.got!==g0||M.run!==r0){console.log('FAIL: ⚓で🧟を見送ると罰がある');process.exit(1);}}
+  /* ②上手く遊ぶ=浮いた物資を片っ端から取る */
+  for(let k=0;k<4000&&Q.st==='mini';k++){
+   bnsMgStep(Q,.05);
+   if(!Q.mg)break;
+   for(let i=Q.mg.sv.length-1;i>=0;i--){const f=Q.mg.sv[i];if(!f.k)bnsSvTap(Q.mg,f.x,f.y);}
+  }
+  if(Q.st==='mini'){console.log('FAIL: ⚓引き揚げが終わらない');process.exit(1);}
+  /* ⑤物資は🏭鉄材(rs=1)の方が多い */
+  if(!(Q.res[1]>Q.res[0]&&Q.res[1]>Q.res[2])){
+   console.log('FAIL: ⚓の物資が🏭鉄材に入っていない '+Q.res.join('/'));process.exit(1);}
+  console.log('⚓引き揚げ(2面の4種目): '+bnsMgN()+'棟 / 上手く遊んで '+BRES[1].ic+Q.res[1]+' / 🧟は押すと失敗・見送りは無罰 OK');}
+ backTitle();
  META.stg=0;setDiff=2;
  console.log('🎒走る前の流れ: 選択'+bnsMgN()+'棟 → '+kinds.join('/')+'(物資 計'+tot
   +') → 乗り込み → 🔧性能'+BUP.length+'項目/⚔装備'+BEQ.length+'種(最高速 '+BUS_SP+'→'+Math.round(sp1)

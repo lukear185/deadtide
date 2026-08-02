@@ -51,6 +51,8 @@ const BEM=/(^|\+)bnsent(=(\d+))?(\+|$)/.exec(OPT),BENTI=BEM?(+(BEM[3]||0)):-1;
 /* ⭐bnsnit = 🔥**ニトロを撃った直後**を撮る(群れの中を走らせながら、終わりの2秒前に発動)。
    ⚠これが無いと炎・速度線・縁の橙・ゲージが1枚も写らない。⚠bns と併せて使う。 */
 const BNIT=/(^|\+)bnsnit(\+|$)/.test(OPT);
+/* ⭐bnssg = 🌊**高潮**(2面だけの新要素)が道を洗っている所を撮る。⚠st2+bns と併せて使う */
+const BSG=/(^|\+)bnssg(\+|$)/.test(OPT);
 /* ⭐bnsarr[=秒] = 🏁**到着のムービー**(拠点の入り口を通過する所)を撮る。⚠bns と併せて使う。
    ⚠**自分で始める**=締め切りは75秒なので、待っていると撮影が終わらない。
    ⭐秒=ムービーを何秒進めた所を撮るか(既定2.2=門をくぐる瞬間)。 */
@@ -63,7 +65,8 @@ const BAM=/(^|\+)bnsarr(=([0-9.]+))?(\+|$)/.exec(OPT),BARR=BAM?(+(BAM[3]||2.2)):
 const BPRE=(/(^|\+)bns(sel|mg|brd|up|eqp|gep)(=\d)?(\+|$)/.exec(OPT)||[])[2]||'';
 /* ⚔bnseq = **装備を全部付けたバス**で走らせて撮る(2026-08-02(44))。⚠bnsdrv と併せて使う */
 const BEQA=/(^|\+)bnseq(\+|$)/.test(OPT);
-/* ⭐bnsmg[=0/1/2] = どのミニゲームを撮るか(0=⛽給油 / 1=🏭荷積み / 2=🏠物色)。
+/* ⭐bnsmg[=0/1/2/3] = どのミニゲームを撮るか(0=⛽給油 / 1=🏭荷積み / 2=🏠物色 / 3=⚓引き揚げ)。
+   ⚠3(⚓)は2面だけなので st2 と併せること。
    ⚠**棟の種類でゲームが変わる**ので、番号でその棟を選んでから始めている。 */
 const MGK=+((/(^|\+)bnsmg=(\d)/.exec(OPT)||[])[2]||0);
 /* ⭐noitr = 「🆕新種のゾンビが現れる!」の紹介モーダルを出さない(2026-07-27ユーザー許可)。
@@ -357,6 +360,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'bnsMgStart(Q,bb);'
        +'if(kk===0){for(var k=0;k<2;k++){Q.mg.pos=Q.mg.tgt;bnsMgTap(Q,0,0);}}'
        +'else if(kk===1){for(var k=0;k<3;k++){Q.mg.bx=Q.mg.cx+(k?0.03:0);bnsMgTap(Q,0,0);}}'
+       /* ⚓引き揚げ(2面の4種目)=いくつか浮かせて、1つ取った所で止める */
+       +'else if(kk===3){Q.mg.pts=11;Q.mg.run=2;for(var k6=0;k6<70;k6++)bnsMgStep(Q,.05);'
+        +'if(Q.mg.sv.length){var f6=null;for(var i6=0;i6<Q.mg.sv.length;i6++)if(!Q.mg.sv[i6].k)f6=Q.mg.sv[i6];'
+        +'if(f6)bnsSvTap(Q.mg,f6.x,f6.y);}for(var k7=0;k7<12;k7++)bnsMgStep(Q,.05);}'
        +'else{Q.mg.pts=14;Q.mg.run=2;for(var k3=0;k3<3;k3++)bnsMmRound(Q.mg,1);'
         +'for(var k4=0;k4<200&&Q.mg.ph!=="in";k4++)bnsMgStep(Q,.05);'
         +'for(var k5=0;k5<8;k5++)bnsMgStep(Q,.05);var R9=bnsMmRects(cv.width,cv.height);'
@@ -387,6 +394,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠bnsdrv と併せた時は**運転を上書きしない**(往復させたまま撃つ) */
      /* ⚠**大群が来ている道へ向かって走らせる**=適当な向きに走らせると群れと一度も出会わず、
         轢き応え(肉片・吹き飛ぶ体・血だまり)が1つも写らない。 */
+     /* 🌊bnssg = **高潮を撮る**(2面だけ)=終わりの少し前に波を起こして、道を洗っている所で止める。
+        ⚠自然に来るのを待つと、撮った瞬間に来ているとは限らない(実際に2枚とも空振りした) */
+     /* ⚠**前線がバスの真横に来る `p`** を逆算して入れる(決め打ちだと通り過ぎた絵になる) */
+     +(BSG?('try{if(k===n-1){var m8=G.players[0].bus;'
+       +'var pp8=Math.max(.05,Math.min(1,(bnsSeaX(m8.y)-(m8.x-260))/BSG_REACH));'
+       +'m8.sg={ph:2,t:BSG_IN*(1-pp8),p:pp8,n:1,y1:m8.y+1400,y0:m8.y+1400-BSG_H};}}catch(e8s){}'):'')
      +(BNIT?('try{'+(BDRV?'':'if(k>110){var L7=LANES[(G.tide.hotLn!=null?G.tide.hotLn:0)],a7=L7.seg[0].a,'
        +'b7=G.players[0].bus,dx7=a7[0]-b7.x,dy7=a7[1]-b7.y,l7=Math.hypot(dx7,dy7)||1;'
        +'bnsStick(dx7/l7,dy7/l7);}')

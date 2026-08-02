@@ -3562,10 +3562,12 @@ function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
  LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;BENT.length=0;BOBJ.length=0;TRE_CELL=null;terrClear();
+ BSEA=0;/* 🌊海(2面の開拓便だけ)を必ず落とす=残すと普通の面の地形に海が混ざる */
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
+ SEG.avg=PLEN/Math.max(1,SEG.length);SEG.vdy=0;/* ⚠y の索引は「y で等間隔に打った道」だけ(=開拓便) */
  SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of (S.sup||SUP_SLOTS))SLOTS.push(e.slice());
  AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
  CORE=PATH[PATH.length-1].slice();
@@ -3580,10 +3582,29 @@ function loadStage(si){
      長さの違うレーンを足す時は、その判定を全部 `LANES[ln].len` に直すこと。
    ⚠LANES が null の間(いつもの1本道)は今までと完全に同じ動きになる。 */
 let LANES=null;
+/* 🌊⭐**2面(沈んだ港)の開拓便だけ「海沿いの道」になる**(2026-08-02(66)ユーザー
+   「2ステージ目の同じ難易度の位置に同じバスのやつ。走るとこは直線じゃなくていい感じに」)。
+   ⚠**面の状態なので `let` の旗1本で持つ**=`loadStage`(普通の面)で必ず落とす。 */
+let BSEA=0;
+/* ⚠⚠⭐**辺の本数が増えても重くならないための索引**(2026-08-02(66))=
+   2面の海沿いの道は**辺が260本**ある(うねりを折れ線で拾うため)。
+   ⭐`avg`=**辺1本の平均の長さ**。ここから当たりを付けて前後へ歩けば、
+     何本あっても数歩で目当ての辺に着く(先頭から舐めると1体につき130回になる)。
+   ⭐`vy0`/`vdy`=**y で等間隔に点を打ってある道**の目印。y から辺の番号が直に引ける。
+     ⚠これが無いと、木を撒く判定(14万点×260辺=3700万回)だけで数秒かかる。 */
+function segRangeY(sg,y,pad){
+ if(!(sg&&sg.vdy>0))return null;
+ const i=Math.floor((y-sg.vy0)/sg.vdy),p=pad||4;
+ return [clamp(i-p,0,sg.length-1),clamp(i+p,0,sg.length-1)];
+}
 function pathPos(d,ln){
  const L=(LANES&&ln!=null&&LANES[ln])?LANES[ln]:null,sg=L?L.seg:SEG;
  d=clamp(d,0,L?L.len:PLEN);
- for(const s of sg){if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}
+ let i=0;
+ if(sg.avg>0){i=clamp(Math.floor(d/sg.avg),0,sg.length-1);
+  while(i>0&&sg[i].s>d)i--;
+  while(i<sg.length-1&&sg[i].s+sg[i].l<d)i++;}
+ for(;i<sg.length;i++){const s=sg[i];if(d<=s.s+s.l){const t=(d-s.s)/s.l;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t,Math.atan2(s.b[1]-s.a[1],s.b[0]-s.a[0])];}}
  const e=sg[sg.length-1];return[e.b[0],e.b[1],0];}
 /* ⭐⭐**道の上での「左右どちらを向くか」**(2026-08-01ユーザー指摘
      「攻撃するときに左向いて攻撃するの全キャラやめて。しっかり敵の方見よう」)。
@@ -3610,7 +3631,9 @@ function uFace(u,p){
  if(!u.back&&u.tgx!=null){const dx=u.tgx-p[0];if(Math.abs(dx)>6)return dx>0?1:-1;}
  return pathFace(u.d,p[0],u.back?1:-1,p[2]);
 }
-function projPath(x,y){let bd=1e9,br=0;for(const s of SEG){const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
+function projPath(x,y){let bd=1e9,br=0;
+ const R=segRangeY(SEG,y),i0=R?R[0]:0,i1=R?R[1]:SEG.length-1;
+ for(let i=i0;i<=i1;i++){const s=SEG[i];const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
 /* 建設マス(loadStageでステージのものに差し替わる)。
    置き方の決まり: 道路の中心線からちょうど95(道路半幅49+マス半28=77なので18px空く)。
    道なりの順に並べる=散らばって見えないように。
@@ -17222,6 +17245,8 @@ function renderCamp(C,t){
  if(BBLD.length||BTREE.length)try{drawBnsTown(c);}catch(e){}
  /* 🚗**壊せる障害物**(2026-08-02(37))=地形の上・ゾンビの下。⚠焼き込みに入れない(壊れて消えるので) */
  if(C.bus&&BOBJ.length)try{drawBnsObj(c,C);}catch(e){}
+ /* 🌊**高潮**(2面・2026-08-02(66))=地面の物の上・ゾンビの下。⚠動くので焼き込みに入れない */
+ if(C.bus&&BSEA)try{drawBnsSurge(c,C,t);}catch(e){}
  /* 🚌開拓便の廃墟(⚠**画面に入っている物だけ描く**=数百個あるので全部描くと重い。
     ⚠VL/VR は「マップ全体を必ず含む」値なので、ここでは**本当の画面の範囲**を出し直す)
     ⚠開拓便は上の焼き込みに入っているのでここでは描かない */
@@ -19614,15 +19639,55 @@ const BNS_WALLY=BNS_STARTY+420;
    ⚠**完全な直線にはしない**=定規で引いた線に見える。**±140ほど蛇行**させて道らしく見せる。
    ⚠**横に振りすぎない**=振ると道が斜めになり、縦スクロールの気持ちよさが消える。 */
 const BNS_WOB=140;/* 蛇行の幅 */
+/* 🌊⭐⭐**2面は「うねる海沿いの道」**(2026-08-02(66)ユーザー「走るとこは直線じゃなくていい感じに」)。
+   ⚠⚠**斜めにしすぎない**=横へ振りすぎると道が斜めの帯になり、縦スクロールの気持ちよさが消える
+     (掟は [[NOTES_面]])。⭐**振り幅ではなく「うねりの細かさ」で曲がって見せる**=
+     波長を8000px前後(=約6秒)にすると、走っている間ずっと切り返しが続く。
+   📐**画面での傾き**=振り幅×2π/波長。1面 約2°/2面 最大約14°(縦を0.80に潰すので画面では約11°)。
+   ⚠⚠**出発点の手前だけは真っ直ぐに戻す**=広場のまわりに廃墟(ミニゲームの選択肢)を
+     `BNS_MG_R`(1320)で並べているので、そこで道が寄ると**棟が1つも建たない**(検査で落ちる)。 */
+const BNS_WOB2=330,BNS_WOB2B=180;
+const BNS_STR_U=.045;/* 出発点からこの割合ぶんは真っ直ぐ(≒5000px=走り出しの4秒) */
+function bnsWobAt(u,si){
+ if(si===1){
+  /* ⭐**細かいうねり+ゆるい大曲がり**の2枚重ね=同じ形の繰り返しに見えない */
+  const tp=clamp((1-u)/BNS_STR_U,0,1);/* 出発点(u=1)へ寄るほど0 */
+  return (Math.sin(u*86.0)*BNS_WOB2+Math.sin(u*23.0+1.1)*BNS_WOB2B)*tp;
+ }
+ /* ⚠位置から決める(乱数を順に引くと面ごとに形が変わる) */
+ return Math.sin(u*7.4)*BNS_WOB+Math.sin(u*17.3)*BNS_WOB*.4;
+}
 function bnsLanePts(){
- const pts=[],N=7;
+ /* ⚠**うねる面は点を細かく打つ**=7点のままだと折れ線が波を跨いで、絵と当たりが両方ずれる */
+ const si=STAGE|0,pts=[],N=(si===1)?260:7;
  for(let i=0;i<=N;i++){
   const u=i/N;
-  /* ⚠位置から決める(乱数を順に引くと面ごとに形が変わる) */
-  const w=Math.sin(u*7.4)*BNS_WOB+Math.sin(u*17.3)*BNS_WOB*.4;
-  pts.push([BNS_CX+w,BNS_GOALY+(BNS_STARTY-BNS_GOALY)*u]);
+  pts.push([BNS_CX+bnsWobAt(u,si),BNS_GOALY+(BNS_STARTY-BNS_GOALY)*u]);
  }
  return pts;
+}
+/* 🌊⭐**海岸線の x**(その y での)。⚠⚠**道と同じ式から出す**=別々に持つと
+   「海の上を走れる/砂浜なのに走れない」が必ず出る(乗り物を地形で止める面の掟)。
+   ⚠**道の通路の半幅(最大820)より必ず外**にすること=内側へ食い込むと海の上を走ることになる。 */
+/* ⚠⚠**近すぎると海の上を走れてしまい、遠すぎると一度も海が見えない**(撮って詰めた)=
+   実測で**画面に映る横幅は道の中心から約1350px**なので、**1010〜1350の間**に収める。
+   📐下限=通路の半幅820+バスの体の半分150=970 より外。 */
+const BNS_SEA_OFF=1180;   /* 道の中心から海岸線まで */
+const BNS_SEA_WOB=110;    /* 海岸線のうねり(入り江と岬) */
+const BNS_SEA_W=1300;     /* 海のぶんマップを右へ広げる幅 */
+/* 🌊**海がある範囲**(⚠出発点の広場=探索場と、到着点の広場は必ず陸にする) */
+const BNS_SEA_Y0=()=>BNS_GOALY+2600;
+const BNS_SEA_Y1=()=>BNS_STARTY-4200;
+function bnsSeaX(y){
+ const u=clamp((y-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1);
+ return BNS_CX+bnsWobAt(u,1)+BNS_SEA_OFF
+      +Math.sin(u*33.0)*BNS_SEA_WOB+Math.sin(u*11.0+2.1)*BNS_SEA_WOB*.55;
+}
+/* その点が海か(⚠半径ぶん食い込んでいたら海とみなす=波打ち際に木が刺さらない) */
+function bnsSeaAt(x,y,r){
+ if(!BSEA)return false;
+ if(y<BNS_SEA_Y0()||y>BNS_SEA_Y1())return false;
+ return x+(r||0)>bnsSeaX(y);
 }
 /* ⚠⚠**タレット置き場は 2026-08-02(24) に丸ごと外した**(ユーザー「拠点防衛は全部外して走り抜ける面に」)。
    守る物はバスだけなので、据え置きの塔を建てる相手が居ない。
@@ -19631,18 +19696,28 @@ function bnsLanePts(){
 function bnsSlots(){return [];}
 function loadBonus(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
- MAPW=BNS_W;MAPH=BNS_H;
+ /* 🌊⭐**2面は海沿い**=**海のぶんだけマップを右へ広げる**(2026-08-02(66))。
+    ⚠⚠**`BNS_CX`(道の中心)は動かさない**=道の座標を出している所が山ほどあるので、
+      中心を動かすと全部ずれる。⭐**広げるのは右端(`MAPW`)だけ**にすると1か所で済む。
+    ⚠寄り具合の基準は `MW` のままなので、広げても「画面に見える広さ」は変わらない。 */
+ BSEA=(STAGE===1)?1:0;
+ MAPW=BNS_W+(BSEA?BNS_SEA_W:0);MAPH=BNS_H;
  /* ⭐**道は1本だけ**(2026-08-02(24))=上(到着)から下(出発)へ引く。
     ⚠**`d` が増える向き=上→下**なので、ゾンビは進行方向の先から下りてくる。 */
  const LN=[bnsLanePts()];
+ /* ⚠⚠**点は y で等間隔に打ってある**(`bnsLanePts`)=その目印(`vy0`/`vdy`)を辺に持たせておく。
+    ⭐これで「一番近い辺」を y から直に引ける(2面は辺が260本あるので、舐めると重い)。 */
+ const vdy9=(BNS_STARTY-BNS_GOALY)/Math.max(1,LN[0].length-1);
  LANES=LN.map(pts=>{const seg=[];let len=0;
   for(let i=0;i<pts.length-1;i++){const l=dist(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);
    seg.push({a:pts[i],b:pts[i+1],l,s:len});len+=l;}
+  seg.avg=len/Math.max(1,seg.length);seg.vy0=BNS_GOALY;seg.vdy=vdy9;
   return {seg,len};});
  /* 道を「いつもの道」としても登録する=地形・砲撃AI・ミニ盤面など道を見る処理がそのまま動く */
  PATH=LN[0].map(p=>p.slice());
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
+ SEG.avg=PLEN/Math.max(1,SEG.length);SEG.vy0=BNS_GOALY;SEG.vdy=vdy9;
  /* ⚠**コアは道の下端(出発点の後ろ)**=この面に守る拠点は無いが、
     `CORE` を見ている処理(演出の座標など)が落ちないように置いておく。 */
  CORE=[BNS_CX,BNS_STARTY+300];
@@ -19703,7 +19778,11 @@ function bnsTreeGrid(){
 function bnsCorrFree(x,y,r){
  for(const L of (LANES||[])){
   let bd=1e9,bu=0;
-  for(const s of L.seg){
+  /* ⚠**y の索引で近い辺だけ見る**(2026-08-02(66))=2面は辺が260本あるので、
+     全部舐めると木を撒くだけで数秒かかる(索引が無い道では今までどおり全部見る)。 */
+  const R9=segRangeY(L.seg,y),i9=R9?R9[0]:0,j9=R9?R9[1]:L.seg.length-1;
+  for(let q9=i9;q9<=j9;q9++){
+   const s=L.seg[q9];
    const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1],l2=vx*vx+vy*vy;
    const t=l2?clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/l2,0,1):0;
    const d=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);
@@ -19714,6 +19793,9 @@ function bnsCorrFree(x,y,r){
 }
 /* その場所が「何も置いてよくない所」の外か=通路でも広場でもないか */
 function bnsFreeAt(x,y,r){
+ /* 🌊**海の上には何も置かない**(2026-08-02(66))=木も建物も廃車も水に浮かない。
+    ⚠**置く側と検査が同じ関数を見る**ので、ここに足せば両方に一度で効く。 */
+ if(bnsSeaAt(x,y,r))return false;
  /* 出発点と到着点の広場も空けておく(⚠出発側は探索場なので広い) */
  return bnsCorrFree(x,y,r)&&bnsEndOut(x,y)>r;
 }
@@ -19762,7 +19844,11 @@ const ENT_K=[
  /* 🏭倉庫=長い箱+**のこぎり屋根**+大きなシャッター */
  {id:'ware',n:'倉庫',L:190,W:112,ex:0,cb:[-1,1,-1,1],rf:'#4f5c66',rf2:'#6d7c86'},
  /* 🏠民家=**切妻屋根**(棟が1本通る)+ポーチ+煙突 */
- {id:'house',n:'民家',L:112,W:88,ex:0,cb:[-1,1,-1,1],rf:'#7a4432',rf2:'#96604a'}];
+ {id:'house',n:'民家',L:112,W:88,ex:0,cb:[-1,1,-1,1],rf:'#7a4432',rf2:'#96604a'},
+ /* ⚓波止場=**2面(沈んだ港)から出る4棟目**(2026-08-02(66)ユーザー「ミニゲームももう一種類だけ追加」)。
+    ⚠**屋根の色で種類を分ける**(白+赤=スタンド / 青灰=倉庫 / 赤錆=民家)ので、
+      ここは**緑青(みどりがかった青)**にする。⭐浮標(ブイ)と積んだ木箱で「港の小屋」と読ませる。 */
+ {id:'dock',n:'波止場',L:168,W:100,ex:0,cb:[-1,1,-1,1],rf:'#3f6b63',rf2:'#5b8b81'}];
 /* 入れる廃墟を1棟置く。⚠**入口は必ず街路側**(`ds`=局所座標でどちらが街路か)=
    裏を向いていると「入れる」が読めないし、探索で回り込む手間だけが増える。 */
 function entPush(x,y,a,ki,ds){
@@ -20054,6 +20140,8 @@ function drawBnsTown(c){
    ⚠**色ごとに1回だけ塗る**(米粒と同じ作法)。
    ⚠木は `arc` で描くので**1つずつ `moveTo` を打つ**(打たないと前の円から線が繋がる)。 */
 function drawTerrIn(c,wx0,wy0,wx1,wy1){
+ /* --- 🌊**海**(2面の開拓便だけ。⚠**一番下に敷く**=この上に砂・木・建物が乗る) --- */
+ if(BSEA)try{drawBnsSea(c,wx0,wy0,wx1,wy1);}catch(e){}
  /* --- 🌲森(建物の下に敷く) --- */
  /* ⚠**画面に掛かる升の中だけ**を見る(木は数万本あるので全部は舐めない) */
  const tv=TRE_VIS;tv.length=0;
@@ -20101,6 +20189,72 @@ function drawTerrIn(c,wx0,wy0,wx1,wy1){
  /* --- 🚗廃車など(⚠焼き込みに含める=毎フレーム描き直さない) --- */
  for(const p of BPROP){if(p.x<wx0||p.x>wx1||p.y<wy0||p.y>wy1)continue;
   try{drawProp(c,p);}catch(e){}}
+}
+/* 🌊⭐⭐⭐**海を焼き込む**(2026-08-02(66))。⚠**焼き込みの中で呼ばれる**=毎フレームではない
+   (だから帯を細かく刻んでよい)。⭐**うねりは焼いた画の上に別で重ねる**(`drawBnsSurf`)。
+   ⚠⚠**海岸線は `bnsSeaX` 1本から出す**=絵と当たり(木を置かない範囲)が必ず一致する。
+   ⚠**色は3段だけ**=砂/浅瀬/深い海。段を増やしても寄り .62 では読めない。 */
+const BSEA_C0='#2c4a58',BSEA_C1='#3c6a78',BSEA_FOAM='#d8e6e4';
+function drawBnsSea(c,wx0,wy0,wx1,wy1){
+ const y0=Math.max(wy0,BNS_SEA_Y0()),y1=Math.min(wy1,BNS_SEA_Y1());
+ if(!(y1>y0))return;
+ const STEP=70,xr=Math.max(wx1,MAPW)+40;
+ /* 海岸線の点を先に作る(⚠3回なぞるので使い回す) */
+ const P=[];
+ for(let y=y0-STEP;y<=y1+STEP;y+=STEP)P.push([bnsSeaX(y),clamp(y,y0,y1)]);
+ if(P.length<2)return;
+ const band=(dx,st)=>{c.fillStyle=st;c.beginPath();
+  c.moveTo(P[0][0]+dx,P[0][1]);
+  for(let i=1;i<P.length;i++)c.lineTo(P[i][0]+dx,P[i][1]);
+  c.lineTo(xr,P[P.length-1][1]);c.lineTo(xr,P[0][1]);c.closePath();c.fill();};
+ /* ① 砂浜(⚠海岸線の手前へ少しはみ出させる=陸と海の境目が硬いと「板」に見える) */
+ band(-120,'#9a8f70');
+ band(-46,'#b4a683');
+ /* ② 深い海 → ③ 浅瀬 → ④ 波打ち際の泡 */
+ band(0,BSEA_C0);
+ {c.fillStyle=BSEA_C1;c.beginPath();
+  c.moveTo(P[0][0],P[0][1]);
+  for(let i=1;i<P.length;i++)c.lineTo(P[i][0],P[i][1]);
+  for(let i=P.length-1;i>=0;i--)c.lineTo(P[i][0]+210,P[i][1]);
+  c.closePath();c.fill();}
+ {c.fillStyle=BSEA_FOAM;c.beginPath();
+  c.moveTo(P[0][0],P[0][1]);
+  for(let i=1;i<P.length;i++)c.lineTo(P[i][0],P[i][1]);
+  for(let i=P.length-1;i>=0;i--)c.lineTo(P[i][0]+26,P[i][1]);
+  c.closePath();c.fill();}
+ /* ⑤ ⭐**沖の白波**=**位置から決める**(乱数を使うと焼き直すたびに位置が変わる)。
+    ⚠横長にする=真上から見た海は「筋」で読ませる。 */
+ c.fillStyle='rgba(216,230,228,.20)';c.beginPath();
+ for(let y=Math.floor(y0/170)*170;y<y1;y+=170){
+  const sx=bnsSeaX(y),k=((y*2654435761)>>>9)%1000/1000;
+  const wx=sx+240+k*1500,wl=90+k*220;
+  if(wx>xr)continue;
+  c.rect(wx,y,wl,9);
+  c.rect(wx+wl*.6,y+58,wl*.7,8);
+ }
+ c.fill();
+ /* ⑥ 🚢**沈んだ船と桟橋**(2026-08-02(66))=**2面が「沈んだ港」だと絵で分かる目印**。
+    ⚠**大きな塊と色だけで描く**(寄り .62 では40px未満の意匠は消える)。 */
+ for(let y=Math.floor(y0/5200)*5200;y<y1;y+=5200){
+  const sx=bnsSeaX(y),k=((y*40503)>>>7)%1000/1000;
+  if(k<.42){
+   /* 桟橋=陸から沖へ伸びる板+杭 */
+   const L=420+k*520;
+   c.fillStyle='rgba(0,0,0,.28)';c.fillRect(sx-40,y+14,L,74);
+   c.fillStyle='#6a5c46';c.fillRect(sx-40,y,L,68);
+   c.fillStyle='#7d6d53';for(let i=0;i<9;i++)c.fillRect(sx-40+i*(L/9),y,L/16,68);
+   c.fillStyle='#4a4033';c.fillRect(sx-40+L-26,y-22,26,112);
+  }else{
+   /* 沈んだ船=船体の塊+傾いた煙突(⚠**半分だけ水から出ている**ように上を明るく) */
+   const L=520+k*380,W=150+k*90,bx=sx+300+k*900;
+   c.save();c.translate(bx,y+300);c.rotate(-.24+k*.5);
+   c.fillStyle='rgba(0,0,0,.30)';rr(c,-L/2+18,-W/2+22,L,W,W*.42);c.fill();
+   c.fillStyle='#4e5a5e';rr(c,-L/2,-W/2,L,W,W*.42);c.fill();
+   c.fillStyle='#66757a';rr(c,-L*.30,-W*.30,L*.52,W*.60,W*.24);c.fill();
+   c.fillStyle='#8a4032';c.fillRect(-L*.06,-W*.86,W*.34,W*.62);
+   c.restore();
+  }
+ }
 }
 /* 🏚⭐**入れる廃墟の絵**(2026-08-02(12))。⚠**焼き込みの中で1回だけ呼ばれる**(毎フレームではない)。
    ⚠⚠**寄りは .26**=画面では建物の全長ですら40px程度しかない。**40px未満の意匠は消える**ので、
@@ -20154,6 +20308,26 @@ function drawEntBld(c,b){
   c.fillStyle=K.rf2;
   for(let i=0;i<3;i++)c.fillRect(-L*.96,-W*.94+W*.30+i*W*.52,L*1.92,W*.20);
   c.restore();
+ }else if(b.ek===3){
+  /* ⚓波止場=**大きな引き戸+積んだ木箱+浮標(ブイ)+マスト**(2026-08-02(66))。
+     ⚠寄り .62 でも読めるように、意匠は「大きな塊と色」だけで語る。 */
+  loc(0);
+  c.fillStyle='#241f19';c.fillRect(-L*.40,W-44,L*.80,44);/* 引き戸(=入口。⚠大きく) */
+  c.fillStyle='#b9b0a0';c.fillRect(-L*.40,W-44,L*.80,14);
+  c.fillStyle='#c8bda4';c.fillRect(-L*.40,W-4,L*.80,10);/* 敷居 */
+  /* 積んだ木箱(街路側の端)=港らしさ */
+  c.fillStyle='#8a6a45';c.fillRect(L*.52,W*.36,46,46);c.fillRect(L*.52+12,W*.36-38,34,34);
+  c.fillStyle='#6d5335';c.fillRect(L*.52,W*.36+20,46,7);
+  /* 浮標(ブイ)=橙の丸2つ。⚠**この色は他の3棟に無い**ので一目で見分けが付く */
+  c.fillStyle='#d4762e';
+  c.beginPath();c.arc(-L*.66,W*.52,17,0,7);c.fill();
+  c.beginPath();c.arc(-L*.66+34,W*.66,13,0,7);c.fill();
+  c.restore();
+  loc(12);
+  c.fillStyle=K.rf;c.fillRect(-L*.98,-W*.96,L*1.96,W*1.72);
+  c.fillStyle=K.rf2;c.fillRect(-L*.98,-W*.30,L*1.96,W*.26);/* 屋根の帯 */
+  c.fillStyle='#8d8471';c.fillRect(-L*.10,-W*1.5,14,W*.62);/* マスト */
+  c.restore();
  }else{
   /* 🏠民家=**切妻屋根**(棟が1本通る)+ポーチ+煙突 */
   loc(0);
@@ -20172,10 +20346,13 @@ function drawEntBld(c,b){
 /* 道の中心線までの距離(一番近いレーン)。⚠廃墟を道の上に置かないため */
 function bnsLaneD(x,y){
  let bd=1e9;
- for(const L of (LANES||[]))for(const s of L.seg){
+ for(const L of (LANES||[])){
+  const R9=segRangeY(L.seg,y),i9=R9?R9[0]:0,j9=R9?R9[1]:L.seg.length-1;
+  for(let q9=i9;q9<=j9;q9++){
+  const s=L.seg[q9];
   const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1],l2=vx*vx+vy*vy;
   const t=l2?clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/l2,0,1):0;
-  const d=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(d<bd)bd=d;}
+  const d=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(d<bd)bd=d;}}
  return bd;
 }
 /* ⚠**廃墟をただ撒く `bnsProps` は 2026-08-02(4) に廃止**した(ユーザー「しっかり建物とか森で
@@ -20498,7 +20675,10 @@ function bnsRoadFit(x,y,cl){
  if(dc<=0)return bnsEntFit(x,y,cl);
  let bx=0,by=0,bd=1e9,inside=0;
  for(const L of LANES){
-  for(const s of L.seg){
+  /* ⚠**y の索引で近い辺だけ見る**(理由は `bnsCorrFree` と同じ) */
+  const R9=segRangeY(L.seg,y),i9=R9?R9[0]:0,j9=R9?R9[1]:L.seg.length-1;
+  for(let q9=i9;q9<=j9;q9++){
+   const s=L.seg[q9];
    const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1],l2=vx*vx+vy*vy;
    const t=l2?clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/l2,0,1):0;
    const px=s.a[0]+vx*t,py=s.a[1]+vy*t,d=dist(x,y,px,py);
@@ -20543,6 +20723,7 @@ function bnsArrStart(C){
  try{G.tide.pool.length=0;}catch(e){}
  for(const z of C.zombies)z.dead=true;
  B.grip=0;B.nitT=0;B.ix=0;B.iy=0;
+ B.sg=null;B.wet=0;B.surf=0;/* 🌊到着のムービー中に高潮を起こさない(門の前で押されない) */
 }
 /* 📷⭐**カメラをバスに付ける**。⚠⚠**到着のムービー中もこれを回すこと**(2026-08-02(42)に踏んだ)=
    ムービーの枝でこれを飛ばしたら、**カメラが置いていかれてバスが画面の上端で切れた**(撮って気づいた)。
@@ -20606,6 +20787,145 @@ const BNS_TIME=75;
 const BNS_CMB_X=[1,1.25,1.6,2.1,3.0];
 const BNS_CMB_T=1.5; /* 連続轢殺が途切れるまでの秒数 */
 const BNS_GAIN_T=.7; /* ⚙️をまとめて出す間隔 */
+/* ============ 🌊⭐⭐⭐**高潮**(2面だけの新要素・2026-08-02(66)ユーザー「新要素も欲しい」)============
+   ⭐**海から波が道を洗いに来る**=①予告 → ②押し寄せる → ③引く の3拍で1回。
+   ⚠⚠**「負けは無い」の決定は守る**=削るのは**速さと舵**だけ(耐久もダメージ演出も出さない)。
+   ⭐**これがこの面の「山場」**=走って轢くだけだと手応えが平らなまま伸びない(ニトロと同じ役目)。
+   ⭐⭐**ニトロ中は「🌊波乗り」**=押されず・遅くならず・ひき殺す力が上がる。
+     ⚠この面は**押す物がニトロ1つだけ**なので、**そのボタンに使い道を足す**方が新しい操作を増やすより良い。
+   ⭐⭐**群れも一緒に押し寄せる**=波にさらわれたゾンビが道の陸側へ寄せられて**塊になる**
+     =待っていれば「濃い列」が勝手にできる(=轢く遊びの側にも褒美がある)。 */
+const BSG_GAP=[17,10];  /* 次の高潮までの秒数(序盤→終盤) */
+const BSG_WARN=2.6;     /* 予告 */
+const BSG_IN=2.4;       /* 押し寄せる */
+const BSG_HOLD=1.2;     /* 道を洗っている */
+const BSG_OUT=1.6;      /* 引く */
+const BSG_H=4200;       /* 波が洗う道の長さ(⚠画面の縦より長くする=入口と出口が同時に映らない) */
+const BSG_AHEAD=3200;   /* バスのどれだけ先に出すか(⚠予告の間に着く距離) */
+const BSG_REACH=1900;   /* 海岸線からどれだけ内陸まで来るか(⚠道を渡り切る長さ) */
+/* ⚠⚠**「海側を全部水にする」形にしない**(2026-08-02(66)に撮って直した)=
+   前線から右をぜんぶ塗ると**画面の大半が青くなって盤面が読めない**うえ、
+   森まで水没して「洪水」に見える。⭐**厚み `BSG_BAND` の帯が横切っていく**形にすると、
+   「波が来た → 通り過ぎた」が絵で読め、**待つ/突っ切る**の判断も生まれる。 */
+const BSG_BAND=700;     /* 波の帯の厚み */
+const BSG_PUSH=760;     /* バスが陸側へ押される力 */
+const BSG_SLOW=.74;     /* 水の中の最高速 */
+const BSG_ZPUSH=560;    /* ゾンビが押される速さ */
+const BSG_SURF=1.35;    /* 🌊波乗り中のひき殺す力 */
+/* 波の先端の x(その y での)。⚠**海岸線から内陸へ `p` の割合だけ寄せる**=海岸が曲がっていても波は必ず岸から来る */
+const bnsSgX=(y,p)=>bnsSeaX(y)-BSG_REACH*p;
+/* その点が波の帯の中か(⚠絵と当たりを同じ式から出す) */
+const bnsSgIn=(x,y,S)=>{const f=bnsSgX(y,S.p);return x>f&&x<f+BSG_BAND;};
+function bnsSurgeStep(C,B,dt){
+ B.wet=0;B.surf=0;
+ if(!BSEA||B.mov||B.arr)return;
+ let S=B.sg;
+ if(!S){S=B.sg={ph:0,t:BSG_GAP[0]*.55,y0:0,y1:0,p:0,n:0};}
+ /* ⚠**進み具合(0→1)で間隔を詰める**=1波きりの面なので波の番号では開けられない(既出の掟) */
+ const pg=clamp(1-(LANES?projPath(B.x,B.y):0)/(PLEN||1),0,1);
+ S.t-=dt;
+ if(S.ph===0){
+  if(S.t<=0){
+   S.ph=1;S.t=BSG_WARN;S.n++;
+   S.y1=B.y-BSG_AHEAD;S.y0=S.y1-BSG_H;
+   /* ⚠**海の無い所では起こさない**=陸だけの区間で「高潮」と出ると嘘になる */
+   if(S.y1<BNS_SEA_Y0()||S.y0>BNS_SEA_Y1()){S.ph=0;S.t=4;S.n--;}
+   else if(C.isMe){toast('🌊 高潮が来る! 波にさらわれるな',true);try{if(sfx.warn)sfx.warn();}catch(e){}}
+  }
+ }else if(S.ph===1){S.p=0;if(S.t<=0){S.ph=2;S.t=BSG_IN;}}
+ else if(S.ph===2){S.p=1-clamp(S.t/BSG_IN,0,1);if(S.t<=0){S.ph=3;S.t=BSG_HOLD;S.p=1;}}
+ else if(S.ph===3){S.p=1;if(S.t<=0){S.ph=4;S.t=BSG_OUT;}}
+ else{S.p=clamp(S.t/BSG_OUT,0,1);if(S.t<=0){S.ph=0;S.p=0;S.t=BSG_GAP[0]+(BSG_GAP[1]-BSG_GAP[0])*pg;}}
+ if(!(S.p>0))return;
+ /* --- 🚌バスが水を被っているか --- */
+ if(B.y>=S.y0&&B.y<=S.y1&&bnsSgIn(B.x,B.y,S)){
+  B.wet=1;
+  if(B.nitT>0)B.surf=1;
+  else{
+   /* ⚠**押すのは速度だけ**=位置を直に動かすと当たりの押し戻しと喧嘩する */
+   B.vx-=BSG_PUSH*dt;
+   if(FXLV>0&&Math.random()<dt*22)
+    addP(C,2,B.x+40,B.y,{sp:230,up:120,g:520,life:.5,r:6*bnsGz()*.4,col:'#cfe2e0',jx:30,jy:18});
+  }
+ }
+ /* --- 🧟**群れも波にさらわれる**(⚠道の外へは出さない) --- */
+ {const p9=LANES?pathPos(clamp(projPath(B.x,B.y),0,PLEN),0):null;
+  const nx9=p9?-Math.sin(p9[2]):-1;
+  const sg9=(nx9<0)?1:-1;/* `off` をこちらへ動かすと世界の -x(陸側)へ寄る */
+  for(const z of C.zombies){
+   if(z.dead||z.d<0)continue;
+   if(z.py<S.y0||z.py>S.y1)continue;
+   if(!bnsSgIn(z.px,z.py,S))continue;
+   const pl9=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
+   const w9=bnsCorrW(clamp(z.d/pl9,0,1));
+   /* ⚠⚠**寄せ切った所で1本の線にしない**(引き寄せで2度踏んだ穴と同じ)=
+      **個体ごとのばらつきを1回だけ焼いて**、止まる場所を散らす。 */
+   if(z.sj==null)z.sj=(((z.d*7919)|0)%101-50)/50;
+   const lim9=w9-Math.abs(z.sj)*w9*.34;
+   z.off=clamp((z.off||0)+sg9*BSG_ZPUSH*dt,-lim9,lim9);
+  }}
+}
+/* 🌊**高潮の絵**。⚠**世界座標**(地形の上・敵の下)。⚠**焼き込みには入れない**(動くので) */
+function drawBnsSurge(c,C,t){
+ const B=C&&C.bus,S=B&&B.sg;if(!S)return;
+ if(!(S.p>0)&&S.ph!==1)return;
+ const wy0=(-OY)/SCY-300,wy1=(cv.height-OY)/SCY+300;
+ if(S.y1<wy0||S.y0>wy1)return;
+ const y0=Math.max(S.y0,wy0),y1=Math.min(S.y1,wy1);
+ const xr=MAPW+60,STEP=80,gz=bnsGz();
+ const P=[];
+ for(let y=y0-STEP;y<=y1+STEP;y+=STEP){
+  const yy=clamp(y,S.y0,S.y1);
+  /* ⚠**先端はまっすぐにしない**=定規の線に見える。波打たせて「水が来ている」に見せる */
+  const wob=Math.sin(yy*.0042+t*3.1)*46+Math.sin(yy*.0113-t*4.4)*22;
+  P.push([bnsSgX(yy,S.p)+wob,yy]);
+ }
+ if(P.length<2)return;
+ /* ⭐**帯として塗る**(前線から `w` だけ後ろまで)。⚠**薄く**=濃いと盤面(群れ)が読めなくなる */
+ const band=(x0,w,st,al)=>{c.save();c.globalAlpha=al;c.fillStyle=st;c.beginPath();
+  c.moveTo(P[0][0]+x0,P[0][1]);
+  for(let i=1;i<P.length;i++)c.lineTo(P[i][0]+x0,P[i][1]);
+  for(let i=P.length-1;i>=0;i--)c.lineTo(Math.min(xr,P[i][0]+x0+w),P[i][1]);
+  c.closePath();c.fill();c.restore();};
+ band(0,BSG_BAND,BSEA_C1,.42);
+ band(0,BSG_BAND*.38,BSEA_C0,.22);
+ /* ⭐**流れる白い筋**=水が動いていることを見せる(⚠位置は y と時間から決める=ちらつかない) */
+ {c.save();c.globalAlpha=.30;c.fillStyle=BSEA_FOAM;c.beginPath();
+  for(let i=0;i<P.length;i+=2){const q=((i*97+Math.floor(t*60))%100)/100;
+   c.rect(P[i][0]+BSG_BAND*(.18+q*.56),P[i][1],BSG_BAND*.20,10);}
+  c.fill();c.restore();}
+ /* 先端の泡(⚠**ここだけ濃く**=水の縁が読めないと「画面が青い」で終わる) */
+ {c.save();c.globalAlpha=.92;c.strokeStyle=BSEA_FOAM;c.lineWidth=18;c.lineJoin='round';
+  c.beginPath();c.moveTo(P[0][0],P[0][1]);
+  for(let i=1;i<P.length;i++)c.lineTo(P[i][0],P[i][1]);
+  c.stroke();c.restore();}
+ /* 後ろの縁も薄く泡立てる=帯の厚みが読める(片側だけだと「青い線」に見える) */
+ {c.save();c.globalAlpha=.42;c.strokeStyle=BSEA_FOAM;c.lineWidth=7;c.lineJoin='round';
+  c.beginPath();c.moveTo(P[0][0]+BSG_BAND,P[0][1]);
+  for(let i=1;i<P.length;i++)c.lineTo(P[i][0]+BSG_BAND,P[i][1]);
+  c.stroke();c.restore();}
+ /* 予告=**波が来る帯そのものに札を出す**(⚠HUDの札には足さない=幅が決め打ち) */
+ if(S.ph<=2){
+  const a9=S.ph===1?1:clamp(S.t/BSG_IN,0,1);
+  const cy9=(S.y0+S.y1)/2,cx9=BNS_CX+bnsWobAt(clamp((cy9-BNS_GOALY)/(BNS_STARTY-BNS_GOALY),0,1),1);
+  c.save();c.globalAlpha=a9;
+  c.translate(cx9,cy9);{const iv8=camIvY();if(iv8!==1)c.scale(1,iv8);}
+  c.scale(gz,gz);
+  c.textAlign='center';c.lineJoin='round';
+  c.fillStyle=INK;rr(c,-118,-30,236,46,12);c.fill();
+  c.fillStyle='#7fd0dd';rr(c,-114,-26,228,38,10);c.fill();
+  c.fillStyle=INK;c.font='900 26px '+FF;c.fillText('🌊 高潮',0,2);
+  c.restore();
+ }
+ /* 🌊**波乗り中の合図**=バスの上に短く(⚠押している間だけ) */
+ if(B.surf){
+  c.save();c.translate(B.x,B.y);{const iv8=camIvY();if(iv8!==1)c.scale(1,iv8);}
+  c.translate(0,-164*gz);c.scale(gz,gz);
+  c.textAlign='center';c.lineWidth=8;c.strokeStyle=INK;c.fillStyle='#8fe0ea';
+  c.font='900 30px '+FF;c.strokeText('🌊 波乗り!',0,0);c.fillText('🌊 波乗り!',0,0);
+  c.restore();
+ }
+}
 function bnsBusInit(C){
  /* ⚠**出発点はマップの下**(2026-08-02(24))=ここから上(次の拠点)へ走り抜ける */
  C.bus={x:BNS_CX,y:BNS_STARTY,vx:0,vy:0,ix:0,iy:0,dr:-1,t:0,hitT:0,arr:0,dmgA:0,
@@ -20639,6 +20959,8 @@ function bnsBusStep(C,dt){
  if(B.nitT>0){B.nitT=Math.max(0,B.nitT-dt);
   /* 🔋**二段ニトロ**=切れた瞬間に3分の1だけ溜まった状態に戻す(次が早い) */
   if(B.nitT<=0&&B.nit2)B.nit=Math.max(B.nit||0,.34);}
+ /* 🌊**高潮**(2面だけ)=**押される・遅くなる**。⚠**加速より先に見る**=同じフレームで押し合う */
+ try{bnsSurgeStep(C,B,dt);}catch(e){}
  const ix=B.ix||0,iy=B.iy||0,il=Math.hypot(ix,iy),im=Math.min(1,il);
  if(im>.06){
   const ac9=BUS_ACC*(B.accX||1);
@@ -20660,7 +20982,9 @@ function bnsBusStep(C,dt){
  const gp9=clamp(B.grip||0,0,1);
  /* ⚔🛡増加装甲=しがみつかれても遅くならない / 🚀ブースター=ニトロ中がさらに速い */
  const gs9=(B.gripS==null?BUS_GRIP_S:B.gripS);
- const sp=Math.hypot(B.vx,B.vy),mx=(B.spMx||BUS_SP)*(nz9?BUS_NIT_SP*(B.nitSpX||1):1)*Math.max(.4,im||1)*(1-gp9*gs9);
+ /* 🌊**水を被っている間は最高速が落ちる**(⚠🌊波乗り中=ニトロ中は落ちない) */
+ const wet9=(B.wet&&!B.surf)?BSG_SLOW:1;
+ const sp=Math.hypot(B.vx,B.vy),mx=(B.spMx||BUS_SP)*(nz9?BUS_NIT_SP*(B.nitSpX||1):1)*Math.max(.4,im||1)*(1-gp9*gs9)*wet9;
  if(sp>mx){B.vx*=mx/sp;B.vy*=mx/sp;}
  /* ⚠盤面の外へ出さない。上は HUD の帯(115)より下に留める */
  let nx2=clamp(B.x+B.vx*dt,70,MAPW-70),ny2=clamp(B.y+B.vy*dt,70,MAPH-30);
@@ -20752,7 +21076,7 @@ function bnsBusStep(C,dt){
       if(ux*ux+uy*uy<=rb9*rb9)ok9=1;}}
    if(!ok9)continue;}
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
-  dmgZ(C,z,BUS_DPS*(B.dpsX||1)*(nz9?BUS_NIT_DPS:1)*dt,1,true);
+  dmgZ(C,z,BUS_DPS*(B.dpsX||1)*(nz9?BUS_NIT_DPS:1)*(B.surf?BSG_SURF:1)*dt,1,true);
   if(z.dead)kil++;
   /* 🔥ニトロ中は**跳ね飛ばす力も上がる**=速いだけでは「化けた」に見えない */
   else{z.d=Math.max(0,z.d-BUS_KB*(nz9?1.8:1)*dt);z.stnT=Math.max(z.stnT||0,.12);
@@ -21684,7 +22008,8 @@ function bnsSelCam(){
  /* ⚠⚠**上の帯と下の案内のぶんを先に除ける**(2026-08-02(43)に撮って気づいた)=
     画面いっぱいに収める計算だと、**一番奥の棟が上の帯の裏に隠れて光の輪が見えなかった**。
     ⭐使ってよいのは画面の縦の `SEL_T`〜(1-`SEL_B`) だけ、と決めてから寄りを出す。 */
- const SEL_T=.21,SEL_B=.07;
+ /* ⚠⚠**下はカードの帯ぶん空ける**(2026-08-02(66))=空けないと**一番手前の棟がカードの裏**に入る */
+ const SEL_T=.21,SEL_B=.32;
  let zm=.42;
  if(SC0>0&&VW>0&&VH>0){
   const zw=(VW/SC0)/Math.max(400,(x1-x0)*1.08);
@@ -21737,9 +22062,17 @@ const BMG_FAST=1.0;  /* 残り1秒あたりの早得(⚠2026-08-02(65)に 2.0→
 const bmgBonus=M=>Math.round(Math.max(0,M.left||0)*BMG_FAST);
 /* ⚠**並びは `ENT_K`(棟の種類)と同じ**。⭐**選択画面の札にもこの名前を出す**=
    何の遊びか読めないと「どこを漁るか」が物資だけの選択になってしまう。 */
-const BMG_K=[{ic:'⛽',n:'給油',   d:'緑の帯でタップ!'},
-             {ic:'🏭',n:'荷積み', d:'荷台の真上でタップ!'},
-             {ic:'🏠',n:'物色',   d:'光った棚を同じ順に押す!'}];
+/* ⚠⚠**`rs`=その棟で多くもらえる物資**(2026-08-02(66)に足した)=**棟の番号と別に持つ**。
+   4種目(⚓波止場)を足した時に**物資は3種のまま**なので、番号がそのまま物資にならなくなった。
+   ⭐⚓は🏭鉄材(海から資材を引き揚げる)=同じ物資でも**測る腕前が違う**ので選ぶ理由になる。 */
+/* ⚠`d2`=**測る腕前**(2026-08-02(66)にカードへ出した)=**同じ遊びを並べていない**ことが
+   選ぶ前に読める。⚠4種目を足した時に「どれも似た遊び」に見えないための札。 */
+const BMG_K=[{ic:'⛽',n:'給油',   d:'緑の帯でタップ!',rs:0,d2:'⏱ タイミング'},
+             {ic:'🏭',n:'荷積み', d:'荷台の真上でタップ!',rs:1,d2:'📏 目測'},
+             {ic:'🏠',n:'物色',   d:'光った棚を同じ順に押す!',rs:2,d2:'🧠 記憶'},
+             {ic:'⚓',n:'引き揚げ',d:'沈む前に物資をタップ! 🧟は押すな',rs:1,d2:'⚡ 反応'}];
+/* その棟(=ミニゲーム)で多くもらえる物資の番号 */
+const bmgRs=k=>((BMG_K[k]||BMG_K[0]).rs)|0;
 /* --- ⛽**給油**=動く針を目標の帯で止める(タイミング)。⚠帯は止める前から見えている --- */
 const BMG_N=8;            /* 給油する本数 */
 const BMG_SP=[1.05,.16];  /* 針の速さ(初回 / 1本ごとの増え) */
@@ -21768,6 +22101,36 @@ const BMM_GAP=.16;        /* 光と光の間 */
    段が始まった瞬間に光ると、目が棚へ移る前に1つ目が終わっている。 */
 const BMM_LEAD=.55;
 const BMM_MISS=2;         /* 間違えてよい回数(これを超えたら終わり) */
+/* --- ⚓**引き揚げ**=**海面に浮かぶ物資を沈む前にタップ**(反応)。2026-08-02(66)の4種目。
+   ⚠⚠**4種目は「また別の腕前」を測ること**=⛽タイミング / 🏭目測 / 🏠記憶 と来たので、ここは**反応**。
+   ⭐**🧟が混ざる**=闇雲に連打すると必ずゾンビを押す=**連打よけがゲームの中に入っている**
+     (何も無い所を押しても損はしない=理不尽にはしない)。
+   ⚠⚠**絵の見分けで遊ばせない**(2026-08-02(47)の掟)=物資は**茶色い四角**・ゾンビは**緑の丸い頭**。
+     形も色も別なので、寄りや画面の大きさに左右されない。 --- */
+/* 📌**満点で70前後**に揃えてある(⛽76 / 🏭64 / 🏠64)=**1回の稼ぎが種類でばらけると
+   「どれを選んでも同じ」か「これしか選ばない」のどちらかになる**。⚠数を増やすと満点も伸びる。 */
+const BSV_N=8;            /* 引き揚げる物資の数 */
+const BSV_GAP=[1.15,.045];/* 次が浮くまで(初回 / 1つごとに短くなる量) */
+const BSV_LF=[1.55,.06];  /* 浮いていられる秒数(初回 / 1つごとに短くなる量) */
+const BSV_ZP=.55;         /* 一緒に🧟が浮いてくる割合 */
+const BSV_FAST=.42;       /* この割合までに取れたら✨ピッタリ */
+/* ⚠**小さくしない**=押す物なので、実機で直径60px以上ないと取り逃しが腕前ではなく事故になる */
+const BSV_R=.17;          /* 浮いている物の大きさ(画面の高さに対する割合) */
+/* 遊び場の枠。⭐**絵とタップで必ず同じ物を使う**(2つに分けると必ず食い違う) */
+function bnsSvBox(W,H){return {x:W*.09,y:H*.28,w:W*.82,h:H*.58,r:H*BSV_R*.5};}
+/* 1つ浮かべる。⚠**重ならない所を探す**=重なると「どっちを押したか」が読めない */
+function bnsSvPut(M,W,H,k){
+ const B=bnsSvBox(W,H);
+ let bx=0,by=0,ok=0;
+ for(let t=0;t<14&&!ok;t++){
+  bx=B.x+B.r+Math.random()*(B.w-B.r*2);
+  by=B.y+B.r+Math.random()*(B.h-B.r*2);
+  ok=1;
+  for(const f of M.sv)if(Math.hypot(f.x-bx,f.y-by)<B.r*2.15){ok=0;break;}
+ }
+ const lf=Math.max(.85,BSV_LF[0]-BSV_LF[1]*M.i);
+ M.sv.push({x:bx,y:by,r:B.r,k:k,t:0,lf:k?lf*.9:lf});
+}
 /* 3種で共通の採点。⚠**倍率は連続でしか伸びない**=1回ごとの手応えではなく「切らさない」に値段を付ける */
 function bnsMgHit(M,g,base){
  if(g<2)M.run++;else M.run=0;
@@ -21807,9 +22170,11 @@ function bnsMgStart(Q,b){
   /* ⛽ */pos:.02,dir:1,sp:BMG_SP[0],w:BMG_W[0],tgt:.5,
   /* 🏭 */n:0,cx:.5,bx:.5,stack:[],
   /* 🏠 */seq:[],si:0,ph:'show',shT:0,lit:-1,miss:0,clean:1,
-  /* ⏱残り時間(3種で共通) */left:BMG_TIME};
+  /* ⚓ */sv:[],got:0,spT:.35,
+  /* ⏱残り時間(共通) */left:BMG_TIME};
  if(k===1){Q.mg.w=BML_W0;Q.mg.cx=.5;Q.mg.stack=[{x:.5,w:BML_W0}];Q.mg.n=1;bnsMlRound(Q.mg);}
  else if(k===2){Q.mg.seq=[];for(let q=0;q<BMM_L0;q++)bnsMmRound(Q.mg,1);bnsMmRound(Q.mg,0);}
+ else if(k===3){/* ⚓最初の1つはすぐ浮かべる(待たされる時間を作らない) */}
  else bnsMgRound(Q.mg);
 }
 function bnsMgStep(Q,dt){
@@ -21823,7 +22188,25 @@ function bnsMgStep(Q,dt){
   M.left=(M.left==null?BMG_TIME:M.left)-dt;
   if(M.left<=0){M.left=0;M.msg='⏱ 時間切れ';M.msgT=1;M.endT=1.2;return;}
  }
- if(M.kind===1){/* 🏭荷が左右に流れる */
+ if(M.kind===3){/* ⚓浮いて沈む */
+  const W=cv.width||800,H=cv.height||400;
+  M.spT-=dt;
+  if(M.spT<=0&&M.i<BSV_N){
+   bnsSvPut(M,W,H,0);M.i++;
+   if(Math.random()<BSV_ZP)bnsSvPut(M,W,H,1);
+   M.spT=Math.max(.42,BSV_GAP[0]-BSV_GAP[1]*M.i);
+  }
+  for(let i=M.sv.length-1;i>=0;i--){
+   const f=M.sv[i];f.t+=dt;
+   if(f.t<f.lf)continue;
+   M.sv.splice(i,1);
+   /* ⚠**🧟は見送っても失敗にしない**=「押さない」が正解なので、罰を付けると理不尽になる */
+   if(f.k)continue;
+   M.got++;bnsMgHit(M,2);M.msg='❌ 沈んでしまった…';
+  }
+  if(M.got>=BSV_N&&!M.endT){M.msg='⚓ 引き揚げ切った!';M.endT=1.2;}
+ }
+ else if(M.kind===1){/* 🏭荷が左右に流れる */
   const lo=M.w/2,hi=1-M.w/2;
   M.bx+=M.dir*M.sp*dt;
   if(M.bx>hi){M.bx=hi;M.dir=-1;}else if(M.bx<lo){M.bx=lo;M.dir=1;}
@@ -21863,6 +22246,7 @@ function bnsMgTap(Q,sx,sy){
  const M=Q.mg;if(!M||M.endT>0)return;
  if(M.kind===1)return bnsMlTap(M);
  if(M.kind===2)return bnsMmTap(M,sx,sy);
+ if(M.kind===3)return bnsSvTap(M,sx,sy);
  /* ⛽ ⚠**外しても本数は進める**=進まないと「当たるまで押す」で終わらなくなる */
  const h=M.w/2,d=Math.abs(M.pos-M.tgt);
  const g=d<=h*.36?0:(d<=h?1:2);
@@ -21910,6 +22294,23 @@ function bnsMmTap(M,sx,sy){
   else{M.msg='❌ 違う('+(BMM_MISS-M.miss+1)+'回まで)';M.ph='ng';M.shT=.55;}
  }
 }
+/* ⚓押す。⚠**何も無い所を押しても損はしない**(=理不尽にしない)が、**🧟を押すと失敗**。
+   ⭐これで「連打すれば取れる」を潰している(連打すると必ずゾンビを掴む)。 */
+function bnsSvTap(M,sx,sy){
+ /* ⚠**後から浮いた物を先に見る**=重なった時に上に描いてある方が取れる(絵と一致させる) */
+ for(let i=M.sv.length-1;i>=0;i--){
+  const f=M.sv[i];
+  if(Math.hypot(sx-f.x,sy-f.y)>f.r*1.12)continue;
+  M.sv.splice(i,1);
+  if(f.k){bnsMgHit(M,2);M.msg='🧟 掴まれた!';return;}
+  const g=(f.t/f.lf<BSV_FAST)?0:1;
+  const add=bnsMgHit(M,g);
+  M.msg=(g===0?'✨ 素早い! +':'⭕ 引き揚げた +')+add;
+  M.got++;
+  if(M.got>=BSV_N){M.msg='⚓ 引き揚げ切った!';M.endT=1.2;}
+  return;
+ }
+}
 /* 🏠棚の枠。⭐**絵とタップで必ず同じ物を使う**(2つに分けると必ず食い違う) */
 function bnsMmRects(W,H){
  const dp=DPR||1,mx=W*.14,my=H*.32,gp=10*dp;
@@ -21926,7 +22327,8 @@ function bnsMgDone(Q){
  /* ⏱**早得**=残り時間ぶんを上乗せする(2026-08-02(51)) */
  const main=Math.max(1,M.pts+bmgBonus(M)),sub=Math.round(main*BMG_SUB);
  const got=[0,0,0];
- for(let i=0;i<3;i++){got[i]=(i===M.ek)?main:sub;Q.res[i]+=got[i];}
+ const rs9=bmgRs(M.kind);/* ⚠**物資は棟の番号ではなく `rs`**(4種目を足して番号と物資がずれた) */
+ for(let i=0;i<3;i++){got[i]=(i===rs9)?main:sub;Q.res[i]+=got[i];}
  Q.got=got;Q.gotT=2.4;Q.mg=null;
  Q.left=Math.max(0,Q.left-1);
  saveMeta();/* ⚠**稼いだ物資は永続**=ここで必ず保存する(2026-08-02(44)) */
@@ -22059,6 +22461,10 @@ function bnsPreTap(sx,sy,mx,my){
     Q.left=0;try{if(sfx.tap)sfx.tap();}catch(e){}
     try{bnsBoardStart();}catch(e){}
     return;}}
+  /* 🃏**下のカード**を先に見る(⚠棟の当たりは広いのでカードを飲み込む) */
+  {const R=bnsSelCards(cv.width,cv.height,Q.pick.length);
+   for(const r of R)if(sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h){
+    Q.selI=r.i;Q.selT=.22;bnsMgStart(Q,Q.pick[r.i]);return;}}
   let h=-1,bd=1e9;
   for(let i=0;i<Q.pick.length;i++){const b=Q.pick[i],d=dist(mx,my,b.x,b.y);
    if(d<b.rr+180&&d<bd){bd=d;h=i;}}
@@ -22073,6 +22479,17 @@ function bnsPreTap(sx,sy,mx,my){
      持ち越した物資を使う機会が消える)。⚠**貯めた物資はそのまま残る**(永続なので損はしない)。
    ⚠⚠**位置は札とぶつからない所**=札は画面の下半分まで降りてくるので、**上の帯の中**に置く。 */
 function bnsSelSkipR(W,H,dp){return {x:W*.735,y:H*.100,w:W*.225,h:H*.070};}
+/* 🃏⭐**下の帯に並べる選択カードの枠**(2026-08-02(66))。⭐**絵とタップで必ず同じ物を使う**。
+   ⚠**数が増えても崩れない**=幅を等分するだけ。⚠**下の案内(1行)ぶんを残す**。 */
+function bnsSelCards(W,H,n){
+ const dp=DPR||1,N=Math.max(1,n|0),mx=W*.025,gp=8*dp;
+ /* ⚠**下端は画面の下のボタン(🔊)より上に収める**=はみ出すと最後のカードが隠れる */
+ const h=H*.21,y=H*.94-h-14*dp;
+ const w=(W-mx*2-gp*(N-1))/N;
+ const R=[];
+ for(let i=0;i<N;i++)R.push({x:mx+i*(w+gp),y:y,w:w,h:h,i:i});
+ return R;
+}
 /* 走る前の帯(上下)。⚠**画面の割合で持つ**=どの寸法でも同じ見え方になる */
 function bnsPanel(c,x,y,w,h,a){
  c.fillStyle='rgba(24,20,15,'+(a==null?.86:a)+')';rr(c,x,y,w,h,10*(DPR||1));c.fill();
@@ -22120,74 +22537,68 @@ function bnsDrawSel(c,Q,W,H,dp,t){
   c.textAlign='center';c.fillStyle='rgba(242,236,220,.82)';
   c.font='900 '+Math.round(15*dp)+'px '+FF;
   c.fillText('⏭ 漁らずに出発',r.x+r.w/2,r.y+r.h*.66);}
- /* 棟ごとの目印。⭐**丸を塗る → 輪を回す → ピンを立てる**の3つ重ねで「ここが押せる」を出す */
- const bw=Math.min(W*.34,220*dp),bh=62*dp,LAY=[];
+ /* 棟ごとの目印(世界の側)。⭐**丸を塗る → 輪を回す → 番号のピンを立てる**の3つ重ね。
+    ⚠⚠**説明の札はもう世界に置かない**(2026-08-02(66)に作り替え)=**選択肢が4つになると
+      札どうし・札と番号が必ず重なる**(実際に撮って重なった)。⭐**下の帯にカードを並べる**形にした
+      =数が増えても崩れず、押す所も大きい。世界には**番号のピンだけ**残す。 */
+ const PIN=[];
  for(let i=0;i<Q.pick.length;i++){
   const b=Q.pick[i],px=OX+b.x*SC,py=OY+b.y*SCY;
   const on=(Q.selI===i&&Q.selT>0)?1:0;
   const pl=.5+.5*Math.sin(t*3.0+i*1.1);
   const r=Math.max(34*dp,b.rr*SC*1.05),ry=r*(SCY/(SC||1));
-  /* ①**下に敷く丸**=棟そのものを明るく浮かせる(暗く落とした盤面から抜き出す) */
   c.fillStyle=on?'rgba(255,246,226,.34)':'rgba(255,207,106,'+(.13+.07*pl).toFixed(2)+')';
   c.beginPath();c.ellipse(px,py,r,ry,0,0,7);c.fill();
-  /* ②**脈打つ輪**(⚠太くする=細い線はこの寸法だと1〜2pxで消える) */
   c.lineWidth=(on?7:4)*dp;
   c.strokeStyle=on?'rgba(255,246,226,.98)':'rgba(255,207,106,'+(.62+.34*pl).toFixed(2)+')';
   c.beginPath();c.ellipse(px,py,r,ry,0,0,7);c.stroke();
-  /* ③**外へ広がる輪**=「押せる」の合図(1本だけ・薄く) */
   {const q=(t*.7+i*.33)%1;
    c.lineWidth=3*dp;c.strokeStyle='rgba(255,207,106,'+(.45*(1-q)).toFixed(2)+')';
    c.beginPath();c.ellipse(px,py,r*(1+q*.7),ry*(1+q*.7),0,0,7);c.stroke();}
-  /* 札の置き場。⚠**上に置けない時は下へ回す**(2026-08-02(43)に撮って気づいた)=
-     上の帯に押し戻すと**札が自分の光の輪に重なって、どの棟の札か読めなくなる**。 */
-  /* ⚠⚠**札は必ず輪の「下」に置く**(2026-08-02(48)に撮って直した)=上に置ける棟と置けない棟が
-     混ざると、**同じ側に並んだ2棟で線が交差**して、どの札がどの棟か逆に読めなくなる。
-     ⭐下に置けない時(画面の外へ出る時)だけ上へ回す。 */
-  let by=py+ry+14*dp;
-  if(by>H-bh-26*dp)by=py-ry-bh-14*dp;
-  LAY.push({b:b,i:i,px:px,py:py,ry:ry,x:clamp(px-bw/2,4*dp,W-bw-4*dp),y:by});
+  /* 番号のピン(⚠**輪の上**=棟の絵を隠さない)。⚠**位置は後でまとめて散らす**(重なるため) */
+  PIN.push({x:clamp(px,18*dp,W-18*dp),y:clamp(py-ry-4*dp,H*.20+18*dp,H*.62),i:i});
  }
- /* ⚠⚠**札どうしの重なりを必ず外す**(2026-08-02(43)に撮って気づいた)=同じ側に2棟並ぶと
-    **2枚の札が完全に重なって両方読めなくなる**。⭐上の札から順に、重なったぶんだけ下へ落とす。 */
- /* ⚠**並べ替えは「棟の位置(py)」で**=札のyで並べると、押し下げた結果が棟の並びと入れ替わる */
- LAY.sort((a,b9)=>a.py-b9.py);
- for(let i=0;i<LAY.length;i++){
-  for(let j=0;j<i;j++){
-   const A=LAY[j],B=LAY[i];
-   if(B.x>A.x+bw||A.x>B.x+bw)continue;/* 横がずれていれば重ならない */
-   if(B.y<A.y+bh+6*dp)B.y=A.y+bh+6*dp;
-  }
-  LAY[i].y=clamp(LAY[i].y,H*.20,H-bh-26*dp);
+ /* ⚠⚠**ピンどうしの重なりを外す**(2026-08-02(66)に撮って直した)=棟が縦に近いと
+    **2つの番号が完全に重なって両方読めない**(1面では起きないが、4棟の2面で必ず起きる)。 */
+ for(let i=1;i<PIN.length;i++)for(let j=0;j<i;j++){
+  const A=PIN[j],B=PIN[i],d9=Math.hypot(A.x-B.x,A.y-B.y),mn=34*dp;
+  if(d9>=mn)continue;
+  B.y=A.y-mn;/* ⭐上へ逃がす(下は棟の絵と札の側) */
  }
- for(const L of LAY){
-  /* ⭐**札と輪を線で繋ぐ**=3棟が近い時にどの札がどの棟か迷わない */
-  c.strokeStyle='rgba(255,207,106,.7)';c.lineWidth=2.6*dp;
-  c.beginPath();c.moveTo(L.x+bw/2,L.y+(L.y<L.py?bh:0));
-  c.lineTo(L.px,L.py+(L.y<L.py?-L.ry:L.ry));c.stroke();
-  /* 札。⚠**枠を金にする**=「押せる物」だと分かる(ただの説明書きに見せない) */
-  c.fillStyle='rgba(24,20,15,.94)';rr(c,L.x,L.y,bw,bh,11*dp);c.fill();
-  c.strokeStyle='rgba(255,207,106,.9)';c.lineWidth=3*dp;c.stroke();
-  /* 番号(ピンと同じ数字)=どの棟の札かを線に頼らず読める */
-  c.fillStyle=GOLD;c.beginPath();c.arc(L.x+17*dp,L.y+bh/2,12*dp,0,7);c.fill();
-  c.strokeStyle=INK;c.lineWidth=2.2*dp;c.stroke();
-  c.textAlign='center';c.fillStyle=INK;c.font='900 '+Math.round(15*dp)+'px '+FF;
-  c.fillText(String(L.i+1),L.x+17*dp,L.y+bh/2+5*dp);
-  c.textAlign='left';c.fillStyle=PANE;c.font='900 '+Math.round(18*dp)+'px '+FF;
-  c.fillText((BMG_K[L.b.ek]||BMG_K[0]).ic+' '+(BMG_K[L.b.ek]||BMG_K[0]).n,L.x+35*dp,L.y+25*dp);
-  c.fillStyle=GOLD;c.font='900 '+Math.round(17*dp)+'px '+FF;
-  c.fillText(BRES[L.b.ek].ic+BRES[L.b.ek].n+' がたくさん',L.x+35*dp,L.y+48*dp);
- }
- /* ⑤**番号の丸は札より後に描く**(2026-08-02(48)に撮って気づいた)=
-    先に描くと**札の下に潜って見えない**。⚠**輪の右上に小さく**=棟の絵を隠さない。 */
- for(const L of LAY){
-  /* ⚠**札は輪の下にあるので、番号は輪の上に置く**(重なる物が無い) */
-  const bx9=clamp(L.px,18*dp,W-18*dp);
-  const by9=clamp(L.py-L.ry-2*dp,H*.20+18*dp,H-18*dp);
-  c.fillStyle=GOLD;c.beginPath();c.arc(bx9,by9,15*dp,0,7);c.fill();
+ for(const p of PIN){
+  c.fillStyle=GOLD;c.beginPath();c.arc(p.x,p.y,15*dp,0,7);c.fill();
   c.strokeStyle=INK;c.lineWidth=2.6*dp;c.stroke();
   c.textAlign='center';c.fillStyle=INK;c.font='900 '+Math.round(18*dp)+'px '+FF;
-  c.fillText(String(L.i+1),bx9,by9+6*dp);
+  c.fillText(String(p.i+1),p.x,p.y+6*dp);
  }
+ /* 🃏⭐⭐**下の帯=選ぶカード**(2026-08-02(66))。⚠**押す所はここ**(棟を押しても選べる)。 */
+ {const R=bnsSelCards(W,H,Q.pick.length);
+  for(let i=0;i<Q.pick.length;i++){
+   const r=R[i],b=Q.pick[i],K=BMG_K[b.ek]||BMG_K[0],rs=bmgRs(b.ek);
+   const on=(Q.selI===i&&Q.selT>0)?1:0;
+   const pl=.5+.5*Math.sin(t*3.0+i*1.1);
+   /* 影→地→枠。⭐**枠を金に脈打たせる**=押せる物だと分かる */
+   c.fillStyle='rgba(0,0,0,.45)';rr(c,r.x+3*dp,r.y+5*dp,r.w,r.h,13*dp);c.fill();
+   c.fillStyle=on?'rgba(70,58,36,.98)':'rgba(26,22,17,.96)';rr(c,r.x,r.y,r.w,r.h,13*dp);c.fill();
+   c.strokeStyle=on?'rgba(255,246,226,.98)':'rgba(255,207,106,'+(.55+.35*pl).toFixed(2)+')';
+   c.lineWidth=(on?4:3)*dp;c.stroke();
+   /* 見出しの帯(番号+遊びの名前) */
+   c.fillStyle='rgba(255,207,106,.16)';rr(c,r.x+3*dp,r.y+3*dp,r.w-6*dp,r.h*.30,10*dp);c.fill();
+   c.fillStyle=GOLD;c.beginPath();c.arc(r.x+18*dp,r.y+r.h*.18,12*dp,0,7);c.fill();
+   c.strokeStyle=INK;c.lineWidth=2.2*dp;c.stroke();
+   c.textAlign='center';c.fillStyle=INK;c.font='900 '+Math.round(15*dp)+'px '+FF;
+   c.fillText(String(i+1),r.x+18*dp,r.y+r.h*.18+5*dp);
+   c.textAlign='left';c.fillStyle=PANE;c.font='900 '+Math.round(17*dp)+'px '+FF;
+   c.fillText(K.ic+' '+K.n,r.x+34*dp,r.y+r.h*.24);
+   /* もらえる物資(⚠**ここが選ぶ理由**なので一番大きく) */
+   c.fillStyle=GOLD;c.font='900 '+Math.round(20*dp)+'px '+FF;
+   c.fillText(BRES[rs].ic+BRES[rs].n,r.x+12*dp,r.y+r.h*.66);
+   c.fillStyle='rgba(242,236,220,.72)';c.font='900 '+Math.round(12*dp)+'px '+FF;
+   c.fillText('が たくさん',r.x+12*dp+66*dp,r.y+r.h*.66);
+   /* 測る腕前=**見出しの右**に小さく(⚠下の行に置くと画面下のボタンに隠れる。撮って直した) */
+   c.textAlign='right';c.fillStyle='rgba(242,236,220,.62)';c.font='900 '+Math.round(12*dp)+'px '+FF;
+   c.fillText(K.d2||'',r.x+r.w-10*dp,r.y+r.h*.23);
+  }}
  /* 直前にもらった物資(戻ってきた時だけ) */
  if(Q.got&&Q.gotT>0){
   const a=clamp(Q.gotT/.6,0,1);
@@ -22199,7 +22610,7 @@ function bnsDrawSel(c,Q,W,H,dp,t){
   c.globalAlpha=1;
  }
  c.textAlign='center';c.fillStyle=PANE;c.font='900 '+Math.round(16*dp)+'px '+FF;
- c.fillText('光っている廃墟をタップ → ミニゲームで物資を集める',W/2,H-14*dp);
+ c.fillText('カードか、光っている廃墟をタップ',W/2,H-9*dp);
 }
 /* ②🎮**ミニゲームの絵**。⚠**枠(見出し・連なり・お知らせ・締め)は3種で共通**にして、
    真ん中の遊び場だけ差し替える=3つ作っても文言と手触りがばらけない。 */
@@ -22214,6 +22625,7 @@ function bnsDrawMg(c,Q,W,H,dp,t){
  c.textAlign='right';c.fillStyle=PANE;c.font='900 '+Math.round(19*dp)+'px '+FF;
  c.fillText((M.kind===1?('あと '+Math.max(0,BML_N-M.n)+' 段')
             :M.kind===2?((M.seq.length-BMM_L0+1)+' / '+BMM_N+' 段 ♥'+Math.max(0,BMM_MISS-M.miss+1))
+            :M.kind===3?('あと '+Math.max(0,BSV_N-M.got)+' 個')
                        :('あと '+Math.max(0,BMG_N-M.i)+' 本'))
             +'  ⏱'+Math.max(0,M.left||0).toFixed(1),W*.95,H*.115);
  /* ⏱**残り時間の帯**(⚠3種で同じ場所)=**早く終えるほど得**なので、減り方が見えていないと急げない */
@@ -22224,6 +22636,7 @@ function bnsDrawMg(c,Q,W,H,dp,t){
  /* 遊び場 */
  if(M.kind===1)bnsDrawMl(c,M,W,H,dp);
  else if(M.kind===2)bnsDrawMm(c,M,W,H,dp,t);
+ else if(M.kind===3)bnsDrawSv(c,M,W,H,dp,t);
  else bnsDrawMgas(c,M,W,H,dp);
  /* 連なりと得点。⚠⚠**遊び場の空いている所は3種で違う**(2026-08-02(45)に撮って直した)=
     同じ y に置いたら🏠は「お題」の上に、🏭は荷台の上に重なって両方読めなかった。
@@ -22235,7 +22648,7 @@ function bnsDrawMg(c,Q,W,H,dp,t){
   c.fillStyle=M.run>=2?GOLD:PANE;
   c.font='900 '+Math.round(20*dp)+'px '+FF;
   c.fillText('🔥 '+M.run+'連続 ×'+BMG_MUL[Math.min(BMG_MUL.length-1,Math.max(0,M.run-1))].toFixed(2)
-             +'     いま '+BRES[M.ek].ic+' '+M.pts,W/2,iy);}
+             +'     いま '+BRES[bmgRs(M.kind)].ic+' '+M.pts,W/2,iy);}
  if(M.msgT>0){c.globalAlpha=clamp(M.msgT/.4,0,1);
   c.fillStyle=M.lastG===0?GOLD:(M.lastG===1?LIFE:DANGER2);
   c.font='900 '+Math.round((M.kind===0?26:22)*dp)+'px '+FF;
@@ -22245,7 +22658,8 @@ function bnsDrawMg(c,Q,W,H,dp,t){
   /* ⏱**早得は別の行で見せる**=上乗せがあったことが分からないと「急ぐ理由」が伝わらない */
   {const bn=bmgBonus(M);
    c.fillStyle=GOLD;c.font='900 '+Math.round(26*dp)+'px '+FF;
-   c.fillText('🎒 '+BRES[M.ek].ic+BRES[M.ek].n+' を '+Math.max(1,M.pts+bn)+' 手に入れた!',W/2,H*.50);
+   {const r9=bmgRs(M.kind);
+   c.fillText('🎒 '+BRES[r9].ic+BRES[r9].n+' を '+Math.max(1,M.pts+bn)+' 手に入れた!',W/2,H*.50);}
    c.font='900 '+Math.round(18*dp)+'px '+FF;
    c.fillStyle=bn>0?LIFE:'rgba(242,236,220,.6)';
    c.fillText(bn>0?('⏱ 早得 +'+bn+'  (のこり '+M.left.toFixed(1)+'秒)'):'⏱ 早得なし',W/2,H*.585);}
@@ -22295,6 +22709,47 @@ function bnsDrawMl(c,M,W,H,dp){
   c.beginPath();c.moveTo(x0+M.bx*gw,by);c.lineTo(x0+M.bx*gw,bot);c.stroke();
   c.fillStyle='#c9a13d';rr(c,bx,by,M.w*gw,rh-3*dp,3*dp);c.fill();
   c.strokeStyle=INK;c.lineWidth=2.6*dp;c.stroke();}
+}
+/* ⚓引き揚げ=**海面に浮かぶ物資を沈む前にタップ**。⚠**物資=茶色い四角 / 🧟=緑の丸い頭**の2つだけ。
+   ⭐**沈むまでの残りを輪で見せる**=いつ消えるかが読めないと「反応」の遊びにならない。 */
+function bnsDrawSv(c,M,W,H,dp,t){
+ const B=bnsSvBox(W,H);
+ /* 海面(⚠**遊び場の枠そのもの**=どこを押せるかが読める) */
+ c.fillStyle='rgba(30,58,68,.85)';rr(c,B.x,B.y,B.w,B.h,16*dp);c.fill();
+ c.strokeStyle='rgba(216,230,228,.35)';c.lineWidth=2.4*dp;c.stroke();
+ c.save();c.beginPath();rr(c,B.x,B.y,B.w,B.h,16*dp);c.clip();
+ c.fillStyle='rgba(216,230,228,.10)';
+ for(let i=0;i<7;i++){const y=B.y+B.h*((i+.5)/7)+Math.sin(t*1.4+i)*4*dp;
+  c.fillRect(B.x,y,B.w,5*dp);}
+ c.restore();
+ for(const f of M.sv){
+  const k=f.t/f.lf;
+  /* ⭐**浮き上がる→沈む**=大きさで見せる(位置は動かさない=狙いが定まらなくなる) */
+  const up=clamp(k/.16,0,1),dn=clamp((1-k)/.20,0,1);
+  const r=f.r*(.55+.45*up)*(.55+.45*dn);
+  c.save();c.translate(f.x,f.y);
+  /* 水面の輪(残り時間)=細くなっていくほど沈む合図 */
+  c.strokeStyle='rgba(216,230,228,.55)';c.lineWidth=3*dp;
+  c.beginPath();c.ellipse(0,r*.5,r*1.25,r*.42,0,0,7);c.stroke();
+  c.lineWidth=5*dp;c.strokeStyle=k>.7?'rgba(200,80,60,.9)':'rgba(255,207,106,.85)';
+  c.beginPath();c.arc(0,0,r*1.18,-1.5708,-1.5708+6.2832*(1-k));c.stroke();
+  if(f.k){
+   /* 🧟=**緑の丸い頭**(⚠押してはいけない物なので、形も色も物資と正反対にする) */
+   c.fillStyle=INK;c.beginPath();c.arc(0,0,r*.82,0,7);c.fill();
+   c.fillStyle='#6f8a44';c.beginPath();c.arc(0,0,r*.70,0,7);c.fill();
+   c.fillStyle=INK;
+   c.beginPath();c.arc(-r*.26,-r*.10,r*.13,0,7);c.fill();
+   c.beginPath();c.arc(r*.26,-r*.10,r*.13,0,7);c.fill();
+   c.fillRect(-r*.30,r*.28,r*.60,r*.12);
+  }else{
+   /* 物資=**茶色い四角の木箱** */
+   c.fillStyle=INK;rr(c,-r*.80,-r*.80,r*1.60,r*1.60,r*.18);c.fill();
+   c.fillStyle='#9c7a4f';rr(c,-r*.68,-r*.68,r*1.36,r*1.36,r*.14);c.fill();
+   c.fillStyle='#7b5f3c';c.fillRect(-r*.68,-r*.14,r*1.36,r*.28);
+   c.fillRect(-r*.14,-r*.68,r*.28,r*1.36);
+  }
+  c.restore();
+ }
 }
 /* 🏠物色=**光った棚を同じ順に押す**。⚠⚠**絵の見分けはゼロ**にしてある(2026-08-02(47))=
    小さい品物を見分けさせる遊びは、棚1つが実機で40px前後のこの画面では成立しなかった。
