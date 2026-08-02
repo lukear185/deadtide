@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<style>
+/* ゲーム本体のパレット(index.html の :root と同じ値)。⚠片方だけ変えない */
+:root{
+ --ink:#241f19;--ink2:#3d362d;--ink3:#2f2b22;--ink4:#1a1611;--void:#0b0908;
+ --pane:#f2ecdc;--paper:#e8e0ce;--paper2:#d8cfba;--paper3:#b9b0a0;
+ --rust:#c1502e;--rust2:#93381e;--amber:#e8a33d;--gold:#ffd23d;
+ --toxic:#8fbf4d;--life:#b7e07a;--life2:#7ba33f;
+ --ff:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic UI','Meiryo',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#000;font-family:var(--ff);overflow:hidden}
+img{display:block}
+
+/* ══ アイコン(400×400・丸く切られる) ══ */
+.ico{width:400px;height:400px;position:relative;overflow:hidden}
+.ico .bg{position:absolute;inset:0}
+.ico .ring{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 13px var(--ink);pointer-events:none}
+
+/* A 顔アップ */
+.icoA .bg{background:radial-gradient(circle at 50% 40%,#6f8f42,#3c5122 58%,#22301a)}
+.icoA .z{position:absolute;left:0;top:0;width:512px;height:512px;transform:translate(-56px,14px)}
+.icoA .vig{position:absolute;inset:0;background:radial-gradient(circle at 50% 44%,transparent 46%,rgba(12,16,8,.72) 82%)}
+
+/* B 噛み跡(名前に依存しない印) */
+.icoB .bg{background:var(--rust2)}
+.icoB svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* D 地面から出る手 */
+.icoD .bg{background:radial-gradient(circle at 50% 34%,#54702e,#2c3a19 66%,#1b2210)}
+.icoD svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* E モノグラム(頭文字を噛み取る) */
+.icoE .bg{background:var(--ink4)}
+.icoE svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* ══ ヘッダー(1500×500) ══ */
+.hdr{width:1500px;height:500px;position:relative;background:var(--ink4);overflow:hidden}
+.hdr .sky{position:absolute;inset:0}
+.hdr .horde{position:absolute;left:0;right:0;bottom:0;height:420px}
+.hdr .horde img{position:absolute;bottom:0}
+.wm{position:absolute;font-weight:900;color:var(--pane);line-height:1;letter-spacing:1px;white-space:nowrap;
+ text-shadow:5px 5px 0 var(--rust2),-3px -3px 0 rgba(0,0,0,.55)}
+.wm em{font-style:normal;color:var(--toxic)}
+.sub{position:absolute;font-weight:900;color:var(--amber);letter-spacing:9px;font-size:20px;white-space:nowrap}
+.tag{position:absolute;font-weight:900;color:var(--paper);opacity:.9;font-size:23px;letter-spacing:1px;white-space:nowrap}
+
+/* ══ 見比べシート ══ */
+.sheet{width:1200px;background:#14110d;color:#e8e0ce;padding:24px 24px 30px;font-family:var(--ff)}
+.sheet h2{font-size:19px;font-weight:900;margin:0 0 4px;color:#e8a33d}
+.sheet p{font-size:12.5px;opacity:.72;margin:0 0 14px;line-height:1.7}
+.row{display:flex;gap:26px;align-items:flex-end;margin-bottom:24px}
+.cell{text-align:center}
+.cell .lb{font-size:12.5px;font-weight:900;margin-top:9px}
+.cell .lb i{font-style:normal;opacity:.55;font-weight:800;display:block;font-size:11px;margin-top:2px}
+.cw{border-radius:50%;overflow:hidden;display:inline-block;vertical-align:bottom;margin-right:9px}
+.s150{width:150px;height:150px}.s150 .ico{transform:scale(.375);transform-origin:0 0}
+.s48{width:48px;height:48px}.s48 .ico{transform:scale(.12);transform-origin:0 0}
+.s24{width:24px;height:24px}.s24 .ico{transform:scale(.06);transform-origin:0 0}
+.hwrap{width:1152px;height:384px;overflow:hidden;border:1px solid #3a3128;position:relative;margin-bottom:16px}
+.hwrap .hdr{transform:scale(.768);transform-origin:0 0}
+.hwrap .av{position:absolute;left:22px;bottom:-16px;width:104px;height:104px;border-radius:50%;
+ border:4px solid #14110d;overflow:hidden}
+.hwrap .av .ico{transform:scale(.24);transform-origin:0 0}
+</style></head><body>
+<div id="root"></div>
+<script>
+const Q=new URLSearchParams(location.search),P=Q.get('p')||'sheet';
+const NAME=Q.get('n')||'NECROBUS';
+/* ⚠**空の tag= は「説明文なし」の意味**=|| で既定に落とすと消せない(1回踏んだ) */
+const TAG=Q.has('tag')?Q.get('tag'):'ひとりでゲームを作っています';
+const ICOBG=Q.get('bg')||'';
+const B=window.__BRAND__||{};
+const el=(h)=>{const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild;};
+
+/* ── 噛み跡の形(円から扇形の欠けと歯形をくり抜く) ──
+   ⚠**点を並べるだけでは「噛み跡」に見えない**(1回そうして失敗した)。
+   ⭐**円板の縁を実際に食い取る**=欠けの弧+歯の半円をマスクで抜く。 */
+function biteMask(id,cx,cy,r,rot){
+ /* cx,cy,r = 円板そのもの。rot = 噛まれた向き(度)。
+    ⚠**歯は「噛んだ縁に沿って」並べる**=中心からの弧に並べても歯には見えない。 */
+ const A=(rot||0)*Math.PI/180;      /* 噛む向き */
+ const H=0.46;                      /* 噛み口の広さ(半角・ラジアン) */
+ const ax=cx+Math.cos(A)*r*0.30, ay=cy+Math.sin(A)*r*0.30;  /* 歯の合わさる奥 */
+ const L=r*1.35;                    /* 縁の長さ(円板の外まで) */
+ let t='<mask id="'+id+'"><rect width="400" height="400" fill="#fff"/><g fill="#000">';
+ /* ① 噛み取られた口(扇形) */
+ t+='<path d="M '+ax.toFixed(1)+' '+ay.toFixed(1)
+   +' L '+(ax+Math.cos(A-H)*L).toFixed(1)+' '+(ay+Math.sin(A-H)*L).toFixed(1)
+   +' L '+(ax+Math.cos(A)*L*1.18).toFixed(1)+' '+(ay+Math.sin(A)*L*1.18).toFixed(1)
+   +' L '+(ax+Math.cos(A+H)*L).toFixed(1)+' '+(ay+Math.sin(A+H)*L).toFixed(1)+' Z"/>';
+ /* ② 上下の歯形=**縁に沿って半円で削る** */
+ const rs=r*0.155;
+ for(const sg of [-1,1]){
+  const a=A+sg*H;
+  for(let d=rs*0.9;d<L*0.92;d+=rs*1.7){
+   const px=ax+Math.cos(a)*d, py=ay+Math.sin(a)*d;
+   if(Math.hypot(px-cx,py-cy)>r+rs)break;
+   t+='<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="'+(rs*(1-d/(L*2.6))).toFixed(1)+'"/>';
+  }
+ }
+ /* ③ 奥の1本(合わさった所の丸み) */
+ t+='<circle cx="'+ax.toFixed(1)+'" cy="'+ay.toFixed(1)+'" r="'+(rs*0.72).toFixed(1)+'"/>';
+ return t+'</g></mask>';
+}
+/* ── 地面から出る手 ── */
+function handSVG(){
+ const F=(x,y,w,h,rot)=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+(w/2)+'" '
+  +'transform="rotate('+rot+' '+(x+w/2)+' '+(y+h)+')"/>';
+ return '<g fill="#8fbf4d" stroke="#241f19" stroke-width="14" stroke-linejoin="round">'
+  +F(120,118,36,120,-26)   /* 小指 */
+  +F(160,80,38,158,-11)
+  +F(202,62,40,176,0)
+  +F(246,78,38,160,12)
+  +F(96,176,36,86,-52)     /* 親指 */
+  +'<path d="M150 214 q54 -26 112 0 l16 104 q-72 26 -144 0 z" stroke-linejoin="round"/>'
+  +'</g>';
+}
+/* ── アイコン ── */
+function icoA(){
+ return el('<div class="ico icoA"><div class="bg"></div>'
+  +(B.head_walk?'<img class="z" src="'+B.head_walk+'">':'')
+  +'<div class="vig"></div><div class="ring"></div></div>');
+}
+function icoB(){
+ return el('<div class="ico icoB"><div class="bg"'+(ICOBG?(' style="background:'+ICOBG+'"'):'')+'></div>'
+  +'<svg viewBox="0 0 400 400">'+biteMask('mb',200,200,142,-38)
+  +'<g mask="url(#mb)">'
+  +'<circle cx="200" cy="209" r="142" fill="rgba(0,0,0,.32)"/>'
+  +'<circle cx="200" cy="200" r="142" fill="#f2ecdc"/>'
+  +'</g></svg></div>');
+}
+function icoD(){
+ return el('<div class="ico icoD"><div class="bg"></div>'
+  +'<svg viewBox="0 0 400 400">'+handSVG()
+  +'<rect x="0" y="298" width="400" height="102" fill="#241f19"/>'
+  +'<rect x="0" y="292" width="400" height="10" fill="#4a5c2c"/>'
+  +'</svg><div class="ring"></div></div>');
+}
+function icoE(){
+ const ch=NAME.charAt(0);
+ return el('<div class="ico icoE"><div class="bg"></div>'
+  +'<svg viewBox="0 0 400 400">'+biteMask('me',200,200,150,-34)
+  +'<g mask="url(#me)">'
+  +'<text x="200" y="208" text-anchor="middle" dominant-baseline="middle" '
+  +'font-family="'+getComputedStyle(document.body).fontFamily.replace(/"/g,"\'")+'" '
+  +'font-size="320" font-weight="900" fill="#93381e" transform="translate(6,10)">'+ch+'</text>'
+  +'<text x="200" y="198" text-anchor="middle" dominant-baseline="middle" '
+  +'font-family="'+getComputedStyle(document.body).fontFamily.replace(/"/g,"\'")+'" '
+  +'font-size="320" font-weight="900" fill="#8fbf4d">'+ch+'</text>'
+  +'</g></svg><div class="ring"></div></div>');
+}
+const ICO={A:icoA,B:icoB,D:icoD,E:icoE};
+
+/* ── ヘッダー① 群れ ──
+   ⚠**シルエットを暗い空に置くと消える**(1回そうして失敗した)。
+   ⭐**空を明るくして、群れを黒く抜く**=逆光の絵にすると小さくても読める。 */
+function hdrHorde(){
+ const d=el('<div class="hdr"></div>');
+ d.appendChild(el('<div class="sky" style="background:'
+  +'linear-gradient(180deg,#0e0c09 0%,#241f19 34%,#6b5a3a 74%,#c98a44 92%,#e8a33d 100%)"></div>'));
+ /* 月 */
+ d.appendChild(el('<div style="position:absolute;left:196px;top:58px;width:112px;height:112px;'
+  +'border-radius:50%;background:#f2ecdc;box-shadow:0 0 130px 40px rgba(242,236,220,.22)"></div>'));
+ /* 遠景の丘 */
+ d.appendChild(el('<div style="position:absolute;left:0;right:0;bottom:96px;height:150px;'
+  +'background:#2a2419;clip-path:polygon(0 62%,180px 42%,420px 58%,700px 34%,980px 54%,1240px 40%,1500px 58%,100% 100%,0 100%)"></div>'));
+ const h=el('<div class="horde"></div>');
+ /* ⚠位置は式で決める(乱数だと撮るたび変わる) */
+ const K=['s_walk','s_run','s_arm','s_crwl','s_brut','s_stlk','s_dog','s_tank','s_blo','s_scr'];
+ for(let i=0;i<30;i++){
+  const k=K[(i*7+3)%K.length];if(!B[k])continue;
+  const far=(i%3===0);
+  const sc=far?0.34:0.50+((i*29)%11)/100;
+  const w=512*sc;
+  const im=document.createElement('img');im.src=B[k];
+  im.style.cssText='left:'+(-30+i*54+((i*47)%34))+'px;width:'+w+'px;height:'+w+'px;'
+   +'bottom:'+(far?58:6)+'px;opacity:'+(far?.55:1)+';filter:brightness(0)'
+   +(far?' saturate(0)':'');
+  h.appendChild(im);
+ }
+ d.appendChild(h);
+ /* 地面 */
+ d.appendChild(el('<div style="position:absolute;left:0;right:0;bottom:0;height:44px;background:#12100c"></div>'));
+ /* 文字=右上(左下はアイコンが重なる) */
+ /* ⚠**説明文を消したら文字の塊を下げる**=上に寄ったままだと頭でっかちになる */
+ {const y=TAG?96:130;
+  d.appendChild(el('<div class="sub" style="right:104px;top:'+y+'px">GAME STUDIO</div>'));
+  d.appendChild(el('<div class="wm" style="right:100px;top:'+(y+30)+'px;font-size:104px">'+NAME+'</div>'));
+  if(TAG)d.appendChild(el('<div class="tag" style="right:104px;top:254px;color:#f2ecdc;opacity:.95;text-shadow:0 2px 6px rgba(0,0,0,.8)">'+TAG+'</div>'));}
+ return d;
+}
+/* ── ヘッダー② 文字主役 ── */
+function hdrWord(){
+ const d=el('<div class="hdr"></div>');
+ d.appendChild(el('<div class="sky" style="background:'
+  +'radial-gradient(ellipse at 74% 46%,#3d3428 0%,#241f19 44%,#14110d 100%)"></div>'));
+ /* 右に1体。⚠大きく・輪郭が出るように背後へ淡い光 */
+ d.appendChild(el('<div style="position:absolute;right:150px;bottom:-40px;width:520px;height:520px;'
+  +'border-radius:50%;background:radial-gradient(circle,rgba(143,191,77,.20),transparent 62%)"></div>'));
+ if(B.z_brut){const im=document.createElement('img');im.src=B.z_brut;
+  im.style.cssText='position:absolute;right:44px;bottom:-104px;width:640px;height:640px;filter:brightness(.42)';
+  d.appendChild(im);}
+ if(B.z_walk){const im=document.createElement('img');im.src=B.z_walk;
+  im.style.cssText='position:absolute;right:392px;bottom:-64px;width:520px;height:520px';
+  d.appendChild(im);}
+ d.appendChild(el('<div class="sub" style="left:96px;top:146px">GAME STUDIO</div>'));
+ d.appendChild(el('<div class="wm" style="left:92px;top:178px;font-size:112px">'+NAME+'</div>'));
+ if(TAG)d.appendChild(el('<div class="tag" style="left:96px;top:316px">'+TAG+'</div>'));
+ /* 下の帯=ゲームの色 */
+ d.appendChild(el('<div style="position:absolute;left:0;right:0;bottom:0;height:9px;background:'
+  +'linear-gradient(90deg,#8fbf4d 0 34%,#e8a33d 34% 62%,#c1502e 62% 86%,#f2ecdc 86% 100%)"></div>'));
+ return d;
+}
+const HDR={horde:hdrHorde,word:hdrWord};
+/* ── 名前の見比べ=ロゴの形で並べる(候補を声に出す前に「見た目」で落とせる) ── */
+function nameStrip(){
+ const list=(Q.get('names')||'KADAVA,SHAMBRA,ROTWAKE,NEKRODE').split(',');
+ const d=el('<div style="width:1200px;background:#14110d;padding:26px 30px 34px;font-family:var(--ff)"></div>');
+ d.appendChild(el('<div style="font-size:19px;font-weight:900;color:#e8a33d;margin-bottom:4px">'
+  +'名前の見比べ ─ ロゴにするとこう見える</div>'));
+ d.appendChild(el('<div style="font-size:12.5px;color:#e8e0ce;opacity:.7;margin-bottom:20px">'
+  +'ゲームのロゴと同じ作り(太い黒フチ+錆色の落ち影)。⚠<b>長い名前は小さくなる</b>=6〜8文字が読みやすい。</div>'));
+ for(const n of list){
+  const r=el('<div style="display:flex;align-items:center;gap:26px;margin-bottom:18px;'
+   +'border-bottom:1px solid #2f2b22;padding-bottom:16px"></div>');
+  const fz=Math.max(44,Math.min(80,Math.round(560/Math.max(5,n.length))));
+  r.appendChild(el('<div class="wm" style="position:relative;font-size:'+fz+'px;flex:0 0 620px">'+n+'</div>'));
+  r.appendChild(el('<div style="font-size:15px;font-weight:900;color:#8fbf4d">'+n+' Games</div>'));
+  const w=el('<div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex:0 0 64px"></div>');
+  const ic=icoE0(n);ic.style.transform='scale(.16)';ic.style.transformOrigin='0 0';w.appendChild(ic);
+  r.appendChild(w);
+  d.appendChild(r);
+ }
+ return d;
+}
+function icoE0(n){
+ const ch=n.charAt(0);
+ return el('<div class="ico icoE"><div class="bg"></div>'
+  +'<svg viewBox="0 0 400 400">'+biteMask('me_'+ch,200,200,150,-34)
+  +'<g mask="url(#me_'+ch+')">'
+  +'<text x="200" y="208" text-anchor="middle" dominant-baseline="middle" font-family="'
+  +getComputedStyle(document.body).fontFamily.replace(/"/g,"'")+'" font-size="320" font-weight="900" '
+  +'fill="#93381e" transform="translate(6,10)">'+ch+'</text>'
+  +'<text x="200" y="198" text-anchor="middle" dominant-baseline="middle" font-family="'
+  +getComputedStyle(document.body).fontFamily.replace(/"/g,"'")+'" font-size="320" font-weight="900" '
+  +'fill="#8fbf4d">'+ch+'</text>'
+  +'</g></svg><div class="ring"></div></div>');
+}
+
+/* ── 出す ── */
+const root=document.getElementById('root');
+if(P==='prev'){
+ /* Xでの見え方(ヘッダー+丸いアイコン+名前) */
+ const w=el('<div style="width:1200px;background:#14110d;padding:0"></div>');
+ const box=el('<div style="position:relative;width:1200px;height:400px;overflow:hidden"></div>');
+ const hd=HDR[Q.get('h')||'horde']();hd.style.transform='scale(.8)';hd.style.transformOrigin='0 0';
+ box.appendChild(hd);
+ const av=el('<div style="position:absolute;left:26px;bottom:-42px;width:132px;height:132px;'
+  +'border-radius:50%;border:5px solid #14110d;overflow:hidden"></div>');
+ const ic=(ICO[Q.get('i')||'B'])();ic.style.transform='scale(.305)';ic.style.transformOrigin='0 0';
+ av.appendChild(ic);box.appendChild(av);
+ w.appendChild(box);
+ w.appendChild(el('<div style="padding:52px 26px 24px;font-family:var(--ff)">'
+  +'<div style="font-size:23px;font-weight:900;color:#e8e0ce">'+NAME.charAt(0)+NAME.slice(1).toLowerCase()+'</div>'
+  +'<div style="font-size:14px;color:#8a8071;margin-top:2px">@'+NAME.toLowerCase()+'</div>'
+  +'<div style="font-size:14.5px;color:#e8e0ce;opacity:.9;margin-top:10px;line-height:1.7">'
+  +TAG+'</div></div>'));
+ root.appendChild(w);
+}
+else if(P==='names')root.appendChild(nameStrip());
+else if(ICO[P])root.appendChild(ICO[P]());
+else if(HDR[P])root.appendChild(HDR[P]());
+else{
+ const s=el('<div class="sheet"></div>');
+ s.appendChild(el('<h2>アイコン 4案 ─ 150px / 48px / 24px</h2>'));
+ s.appendChild(el('<p>Xのアイコンは<b>丸く切られる</b>。48pxがタイムラインでの実寸、24pxが通知欄。<b>小さい方で読めるか</b>が全て。</p>'));
+ const LB={A:['A 顔アップ','ゲームのゾンビをそのまま'],B:['B 噛み跡','名前に依存しない印'],
+  D:['D 地面から出る手','ゾンビの古典的な記号'],E:['E 頭文字を噛む','名前が決まってから']};
+ const row=el('<div class="row"></div>');
+ for(const k of ['A','B','D','E']){
+  const c=el('<div class="cell"></div>');
+  for(const cls of ['s150','s48','s24']){
+   const w=el('<div class="cw '+cls+'"></div>');w.appendChild(ICO[k]());c.appendChild(w);
+  }
+  c.appendChild(el('<div class="lb">'+LB[k][0]+'<i>'+LB[k][1]+'</i></div>'));
+  row.appendChild(c);
+ }
+ s.appendChild(row);
+ s.appendChild(el('<h2>ヘッダー 2案 ─ 1500×500</h2>'));
+ s.appendChild(el('<p>左下の丸が<b>アイコンの重なる位置</b>。文字はそれを避けてある。<b>名前は仮</b>。</p>'));
+ for(const k of ['horde','word']){
+  const w=el('<div class="hwrap"></div>');
+  w.appendChild(HDR[k]());
+  const av=el('<div class="av"></div>');av.appendChild(ICO['A']());w.appendChild(av);
+  s.appendChild(w);
+ }
+ root.appendChild(s);
+}
+</script></body></html>
