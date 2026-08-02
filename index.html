@@ -60,7 +60,8 @@ h2.hd{font-size:20px;font-weight:900;margin-bottom:10px}
 input.tx{border:3px solid var(--ink);border-radius:12px;padding:10px;font-size:18px;font-weight:800;width:100%;background:var(--pane);text-align:center;letter-spacing:2px}
 .hazard{background:repeating-linear-gradient(45deg,var(--amber),var(--amber) 12px,var(--ink) 12px,var(--ink) 24px);height:8px;border-radius:4px}
 /* ---- タイトル ---- */
-#scr-title{background:radial-gradient(ellipse at 50% 20%,#3d3428,var(--ink4) 70%)}
+#scr-title{background:radial-gradient(ellipse at 50% 20%,#3d3428,var(--ink4) 70%);position:relative;overflow:hidden}
+#titlebg{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 .logo-wrap{text-align:center;margin-bottom:8px}
 .logo-sub{font-size:13px;font-weight:900;letter-spacing:8px;color:var(--amber);text-shadow:2px 2px 0 #000}
 .logo{font-size:min(16vw,92px);font-weight:900;line-height:1.02;color:var(--paper);letter-spacing:2px;
@@ -612,7 +613,7 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .mulsw button.on{background:var(--rust);color:var(--pane)}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;align-items:stretch}
 .lc{display:flex;flex-direction:column;gap:2px;border:2px solid var(--ink);border-radius:10px;
- background:var(--pane);padding:6px 7px;text-align:left}
+ background:var(--pane);padding:6px 7px;text-align:left;box-shadow:0 3px 0 rgba(0,0,0,.16)}
 .lc.can{border-color:var(--amber);box-shadow:0 0 0 2px rgba(232,163,61,.45)}
 .lc .ic{font-size:19px;line-height:1.1}
 /* ⭐解放/強化するタワー・キャラは**実物の姿**を出す(2026-07-26 第91弾ユーザー指示)。
@@ -642,8 +643,8 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .labitem .li-d{flex:1;text-align:left}
 .labdone{background:var(--ink3);border:2px solid var(--paper);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:800;color:var(--paper);text-align:left}
 /* 研究所のカテゴリ見出し(何の強化なのかを分かりやすくする) */
-.labcat{margin:14px 0 2px;padding:5px 10px;border-radius:9px;background:var(--ink2);border:2px solid var(--paper);
- color:var(--gold);font-weight:900;font-size:13px;text-align:left}
+.labcat{margin:14px 0 2px;padding:5px 10px 5px 12px;border-radius:9px;background:var(--ink);border:2px solid var(--paper);
+ border-left:6px solid var(--gold);color:var(--gold);font-weight:900;font-size:13px;text-align:left}
 .labcat span{display:block;color:var(--paper);opacity:.72;font-weight:700;font-size:11px;margin-top:1px}
 /* 英雄召集(ガチャ) */
 .hcard{display:flex;align-items:center;gap:8px;background:var(--ink3);border:2px solid var(--paper);border-radius:10px;padding:5px 9px;margin:4px 0;color:var(--paper);font-size:12px}
@@ -943,6 +944,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 <body>
 
 <div class="scr on" id="scr-title">
+  <!-- 🌆(96)タイトルにもホームと同じ夕暮れの情景を敷く(sceneBg) -->
+  <canvas id="titlebg"></canvas>
   <div class="ver" id="vertag">v2.0 β</div>
   <div class="titlewrap">
   <div class="logo-wrap">
@@ -28231,8 +28234,10 @@ let HOMEH='';
 /* 🌆(96)ホームの情景=夕暮れの廃墟(全部プロシージャル)。
    空のグラデ→沈む太陽→廃墟のスカイライン(座標は決め打ち=毎フレーム同じ絵)→
    バリケードの塀→漂う塵(ゆっくり流れる)→ビネット。⚠文字が乗る右側はうるさくしない */
-function homeBg(t){
- const cv9=$('homebg');if(!cv9)return;
+function homeBg(t){sceneBg($('homebg'),t);}
+/* ⚠(96)タイトルとホームで同じ情景を使う(sceneBg=canvas を渡す形) */
+function sceneBg(cv9,t){
+ if(!cv9)return;
  const dpr=Math.min(2,window.devicePixelRatio||1);
  const w=cv9.clientWidth*dpr,h=cv9.clientHeight*dpr;
  if(!w||!h)return;
@@ -28705,6 +28710,7 @@ function loopBody(now){
  if(SCR==='map')try{mapDraw(TT);}catch(e){}
  if(SCR==='home')try{homeDraw(TT);}catch(e){}
  if(SCR==='title'){paradeStep(TT);
+  try{sceneBg($('titlebg'),TT);}catch(e){}/* 🌆(96)ホームと同じ夕暮れの情景 */
   /* ⏳**残り時間の表示を出しっぱなしにしない**=タイトルに居る間は時々書き直す(20秒ごと) */
   BNSDT-=dt0;if(BNSDT<=0){BNSDT=20;try{refreshDiffUI();}catch(e){}}
  }
