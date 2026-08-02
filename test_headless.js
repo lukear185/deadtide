@@ -2556,6 +2556,37 @@ function checkBonus(){
    for(const s of LANES[0].seg){mnx=Math.min(mnx,s.a[0]);mxx=Math.max(mxx,s.a[0]);}
    if(!(mxx-mnx>600)){console.log('FAIL: 2面の道がうねっていない '+Math.round(mxx-mnx));process.exit(1);}
    console.log('🌊2面=海沿いのうねる道: 横のブレ'+Math.round(mxx-mnx)+'px / 海の上に木も建物も無い OK');
+   /* 🌊⭐**高潮**(2面だけの新要素)。見るのは4つ:
+      ①予告→押し寄せ→とどまり→引く の4拍が全部来る ②帯の中に居ると濡れて遅くなる
+      ③ニトロ中は「波乗り」=押されない ④到着のムービー中は起こさない */
+   {const B=me.bus;B.sg=null;B.mov=0;B.arr=0;
+    let seen={},wet=0,surf=0;
+    for(let k=0;k<2400;k++){
+     const S=B.sg;
+     if(S){seen[S.ph]=1;
+      /* 波が来たら、その帯の真ん中へバスを置く(実際の走行では自分で突っ込む) */
+      if(S.p>0){B.y=(S.y0+S.y1)/2;B.x=bnsSgX(B.y,S.p)+BSG_BAND*.5;
+       if(seen[3]&&!surf){B.nitT=1;}else B.nitT=0;}}
+     bnsSurgeStep(me,B,.05);
+     if(B.wet)wet=1;
+     if(B.surf)surf=1;
+    }
+    for(const ph of [1,2,3,4])if(!seen[ph]){
+     console.log('FAIL: 高潮の'+ph+'拍目が来ない '+JSON.stringify(seen));process.exit(1);}
+    if(!wet){console.log('FAIL: 高潮の帯の中に居ても濡れない');process.exit(1);}
+    if(!surf){console.log('FAIL: ニトロ中に🌊波乗りにならない');process.exit(1);}
+    /* ④ムービー中は起こさない */
+    B.mov=1;B.sg=null;bnsSurgeStep(me,B,.05);
+    if(B.sg&&B.sg.p>0){console.log('FAIL: 到着のムービー中に高潮が起きる');process.exit(1);}
+    B.mov=0;B.sg=null;B.nitT=0;
+    console.log('🌊高潮: 予告→押し寄せ→とどまり→引く / 帯の中で減速 / ニトロで波乗り / ムービー中は起きない OK');}
+  }
+  /* ⚠**1面には海も高潮も無いこと**(面ごとの分岐が壊れていないか) */
+  if(si===0){
+   if(BSEA){console.log('FAIL: 1面に海が出ている');process.exit(1);}
+   const B=me.bus;B.sg=null;
+   for(let k=0;k<800;k++)bnsSurgeStep(me,B,.05);
+   if(B.sg||B.wet){console.log('FAIL: 1面で高潮が起きる');process.exit(1);}
   }
   /* ⚠**進む向き**=道に沿った距離が増えるほど下(=ゾンビは上から下りてくる) */
   if(!(LANES[0].seg[0].a[1]<LANES[0].seg[LANES[0].seg.length-1].b[1])){
