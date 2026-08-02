@@ -3468,41 +3468,50 @@ function checkBnsFlow(){
   if((Q.up.sp|0)!==BUP[0].mx){console.log('FAIL: 強化の段が上限で止まらない '+Q.up.sp);process.exit(1);}
   bnsUpTap(Q,R[2].x+4,R[2].y+4);
   if((Q.up.ram|0)!==0){console.log('FAIL: 物資が足りないのに強化が買える');process.exit(1);}
-  /* ⚔⭐**装備は「3系統×4段」の段階解放**(2026-08-02(55))=**前の段を買うまで次は買えない** */
-  {Q.tab=1;Q.eq={};Q.res=[9999,9999,9999];
-   const RE=bnsUpRects(cv.width,cv.height,1);
-   if(BEQ.length%BEQ_ST!==0){console.log('FAIL: 装備の数が段数で割り切れない '+BEQ.length);process.exit(1);}
-   /* ①段目は買える / ③段目はまだ買えない */
-   if(beqCost(Q.eq,0)!==BEQ[0].c){console.log('FAIL: 1段目が買えない');process.exit(1);}
-   if(beqCost(Q.eq,2)!==-1){console.log('FAIL: 前の段を飛ばして買えてしまう');process.exit(1);}
-   bnsUpTap(Q,RE[2].x+4,RE[2].y+4);
-   if(Q.eq[BEQ[2].k]){console.log('FAIL: 段を飛ばして装備が付いた');process.exit(1);}
-   /* 順に買えば通る */
-   for(let q=0;q<BEQ_ST;q++)bnsUpTap(Q,RE[q].x+4,RE[q].y+4);
-   for(let q=0;q<BEQ_ST;q++)if(!Q.eq[BEQ[q].k]){
-    console.log('FAIL: 順に買っても'+(q+1)+'段目が付かない');process.exit(1);}
-   /* ⚠**列=系統・行=段**に並んでいること(絵とタップが同じ物を見る) */
-   for(let q=0;q<BEQ.length;q++){
-    const cx=(q/BEQ_ST)|0,ry=q%BEQ_ST;
-    if(ry>0&&!(RE[q].y>RE[q-1].y)){
-     console.log('FAIL: 段が上から下へ並んでいない '+q);process.exit(1);}
-    if(cx>0&&!(RE[q].x>RE[q-BEQ_ST].x)){
-     console.log('FAIL: 系統が左から右へ並んでいない '+q);process.exit(1);}}
-   /* ⚠**1系統=1つの物資**(混ざっていると並びの意味が消える) */
-   for(let q=0;q<BEQ.length;q++)if(BEQ[q].r!==BEQ[((q/BEQ_ST)|0)*BEQ_ST].r){
-    console.log('FAIL: 同じ系統に別の物資が混ざっている '+BEQ[q].n);process.exit(1);}
-   /* ⚠**入れ替えずに中身だけ消す**= は META.beq そのものなので、代入すると繋がりが切れる */
-   for(const k9 in Q.eq)delete Q.eq[k9];
-   Q.tab=0;Q.res[0]=9999;Q.res[1]=0;Q.res[2]=9999;}
-  /* ⚔装備の枠=つまみで切り替わる/買い切り/2度は買えない/絵が例外なく描ける */
+  /* ⚔装備=タブ×列(物資)×段の段階解放(2026-08-02(63)にタブで分けた)。
+     前の段を買うまで次は買えない。タブごとに列の数も段の数も違うので、
+     添字の割り算で位置を出さず BEQ_LN(列の一覧)と BEQ_AT(添字→列と段)から見ること。 */
+  {Q.eq={};Q.res=[9999,9999,9999];
+   if(BEQ_TB.length!==2){console.log('FAIL: 装備のタブが2つでない '+BEQ_TB.length);process.exit(1);}
+   for(let tb=0;tb<BEQ_TB.length;tb++){
+    Q.tab=tb+1;
+    const LN=BEQ_LN.filter(l=>l.tb===tb),RE=bnsUpRects(cv.width,cv.height,tb+1);
+    let n9=0;for(const l of LN)n9+=l.ix.length;
+    if(RE.length!==n9){console.log('FAIL: 札の数が中身と合わない tb'+tb+' '+RE.length+'/'+n9);process.exit(1);}
+    /* ⚠**1列=1つの物資**(混ざっていると並びの意味が消える) */
+    for(const l of LN)for(const i of l.ix)if(BEQ[i].r!==l.r){
+     console.log('FAIL: 同じ列に別の物資が混ざっている '+BEQ[i].n);process.exit(1);}
+    /* ⚠**列=左から右・段=上から下**に並んでいること(絵とタップが同じ物を見る) */
+    const pos={};for(const r of RE)pos[r.i]=r;
+    for(let li=0;li<LN.length;li++)for(let st=0;st<LN[li].ix.length;st++){
+     const me9=pos[LN[li].ix[st]];
+     if(st>0&&!(me9.y>pos[LN[li].ix[st-1]].y)){
+      console.log('FAIL: 段が上から下へ並んでいない '+BEQ[LN[li].ix[st]].n);process.exit(1);}
+     if(li>0&&!(me9.x>pos[LN[li-1].ix[0]].x)){
+      console.log('FAIL: 列が左から右へ並んでいない '+BEQ[LN[li].ix[st]].n);process.exit(1);}}
+    /* ①段目は買える / ③段目はまだ買えない(⚠2段以上ある列だけで見る) */
+    for(const l of LN){
+     if(beqCost(Q.eq,l.ix[0])!==BEQ[l.ix[0]].c){
+      console.log('FAIL: 1段目が買えない '+BEQ[l.ix[0]].n);process.exit(1);}
+     if(l.ix.length>1&&beqCost(Q.eq,l.ix[1])!==-1){
+      console.log('FAIL: 前の段を飛ばして買えてしまう '+BEQ[l.ix[1]].n);process.exit(1);}
+     if(l.ix.length>1){
+      bnsUpTap(Q,pos[l.ix[1]].x+4,pos[l.ix[1]].y+4);
+      if(Q.eq[BEQ[l.ix[1]].k]){console.log('FAIL: 段を飛ばして装備が付いた');process.exit(1);}}
+     /* 順に買えば通る */
+     for(const i of l.ix){Q.res[BEQ[i].r]=9999;bnsUpTap(Q,pos[i].x+4,pos[i].y+4);}
+     for(const i of l.ix)if(!Q.eq[BEQ[i].k]){
+      console.log('FAIL: 順に買っても付かない '+BEQ[i].n);process.exit(1);}}
+    /* 買い切り=2度は買えない */
+    {const i0=LN[0].ix[0],r0=Q.res[BEQ[i0].r];bnsUpTap(Q,pos[i0].x+4,pos[i0].y+4);
+     if(Q.res[BEQ[i0].r]!==r0){console.log('FAIL: 同じ装備を2度買える');process.exit(1);}}
+   }
+   for(const q of BEQ)if(!Q.eq[q.k]){console.log('FAIL: 装備が買えていない '+q.k);process.exit(1);}}
+  /* ⚔つまみで枠が切り替わること(3つある) */
+  bnsUpTap(Q,R.tab[2].x+4,R.tab[2].y+4);
+  if((Q.tab|0)!==2){console.log('FAIL: ⚙艤装の枠に切り替わらない');process.exit(1);}
   bnsUpTap(Q,R.tab[1].x+4,R.tab[1].y+4);
-  if((Q.tab|0)!==1){console.log('FAIL: ⚔装備の枠に切り替わらない');process.exit(1);}
-  {const R2=bnsUpRects(cv.width,cv.height,1);
-   if(R2.length!==BEQ.length){console.log('FAIL: 装備の札の数が違う '+R2.length);process.exit(1);}
-   for(let i=0;i<BEQ.length;i++){Q.res[BEQ[i].r]=9999;bnsUpTap(Q,R2[i].x+4,R2[i].y+4);}
-   for(const q of BEQ)if(!Q.eq[q.k]){console.log('FAIL: 装備が買えていない '+q.k);process.exit(1);}
-   const r0=Q.res[BEQ[0].r];bnsUpTap(Q,R2[0].x+4,R2[0].y+4);
-   if(Q.res[BEQ[0].r]!==r0){console.log('FAIL: 同じ装備を2度買える');process.exit(1);}}
+  if((Q.tab|0)!==1){console.log('FAIL: 🚌車体の枠に切り替わらない');process.exit(1);}
   /* ⚠装備の効き目がバスに入っていること(絵と当たりの両方がこれを見る) */
   if(!(me.bus.bladeR>0&&me.bus.zap&&me.bus.siren&&me.bus.gun)){
    console.log('FAIL: 装備の効き目がバスに入っていない');process.exit(1);}

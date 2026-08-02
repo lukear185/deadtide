@@ -21402,29 +21402,49 @@ const BUP=[
 /* ⭐⭐**5段目を足した**(2026-08-02(60)ユーザー「装備をもっと増やす」)。
    ⚠⚠**系統(列)は増やさない**=1系統=1つの物資という約束(NOTESの掟)なので、
      物資が3種のうちは**4列目を作れない**(作ると1列に2つの通貨が混ざって分けた意味が消える)。
-   ⭐**増やすなら段(行)**=梯子が1段伸びるだけなので、並びも買い方も何も変わらない。
-   ⚠**5段目は「終わりの1個」**=どれも**前の段の延長**にして、系統の性格を最後まで通す。 */
-const BEQ_ST=5;/* 1系統あたりの段数(⚠絵の並びもこれで決まる) */
+   ⭐**増やすなら段(行)**=梯子が1段伸びるだけなので、並びも買い方も何も変わらない。 */
+/* ⚔⭐⭐⭐**装備は「やること」でタブを分ける**(2026-08-02(63)ユーザー
+   「**そういう 車体自体をいじる / ノコとかの装備をつける とかはタブ分けして**」)。
+   ⚠⚠**それまで15種が1枚に混ざっていた**=**車体そのものが変わる物**と**取り付ける物**が
+     同じ列に並んでいて、何をしているのか読み分けられなかった。
+   ⭐**枠は3つ**=🔧性能(数値) / 🚌車体(車体そのもの) / ⚙艤装(取り付ける物)。
+   ⚠⚠**列は今までどおり「1列=1つの物資」**=タブが変わっても買い方の読み方は同じ。
+   ⚠**タブごとに列の数も段の数も違ってよい**(⚠揃えるために中身を歪めない)。
+   ⚠**段の梯子は「同じタブの同じ物資」の中だけ**で繋がる(`BEQ_LN`)。 */
+const BEQ_TB=[{ic:'🚌',n:'車体'},{ic:'🛠',n:'艤装'}];
 const BEQ=[
- /* ⛽燃料=**走り(噴かす)** */
- {k:'blast',r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを吹き飛ばす',      c:60},
- {k:'boost',r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
- {k:'nit2', r:0,ic:'🔋',n:'二段ニトロ',      d:'切れても3分の1だけ残る',      c:220},
- {k:'big',  r:0,ic:'🚌',n:'大型車体',        d:'バスが一回りでかくなる',      c:340},
- {k:'trail',r:0,ic:'🚎',n:'二階建て化',      d:'バスがもう一段でかくなる',    c:540},
- /* 🏭鉄材=**前まわり(轢く物)** */
- {k:'tire', r:1,ic:'🛞',n:'スパイクタイヤ',  d:'障害物で減速しない',          c:45},
- {k:'wire', r:1,ic:'🪤',n:'鉄条網バンパー',  d:'前に張り出して当たりが広い',  c:100},
- {k:'spike',r:1,ic:'🔩',n:'スパイクローラー',d:'ひいた体が高く舞う',          c:180},
- {k:'blade',r:1,ic:'⚙',n:'回転ノコ',        d:'左右の丸ノコで横も薙ぐ',      c:300},
- {k:'saw2', r:1,ic:'🪚',n:'四連ノコ',        d:'丸ノコが前後4枚・もっと外まで',c:480},
- /* 🏠食料=**乗員がやること** */
- {k:'plate',r:2,ic:'🛡',n:'内張り装甲',      d:'しがみつかれても遅くならない',c:50},
- {k:'horn', r:2,ic:'📢',n:'拡声器',          d:'近くのゾンビが寄ってくる',    c:110},
- {k:'siren',r:2,ic:'🔊',n:'サイレン',        d:'遠くまで群がってくる',        c:200},
- {k:'zap',  r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320},
- {k:'gun',  r:2,ic:'🔫',n:'ルーフガン',      d:'前を撃ち抜く(並んだ敵ごと)',  c:520}
+ /* ===== 🚌車体タブ(tb:0)=**車体そのものをいじる物**(エンジン・増槽・大きさ・内張り) ===== */
+ {k:'blast',tb:0,r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを吹き飛ばす',      c:60},
+ {k:'boost',tb:0,r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
+ {k:'nit2', tb:0,r:0,ic:'🔋',n:'二段ニトロ',      d:'切れても3分の1だけ残る',      c:220},
+ {k:'big',  tb:0,r:1,ic:'🚌',n:'大型車体',        d:'バスが一回りでかくなる',      c:340},
+ {k:'trail',tb:0,r:1,ic:'🚎',n:'二階建て化',      d:'バスがもう一段でかくなる',    c:540},
+ /* ===== 🛠艤装タブ(tb:1)=**車体に取り付ける物**(装甲・ノコ・バンパー・ラッパ・コイル・銃座) ===== */
+ /* ⚠**列の並び順は表の出てくる順**=物資の順(⛽🏭🏠)で書くこと(タブが変わっても左右が入れ替わらない) */
+ {k:'tire', tb:1,r:1,ic:'🛞',n:'スパイクタイヤ',  d:'障害物で減速しない',          c:45},
+ {k:'wire', tb:1,r:1,ic:'🪤',n:'鉄条網バンパー',  d:'前に張り出して当たりが広い',  c:100},
+ {k:'spike',tb:1,r:1,ic:'🔩',n:'スパイクローラー',d:'ひいた体が高く舞う',          c:180},
+ {k:'blade',tb:1,r:1,ic:'⚙',n:'回転ノコ',        d:'左右の丸ノコで横も薙ぐ',      c:300},
+ {k:'saw2', tb:1,r:1,ic:'🪚',n:'四連ノコ',        d:'丸ノコが前後4枚・もっと外まで',c:480},
+ {k:'plate',tb:1,r:2,ic:'🛡',n:'内張り装甲',      d:'しがみつかれても遅くならない',c:50},
+ {k:'horn', tb:1,r:2,ic:'📢',n:'拡声器',          d:'近くのゾンビが寄ってくる',    c:110},
+ {k:'siren',tb:1,r:2,ic:'🔊',n:'サイレン',        d:'遠くまで群がってくる',        c:200},
+ {k:'zap',  tb:1,r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320},
+ {k:'gun',  tb:1,r:2,ic:'🔫',n:'ルーフガン',      d:'前を撃ち抜く(並んだ敵ごと)',  c:520}
 ];
+/* ⭐**梯子(系統)を表から自動で作る**=**同じタブ・同じ物資**の並び順がそのまま段になる。
+   ⚠⚠**手で段番号を書かない**=表に1行足すたびに書き直すことになり、必ずどこかで食い違う。
+   ⭐`BEQ_LN`=列の一覧([{tb,r,ix:[BEQの添字…]}]) / `BEQ_AT`=BEQの添字→{ln:列番号, st:段番号}。 */
+const BEQ_LN=[],BEQ_AT=[];
+for(let i=0;i<BEQ.length;i++){const q=BEQ[i];
+ let L=BEQ_LN.find(l=>l.tb===q.tb&&l.r===q.r);
+ if(!L){L={tb:q.tb,r:q.r,ix:[]};BEQ_LN.push(L);}
+ BEQ_AT[i]={ln:BEQ_LN.indexOf(L),st:L.ix.length};
+ L.ix.push(i);
+}
+const BEQ_ST=BEQ_LN.reduce((a,l)=>Math.max(a,l.ix.length),0);/* 一番長い列の段数 */
+/* そのタブに出す列だけ(⚠タブごとに列の数が違う) */
+const beqLines=tb=>BEQ_LN.filter(l=>l.tb===tb);
 /* ⚔⭐⭐⭐**装備は「車体に固定された物」だけ**(2026-08-02(62)ユーザー決定
    「**明らかに動くやつはなし。いまの丸鋸みたいな動きはいいけど、自立してるやつは現実的じゃないからなし。
      あと火炎放射もなし**」)。⚠⚠**この掟で3つ外した**:
@@ -21545,12 +21565,16 @@ function bupCost(U,i){const u=BUP[i],lv=(U&&U[u.k])|0;return lv>=u.mx?null:u.c[l
 /* 装備の値段(すでに付けていれば null=所持) */
 /* ⚠**前の段を買っていなければ買えない**=段階解放の本体。⭐所持なら null(=✅装備ずみ)、
    まだ前の段が無ければ -1(=🔒)を返す。⚠**呼ぶ側は3通りを書き分けること**。 */
+/* ⚠⚠**前の段は「同じタブの同じ物資」の1つ前**(2026-08-02(63))=添字の -1 で見てはいけない
+   (タブで分けたので、表の隣が別の列になっている所がある)。⭐`BEQ_AT`/`BEQ_LN` から引くこと。 */
 function beqCost(E,i){
- const q=BEQ[i];
+ const q=BEQ[i],at=BEQ_AT[i];
  if(E&&E[q.k])return null;
- if(i%BEQ_ST>0&&!(E&&E[BEQ[i-1].k]))return -1;
+ if(at.st>0&&!(E&&E[BEQ[BEQ_LN[at.ln].ix[at.st-1]].k]))return -1;
  return q.c;
 }
+/* 🔒の時に「何を先に買えばいいか」を言うための1つ前(⚠先頭なら null) */
+function beqPrev(i){const at=BEQ_AT[i];return at.st>0?BEQ[BEQ_LN[at.ln].ix[at.st-1]]:null;}
 /* 🎒**走る前の状態**。⚠**G に持つ**=面(=1試合)の状態であってバスの持ち物ではない */
 function bnsPreInit(C){
  /* ⚠**奥(y小)から手前へ番号を振る**=札も上から順に並ぶので、ピンの数字と札の数字が同じ流れで読める。
@@ -21850,25 +21874,37 @@ function bnsBoardStep(C,Q,dt){
 }
 /* ============ 🔧**強化画面**(④)============ */
 /* ⭐**札の位置は1か所で出す**=絵とタップが必ず一致する(2つに分けると必ず食い違う)。
-   ⭐**枠は2つ**(`tab` 0=🔧性能 / 1=⚔装備)=性能は3x2・装備は3x3。⚠**行数は中身から出す**。 */
+   ⭐**枠は3つ**(`tab` 0=🔧性能 / 1=🚌車体 / 2=⚙艤装。2026-08-02(63))。
+   ⚠**列の数も行の数も中身から出す**=タブごとに違う(揃えるために中身を歪めない)。 */
 function bnsUpRects(W,H,tab){
  const dp=DPR||1,R=[],mx=W*.035,gp=9*dp;
- /* ⚠⚠**⚔装備は「列=系統・行=段」**(2026-08-02(55))=**上から下へ段が上がる**のがそのまま見える。
+ /* ⚠⚠**⚔装備は「列=物資・行=段」**(2026-08-02(55))=**上から下へ段が上がる**のがそのまま見える。
     ⚠**行優先で並べない**=段の梯子が横に折れて、どれが次の段か読めなくなる。
     ⭐🔧性能は物資ごとに2つなので**2列**(こちらは1行=1つの物資)。 */
- const CL=tab?3:2;
- const N=tab?BEQ.length:BUP.length,rows=tab?BEQ_ST:Math.ceil(N/CL);
+ const LN=tab?beqLines(tab-1):null;
+ const CL=tab?LN.length:2;
+ const rows=tab?LN.reduce((a,l)=>Math.max(a,l.ix.length),1):Math.ceil(BUP.length/CL);
  const ty=H*.145,th=H*.085;/* 枠のつまみ */
  const gy=ty+th+10*dp,gh=H*.965-H*.135-gy;/* 札の置ける高さ(下に「準備OK」を残す) */
  const cw=(W-mx*2-gp*(CL-1))/CL,ch=(gh-gp*(rows-1))/rows;
- for(let i=0;i<N;i++){
-  /* ⚔装備=列が系統(i/4)・行が段(i%4) / 🔧性能=今までどおり行優先 */
-  const cx9=tab?((i/BEQ_ST)|0):(i%CL),ry9=tab?(i%BEQ_ST):((i/CL)|0);
-  R.push({x:mx+cx9*(cw+gp),y:gy+ry9*(ch+gp),w:cw,h:ch,i:i});}
- R.tab=[{x:W*.035,y:ty,w:W*.22,h:th,i:0},{x:W*.035+W*.23,y:ty,w:W*.22,h:th,i:1}];
+ if(tab){
+  /* ⚠**列ごとに段の数が違う**ので、素直に列→段の二重回しで置く(添字の割り算で出さない) */
+  for(let cx9=0;cx9<LN.length;cx9++)for(let ry9=0;ry9<LN[cx9].ix.length;ry9++)
+   R.push({x:mx+cx9*(cw+gp),y:gy+ry9*(ch+gp),w:cw,h:ch,i:LN[cx9].ix[ry9]});
+ }else{
+  for(let i=0;i<BUP.length;i++)
+   R.push({x:mx+(i%CL)*(cw+gp),y:gy+((i/CL)|0)*(ch+gp),w:cw,h:ch,i:i});
+ }
+ /* つまみ3つ。⚠**幅は3等分**=文字が入らないので札の名前は短くしてある */
+ R.tab=[];
+ for(let i=0;i<3;i++)R.tab.push({x:W*.035+i*W*.172,y:ty,w:W*.162,h:th,i:i});
  R.go={x:W*.56,y:ty,w:W*.405,h:th};
  return R;
 }
+/* そのつまみに出す札の総数と所持数(⚠見出しの「2/6」はここ1か所から出す) */
+function beqTabCnt(E,tb){const L=beqLines(tb);let n=0,o=0;
+ for(const l of L)for(const i of l.ix){n++;if(E&&E[BEQ[i].k])o++;}
+ return o+'/'+n;}
 function bnsUpTap(Q,sx,sy){
  const hit=(r)=>sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h;
  const R=bnsUpRects(cv.width,cv.height,Q.tab|0);
@@ -21878,13 +21914,13 @@ function bnsUpTap(Q,sx,sy){
  for(const r of R){
   if(!hit(r))continue;
   /* ⚔装備は買い切り(段が無い) / 🔧性能は段を1つ積む */
-  const eqm=(Q.tab|0)===1;
+  const eqm=(Q.tab|0)>0;
   const u=eqm?BEQ[r.i]:BUP[r.i];
   const p=eqm?beqCost(Q.eq,r.i):bupCost(Q.up,r.i);
   if(p==null){try{if(sfx.back)sfx.back();}catch(e){}return;}
   /* ⚠**前の段がまだ**=買えない理由が「足りない」と違うので、必ず言い分ける */
   if(p<0){try{if(sfx.warn)sfx.warn();}catch(e){}
-   try{toast('⚔ 先に「'+BEQ[r.i-1].n+'」を付ける必要がある');}catch(e){}return;}
+   try{const pv=beqPrev(r.i);if(pv)toast('⚔ 先に「'+pv.n+'」を付ける必要がある');}catch(e){}return;}
   if((Q.res[u.r]|0)<p){try{if(sfx.warn)sfx.warn();}catch(e){}
    try{toast(BRES[u.r].ic+BRES[u.r].n+'が足りない');}catch(e){}return;}
   Q.res[u.r]-=p;
@@ -22231,7 +22267,7 @@ function bnsDrawUp(c,Q,W,H,dp,t){
     「買った物はずっと残る」の上に物資が重なって両方読めない。 */
  bnsResBar(c,Q,W,H*.072,dp,.44);
  const R=bnsUpRects(W,H,tab);
- /* 枠のつまみ(🔧性能 / ⚔装備) */
+ /* 枠のつまみ(🔧性能 / 🚌車体 / ⚙艤装)。⚠**3つに増えたので文字は小さく短く**(2026-08-02(63)) */
  for(const tb of R.tab){
   const on=tb.i===tab;
   c.fillStyle=on?'rgba(70,58,36,.96)':'rgba(28,24,19,.8)';
@@ -22239,10 +22275,11 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.strokeStyle=on?'rgba(255,207,106,.95)':'rgba(242,236,220,.30)';
   c.lineWidth=(on?3:2)*dp;c.stroke();
   c.textAlign='center';c.fillStyle=on?GOLD:'rgba(242,236,220,.6)';
-  c.font='900 '+Math.round(17*dp)+'px '+FF;
-  const own=tb.i?BEQ.filter(q=>Q.eq[q.k]).length+'/'+BEQ.length
+  c.font='900 '+Math.round(14*dp)+'px '+FF;
+  const own=tb.i?beqTabCnt(Q.eq,tb.i-1)
                 :BUP.reduce((a,u)=>a+((Q.up[u.k])|0),0)+'/'+BUP.reduce((a,u)=>a+u.mx,0);
-  c.fillText((tb.i?'⚔ 装備 ':'🔧 性能 ')+own,tb.x+tb.w/2,tb.y+tb.h*.66);
+  const nm=tb.i?(BEQ_TB[tb.i-1].ic+BEQ_TB[tb.i-1].n):'🔧性能';
+  c.fillText(nm+' '+own,tb.x+tb.w/2,tb.y+tb.h*.64);
  }
  for(const r of R){
   const u=tab?BEQ[r.i]:BUP[r.i];
@@ -22259,7 +22296,7 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.fillStyle=(ok||p==null)?PANE:(lk?'rgba(242,236,220,.34)':'rgba(242,236,220,.55)');
   c.font='900 '+Math.round(16*dp)+'px '+FF;
   /* ⚔段の数字(①②③④)=どこまで来たかが一目で分かる */
-  c.fillText((tab?'①②③④⑤'.charAt(r.i%BEQ_ST)+' ':'')+u.ic+' '+u.n,r.x+9*dp,r.y+22*dp);
+  c.fillText((tab?'①②③④⑤'.charAt(BEQ_AT[r.i].st)+' ':'')+u.ic+' '+u.n,r.x+9*dp,r.y+22*dp);
   c.font='900 '+Math.round(12*dp)+'px '+FF;
   c.fillStyle=(ok||p==null)?'rgba(242,236,220,.85)':(lk?'rgba(242,236,220,.3)':'rgba(242,236,220,.45)');
   c.fillText(u.d,r.x+9*dp,r.y+39*dp);
