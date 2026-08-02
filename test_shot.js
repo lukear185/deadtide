@@ -58,7 +58,7 @@ const BAM=/(^|\+)bnsarr(=([0-9.]+))?(\+|$)/.exec(OPT),BARR=BAM?(+(BAM[3]||2.2)):
 /* 🎒⭐**走る前の流れ**(2026-08-02(43))を撮る。⚠bns と併せて使う。
    `bnssel`=①ミニゲーム選択画面(広場を見下ろして棟が光る)
    `bnsmg`=②⛽給油のミニゲーム(3本目まで進めた所)
-   `bnsbrd`=③乗り込みのムービー / `bnsup`=④強化画面の🔧性能 / `bnseqp`=🚌車体 / `bnsgep`=🛠艤装
+   `bnsbrd`=③乗り込みのムービー / `bnsup`=④強化画面の🔧性能 / `bnseqp`=🚌車体 / `bnsgep`=⚔装備
    ⚠⚠**どれも指定しなければ流れは丸ごと飛ばす**(`bnsPreSkip`)=でないと敵が1体も湧かない絵になる。 */
 const BPRE=(/(^|\+)bns(sel|mg|brd|up|eqp|gep)(=\d)?(\+|$)/.exec(OPT)||[])[2]||'';
 /* ⚔bnseq = **装備を全部付けたバス**で走らせて撮る(2026-08-02(44))。⚠bnsdrv と併せて使う */
@@ -365,7 +365,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +(BPRE==='brd'?'Q.res=[120,90,80];Q.left=0;bnsBoardStart();'
        +'for(var k=0;k<70;k++)bnsPreStep(.02);':'')
      /* ⚠**強化画面は物資を持たせて撮る**=素寒貧だと全部灰色の札しか写らない。
-        ⭐bnsup=🔧性能の枠 / bnseqp=🚌車体の枠 / bnsgep=🛠艤装の枠(2026-08-02(63)にタブが3つになった) */
+        ⭐bnsup=🔧性能の枠 / bnseqp=🚌車体の枠 / bnsgep=⚔装備の枠(2026-08-02(63)にタブが3つになった) */
      +((BPRE==='up'||BPRE==='eqp'||BPRE==='gep')?'Q.res[0]=150;Q.res[1]=110;Q.res[2]=95;Q.left=0;Q.st="up";'
        +'Q.tab='+(BPRE==='gep'?2:BPRE==='eqp'?1:0)+';Q.up.sp=2;Q.up.ram=1;Q.eq.tire=1;Q.eq.wire=1;Q.eq.blast=1;Q.eq.plate=1;'
        +'if(G.players[0].bus){var B7=G.players[0].bus;bupApply(B7,Q.up,Q.eq);camOn(B7.x,B7.y,.62,BNS_SQ);camApply();}':'')

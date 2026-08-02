@@ -3509,7 +3509,7 @@ function checkBnsFlow(){
    for(const q of BEQ)if(!Q.eq[q.k]){console.log('FAIL: 装備が買えていない '+q.k);process.exit(1);}}
   /* ⚔つまみで枠が切り替わること(3つある) */
   bnsUpTap(Q,R.tab[2].x+4,R.tab[2].y+4);
-  if((Q.tab|0)!==2){console.log('FAIL: ⚙艤装の枠に切り替わらない');process.exit(1);}
+  if((Q.tab|0)!==2){console.log('FAIL: ⚔装備の枠に切り替わらない');process.exit(1);}
   bnsUpTap(Q,R.tab[1].x+4,R.tab[1].y+4);
   if((Q.tab|0)!==1){console.log('FAIL: 🚌車体の枠に切り替わらない');process.exit(1);}
   /* ⚠装備の効き目がバスに入っていること(絵と当たりの両方がこれを見る) */
@@ -3523,6 +3523,27 @@ function checkBnsFlow(){
   if(!(Array.isArray(me.bus.blXs)&&me.bus.blXs.length===2)){
    console.log('FAIL: 四連ノコが2組になっていない');process.exit(1);}
   if(!(me.bus.blOut>EQ_BL_OUT)){console.log('FAIL: 四連ノコで外接半径が伸びていない');process.exit(1);}
+  /* 🚌⭐⭐**当たりの形が「絵そのもの」であること**(2026-08-02(64)ユーザー
+     「ちゃんと当たり判定をバスの見た目通りにしてほしい バスの先端」)。
+     ⚠**丸だった頃は横が絵より39px外・先端が絵より64px手前**だった。ここが崩れたら必ず落ちること。
+     ⚠寸法は全部 BUSD_L/BUSD_W(絵)から出ているので、絵を直せば当たりも一緒に動く。 */
+  {const H=(fw,sw,k,wire)=>busBoxHit(fw,sw,0,k==null?1:k,wire?1:0);
+   if(H(0,BUSH_W-4)!==1){console.log('FAIL: 車体の横(絵の中)で当たらない');process.exit(1);}
+   if(H(0,BUSH_W+8)!==0){console.log('FAIL: 車体の横(絵の外)で当たってしまう');process.exit(1);}
+   if(H(BUSH_L-4,0)!==1){console.log('FAIL: 車体の前(絵の中)で当たらない');process.exit(1);}
+   /* 排障器=先端まで当たる/その先は当たらない/先は細い */
+   if(H(BUSH_RX-6,0)!==1){console.log('FAIL: 排障器の先端で当たらない');process.exit(1);}
+   if(H(BUSH_RX+8,0)!==0){console.log('FAIL: 排障器より前で当たってしまう');process.exit(1);}
+   if(H(BUSH_RX-2,BUSH_W-8)!==0){console.log('FAIL: 排障器の外(細くなった所)で当たってしまう');process.exit(1);}
+   /* 🪤鉄条網=付けた時だけさらに前 */
+   if(H(BUSH_RX+EQ_WIRE_X-6,0,1,1)!==1){console.log('FAIL: 鉄条網の絵の中で当たらない');process.exit(1);}
+   if(H(BUSH_RX+EQ_WIRE_X-6,0,1,0)!==0){console.log('FAIL: 鉄条網が無いのに前で当たる');process.exit(1);}
+   if(H(BUSH_RX+EQ_WIRE_X+8,0,1,1)!==0){console.log('FAIL: 鉄条網より前で当たってしまう');process.exit(1);}
+   /* 🚌大きさの倍率が当たりにも乗る(絵の縮尺と同じ物) */
+   if(H(0,BUSH_W+8,EQ_BIG2)!==1){console.log('FAIL: 二階建てで当たりが大きくなっていない');process.exit(1);}
+   /* ⚠**絵の寸法から出ていること**=別の定数に書き写すと必ず食い違う */
+   if(BUSH_L!==BUSD_L+5||BUSH_W!==BUSD_W+5||BUSH_RX!==BUSD_L+54){
+    console.log('FAIL: 当たりの寸法が絵(BUSD_L/BUSD_W)から出ていない');process.exit(1);}}
   try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: ⚔装備の枠の描画で例外 '+e.message);process.exit(1);}
   try{drawBus(ctx,me,1.2);}catch(e){console.log('FAIL: 装備を付けたバスの描画で例外 '+e.message);process.exit(1);}
   bnsUpTap(Q,R.go.x+4,R.go.y+4);}
