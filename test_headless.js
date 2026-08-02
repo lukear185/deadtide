@@ -1410,6 +1410,16 @@ function checkProgress(){
    console.log('FAIL: '+D5[d].n+'をクリアしただけで'+D5[nx2].n+'まで開いている(飛び越し)');process.exit(1);}
   backTitle();
  }
+ /* ⚠⚠**画面に並んでいる順(HTMLの data-v)と D_ORD が同じか**(2026-08-02(69)に踏んだ)=
+    D_ORD だけ直して HTML の並びを直し忘れると、「開いているのに札が前にある」という
+    ちぐはぐな画面になる。⚠DOMは張りぼてなので**index.htmlの文字列を直に読む**。
+    ⚠この検査はテンプレート文字列の中なので、正規表現のバックスラッシュは2重に書くこと。 */
+ {const seg=(/id="seg-diff"[^]*?<\\/div>/.exec(html)||[''])[0];
+  const shown=[...seg.matchAll(/data-v="(\\d+)"/g)].map(m=>+m[1]);
+  if(shown.join(',')!==D_ORD.join(',')){
+   console.log('FAIL: 出撃準備の難易度の並びが D_ORD と違う 画面=['+shown.join(',')+'] D_ORD=['+D_ORD.join(',')+']');
+   process.exit(1);}
+  console.log('難易度の並び: 画面(seg-diff)と D_ORD が一致 '+D_ORD.map(d=>D5[d].n).join('→')+' OK');}
  console.log('進行: 難易度は順に解放(最終W='+ws+')/クリアした難易度がそのまま記録される/港はナイトメアクリアで解放/港の重さx'+STAGES[1].hpM+' OK');
  META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];
 }
@@ -2599,9 +2609,10 @@ function checkBonus(){
   if(!(me.team||[]).length){console.log('FAIL: ボーナス面で team を空にしている');process.exit(1);}
   if(me.hUi>=0){console.log('FAIL: ボーナス面に英雄が居る');process.exit(1);}
   if(!me.bus){console.log('FAIL: ボーナス面にバスが居ない');process.exit(1);}
-  /* ④遊べば次(古参)が開く=クリアしていなくても */
+  /* ④遊べば次(鬼軍曹)が開く=クリアしていなくても。⚠並びは D_ORD が持つ(2026-08-02(69)に古参の次へ移動) */
   if(!scArr(si)[BNS_D]){console.log('FAIL: ボーナス面に入っても記録が立たない');process.exit(1);}
-  if(!diffOK(si,2)){console.log('FAIL: ボーナス面を遊んでも次の難易度が開かない');process.exit(1);}
+  {const nx9=D_ORD[D_ORD.indexOf(BNS_D)+1];
+   if(!diffOK(si,nx9)){console.log('FAIL: ボーナス面を遊んでも次の難易度が開かない');process.exit(1);}}
   /* ⑥中断の記録を残さない */
   try{localStorage.removeItem(RUN_KEY);}catch(e){}
   saveRun();
@@ -2659,25 +2670,29 @@ function checkBonus(){
    if(!me.waveDone){console.log('FAIL: 到着しても制圧にならない(試合が終わらない)');process.exit(1);}}
   /* ⑤報酬は初回だけ。⚠**初回と2回目は同じスコアで比べる**(2026-08-02(56))=
      🧬は⚡スコア割りなので、スコアが違うと「初回の方が少ない」が普通に起きて意味の無い検査になる。 */
-  if(me.bus)me.bus.score=999999;
+  /* ⚠**初回と2回目で「轢いた数」も揃える**(2026-08-02(69)に上限を撤廃したので、
+     数が違うと「初回の方が少ない」が普通に起きて意味の無い検査になる) */
+  if(me.bus){me.bus.score=999999;me.bus.kill=1234;}
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   const gm1=META.gem,pt1=META.pts;
   if(gm1!==BNS_GEM){console.log('FAIL: 初回クリアの💎が'+gm1);process.exit(1);}
   if(!(pt1>0)){console.log('FAIL: 初回クリアの🧬が入らない');process.exit(1);}
   backTitle();
   META.stg=si;setDiff=BNS_D;startSolo();bnsPreSkip();
-  /* ⚠⚠**倒した数で🧬を配らない**(2026-08-02(50)ユーザー「無限プレイで研究ptを無限獲得できちゃう」)=
-     この面は**負けが無く75秒で終わる**ので、キルに比例させると1走で本編クリア1回ぶんを超える。
-     ⭐**2回目からは⚡スコアに応じた少額+上限**(2026-08-02(52))=**上限を超えないこと**を見る。
+  /* 🧬⭐**2回目からは「轢いた数そのまま」**(2026-08-02(69)ユーザー決定で上限も下限も撤廃)。
+     ⚠**歯止めは「1日5回」(BNS_DAY_N)だけ**=下でその回数を測っている。
+     ⚠⚠**この検査の本体(39〜3745行)はテンプレート文字列の中**(39行目 const body=)=
+       コメントの中でも**バッククォートとドル+波括弧は書けない**。書くと文字列が切れて
+       スクリプトごと構文エラーになる(2026-08-02(69)に踏んだ)。
      ⚠**回数制限(1日1回)は入れて外した**=ユーザー決定「回数制限はやめて報酬を減らそう」。 */
   G.players[0].kills=2000;
-  if(G.players[0].bus)G.players[0].bus.score=999999;/* どれだけ稼いでも上限で止まること */
+  /* ⚠**⚡スコアでは1つも増えないこと**=🧬は轢いた数だけから出る */
+  if(G.players[0].bus){G.players[0].bus.score=999999;G.players[0].bus.kill=1234;}
   const pt2=META.pts;
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   if(META.gem!==gm1){console.log('FAIL: 2回目のクリアでも💎が増える(周回で稼げる)');process.exit(1);}
   {const d2=META.pts-pt2;
-   if(d2>BNS_RPT_MAX){console.log('FAIL: 2回目の🧬が上限を超える +'+d2+'(上限'+BNS_RPT_MAX+')');process.exit(1);}
-   if(d2<BNS_RPT_MIN){console.log('FAIL: 2回目の🧬が少なすぎる +'+d2);process.exit(1);}
+   if(d2!==1234*BNS_RPT_K){console.log('FAIL: 2回目の🧬が轢いた数と違う +'+d2+'(轢いた数1234)');process.exit(1);}
    /* ⚠**初回は「1走ぶん+初回クリア報酬」**なので、必ず2回目より多いこと */
    if(d2>=pt1){console.log('FAIL: 2回目の🧬が初回と同じかそれ以上 +'+d2+' vs 初回'+pt1);process.exit(1);}}
   backTitle();
@@ -2751,8 +2766,8 @@ function checkRice(){
  {const sc0=me.scrap;
   for(const z of me.zombies){if(z.dead||z.boss||z.elite)continue;killZ(me,z);break;}
   if(me.scrap!==sc0){console.log('FAIL: 道中でスクラップが増えている +'+(me.scrap-sc0));process.exit(1);}}
- /* 🧬**走っている間に貯まる研究pt**=**轢いた数**から出て、上限で止まること
-    (2026-08-02(60)ユーザー決定でスコア割から「1体=1🧬」に変えた) */
+ /* 🧬**走っている間に貯まる研究pt**=**轢いた数そのもの**(2026-08-02(60)に「1体=1🧬」へ・
+    2026-08-02(69)に上限も下限も撤廃)。⚠**頭打ちを足し直さないこと**を下で見ている */
  {const B9=me.bus;const kl0=B9.kill|0;B9.kill=0;
   if(bnsGainPts(B9)!==0){console.log('FAIL: 0体なのに🧬が入っている');process.exit(1);}
   B9.kill=40;
@@ -2760,8 +2775,9 @@ function checkRice(){
   /* ⚠**スコアでは動かないこと**=前は⚡スコア割だったので、取り違えるとまた倍率が乗る */
   B9.score=999999;
   if(bnsGainPts(B9)!==40*BNS_RPT_K){console.log('FAIL: 🧬がスコアに引きずられている '+bnsGainPts(B9));process.exit(1);}
+  /* ⚠**上限は無い**(2026-08-02(69)撤廃)=どれだけ轢いても頭打ちにしないこと */
   B9.kill=999999;
-  if(bnsGainPts(B9)!==BNS_RPT_MAX){console.log('FAIL: 🧬が上限で止まらない '+bnsGainPts(B9));process.exit(1);}
+  if(bnsGainPts(B9)!==999999*BNS_RPT_K){console.log('FAIL: 🧬に上限が残っている '+bnsGainPts(B9));process.exit(1);}
   B9.kill=kl0;B9.score=0;}
  /* ③ 連なり */
  const B=me.bus;
