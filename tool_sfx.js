@@ -302,6 +302,35 @@ const REC=[
  {k:'geoBigH', d:1.05,g:-1, af:'equalizer=f=200:width_type=o:width=1.4:g=4',
    mix:[{f:'powerful explosions_multiples',t:1,d:.12,g:-2,r:1.10},
         {f:'METAL SWING HIT Weapon Swing',t:0,d:1.00,g:-2,r:.78,dl:18}]},
+ /* ===== 🏇騎槍の突き・第2陣(2026-08-03(86)ユーザー「騎槍の突き以外の音はOK」) =====
+    ❌**1本目(mSpear)がダメだった理由**=**木の棒を叩いた「カツン」しか鳴っていなかった**。
+      ⚠2層目の `SWING IMPACTS` を**かたまりの頭から**切っていたが、この素材は
+      **前半0.17秒が風切り・当たりはその後**=つまり**当たりが1ミリも入っていなかった**。
+      ⭐だから `o`(かたまりの中のずらし)を足した。位置は `node tool_sfx.js peak` で見る。
+    ⭐**突きは斬りと別物**=①穂先が刺さる鋭い頭 ②**貫いた肉/鎧の胴** ③短い尾。
+      「カツン」は当たりではなく**柄が鳴っているだけ**。 */
+ /* A 貫き=穂先の細い頭→濡れた肉の潰れ→鈍い芯(「刺さった」寄り) */
+ {k:'mSprA', d:.28, g:-5.5, af:'highpass=f=130',
+   mix:[{f:'WHIP Snap Crack',t:0,o:.13,d:.05,g:-11,r:1.50},
+        {f:'Blood Spill Splat',t:0,d:.22,g:-1,r:.85},
+        {f:'SWING IMPACTS Quick Heavy',t:9,o:.17,d:.20,g:-7,r:.80,dl:25}]},
+ /* B 鉄の穂先=金属が体に刺さって短く残響(「鉄」寄り) */
+ {k:'mSprB', d:.26, g:-2.5, af:'highpass=f=150',
+   mix:[{f:'METAL SWING HIT Weapon Swing',t:0,o:.35,d:.26,g:-1,r:1.05},
+        {f:'Spear And Stick Impact',t:2,d:.14,g:-8,r:.95}]},
+ /* C 重い突進=当たりだけを低くして正面から(「ドスッ」寄り) */
+ {k:'mSprC', d:.28, g:-9.5, af:'equalizer=f=200:width_type=o:width=1.4:g=4',
+   mix:[{f:'SWING IMPACTS Quick Heavy',t:9,o:.17,d:.26,g:-1,r:.82},
+        {f:'4 x Punch, Body',t:1,d:.20,g:-7,r:.85,dl:20}]},
+ /* D 現行の直し=木の柄は残したまま、肉と芯を足して「当たった」を作る */
+ {k:'mSprD', d:.26, g:-5.3, af:'highpass=f=120',
+   mix:[{f:'Spear And Stick Impact',t:6,d:.24,g:-2,r:.92},
+        {f:'Blood Spill Splat',t:0,d:.20,g:-7,r:.90,dl:20},
+        {f:'SWING IMPACTS Quick Heavy',t:15,o:.17,d:.18,g:-10,r:.78,dl:35}]},
+ /* E 突進=速い風を先に置いてから抉る(「馬で突っ込んだ」寄り) */
+ {k:'mSprE', d:.30, g:-4.8, af:'highpass=f=140',
+   mix:[{f:'Wind, Rush, Whoosh',t:0,o:.06,d:.10,g:-10,r:1.60},
+        {f:'Gore Designed',t:0,d:.22,g:-3,r:1.15,dl:45}]},
 ];
 
 const SRC=process.argv[3]||path.join(__dirname,'sfx_src');
@@ -361,6 +390,24 @@ if(process.argv[2]==='scan'){
  }
  process.exit(0);
 }
+if(process.argv[2]==='peak'){
+ /* ⭐**かたまりの中の「一番大きい所」が頭から何秒目か**を出す(2026-08-03(86))=
+      node tool_sfx.js peak sfx_src "SWING IMPACTS" 9
+    ⚠**風切り→当たり**が1つのかたまりになっている素材は、頭から切ると当たりが入らない。
+      ここで出た秒数を レシピの `o:` に書くと当たりだけを切り出せる。 */
+ const fr=(process.argv[4]||'').split(',')[0].trim(),ti=+(process.argv[5]||0);
+ const f=findSrc(fr);
+ if(!f){console.log('× 素材なし: "'+fr+'"');process.exit(1);}
+ const s=segs(f),q=s[Math.min(ti,s.length-1)]||[0,1];
+ console.log('■ '+path.basename(f)+' かたまり'+ti+' 開始'+q[0].toFixed(2)+'s 長さ'+q[1].toFixed(2)+'s');
+ const STEP=.04;
+ for(let t=0;t<q[1];t+=STEP){
+  const o=runE(['-hide_banner','-ss',String(q[0]+t),'-t',String(STEP),'-i',f,'-af','volumedetect','-f','null','-']);
+  const mx=+((/max_volume: (-?[\d.]+) dB/.exec(o)||[0,-99])[1]);
+  console.log('   +'+t.toFixed(2)+'s  '+mx.toFixed(1).padStart(6)+'dB  '+'#'.repeat(Math.max(0,Math.round((mx+50)/2))));
+ }
+ process.exit(0);
+}
 if(process.argv[2]==='build'){
  if(!fs.existsSync(OUT))fs.mkdirSync(OUT);
  const TMP=path.join(require('os').tmpdir(),'dt_sfx_tmp.wav');
@@ -384,7 +431,10 @@ if(process.argv[2]==='build'){
     const lf=findSrc(L.f);
     if(!lf){console.log('× 素材なし: '+R.k+' の層 "'+L.f+'"');miss=1;break;}
     const ls=segs(lf),lq=ls[Math.min(L.t||0,ls.length-1)]||[0,L.d];
-    const lst=Math.max(0,lq[0]-.005),ld=Math.min(L.d,lq[1]+.02);
+    /* ⭐`o` = **かたまりの頭から何秒ずらして切り出すか**(2026-08-03(86))。
+       ⚠これが無いと「風切り→当たり」で1つのかたまりになっている素材から**当たりだけ**を取れない
+         (頭から切ると必ず風切りしか入らない)。位置は `node tool_sfx.js peak` で調べる。 */
+    const lst=Math.max(0,lq[0]-.005+(L.o||0)),ld=Math.min(L.d,lq[1]+.02-(L.o||0));
     /* ⚠層ごとに**先にピークを揃えてから** L.g で混ぜ具合を決める(素材の録り音量がバラバラなため) */
     const lp=runE(['-hide_banner','-ss',String(lst),'-t',String(ld),'-i',lf,'-af','volumedetect','-f','null','-']);
     const lmx=+((/max_volume: (-?[\d.]+) dB/.exec(lp)||[0,0])[1]);
@@ -403,8 +453,8 @@ if(process.argv[2]==='build'){
    const f=findSrc(R.f);
    if(!f){console.log('× 素材なし: '+R.k);ng++;continue;}
    const s=segs(f),q=s[Math.min(R.t,s.length-1)]||[0,R.d];
-   const st=Math.max(0,q[0]-.01);
-   dur=Math.min(R.d,q[1]+.02);
+   const st=Math.max(0,q[0]-.01+(R.o||0));
+   dur=Math.min(R.d,q[1]+.02-(R.o||0));
    /* ⚠`-vn -sn -dn -map_metadata -1` は**必ず -i の後ろ**に置く(前だと入力側の指定と見なされて無視される)。
       付け忘れると素材WAVに埋まったジャケット画像が動画として混ざり、1本30KBに膨らむ(実際に膨らんだ) */
    runE(['-y','-hide_banner','-ss',String(st),'-t',String(dur),'-i',f,
