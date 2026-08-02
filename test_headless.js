@@ -3543,7 +3543,20 @@ function checkBnsFlow(){
    if(H(0,BUSH_W+8,EQ_BIG2)!==1){console.log('FAIL: 二階建てで当たりが大きくなっていない');process.exit(1);}
    /* ⚠**絵の寸法から出ていること**=別の定数に書き写すと必ず食い違う */
    if(BUSH_L!==BUSD_L+5||BUSH_W!==BUSD_W+5||BUSH_RX!==BUSD_L+54){
-    console.log('FAIL: 当たりの寸法が絵(BUSD_L/BUSD_W)から出ていない');process.exit(1);}}
+    console.log('FAIL: 当たりの寸法が絵(BUSD_L/BUSD_W)から出ていない');process.exit(1);}
+   /* 🪤**鉄条網は「効いたと分かる大きさ」であること**(2026-08-02(65)ユーザー実機
+      「出っ張ってるようには見えるけど そこに判定はないように感じた」)=
+      ⚠**車体より横へ張り出していない**と、前に少し伸びただけで手応えが出ない。 */
+   if(!(EQ_WIRE_W>BUSH_W)){console.log('FAIL: 鉄条網が車体より横へ張り出していない');process.exit(1);}
+   if(!(EQ_WIRE_X>=80)){console.log('FAIL: 鉄条網の前への張り出しが小さすぎる '+EQ_WIRE_X);process.exit(1);}}
+  /* 🔧⚠⚠**強化の札の文字が札からはみ出さないこと**(2026-08-02(65)ユーザー実機「文字がおかしい」)=
+     **文字を dp 基準・札を画面の割合**で置くと、縦の短い実機で説明が札の外へ出る。
+     ⭐説明の行(39*dp*k)と下端の値段(h-9*dp*k)が必ず札の中に収まるかを、色々な寸法で見る。 */
+  {for(const dp9 of [1,2,3,4])for(let h9=26*dp9;h9<200*dp9;h9+=3*dp9){
+    const k9=bnsUpTextK(h9,dp9);
+    const desc=39*dp9*k9+12*dp9*k9*.35;/* 説明のベースライン+下に出る分 */
+    if(desc>h9){console.log('FAIL: 説明が札からはみ出す dp'+dp9+' h'+Math.round(h9)+' → '+Math.round(desc));process.exit(1);}
+    if(39*dp9*k9>=h9-9*dp9*k9){console.log('FAIL: 説明と値段の行が重なる dp'+dp9+' h'+Math.round(h9));process.exit(1);}}}
   try{drawBnsPre(ctx,me,1.2);}catch(e){console.log('FAIL: ⚔装備の枠の描画で例外 '+e.message);process.exit(1);}
   try{drawBus(ctx,me,1.2);}catch(e){console.log('FAIL: 装備を付けたバスの描画で例外 '+e.message);process.exit(1);}
   bnsUpTap(Q,R.go.x+4,R.go.y+4);}

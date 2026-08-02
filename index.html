@@ -20442,8 +20442,13 @@ const BUSH_RW=BUSD_W*.42;  /* 40.3 先端の半分の幅(絵の ⑦ と同じ) *
 /* 🪤**鉄条網バンパー**=**排障器の先にさらに張り出す格子**。⚠⚠**当たりも絵もこの2本から出す**。
    ⚠**倍率(旧 `EQ_WIRE`=1.07)をやめた**=丸を1.07倍すると**横まで7%広がって**、
      前に張り出す装備なのに横で死ぬようになる(絵と食い違う)。⭐**前だけに箱を足す**のが正しい。 */
-const EQ_WIRE_X=46;        /* 排障器の先からさらに前へ出る量 */
-const EQ_WIRE_W=64;        /* その半分の幅 */
+/* ⚠⚠**小さく作って「判定が無い」と言われた**(2026-08-02(65)ユーザー実機「出っ張ってるようには
+   見えるけど そこに判定はないように感じた」)=46px先・幅64pxでは**排障器の先の細い帯**でしかなく、
+   バスは毎フレーム20px進むので**そこに居た敵は次のフレームで車体に当たる**=効いた実感がゼロ。
+   ⭐**倍にして車体より横へも張り出した**(92px先・幅116px>車体の101px)=
+     **前も横も明らかに広がる**ので「当たりが広い」が手で分かる。 */
+const EQ_WIRE_X=92;        /* 排障器の先からさらに前へ出る量 */
+const EQ_WIRE_W=116;       /* その半分の幅(⚠車体の `BUSH_W`=101 より外まで) */
 /* いちばん外側(=先に弾く丸)。⚠**装備で伸びる分は掛ける側で足す** */
 const BUSH_OUT=Math.max(Math.hypot(BUSH_L,BUSH_W),Math.hypot(BUSH_RX,BUSH_RW));
 /* 🚌⭐**バスの箱に触れているか**(バスの局所座標=+xが進む向き・`pad`=相手の半径)。
@@ -21636,6 +21641,19 @@ function beqCost(E,i){
 }
 /* 🔒の時に「何を先に買えばいいか」を言うための1つ前(⚠先頭なら null) */
 function beqPrev(i){const at=BEQ_AT[i];return at.st>0?BEQ[BEQ_LN[at.ln].ix[at.st-1]]:null;}
+/* 🐞⚠⚠**古いセーブの穴を埋める**(2026-08-02(65)ユーザーの実機写真で発覚)=
+   **段階解放が入る前(2026-08-02(55)より前)は好きな装備を単品で買えた**ので、
+   **③だけ持っていて①②が🔒**という「梯子が途中から始まっている」状態のセーブが残っている。
+   ⭐**持っている段より下は全部持っていることにする**(取り上げない)=画面の矛盾が消える。
+   ⚠**中身を消さない・入れ替えない**(META.beq は参照で持ち回っているため)。 */
+function beqFixLadder(E){
+ if(!E)return;
+ for(const L of BEQ_LN){
+  let top=-1;
+  for(let s=0;s<L.ix.length;s++)if(E[BEQ[L.ix[s]].k])top=s;
+  for(let s=0;s<top;s++)E[BEQ[L.ix[s]].k]=1;
+ }
+}
 /* 🎒**走る前の状態**。⚠**G に持つ**=面(=1試合)の状態であってバスの持ち物ではない */
 function bnsPreInit(C){
  /* ⚠**奥(y小)から手前へ番号を振る**=札も上から順に並ぶので、ピンの数字と札の数字が同じ流れで読める。
@@ -21646,6 +21664,7 @@ function bnsPreInit(C){
  if(!Array.isArray(META.bres))META.bres=[0,0,0];
  if(!META.bup||typeof META.bup!=='object')META.bup={};
  if(!META.beq||typeof META.beq!=='object')META.beq={};
+ beqFixLadder(META.beq);/* 🐞古いセーブの「③だけ持っている」を埋める(2026-08-02(65)) */
  G.bpre={st:'sel',left:BNS_MG_T,res:META.bres,up:META.bup,eq:META.beq,pick:P,t:0,mg:null,
          tab:0,selI:-1,selT:0,got:null,gotT:0,bt:0,bp:0};
  document.body.classList.add('bnspre');
@@ -21697,9 +21716,16 @@ function bnsPreStep(dt){
    ⚠⚠**コメントの中で「星2つ」の直後に「斜線」を書かない**(2026-08-02(43)に踏んだ)=
      **その2文字がコメントの終わりの記号そのもの**なので、コメントがそこで切れて
      **スクリプト全体が文法エラー**になる(`test_undef` が捕まえた)。 */
+/* 💰⚠⚠**稼ぎは半分に落とした**(2026-08-02(65)ユーザー実機「**ミニゲームで稼げる額が多い
+   (普通に人は完璧にクリアできちゃう)からすぐ強化終わる**」)=
+   ⚠**上手い人は毎回ほぼ満点**なので、**満点の額がそのまま「1回の稼ぎ」**になる。
+     満点前提で釣り合わせないと、**遊びの寿命(強化を全部そろえるまで)が一瞬で終わる**。
+   ⭐**下げたのは3つ**=1回の点(5→3)・早得(2.0→1.0)・おまけの物資(.35→.25)。
+   ⚠⚠**ミニゲームを難しくして調整しない**=難しくすると**下手な人だけが損をする**。
+     ⭐**上手い人の満点の額**を下げる方が、腕前の差はそのままで寿命だけ伸びる。 */
 const BMG_MUL=[1,1.2,1.5,1.9,2.4];/* 連続の倍率(1連目から。⚠3種で共通) */
-const BMG_PT=[5,3,0];             /* ✨ピッタリ / ⭕成功 / ❌失敗(⚠3種で共通) */
-const BMG_SUB=.35;                /* ⚠主でない物資も少しは入る=1種類しか貯まらないと強化が1本道になる */
+const BMG_PT=[3,2,0];             /* ✨ピッタリ / ⭕成功 / ❌失敗(⚠3種で共通) */
+const BMG_SUB=.25;                /* ⚠主でない物資も少しは入る=1種類しか貯まらないと強化が1本道になる */
 /* ⏱⭐⭐⭐**3種とも制限時間つき+早く終えるほど得**(2026-08-02(51)ユーザー決定
    「各ミニゲームは制限時間があって早くやればやるほど報酬が増えるようにして」)。
    ⚠⚠**時計は「自分が操作できる間」だけ動かす**=🏠記憶の「見せている間」は待たされているだけなので、
@@ -21707,7 +21733,7 @@ const BMG_SUB=.35;                /* ⚠主でない物資も少しは入る=1�
    ⭐**早得は残り秒に比例**=**急ぐ理由**が入って、狙う⇄急ぐの綱引きが生まれる。
    ⚠**時間切れは失敗ではない**=そこまでの点は残す(この面の「負けは無い」に揃える)。 */
 const BMG_TIME=30;   /* 1回の制限時間(秒) */
-const BMG_FAST=2.0;  /* 残り1秒あたりの早得 */
+const BMG_FAST=1.0;  /* 残り1秒あたりの早得(⚠2026-08-02(65)に 2.0→1.0) */
 const bmgBonus=M=>Math.round(Math.max(0,M.left||0)*BMG_FAST);
 /* ⚠**並びは `ENT_K`(棟の種類)と同じ**。⭐**選択画面の札にもこの名前を出す**=
    何の遊びか読めないと「どこを漁るか」が物資だけの選択になってしまう。 */
@@ -21962,6 +21988,13 @@ function bnsUpRects(W,H,tab){
  R.go={x:W*.56,y:ty,w:W*.405,h:th};
  return R;
 }
+/* ⚠⚠⭐**札の文字の縮み具合**(2026-08-02(65)ユーザー実機「文字がおかしい」)=
+   **文字を `dp` 基準・札の高さを画面の割合**で置いていたので、**別々の物差し**だった。
+   縦の短い(横に長い)実機ほど札が低くなり、**説明が札の外へはみ出していた**。
+   ⭐**札1枚に要る高さ(`BNS_UP_ROWH`)に対する比で全部を縮める**=どの寸法でも中に収まる。
+   ⚠**描く側と検査が同じ物を見る**ために関数にしてある(2か所に書くと必ず食い違う)。 */
+const BNS_UP_ROWH=58;
+function bnsUpTextK(h,dp){return clamp(h/(BNS_UP_ROWH*(dp||1)),.5,1);}
 /* そのつまみに出す札の総数と所持数(⚠見出しの「2/6」はここ1か所から出す) */
 function beqTabCnt(E,tb){const L=beqLines(tb);let n=0,o=0;
  for(const l of L)for(const i of l.ix){n++;if(E&&E[BEQ[i].k])o++;}
@@ -22342,6 +22375,13 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   const nm=tb.i?(BEQ_TB[tb.i-1].ic+BEQ_TB[tb.i-1].n):'🔧性能';
   c.fillText(nm+' '+own,tb.x+tb.w/2,tb.y+tb.h*.64);
  }
+ /* ⚠⚠⭐**文字の位置と大きさは「札の高さ」から出す**(2026-08-02(65)ユーザー実機「文字がおかしい」)=
+    それまで**文字は `dp` 基準・札の高さは画面の割合**という**別々の物差し**で置いていたので、
+    **縦の短い(=横に長い)実機ほど説明が札の外へはみ出していた**(実機の写真で発覚)。
+    ⭐**札1枚に必要な高さ(`ROWH`)に対する比**で全部を縮める=どんな寸法でも札の中に収まる。
+    ⚠**上限は1**=大きい画面で文字だけ膨らませない。 */
+ const kz=R.length?bnsUpTextK(R[0].h,dp):1;
+ const PAD=9*dp*Math.max(.7,kz);
  for(const r of R){
   const u=tab?BEQ[r.i]:BUP[r.i];
   const p=tab?beqCost(Q.eq,r.i):bupCost(Q.up,r.i);
@@ -22355,23 +22395,23 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.lineWidth=(ok?3:2)*dp;c.stroke();
   c.textAlign='left';
   c.fillStyle=(ok||p==null)?PANE:(lk?'rgba(242,236,220,.34)':'rgba(242,236,220,.55)');
-  c.font='900 '+Math.round(16*dp)+'px '+FF;
-  /* ⚔段の数字(①②③④)=どこまで来たかが一目で分かる */
-  c.fillText((tab?'①②③④⑤'.charAt(BEQ_AT[r.i].st)+' ':'')+u.ic+' '+u.n,r.x+9*dp,r.y+22*dp);
-  c.font='900 '+Math.round(12*dp)+'px '+FF;
+  c.font='900 '+Math.round(16*dp*kz)+'px '+FF;
+  /* ⚔段の数字(①②③④⑤)=どこまで来たかが一目で分かる */
+  c.fillText((tab?'①②③④⑤'.charAt(BEQ_AT[r.i].st)+' ':'')+u.ic+' '+u.n,r.x+PAD,r.y+22*dp*kz);
+  c.font='900 '+Math.round(12*dp*kz)+'px '+FF;
   c.fillStyle=(ok||p==null)?'rgba(242,236,220,.85)':(lk?'rgba(242,236,220,.3)':'rgba(242,236,220,.45)');
-  c.fillText(u.d,r.x+9*dp,r.y+39*dp);
+  c.fillText(u.d,r.x+PAD,r.y+39*dp*kz);
   /* 🔧性能は段(◆の数)=いくつ積んだかが数字より速く読める。⚔装備は付いているかだけ */
-  if(!tab){c.fillStyle=GOLD;c.font='900 '+Math.round(12*dp)+'px '+FF;
+  if(!tab){c.fillStyle=GOLD;c.font='900 '+Math.round(12*dp*kz)+'px '+FF;
    let dm='';for(let k=0;k<u.mx;k++)dm+=(k<lv?'◆':'◇');
-   c.fillText(dm,r.x+9*dp,r.y+55*dp);}
+   c.fillText(dm,r.x+PAD,r.y+55*dp*kz);}
   c.textAlign='right';
-  c.font='900 '+Math.round(15*dp)+'px '+FF;
+  c.font='900 '+Math.round(15*dp*kz)+'px '+FF;
   c.fillStyle=p==null?LIFE:(lk?'rgba(242,236,220,.34)':(ok?GOLD:'rgba(242,236,220,.45)'));
-  /* ⚠⚠**短く書く**(2026-08-02(55)に撮って直した)=4段に増えて札が低くなったので、
+  /* ⚠⚠**短く書く**(2026-08-02(55)に撮って直した)=段が増えて札が低くなったので、
      長い文字だと**説明と値段が同じ行で重なる**。⭐印だけで足りる物は印だけにする。 */
   c.fillText(p==null?(tab?'✅':'MAX'):(lk?'🔒':(BRES[u.r].ic+p)),
-             r.x+r.w-9*dp,r.y+r.h-9*dp);
+             r.x+r.w-PAD,r.y+r.h-PAD);
  }
  const g=R.go,pl=.5+.5*Math.sin(t*4);
  c.fillStyle='rgba(122,42,30,.96)';rr(c,g.x,g.y,g.w,g.h,10*dp);c.fill();
