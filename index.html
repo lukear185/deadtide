@@ -662,14 +662,20 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hcard.r5{border-color:var(--r5);background:var(--r5bg);box-shadow:0 0 16px rgba(255,106,74,.6)}
 .hcard.dud{border-color:var(--dud);background:var(--dudbg);opacity:.9}
 .hcard .rk{flex:0 0 auto;font-size:11px;font-weight:900}
-.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:5px;margin-top:6px}
-.hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:4px 6px;font-size:11px;color:var(--paper);text-align:left}
+/* ⚠(100)札の幅118pxは狭すぎて押しづらい(ユーザー指摘)=160pxに広げ、高さも44pxの掟に合わせる */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:6px}
+.hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:8px 8px;min-height:44px;font-size:11.5px;color:var(--paper);text-align:left}
 .hgrid .hb.own{border-color:var(--paper)}
-.hgrid .hb .hq{font-size:10.5px;opacity:.75}
+/* ⚠実機(dp=3)は文字の実測がわずかに太り、「未所持」が折り返して札の縁で切れた(ユーザー写真)。
+   1行に固定して溢れは…で切る(大事な言葉は行頭に置く=renderHStat側) */
+.hgrid .hb .hq{font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ⭐🦸英雄ステータス(2026-07-30)。⚠横画面は高さ393pxしか無いので**左=姿・右=数値**の横並び。
    縦に積むと数値が画面外へ出る(研究所のカードで同じ失敗をしている) */
 .hstop{display:flex;gap:8px;align-items:stretch;margin-bottom:6px}
-.hsshow{flex:0 0 132px;height:158px;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void)}
+.hsshow{flex:0 0 132px;height:158px;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void);cursor:pointer}
+/* ▶(100)必殺技を実際に使っている映像(ユーザー指示)。姿の枠に重ねて再生する */
+.hsshow .hsplay{position:absolute;left:0;right:0;bottom:0;background:rgba(20,16,12,.82);color:var(--gold);
+ font-size:10.5px;font-weight:900;text-align:center;padding:3px 2px;letter-spacing:1px}
 .hsshow canvas{position:absolute;left:0;top:0;width:100%;height:100%}
 .hsinfo{flex:1 1 auto;min-width:0}
 .hsinfo .hsn{font-weight:900;font-size:16px;line-height:1.2}
@@ -689,7 +695,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hchips span{background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
  padding:1px 6px;font-size:10.5px;font-weight:800}
 /* ⚠金色は紙色の地では読めない(コントラスト不足)。必殺の行は英雄窓の .ul と同じ濃い錆色に揃える */
-.hsul{font-size:12px;font-weight:900;color:var(--rust2);line-height:1.35}
+/* ⚠(100)必殺の説明は**高さを固定**する(ユーザー指摘)=英雄によって1行/2行で下の一覧が上下に動き、
+   同じ札を押しているのに位置が変わっていた。⚠font-sizeも1つに固定(iOSの自動拡大も止める) */
+.hsul{font-size:12px;font-weight:900;color:var(--rust2);line-height:1.4;
+ height:34px;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .hgrid .hb.pick{cursor:pointer}
 .hgrid .hb.sel{outline:3px solid var(--gold);outline-offset:1px}
 /* ⭐召集画面の骨格(2026-07-27 第93弾): 左2/3=目玉の英雄 / 右1/3=💎と大きなボタン。
@@ -1334,7 +1344,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="bphd"><b>🦸 英雄ステータス</b><span class="pt" id="hs-own"></span><button class="xbtn" id="bt-hstat-close">✕</button></div>
     <div class="bpbody">
       <div class="hstop">
-        <div class="hsshow"><canvas id="hs-cv" width="264" height="316"></canvas></div>
+        <div class="hsshow" id="hs-show"><canvas id="hs-cv" width="264" height="316"></canvas><span class="hsplay" id="hs-play">▶ 必殺技を見る</span></div>
         <div class="hsinfo" id="hs-info"></div>
       </div>
       <div class="hgrid" id="hs-grid"></div>
@@ -15936,9 +15946,19 @@ const LUPI_HOP=170,LUPI_COLS=['#ff7fb8','#7fc8ff','#ffd23d'];
 const GUM_T=10,GUM_SLOW=.3,GUM_DEF=2,GUM_RNG=280,GUM_FLY=2.1;
 function lupiHop(C,x1,y1,z2,col,big){
  if(!(FXLV>0))return;
- addFx(C,'tr',x1,y1,'',{x2:z2.px,y2:z2.py-16*CH_UP,col:'rgba('+(col==='#7fc8ff'?'127,200,255,':col==='#ffd23d'?'255,210,61,':'255,127,184,'),w:big?3.4:2.2});
- addFx(C,'ring',z2.px,z2.py,'',{r:big?34:22,col});
- addP(C,big?6:3,z2.px,z2.py-16*CH_UP,{sp:120,up:60,g:420,life:.3,r:big?2.6:1.8,col});
+ /* 🎾(100)**ゴムボールを撃っている感**(ユーザー指示「弾もっとでかくして遅くして」)=
+    細い線ではなく**大きな玉が飛ぶ**。⚠玉は粒(addP)を軌道上に置いて作る=
+    寿命をずらして置くと「玉が転がって進む」ように見える(粒1つ=1コマ)。 */
+ const x2=z2.px,y2=z2.py-16*CH_UP;
+ const NB=big?9:7,R=big?9:6.5;/* 玉の大きさ(以前は線の太さ2.2px相当) */
+ for(let i=0;i<=NB;i++){
+  const q=i/NB,ex=x1+(x2-x1)*q,ey=y1+(y2-y1)*q-Math.sin(q*Math.PI)*(big?26:16);
+  /* ⚠**遅く見せる**=先の粒ほど寿命を長く(=あとから現れる)。0.42秒かけて届く */
+  addP(C,1,ex,ey,{sp:0,up:0,g:0,life:.10+q*.32,r:R,col});
+  addP(C,1,ex-R*.34,ey-R*.34,{sp:0,up:0,g:0,life:.10+q*.32,r:R*.3,col:'#fff7fb'});/* 玉のツヤ */
+ }
+ addFx(C,'ring',z2.px,z2.py,'',{r:big?34:24,col});
+ addP(C,big?6:4,z2.px,z2.py-16*CH_UP,{sp:120,up:60,g:420,life:.3,r:big?2.6:2,col});
 }
 function lupiNext(C,x,y,hit){
  let tg=null,bd=1e9;
@@ -25842,12 +25862,17 @@ function hsList(){return HEROES;}
 function openHStat(id){
  const own=HEROES.find(h=>heroOwned(h.id));
  HSSEL=id||(heroOwned(HSSEL)?HSSEL:'')||(META.hsel&&heroOwned(META.hsel)?META.hsel:'')||(own?own.id:HEROES[0].id);
- $('md-hstat').classList.add('on');renderHStat();
+ $('md-hstat').classList.add('on');hsDemoStop();renderHStat();
  /* ⭐開いた時は選択中の札まで一覧を寄せる(⚠rAFで1フレーム遅らせる=開いた直後は寸法が無い) */
  try{requestAnimationFrame(()=>{const e9=document.querySelector('#hs-grid .hb.sel');
   if(e9&&e9.scrollIntoView)e9.scrollIntoView({block:'nearest'});});}catch(e){}
 }
-function closeHStat(){$('md-hstat').classList.remove('on');try{renderPickRows();}catch(e){}}
+function closeHStat(){$('md-hstat').classList.remove('on');try{hsDemoStop();}catch(e){}try{renderPickRows();}catch(e){}}
+/* ▶(100)姿の枠を押すと必殺技のデモを再生/停止(ユーザー指示) */
+{const sh=$('hs-show');
+ if(sh&&sh.addEventListener)sh.addEventListener('click',()=>{
+  if(HSD){hsDemoStop();return;}
+  hsDemoStart(HSSEL);});}
 const hsRow=(a,b)=>'<tr><td>'+a+'</td><td>'+b+'</td></tr>';
 /* ⭐⭐**数字だけの表をやめて「棒」で見せる**(2026-08-02(66)ユーザー「文字とかだけ並んでるとこを
    わかりやすく」)=**HP900と書いても、それが強いのか弱いのかは他と比べないと分からない**。
@@ -25892,16 +25917,112 @@ function renderHStat(){
    +(U.hook?('<span>🪝 足止め'+U.hook+'体</span>'):'')
    +'<span>⚡ 必殺まで'+(H.uch||0)+'秒</span></div>'
   +'<div class="hsul">必殺『'+H.ult+'』— '+H.udsc+'</div>');
- /* 姿。⚠fitDraw は canvas の中の寸法に合わせて収める(CSSと食い違うと潰れる=第93弾の失敗) */
- try{const cv=$('hs-cv');if(cv&&cv.getContext&&ui>=0)fitDraw(cv,cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),10);}catch(e){}
+ /* 姿。⚠fitDraw は canvas の中の寸法に合わせて収める(CSSと食い違うと潰れる=第93弾の失敗)。
+    ⚠▶デモを流している最中は上書きしない(毎フレーム描いているのを消してしまう) */
+ if(!HSD)try{const cv=$('hs-cv');if(cv&&cv.getContext&&ui>=0)fitDraw(cv,cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),10);}catch(e){}
  const g=$('hs-grid');
  if(g){const sv9=g.scrollTop;/* ⚠書き直したらスクロール位置を戻す(掟)=一覧が自前で流れる箱になった */
   g.innerHTML=HEROES.map(h=>{const c2=(META.hero||{})[h.id]||0;
    return '<div class="hb pick'+(c2?' own':'')+(h.id===HSSEL?' sel':'')+'" data-hs="'+h.id+'">'
     +RK_S[h.rk]+' '+(c2?h.n:'???')
-    +'<div class="hq">'+(c2?('所持'+c2+' / '+h.ult):RK_N[h.rk]+'枠 — 未所持')+'</div></div>';}).join('');
+    /* ⚠「未所持」を行頭に=1行に切り詰めた時、消えるのはレア枠名の方(大事な状態は残る) */
+    +'<div class="hq">'+(c2?('所持'+c2+' / '+h.ult):'未所持 — '+RK_N[h.rk]+'枠')+'</div></div>';}).join('');
   g.scrollTop=sv9;
-  g.querySelectorAll('[data-hs]').forEach(b=>{b.onclick=()=>{HSSEL=b.dataset.hs;if(sfx.buy)sfx.buy();renderHStat();};});}
+  /* ⚠札を選び直したらデモは止める(別の英雄の映像が流れ続けない) */
+  g.querySelectorAll('[data-hs]').forEach(b=>{b.onclick=()=>{HSSEL=b.dataset.hs;if(sfx.buy)sfx.buy();
+   if(HSD)hsDemoStop();else renderHStat();};});}
+}
+/* ▶⭐⭐(100)**必殺技のデモ映像**(2026-08-03ユーザー指示「実際にゾンビとかに使ってる映像を流して」)。
+   ⭐**本物の仕組みをそのまま回す**=英雄1体+ゾンビ数体の小さな箱庭(newCamp)を作り、
+     `heroUlt` を呼んで `campStep`+`renderCamp` で回す。⚠**絵も演出も本番と同一**になる(嘘をつかない)。
+   ⚠**G には触らない**=試合中に開いても盤面を壊さない(専用のC9を持つ)。
+   ⚠倒し切ってしまうと見る物が無くなるので、**ゾンビは死なない**(hpを戻す=🎯ダミーと同じ手)。 */
+let HSD=null;/* {C,t,cv,ui,loop} */
+function hsDemoStop(){
+ if(HSD&&HSD.raf)try{cancelAnimationFrame(HSD.raf);}catch(e){}
+ HSD=null;
+ const p=$('hs-play');if(p)p.textContent='▶ 必殺技を見る';
+ try{renderHStat();}catch(e){}/* 姿の絵に戻す */
+}
+function hsDemoStart(id){
+ hsDemoStop();
+ const H=HEROES.find(h=>h.id===id)||HEROES[0];
+ const ui=hUiOf(H.id);if(ui<0)return;
+ const cv=$('hs-cv');if(!cv||!cv.getContext)return;
+ const C=newCamp('demo','me',0,true);
+ C.hUi=ui;C.hOut=1;C.hCg=1;C.isMe=false;/* ⚠isMe=false=デモで音を鳴らさない・トーストも出さない */
+ /* 英雄を道の中ほどに置く。⚠**px/py は campStep が入れる**ので、まず1回回す */
+ const d0=PLEN*.5;
+ C.units.push({eid:EID++,ui,own:0,am:1,d:d0,hp:UNITS[ui].hp,mhp:UNITS[ui].hp,cd:0,hitT:0,ph:0,px:0,py:0,hro:H.rk});
+ /* 的=前方に並べる雑魚(⚠倒れない=デモが空になるのを防ぐ) */
+ for(let i=0;i<7;i++){const z=mkZ(zSpec(0,1,1,false,''),d0-90-i*46);z.dummy=1;C.zombies.push(z);}
+ try{campStep(C,.001,1);}catch(e){}
+ HSD={C,t:0,cv,ui,ph:0,last:0};
+ const p=$('hs-play');if(p)p.textContent='■ 止める';
+ try{if(sfx.tap)sfx.tap();}catch(e){}
+ const step=(ts)=>{
+  if(!HSD)return;
+  const dt=Math.min(.05,HSD.last?(ts-HSD.last)/1000:.016);HSD.last=ts;
+  HSD.t+=dt;
+  /* 1.2秒ごとに撃ち直す(前置きモーション+本体が収まる長さ) */
+  if(HSD.t-HSD.ph>4.2||HSD.ph===0){HSD.ph=HSD.t;
+   const C9=HSD.C;C9.hCg=1;
+   /* 位置とHPを戻す=何度見ても同じ絵になる */
+   for(let i=0;i<C9.zombies.length;i++){const z=C9.zombies[i];
+    z.dead=false;z.hp=z.mhp;z.d=d0-90-i*46;z.gumT=0;z.slowT=0;z.frzT=0;z.stnT=0;z.burnT=0;z.dvT=0;z.shT=0;}
+   const u9=C9.units[0];if(u9){u9.d=d0;u9.hp=u9.mhp;u9.dead=false;}
+   try{heroUlt(C9,1);}catch(e){}}
+  try{campStep(HSD.C,dt,1);}catch(e){}
+  try{hsDemoDraw();}catch(e){}
+  HSD.raf=requestAnimationFrame(step);
+ };
+ HSD.raf=requestAnimationFrame(step);
+}
+/* デモの1コマ。⚠**renderCamp は本番のcanvas(cv/ctx)に固定で描く**ので流用できない=
+   ここでは同じ描画部品(drawZombie/drawUnit/drawP)を呼んで小さく組む。
+   ⚠**演出(C.fx)は主要な形だけ**描く=輪・線・衝撃・火花・文字。これで必殺の見え方は伝わる。 */
+function hsDemoDraw(){
+ if(!HSD)return;
+ const cv=HSD.cv,c=cv.getContext&&cv.getContext('2d');if(!c)return;
+ const W=cv.width,Hh=cv.height,C=HSD.C,t=HSD.t;
+ c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W,Hh);
+ const u=C.units[0];if(!u)return;
+ /* 背景=夜の地面(枠の意匠は .hsshow が持っている) */
+ {const g=c.createLinearGradient(0,0,0,Hh);
+  g.addColorStop(0,'#241f19');g.addColorStop(1,'#12100c');c.fillStyle=g;c.fillRect(0,0,W,Hh);}
+ const k=Math.min(W/430,Hh/330)*1.5;
+ c.save();c.beginPath();c.rect(0,0,W,Hh);c.clip();
+ c.translate(W*.5-u.px*k,Hh*.60-u.py*k);c.scale(k,k);
+ /* 道(英雄の足元を通る帯) */
+ c.fillStyle='#3a352c';c.fillRect(u.px-460,u.py-34,920,74);
+ c.strokeStyle='rgba(242,236,220,.16)';c.lineWidth=2;c.setLineDash([16,14]);
+ c.beginPath();c.moveTo(u.px-460,u.py+3);c.lineTo(u.px+460,u.py+3);c.stroke();c.setLineDash([]);
+ /* 敵→英雄の順(手前に英雄) */
+ for(const z of C.zombies){if(z.d<-2)continue;
+  try{groundShadow(c,z.px,z.py,13*ZOMBIES[z.zi].sc);}catch(e){}
+  try{drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,d:z.d});}catch(e){}
+  /* 🫧ガム(ルピナの必殺)はデモでも見せる */
+  if(z.gumT>0){const zc=ZOMBIES[z.zi].sc;
+   for(let q=0;q<3;q++){c.fillStyle=LUPI_COLS[q%3];c.globalAlpha=.9;
+    c.beginPath();c.arc(z.px+Math.cos(q*2.1)*10*zc,z.py-(24+q*7)*zc,5*zc,0,7);c.fill();}
+   c.globalAlpha=1;}}
+ try{groundShadow(c,u.px,u.py,15);}catch(e){}
+ try{drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{chg:u.chg||0,fireT:u.fireT||0,ulW:u.ulW||0,ulW0:u.ulW0||0,ulT:u.ulT||0,ulm:1});}catch(e){}
+ try{drawP(c,C);}catch(e){}
+ /* 演出(主要な形だけ) */
+ for(const e of C.fx){
+  const a=Math.max(0,1-e.t/(e.lf||.5));if(a<=0)continue;
+  c.globalAlpha=a;
+  if(e.k==='tr'||e.k==='beam'){c.strokeStyle=(e.col||'rgba(255,235,150,')+a+')';c.lineWidth=e.w||3;
+   c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2==null?e.x:e.x2,e.y2==null?e.y:e.y2);c.stroke();}
+  else if(e.k==='ring'||e.k==='shock'){c.strokeStyle=e.col||GOLD;c.lineWidth=e.k==='shock'?5:3;
+   c.beginPath();c.arc(e.x,e.y,(e.r||60)*Math.min(1,e.t/(e.lf||.5)+.15),0,7);c.stroke();}
+  else if(e.k==='spark'||e.k==='flame'){c.fillStyle=e.col||GLOW;
+   c.beginPath();c.arc(e.x,e.y,6+e.t*40,0,7);c.fill();}
+  else if(e.k==='txt'){c.fillStyle=GOLD;c.font='900 20px '+FF;c.textAlign='center';
+   c.fillText(String(e.s||''),e.x,e.y-e.t*24);}
+  c.globalAlpha=1;}
+ c.restore();
 }
 function gcView(v){
  GCV=v;
@@ -25966,7 +26087,11 @@ function gcHomeStep(dt){
   const up=()=>{if(!GCH.dg)return;const dx=GCH.dg.dx,n=Math.max(1,GCH.n||1);
    GCH.a+=dx*GC_SWIPE;GCH.dg=null;
    /* ⚠**しきい値を置く**=軽く触れただけで入れ替わると、押したい単発/10連が押せなくなる */
-   if(n>1&&Math.abs(dx)>36){GCH.idx=((GCH.idx+(dx<0?1:-1))%n+n)%n;if(sfx.buy)sfx.buy();}};
+   if(n>1&&Math.abs(dx)>36){GCH.idx=((GCH.idx+(dx<0?1:-1))%n+n)%n;if(sfx.buy)sfx.buy();}
+   /* 🦸(100)**正面のキャラを軽くタップ=ステータス画面へ**(ユーザー指示)。
+      ⚠スワイプと区別する=動きが小さい時だけ(36px未満なら入れ替えも起きていない) */
+   else if(Math.abs(dx)<10){try{const L=gcStarList(),h=L[((GCH.idx%L.length)+L.length)%L.length];
+    if(h){const m=$('md-gacha');if(m)m.classList.remove('on');openHStat(h.id);}}catch(x){}}};
   cv.addEventListener('pointerdown',dn);cv.addEventListener('pointermove',mv,{passive:false});
   cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
   cv.addEventListener('pointerleave',up);

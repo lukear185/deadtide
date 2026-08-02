@@ -200,8 +200,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
        +'MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')
      /* hstat=🦸英雄ステータス。hs=英雄id を足すとその1人を選んだ状態で撮る */
-     :(OPT.indexOf('hstat')>=0)?('META.hero={hNox:1,hSf:2,hCop:1,hDawn:1,hStorm:1};META.gem=17;'
-       +'openHStat("'+((/hs=([A-Za-z0-9]+)/.exec(OPT)||[0,''])[1])+'");')
+     /* ⭐hsdemo = ▶必殺技のデモを再生した状態で撮る(2026-08-03(100)) */
+     :(OPT.indexOf('hstat')>=0)?('META.hero={hNox:1,hSf:2,hCop:1,hDawn:1,hStorm:1,hLupi:1};META.gem=17;'
+       +'openHStat("'+((/hs=([A-Za-z0-9]+)/.exec(OPT)||[0,''])[1])+'");'
+       +(OPT.indexOf('hsdemo')>=0?'setTimeout(function(){try{hsDemoStart(HSSEL);}catch(e){}},120);':''))
      :STP?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.nmOK=1;META.st=["air","mgun","frost","napalm"];'
        +'META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.hero={hNox:1,hSf:1,hCop:1};'
        +'renderStkSeg();renderHeroSeg();updLabBtn();refreshDiffUI();refreshRunUI();show("setup");')
