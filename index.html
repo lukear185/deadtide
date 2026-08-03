@@ -1121,6 +1121,14 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 .arcwrap .menu .btn{min-height:48px}
 .arcwrap .menu .btn.sm{min-height:44px;font-size:13px}
 .arcrec{font-size:11.5px;font-weight:900;color:var(--gold)}
+/* 🗺(132)ステージの札 */
+.arcst{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:min(560px,94%)}
+.arcst .sb{flex:1 1 120px;min-height:52px;padding:5px 8px;border:3px solid var(--ink);border-radius:12px;
+ background:rgba(24,20,16,.8);color:var(--paper3);font-family:inherit;font-weight:900;font-size:13px;
+ cursor:pointer;text-align:left;line-height:1.2}
+.arcst .sb.on{border-color:var(--gold);background:rgba(84,58,14,.85);color:var(--gold)}
+.arcst .sb i{display:block;font-style:normal;font-size:10.5px;color:var(--paper3);margin-top:2px}
+.arcst .sb.on i{color:var(--paper2)}
 /* ---- 盤面 ---- */
 #scr-arcg{display:none;position:absolute;inset:0;overflow:hidden;background:#101820}
 #scr-arcg.on{display:block}
@@ -1131,7 +1139,12 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
  font-weight:900;font-size:15px;color:var(--pane);min-height:30px;display:flex;align-items:center;gap:5px}
 #arc-msg{flex:1 1 auto;text-align:center;font-size:13px;color:var(--gold);font-weight:900;text-shadow:0 2px 0 #000}
 /* ⚠(126)10秒の待ちを廃止したので、時間の帯(#arc-bar)は使わない(印だけ残す) */
-#arc-bar{display:none}
+/* ⏱(131)狙う持ち時間の帯(15秒)。⚠自分の番だけ出す */
+#arc-bar{position:absolute;left:10px;right:10px;top:44px;z-index:3;height:9px;border:3px solid var(--ink);
+ border-radius:8px;background:rgba(24,20,16,.7);overflow:hidden;pointer-events:none;display:none}
+#arc-bar.on{display:block}
+#arc-bar i{display:block;height:100%;background:var(--gold);width:100%}
+#arc-bar.hot i{background:var(--danger2)}
 #arc-ctl{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:flex-end;gap:6px;padding:8px 10px}
 #arc-ctl.off{opacity:.45;pointer-events:none}
 #arc-l,#arc-r,#arc-duck,#arc-helm{flex:0 0 auto;min-width:56px;min-height:56px;font-size:20px}
@@ -1409,8 +1422,10 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="arcwrap">
     <div class="arclogo">🏹 弓比べ</div>
     <div class="arcsub">— 見えない相手を、勘と度胸で射抜く —</div>
+    <!-- 🗺(132)ステージ選び=最初から全部選べる。中身(ギミック)は番号が上がるほど増える -->
+    <div class="arcst" id="arc-st"></div>
     <div class="menu">
-      <button class="btn red" id="bt-arc-play">▶ ひとりで遊ぶ</button>
+      <button class="btn red" id="bt-arc-play">▶ このステージで遊ぶ</button>
       <button class="btn" id="bt-arc-how">📖 あそびかた</button>
       <button class="btn sm" id="bt-arc-back">← DEADTIDE へ戻る</button>
     </div>
@@ -30397,6 +30412,26 @@ const ARC_MIND=18,ARC_MAXD=72;/* 相手までのマス数(72m〜288m) */
    ⭐**視点が相手に居る間=こちらは相手の視界の外**、という読み替え。⚠自分の番は一切動けない。
    ⚠だから相手が狙う時間は**動くか決めるのに足りる長さ**が要る(ARC_ETHINK)。 */
 const ARC_ETHINK=2.8;/* 相手が狙いを定めている秒数(=こちらが動ける唯一の間) */
+/* 💨⭐⭐(131)**風**(ユーザー採用)=毎射ごとに変わる横風。⚠矢だけに効く(人は流されない)。 */
+const ARC_WIND=115;   /* 風1.0あたりの横向きの加速(px/秒²) */
+/* ⛰(131)**起伏**=試合ごとに地面の形が変わる。低い弾道は丘に遮られる(遮蔽) */
+let ARC_TER=null;
+/* 🎯(131)**頭に当たれば2ダメージ**(ユーザー採用)。⚠HPは2なので**頭一発で決着**する。 */
+const ARC_HEAD=30;    /* 地面からこの高さより上に当たったら頭 */
+/* ⏱(131)**狙う持ち時間**(ユーザー指示で15秒)。⚠指を離しても撃たない=**射るボタンで撃つ**。
+   ⚠0になったら**その狙いのまま自動で飛ぶ**(止まらない=テンポを守る)。 */
+const ARC_AIMT=15;
+/* 🗺⭐⭐⭐(132)**ステージ**(ユーザー「ステージが何個かあって、2,3,4と数字が大きくなるにつれて
+   ギミックを追加して難しさも上げよう。いきなりステージ2で全部載せではなく徐々に。
+   ステージは最初に選べるように」)。
+   ⭐**1つずつ増える**=①平地/無風 →②⛰起伏(遮蔽) →③+💨風 →④+強風・遠い・相手が上手い。
+   ⚠**最初から全部選べる**(解放の鎖にしない)=好きな所から遊べる。 */
+const ARC_ST=[
+ {n:'① 平原',   d:'まっすぐな野原。まずは距離感をつかむ',      ter:0,  wind:0,  dist:[18,46],gsd:7,learn:.80,move:.35},
+ {n:'② 丘陵',   d:'⛰起伏あり。低い矢は丘に阻まれる',          ter:1,  wind:0,  dist:[20,56],gsd:6,learn:.74,move:.45},
+ {n:'③ 風の丘', d:'⛰起伏 + 💨横風。毎射ごとに風が変わる',     ter:1,  wind:1,  dist:[22,64],gsd:5,learn:.70,move:.55},
+ {n:'④ 断崖',   d:'⛰荒い起伏 + 💨強風。相手も手強い',         ter:1.35,wind:1.8,dist:[26,72],gsd:4,learn:.62,move:.7}
+];
 const ARC_DUCK_R=5,ARC_HELM_R=7;/* もらえるターン */
 const ARC_HELM_H=34;           /* 「頭付近」と見なす高さ(地面からの高さpx) */
 const ARC_EZW=10;             /* 相手が動ける幅(自分の居場所の±) */
@@ -30408,17 +30443,31 @@ const ARC_EZW=10;             /* 相手が動ける幅(自分の居場所の±) 
 const ARC_VIEW=640;   /* 画面に映る世界の横幅(64m) */
 const ARC_CAMK=7;     /* 普段の寄りの速さ */
 const ARC_CAMF=3.4;   /* 「結構早い視点移動」の速さ(人から人へ飛ぶ時) */
-let ARC=null;
-const arcGround=x=>ARC_GY+Math.sin(x*.0042)*16+Math.sin(x*.0011+2)*10;
+let ARC=null,ARCST=0;/* 🗺(132)いま選んでいるステージ */
+/* ⛰(131)地面の形。⚠**試合ごとに作り直す**(ARC_TER)=起伏がそのまま遮蔽になる。
+   ⚠人の立つ高さも当たり判定も**全部この1本から出す**(別々に持つと必ずずれる)。 */
+function arcMakeTer(k){ARC_TER=[];
+ /* ⛰(132)k=起伏の強さ(0=ほぼ平地)。ステージごとに変える */
+ if(!(k>0)){ARC_TER.push({a:6,f:.0012,p:rnd(0,6.28)});return;}
+ for(let i=0;i<3;i++)ARC_TER.push({a:rnd(14,40)*k,f:rnd(.0018,.0052),p:rnd(0,6.28)});
+ ARC_TER.push({a:rnd(40,78)*k,f:rnd(.0007,.0016),p:rnd(0,6.28)});}
+function arcGround(x){
+ if(!ARC_TER)return ARC_GY+Math.sin(x*.0042)*16+Math.sin(x*.0011+2)*10;
+ let y=ARC_GY;for(const t of ARC_TER)y-=Math.sin(x*t.f+t.p)*t.a;
+ return y;}
 const arcCX=c=>(c+.5)*ARC_CELL;          /* マスの番号 → 世界のx(マスの中心) */
 const arcCell=x=>clamp(Math.floor(x/ARC_CELL),0,ARC_N-1);/* 世界のx → マスの番号 */
-function arcNew(){
+function arcNew(st){
+ const S=ARC_ST[clamp(st|0,0,ARC_ST.length-1)];
+ arcMakeTer(S.ter);/* ⛰ステージごとの起伏 */
  const mc=ri(ARC_PZ[0],ARC_PZ[1]);
- const fc=clamp(mc+ri(ARC_MIND,ARC_MAXD),ARC_PZ[1]+ARC_MIND,ARC_N-3);
+ const fc=clamp(mc+ri(S.dist[0],S.dist[1]),ARC_PZ[1]+ARC_MIND,ARC_N-3);
  const ez=[Math.max(fc-ARC_EZW,ARC_PZ[1]+6),Math.min(fc+ARC_EZW,ARC_N-2)];
  return {ph:'aim',t:0,me:{c:mc,hp:ARC_HP,steps:1,duck:0,duckOn:0,helm:0,helmOn:0},
-  foe:{c:fc,hp:ARC_HP,steps:1,guess:ri(ARC_PZ[0],ARC_PZ[1]),gsd:5,z:ez},
+  st:S,sti:clamp(st|0,0,ARC_ST.length-1),
+  foe:{c:fc,hp:ARC_HP,steps:1,guess:ri(ARC_PZ[0],ARC_PZ[1]),gsd:S.gsd,z:ez},
   ang:45,pow:70,ar:null,marks:[],round:1,msg:'',msgT:0,over:0,
+  wind:S.wind?Math.round(rnd(-10,10))/10*S.wind:0,aimT:ARC_AIMT,last:null,/* 💨風 / ⏱狙う持ち時間 / 🔁前回の狙い */
   cam:arcCX(mc),camT:arcCX(mc),camK:ARC_CAMK};
 }
 /* 矢を1本作る。⚠**手ブレは常に同じだけ**(時間では変わらない=(126)で10秒管理をやめたため) */
@@ -30430,6 +30479,7 @@ function arcArrow(fromC,toC,ang,pow,mine){
 }
 function arcFire(){
  const A=ARC;if(!A||A.ar||A.ph!=='aim'||A.over)return;
+ A.last={ang:A.ang,pow:A.pow,wind:A.wind};/* 🔁(131)前回の狙いを控える */
  A.ar=arcArrow(A.me.c,A.foe.c,A.ang,A.pow,1);A.ph='fly';A.t=0;
  arcMsg('🏹 放った!',1.4);
  try{if(sfx.tap)sfx.tap();}catch(e){}
@@ -30462,8 +30512,9 @@ function arcDragTo(ev,fire){
   A.ang=Math.round(clamp(Math.atan2(Math.max(0,dy),Math.abs(dx)||.0001)*180/Math.PI,10,85));
   A.pow=Math.round(clamp(30+len/ARC_DRAG*70,30,100));
  }
- if(fire){const ok9=len>18;A.drag=null;if(ok9)arcFire();else arcMsg('もう少し長くなぞる(短いと撃たない)',2);arcUI();}
- else arcUI();
+ /* ⚠⚠(131)**指を離しても撃たない**(ユーザー指示)=狙いが決まるだけ。撃つのは🏹射るボタン。 */
+ if(fire)A.drag=null;
+ arcUI();
 }
 /* ⭐(129)動ける/道具を使えるのは**相手が狙っている間だけ** */
 const arcFree=()=>{const A=ARC;return !!A&&!A.over&&!A.ar&&A.ph==='ethink';};
@@ -30499,22 +30550,30 @@ function arcLand(A,ar){
   if(A.me.duckOn){hit=false;guard='🦆 しゃがんでかわした!';}
   else if(A.me.helmOn&&ar.hh<=ARC_HELM_H){hit=false;A.me.helmOn=0;A.me.helm=0;guard='⛑ ヘルメットで弾いた!';}
  }
- A.marks.push({c:cell,t:0,hit,mine:ar.mine});
- if(A.marks.length>18)A.marks.splice(0,A.marks.length-18);
- if(guard){arcMsg(guard,2.8);try{if(sfx.thunk)sfxAt&&sfxAt('thunk',.3);}catch(e){}}
+ /* 🏹⭐(131)**刺さった矢はずっと残る**(ユーザー指示)=前に撃った所がそのまま物差しになる。
+    ⚠上限だけ置く(60本)=長い試合でも増え続けない */
+ A.marks.push({c:cell,t:0,hit,mine:ar.mine,head:ar.hh>=ARC_HEAD?1:0});
+ if(A.marks.length>60)A.marks.splice(0,A.marks.length-60);
+ if(guard){arcMsg(guard,2.8);A.slow=.35;try{if(sfx.build)sfx.build();else if(sfxAt)sfxAt('thunk',.3);}catch(e){}}
  else if(hit){
-  tgt.hp--;
-  try{(sfx.hit||sfx.thunk)();}catch(e){}
-  arcMsg(ar.mine?('🎯 命中! 相手の残り '+tgt.hp):('💥 当たった! こちらの残り '+tgt.hp),2.6);
+  /* 🎯(131)**頭に当たれば2**(HPは2なので頭一発で決着)。⚠地面からの高さで見る */
+  const head=(!ar.mine||1)&&ar.hh>=ARC_HEAD;
+  tgt.hp-=head?2:1;A.slow=.45;/* ⏱(131)当たった一瞬だけ画がゆっくりになる */
+  A.lastHead=head?1:0;
+  /* 🔊(131)当たり所で音を変える=頭は重く、胴は普通 */
+  try{if(head){if(sfx.bossKill)sfx.bossKill();else if(sfx.thunk)sfx.thunk();}
+   else{(sfx.hit||sfx.thunk)();}}catch(e){}
+  arcMsg((head?'💀 頭に命中!(2)':'🎯 命中!')+(ar.mine?(' 相手の残り '+Math.max(0,tgt.hp)):(' こちらの残り '+Math.max(0,tgt.hp))),2.8);
  }else{
-  try{if(sfxAt)sfxAt('thunk',.2);}catch(e){}
+  /* 🔊地面に刺さった音は軽く(命中と混ざらないように) */
+  try{if(sfxAt)sfxAt('thunk',.14);}catch(e){}
   if(ar.mine){const d=cell-A.foe.c;
    /* ⭐マスで返す=次の一射が組み立てられる(⚠相手は毎ターン動くので、これでも当てずっぽうは残る) */
    arcMsg('外れ… '+Math.abs(d)+'マス'+(d<0?'手前':'奥')+'に刺さった',2.8);
   }else arcMsg('相手の矢が外れた('+Math.abs(cell-A.me.c)+'マス'+(cell<A.me.c?'手前':'奥')+')',2.4);
  }
  /* 🎯相手は自分の着弾から学ぶ */
- if(!ar.mine){A.foe.guess=cell+(A.me.c-cell)*.6;A.foe.gsd=Math.max(.8,A.foe.gsd*.7);}
+ if(!ar.mine){A.foe.guess=cell+(A.me.c-cell)*.6;A.foe.gsd=Math.max(.8,A.foe.gsd*(A.st?A.st.learn:.7));}
  A.ar=null;A.t=0;
  if(A.me.hp<=0||A.foe.hp<=0){
   A.over=A.foe.hp<=0?1:-1;A.ph='over';
@@ -30529,13 +30588,16 @@ function arcLand(A,ar){
 }
 function arcStep(dt){
  const A=ARC;if(!A)return;
+ /* ⏱(131)**当たった一瞬だけ画をゆっくり**にする(手応え)。⚠止めない=止めると事故に見える */
+ if(A.slow>0){A.slow=Math.max(0,A.slow-dt);dt*=.35;}
  if(A.msgT>0)A.msgT-=dt;
  for(const m of A.marks)m.t+=dt;
  A.t+=dt;
  /* 飛んでいる矢。⭐**視点は矢そのもの**(張り付く) */
  if(A.ar){const ar=A.ar;
   for(let s=0;s<2;s++){/* ⚠2回刻む=速い矢が地面をすり抜けるのを防ぐ */
-   ar.vy+=ARC_G*dt*.5;ar.x+=ar.vx*dt*.5;ar.y+=ar.vy*dt*.5;
+   ar.vy+=ARC_G*dt*.5;ar.vx+=(A.wind||0)*ARC_WIND*dt*.5;/* 💨風は矢だけを流す */
+   ar.x+=ar.vx*dt*.5;ar.y+=ar.vy*dt*.5;
    ar.tr.push([ar.x,ar.y]);if(ar.tr.length>30)ar.tr.shift();
    const gy=arcGround(ar.x),tgt=ar.mine?A.foe:A.me;
    A.cam=A.camT=ar.x;/* 🎥完全に張り付く */
@@ -30549,13 +30611,16 @@ function arcStep(dt){
  if(A.over)return;
  /* 🎥視点を寄せる(矢が飛んでいない時だけ) */
  A.cam+=(A.camT-A.cam)*Math.min(1,dt*A.camK);
- if(A.ph==='aim'){A.camT=arcCX(A.me.c);A.camK=ARC_CAMK;}
+ if(A.ph==='aim'){A.camT=arcCX(A.me.c);A.camK=ARC_CAMK;
+  /* ⏱(131)持ち時間。⚠0になったらその狙いのまま自動で飛ぶ */
+  A.aimT=Math.max(0,(A.aimT==null?ARC_AIMT:A.aimT)-dt);
+  if(A.aimT<=0&&!A.ar){arcMsg('⏱ 時間切れ! そのまま放った',2.4);arcFire();}}
  else if(A.ph==='eland'){/* 自分の矢が刺さった → 少し見せてから相手へ視点が飛ぶ */
   if(A.t>=.85){A.ph='epan';A.t=0;A.camT=arcCX(A.foe.c);A.camK=ARC_CAMF;}
  }else if(A.ph==='epan'){
   if(Math.abs(A.cam-A.camT)<30||A.t>2.2){A.ph='ethink';A.t=0;A.camK=ARC_CAMK;
    /* ⭐相手はここで動くかどうかを決める(自分からは見えている=視点が相手に居るので) */
-   if(A.foe.steps>0&&Math.random()<.6){
+   if(A.foe.steps>0&&Math.random()<(A.st?A.st.move:.6)){
     const d=Math.random()<.5?-1:1,nc=clamp(A.foe.c+d,A.foe.z[0],A.foe.z[1]);
     if(nc!==A.foe.c){A.foe.c=nc;A.foe.steps--;A.foe.gsd=Math.min(6,A.foe.gsd+.6);}}
    arcMsg('🎯 相手が狙いを定めている… いまのうちに動け!',ARC_ETHINK);}
@@ -30567,6 +30632,7 @@ function arcStep(dt){
  }else if(A.ph==='ppan'){
   if(Math.abs(A.cam-A.camT)<30||A.t>2.2){
    A.round++;A.me.steps++;A.foe.steps++;A.ph='aim';A.t=0;A.camK=ARC_CAMK;
+   A.aimT=ARC_AIMT;A.wind=A.st.wind?Math.round(rnd(-10,10))/10*A.st.wind:0;/* ⏱持ち時間 / 💨風 */
    /* 🦆⛑(128)5ターン目にしゃがみ・7ターン目にヘルメットを1つだけ配る */
    let got='';
    if(A.round===ARC_DUCK_R&&!A.me.duck){A.me.duck=1;got='　🦆しゃがみを覚えた!';}
@@ -30579,24 +30645,34 @@ function arcUI(){
  const hp=(n)=>'♥'.repeat(Math.max(0,n))+'·'.repeat(Math.max(0,ARC_HP-n));
  const me=$('arc-me'),fo=$('arc-foe'),ms=$('arc-msg');
  if(me)me.textContent='🏹'+hp(A.me.hp)+' 👣'+A.me.steps+' '+(A.me.c*ARC_CELL/10|0)+'m';
- if(fo)fo.textContent='第'+A.round+'射　'+hp(A.foe.hp)+'🎯';
+ if(fo)fo.textContent=(A.st?A.st.n.slice(0,2):'')+' 第'+A.round+'射 '+hp(A.foe.hp)+'🎯';
  if(ms)ms.textContent=A.msgT>0?A.msg:(A.ph==='aim'?'角度と威力を決めて射る(⚠動けるのは相手が狙っている間だけ)':(A.ph==='ethink'?'🎯 相手が狙っている — いまなら動ける':'相手の番'));
+ /* ⏱(131)持ち時間の帯 */
+ {const b9=$('arc-bar');
+  if(b9){const on9=(A.ph==='aim'&&!A.ar&&!A.over);
+   b9.classList.toggle('on',on9);
+   if(on9){const k9=clamp((A.aimT==null?ARC_AIMT:A.aimT)/ARC_AIMT,0,1);
+    if(b9.firstChild&&b9.firstChild.style)b9.firstChild.style.width=(k9*100).toFixed(1)+'%';
+    b9.classList.toggle('hot',k9<.34);}}}
  const ctl=$('arc-ctl'),en=$('arc-end');
  if(en)en.classList.toggle('on',!!A.over);
  if(ctl){ctl.style.display=A.over?'none':'flex';
   ctl.classList.toggle('off',A.ph!=='aim'&&!!A.ar);}
  const fb=$('arc-fire');if(fb)fb.disabled=(A.ph!=='aim'||!!A.ar||!!A.over);
+ const free9=arcFree();/* ⚠(131)**先に出す**=下の道具のボタンより後ろに置くとTDZで落ちる */
  /* 🦆⛑(128)持っている時だけ出す。⚠使い切ったら消える(押せないボタンを置きっぱなしにしない) */
  {const db=$('arc-duck'),hb=$('arc-helm');
   if(db){db.style.display=(A.me.duck||A.me.duckOn)?'':'none';
    db.disabled=!A.me.duck||!free9;db.textContent=A.me.duckOn?'🦆中':'🦆';}
   if(hb){hb.style.display=(A.me.helm||A.me.helmOn)?'':'none';
    hb.disabled=!A.me.helm||!!A.me.helmOn||!free9;hb.textContent=A.me.helmOn?'⛑装備':'⛑';}}
- const free9=arcFree();
  for(const q of ['arc-l','arc-r']){const e=$(q);if(e)e.disabled=(A.me.steps<1||!free9);}
  const la=$('arc-la'),lp=$('arc-lp');
- if(la)la.textContent=A.ang+'°';
- if(lp)lp.textContent='威力 '+A.pow+(A.ph==='aim'?'　—　画面をなぞって狙う':'');
+ if(la)la.textContent=A.ang+'° / 力'+A.pow;
+ if(lp){const w9=A.wind||0;
+  const wt=(Math.abs(w9)<.05?'💨 無風':('💨 '+(w9>0?'→':'←')+' '+Math.abs(w9).toFixed(1)));
+  const lt=A.last?('　🔁前回 '+A.last.ang+'°/力'+A.last.pow):'';
+  lp.textContent=wt+lt+(A.ph==='aim'?'　—　なぞって狙い、射るで放つ':'');}
 }
 function arcDraw(t){
  const A=ARC,cv9=$('arccv');if(!A||!cv9)return;
@@ -30643,7 +30719,7 @@ function arcDraw(t){
   c.fillRect(x-1.5,gy-3,3,11);c.fillText((x/10)+'m',x,gy+22);}
  /* 刺さった矢(⭐マスの真ん中に立つ=1本1マスが目で分かる) */
  for(const m of A.marks){
-  const x=arcCX(m.c),gy=arcGround(x),a=Math.max(0,1-m.t/24);if(a<=0)continue;
+  const x=arcCX(m.c),gy=arcGround(x),a=1;/* ⚠(131)消さない */
   c.globalAlpha=a;
   c.strokeStyle=m.hit?DANGER:'#e8e4d8';c.lineWidth=3;
   c.beginPath();c.moveTo(x-7,gy-30);c.lineTo(x,gy-2);c.stroke();
@@ -30673,12 +30749,31 @@ function arcDraw(t){
   c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=4;c.setLineDash([6,8]);
   c.beginPath();c.moveTo(gx,gy);c.lineTo(gx+dx,gy+dy);c.stroke();c.setLineDash([]);
   /* 力の帯(引くほど伸びて色が濃くなる) */
-  const pk=(A.pow-30)/70;
-  c.fillStyle='rgba(24,20,16,.7)';rr(c,gx-46,gy-62,92,13,6);c.fill();
-  c.fillStyle=pk>.8?DANGER:GOLD;rr(c,gx-43,gy-59,86*pk,7,4);c.fill();
-  c.fillStyle=PANE;c.font='900 20px '+FF;c.textAlign='center';
-  c.fillText(A.ang+'° / '+A.pow,gx,gy-70);
+  /* ⚠⚠(131)**角度と威力を別の形で見せる**(ユーザー「同じ位置でどっちがなんだか分かりづらい」)=
+     ⭐**角度は扇**(左・弓の根元から広がる) / ⭐**威力は横の帯**(右・伸びる)。形が違えば読み違えない。 */
+  const pk=(A.pow-30)/70,ak=(A.ang-10)/75;
+  /* 角度=扇(0°〜90°の目盛りの上に、いまの角度の線) */
+  c.save();c.translate(gx-30,gy-6);
+  c.strokeStyle='rgba(24,20,16,.55)';c.lineWidth=9;
+  c.beginPath();c.arc(0,0,30,-Math.PI/2,0);c.stroke();
+  c.strokeStyle=TECH;c.lineWidth=6;
+  c.beginPath();c.arc(0,0,30,-A.ang*Math.PI/180,0);c.stroke();
+  c.fillStyle=TECH;c.font='900 17px '+FF;c.textAlign='right';
+  c.fillText(A.ang+'°',-6,-30);
+  c.restore();
+  /* 威力=横の帯 */
+  c.fillStyle='rgba(24,20,16,.55)';rr(c,gx+10,gy-48,96,13,6);c.fill();
+  c.fillStyle=pk>.8?DANGER:GOLD;rr(c,gx+13,gy-45,90*pk,7,4);c.fill();
+  c.fillStyle=pk>.8?DANGER:GOLD;c.font='900 17px '+FF;c.textAlign='left';
+  c.fillText('力 '+A.pow,gx+12,gy-54);
  }
+ /* 🔁(131)**前回の狙い**を薄い線で残す(ユーザー「前回どれぐらいの角度とパワーで撃ったか見れるように」)。
+    ⚠数字だけでなく**線でも**出す=次の一射を「もう少し上/強く」で組み立てられる。 */
+ if(A.last&&A.ph==='aim'&&!A.ar&&!A.over){
+  const a=A.last.ang*Math.PI/180,v=A.last.pow*ARC_V,sx=arcCX(A.me.c),sy=arcGround(sx)-30;
+  c.strokeStyle='rgba(242,236,220,.28)';c.lineWidth=3;c.setLineDash([5,9]);c.beginPath();
+  for(let i=0;i<=10;i++){const q=i*.022;c.lineTo(sx+Math.cos(a)*v*q,sy-Math.sin(a)*v*q+ARC_G*q*q/2);}
+  c.stroke();c.setLineDash([]);}
  /* 狙いの目安(自分の番だけ)。⚠**軌道は最後まで見せない**=見せると勘の遊びが消える */
  if(A.ph==='aim'&&!A.over&&!A.ar){
   const a=A.ang*Math.PI/180,v=A.pow*ARC_V,sx=arcCX(A.me.c),sy=arcGround(sx)-30;
@@ -30705,16 +30800,30 @@ function arcDrawMan(c,x,gy,dir,col,ang,duck,helm){
  c.restore();
  c.restore();
 }
+function arcStRender(){
+ const box=$('arc-st');if(!box)return;
+ box.innerHTML='';
+ ARC_ST.forEach((S,i)=>{
+  const b=document.createElement('button');
+  b.className='sb'+(i===ARCST?' on':'');
+  b.innerHTML='';
+  b.textContent=S.n;
+  const em=document.createElement('i');em.textContent=S.d;b.appendChild(em);
+  b.onclick=()=>{ARCST=i;arcStRender();};
+  box.appendChild(b);
+ });
+}
 function arcOpen(){
  try{ensureAC();}catch(e){}
  const r=$('arc-rec');
  if(r)r.textContent='戦績 '+(META.arcW|0)+'勝 '+(META.arcL|0)+'敗';
+ arcStRender();
  show('arc');
 }
 function arcPlay(){
- ARC=arcNew();
+ ARC=arcNew(ARCST);
 
- arcMsg('第1射 — 相手は遠くの霧の向こう。当てずっぽうで撃つしかない',3.4);
+ arcMsg(ARC.st.n+' — '+ARC.st.d,3.6);
  arcUI();show('arcg');
 }
 try{
