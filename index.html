@@ -20655,6 +20655,17 @@ const LUCK_SP=1.5;          /* 💫(117)歩く速さの倍率(ユーザー指示
 /* 🚌⚠(118)**バスだけは倍率ではなく決め打ちの確率**(ユーザー「チケット中はバス0.1%にしよう」)。
    ⚠素が0.001%しかないので、30倍でも0.03%=**30秒ではまず出ない**。⭐チケット中は 0.1% に固定する。 */
 const LUCK_BUS=.001;
+/* ⚠⚠⭐(119)**確率を上げても「抽選が回る回数」が増えないと何も起きない**(ユーザー
+     「本当になってる?今使ったけどあんまり出てこなかった」→実測したら**30秒でたった16回**しか回っていなかった)。
+   ⚠抽選は**1体が画面の外へ出た時か、倒された時**にしか回らない=歩き切るのに十数秒かかるので、
+     7体しか居なければ30秒では十数回で終わる。**15%を掛けても2体しか期待できない**。
+   ⭐**チケット中は行進の人数そのものを増やす**=そのぶん抽選が回る。
+     ⚠**増やすのは左から順に**(いきなり画面の真ん中に湧かせない)。
+     ⚠切れたら**足したぶんは歩き去るに任せて減らす**(いきなり消さない)。 */
+const LUCK_N=20;      /* チケット中の行進の人数(素は7) */
+const LUCK_ADD=.28;   /* 何秒ごとに1体足すか */
+const PAR_N=7;        /* 素の人数 */
+let LUCK_ADDT=0;
 const LUCK_T=30;            /* 効く秒数 */
 const LUCK_DAYS=[1,3,5,10]; /* 何日目に配るか */
 /* ⚠⚠(118)**配布の版**(ユーザー「さっき配布したやつはノーカンで今からもう一回配布」)。
@@ -20721,7 +20732,7 @@ function parNew(){
  if(Math.random()<RB_RATE)return mk(5,56,RB_HP,{rb:1});
  const zi=[0,0,1,2,3,4,5][ri(0,6)];
  return mk(zi,rnd(16,42),parHP(zi),{});}
-function paradeInit(){PAR=[];for(let i=0;i<7;i++){const z=parNew();z.x=rnd(0,innerWidth);PAR.push(z);}}
+function paradeInit(){PAR=[];for(let i=0;i<PAR_N;i++){const z=parNew();z.x=rnd(0,innerWidth);PAR.push(z);}}
 /* ⭐**タイトルのゾンビはタップで倒せる**(2026-07-27ユーザー指示
      「タイトルでゾンビタップして倒せるようにして、倒したときだけ撃破ボイス」)。
    ⚠**canvas を pointer-events:auto にしてはいけない**=行進canvasは画面下120pxに敷いてあり、
@@ -20992,6 +21003,10 @@ function paradeStep(t){
  /* ⭐⭐**🚌バスくんが居る間だけ canvas を高くする**(2026-08-01)。
     ⚠行進canvasは高さ120pxしかなく、**大きい個体は上下が切れる**(屍熊で実際に切れた)。
     ⚠**素の高さは決め打ちにせずCSSから測る**=中の寸法とCSSの見た目がずれると絵が縦に潰れる。 */
+ /* 💫(119)チケット中は人数を増やして**抽選の回数**を稼ぐ。⚠必ず画面の左の外から入れる */
+ if(luckOn()){LUCK_ADDT+=.016;
+  while(LUCK_ADDT>=LUCK_ADD&&PAR.length<LUCK_N){LUCK_ADDT-=LUCK_ADD;PAR.push(parNew());}
+ }else LUCK_ADDT=0;
  const tall=PAR.some(p=>p.bus&&p.ht<1)?BUS_TALL:0;
  if(parBaseH<0||parLastW!==w){pcv.style.height='';parBaseH=pcv.clientHeight||120;parLastW=w;parTall=-1;}
  if(parTall!==tall){parTall=tall;pcv.style.height=tall?(parBaseH+tall)+'px':'';}
@@ -21015,7 +21030,12 @@ function paradeStep(t){
    pctx.restore();pctx.globalAlpha=1;continue;}
   /* 💫(117)**幸運チケット中は歩くのも速い**(ユーザー指示)=画面を横切るのが速いぶん
      **入れ替わりも速い**=同じ30秒でより多く抽選が回る。⚠**タップは難しくなる**(そこは腕)。 */
-  p.x+=p.sp*luckSp()*.016;if(p.x>w+(p.bus?130:60))PAR[i]=parNew();
+  p.x+=p.sp*luckSp()*.016;
+  if(p.x>w+(p.bus?130:60)){
+   /* ⚠(119)チケットが切れた後は、増やしたぶんを**歩き去るに任せて**素の人数へ戻す */
+   if(!luckOn()&&PAR.length>PAR_N){PAR.splice(i,1);i--;continue;}
+   PAR[i]=parNew();
+  }
   const dx=p.x-p.kb;
   /* ⭐🚌バスくん。⚠虹/金と違って**焼き直さず直に描く**=RBC(160px)には収まらない大きさなので */
   if(p.bus){drawBusKun(pctx,dx,h-20,t,p.ph,p.hp);
