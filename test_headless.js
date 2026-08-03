@@ -3007,12 +3007,17 @@ function checkRice(){
   for(let k=0;k<12;k++)bnsBusStep(me,.05);
   const spN=Math.hypot(B.vx,B.vy);
   if(!(spN>BUS_SP*1.3)){console.log('FAIL: ニトロで速くなっていない '+Math.round(spN));process.exit(1);}
-  /* ⑤使用中は溜まらない */
+  /* ⑤⭐(115)**使っている間も溜まる**(ユーザー「ニトロは押した時だけ消費することにして」)。
+     ⚠それまでは『使用中は溜まらない』を検査していた=**方針が変わった**ので書き換えた。
+     ⭐減るのは**押した瞬間の1回だけ**。 */
   const n0=B.nit;
   me.zombies.length=0;
   for(let k=0;k<10;k++){const z9=mkZ(zSpec(0,.02,1),200);z9.ln=0;z9.px=B.x;z9.py=B.y;me.zombies.push(z9);}
   for(let k=0;k<6;k++){for(const z of me.zombies){z.px=B.x;z.py=B.y;}bnsBusStep(me,.05);}
-  if(B.nit!==n0){console.log('FAIL: ニトロ中なのにゲージが溜まる');process.exit(1);}
+  if(!(B.nit>n0)){console.log('FAIL: ニトロ中にゲージが溜まらない(押した時だけ消費のはず)');process.exit(1);}
+  /* ⚠**押していないのに減らない**=消費は押した瞬間だけ */
+  {const n1=B.nit;for(let k=0;k<6;k++)bnsBusStep(me,.05);
+   if(B.nit<n1){console.log('FAIL: 押していないのにニトロが減っている');process.exit(1);}}
   /* ④切れたら戻る */
   me.zombies.length=0;
   for(let k=0;k<Math.ceil(BUS_NIT_T/.05)+4;k++)bnsBusStep(me,.05);

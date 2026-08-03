@@ -892,6 +892,22 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-gacha .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #md-gacha #gc-home{flex:1 1 auto;min-height:0}
 #md-gacha #gc-sub{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+/* ⚡(115)スコア報酬の窓=**1行=1つの段**。状態は「形」で言う(達成は金の縁+✅、未達は暗いまま) */
+#md-bsg .bpbody{overflow-y:auto;overscroll-behavior:contain}
+/* ⚠4段が**スクロールなしで全部見える**ようにする(1画面1目的の掟)=横画面は高さ393pxしか無い */
+.bsghint{font-size:11.5px;font-weight:800;color:var(--ink);opacity:.85;margin-bottom:5px;line-height:1.35}
+.bsglist{display:flex;flex-direction:column;gap:6px}
+.bsgrow{display:flex;align-items:center;gap:10px;min-height:46px;padding:4px 11px;
+ background:var(--ink3);border:3px solid var(--dud);border-radius:12px;color:var(--paper)}
+.bsgrow.got{border-color:var(--gold);background:#3a2f16}
+.bsgrow.next{border-color:var(--pane)}
+.bsgrow .sc{flex:0 0 auto;font-size:16px;font-weight:900;color:var(--pane);min-width:74px;text-align:right}
+.bsgrow .mid{flex:1 1 auto;min-width:0}
+.bsgrow .gm{font-size:16px;font-weight:900;color:var(--gold);white-space:nowrap}
+.bsgrow .st{font-size:11px;font-weight:800;opacity:.8;margin-top:1px}
+/* 進み具合の棒。⚠達成済みの段には出さない(もう見る意味がない) */
+.bsgbar{display:block;height:7px;border:2px solid var(--ink);border-radius:6px;background:var(--paper2);overflow:hidden;margin-top:4px}
+.bsgbar i{display:block;height:100%;background:var(--gold)}
 #md-hstat .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 /* ▶⭐(111)**必殺技を見ている間は窓いっぱいで見せる**(ユーザー「ちゃんと必殺技を見れるようにして欲しい」)。
    ⚠118x132の小窓では何をしているのか読めない=**数値と一覧を畳んで舞台を広げる**(止めると戻る) */
@@ -1149,6 +1165,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <b id="mc-name">—</b>
     <p class="note" id="mc-sub" style="margin:2px 0"></p>
     <p class="note" id="mc-st" style="margin:2px 0"></p>
+    <!-- ⚡(115)スコアの段位報酬。⚠🚌拠点開拓を選んでいる時だけ出す -->
+    <button class="btn gold" id="bt-map-sg" style="width:100%;display:none;margin-bottom:6px">⚡ スコア報酬</button>
     <button class="btn red" id="bt-map-go" style="width:100%">🧟 いざ出撃!!</button>
   </div>
   <button class="btn mapback" id="bt-map-back">← ホーム</button>
@@ -1424,6 +1442,17 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="stkgrid" id="stk-grid"></div>
   </div>
 </div>
+<!-- ⚡⭐(115)**スコアの段位報酬**の専用の窓。1行=1つの段(達成したか/いくら貰えるか/あといくつか) -->
+<div class="modal" id="md-bsg">
+  <div class="panel bigpanel">
+    <div class="bphd"><b>⚡ スコア報酬</b><span class="pt" id="bsg-gem"></span><button class="xbtn" id="bt-bsg-close">✕</button></div>
+    <div class="bpbody">
+      <div class="bsghint" id="bsg-hint"></div>
+      <div class="bsglist" id="bsg-list"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="md-hstat">
   <div class="panel bigpanel">
     <!-- ⭐(110)**来た所へ戻るボタン**(ユーザー指摘「ガチャに戻るボタンが無くてホームに戻るしかない」)。
@@ -1726,6 +1755,7 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!META.bup||typeof META.bup!=='object')META.bup={};
  if(!META.beq||typeof META.beq!=='object')META.beq={};
  /* 🚌1日の回数(2026-08-02(58))。⚠古いセーブには無いので必ず作り直す */
+ if(!Array.isArray(META.bsg))META.bsg=[];/* ⚡(115)スコアの段位報酬の印。⚠古いセーブには無い */
  if(!Array.isArray(META.bday))META.bday=[];
  if(!Array.isArray(META.bnum))META.bnum=[];
  if(!META.hlv||typeof META.hlv!=='object')META.hlv={};/* 英雄の鍛錬Lv id→Lv */
@@ -1785,6 +1815,7 @@ function metaReset(){
 function metaResetAll(){
  META.gem=0;META.hero={};META.hsel='';        /* 💎魔石・引いた英雄・連れて行く英雄 */
  META.tk5=0;META.gft={};                      /* 🎫★5確定チケットと、受け取った配布物の印 */
+ META.bsg=[];                                 /* ⚡(115)スコアの段位報酬を受け取った印 */
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
@@ -20024,6 +20055,10 @@ function bnsBadge(k,u){
 }
 function showResultA(){
  gameActive=false;$('interv').classList.remove('on');closeBM();
+ /* ⚠⚠(115)**ここでも走行音を止める**(ユーザー指摘「クリア後もバスの音が残る/次の走行でもずっと鳴る」)。
+    ⚠原因=止めていたのが backTitle だけで、**リザルトは素通り**していた。走行音は毎コマ音量を
+    書き換えて鳴らし続ける作りなので、**回るのを止めた瞬間の音量のまま鳴り続ける**。 */
+ try{busSndOff();}catch(e){}
  const me=G.players[G.myIdx],win=G.pve?G.winner===0:me.place===1;
  /* ⚠(97)「ステージ1クリア/ナイトメア制覇」をやめて**拠点名**で言う(マップ形式に合わせる) */
  {let tt9='💀 拠点陥落…';
@@ -20047,6 +20082,9 @@ function showResultA(){
   ?[...(G.metaGain!=null?[['🧬 研究pt獲得','+'+G.metaGain+' (計'+fmt(META.pts)+')']]:[]),
     /* ⭐🚌ボーナス面の初回クリア報酬(2回目からは出ない=配っていないので) */
     ...(G.bnsPts?[['🚌 初回クリア報酬(🧬'+BNS_FIRST_X+'倍)','🧬+'+fmt(G.bnsPts)+' / 💎+'+(G.bnsGem||0)]]:[]),
+    /* ⚡(115)スコアの段位報酬=**この走りで新しく取った段だけ**出す */
+    ...((G.bnsSg&&G.bnsSg.length)?[['⚡ スコア報酬('+G.bnsSg.map(i=>fmt(BNS_SG[i].s)).join(' / ')+')',
+      '💎+'+G.bnsSg.reduce((a,i)=>a+BNS_SG[i].g,0)]]:[]),
     /* ⭐🚌轢き殺した数と最高連続(2026-08-02(2))=「連続で気持ちいい」の締めをここで見せる。
        ⚠バスの居る面(開拓便)でしか出さない */
     /* ⭐**自己ベストを併記する**(2026-08-02(37))=更新した時だけ 🎉 を付ける。
@@ -20065,6 +20103,7 @@ function showResultA(){
 }
 function showResultC(sn){
  gameActive=false;$('interv').classList.remove('on');closeBM();
+ try{busSndOff();}catch(e){}
  const win=sn.me.pl===1;
  $('res-title').textContent=COOP?(win?'🏆 ステージ1 クリア!':'💀 拠点陥落…'):(win?'🏆 最後の生存者!':'💀 '+sn.me.pl+'位…');
  $('res-title').className='restitle'+(win?' win':'');
@@ -21541,11 +21580,32 @@ function bnsMap(){
       その空き地も**走れる範囲(`bnsOpenW`/`bnsClr`)の側に足す**こと。片方だけ空けない。
     ⚠木の大きさだけは散らす(揃うと絨毯に見えるので)。 */
  const bx0=BBLD;
+ /* ⚠⚠⭐**建物を升目に入れてから撒く**(2026-08-03(115)ユーザー「バスのステージ行く時ちょっと重い」)。
+    ⚠それまでは**木の候補1つごとに建物を全部**見ていた=**8.5万×2049=約1.7億回**の距離判定で、
+      これが読み込みの重さの大半だった(実測 bnsMap 335ms のうちの大部分)。
+    ⭐**出来上がる森は1本も変わらない**=見る建物を「近くの升目にある物」に絞るだけ。
+    ⚠升目の大きさは**一番大きい建物の半径より大きく**取る(小さいと隣の升まで見に行く数が増える)。 */
+ const BCS=Math.max(256,BNS_TSP*8);
+ const bgx=Math.max(1,Math.ceil(MAPW/BCS)),bgy=Math.max(1,Math.ceil(MAPH/BCS));
+ const bcell=new Array(bgx*bgy);
+ let bmaxR=0;
+ for(const b of bx0){
+  if(b.rr>bmaxR)bmaxR=b.rr;
+  const ix=clamp(Math.floor(b.x/BCS),0,bgx-1),iy=clamp(Math.floor(b.y/BCS),0,bgy-1);
+  const i=ix+iy*bgx;(bcell[i]||(bcell[i]=[])).push(b);
+ }
+ const bRad=Math.max(1,Math.ceil(bmaxR/BCS));/* 何升ぶん先まで見るか */
  for(let x=60;x<MAPW-60;x+=BNS_TSP)for(let y=60;y<MAPH-60;y+=BNS_TSP){
   const jx=x+rr2(-BNS_TSP*.42,BNS_TSP*.42),jy=y+rr2(-BNS_TSP*.42,BNS_TSP*.42);
   if(!bnsFreeAt(jx,jy,22))continue;
   let on=0;
-  for(const b of bx0){const dx9=b.x-jx,dy9=b.y-jy;if(dx9*dx9+dy9*dy9<b.rr*b.rr){on=1;break;}}
+  const cx9=clamp(Math.floor(jx/BCS),0,bgx-1),cy9=clamp(Math.floor(jy/BCS),0,bgy-1);
+  for(let gy=Math.max(0,cy9-bRad);gy<=Math.min(bgy-1,cy9+bRad)&&!on;gy++)
+   for(let gx=Math.max(0,cx9-bRad);gx<=Math.min(bgx-1,cx9+bRad)&&!on;gx++){
+    const cl=bcell[gx+gy*bgx];if(!cl)continue;
+    for(let q=0;q<cl.length;q++){const b=cl[q],dx9=b.x-jx,dy9=b.y-jy;
+     if(dx9*dx9+dy9*dy9<b.rr*b.rr){on=1;break;}}
+   }
   if(on)continue;
   BTREE.push({x:jx,y:jy,r:rr2(30,58)});
  }
@@ -22033,10 +22093,66 @@ function bnsRecord(C){
  if(k>(r.k|0)){r.k=k;nb.k=1;}
  if(c>(r.c|0)){r.c=c;nb.c=1;}
  try{G.bnsRec={s:s,k:k,c:c,bs:r.s|0,bk:r.k|0,bc:r.c|0,nb:nb};}catch(e){}
+ /* ⚡(115)**スコアの段位報酬**=この走りのスコアで、まだ取っていない段を配る */
+ try{const got=bnsSgClaim(STAGE,s);
+  if(got.length){G.bnsSg=got.slice();
+   const gm=got.reduce((a,i)=>a+BNS_SG[i].g,0);
+   toast('⚡ スコア'+fmt(BNS_SG[got[got.length-1]].s)+'達成! 💎+'+gm);
+   if(sfx.win)sfx.win();}}catch(e){}
  saveMeta();
 }
+/* ⚡⭐(115)**スコア報酬の窓を描く**。⚠**いま見ている拠点(si)のぶんだけ**=拠点ごとに別々に貰える。
+   ⭐**1行=1つの段**(必要スコア / 💎 / 状態)。⚠状態は色と✅の形で言う(文字だけにしない)。 */
+let BSGSI=0;
+function renderBsg(si){
+ BSGSI=si|0;
+ const best=(bnsBestOf(BSGSI)||{}).s|0,got=bnsSgGot(BSGSI);
+ const ge=$('bsg-gem');if(ge)ge.innerHTML=IC('💎 ')+(META.gem||0);
+ const hi=$('bsg-hint');
+ const left=BNS_SG.filter((_,i)=>!(got&(1<<i)));
+ if(hi)hi.innerHTML=IC('🚌'+((MAPND.find(n=>n.bns&&n.stg===BSGSI)||{}).n||'開拓便')
+  +' の⚡スコアで💎が貰える。<b>それぞれ1回だけ</b>。<br>いまの自己ベスト <b>⚡'+fmt(best)+'</b>'
+  +(left.length?('　のこり '+left.length+'段'):'　<b>全部そろえた!</b>'));
+ const bx=$('bsg-list');if(!bx)return;
+ /* 次に狙う段=まだ取っていない一番下の段(そこだけ進み具合の棒を出す) */
+ let nx=-1;for(let i=0;i<BNS_SG.length;i++)if(!(got&(1<<i))){nx=i;break;}
+ bx.innerHTML=IC(BNS_SG.map((t,i)=>{
+  const ok=!!(got&(1<<i)),isNx=(i===nx);
+  const pct=Math.round(clamp(best/t.s,0,1)*100);
+  return '<div class="bsgrow'+(ok?' got':(isNx?' next':''))+'">'
+   +'<span class="sc">⚡'+fmt(t.s)+'</span>'
+   +'<span class="mid"><span class="gm">💎 '+t.g+'</span>'
+    +'<div class="st">'+(ok?'✅ 受け取り済み'
+      :(best>=t.s?'⏳ 次に走り終えた時に受け取る'
+        :('あと ⚡'+fmt(t.s-best))))+'</div>'
+    +(ok?'':'<i class="bsgbar"><i style="width:'+pct+'%"></i></i>')
+   +'</span></div>';}).join(''));
+}
+function openBsg(si){renderBsg(si);$('md-bsg').classList.add('on');}
 /* 自己ベストの読み出し(タイトルの難易度ボタンにも出す)。⚠まだ走っていなければ null */
 function bnsBestOf(si){const a=META.brec;return (Array.isArray(a)&&a[si])?a[si]:null;}
+/* ⚡⭐⭐**スコアの段位報酬**(2026-08-03(115)ユーザー指示
+     「拠点開拓のバスでスコアが機能してないから、スコアごとにガチャ石の報酬用意しよう。
+       1000で10個 3000で30個 5000で100個 10000で300個」)。
+   ⚠⚠**1段につき1回だけ**(拠点ごと)=**回数制限(1日5回)がある面なので、繰り返し配ると石が無限に増える**。
+   ⭐受け取った段は `META.bsg[拠点]` にビットで残す=どの段を取ったかが1つの数字で分かる。
+   ⚠**自己ベストではなく「その走りのスコア」で判定する**=ベストで判定すると、
+     一度到達した段が毎回鳴り続ける(受け取り済みなので配りはしないが、報せが嘘になる)。 */
+const BNS_SG=[{s:1000,g:10},{s:3000,g:30},{s:5000,g:100},{s:10000,g:300}];
+const bnsSgGot=si=>(Array.isArray(META.bsg)?(META.bsg[si]|0):0);
+/* その拠点で「まだ取っていない段」のうち、いま出したスコアで届いたものを配る。戻り値=配った段の並び */
+function bnsSgClaim(si,score){
+ if(!Array.isArray(META.bsg))META.bsg=[];
+ const got=META.bsg[si]|0;let add=0,gem=0;const list=[];
+ for(let i=0;i<BNS_SG.length;i++){
+  if(got&(1<<i))continue;
+  if(score<BNS_SG[i].s)continue;
+  add|=(1<<i);gem+=BNS_SG[i].g;list.push(i);}
+ if(!list.length)return [];
+ META.bsg[si]=got|add;META.gem=(META.gem||0)+gem;
+ saveMeta();
+ return list;
+}
 /* 初回クリアの報酬。⚠**2回目からは配らない**(何度でも入れる面で配ると回すだけ増える) */
 function bnsReward(){
  if(!Array.isArray(META.bcl))META.bcl=[];
@@ -22660,8 +22776,12 @@ function bnsBusStep(C,dt){
     ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
  if(kil){
   const tb=bnsCmbT(B.cmb||0);
-  /* 🔥**ニトロは轢いた時だけ溜まる**(⚠使っている間は溜めない=撃ちっぱなしにしない) */
-  if(!nz9)B.nit=Math.min(1,(B.nit||0)+kil*(B.nitK||BUS_NIT_K));
+  /* 🔥**ニトロは轢いた時だけ溜まる**。
+     ⭐⭐(115)**使っている間も溜まる**ようにした(ユーザー「ニトロは押した時だけ消費することにして」)。
+     ⚠それまでは**ニトロ中は溜まりが止まっていた**ので、
+       押していないのに減っている(=使っている間ずっと消費している)ように見えていた。
+     ⭐これで**減るのは押した瞬間の1回だけ**になる。 */
+  B.nit=Math.min(1,(B.nit||0)+kil*(B.nitK||BUS_NIT_K));
   /* ⭐**一度にたくさん轢いた瞬間だけ画面を抜く**=「群れをまとめて薙いだ」を画で言い切る */
   if(kil>=BUS_FLASH_N&&(B.flashCd||0)<=0&&FXLV>0){B.flashT=.16;B.flashCd=BUS_FLASH_CD;
    /* ⭐⭐**一瞬だけ時間を止める**(2026-08-02(28))=**手応えの正体はこれ**。
@@ -23322,8 +23442,14 @@ const BEQ=[
  {k:'blast',tb:0,r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを吹き飛ばす',      c:60},
  {k:'boost',tb:0,r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
  {k:'nit2', tb:0,r:0,ic:'🔋',n:'二段ニトロ',      d:'切れても3分の1だけ残る',      c:220},
- {k:'big',  tb:0,r:1,ic:'🚌',n:'大型車体',        d:'バスが一回りでかくなる',      c:340},
- {k:'trail',tb:0,r:1,ic:'🚎',n:'二階建て化',      d:'バスがもう一段でかくなる',    c:540},
+ /* 🚌⭐(115)**大きさは3段**(ユーザー「バスの車体でかくするやつは3段階のデカさを設けて、
+    最終的に初期の1.5倍にして」)。⚠**キー(big/trail)はそのまま使い回す**=もう買った人の持ち物を消さない。
+    ⚠❌「二階建て化」という名前はやめた=**真上から見る面なので階数は一度も見えず、
+      何が起きたのか伝わらない名前だった**(ユーザーの「2階建てって何か意味あるの?」がまさにそれ)。
+    ⭐**大型車体Ⅰ/Ⅱ/Ⅲ**にして、名前と丸数字で「同じ物が3段で伸びる」と読めるようにした。 */
+ {k:'big',  tb:0,r:1,ic:'🚌',n:'大型車体Ⅰ',      d:'バスが一回りでかくなる(1.17倍)',c:340},
+ {k:'trail',tb:0,r:1,ic:'🚍',n:'大型車体Ⅱ',      d:'もう一回りでかくなる(1.33倍)',  c:540},
+ {k:'big3', tb:0,r:1,ic:'🚛',n:'大型車体Ⅲ',      d:'最大の大きさ(初期の1.5倍)',     c:820},
  /* ===== ⚔装備タブ(tb:1)=**車体に取り付ける物**(装甲・ノコ・バンパー・ラッパ・コイル・銃座) ===== */
  /* ⚠**列の並び順は表の出てくる順**=物資の順(⛽🏭🏠)で書くこと(タブが変わっても左右が入れ替わらない) */
  {k:'tire', tb:1,r:1,ic:'🛞',n:'スパイクタイヤ',  d:'障害物で減速しない',          c:45},
@@ -23400,8 +23526,11 @@ const EQ_ZAP_R=300,EQ_ZAP_D=90,EQ_ZAP_P=.22;/* 感電の半径/傷/1回轢くご
      「当たっていないのに死ぬ」に戻る。⭐掛ける所=**轢く丸 / 装備の寸法(ノコ) / 絵の縮尺 / 影**。
    ⚠**地形の当たり(`BUS_CL`)は広げない**=広げると森の隙間に入れなくなり「変な判定」に逆戻りする。
    ⚠**段は積み上がる**ので⑤を持っていれば④も持っている=**倍率は置き換え**(掛け算にしない)。 */
-const EQ_BIG=1.26;   /* 🚌大型車体(④)の倍率 */
-const EQ_BIG2=1.52;  /* 🚎二階建て化(⑤)の倍率。⚠道幅780に対して車体は約425
+/* ⭐(115)**3段で 初期の1.5倍まで**(ユーザー指示)。⚠**段は積み上がる**ので、上の段を持っていれば
+   下の段も持っている=**倍率は置き換え**(掛け算にしない)。 */
+const EQ_BIG=1.17;   /* 🚌大型車体Ⅰ */
+const EQ_BIG3=1.50;  /* 🚛大型車体Ⅲ=**初期の1.5倍**(ここが最終) */
+const EQ_BIG2=1.33;  /* 🚍大型車体Ⅱ。⚠道幅780に対して車体は約425
    ⚠**「連結トレーラー」で作りかけて捨てた**=後ろに繋いだ物は**画面の外**(バスは画面の下に張り付いている)
      ので一度も見えない。⭐**真上から見て大きくなる理由**にすること(二階建て/装甲増し)。 */
 /* 🔫⭐**ルーフガン**(🏠⑤)=**屋根の銃が前方へ撃ち抜く**。
@@ -23427,7 +23556,7 @@ function bupApply(B,up,eq){
  B.eq=eq;
  /* 🚌**大型車体/🚛連結トレーラー**=⚠⚠**当たりも絵も装備の寸法も、全部この1つを掛ける**
     (掛け忘れると絵と当たりがずれる)。⚠**段は積み上がるので置き換え**(掛け算にしない)。 */
- B.bigX   =eq.trail?EQ_BIG2:(eq.big?EQ_BIG:1);
+ B.bigX   =eq.big3?EQ_BIG3:(eq.trail?EQ_BIG2:(eq.big?EQ_BIG:1));
  /* ⚠**🪤鉄条網は倍率ではなく「前に足す箱」**(2026-08-02(64))=倍率だと横まで広がって絵と食い違う。
     ⚠`B.rX` は**大きさの倍率そのもの**(絵の縮尺と同じ)=当たりの形は `busBoxHit` が持つ。 */
  B.rX     =B.bigX;
@@ -24414,7 +24543,8 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.fillStyle=(ok||p==null)?PANE:(lk?'rgba(242,236,220,.34)':'rgba(242,236,220,.55)');
   c.font='900 '+Math.round(16*dp*kz)+'px '+FF;
   /* ⚔段の数字(①②③④⑤)=どこまで来たかが一目で分かる */
-  c.fillText((tab?'①②③④⑤'.charAt(BEQ_AT[r.i].st)+' ':'')+u.ic+' '+u.n,r.x+PAD,r.y+22*dp*kz);
+  /* ⚠(115)車体の列が6段になった=**丸数字も伸ばす**(足りないと6段目が無印になる) */
+  c.fillText((tab?'①②③④⑤⑥'.charAt(BEQ_AT[r.i].st)+' ':'')+u.ic+' '+u.n,r.x+PAD,r.y+22*dp*kz);
   c.font='900 '+Math.round(12*dp*kz)+'px '+FF;
   c.fillStyle=(ok||p==null)?'rgba(242,236,220,.85)':(lk?'rgba(242,236,220,.3)':'rgba(242,236,220,.45)');
   c.fillText(u.d,r.x+PAD,r.y+39*dp*kz);
@@ -28825,6 +28955,9 @@ function mapSel(i){
   :ndClr(nd)?IC('✅ 解放済み(何度でも遊べる)')
   :(CLR_GEM[nd.d]?IC('⭐初回クリアで 💎'+CLR_GEM[nd.d]):'⭐初めての拠点');
  $('bt-map-go').style.display=(open&&!nd.lock3)?'':'none';
+ /* ⚡(115)スコア報酬は🚌拠点開拓の拠点にだけ出す(⚠解放前は出さない=中身が全部「あと○○」で無意味) */
+ {const b8=$('bt-map-sg');
+  if(b8&&b8.style)b8.style.display=(nd.bns&&open&&!nd.lock3)?'':'none';}
  /* ⚠タップ音はここで鳴らさない(🗺出撃ボタン経由だと一括リスナーと二重に鳴っていた)。
     ピンを押した側(pointerdown)が鳴らす。 */
 }
@@ -29013,6 +29146,9 @@ $('bt-map-go').onclick=()=>{
  ensureAC();META.stg=nd.stg;saveMeta();setDiff=nd.d;startSolo();
 };
 $('bt-map-back').onclick=()=>{renderHome();show('home');};
+/* ⚡(115)スコア報酬の窓 */
+$('bt-map-sg').onclick=()=>{const nd=MAPND[MSEL];if(nd&&nd.bns)openBsg(nd.stg|0);};
+$('bt-bsg-close').onclick=()=>$('md-bsg').classList.remove('on');
 /* ---- 🏠ホーム ---- */
 function renderHome(){
  const hr=$('home-res');
@@ -29495,6 +29631,9 @@ function loop(now){
 }
 function loopBody(now){
  const dt0=Math.min(.05,(now-last)/1000);last=now;TT+=dt0;
+ /* ⚠(115)**走行音の最後の砦**=🚌の面から出ているのに鳴っていたら止める。
+    ⚠止める所を1つでも書き忘れると鳴りっぱなしになるので、毎コマ見張る形にした。 */
+ if(BUSA&&!(gameActive&&document.body.classList.contains('bns')))try{busSndOff();}catch(e){}
  if(gameActive&&!PAUSED){
   if(MODE!=='client'){const sp=(G&&G.spd)||1;
    let step=Math.min(.033,dt0),sl=1;
