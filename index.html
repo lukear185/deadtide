@@ -20662,8 +20662,24 @@ const LUCK_BUS=.001;
    ⭐**チケット中は行進の人数そのものを増やす**=そのぶん抽選が回る。
      ⚠**増やすのは左から順に**(いきなり画面の真ん中に湧かせない)。
      ⚠切れたら**足したぶんは歩き去るに任せて減らす**(いきなり消さない)。 */
-const LUCK_N=20;      /* チケット中の行進の人数(素は7) */
-const LUCK_ADD=.28;   /* 何秒ごとに1体足すか */
+const LUCK_N=20;      /* チケット中、地面を歩く人数(素は7) */
+/* 🌠⭐(120)**チケット中は左上からも降ってくる**(ユーザー指示
+     「今出てるゾンビの数はそのまま変わらず、左上からも同じぐらいの感じで斜めに降ってくる感じ」)。
+   ⭐**地面を歩く20体はそのまま**+**空から降ってくる20体**=抽選が回る回数もそのぶん増える。
+   ⚠**行進canvasは画面の下120pxしかない**ので、降らせる間は**canvasを上へ伸ばす**
+     (🚌バスくんで背を伸ばしているのと同じ仕組み)。伸ばさないと上で切れて「湧いて出た」ように見える。
+   ⚠**降り切ったら地面を歩く仲間になる**=別の群れにしない(タップも当たり判定も1つで済む)。 */
+const LUCK_FN=20;     /* チケット中、空から降ってくる人数 */
+const LUCK_TALL=190;  /* 降らせる間、行進canvasを何px上へ伸ばすか */
+/* ⚠**落ちる速さと横へ流れる速さを釣り合わせないと「斜め」に見えない**(2026-08-03(120))=
+   落下が速すぎると**画面の左端で真下に落ちるだけ**になり、斜めに降ってきたように見えない。
+   ⭐落ちながら横へは**歩く速さの3倍**で流す(下の LUCK_FVX)。 */
+const LUCK_FVY=100;   /* 落ちる速さ(px/秒)=250px を約2.6秒で落ちる */
+const LUCK_FVX=3.2;   /* 落ちている間、横へ流れる速さの倍率 */
+/* ⚠**空に何体居るか = 落ちきるまでの時間 ÷ 足す間隔**(2026-08-03(120)に実測して合わせた)。
+   落ちるのに約2.6秒かかるので、0.12秒ごとに足せば**常に20体ぐらいが空に居る**。
+   ⚠間隔を空けると空がスカスカになり「降ってきている」に見えない(0.28では6体しか居なかった)。 */
+const LUCK_ADD=.12;   /* 何秒ごとに1体足すか */
 const PAR_N=7;        /* 素の人数 */
 let LUCK_ADDT=0;
 const LUCK_T=30;            /* 効く秒数 */
@@ -20748,7 +20764,11 @@ function paradeHit(cx,cy){
  /* ⚠**黄金のロブスターだけ当たり判定を広く取る**=横に長い絵で、しかも5発当てないと倒せないので、
     普通と同じ34pxだと「押しているのに減らない」に見える。
     ⚠**🚌ゾンビバスは絵そのものが横190pxある**ので、絵の幅に合わせて100取る(2026-08-01) */
- for(const p of PAR){if(p.ht>0)continue;const d=Math.abs(p.x-px);if(d<(p.bus?100:p.lb?46:34)&&d<bd){bd=d;best=p;}}
+ /* ⚠🌠(120)**降っている個体は高さも見る**=足元だけで判定すると、空に居る子を地面のつもりで押せてしまう */
+ for(const p of PAR){if(p.ht>0)continue;
+  const d=Math.abs(p.x-px);if(d>=(p.bus?100:p.lb?46:34))continue;
+  const gy9=h9-20+(p.fy||0);if(Math.abs(py-(gy9-26))>62)continue;
+  if(d<bd){bd=d;best=p;}}
  if(!best)return false;
  ensureAC();
  /* ⭐**打撃感**(2026-07-27ユーザー指示)。絵を足さずに**3つ**でそれらしくする:
@@ -21005,9 +21025,18 @@ function paradeStep(t){
     ⚠**素の高さは決め打ちにせずCSSから測る**=中の寸法とCSSの見た目がずれると絵が縦に潰れる。 */
  /* 💫(119)チケット中は人数を増やして**抽選の回数**を稼ぐ。⚠必ず画面の左の外から入れる */
  if(luckOn()){LUCK_ADDT+=.016;
-  while(LUCK_ADDT>=LUCK_ADD&&PAR.length<LUCK_N){LUCK_ADDT-=LUCK_ADD;PAR.push(parNew());}
+  while(LUCK_ADDT>=LUCK_ADD&&PAR.length<LUCK_N+LUCK_FN){LUCK_ADDT-=LUCK_ADD;
+   const z=parNew();
+   /* ⭐**半分は空から**=いま空に居る数が足りなければ降らせる。⚠**左上から**斜めに落とす */
+   const air=PAR.filter(q=>(q.fy||0)<0).length;
+   /* ⚠**画面の外の左から落とすと、斜めの筋が画面に入る前に着地する**(撮って分かった)。
+      ⭐**画面の左寄りに散らして落とす**=斜めに降りてくる線がちゃんと見える。 */
+   if(air<LUCK_FN){z.fy=-(LUCK_TALL+40)-rnd(0,80);z.x=-40+rnd(0,w*.34);}
+   PAR.push(z);}
  }else LUCK_ADDT=0;
- const tall=PAR.some(p=>p.bus&&p.ht<1)?BUS_TALL:0;
+ /* ⚠(120)**降ってくる子が居る間も伸ばす**=チケットが切れた瞬間に縮めると空の子が消える */
+ const tall=Math.max(PAR.some(p=>p.bus&&p.ht<1)?BUS_TALL:0,
+  (luckOn()||PAR.some(p=>(p.fy||0)<0))?LUCK_TALL:0);
  if(parBaseH<0||parLastW!==w){pcv.style.height='';parBaseH=pcv.clientHeight||120;parLastW=w;parTall=-1;}
  if(parTall!==tall){parTall=tall;pcv.style.height=tall?(parBaseH+tall)+'px':'';}
  const h=parBaseH+tall;
@@ -21025,22 +21054,25 @@ function paradeStep(t){
    const k=p.ht;
    pctx.save();pctx.globalAlpha=Math.max(0,1-k*k);
    /* ⚠バスは重いので**倒れ方を浅く・ゆっくり**にする(1.5回すと横倒しの箱が転がって見える) */
-   pctx.translate(p.x-p.kb,h-20);pctx.rotate((p.bus?.5:1.5)*(1-Math.pow(1-k,3)));
+   pctx.translate(p.x-p.kb,h-20+(p.fy||0));pctx.rotate((p.bus?.5:1.5)*(1-Math.pow(1-k,3)));
    if(p.bus)drawBusKun(pctx,0,0,t,p.ph,0);else drawZombie(pctx,p.zi,0,0,1,t,p.ph,{});
    pctx.restore();pctx.globalAlpha=1;continue;}
   /* 💫(117)**幸運チケット中は歩くのも速い**(ユーザー指示)=画面を横切るのが速いぶん
      **入れ替わりも速い**=同じ30秒でより多く抽選が回る。⚠**タップは難しくなる**(そこは腕)。 */
-  p.x+=p.sp*luckSp()*.016;
+  /* 🌠(120)空から降っている間は**斜めに落ちる**。地面に着いたら普通の仲間になる */
+  const air9=(p.fy||0)<0;
+  if(air9)p.fy=Math.min(0,p.fy+LUCK_FVY*.016);
+  p.x+=p.sp*luckSp()*(air9?LUCK_FVX:1)*.016;
   if(p.x>w+(p.bus?130:60)){
    /* ⚠(119)チケットが切れた後は、増やしたぶんを**歩き去るに任せて**素の人数へ戻す */
    if(!luckOn()&&PAR.length>PAR_N){PAR.splice(i,1);i--;continue;}
    PAR[i]=parNew();
   }
-  const dx=p.x-p.kb;
+  const dx=p.x-p.kb,gy=h-20+(p.fy||0);/* 🌠(120)降っている間は gy が上にある */
   /* ⭐🚌バスくん。⚠虹/金と違って**焼き直さず直に描く**=RBC(160px)には収まらない大きさなので */
-  if(p.bus){drawBusKun(pctx,dx,h-20,t,p.ph,p.hp);
+  if(p.bus){drawBusKun(pctx,dx,gy,t,p.ph,p.hp);
    if(p.fl>0){pctx.save();pctx.globalCompositeOperation='lighter';pctx.globalAlpha=p.fl*.8;
-    drawBusKun(pctx,dx,h-20,t,p.ph,p.hp);pctx.restore();}
+    drawBusKun(pctx,dx,gy,t,p.ph,p.hp);pctx.restore();}
    continue;}
   /* ⭐⭐**虹色の塗り分け**(2026-07-27にユーザー報告「虹じゃなくて白い丸い点滅が背景にある犬だった」)。
      ⚠⚠**`ctx.filter` は iOS Safari で効かない**=hue-rotate は丸ごと無視され、後光だけが出ていた。
@@ -21079,24 +21111,24 @@ function paradeStep(t){
      pctx.fillStyle='hsl('+((hs+k*120)%360)+',95%,62%)';
      pctx.beginPath();pctx.arc(dx,h-34,20+k*9+Math.sin(t*7+k)*3,0,7);pctx.fill();}}
    pctx.globalAlpha=1;
-   pctx.drawImage(RBC,dx-SZ/2,h-20-120,SZ,SZ);
+   pctx.drawImage(RBC,dx-SZ/2,gy-120,SZ,SZ);
    /* ⭐金だけ**もう1枚 lighter で重ねて発光させる**(2026-07-28)。
       ⚠タイトルの背景は暗い茶色なので、金色は素で乗せると背景に沈んで「くすんだ茶色」に見える。 */
    if(p.lb){pctx.globalCompositeOperation='lighter';pctx.globalAlpha=.34;
-    pctx.drawImage(RBC,dx-SZ/2,h-20-120,SZ,SZ);
+    pctx.drawImage(RBC,dx-SZ/2,gy-120,SZ,SZ);
     pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;}
    /* ⭐殴った瞬間は焼いた絵をもう1枚 lighter で重ねて光らせる
       (5発要る金は、効いているのが分からないと「押しても無反応」に見える) */
    if(p.fl>0){pctx.globalCompositeOperation='lighter';pctx.globalAlpha=p.fl;
-    pctx.drawImage(RBC,dx-SZ/2,h-20-120,SZ,SZ);
+    pctx.drawImage(RBC,dx-SZ/2,gy-120,SZ,SZ);
     pctx.globalCompositeOperation='source-over';pctx.globalAlpha=1;}
    pctx.restore();
    if(p.lb)parSpark(pctx,dx,h-30,t);
    continue;}
-  drawZombie(pctx,p.zi,dx,h-20,1,t,p.ph,{});
+  drawZombie(pctx,p.zi,dx,gy,1,t,p.ph,{});
   /* ⭐殴った瞬間だけ白く光らせる。⚠同じ絵をもう1枚 lighter で重ねるだけ(盤面の撃破と同じやり方) */
   if(p.fl>0){pctx.save();pctx.globalCompositeOperation='lighter';pctx.globalAlpha=p.fl;
-   drawZombie(pctx,p.zi,dx,h-20,1,t,p.ph,{});
+   drawZombie(pctx,p.zi,dx,gy,1,t,p.ph,{});
    pctx.restore();}}
  parDzStep(pctx);/* 窓からこぼれ落ちたゾンビ */
  /* 上へ流れて消える。⚠ゲーム中の「+N⚙️」と同じ動き方にして、見た瞬間に同じ物だと分かるようにする */
@@ -26332,7 +26364,10 @@ function gcPull(n){
    ⭐演出は gcStart が結果から組み立てるので、**必ず★5の最上段の見せ方**(虹の文字/✨ロブ等)になる。 */
 function gcPull5(){
  if((META.tk5||0)<1){toast('🎫 ★5確定チケットを持っていない',true);return;}
- const pool=HEROES.filter(h=>h.rk===5);
+ /* ⭐(120)**まだ持っていない★5を優先する**(ユーザー「星5確定チケットは被らないようにしよう」)。
+    ⚠全部そろっている時だけ重複になる(その時は🔧に化けるので無駄にはならない)。 */
+ const all5=HEROES.filter(h=>h.rk===5);
+ const pool=all5.filter(h=>!heroOwned(h.id)).length?all5.filter(h=>!heroOwned(h.id)):all5;
  if(!pool.length){toast('★5の英雄がいない',true);return;}
  META.tk5=(META.tk5||0)-1;
  const out=[gcApply({hero:pool[ri(0,pool.length-1)]})];
