@@ -63,7 +63,10 @@ const SCENES=[
  ['ゾンビ図鑑',          'TRTAB="zoo";renderTrain();MD("md-train");'],
  ['編成',                'renderLoad();MD("md-load");'],
  ['英雄を選ぶ',          'renderHeroPick();MD("md-hpick");'],
- ['英雄ステータス',      'openHStat("hLupi");'],
+ /* ⚠**「←戻る」が出ている形で測る**=たまにしか出ない物こそ入れる(2026-08-03(108)の教訓)。
+    ⚠⚠**先に他の窓を閉じる**=openHStat は自分で閉じないので、前の場面の窓が開いたままだと
+      `.modal.on` の**1枚目**(=前の窓)を測ってしまう(実際に英雄を選ぶ窓を測っていた) */
+ ['英雄ステータス',      'MDX();openHStat("hLupi","gacha");'],
  ['砲撃を選ぶ',          'renderStkPick();MD("md-stk");'],
  ['オプション',          'optRender();MD("md-opt");'],
 ];
@@ -71,8 +74,8 @@ const SCENES=[
 /* ---- ページの中で走る測定器 ---- */
 const RUNNER=`
 /* 開いているモーダルを1枚だけにする(前の場面が残っていると重なって嘘の結果になる) */
-function MD(id){document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
- document.getElementById(id).classList.add('on');}
+function MDX(){document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});}
+function MD(id){MDX();document.getElementById(id).classList.add('on');}
 function VIS(e){var cs=getComputedStyle(e);
  if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0)return false;
  var r=e.getBoundingClientRect();return r.width>0.5&&r.height>0.5;}

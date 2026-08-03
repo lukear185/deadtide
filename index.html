@@ -703,42 +703,50 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hcard.dud{border-color:var(--dud);background:var(--dudbg);opacity:.9}
 .hcard .rk{flex:0 0 auto;font-size:11px;font-weight:900}
 /* ⚠(100)札の幅118pxは狭すぎて押しづらい(ユーザー指摘)=160pxに広げ、高さも44pxの掟に合わせる */
-.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:6px}
-.hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:8px 8px;min-height:44px;font-size:11.5px;color:var(--paper);text-align:left}
+/* ⚠(110)**1列ぶん増やして詰める**=22人を見比べる場所なので、一度に見える数がそのまま使い勝手になる */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:5px;margin-top:5px}
+.hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:5px 7px;min-height:44px;font-size:11.5px;color:var(--paper);text-align:left;
+ display:flex;flex-direction:column;justify-content:center;gap:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hgrid .hb.own{border-color:var(--paper)}
 /* ⚠実機(dp=3)は文字の実測がわずかに太り、「未所持」が折り返して札の縁で切れた(ユーザー写真)。
    1行に固定して溢れは…で切る(大事な言葉は行頭に置く=renderHStat側) */
 .hgrid .hb .hq{font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ⭐🦸英雄ステータス(2026-07-30)。⚠横画面は高さ393pxしか無いので**左=姿・右=数値**の横並び。
    縦に積むと数値が画面外へ出る(研究所のカードで同じ失敗をしている) */
-.hstop{display:flex;gap:8px;align-items:stretch;margin-bottom:6px}
-.hsshow{flex:0 0 132px;height:158px;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void);cursor:pointer}
+/* ⚠(110)**上の塊は詰める**=下の一覧(22人ぶん)が2行しか見えず狭かった(ユーザー指摘)。
+   姿の枠を158→132pxに下げたぶんが、そのまま下の一覧の高さになる。 */
+.hstop{display:flex;gap:8px;align-items:stretch;margin-bottom:5px}
+.hsshow{flex:0 0 118px;height:132px;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void);cursor:pointer}
 /* ▶(100)必殺技を実際に使っている映像(ユーザー指示)。姿の枠に重ねて再生する */
 .hsshow .hsplay{position:absolute;left:0;right:0;bottom:0;background:rgba(20,16,12,.82);color:var(--gold);
  font-size:10.5px;font-weight:900;text-align:center;padding:3px 2px;letter-spacing:1px}
 .hsshow canvas{position:absolute;left:0;top:0;width:100%;height:100%}
 .hsinfo{flex:1 1 auto;min-width:0}
-.hsinfo .hsn{font-weight:900;font-size:16px;line-height:1.2}
+.hsinfo .hsn{font-weight:900;font-size:15px;line-height:1.15}
 /* ⚠パネルの地は明るいので **--paper(明色)を文字色にしない**=読めなくなる(撮って直した) */
-.hsinfo .hsr{font-weight:900;font-size:11px;color:var(--ink);opacity:.8;margin:1px 0 3px}
+.hsinfo .hsr{font-weight:900;font-size:11px;color:var(--ink);opacity:.8;margin:0 0 2px}
 .hsinfo table.stats{margin:3px 0;font-size:12px}
 .hsinfo table.stats td{padding:2px 8px}
 /* ⭐**数値の棒**(2026-08-02(66))=名前 / 数字 / 棒 の3列。⚠**幅は割合**にする(px決め打ちは溢れる) */
-.hsinfo .sbr{display:grid;grid-template-columns:66px minmax(64px,84px) 1fr;align-items:center;gap:7px;
- font-size:11.5px;font-weight:900;margin:4px 0}
+/* ⭐(110)**棒は2列に畳む**=横に余っているのに縦へ4本積んでいて、下の一覧を28px圧迫していた。
+   ⚠**狭い画面では1列に戻す**(2列だと棒が短すぎて「多い/少ない」が読めなくなる) */
+.sbwrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px}
+@media (max-width:640px){.sbwrap{grid-template-columns:1fr}}
+.hsinfo .sbr{display:grid;grid-template-columns:58px minmax(58px,76px) 1fr;align-items:center;gap:6px;
+ font-size:11.5px;font-weight:900;margin:2px 0}
 .hsinfo .sbr .sv{text-align:right;white-space:nowrap}
 .hsinfo .sbr .sv small{font-size:10.5px;font-weight:800;opacity:.65}
 .hsinfo .sbr .sb{display:block;height:10px;border:2px solid var(--ink);border-radius:6px;
  background:var(--paper2);overflow:hidden}
 .hsinfo .sbr .sb b{display:block;height:100%}
-.hchips{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0 3px}
+.hchips{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}
 .hchips span{background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
  padding:1px 6px;font-size:10.5px;font-weight:800}
 /* ⚠金色は紙色の地では読めない(コントラスト不足)。必殺の行は英雄窓の .ul と同じ濃い錆色に揃える */
 /* ⚠(100)必殺の説明は**高さを固定**する(ユーザー指摘)=英雄によって1行/2行で下の一覧が上下に動き、
    同じ札を押しているのに位置が変わっていた。⚠font-sizeも1つに固定(iOSの自動拡大も止める) */
-.hsul{font-size:12px;font-weight:900;color:var(--rust2);line-height:1.4;
- height:34px;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;
+.hsul{font-size:11.5px;font-weight:900;color:var(--rust2);line-height:1.35;
+ height:31px;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;
  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .hgrid .hb.pick{cursor:pointer}
 .hgrid .hb.sel{outline:3px solid var(--gold);outline-offset:1px}
@@ -875,6 +883,12 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-load .tmord,#md-load .ldhdr{flex:0 0 auto}
 /* 🦸英雄ステータスも同じ型=上の情報は固定して、一覧だけ流す(2026-08-03 UI総監査。
    ⚠丸ごと流れると、下の英雄を押しても情報欄が画面外のままで「何も起きない」ように見える) */
+/* 💎(110)**召集の窓は動かさない**(ユーザー指摘「スクロールできないようにちゃんと固定して」)=
+   目玉の英雄と単発/10連は**常に同じ位置**に居てほしい。
+   ⚠**📖図鑑と確率の面だけは中で流す**(22人ぶんは1画面に収まらない)。 */
+#md-gacha .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
+#md-gacha #gc-home{flex:1 1 auto;min-height:0}
+#md-gacha #gc-sub{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 #md-hstat .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #md-hstat .hstop{flex:0 0 auto}
 #md-hstat .hgrid{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0}
@@ -1402,7 +1416,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 </div>
 <div class="modal" id="md-hstat">
   <div class="panel bigpanel">
-    <div class="bphd"><b>🦸 英雄ステータス</b><span class="pt" id="hs-own"></span><button class="xbtn" id="bt-hstat-close">✕</button></div>
+    <!-- ⭐(110)**来た所へ戻るボタン**(ユーザー指摘「ガチャに戻るボタンが無くてホームに戻るしかない」)。
+         ⚠✕は今までどおり全部閉じる=**戻る と 閉じる は別の物**として両方置く -->
+    <div class="bphd"><button class="xbtn hsback" id="bt-hstat-back" style="display:none">←</button><b>🦸 英雄ステータス</b><span class="pt" id="hs-own"></span><button class="xbtn" id="bt-hstat-close">✕</button></div>
     <div class="bpbody">
       <div class="hstop">
         <div class="hsshow" id="hs-show"><canvas id="hs-cv" width="264" height="316"></canvas><span class="hsplay" id="hs-play">▶ 必殺技を見る</span></div>
@@ -25436,7 +25452,7 @@ function renderHeroPick(){
    f.innerHTML=IC("<span class=\"ul\">⚡ 必殺『"+h.ult+"』</span><span>"+h.udsc+"</span>"
     +"<span class=\"sp\"><span>❤"+fmt(Math.round((U.hp||0)*bo))+"</span><span>⚔"+fmt(Math.round((U.atk||0)*bo))+"</span>"
     +"<button id=\"hp-more\">📋 くわしく</button></span>");
-   const mb=$("hp-more");if(mb)mb.onclick=()=>{try{if(sfx.tap)sfx.tap();}catch(e){}const m=$("md-hpick");if(m)m.classList.remove("on");openHStat(h.id);};}}
+   const mb=$("hp-more");if(mb)mb.onclick=()=>{try{if(sfx.tap)sfx.tap();}catch(e){}const m=$("md-hpick");if(m)m.classList.remove("on");openHStat(h.id,'hpick');};}}
 }
 /* 研究所のタブ=この順で固定。値段では並べ替えない(買うと値段が上がって順が入れ替わるため)。
    n=タブの短い名前 / d=そのタブの1行説明 */
@@ -26101,16 +26117,30 @@ function gcDexHtml(){
    ⚠🔧鍛錬Lvは鍛錬所をしまっている間(TR_OPEN=false)は必ず0なので、その時は行を出さない。 */
 const HS_TYN={melee:'近接',bullet:'実弾',fire:'火炎',pierce:'貫通',blast:'爆発',frost:'冷気',heal:'回復'};
 let HSSEL='';
+/* ⭐(110)**どこから開いたか**を覚えておく=見出しの「←戻る」がそこへ返す。
+   ⚠''(直に開いた)の時はボタンを出さない=行き先が無いのに戻るボタンがあると嘘になる。 */
+let HSFROM='';
+const HS_BACK={gacha:{t:'← 召集',md:'md-gacha',f:()=>renderGacha(null)},
+ hpick:{t:'← 英雄',md:'md-hpick',f:()=>renderHeroPick()}};
 function hsList(){return HEROES;}
-function openHStat(id){
+function openHStat(id,from){
  const own=HEROES.find(h=>heroOwned(h.id));
+ HSFROM=HS_BACK[from]?from:'';
  HSSEL=id||(heroOwned(HSSEL)?HSSEL:'')||(META.hsel&&heroOwned(META.hsel)?META.hsel:'')||(own?own.id:HEROES[0].id);
  $('md-hstat').classList.add('on');hsDemoStop();renderHStat();
  /* ⭐開いた時は選択中の札まで一覧を寄せる(⚠rAFで1フレーム遅らせる=開いた直後は寸法が無い) */
  try{requestAnimationFrame(()=>{const e9=document.querySelector('#hs-grid .hb.sel');
   if(e9&&e9.scrollIntoView)e9.scrollIntoView({block:'nearest'});});}catch(e){}
 }
-function closeHStat(){$('md-hstat').classList.remove('on');try{hsDemoStop();}catch(e){}try{renderPickRows();}catch(e){}}
+function closeHStat(){$('md-hstat').classList.remove('on');HSFROM='';try{hsDemoStop();}catch(e){}try{renderPickRows();}catch(e){}}
+/* ⭐(110)来た所へ戻る。⚠**閉じる(✕)とは別物**=✕は全部閉じてホームへ、こちらは元の窓を開き直す */
+function hsBack(){
+ const b=HS_BACK[HSFROM];if(!b){closeHStat();return;}
+ $('md-hstat').classList.remove('on');HSFROM='';
+ try{hsDemoStop();}catch(e){}
+ try{b.f();}catch(e){}
+ $(b.md).classList.add('on');
+}
 /* ▶(100)姿の枠を押すと必殺技のデモを再生/停止(ユーザー指示) */
 {const sh=$('hs-show');
  if(sh&&sh.addEventListener)sh.addEventListener('click',()=>{
@@ -26139,6 +26169,9 @@ function renderHStat(){
  const H=HEROES.find(h=>h.id===HSSEL)||HEROES[0];HSSEL=H.id;
  const ownN=HEROES.filter(h=>heroOwned(h.id)).length;
  const oe=$('hs-own');if(oe)oe.innerHTML=IC('所持 '+ownN+'/'+HEROES.length+'　💎'+(META.gem||0));
+ /* ⭐(110)来た所が分かっている時だけ「←戻る」を出す(行き先を文字で言う) */
+ {const bb=$('bt-hstat-back'),bk=HS_BACK[HSFROM];
+  if(bb){if(bb.style)bb.style.display=bk?'':'none';if(bk)bb.textContent=bk.t;bb.onclick=hsBack;}}
  const ui=hUiOf(H.id),U=UNITS[ui]||H,cnt=(META.hero||{})[H.id]||0;
  const tl=TR_OPEN?hLv(H.id):0,tm=1+TR_PER*tl;
  const col=RARE[H.rk-1]||RARE[0];
@@ -26147,11 +26180,14 @@ function renderHStat(){
  if(inf)inf.innerHTML=IC('<div class="hsn" style="color:'+col+'">'+RK_S[H.rk]+' '+H.n+'</div>'
   +'<div class="hsr">'+RK_N[H.rk]+'枠'+(cnt?('　所持 '+cnt+'体'):'　<b style="color:var(--danger2)">未所持</b>')
    +(tl?('　🔧鍛錬Lv'+tl+'(HPと攻撃+'+Math.round(tl*TR_PER*100)+'%)'):'')+'</div>'
-  /* ⭐**4つの数値は棒で**(21人の中での位置が一目で分かる) */
+  /* ⭐**4つの数値は棒で**(21人の中での位置が一目で分かる)。
+     ⚠(110)**2列に畳む**=横に空きがあるのに縦へ4本積んでいて、下の一覧を28px圧迫していた */
+  +'<div class="sbwrap">'
   +hsBar('❤ HP',fmt(Math.round((U.hp||0)*tm)),(U.hp||0)/hsMax().hp,'var(--life2)')
   +hsBar('⚔ 攻撃',fmt(Math.round((U.atk||0)*tm))+' <small>毎秒'+fmt(dps)+'</small>',(U.atk||0)/hsMax().atk,'var(--rust)')
   +hsBar('📡 射程',(U.rng>=100?U.rng:'近接 '+(U.rng||0)),(U.rng||0)/hsMax().rng,'var(--tech2)')
   +hsBar('👟 移動',Math.round(U.sp||0),(U.sp||0)/hsMax().sp,'var(--amber)')
+  +'</div>'
   /* ⭐**棒にならない物は小さな札で**(⚠表に混ぜると結局「文字の並び」に戻る) */
   +'<div class="hchips"><span>⏩ 間隔 '+(U.rate||0).toFixed(2)+'秒</span>'
    +'<span>💥 '+(HS_TYN[U.type]||U.type)+'</span>'
@@ -26275,7 +26311,7 @@ function gcView(v){
  /* ⚠結果の一覧は**別ウィンドウ(#md-gcres)**に移した(第73弾)。ここは確率/図鑑の置き場 */
  $('gc-res').innerHTML=(v==='rate')?IC(gcRateHtml()):'';
  $('gc-list').innerHTML=(v==='dex')?gcDexHtml():'';
- {const b=$('gc-dexst');if(b)b.onclick=()=>openHStat('');}
+ {const b=$('gc-dexst');if(b)b.onclick=()=>openHStat('','gacha');}
  const st=$('gc-subt');if(st)st.textContent=(v==='rate')?'1回ごとに抽選する(天井は無い)':(v==='dex')?'引いた英雄がここに載る':'';
  /* ⚠開いた直後は clientWidth が0のことがあるので、次のフレームで測り直してから描く */
  if(v==='home')requestAnimationFrame(()=>{gcHomeFit();gcHomeDraw();});
@@ -26340,7 +26376,7 @@ function gcHomeStep(dt){
    /* 🦸(100)**正面のキャラを軽くタップ=ステータス画面へ**(ユーザー指示)。
       ⚠スワイプと区別する=動きが小さい時だけ(36px未満なら入れ替えも起きていない) */
    else if(Math.abs(dx)<10){try{const L=gcStarList(),h=L[((GCH.idx%L.length)+L.length)%L.length];
-    if(h){const m=$('md-gacha');if(m)m.classList.remove('on');openHStat(h.id);}}catch(x){}}};
+    if(h){const m=$('md-gacha');if(m)m.classList.remove('on');openHStat(h.id,'gacha');}}catch(x){}}};
   cv.addEventListener('pointerdown',dn);cv.addEventListener('pointermove',mv,{passive:false});
   cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
   cv.addEventListener('pointerleave',up);
