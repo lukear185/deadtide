@@ -2594,6 +2594,16 @@ function checkHero(){
    if(mg<0){console.log('FAIL: 近接英雄 '+U.n+' の射程が届かない(要'+need+' / 射程'+U.rng+')');process.exit(1);}
    worst=Math.min(worst,mg);}
   console.log('近接英雄の立ち位置: 前線の兵科は旗ちょうど / 英雄は'+Math.round(uStand(UNITS[hUiOf(RNG_MELEE[0])]))+'後ろ・射程の余裕'+worst+'px OK');}
+ /* 💫(122)**幸運チケットが本当に確率に効いているか**(ユーザー「全然確率が変わってない」)。
+    ⚠⚠**parNew が素の定数(RB_RATE等)を直に見ていて、倍率の入った関数を通っていなかった**。
+    ⚠この検査は**関数を通っているか**を確率そのもので確かめる=定数に戻したら必ず落ちる。 */
+ {const cnt=(on,n)=>{LUCKT=on?999:0;let rb=0,bus=0;
+   for(let i=0;i<n;i++){const z=parNew();if(z.rb)rb++;if(z.bus)bus++;}
+   LUCKT=0;return {rb:rb/n,bus:bus/n};};
+  const A=cnt(false,60000),B=cnt(true,60000);
+  if(!(B.rb>A.rb*8)){console.log('FAIL: 幸運チケットで🌈虹犬の確率が上がっていない ('+(A.rb*100).toFixed(2)+'% → '+(B.rb*100).toFixed(2)+'%)');process.exit(1);}
+  if(!(B.bus>A.bus*8)){console.log('FAIL: 幸運チケットで🚌バスの確率が上がっていない');process.exit(1);}
+  console.log('💫幸運チケット: 🌈虹犬 '+(A.rb*100).toFixed(2)+'%→'+(B.rb*100).toFixed(2)+'% / 🚌バス '+(A.bus*100).toFixed(3)+'%→'+(B.bus*100).toFixed(3)+'% OK');}
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  /* ⭐⭐**狙撃王ジョルジ『撃墜』の締めの1発は射程無限**(2026-08-02(70)ユーザー指示)。
     ⚠⚠**これが「必殺技の最後の攻撃が出ない」の正体だった**=前の9発は盤面のどこの敵でも撃つのに、
