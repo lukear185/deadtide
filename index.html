@@ -675,6 +675,12 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ⚠伸ばしすぎるとカードが縦に育って1画面に入る枚数が減るので、4行まで。 */
 .lc .ds{font-size:10.5px;font-weight:700;opacity:.7;line-height:1.32;
  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+/* 🛡⭐相性の札(2026-08-04)。⚠**色で得意/苦手を言う**=文字を読ませない。数字は必ず残す(掟) */
+.afz{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.afz span{font-size:10.5px;font-weight:900;line-height:1.15;padding:2px 5px;border-radius:6px;
+ border:1.5px solid var(--ink);white-space:nowrap}
+.afz .wk{background:var(--rust);color:var(--pane)}
+.afz .rs{background:var(--paper3);color:var(--ink)}
 /* ⭐タワー/兵科の個別強化は項目が20〜32枚並ぶ。普通のカード(4列・説明3行)だと
    1画面に8枚しか入らず探せないので、**小さいカードで6列**にする(1画面に18枚)。
    ⚠説明は .tg の1行に収める(.ds を出さない) */
@@ -946,6 +952,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .tmc .tg{font-size:10.5px;font-weight:800;color:var(--gold);line-height:1.15}
 /* ⭐編成に入っている札=**押すと外すトグル**(2026-08-03 UI総監査)。金の枠+✅バッジ+薄い光 */
 .tmc.on{border-color:var(--gold);box-shadow:0 0 10px rgba(255,210,61,.4),0 3px 0 rgba(0,0,0,.3)}
+/* 🛡相性の帯(2026-08-04)。⚠**苦手だけ赤く**する=全部に色を付けると何も目立たない */
+.tmc .afu{font-style:normal;font-size:10.5px;font-weight:900;color:var(--paper);opacity:.82}
+.tmc .afu.rs{color:var(--rust2);opacity:1}
+.tmc .afu.wk{color:var(--life);opacity:1}
 .tmc .onb{position:absolute;left:4px;top:4px;font-size:13px;line-height:1}
 .tmc .hkb{position:absolute;right:4px;top:4px;font-size:13px;line-height:1;text-shadow:0 1px 0 rgba(0,0,0,.5)}
 #buildmenu .bm-us{text-align:left;font-size:13px}
@@ -953,6 +963,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
 .bm-item canvas{width:46px;height:40px}
 .bm-item .bn{font-size:9px;font-weight:900;white-space:nowrap}
+/* 🛡相性の札(2026-08-04)。⚠**苦手(45%)と得意(×1.9)だけ色を付ける** */
+.bm-item .baf{font-size:9px;font-weight:900;white-space:nowrap;opacity:.72}
+.bm-item .baf.rs{color:var(--rust2);opacity:1}
+.bm-item .baf.wk{color:var(--life);opacity:1}
 .bm-item .bc{font-size:11px;font-weight:900;color:var(--rust2)}
 .bm-item:active{transform:scale(.94)}
 .bm-item.poor{opacity:.5}
@@ -4178,6 +4192,50 @@ const diffW=d=>(D5[d]||D5[2]).w;
 const curW=()=>(G&&G.pve&&!G.coop&&G.pveDiff!=null)?diffW(G.pveDiff):STAGE_W;
 const FIRE_VS_ARMOR=1.9;/* 火炎放射塔の装甲特効(装甲持ちへの直撃と燃焼の倍率) */
 const ELEC_VS_SCALE=1.9;
+const ARMOR_CUT=.45;/* 🛡装甲・🐟鱗の敵に「貫通しない攻撃」が通る割合(dmgZ が掛ける) */
+/* ============ 🛡 相性の見せ方(2026-08-04) ============
+   ⭐**それまで相性はコードにしか無く、プレイヤーには一切見えていなかった**
+     (装甲は⚔近接/🔫実弾が45%・🔥火炎の塔は×1.9…)。兵科30種・ゾンビ46種あっても
+     編成が「強い順」に収束していた原因。
+   ⚠⚠**倍率は必ず上の3つの定数から作る**=数字を直に書くと、計算側を直した時に説明だけ古くなる
+     (「同じ表示を2か所で作らない」の掟。NOTES_UI)。
+   ⚠**貫通の判定も計算側と同じ式にしてある**:
+     兵科/英雄 = type が fire/blast/pierce なら貫通(`stepUnits` の `pierce`)/
+     タワー = bullet 以外は必ず貫通・bullet だけ `T.pierce` を見る。 */
+const AF_TY={melee:{ic:'⚔',n:'近接'},bullet:{ic:'🔫',n:'実弾'},pierce:{ic:'🗡',n:'貫通'},
+ blast:{ic:'💣',n:'爆発'},fire:{ic:'🔥',n:'火炎'},frost:{ic:'❄',n:'冷気'},
+ elec:{ic:'⚡',n:'電撃'},net:{ic:'🕸',n:'拘束'},heal:{ic:'✚',n:'回復'},
+ eco:{ic:'🏭',n:'工房'},sup:{ic:'🏗',n:'支援'}};
+/* その攻撃が装甲・鱗を貫くか。isTw=タワーの表(TOWERS)を見ている時 */
+const afPrc=(type,prc,isTw)=>isTw?(type!=='bullet'||!!prc):(type==='fire'||type==='blast'||type==='pierce');
+/* 🛡装甲/🐟鱗の敵へ何倍通るか。攻撃しない物(工房・支援・回復)は null */
+function afMul(type,prc,isTw){
+ if(type==='eco'||type==='sup'||type==='heal')return null;
+ const m=afPrc(type,prc,isTw)?1:ARMOR_CUT;
+ return{ar:(isTw&&type==='fire')?FIRE_VS_ARMOR:m,sc:(isTw&&type==='elec')?ELEC_VS_SCALE:m};
+}
+/* ⭐一覧に出す札1つぶん。**型の名前ではなく「硬い敵にどうなるか」を書く**
+   =「貫通」と書かれても選べない。
+   {ic,n,e(効果だけ),t(絵+効果),s(絵+割合だけ=幅の無い所用),k}(k=wk得意/rs苦手/ok等倍)
+   ⚠**s は「装甲」の字を落とす**ので、使う画面の見出しに何の割合かを1行だけ書くこと */
+function afTag(type,prc,isTw){
+ const T=AF_TY[type]||{ic:'🎯',n:type||'?'},m=afMul(type,prc,isTw);
+ const mk=(e,k,s)=>({ic:T.ic,n:T.n,e,k,t:T.ic+' '+e,s:T.ic+' '+(s||e)});
+ if(!m||type==='net')return mk(T.n,'');
+ if(isTw&&type==='fire')return mk('装甲'+Math.round(m.ar*100)+'%','wk',Math.round(m.ar*100)+'%');
+ if(isTw&&type==='elec')return mk('鱗'+Math.round(m.sc*100)+'%','wk','鱗'+Math.round(m.sc*100)+'%');
+ return mk('装甲'+Math.round(m.ar*100)+'%',m.ar<1?'rs':'ok',Math.round(m.ar*100)+'%');
+}
+/* 🧟側=そのゾンビの弱点と耐性。装甲も鱗も持たない個体は null(札を出さない) */
+function afZ(Z){
+ if(!Z||(!Z.armor&&!Z.scl))return null;
+ const cut=Math.round(ARMOR_CUT*100);
+ return{wk:Z.armor?('🔥 火炎の塔 ×'+FIRE_VS_ARMOR.toFixed(1)):('⚡ 電撃の塔 ×'+ELEC_VS_SCALE.toFixed(1)),
+  rs:'⚔🔫❄ '+cut+'%'};
+}
+/* 図鑑・紹介の見出しに1行だけ置く凡例。⚠**掟は1か所にだけ書く**(カード46枚に繰り返さない) */
+const AF_LEG=()=>'🛡装甲・🐟鱗 → <b>⚔🔫❄は'+Math.round(ARMOR_CUT*100)+'%</b>／<b>🗡💣🔥はそのまま</b>'
+ +'／🔥火炎の塔は装甲に×'+FIRE_VS_ARMOR.toFixed(1)+'・⚡電撃の塔は鱗に×'+ELEC_VS_SCALE.toFixed(1);
 /* ⭐電撃が次の敵へ跳べる距離(テスラコイル・重テスラで共通)。
    2026-07-27ユーザー指示で150→180(1.2倍)。⚠**2つの塔で同じ値を使う**ので必ずここだけを直すこと */
 const ARC_HOP=180;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
@@ -16941,8 +16999,9 @@ function dmgZ(C,z,d,armorPierce,quiet){
     ⚠**削る処理はそのまま通す**=ダメージの数字も被弾の白光りも普通に出る(手応えを見る場なので)。
       ⭐**0を割ったところで満タンへ戻すだけ**にしてある=1点で済み、他の枝を1つも触らない。
     ⚠**検証場(G.tst)でしか作れない**=普通の試合には出てこない。 */
- /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する */
- if((z.armor||z.scl)&&!armorPierce)d*=.45;
+ /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する。
+    ⚠割合は `ARMOR_CUT` の1か所だけ=図鑑・編成・建設メニューの説明も同じ値から作っている */
+ if((z.armor||z.scl)&&!armorPierce)d*=ARMOR_CUT;
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
  z.hp-=d;
  /* ⚡⭐(124)**継続攻撃(火炎放射塔・レーザー塔)の白光りは「点滅」にする**。
@@ -20638,7 +20697,9 @@ function openBM(si){
    if(T.grd||T.off)continue;/* グレードアップ専用と、外した施設は建設リストに出さない */
    if(want){if(T.type!==want)continue;}
    else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
-   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
+   /* 🛡⭐**硬い敵への通り方を札で出す**(2026-08-04)=盤面で建てる時に一番効く情報 */
+   const at9=afTag(T.type,T.pierce,true);
+   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="baf ${at9.k}">${at9.t}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
   if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所で『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
@@ -26588,13 +26649,21 @@ function introNext(){
  try{
   /* ⭐絵は**枠いっぱい**に描く(第91弾)。決め打ちの1.5倍では、大きい物ははみ出し小さい物は豆粒だった */
   if(it.k==='u'){const U=UNITS[it.i];hd='🪖 新しい部隊が使える!';nm=U.n;ds=U.dsc;
-   st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め('+U.hook+'体)':'');
+   st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め('+U.hook+'体)':'')
+    +' ／ '+afTag(U.type,0,false).t;/* 🛡硬い敵への通り(2026-08-04) */
    fitDraw(cvv,cc=>drawUnit(cc,it.i,0,0,1,.4,0,{}),8);}
   else if(it.k==='t'){const T=TOWERS[it.i];hd='🗼 新しいタワーが建てられる!';nm=T.n;ds=T.dsc;
-   st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒';
+   st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒'
+    +' ／ '+afTag(T.type,T.pierce,true).t;/* 🛡硬い敵への通り(2026-08-04) */
    fitDraw(cvv,cc=>drawTower(cc,it.i,1,0,0,-0.5,0,{}),8);}
   else if(it.k==='z'){const Z=ZOMBIES[it.i];hd='🧟 新種のゾンビが現れる!';nm=Z.n;
-   const tag=[];if(Z.armor)tag.push('装甲(通常弾が効きにくい・火炎に弱い)');if(Z.scl)tag.push('鱗の鎧(通常弾が効きにくい・⚡電撃に弱い)');if(Z.noblock)tag.push('すり抜け(鎖使いだけが止められる)');
+   /* 🛡⭐**数字で言う**(2026-08-04)=「効きにくい」では何を出せばいいのか分からない。
+      ⚠割合は必ず ARMOR_CUT / FIRE_VS_ARMOR / ELEC_VS_SCALE から作る */
+   const cut9=Math.round(ARMOR_CUT*100);
+   const tag=[];if(Z.armor)tag.push('装甲(⚔近接/🔫実弾/❄冷気は'+cut9+'%・🔥火炎の塔は×'+FIRE_VS_ARMOR.toFixed(1)+')');
+   if(Z.scl)tag.push('鱗の鎧(⚔近接/🔫実弾/❄冷気は'+cut9+'%・⚡電撃の塔は×'+ELEC_VS_SCALE.toFixed(1)+')');
+   if(Z.armor||Z.scl)tag.push('🗡貫通・💣爆発・🔥火炎はそのまま通る');
+   if(Z.noblock)tag.push('すり抜け(鎖使いだけが止められる)');
    if(Z.aura)tag.push('周囲を加速させる');if(Z.split)tag.push('倒すと弾けて分裂(周りの部隊を巻き込む)');if(Z.boss)tag.push('ボス');if(Z.aoe)tag.push('薙ぎ払い'+Z.aoe+'体');
    ds=tag.length?tag.join(' ／ '):'ごく普通の個体。数で押してくる。';
    st='HP'+Z.hp+' ／ 速さ'+Z.sp+' ／ 報酬⚙️'+Z.bt;
@@ -26740,19 +26809,26 @@ function renderLoad(){
   for(let k=T9.length;k<TEAM_N;k++)h+='<div class="tmo emp">＋</div>';
   h+='</div>';
   /* ⚠**注意書きは消した**(2026-08-02(68))=毎回読む物ではないのに毎回場所を取っていた。 */
-  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる/外す</span></div>';
+  /* 🛡⭐札の「45%/100%」が何の割合かは**ここに1行だけ**書く(札には書かない=幅が無い) */
+  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる/外す'
+   +'　％=🛡装甲・🐟鱗への通り</span></div>';
   h+='<div class="tmgrid" id="tm-grid">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
    const on=T9.indexOf(i)>=0,fx=TEAM_FIX.indexOf(i)>=0;
    /* ⭐編成に入っている札も押せる=**押すと外すトグル**(disabledの死に札が一覧の先頭を埋めていた)。
       ⚠✅は名前に混ぜず左上のバッジに(名前の幅を食わない) */
+   /* 🛡⭐**硬い敵への通り方**(2026-08-04)=これが見えないと「攻撃力の強い順」でしか選べない */
+   const at9=afTag((uEff(i)||U).type,0,false);
    h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'" data-on="'+(on?1:0)+'">'
     +(on?'<span class="onb">'+IC('✅')+'</span>':'')
     +(((uEff(i)||U).hook)?'<span class="hkb">🛡</span>':'')/* 🛡すり抜けを足止めできる印(98) */
     +'<canvas width="96" height="58"></canvas>'
     +'<span class="nm">'+(uEff(i)||U).n+'</span>'
-    +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))+'</span></button>';}
+    /* ⚠**行を増やさない**=札が1行伸びると、一覧の1行目の下端が箱から切れて相性だけ見えなくなる
+       (撮って気づいた)。⭐⚙️の値と同じ行に置く(数字は2つまで。掟) */
+    +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))
+      +' <em class="afu '+at9.k+'">'+at9.s+'</em></span></button>';}
   h+='</div>';
   /* ⭐持っているのが固定2種だけの時は「押せる物ゼロ」で故障に見える=次にやる事を1行だけ。
      ⚠auto-fillのgridでは grid-column:1/-1 が1列ぶんに潰れる=**箱の外**に置く */
@@ -27029,7 +27105,9 @@ function renderHStat(){
   +'</div>'
   /* ⭐**棒にならない物は小さな札で**(⚠表に混ぜると結局「文字の並び」に戻る) */
   +'<div class="hchips"><span>⏩ 間隔 '+(U.rate||0).toFixed(2)+'秒</span>'
-   +'<span>💥 '+(HS_TYN[U.type]||U.type)+'</span>'
+   /* 🛡型の名前だけでは選べない=**硬い敵にどう通るか**まで札に入れる(2026-08-04) */
+   +(()=>{const a9=afTag(U.type,0,false);
+     return '<span>'+a9.ic+' '+(HS_TYN[U.type]||U.type)+(a9.k?'・'+a9.e:'')+'</span>';})()
    +(U.multi?('<span>🎯 同時'+U.multi+'体</span>'):'')
    +(U.aoe?('<span>💥 範囲'+U.aoe+'</span>'):'')
    +(U.hook?('<span>🪝 足止め'+U.hook+'体</span>'):'')
@@ -28305,8 +28383,10 @@ function zcThumb(cv,zi,sil){
 /* ⚠見出し+グリッドを ZDEX_G の順に積む。1画面に全部は入らないので .bpbody 側でスクロールさせる */
 function renderZoo(box,hintId){
  const hint=$(hintId||'tr-hint');/* ⚠単独の窓(md-zoo)から呼ぶ時は説明文の置き場が違う */
- if(hint)hint.innerHTML=DEV?'🛠DEVモード=絵の確認用に<b>全種そのまま見える</b>(本番はソロ作戦で倒した種類だけ)。'
-  :'ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は影だけで出る。';
+ /* ⭐**相性の掟はここに1行だけ**(2026-08-04)。カード46枚に繰り返さない */
+ if(hint)hint.innerHTML=(DEV?'🛠DEVモード=絵の確認用に<b>全種そのまま見える</b>(本番はソロ作戦で倒した種類だけ)。'
+  :'ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は影だけで出る。')
+  +'<br>'+AF_LEG();
  const seen=ZOMBIES.filter(z=>zcSeen(z.id)).length;
  /* ⚠単独の窓は見出しに数を出しているので、ここでは出さない(1画面に同じ数が2つ並ぶ) */
  let html=hintId?'':'<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+ZOMBIES.length+' 種</div>';
@@ -28324,12 +28404,16 @@ function renderZoo(box,hintId){
     if(z.armor)tg.push('装甲');if(z.scl)tg.push('鱗の鎧');
     if(z.noblock)tg.push('すり抜け');if(z.aura)tg.push('オーラ');if(z.split)tg.push('分裂');
     const tag=tg.length?tg.join('・'):'通常';
+    /* 🛡⭐**弱点と耐性の札**(2026-08-04)。⚠未発見の個体には出さない(何がいるか漏れる) */
+    const af=afZ(z);
     return '<div class="lc"'+(ok?'':' style="opacity:.55"')+'>'
      +'<canvas class="zth'+(ok?'':' zsil')+'" width="128" height="128" data-zi="'+i+'"></canvas>'
      +'<div class="nm">'+(ok?z.n:'???')+'</div>'
      +'<div class="tg">'+(ok?('HP'+z.hp+'・攻撃'+z.atk+'／'+tag):'未発見')+'</div>'
      +'<div class="ds">'+(ok?(z.dsc||('速さ'+z.sp+'／抜けられるとコアに'+z.dmg+'ダメージ'))
-       :'ソロ作戦で倒すと載る')+'</div></div>';
+       :'ソロ作戦で倒すと載る')+'</div>'
+     +(ok&&af?('<div class="afz"><span class="wk">弱点 '+af.wk+'</span>'
+       +'<span class="rs">耐性 '+af.rs+'</span></div>'):'')+'</div>';
    }).join('')+'</div>';
  }
  box.innerHTML=html;
