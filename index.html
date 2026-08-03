@@ -4235,6 +4235,14 @@ function afZ(Z){
  return{wk:Z.armor?('🔥 火炎の塔 ×'+FIRE_VS_ARMOR.toFixed(1)):('⚡ 電撃の塔 ×'+ELEC_VS_SCALE.toFixed(1)),
   rs:'⚔🔫❄ '+cut+'%'};
 }
+/* 🎨⭐**特効のダメージ数字は「効いている属性の色」で出す**(2026-08-04(141)ユーザー指示
+     「金色は各属性の色にしたい。電気で効いてるなら黄色、火ならオレンジっぽい色、実弾なら若干黒目」)。
+   ⚠色は必ず表(`:root`とJSの見た目ブロック)から採る=直書きは `checkPalette` が落とす。
+   ⚠`od`=フチの色。**暗い文字は暗いフチ(INK)だと潰れる**ので、明るいフチに差し替える。
+   ⚠いま特効が出るのは 🔥火炎×装甲 と ⚡電撃×鱗 の2つだけ。**残りは出番待ちの席**
+     (🔫実弾は対空を入れた時に使う。⚠使う時は必ず実機で読めるか見ること)。 */
+const AF_WKC={fire:{c:AMBER},elec:{c:GOLD},bullet:{c:STEEL,od:PANE},
+ pierce:{c:TECH2,od:PANE},blast:{c:LIFE2,od:PANE},frost:{c:FROST},melee:{c:GOLD2}};
 /* 図鑑・紹介の見出しに1行だけ置く凡例。⚠**掟は1か所にだけ書く**(カード46枚に繰り返さない) */
 const AF_LEG=()=>'🛡装甲・🐟鱗 → <b>⚔🔫❄は'+Math.round(ARMOR_CUT*100)+'%</b>／<b>🗡💣🔥はそのまま</b>'
  +'／🔥火炎の塔は装甲に×'+FIRE_VS_ARMOR.toFixed(1)+'・⚡電撃の塔は鱗に×'+ELEC_VS_SCALE.toFixed(1);
@@ -17000,7 +17008,7 @@ function kbZ(z,cx,cy,pw){if(!z||z.dead)return;
  const dx=z.px-cx,dy=(z.py-cy)*.5,l=Math.hypot(dx,dy)||1;
  z.kbx=dx/l;z.kby=dy/(l*2);z.kbp=pw*(z.boss?.25:z.elite?.6:1);}
 /* quiet=ダメージ数字と血を出さない(継続攻撃はまとめて1つ出すので毎フレーム湧かせない)
-   🛡wk=**特効(🔥火炎の塔×装甲 / ⚡電撃の塔×鱗)が乗っている一撃**という合図。
+   🛡wk=**特効が乗っている一撃なら、その属性の名前**('fire'/'elec'…)。数字をその属性の色で出す。
    ⚠倍率そのものは呼ぶ側で掛けてある(ここでは掛けない)=数字の**色を変えるためだけ**に受け取る。
    ⚠減らされた側(45%)は下でこの関数自身が判定するので、呼ぶ側は何もしなくてよい。 */
 function dmgZ(C,z,d,armorPierce,quiet,wk){
@@ -17016,7 +17024,7 @@ function dmgZ(C,z,d,armorPierce,quiet,wk){
     ⚠割合は `ARMOR_CUT` の1か所だけ=図鑑・編成・建設メニューの説明も同じ値から作っている */
  let afk9='';/* 🛡この一撃の相性(''=等倍 / 'rs'=減らされた / 'wk'=特効が乗っている) */
  if((z.armor||z.scl)&&!armorPierce){d*=ARMOR_CUT;afk9='rs';}
- if(wk)afk9='wk';/* ⚠特効(×1.9)は呼ぶ側で掛けているので、合図だけ受け取る */
+ if(wk)afk9='wk';/* ⚠特効(×1.9)は呼ぶ側で掛けているので、合図だけ受け取る(中身=属性の名前) */
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
  z.hp-=d;
  /* ⚡⭐(124)**継続攻撃(火炎放射塔・レーザー塔)の白光りは「点滅」にする**。
@@ -17042,7 +17050,7 @@ function dmgZ(C,z,d,armorPierce,quiet,wk){
  const rice0=!!(C.bus&&!z.boss&&!z.elite);
  /* 🛡⭐**相性は数字の色で言う**(2026-08-04(139))=場所を1pxも使わずに全部の攻撃に効く。
     ⚠色を変えるだけ(filter も影も使わない)なので、1コマの時間には響かない。 */
- if(!quiet&&!rice0&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)),afk9?{af:afk9}:null);
+ if(!quiet&&!rice0&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)),afk9?{af:afk9,aty:wk||''}:null);
   if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28*CH_UP,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
@@ -18215,10 +18223,10 @@ function campStep(C,dt,wave){
         数字と血が画面を埋めて「重い」が直らない)。0.35秒ぶんためて1つにまとめて出す。 */
    /* 🛡af=この塔のこの相手への相性(2026-08-04(139))。⚠**継続攻撃は quiet で dmgZ を通す**ので、
       色は dmgZ 側では決まらない=まとめて出すこちらで渡すこと(渡し忘れると火炎放射塔だけ白いまま) */
-   const acc=(z0,dd,af)=>{tw.dacc=(tw.dacc||0)+dd;tw.dnT=(tw.dnT||0)-dt;
+   const acc=(z0,dd,af,aty)=>{tw.dacc=(tw.dacc||0)+dd;tw.dnT=(tw.dnT||0)-dt;
     if(tw.dnT<=0){tw.dnT=.35;
      if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){
-      addFx(C,'dmg',z0.px+rnd(-8,8),z0.py-44*CH_UP,''+Math.max(1,Math.round(tw.dacc)),af?{af}:null);
+      addFx(C,'dmg',z0.px+rnd(-8,8),z0.py-44*CH_UP,''+Math.max(1,Math.round(tw.dacc)),af?{af,aty:aty||''}:null);
       if(FXLV>0&&Math.random()<.5)addFx(C,'blood',z0.px,z0.py-28*CH_UP,'',{sd:rnd(0,9)});}
      tw.dacc=0;}};
    if(T.heatN){/* レーザー塔: 同じ敵を焼き続けるほど威力が上がる(最大 twHeatM 倍) */
@@ -18231,7 +18239,7 @@ function campStep(C,dt,wave){
     if(FXLV>0&&Math.random()<dt*14)addP(C,1,tg.px,tg.py-14*CH_UP,{sp:70,g:60,life:.2,r:1.8,col:hk>.5?'#fff0fa':'#ffb0dd'});
    }else{/* 火炎放射塔: 装甲特効・燃焼・周りへ1/4 は今までどおり */
     const av=tg.armor?FIRE_VS_ARMOR:1,df=dps*dt*av;
-    dmgZ(C,tg,df,1,1);acc(tg,df,av>1?'wk':'');
+    dmgZ(C,tg,df,1,1);acc(tg,df,av>1?'wk':'','fire');
     if(T.fspl){const sr=T.fspl*(1+.06*usEff(tw.us.g));
      for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
       if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
@@ -18303,13 +18311,13 @@ function campStep(C,dt,wave){
    /* ⭐炎(酸)の帯を狙った方向へ吹く。⚠今までは銃口の粒だけで「届いている」感じが出ていなかった */
    if(FXLV>0)addFx(C,'flame',mzx,mzy,'',
     {ang:tw.ang,len:rng*.92,col:T.id==='acid'?'#a8e05a':'#ff9a3d',sd:rnd(0,9)});
-   dmgZ(C,tg,dm*av,1,0,av>1?1:0);/* 🛡av>1=装甲に特効が乗った=数字を金の▲にする */
+   dmgZ(C,tg,dm*av,1,0,av>1?'fire':0);/* 🛡av>1=装甲に特効が乗った=数字を火炎の色の▲にする */
    /* ⭐吹き付けた炎は狙った敵の周りにも広がる=直撃の1/4だけ通る(2026-07-26ユーザー指示)。
       ⚠装甲特効は敵ごとに見る(周りの敵が装甲持ちならそちらにも1.9倍が乗る)。燃焼が付くのは直撃だけ */
    if(T.fspl){const sr=T.fspl*(1+.06*usEff(tw.us.g));
     for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
-     dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1,0,z2.armor?1:0);}
+     dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1,0,z2.armor?'fire':0);}
     if(FXLV>0)addFx(C,'ring',tg.px,tg.py,'',{r:sr,col:'#ff9a3d'});}
    if(!tg.dead){const bd=T.burn*m*aB*(1+(TRT&&TRT.k==='burn'?TRT.v*TL:0))*av;
     /* ⭐酸(axr持ち)は燃焼ではなく**酸**として乗せる=倒れた時に酸爆発が起きる */
@@ -18323,14 +18331,14 @@ function campStep(C,dt,wave){
    C.arcs.push({x:mzx,y:mzy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
   else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
-   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*elecX()*(cur.scl?ELEC_VS_SCALE:1),1,0,cur.scl?1:0);
+   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*elecX()*(cur.scl?ELEC_VS_SCALE:1),1,0,cur.scl?'elec':0);
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
     let nx=null,bd=1e9;
     for(const z of C.zombies){if(z.dead||hitl.includes(z))continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
     if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===cur)continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
     if(!nx)break;
-    dmgZ(C,nx,dm*Math.pow(.85,k)*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?1:0);if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
+    dmgZ(C,nx,dm*Math.pow(.85,k)*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0);if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
    addFx(C,'zap',sx,sy,'',{pts,sd:rnd(0,9)});
    if(FXLV>0)for(const p6 of pts)addP(C,2,p6[0],p6[1],{sp:60,g:40,life:.35,r:2,col:FROST});
    twSfx(C,T);}
@@ -18426,7 +18434,7 @@ function campStep(C,dt,wave){
    if(a.first){/* 最初の1体は塔から直接 */
     a.first=0;
     addFx(C,'zap',a.x,a.y,'',{pts:[[a.x,a.y],[a.cur.px,a.cur.py]],sd:rnd(0,9),wm:1});
-    dmgZ(C,a.cur,a.dm*elecX()*(a.cur.scl?ELEC_VS_SCALE:1),1,0,a.cur.scl?1:0);a.k++;continue;}
+    dmgZ(C,a.cur,a.dm*elecX()*(a.cur.scl?ELEC_VS_SCALE:1),1,0,a.cur.scl?'elec':0);a.k++;continue;}
    let nx=null,bd=1e9;
    for(const z of C.zombies){if(z.dead||a.hitl.includes(z))continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
    if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===a.cur)continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
@@ -18434,7 +18442,7 @@ function campStep(C,dt,wave){
    const gm=Math.min(Math.pow(a.grow,a.k),a.gmax);
    addFx(C,'zap',a.cur.px,a.cur.py,'',{pts:[[a.cur.px,a.cur.py],[nx.px,nx.py]],sd:rnd(0,9),wm:.7+gm*.34});
    if(FXLV>0)addP(C,2+Math.round(gm),nx.px,nx.py,{sp:60+gm*22,g:40,life:.35,r:2,col:FROST});
-   dmgZ(C,nx,a.dm*gm*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?1:0);
+   dmgZ(C,nx,a.dm*gm*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0);
    if(a.hitl.indexOf(nx)<0)a.hitl.push(nx);
    a.cur=nx;a.k++;
   }
@@ -19954,7 +19962,9 @@ function renderCamp(C,t){
      wk=特効が乗った(大きい金) / rs=装甲・鱗に減らされた(小さい灰) / 無印=等倍(今までどおり白) */
   else if(e.k==='dmg'){c.globalAlpha=Math.max(0,1-e.t/.5);
    const wk9=e.af==='wk',rs9=e.af==='rs';
-   c.fillStyle=wk9?GOLD:rs9?DIM:PANE;c.strokeStyle=INK;c.lineWidth=3;
+   /* 🎨特効は**効いている属性の色**(🔥オレンジ/⚡黄…)。表に無い属性は金に落ちる */
+   const wc9=wk9?(AF_WKC[e.aty]||{c:GOLD}):null;
+   c.fillStyle=wk9?wc9.c:rs9?DIM:PANE;c.strokeStyle=(wc9&&wc9.od)||INK;c.lineWidth=3;
    c.font='900 '+(wk9?25:rs9?16:20)+'px '+FF;c.textAlign='center';
    const s9=wk9?(e.s+' ▲'):rs9?(e.s+' ▼'):e.s,ty=e.y-e.t*40;
    c.strokeText(s9,e.x,ty);c.fillText(s9,e.x,ty);c.globalAlpha=1;}
