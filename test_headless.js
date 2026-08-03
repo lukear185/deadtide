@@ -2582,6 +2582,18 @@ function checkHero(){
   console.log('🎯ダミー: 出せる/倒れない(1e18を50発)/攻撃力0/その場から動かない/図鑑に混ざらない OK');
   backTitle();}
  if(dmgN<8){console.log('FAIL: 敵にダメージを与える必殺技が少なすぎる '+dmgN);process.exit(1);}
+ /* 🦸(121)**近接の英雄は旗の少し手前に立つ / それでも射程は届く**(ユーザー指示)。
+    ⚠⚠**届かなくなったら殴れない置物になる**ので、ここは必ず落とすこと。 */
+ {let worst=1e9;
+  const front=Math.min.apply(null,UNITS.slice(0,U_N).filter(U=>U.type==='melee').map(U=>uStand(U)));
+  for(const id of RNG_MELEE){const U=UNITS[hUiOf(id)];const bk=uStand(U);
+   if(!(bk>front)){console.log('FAIL: 近接英雄 '+U.n+' が前線の兵科より後ろに居ない (英雄'+bk+' / 前線'+front+')');process.exit(1);}
+   if(bk>60){console.log('FAIL: 近接英雄 '+U.n+' が下がりすぎ '+bk);process.exit(1);}
+   /* 敵は前線から最大 ENG_GAP 離れた所で止まる=英雄からの距離は bk+ENG_GAP */
+   const need=bk+ENG_GAP,mg=(U.rng||0)-need;
+   if(mg<0){console.log('FAIL: 近接英雄 '+U.n+' の射程が届かない(要'+need+' / 射程'+U.rng+')');process.exit(1);}
+   worst=Math.min(worst,mg);}
+  console.log('近接英雄の立ち位置: 前線の兵科は旗ちょうど / 英雄は'+Math.round(uStand(UNITS[hUiOf(RNG_MELEE[0])]))+'後ろ・射程の余裕'+worst+'px OK');}
  console.log('英雄: '+HEROES.length+'人の出撃(1ゲーム1回・戦死したら終わり)と必殺技'+HEROES.length+'種 OK(うち'+dmgN+'種が直接ダメージ)');
  /* ⭐⭐**狙撃王ジョルジ『撃墜』の締めの1発は射程無限**(2026-08-02(70)ユーザー指示)。
     ⚠⚠**これが「必殺技の最後の攻撃が出ない」の正体だった**=前の9発は盤面のどこの敵でも撃つのに、
