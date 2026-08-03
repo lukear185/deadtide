@@ -3392,18 +3392,21 @@ function checkTrain(){
  {let n=0;for(const z of ZOMBIES)for(const G2 of ZDEX_G)if(G2.f(z))n++;
   if(n!==ZOMBIES.length){
    console.log('FAIL: 図鑑の欄分けが全'+ZOMBIES.length+'種を1回ずつ拾えていない '+n);process.exit(1);}}
- /* 🔧を注ぐと減って経験が入る */
- const m0=META.hmat;
+ /* 🔧を払うと減って鍛錬Lvが1つ上がる(2026-08-03に経験値の中間層を撤去した) */
+ const m0=META.hmat,c0=TR_COST(0);
  trainGrind(h.id);
- if(META.hmat!==m0-TR_COST){console.log('FAIL: 🔧鍛錬素材が減っていない');process.exit(1);}
- if(hLv(h.id)*10000+((META.hxp||{})[h.id]||0)<=0){console.log('FAIL: 経験が入っていない');process.exit(1);}
+ if(META.hmat!==m0-c0){console.log('FAIL: 🔧鍛錬素材が減っていない');process.exit(1);}
+ if(hLv(h.id)!==1){console.log('FAIL: 鍛錬Lvが上がっていない '+hLv(h.id));process.exit(1);}
  /* 🔧が足りなければ鍛えられない */
  META.hmat=0;
- {const lv0=hLv(h.id),xp0=META.hxp[h.id];
+ {const lv0=hLv(h.id);
   trainGrind(h.id);
-  if(hLv(h.id)!==lv0||META.hxp[h.id]!==xp0){console.log('FAIL: 🔧が無いのに鍛えられる');process.exit(1);}}
+  if(hLv(h.id)!==lv0){console.log('FAIL: 🔧が無いのに鍛えられる');process.exit(1);}}
+ /* 値段はLvが上がるほど高くなる(下がらない) */
+ for(let k=1;k<TR_MAX;k++)if(TR_COST(k)<TR_COST(k-1)){
+  console.log('FAIL: 鍛錬の値段が Lv'+k+' で下がっている');process.exit(1);}
  /* 上限Lvを超えない・上限に達したら🔧を食わない */
- META.hmat=99999;
+ META.hmat=999999;
  for(let k=0;k<400;k++)trainGrind(h.id);
  if(hLv(h.id)!==TR_MAX){console.log('FAIL: 鍛錬Lvの上限が'+TR_MAX+'でない '+hLv(h.id));process.exit(1);}
  {const mm=META.hmat;trainGrind(h.id);
@@ -3423,7 +3426,7 @@ function checkTrain(){
   if(!zdexAdd('__test__')){console.log('FAIL: 新しい種類が図鑑に登録されない');process.exit(1);}
   delete META.zdex['__test__'];}
  backTitle();
- console.log('鍛錬所: 🔧で鍛える(消費/経験/Lv上限'+TR_MAX+'/英雄のHPに反映)・'
+ console.log('鍛錬所: 🔧で鍛える(消費/値段の伸び/Lv上限'+TR_MAX+'(+'+Math.round(TR_PER*TR_MAX*100)+'%)/英雄のHPに反映)・'
   +'📖ゾンビ図鑑 全'+ZOMBIES.length+'種を'+ZDEX_G.length+'欄に整理・ソロの撃破で'+seen+'種登録 OK');
  META.hero={};META.hsel='';META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;META.zdex={};
 }
@@ -3497,7 +3500,8 @@ function checkRpg(){
  {const id='hCop';META.rpg.lv[id]=1;META.rpg.xp[id]=0;META.hlv={};
   rgAddXp(id,999999);
   if(rgLv(id)!==RG_LVMAX){console.log('FAIL: 上限までレベルが上がらない '+rgLv(id));process.exit(1);}
-  if((META.hlv[id]||0)!==TR_MAX){
+  /* ⚠TR_MAX=50 になったので、RPG側を上限まで上げても鍛錬Lvは rgTrLv(RG_LVMAX) までしか届かない */
+  if((META.hlv[id]||0)!==rgTrLv(RG_LVMAX)){
    console.log('FAIL: RPGのLvがTD側の鍛錬Lvに反映されない '+(META.hlv[id]||0));process.exit(1);}
   if(rgTrLv(1)!==0||rgTrLv(21)!==10){console.log('FAIL: 鍛錬Lvの換算がおかしい');process.exit(1);}}
  /* ---- 町の施設 ---- */
@@ -3526,7 +3530,7 @@ function checkRpg(){
  rgBack();
  if(RG!==null){console.log('FAIL: 冒険をやめても状態が残っている');process.exit(1);}
  console.log('⚔冒険: 行けるエリアはTD側のクリア連動(12エリア)・拠点/歩行/壁・'
-  +'コマンド戦闘('+res+')・経験値→鍛錬Lv反映(Lv'+RG_LVMAX+'→鍛錬Lv'+TR_MAX+')・'
+  +'コマンド戦闘('+res+')・経験値→鍛錬Lv反映(Lv'+RG_LVMAX+'→鍛錬Lv'+rgTrLv(RG_LVMAX)+')・'
   +'宿屋/どうぐ・英雄'+HEROES.length+'人ぶんのステータスととくぎ'+RG_SK.length+'種 OK');
  META.hero={};META.rpg=null;META.hlv={};META.hxp={};META.tr0=0;
  META.sc=[[0,0,0,0,0,0],[0,0,0,0,0,0]];

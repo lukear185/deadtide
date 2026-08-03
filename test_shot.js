@@ -189,8 +189,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
      /* 🏠home=シングルプレイのホーム / 🗺worldmap=エリアマップ(2026-08-03(93)) */
-     :(OPT.indexOf('home')>=0)?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.hero={hNox:1};META.hsel="hNox";'
+     /* ⚠**`trhome` を巻き込まない**='trhome'.indexOf('home') は2で当たるので、こちらが先に食っていた
+        (2026-08-03に発覚。🏋鍛錬所のモーダルが撮れなくなっていた) */
+     :(OPT.indexOf('home')>=0&&!TRH)?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.hero={hNox:1};META.hsel="hNox";'
        +'renderHome();show("home");for(var q9=0;q9<8;q9++)homeDraw(q9*.1);'
+       /* htrain=ホームから🏋鍛錬所を開いた状態(いまの本当の動線) */
+       +(OPT.indexOf('htrain')>=0?'META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:22};'
+         +'TRTAB="hero";renderTrain();document.getElementById("md-train").classList.add("on");':'')
        /* hteam=ホームの上に🎖編成の窓を開いた状態(パネルの中身がちゃんと開くかの確認) */
        +(OPT.indexOf('hteam')>=0?'renderLoad();document.getElementById("md-load").classList.add("on");':'')
        /* hpick=🦸英雄を選ぶ窓 / hstk=🎯砲撃の窓(2026-08-03。今まで撮る口が無かった) */
@@ -222,7 +227,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});'
        +'META.rpg={lv:{hNox:12,hSf:7,hMed:5,hCop:3},xp:{hNox:60},pt:["hNox","hSf","hMed","hCop"],gold:1240,cl:{a0:1,a1:1}};'
        +'META.sc=[[1,1,1,1,1,1],[1,1,1,0,0,0]];'
-       +'TRTAB="'+(OPT.indexOf('trzoo')>=0?'zoo':OPT.indexOf('trhero')>=0?'hero':'adv')+'";renderTrain();document.getElementById("md-train").classList.add("on");')
+       /* ⚠既定は🦸鍛える(⚔冒険のタブは2026-08-03に外した)。adv を撮りたい時だけ tradv を付ける */
+       +'TRTAB="'+(OPT.indexOf('trzoo')>=0?'zoo':OPT.indexOf('tradv')>=0?'adv':'hero')+'";renderTrain();document.getElementById("md-train").classList.add("on");')
      :RPG?('META.tr0=1;META.hero={hNox:1,hSf:1,hMed:1,hCop:1,hBomb:1,hSeer:1};'
        +'META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.stg=1;'
        +'rgOpen();rgMeta().gold=1240;rgMeta().it={herb:6,herb2:2,water:3,wing:1};'

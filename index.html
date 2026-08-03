@@ -153,12 +153,17 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homeres span{background:rgba(12,10,8,.66);border:2px solid rgba(242,236,220,.24);border-radius:20px;padding:3px 12px;
  box-shadow:inset 0 1px 0 rgba(242,236,220,.08)}
 /* 出撃=この画面の主役。文字を大きく+光が周期的に走る */
-.homego{position:relative;overflow:hidden;width:100%;font-size:22px;letter-spacing:5px}
+/* ⚠**縮ませない**(flex:0 0 auto)=下のタイルが3行になった時に押し潰されて小文字が切れた(2026-08-03) */
+.homego{position:relative;overflow:hidden;width:100%;font-size:22px;letter-spacing:5px;flex:0 0 auto}
 .homego i{display:block;font-style:normal;font-size:11px;opacity:.92;font-weight:800;letter-spacing:1px;margin-top:1px}
 .homego::after{content:'';position:absolute;top:-45%;bottom:-45%;width:36px;left:-70px;
  background:rgba(255,243,192,.30);transform:rotate(16deg);animation:hsheen 3.4s ease-in-out infinite;pointer-events:none}
 @keyframes hsheen{0%,58%{left:-80px}88%,100%{left:115%}}
 .homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;flex:1 1 auto}
+/* ⭐タイルは7つ(3+3)+タイトルは横いっぱい=最後の行に1つだけ残る形にしない */
+.homegrid #hm-back{grid-column:1/-1;min-height:44px;flex-direction:row;gap:8px}
+/* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
+.homebt.lk{opacity:.55;filter:grayscale(.7)}
 /* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
 .homebt{height:100%;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;
  background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:14px;color:var(--pane);
@@ -1049,6 +1054,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <div class="homegrid">
         <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><b>編成</b><i id="hm-team-i"></i></button>
         <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><b>英雄</b><i id="hm-hero-i"></i></button>
+        <!-- 🏋鍛錬所: 🔬研究所で🧬300を払うまでは**灰色の錠前**で置いておく(存在を先に見せる) -->
+        <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><b>鍛錬所</b><i id="hm-train-i"></i></button>
         <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><b>砲撃</b><i id="hm-stk-i"></i></button>
         <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><b>研究所</b><i id="hm-lab-pts"></i></button>
         <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><b>英雄召集</b><i id="hm-gem"></i></button>
@@ -3726,15 +3733,20 @@ const SIEGE_D=46;
 const gemBoss=fin=>Math.round((fin?GEM_FIN:GEM_BOSS)*(1+.35*((G&&G.pveDiff!=null)?G.pveDiff:0)));
 const heroOf=id=>HEROES.find(h=>h.id===id);
 const heroOwned=id=>((META.hero||{})[id]||0)>0;
-/* ⚠2026-07-26(第56弾): **🏋鍛錬所は一旦しまってある**(ユーザー決定=「あとから作りこむ」)。
-   タイトルにボタンを出さず、🔬研究所の解放項目からも外す。⚔冒険・📖図鑑・🔧のコードはそのまま残してある。
-   **再び開ける時はここを true にするだけ**(それ以外は触らなくてよい)。 */
-const TR_OPEN=false;
-/* 🏋鍛錬(鍛錬所で上がるレベル)。HPと攻撃が+8%/Lv・最大Lv10=+80% */
-const TR_MAX=10,TR_COST=10;/* 上限Lv / 1回の鍛錬で使う🔧鍛錬素材 */
-const TR_NEED=lv=>100+60*lv;/* そのLvから次へ上がるのに必要な経験 */
+/* ⭐2026-08-03: **🏋鍛錬所を「普通の強化画面」として開けた**(ユーザー決定
+   「どういうゲームにするかはちゃんと考えたいから一旦未定にしよう。普通に強化画面であのリソースで
+     強化できるように一旦しとこう。ヒーローレベルは最大50にしとこう一旦」)。
+   ⚠**遊び(ミニゲーム)の中身は白紙のまま**=下の「実戦稽古」案は保留(明細は TODO.md)。
+   ⚠**⚔冒険のタブは出さない**(お蔵入りのまま。コードは残っている)。 */
+const TR_OPEN=true;
+/* 🏋鍛錬(鍛錬所で上がるレベル)。⭐**🔧を払って直接Lv+1**(経験値の中間層は撤去した=
+   経験値は⚔冒険RPGの橋渡しのために在っただけで、冒険をしまった今は意味が無かった)。
+   ⭐**Lv1ごとにHPと攻撃が+2%・最大Lv50で+100%(2倍)**。⚠上げ下げは `TR_PER` の1か所。
+   ⭐**値段は10Lvごとに🔧が3つずつ高くなる(3→15)**=Lv50まで通しで🔧450。 */
+const TR_MAX=50,TR_PER=.02;/* 上限Lv / 1Lvあたりの伸び */
+const TR_COST=lv=>3+Math.floor(clamp(lv,0,TR_MAX-1)/10)*3;/* そのLvから1つ上げるのに要る🔧 */
 const hLv=id=>clamp((META.hlv&&META.hlv[id])||0,0,TR_MAX);
-const hBoost=id=>1+.08*hLv(id);
+const hBoost=id=>1+TR_PER*hLv(id);
 /* 📖ゾンビ図鑑(2026-07-26 第53弾): ソロ作戦で初めて倒したゾンビが載る。
    ⚠元は「🧿コアを集めて洞窟のゾンビを強化する」仕組みだったが、**洞窟をまるごと廃止した**ので
      記録(図鑑)だけ残した。コアの所持数(META.zc)と強化Lv(META.zl)は廃止。 */
@@ -25219,11 +25231,19 @@ function applyFrames(){
 function updLabBtn(){const e=$('lab-pts');if(e)e.innerHTML=IC('🧬')+fmt(META.pts);
  const g=$('gem-cnt');if(g)g.innerHTML=IC('💎')+(META.gem||0);
  refreshTrainBtn();}
-/* 🏋鍛錬所は研究所で解放するまでタイトルに出さない。
-   ⚠さらに `TR_OPEN=false` の間はDEVでも一切出さない(2026-07-26に一旦しまった) */
-function refreshTrainBtn(){const b=$('bt-train');if(!b||!b.style)return;
- b.style.display=(TR_OPEN&&(META.tr0||DEV))?'block':'none';
- const m=$('tr-mat');if(m)m.innerHTML=IC('🔧')+fmt(META.hmat||0);}
+/* 🏋鍛錬所の入口は**ホームのタイル(hm-train)**に移した(2026-08-03。動線がタイトル→ホームになったため)。
+   ⚠タイトルのボタン(bt-train)は**もう出さない**=要素だけ残してある(アイコン差し替えの表が参照するため)。 */
+function refreshTrainBtn(){const b=$('bt-train');if(b&&b.style)b.style.display='none';
+ const m=$('tr-mat');if(m)m.innerHTML=IC('🔧')+fmt(META.hmat||0);
+ updHomeTrain();}
+/* ホームの🏋タイル。⚠解放前は🔒で灰色(押せない)=**存在だけ先に見せる**。
+   ⚠renderHome からも呼ぶ(往復しないよう renderHome は呼び返さないこと) */
+function updHomeTrain(){
+ const ok=TR_OPEN&&(DEV||(META.tr0||0)),b=$('hm-train');if(!b)return;
+ const ti=$('hm-train-ic');if(ti)ti.innerHTML=ok?icoImg('ic-train','🏋'):icoImg('ic-lock','🔒');
+ const t=$('hm-train-i');if(t)t.innerHTML=ok?(IC('🔧')+fmt(META.hmat||0)):'🔬研究所で解放';
+ b.classList.toggle('lk',!ok);b.disabled=!ok;
+ if(!TR_OPEN&&b.style)b.style.display='none';}
 /* ============ 🎒⭐⭐**出撃準備の「持って行く物」3行**(2026-08-02(68)) ============
    ⚠⚠**それまでは砲撃5個と英雄N人が、文字のチップで折り返して並んでいた**=
      1画面に押せる物が20個あり、目がどこへ行けばいいか決まらなかった(ユーザー「むしろ見づらい」)。
@@ -25459,7 +25479,7 @@ function renderLab(){
  if((META.ec0||0)<5)items.push({cat:'eco',k:'ec0',ic:'🏭',t:'工房の産出+12%',tag:'Lv'+(META.ec0||0)+'/5',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({cat:'eco',k:'cd0',ic:'⏱',t:'出撃の待ち-6%',tag:'Lv'+(META.cd0||0)+'/5',d:'部隊を続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
  /* ⚠鍛錬所をしまっている間は解放項目も出さない(🧬300払っても入口が無いため) */
- if(TR_OPEN&&!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'タイトルに鍛錬所が開く。🔧を注いで英雄のHPと攻撃が最大+80%',p:300});
+ if(TR_OPEN&&!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'ホームに鍛錬所が開く。🔧で英雄を鍛えるとHPと攻撃が最大+'+Math.round(TR_PER*TR_MAX*100)+'%',p:300});
  if(!(META.ec1||0))items.push({cat:'start',k:'ec1',ic:'🏭',t:'工房つきで開始',tag:'1回きり',d:'工房エリアに1基が最初から建っている',p:220});
  /* ---- ⭐タワー1種ごとの強化(2026-07-26ユーザー指示。型ごとのまとめ強化から変えた) ----
     ⚠**まだ解放していないタワーは出さない**=持っていない物を強化できても意味がないため。
@@ -26038,13 +26058,13 @@ function renderHStat(){
  const ownN=HEROES.filter(h=>heroOwned(h.id)).length;
  const oe=$('hs-own');if(oe)oe.innerHTML=IC('所持 '+ownN+'/'+HEROES.length+'　💎'+(META.gem||0));
  const ui=hUiOf(H.id),U=UNITS[ui]||H,cnt=(META.hero||{})[H.id]||0;
- const tl=TR_OPEN?((META.hlv||{})[H.id]||0):0,tm=1+.08*tl;
+ const tl=TR_OPEN?hLv(H.id):0,tm=1+TR_PER*tl;
  const col=RARE[H.rk-1]||RARE[0];
  const dps=(U.rate>0)?Math.round((U.atk||0)*tm/U.rate):0;
  const inf=$('hs-info');
  if(inf)inf.innerHTML=IC('<div class="hsn" style="color:'+col+'">'+RK_S[H.rk]+' '+H.n+'</div>'
   +'<div class="hsr">'+RK_N[H.rk]+'枠'+(cnt?('　所持 '+cnt+'体'):'　<b style="color:var(--danger2)">未所持</b>')
-   +(tl?('　🔧鍛錬Lv'+tl+'(HPと攻撃+'+(tl*8)+'%)'):'')+'</div>'
+   +(tl?('　🔧鍛錬Lv'+tl+'(HPと攻撃+'+Math.round(tl*TR_PER*100)+'%)'):'')+'</div>'
   /* ⭐**4つの数値は棒で**(21人の中での位置が一目で分かる) */
   +hsBar('❤ HP',fmt(Math.round((U.hp||0)*tm)),(U.hp||0)/hsMax().hp,'var(--life2)')
   +hsBar('⚔ 攻撃',fmt(Math.round((U.atk||0)*tm))+' <small>毎秒'+fmt(dps)+'</small>',(U.atk||0)/hsMax().atk,'var(--rust)')
@@ -27009,18 +27029,19 @@ $('bt-hstat-close').onclick=closeHStat;
      マザーゾンビ防衛/🌊死潮/🦠感染/攻めてくる英雄の必殺技/専用BGM。
    ⚠**同じものを作り直さないこと**。ここに手を入れるなら設計から別物にする。
    いま残っているのは次の2つだけ:
-    ① 英雄の鍛錬Lv(HPと攻撃が+8%/Lv・最大10) ② ソロ作戦のゾンビ図鑑
-   ⚠鍛錬の中身(🔧鍛錬素材を何に使わせるか)は作り直し予定。
-     今は「🔧を注いで経験値を入れる」だけの**暫定の形**で、遊びとしての中身はまだ無い。 */
-let TRSEL='',TRTAB='adv';/* 既定は⚔冒険のタブ(鍛錬所の本体はこちら) */
-const TR_XP=150;/* 🔧TR_COST ぶん注いだ時に入る経験値(暫定) */
+    ① 英雄の鍛錬Lv(HPと攻撃が+2%/Lv・最大50) ② ソロ作戦のゾンビ図鑑
+   ⭐2026-08-03: **「普通の強化画面」として開けた**(🔧を払って直接Lv+1・Lv50で+100%)。
+     ⚠**遊び(ミニゲームの中身)は白紙のまま**=どんな遊びにするかはまだ決めていない(明細は TODO.md)。
+     ⚠**⚔冒険のタブは出していない**(お蔵入り。renderAdv 以下のコードは残してある)。 */
+let TRSEL='',TRTAB='hero';/* ⭐既定は🦸鍛えるのタブ(⚔冒険はしまってある) */
 
 /* ---------------- 🏋 鍛錬所のモーダル ---------------- */
 function renderTrain(){
  const box=$('tr-list');if(!box)return;
  const mt=$('tr-mat2');if(mt)mt.innerHTML=IC('🔧 ')+fmt(META.hmat||0);
  const tb=$('tr-tabs');
- if(tb){tb.innerHTML=[['adv','⚔ 冒険'],['hero','🦸 鍛える'],['zoo','📖 ゾンビ図鑑']].map(x=>
+ /* ⚠**⚔冒険のタブは出さない**(2026-08-03。DQ式は考え直しでお蔵入り。renderAdv のコードは残してある) */
+ if(tb){tb.innerHTML=[['hero','🦸 鍛える'],['zoo','📖 ゾンビ図鑑']].map(x=>
    '<button class="tb'+(TRTAB===x[0]?' on':'')+'" data-tt="'+x[0]+'">'+x[1]+'</button>').join('');
   tb.querySelectorAll('[data-tt]').forEach(e=>{e.onclick=()=>{TRTAB=e.dataset.tt;renderTrain();};});}
  const ft=$('tr-foot');if(ft&&ft.style)ft.style.display=TRTAB==='hero'?'':'none';
@@ -27028,8 +27049,8 @@ function renderTrain(){
 }
 function renderTrHero(box){
  const hint=$('tr-hint');
- if(hint)hint.innerHTML=IC('🔧鍛錬素材を注いで英雄を鍛える。<b>鍛錬Lvが1上がるごとにHPと攻撃が+8%</b>'
-  +'(最大Lv'+TR_MAX+'で+80%)。🔧は💎英雄召集の重複で貯まる。<b>※鍛錬の中身は作り直し中の暫定版</b>');
+ if(hint)hint.innerHTML=IC('🔧鍛錬素材で英雄を鍛える。<b>鍛錬Lv1ごとにHPと攻撃が+'+Math.round(TR_PER*100)+'%</b>'
+  +'(最大Lv'+TR_MAX+'で+'+Math.round(TR_PER*TR_MAX*100)+'%)。🔧は💎英雄召集の重複で貯まる。');
  const own=DEV?HEROES.slice():HEROES.filter(h=>heroOwned(h.id));
  const g=$('bt-tr-go');
  if(!own.length){
@@ -27038,38 +27059,38 @@ function renderTrHero(box){
   return;}
  if(!own.some(h=>h.id===TRSEL))TRSEL=own[0].id;
  box.innerHTML=IC('<div class="lgrid">'+own.map(h=>{
-  const lv=hLv(h.id),xp=(META.hxp&&META.hxp[h.id])||0,nd=TR_NEED(lv),bo=hBoost(h.id),U=UNITS[hUiOf(h.id)];
-  const pct=lv>=TR_MAX?100:Math.round(clamp(xp/nd,0,1)*100);
+  const lv=hLv(h.id),bo=hBoost(h.id),U=UNITS[hUiOf(h.id)];
+  /* ⭐棒はLvそのもの(0→50)。⚠経験値の中間層は撤去したので進捗=Lvしか無い */
+  const pct=Math.round(lv/TR_MAX*100);
   return '<div class="lc trc'+(TRSEL===h.id?' sel':'')+'" data-tr="'+h.id+'">'
    +'<div class="tg">'+RK_S[h.rk]+'</div>'
    +'<div class="nm">'+h.n+'</div>'
    +'<div class="tg">鍛錬Lv'+lv+'/'+TR_MAX+(lv?' (+'+Math.round((bo-1)*100)+'%)':'')+'</div>'
    +'<div class="ds">HP'+Math.round(U.hp*bo)+' ／ 攻撃'+Math.round(U.atk*bo)+'<br>必殺『'+h.ult+'』</div>'
    +'<div class="tbar"><i style="width:'+pct+'%"></i></div>'
-   +'<div class="tg">'+(lv>=TR_MAX?'鍛錬しつくした':('経験 '+xp+' / '+nd))+'</div></div>';
+   +'<div class="tg">'+(lv>=TR_MAX?'鍛錬しつくした':('次のLv 🔧'+TR_COST(lv)))+'</div></div>';
  }).join('')+'</div>');
  box.querySelectorAll('[data-tr]').forEach(e=>{e.onclick=()=>{TRSEL=e.dataset.tr;renderTrain();};});
- if(g){const sel=heroOf(TRSEL),done=!!sel&&hLv(sel.id)>=TR_MAX;
-  g.innerHTML=icoImg('ic-train','🏋')+' '+(sel?sel.n:'')+' を鍛える '+IC('🔧')+TR_COST+' → 経験+'+TR_XP;
-  g.disabled=done||(!DEV&&(META.hmat||0)<TR_COST);
+ if(g){const sel=heroOf(TRSEL),done=!!sel&&hLv(sel.id)>=TR_MAX,cs=sel?TR_COST(hLv(sel.id)):0;
+  g.innerHTML=icoImg('ic-train','🏋')+' '+(sel?sel.n:'')+' を鍛える '+IC('🔧')+cs
+   +' → 鍛錬Lv'+(sel?hLv(sel.id)+1:1);
+  g.disabled=done||(!DEV&&(META.hmat||0)<cs);
   if(done)g.textContent=sel.n+' は鍛錬しつくした';
   g.onclick=()=>trainGrind(TRSEL);}
 }
-/* 🔧を注いで経験値を入れる(暫定)。⚠上限Lvに届いたら余った経験は切り捨て */
+/* 🔧を払って鍛錬Lvを1つ上げる。⚠上限に達したら🔧を食わない */
 function trainGrind(hid){
  const h=heroOf(hid);if(!h)return;
- if(hLv(hid)>=TR_MAX){toast(h.n+' はもう鍛錬しつくした',true);return;}
- if(!DEV&&(META.hmat||0)<TR_COST){
-  toast('🔧'+TR_COST+' 必要(所持 '+(META.hmat||0)+') — 英雄召集の重複で貯まる',true);return;}
- META.hmat=Math.max(0,(META.hmat||0)-TR_COST);
- let lv=hLv(hid),xp=((META.hxp&&META.hxp[hid])||0)+TR_XP,up=0;
- while(lv<TR_MAX&&xp>=TR_NEED(lv)){xp-=TR_NEED(lv);lv++;up++;}
- if(lv>=TR_MAX)xp=0;
- if(!META.hlv)META.hlv={};if(!META.hxp)META.hxp={};
- META.hlv[hid]=lv;META.hxp[hid]=xp;saveMeta();
- if(up){sfx.win&&sfx.win();
-  toast(h.n+' 鍛錬Lv'+lv+' に上がった (HPと攻撃 合計+'+Math.round((hBoost(hid)-1)*100)+'%)');}
- else sfx.buy&&sfx.buy();
+ const lv=hLv(hid);
+ if(lv>=TR_MAX){toast(h.n+' はもう鍛錬しつくした',true);return;}
+ const cs=TR_COST(lv);
+ if(!DEV&&(META.hmat||0)<cs){
+  toast('🔧'+cs+' 必要(所持 '+(META.hmat||0)+') — 英雄召集の重複で貯まる',true);return;}
+ META.hmat=Math.max(0,(META.hmat||0)-cs);
+ if(!META.hlv)META.hlv={};
+ META.hlv[hid]=lv+1;saveMeta();
+ sfx.win&&sfx.win();
+ toast(h.n+' 鍛錬Lv'+(lv+1)+' に上がった (HPと攻撃 合計+'+Math.round((hBoost(hid)-1)*100)+'%)');
  renderTrain();updLabBtn();
 }
 
@@ -27183,7 +27204,8 @@ const RG_TW=21,RG_TH=15;     /* 拠点の町のマス数(固定) */
 const RG_ENC=[.055,.10];     /* 1歩あたりの遭遇率(通路/奥) */
 const RG_PARTY=4;            /* パーティの人数 */
 const RG_LVMAX=40;           /* RPG側のレベル上限 */
-/* RPGのLv → TD側の鍛錬Lv(0〜10)。Lv21で+80%(上限)に届く */
+/* RPGのLv → TD側の鍛錬Lv。⚠⚔冒険は**お蔵入り**(2026-08-03に鍛錬所のタブから外した)ので
+   いまこの経路は通らない。TR_MAX=50 になったのでRPG側(最大Lv40)では鍛錬Lv19までしか届かない。 */
 const rgTrLv=lv=>clamp(Math.floor((lv-1)/2),0,TR_MAX);
 /* 次のレベルに要る経験値。⚠序盤は軽く、後半で伸ばす */
 const rgNeed=lv=>Math.round(14*Math.pow(lv,1.72)+6*lv);
@@ -28741,6 +28763,7 @@ function renderHome(){
  {const k9=META.eq||(META.st&&META.st[0]);
   const si=$('hm-stk-ic');if(si)si.innerHTML=(k9&&STRIKES[k9])?icoImg('ic-stk-'+k9,STRIKES[k9].ic):'🎯';
   const t9=$('hm-stk-i');if(t9)t9.textContent=(k9&&STRIKES[k9])?STRIKES[k9].n:'まだ無い';}
+ updHomeTrain();
  {const li=$('hm-lab-ic');if(li)li.innerHTML=icoImg('ic-lab','🔬');
   const lp=$('hm-lab-pts');if(lp)lp.innerHTML=IC('🧬')+fmt(META.pts||0);}
  {const gi=$('hm-gacha-ic');if(gi)gi.innerHTML=icoImg('ic-gem','💎');
@@ -28872,6 +28895,8 @@ $('hm-team').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
 $('hm-hero').onclick=()=>{renderHeroPick();$('md-hpick').classList.add('on');};
 $('hm-stk').onclick=()=>{renderStkPick();$('md-stk').classList.add('on');};
 $('hm-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
+/* 🏋鍛錬所(2026-08-03にホームへ移した。⚠タイトルのボタンは出さない) */
+$('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
 $('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');};
 $('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
