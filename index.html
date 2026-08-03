@@ -12461,8 +12461,10 @@ function drawHeroBody(c,U,walk,o,t,ph){
  if(f)f(c,U,walk,t||0,ph||0,o||{},rk);
  /* 撃った瞬間の閃光(⚠武器の先あたり)。⚠`H_MZOFF=1` を立てた体は**自分で銃口に描いている** */
  if(!H_MZOFF&&o&&o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(26,-33,4+o.fireT*20,0,7);c.fill();}
- /* レア度の★。⚠🏠ホームの一枚絵は★を出さない(o.nost)=下の名前に★が付いている+拡大すると巨大になる */
- if(o&&o.nost)return;
+ /* レア度の★。⚠🏠ホームの一枚絵は★を出さない(o.nost)=下の名前に★が付いている+拡大すると巨大になる。
+    ⚠⚠**盤面(TD中)も出さない**(2026-08-03(103)ユーザー指示)=そこには**HPバー**を出す。
+      ★は図鑑・編成・召集など「見て選ぶ場所」だけでよい。 */
+ if(o&&(o.nost||o.fld))return;
  c.fillStyle=GOLD;c.strokeStyle=INK;c.lineWidth=1.6;c.font='900 11px '+FF;c.textAlign='center';
  /* ⚠背の高い英雄は★を上げる=頭飾りに食い込む(騎乗の暗黒の騎士は特に高い) */
  const st='★'.repeat(Math.min(5,rk)),sy=(U.id==='hGiant')?-72:(U.id==='hDawn')?-78:(U.id==='hDark')?-84:-62;
@@ -15341,9 +15343,12 @@ function bakeSet(scale,drawFn){
   f.push(cvv);}
  return {f,ss,W,H,ox,oy};
 }
+/* ⚠**焼いたコマは盤面でしか使わない**ので fld:1 を渡す(2026-08-03(103))=
+   英雄の頭上の★を焼き込まない(盤面ではHPバーを出すため)。⚠ここを忘れると
+   直描きの時だけ★が消えて、止まっている間だけ★が出る、という食い違いになる(実際に踏んだ) */
 function bakeU(ui){const key=''+ui;if(SPR.u[key])return SPR.u[key];
  const sc=(TSCALE[uTier(ui)-1]||1)*1.05;
- return SPR.u[key]=bakeSet(sc,(c,i)=>drawUnit(c,ui,0,0,1,i/SPRN*(2*Math.PI/10),0,{}));}
+ return SPR.u[key]=bakeSet(sc,(c,i)=>drawUnit(c,ui,0,0,1,i/SPRN*(2*Math.PI/10),0,{fld:1}));}
 function bakeZ(zi,elite){const key=zi+'_'+(elite?1:0);if(SPR.z[key])return SPR.z[key];
  const spd=(ZOMBIES[zi].sp>90?14:8),sc=ZOMBIES[zi].sc*(elite?1.4:1)*1.05;
  return SPR.z[key]=bakeSet(sc,(c,i)=>drawZombie(c,zi,0,0,1,i/SPRN*(2*Math.PI/spd),0,{elite}));}
@@ -18875,12 +18880,27 @@ function renderCamp(C,t){
    const ug9=ulp9>=0?ulk9:ul9,ust9=(U_ULM[uMotK(u.ui)]||{}).still;
    if(ul9>0&&!ust9){c.save();c.translate(u.px,u.py);c.scale(1+.14*ug9,1+.14*ug9);c.translate(-u.px,-u.py);}
    /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
+   /* ⚠fld=**盤面で描いている**印(2026-08-03(103))=英雄の頭上の★を出さない(代わりにHPバー) */
    drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:pose9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
-    ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0});
+    fld:1,ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0});
    if(ul9>0&&!ust9)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
   if(ulp9>=0&&FXLV>0)drawUChg(c,u,t,1,ulk9);/* 詠唱の照準線・粒も体の前 */
-  if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
+  /* ⭐(103)英雄のHPバーは**★の代わりに常に出す**(ユーザー指示)=1試合1回の切り札なので
+     「あとどれだけ保つか」が常に読める必要がある。⚠**★を出していた高さ**に置く。
+     ⚠普通の部隊は今までどおり「傷ついた時だけ」(常時出すと盤面が棒だらけになる)。 */
+  if(u.hro){const r4=clamp(u.hp/u.mhp,0,1),U9=UNITS[u.ui]||{};
+   /* ⚠⚠**高さは体の拡大率(TSCALE)を掛ける**(2026-08-03(103)に踏んだ)=
+      ★は drawUnit の中(scale 済み)で描かれるので、外から同じ数字を使うと**顎の辺り**に出る。
+      ⭐**頭の上**に出すため、★の高さ×拡大率 からさらに1段上げる。 */
+   const ts9=TSCALE[uTier(u.ui)-1]||1;
+   const sy9=(U9.id==='hGiant')?-72:(U9.id==='hDawn')?-78:(U9.id==='hDark')?-84:-62;
+   const hy9=u.py+sy9*ts9-9;
+   const bw9=34,col9=r4>.5?TOXIC:r4>.25?AMBER:DANGER;
+   c.fillStyle='rgba(0,0,0,.55)';rr(c,u.px-bw9/2-1,hy9-1,bw9+2,7,2.5);c.fill();
+   c.fillStyle=col9;rr(c,u.px-bw9/2,hy9,bw9*r4,5,2);c.fill();
+   c.strokeStyle=INK;c.lineWidth=1.6;rr(c,u.px-bw9/2-1,hy9-1,bw9+2,7,2.5);c.stroke();c.lineWidth=3;}
+  else if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
   if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64*CH_UP,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }
  /* 🩸弾け飛んだ肉片(⚠敵より手前=飛んでいる物なので上に置く) */
