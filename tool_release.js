@@ -44,6 +44,11 @@ const STEPS=[
  {f:'test_layout.js', n:'画面の寸法',       soft:true},
  {f:'test_balance.js',n:'数値(hp/atk)',     soft:true},
  {f:'test_sfx.js',    n:'効果音',           heavy:true},
+ /* 👁 本物のブラウザで座標を実測する検査(2026-08-03(109)に追加)。
+    ⚠⚠**`test_layout.js` では代わりにならない**=あちらはDOMがスタブなので
+      「画面からはみ出している」を1件も見つけられず、実機で3回崩れを見逃した。
+    ⚠Chrome/Edgeを起動するので少し重い=--quick では飛ばす。基準は release_baseline.json の view_852x393。 */
+ {f:'test_view.js',   n:'見た目の実測(852x393)',heavy:true},
  {f:'test_headless.js',n:'実走(PvE/協力/対戦)',heavy:true,flake:'★4'},
 ];
 

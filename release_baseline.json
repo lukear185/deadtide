@@ -1,4 +1,11 @@
 {
  "test_layout.js": 0,
- "test_balance.js": 4
+ "test_balance.js": 4,
+ "view_852x393": {
+  "err": 0,
+  "cut": 1,
+  "overlap": 1,
+  "tap": 37,
+  "font": 72
+ }
 }

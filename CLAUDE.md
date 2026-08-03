@@ -124,12 +124,15 @@ aliases: [引き継ぎ]
 
 ## テスト手順(Node.js=`C:\Program Files\nodejs\node.exe`)
 ```
-node tool_release.js    # ⭐毎回これ1本。5本を順に流して1本でも落ちたら止まる(約30秒)
+node tool_release.js    # ⭐毎回これ1本。6本を順に流して1本でも落ちたら止まる(約40秒)
 node tool_release.js --quick   # 重い2本を飛ばす(数秒)
 node test_shot.js out.png 852 393 [オプション]  # ⭐見た目は必ず撮って目視。一覧は NOTES_道具
 ```
 ⚠**ゲートは絵を見ていない**=通っても必ず撮る。個別に流したい時は
-`test_undef` / `test_headless` / `test_balance` / `test_layout` / `test_sfx` を直に叩く。
+`test_undef` / `test_headless` / `test_balance` / `test_layout` / `test_sfx` / `test_view` を直に叩く。
+👁⭐**`test_view.js`=本物のブラウザで座標を実測する検査**(はみ出し/重なり/44px/10.5px)。
+  ⚠⚠**`test_layout.js` はDOMがスタブ**なので**はみ出しを1件も見つけられない**(実機で3回見逃した)。
+  別の大きさで見る=`node test_view.js 932 430` / 全件=`--all` / 基準を下げる=`--accept`。
 ⚠`test_balance`/`test_layout` は落ちない=**⚠件数が基準より増えた時だけ**ゲートが落とす
 (基準は `release_baseline.json`。**減ったら `--accept` で基準を下げる**)。
 合格基準=ゲートが🟢。⚠**「★4以上の演出の割合」だけは統計のゆらぎで落ちる**(ゲートが自動で1回流し直す)。

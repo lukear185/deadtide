@@ -138,7 +138,15 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #scr-home{display:none;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--ink4)}
 #scr-home.on{display:flex}
 #homebg{position:absolute;inset:0;width:100%;height:100%;display:block}
-.homewrap{position:relative;z-index:1;display:flex;gap:14px;width:min(97vw,900px);height:min(94vh,480px);align-items:stretch;padding:8px 0}
+/* ⚠⚠⚠**`94vh` だけで高さを決めない**(2026-08-03(109)ユーザー写真=実機でタイルの下が切れ続けた)。
+   iOSの `vh` は**ツールバーが隠れている前提の大きい方**なので、**実際に見えている高さより長くなる**
+   =その差ぶんだけ中身が画面の下へ潜る。⭐**実測した `--appH` と `max-height:100%` で必ず抑える**
+   (`.modal .panel.bigpanel` は前から同じ書き方をしている=**こちらだけ直し忘れていた**)。 */
+/* ⭐**上下の遊びを削る**(2026-08-03(109)ユーザー「上にちょっと詰めれない?空いてるから」)=
+   94%で持っていたので上下に6%(約24px)の死に地があった。**高さいっぱいに使い、余白は上4/下8だけ**
+   (⚠下を少し残すのは iPhone のホームインジケータに札が被らないようにするため)。 */
+.homewrap{position:relative;z-index:1;display:flex;gap:14px;width:min(97vw,900px);
+ height:min(100vh,var(--appH,100vh),486px);max-height:100%;align-items:stretch;padding:4px 0 8px}
 /* 英雄は「箱の中の絵」ではなく情景の上に立たせる(枠・背景なし) */
 .homeleft{flex:0 0 33%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
  background:transparent;border:0;box-shadow:none;overflow:visible}
@@ -178,29 +186,34 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* ⭐⭐**▶続きからが出ている時はタイルを詰める**(`cmp`)。
    ⚠**大ボタンが2つ並ぶと縦が足りなくなる**=台座と文字を一回り小さくして2行ぶんを収める。
    ⚠押す所は `min-height:44px` で守る(下の .homebt)。 */
-.homegrid.cmp .homebt{padding:3px;gap:1px}
+.homegrid.cmp .homebt{padding:4px 7px;gap:6px}
 .homegrid.cmp .homebt .hic{width:32px;height:32px;font-size:17px;border-radius:9px}
 .homegrid.cmp .homebt .hth{min-height:32px;padding:2px 4px}
-.homegrid.cmp .homebt b{font-size:12px}
+.homegrid.cmp .homebt .hth canvas{width:24px;height:18px}
+.homegrid.cmp .homebt b{font-size:13px}
 .homegrid.cmp .homebt i{font-size:10.5px}
 /* ⭐機能タイルはちょうど6つ(3×2)。⚠戻るはここに入れない(上の帯へ出した) */
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
 /* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
-.homebt{height:100%;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;overflow:hidden;
+/* ⭐**絵は左・文字は右の横並び**(2026-08-03(109))=縦に積むより背が低くて済み、名前と中身が読みやすい */
+.homebt{height:100%;min-height:44px;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;padding:6px 9px;overflow:hidden;text-align:left;
  background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:14px;color:var(--pane);
  box-shadow:0 4px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(242,236,220,.08)}
 .homebt:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.5)}
-.homebt b{font-size:13px;color:var(--pane)}
-.homebt i{font-style:normal;font-size:10.5px;color:var(--paper3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 文字は絵の右に2行(名前/中身)。⚠`min-width:0` が要る=無いと長い名前で絵が潰れる */
+.homebt .hlb{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;overflow:hidden}
+.homebt b{font-size:14px;color:var(--pane);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.homebt i{font-style:normal;font-size:11px;color:var(--paper3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* アイコンは小さな台座に載せる(タイルの目印が揃う) */
-.homebt .hic{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:21px;line-height:1;
+.homebt .hic{flex:0 0 auto;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;
  background:rgba(0,0,0,.42);border:2px solid rgba(242,236,220,.15);border-radius:11px}
 .homebt .hic .ico{height:1.4em;width:1.4em;vertical-align:-.3em}
-.homebt .hth{display:flex;gap:3px;align-items:center;justify-content:center;min-height:40px;
- background:rgba(0,0,0,.42);border:2px solid rgba(242,236,220,.15);border-radius:11px;padding:3px 6px}
+/* ⚠横並びにしたので**サムネは2体だけ**(renderHome側)=4体だと絵で幅を使い切って名前が消える */
+.homebt .hth{flex:0 0 auto;display:flex;gap:3px;align-items:center;justify-content:center;min-height:38px;
+ background:rgba(0,0,0,.42);border:2px solid rgba(242,236,220,.15);border-radius:11px;padding:3px 5px}
 /* ⚠サムネ(UTHUMBS)は104x78=4:3。縦長の箱に入れると胴が潰れる(撮って直した) */
-.homebt .hth canvas{width:32px;height:24px}
+.homebt .hth canvas{width:28px;height:21px}
 /* 🗺エリアマップ(2026-08-03(93))=canvasの地図+右下の拠点カード */
 #scr-map{display:none;position:relative}
 #scr-map.on{display:block}
@@ -1090,13 +1103,15 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <button class="btn red homego" id="bt-map">🗺 出撃 <i>エリア1 — 生存圏の地図</i></button>
       <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
       <div class="homegrid" id="home-grid">
-        <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><b>編成</b><i id="hm-team-i"></i></button>
-        <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><b>英雄</b><i id="hm-hero-i"></i></button>
+        <!-- ⭐絵は左・文字は右の**横並び**(2026-08-03(109)ユーザー「無理に2列にしなくていい。横とか良い感じに」)。
+             ⚠b と i は `.hlb` でひとまとめにする=でないと横並びにした時に名前と中身が横一列に散らばる -->
+        <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
+        <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><span class="hlb"><b>英雄</b><i id="hm-hero-i"></i></span></button>
         <!-- 🏋鍛錬所: 🔬研究所で🧬300を払うまでは**灰色の錠前**で置いておく(存在を先に見せる) -->
-        <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><b>鍛錬所</b><i id="hm-train-i"></i></button>
-        <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><b>砲撃</b><i id="hm-stk-i"></i></button>
-        <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><b>研究所</b><i id="hm-lab-pts"></i></button>
-        <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><b>英雄召集</b><i id="hm-gem"></i></button>
+        <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
+        <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
+        <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
+        <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><span class="hlb"><b>英雄召集</b><i id="hm-gem"></i></span></button>
       </div>
     </div>
   </div>
@@ -28830,7 +28845,8 @@ function renderHome(){
  if(hr)hr.innerHTML='<span>'+IC('🧬')+fmt(META.pts||0)+'</span><span>'+IC('💎')+(META.gem||0)+'</span><span>'+IC('🔧')+(META.hmat||0)+'</span>';
  /* ⭐(94)パネルに「いまの中身」を出す=押す前に何が入っているか読める(1行=1つの物の掟) */
  {const T=teamIdx(),w9=$('hm-team-th');
-  if(w9){w9.innerHTML='';T.slice(0,4).forEach(i=>{const c9=pickTh(i);if(c9)w9.appendChild(c9);});}
+  /* ⚠**2体まで**(2026-08-03(109)に横並びにした=4体だと絵で幅を使い切って名前が読めなくなる) */
+  if(w9){w9.innerHTML='';T.slice(0,2).forEach(i=>{const c9=pickTh(i);if(c9)w9.appendChild(c9);});}
   const ti=$('hm-team-i');if(ti)ti.textContent='兵科 '+teamIdx().length+'種';}
  {const hi=$('hm-hero-ic');
   /* ⚠所持していない英雄は出さない(左の名札と同じ条件に揃える。DEVは全員可) */
