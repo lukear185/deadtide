@@ -8678,8 +8678,12 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠おまけに **iOS Safari では `ctx.filter` が効かない**=実機では光ってすらいなかった。
     ⭐**同じ絵をもう1枚 `lighter` で重ねる**方式へ(死体の「倒れた瞬間の光り」と同じ手)=
       安い上に iOS でも光る。⚠光らせるのは**呼ぶ側**(スプライトのままで光らせられる)。 */
- if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
- if(o.elite){c.shadowColor='#b04ad0';c.shadowBlur=13;}
+ /* ⚠⚠⚠(124)**影(shadowBlur)は焼く時だけ**(総ざらいで発見)。
+    ⚠実測=**送り込まれた敵が並ぶ対戦の盤面で1コマ69ms**(普通の盤面は5ms)。
+      影も filter と同じで**1件ごとに面を作り直す**ので、敵の数だけ膨らむ。
+    ⭐エリートの紫は**焼き込み(bakeZ)の中でだけ**掛ける=絵は今までと1pxも変わらず、
+      盤面では1回も掛からない。⭐送り込まれた敵の赤は**足元の赤い光**に変えた(呼ぶ側で1塗り)。 */
+ if(o.bake&&o.elite){c.shadowColor='#b04ad0';c.shadowBlur=13;}
  /* ⚠黒フチを絵の大きさに比例させて太くする(2.6*CH_UP)のは**試して駄目だった**(第96弾)。
     34pxでは3.9だとフチが図形を食い、頭がヘルメット・腕が黒い棒になる。2.6のままが正しい */
  c.lineWidth=2.6/s;c.strokeStyle=INK;
@@ -10921,7 +10925,12 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
     ⭐18種ぶんの絵を描いたらこの読み替えを外すこと(検査 checkTwLook の GRD_TODO も空にする)。 */
  const tid=T.gmid?T.base:T.id;
  c.save();c.translate(x,y);
- if(o.jam)c.filter='grayscale(1) brightness(.75)';
+ /* ⚡⚠⚠⚠(124)**妨害中の灰色に `ctx.filter` を使わない**(総ざらいで発見)。
+    ⚠実測=**妨害中の塔が並ぶ盤面で1コマ358ms**(普通の盤面は5ms)。canvas の filter は
+      **1回ごとに画面いっぱいの面を作り直す**ので、22台ぶんで70倍以上に膨れていた。
+    ⚠妨害は対戦で**20秒**続く=その間ずっとこの重さになる。
+    ⭐**薄く描く**だけに変えた=「止まっている/効いていない」は薄さと ⚡✖ の札で読める。 */
+ if(o.jam)c.globalAlpha=.45;
  c.lineWidth=3;c.strokeStyle=INK;
  /* 基部(形はタワーごとに違う=35pxでは輪郭だけが見分けの手がかりになるため) */
  twBase(c,T,t);
@@ -11421,7 +11430,8 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
  }
  /* 強化ピップ表示(合計強化数を最大5個) */
  c.fillStyle=PANE;for(let i=0;i<lv;i++){c.beginPath();c.moveTo(-19+i*8,26);c.lineTo(-15.5+i*8,20);c.lineTo(-12+i*8,26);c.closePath();c.fill();c.stroke();}
- if(o.jam){c.filter='none';c.fillStyle=GOLD;c.font='900 20px '+FF;c.textAlign='center';c.fillText('⚡✖',0,-28);}
+ /* ⚡札だけは薄くしない(⚠(124)filter をやめたので globalAlpha を戻す) */
+ if(o.jam){c.globalAlpha=1;c.fillStyle=GOLD;c.font='900 20px '+FF;c.textAlign='center';c.fillText('⚡✖',0,-28);}
  c.restore();
 }
 /* ============ 🦸英雄の姿(2026-07-26 第91弾で11人ぶんに分けた) ============
@@ -15557,7 +15567,8 @@ function bakeU(ui){const key=''+ui;if(SPR.u[key])return SPR.u[key];
  return SPR.u[key]=bakeSet(sc,(c,i)=>drawUnit(c,ui,0,0,1,i/SPRN*(2*Math.PI/10),0,{fld:1}));}
 function bakeZ(zi,elite){const key=zi+'_'+(elite?1:0);if(SPR.z[key])return SPR.z[key];
  const spd=(ZOMBIES[zi].sp>90?14:8),sc=ZOMBIES[zi].sc*(elite?1.4:1)*1.05;
- return SPR.z[key]=bakeSet(sc,(c,i)=>drawZombie(c,zi,0,0,1,i/SPRN*(2*Math.PI/spd),0,{elite}));}
+ /* ⚠(124)`bake:1`=**焼いている最中の印**。エリートの紫の影はこの時だけ掛ける(盤面では掛けない) */
+ return SPR.z[key]=bakeSet(sc,(c,i)=>drawZombie(c,zi,0,0,1,i/SPRN*(2*Math.PI/spd),0,{elite,bake:1}));}
 function drawSpr(c,S,fi,x,y,flip){
  const im=S.f[fi];if(!im)return;
  c.save();c.translate(x,y);if(flip)c.scale(-1,1);
@@ -19142,7 +19153,10 @@ function renderCamp(C,t){
      ⭐白光りは**同じ絵をもう1枚 `lighter` で重ねる**だけにした(死体の光りと同じ手)=
        スプライトのまま光らせられる。⚠**iOSでも初めて光る**(`ctx.filter` は iOS で無効だった)。 */
   const fl9=z.hitT>0?clamp(z.hitT/.1,0,1):0;
-  if(!(z.lgT>0||z.sent||pxOf(ZOMBIES[z.zi].id))){
+  /* ⚠(124)**送り込まれた敵(対戦)の赤は足元の光で出す**=影(shadowBlur)は敵の数だけ面を作るので使わない */
+  if(z.sent){c.fillStyle='rgba(255,59,47,.30)';
+   c.beginPath();c.ellipse(z.px,z.py+2,20*ZOMBIES[z.zi].sc,8*ZOMBIES[z.zi].sc,0,0,7);c.fill();}
+  if(!(z.lgT>0||pxOf(ZOMBIES[z.zi].id))){
    const S9=bakeZ(z.zi,z.elite?1:0),fi9=sprFrame(t,z.ph,ZOMBIES[z.zi].sp>90?14:8),fp9=(z.dr||1)<0;
    drawSpr(c,S9,fi9,z.px,z.py,fp9);
    if(fl9>0){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=fl9*.85;

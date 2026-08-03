@@ -352,7 +352,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'if(TOWERS[ti9].grd){var tg9=me.towers[si9],gu9=0;'
        +'while(tg9&&tg9.ti!==ti9&&gu9++<8){twStats(tg9.ti).forEach(function(s9){tg9.us[s9]=USTAT_MAX;});'
        +'me.scrap=999999;if(!gradeTower(me,si9))break;}}}'
-       +'setInterval(function(){try{var t9=me.towers[AI_ORDER[0]];if(t9)t9.cd=0;'
+       /* ⚡jam=**妨害中の塔**(対戦で相手に止められた姿)を撮る(2026-08-04(124)に filter をやめたので撮る口を足した) */
+     +(OPT.indexOf('jam')>=0?'me.towers.forEach(function(t9){if(t9)t9.jamT=99;});':'')
+     +'setInterval(function(){try{var t9=me.towers[AI_ORDER[0]];if(t9)t9.cd=0;'
        +'me.zombies.forEach(function(z){z.hp=z.mhp;});}catch(e){}},80);'):'')
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
  +(HID?('setTimeout(function(){try{var me=G.players[0];'
