@@ -1779,7 +1779,7 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!META.bup||typeof META.bup!=='object')META.bup={};
  if(!META.beq||typeof META.beq!=='object')META.beq={};
  /* 🚌1日の回数(2026-08-02(58))。⚠古いセーブには無いので必ず作り直す */
- if(typeof META.lgD!=='string')META.lgD='';META.lgN=META.lgN|0;META.luck=META.luck|0;/* 💫(116)ログイン日数と幸運チケット。⚠古いセーブには無い */
+ if(typeof META.lgD!=='string')META.lgD='';META.lgN=META.lgN|0;META.luck=META.luck|0;META.lgG=META.lgG|0;/* 💫(116)(118)ログイン日数・幸運チケット・配布の版。⚠古いセーブには無い */
  if(!Array.isArray(META.bsg))META.bsg=[];/* ⚡(115)スコアの段位報酬の印。⚠古いセーブには無い */
  if(!Array.isArray(META.bday))META.bday=[];
  if(!Array.isArray(META.bnum))META.bnum=[];
@@ -1841,7 +1841,7 @@ function metaResetAll(){
  META.gem=0;META.hero={};META.hsel='';        /* 💎魔石・引いた英雄・連れて行く英雄 */
  META.tk5=0;META.gft={};                      /* 🎫★5確定チケットと、受け取った配布物の印 */
  META.bsg=[];                                 /* ⚡(115)スコアの段位報酬を受け取った印 */
- META.luck=0;META.lgD='';META.lgN=0;           /* 💫(116)幸運チケットとログイン日数 */
+ META.luck=0;META.lgD='';META.lgN=0;META.lgG=0;/* 💫(116)(118)幸運チケット・ログイン日数・配布の版 */
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
@@ -20642,7 +20642,7 @@ const lbRate=()=>DEV?.5:LB_RATE*luckX();/* 💫(116) */
    ⚠**🐻🌈虹の熊(屍熊の使い回し)は廃止**=確率0.001%・8発 の枠だけそのまま引き継いだ
      (💎は100個で始めて、2026-08-02にユーザー指示で**250個**にした)。 */
 const BUS_RATE=.00001,BUS_GEM=250,BUS_HP=8;
-const busRate=()=>DEV?.5:BUS_RATE*luckX();/* 💫(116) */
+const busRate=()=>DEV?.5:(luckOn()?LUCK_BUS:BUS_RATE);/* 💫(116)(118)チケット中は0.1%の決め打ち */
 /* 💫⭐⭐**幸運チケット**(2026-08-03(116)ユーザー指示
      「1日目/3日目/5日目/10日目ログイン時に、タイトル画面で虹犬・金ロブスター・バスが出る確率が
        30秒だけ10倍になるチケットを配ろう」)。
@@ -20652,14 +20652,24 @@ const busRate=()=>DEV?.5:BUS_RATE*luckX();/* 💫(116) */
      META.lgN は未設定なら0なので、初回の起動でそのまま1日目になる。 */
 const LUCK_X=30;            /* 出る確率を何倍にするか(2026-08-03(117)ユーザー指示で10→30) */
 const LUCK_SP=1.5;          /* 💫(117)歩く速さの倍率(ユーザー指示)=入れ替わりが速い=抽選が多く回る */
+/* 🚌⚠(118)**バスだけは倍率ではなく決め打ちの確率**(ユーザー「チケット中はバス0.1%にしよう」)。
+   ⚠素が0.001%しかないので、30倍でも0.03%=**30秒ではまず出ない**。⭐チケット中は 0.1% に固定する。 */
+const LUCK_BUS=.001;
 const LUCK_T=30;            /* 効く秒数 */
 const LUCK_DAYS=[1,3,5,10]; /* 何日目に配るか */
+/* ⚠⚠(118)**配布の版**(ユーザー「さっき配布したやつはノーカンで今からもう一回配布」)。
+   ⭐**この数字を上げると、全員が次の起動で「1日目」からやり直し**になる。
+   ⚠**もう貰ったチケットは取り上げない**(手に入れた物を消すのは筋が悪い)=日数だけ0に戻す。
+   ⚠**上げるのは配り直したい時だけ**=軽い気持ちで上げると、10日目まで進めた人が振り出しに戻る。 */
+const LUCK_GEN=2;
 let LUCKT=0;                /* いま効いている残り秒(⚠セーブしない=起動ごとに切れる) */
 const luckOn=()=>LUCKT>0;
 const luckX=()=>luckOn()?LUCK_X:1;
 const luckSp=()=>luckOn()?LUCK_SP:1;
 /* その日の初回起動なら通算日数を1つ進めて、配る日なら1枚渡す。戻り値=配ったら日数 */
 function luckLogin(){
+ /* ⚠(118)配布の版が変わっていたら**日数を振り出しに戻す**(=今からもう一度1日目) */
+ if((META.lgG|0)!==LUCK_GEN){META.lgG=LUCK_GEN;META.lgD='';META.lgN=0;}
  const k=bnsDayKey();
  if(META.lgD===k)return 0;
  META.lgD=k;META.lgN=(META.lgN|0)+1;
@@ -20675,7 +20685,7 @@ function luckUse(){
  if((META.luck|0)<1)return false;
  META.luck=(META.luck|0)-1;LUCKT=LUCK_T;saveMeta();
  if(sfx.win)sfx.win();
- toast('💫 幸運チケット! '+LUCK_T+'秒だけ 🌈虹犬・✨金ロブ・🚌バス が'+LUCK_X+'倍(歩くのも'+LUCK_SP+'倍速い)');
+ toast('💫 幸運チケット! '+LUCK_T+'秒だけ 🌈虹犬・✨金ロブ'+LUCK_X+'倍・🚌バス'+(LUCK_BUS*100).toFixed(1)+'%(歩くのも'+LUCK_SP+'倍速い)');
  luckUpd();
  return true;
 }
@@ -20687,7 +20697,7 @@ function luckUpd(){
  b.classList.toggle('on',luckOn());
  const nn=$('luck-n'),ss=$('luck-s');
  if(nn)nn.textContent=luckOn()?('💫 のこり '+Math.ceil(LUCKT)+'秒'):('💫 幸運チケット ×'+n);
- if(ss)ss.textContent=luckOn()?('🌈✨🚌 が'+LUCK_X+'倍! 歩くのも'+LUCK_SP+'倍速い'):'タップして使う';
+ if(ss)ss.textContent=luckOn()?('🌈✨'+LUCK_X+'倍・🚌'+(LUCK_BUS*100).toFixed(1)+'%! 雑魚は一撃'):'タップして使う';
 }
 /* 毎コマ減らす。⚠**タイトルに居る時だけ減らす**=効くのがタイトルの行進だけなので、
    別の画面に居る間に切れてしまうと「使ったのに何も起きない」になる。 */
@@ -20742,6 +20752,10 @@ function paradeHit(cx,cy){
     ⚠8発も要るので、体力の残りが**絵で減っていく**ようにしないと「押しても無反応」に見える
     (窓の手の本数も hp から出している=`drawBusKun`)。 */
  if(best.bus)parDrop(best.x,h9-20);
+ /* 💫⭐(118)**幸運チケット中は、珍しい3種以外はワンタップで倒せる**(ユーザー指示)。
+    ⚠**叩く時に見る**(湧く時ではない)=チケットを使う前から歩いている個体にも効かせるため。
+    ⚠🌈虹犬・✨金ロブ・🚌バスは**据え置き**=あの3種は「何発も当てて倒す」のが手応えそのもの。 */
+ if(luckOn()&&!best.bus&&!best.lb&&!best.rb)best.hp=1;
  if(--best.hp>0){if(best.bus)sfx.busHit();else if(best.lb)sfx.lobHit();else sfxAt('thunk',.34);return true;}
   best.ht=.001;/* 倒れ始め */
   /* ⭐**強さに応じて研究ptが入る**(2026-07-27ユーザー指示)。
@@ -29240,8 +29254,10 @@ try{
   if((META.luck|0)<1){toast('💫 幸運チケットを持っていない',true);return;}
   const d=$('luck-dsc');
   if(d)d.innerHTML=IC('使うと <b>'+LUCK_T+'秒だけ</b> タイトルの<br>'
-   +'🌈虹犬・✨黄金のロブスター・🚌ゾンビバス が出る確率が <b>'+LUCK_X+'倍</b>になる。'
+   +'🌈虹犬・✨黄金のロブスターが出る確率が <b>'+LUCK_X+'倍</b>、'
+   +'🚌ゾンビバスは <b>'+(LUCK_BUS*100).toFixed(1)+'%</b> になる。'
    +'<br>みんなの<b>歩く速さも'+LUCK_SP+'倍</b>(そのぶん入れ替わりが速い)。'
+   +'<br>ふつうのゾンビは<b>ワンタップで倒せる</b>。'
    +'<br>のこり <b>'+(META.luck|0)+'枚</b>');
   $('md-luck').classList.add('on');
  };
