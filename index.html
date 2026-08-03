@@ -4295,8 +4295,13 @@ const BNS_DENS=.6;    /* 到着時の塊の大きさの上乗せ */
    たまに横一面にゾンビがいるところを道中作って」)。⚠1面は今までどおり。 */
 const BNS_SEA_DL=.62; /* 湧く間隔の倍率(小さいほど濃い)=約1.6倍の量 */
 const BNS_WALL_P=[.10,.26];/* 塊が「横一面の壁」になる率(1面/2面) */
-const BNS_WALL_N=[70,130]; /* 壁1枚の体数 */
-const BNS_WALL_R=90;  /* 壁の厚み(前後のばらつき) */
+/* 🧱⚠⚠(133)**壁は「並べる」=散らさない**(ユーザー「壁のようなゾンビ、数はそのまま
+   ただまばらになってるだけのせいで全然倒せない。もっと密度をガッチガチに」)。
+   ⚠それまでは道幅いっぱいに**乱数で散らしていた**ので、体数が同じでも**隙間だらけ**だった。
+   ⭐**升目に詰めて並べる**=横は等間隔、縦は列(row)。**壁として当たる**。 */
+const BNS_WALL_SP=44;  /* 横の間隔(px)=これで1列の体数が決まる(道幅1560→約35体) */
+const BNS_WALL_ROW=[3,5];/* 何列ぶん重ねるか(1面/2面) */
+const BNS_WALL_GAP=46; /* 列と列の間(px) */
 const BNS_ELT=.055;   /* 終盤にエリート(👑・でかい・硬い)が混ざる率。⚠序盤は出さない */
 const BNS_MIX0=.07,BNS_MIXP=.26;/* 別の顔ぶれが混ざる率(出発時=7% → 到着時=33%)。⚠上げすぎると轢けなくなる */
 /* 🚗**壊せる障害物の種類**。r=当たりの半径 / sl=当たった時に残る速さ / c=色 / n=名前。
@@ -16053,17 +16058,24 @@ function tideStep(dt){
     if(!K||K.n<=0){
      /* 🧱⭐(127)**たまに「横一面の壁」**=道幅いっぱいに並ぶ列。⚠海の面ほど出やすい */
      const wall=Math.random()<BNS_WALL_P[BSEA?1:0];
+     const per9=Math.max(8,Math.round(BNS_OFF*2/BNS_WALL_SP));
+     const row9=ri(BNS_WALL_ROW[0],BNS_WALL_ROW[1])+(BSEA?1:0);
      K=T.bnsK=wall
-      ?{wall:1,n:ri(BNS_WALL_N[0],BNS_WALL_N[1]),d:rnd(BNS_AHEAD,BNS_AHEAD2),o:0,r:BNS_WALL_R}
+      ?{wall:1,per:per9,rows:row9,i:0,n:per9*row9,d:rnd(BNS_AHEAD,BNS_AHEAD2),o:0,r:0}
       :{n:Math.round(ri(BNS_CL_N,BNS_CL_N2)*(1+pd9*BNS_DENS)),
         d:rnd(BNS_AHEAD,BNS_AHEAD2),
         o:rnd(-BNS_OFF*.72,BNS_OFF*.72),r:rnd(BNS_CL_R,BNS_CL_R2)*(1-pd9*.18)};
      if(wall&&C.isMe&&G&&G.wave>0)toast('🧱 前方に壁のような群れ!',true);
     }
     K.n--;
-    z9.d=clamp(bd9-K.d+rnd(-K.r,K.r),0,PLEN);
-    /* 🧱壁は**道幅いっぱい**に散らす(普通の塊は中心の周り) */
-    z9.off=K.wall?rnd(-BNS_OFF,BNS_OFF):clamp(K.o+rnd(-K.r,K.r),-BNS_OFF,BNS_OFF);}
+    if(K.wall){
+     /* 🧱(133)**升目に詰めて並べる**=横は等間隔・縦は列。⚠乱数のブレは小さく(±6/±8)して隙間を作らない */
+     const i9=K.i++,cl9=i9%K.per,rw9=Math.floor(i9/K.per);
+     z9.off=clamp(-BNS_OFF+(cl9+.5)*(BNS_OFF*2/K.per)+rnd(-6,6),-BNS_OFF,BNS_OFF);
+     z9.d=clamp(bd9-K.d-rw9*BNS_WALL_GAP+rnd(-8,8),0,PLEN);
+    }else{
+     z9.d=clamp(bd9-K.d+rnd(-K.r,K.r),0,PLEN);
+     z9.off=clamp(K.o+rnd(-K.r,K.r),-BNS_OFF,BNS_OFF);}}
    C.zombies.push(z9);}
   /* ⭐**濃い道が変わったら予告する**(2026-08-02(3))=見せないとただの当たり外れになる。
      ⚠**濃い側の1体が湧いた時にだけ見る**=薄く流している1体で切り替わると予告が嘘になる。 */

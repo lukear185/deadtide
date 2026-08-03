@@ -392,6 +392,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
     その間に rAF が回って**リザルト画面になってしまい、盤面が1枚も撮れない**
     (bnsn を小さくしても直らない=進んでいるのは仮想時間ではなく実時間の方)。 */
  +(BNS?'setInterval(function(){try{var m9=G&&G.players[0];if(m9){m9.core=m9.coreMax;}}catch(e){}},150);':'')
+ /* 🧱(133)bnswall=**壁のような群れ**を目の前に湧かせて撮る */
+ +((BNS&&OPT.indexOf('bnswall')>=0)?('setTimeout(function(){try{'
+   +'var T=G.tide,m9=G.players[0];T.bnsK=null;'
+   +'var per=Math.max(8,Math.round(BNS_OFF*2/BNS_WALL_SP));'
+   +'T.bnsK={wall:1,per:per,rows:5,i:0,n:per*5,d:520,o:0,r:0};'
+   +'for(var q=0;q<260;q++){try{gameStep(0.02);m9.core=m9.coreMax;}catch(e){}}'
+   +'}catch(e){document.title="ERR19 "+e.message;}},1500);'):'')
  /* 🎒⭐**走る前の流れ**(2026-08-02(43))。⚠**指定が無ければ丸ごと飛ばす**=
     そうしないと `bns` の撮影が選択画面で止まって、敵も血だまりも1枚も写らない。 */
  +((BNS&&!BPRE)?('setTimeout(function(){try{'
