@@ -892,6 +892,15 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-gacha .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #md-gacha #gc-home{flex:1 1 auto;min-height:0}
 #md-gacha #gc-sub{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+/* 💫(116)幸運チケットの札=タイトルの左上。⚠押す所44px(この企画の物差し)。
+   ⭐使っている間は金色に光って**残り秒数**を出す=「いま効いている」が一目で分かる。 */
+#luckbar{position:absolute;left:10px;top:10px;z-index:6;display:none;min-height:44px;padding:5px 13px;
+ background:rgba(24,20,15,.86);border:3px solid var(--gold);border-radius:13px;color:var(--pane);
+ font-weight:900;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.5);text-align:left}
+#scr-title.on #luckbar{display:block}
+#luckbar b{display:block;font-size:15px;color:var(--gold)}
+#luckbar i{display:block;font-style:normal;font-size:10.5px;color:var(--paper3);margin-top:1px}
+#luckbar.on{animation:nitpulse 1s infinite;background:rgba(84,58,14,.9)}
 /* ⚡(115)スコア報酬の窓=**1行=1つの段**。状態は「形」で言う(達成は金の縁+✅、未達は暗いまま) */
 #md-bsg .bpbody{overflow-y:auto;overscroll-behavior:contain}
 /* ⚠4段が**スクロールなしで全部見える**ようにする(1画面1目的の掟)=横画面は高さ393pxしか無い */
@@ -1095,6 +1104,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <!-- 🌆(96)タイトルにもホームと同じ夕暮れの情景を敷く(sceneBg) -->
   <canvas id="titlebg"></canvas>
   <div class="ver" id="vertag">v2.0 β</div>
+  <!-- 💫(116)幸運チケット=タイトルの左上に小さく出す。持っていない時は出さない -->
+  <button id="luckbar" style="display:none"><b id="luck-n">💫 ×0</b><i id="luck-s"></i></button>
   <div class="titlewrap">
   <div class="logo-wrap">
     <div class="logo-sub">SURVIVORS' LAST STAND</div>
@@ -1443,6 +1454,19 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 <!-- ⚡⭐(115)**スコアの段位報酬**の専用の窓。1行=1つの段(達成したか/いくら貰えるか/あといくつか) -->
+<!-- 💫(116)幸運チケットを使うか聞く窓。⚠**はい/いいえ**の2択だけ(取り消せない物なので必ず聞く) -->
+<div class="modal" id="md-luck">
+  <div class="panel" style="width:min(92vw,420px);text-align:center">
+    <div style="font-size:34px;line-height:1">💫</div>
+    <b style="display:block;font-size:17px;margin:4px 0 2px">幸運チケットを使いますか?</b>
+    <p class="note" id="luck-dsc" style="margin:2px 0 10px"></p>
+    <div style="display:flex;gap:8px">
+      <button class="btn gold" id="bt-luck-yes" style="flex:1 1 0">はい</button>
+      <button class="btn" id="bt-luck-no" style="flex:1 1 0">いいえ</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="md-bsg">
   <div class="panel bigpanel">
     <div class="bphd"><b>⚡ スコア報酬</b><span class="pt" id="bsg-gem"></span><button class="xbtn" id="bt-bsg-close">✕</button></div>
@@ -1755,6 +1779,7 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!META.bup||typeof META.bup!=='object')META.bup={};
  if(!META.beq||typeof META.beq!=='object')META.beq={};
  /* 🚌1日の回数(2026-08-02(58))。⚠古いセーブには無いので必ず作り直す */
+ if(typeof META.lgD!=='string')META.lgD='';META.lgN=META.lgN|0;META.luck=META.luck|0;/* 💫(116)ログイン日数と幸運チケット。⚠古いセーブには無い */
  if(!Array.isArray(META.bsg))META.bsg=[];/* ⚡(115)スコアの段位報酬の印。⚠古いセーブには無い */
  if(!Array.isArray(META.bday))META.bday=[];
  if(!Array.isArray(META.bnum))META.bnum=[];
@@ -1816,6 +1841,7 @@ function metaResetAll(){
  META.gem=0;META.hero={};META.hsel='';        /* 💎魔石・引いた英雄・連れて行く英雄 */
  META.tk5=0;META.gft={};                      /* 🎫★5確定チケットと、受け取った配布物の印 */
  META.bsg=[];                                 /* ⚡(115)スコアの段位報酬を受け取った印 */
+ META.luck=0;META.lgD='';META.lgN=0;           /* 💫(116)幸運チケットとログイン日数 */
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
@@ -1848,7 +1874,7 @@ try{if(GIFT&&GIFT.id){
 /* ⚠**新しく足した物は必ずDEVの底上げにも足す**(でないと実機で一度も見られない)=
    🚌バスの物資は3種とも潤沢に(装備9個と性能25段を一度に見比べられる額)。 */
 /* ⚠🎫★5確定チケットもDEVでは切らさない(でないと配布物の演出を実機で一度も確かめられない) */
-function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;
+function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;META.luck=9;
  if(!Array.isArray(META.bres))META.bres=[0,0,0];
  for(let i=0;i<3;i++)META.bres[i]=99999;}
 devTop();
@@ -20596,7 +20622,7 @@ const parHP=zi=>{const h=(ZOMBIES[zi]||{}).hp||0;return h>=200?3:h>=110?2:1;};
    🐻🌈虹の熊(新設)**0.001%**。⚠🛠DEVでは3種を**均等33%ずつ**で出す(実機で全部確かめられるように)。 */
 const RB_RATE=.005,RB_GEM=10,RB_HP=3;
 /* ⚠🌈虹も🛠DEVでは出しやすくする(✨金と同じ扱い)。⚠金の方を先に判定するので金が食われることはない */
-const rbRate=()=>DEV?.5:RB_RATE;
+const rbRate=()=>DEV?.5:RB_RATE*luckX();/* 💫(116)幸運チケット中は10倍 */
 /* ⭐⭐**0.1%でキラキラ光る黄金のロブスター**(2026-07-28ユーザー指示
      「0.1%でキラキラ金色に輝くロブスターが出るようにしよう。5タップで倒せる。倒したらガチャ石30個」)。
    ⚠絵は**ステージ2の甲殻ロブスターを使い回す**(新しく描かない)。金色は虹と同じやり方=
@@ -20606,7 +20632,7 @@ const rbRate=()=>DEV?.5:RB_RATE;
    ⚠普通に遊ぶ側の確率は 0.1% のまま。 */
 /* ⚠💎の数は2026-08-02にユーザー指示で ロブ30→**50** / バス100→**250** にした */
 const LB_RATE=.0005,LB_GEM=50,LB_HP=5,LB_ZI=ZOMBIES.findIndex(z=>z.id==='sLob');
-const lbRate=()=>DEV?.5:LB_RATE;
+const lbRate=()=>DEV?.5:LB_RATE*luckX();/* 💫(116) */
 /* ⭐⭐**0.001%で🚌ゾンビバス(バスくん)**(2026-08-01ユーザー決定=案①でいく)。一番珍しい=💎100個。
    ⭐**タイトル画面だけに出る巨大ゆるキャラ**。廃バスが脚を生やして のっそり歩き、
      ヘッドライトが目・へこんだバンパーが口・窓からゾンビの手がわらわら振っている。
@@ -20616,7 +20642,60 @@ const lbRate=()=>DEV?.5:LB_RATE;
    ⚠**🐻🌈虹の熊(屍熊の使い回し)は廃止**=確率0.001%・8発 の枠だけそのまま引き継いだ
      (💎は100個で始めて、2026-08-02にユーザー指示で**250個**にした)。 */
 const BUS_RATE=.00001,BUS_GEM=250,BUS_HP=8;
-const busRate=()=>DEV?.5:BUS_RATE;
+const busRate=()=>DEV?.5:BUS_RATE*luckX();/* 💫(116) */
+/* 💫⭐⭐**幸運チケット**(2026-08-03(116)ユーザー指示
+     「1日目/3日目/5日目/10日目ログイン時に、タイトル画面で虹犬・金ロブスター・バスが出る確率が
+       30秒だけ10倍になるチケットを配ろう」)。
+   ⚠**効くのはタイトルの行進だけ**(3種はタイトルにしか湧かない)。
+   ⚠**貯めておける**=使うのはタイトルで自分でタップした時だけ(勝手に減らない)。
+   ⭐**1日目=この版を最初に起動した日**(ユーザー「これ実装した瞬間が1日目ね」)=
+     META.lgN は未設定なら0なので、初回の起動でそのまま1日目になる。 */
+const LUCK_X=10;            /* 何倍にするか */
+const LUCK_T=30;            /* 効く秒数 */
+const LUCK_DAYS=[1,3,5,10]; /* 何日目に配るか */
+let LUCKT=0;                /* いま効いている残り秒(⚠セーブしない=起動ごとに切れる) */
+const luckOn=()=>LUCKT>0;
+const luckX=()=>luckOn()?LUCK_X:1;
+/* その日の初回起動なら通算日数を1つ進めて、配る日なら1枚渡す。戻り値=配ったら日数 */
+function luckLogin(){
+ const k=bnsDayKey();
+ if(META.lgD===k)return 0;
+ META.lgD=k;META.lgN=(META.lgN|0)+1;
+ const n=META.lgN;
+ let got=0;
+ if(LUCK_DAYS.indexOf(n)>=0){META.luck=(META.luck|0)+1;got=n;}
+ saveMeta();
+ return got;
+}
+/* 使う。⚠**残っている間は二度押ししない**(重ねても意味が無いのに1枚減る) */
+function luckUse(){
+ if(luckOn())return false;
+ if((META.luck|0)<1)return false;
+ META.luck=(META.luck|0)-1;LUCKT=LUCK_T;saveMeta();
+ if(sfx.win)sfx.win();
+ toast('💫 幸運チケット! '+LUCK_T+'秒だけ 🌈虹犬・✨金ロブ・🚌バス が'+LUCK_X+'倍');
+ luckUpd();
+ return true;
+}
+/* 札の見た目を合わせる。⚠**持っていない かつ 効いていない**なら丸ごと隠す */
+function luckUpd(){
+ const b=$('luckbar');if(!b||!b.style)return;
+ const n=META.luck|0;
+ b.style.display=(n>0||luckOn())?'block':'none';
+ b.classList.toggle('on',luckOn());
+ const nn=$('luck-n'),ss=$('luck-s');
+ if(nn)nn.textContent=luckOn()?('💫 のこり '+Math.ceil(LUCKT)+'秒'):('💫 幸運チケット ×'+n);
+ if(ss)ss.textContent=luckOn()?('🌈✨🚌 が'+LUCK_X+'倍で出ている!'):'タップして使う';
+}
+/* 毎コマ減らす。⚠**タイトルに居る時だけ減らす**=効くのがタイトルの行進だけなので、
+   別の画面に居る間に切れてしまうと「使ったのに何も起きない」になる。 */
+function luckStep(dt){
+ if(LUCKT<=0)return;
+ if(SCR!=='title')return;
+ LUCKT=Math.max(0,LUCKT-dt);
+ if(LUCKT<=0){toast('💫 幸運チケットの効果が切れた');}
+ luckUpd();
+}
 function parNew(){
  const mk=(zi,sp,hp,ex)=>Object.assign({zi,x:-60,sp,ph:rnd(0,9),ht:0,hp,kb:0,fl:0},ex);
  /* ⭐🛠DEVは**3種を均等(33%ずつ)**で出す=0.001%では実機で一度も見られないため */
@@ -29149,6 +29228,21 @@ $('bt-map-back').onclick=()=>{renderHome();show('home');};
 /* ⚡(115)スコア報酬の窓 */
 $('bt-map-sg').onclick=()=>{const nd=MAPND[MSEL];if(nd&&nd.bns)openBsg(nd.stg|0);};
 $('bt-bsg-close').onclick=()=>$('md-bsg').classList.remove('on');
+/* 💫(116)幸運チケット=札を押す→使うか聞く→はい で使う */
+try{
+ $('luckbar').onclick=()=>{
+  ensureAC();
+  if(luckOn()){toast('💫 いま効いている(のこり '+Math.ceil(LUCKT)+'秒)');return;}
+  if((META.luck|0)<1){toast('💫 幸運チケットを持っていない',true);return;}
+  const d=$('luck-dsc');
+  if(d)d.innerHTML=IC('使うと <b>'+LUCK_T+'秒だけ</b> タイトルの<br>'
+   +'🌈虹犬・✨黄金のロブスター・🚌ゾンビバス が出る確率が <b>'+LUCK_X+'倍</b>になる。'
+   +'<br>のこり <b>'+(META.luck|0)+'枚</b>');
+  $('md-luck').classList.add('on');
+ };
+ $('bt-luck-yes').onclick=()=>{$('md-luck').classList.remove('on');luckUse();};
+ $('bt-luck-no').onclick=()=>{$('md-luck').classList.remove('on');};
+}catch(e){}
 /* ---- 🏠ホーム ---- */
 function renderHome(){
  const hr=$('home-res');
@@ -29590,6 +29684,17 @@ try{applyIcons();}catch(e){}/* 画面アイコンの差し替え(素材が無け
 /* 🎫**配布物を受け取った回だけ報せる**。⚠タイトルが出てから出す(起動直後だとDOMが間に合わない) */
 if(GIFT_NEW)try{setTimeout(()=>{toast(GIFT.n+' を '+(GIFT.tk5||0)+'枚 受け取った! 💎英雄召集から使える');
  if(sfx.win)sfx.win();},900);}catch(e){}
+/* 💫(116)**ログイン日数の判定**=その日の初回起動なら1日進めて、配る日なら1枚渡す。
+   ⚠**必ず起動のたびに1回だけ呼ぶ**(画面を行き来するたびに呼ぶと日数が進んでしまう)。 */
+let LUCK_GOT=0;try{LUCK_GOT=luckLogin();}catch(e){}
+try{luckUpd();}catch(e){}
+if(LUCK_GOT)try{setTimeout(()=>{
+  /* ⭐**「獲得!」を大きく報せる**(ユーザー指示)=何日目のご褒美かも言う */
+  toast('🎉 '+LUCK_GOT+'日目ログイン! 💫幸運チケットを獲得!',true);
+  if(sfx.win)sfx.win();
+  try{luckUpd();const b=$('luckbar');if(b)b.classList.add('on');
+   setTimeout(()=>{try{if(!luckOn())$('luckbar').classList.remove('on');}catch(e){}},4000);}catch(e){}
+ },1500);}catch(e){}
 /* 🔊音の確認: ?sfx=1 なら起動と同時に開く。🛠DEVモードならタイトルにボタンを出す。
    ⚠`el.style.display=''` はCSSの指定に戻るので 'block' を明示すること */
 try{
@@ -29631,6 +29736,7 @@ function loop(now){
 }
 function loopBody(now){
  const dt0=Math.min(.05,(now-last)/1000);last=now;TT+=dt0;
+ try{luckStep(dt0);}catch(e){}/* 💫(116)幸運チケットの残り秒 */
  /* ⚠(115)**走行音の最後の砦**=🚌の面から出ているのに鳴っていたら止める。
     ⚠止める所を1つでも書き忘れると鳴りっぱなしになるので、毎コマ見張る形にした。 */
  if(BUSA&&!(gameActive&&document.body.classList.contains('bns')))try{busSndOff();}catch(e){}
