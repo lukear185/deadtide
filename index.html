@@ -890,6 +890,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-gacha #gc-home{flex:1 1 auto;min-height:0}
 #md-gacha #gc-sub{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 #md-hstat .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
+/* ▶⭐(111)**必殺技を見ている間は窓いっぱいで見せる**(ユーザー「ちゃんと必殺技を見れるようにして欲しい」)。
+   ⚠118x132の小窓では何をしているのか読めない=**数値と一覧を畳んで舞台を広げる**(止めると戻る) */
+#md-hstat .bpbody.demo .hsinfo,#md-hstat .bpbody.demo .hgrid{display:none}
+#md-hstat .bpbody.demo .hstop{flex:1 1 auto;min-height:0;margin-bottom:0}
+#md-hstat .bpbody.demo .hsshow{flex:1 1 auto;width:100%;height:100%}
 #md-hstat .hstop{flex:0 0 auto}
 #md-hstat .hgrid{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0}
 .tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;
@@ -26221,8 +26226,27 @@ function hsDemoStop(){
  if(HSD&&HSD.raf)try{cancelAnimationFrame(HSD.raf);}catch(e){}
  HSD=null;
  const p=$('hs-play');if(p)p.textContent='▶ 必殺技を見る';
+ /* ⚠**舞台を畳んで元の画面に戻す**(class を外し忘れると数値も一覧も出てこない) */
+ try{const b=document.querySelector('#md-hstat .bpbody');if(b)b.classList.remove('demo');}catch(e){}
+ /* ⚠**canvasの面も元の縦長に戻す**=舞台で横長に作り直しているので、戻さないと姿の絵が歪む */
+ try{const cv=$('hs-cv');if(cv){cv.width=264;cv.height=316;}}catch(e){}
  try{renderHStat();}catch(e){}/* 姿の絵に戻す */
 }
+/* ⭐⭐(111)**「必殺技だけを見せる舞台」に作り替えた**(ユーザー指摘
+     「見れはするけど機能してない。ゾンビに通過されたり通常攻撃ばっかりだったり必殺技が不発だったり」)。
+   ⚠**元の作りは本番の盤面をそのまま回していた**ので、
+     ①ゾンビが歩いて英雄を追い越す ②必殺の合間に通常攻撃が延々と入る
+     ③英雄も歩くので的が射程から外れて**必殺が空振り**する、の3つが同時に起きていた。
+   ⭐**直し方=盤面ではなく「舞台」にする**(絵と技の中身は本物のまま=嘘はつかない):
+     ①**ゾンビは歩かない**(sp=0)・**殴ってこない**(atk=0)・**倒れない**(dummy)
+     ②**英雄はその場から動かない**(毎コマ d を戻す)
+     ③**通常攻撃を封じる**(毎コマ cd を先送り)=映るのは必殺技だけ
+     ④**的は必殺が必ず届く近さに並べる**(44〜244)=近接の必殺でも空振りしない
+   ⚠**吹き飛ばし・減速・凍結などは殺さない**=技の効き目が見えなくなるため、
+     位置は**周回の頭でだけ**戻す。 */
+const HSD_CYC=5.4;/* 1周の長さ(秒)。⚠一番長い必殺(狙撃王の10連射+締め)が収まる長さ */
+const HSD_N=6;    /* 的の数 */
+const hsdZd=(d0,i)=>d0-44-i*40;/* i番目の的の位置(英雄の前方) */
 function hsDemoStart(id){
  hsDemoStop();
  const H=HEROES.find(h=>h.id===id)||HEROES[0];
@@ -26233,25 +26257,47 @@ function hsDemoStart(id){
  /* 英雄を道の中ほどに置く。⚠**px/py は campStep が入れる**ので、まず1回回す */
  const d0=PLEN*.5;
  C.units.push({eid:EID++,ui,own:0,am:1,d:d0,hp:UNITS[ui].hp,mhp:UNITS[ui].hp,cd:0,hitT:0,ph:0,px:0,py:0,hro:H.rk});
- /* 的=前方に並べる雑魚(⚠倒れない=デモが空になるのを防ぐ) */
- for(let i=0;i<7;i++){const z=mkZ(zSpec(0,1,1,false,''),d0-90-i*46);z.dummy=1;C.zombies.push(z);}
+ /* 的=前方に並べる。⚠**歩かない・殴らない・倒れない**の3点セットにしないと舞台にならない */
+ for(let i=0;i<HSD_N;i++){const z=mkZ(zSpec(0,1,1,false,''),hsdZd(d0,i));
+  z.dummy=1;z.sp=0;z.atk=0;z.mhp=z.hp=99999;C.zombies.push(z);}
  try{campStep(C,.001,1);}catch(e){}
- HSD={C,t:0,cv,ui,ph:0,last:0};
+ HSD={C,t:0,cv,ui,ph:-99,nx:null,last:0,d0};
+ /* ▶(111)舞台を窓いっぱいに広げる(止めると戻す) */
+ try{const b=document.querySelector('#md-hstat .bpbody');if(b)b.classList.add('demo');}catch(e){}
  const p=$('hs-play');if(p)p.textContent='■ 止める';
  try{if(sfx.tap)sfx.tap();}catch(e){}
  const step=(ts)=>{
   if(!HSD)return;
   const dt=Math.min(.05,HSD.last?(ts-HSD.last)/1000:.016);HSD.last=ts;
   HSD.t+=dt;
-  /* 1.2秒ごとに撃ち直す(前置きモーション+本体が収まる長さ) */
-  if(HSD.t-HSD.ph>4.2||HSD.ph===0){HSD.ph=HSD.t;
-   const C9=HSD.C;C9.hCg=1;
-   /* 位置とHPを戻す=何度見ても同じ絵になる */
+  const C9=HSD.C,u9=C9.units[0];
+  /* ⭐**技が終わったら少し間を置いて撃ち直す**=短い必殺(近接など)で棒立ちの時間が長くならない。
+     ⚠**遅れて出る締めの一発**(狙撃王『撃墜』は3.9秒後)を切らないよう、演出(fx)が引くまで待つ。
+     ⚠HSD_CYC は**最後の歯止め**(何かの技が終わりを報せない時に止まらなくなるのを防ぐ)。 */
+  if(HSD.nx==null&&u9&&(u9.ulW||0)<=0&&(u9.ulT||0)<=0&&C9.fx.length<=1&&HSD.t-HSD.ph>1.0)
+   HSD.nx=HSD.t+.8;
+  if((HSD.nx!=null&&HSD.t>=HSD.nx)||HSD.t-HSD.ph>HSD_CYC){HSD.ph=HSD.t;HSD.nx=null;
    for(let i=0;i<C9.zombies.length;i++){const z=C9.zombies[i];
-    z.dead=false;z.hp=z.mhp;z.d=d0-90-i*46;z.gumT=0;z.slowT=0;z.frzT=0;z.stnT=0;z.burnT=0;z.dvT=0;z.shT=0;}
-   const u9=C9.units[0];if(u9){u9.d=d0;u9.hp=u9.mhp;u9.dead=false;}
+    z.dead=false;z.hp=z.mhp;z.d=hsdZd(d0,i);z.sp=0;z.atk=0;
+    z.gumT=0;z.slowT=0;z.frzT=0;z.stnT=0;z.burnT=0;z.dvT=0;z.shT=0;z.acdT=0;z.hitT=0;}
+   /* ⚠前の周の演出は消す=残っていると「いつ撃ったのか」が読めなくなる(粒はC.ps・弾はshells/arcs) */
+   C9.fx.length=0;if(C9.ps)C9.ps.length=0;if(C9.shells)C9.shells.length=0;if(C9.arcs)C9.arcs.length=0;
+   if(u9){u9.d=d0;u9.hp=u9.mhp;u9.dead=false;u9.ulW=0;u9.ulT=0;u9.chg=0;}
+   /* ⚠**撃つ条件を必ず満たしてから呼ぶ**=これを怠ると「不発」になる */
+   C9.dead=false;C9.hOut=1;C9.hCg=1;
    try{heroUlt(C9,1);}catch(e){}}
-  try{campStep(HSD.C,dt,1);}catch(e){}
+  /* ---- 舞台を保つ。⚠**campStepの前後で挟む**=前で位置を決めさせ、後で歩いたぶんを戻す。
+       ⚠**px/py には触らない**=必殺の踏み込み(ulBk)を campStep が px/py に乗せているので、
+         こちらで上書きすると**溜めの動きが死ぬ**。動かすのは d だけにする。 ---- */
+  const hold=()=>{if(!u9)return;
+   u9.d=d0;u9.dead=false;u9.hp=u9.mhp;
+   /* ⚠通常攻撃を封じる=必殺の合間が通常攻撃で埋まると「何の技か」が読めない。
+      ⚠必殺そのものは cd を見ないので、これで技だけが残る */
+   u9.cd=9;u9.ct=0;};
+  hold();
+  try{campStep(C9,dt,1);}catch(e){}
+  hold();
+  for(const z of C9.zombies){z.sp=0;z.atk=0;if(z.hp<z.mhp)z.hp=z.mhp;z.dead=false;}
   try{hsDemoDraw();}catch(e){}
   HSD.raf=requestAnimationFrame(step);
  };
@@ -26263,15 +26309,29 @@ function hsDemoStart(id){
 function hsDemoDraw(){
  if(!HSD)return;
  const cv=HSD.cv,c=cv.getContext&&cv.getContext('2d');if(!c)return;
+ /* ⚠(111)**箱の実寸に合わせて描く面を作り直す**=舞台を広げた時に絵が横に引き伸ばされる
+    (canvasは width/height 属性が中身の解像度で、CSSの寸法とは別物) */
+ {const dpr=Math.min(2,window.devicePixelRatio||1);
+  const bw=Math.max(2,Math.round((cv.clientWidth||132)*dpr)),bh=Math.max(2,Math.round((cv.clientHeight||158)*dpr));
+  if(cv.width!==bw)cv.width=bw;
+  if(cv.height!==bh)cv.height=bh;}
  const W=cv.width,Hh=cv.height,C=HSD.C,t=HSD.t;
  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W,Hh);
  const u=C.units[0];if(!u)return;
  /* 背景=夜の地面(枠の意匠は .hsshow が持っている) */
  {const g=c.createLinearGradient(0,0,0,Hh);
   g.addColorStop(0,'#241f19');g.addColorStop(1,'#12100c');c.fillStyle=g;c.fillRect(0,0,W,Hh);}
- const k=Math.min(W/430,Hh/330)*1.5;
+ /* ⭐(111)**英雄と的が全部入るように寄りと中心を決める**。
+    ⚠英雄を画面の真ん中に置くと**的が枠の外へはみ出す**(舞台を広げたら右端の1体が切れていた)。
+    ⭐中心=英雄と的の真ん中 / 寄り=一番離れた的まで収まる大きさ(⚠寄りすぎないよう上限も置く)。 */
+ let cx=u.px,cy=u.py,span=200;
+ {const zs=C.zombies.filter(z=>!z.dead);
+  if(zs.length){let x0=u.px,x1=u.px,y0=u.py,y1=u.py;
+   for(const z of zs){x0=Math.min(x0,z.px);x1=Math.max(x1,z.px);y0=Math.min(y0,z.py);y1=Math.max(y1,z.py);}
+   cx=(x0+x1)/2;cy=(y0+y1)/2;span=Math.max(x1-x0,(y1-y0)*1.6);}}
+ const k=Math.min(W/(span+190),Hh/300,Math.min(W/430,Hh/330)*1.5);
  c.save();c.beginPath();c.rect(0,0,W,Hh);c.clip();
- c.translate(W*.5-u.px*k,Hh*.60-u.py*k);c.scale(k,k);
+ c.translate(W*.5-cx*k,Hh*.58-cy*k);c.scale(k,k);
  /* 道(英雄の足元を通る帯) */
  c.fillStyle='#3a352c';c.fillRect(u.px-460,u.py-34,920,74);
  c.strokeStyle='rgba(242,236,220,.16)';c.lineWidth=2;c.setLineDash([16,14]);
