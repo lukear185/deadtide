@@ -148,7 +148,11 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  border-top:2px solid rgba(255,210,61,.6);border-bottom:2px solid rgba(255,210,61,.22);padding:5px 6px}
 .homehsub{position:absolute;left:0;right:0;top:auto;bottom:42px;text-align:center;font-weight:900;font-size:10.5px;
  letter-spacing:4px;color:var(--paper3);text-shadow:0 2px 0 #000;opacity:.9}
-.homeright{flex:1 1 auto;display:flex;flex-direction:column;gap:9px;min-width:0}
+/* ⚠`min-height:0` が要る=flexの子は既定で中身より小さくなれないので、
+   ▶続きからが出た時に**タイルが下へはみ出して切れた**(2026-08-03(108)ユーザー写真) */
+.homeright{flex:1 1 auto;display:flex;flex-direction:column;gap:9px;min-width:0;min-height:0}
+/* ▶続きから=出撃と並ぶ2つ目の大ボタン。⚠出撃より控えめにして高さを食わない */
+#bt-home-resume{flex:0 0 auto;width:100%;font-size:17px;letter-spacing:1px;padding:6px 10px}
 /* ⭐上の帯=左に小さな戻る / 右に所持の札 */
 .homebar{display:flex;align-items:center;gap:8px}
 /* ⚠押す所は44px(この画面の物差し)。文字だけの小さな四角にして機能タイルと見分けを付ける */
@@ -170,12 +174,20 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* ⚠⚠**`grid-auto-rows:1fr` が要る**=これが無いと行は中身の高さ(auto)で止まり、
    伸ばした箱の**下に謎の空きが残る**(2026-08-03(107)ユーザー指摘「下に謎の空間があって画面全体が上にズレてる」)。
    ⚠`.homebt{height:100%}` だけでは効かない=**行そのものが伸びていない**ため。 */
-.homegrid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:9px;flex:1 1 auto}
+.homegrid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:9px;flex:1 1 auto;min-height:0}
+/* ⭐⭐**▶続きからが出ている時はタイルを詰める**(`cmp`)。
+   ⚠**大ボタンが2つ並ぶと縦が足りなくなる**=台座と文字を一回り小さくして2行ぶんを収める。
+   ⚠押す所は `min-height:44px` で守る(下の .homebt)。 */
+.homegrid.cmp .homebt{padding:3px;gap:1px}
+.homegrid.cmp .homebt .hic{width:32px;height:32px;font-size:17px;border-radius:9px}
+.homegrid.cmp .homebt .hth{min-height:32px;padding:2px 4px}
+.homegrid.cmp .homebt b{font-size:12px}
+.homegrid.cmp .homebt i{font-size:10.5px}
 /* ⭐機能タイルはちょうど6つ(3×2)。⚠戻るはここに入れない(上の帯へ出した) */
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
 /* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
-.homebt{height:100%;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;
+.homebt{height:100%;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;overflow:hidden;
  background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:14px;color:var(--pane);
  box-shadow:0 4px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(242,236,220,.08)}
 .homebt:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.5)}
@@ -1077,7 +1089,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       </div>
       <button class="btn red homego" id="bt-map">🗺 出撃 <i>エリア1 — 生存圏の地図</i></button>
       <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
-      <div class="homegrid">
+      <div class="homegrid" id="home-grid">
         <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><b>編成</b><i id="hm-team-i"></i></button>
         <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><b>英雄</b><i id="hm-hero-i"></i></button>
         <!-- 🏋鍛錬所: 🔬研究所で🧬300を払うまでは**灰色の錠前**で置いておく(存在を先に見せる) -->
@@ -28854,6 +28866,8 @@ function renderHome(){
  HOMEH=H?H.id:'';
  const rb=$('bt-home-resume');
  if(rb){const d=loadRun();rb.style.display=d?'':'none';
+  /* ⚠大ボタンが2つ並ぶ時だけタイルを詰める=でないと下の段が画面から切れる(2026-08-03(108)) */
+  {const g9=$('home-grid');if(g9)g9.classList.toggle('cmp',!!d);}
   /* ⭐「どこの続きか」は拠点名で言う(難易度をUIから消した(93)の読み替えに揃える) */
   if(d){const nd9=MAPND.find(n9=>n9.stg===(d.stg||0)&&n9.d===(d.dif==null?2:d.dif));
    rb.textContent='▶ 続きから — '+(nd9?nd9.n:(STAGES[d.stg||0]||STAGES[0]).n)+' WAVE '+((d.wave||0)+1);}}

@@ -192,6 +192,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠**`trhome` を巻き込まない**='trhome'.indexOf('home') は2で当たるので、こちらが先に食っていた
         (2026-08-03に発覚。🏋鍛錬所のモーダルが撮れなくなっていた) */
      :(OPT.indexOf('home')>=0&&!TRH)?('META.tr0=1;META.pts=4820;META.gem=17;META.hmat=64;META.hero={hNox:1};META.hsel="hNox";'
+       /* ⭐hresume=▶続きからが出ている状態(⚠**大ボタンが2つ並ぶ一番きつい形**。
+          2026-08-03(108)にここでタイルが画面から切れていた=撮る口が無くて気付けなかった) */
+       +(OPT.indexOf('hresume')>=0?'try{localStorage.setItem(RUN_KEY,JSON.stringify({v:2,stg:0,dif:2,wave:4}));}catch(e){}':'')
        +'renderHome();show("home");for(var q9=0;q9<8;q9++)homeDraw(q9*.1);'
        /* htrain=ホームから🏋鍛錬所を開いた状態(いまの本当の動線) */
        +(OPT.indexOf('htrain')>=0?'META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:22};'
