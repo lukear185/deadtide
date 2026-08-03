@@ -4257,6 +4257,12 @@ const BNS_SQ=.80;
 const BNS_HARD=.5;    /* 到着時の体力の上乗せ(.5=1.5倍)。⚠上げすぎると轢けずに押すだけの面になる */
 const BNS_SPX=.18;    /* 到着時の足の速さの上乗せ */
 const BNS_DENS=.6;    /* 到着時の塊の大きさの上乗せ */
+/* 🌊⭐⭐(127)**海の面(2面)はゾンビが濃い**(ユーザー「海ステージのバスステージはゾンビの量を増やして、
+   たまに横一面にゾンビがいるところを道中作って」)。⚠1面は今までどおり。 */
+const BNS_SEA_DL=.62; /* 湧く間隔の倍率(小さいほど濃い)=約1.6倍の量 */
+const BNS_WALL_P=[.10,.26];/* 塊が「横一面の壁」になる率(1面/2面) */
+const BNS_WALL_N=[70,130]; /* 壁1枚の体数 */
+const BNS_WALL_R=90;  /* 壁の厚み(前後のばらつき) */
 const BNS_ELT=.055;   /* 終盤にエリート(👑・でかい・硬い)が混ざる率。⚠序盤は出さない */
 const BNS_MIX0=.07,BNS_MIXP=.26;/* 別の顔ぶれが混ざる率(出発時=7% → 到着時=33%)。⚠上げすぎると轢けなくなる */
 /* 🚗**壊せる障害物の種類**。r=当たりの半径 / sl=当たった時に残る速さ / c=色 / n=名前。
@@ -15993,12 +15999,20 @@ function tideStep(dt){
     let K=T.bnsK;
     /* ⭐**進むほど塊を大きく・少し詰める**(2026-08-02(37))=終盤ほど「壁のような群れ」になる */
     const pd9=pg9>=0?pg9:0;
-    if(!K||K.n<=0)K=T.bnsK={n:Math.round(ri(BNS_CL_N,BNS_CL_N2)*(1+pd9*BNS_DENS)),
-      d:rnd(BNS_AHEAD,BNS_AHEAD2),
-      o:rnd(-BNS_OFF*.72,BNS_OFF*.72),r:rnd(BNS_CL_R,BNS_CL_R2)*(1-pd9*.18)};
+    if(!K||K.n<=0){
+     /* 🧱⭐(127)**たまに「横一面の壁」**=道幅いっぱいに並ぶ列。⚠海の面ほど出やすい */
+     const wall=Math.random()<BNS_WALL_P[BSEA?1:0];
+     K=T.bnsK=wall
+      ?{wall:1,n:ri(BNS_WALL_N[0],BNS_WALL_N[1]),d:rnd(BNS_AHEAD,BNS_AHEAD2),o:0,r:BNS_WALL_R}
+      :{n:Math.round(ri(BNS_CL_N,BNS_CL_N2)*(1+pd9*BNS_DENS)),
+        d:rnd(BNS_AHEAD,BNS_AHEAD2),
+        o:rnd(-BNS_OFF*.72,BNS_OFF*.72),r:rnd(BNS_CL_R,BNS_CL_R2)*(1-pd9*.18)};
+     if(wall&&C.isMe&&G&&G.wave>0)toast('🧱 前方に壁のような群れ!',true);
+    }
     K.n--;
     z9.d=clamp(bd9-K.d+rnd(-K.r,K.r),0,PLEN);
-    z9.off=clamp(K.o+rnd(-K.r,K.r),-BNS_OFF,BNS_OFF);}
+    /* 🧱壁は**道幅いっぱい**に散らす(普通の塊は中心の周り) */
+    z9.off=K.wall?rnd(-BNS_OFF,BNS_OFF):clamp(K.o+rnd(-K.r,K.r),-BNS_OFF,BNS_OFF);}
    C.zombies.push(z9);}
   /* ⭐**濃い道が変わったら予告する**(2026-08-02(3))=見せないとただの当たり外れになる。
      ⚠**濃い側の1体が湧いた時にだけ見る**=薄く流している1体で切り替わると予告が嘘になる。 */
@@ -16014,7 +16028,8 @@ function tideStep(dt){
   if(e.boss){ev(ti2,'💀 '+zNameOf(e.z)+'がこっちに来た!',true);C.shake=.4;
    addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:RUST});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
    if(C.isMe)sfx.growl();}
-  T.qt+=(T.pool.length?T.pool[0].dl:0);
+  /* 🌊(127)海の面は湧く間隔を詰める=ゾンビの量が増える */
+ T.qt+=(T.pool.length?T.pool[0].dl:0)*((meV()&&meV().bus&&BSEA)?BNS_SEA_DL:1);
  }
 }
 function pushTide(C,tg){
@@ -20037,8 +20052,9 @@ function bnsHud(C){
    el.style.display=mv?'none':'';
    const sk=$('bstick');if(sk&&sk.style)sk.style.display=mv?'none':'';}
   if(mv)return;}
- const p=B.nitT>0?Math.round(B.nitT/(B.nitT0||BUS_NIT_T)*100):Math.round((B.nit||0)*100);
- const st=B.nitT>0?2:((B.nit||0)>=1?1:0);
+ /* ⚠(127)**帯はいつも「残っている量」**=押している間は減っていくのがそのまま見える */
+ const p=Math.round(clamp(B.nit||0,0,1)*100);
+ const st=B.nitT>0?2:((B.nit||0)>.02?1:0);
  if(p!==BNIT_P){BNIT_P=p;const b=el.firstElementChild;if(b&&b.style)b.style.height=p+'%';}
  if(st!==BNIT_R){BNIT_R=st;
   el.classList.toggle('rdy',st===1);el.classList.toggle('on',st===2);
@@ -20724,8 +20740,13 @@ cv.addEventListener('pointermove',e=>{if(AIM||FLAGAIM)aimPos=evtToMap(e);});
    ⚠pointerdown で撃つ=タップの遅れを入れない(押した瞬間に出るのが手応え)。 */
 (function(){
  const el=$('bnitro');if(!el||!el.addEventListener)return;
- el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{bnsNitro();}catch(x){}});
- el.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();});
+ /* 🔥⭐(127)**押している間だけ吹かす**=離した/指が外れた/画面から出た、を全部拾って止める。
+    ⚠1つでも拾い忘れると**押しっぱなしのまま止まらなくなる**(指を滑らせた時に起きる)。 */
+ el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();
+  try{el.setPointerCapture&&el.setPointerCapture(e.pointerId);}catch(x){}
+  try{bnsNitHold(true);}catch(x){}});
+ for(const ev of ['pointerup','pointercancel','pointerleave','lostpointercapture'])
+  el.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();try{bnsNitHold(false);}catch(x){}});
 })();
 /* ⚠🎯**🚌道中では砲撃を使わない**(2026-08-02(25)ユーザー「砲撃は無し」)=
    ボタンはCSSで隠してあるが、**照準に入る経路も塞ぐ**(盤面タップで撃てては意味が無い)。 */
@@ -21663,7 +21684,11 @@ const BNS_FIRST_X=3;              /* 初回クリアの🧬の倍率(⚠ステ�
        伸ばす前は木が約57,000本=**約1.5秒**だった。⚠**実機(スマホ)はこの3〜5倍**と見ておく。
        ⭐重くて待てない時のノブは **`BNS_TSP`(木の間隔)**=上げれば本数が減って軽くなる
        (⚠上げすぎると森が点々に戻る)。**道の長さは遊びの根幹なので先に削るのはこちら**。 */
-const BNS_W=3400,BNS_H=174650;
+/* ⭐⭐(127)**道をほぼ2倍にした**(174650→333000)=ユーザー「ずっとニトロ使うとゴールついちゃう。
+   5秒残しぐらいでゴールできちゃうから長さもっと長く。2倍ぐらいでもいいから絶対ゴールできないように」。
+   ⚠⚠**木の間隔(BNS_TSP)も一緒に上げること**=長さだけ倍にすると木が17万本になり、
+     読み込みが倍になる(実測で2.2秒→4秒超)。⭐面積が倍なら間隔を√2倍で**本数は据え置き**。 */
+const BNS_W=3400,BNS_H=333000;
 const BNS_CX=BNS_W/2,BNS_CY=BNS_H/2;/* 道の中心線(x)とマップの中心 */
 const BNS_GOALY=900;         /* 到着線(マップの上) */
 /* ⚠⚠**2026-08-02(39)に 1200→3800**=出発点の広場が**探索場**になり半径3000まで広がったので、
@@ -21798,7 +21823,7 @@ const BLD_VIS=[],TRE_VIS=[];/* 画面に入っている物の置き場(毎フレ
 /* ⭐**森の濃さのノブ**(2026-08-02(7))=木を置く間隔。⚠**木の半径(26〜48)より小さくする**こと
    =半径より広いと枝が重ならず、どれだけ本数を増やしても「点々」に戻る。
    ⚠重ければここを上げる(52→60で本数が3割減る)。 */
-const BNS_TSP=62;
+const BNS_TSP=86;/* ⚠(127)道を2倍にしたぶん間隔も広げて本数を据え置く(62→86) */
 /* ⚠⚠**木は数万本になるので、画面の外を毎フレーム舐めない**(2026-08-02(7))=
    粗い格子に振り分けておき、**画面に掛かる升だけ**を見る。これが無いと
    毎フレーム3万件の当たり外れ判定が走る。⚠索引の変数はファイルの上の方で宣言してある(TDZ)。 */
@@ -22758,7 +22783,11 @@ const BUS_SIDE=420;
    1試合の轢殺は1000体前後なので、110体で1回=**1試合で10回前後**の見当。
    ⭐実機で「なかなか溜まらない/溜まりすぎ」ならここだけ動かす。 */
 const BUS_NIT_K=1/110;  /* 1体轢くごとに溜まる量(=110体で満タン) */
-const BUS_NIT_T=3.0;    /* 続く秒数 */
+/* 🔥⚠⚠(127)**ニトロは「押している間だけ減る」**(ユーザー「押している時だけニトロを消費して、
+   押すのをやめたら消費が止まって普通にゾンビを轢いたら普通に回復。今だと無限に使えちゃってる」)。
+   ⚠それまでは**押した瞬間に満タンを使い切って3秒だけ効く**形だった=轢けば轢くほど即満タンに戻り、
+     実質使い放題だった。⭐**満タンから使い切るまでの秒数**に読み替える(=減る速さ)。 */
+const BUS_NIT_T=3.4;    /* 満タンで何秒吹かせるか(=1秒あたり 1/この値 減る) */
 const BUS_NIT_SP=1.8;   /* 最高速の倍率 */
 const BUS_NIT_ACC=1.7;  /* 加速の倍率 */
 const BUS_NIT_DPS=2.4;  /* 轢く力の倍率 */
@@ -23111,10 +23140,13 @@ function bnsBusStep(C,dt){
     門まで一直線に走らせるだけ。⚠**跡と粒(`bnsFxStep`)は回す**=止めると土埃も輪も動かない。 */
  if(B.mov){if(B.flashT>0)B.flashT-=dt;bnsArrStep(C,dt);bnsFxStep(C,dt);return;}
  /* 🔥ニトロ中は速さも轢く力も化ける。⚠**倍率は1か所で出す**(あちこちで掛けると必ずずれる) */
+ /* 🔥(127)**押している間だけ減る**。⚠離した瞬間に止まる=`nitT` は「いま吹いているか」の印だけ */
+ if(B.nitOn&&(B.nit||0)>0){
+  B.nit=Math.max(0,(B.nit||0)-dt/((B.nitT0||BUS_NIT_T)*(B.nit2?1.35:1)));
+  if(!B.nitT&&sfx.nitro)try{sfx.nitro();}catch(e){}
+  B.nitT=.12;
+ }else B.nitT=0;
  const nz9=B.nitT>0?1:0;
- if(B.nitT>0){B.nitT=Math.max(0,B.nitT-dt);
-  /* 🔋**二段ニトロ**=切れた瞬間に3分の1だけ溜まった状態に戻す(次が早い) */
-  if(B.nitT<=0&&B.nit2)B.nit=Math.max(B.nit||0,.34);}
  /* 🌊**高潮**(2面だけ)=**群れを寄せる+🌊波乗り**。⚠バスは押されも遅くもならない((69)で反転) */
  try{bnsSurgeStep(C,B,dt);}catch(e){}
  const ix=B.ix||0,iy=B.iy||0,il=Math.hypot(ix,iy),im=Math.min(1,il);
@@ -23468,17 +23500,21 @@ function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=
  C.bbod=[];C.bbodI=0;/* ⭐吹き飛んで転がる体(高さを持つ) */}
 /* 🔥⭐**ニトロを使う**(2026-08-02(23))。⚠**呼ぶのはボタンからだけ**にする(スティックと同じ作法)。
    ⚠満タンでない時は撃たせない=「押したのに何も起きない」を避けるため音で断る。 */
-function bnsNitro(){
- const C=meV();if(!C||!C.bus||!gameActive||PAUSED)return false;
+/* 🔥⭐⭐(127)**押している間だけ吹かす**(ユーザー指示)。⚠押した瞬間に使い切る形は捨てた。
+   ⚠**空でも押せる**(何も起きないだけ)=押すたびに警告音が鳴ると耳障りなので、鳴らすのは吹けた時だけ。 */
+function bnsNitHold(on){
+ const C=meV();if(!C||!C.bus)return false;
  const B=C.bus;
- if(B.nitT>0)return false;/* 使っている最中は二度押ししない */
- if((B.nit||0)<1){if(sfx.warn)sfx.warn();return false;}
- B.nit=0;B.nitT=(B.nitT0||BUS_NIT_T);B.nitN=(B.nitN||0)+1;
- if(sfx.nitro)sfx.nitro();
- if(FXLV>0){C.shake=Math.max(C.shake||0,.34);
-  /* 足元から輪が1枚(⚠1試合で数回しか出ないので盛ってよい=NOTESの「まとまった瞬間」) */
-  addFx(C,'ring',B.x,B.y,'',{r:BUS_R*1.6,col:'#ffb347'});}
- toast('🔥 ニトロ!',true);
+ if(on&&(!gameActive||PAUSED))return false;
+ const was=!!B.nitOn;
+ B.nitOn=!!on;
+ if(on&&!was){
+  if((B.nit||0)<=.02){if(sfx.warn)sfx.warn();return false;}
+  B.nitN=(B.nitN||0)+1;
+  if(FXLV>0){C.shake=Math.max(C.shake||0,.30);
+   /* 足元から輪が1枚(⚠吹かし始めだけ=押しっぱなしで出し続けない) */
+   addFx(C,'ring',B.x,B.y,'',{r:BUS_R*1.6,col:'#ffb347'});}
+ }
  return true;
 }
 /* 使い回しの輪へ1件積む。⚠**上限に達したら一番古い物を上書きする**(伸ばさない) */
@@ -23875,7 +23911,7 @@ function bnsSmash(C,o){
   if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;
    if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
    bnsScore(B,kb);
-   if(!nz)B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));}
+   B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));/* ⚠(127)ニトロ中でも普通に回復する */}
   if(C.isMe)try{sfxAt('boom',.9);}catch(e){}
  }else if(C.isMe)try{sfxAt(SFX_SMASH,.5);}catch(e){}
 }
@@ -23925,7 +23961,7 @@ function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy
    ⚠**轢く範囲を数値だけで広げない**=絵と当たりは必ず揃える掟(NOTES)。広げる物は装備として絵を足す。 */
 const BUP=[
  {k:'sp', r:0,ic:'🏎',n:'エンジン',  d:'スピード +7%',           mx:5,c:[30,60,110,190,300]},
- {k:'nt', r:0,ic:'🔥',n:'ニトロ増槽',d:'ニトロが 0.6秒 長い',     mx:4,c:[45,90,170,290]},
+ {k:'nt', r:0,ic:'🔥',n:'ニトロ増槽',d:'満タンで 0.6秒 長く吹ける',mx:4,c:[45,90,170,290]},
  {k:'ram',r:1,ic:'🛡',n:'排障器',    d:'ひき殺す力 +20%',         mx:5,c:[30,60,110,190,300]},
  {k:'tir',r:1,ic:'🛞',n:'タイヤ',    d:'加速が速い / よく曲がる', mx:3,c:[55,110,210]},
  {k:'crw',r:2,ic:'👥',n:'乗員',      d:'コンボが切れるまで +0.3秒',mx:4,c:[40,80,150,260]},
@@ -23963,7 +23999,7 @@ const BEQ=[
  /* ===== 🚌車体タブ(tb:0)=**車体そのものをいじる物**(エンジン・増槽・大きさ・内張り) ===== */
  {k:'blast',tb:0,r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを吹き飛ばす',      c:60},
  {k:'boost',tb:0,r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
- {k:'nit2', tb:0,r:0,ic:'🔋',n:'二段ニトロ',      d:'切れても3分の1だけ残る',      c:220},
+ {k:'nit2', tb:0,r:0,ic:'🔋',n:'大容量タンク',    d:'ニトロの減りが 26% 遅い',     c:220},
  /* 🚌⭐(115)**大きさは3段**(ユーザー「バスの車体でかくするやつは3段階のデカさを設けて、
     最終的に初期の1.5倍にして」)。⚠**キー(big/trail)はそのまま使い回す**=もう買った人の持ち物を消さない。
     ⚠❌「二階建て化」という名前はやめた=**真上から見る面なので階数は一度も見えず、
@@ -24096,7 +24132,7 @@ function bupApply(B,up,eq){
  B.gripX *=eq.tire ?1.15:1;         /* 🛞よく曲がる */
  B.sideX  =(eq.blade?(eq.saw2?2.2:1.7):1)*(eq.blast?1.6:1);/* 横へ弾く強さ */
  B.nitSpX =eq.boost?1.18:1;         /* 🚀ニトロ中の最高速 */
- B.nit2   =eq.nit2 ?1:0;            /* 🔋切れても3分の1残る */
+ B.nit2   =eq.nit2 ?1:0;            /* 🔋(127)ニトロの減りが遅くなる */
  /* 🔊引き寄せの強さ=**0=無 / 1=📢拡声器(近く・弱い) / 2=🔊サイレン(遠く・強い)** */
  B.siren  =eq.siren?2:(eq.horn?1:0);
  B.zap    =eq.zap?1:0;
@@ -24114,7 +24150,7 @@ function bnsZap(C,B,nz){
  if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;
   if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
   bnsScore(B,kb);
-  if(!nz)B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));}
+  B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));/* ⚠(127)ニトロ中でも普通に回復する */}
  B.zapT=.22;/* 絵(青い輪)を出す秒数 */
  if(FXLV>0)try{addFx(C,'ring',B.x,B.y,'',{r:EQ_ZAP_R*1.1,col:TECH});}catch(e){}
 }
@@ -25079,8 +25115,28 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.fillStyle=p==null?LIFE:(lk?'rgba(242,236,220,.34)':(ok?GOLD:'rgba(242,236,220,.45)'));
   /* ⚠⚠**短く書く**(2026-08-02(55)に撮って直した)=段が増えて札が低くなったので、
      長い文字だと**説明と値段が同じ行で重なる**。⭐印だけで足りる物は印だけにする。 */
-  c.fillText(p==null?(tab?'✅':'MAX'):(lk?'🔒':(BRES[u.r].ic+p)),
-             r.x+r.w-PAD,r.y+r.h-PAD);
+  /* 💰⭐⭐(127)**買えるかどうかを一目で**(ユーザー「今持ってるリソースで強化できるかできないかの
+     可視化をもっとわかりやすく」)。⚠それまでは**枠の色の濃さ**だけで、実機では見分けが付かなかった。
+     ⭐3つ足した: ①**左端に太い帯**(買える=金/足りない=灰/鍵=暗い) ②買える札は値段を**金の座布団**に置く
+     ③足りない札は**「あと⛽12」**と**不足分そのもの**を出す=何を貯めればいいかが数字で分かる。 */
+  {const bw=6*dp;
+   c.fillStyle=p==null?LIFE:(lk?'rgba(242,236,220,.18)':(ok?GOLD:'rgba(242,236,220,.22)'));
+   rr(c,r.x+2*dp,r.y+6*dp,bw,r.h-12*dp,bw*.5);c.fill();}
+  c.textAlign='right';
+  c.font='900 '+Math.round(15*dp*kz)+'px '+FF;
+  if(p==null){c.fillStyle=LIFE;c.fillText(tab?'✅':'MAX',r.x+r.w-PAD,r.y+r.h-PAD);}
+  else if(lk){c.fillStyle='rgba(242,236,220,.34)';c.fillText('🔒',r.x+r.w-PAD,r.y+r.h-PAD);}
+  else if(ok){/* ⭐買える=金の座布団に値段(押せる物がどれか、色で先に目に入る) */
+   const tx=BRES[u.r].ic+p,tw=c.measureText(tx).width;
+   c.fillStyle='rgba(255,207,106,.20)';
+   rr(c,r.x+r.w-PAD-tw-7*dp,r.y+r.h-PAD-16*dp*kz,tw+14*dp,22*dp*kz,6*dp);c.fill();
+   c.fillStyle=GOLD;c.fillText(tx,r.x+r.w-PAD,r.y+r.h-PAD);}
+  else{/* ⭐足りない=**あといくつ足りないか**を出す(⚠値段だけだと引き算を暗算させることになる) */
+   c.fillStyle='rgba(242,236,220,.40)';
+   c.font='900 '+Math.round(12*dp*kz)+'px '+FF;
+   c.fillText(BRES[u.r].ic+p,r.x+r.w-PAD,r.y+r.h-PAD-15*dp*kz);
+   c.fillStyle=DANGER;c.font='900 '+Math.round(14*dp*kz)+'px '+FF;
+   c.fillText('あと'+BRES[u.r].ic+(p-(Q.res[u.r]|0)),r.x+r.w-PAD,r.y+r.h-PAD);}
  }
  const g=R.go,pl=.5+.5*Math.sin(t*4);
  c.fillStyle='rgba(122,42,30,.96)';rr(c,g.x,g.y,g.w,g.h,10*dp);c.fill();

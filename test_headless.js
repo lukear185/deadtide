@@ -3016,33 +3016,42 @@ function checkRice(){
    if(!(Math.hypot(p9.vx,p9.vy)<50)){
     console.log('FAIL: 吹き飛んだ体が転がり止まらない v='+Math.round(Math.hypot(p9.vx,p9.vy)));process.exit(1);}
    B.vx=0;B.vy=0;}
-  B.nit=.5;
-  if(bnsNitro()!==false){console.log('FAIL: 満タンでないのにニトロが撃てる');process.exit(1);}
+  /* 🔥(127)**押している間だけ減る**形に変えた=見るのは「押している間だけ減るか」「離したら止まるか」 */
+  B.nit=0;B.nitOn=false;
+  bnsNitHold(true);bnsBusStep(me,1/60);
+  if(B.nitT>0){console.log('FAIL: 空なのにニトロが吹けている');process.exit(1);}
+  bnsNitHold(false);
   B.nit=1;
-  if(bnsNitro()!==true){console.log('FAIL: 満タンなのにニトロが撃てない');process.exit(1);}
-  if(!(B.nitT>0)){console.log('FAIL: ニトロが効いていない');process.exit(1);}
-  if(bnsNitro()!==false){console.log('FAIL: ニトロを二重に撃てる');process.exit(1);}
-  if(B.nit!==0){console.log('FAIL: 撃ったのにゲージが減っていない');process.exit(1);}
+  bnsNitHold(true);bnsBusStep(me,1/60);
+  if(!(B.nitT>0)){console.log('FAIL: 押しているのにニトロが効いていない');process.exit(1);}
+  {const n0=B.nit;for(let q=0;q<30;q++)bnsBusStep(me,1/60);
+   if(!(B.nit<n0-.05)){console.log('FAIL: 押している間にニトロが減っていない');process.exit(1);}
+   bnsNitHold(false);bnsBusStep(me,1/60);
+   if(B.nitT>0){console.log('FAIL: 離してもニトロが止まらない');process.exit(1);}
+   const n1=B.nit;for(let q=0;q<30;q++)bnsBusStep(me,1/60);
+   if(B.nit!==n1){console.log('FAIL: 離したのにニトロが減り続ける');process.exit(1);}}
+  B.nit=1;bnsNitHold(true);
   /* ③速さ=同じ入力・同じ秒数で、素の最高速を超えること。
      ⚠**道に沿って(上へ)走らせる**=横へ倒すと道幅の端で押し戻されて速さが出ない(2026-08-02(28)に踏んだ) */
   me.zombies.length=0;B.vx=B.vy=0;B.x=BNS_CX;B.y=BNS_CY;bnsStick(0,-1);
   for(let k=0;k<12;k++)bnsBusStep(me,.05);
   const spN=Math.hypot(B.vx,B.vy);
   if(!(spN>BUS_SP*1.3)){console.log('FAIL: ニトロで速くなっていない '+Math.round(spN));process.exit(1);}
-  /* ⑤⭐(115)**使っている間も溜まる**(ユーザー「ニトロは押した時だけ消費することにして」)。
-     ⚠それまでは『使用中は溜まらない』を検査していた=**方針が変わった**ので書き換えた。
-     ⭐減るのは**押した瞬間の1回だけ**。 */
+  /* ⑤⭐(127)**離していれば減らない・轢けば溜まる**(ユーザー「押している時だけ消費して、
+     押すのをやめたら消費が止まって普通にゾンビを轢いたら普通に回復」)。 */
+  bnsNitHold(false);bnsBusStep(me,1/60);
   const n0=B.nit;
   me.zombies.length=0;
   for(let k=0;k<10;k++){const z9=mkZ(zSpec(0,.02,1),200);z9.ln=0;z9.px=B.x;z9.py=B.y;me.zombies.push(z9);}
   for(let k=0;k<6;k++){for(const z of me.zombies){z.px=B.x;z.py=B.y;}bnsBusStep(me,.05);}
-  if(!(B.nit>n0)){console.log('FAIL: ニトロ中にゲージが溜まらない(押した時だけ消費のはず)');process.exit(1);}
-  /* ⚠**押していないのに減らない**=消費は押した瞬間だけ */
+  if(!(B.nit>n0)){console.log('FAIL: 轢いてもニトロが溜まらない');process.exit(1);}
   {const n1=B.nit;for(let k=0;k<6;k++)bnsBusStep(me,.05);
    if(B.nit<n1){console.log('FAIL: 押していないのにニトロが減っている');process.exit(1);}}
-  /* ④切れたら戻る */
-  me.zombies.length=0;
-  for(let k=0;k<Math.ceil(BUS_NIT_T/.05)+4;k++)bnsBusStep(me,.05);
+  /* ④押しっぱなしなら空になって止まる */
+  me.zombies.length=0;bnsNitHold(true);
+  for(let k=0;k<Math.ceil(BUS_NIT_T/.05)+40;k++)bnsBusStep(me,.05);
+  if(B.nit>0.001){console.log('FAIL: 押しっぱなしなのに空にならない');process.exit(1);}
+  bnsNitHold(false);bnsBusStep(me,1/60);
   if(B.nitT!==0){console.log('FAIL: ニトロが切れない');process.exit(1);}
   B.vx=B.vy=0;B.x=BNS_CX;B.y=BNS_CY;
   for(let k=0;k<12;k++)bnsBusStep(me,.05);
@@ -3083,11 +3092,12 @@ function checkRice(){
   B8.vx=0;B8.vy=0;m8.zombies.length=0;}
  /* ⑭ 🧟**しがみつき**=倒しきれない敵に当たり続けると最高速が落ち、ニトロで振り払える */
  {const m7=G.players[0],B7=m7.bus;
-  B7.grip=0;B7.nitT=0;B7.x=BNS_CX;B7.y=BNS_CY;B7.vx=0;B7.vy=0;m7.zombies.length=0;
+  B7.grip=0;B7.nitT=0;bnsNitHold(false);B7.x=BNS_CX;B7.y=BNS_CY;B7.vx=0;B7.vy=0;m7.zombies.length=0;
   for(let k=0;k<14;k++){const z7=mkZ(zSpec(0,60,1),200);z7.ln=0;z7.px=B7.x;z7.py=B7.y;m7.zombies.push(z7);}
   for(let k=0;k<30;k++){for(const z of m7.zombies){z.px=B7.x;z.py=B7.y;}bnsBusStep(m7,.05);}
   if(!(B7.grip>.2)){console.log('FAIL: 倒しきれない敵に当たっても沈まない grip='+B7.grip.toFixed(2));process.exit(1);}
-  B7.nitT=1;bnsBusStep(m7,.02);
+  /* ⚠(127)nitT は毎コマ作り直される=**押した状態**にしてから回すこと */
+  B7.nit=1;bnsNitHold(true);bnsBusStep(m7,.02);
   if(B7.grip!==0){console.log('FAIL: ニトロでしがみつきを振り払えない');process.exit(1);}
   B7.nitT=0;m7.zombies.length=0;
   for(let k=0;k<40;k++)bnsBusStep(m7,.05);

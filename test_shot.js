@@ -419,7 +419,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +'for(var k=0;k<70;k++)bnsPreStep(.02);':'')
      /* ⚠**強化画面は物資を持たせて撮る**=素寒貧だと全部灰色の札しか写らない。
         ⭐bnsup=🔧性能の枠 / bnseqp=🚌車体の枠 / bnsgep=⚔装備の枠(2026-08-02(63)にタブが3つになった) */
-     +((BPRE==='up'||BPRE==='eqp'||BPRE==='gep')?'Q.res[0]=150;Q.res[1]=110;Q.res[2]=95;Q.left=0;Q.st="up";'
+     +((BPRE==='up'||BPRE==='eqp'||BPRE==='gep')?'Q.res[0]=70;Q.res[1]=110;Q.res[2]=95;/* ⚠(127)1列目はわざと足りない額にする=「あと⛽○」の見え方も一緒に撮る */Q.left=0;Q.st="up";'
        +'Q.tab='+(BPRE==='gep'?2:BPRE==='eqp'?1:0)+';Q.up.sp=2;Q.up.ram=1;Q.eq.tire=1;Q.eq.wire=1;Q.eq.blast=1;Q.eq.plate=1;'
        +'if(G.players[0].bus){var B7=G.players[0].bus;bupApply(B7,Q.up,Q.eq);camOn(B7.x,B7.y,.62,BNS_SQ);camApply();}':'')
      +'}catch(e){document.title="ERR17 "+e.message;}},1200);'):'')
@@ -449,7 +449,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +(BNIT?('try{'+(BDRV?'':'if(k>110){var L7=LANES[(G.tide.hotLn!=null?G.tide.hotLn:0)],a7=L7.seg[0].a,'
        +'b7=G.players[0].bus,dx7=a7[0]-b7.x,dy7=a7[1]-b7.y,l7=Math.hypot(dx7,dy7)||1;'
        +'bnsStick(dx7/l7,dy7/l7);}')
-       +'if(k===n-40){var m7=G.players[0];m7.bus.nit=1;bnsNitro();}}catch(e7){}'):'')
+       +'if(k===n-40){var m7=G.players[0];m7.bus.nit=1;bnsNitHold(true);}}catch(e7){}'):'')
      /* ⚠⚠**カメラは rAF の中で動く**(gameStep には入っていない)ので、
         自分で時間を進める撮影では**camStep も一緒に回さないとカメラが置いていかれる**
         (バスが画面の外にいる絵になる。2026-08-02(24)に撮って気づいた)。 */
