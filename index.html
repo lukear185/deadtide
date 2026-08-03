@@ -1135,9 +1135,11 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #arc-ctl{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:flex-end;gap:6px;padding:8px 10px}
 #arc-ctl.off{opacity:.45;pointer-events:none}
 #arc-l,#arc-r,#arc-duck,#arc-helm{flex:0 0 auto;min-width:56px;min-height:56px;font-size:20px}
-.arcsl{flex:1 1 0;background:rgba(24,20,16,.85);border:3px solid var(--ink);border-radius:12px;padding:4px 9px 6px}
-.arcsl b{display:block;font-size:11px;font-weight:900;color:var(--paper3)}
-.arcsl input{width:100%;height:44px}/* ⚠44px(押す所の物差し) */
+/* 🎯(130)狙いの読み取り(押す所ではない) */
+.arcaim{flex:1 1 0;background:rgba(24,20,16,.85);border:3px solid var(--gold);border-radius:12px;
+ padding:5px 10px;min-height:56px;display:flex;flex-direction:column;justify-content:center}
+.arcaim b{font-size:20px;font-weight:900;color:var(--gold);line-height:1.05}
+.arcaim i{font-style:normal;font-size:12px;font-weight:900;color:var(--paper3)}
 #arc-fire{flex:0 0 auto;min-width:100px;min-height:56px}
 #arc-end{position:absolute;left:0;right:0;bottom:0;z-index:4;display:none;align-items:center;justify-content:center;gap:10px;padding:8px 10px}
 #arc-end.on{display:flex}
@@ -1426,8 +1428,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div id="arc-ctl">
     <button class="btn" id="arc-l">←</button>
     <button class="btn" id="arc-r">→</button>
-    <div class="arcsl" id="arc-sl-a"><b id="arc-la">角度 45°</b><input type="range" id="arc-ang" min="10" max="85" value="45"></div>
-    <div class="arcsl" id="arc-sl-p"><b id="arc-lp">威力 70</b><input type="range" id="arc-pow" min="30" max="100" value="70"></div>
+    <!-- 🎯(130)**狙いは画面を指でなぞって決める**(スライダーは廃止)。ここは読み取り専用の表示 -->
+    <div class="arcaim" id="arc-aim"><b id="arc-la">45°</b><i id="arc-lp">威力 70</i></div>
     <button class="btn" id="arc-duck" style="display:none" aria-label="しゃがむ">🦆</button>
     <button class="btn" id="arc-helm" style="display:none" aria-label="ヘルメット">⛑</button>
     <button class="btn red" id="arc-fire">🏹 射る</button>
@@ -30443,6 +30445,26 @@ function arcFoeFire(){
 }
 function arcMsg(s,sec){ARC.msg=s;ARC.msgT=sec||2.2;}
 /* ⭐(126)**一マス移動はいつでもできる**(矢が飛んでいる間と決着後だけ不可) */
+/* 🎯⭐⭐⭐(130)**狙いは指でなぞって決める**(ユーザー「威力と方向の調整方法 もっと感覚的な操作で」)。
+   ⚠⚠スライダー2本は**数字を合わせる作業**になっていて、弓を引く手触りが無かった。
+   ⭐**なぞった向き=矢の向き / なぞった長さ=威力**。指を離した瞬間に飛ぶ(離す=弦を離す)。
+   ⚠**短すぎるなぞりは撃たない**(触っただけの誤射を防ぐ)。⚠盤面は押す所にしない(検査の掟)。 */
+const ARC_DRAG=150;/* この長さ(画面px)で威力100 */
+function arcDragTo(ev,fire){
+ const A=ARC,cv9=$('arccv');if(!A||!cv9||A.over||A.ar||A.ph!=='aim')return;
+ const r=cv9.getBoundingClientRect();
+ const x=(ev.clientX!=null?ev.clientX:0)-r.left,y=(ev.clientY!=null?ev.clientY:0)-r.top;
+ if(!A.drag){A.drag={x0:x,y0:y,x:x,y:y};return;}
+ A.drag.x=x;A.drag.y=y;
+ const dx=x-A.drag.x0,dy=A.drag.y0-y;/* ⚠画面のyは下向き=上へなぞったら正 */
+ const len=Math.hypot(dx,dy);
+ if(len>6){
+  A.ang=Math.round(clamp(Math.atan2(Math.max(0,dy),Math.abs(dx)||.0001)*180/Math.PI,10,85));
+  A.pow=Math.round(clamp(30+len/ARC_DRAG*70,30,100));
+ }
+ if(fire){const ok9=len>18;A.drag=null;if(ok9)arcFire();else arcMsg('もう少し長くなぞる(短いと撃たない)',2);arcUI();}
+ else arcUI();
+}
 /* ⭐(129)動ける/道具を使えるのは**相手が狙っている間だけ** */
 const arcFree=()=>{const A=ARC;return !!A&&!A.over&&!A.ar&&A.ph==='ethink';};
 function arcMove(d){
@@ -30556,8 +30578,8 @@ function arcUI(){
  const A=ARC;if(!A)return;
  const hp=(n)=>'♥'.repeat(Math.max(0,n))+'·'.repeat(Math.max(0,ARC_HP-n));
  const me=$('arc-me'),fo=$('arc-foe'),ms=$('arc-msg');
- if(me)me.textContent='🏹 '+hp(A.me.hp)+'  👣'+A.me.steps+'  '+(A.me.c*ARC_CELL/10|0)+'m';
- if(fo)fo.textContent=hp(A.foe.hp)+' 🎯';
+ if(me)me.textContent='🏹'+hp(A.me.hp)+' 👣'+A.me.steps+' '+(A.me.c*ARC_CELL/10|0)+'m';
+ if(fo)fo.textContent='第'+A.round+'射　'+hp(A.foe.hp)+'🎯';
  if(ms)ms.textContent=A.msgT>0?A.msg:(A.ph==='aim'?'角度と威力を決めて射る(⚠動けるのは相手が狙っている間だけ)':(A.ph==='ethink'?'🎯 相手が狙っている — いまなら動ける':'相手の番'));
  const ctl=$('arc-ctl'),en=$('arc-end');
  if(en)en.classList.toggle('on',!!A.over);
@@ -30573,8 +30595,8 @@ function arcUI(){
  const free9=arcFree();
  for(const q of ['arc-l','arc-r']){const e=$(q);if(e)e.disabled=(A.me.steps<1||!free9);}
  const la=$('arc-la'),lp=$('arc-lp');
- if(la)la.textContent='角度 '+A.ang+'°';
- if(lp)lp.textContent='威力 '+A.pow;
+ if(la)la.textContent=A.ang+'°';
+ if(lp)lp.textContent='威力 '+A.pow+(A.ph==='aim'?'　—　画面をなぞって狙う':'');
 }
 function arcDraw(t){
  const A=ARC,cv9=$('arccv');if(!A||!cv9)return;
@@ -30643,6 +30665,20 @@ function arcDraw(t){
   c.strokeStyle='#f2ecdc';c.lineWidth=4;c.beginPath();c.moveTo(-26,0);c.lineTo(10,0);c.stroke();
   c.fillStyle='#f2ecdc';c.beginPath();c.moveTo(16,0);c.lineTo(4,-5);c.lineTo(4,5);c.closePath();c.fill();
   c.restore();}
+ /* 🎯(130)なぞっている間=**指の跡と力の帯**を出す(どれだけ引いたかが見える) */
+ if(A.drag&&A.ph==='aim'&&!A.ar){
+  const sc9=W/ARC_VIEW;/* 画面px → 世界px */
+  const gx=arcCX(A.me.c),gy=arcGround(gx)-30;
+  const dx=(A.drag.x-A.drag.x0)/sc9,dy=(A.drag.y-A.drag.y0)/sc9;
+  c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=4;c.setLineDash([6,8]);
+  c.beginPath();c.moveTo(gx,gy);c.lineTo(gx+dx,gy+dy);c.stroke();c.setLineDash([]);
+  /* 力の帯(引くほど伸びて色が濃くなる) */
+  const pk=(A.pow-30)/70;
+  c.fillStyle='rgba(24,20,16,.7)';rr(c,gx-46,gy-62,92,13,6);c.fill();
+  c.fillStyle=pk>.8?DANGER:GOLD;rr(c,gx-43,gy-59,86*pk,7,4);c.fill();
+  c.fillStyle=PANE;c.font='900 20px '+FF;c.textAlign='center';
+  c.fillText(A.ang+'° / '+A.pow,gx,gy-70);
+ }
  /* 狙いの目安(自分の番だけ)。⚠**軌道は最後まで見せない**=見せると勘の遊びが消える */
  if(A.ph==='aim'&&!A.over&&!A.ar){
   const a=A.ang*Math.PI/180,v=A.pow*ARC_V,sx=arcCX(A.me.c),sy=arcGround(sx)-30;
@@ -30677,8 +30713,7 @@ function arcOpen(){
 }
 function arcPlay(){
  ARC=arcNew();
- const a=$('arc-ang'),p=$('arc-pow');
- if(a)a.value=ARC.ang;if(p)p.value=ARC.pow;
+
  arcMsg('第1射 — 相手は遠くの霧の向こう。当てずっぽうで撃つしかない',3.4);
  arcUI();show('arcg');
 }
@@ -30687,9 +30722,18 @@ try{
  $('bt-arc-back').onclick=()=>show('title');
  $('bt-arc-play').onclick=()=>arcPlay();
  $('bt-arc-how').onclick=()=>toast('🏹 相手は見えない。角度と威力を決めて射る(押したらすぐ飛ぶ)。3回当てたら勝ち。地面は1マス4m=矢は必ず1マスに刺さる。ターンごとに👣歩数+1、←→でいつでも1マス動ける',true);
- $('arc-ang').oninput=e=>{if(ARC){ARC.ang=+e.target.value;arcUI();}};
- $('arc-pow').oninput=e=>{if(ARC){ARC.pow=+e.target.value;arcUI();}};
+
  $('arc-fire').onclick=()=>arcFire();
+ /* 🎯(130)盤面をなぞって狙う。⚠**onclick は付けない**(全画面なので検査で重なり扱いになる) */
+ {const cv9=$('arccv');
+  if(cv9&&cv9.addEventListener){
+   cv9.addEventListener('pointerdown',e=>{e.preventDefault();
+    try{cv9.setPointerCapture&&cv9.setPointerCapture(e.pointerId);}catch(x){}
+    if(ARC&&ARC.ph==='aim'&&!ARC.ar&&!ARC.over){ARC.drag=null;arcDragTo(e,0);}});
+   cv9.addEventListener('pointermove',e=>{if(ARC&&ARC.drag){e.preventDefault();arcDragTo(e,0);}});
+   for(const ev of ['pointerup','pointercancel','lostpointercapture'])
+    cv9.addEventListener(ev,e=>{if(ARC&&ARC.drag){e.preventDefault();arcDragTo(e,1);}});
+  }}
  $('arc-duck').onclick=()=>arcDuck();
  $('arc-helm').onclick=()=>arcHelm();
  $('arc-l').onclick=()=>arcMove(-1);

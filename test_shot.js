@@ -191,7 +191,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :(OPT.indexOf('bsg')>=0)?('META.brec=[{s:7400}];'
        +(OPT.indexOf('bsgot')>=0?'META.bsg=[7];':'')+'openBsg(0);')
      /* 🏹(125)arc=弓比べのホーム / arcg=弓比べの盤面(arcmv で相手のターン=移動の帯) */
-     :(OPT.indexOf('arcg')>=0)?('arcPlay();'+(OPT.indexOf('arcmv')>=0?'ARC.ph="ethink";ARC.me.duck=1;ARC.me.helm=1;ARC.cam=arcCX(ARC.foe.c);ARC.camT=ARC.cam;arcUI();':''))
+     :(OPT.indexOf('arcg')>=0)?('arcPlay();'+(OPT.indexOf('arcdrag')>=0?'ARC.drag={x0:300,y0:300,x:430,y:200};ARC.ang=38;ARC.pow=88;arcUI();':'')+(OPT.indexOf('arcmv')>=0?'ARC.ph="ethink";ARC.me.duck=1;ARC.me.helm=1;ARC.cam=arcCX(ARC.foe.c);ARC.camT=ARC.cam;arcUI();':''))
      :(OPT.indexOf('arc')>=0)?'arcOpen();'
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
