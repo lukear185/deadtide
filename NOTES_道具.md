@@ -204,7 +204,9 @@ node test_shot.js out.png 852 393 "gacha5+gbang" # 💎召集(gacha=撃て! / +g
                                                 #   +gcard=結果カード / +gres=結果ウィンドウ / gacha5=★5 / +gt0/1/2=タレットの段)
 node test_shot.js out.png 852 393 "gacha+gopen"   # 💎召集画面(引く前・目玉の英雄)。+gdex=📖図鑑 / +grate=確率
 node test_shot.js out.png 852 393 "gacha+gopen+gowned" # 目玉が下のレア度に降りた時の絵(★5まで持っている状態)
-node test_shot.js out.png 852 393 trhome         # 🏋鍛錬所(既定=⚔冒険タブ。trzoo=図鑑 / trhero=🔧鍛える)
+node test_shot.js out.png 852 393 home+htrain    # ⭐🏋鍛錬所(いまの動線=ホームから開く)
+node test_shot.js out.png 852 393 trhome        # 🏋鍛錬所を単体で(既定=🦸鍛える。trzoo=図鑑 / tradv=⚔冒険)
+  # ⚠2026-08-03: 'trhome' に 'home' が含まれるのでホームの枝が先に食っていた(撮れなくなっていた)。直した。
 node test_shot.js out.png 852 393 rpg            # ⚔冒険の拠点の町 / rpgf=エリア / rpgb=戦闘 / rpgg=門 / rpgs=つよさ
 node test_shot.js out.png 852 393 "u=snp+uchg=0.8"  # ⭐溜めの途中で止めて撮る(攻撃モーション用)
 node test_shot.js out.png 852 393 hstat          # 🦸英雄ステータス(hs=hNox でその1人を選んだ状態)
