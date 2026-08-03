@@ -3038,9 +3038,13 @@ const TOWERS=[
     タワーとは別軸。専用の支援枠2つにしか建たず、タワーの解放チェーンにも研究所にも出さない。
     ⚠タワーの強化はしないこと(ユーザー指示)。効いてよいのは 情報 / 部隊 / 経済 の3軸だけ。
     ⚠必ず配列の最後(TOWERSの末尾)に置く。T_PLAYで解放チェーンと切り分けている */
- {id:'radio',n:'電波塔',cost:380,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
- {id:'medic',n:'野戦病院',cost:420,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:LIFE,dsc:'部隊全員のHPを毎秒16回復し、出撃の待ち時間を20%短縮'},
- {id:'depot',n:'物資投下所',cost:460,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
+ /* ⚠⚠(113)**電波塔と物資投下所は外した**(ユーザー「電波塔いらない。あと物資なんとかも」)。
+    ⚠**配列からは消さない**=消すと後ろのグレードアップ専用の番号が2つずれ、
+      中断データ(saveRunは塔を**番号**で持つ)の廃品工房が別の塔に化ける。
+    ⭐`off:1` で建設リストからも建てる判定からも外している(戻すならこの印を消すだけ)。 */
+ {id:'radio',off:1,n:'電波塔',cost:380,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
+ {id:'medic',n:'野戦病院',cost:420,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:LIFE,dsc:'部隊全員のHPを毎秒16回復(🦸英雄は毎秒1.2%)し、出撃の待ち時間を20%短縮'},
+ {id:'depot',off:1,n:'物資投下所',cost:460,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
  /* ===== グレードアップ専用(grd:1) =====
     ⭐廃品工房は⚙️産出・⏩サイクルとも最大まで上げると次の段へ建て替えられる(2026-07-26ユーザー指示)。
     **🏭廃品工房 → ⬆上級廃品工房 → ⬆⬆廃品プラント** の3段。
@@ -4328,7 +4332,7 @@ function loadStage(si){
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
  SEG.avg=PLEN/Math.max(1,SEG.length);SEG.vdy=0;/* ⚠y の索引は「y で等間隔に打った道」だけ(=開拓便) */
- SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of (S.sup||SUP_SLOTS))SLOTS.push(e.slice());
+ SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of (S.sup||SUP_SLOTS).slice(0,SUP_MAX))SLOTS.push(e.slice());/* ⚠(113)使う枠のぶんだけ作る */
  AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
  CORE=PATH[PATH.length-1].slice();
  /* ⭐道路(侵入路)は**マップ矩形の外**(x>MW)まで伸びている。対戦のミニ盤面と重ねないためには、
@@ -4406,7 +4410,11 @@ const ECO_SLOTS=[[129,213],[253,211],[374,211]];
    建てる前に⚙️で枠を解放する必要がある(左から順) */
 const SUP_SLOTS=[[560,235],[1160,235]];/* 既定値(STAGES[].sup が無い時だけ使う) */
 const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定(通常22+工房3+支援2=27) */
-const SUP_BASE=ECO_BASE+ECO_MAX,SUP_MAX=2;
+/* ⚠(113)**支援枠は1つ**=建てられる支援施設が🏥野戦病院だけになったため(2つ目は永久に空く)。
+   ⚠「同じ施設は1つまで」の決まりがあるので、枠だけ増やしても埋まらない。 */
+const SUP_BASE=ECO_BASE+ECO_MAX,SUP_MAX=1;
+/* 🏥(113)**英雄の回復は最大HPの割合**(毎秒1.2%=HP5400なら約65/秒)。⚠兵科は毎秒16のまま */
+const SUP_HERO_P=.012;
 const isEcoSlot=si=>si>=ECO_BASE&&si<SUP_BASE;
 const isSupSlot=si=>si>=SUP_BASE;
 const supUnlocked=(C,si)=>(si-SUP_BASE)<(C&&C.supN||0);
@@ -16687,6 +16695,7 @@ function buildTower(C,si,ti){
  /* 支援施設はタワーの解放チェーン(unlocked)の外。それ以外は解放済みの物だけ */
  if(T.type!=='sup'&&ti>=C.unlocked)return false;
  /* 廃品工房・支援施設は専用スロット専用。逆に専用スロットにはそれしか建てられない */
+  if(T.off)return false;/* (113)外した施設は建てられない */
  if(isSupSlot(si)){if(T.type!=='sup'||!supUnlocked(F,si))return false;
   /* 同じ支援施設は1つまで(2枠に同じ物を2つ建てさせない) */
   for(let k=SUP_BASE;k<SLOTS.length;k++)if(F.towers[k]&&F.towers[k].ti===ti)return false;}
@@ -17650,9 +17659,15 @@ function campStep(C,dt,wave){
    const T=TOWERS[tw.ti];if(!T||T.type!=='sup')continue;
    if(T.supH)sh+=T.supH;if(T.supCd)scd*=T.supCd;if(T.supD)dep=1;if(T.id==='radio')rad=1;}
   C.supH=sh;C.supCd=scd;C.supRadio=rad;C.supDepot=dep;}
- /* 🏥野戦病院: 部隊を回復する */
+ /* 🏥野戦病院: 部隊を回復する。
+    ⭐⭐(113)**英雄にもちゃんと効くようにした**(ユーザー「野戦病院はヒーローも回復するようにして」)。
+    ⚠**元から英雄も C.units に居るので「回復していた」のは事実**だが、
+      毎秒16は**HP5400〜7000の英雄には0.3%/秒**=見た目にも手応えにも何も起きていなかった。
+    ⭐英雄だけ**最大HPの割合**で回復する(`SUP_HERO_P`)=どの英雄でも同じ体感になる。
+    ⚠兵科側(毎秒16)は1ミリも変えない=難易度を動かさないため。 */
  if(C.supH>0)for(const u of C.units){if(u.dead||u.hp>=u.mhp)continue;
-  u.hp=Math.min(u.mhp,u.hp+C.supH*dt);
+  const hl=u.hro?Math.max(C.supH,u.mhp*SUP_HERO_P):C.supH;
+  u.hp=Math.min(u.mhp,u.hp+hl*dt);
   if(FXLV===2&&Math.random()<dt*.5)addP(C,1,u.px,u.py-20*CH_UP,{sp:14,up:34,g:-40,life:.7,r:2.2,col:LIFE});}
  /* タワー */
  /* ⚠**炉心の番人の『炉心解放』**(atkT)はここだけで効かせる=タワー全部に一律+60% */
@@ -20089,10 +20104,10 @@ function openBM(si){
   h=`<div id="bm-title">🏭 工房スロット ${si-ECO_BASE+1}/${ECO_MAX}</div>`+
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'増設すると廃品工房をもう1基建てられる':'左の枠から順に増設できる'}</div>`+
    `<div class="bm-row"><button class="btn gold sm" id="bm-eco" ${nextOk&&p!=null?'data-p="'+p+'"':''} ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 増設 ⚙️'+fmt(p):'MAX'}</button></div>`;
- }else if(!tw){h='<div id="bm-title">'+(sSlot?'🏗 支援施設を建設':eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div>'+(sSlot?'<div class="cdsc" style="font-size:12px;margin:2px 0 6px;color:var(--paper)">タワーの性能には影響しない。同じ施設は1つまで</div>':'')+'<div class="bm-grid">';
+ }else if(!tw){h='<div id="bm-title">'+(sSlot?'🏗 支援施設を建設':eSlot?'🏭 廃品工房を建設':'🔨 タワー建設')+'</div>'+(sSlot?'<div class="cdsc" style="font-size:12px;margin:2px 0 6px;color:var(--paper)">タワーの性能には影響しない。部隊と🦸英雄を支える枠</div>':'')+'<div class="bm-grid">';
   for(let i=0;i<TOWERS.length;i++){const T=TOWERS[i];
    const want=sSlot?'sup':eSlot?'eco':'';
-   if(T.grd)continue;/* グレードアップ専用は建設リストに出さない */
+   if(T.grd||T.off)continue;/* グレードアップ専用と、外した施設は建設リストに出さない */
    if(want){if(T.type!==want)continue;}
    else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
    h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}

@@ -3557,7 +3557,8 @@ function checkSup(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
  const me=G.players[0];me.scrap=99999;
- const sti=TOWERS.findIndex(T=>T.type==='sup');
+ /* ⚠(113)**建てられる支援施設**を探す=先頭の電波塔は off なので findIndex だと外れを掴む */
+ const sti=TOWERS.findIndex(T=>T.type==='sup'&&!T.off);
  if(sti<0||sti<T_PLAY){console.log('FAIL: 支援施設がTOWERSの末尾に無い');process.exit(1);}
  /* 未解放の支援枠には建たない */
  if(buildTower(me,SUP_BASE,sti)){console.log('FAIL: 未解放の支援枠に建った');process.exit(1);}
@@ -3574,20 +3575,35 @@ function checkSup(){
  me.ucd[0]=0;deployUnit(me,0);
  const u=me.units[0];if(u){u.hp=1;campStep(me,.5,G.wave);
   if(!(u.hp>1)){console.log('FAIL: 野戦病院が回復していない');process.exit(1);}}
- /* 同じ施設は2つ建たない */
+ /* 🦸(113)**英雄も「ちゃんと」回復する**=元から回復してはいたが毎秒16では
+    HP5400〜7000の英雄に何も起きていなかった。⚠**兵科より速く**回復することを見る */
+ {me.hUi=hUiOf(HEROES.find(h=>h.rk===5).id);me.hOut=0;
+  if(!heroDeploy(me)){console.log('FAIL: 検査用の英雄が出せない');process.exit(1);}
+  const hu=me.units.filter(x=>x.hro)[0];
+  if(!hu){console.log('FAIL: 英雄が部隊に居ない');process.exit(1);}
+  hu.hp=Math.round(hu.mhp*.5);const h0=hu.hp;
+  campStep(me,.5,G.wave);
+  const gain=hu.hp-h0;
+  if(gain<=0){console.log('FAIL: 野戦病院が英雄を回復していない');process.exit(1);}
+  /* 毎秒 SUP_HERO_P の割合ぶん(0.5秒ぶん)は入っているか。⚠丸めの余裕を少し見る */
+  const want=hu.mhp*SUP_HERO_P*.5;
+  if(gain<want*.8){console.log('FAIL: 英雄の回復量が割合になっていない '+gain+'(想定'+Math.round(want)+')');process.exit(1);}
+  if(!(gain>16*.5*2)){console.log('FAIL: 英雄の回復が兵科と同じ量のまま');process.exit(1);}}
+ /* ⚠(113)**外した支援施設は建たない**(電波塔/物資投下所)。⚠配列には残してあるので番号は引ける */
+ for(const oid of ['radio','depot']){
+  const oi=TOWERS.findIndex(T=>T.id===oid);
+  if(oi<0){console.log('FAIL: '+oid+' が TOWERS から消えている(番号がずれる)');process.exit(1);}
+  if(!TOWERS[oi].off){console.log('FAIL: '+oid+' に off の印が無い');process.exit(1);}
+  me.towers[SUP_BASE]=null;
+  if(buildTower(me,SUP_BASE,oi)){console.log('FAIL: 外したはずの '+TOWERS[oi].n+' が建った');process.exit(1);}}
+ /* ⚠支援枠は1つだけ(2つ目は開かない) */
+ if(SUP_MAX!==1){console.log('FAIL: 支援枠が1つになっていない');process.exit(1);}
  doPurchase(me,'supslot',{});
- if(buildTower(me,SUP_BASE+1,tim)){console.log('FAIL: 同じ支援施設が2つ建った');process.exit(1);}
- /* 物資投下所: ウェーブ開始で補給が届く */
- const tid2=TOWERS.findIndex(T=>T.id==='depot');
- buildTower(me,SUP_BASE+1,tid2);campStep(me,.02,G.wave);
- if(!me.supDepot){console.log('FAIL: 物資投下所が効いていない');process.exit(1);}
- const s0=me.scrap,u0=me.up||0,c0=me.core,ch0=me.charge;
- let got=false;for(let k=0;k<40&&!got;k++){resetCampWave(me);
-  if(me.scrap>s0||(me.up||0)>u0||me.core>c0||me.charge>ch0||me.ucd.every(v=>v===0))got=true;}
- if(!got){console.log('FAIL: 補給が一度も届かない');process.exit(1);}
+ if((me.supN||0)!==1){console.log('FAIL: 支援枠が上限を超えて開いた');process.exit(1);}
  /* 支援施設は解放チェーンに混ざらない */
  if(metaTowerCap()>T_PLAY){console.log('FAIL: 支援施設が解放チェーンに混ざっている');process.exit(1);}
- console.log('支援施設: 枠は⚙️解放制・専用枠のみ・同じ物は1つまで・野戦病院と物資投下所の効果OK');
+ console.log('支援施設: 枠1つ(⚙️解放制・専用枠のみ)・🏥野戦病院は部隊も🦸英雄(割合)も回復・'
+  +'外した電波塔/物資投下所は建たない OK');
  backTitle();
 }
 /* 🎒⭐⭐⭐**走る前の流れ**(2026-08-02(43)ユーザー決定の1試合の流れ①〜④)。見るのは8つ:
