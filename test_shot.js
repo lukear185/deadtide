@@ -190,6 +190,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         bsgot=最初の3段を受け取り済みにして撮る(✅と次の段の棒が両方映る) */
      :(OPT.indexOf('bsg')>=0)?('META.brec=[{s:7400}];'
        +(OPT.indexOf('bsgot')>=0?'META.bsg=[7];':'')+'openBsg(0);')
+     /* 🏹(125)arc=弓比べのホーム / arcg=弓比べの盤面(arcmv で相手のターン=移動の帯) */
+     :(OPT.indexOf('arcg')>=0)?('arcPlay();'+(OPT.indexOf('arcmv')>=0?'ARC.ph="eaim";ARC.t=3;arcUI();':''))
+     :(OPT.indexOf('arc')>=0)?'arcOpen();'
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
      /* 🏠home=シングルプレイのホーム / 🗺worldmap=エリアマップ(2026-08-03(93)) */

@@ -69,6 +69,10 @@ const SCENES=[
  ['英雄ステータス',      'MDX();openHStat("hLupi","gacha");'],
  ['砲撃を選ぶ',          'renderStkPick();MD("md-stk");'],
  ['オプション',          'optRender();MD("md-opt");'],
+ /* 🏹(125)弓比べ=別ゲーム。ホームと盤面の両方を測る(盤面は下の操作の帯が要になる) */
+ ['🏹弓比べ ホーム',     'MDX();arcOpen();'],
+ ['🏹弓比べ 盤面',       'MDX();arcPlay();'],
+ ['🏹弓比べ 盤面(移動)', 'MDX();arcPlay();ARC.ph="eaim";arcUI();'],
 ];
 
 /* ---- ページの中で走る測定器 ---- */

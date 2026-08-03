@@ -1099,6 +1099,55 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #flagbtn .ico{height:1.55em;width:1.55em;vertical-align:-.4em}
 #strikebtn .ico{height:1.5em;width:1.5em;vertical-align:-.35em}
 #herobtn .ico{height:1.9em;width:1.9em;vertical-align:-.3em}
+/* ============ 🏹 弓比べ(お遊びの別ゲーム。2026-08-04(125)ユーザー指示) ============
+   ⭐**DEADTIDE本編とは別のゲーム**=タイトルの🏹から入って、専用のホームと盤面を持つ。
+   ⚠本編の仕組み(G/META.sc/波)には一切ぶら下げない=壊しようがない作りにする。 */
+/* ⚠⚠(125)**右上は駄目**=版の札とも🛡シングルプレイのボタンとも重なる(検査が落ちた)。⭐左下へ置いた */
+#arcbtn{position:absolute;left:10px;bottom:10px;z-index:6;min-height:44px;min-width:44px;padding:5px 11px;
+ border:3px solid var(--gold);border-radius:12px;background:rgba(36,31,25,.85);color:var(--pane);
+ font-family:inherit;font-weight:900;font-size:20px;line-height:1.1;cursor:pointer}
+#arcbtn i{display:block;font-style:normal;font-size:10.5px;color:var(--paper3);margin-top:1px}
+#arcbtn:active{transform:translateY(2px)}
+#scr-arc{display:none;position:absolute;inset:0;overflow:hidden}
+#scr-arc.on{display:block}
+#arcbg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.arcwrap{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:8px;padding:10px}
+.arclogo{font-size:34px;font-weight:900;color:var(--pane);text-shadow:0 3px 0 #000,0 0 18px rgba(232,163,61,.5);letter-spacing:2px}
+.arcsub{font-size:11.5px;font-weight:900;color:var(--paper3);letter-spacing:1px}
+.arcwrap .menu{width:min(420px,86%);display:flex;flex-direction:column;gap:8px}
+/* ⚠(125)押す所は44px以上(この企画の物差し)。⚠.btn.sm は既定が小さいので上書きする */
+.arcwrap .menu .btn{min-height:48px}
+.arcwrap .menu .btn.sm{min-height:44px;font-size:13px}
+.arcrec{font-size:11.5px;font-weight:900;color:var(--gold)}
+/* ---- 盤面 ---- */
+#scr-arcg{display:none;position:absolute;inset:0;overflow:hidden;background:#101820}
+#scr-arcg.on{display:block}
+#arccv{position:absolute;inset:0;width:100%;height:100%;display:block}
+#arc-top{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;align-items:center;gap:8px;
+ padding:6px 10px;pointer-events:none}
+.arcpill{background:rgba(24,20,16,.82);border:3px solid var(--ink);border-radius:12px;padding:3px 10px;
+ font-weight:900;font-size:15px;color:var(--pane);min-height:30px;display:flex;align-items:center;gap:5px}
+#arc-msg{flex:1 1 auto;text-align:center;font-size:13px;color:var(--gold);font-weight:900;text-shadow:0 2px 0 #000}
+#arc-bar{position:absolute;left:10px;right:10px;top:44px;z-index:3;height:10px;border:3px solid var(--ink);
+ border-radius:8px;background:rgba(24,20,16,.7);overflow:hidden;pointer-events:none}
+#arc-bar i{display:block;height:100%;background:var(--gold);width:100%}
+#arc-bar.hot i{background:var(--danger2)}
+#arc-ctl{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:flex-end;gap:8px;padding:8px 10px}
+.arcsl{flex:1 1 0;background:rgba(24,20,16,.85);border:3px solid var(--ink);border-radius:12px;padding:4px 9px 6px}
+.arcsl b{display:block;font-size:11px;font-weight:900;color:var(--paper3)}
+.arcsl input{width:100%;height:44px}/* ⚠44px(押す所の物差し) */
+.arcsl.lock{opacity:.5}
+#arc-fire{flex:0 0 auto;min-width:104px;min-height:56px}
+#arc-mv{position:absolute;left:0;right:0;bottom:0;z-index:3;display:none;align-items:center;justify-content:center;
+ gap:10px;padding:8px 10px}
+#arc-mv.on{display:flex}
+#arc-end{position:absolute;left:0;right:0;bottom:0;z-index:4;display:none;align-items:center;justify-content:center;gap:10px;padding:8px 10px}
+#arc-end.on{display:flex}
+#arc-end .btn{min-width:160px;min-height:56px}
+#arc-mv .btn{min-width:84px;min-height:56px;font-size:22px}
+#arc-step{background:rgba(24,20,16,.85);border:3px solid var(--gold);border-radius:12px;padding:5px 11px;
+ font-weight:900;font-size:15px;color:var(--gold);min-height:44px;display:flex;align-items:center}
 </style>
 </head>
 <body>
@@ -1109,6 +1158,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="ver" id="vertag">v2.0 β</div>
   <!-- 💫(116)幸運チケット=タイトルの左上に小さく出す。持っていない時は出さない -->
   <button id="luckbar" style="display:none"><b id="luck-n">💫 ×0</b><i id="luck-s"></i></button>
+  <!-- 🏹(125)お遊びの別ゲーム「弓比べ」への入口。⚠本編とは別物なので**右上に小さく**置く -->
+  <button id="arcbtn" aria-label="弓比べ">🏹<i>弓比べ</i></button>
   <div class="titlewrap">
   <div class="logo-wrap">
     <div class="logo-sub">SURVIVORS' LAST STAND</div>
@@ -1349,6 +1400,48 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="cards" id="ivcards"></div>
     <div id="ivlog"></div>
     <button class="btn red" id="ivready">✅ 配置完了!</button>
+  </div>
+</div>
+
+<!-- 🏹⭐⭐**弓比べ**(2026-08-04(125)ユーザー指示のお遊び)=**本編とは別のゲーム**。
+     ルール: ①相手の姿は見えない ②角度と威力で撃つ ③3回当てたら勝ち
+             ④1ターンごとに歩数が1つ貯まる(使わなければ貯まる)
+             ⑤矢は**必ず10秒後に飛ぶ**。決めるのが遅いほど狙いがずれる
+             ⑥その10秒の間に**相手は動くかどうかを決める**(自分も相手の10秒の間だけ動ける) -->
+<div class="scr" id="scr-arc">
+  <canvas id="arcbg"></canvas>
+  <div class="arcwrap">
+    <div class="arclogo">🏹 弓比べ</div>
+    <div class="arcsub">— 見えない相手を、勘と度胸で射抜く —</div>
+    <div class="menu">
+      <button class="btn red" id="bt-arc-play">▶ ひとりで遊ぶ</button>
+      <button class="btn" id="bt-arc-how">📖 あそびかた</button>
+      <button class="btn sm" id="bt-arc-back">← DEADTIDE へ戻る</button>
+    </div>
+    <div class="arcrec" id="arc-rec"></div>
+  </div>
+</div>
+<div class="scr" id="scr-arcg">
+  <canvas id="arccv"></canvas>
+  <div id="arc-top">
+    <div class="arcpill" id="arc-me">🏹 ♥♥♥</div>
+    <div id="arc-msg"></div>
+    <div class="arcpill" id="arc-foe">♥♥♥ 🎯</div>
+  </div>
+  <div id="arc-bar"><i></i></div>
+  <div id="arc-ctl">
+    <div class="arcsl" id="arc-sl-a"><b id="arc-la">角度 45°</b><input type="range" id="arc-ang" min="10" max="85" value="45"></div>
+    <div class="arcsl" id="arc-sl-p"><b id="arc-lp">威力 70</b><input type="range" id="arc-pow" min="30" max="100" value="70"></div>
+    <button class="btn red" id="arc-fire">🎯 決定</button>
+  </div>
+  <div id="arc-end" style="display:none">
+    <button class="btn red" id="arc-again">▶ もう一度</button>
+    <button class="btn" id="arc-home">← ホームへ</button>
+  </div>
+  <div id="arc-mv">
+    <button class="btn" id="arc-l">←</button>
+    <div id="arc-step">👣 0</div>
+    <button class="btn" id="arc-r">→</button>
   </div>
 </div>
 
@@ -1777,7 +1870,7 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
  if(!Array.isArray(META.uv))META.uv=[];if(!Array.isArray(META.tg))META.tg=[];if(!META.ld||typeof META.ld!=='object')META.ld={};delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
- for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0','tk5'])META[k]=META[k]||0;
+ for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0','tk5','arcW','arcL'])META[k]=META[k]||0;/* ⚠(125)arcW/arcL=🏹弓比べの戦績 */
  if(!META.gft||typeof META.gft!=='object')META.gft={};/* 🎫受け取った配布物の印 id→1 */
  /* 🚌バスの物資と永続強化(2026-08-02(44))。⚠古いセーブには無いので必ず作り直す */
  if(!Array.isArray(META.bres))META.bres=[0,0,0];while(META.bres.length<3)META.bres.push(0);
@@ -30106,6 +30199,294 @@ setTimeout(()=>{try{
  const played=(META.sc||[]).some(r=>(r||[]).some(v=>v));
  if(!META.tut&&!played&&!SFXTEST&&!EDIT&&SCR==='title')tutAuto();
 }catch(e){}},600);
+/* ============ 🏹 弓比べ(2026-08-04(125)ユーザー指示のお遊び) ============
+   ⭐⭐**本編とは別のゲーム**。⚠`G`(本編の試合)には一切触らない=ここが壊れても本編は動く。
+   ⭐**遊びの芯**(ユーザーの言葉のまま):
+     ①相手の姿は**自分の視点では見えない** ②角度と威力を決めて撃つ ③**3回当てたら勝ち**
+     ④ターンごとに**歩数が1つ貯まる**。相手のターン中に動くかどうかを決める(動かなければ貯まる)
+     ⑤矢は**どれだけ早く決めても10秒後に飛ぶ**。⚠**決めるのが遅いほど狙いがずれる**
+     ⑥その10秒の間に**相手は動くかどうかを決めている**。
+   ⚠**見えないまま当てる**ので、外した時の手がかり(手前/奥・大きく/わずか)だけは必ず返す。
+   ⚠相手が撃つと**発射地点が一瞬見える**=そこが唯一の確かな情報(ただし相手はその後も動く)。 */
+const ARC_W=1600,ARC_H=560;      /* 盤面(世界座標) */
+const ARC_GY=430;                /* 地面の基準の高さ */
+const ARC_T=10;                  /* ⭐矢が飛ぶまでの秒数(早く決めても縮まない) */
+const ARC_FREE=2;                /* この秒数までに決めれば狙いはぴたり */
+const ARC_ADEV=13,ARC_PDEV=.20;  /* 決めるのが遅い時の最大のずれ(角度°/威力の割合) */
+const ARC_STEP=46;               /* 1歩の距離 */
+const ARC_HP=3;                  /* 何回当てたら勝ちか */
+const ARC_G=980;                 /* 重力 */
+const ARC_V=12;                  /* 威力→初速の倍率 */
+const ARC_PZ=[120,520],ARC_EZ=[1160,1520];/* 動ける範囲(自分/相手) */
+/* 🎥⭐⭐⭐**視点は「いま一番大事なもの」にだけ寄る**(2026-08-04(125)ユーザー指示
+     「視点はもっと自分の周りしか見えない感じで、矢を打ったら矢に視点が映って矢の周りだけ見える感じ。
+       だから最初は完全に当てずっぽう。矢が刺さってターンエンドしたら結構早い視点移動で敵の位置まで
+       視点がいって、そのまま敵のターン開始」)。
+   ⚠⚠**盤面の全体を見せない**=見せた瞬間に「当てずっぽうで撃つ」というこの遊びの芯が消える。
+   ⭐順番: 自分 →(撃つ)→ 矢を追う →(刺さる)→ **すっと相手まで飛ぶ** → 相手のターン → 矢を追う → 自分。 */
+const ARC_VIEW=640;   /* 画面に映る世界の横幅(狭いほど当てずっぽうになる) */
+const ARC_CAMK=7;     /* 普段の寄りの速さ */
+const ARC_CAMF=3.2;   /* ⭐「結構早い視点移動」の速さ(相手へ飛ぶ時) */
+const ARC_HIT=34;                /* 当たりの半径 */
+let ARC=null;
+const arcGround=x=>ARC_GY+Math.sin(x*.0042)*16+Math.sin(x*.0011+2)*10;
+function arcNew(){
+ const mx=rnd(ARC_PZ[0]+40,ARC_PZ[1]-40),fx=rnd(ARC_EZ[0]+40,ARC_EZ[1]-40);
+ return {ph:'aim',t:0,me:{x:mx,hp:ARC_HP,steps:1,hits:0},
+  foe:{x:fx,hp:ARC_HP,steps:1,guess:rnd(ARC_PZ[0],ARC_PZ[1]),gsd:1},
+  lockT:-1,ang:45,pow:70,ar:null,marks:[],round:1,msg:'',msgT:0,over:0,
+  foeMoveT:rnd(1.5,8.5),foeLock:rnd(.6,6),shown:0,shotN:0,
+  cam:mx,camT:mx,camK:ARC_CAMK};/* 🎥視点(いま映している場所) */
+}
+/* 矢を1本作る。dev=狙いのずれ(0〜1) */
+function arcArrow(from,to,ang,pow,dev,mine){
+ const a=(ang+rnd(-1,1)*dev*ARC_ADEV)*Math.PI/180;
+ const v=pow*(1+rnd(-1,1)*dev*ARC_PDEV)*ARC_V;
+ const dir=(to>from)?1:-1;
+ return {x:from,y:arcGround(from)-30,vx:Math.cos(a)*v*dir,vy:-Math.sin(a)*v,mine,tr:[]};
+}
+/* 自分の狙い(相手の居る方向へ)。⚠相手は見えないので「どこを狙ったか」は着弾で分かる */
+function arcFire(){
+ const A=ARC;if(!A||A.ar)return;
+ const dev=clamp((A.lockT<0?ARC_T:A.lockT-ARC_FREE)/(ARC_T-ARC_FREE),0,1);
+ A.ar=arcArrow(A.me.x,A.foe.x,A.ang,A.pow,dev,1);
+ A.shotN++;A.ph='fly';
+ try{if(sfx.tap)sfx.tap();}catch(e){}
+}
+function arcFoeFire(){
+ const A=ARC;if(!A||A.ar)return;
+ /* 🎯相手の狙い=「こう思っている場所(guess)」へ撃つ。当たらないほど散らばりが縮まっていく */
+ const tx=clamp(A.foe.guess+rnd(-1,1)*A.foe.gsd*170,ARC_PZ[0]-60,ARC_PZ[1]+60);
+ const d=Math.abs(tx-A.foe.x);
+ /* 距離から角度45°で必要な初速を逆算して威力に直す(相手も同じ物理で撃つ) */
+ const need=Math.sqrt(Math.max(1,d*ARC_G));
+ const pow=clamp(need/ARC_V,30,100);
+ const dev=clamp((A.foeLock-ARC_FREE)/(ARC_T-ARC_FREE),0,1)*.6;
+ A.ar=arcArrow(A.foe.x,A.me.x,45,pow,dev,0);
+ A.marks.push({x:A.foe.x,y:arcGround(A.foe.x),t:0,kind:'from'});/* ⭐発射地点が一瞬だけ見える */
+ A.ph='efly';
+}
+function arcMsg(s,sec){ARC.msg=s;ARC.msgT=sec||2.2;}
+function arcMove(d){
+ const A=ARC;if(!A||A.ph!=='eaim'||A.over)return;
+ if(A.me.steps<1){arcMsg('👣 歩数が足りない');return;}
+ const nx=clamp(A.me.x+d*ARC_STEP,ARC_PZ[0],ARC_PZ[1]);
+ if(Math.abs(nx-A.me.x)<1){arcMsg('これ以上は下がれない');return;}
+ A.me.x=nx;A.me.steps--;arcUI();
+ try{if(sfx.tap)sfx.tap();}catch(e){}
+}
+/* 当たり判定と、外した時の手がかり */
+function arcLand(A,ar){
+ const tgt=ar.mine?A.foe:A.me;
+ const hit=Math.abs(ar.x-tgt.x)<ARC_HIT;
+ A.marks.push({x:ar.x,y:arcGround(ar.x),t:0,kind:hit?'hit':'miss',mine:ar.mine});
+ if(hit){
+  tgt.hp--;
+  try{(sfx.hit||sfx.thunk)();}catch(e){}
+  if(ar.mine){A.me.hits++;arcMsg('🎯 命中! 残り '+tgt.hp);}
+  else arcMsg('💥 当たった! こちらの残り '+tgt.hp);
+ }else{
+  try{if(sfx.thunk)sfxAt&&sfxAt('thunk',.2);}catch(e){}
+  if(ar.mine){
+   const d=ar.x-A.foe.x,ad=Math.abs(d);
+   /* ⚠**位置は教えない**=手前/奥と、大きく/わずか だけ返す(見えない相手を探る遊びなので) */
+   arcMsg('外れ… '+(d<0?'手前':'奥')+'すぎ('+(ad>260?'大きく':ad>120?'すこし':'わずかに')+')');
+  }else arcMsg('相手の矢が外れた');
+ }
+ /* 🎯相手は自分の着弾から学ぶ(外した分だけ寄せる。ばらつきも縮む) */
+ if(!ar.mine){A.foe.guess=ar.x+(A.me.x-ar.x)*.62;A.foe.gsd=Math.max(.22,A.foe.gsd*.72);}
+ A.ar=null;
+ if(A.me.hp<=0||A.foe.hp<=0){
+  A.over=A.foe.hp<=0?1:-1;A.ph='over';A.shown=1;
+  try{META.arcW=(META.arcW|0)+(A.over>0?1:0);META.arcL=(META.arcL|0)+(A.over>0?0:1);saveMeta();}catch(e){}
+  try{(A.over>0?sfx.win:sfx.lose)();}catch(e){}
+  arcMsg(A.over>0?'🏆 勝ち! 見えない相手を射抜いた':'💀 負け… 相手に3回当てられた',9);
+  return;
+ }
+ A.t=0;
+ if(ar.mine)A.ph='ewait';else A.ph='wait';
+}
+function arcStep(dt){
+ const A=ARC;if(!A)return;
+ /* 🎥視点を寄せる。⚠**行き先(camT)は各局面が決める**=ここは動かすだけ */
+ A.cam+=(A.camT-A.cam)*Math.min(1,dt*A.camK);
+ if(A.msgT>0)A.msgT-=dt;
+ for(const m of A.marks)m.t+=dt;
+ if(A.marks.length>14)A.marks.splice(0,A.marks.length-14);
+ if(A.over){A.t+=dt;return;}
+ /* 飛んでいる矢 */
+ if(A.ar){const ar=A.ar;
+  A.camT=ar.x;A.camK=ARC_CAMK*1.6;/* 🎥飛んでいる矢を追う=**矢の周りしか見えない** */
+  for(let s=0;s<2;s++){/* ⚠2回刻む=速い矢が地面をすり抜けるのを防ぐ */
+   ar.vy+=ARC_G*dt*.5;ar.x+=ar.vx*dt*.5;ar.y+=ar.vy*dt*.5;
+   ar.tr.push([ar.x,ar.y]);if(ar.tr.length>26)ar.tr.shift();
+   const gy=arcGround(ar.x);
+   const tgt=ar.mine?A.foe:A.me;
+   if(Math.abs(ar.x-tgt.x)<ARC_HIT&&ar.y>gy-56){arcLand(A,ar);return;}
+   if(ar.y>=gy||ar.x<-80||ar.x>ARC_W+80){ar.y=gy;arcLand(A,ar);return;}
+  }
+  return;
+ }
+ A.t+=dt;
+ if(A.ph==='aim'){
+  /* ⭐相手はこの10秒の間に動くかどうかを決めている(こちらからは見えない) */
+  if(A.t>=A.foeMoveT&&A.foeMoveT>0){A.foeMoveT=-1;
+   if(A.foe.steps>0&&Math.random()<.55){
+    const d=Math.random()<.5?-1:1;
+    const nx=clamp(A.foe.x+d*ARC_STEP*(1+(A.foe.steps>2?1:0)),ARC_EZ[0],ARC_EZ[1]);
+    if(Math.abs(nx-A.foe.x)>1){A.foe.steps-=Math.abs(nx-A.foe.x)/ARC_STEP|0||1;A.foe.x=nx;A.foe.gsd=Math.min(1,A.foe.gsd+.1);}
+   }}
+  if(A.t>=ARC_T)arcFire();
+ }else if(A.ph==='eaim'){
+  if(A.t>=ARC_T)arcFoeFire();
+ }else if(A.ph==='wait'||A.ph==='ewait'){
+  /* 🎥⭐**刺さった所を少し見せてから、視点が相手(自分)まで飛ぶ** */
+  if(A.t>=.75){A.camT=(A.ph==='ewait')?A.foe.x:A.me.x;A.camK=ARC_CAMF;}
+  if(A.t>=1.35){
+   if(A.ph==='ewait'){A.ph='eaim';A.t=0;A.foeLock=rnd(.6,6.5);
+    A.camT=A.foe.x;A.camK=ARC_CAMK;arcMsg('⏳ 相手が狙っている! 動くなら今',3);}
+   else{A.round++;A.me.steps++;A.foe.steps++;A.ph='aim';A.t=0;A.lockT=-1;
+    A.camT=A.me.x;A.camK=ARC_CAMK;A.foeMoveT=rnd(1.5,8.5);
+    arcMsg('👣 歩数 +1(いまは '+A.me.steps+'歩)',2.4);}
+   arcUI();
+  }
+ }
+ if(A.ph==='aim')A.camT=A.me.x;
+ if(A.ph==='eaim')A.camT=A.foe.x;
+}
+function arcUI(){
+ const A=ARC;if(!A)return;
+ const hp=(n)=>'♥'.repeat(Math.max(0,n))+'·'.repeat(Math.max(0,ARC_HP-n));
+ const me=$('arc-me'),fo=$('arc-foe'),ms=$('arc-msg'),st=$('arc-step');
+ if(me)me.textContent='🏹 '+hp(A.me.hp)+'  👣'+A.me.steps;
+ if(fo)fo.textContent=hp(A.foe.hp)+' 🎯';
+ if(ms)ms.textContent=A.msgT>0?A.msg:(A.ph==='aim'?'角度と威力を決めろ(早いほど正確)':A.ph==='eaim'?'相手が狙っている':'');
+ /* ⚠(125)相手のターンは**視点が相手に居る**=自分の居場所が見えないので、数字で出す */
+ if(st)st.textContent='👣 '+A.me.steps+'　自分 '+Math.round(A.me.x/10)+'m';
+ const ctl=$('arc-ctl'),mv=$('arc-mv'),en=$('arc-end');
+ if(en)en.classList.toggle('on',!!A.over&&A.t>1);
+ if(ctl)ctl.style.display=(A.ph==='aim'&&!A.over)?'flex':'none';
+ if(mv)mv.classList.toggle('on',A.ph==='eaim'&&!A.over);
+ const fb=$('arc-fire');
+ if(fb){fb.disabled=(A.lockT>=0)||A.ph!=='aim';
+  fb.textContent=(A.lockT>=0)?'決定済み':'🎯 決定';}
+ for(const q of ['arc-sl-a','arc-sl-p']){const e=$(q);if(e)e.classList.toggle('lock',A.lockT>=0);}
+ const la=$('arc-la'),lp=$('arc-lp');
+ if(la)la.textContent='角度 '+A.ang+'°';
+ if(lp)lp.textContent='威力 '+A.pow;
+}
+function arcDraw(t){
+ const A=ARC,cv9=$('arccv');if(!A||!cv9)return;
+ const dpr=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);
+ const W=Math.round((cv9.clientWidth||innerWidth)*dpr),H=Math.round((cv9.clientHeight||innerHeight)*dpr);
+ if(cv9.width!==W)cv9.width=W;if(cv9.height!==H)cv9.height=H;
+ const c=cv9.getContext('2d');if(!c)return;
+ c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W,H);
+ /* 🎥⭐**視点の周りだけを映す**(全体は絶対に見せない)。⚠横幅 ARC_VIEW ぶんだけ入る倍率にする */
+ const sc=W/ARC_VIEW;
+ const ox=W/2-A.cam*sc,oy=H-(ARC_GY+128)*sc;/* ⚠下の操作の帯に地面が潜らない高さ */
+ c.setTransform(sc,0,0,sc,ox,oy);
+ const VL=A.cam-ARC_VIEW/2,VR=A.cam+ARC_VIEW/2;
+ /* 空(⚠映っている範囲だけ塗る=視点が動いても継ぎ目が出ない) */
+ {const g=c.createLinearGradient(0,-260,0,ARC_GY);
+  g.addColorStop(0,'#2b3f63');g.addColorStop(.55,'#6b6a8a');g.addColorStop(1,'#c98f66');
+  c.fillStyle=g;c.fillRect(VL-40,-400,ARC_VIEW+80,ARC_GY+400);}
+ /* 遠景の丘(⚠**視点の動きより遅く流す**=奥行きが出て「移動している」ことが分かる) */
+ c.fillStyle='#3b4a52';
+ {const px=A.cam*.55;
+  for(let i=-1;i<9;i++){const bx=Math.floor((VL-px)/300)*300+i*300+px;
+   /* ⚠⚠**裾は「地面の線」に合わせる**(撮って2回直した)=平らな裾にすると、地面の起伏との間に
+      **横一直線の黒い帯**が出る。地面は後から描くので、多少食い込ませてよい。 */
+   c.beginPath();c.moveTo(bx,arcGround(bx)+8);c.lineTo(bx+150,ARC_GY-46-((Math.abs(bx*7)|0)%38));
+   c.lineTo(bx+300,arcGround(bx+300)+8);c.closePath();c.fill();}}
+ /* 地面 */
+ c.fillStyle='#4a5a3a';c.beginPath();c.moveTo(VL-60,ARC_H+300);
+ for(let x=VL-60;x<=VR+60;x+=10)c.lineTo(x,arcGround(x));
+ c.lineTo(VR+60,ARC_H+300);c.closePath();c.fill();
+ c.strokeStyle='#6b7a4a';c.lineWidth=5;c.beginPath();
+ for(let x=VL-60;x<=VR+60;x+=10)c.lineTo(x,arcGround(x));c.stroke();
+ /* 草(⚠視点が動いたことが分かる目印。等間隔に生やすだけ) */
+ c.strokeStyle='rgba(120,140,80,.9)';c.lineWidth=2;
+ for(let x=Math.floor(VL/34)*34;x<=VR+34;x+=34){const gy=arcGround(x);
+  c.beginPath();c.moveTo(x,gy);c.lineTo(x-3,gy-9);c.moveTo(x,gy);c.lineTo(x+4,gy-7);c.stroke();}
+ /* ⚠**目盛り**=唯一の確かな手がかり(いま映っている所の距離)。10px=1m */
+ c.fillStyle='rgba(242,236,220,.8)';c.font='900 12px '+FF;c.textAlign='center';
+ for(let x=Math.floor(VL/100)*100;x<=VR+100;x+=100){const gy=arcGround(x);
+  c.fillRect(x-1.5,gy-3,3,11);c.fillText((x/10)+'m',x,gy+22);}
+ /* 自分と相手。⚠⚠**姿を隠すのは霧ではなく「視点」**=遠くに居る側は画面の外なので自然に見えない */
+ arcDrawMan(c,A.me.x,arcGround(A.me.x),1,'#e8a83d',A.ph==='aim'?A.ang:35);
+ arcDrawMan(c,A.foe.x,arcGround(A.foe.x),-1,'#c9525f',A.ph==='eaim'?45:35);
+ for(const m of A.marks){
+  const a=Math.max(0,1-m.t/(m.kind==='from'?2.2:9));if(a<=0)continue;
+  c.globalAlpha=a;
+  if(m.kind==='from'){c.strokeStyle=DANGER;c.lineWidth=6;
+   c.beginPath();c.arc(m.x,m.y-16,26+m.t*20,0,7);c.stroke();
+   c.fillStyle=DANGER;c.font='900 22px '+FF;c.fillText('ここから撃たれた!',m.x,m.y-56);}
+  else{c.strokeStyle=m.kind==='hit'?DANGER:STEEL;c.lineWidth=5;
+   c.beginPath();c.moveTo(m.x,m.y-26);c.lineTo(m.x+7,m.y+2);c.stroke();
+   c.fillStyle=c.strokeStyle;c.beginPath();c.arc(m.x+7,m.y+2,4.5,0,7);c.fill();}
+  c.globalAlpha=1;}
+ /* 飛んでいる矢 */
+ if(A.ar){const ar=A.ar;
+  c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=3;c.beginPath();
+  for(let i=0;i<ar.tr.length;i++)c.lineTo(ar.tr[i][0],ar.tr[i][1]);c.stroke();
+  const an=Math.atan2(ar.vy,ar.vx);
+  c.save();c.translate(ar.x,ar.y);c.rotate(an);
+  c.strokeStyle='#f2ecdc';c.lineWidth=4;c.beginPath();c.moveTo(-26,0);c.lineTo(10,0);c.stroke();
+  c.fillStyle='#f2ecdc';c.beginPath();c.moveTo(16,0);c.lineTo(4,-5);c.lineTo(4,5);c.closePath();c.fill();
+  c.restore();}
+ /* 狙いの目安(自分の番だけ)。⚠**軌道は最後まで見せない**=見せると勘の遊びが消える */
+ if(A.ph==='aim'&&!A.over){
+  const a=A.ang*Math.PI/180,v=A.pow*ARC_V,sx=A.me.x,sy=arcGround(A.me.x)-30;
+  c.strokeStyle='rgba(255,210,61,.75)';c.lineWidth=4;c.setLineDash([10,10]);c.beginPath();
+  for(let i=0;i<=12;i++){const q=i*.045;c.lineTo(sx+Math.cos(a)*v*q,sy-Math.sin(a)*v*q+ARC_G*q*q/2);}
+  c.stroke();c.setLineDash([]);}
+ c.setTransform(1,0,0,1,0,0);
+}
+/* 弓を構えた人(小さいので輪郭で読ませる) */
+function arcDrawMan(c,x,gy,dir,col,ang){
+ c.save();c.translate(x,gy);c.scale(dir,1);
+ c.lineWidth=4;c.strokeStyle=INK;
+ c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(0,2,20,6,0,0,7);c.fill();
+ c.fillStyle=col;c.beginPath();c.moveTo(-9,0);c.lineTo(-6,-30);c.lineTo(6,-30);c.lineTo(9,0);c.closePath();c.fill();c.stroke();
+ c.fillStyle='#e8d9b8';c.beginPath();c.arc(0,-38,9,0,7);c.fill();c.stroke();
+ /* 弓 */
+ c.save();c.translate(6,-26);c.rotate(-(ang||35)*Math.PI/180);
+ c.strokeStyle='#8a6a3a';c.lineWidth=5;c.beginPath();c.arc(0,0,20,-1.2,1.2);c.stroke();
+ c.strokeStyle='rgba(242,236,220,.9)';c.lineWidth=2;
+ c.beginPath();c.moveTo(20*Math.cos(-1.2),20*Math.sin(-1.2));c.lineTo(20*Math.cos(1.2),20*Math.sin(1.2));c.stroke();
+ c.restore();
+ c.restore();
+}
+function arcOpen(){
+ try{ensureAC();}catch(e){}
+ const r=$('arc-rec');
+ if(r)r.textContent='戦績 '+(META.arcW|0)+'勝 '+(META.arcL|0)+'敗';
+ show('arc');
+}
+function arcPlay(){
+ ARC=arcNew();
+ const a=$('arc-ang'),p=$('arc-pow');
+ if(a)a.value=ARC.ang;if(p)p.value=ARC.pow;
+ arcMsg('第1射 — 角度と威力を決めろ(早く決めるほど正確)',3.2);
+ arcUI();show('arcg');
+}
+try{
+ $('arcbtn').onclick=()=>{arcOpen();};
+ $('bt-arc-back').onclick=()=>show('title');
+ $('bt-arc-play').onclick=()=>arcPlay();
+ $('bt-arc-how').onclick=()=>toast('🏹 相手は見えない。角度と威力を決めて撃つ(矢は必ず10秒後に飛ぶ・決めるのが遅いほどズレる)。3回当てたら勝ち。ターンごとに歩数+1、相手の10秒の間だけ動ける',true);
+ $('arc-ang').oninput=e=>{if(ARC&&ARC.lockT<0){ARC.ang=+e.target.value;arcUI();}};
+ $('arc-pow').oninput=e=>{if(ARC&&ARC.lockT<0){ARC.pow=+e.target.value;arcUI();}};
+ $('arc-fire').onclick=()=>{if(ARC&&ARC.ph==='aim'&&ARC.lockT<0){ARC.lockT=ARC.t;
+  arcMsg(ARC.lockT<=ARC_FREE?'✅ 早い! 狙いはぴたり(あと'+Math.ceil(ARC_T-ARC.t)+'秒)':'✅ 決定(あと'+Math.ceil(ARC_T-ARC.t)+'秒)',2.6);arcUI();}};
+ $('arc-l').onclick=()=>arcMove(-1);
+ $('arc-r').onclick=()=>arcMove(1);
+ /* ⚠⚠(125)**canvas を押す所にしない**=全画面なので、上に乗るボタンと必ず重なる(検査が落ちた)。
+    決着した時だけ下に「もう一度/ホームへ」を出す。 */
+ $('arc-again').onclick=()=>arcPlay();
+ $('arc-home').onclick=()=>arcOpen();
+}catch(e){}
 let last=performance.now();
 function loop(now){
  try{loopBody(now);}catch(e){/* 1フレームの例外でゲーム全体を止めない */
@@ -30167,6 +30548,11 @@ function loopBody(now){
  }
  if(TUT&&!PAUSED)tutStep(dt0);/* ⚠タイトルの段(ガチャ)もあるので gameActive では絞らない */
  if(TUT)tutPtr();/* ⚠止まっている間も置き直す(中で引っ込める)ので PAUSED では絞らない */
+ /* 🏹(125)弓比べ。⚠**本編とは別のゲーム**なので、ここだけで完結させる */
+ if(SCR==='arcg'){try{arcStep(Math.min(.05,dt0));arcDraw(TT);arcUI();}catch(e){}
+  try{const b=$('arc-bar');if(b&&ARC){const k=(ARC.ph==='aim'||ARC.ph==='eaim')?clamp(1-ARC.t/ARC_T,0,1):0;
+   b.firstChild.style.width=(k*100).toFixed(1)+'%';b.classList.toggle('hot',k<.34);}}catch(e){}}
+ if(SCR==='arc')try{sceneBg($('arcbg'),TT);}catch(e){}
  if(SCR==='map')try{mapDraw(TT);}catch(e){}
  if(SCR==='home')try{homeDraw(TT);}catch(e){}
  if(SCR==='title'){paradeStep(TT);
