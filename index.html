@@ -16310,6 +16310,10 @@ function lupiBall(C,u,bd,grow,hops,cur,dl0,big){
  };
  later(C,dl0,step);
 }
+/* 💥(124)倒した時の演出の間引き。⚠**普通に遊んでいる時(毎秒1〜5体)は1つも変わらない**=
+   混み合った時だけ効く。⚠数字を上げると重くなる。 */
+const FX_SPLAT_MAX=80;/* 演出がこれ以上混んでいたら、地面の血の染みは足さない */
+const FX_GACC=.35;    /* 「+⚙️」を足し込む間合い(秒)。これより短い間に倒したら1枚にまとめる */
 const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slash:.26,shock:.5,
  toss:.3,rkt:.26,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
  beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24};
@@ -16597,7 +16601,22 @@ function killZ(C,z){
  if(C.bus){/* ⚙️は入れない */}
  else if(G&&G.coop){for(const P of G.players){P.scrap+=g;P.enTotal+=g;}}
  else{C.scrap+=g;C.enTotal+=g;}
- if(!rice&&!C.bus){addFx(C,'splat',z.px,z.py,'');addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');}
+ /* 💥⭐⭐(124)**倒した時の演出は「毎秒何十体」を前提に間引く**(ユーザー
+      「火炎放射器+重テスラ+レールガンを置きまくって最大強化したら重い」)。
+    ⚠⚠実測すると、一番きつい盤面で**画面に生きている演出の内訳は
+      血の染み49件・「+⚙️」の文字35件**(次が死体32件)=**派手な物ではなく、この2つが正体**だった。
+    ⭐①**染みは頭打ち**(既に演出が混んでいたら足さない)=地面はもう十分に汚れている。
+    ⭐②**⚙️の文字は足し込む**=直前の1件がまだ生きていれば、その文字に数を足して出し直す。
+      ⚠**取り分は1⚙️も変わらない**(足す先が表示だけ)。⚠毎秒30体倒れる時は読めない文字が
+        30枚重なっていた=**まとめた方が読める**。⚠🚌開拓便が先に同じ手を使っている(0.7秒に1回)。 */
+ if(!rice&&!C.bus){
+  if(C.fx.length<FX_SPLAT_MAX)addFx(C,'splat',z.px,z.py,'');
+  const gt9=C.gTx;
+  if(gt9&&gt9.t<FX_GACC&&C.fx.indexOf(gt9)>=0){
+   gt9.g=(gt9.g||0)+g;gt9.s='+'+gt9.g+'⚙️';gt9.t=0;gt9.x=z.px;gt9.y=z.py-30*CH_UP;}
+  else{addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');
+   C.gTx=C.fx[C.fx.length-1];C.gTx.g=g;}
+ }
  /* 💎魔石: ボス級を倒した時だけ落ちる(英雄召集の通貨)。ソロのみ */
  if(z.boss&&soloMeta()&&C.isMe){const gm=gemBoss(z.fin);
   META.gem=(META.gem||0)+gm;G.gemGain=(G.gemGain||0)+gm;saveMeta();
