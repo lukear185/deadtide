@@ -1430,6 +1430,7 @@ function checkProgress(){
 function checkMetaReset(){
  META.gem=7;META.hero={hNox:1};META.hmat=5;META.zdex={walk:1};META.hlv={hNox:2};META.hxp={hNox:30};
  META.rpg={gold:99};META.hsel='hNox';META.tr0=1;META.tmTip=1;
+ META.tk5=2;META.gft={x:1};/* 🎫★5確定チケットと配布物の印(2026-08-03(106)) */
  META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;/* タワー/兵科の個別強化と砲撃威力 */
  META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
@@ -1449,7 +1450,9 @@ function checkMetaReset(){
   ['⚔冒険',Object.keys(META.rpg||{}).length===0],['連れて行く英雄',!META.hsel],
   ['鍛錬所の解放',!META.tr0],['選んでいたステージ',!META.stg],
   /* ⚠🎒編成の案内は「1回だけ出す」印=消し忘れると初期化した人に案内が出ない(2026-08-02) */
-  ['🎒編成の案内の印',!META.tmTip]];
+  ['🎒編成の案内の印',!META.tmTip],
+  /* 🎫⚠印まで消さないと、初期化した人に配布物がもう一度渡らない(逆に印が残ると永久に渡らない) */
+  ['🎫★5確定チケット',!(META.tk5||0)],['🎫配布物の印',Object.keys(META.gft||{}).length===0]];
  for(const [n,ok] of gone2)if(!ok){console.log('FAIL: 初期化しても '+n+' が残っている');process.exit(1);}
  const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
   ['派生',META.uv.length===0],['経済強化',META.py0===0],
@@ -2411,6 +2414,20 @@ function checkGacha(){
  /* ⚠**55固定で見ない**=はずれ枠は「残り全部」なので英雄を足すと動く(2026-07-30) */
  if(Math.abs(dp-G_RATE[0][1])>3){console.log('FAIL: はずれ枠の率がずれている '+dp.toFixed(1)+'%(想定'+G_RATE[0][1].toFixed(1)+'%)');process.exit(1);}
  if(!byRk[5]){console.log('WARN: 2万回でギガトンレアが出なかった(確率0.1%なので稀にあり得る)');}
+ /* 🎫★5確定チケット(配布物・2026-08-03(106))=1枚減って必ず★5が1体入る。0枚なら引けない */
+ {META.hero={};META.gem=0;META.tk5=2;
+  gcPull5();
+  if((META.tk5||0)!==1){console.log('FAIL: 🎫チケットが1枚減っていない');process.exit(1);}
+  const got=Object.keys(META.hero);
+  if(got.length!==1){console.log('FAIL: 🎫チケットで英雄が1体入っていない');process.exit(1);}
+  if(heroOf(got[0]).rk!==5){console.log('FAIL: 🎫チケットなのに★5でない');process.exit(1);}
+  if((META.gem||0)!==0){console.log('FAIL: 🎫チケットが💎を消費している');process.exit(1);}
+  META.tk5=0;const n0=Object.keys(META.hero).length;
+  gcPull5();
+  if(Object.keys(META.hero).length!==n0){console.log('FAIL: 🎫0枚でも引けてしまう');process.exit(1);}
+  /* 配布は1人1回きり(印が立っていたら渡らない) */
+  if(!GIFT||!GIFT.id){console.log('FAIL: 配布物(GIFT)の定義が無い');process.exit(1);}
+  META.hero={};META.tk5=0;}
  /* 重複は鍛錬素材になる */
  META.hero={};META.hmat=0;
  const h5=HEROES.find(h=>h.rk===5);

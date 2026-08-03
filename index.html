@@ -149,7 +149,15 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homehsub{position:absolute;left:0;right:0;top:auto;bottom:42px;text-align:center;font-weight:900;font-size:10.5px;
  letter-spacing:4px;color:var(--paper3);text-shadow:0 2px 0 #000;opacity:.9}
 .homeright{flex:1 1 auto;display:flex;flex-direction:column;gap:9px;min-width:0}
-.homeres{font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:7px;justify-content:flex-end;align-items:center}
+/* ⭐上の帯=左に小さな戻る / 右に所持の札 */
+.homebar{display:flex;align-items:center;gap:8px}
+/* ⚠押す所は44px(この画面の物差し)。文字だけの小さな四角にして機能タイルと見分けを付ける */
+/* ⚠素の .btn(明るい紙)のままだと、暗い情景の上で出撃の次に目立ってしまう=タイルと同じ暗いガラスにする */
+.homeback{flex:0 0 auto;width:44px;height:44px;padding:0;font-size:20px;line-height:1;font-weight:900;
+ background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:12px;color:var(--pane);
+ box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(242,236,220,.08)}
+.homeback:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.5)}
+.homeres{flex:1 1 auto;font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:7px;justify-content:flex-end;align-items:center}
 .homeres span{background:rgba(12,10,8,.66);border:2px solid rgba(242,236,220,.24);border-radius:20px;padding:3px 12px;
  box-shadow:inset 0 1px 0 rgba(242,236,220,.08)}
 /* 出撃=この画面の主役。文字を大きく+光が周期的に走る */
@@ -160,8 +168,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  background:rgba(255,243,192,.30);transform:rotate(16deg);animation:hsheen 3.4s ease-in-out infinite;pointer-events:none}
 @keyframes hsheen{0%,58%{left:-80px}88%,100%{left:115%}}
 .homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;flex:1 1 auto}
-/* ⭐タイルは7つ(3+3)+タイトルは横いっぱい=最後の行に1つだけ残る形にしない */
-.homegrid #hm-back{grid-column:1/-1;min-height:44px;flex-direction:row;gap:8px}
+/* ⭐機能タイルはちょうど6つ(3×2)。⚠戻るはここに入れない(上の帯へ出した) */
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
 /* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
@@ -719,6 +726,17 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  font-weight:900;font-size:20px;text-align:center;padding:2px 0;letter-spacing:-.5px}
 .gcbig{width:100%;padding:8px 6px;font-size:17px;line-height:1.1}
 .gcbig small{display:block;font-size:12px;font-weight:900;opacity:.85;margin-top:1px}
+/* 🎫★5確定チケット=単発/10連と並べても「別物」と分かるように白い縁と金の光で締める */
+.gctk{border-color:#f2ecdc;box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.35) inset,
+ 0 0 10px rgba(255,210,61,.55)}
+/* ⚠⚠**横画面は高さ393pxしか無い**=3つ目の大ボタンを足すと図鑑/確率がはみ出す(撮って判明)。
+   ⭐チケットを持っている間だけ全体を詰める。⚠**押す所44pxは割らない**(padding+行送りで確保) */
+.gcside.tk{gap:4px}
+.gcside.tk .gcgemb{font-size:15px}
+.gcside.tk .gcbig{padding:4px 6px;font-size:15px}
+.gcside.tk .gcbig small{font-size:11px;margin-top:0}
+.gcside.tk .gcrow2 .btn{padding:3px 4px}
+.gcside.tk .gchint{display:none}
 .gcrow2{display:flex;gap:5px}
 .gcrow2 .btn{flex:1 1 0;padding:5px 4px}
 .gchint{font-size:10.5px;font-weight:700;opacity:.75;line-height:1.35;margin-top:auto}
@@ -1048,7 +1066,12 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <div id="home-hname" class="homehn"></div>
     </div>
     <div class="homeright">
-      <div class="homeres" id="home-res"></div>
+      <!-- ⭐戻るは**上の帯の左端**に小さく置く(2026-08-03(106)ユーザー「下に埋もれてるから場所変えて
+           小さいボタンにして」)。⚠タイル(3×2)の中に混ぜない=機能タイルと戻るは役割が違う -->
+      <div class="homebar">
+        <button class="btn homeback" id="hm-back" aria-label="タイトルへ戻る">←</button>
+        <div class="homeres" id="home-res"></div>
+      </div>
       <button class="btn red homego" id="bt-map">🗺 出撃 <i>エリア1 — 生存圏の地図</i></button>
       <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
       <div class="homegrid">
@@ -1059,7 +1082,6 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><b>砲撃</b><i id="hm-stk-i"></i></button>
         <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><b>研究所</b><i id="hm-lab-pts"></i></button>
         <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><b>英雄召集</b><i id="hm-gem"></i></button>
-        <button class="btn homebt" id="hm-back"><span class="hic">←</span><b>タイトル</b></button>
       </div>
     </div>
   </div>
@@ -1293,10 +1315,12 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <!-- 召集画面の骨格(第93弾): 左=目玉の英雄を大きく / 右=💎所持と大きな単発/10連 -->
       <div class="gchome" id="gc-home">
         <div class="gcshow"><canvas id="gc-hcv"></canvas></div>
-        <div class="gcside">
+        <div class="gcside" id="gc-side">
           <div class="gcgemb" id="gc-gemb">💎 0</div>
           <button class="btn gold gcbig" id="gc-1">単発<small>💎3</small></button>
           <button class="btn gold gcbig" id="gc-10">10連<small>💎25</small></button>
+          <!-- 🎫★5確定チケット: 持っている時だけ出す(配布物。⚠確率には一切触っていない) -->
+          <button class="btn gold gcbig gctk" id="gc-t5" style="display:none">🎫 ★5確定<small>のこり 0枚</small></button>
           <div class="gcrow2">
             <button class="btn sm" id="gc-dex">📖 図鑑</button>
             <button class="btn sm" id="gc-rate">確率</button>
@@ -1640,7 +1664,8 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
  if(!Array.isArray(META.uv))META.uv=[];if(!Array.isArray(META.tg))META.tg=[];if(!META.ld||typeof META.ld!=='object')META.ld={};delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
- for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0'])META[k]=META[k]||0;
+ for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0','tk5'])META[k]=META[k]||0;
+ if(!META.gft||typeof META.gft!=='object')META.gft={};/* 🎫受け取った配布物の印 id→1 */
  /* 🚌バスの物資と永続強化(2026-08-02(44))。⚠古いセーブには無いので必ず作り直す */
  if(!Array.isArray(META.bres))META.bres=[0,0,0];while(META.bres.length<3)META.bres.push(0);
  if(!META.bup||typeof META.bup!=='object')META.bup={};
@@ -1704,6 +1729,7 @@ function metaReset(){
      新しく META.xxx を増やしたら必ずここにも書くこと(検査 checkMetaReset が見張っている)。 */
 function metaResetAll(){
  META.gem=0;META.hero={};META.hsel='';        /* 💎魔石・引いた英雄・連れて行く英雄 */
+ META.tk5=0;META.gft={};                      /* 🎫★5確定チケットと、受け取った配布物の印 */
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
@@ -1721,10 +1747,22 @@ function metaResetAll(){
 try{if((META.rst|0)<META_RESET){META.rst=META_RESET;
  if(META_RESET>=3)metaResetProgress();else metaReset();
  saveMeta();}}catch(e){}
+/* 🎫⭐**ログイン配布**(2026-08-03(106)ユーザー指示「俺は消してっていうまで、今からログインした人に
+     星5確定チケット配布してくれ 1枚だけ」)。
+   ⚠⚠**やめる時は下の `GIFT` を null にする1行だけ**(それ以外は触らなくてよい)。
+   ⚠**`id` は変えないこと**=変えると「もう1回配る」意味になり、受け取り済みの人にもう1枚渡る。
+   ⚠受け取った印は `META.gft[id]` に残るので、**同じ人には二度と配られない**。 */
+const GIFT={id:'gift2608a',tk5:1,n:'🎫 ★5確定チケット'};
+let GIFT_NEW=0;
+try{if(GIFT&&GIFT.id){
+ if(!META.gft||typeof META.gft!=='object')META.gft={};
+ if(!META.gft[GIFT.id]){META.gft[GIFT.id]=1;
+  META.tk5=(META.tk5||0)+(GIFT.tk5||0);GIFT_NEW=1;saveMeta();}}}catch(e){}
 /* 🛠DEVモード: 使ったそばから補充する=実質無限。saveMetaは何かを買うたびに通るのでここに置く */
 /* ⚠**新しく足した物は必ずDEVの底上げにも足す**(でないと実機で一度も見られない)=
    🚌バスの物資は3種とも潤沢に(装備9個と性能25段を一度に見比べられる額)。 */
-function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;
+/* ⚠🎫★5確定チケットもDEVでは切らさない(でないと配布物の演出を実機で一度も確かめられない) */
+function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;
  if(!Array.isArray(META.bres))META.bres=[0,0,0];
  for(let i=0;i<3;i++)META.bres[i]=99999;}
 devTop();
@@ -25215,8 +25253,9 @@ function applyFrames(){
  try{
   if(!ICN['fr-btn'])return;
   const css=[];
-  /* ⚠🏠ホームの機能タイル(.homebt)は暗いガラス板の意匠なので紙の枠を貼らない(2026-08-03(96)) */
-  css.push('.btn:not(.sm):not(.homebt){border-style:solid;border-width:10px 14px;border-radius:0;'
+  /* ⚠🏠ホームの機能タイル(.homebt)と小さな戻る(.homeback)は暗いガラス板の意匠なので紙の枠を貼らない
+     (2026-08-03(96)(106))。⚠この枠は `padding:4px 12px` も上書きするので、貼ると寸法まで崩れる */
+  css.push('.btn:not(.sm):not(.homebt):not(.homeback){border-style:solid;border-width:10px 14px;border-radius:0;'
    +'border-image-source:url('+ICN['fr-btn']+');border-image-slice:24% 11%;border-image-repeat:stretch;'
    /* ⚠枠のぶん上下に10pxずつ増えるので、その分パディングを削らないとボタンが背高になって
       タイトルのメニューが画面からはみ出す(2026-07-26に実際にそうなった) */
@@ -25970,6 +26009,19 @@ function gcPull(n){
  /* ⚠音は演出側で鳴らす。ここで鳴らすと撃つ前に結果が分かってしまう */
  gcStart(out);
 }
+/* 🎫⭐**★5確定チケットを1枚使う**(配布物。2026-08-03(106))。
+   ⚠**確率(gcPick/G_RATE)には一切触っていない**=★5の中から1人選んで、いつもの gcApply に流すだけ。
+   ⚠**重複も出る**(そのぶん🔧15になる)=「未所持の★5を優先する」にしたければ pool の絞りを1行変える。
+   ⭐演出は gcStart が結果から組み立てるので、**必ず★5の最上段の見せ方**(虹の文字/✨ロブ等)になる。 */
+function gcPull5(){
+ if((META.tk5||0)<1){toast('🎫 ★5確定チケットを持っていない',true);return;}
+ const pool=HEROES.filter(h=>h.rk===5);
+ if(!pool.length){toast('★5の英雄がいない',true);return;}
+ META.tk5=(META.tk5||0)-1;
+ const out=[gcApply({hero:pool[ri(0,pool.length-1)]})];
+ saveMeta();
+ gcStart(out);
+}
 function gcRateHtml(){
  /* ⚠**1体あたりの確率も一緒に出す**=「英雄が増えると枠が太くなる」仕組みが伝わらないと、
     数字だけ見て「★5が0.2%もある」と誤解される(2026-07-30) */
@@ -26204,6 +26256,12 @@ function renderGacha(res){
  const gb=$('gc-gemb');if(gb)gb.innerHTML=IC('💎 ')+(META.gem||0);
  $('gc-1').disabled=(META.gem||0)<G_COST1;
  $('gc-10').disabled=(META.gem||0)<G_COST10;
+ /* 🎫★5確定チケット=持っている時だけ出す(0枚の人には存在ごと見せない)。
+    ⚠出す時は右の列を詰める(`tk`)=でないと図鑑/確率が画面からはみ出す */
+ {const b=$('gc-t5'),n=META.tk5||0,sd=$('gc-side');
+  if(b){if(b.style)b.style.display=n>0?'':'none';
+   b.innerHTML='🎫 ★5確定<small>のこり '+n+'枚</small>';b.disabled=n<1;}
+  if(sd)sd.classList.toggle('tk',n>0);}
  const own=HEROES.filter(h=>heroOwned(h.id)).length;
  const dx=$('gc-dex');if(dx)dx.textContent='📖 図鑑 '+own+'/'+HEROES.length;
  gcView(GCV);
@@ -27015,6 +27073,7 @@ $('bt-gcres-close').onclick=closeGcRes;
 $('bt-gcres-ok').onclick=closeGcRes;
 $('gc-1').onclick=()=>gcPull(1);
 $('gc-10').onclick=()=>gcPull(10);
+$('gc-t5').onclick=()=>gcPull5();
 $('gc-rate').onclick=()=>gcView('rate');
 $('gc-dex').onclick=()=>gcView('dex');
 $('gc-back').onclick=()=>gcView('home');
@@ -28767,7 +28826,9 @@ function renderHome(){
  {const li=$('hm-lab-ic');if(li)li.innerHTML=icoImg('ic-lab','🔬');
   const lp=$('hm-lab-pts');if(lp)lp.innerHTML=IC('🧬')+fmt(META.pts||0);}
  {const gi=$('hm-gacha-ic');if(gi)gi.innerHTML=icoImg('ic-gem','💎');
-  const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0);}
+  /* 🎫持っている時は札に出す=召集の窓を開かないと気付けない、をなくす */
+  const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0)
+   +((META.tk5||0)>0?('　🎫'+(META.tk5||0)):'');}
  /* 🗺⭐出撃ボタンの小文字=**次の拠点**を出す(静的な「エリア1」の書き殴りだと一生そのままだった) */
  {const g9=$('bt-map')&&$('bt-map').querySelector('i');
   if(g9){const nd9=MAPND[mapDefSel()];
@@ -29176,6 +29237,9 @@ if(DEV){try{
 }catch(e){}}
 makeThumbs();paradeInit();updLabBtn();/* 🏋鍛錬所ボタンの表示/💎🔧の残数を起動時に合わせる */
 try{applyIcons();}catch(e){}/* 画面アイコンの差し替え(素材が無ければ絵文字のまま) */
+/* 🎫**配布物を受け取った回だけ報せる**。⚠タイトルが出てから出す(起動直後だとDOMが間に合わない) */
+if(GIFT_NEW)try{setTimeout(()=>{toast(GIFT.n+' を '+(GIFT.tk5||0)+'枚 受け取った! 💎英雄召集から使える');
+ if(sfx.win)sfx.win();},900);}catch(e){}
 /* 🔊音の確認: ?sfx=1 なら起動と同時に開く。🛠DEVモードならタイトルにボタンを出す。
    ⚠`el.style.display=''` はCSSの指定に戻るので 'block' を明示すること */
 try{
