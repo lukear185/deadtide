@@ -16703,7 +16703,14 @@ function dmgZ(C,z,d,armorPierce,quiet){
  /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する */
  if((z.armor||z.scl)&&!armorPierce)d*=.45;
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
- z.hp-=d;z.hitT=.1;
+ z.hp-=d;
+ /* ⚡⭐(124)**継続攻撃(火炎放射塔・レーザー塔)の白光りは「点滅」にする**。
+    ⚠⚠これまでは**毎コマ** hitT を .1 に押し戻していたので、狙われている敵は**ずっと白いまま**だった。
+      白光りは `ctx.filter='brightness(2.1)'` で出しており、**canvas の filter は一番高い部類**
+      (敵1体ごとに別の面を作って掛け直す)。何台も置くと「当たり続けている敵の数だけ」毎コマ掛かる。
+    ⭐hitT を**マイナスまで下げてよい**ことにして、0.25秒空いた時だけ光らせる=
+      手応え(当たっている)は残しつつ、掛かる回数が1/3以下になる。⚠単発の攻撃は今までどおり。 */
+ if(!quiet)z.hitT=.1;else if((z.hitT||0)<=-.25)z.hitT=.08;
  if(z.dummy&&z.hp<=0)z.hp=z.mhp;/* 🎯ダミーは何発当てても倒れない */
  /* ボスは削った分だけ報酬を先払い(倒しきれなくても取り分が残る) */
  if(z.boss&&z.mhp>0&&z.hp>0){
@@ -17328,7 +17335,8 @@ function campStep(C,dt,wave){
  const bnS9=Math.min(1,12/Math.max(1,C.burnN||1));let bnN9=0;
  for(const z of C.zombies){
   z.sm=1;for(const s2 of scrs){if(s2!==z&&dist(z.px,z.py,s2.px,s2.py)<150){z.sm=1.35;break;}}
-  if(z.hitT>0)z.hitT-=dt;
+  /* ⚠(124)**0を下回っても下げ続ける**(-.6で止める)=継続攻撃の白光りの間合いを測るのに使う(dmgZ) */
+  if(z.hitT>-.6)z.hitT-=dt;
   if(z.lgT>0)z.lgT-=dt;
   if(z.burnT>0){z.burnT-=dt;z.hp-=z.burnD*dt;bnN9++;
    if(FXLV>0&&Math.random()<dt*9*bnS9)addP(C,1,z.px,z.py-16*CH_UP,{sp:22,up:45,g:-70,life:.6,r:2.4,col:Math.random()<.5?'#ff9a3d':GOLD,jx:7,jy:9});
@@ -19498,41 +19506,55 @@ function renderCamp(C,t){
   /* 拠点の灯り(⚠🚌道中は拠点が無いので**バスのヘッドライト**を灯りにする) */
   if(C.bus)lite(C.bus.x,C.bus.y,300,.95);
   else lite(CORE[0],CORE[1],150,.95);
+  /* 💡⭐⭐⭐(124)**灯りは「升目でまとめてから」出す**(ユーザー「同じ作りのやつとか重いかもしれないやつ直して」)。
+     ⚠⚠**重さの正体**=`lite` も `glow` も**1件ごとにラジアルグラデを作って塗る**。
+       canvas 2D で一番高い部類で、半径70pxでも1枚で15,000px塗る。
+       敵・兵・電撃の数だけ増える作りだったので、**盤面が混むほど毎コマ数十〜百枚**になっていた。
+     ⭐同じ色の灯りが重なった所は元から飽和していた=**まとめても見た目はほとんど変わらない**。
+     ⚠**1件だけの時は今までと1pxも変えない**(n=1で素の半径・素の濃さになる式にする)。
+     ⚠数が増えた時だけ少し大きく・少し濃くする。⚠必ず頭切り(cap)を付ける。 */
+  const bkt=(cell,cap)=>{const m=new Map();return{
+   add(x,y){const k=Math.round(x/cell)*8192+Math.round(y/cell),e=m.get(k);
+    if(e){e.n++;e.x+=x;e.y+=y;}else m.set(k,{n:1,x,y});},
+   each(f){let i=0;for(const e of m.values()){if(i++>=cap)break;f(e.x/e.n,e.y/e.n,e.n);}}};};
   if(FXLV>0){
+   /* 🏰塔: ⚠**撃っている間の常夜灯は要らない**=発砲閃光(95px)の中に丸ごと入っている。
+      ⭐継続攻撃(火炎放射塔・レーザー塔)は**撃ちっぱなし=閃光が出っぱなし**なので、
+        ここを外すだけで台数ぶんまるごと減る。 */
    for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
-    lite(SLOTS[si][0],SLOTS[si][1],62,.35);/* 常夜灯 */
-    if(tw.fireT>0){lite(SLOTS[si][0],SLOTS[si][1],95,.7);glow.push([SLOTS[si][0],SLOTS[si][1],86,.5,'255,214,120']);}}/* 発砲閃光 */
-   for(const u of us2)if(u.fireT>0){lite(u.px,u.py-24*CH_UP,110,.8);glow.push([u.px,u.py-24*CH_UP,88,.42,'255,214,120']);}
-   /* 🔥⭐⭐(124)**燃えている敵の灯りは、近い者どうしをまとめて1つにする**(ユーザー
-        「火炎放射器タレットが何台も置くと重い」)。
-      ⚠⚠**重さの正体はここ**=`lite`+`glow` は**1件ごとにラジアルグラデを作って塗る**。
-        canvas 2D で一番高い部類の処理で、燃えている敵が40体なら**毎コマ80枚**作っていた。
-        火炎放射塔は周りにも燃焼を配るので、台数を増やすとここだけが線形に膨らむ。
-      ⭐**120pxの升目でまとめる**=群れの中の30体は数個の灯りになる。
-        重なった灯りは元々ほぼ同じ色に飽和していたので、**見た目はほとんど変わらない**。
-      ⚠まとめた灯りは**数に応じて少しだけ大きく**する(1体と10体で同じ大きさだと嘘に見える)。
-      ⚠最大10個で頭切り=どんなに燃えても上限が決まる。 */
-   {const CEL=120,bk=new Map();
-    for(const z of C.zombies){if(!(z.burnT>0))continue;
-     const gy=z.py-14*CH_UP,k9=Math.round(z.px/CEL)*8192+Math.round(gy/CEL);
-     const e9=bk.get(k9);
-     if(e9){e9.n++;e9.x+=z.px;e9.y+=gy;}else bk.set(k9,{n:1,x:z.px,y:gy});}
-    let bi9=0;
-    for(const e9 of bk.values()){if(bi9++>=10)break;
-     const n9=Math.min(e9.n,8),x9=e9.x/e9.n,y9=e9.y/e9.n,r9=70+n9*9;
-     lite(x9,y9,r9,.6);glow.push([x9,y9,r9*.86,Math.min(.5,.3+n9*.025),'255,140,60']);}}
-  /* ⭐酸まみれの敵は緑に光る=「こいつが倒れると弾ける」が見て分かるようにする */
-  for(const z of C.zombies)if(z.acdT>0)glow.push([z.px,z.py-14*CH_UP,54,.26,'150,230,60']);
+    if(tw.fireT>0){lite(SLOTS[si][0],SLOTS[si][1],95,.7);glow.push([SLOTS[si][0],SLOTS[si][1],86,.5,'255,214,120']);}
+    else lite(SLOTS[si][0],SLOTS[si][1],62,.35);/* 常夜灯 */}
+   /* 🔫撃っている兵科・英雄。⚠密集して撃つ(20体編成)ので、これも升目でまとめる */
+   {const b9=bkt(110,10);let any=false;
+    for(const u of us2)if(u.fireT>0){b9.add(u.px,u.py-24*CH_UP);any=true;}
+    if(any)b9.each((x,y,n)=>{const r=110+(Math.min(n,8)-1)*8;
+     lite(x,y,r,.8);glow.push([x,y,r*.8,Math.min(.55,.42+(n-1)*.02),'255,214,120']);});}
+   /* 🔥燃えている敵(火炎放射塔は周りにも燃焼を配るので、何台も置くと数十体になる) */
+   {const b9=bkt(120,10);let any=false;
+    for(const z of C.zombies)if(z.burnT>0){b9.add(z.px,z.py-14*CH_UP);any=true;}
+    if(any)b9.each((x,y,n)=>{const r=70+(Math.min(n,8)-1)*9;
+     lite(x,y,r,.6);glow.push([x,y,r*.86,Math.min(.5,.3+(n-1)*.025),'255,140,60']);});}
+   /* ⭐酸まみれの敵は緑に光る=「こいつが倒れると弾ける」が見て分かるようにする
+      ⚠こちらは加算の光だけ(暗がりは削らない)。酸噴射砲を並べると同じだけ増えるのでまとめる */
+   {const b9=bkt(120,8);let any=false;
+    for(const z of C.zombies)if(z.acdT>0){b9.add(z.px,z.py-14*CH_UP);any=true;}
+    if(any)b9.each((x,y,n)=>{glow.push([x,y,54+(Math.min(n,8)-1)*7,Math.min(.42,.26+(n-1)*.02),'150,230,60']);});}
+   /* ⚡電撃(テスラ・コイル)。⚠**1本の稲妻が「点の数だけ」灯りを出していた**=
+      連鎖する塔を並べると一気に増える枠。⚠色が違うので炎とは別の升目にする */
+   const zb=bkt(100,10);let zany=false;
    for(const e of C.fx){
     /* ⭐⚠**火球の上の暗がりを必ず外すこと**(2026-07-27 第106弾)。
        画面には時間帯の陰が掛かるので、`lite` の範囲が火球とずれていると
        せっかく彩度の高い橙で描いても**茶色く沈んで泥のような色**になる。
-       ⚠だから半径は固定値ではなく**火球の大きさ(R)に合わせて**取る。 */
+       ⚠だから半径は固定値ではなく**火球の大きさ(R)に合わせて**取る。
+       ⚠爆発は**1つ1つ大きさが違う**のでまとめない(まとめると光の大きさが嘘になる)。 */
     if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0),du=(e.k==='boomL'?.7:.5);
      if(tt>=0&&tt<du){const bb2=(e.k==='boomL'?1.8:1),R2=(24+clamp(tt/du,0,1)*54)*bb2;
       lite(e.x,e.y,R2*1.3,1);glow.push([e.x,e.y,R2*1.5,.5*Math.max(0,1-tt/du),'255,150,50']);}}
-    else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){lite(p4[0],p4[1],90,.85);glow.push([p4[0],p4[1],76,.45,'150,225,255']);}
+    else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){zb.add(p4[0],p4[1]);zany=true;}
    }
+   if(zany)zb.each((x,y,n)=>{const r=90+(Math.min(n,8)-1)*6;
+    lite(x,y,r,.85);glow.push([x,y,r*.84,Math.min(.6,.45+(n-1)*.02),'150,225,255']);});
    const fp2=BRANCH;if(COOP)for(let i=0;i<3;i++)lite(fp2[i][0],fp2[i][1]-10,70,.4);
   }
   /* 加算で光の色そのものを乗せる=夜でも昼でも「撃った光」だと分かる */
