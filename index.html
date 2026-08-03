@@ -716,7 +716,8 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ⚠(110)**上の塊は詰める**=下の一覧(22人ぶん)が2行しか見えず狭かった(ユーザー指摘)。
    姿の枠を158→132pxに下げたぶんが、そのまま下の一覧の高さになる。 */
 .hstop{display:flex;gap:8px;align-items:stretch;margin-bottom:5px}
-.hsshow{flex:0 0 118px;height:132px;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void);cursor:pointer}
+/* ⚠(114)一覧を消したので**姿の枠は縦いっぱいに伸ばす**(横も広げる)=下に大きな空きが残るため */
+.hsshow{flex:0 0 210px;height:auto;min-height:132px;position:relative;border:3px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--void);cursor:pointer}
 /* ▶(100)必殺技を実際に使っている映像(ユーザー指示)。姿の枠に重ねて再生する */
 .hsshow .hsplay{position:absolute;left:0;right:0;bottom:0;background:rgba(20,16,12,.82);color:var(--gold);
  font-size:10.5px;font-weight:900;text-align:center;padding:3px 2px;letter-spacing:1px}
@@ -730,9 +731,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ⭐**数値の棒**(2026-08-02(66))=名前 / 数字 / 棒 の3列。⚠**幅は割合**にする(px決め打ちは溢れる) */
 /* ⭐(110)**棒は2列に畳む**=横に余っているのに縦へ4本積んでいて、下の一覧を28px圧迫していた。
    ⚠**狭い画面では1列に戻す**(2列だと棒が短すぎて「多い/少ない」が読めなくなる) */
-.sbwrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px}
-@media (max-width:640px){.sbwrap{grid-template-columns:1fr}}
-.hsinfo .sbr{display:grid;grid-template-columns:58px minmax(58px,76px) 1fr;align-items:center;gap:6px;
+/* ⚠(114)**1列に戻した**=下の一覧を消して縦に余裕ができたので、2列に詰める必要が無くなった。
+   ⭐2列のままだと数字の欄が狭く、鍛錬Lvで桁が増えた英雄で**「毎秒1,020」が棒に重なっていた**。 */
+.sbwrap{display:grid;grid-template-columns:1fr;gap:1px}
+/* ⚠数字の欄は**桁が増えても収まる幅**にする(鍛錬Lv50で「9,999 毎秒9,999」まで出る) */
+.hsinfo .sbr{display:grid;grid-template-columns:66px minmax(112px,140px) 1fr;align-items:center;gap:7px;
  font-size:11.5px;font-weight:900;margin:2px 0}
 .hsinfo .sbr .sv{text-align:right;white-space:nowrap}
 .hsinfo .sbr .sv small{font-size:10.5px;font-weight:800;opacity:.65}
@@ -892,11 +895,13 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-hstat .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 /* ▶⭐(111)**必殺技を見ている間は窓いっぱいで見せる**(ユーザー「ちゃんと必殺技を見れるようにして欲しい」)。
    ⚠118x132の小窓では何をしているのか読めない=**数値と一覧を畳んで舞台を広げる**(止めると戻る) */
-#md-hstat .bpbody.demo .hsinfo,#md-hstat .bpbody.demo .hgrid{display:none}
+#md-hstat .bpbody.demo .hsinfo{display:none}
 #md-hstat .bpbody.demo .hstop{flex:1 1 auto;min-height:0;margin-bottom:0}
 #md-hstat .bpbody.demo .hsshow{flex:1 1 auto;width:100%;height:100%}
 #md-hstat .hstop{flex:0 0 auto}
-#md-hstat .hgrid{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0}
+/* ⚠(114)一覧を消したので**姿と数値が窓いっぱい**に伸びる */
+#md-hstat .hstop{flex:1 1 auto;min-height:0}
+#md-hstat .hsinfo{overflow-y:auto;overscroll-behavior:contain;min-height:0}
 .tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;
  overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0;padding-bottom:4px}
 /* ⭐(96c)一覧の札=英雄窓と同じ暗い札。**金の枠+✅=編成に入っている(押すと外す)** */
@@ -1429,7 +1434,6 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <div class="hsshow" id="hs-show"><canvas id="hs-cv" width="264" height="316"></canvas><span class="hsplay" id="hs-play">▶ 必殺技を見る</span></div>
         <div class="hsinfo" id="hs-info"></div>
       </div>
-      <div class="hgrid" id="hs-grid"></div>
     </div>
   </div>
 </div>
@@ -26148,9 +26152,6 @@ function openHStat(id,from){
  HSFROM=HS_BACK[from]?from:'';
  HSSEL=id||(heroOwned(HSSEL)?HSSEL:'')||(META.hsel&&heroOwned(META.hsel)?META.hsel:'')||(own?own.id:HEROES[0].id);
  $('md-hstat').classList.add('on');hsDemoStop();renderHStat();
- /* ⭐開いた時は選択中の札まで一覧を寄せる(⚠rAFで1フレーム遅らせる=開いた直後は寸法が無い) */
- try{requestAnimationFrame(()=>{const e9=document.querySelector('#hs-grid .hb.sel');
-  if(e9&&e9.scrollIntoView)e9.scrollIntoView({block:'nearest'});});}catch(e){}
 }
 function closeHStat(){$('md-hstat').classList.remove('on');HSFROM='';try{hsDemoStop();}catch(e){}try{renderPickRows();}catch(e){}}
 /* ⭐(110)来た所へ戻る。⚠**閉じる(✕)とは別物**=✕は全部閉じてホームへ、こちらは元の窓を開き直す */
@@ -26218,18 +26219,16 @@ function renderHStat(){
   +'<div class="hsul">必殺『'+H.ult+'』— '+H.udsc+'</div>');
  /* 姿。⚠fitDraw は canvas の中の寸法に合わせて収める(CSSと食い違うと潰れる=第93弾の失敗)。
     ⚠▶デモを流している最中は上書きしない(毎フレーム描いているのを消してしまう) */
- if(!HSD)try{const cv=$('hs-cv');if(cv&&cv.getContext&&ui>=0)fitDraw(cv,cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),10);}catch(e){}
- const g=$('hs-grid');
- if(g){const sv9=g.scrollTop;/* ⚠書き直したらスクロール位置を戻す(掟)=一覧が自前で流れる箱になった */
-  g.innerHTML=HEROES.map(h=>{const c2=(META.hero||{})[h.id]||0;
-   return '<div class="hb pick'+(c2?' own':'')+(h.id===HSSEL?' sel':'')+'" data-hs="'+h.id+'">'
-    +RK_S[h.rk]+' '+(c2?h.n:'???')
-    /* ⚠「未所持」を行頭に=1行に切り詰めた時、消えるのはレア枠名の方(大事な状態は残る) */
-    +'<div class="hq">'+(c2?('所持'+c2+' / '+h.ult):'未所持 — '+RK_N[h.rk]+'枠')+'</div></div>';}).join('');
-  g.scrollTop=sv9;
-  /* ⚠札を選び直したらデモは止める(別の英雄の映像が流れ続けない) */
-  g.querySelectorAll('[data-hs]').forEach(b=>{b.onclick=()=>{HSSEL=b.dataset.hs;if(sfx.buy)sfx.buy();
-   if(HSD)hsDemoStop();else renderHStat();};});}
+ /* ⚠(114)**枠の実寸に合わせて面を作り直してから描く**=枠を縦いっぱいに伸ばしたので、
+    264x316 の決め打ちのままだと姿が縦横に潰れる(canvasのwidth/height属性とCSSの寸法は別物) */
+ if(!HSD)try{const cv=$('hs-cv');
+  if(cv&&cv.getContext&&ui>=0){const dpr9=Math.min(2,window.devicePixelRatio||1);
+   const bw9=Math.max(2,Math.round((cv.clientWidth||132)*dpr9)),bh9=Math.max(2,Math.round((cv.clientHeight||158)*dpr9));
+   if(cv.width!==bw9)cv.width=bw9;if(cv.height!==bh9)cv.height=bh9;
+   /* ⚠余白は18=★の冠が枠の上で切れる(10だと切れていた) */
+   fitDraw(cv,cc=>drawUnit(cc,ui,0,0,1,.4,0,{}),18);}}catch(e){}
+ /* ⚠(114)**下の英雄一覧は消した**(ユーザー「この画面の下部のリスト削除で。要らないわ」)。
+    ⭐英雄を選び直すのは💎召集と🦸英雄を選ぶ窓の役目=ここは**1人を見る画面**に徹する。 */
 }
 /* ▶⭐⭐(100)**必殺技のデモ映像**(2026-08-03ユーザー指示「実際にゾンビとかに使ってる映像を流して」)。
    ⭐**本物の仕組みをそのまま回す**=英雄1体+ゾンビ数体の小さな箱庭(newCamp)を作り、
@@ -26244,7 +26243,7 @@ function hsDemoStop(){
  /* ⚠**舞台を畳んで元の画面に戻す**(class を外し忘れると数値も一覧も出てこない) */
  try{const b=document.querySelector('#md-hstat .bpbody');if(b)b.classList.remove('demo');}catch(e){}
  /* ⚠**canvasの面も元の縦長に戻す**=舞台で横長に作り直しているので、戻さないと姿の絵が歪む */
- try{const cv=$('hs-cv');if(cv){cv.width=264;cv.height=316;}}catch(e){}
+ /* ⚠(114)姿の絵は枠の実寸から作り直すので、ここで決め打ちに戻す必要はない(renderHStatが合わせる) */
  try{renderHStat();}catch(e){}/* 姿の絵に戻す */
 }
 /* ⭐⭐(111)**「必殺技だけを見せる舞台」に作り替えた**(ユーザー指摘
@@ -26269,7 +26268,25 @@ const HSD_N=6;    /* 的の数 */
      ②英雄から見て**向きが裏返る**(=左を向く) が同時に起きていた。
    ⭐d=0〜300 は**y が変わらないまっすぐな区間**なので、そこを舞台にする。
    ⚠**hDark の突撃は d=0 まで駆ける**ので、英雄をここに置くと**駆け抜けが舞台に収まる**。 */
-const HSD_D0=260;/* 英雄を置く位置(道のまっすぐな区間)。⚠300だと曲がり角に掛かる */
+/* ⚠⚠⚠**「まっすぐな区間」を決め打ちしてはいけない**(2026-08-03(114)ユーザー写真=
+     必殺技のムービーが**縦になっていた**)。⚠道の形は**ステージごとに違う**ので、
+     ①面で当たりを付けた d=260 が、別のステージでは**縦に伸びる区間**だった。
+   ⭐**その場で道を測って、一番まっすぐ横に伸びている所を舞台にする**。 */
+const HSD_SPAN=300;/* 舞台に要る長さ */
+function hsdFlatD0(){
+ let best=null;
+ for(let d=HSD_SPAN;d<=PLEN;d+=20){
+  const a=pathPos(d-HSD_SPAN),b=pathPos(d);
+  const dx=Math.abs(b[0]-a[0]);
+  if(dx<HSD_SPAN*.75)continue;/* 横に伸びていない(縦の区間や曲がり角) */
+  /* 途中も含めて上下のブレが一番小さい所を選ぶ=端だけ見ると弧を描く道を拾ってしまう */
+  let dy=0;for(let k=1;k<6;k++){const p=pathPos(d-HSD_SPAN*(1-k/6));dy=Math.max(dy,Math.abs(p[1]-a[1]));}
+  dy=Math.max(dy,Math.abs(b[1]-a[1]));
+  if(!best||dy<best.dy)best={d,dy};
+ }
+ /* ⚠**見つからない時は null**=呼ぶ側で「別の地図を読み直す」判断をさせる */
+ return best?best.d:null;
+}
 const HSD_N_R=40;/* 的の間隔 */
 const hsdZd=(d0,i)=>Math.max(20,d0-44-i*HSD_N_R);/* i番目の的の位置(英雄の前方) */
 function hsDemoStart(id){
@@ -26279,8 +26296,15 @@ function hsDemoStart(id){
  const cv=$('hs-cv');if(!cv||!cv.getContext)return;
  const C=newCamp('demo','me',0,true);
  C.hUi=ui;C.hOut=1;C.hCg=1;C.isMe=false;/* ⚠isMe=false=デモで音を鳴らさない・トーストも出さない */
- /* ⚠**道のまっすぐな区間に置く**(上の HSD_D0 の説明)。⚠px/py は campStep が入れるのでまず1回回す */
- const d0=Math.min(HSD_D0,PLEN*.5);
+ /* ⚠**その場で道を測って、まっすぐ横に伸びている所を舞台にする**(上の hsdFlatD0 の説明)。
+    ⚠px/py は campStep が入れるのでまず1回回す */
+ /* ⚠⚠**いま読み込まれている地図の道を使う**ので、🚌開拓便(縦一直線の道路)の後に開くと
+    **舞台まで縦になる**(2026-08-03(114)ユーザー写真)。⭐横に伸びた区間が1つも無ければ、
+    **試合中でない時に限り**ステージ1の道を読み直してから測る。 */
+ let d0=null;
+ try{d0=hsdFlatD0();}catch(e){}
+ if(d0==null&&!gameActive){try{loadStage(0);d0=hsdFlatD0();}catch(e){}}
+ if(d0==null)d0=Math.min(HSD_SPAN,PLEN*.5);
  C.units.push({eid:EID++,ui,own:0,am:1,d:d0,hp:UNITS[ui].hp,mhp:UNITS[ui].hp,cd:0,hitT:0,ph:0,px:0,py:0,hro:H.rk});
  /* 的=前方に並べる。⚠**歩かない・殴らない・倒れない**の3点セットにしないと舞台にならない */
  for(let i=0;i<HSD_N;i++){const z=mkZ(zSpec(0,1,1,false,''),hsdZd(d0,i));
