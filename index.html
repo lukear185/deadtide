@@ -1102,8 +1102,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 /* ============ 🏹 弓比べ(お遊びの別ゲーム。2026-08-04(125)ユーザー指示) ============
    ⭐**DEADTIDE本編とは別のゲーム**=タイトルの🏹から入って、専用のホームと盤面を持つ。
    ⚠本編の仕組み(G/META.sc/波)には一切ぶら下げない=壊しようがない作りにする。 */
-/* ⚠⚠(125)**右上は駄目**=版の札とも🛡シングルプレイのボタンとも重なる(検査が落ちた)。⭐左下へ置いた */
-#arcbtn{position:absolute;left:10px;bottom:10px;z-index:6;min-height:44px;min-width:44px;padding:5px 11px;
+/* ⚠⚠(129)置き場所を2回動かした=**右上**は版の札と🛡シングルプレイに重なり、**左下**は行進と被った。
+   ⭐**左上の💫幸運チケットの下**に落ち着かせた(⚠チケットが無い時は上に詰まる) */
+#arcbtn{position:absolute;left:10px;top:78px;z-index:6;min-height:44px;min-width:44px;padding:5px 11px;
  border:3px solid var(--gold);border-radius:12px;background:rgba(36,31,25,.85);color:var(--pane);
  font-family:inherit;font-weight:900;font-size:20px;line-height:1.1;cursor:pointer}
 #arcbtn i{display:block;font-style:normal;font-size:10.5px;color:var(--paper3);margin-top:1px}
@@ -1431,7 +1432,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button class="btn" id="arc-helm" style="display:none" aria-label="ヘルメット">⛑</button>
     <button class="btn red" id="arc-fire">🏹 射る</button>
   </div>
-  <div id="arc-end" style="display:none">
+  <!-- ⚠(129)**インラインの style=display:none を書かない**=.on の指定に勝ってしまい、
+       決着しても「もう一度/ホームへ」が一度も出なかった -->
+  <div id="arc-end">
     <button class="btn red" id="arc-again">▶ もう一度</button>
     <button class="btn" id="arc-home">← ホームへ</button>
   </div>
@@ -30373,7 +30376,7 @@ const ARC_N=84;                  /* マスの数(=336m) */
 const ARC_W=ARC_CELL*ARC_N;
 const ARC_GY=430;                /* 地面の基準の高さ */
 const ARC_STEPD=1;               /* 1歩で動けるマス数 */
-const ARC_HP=3;                  /* 何回当てたら勝ちか */
+const ARC_HP=2;                  /* 何回当てたら勝ちか(⚠(129)3→2。決着を早くする) */
 const ARC_G=980;                 /* 重力 */
 const ARC_V=20;                  /* 威力→初速の倍率(威力100・45°で約408m飛ぶ) */
 const ARC_WOB_A=.9,ARC_WOB_P=.012;/* ⭐手ブレ(角度°/威力の割合)。⚠0にすると同じ狙いが必ず当たる */
@@ -30386,6 +30389,12 @@ const ARC_MIND=18,ARC_MAXD=72;/* 相手までのマス数(72m〜288m) */
    頭付近への矢をガードできる」)。⚠どちらも**1試合に1回だけ**=使いどころがそのまま腕になる。
    ⭐しゃがみ=**次の1本を必ずかわす**(相手が撃ち終わるまで続く)。
    ⭐ヘルメット=**頭のあたりに来た1本を弾く**(低い弾道の矢は防げない=かわす方と役割が違う)。 */
+/* 🫥⭐⭐(129)**動けるのは「相手が狙いを定めている間」だけ**(ユーザー「マス移動する時 敵に移動してる姿
+   見えたら意味ないから、敵の視点で角度調整とか威力調整とかしてる時だけ、逆にいうと
+   自分が視界に入ってる間は移動としゃがみとヘルメットできないように」)。
+   ⭐**視点が相手に居る間=こちらは相手の視界の外**、という読み替え。⚠自分の番は一切動けない。
+   ⚠だから相手が狙う時間は**動くか決めるのに足りる長さ**が要る(ARC_ETHINK)。 */
+const ARC_ETHINK=2.8;/* 相手が狙いを定めている秒数(=こちらが動ける唯一の間) */
 const ARC_DUCK_R=5,ARC_HELM_R=7;/* もらえるターン */
 const ARC_HELM_H=34;           /* 「頭付近」と見なす高さ(地面からの高さpx) */
 const ARC_EZW=10;             /* 相手が動ける幅(自分の居場所の±) */
@@ -30434,8 +30443,11 @@ function arcFoeFire(){
 }
 function arcMsg(s,sec){ARC.msg=s;ARC.msgT=sec||2.2;}
 /* ⭐(126)**一マス移動はいつでもできる**(矢が飛んでいる間と決着後だけ不可) */
+/* ⭐(129)動ける/道具を使えるのは**相手が狙っている間だけ** */
+const arcFree=()=>{const A=ARC;return !!A&&!A.over&&!A.ar&&A.ph==='ethink';};
 function arcMove(d){
- const A=ARC;if(!A||A.over||A.ar)return;
+ const A=ARC;if(!A)return;
+ if(!arcFree()){arcMsg('⚠ 動けるのは相手が狙っている間だけ',2);arcUI();return;}
  if(A.me.steps<1){arcMsg('👣 歩数が足りない(1ターンに1つ貯まる)');arcUI();return;}
  const nc=clamp(A.me.c+d*ARC_STEPD,ARC_PZ[0],ARC_PZ[1]);
  if(nc===A.me.c){arcMsg('これ以上は動けない');arcUI();return;}
@@ -30447,10 +30459,12 @@ function arcMove(d){
 }
 /* 🦆⛑(128)使う。⚠**しゃがみは相手の番でしか意味が無い**ので、押せるのは相手が狙っている間だけ。
    ⚠ヘルメットは**いつ被ってもよい**(次に飛んでくる1本を待つ) */
-function arcDuck(){const A=ARC;if(!A||A.over||!A.me.duck||A.me.duckOn)return;
+function arcDuck(){const A=ARC;if(!A||!A.me.duck||A.me.duckOn)return;
+ if(!arcFree()){arcMsg('⚠ しゃがめるのは相手が狙っている間だけ',2);arcUI();return;}
  A.me.duck=0;A.me.duckOn=1;arcMsg('🦆 しゃがんだ! 次の1本はかわせる',3);
  try{if(sfx.tap)sfx.tap();}catch(e){}arcUI();}
-function arcHelm(){const A=ARC;if(!A||A.over||!A.me.helm||A.me.helmOn)return;
+function arcHelm(){const A=ARC;if(!A||!A.me.helm||A.me.helmOn)return;
+ if(!arcFree()){arcMsg('⚠ 被れるのは相手が狙っている間だけ',2);arcUI();return;}
  A.me.helmOn=1;arcMsg('⛑ ヘルメットを被った! 頭に来た1本を弾く',3);
  try{if(sfx.tap)sfx.tap();}catch(e){}arcUI();}
 /* 刺さった=マスが決まる。⭐**当たりは「同じマス」**(1本1マスの掟) */
@@ -30522,10 +30536,10 @@ function arcStep(dt){
    if(A.foe.steps>0&&Math.random()<.6){
     const d=Math.random()<.5?-1:1,nc=clamp(A.foe.c+d,A.foe.z[0],A.foe.z[1]);
     if(nc!==A.foe.c){A.foe.c=nc;A.foe.steps--;A.foe.gsd=Math.min(6,A.foe.gsd+.6);}}
-   arcMsg('相手の番',1.2);}
+   arcMsg('🎯 相手が狙いを定めている… いまのうちに動け!',ARC_ETHINK);}
  }else if(A.ph==='ethink'){
   A.camT=arcCX(A.foe.c);
-  if(A.t>=.9)arcFoeFire();
+  if(A.t>=ARC_ETHINK)arcFoeFire();
  }else if(A.ph==='pland'){/* 相手の矢が刺さった → 自分の番へ */
   if(A.t>=.85){A.ph='ppan';A.t=0;A.camT=arcCX(A.me.c);A.camK=ARC_CAMF;}
  }else if(A.ph==='ppan'){
@@ -30544,7 +30558,7 @@ function arcUI(){
  const me=$('arc-me'),fo=$('arc-foe'),ms=$('arc-msg');
  if(me)me.textContent='🏹 '+hp(A.me.hp)+'  👣'+A.me.steps+'  '+(A.me.c*ARC_CELL/10|0)+'m';
  if(fo)fo.textContent=hp(A.foe.hp)+' 🎯';
- if(ms)ms.textContent=A.msgT>0?A.msg:(A.ph==='aim'?'角度と威力を決めて射る(←→でいつでも1マス動ける)':'相手の番');
+ if(ms)ms.textContent=A.msgT>0?A.msg:(A.ph==='aim'?'角度と威力を決めて射る(⚠動けるのは相手が狙っている間だけ)':(A.ph==='ethink'?'🎯 相手が狙っている — いまなら動ける':'相手の番'));
  const ctl=$('arc-ctl'),en=$('arc-end');
  if(en)en.classList.toggle('on',!!A.over);
  if(ctl){ctl.style.display=A.over?'none':'flex';
@@ -30553,10 +30567,11 @@ function arcUI(){
  /* 🦆⛑(128)持っている時だけ出す。⚠使い切ったら消える(押せないボタンを置きっぱなしにしない) */
  {const db=$('arc-duck'),hb=$('arc-helm');
   if(db){db.style.display=(A.me.duck||A.me.duckOn)?'':'none';
-   db.disabled=!A.me.duck||!!A.over;db.textContent=A.me.duckOn?'🦆中':'🦆';}
+   db.disabled=!A.me.duck||!free9;db.textContent=A.me.duckOn?'🦆中':'🦆';}
   if(hb){hb.style.display=(A.me.helm||A.me.helmOn)?'':'none';
-   hb.disabled=!A.me.helm||!!A.me.helmOn||!!A.over;hb.textContent=A.me.helmOn?'⛑装備':'⛑';}}
- for(const q of ['arc-l','arc-r']){const e=$(q);if(e)e.disabled=(A.me.steps<1||!!A.ar||!!A.over);}
+   hb.disabled=!A.me.helm||!!A.me.helmOn||!free9;hb.textContent=A.me.helmOn?'⛑装備':'⛑';}}
+ const free9=arcFree();
+ for(const q of ['arc-l','arc-r']){const e=$(q);if(e)e.disabled=(A.me.steps<1||!free9);}
  const la=$('arc-la'),lp=$('arc-lp');
  if(la)la.textContent='角度 '+A.ang+'°';
  if(lp)lp.textContent='威力 '+A.pow;
@@ -30615,7 +30630,10 @@ function arcDraw(t){
   c.globalAlpha=1;}
  /* 自分と相手。⚠**姿を隠すのは視点**=遠くに居る側は画面の外なので自然に見えない */
  arcDrawMan(c,arcCX(A.me.c),arcGround(arcCX(A.me.c)),1,'#e8a83d',A.ph==='aim'?A.ang:35,A.me.duckOn,A.me.helmOn);
- arcDrawMan(c,arcCX(A.foe.c),arcGround(arcCX(A.foe.c)),-1,'#c9525f',45);
+ /* 🎯(129)狙いを定めている間は**弓の角度が揺れる**=何をしているのかが見て分かる
+    (⚠その間だけこちらは動ける=「見られていない合図」でもある) */
+ arcDrawMan(c,arcCX(A.foe.c),arcGround(arcCX(A.foe.c)),-1,'#c9525f',
+  A.ph==='ethink'?(38+Math.sin(t*3.1)*14):40);
  /* 飛んでいる矢 */
  if(A.ar){const ar=A.ar;
   c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=3;c.beginPath();
