@@ -20650,12 +20650,14 @@ const busRate=()=>DEV?.5:BUS_RATE*luckX();/* 💫(116) */
    ⚠**貯めておける**=使うのはタイトルで自分でタップした時だけ(勝手に減らない)。
    ⭐**1日目=この版を最初に起動した日**(ユーザー「これ実装した瞬間が1日目ね」)=
      META.lgN は未設定なら0なので、初回の起動でそのまま1日目になる。 */
-const LUCK_X=10;            /* 何倍にするか */
+const LUCK_X=30;            /* 出る確率を何倍にするか(2026-08-03(117)ユーザー指示で10→30) */
+const LUCK_SP=1.5;          /* 💫(117)歩く速さの倍率(ユーザー指示)=入れ替わりが速い=抽選が多く回る */
 const LUCK_T=30;            /* 効く秒数 */
 const LUCK_DAYS=[1,3,5,10]; /* 何日目に配るか */
 let LUCKT=0;                /* いま効いている残り秒(⚠セーブしない=起動ごとに切れる) */
 const luckOn=()=>LUCKT>0;
 const luckX=()=>luckOn()?LUCK_X:1;
+const luckSp=()=>luckOn()?LUCK_SP:1;
 /* その日の初回起動なら通算日数を1つ進めて、配る日なら1枚渡す。戻り値=配ったら日数 */
 function luckLogin(){
  const k=bnsDayKey();
@@ -20673,7 +20675,7 @@ function luckUse(){
  if((META.luck|0)<1)return false;
  META.luck=(META.luck|0)-1;LUCKT=LUCK_T;saveMeta();
  if(sfx.win)sfx.win();
- toast('💫 幸運チケット! '+LUCK_T+'秒だけ 🌈虹犬・✨金ロブ・🚌バス が'+LUCK_X+'倍');
+ toast('💫 幸運チケット! '+LUCK_T+'秒だけ 🌈虹犬・✨金ロブ・🚌バス が'+LUCK_X+'倍(歩くのも'+LUCK_SP+'倍速い)');
  luckUpd();
  return true;
 }
@@ -20685,7 +20687,7 @@ function luckUpd(){
  b.classList.toggle('on',luckOn());
  const nn=$('luck-n'),ss=$('luck-s');
  if(nn)nn.textContent=luckOn()?('💫 のこり '+Math.ceil(LUCKT)+'秒'):('💫 幸運チケット ×'+n);
- if(ss)ss.textContent=luckOn()?('🌈✨🚌 が'+LUCK_X+'倍で出ている!'):'タップして使う';
+ if(ss)ss.textContent=luckOn()?('🌈✨🚌 が'+LUCK_X+'倍! 歩くのも'+LUCK_SP+'倍速い'):'タップして使う';
 }
 /* 毎コマ減らす。⚠**タイトルに居る時だけ減らす**=効くのがタイトルの行進だけなので、
    別の画面に居る間に切れてしまうと「使ったのに何も起きない」になる。 */
@@ -20997,7 +20999,9 @@ function paradeStep(t){
    pctx.translate(p.x-p.kb,h-20);pctx.rotate((p.bus?.5:1.5)*(1-Math.pow(1-k,3)));
    if(p.bus)drawBusKun(pctx,0,0,t,p.ph,0);else drawZombie(pctx,p.zi,0,0,1,t,p.ph,{});
    pctx.restore();pctx.globalAlpha=1;continue;}
-  p.x+=p.sp*.016;if(p.x>w+(p.bus?130:60))PAR[i]=parNew();
+  /* 💫(117)**幸運チケット中は歩くのも速い**(ユーザー指示)=画面を横切るのが速いぶん
+     **入れ替わりも速い**=同じ30秒でより多く抽選が回る。⚠**タップは難しくなる**(そこは腕)。 */
+  p.x+=p.sp*luckSp()*.016;if(p.x>w+(p.bus?130:60))PAR[i]=parNew();
   const dx=p.x-p.kb;
   /* ⭐🚌バスくん。⚠虹/金と違って**焼き直さず直に描く**=RBC(160px)には収まらない大きさなので */
   if(p.bus){drawBusKun(pctx,dx,h-20,t,p.ph,p.hp);
@@ -29237,6 +29241,7 @@ try{
   const d=$('luck-dsc');
   if(d)d.innerHTML=IC('使うと <b>'+LUCK_T+'秒だけ</b> タイトルの<br>'
    +'🌈虹犬・✨黄金のロブスター・🚌ゾンビバス が出る確率が <b>'+LUCK_X+'倍</b>になる。'
+   +'<br>みんなの<b>歩く速さも'+LUCK_SP+'倍</b>(そのぶん入れ替わりが速い)。'
    +'<br>のこり <b>'+(META.luck|0)+'枚</b>');
   $('md-luck').classList.add('on');
  };
