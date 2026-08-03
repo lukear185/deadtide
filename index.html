@@ -17320,12 +17320,18 @@ function campStep(C,dt,wave){
   z.vw=pxVw(p[2]);if(z.aura)scrs.push(z);}
  if(C.bus)bnsBusStep(C,dt);/* 🚌ボーナス面の轢き殺し */
  for(const u of C.units)u.eng=0;
+ /* 🔥⭐(124)**燃えている敵が増えるほど、1体あたりの火の粉を減らす**(ユーザー
+      「火炎放射器タレットが何台も置くと重い」)。⚠火炎放射塔は**周りにも燃焼を配る**ので、
+      何台も置くと燃えている敵が数十体になり、**1体ずつが毎秒9粒**出していた。
+    ⭐総量を12体ぶんで頭打ちにする=1体だけ燃えている時の見え方は1粒も変わらない。
+    ⚠数は**前のコマの数**で決める(この場で数え直すと、もう1周ぶん舐めることになる)。 */
+ const bnS9=Math.min(1,12/Math.max(1,C.burnN||1));let bnN9=0;
  for(const z of C.zombies){
   z.sm=1;for(const s2 of scrs){if(s2!==z&&dist(z.px,z.py,s2.px,s2.py)<150){z.sm=1.35;break;}}
   if(z.hitT>0)z.hitT-=dt;
   if(z.lgT>0)z.lgT-=dt;
-  if(z.burnT>0){z.burnT-=dt;z.hp-=z.burnD*dt;
-   if(FXLV>0&&Math.random()<dt*9)addP(C,1,z.px,z.py-16*CH_UP,{sp:22,up:45,g:-70,life:.6,r:2.4,col:Math.random()<.5?'#ff9a3d':GOLD,jx:7,jy:9});
+  if(z.burnT>0){z.burnT-=dt;z.hp-=z.burnD*dt;bnN9++;
+   if(FXLV>0&&Math.random()<dt*9*bnS9)addP(C,1,z.px,z.py-16*CH_UP,{sp:22,up:45,g:-70,life:.6,r:2.4,col:Math.random()<.5?'#ff9a3d':GOLD,jx:7,jy:9});
    if(z.hp<=0&&!z.dead)killZ(C,z);}
   /* ⭐酸。燃焼と違って**滴り落ちる**ので粒は下へ落とす。倒れた時の酸爆発は killZ 側 */
   if(z.acdT>0&&!z.dead){z.acdT-=dt;z.hp-=z.acdD*dt;
@@ -17421,6 +17427,7 @@ function campStep(C,dt,wave){
     if(C.isMe){sfx.leak();dmgFlash();}}
    if(C.core<=0){C.core=0;C.dying=true;addFx(C,'boomL',CORE[0],CORE[1],'');}}
  }
+ C.burnN=bnN9;/* 🔥(124)燃えている数=次のコマの火の粉の間引きに使う */
  /* ユニット */
  const MR=38;
  for(let ui2=0;ui2<UNITS.length;ui2++)if(C.ucd[ui2]>0)C.ucd[ui2]-=dt;
@@ -19496,7 +19503,24 @@ function renderCamp(C,t){
     lite(SLOTS[si][0],SLOTS[si][1],62,.35);/* 常夜灯 */
     if(tw.fireT>0){lite(SLOTS[si][0],SLOTS[si][1],95,.7);glow.push([SLOTS[si][0],SLOTS[si][1],86,.5,'255,214,120']);}}/* 発砲閃光 */
    for(const u of us2)if(u.fireT>0){lite(u.px,u.py-24*CH_UP,110,.8);glow.push([u.px,u.py-24*CH_UP,88,.42,'255,214,120']);}
-   for(const z of C.zombies)if(z.burnT>0){lite(z.px,z.py-14*CH_UP,70,.6);glow.push([z.px,z.py-14*CH_UP,60,.3,'255,140,60']);}/* 燃えてる敵 */
+   /* 🔥⭐⭐(124)**燃えている敵の灯りは、近い者どうしをまとめて1つにする**(ユーザー
+        「火炎放射器タレットが何台も置くと重い」)。
+      ⚠⚠**重さの正体はここ**=`lite`+`glow` は**1件ごとにラジアルグラデを作って塗る**。
+        canvas 2D で一番高い部類の処理で、燃えている敵が40体なら**毎コマ80枚**作っていた。
+        火炎放射塔は周りにも燃焼を配るので、台数を増やすとここだけが線形に膨らむ。
+      ⭐**120pxの升目でまとめる**=群れの中の30体は数個の灯りになる。
+        重なった灯りは元々ほぼ同じ色に飽和していたので、**見た目はほとんど変わらない**。
+      ⚠まとめた灯りは**数に応じて少しだけ大きく**する(1体と10体で同じ大きさだと嘘に見える)。
+      ⚠最大10個で頭切り=どんなに燃えても上限が決まる。 */
+   {const CEL=120,bk=new Map();
+    for(const z of C.zombies){if(!(z.burnT>0))continue;
+     const gy=z.py-14*CH_UP,k9=Math.round(z.px/CEL)*8192+Math.round(gy/CEL);
+     const e9=bk.get(k9);
+     if(e9){e9.n++;e9.x+=z.px;e9.y+=gy;}else bk.set(k9,{n:1,x:z.px,y:gy});}
+    let bi9=0;
+    for(const e9 of bk.values()){if(bi9++>=10)break;
+     const n9=Math.min(e9.n,8),x9=e9.x/e9.n,y9=e9.y/e9.n,r9=70+n9*9;
+     lite(x9,y9,r9,.6);glow.push([x9,y9,r9*.86,Math.min(.5,.3+n9*.025),'255,140,60']);}}
   /* ⭐酸まみれの敵は緑に光る=「こいつが倒れると弾ける」が見て分かるようにする */
   for(const z of C.zombies)if(z.acdT>0)glow.push([z.px,z.py-14*CH_UP,54,.26,'150,230,60']);
    for(const e of C.fx){
