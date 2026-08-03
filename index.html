@@ -26246,7 +26246,17 @@ function hsDemoStop(){
      位置は**周回の頭でだけ**戻す。 */
 const HSD_CYC=5.4;/* 1周の長さ(秒)。⚠一番長い必殺(狙撃王の10連射+締め)が収まる長さ */
 const HSD_N=6;    /* 的の数 */
-const hsdZd=(d0,i)=>d0-44-i*40;/* i番目の的の位置(英雄の前方) */
+/* ⚠⚠⭐**舞台は道の「まっすぐな所」に置く**(2026-08-03(112)ユーザー指摘
+     「暗黒の騎士のやつ、ゾンビ浮いてたり道から外れたり左向いてたりする」)。
+   ⚠原因=舞台を道の**真ん中(PLEN*.5)**に置いていたが、そこは**道が折れている所**だった。
+     『漆黒の突撃』のように**敵を遠くまで押し出す必殺**だと、押された敵が曲がり角の向こうへ出て
+     ①舞台に描いた**まっすぐな道の帯から外れる**(=浮いて見える)
+     ②英雄から見て**向きが裏返る**(=左を向く) が同時に起きていた。
+   ⭐d=0〜300 は**y が変わらないまっすぐな区間**なので、そこを舞台にする。
+   ⚠**hDark の突撃は d=0 まで駆ける**ので、英雄をここに置くと**駆け抜けが舞台に収まる**。 */
+const HSD_D0=260;/* 英雄を置く位置(道のまっすぐな区間)。⚠300だと曲がり角に掛かる */
+const HSD_N_R=40;/* 的の間隔 */
+const hsdZd=(d0,i)=>Math.max(20,d0-44-i*HSD_N_R);/* i番目の的の位置(英雄の前方) */
 function hsDemoStart(id){
  hsDemoStop();
  const H=HEROES.find(h=>h.id===id)||HEROES[0];
@@ -26254,12 +26264,12 @@ function hsDemoStart(id){
  const cv=$('hs-cv');if(!cv||!cv.getContext)return;
  const C=newCamp('demo','me',0,true);
  C.hUi=ui;C.hOut=1;C.hCg=1;C.isMe=false;/* ⚠isMe=false=デモで音を鳴らさない・トーストも出さない */
- /* 英雄を道の中ほどに置く。⚠**px/py は campStep が入れる**ので、まず1回回す */
- const d0=PLEN*.5;
+ /* ⚠**道のまっすぐな区間に置く**(上の HSD_D0 の説明)。⚠px/py は campStep が入れるのでまず1回回す */
+ const d0=Math.min(HSD_D0,PLEN*.5);
  C.units.push({eid:EID++,ui,own:0,am:1,d:d0,hp:UNITS[ui].hp,mhp:UNITS[ui].hp,cd:0,hitT:0,ph:0,px:0,py:0,hro:H.rk});
  /* 的=前方に並べる。⚠**歩かない・殴らない・倒れない**の3点セットにしないと舞台にならない */
  for(let i=0;i<HSD_N;i++){const z=mkZ(zSpec(0,1,1,false,''),hsdZd(d0,i));
-  z.dummy=1;z.sp=0;z.atk=0;z.mhp=z.hp=99999;C.zombies.push(z);}
+  z.dummy=1;z.sp=0;z.atk=0;z.mhp=z.hp=99999;z.home=hsdZd(d0,i);C.zombies.push(z);}
  try{campStep(C,.001,1);}catch(e){}
  HSD={C,t:0,cv,ui,ph:-99,nx:null,last:0,d0};
  /* ▶(111)舞台を窓いっぱいに広げる(止めると戻す) */
@@ -26278,7 +26288,7 @@ function hsDemoStart(id){
    HSD.nx=HSD.t+.8;
   if((HSD.nx!=null&&HSD.t>=HSD.nx)||HSD.t-HSD.ph>HSD_CYC){HSD.ph=HSD.t;HSD.nx=null;
    for(let i=0;i<C9.zombies.length;i++){const z=C9.zombies[i];
-    z.dead=false;z.hp=z.mhp;z.d=hsdZd(d0,i);z.sp=0;z.atk=0;
+    z.dead=false;z.hp=z.mhp;z.d=z.home=hsdZd(d0,i);z.sp=0;z.atk=0;
     z.gumT=0;z.slowT=0;z.frzT=0;z.stnT=0;z.burnT=0;z.dvT=0;z.shT=0;z.acdT=0;z.hitT=0;}
    /* ⚠前の周の演出は消す=残っていると「いつ撃ったのか」が読めなくなる(粒はC.ps・弾はshells/arcs) */
    C9.fx.length=0;if(C9.ps)C9.ps.length=0;if(C9.shells)C9.shells.length=0;if(C9.arcs)C9.arcs.length=0;
@@ -26297,7 +26307,26 @@ function hsDemoStart(id){
   hold();
   try{campStep(C9,dt,1);}catch(e){}
   hold();
-  for(const z of C9.zombies){z.sp=0;z.atk=0;if(z.hp<z.mhp)z.hp=z.mhp;z.dead=false;}
+  /* ⚠⚠**押し出された的が舞台から出ないように挟む**=『漆黒の突撃』は敵を何百も押し出すので、
+     放っておくと**曲がり角の向こう**へ飛んで浮いて見える。⭐押した手応えは残しつつ舞台内に留める。 */
+  for(const z of C9.zombies){z.sp=0;z.atk=0;if(z.hp<z.mhp)z.hp=z.mhp;z.dead=false;
+   /* ⭐**自分の立ち位置からの ずれ幅** で挟む=一律の床で止めると全員が同じ点に積み上がる
+      (『漆黒の突撃』は1周で600以上押すので、実際に6体が1点に重なっていた)。
+      ⚠押し(-)も引き寄せ(+)も見えるように両側に遊びを持たせる。 */
+   /* ⚠**押せる幅は立ち位置に比例させる**=一律80だと道の端に居る2体が床(12)で重なる。 */
+   const hm=z.home!=null?z.home:d0-60;
+   const nd=clamp(z.d,Math.max(12,hm-Math.min(80,hm*.4)),Math.min(d0-16,hm+60));
+   /* ⚠⚠**d を挟んだら描く位置も道の上へ置き直す**=campStep は d から px/py を出すので、
+      ここで d だけ戻すと**1コマだけ道から浮いた所に立つ**(実測で毎周6コマ出ていた)。
+      ⚠**ずらし幅で足し引きしても直らない**=その時の px/py は前のコマの d のものなので合わない。
+        この舞台では敵は道の上に一列に並んでいるだけなので、**素直に道の点へ置く**のが正しい。 */
+   if(nd!==z.d){z.d=nd;const p1=pathPos(clamp(nd,0,PLEN));z.px=p1[0];z.py=p1[1];}}
+  /* ⚠**英雄は必ず的の方を向く**=向きは campStep が敵との位置関係で決めるので、
+     押し出しで的が散ると裏返ることがある(ユーザー指摘の「左を向く」)。
+     ⚠**決め打ちにしない**=道の向きは場所で変わるので、**実際の x を見て**決める。 */
+  if(u9&&C9.zombies.length){
+   const mx=C9.zombies.reduce((a,z)=>a+z.px,0)/C9.zombies.length;
+   u9.dr=(mx>=u9.px)?1:-1;}
   try{hsDemoDraw();}catch(e){}
   HSD.raf=requestAnimationFrame(step);
  };
@@ -26332,10 +26361,20 @@ function hsDemoDraw(){
  const k=Math.min(W/(span+190),Hh/300,Math.min(W/430,Hh/330)*1.5);
  c.save();c.beginPath();c.rect(0,0,W,Hh);c.clip();
  c.translate(W*.5-cx*k,Hh*.58-cy*k);c.scale(k,k);
- /* 道(英雄の足元を通る帯) */
- c.fillStyle='#3a352c';c.fillRect(u.px-460,u.py-34,920,74);
- c.strokeStyle='rgba(242,236,220,.16)';c.lineWidth=2;c.setLineDash([16,14]);
- c.beginPath();c.moveTo(u.px-460,u.py+3);c.lineTo(u.px+460,u.py+3);c.stroke();c.setLineDash([]);
+ /* 道。⚠⚠**まっすぐな帯を決め打ちしない**(2026-08-03(112))=道は場所によって折れるので、
+    決め打ちだと押し出された的が帯の外に立って**浮いて見える**。⭐**本物の経路をなぞって描く**。 */
+ {const q0=clamp(HSD.d0-300,0,PLEN),q1=clamp(HSD.d0+30,0,PLEN),ST=18;
+  const pts=[];for(let q=q0;q<=q1;q+=ST)pts.push(pathPos(q));
+  if(pts.length>1){
+   c.lineCap='round';c.lineJoin='round';
+   c.strokeStyle='#3a352c';c.lineWidth=74;
+   c.beginPath();c.moveTo(pts[0][0],pts[0][1]+3);
+   for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]+3);
+   c.stroke();
+   c.strokeStyle='rgba(242,236,220,.16)';c.lineWidth=2;c.setLineDash([16,14]);
+   c.beginPath();c.moveTo(pts[0][0],pts[0][1]+3);
+   for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]+3);
+   c.stroke();c.setLineDash([]);}}
  /* 敵→英雄の順(手前に英雄) */
  for(const z of C.zombies){if(z.d<-2)continue;
   try{groundShadow(c,z.px,z.py,13*ZOMBIES[z.zi].sc);}catch(e){}
