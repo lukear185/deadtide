@@ -18637,8 +18637,14 @@ function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,cor
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
 /* 地面の模様はマップの外(画面端まで伸ばす裁ち落とし部分)にも撒く=境目が見えないように */
 const DOTS=[],PATCHES=[],TUFTS=[],CRACKS=[],SKID=[];
+/* 🖼(124)動かない背景の焼き込みの入れ物。⚠**makeScenery より前に置く**=
+   起動時の `loadStage(0)` が makeScenery を呼ぶので、後ろに置くと未初期化で落ちる(TDZ)。 */
+let BGL1=null,BGL2=null,BGKEY='',BGRC=null;
 /* 地面と道路の質感。ステージを読み込むたびに作り直す(道の形が変わるとひび割れの位置も変わるため) */
 function makeScenery(){
+ /* 🖼⚠⚠(124)**作り直したら焼き込みを捨てる**=ムラもひびも道もここで変わるので、
+    捨て忘れると**前の面の地面のまま**になる(🧪検証場は道の形そのものが変わる)。 */
+ BGKEY='';
  DOTS.length=0;for(let i=0;i<260;i++)DOTS.push([rnd(-160,1760),rnd(120,940),rnd(1.5,4),Math.random()<.5]);
  PATCHES.length=0;for(let i=0;i<42;i++)PATCHES.push([rnd(-150,1750),rnd(130,930),rnd(40,120),rnd(20,60),rnd(0,3.14),Math.random()<.5]);
  TUFTS.length=0;for(let i=0;i<115;i++)TUFTS.push([rnd(-160,1760),rnd(120,942),rnd(4,9),rnd(0,9)]);
@@ -18659,6 +18665,80 @@ function todCol(p){
 }
 const CARS=[[1455,255,-.4,'#7b4a3a'],[610,185,.35,'#4a5a6b'],[985,708,.12,'#6b6b4a']];
 const TREES=[[205,300],[1502,702],[860,92],[95,410]];
+/* 🖼⭐⭐(124)**動かない背景の焼き込み**(ユーザー了承)。⚠中身の説明は renderCamp の呼び出し口に書いてある。
+   ⚠**ここに描く物を足す時の掟**=「毎コマ姿が変わる物」を入れないこと(入れると止まって見える)。
+   ⚠焼く時の変換は `setTransform(SC,0,0,SCY,…)`=**盤面と同じ物差し**。だから貼る時は世界座標で貼れる。 */
+/* ①草の下=地面・土のムラ・小石 */
+function bgDrawL1(c,tod,dk,PAL,VL,VR,VT,VB){
+ const gg=c.createLinearGradient(0,110,0,MH);
+ gg.addColorStop(0,mix(PAL.g0,'#4f4839',dk*.72));gg.addColorStop(1,mix(PAL.g1,'#413b30',dk*.72));
+ c.fillStyle=gg;c.fillRect(VL,110,VR-VL,VB-110);
+ c.save();
+ for(const p of PATCHES){c.globalAlpha=p[5]?.1:.07;c.fillStyle=p[5]?PAL.patch[0]:PAL.patch[1];
+  c.save();c.translate(p[0],p[1]);c.rotate(p[4]);c.beginPath();c.ellipse(0,0,p[2],p[3],0,0,7);c.fill();c.restore();}
+ c.restore();
+ for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
+}
+/* ②草の上=空・廃墟・月/太陽・道路・廃車・木。⚠🌑血月の脈打つ光だけは生で描く(あれは動く) */
+function bgDrawL2(c,tod,dk,PAL,VL,VR,VT,VB){
+ {const sky=todCol(tod),sg=c.createLinearGradient(0,0,0,115);
+  sg.addColorStop(0,sky);sg.addColorStop(1,mix(PANE,sky,.72));c.fillStyle=sg;c.fillRect(VL,VT,VR-VL,115-VT);}
+ c.fillStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
+ [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
+ if(isNM()){
+  c.fillStyle='#8a1a2a';c.beginPath();c.arc(1380,48,34,0,7);c.fill();
+  c.fillStyle='#5a1020';c.beginPath();c.arc(1372,42,9,0,7);c.fill();c.beginPath();c.arc(1391,56,6,0,7);c.fill();
+ }else{
+  if(tod<.42){c.globalAlpha=clamp((.42-tod)*3,0,.9);c.fillStyle=GLOW;c.beginPath();c.arc(300,52,30,0,7);c.fill();c.globalAlpha=1;}
+  if(tod>.6){c.globalAlpha=clamp((tod-.6)*3,0,1);c.fillStyle='#e8e4d2';c.beginPath();c.arc(1380,45,26,0,7);c.fill();
+   c.fillStyle='#fff';for(let s=0;s<18;s++){const sx2=((s*197)%1500)+40,sy2=((s*83)%80)+12;c.globalAlpha=clamp((tod-.6)*3,0,1)*(.4+(s%3)*.2);c.fillRect(sx2,sy2,2,2);}c.globalAlpha=1;}
+ }
+ c.fillStyle='rgba(0,0,0,.25)';c.fillRect(VL,110,VR-VL,6);
+ const roadPath=()=>{c.beginPath();
+  c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);};
+ c.lineJoin='round';c.lineCap='round';
+ c.strokeStyle='rgba(0,0,0,.22)';c.lineWidth=104;roadPath();c.stroke();
+ c.strokeStyle=mix('#6b6459','#39362f',dk*.5);c.lineWidth=98;roadPath();c.stroke();
+ c.strokeStyle=mix('#57524a','#2f2d29',dk*.4);c.lineWidth=92;roadPath();c.stroke();
+ c.save();c.globalAlpha=.5;c.strokeStyle=mix('#6e675c','#3a372f',dk*.4);c.lineWidth=54;roadPath();c.stroke();c.restore();
+ if(FXLV>0){c.save();c.globalAlpha=.5;c.strokeStyle='#2a2723';c.lineCap='butt';
+  for(const k of CRACKS){c.lineWidth=k[4];c.beginPath();c.moveTo(k[0],k[1]);
+   c.lineTo(k[0]+Math.cos(k[2])*k[3],k[1]+Math.sin(k[2])*k[3]*.7);c.stroke();}
+  c.globalAlpha=.16;c.strokeStyle='#171512';c.lineWidth=9;c.lineCap='round';
+  for(const s of SKID){c.beginPath();c.moveTo(s[0]+s[4],s[1]);c.lineTo(s[2]+s[4],s[3]);c.stroke();}
+  c.restore();c.lineCap='round';}
+ c.strokeStyle='rgba(190,182,158,.5)';c.lineWidth=4;c.setLineDash([24,30]);
+ roadPath();c.stroke();c.setLineDash([]);
+ c.lineWidth=3;c.strokeStyle=INK;
+ for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
+ for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
+}
+/* 焼き直すかどうかを決めて、貼る場所(世界座標の矩形)を返す。焼けなければ null=今までどおり生で描く */
+function bgCache(C,tod,dk,PAL){
+ try{
+  /* ⚠**画面ゆれを入れない範囲**で焼く(ゆれは貼る側の変換に乗る)。端に少し余白を足す */
+  const m9=12;
+  const VL0=Math.min(0,(-OX)/SC)-m9,VR0=Math.max(MW,(cv.width-OX)/SC)+m9,
+        VT0=Math.min(0,(-OY)/SCY)-m9,VB0=Math.max(MH,(cv.height-OY)/SCY)+m9;
+  /* ⚠**波(=空の色)と画面の大きさが変わったら焼き直す**。それ以外は貼るだけ */
+  const key=[STAGE,BSEA?1:0,FXLV,cv.width,cv.height,SC.toFixed(3),SCY.toFixed(3),
+   Math.round(OX),Math.round(OY),Math.round(tod*200),isNM()?1:0].join(',');
+  if(BGKEY===key&&BGL1&&BGL2)return BGRC;
+  const w9=Math.max(1,Math.ceil((VR0-VL0)*SC)),h9=Math.max(1,Math.ceil((VB0-VT0)*SCY));
+  if(w9>4096||h9>4096)return null;/* ⚠でかすぎる時は焼かない(古い端末の上限) */
+  if(!BGL1){BGL1=document.createElement('canvas');BGL2=document.createElement('canvas');}
+  for(const cn of [BGL1,BGL2]){if(cn.width!==w9)cn.width=w9;if(cn.height!==h9)cn.height=h9;}
+  for(const q of [[BGL1,bgDrawL1],[BGL2,bgDrawL2]]){
+   const c2=q[0].getContext('2d');if(!c2)return null;
+   c2.setTransform(1,0,0,1,0,0);c2.clearRect(0,0,w9,h9);
+   c2.setTransform(SC,0,0,SCY,-VL0*SC,-VT0*SCY);
+   c2.lineWidth=3;c2.strokeStyle=INK;c2.lineJoin='round';c2.lineCap='round';c2.textAlign='left';
+   q[1](c2,tod,dk,PAL,VL0,VR0,VT0,VB0);
+  }
+  BGKEY=key;BGRC=[VL0,VT0,VR0-VL0,VB0-VT0];
+  return BGRC;
+ }catch(e){return null;}
+}
 function renderCamp(C,t){
  fitCanvas();const c=ctx;
  const wv=MODE==='client'?(CS.w||1):(G?G.wave:1);
@@ -18681,6 +18761,20 @@ function renderCamp(C,t){
  const VL=Math.min(0,(-OX-shx)/SC),VR=Math.max(MW,(cv.width-OX-shx)/SC),VT=Math.min(0,(-OY-shy)/SCY),VB=Math.max(MH,(cv.height-OY-shy)/SCY);
  /* 地面(ステージごとの色) */
  const PAL=stagePal();
+ /* 🖼⭐⭐⭐(124)**動かない背景は焼いて貼る**(ユーザー了承の上で入れた)。
+    ⚠⚠**実測すると、塔も敵も0の空の盤面だけで塗り625/コマ**=一番きつい盤面(1640)の**38%**が
+      「毎コマ描き直している地面・廃墟・道路」だった。土のムラ・小石・ひび・タイヤ痕・廃車・木は
+      **1つも動かない**のに、毎コマ全部引き直していた。
+    ⭐**2枚に分けて焼く**=①草の下(地面・ムラ・小石) ②草の上(空・廃墟・道路・廃車・木)。
+      ⚠**枯れ草だけは焼かない**=風に揺れる(唯一の動き)。挟んで描けば重ね順は元のまま。
+    ⚠**焼き直す条件は `bgKey`**(ステージ/波=時間帯/画面の大きさ/寄り/演出の強さ)。
+      波が変われば空の色が変わるので、そこで1回だけ焼き直す。
+    ⚠**画面ゆれ(shx/shy)は貼る側の変換に乗る**ので焼き込みには入れない(入れると揺れが二重になる)。
+    ⚠🚌開拓便はカメラが動き続ける+別の焼き込み(drawBnsTown)があるので**通さない**。 */
+ const bgR=(!C.bus)?bgCache(C,tod,dk,PAL):null;
+ if(bgR){
+  try{c.drawImage(BGL1,bgR[0],bgR[1],bgR[2],bgR[3]);}catch(e){}
+ }else{
  {const gg=c.createLinearGradient(0,110,0,MH);
   gg.addColorStop(0,mix(PAL.g0,'#4f4839',dk*.72));gg.addColorStop(1,mix(PAL.g1,'#413b30',dk*.72));
   c.fillStyle=gg;c.fillRect(VL,110,VR-VL,VB-110);}
@@ -18690,12 +18784,22 @@ function renderCamp(C,t){
   c.save();c.translate(p[0],p[1]);c.rotate(p[4]);c.beginPath();c.ellipse(0,0,p[2],p[3],0,0,7);c.fill();c.restore();}
  c.restore();
  for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
- /* 枯れ草 */
+ }
+ /* 枯れ草(⚠揺れるので焼き込みに入れない。⚠**焼いた2枚の間**に描く=重ね順は元のまま) */
  if(FXLV>0){c.strokeStyle=mix(PAL.tuft,'#3c3a2c',dk*.6);c.lineWidth=1.6;
   for(const g3 of TUFTS){const sw=Math.sin(t*1.5+g3[3])*1.6;
    c.beginPath();c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+sw,g3[1]-g3[2]);
    c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]-3+sw,g3[1]-g3[2]*.7);
-   c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+3+sw,g3[1]-g3[2]*.6);c.stroke();}}
+   c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+3+sw,g3[1]-g3[2]*.6);c.stroke();}
+  c.lineWidth=3;c.strokeStyle=INK;}
+ if(bgR){
+  try{c.drawImage(BGL2,bgR[0],bgR[1],bgR[2],bgR[3]);}catch(e){}
+  /* ⚠焼いた後は**線と文字の設定を元に戻す**=下の枝は「前の枝が置いた状態」を当てにしている */
+  c.lineWidth=3;c.strokeStyle=INK;c.lineJoin='round';c.lineCap='round';c.globalAlpha=1;c.setLineDash([]);
+  /* 🌑血月の脈打つ光だけは動くので生で描く(⚠空の高さ=道路とは重ならない) */
+  if(isNM()){c.save();c.globalAlpha=.35;c.fillStyle='#c1302e';
+   c.beginPath();c.arc(1380,48,50+Math.sin(t*1.5)*4,0,7);c.fill();c.restore();}
+ }else{
  /* 地平線と廃墟 */
  {const sky=todCol(tod),sg=c.createLinearGradient(0,0,0,115);
   sg.addColorStop(0,sky);sg.addColorStop(1,mix(PANE,sky,.72));c.fillStyle=sg;c.fillRect(VL,VT,VR-VL,115-VT);}
@@ -18747,6 +18851,7 @@ function renderCamp(C,t){
  /* 装飾 */
  for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
+ }/* ← 🖼(124)ここまでが「焼いた2枚目」に入っている分(焼けた時は丸ごと飛ばす) */
  /* 🛞轍と🩸血だまり(🚌開拓便)。⚠**地面の上・廃墟の下**=踏まれている物なので一番下に敷く */
  if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
  /* 🏚🌲地形(建物と森と廃車)。⚠**焼いた画を貼るだけ**=中身は `drawTerrIn`。これが導線そのもの */
