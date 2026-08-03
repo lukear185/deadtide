@@ -1145,14 +1145,17 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #arc-bar.on{display:block}
 #arc-bar i{display:block;height:100%;background:var(--gold);width:100%}
 #arc-bar.hot i{background:var(--danger2)}
+#arc-hint{position:absolute;left:10px;right:10px;top:58px;z-index:3;text-align:center;pointer-events:none;
+ font-size:12px;font-weight:900;color:var(--paper2);text-shadow:0 2px 0 #000}
 #arc-ctl{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:flex-end;gap:6px;padding:8px 10px}
 #arc-ctl.off{opacity:.45;pointer-events:none}
 #arc-l,#arc-r,#arc-duck,#arc-helm{flex:0 0 auto;min-width:56px;min-height:56px;font-size:20px}
 /* 🎯(130)狙いの読み取り(押す所ではない) */
 .arcaim{flex:1 1 0;background:rgba(24,20,16,.85);border:3px solid var(--gold);border-radius:12px;
- padding:5px 10px;min-height:56px;display:flex;flex-direction:column;justify-content:center}
-.arcaim b{font-size:20px;font-weight:900;color:var(--gold);line-height:1.05}
-.arcaim i{font-style:normal;font-size:12px;font-weight:900;color:var(--paper3)}
+ padding:3px 10px 4px;min-height:56px;display:flex;align-items:center;gap:9px}
+.arcaim b{flex:0 0 auto;font-size:19px;font-weight:900;color:var(--tech);line-height:1.05;min-width:52px}
+.arcaim i{flex:0 0 auto;font-style:normal;font-size:13px;font-weight:900;color:var(--gold);min-width:52px;text-align:right}
+.arcaim input{flex:1 1 0;height:44px}/* ⚠44px(押す所の物差し) */
 #arc-fire{flex:0 0 auto;min-width:100px;min-height:56px}
 #arc-end{position:absolute;left:0;right:0;bottom:0;z-index:4;display:none;align-items:center;justify-content:center;gap:10px;padding:8px 10px}
 #arc-end.on{display:flex}
@@ -1439,12 +1442,23 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div id="arc-msg"></div>
     <div class="arcpill" id="arc-foe">♥♥♥ 🎯</div>
   </div>
+  <!-- ⏱(131)狙う持ち時間の帯(15秒) ⚠⚠(137)**HTMLから消えていた**=CSSとJSはあるのに札が無く、
+       時間の帯が一度も出ていなかった(撮って気づいた) -->
+  <div id="arc-bar"><i></i></div>
+  <!-- 💨風と🔁前回の狙い(⚠下の帯はスライダーで埋まったので上に出す) -->
+  <div id="arc-hint"></div>
   <!-- ⚠(126)10秒の待ちは廃止(テンポが悪い)=**押したら飛ぶ**。移動はいつでもできる -->
   <div id="arc-ctl">
     <button class="btn" id="arc-l">←</button>
     <button class="btn" id="arc-r">→</button>
     <!-- 🎯(130)**狙いは画面を指でなぞって決める**(スライダーは廃止)。ここは読み取り専用の表示 -->
-    <div class="arcaim" id="arc-aim"><b id="arc-la">45°</b><i id="arc-lp">威力 70</i></div>
+    <!-- 🎚(137)**威力はスライダーに戻した**(ユーザー「力調整は一番最初みたいな調整方法に」)。
+         ⚠角度は今までどおり画面をなぞって決める(なぞると威力も一緒に動き、つまみも追従する) -->
+    <div class="arcaim" id="arc-aim">
+      <b id="arc-la">45°</b>
+      <input type="range" id="arc-pow" min="30" max="100" value="70">
+      <i id="arc-lp">力 70</i>
+    </div>
     <button class="btn" id="arc-duck" style="display:none" aria-label="しゃがむ">🦆</button>
     <button class="btn" id="arc-helm" style="display:none" aria-label="ヘルメット">⛑</button>
     <button class="btn red" id="arc-fire">🏹 射る</button>
@@ -27524,7 +27538,8 @@ function gcStart(res){
  /* ⭐★5は ✨ロブ1/3 / どんでん返し1/3 / 通常の最上位1/3(2026-07-30の均等の考えを★5に引き継ぐ)。
     ★4は どんでん返しGC_P_TW / 残りは通常。⚠**1回の乱数を割る**こと=別々に引くと比が崩れる。 */
  const rl9=Math.random();
- const lob=!!(best>=5&&LB_ZI>=0&&rl9<1/3);
+ /* ⭐(136)★5の合図は**4通りを1/4ずつ**(✨ロブ/🥇どんでん返し/🐕犬の軍勢/通常の最上位) */
+ const lob=!!(best>=5&&LB_ZI>=0&&rl9<.25);
  /* ⭐⭐**どんでん返し**(2026-07-30ユーザー指示)。わざと**一番しょぼい見た目**
       (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、**当たった所までは通常演出と同じ**に見せ、
       爆散した跡から**金色の個体が現れて**もう一度砕ける。★4以上を引いた回だけ、たまに起きる。
@@ -27533,9 +27548,10 @@ function gcStart(res){
       なって…のやつは星5確定演出にして。いまだとあの演出出たのに星4当たっちゃってる」)。
     ⚠★4でも出していたので、**一番の盛り上がりが空振りする**ことがあった。
     ⭐これで★5の合図は3つとも「確定」で揃う=🌈虹の文字 / ✨黄金のロブスター / 🥇どんでん返し。 */
- const twist=best>=5&&rl9>=1/3&&rl9<2/3;
- /* 🐕(128)犬の軍勢=**★4の合図**(★5には出さない=★5の合図3つと混ぜない) */
- const dogs=(best===4)&&Math.random()<.55;
+ const twist=best>=5&&rl9>=.25&&rl9<.5;
+ /* 🐕⭐(136)**犬の軍勢も★5確定にした**(ユーザー指示)=★5の合図は4つになった。
+    ⚠★4には専用の合図が無くなる(そこは⚡レーザーの見た目が担う)。 */
+ const dogs=best>=5&&rl9>=.5&&rl9<.75;
  GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:(dogs?1:tw),zk:twist?0:(dogs?1:tw),hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,
   night:(twist||dogs)?false:night,fc:(twist||dogs)?0:fc,lob:lob?1:0,twist:twist?1:0,dogs:dogs?1:0};
  cv.classList.add('on');gcFit();
@@ -27619,8 +27635,8 @@ const GC_TW_R=.45;/* 爆発から「金色が現れる」へ切り替わる所(0
    ⚠**どんでん返しを★5確定にした穴埋め**=★4にも「まさか」の枠を1つ残す。
    ⭐必ず**ショットガン+アーマーゾンビ(=一番期待できない見た目)**から始まる。 */
 const GC_DOGS=2.0;   /* 犬が横切って骨になるまでの秒数 */
-const GC_DOG_N=11;   /* 走り抜ける犬の数 */
-const GC_DOG_R=.62;  /* この進み具合で「喰われて骨になる」 */
+const GC_DOG_N=30;   /* ⚠(136)走り抜ける犬の数=**アーマーゾンビが見えなくなるぐらい**(ユーザー指示) */
+const GC_DOG_R=.50;  /* この進み具合で「喰われて骨になる」=**犬の壁に隠れている間に消える** */
 const gcDly=()=>GC?(GC.twist?GC_TWIST:(GC.dogs?GC_DOGS:0)):0;
 /* ⭐★4以上を引いた回の内訳(2026-07-30ユーザー指示「ピラミッドにしよう」)。
    ✨黄金のロブスター20% / どんでん返し35% / 通常の最上位演出45%。
@@ -27991,11 +28007,11 @@ function gcDraw(){
    const di9=ZOMBIES.findIndex(q=>q.id==='dog');
    if(di9>=0)for(let i9=0;i9<GC_DOG_N;i9++){
     const ph9=i9/GC_DOG_N;
-    const q9=clamp((dgK-.04-ph9*.46)/.40,0,1);
+    const q9=clamp((dgK-.02-ph9*.30)/.42,0,1);
     if(q9<=0||q9>=1)continue;
     const dp9=((i9*7)%5)/4;/* 奥行き(奥ほど小さく上) */
-    const dx9=w*1.3-(w*1.75)*q9,dy9=ZY+18-dp9*30;
-    const ds9=.72-dp9*.26;
+    const dx9=w*1.3-(w*1.75)*q9,dy9=ZY+22-dp9*44;
+    const ds9=1.05-dp9*.30;/* ⚠(136)一回り大きく=群れで的を隠す */
     c.save();c.translate(dx9,dy9);c.scale(ds9,ds9);
     try{drawZombie(c,di9,0,0,1,GC.t*3.2+i9,i9,{});}catch(e){}
     c.restore();
@@ -30700,11 +30716,14 @@ function arcUI(){
    hb.disabled=!A.me.helm||!!A.me.helmOn||!free9;hb.textContent=A.me.helmOn?'⛑装備':'⛑';}}
  for(const q of ['arc-l','arc-r']){const e=$(q);if(e)e.disabled=(A.me.steps<1||!free9);}
  const la=$('arc-la'),lp=$('arc-lp');
- if(la)la.textContent=A.ang+'° / 力'+A.pow;
+ if(la)la.textContent='📐'+A.ang+'°';
  if(lp){const w9=A.wind||0;
   const wt=(Math.abs(w9)<.05?'💨 無風':('💨 '+(w9>0?'→':'←')+' '+Math.abs(w9).toFixed(1)));
   const lt=A.last?('　🔁前回 '+A.last.ang+'°/力'+A.last.pow):'';
-  lp.textContent=wt+lt+(A.ph==='aim'?'　—　なぞって狙い、射るで放つ':'');}
+  lp.textContent='力 '+A.pow;
+  const sl=$('arc-pow');
+  if(sl){if(+sl.value!==A.pow)sl.value=A.pow;sl.disabled=(A.ph!=='aim'||!!A.ar||!!A.over);}
+  const hn=$('arc-hint');if(hn)hn.textContent=wt+lt;}
 }
 function arcDraw(t){
  const A=ARC,cv9=$('arccv');if(!A||!cv9)return;
@@ -30869,6 +30888,8 @@ try{
  $('bt-arc-play').onclick=()=>arcPlay();
  $('bt-arc-how').onclick=()=>toast('🏹 相手は見えない。画面をなぞって狙い、🏹射るで放つ(持ち時間15秒)。'+ARC_HP+'回当てたら勝ち・頭なら一発。⛰丘は矢を阻み、💨風は矢を流す。地面は1マス4m=矢は必ず1マスに刺さる。👣移動・🦆しゃがみ・⛑ヘルメットは**相手が狙っている間だけ**使える',true);
 
+ {const sl=$('arc-pow');
+  if(sl)sl.oninput=e=>{if(ARC&&ARC.ph==='aim'&&!ARC.ar&&!ARC.over){ARC.pow=+e.target.value;arcUI();}};}
  $('arc-fire').onclick=()=>arcFire();
  /* 🎯(130)盤面をなぞって狙う。⚠**onclick は付けない**(全画面なので検査で重なり扱いになる) */
  {const cv9=$('arccv');

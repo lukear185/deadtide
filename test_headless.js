@@ -1731,12 +1731,16 @@ function checkGachaFx(){
   /* ⭐⭐2026-08-03(92)ユーザー指示「虹とか金のロブスターとかは★5以上確定にして」=
      **虹の文字(fc2)と✨黄金のロブスターは★5確定**へ。レーザーとどんでん返しは★4以上のまま。 */
   if(r===4)n4++;
-  if(GC.dogs){if(r===4)dog4++;else dog5++;}
+
   if(GC.twist){
    if(r<4){console.log('FAIL: ★4未満でどんでん返しが起きている(レア度'+r+')');process.exit(1);}
    if(GC.tw!==0||GC.zk!==0||GC.fc!==0||GC.night!==false||GC.lob){
     console.log('FAIL: どんでん返しなのに見た目がしょぼくない');process.exit(1);}
    twN++;if(r===5)hi5N[1]++;else tw4++;gcEnd();continue;}
+  /* 🐕(136)犬の軍勢は**わざとショットガン+アーマーゾンビ**から始まる=下の「★5はレーザー」の
+     決まりの外に置く(どんでん返しと同じ扱い)。 */
+  if(GC.dogs){if(r<5){console.log('FAIL: ★5未満なのに犬の軍勢が出た(レア度'+r+')');process.exit(1);}
+   dog5++;hi5N[1]++;gcEnd();continue;}
   if(GC.lob&&r<5){console.log('FAIL: ★5未満なのに黄金のロブスターが出た(レア度'+r+')');process.exit(1);}
   if(GC.lob)lobN++;
   if(r===5)hi5N[GC.lob?0:2]++;
@@ -1755,17 +1759,15 @@ function checkGachaFx(){
  if(!sawRifleLow){console.log('FAIL: レアでない時の見せ方を確かめられていない');process.exit(1);}
  if(!twN){console.log('FAIL: どんでん返しが一度も起きなかった');process.exit(1);}
  if(!lobN){console.log('FAIL: ✨黄金のロブスターが一度も出なかった');process.exit(1);}
- /* ⭐★5は3通り(✨ロブ/どんでん返し/通常の最上位)を**1/3ずつ**(2026-08-03(92))。
-    ★4は どんでん返しが GC_P_TW、残りは通常。⚠1回の乱数を割っているので比は安定する。 */
- {const tot=hi5N[0]+hi5N[1]+hi5N[2];
+ /* ⭐(136)★5は**4通り**(✨ロブ/🥇どんでん返し/🐕犬の軍勢/通常)を1/4ずつ。
+    ⚠数える箱は3つ(0=ロブ / 1=どんでん返し+犬 / 2=通常)なので**真ん中は2つぶん=50%**。 */
+ {const tot=hi5N[0]+hi5N[1]+hi5N[2],want=[.25,.5,.25];
   for(let q=0;q<3;q++){const pc=hi5N[q]/Math.max(1,tot);
-   if(Math.abs(pc-1/3)>.09){console.log('FAIL: ★5の演出の割合がずれている '+hi5N.join('/')+' (計'+tot+' 想定33/33/33)');process.exit(1);}}}
- /* ⭐(128)**どんでん返しは★5確定になった**(ユーザー指示)=★4では一度も起きないこと。
-    代わりに★4には🐕犬の軍勢が来る(こちらは半分ぐらい)。 */
+   if(Math.abs(pc-want[q])>.10){console.log('FAIL: ★5の演出の割合がずれている '+hi5N.join('/')+' (計'+tot+' 想定25/50/25)');process.exit(1);}}}
+ /* ⭐(136)**★5の合図は4つ**(✨ロブ/🥇どんでん返し/🐕犬の軍勢/通常)=どれも★5でしか出ない。 */
  {if(tw4>0){console.log('FAIL: ★5確定にしたのに★4でどんでん返しが出た '+tw4+'/'+n4);process.exit(1);}
-  const pcD=dog4/Math.max(1,n4);
-  if(n4>=20&&(pcD<.3||pcD>.8)){console.log('FAIL: ★4の犬の軍勢の割合がおかしい '+dog4+'/'+n4);process.exit(1);}
-  if(dog5>0){console.log('FAIL: ★5で犬の軍勢が出た(★5の合図と混ざる) '+dog5);process.exit(1);}}
+  if(dog4>0){console.log('FAIL: ★5確定にしたのに★4で犬の軍勢が出た '+dog4+'/'+n4);process.exit(1);}
+  if(!dog5){console.log('FAIL: ★5で犬の軍勢が一度も出なかった');process.exit(1);}}
  /* ⭐**夜の方が期待度が高い**=レアな時ほど夜が出やすいこと(逆になっていたら演出が嘘になる) */
  {const hi=nightN[1]/Math.max(1,nightN[1]+dayN[1]),lo=nightN[0]/Math.max(1,nightN[0]+dayN[0]);
   if(!(hi>lo+.2)){console.log('FAIL: 夜が期待度になっていない(レア時'+(hi*100|0)+'% / それ以外'+(lo*100|0)+'%)');process.exit(1);}}
