@@ -3389,7 +3389,13 @@ const ZOMBIES=[
  {id:'stlk',n:'ストーカー',hp:560,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
  {id:'wrth',n:'レイス',hp:300,sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
  {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,aoe:3,atk:78,ar:1.1,c:'#39424c',dsc:'重い盾で3体まとめて薙ぎ払う'},
- {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:84,ar:1.2,aoe:5,c:'#c14b3e'},
+ /* ⚔⭐(124)**ボスの攻撃力を約1.9倍にした**(ユーザー「ボスの攻撃力が低いからもっと強くして」)。
+    ⚠それまでの atk 84〜132 は**雑魚の強い個体(屍熊109・腐肉シーラカンス112)と同じ**で、
+      しかも `aoe` の薙ぎ払いは**1体あたり65%**しか通らない=ボスなのに部隊が全然溶けなかった。
+    ⭐jug 84→160 / 肉塊・鯨 109→205 / 触腕 87→165 / 深淵の母 120→225 / 屍山の王 123→235 /
+      原初 132→250。⚠**HPも足の速さもコアへのダメージ(`dmg`)も1つも触っていない**。
+    ⚠難易度側の `boss` 倍率(古参1.0〜ナイトメア1.6)はこの上に掛かる。 */
+ {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:160,ar:1.2,aoe:5,c:'#c14b3e'},
  /* ===== ナイトメア専用: 変異した獣たち(nm:1 の個体は通常の波には出ない) ===== */
  {id:'nmRat',n:'巨鼠の群れ',hp:95,sp:205,bt:26,dmg:1,mw:1,nm:1,w:1.2,sc:.8,atk:22,ar:.35,c:'#6b5f4a'},
  {id:'nmBoar',n:'変異猪',hp:430,sp:150,bt:64,dmg:3,mw:1,nm:1,w:.7,sc:1.2,aoe:2,atk:73,ar:1,c:'#7a5a3a',dsc:'牙で2体まとめて薙ぎ払う'},
@@ -3397,7 +3403,7 @@ const ZOMBIES=[
  {id:'nmBat',n:'吸血蝙蝠',hp:150,sp:240,bt:48,dmg:2,mw:3,nm:1,noblock:1,w:.5,sc:.9,atk:0,ar:9,c:'#5a4a6b'},
  {id:'nmCrow',n:'腐肉鴉',hp:190,sp:170,bt:54,dmg:2,mw:4,nm:1,aura:1,w:.55,sc:.95,atk:34,ar:.6,c:'#3f3a44'},
  {id:'nmBear',n:'屍熊',hp:1050,sp:66,bt:150,dmg:5,mw:6,nm:1,armor:1,w:.35,sc:1.7,atk:109,ar:1.1,aoe:3,c:'#5a4a3a'},
- {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:109,ar:1.1,aoe:7,c:'#8a3a5a'},
+ {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:205,ar:1.1,aoe:7,c:'#8a3a5a'},
  /* ===== 🌑ナイトメア × ステージ2 専用: 変異した深海の生き物(nm:1 かつ st:2) =====
     ⭐2026-07-27ユーザー指示「2ステージ目のナイトメアも別の種類の敵にしたい」。方向は
       **A=深海の生き物が変異した**(ユーザー選択)。⚠それまでは**ステージ2でも陸の獣が出ていた**。
@@ -3414,7 +3420,7 @@ const ZOMBIES=[
  {id:'dVamp',n:'吸血コウモリダコ',hp:200,sp:168,bt:54,dmg:2,mw:4,nm:1,st:2,aura:1,w:.55,sc:.95,atk:36,ar:.6,c:'#5a3a4a',dsc:'外套を翻して周りの群れを昂ぶらせる'},
  {id:'dSquid',n:'硝子イカ',hp:390,sp:118,bt:60,dmg:2,mw:6,nm:1,st:2,scl:1,w:.5,sc:1.15,atk:58,ar:.8,c:'#7f9cae',dsc:'透き通った鱗の鎧。実弾が効きにくいが⚡電撃に弱い'},
  {id:'dCoel',n:'腐肉シーラカンス',hp:1080,sp:64,bt:150,dmg:5,mw:6,nm:1,st:2,armor:1,w:.35,sc:1.7,atk:112,ar:1.1,aoe:3,c:'#4a6b5a',dsc:'太古の肉鰭。ぶ厚い装甲で3体を薙ぎ払う'},
- {id:'dWhal',n:'腐骸の鯨',hp:2600,sp:36,bt:600,dmg:14,boss:1,nm:1,st:2,armor:1,mw:5,sc:3.2,/* ⚠中で0.72倍しているので実質2.3 */atk:109,ar:1.1,aoe:7,c:'#3f5a6b',dsc:'肉の落ちた鯨の骸。顎で7体を薙ぎ払う'},
+ {id:'dWhal',n:'腐骸の鯨',hp:2600,sp:36,bt:600,dmg:14,boss:1,nm:1,st:2,armor:1,mw:5,sc:3.2,/* ⚠中で0.72倍しているので実質2.3 */atk:205,ar:1.1,aoe:7,c:'#3f5a6b',dsc:'肉の落ちた鯨の骸。顎で7体を薙ぎ払う'},
  /* ===== ステージ2「沈んだ港」専用: ゾンビ化した海の生き物(st:2 の個体は他の波には出ない) =====
     役割はステージ1のゾンビと1対1で対応させてある(基本/快速/装甲/分裂/オーラ/高速/すり抜け/…) */
  {id:'sCrab',n:'腐れガニ',hp:78,sp:74,bt:12,dmg:1,mw:1,st:2,sc:1,atk:21,ar:.85,c:'#7d7a55',dsc:'甲羅ごと腐って這い寄る'},
@@ -3437,12 +3443,12 @@ const ZOMBIES=[
     もう一つぐらい敵の個性を」)=2.2秒、足を止めて**受けるダメージが2割**になる。
     潜り(dv)と逆の性格=消えて進む/居座って固くなる。⚠個性は1キャラ最大1個の掟。 */
  {id:'sTurt',n:'巨大ウミガメ',hp:680,sp:52,bt:130,dmg:4,mw:15,st:2,scl:1,shl:1,w:.3,sc:1.45,aoe:3,atk:78,ar:1.1,c:'#5f6b52',dsc:'ぶ厚い鱗の甲羅。電撃に弱い。たまに甲羅にこもって固くなる'},
- {id:'sKrak',n:'触腕の主',hp:1450,sp:38,bt:400,dmg:10,st:2,boss:1,scl:1,mw:5,sc:2.1,atk:87,ar:1.2,aoe:5,c:'#6b4a7a',dsc:'港の主。触腕で薙ぎ払う'},
+ {id:'sKrak',n:'触腕の主',hp:1450,sp:38,bt:400,dmg:10,st:2,boss:1,scl:1,mw:5,sc:2.1,atk:165,ar:1.2,aoe:5,c:'#6b4a7a',dsc:'港の主。触腕で薙ぎ払う'},
  /* ===== 各ステージの最終ボス(WAVE20だけに出る特別な1体。fin:1) ===== */
- {id:'fKing',n:'屍山の王',hp:2600,sp:34,bt:900,dmg:16,boss:1,fin:1,armor:1,aura:1,mw:20,sc:2.6,atk:123,ar:1.15,aoe:7,c:'#6b3a34',dsc:'融合した屍の山。周囲の群れを昂ぶらせ、薙ぎ払う'},
- {id:'fMoth',n:'深淵の母',hp:2600,sp:32,bt:900,dmg:16,st:2,boss:1,fin:1,scl:1,split:3,mw:20,sc:2.6,atk:120,ar:1.2,aoe:6,c:'#3f5a63',dsc:'港の底で孵り続けるもの。倒すと弾けて周りを巻き込み、仔が這い出る'},
- {id:'fLevi',n:'原初の海淵',hp:3000,sp:42,bt:900,dmg:16,nm:1,st:2,boss:1,fin:1,scl:1,aura:1,split:3,mw:20,sc:3.7,/* ⚠中で0.72倍しているので実質2.66 */atk:132,ar:1.1,aoe:8,c:'#2f4a63',dsc:'すべての深海の源。群れを狂わせ、薙ぎ払い、倒れても弾ける'},
- {id:'fBeast',n:'原初の獣',hp:3000,sp:44,bt:900,dmg:16,nm:1,boss:1,fin:1,armor:1,aura:1,split:3,mw:20,sc:2.7,atk:132,ar:1.1,aoe:8,c:'#6b2f3a',dsc:'すべての獣の源。群れを狂わせ、薙ぎ払い、倒すと弾けて仔を産み落とす'}
+ {id:'fKing',n:'屍山の王',hp:2600,sp:34,bt:900,dmg:16,boss:1,fin:1,armor:1,aura:1,mw:20,sc:2.6,atk:235,ar:1.15,aoe:7,c:'#6b3a34',dsc:'融合した屍の山。周囲の群れを昂ぶらせ、薙ぎ払う'},
+ {id:'fMoth',n:'深淵の母',hp:2600,sp:32,bt:900,dmg:16,st:2,boss:1,fin:1,scl:1,split:3,mw:20,sc:2.6,atk:225,ar:1.2,aoe:6,c:'#3f5a63',dsc:'港の底で孵り続けるもの。倒すと弾けて周りを巻き込み、仔が這い出る'},
+ {id:'fLevi',n:'原初の海淵',hp:3000,sp:42,bt:900,dmg:16,nm:1,st:2,boss:1,fin:1,scl:1,aura:1,split:3,mw:20,sc:3.7,/* ⚠中で0.72倍しているので実質2.66 */atk:250,ar:1.1,aoe:8,c:'#2f4a63',dsc:'すべての深海の源。群れを狂わせ、薙ぎ払い、倒れても弾ける'},
+ {id:'fBeast',n:'原初の獣',hp:3000,sp:44,bt:900,dmg:16,nm:1,boss:1,fin:1,armor:1,aura:1,split:3,mw:20,sc:2.7,atk:250,ar:1.1,aoe:8,c:'#6b2f3a',dsc:'すべての獣の源。群れを狂わせ、薙ぎ払い、倒すと弾けて仔を産み落とす'}
 ];
 const SENDABLE=[0,1,2,3];
 /* ⚠**プールは4つある**(2026-07-27にナイトメア×ステージ2を足した)。印の組み合わせで見分ける:
@@ -15600,6 +15606,11 @@ function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1
 /* ⚠`stnT`=気絶の**見せ方**だけのタイマー(★が頭上を回る)。止める仕組みは `frzT` の方。
    ⚠**凍結と気絶を分けるために持つ**=罠・引力場・時間停止・落雷を氷漬けで見せない(2026-08-02) */
 function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,stnT:0,frzUsed:0,burnT:0,burnD:0,acdT:0,acdD:0,acdX:0,acdR:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
+/* ⚠⚠(124)**ボスの名前は必ずここから引く**(ユーザー「ジャガーノートじゃないのに
+   ジャガーノートが現れた!って表示される」)=報せの文に名前を直に書くと、
+   ステージやナイトメアで別のボスが出た時に必ず嘘になる。
+   ⚠spec でも実体でも zi さえあれば引ける(湧く時は spec・倒した時は実体を渡している)。 */
+const zNameOf=z=>(ZOMBIES[(z||{}).zi]||{}).n||'ボス';
 /* ⭐⭐⭐**波ごとに「物量」と「重厚」が振れる**(2026-08-02ユーザー決定)。
    ⚠狙いは**毎波の最適解を変えること**=それまで20波ぜんぶ「強い兵科で20枠を埋める」が答えだった。
      出撃枠を重さ制(`uWt`)にしたので、**物量の波は薄く広く・重厚の波は厚く少なく**が効くようになる。
@@ -15896,7 +15907,11 @@ function tideStep(dt){
     toast('⚠ '+(dn?dn+'から':'')+'大群が来る! バスで迎え撃て',true);
     if(sfx.horn)sfx.horn();}}
   C.totalWave++;
-  if(e.boss){ev(ti2,'💀 ジャガーノートがこっちに来た!',true);C.shake=.4;
+  /* ⚠⚠(124)**ボスの名前を決め打ちにしない**(ユーザー「ジャガーノートじゃないのに
+     ジャガーノートが現れた!って表示される」)=①のボスの名前をそのまま書いていたので、
+     屍山の王・深淵の母・原初の獣が出ても「ジャガーノート」と言っていた。
+     ⚠HPバーの名前(`bn`)は先に直してあったので、**残っていたのは湧いた時と撃破の報せ**。 */
+  if(e.boss){ev(ti2,'💀 '+zNameOf(e.z)+'がこっちに来た!',true);C.shake=.4;
    addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:RUST});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
    if(C.isMe)sfx.growl();}
   T.qt+=(T.pool.length?T.pool[0].dl:0);
@@ -16630,7 +16645,7 @@ function killZ(C,z){
   for(let k=0;k<nb;k++)addFx(C,'boom',z.px+rnd(-80,80),z.py+rnd(-55,30),'',{d0:.12+k*.16});
   if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:GOLD,big:1});
   addFx(C,'txt',z.px,z.py-90*CH_UP,'+'+g+'⚙️ とどめ!'+(z.bpaid?'(削り '+z.bpaid+'⚙️)':''));
-  if(C.isMe){sfx.bossKill();UI.banner('💀 ジャガーノート撃破!!');}
+  if(C.isMe){sfx.bossKill();UI.banner('💀 '+zNameOf(z)+'撃破!!');}/* ⚠(124)名前は決め打ちにしない */
  }else if(z.elite){
   addP(C,14,z.px,z.py-24*CH_UP,{sp:200,up:80,g:540,life:.6,r:3,col:HEROC});
   C.shake=Math.max(C.shake||0,.25);
@@ -29669,7 +29684,7 @@ function syncEnts(cc,es,us,dt){
  for(const k of Array.from(cc.zm.keys()))if(!seen.has(k)){
   const z=cc.zm.get(k);
   if(cc===CC&&z&&z.hpPc<=30&&z.d<PLEN-80){/* 撃破とみなしてクライアント側でも祝う */
-   if(z.boss){cc.shake=.55;sfx.bossKill();UI.banner('💀 ジャガーノート撃破!!');}
+   if(z.boss){cc.shake=.55;sfx.bossKill();UI.banner('💀 '+zNameOf(z)+'撃破!!');}/* ⚠(124)名前は決め打ちにしない */
    else if(z.elite){cc.shake=Math.max(cc.shake||0,.25);sfx.eliteKill();}
   }
   cc.zm.delete(k);}
