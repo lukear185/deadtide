@@ -16652,8 +16652,18 @@ function killZ(C,z){
  /* ⚠**間隔も毎回ずらす**(2026-08-02(32))=きっかり0.075秒ごとだと拍が揃って機械の音になる */
  if(rice){if(C.isMe&&C.tm-(C.zsfxT||-9)>=.058+Math.random()*.05){C.zsfxT=C.tm;
   try{busCrushSfx(C);}catch(e){(sfx[SFX_CRUSH]||sfx.splat)();}}}
- else if(C.isMe){sfx.splat();if(Math.random()<.5)sfx.coin();
-  if(z.elite)sfx.moanBig();else if(Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
+ /* ⚠⚠⭐(124)**本編でも音を間引く**(ユーザー「(必殺を)撃ったときに重い」)。
+    ⚠⚠実測=必殺1発で**1コマに85件**の音が同時に鳴っていた(死の宣告・腐食の霧・地響きは
+      盤面の敵を一度に倒すので、1体ずつ鳴らすと撃破音が数十重なる)。
+      音は1件ごとに音の回路を組むので、**その1コマだけ極端に重くなる**=「撃った瞬間だけカクつく」の正体。
+    ⭐**0.05秒に1回まで**=最大でも毎秒20発。⚠普通に倒している間(毎秒1〜5体)は1発も減らない。
+    ⚠🚌開拓便が先に同じ手を使っている(0.075秒に1回)。⚠**間隔は毎回ずらす**=拍が揃うと機械の音になる。
+    ⚠エリートの唸りだけは**間引かない**(数が少なく、消えると手応えが無くなる)。 */
+ else if(C.isMe){
+  if(C.tm-(C.zsfxT||-9)>=.05+Math.random()*.03){C.zsfxT=C.tm;
+   sfx.splat();if(Math.random()<.5)sfx.coin();
+   if(!z.elite&&Math.random()<.3)(Math.random()<.55?sfx.die:sfx.moan)();}
+  if(z.elite)sfx.moanBig();}
  /* 大物撃破の特別演出 */
  if(z.boss){
   addP(C,26,z.px,z.py-30*CH_UP,{sp:300,up:120,g:540,life:.9,r:4,col:GOLD,jx:14,jy:14});
