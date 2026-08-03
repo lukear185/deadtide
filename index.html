@@ -8672,7 +8672,12 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  /* 🧪ドット絵の試作: 用意がある種類だけ差し替える(無い種類は今までどおりコード描画) */
  if(PXS&&pxDraw(c,PXS,Z.id,pxf,s,o.vw,dir)){c.restore();return;}
  if(o.lg>0)c.translate(o.lg*34,0);
- if(o.hitT>0)c.filter='brightness(2.1)';
+ /* ⚠⚠⚠(124)**被弾の白光りに `ctx.filter` を使わない**(ユーザー「スマホがめっちゃ熱くなる」)。
+    ⚠実測=`filter` を1回使うだけで**1コマ40ms**(ヘッドレスのソフト描画)。
+      canvas の filter は**画面いっぱいの面を作り直して掛ける**ので、1体ぶんでも桁違いに高い。
+    ⚠おまけに **iOS Safari では `ctx.filter` が効かない**=実機では光ってすらいなかった。
+    ⭐**同じ絵をもう1枚 `lighter` で重ねる**方式へ(死体の「倒れた瞬間の光り」と同じ手)=
+      安い上に iOS でも光る。⚠光らせるのは**呼ぶ側**(スプライトのままで光らせられる)。 */
  if(o.sent){c.shadowColor='#ff3b2f';c.shadowBlur=10;}
  if(o.elite){c.shadowColor='#b04ad0';c.shadowBlur=13;}
  /* ⚠黒フチを絵の大きさに比例させて太くする(2.6*CH_UP)のは**試して駄目だった**(第96弾)。
@@ -14456,7 +14461,8 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  else if(o.fireT>0)c.translate(-(2+7*clamp(o.fireT/.14,0,1)),0);
  /* ⚠詠唱中は掛けない=bUlt の踏み込み(fw)と二重になる */
  else if(o.chg>0&&!o.ulm)c.translate(1.6*o.chg,0);
- if(o.hitT>0)c.filter='brightness(2.1)';
+ /* ⚠(124)**被弾の白光りはここでは出さない**(`ctx.filter` は画面いっぱいの面を作るので極端に高い/
+    iOSでは効かない)。⭐**呼ぶ側が同じ絵をもう1枚 `lighter` で重ねる**=安くて iOS でも光る。 */
  /* ⭐英雄の光は**レア度の色**にする(第91弾)。全員が同じ琥珀色だと、せっかく11人ぶん
     描き分けた色が光に飲まれて全部金色に見えた(並べて撮って気づいた) */
  /* ⭐★4の光は**影(shadowBlur)ではなく背面の輪**にする(2026-07-31ユーザー指摘
@@ -19129,10 +19135,24 @@ function renderCamp(C,t){
    c.font='900 16px '+FF;c.textAlign='center';c.globalAlpha=.85;c.fillText('❄',z.px,z.py-64*ZOMBIES[z.zi].sc);c.globalAlpha=1;}
   /* 通常時は焼き込みスプライト・特殊状態のみ直接描画 */
   /* ⚠🧪ドット絵の種類は焼き込みを通さない=焼くと1ドットが画面の1画素からずれてボケる */
-  if(!(z.hitT>0||z.lgT>0||z.sent||pxOf(ZOMBIES[z.zi].id)))
-   drawSpr(c,bakeZ(z.zi,z.elite?1:0),sprFrame(t,z.ph,ZOMBIES[z.zi].sp>90?14:8),z.px,z.py,(z.dr||1)<0);
+  /* ⚠⚠⭐(124)**被弾中(hitT)を「直描き送り」から外した**(ユーザー「スマホがめっちゃ熱くなる」)。
+     ⚠⚠塔を22台も置くと**盤面の敵はほぼ常に誰かに撃たれている**=`hitT>0` が消えず、
+       敵が全員**焼き込みを使わずベクタで描き直され、さらに `ctx.filter` まで掛かっていた**。
+       実測=ライフル台22台で**1コマ42ms**(rail=5.4ms)。⭐この1点で**42ms→5ms台**になる。
+     ⭐白光りは**同じ絵をもう1枚 `lighter` で重ねる**だけにした(死体の光りと同じ手)=
+       スプライトのまま光らせられる。⚠**iOSでも初めて光る**(`ctx.filter` は iOS で無効だった)。 */
+  const fl9=z.hitT>0?clamp(z.hitT/.1,0,1):0;
+  if(!(z.lgT>0||z.sent||pxOf(ZOMBIES[z.zi].id))){
+   const S9=bakeZ(z.zi,z.elite?1:0),fi9=sprFrame(t,z.ph,ZOMBIES[z.zi].sp>90?14:8),fp9=(z.dr||1)<0;
+   drawSpr(c,S9,fi9,z.px,z.py,fp9);
+   if(fl9>0){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=fl9*.85;
+    drawSpr(c,S9,fi9,z.px,z.py,fp9);c.restore();}
+  }
   /* ⚠**d(進んだ距離)を渡す**=ドット絵のコマ送りを距離で回すため(足が滑らない) */
-  else drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,{hitT:z.hitT,sent:z.sent,lg:z.lgT,elite:z.elite,d:z.d,vw:z.vw});
+  else{const o9={sent:z.sent,lg:z.lgT,elite:z.elite,d:z.d,vw:z.vw};
+   drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,o9);
+   if(fl9>0){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=fl9*.7;
+    drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,o9);c.restore();}}
   /* ⭐⭐**気絶**(2026-08-02ユーザー指示)。凍結の使い回しをやめて、
      **頭の上を★が円を描いて回る**+目の高さで小さくよろける。⚠氷漬けは出さない。
      ⚠★は3つ・**奥に回った時は小さく暗く**する=平面に並べると回って見えない。 */
@@ -19228,15 +19248,25 @@ function renderCamp(C,t){
   const bsw9=uBatP(u);/* ⭐バットは振っている最中だけ直に描く(焼いたコマでは振れない) */
   const vsw9=uValkP(u);/* ⭐ヴァルキリーも同じ(剣を振っている間は焼いたコマを使えない) */
   const sw9=uSwP(u);/* ⭐得物を振る兵科・英雄(表 U_SWG)。⚠同じ理由で直描きになる */
-  if(!(u.hitT>0||u.fireT>0||pose9>0||ul9>0||bsw9>0||vsw9>0||sw9>0))
+  /* ⚠(124)**被弾中(hitT)は外した**=敵と噛み合っている間ずっとベクタ描きになっていた(ゾンビ側と同じ話)。
+     白光りは下で**同じ絵をもう1枚 `lighter` で重ねる**。 */
+  const ufl9=u.hitT>0?clamp(u.hitT/.1,0,1):0;
+  if(!(u.fireT>0||pose9>0||ul9>0||bsw9>0||vsw9>0||sw9>0)){
    /* ⭐止まっている間は歩行の1コマ目で固定(2026-08-01)=その場で足踏みして見えるのを止める。
       ⚠⚠**ただし完全には止めない**(2026-08-01ユーザー指示「完全硬直だと味気ない」)=
         焼いたコマのまま**呼吸の上下**と**わずかな傾き**を掛ける。⚠脚は動かさない(足踏みに戻るため)。
         ⚠焼いたコマなので絵は1枚のまま=**重さは増えない**。 */
+   const US9=bakeU(u.ui),ufp9=(u.dr||-1)<0,ufi9=(u.mv===0)?0:sprFrame(t,u.ph,10);
    if(u.mv===0){const br9=Math.sin(t*1.9+u.ph),sw9=Math.sin(t*1.31+u.ph*.7);
     c.save();c.translate(u.px,u.py);c.rotate(sw9*.022);c.translate(-u.px,-u.py-br9*2.2);
-    drawSpr(c,bakeU(u.ui),0,u.px,u.py,(u.dr||-1)<0);c.restore();}
-   else drawSpr(c,bakeU(u.ui),sprFrame(t,u.ph,10),u.px,u.py,(u.dr||-1)<0);
+    drawSpr(c,US9,0,u.px,u.py,ufp9);
+    if(ufl9>0){c.globalCompositeOperation='lighter';c.globalAlpha=ufl9*.85;
+     drawSpr(c,US9,0,u.px,u.py,ufp9);}
+    c.restore();}
+   else{drawSpr(c,US9,ufi9,u.px,u.py,ufp9);
+    if(ufl9>0){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=ufl9*.85;
+     drawSpr(c,US9,ufi9,u.px,u.py,ufp9);c.restore();}}
+  }
   else{
    /* ⚠**膨らみも詠唱の進みに合わせる**(2026-08-02)=押した瞬間に一段大きくなると、
       そこで動きが終わったように見えて前置きが「始まり」に読めない */
@@ -19246,8 +19276,11 @@ function renderCamp(C,t){
    if(ul9>0&&!ust9){c.save();c.translate(u.px,u.py);c.scale(1+.14*ug9,1+.14*ug9);c.translate(-u.px,-u.py);}
    /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
    /* ⚠fld=**盤面で描いている**印(2026-08-03(103))=英雄の頭上の★を出さない(代わりにHPバー) */
-   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,{hitT:u.hitT,fireT:u.fireT,chg:pose9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
-    fld:1,ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0});
+   const uo9={hitT:u.hitT,fireT:u.fireT,chg:pose9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
+    fld:1,ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0};
+   drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,uo9);
+   if(ufl9>0){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=ufl9*.7;
+    drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,uo9);c.restore();}
    if(ul9>0&&!ust9)c.restore();}
   if(chg9>0&&FXLV>0)drawUChg(c,u,t,1);/* 光や照準の線は体の前 */
   if(ulp9>=0&&FXLV>0)drawUChg(c,u,t,1,ulk9);/* 詠唱の照準線・粒も体の前 */
