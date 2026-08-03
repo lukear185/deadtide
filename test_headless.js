@@ -1722,7 +1722,7 @@ function checkGachaFx(){
  if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
  /* ⭐展開が読めること: タレット/ゾンビは予告で**下振れだけ**(上振れしない)
     → レーザー(段2)が出たら★4以上が確定 / レアでない時は基本ライフル+通常ゾンビ */
- let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0],hi5N=[0,0,0],tw4=0,n4=0;
+ let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0],hi5N=[0,0,0],tw4=0,n4=0,dog4=0,dog5=0;
  for(let k=0;k<1200;k++){
   const rk=k%6;
   const one=[rk===0?{dud:GDUD[0],txt:''}:{hero:HEROES.find(h=>h.rk===rk),txt:''}];
@@ -1731,6 +1731,7 @@ function checkGachaFx(){
   /* ⭐⭐2026-08-03(92)ユーザー指示「虹とか金のロブスターとかは★5以上確定にして」=
      **虹の文字(fc2)と✨黄金のロブスターは★5確定**へ。レーザーとどんでん返しは★4以上のまま。 */
   if(r===4)n4++;
+  if(GC.dogs){if(r===4)dog4++;else dog5++;}
   if(GC.twist){
    if(r<4){console.log('FAIL: ★4未満でどんでん返しが起きている(レア度'+r+')');process.exit(1);}
    if(GC.tw!==0||GC.zk!==0||GC.fc!==0||GC.night!==false||GC.lob){
@@ -1759,8 +1760,12 @@ function checkGachaFx(){
  {const tot=hi5N[0]+hi5N[1]+hi5N[2];
   for(let q=0;q<3;q++){const pc=hi5N[q]/Math.max(1,tot);
    if(Math.abs(pc-1/3)>.09){console.log('FAIL: ★5の演出の割合がずれている '+hi5N.join('/')+' (計'+tot+' 想定33/33/33)');process.exit(1);}}}
- {const pc4=tw4/Math.max(1,n4);
-  if(Math.abs(pc4-GC_P_TW)>.07){console.log('FAIL: ★4のどんでん返しの割合がずれている '+tw4+'/'+n4+' (想定'+Math.round(GC_P_TW*100)+'%)');process.exit(1);}}
+ /* ⭐(128)**どんでん返しは★5確定になった**(ユーザー指示)=★4では一度も起きないこと。
+    代わりに★4には🐕犬の軍勢が来る(こちらは半分ぐらい)。 */
+ {if(tw4>0){console.log('FAIL: ★5確定にしたのに★4でどんでん返しが出た '+tw4+'/'+n4);process.exit(1);}
+  const pcD=dog4/Math.max(1,n4);
+  if(n4>=20&&(pcD<.3||pcD>.8)){console.log('FAIL: ★4の犬の軍勢の割合がおかしい '+dog4+'/'+n4);process.exit(1);}
+  if(dog5>0){console.log('FAIL: ★5で犬の軍勢が出た(★5の合図と混ざる) '+dog5);process.exit(1);}}
  /* ⭐**夜の方が期待度が高い**=レアな時ほど夜が出やすいこと(逆になっていたら演出が嘘になる) */
  {const hi=nightN[1]/Math.max(1,nightN[1]+dayN[1]),lo=nightN[0]/Math.max(1,nightN[0]+dayN[0]);
   if(!(hi>lo+.2)){console.log('FAIL: 夜が期待度になっていない(レア時'+(hi*100|0)+'% / それ以外'+(lo*100|0)+'%)');process.exit(1);}}

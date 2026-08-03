@@ -16395,7 +16395,8 @@ const H_FX={
  /* 🌈跳弾姫ルピナ: **弾むゴムボール**。1発目の当たりは普段の枝(dmgZ)が済ませている=
     ここは①発射の絵②2跳ね目以降(lupiBall)の予約だけ。⚠威力の式は本体と同じに保つこと。 */
  hLupi:(C,u,U,tg,mx,my,ang)=>{u.fireT=.12;
-  const n9=1+ri(0,4);/* 跳ねる回数1〜5(等確率) */
+  /* 🌈⭐(128)**跳ねる回数は3〜7(等確率)**(ユーザー指示。1〜5から引き上げ) */
+  const n9=ri(3,7);
   const ua9=Math.round(U.atk*(u.am||1)*(((C.uOv||0)>0)?UOV_ATK:1)*uChgM(u.ui));
   addFx(C,'mzl',mx,my,'',{ang});
   lupiHop(C,mx,my,tg,'#ff7fb8',0);/* 発射→1体目の跳ねの線 */
@@ -16428,23 +16429,27 @@ function lupiHop(C,x1,y1,z2,col,big){
  addFx(C,'ring',z2.px,z2.py,'',{r:big?34:24,col});
  addP(C,big?6:4,z2.px,z2.py-16*CH_UP,{sp:120,up:60,g:420,life:.3,r:big?2.6:2,col});
 }
-function lupiNext(C,x,y,hit){
+/* 🌈⚠⚠(128)**一度当てた敵にもまた跳ねる**(ユーザー「一回ダメージ与えた敵にもまだ跳弾するように」)。
+   ⚠それまでは  に入っている敵を除いていたので、**近くに敵が少ないと途中で止まって**いた。
+   ⭐**直前に当てた1体だけ除く**=同じ敵で往復し続けるのは防ぎつつ、群れの中では跳ね続ける。
+   ⚠敵が1体しか居なければそこで止まる(このキャラの性格はそのまま)。 */
+function lupiNext(C,x,y,last){
  let tg=null,bd=1e9;
- for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0||hit.indexOf(z)>=0)continue;
+ for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0||z===last)continue;
   const dd=dist(z.px,z.py,x,y);if(dd<LUPI_HOP&&dd<bd){bd=dd;tg=z;}}
  return tg;
 }
 function lupiBall(C,u,bd,grow,hops,cur,dl0,big){
- let px=cur.px,py=cur.py-16*CH_UP;const hit=[cur];let k=0;
+ let px=cur.px,py=cur.py-16*CH_UP;let last=cur;let k=0;
  const step=()=>{
   if(!C)return;/* ⚠撃った本人が倒れてもボールは跳ね続ける(もう手を離れている) */
-  const nx=lupiNext(C,px,py,hit);
+  const nx=lupiNext(C,px,py,last);
   if(!nx)return;/* 跳ね先が居なければボールは転がって消える */
   const col=LUPI_COLS[(k+1)%3];
   lupiHop(C,px,py,nx,col,big);
   dmgZ(C,nx,Math.max(1,Math.round(bd*(1+grow*(k+1)))),1);
   if(C.isMe)sfxAtR&&sfxAtR('thunk',.20,1.45+k*.06);/* 跳ねるほど少し高く鳴る */
-  hit.push(nx);px=nx.px;py=nx.py-16*CH_UP;k++;
+  last=nx;px=nx.px;py=nx.py-16*CH_UP;k++;
   if(k<hops)later(C,.14,step);
  };
  later(C,dl0,step);
@@ -17570,7 +17575,14 @@ function campStep(C,dt,wave){
    if(z.frzT<=0)z.acd=(z.acd||0)-dt;/* 凍結中は殴れない */
    if(z.frzT<=0&&!(z.shT>0)&&z.acd<=0){z.acd=z.ar;z.lgT=.22;/* 🐢こもり中も殴れない */
     if(z.aoe){/* ボス級=薙ぎ払い(周囲の部隊を同時に殴る) */
-     const tg2=[];for(const u2 of C.units){if(u2.dead)continue;const gp=Math.abs(u2.d-z.d);if(gp<=110)tg2.push({u:u2,gp});}
+     /* 🦸⚠⚠(128)**後ろに居る英雄は薙ぎ払いに巻き込まない**(ユーザー「前線ユニットの後ろに
+        近接ヒーローが行くようにしたけど、相手の範囲攻撃持ちがいる時 普通に後ろにいても
+        喰らっちゃうから喰らわないようにして欲しい」)。
+        ⚠**噛みついている本人(blk)が英雄の時は当たる**=前に出ているなら普通に殴られる。
+        ⚠兵科(部隊)は今までどおり全員巻き込む=難易度を動かさないため。 */
+     const tg2=[];for(const u2 of C.units){if(u2.dead)continue;
+      if(u2.hro&&u2!==blk)continue;
+      const gp=Math.abs(u2.d-z.d);if(gp<=110)tg2.push({u:u2,gp});}
      tg2.sort((a,b)=>a.gp-b.gp);
      for(let k9=0;k9<Math.min(z.aoe,tg2.length);k9++)dmgU(C,tg2[k9].u,z.atk*.65);/* 薙ぎ払いは1体あたり65% */
      addFx(C,'ring',z.px,z.py-16*CH_UP,'',{r:96,col:DANGER2});
@@ -27474,9 +27486,15 @@ function gcStart(res){
       (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、**当たった所までは通常演出と同じ**に見せ、
       爆散した跡から**金色の個体が現れて**もう一度砕ける。★4以上を引いた回だけ、たまに起きる。
     ⚠これがあるので「ライフル+通常ゾンビ=はずれ」と決め打ちできなくなる=毎回タップする理由になる。 */
- const twist=best>=5?(rl9>=1/3&&rl9<2/3):(best>=4&&rl9<GC_P_TW);
- GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,
-  night:twist?false:night,fc:twist?0:fc,lob:lob?1:0,twist:twist?1:0};
+ /* ⭐⭐(128)**どんでん返しは★5確定にした**(ユーザー「一番しょぼい演出かと思ったら金のゾンビに
+      なって…のやつは星5確定演出にして。いまだとあの演出出たのに星4当たっちゃってる」)。
+    ⚠★4でも出していたので、**一番の盛り上がりが空振りする**ことがあった。
+    ⭐これで★5の合図は3つとも「確定」で揃う=🌈虹の文字 / ✨黄金のロブスター / 🥇どんでん返し。 */
+ const twist=best>=5&&rl9>=1/3&&rl9<2/3;
+ /* 🐕(128)犬の軍勢=**★4の合図**(★5には出さない=★5の合図3つと混ぜない) */
+ const dogs=(best===4)&&Math.random()<.55;
+ GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:(dogs?1:tw),zk:twist?0:(dogs?1:tw),hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,
+  night:(twist||dogs)?false:night,fc:(twist||dogs)?0:fc,lob:lob?1:0,twist:twist?1:0,dogs:dogs?1:0};
  cv.classList.add('on');gcFit();
  if(sfx.heal)sfx.heal();
 }
@@ -27523,7 +27541,7 @@ function gcCam(w,h,TX,TY,ZX,ZY){
    /* 発射の反動(最初の0.12秒だけ強く蹴る) */
    const r=Math.max(0,1-ft/.12);sx=Math.sin(ft*90)*11*r;sy=Math.cos(ft*77)*7*r;
   }else{
-   const hk=clamp((ft-GC_FLY-GC_HOLD-(GC.twist?GC_TWIST:0))/1.05,0,1);
+   const hk=clamp((ft-GC_FLY-GC_HOLD-gcDly())/1.05,0,1);
    /* 着弾で一気に寄ってから、ゆっくり引いて跡地を見せる */
    const e=hk*hk*(3-2*hk);
    z=1.46-e*.43;x=ZX+(( (TX+ZX)/2 )-ZX)*e;y=(ZY-30)+(((TY+ZY)/2-20)-(ZY-30))*e;
@@ -27552,6 +27570,15 @@ function gcHitSfx(){
    前半 GC_TW_R = 普通に木っ端みじん(通常演出と見分けが付かない) / 後半 = その跡から金色の個体がせり上がる */
 const GC_TWIST=1.5;
 const GC_TW_R=.45;/* 爆発から「金色が現れる」へ切り替わる所(0〜1) */
+/* 🐕⭐⭐(128)**犬の軍勢**(ユーザー「ショットガン+アーマーゾンビが今一番期待できない演出になってる
+     けど、そこを逆手にとって、ショットガンでアーマーゾンビ撃つ→死なない→犬の軍勢が横切って
+     アーマーゾンビが喰われて骨になる→星何個の演出っていうのを新規で」)。
+   ⚠**どんでん返しを★5確定にした穴埋め**=★4にも「まさか」の枠を1つ残す。
+   ⭐必ず**ショットガン+アーマーゾンビ(=一番期待できない見た目)**から始まる。 */
+const GC_DOGS=2.0;   /* 犬が横切って骨になるまでの秒数 */
+const GC_DOG_N=11;   /* 走り抜ける犬の数 */
+const GC_DOG_R=.62;  /* この進み具合で「喰われて骨になる」 */
+const gcDly=()=>GC?(GC.twist?GC_TWIST:(GC.dogs?GC_DOGS:0)):0;
 /* ⭐★4以上を引いた回の内訳(2026-07-30ユーザー指示「ピラミッドにしよう」)。
    ✨黄金のロブスター20% / どんでん返し35% / 通常の最上位演出45%。
    ⚠**珍しい絵ほど出にくい**のが演出の基本=均等にすると「派手=当たり」の情報価値が消え、
@@ -27580,7 +27607,7 @@ function gcStep(dt){
   if(sfx.heal)sfx.heal();}
  /* どんでん返し: 金色になり切った瞬間に大爆発 */
  if(GC.ph==='fire'&&GC.twist&&!GC.hit2&&GC.t>=GC_FLY+GC_HOLD+GC_TWIST){GC.hit2=1;gcHitSfx();}
- if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_HOLD+GC_BANG+(GC.twist?GC_TWIST:0)){GC.ph='card';GC.t=0;}
+ if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_HOLD+GC_BANG+gcDly()){GC.ph='card';GC.t=0;}
  try{gcDraw();}catch(e){}
 }
 /* 押した時: 「撃て!」なら撃つ / 撃った後の余韻は飛ばす / カードなら次の1枚へ */
@@ -27592,7 +27619,7 @@ function gcTap(mx,my){
  if(GC.ph==='chg')return;
  if(GC.ph==='fire'){
   /* 弾が飛んでいる間は飛ばさない(当たる前に結果へ行くと何が起きたか分からない) */
-  if(GC.t<GC_FLY+GC_HOLD+.35+(GC.twist?GC_TWIST:0))return;
+  if(GC.t<GC_FLY+GC_HOLD+.35+gcDly())return;
   GC.ph='card';GC.t=0;return;}
  GC.i++;
  if(GC.i>=GC.res.length){gcEnd();return;}
@@ -27718,6 +27745,28 @@ function gcRays(c,cx,cy,R,n,rot,col,a){
   c.beginPath();c.moveTo(0,0);c.lineTo(R,-R*.055);c.lineTo(R,R*.055);c.closePath();c.fill();}
  c.restore();c.globalAlpha=1;
 }
+/* 🦴(128)喰われた跡=骨(頭骨+あばら+散らばった骨)。⚠**血は出さない**=喰い尽くされた後なので */
+function gcBones(c,ZX,ZY,k){
+ const a=Math.min(1,k*2.2);if(a<=0)return;
+ c.save();c.globalAlpha=a;
+ c.fillStyle='#e8e2d0';c.strokeStyle=INK;c.lineWidth=3;
+ /* 頭骨 */
+ c.beginPath();c.arc(ZX-2,ZY-16,11,0,7);c.fill();c.stroke();
+ c.fillStyle='#3a3128';
+ c.beginPath();c.arc(ZX-6,ZY-18,2.6,0,7);c.fill();c.beginPath();c.arc(ZX+2,ZY-18,2.6,0,7);c.fill();
+ /* あばら */
+ c.fillStyle='#e8e2d0';c.strokeStyle=INK;
+ c.beginPath();c.moveTo(ZX-1,ZY-6);c.lineTo(ZX+1,ZY+6);c.lineWidth=4;c.stroke();
+ c.lineWidth=3;
+ for(let i=0;i<3;i++){const y=ZY-3+i*5;
+  c.beginPath();c.moveTo(ZX-9,y);c.quadraticCurveTo(ZX,y-3,ZX+9,y);c.stroke();}
+ /* 散らばった骨 */
+ for(let i=0;i<4;i++){const a2=i*1.7+.6,r=16+i*4;
+  const bx=ZX+Math.cos(a2)*r*k,by=ZY+6+Math.sin(a2)*r*.4*k;
+  c.save();c.translate(bx,by);c.rotate(a2);
+  c.fillStyle='#e8e2d0';rr(c,-6,-1.6,12,3.2,1.6);c.fill();c.stroke();c.restore();}
+ c.restore();c.globalAlpha=1;
+}
 /* ⭐木っ端みじん(衝撃の輪+肉片+地面の染み)。⚠肉片は落ちたら地面に転がしておく(消すと跡が残らない)。
    ⭐**どんでん返しでも同じ絵を使う**(2026-07-30)=「1回目=普通に爆散 / 2回目=金色のまま砕ける」で
      見た目の筋が通る。gold=1 で肉片と染みが金になる */
@@ -27788,15 +27837,18 @@ function gcDraw(){
   /* ⭐着弾したら GC_HOLD 秒だけ画を止める(ヒットストップ)。hk はそのあとから進む。
      ⚠止めている間も**ゾンビは立ったまま**にする=消すと0.14秒の穴が空いて手応えが消える */
   /* ⭐どんでん返しの間(GC_TWIST秒)は**まだ決着していない**ので、跡地の進行(hk)をその分うしろへずらす */
-  const dly=GC.twist?GC_TWIST:0;
+  const dly=gcDly();
   const hit=fire&&ft>=GC_FLY,hk=hit?clamp((ft-GC_FLY-GC_HOLD-dly)/1.05,0,1):0;
   const stop=hit&&ft<GC_FLY+GC_HOLD;
   /* どんでん返しの進み(0→1)。前半=普通に爆散 / 後半=その跡から金色の個体が現れる */
   const twK=GC.twist?clamp((ft-GC_FLY-GC_HOLD)/dly,0,1):0;
+  /* 🐕(128)犬の軍勢の進み(0→1)。前半=当たったのに立ったまま / 犬が横切る / 後半=骨になる */
+  const dgK=GC.dogs?clamp((ft-GC_FLY-GC_HOLD)/dly,0,1):0;
   const rz9=GC.twist?clamp((twK-GC_TW_R)/(.85-GC_TW_R),0,1):0;/* 金色がせり上がる分 */
   /* ⚠**どんでん返しでも一度はちゃんと爆散する**(2026-07-30ユーザー指示)ので、
      立っているのは「当たる前」と「止めている一瞬」だけ */
-  const alive9=(!hit||stop);
+  /* ⚠🐕犬の軍勢は**喰われるまで立っている**(当たっても死なないのがこの演出の肝) */
+  const alive9=(!hit||stop||(GC.dogs&&dgK<GC_DOG_R));
   /* 肉片の散り方。⚠どんでん返しの1回目は途中で止める=跡が残っていないと出現の土台が無い */
   const bk9=(GC.twist&&twK<1)?Math.min(.5,twK/GC_TW_R*.5):hk;
   const mx=TX+64,my=TY-64,ex=ZX,ey=ZY-26;/* 銃口 → 的 */
@@ -27821,12 +27873,16 @@ function gcDraw(){
       ⚠どんでん返しは**当たるまで普通の姿**=見た目で先に割れてはいけない */
    if(GC.lob)gcGold(c,zidx,zsc,ZX,ZY,1,1.5);
    else{
-    c.save();c.translate(ZX,ZY);c.scale(zsc,zsc);
-    try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
+    /* 🐕当たったのに立っている間は**のけぞって震える**=「効いていないのに死なない」を体で言う */
+    const sh9=(GC.dogs&&hit)?Math.sin(GC.t*40)*3:0;
+    c.save();c.translate(ZX+sh9,ZY);c.scale(zsc,zsc);
+    try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{hitT:(GC.dogs&&hit&&dgK<.18)?1:0});}catch(e){}
     c.restore();}
   }else{
-   /* ⭐倒し方は確定で木っ端みじん。⚠どんでん返しの2回目は**金色のまま砕ける** */
-   gcGib(c,ZX,ZY,bk9,Z,(GC.lob||(GC.twist&&twK>=1))?1:0);
+   /* ⭐倒し方は確定で木っ端みじん。⚠どんでん返しの2回目は**金色のまま砕ける**
+      ⚠🐕犬の軍勢だけは**爆散させない**=喰われて骨になるので、跡地には骨を置く */
+   if(GC.dogs)gcBones(c,ZX,ZY,clamp((dgK-GC_DOG_R)/(1-GC_DOG_R),0,1));
+   else gcGib(c,ZX,ZY,bk9,Z,(GC.lob||(GC.twist&&twK>=1))?1:0);
    /* ⭐⭐どんでん返し: 爆発の跡から**金色の個体がせり上がる**(2026-07-30ユーザー指示
       「当たったらゾンビが爆発して金色のゾンビが現れる感じで」)。 */
    if(GC.twist&&rz9>0&&twK<1){
@@ -27840,6 +27896,8 @@ function gcDraw(){
     gcGold(c,zidx,zsc,ZX,ZY,rz9,1);
     c.restore();
    }
+   /* ---- 🐕(128)犬の軍勢が横切る。⚠**骨になる前後にまたがって**走らせる=
+        「犬が通り過ぎたら骨になっていた」という順番が読める ---- */
    /* ---- ⭐跡地に残る「示唆」= この召集の一番いい結果を教える ---- */
    /* ⭐**一度に全部出さない**。まず「木っ端みじん!!」を見せ、それが消えてから気配が立ち上る
       (同時に出すと★と文字が重なって、どちらも読めなくなっていた) */
@@ -27885,6 +27943,25 @@ function gcDraw(){
      c.beginPath();c.moveTo(mx+Math.cos(a)*d,my+Math.sin(a)*d);
      c.lineTo(mx+Math.cos(a)*(d*.45),my+Math.sin(a)*(d*.45));c.stroke();}
     c.globalAlpha=1;c.lineWidth=3;}}
+  /* 🐕(128)犬の軍勢=**枝の外**で描く(立っている間も骨になった後も横切る) */
+  if(GC.dogs&&dgK>0.02&&dgK<.98){
+   const di9=ZOMBIES.findIndex(q=>q.id==='dog');
+   if(di9>=0)for(let i9=0;i9<GC_DOG_N;i9++){
+    const ph9=i9/GC_DOG_N;
+    const q9=clamp((dgK-.04-ph9*.46)/.40,0,1);
+    if(q9<=0||q9>=1)continue;
+    const dp9=((i9*7)%5)/4;/* 奥行き(奥ほど小さく上) */
+    const dx9=w*1.3-(w*1.75)*q9,dy9=ZY+18-dp9*30;
+    const ds9=.72-dp9*.26;
+    c.save();c.translate(dx9,dy9);c.scale(ds9,ds9);
+    try{drawZombie(c,di9,0,0,1,GC.t*3.2+i9,i9,{});}catch(e){}
+    c.restore();
+   }
+   c.globalAlpha=.22;c.fillStyle='#b9a67c';
+   for(let i9=0;i9<7;i9++){const q9=clamp((dgK-.05-i9*.05)/.6,0,1);if(q9<=0||q9>=1)continue;
+    c.beginPath();c.ellipse(w*1.25-(w*1.75)*q9,ZY+14,22,7,0,0,7);c.fill();}
+   c.globalAlpha=1;
+  }
   /* ---- 弾(GC_FLY秒かけて奥へ飛ぶ。奥へ行くほど小さくなる) ---- */
   if(fire&&ft<=GC_FLY+.04){
    const p=clamp(ft/GC_FLY,0,1),bx=mx+(ex-mx)*p,by=my+(ey-my)*p,sz=1-p*.55;
