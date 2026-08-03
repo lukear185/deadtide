@@ -282,6 +282,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
            +';for(var q9=0;q9<40;q9++)gcHomeStep(0.05);}'):'gcPull(10);')+''
        +(OPT.indexOf('gacha5')>=0
          ?'if(GC){GC.res[0]={hero:HEROES[HEROES.length-1],txt:"NEW!"};GC.best=5;}':'')
+       /* gdup5=★5が**重複**した札(2026-08-04(124)に🔧100+💎25にしたので、
+          額の文字が右へはみ出していないかを見る口)。⚠gcard と一緒に渡す */
+       +(OPT.indexOf('gdup5')>=0
+         ?'if(GC){var h5=HEROES.filter(function(h){return h.rk===5;})[0];'
+          +'META.hero[h5.id]=1;GC.res[0]=gcApply({hero:h5});GC.best=5;}':'')
        /* ⭐期待度の演出を狙って撮る(2026-07-30)。
           gnight/gmorn=背景の朝夜 / gfc=0..2 で「撃て!」の文字色(白/赤/虹) /
           glob=的が✨黄金のロブスター / gtwist=どんでん返し(しょぼい見た目から始まる) /
