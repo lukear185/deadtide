@@ -1413,7 +1413,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 </div>
 
 <!-- 🏹⭐⭐**弓比べ**(2026-08-04(125)ユーザー指示のお遊び)=**本編とは別のゲーム**。
-     ルール: ①相手の姿は見えない ②角度と威力で撃つ ③3回当てたら勝ち
+     ルール: ①相手の姿は見えない ②角度と威力で撃つ ③2回当てたら勝ち(頭なら一発)
              ④1ターンごとに歩数が1つ貯まる(使わなければ貯まる)
              ⑤矢は**必ず10秒後に飛ぶ**。決めるのが遅いほど狙いがずれる
              ⑥その10秒の間に**相手は動くかどうかを決める**(自分も相手の10秒の間だけ動ける) -->
@@ -16065,7 +16065,7 @@ function tideStep(dt){
       :{n:Math.round(ri(BNS_CL_N,BNS_CL_N2)*(1+pd9*BNS_DENS)),
         d:rnd(BNS_AHEAD,BNS_AHEAD2),
         o:rnd(-BNS_OFF*.72,BNS_OFF*.72),r:rnd(BNS_CL_R,BNS_CL_R2)*(1-pd9*.18)};
-     if(wall&&C.isMe&&G&&G.wave>0)toast('🧱 前方に壁のような群れ!',true);
+     /* ⚠(135)**壁の予告は出さない**(ユーザー指示)=見れば分かるものを文字で言わない */
     }
     K.n--;
     if(K.wall){
@@ -22862,7 +22862,11 @@ const BUS_SIDE=420;
 /* ⚠⚠**溜まる速さが遊びの尺そのもの**=速すぎると撃ちっぱなしになって山場が消える。
    1試合の轢殺は1000体前後なので、110体で1回=**1試合で10回前後**の見当。
    ⭐実機で「なかなか溜まらない/溜まりすぎ」ならここだけ動かす。 */
-const BUS_NIT_K=1/110;  /* 1体轢くごとに溜まる量(=110体で満タン) */
+/* 🔥⚠⚠(135)**溜まりが速すぎた**(ユーザー「ゾンビ倒してたまるニトロが多すぎて無限に押せちゃう」)=
+   壁の群れ(140〜210体)を1回轢くだけで満タンに戻っていた。⭐**320体で満タン**まで絞る。
+   ⚠さらに**吹かしている間の回復は3割**にする=群れに突っ込みながら押しっぱなし、が成立しない。 */
+const BUS_NIT_K=1/320;  /* 1体轢くごとに溜まる量(=320体で満タン) */
+const BUS_NIT_KZ=.3;    /* 吹かしている間の回復の倍率 */
 /* 🔥⚠⚠(127)**ニトロは「押している間だけ減る」**(ユーザー「押している時だけニトロを消費して、
    押すのをやめたら消費が止まって普通にゾンビを轢いたら普通に回復。今だと無限に使えちゃってる」)。
    ⚠それまでは**押した瞬間に満タンを使い切って3秒だけ効く**形だった=轢けば轢くほど即満タンに戻り、
@@ -23415,7 +23419,7 @@ function bnsBusStep(C,dt){
      ⚠それまでは**ニトロ中は溜まりが止まっていた**ので、
        押していないのに減っている(=使っている間ずっと消費している)ように見えていた。
      ⭐これで**減るのは押した瞬間の1回だけ**になる。 */
-  B.nit=Math.min(1,(B.nit||0)+kil*(B.nitK||BUS_NIT_K));
+  B.nit=Math.min(1,(B.nit||0)+kil*(B.nitK||BUS_NIT_K)*(nz9?BUS_NIT_KZ:1));/* ⚠(135)吹かしている間は3割 */
   /* ⭐**一度にたくさん轢いた瞬間だけ画面を抜く**=「群れをまとめて薙いだ」を画で言い切る */
   if(kil>=BUS_FLASH_N&&(B.flashCd||0)<=0&&FXLV>0){B.flashT=.16;B.flashCd=BUS_FLASH_CD;
    /* ⭐⭐**一瞬だけ時間を止める**(2026-08-02(28))=**手応えの正体はこれ**。
@@ -23991,7 +23995,7 @@ function bnsSmash(C,o){
   if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;
    if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
    bnsScore(B,kb);
-   B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));/* ⚠(127)ニトロ中でも普通に回復する */}
+   B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K)*(nz?BUS_NIT_KZ:1));/* ⚠(135)吹かしている間は3割 */}
   if(C.isMe)try{sfxAt('boom',.9);}catch(e){}
  }else if(C.isMe)try{sfxAt(SFX_SMASH,.5);}catch(e){}
 }
@@ -24230,7 +24234,7 @@ function bnsZap(C,B,nz){
  if(kb){B.kill=(B.kill||0)+kb;B.cmb=(B.cmb||0)+kb;B.cmbT=(B.cmbT0||BNS_CMB_T);B.cmbP=1;
   if(B.cmb>(B.cmbMx||0))B.cmbMx=B.cmb;
   bnsScore(B,kb);
-  B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K));/* ⚠(127)ニトロ中でも普通に回復する */}
+  B.nit=Math.min(1,(B.nit||0)+kb*(B.nitK||BUS_NIT_K)*(nz?BUS_NIT_KZ:1));/* ⚠(135)吹かしている間は3割 */}
  B.zapT=.22;/* 絵(青い輪)を出す秒数 */
  if(FXLV>0)try{addFx(C,'ring',B.x,B.y,'',{r:EQ_ZAP_R*1.1,col:TECH});}catch(e){}
 }
@@ -30393,7 +30397,7 @@ setTimeout(()=>{try{
 /* ============ 🏹 弓比べ(2026-08-04(125)(126)ユーザー指示のお遊び) ============
    ⭐⭐**本編とは別のゲーム**。⚠`G`(本編の試合)には一切触らない=ここが壊れても本編は動く。
    ⭐**遊びの芯**(ユーザーの言葉のまま):
-     ①相手の姿は**自分の視点では見えない** ②角度と威力を決めて撃つ ③**3回当てたら勝ち**
+     ①相手の姿は**自分の視点では見えない** ②角度と威力を決めて撃つ ③**2回当てたら勝ち**(頭は2)
      ④ターンごとに**歩数が1つ貯まる**(使わなければ貯まる) ⑤**一マス移動はいつでもできる**
    ⚠⚠(126)**10秒の待ちは廃止**(ユーザー「10秒管理はテンポ悪いからなし」)=**押したら飛ぶ**。
      ⚠これに伴い「早く決めないとズレる」も廃止。代わりに**ごく小さな手ブレ**だけ残す。
@@ -30511,7 +30515,7 @@ function arcMsg(s,sec){ARC.msg=s;ARC.msgT=sec||2.2;}
    ⚠⚠スライダー2本は**数字を合わせる作業**になっていて、弓を引く手触りが無かった。
    ⭐**なぞった向き=矢の向き / なぞった長さ=威力**。指を離した瞬間に飛ぶ(離す=弦を離す)。
    ⚠**短すぎるなぞりは撃たない**(触っただけの誤射を防ぐ)。⚠盤面は押す所にしない(検査の掟)。 */
-const ARC_DRAG=150;/* この長さ(画面px)で威力100 */
+const ARC_DRAG=230;/* ⚠(134)150→230=**同じ1pxの動きで変わる量が小さくなる**=細かく合わせられる */
 function arcDragTo(ev,fire){
  const A=ARC,cv9=$('arccv');if(!A||!cv9||A.over||A.ar||A.ph!=='aim')return;
  const r=cv9.getBoundingClientRect();
@@ -30527,6 +30531,21 @@ function arcDragTo(ev,fire){
  /* ⚠⚠(131)**指を離しても撃たない**(ユーザー指示)=狙いが決まるだけ。撃つのは🏹射るボタン。 */
  if(fire)A.drag=null;
  arcUI();
+}
+/* 🎯⭐⭐(134)**着弾の予想**(ユーザー「威力の調整が難しすぎるからもっと簡単に」)。
+   ⚠⚠数字(威力70)だけでは**どこに落ちるのか**が分からず、当てずっぽうの上に当てずっぽうを重ねていた。
+   ⭐**地面に「ここに落ちる」の印**を出す=狙いは「印を相手の居そうな所に合わせる」だけになる。
+   ⚠⚠**風は計算に入れない**(入れると③④のギミックが死ぬ)=風の読みは自分でやる。
+   ⚠手ブレも入れない=**ぴたりには当たらない**(そこは腕)。 */
+function arcPredict(ang,pow){
+ const a=ang*Math.PI/180,v=pow*ARC_V;
+ let x=arcCX(ARC.me.c),y=arcGround(x)-30,vx=Math.cos(a)*v,vy=-Math.sin(a)*v;
+ for(let i=0;i<900;i++){
+  vy+=ARC_G*.02;x+=vx*.02;y+=vy*.02;
+  if(x<0||x>ARC_W)break;
+  if(y>=arcGround(x))return x;
+ }
+ return x;
 }
 /* ⭐(129)動ける/道具を使えるのは**相手が狙っている間だけ** */
 const arcFree=()=>{const A=ARC;return !!A&&!A.over&&!A.ar&&A.ph==='ethink';};
@@ -30591,7 +30610,8 @@ function arcLand(A,ar){
   A.over=A.foe.hp<=0?1:-1;A.ph='over';
   try{META.arcW=(META.arcW|0)+(A.over>0?1:0);META.arcL=(META.arcL|0)+(A.over>0?0:1);saveMeta();}catch(e){}
   try{(A.over>0?sfx.win:sfx.lose)();}catch(e){}
-  arcMsg(A.over>0?'🏆 勝ち! 見えない相手を射抜いた':'💀 負け… 相手に3回当てられた',9);
+  /* ⚠(134)**ここに数を直に書かない**=ARC_HPを変えるたびに嘘になる(3のまま残っていた) */
+  arcMsg(A.over>0?'🏆 勝ち! 見えない相手を射抜いた':'💀 負け… 射抜かれた',9);
   arcUI();return;
  }
  if(!ar.mine)A.me.duckOn=0;/* 🦆(128)相手が1本撃ち終わったらしゃがみは終わり */
@@ -30761,23 +30781,28 @@ function arcDraw(t){
   c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=4;c.setLineDash([6,8]);
   c.beginPath();c.moveTo(gx,gy);c.lineTo(gx+dx,gy+dy);c.stroke();c.setLineDash([]);
   /* 力の帯(引くほど伸びて色が濃くなる) */
-  /* ⚠⚠(131)**角度と威力を別の形で見せる**(ユーザー「同じ位置でどっちがなんだか分かりづらい」)=
-     ⭐**角度は扇**(左・弓の根元から広がる) / ⭐**威力は横の帯**(右・伸びる)。形が違えば読み違えない。 */
-  const pk=(A.pow-30)/70,ak=(A.ang-10)/75;
-  /* 角度=扇(0°〜90°の目盛りの上に、いまの角度の線) */
-  c.save();c.translate(gx-30,gy-6);
-  c.strokeStyle='rgba(24,20,16,.55)';c.lineWidth=9;
-  c.beginPath();c.arc(0,0,30,-Math.PI/2,0);c.stroke();
-  c.strokeStyle=TECH;c.lineWidth=6;
-  c.beginPath();c.arc(0,0,30,-A.ang*Math.PI/180,0);c.stroke();
-  c.fillStyle=TECH;c.font='900 17px '+FF;c.textAlign='right';
-  c.fillText(A.ang+'°',-6,-30);
-  c.restore();
-  /* 威力=横の帯 */
-  c.fillStyle='rgba(24,20,16,.55)';rr(c,gx+10,gy-48,96,13,6);c.fill();
-  c.fillStyle=pk>.8?DANGER:GOLD;rr(c,gx+13,gy-45,90*pk,7,4);c.fill();
-  c.fillStyle=pk>.8?DANGER:GOLD;c.font='900 17px '+FF;c.textAlign='left';
-  c.fillText('力 '+A.pow,gx+12,gy-54);
+ }
+ /* 🎯(134)**着弾の予想の印**=狙っている間ずっと出す(⚠風とブレは入っていない) */
+ if(A.ph==='aim'&&!A.ar&&!A.over){
+  const px9=arcPredict(A.ang,A.pow),gy9=arcGround(px9);
+  /* ⚠⚠(134)**画面の外に落ちる時は端に出す**=印が見えないと「威力を何に合わせているのか」が分からない
+     (撮って気づいた=45°/力70は147m先に落ちるので、いつも画面の外だった) */
+  if(px9<VL+30||px9>VR-30){
+   /* ⚠(134b)**地面の近く**に置く=高い所に出すと上のHUD(第N射♥)と重なる(撮って気づいた) */
+   const ex9=clamp(px9,VL+34,VR-34),ey9=arcGround(ex9)-26;
+   c.fillStyle=GOLD;c.beginPath();
+   if(px9>VR-30){c.moveTo(ex9+16,ey9);c.lineTo(ex9-6,ey9-11);c.lineTo(ex9-6,ey9+11);}
+   else{c.moveTo(ex9-16,ey9);c.lineTo(ex9+6,ey9-11);c.lineTo(ex9+6,ey9+11);}
+   c.closePath();c.fill();
+   c.font='900 15px '+FF;c.textAlign=px9>VR-30?'right':'left';
+   c.fillText('着弾 '+Math.round(px9/10)+'m',px9>VR-30?ex9-22:ex9+22,ey9+5);
+  }
+  c.strokeStyle=GOLD;c.lineWidth=4;
+  c.beginPath();c.ellipse(px9,gy9+2,20,7,0,0,7);c.stroke();
+  c.beginPath();c.moveTo(px9,gy9-30);c.lineTo(px9,gy9-6);c.stroke();
+  c.fillStyle=GOLD;c.beginPath();c.moveTo(px9,gy9-2);c.lineTo(px9-6,gy9-12);c.lineTo(px9+6,gy9-12);c.closePath();c.fill();
+  c.fillStyle=GOLD;c.font='900 15px '+FF;c.textAlign='center';
+  c.fillText(Math.round(px9/10)+'m',px9,gy9-38);
  }
  /* 🔁(131)**前回の狙い**を薄い線で残す(ユーザー「前回どれぐらいの角度とパワーで撃ったか見れるように」)。
     ⚠数字だけでなく**線でも**出す=次の一射を「もう少し上/強く」で組み立てられる。 */
@@ -30842,7 +30867,7 @@ try{
  $('arcbtn').onclick=()=>{arcOpen();};
  $('bt-arc-back').onclick=()=>show('title');
  $('bt-arc-play').onclick=()=>arcPlay();
- $('bt-arc-how').onclick=()=>toast('🏹 相手は見えない。角度と威力を決めて射る(押したらすぐ飛ぶ)。3回当てたら勝ち。地面は1マス4m=矢は必ず1マスに刺さる。ターンごとに👣歩数+1、←→でいつでも1マス動ける',true);
+ $('bt-arc-how').onclick=()=>toast('🏹 相手は見えない。画面をなぞって狙い、🏹射るで放つ(持ち時間15秒)。'+ARC_HP+'回当てたら勝ち・頭なら一発。⛰丘は矢を阻み、💨風は矢を流す。地面は1マス4m=矢は必ず1マスに刺さる。👣移動・🦆しゃがみ・⛑ヘルメットは**相手が狙っている間だけ**使える',true);
 
  $('arc-fire').onclick=()=>arcFire();
  /* 🎯(130)盤面をなぞって狙う。⚠**onclick は付けない**(全画面なので検査で重なり扱いになる) */
