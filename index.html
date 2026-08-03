@@ -1133,7 +1133,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #arc-bar{display:none}
 #arc-ctl{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:flex-end;gap:6px;padding:8px 10px}
 #arc-ctl.off{opacity:.45;pointer-events:none}
-#arc-l,#arc-r{flex:0 0 auto;min-width:60px;min-height:56px;font-size:22px}
+#arc-l,#arc-r,#arc-duck,#arc-helm{flex:0 0 auto;min-width:56px;min-height:56px;font-size:20px}
 .arcsl{flex:1 1 0;background:rgba(24,20,16,.85);border:3px solid var(--ink);border-radius:12px;padding:4px 9px 6px}
 .arcsl b{display:block;font-size:11px;font-weight:900;color:var(--paper3)}
 .arcsl input{width:100%;height:44px}/* ⚠44px(押す所の物差し) */
@@ -1427,6 +1427,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <button class="btn" id="arc-r">→</button>
     <div class="arcsl" id="arc-sl-a"><b id="arc-la">角度 45°</b><input type="range" id="arc-ang" min="10" max="85" value="45"></div>
     <div class="arcsl" id="arc-sl-p"><b id="arc-lp">威力 70</b><input type="range" id="arc-pow" min="30" max="100" value="70"></div>
+    <button class="btn" id="arc-duck" style="display:none" aria-label="しゃがむ">🦆</button>
+    <button class="btn" id="arc-helm" style="display:none" aria-label="ヘルメット">⛑</button>
     <button class="btn red" id="arc-fire">🏹 射る</button>
   </div>
   <div id="arc-end" style="display:none">
@@ -3193,6 +3195,11 @@ const TOWERS=[
     ⭐`off:1` で建設リストからも建てる判定からも外している(戻すならこの印を消すだけ)。 */
  {id:'radio',off:1,n:'電波塔',cost:380,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
  {id:'medic',n:'野戦病院',cost:420,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:LIFE,dsc:'部隊全員のHPを毎秒16回復(🦸英雄は毎秒1.2%)し、出撃の待ち時間を20%短縮'},
+/* 👟⭐⭐(128)**進軍旗**(ユーザー「TDの支援枠にユニットとヒーローの移動速度上昇するやつ追加で。
+    1%〜50%まで強化であげれる感じで、これは研究所でのアップグレードは無し」)。
+    ⚠**支援枠は1つしか建たない**ので、🏥野戦病院と**どちらを取るか**の選択になる(それが遊び)。
+    ⚠研究所には出さない=支援は T_PLAY の外(解放の鎖にも研究所にも出ない)。 */
+ {id:'flag',n:'進軍旗',cost:400,rng:0,dmg:0,rate:0,type:'sup',supMs:1,c:AMBER,dsc:'部隊と英雄の足が速くなる(建てて+8%・強化で最大+50%)'},
  {id:'depot',off:1,n:'物資投下所',cost:460,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
  /* ===== グレードアップ専用(grd:1) =====
     ⭐廃品工房は⚙️産出・⏩サイクルとも最大まで上げると次の段へ建て替えられる(2026-07-26ユーザー指示)。
@@ -3293,7 +3300,7 @@ const GRD_MID={
   if(TW_SFX[B.id])TW_SFX[M.id]=TW_SFX[B.id];
   add.push(M);}
  for(const M of add)TOWERS.push(M);}
-const SUP_N=3;/* 支援施設の数(末尾のグレードアップ専用の手前まで) */
+const SUP_N=4;/* 支援施設の数(末尾のグレードアップ専用の手前まで)。⚠(128)進軍旗を足して3→4 */
 /* ↑末尾のグレードアップ専用の数(工房の2段+タレットの最終形態18種+**中段17種**)。⚠段を足したらここも増やす。
    ⚠**中段は TOWERS の一番後ろに push している**ので、素のタワーの添字は1つも動いていない(セーブと解放順が無事) */
 const GRD_N=20+17;/* ⚠ドローン基地だけ中段が無いので17 */
@@ -3352,7 +3359,7 @@ const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0});/* z=❄凍結時間(極低温塔だけ) */
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0,ms:0});/* z=❄凍結時間 / ms=👟移動速度(進軍旗だけ) */
 /* 盤面の強化は⚙️払い。⚠進化先は**そのタワーの値段で1段目から数え直す**(引き継いだLvのぶん
    1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMinSt(tw.ti,st)));
@@ -3369,7 +3376,7 @@ const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]
    ⭐いまは**進化しても連射は素のMAX(0.55倍)で頭打ち**。買った段(tw.us.r)はそのまま効くので弱くならない。
    ⚠**廃品工房(eco)だけは別**=⏩サイクルが産出そのものなので、外すと進化後に買う物が無くなる。
    ⚠twStatsRaw=外す前の一覧。**どの塔が⏩連射を失ったか**を下の twLostRate が見るのに要る。 */
-const twStatsRaw=ti=>TOWERS[ti].type==='sup'?[]:TOWERS[ti].type==='eco'?['d','r']
+const twStatsRaw=ti=>TOWERS[ti].type==='sup'?(TOWERS[ti].supMs?['ms']:[])/* ⚠(128)進軍旗だけ強化できる */:TOWERS[ti].type==='eco'?['d','r']
  :TOWERS[ti].drn?(TOWERS[ti].grd?['d','r','a']:['d','r','n'])/* 素=🛩機体数 / 進化後=🔫弾数 */
 /* ⭐**進化すると❄冷却回数の枠が❄凍結時間に入れ替わる**(2026-07-27ユーザー指示
      「極低温塔は凍結時間を強化できるようにしよう」)。
@@ -3400,7 +3407,7 @@ const twStats=ti=>{const T=TOWERS[ti],L=twStatsRaw(ti);
 const TW_DSTEP=.20,TW_DSTEP_G=.40;
 const twLostRate=ti=>{const T=TOWERS[ti];if(!T||!T.grd||T.type==='eco')return false;
  const b=TOWERS.findIndex(z=>z.up2===T.id);return b>=0&&twStatsRaw(b).indexOf('r')>=0;};
-const USTAT_L={d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const USTAT_L={ms:'👟移動速度',d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに15.5%短くなる。
    ⭐⭐**掛け算にした**(2026-07-30ユーザー指摘「レーザー砲の進化後の昇温時間が0.3から上がらず無駄強化」)。
    ⚠それまでは `20*(1-.13*段)` の**引き算**だったので、進化後(最大10段=usEff 7.5)は
@@ -4595,6 +4602,9 @@ const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定(通常22+
 const SUP_BASE=ECO_BASE+ECO_MAX,SUP_MAX=1;
 /* 🏥(113)**英雄の回復は最大HPの割合**(毎秒1.2%=HP5400なら約65/秒)。⚠兵科は毎秒16のまま */
 const SUP_HERO_P=.012;
+/* 👟(128)進軍旗の効き=**建てた時+8%、強化1段ごとに+約10%、最大+50%**(⚠上限は50%) */
+const SUP_MS=[8,19,29,39,45,50];
+const supMsOf=lv=>1+SUP_MS[Math.min(SUP_MS.length-1,Math.max(0,lv|0))]/100;
 const isEcoSlot=si=>si>=ECO_BASE&&si<SUP_BASE;
 const isSupSlot=si=>si>=SUP_BASE;
 const supUnlocked=(C,si)=>(si-SUP_BASE)<(C&&C.supN||0);
@@ -11032,6 +11042,20 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   c.fillStyle=DANGER;c.beginPath();c.arc(0,-34,3.4,0,7);c.fill();
   c.strokeStyle='rgba(159,220,245,'+(.35+Math.sin(t*3)*.3)+')';c.lineWidth=2.4;
   for(let k=1;k<=2;k++){c.beginPath();c.arc(0,-34,7+k*7+Math.sin(t*3)*2,-2.5,-.65);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.restore();return;}
+ if(tid==='flag'){/* 👟(128)進軍旗: 太い旗竿+風にはためく三角旗+足元の円陣(⚠他の塔と形が被らないこと) */
+  c.strokeStyle='#6e6354';c.lineWidth=5;c.beginPath();c.moveTo(-10,2);c.lineTo(-10,-34);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.fillStyle='#4a4238';c.beginPath();c.ellipse(-10,2,11,4,0,0,7);c.fill();c.stroke();
+  {const w=Math.sin(t*3.4)*3.4;
+   c.fillStyle=AMBER;c.beginPath();c.moveTo(-10,-34);
+   c.quadraticCurveTo(6+w,-30,20-w,-24);c.quadraticCurveTo(6-w,-20,-10,-17);
+   c.closePath();c.fill();c.stroke();}
+  /* 👟の印(何が上がるのかを絵で言う) */
+  c.fillStyle=PANE;c.beginPath();c.moveTo(-2,-27);c.lineTo(7,-26);c.lineTo(4,-22);c.lineTo(-4,-23);c.closePath();c.fill();
+  c.strokeStyle=AMBER;c.lineWidth=2.4;c.globalAlpha=.34+Math.sin(t*2.2)*.16;
+  c.beginPath();c.ellipse(0,3,26,9,0,0,7);c.stroke();c.globalAlpha=1;
   c.strokeStyle=INK;c.lineWidth=3;
   c.restore();return;}
  if(tid==='medic'){/* 野戦病院: 十字のテント */
@@ -17909,15 +17933,17 @@ function campStep(C,dt,wave){
    const df=goal-u.d;
    /* ⭐**歩いている印**(2026-08-01ユーザー指示「移動してないときは足を動かすのやめて」)。
       ⚠止まっているのに脚が動くと、その場で足踏みしているように見える。 */
-   if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*dt;u.back=df>0;u.mv=1;}else{u.back=false;u.mv=0;}}
+   /* 👟(128)進軍旗=部隊も英雄も足が速くなる(⚠掛けるのはここ1か所だけ) */
+   if(Math.abs(df)>8){u.d+=Math.sign(df)*U.sp*(C.supMs||1)*dt;u.back=df>0;u.mv=1;}else{u.back=false;u.mv=0;}}
  }
  C.units=C.units.filter(u=>!u.dead);
  /* 支援施設の効果をまとめる。⚠タワーの性能には一切触らない(情報/部隊/経済の3軸だけ) */
- {let sh=0,scd=1,rad=0,dep=0;
+ {let sh=0,scd=1,rad=0,dep=0,ms=1;
   for(let si=SUP_BASE;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.jamT>0)continue;
    const T=TOWERS[tw.ti];if(!T||T.type!=='sup')continue;
-   if(T.supH)sh+=T.supH;if(T.supCd)scd*=T.supCd;if(T.supD)dep=1;if(T.id==='radio')rad=1;}
-  C.supH=sh;C.supCd=scd;C.supRadio=rad;C.supDepot=dep;}
+   if(T.supH)sh+=T.supH;if(T.supCd)scd*=T.supCd;if(T.supD)dep=1;if(T.id==='radio')rad=1;
+   if(T.supMs)ms=Math.max(ms,supMsOf(tw.us&&tw.us.ms));/* 👟(128)移動速度 */}
+  C.supH=sh;C.supCd=scd;C.supRadio=rad;C.supDepot=dep;C.supMs=ms;}
  /* 🏥野戦病院: 部隊を回復する。
     ⭐⭐(113)**英雄にもちゃんと効くようにした**(ユーザー「野戦病院はヒーローも回復するようにして」)。
     ⚠**元から英雄も C.units に居るので「回復していた」のは事実**だが、
@@ -19815,14 +19841,17 @@ function renderCamp(C,t){
    /* 🏰塔: ⚠**撃っている間の常夜灯は要らない**=発砲閃光(95px)の中に丸ごと入っている。
       ⭐継続攻撃(火炎放射塔・レーザー塔)は**撃ちっぱなし=閃光が出っぱなし**なので、
         ここを外すだけで台数ぶんまるごと減る。 */
+   /* ⚠⚠(128)**塔と兵科の「暖色の輪」は廃止**(ユーザー「火炎放射器を置いたら拠点の周りが円状に
+      赤くなったり、ユニットやヒーローの攻撃時に体の周りに出る円状のエフェクトが赤くなる。
+      なんならその円状のエフェクト無くしてもいい」)。
+      ⚠正体=**加算(lighter)の暖色の輪**。撃ち続ける塔(火炎放射塔・レーザー塔)は `fireT` が
+        出っぱなしなので、**輪が消えずに地面へ焼き付いて見えていた**。
+      ⭐**暗がりを削る方(`lite`)は残す**=夜の面で明かりが要る。⚠色を乗せる方だけをやめた。 */
    for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
-    if(tw.fireT>0){lite(SLOTS[si][0],SLOTS[si][1],95,.7);glow.push([SLOTS[si][0],SLOTS[si][1],86,.5,'255,214,120']);}
-    else lite(SLOTS[si][0],SLOTS[si][1],62,.35);/* 常夜灯 */}
-   /* 🔫撃っている兵科・英雄。⚠密集して撃つ(20体編成)ので、これも升目でまとめる */
+    lite(SLOTS[si][0],SLOTS[si][1],tw.fireT>0?95:62,tw.fireT>0?.7:.35);}
    {const b9=bkt(110,10);let any=false;
     for(const u of us2)if(u.fireT>0){b9.add(u.px,u.py-24*CH_UP);any=true;}
-    if(any)b9.each((x,y,n)=>{const r=110+(Math.min(n,8)-1)*8;
-     lite(x,y,r,.8);glow.push([x,y,r*.8,Math.min(.55,.42+(n-1)*.02),'255,214,120']);});}
+    if(any)b9.each((x,y,n)=>{lite(x,y,110+(Math.min(n,8)-1)*8,.8);});}
    /* 🔥燃えている敵(火炎放射塔は周りにも燃焼を配るので、何台も置くと数十体になる) */
    {const b9=bkt(120,10);let any=false;
     for(const z of C.zombies)if(z.burnT>0){b9.add(z.px,z.py-14*CH_UP);any=true;}
@@ -30264,7 +30293,18 @@ const ARC_HP=3;                  /* 何回当てたら勝ちか */
 const ARC_G=980;                 /* 重力 */
 const ARC_V=20;                  /* 威力→初速の倍率(威力100・45°で約408m飛ぶ) */
 const ARC_WOB_A=.9,ARC_WOB_P=.012;/* ⭐手ブレ(角度°/威力の割合)。⚠0にすると同じ狙いが必ず当たる */
-const ARC_PZ=[4,24],ARC_EZ=[58,78];/* 動ける範囲(マスの番号) 自分16〜96m / 相手232〜312m */
+const ARC_PZ=[4,24];/* 自分が動ける範囲(マスの番号)=16〜96m */
+/* 🎲⭐(128)**相手までの距離は毎回ランダム**(ユーザー「人の距離感は毎回ランダムで、
+   めっちゃ近いとか以外はなんでもあり距離にして」)=**近すぎるのだけ除く**。 */
+const ARC_MIND=18,ARC_MAXD=72;/* 相手までのマス数(72m〜288m) */
+/* 🦆⛑⭐⭐(128)**しゃがみとヘルメット**(ユーザー「5ターン目に一個だけしゃがみを獲得して、
+   敵が一回矢を打ち終えるまでしゃがめる。7ターン目にヘルメットをもらえて、1回だけ装着して
+   頭付近への矢をガードできる」)。⚠どちらも**1試合に1回だけ**=使いどころがそのまま腕になる。
+   ⭐しゃがみ=**次の1本を必ずかわす**(相手が撃ち終わるまで続く)。
+   ⭐ヘルメット=**頭のあたりに来た1本を弾く**(低い弾道の矢は防げない=かわす方と役割が違う)。 */
+const ARC_DUCK_R=5,ARC_HELM_R=7;/* もらえるターン */
+const ARC_HELM_H=34;           /* 「頭付近」と見なす高さ(地面からの高さpx) */
+const ARC_EZW=10;             /* 相手が動ける幅(自分の居場所の±) */
 /* 🎥⭐⭐⭐**視点は「いま一番大事なもの」にだけ寄る**(2026-08-04(125)ユーザー指示)。
    ⚠⚠**盤面の全体を見せない**=見せた瞬間に「当てずっぽうで撃つ」というこの遊びの芯が消える。
    ⭐(126)**矢を放ったら視点は矢に完全に張り付く**(ユーザー「完全に視点が矢に注目してついていく感じ」)
@@ -30278,9 +30318,11 @@ const arcGround=x=>ARC_GY+Math.sin(x*.0042)*16+Math.sin(x*.0011+2)*10;
 const arcCX=c=>(c+.5)*ARC_CELL;          /* マスの番号 → 世界のx(マスの中心) */
 const arcCell=x=>clamp(Math.floor(x/ARC_CELL),0,ARC_N-1);/* 世界のx → マスの番号 */
 function arcNew(){
- const mc=ri(ARC_PZ[0],ARC_PZ[1]),fc=ri(ARC_EZ[0],ARC_EZ[1]);
- return {ph:'aim',t:0,me:{c:mc,hp:ARC_HP,steps:1},
-  foe:{c:fc,hp:ARC_HP,steps:1,guess:ri(ARC_PZ[0],ARC_PZ[1]),gsd:5},
+ const mc=ri(ARC_PZ[0],ARC_PZ[1]);
+ const fc=clamp(mc+ri(ARC_MIND,ARC_MAXD),ARC_PZ[1]+ARC_MIND,ARC_N-3);
+ const ez=[Math.max(fc-ARC_EZW,ARC_PZ[1]+6),Math.min(fc+ARC_EZW,ARC_N-2)];
+ return {ph:'aim',t:0,me:{c:mc,hp:ARC_HP,steps:1,duck:0,duckOn:0,helm:0,helmOn:0},
+  foe:{c:fc,hp:ARC_HP,steps:1,guess:ri(ARC_PZ[0],ARC_PZ[1]),gsd:5,z:ez},
   ang:45,pow:70,ar:null,marks:[],round:1,msg:'',msgT:0,over:0,
   cam:arcCX(mc),camT:arcCX(mc),camK:ARC_CAMK};
 }
@@ -30319,13 +30361,28 @@ function arcMove(d){
  try{if(sfx.tap)sfx.tap();}catch(e){}
  arcUI();
 }
+/* 🦆⛑(128)使う。⚠**しゃがみは相手の番でしか意味が無い**ので、押せるのは相手が狙っている間だけ。
+   ⚠ヘルメットは**いつ被ってもよい**(次に飛んでくる1本を待つ) */
+function arcDuck(){const A=ARC;if(!A||A.over||!A.me.duck||A.me.duckOn)return;
+ A.me.duck=0;A.me.duckOn=1;arcMsg('🦆 しゃがんだ! 次の1本はかわせる',3);
+ try{if(sfx.tap)sfx.tap();}catch(e){}arcUI();}
+function arcHelm(){const A=ARC;if(!A||A.over||!A.me.helm||A.me.helmOn)return;
+ A.me.helmOn=1;arcMsg('⛑ ヘルメットを被った! 頭に来た1本を弾く',3);
+ try{if(sfx.tap)sfx.tap();}catch(e){}arcUI();}
 /* 刺さった=マスが決まる。⭐**当たりは「同じマス」**(1本1マスの掟) */
 function arcLand(A,ar){
  const cell=arcCell(ar.x),tgt=ar.mine?A.foe:A.me;
- const hit=(cell===tgt.c);
+ let hit=(cell===tgt.c);
+ /* 🦆⛑(128)相手の矢だけ、しゃがみとヘルメットで防げる */
+ let guard='';
+ if(hit&&!ar.mine){
+  if(A.me.duckOn){hit=false;guard='🦆 しゃがんでかわした!';}
+  else if(A.me.helmOn&&ar.hh<=ARC_HELM_H){hit=false;A.me.helmOn=0;A.me.helm=0;guard='⛑ ヘルメットで弾いた!';}
+ }
  A.marks.push({c:cell,t:0,hit,mine:ar.mine});
  if(A.marks.length>18)A.marks.splice(0,A.marks.length-18);
- if(hit){
+ if(guard){arcMsg(guard,2.8);try{if(sfx.thunk)sfxAt&&sfxAt('thunk',.3);}catch(e){}}
+ else if(hit){
   tgt.hp--;
   try{(sfx.hit||sfx.thunk)();}catch(e){}
   arcMsg(ar.mine?('🎯 命中! 相手の残り '+tgt.hp):('💥 当たった! こちらの残り '+tgt.hp),2.6);
@@ -30346,6 +30403,7 @@ function arcLand(A,ar){
   arcMsg(A.over>0?'🏆 勝ち! 見えない相手を射抜いた':'💀 負け… 相手に3回当てられた',9);
   arcUI();return;
  }
+ if(!ar.mine)A.me.duckOn=0;/* 🦆(128)相手が1本撃ち終わったらしゃがみは終わり */
  A.ph=ar.mine?'eland':'pland';
  arcUI();
 }
@@ -30361,8 +30419,10 @@ function arcStep(dt){
    ar.tr.push([ar.x,ar.y]);if(ar.tr.length>30)ar.tr.shift();
    const gy=arcGround(ar.x),tgt=ar.mine?A.foe:A.me;
    A.cam=A.camT=ar.x;/* 🎥完全に張り付く */
-   if(Math.abs(ar.x-arcCX(tgt.c))<ARC_CELL*.5&&ar.y>gy-56){arcLand(A,ar);return;}
-   if(ar.y>=gy||ar.x<-60||ar.x>ARC_W+60){ar.y=gy;arcLand(A,ar);return;}
+   if(Math.abs(ar.x-arcCX(tgt.c))<ARC_CELL*.5&&ar.y>gy-56){
+    ar.hh=gy-ar.y;/* ⛑当たった高さ(地面から)=頭付近かどうかの判定に使う */
+    arcLand(A,ar);return;}
+   if(ar.y>=gy||ar.x<-60||ar.x>ARC_W+60){ar.y=gy;ar.hh=0;arcLand(A,ar);return;}
   }
   return;
  }
@@ -30376,7 +30436,7 @@ function arcStep(dt){
   if(Math.abs(A.cam-A.camT)<30||A.t>2.2){A.ph='ethink';A.t=0;A.camK=ARC_CAMK;
    /* ⭐相手はここで動くかどうかを決める(自分からは見えている=視点が相手に居るので) */
    if(A.foe.steps>0&&Math.random()<.6){
-    const d=Math.random()<.5?-1:1,nc=clamp(A.foe.c+d,ARC_EZ[0],ARC_EZ[1]);
+    const d=Math.random()<.5?-1:1,nc=clamp(A.foe.c+d,A.foe.z[0],A.foe.z[1]);
     if(nc!==A.foe.c){A.foe.c=nc;A.foe.steps--;A.foe.gsd=Math.min(6,A.foe.gsd+.6);}}
    arcMsg('相手の番',1.2);}
  }else if(A.ph==='ethink'){
@@ -30387,7 +30447,11 @@ function arcStep(dt){
  }else if(A.ph==='ppan'){
   if(Math.abs(A.cam-A.camT)<30||A.t>2.2){
    A.round++;A.me.steps++;A.foe.steps++;A.ph='aim';A.t=0;A.camK=ARC_CAMK;
-   arcMsg('第'+A.round+'射 — 👣歩数 +1(いま '+A.me.steps+'歩)',2.4);arcUI();}
+   /* 🦆⛑(128)5ターン目にしゃがみ・7ターン目にヘルメットを1つだけ配る */
+   let got='';
+   if(A.round===ARC_DUCK_R&&!A.me.duck){A.me.duck=1;got='　🦆しゃがみを覚えた!';}
+   if(A.round===ARC_HELM_R&&!A.me.helm){A.me.helm=1;got='　⛑ヘルメットを拾った!';}
+   arcMsg('第'+A.round+'射 — 👣歩数 +1(いま '+A.me.steps+'歩)'+got,got?3.4:2.4);arcUI();}
  }
 }
 function arcUI(){
@@ -30402,6 +30466,12 @@ function arcUI(){
  if(ctl){ctl.style.display=A.over?'none':'flex';
   ctl.classList.toggle('off',A.ph!=='aim'&&!!A.ar);}
  const fb=$('arc-fire');if(fb)fb.disabled=(A.ph!=='aim'||!!A.ar||!!A.over);
+ /* 🦆⛑(128)持っている時だけ出す。⚠使い切ったら消える(押せないボタンを置きっぱなしにしない) */
+ {const db=$('arc-duck'),hb=$('arc-helm');
+  if(db){db.style.display=(A.me.duck||A.me.duckOn)?'':'none';
+   db.disabled=!A.me.duck||!!A.over;db.textContent=A.me.duckOn?'🦆中':'🦆';}
+  if(hb){hb.style.display=(A.me.helm||A.me.helmOn)?'':'none';
+   hb.disabled=!A.me.helm||!!A.me.helmOn||!!A.over;hb.textContent=A.me.helmOn?'⛑装備':'⛑';}}
  for(const q of ['arc-l','arc-r']){const e=$(q);if(e)e.disabled=(A.me.steps<1||!!A.ar||!!A.over);}
  const la=$('arc-la'),lp=$('arc-lp');
  if(la)la.textContent='角度 '+A.ang+'°';
@@ -30460,7 +30530,7 @@ function arcDraw(t){
   c.beginPath();c.moveTo(x,gy-2);c.lineTo(x-5,gy-9);c.lineTo(x+3,gy-11);c.closePath();c.fill();
   c.globalAlpha=1;}
  /* 自分と相手。⚠**姿を隠すのは視点**=遠くに居る側は画面の外なので自然に見えない */
- arcDrawMan(c,arcCX(A.me.c),arcGround(arcCX(A.me.c)),1,'#e8a83d',A.ph==='aim'?A.ang:35);
+ arcDrawMan(c,arcCX(A.me.c),arcGround(arcCX(A.me.c)),1,'#e8a83d',A.ph==='aim'?A.ang:35,A.me.duckOn,A.me.helmOn);
  arcDrawMan(c,arcCX(A.foe.c),arcGround(arcCX(A.foe.c)),-1,'#c9525f',45);
  /* 飛んでいる矢 */
  if(A.ar){const ar=A.ar;
@@ -30480,12 +30550,16 @@ function arcDraw(t){
  c.setTransform(1,0,0,1,0,0);
 }
 /* 弓を構えた人(小さいので輪郭で読ませる) */
-function arcDrawMan(c,x,gy,dir,col,ang){
+function arcDrawMan(c,x,gy,dir,col,ang,duck,helm){
  c.save();c.translate(x,gy);c.scale(dir,1);
+ /* 🦆(128)しゃがみ=縮めて低くする(⚠矢は上を通る) */
+ if(duck)c.scale(1,.6);
  c.lineWidth=4;c.strokeStyle=INK;
  c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(0,2,20,6,0,0,7);c.fill();
  c.fillStyle=col;c.beginPath();c.moveTo(-9,0);c.lineTo(-6,-30);c.lineTo(6,-30);c.lineTo(9,0);c.closePath();c.fill();c.stroke();
  c.fillStyle='#e8d9b8';c.beginPath();c.arc(0,-38,9,0,7);c.fill();c.stroke();
+ /* ⛑(128)被っている時だけ兜を描く */
+ if(helm){c.fillStyle=STEEL;c.beginPath();c.arc(0,-40,10.5,Math.PI,0);c.closePath();c.fill();c.stroke();}
  c.save();c.translate(6,-26);c.rotate(-(ang||35)*Math.PI/180);
  c.strokeStyle='#8a6a3a';c.lineWidth=5;c.beginPath();c.arc(0,0,20,-1.2,1.2);c.stroke();
  c.strokeStyle='rgba(242,236,220,.9)';c.lineWidth=2;
@@ -30514,6 +30588,8 @@ try{
  $('arc-ang').oninput=e=>{if(ARC){ARC.ang=+e.target.value;arcUI();}};
  $('arc-pow').oninput=e=>{if(ARC){ARC.pow=+e.target.value;arcUI();}};
  $('arc-fire').onclick=()=>arcFire();
+ $('arc-duck').onclick=()=>arcDuck();
+ $('arc-helm').onclick=()=>arcHelm();
  $('arc-l').onclick=()=>arcMove(-1);
  $('arc-r').onclick=()=>arcMove(1);
  /* ⚠(125)**canvas は押す所にしない**=全画面なので、上に乗るボタンと必ず重なる(検査が落ちた) */
