@@ -167,7 +167,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homego::after{content:'';position:absolute;top:-45%;bottom:-45%;width:36px;left:-70px;
  background:rgba(255,243,192,.30);transform:rotate(16deg);animation:hsheen 3.4s ease-in-out infinite;pointer-events:none}
 @keyframes hsheen{0%,58%{left:-80px}88%,100%{left:115%}}
-.homegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;flex:1 1 auto}
+/* ⚠⚠**`grid-auto-rows:1fr` が要る**=これが無いと行は中身の高さ(auto)で止まり、
+   伸ばした箱の**下に謎の空きが残る**(2026-08-03(107)ユーザー指摘「下に謎の空間があって画面全体が上にズレてる」)。
+   ⚠`.homebt{height:100%}` だけでは効かない=**行そのものが伸びていない**ため。 */
+.homegrid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:9px;flex:1 1 auto}
 /* ⭐機能タイルはちょうど6つ(3×2)。⚠戻るはここに入れない(上の帯へ出した) */
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
@@ -724,18 +727,18 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .gcside{flex:0 0 200px;display:flex;flex-direction:column;gap:6px}
 .gcgemb{border:3px solid var(--ink);border-radius:11px;background:var(--ink3);color:var(--gold);
  font-weight:900;font-size:20px;text-align:center;padding:2px 0;letter-spacing:-.5px}
-.gcbig{width:100%;padding:8px 6px;font-size:17px;line-height:1.1}
+/* ⚠⚠**大ボタンは残りの高さを分け合う**(`flex:1 1 0`)=チケットの有無や画面の高さが変わっても
+   **下に謎の空きが残らない**(2026-08-03(107)ユーザー指摘)。⚠押す所44pxは `min-height` で守る。
+   ⚠決め打ちの padding で詰める直し方はやめた=**画面の高さごとに空きの量が変わる**ため。 */
+.gcbig{width:100%;padding:6px;font-size:17px;line-height:1.1;flex:1 1 0;min-height:46px;
+ display:flex;flex-direction:column;align-items:center;justify-content:center}
 .gcbig small{display:block;font-size:12px;font-weight:900;opacity:.85;margin-top:1px}
 /* 🎫★5確定チケット=単発/10連と並べても「別物」と分かるように白い縁と金の光で締める */
 .gctk{border-color:#f2ecdc;box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.35) inset,
  0 0 10px rgba(255,210,61,.55)}
 /* ⚠⚠**横画面は高さ393pxしか無い**=3つ目の大ボタンを足すと図鑑/確率がはみ出す(撮って判明)。
    ⭐チケットを持っている間だけ全体を詰める。⚠**押す所44pxは割らない**(padding+行送りで確保) */
-.gcside.tk{gap:4px}
-.gcside.tk .gcgemb{font-size:15px}
-.gcside.tk .gcbig{padding:4px 6px;font-size:15px}
-.gcside.tk .gcbig small{font-size:11px;margin-top:0}
-.gcside.tk .gcrow2 .btn{padding:3px 4px}
+.gcside.tk{gap:5px}
 .gcside.tk .gchint{display:none}
 .gcrow2{display:flex;gap:5px}
 .gcrow2 .btn{flex:1 1 0;padding:5px 4px}
@@ -26403,7 +26406,14 @@ function gcHomeDraw(){
  c.lineWidth=3;c.strokeStyle=col;rr(c,6,ny,w-12,46,10);c.stroke();
  c.fillStyle=col;c.font='900 12px '+FF;c.fillText(RK_N[H.rk]+'枠',w*.5,ny+15);
  c.fillStyle=PANE;c.font='900 19px '+FF;c.fillText(H.n,w*.5,ny+34);
- c.fillStyle=GOLD;c.font='900 11px '+FF;c.fillText('必殺『'+H.ult+'』— '+H.udsc,w*.5,ny+45);
+ /* ⚠⚠**長い説明は左右にはみ出す**(ルピナで判明・2026-08-03(107))=canvasの文字は折り返しも
+    はみ出しの切り落としもしてくれない。⭐**収まるまで字を小さくし、それでも無理な時だけ末尾を「…」で切る**。 */
+ {const s='必殺『'+H.ult+'』— '+H.udsc,mw=w-26;
+  let fs=11;c.font='900 '+fs+'px '+FF;
+  while(fs>8&&c.measureText(s).width>mw){fs--;c.font='900 '+fs+'px '+FF;}
+  let t=s;
+  if(c.measureText(t).width>mw){while(t.length>4&&c.measureText(t+'…').width>mw)t=t.slice(0,-1);t+='…';}
+  c.fillStyle=GOLD;c.fillText(t,w*.5,ny+45);}
  c.restore();
 }
 /* ============ 💎英雄召集の演出(2026-07-26 第71弾) ============
