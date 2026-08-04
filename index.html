@@ -20884,8 +20884,9 @@ function openBM(si){
    if(want){if(T.type!==want)continue;}
    else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
    /* 🛡⭐**硬い敵への通り方を札で出す**(2026-08-04)=盤面で建てる時に一番効く情報 */
-   const at9=afTag(T.type,T.pierce,true);
-   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="baf ${at9.k} af-${at9.ty}">${at9.ic} ${at9.s}</span><span class="bc">⚙️${T.cost}</span></div>`;}
+   /* ⛔**相性の札は外した**(2026-08-04(145))=(138)で足したが、文字でも記号でも読まれない。
+      ⚠**書き戻さない**。相性は敵の見た目と戦闘中のダメージ数字の色で言う。 */
+   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
   if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所で『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
@@ -26835,20 +26836,15 @@ function introNext(){
  try{
   /* ⭐絵は**枠いっぱい**に描く(第91弾)。決め打ちの1.5倍では、大きい物ははみ出し小さい物は豆粒だった */
   if(it.k==='u'){const U=UNITS[it.i];hd='🪖 新しい部隊が使える!';nm=U.n;ds=U.dsc;
-   st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め('+U.hook+'体)':'')
-    +' ／ '+afTag(U.type,0,false).t;/* 🛡硬い敵への通り(2026-08-04) */
+   st='⚙️'+U.cost+' ／ HP'+U.hp+' ／ 攻撃'+U.atk+' ／ 射程'+(U.rng>=100?U.rng:'近接')+(U.hook?' ／ すり抜けも足止め('+U.hook+'体)':'');/* ⛔相性の言葉は外した(145) */
    fitDraw(cvv,cc=>drawUnit(cc,it.i,0,0,1,.4,0,{}),8);}
   else if(it.k==='t'){const T=TOWERS[it.i];hd='🗼 新しいタワーが建てられる!';nm=T.n;ds=T.dsc;
-   st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒'
-    +' ／ '+afTag(T.type,T.pierce,true).t;/* 🛡硬い敵への通り(2026-08-04) */
+   st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒';/* ⛔相性の言葉は外した(145) */
    fitDraw(cvv,cc=>drawTower(cc,it.i,1,0,0,-0.5,0,{}),8);}
   else if(it.k==='z'){const Z=ZOMBIES[it.i];hd='🧟 新種のゾンビが現れる!';nm=Z.n;
-   /* 🛡⭐**数字で言う**(2026-08-04)=「効きにくい」では何を出せばいいのか分からない。
-      ⚠割合は必ず ARMOR_CUT / FIRE_VS_ARMOR / ELEC_VS_SCALE から作る */
-   const cut9=Math.round(ARMOR_CUT*100);
-   const tag=[];if(Z.armor)tag.push('装甲(⚔近接/🔫実弾/❄冷気は'+cut9+'%・🔥火炎の塔は×'+FIRE_VS_ARMOR.toFixed(1)+')');
-   if(Z.scl)tag.push('鱗の鎧(⚔近接/🔫実弾/❄冷気は'+cut9+'%・⚡電撃の塔は×'+ELEC_VS_SCALE.toFixed(1)+')');
-   if(Z.armor||Z.scl)tag.push('🗡貫通・💣爆発・🔥火炎はそのまま通る');
+   /* ⛔**相性の割合は外した**(2026-08-04(145))=**特性の名前だけ**にする。⚠書き戻さない */
+   const tag=[];if(Z.armor)tag.push('装甲');
+   if(Z.scl)tag.push('鱗の鎧');
    if(Z.noblock)tag.push('すり抜け(鎖使いだけが止められる)');
    if(Z.aura)tag.push('周囲を加速させる');if(Z.split)tag.push('倒すと弾けて分裂(周りの部隊を巻き込む)');if(Z.boss)tag.push('ボス');if(Z.aoe)tag.push('薙ぎ払い'+Z.aoe+'体');
    ds=tag.length?tag.join(' ／ '):'ごく普通の個体。数で押してくる。';
@@ -27291,8 +27287,9 @@ function renderHStat(){
   /* ⭐**棒にならない物は小さな札で**(⚠表に混ぜると結局「文字の並び」に戻る) */
   +'<div class="hchips"><span>⏩ 間隔 '+(U.rate||0).toFixed(2)+'秒</span>'
    /* 🛡型の名前だけでは選べない=**硬い敵にどう通るか**まで札に入れる(2026-08-04) */
+   /* ⛔相性の言葉は外した(2026-08-04(145))=**型の名前だけ**に戻す。⚠書き戻さない */
    +(()=>{const a9=afTag(U.type,0,false);
-     return '<span>'+a9.ic+' '+(HS_TYN[U.type]||U.type)+(a9.k?'・'+a9.e:'')+'</span>';})()
+     return '<span>'+a9.ic+' '+(HS_TYN[U.type]||U.type)+'</span>';})()
    +(U.multi?('<span>🎯 同時'+U.multi+'体</span>'):'')
    +(U.aoe?('<span>💥 範囲'+U.aoe+'</span>'):'')
    +(U.hook?('<span>🪝 足止め'+U.hook+'体</span>'):'')
