@@ -96,6 +96,11 @@ const ARTUL=OPT.indexOf('poseult')>=0;
 /* ⭐arena=bat:walk = 🧪検証場(一本道)を開いて撮る(2026-07-30)。
    ⚠オプション名に `t=`/`u=`/`z=` を含めないこと=`tst=` にすると **`t=` に食われて**タワーを建てにいく。 */
 const ARN=/arena=([A-Za-z0-9]+):([A-Za-z0-9]+)/.exec(OPT);
+/* 🔥⭐heat / heat=flame2 / heat=flame2:h = 🧪検証場の「🔥熱さ検査」タブを撮る(2026-08-05(178))。
+   heat=<塔のid> で12枠を埋め、`:s|h|b` で湧かせ続ける敵(雑魚/固い/ボス)を選ぶ。
+   ⚠オプション名に `t=`/`z=` を含めないこと(先に食われて別の道に入る)。 */
+const HTM=/heat(?:=([A-Za-z0-9]+)(?::([shb]))?)?/.exec(OPT);
+const HEAT=!!HTM,HEATT=(HTM&&HTM[1])||'',HEATK=(HTM&&HTM[2])||'';
 const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=twup(タワー強化) / lab=unup(部隊強化) / lab=rec(記録) = 🔬研究所の指定タブ */
 const LAB=!!LM,LABT=(LM&&LM[1])||'new';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
@@ -279,7 +284,15 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ⚠**pose= と grid= は戦闘を始めない**(タイトルのまま)。既定の `startSolo()` に落ちると
         仮想時間ぶんの試合が丸ごと走って**撮影が1分以上終わらない**(実際に何度も固まった)。
         どちらも canvas を全面に被せて絵を並べるだけなので盤面は要らない。 */
-     :ARN?('var ui9=UNITS.findIndex(function(q){return q.id==="'+ARN[1]+'";});'
+     /* 🔥(178)熱さ検査。⚠**ARN より前**=どちらも検証場に入るので、後ろに置くと届かない */
+    :HEAT?('startTst();TSTBAR="w";buildZbar();'
+      +(HEATT?('var ti9=TOWERS.findIndex(function(q){return q.id==="'+HEATT+'";});'
+        +'if(ti9<0)throw new Error("塔 '+HEATT+' が無い");'
+        +'if(TOWERS[ti9].grd)TSTTW="grd";tstFill(ti9);'):'')
+      +(HEATK?('TSTKEEP="'+HEATK+'";buildZbar();'):'')
+      +'for(var q9=0;q9<'+Math.round((+((/heatn=(\d+)/.exec(OPT)||[0,'8'])[1]))*30)+';q9++)'
+      +'{try{tstStep(1/30);}catch(e){document.title="TSTERR "+e.message;break;}}')
+    :ARN?('var ui9=UNITS.findIndex(function(q){return q.id==="'+ARN[1]+'";});'
        +'var zi9=ZOMBIES.findIndex(function(q){return q.id==="'+ARN[2]+'";});'
        +'if(ui9<0)throw new Error("兵科 '+ARN[1]+' が無い");'
        +'if(zi9<0)throw new Error("敵 '+ARN[2]+' が無い");'

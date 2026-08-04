@@ -513,8 +513,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ⚠`position:sticky` は横スクロールの中でも効く。背景を必ず敷く(下のボタンが透ける) */
 #zbar .zsw{position:sticky;left:0;z-index:2;flex:0 0 auto;display:flex;gap:3px;padding-right:5px;
  background:linear-gradient(90deg,var(--void) 78%,transparent)}
-/* ⭐★の絞り込みは本体の切り替えの右隣に貼り付く。⚠地を少し変えて役割の違いを出す */
-#zbar .zsw2{left:96px}
+/* ⭐★の絞り込みは本体の切り替えの右隣に貼り付く。⚠地を少し変えて役割の違いを出す
+   ⚠(178)**タブが4つに増えた**(🔥熱さ)ので貼り付く位置を 96→268px に押した
+     =ここが足りないと、横に流した時に1段目の切り替えと重なって字が読めなくなる。 */
+#zbar .zsw2{left:286px}
 #zbar .zsw2 button{padding:3px 7px;font-size:11px;background:#3a2f22}
 #zbar .zsw button{flex:0 0 auto;padding:3px 9px;border-radius:8px;border:2px solid var(--paper);
  background:var(--pane);color:var(--ink);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
@@ -523,6 +525,23 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  color:var(--pane);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
 @media (pointer:coarse){#zbar{top:calc(max(6px,env(safe-area-inset-top)) + 26px)}
  #zbar .zk,#zbar .hk{font-size:11px;padding:2px 6px}}
+/* 🔥⭐(178)**熱さ検査の2段目**=タワーの一覧。⚠1段目に全部詰めると押す所が半分も入らない
+   (1段目=タブ+敵キープ+数字+片づけで既に横幅の半分を食う)ので、**塔だけ別の段**に出す。
+   ⚠**DEVの検証場の🔥タブでだけ出す**=普通の試合では display:none のまま。 */
+#zbar2{position:absolute;top:calc(max(8px,env(safe-area-inset-top)) + 72px);left:max(6px,env(safe-area-inset-left));
+ right:max(6px,env(safe-area-inset-right));z-index:6;display:none;gap:4px;overflow-x:auto;padding-bottom:2px;
+ scrollbar-width:none}
+#zbar2::-webkit-scrollbar{display:none}
+#zbar2 .zk{flex:0 0 auto;padding:3px 8px;border-radius:8px;border:2px solid var(--paper);background:#2f4a52;
+ color:var(--pane);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
+#zbar2 .zk.on{background:var(--gold);border-color:var(--gold2);color:var(--ink)}
+#zbar2 .zsw{position:sticky;left:0;z-index:2;flex:0 0 auto;display:flex;gap:3px;padding-right:5px;
+ background:linear-gradient(90deg,var(--void) 78%,transparent)}
+#zbar2 .zsw button{flex:0 0 auto;padding:3px 9px;border-radius:8px;border:2px solid var(--paper);
+ background:var(--pane);color:var(--ink);font-weight:900;font-size:12px;white-space:nowrap;box-shadow:0 2px 0 #000}
+#zbar2 .zsw button.on{background:var(--gold);border-color:var(--gold2)}
+@media (pointer:coarse){#zbar2{top:calc(max(6px,env(safe-area-inset-top)) + 52px)}
+ #zbar2 .zk{font-size:11px;padding:2px 6px}}
 /* 画面下の操作バー: 🚩集結旗・🎯航空支援・出撃デッキ・🌊押す を一列にまとめる。
    フィールドの上にボタンを浮かせないぶん、マップを画面いっぱいまで広げられる */
 #abar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
@@ -1508,6 +1527,8 @@ body.perf #perfbox{display:block}
   <div id="tidebar"><div id="tidelbl">🌊死潮</div><div id="tideseg"></div></div>
   <!-- 🧪検証場の敵デッキ(⚠DEVの検証場でだけ出す)。ユニットのデッキと同じ「押したら出る」操作を敵にも -->
   <div id="zbar" style="display:none"></div>
+  <!-- 🔥(178)熱さ検査の2段目=タワーの一覧だけを持つ(⚠DEVの検証場の🔥タブでだけ出す) -->
+  <div id="zbar2" style="display:none"></div>
   <button id="pushtgt">→全員</button>
   <div id="strikehint">タップした地点に爆撃!(もう一度🎯で解除)</div>
   <div id="flaghint">タップした地点へ部隊が集結!(もう一度🚩で解除)</div>
@@ -26761,14 +26782,31 @@ function startTst(){
  $('strikebtn').textContent='🎯';
  $('tidebar').style.display='none';$('pushbtn').style.display='none';
  $('pausebtn').style.display='inline-block';
+ TSTFILL=-1;TSTKEEP='';/* 🔥(178)入り直したら熱さ検査の状態は素に戻す */
  buildZbar();
- toast('🧪 検証場: 下のデッキで味方・上の帯で🦸英雄と敵を出す',true);
+ toast('🧪 検証場: 下のデッキで味方・上の帯で🦸英雄と敵・🔥熱さで塔の検査',true);
 }
 /* ⭐上の帯(検証場だけ)。⭐**🦸英雄と敵**を並べる=英雄は下のデッキに載っていないので
      ここが唯一の出し口(選ぶ画面を廃止したぶんの受け皿)。
    ⚠ZOMBIES は46種あるので**横スクロールの名前ボタン**にする
      (下のデッキのような絵札にすると焼き直しが要るうえ、帯が厚くなって盤面を覆う) */
-let TSTBAR='z';/* 帯の中身: z=🧟敵 / h=🦸英雄 */
+let TSTBAR='z';/* 帯の中身: z=🧟敵 / h=🦸英雄 / w=🔥熱さ検査 */
+/* 🔥⭐⭐(178)**塔の熱さ検査**(⚠DEVの検証場だけ)。2026-08-05ユーザー指示
+   「いちいち自分で設置してボスとか固いやつ来るまで待つの面倒だから、
+     タレットの重さテストする専用のやつ欲しいね。テストモードでできるやつ」。
+   ⭐**やることは3つだけ**=①塔を押すと**12枠全部にその塔がMAX強化で建つ**
+     ②敵を**湧かせ続ける**(雑魚/固い/ボスを選ぶ=待たなくていい) ③**数字を出す**。
+   ⚠⚠**③は既定OFF**=計測の仕掛けそのものが少し重いので、**熱さを体で確かめる時は必ず切る**
+     (付けたまま「熱い」と言うと、塔のせいなのか物差しのせいなのか分からなくなる)。
+   ⚠数字の軸は `tool_paint.js` と同じ(塗り/グラデ/**合成**)=ヘッドレスの結果と突き合わせられる。 */
+let TSTFILL=-1;   /* いま12枠に建てている塔(-1=まだ) */
+let TSTTW='base'; /* 2段目の一覧: base=素 / grd=進化 */
+let TSTKEEP='';   /* 湧かせ続ける敵('' / s / h / b) */
+/* ⚠**ボスは数を絞る**=体が大きいので45体も出すと盤面が見えず、比べ物にならない */
+const TSTK_SET={
+ s:{n:'🧟 雑魚',t:'軽い敵を45体たもつ',ids:['walk','run','dog','crwl'],cap:45},
+ h:{n:'⬛ 固い',t:'装甲・大型を35体たもつ',ids:['arm','brut','tank','jug'],cap:35},
+ b:{n:'💀 ボス',t:'各ステージの最終ボスを6体たもつ',ids:['fKing','fMoth','fLevi','fBeast'],cap:6}};
 let TSTRK=5;/* 🦸英雄の帯で出す★(2026-08-03(77))。⚠既定は★5=いちばん見たい人を最初に出す */
 function buildZbar(){
  const w=$('zbar');if(!w)return;
@@ -26776,8 +26814,9 @@ function buildZbar(){
  /* ⚠⚠**英雄を敵46種の後ろに並べない**(2026-08-01ユーザー指摘「試験場でヒーローも出せるように」)。
     右へ長くスクロールしないと届かず、事実上「出せない」状態だった。
     ⭐左端に貼り付く切り替えを置いて、どちらも1タップで届くようにする。 */
+ {const zb2=$('zbar2');if(zb2){zb2.style.display='none';zb2.innerHTML='';}}
  {const sw=document.createElement('div');sw.className='zsw';
-  for(const [k,lb] of [['z','🧟 敵'],['h','🦸 英雄']]){
+  for(const [k,lb] of [['z','🧟 敵'],['h','🦸 英雄'],['w','🔥 熱さ']]){
    const b=document.createElement('button');
    b.textContent=lb;if(TSTBAR===k)b.classList.add('on');
    b.onclick=()=>{TSTBAR=k;buildZbar();};
@@ -26789,6 +26828,23 @@ function buildZbar(){
    b.onclick=()=>tstDummy();
    sw.appendChild(b);}
   w.appendChild(sw);}
+ /* 🔥⭐(178)**熱さ検査**=1段目は「何を湧かせ続けるか / 数字 / 片づけ」、塔は2段目(#zbar2)。 */
+ if(TSTBAR==='w'){
+  const sw=document.createElement('div');sw.className='zsw zsw2';
+  for(const k of ['s','h','b']){const S=TSTK_SET[k];
+   const b=document.createElement('button');
+   b.textContent=S.n;b.title=S.t;if(TSTKEEP===k)b.classList.add('on');
+   b.onclick=()=>{TSTKEEP=(TSTKEEP===k?'':k);buildZbar();};
+   sw.appendChild(b);}
+  /* 📊⚠**既定はOFF**=計測の仕掛け自体が少し重い。**熱さを体で確かめる時は必ず切る**。 */
+  {const b=document.createElement('button');
+   b.textContent='📊 数字';b.title='塗り/グラデ/合成を画面の下に出す。⚠これ自体が少し重いので、熱さを確かめる時は切る';
+   if(PF.on)b.classList.add('on');b.onclick=()=>tstPerf();sw.appendChild(b);}
+  {const b=document.createElement('button');
+   b.textContent='🧹 片づけ';b.title='塔と敵を全部消す';b.onclick=()=>tstClear();sw.appendChild(b);}
+  w.appendChild(sw);
+  tstTwBar();
+  return;}
  if(TSTBAR==='h'){
   /* ⚠⚠**21人を1列に並べると右端の数人に届かない**(2026-08-03(77)ユーザー
      「検証場で暗黒の騎士が画面外に行っててクリックできず出せない」)。
@@ -26859,6 +26915,74 @@ function tstDummy(){
  me.zombies.push(z);
  toast('🎯 ダミーを出した(倒れない・殴ってこない)');
 }
+/* 🔥(178)2段目=塔の一覧。⚠**素20種+進化19種を1列に並べない**=右端に届かなくなる
+   (🦸英雄21人で実際に踏んだ穴)。左端に貼り付く[素][進化]で半分ずつに割る。 */
+function tstTwBar(){
+ const w=$('zbar2');if(!w)return;
+ w.innerHTML='';w.style.display='flex';
+ {const sw=document.createElement('div');sw.className='zsw';
+  for(const [k,lb] of [['base','素'],['grd','進化']]){
+   const b=document.createElement('button');
+   b.textContent=lb;if(TSTTW===k)b.classList.add('on');
+   b.onclick=()=>{TSTTW=k;tstTwBar();};
+   sw.appendChild(b);}
+  w.appendChild(sw);}
+ TOWERS.forEach((T,ti)=>{
+  if(!T||!T.n||T.off)return;
+  /* ⚠廃品工房と支援施設は外す=専用枠にしか建たないので12枠を埋められない */
+  if(T.type==='eco'||T.type==='sup')return;
+  if((TSTTW==='grd')!==!!T.grd)return;
+  const b=document.createElement('button');
+  b.className='zk';b.textContent=T.n;b.title=T.n+' — 押すと12枠全部にMAX強化で建つ';
+  if(TSTFILL===ti)b.classList.add('on');
+  b.onclick=()=>tstFill(ti);
+  w.appendChild(b);});
+}
+/* 🏗**12枠を1種類の塔で埋める**(MAX強化込み)。
+   ⚠⚠**buildTower は通さない**=あれは進化先(grd)を弾き、費用や解放も見る。
+     ここは「同じ条件で塔だけを取り替えて比べる場」なので、**直に置き換える**のが正しい。
+   ⚠**建て替えも同じ操作**=押すたびに前の塔を捨てて建て直す(消してから押す手間を無くす)。 */
+function tstFill(ti){
+ if(!G||!G.tst)return;const me=G.players[0];if(!me||!TOWERS[ti])return;
+ let n=0;
+ for(let si=0;si<ECO_BASE;si++){
+  if(!SLOTS[si]||SLOTS[si][0]<-900)continue;/* ⚠検証場は12枠だけ。余りは画面外(-999)に逃がしてある */
+  me.towers[si]={ti,us:newUs(),cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:0,own:me.gi||0};
+  const tw=me.towers[si];
+  twStats(ti).forEach(st=>{tw.us[st]=usCap(ti,st);});
+  n++;}
+ TSTFILL=ti;SEL=-1;
+ tstTwBar();
+ toast('🏗 '+TOWERS[ti].n+' ×'+n+'台(MAX強化)');
+}
+/* 🧹全部消す=次の塔を素の状態から見たい時に */
+function tstClear(){
+ if(!G||!G.tst)return;const me=G.players[0];if(!me)return;
+ for(let si=0;si<ECO_BASE;si++)me.towers[si]=null;
+ me.zombies.length=0;TSTFILL=-1;TSTKEEP='';SEL=-1;
+ buildZbar();toast('🧹 塔と敵を片づけた');
+}
+/* 📊数字の出し入れ。⚠**あとから仕掛けを入れられる**=`pfHook` は prototype を包むだけなので、
+   起動時に ?perf=1 が無くてもここで有効にできる。⚠**外すことはできない**(包みは戻せない)ので、
+   OFFにした時は数えるのを止めるだけ=1回でも付けたらその試合は少し重いまま。 */
+function tstPerf(){
+ PF.on=!PF.on;
+ try{if(PF.on)pfHook();}catch(e){}
+ try{document.body.classList.toggle('perf',!!PF.on);}catch(e){}
+ buildZbar();
+ toast(PF.on?'📊 数字を出した(⚠これ自体が少し重い=熱さを見る時は切る)':'📊 数字を消した');
+}
+/* 🧟**湧かせ続ける**=減った分だけ足す。⚠**道のどこにでも出す**=湧き口から歩いてくるのを
+   待たずに済む(「固いのが来るまで待つのが面倒」がこの道具を作った理由そのもの)。 */
+function tstKeep(){
+ const S=TSTK_SET[TSTKEEP];if(!S)return;
+ const me=G.players[0];if(!me)return;
+ let alive=0;for(const z of me.zombies)if(!z.dead)alive++;
+ for(let k=alive;k<S.cap;k++){
+  const zi=ZOMBIES.findIndex(q=>q&&q.id===S.ids[ri(0,S.ids.length-1)]);
+  if(zi<0)continue;
+  me.zombies.push(mkZ(zSpec(zi,1,20),4+rnd(0,PLEN*.92)));}
+}
 function tstSpawnZ(zi){
  if(!G||!G.tst)return;const me=G.players[0];if(!me)return;
  me.zombies.push(mkZ(zSpec(zi,1,1),4+rnd(0,50)));
@@ -26871,6 +26995,8 @@ function tstStep(dt){
  /* ⚠**湧かせる処理はここに書かない**=味方も敵も押した時だけ出す(2026-07-30ユーザー指示)。
     味方=デッキの `actDeploy` / 敵=`tstSpawnZ`。⚠クールダウンだけは待たずに済むよう毎フレーム0に戻す */
  if(me.ucd)for(let i=0;i<me.ucd.length;i++)me.ucd[i]=0;
+ /* 🔥(178)熱さ検査の「湧かせ続ける」だけは例外=押した時だけの掟の外(そのための道具) */
+ if(TSTKEEP)try{tstKeep();}catch(e){}
  /* ⭐英雄が出ている間は必殺技のチャージを満タンで置く=前置きのモーションを何度でも見比べられる
     (2026-08-01。⚠普通の試合には一切影響しない=ここは検証場だけを通る道) */
  if(me.hOut===1)me.hCg=1;
@@ -26886,6 +27012,7 @@ function startGameUI(others){
  try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}catch(e){}/* スマホのキーボードを閉じて画面高さを戻す */
  $('tidebar').style.display='';$('pushbtn').style.display='';
  {const zb=$('zbar');if(zb){zb.style.display='none';zb.innerHTML='';}}/* 🧪検証場の敵デッキは普通の試合では出さない */
+ {const z2=$('zbar2');if(z2){z2.style.display='none';z2.innerHTML='';}}/* 🔥(178)熱さ検査の2段目も同じ */
  $('strikebtn').textContent='🎯';
  if(MOBILE){
   try{const de=document.documentElement;if(de&&de.requestFullscreen){const p=de.requestFullscreen();p&&p.catch&&p.catch(()=>{});}}catch(e){}
