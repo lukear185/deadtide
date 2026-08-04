@@ -874,6 +874,17 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  font-size:22px;align-items:center;justify-content:center;min-height:74px}
 /* ⚠canvasは属性とCSSの寸法を必ず合わせる(合わないと絵が潰れる。NOTESの掟) */
 .tmo canvas{width:62px;height:34px;display:block;background:rgba(0,0,0,.32);border-radius:5px}
+/* ⭐(163)**「連れて行く」タブは枠を大きく出す**(ユーザー「入れる兵科の幅が狭くて押しづらい」で
+   一覧を別タブへ出したので、こちらは横に10個並べる必要がなくなった)。
+   ⚠**canvasは属性とCSSの寸法を必ず合わせる**(合わないと絵が潰れる。既出の掟)=絵は96x54で作る。 */
+/* ⚠⚠**流れる grid の行は必ず min-content で止める**=`align-content:stretch`(既定)のままだと
+   高さが足りない時に**行の方が潰れて、札の中の名前が消える**(撮って気づいた)。 */
+.tmord.big{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;grid-auto-rows:min-content;align-content:start}
+.tmord.big canvas{width:96px;height:36px}
+.tmord.big .tmo{padding:4px 3px;font-size:12px}
+.tmord.big .tmo.emp{min-height:76px}
+/* ⚠押す所を確保する=✕は札の右上に重なる小さい字だったので、大きい札では当たりも広げる */
+.tmord.big .tmo em{font-size:15px;right:5px;top:3px}
 /* 見出しの右に合計を置く(⚠1行に混ぜず、右端で揃える) */
 .ldhdr{display:flex;align-items:center;gap:8px}
 .ldsum{margin-left:auto;font-size:11px;font-weight:900;color:var(--ink);background:var(--paper2);
@@ -897,6 +908,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ⭐上の「連れて行く枠」は固定して、下の一覧だけを流す(調べた型)。 */
 #md-load .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #md-load .tmord,#md-load .ldhdr{flex:0 0 auto}
+/* ⚠(163)**大きい札の2段は画面に入り切らない**=下の「入れ替える」ボタンが枠の外へ落ちる
+   (撮って気づいた。--appH の罠と同じ形)。⭐**枠を流れるようにして、ボタンは固定**する。 */
+#md-load .tmord.big{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#md-load #ld-go-add{flex:0 0 auto}
 /* 🦸英雄ステータスも同じ型=上の情報は固定して、一覧だけ流す(2026-08-03 UI総監査。
    ⚠丸ごと流れると、下の英雄を押しても情報欄が画面外のままで「何も起きない」ように見える) */
 /* 💎(110)**召集の窓は動かさない**(ユーザー指摘「スクロールできないようにちゃんと固定して」)=
@@ -3335,7 +3350,10 @@ const TOWERS=[
     ⚠並び順がそのまま研究所に出る順番。入れ替えると既存プレイヤーの解放済み(META.nt)が別のタワーを指す */
  /* heatN=同じ敵を撃ち続けて最大まで焼き切るのに要る発射数 / heatM=その時の威力の倍率(2026-07-26ユーザー指示)。
     ⚠別の敵に狙いが移った瞬間に0へ戻る=雑魚を薙ぐ塔ではなく「1体を焼き切る」塔になる */
- {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が上がる(素で3倍・🔺最大倍率MAXで6倍)'},
+ /* ⚡(163)**レーザーは電撃系**(ユーザー指示「レーザー砲はテスラと一緒で電撃系のタレットにしよう」)。
+    ⚠**撃ち方は変わらない**=`if(T.cont)` の枝が先に当たるので、連鎖(テスラ)の枝には入らない。
+    ⚠変わるのは**相性**(🐟鱗に×1.9で通る)と**一覧の印(⚡)**だけ。威力・間隔・射程は1つも触っていない。 */
+ {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'elec',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が上がる(素で3倍・🔺最大倍率MAXで6倍)'},
  /* ⭐**酸は燃焼とは別枠の継続ダメージ**(2026-07-27ユーザー指示
       「酸噴射は酸の継続ダメージをつけて、その酸がついてる敵が死んだら酸爆発で周囲にダメージにしよう」)。
     ⚠それまでは type:'fire' の燃焼をそのまま使っていて、**実戦DPS30=全19種で最弱**だった
@@ -3414,7 +3432,7 @@ const TOWERS=[
  /* ⚠素を38→58にしたので、決まり(威力×2.0)どおり 76→**116**(2026-08-02) */
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:116,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
- {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'bullet',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
+ {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'elec',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
  {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・強い酸で削り、倒れた敵が大きな酸爆発を起こす'},
  {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
  {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
@@ -3755,7 +3773,9 @@ const UNITS=[
     戦力カーブに合わせて hp/atk を同率で上げると**回復量が丸ごと+13%**になるので、
     2026-08-02は**HP寄りに振って回復の伸びを+6%に抑えた**(戦力は同じ目標に乗る)。
     ⚠回復役は傷ついた味方の所へ歩いて行く=HPを積む方が役割としても自然。 */
- {id:'med',n:'医療兵',cost:116,cd:10,hp:384,atk:75,rate:1.4,rng:150,sp:52,type:'heal',c:'#d8d2c4',dsc:'周囲の部隊を回復'},
+ /* ✚(163)**回復の届く範囲を広げた**(ユーザー指示「医療兵の回復範囲をもっと増やして」)=150→270。
+    ⚠**旗より前には絶対に出ない**(同指示)=立ち位置は uGoal が MED_BACK で押さえている。 */
+ {id:'med',n:'医療兵',cost:116,cd:10,hp:384,atk:75,rate:1.4,rng:270,sp:52,type:'heal',c:'#d8d2c4',dsc:'離れた所からでも部隊を回復する。旗より前には出ない'},
  {id:'snp',n:'スナイパー',cost:128,cd:10,hp:300,atk:513,rate:2,rng:430,sp:46,type:'pierce',c:'#4a5560',dsc:'超射程・装甲貫通'},
  {id:'mgn',n:'ミニガン',cost:148,cd:11,hp:591,atk:38,rate:.16,rng:200,sp:40,type:'bullet',c:'#6b7580',dsc:'弾幕をばら撒く'},
  {id:'rkt',n:'ロケラン',cost:168,cd:12,hp:643,atk:468,rate:2.4,rng:300,sp:42,type:'blast',aoe:100,c:'#7a7f6a',dsc:'範囲爆撃'},
@@ -3795,11 +3815,13 @@ const BASE_U=2;/* ソロで最初から使える兵科数=猟犬とバット(こ
    ⭐**価格は元の解放コストのまま**(`UNITP[元の添字]`)=そうしないと
      「高い兵科ばかり選ぶと進まない」が成立しない。UNITS は出撃費の安い順に並べてあるので
      **元の添字の昇順=元の解放コストの安い順**。
-   ⚠**猟犬(0)とバット(1)は固定枠**=外せない。外せると「開始時に無料で2枠開く」を使って
-     タイタンとヴァルキリーを無料で持って始められてしまう。実質「固定2+選ぶ8」。
+   ⚠⚠**固定枠は廃止した**(2026-08-05(163)ユーザー指示「猟犬とバットを編成に固定するのやめて」)=
+     10体とも自由に選べる。⚠**空にはできない**(1体も居ないと出撃できる兵科がゼロになる)。
+     📌**残っている穴**=「開始時に無料で2枠開く」は**連れて行った中の安い順**に効くので、
+       高い兵科だけで組むと解放費用を踏み倒せる。⚠気になったら uUn の配り方を直すこと。
    ⚠**保存は UBASE の id で持つ**=`UNITS[i]` は applyLoadout で派生キャラ(狼など)に
      差し替わるので、UNITS の id で保存すると素に戻した時に編成が消える。 */
-const TEAM_N=10,TEAM_FIX=[0,1];
+const TEAM_N=10,TEAM_FIX=[];
 const PVP_TEAM=()=>{const a=[];for(let i=0;i<PVP_U;i++)a.push(i);return a;};
 function teamIdx(){
  /* ⚠🛠DEVは**全兵科を持っている**状態にするだけ(metaUnitCap=30)。
@@ -3907,7 +3929,12 @@ while(UNITP.length<UNITS.length+2)UNITP.push(Math.round(UNITP[UNITP.length-1]*1.
 /* ============ 派生兵科(研究所で解放 → 編成画面で基本兵科と入れ替え) ============
  基本兵科(作戦タイムで解放できる7種)それぞれに、役割が同じで格上の3種を用意する。
  コストは微増。数値は基本兵科に対する倍率。 */
-const VBASE=['hnd','bat','big','spr','chain','gun','axe','shd'];
+/* ⚠(163)**全兵科(上級2種を除く28種)に派生がある**=ここに1つでも書き漏らすと
+   その兵科は🎖編成の「派生を選ぶ」に一行も出ない(=選べない兵科になる)。
+   ⚠並びは UBASE(解放される順)に合わせてある。⚠titan/valk だけは FVBASE(研究所の上級)。 */
+const VBASE=['hnd','bat','big','spr','chain','gun','axe','shd',
+ 'mol','grn','frz','saw','med','snp','mgn','rkt','smg','pike','flm','gld',
+ 'elec','mortarU','engi','ninja','gren2','rail2','frost2','chief'];
 const UVAR={
  hnd:[
   {id:'wolf',n:'狼',cm:1.2,hp:1.4,atk:1.35,sp:1.05,c:'#6b6b73',dsc:'群れで狩る野生の狼'},
@@ -3941,6 +3968,92 @@ const UVAR={
   {id:'bshd',n:'大盾兵',cm:1.2,hp:1.45,atk:1.2,c:'#5f8fa3',dsc:'一回り大きい盾で受け止める'},
   {id:'iron',n:'鉄壁',cm:1.45,hp:2,atk:1.45,c:'#8a8f96',dsc:'鋼板を並べた動く壁'},
   {id:'fortr',n:'城塞兵',cm:1.75,hp:2.8,atk:1.75,c:GOLD2,dsc:'決して抜かれぬ人間城塞'}],
+
+ /* ⭐⭐(163)**派生を全兵科に用意した**(ユーザー指示「ユニットで派生が無いやついるから
+    全員派生があるように作って」)=それまで派生があったのは10種だけで、
+    **20種は🎖編成の「派生を選ぶ」に一行も出なかった**(選べない兵科を持っている状態)。
+    ⚠**段の付け方は既にある10種に揃える**=cm 1.2/1.45/1.75・hp と atk はその兵科の持ち味の方へ寄せる
+    (壁役はHP・狙撃は威力・回復役は回復量=atk)。⚠**射程/速さ/間隔は最終段でだけ少し動かす**。 */
+ mol:[
+  {id:'mol2',n:'焼夷瓶',cm:1.2,hp:1.3,atk:1.35,c:'#d9803a',dsc:'よく燃える焼夷剤を詰めた瓶'},
+  {id:'mol3',n:'焼き討ち屋',cm:1.45,hp:1.7,atk:1.8,c:'#b0483a',dsc:'街ごと焼いてきた放火の玄人'},
+  {id:'mol4',n:'業火の使徒',cm:1.75,hp:2.3,atk:2.4,rng:1.12,c:'#ff8a3d',dsc:'消えぬ業火を投げる狂信者'}],
+ grn:[
+  {id:'grn2',n:'榴弾兵',cm:1.2,hp:1.3,atk:1.35,c:'#8f9c5c',dsc:'破片で薙ぐ榴弾を投げる'},
+  {id:'grn3',n:'破砕兵',cm:1.45,hp:1.7,atk:1.8,c:'#6b7a45',dsc:'瓦礫ごと吹き飛ばす破砕弾'},
+  {id:'grn4',n:'爆砕王',cm:1.75,hp:2.3,atk:2.45,rate:.9,c:'#a0623a',dsc:'投げる間も惜しむ爆破の王'}],
+ frz:[
+  {id:'frz2',n:'冷却兵',cm:1.2,hp:1.3,atk:1.3,c:'#8fc4d9',dsc:'冷却剤で足を鈍らせる'},
+  {id:'frz3',n:'氷結兵',cm:1.45,hp:1.7,atk:1.7,c:'#7fb6c9',dsc:'路面ごと凍らせて止める'},
+  {id:'frz4',n:'凍土の魔手',cm:1.75,hp:2.2,atk:2.2,rng:1.15,c:'#cdf1ff',dsc:'触れた物を凍土に変える'}],
+ saw:[
+  {id:'saw2',n:'電動鋸',cm:1.2,hp:1.35,atk:1.35,c:'#c96b35',dsc:'刃を替えて回転を上げた'},
+  {id:'saw3',n:'解体屋',cm:1.45,hp:1.8,atk:1.8,c:'#8a4526',dsc:'建物も屍も解体する'},
+  {id:'saw4',n:'屠殺人',cm:1.75,hp:2.4,atk:2.4,rate:.88,c:'#7a2f2a',dsc:'肉を挽くことしか知らない'}],
+ med:[
+  {id:'med2',n:'衛生兵',cm:1.2,hp:1.3,atk:1.35,c:'#a8d98f',dsc:'手際のいい前線の衛生兵'},
+  {id:'med3',n:'軍医',cm:1.45,hp:1.7,atk:1.8,c:'#7ba33f',dsc:'重傷でも立たせる本物の医者'},
+  {id:'med4',n:'聖救の手',cm:1.75,hp:2.2,atk:2.4,rng:1.15,c:'#b7e07a',dsc:'触れずとも傷が塞がる'}],
+ snp:[
+  {id:'snp2',n:'狙撃手',cm:1.2,hp:1.3,atk:1.35,c:'#7f9cae',dsc:'呼吸を止めて撃つ本職'},
+  {id:'snp3',n:'精密狙撃',cm:1.45,hp:1.7,atk:1.8,rng:1.1,c:'#5f8fa3',dsc:'風も距離も読み切る'},
+  {id:'snp4',n:'神の一撃',cm:1.75,hp:2.1,atk:2.5,rate:.9,c:'#cdf1ff',dsc:'外すという言葉を知らない'}],
+ mgn:[
+  {id:'mgn2',n:'重ミニガン',cm:1.2,hp:1.35,atk:1.35,c:'#7a8590',dsc:'銃身を増やして弾を厚くした'},
+  {id:'mgn3',n:'掃射手',cm:1.45,hp:1.8,atk:1.75,c:'#5c6b78',dsc:'道を丸ごと薙ぐ掃射'},
+  {id:'mgn4',n:'鉄の雨',cm:1.75,hp:2.4,atk:2.4,rng:1.12,c:'#3f4a54',dsc:'降り止まぬ鉄の雨'}],
+ rkt:[
+  {id:'rkt2',n:'対戦車兵',cm:1.2,hp:1.3,atk:1.35,c:'#8a7a5c',dsc:'装甲を抜くために撃つ'},
+  {id:'rkt3',n:'多連装ロケット',cm:1.45,hp:1.7,atk:1.8,rate:.9,c:'#a0623a',dsc:'続けざまに撃ち込む'},
+  {id:'rkt4',n:'破城の轟',cm:1.75,hp:2.3,atk:2.45,c:'#b0483a',dsc:'一発で門を落とす轟音'}],
+ smg:[
+  {id:'smg2',n:'短機関手',cm:1.2,hp:1.3,atk:1.35,c:'#8a97a5',dsc:'弾切れを恐れず撃ち続ける'},
+  {id:'smg3',n:'制圧射手',cm:1.45,hp:1.7,atk:1.75,c:'#6b7580',dsc:'頭を上げさせない制圧射撃'},
+  {id:'smg4',n:'弾幕の主',cm:1.75,hp:2.2,atk:2.35,rate:.88,c:'#4a5560',dsc:'弾幕そのものが壁になる'}],
+ pike:[
+  {id:'pike2',n:'重槍兵',cm:1.2,hp:1.4,atk:1.3,c:'#8a8f96',dsc:'厚い穂先で受けて突く'},
+  {id:'pike3',n:'槍衾',cm:1.45,hp:1.9,atk:1.7,c:'#6f8a8f',dsc:'穂先を並べて前を塞ぐ'},
+  {id:'pike4',n:'貫きの穂先',cm:1.75,hp:2.5,atk:2.2,rng:1.14,c:'#a5b8c4',dsc:'何体でもまとめて貫く'}],
+ flm:[
+  {id:'flm2',n:'焼却兵',cm:1.2,hp:1.3,atk:1.35,c:'#d9803a',dsc:'火力を上げた焼却装備'},
+  {id:'flm3',n:'業火放射',cm:1.45,hp:1.75,atk:1.8,rng:1.12,c:'#ff9a3d',dsc:'炎の帯が遠くまで届く'},
+  {id:'flm4',n:'灼熱の炉',cm:1.75,hp:2.4,atk:2.4,c:'#ffcf6a',dsc:'背負った炉から吹き出す白い炎'}],
+ gld:[
+  {id:'gld2',n:'装甲盾',cm:1.2,hp:1.45,atk:1.2,c:'#7a8590',dsc:'鋼板を足した重い盾'},
+  {id:'gld3',n:'鋼鉄障壁',cm:1.45,hp:2,atk:1.45,c:'#5c6b78',dsc:'並べば道が塞がる'},
+  {id:'gld4',n:'不落の砦',cm:1.75,hp:2.8,atk:1.75,c:'#c9a13d',dsc:'一度も抜かれたことがない'}],
+ elec:[
+  {id:'elec2',n:'電磁投射',cm:1.2,hp:1.3,atk:1.35,c:'#9fdcf5',dsc:'磁力で弾を加速して撃つ'},
+  {id:'elec3',n:'雷撃兵',cm:1.45,hp:1.7,atk:1.8,c:'#5fa8c9',dsc:'雷を落として貫く'},
+  {id:'elec4',n:'雷神の槍',cm:1.75,hp:2.2,atk:2.4,rng:1.12,c:'#ffd23d',dsc:'空から降る雷そのもの'}],
+ mortarU:[
+  {id:'mor2',n:'重迫撃',cm:1.2,hp:1.3,atk:1.35,c:'#8a8560',dsc:'砲身を太くして威力を上げた'},
+  {id:'mor3',n:'曲射砲兵',cm:1.45,hp:1.7,atk:1.8,rng:1.1,c:'#6b6b4a',dsc:'壁の裏まで撃ち込む'},
+  {id:'mor4',n:'天蓋の砲',cm:1.75,hp:2.3,atk:2.4,c:'#a0623a',dsc:'空を覆うほど撃ち上げる'}],
+ engi:[
+  {id:'engi2',n:'整備兵',cm:1.2,hp:1.3,atk:1.35,c:'#a5b04a',dsc:'手早く直す整備の腕'},
+  {id:'engi3',n:'技術兵',cm:1.45,hp:1.7,atk:1.8,c:'#7ba33f',dsc:'壊れた物を戦えるまで戻す'},
+  {id:'engi4',n:'鋼の匠',cm:1.75,hp:2.2,atk:2.4,rng:1.15,c:'#c9a13d',dsc:'触れるだけで鋼が繋がる'}],
+ ninja:[
+  {id:'ninja2',n:'隠密',cm:1.2,hp:1.3,atk:1.35,sp:1.05,c:'#5a5560',dsc:'足音を消して回り込む'},
+  {id:'ninja3',n:'暗殺者',cm:1.45,hp:1.7,atk:1.8,sp:1.1,c:'#3f3a4a',dsc:'一撃で急所を断つ'},
+  {id:'ninja4',n:'無音の刃',cm:1.75,hp:2.2,atk:2.4,sp:1.16,c:'#b07ad0',dsc:'斬られたことにも気づかせない'}],
+ gren2:[
+  {id:'gren3',n:'破砕擲弾兵',cm:1.2,hp:1.3,atk:1.35,c:'#8f9c5c',dsc:'破片を撒く重い擲弾'},
+  {id:'gren4',n:'榴散弾兵',cm:1.45,hp:1.75,atk:1.8,c:'#6b7a45',dsc:'広く薄く、確実に削る'},
+  {id:'gren5',n:'大破壊の使い',cm:1.75,hp:2.4,atk:2.45,rate:.9,c:'#b0483a',dsc:'投げるたびに地形が変わる'}],
+ rail2:[
+  {id:'rail3',n:'加速砲手',cm:1.2,hp:1.3,atk:1.35,c:'#7f9cae',dsc:'加速レールを増設した'},
+  {id:'rail4',n:'超電磁狙撃',cm:1.45,hp:1.7,atk:1.8,rng:1.08,c:'#5fa8c9',dsc:'音より速い一射'},
+  {id:'rail5',n:'貫通の閃光',cm:1.75,hp:2.1,atk:2.5,rate:.9,c:'#cdf1ff',dsc:'閃光が通った所には何も残らない'}],
+ frost2:[
+  {id:'frost3',n:'極低温兵',cm:1.2,hp:1.3,atk:1.3,c:'#8fc4d9',dsc:'さらに温度を落とした冷却弾'},
+  {id:'frost4',n:'氷結領域',cm:1.45,hp:1.75,atk:1.7,rng:1.1,c:'#7fb6c9',dsc:'足を踏み入れた物が止まる'},
+  {id:'frost5',n:'永久凍土',cm:1.75,hp:2.3,atk:2.2,c:'#e8f7ff',dsc:'溶けることのない氷の大地'}],
+ chief:[
+  {id:'chief2',n:'分隊長',cm:1.2,hp:1.35,atk:1.35,c:'#8a97a5',dsc:'前線をまとめる分隊の長'},
+  {id:'chief3',n:'大隊長',cm:1.45,hp:1.8,atk:1.8,c:'#6b7580',dsc:'一声で戦線を立て直す'},
+  {id:'chief4',n:'総司令',cm:1.75,hp:2.4,atk:2.45,rng:1.1,c:'#ffd23d',dsc:'この街の生き残りを率いる者'}],
  /* ↓研究所限定の上級4種にも、姿が変わる3段階アップグレードを用意(2026-07-25) */
  titan:[
   {id:'titan2',n:'鋼の巨兵',cm:1.25,hp:1.4,atk:1.4,c:'#8a8f96',dsc:'鋼を纏った巨兵'},
@@ -4019,6 +4132,9 @@ const TW_TRAIT={
  /* ⚠連鎖は整数なので端数を切り捨てる=4段ごとに1体増える(使う側で Math.floor する) */
  elec:{k:'chain',v:.25,t:'連鎖+0.25体'}/* ⚠カードは「…/段」と続くので**1段あたりの言い方**にする(4段で+1体) */
 };
+/* ⚠(163)**その塔が実際に持っていない持ち味は出さない**=⚡電撃系にした🔦レーザー塔は
+   連鎖しないので、研究所に「連鎖+0.25体/段」と書くと嘘になる(相性のためだけに型を合わせた)。 */
+const twTrait=T=>{const R9=TW_TRAIT[T&&T.type];return (R9&&R9.k==='chain'&&!(T&&T.chain))?null:R9;};
 /* 一覧に出す絵文字。⚠タワー20枚・兵科32枚が全部同じ絵だと見分けられないので型で変える */
 const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡'};
 const UN_IC={melee:'✊',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚'};
@@ -4417,6 +4533,31 @@ const ENG_GAP=36;
      **足止めした敵に一発も届かない**(射程の外で棒立ちになる)。min で自動に切り替わる。
    ⚠射程50以下(近接)は0=今までどおり旗の位置に立つ。 */
 const uStand=U=>Math.max(0,Math.min((U.rng||0)/2,(U.rng||0)-ENG_GAP-14));
+/* ⭐**その部隊が立つべき所**(旗+射程ぶんの下がり / 回復役は一番傷ついた味方の所)。
+   ⚠(163)**歩く時と「戦闘中に下がる時」の両方から呼ぶ**ので関数に切り出した
+   =2か所で別々に書くと必ず食い違う([[NOTES_UI]]「同じ表示を2か所で作らない」と同じ話)。
+   ⭐⭐**回復役は傷ついた味方の所へ歩いて行く**(2026-08-01ユーザー指示
+     「医療兵は絶対ダメージを食らってるユニットやヒーローのところにいくように」)。
+   ⚠**優先は「HPの割合」ではなく「減った量」**=最大HPの大きい英雄や壁役が後回しにならない。 */
+function uGoal(C,u,U){
+ const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD;
+ let goal=clamp(fD+uStand(U),60,PLEN-40);
+ /* ✚⚠⚠(163)**回復役は旗より前に出ない**(ユーザー指示「絶対旗の近くには行かないようにして」)=
+    それまで**傷ついた味方の所へそのまま歩いて行っていた**ので、前線で殴られて真っ先に落ちていた。
+    ⭐**下限を「旗 + MED_BACK」にする**=どれだけ前で傷ついていても、そこまでしか出ない。
+    ⚠だから**射程を広げる(150→270)のとセット**でないと、後ろで届かないだけの兵科になる。 */
+ if(U.type==='heal'){let ta=null,bm=1;
+  for(const a of C.units){if(a.dead||a===u)continue;const ms=a.mhp-a.hp;if(ms>bm){bm=ms;ta=a;}}
+  if(ta)goal=clamp(ta.d,fD+MED_BACK,PLEN-40);}
+ return goal;
+}
+/* 🚩⭐(163)**戦闘中でも旗を後ろへ動かしたら下がる**(ユーザー指示「ヒーローとユニットが戦闘中でも
+   旗を後ろにしたら移動するようにして」)。⚠**下がる方だけ**=前へは出ない
+   (前へも出すと「敵に触れたら勝手に突っ込む」ことになり、旗で線を引く遊びが壊れる)。
+   ⚠**撃つのは止めない**=下がりながら撃つ。⚠しきい値は歩く時と同じ8。 */
+const UBACK_MIN=8;
+/* ✚(163)回復役が旗より後ろに保つ距離。⚠**射程(med=270)より十分小さくする**=届かなくなる */
+const MED_BACK=90;
 /* 🦸⭐⭐**近接の英雄は「旗の少し手前」に立つ**(2026-08-03(121)ユーザー指示
      「ヒーローの近接職のやつは若干射程伸ばして、旗の少し手前で止まるようにしよう。
        (これは確実に射程が届くように注意)他のユニットの近接キャラが一番前になるように」)。
@@ -18392,6 +18533,10 @@ function campStep(C,dt,wave){
       ⭐**この印と `u.fired`(一度でも攻撃したか)の両方を見ること**。
         ⚠他のキャラに攻撃モーションを付ける時も必ず同じようにする。 */
    u.eng=1;u.tgx=tg.px;/* ⭐狙っている敵の横位置=次のフレームの「向き」に使う(uFace) */
+   /* 🚩(163)**旗が自分より後ろにあるなら、交戦中でも下がる**(撃ちながら後退する) */
+   {const g9=uGoal(C,u,U),d9=g9-u.d;
+    if(d9>UBACK_MIN){u.d+=Math.min(d9,U.sp*(C.supMs||1)*dt);u.back=true;u.mv=1;}
+    else u.mv=0;}
    /* ⭐⭐**4段階(待機→溜め→発射→硬直)**。u.cd=硬直 / u.chg=溜めの進行度(0→1) / u.ct=いま溜めている印。
       ⚠溜め中は狙っている座標を控える(照準の線を引くため)。 */
    const cgT9=uChgT(u.ui);
@@ -18621,17 +18766,7 @@ function campStep(C,dt,wave){
       ⚠**絵は出さない**(u.ct=0)=歩きながら光らせると何が起きているのか分からない。
       ⚠硬直中(u.cd>0)は溜めない=撃った直後に歩いても間隔は縮まらない。 */
    {const cg8=uChgT(u.ui);if(cg8>0&&u.cd<=0)u.chg=Math.min(1,(u.chg||0)+dt/cg8);}
-   const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD;
-   let goal=clamp(fD+uStand(U),60,PLEN-40);
-   /* ⭐⭐**回復役は傷ついた味方の所へ歩いて行く**(2026-08-01ユーザー指示
-      「医療兵は絶対ダメージを食らってるユニットやヒーローのところにいくように」)。
-      ⚠それまでは旗の位置に立ったまま、たまたま射程に入った相手だけを回復していた=
-        後ろで傷ついた味方が居ても一生近寄らなかった。
-      ⚠**優先は「HPの割合」ではなく「減った量」**(同指示)=英雄や壁役のような
-        最大HPの大きい相手が後回しにならない。⚠英雄も普通に C.units に居るので同じ式で拾える。 */
-   if(U.type==='heal'){let ta=null,bm=1;
-    for(const a of C.units){if(a.dead||a===u)continue;const ms=a.mhp-a.hp;if(ms>bm){bm=ms;ta=a;}}
-    if(ta)goal=clamp(ta.d,60,PLEN-40);}
+   const goal=uGoal(C,u,U);
    const df=goal-u.d;
    /* ⭐**歩いている印**(2026-08-01ユーザー指示「移動してないときは足を動かすのやめて」)。
       ⚠止まっているのに脚が動くと、その場で足踏みしているように見える。 */
@@ -18771,7 +18906,7 @@ function campStep(C,dt,wave){
    tw.ct=tg||null;
    if(!tg){tw.hz=null;tw.hs=0;tw.chg=0;tw.fireT=0;continue;}
    tw.fireT=.12;
-   const TLc=twlv(twKey(T)),TRTc=TW_TRAIT[T.type];
+   const TLc=twlv(twKey(T)),TRTc=twTrait(T);
    const dps=(T.dmg/T.rate)*m*aB*(1+lineAcc(TW_DMG_STEP,TLc));
    /* ⚠**ダメージ数字は毎フレーム出さない**(継続攻撃は1フレーム1回当たるので、そのままだと
         数字と血が画面を埋めて「重い」が直らない)。0.35秒ぶんためて1つにまとめて出す。 */
@@ -18814,7 +18949,7 @@ function campStep(C,dt,wave){
     ⚠型ごとのまとめ強化だった頃と同じ場所で効かせている=当たり判定や順番は変えていない */
  /* ⚠ローカル名を TT にしてはいけない=**グローバルの TT(ゲーム時刻)を隠してしまう**。
     実際に droneOff(…,TT) が undefined を受けて弾の座標が NaN になり、ドローンの弾が消えていた(2026-07-26) */
- const TL=twlv(twKey(T)),TRT=TW_TRAIT[T.type];
+ const TL=twlv(twKey(T)),TRT=twTrait(T);
   /* ⭐**特攻**(vsB)=💀ボス級と👁オーラ持ちにだけ倍率が乗る(2026-07-30ユーザー指示
      「スナイパータレットはオーラ纏ってる敵とボスに特攻にする」)。
      ⚠狙いは1体なので、ここで tg を見て掛けてしまってよい(貫通しても線上は同じ倍率になる)。 */
@@ -18895,7 +19030,8 @@ function campStep(C,dt,wave){
     if(!nx)break;
     dmgZ(C,nx,dm*Math.pow(.85,k)*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0);if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
    addFx(C,'zap',sx,sy,'',{pts,sd:rnd(0,9)});
-   if(FXLV>0)for(const p6 of pts)addP(C,2,p6[0],p6[1],{sp:60,g:40,life:.35,r:2,col:FROST});
+   /* ⚡(163)粒は**跳ねた先だけ**に1つずつ(元は全点に2つ=連鎖6体で12個/発だった) */
+   if(FXLV>0)for(let k6=1;k6<pts.length;k6++)addP(C,1,pts[k6][0],pts[k6][1],{sp:60,g:40,life:.35,r:2,col:FROST});
    twSfx(C,T);}
   else if(T.type==='blast'){
    /* ⭐プラズマ砲だけは「砲弾」ではなく**プラズマ球**を撃つ(2026-07-26ユーザー指摘=迫撃砲と区別が付かない)。
@@ -20196,24 +20332,35 @@ function renderCamp(C,t){
    const jag=(i2,amp)=>{const q=Math.sin(seed+i2*3.1+e.t*11)*amp,w2=Math.cos(seed+i2*1.7+e.t*8)*amp;return[q,w2];};
    c.lineCap='round';c.lineJoin='round';
    const wm=e.wm||1;/* 重テスラは跳ねるほど太くなる=威力が上がったのが見て分かる */
+   /* ⚡⚠⚠(163)**「重い」の正体は同じ計算のやり直しだった**(ユーザー「テスラが重いから軽くして」)=
+      太さの違う3本を引くのに、**揺れ(sin/cos)を3回とも計算し直していた**。
+      ⭐**折れ点を1回だけ作って3本で使い回す**=見た目は1pxも変わらないまま計算が1/3になる。
+      ⭐**枝分かれと光点も1本のパスにまとめる**=`stroke()`/`fill()` の回数が 点の数+1 回 → 2回になる。
+      ⚠**arc は前の部分パスから線が繋がる**ので、1本にまとめる時は都度 moveTo を打つこと(既出の掟)。 */
+   const JP=[[ps[0][0],ps[0][1]]];
+   for(let i2=1;i2<ps.length;i2++){
+    const ax=ps[i2-1][0],ay=ps[i2-1][1],bx=ps[i2][0],by=ps[i2][1];
+    for(let s2=1;s2<=3;s2++){const f2=s2/3,jj=jag(i2*3+s2,s2===3?0:7);
+     JP.push([ax+(bx-ax)*f2+jj[0],ay+(by-ay)*f2+jj[1]]);}}
    for(const pass of [[9,'rgba(90,170,255,',.30],[4.5,'rgba(190,235,255,',.75],[1.8,'rgba(255,255,255,',1]]){
     c.strokeStyle=pass[1]+(k5*pass[2])+')';c.lineWidth=pass[0]*wm;
-    c.beginPath();c.moveTo(ps[0][0],ps[0][1]);
-    for(let i2=1;i2<ps.length;i2++){
-     const ax=ps[i2-1][0],ay=ps[i2-1][1],bx=ps[i2][0],by=ps[i2][1];
-     for(let s2=1;s2<=3;s2++){const f2=s2/3,jj=jag(i2*3+s2,s2===3?0:7);
-      c.lineTo(ax+(bx-ax)*f2+jj[0],ay+(by-ay)*f2+jj[1]);}}
+    c.beginPath();c.moveTo(JP[0][0],JP[0][1]);
+    for(let i2=1;i2<JP.length;i2++)c.lineTo(JP[i2][0],JP[i2][1]);
     c.stroke();}
-   /* 枝分かれ */
+   /* 枝分かれ(⚠1本のパスにまとめて1回で引く) */
    c.strokeStyle='rgba(200,240,255,'+(k5*.5)+')';c.lineWidth=1.6;
+   c.beginPath();
    for(let i2=1;i2<ps.length;i2++){const jj=jag(i2*7,10);
-    c.beginPath();c.moveTo(ps[i2][0],ps[i2][1]);c.lineTo(ps[i2][0]+jj[0]*1.8,ps[i2][1]+jj[1]*1.8);c.stroke();}
+    c.moveTo(ps[i2][0],ps[i2][1]);c.lineTo(ps[i2][0]+jj[0]*1.8,ps[i2][1]+jj[1]*1.8);}
+   c.stroke();
    /* 電流が経路を走る光点 */
    {const prog=clamp(e.t/life,0,.999),seg=Math.min(ps.length-2,Math.floor(prog*(ps.length-1))),f3=(prog*(ps.length-1))%1;
     if(seg>=0){const gx=ps[seg][0]+(ps[seg+1][0]-ps[seg][0])*f3,gy=ps[seg][1]+(ps[seg+1][1]-ps[seg][1])*f3;
      c.globalAlpha=k5;c.fillStyle='#fff';c.beginPath();c.arc(gx,gy,4.5,0,7);c.fill();
      c.fillStyle='rgba(150,220,255,.7)';c.beginPath();c.arc(gx,gy,9,0,7);c.fill();c.globalAlpha=1;}}
-   for(const p5 of ps){c.globalAlpha=k5*.9;c.fillStyle='#dff4ff';c.beginPath();c.arc(p5[0],p5[1],3.2,0,7);c.fill();c.globalAlpha=1;}
+   {c.globalAlpha=k5*.9;c.fillStyle='#dff4ff';c.beginPath();
+    for(const p5 of ps){c.moveTo(p5[0]+3.2,p5[1]);c.arc(p5[0],p5[1],3.2,0,7);}
+    c.fill();c.globalAlpha=1;}
   }
   else if(e.k==='ring'){c.strokeStyle=e.col||'#9fd9c6';c.globalAlpha=Math.max(0,.45-e.t*1.4);c.lineWidth=3;c.beginPath();c.arc(e.x,e.y,10+(e.r||160)*e.t*2.4,0,7);c.stroke();c.globalAlpha=1;}
   /* ⭐爆発(2026-07-27 第106弾・ユーザーが見本の画像を出してくれた)。
@@ -21323,7 +21470,7 @@ function openBM(si){
   const rows=twStats(tw.ti).map(st=>{
    const lvv=tw.us[st]||0,mn9=usMinSt(tw.ti,st),mx9=usCap(tw.ti,st),mx=lvv>=mx9,p=mx?null:stCost(tw,st);
    /* ⚠⚡連鎖数は研究所の個別強化(elecの持ち味+1/段)も足して出す=実際に飛ぶ数と合わせる */
-   const chBonus=(TW_TRAIT[T.type]&&TW_TRAIT[T.type].k==='chain')?Math.floor(TW_TRAIT[T.type].v*twlv(twKey(T))):0;
+   const chBonus=(twTrait(T)&&twTrait(T).k==='chain')?Math.floor(twTrait(T).v*twlv(twKey(T))):0;
    let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
     +(st==='f'?(mx?'('+twFrzN(T,tw)+'回)':'('+twFrzN(T,tw)+'→'+(twFrzN(T,tw)+1)+'回)'):'')
     /* 🔥昇温速度は「最大倍率まで何発か」を出す=数字が減るほど良い、と分かるように */
@@ -27103,7 +27250,7 @@ function renderLab(){
    if(i>=BASE_T&&(i-BASE_T)>=(META.nt||0))continue;/* 研究所でまだ解放していない新型 */
    const key=twKey(T);if(seen[key])continue;seen[key]=1;
    const lv=(META.tw&&META.tw[key])||0;if(lv>=LINE_MAX)continue;
-   const TRT=TW_TRAIT[T.type];/* ⚠TT という名前は使わない=グローバルのゲーム時刻を隠すため */
+   const TRT=twTrait(T);/* ⚠TT という名前は使わない=グローバルのゲーム時刻を隠すため */
    const d=(T.type==='eco'?'':'威力+'+Math.round(TW_DMG_STEP*100)+'%')+(TRT?(T.type==='eco'?'':'・')+TRT.t:'')+'/段';
    items.push({cat:'twup',k:'tw',id:key,sm:1,ic:TW_IC[T.type]||'🗼',pv:{k:'t',i:i},t:T.n,tag:'Lv'+lv+'/'+LINE_MAX,d,p:LAB_TW(lv)});}}
  /* ---- ⭐兵科1種ごとの強化。派生キャラは元の兵科の枠を共有する ---- */
@@ -27388,8 +27535,13 @@ let LDTAB='team';
    ⚠それまで3つあり、しかも「基本の枠」と「上級」は**同じこと(派生キャラの割り当て)を
      カテゴリで割っただけ**だった=何が違うのか読めない。1つに畳んだ。
    ⚠**の記法は使わない=そのまま文字として出る(2026-08-01に撮って気づいた) */
+/* ⚠⚠(163)**「入れる兵科」を別のタブへ出した**(ユーザー「入れる兵科の幅が狭くて押しづらいから、
+   別UIを開くか、いい感じにしてほしい」)=1つの画面に「選んだ10体」と「持っている30種」を
+   両方置いていたので、**30種の一覧が1行ぶんしか見えなかった**(横画面は高さ393pxしか無い)。
+   ⭐分けると一覧が窓いっぱいに広がる=**1画面1目的**([[NOTES_UI]])。 */
 const LD_TABS=[
  {k:'team',n:'🎒 連れて行く',d:''},
+ {k:'add', n:'🪖 入れる',d:''},
  /* ⚠🔒の入手経路はここで言う(2026-08-03 UI総監査)=どこにも書いておらず「壊れた画面」に見えた */
  {k:'var', n:'⭐ 派生を選ぶ',d:'どの派生キャラで出すか決める。🔒は🔬研究所の兵科タブで解放できる'}];
 /* ⚠**弾薬タブは2026-07-27に廃止**(タワーの進化に置き換えた)。書き戻さないこと */
@@ -27418,7 +27570,7 @@ function renderLoad(){
     +'<span class="ldb atk"><em>攻</em><span class="bb"><b style="width:'+Math.round((o.def.atk||0)/mx.atk*100)+'%"></b></span><i>'+o.def.atk+'</i></span>'
     +'</span></button>';});
   h+='</div></div>';};
- if(LDTAB==='team'){
+ if(LDTAB==='team'||LDTAB==='add'){
   /* ⭐⭐**「選んだ10体が安い順に解放される」を文章ではなく並びで見せる**
      (2026-08-01ユーザー指摘「編成の画面がわかりずらい」で作り直し)。
      ⚠前の形=長い注意書き1行+特大カード30枚。何を選んでいるのか・何が起きるのかが
@@ -27433,28 +27585,32 @@ function renderLoad(){
      ⚠タブ名「🎒 連れて行く」の真下に同じ文字を繰り返さない(2026-08-03 UI総監査)。
      ⭐**合計は上の帯の見出しに置く**=帯(選んだ10体)の話なのに、下の「入れる兵科」の行に
        置いてあって30種の合計に読めた。0の時は出さない(素の状態で赤い0が意味不明だった)。 */
+  const ADD=(LDTAB==='add');
   h='<div class="ldhdr" style="border-top:0;padding-top:0;margin:2px 2px 3px">'
    +'🎒 <b>'+T9.length+'/'+TEAM_N+'</b>'
-   +'<span class="lsub">この順に解放される・✕で外す</span>'
+   +'<span class="lsub">'+(ADD?('持っている '+own+'種・押すと入れる/外す・ⓘで能力'):'この順に解放される・✕で外す')+'</span>'
    +(sum>0?'<span class="ldsum">⚙️ 全員の解放に <b>'+sum.toLocaleString()+'</b></span>':'')
    +'</div>';
   /* ⭐⭐**枠は上限ぶん全部出す**(2026-08-02(68))=調べた型「空き枠は空白にせず、実枠と同じ大きさの
      点線＋＋。総数を最初から見せる」。⚠**あと何体入るかを数えさせない**。 */
   /* ⚠絵と名前は uEff(派生を反映した中身)で出す。🔒は「未解放」と紛らわしいので固定枠は「固定」の字 */
-  h+='<div class="tmord">';
-  T9.forEach((i,k)=>{const p=UNITP[i]||0;const fx=TEAM_FIX.indexOf(i)>=0;
-   h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'">'
-    +'<b>'+(k+1)+'</b><canvas width="62" height="34"></canvas>'
-    +'<span class="nm2">'+((uEff(i)||{}).n||'?')+'</span>'
-    +'<i>⚙️'+p+'</i>'+(fx?'<em>固定</em>':'<em>✕</em>')+'</button>';});
-  for(let k=T9.length;k<TEAM_N;k++)h+='<div class="tmo emp">＋</div>';
-  h+='</div>';
+  if(!ADD){
+   h+='<div class="tmord big">';
+   T9.forEach((i,k)=>{const p=UNITP[i]||0;const fx=TEAM_FIX.indexOf(i)>=0;
+    h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'">'
+     +'<b>'+(k+1)+'</b><canvas width="96" height="36"></canvas>'
+     +'<span class="nm2">'+((uEff(i)||{}).n||'?')+'</span>'
+     +'<i>⚙️'+p+'</i>'+(fx?'<em>固定</em>':'<em>✕</em>')+'</button>';});
+   for(let k=T9.length;k<TEAM_N;k++)h+='<div class="tmo emp">＋</div>';
+   h+='</div>';
+   /* ⭐**次にやる事を大きなボタンで置く**=タブがあることに気づかなくても一覧へ行ける */
+   h+='<button class="btn gold" id="ld-go-add" style="width:100%;min-height:44px;margin-top:4px">🪖 兵科を入れ替える</button>';}
   /* ⚠**注意書きは消した**(2026-08-02(68))=毎回読む物ではないのに毎回場所を取っていた。 */
   /* ⛔⭐**相性の印と説明は外した**(2026-08-04(145)ユーザー「弱点がどうとか耐性がどうとか
      文字で書いてあるやつは一切いらない。見づらすぎるし誰も見ない」)。⚠**書き戻さない**。
      ⚠(142)に「▲▼の記号なら入る」と言って足したが、**記号でも同じ**=カードの1行に
        ⚙️の値と並べて置く限り、読ませるのではなく**ノイズになる**。 */
-  h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる/外す</span></div>';
+  if(ADD){
   h+='<div class="tmgrid" id="tm-grid">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
@@ -27471,11 +27627,12 @@ function renderLoad(){
     +'<span class="nm">'+(uEff(i)||U).n+'</span>'
     /* ⚠**行を増やさない**(一覧の1行目の下端が箱から切れる。撮って気づいた) */
     +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))+'</span></button>';}
-  h+='</div>';
+  h+='</div>';}
   /* ⭐持っているのが固定2種だけの時は「押せる物ゼロ」で故障に見える=次にやる事を1行だけ。
      ⚠auto-fillのgridでは grid-column:1/-1 が1列ぶんに潰れる=**箱の外**に置く */
-  if(own<=TEAM_FIX.length)h+='<div class="note" style="font-size:12px;font-weight:800;padding:6px 4px 2px">🔬 研究所で兵科を解放すると、ここから選べる</div>';
+  if(ADD&&own<=2)h+='<div class="note" style="font-size:12px;font-weight:800;padding:6px 4px 2px">🔬 研究所で兵科を解放すると、ここから選べる</div>';
   box.innerHTML=IC(h);
+  {const gb=$('ld-go-add');if(gb)gb.onclick=()=>{LDTAB='add';renderLoad();};}
   /* ⚠**一覧のスクロール位置を保つ**(2026-08-02(68))=1体入れるたび先頭へ戻ると、
      下の方の兵科は事実上選べない(調べた型「押した所がその場で書き変わる」)。 */
   const pick=(i,add)=>{
@@ -27485,7 +27642,9 @@ function renderLoad(){
       **何も起きない**ように見える。固定枠は入れない(常に先頭に付く)。 */
    let cur=teamIdx().filter(x=>TEAM_FIX.indexOf(x)<0).map(x=>UBASE[x].id);
    const id=UBASE[i].id,k=cur.indexOf(id);
-   if(!add){if(k>=0)cur.splice(k,1);}
+   /* ⚠(163)**最後の1体は外せない**=空の編成で出撃すると兵科を1つも出せない試合になる */
+   if(!add){if(cur.length<=1){sfx.back&&sfx.back();toast('⚠ 連れて行く兵科を1つも選ばない状態にはできない',true);return;}
+    if(k>=0)cur.splice(k,1);}
    else{
     if(k>=0)return;
     /* ⚠満杯は音でも「進めなかった」と言う(無音だと固まったように見える。back=低い音の語彙) */

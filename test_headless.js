@@ -2186,6 +2186,9 @@ function checkHook(){
   me.team=UNITS.map((u,i)=>i);me.uUn=Math.max(me.uUn,ui+1);me.ucd[ui]=0;me.scrap=999999;
   if(!deployUnit(me,ui)){console.log('FAIL: '+UNITS[ui].n+' が出せない');process.exit(1);}
   const u=me.units[me.units.length-1];u.d=PLEN*.5;u.hp=u.mhp=1e9;
+  /* ⚠(163)**旗をその兵科の立ち位置に合わせる**=(163)から「旗より前に居たら戦闘中でも下がる」ので、
+     旗を既定(PLEN*.55)のままにすると**抱えたまま後ろへ歩き**、抱えていないように見えて落ちる。 */
+  me.flagD=u.d-uStand(UNITS[ui]);
   /* ⚠**上限ぴったり**を重ねて、1体も素通りしないこと */
   for(let k=0;k<N;k++){const z=mkZ(zSpec(zi,1,5),u.d-2);z.hp=z.mhp=1e9;me.zombies.push(z);}
   const d0=me.zombies.map(z=>z.d);
