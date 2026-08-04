@@ -20886,8 +20886,19 @@ function renderCamp(C,t){
       ⚠正体=**加算(lighter)の暖色の輪**。撃ち続ける塔(火炎放射塔・レーザー塔)は `fireT` が
         出っぱなしなので、**輪が消えずに地面へ焼き付いて見えていた**。
       ⭐**暗がりを削る方(`lite`)は残す**=夜の面で明かりが要る。⚠色を乗せる方だけをやめた。 */
-   for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
-    lite(SLOTS[si][0],SLOTS[si][1],tw.fireT>0?95:62,tw.fireT>0?.7:.35);}
+   /* 🔥⚠⚠⚠(173)**ここが「重くはないのにスマホが熱くなる」の正体だった**(2026-08-05ユーザー実機
+      「盤面いっぱいに塔を建てて海の最終ウェーブまでクリアしたら、重くはないけどスマホがめっちゃ熱くなった」)。
+      ⚠**塔1台につきラジアルグラデを1枚、毎コマ塗っていた**=22台なら**毎秒1320枚**。
+        敵や兵科の灯りは升目でまとめて頭切りしてあったのに、**塔の灯りだけ素通しだった**。
+      ⭐**同じ手当てを塔にも入れる**=升目でまとめて上限8枚。塔は固まって建つので実際は数枚に減る。
+      ⚠**撃っている台と撃っていない台は別の升目**=まとめると撃った瞬間の明るさが伝わらない。
+      ⚠1台だけの時は今までと1pxも変えない(n=1で素の半径・素の濃さになる式)。 */
+   {const bF=bkt(130,8),bI=bkt(150,8);let aF=false,aI=false;
+    for(let si=0;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw)continue;
+     if(tw.fireT>0){bF.add(SLOTS[si][0],SLOTS[si][1]);aF=true;}
+     else{bI.add(SLOTS[si][0],SLOTS[si][1]);aI=true;}}
+    if(aI)bI.each((x,y,n)=>{lite(x,y,62+(Math.min(n,8)-1)*10,.35);});
+    if(aF)bF.each((x,y,n)=>{lite(x,y,95+(Math.min(n,8)-1)*10,.7);});}
    {const b9=bkt(110,10);let any=false;
     for(const u of us2)if(u.fireT>0){b9.add(u.px,u.py-24*CH_UP);any=true;}
     if(any)b9.each((x,y,n)=>{lite(x,y,110+(Math.min(n,8)-1)*8,.8);});}
