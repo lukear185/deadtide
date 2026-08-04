@@ -1692,6 +1692,10 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <canvas id="itr-cv" width="150" height="130" style="width:150px;height:130px;display:block;margin:2px auto;background:var(--paper);border:3px solid var(--ink);border-radius:12px"></canvas>
     <div id="itr-n" style="font-size:19px;font-weight:900;margin-top:6px"></div>
     <div id="itr-s" style="font-size:12px;font-weight:900;color:var(--rust2);margin-top:2px"></div>
+    <!-- 🛡⭐**弱点/耐性はここだけ、1行で簡潔に**(2026-08-04(147)ユーザー「新登場の紹介だけは
+         弱点：炎 耐性：なんとか とかぐらいの分かりやすい感じで残して。文字はごちゃごちゃするから要らない」)。
+         ⚠⚠**割合も説明文も書かない**=絵文字と一語だけ。⚠他の画面には一切出さない((145)(146)で全部外した) -->
+    <div id="itr-af" style="font-size:13px;font-weight:900;margin-top:4px"></div>
     <div id="itr-d" style="font-size:13px;font-weight:700;margin:6px 0 2px"></div>
     <button class="btn gold" id="bt-itr-ok" style="margin-top:8px;width:100%">OK</button>
   </div>
@@ -4238,13 +4242,13 @@ function afTag(type,prc,isTw){
  if(isTw&&type==='elec')return mk('鱗に走る','wk');
  return m.ar<1?mk('硬い敵に弾かれる','rs','弾かれる'):mk('硬い敵にも通る','ok','通る');
 }
-/* 🧟側=そのゾンビの弱点と耐性。装甲も鱗も持たない個体は null(札を出さない)。
-   ⚠こちらは**図鑑の中**なので割合を出してよい(上の掟の「数字を置く場所」がここ) */
+/* 🧟側=そのゾンビの弱点と耐性。装甲も鱗も持たない個体は null(出さない)。
+   ⭐**使うのは🆕新登場の紹介の1画面だけ**(2026-08-04(147)ユーザー「弱点：炎 耐性：なんとか
+     とかぐらいの分かりやすい感じで。文字はごちゃごちゃするから要らない」)。
+   ⚠⚠**割合(45%/×1.9)も説明文も入れない**=絵文字と一語だけ。長くしたくなったらここを疑う。 */
 function afZ(Z){
  if(!Z||(!Z.armor&&!Z.scl))return null;
- const cut=Math.round(ARMOR_CUT*100);
- return{wk:Z.armor?('🔥 火炎の塔が焼く ×'+FIRE_VS_ARMOR.toFixed(1)):('⚡ 電撃の塔が走る ×'+ELEC_VS_SCALE.toFixed(1)),
-  rs:'⚔🔫❄ は弾かれる '+cut+'%'};
+ return{wk:Z.armor?'🔥火炎':'⚡電撃',rs:'⚔近接 🔫実弾 ❄冷気'};
 }
 /* 🎨⭐**特効のダメージ数字は「効いている属性の色」で出す**(2026-08-04(141)ユーザー指示
      「金色は各属性の色にしたい。電気で効いてるなら黄色、火ならオレンジっぽい色、実弾なら若干黒目」)。
@@ -26832,7 +26836,7 @@ function introNext(){
  if(!it){$('md-intro').classList.remove('on');PAUSED=false;return;}
  const cvv=$('itr-cv'),c=cvv.getContext&&cvv.getContext('2d');
  if(c&&c.clearRect)c.clearRect(0,0,cvv.width,cvv.height);
- let hd='',nm='',ds='',st='';
+ let hd='',nm='',ds='',st='',af9=null;/* af9=🧟の弱点/耐性(この画面だけ) */
  try{
   /* ⭐絵は**枠いっぱい**に描く(第91弾)。決め打ちの1.5倍では、大きい物ははみ出し小さい物は豆粒だった */
   if(it.k==='u'){const U=UNITS[it.i];hd='🪖 新しい部隊が使える!';nm=U.n;ds=U.dsc;
@@ -26842,7 +26846,9 @@ function introNext(){
    st='⚙️'+T.cost+' ／ 威力'+T.dmg+' ／ 射程'+(T.rng||'-')+' ／ 間隔'+T.rate+'秒';/* ⛔相性の言葉は外した(145) */
    fitDraw(cvv,cc=>drawTower(cc,it.i,1,0,0,-0.5,0,{}),8);}
   else if(it.k==='z'){const Z=ZOMBIES[it.i];hd='🧟 新種のゾンビが現れる!';nm=Z.n;
-   /* ⛔**相性の割合は外した**(2026-08-04(145))=**特性の名前だけ**にする。⚠書き戻さない */
+   /* ⛔**相性の割合は外した**(2026-08-04(145))=**特性の名前だけ**にする。⚠書き戻さない。
+      ⭐弱点/耐性は下の `itr-af` に1行で出す((147)ユーザー指示。⚠この画面だけ) */
+   af9=afZ(Z);
    const tag=[];if(Z.armor)tag.push('装甲');
    if(Z.scl)tag.push('鱗の鎧');
    if(Z.noblock)tag.push('すり抜け(鎖使いだけが止められる)');
@@ -26852,6 +26858,13 @@ function introNext(){
    fitDraw(cvv,cc=>drawZombie(cc,it.i,0,0,1,.4,0,{}),8);}
  }catch(e){}
  $('itr-h').textContent=hd;$('itr-n').textContent=nm;$('itr-d').textContent=ds;$('itr-s').textContent=st;
+ /* 🛡弱点/耐性の1行。⚠**持っていない個体には出さない**(空の見出しだけ残ると壊れて見える)。
+    ⚠色は「弱点=金 / 耐性=灰」=**戦闘中のダメージ数字と同じ言い方**に揃える */
+ {const e9=$('itr-af');
+  /* ⚠**戦闘中と同じ金/灰にしたら紙色のパネルで白ばんで読めなかった**(撮って直した)=
+     `--gold`も`--dim`も紙(--paper #e8e0ce)と明るさが近い。**パネルの上では濃い色を使う**。 */
+  if(e9)e9.innerHTML=af9?('<span style="color:var(--rust2)">弱点 '+af9.wk+'</span>'
+   +'　<span style="color:var(--steel)">耐性 '+af9.rs+'</span>'):'';}
  $('md-intro').classList.add('on');
 }
 $('bt-itr-ok').onclick=()=>{sfx.buy&&sfx.buy();introNext();};
