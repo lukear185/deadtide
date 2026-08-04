@@ -60,7 +60,9 @@ const SCENES=[
  ['英雄召集',            'META.tk5=0;renderGacha(null);MD("md-gacha");'],
  ['英雄召集(🎫あり)',    'META.tk5=1;renderGacha(null);MD("md-gacha");'],
  ['鍛錬所',              'META.tk5=0;TRTAB="hero";renderTrain();MD("md-train");'],
- ['ゾンビ図鑑',          'TRTAB="zoo";renderTrain();MD("md-train");'],
+ /* 📖(142)図鑑は鍛錬所のタブから**独立した窓(md-zoo)**へ出した=開き方も変える。
+    ⚠古い開き方(TRTAB="zoo")のままだと「鍛える」画面を2回測るだけになる */
+ ['ゾンビ図鑑',          'openZoo();MD("md-zoo");'],
  ['編成',                'renderLoad();MD("md-load");'],
  ['英雄を選ぶ',          'renderHeroPick();MD("md-hpick");'],
  /* ⚠**「←戻る」が出ている形で測る**=たまにしか出ない物こそ入れる(2026-08-03(108)の教訓)。

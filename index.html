@@ -956,6 +956,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .tmc .afu{font-style:normal;font-size:10.5px;font-weight:900;color:var(--paper);opacity:.82}
 .tmc .afu.rs{color:var(--rust2);opacity:1}
 .tmc .afu.wk{color:var(--life);opacity:1}
+/* 🎨⭐**得意の札は戦闘中のダメージ数字と同じ色にする**(2026-08-04(142))=
+   「カードで見た色が、盤面でそのまま出る」ので言葉を覚え直さなくていい。⚠JSの AF_WKC と同じ値にすること */
+.tmc .afu.wk.af-fire,.bm-item .baf.wk.af-fire{color:var(--amber)}
+.tmc .afu.wk.af-elec,.bm-item .baf.wk.af-elec{color:var(--gold)}
 .tmc .onb{position:absolute;left:4px;top:4px;font-size:13px;line-height:1}
 .tmc .hkb{position:absolute;right:4px;top:4px;font-size:13px;line-height:1;text-shadow:0 1px 0 rgba(0,0,0,.5)}
 #buildmenu .bm-us{text-align:left;font-size:13px}
@@ -1242,6 +1246,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><span class="hlb"><b>英雄</b><i id="hm-hero-i"></i></span></button>
         <!-- 🏋鍛錬所: 🔬研究所で🧬300を払うまでは**灰色の錠前**で置いておく(存在を先に見せる) -->
         <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
+        <!-- 📖図鑑: ⚠**最初から押せる**(解放も課金も無い)=相性を学ぶ場所なので初手で要る -->
+        <button class="btn homebt" id="hm-zoo"><span class="hic" id="hm-zoo-ic">📖</span><span class="hlb"><b>ゾンビ図鑑</b><i id="hm-zoo-i"></i></span></button>
         <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
         <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
         <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><span class="hlb"><b>英雄召集</b><i id="hm-gem"></i></span></button>
@@ -4216,24 +4222,29 @@ function afMul(type,prc,isTw){
  const m=afPrc(type,prc,isTw)?1:ARMOR_CUT;
  return{ar:(isTw&&type==='fire')?FIRE_VS_ARMOR:m,sc:(isTw&&type==='elec')?ELEC_VS_SCALE:m};
 }
-/* ⭐一覧に出す札1つぶん。**型の名前ではなく「硬い敵にどうなるか」を書く**
-   =「貫通」と書かれても選べない。
-   {ic,n,e(効果だけ),t(絵+効果),s(絵+割合だけ=幅の無い所用),k}(k=wk得意/rs苦手/ok等倍)
-   ⚠**s は「装甲」の字を落とす**ので、使う画面の見出しに何の割合かを1行だけ書くこと */
+/* ⭐一覧に出す札1つぶん。⭐⭐**数字ではなく「動詞」で書く**(2026-08-04(142)ユーザー
+     「編成とタワーの札もちょっとわかりずらいからもっとほかの方法があるといいね」)。
+   ⚠⚠**それまで「装甲45%」「鱗190%」と割合を書いていた**が、
+     ①何と比べて45%なのかが札の中だけでは分からない
+     ②%は「読んで計算する物」であって、選ぶ時に目で拾える物ではない
+     =数字は**図鑑と見出しの凡例(AF_LEG)にだけ**置き、札は「弾かれる/通る/装甲を焼く」に統一した。
+   ⚠**数字を札に書き戻さない**。詳しい割合を知りたい人の口は AF_LEG が受け持つ。
+   {ic,n,ty,e(長い),s(短い=幅の無い所),t(絵+長い),k}(k=wk得意/rs苦手/ok等倍) */
 function afTag(type,prc,isTw){
  const T=AF_TY[type]||{ic:'🎯',n:type||'?'},m=afMul(type,prc,isTw);
- const mk=(e,k,s)=>({ic:T.ic,n:T.n,e,k,t:T.ic+' '+e,s:T.ic+' '+(s||e)});
+ const mk=(e,k,s)=>({ic:T.ic,n:T.n,ty:type,e,k,s:s||e,t:T.ic+' '+e});
  if(!m||type==='net')return mk(T.n,'');
- if(isTw&&type==='fire')return mk('装甲'+Math.round(m.ar*100)+'%','wk',Math.round(m.ar*100)+'%');
- if(isTw&&type==='elec')return mk('鱗'+Math.round(m.sc*100)+'%','wk','鱗'+Math.round(m.sc*100)+'%');
- return mk('装甲'+Math.round(m.ar*100)+'%',m.ar<1?'rs':'ok',Math.round(m.ar*100)+'%');
+ if(isTw&&type==='fire')return mk('装甲を焼く','wk');
+ if(isTw&&type==='elec')return mk('鱗に走る','wk');
+ return m.ar<1?mk('硬い敵に弾かれる','rs','弾かれる'):mk('硬い敵にも通る','ok','通る');
 }
-/* 🧟側=そのゾンビの弱点と耐性。装甲も鱗も持たない個体は null(札を出さない) */
+/* 🧟側=そのゾンビの弱点と耐性。装甲も鱗も持たない個体は null(札を出さない)。
+   ⚠こちらは**図鑑の中**なので割合を出してよい(上の掟の「数字を置く場所」がここ) */
 function afZ(Z){
  if(!Z||(!Z.armor&&!Z.scl))return null;
  const cut=Math.round(ARMOR_CUT*100);
- return{wk:Z.armor?('🔥 火炎の塔 ×'+FIRE_VS_ARMOR.toFixed(1)):('⚡ 電撃の塔 ×'+ELEC_VS_SCALE.toFixed(1)),
-  rs:'⚔🔫❄ '+cut+'%'};
+ return{wk:Z.armor?('🔥 火炎の塔が焼く ×'+FIRE_VS_ARMOR.toFixed(1)):('⚡ 電撃の塔が走る ×'+ELEC_VS_SCALE.toFixed(1)),
+  rs:'⚔🔫❄ は弾かれる '+cut+'%'};
 }
 /* 🎨⭐**特効のダメージ数字は「効いている属性の色」で出す**(2026-08-04(141)ユーザー指示
      「金色は各属性の色にしたい。電気で効いてるなら黄色、火ならオレンジっぽい色、実弾なら若干黒目」)。
@@ -4244,8 +4255,9 @@ function afZ(Z){
 const AF_WKC={fire:{c:AMBER},elec:{c:GOLD},bullet:{c:STEEL,od:PANE},
  pierce:{c:TECH2,od:PANE},blast:{c:LIFE2,od:PANE},frost:{c:FROST},melee:{c:GOLD2}};
 /* 図鑑・紹介の見出しに1行だけ置く凡例。⚠**掟は1か所にだけ書く**(カード46枚に繰り返さない) */
-const AF_LEG=()=>'🛡装甲・🐟鱗 → <b>⚔🔫❄は'+Math.round(ARMOR_CUT*100)+'%</b>／<b>🗡💣🔥はそのまま</b>'
- +'／🔥火炎の塔は装甲に×'+FIRE_VS_ARMOR.toFixed(1)+'・⚡電撃の塔は鱗に×'+ELEC_VS_SCALE.toFixed(1);
+const AF_LEG=()=>'🛡装甲・🐟鱗の敵 → <b>⚔🔫❄は弾かれる('+Math.round(ARMOR_CUT*100)+'%)</b>'
+ +'／<b>🗡💣🔥はそのまま通る</b>／🔥火炎の塔は装甲を焼く(×'+FIRE_VS_ARMOR.toFixed(1)+')'
+ +'・⚡電撃の塔は鱗に走る(×'+ELEC_VS_SCALE.toFixed(1)+')';
 /* ⭐電撃が次の敵へ跳べる距離(テスラコイル・重テスラで共通)。
    2026-07-27ユーザー指示で150→180(1.2倍)。⚠**2つの塔で同じ値を使う**ので必ずここだけを直すこと */
 const ARC_HOP=180;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
@@ -16583,7 +16595,7 @@ function lupiBall(C,u,bd,grow,hops,cur,dl0,big){
    混み合った時だけ効く。⚠数字を上げると重くなる。 */
 const FX_SPLAT_MAX=80;/* 演出がこれ以上混んでいたら、地面の血の染みは足さない */
 const FX_GACC=.35;    /* 「+⚙️」を足し込む間合い(秒)。これより短い間に倒したら1枚にまとめる */
-const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slash:.26,shock:.5,
+const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slp:.4,slash:.26,shock:.5,
  toss:.3,rkt:.26,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
  beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24};
 /* ⚠寿命が1つずつ違う演出は ex に `lf` を持たせる(投擲=飛ぶ距離で / 死体=大きさで変わる)。
@@ -16788,10 +16800,24 @@ function drawUltWind(c,u,t){
    ⚠それまで `z.armor&&!prc&&type==='bullet'` だったので、**近接・冷気で殴っても45%なのに無反応**
      (硬い敵に近接を出し続けても、何も間違っていないように見えていた)。⭐条件を計算側と同じ式にした。
    ⚠鱗(scl)も同じ45%なのに一度も火花が出ていなかった=②沈んだ港でまるごと抜けていた。 */
+/* 🐟⭐**鱗は「滑る」・装甲は「弾く」で分ける**(2026-08-04(142)ユーザー「にゃんこは色で分けてるけど
+     それはパクリ。圧倒的に分かりやすいやり方」→ ⭐**色のラベルではなく"材質"で言う**と決めた)。
+   ⚠それまで鱗も金属と同じ金色の火花だった=**同じ45%でも、当たった手触りが違うことが伝わらない**。
+   ⭐金属=カツンと跳ねる金色の火花 / 鱗=**ヌルッと逸れる水色のしぶき**。 */
 function hitFx(C,z,ang,col,prc,type){
  if(FXLV<1||!z)return;
- if((z.armor||z.scl)&&!prc)addFx(C,'ric',z.px,z.py-18*CH_UP,'',{ang});
+ if(z.scl&&!prc)addFx(C,'slp',z.px,z.py-18*CH_UP,'',{ang});
+ else if(z.armor&&!prc)addFx(C,'ric',z.px,z.py-18*CH_UP,'',{ang});
  else addFx(C,'hit',z.px,z.py-18*CH_UP,'',{ang,col:col||GOLD});}
+/* 🎆⭐**特効が乗った時だけ出す「材質が負けている」粒**(2026-08-04(142))。
+   🔥装甲が焼ける=オレンジの火の粉が立ちのぼる / ⚡鱗に電気が走る=水色の粒が弾ける。
+   ⚠**数字と同じ色**(`AF_WKC`)にすること=画面の合図を1つの言葉に揃えるため。
+   ⚠継続攻撃は毎コマ呼ばない=塔側の `acc()`(0.35秒に1回)から呼ぶこと。 */
+function wkFx(C,z,ty){
+ if(FXLV<1||!z)return;
+ if(ty==='fire')addP(C,5,z.px+rnd(-7,7),z.py-16*CH_UP,{sp:34,up:70,g:-40,life:.5,r:2.4,col:AMBER});
+ else if(ty==='elec')for(let i=0;i<4;i++)
+  addP(C,1,z.px+rnd(-11,11),z.py-rnd(6,34)*CH_UP,{sp:150,spread:6.3,g:0,life:.16,r:1.8,col:FROST});}
 /* ⭐投げた物が山なりに飛ぶ絵(2026-07-26 第65弾)。飛んでいる秒数を返す(0=飛ばさずその場で発動)。
    ⚠当たり判定は今までどおり即時のまま=数値のバランスには一切触っていない。
    見た目だけ「投げる→飛ぶ→着弾して爆発」の順に並べ替えている(爆発は later() で遅らせる) */
@@ -17051,6 +17077,7 @@ function dmgZ(C,z,d,armorPierce,quiet,wk){
  /* 🛡⭐**相性は数字の色で言う**(2026-08-04(139))=場所を1pxも使わずに全部の攻撃に効く。
     ⚠色を変えるだけ(filter も影も使わない)なので、1コマの時間には響かない。 */
  if(!quiet&&!rice0&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)),afk9?{af:afk9,aty:wk||''}:null);
+  if(afk9==='wk')wkFx(C,z,wk);/* 🎆材質が負けている粒(継続攻撃は quiet なのでここを通らない=塔側で出す) */
   if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28*CH_UP,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
@@ -18227,6 +18254,7 @@ function campStep(C,dt,wave){
     if(tw.dnT<=0){tw.dnT=.35;
      if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){
       addFx(C,'dmg',z0.px+rnd(-8,8),z0.py-44*CH_UP,''+Math.max(1,Math.round(tw.dacc)),af?{af,aty:aty||''}:null);
+      if(af==='wk')wkFx(C,z0,aty);/* 🎆0.35秒に1回=継続攻撃でも粒が湧きすぎない */
       if(FXLV>0&&Math.random()<.5)addFx(C,'blood',z0.px,z0.py-28*CH_UP,'',{sd:rnd(0,9)});}
      tw.dacc=0;}};
    if(T.heatN){/* レーザー塔: 同じ敵を焼き続けるほど威力が上がる(最大 twHeatM 倍) */
@@ -19744,6 +19772,17 @@ function renderCamp(C,t){
     if(r1<=r0)continue;
     c.beginPath();c.moveTo(Math.cos(aa)*r0,Math.sin(aa)*r0*.7);c.lineTo(Math.cos(aa)*r1,Math.sin(aa)*r1*.7);c.stroke();}
    c.globalAlpha=1;c.restore();}
+  else if(e.k==='slp'){/* 🐟鱗に逸らされた=**ヌルッと滑る**。⚠金属(ric)と混ざらないよう
+     ①色は水色 ②直線ではなく**弧**で逃がす ③飛沫の粒を1つ落とす=手触りが金属と別物になる */
+   const a4=Math.max(0,1-e.t/fxLife('slp'));
+   c.save();c.translate(e.x,e.y);c.globalAlpha=a4;
+   c.strokeStyle=FROST;c.lineWidth=2.2;c.lineCap='round';
+   const ba=(e.ang||0)+Math.PI+1.5;
+   for(let i4=0;i4<2;i4++){const r0=6+e.t*120,sw=.9+i4*.5;
+    c.beginPath();c.arc(0,0,r0+i4*7,ba-sw*.5,ba+sw*.5);c.stroke();}
+   c.fillStyle=TECH;c.globalAlpha=a4*.9;
+   c.beginPath();c.arc(Math.cos(ba)*(9+e.t*110),Math.sin(ba)*(9+e.t*110)*.7+e.t*46,2.2+a4*2,0,7);c.fill();
+   c.lineCap='butt';c.globalAlpha=1;c.restore();}
   else if(e.k==='shock'){/* 重い砲の発射で床が押される衝撃波。⚠時間差(d0)で出す時があるので待った分を引く */
    const tt=e.t-(e.d0||0),a4=Math.max(0,1-tt/fxLife('shock',e)),rr=(e.r||54)*tt*3.4;
    c.strokeStyle=e.col||'#fff0c8';
@@ -20736,7 +20775,7 @@ function openBM(si){
    else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
    /* 🛡⭐**硬い敵への通り方を札で出す**(2026-08-04)=盤面で建てる時に一番効く情報 */
    const at9=afTag(T.type,T.pierce,true);
-   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="baf ${at9.k}">${at9.t}</span><span class="bc">⚙️${T.cost}</span></div>`;}
+   h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="baf ${at9.k} af-${at9.ty}">${at9.ic} ${at9.s}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
   if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所で『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
@@ -26846,9 +26885,13 @@ function renderLoad(){
   for(let k=T9.length;k<TEAM_N;k++)h+='<div class="tmo emp">＋</div>';
   h+='</div>';
   /* ⚠**注意書きは消した**(2026-08-02(68))=毎回読む物ではないのに毎回場所を取っていた。 */
-  /* 🛡⭐札の「45%/100%」が何の割合かは**ここに1行だけ**書く(札には書かない=幅が無い) */
+  /* 🛡⭐**印の意味はここに1行だけ**書く(カードには書かない=1文字ぶんの幅も無い)。
+     ⚠⚠**カードの札を言葉にしたら「弾かれ」で切れた**(2026-08-04(142)に撮って発覚)=
+       カード幅は⚙️の値と合わせて8文字ぶんしか無い。⭐**戦闘中のダメージ数字と同じ ▲▼ に統一**した
+       =盤面で見る印とカードで見る印が同じなので、覚え直しが要らない。
+     ⚠**言葉で出したいなら建設メニュー(1行まるごと使える)か英雄ステータスの方へ**。 */
   h+='<div class="ldhdr">🪖 入れる兵科<span class="lsub">持っている '+own+'種・押すと入れる/外す'
-   +'　％=🛡装甲・🐟鱗への通り</span></div>';
+   +'　🛡装甲・🐟鱗の敵に <b>▼</b>=弾かれる／印なし=通る</span></div>';
   h+='<div class="tmgrid" id="tm-grid">';
   for(let i=0;i<own;i++){
    const U=UBASE[i];if(!U)continue;
@@ -26865,7 +26908,7 @@ function renderLoad(){
     /* ⚠**行を増やさない**=札が1行伸びると、一覧の1行目の下端が箱から切れて相性だけ見えなくなる
        (撮って気づいた)。⭐⚙️の値と同じ行に置く(数字は2つまで。掟) */
     +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))
-      +' <em class="afu '+at9.k+'">'+at9.s+'</em></span></button>';}
+      +' <em class="afu '+at9.k+' af-'+at9.ty+'">'+at9.ic+(at9.k==='rs'?'▼':at9.k==='wk'?'▲':'')+'</em></span></button>';}
   h+='</div>';
   /* ⭐持っているのが固定2種だけの時は「押せる物ゼロ」で故障に見える=次にやる事を1行だけ。
      ⚠auto-fillのgridでは grid-column:1/-1 が1列ぶんに潰れる=**箱の外**に置く */
@@ -28311,11 +28354,13 @@ function renderTrain(){
  const mt=$('tr-mat2');if(mt)mt.innerHTML=IC('🔧 ')+fmt(META.hmat||0);
  const tb=$('tr-tabs');
  /* ⚠**⚔冒険のタブは出さない**(2026-08-03。DQ式は考え直しでお蔵入り。renderAdv のコードは残してある) */
- if(tb){tb.innerHTML=[['hero','🦸 鍛える'],['zoo','📖 ゾンビ図鑑']].map(x=>
-   '<button class="tb'+(TRTAB===x[0]?' on':'')+'" data-tt="'+x[0]+'">'+x[1]+'</button>').join('');
-  tb.querySelectorAll('[data-tt]').forEach(e=>{e.onclick=()=>{TRTAB=e.dataset.tt;renderTrain();};});}
- const ft=$('tr-foot');if(ft&&ft.style)ft.style.display=TRTAB==='hero'?'':'none';
- if(TRTAB==='zoo')renderZoo(box);else if(TRTAB==='adv')renderAdv(box);else renderTrHero(box);
+ /* 📖**ゾンビ図鑑のタブも外した**(2026-08-04(142))=ホームの独立タイルへ出した(1画面1目的の掟)。
+    ⭐**残りが「鍛える」1つだけになったので、タブの帯そのものを出さない**
+    (押しても何も変わらないタブは「壊れている」に見える)。⚠renderZoo/renderAdv は残してある。 */
+ TRTAB='hero';/* ⚠古いセーブや再入場で 'zoo' が残っていても必ず戻す */
+ if(tb){tb.innerHTML='';if(tb.style)tb.style.display='none';}
+ const ft=$('tr-foot');if(ft&&ft.style)ft.style.display='';
+ renderTrHero(box);
 }
 function renderTrHero(box){
  const hint=$('tr-hint');
@@ -30067,6 +30112,9 @@ function renderHome(){
  updHomeTrain();
  {const li=$('hm-lab-ic');if(li)li.innerHTML=icoImg('ic-lab','🔬');
   const lp=$('hm-lab-pts');if(lp)lp.innerHTML=IC('🧬')+fmt(META.pts||0);}
+ /* 📖図鑑タイル。⭐**登録数を札に出す**=「まだ埋まっていない」が押す前に分かる(2026-08-04(142)) */
+ {const zi=$('hm-zoo-ic');if(zi)zi.innerHTML=IC('📖');
+  const zn=$('hm-zoo-i');if(zn)zn.textContent=ZOMBIES.filter(z=>zcSeen(z.id)).length+' / '+ZOMBIES.length+' 種';}
  {const gi=$('hm-gacha-ic');if(gi)gi.innerHTML=icoImg('ic-gem','💎');
   /* 🎫持っている時は札に出す=召集の窓を開かないと気付けない、をなくす */
   const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0)
@@ -30205,6 +30253,11 @@ $('hm-stk').onclick=()=>{renderStkPick();$('md-stk').classList.add('on');};
 $('hm-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
 /* 🏋鍛錬所(2026-08-03にホームへ移した。⚠タイトルのボタンは出さない) */
 $('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
+/* 📖⭐**図鑑はホームの独立タイルから開く**(2026-08-04(142)ユーザー「図鑑はテストモードにしかない」)。
+   ⚠⚠それまでの口は①タイトルの `bt-zoo`(**DEV専用**)②鍛錬所のタブ(**🔬研究所で🧬300を払って
+     『ヒーロー鍛錬所』を買うまでホームにタイルすら出ない**)の2つだけ=**素で遊ぶと存在しなかった**。
+   ⭐相性を学ぶ場所は**最初から押せる**こと。窓(`md-zoo`)と `openZoo()` は前からあったので繋いだだけ。 */
+$('hm-zoo').onclick=()=>{openZoo();};
 $('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');};
 $('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
