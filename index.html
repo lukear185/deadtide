@@ -32496,7 +32496,17 @@ const CUP_RD=5;                 /* 1組の回数 */
 const CUP_CNT=3;                /* (167)始まる前に数える秒数 */
 const cupN=d=>3+Math.floor((d-1)/2);          /* カップの数 3〜7 */
 const cupSw=d=>4+d*2;                          /* 入れ替える回数 6〜24 */
-const cupDur=d=>Math.max(.19,.64-(d-1)*.05);   /* 1回の入れ替えにかける秒 .64→.19 */
+const cupDur=d=>Math.max(.19,.64-(d-1)*.05);   /* 1回の入れ替えにかける秒 .64→.19(=最後の速さ) */
+/* ⏩⭐(170)**入れ替えは「最初ゆっくり→だんだん速く」**(ユーザー指示「難易度高いやつも最初は遅くて
+   どんどん早くなるように。全体的にカップ移動しはじめの最初はゆっくりで」)。
+   ⚠**難易度に関係なく、1手目は必ずゆっくり**=`CUP_D0` から始めて、その難易度の速さまで落としていく。
+   ⚠**書き戻さない**=前は最初から最高速だったので、目で追い始める前に終わっていた。
+   📐k手目の秒数 = 目標 +(始め - 目標)×(1 - k/N)。N=その回の入れ替え数の4割(最低3手)。 */
+const CUP_D0=.62;
+const cupDurAt=(A,k)=>{
+ const st=Math.max(CUP_D0,A.dur*1.2),n=Math.max(3,Math.round(A.plan.length*.4));
+ return A.dur+(st-A.dur)*Math.max(0,1-k/n);
+};
 const cupPair=d=>(d>=6?2:1);                   /* 同時に入れ替わる組の数 */
 let CUP=null,CUPLV=1;
 /* 記録=難易度ごとの最高正解数。⚠**META に持つ**(セーブに残す)=挑む理由になる */
@@ -32526,7 +32536,7 @@ function cupSlot(A,i){
  /* i=カップ番号 → 画面の席(小数。入れ替え中は間を取る) */
  let sl=A.pos[i];
  if(A.ph==='mix'&&A.k<A.plan.length){
-  const pairs=A.plan[A.k],q=Math.min(1,A.t/A.dur);
+  const pairs=A.plan[A.k],q=Math.min(1,A.t/cupDurAt(A,A.k));
   for(const p of pairs){
    if(sl===p[0])return p[0]+(p[1]-p[0])*q;
    if(sl===p[1])return p[1]+(p[0]-p[1])*q;}}
@@ -32537,7 +32547,7 @@ const cupX=(A,sl,w)=>{const gap=Math.min(w/(A.n+1),w*.9/A.n);return w*.5+(sl-(A.
 /* 入れ替え中の「持ち上がり」=すれ違いが見えるように、片方だけ弧を描く */
 const cupLift=(A,i)=>{
  if(A.ph!=='mix'||A.k>=A.plan.length)return 0;
- const sl=A.pos[i],q=Math.min(1,A.t/A.dur);
+ const sl=A.pos[i],q=Math.min(1,A.t/cupDurAt(A,A.k));
  for(const p of A.plan[A.k])if(sl===p[0]||sl===p[1])return Math.sin(q*Math.PI)*(sl===p[0]?1:-.45);
  return 0;
 };
@@ -32598,7 +32608,7 @@ function cupStep(dt){
    if(CUPB&&!CUPB.cur&&CUPB.n>0&&Math.random()<CUP_BP){CUPB.cur={k:ri(0,1),t:0};CUPB.n--;}
    if(!A.plan.length)A.ph='pick';}}
  else if(A.ph==='mix'){
-  if(A.t>=A.dur){
+  if(A.t>=cupDurAt(A,A.k)){
    /* 台本の1手を確定させる(⚠pos は「カップ番号→席」なので、席で探して入れ替える) */
    const pairs=A.plan[A.k];
    for(const p of pairs){
