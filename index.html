@@ -19901,7 +19901,8 @@ let BGL1=null,BGL2=null,BGKEY='',BGRC=null;
 /* 🔥(175)ビネットの焼き込み。⚠**濃さが変わった時だけ焼き直す**(鍵=濃さと大きさ) */
 let VGC=null,VGK='';
 /* 💥(175)爆発の「加算の色」を出す上限(1コマ)。⚠**暗がり削り(lite)は頭切りしない**(泥色になる) */
-const BOOM_G=4;
+const BOOM_G=3;/* ⚠(176)4→3 */
+const BOOM_L=5;/* 💥(176)爆発の暗がり削りの升の上限。⚠**半径は升の中の最大**を採るので暗くなりすぎない */
 /* 地面と道路の質感。ステージを読み込むたびに作り直す(道の形が変わるとひび割れの位置も変わるため) */
 function makeScenery(){
  /* 🖼⚠⚠(124)**作り直したら焼き込みを捨てる**=ムラもひびも道もここで変わるので、
@@ -21017,7 +21018,7 @@ function renderCamp(C,t){
    /* ⚠(175)**上限 10→6**(ユーザー了承)=1升につき lite と glow の**2枚**出すので、
       10だと実効20枚になっていた。⚠消えるのは**地面に落ちる暖色のにじみ**だけで、
       **炎の粒はそのまま**=燃えているのは変わらず見える。 */
-   {const b9=bkt(120,6);let any=false;
+   {const b9=bkt(150,4);let any=false;/* ⚠(176)6→4・升目も120→150(火炎放射塔は周りにも燃焼を配る) */
     for(const z of C.zombies)if(z.burnT>0){b9.add(z.px,z.py-14*CH_UP);any=true;}
     if(any)b9.each((x,y,n)=>{const r=70+(Math.min(n,8)-1)*9;
      lite(x,y,r,.6);glow.push([x,y,r*.86,Math.min(.5,.3+(n-1)*.025),'255,140,60']);});}
@@ -21029,6 +21030,11 @@ function renderCamp(C,t){
    /* ⚡電撃(テスラ・コイル)。⚠**1本の稲妻が「点の数だけ」灯りを出していた**=
       連鎖する塔を並べると一気に増える枠。⚠色が違うので炎とは別の升目にする */
    const bmG=[];/* 💥(175)爆発の加算の光=あとで大きい順に BOOM_G 枚だけ採る */
+   /* 💥(176)爆発の暗がり削り=升目でまとめる。⚠**半径は升の中の最大**を採る(最小だと泥色になる) */
+   const bmL=(()=>{const m=new Map();return{
+    add(x,y,r){const k=Math.round(x/110)*8192+Math.round(y/110),e=m.get(k);
+     if(e){e.n++;e.x+=x;e.y+=y;e.r=Math.max(e.r,r);}else m.set(k,{n:1,x,y,r});},
+    each(f){let i=0;for(const e of m.values()){if(i++>=BOOM_L)break;f(e.x/e.n,e.y/e.n,e.r);}}};})();
    const zb=bkt(100,6);let zany=false;/* ⚠(175)10→6(1升につき lite+glow の2枚出るため) */
    for(const e of C.fx){
     /* ⭐⚠**火球の上の暗がりを必ず外すこと**(2026-07-27 第106弾)。
@@ -21043,11 +21049,19 @@ function renderCamp(C,t){
        ⚠**大きい順に配る**=小さい爆発が切られるので目立たない(擲弾砲台を並べた時が本番)。 */
     if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0),du=(e.k==='boomL'?.7:.5);
      if(tt>=0&&tt<du){const bb2=(e.k==='boomL'?1.8:1),R2=(24+clamp(tt/du,0,1)*54)*bb2;
-      lite(e.x,e.y,R2*1.3,1);bmG.push([e.x,e.y,R2*1.5,.5*Math.max(0,1-tt/du),'255,150,50']);}}
+      /* 💥⭐⭐(176)**爆発の暗がり削りも升目でまとめる**(2026-08-05ユーザー「やってみて」)。
+         ⚠⚠それまで**1発につき1枚**で頭切りが無く、爆裂砲台を並べた時の一番大きい山だった。
+         ⚠**(106)の「まとめない」の理由は「光の大きさが嘘になる」**だったが、
+           ⭐**升の中の一番大きい火球に合わせれば嘘にならない**=足りないから泥色になるのであって、
+           **大きすぎる方は害が無い**(暗がりを余分に削るだけ)。⚠**小さい方に合わせては絶対にいけない**。
+         ⚠加算の色(glow)は今までどおり別で、大きい順に BOOM_G 枚。 */
+      bmL.add(e.x,e.y,R2*1.3);
+      bmG.push([e.x,e.y,R2*1.5,.5*Math.max(0,1-tt/du),'255,150,50']);}}
     else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){zb.add(p4[0],p4[1]);zany=true;}
    }
    if(zany)zb.each((x,y,n)=>{const r=90+(Math.min(n,8)-1)*6;
     lite(x,y,r,.85);glow.push([x,y,r*.84,Math.min(.6,.45+(n-1)*.02),'150,225,255']);});
+   bmL.each((x,y,r)=>{lite(x,y,r,1);});/* 💥(176)まとめた暗がり削り */
    /* 💥(175)爆発の加算の光は**大きい順に BOOM_G 枚まで** */
    if(bmG.length){bmG.sort((p,q)=>q[2]-p[2]);
     for(let i9=0;i9<Math.min(BOOM_G,bmG.length);i9++)glow.push(bmG[i9]);}
