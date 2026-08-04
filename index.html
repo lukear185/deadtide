@@ -68,7 +68,11 @@ input.tx{border:3px solid var(--ink);border-radius:12px;padding:10px;font-size:1
 text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10px 0 var(--rust2)}
 .logo em{font-style:normal;color:var(--toxic)}
 .logo-jp{font-size:15px;font-weight:900;color:var(--paper);opacity:.9;letter-spacing:4px;margin-top:6px;text-shadow:2px 2px 0 #000}
-.menu{display:flex;flex-direction:column;gap:12px;width:min(320px,86vw);margin-top:16px}
+/* ⚠⚠**幅を決めた箱は `margin:auto` を付けないと中央に来ない**(2026-08-04(154)ユーザー実機指摘
+   「中心からズレてるってことだよ?」)。⭐**`.center`(text-align:center)は文字しか中央に寄せない**ので、
+   幅 320px の `.menu` は親の左端に貼り付いたままだった=⏸一時停止の窓でボタン3つが**左に寄っていた**
+   (タイトルは親が flex+align-items:center なので偶然中央に見えていた=気づけなかった)。 */
+.menu{display:flex;flex-direction:column;gap:12px;width:min(320px,86vw);margin:16px auto 0}
 /* タイトルはロゴとメニューを縦に積む。⚠横画面のスマホ(高さ393px)だとロゴが画面外へ出て
    ボタンも下2つが切れるので、下の @media で左右2カラムに切り替える(2026-07-25) */
 .titlewrap{display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;
