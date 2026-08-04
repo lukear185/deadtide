@@ -121,6 +121,8 @@ aliases: [引き継ぎ]
 ## テスト手順(Node.js=`C:\Program Files\nodejs\node.exe`)
 ```
 node tool_bench.js      # ⏱**「重い」と言われたら最初にこれ**(場面ごとの1コマの時間。ui で画面と必殺も)
+node tool_paint.js      # 🔥**「熱い」と言われたらこれ**(塗った面積とグラデの枚数。時間には出ない)
+                        #   ⭐実機で見るなら **?perf=1**(画面の下に「塗り○倍/グラデ○枚/内訳」)
 node tool_release.js    # ⭐毎回これ1本。6本を順に流して1本でも落ちたら止まる(約40秒)
 node tool_release.js --quick   # 重い2本を飛ばす(数秒)
 node test_shot.js out.png 852 393 [オプション]  # ⭐見た目は必ず撮って目視。一覧は NOTES_道具

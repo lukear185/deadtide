@@ -1155,6 +1155,12 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
  font-family:inherit;font-weight:900;font-size:20px;line-height:1.1;cursor:pointer}
 #arcbtn i{display:block;font-style:normal;font-size:10.5px;color:var(--paper3);margin-top:1px}
 #arcbtn:active{transform:translateY(2px)}
+/* 🔥(174)塗りの物差し。⚠**?perf=1 の時だけ出す**(素の遊びでは絶対に出さない) */
+#perfbox{position:fixed;left:0;right:0;bottom:0;z-index:99;display:none;pointer-events:none;
+ background:rgba(10,8,6,.78);color:var(--pane);font-size:11.5px;font-weight:900;line-height:1.35;
+ padding:3px 8px;font-variant-numeric:tabular-nums}
+body.perf #perfbox{display:block}
+#perfbox b{color:var(--gold)}
 #scr-arc{display:none;position:absolute;inset:0;overflow:hidden}
 #scr-arc.on{display:block}
 #arcbg{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -1969,6 +1975,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 </div>
 
 <div id="toasts"></div>
+<!-- 🔥(174)塗りの物差し(?perf=1 の時だけ出す)。⚠**押す所ではない** -->
+<div id="perfbox"></div>
 <div id="errbox"></div>
 <script>
 'use strict';
@@ -2389,6 +2397,90 @@ const LAB_UU0=lv=>Math.round(330*Math.pow(2.6515,lv)); /* 開始時の部隊枠+
 const metaPay=()=>soloMeta()?1+.06*(META.py0||0):1;
 const metaCd=()=>soloMeta()?1-.06*(META.cd0||0):1;
 const metaEco=()=>soloMeta()?1+.12*(META.ec0||0):1;
+/* ============ 🔥 塗りの物差し(?perf=1) — 2026-08-05(174)ユーザー指示で作った ============
+   ⚠⚠**作った理由**=(173)の「重くはないのにスマホが熱くなる」を tool_bench が**素通りした**。
+     あれは**1コマの時間**を測る道具なので、**塗った面積(オーバードロー)**は見えない。
+     熱さ ≒ **1コマで塗ったピクセル数** と **ラジアルグラデの生成枚数** なので、そこを直接数える。
+   ⭐**実機で動く**のが肝=熱くなる端末そのもので測れる。⚠出すのは ?perf=1 の時だけ。
+   ⚠⚠**計測そのものが少し重い**(全部の塗りを包む)ので、素の遊びでは絶対に有効にしない。
+   📌当て方=①?perf=1 で遊ぶ ②「塗り 画面の何倍」と「グラデ枚数」を見る
+     ③**札(タグ)ごとの内訳**で犯人を特定する ④構造で潰す(升目でまとめる/焼き込む)。 */
+/* ⚠**location が無い所(検査のスタブ)でも落ちないこと**=ここは読み込みの最初に通るので、
+   素で書くと test_layout の LOAD が丸ごと落ちる(実際に落とした) */
+const PERF=/[?&]perf=1/.test((typeof location!=='undefined'&&location.search)||'');
+const PF={on:PERF,tag:'',fr:0,t0:0,
+ /* 1コマぶん。area=塗った面積(px) / grad=グラデ生成 / call=塗りの呼び出し */
+ cur:{area:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0},ctx:null,sc:1,
+ tags:{},acc:null,n:0,last:'',px:1};
+function pfTag(t){if(PF.on)PF.tag=t||'';}
+function pfAdd(k,v,ar){
+ if(!PF.on)return;
+ if(ar&&PF.ctx){try{const m=PF.ctx.getTransform();PF.sc=Math.abs(m.a*m.d-m.b*m.c)||1;}catch(e){PF.sc=1;}}
+ /* ⚠⚠**面積は「変換をかけた後」で数える**=盤面は寄り(SC≒0.4)の中で描くので、
+    世界座標のまま数えると**実際に塗る画素の約6倍**に見える(最初の版でそれをやって
+    ビネットが48倍と出た)。⭐getTransform の行列式で潰す。 */
+ PF.cur[k]+=v;if(ar)PF.cur.area+=ar*PF.sc;
+ const t=PF.tag||'その他',e=PF.tags[t]||(PF.tags[t]={area:0,grad:0,fill:0,stroke:0,img:0});
+ /* ⚠**札の方にも縮尺を掛ける**(掛け忘れると内訳の合計が全体と合わない=最初にそれをやった) */
+ if(e[k]!=null)e[k]+=v;if(ar)e.area+=ar*PF.sc;
+}
+/* ⭐**ctx を包んで数える**。⚠**面積は「そのパスの見当」**=arc は πr²・rect は w×h・
+   線は 長さ×太さ。厳密でなくてよい(桁で犯人が分かればよい)。 */
+function pfHook(){
+ if(!PF.on||PF.hooked)return;PF.hooked=1;
+ const C=window.CanvasRenderingContext2D&&window.CanvasRenderingContext2D.prototype;
+ if(!C)return;
+ const A=(o,n,f)=>{const g=o[n];if(g)o[n]=f(g);};
+ /* パスの見当を貯める入れ物(ctxごと) */
+ const pa=o=>{if(o.__pa==null){o.__pa=0;o.__pl=0;o.__lx=0;o.__ly=0;}return o;};
+ A(C,'beginPath',g=>function(){pa(this).__pa=0;this.__pl=0;return g.apply(this,arguments);});
+ A(C,'moveTo',g=>function(x,y){pa(this).__lx=x;this.__ly=y;return g.apply(this,arguments);});
+ A(C,'lineTo',g=>function(x,y){const o=pa(this);o.__pl+=Math.hypot(x-o.__lx,y-o.__ly);o.__lx=x;o.__ly=y;return g.apply(this,arguments);});
+ A(C,'arc',g=>function(x,y,r){const o=pa(this);o.__pa+=Math.PI*r*r;o.__pl+=2*Math.PI*r;o.__lx=x+r;o.__ly=y;return g.apply(this,arguments);});
+ A(C,'ellipse',g=>function(x,y,rx,ry){const o=pa(this);o.__pa+=Math.PI*rx*ry;o.__pl+=Math.PI*(rx+ry);o.__lx=x+rx;o.__ly=y;return g.apply(this,arguments);});
+ A(C,'rect',g=>function(x,y,w,h){const o=pa(this);o.__pa+=Math.abs(w*h);o.__pl+=2*(Math.abs(w)+Math.abs(h));return g.apply(this,arguments);});
+ A(C,'fill',g=>function(){PF.ctx=this;pfAdd('fill',1,pa(this).__pa);return g.apply(this,arguments);});
+ A(C,'stroke',g=>function(){const o=pa(this);PF.ctx=this;pfAdd('stroke',1,o.__pl*Math.max(1,this.lineWidth||1));return g.apply(this,arguments);});
+ A(C,'fillRect',g=>function(x,y,w,h){PF.ctx=this;pfAdd('fill',1,Math.abs(w*h));return g.apply(this,arguments);});
+ A(C,'strokeRect',g=>function(x,y,w,h){pfAdd('stroke',1,2*(Math.abs(w)+Math.abs(h))*Math.max(1,this.lineWidth||1));return g.apply(this,arguments);});
+ A(C,'drawImage',g=>function(im,a,b,c2,d,e,f,w2,h2){
+  const W=(w2!=null?w2:(c2!=null?c2:(im&&(im.width||0)))),H=(h2!=null?h2:(d!=null?d:(im&&(im.height||0))));
+  PF.ctx=this;pfAdd('img',1,Math.abs((W||0)*(H||0)));return g.apply(this,arguments);});
+ A(C,'createRadialGradient',g=>function(){pfAdd('grad',1,0);return g.apply(this,arguments);});
+ A(C,'createLinearGradient',g=>function(){pfAdd('grad',1,0);return g.apply(this,arguments);});
+ /* ⚠**この2つは NOTES で禁止**=使った瞬間に数えて札に出す(見つけたら必ず外す) */
+ try{const df=Object.getOwnPropertyDescriptor(C,'filter');
+  if(df&&df.set)Object.defineProperty(C,'filter',{configurable:true,get:df.get,
+   set:function(v){if(v&&v!=='none')pfAdd('filt',1,0);return df.set.call(this,v);}});}catch(e){}
+ try{const ds=Object.getOwnPropertyDescriptor(C,'shadowBlur');
+  if(ds&&ds.set)Object.defineProperty(C,'shadowBlur',{configurable:true,get:ds.get,
+   set:function(v){if(v>0)pfAdd('shad',1,0);return ds.set.call(this,v);}});}catch(e){}
+}
+/* 1コマの終わりに締める。⚠**画面の面積で割る**=「画面の何倍塗ったか」にすると端末をまたいで比べられる */
+function pfFrame(){
+ if(!PF.on)return;
+ const cv=$('cv'),px=Math.max(1,(cv&&cv.width*cv.height)||(innerWidth*innerHeight));
+ /* ⚠**札は毎コマ捨てる**=最後に立てた札(ビネット)が次のコマの頭まで付いて回り、
+    そこが不当に太って見える(最初の版でそれをやった) */
+ PF.tag='';PF.px=px;PF.fr++;
+ const a=PF.acc||(PF.acc={area:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0,n:0});
+ for(const k in PF.cur)a[k]+=PF.cur[k];a.n++;
+ for(const k in PF.cur)PF.cur[k]=0;
+ const now=performance.now();
+ if(!PF.t0)PF.t0=now;
+ if(now-PF.t0>=500){
+  const n=Math.max(1,a.n),o=$('perfbox');
+  const top=Object.keys(PF.tags).map(t=>({t,a:PF.tags[t].area/n,g:PF.tags[t].grad/n}))
+   .sort((x,y)=>y.a-x.a).slice(0,5)
+   .map(x=>x.t+' '+(x.a/px).toFixed(2)+'倍'+(x.g>=.5?('/グ'+x.g.toFixed(0)):'')).join('　');
+  if(o)o.innerHTML='🔥塗り <b>'+(a.area/n/px).toFixed(2)+'倍</b>　グラデ <b>'+(a.grad/n).toFixed(1)
+   +'</b>　塗<b>'+(a.fill/n).toFixed(0)+'</b> 線<b>'+(a.stroke/n).toFixed(0)+'</b> 画<b>'+(a.img/n).toFixed(0)+'</b>'
+   +((a.filt||a.shad)?'　<span style="color:#ff5a4a">⚠filter'+(a.filt/n).toFixed(1)+' 影'+(a.shad/n).toFixed(1)+'</span>':'')
+   +'<br><span style="opacity:.8;font-size:10px">'+top+'</span>';
+  PF.acc=null;PF.tags={};PF.t0=now;
+ }
+}
+try{pfHook();if(PERF)document.body.classList.add('perf');}catch(e){}
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -9651,6 +9743,7 @@ function sclWet(hex,f){
  return '#'+[m(16),m(8),m(0)].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
 function drawZombie(c,zi,x,y,dir,t,ph,o){
+ pfTag('敵');
  o=o||{};
  /* ⭐2度描き(?v2=1の時だけ)。⚠**o.v2 で再入を止める**=無限に呼び合う */
  if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
@@ -11935,6 +12028,8 @@ function drawCont(c,T,sx,sy,tw,t){
  c.restore();c.globalAlpha=1;c.lineCap='butt';
 }
 function drawTower(c,ti,lv,x,y,ang,t,o){
+ pfTag('塔');
+ pfTag('塔');
  o=o||{};
  if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
   drawTower(silLayer(c,VEC2_W,INK),ti,lv,x,y,ang,t,o1);
@@ -15466,6 +15561,7 @@ function bUlt(c,o,t){
  return ()=>{UL_HA=UL_HX=UL_HY=0;c.restore();};
 }
 function drawUnit(c,ui,x,y,dr,t,ph,o){
+ pfTag('部隊');
  o=o||{};
  /* ⭐溜めの構えを型ごとに変えるため、攻撃の型を o に載せて各体へ渡す(uChgUp が読む) */
  if(o.mk==null)o.mk=uMotK(ui);
@@ -19895,6 +19991,7 @@ function bgCache(C,tod,dk,PAL){
  }catch(e){return null;}
 }
 function renderCamp(C,t){
+ pfTag('地面');/* 🔥(174)ここから盤面。⚠札は節ごとに立て直す(前の札が付いて回らないように) */
  fitCanvas();const c=ctx;
  const wv=MODE==='client'?(CS.w||1):(G?G.wave:1);
  c.setTransform(1,0,0,1,0,0);
@@ -20859,6 +20956,7 @@ function renderCamp(C,t){
   /* 発砲/爆発の光は「暗さを削る」だけだと時間帯の色と同じに見えるので、
      位置を控えておいて後から暖色(電撃だけ青白)を加算で乗せる */
   const glow=[];
+  pfTag('灯り');/* 🔥(174)ここから先の塗りは「灯り」に付ける(?perf=1 の時だけ数える) */
   const lite=(x,y,r,a)=>{const g2=c.createRadialGradient(x,y,0,x,y,r);
    g2.addColorStop(0,'rgba(0,0,0,'+a+')');g2.addColorStop(.55,'rgba(0,0,0,'+(a*.45)+')');g2.addColorStop(1,'rgba(0,0,0,0)');
    c.fillStyle=g2;c.beginPath();c.arc(x,y,r,0,7);c.fill();};
@@ -20938,6 +21036,7 @@ function renderCamp(C,t){
     c.fillStyle=g3;c.beginPath();c.arc(w[0],w[1],w[2],0,7);c.fill();}}
   c.restore();
   /* 時間帯の色被り(ごく薄く)+控えめなビネット */
+  pfTag('ビネット');
   c.save();c.globalCompositeOperation='source-over';
   if(tod<.3)c.fillStyle='rgba(255,190,120,'+((.3-tod)*.2)+')';
   else if(tod>.42&&tod<.72)c.fillStyle='rgba(255,150,80,'+((.15-Math.abs(tod-.57)*.5))+')';
@@ -32934,10 +33033,12 @@ try{
  $('arc-again').onclick=()=>arcPlay();
  $('arc-home').onclick=()=>arcOpen();
 }catch(e){}
+
 let last=performance.now();
 function loop(now){
  try{loopBody(now);}catch(e){/* 1フレームの例外でゲーム全体を止めない */
   try{window.onerror(e.message,'',0);}catch(x){}}
+ try{pfFrame();}catch(e){}
  requestAnimationFrame(loop);
 }
 function loopBody(now){

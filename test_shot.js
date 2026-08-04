@@ -731,7 +731,9 @@ const args=['--headless=new','--disable-gpu','--no-sandbox',
  '--force-device-scale-factor=2','--window-size='+W+','+H,'--virtual-time-budget='+WAIT,
  /* edit=マス編集モード / dev=🛠DEVモード(全開放の見た目を確かめる)で撮る */
  '--screenshot='+OUT,'file:///'+tmp.replace(/\\/g,'/')
-  +(OPT.indexOf('edit')>=0?'?edit=1':OPT.indexOf('dev')>=0?'?dev=1':'')];
+  /* 🔥(174)perf=塗りの物差しを出して撮る(?perf=1)。⚠dev と混ぜたい時は "dev+perf" */
+  +((OPT.indexOf('edit')>=0?'?edit=1':OPT.indexOf('dev')>=0?'?dev=1':'')
+    +(OPT.indexOf('perf')>=0?((OPT.indexOf('edit')>=0||OPT.indexOf('dev')>=0)?'&perf=1':'?perf=1'):''))];
 const r=cp.spawnSync(BR,args,{encoding:'utf-8'});
 console.log((r.stderr||'').split('\n').filter(l=>/written to file|ERROR/.test(l)).join('\n')||'(出力なし)');
 console.log('→ '+OUT+'  '+W+'x'+H+' / '+(PC?'PC用CSS':'スマホ用CSSを強制適用')+' / 実寸の2倍で撮影');

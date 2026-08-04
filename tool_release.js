@@ -49,6 +49,11 @@ const STEPS=[
       「画面からはみ出している」を1件も見つけられず、実機で3回崩れを見逃した。
     ⚠Chrome/Edgeを起動するので少し重い=--quick では飛ばす。基準は release_baseline.json の view_852x393。 */
  {f:'test_view.js',   n:'見た目の実測(852x393)',heavy:true},
+ /* 🔥**塗りの量の検査**(2026-08-05(174)に追加)。⚠⚠**時間の検査(tool_bench)では代わりにならない**=
+    「重くはないのにスマホが熱くなる」は**塗った面積とグラデの枚数**に出るので、そこに柵を立てる。
+    ⚠(173)の「塔1台につき灯り1枚」はこれがあれば通らなかった。⚠Chromeを起動するので --quick では飛ばす。
+    ⚠上限は tool_paint.js の LIM。**減らせたら必ず柵も下げる**こと。 */
+ {f:'tool_paint.js',  n:'塗りの量(熱さ)',   heavy:true,args:['--check']},
  {f:'test_headless.js',n:'実走(PvE/協力/対戦)',heavy:true,flake:'★4'},
 ];
 
@@ -68,7 +73,7 @@ const padW=(s,w)=>s+' '.repeat(Math.max(1,w-wide(s)));
 
 function run(step){
  const t0=Date.now();
- const r=spawnSync(NODE,[path.join(DIR,step.f)],{cwd:DIR,encoding:'utf8',maxBuffer:64*1024*1024});
+ const r=spawnSync(NODE,[path.join(DIR,step.f)].concat(step.args||[]),{cwd:DIR,encoding:'utf8',maxBuffer:64*1024*1024});
  const sec=((Date.now()-t0)/1000).toFixed(1);
  const out=(r.stdout||'')+(r.stderr||'');
  return {code:r.status==null?1:r.status,out,sec};
