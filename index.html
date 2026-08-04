@@ -20553,8 +20553,10 @@ function renderCamp(C,t){
   try{drawHero0(c,t,0,Math.sin(t*2)*.1);}catch(e){}
   c.restore();}
  /* パーティクル(キャラの下=地面の染み → 上=火花や煙) */
+ pfTag('粒');/* 🔥(174) */
  drawP(c,C);
  /* エフェクト */
+ pfTag('演出');/* 🔥(174)⚠**塔ごとの比較はここが本体**(弾・ビーム・爆発) */
  for(const e of C.fx){
   if(e.d0&&e.t<e.d0)continue;/* 着弾待ち(時間差の爆撃) */
   if(e.k==='corpse')continue;/* 死体はゾンビより先に描いてある */

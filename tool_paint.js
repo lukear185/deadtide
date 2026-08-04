@@ -75,7 +75,7 @@ for(var si=0;si<SCN.length;si++){
   var cv=document.getElementById('cv'),px=Math.max(1,cv.width*cv.height);
   N=Math.max(1,N);
   var top=Object.keys(TG).map(function(t){return{t:t,a:TG[t]/N/px};})
-   .sort(function(x,y){return y.a-x.a;}).slice(0,4)
+   .sort(function(x,y){return y.a-x.a;}).slice(0,7)
    .map(function(x){return x.t+' '+x.a.toFixed(2);}).join(' / ');
   R.push([(A.area/N/px).toFixed(2),(A.grad/N).toFixed(1),(A.fill/N).toFixed(0),
    (A.stroke/N).toFixed(0),(A.img/N).toFixed(0),(A.filt/N).toFixed(2),(A.shad/N).toFixed(2),
