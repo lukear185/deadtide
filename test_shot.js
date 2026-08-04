@@ -199,6 +199,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :(OPT.indexOf('msn')>=0)?((OPT.indexOf('msnp')>=0
        ?'try{var M9=msnDay();M9.p[0]=MSN_P[M9.id[0]].g;M9.p[1]=Math.round(MSN_P[M9.id[1]].g*.45);}catch(e){}':'')
        +'openMsn();')
+     /* 🏁ed=区切りの幕(2026-08-04(156))。⚠実際に2面のナイトメアを落とすまで出ないので撮る口が要る */
+     :(OPT.indexOf('ed')>=0&&!/edit/.test(OPT))?'try{openEnding();}catch(e){}'
      /* ⏸pause=一時停止の窓(ボタンの枠がずれていないかを見る口。2026-08-04(153)) */
      :(OPT.indexOf('pause')>=0)?'try{document.getElementById("md-pause").classList.add("on");}catch(e){}'
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
