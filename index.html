@@ -1449,7 +1449,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="hudpanel" id="corepanel"><span id="coreico">🏕</span><div id="corebar"><i></i></div><span id="corelbl">50</span></div>
     <div class="hudpanel" id="energybox">⚙️ 0</div>
     <div class="hudpanel" id="ptbox">🔩 0</div>
-    <!-- ⭐部隊の枠(重さ)。2026-08-02に「体数」から「重さ」に変えたので、見えないと理屈が伝わらない -->
+    <!-- ⭐🤝出撃コスト。2026-08-02に「体数」から「重さ」に変え、(160)に呼び名を**コスト**へ改めた
+         (ユーザー「重さをコストに替えて。わかりづらいから」)。⚠中身(uWt)は1つも変えていない -->
     <div class="hudpanel" id="ubox">🤝 0/20</div>
     <button id="pausebtn">⏸</button>
     <button id="ffbtn">⏩ ×1</button>
@@ -1838,7 +1839,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     </div>
   </div>
 </div>
-<!-- 📖HUDの札の中身(⚙️スクラップ / 🔩強化pt / 🤝部隊の枠 / 🏕拠点HP)。2026-08-04(158)ユーザー指示。
+<!-- 📖HUDの札の中身(⚙️スクラップ / 🔩強化pt / 🤝出撃コスト / 🏕拠点HP)。2026-08-04(158)ユーザー指示。
      ⚠高さは `vh` で決めない=`--appH` で抑える([[NOTES_UI]]) -->
 <div class="modal" id="md-hinfo">
   <div class="panel" style="max-width:470px;width:min(94vw,470px);max-height:min(88vh,var(--appH,88vh));display:flex;flex-direction:column;gap:5px;padding:8px 9px;overflow:hidden">
@@ -17617,7 +17618,7 @@ function deployUnit(C,ui){
     予約しないと**部隊で枠を埋め切った時点で英雄を一生出せない**(部隊を下げる操作は無い・
     作戦タイムは敵が居ないので枠が空かない)=NOTES「塞いだ先に詰む物が無いか洗う」に該当。 */
  const cap=(G&&G.coop?COOP_MAXU:MAXU)-((C.hUi>=0&&C.hOut===0)?uWt(C.hUi):0);
- if(cnt+wt>cap){if(C.isMe)toast('⚠ 部隊枠が足りない('+cnt+'/'+cap+' ・'+U.n+'は'+wt+'枠'+((C.hUi>=0&&C.hOut===0)?' /🦸に'+uWt(C.hUi)+'枠を確保中':'')+')',true);return false;}
+ if(cnt+wt>cap){if(C.isMe)toast('⚠ 出撃コストが足りない('+cnt+'/'+cap+' ・'+U.n+'は'+wt+')'+((C.hUi>=0&&C.hOut===0)?'  🦸に'+uWt(C.hUi)+'を確保中':''),true);return false;}
  C.scrap-=dc;C.ucd[ui]=U.cd*metaCd()*(C.supCd||1);C.dep++;/* 🏥野戦病院ぶんCD短縮 */
  /* ⭐研究所の個別強化(その兵科1種ぶん)。⚠部隊レベル(全兵科+10%/Lv)とは別枠で掛け算 */
  const UL=unlv(unKey(U)),US=UN_STEP(U.type);
@@ -17797,7 +17798,7 @@ function airstrikeHit(C,x,y,wave,stk,mine){
 function heroDeploy(C){
  if(!C||C.dead||C.hUi<0||C.hOut!==0)return false;
  /* ⚠英雄も枠(4)を使う。⚠**黙って false を返さない**=なぜ出せないかを必ず出す */
- if(unitsWt(C.units)+uWt(C.hUi)>MAXU){if(C.isMe)toast('⚠ 部隊枠が足りない(英雄は'+uWt(C.hUi)+'枠)! 空きを作ってから',true);return false;}
+ if(unitsWt(C.units)+uWt(C.hUi)>MAXU){if(C.isMe)toast('⚠ 出撃コストが足りない(英雄は'+uWt(C.hUi)+')! 空きを作ってから',true);return false;}
  const U=UNITS[C.hUi],H=heroAt(C.hUi);if(!U||!H)return false;
  const lvM=(1+.1*(C.uLv||0))*hBoost(H.id);/* 部隊レベル+🏋鍛錬レベルが乗る */
  const hp0=Math.round(U.hp*lvM);
@@ -21587,7 +21588,7 @@ function actDeploy(ui){
      ⚠⚠**参加側の自分の番号は `CS.myJ`**=`meV()`(CS.meN)は gi を持っていないので
        `m.gi||0` と書くと常に0(=ホスト)を数えてしまう。 */
   if(CC&&CC.units&&unitsWt(CC.units,CS.myJ||0)+uWt(ui)>(COOP?COOP_MAXU:MAXU)){
-   toast('⚠ 部隊枠が足りない',true);return;}
+   toast('⚠ 出撃コストが足りない',true);return;}
   sendCmd({t:'c',a:'un',ui});m.scrap-=dc;if(!m.ucd)m.ucd=UNITS.map(()=>0);m.ucd[ui]=U.cd;sfx.dep();updHUD();return;}
  if(G)deployUnit(G.players[G.myIdx],ui);}
 let DECKB=[],DECKI=[];
@@ -27560,7 +27561,7 @@ function renderUstat(){
   +'</div>'
   +'<div class="hchips"><span>⏩ 間隔 '+(U.rate||0).toFixed(2)+'秒</span>'
    +'<span>'+afTag(U.type,0,false).ic+' '+(HS_TYN[U.type]||U.type)+'</span>'
-   +'<span>⚖ 重さ '+uWt(i)+'</span>'
+   +'<span>🤝 コスト '+uWt(i)+'</span>'
    +'<span>⏳ 待ち '+(U.cd||0)+'秒</span>'
    +(U.multi?('<span>🎯 同時'+U.multi+'体</span>'):'')
    +(U.aoe?('<span>💥 範囲'+U.aoe+'</span>'):'')
@@ -29208,9 +29209,9 @@ function hudInfo(kind){
   for(const u of arr){if(u.dead)continue;if(own!=null&&(u.own||0)!==own)continue;
    cnt[u.ui]=(cnt[u.ui]||0)+1;w+=uWt(u.ui);}
   const ks=Object.keys(cnt);
-  t='🤝 部隊の枠';now=w+' / '+cap;
-  use='出している部隊の<b>重さ</b>の合計。上限 <b>'+cap+'</b>(増えない)';
-  h=hiRow('⚖','重さ … 兵科ごとに <b>1〜4</b>(強いほど重い)')
+  t='🤝 出撃コスト';now=w+' / '+cap;
+  use='いま出している部隊の<b>コスト</b>の合計。上限 <b>'+cap+'</b>(増えない)';
+  h=hiRow('🤝','コスト … 兵科ごとに <b>1〜4</b>(強いほど高い)')
    +hiRow('🦸','英雄 … <b>4</b>')
    +hiRow('⚔','倒れる … <b>すぐ空く</b>')
    +(ks.length?(hiSec('いま出ている')
