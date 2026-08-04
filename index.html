@@ -26685,7 +26685,19 @@ function applyFrames(){
    +'border-image-source:url('+ICN['fr-btn']+');border-image-slice:24% 11%;border-image-repeat:stretch;'
    /* ⚠枠のぶん上下に10pxずつ増えるので、その分パディングを削らないとボタンが背高になって
       タイトルのメニューが画面からはみ出す(2026-07-26に実際にそうなった) */
-   +'box-shadow:0 4px 0 rgba(0,0,0,.4);padding:4px 12px}');
+   /* ⚠⚠⭐**枠を貼ったら影と背景のはみ出しを止める**(2026-08-04(153)ユーザー実機指摘「これズレてる」)。
+      ⚠**枠の絵には周囲2pxの透明な余白がある**(256x105のうち絵は2〜253列)。
+        border-width に縮めると**CSSで1〜2px**になり、
+        ①`background`(既定は border-box)が**枠の外へ1〜2pxはみ出す**
+        ②`box-shadow`(border-box基準)も同じだけ外側に出て、**枠より広い灰色の板**が下に敷かれる
+        =実機では「ボタンの下に灰色の板がずれて置いてある」ようにしか見えない。
+      ⭐直し方=**影を消すだけ**(枠の絵が自前で黒フチと厚みを持っているので影は要らない)。
+      ⚠⚠**`background-clip:padding-box` にしてはいけない**(試して駄目だった)=
+        塗りが border-width(上下10px・左右14px)ぶん内側に寄り、**枠と塗りの間に紙色の隙間**ができて
+        「枠の中に色板が浮いている」絵になる。塗りは今までどおり枠の下まで敷く(枠の帯は不透明なので隠れる)。
+      ⚠`:active` の影も一緒に消すこと(押した瞬間だけ灰色の板が復活する)。 */
+   +'box-shadow:none;padding:4px 12px}');
+  css.push('.btn:not(.sm):not(.homebt):not(.homeback):active{box-shadow:none}');
   if(ICN['fr-btn-red'])css.push('.btn.red:not(.sm){border-image-source:url('+ICN['fr-btn-red']+')}');
   if(ICN['fr-panel'])css.push('.modal .panel.bigpanel{border-style:solid;border-width:18px;border-radius:0;'
    +'border-image-source:url('+ICN['fr-panel']+');border-image-slice:18%;border-image-repeat:stretch;box-shadow:none}');

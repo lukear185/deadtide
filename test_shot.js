@@ -199,6 +199,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :(OPT.indexOf('msn')>=0)?((OPT.indexOf('msnp')>=0
        ?'try{var M9=msnDay();M9.p[0]=MSN_P[M9.id[0]].g;M9.p[1]=Math.round(MSN_P[M9.id[1]].g*.45);}catch(e){}':'')
        +'openMsn();')
+     /* ⏸pause=一時停止の窓(ボタンの枠がずれていないかを見る口。2026-08-04(153)) */
+     :(OPT.indexOf('pause')>=0)?'try{document.getElementById("md-pause").classList.add("on");}catch(e){}'
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
      /* 🏠home=シングルプレイのホーム / 🗺worldmap=エリアマップ(2026-08-03(93)) */
      /* ⚠**`trhome` を巻き込まない**='trhome'.indexOf('home') は2で当たるので、こちらが先に食っていた
