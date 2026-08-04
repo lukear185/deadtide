@@ -2413,7 +2413,10 @@ const PF={on:PERF,tag:'',fr:0,t0:0,
  /* ⚠(175)**garea=グラデで塗った面積**を別に数える=ビネットを焼き込みに替えても
     「塗った面積」は変わらないので、それだけでは**効いたのかどうか分からなかった**(実際に踏んだ)。
     ⭐グラデ塗りは1画素ずつ計算する=**同じ面積でも桁で高い**。ここが本当の熱さの指標。 */
- cur:{area:0,garea:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0},ctx:null,sc:1,gr:0,
+ /* ⚠(177)**加算(lighter)も数える**=同じ面積でも**1画素ずつ足し算する**ので高く、
+    さらに**切り替えるたびに描画の区切りが入る**(モバイルで熱の元になる)。
+    aarea=加算で塗った面積 / comp=合成の切り替え回数。 */
+ cur:{area:0,garea:0,aarea:0,grad:0,comp:0,fill:0,stroke:0,img:0,filt:0,shad:0},ctx:null,sc:1,gr:0,
  tags:{},acc:null,n:0,last:'',px:1};
 function pfTag(t){if(PF.on)PF.tag=t||'';}
 function pfAdd(k,v,ar,isg){
@@ -2422,7 +2425,8 @@ function pfAdd(k,v,ar,isg){
  /* ⚠⚠**面積は「変換をかけた後」で数える**=盤面は寄り(SC≒0.4)の中で描くので、
     世界座標のまま数えると**実際に塗る画素の約6倍**に見える(最初の版でそれをやって
     ビネットが48倍と出た)。⭐getTransform の行列式で潰す。 */
- PF.cur[k]+=v;if(ar){PF.cur.area+=ar*PF.sc;if(isg)PF.cur.garea+=ar*PF.sc;}
+ PF.cur[k]+=v;if(ar){PF.cur.area+=ar*PF.sc;if(isg)PF.cur.garea+=ar*PF.sc;
+  if(PF.ctx&&PF.ctx.__ad)PF.cur.aarea+=ar*PF.sc;}
  const t=PF.tag||'その他',e=PF.tags[t]||(PF.tags[t]={area:0,grad:0,fill:0,stroke:0,img:0});
  /* ⚠**札の方にも縮尺を掛ける**(掛け忘れると内訳の合計が全体と合わない=最初にそれをやった) */
  if(e[k]!=null)e[k]+=v;if(ar)e.area+=ar*PF.sc;
@@ -2453,6 +2457,12 @@ function pfHook(){
  try{const dfs=Object.getOwnPropertyDescriptor(C,'fillStyle');
   if(dfs&&dfs.set)Object.defineProperty(C,'fillStyle',{configurable:true,get:dfs.get,
    set:function(v){this.__gr=(v&&typeof v==='object')?1:0;return dfs.set.call(this,v);}});}catch(e){}
+ /* ⚠**加算になっているか**を覚える(合成の切り替えも数える) */
+ try{const dco=Object.getOwnPropertyDescriptor(C,'globalCompositeOperation');
+  if(dco&&dco.set)Object.defineProperty(C,'globalCompositeOperation',{configurable:true,get:dco.get,
+   set:function(v){const a1=(v&&v!=='source-over')?1:0;
+    if(a1!==this.__ad){this.__ad=a1;PF.ctx=this;pfAdd('comp',1,0);}
+    return dco.set.call(this,v);}});}catch(e){}
  A(C,'createRadialGradient',g=>function(){pfAdd('grad',1,0);return g.apply(this,arguments);});
  A(C,'createLinearGradient',g=>function(){pfAdd('grad',1,0);return g.apply(this,arguments);});
  /* ⚠**この2つは NOTES で禁止**=使った瞬間に数えて札に出す(見つけたら必ず外す) */
@@ -2470,7 +2480,7 @@ function pfFrame(){
  /* ⚠**札は毎コマ捨てる**=最後に立てた札(ビネット)が次のコマの頭まで付いて回り、
     そこが不当に太って見える(最初の版でそれをやった) */
  PF.tag='';PF.px=px;PF.fr++;
- const a=PF.acc||(PF.acc={area:0,garea:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0,n:0});
+ const a=PF.acc||(PF.acc={area:0,garea:0,aarea:0,grad:0,comp:0,fill:0,stroke:0,img:0,filt:0,shad:0,n:0});
  for(const k in PF.cur)a[k]+=PF.cur[k];a.n++;
  for(const k in PF.cur)PF.cur[k]=0;
  const now=performance.now();
@@ -2480,7 +2490,7 @@ function pfFrame(){
   const top=Object.keys(PF.tags).map(t=>({t,a:PF.tags[t].area/n,g:PF.tags[t].grad/n}))
    .sort((x,y)=>y.a-x.a).slice(0,5)
    .map(x=>x.t+' '+(x.a/px).toFixed(2)+'倍'+(x.g>=.5?('/グ'+x.g.toFixed(0)):'')).join('　');
-  if(o)o.innerHTML='🔥塗り <b>'+(a.area/n/px).toFixed(2)+'倍</b>(うちグラデ <b>'+(a.garea/n/px).toFixed(2)+'倍</b>)　枚数 <b>'+(a.grad/n).toFixed(1)
+  if(o)o.innerHTML='🔥塗り <b>'+(a.area/n/px).toFixed(2)+'倍</b>(グ<b>'+(a.garea/n/px).toFixed(2)+'</b>/加<b>'+(a.aarea/n/px).toFixed(2)+'</b>)　枚<b>'+(a.grad/n).toFixed(1)+'</b> 合<b>'+(a.comp/n).toFixed(0)
    +'</b>　塗<b>'+(a.fill/n).toFixed(0)+'</b> 線<b>'+(a.stroke/n).toFixed(0)+'</b> 画<b>'+(a.img/n).toFixed(0)+'</b>'
    +((a.filt||a.shad)?'　<span style="color:#ff5a4a">⚠filter'+(a.filt/n).toFixed(1)+' 影'+(a.shad/n).toFixed(1)+'</span>':'')
    +'<br><span style="opacity:.8;font-size:10px">'+top+'</span>';
@@ -11985,7 +11995,14 @@ function drawDrones(c,T,sx,sy,tw,t){
   c.globalAlpha=1;c.restore();}
  c.restore();c.lineWidth=3;
 }
-function drawCont(c,T,sx,sy,tw,t){
+/* 🔥⚠⚠(177)**炎は「加算のまとめ」で描く**(2026-08-05ユーザー実機・火炎放射塔だらけの盤面で発熱)。
+   ⚠⚠**正体は塗る量ではなく「合成の切り替え回数」**=炎1本ごとに lighter ⇄ source-over を往復していて、
+     火炎放射塔を並べると**1コマ19回**(他の塔は4〜6回)。切り替えるたびに描画がそこで区切られるので、
+     モバイルでは面積の割に高くつく。⭐**塗りの物差しに「合成」を足して初めて見えた**。
+   ⭐直し=**炎だけ後回しにして、lighter を1回だけ立てて全部まとめて描く**(切り替え 19→4回)。
+   ⚠**レーザー(heatN)は加算ではない**ので、まとめの外で今までどおり描く。
+   ⚠batched=呼ぶ側が既に lighter を立てている印。 */
+function drawCont(c,T,sx,sy,tw,t,batched){
  const z=tw.ct;if(!z||!isFinite(z.px)||!isFinite(z.py))return;
  const tx=z.px,ty=z.py-14*CH_UP;
  const ang=Math.atan2(ty-sy,tx-sx),mz=twMzPt(T,sx,sy,ang),mx=mz[0],my=mz[1];
@@ -12019,7 +12036,7 @@ function drawCont(c,T,sx,sy,tw,t){
    for(let k=N;k>=0;k--){const u=k/N,fl=Math.pow(u,.62)*w;
     c.lineTo(u*l,fl+Math.sin(u*7-t*sp+ph2+2.1)*fl*.34);}
    c.closePath();c.fill();};
-  c.globalCompositeOperation='lighter';
+  if(!batched)c.globalCompositeOperation='lighter';
   if(FXLV>0){
    tongue(len*(1+Math.sin(t*13)*.04),     22,acid?'#2f5a16':'#7a2708',.50,17,0);
    tongue(len*(.82+Math.sin(t*17+1)*.05), 15,acid?'#5f8f26':'#c2500f',.55,21,1.3);}
@@ -12030,12 +12047,11 @@ function drawCont(c,T,sx,sy,tw,t){
    const u=.68+k*.13,r2=Math.max(1,(4.6-k*1.1)*(1+Math.sin(t*19+k*2)*.3));
    c.globalAlpha=.45-k*.11;c.fillStyle=acid?'#cdf07a':'#ffc25a';
    c.beginPath();c.arc(len*u+((t*90+k*40)%42),Math.sin(t*11+k*2.3)*10*u,r2,0,7);c.fill();}
-  c.globalCompositeOperation='source-over';
+  if(!batched)c.globalCompositeOperation='source-over';
  }
  c.restore();c.globalAlpha=1;c.lineCap='butt';
 }
 function drawTower(c,ti,lv,x,y,ang,t,o){
- pfTag('塔');
  pfTag('塔');
  o=o||{};
  if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
@@ -19902,6 +19918,8 @@ let BGL1=null,BGL2=null,BGKEY='',BGRC=null;
 let VGC=null,VGK='';
 /* 💥(175)爆発の「加算の色」を出す上限(1コマ)。⚠**暗がり削り(lite)は頭切りしない**(泥色になる) */
 const BOOM_G=3;/* ⚠(176)4→3 */
+/* 🔥(177)炎の描画待ち(まとめて加算で描くため)。⚠**毎コマ空にする**(貯め込むと前のコマの炎が残る) */
+const CONTQ=[];
 const BOOM_L=5;/* 💥(176)爆発の暗がり削りの升の上限。⚠**半径は升の中の最大**を採るので暗くなりすぎない */
 /* 地面と道路の質感。ステージを読み込むたびに作り直す(道の形が変わるとひび割れの位置も変わるため) */
 function makeScenery(){
@@ -20004,6 +20022,7 @@ function bgCache(C,tod,dk,PAL){
 }
 function renderCamp(C,t){
  pfTag('地面');/* 🔥(174)ここから盤面。⚠札は節ごとに立て直す(前の札が付いて回らないように) */
+ CONTQ.length=0;/* 🔥(177)⚠**毎コマ頭で空にする**=途中で抜けた時に前のコマの炎が残らないように */
  fitCanvas();const c=ctx;
  const wv=MODE==='client'?(CS.w||1):(G?G.wave:1);
  c.setTransform(1,0,0,1,0,0);
@@ -20196,7 +20215,10 @@ function renderCamp(C,t){
    c.save();c.translate(sx,sy);c.scale(TW_SC,TW_SC);
    drawTower(c,tw.ti,twPips(tw),0,0,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
    c.restore();
-   if(tw.ct&&!(tw.jamT>0)&&TOWERS[tw.ti]&&TOWERS[tw.ti].cont)drawCont(c,TOWERS[tw.ti],sx,sy,tw,t);
+   /* 🔥(177)**炎は後回し**(下でまとめて加算で描く)。レーザーは加算ではないのでここで描く */
+   if(tw.ct&&!(tw.jamT>0)&&TOWERS[tw.ti]&&TOWERS[tw.ti].cont){
+    if(TOWERS[tw.ti].heatN)drawCont(c,TOWERS[tw.ti],sx,sy,tw,t);
+    else CONTQ.push([TOWERS[tw.ti],sx,sy,tw]);}
    if(TOWERS[tw.ti]&&TOWERS[tw.ti].drn)drawDrones(c,TOWERS[tw.ti],sx,sy,tw,t);
    continue;
   }
@@ -20243,7 +20265,9 @@ function renderCamp(C,t){
    drawTower(c,tw.ti,twPips(tw),0,0,tw.ang,t,{jam:tw.jamT>0,fire:tw.fireT>0,chg:tw.chg||0,si});
    c.restore();
    /* ⭐継続攻撃の炎/ビームは塔の外(世界座標)で引く */
-   if(tw.ct&&!(tw.jamT>0)&&TOWERS[tw.ti]&&TOWERS[tw.ti].cont)drawCont(c,TOWERS[tw.ti],sx,sy,tw,t);
+   if(tw.ct&&!(tw.jamT>0)&&TOWERS[tw.ti]&&TOWERS[tw.ti].cont){
+    if(TOWERS[tw.ti].heatN)drawCont(c,TOWERS[tw.ti],sx,sy,tw,t);
+    else CONTQ.push([TOWERS[tw.ti],sx,sy,tw]);}
    if(TOWERS[tw.ti]&&TOWERS[tw.ti].drn)drawDrones(c,TOWERS[tw.ti],sx,sy,tw,t);}
   }
   /* 🛠編集モード: 番号と座標を出し、条件に反しているマスは赤く囲む */
@@ -20258,6 +20282,13 @@ function renderCamp(C,t){
     c.fillStyle=DANGER2;c.font='900 12px '+FF;c.fillText(bad.slice(0,2).join('/'),sx,sy+46);}
   }
  }
+  /* 🔥⭐(177)**溜めた炎を1回の加算でまとめて描く**=合成の切り替えが台数ぶんではなく1回で済む。
+     ⚠⚠**必ずスロットのループの"外"に置くこと**=中に置くと台数ぶん走って**1つも減らない**
+       (最初にそれをやって、測っても19→20のまま針が動かなかった)。
+     ⚠**重ね順**=炎は光なので全部の塔の上に来てよい(元は自分の塔の直後だった)。 */
+  if(CONTQ.length){c.save();c.globalCompositeOperation='lighter';
+   for(const q of CONTQ)drawCont(c,q[0],q[1],q[2],q[3],t,1);
+   c.globalCompositeOperation='source-over';c.restore();CONTQ.length=0;}
  if(SEL>=0){const tw=C.towers[SEL];if(tw&&TOWERS[tw.ti].rng){const T4=TOWERS[tw.ti],[sxx,syy]=SLOTS[SEL];
    /* 射程を強化するとどこまで広がるか、強化前に薄い緑の輪でプレビュー */
    if((tw.us?tw.us.g:0)<usMax(tw.ti)){const nr=T4.rng*twRngMlv((tw.us?tw.us.g:0)+1);
