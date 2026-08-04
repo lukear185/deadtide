@@ -32493,6 +32493,7 @@ function arcStRender(){
      (ムービーと同じ考え方=[[NOTES_面]]「移動はスクリプトで書く」)。
    ⚠⚠**当たり判定は「いま画面のどこに居るか」で取る**=台本の途中でも、見えている位置と一致する。 */
 const CUP_RD=5;                 /* 1組の回数 */
+const CUP_CNT=3;                /* (167)始まる前に数える秒数 */
 const cupN=d=>3+Math.floor((d-1)/2);          /* カップの数 3〜7 */
 const cupSw=d=>4+d*2;                          /* 入れ替える回数 6〜24 */
 const cupDur=d=>Math.max(.19,.64-(d-1)*.05);   /* 1回の入れ替えにかける秒 .64→.19 */
@@ -32514,9 +32515,11 @@ function cupNew(d){
    const a=free.splice(ri(0,free.length-1),1)[0],b=free.splice(ri(0,free.length-1),1)[0];
    use.push(a,b);pairs.push([a,b]);}
   if(pairs.length)plan.push(pairs);}
+ /* ⚠(167)**始まる前に3秒数える**(ユーザー指示「開始する前に3秒カウントして」)=
+    画面を見る前に入れ替えが始まってしまうのを防ぐ。⚠**2回目以降の回も必ず数える**(同じ入口を通る) */
  return{d,n,dur,plan,pos,zi:Math.max(0,ZOMBIES.findIndex(z=>z.id==='walk')),
   hit:ri(0,n-1),/* ゾンビを入れたカップ(番号) */
-  ph:'show',t:0,k:0,pick:-1,rd:1,ok:0,over:0};
+  ph:'cnt',t:0,k:0,pick:-1,rd:1,ok:0,over:0};
 }
 /* いまの席の並び(台本を k 番目まで適用した形)。⚠**入れ替え中は t で混ぜる** */
 function cupSlot(A,i){
@@ -32541,7 +32544,8 @@ const cupLift=(A,i)=>{
 function cupStep(dt){
  const A=CUP;if(!A||A.over)return;
  A.t+=dt;
- if(A.ph==='show'){if(A.t>=1.25){A.ph='drop';A.t=0;}}
+ if(A.ph==='cnt'){if(A.t>=CUP_CNT){A.ph='show';A.t=0;}}
+ else if(A.ph==='show'){if(A.t>=1.25){A.ph='drop';A.t=0;}}
  else if(A.ph==='drop'){if(A.t>=.55){A.ph='mix';A.t=0;A.k=0;if(!A.plan.length)A.ph='pick';}}
  else if(A.ph==='mix'){
   if(A.t>=A.dur){
@@ -32562,10 +32566,66 @@ function cupStep(dt){
 function cupUI(){
  const A=CUP;if(!A)return;
  const e=$('cup-msg');
- if(e)e.textContent=A.ph==='show'?'ここに居る':A.ph==='drop'?'かぶせる…':A.ph==='mix'?'よく見て!'
+ if(e)e.textContent=A.ph==='cnt'?'よく見てろ…':A.ph==='show'?'ここに居る':A.ph==='drop'?'かぶせる…':A.ph==='mix'?'よく見て!'
   :A.ph==='pick'?'どのカップ?':(A.pick===A.hit?'⭕ 当たり!':'❌ はずれ…');
  const l=$('cup-lvl');if(l)l.textContent='Lv'+A.d+'  '+A.n+'個';
  const r=$('cup-rd');if(r)r.textContent=A.rd+' / '+CUP_RD+'  ⭕'+A.ok;
+}
+/* 🧟💚⭐(167)**カップゾンビ専用の「可愛いゾンビ」**(ユーザー指示「カップに入る前に可愛い感じで
+   ゾンビがこっちに手を振って。あとゾンビ可愛い感じの姿にして」)。
+   ⚠**本編の drawZombie は使わない**=本編のゾンビは「怖い方」に寄せてあるので、
+     ここだけ**頭が大きい2頭身**にする(本編の絵は1pxも触っていない)。
+   ⭐可愛さの作り=①**頭が体より大きい** ②**目が大きくて片方だけ小さい** ③**口は小さい弧**
+     ④**手足は短くて丸い** ⑤**こっちを向いて手を振る**。
+   ⚠**素の大きさは 高さ40 × 幅30**(呼ぶ側はこれで割って合わせる)。足元が原点。 */
+function cupZ(c,t,wave){
+ const SK='#8fbf4d',SK2='#7ba33f',SH='#5f8fa3',INKC=INK;
+ const bob=Math.sin(t*3.2)*.9;
+ c.save();c.translate(0,bob);
+ c.lineJoin='round';c.lineCap='round';c.strokeStyle=INKC;c.lineWidth=1.8;
+ /* 脚(短く丸い) */
+ c.fillStyle='#6b5a45';
+ for(const lx of [-4.6,4.6]){rr(c,lx-3,-8,6,9,3);c.fill();c.stroke();}
+ /* 体(小さめ・ぼろシャツ) */
+ c.fillStyle=SH;rr(c,-7,-19,14,12,5);c.fill();c.stroke();
+ c.fillStyle='#93381e';/* 胸の染み(⚠小さく=怖くしない) */
+ c.beginPath();c.arc(3,-15,2,0,7);c.fill();
+ /* 振っていない方の腕 */
+ c.fillStyle=SK2;c.save();c.translate(-7,-17);c.rotate(.35);rr(c,-2.4,0,4.8,9,2.4);c.fill();c.stroke();c.restore();
+ /* ⭐振る腕(⚠**肩を軸に振る**=手だけ動かすと「浮いた棒」に見える) */
+ {const a=(wave?(-.95+Math.sin(t*7)*.55):.3);
+  c.save();c.translate(7,-17);c.rotate(a);
+  c.fillStyle=SK2;rr(c,-2.4,0,4.8,10,2.4);c.fill();c.stroke();
+  c.fillStyle=SK;c.beginPath();c.arc(0,11.5,3.2,0,7);c.fill();c.stroke();c.restore();}
+ /* 頭(大きい=2頭身) */
+ c.fillStyle=SK;c.beginPath();c.arc(0,-27,10.5,0,7);c.fill();c.stroke();
+ /* 髪の毛のひと房(⚠1本だけ=ちょこんと立てると可愛くなる) */
+ c.strokeStyle=INKC;c.lineWidth=2.2;
+ c.beginPath();c.moveTo(0,-37.2);c.quadraticCurveTo(3.4,-40.5,1.2,-42.4);c.stroke();
+ c.lineWidth=1.8;
+ /* 目(⚠**大きさを左右で変える**=そろえると人形に見える) */
+ c.fillStyle='#f2ecdc';c.beginPath();c.arc(-3.6,-28.4,3.5,0,7);c.fill();c.stroke();
+ c.beginPath();c.arc(4.2,-28,2.6,0,7);c.fill();c.stroke();
+ c.fillStyle=INKC;c.beginPath();c.arc(-3,-28.2,1.7,0,7);c.fill();
+ c.beginPath();c.arc(4.6,-27.9,1.3,0,7);c.fill();
+ /* 白いハイライト(⚠これが無いと目が死ぬ) */
+ c.fillStyle='#fff';c.beginPath();c.arc(-3.7,-29,.7,0,7);c.fill();
+ /* 口(小さい弧=にっこり) */
+ c.strokeStyle=INKC;c.lineWidth=1.6;
+ c.beginPath();c.arc(0,-22.6,3,.25,2.9);c.stroke();
+ /* ほっぺ */
+ c.fillStyle='rgba(255,120,120,.35)';
+ c.beginPath();c.arc(-7,-24.6,2.2,0,7);c.fill();
+ c.beginPath();c.arc(7.4,-24.2,2.2,0,7);c.fill();
+ /* 縫い目(⚠ゾンビらしさは**1か所だけ**=увелич увеличると怖くなる) */
+ c.strokeStyle=SK2;c.lineWidth=1.2;
+ c.beginPath();c.moveTo(-9.4,-31.5);c.lineTo(-5.4,-31.5);c.stroke();
+ for(const sx of [-8.4,-6.4]){c.beginPath();c.moveTo(sx,-32.8);c.lineTo(sx,-30.2);c.stroke();}
+ /* 振っている間だけ、上に小さな音符(⚠出しっぱなしにしない) */
+ if(wave){const a2=Math.sin(t*7);
+  c.fillStyle='rgba(255,210,61,'+(.45+a2*.3).toFixed(2)+')';
+  c.beginPath();c.arc(13+a2*1.2,-34,1.8,0,7);c.fill();}
+ c.restore();
 }
 /* 1杯ぶんの絵。⚠**紙コップではなくバケツ**(この世界の物)=上が広い台形+口の縁 */
 function cupDraw1(c,x,y,w,h,lift,col){
@@ -32606,11 +32666,16 @@ function cupDraw(t){
  c.fillStyle='rgba(0,0,0,.35)';
  for(let i=0;i<A.n;i++){const x=cupX(A,cupSlot(A,i),w);
   c.beginPath();c.ellipse(x,gy+3*dpr,cw*.40,cw*.10,0,0,7);c.fill();}
- /* ゾンビ(⚠かぶさっている間は描かない=中が見えたら遊びが消える) */
- const showZ=(A.ph==='show')||(A.ph==='res');
+ /* ゾンビ(⚠かぶさっている間は描かない=中が見えたら遊びが消える)。
+    ⭐(167)**専用の可愛い絵**(cupZ・素の大きさ40x30)=ユーザー指示。⚠本編の drawZombie は使わない。
+    ⚠⚠**カップに収まる大きさにする**(ユーザー指示)=それまでカップとほぼ同じ背丈だったので、
+    「入っている」ではなく「隣に立っている」に見えていた。⭐**縦も横も内側**で抑える
+    (カップの内側の幅は下端で cw*.72)。
+    ⚠**入る前(cnt/show)だけ手を振る**=当てた後まで振っていると可愛さが薄れる。 */
+ const showZ=(A.ph==='cnt')||(A.ph==='show')||(A.ph==='res');
  if(showZ){const x=cupX(A,cupSlot(A,A.hit),w);
-  c.save();c.translate(x,gy);const k=(ch*.82)/34;c.scale(k,k);
-  try{drawZombie(c,A.zi,0,0,-1,t,0,{});}catch(e){}
+  c.save();c.translate(x,gy);const k=Math.min((ch*.74)/40,(cw*.66)/30);c.scale(k,k);
+  try{cupZ(c,t,A.ph!=='res');}catch(e){}
   c.restore();}
  /* カップ(⚠奥から手前=持ち上がっている物を最後に描く) */
  const ord=[];for(let i=0;i<A.n;i++)ord.push(i);
@@ -32620,7 +32685,9 @@ function cupDraw(t){
   let lift=cupLift(A,i)*ch*.55;
   /* ⚠**見せている間は「ゾンビの背より高く」上げる**=中途半端だと頭が隠れて何が居るのか読めない
      (撮って直した)。⚠カップはゾンビの後に描く=下ろす途中でちゃんと隠れる。 */
-  if(A.ph==='show')lift=ch*1.55;
+  /* ⚠(167)**数えている間もカップは上げておく**=下ろしたままだと、
+     手を振っているゾンビがカップの裏に隠れて一度も見えない(撮って直した)。 */
+  if(A.ph==='cnt'||A.ph==='show')lift=ch*1.55;
   else if(A.ph==='drop')lift=ch*1.55*(1-Math.min(1,A.t/.55));
   else if(A.ph==='res'&&i===A.hit)lift=ch*1.55*Math.min(1,A.t/.35);
   const col=(A.ph==='res')?(i===A.pick?(i===A.hit?'#7ba33f':'#93381e'):'#8a6a45'):'#8a6a45';
@@ -32631,6 +32698,17 @@ function cupDraw(t){
   if(A.ph==='pick'){c.fillStyle='rgba(242,236,220,.9)';c.font='900 '+Math.round(cw*.3)+'px '+FF;
    c.textAlign='center';c.fillText(String(Math.round(sl)+1),x,gy-ch*.35);}
  }
+ /* ⏱(167)始まる前の3・2・1(⚠**画面の真ん中に大きく**=カップより先に目が行く所に置く) */
+ if(A.ph==='cnt'){
+  const left=Math.max(0,CUP_CNT-A.t),n9=Math.ceil(left),q=1-(n9-left);
+  /* ⚠**暗くしすぎない**=手を振っているゾンビが沈む(撮って直した) */
+  c.fillStyle='rgba(8,6,12,.26)';c.fillRect(0,0,w,h);
+  c.textAlign='center';c.textBaseline='middle';
+  c.font='900 '+Math.round(h*.30*(1+ (1-q)*.25))+'px '+FF;
+  c.fillStyle='rgba(255,210,61,'+(.35+q*.65).toFixed(2)+')';
+  c.fillText(String(n9),w*.5,h*.34);
+  /* ⚠**同じ言葉を2か所に出さない**=上の帯が既に「よく見てろ…」と言っている */
+  c.textBaseline='alphabetic';}
  c.textAlign='left';
 }
 /* 押した所のカップを拾う。⚠**見えている位置**(cupSlot)で取る=台本の途中でもずれない */
