@@ -2410,16 +2410,19 @@ const metaEco=()=>soloMeta()?1+.12*(META.ec0||0):1;
 const PERF=/[?&]perf=1/.test((typeof location!=='undefined'&&location.search)||'');
 const PF={on:PERF,tag:'',fr:0,t0:0,
  /* 1コマぶん。area=塗った面積(px) / grad=グラデ生成 / call=塗りの呼び出し */
- cur:{area:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0},ctx:null,sc:1,
+ /* ⚠(175)**garea=グラデで塗った面積**を別に数える=ビネットを焼き込みに替えても
+    「塗った面積」は変わらないので、それだけでは**効いたのかどうか分からなかった**(実際に踏んだ)。
+    ⭐グラデ塗りは1画素ずつ計算する=**同じ面積でも桁で高い**。ここが本当の熱さの指標。 */
+ cur:{area:0,garea:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0},ctx:null,sc:1,gr:0,
  tags:{},acc:null,n:0,last:'',px:1};
 function pfTag(t){if(PF.on)PF.tag=t||'';}
-function pfAdd(k,v,ar){
+function pfAdd(k,v,ar,isg){
  if(!PF.on)return;
  if(ar&&PF.ctx){try{const m=PF.ctx.getTransform();PF.sc=Math.abs(m.a*m.d-m.b*m.c)||1;}catch(e){PF.sc=1;}}
  /* ⚠⚠**面積は「変換をかけた後」で数える**=盤面は寄り(SC≒0.4)の中で描くので、
     世界座標のまま数えると**実際に塗る画素の約6倍**に見える(最初の版でそれをやって
     ビネットが48倍と出た)。⭐getTransform の行列式で潰す。 */
- PF.cur[k]+=v;if(ar)PF.cur.area+=ar*PF.sc;
+ PF.cur[k]+=v;if(ar){PF.cur.area+=ar*PF.sc;if(isg)PF.cur.garea+=ar*PF.sc;}
  const t=PF.tag||'その他',e=PF.tags[t]||(PF.tags[t]={area:0,grad:0,fill:0,stroke:0,img:0});
  /* ⚠**札の方にも縮尺を掛ける**(掛け忘れると内訳の合計が全体と合わない=最初にそれをやった) */
  if(e[k]!=null)e[k]+=v;if(ar)e.area+=ar*PF.sc;
@@ -2439,13 +2442,17 @@ function pfHook(){
  A(C,'arc',g=>function(x,y,r){const o=pa(this);o.__pa+=Math.PI*r*r;o.__pl+=2*Math.PI*r;o.__lx=x+r;o.__ly=y;return g.apply(this,arguments);});
  A(C,'ellipse',g=>function(x,y,rx,ry){const o=pa(this);o.__pa+=Math.PI*rx*ry;o.__pl+=Math.PI*(rx+ry);o.__lx=x+rx;o.__ly=y;return g.apply(this,arguments);});
  A(C,'rect',g=>function(x,y,w,h){const o=pa(this);o.__pa+=Math.abs(w*h);o.__pl+=2*(Math.abs(w)+Math.abs(h));return g.apply(this,arguments);});
- A(C,'fill',g=>function(){PF.ctx=this;pfAdd('fill',1,pa(this).__pa);return g.apply(this,arguments);});
+ A(C,'fill',g=>function(){PF.ctx=this;pfAdd('fill',1,pa(this).__pa,this.__gr);return g.apply(this,arguments);});
  A(C,'stroke',g=>function(){const o=pa(this);PF.ctx=this;pfAdd('stroke',1,o.__pl*Math.max(1,this.lineWidth||1));return g.apply(this,arguments);});
- A(C,'fillRect',g=>function(x,y,w,h){PF.ctx=this;pfAdd('fill',1,Math.abs(w*h));return g.apply(this,arguments);});
+ A(C,'fillRect',g=>function(x,y,w,h){PF.ctx=this;pfAdd('fill',1,Math.abs(w*h),this.__gr);return g.apply(this,arguments);});
  A(C,'strokeRect',g=>function(x,y,w,h){pfAdd('stroke',1,2*(Math.abs(w)+Math.abs(h))*Math.max(1,this.lineWidth||1));return g.apply(this,arguments);});
  A(C,'drawImage',g=>function(im,a,b,c2,d,e,f,w2,h2){
   const W=(w2!=null?w2:(c2!=null?c2:(im&&(im.width||0)))),H=(h2!=null?h2:(d!=null?d:(im&&(im.height||0))));
   PF.ctx=this;pfAdd('img',1,Math.abs((W||0)*(H||0)));return g.apply(this,arguments);});
+ /* ⚠**fillStyle にグラデが入っているか**を覚える=塗った時に「グラデ塗り」として数えるため */
+ try{const dfs=Object.getOwnPropertyDescriptor(C,'fillStyle');
+  if(dfs&&dfs.set)Object.defineProperty(C,'fillStyle',{configurable:true,get:dfs.get,
+   set:function(v){this.__gr=(v&&typeof v==='object')?1:0;return dfs.set.call(this,v);}});}catch(e){}
  A(C,'createRadialGradient',g=>function(){pfAdd('grad',1,0);return g.apply(this,arguments);});
  A(C,'createLinearGradient',g=>function(){pfAdd('grad',1,0);return g.apply(this,arguments);});
  /* ⚠**この2つは NOTES で禁止**=使った瞬間に数えて札に出す(見つけたら必ず外す) */
@@ -2463,7 +2470,7 @@ function pfFrame(){
  /* ⚠**札は毎コマ捨てる**=最後に立てた札(ビネット)が次のコマの頭まで付いて回り、
     そこが不当に太って見える(最初の版でそれをやった) */
  PF.tag='';PF.px=px;PF.fr++;
- const a=PF.acc||(PF.acc={area:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0,n:0});
+ const a=PF.acc||(PF.acc={area:0,garea:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0,n:0});
  for(const k in PF.cur)a[k]+=PF.cur[k];a.n++;
  for(const k in PF.cur)PF.cur[k]=0;
  const now=performance.now();
@@ -2473,7 +2480,7 @@ function pfFrame(){
   const top=Object.keys(PF.tags).map(t=>({t,a:PF.tags[t].area/n,g:PF.tags[t].grad/n}))
    .sort((x,y)=>y.a-x.a).slice(0,5)
    .map(x=>x.t+' '+(x.a/px).toFixed(2)+'倍'+(x.g>=.5?('/グ'+x.g.toFixed(0)):'')).join('　');
-  if(o)o.innerHTML='🔥塗り <b>'+(a.area/n/px).toFixed(2)+'倍</b>　グラデ <b>'+(a.grad/n).toFixed(1)
+  if(o)o.innerHTML='🔥塗り <b>'+(a.area/n/px).toFixed(2)+'倍</b>(うちグラデ <b>'+(a.garea/n/px).toFixed(2)+'倍</b>)　枚数 <b>'+(a.grad/n).toFixed(1)
    +'</b>　塗<b>'+(a.fill/n).toFixed(0)+'</b> 線<b>'+(a.stroke/n).toFixed(0)+'</b> 画<b>'+(a.img/n).toFixed(0)+'</b>'
    +((a.filt||a.shad)?'　<span style="color:#ff5a4a">⚠filter'+(a.filt/n).toFixed(1)+' 影'+(a.shad/n).toFixed(1)+'</span>':'')
    +'<br><span style="opacity:.8;font-size:10px">'+top+'</span>';
@@ -19891,6 +19898,10 @@ const DOTS=[],PATCHES=[],TUFTS=[],CRACKS=[],SKID=[];
 /* 🖼(124)動かない背景の焼き込みの入れ物。⚠**makeScenery より前に置く**=
    起動時の `loadStage(0)` が makeScenery を呼ぶので、後ろに置くと未初期化で落ちる(TDZ)。 */
 let BGL1=null,BGL2=null,BGKEY='',BGRC=null;
+/* 🔥(175)ビネットの焼き込み。⚠**濃さが変わった時だけ焼き直す**(鍵=濃さと大きさ) */
+let VGC=null,VGK='';
+/* 💥(175)爆発の「加算の色」を出す上限(1コマ)。⚠**暗がり削り(lite)は頭切りしない**(泥色になる) */
+const BOOM_G=4;
 /* 地面と道路の質感。ステージを読み込むたびに作り直す(道の形が変わるとひび割れの位置も変わるため) */
 function makeScenery(){
  /* 🖼⚠⚠(124)**作り直したら焼き込みを捨てる**=ムラもひびも道もここで変わるので、
@@ -21003,31 +21014,43 @@ function renderCamp(C,t){
     for(const u of us2)if(u.fireT>0){b9.add(u.px,u.py-24*CH_UP);any=true;}
     if(any)b9.each((x,y,n)=>{lite(x,y,110+(Math.min(n,8)-1)*8,.8);});}
    /* 🔥燃えている敵(火炎放射塔は周りにも燃焼を配るので、何台も置くと数十体になる) */
-   {const b9=bkt(120,10);let any=false;
+   /* ⚠(175)**上限 10→6**(ユーザー了承)=1升につき lite と glow の**2枚**出すので、
+      10だと実効20枚になっていた。⚠消えるのは**地面に落ちる暖色のにじみ**だけで、
+      **炎の粒はそのまま**=燃えているのは変わらず見える。 */
+   {const b9=bkt(120,6);let any=false;
     for(const z of C.zombies)if(z.burnT>0){b9.add(z.px,z.py-14*CH_UP);any=true;}
     if(any)b9.each((x,y,n)=>{const r=70+(Math.min(n,8)-1)*9;
      lite(x,y,r,.6);glow.push([x,y,r*.86,Math.min(.5,.3+(n-1)*.025),'255,140,60']);});}
    /* ⭐酸まみれの敵は緑に光る=「こいつが倒れると弾ける」が見て分かるようにする
       ⚠こちらは加算の光だけ(暗がりは削らない)。酸噴射砲を並べると同じだけ増えるのでまとめる */
-   {const b9=bkt(120,8);let any=false;
+   {const b9=bkt(120,5);let any=false;/* ⚠(175)8→5(こちらは加算の光だけ=1升1枚) */
     for(const z of C.zombies)if(z.acdT>0){b9.add(z.px,z.py-14*CH_UP);any=true;}
     if(any)b9.each((x,y,n)=>{glow.push([x,y,54+(Math.min(n,8)-1)*7,Math.min(.42,.26+(n-1)*.02),'150,230,60']);});}
    /* ⚡電撃(テスラ・コイル)。⚠**1本の稲妻が「点の数だけ」灯りを出していた**=
       連鎖する塔を並べると一気に増える枠。⚠色が違うので炎とは別の升目にする */
-   const zb=bkt(100,10);let zany=false;
+   const bmG=[];/* 💥(175)爆発の加算の光=あとで大きい順に BOOM_G 枚だけ採る */
+   const zb=bkt(100,6);let zany=false;/* ⚠(175)10→6(1升につき lite+glow の2枚出るため) */
    for(const e of C.fx){
     /* ⭐⚠**火球の上の暗がりを必ず外すこと**(2026-07-27 第106弾)。
        画面には時間帯の陰が掛かるので、`lite` の範囲が火球とずれていると
        せっかく彩度の高い橙で描いても**茶色く沈んで泥のような色**になる。
        ⚠だから半径は固定値ではなく**火球の大きさ(R)に合わせて**取る。
        ⚠爆発は**1つ1つ大きさが違う**のでまとめない(まとめると光の大きさが嘘になる)。 */
+    /* 💥⭐(175)**爆発は「暗がり削り(lite)は全部・加算の色(glow)だけ頭切り」**(ユーザー了承)。
+       ⚠⚠**素直に頭切りしてはいけない**=[[NOTES_絵]]の掟「火球の上の暗がりを必ず外すこと」に当たり、
+         切られた爆発だけ**茶色く沈んで泥のような色**になる(実際にそう見える所を作ってしまう)。
+       ⭐**lite は残したまま glow だけ大きい順に配る**=泥色にならず枚数は半分になる。
+       ⚠**大きい順に配る**=小さい爆発が切られるので目立たない(擲弾砲台を並べた時が本番)。 */
     if(e.k==='boom'||e.k==='boomL'){const tt=e.t-(e.d0||0),du=(e.k==='boomL'?.7:.5);
      if(tt>=0&&tt<du){const bb2=(e.k==='boomL'?1.8:1),R2=(24+clamp(tt/du,0,1)*54)*bb2;
-      lite(e.x,e.y,R2*1.3,1);glow.push([e.x,e.y,R2*1.5,.5*Math.max(0,1-tt/du),'255,150,50']);}}
+      lite(e.x,e.y,R2*1.3,1);bmG.push([e.x,e.y,R2*1.5,.5*Math.max(0,1-tt/du),'255,150,50']);}}
     else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){zb.add(p4[0],p4[1]);zany=true;}
    }
    if(zany)zb.each((x,y,n)=>{const r=90+(Math.min(n,8)-1)*6;
     lite(x,y,r,.85);glow.push([x,y,r*.84,Math.min(.6,.45+(n-1)*.02),'150,225,255']);});
+   /* 💥(175)爆発の加算の光は**大きい順に BOOM_G 枚まで** */
+   if(bmG.length){bmG.sort((p,q)=>q[2]-p[2]);
+    for(let i9=0;i9<Math.min(BOOM_G,bmG.length);i9++)glow.push(bmG[i9]);}
    const fp2=BRANCH;if(COOP)for(let i=0;i<3;i++)lite(fp2[i][0],fp2[i][1]-10,70,.4);
   }
   /* 加算で光の色そのものを乗せる=夜でも昼でも「撃った光」だと分かる */
@@ -21046,9 +21069,30 @@ function renderCamp(C,t){
   c.fillRect(VL,110,VR-VL,VB-110);
   /* 色被りもビネットも「画面全体」に掛ける=マップの外(裁ち落とし部分)と色が変わって
      盤の四角い縁が見えてしまうのを防ぐ */
-  const vg=c.createRadialGradient(MW/2,MH/2,MH*.45,MW/2,MH/2,MH*1.15);
-  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,'+(.1+night*.08)+')');
-  c.fillStyle=vg;c.fillRect(VL,VT,VR-VL,VB-VT);
+  /* 🔥⭐(175)**ビネットは焼いて貼る**(2026-08-05ユーザー了承)=それまで**全画面のラジアルグラデを
+     毎コマ1枚**塗っていた(塗りの物差しで 2.0倍=全体の3割)。
+     ⚠⚠**見た目は1pxも変えない**=同じ式・同じ大きさで焼いて、そのまま同じ所へ貼るだけ。
+     ⚠**焼き直すのは「濃さが変わった時」だけ**(夜の深さは波でゆっくり動くので .01 刻みで丸める)。
+     ⚠**貼る大きさは世界座標のまま**=変換(寄り)は貼る側に乗るので、ぼけない。
+     ⚠画面ゆれ(shx/shy)も貼る側の変換に乗る=焼き込みには入れない(地面の焼き込みと同じ掟)。 */
+  /* ⚠⚠(175)**鍵に生の大きさを入れてはいけない**=画面ゆれ(shake)で VL..VB が毎コマ数px動くので、
+     **毎コマ焼き直して逆に重くなる**(実際にそうなって塗りが2.0→13.0倍に跳ねた。撮る前に測って気づいた)。
+     ⭐**16pxに丸めた大きさ**を鍵にする=ゆれでは変わらない。⚠貼る時も丸めた大きさで貼る
+     (最大16pxの伸びだが、ぼんやりしたビネットなので見た目には出ない)。 */
+  {const a9=+( .1+night*.08 ).toFixed(2);
+   const w9=Math.max(16,Math.ceil((VR-VL)/16)*16),h9=Math.max(16,Math.ceil((VB-VT)/16)*16);
+   const k9=a9+'|'+w9+'|'+h9+'|'+Math.round(MW)+'|'+Math.round(MH);
+   if(VGK!==k9){
+    if(!VGC)VGC=document.createElement('canvas');
+    if(VGC.width!==w9)VGC.width=w9;if(VGC.height!==h9)VGC.height=h9;
+    const vc=VGC.getContext('2d');
+    if(vc){vc.setTransform(1,0,0,1,0,0);vc.clearRect(0,0,w9,h9);
+     /* ⚠**焼く時は左上を原点にずらす**=貼る時に (VL,VT) へ戻す */
+     const vg=vc.createRadialGradient(MW/2-VL,MH/2-VT,MH*.45,MW/2-VL,MH/2-VT,MH*1.15);
+     vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,'+a9+')');
+     vc.fillStyle=vg;vc.fillRect(0,0,w9,h9);VGK=k9;}
+   }
+   if(VGK===k9)try{c.drawImage(VGC,VL,VT,w9,h9);}catch(e){}}
   c.restore();
  }
  /* ⭐**ウェーブ制圧のスローモーションを「画」でも知らせる**(2026-07-27ユーザー判断

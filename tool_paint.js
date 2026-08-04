@@ -30,10 +30,10 @@ const html=fs.readFileSync(TARGET,'utf-8');
 
 /* ⚠**上限**(1コマあたり)。⚠数字を動かす時は「なぜ増えてよいのか」を必ず書くこと。
    📌グラデ22枚=(173)で見つけた「塔1台につき1枚」の状態。そこへ戻らないための柵。 */
-const LIM={grad:32,area:9.0};
-/* 📌**いまの実測(2026-08-05(174))**=塗り 7.1〜7.2倍 / グラデ 10〜30枚。
-   内訳は **地面 3.2 / ビネット 2.0 / 塔 1.9 / 灯り 0.08**。
-   ⚠グラデが多いのは🔥火炎(29.7)と⚡重テスラ(22.9)=燃えている敵と稲妻の灯り(升目で頭切り済み)。
+const LIM={grad:26,area:9.0,garea:0.6};
+/* 📌**いまの実測(2026-08-05(175)の手当て後)**=塗り 6.9〜7.3倍 / 枚数 9〜22 / **グ塗り 0.07〜0.19倍**。
+   内訳は **地面 3.2 / ビネット 2.0(=焼いた絵を貼るだけ) / 演出 1.0 / 塔 0.6〜0.8 / 灯り 0.06〜0.2**。
+   ⭐**グ塗りが本命**=(175)でビネットを焼き込みにして **2.0倍ぶんのグラデ塗りが丸ごと消えた**。
    ⚠**上限は「いまより悪くなったら落ちる」ための柵**。減らせたら**必ず柵も下げる**こと。 */
 
 const SCRIPT=`
@@ -61,7 +61,7 @@ for(var si=0;si<SCN.length;si++){
   if(S9.hero){me.hUi=hUiOf(S9.hero);me.hOut=0;try{heroDeploy(me);}catch(e){}me.hCg=1;}
   if(S9.units)for(var u9=0;u9<S9.units;u9++){try{me.ucd=[];deployUnit(me,me.team[u9%me.team.length]);}catch(e){}}
   /* 数える。⚠**最初の数コマは焼き込みが走る**ので捨てる */
-  var A={area:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0},N=0,TG={};
+  var A={area:0,garea:0,grad:0,fill:0,stroke:0,img:0,filt:0,shad:0},N=0,TG={};
   for(var k=0;k<80;k++){
    while(me.zombies.filter(function(z){return !z.dead;}).length<45){
     me.zombies.push(mkZ(zSpec(ri(0,5),18,20),PLEN*(0.22+Math.random()*0.55)));}
@@ -77,7 +77,7 @@ for(var si=0;si<SCN.length;si++){
   var top=Object.keys(TG).map(function(t){return{t:t,a:TG[t]/N/px};})
    .sort(function(x,y){return y.a-x.a;}).slice(0,7)
    .map(function(x){return x.t+' '+x.a.toFixed(2);}).join(' / ');
-  R.push([(A.area/N/px).toFixed(2),(A.grad/N).toFixed(1),(A.fill/N).toFixed(0),
+  R.push([(A.area/N/px).toFixed(2),(A.grad/N).toFixed(1),(A.garea/N/px).toFixed(2),
    (A.stroke/N).toFixed(0),(A.img/N).toFixed(0),(A.filt/N).toFixed(2),(A.shad/N).toFixed(2),
    S9.n,top].join("\\u0001"));
   try{backTitle();}catch(e){}
@@ -95,18 +95,21 @@ const rows=m[1].split(' || ').map(l=>l.split('\u0001'));
 rows.sort((a,b)=>parseFloat(b[0])-parseFloat(a[0]));
 let bad=[];
 console.log('──────── 塗りの重い順(1コマあたり) ────────');
-console.log('塗り倍率\tグラデ\t塗\t線\t画\t場面');
+console.log('塗り倍率\t枚数\tグ塗り\t線\t画\t場面');
 for(const c of rows){
  if(c[0]==='ERR'){console.log('ERR\t'+c[1]+'\t'+c[2]);bad.push('ERR '+c[1]);continue;}
  console.log(c[0]+'倍\t'+c[1]+'\t'+c[2]+'\t'+c[3]+'\t'+c[4]+'\t'+c[7]);
  console.log('\t\t\t\t\t  └ '+c[8]);
  if(+c[1]>LIM.grad)bad.push(c[7]+': グラデ '+c[1]+'枚(上限'+LIM.grad+')');
  if(+c[0]>LIM.area)bad.push(c[7]+': 塗り '+c[0]+'倍(上限'+LIM.area+'倍)');
+ if(+c[2]>LIM.garea)bad.push(c[7]+': **グラデで塗った面積** '+c[2]+'倍(上限'+LIM.garea+'倍)=全画面のグラデを疑う');
  if(+c[5]>0)bad.push(c[7]+': ctx.filter を '+c[5]+'回/コマ使っている(禁止)');
  if(+c[6]>0)bad.push(c[7]+': shadowBlur を '+c[6]+'回/コマ使っている(禁止)');
 }
 console.log('──────────────────────────────────────────');
-console.log('⚠塗り倍率=1コマで画面を何回塗り直したか / グラデ=ラジアル+線形の生成枚数(一番高い)');
+console.log('⚠塗り倍率=1コマで画面を何回塗り直したか / 枚数=グラデの生成数 / **グ塗り=グラデで塗った面積**');
+console.log('⚠⚠**本当の熱さは「グ塗り」**=同じ面積でもグラデ塗りは1画素ずつ計算するので桁で高い。');
+console.log('　(焼き込みに替えると面積は変わらないが「グ塗り」だけ減る=効いたかはここで見る)');
 console.log('⚠**時間ではなく数を見る道具**。熱さはここに出る(ヘッドレスの時間には出ない)。');
 if(bad.length){
  console.log('');
