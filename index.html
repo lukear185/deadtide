@@ -3538,7 +3538,10 @@ const ZOMBIES=[
  {id:'scr',n:'スクリーマー',hp:130,sp:69,bt:36,dmg:2,mw:6,aura:1,sc:1,atk:17,ar:.9,c:'#d67ba8'},
  {id:'dog',n:'感染ハウンド',hp:82,sp:215,bt:20,dmg:1,mw:8,sc:.85,atk:13,ar:.45,c:'#b0713d'},
  {id:'crwl',n:'クローラー',hp:300,sp:52,bt:40,dmg:2,mw:6,noblock:1,w:.5,sc:.95,atk:0,ar:9,c:'#7a5f8f'},
- {id:'ooze',n:'スライム状体',hp:320,sp:44,bt:62,dmg:3,mw:10,noblock:1,armor:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
+ /* ⚠⚠**装甲を外した**(2026-08-04(151)ユーザー選択)=⬛黒=硬いの看板を出した以上、
+    **緑のまま45%カットするのは読めない**。この個体は「すり抜け」1特性に絞る
+    (「5面目までは1体1特性」の方針にも合う)。⚠バランスは少し楽になる。 */
+ {id:'ooze',n:'スライム状体',hp:320,sp:44,bt:62,dmg:3,mw:10,noblock:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
  /* ↓中盤以降の強敵 */
  {id:'brut',n:'ブルート',hp:420,sp:74,bt:74,dmg:3,mw:8,armor:1,w:.5,sc:1.3,aoe:2,atk:59,ar:.9,c:'#8a4a3a',dsc:'太い腕で2体まとめて薙ぎ払う'},
  {id:'stlk',n:'ストーカー',hp:560,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
@@ -9146,6 +9149,18 @@ function zArmBrut(c,Z,t,ph,walk){
 /* ⬛**装甲版の体を使うかどうかの元栓**。⚠⚠**割り振り(どの種類に着せるか)は絵が合格してから**
    =(143)(144)は順番を間違えて生煮えのまま実機に出した。 */
 const ZARM_ON=true;
+/* 🐟⭐**鱗(②沈んだ港)の色**。⚠⚠**装甲の青黒(ZAR)と必ず違う色域にする**
+     =装甲は🔥火炎に弱く、鱗は⚡電撃に弱い**別の物**。同じ黒にすると2つの相性が1つに潰れる。
+   ⭐**濡れた青緑**=「電気が走る濡れた鱗」を材質で言う([[NOTES_絵]]「色で分類ではなく材質で見せる」)。
+   ⚠**混ぜ切らない**(.78)=切ると8種の見分け(蟹/イカ/亀/アンコウ…)が消えて青緑の塊になる。 */
+const SCL={b:'#0f6b6b',e:'#5fd8cc',h:'#b0f2e6'};
+const SCL_ON=true,SCLZ={};
+function sclWet(hex,f){
+ f=(f===undefined?.78:f);
+ const a=parseInt(hex.slice(1),16),b=parseInt(SCL.b.slice(1),16),m=(s)=>{
+  const x=(a>>s)&255,y=(b>>s)&255;return Math.round(x+(y-x)*f);};
+ return '#'+[m(16),m(8),m(0)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
 function drawZombie(c,zi,x,y,dir,t,ph,o){
  o=o||{};
  /* ⭐2度描き(?v2=1の時だけ)。⚠**o.v2 で再入を止める**=無限に呼び合う */
@@ -9153,7 +9168,15 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   drawZombie(silLayer(c,VEC2_W,INK),zi,x,y,dir,t,ph,o1);
   if(VEC2_R>0)drawZombie(silLayer(c,VEC2_R,VEC2_RC),zi,x-.9,y-1.6,dir,t,ph,o1);
   drawZombie(flatLayer(c),zi,x,y,dir,t,ph,o1);return;}
- const Z=ZOMBIES[zi],s=Z.sc*(o.elite?1.35:1);
+ /* 🐟⭐**鱗持ちは地の色を「濡れた青緑」へ寄せる**(2026-08-04(151)ユーザー選択)。
+    ⚠⚠**装甲(青黒)と必ず違う色域にする**=装甲は🔥火炎・鱗は⚡電撃に弱い**別物**なので、
+      同じ黒にすると2つの相性が1つに潰れる。
+    ⭐やり方は黒アーマーで一番効いたのと同じ**「地の色そのものを寄せる」**
+      =海の生き物はどの体も `Z.c` から色を作っているので、**ここ1か所で8種すべてに効く**。
+    ⚠**表(ZOMBIES)を書き換えない**=写しを1つ作って覚えておく(毎コマ作ると無駄)。 */
+ let Z=ZOMBIES[zi];
+ if(SCL_ON&&Z.scl&&!pxOf(Z.id))Z=SCLZ[zi]||(SCLZ[zi]=Object.assign({},Z,{c:sclWet(Z.c)}));
+ const s=Z.sc*(o.elite?1.35:1);
  const walk=Math.sin(t*(Z.sp>90?14:8)+ph);
  let bob=Math.abs(walk)*2.5*s;
  /* 🧪ドット絵の種類は**上下の揺れも歩幅に合わせる**(すり足のコマで浮く)。
