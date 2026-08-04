@@ -1202,6 +1202,9 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
  font-size:11.5px;background:rgba(24,20,16,.72);color:var(--pane);border:2px solid var(--paper2);box-shadow:none}
 /* 📖⭐**HUDの札を押すと出る「これは何 / どうやって増えるか」**(2026-08-04(158)ユーザー指示)。
    ⚠**HUDそのものに情報を足さない**=押した時だけ出す([[NOTES_UI]]「情報を足す方向は間違い」)。 */
+/* 用途は見出しの下に1行だけ(⚠節にしない=ユーザー「無駄なやつある」) */
+.hiuse{font-size:12px;line-height:1.5;color:var(--ink2);margin:3px 3px 1px}
+.hiuse b{color:var(--rust2)}
 .hisec{font-size:11.5px;font-weight:900;color:var(--ink2);margin:7px 3px 1px;letter-spacing:.5px}
 .hirow{display:flex;gap:7px;align-items:flex-start;background:var(--paper);
  border:2px solid var(--ink);border-radius:9px;padding:4px 8px;margin-top:4px}
@@ -29071,41 +29074,36 @@ function hudInfo(kind){
  const m=meV();if(!m)return;
  const bus=!!m.bus,pve=!!(G&&G.pve),wv=Math.max(1,(MODE==='client'?(CS.w||1):(G?G.wave:1)));
  let t='',now='',h='';
- /* ⚠⚠**説明口調にしない**(2026-08-04(158)ユーザー「文章多くて説明口調すぎる」)=
-    **1行=「何が起きたら / いくら」だけ**。理屈も言い換えも書かない。 */
+ /* ⚠⚠⭐**説明口調にしない・要らない節を作らない**(2026-08-04(158)ユーザーに2回言われた)=
+    **①用途は見出しの下に1行だけ ②あとは入手経路の一覧だけ**。
+    ⚠❌**「出すのに要る」のような、その札の話でない節を足さない**。 */
+ let use='';
  if(kind==='en'&&bus){
   /* 🚌道中は⚙️ではなく🧬(この面で増える物だけを出している) */
   t='🧬 研究ポイント';now=fmt(bnsGainPts(m.bus));
-  h=hiSec('増える')
+  use='研究所の永久強化に使う(持ち帰ってから)';
+  h=hiSec('入手')
    +hiRow('🚌','ゾンビを轢く … <b>'+BNS_RPT_K+'</b> / 1体')
-   +hiRow('🏁','拠点の初回クリア … <b>×3</b>')
-   +hiSec('使う')
-   +hiRow('🔬','研究所(持ち帰ってから)')
-   +hiRow('⚙️','この面ではスクラップは入らない',1);
+   +hiRow('🏁','拠点の初回クリア … <b>×3</b>');
  }else if(kind==='en'){
   t='⚙️ スクラップ';now=fmt(m.scrap);
   const pay=((pve?D5v().pay:1)*metaPay()),eco=hiEco(m);
-  h=hiSec('増える')
+  use='タワーの建設・進化 / 部隊の出撃'+(pve?'':' / 押し流し')+' に使う';
+  h=hiSec('入手')
    +hiRow('🧟','ゾンビ撃破 … 硬い敵ほど多い <b>×'+pay.toFixed(2)+'</b>')
    +hiRow('💀','ボス … 削ったぶんが先に入る(最大<b>6割</b>)')
    +hiRow('🏭','廃品工房 … '+(eco||'<b>未建設</b>'))
    +hiRow('🏚','塔を売る … 使った額の<b>6割</b>')
    +hiRow('📦','物資投下所 … <b>'+Math.round(120+wv*22)+'</b>(5回に1回)')
-   +hiRow('🕶','必殺「闇取引」')
-   +hiSec('使う')
-   +hiRow('🔨','タワーの建設・進化')
-   +hiRow('🪖','部隊の出撃')
-   +(pve?'':hiRow('🌊','押し流し'));
+   +hiRow('🕶','必殺「闇取引」');
  }else if(kind==='pt'){
   t=PT+' 強化ポイント';now=fmt(m.up||0);
-  h=hiSec('増える')
+  use='作戦タイムの強化カードに使う(⬆部隊 🔧火力 🎯砲撃 🛠修理)';
+  h=hiSec('入手')
    +hiRow('🌊','WAVE '+wv+' を守り切る … <b>+'+wavePts(wv)+'</b>(次の波 +'+wavePts(wv+1)+')')
    +hiRow('🏳','諦める … <b>半分</b>')
    +hiRow('🏁','出撃した時点 … <b>'+(12+up0V())+'</b>')
-   +hiRow('📦','物資投下所 … <b>+'+Math.round(4+wv*.9)+'</b>(5回に1回)')
-   +hiSec('使う')
-   +hiRow('🃏','作戦タイムの強化カードだけ')
-   +hiRow('🛠','⬆部隊強化 🔧火力増強 🎯砲撃強化 🛠コア修理');
+   +hiRow('📦','物資投下所 … <b>+'+Math.round(4+wv*.9)+'</b>(5回に1回)');
  }else if(kind==='u'){
   const cap=(G&&G.coop?COOP_MAXU:MAXU);
   const arr=(MODE==='client'?(CC&&CC.units):m.units)||[];
@@ -29115,33 +29113,28 @@ function hudInfo(kind){
    cnt[u.ui]=(cnt[u.ui]||0)+1;w+=uWt(u.ui);}
   const ks=Object.keys(cnt);
   t='🤝 部隊の枠';now=w+' / '+cap;
-  h=hiSec('数え方')
-   +hiRow('⚖','体数ではなく<b>重さ</b>の合計 … 兵科ごとに <b>1〜4</b>')
+  use='出している部隊の<b>重さ</b>の合計。上限 <b>'+cap+'</b>(増えない)';
+  h=hiRow('⚖','重さ … 兵科ごとに <b>1〜4</b>(強いほど重い)')
    +hiRow('🦸','英雄 … <b>4</b>')
    +hiRow('⚔','倒れる … <b>すぐ空く</b>')
-   +hiRow('🔒','上限 <b>'+cap+'</b> … 増えない')
-   +hiSec('出すのに要る')
-   +hiRow('⚙️','スクラップ(札の額)')
-   +hiRow('⏳','待ち時間')
    +(ks.length?(hiSec('いま出ている')
      +ks.map(k=>hiRow('🪖',uName(+k)+' ×'+cnt[k]+' … <b>'+(uWt(+k)*cnt[k])+'</b>')).join('')):'');
  }else{
   const cr=Math.ceil(m.core),cm=m.coreMax;
   t=bus?'🚌 バスの耐久':'🏕 拠点HP';now=cr+' / '+cm;
-  h=bus?(hiSec('この面')
-    +hiRow('🏁','負けは無い … 耐久は減らない')
-    +hiRow('🧟','後ろへ抜けた敵 … 何もしない'))
-   :(hiSec('減る')
+  if(bus){use='この面に負けは無い(耐久は減らない)';
+   h=hiRow('🧟','後ろへ抜けた敵 … <b>何もしない</b>');
+  }else{
+   use='<b>0で敗北</b>。最大 <b>'+cm+'</b>(50 + 研究所 '+hp0V()+')';
+   h=hiSec('減る')
     +hiRow('🧟','敵が道の終わりに届く … その敵の<b>攻撃力</b>')
     +hiRow('🏗','攻城の敵が殴る … 攻撃力の<b>半分</b>ずつ')
-    +hiRow('💀','<b>0で敗北</b>',1)
     +hiSec('回復')
     +hiRow('🛠','コア修理('+PT+') … <b>+12</b>')
     +hiRow('📦','物資投下所 … <b>+'+Math.round(cm*.15)+'</b>(最大の15%)')
-    +hiRow('🌙','波をまたいでも<b>自動回復なし</b>',1)
-    +hiSec('最大値')
-    +hiRow('🔬','50 + 研究所 <b>'+hp0V()+'</b> = <b>'+cm+'</b>'));
+    +hiRow('🌙','波をまたいでも<b>自動回復なし</b>',1);}
  }
+ if(use)h='<div class="hiuse">'+use+'</div>'+h;
  $('hi-t').innerHTML=IC(t);
  $('hi-now').innerHTML=IC(now);
  $('hi-body').innerHTML=IC(h);
