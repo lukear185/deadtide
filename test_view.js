@@ -4,8 +4,7 @@
    ⭐こちらは**本物のヘッドレスChromeでページを開いて `getBoundingClientRect` を叩く**。
 
    使い方:
-     node test_view.js              … 1920x1080(PC・既定)で全場面を測る
-     node test_view.js 852 393      … 凍結したスマホ版を見る時だけ
+     node test_view.js              … 852x393(iPhone横向き想定)で全場面を測る
      node test_view.js 932 430      … 別の画面の大きさで測る
      node test_view.js --all        … 見つかったものを全部並べる(既定は各種10件まで)
 
@@ -24,8 +23,7 @@ const ARG=process.argv.slice(2);
 const ALL=ARG.indexOf('--all')>=0;
 const ACCEPT=ARG.indexOf('--accept')>=0;
 const NUMS=ARG.filter(a=>/^\d+$/.test(a));
-/* ⭐既定をPC(1920x1080)にした(2026-08-04にPCへ移行) */
-const W=+(NUMS[0]||1920),H=+(NUMS[1]||1080);
+const W=+(NUMS[0]||852),H=+(NUMS[1]||393);
 
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'];

@@ -1,7 +1,6 @@
 /* 実画面のスクリーンショットを撮る開発用ツール(見た目の確認はこれで行う)
    使い方: node test_shot.js [出力png] [幅] [高さ] [pc]
-     例) node test_shot.js shot.png              … PC想定 1920x1080(既定・2026-08-04にPCへ移行)
-         node test_shot.js shot.png 852 393 … 凍結したスマホ版を見る時だけ
+     例) node test_shot.js shot.png 852 393      … スマホ想定(既定)
          node test_shot.js shot.png 1280 720 pc  … PC想定
    ・index.htmlに「ソロを自動で開始する」スクリプトを足した一時ファイルを作り、ヘッドレスChromeで撮る
    ・⚠ヘッドレスChromeでは @media (pointer:coarse) が効かないので、既定ではスマホ用CSSを
@@ -10,8 +9,7 @@
    ・Chromeが無い場合はEdgeを使う */
 const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process');
 const OUT=path.resolve(process.argv[2]||'shot.png');
-/* ⭐既定をPC(1920x1080)にした(2026-08-04。スマホ版は docs/ に凍結してPC版へ移行) */
-const W=+(process.argv[3]||1920),H=+(process.argv[4]||1080);
+const W=+(process.argv[3]||852),H=+(process.argv[4]||393);
 const OPT=(process.argv[5]||'');
 const PC=OPT.indexOf('pc')>=0;
 const ST=/st(\d)/.exec(OPT);/* 例 st2 = ステージ2を撮る */
