@@ -1175,6 +1175,25 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 .arcst .sb.on{border-color:var(--gold);background:rgba(84,58,14,.85);color:var(--gold)}
 .arcst .sb i{display:block;font-style:normal;font-size:10.5px;color:var(--paper3);margin-top:2px}
 .arcst .sb.on i{color:var(--paper2)}
+/* 🎮(166)ミニゲームの選択画面と🥤カップゾンビ。⚠弓比べと同じ骨格を使う(覚え直しを増やさない) */
+#scr-mini,#scr-cup{display:none;position:absolute;inset:0;overflow:hidden}
+#scr-mini.on,#scr-cup.on{display:block}
+#minibg,#cupbg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#scr-cupg{display:none;position:absolute;inset:0;overflow:hidden;background:#141018}
+#scr-cupg.on{display:block}
+#cupcv{position:absolute;inset:0;width:100%;height:100%;display:block}
+#cup-hud{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;align-items:center;gap:8px;
+ padding:8px 10px;pointer-events:none}
+#cup-msg{flex:1 1 auto;text-align:center;font-size:15px;font-weight:900;color:var(--gold);
+ text-shadow:0 2px 0 #000}
+#cup-end{position:absolute;left:0;right:0;bottom:0;z-index:4;display:none;align-items:center;
+ justify-content:center;gap:10px;padding:10px}
+#cup-end.on{display:flex}
+#cup-end .btn{min-width:160px;min-height:56px}
+/* 🎮(166)ミニゲームの「やめる」。⚠**帯は pointer-events:none** なのでここで auto に戻す。
+   ⚠押す所44px(この企画の物差し) */
+.mgq{pointer-events:auto;flex:0 0 auto;min-width:44px;min-height:44px;padding:0 10px;
+ background:rgba(24,20,16,.82);color:var(--pane);border:3px solid var(--paper2);font-size:16px}
 /* ---- 盤面 ---- */
 #scr-arcg{display:none;position:absolute;inset:0;overflow:hidden;background:#101820}
 #scr-arcg.on{display:block}
@@ -1197,8 +1216,11 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #arc-ctl.off{opacity:.45;pointer-events:none}
 #arc-l,#arc-r,#arc-duck,#arc-helm{flex:0 0 auto;min-width:56px;min-height:56px;font-size:20px}
 /* 🎯(130)狙いの読み取り(押す所ではない) */
+/* 🎚(166)角度と威力の2行。⚠**1行あたり44px(押す所の物差し)** */
 .arcaim{flex:1 1 0;background:rgba(24,20,16,.85);border:3px solid var(--gold);border-radius:12px;
- padding:3px 10px 4px;min-height:56px;display:flex;align-items:center;gap:9px}
+ padding:2px 10px 3px;min-height:56px;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.arcaim .arow{display:flex;align-items:center;gap:9px;min-height:38px}
+.arcaim .arow i{min-width:38px}
 .arcaim b{flex:0 0 auto;font-size:19px;font-weight:900;color:var(--tech);line-height:1.05;min-width:52px}
 .arcaim i{flex:0 0 auto;font-style:normal;font-size:13px;font-weight:900;color:var(--gold);min-width:52px;text-align:right}
 .arcaim input{flex:1 1 0;height:44px}/* ⚠44px(押す所の物差し) */
@@ -1258,8 +1280,10 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div class="ver" id="vertag">v2.0 β</div>
   <!-- 💫(116)幸運チケット=タイトルの左上に小さく出す。持っていない時は出さない -->
   <button id="luckbar" style="display:none"><b id="luck-n">💫 ×0</b><i id="luck-s"></i></button>
-  <!-- 🏹(125)お遊びの別ゲーム「弓比べ」への入口。⚠本編とは別物なので**右上に小さく**置く -->
-  <button id="arcbtn" aria-label="弓比べ">🏹<i>弓比べ</i></button>
+  <!-- 🎮(166)**ミニゲームの入口**(ユーザー指示「あのボタンをミニゲームボタンにして、
+       それ押した後にどのミニゲームやるか決めるようにしよう」)。
+       ⚠**id は arcbtn のまま**=CSSと撮影の口が全部これを見ているので、名前だけ変えると壊れる。 -->
+  <button id="arcbtn" aria-label="ミニゲーム">🎮<i>ミニゲーム</i></button>
   <div class="titlewrap">
   <div class="logo-wrap">
     <div class="logo-sub">SURVIVORS' LAST STAND</div>
@@ -1511,6 +1535,51 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   </div>
 </div>
 
+<!-- 🎮⭐(166)**ミニゲームを選ぶ画面**。⚠本編とは別物なので、ここから先は本編の状態を一切触らない -->
+<div class="scr" id="scr-mini">
+  <canvas id="minibg"></canvas>
+  <div class="arcwrap">
+    <div class="arclogo">🎮 ミニゲーム</div>
+    <div class="arcsub">— 本編の合間に —</div>
+    <div class="menu" style="width:min(420px,92%)">
+      <button class="btn red" id="bt-mini-cup">🥤 カップゾンビ<i style="display:block;font-style:normal;font-size:11px;font-weight:800;opacity:.85">どのカップに居るか当てる</i></button>
+      <button class="btn gold" id="bt-mini-arc">🏹 弓比べ<i style="display:block;font-style:normal;font-size:11px;font-weight:800;opacity:.85">見えない相手を射抜く</i></button>
+      <button class="btn sm" id="bt-mini-back">← DEADTIDE へ戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🥤⭐⭐(166)**カップゾンビ**(ユーザー指示「カップにゾンビを入れて、よくある動体視力で
+     どのカップにゾンビが入ってるかみたいなミニゲーム」)。
+     ルール: ①ゾンビを1つのカップに入れて見せる ②カップが入れ替わる ③どれか当てる
+     ⚠難易度1〜10で**カップの数**と**入れ替わる速さ**が上がる。⚠5回1組で、当てた数が記録 -->
+<div class="scr" id="scr-cup">
+  <canvas id="cupbg"></canvas>
+  <div class="arcwrap">
+    <div class="arclogo">🥤 カップゾンビ</div>
+    <div class="arcsub">— どのカップに居る? —</div>
+    <div class="arcst" id="cup-lv"></div>
+    <div class="menu" style="width:min(420px,92%)">
+      <button class="btn red" id="bt-cup-play">▶ この難易度で遊ぶ</button>
+      <button class="btn sm" id="bt-cup-back">← ミニゲームへ戻る</button>
+    </div>
+    <div class="arcrec" id="cup-rec"></div>
+  </div>
+</div>
+<div class="scr" id="scr-cupg">
+  <canvas id="cupcv"></canvas>
+  <div id="cup-hud">
+    <div class="arcpill" id="cup-lvl">Lv1</div>
+    <div class="arcpill" id="cup-rd">1 / 5</div>
+    <div id="cup-msg"></div>
+    <button class="btn sm mgq" data-mgq="1">✕</button>
+  </div>
+  <div id="cup-end">
+    <button class="btn red" id="cup-again">▶ もう一度</button>
+    <button class="btn" id="cup-home">← 難易度を選ぶ</button>
+  </div>
+</div>
+
 <!-- 🏹⭐⭐**弓比べ**(2026-08-04(125)ユーザー指示のお遊び)=**本編とは別のゲーム**。
      ルール: ①相手の姿は見えない ②角度と威力で撃つ ③2回当てたら勝ち(頭なら一発)
              ④1ターンごとに歩数が1つ貯まる(使わなければ貯まる)
@@ -1537,6 +1606,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div class="arcpill" id="arc-me">🏹 ♥♥♥</div>
     <div id="arc-msg"></div>
     <div class="arcpill" id="arc-foe">♥♥♥ 🎯</div>
+    <!-- 🎮(166)やめる。⚠帯は pointer-events:none なので、このボタンだけ auto に戻す -->
+    <button class="btn sm mgq" data-mgq="1">✕</button>
   </div>
   <!-- ⏱(131)狙う持ち時間の帯(15秒) ⚠⚠(137)**HTMLから消えていた**=CSSとJSはあるのに札が無く、
        時間の帯が一度も出ていなかった(撮って気づいた) -->
@@ -1547,13 +1618,15 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
   <div id="arc-ctl">
     <button class="btn" id="arc-l">←</button>
     <button class="btn" id="arc-r">→</button>
-    <!-- 🎯(130)**狙いは画面を指でなぞって決める**(スライダーは廃止)。ここは読み取り専用の表示 -->
-    <!-- 🎚(137)**威力はスライダーに戻した**(ユーザー「力調整は一番最初みたいな調整方法に」)。
-         ⚠角度は今までどおり画面をなぞって決める(なぞると威力も一緒に動き、つまみも追従する) -->
+    <!-- 🎚⭐(166)**角度も威力と同じスライダーにした**(ユーザー指示「弓当ての角度も今みたいなのじゃ
+         なくて威力調整と一緒な感じ(縦軸)にして」)=**なぞって狙う操作は廃止**。
+         ⚠📐角度=上下(縦軸)の向き / 力=飛ぶ距離。**2行に積む**=1行に押し込むとつまみが短すぎる。
+         ⚠書き戻さない=なぞる操作は「どこを触れば動くのか」が読めなかった。 -->
     <div class="arcaim" id="arc-aim">
-      <b id="arc-la">45°</b>
-      <input type="range" id="arc-pow" min="30" max="100" value="70">
-      <i id="arc-lp">力 70</i>
+      <div class="arow"><b id="arc-la">📐45°</b>
+        <input type="range" id="arc-ang" min="10" max="85" value="45"><i>角度</i></div>
+      <div class="arow"><b id="arc-lp">力 70</b>
+        <input type="range" id="arc-pow" min="30" max="100" value="70"><i>威力</i></div>
     </div>
     <button class="btn" id="arc-duck" style="display:none" aria-label="しゃがむ">🦆</button>
     <button class="btn" id="arc-helm" style="display:none" aria-label="ヘルメット">⛑</button>
@@ -1866,6 +1939,18 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
     <div id="hi-body" style="overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y"></div>
   </div>
 </div>
+<!-- 🎮(166)**ミニゲームを途中でやめる**(ユーザー指示「ミニゲーム中にゲーム終了して
+     タイトル戻る画面追加して」)。⚠**弓比べとカップで共用**=同じことを2つ作らない -->
+<div class="modal" id="md-mgquit">
+  <div class="panel center" style="max-width:400px">
+    <h2 class="hd">🎮 やめる?</h2>
+    <p class="note" style="margin:8px 0;font-size:13px;line-height:1.6">いまの勝負は記録に残らない。</p>
+    <div class="row" style="gap:10px;justify-content:center">
+      <button class="btn red" id="bt-mgq-yes">🏕 タイトルへ戻る</button>
+      <button class="btn" id="bt-mgq-no">↩ 続ける</button>
+    </div>
+  </div>
+</div>
 <div class="modal" id="md-pause">
   <div class="panel center">
     <h2 class="hd">⏸ 一時停止</h2>
@@ -2121,6 +2206,7 @@ function metaResetAll(){
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.msn=null;                                /* 🎯(152)今日の任務(次に開いた時に作り直される) */
  META.edOK=0;META.edPend=0;                    /* 🏁(156)区切りの幕を見たか */
+ META.cupR=[];                                 /* 🥤(166)カップゾンビの記録 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
  META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
  META.tmTip=0;                                 /* 🎒編成の案内(初めて兵科を解放した時に1回) */
@@ -4493,9 +4579,11 @@ function afZ(Z){
  return{wk:Z.armor?'🔥火炎':'⚡電撃',rs:'✊近接 🔫実弾 ❄冷気'};
 }
 /* 📖(165)**図鑑用=印だけ**(ユーザー指示「ゾンビ図鑑で 弱点:🔥 耐性:🔫 みたいに
-   弱点と耐性だけ書いて」)=札が小さいので**言葉は入れない**。⚠中身は afZ と同じ所から出す。 */
+   弱点と耐性だけ書いて」)=札が小さいので**言葉は入れない**。⚠中身は afZ と同じ所から出す。
+   ⚠(166)**持っていない個体も「-」で必ず出す**(ユーザー指示「耐性とかないやつは 弱点:- って感じで
+   一応記載して」)=行が出たり出なかったりすると、**札ごとに高さが変わって並びが揺れる**。 */
 function afZIC(Z){
- if(!Z||(!Z.armor&&!Z.scl))return null;
+ if(!Z||(!Z.armor&&!Z.scl))return{wk:'-',rs:'-'};
  return{wk:Z.armor?'🔥':'⚡',rs:'✊🔫❄'};
 }
 /* 🎨⭐**特効のダメージ数字は「効いている属性の色」で出す**(2026-08-04(141)ユーザー指示
@@ -29303,10 +29391,10 @@ function renderZoo(box,hintId){
     /* ⛔**弱点/耐性の札は外した**(2026-08-04(145))=文章で書いても読まれない。⚠書き戻さない。
        ⚠**特性の名前(装甲・鱗の鎧・すり抜け…)は上の `tag` に残す**=これは「何を持っているか」であって
        「何が効くか」の説明ではない。消したのは説明文の方だけ。 */
-    /* 🛡📖(165)**弱点と耐性を印だけで1行**(ユーザー指示)。⚠**持っていない個体には出さない**
-       (空の行が並ぶと壊れて見える)。⚠色は「弱点=錆 / 耐性=灰」=戦闘中のダメージ数字と同じ言い方。 */
+    /* 🛡📖(165)(166)**弱点と耐性を印だけで1行**(ユーザー指示)。**無い個体は「-」**。
+       ⚠色は「弱点=錆 / 耐性=灰」=戦闘中のダメージ数字と同じ言い方。 */
     const az=afZIC(z);
-    const azl=(ok&&az)?('<div class="zaf"><span class="wk">弱点 '+az.wk+'</span>'
+    const azl=ok?('<div class="zaf"><span class="wk">弱点 '+az.wk+'</span>'
       +'<span class="rs">耐性 '+az.rs+'</span></div>'):'';
     return '<div class="lc"'+(ok?'':' style="opacity:.55"')+'>'
      +'<canvas class="zth'+(ok?'':' zsil')+'" width="128" height="128" data-zi="'+i+'"></canvas>'
@@ -32240,6 +32328,9 @@ function arcUI(){
  for(const q of ['arc-l','arc-r']){const e=$(q);if(e)e.disabled=(A.me.steps<1||!free9);}
  const la=$('arc-la'),lp=$('arc-lp');
  if(la)la.textContent='📐'+A.ang+'°';
+ /* 🎚(166)角度のつまみも値に追従させる(⚠**押している最中は動かさない**=指と喧嘩する) */
+ {const sa=$('arc-ang');
+  if(sa){if(+sa.value!==A.ang)sa.value=A.ang;sa.disabled=(A.ph!=='aim'||!!A.ar||!!A.over);}}
  if(lp){const w9=A.wind||0;
   const wt=(Math.abs(w9)<.05?'💨 無風':('💨 '+(w9>0?'→':'←')+' '+Math.abs(w9).toFixed(1)));
   const lt=A.last?('　🔁前回 '+A.last.ang+'°/力'+A.last.pow):'';
@@ -32392,6 +32483,224 @@ function arcStRender(){
   box.appendChild(b);
  });
 }
+
+/* ============ 🥤 カップゾンビ(ミニゲーム・2026-08-05(166)ユーザー指示) ============
+   「カップにゾンビを入れて、よくある動体視力でどのカップにゾンビが入ってるかみたいなミニゲームを
+     弓当てみたいな感じで作って。難易度は1〜10で カップの数とカップが移動する速さがどんどん増えて
+     早くなっていく感じで」。
+   ⚠**本編とは別のゲーム**=本編の状態(G/META の進行)を一切触らない。記録だけ META に置く。
+   ⭐**中身は「入れ替えの台本」1本だけ**=時間から位置を出すので、途中で崩れることが無い
+     (ムービーと同じ考え方=[[NOTES_面]]「移動はスクリプトで書く」)。
+   ⚠⚠**当たり判定は「いま画面のどこに居るか」で取る**=台本の途中でも、見えている位置と一致する。 */
+const CUP_RD=5;                 /* 1組の回数 */
+const cupN=d=>3+Math.floor((d-1)/2);          /* カップの数 3〜7 */
+const cupSw=d=>4+d*2;                          /* 入れ替える回数 6〜24 */
+const cupDur=d=>Math.max(.19,.64-(d-1)*.05);   /* 1回の入れ替えにかける秒 .64→.19 */
+const cupPair=d=>(d>=6?2:1);                   /* 同時に入れ替わる組の数 */
+let CUP=null,CUPLV=1;
+/* 記録=難易度ごとの最高正解数。⚠**META に持つ**(セーブに残す)=挑む理由になる */
+const cupBest=d=>{try{return (META.cupR&&META.cupR[d-1])|0;}catch(e){return 0;}};
+/* 台本を1つ作る。⚠**乱数はここで全部引いて配列に残す**=毎コマ引くと絵が暴れる */
+function cupNew(d){
+ const n=cupN(d),sw=cupSw(d),dur=cupDur(d),pr=cupPair(d);
+ const pos=[];for(let i=0;i<n;i++)pos.push(i);/* pos[カップ番号]=いまの席 */
+ const plan=[];
+ for(let k=0;k<sw;k++){
+  const use=[],pairs=[];
+  for(let q=0;q<pr;q++){
+   /* まだ使っていない席から2つ選ぶ(⚠同じ席を2組で使うと入れ替えが壊れる) */
+   const free=[];for(let i=0;i<n;i++)if(use.indexOf(i)<0)free.push(i);
+   if(free.length<2)break;
+   const a=free.splice(ri(0,free.length-1),1)[0],b=free.splice(ri(0,free.length-1),1)[0];
+   use.push(a,b);pairs.push([a,b]);}
+  if(pairs.length)plan.push(pairs);}
+ return{d,n,dur,plan,pos,zi:Math.max(0,ZOMBIES.findIndex(z=>z.id==='walk')),
+  hit:ri(0,n-1),/* ゾンビを入れたカップ(番号) */
+  ph:'show',t:0,k:0,pick:-1,rd:1,ok:0,over:0};
+}
+/* いまの席の並び(台本を k 番目まで適用した形)。⚠**入れ替え中は t で混ぜる** */
+function cupSlot(A,i){
+ /* i=カップ番号 → 画面の席(小数。入れ替え中は間を取る) */
+ let sl=A.pos[i];
+ if(A.ph==='mix'&&A.k<A.plan.length){
+  const pairs=A.plan[A.k],q=Math.min(1,A.t/A.dur);
+  for(const p of pairs){
+   if(sl===p[0])return p[0]+(p[1]-p[0])*q;
+   if(sl===p[1])return p[1]+(p[0]-p[1])*q;}}
+ return sl;
+}
+/* 席 → 画面のx。⚠**画面の幅から出す**(決め打ちにしない=実機で溢れる) */
+const cupX=(A,sl,w)=>{const gap=Math.min(w/(A.n+1),w*.9/A.n);return w*.5+(sl-(A.n-1)/2)*gap;};
+/* 入れ替え中の「持ち上がり」=すれ違いが見えるように、片方だけ弧を描く */
+const cupLift=(A,i)=>{
+ if(A.ph!=='mix'||A.k>=A.plan.length)return 0;
+ const sl=A.pos[i],q=Math.min(1,A.t/A.dur);
+ for(const p of A.plan[A.k])if(sl===p[0]||sl===p[1])return Math.sin(q*Math.PI)*(sl===p[0]?1:-.45);
+ return 0;
+};
+function cupStep(dt){
+ const A=CUP;if(!A||A.over)return;
+ A.t+=dt;
+ if(A.ph==='show'){if(A.t>=1.25){A.ph='drop';A.t=0;}}
+ else if(A.ph==='drop'){if(A.t>=.55){A.ph='mix';A.t=0;A.k=0;if(!A.plan.length)A.ph='pick';}}
+ else if(A.ph==='mix'){
+  if(A.t>=A.dur){
+   /* 台本の1手を確定させる(⚠pos は「カップ番号→席」なので、席で探して入れ替える) */
+   const pairs=A.plan[A.k];
+   for(const p of pairs){
+    let ia=-1,ib=-1;
+    for(let i=0;i<A.n;i++){if(A.pos[i]===p[0])ia=i;else if(A.pos[i]===p[1])ib=i;}
+    if(ia>=0)A.pos[ia]=p[1];if(ib>=0)A.pos[ib]=p[0];}
+   A.k++;A.t=0;
+   if(A.k>=A.plan.length){A.ph='pick';A.t=0;}}}
+ else if(A.ph==='res'){
+  if(A.t>=1.5){
+   if(A.rd>=CUP_RD){A.over=1;cupEnd();}
+   else{const d=A.d,ok=A.ok,rd=A.rd+1;CUP=cupNew(d);CUP.ok=ok;CUP.rd=rd;}}}
+ cupUI();
+}
+function cupUI(){
+ const A=CUP;if(!A)return;
+ const e=$('cup-msg');
+ if(e)e.textContent=A.ph==='show'?'ここに居る':A.ph==='drop'?'かぶせる…':A.ph==='mix'?'よく見て!'
+  :A.ph==='pick'?'どのカップ?':(A.pick===A.hit?'⭕ 当たり!':'❌ はずれ…');
+ const l=$('cup-lvl');if(l)l.textContent='Lv'+A.d+'  '+A.n+'個';
+ const r=$('cup-rd');if(r)r.textContent=A.rd+' / '+CUP_RD+'  ⭕'+A.ok;
+}
+/* 1杯ぶんの絵。⚠**紙コップではなくバケツ**(この世界の物)=上が広い台形+口の縁 */
+function cupDraw1(c,x,y,w,h,lift,col){
+ c.save();c.translate(x,y-lift);
+ c.lineJoin='round';c.strokeStyle=INK;c.lineWidth=3;
+ c.fillStyle=col;
+ c.beginPath();c.moveTo(-w*.5,-h);c.lineTo(w*.5,-h);c.lineTo(w*.36,0);c.lineTo(-w*.36,0);c.closePath();
+ c.fill();c.stroke();
+ /* 明暗を1段(⚠のっぺりだと「ただの台形」に見える) */
+ c.save();c.beginPath();c.moveTo(0,-h);c.lineTo(w*.5,-h);c.lineTo(w*.36,0);c.lineTo(0,0);c.closePath();
+ c.fillStyle='rgba(0,0,0,.22)';c.fill();c.restore();
+ /* 口の縁 */
+ c.fillStyle=shade(col,1.15);c.beginPath();c.ellipse(0,-h,w*.5,w*.11,0,0,7);c.fill();c.stroke();
+ c.fillStyle='rgba(0,0,0,.5)';c.beginPath();c.ellipse(0,-h,w*.5*.82,w*.11*.72,0,0,7);c.fill();
+ c.restore();
+}
+function cupDraw(t){
+ const cv=$('cupcv');if(!cv||!cv.getContext)return;
+ const A=CUP;
+ const dpr=Math.min(2,window.devicePixelRatio||1);
+ const w=Math.round((cv.clientWidth||852)*dpr),h=Math.round((cv.clientHeight||393)*dpr);
+ if(!w||!h)return;
+ if(cv.width!==w)cv.width=w;if(cv.height!==h)cv.height=h;
+ const c=cv.getContext('2d');if(!c)return;
+ c.setTransform(1,0,0,1,0,0);
+ /* 舞台=暗い部屋と台。⚠**台の面を1本入れる**=カップが宙に浮いて見えない */
+ let g=c.createLinearGradient(0,0,0,h);
+ g.addColorStop(0,'#1a1420');g.addColorStop(1,'#0b0810');
+ c.fillStyle=g;c.fillRect(0,0,w,h);
+ const gy=h*.70,tw=w*.94;
+ c.fillStyle='#2e2436';c.fillRect(w*.03,gy,tw,h*.28);
+ c.fillStyle='#3d3148';c.fillRect(w*.03,gy,tw,4*dpr);
+ if(!A)return;
+ /* ⚠⚠**寸法は画面から出す**=決め打ちにすると実機で溢れる。⚠**高さ側でも必ず抑える**
+    (横だけで出すと、カップが3個の時に画面の高さを超えて上に飛び出す。撮って直した) */
+ const cw=Math.min(w*.86/A.n,h*.19),ch=cw*1.18;
+ /* 影(⚠先に全部描く=カップの下に敷く) */
+ c.fillStyle='rgba(0,0,0,.35)';
+ for(let i=0;i<A.n;i++){const x=cupX(A,cupSlot(A,i),w);
+  c.beginPath();c.ellipse(x,gy+3*dpr,cw*.40,cw*.10,0,0,7);c.fill();}
+ /* ゾンビ(⚠かぶさっている間は描かない=中が見えたら遊びが消える) */
+ const showZ=(A.ph==='show')||(A.ph==='res');
+ if(showZ){const x=cupX(A,cupSlot(A,A.hit),w);
+  c.save();c.translate(x,gy);const k=(ch*.82)/34;c.scale(k,k);
+  try{drawZombie(c,A.zi,0,0,-1,t,0,{});}catch(e){}
+  c.restore();}
+ /* カップ(⚠奥から手前=持ち上がっている物を最後に描く) */
+ const ord=[];for(let i=0;i<A.n;i++)ord.push(i);
+ ord.sort((a,b)=>Math.abs(cupLift(A,a))-Math.abs(cupLift(A,b)));
+ for(const i of ord){
+  const sl=cupSlot(A,i),x=cupX(A,sl,w);
+  let lift=cupLift(A,i)*ch*.55;
+  /* ⚠**見せている間は「ゾンビの背より高く」上げる**=中途半端だと頭が隠れて何が居るのか読めない
+     (撮って直した)。⚠カップはゾンビの後に描く=下ろす途中でちゃんと隠れる。 */
+  if(A.ph==='show')lift=ch*1.55;
+  else if(A.ph==='drop')lift=ch*1.55*(1-Math.min(1,A.t/.55));
+  else if(A.ph==='res'&&i===A.hit)lift=ch*1.55*Math.min(1,A.t/.35);
+  const col=(A.ph==='res')?(i===A.pick?(i===A.hit?'#7ba33f':'#93381e'):'#8a6a45'):'#8a6a45';
+  cupDraw1(c,x,gy,cw,ch,Math.abs(lift),col);
+  /* 選べる間は番号を出す(⚠押す所が分かるように) */
+  /* ⚠⚠**番号は「左から何番目か」で振る**=カップの番号(i)を出すと、
+     入れ替えても番号が付いて回るので**答えがそのまま見えてしまう**(撮って気づいた)。 */
+  if(A.ph==='pick'){c.fillStyle='rgba(242,236,220,.9)';c.font='900 '+Math.round(cw*.3)+'px '+FF;
+   c.textAlign='center';c.fillText(String(Math.round(sl)+1),x,gy-ch*.35);}
+ }
+ c.textAlign='left';
+}
+/* 押した所のカップを拾う。⚠**見えている位置**(cupSlot)で取る=台本の途中でもずれない */
+function cupHit(ev){
+ const A=CUP;if(!A||A.ph!=='pick')return;
+ const cv=$('cupcv');if(!cv)return;
+ const r=cv.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);
+ const px=(ev.clientX-r.left)*dpr,w=cv.width,h=cv.height;
+ const cw=Math.min(w*.7/A.n,h*.30);
+ let bi=-1,bd=1e9;
+ for(let i=0;i<A.n;i++){const x=cupX(A,cupSlot(A,i),w),dd=Math.abs(px-x);
+  if(dd<bd&&dd<cw*.75){bd=dd;bi=i;}}
+ if(bi<0)return;
+ A.pick=bi;A.ph='res';A.t=0;
+ if(bi===A.hit){A.ok++;try{sfx.win&&sfx.win();}catch(e){}}
+ else{try{sfx.lose&&sfx.lose();}catch(e){}}
+ cupUI();
+}
+function cupEnd(){
+ const A=CUP;if(!A)return;
+ /* 記録(⚠難易度ごと。**最高だけ**残す) */
+ try{if(!Array.isArray(META.cupR))META.cupR=[];
+  if(A.ok>(META.cupR[A.d-1]|0)){META.cupR[A.d-1]=A.ok;saveMeta();}}catch(e){}
+ const e=$('cup-msg');if(e)e.textContent='⭕ '+A.ok+' / '+CUP_RD+(A.ok>=CUP_RD?'  かんぺき!':'');
+ const b=$('cup-end');if(b)b.classList.add('on');
+}
+function cupPlay(){
+ CUP=cupNew(CUPLV);
+ const b=$('cup-end');if(b)b.classList.remove('on');
+ cupUI();show('cupg');
+}
+function cupLvRender(){
+ const box=$('cup-lv');if(!box)return;
+ box.innerHTML='';
+ for(let d=1;d<=10;d++){
+  const b=document.createElement('button');
+  b.className='sb'+(d===CUPLV?' on':'');
+  b.textContent='Lv'+d;
+  const em=document.createElement('i');
+  em.textContent=cupN(d)+'個・'+(cupBest(d)?('最高⭕'+cupBest(d)):'記録なし');
+  b.appendChild(em);
+  b.onclick=()=>{CUPLV=d;cupLvRender();};
+  box.appendChild(b);}
+}
+function cupOpen(){
+ try{ensureAC();}catch(e){}
+ const r=$('cup-rec');
+ if(r)r.textContent='⚠ 5回1組。カップの数と速さは難易度で上がる';
+ cupLvRender();show('cup');
+}
+try{
+ /* 🎮(166)ミニゲームを途中でやめる=弓比べとカップで**同じ窓を共用**する。
+    ⚠**印(data-mgq)で拾う**=盤面ごとに別のidを作らない(足すたびに配線が増える) */
+ document.querySelectorAll('[data-mgq]').forEach(b9=>{b9.onclick=()=>{
+  $('md-mgquit').classList.add('on');};});
+ $('bt-mgq-no').onclick=()=>$('md-mgquit').classList.remove('on');
+ $('bt-mgq-yes').onclick=()=>{$('md-mgquit').classList.remove('on');
+  ARC=null;CUP=null;
+  try{const e9=$('cup-end');if(e9)e9.classList.remove('on');}catch(e){}
+  show('title');};
+ $('bt-mini-back').onclick=()=>show('title');
+ $('bt-mini-cup').onclick=()=>cupOpen();
+ $('bt-mini-arc').onclick=()=>arcOpen();
+ $('bt-cup-back').onclick=()=>show('mini');
+ $('bt-cup-play').onclick=()=>cupPlay();
+ $('cup-again').onclick=()=>cupPlay();
+ $('cup-home').onclick=()=>{CUP=null;cupOpen();};
+ {const cv=$('cupcv');
+  if(cv&&cv.addEventListener)cv.addEventListener('pointerdown',e=>{e.preventDefault();cupHit(e);});}
+}catch(e){}
 function arcOpen(){
  try{ensureAC();}catch(e){}
  const r=$('arc-rec');
@@ -32406,24 +32715,20 @@ function arcPlay(){
  arcUI();show('arcg');
 }
 try{
- $('arcbtn').onclick=()=>{arcOpen();};
- $('bt-arc-back').onclick=()=>show('title');
+ /* 🎮(166)タイトルのボタンは**ミニゲームを選ぶ画面**へ(ユーザー指示)。⚠弓比べへ直行させない */
+ $('arcbtn').onclick=()=>{show('mini');};
+ $('bt-arc-back').onclick=()=>show('mini');
  $('bt-arc-play').onclick=()=>arcPlay();
  $('bt-arc-how').onclick=()=>toast('🏹 相手は見えない。画面をなぞって狙い、🏹射るで放つ(持ち時間15秒)。'+ARC_HP+'回当てたら勝ち・頭なら一発。⛰丘は矢を阻み、💨風は矢を流す。地面は1マス4m=矢は必ず1マスに刺さる。👣移動・🦆しゃがみ・⛑ヘルメットは**相手が狙っている間だけ**使える',true);
 
  {const sl=$('arc-pow');
   if(sl)sl.oninput=e=>{if(ARC&&ARC.ph==='aim'&&!ARC.ar&&!ARC.over){ARC.pow=+e.target.value;arcUI();}};}
+ /* 🎚(166)角度のスライダー(⚠威力と同じ形にする=覚え直すものを増やさない) */
+ {const sa=$('arc-ang');
+  if(sa)sa.oninput=e=>{if(ARC&&ARC.ph==='aim'&&!ARC.ar&&!ARC.over){ARC.ang=+e.target.value;arcUI();}};}
  $('arc-fire').onclick=()=>arcFire();
- /* 🎯(130)盤面をなぞって狙う。⚠**onclick は付けない**(全画面なので検査で重なり扱いになる) */
- {const cv9=$('arccv');
-  if(cv9&&cv9.addEventListener){
-   cv9.addEventListener('pointerdown',e=>{e.preventDefault();
-    try{cv9.setPointerCapture&&cv9.setPointerCapture(e.pointerId);}catch(x){}
-    if(ARC&&ARC.ph==='aim'&&!ARC.ar&&!ARC.over){ARC.drag=null;arcDragTo(e,0);}});
-   cv9.addEventListener('pointermove',e=>{if(ARC&&ARC.drag){e.preventDefault();arcDragTo(e,0);}});
-   for(const ev of ['pointerup','pointercancel','lostpointercapture'])
-    cv9.addEventListener(ev,e=>{if(ARC&&ARC.drag){e.preventDefault();arcDragTo(e,1);}});
-  }}
+ /* 🎯⛔(166)**盤面をなぞって狙う操作は廃止**(ユーザー指示で角度もスライダーにした)。
+    ⚠**書き戻さない**=どこを触れば動くのかが読めなかった。arcDragTo は撮影の口が使うので残してある。 */
  $('arc-duck').onclick=()=>arcDuck();
  $('arc-helm').onclick=()=>arcHelm();
  $('arc-l').onclick=()=>arcMove(-1);
@@ -32497,6 +32802,10 @@ function loopBody(now){
  /* ⚠(126)10秒の待ちを廃止したので、時間の帯の書き換えも要らなくなった */
  if(SCR==='arcg')try{arcStep(Math.min(.05,dt0));arcDraw(TT);arcUI();}catch(e){}
  if(SCR==='arc')try{sceneBg($('arcbg'),TT);}catch(e){}
+ /* 🎮(166)ミニゲーム。⚠**開いている画面だけ**回す */
+ if(SCR==='mini')try{sceneBg($('minibg'),TT);}catch(e){}
+ if(SCR==='cup')try{sceneBg($('cupbg'),TT);}catch(e){}
+ if(SCR==='cupg')try{cupStep(Math.min(.05,dt0));cupDraw(TT);}catch(e){}
  /* 🎬(157)区切りの幕のムービー。⚠**画面(SCR)では絞らない**=成績表の上にかぶさる窓なので、
     開いている間だけ回す(閉じると `ED.on=0` で止まる) */
  if(ED.on)try{edStep(dt0);}catch(e){}

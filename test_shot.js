@@ -192,6 +192,16 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         bsgot=最初の3段を受け取り済みにして撮る(✅と次の段の棒が両方映る) */
      :(OPT.indexOf('bsg')>=0)?('META.brec=[{s:7400}];'
        +(OPT.indexOf('bsgot')>=0?'META.bsg=[7];':'')+'openBsg(0);')
+     /* 🎮(166)mini=ミニゲームを選ぶ画面 / cup=🥤カップゾンビのホーム /
+        cupg=カップの盤面(cupph=show/mix/pick/res で見せたい所を出す・cuplv=難易度) */
+     :(OPT.indexOf('cupg')>=0)?('CUPLV='+((/cuplv=([0-9]+)/.exec(OPT)||[0,'5'])[1])+';cupPlay();'
+       +'try{var ph9="'+((/cupph=([a-z]+)/.exec(OPT)||[0,'pick'])[1])+'";'
+       /* ⚠⚠仮想時間では rAF がほとんど回らないので、**自分で cupStep を回して**その段まで進める */
+       +'for(var q9=0;q9<900&&CUP&&CUP.ph!==ph9;q9++)cupStep(.05);'
+       +'if(ph9==="res"&&CUP){CUP.pick=CUP.hit;CUP.ph="res";CUP.t=.4;}'
+       +'cupUI();cupDraw(1.2);}catch(e){document.title="ERR15 "+e.message;}')
+     :(OPT.indexOf('cup')>=0)?'cupOpen();'
+     :(OPT.indexOf('mini')>=0)?'show("mini");'
      /* 🏹(125)arc=弓比べのホーム / arcg=弓比べの盤面(arcmv で相手のターン=移動の帯) */
      :(OPT.indexOf('arcg')>=0)?(((/arcst=([0-9])/.exec(OPT))?('ARCST='+(/arcst=([0-9])/.exec(OPT))[1]+';'):'')+'arcPlay();'+(OPT.indexOf('arcdrag')>=0?'ARC.drag={x0:300,y0:300,x:430,y:200};ARC.ang=38;ARC.pow=88;arcUI();':'')+(OPT.indexOf('arcmv')>=0?'ARC.ph="ethink";ARC.me.duck=1;ARC.me.helm=1;ARC.cam=arcCX(ARC.foe.c);ARC.camT=ARC.cam;arcUI();':''))
      :(OPT.indexOf('arc')>=0)?'arcOpen();'
