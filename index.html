@@ -3903,7 +3903,7 @@ const TW_TRAIT={
 };
 /* 一覧に出す絵文字。⚠タワー20枚・兵科32枚が全部同じ絵だと見分けられないので型で変える */
 const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡'};
-const UN_IC={melee:'⚔',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚'};
+const UN_IC={melee:'✊',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚'};
 const TW_DMG_STEP=.05;/* タワーの威力(1段あたりの素の刻み)。⚠伸びは `lineAcc` を通す(後半ほど大きい) */
 /* 兵科は近接だけHP寄り、それ以外は攻撃寄り(型ごと強化の時の配分をそのまま引き継ぐ) */
 const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 1段あたりの素の刻み */
@@ -4214,7 +4214,10 @@ const ARMOR_CUT=.45;/* 🛡装甲・🐟鱗の敵に「貫通しない攻撃」�
    ⚠**貫通の判定も計算側と同じ式にしてある**:
      兵科/英雄 = type が fire/blast/pierce なら貫通(`stepUnits` の `pierce`)/
      タワー = bullet 以外は必ず貫通・bullet だけ `T.pierce` を見る。 */
-const AF_TY={melee:{ic:'⚔',n:'近接'},bullet:{ic:'🔫',n:'実弾'},pierce:{ic:'🗡',n:'貫通'},
+/* ⚠⚔近接は**✊**にした(2026-08-04(147)ユーザー指示)=本作の近接は素手・バット・鎖・盾が主で、
+   剣を持っている兵科は1人もいない。⚠`UN_IC` の melee も同じ値に揃えてある(2か所)。
+   📌**いずれ専用のアイコン画像に差し替える**(ユーザー「のちのちここのアイコンも作って差し換えよう」)=[[TODO]] */
+const AF_TY={melee:{ic:'✊',n:'近接'},bullet:{ic:'🔫',n:'実弾'},pierce:{ic:'🗡',n:'貫通'},
  blast:{ic:'💣',n:'爆発'},fire:{ic:'🔥',n:'火炎'},frost:{ic:'❄',n:'冷気'},
  elec:{ic:'⚡',n:'電撃'},net:{ic:'🕸',n:'拘束'},heal:{ic:'✚',n:'回復'},
  eco:{ic:'🏭',n:'工房'},sup:{ic:'🏗',n:'支援'}};
@@ -4248,7 +4251,7 @@ function afTag(type,prc,isTw){
    ⚠⚠**割合(45%/×1.9)も説明文も入れない**=絵文字と一語だけ。長くしたくなったらここを疑う。 */
 function afZ(Z){
  if(!Z||(!Z.armor&&!Z.scl))return null;
- return{wk:Z.armor?'🔥火炎':'⚡電撃',rs:'⚔近接 🔫実弾 ❄冷気'};
+ return{wk:Z.armor?'🔥火炎':'⚡電撃',rs:'✊近接 🔫実弾 ❄冷気'};
 }
 /* 🎨⭐**特効のダメージ数字は「効いている属性の色」で出す**(2026-08-04(141)ユーザー指示
      「金色は各属性の色にしたい。電気で効いてるなら黄色、火ならオレンジっぽい色、実弾なら若干黒目」)。
