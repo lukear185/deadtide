@@ -2166,6 +2166,37 @@ function checkTwFx(){
  console.log('タワーの撃ち方: 冷却塔/ドローン/要塞砲/ショットガン/プラズマ が別々の絵・別々の音 OK');
  backTitle();
 }
+/* 💀(165)**ラスボスは居座るほど攻撃力が上がる**(ユーザー指示)。
+   ⚠見るのは3つ=①最終ボス(fin)だけ上がる ②1分で+1倍・上限5倍 ③実際に受ける傷が増える */
+function checkFinRamp(){
+ META.stg=0;setDiff=2;startSolo();
+ frames(20,.016);
+ const me=G.players[0];
+ const fi=ZOMBIES.findIndex(z=>z.fin&&!z.nm&&!z.st);
+ if(fi<0){console.log('FAIL: 最終ボスが見つからない');process.exit(1);}
+ const f0={fin:1,age:0},f1={fin:1,age:FIN_RAMP},f4={fin:1,age:FIN_RAMP*4},f9={fin:1,age:FIN_RAMP*99};
+ if(finAtkM(f0)!==1){console.log('FAIL: 湧いた直後の倍率が1ではない '+finAtkM(f0));process.exit(1);}
+ if(Math.abs(finAtkM(f1)-2)>.001){console.log('FAIL: 1分で2倍になっていない '+finAtkM(f1));process.exit(1);}
+ if(Math.abs(finAtkM(f4)-FIN_MAX)>.001){console.log('FAIL: 4分で上限になっていない '+finAtkM(f4));process.exit(1);}
+ if(finAtkM(f9)!==FIN_MAX){console.log('FAIL: 上限を超えて上がっている '+finAtkM(f9));process.exit(1);}
+ if(finAtkM({boss:1,age:FIN_RAMP*9})!==1){console.log('FAIL: 最終ボス以外まで上がっている');process.exit(1);}
+ const hit=(age)=>{
+  me.units.length=0;me.zombies.length=0;me.flagD=PLEN*.5;
+  const ui=UNITS.findIndex(u=>u.id==='shd');
+  me.team=UNITS.map((u,i)=>i);me.uUn=UNITS.length;me.ucd[ui]=0;me.scrap=999999;
+  deployUnit(me,ui);const u=me.units[me.units.length-1];u.d=PLEN*.5;u.hp=u.mhp=1e9;
+  const z=mkZ(zSpec(fi,1,20),u.d-2);z.hp=z.mhp=1e12;z.age=age;me.zombies.push(z);
+  const h0=u.hp;for(let k=0;k<120;k++)campStep(me,.03,G.wave);
+  return h0-u.hp;};
+ const d0=hit(0),d4=hit(FIN_RAMP*4);
+ if(!(d0>0)){console.log('FAIL: 最終ボスが盾役を殴っていない');process.exit(1);}
+ if(d4<d0*3){console.log('FAIL: 時間が経っても攻撃力が上がっていない '+Math.round(d0)+'→'+Math.round(d4));process.exit(1);}
+ {const z=mkZ(zSpec(fi,1,20),0);const d1=z.dmg;z.age=FIN_RAMP*9;
+  if(z.dmg!==d1){console.log('FAIL: コアへのダメージまで動いている');process.exit(1);}}
+ console.log('💀最終ボスの攻撃力: 湧いた直後x1 → '+FIN_RAMP+'秒ごとに+1倍 → 上限x'+FIN_MAX
+  +' / 実測 盾役の被害 '+Math.round(d0)+'→'+Math.round(d4)+' / 普通のボスと雑魚は据え置き OK');
+ backTitle();
+}
 function checkHook(){
  META.stg=0;setDiff=2;startSolo();
  frames(20,.016);
@@ -3951,6 +3982,7 @@ checkRpg();
 checkProgress();
 checkMetaReset();
 checkEvo();
+checkFinRamp();
 checkHook();
 checkBite();
 checkFx2();

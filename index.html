@@ -755,6 +755,10 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hsinfo .sbr .sb{display:block;height:10px;border:2px solid var(--ink);border-radius:6px;
  background:var(--paper2);overflow:hidden}
 .hsinfo .sbr .sb b{display:block;height:100%}
+/* 📖(165)図鑑の「弱点/耐性」の1行。⚠**印だけ**(言葉を入れない=札が小さい) */
+.zaf{display:flex;gap:6px;justify-content:center;font-size:11px;font-weight:900;margin:1px 0 0}
+.zaf .wk{color:var(--rust2)}
+.zaf .rs{color:var(--ink2);opacity:.75}
 .hchips{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}
 .hchips span{background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
  padding:1px 6px;font-size:10.5px;font-weight:800}
@@ -4488,6 +4492,12 @@ function afZ(Z){
  if(!Z||(!Z.armor&&!Z.scl))return null;
  return{wk:Z.armor?'🔥火炎':'⚡電撃',rs:'✊近接 🔫実弾 ❄冷気'};
 }
+/* 📖(165)**図鑑用=印だけ**(ユーザー指示「ゾンビ図鑑で 弱点:🔥 耐性:🔫 みたいに
+   弱点と耐性だけ書いて」)=札が小さいので**言葉は入れない**。⚠中身は afZ と同じ所から出す。 */
+function afZIC(Z){
+ if(!Z||(!Z.armor&&!Z.scl))return null;
+ return{wk:Z.armor?'🔥':'⚡',rs:'✊🔫❄'};
+}
 /* 🎨⭐**特効のダメージ数字は「効いている属性の色」で出す**(2026-08-04(141)ユーザー指示
      「金色は各属性の色にしたい。電気で効いてるなら黄色、火ならオレンジっぽい色、実弾なら若干黒目」)。
    ⚠色は必ず表(`:root`とJSの見た目ブロック)から採る=直書きは `checkPalette` が落とす。
@@ -4520,6 +4530,18 @@ const uHook=ui=>(UNITS[ui]&&UNITS[ui].hook)||0;/* 0=すり抜け敵を止めら�
      しかも旗で足が止まっているので前へ出て詰めることもできない=一方的に殴られ続ける
      (2026-07-26にユーザーから指摘。実際そうなっていた)。 */
 const ENG_GAP=36;
+/* 💀⭐⭐(165)**各ステージのラスボスは、居座るほど攻撃力が上がる**(ユーザー指示
+     「各ステージのラスボス攻撃力は1分ごとにどんどん増えていって最終的に5倍になるようにして、
+       盾兵で耐えるだけになるのをできないようにして」)。
+   ⚠**対象は最終ボス(fin:1)だけ**=WAVE10/15のボスや雑魚は今までどおり。
+   ⭐**1分で+1倍・4分で×5で頭打ち**(なめらかに上がる=急に死なない)。
+   ⚠**上げるのは部隊への攻撃力(atk)だけ**=コアへのダメージ(dmg)は触らない
+     (漏れた時の被害まで5倍になると、耐える遊びではなく事故になる)。
+   ⚠**倍率を文章に直接書かない**=札も知らせもこの定数から作る(相性の掟と同じ)。 */
+const FIN_RAMP=60,FIN_MAX=5;/* 何秒で+1倍 / 上限の倍率 */
+const finAtkM=z=>(z&&z.fin)?Math.min(FIN_MAX,1+(z.age||0)/FIN_RAMP):1;
+/* いま何段目か(1〜FIN_MAX)。⚠**段が上がった時だけ知らせる**=毎秒言うと読めない */
+const finStep=z=>Math.min(FIN_MAX,1+Math.floor((z&&z.age||0)/FIN_RAMP));
 /* ⭐⭐**🚩集結旗にどこまで詰めるかは兵科ごとに違う**(2026-07-28ユーザー指示
      「各々のユニットの攻撃射程まで旗に近づくようにしたい。敵がいないときに旗のとこまで
        遠距離職も行っちゃって遠距離の意味があまりなくなっちゃうから」)。
@@ -17680,7 +17702,7 @@ function killZ(C,z){
      ⚠距離は道に沿った位置(d)で測る=噛みつき(ENG_GAP)と同じ物差し。
      ⚠威力はその敵の攻撃力×2.4に留める(ブローター72/深淵の母206)=前線が一撃で溶けないため。
      ⚠部隊にだけ効かせる(コアは削らない)。分裂しない敵には一切関係しない */
-  {const br=z.boss?150:110,bdm=(z.atk||25)*2.4;
+  {const br=z.boss?150:110,bdm=(z.atk||25)*2.4*finAtkM(z);
    for(const u of C.units){if(u.dead)continue;if(Math.abs(u.d-z.d)>br)continue;dmgU(C,u,bdm);}
    addFx(C,'boom',z.px,z.py,'');
    addFx(C,'ring',z.px,z.py,'',{r:br,col:TOXIC});
@@ -18368,6 +18390,12 @@ function campStep(C,dt,wave){
   /* 歩行の土埃 */
   if(FXLV===2&&!z.dead&&z.d>0&&Math.random()<dt*(z.sp>140?2.2:.9))addP(C,1,z.px-4,z.py+2,{sp:16,g:-8,flat:1,life:.5,r:3.2,col:'#b9a67c',typ:'smoke'});
   if(z.dead)continue;
+  /* 💀(165)**ラスボスは居座るほど攻撃力が上がる**=年齢を数える。⚠ここ以外で age を触らない。
+     ⭐**段が上がった瞬間だけ知らせる**=盾で耐えているだけだと危なくなっていくのが分かる。 */
+  if(z.fin){const st0=finStep(z);z.age=(z.age||0)+dt;
+   const st1=finStep(z);
+   if(st1>st0&&C.isMe){UI.banner('💀 '+(ZOMBIES[z.zi]?ZOMBIES[z.zi].n:'ボス')+' の攻撃が激しくなった! ×'+st1);
+    try{sfx.elite&&sfx.elite();}catch(e){}}}
   /* 凍結中は完全停止(移動も攻撃もできない)。永久ロックは**凍らせられる回数の上限**が止める */
   if(z.frzT>0)z.frzT-=dt;
   if(z.stnT>0)z.stnT-=dt;/* ⭐気絶の見せ方(★が回る)。⚠止める仕組みは frzT の方=これは演出だけ */
@@ -18416,11 +18444,11 @@ function campStep(C,dt,wave){
       if(u2.hro&&u2!==blk)continue;
       const gp=Math.abs(u2.d-z.d);if(gp<=110)tg2.push({u:u2,gp});}
      tg2.sort((a,b)=>a.gp-b.gp);
-     for(let k9=0;k9<Math.min(z.aoe,tg2.length);k9++)dmgU(C,tg2[k9].u,z.atk*.65);/* 薙ぎ払いは1体あたり65% */
+     for(let k9=0;k9<Math.min(z.aoe,tg2.length);k9++)dmgU(C,tg2[k9].u,z.atk*.65*finAtkM(z));/* 薙ぎ払いは1体あたり65% */
      addFx(C,'ring',z.px,z.py-16*CH_UP,'',{r:96,col:DANGER2});
      addP(C,8,z.px,z.py-18*CH_UP,{sp:170,up:40,g:420,life:.35,r:2.6,col:'#ff9a6a',flat:1});
      C.shake=Math.max(C.shake||0,.16);if(C.isMe)sfx.thunk();
-    }else dmgU(C,blk,z.atk);
+    }else dmgU(C,blk,z.atk*finAtkM(z));
     if(C.isMe&&Math.random()<.3)sfx.bite();
     if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30*CH_UP,'',{sd:rnd(0,9),gray:1});}
    continue;
@@ -29275,10 +29303,16 @@ function renderZoo(box,hintId){
     /* ⛔**弱点/耐性の札は外した**(2026-08-04(145))=文章で書いても読まれない。⚠書き戻さない。
        ⚠**特性の名前(装甲・鱗の鎧・すり抜け…)は上の `tag` に残す**=これは「何を持っているか」であって
        「何が効くか」の説明ではない。消したのは説明文の方だけ。 */
+    /* 🛡📖(165)**弱点と耐性を印だけで1行**(ユーザー指示)。⚠**持っていない個体には出さない**
+       (空の行が並ぶと壊れて見える)。⚠色は「弱点=錆 / 耐性=灰」=戦闘中のダメージ数字と同じ言い方。 */
+    const az=afZIC(z);
+    const azl=(ok&&az)?('<div class="zaf"><span class="wk">弱点 '+az.wk+'</span>'
+      +'<span class="rs">耐性 '+az.rs+'</span></div>'):'';
     return '<div class="lc"'+(ok?'':' style="opacity:.55"')+'>'
      +'<canvas class="zth'+(ok?'':' zsil')+'" width="128" height="128" data-zi="'+i+'"></canvas>'
      +'<div class="nm">'+(ok?z.n:'???')+'</div>'
      +'<div class="tg">'+(ok?('HP'+z.hp+'・攻撃'+z.atk+'／'+tag):'未発見')+'</div>'
+     +azl
      +'<div class="ds">'+(ok?(z.dsc||('速さ'+z.sp+'／抜けられるとコアに'+z.dmg+'ダメージ'))
        :'ソロ作戦で倒すと載る')+'</div>'
      +'</div>';
