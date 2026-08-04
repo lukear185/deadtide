@@ -1582,7 +1582,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 
 <div class="modal" id="md-giveup">
   <div class="panel center" style="max-width:400px">
-    <h2 class="hd">🏳 このウェーブを諦める?</h2>
+    <h2 class="hd">🏳 この WAVE を諦める?</h2>
     <p class="note" style="margin:8px 0;font-size:14px;line-height:1.7">残っている敵と、これから来る敵の分だけ<b>コアがダメージを受けて</b>すぐ作戦タイムに進む。</p>
     <table class="stats" style="margin:8px auto"><tr><td>受けるダメージ</td><td id="gu-dmg">-0</td></tr><tr><td>コアHP</td><td id="gu-core">-</td></tr></table>
     <div class="row" style="gap:10px;justify-content:center">
@@ -1855,7 +1855,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <button class="btn gold" id="bt-suspend">💾 中断してタイトルへ</button>
       <button class="btn" id="bt-quit">🏕 やめる(記録を消す)</button>
     </div>
-    <p class="note" id="pause-note" style="margin:8px 0 0;font-size:11px">💾中断=このウェーブの初めからやり直し。戦闘中に稼いだ⚙️や建てた塔は持ち越さない。</p>
+    <p class="note" id="pause-note" style="margin:8px 0 0;font-size:11px">💾中断=この WAVE の初めからやり直し。戦闘中に稼いだ⚙️や建てた塔は持ち越さない。</p>
   </div>
 </div>
 <div id="rotatehint">
@@ -2991,9 +2991,9 @@ const SFX_LBL={
  warn:['警告','⚙️不足など','ui'], dep:['部隊の出撃','デッキを押す','ui'],
  heal:['回復','野戦病院・軍医','ui'], push:['死潮を押す','対戦','ui'],
  net2:['—','—','ui'],
- horn:['ウェーブ開始','波の始まり','ev'], leak:['コアに被弾','敵が抜けた','ev'],
+ horn:['WAVE 開始','WAVE の始まり','ev'], leak:['コアに被弾','敵が抜けた','ev'],
  elite:['エリート出現','強い個体が来る','ev'], eliteKill:['エリート撃破','','ev'],
- bossKill:['ボス撃破','','ev'], clearJ:['ウェーブ制圧','波をしのいだ','ev'],
+ bossKill:['ボス撃破','','ev'], clearJ:['WAVE 制圧','WAVE をしのいだ','ev'],
  /* ⚠**新しい合成音は必ずここに足す**=?sfx=1 で鳴らして確かめられないと、
     実機で「聞こえない」と言われた時に原因(音量なのか帯域なのか呼ばれていないのか)が切り分けられない */
  acidPop:['酸爆発','酸まみれの敵が倒れた','ev'],
@@ -3370,14 +3370,14 @@ const TOWERS=[
  /* 💰⭐(159)**支援施設の値段を5倍にした**(ユーザー指示「置ける野戦病院とかのコストを5倍にして」)=
     支援枠が2つに戻って**両方建つ**ようになったので、素の値段では安すぎた。
     ⚠**強化代は値段から出している**(`stCost`=cost×.45×1.75^段)ので、強化代も5倍になる。 */
- {id:'radio',off:1,n:'電波塔',cost:1900,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
+ {id:'radio',off:1,n:'電波塔',cost:1900,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'WAVE が始まった瞬間に、その WAVE の敵の顔ぶれと総数が読める'},
  {id:'medic',n:'野戦病院',cost:2100,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:LIFE,dsc:'部隊全員のHPを回復(建てて毎秒16・強化で最大52。🦸英雄は毎秒1.2%)し、出撃の待ち時間を20%短縮'},
 /* 👟⭐⭐(128)**進軍旗**(ユーザー「TDの支援枠にユニットとヒーローの移動速度上昇するやつ追加で。
     1%〜50%まで強化であげれる感じで、これは研究所でのアップグレードは無し」)。
     ⚠**支援枠は1つしか建たない**ので、🏥野戦病院と**どちらを取るか**の選択になる(それが遊び)。
     ⚠研究所には出さない=支援は T_PLAY の外(解放の鎖にも研究所にも出ない)。 */
  {id:'flag',n:'進軍旗',cost:2000,rng:0,dmg:0,rate:0,type:'sup',supMs:1,c:AMBER,dsc:'部隊と英雄の足が速くなる(建てて+8%・強化で最大+50%)'},
- {id:'depot',off:1,n:'物資投下所',cost:2300,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
+ {id:'depot',off:1,n:'物資投下所',cost:2300,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'WAVE 開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
  /* ===== グレードアップ専用(grd:1) =====
     ⭐廃品工房は⚙️産出・⏩サイクルとも最大まで上げると次の段へ建て替えられる(2026-07-26ユーザー指示)。
     **🏭廃品工房 → ⬆上級廃品工房 → ⬆⬆廃品プラント** の3段。
@@ -16407,8 +16407,10 @@ const tideKof=w=>{if(w<5||w%5===0)return 1;
  const k=(w%2===1)?1.25:.85;
  return w>=12?1+(k-1)*.6:k;};
 const tideKind=w=>{const k=tideKof(w);
- return k>1.05?{t:'🐜 物量の波',d:'数が多く、1体は薄い'}
-  :(k<.95?{t:'🗿 重厚の波',d:'数は少なく、1体が厚い'}:{t:'⚖ 普通の波',d:''});};
+ /* ⚠(162)**「〜の波」をやめた**=出す所が「次の WAVE 3 は 🐜 物量の波」と**2回言っていた**。
+    ⚠⚠**言い方は WAVE に統一する**(波/ウェーブ/WAVE の3種が混ざっていた。ユーザー「めんどい」)。 */
+ return k>1.05?{t:'🐜 物量',d:'数が多く、1体は薄い'}
+  :(k<.95?{t:'🗿 重厚',d:'数は少なく、1体が厚い'}:{t:'⚖ 普通',d:''});};
 function buildTide(wave){
  const T=G.tide,alive=G.players.filter(p=>!p.dead).length;
  const up=T.up;
@@ -19117,7 +19119,7 @@ function doPurchase(C,kind,opt){
   case 'atk':C.atkLv++;break;
   case 'stkup':C.stkLv=(C.stkLv||0)+1;break;
   case 'repair':{C.repairs++;const FC=G&&G.coop?G.players[0]:C;FC.core=Math.min(FC.coreMax,FC.core+12);break;}
-  case 'tide':G.tide.up++;G.tide.upN++;for(let k=0;k<G.players.length;k++)if(G.players[k]!==C&&!G.players[k].dead)ev(k,'🌊 '+C.name+' が潮位を引き上げた!次の波が深くなる…',true);break;
+  case 'tide':G.tide.up++;G.tide.upN++;for(let k=0;k<G.players.length;k++)if(G.players[k]!==C&&!G.players[k].dead)ev(k,'🌊 '+C.name+' が潮位を引き上げた!次の WAVE が深くなる…',true);break;
   case 'jam':C.jams++;tgt.inc.jam.push(C.name);break;
   case 'send':tgt.inc.sent.push({zi:opt.zi,cnt:opt.cnt,from:C.name});C.sentCount+=opt.cnt;break;
  }
@@ -21662,7 +21664,7 @@ try{
 /* 中断=いまの状態を保存してタイトルへ(そのウェーブの初めから再開できる) */
 /* ⚠戦闘中の中断は**そのウェーブの初めの状態**が保存される(稼ぎ直しの穴を塞ぐため)。そう言い切る */
 $('bt-suspend').onclick=()=>{const mid=!!(G&&G.phase==='wave');saveRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();
- toast(mid?'💾 中断した。このウェーブの初めから再開する(戦闘中のぶんは持ち越さない)':'💾 中断した。ホームの「▶続きから」で再開できる');};
+ toast(mid?'💾 中断した。この WAVE の初めから再開する(戦闘中のぶんは持ち越さない)':'💾 中断した。ホームの「▶続きから」で再開できる');};
 $('bt-quit').onclick=()=>{clearRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();};
 $('bt-rothide').onclick=()=>$('rotatehint').classList.add('off');
 $('ffbtn').onclick=()=>{if(!G)return;const SP=[1,2,8];G.spd=SP[(SP.indexOf(G.spd||1)+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
@@ -21702,9 +21704,9 @@ function ivRender(){
  h+=`<div class="card"><div class="ci">🛠</div><div class="ct">コア修理</div><div class="cdsc">シェルターHP <b>+12</b>(いま ${Math.ceil(m.core)}/${m.coreMax})</div><button class="btn gold sm buy" data-buy="repair" ${(m.up||0)>=pc('repair')&&m.core<m.coreMax?'':'disabled'}>${PT}${pc('repair')}</button></div>`;
  if(!((G&&G.pve)||COOP)){
  h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">大押し流し</div><div class="cdsc">死潮の取り分を一気に15%相手へ押し付ける</div><div class="tgt">${tgtBtns('tB')}</div><button class="btn red sm buy" data-buy="big" ${can('big')&&ivS.tB>=0?'':'disabled'}>⚙️${pc('big')}</button></div>`;
- h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">潮位上昇</div><div class="cdsc">次の波【全体】を大きく強くする。押し勝ってる時の追い打ちに</div><button class="btn red sm buy" data-buy="tide" ${can('tide')?'':'disabled'}>⚙️${pc('tide')}</button></div>`;
- h+=`<div class="card atk"><div class="ci">⚡</div><div class="ct">妨害工作</div><div class="cdsc">相手のタワー1基を次ウェーブ開始から20秒封印</div><div class="tgt">${tgtBtns('tJ')}</div><button class="btn red sm buy" data-buy="jam" ${can('jam')&&ivS.tJ>=0?'':'disabled'}>⚙️${pc('jam')}</button></div>`;
- h+=`<div class="card atk"><div class="ci">🧟</div><div class="ct">変異体送り込み</div><div class="cdsc">選んだゾンビ(強化個体)を相手の波に追加</div>
+ h+=`<div class="card atk"><div class="ci">🌊</div><div class="ct">潮位上昇</div><div class="cdsc">次の WAVE【全体】を大きく強くする。押し勝ってる時の追い打ちに</div><button class="btn red sm buy" data-buy="tide" ${can('tide')?'':'disabled'}>⚙️${pc('tide')}</button></div>`;
+ h+=`<div class="card atk"><div class="ci">⚡</div><div class="ct">妨害工作</div><div class="cdsc">相手のタワー1基を次の WAVE 開始から20秒封印</div><div class="tgt">${tgtBtns('tJ')}</div><button class="btn red sm buy" data-buy="jam" ${can('jam')&&ivS.tJ>=0?'':'disabled'}>⚙️${pc('jam')}</button></div>`;
+ h+=`<div class="card atk"><div class="ci">🧟</div><div class="ct">変異体送り込み</div><div class="cdsc">選んだゾンビ(強化個体)を相手の WAVE に追加</div>
  <div class="chips">${SENDABLE.map(zi=>`<button class="btn sm ${ivS.zi===zi?'sel':''}" data-zi="${zi}">${ZOMBIES[zi].n}</button>`).join('')}</div>
  <div class="chips">${[1,3,5].map(n2=>`<button class="btn sm ${ivS.cnt===n2?'sel':''}" data-cnt="${n2}">×${n2}</button>`).join('')}</div>
  <div class="tgt">${tgtBtns('tS')}</div><button class="btn red sm buy" data-buy="send" ${can('send')&&ivS.tS>=0?'':'disabled'}>⚙️${pc('send')}</button></div>`;
@@ -26462,7 +26464,7 @@ function tutSteps(){return[
   hi:{k:'slotI',i:SUP_BASE},al:'#buildmenu',low:1,sc0:700,
   ok:C=>!!(C.towers||[])[SUP_BASE]},
  {id:'unit',scr:'game',t:'主役は生存者部隊だ',
-  m:'下のデッキから出撃させろ。部隊はウェーブを跨いで戦い続ける。',
+  m:'下のデッキから出撃させろ。部隊は WAVE を跨いで戦い続ける。',
   hi:{k:'dom',s:'#deck'},ok:C=>C.units.length>0},
  {id:'flag',scr:'game',t:'🚩集結旗で戦線を張る',
   m:'🚩を押してから地点をタップ。部隊はそこまで前進して敵を食い止める。',
@@ -26478,8 +26480,8 @@ function tutSteps(){return[
  {id:'hero',scr:'game',t:'🦸英雄は1試合に1回の切り札',
   m:'🦸を押すと拠点から出撃する。倒れたら二度と出せないが、出したあとはボタンが必殺技に変わり、溜まるたびに撃てる。',
   hi:{k:'dom',s:'#herobtn'},ok:C=>(C.hOut||0)>0},
- {id:'go',scr:'game',t:'まもなくウェーブ開始',
-  m:'ウェーブ中もタワーは建てられるし、部隊も出せる。2波目からは作戦タイムに強化を選べる。',
+ {id:'go',scr:'game',t:'まもなく WAVE 開始',
+  m:'WAVE 中もタワーは建てられるし、部隊も出せる。WAVE 2 からは作戦タイムに強化を選べる。',
   hi:null,pre:()=>{TUT.ran=true;if(G)G.tI=Math.min(G.tI,4);},ok:()=>!!(G&&G.phase==='wave')},
  /* ⚠**戦っている間は手を縛らない**(第89弾)。1波目が終わるまでの2段は待ち時間が長いので、
     ここまでで教えた操作(デッキ・🚩・🎯・光っているマス)は使えるままにする。
@@ -26488,7 +26490,7 @@ function tutSteps(){return[
   m:'1人の部隊が食い止められるのは3体まで。溢れた分は素通りするので、数と壁役で受けろ。',
   hi:null,al:'#deck,#flagbtn,#strikebtn',sl:2},
  {id:'clear',scr:'game',t:'守り切ると🔩が入る',
-  m:'ウェーブを制圧すると🔩強化ポイント。作戦タイムのカードで部隊レベル(全兵科+10%)を上げろ。',
+  m:'WAVE を制圧すると🔩強化ポイント。作戦タイムのカードで部隊レベル(全兵科+10%)を上げろ。',
   hi:{k:'dom',s:'#interv'},al:'#deck,#flagbtn,#strikebtn',sl:2,
   ok:()=>!!(G&&G.phase==='interval'&&G.wave>=1)},
  {id:'lab',scr:'game',t:'負けても強くなる',
@@ -26991,7 +26993,7 @@ const LAB_CATS=[
  {k:'vart',ic:'ic-tab-var',em:'🗼',t:'タレット',d:'タレットと廃品工房の進化先'},
  {k:'twup',ic:'ic-tab-line',em:'🗼',t:'タワー',d:'タワー1種ずつ鍛える(解放したものだけ並ぶ)'},
  {k:'unup',ic:'ic-tab-line',em:'🪖',t:'部隊',d:'兵科1種ずつ鍛える(派生キャラにも同じだけ効く)'},
- {k:'start',ic:'ic-tab-start',em:'🚀',t:'開始',d:'1波目から効く。序盤の立ち上がりが楽になる'},
+ {k:'start',ic:'ic-tab-start',em:'🚀',t:'開始',d:'WAVE 1 から効く。序盤の立ち上がりが楽になる'},
  {k:'eco',ic:'ic-tab-eco',em:'💰',t:'経済',d:'⚙️の稼ぎや出撃の回転が良くなる'},
  {k:'rec',ic:'ic-tab-rec',em:'📖',t:'記録',d:'クリア状況と、今までに解放したもの'}
 ];
@@ -27086,7 +27088,7 @@ function renderLab(){
  if((META.up0||0)<UP0_MAX)items.push({cat:'start',k:'up0',ic:PT,t:'開始の強化pt+'+labNx(UP0_V,META.up0||0),tag:'Lv'+(META.up0||0)+'/'+UP0_MAX,d:'最初の作戦タイムから強化を回せる(いま+'+up0V()+' → +'+UP0_V[(META.up0||0)+1]+')',p:LAB_UP0(META.up0||0)});
  if((META.uu0||0)<UU0_MAX)items.push({cat:'start',k:'uu0',ic:'🤝',t:'開始の部隊枠+1',tag:'Lv'+(META.uu0||0)+'/'+UU0_MAX,d:'最初から使える兵科が増える(2種→最大'+(2+UU0_MAX)+'種)',p:LAB_UU0(META.uu0||0)});
  if((META.sl0||0)<SL0_MAX)items.push({cat:'start',k:'sl0',ic:'🧱',t:'建設スロット+1',tag:'Lv'+(META.sl0||0)+'/'+SL0_MAX,d:'開幕から置けるタワーの数が増える('+SLOT0+'→最大'+(SLOT0+SL0_MAX)+')',p:LAB_SL0(META.sl0||0)});
- if((META.py0||0)<5)items.push({cat:'eco',k:'py0',ic:'💰',t:'撃破報酬+6%',tag:'Lv'+(META.py0||0)+'/5',d:'ゾンビを倒した時の⚙️が増える(全ウェーブ)',p:LAB_PY0(META.py0||0)});
+ if((META.py0||0)<5)items.push({cat:'eco',k:'py0',ic:'💰',t:'撃破報酬+6%',tag:'Lv'+(META.py0||0)+'/5',d:'ゾンビを倒した時の⚙️が増える(全 WAVE)',p:LAB_PY0(META.py0||0)});
  if((META.ec0||0)<5)items.push({cat:'eco',k:'ec0',ic:'🏭',t:'工房の産出+12%',tag:'Lv'+(META.ec0||0)+'/5',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({cat:'eco',k:'cd0',ic:'⏱',t:'出撃の待ち-6%',tag:'Lv'+(META.cd0||0)+'/5',d:'部隊を続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
  /* ⚠鍛錬所をしまっている間は解放項目も出さない(🧬300払っても入口が無いため) */
@@ -29198,12 +29200,12 @@ function hudInfo(kind){
   t=PT+' 強化ポイント';now=fmt(m.up||0);
   use='作戦タイムの強化カードに使う(⬆部隊 🔧火力 🎯砲撃 🛠修理)';
   h=hiSec('入手')
-   +hiRow('🌊','WAVE '+wv+' を守り切る … <b>+'+wavePts(wv)+'</b>(次の波 +'+wavePts(wv+1)+')')
+   +hiRow('🌊','WAVE '+wv+' を守り切る … <b>+'+wavePts(wv)+'</b>(次の WAVE は +'+wavePts(wv+1)+')')
    /* ⚠(161)ユーザー「諦める→半分 みたいな文章わかりづらい」=**短くしすぎて何の話か消えていた**。
       ⭐直し方は**説明を足すことではなく、画面に出ているボタンの名前をそのまま出すこと**。
       ⚠⚠**同じ回に「文章鬱陶しい」とも言われた**=**言葉を足して直そうとしない**。
         1行に入れてよいのは「①画面に出ている名前 ②何がどうなるか」の2つだけ。 */
-   +hiRow('🏳','「🏳 諦める」で波を切り上げる … その波は<b>半分</b>')
+   +hiRow('🏳','「🏳 諦める」で切り上げた WAVE … <b>'+PT+'が半分</b>')
    +hiRow('🏁','出撃した時に … <b>'+(12+up0V())+'</b>');
  }else if(kind==='u'){
   const cap=(G&&G.coop?COOP_MAXU:MAXU);
@@ -29232,7 +29234,7 @@ function hudInfo(kind){
     +hiRow('🏗','攻城の敵が殴る … 攻撃力の<b>半分</b>ずつ')
     +hiSec('回復')
     +hiRow('🛠','コア修理('+PT+') … <b>+12</b>')
-    +hiRow('🌙','波をまたいでも<b>自動回復なし</b>',1);}
+    +hiRow('🌙','WAVE をまたいでも<b>自動回復なし</b>',1);}
  }
  if(use)h='<div class="hiuse">'+use+'</div>'+h;
  $('hi-t').innerHTML=IC(t);
@@ -30800,7 +30802,7 @@ function refreshDiffUI(){
            :((Array.isArray(META.bcl)&&META.bcl[si])?((bs&&bs.s>0)?('⚡'+fmt(bs.s)):'きょう走れる')
                                                     :'💎 初回ボーナス')))+'</i>';}
   else x.innerHTML='<b>'+D.n+'</b>'
-    +'<span class="w">'+(ok?(D.w+'<s> 波</s>'):'<s>🔒</s>')+'</span>'
+    +'<span class="w">'+(ok?(D.w+'<s> WAVE</s>'):'<s>🔒</s>')+'</span>'
     +'<i>'+(ok?(cl?'<span class="ok">'+IC('✅')+' クリア</span>':'はじめて'):'まだ開かない')+'</i>';
   x.disabled=!ok;x.style.opacity=ok?'':'.45';});
  if(!diffOK(si,setDiff))setDiff=best;
@@ -30887,7 +30889,7 @@ function mapSel(i){
  $('mc-name').innerHTML=IC((nd.nm?'🌑 ':nd.bns?'🚌 ':'')+nd.n);
  const open=ndOpen(nd);
  let sub=nd.s;
- if(!nd.lock3&&nd.d!==BNS_D)sub+=' — '+D5[nd.d].w+'波';
+ if(!nd.lock3&&nd.d!==BNS_D)sub+=' — '+D5[nd.d].w+' WAVE';
  /* ⚠「(今日あとN回)」をsubに足さない=説明が2行に折り返してカードが伸び、下のピンを隠していた。
     回数は下の状態行が言う。 */
  $('mc-sub').textContent=sub;
