@@ -1200,6 +1200,19 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #ed-cap.on{opacity:1}
 #bt-ed-skip{position:absolute;right:6px;top:6px;z-index:3;min-height:32px;padding:0 10px;
  font-size:11.5px;background:rgba(24,20,16,.72);color:var(--pane);border:2px solid var(--paper2);box-shadow:none}
+/* 📖⭐**HUDの札を押すと出る「これは何 / どうやって増えるか」**(2026-08-04(158)ユーザー指示)。
+   ⚠**HUDそのものに情報を足さない**=押した時だけ出す([[NOTES_UI]]「情報を足す方向は間違い」)。 */
+.hisec{font-size:11.5px;font-weight:900;color:var(--ink2);margin:7px 3px 1px;letter-spacing:.5px}
+.hirow{display:flex;gap:7px;align-items:flex-start;background:var(--paper);
+ border:2px solid var(--ink);border-radius:9px;padding:4px 8px;margin-top:4px}
+.hirow .hi-ic{flex:0 0 auto;width:22px;text-align:center;font-size:15px;line-height:1.5}
+.hirow .hi-tx{flex:1 1 auto;font-size:12px;line-height:1.5}
+.hirow .hi-tx b{color:var(--rust2)}
+.hirow.no{background:var(--dudbg);color:var(--paper2)}
+.hirow.no .hi-tx b{color:var(--danger2)}
+/* HUDの札=押せると分かるように少しだけ持ち上げる。⚠**押した時に沈む**(押せた手応え) */
+#energybox,#ptbox,#ubox,#corepanel{cursor:pointer}
+#energybox:active,#ptbox:active,#ubox:active,#corepanel:active{transform:translateY(2px)}
 #ed-foot{display:none}
 #md-ending.done #ed-foot{display:block;margin-top:8px}
 #md-ending.done #bt-ed-skip{display:none}
@@ -1798,6 +1811,14 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <p class="note" style="font-size:12.5px;line-height:1.7;margin:0 4px 9px">— ここまでが、いまの物語。次の拠点で会おう。</p>
       <button class="btn gold" id="bt-ed-ok" style="width:100%;min-height:44px">🏕 拠点へ戻る</button>
     </div>
+  </div>
+</div>
+<!-- 📖HUDの札の中身(⚙️スクラップ / 🔩強化pt / 🤝部隊の枠 / 🏕拠点HP)。2026-08-04(158)ユーザー指示。
+     ⚠高さは `vh` で決めない=`--appH` で抑える([[NOTES_UI]]) -->
+<div class="modal" id="md-hinfo">
+  <div class="panel" style="max-width:470px;width:min(94vw,470px);max-height:min(88vh,var(--appH,88vh));display:flex;flex-direction:column;gap:5px;padding:8px 9px;overflow:hidden">
+    <div class="bphd"><b id="hi-t">⚙️</b><span class="pt" id="hi-now"></span><button class="xbtn" id="bt-hinfo-close">✕</button></div>
+    <div id="hi-body" style="overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y"></div>
   </div>
 </div>
 <div class="modal" id="md-pause">
@@ -21582,6 +21603,16 @@ $('pausebtn').onclick=()=>{
  else{$('md-pause').classList.add('on');}/* マルチ中は一時停止せずメニューだけ開く(タイトルへ戻る用) */
 };
 $('bt-resume').onclick=()=>{PAUSED=false;$('md-pause').classList.remove('on');};
+/* 📖(158)HUDの札を押すと「これは何/どうやって増えるか」が出る。
+   ⚠**試合中でなければ出さない**(タイトルの裏で開くと meV() が空の見本を返す) */
+try{
+ [['energybox','en'],['ptbox','pt'],['ubox','u'],['corepanel','core']].forEach(q=>{
+  const el=$(q[0]);if(!el)return;
+  el.onclick=()=>{if(!gameActive)return;try{hudInfo(q[1]);}catch(e){toast('中身でエラー: '+e.message,true);}};});
+ const hc=$('bt-hinfo-close');if(hc)hc.onclick=closeHinfo;
+ /* ⚠**枠の外を押しても閉じる**=✕が小さい端末でも必ず出られる(閉じられないUIを作らない) */
+ const hm=$('md-hinfo');if(hm)hm.onclick=e=>{if(e.target===hm)closeHinfo();};
+}catch(e){}
 /* 中断=いまの状態を保存してタイトルへ(そのウェーブの初めから再開できる) */
 /* ⚠戦闘中の中断は**そのウェーブの初めの状態**が保存される(稼ぎ直しの穴を塞ぐため)。そう言い切る */
 $('bt-suspend').onclick=()=>{const mid=!!(G&&G.phase==='wave');saveRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();
@@ -29020,6 +29051,106 @@ function renderMsn(){
   if(msnClaim(+b.dataset.msn)){renderMsn();renderHome();}};});
 }
 function openMsn(){renderMsn();$('md-msn').classList.add('on');}
+/* ============ 📖 HUDの札の中身(押すと出る) ============
+   2026-08-04(158)ユーザー指示「リソースの歯車とナットマークを押したら獲得条件を見れるように」
+   「ついでに部隊上限と拠点HPも」。
+   ⚠⚠⭐**数字は必ず生きている値と定数から作る**=文章に直接書くと、調整した時に**嘘の説明**になる
+     (相性の倍率を文章に書かない、と同じ掟)。
+   ⚠**HUDそのものには何も足さない**=札は今までどおり。押した時だけ出す([[NOTES_UI]])。
+   ⚠**ソロだけ一時停止する**=マルチは他の人を待たせるので止めない(⏸と全く同じ決まり)。 */
+let HIWASP=false;
+const hiSec=t=>'<div class="hisec">'+t+'</div>';
+const hiRow=(ic,tx,no)=>'<div class="hirow'+(no?' no':'')+'"><div class="hi-ic">'+ic+'</div><div class="hi-tx">'+tx+'</div></div>';
+/* いま建っている廃品工房の生産量(建てていなければ空)。⚠**強化した段も込みの実値**を出す */
+function hiEco(m){
+ try{for(const tw of (m.towers||[])){if(!tw)continue;const T=TOWERS[tw.ti];
+  if(T&&T.type==='eco')return 'いまの1台=<b>⚙️'+ecoPer(T,tw)+'</b> / '+(T.rate*(1-.08*usEff((tw.us&&tw.us.r)||0))).toFixed(1)+'秒';}}catch(e){}
+ return '';
+}
+function hudInfo(kind){
+ const m=meV();if(!m)return;
+ const bus=!!m.bus,pve=!!(G&&G.pve),wv=Math.max(1,(MODE==='client'?(CS.w||1):(G?G.wave:1)));
+ let t='',now='',h='';
+ /* ⚠⚠**説明口調にしない**(2026-08-04(158)ユーザー「文章多くて説明口調すぎる」)=
+    **1行=「何が起きたら / いくら」だけ**。理屈も言い換えも書かない。 */
+ if(kind==='en'&&bus){
+  /* 🚌道中は⚙️ではなく🧬(この面で増える物だけを出している) */
+  t='🧬 研究ポイント';now=fmt(bnsGainPts(m.bus));
+  h=hiSec('増える')
+   +hiRow('🚌','ゾンビを轢く … <b>'+BNS_RPT_K+'</b> / 1体')
+   +hiRow('🏁','拠点の初回クリア … <b>×3</b>')
+   +hiSec('使う')
+   +hiRow('🔬','研究所(持ち帰ってから)')
+   +hiRow('⚙️','この面ではスクラップは入らない',1);
+ }else if(kind==='en'){
+  t='⚙️ スクラップ';now=fmt(m.scrap);
+  const pay=((pve?D5v().pay:1)*metaPay()),eco=hiEco(m);
+  h=hiSec('増える')
+   +hiRow('🧟','ゾンビ撃破 … 硬い敵ほど多い <b>×'+pay.toFixed(2)+'</b>')
+   +hiRow('💀','ボス … 削ったぶんが先に入る(最大<b>6割</b>)')
+   +hiRow('🏭','廃品工房 … '+(eco||'<b>未建設</b>'))
+   +hiRow('🏚','塔を売る … 使った額の<b>6割</b>')
+   +hiRow('📦','物資投下所 … <b>'+Math.round(120+wv*22)+'</b>(5回に1回)')
+   +hiRow('🕶','必殺「闇取引」')
+   +hiSec('使う')
+   +hiRow('🔨','タワーの建設・進化')
+   +hiRow('🪖','部隊の出撃')
+   +(pve?'':hiRow('🌊','押し流し'));
+ }else if(kind==='pt'){
+  t=PT+' 強化ポイント';now=fmt(m.up||0);
+  h=hiSec('増える')
+   +hiRow('🌊','WAVE '+wv+' を守り切る … <b>+'+wavePts(wv)+'</b>(次の波 +'+wavePts(wv+1)+')')
+   +hiRow('🏳','諦める … <b>半分</b>')
+   +hiRow('🏁','出撃した時点 … <b>'+(12+up0V())+'</b>')
+   +hiRow('📦','物資投下所 … <b>+'+Math.round(4+wv*.9)+'</b>(5回に1回)')
+   +hiSec('使う')
+   +hiRow('🃏','作戦タイムの強化カードだけ')
+   +hiRow('🛠','⬆部隊強化 🔧火力増強 🎯砲撃強化 🛠コア修理');
+ }else if(kind==='u'){
+  const cap=(G&&G.coop?COOP_MAXU:MAXU);
+  const arr=(MODE==='client'?(CC&&CC.units):m.units)||[];
+  const own=(G&&G.coop)?(m.gi||0):null;
+  const cnt={};let w=0;
+  for(const u of arr){if(u.dead)continue;if(own!=null&&(u.own||0)!==own)continue;
+   cnt[u.ui]=(cnt[u.ui]||0)+1;w+=uWt(u.ui);}
+  const ks=Object.keys(cnt);
+  t='🤝 部隊の枠';now=w+' / '+cap;
+  h=hiSec('数え方')
+   +hiRow('⚖','体数ではなく<b>重さ</b>の合計 … 兵科ごとに <b>1〜4</b>')
+   +hiRow('🦸','英雄 … <b>4</b>')
+   +hiRow('⚔','倒れる … <b>すぐ空く</b>')
+   +hiRow('🔒','上限 <b>'+cap+'</b> … 増えない')
+   +hiSec('出すのに要る')
+   +hiRow('⚙️','スクラップ(札の額)')
+   +hiRow('⏳','待ち時間')
+   +(ks.length?(hiSec('いま出ている')
+     +ks.map(k=>hiRow('🪖',uName(+k)+' ×'+cnt[k]+' … <b>'+(uWt(+k)*cnt[k])+'</b>')).join('')):'');
+ }else{
+  const cr=Math.ceil(m.core),cm=m.coreMax;
+  t=bus?'🚌 バスの耐久':'🏕 拠点HP';now=cr+' / '+cm;
+  h=bus?(hiSec('この面')
+    +hiRow('🏁','負けは無い … 耐久は減らない')
+    +hiRow('🧟','後ろへ抜けた敵 … 何もしない'))
+   :(hiSec('減る')
+    +hiRow('🧟','敵が道の終わりに届く … その敵の<b>攻撃力</b>')
+    +hiRow('🏗','攻城の敵が殴る … 攻撃力の<b>半分</b>ずつ')
+    +hiRow('💀','<b>0で敗北</b>',1)
+    +hiSec('回復')
+    +hiRow('🛠','コア修理('+PT+') … <b>+12</b>')
+    +hiRow('📦','物資投下所 … <b>+'+Math.round(cm*.15)+'</b>(最大の15%)')
+    +hiRow('🌙','波をまたいでも<b>自動回復なし</b>',1)
+    +hiSec('最大値')
+    +hiRow('🔬','50 + 研究所 <b>'+hp0V()+'</b> = <b>'+cm+'</b>'));
+ }
+ $('hi-t').innerHTML=IC(t);
+ $('hi-now').innerHTML=IC(now);
+ $('hi-body').innerHTML=IC(h);
+ /* ⚠**ソロだけ止める**(マルチは他の人が待たされる)=⏸ボタンと同じ決まり */
+ HIWASP=PAUSED;
+ if(MODE==='solo'&&G&&!G.over&&gameActive)PAUSED=true;
+ $('md-hinfo').classList.add('on');
+}
+function closeHinfo(){PAUSED=HIWASP;$('md-hinfo').classList.remove('on');}
 /* ============ 🎬 区切りの幕(ムービー) ============
    (156)で作った**静止したカード**を、(157)ユーザー指示「ムービー欲しい」で**動く一幕**に差し替えた。
    ⚠**壮大にしない**=まだ話は途中なので「ここまでが今の話」と言い切るだけ。尺は約9.6秒の3カット。

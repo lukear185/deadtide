@@ -691,6 +691,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'openBM(s9);window.addEventListener("resize",function(){try{openBM(s9);}catch(e){}});'
      +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e){}},120);'
      +'}catch(e){document.title="ERR12 "+e.message;}},1300);'):'')
+ /* 📖hinfo=HUDの札を押した中身(2026-08-04(158))。hinfo=en/pt/u/core。
+    ⚠**盤面が要る**(meV() から生きた値を作るため)ので、盤面を出す他の指定と一緒に渡す。
+    ⚠resize で閉じはしないが、撮る直前の resize より後に開き直す方が確実なので開き直し続ける。 */
+ +((/hinfo=([a-z]+)/.exec(OPT))?('setTimeout(function(){try{var k9="'+(/hinfo=([a-z]+)/.exec(OPT))[1]+'";'
+     +'hudInfo(k9);setInterval(function(){try{if(!document.getElementById("md-hinfo").classList.contains("on"))hudInfo(k9);}catch(e){}},150);'
+     +'}catch(e){document.title="ERR13 "+e.message;}},1400);'):'')
  +'},200);</scr'+'ipt>';
 const tmp=path.join(os.tmpdir(),'dt_shot_'+W+'x'+H+(PC?'_pc':'')+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',inj+'</body>'));
