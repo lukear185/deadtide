@@ -8883,7 +8883,106 @@ function pxDraw(c,sp,id,fi,s,vw,dir){
  try{c.drawImage(im,-(st.ax==null?st.w/2:st.ax)*k,-sp.h*k,st.w*k,sp.h*k);}catch(e){c.restore();return false;}
  c.restore();return true;
 }
+/* ⬛⭐⭐**黒アーマー(装甲持ちの共通レイヤー)**(2026-08-04(143)ユーザー
+     「アーマーはゾンビに黒いアーマー部分をかなり増やして黒として表現する」
+      「半分ぐらいのゾンビにアーマー着せちゃう」)。
+   ⭐**同じ形のゾンビの"黒い版"にするのが肝**=形が同じなら違いは装甲以外に無いので
+     「硬さが違う」が一目で分かる。⚠にゃんこの色分けと違い**なぜ黒いのかに意味がある**。
+   ⚠⚠**純黒にしない**=本作の黒フチ(`INK`#241f19)と同じ明るさになり、体と輪郭が潰れる。
+     **青黒(`ZAR.b`)+明るい縁(`ZAR.e`)+上面のハイライト(`ZAR.h`)**の3段で「金属の板」に見せる。
+   ⚠**面積は体の6割以上**=実機のゾンビは25px前後なので、肩当て程度では色として読めない。
+   ⚠🌑ナイトメア(暗い画面)で消えないよう**縁を明るく**してある。⚠合わせるのは背景3つ
+     (①砂色・②青灰・🌑暗い赤)。 */
+const ZAR={b:'#2f3540',b2:'#232932',e:'#68727f',h:'#8c96a4',r:'#aab3bf'};
+/* 板を1枚描く道具。pts=多角形 / hi=上面のハイライトを入れるか */
+function zarPlate(c,pts,hi){
+ c.fillStyle=ZAR.b;c.strokeStyle=ZAR.e;c.lineWidth=1.5;
+ c.beginPath();c.moveTo(pts[0][0],pts[0][1]);
+ for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);
+ c.closePath();c.fill();c.stroke();
+ if(hi){/* 上の辺だけ明るい帯=光が乗って「板」に見える。⚠全面に入れると灰色の図形になる */
+  c.fillStyle=ZAR.h;c.globalAlpha=.5;
+  c.beginPath();c.moveTo(pts[0][0],pts[0][1]);c.lineTo(pts[1][0],pts[1][1]);
+  c.lineTo(pts[1][0]-1.2,pts[1][1]+2.4);c.lineTo(pts[0][0]+1.2,pts[0][1]+2.4);
+  c.closePath();c.fill();c.globalAlpha=1;}
+}
+const zarRivet=(c,x,y,r)=>{c.fillStyle=ZAR.r;c.beginPath();c.arc(x,y,r||.9,0,7);c.fill();};
+/* ⚠⚠**板を乗せるだけでは「黒い敵」にならない**(ブルートを撮って発覚)=
+     地の色が強い赤なので、腕・脚・肩の赤が残って**「赤い敵が鎧を着ている」**にしか見えなかった。
+   ⭐**地の色そのものを鉄色へ寄せる**=これで初めて遠目に黒として読める。
+   ⚠hexを返すこと(`shade()` が `hex.slice(1)` で読むので rgb() 文字列だと壊れる)。
+   ⚠**混ぜ切らない**(.72)=完全に同じ色にすると種類の見分けが付かなくなる。 */
+function zarDark(hex,f){
+ f=(f===undefined?.72:f);
+ const a=parseInt(hex.slice(1),16),b=parseInt(ZAR.b.slice(1),16),m=(s)=>{
+  const x=(a>>s)&255,y=(b>>s)&255;return Math.round(x+(y-x)*f);};
+ return '#'+[m(16),m(8),m(0)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+/* 人型ゾンビ用の一式。⚠座標はウォーカーの体(頭 -54〜-40 / 胴 -39〜-20 / 脚 -24〜0)に合わせてある */
+/* ⚠⚠**板を何枚も並べない**(1度目に踏んだ)=肩当て・篭手・脛当てを別々の板にしたら
+     **鎧ではなく「板の寄せ集め」**になり、[[NOTES_絵]]の「ハリボテ感=等間隔の部品」そのものになった。
+   ⭐**枚数を減らして1枚を大きくし、体の輪郭に沿わせる**=肩は胸当てと一体にする。
+   ⚠**顔は開ける**(目と口が見えないとゾンビに見えない)。⚠**脚の間に隙間を作らない**
+     (胸当ての裾と脛当ての間が空くと、胴と脚が分かれて見える)=腿当てで繋ぐ。 */
+function zArmor(c,Z,t,ph,walk){
+ const sw=walk*3.2,lean=Math.sin(t*8+ph+1.15);
+ const F=ZARM_FIT[Z.id]||[1,1,0];
+ c.save();c.translate(0,F[2]);c.scale(F[0],F[1]);/* ⚠体格に合わせて板を伸ばす */
+ /* --- 脛当て(両脚)。⚠上体の傾きに乗せない=脚は傾かない --- */
+ for(const L of [[-.9-sw*2.6,.82],[.9+sw*2.6,1]]){
+  const kx=L[0]*.5,ax=L[0];
+  c.save();c.globalAlpha=L[1]<1?.8:1;
+  zarPlate(c,[[-3.8+kx,-15.4],[3.6+kx,-15.4],[3.1+ax,-5.2],[-3.2+ax,-5.2]],1);
+  c.restore();}
+ /* --- ここから上体(体と同じよろめきに乗せる) --- */
+ c.save();c.translate(1,-23);c.rotate(lean*.05);c.translate(-1,23);
+ /* 腿当て(1枚・胴の裾から腰を覆う)=胴と脚が切れて見えるのを防ぐ */
+ zarPlate(c,[[-8,-24.6],[8,-24.6],[6.8,-16.2],[-6.4,-16.2]],0);
+ /* ⭐胸当て=**肩まで一体**。⚠別々の肩当てにすると翼に見える。
+    輪郭は胴(body)の外形を少し外に張り出させた形にして、シルエットの肩を角張らせる */
+ zarPlate(c,[[-10.6,-33.2],[-9.4,-38.4],[-3.6,-41],[3.6,-41],[10.4,-38],[11.6,-32.6],
+   [9.4,-23.8],[4.6,-20.8],[-3.4,-20.6],[-8.4,-23.8]],1);
+ c.fillStyle=ZAR.b2;/* 胸の中央の合わせ目=板が2枚に見えて厚みが出る */
+ c.beginPath();c.moveTo(-.8,-40.2);c.lineTo(1.6,-40.2);c.lineTo(2.4,-21);c.lineTo(-1.6,-21);c.closePath();c.fill();
+ zarRivet(c,-7,-35.6);zarRivet(c,8,-35);zarRivet(c,-5.6,-24.4);zarRivet(c,6.6,-24);
+ /* 上腕の帯(手前の腕の付け根だけ)。⚠前腕まで覆うと腕が1本の黒い棒になる */
+ zarPlate(c,[[5,-37.2],[10.4,-35.4],[12.4,-30],[7,-31.4]],1);
+ /* --- 兜: **頭のてっぺんから後頭部だけ**。⚠目より下は開ける --- */
+ zarPlate(c,[[-5.8,-47.6],[-6.2,-51.6],[-1.4,-55.2],[4.4,-55.2],[8.8,-51.8],[9,-48.6],
+   [4,-49.4],[-1.6,-49.6]],1);
+ c.fillStyle=ZAR.b2;/* 鼻当て(⚠細く短く=太いと顔が塞がって「箱」になる) */
+ c.beginPath();c.moveTo(4.4,-50.2);c.lineTo(6.6,-50.2);c.lineTo(6.2,-45.4);c.lineTo(4.8,-45.4);c.closePath();c.fill();
+ zarRivet(c,-3.6,-51,.8);zarRivet(c,7.4,-51,.8);
+ c.restore();/* 上体の傾き */
+ c.restore();/* 体格合わせ */
+}
+/* ⭐**人型の体を持つ種類だけに一式が乗る**。⚠獣・魚介は骨格が違うので座標が合わない
+   (それぞれ専用の板が要る=別の回にやる)。⚠ここに足す前に必ず撮って確かめること */
+/* ⚠⚠**1つの板を全員に使い回すと、体格の違う種類からはみ出す**(撮って発覚)=
+     ブルート・重装兵は肩幅も背丈もウォーカーより一回り大きく、板が胸の一部にしか乗らない。
+   ⭐**[横の伸び, 縦の伸び, 上下のずれ]** を種類ごとに持たせて、同じ板を体に合わせる。
+   ⚠**新しい種類に装甲を付ける時は必ずここに1行足して撮る**(既定値のままだと必ずずれる)。 */
+const ZARM_FIT={arm:[1,1,0],brut:[1.22,1.12,-2.4],tank:[1.16,1.08,-1.6],jugg:[1.3,1.2,-3.4]};
+const ZARM_HUM={arm:1,brut:1,tank:1,jugg:1};
+/* ⬛装甲持ちなら、体を描いた上から共通の黒アーマーを重ねる。
+   ⚠**体そのものは1pxも触っていない**=着せ替えなので、外せば元に戻る。
+   ⚠🧪ドット絵に差し替えている種類には乗せない(座標系が別) */
 function drawZombie(c,zi,x,y,dir,t,ph,o){
+ o=o||{};
+ const Z0=ZOMBIES[zi],on=!!(Z0&&Z0.armor&&ZARM_HUM[Z0.id]&&!pxOf(Z0.id));
+ if(on){/* ⚠地の色を鉄色へ寄せてから体を描く。⚠**必ず戻す**(表を書き換えているので) */
+  const c0=Z0.c;Z0.c=zarDark(c0);
+  try{drawZBody(c,zi,x,y,dir,t,ph,o);}finally{Z0.c=c0;}
+ }else drawZBody(c,zi,x,y,dir,t,ph,o);
+ if(o.v2||!on)return;/* 2度描き(?v2=1)の内側からは板を重ねない */
+ const Z=Z0;
+ const s=Z.sc*(o.elite?1.35:1),walk=Math.sin(t*(Z.sp>90?14:8)+ph);
+ c.save();c.translate(x,y-Math.abs(walk)*2.5*s);c.scale(dir*s,s);
+ if(o.lg>0)c.translate(o.lg*34,0);
+ zArmor(c,Z,t,ph,walk);
+ c.restore();
+}
+function drawZBody(c,zi,x,y,dir,t,ph,o){
  o=o||{};
  /* ⭐2度描き(?v2=1の時だけ)。⚠**o.v2 で再入を止める**=無限に呼び合う */
  if(VEC2&&!o.v2){const o1=Object.assign({},o,{v2:1});
