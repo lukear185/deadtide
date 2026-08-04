@@ -9056,6 +9056,93 @@ function zArmHum(c,Z,t,ph,walk){
  zaRiv(c,-4.6,-51.6,.9);zaRiv(c,8.6,-45.6,.85);
  c.restore();/* 上体の傾き */
 }
+/* ⭐**装甲持ちに共通の「顔」**=バイザーの隙間+灯る目。⚠**この2つだけは全種そろえる**
+   =黒い敵が何体並んでも「同じ一族」に見えるのは、輪郭ではなくここの色で決まる。 */
+function zaVisor(c,x0,y0,x1,y1,ex,ey,r){
+ c.fillStyle='#12161c';c.beginPath();
+ c.moveTo(x0,y0);c.lineTo(x1,y0-.4);c.lineTo(x1,y1-.2);c.lineTo(x0,y1);c.closePath();c.fill();
+ c.fillStyle='#e8703c';c.beginPath();c.ellipse(ex,ey,r||1.8,(r||1.8)*.66,0,0,7);c.fill();
+ c.fillStyle='#ffdcae';c.beginPath();c.ellipse(ex+.3,ey,(r||1.8)*.44,(r||1.8)*.34,0,0,7);c.fill();
+}
+/* ⭐**あごの下は開ける**=腐った肌と歯が覗く。⚠塞ぎ切ると「鉄の人形」になってゾンビに見えない */
+function zaJaw(c,x0,y0,x1,y1){
+ c.fillStyle='#7f8a5e';c.beginPath();
+ c.moveTo(x0,y0);c.lineTo(x1,y0+.2);c.lineTo(x1-.6,y1);c.lineTo(x0+.8,y1-.2);c.closePath();c.fill();
+ c.fillStyle=INK;c.beginPath();
+ c.moveTo(x0+2.2,y0+.8);c.lineTo(x1-1,y0+1.0);c.lineTo(x1-1.6,y1-1.4);c.lineTo(x0+2.6,y1-1.6);c.closePath();c.fill();
+ c.fillStyle=PANE;c.fillRect(x0+3.6,y0+1.0,.95,1.1);c.fillRect(x0+5.7,y0+.9,.8,.85);
+}
+/* ⬛**ブルートの装甲版**(2026-08-04(149))。⚠⚠**輪郭は素のブルートと同じ座標**
+     (逆三角形の上半身+地面まで垂れた長い腕)=「同じ形の黒い版」にするため。
+   ⚠⚠**共通の体(zArmHum)を使い回さない**=重装兵・ジャガーノートと同じ絵になる
+     ([[NOTES_絵]]「役割が同じ2体は必ず輪郭ごと分ける」で1度やらかしている)。
+   ⭐素との違いは**裸の上半身が胸当てになったこと**と**肩の骨が折れた鉄板になったこと**だけ。 */
+function zArmBrut(c,Z,t,ph,walk){
+ const sw=walk*2.5;
+ const B=zarDark(Z.c,.84),EG=ZAR.e,HI=ZAR.h;
+ /* 具足(短く太い)+鉄靴。⚠素は裸足=ここだけは形が変わる(裸足のままだと下半身が生身に見える) */
+ const gleg=(dx,dk)=>{
+  zaP(c,[[-5.6+dx,-16],[5.6+dx,-16],[4.8+dx,-5],[-4.8+dx,-5]],zarSh(B,dk*1.04),dk>.9?HI:0);
+  zaP(c,[[-4.8+dx,-5.2],[4.8+dx,-5.2],[7.2+dx,-.6],[-5.6+dx,-.6]],zarSh(B,dk*.74),0);
+ };
+ gleg(-6+sw,.78);gleg(6-sw,1);
+ /* 長い腕(奥・暗い)。⚠**肘で折る**=一直線の帯は板に見える */
+ const dk1=zarSh(B,.62);
+ zaP(c,[[-17,-41],[-9,-41],[-15,-24],[-19+sw*2,-9],[-25+sw*2,-10],[-21,-25]],dk1,0);
+ zaP(c,[[-25.4+sw*2,-10.6],[-18.6+sw*2,-9.6],[-19.4+sw*2,-2.6],[-26+sw*2,-3.6]],dk1,0);
+ /* 逆三角形の胴(胸当て)。⚠座標は素のブルートのまま */
+ const body=()=>{c.beginPath();
+  c.moveTo(-18,-42);
+  c.bezierCurveTo(-21,-38,-20,-30,-16,-24);
+  c.bezierCurveTo(-13,-19,-12,-16,-11,-13);
+  c.lineTo(11,-13);
+  c.bezierCurveTo(12,-16,13,-19,16,-24);
+  c.bezierCurveTo(20,-30,21,-38,18,-42);
+  c.bezierCurveTo(10,-45.4,-10,-45.4,-18,-42);
+  c.closePath();};
+ zFill(c,body,B,-30);
+ c.save();c.beginPath();c.moveTo(-26,-48);c.lineTo(-10,-44);c.lineTo(-8,-12);c.lineTo(-26,-12);c.closePath();c.clip();
+ c.fillStyle=zarSh(B,.78);body();c.fill();c.restore();
+ c.save();c.beginPath();c.moveTo(4,-48);c.lineTo(26,-48);c.lineTo(26,-12);c.lineTo(6,-12);c.closePath();c.clip();
+ c.fillStyle=zarSh(B,1.16);body();c.fill();c.restore();
+ /* 胸当ての継ぎ目と稜線。⚠**明るい側で引く**(暗い線は黒フチに溶ける)が、
+    ⚠⚠**必ず胴で切り抜くこと**=矩形のまま引くと線が体からはみ出して腕と背景を横切る(撮って発覚) */
+ c.save();body();c.clip();
+ c.fillStyle=zarSh(EG,.5);
+ c.fillRect(-19,-36.4,38,1.3);c.fillRect(-19,-27.6,38,1.1);
+ c.fillStyle=zarSh(EG,.78);/* 稜線(細く1本) */
+ c.fillRect(2.6,-45,1.2,32);
+ c.restore();
+ c.fillStyle=EG;/* ⭐肩の上ぶちの明るい縁=暗い画面で輪郭が消えないための命綱 */
+ c.beginPath();c.moveTo(-18,-42.4);c.bezierCurveTo(-10,-45.6,10,-45.6,18,-42.4);
+ c.lineTo(17.2,-41.0);c.bezierCurveTo(9.6,-44.0,-9.6,-44.0,-17.2,-41.0);c.closePath();c.fill();
+ zaRiv(c,-12.4,-33.4);zaRiv(c,-1.4,-32.6);zaRiv(c,10.6,-33.4);zaRiv(c,-9,-19.4,.9);zaRiv(c,8,-19,.9);
+ /* ⭐肩から突き出た**折れた鉄板**(素では骨だった所)。⚠左右で形と大きさを変える
+    =同じ箱を左右に置くと「肩パッドの作り物」に見える(素のブルートで一度踏んだ)。
+    ⚠⚠**尖った棘を立てない**=棘はジャガーノートの語彙。混ざると見分けが付かなくなるので、
+      ここは「**割れて口を開けた板**」で崩す(撮って三角の棘を1つ外した)。 */
+ zaP(c,[[-19,-44],[-11,-45],[-13,-40],[-21,-39],[-25.4,-41.6]],zarSh(B,1.06),HI);
+ zaP(c,[[10,-45],[19,-44.4],[22.6,-45.4],[23.2,-41],[19.6,-38.4],[11,-39]],zarSh(B,1.22),HI);
+ /* 長い腕(手前)。⚠肘で折る */
+ const lt=zarSh(B,1.06);
+ zaP(c,[[10,-41],[18,-41],[23,-25],[26-sw*2,-9],[20-sw*2,-8],[16,-24]],lt,HI);
+ zaP(c,[[19.6-sw*2,-8.6],[26.4-sw*2,-9.6],[27-sw*2,-2.6],[20.4-sw*2,-1.6]],zarSh(B,.92),0);
+ /* 太い首+兜 */
+ zaP(c,[[-3,-50],[5,-50],[5,-44],[-3,-44]],zarSh(B,.8),0);
+ const helm=()=>{c.beginPath();
+  c.moveTo(-6,-54);c.bezierCurveTo(-6.2,-60.4,-3.2,-63.6,1.4,-63.6);
+  c.bezierCurveTo(6.2,-63.6,9.2,-60.2,9.0,-55);
+  c.lineTo(8.2,-50.4);c.bezierCurveTo(7,-47.8,-2.6,-47.8,-4.2,-50.4);c.closePath();};
+ zFill(c,helm,zarSh(B,1.04),-47.8);
+ c.fillStyle=zarSh(EG,.9);/* てっぺんの稜線(⚠太くしない) */
+ c.beginPath();c.moveTo(-5.9,-56.4);c.bezierCurveTo(-6.0,-60.0,-3.2,-62.4,1.4,-62.4);
+ c.bezierCurveTo(5.6,-62.4,8.0,-60.0,7.9,-56.8);
+ c.lineTo(6.6,-56.8);c.bezierCurveTo(6.6,-59.4,4.8,-61.0,1.4,-61.0);
+ c.bezierCurveTo(-2.0,-61.0,-4.6,-59.4,-4.6,-56.6);c.closePath();c.fill();
+ zaVisor(c,-3.2,-57.0,8.8,-54.2, 5.4,-55.7,1.8);
+ zaJaw(c,-.4,-52.0,8.0,-48.8);
+ zaRiv(c,-4.2,-58.2,.9);
+}
 /* ⬛**装甲版の体を使うかどうかの元栓**。⚠⚠**割り振り(どの種類に着せるか)は絵が合格してから**
    =(143)(144)は順番を間違えて生煮えのまま実機に出した。 */
 const ZARM_ON=true;
@@ -10839,7 +10926,9 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   for(const k of [[-13,5.4,3.2],[0,4.2,2.4],[11,6,3.6]]){const dy2=Math.sin(t*4+k[0]*.3+ph)*2;
    c.beginPath();c.ellipse(k[0],1+dy2,k[1],k[2],0,0,7);c.fill();c.stroke();}
   c.restore();return;}
- if(Z.id==='brut'){/* ブルート: 逆三角形。肩が大きく張り出し、長い腕を地面まで垂らす */
+ if(Z.id==='brut'){/* ブルート: 逆三角形。肩が大きく張り出し、長い腕を地面まで垂らす。
+    ⬛装甲持ちなので**黒い装甲版に差し替える**(2026-08-04(149))。⚠以下は元の絵(触らない) */
+  if(ZARM_ON){zArmBrut(c,Z,t,ph,walk);c.restore();return;}
   const sw=walk*2.5;
   /* ⭐描き直し(第97弾)。**逆三角形の上半身+地面まで垂れた長い腕**が売り=上半身は裸のまま。
      ⚠腕を丸い端の太い線で描くとホースに見えたので、**肩から手首へ細くなる帯**にした */
@@ -10989,7 +11078,11 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠ジャガーノート(縦に高い+棘)と混ざらないよう、こちらは**低く・平たく・棘なし**に徹する。
     ⚠角丸長方形を積むのをやめ、鉄を3色+**段付きの装甲**+不揃いの鋲にする */
   const sw=walk*2.2;
-  const TK1='#2b333b',TK2='#4c5862',TK3='#8f99a2';
+  /* ⬛装甲持ちなので**黒い一族の色に寄せる**(2026-08-04(149))。⚠形は1つも変えない
+     =重装兵は元から全身鉄板で、**輪郭を変えるとアーマードやジャガーノートと役割が混ざる**。
+     ⚠変えるのは①地の色を青黒へ②灯る目(オレンジ)③明るい帯を一族の色に、の3つだけ */
+  const AR=ZARM_ON,BB=zarDark(Z.c,.84);
+  const TK1=AR?zarSh(BB,.78):'#2b333b',TK2=AR?zarSh(BB,1.42):'#4c5862',TK3=AR?ZAR.e:'#8f99a2';
   /* 具足(短くて太い) */
   const tleg=(dx,dk)=>{
    c.fillStyle=shade(TK1,dk);
@@ -11004,7 +11097,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   /* 胴(横に広い装甲)。⚠肩の上をわずかに丸める=真四角だと箱に見える */
   zFill(c,()=>{c.beginPath();
    c.moveTo(-17,-41);c.lineTo(-18,-20);c.lineTo(-14,-13);c.lineTo(14,-13);c.lineTo(18,-20);c.lineTo(17,-41);
-   c.bezierCurveTo(8,-45,-8,-45,-17,-41);c.closePath();},Z.c,-27);
+   c.bezierCurveTo(8,-45,-8,-45,-17,-41);c.closePath();},AR?BB:Z.c,-27);
   c.fillStyle=TK1;/* 装甲を3段に割る(継ぎ目で「板を重ねた」を出す) */
   c.beginPath();c.moveTo(-16,-39);c.lineTo(16,-39);c.lineTo(15.4,-32);c.lineTo(-15.4,-32);c.closePath();c.fill();c.stroke();
   c.beginPath();c.moveTo(-15.4,-31);c.lineTo(15.4,-31);c.lineTo(14.6,-24);c.lineTo(-14.6,-24);c.closePath();c.fill();c.stroke();
@@ -11025,20 +11118,26 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.beginPath();c.moveTo(16,-35-sw);c.lineTo(23,-34-sw);c.lineTo(31,-27-sw);c.lineTo(28,-22-sw);c.closePath();c.fill();c.stroke();
   /* 兜(低く、バイザーの隙間だけ) */
   zFill(c,()=>{c.beginPath();
-   c.moveTo(-9,-49);c.lineTo(10,-49);c.lineTo(11,-42);c.lineTo(-8,-42);c.closePath();},STEEL,-44);
+   c.moveTo(-9,-49);c.lineTo(10,-49);c.lineTo(11,-42);c.lineTo(-8,-42);c.closePath();},AR?zarSh(BB,1.16):STEEL,-44);
   c.fillStyle=TK1;
   c.beginPath();c.moveTo(-9.4,-49.6);c.bezierCurveTo(-9.6,-55,-5,-57.4,1,-57.4);
   c.bezierCurveTo(7,-57.4,11.4,-55,11,-49.6);c.closePath();c.fill();c.stroke();
   c.fillStyle=TK3;c.fillRect(-8.6,-53.4,19.4,2.4);
-  c.fillStyle=INK;c.fillRect(-6,-48.4,15,4.2);/* バイザーの隙間 */
-  c.fillStyle=DANGER;c.beginPath();c.arc(5.4,-46.2,2,0,7);c.fill();
+  if(AR)zaVisor(c,-6,-48.4,9,-44.2, 5.4,-46.2,2.1);/* ⬛一族そろいの灯る目 */
+  else{c.fillStyle=INK;c.fillRect(-6,-48.4,15,4.2);/* バイザーの隙間 */
+   c.fillStyle=DANGER;c.beginPath();c.arc(5.4,-46.2,2,0,7);c.fill();}
   c.restore();return;}
  if(Z.id==='jug'){/* ジャガーノート(①のボス): 棘の肩当てを付けた巨躯。鉄球の鎖を引きずる */
   const sw=walk*2.5;
   /* ⭐描き直し(2026-07-27ユーザー指摘「ハリボテ感がある」)。
      ⚠**同じ棘を等間隔に3本ずつ左右対称**に置いていたのが原因。棘は**長さと傾きを変え、肩当ての形に沿わせる**。
      ⚠鉄は必ず2色(暗い地+明るい帯)。⚠鉄球は真円+線ではなく**鋲とハイライト**を入れる */
-  const JG1='#3a444e',JG2='#5a6874',JG3='#98a2ab';
+  /* ⬛装甲持ちなので**黒い一族の色に寄せる**(2026-08-04(149))。⚠⚠**形は1つも変えない**
+     =棘の肩当て・鉄球・巨躯がこの個体の売りで、輪郭を触ると重装兵と混ざる。
+     ⚠素の地色は赤(#c14b3e)なので、**そこを鉄色へ寄せるのがこの個体の肝**
+       (胸当ての外=肩・脇・腰に赤が残っていて、遠目に「赤い敵」だった) */
+  const AR=ZARM_ON,BB=zarDark(Z.c,.88);
+  const JG1=AR?zarSh(BB,.86):'#3a444e',JG2=AR?zarSh(BB,1.24):'#5a6874',JG3=AR?ZAR.e:'#98a2ab';
   const jleg=(dx,dk)=>{
    c.fillStyle=shade(JG1,dk);
    c.beginPath();c.moveTo(-6.4+dx,-17);c.lineTo(6.4+dx,-17);c.lineTo(5.6+dx,-6);c.lineTo(-5.6+dx,-6);c.closePath();c.fill();c.stroke();
@@ -11055,7 +11154,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.fillStyle='#2e2a24';/* 鋲 */
   for(const b of [[-33,-13.4],[-27.6,-6],[-33,-.6],[-38.4,-8]]){c.beginPath();c.arc(b[0],b[1],1.9,0,7);c.fill();}
   /* 奥の腕 */
-  c.fillStyle=shade(Z.c,.66);
+  c.fillStyle=shade(AR?BB:Z.c,.66);
   c.beginPath();c.moveTo(14,-42+sw);c.lineTo(21,-41+sw);c.lineTo(31,-33+sw);c.lineTo(28,-28+sw);c.closePath();c.fill();c.stroke();
   /* 胴(鉄の胸当て付き)。⚠肩の上を丸めると鉄板の箱に見えない */
   zFill(c,()=>{c.beginPath();
@@ -11063,7 +11162,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    c.bezierCurveTo(-25,-42,-23,-28,-18,-20);
    c.lineTo(-14,-15);c.lineTo(14,-15);c.lineTo(18,-20);
    c.bezierCurveTo(23,-28,25,-42,22,-48);
-   c.bezierCurveTo(12,-52,-12,-52,-22,-48);c.closePath();},Z.c,-32);
+   c.bezierCurveTo(12,-52,-12,-52,-22,-48);c.closePath();},AR?BB:Z.c,-32);
   c.fillStyle=JG1;/* 胸当て(2段) */
   c.beginPath();c.moveTo(-16,-42);c.lineTo(16,-42);c.lineTo(15,-33);c.lineTo(-15,-33);c.closePath();c.fill();c.stroke();
   c.beginPath();c.moveTo(-15,-32);c.lineTo(15,-32);c.lineTo(13,-24);c.lineTo(-13,-24);c.closePath();c.fill();c.stroke();
@@ -11085,14 +11184,17 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   zFill(c,()=>{c.beginPath();
    c.moveTo(-9,-58);c.bezierCurveTo(-9.4,-66,-5.4,-70,1.6,-70);
    c.bezierCurveTo(8.6,-70,12.6,-66,12.2,-57.6);
-   c.lineTo(11,-52);c.bezierCurveTo(9,-49,-6,-49,-8,-52);c.closePath();},Z.c,-49.4);
+   c.lineTo(11,-52);c.bezierCurveTo(9,-49,-6,-49,-8,-52);c.closePath();},AR?BB:Z.c,-49.4);
   c.fillStyle=JG1;
   c.beginPath();c.moveTo(-9.2,-58.6);c.bezierCurveTo(-9.4,-66,-5.4,-70,1.6,-70);
   c.bezierCurveTo(8.6,-70,12.6,-66,12.2,-57.6);c.lineTo(-9,-58.6);c.closePath();c.fill();c.stroke();
   c.fillStyle=JG2;c.fillRect(-8.6,-63.4,20.6,2.6);
-  c.fillStyle=INK;/* バイザーの隙間(縦棒+横棒) */
+  c.fillStyle=INK;/* バイザーの隙間(縦棒+横棒)。⚠Tスリットはこの個体だけの形なので残す */
   c.fillRect(-6,-58,17,4.4);c.fillRect(2.6,-57.6,3.4,8);
-  c.fillStyle=DANGER;c.beginPath();c.arc(7,-55.8,2.2,0,7);c.fill();
+  if(AR){/* ⬛一族そろいの灯る目 */
+   c.fillStyle='#e8703c';c.beginPath();c.ellipse(7,-55.8,2.3,1.6,0,0,7);c.fill();
+   c.fillStyle='#ffdcae';c.beginPath();c.ellipse(7.3,-55.8,1.0,.72,0,0,7);c.fill();}
+  else{c.fillStyle=DANGER;c.beginPath();c.arc(7,-55.8,2.2,0,7);c.fill();}
   c.restore();return;}
  /* ↓上のどれにも当てはまらない個体の保険(ゾンビを足したときに何も出ないのを防ぐ) */
  c.fillStyle=shade(Z.c,.7);
