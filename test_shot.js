@@ -174,7 +174,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      /* ldsel = ⭐派生を選んだ状態で撮る(連れて行くタブに派生の絵と名前が映るかの確認・2026-08-03) */
      :LOAD?('META.uv=VARLIST.slice(0,10).map(function(x){return x.v.id;});META.am=2;'
        +(OPT.indexOf('ldsel')>=0?'META.ld={};VARLIST.slice(0,10).forEach(function(x){META.ld[x.b]=x.v.id;});':'')
-       +'LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");')
+       +'LDTAB="'+LOADT+'";renderLoad();document.getElementById("md-load").classList.add("on");'
+       /* 📊(159)ustat=ⓘで開く兵科のステータス。ustat=6 でその添字の兵科を撮る(既定は6=火炎瓶) */
+       +(/ustat/.test(OPT)?('META.uu=UBASE.length;openUstat('+((/ustat=([0-9]+)/.exec(OPT)||[0,'6'])[1])+');'):''))
      /* tutauto=はじめての人の入り口(タイトルで「🎓あそびかた」を光らせる段)から撮る */
      /* tutbm = その段のまま塔を建てて強化ウィンドウを開いて撮る(帯と被っていないかを見る) */
      :TUT?((OPT.indexOf('tutauto')>=0?'tutAuto();':'tutStart();')+'for(var q=0;q<'+TUTI+';q++)tutGo(TUT.i+1);'
@@ -352,7 +354,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +(TID?('var ti9=TOWERS.findIndex(function(q){return q.id==="'+TID+'";});'
        +'me.scrap=99999;'
        /* 支援施設(type:sup)は専用枠にしか建たないので、施設枠へ3種まとめて建てる */
-       +'if(TOWERS[ti9].type==="sup"){for(var k9=0;k9<SUP_N;k9++){me.towers[SUP_BASE+k9]=null;buildTower(me,SUP_BASE+k9,T_PLAY+k9);}}'
+       /* ⚠(159)**枠の数(SUP_MAX)を超えて書かない**=SLOTS に無い番号へ塔を置くと座標が undefined になる */
+       +'if(TOWERS[ti9].type==="sup"){me.supN=SUP_MAX;for(var k9=0;k9<SUP_MAX;k9++){me.towers[SUP_BASE+k9]=null;buildTower(me,SUP_BASE+k9,T_PLAY+k9);}}'
        /* 廃品工房は工房エリア専用の枠にしか建たない */
        /* 上級廃品工房(grd)は直接は建たない=普通の工房を全部MAXにしてから建て替える */
        +'else if(TOWERS[ti9].type==="eco"){me.towers[ECO_BASE]=null;var pe=me.unlocked;me.unlocked=ti9+1;'
@@ -691,6 +694,18 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'openBM(s9);window.addEventListener("resize",function(){try{openBM(s9);}catch(e){}});'
      +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e){}},120);'
      +'}catch(e){document.title="ERR12 "+e.message;}},1300);'):'')
+ /* 🏗supbm=支援枠に🏥野戦病院を建てて強化ウィンドウを開く(2026-08-04(159))。
+    ⚠**支援施設は専用枠にしか建たない**ので bmenu(普通のマス)では絶対に出ない=専用の口が要る。
+    ⚠supbm2 で2枠目(👟進軍旗)を開く。 */
+ +(OPT.indexOf('supbm')>=0?('setTimeout(function(){try{var m9=G.players[0];m9.scrap=999999;m9.supN=SUP_MAX;'
+     +'var mi9=TOWERS.findIndex(function(q){return q.id==="medic";});'
+     +'var fi9=TOWERS.findIndex(function(q){return q.id==="flag";});'
+     +'m9.towers[SUP_BASE]=null;buildTower(m9,SUP_BASE,mi9);'
+     +'m9.towers[SUP_BASE+1]=null;buildTower(m9,SUP_BASE+1,fi9);'
+     +'var s9=SUP_BASE'+(/supbm2/.test(OPT)?'+1':'')+';'
+     +'openBM(s9);window.addEventListener("resize",function(){try{openBM(s9);}catch(e){}});'
+     +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e){}},120);'
+     +'}catch(e){document.title="ERR14 "+e.message;}},1300);'):'')
  /* 📖hinfo=HUDの札を押した中身(2026-08-04(158))。hinfo=en/pt/u/core。
     ⚠**盤面が要る**(meV() から生きた値を作るため)ので、盤面を出す他の指定と一緒に渡す。
     ⚠resize で閉じはしないが、撮る直前の resize より後に開き直す方が確実なので開き直し続ける。 */

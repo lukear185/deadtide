@@ -3640,13 +3640,24 @@ function checkSup(){
   if(!TOWERS[oi].off){console.log('FAIL: '+oid+' に off の印が無い');process.exit(1);}
   me.towers[SUP_BASE]=null;
   if(buildTower(me,SUP_BASE,oi)){console.log('FAIL: 外したはずの '+TOWERS[oi].n+' が建った');process.exit(1);}}
- /* ⚠支援枠は1つだけ(2つ目は開かない) */
- if(SUP_MAX!==1){console.log('FAIL: 支援枠が1つになっていない');process.exit(1);}
- doPurchase(me,'supslot',{});
- if((me.supN||0)!==1){console.log('FAIL: 支援枠が上限を超えて開いた');process.exit(1);}
+ /* ⚠(159)支援枠は**2つ**(🏥野戦病院と👟進軍旗の2種が建つので両方埋まる)。3つ目は開かない */
+ if(SUP_MAX!==2){console.log('FAIL: 支援枠が2つになっていない');process.exit(1);}
+ me.supN=0;me.scrap=999999;
+ doPurchase(me,'supslot',{});doPurchase(me,'supslot',{});doPurchase(me,'supslot',{});
+ if((me.supN||0)!==2){console.log('FAIL: 支援枠が上限を超えて開いた '+me.supN);process.exit(1);}
+ /* 💚(159)野戦病院も強化できる(進軍旗と同じ形)=枠は1つ・段は5・素の値は表と一致 */
+ {const mi=TOWERS.findIndex(T=>T.id==='medic');
+  const st=twStats(mi);
+  if(st.length!==1||st[0]!=='hl'){console.log('FAIL: 野戦病院の強化枠が💚回復量1つになっていない '+st);process.exit(1);}
+  if(supHlOf(0)!==TOWERS[mi].supH){console.log('FAIL: 野戦病院の素の回復量が表とずれている');process.exit(1);}
+  if(!(supHlOf(5)>supHlOf(0))){console.log('FAIL: 野戦病院を強化しても回復量が増えない');process.exit(1);}
+  if(usCap(mi,'hl')!==5){console.log('FAIL: 野戦病院の段数が5ではない '+usCap(mi,'hl'));process.exit(1);}}
+ /* 💰(159)支援施設の値段は5倍(野戦病院2100/進軍旗2000)=2枠とも建てるのが軽い買い物にならないように */
+ {const mi=TOWERS.findIndex(T=>T.id==='medic'),fi=TOWERS.findIndex(T=>T.id==='flag');
+  if(TOWERS[mi].cost<2000||TOWERS[fi].cost<2000){console.log('FAIL: 支援施設の値段が5倍になっていない');process.exit(1);}}
  /* 支援施設は解放チェーンに混ざらない */
  if(metaTowerCap()>T_PLAY){console.log('FAIL: 支援施設が解放チェーンに混ざっている');process.exit(1);}
- console.log('支援施設: 枠1つ(⚙️解放制・専用枠のみ)・🏥野戦病院は部隊も🦸英雄(割合)も回復・'
+ console.log('支援施設: 枠2つ(⚙️解放制・専用枠のみ)・🏥野戦病院は部隊も🦸英雄(割合)も回復・💚強化あり・'
   +'外した電波塔/物資投下所は建たない OK');
  backTitle();
 }

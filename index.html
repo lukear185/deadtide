@@ -956,6 +956,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .tmc .tg{font-size:10.5px;font-weight:800;color:var(--gold);line-height:1.15}
 /* ⭐編成に入っている札=**押すと外すトグル**(2026-08-03 UI総監査)。金の枠+✅バッジ+薄い光 */
 .tmc.on{border-color:var(--gold);box-shadow:0 0 10px rgba(255,210,61,.4),0 3px 0 rgba(0,0,0,.3)}
+/* 📊(159)**ⓘ=その兵科のステータスを見る**(ユーザー指示)。⚠札そのものは今までどおり「入れる/外す」。
+   ⚠**指で押せる大きさ(32px)を確保する**=小さいと押せないのと同じ(✕ボタンで踏んだのと同じ掟)。 */
+.tmc .ib{position:absolute;right:1px;top:1px;z-index:2;width:32px;height:32px;line-height:27px;
+ border:2px solid var(--ink);border-radius:50%;background:var(--paper);color:var(--ink);
+ font-size:15px;font-weight:900;text-align:center;box-shadow:0 2px 0 rgba(0,0,0,.35)}
 /* 🛡相性の帯(2026-08-04)。⚠**苦手だけ赤く**する=全部に色を付けると何も目立たない */
 .tmc .afu{font-style:normal;font-size:10.5px;font-weight:900;color:var(--paper);opacity:.82}
 .tmc .afu.rs{color:var(--rust2);opacity:1}
@@ -1202,6 +1207,11 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
  font-size:11.5px;background:rgba(24,20,16,.72);color:var(--pane);border:2px solid var(--paper2);box-shadow:none}
 /* 📖⭐**HUDの札を押すと出る「これは何 / どうやって増えるか」**(2026-08-04(158)ユーザー指示)。
    ⚠**HUDそのものに情報を足さない**=押した時だけ出す([[NOTES_UI]]「情報を足す方向は間違い」)。 */
+/* 📊(159)兵科のステータスの窓。⚠姿の枠は**中の寸法とCSSの寸法を必ず揃える**(潰れる) */
+#us-show{flex:0 0 132px;height:96px;border:3px solid var(--ink);border-radius:11px;overflow:hidden;
+ background:linear-gradient(180deg,var(--ink2),var(--ink4))}
+#us-cv{display:block;width:100%;height:100%}
+@media (max-width:520px){#us-show{flex:0 0 104px;height:78px}}
 /* 用途は見出しの下に1行だけ(⚠節にしない=ユーザー「無駄なやつある」) */
 .hiuse{font-size:12px;line-height:1.5;color:var(--ink2);margin:3px 3px 1px}
 .hiuse b{color:var(--rust2)}
@@ -1813,6 +1823,18 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <h2 class="hd" style="margin:2px 0 6px;font-size:20px">🏁 沈んだ港を、取り返した</h2>
       <p class="note" style="font-size:12.5px;line-height:1.7;margin:0 4px 9px">— ここまでが、いまの物語。次の拠点で会おう。</p>
       <button class="btn gold" id="bt-ed-ok" style="width:100%;min-height:44px">🏕 拠点へ戻る</button>
+    </div>
+  </div>
+</div>
+<!-- 📊兵科のステータス(2026-08-04(159)ユーザー指示「編成画面で各ユニットのステータスを見れるように」)。
+     ⚠**英雄の窓(md-hstat)と同じ見せ方**にする=棒+札。覚え直すものを増やさない。
+     ⚠高さは `vh` で決めない=`--appH` で抑える([[NOTES_UI]]) -->
+<div class="modal" id="md-ustat">
+  <div class="panel" style="max-width:520px;width:min(94vw,520px);max-height:min(90vh,var(--appH,90vh));display:flex;flex-direction:column;gap:5px;padding:8px 9px;overflow:hidden">
+    <div class="bphd"><b id="us-t">兵科</b><span class="pt" id="us-cost"></span><button class="xbtn" id="bt-ustat-close">✕</button></div>
+    <div class="hsinfo" id="us-body" style="display:flex;gap:9px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y">
+      <div id="us-show"><canvas id="us-cv"></canvas></div>
+      <div id="us-info" style="flex:1 1 auto;min-width:0"></div>
     </div>
   </div>
 </div>
@@ -3344,14 +3366,17 @@ const TOWERS=[
     ⚠**配列からは消さない**=消すと後ろのグレードアップ専用の番号が2つずれ、
       中断データ(saveRunは塔を**番号**で持つ)の廃品工房が別の塔に化ける。
     ⭐`off:1` で建設リストからも建てる判定からも外している(戻すならこの印を消すだけ)。 */
- {id:'radio',off:1,n:'電波塔',cost:380,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
- {id:'medic',n:'野戦病院',cost:420,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:LIFE,dsc:'部隊全員のHPを毎秒16回復(🦸英雄は毎秒1.2%)し、出撃の待ち時間を20%短縮'},
+ /* 💰⭐(159)**支援施設の値段を5倍にした**(ユーザー指示「置ける野戦病院とかのコストを5倍にして」)=
+    支援枠が2つに戻って**両方建つ**ようになったので、素の値段では安すぎた。
+    ⚠**強化代は値段から出している**(`stCost`=cost×.45×1.75^段)ので、強化代も5倍になる。 */
+ {id:'radio',off:1,n:'電波塔',cost:1900,rng:0,dmg:0,rate:0,type:'sup',c:'#5f8fa3',dsc:'ウェーブが始まった瞬間に、その波の敵の顔ぶれと総数が読める'},
+ {id:'medic',n:'野戦病院',cost:2100,rng:0,dmg:0,rate:0,type:'sup',supH:16,supCd:.8,c:LIFE,dsc:'部隊全員のHPを回復(建てて毎秒16・強化で最大52。🦸英雄は毎秒1.2%)し、出撃の待ち時間を20%短縮'},
 /* 👟⭐⭐(128)**進軍旗**(ユーザー「TDの支援枠にユニットとヒーローの移動速度上昇するやつ追加で。
     1%〜50%まで強化であげれる感じで、これは研究所でのアップグレードは無し」)。
     ⚠**支援枠は1つしか建たない**ので、🏥野戦病院と**どちらを取るか**の選択になる(それが遊び)。
     ⚠研究所には出さない=支援は T_PLAY の外(解放の鎖にも研究所にも出ない)。 */
- {id:'flag',n:'進軍旗',cost:400,rng:0,dmg:0,rate:0,type:'sup',supMs:1,c:AMBER,dsc:'部隊と英雄の足が速くなる(建てて+8%・強化で最大+50%)'},
- {id:'depot',off:1,n:'物資投下所',cost:460,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
+ {id:'flag',n:'進軍旗',cost:2000,rng:0,dmg:0,rate:0,type:'sup',supMs:1,c:AMBER,dsc:'部隊と英雄の足が速くなる(建てて+8%・強化で最大+50%)'},
+ {id:'depot',off:1,n:'物資投下所',cost:2300,rng:0,dmg:0,rate:0,type:'sup',supD:1,c:GOLD2,dsc:'ウェーブ開始ごとに補給が1つ届く(⚙️/🔩/コア修理/無料出撃/砲撃即完了)'},
  /* ===== グレードアップ専用(grd:1) =====
     ⭐廃品工房は⚙️産出・⏩サイクルとも最大まで上げると次の段へ建て替えられる(2026-07-26ユーザー指示)。
     **🏭廃品工房 → ⬆上級廃品工房 → ⬆⬆廃品プラント** の3段。
@@ -3510,7 +3535,7 @@ const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タワー個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0,ms:0});/* z=❄凍結時間 / ms=👟移動速度(進軍旗だけ) */
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0,ms:0,hl:0});/* z=❄凍結時間 / ms=👟移動速度(進軍旗) / hl=💚回復量(野戦病院) */
 /* 盤面の強化は⚙️払い。⚠進化先は**そのタワーの値段で1段目から数え直す**(引き継いだLvのぶん
    1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMinSt(tw.ti,st)));
@@ -3527,7 +3552,10 @@ const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]
    ⭐いまは**進化しても連射は素のMAX(0.55倍)で頭打ち**。買った段(tw.us.r)はそのまま効くので弱くならない。
    ⚠**廃品工房(eco)だけは別**=⏩サイクルが産出そのものなので、外すと進化後に買う物が無くなる。
    ⚠twStatsRaw=外す前の一覧。**どの塔が⏩連射を失ったか**を下の twLostRate が見るのに要る。 */
-const twStatsRaw=ti=>TOWERS[ti].type==='sup'?(TOWERS[ti].supMs?['ms']:[])/* ⚠(128)進軍旗だけ強化できる */:TOWERS[ti].type==='eco'?['d','r']
+/* ⚠(159)**🏥野戦病院も強化できる**(ユーザー指示「野戦病院も足の速さの支援塔と一緒で強化できるように」)。
+   ⭐支援施設は**1つの塔につき1つの枠**だけ持つ=進軍旗は👟移動速度・野戦病院は💚回復量。
+   ⚠**タワーの性能には相変わらず一切触らない**(情報/部隊/経済の3軸だけ、の約束は守っている)。 */
+const twStatsRaw=ti=>TOWERS[ti].type==='sup'?(TOWERS[ti].supMs?['ms']:TOWERS[ti].supH?['hl']:[]):TOWERS[ti].type==='eco'?['d','r']
  :TOWERS[ti].drn?(TOWERS[ti].grd?['d','r','a']:['d','r','n'])/* 素=🛩機体数 / 進化後=🔫弾数 */
 /* ⭐**進化すると❄冷却回数の枠が❄凍結時間に入れ替わる**(2026-07-27ユーザー指示
      「極低温塔は凍結時間を強化できるようにしよう」)。
@@ -3558,7 +3586,7 @@ const twStats=ti=>{const T=TOWERS[ti],L=twStatsRaw(ti);
 const TW_DSTEP=.20,TW_DSTEP_G=.40;
 const twLostRate=ti=>{const T=TOWERS[ti];if(!T||!T.grd||T.type==='eco')return false;
  const b=TOWERS.findIndex(z=>z.up2===T.id);return b>=0&&twStatsRaw(b).indexOf('r')>=0;};
-const USTAT_L={ms:'👟移動速度',d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const USTAT_L={ms:'👟移動速度',hl:'💚回復量',d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに15.5%短くなる。
    ⭐⭐**掛け算にした**(2026-07-30ユーザー指摘「レーザー砲の進化後の昇温時間が0.3から上がらず無駄強化」)。
    ⚠それまでは `20*(1-.13*段)` の**引き算**だったので、進化後(最大10段=usEff 7.5)は
@@ -4897,14 +4925,21 @@ const ECO_SLOTS=[[129,213],[253,211],[374,211]];
    建てる前に⚙️で枠を解放する必要がある(左から順) */
 const SUP_SLOTS=[[560,235],[1160,235]];/* 既定値(STAGES[].sup が無い時だけ使う) */
 const ECO_BASE=22,ECO_MAX=3;/* ⚠マス数はステージ間で固定(通常22+工房3+支援2=27) */
-/* ⚠(113)**支援枠は1つ**=建てられる支援施設が🏥野戦病院だけになったため(2つ目は永久に空く)。
-   ⚠「同じ施設は1つまで」の決まりがあるので、枠だけ増やしても埋まらない。 */
-const SUP_BASE=ECO_BASE+ECO_MAX,SUP_MAX=1;
+/* ⭐(159)**支援枠は2つに戻した**(ユーザー指示「支援枠置けるとこ2個にして」)=
+   建てられる支援施設が🏥野戦病院と👟進軍旗の**2種**になったので、2枠とも埋まる。
+   ⚠(113)に1枠へ絞ったのは**建てられる物が野戦病院だけだった**ため(2枠目が永久に空いていた)。
+   ⚠「同じ施設は1つまで」の決まりは残す=2枠に同じ物は建てられない。 */
+const SUP_BASE=ECO_BASE+ECO_MAX,SUP_MAX=2;
 /* 🏥(113)**英雄の回復は最大HPの割合**(毎秒1.2%=HP5400なら約65/秒)。⚠兵科は毎秒16のまま */
 const SUP_HERO_P=.012;
 /* 👟(128)進軍旗の効き=**建てた時+8%、強化1段ごとに+約10%、最大+50%**(⚠上限は50%) */
 const SUP_MS=[8,19,29,39,45,50];
 const supMsOf=lv=>1+SUP_MS[Math.min(SUP_MS.length-1,Math.max(0,lv|0))]/100;
+/* 💚(159)野戦病院の回復量=**建てて毎秒16、強化5段で52**(ユーザー指示「進軍旗と一緒で強化できるように」)。
+   ⚠**素の値は表(`supH:16`)と必ず揃える**=1段目を表と違う値にすると、建てた瞬間に数字が動く。
+   ⚠🦸英雄は最大HPの割合(`SUP_HERO_P`)の方が大きければそちらを採るので、ここを上げても英雄には効きにくい。 */
+const SUP_HL=[16,25,33,41,47,52];
+const supHlOf=lv=>SUP_HL[Math.min(SUP_HL.length-1,Math.max(0,lv|0))];
 const isEcoSlot=si=>si>=ECO_BASE&&si<SUP_BASE;
 const isSupSlot=si=>si>=SUP_BASE;
 const supUnlocked=(C,si)=>(si-SUP_BASE)<(C&&C.supN||0);
@@ -18605,7 +18640,8 @@ function campStep(C,dt,wave){
  {let sh=0,scd=1,rad=0,dep=0,ms=1;
   for(let si=SUP_BASE;si<SLOTS.length;si++){const tw=C.towers[si];if(!tw||tw.jamT>0)continue;
    const T=TOWERS[tw.ti];if(!T||T.type!=='sup')continue;
-   if(T.supH)sh+=T.supH;if(T.supCd)scd*=T.supCd;if(T.supD)dep=1;if(T.id==='radio')rad=1;
+   if(T.supH)sh+=supHlOf(tw.us&&tw.us.hl);/* 💚(159)回復量(強化ぶんを込みで引く) */
+   if(T.supCd)scd*=T.supCd;if(T.supD)dep=1;if(T.id==='radio')rad=1;
    if(T.supMs)ms=Math.max(ms,supMsOf(tw.us&&tw.us.ms));/* 👟(128)移動速度 */}
   C.supH=sh;C.supCd=scd;C.supRadio=rad;C.supDepot=dep;C.supMs=ms;}
  /* 🏥野戦病院: 部隊を回復する。
@@ -21259,7 +21295,7 @@ function openBM(si){
  }else if(sSlot&&!supUnlocked(m,si)){/* 未解放の支援枠=解放メニュー */
   const sn=m.supN||0,p=(sn<SUP_MAX)?prSup(sn):null,nextOk=(si-SUP_BASE)===sn;
   h=`<div id="bm-title">🏗 支援枠 ${si-SUP_BASE+1}/${SUP_MAX}</div>`+
-   `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'開くと支援施設(電波塔/野戦病院/物資投下所)を建てられる':'左の枠から順に開ける'}</div>`+
+   `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'開くと支援施設(🏥野戦病院/👟進軍旗)を建てられる':'左の枠から順に開ける'}</div>`+
    `<div class="bm-row"><button class="btn gold sm" id="bm-sup" ${nextOk&&p!=null?'data-p="'+p+'"':''} ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 解放 ⚙️'+fmt(p):'MAX'}</button></div>`;
  }else if(eSlot&&!ecoUnlocked(m,si)){/* 未解放の工房スロット=増設メニュー */
   const p=(eN<ECO_MAX)?prEco(eN):null;
@@ -21295,7 +21331,10 @@ function openBM(si){
     +(st==='b'?(mx?'(x'+twBurnM(tw).toFixed(2)+')':'(x'+twBurnM(tw).toFixed(2)+'→x'+twBurnM({us:Object.assign({},tw.us,{b:lvv+1})}).toFixed(2)+')'):'')
     +(st==='z'?(mx?'('+twFrzT(T,tw).toFixed(1)+'秒)':'('+twFrzT(T,tw).toFixed(1)+'→'+twFrzT(T,{us:Object.assign({},tw.us,{z:lvv+1})}).toFixed(1)+'秒)'):'')
     +(st==='n'?(mx?'('+twDrN(T,tw)+'機)':'('+twDrN(T,tw)+'→'+twDrN(T,{us:Object.assign({},tw.us,{n:lvv+1})})+'機)'):'')
-    +(st==='a'?(mx?'('+twDrAmmo(T,tw)+'発)':'('+twDrAmmo(T,tw)+'→'+twDrAmmo(T,{us:Object.assign({},tw.us,{a:lvv+1})})+'発)'):'');
+    +(st==='a'?(mx?'('+twDrAmmo(T,tw)+'発)':'('+twDrAmmo(T,tw)+'→'+twDrAmmo(T,{us:Object.assign({},tw.us,{a:lvv+1})})+'発)'):'')
+    /* 🏗支援施設も「今→強化後」を出す(👟進軍旗=+%、💚野戦病院=毎秒の回復量) */
+    +(st==='ms'?(mx?'(+'+SUP_MS[Math.min(SUP_MS.length-1,lvv)]+'%)':'(+'+SUP_MS[Math.min(SUP_MS.length-1,lvv)]+'%→+'+SUP_MS[Math.min(SUP_MS.length-1,lvv+1)]+'%)'):'')
+    +(st==='hl'?(mx?'('+supHlOf(lvv)+'/秒)':'('+supHlOf(lvv)+'→'+supHlOf(lvv+1)+'/秒)'):'');
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
    if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
    /* ⚠進化先は引き継いだぶんを引いて数える(◆が10個並ぶとボタンからはみ出す) */
@@ -21613,6 +21652,9 @@ try{
   const el=$(q[0]);if(!el)return;
   el.onclick=()=>{if(!gameActive)return;try{hudInfo(q[1]);}catch(e){toast('中身でエラー: '+e.message,true);}};});
  const hc=$('bt-hinfo-close');if(hc)hc.onclick=closeHinfo;
+ /* 📊(159)兵科のステータスの窓 */
+ const uc=$('bt-ustat-close');if(uc)uc.onclick=()=>$('md-ustat').classList.remove('on');
+ const um=$('md-ustat');if(um)um.onclick=e=>{if(e.target===um)um.classList.remove('on');};
  /* ⚠**枠の外を押しても閉じる**=✕が小さい端末でも必ず出られる(閉じられないUIを作らない) */
  const hm=$('md-hinfo');if(hm)hm.onclick=e=>{if(e.target===hm)closeHinfo();};
 }catch(e){}
@@ -26415,7 +26457,7 @@ function tutSteps(){return[
       枠の解放は⚙️600だが、チュートリアルの⚙️は下で毎フレーム補充している飾りなので出し惜しむ意味がない。
       **押せないボタンを見せる**方が悪い。sc0 でこの段だけ下限を上げ、実際に開けて建てさせる。 */
  {id:'sup',scr:'game',t:'🏗支援施設の枠もある',
-  m:'青い破線の枠は支援施設だけの場所だ。⚙️で枠を開けると 📻電波塔(次の波の中身が読める)・🏥野戦病院(部隊を回復)・📦物資投下所 が建つ。開けて1つ建ててみろ。',
+  m:'青い破線の枠は支援施設だけの場所だ。⚙️で枠を開けると 🏥野戦病院(部隊を回復)・👟進軍旗(部隊の足が速くなる)が建つ。開けて1つ建ててみろ。',
   hi:{k:'slotI',i:SUP_BASE},al:'#buildmenu',low:1,sc0:700,
   ok:C=>!!(C.towers||[])[SUP_BASE]},
  {id:'unit',scr:'game',t:'主役は生存者部隊だ',
@@ -27417,7 +27459,9 @@ function renderLoad(){
    /* ⭐編成に入っている札も押せる=**押すと外すトグル**(disabledの死に札が一覧の先頭を埋めていた)。
       ⚠✅は名前に混ぜず左上のバッジに(名前の幅を食わない) */
    /* ⛔**相性の札は外した**(2026-08-04(145))=文字でも記号でも読まれない。⚠書き戻さない */
+   /* 📊(159)**ⓘ=ステータスを見る**(ユーザー指示)。⚠札そのものは今までどおり「入れる/外す」 */
    h+='<button class="tmc'+(on?' on':'')+'" data-team="'+i+'" data-on="'+(on?1:0)+'">'
+    +'<span class="ib" data-ui="'+i+'">ⓘ</span>'
     +(on?'<span class="onb">'+IC('✅')+'</span>':'')
     +(((uEff(i)||U).hook)?'<span class="hkb">🛡</span>':'')/* 🛡すり抜けを足止めできる印(98) */
     +'<canvas width="96" height="58"></canvas>'
@@ -27455,7 +27499,10 @@ function renderLoad(){
    b.onclick=()=>{if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,false);};});
   box.querySelectorAll('[data-team]').forEach(b=>{
    const i=+b.dataset.team;ldPrev(b.querySelector('canvas'),i,uEff(i));
-   b.onclick=()=>{if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,b.dataset.on!=='1');};});
+   /* ⚠**ボタンの中にボタンは置けない**(HTMLとして不正)ので、ⓘは span にして押した所で振り分ける */
+   b.onclick=e=>{
+    if(e&&e.target&&e.target.classList&&e.target.classList.contains('ib')){openUstat(i);return;}
+    if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,b.dataset.on!=='1');};});
   return;
  }
  /* ⭐派生の割り当て。⚠基本と上級を**1つのタブ**にまとめた(2026-08-01)=分ける意味が無かった */
@@ -27480,6 +27527,57 @@ function renderLoad(){
    META.ld[bid]=b.dataset.v;saveMeta();sfx.buy&&sfx.buy();renderLoad();
    try{const g=box.querySelector('.ldscroll');if(g)g.scrollTop=sv;}catch(e){}};});
 }
+/* ============ 📊 兵科のステータス(2026-08-04(159)) ============
+   ユーザー指示「ユニットの編成画面で各ユニットのステータスを見れるように追加して」。
+   ⭐**英雄の窓(renderHStat)と同じ見せ方**=棒4本+小さな札。⚠覚え直すものを増やさない。
+   ⚠**棒は「30種の中での位置」**=数字だけでは強いのか弱いのか分からない(英雄窓と同じ理屈)。
+   ⚠**数字も必ず残す**(棒だけにすると細かい比較ができない)。
+   ⚠**相性の文字は書かない**((145)で却下済み)=型の名前までにする。 */
+let USSEL=-1;
+/* ⚠**覚え込ませない**=派生を選び直すと中身が変わるので、開くたびに数え直す(30種なので安い) */
+function uStMax(){
+ const m={hp:1,atk:1,rng:1,sp:1};
+ for(let i=0;i<U_N;i++){const u=uEff(i)||UBASE[i];if(!u)continue;
+  m.hp=Math.max(m.hp,u.hp||0);m.atk=Math.max(m.atk,u.atk||0);
+  m.rng=Math.max(m.rng,u.rng||0);m.sp=Math.max(m.sp,u.sp||0);}
+ return m;
+}
+function renderUstat(){
+ const i=USSEL,U=uEff(i)||UBASE[i];if(!U)return;
+ const MX=uStMax(),dps=(U.rate>0)?Math.round((U.atk||0)/U.rate):0;
+ /* ⚠⚠**棒は素の割合で引かない**=🛡盾持ちのHPが4500で他が300前後なので、
+    そのまま割ると**ほぼ全員が空の棒**になり「多い/少ない」が読めない(撮って直した)。
+    ⭐平方根で伸ばす=順番は変わらないまま、団子になっている所の差が見える。 */
+ const q9=(v,m)=>Math.sqrt(Math.max(0,v||0)/Math.max(1,m));
+ const t=$('us-t');if(t)t.innerHTML=IC(U.n);
+ const c9=$('us-cost');if(c9)c9.innerHTML=IC('⚙️'+(U.cost||0));
+ const inf=$('us-info');
+ if(inf)inf.innerHTML=IC('<div class="sbwrap">'
+  +hsBar('❤ HP',fmt(U.hp||0),q9(U.hp,MX.hp),'var(--life2)')
+  +hsBar('⚔ 攻撃',fmt(U.atk||0)+' <small>毎秒'+fmt(dps)+'</small>',q9(U.atk,MX.atk),'var(--rust)')
+  +hsBar('📡 射程',(U.rng>=100?U.rng:'近接 '+(U.rng||0)),q9(U.rng,MX.rng),'var(--tech2)')
+  +hsBar('👟 移動',Math.round(U.sp||0),q9(U.sp,MX.sp),'var(--amber)')
+  +'</div>'
+  +'<div class="hchips"><span>⏩ 間隔 '+(U.rate||0).toFixed(2)+'秒</span>'
+   +'<span>'+afTag(U.type,0,false).ic+' '+(HS_TYN[U.type]||U.type)+'</span>'
+   +'<span>⚖ 重さ '+uWt(i)+'</span>'
+   +'<span>⏳ 待ち '+(U.cd||0)+'秒</span>'
+   +(U.multi?('<span>🎯 同時'+U.multi+'体</span>'):'')
+   +(U.aoe?('<span>💥 範囲'+U.aoe+'</span>'):'')
+   +(U.burn?('<span>🔥 燃焼'+U.burn+'</span>'):'')
+   +(U.hook?('<span>🪝 足止め'+U.hook+'体</span>'):'')
+   +'</div>'
+  +(U.dsc?('<div class="hsul">'+U.dsc+'</div>'):''));
+ /* 姿。⚠fitDraw は枠の中に収める(CSSと中の寸法が食い違うと潰れる=既出の掟) */
+ try{const cv=$('us-cv');
+  if(cv&&cv.getContext){const dpr9=Math.min(2,window.devicePixelRatio||1);
+   const bw9=Math.max(2,Math.round((cv.clientWidth||126)*dpr9)),bh9=Math.max(2,Math.round((cv.clientHeight||90)*dpr9));
+   if(cv.width!==bw9)cv.width=bw9;if(cv.height!==bh9)cv.height=bh9;
+   /* ⚠**派生を選んでいれば派生の姿**を描く(素のUNITS頼みにしない=既出の掟) */
+   fitDraw(cv,cc=>drawUnitAs(cc,i,U),12);}}catch(e){}
+}
+function openUstat(i){USSEL=i;renderUstat();$('md-ustat').classList.add('on');}
+
 /* 🎒**「持って行く物」の3行**(2026-08-02(68))=押すと専用の窓が開く */
 $('row-team').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
 $('row-stk').onclick=()=>{renderStkPick();$('md-stk').classList.add('on');};
@@ -29094,7 +29192,6 @@ function hudInfo(kind){
    +hiRow('💀','ボス … 削ったぶんが先に入る(最大<b>6割</b>)')
    +hiRow('🏭','廃品工房 … '+(eco||'<b>未建設</b>'))
    +hiRow('🏚','塔を売る … 使った額の<b>6割</b>')
-   +hiRow('📦','物資投下所 … <b>'+Math.round(120+wv*22)+'</b>(5回に1回)')
    +hiRow('🕶','必殺「闇取引」');
  }else if(kind==='pt'){
   t=PT+' 強化ポイント';now=fmt(m.up||0);
@@ -29102,8 +29199,7 @@ function hudInfo(kind){
   h=hiSec('入手')
    +hiRow('🌊','WAVE '+wv+' を守り切る … <b>+'+wavePts(wv)+'</b>(次の波 +'+wavePts(wv+1)+')')
    +hiRow('🏳','諦める … <b>半分</b>')
-   +hiRow('🏁','出撃した時点 … <b>'+(12+up0V())+'</b>')
-   +hiRow('📦','物資投下所 … <b>+'+Math.round(4+wv*.9)+'</b>(5回に1回)');
+   +hiRow('🏁','出撃した時点 … <b>'+(12+up0V())+'</b>');
  }else if(kind==='u'){
   const cap=(G&&G.coop?COOP_MAXU:MAXU);
   const arr=(MODE==='client'?(CC&&CC.units):m.units)||[];
@@ -29131,7 +29227,6 @@ function hudInfo(kind){
     +hiRow('🏗','攻城の敵が殴る … 攻撃力の<b>半分</b>ずつ')
     +hiSec('回復')
     +hiRow('🛠','コア修理('+PT+') … <b>+12</b>')
-    +hiRow('📦','物資投下所 … <b>+'+Math.round(cm*.15)+'</b>(最大の15%)')
     +hiRow('🌙','波をまたいでも<b>自動回復なし</b>',1);}
  }
  if(use)h='<div class="hiuse">'+use+'</div>'+h;
