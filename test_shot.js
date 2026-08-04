@@ -199,6 +199,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        /* ⚠⚠仮想時間では rAF がほとんど回らないので、**自分で cupStep を回して**その段まで進める */
        +'for(var q9=0;q9<900&&CUP&&CUP.ph!==ph9;q9++)cupStep(.05);'
        +'if(ph9==="res"&&CUP){CUP.pick=CUP.hit;CUP.ph="res";CUP.t=.4;}'
+       /* 🐕(168)cupb=0(犬)/1(魚) で横切る小動物を必ず出す(⚠出るのは運なので撮る口が要る) */
+       +((/cupb=([0-9])/.exec(OPT))?('if(CUPB)CUPB.cur={k:'+(/cupb=([0-9])/.exec(OPT))[1]+',t:4.5};'):'')
        +'cupUI();cupDraw(1.2);}catch(e){document.title="ERR15 "+e.message;}')
      :(OPT.indexOf('cup')>=0)?'cupOpen();'
      :(OPT.indexOf('mini')>=0)?'show("mini");'

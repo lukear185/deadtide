@@ -32541,8 +32541,48 @@ const cupLift=(A,i)=>{
  for(const p of A.plan[A.k])if(sl===p[0]||sl===p[1])return Math.sin(q*Math.PI)*(sl===p[0]?1:-.45);
  return 0;
 };
+/* 🐕🐟⭐(168)**たまに横から小動物が通る**(ユーザー指示「ランダムで横から犬とか魚とかが歩いてきたり。
+   一個の難易度で多くて2回。絶対カップの視界を遮らないようにゆっくり10秒掛けて右から左に通過」)。
+   ⚠⚠**カップの前は絶対に通さない**=通り道は**台の手前の面**(カップより下)に固定してある。
+   ⚠**1組(5回)で最大2匹**=出しすぎると本題の邪魔になる。⚠**右から左へ10秒**(ゆっくり)。 */
+const CUP_CROSS=10;             /* 横切るのに掛かる秒 */
+let CUPB=null;
+function cupBNew(){return{n:ri(0,2),t:0,cur:null,next:rnd(4,12)};}
+function cupBStep(dt){
+ const B=CUPB;if(!B)return;
+ B.t+=dt;
+ if(B.cur){B.cur.t+=dt;if(B.cur.t>=CUP_CROSS){B.cur=null;B.next=B.t+rnd(6,14);}}
+ else if(B.n>0&&B.t>=B.next){B.cur={k:ri(0,1),t:0};B.n--;}
+}
+/* 1匹ぶん。⚠**素の大きさは 高さ20 × 幅28**(呼ぶ側はこれで割って合わせる)。足元が原点 */
+function cupBDraw(c,k,t){
+ c.lineJoin='round';c.lineCap='round';c.strokeStyle=INK;c.lineWidth=1.6;
+ if(k===0){/* 🐕犬(⚠尻尾を振る=これだけで生きて見える) */
+  const wk=Math.sin(t*7),tl=Math.sin(t*11)*.5;
+  c.fillStyle='#8a6a45';
+  for(const lx of [-7,-2,4,9]){const sw=Math.sin(t*7+lx)*1.6;
+   c.beginPath();c.moveTo(lx,-6);c.lineTo(lx+sw,0);c.stroke();}
+  c.save();c.translate(-10,-9);c.rotate(-.5+tl);
+  c.beginPath();c.moveTo(0,0);c.lineTo(-5,-3);c.stroke();c.restore();
+  rr(c,-11,-13,20,8,4);c.fill();c.stroke();
+  c.beginPath();c.arc(11,-14,4.6,0,7);c.fill();c.stroke();
+  c.fillStyle='#6b5133';c.beginPath();c.moveTo(9,-18);c.lineTo(11,-22);c.lineTo(13,-18);c.closePath();c.fill();c.stroke();
+  c.fillStyle=INK;c.beginPath();c.arc(13,-15,.9,0,7);c.fill();
+  c.fillStyle='#3f3128';c.beginPath();c.arc(15,-13.4,1.2,0,7);c.fill();
+  if(wk>0){}/* ⚠歩幅の印は脚だけで足りる */
+ }else{/* 🐟魚(⚠**跳ねる**=歩けないので、弧を描いて進む) */
+  const hop=Math.abs(Math.sin(t*3.4)),rot=Math.cos(t*3.4)*.5;
+  c.save();c.translate(0,-4-hop*9);c.rotate(rot);
+  c.fillStyle='#5fa8c9';
+  c.beginPath();c.ellipse(0,0,10,5.4,0,0,7);c.fill();c.stroke();
+  c.beginPath();c.moveTo(-9,0);c.lineTo(-15,-4.4);c.lineTo(-15,4.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#cdf1ff';c.beginPath();c.arc(5,-1,1.7,0,7);c.fill();
+  c.fillStyle=INK;c.beginPath();c.arc(5.4,-1,.9,0,7);c.fill();
+  c.restore();}
+}
 function cupStep(dt){
  const A=CUP;if(!A||A.over)return;
+ cupBStep(dt);
  A.t+=dt;
  if(A.ph==='cnt'){if(A.t>=CUP_CNT){A.ph='show';A.t=0;}}
  else if(A.ph==='show'){if(A.t>=1.25){A.ph='drop';A.t=0;}}
@@ -32627,19 +32667,24 @@ function cupZ(c,t,wave){
   c.beginPath();c.arc(13+a2*1.2,-34,1.8,0,7);c.fill();}
  c.restore();
 }
-/* 1杯ぶんの絵。⚠**紙コップではなくバケツ**(この世界の物)=上が広い台形+口の縁 */
+/* 1杯ぶんの絵。⚠**紙コップではなくバケツ**(この世界の物)。
+   ⚠⚠(168)**伏せた向きで描く**(ユーザー「カップの向きが上下逆だから広い口側を下にして」)=
+   **上=閉じた底(狭い) / 下=口(広い)**。かぶせて隠す物なので、上向きに置いてあったら中身が入らない。
+   ⚠**書き戻さない**。⭐口の暗い楕円は**体より先に描く**=持ち上げた時だけ下からのぞく。 */
 function cupDraw1(c,x,y,w,h,lift,col){
  c.save();c.translate(x,y-lift);
  c.lineJoin='round';c.strokeStyle=INK;c.lineWidth=3;
+ /* 下の口(⚠体の後ろに置く=伏せている時は見えない) */
+ c.fillStyle='#1a1216';c.beginPath();c.ellipse(0,0,w*.5,w*.12,0,0,7);c.fill();c.stroke();
+ /* 体(上が狭く下が広い=伏せた形) */
  c.fillStyle=col;
- c.beginPath();c.moveTo(-w*.5,-h);c.lineTo(w*.5,-h);c.lineTo(w*.36,0);c.lineTo(-w*.36,0);c.closePath();
+ c.beginPath();c.moveTo(-w*.36,-h);c.lineTo(w*.36,-h);c.lineTo(w*.5,0);c.lineTo(-w*.5,0);c.closePath();
  c.fill();c.stroke();
  /* 明暗を1段(⚠のっぺりだと「ただの台形」に見える) */
- c.save();c.beginPath();c.moveTo(0,-h);c.lineTo(w*.5,-h);c.lineTo(w*.36,0);c.lineTo(0,0);c.closePath();
+ c.save();c.beginPath();c.moveTo(0,-h);c.lineTo(w*.36,-h);c.lineTo(w*.5,0);c.lineTo(0,0);c.closePath();
  c.fillStyle='rgba(0,0,0,.22)';c.fill();c.restore();
- /* 口の縁 */
- c.fillStyle=shade(col,1.15);c.beginPath();c.ellipse(0,-h,w*.5,w*.11,0,0,7);c.fill();c.stroke();
- c.fillStyle='rgba(0,0,0,.5)';c.beginPath();c.ellipse(0,-h,w*.5*.82,w*.11*.72,0,0,7);c.fill();
+ /* 上の底(閉じている面) */
+ c.fillStyle=shade(col,1.18);c.beginPath();c.ellipse(0,-h,w*.36,w*.09,0,0,7);c.fill();c.stroke();
  c.restore();
 }
 function cupDraw(t){
@@ -32659,6 +32704,12 @@ function cupDraw(t){
  c.fillStyle='#2e2436';c.fillRect(w*.03,gy,tw,h*.28);
  c.fillStyle='#3d3148';c.fillRect(w*.03,gy,tw,4*dpr);
  if(!A)return;
+ /* 🐕🐟(168)横切る小動物。⚠**台の手前の面**を通す=カップと重ならない(視界を遮らない) */
+ if(CUPB&&CUPB.cur){const q=CUPB.cur.t/CUP_CROSS;
+  /* ⚠**跳ねる魚の頂点までカップに触れさせない**=通り道は台の手前の**下寄り**に置く(撮って直した) */
+  const bx=w*1.06-q*(w*1.12),by=gy+(h-gy)*.76,bs=Math.min(w*.030,(h-gy)*.028);
+  c.save();c.translate(bx,by);c.scale(bs,bs);
+  c.globalAlpha=.9;try{cupBDraw(c,CUPB.cur.k,t);}catch(e){}c.globalAlpha=1;c.restore();}
  /* ⚠⚠**寸法は画面から出す**=決め打ちにすると実機で溢れる。⚠**高さ側でも必ず抑える**
     (横だけで出すと、カップが3個の時に画面の高さを超えて上に飛び出す。撮って直した) */
  const cw=Math.min(w*.86/A.n,h*.19),ch=cw*1.18;
@@ -32736,7 +32787,7 @@ function cupEnd(){
  const b=$('cup-end');if(b)b.classList.add('on');
 }
 function cupPlay(){
- CUP=cupNew(CUPLV);
+ CUP=cupNew(CUPLV);CUPB=cupBNew();/* 🐕(168)横切る小動物は**1組につき作り直す**(最大2匹) */
  const b=$('cup-end');if(b)b.classList.remove('on');
  cupUI();show('cupg');
 }
