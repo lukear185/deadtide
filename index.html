@@ -1838,7 +1838,7 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
       <div style="font-size:12px;font-weight:900;letter-spacing:4px;color:var(--rust2)">SURVIVORS' LAST STAND</div>
       <h2 class="hd" style="margin:2px 0 6px;font-size:20px">🏁 沈んだ港を、取り返した</h2>
       <p class="note" style="font-size:12.5px;line-height:1.7;margin:0 4px 9px">— ここまでが、いまの物語。次の拠点で会おう。</p>
-      <button class="btn gold" id="bt-ed-ok" style="width:100%;min-height:44px">🏕 拠点へ戻る</button>
+      <button class="btn gold" id="bt-ed-ok" style="width:100%;min-height:44px">▶ 続ける</button>
     </div>
   </div>
 </div>
@@ -2043,7 +2043,8 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0','tk5','arcW','arcL'])META[k]=META[k]||0;/* ⚠(125)arcW/arcL=🏹弓比べの戦績 */
  if(!META.gft||typeof META.gft!=='object')META.gft={};/* 🎫受け取った配布物の印 id→1 */
  if(!META.msn||typeof META.msn!=='object')META.msn=null;
- META.edOK=META.edOK||0;/* 🏁(156)区切りの幕を見たか *//* 🎯任務(2026-08-04(152))。⚠日が違えば msnDay が作り直す */
+ META.edOK=META.edOK||0;/* 🏁(156)区切りの幕を見たか */
+ META.edPend=META.edPend||0;/* 🎬(164)タイトルへ戻ったら流す印 *//* 🎯任務(2026-08-04(152))。⚠日が違えば msnDay が作り直す */
  /* 🚌バスの物資と永続強化(2026-08-02(44))。⚠古いセーブには無いので必ず作り直す */
  if(!Array.isArray(META.bres))META.bres=[0,0,0];while(META.bres.length<3)META.bres.push(0);
  if(!META.bup||typeof META.bup!=='object')META.bup={};
@@ -2115,7 +2116,7 @@ function metaResetAll(){
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.msn=null;                                /* 🎯(152)今日の任務(次に開いた時に作り直される) */
- META.edOK=0;                                  /* 🏁(156)区切りの幕を見たか */
+ META.edOK=0;META.edPend=0;                    /* 🏁(156)区切りの幕を見たか */
  META.rpg={};                                  /* ⚔冒険の進捗 */
  META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
  META.tmTip=0;                                 /* 🎒編成の案内(初めて兵科を解放した時に1回) */
@@ -19430,7 +19431,10 @@ function awardMeta(){
        (2026-08-04(156)ユーザー選択「2ステージ目の区切りという意味でのエンディングだけ作ろう」)。
        ⚠**1回だけ**(`META.edOK`)=毎回出すと周回の邪魔になる。
        ⚠**次のステージがある間は出さない**=STAGES が増えたら自動でここは通らなくなる。 */
-    else if(!META.edOK){META.edOK=1;G.ending=1;}}
+    /* 🎬(164)**タイトルへ戻った時に流す**(ユーザー指示「海の最後のステージクリアして
+       タイトル戻ったら自動的に流れるようにして」)=それまでは成績表の上にかぶせていた。
+       ⚠**印はセーブに置く**(META.edPend)=成績表→ホーム→タイトルと何段か挟むため。 */
+    else if(!META.edOK){META.edOK=1;META.edPend=1;saveMeta();}}
   }
   if(d9>=4&&!META.nmOK){META.nmOK=1;G.nmUnlocked=1;}
   /* 🎯任務。⚠**初回クリアに限らない**=毎日の任務なので、2周目でも「今日突破した」なら数える。
@@ -26939,6 +26943,10 @@ function backTitle(){
  try{if(NET.peer){NET.peer.destroy();}}catch(e){}
  NET={peer:null,conn:null,lob:[],host:false};CS={meN:null,ot:[],w:1,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0};CC=null;CCFX=[];MODE='solo';
  show('title');
+ /* 🎬(164)**区切りの幕はここで流す**(ユーザー指示)=タイトルに戻った所で1回だけ。
+    ⚠**印は先に落としてから開く**=途中で閉じてももう出ない(1回きりの約束)。
+    ⚠**少し待ってから開く**=画面の切り替えと重ねると、幕の1コマ目が飛ぶ。 */
+ try{if(META.edPend){META.edPend=0;saveMeta();setTimeout(()=>{try{openEnding();}catch(e){}},450);}}catch(e){}
 }
 /* ---- 研究所UI ---- */
 /* 画面アイコン(名前で引く)。⚠絵文字が重複する(🧬は研究ptと派生、📖はあそびかたと記録)ので
@@ -29418,14 +29426,21 @@ function closeHinfo(){PAUSED=HIWASP;$('md-hinfo').classList.remove('on');}
    ⚠絶対値で持つしかない物(建物の高さ・バスの大きさ)は `EK`(=ED_H/292)を掛けて連動させる。 */
 const ED_W=520;let ED_H=292,EK=1;
 const ED_BAR=15;                      /* 上下の黒帯(映画の枠) */
-const ED_C1=2.9,ED_C2=6.3,ED_C3=9.6;  /* カットの切れ目(秒)。ED_C3=幕の終わり */
+/* ⭐(164)**カットを5本に増やした**(ユーザー指示「もうちょっと内容増やして」)=
+   ①戦いの跡(長い夜) ②岸壁の夜明け(沈んでいくもの) ③拠点に灯りが戻る ④荷を積む朝 ⑤次の土地へ。
+   ⚠**切れ目の秒数はここだけで持つ**(ED_CT)=描く側も字幕も終わりの判定も全部ここから引く。
+   ⚠**壮大にしない**の掟は生きている=話はまだ途中なので、盛るのは「日常が戻る所」だけ。 */
+const ED_CT=[2.7,5.6,9.0,11.9,15.2];  /* 各カットの終わりの秒。⚠末尾=幕の終わり */
+const ED_C3=ED_CT[ED_CT.length-1];    /* 幕の終わり(⚠古い名前のまま使っている所がある) */
 const ED_DIP=.42;                     /* 切れ目の暗転(前後で半分ずつ) */
 /* 字幕。⚠**カットの切れ目をまたがせない**=間に隙間を空けて、そこで消えるようにする */
 const ED_CUE=[
- [.45,2.60,'海から這い上がってきたものは、もう来ない。'],
- [3.30,5.00,'錆びた岸壁に、灯りが戻った。'],
- [5.25,6.05,'ここは、人が住める。'],
- [6.85,9.30,'バスは、次の土地へ向かう。']];
+ [.50,2.45,'長い夜だった。'],
+ [3.10,5.35,'海から這い上がってきたものは、もう来ない。'],
+ [6.00,7.60,'錆びた岸壁に、灯りが戻った。'],
+ [7.85,8.75,'ここは、人が住める。'],
+ [9.55,11.65,'積み込みが終わる。'],
+ [12.30,15.05,'バスは、次の土地へ向かう。']];
 const ED={on:0,t:0,done:0,cap:-2};
 const edZi=id=>{const i=ZOMBIES.findIndex(z=>z.id===id);return i<0?0:i;};
 /* 沈んだ船の骸。⚠**水平線に少し傾けて置く**=まっすぐ置くと「浮かんでいる船」に見える */
@@ -29498,7 +29513,7 @@ function edBus(c,x,y,s,t){
  c.restore();
 }
 /* 🚌カット③の路面の演出は「流れていく目印」で速さを出す([[NOTES_面]]) */
-function edCut3(c,u){
+function edCut3(c,u,len){
  const hz=ED_H*.62,rd=ED_H*.72;
  /* 空(朝焼け=3つのカットで一番明るい) */
  let g=c.createLinearGradient(0,0,0,hz);
@@ -29548,9 +29563,92 @@ function edCut3(c,u){
  c.moveTo(bx+84*bs,by-40*bs);c.lineTo(ED_W+30,by-58*bs);c.lineTo(ED_W+30,by-4*bs);
  c.lineTo(bx+84*bs,by-19*bs);c.closePath();c.fill();
 }
+/* 🔥⭐(164)カット⓪=**戦いの跡**。まだ夜。港が燃えている・煙・降る灰。
+   ⚠**明るくしない**=次のカットで夜が明けるので、ここは一番暗い所にしておく(落差が物語になる)。 */
+function edCut0(c,u,len){
+ const p=clamp(u/(len||2.7),0,1),hz=ED_H*.70;
+ let g=c.createLinearGradient(0,0,0,hz);
+ g.addColorStop(0,'#0a0d14');g.addColorStop(.62,'#171420');g.addColorStop(1,'#3a2118');
+ c.fillStyle=g;c.fillRect(0,0,ED_W,hz);
+ /* 燃えている所の明かり(⚠ラジアルグラデを使わない=薄い円盤を2重に置く) */
+ for(const f of [[118,.20],[300,.15],[430,.11]]){
+  const fk=f[1]*(.8+Math.sin(u*5+f[0])*.2);
+  c.fillStyle='rgba(232,120,40,'+fk.toFixed(3)+')';
+  c.beginPath();c.arc(f[0],hz,66*EK,0,7);c.fill();
+  c.fillStyle='rgba(255,180,80,'+(fk*.8).toFixed(3)+')';
+  c.beginPath();c.arc(f[0],hz,30*EK,0,7);c.fill();}
+ /* 立ち上る煙(⚠柱にしない=横へ流しながら太らせる) */
+ c.fillStyle='rgba(30,26,24,.55)';
+ for(const sx of [118,300,430])for(let k=0;k<7;k++){
+  const q=k/7,yy=hz-q*(hz*.95)-u*6;
+  c.beginPath();c.arc(sx+Math.sin(q*3+sx)*22+q*24,yy,(7+q*20)*EK,0,7);c.fill();}
+ /* 崩れた街と折れたクレーン */
+ c.fillStyle='#0c0a09';
+ for(const b of ED_BLD)c.fillRect(b[0],hz-b[2]*.78*EK,b[1],b[2]*.78*EK);
+ {c.save();c.translate(352,hz);c.rotate(.42);c.fillRect(-3,-124*EK,6,124*EK);
+  c.fillRect(-30*EK,-128*EK,74*EK,5);c.restore();}
+ /* 手前=瓦礫の稜線(⚠まっすぐ切らない=戦いの跡に見えない) */
+ c.fillStyle='#080706';
+ c.beginPath();c.moveTo(0,ED_H);c.lineTo(0,hz+16);
+ for(let x9=0;x9<=ED_W;x9+=26)c.lineTo(x9,hz+16+Math.sin(x9*.037+1.2)*9+Math.cos(x9*.017)*7);
+ c.lineTo(ED_W,ED_H);c.closePath();c.fill();
+ /* 降る灰(⚠雪に見せない=ゆっくり斜めに落として、数を抑える) */
+ for(let i=0;i<26;i++){const s9=((i*2654435761)>>>0)%1000/1000;
+  const yy=(s9*ED_H+u*(14+s9*20))%ED_H,xx=(s9*ED_W+yy*.22)%ED_W;
+  c.fillStyle='rgba(200,190,178,'+(.10+s9*.18).toFixed(3)+')';
+  c.fillRect(xx,yy,1.6,1.6);}
+ /* だんだん静かになる(明かりを落として次のカットへ渡す) */
+ if(p>.6){c.fillStyle='rgba(6,8,12,'+((p-.6)/.4*.35).toFixed(3)+')';c.fillRect(0,0,ED_W,ED_H);}
+}
+/* 📦⭐(164)カット③=**荷を積む朝**。バスは止まっていて、人影が箱を運ぶ。
+   ⚠**ここだけ人が主役**=灯りが戻った拠点で「暮らしが動き出した」を見せる所。
+   ⚠バスは⑤と同じ絵(edBus)を使う=同じ車だと読めるように。 */
+function edCut4(c,u,len){
+ const p=clamp(u/(len||2.9),0,1),hz=ED_H*.64,gy=ED_H-ED_BAR-4;
+ let g=c.createLinearGradient(0,0,0,hz);
+ g.addColorStop(0,'#243046');g.addColorStop(.55,'#6b5540');g.addColorStop(1,'#c98a45');
+ c.fillStyle=g;c.fillRect(0,0,ED_W,hz);
+ c.fillStyle='rgba(255,210,109,.22)';c.beginPath();c.arc(96,hz-4,40*EK,0,7);c.fill();
+ /* 拠点の建物(⚠窓は全部点いている=カット②の続きだと分かる) */
+ c.fillStyle='#171310';
+ for(const b of ED_BLD)c.fillRect(b[0],hz-b[2]*.62*EK,b[1],b[2]*.62*EK);
+ c.fillStyle='rgba(255,210,109,.78)';
+ {let wi=0;for(const b of ED_BLD){const bh=b[2]*.62*EK;
+  const cols=Math.max(2,Math.floor(b[1]/23)),rows=Math.max(1,Math.floor(bh/26));
+  for(let ix=0;ix<cols;ix++)for(let iy=0;iy<rows;iy++){wi++;
+   if(wi%3===0)continue;
+   c.fillRect(b[0]+6+ix*((b[1]-12)/cols),hz-bh+8+iy*((bh-14)/rows),6,7);}}}
+ /* 地面(⚠空との境に1本入れる=入れないと地面が空の続きに見える) */
+ g=c.createLinearGradient(0,hz,0,ED_H);
+ g.addColorStop(0,'#4a4030');g.addColorStop(1,'#241f19');
+ c.fillStyle=g;c.fillRect(0,hz,ED_W,ED_H-hz);
+ c.fillStyle='rgba(255,210,109,.16)';c.fillRect(0,hz,ED_W,2);
+ /* 🚌止まっているバス(⚠タイヤは回さない=止まっていることが伝わらない) */
+ const bs=.88*EK,bx=352,by=gy-4;
+ c.fillStyle='rgba(0,0,0,.32)';c.beginPath();c.ellipse(bx,by+2,92*bs,8*bs,0,0,7);c.fill();
+ edBus(c,bx,by,bs,0);
+ /* ⭐積み荷が増えていく=**進み具合そのものを絵にする**(3個目まで) */
+ c.save();c.translate(bx,by);c.scale(bs,bs);
+ c.lineJoin='round';c.strokeStyle=INK;c.lineWidth=2.4/bs;
+ const box=[[-30,-104,26,14],[2,-102,22,12],[-64,-106,28,16]];
+ for(let k=0;k<3;k++){if(p<(k+1)/3.4)continue;
+  c.fillStyle=k===1?'#948d7e':'#7a6144';rr(c,box[k][0],box[k][1],box[k][2],box[k][3],2);c.fill();c.stroke();}
+ c.restore();
+ /* 人影=箱を持って左から右へ運ぶ(⚠位相をずらす=行列に見せない) */
+ for(let k=0;k<3;k++){
+  const q=((u*.42+k*.37)%1),hx=80+q*250,hh=(34-k*3)*EK;
+  c.fillStyle='#141009';edFig(c,hx,gy,hh);
+  /* 抱えている箱 */
+  c.fillStyle='#7a6144';c.fillRect(hx-8*EK,gy-hh*.74,17*EK,12*EK);
+  c.fillStyle='#5c4732';c.fillRect(hx-8*EK,gy-hh*.74+5*EK,17*EK,2*EK);}
+ /* 朝の埃(⚠光の中だけに置く) */
+ for(let i=0;i<14;i++){const s9=((i*2654435761)>>>0)%1000/1000;
+  const dx=((s9*ED_W)+u*(6+s9*10))%ED_W,dy=hz*(.30+((i*97)%60)/100)+Math.sin(u*.9+i)*5;
+  c.fillStyle='rgba(255,210,109,'+(.06+s9*.10).toFixed(3)+')';c.fillRect(dx,dy,2,2);}
+}
 /* 🌊カット①=岸壁の夜明け。**這い上がってきたものが沈んでいく** */
-function edCut1(c,u){
- const p=clamp(u/ED_C1,0,1),hz=ED_H*.50,qy=ED_H*.84;
+function edCut1(c,u,len){
+ const p=clamp(u/(len||2.9),0,1),hz=ED_H*.50,qy=ED_H*.84;
  let g=c.createLinearGradient(0,0,0,hz);
  g.addColorStop(0,'#0c1119');g.addColorStop(.62,'#182031');g.addColorStop(1,'#2c2c32');
  c.fillStyle=g;c.fillRect(0,0,ED_W,hz);
@@ -29601,8 +29699,8 @@ function edCut1(c,u){
 }
 /* 🏠カット②=拠点に灯りが戻る。⚠**窓は1つずつ点ける**(まとめて点けると何も起きていないのと同じ) */
 const ED_BLD=[[6,72,84],[84,50,118],[140,62,62],[208,94,140],[308,42,90],[356,84,108],[446,66,72]];
-function edCut2(c,u){
- const p=clamp(u/(ED_C2-ED_C1),0,1),hz=ED_H*.74;
+function edCut2(c,u,len){
+ const p=clamp(u/(len||3.4),0,1),hz=ED_H*.74;
  /* ゆっくり寄る(1コマに変換1回だけ=重さゼロ) */
  c.save();c.translate(ED_W*.5,ED_H*.66);const k=1+.055*p;c.scale(k,k);c.translate(-ED_W*.5,-ED_H*.66);
  let g=c.createLinearGradient(0,-30,0,hz);
@@ -29664,15 +29762,21 @@ function edDraw(){
  c.setTransform(s,0,0,s,(w-ED_W*s)/2,(h-ED_H*s)/2);
  const t=ED.t;
  c.save();c.beginPath();c.rect(0,0,ED_W,ED_H);c.clip();
- if(t<ED_C1)edCut1(c,t);
- else if(t<ED_C2)edCut2(c,t-ED_C1);
- else edCut3(c,t-ED_C2);
+ /* ⚠**何カット目か**は ED_CT から出す(秒を直に書かない=足す時に必ず食い違う) */
+ {let ci=0;while(ci<ED_CT.length-1&&t>=ED_CT[ci])ci++;
+  const t0=ci?ED_CT[ci-1]:0,u=t-t0,len=ED_CT[ci]-t0;
+  if(ci===0)edCut0(c,u,len);
+  else if(ci===1)edCut1(c,u,len);
+  else if(ci===2)edCut2(c,u,len);
+  else if(ci===3)edCut4(c,u,len);
+  else edCut3(c,u,len);}
  c.restore();
  /* 上下の黒帯(映画の枠)。⚠**字幕はこの上に置く**(CSS側) */
  c.fillStyle='#000';c.fillRect(0,0,ED_W,ED_BAR);c.fillRect(0,ED_H-ED_BAR,ED_W,ED_BAR);
  /* カットの切れ目の暗転(開幕も同じ式で1回だけ落とす) */
  const dip=b=>{const d=Math.abs(t-b);return d>=ED_DIP?0:1-d/ED_DIP;};
- const f=Math.max(t<ED_DIP?1-t/ED_DIP:0,dip(ED_C1),dip(ED_C2));
+ let f=(t<ED_DIP?1-t/ED_DIP:0);
+ for(let k=0;k<ED_CT.length-1;k++)f=Math.max(f,dip(ED_CT[k]));
  if(f>0){c.setTransform(1,0,0,1,0,0);
   c.fillStyle='rgba(0,0,0,'+f.toFixed(3)+')';c.fillRect(0,0,w,h);}
 }
@@ -31469,7 +31573,10 @@ $('tut-quit').onclick=()=>{if(!TUT)return;tutEnd(false);backTitle();
 $('bt-totitle').onclick=backTitle;
 /* 🏁区切りの幕。⚠閉じたら**ホームへ戻すだけ**(報酬も解放もここでは配らない) */
 /* 🎬幕。⚠**閉じる時に必ず止める**(`ED.on=0`)=出しっぱなしだと裏で毎コマ描き続ける */
-$('bt-ed-ok').onclick=()=>{ED.on=0;$('md-ending').classList.remove('on');backTitle();};
+/* ⚠(164)**もうタイトルに居る**(幕はタイトルで流れる)ので、閉じるだけでよい。
+   ⚠🛠DEVのボタンや古い経路から試合中に開いた時だけタイトルへ戻す。 */
+$('bt-ed-ok').onclick=()=>{ED.on=0;$('md-ending').classList.remove('on');
+ if(SCR!=='title')backTitle();};
 $('bt-ed-skip').onclick=()=>{edSeek(ED_C3);};
 $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */
