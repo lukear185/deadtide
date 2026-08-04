@@ -4991,15 +4991,24 @@ function bnsLeftT(si){
      戦闘の中で新しく数える物を増やさない(倒した数・拠点クリア・ボス撃破は元から数えている)。
    ⚠**その日のうちに終わる量**にする=溜まると「借金」になって逆に遊ぶ気が失せる。
    ⚠報酬は💎と🧬だけ(⚙️や🔩のような**試合中の資源は配らない**=1試合の強さが日替わりで変わってしまう)。 */
+/* 🎯⭐⭐(171)**報酬は💎だけ・3段**(ユーザー指示「簡単な任務でダイヤ3個 / 中位の任務でダイヤ10個 /
+   結構難しい任務でダイヤ25個。研究pは無しで」)。
+   ⚠⚠**🧬研究ptは配らない**=研究所の物は研究所で稼ぐ、と役割を分ける(pts の欄ごと消した)。
+   ⚠**段は「簡単/中位/難しい」の3つ**=種類ごとに3行ずつ持つ(msnPick が種類の中から1つ引く)。
+   📌1日の最大=3件とも「難しい」を引いた時で **💎75**。⚠多いと感じたら gem の数字だけ動かす。 */
 const MSN_P=[
- {k:'kill',g:150,n:'ゾンビを 150体 倒す',      gem:1,pts:120},
- {k:'kill',g:320,n:'ゾンビを 320体 倒す',      gem:2,pts:240},
- {k:'harm',g:20, n:'⬛装甲・🐟鱗を 20体 倒す', gem:1,pts:160},
- {k:'harm',g:45, n:'⬛装甲・🐟鱗を 45体 倒す', gem:2,pts:280},
- {k:'clr', g:1,  n:'拠点を 1つ 突破する',       gem:1,pts:110},
- {k:'clr', g:2,  n:'拠点を 2つ 突破する',       gem:2,pts:220},
- {k:'boss',g:1,  n:'ボスを 1体 倒す',           gem:1,pts:150},
- {k:'boss',g:3,  n:'ボスを 3体 倒す',           gem:2,pts:260}];
+ {k:'kill',g:150,n:'ゾンビを 150体 倒す',       gem:3},
+ {k:'kill',g:400,n:'ゾンビを 400体 倒す',       gem:10},
+ {k:'kill',g:900,n:'ゾンビを 900体 倒す',       gem:25},
+ {k:'harm',g:20, n:'⬛装甲・🐟鱗を 20体 倒す',  gem:3},
+ {k:'harm',g:60, n:'⬛装甲・🐟鱗を 60体 倒す',  gem:10},
+ {k:'harm',g:140,n:'⬛装甲・🐟鱗を 140体 倒す', gem:25},
+ {k:'clr', g:1,  n:'拠点を 1つ 突破する',        gem:3},
+ {k:'clr', g:3,  n:'拠点を 3つ 突破する',        gem:10},
+ {k:'clr', g:6,  n:'拠点を 6つ 突破する',        gem:25},
+ {k:'boss',g:1,  n:'ボスを 1体 倒す',            gem:3},
+ {k:'boss',g:4,  n:'ボスを 4体 倒す',            gem:10},
+ {k:'boss',g:9,  n:'ボスを 9体 倒す',            gem:25}];
 const MSN_N=3;
 /* ⚠**その日のうちは何度読み直しても同じ3件**にする=日付から作るので保存の有無に依らない。
    ⭐**種類は必ずばらす**(倒す/突破/ボス)=同じ種類が並ぶと1試合で3件とも埋まって「今日の理由」が1回で尽きる。 */
@@ -5047,14 +5056,15 @@ function msnClaim(i){
  const M=msnDay(),d=MSN_P[M.id[i]];
  if(!d||M.got[i]||M.p[i]<d.g)return false;
  M.got[i]=1;
- META.gem=(META.gem||0)+d.gem;META.pts=(META.pts||0)+d.pts;
+ /* ⚠(171)**🧬研究ptは配らない**(ユーザー指示)=💎だけ */
+ META.gem=(META.gem||0)+d.gem;
  saveMeta();
  try{if(sfx.win)sfx.win();}catch(e){}
  /* ⚠⚠**toast に `IC()` を通した文字列を渡さない**(2026-08-04(157)ユーザー実機で発覚)=
     `toast` は中で①`<`と`>`を伏せ字にしてから②`IC()` を掛ける、という順で組む。
     先に `IC()` を掛けると **`<img src="data:image/png;base64,…">` がそのまま文字として出る**。
     ⭐**絵文字のまま渡す**のが正しい(画像への差し替えは toast の中でやってくれる)。 */
- try{toast('🎯 受け取った! 💎'+d.gem+' / 🧬'+d.pts);}catch(e){}
+ try{toast('🎯 受け取った! 💎'+d.gem);}catch(e){}
  return true;
 }
 /* 受け取れる件数(ホームのタイルの札に出す=開かなくても分かる) */
@@ -29434,7 +29444,7 @@ function renderMsn(){
   return '<div class="lc'+(done&&!got?' can':'')+'" style="margin-bottom:6px">'
    +'<div style="display:flex;align-items:center;gap:8px">'
    +'<b style="flex:1;font-size:12.5px">'+IC(d.n)+'</b>'
-   +'<span style="font-size:11.5px;opacity:.85;white-space:nowrap">'+IC('💎')+d.gem+' '+IC('🧬')+d.pts+'</span>'
+   +'<span style="font-size:12.5px;font-weight:900;white-space:nowrap;color:var(--rust2)">'+IC('💎')+d.gem+'</span>'
    +'</div>'
    +'<div class="lvb"><span class="l">'+p+'</span><i><b style="width:'+Math.round(p/d.g*100)+'%"></b></i><span class="m">'+d.g+'</span></div>'
    +(got?'<div style="font-size:11.5px;opacity:.7;margin-top:2px">✅ 受け取り済み</div>'
