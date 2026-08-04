@@ -35,7 +35,13 @@ aliases: [引き継ぎ]
   ⚠いま画像なのは**英雄の顔**(`FACE`。体・武器・髪の揺れはプロシージャルのまま)。
   手順=`ui_srcfaces/` に置く → `node tool_face.js <入力> <英雄id>` → `node tool_face_embed.js`。
   生WAVはリポジトリに入れない。加工済みMP3を base64 で埋め込んである。
-- **公開URL: https://lukear185.github.io/deadtide/** (repo=github.com/lukear185/deadtide・masterへpushで1〜2分で反映)。
+- 🖥⭐⭐**2026-08-04にPC(Steam・買い切り)へ移行した**。目的は**稼ぐこと**。手順は [[TODO]] の「🖥Steam」。
+  ⚠**スマホ横(852x393)を"主基準"にするのはやめた**(撮影・性能・絵の縮尺はPC 1920x1080)。
+  ⚠⚠**ただしタッチで一応動くことは壊さない**=**ブラウザ体験版の拡散はスマホで起きる**から。
+  **公開URL https://lukear185.github.io/deadtide/ は `docs/`(凍結した旧スマホ版)を配信している**
+  =渡した人はそのまま遊べる。⚠⚠**`docs/` は今後一切直さない**。
+  ⭐**開発するのはルートの `index.html`(PC版)**。⚠**いまPC版はWebに出ていない**(Steam配布のため)。
+  repo=github.com/lukear185/deadtide・masterへpushで1〜2分で反映。
 - **作業が一区切りしたら毎回 master へ push してよい**(許可済み・毎回聞かなくてよい)。
   検査を通してコミットしたら、push して公開URLを渡すところまでやる。
 - ⚠**新しく「珍しいもの」を足したら、同じ回に `?dev=1` の底上げも足す**(でないと実機で一度も見られない)。
@@ -115,7 +121,7 @@ aliases: [引き継ぎ]
 node tool_bench.js      # ⏱**「重い」と言われたら最初にこれ**(場面ごとの1コマの時間。ui で画面と必殺も)
 node tool_release.js    # ⭐毎回これ1本。6本を順に流して1本でも落ちたら止まる(約40秒)
 node tool_release.js --quick   # 重い2本を飛ばす(数秒)
-node test_shot.js out.png 852 393 [オプション]  # ⭐見た目は必ず撮って目視。一覧は NOTES_道具
+node test_shot.js out.png [オプション]          # ⭐見た目は必ず撮って目視(既定=PC 1920x1080)
 ```
 ⚠**ゲートは絵を見ていない**=通っても必ず撮る。⚠ヘッドレスはDOM/Canvasがスタブ=**見た目は検証できない**。
 👁⚠⚠**`test_layout` ははみ出しを1件も見つけられない**(実機で3回見逃した)=実測は **`test_view.js`**。

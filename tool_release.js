@@ -48,7 +48,7 @@ const STEPS=[
     ⚠⚠**`test_layout.js` では代わりにならない**=あちらはDOMがスタブなので
       「画面からはみ出している」を1件も見つけられず、実機で3回崩れを見逃した。
     ⚠Chrome/Edgeを起動するので少し重い=--quick では飛ばす。基準は release_baseline.json の view_852x393。 */
- {f:'test_view.js',   n:'見た目の実測(852x393)',heavy:true},
+ {f:'test_view.js',   n:'見た目の実測(1920x1080)',heavy:true},
  {f:'test_headless.js',n:'実走(PvE/協力/対戦)',heavy:true,flake:'★4'},
 ];
 
@@ -154,4 +154,4 @@ if(bad){
 }
 console.log('─'.repeat(60));
 console.log('🟢 全部通った。'+(QUICK?'⚠--quick なので実走は見ていない。':'出してよい。'));
-console.log('   ⚠**見た目は撮って目視する**(検査は絵を見ていない): node test_shot.js out.png 852 393');
+console.log('   ⚠**見た目は撮って目視する**(検査は絵を見ていない): node test_shot.js out.png');
