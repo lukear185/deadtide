@@ -3953,6 +3953,20 @@ function teamAutoAdd(bid){
  UNITS.length=0;for(const u of norm)UNITS.push(u);for(const u of last)UNITS.push(u);}
 /* ティア: 序盤/中盤/終盤/切り札(見た目の大きさとデッキ枠の色に使う) */
 const uTier=i=>i<6?1:i<14?2:i<22?3:4;
+/* 💰⏳⭐⭐(172)**上位ほど「高くて出し直せない」ようにする**(2026-08-05ユーザー決定
+     「②のcdを長くするのはかなりあり。あともっと出す時のコストを高くしたいね 今は安すぎる」)。
+   ⚠⚠**「安い兵科を出す理由が無い」の正体は、⚙️を"重さ1枠あたり"で割ると上位ほど安かったこと**=
+     枠を4つ食う影が⚙️40/枠なのに、枠1つの盾持ちは⚙️60/枠だった。
+   ⭐**直し方=序盤(重さ1〜2)は1ミリも触らず、上位だけ跳ねさせる**。
+     これで「強いのは高い・倒されたら次が来ない」→ 繋ぎに安い兵科が要る、になる。
+   ⚠⚠**hp/atk/rate/rng/sp は1つも触っていない**=戦力の目標曲線(test_balance)を壊さないため。
+   ⚠**解放費用(🔬研究所の UNITP)は別物**=上がるのは出撃⚙️と待ち時間だけ。
+   ⚠**英雄はこの並びに入っていない**(この後で末尾に足す)ので巻き込まない。 */
+const U_COSTM=[1,1,1.3,1.8],U_CDM=[1,1,1.4,1.8];
+const U_TOPM=2.2;/* 切り札2種(タイタン/ヴァルキリー)は出撃⚙️だけさらに上げる */
+UNITS.forEach((u,i)=>{const w=uTier(i);
+ u.cost=Math.round(u.cost*U_COSTM[w-1]*((u.id==='titan'||u.id==='valk')?U_TOPM/U_COSTM[w-1]:1));
+ u.cd=+(u.cd*U_CDM[w-1]).toFixed(1);});
 /* ⭐⭐⭐**出撃枠は「体数」ではなく「重さ」で数える**(2026-08-02ユーザー決定)。
    ⚠それまでは20"体"の枠だったので、**1枠に安い兵科を入れる理由が無く、
      上位兵科だけで盤面を埋めるのが常に最適**=終盤の遊びが単調だった(ユーザー指摘)。
@@ -16704,7 +16718,12 @@ function buildTide(wave){
     「ゾンビ一体一体が弱くて終盤数でごまかそうとするから数が多すぎてぐちゃぐちゃしてるし重くなる」)。
     ⚠**総HPを動かさない**ため、n を割ったのと同じ値を雑魚の mul に掛ける。
     ⚠⚠**ボスには掛けない**=掛けるとボスだけ 1.6倍になる。 */
- const cut=wave>=12?Math.min(1.62,1+(wave-11)*.07):1;
+ /* ⚠⚠(172)**もっと強く効かせた**(ユーザー「ウェーブ中盤終盤の敵の数が多くて重い。とにかく減らしたい。
+    前から言ってるけど多い時多すぎる」)=**W12から → W8から** / **上限1.62 → 2.2**。
+    📌体数の実測 W10 20→16 / W12 22→16 / W20 24→18(**2〜3割減**)。
+    ⚠**総HPは1ミリも動いていない**=割った分だけ雑魚の mul に掛け戻しているので、
+      「数が減って1体が厚くなる」だけ。難易度ではなく**画面の混み具合と重さ**が変わる。 */
+ const cut=wave>=8?Math.min(2.2,1+(wave-7)*.09):1;
  /* ⭐波の性格(物量/重厚)。⚠**総HPを変えない**ため、下の雑魚の mul で必ず割り戻すこと */
  const tideK=(G.pve&&!G.coop)?tideKof(wave):1;
  const n=Math.round(.85*laneN*Math.max(8,(G.pve?6.5+wave*1.6:7+wave*1.8)-taper)*(1+.2*up)*(wave>=8?1+(wave-7)*.016:1)*(G.pve?D.cnt*warm:1)*(G.coop?1+.68*(G.np-1):1)*tideK/cut);
@@ -19203,7 +19222,10 @@ function campStep(C,dt,wave){
        ドローン基地=機体が飛び出して叩く / 要塞砲=極太の貫通弾 / ショットガン台=散弾。
        ⚠当たり判定・威力・体数は今までどおり=変えたのは絵と音だけ */
     const kd=T.id==='drone'?'drone':T.id==='fort'?'fort':T.id==='shot'?'shot':'';
+    /* ⚠(172)**着弾の絵は先頭2体だけ**(要塞砲は4〜5体を同時に撃つので、全部に出すと
+       1発で着弾の絵が5つ増える)。⚠**当たり判定と威力は全員そのまま**=見せ方だけ間引く。 */
     for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];splash(nx);dmgZ(C,nx,dm,prc);
+     const qfx=(k2<2);
      if(kd==='drone'&&FXLV>0){
       /* ⭐**浮いている2機がそれぞれ小粒の弾を撃つ**(2026-07-26ユーザー指示)。
          ⚠ダメージは撃った瞬間に済んでいて、遅らせているのは着弾の絵だけ */
@@ -19213,8 +19235,9 @@ function campStep(C,dt,wave){
       later(C,.16,()=>{hitFx(C,nx,tw.ang,hitC,prc,T.type);});
      }else if(kd==='fort'){
       /* 極太の貫通弾。⚠細い曳光線だと「最終兵器」に見えない */
-      addFx(C,'beam',mzx,mzy,'',{x2:nx.px,y2:nx.py-14*CH_UP,col:'rgba(255,226,150,',col2:'rgba(255,246,214,',w:9,lf:.34});
-      hitFx(C,nx,tw.ang,hitC,prc,T.type);
+      /* ⚠(172)**寿命を縮める**(.34→.20)=同時に生きているビームが4割減る(要塞砲は1発4本) */
+      addFx(C,'beam',mzx,mzy,'',{x2:nx.px,y2:nx.py-14*CH_UP,col:'rgba(255,226,150,',col2:'rgba(255,246,214,',w:9,lf:.20});
+      if(qfx)hitFx(C,nx,tw.ang,hitC,prc,T.type);
      }else{addFx(C,'tr',mzx,mzy,'',{x2:nx.px,y2:nx.py,col:trC,hit:hitC,w:trW});
       hitFx(C,nx,tw.ang,hitC,prc,T.type);}
      cnt++;}
@@ -20450,7 +20473,10 @@ function renderCamp(C,t){
    const w3=(e.w||24)*2,pul=e.sus?(1+Math.sin(e.t*44)*.06):1;
    const bc1=e.col||'rgba(180,120,255,',bc2=e.col2||'rgba(216,170,255,';
    c.lineCap='round';
-   for(const pass of [[w3,bc1,.30],[w3*.5,bc2,.65],[w3*.16,'rgba(255,255,255,',1]]){
+   /* ⚡(172)**3本→2本**(ユーザー「重いタレットがまだ絶対ある。要塞砲」)=
+      一番太くて一番薄い層(幅w3・濃さ.30)を落とし、中の層を少し太くして見た目を保つ。
+      ⚠要塞砲は1発で4本引く(multi:4)ので、**1本あたりの節約が4倍効く**。 */
+   for(const pass of [[w3*.62,bc2,.62],[w3*.16,'rgba(255,255,255,',1]]){
     c.strokeStyle=pass[1]+(a3*pass[2])+')';c.lineWidth=pass[0]*pul*(e.sus?(.72+a3*.28):(.35+a3*.65));
     c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();}
    c.lineCap='butt';
