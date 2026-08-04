@@ -1247,6 +1247,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
         <!-- 🏋鍛錬所: 🔬研究所で🧬300を払うまでは**灰色の錠前**で置いておく(存在を先に見せる) -->
         <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
         <!-- 📖図鑑: ⚠**最初から押せる**(解放も課金も無い)=相性を学ぶ場所なので初手で要る -->
+        <!-- 🎯任務: ⚠**最初から押せる**(解放も課金も無い)=「今日それを遊ぶ理由」なので初手で要る -->
+        <button class="btn homebt" id="hm-msn"><span class="hic" id="hm-msn-ic">🎯</span><span class="hlb"><b>任務</b><i id="hm-msn-i"></i></span></button>
         <button class="btn homebt" id="hm-zoo"><span class="hic" id="hm-zoo-ic">📖</span><span class="hlb"><b>ゾンビ図鑑</b><i id="hm-zoo-i"></i></span></button>
         <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
         <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
@@ -1667,6 +1669,16 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 </div>
 
 <!-- 📖ゾンビ図鑑(単独の窓)。⚠🛠DEVモード専用=絵の確認用に鍛錬所を開かずに見られるようにした -->
+<!-- 🎯任務(デイリー)。⚠**1行=1つの任務**([[NOTES_UI]]の掟)。棒で進み具合を見せる -->
+<div class="modal" id="md-msn">
+  <!-- ⚠**3件しか無いので bigpanel の高さいっぱいにしない**(下2/3が空白の紙になる)=中身に合わせる。
+       ⚠高さは `vh` で決めない=`--appH` で抑える([[NOTES_UI]]で3回崩している) -->
+  <div class="panel bigpanel" style="width:min(94vw,560px);height:auto;max-height:min(88vh,var(--appH,88vh))">
+    <div class="bphd"><b>🎯 今日の任務</b><span class="pt" id="msn-cnt"></span><button class="xbtn" id="bt-msn-close">✕</button></div>
+    <div class="bphint" id="msn-hint"></div>
+    <div class="bpbody" id="msn-list"></div>
+  </div>
+</div>
 <div class="modal" id="md-zoo">
   <div class="panel bigpanel">
     <div class="bphd"><b>📖 ゾンビ図鑑</b><span class="pt" id="zoo-cnt"></span><button class="xbtn" id="bt-zoo-close">✕</button></div>
@@ -1922,6 +1934,7 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!Array.isArray(META.uv))META.uv=[];if(!Array.isArray(META.tg))META.tg=[];if(!META.ld||typeof META.ld!=='object')META.ld={};delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0','tk5','arcW','arcL'])META[k]=META[k]||0;/* ⚠(125)arcW/arcL=🏹弓比べの戦績 */
  if(!META.gft||typeof META.gft!=='object')META.gft={};/* 🎫受け取った配布物の印 id→1 */
+ if(!META.msn||typeof META.msn!=='object')META.msn=null;/* 🎯任務(2026-08-04(152))。⚠日が違えば msnDay が作り直す */
  /* 🚌バスの物資と永続強化(2026-08-02(44))。⚠古いセーブには無いので必ず作り直す */
  if(!Array.isArray(META.bres))META.bres=[0,0,0];while(META.bres.length<3)META.bres.push(0);
  if(!META.bup||typeof META.bup!=='object')META.bup={};
@@ -1992,6 +2005,7 @@ function metaResetAll(){
  META.luck=0;META.lgD='';META.lgN=0;META.lgG=0;/* 💫(116)(118)幸運チケット・ログイン日数・配布の版 */
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
+ META.msn=null;                                /* 🎯(152)今日の任務(次に開いた時に作り直される) */
  META.rpg={};                                  /* ⚔冒険の進捗 */
  META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
  META.tmTip=0;                                 /* 🎒編成の案内(初めて兵科を解放した時に1回) */
@@ -4620,6 +4634,78 @@ function bnsLeftT(si){
  if(!Array.isArray(META.bday)||META.bday[i]!==bnsDayKey())return BNS_DAY_N;
  return clamp(BNS_DAY_N-((Array.isArray(META.bnum)?META.bnum[i]:0)|0),0,BNS_DAY_N);
 }
+/* ============ 🎯任務(デイリー・2026-08-04(152)) ============
+   ⭐**解こうとしている問題は1つだけ=「今日それを遊ぶ理由が無い」**(ユーザー選択=毎日変わる3件)。
+   ⚠⚠**バランスには一切触らない**=判定は**すでに数えている値の集計だけ**。
+     戦闘の中で新しく数える物を増やさない(倒した数・拠点クリア・ボス撃破は元から数えている)。
+   ⚠**その日のうちに終わる量**にする=溜まると「借金」になって逆に遊ぶ気が失せる。
+   ⚠報酬は💎と🧬だけ(⚙️や🔩のような**試合中の資源は配らない**=1試合の強さが日替わりで変わってしまう)。 */
+const MSN_P=[
+ {k:'kill',g:150,n:'ゾンビを 150体 倒す',      gem:1,pts:120},
+ {k:'kill',g:320,n:'ゾンビを 320体 倒す',      gem:2,pts:240},
+ {k:'harm',g:20, n:'⬛装甲・🐟鱗を 20体 倒す', gem:1,pts:160},
+ {k:'harm',g:45, n:'⬛装甲・🐟鱗を 45体 倒す', gem:2,pts:280},
+ {k:'clr', g:1,  n:'拠点を 1つ 突破する',       gem:1,pts:110},
+ {k:'clr', g:2,  n:'拠点を 2つ 突破する',       gem:2,pts:220},
+ {k:'boss',g:1,  n:'ボスを 1体 倒す',           gem:1,pts:150},
+ {k:'boss',g:3,  n:'ボスを 3体 倒す',           gem:2,pts:260}];
+const MSN_N=3;
+/* ⚠**その日のうちは何度読み直しても同じ3件**にする=日付から作るので保存の有無に依らない。
+   ⭐**種類は必ずばらす**(倒す/突破/ボス)=同じ種類が並ぶと1試合で3件とも埋まって「今日の理由」が1回で尽きる。 */
+function msnPick(key){
+ let h=0;for(let i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
+ const rnd9=()=>{h=(h*1103515245+12345)>>>0;return h>>>8;};
+ const kinds=[];MSN_P.forEach(m=>{if(kinds.indexOf(m.k)<0)kinds.push(m.k);});
+ for(let i=kinds.length-1;i>0;i--){const j=rnd9()%(i+1),t=kinds[i];kinds[i]=kinds[j];kinds[j]=t;}
+ return kinds.slice(0,MSN_N).map(k=>{
+  const g=MSN_P.map((m,i)=>({m,i})).filter(o=>o.m.k===k);
+  return g[rnd9()%g.length].i;});
+}
+/* 今日ぶんを取り出す(日が変わっていたら作り直す)。⚠**受け取り忘れは繰り越さない**=溜めない */
+function msnDay(){
+ const key=bnsDayKey();
+ if(!META.msn||META.msn.d!==key){
+  META.msn={d:key,id:msnPick(key),p:[0,0,0],got:[0,0,0]};saveMeta();}
+ const M=META.msn;
+ if(!Array.isArray(M.id)||M.id.length!==MSN_N)M.id=msnPick(key);
+ if(!Array.isArray(M.p)||M.p.length!==MSN_N)M.p=[0,0,0];
+ if(!Array.isArray(M.got)||M.got.length!==MSN_N)M.got=[0,0,0];
+ return M;
+}
+/* ⚠⚠**倒すたびに saveMeta しない**(ゾンビは1試合で数百体死ぬ)=印だけ立てて4秒に1回まとめて書く。
+   ⚠達成した瞬間だけは即書き(そこで閉じられても消えないように)。 */
+let MSN_DIRTY=0,MSN_ST=0;
+function msnFlush(force){
+ if(!MSN_DIRTY)return;
+ const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
+ if(!force&&now-MSN_ST<4000)return;
+ MSN_ST=now;MSN_DIRTY=0;saveMeta();
+}
+function msnAdd(k,n){
+ let M;try{M=msnDay();}catch(e){return;}
+ for(let i=0;i<MSN_N;i++){
+  const d=MSN_P[M.id[i]];if(!d||d.k!==k)continue;
+  if(M.p[i]>=d.g)continue;
+  M.p[i]+=(n||1);MSN_DIRTY=1;
+  if(M.p[i]>=d.g){M.p[i]=d.g;msnFlush(1);
+   try{toast('🎯 任務 達成! '+d.n+' — ホームで受け取れる');}catch(e){}}}
+ msnFlush(0);
+}
+/* 受け取り。⚠**達成していて、まだ受け取っていない時だけ**(二度押しで2回配らない) */
+function msnClaim(i){
+ const M=msnDay(),d=MSN_P[M.id[i]];
+ if(!d||M.got[i]||M.p[i]<d.g)return false;
+ M.got[i]=1;
+ META.gem=(META.gem||0)+d.gem;META.pts=(META.pts||0)+d.pts;
+ saveMeta();
+ try{if(sfx.win)sfx.win();}catch(e){}
+ try{toast('🎯 受け取った! '+IC('💎')+d.gem+' / '+IC('🧬')+d.pts);}catch(e){}
+ return true;
+}
+/* 受け取れる件数(ホームのタイルの札に出す=開かなくても分かる) */
+function msnReady(){try{const M=msnDay();let n=0;
+ for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];if(d&&!M.got[i]&&M.p[i]>=d.g)n++;}
+ return n;}catch(e){return 0;}}
 /* 次に走れるまでの残り(⚠日付が変わるまでなので分まで出す) */
 function bnsNextS(){
  const d=new Date();
@@ -17198,6 +17284,12 @@ function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{})
  }}
 function killZ(C,z){
  z.dead=true;C.kills++;C.killsWave++;
+ /* 🎯任務(デイリー)の集計。⚠⚠**ここで新しく数え始めない**=すでに数えている `C.kills` と
+    同じ場所で拾うだけ。⚠**自分の陣営のソロPvEだけ**(対戦のCPUや相手の撃破まで数えない)。
+    ⚠ saveMeta は msnAdd の中で4秒に1回まで(1試合で数百体死ぬので毎回書くと重い)。 */
+ try{if(C.isMe&&G&&G.pve){msnAdd('kill',1);
+  if(z.armor||z.scl)msnAdd('harm',1);
+  if(z.boss)msnAdd('boss',1);}}catch(e){}
  /* ⭐⭐**米粒(🚌開拓便の雑魚)は撃破の演出を丸ごと専用のものに差し替える**(2026-08-02(2)ユーザー①)。
     ⚠**1体ぶんの演出が全部そのまま掛かるのが「超大量にできない」正体だった**=
       1体倒すごとに 血の粒9+染み3+死体(焼いた絵をもう1枚描く)+「+12⚙️」の文字+断末魔の音。
@@ -19081,7 +19173,11 @@ function awardMeta(){
     if(STAGES[STAGE+1])G.stgUnlocked=STAGE+1;}
   }
   if(d9>=4&&!META.nmOK){META.nmOK=1;G.nmUnlocked=1;}
+  /* 🎯任務。⚠**初回クリアに限らない**=毎日の任務なので、2周目でも「今日突破した」なら数える。
+     ⚠🚌開拓便(BNS_D)は負けが無い面なので数えない(回すだけで埋まってしまう)。 */
+  try{if(G.pve&&d9!==BNS_D)msnAdd('clr',1);}catch(e){}
  }
+ msnFlush(1);
  saveMeta();
 }
 function ev(idx,msg,warn){if(!G)return;if(idx===G.myIdx){toast(msg,warn);if(warn)sfx.warn();}else if(G.evq[idx])G.evq[idx].push({m:msg,w:warn?1:0});}
@@ -28829,6 +28925,32 @@ function openZoo(){
  renderZoo(box,'zoo-hint');
  $('md-zoo').classList.add('on');
 }
+/* 🎯今日の任務の窓。⚠**1行=1つの任務** / ⚠**進み具合は数字ではなく棒**(研究所の段と同じ見せ方)。
+   ⚠⚠強調の `**` の直後にスラッシュを置くとコメントが早く閉じる([[NOTES_絵]]に記録あり・3回目)。
+   ⚠受け取りボタンは**達成した行にだけ**出す=押せない灰色のボタンを3つ並べない。 */
+function renderMsn(){
+ const box=$('msn-list');if(!box)return;
+ const M=msnDay();
+ const n=$('msn-cnt');
+ if(n)n.textContent=M.got.filter(x=>x).length+' / '+MSN_N+' 受取';
+ const h=$('msn-hint');
+ if(h)h.innerHTML='毎日 0時に3件とも入れ替わる(残り '+bnsNextS()+')。⚠受け取り忘れは繰り越さない';
+ box.innerHTML=M.id.map((zi,i)=>{
+  const d=MSN_P[zi];if(!d)return '';
+  const p=Math.min(M.p[i],d.g),done=p>=d.g,got=!!M.got[i];
+  return '<div class="lc'+(done&&!got?' can':'')+'" style="margin-bottom:6px">'
+   +'<div style="display:flex;align-items:center;gap:8px">'
+   +'<b style="flex:1;font-size:12.5px">'+IC(d.n)+'</b>'
+   +'<span style="font-size:11.5px;opacity:.85;white-space:nowrap">'+IC('💎')+d.gem+' '+IC('🧬')+d.pts+'</span>'
+   +'</div>'
+   +'<div class="lvb"><span class="l">'+p+'</span><i><b style="width:'+Math.round(p/d.g*100)+'%"></b></i><span class="m">'+d.g+'</span></div>'
+   +(got?'<div style="font-size:11.5px;opacity:.7;margin-top:2px">✅ 受け取り済み</div>'
+     :done?'<button class="btn gold" data-msn="'+i+'" style="margin-top:4px;width:100%;min-height:44px">受け取る</button>':'')
+   +'</div>';}).join('');
+ box.querySelectorAll('[data-msn]').forEach(b=>{b.onclick=()=>{
+  if(msnClaim(+b.dataset.msn)){renderMsn();renderHome();}};});
+}
+function openMsn(){renderMsn();$('md-msn').classList.add('on');}
 
 /* ============ ⚔ 冒険(育成RPG・鍛錬所の中身) ============
    2026-07-26(第54弾)。⚠**TDとは全く別のゲーム**として作る(ユーザー決定)。
@@ -30434,6 +30556,12 @@ function renderHome(){
  /* 📖図鑑タイル。⭐**登録数を札に出す**=「まだ埋まっていない」が押す前に分かる(2026-08-04(142)) */
  {const zi=$('hm-zoo-ic');if(zi)zi.innerHTML=IC('📖');
   const zn=$('hm-zoo-i');if(zn)zn.textContent=ZOMBIES.filter(z=>zcSeen(z.id)).length+' / '+ZOMBIES.length+' 種';}
+ /* 🎯任務タイル。⭐**受け取れる件数を札に出す**=窓を開かないと気付けない、をなくす(💎チケットと同じ手) */
+ {const mi=$('hm-msn-ic');if(mi)mi.innerHTML=IC('🎯');
+  const mn=$('hm-msn-i');
+  if(mn){const r=msnReady();
+   mn.textContent=r?('受け取れる '+r+'件!'):(msnDay().got.filter(x=>x).length+' / '+MSN_N+' 達成');}
+  const mb=$('hm-msn');if(mb)mb.classList.toggle('can',msnReady()>0);}
  {const gi=$('hm-gacha-ic');if(gi)gi.innerHTML=icoImg('ic-gem','💎');
   /* 🎫持っている時は札に出す=召集の窓を開かないと気付けない、をなくす */
   const gm=$('hm-gem');if(gm)gm.innerHTML=IC('💎')+(META.gem||0)
@@ -30577,6 +30705,7 @@ $('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add(
      『ヒーロー鍛錬所』を買うまでホームにタイルすら出ない**)の2つだけ=**素で遊ぶと存在しなかった**。
    ⭐相性を学ぶ場所は**最初から押せる**こと。窓(`md-zoo`)と `openZoo()` は前からあったので繋いだだけ。 */
 $('hm-zoo').onclick=()=>{openZoo();};
+$('hm-msn').onclick=()=>{openMsn();};
 $('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');};
 $('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
@@ -30884,6 +31013,7 @@ try{
  if(zb){if(DEV)zb.style.display='block';
   zb.onclick=()=>{openZoo();};}
  const zc=$('bt-zoo-close');if(zc)zc.onclick=()=>$('md-zoo').classList.remove('on');
+ const mc=$('bt-msn-close');if(mc)mc.onclick=()=>$('md-msn').classList.remove('on');
  /* 🧪検証場(DEV専用)。⚠選ぶ画面は廃止=押したらそのまま入る */
  const tb=$('bt-tst');
  if(tb){if(DEV)tb.style.display='block';

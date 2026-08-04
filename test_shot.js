@@ -194,6 +194,11 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :(OPT.indexOf('arcg')>=0)?(((/arcst=([0-9])/.exec(OPT))?('ARCST='+(/arcst=([0-9])/.exec(OPT))[1]+';'):'')+'arcPlay();'+(OPT.indexOf('arcdrag')>=0?'ARC.drag={x0:300,y0:300,x:430,y:200};ARC.ang=38;ARC.pow=88;arcUI();':'')+(OPT.indexOf('arcmv')>=0?'ARC.ph="ethink";ARC.me.duck=1;ARC.me.helm=1;ARC.cam=arcCX(ARC.foe.c);ARC.camT=ARC.cam;arcUI();':''))
      :(OPT.indexOf('arc')>=0)?'arcOpen();'
      /* zoo=📖ゾンビ図鑑の単独の窓(🛠DEV専用)。⚠dev と一緒に渡すこと(例: "dev+zoo") */
+     /* 🎯(152)msn=今日の任務の窓。msnp=1件目を達成・2件目を途中まで進めた状態で撮る
+        (⚠素で開くと3件とも0%で、棒も受け取りボタンも確かめられない) */
+     :(OPT.indexOf('msn')>=0)?((OPT.indexOf('msnp')>=0
+       ?'try{var M9=msnDay();M9.p[0]=MSN_P[M9.id[0]].g;M9.p[1]=Math.round(MSN_P[M9.id[1]].g*.45);}catch(e){}':'')
+       +'openMsn();')
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
      /* 🏠home=シングルプレイのホーム / 🗺worldmap=エリアマップ(2026-08-03(93)) */
      /* ⚠**`trhome` を巻き込まない**='trhome'.indexOf('home') は2で当たるので、こちらが先に食っていた
