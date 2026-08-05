@@ -71,6 +71,11 @@ const SCENES=[
  ['英雄ステータス',      'MDX();openHStat("hLupi","gacha");'],
  ['砲撃を選ぶ',          'renderStkPick();MD("md-stk");'],
  ['オプション',          'optRender();MD("md-opt");'],
+ /* 🏆(181)成績表。⚠⚠**拠点名が一番長い形で測る**=見出しは拠点名から作るので、
+    短い名前で測ると横画面(852x393)のはみ出しを見逃す。⚠**「▶次へ」の形**も別に測る。 */
+ ['成績表(拠点名が長い)', 'MDX();RESDEMO("🏆 『崩れた立体交差』解放!",0);'],
+ ['成績表(👑制覇)',       'MDX();RESDEMO("👑 『終末の廃線』制覇!!",0);'],
+ ['成績表(▶次へ)',        'MDX();RESDEMO("👑 『海淵の底』制覇!!",1);'],
  /* 🎬(180)区切りの幕。⚠⚠**「終わった後」こそ測る**=下に札とボタンが増えるので、
     ここが `--appH` の罠を4回踏んでいる場所そのもの([[NOTES_面]])。
     ⚠**先に transition を切る**=枠の高さは .45秒かけて縮むので、切らないと縮む前の姿を測る。 */
@@ -87,6 +92,20 @@ const RUNNER=`
 /* 開いているモーダルを1枚だけにする(前の場面が残っていると重なって嘘の結果になる) */
 function MDX(){document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});}
 function MD(id){MDX();document.getElementById(id).classList.add('on');}
+/* 🏆(181)成績表を「見出しと中身を入れた形」で出す(盤面が無くても測れるように直に組む) */
+function RESDEMO(title,next){
+ document.getElementById('res-title').textContent=title;
+ document.getElementById('res-title').className='restitle win';
+ document.getElementById('res-sub').textContent='WAVE 20 を守り切った!';
+ var rows=[['🧬 研究pt獲得','+8420 (計12,300)'],['🏅 拠点を初解放','💎+30'],['ゾンビ撃破','418'],
+  ['部隊出撃','62体'],['🔩 獲得強化pt','1,240'],['回収⚙️総額','18,900'],['解放タワー','9/12'],
+  ['解放部隊','8/10'],['部隊レベル','Lv7'],['火力増強','Lv5'],['砲撃強化','Lv3']];
+ document.getElementById('res-stats').innerHTML=rows.map(function(r){
+  return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>';}).join('');
+ var rw=document.getElementById('reswrap');
+ if(next)rw.classList.add('ednext');else rw.classList.remove('ednext');
+ show('result');
+}
 function VIS(e){var cs=getComputedStyle(e);
  if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0)return false;
  var r=e.getBoundingClientRect();return r.width>0.5&&r.height>0.5;}

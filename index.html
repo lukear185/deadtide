@@ -1120,9 +1120,29 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ---- リザルト ---- */
 #scr-result{background:rgba(20,16,12,.88)}
 #reswrap{display:flex;flex-direction:column;align-items:center;gap:6px;max-height:100%;overflow:auto;padding:12px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
-#res-left{display:flex;flex-direction:column;align-items:center;gap:6px}
+#res-left{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;max-width:100%}
+/* 🎬(180)**幕が控えている成績表は「▶次へ」1つだけ**(ユーザー指示)。
+   ⚠**幕を見終わったらクラスを外す**=いつもの「もう一度/タイトルへ」が戻る。 */
+#bt-resnext{display:none}
+#reswrap.ednext #bt-resnext{display:block}
+#reswrap.ednext #bt-rematch,#reswrap.ednext #bt-totitle{display:none}
+/* ⚠(181)**見出しは拠点名から作る**ので長さが揃わない(『崩れた立体交差』解放! で14文字)。
+   ⭐**折り返せるようにして、行の高さを詰める**=2行になっても札と表を押し出さない。 */
+.restitle{font-size:min(14vw,60px);font-weight:900;color:var(--pane);text-align:center;
+ line-height:1.06;max-width:100%;overflow-wrap:anywhere;
+ text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 var(--rust2)}
+.restitle.win{color:var(--toxic)}
+table.stats{border-collapse:collapse;margin:10px 0;background:var(--pane);border:3px solid var(--ink);border-radius:12px;overflow:hidden;font-size:13px;font-weight:800}
+table.stats td{padding:6px 14px;border-bottom:2px solid var(--paper2)}
+table.stats td:last-child{text-align:right;color:var(--rust2)}
+/* 🏆⚠⚠(181)**横画面(スマホ)の成績表はここで上書きする**。⚠**この塊は必ず上の素の指定より後に置く**
+   =前は上に書いてあったので `.restitle` も `table.stats` も**同じ強さの後ろ勝ちで死んでいた**
+   (見出しが42pxのつもりで60pxのまま出て、表は 393px の画面に対して 444px あって上下とも切れていた)。 */
 @media (orientation:landscape) and (max-height:560px){
  #reswrap{flex-direction:row;gap:28px}
+ /* ⚠**表は縮めない・見出し側で折り返す**=表を縮めると数字が2段になって読めなくなる */
+ #res-left{flex:1 1 auto}
+ table.stats{flex:0 0 auto}
  .restitle{font-size:min(7vw,42px)}
  #res-sub{font-size:13px}
  table.stats{font-size:12px;margin:0}
@@ -1130,16 +1150,6 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  #reswrap .menu{margin-top:8px}
  #reswrap .btn{padding:9px 16px;font-size:15px}
 }
-/* 🎬(180)**幕が控えている成績表は「▶次へ」1つだけ**(ユーザー指示)。
-   ⚠**幕を見終わったらクラスを外す**=いつもの「もう一度/タイトルへ」が戻る。 */
-#bt-resnext{display:none}
-#reswrap.ednext #bt-resnext{display:block}
-#reswrap.ednext #bt-rematch,#reswrap.ednext #bt-totitle{display:none}
-.restitle{font-size:min(14vw,60px);font-weight:900;color:var(--pane);text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 var(--rust2)}
-.restitle.win{color:var(--toxic)}
-table.stats{border-collapse:collapse;margin:10px 0;background:var(--pane);border:3px solid var(--ink);border-radius:12px;overflow:hidden;font-size:13px;font-weight:800}
-table.stats td{padding:6px 14px;border-bottom:2px solid var(--paper2)}
-table.stats td:last-child{text-align:right;color:var(--rust2)}
 /* ---- 共通 ---- */
 #toasts{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(94vw,480px)}
 .toast{background:var(--ink);color:var(--paper);border:2px solid var(--paper);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.5);animation:tin .25s ease;max-width:100%}
