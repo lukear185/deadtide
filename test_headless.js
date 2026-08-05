@@ -4038,7 +4038,43 @@ function checkUnlock(){
  META.sc=kpSc;META.ot=kpOt;META.ou=kpOu;twGrantAll();
  console.log('🎓解放の門2つ: 塔'+sT+'種・兵科'+sU+'種を'+UNL_TN.length+'段に配り切り / 拠点クリアで棚が増える(🚌は数えない) / 買っていない塔は建たない / 旧セーブの解放済みは残る OK');
 }
+/* ---- ⚔⭐(187)進行の作り替えC=兵科と英雄にも属性を効かせた ----
+   ⚠**塔だけに特効が乗っていた**のを揃えた回。見るのは
+     ①🔥火炎の兵科は装甲に×1.9 ②✊近接は装甲に45%(連撃の2打目以降も) ③素の敵には効かない。 */
+function checkUnitAf(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ META.stg=0;setDiff=2;startSolo();frames(20,.016);
+ const me=G.players[0];
+ /* その兵科を1体置き、目の前の敵1体に1回ぶん当てて削れた量を返す */
+ const hit=(uid,arm)=>{
+  const ui=UNITS.findIndex(u=>u.id===uid);if(ui<0)F('兵科 '+uid+' が居ない');
+  const U=UNITS[ui],ud=me.flagD;
+  me.units.length=0;me.zombies.length=0;me.fx.length=0;me.dly=[];
+  me.units.push({eid:EID++,ui,own:0,am:1,d:ud,hp:99999,mhp:99999,cd:0,hitT:0,fireT:0,ph:0,px:0,py:0,dr:-1,eng:0});
+  const z=mkZ(zSpec(ZOMBIES.findIndex(x=>x.id==='walk'),1,10),ud-Math.min(U.rng*.55,110));
+  z.hp=z.mhp=1e9;z.armor=arm?1:0;me.zombies.push(z);
+  const h0=z.hp;
+  for(let k=0;k<70;k++)campStep(me,.05,G.wave);
+  for(const d of (me.dly||[]).slice())campStep(me,.05,G.wave);/* 遅らせた着弾も落とす */
+  return h0-z.hp;};
+ /* ① 🔥火炎放射兵=装甲に特効 */
+ {const p=hit('flm',0),a=hit('flm',1);
+  if(!(p>0&&a>0))F('火炎放射兵が当たっていない');
+  if(a/p<1.5)F('火炎の兵科に装甲特効が乗っていない 素'+Math.round(p)+'→装甲'+Math.round(a));}
+ /* ② ✊近接(連撃を持つ英雄)=装甲に弾かれる。⚠2打目以降だけ貫通していた穴の見張り */
+ {const hid=(H_HITS&&Object.keys(H_HITS)[0])||'';if(!hid)F('連撃を持つ英雄が居ない');
+  const p=hit(hid,0),a=hit(hid,1);
+  if(!(p>0))F('近接英雄が当たっていない');
+  if(a/p>.75)F('近接の連撃が装甲を素通りしている 素'+Math.round(p)+'→装甲'+Math.round(a));}
+ /* ③ ❄冷気も弾かれる側 */
+ {const p=hit('frz',0),a=hit('frz',1);
+  if(!(p>0))F('冷凍兵が当たっていない');
+  if(a/p>.75)F('冷気が装甲を素通りしている 素'+Math.round(p)+'→装甲'+Math.round(a));}
+ backTitle();
+ console.log('⚔兵科の属性: 🔥火炎は装甲に×'+FIRE_VS_ARMOR.toFixed(1)+' / ✊近接の連撃も❄冷気も装甲に'+Math.round(ARMOR_CUT*100)+'%(素通りしない) OK');
+}
 twGrantAll();checkUnlock();
+twGrantAll();checkUnitAf();
 twGrantAll();checkStrikes();
 twGrantAll();checkSup();
 twGrantAll();checkTeam();

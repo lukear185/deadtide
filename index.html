@@ -4741,8 +4741,24 @@ const afPrc=(type,prc,isTw)=>isTw?(type!=='bullet'||!!prc):(type==='fire'||type=
 function afMul(type,prc,isTw){
  if(type==='eco'||type==='sup'||type==='heal')return null;
  const m=afPrc(type,prc,isTw)?1:ARMOR_CUT;
- return{ar:(isTw&&type==='fire')?FIRE_VS_ARMOR:m,sc:(isTw&&type==='elec')?ELEC_VS_SCALE:m};
+ /* ⚠(187)**塔だけの話ではなくなった**(進行の作り替えC)=兵科・英雄にも同じ特効が乗る */
+ return{ar:(type==='fire')?FIRE_VS_ARMOR:m,sc:(type==='elec')?ELEC_VS_SCALE:m};
 }
+/* ⚔⭐⭐⭐(187)**兵科と英雄にも属性を効かせる**(進行の作り替えC・2026-08-06ユーザー決定)。
+   ⚠⚠**それまで特効(×1.9)が乗るのは塔だけ**で、兵科と英雄は素通りしていた=
+     「相性で選ぶ」が**塔の話にしかなっていなかった**。編成が「強い順」に収束する原因の1つ。
+   ⭐**組み合わせは塔と同じ**=🔥火炎×🛡装甲 / ⚡電撃×🐟鱗。⚠倍率は同じ定数から引く。
+   ⚠**弱い側(45%)は今までどおり `dmgZ` が引き受ける**=ここは特効だけを見る。
+   ⚠⚠**兵科の一撃は必ず `uHit` を通すこと**=`dmgZ` を直に呼ぶと特効が乗らない。 */
+function afUnit(ty,z){
+ if(z){if(ty==='fire'&&z.armor)return{m:FIRE_VS_ARMOR,wk:'fire'};
+  if(ty==='elec'&&z.scl)return{m:ELEC_VS_SCALE,wk:'elec'};}
+ return{m:1,wk:0};
+}
+/* その兵科/英雄の攻撃が装甲・鱗を貫くか。⚠**判定は afPrc と同じ式**(2か所に書かない) */
+const uPrc=U=>afPrc((U&&U.type)||'',0,false)?1:0;
+function uHit(C,z,d,U,quiet){const a=afUnit((U&&U.type)||'',z);
+ dmgZ(C,z,d*a.m,uPrc(U),quiet,a.wk);}
 /* ⭐一覧に出す札1つぶん。⭐⭐**数字ではなく「動詞」で書く**(2026-08-04(142)ユーザー
      「編成とタワーの札もちょっとわかりずらいからもっとほかの方法があるといいね」)。
    ⚠⚠**それまで「装甲45%」「鱗190%」と割合を書いていた**が、
@@ -4755,8 +4771,8 @@ function afTag(type,prc,isTw){
  const T=AF_TY[type]||{ic:'🎯',n:type||'?'},m=afMul(type,prc,isTw);
  const mk=(e,k,s)=>({ic:T.ic,n:T.n,ty:type,e,k,s:s||e,t:T.ic+' '+e});
  if(!m||type==='net')return mk(T.n,'');
- if(isTw&&type==='fire')return mk('装甲を焼く','wk');
- if(isTw&&type==='elec')return mk('鱗に走る','wk');
+ if(type==='fire')return mk('装甲を焼く','wk');
+ if(type==='elec')return mk('鱗に走る','wk');
  return m.ar<1?mk('硬い敵に弾かれる','rs','弾かれる'):mk('硬い敵にも通る','ok','通る');
 }
 /* 🧟側=そのゾンビの弱点と耐性。装甲も鱗も持たない個体は null(出さない)。
@@ -4785,8 +4801,8 @@ const AF_WKC={fire:{c:AMBER},elec:{c:GOLD},bullet:{c:STEEL,od:PANE},
  pierce:{c:TECH2,od:PANE},blast:{c:LIFE2,od:PANE},frost:{c:FROST},melee:{c:GOLD2}};
 /* 図鑑・紹介の見出しに1行だけ置く凡例。⚠**掟は1か所にだけ書く**(カード46枚に繰り返さない) */
 const AF_LEG=()=>'🛡装甲・🐟鱗の敵 → <b>⚔🔫❄は弾かれる('+Math.round(ARMOR_CUT*100)+'%)</b>'
- +'／<b>🗡💣🔥はそのまま通る</b>／🔥火炎の塔は装甲を焼く(×'+FIRE_VS_ARMOR.toFixed(1)+')'
- +'・⚡電撃の塔は鱗に走る(×'+ELEC_VS_SCALE.toFixed(1)+')';
+ +'／<b>🗡💣🔥はそのまま通る</b>／🔥火炎は装甲を焼く(×'+FIRE_VS_ARMOR.toFixed(1)+')'
+ +'・⚡電撃は鱗に走る(×'+ELEC_VS_SCALE.toFixed(1)+')';
 /* ⭐電撃が次の敵へ跳べる距離(テスラコイル・重テスラで共通)。
    2026-07-27ユーザー指示で150→180(1.2倍)。⚠**2つの塔で同じ値を使う**ので必ずここだけを直すこと */
 const ARC_HOP=180;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
@@ -15585,9 +15601,12 @@ function hCmbStrike(C,u,U,ua,k,n){
  const d5=(u.dr||-1),mx=u.px+d5*30*CH_UP,my=u.py-27*CH_UP;
  const ang=Math.atan2((tg.py-20*CH_UP)-my,tg.px-mx);
  const utl=uFxTier(u),ucl=uUniq(u.ui)?(U.c||UFX_COL[utl]):UFX_COL[utl];
+ /* ⚠⚠(187)**2打目以降だけ貫通になっていた**=1打目は属性どおり45%に削られるのに、
+    連撃の残りは `armorPierce=1` で素通りしていた(1回の攻撃の中で通り方が違う)。
+    ⭐`uHit` に揃えた=✊近接の連撃も装甲には弾かれ、🔥火炎なら特効が乗る。 */
  if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){
-   dmgZ(C,z,ua,1);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}}
- else dmgZ(C,tg,ua,1);
+   uHit(C,z,ua,U);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}}
+ else uHit(C,tg,ua,U);
  if(H_FX[U.id])H_FX[U.id](C,u,U,tg,mx,my,ang,ucl,utl,d5,1);
 }
 /* ⭐⭐**連撃の「手ごとの当たりの絵」**(2026-08-03(79))。
@@ -18984,7 +19003,8 @@ function campStep(C,dt,wave){
        2発目以降を短い間隔で予約する。⚠**次の攻撃で並びが1つ進む**(単発→二連→三連…)。 */
     u.swT=u.swD=SWG_SUB;u.mhFin=(nh9<=1)?1:0;u.hcy=((u.hcy||0)+1)%64;
     if(nh9>1)for(let k9=1;k9<nh9;k9++)later(C,k9*SWG_SUB*1.05,()=>hCmbStrike(C,u,U,ua,k9,nh9));
-    const pierce=(U.type==='fire'||U.type==='blast'||U.type==='pierce')?1:0;
+    /* ⚠(187)当たり判定は `uHit`(特効つき)に移した=ここの `pierce` は**演出(H_FX)に渡すだけ** */
+    const pierce=uPrc(U);
     /* ⭐⭐**投げた物は「着弾してから」当てる**(2026-08-01ユーザー指摘
        「攻撃モーションに入った瞬間に相手にダメージが入っていて、爆発物が着弾していないのに敵が倒れる」)。
        ⚠それまでは**当たり判定は即時・見た目だけ `later` で遅らせる**作りだった(前はそれが正だと書いてあった)。
@@ -18994,7 +19014,8 @@ function campStep(C,dt,wave){
     if(U.type==='frost'){
      const tx9=tg.px,ty9=tg.py;
      const im9=()=>{
-      for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tx9,ty9)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);dmgZ(C,z,ua,1);}}
+      /* ⚠(187)❄冷気は装甲に弾かれる側=ここだけ貫通(1)になっていたので `uHit` に揃えた */
+      for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tx9,ty9)<=U.aoe){z.slowT=Math.max(z.slowT,1.7);uHit(C,z,ua,U);}}
       addFx(C,'ring',tx9,ty9,'',{r:U.aoe,col:TECH});
       addFx(C,'ice',tx9,ty9-12,'',{sd:rnd(0,9),r:U.aoe*.55});
       addP(C,8,tx9,ty9-14,{sp:110,g:180,life:.5,r:2.2,col:FROST});
@@ -19005,7 +19026,7 @@ function campStep(C,dt,wave){
      const tx9=tg.px,ty9=tg.py,fire9=U.type==='fire';
      /* ⭐着弾の瞬間に当てる(⚠中心は投げた瞬間の狙い先で固定) */
      const hit9=()=>{for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tx9,ty9)<=U.aoe){
-      dmgZ(C,z,ua,pierce);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}};
+      uHit(C,z,ua,U);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}};
      /* ⭐⭐**斬撃型(ヴァルキリー)は投げない=光の刃が飛んでいって斬り裂く**
         (2026-07-31ユーザー指示「遠距離斬撃キャラにしよう」)。
         ⚠射程340・範囲130はそのまま=遊びの数値は一切変えていない。見せ方だけ差し替える。 */
@@ -19074,13 +19095,13 @@ function campStep(C,dt,wave){
       :tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c');
      if(f9>0)later(C,f9,im9);else im9();
      if(U.aoe>=100)u.fireT=.14;}}
-    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){dmgZ(C,z,ua,pierce);if(++n2>=U.multi)break;}}}
+    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){uHit(C,z,ua,U);if(++n2>=U.multi)break;}}}
     else{
      /* ⭐**飛び道具の英雄だけ、当たるのを飛行時間ぶん遅らせる**(2026-08-03(71))。
         ⚠`tg` はそのまま持つ=途中で倒れていれば `dmgZ` が頭で弾く(追尾にはならない)。 */
      {const fly9=(U.hro&&H_FLY[U.id])?H_FLY[U.id](C,u,U,tg):0;
-      if(fly9>0&&FXLV>0)later(C,fly9,()=>dmgZ(C,tg,ua,pierce));
-      else dmgZ(C,tg,ua,pierce);}
+      if(fly9>0&&FXLV>0)later(C,fly9,()=>uHit(C,tg,ua,U));
+      else uHit(C,tg,ua,U);}
      /* ⭐進化段階が上がるほどエフェクトを豪華にする(ユーザー指示)。英雄は最大 */
      /* ⭐⭐**固有(uUniq)はそのキャラ自身の色で撃つ**(2026-07-30)=18種+英雄5人が一目で見分く */
      const utl=uFxTier(u),ucl=uUniq(u.ui)?(U.c||UFX_COL[utl]):UFX_COL[utl];
