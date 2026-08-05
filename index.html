@@ -21604,10 +21604,17 @@ function renderCamp(C,t){
   /* 時間帯の色被り(ごく薄く)+控えめなビネット */
   pfTag('ビネット');
   c.save();c.globalCompositeOperation='source-over';
-  if(tod<.3)c.fillStyle='rgba(255,190,120,'+((.3-tod)*.2)+')';
-  else if(tod>.42&&tod<.72)c.fillStyle='rgba(255,150,80,'+((.15-Math.abs(tod-.57)*.5))+')';
-  else c.fillStyle='rgba(70,100,175,'+(night*.06)+')';
-  c.fillRect(VL,110,VR-VL,VB-110);
+  /* 🌇⭐⭐(191)**色被りをビネットの焼き絵に一緒に焼き込む**=それまで
+     **全画面の一枚塗り(1.0倍)+焼いたビネット(1.0倍)の2回**貼っていた。
+     ⚠⚠**重ねる順が同じなら、先に重ねてから1回で貼っても結果は完全に同じ**
+       (source-over は結合則が成り立つ)=**絵は1画素も変わらない**。
+     ⚠**焼く場所は画面ゆれを入れない矩形**(地面の焼き込みと同じ`VL0`系)にする=
+       ゆれで毎コマ焼き直す罠((175)で2.0→13.0倍に跳ねた)を踏まないため。
+     ⭐これで **ビネットの節は 2.04倍→1.0倍・2回→1回**。 */
+  let tint9;
+  if(tod<.3)tint9='rgba(255,190,120,'+((.3-tod)*.2)+')';
+  else if(tod>.42&&tod<.72)tint9='rgba(255,150,80,'+((.15-Math.abs(tod-.57)*.5))+')';
+  else tint9='rgba(70,100,175,'+(night*.06)+')';
   /* 色被りもビネットも「画面全体」に掛ける=マップの外(裁ち落とし部分)と色が変わって
      盤の四角い縁が見えてしまうのを防ぐ */
   /* 🔥⭐(175)**ビネットは焼いて貼る**(2026-08-05ユーザー了承)=それまで**全画面のラジアルグラデを
@@ -21621,19 +21628,24 @@ function renderCamp(C,t){
      ⭐**16pxに丸めた大きさ**を鍵にする=ゆれでは変わらない。⚠貼る時も丸めた大きさで貼る
      (最大16pxの伸びだが、ぼんやりしたビネットなので見た目には出ない)。 */
   {const a9=+( .1+night*.08 ).toFixed(2);
-   const w9=Math.max(16,Math.ceil((VR-VL)/16)*16),h9=Math.max(16,Math.ceil((VB-VT)/16)*16);
-   const k9=a9+'|'+w9+'|'+h9+'|'+Math.round(MW)+'|'+Math.round(MH);
+   /* ⚠(191)**画面ゆれを入れない矩形**(端に12の余白=ゆれは最大4)。ゆれは貼る側の変換に乗る */
+   const VL9=Math.min(0,(-OX)/SC)-12,VT9=Math.min(0,(-OY)/SCY)-12,
+         VR9=Math.max(MW,(cv.width-OX)/SC)+12,VB9=Math.max(MH,(cv.height-OY)/SCY)+12;
+   const w9=Math.max(16,Math.ceil((VR9-VL9)/16)*16),h9=Math.max(16,Math.ceil((VB9-VT9)/16)*16);
+   const k9=a9+'|'+w9+'|'+h9+'|'+Math.round(MW)+'|'+Math.round(MH)+'|'+Math.round(VL9)+'|'+Math.round(VT9)+'|'+tint9;
    if(VGK!==k9){
     if(!VGC)VGC=document.createElement('canvas');
     if(VGC.width!==w9)VGC.width=w9;if(VGC.height!==h9)VGC.height=h9;
     const vc=VGC.getContext('2d');
     if(vc){vc.setTransform(1,0,0,1,0,0);vc.clearRect(0,0,w9,h9);
-     /* ⚠**焼く時は左上を原点にずらす**=貼る時に (VL,VT) へ戻す */
-     const vg=vc.createRadialGradient(MW/2-VL,MH/2-VT,MH*.45,MW/2-VL,MH/2-VT,MH*1.15);
+     /* ⚠**焼く時は左上を原点にずらす**=貼る時に (VL9,VT9) へ戻す。
+        ⚠**色被りは地平線(y=110)から下だけ**=空には掛けない(元の `fillRect(VL,110,…)` と同じ) */
+     vc.fillStyle=tint9;vc.fillRect(0,110-VT9,w9,h9-(110-VT9));
+     const vg=vc.createRadialGradient(MW/2-VL9,MH/2-VT9,MH*.45,MW/2-VL9,MH/2-VT9,MH*1.15);
      vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,'+a9+')');
      vc.fillStyle=vg;vc.fillRect(0,0,w9,h9);VGK=k9;}
    }
-   if(VGK===k9)try{c.drawImage(VGC,VL,VT,w9,h9);}catch(e){}}
+   if(VGK===k9)try{c.drawImage(VGC,VL9,VT9,w9,h9);}catch(e){}}
   c.restore();
  }
  /* ⭐**ウェーブ制圧のスローモーションを「画」でも知らせる**(2026-07-27ユーザー判断
