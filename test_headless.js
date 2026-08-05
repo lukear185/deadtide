@@ -4290,6 +4290,31 @@ process.exit(0);
   const f5=new Function(js+String.fromCharCode(10)+'return ffSteps().join(",");')();
   if(f5!=='1,2,3,5'){console.log('FAIL: 🛠DEVの倍速に×5が無い ['+f5+']');process.exit(1);}
   console.log('⏩🛠DEVの倍速: ×1→×2→×3→×5→×1 OK');
+  /* 🛠⭐⭐(188)**「素で始める」**=①道具と②面の解放は残したまま、持ち物と🧬だけ素になること。
+     ⚠**ここが崩れると実機でバランスを一切測れなくなる**(それが入れた理由そのもの)。
+     ⚠見るのは4つ: ①持ち物が2種ずつに戻る ②🧬が補充されない ③**面の解放は残る**
+     ④棚は「クリアした拠点の数」で増える。 */
+  const r9=new Function(js+String.fromCharCode(10)
+   +'META.devRaw=1;metaResetLab();META.sc=[];META.sclr=[];TWOWN_K=-1;'
+   +'META.pts=0;saveMeta();'/* saveMeta は devTop を通る=素モードなら補充されない */
+   +'const a={pts:META.pts,tw:twOwnList().length,un:uOwnList().length,'
+   +'stg:stageOK(1),dif:diffOK(1,5),sT:shelfT().length,sU:shelfU().length,ff:ffSteps().length,'
+   +'bT:BASE_T,bU:BASE_U,tp:T_PLAY};'
+   /* 拠点を6つクリアしたことにすると棚が②相当まで進む */
+   +'const q=scArr(0);for(const d of UNL_ORD)q[d]=1;'
+   +'a.sT6=shelfT().length;a.sU6=shelfU().length;a.step6=unlStep();'
+   /* 全開放へ戻すと元どおり */
+   +'META.devRaw=0;TWOWN_K=-1;saveMeta();a.pts2=META.pts;a.tw2=twOwnList().length;'
+   +'return a;')();
+  if(r9.pts!==0){console.log('FAIL: 🛠素モードでも🧬が補充されている '+r9.pts);process.exit(1);}
+  if(r9.tw!==r9.bT||r9.un!==r9.bU){console.log('FAIL: 🛠素モードで持ち物が2種ずつに戻らない 塔'+r9.tw+'/兵科'+r9.un);process.exit(1);}
+  if(!r9.stg||!r9.dif){console.log('FAIL: 🛠素モードで面の解放まで消えている(②とナイトメアが選べない)');process.exit(1);}
+  if(r9.ff!==4){console.log('FAIL: 🛠素モードで×5倍速が消えている');process.exit(1);}
+  if(r9.step6!==6){console.log('FAIL: 🛠クリア+1が数えられていない '+r9.step6);process.exit(1);}
+  if(!(r9.sT6>r9.sT&&r9.sU6>r9.sU)){console.log('FAIL: 拠点をクリアしても棚が増えない');process.exit(1);}
+  if(r9.pts2<1e6||r9.tw2<r9.tp){console.log('FAIL: 🛠全開放に戻しても元に戻らない');process.exit(1);}
+  console.log('🛠素で始める: 持ち物'+r9.tw+'+'+r9.un+'種・🧬0・棚'+r9.sT+'塔/'+r9.sU+'兵科'
+   +' → 6拠点クリアで'+r9.sT6+'塔/'+r9.sU6+'兵科 / 面の解放と×5は残る / 戻せる OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
  }finally{

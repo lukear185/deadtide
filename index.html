@@ -2292,7 +2292,17 @@ try{if(GIFT&&GIFT.id){
 /* ⚠**新しく足した物は必ずDEVの底上げにも足す**(でないと実機で一度も見られない)=
    🚌バスの物資は3種とも潤沢に(装備9個と性能25段を一度に見比べられる額)。 */
 /* ⚠🎫★5確定チケットもDEVでは切らさない(でないと配布物の演出を実機で一度も確かめられない) */
-function devTop(){if(!DEV)return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;META.luck=9;
+/* 🛠⭐⭐⭐(188)**「素で始める」**(2026-08-06ユーザー指示「研究所をリセットしてもゲーム中で全解放されてて
+     リソースも無限だからテストにならない」)。
+   ⚠⚠**`?dev=1` は3つの別の仕事を1つの旗でやっていた**=
+     ①道具(検証場・撮影・×5倍速) ②面の解放(②沈んだ港もナイトメアも最初から選べる)
+     ③**全開放と無限リソース**。進行そのものを作り替えた回に、③だけがテストの邪魔になった。
+   ⭐**`devAll()` が③の担当**=ここを false にすると、**①と②は残したまま持ち物と🧬だけ素になる**。
+   ⚠**印はテスト用のセーブ(dt_meta_dev)に残る**ので、再読み込みしても素のまま
+     (それまでの🛠研究リセットは、読み直すと全開放へ戻るのが仕様だった=これが「テストにならない」の正体)。
+   ⚠**新しく DEV の底上げを足す時は `devAll()` の側に足すこと**(素モードで消えないと意味がない)。 */
+const devAll=()=>DEV&&!(META.devRaw||0);
+function devTop(){if(!devAll())return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;META.luck=9;
  if(!Array.isArray(META.bres))META.bres=[0,0,0];
  for(let i=0;i<3;i++)META.bres[i]=99999;}
 devTop();
@@ -2357,7 +2367,7 @@ function resumeRun(){
  if(d.flagD)m.flagD=clamp(d.flagD,0,PLEN);
  if(d.slk&&d.slk.length)m.slk=m.slk.map((v,i)=>!!d.slk[i]);
  /* ⚠🛠DEVは「最初から全開放」なので、中断前のセーブで巻き戻さない */
- if(DEV){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.team=teamIdx();m.uUn=Math.max(m.uUn||0,m.team.length);
+ if(devAll()){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.team=teamIdx();m.uUn=Math.max(m.uUn||0,m.team.length);
   m.ecoN=ECO_MAX;m.supN=SUP_MAX;m.slk=m.slk.map((v,i)=>i<ECO_BASE?true:v);}
  if(d.tw&&d.tw.length)m.towers=m.towers.map((t,i)=>{const s=d.tw[i];
   return s?{ti:s.ti,us:Object.assign(newUs(),s.us||{}),cd:rnd(.1,.5),ang:-.6,jamT:0,fireT:0,spent:s.spent||0,own:0}:null;});
@@ -3773,7 +3783,7 @@ const T_GCOST=ti=>(TOWERS[ti]&&TOWERS[ti].gc)||700;/* その段からの建て�
    ⚠工房の3段も同じ扱い(上級廃品工房/廃品プラント)。⚠支援施設は元から進化しない。 */
 const TG_ALL=TOWERS.filter(T=>T.grd).map(T=>T.id);/* 進化先(grd:1)のid一覧 */
 const tgOK=ti=>{const T=TOWERS[ti];if(!T)return false;
- return DEV||(META.tg||[]).indexOf(T.id)>=0;};
+ return devAll()||(META.tg||[]).indexOf(T.id)>=0;};/* ⚠(188)素モードでは印どおりに見る */
 /* その素のタワーの「次の段」が解放済みか(-1=次が無い) */
 const tgNext=ti=>{const nx=T_GRD(ti);return nx>=0&&tgOK(nx)?nx:-1;};
 const T_PLAY=TOWERS.length-SUP_N-GRD_N;/* 解放チェーン/研究所に出るタワーの数 */
@@ -4381,7 +4391,7 @@ const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(
 const LAB_TG=(k,i,fin)=>Math.round(380*Math.pow(1.085,i||0)*Math.pow(1.02,k||0)*(fin?2.6:1));
 /* 上級兵科(titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
 /* ⚠(187)持ち物が飛び飛びになったので「先頭から何個」ではなく集合で見る */
-const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&(i<BASE_U||unHas(b)||DEV);};
+const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&(i<BASE_U||unHas(b)||devAll());};
 /* ⚠**弾薬(AMMO)は2026-07-27に廃止した**(ユーザー指示)。
    実弾タワーの威力に一律で乗るだけの数値だったので、**盤面のタワーを進化させる**方に置き換えた。
    ⚠書き戻さないこと。編成の弾薬タブ・研究所の弾薬項目も一緒に消してある。 */
@@ -5026,7 +5036,7 @@ const unHas=id=>(META.ou||[]).indexOf(id)>=0;
 let TWOWN_C=null,TWOWN_K=-1;
 function twOwnList(){
  const solo=(typeof soloUI==='function')?soloUI():true;
- const all=!!(DEV||(typeof G!=='undefined'&&G&&G.tut));
+ const all=!!(devAll()||(typeof G!=='undefined'&&G&&G.tut));
  const k=(all?1:0)+(solo?2:0)+((META.ot||[]).length*4);
  if(TWOWN_K===k&&TWOWN_C)return TWOWN_C;
  const a=[];
@@ -5050,7 +5060,7 @@ const twRank=ti=>twOwnList().indexOf(ti);
 const twReady=(C,ti)=>{const r=twRank(ti);return r>=0&&r<((C&&C.unlocked)|0);};
 /* ⭐**持っている兵科の並び**(UBASEの添字)。⚠編成(teamIdx)はここから引く */
 function uOwnList(){
- if(DEV||(typeof G!=='undefined'&&G&&G.tut)){const a=[];for(let i=0;i<U_N;i++)a.push(i);return a;}
+ if(devAll()||(typeof G!=='undefined'&&G&&G.tut)){const a=[];for(let i=0;i<U_N;i++)a.push(i);return a;}
  if(typeof soloUI==='function'&&!soloUI()){const a=[];for(let i=0;i<PVP_U;i++)a.push(i);return a;}
  const a=[];for(let i=0;i<BASE_U;i++)a.push(i);
  for(const id of UNL_U)if(unHas(id)&&UB_IDX[id]!=null)a.push(UB_IDX[id]);
@@ -16981,7 +16991,7 @@ let EID=1;
    実機で演出やバランスを見るのに、毎回⚙️を貯めて解放するのは回らないため。
    ⚠通常モードは今までどおり(タワー2種・兵科2種・建設マス7つ)。DEVのセーブは別枠なので普段のデータは汚れない */
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
- core:50,coreMax:50,scrap:250,unlocked:DEV?metaTowerCap():2,atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,
+ core:50,coreMax:50,scrap:250,unlocked:devAll()?metaTowerCap():2,atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,
  towers:SLOTS.map(()=>null),ecoN:DEV?ECO_MAX:1,supN:DEV?SUP_MAX:0,up:12,upTotal:12,
  slk:SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0)),
  zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:DEV?teamIdx().length:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
@@ -27867,7 +27877,8 @@ function refreshTrainBtn(){const b=$('bt-train');if(b&&b.style)b.style.display='
 /* ホームの🏋タイル。⚠解放前は🔒で灰色(押せない)=**存在だけ先に見せる**。
    ⚠renderHome からも呼ぶ(往復しないよう renderHome は呼び返さないこと) */
 function updHomeTrain(){
- const ok=TR_OPEN&&(DEV||(META.tr0||0)),b=$('hm-train');if(!b)return;
+ /* ⚠(188)鍛錬所は研究所で🧬300払って開ける物=**素モードでは閉じている**のが正しい */
+ const ok=TR_OPEN&&(devAll()||(META.tr0||0)),b=$('hm-train');if(!b)return;
  const ti=$('hm-train-ic');if(ti)ti.innerHTML=ok?icoImg('ic-train','🏋'):icoImg('ic-lock','🔒');
  const t=$('hm-train-i');if(t)t.innerHTML=ok?(IC('🔧')+fmt(META.hmat||0)):'🔬研究所で解放';
  b.classList.toggle('lk',!ok);b.disabled=!ok;
@@ -28096,7 +28107,7 @@ function renderLab(){
  {const tg=META.tg||[];
   for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];
    if(!T||T.type==='sup'||T.grd)continue;/* 素のタワーだけを起点にする */
-   if(i>=BASE_T&&!twHas(TOWERS[i].id)&&!DEV)continue;/* (187)研究所でまだ買っていない新型 */
+   if(i>=BASE_T&&!twHas(TOWERS[i].id)&&!devAll())continue;/* (187)研究所でまだ買っていない新型 */
    /* その系統の「まだ解放していない一番手前の段」を探す */
    let cur=i,nx=T_GRD(cur);
    while(nx>=0&&tg.indexOf(TOWERS[nx].id)>=0){cur=nx;nx=T_GRD(cur);}
@@ -28133,7 +28144,7 @@ function renderLab(){
  {const seen={};
   for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];
    if(T.type==='sup')continue;
-   if(i>=BASE_T&&!twHas(TOWERS[i].id)&&!DEV)continue;/* (187)研究所でまだ買っていない新型 */
+   if(i>=BASE_T&&!twHas(TOWERS[i].id)&&!devAll())continue;/* (187)研究所でまだ買っていない新型 */
    const key=twKey(T);if(seen[key])continue;seen[key]=1;
    const lv=(META.tw&&META.tw[key])||0;if(lv>=LINE_MAX)continue;
    const TRT=twTrait(T);/* ⚠TT という名前は使わない=グローバルのゲーム時刻を隠すため */
@@ -28144,7 +28155,7 @@ function renderLab(){
     UNITS は編成を適用した時点で派生キャラの実体に差し替わり、タイトルへ戻っても元に戻らない。
     UNITS で引くと『狼』のidで保存され、出撃側(unKey=元のid)が読めず**強化が消える**。 */
  for(let i=0;i<U_N;i++){const U=UBASE[i];
-  if(i>=BASE_U&&!unHas(UBASE[i].id)&&!DEV)continue;/* (187)まだ買っていない兵科 */
+  if(i>=BASE_U&&!unHas(UBASE[i].id)&&!devAll())continue;/* (187)まだ買っていない兵科 */
   const lv=(META.un&&META.un[U.id])||0;if(lv>=LINE_MAX)continue;
   const st=UN_STEP(U.type),hl=U.type==='heal'?'回復':'攻撃';
   items.push({cat:'unup',k:'un',id:U.id,sm:1,ic:UN_IC[U.type]||'🪖',pv:{k:'u',i:i,def:U},t:U.n,tag:'Lv'+lv+'/'+LINE_MAX,
@@ -28230,7 +28241,17 @@ function renderLab(){
      ⚠**バス強化は永続**なので、一度買うと**段階解放の並びを二度と確かめられない**。
      ⭐**初回クリアの印(`bcl`)も一緒に戻す**=初回3倍の報酬も何度でも確かめられる。
      ⚠🛠DEVは物資が99999なので、押した直後から全部買い直せる。 */
-  const tools=(DEV?'<button data-labrst>🛠リセット</button><button data-busrst>🛠バス強化</button>':'')
+  /* 🛠⭐⭐(188)**「素で始める」と「🛠クリア +1」**(2026-08-06ユーザー指示)。
+     ⭐**素で始める**=①道具と②面の解放は残したまま、**持ち物と🧬だけ素にする**(`devAll()`)。
+       ⚠印はセーブに残るので**再読み込みしても戻らない**(ここが🛠リセットとの違い)。
+     ⭐**🛠クリア +1**=**棚は「実際にクリアした拠点の数」で決まる**ので、
+       ②沈んだ港を選べても棚は最初のままになる。押すと1拠点ぶん進む(0に戻すも置く)。
+       ⚠**印を立てるのは①廃線の側から順**=`unlStep()` は両ステージのクリアを数えるだけなので、
+         どちらに立てても段は同じだけ進む。 */
+  const raw9=!!(META.devRaw||0);
+  const tools=(DEV?('<button data-labrst>🛠リセット</button><button data-busrst>🛠バス強化</button>'
+    +'<button data-devraw'+(raw9?' class="on"':'')+'>'+(raw9?'🛠全開放に戻す':'🛠素で始める')+'</button>'
+    +(raw9?('<button data-devclr>🛠クリア +1('+unlStep()+')</button><button data-devclr0>🛠クリア 0</button>'):'')):'')
    +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
   body='<div class="bphint">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
     +cat.d+'</div>'
@@ -28282,6 +28303,27 @@ function renderLab(){
  $('lab-items').querySelectorAll('[data-busrst]').forEach(b=>{b.onclick=()=>{
   metaResetBus();devTop();saveMeta();renderLab();
   toast('🛠 バス強化(🔧段・⚔装備・🎒物資・初回クリア)を全部リセットした');};});
+ /* 🛠(188)**素で始める / 全開放に戻す**。⚠切り替えたら**中身も作り直す**
+    (印を立てるだけでは、すでに買ってある物と積んである🧬がそのまま残る)。 */
+ $('lab-items').querySelectorAll('[data-devraw]').forEach(b=>{b.onclick=()=>{
+  const on=!(META.devRaw||0);META.devRaw=on?1:0;
+  if(on){metaResetLab();META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;TWOWN_K=-1;
+   toast('🛠 素モード: 持ち物2種ずつ・🧬0・棚は拠点のクリア数どおり(再読み込みしても戻らない)');}
+  else{toast('🛠 全開放に戻した(再読み込みすると持ち物と🧬が満タンになる)');}
+  saveMeta();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();
+  try{refreshStageUI();refreshDiffUI();}catch(e){}};});
+ /* 🛠(188)**クリアした拠点の数を進める/戻す**=棚を②相当まで進めてから試すため */
+ $('lab-items').querySelectorAll('[data-devclr]').forEach(b=>{b.onclick=()=>{
+  const a=scArr(0);let put=false;
+  for(const d of UNL_ORD)if(!a[d]){a[d]=1;put=true;break;}
+  if(!put){const b2=scArr(1);for(const d of UNL_ORD)if(!b2[d]){b2[d]=1;put=true;break;}}
+  saveMeta();renderLab();try{refreshStageUI();refreshDiffUI();}catch(e){}
+  toast(put?('🛠 クリアした拠点を '+unlStep()+' にした(棚が'+shelfT().length+'塔/'+shelfU().length+'兵科)')
+   :'🛠 もう全部クリア済み');};});
+ $('lab-items').querySelectorAll('[data-devclr0]').forEach(b=>{b.onclick=()=>{
+  META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;
+  saveMeta();renderLab();try{refreshStageUI();refreshDiffUI();}catch(e){}
+  toast('🛠 クリアした拠点を 0 に戻した');};});
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
   /* ⭐まとめ買いの段数。⚠**表に無い種類は必ず1**(「次の1つ」を買う形の項目を複数回進めない) */
   const n=(LAB_MSTEP[it.k]&&it.n>1)?it.n:1;
@@ -32725,7 +32767,9 @@ $('bt-lobby-back').onclick=backTitle;
    ⚠`devTop()` はMETAを読み込んだ直後(データ定義より**前**)に呼ばれるので、
      T_PLAY/U_N のような後で定義される const をそこで触ると TDZ で落ちる(ZCAVEで実際に踏んだ)。
      だから「研究所で解放する種類」の開放だけは、全部の定義が終わったここでやる。 */
-if(DEV){try{
+/* ⚠(188)**🛠素で始める**の時はここを丸ごと飛ばす=飛ばさないと**再読み込みのたびに全開放へ戻る**
+   (それが「研究所をリセットしてもテストにならない」の正体だった)。 */
+if(devAll()){try{
  /* ⚠(187)持ち物は id の集合になった=**中身も全部入れる**(数だけ合わせても棚が空になる) */
  if(!Array.isArray(META.ot))META.ot=[];if(!Array.isArray(META.ou))META.ou=[];
  for(const id of UNL_T)if(!twHas(id))META.ot.push(id);
