@@ -19901,6 +19901,10 @@ function metaGainOf(d9,stg,wave,kills){
      設計の狙いは**1拠点につき2種**なので、st 個目の拠点では**塔st個・兵科st個を持っている**と見る。
    ⚠並んだ物を全部買う前提で数えると値段が跳ね上がって、物差しとして使えない(一度そう書いて外した)。 */
 const shelfPairCost=st=>LAB_NT(Math.max(0,st))+LAB_NU(Math.max(0,st));
+/* 💾(189)クリップボードが使えない時の逃げ道=選べる形で画面に出す(手で写せる) */
+/* ⚠**空の catch にしない**=握り潰すと「押したのに何も起きない」になる(🩺健康診断が見張っている) */
+function promptSave(s){try{window.prompt('💾 この文字列をコピーして渡す',s);}
+ catch(e){toast('⚠ 画面に出せなかった: '+e.message,true);}}
 /* ソロPvEの終了時に研究ptを付与(勝敗問わず) */
 function awardMeta(){
  if(!soloMeta()||G.metaGain!=null)return;
@@ -28251,7 +28255,9 @@ function renderLab(){
   const raw9=!!(META.devRaw||0);
   const tools=(DEV?('<button data-labrst>🛠リセット</button><button data-busrst>🛠バス強化</button>'
     +'<button data-devraw'+(raw9?' class="on"':'')+'>'+(raw9?'🛠全開放に戻す':'🛠素で始める')+'</button>'
-    +(raw9?('<button data-devclr>🛠クリア +1('+unlStep()+')</button><button data-devclr0>🛠クリア 0</button>'):'')):'')
+    +(raw9?('<button data-devclr>🛠クリア +1('+unlStep()+')</button><button data-devclr0>🛠クリア 0</button>'):'')
+    /* 💾(189)**セーブの持ち帰り**=実機で起きた状態をPCで再現するため。⚠DEV専用 */
+    +'<button data-savex>💾書き出す</button><button data-savei>💾読み込む</button>'):'')
    +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
   body='<div class="bphint">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
     +cat.d+'</div>'
@@ -28320,6 +28326,31 @@ function renderLab(){
   saveMeta();renderLab();try{refreshStageUI();refreshDiffUI();}catch(e){}
   toast(put?('🛠 クリアした拠点を '+unlStep()+' にした(棚が'+shelfT().length+'塔/'+shelfU().length+'兵科)')
    :'🛠 もう全部クリア済み');};});
+ /* 💾⭐⭐(189)**セーブの持ち帰り / 流し込み**(ユーザー指示で作った道具の1つ)。
+    ⚠⚠**作った理由**=実機で「こうなった」と言われても、こちらは**その状態を再現できない**。
+      セーブを1本の文字列にできれば、貼ってもらうだけでPCで同じ状態から始められる。
+    ⚠**DEV専用**(普通に遊ぶ人の画面には出さない)。⚠**書き出すのはテスト用のセーブ枠だけ**。
+    ⭐**中身はただのJSON**=読めるので、何が入っているかを目で確かめられる。
+      ⚠圧縮はしない(`CompressionStream` は古い端末に無く、分岐を作ると壊れる口が増える)。 */
+ $('lab-items').querySelectorAll('[data-savex]').forEach(b=>{b.onclick=()=>{
+  try{
+   const s=JSON.stringify(META);
+   /* ⚠**クリップボードは実機の許可が要る**ので、失敗したら選択して手で写せる形に落とす */
+   const done=()=>toast('💾 セーブを書き出した(貼り付けて渡せる。'+s.length+'文字)');
+   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(done,()=>promptSave(s));
+   else promptSave(s);
+  }catch(e){toast('⚠ 書き出せなかった: '+e.message,true);}};});
+ $('lab-items').querySelectorAll('[data-savei]').forEach(b=>{b.onclick=()=>{
+  try{
+   const s=window.prompt('💾 セーブの文字列を貼り付ける(⚠いまのテスト用セーブは上書きされる)','');
+   if(!s)return;
+   const o=JSON.parse(s);
+   if(!o||typeof o!=='object')throw new Error('形が違う');
+   /* ⚠**入れ替えではなく中身を移す**=画面が META を参照で持っているため(既出の穴) */
+   for(const k in META)delete META[k];
+   for(const k in o)META[k]=o[k];
+   saveMeta();toast('💾 読み込んだ。⚠**再読み込みすると反映される**');
+  }catch(e){toast('⚠ 読み込めなかった: '+e.message,true);}};});
  $('lab-items').querySelectorAll('[data-devclr0]').forEach(b=>{b.onclick=()=>{
   META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;
   saveMeta();renderLab();try{refreshStageUI();refreshDiffUI();}catch(e){}
