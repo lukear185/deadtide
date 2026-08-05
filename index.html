@@ -50,6 +50,8 @@ button{font-family:inherit;color:var(--ink)}
 .btn.gold{background:var(--amber)}
 .btn.grn{background:var(--toxic)}
 .btn.sm{padding:7px 12px;font-size:14px;border-radius:10px;box-shadow:0 3px 0 var(--ink)}
+/* 🚪(191)タイトルのDEV専用の横1行(縦画面でも幅を持たせない) */
+#devrow .btn.sm{flex:0 0 auto;min-height:0;padding:5px 9px;font-size:12px}
 .btn:disabled{opacity:.45;pointer-events:none}
 .panel{background:var(--pane);border:3px solid var(--ink);border-radius:16px;box-shadow:0 6px 0 var(--ink);padding:16px}
 .tag{display:inline-block;background:var(--ink);color:var(--paper);border-radius:8px;padding:2px 8px;font-size:12px;font-weight:800}
@@ -86,6 +88,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  .menu{margin-top:0;gap:7px;width:min(330px,44vw)}
  .menu .btn{padding:7px 12px;font-size:15px;box-shadow:0 4px 0 var(--ink)}
  .menu .btn.sm{padding:3px 8px;font-size:11px;box-shadow:0 2px 0 var(--ink)}
+ /* 🚪(191)DEV専用の横1行=**幅を持たせない**(内容ぶんだけ)。⚠ここだけは44pxの物差しの外
+    (開発用の入口で、遊ぶ人には出ない。既に devdoor が同じ扱い) */
+ #devrow .btn.sm{flex:0 0 auto;min-height:0;padding:3px 7px;font-size:11px}
  .menu .seg{margin-top:4px!important}
  .menu .note{font-size:10px;line-height:1.4;margin-top:4px!important}
  #paradecv{height:86px;opacity:.5;z-index:0}
@@ -1341,14 +1346,21 @@ body.perf #perfbox{display:block}
     <button class="btn gold" id="bt-train" style="display:none">🏋 鍛錬所 <span id="tr-mat"></span></button>
     <button class="btn gold" id="bt-online">📡 オンライン対戦 <span class="tag">β</span></button>
     <button class="btn" id="bt-howto">🎓 あそびかた</button>
-    <button class="btn sm" id="bt-sfx" style="display:none">🔊 音の確認</button>
+    <!-- 🚪⭐⭐(191)**DEV専用の4つは横1行に畳む**(2026-08-06 ユーザー実機「まだはみ出てる」)。
+         ⚠⚠**縦積みのままだと4行(約133px)使う**=横画面(高さ430px)ではシングルプレイと
+           オプションが画面の上下から切れていた。⚠**この列に縦へ増える物を足さない**の掟([[CLAUDE]])。
+         ⚠**折り返す**=文字が伸びても2行目に落ちるだけで、はみ出しには戻らない。 -->
+    <div id="devrow" style="display:none;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:2px">
+    <!-- ⚠**札は短く**=852x393(一番狭い実機)だと4つで2行になり、それだけで はみ出しに戻る -->
+    <button class="btn sm" id="bt-sfx" style="display:none">🔊 音</button>
     <!-- 📖ゾンビ図鑑: ⚠🛠DEVモード(?dev=1)の時だけ出す。絵の確認用なので全種そのまま見える -->
-    <button class="btn sm" id="bt-zoo" style="display:none">📖 ゾンビ図鑑</button>
+    <button class="btn sm" id="bt-zoo" style="display:none">📖 図鑑</button>
     <!-- 🧪検証場: ⚠DEVモード(?dev=1)の時だけ出す。動きの確認だけをする一本道の場 -->
-    <button class="btn sm" id="bt-tst" style="display:none">🧪 検証場</button>
+    <button class="btn sm" id="bt-tst" style="display:none">🧪 検証</button>
     <!-- 🎬区切りの幕: ⚠DEV専用。**②のナイトメアを1回落とすまで出ない**ので、
          これが無いと実機で一度も見られない(「珍しい物には ?dev=1 の底上げを足す」) -->
-    <button class="btn sm" id="bt-edtest" style="display:none">🎬 区切りの幕</button>
+    <button class="btn sm" id="bt-edtest" style="display:none">🎬 幕</button>
+    </div>
     <!-- 🚪(189)**開発モードの入口**: ⚠DEV専用。URLを打ち直さずに ?sfx=1 / ?edit=1 / ?perf=1 へ行く。
          ⚠⚠**それまでURL直打ちしか無かった**=`?dev=1` の付け忘れで「2面が開かない」を実際にやった -->
     <!-- ⚠⚠**必ず横並びで折り返す**(2026-08-06(190)実機で画面外へはみ出した)=
@@ -18074,8 +18086,19 @@ function stepIdle(C,dt){
  if(C.shake>0)C.shake-=dt;
  if(C.flash>0)C.flash-=dt;
 }
-function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{}));
- /* ホストは演出イベントをクライアントへも配信(参加側で見えない問題の対策) */
+function addFx(C,k,x,y,s,ex){C.fx.push(Object.assign({k,x,y,t:0,s:s||''},ex||{}));fxNet(C,k,x,y,s,ex);}
+/* ホストは演出イベントをクライアントへも配信(参加側で見えない問題の対策)。
+   ⚠(191)**配信だけ別に呼べるように切り出した**=連鎖電撃は手元では1本の折れ線にまとめるが、
+     向こうには繋ぎ先が無いので**今までどおり1跳ね=1件**で送る。 */
+/* ⚡(191)連鎖電撃の1跳ね。手元では**1本の折れ線に足す**・遠隔へは**1跳ね=1件**で送る(掟は呼ぶ側) */
+function arcZap(C,a,x1,y1,x2,y2,wm){
+ const e=a.fx;
+ if(e&&e.t<.5&&e.pts.length<24){e.pts.push([x2,y2]);e.wms.push(wm);e.t=0;}
+ else{a.fx={k:'zap',x:x1,y:y1,t:0,s:'',pts:[[x1,y1],[x2,y2]],wms:[wm],sd:rnd(0,9),gw:1,st:a.step||.1};
+  C.fx.push(a.fx);}
+ fxNet(C,'zap',x1,y1,'',{pts:[[x1,y1],[x2,y2]],sd:rnd(0,9),wm});
+}
+function fxNet(C,k,x,y,s,ex){
  if(MODE==='host'&&G){
   if(G.coop){if(C===G.players[0]){G.fxq=G.fxq||[];if(G.fxq.length<60)G.fxq.push([k,Math.round(x),Math.round(y),s||'',ex||null]);}}
   else if(C.conn){C.fxq=C.fxq||[];if(C.fxq.length<60)C.fxq.push([k,Math.round(x),Math.round(y),s||'',ex||null]);}
@@ -19669,22 +19692,31 @@ function campStep(C,dt,wave){
     twSfx(C,T);}
   }
  }
- /* ゆっくり伝わる連鎖電撃(重テスラ)。1跳ねごとに step 秒かけて次の敵へ移り、威力が増えていく */
+ /* ⚡⭐⭐(191)**連鎖電撃は「1つの連鎖=1本の折れ線」**にまとめる(2026-08-06)。
+    ⚠⚠**それまで1跳ね=1本の稲妻**を別々に積んでいたので、重テスラでは**同時に22本**生きていて、
+      1本あたり**7回**(太さ違いの線3+枝+走る光点2+節の点)=**それだけで+150回/コマ**あった。
+    ⚠⚠**塗った面積はほぼ同じ**(6.75倍 vs 6.59倍)なので、**面積の軸では丸ごと素通りした**
+      =`tool_paint.js` に「描く回数」の軸を足して初めて見えた。⭐**軸が足りないと見つからない**。
+    ⭐**折れ点ごとの太さ(`wms`)は残す**=「跳ねるほど太くなる」読みは1つも失っていない。
+    ⚠**遠隔(協力/対戦)へは今までどおり1跳ね=1件で送る**=向こうには繋ぎ先の折れ線が無い。
+    ⚠**寿命(0.5秒)より前に次の跳ねが来る**(step=0.09〜0.1秒)ので、生きている間は同じ1本に足せる。
+      ⭐**生きているかは `t<0.5` で見る**(消えた物は `C.fx` から外れているだけで参照は残るため)。 */
  if(!C.arcs)C.arcs=[];
+ /* ゆっくり伝わる連鎖電撃(重テスラ)。1跳ねごとに step 秒かけて次の敵へ移り、威力が増えていく */
  for(const a of C.arcs){
   a.t+=dt;
   while(!a.dead&&a.t>=a.step&&a.k<a.n){
    a.t-=a.step;
    if(a.first){/* 最初の1体は塔から直接 */
     a.first=0;
-    addFx(C,'zap',a.x,a.y,'',{pts:[[a.x,a.y],[a.cur.px,a.cur.py]],sd:rnd(0,9),wm:1});
+    arcZap(C,a,a.x,a.y,a.cur.px,a.cur.py,1);
     dmgZ(C,a.cur,a.dm*elecX()*(a.cur.scl?ELEC_VS_SCALE:1),1,0,a.cur.scl?'elec':0);a.k++;continue;}
    let nx=null,bd=1e9;
    for(const z of C.zombies){if(z.dead||a.hitl.includes(z))continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
    if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===a.cur)continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
    if(!nx){a.dead=true;break;}
    const gm=Math.min(Math.pow(a.grow,a.k),a.gmax);
-   addFx(C,'zap',a.cur.px,a.cur.py,'',{pts:[[a.cur.px,a.cur.py],[nx.px,nx.py]],sd:rnd(0,9),wm:.7+gm*.34});
+   arcZap(C,a,a.cur.px,a.cur.py,nx.px,nx.py,.7+gm*.34);
    if(FXLV>0)addP(C,2+Math.round(gm),nx.px,nx.py,{sp:60+gm*22,g:40,life:.35,r:2,col:FROST});
    dmgZ(C,nx,a.dm*gm*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0);
    if(a.hitl.indexOf(nx)<0)a.hitl.push(nx);
@@ -20410,8 +20442,13 @@ function renderCamp(C,t){
  fitCanvas();const c=ctx;
  const wv=MODE==='client'?(CS.w||1):(G?G.wave:1);
  c.setTransform(1,0,0,1,0,0);
- {const fr=todCol(clamp((wv-1)/((G&&G.pve?curW():STAGE_W)-1||19),0,1));
-  c.fillStyle=fr;c.fillRect(0,0,cv.width,cv.height);
+ /* 🖼⭐(191)**下地の一枚塗りは「焼いた地面で覆い切れない時」だけ**にした=
+    覆えている時は必ずこの上から塗り潰されるので、**絵は1画素も変わらないまま画面1枚ぶんの塗りが消える**
+    (この盤面は毎コマ画面5枚ぶんを塗り直していた。塗りの物差しで 6.9倍→5.9倍)。
+    ⚠**覆えているかは画面ゆれ込みで確かめる**(端が出ると前のコマが残って尾を引く)=判定は下の `bgFull`。
+    ⚠**額縁の色(FRAMECOL)の更新はここに残す**=CSS側の背景なので塗りとは関係ない。 */
+ let baseFR='';
+ {const fr=todCol(clamp((wv-1)/((G&&G.pve?curW():STAGE_W)-1||19),0,1));baseFR=fr;
   if(FRAMECOL!==fr){FRAMECOL=fr;const sg2=$('scr-game');if(sg2&&sg2.style)sg2.style.background=fr;
    /* ブラウザのバーが隠れた瞬間に下端が黒く見えないよう、土台の色も時間帯に合わせる */
    try{document.body.style.background=fr;document.documentElement.style.background=fr;}catch(e){}}}
@@ -20439,6 +20476,12 @@ function renderCamp(C,t){
     ⚠**画面ゆれ(shx/shy)は貼る側の変換に乗る**ので焼き込みには入れない(入れると揺れが二重になる)。
     ⚠🚌開拓便はカメラが動き続ける+別の焼き込み(drawBnsTown)があるので**通さない**。 */
  const bgR=(!C.bus)?bgCache(C,tod,dk,PAL):null;
+ /* 🖼(191)焼いた2枚が画面を丸ごと覆っているか(=下地の一枚塗りを省いてよいか)。
+    ⚠**BGL1は y=110 から下・BGL2は空(y<115)**なので、2枚合わせればこの矩形は隙間なく不透明。
+    ⚠**画面ゆれ(shx/shy)を含めた実際の位置**で見る。⚠1pxでも足りなければ塗る(安全側)。 */
+ const bgFull=!!bgR&&(bgR[0]*SC+OX+shx<=0)&&((bgR[0]+bgR[2])*SC+OX+shx>=cv.width)
+  &&(bgR[1]*SCY+OY+shy<=0)&&((bgR[1]+bgR[3])*SCY+OY+shy>=cv.height);
+ if(!bgFull){c.save();c.setTransform(1,0,0,1,0,0);c.fillStyle=baseFR;c.fillRect(0,0,cv.width,cv.height);c.restore();}
  if(bgR){
   try{c.drawImage(BGL1,bgR[0],bgR[1],bgR[2],bgR[3]);}catch(e){}
  }else{
@@ -20453,11 +20496,16 @@ function renderCamp(C,t){
  for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
  }
  /* 枯れ草(⚠揺れるので焼き込みに入れない。⚠**焼いた2枚の間**に描く=重ね順は元のまま) */
+ /* 🌱⭐(191)**115本を1本のパスにまとめて1回で引く**=色も太さも全部同じなので**絵は1画素も変わらない**。
+    ⚠それまで**1株ごとに `stroke()`**していて、**地面の節だけで115回/コマ**あった(道具に
+      「描く回数」の軸を足して初めて見えた=面積では出ない)。⚠**株ごとに beginPath は打たない**。 */
  if(FXLV>0){c.strokeStyle=mix(PAL.tuft,'#3c3a2c',dk*.6);c.lineWidth=1.6;
+  c.beginPath();
   for(const g3 of TUFTS){const sw=Math.sin(t*1.5+g3[3])*1.6;
-   c.beginPath();c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+sw,g3[1]-g3[2]);
+   c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+sw,g3[1]-g3[2]);
    c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]-3+sw,g3[1]-g3[2]*.7);
-   c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+3+sw,g3[1]-g3[2]*.6);c.stroke();}
+   c.moveTo(g3[0],g3[1]);c.lineTo(g3[0]+3+sw,g3[1]-g3[2]*.6);}
+  c.stroke();
   c.lineWidth=3;c.strokeStyle=INK;}
  if(bgR){
   try{c.drawImage(BGL2,bgR[0],bgR[1],bgR[2],bgR[3]);}catch(e){}
@@ -21053,11 +21101,28 @@ function renderCamp(C,t){
     const ax=ps[i2-1][0],ay=ps[i2-1][1],bx=ps[i2][0],by=ps[i2][1];
     for(let s2=1;s2<=3;s2++){const f2=s2/3,jj=jag(i2*3+s2,s2===3?0:7);
      JP.push([ax+(bx-ax)*f2+jj[0],ay+(by-ay)*f2+jj[1]]);}}
+   /* ⚡⭐(191)**跳ねごとの太さは残したまま、線を引く回数を頭打ちにする**=
+      太さを**最大3段**に丸めて、同じ段の折れ線をひとつのパスにまとめて1回で引く。
+      ⚠**丸めないと段の数=跳ねの数**になって、まとめた意味が消える(11跳ねで33回)。
+      ⭐段が1つ(素のテスラ=1本きり)なら今までとまったく同じ3回。 */
+   const NS=ps.length-1,WS=[];
+   let wlo=1e9,whi=-1e9;
+   for(let i2=0;i2<NS;i2++){const w9=(e.wms&&e.wms[i2]!=null)?e.wms[i2]:wm;WS.push(w9);
+    if(w9<wlo)wlo=w9;if(w9>whi)whi=w9;}
+   const LV=(whi-wlo<.06)?1:3,BW=[];
+   for(let b2=0;b2<LV;b2++)BW.push(LV===1?wlo:(wlo+(whi-wlo)*b2/(LV-1)));
+   const BK=WS.map(w9=>LV===1?0:clamp(Math.round((w9-wlo)/(whi-wlo)*(LV-1)),0,LV-1));
    for(const pass of [[9,'rgba(90,170,255,',.30],[4.5,'rgba(190,235,255,',.75],[1.8,'rgba(255,255,255,',1]]){
-    c.strokeStyle=pass[1]+(k5*pass[2])+')';c.lineWidth=pass[0]*wm;
-    c.beginPath();c.moveTo(JP[0][0],JP[0][1]);
-    for(let i2=1;i2<JP.length;i2++)c.lineTo(JP[i2][0],JP[i2][1]);
-    c.stroke();}
+    c.strokeStyle=pass[1]+(k5*pass[2])+')';
+    for(let b2=0;b2<LV;b2++){
+     let any=false,prev=-9;
+     c.lineWidth=pass[0]*BW[b2];c.beginPath();
+     for(let i2=0;i2<NS;i2++){if(BK[i2]!==b2)continue;
+      /* JP は1跳ねを3分割してある=跳ね i2 は JP[i2*3] 〜 JP[i2*3+3] */
+      if(prev!==i2-1)c.moveTo(JP[i2*3][0],JP[i2*3][1]);
+      for(let j2=1;j2<=3;j2++)c.lineTo(JP[i2*3+j2][0],JP[i2*3+j2][1]);
+      prev=i2;any=true;}
+     if(any)c.stroke();}}
    /* 枝分かれ(⚠1本のパスにまとめて1回で引く) */
    c.strokeStyle='rgba(200,240,255,'+(k5*.5)+')';c.lineWidth=1.6;
    c.beginPath();
@@ -21065,7 +21130,11 @@ function renderCamp(C,t){
     c.moveTo(ps[i2][0],ps[i2][1]);c.lineTo(ps[i2][0]+jj[0]*1.8,ps[i2][1]+jj[1]*1.8);}
    c.stroke();
    /* 電流が経路を走る光点 */
-   {const prog=clamp(e.t/life,0,.999),seg=Math.min(ps.length-2,Math.floor(prog*(ps.length-1))),f3=(prog*(ps.length-1))%1;
+   /* ⚡(191)**繋ぎながら伸びる折れ線では、光点は「いま伸びている最後の1本」を走る**
+      (全体の進み具合で出すと、跳ねるたびに後ろへ戻ってしまう) */
+   {const prog=clamp(e.t/life,0,.999),
+     seg=e.gw?(ps.length-2):Math.min(ps.length-2,Math.floor(prog*(ps.length-1))),
+     f3=e.gw?clamp(e.t/(e.st||.1),0,1):(prog*(ps.length-1))%1;
     if(seg>=0){const gx=ps[seg][0]+(ps[seg+1][0]-ps[seg][0])*f3,gy=ps[seg][1]+(ps[seg+1][1]-ps[seg][1])*f3;
      c.globalAlpha=k5;c.fillStyle='#fff';c.beginPath();c.arc(gx,gy,4.5,0,7);c.fill();
      c.fillStyle='rgba(150,220,255,.7)';c.beginPath();c.arc(gx,gy,9,0,7);c.fill();c.globalAlpha=1;}}
@@ -21507,7 +21576,10 @@ function renderCamp(C,t){
          ⚠加算の色(glow)は今までどおり別で、大きい順に BOOM_G 枚。 */
       bmL.add(e.x,e.y,R2*1.3);
       bmG.push([e.x,e.y,R2*1.5,.5*Math.max(0,1-tt/du),'255,150,50']);}}
-    else if(e.k==='zap'&&e.t<.2)for(const p4 of e.pts){zb.add(p4[0],p4[1]);zany=true;}
+    /* ⚡(191)**伸びる折れ線は「いま伸びた先の2点」だけ灯す**=1本にまとめた副作用で
+       過ぎた跳ねまで毎回光り直すと、連鎖の跡が丸ごと光り続けて別物になる(灯りの数も増える) */
+    else if(e.k==='zap'&&e.t<.2){const st4=e.gw?Math.max(0,e.pts.length-2):0;
+     for(let i4=st4;i4<e.pts.length;i4++){zb.add(e.pts[i4][0],e.pts[i4][1]);zany=true;}}
    }
    if(zany)zb.each((x,y,n)=>{const r=90+(Math.min(n,8)-1)*6;
     lite(x,y,r,.85);glow.push([x,y,r*.84,Math.min(.6,.45+(n-1)*.02),'150,225,255']);});
@@ -32900,31 +32972,39 @@ if(LUCK_GOT)try{setTimeout(()=>{
    ⚠`el.style.display=''` はCSSの指定に戻るので 'block' を明示すること */
 try{
  const b=$('bt-sfx');
- if(b){if(DEV||SFXTEST)b.style.display='block';b.onclick=()=>openSfxTest();}
+ if(b){if(DEV||SFXTEST){b.style.display='block';devRow();}b.onclick=()=>openSfxTest();}
  if(SFXTEST)setTimeout(()=>{try{openSfxTest();}catch(e){}},300);
 }catch(e){}
+/* 🚪(191)DEV専用の横1行を出す。⚠**1つでも中身が出たら行ごと出す**(空の行を出さない) */
+function devRow(){const r=$('devrow');if(r)r.style.display='flex';}
 /* 📖ゾンビ図鑑: 🛠DEVモードの時だけタイトルにボタンを出す(2026-07-27ユーザー指示)。
    ⚠鍛錬所(しまってある)を開かずに絵を確認できるよう**単独の窓**にしてある */
 try{
  const zb=$('bt-zoo');
- if(zb){if(DEV)zb.style.display='block';
+ if(zb){if(DEV){zb.style.display='block';devRow();}
   zb.onclick=()=>{openZoo();};}
  const zc=$('bt-zoo-close');if(zc)zc.onclick=()=>$('md-zoo').classList.remove('on');
  const mc=$('bt-msn-close');if(mc)mc.onclick=()=>$('md-msn').classList.remove('on');
  /* 🧪検証場(DEV専用)。⚠選ぶ画面は廃止=押したらそのまま入る */
  const tb=$('bt-tst');
- if(tb){if(DEV)tb.style.display='block';
+ if(tb){if(DEV){tb.style.display='block';devRow();}
   tb.onclick=()=>{try{startTst();}catch(e){toast('検証場でエラー: '+e.message,true);}};}
  /* 🎬(157)区切りの幕を頭から見る口(DEV専用)。⚠**閉じるとタイトルへ戻る**のは本番と同じ */
  const eb=$('bt-edtest');
- if(eb){if(DEV)eb.style.display='block';
+ if(eb){if(DEV){eb.style.display='block';devRow();}
   eb.onclick=()=>{try{openEnding();}catch(e){toast('幕でエラー: '+e.message,true);}};}
  /* 🚪⭐(189)**開発モードの入口を画面に出す**(ユーザー指示で作った道具の1つ)。
     ⚠⚠**それまでURL直打ちしか無かった**=`?dev=1` の付け忘れで実機テストが1回無駄になった。
     ⚠**いま居るモードには印を付ける**=どのモードで見ているか分からなくなるのが一番困る。
     ⚠**新しい `?xxx=1` を足したらここにも1行**。 */
+ if(DEV)devDoor();
+}catch(e){}
+/* 🚪⭐(191)**DEVのタイトルの見た目を作る所を関数にした**=👁見た目の実測検査(`test_view.js`)から
+   呼べるようにするため。⚠⚠**DEVのタイトルを一度も測っていなかった**ので、
+   ボタンが5つ増えて画面の上下から切れているのに検査は0件のまま通っていた(実機で2回言われた)。 */
+function devDoor(){
  const dd=$('devdoor');
- if(dd&&DEV){
+ if(dd){
   const cur=(location.search||'');
   const M=[['dev=1','🛠DEV'],['dev=1&perf=1','🔥塗り'],['sfx=1','🔊音'],['edit=1','🛠マス'],['dev=1&v2=1','🖍輪郭']];
   /* ⚠**1行に収める**=`flex-wrap` の親に、幅を持たない小さなボタンを並べる。
@@ -32937,7 +33017,12 @@ try{
   dd.querySelectorAll('[data-door]').forEach(b=>{b.onclick=()=>{
    try{location.search='?'+b.dataset.door;}catch(e){toast('切り替えられなかった: '+e.message,true);}};});
  }
-}catch(e){}
+}
+/* 🚪(191)**DEVのタイトルを丸ごと出す**(検査から呼ぶ入口。素の起動では DEV の時に同じ形になる) */
+function devTitleAll(){
+ for(const id of ['bt-sfx','bt-zoo','bt-tst','bt-edtest']){const b=$(id);if(b)b.style.display='block';}
+ devRow();devDoor();
+}
 try{applyFrames();}catch(e){}/* ボタン/パネルの枠(素材が無ければ従来の見た目) */
 try{for(const k in ICO)icoImgFor(k);for(const k in ICN)icoImgFor(k);}catch(e){}/* canvas用に先読みしておく */
 if(MOBILE&&!STANDALONE)$('pwahint').style.display='block';

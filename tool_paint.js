@@ -34,7 +34,12 @@ const html=fs.readFileSync(TARGET,'utf-8');
      (1枚でも「毎コマ作る所」が戻ったらすぐ落ちる。作るのは最初の1コマだけなので平均は0.x)。
    ⚠(185)**合成の数え方を直した**=それまで `save→lighter→restore` の restore を数え落としていて
      **本当より少なく出ていた**(加算で塗った面積は逆に多く出ていた)。柵はいまの実測に合わせ直した。 */
-const LIM={grad:4,area:9.0,garea:0.6,comp:8};
+const LIM={grad:4,area:9.0,garea:0.6,comp:8,call:9999};
+/* ⭐⭐(191)**5つ目の軸=「描く回数」**(fill/stroke/drawImage の呼び出し数)。
+   ⚠⚠**作った理由**=重テスラの稲妻が **1跳ね=1本** で別々に引かれていて、同時に22本生きていた。
+     1本につき7回(太さ違いの線3+枝+走る光点2+節の点)=**それだけで+160回/コマ**。
+     ⚠**塗った面積はほぼ同じ**(6.75 vs 6.59倍)なので、**面積の軸では丸ごと素通りした**。
+   ⭐**軸が足りないと見つからない**(場面・数え方に続いて3件目)。⚠柵は下で実測に合わせて置く。 */
 /* ⭐**合成(globalCompositeOperation の切り替え回数)**も見る=(177)で炎の塔だけ **20回/コマ**あった。
    ⚠GPU側で描画のまとめが毎回切れるので、**時間には出ないのに端末が熱くなる**。
    ⚠潰し方=**同じ合成でまとめて描く**(溜めておいて最後に1回だけ lighter で吐く)。
@@ -120,16 +125,23 @@ for(var si=0;si<SCN.length;si++){
    for(var q in PF.cur)PF.cur[q]=0;PF.tags={};
    renderCamp(me,k*0.033);
    if(k>=30){for(var q2 in A)A[q2]+=PF.cur[q2]||0;N++;
-    for(var tg in PF.tags){if(!TG[tg])TG[tg]=0;TG[tg]+=PF.tags[tg].area;}}
+    /* ⭐(191)**札ごとに「描く回数」も溜める**=面積では見えない重さ(1本ずつ引いた稲妻)を
+       内訳から名指しできるようにするため。call=塗り+線+画像の呼び出し数。 */
+    for(var tg in PF.tags){var e9=PF.tags[tg];if(!TG[tg])TG[tg]={a:0,c:0};
+     TG[tg].a+=e9.area;TG[tg].c+=(e9.fill||0)+(e9.stroke||0)+(e9.img||0);}}
   }
   var cv=document.getElementById('cv'),px=Math.max(1,cv.width*cv.height);
   N=Math.max(1,N);
-  var top=Object.keys(TG).map(function(t){return{t:t,a:TG[t]/N/px};})
+  var top=Object.keys(TG).map(function(t){return{t:t,a:TG[t].a/N/px,c:TG[t].c/N};})
    .sort(function(x,y){return y.a-x.a;}).slice(0,7)
-   .map(function(x){return x.t+' '+x.a.toFixed(2);}).join(' / ');
+   .map(function(x){return x.t+' '+x.a.toFixed(2)+'/'+x.c.toFixed(0)+'回';}).join(' / ');
+  /* ⭐(191)**描く回数の多い順**も別に出す=面積の多い順とは並びが違う(稲妻がそれ) */
+  var topc=Object.keys(TG).map(function(t){return{t:t,c:TG[t].c/N};})
+   .sort(function(x,y){return y.c-x.c;}).slice(0,5)
+   .map(function(x){return x.t+' '+x.c.toFixed(0)+'回';}).join(' / ');
   R.push([(A.area/N/px).toFixed(2),(A.grad/N).toFixed(1),(A.garea/N/px).toFixed(2),
    (A.aarea/N/px).toFixed(2),(A.comp/N).toFixed(0),(A.filt/N).toFixed(2),(A.shad/N).toFixed(2),
-   S9.n,top].join("\\u0001"));
+   S9.n,top,((A.fill+A.stroke+A.img)/N).toFixed(0),topc].join("\\u0001"));
   try{backTitle();}catch(e){}
  }catch(e){R.push("ERR\\u0001"+S9.n+"\\u0001"+e.message);}
 }
@@ -145,11 +157,13 @@ const rows=m[1].split(' || ').map(l=>l.split('\u0001'));
 rows.sort((a,b)=>parseFloat(b[0])-parseFloat(a[0]));
 let bad=[];
 console.log('──────── 塗りの重い順(1コマあたり) ────────');
-console.log('塗り倍率\t枚数\tグ塗り\t加塗り\t合成\t場面');
+console.log('塗り倍率\t枚数\tグ塗り\t加塗り\t合成\t回数\t場面');
 for(const c of rows){
  if(c[0]==='ERR'){console.log('ERR\t'+c[1]+'\t'+c[2]);bad.push('ERR '+c[1]);continue;}
- console.log(c[0]+'倍\t'+c[1]+'\t'+c[2]+'\t'+c[3]+'\t'+c[4]+'\t'+c[7]);
- console.log('\t\t\t\t\t  └ '+c[8]);
+ console.log(c[0]+'倍\t'+c[1]+'\t'+c[2]+'\t'+c[3]+'\t'+c[4]+'\t'+c[9]+'\t'+c[7]);
+ console.log('\t\t\t\t\t  └ 面積 '+c[8]);
+ console.log('\t\t\t\t\t  └ 回数 '+c[10]);
+ if(+c[9]>LIM.call)bad.push(c[7]+': **描く回数** '+c[9]+'回/コマ(上限'+LIM.call+'回)=1本ずつ引いている所を折れ線1本にまとめる');
  if(+c[1]>LIM.grad)bad.push(c[7]+': グラデ '+c[1]+'枚(上限'+LIM.grad+')');
  if(+c[0]>LIM.area)bad.push(c[7]+': 塗り '+c[0]+'倍(上限'+LIM.area+'倍)');
  if(+c[4]>LIM.comp)bad.push(c[7]+': **合成の切り替え** '+c[4]+'回/コマ(上限'+LIM.comp+'回)=同じ合成でまとめて描く');

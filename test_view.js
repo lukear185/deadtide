@@ -53,6 +53,11 @@ const NORUN='try{localStorage.removeItem(RUN_KEY);}catch(e){}';
 const HASRUN='try{localStorage.setItem(RUN_KEY,'+RUNJS+');}catch(e){}';
 const SCENES=[
  ['タイトル',            'show("title");'],
+ /* 🚪⭐⭐(191)**DEVのタイトル**=ボタンが5つ増える形。⚠⚠**ここを測っていなかった**ので
+    実機で2回「はみ出てる」と言われた(素のタイトルだけ測っても永久に見つからない)。
+    ⚠**鍛錬所と💫幸運チケットも出した一番背の高い形**で測る。 */
+ ['タイトル(🛠DEV)',     'devTitleAll();document.getElementById("bt-train").style.display="block";'
+                        +'document.getElementById("luckbar").style.display="block";show("title");'],
  ['ホーム',              NORUN+'renderHome();show("home");'],
  ['ホーム(▶続きから)',   HASRUN+'renderHome();show("home");'],
  ['エリアマップ',        'MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show("map");'],
@@ -134,6 +139,10 @@ function OWNTEXT(e){for(var i=0;i<e.childNodes.length;i++){var n=e.childNodes[i]
  if(n.nodeType===3&&n.nodeValue&&n.nodeValue.trim())return true;}return false;}
 function VIEW_SCAN(scene){
  var out=[],vw=innerWidth,vh=innerHeight;
+ /* 🛠(191)**DEV専用の場面は「押す所の大きさ」と「文字の大きさ」を見ない**=
+    遊ぶ人には出ない開発用の入口で、わざと小さく畳んである(そうしないと画面からはみ出す)。
+    ⚠**はみ出しと重なりはちゃんと見る**=そこを見るために足した場面なので外さない。 */
+ var DEVSC=scene.indexOf('🛠DEV')>=0;
  var root=document.querySelector('.modal.on')||document.querySelector('.scr.on');
  if(!root)return out;
  var els=[],all=root.querySelectorAll('*');
@@ -153,11 +162,11 @@ function VIEW_SCAN(scene){
   }
   if(TAPPABLE(e)&&!e.disabled){taps.push({e:e,r:r});
    /* ③押す所の大きさ。⚠44pxはこの企画の物差し(CLAUDE.md) */
-   if(r.width<43.5||r.height<43.5)
+   if(!DEVSC&&(r.width<43.5||r.height<43.5))
     out.push({s:scene,k:'tap',e:NAME(e),d:Math.round(r.width)+'x'+Math.round(r.height)});
   }
   /* ④文字の大きさ。⚠自分の文字を持つ要素だけ */
-  if(OWNTEXT(e)){var fs=parseFloat(getComputedStyle(e).fontSize)||99;
+  if(!DEVSC&&OWNTEXT(e)){var fs=parseFloat(getComputedStyle(e).fontSize)||99;
    if(fs<10.4)out.push({s:scene,k:'font',e:NAME(e),d:fs.toFixed(1)+'px'});}
  }
  /* ⑤押す所どうしの重なり(押し間違いになる) */
