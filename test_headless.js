@@ -4123,6 +4123,12 @@ function checkGain(){
   +Math.min.apply(null,rows.map(x=>x.r)).toFixed(2)+'〜x'+Math.max.apply(null,rows.map(x=>x.r)).toFixed(2)
   +' / 進むほど増える(①'+rows[0].g+'→②'+rows[rows.length-1].g+') OK');
 }
+/* ⏩(188)**本番には×5を出さない**=×5は絵が飛ぶのでテスト専用。⚠DEV側は checkDevLoad が見ている */
+(function checkFF(){
+ const s=ffSteps().join(',');
+ if(s!=='1,2,3'){console.log('FAIL: 本番の倍速が ×1→×2→×3 になっていない ['+s+']');process.exit(1);}
+ console.log('⏩本番の倍速: ×1→×2→×3(×5はテストモードだけ) OK');
+})();
 twGrantAll();checkUnlock();
 twGrantAll();checkGain();
 twGrantAll();checkUnitAf();
@@ -4279,6 +4285,11 @@ process.exit(0);
   if(v9.pick!==4||v9.kinds!=='0123'){
    console.log('FAIL: 🛠DEVの2面で選択肢が4棟(⛽🏭🏠⚓)にならない '+v9.pick+'棟 ['+v9.kinds+']');process.exit(1);}
   console.log('🛠DEVで2面の🚌拠点開拓: まっさらでもステージ2と拠点開拓が押せる / 海あり / 選択肢4棟(⛽🏭🏠⚓) OK');
+  /* ⏩⭐(188)**テストモードだけ ×5 が出る**(ユーザー指示「テストモードに5倍速追加して」)。
+     ⚠本番(DEV=false)側は下の実走スコープで見る=**両方見ないと「本番にも出た」を捕まえられない**。 */
+  const f5=new Function(js+String.fromCharCode(10)+'return ffSteps().join(",");')();
+  if(f5!=='1,2,3,5'){console.log('FAIL: 🛠DEVの倍速に×5が無い ['+f5+']');process.exit(1);}
+  console.log('⏩🛠DEVの倍速: ×1→×2→×3→×5→×1 OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
  }finally{

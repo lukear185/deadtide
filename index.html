@@ -22542,9 +22542,14 @@ $('bt-rothide').onclick=()=>$('rotatehint').classList.add('off');
    ⚠**通信対戦では出さない**(自分だけ速く回すと盤面が食い違う)=出すのは `ffOK()` が決める。
    ⚠**倒れた後の観戦だけは今までどおり ×8 まで**(早く終わらせたいだけの場面なので刻みが違う)。
    ⚠中身は「1コマの中で gameStep を倍数だけ回す」=**絵は1回**なので、増えるのは中の計算だけ。 */
+/* 🛠⭐(188)**テストモード(?dev=1)だけ ×5 を足す**(2026-08-06ユーザー指示
+   「テストモードに5倍速追加して」)=バランスの確認を実機でやるので、1試合を短くするため。
+   ⚠**本番では出さない**=×5は絵が飛んで手触りが確かめられない(テスト専用の速さ)。 */
 const ffSpec=()=>!!(G&&!G.pve&&G.players&&G.players[G.myIdx]&&G.players[G.myIdx].dead);
-$('ffbtn').onclick=()=>{if(!G)return;const SP=ffSpec()?[1,2,8]:[1,2,3];
- G.spd=SP[(SP.indexOf(G.spd||1)+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
+const ffSteps=()=>ffSpec()?[1,2,8]:(DEV?[1,2,3,5]:[1,2,3]);
+$('ffbtn').onclick=()=>{if(!G)return;const SP=ffSteps();
+ const k=SP.indexOf(G.spd||1);/* ⚠今の値が並びに無い時(モードが変わった)は先頭へ戻す */
+ G.spd=SP[(k<0?0:k+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
 /* ⏩この試合で倍速を出してよいか。⚠**ソロ(PvE)だけ**=協力/対戦はホストと足並みが崩れる。
    ⚠🎓チュートリアルでは出さない(段取りが崩れる)。⚠**見るのは `G.tut` ではなく `TUT`**=
      🧪検証場も戦績を汚さないために G.tut を立てているので、それだと検証場でも消える。 */
