@@ -63,6 +63,8 @@ const STEPS=[
  {f:'tool_nums.js',   n:'数字の腐り止め',   args:['--check']},
  /* 🩺**健康診断**(同上)=空catch・ノートのリンク切れ/迷子・道具の棚卸しが**増えたら**落ちる。
     ⚠**0件を目標にしない**=基準(health_baseline.json)より増えた時だけ。 */
+ /* 🎨**色の物差し**(2026-08-06(189)に追加)=読めない組み合わせが増えたら落ちる。⚠0件は目標にしない */
+ {f:'tool_look.js',   n:'色の物差し',       args:['--check']},
  {f:'tool_health.js', n:'健康診断',         args:['--check']},
  {f:'test_headless.js',n:'実走(PvE/協力/対戦)',heavy:true,flake:'★4'},
 ];

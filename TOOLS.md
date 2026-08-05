@@ -42,9 +42,14 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 | ⭐`test_feel.js` | 👊**手応えの計測**=揺れ/止まる時間/演出の数を強い順に。⚠合否は出さない | Claude |
 | ⭐`test_save.js` | 🛡**セーブ移行の門番**=昔のセーブの標本(save_fixtures/)を毎回全通し | Claude |
 | ⭐`tool_snd.js` | 🔊**音の物差し**=check(重心/平坦さ/長さ/割れ) / sheet(スペクトログラム1枚) / stock(在庫) | Claude |
+| ⭐`tool_look.js` | 🎨**色の物差し**=コントラスト/近すぎる色/色覚多様性で衝突する組(WCAG2は自前実装) | Claude |
+| ⭐`tool_tex.js` | ✨**粒の絵を作る**(輪・線状火花・十字・星・破片…8種)。依存ゼロでPNG生成 | Claude |
 | ⭐`tool_nums.js` | 📌**数字の腐り止め**=実装から表を作り直す+文章の数字を`@claim`で検算 | Claude |
 | `tool_face.js` `tool_face_embed.js` | 🎨英雄の顔画像の規格化と埋め込み | Claude |
 | `tool_brand.js` `tool_devicon.js` | 🎨ロゴ・アイコンの生成 | Claude |
+| `tool_bench.js --slow[=N]` | 🐢**遅い端末を真似て測る**(同じ条件どうしの比較用) | Claude |
+| `test_shot.js --help` | ❓オプション一覧(名前の衝突つき) | Claude |
+| 🚪DEVタイトルの入口 | ?dev/?perf/?sfx/?edit/?v2 をURL直打ちせず切り替える | 人 |
 | `DT_SKIP_RUN=1` / `DT_SHUFFLE=n` | ⏱実走だけ飛ばす(40秒→4秒) / 🔀検査の順番をシャッフルして順序依存を暴く | Claude |
 
 ### 目についた穴(この文書の出発点)

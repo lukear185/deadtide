@@ -4178,7 +4178,63 @@ checkDesignNums();
      (ownN が後ろの検査を壊す / twGrantAll を各所に足す羽目になった、が実例)
    ⭐使い方= DT_SHUFFLE=1 node test_headless.js  (種を変えるなら DT_SHUFFLE=7 のように数字で)
    ⚠**既定は今までどおりの順**=順番を毎回変えると、落ちた時に再現できない。 */
-const CHECKS=[
+/* ---- 🎲⭐⭐(189)**不変条件の総当たり**(ユーザー指示で作った道具の1つ) ----
+   ⚠⚠**作った理由**=ここまでの検査は全部「決まった手順を1本」流す物。
+     **人はもっとでたらめに触る**(押せる物を手当たり次第・順番もばらばら)。
+     ⭐**乱数で操作の列を作って、どんな順でも壊れない条件だけを見張る**。
+   ⚠**見るのは「絶対に破れてはいけない事」だけ**=バランスや手触りは対象外。
+     ①⚙️🔩🧬💎が負にならない ②コアが上限を超えない ③出撃コストが上限を超えない
+     ④持ち物が消えない ⑤中断→再開で食い違わない
+   ⚠**種を固定する**=落ちた時に再現できないと直せない。 */
+function checkInvariants(){
+ const F=(m,seed)=>{console.log('FAIL: 不変条件が破れた(種'+seed+') '+m);process.exit(1);};
+ let steps=0;
+ for(let seed=1;seed<=6;seed++){
+  /* ⚠この検査の中だけ乱数を種で固定する(終わったら必ず戻す) */
+  const realR=Math.random;let x=seed*7919+13;
+  Math.random=()=>{x=(x*1103515245+12345)%2147483648;return x/2147483648;};
+  try{
+   ownN(8,12);META.pts=50000;META.team=null;
+   META.stg=0;setDiff=(seed%3)+1;startSolo();frames(12,.016);
+   const me=G.players[0];
+   for(let k=0;k<220;k++){
+    steps++;
+    const r=Math.random();
+    try{
+     if(r<.16){const si=AI_ORDER[ri(0,AI_ORDER.length-1)];const ti=ri(0,T_PLAY-1);
+      me.scrap+=ri(0,900);buildTower(me,si,ti);}
+     else if(r<.24){const si=AI_ORDER[ri(0,AI_ORDER.length-1)];if(me.towers[si])sellTower(me,si);}
+     else if(r<.34){const si=AI_ORDER[ri(0,AI_ORDER.length-1)];const tw=me.towers[si];
+      if(tw){const st=twStats(tw.ti);me.up=(me.up||0)+ri(0,300);upTower(me,si,st[ri(0,st.length-1)]);}}
+     else if(r<.50){const T9=me.team||[];if(T9.length)deployUnit(me,T9[ri(0,T9.length-1)]);}
+     else if(r<.58){me.scrap+=ri(0,2000);me.up=(me.up||0)+ri(0,300);
+      doPurchase(me,['unlock','uun','atk','repair','stkup','uup','slot','ecoslot'][ri(0,7)],{si:AI_ORDER[ri(0,5)]});}
+     else if(r<.64){if(me.charge>=1&&me.zombies.length)airstrike(me,me.zombies[0].px,me.zombies[0].py,G.wave);}
+     else if(r<.70){me.flagD=clamp(rnd(0,PLEN),0,PLEN);}
+     else if(r<.74){saveRun();loadRun();}
+     else frames(ri(1,6),.033);
+    }catch(e){F('操作で例外: '+e.message,seed);}
+    /* ---- 破れてはいけない条件 ---- */
+    if(!(me.scrap>=-0.001))F('⚙️が負になった '+me.scrap,seed);
+    if(!((me.up||0)>=-0.001))F('🔩が負になった '+me.up,seed);
+    if(!(META.pts>=0))F('🧬が負になった '+META.pts,seed);
+    if(!((META.gem||0)>=0))F('💎が負になった '+META.gem,seed);
+    if(me.core>me.coreMax+0.001)F('コアが上限を超えた '+me.core+'/'+me.coreMax,seed);
+    if(typeof unitsWt==='function'&&unitsWt(me.units)>MAXU+0.001)F('出撃コストが上限を超えた '+unitsWt(me.units)+'/'+MAXU,seed);
+    if((META.ot||[]).length<8)F('買った塔が消えた '+(META.ot||[]).length,seed);
+    if(!teamIdx().length)F('編成が空になった(出撃できない)',seed);
+    /* ⚠**建っている塔は必ず「持っていて⚙️で開けた物」**=飛び飛びの持ち物で崩れやすい所 */
+    for(let si=0;si<SLOTS.length;si++){const tw=me.towers[si];
+     if(tw&&TOWERS[tw.ti].type!=='sup'&&!TOWERS[tw.ti].grd&&!twReady(me,tw.ti))
+      F('持っていない塔が建っている '+TOWERS[tw.ti].n,seed);}
+   }
+   backTitle();
+  }finally{Math.random=realR;}
+ }
+ ownN(null,0);
+ console.log('🎲不変条件: 6通り×220手('+steps+'手)のでたらめな操作で、資源が負にならない/コア上限/出撃コスト上限/持ち物が消えない/持っていない塔が建たない OK');
+}
+const CHECKS=[['checkInvariants',checkInvariants],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
 ['checkUnitAf',checkUnitAf],

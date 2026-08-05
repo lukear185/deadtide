@@ -1349,6 +1349,9 @@ body.perf #perfbox{display:block}
     <!-- 🎬区切りの幕: ⚠DEV専用。**②のナイトメアを1回落とすまで出ない**ので、
          これが無いと実機で一度も見られない(「珍しい物には ?dev=1 の底上げを足す」) -->
     <button class="btn sm" id="bt-edtest" style="display:none">🎬 区切りの幕</button>
+    <!-- 🚪(189)**開発モードの入口**: ⚠DEV専用。URLを打ち直さずに ?sfx=1 / ?edit=1 / ?perf=1 へ行く。
+         ⚠⚠**それまでURL直打ちしか無かった**=`?dev=1` の付け忘れで「2面が開かない」を実際にやった -->
+    <div id="devdoor" style="display:none;margin-top:6px;text-align:center"></div>
     <button class="btn" id="bt-opt">⚙ オプション</button>
     <p class="note" id="pwahint" style="display:none;text-align:center;margin-top:8px;max-width:340px">📲 ブラウザの共有メニュー→<b>「ホーム画面に追加」</b>すると、アプリみたいに全画面で遊べる!</p>
   </div>
@@ -32905,6 +32908,22 @@ try{
  const eb=$('bt-edtest');
  if(eb){if(DEV)eb.style.display='block';
   eb.onclick=()=>{try{openEnding();}catch(e){toast('幕でエラー: '+e.message,true);}};}
+ /* 🚪⭐(189)**開発モードの入口を画面に出す**(ユーザー指示で作った道具の1つ)。
+    ⚠⚠**それまでURL直打ちしか無かった**=`?dev=1` の付け忘れで実機テストが1回無駄になった。
+    ⚠**いま居るモードには印を付ける**=どのモードで見ているか分からなくなるのが一番困る。
+    ⚠**新しい `?xxx=1` を足したらここにも1行**。 */
+ const dd=$('devdoor');
+ if(dd&&DEV){
+  const cur=(location.search||'');
+  const M=[['dev=1','🛠DEV'],['dev=1&perf=1','🔥塗り'],['sfx=1','🔊音'],['edit=1','🛠マス'],['dev=1&v2=1','🖍輪郭']];
+  dd.innerHTML=M.map(m=>{
+   const on=cur.indexOf(m[0].split('&')[0])>=0&&(m[0].indexOf('perf')<0||cur.indexOf('perf')>=0);
+   return '<button class="btn sm'+(on?' sel':'')+'" data-door="'+m[0]+'" style="margin:2px">'+m[1]+'</button>';}).join('')
+   +'<div class="note" style="font-size:11px;margin-top:2px">🚪開発モードの入口(⚠この行はDEVでしか出ない)</div>';
+  dd.style.display='block';
+  dd.querySelectorAll('[data-door]').forEach(b=>{b.onclick=()=>{
+   try{location.search='?'+b.dataset.door;}catch(e){toast('切り替えられなかった: '+e.message,true);}};});
+ }
 }catch(e){}
 try{applyFrames();}catch(e){}/* ボタン/パネルの枠(素材が無ければ従来の見た目) */
 try{for(const k in ICO)icoImgFor(k);for(const k in ICN)icoImgFor(k);}catch(e){}/* canvas用に先読みしておく */

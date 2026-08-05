@@ -8,6 +8,33 @@
    ・一時ファイルはOSのテンポラリに作るのでリポジトリは汚れない
    ・Chromeが無い場合はEdgeを使う */
 const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process');
+/* ❓⭐(189)**--help**(ユーザー指示で作った道具の1つ)。
+   ⚠⚠**作った理由**=オプションが100か所以上あり、**名前の衝突**(`w+数字` が時間指定に食われる等)を
+     覚えていないと使えなかった。⚠**表はここ1か所に持つ**=足したらここにも1行。 */
+if(process.argv.includes('--help')||process.argv.includes('-h')){
+ const T=[
+  ['(なし)','タイトル画面'],['dev','🛠DEVモード(全開放の見た目)'],['edit','🛠マス編集モード'],
+  ['perf','🔥塗りの物差しを出す(?perf=1)。dev と混ぜるなら "dev+perf"'],
+  ['pc','PC用CSS(既定はスマホ用を強制適用)'],
+  ['st2','ステージ2(沈んだ港)'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
+  ['setup','出撃準備'],['lab[=タブ]','🔬研究所(twup/unup/rec…)'],['load','🎒編成'],['home','🏠ホーム'],
+  ['map','🗺エリアマップ'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
+  ['iv=<波>','作戦タイム'],['grid=tw|tg|u|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
+  ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
+  ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
+  ['ed+edt=<秒>','🎬区切りの幕'],['arena=…','🧪検証場'],['title+bus','🚌ゾンビバス'],
+ ];
+ console.log('📷 test_shot.js — 実画面のスクリーンショット');
+ console.log('  使い方: node test_shot.js <出力png> <幅> <高さ> "<オプション>"');
+ console.log('  例:     node test_shot.js out.png 852 393 "dev+lab"');
+ console.log('─'.repeat(66));
+ for(const [k,v] of T)console.log('  '+k.padEnd(22)+v);
+ console.log('─'.repeat(66));
+ console.log('⚠**オプションは "+" で繋ぐ**(例 "dev+perf+st2")');
+ console.log('⚠⚠**名前の衝突に注意**=`w` で始まる指定は時間(w9000)として読まれる');
+ console.log('⭐**全種を1枚に並べる**のは別の道具: node tool_sheet.js out.png tw|un|zom');
+ process.exit(0);
+}
 const OUT=path.resolve(process.argv[2]||'shot.png');
 const W=+(process.argv[3]||852),H=+(process.argv[4]||393);
 const OPT=(process.argv[5]||'');

@@ -136,7 +136,22 @@ document.title=R.join(" || ");
 `;
 const S=UI?UIS:BOARD;
 fs.writeFileSync(OUT,html.replace('</body>','<scr'+'ipt>(function(){try{'+S+'}catch(e){document.title="ERR "+e.message;}})();</scr'+'ipt></body>'),'utf-8');
-console.log('⏱ 測っています('+(UI?'画面と必殺':'盤面')+'・1〜3分)… 対象='+path.basename(TARGET));
+/* 🐢⭐(189)**遅い端末を真似る**(`--slow` / `--slow=6`)=ユーザー指示で作った定点観測。
+   ⚠⚠**作った理由**=測っているのは開発機の速いCPU。**実機(スマホ)で熱い/重い**と言われた時に、
+     手元では差が出ないことがある。⭐CPUを N倍遅くして測れば、**同じ条件で毎回比べられる**。
+   ⚠**絶対値は実機と一致しない**(あくまで同じ条件どうしの比較用)。
+   ⚠**倍率を変えたら前の数字と比べない**=`--slow=4` と `--slow=6` の数字は別物。 */
+const SLOWM=/--slow(?:=(\d+))?/.exec(process.argv.join(' '));
+const SLOW=SLOWM?(+SLOWM[1]||4):0;
+console.log('⏱ 測っています('+(UI?'画面と必殺':'盤面')+(SLOW?('・🐢CPUを'+SLOW+'倍遅く'):'')+'・1〜3分)… 対象='+path.basename(TARGET));
+/* ⚠**CPUを遅くする口はヘッドレスの引数には無い**(CDPの Emulation.setCPUThrottlingRate)。
+   ⭐依存を増やさずに同じ事をするため、**測る前に空回りを挟んで1コマの予算を削る**。
+   ⚠これは「同じ条件で比べる」ためのおもりであって、実機の再現ではない。 */
+if(SLOW)fs.writeFileSync(OUT,fs.readFileSync(OUT,'utf-8').replace('</body>',
+ '<scr'+'ipt>(function(){var K='+(SLOW-1)+';var rq=window.requestAnimationFrame;'
+ +'window.requestAnimationFrame=function(f){return rq(function(t){'
+ +'var t0=performance.now();var budget=16.7*K;while(performance.now()-t0<budget){}'
+ +'f(t);});};})();</scr'+'ipt></body>'),'utf-8');
 const r=cp.execSync('"'+BR+'" --headless --disable-gpu --window-size=852,393 --dump-dom "file:///'+OUT.replace(/\\/g,'/')+'"',{maxBuffer:1e9}).toString();
 const m=/<title>([^<]*)<\/title>/.exec(r);
 if(!m){console.log('(結果が取れなかった)');process.exit(1);}
