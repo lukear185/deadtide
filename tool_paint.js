@@ -29,14 +29,20 @@ const OUT=path.join(require('os').tmpdir(),'dt_paint.html');
 const html=fs.readFileSync(TARGET,'utf-8');
 
 /* ⚠**上限**(1コマあたり)。⚠数字を動かす時は「なぜ増えてよいのか」を必ず書くこと。
-   📌グラデ22枚=(173)で見つけた「塔1台につき1枚」の状態。そこへ戻らないための柵。 */
-const LIM={grad:24,area:9.0,garea:0.6,comp:10};
+   📌グラデ22枚=(173)で見つけた「塔1台につき1枚」の状態。そこへ戻らないための柵。
+   ⭐⭐(185)**グラデは使い回すようにしたので実測0枚**になった=柵を 24→**4** まで下げた
+     (1枚でも「毎コマ作る所」が戻ったらすぐ落ちる。作るのは最初の1コマだけなので平均は0.x)。
+   ⚠(185)**合成の数え方を直した**=それまで `save→lighter→restore` の restore を数え落としていて
+     **本当より少なく出ていた**(加算で塗った面積は逆に多く出ていた)。柵はいまの実測に合わせ直した。 */
+const LIM={grad:4,area:9.0,garea:0.6,comp:8};
 /* ⭐**合成(globalCompositeOperation の切り替え回数)**も見る=(177)で炎の塔だけ **20回/コマ**あった。
    ⚠GPU側で描画のまとめが毎回切れるので、**時間には出ないのに端末が熱くなる**。
    ⚠潰し方=**同じ合成でまとめて描く**(溜めておいて最後に1回だけ lighter で吐く)。
    ⚠⚠**溜めた物を吐く所は、必ず台数のループの"外"**=中に置くと台数ぶん走って1つも減らない。 */
-/* 📌**いまの実測(2026-08-05(175)の手当て後)**=塗り 6.9〜7.3倍 / 枚数 9〜22 / **グ塗り 0.07〜0.19倍**。
-   内訳は **地面 3.2 / ビネット 2.0(=焼いた絵を貼るだけ) / 演出 1.0 / 塔 0.6〜0.8 / 灯り 0.06〜0.2**。
+/* 📌**いまの実測(2026-08-05(185)の手当て後)**=塗り 6.6〜7.6倍 / 枚数 **0.0** / グ塗り 0.06〜0.28 /
+   合成 **2〜5回**。内訳は **地面 3.2 / ビネット 2.0(=焼いた絵を貼るだけ) / 演出 1.0 / 塔 0.3〜0.9 / 灯り 0.06〜0.28**。
+   📌**(185)で潰した3つ**=①ラジアルグラデを使い回す(46枚→0)②撃たれた敵の白光りをまとめて1回
+   ③倒れた死体の白光りをまとめて1回(要塞砲12台+ボスで**合成 11.3→5.5**)。
    ⭐**グ塗りが本命**=(175)でビネットを焼き込みにして **2.0倍ぶんのグラデ塗りが丸ごと消えた**。
    ⚠**上限は「いまより悪くなったら落ちる」ための柵**。減らせたら**必ず柵も下げる**こと。 */
 
@@ -46,6 +52,14 @@ var SCN=[];
 TOWS.forEach(function(id){SCN.push({n:"塔22台 "+id,mix:[id]});});
 SCN.push({n:"兵科20体+塔22",mix:["rifle"],units:20});
 SCN.push({n:"英雄+塔22",mix:["hNox"],hero:"hNox",tw:"rifle"});
+/* 🔥⭐⭐(185)**「12枠MAX+ボスを湧かせ続ける」場面を足した**(ユーザー実機
+   「重テスラで熱さテストしたら(ボス出しまくって)熱くなった すぐに」)。
+   ⚠⚠**上の普通の場面では出ない**=難易度3の雑魚では**死体も被弾も桁が違う**ので、
+     グラデ46枚・合成11回といった山が**丸ごと素通り**していた(実際に素通りしていた)。
+   ⭐**🧪検証場の🔥熱さタブと同じ形**にする=実機で熱いと言われた場面がそのまま検査になる。
+   ⚠**全部の塔でやると倍の時間が掛かる**ので、火力と演出が濃い塔だけに絞る。 */
+["fort","coil","gat","flame","plasma","tesla","gren","arty"].forEach(function(id){
+ SCN.push({n:"🔥12枠MAX+ボス "+id,heat:id});});
 var R=[];
 function snap(){var o={};for(var k in PF.cur)o[k]=PF.cur[k];return o;}
 for(var si=0;si<SCN.length;si++){
@@ -53,21 +67,30 @@ for(var si=0;si<SCN.length;si++){
  try{
   FXLV=2;META.tut=1;META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg=1;
   META.hero={};META.hsel="";if(S9.hero){META.hero[S9.hero]=1;META.hsel=S9.hero;}
-  setDiff=3;showIntro=function(){};startSolo();
-  var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<60)introNext();
-  var me=G.players[0],built=0,mix=S9.tw?[S9.tw]:S9.mix;
-  me.scrap=9999999;me.up=99999;
-  for(var i=0;i<AI_ORDER.length;i++){var s2=AI_ORDER[i];if(me.towers[s2])continue;
-   var id=mix[built%mix.length],ti=TOWERS.findIndex(function(q){return q.id===id;});
-   if(ti<0)continue;
-   var pu=me.unlocked;me.unlocked=ti+1;try{buildTower(me,s2,ti);built++;}catch(e){}me.unlocked=pu;
-   var tw=me.towers[s2];if(tw){twStats(tw.ti).forEach(function(x){tw.us[x]=USTAT_MAX;});}}
-  if(S9.hero){me.hUi=hUiOf(S9.hero);me.hOut=0;try{heroDeploy(me);}catch(e){}me.hCg=1;}
-  if(S9.units)for(var u9=0;u9<S9.units;u9++){try{me.ucd=[];deployUnit(me,me.team[u9%me.team.length]);}catch(e){}}
+  var me,built=0,mix=null;
+  if(S9.heat){
+   /* 🔥(185)🧪検証場の🔥熱さタブと同じ形=12枠にMAXで建てて、ボスを湧かせ続ける */
+   startTst();me=G.players[0];
+   var th=TOWERS.findIndex(function(q){return q.id===S9.heat;});
+   tstFill(th);TSTKEEP="b";
+  }else{
+   setDiff=3;showIntro=function(){};startSolo();
+   var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<60)introNext();
+   me=G.players[0];mix=S9.tw?[S9.tw]:S9.mix;
+   me.scrap=9999999;me.up=99999;
+   for(var i=0;i<AI_ORDER.length;i++){var s2=AI_ORDER[i];if(me.towers[s2])continue;
+    var id=mix[built%mix.length],ti=TOWERS.findIndex(function(q){return q.id===id;});
+    if(ti<0)continue;
+    var pu=me.unlocked;me.unlocked=ti+1;try{buildTower(me,s2,ti);built++;}catch(e){}me.unlocked=pu;
+    var tw=me.towers[s2];if(tw){twStats(tw.ti).forEach(function(x){tw.us[x]=USTAT_MAX;});}}
+   if(S9.hero){me.hUi=hUiOf(S9.hero);me.hOut=0;try{heroDeploy(me);}catch(e){}me.hCg=1;}
+   if(S9.units)for(var u9=0;u9<S9.units;u9++){try{me.ucd=[];deployUnit(me,me.team[u9%me.team.length]);}catch(e){}}
+  }
   /* 数える。⚠**最初の数コマは焼き込みが走る**ので捨てる */
   var A={area:0,garea:0,aarea:0,grad:0,comp:0,fill:0,stroke:0,img:0,filt:0,shad:0},N=0,TG={};
   for(var k=0;k<80;k++){
-   while(me.zombies.filter(function(z){return !z.dead;}).length<45){
+   /* ⚠**🔥の場面は敵を自分で足さない**=検証場の側が湧かせ続けている(ボスは6体まで) */
+   if(!S9.heat)while(me.zombies.filter(function(z){return !z.dead;}).length<45){
     me.zombies.push(mkZ(zSpec(ri(0,5),18,20),PLEN*(0.22+Math.random()*0.55)));}
    me.core=me.coreMax;if(S9.hero)me.hCg=1;
    gameStep(0.033);
