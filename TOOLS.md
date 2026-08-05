@@ -39,6 +39,7 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 | ⭐`tool_health.js` | 🩺**健康診断**=空catch/ノートのリンク切れ・迷子・行数/容量の内訳/道具の棚卸し | Claude |
 | ⭐`tool_sheet.js` | 🖼**コンタクトシート**=全種を1枚の格子に(tw/tg/un/uv/hero/zom)。`--sil`でシルエット | Claude |
 | ⭐`tool_tune.js` | 🎚**つまみ**=一覧/雛形/?tune=のURL作り/**index.htmlへ書き戻す** | Claude+人 |
+| ⭐`test_feel.js` | 👊**手応えの計測**=揺れ/止まる時間/演出の数を強い順に。⚠合否は出さない | Claude |
 | ⭐`tool_nums.js` | 📌**数字の腐り止め**=実装から表を作り直す+文章の数字を`@claim`で検算 | Claude |
 | `tool_face.js` `tool_face_embed.js` | 🎨英雄の顔画像の規格化と埋め込み | Claude |
 | `tool_brand.js` `tool_devicon.js` | 🎨ロゴ・アイコンの生成 | Claude |
