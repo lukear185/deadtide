@@ -37,6 +37,7 @@ const js=html.split('<script>')[1].split('</'+'script>')[0];
    「どう見ても正しいコメント行で SyntaxError」になる(2026-07-26に実際に踏んだ)。
    コード片を引用したい時は「」で囲むか、記号なしで書くこと。 */
 const body=`
+const SKIP_RUN=${process.env.DT_SKIP_RUN?1:0};
 ;console.log('LOAD OK. PLEN='+Math.round(PLEN)+' slots='+SLOTS.length+' units='+UNITS.length+' STAGE_W='+STAGE_W);
 /* 🎓⭐(187)**研究所の持ち物は「id の集合」になった**(進行の作り替えB)ので、
    検査から「先頭からN個持っている」状態を作るための道具。⚠**META.nt/nu に直に代入しない**
@@ -1426,7 +1427,11 @@ function checkProgress(){
     ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。
     D5 の末尾(6)に置いてあるので、d+1 で見ると「ナイトメアの次がボーナス」という別物を検査してしまう。 */
  for(let oi=0;oi<D_ORD.length;oi++){const d=D_ORD[oi];
+  /* ⚠⚠(189)**🚌の「今日の残り回数」も戻す**=戻さないと、前に流れた検査が5回使い切っていた時に
+     diffOK が false を返して「古参をクリアしても🚌が開かない」と嘘の FAIL が出る。
+     🔀**検査の順番シャッフル(DT_SHUFFLE=5)が見つけた**=前の検査の後始末に寄りかかっていた。 */
   META.sc=[D5.map(()=>0),D5.map(()=>0)];META.sclr=[];META.clr=[0,0,0,0,0,0];META.pts=0;META.bcl=[];
+  META.bday=[];META.bnum=[];
   META.stg=0;setDiff=d;startSolo();
   G.winner=0;G.over=true;G.wave=D5[d].w;
   awardMeta();
@@ -4129,53 +4134,117 @@ function checkGain(){
  if(s!=='1,2,3'){console.log('FAIL: 本番の倍速が ×1→×2→×3 になっていない ['+s+']');process.exit(1);}
  console.log('⏩本番の倍速: ×1→×2→×3(×5はテストモードだけ) OK');
 })();
-twGrantAll();checkUnlock();
-twGrantAll();checkGain();
-twGrantAll();checkUnitAf();
-twGrantAll();checkStrikes();
-twGrantAll();checkSup();
-twGrantAll();checkTeam();
-twGrantAll();checkGacha();
-twGrantAll();checkHero();
-twGrantAll();checkUltMot();
-twGrantAll();checkBonus();
-twGrantAll();checkRice();
-twGrantAll();checkCam();
-twGrantAll();checkBnsFlow();
-twGrantAll();checkTrain();
-twGrantAll();checkRpg();
-twGrantAll();checkProgress();
-twGrantAll();checkMetaReset();
-twGrantAll();checkEvo();
-twGrantAll();checkFinRamp();
-twGrantAll();checkHook();
-twGrantAll();checkBite();
-twGrantAll();checkFx2();
-twGrantAll();checkGachaFx();
-twGrantAll();checkTwFx();
-twGrantAll();checkZLook();
-twGrantAll();checkBus();
-twGrantAll();checkHeroFx();
-twGrantAll();checkPixel();
-twGrantAll();checkULook();
-twGrantAll();checkHeroLook();
-twGrantAll();checkTwLook();
-twGrantAll();checkPreview();
-twGrantAll();checkSfxGain();
-twGrantAll();checkTut();
-twGrantAll();checkTutLock();
-twGrantAll();checkResume();
-twGrantAll();checkResumeFarm();
-twGrantAll();checkTwNew();
-twGrantAll();checkPerUp();
-twGrantAll();checkLabSteps();
-twGrantAll();checkStart0();checkLabMul();checkUChg();checkAtkMotion();checkSlotWt();checkTideKind();
-twGrantAll();checkCryo();
-twGrantAll();checkBeam();
-twGrantAll();checkCoil();
-twGrantAll();checkEarly();
-twGrantAll();checkFinalBoss();
-twGrantAll();checkZPools();
+/* ---- 📐⭐⭐⭐(189)**ユーザーが決めた数字を、そのままベタ書きで突き合わせる** ----
+   ⚠⚠**期待値を実装と同じ式から作ってはいけない**(NOTES_数値の既出の掟)=
+     実装が壊れると期待値も一緒に壊れて、検査は永久に通る。
+   🧨**この検査は tool_mutate.js(壊して確かめる検査)が見つけた穴から生まれた**=
+     ARMOR_CUT を .45→.72 / FIRE_VS_ARMOR を 1.9→3.04 / TEAM_N を 10→16 にしても
+     **50本の検査が1本も落ちなかった**。
+   ⚠**ここに書くのは「チャットで決めた数字」だけ**。実装の都合で動く数値を書くと、
+     直すたびに2か所書き換える羽目になって形骸化する。
+   ⭐**数字を変える時は、決定した回の記録(CHANGELOG/DESIGN)と一緒にここも直す**。 */
+function checkDesignNums(){
+ const want=[
+  ['BASE_T(初期解放のタワー)',BASE_T,2],
+  ['BASE_U(初期解放の兵科)',BASE_U,2],
+  ['TEAM_N(連れて行く兵科)',TEAM_N,10],
+  ['MAXU(出撃コストの上限)',MAXU,20],
+  ['LINE_MAX(研究所の段)',LINE_MAX,20],
+  ['ARMOR_CUT(硬い敵に通る割合)',ARMOR_CUT,.45],
+  ['FIRE_VS_ARMOR(🔥火炎×🛡装甲)',FIRE_VS_ARMOR,1.9],
+  ['ELEC_VS_SCALE(⚡電撃×🐟鱗)',ELEC_VS_SCALE,1.9],
+  ['RPT_X(🧬配布の全体倍率)',RPT_X,1.2],
+  ['STAGES[1].hpM(②沈んだ港の重さ)',STAGES[1].hpM,2],
+  ['TR_MAX(鍛錬Lvの上限)',TR_MAX,50],
+  ['BNS_TIME(🚌道中の締め切り)',BNS_TIME,75],
+  ['BNS_DAY_N(🚌1日の回数)',BNS_DAY_N,5],
+  ['META_RESET(セーブの版)',META_RESET,3],
+  ['D5[4].hp(悪夢の体力)',D5[4].hp,1.26],
+  ['D5[5].hp(🌑NMの体力)',D5[5].hp,1.42],
+  ['D5[4].cnt(悪夢の物量)',D5[4].cnt,1.14],
+  ['D5[5].cnt(🌑NMの物量)',D5[5].cnt,1.22],
+ ];
+ for(const [n,got,exp] of want){
+  if(Math.abs((got==null?NaN:got)-exp)>1e-9){
+   console.log('FAIL: 決めた数字と実装が食い違う '+n+' 実装'+got+'(決定は'+exp+')');
+   console.log('      ⚠わざと変えたのなら、決定した回の記録と一緒にこの表も直すこと');
+   process.exit(1);}
+ }
+ console.log('📐決めた数字: '+want.length+'件すべて実装と一致(初期解放2種ずつ/編成10体/出撃コスト20/相性45%と×1.9/🧬×1.2 ほか) OK');
+}
+checkDesignNums();
+/* 🔀⭐⭐(189)**検査の順番シャッフル**(ユーザー指示で作った道具の1つ)。
+   ⚠⚠**作った理由**=このセッションで3回踏んだ「前の検査が残した状態に寄りかかっていた」を暴くため。
+     (ownN が後ろの検査を壊す / twGrantAll を各所に足す羽目になった、が実例)
+   ⭐使い方= DT_SHUFFLE=1 node test_headless.js  (種を変えるなら DT_SHUFFLE=7 のように数字で)
+   ⚠**既定は今までどおりの順**=順番を毎回変えると、落ちた時に再現できない。 */
+const CHECKS=[
+['checkUnlock',checkUnlock],
+['checkGain',checkGain],
+['checkUnitAf',checkUnitAf],
+['checkStrikes',checkStrikes],
+['checkSup',checkSup],
+['checkTeam',checkTeam],
+['checkGacha',checkGacha],
+['checkHero',checkHero],
+['checkUltMot',checkUltMot],
+['checkBonus',checkBonus],
+['checkRice',checkRice],
+['checkCam',checkCam],
+['checkBnsFlow',checkBnsFlow],
+['checkTrain',checkTrain],
+['checkRpg',checkRpg],
+['checkProgress',checkProgress],
+['checkMetaReset',checkMetaReset],
+['checkEvo',checkEvo],
+['checkFinRamp',checkFinRamp],
+['checkHook',checkHook],
+['checkBite',checkBite],
+['checkFx2',checkFx2],
+['checkGachaFx',checkGachaFx],
+['checkTwFx',checkTwFx],
+['checkZLook',checkZLook],
+['checkBus',checkBus],
+['checkHeroFx',checkHeroFx],
+['checkPixel',checkPixel],
+['checkULook',checkULook],
+['checkHeroLook',checkHeroLook],
+['checkTwLook',checkTwLook],
+['checkPreview',checkPreview],
+['checkSfxGain',checkSfxGain],
+['checkTut',checkTut],
+['checkTutLock',checkTutLock],
+['checkResume',checkResume],
+['checkResumeFarm',checkResumeFarm],
+['checkTwNew',checkTwNew],
+['checkPerUp',checkPerUp],
+['checkLabSteps',checkLabSteps],
+['checkStart0',checkStart0],
+['checkLabMul',checkLabMul],
+['checkUChg',checkUChg],
+['checkAtkMotion',checkAtkMotion],
+['checkSlotWt',checkSlotWt],
+['checkTideKind',checkTideKind],
+['checkCryo',checkCryo],
+['checkBeam',checkBeam],
+['checkCoil',checkCoil],
+['checkEarly',checkEarly],
+['checkFinalBoss',checkFinalBoss],
+['checkZPools',checkZPools]
+];
+{const sd=+(process.env.DT_SHUFFLE||0);
+ let L=CHECKS.slice();
+ if(sd){let x=sd*9301+49297;const rnd=()=>((x=(x*9301+49297)%233280)/233280);
+  for(let i=L.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const t=L[i];L[i]=L[j];L[j]=t;}
+  console.log('🔀 検査の順番をシャッフルした(種='+sd+')');}
+ for(const [n,f] of L){twGrantAll();
+  try{f();}catch(e){console.log('FAIL: '+n+' が例外で落ちた: '+e.message);
+   console.log((e.stack||'').split(String.fromCharCode(10)).slice(0,3).join(' | '));process.exit(1);}}
+}
+/* ⏱⭐(189)**実走(数分ぶんの試合)だけを飛ばす口**= DT_SKIP_RUN=1 。
+   ⚠⚠**check*() は全部そのまま流す**（飛ばすのは時間を食う実走4本だけ）。
+   ⭐壊して確かめる検査(tool_mutate.js)が何十回も流すために要る。 */
+if(!SKIP_RUN){
 runStage2();
 runNightmare();
 runPvE(2,'PvE'+D5[2].n+'(素の腕前・W'+D5[2].w+')',false);
@@ -4188,6 +4257,7 @@ if(!won)console.log('INFO: 悪夢は上の行の wave まで(研究所の解放�
 const cw=runCoop('協力3人(古参)');
 if(!cw)console.log('INFO: 協力3人は陥落(良プレイなら勝てるかは実機で確認)');
 runPvP('対戦三つ巴');
+}else console.log('INFO: 実走は飛ばした(DT_SKIP_RUN=1)');
 console.log('ALL TESTS DONE');
 process.exit(0);
 `;
