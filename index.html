@@ -17465,14 +17465,42 @@ function stepP(C,dt){
  }
  C.ps=C.ps.filter(p=>p.t<p.life);
 }
+/* ✨⭐⭐(191)**粒は「色×濃さ」でまとめて1回で塗る**(2026-08-06)。
+   ⚠⚠それまで**1粒につき1回 `fill()`**していて、要塞砲を12台並べた場面で**299回/コマ**あった
+     (塗った面積は 0.02倍=**面積の軸では見えない**。「描く回数」の軸を足して出た)。
+   ⭐**濃さは 1/24 刻みに丸めて升にする**=同じ升の粒は**1本のパス**にまとめて1回で塗れる。
+     丸めのずれは最大 1/24(4%)=粒は小さくて動くので目に見えない。
+   ⚠⚠**まとめてよいのは `dot` だけ**=重なった所の見え方が変わるため。
+     煙(smoke)は大きくて薄く**必ず重なる**ので、まとめると重なりが薄くなって別物になる。
+     染み(stain)も地面で重なる。薬莢(shell)は1つずつ回すので、そもそもまとめられない。
+   ⚠**arc は前の部分パスから線が繋がる**ので、1本にまとめる時は**都度 moveTo を打つ**(既出の掟)。 */
+const PQ9=new Map();
 function drawP(c,C){
  if(!C.ps)return;
+ PQ9.clear();
  for(const p of C.ps){
   const k=1-p.t/p.life;
   if(p.typ==='smoke'){c.globalAlpha=k*.36;c.fillStyle=p.col;c.beginPath();c.arc(p.x,p.y,p.r*(1+(1-k)*2.6),0,7);c.fill();}
-  else if(p.typ==='shell'){c.globalAlpha=Math.min(1,k*2.2);c.save();c.translate(p.x,p.y);c.rotate(p.rot);c.fillStyle=p.col;c.fillRect(-2.4,-1.1,4.8,2.2);c.restore();}
+  /* 🔩(191)**薬莢も升にまとめる**=回すが、**四隅を自分で出せば1本のパスに入る**
+     (`translate`+`rotate`+`fillRect` を1つずつ呼ぶ必要は無い)。⚠要塞砲は1発で6個出す */
+  else if(p.typ==='shell'){const a8=Math.max(1,Math.round(Math.min(1,k*2.2)*24)),ky8='s'+p.col+'|'+a8;
+   let g8=PQ9.get(ky8);if(!g8){g8=[];PQ9.set(ky8,g8);}g8.push(p);}
   else if(p.typ==='stain'){c.globalAlpha=k*.5;c.fillStyle=p.col;c.beginPath();c.ellipse(p.x,p.y,p.r,p.r*.5,0,0,7);c.fill();}
-  else{c.globalAlpha=Math.min(1,k*1.6);c.fillStyle=p.col;c.beginPath();c.arc(p.x,p.y,p.r*(.4+k*.6),0,7);c.fill();}
+  else{const a9=Math.max(1,Math.round(Math.min(1,k*1.6)*24)),ky='d'+p.col+'|'+a9;
+   let g9=PQ9.get(ky);if(!g9){g9=[];PQ9.set(ky,g9);}g9.push(p);}
+ }
+ for(const [ky,g9] of PQ9){
+  const i9=ky.lastIndexOf('|');
+  c.globalAlpha=(+ky.slice(i9+1))/24;c.fillStyle=ky.slice(1,i9);
+  c.beginPath();
+  if(ky.charCodeAt(0)===115){/* 's'=薬莢(回した長方形の四隅を自分で出す) */
+   for(const p of g9){const co=Math.cos(p.rot),si=Math.sin(p.rot),hx=2.4,hy=1.1;
+    c.moveTo(p.x-hx*co+hy*si,p.y-hx*si-hy*co);
+    c.lineTo(p.x+hx*co+hy*si,p.y+hx*si-hy*co);
+    c.lineTo(p.x+hx*co-hy*si,p.y+hx*si+hy*co);
+    c.lineTo(p.x-hx*co-hy*si,p.y-hx*si+hy*co);c.closePath();}
+  }else for(const p of g9){const k=1-p.t/p.life,r=p.r*(.4+k*.6);c.moveTo(p.x+r,p.y);c.arc(p.x,p.y,r,0,7);}
+  c.fill();
  }
  c.globalAlpha=1;
 }
@@ -21171,9 +21199,13 @@ function renderCamp(C,t){
    const R=(24+kk*54)*bb;
    c.save();
    /* ①外の煙(通常合成・火の輪の外に散らす) */
+   /* 💨(191)**5つとも同じ色・同じ濃さ**=1本のパスにまとめて1回で塗る(⚠arcの前に必ず moveTo) */
    c.globalAlpha=Math.max(0,.34-kk*.30);c.fillStyle='#6b6055';
-   for(let i=0;i<5;i++){const a=sd+i*1.87,rd=R*(.95+((i*23)%5)*.13);
-    c.beginPath();c.arc(e.x+Math.cos(a)*rd,e.y+Math.sin(a)*rd*.7,R*(.24+((i*17)%4)*.05),0,7);c.fill();}
+   c.beginPath();
+   for(let i=0;i<5;i++){const a=sd+i*1.87,rd=R*(.95+((i*23)%5)*.13),
+    cx9=e.x+Math.cos(a)*rd,cy9=e.y+Math.sin(a)*rd*.7,r9=R*(.24+((i*17)%4)*.05);
+    c.moveTo(cx9+r9,cy9);c.arc(cx9,cy9,r9,0,7);}
+   c.fill();
    /* ②火の輪。⚠⭐**加算合成(lighter)を主役にしない**。
       見本は黒背景なので加算が映えるが、この game の地面は明るい砂色なので、
       加算すると 砂色+橙 で**白っぽい山吹色**に飛び、泥のような色になる(1回そうなった)。
@@ -21188,21 +21220,29 @@ function renderCamp(C,t){
    /* ④⭐放射の筋(ここが主役)。⚠等間隔・同じ長さで並べると花火の丸になる */
    /* ⚠**太くて白い筋を少数**にすると太陽/星のマークに見える(1回そうなった)。
       見本は**細い筋がたくさん**で、色はほぼ火の色。白は数本だけ。 */
+   /* 🔥⭐(191)**筋は色が3種類しかない**(白熱/黄/橙)=**色ごとに1本のパス**にまとめて3回で塗る。
+      ⚠それまで**1本ずつ `fill()`**していて、爆発1つで22〜30回=要塞砲12台で**333回/コマ**あった。
+      ⚠**形も角度も長さも1つも変えていない**(まとめるのは呼び出しだけ)。 */
    const N=(FXLV>=2?(e.k==='boomL'?30:22):(e.k==='boomL'?16:12));
    c.globalAlpha=fade;
-   for(let i=0;i<N;i++){
-    const a=sd*1.7+i*6.283/N+((i*37)%13)*.05;
-    const lm=.34+((i*29)%19)*.062;/* ⚠長さの散らばりを大きく取る(短いのと長いのが混ざる) */
-    const r0=R*(.36+kk*.4)*(.8+lm*.4),r1=r0+R*1.5*lm*(1-kk*.5);
-    const w=(1.3+((i*19)%5)*.6)*bb*(1-kk*.5);
-    const ca=Math.cos(a),sa=Math.sin(a)*.9,nx=-sa,ny=ca;
-    c.fillStyle=(i%5===0?'rgba(255,244,205,':i%2?'rgba(255,196,80,':'rgba(255,146,42,')+'.95)';
-    c.beginPath();
-    c.moveTo(e.x+ca*r0+nx*w,e.y+sa*r0+ny*w);
-    c.lineTo(e.x+ca*r1+nx*w*.16,e.y+sa*r1+ny*w*.16);
-    c.lineTo(e.x+ca*r1-nx*w*.16,e.y+sa*r1-ny*w*.16);
-    c.lineTo(e.x+ca*r0-nx*w,e.y+sa*r0-ny*w);
-    c.closePath();c.fill();}
+   /* ⚠**白熱の筋は最後に塗る**=まとめると重なりの前後が変わるので、
+      「白は数本だけの光の芯」が他の筋の下へ潜らないようにする(橙→黄→白の順) */
+   for(const g4 of [2,1,0]){
+    c.fillStyle=(g4===0?'rgba(255,244,205,':g4===1?'rgba(255,196,80,':'rgba(255,146,42,')+'.95)';
+    let any4=false;c.beginPath();
+    for(let i=0;i<N;i++){
+     if((i%5===0?0:i%2?1:2)!==g4)continue;
+     const a=sd*1.7+i*6.283/N+((i*37)%13)*.05;
+     const lm=.34+((i*29)%19)*.062;/* ⚠長さの散らばりを大きく取る(短いのと長いのが混ざる) */
+     const r0=R*(.36+kk*.4)*(.8+lm*.4),r1=r0+R*1.5*lm*(1-kk*.5);
+     const w=(1.3+((i*19)%5)*.6)*bb*(1-kk*.5);
+     const ca=Math.cos(a),sa=Math.sin(a)*.9,nx=-sa,ny=ca;
+     c.moveTo(e.x+ca*r0+nx*w,e.y+sa*r0+ny*w);
+     c.lineTo(e.x+ca*r1+nx*w*.16,e.y+sa*r1+ny*w*.16);
+     c.lineTo(e.x+ca*r1-nx*w*.16,e.y+sa*r1-ny*w*.16);
+     c.lineTo(e.x+ca*r0-nx*w,e.y+sa*r0-ny*w);
+     c.closePath();any4=true;}
+    if(any4)c.fill();}
    /* ⑤白熱の芯(出た瞬間だけ・小さく) */
    const wf=Math.max(0,1-kk*4.5);
    if(wf>0){c.globalAlpha=wf;c.fillStyle='rgba(255,247,220,.95)';
@@ -21211,18 +21251,23 @@ function renderCamp(C,t){
    c.globalAlpha=Math.max(0,(.34-kk*.26))*fade;c.fillStyle='#33302c';
    c.beginPath();c.ellipse(e.x,e.y,R*(.24+kk*.14),R*(.21+kk*.12),0,0,7);c.fill();
    c.globalAlpha=1;c.restore();}}
+  /* ✨(191)7〜10本とも同じ色・同じ太さ=1本のパスにまとめて1回で引く */
   else if(e.k==='spark'){const n3=e.big?10:7,ln=e.big?130:75;c.strokeStyle=e.col||GOLD;c.globalAlpha=Math.max(0,1-e.t/.6);c.lineWidth=e.big?4:3;
+   c.beginPath();let any3=false;
    for(let k4=0;k4<n3;k4++){const a=(e.sd||0)+k4*6.283/n3,r0=e.t*280,r1=r0+ln*(1-e.t*1.4);
     if(r1<=r0)continue;
-    c.beginPath();c.moveTo(e.x+Math.cos(a)*r0,e.y+Math.sin(a)*r0*.6);c.lineTo(e.x+Math.cos(a)*r1,e.y+Math.sin(a)*r1*.6);c.stroke();}c.globalAlpha=1;}
+    c.moveTo(e.x+Math.cos(a)*r0,e.y+Math.sin(a)*r0*.6);c.lineTo(e.x+Math.cos(a)*r1,e.y+Math.sin(a)*r1*.6);any3=true;}
+   if(any3)c.stroke();c.globalAlpha=1;}
   else if(e.k==='mzl'){/* 銃口の閃光。⚠丸だけだと「撃った」感じが出ないので向き(ang)に扇形で出す */
    const a4=Math.max(0,1-e.t/fxLife('mzl')),r4=(e.r||14)*(.55+a4*.85);
    c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);c.globalAlpha=a4;
    c.fillStyle=e.col||GLOW;
    c.beginPath();c.moveTo(0,0);c.lineTo(r4*1.7,-r4*.45);c.lineTo(r4*2.1,0);c.lineTo(r4*1.7,r4*.45);c.closePath();c.fill();
    c.strokeStyle=e.col||GLOW;c.lineWidth=2;
+   c.beginPath();/* 🔫(191)4本とも同じ色・同じ太さ=1本のパスで1回 */
    for(let i4=0;i4<4;i4++){const aa=(i4-1.5)*.5;
-    c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(aa)*r4*1.4,Math.sin(aa)*r4*1.4);c.stroke();}
+    c.moveTo(0,0);c.lineTo(Math.cos(aa)*r4*1.4,Math.sin(aa)*r4*1.4);}
+   c.stroke();
    c.fillStyle='#fff';c.beginPath();c.arc(0,0,r4*.45,0,7);c.fill();
    c.globalAlpha=1;c.restore();}
   else if(e.k==='hit'){/* 着弾。⚠飛来した向きの**逆へ**破片が散る(向きが合っていないと当たった感じにならない) */
@@ -21231,9 +21276,11 @@ function renderCamp(C,t){
    c.fillStyle='#fff';c.beginPath();c.arc(0,0,1.6+a4*4.4,0,7);c.fill();
    c.strokeStyle=e.col||GOLD;c.lineWidth=2.2;
    const ba=(e.ang||0)+Math.PI;
+   c.beginPath();let any6=false;/* (191)5本とも同じ色・同じ太さ=1本のパスで1回 */
    for(let i4=0;i4<5;i4++){const aa=ba+(i4-2)*.42,r0=e.t*95,r1=r0+26*(1-e.t*2.6);
     if(r1<=r0)continue;
-    c.beginPath();c.moveTo(Math.cos(aa)*r0,Math.sin(aa)*r0);c.lineTo(Math.cos(aa)*r1,Math.sin(aa)*r1);c.stroke();}
+    c.moveTo(Math.cos(aa)*r0,Math.sin(aa)*r0);c.lineTo(Math.cos(aa)*r1,Math.sin(aa)*r1);any6=true;}
+   if(any6)c.stroke();
    c.globalAlpha=1;c.restore();}
   else if(e.k==='ric'){/* ⭐装甲に弾かれた=浅い角度で跳ねる金色の火花。相性が悪いのが一目で分かる */
    const a4=Math.max(0,1-e.t/fxLife('ric'));
@@ -21241,9 +21288,11 @@ function renderCamp(C,t){
    c.fillStyle='#cfd6dd';c.beginPath();c.arc(0,0,1.4+a4*3,0,7);c.fill();
    c.strokeStyle='#ffe08a';c.lineWidth=1.8;
    const ba=(e.ang||0)+Math.PI+.9;
+   c.beginPath();let any5=false;/* (191)3本とも同じ色・同じ太さ=1本のパスで1回 */
    for(let i4=0;i4<3;i4++){const aa=ba+(i4-1)*.22,r0=5+e.t*160,r1=r0+30*(1-e.t*2.2);
     if(r1<=r0)continue;
-    c.beginPath();c.moveTo(Math.cos(aa)*r0,Math.sin(aa)*r0*.7);c.lineTo(Math.cos(aa)*r1,Math.sin(aa)*r1*.7);c.stroke();}
+    c.moveTo(Math.cos(aa)*r0,Math.sin(aa)*r0*.7);c.lineTo(Math.cos(aa)*r1,Math.sin(aa)*r1*.7);any5=true;}
+   if(any5)c.stroke();
    c.globalAlpha=1;c.restore();}
   else if(e.k==='slp'){/* 🐟鱗に逸らされた=**ヌルッと滑る**。⚠金属(ric)と混ざらないよう
      ①色は水色 ②直線ではなく**弧**で逃がす ③飛沫の粒を1つ落とす=手触りが金属と別物になる */
@@ -21251,8 +21300,10 @@ function renderCamp(C,t){
    c.save();c.translate(e.x,e.y);c.globalAlpha=a4;
    c.strokeStyle=FROST;c.lineWidth=2.2;c.lineCap='round';
    const ba=(e.ang||0)+Math.PI+1.5;
-   for(let i4=0;i4<2;i4++){const r0=6+e.t*120,sw=.9+i4*.5;
-    c.beginPath();c.arc(0,0,r0+i4*7,ba-sw*.5,ba+sw*.5);c.stroke();}
+   c.beginPath();/* (191)2本とも同じ色・同じ太さ=1本のパスで1回。⚠arcの前に moveTo で切る */
+   for(let i4=0;i4<2;i4++){const r0=6+e.t*120,sw=.9+i4*.5,rr9=r0+i4*7;
+    c.moveTo(Math.cos(ba-sw*.5)*rr9,Math.sin(ba-sw*.5)*rr9);c.arc(0,0,rr9,ba-sw*.5,ba+sw*.5);}
+   c.stroke();
    c.fillStyle=TECH;c.globalAlpha=a4*.9;
    c.beginPath();c.arc(Math.cos(ba)*(9+e.t*110),Math.sin(ba)*(9+e.t*110)*.7+e.t*46,2.2+a4*2,0,7);c.fill();
    c.lineCap='butt';c.globalAlpha=1;c.restore();}
