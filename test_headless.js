@@ -4085,7 +4085,42 @@ function checkUnitAf(){
  backTitle();
  console.log('⚔兵科の属性: 🔥火炎は装甲に×'+FIRE_VS_ARMOR.toFixed(1)+' / ✊近接の連撃も❄冷気も装甲に'+Math.round(ARMOR_CUT*100)+'%(素通りしない) OK');
 }
+/* ---- 🧬⭐⭐⭐(187)**実入りと棚の値段が釣り合っているか** ----
+   ⚠⚠**この検査が無かったせいで RPT_X を3.6倍も外した**(2026-08-06)。
+     古いコメントの「①NMのクリアで8400🧬」を信じて配布を決めたが、
+     **1試合に湧く敵は新兵40体〜NM358体しか居ない**ので実際は1/4だった。
+   ⭐物差し=**その拠点を1回クリアした時の実入り ÷ その段の棚の2種ぶんの値段**が 0.7〜1.4。
+     ⚠**式は必ず metaGainOf(本番と同じ1本)から出す**=検査に式を写すと、
+       本番を直した時に検査だけ古いまま通ってしまう。 */
+function checkGain(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kp=META.sc;
+ const rows=[];let st=0,prev=0;
+ for(let stg=0;stg<2;stg++)for(const d of UNL_ORD){
+  /* その難易度で1試合ぶんに湧く敵の総数(顔ぶれは毎回引き直すので4回の平均) */
+  META.stg=stg;setDiff=d;startSolo();frames(6,.016);
+  let n=0;
+  /* ⚠⚠**最終ウェーブは試合中に控えておく**= backTitle() の後の curW() は G が無いので
+     対戦用の20を返す(ここで一度踏んだ。新兵が5波なのに20波として計算されていた)。 */
+  const wN=curW();
+  for(let w=1;w<=wN;w++)for(let r=0;r<4;r++){buildTide(w);n+=G.tide.pool.length*.25;}
+  backTitle();
+  const g=metaGainOf(d,stg,wN,n),c=shelfPairCost(st);
+  const r=g/c;
+  rows.push({st,g,c,r:+r.toFixed(2)});
+  if(r<.7||r>1.4)F('拠点'+(st+1)+'('+(stg?'②':'①')+D5[d].n+')の実入りが棚と釣り合っていない '
+   +g+'🧬 / 棚の2種'+c+'🧬 = x'+r.toFixed(2)+'(0.7〜1.4に収めること。ノブは RPT_X)');
+  if(g<=prev)F('拠点'+(st+1)+'で実入りが前より減っている '+prev+'→'+g+'(進むほど増やすこと)');
+  prev=g;st++;
+ }
+ META.sc=kp;
+ const tot=rows.reduce((a,x)=>a+x.g,0);
+ console.log('🧬実入り: 12拠点で計'+tot.toLocaleString()+'🧬 / 棚の2種ぶんとの比 x'
+  +Math.min.apply(null,rows.map(x=>x.r)).toFixed(2)+'〜x'+Math.max.apply(null,rows.map(x=>x.r)).toFixed(2)
+  +' / 進むほど増える(①'+rows[0].g+'→②'+rows[rows.length-1].g+') OK');
+}
 twGrantAll();checkUnlock();
+twGrantAll();checkGain();
 twGrantAll();checkUnitAf();
 twGrantAll();checkStrikes();
 twGrantAll();checkSup();
