@@ -218,6 +218,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      :(OPT.indexOf('msn')>=0)?((OPT.indexOf('msnp')>=0
        ?'try{var M9=msnDay();M9.p[0]=MSN_P[M9.id[0]].g;M9.p[1]=Math.round(MSN_P[M9.id[1]].g*.45);}catch(e){}':'')
        +'openMsn();')
+     /* 🎬(180)resnext=**幕が控えている成績表**(ボタンが「▶次へ」1つに替わっている形)。
+        ⚠**`ed` より先に見ること**='resnext'.indexOf('ed')<0 なので順番の事故は無いが、
+          ここは「幕そのもの」ではなく**幕へ入る前の画面**を撮る口。 */
+     :(OPT.indexOf('resnext')>=0)?('setDiff=NM_DIFF;META.nmOK=1;startSolo();'
+       +'try{G.winner=0;G.over=true;G.ending=1;G.players[0].kills=418;'
+       +'UI.showResult();}catch(e){document.title="ERR15 "+e.message;}')
      /* 🏁ed=区切りの幕(2026-08-04(156))。⚠実際に2面のナイトメアを落とすまで出ないので撮る口が要る。
         🎬(157)からムービーになったので **`edt=秒` で好きな1コマを撮る**(例 "ed+edt=4.2")。
         ⚠⚠**ヘッドレスの仮想時間では rAF がほとんど回らない**ので、放っておくと**開幕の暗転(真っ黒)**しか撮れない。

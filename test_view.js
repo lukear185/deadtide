@@ -71,6 +71,11 @@ const SCENES=[
  ['英雄ステータス',      'MDX();openHStat("hLupi","gacha");'],
  ['砲撃を選ぶ',          'renderStkPick();MD("md-stk");'],
  ['オプション',          'optRender();MD("md-opt");'],
+ /* 🎬(180)区切りの幕。⚠⚠**「終わった後」こそ測る**=下に札とボタンが増えるので、
+    ここが `--appH` の罠を4回踏んでいる場所そのもの([[NOTES_面]])。
+    ⚠**先に transition を切る**=枠の高さは .45秒かけて縮むので、切らないと縮む前の姿を測る。 */
+ ['🎬区切りの幕(再生中)', 'MDX();document.getElementById("ed-stage").style.transition="none";openEnding();edSeek(4);'],
+ ['🎬区切りの幕(終わった後)','MDX();document.getElementById("ed-stage").style.transition="none";openEnding();edSeek(ED_C3);'],
  /* 🏹(125)弓比べ=別ゲーム。ホームと盤面の両方を測る(盤面は下の操作の帯が要になる) */
  ['🏹弓比べ ホーム',     'MDX();arcOpen();'],
  ['🏹弓比べ 盤面',       'MDX();arcPlay();'],

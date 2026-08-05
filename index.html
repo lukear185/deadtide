@@ -1130,6 +1130,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  #reswrap .menu{margin-top:8px}
  #reswrap .btn{padding:9px 16px;font-size:15px}
 }
+/* 🎬(180)**幕が控えている成績表は「▶次へ」1つだけ**(ユーザー指示)。
+   ⚠**幕を見終わったらクラスを外す**=いつもの「もう一度/タイトルへ」が戻る。 */
+#bt-resnext{display:none}
+#reswrap.ednext #bt-resnext{display:block}
+#reswrap.ednext #bt-rematch,#reswrap.ednext #bt-totitle{display:none}
 .restitle{font-size:min(14vw,60px);font-weight:900;color:var(--pane);text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 var(--rust2)}
 .restitle.win{color:var(--toxic)}
 table.stats{border-collapse:collapse;margin:10px 0;background:var(--pane);border:3px solid var(--ink);border-radius:12px;overflow:hidden;font-size:13px;font-weight:800}
@@ -1259,8 +1264,11 @@ body.perf #perfbox{display:block}
      JSでインラインの display を書かないこと。[[NOTES_面]]に既出)。 */
 /* ⚠⚠**幕が終わったら枠を縮める**=下に札とボタンが増えるので、大きいままだと
    **横画面のスマホ(高さ393px)でボタンが画面の外へ落ちる**(撮って直した。--appH の罠は4度目)。 */
+/* ⭐(180)**画面の8割まで大きくした**(ユーザー指示「画面全体が10だとして8ぐらいの大きさに」)。
+   ⚠**枠の外側(panel)も一緒に広げないと横が 520 で頭打ちになる**(HTML側のインラインで広げてある)。
+   ⚠**終わった後(.done)は今までどおり縮める**=下に札とボタンが増えるため。 */
 #ed-stage{position:relative;width:100%;aspect-ratio:16/9;
- max-height:min(50vh,calc(var(--appH,100dvh) * .50));transition:max-height .45s ease;
+ max-height:min(80vh,calc(var(--appH,100dvh) * .80));transition:max-height .45s ease;
  border:3px solid var(--ink);border-radius:10px;overflow:hidden;background:#000}
 #md-ending.done #ed-stage{max-height:min(32vh,calc(var(--appH,100dvh) * .32))}
 #ed-cv{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -1691,6 +1699,9 @@ body.perf #perfbox{display:block}
       <div class="restitle" id="res-title">生還!</div>
       <div class="note" id="res-sub" style="color:var(--pane);font-size:15px;font-weight:800;margin-top:4px"></div>
       <div class="menu">
+        <!-- 🎬(180)**幕が控えている時だけ「次へ」1つに差し替える**(ユーザー指示)。
+             ⚠隠し方はクラス側に寄せる(JSでインラインの display を書かない=[[NOTES_面]]) -->
+        <button class="btn gold" id="bt-resnext">▶ 次へ</button>
         <button class="btn red" id="bt-rematch">🔁 もう一度防衛</button>
         <button class="btn" id="bt-totitle">🏕 タイトルへ</button>
       </div>
@@ -1932,7 +1943,7 @@ body.perf #perfbox{display:block}
      ステージが増えたら自動で出なくなる(次のステージがある間は通らない)。
      ⚠高さは `vh` で決めない=`--appH` で抑える([[NOTES_UI]]) -->
 <div class="modal" id="md-ending">
-  <div class="panel center" style="max-width:520px;width:min(94vw,520px);position:relative;overflow:hidden">
+  <div class="panel center" style="max-width:none;width:min(96vw,880px);max-height:min(94vh,var(--appH,94vh));padding:8px;position:relative;overflow:hidden">
     <div id="ed-stage">
       <canvas id="ed-cv"></canvas>
       <div id="ed-cap"></div>
@@ -21784,9 +21795,9 @@ function showResultA(){
  show('result');
  /* 🏁**区切りの幕**は成績表の上にかぶせる(2026-08-04(156))。
     ⚠**成績表より先に出さない**=何を達成して幕が出たのかが分からなくなる。 */
- /* ⚠**印は先に落としてから開く**=途中で閉じてももう出ない(1回きりの約束)。
-    ⚠**少し待ってから開く**=画面の切り替えと重ねると、幕の1コマ目が飛ぶ。 */
- try{if(G&&G.ending){G.ending=0;setTimeout(()=>{try{openEnding();}catch(e){}},900);}}catch(e){}
+ /* 🎬(180)**勝手に流さず「▶次へ」を出す**(ユーザー指示「いつもはタイトルへとかもう一度って出るけど
+    次へって出るようにして。それ押したらムービーにしよう」)。⚠**印は先に落とす**=1回きりの約束。 */
+ try{const rw=$('reswrap');if(rw){if(G&&G.ending){G.ending=0;rw.classList.add('ednext');}else rw.classList.remove('ednext');}}catch(e){}
 }
 function showResultC(sn){
  gameActive=false;$('interv').classList.remove('on');closeBM();
@@ -21797,6 +21808,7 @@ function showResultC(sn){
  $('res-sub').textContent=COOP?(win?'WAVE '+STAGE_W+' を守り切った!':'WAVE '+sn.w+' で陥落…'):((sn.wn?('生存: '+sn.wn+' / '):'')+'WAVE '+sn.w+' まで到達');
  $('res-stats').innerHTML=[['ゾンビ撃破',sn.me.kl],['部隊出撃',(sn.me.dp||0)+'体'],['送った変異体',sn.me.sent+'体'],['解放タワー',sn.me.un+'/'+PVP_T]].map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
  (win?sfx.win:sfx.lose)();show('result');
+ try{$('reswrap').classList.remove('ednext');}catch(e){}/* 🎬幕の「次へ」は持ち越さない */
 }
 /* ---- 建設メニュー・入力 ---- */
 function mapToClient(x,y){const r=cv.getBoundingClientRect();return[r.left+(OX+x*SC)/DPR,r.top+(OY+y*SCY)/DPR];}
@@ -32062,10 +32074,14 @@ $('bt-totitle').onclick=backTitle;
 /* 🏁区切りの幕。⚠閉じたら**ホームへ戻すだけ**(報酬も解放もここでは配らない) */
 /* 🎬幕。⚠**閉じる時に必ず止める**(`ED.on=0`)=出しっぱなしだと裏で毎コマ描き続ける */
 /* ⚠(179)**成績表の上で流す**ので、閉じたら**成績表をそのまま見せる**(下に隠れている)。
+   ⚠(180)**その時に「▶次へ」を畳む**=いつもの「もう一度/タイトルへ」が戻る。
    ⚠タイトルで開いた時(DEVのボタン・古いセーブの予備の口)も閉じるだけ。
    ⚠🛠それ以外(試合中に開いた等)だけタイトルへ戻す。 */
 $('bt-ed-ok').onclick=()=>{ED.on=0;$('md-ending').classList.remove('on');
+ try{$('reswrap').classList.remove('ednext');}catch(e){}
  if(SCR!=='title'&&SCR!=='result')backTitle();};
+/* 🎬(180)成績表の「▶ 次へ」=ここで幕を開く */
+$('bt-resnext').onclick=()=>{try{openEnding();}catch(e){toast('幕でエラー: '+e.message,true);}};
 $('bt-ed-skip').onclick=()=>{edSeek(ED_C3);};
 $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */
