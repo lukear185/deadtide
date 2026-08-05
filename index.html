@@ -22217,7 +22217,21 @@ $('bt-suspend').onclick=()=>{const mid=!!(G&&G.phase==='wave');saveRun();PAUSED=
  toast(mid?'💾 中断した。この WAVE の初めから再開する(戦闘中のぶんは持ち越さない)':'💾 中断した。ホームの「▶続きから」で再開できる');};
 $('bt-quit').onclick=()=>{clearRun();PAUSED=false;$('md-pause').classList.remove('on');backTitle();};
 $('bt-rothide').onclick=()=>$('rotatehint').classList.add('off');
-$('ffbtn').onclick=()=>{if(!G)return;const SP=[1,2,8];G.spd=SP[(SP.indexOf(G.spd||1)+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
+/* ⏩⭐**倍速(2026-08-05(182)ユーザー指示「全ステージに2倍速3倍速のボタンが欲しい。
+   最初は等倍で一回タップで2倍速 2回タップで3倍速 もう一回タップしたら等倍」)**。
+   ⚠**通信対戦では出さない**(自分だけ速く回すと盤面が食い違う)=出すのは `ffOK()` が決める。
+   ⚠**倒れた後の観戦だけは今までどおり ×8 まで**(早く終わらせたいだけの場面なので刻みが違う)。
+   ⚠中身は「1コマの中で gameStep を倍数だけ回す」=**絵は1回**なので、増えるのは中の計算だけ。 */
+const ffSpec=()=>!!(G&&!G.pve&&G.players&&G.players[G.myIdx]&&G.players[G.myIdx].dead);
+$('ffbtn').onclick=()=>{if(!G)return;const SP=ffSpec()?[1,2,8]:[1,2,3];
+ G.spd=SP[(SP.indexOf(G.spd||1)+1)%SP.length];$('ffbtn').textContent='⏩ ×'+G.spd;};
+/* ⏩この試合で倍速を出してよいか。⚠**ソロ(PvE)だけ**=協力/対戦はホストと足並みが崩れる。
+   ⚠🎓チュートリアルでは出さない(段取りが崩れる)。⚠**見るのは `G.tut` ではなく `TUT`**=
+     🧪検証場も戦績を汚さないために G.tut を立てているので、それだと検証場でも消える。 */
+function ffOK(){return !!(G&&G.pve&&MODE==='solo'&&!TUT);}
+function updFF(){try{const b=$('ffbtn');if(!b)return;
+ if(ffOK()){b.style.display='inline-block';b.textContent='⏩ ×'+((G&&G.spd)||1);}
+ else b.style.display='none';}catch(e){}}
 /* ============ インターバルUI ============ */
 let ivS={zi:0,cnt:1,tB:-1,tS:-1,tJ:-1},ivLogs=[];
 function ivLog(s){ivLogs.push(s);if(ivLogs.length>5)ivLogs.shift();const el=$('ivlog');if(el)el.innerHTML=ivLogs.join('<br>');}
@@ -27045,7 +27059,10 @@ function startGameUI(others){
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){}
  }
  ivS={zi:0,cnt:1,tB:-1,tS:-1,tJ:-1};
- $('ffbtn').style.display='none';$('ffbtn').textContent='⏩ ×1';
+ /* ⏩(182)倍速のボタン。⚠**素は等倍に戻す**=前の試合の倍速を持ち越さない。
+    ⚠出すかどうかは `updFF()` が決める(ソロのPvEだけ)。 */
+ if(G)G.spd=1;
+ $('ffbtn').style.display='none';$('ffbtn').textContent='⏩ ×1';updFF();
  buildMinis(others);show('game');
  if(EDIT){try{edPanel();toast('🛠 マス編集モード: マスを指でドラッグ→📋出力で座標を書き出す',true);}catch(e){}}
  if(DEV){try{toast('🛠 DEVモード: 🧬💎🔧⚙️🔩が無限・全ステージ/難易度/英雄が選べる(セーブは別枠)',true);}catch(e){}}
