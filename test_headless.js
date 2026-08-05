@@ -4459,30 +4459,43 @@ process.exit(0);
    if(Math.abs(t0[0]-.45)>1e-9||t0[2]!==0){
     console.log('FAIL: つまみを渡していないのに素の値に戻らない '+t0[0]+'/'+t0[2]);process.exit(1);}
    console.log('🎚つまみ: '+t9[3]+'件 / ?tune= で差し替わる / 渡さなければ素の値 OK');}
-  /* 🛠⭐⭐(188)**「素で始める」**=①道具と②面の解放は残したまま、持ち物と🧬だけ素になること。
+  /* 🛠⭐⭐(188)**「素で始める」**=①道具と②面の解放は残したまま、持ち物とゲーム中のリソースが素になること。
      ⚠**ここが崩れると実機でバランスを一切測れなくなる**(それが入れた理由そのもの)。
-     ⚠見るのは4つ: ①持ち物が2種ずつに戻る ②🧬が補充されない ③**面の解放は残る**
-     ④棚は「クリアした拠点の数」で増える。 */
+     ⚠⚠(191)**🧬研究ptは無限のままが正しい**(ユーザー指示)=元手を絞ると何も試せない。
+     ⚠見るのは5つ: ①持ち物が2種ずつに戻る ②**ゲーム中の⚙️🔩が補充されない**(ここが(191)の本題)
+     ③🧬は無限のまま ④**面の解放は残る** ⑤棚は「クリアした拠点の数」で増える。 */
   const r9=new Function(js+String.fromCharCode(10)
    +'META.devRaw=1;metaResetLab();META.sc=[];META.sclr=[];TWOWN_K=-1;'
    +'META.pts=0;saveMeta();'/* saveMeta は devTop を通る=素モードなら補充されない */
    +'const a={pts:META.pts,tw:twOwnList().length,un:uOwnList().length,'
    +'stg:stageOK(1),dif:diffOK(1,5),sT:shelfT().length,sU:shelfU().length,ff:ffSteps().length,'
    +'bT:BASE_T,bU:BASE_U,tp:T_PLAY};'
+   /* ⚙️🔩(191)**ゲーム中のリソースが通常プレイと同じか**=拠点を1つ作って1コマ回す。
+      ⚠**campStep が⚙️と🔩を99,999に補充していた**(`DEV` で見ていた)ので、ここが本題。 */
+   +'{const m9=newCamp("t","solo",0,true);a.eco=m9.ecoN;a.sup=m9.supN;a.uun=m9.uUn;'
+   +'a.slk=m9.slk.filter(Boolean).length;a.unl=m9.unlocked;'
+   +'try{campStep(m9,0.033,1);}catch(e){a.cerr=e.message;}a.s1=m9.scrap;a.u1=m9.up;}'
    /* 拠点を6つクリアしたことにすると棚が②相当まで進む */
    +'const q=scArr(0);for(const d of UNL_ORD)q[d]=1;'
    +'a.sT6=shelfT().length;a.sU6=shelfU().length;a.step6=unlStep();'
    /* 全開放へ戻すと元どおり */
    +'META.devRaw=0;TWOWN_K=-1;saveMeta();a.pts2=META.pts;a.tw2=twOwnList().length;'
    +'return a;')();
-  if(r9.pts!==0){console.log('FAIL: 🛠素モードでも🧬が補充されている '+r9.pts);process.exit(1);}
+  if(r9.pts<1e6){console.log('FAIL: 🛠素モードで🧬が無限になっていない '+r9.pts);process.exit(1);}
+  if(r9.cerr){console.log('FAIL: 🛠素モードの拠点を1コマ回せない: '+r9.cerr);process.exit(1);}
+  if(r9.s1>50000||r9.u1>50000){
+   console.log('FAIL: 🛠素モードでゲーム中の⚙️🔩が補充されている ⚙️'+r9.s1+' 🔩'+r9.u1);process.exit(1);}
+  if(r9.eco!==1||r9.sup!==0||r9.uun!==2||r9.unl!==2){
+   console.log('FAIL: 🛠素モードの開始状態が通常プレイと違う 廃品'+r9.eco+'/支援'+r9.sup
+    +'/部隊枠'+r9.uun+'/塔解放'+r9.unl);process.exit(1);}
   if(r9.tw!==r9.bT||r9.un!==r9.bU){console.log('FAIL: 🛠素モードで持ち物が2種ずつに戻らない 塔'+r9.tw+'/兵科'+r9.un);process.exit(1);}
   if(!r9.stg||!r9.dif){console.log('FAIL: 🛠素モードで面の解放まで消えている(②とナイトメアが選べない)');process.exit(1);}
   if(r9.ff!==4){console.log('FAIL: 🛠素モードで×5倍速が消えている');process.exit(1);}
   if(r9.step6!==6){console.log('FAIL: 🛠クリア+1が数えられていない '+r9.step6);process.exit(1);}
   if(!(r9.sT6>r9.sT&&r9.sU6>r9.sU)){console.log('FAIL: 拠点をクリアしても棚が増えない');process.exit(1);}
   if(r9.pts2<1e6||r9.tw2<r9.tp){console.log('FAIL: 🛠全開放に戻しても元に戻らない');process.exit(1);}
-  console.log('🛠素で始める: 持ち物'+r9.tw+'+'+r9.un+'種・🧬0・棚'+r9.sT+'塔/'+r9.sU+'兵科'
+  console.log('🛠素で始める: 持ち物'+r9.tw+'+'+r9.un+'種・ゲーム中⚙️'+r9.s1+'🔩'+r9.u1
+   +'(🧬は無限)・棚'+r9.sT+'塔/'+r9.sU+'兵科'
    +' → 6拠点クリアで'+r9.sT6+'塔/'+r9.sU6+'兵科 / 面の解放と×5は残る / 戻せる OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);

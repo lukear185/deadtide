@@ -2354,12 +2354,20 @@ try{if(GIFT&&GIFT.id){
    ⚠⚠**`?dev=1` は3つの別の仕事を1つの旗でやっていた**=
      ①道具(検証場・撮影・×5倍速) ②面の解放(②沈んだ港もナイトメアも最初から選べる)
      ③**全開放と無限リソース**。進行そのものを作り替えた回に、③だけがテストの邪魔になった。
-   ⭐**`devAll()` が③の担当**=ここを false にすると、**①と②は残したまま持ち物と🧬だけ素になる**。
+   ⭐**`devAll()` が③の担当**=ここを false にすると、**①と②は残したまま持ち物とゲーム中のリソースが素になる**。
+   ⚠⚠(191)**🧬研究ptだけは無限のまま**にした(ユーザー指示)=素モードで見たいのは
+     「研究所で買った物が試合にどう効くか」なので、**買う元手を絞ると何も試せない**。
    ⚠**印はテスト用のセーブ(dt_meta_dev)に残る**ので、再読み込みしても素のまま
      (それまでの🛠研究リセットは、読み直すと全開放へ戻るのが仕様だった=これが「テストにならない」の正体)。
    ⚠**新しく DEV の底上げを足す時は `devAll()` の側に足すこと**(素モードで消えないと意味がない)。 */
 const devAll=()=>DEV&&!(META.devRaw||0);
-function devTop(){if(!devAll())return;META.pts=DEV_INF;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;META.luck=9;
+/* 🧬⭐⭐(191)**🧬研究ptだけは素モードでも無限のまま**(2026-08-06ユーザー指示
+   「素モードで研究ポイントが0だと意味ない。研究Pは今まで通り無限でよくて、
+     ゲーム中のリソースは通常プレイと一緒(研究状況を加味して)にしないと意味ない」)。
+   ⭐**素モードで見たいのは「研究所で何を買ったか」が試合にどう効くか**なので、
+     買う元手(🧬)を絞る意味は無い。⚠**絞るのは持ち物(ot/ou)と、ゲーム中の⚙️🔩の方**。 */
+function devTop(){if(!DEV)return;META.pts=DEV_INF;
+ if(!devAll())return;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;META.luck=9;
  if(!Array.isArray(META.bres))META.bres=[0,0,0];
  for(let i=0;i<3;i++)META.bres[i]=99999;}
 devTop();
@@ -17052,9 +17060,11 @@ let EID=1;
    ⚠通常モードは今までどおり(タワー2種・兵科2種・建設マス7つ)。DEVのセーブは別枠なので普段のデータは汚れない */
 function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,dying:false,place:0,
  core:50,coreMax:50,scrap:250,unlocked:devAll()?metaTowerCap():2,atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,
- towers:SLOTS.map(()=>null),ecoN:DEV?ECO_MAX:1,supN:DEV?SUP_MAX:0,up:12,upTotal:12,
- slk:SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0)),
- zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:DEV?teamIdx().length:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
+ /* ⚠⚠(191)**ここは全部 `devAll()` で見る**=素モードは「通常プレイと同じ手持ち」で始めないと
+    研究所の開始ボーナス(🧱建設スロット/🤝部隊枠/廃品工房)が効いているか分からない。 */
+ towers:SLOTS.map(()=>null),ecoN:devAll()?ECO_MAX:1,supN:devAll()?SUP_MAX:0,up:12,upTotal:12,
+ slk:SLOTS.map((_,i)=>devAll()?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0)),
+ zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:devAll()?teamIdx().length:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
  hUi:-1,hOut:0,hCg:0,fallen:[],/* 英雄: 連れて行く英雄のUNITS添字 / 0=未出撃 1=出撃中 2=戦死 / 必殺チャージ / 戦死した部隊(蘇生用) */
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
@@ -18874,7 +18884,9 @@ function campStep(C,dt,wave){
  if(C.dead)return;
  /* 🛠DEVモード: 自分の⚙️と🔩を切らさない(実機テストで建てたい物をすぐ建てるため) */
  /* ⚠HUDの桁が溢れないよう、ゲーム中は99,999止まりにして減ったら補充する */
- if(DEV&&C.isMe){if(C.scrap<50000)C.scrap=99999;if((C.up||0)<50000)C.up=99999;}
+ /* ⚠⚠(191)**素モードでは補充しない**(`DEV`ではなく`devAll()`で見る)=
+    ⚙️と🔩が無限だと「研究所の廃品工房や撃破報酬が効いているか」を実機で測れない。 */
+ if(devAll()&&C.isMe){if(C.scrap<50000)C.scrap=99999;if((C.up||0)<50000)C.up=99999;}
  C.tm+=dt;
  /* ⭐英雄の時限バフ(2026-07-28)。⚠**効かせる場所は1か所ずつ**にしてある=
     炉心解放(atkT)は下の atkB / 暁の号令(uOv)は部隊の攻撃力と dmgU の2か所だけ。 */
@@ -23392,9 +23404,9 @@ function startSolo(){
  /* 研究所の序盤系ボーナス */
  me.up=me.upTotal=12+up0V();
  /* ⚠🛠DEVは newCamp で全開放してあるので、ここの「開始時ボーナス」で巻き戻さない */
- me.team=teamIdx();me.uUn=DEV?me.team.length:Math.min(me.team.length,2+(META.uu0||0));
+ me.team=teamIdx();me.uUn=devAll()?me.team.length:Math.min(me.team.length,2+(META.uu0||0));
  {const s0=SLOT0+(META.sl0||0);
-  me.slk=SLOTS.map((_,i)=>DEV?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<s0));}
+  me.slk=SLOTS.map((_,i)=>devAll()?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<s0));}
  if(META.ec1){/* 廃品工房を建てた状態で開始 */
   const eti=TOWERS.findIndex(t=>t.type==='eco');
   if(eti>=0)me.towers[ECO_BASE]={ti:eti,us:newUs(),cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:TOWERS[eti].cost,own:0};}
@@ -28386,7 +28398,9 @@ function renderLab(){
      ⭐**初回クリアの印(`bcl`)も一緒に戻す**=初回3倍の報酬も何度でも確かめられる。
      ⚠🛠DEVは物資が99999なので、押した直後から全部買い直せる。 */
   /* 🛠⭐⭐(188)**「素で始める」と「🛠クリア +1」**(2026-08-06ユーザー指示)。
-     ⭐**素で始める**=①道具と②面の解放は残したまま、**持ち物と🧬だけ素にする**(`devAll()`)。
+     ⭐**素で始める**=①道具と②面の解放は残したまま、**持ち物とゲーム中のリソースを素にする**(`devAll()`)。
+       ⚠⚠(191)**🧬研究ptは無限のまま**(ユーザー指示)=元手を絞っても得る物が無い。
+       ⭐**素になるのは**=持ち物(ot/ou)/ゲーム中の⚙️🔩/建設スロット/部隊枠/廃品工房・支援施設の初期段。
        ⚠印はセーブに残るので**再読み込みしても戻らない**(ここが🛠リセットとの違い)。
      ⭐**🛠クリア +1**=**棚は「実際にクリアした拠点の数」で決まる**ので、
        ②沈んだ港を選べても棚は最初のままになる。押すと1拠点ぶん進む(0に戻すも置く)。
@@ -28454,7 +28468,7 @@ function renderLab(){
  $('lab-items').querySelectorAll('[data-devraw]').forEach(b=>{b.onclick=()=>{
   const on=!(META.devRaw||0);META.devRaw=on?1:0;
   if(on){metaResetLab();META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;TWOWN_K=-1;
-   toast('🛠 素モード: 持ち物2種ずつ・🧬0・棚は拠点のクリア数どおり(再読み込みしても戻らない)');}
+   toast('🛠 素モード: 持ち物2種ずつ・棚は拠点のクリア数どおり・ゲーム中の⚙️🔩は通常プレイと同じ(🧬は無限のまま)');}
   else{toast('🛠 全開放に戻した(再読み込みすると持ち物と🧬が満タンになる)');}
   saveMeta();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();
   try{refreshStageUI();refreshDiffUI();}catch(e){}};});
