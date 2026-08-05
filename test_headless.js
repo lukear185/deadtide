@@ -38,6 +38,16 @@ const js=html.split('<script>')[1].split('</'+'script>')[0];
    コード片を引用したい時は「」で囲むか、記号なしで書くこと。 */
 const body=`
 ;console.log('LOAD OK. PLEN='+Math.round(PLEN)+' slots='+SLOTS.length+' units='+UNITS.length+' STAGE_W='+STAGE_W);
+/* 🎓⭐(187)**研究所の持ち物は「id の集合」になった**(進行の作り替えB)ので、
+   検査から「先頭からN個持っている」状態を作るための道具。⚠**META.nt/nu に直に代入しない**
+   (数を書き換えても持ち物は増えないので、検査が全部素通りする)。 */
+function ownN(nt,nu){
+ if(nt!=null){META.ot=UNL_T.slice(0,Math.max(0,nt));META.nt=META.ot.length;}
+ if(nu!=null){META.ou=UNL_U.slice(0,Math.max(0,nu));META.nu=META.ou.length;}
+}
+/* ⚠**盤面に塔を建てて測る検査は「持っている」前提**=me.unlocked=ti+1 だけでは建たない。
+   ⭐全部持っていれば **持ち物の並びの番号=TOWERSの添字** なので、今までの書き方がそのまま通る。 */
+twGrantAll();
 function frames(n,step){for(let i=0;i<n;i++){NOW+=step*1000;const q=rafq.splice(0);for(const f of q)f(NOW);
  try{if(typeof PAUSED!=='undefined'&&PAUSED&&typeof INTROQ!=='undefined'){let g=0;while(PAUSED&&g++<40)introNext();}}catch(e){}}}
 function chkShares(tag){
@@ -785,7 +795,7 @@ function checkStart0(){
   console.log('FAIL: まとめ買いの上限が段数と違う '+c[0]+' '+LAB_MSTEP[c[0]][0]+'/'+c[1]);process.exit(1);}
  /* ④ 全部取り切った状態で出撃して、実際に効いているか */
  const kp=[META.sc0,META.hp0,META.up0,META.uu0,META.sl0,META.nu];
- META.sc0=SC0_MAX;META.hp0=HP0_MAX;META.up0=UP0_MAX;META.uu0=UU0_MAX;META.sl0=SL0_MAX;META.nu=U_N-BASE_U;
+ META.sc0=SC0_MAX;META.hp0=HP0_MAX;META.up0=UP0_MAX;META.uu0=UU0_MAX;META.sl0=SL0_MAX;ownN(null,U_N-BASE_U);
  META.stg=0;setDiff=2;startSolo();
  const me=G.players[0];
  if(me.scrap!==D5v().scrap+SC0_V[SC0_MAX]){console.log('FAIL: 初期スクラップが効いていない '+me.scrap);process.exit(1);}
@@ -795,12 +805,12 @@ function checkStart0(){
  const sl=me.slk.filter(Boolean).length;
  if(sl!==SLOT0+SL0_MAX){console.log('FAIL: 建設スロットが効いていない '+sl+'(想定'+(SLOT0+SL0_MAX)+')');process.exit(1);}
  backTitle();
- META.sc0=kp[0];META.hp0=kp[1];META.up0=kp[2];META.uu0=kp[3];META.sl0=kp[4];META.nu=kp[5];
+ META.sc0=kp[0];META.hp0=kp[1];META.up0=kp[2];META.uu0=kp[3];META.sl0=kp[4];ownN(null,kp[5]);
  console.log('開始タブ: '+line.join(' / ')+' / 🤝部隊枠'+UU0_MAX+'段・🧱建設枠'+SL0_MAX+'段 / 出撃に反映 OK');
 }
 function checkLabMul(){
  const keep=META.pts;
- META.pts=999999;META.tw={};META.un={};META.st0=0;META.nt=3;META.nu=3;
+ META.pts=999999;META.tw={};META.un={};META.st0=0;ownN(3,null);ownN(null,3);
  LABMUL=5;renderLab();
  const it=LAB_ITEMS.find(x=>x.k==='tw');
  if(!it){console.log('FAIL: まとめ買いの検査でタワー強化の項目が出ない');process.exit(1);}
@@ -826,7 +836,7 @@ function checkPerUp(){
  /* 素の状態にしてから測る(前の検査の買い物が残っていると倍率がずれる) */
  META.tw={};META.un={};META.st0=0;
  /* --- ① タワー1種ごとに威力が上がる。他のタワーには影響しない --- */
- const put=(id)=>{const ti=TOWERS.findIndex(t=>t.id===id);
+ const put=(id)=>{const ti=TOWERS.findIndex(t=>t.id===id);twGrantAll();
   me.scrap=999999;me.unlocked=Math.max(me.unlocked,ti+1);me.towers[si]=null;buildTower(me,si,ti);return me.towers[si];};
  const hit1=(id)=>{const tw=put(id);
   me.zombies.length=0;
@@ -866,11 +876,11 @@ function checkPerUp(){
    META.tw={};if(lv)META.tw[id]=lv;
    const ti=TOWERS.findIndex(t=>t.id===id);
    me.scrap=999999;me.unlocked=Math.max(me.unlocked,ti+1);me.towers[si]=null;buildTower(me,si,ti);
-   const tw=me.towers[si];
+   const tw=me.towers[si];if(!tw)console.log('DBG chain fail',id,ti,twRank(ti),me.unlocked,(META.ot||[]).length,DEV);
    me.zombies.length=0;
    /* 連鎖は150px以内へ跳ねるので、塔の前に詰めて12体並べる(上限まで届く数) */
    for(let k=0;k<12;k++){const z=mkZ(zSpec(0,1,5),Math.max(20,projPath(sx,sy)-40+k*22));z.hp=z.mhp=1e9;me.zombies.push(z);}
-   tw.cd=999;campStep(me,.001,G.wave);
+   if(!tw)console.log('DBG chain fail');tw.cd=999;campStep(me,.001,G.wave);
    const h0=me.zombies.map(z=>z.hp);
    tw.cd=0;campStep(me,.001,G.wave);
    return me.zombies.filter((z,i)=>h0[i]-z.hp>0).length;};
@@ -896,7 +906,7 @@ function checkPerUp(){
   META.tw={};const a0=inc('scrap');
   if(!(a>a0)){console.log('FAIL: 工房を鍛えても産出が増えない '+a0+'→'+a);process.exit(1);}}
  /* --- ④ 支援施設は強化の対象にしない --- */
- META.tw={};META.nt=T_PLAY-BASE_T;META.nu=U_N-BASE_U;renderLab();/* 全部解放した状態で数える */
+ META.tw={};ownN(T_PLAY-BASE_T,null);ownN(null,U_N-BASE_U);renderLab();/* 全部解放した状態で数える */
  {const rows=LAB_ITEMS.filter(o=>o.cat==='twup');
   const supN=TOWERS.filter(T=>T.type==='sup').length;
   /* ⚠「一覧に出ていないか」だけ見ると、支援施設は T_PLAY の外なので**構造上ぜったい落ちない検査**になる。
@@ -918,9 +928,10 @@ function checkPerUp(){
   const st=LAB_ITEMS.filter(o=>o.k==='st0');
   if(st.length!==1){console.log('FAIL: 砲撃の威力強化が研究所に出ていない');process.exit(1);}
   /* まだ解放していないタワーは出さない */
-  META.nt=0;renderLab();
+  ownN(0,null);renderLab();
   const rows0=LAB_ITEMS.filter(o=>o.cat==='twup');
   if(rows0.length>=rows.length){console.log('FAIL: 未解放のタワーまで強化の一覧に出ている');process.exit(1);}
+  twGrantAll();/* ⚠(187)持ち直す=このあと盤面に塔を建てる検査が続く */
   console.log('研究所の個別強化: タワー'+rows.length+'枠(支援'+supN+'種と工房の上位2段は対象外=工房は1枠を共有)/兵科'+uns.length+'種/砲撃の威力1項目 OK');}
  /* --- ⑤ 兵科1種ごと。派生キャラは元の兵科の枠を共有する --- */
  META.un={};
@@ -1001,7 +1012,7 @@ function checkPerUp(){
  {const U0=UBASE[0];
   const vb=(typeof UVAR==='object'&&UVAR[U0.id])?UVAR[U0.id][0]:null;
   if(vb){
-   META.uv=[vb.id];META.ld={};META.ld[U0.id]=vb.id;META.nu=U_N-BASE_U;META.un={};
+   META.uv=[vb.id];META.ld={};META.ld[U0.id]=vb.id;ownN(null,U_N-BASE_U);META.un={};
    META.stg=0;setDiff=2;startSolo();frames(10,.016);
    /* 派生が実際に UNITS に入っているか(前提の確認。入っていないとこの検査は何も見ていない) */
    if(UNITS[0].id!==vb.id){console.log('FAIL: 検査の前提が崩れている(編成で派生が適用されていない)');process.exit(1);}
@@ -1447,14 +1458,14 @@ function checkMetaReset(){
  META.gem=7;META.hero={hNox:1};META.hmat=5;META.zdex={walk:1};META.hlv={hNox:2};META.hxp={hNox:30};
  META.rpg={gold:99};META.hsel='hNox';META.tr0=1;META.tmTip=1;
  META.tk5=2;META.gft={x:1};/* 🎫★5確定チケットと配布物の印(2026-08-03(106)) */
- META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.py0=3;
+ META.pts=500;ownN(3,null);ownN(null,4);META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;/* タワー/兵科の個別強化と砲撃威力 */
  META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
  /* ⭐🛠DEVの「研究をリセット」は**研究所ぶんだけ**を戻す=難易度とステージの解放は残す */
  metaResetLab();
  if(META.pts!==0||META.nt!==0||META.st0!==0){console.log('FAIL: 研究リセットで研究所ぶんが消えていない');process.exit(1);}
  if(!(META.sc&&META.sc[0]&&META.sc[0][0])||META.nmOK!==1){console.log('FAIL: 研究リセットで難易度の解放まで消えている');process.exit(1);}
- META.pts=500;META.nt=3;META.nu=4;META.uv=['x'];META.py0=3;
+ META.pts=500;ownN(3,null);ownN(null,4);META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;
  metaReset();
  /* ⭐**2026-07-27から「全部消す」**(ユーザー指示「通常プレイ用のやつは初期化して最初からに」)。
@@ -2044,7 +2055,7 @@ function checkTwLook(){
    ⭐ユーザー指示「全容が見える大きさに」。⚠DOM側だけの検査はヘッドレスでは0個でも通るので、
      **項目データ(LAB_ITEMS)に姿の指定(pv)が付いているか**を見る。 */
 function checkPreview(){
- META.pts=999999;META.nt=3;META.nu=4;renderLab();
+ META.pts=999999;ownN(3,null);ownN(null,4);renderLab();
  const need=LAB_ITEMS.filter(it=>it.k==='nt'||it.k==='nu'||it.k==='tw'||it.k==='un'||it.k==='uv');
  if(!need.length){console.log('FAIL: 研究所にタワー/兵科の項目が1つも無い');process.exit(1);}
  const nopv=need.filter(it=>!it.pv).map(it=>it.t);
@@ -2265,7 +2276,7 @@ function checkHook(){
    ③重い兵科は「残り枠が足りない」で弾かれる(=体数ではなく重さで見ている証拠)
    ④倒れた部隊は枠を食わない。 */
 function checkSlotWt(){
- META.stg=0;setDiff=2;META.nu=U_N-BASE_U;META.team=null;startSolo();
+ META.stg=0;setDiff=2;ownN(null,U_N-BASE_U);META.team=null;startSolo();
  const me=G.players[0];
  const fill=(id)=>{const i=UBASE.findIndex(u=>u.id===id);
   me.units.length=0;me.team=[i];me.uUn=1;me.scrap=1e9;
@@ -2290,7 +2301,7 @@ function checkSlotWt(){
   if(n!==MAXU-uWt(HERO_I0)){console.log('FAIL: 英雄のぶんの枠が予約されていない(部隊が'+n+'体入った)');process.exit(1);}
   if(!heroDeploy(me)){console.log('FAIL: 枠を埋め切ると英雄が出せない(詰み)');process.exit(1);}
   me.hUi=-1;me.hOut=0;}
- me.units.length=0;me.team=null;META.nu=0;/* ⚠**解放数を戻す**=戻さないと後の検査が全兵科ありで走る */
+ me.units.length=0;me.team=null;ownN(null,0);/* ⚠**解放数を戻す**=戻さないと後の検査が全兵科ありで走る */
  backTitle();
  console.log('出撃枠(重さ制): タイタン4枠='+T.n+'体 / 猟犬1枠='+H.n+'体 / 満杯なら1枠も入らない / 戦死した枠は空く / 英雄のぶんは予約される OK');
 }
@@ -2338,7 +2349,7 @@ function checkTideKind(){
 function checkEvo(){
  /* ⚠⚠**2026-08-01に「未解放の兵科は進化も出さない」に変えた**(実機で
     「巨漢も何も解放していないのに進化が並ぶ」と指摘)。nu=0 で出るのは初期解放の2種ぶんだけ。 */
- META.uv=[];META.nu=0;META.pts=1e9;
+ META.uv=[];ownN(null,0);META.pts=1e9;
  renderLab();
  {const vs0=LAB_ITEMS.filter(o=>o.k==='uv');
   const base0=VBASE.filter(b=>UBASE.findIndex(u=>u.id===b)<BASE_U).length;
@@ -2348,7 +2359,7 @@ function checkEvo(){
   const adv0=vs0.filter(o=>/上級進化/.test(o.tag||''));
   if(adv0.length){console.log('FAIL: 本体未解放の上級兵科の進化が出ている '+adv0.length+'件');process.exit(1);}}
  /* 全部解放すれば基本8種+上級2種ぶん選べる */
- META.nu=U_N-BASE_U;renderLab();
+ ownN(null,U_N-BASE_U);renderLab();
  const vs=LAB_ITEMS.filter(o=>o.k==='uv');
  if(vs.length<ALLVB.length){console.log('FAIL: 進化の選択肢が'+vs.length+'件しか出ていない(全解放なら'+ALLVB.length+'種ぶん出るはず)');process.exit(1);}
  /* 1つ買っても「次の段階」が同じ兵科で出る=段階は飛ばせない */
@@ -2363,7 +2374,7 @@ function checkEvo(){
  /* ⭐⭐**タレットの進化は2段**(2026-08-02)=研究所には**中段が先に出て、最終形態はその後**。
     ⚠値段も別(最終形態は中段の2.6倍)。ここが逆になると「初期のタワーの最終形態が数百🧬で買える」に戻る。 */
  {const nt0=META.nt,tg0=META.tg;
-  META.tg=[];META.nt=T_PLAY-BASE_T;renderLab();
+  META.tg=[];ownN(T_PLAY-BASE_T,null);renderLab();
   const t1=LAB_ITEMS.filter(o=>o.k==='tg'),r1=t1.find(o=>o.id==='rifleM');
   if(!r1){console.log('FAIL: 進化の中段(速射ライフル台)が研究所に出ない');process.exit(1);}
   if(t1.some(o=>o.id==='rifle2')){console.log('FAIL: 中段を取る前に最終形態が研究所に出ている');process.exit(1);}
@@ -2372,16 +2383,16 @@ function checkEvo(){
   if(!r2){console.log('FAIL: 中段を取っても最終形態が出ない');process.exit(1);}
   if(!(r2.p>r1.p*2)){console.log('FAIL: 最終形態の値段が中段と大差ない '+r2.p+' vs '+r1.p);process.exit(1);}
   console.log('タレットの進化(研究所): 中段'+r1.p+'🧬 → 最終形態'+r2.p+'🧬 の順にだけ出る OK');
-  META.tg=tg0;META.nt=nt0;}
+  META.tg=tg0;ownN(nt0,null);}
  console.log('進化: 解放した兵科だけ出る(未解放0件) / 全解放で'+vs.length+'兵科から選べる / 最終段階は最低でも素の'+worst.toFixed(2)+'倍 / 1個目'+LAB_UV(0)+'pt OK');
- META.uv=[];META.nu=0;
+ META.uv=[];ownN(null,0);
 }
 /* ---- 🎒編成(連れて行く10体)。2026-08-01ユーザー指示で入れた仕組み ----
    ⚠画面のボタンからしか触らない所なので、放っておくと**検査が一度も通らない**。 */
 function checkTeam(){
  /* ⚠**ソロを1戦始めてから測る**=teamIdx は soloMeta() を見ており、
     タイトルのままだと対戦扱い(PVP_TEAM の10体固定)になって何を変えても動かない */
- META.stg=0;setDiff=2;META.nu=U_N-BASE_U;startSolo();
+ META.stg=0;setDiff=2;ownN(null,U_N-BASE_U);startSolo();
  const keep=META.team;
  /* ① 一度も触っていない(null)=安い順に自動で10体そろう */
  META.team=null;
@@ -2406,31 +2417,31 @@ function checkTeam(){
  /* ⑤ ⭐⭐**タイトル(試合が始まっていない時)もソロの上限で見る**(2026-08-01に実機で発覚)。
     soloMeta() は G を見るので**タイトルでは必ず対戦扱い**になり、研究所で1つも解放していないのに
     編成へ10体(巨漢〜火炎瓶)が並んでいた。 */
- {META.team=null;backTitle();META.nu=0;
+ {META.team=null;backTitle();ownN(0,0);/* ⚠(187)塔も0に戻す=下でタワーの上限も見るため */
   if(metaUnitCap()!==BASE_U){console.log('FAIL: タイトルの兵科上限が解放済みの数にならない '+metaUnitCap()+'(想定'+BASE_U+')');process.exit(1);}
   if(metaTowerCap()!==BASE_T){console.log('FAIL: タイトルのタワー上限が解放済みの数にならない '+metaTowerCap()+'(想定'+BASE_T+')');process.exit(1);}
   const t9=teamIdx();
   if(t9.length!==BASE_U||t9.some(i=>i>=BASE_U)){console.log('FAIL: タイトルの編成に未解放の兵科が入っている '+t9.join(','));process.exit(1);}
-  META.nu=3;
+  ownN(null,3);twGrantAll();/* ⚠(187)塔は測り終わったら全部持ち直す(後の検査が建てられなくなる) */
   if(metaUnitCap()!==BASE_U+3){console.log('FAIL: 研究所で解放したぶんがタイトルの編成に出ない '+metaUnitCap());process.exit(1);}}
  /* ⑥ ⭐**研究所で解放した兵科は、空きがあれば自動で編成に入る**(2026-08-02ユーザー指示) */
  {backTitle();
-  META.nu=0;META.team=null;
+  ownN(null,0);META.team=null;
   if(teamAutoAdd(UBASE[BASE_U].id)!=='auto'){
    console.log('FAIL: 編成を触っていない人の team を勝手に配列にしている(以後の自動補充が止まる)');process.exit(1);}
   if(META.team!=null){console.log('FAIL: teamAutoAdd が未設定の編成を書き換えた');process.exit(1);}
   /* 触った状態で空きがある=入る */
-  META.nu=1;META.team=[];
+  ownN(null,1);META.team=[];
   if(teamAutoAdd(UBASE[BASE_U].id)!=='add'){console.log('FAIL: 解放した兵科が編成に自動で入らない');process.exit(1);}
   if(teamIdx().indexOf(BASE_U)<0){console.log('FAIL: 自動で入れた兵科が編成に居ない');process.exit(1);}
   /* 満杯なら入れない(何を外すかはプレイヤーが決める) */
-  META.nu=U_N-BASE_U;META.team=[];
+  ownN(null,U_N-BASE_U);META.team=[];
   for(let i=TEAM_FIX.length;i<TEAM_N;i++)META.team.push(UBASE[i].id);
   if(teamIdx().length!==TEAM_N){console.log('FAIL: 検査の前提が崩れている(編成が'+teamIdx().length+'体)');process.exit(1);}
   if(teamAutoAdd(UBASE[TEAM_N].id)!=='full'){console.log('FAIL: 編成が満杯なのに押し込んでいる');process.exit(1);}
   if(teamIdx().indexOf(TEAM_N)>=0){console.log('FAIL: 満杯の編成に'+TEAM_N+'体を超えて入っている');process.exit(1);}
-  META.team=null;META.nu=0;}
- META.team=keep;META.nu=0;
+  META.team=null;ownN(null,0);}
+ META.team=keep;ownN(null,0);
  console.log('🎒編成: 未設定なら安い順に'+TEAM_N+'体・触った後は自動で埋めない・解放費は元のコスト・上限'+TEAM_N+'体・タイトルでも解放済みだけ・解放した兵科は空きがあれば自動で入る OK');
 }
 /* ---- 💎英雄召集(ガチャ): 排出率・重複・魔石の増減 ---- */
@@ -2508,9 +2519,9 @@ function checkGacha(){
    ⚠必殺技は画面のボタンからしか呼ばれない=普段のテストを素通りするので、ここで11人ぶん直接呼ぶ */
 function checkHero(){
  if(HERO_I0!==U_N){console.log('FAIL: 英雄がUNITSの末尾(U_N以降)に無い');process.exit(1);}
- META.stg=0;setDiff=2;META.nu=99;startSolo();
+ META.stg=0;setDiff=2;ownN(null,99);startSolo();
  if(metaUnitCap()>U_N){console.log('FAIL: 英雄まで兵科として解放できてしまう '+metaUnitCap());process.exit(1);}
- backTitle();META.nu=0;
+ backTitle();ownN(null,0);
  let dmgN=0;
  for(const h of HEROES){
   META.stg=0;setDiff=2;META.hero={};META.hero[h.id]=1;META.hsel=h.id;
@@ -3983,50 +3994,95 @@ function checkBnsFlow(){
   +') → 乗り込み → 🔧性能'+BUP.length+'項目/⚔装備'+BEQ.length+'種(最高速 '+BUS_SP+'→'+Math.round(sp1)
   +') → 出発 / 永続で持ち越す OK');
 }
-checkStrikes();
-checkSup();
-checkTeam();
-checkGacha();
-checkHero();
-checkUltMot();
-checkBonus();
-checkRice();
-checkCam();
-checkBnsFlow();
-checkTrain();
-checkRpg();
-checkProgress();
-checkMetaReset();
-checkEvo();
-checkFinRamp();
-checkHook();
-checkBite();
-checkFx2();
-checkGachaFx();
-checkTwFx();
-checkZLook();
-checkBus();
-checkHeroFx();
-checkPixel();
-checkULook();
-checkHeroLook();
-checkTwLook();
-checkPreview();
-checkSfxGain();
-checkTut();
-checkTutLock();
-checkResume();
-checkResumeFarm();
-checkTwNew();
-checkPerUp();
-checkLabSteps();
-checkStart0();checkLabMul();checkUChg();checkAtkMotion();checkSlotWt();checkTideKind();
-checkCryo();
-checkBeam();
-checkCoil();
-checkEarly();
-checkFinalBoss();
-checkZPools();
+/* ---- 🎓⭐⭐(187)進行の作り替えB=解放の門を2つにした(拠点クリアで棚に並ぶ → 🧬で買う) ----
+   ⚠**ここが崩れると「持っていない塔が建つ」「棚が永久に空」といった致命傷になる**ので、
+     ①配り切れているか ②棚が拠点クリアで増えるか ③買っていない塔は建たないか
+     ④旧セーブの解放済みを取り上げていないか の4つを見る。 */
+function checkUnlock(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kpSc=META.sc,kpOt=META.ot,kpOu=META.ou;
+ /* ① 17種/28種を1つ残らず配っているか(余ると永久に棚へ出ない物ができる) */
+ const sT=UNL_TN.reduce((a,b)=>a+b,0),sU=UNL_UN.reduce((a,b)=>a+b,0);
+ if(sT!==UNL_T.length)F('塔の配分が合わない 配'+sT+'/種'+UNL_T.length);
+ if(sU!==UNL_U.length)F('兵科の配分が合わない 配'+sU+'/種'+UNL_U.length);
+ for(const id of UNL_T)if(TW_IDX[id]==null||TW_IDX[id]>=T_PLAY)F('棚の塔 '+id+' が TOWERS に無い');
+ for(const id of UNL_U)if(UB_IDX[id]==null)F('棚の兵科 '+id+' が UBASE に無い');
+ /* ② 棚は拠点クリアで増える。⚠🚌拠点開拓(BNS_D)は数えない */
+ META.sc=[D5.map(()=>0),D5.map(()=>0)];
+ if(unlStep()!==0)F('まっさらなのに拠点をクリア済みと数えている '+unlStep());
+ if(shelfT().length!==UNL_TN[0]||shelfU().length!==UNL_UN[0])F('最初の棚が配分どおりでない');
+ META.sc[0][BNS_D]=1;
+ if(unlStep()!==0)F('🚌拠点開拓を拠点の数に入れている');
+ META.sc[0][0]=1;META.sc[0][1]=1;META.sc[0][2]=1;
+ if(unlStep()!==3)F('クリアした拠点が数えられていない '+unlStep());
+ const w3=UNL_TN[0]+UNL_TN[1]+UNL_TN[2]+UNL_TN[3];
+ if(shelfT().length!==w3)F('3拠点クリアの棚が配分どおりでない '+shelfT().length+'(想定'+w3+')');
+ if(!lockT().length&&!lockU().length)F('次の拠点で並ぶ分(🔒)が1つも見えない');
+ /* ③ 買っていない塔は盤面に建たない(⚙️で全部開けても) */
+ META.ot=[];META.ou=[];
+ META.stg=0;setDiff=2;startSolo();frames(10,.016);
+ {const me=G.players[0],si=AI_ORDER[0],ti=TW_IDX.tesla;
+  me.scrap=999999;me.unlocked=99;me.towers[si]=null;
+  if(buildTower(me,si,ti))F('研究所で買っていない塔が建った');
+  META.ot=['tesla'];
+  if(!buildTower(me,si,ti))F('研究所で買った塔が建たない');
+  /* 並びは TOWERS の順=飛び飛びに持っていても番号が入れ替わらない */
+  const L=twOwnList();
+  for(let k=1;k<L.length;k++)if(L[k]<=L[k-1])F('持ち物の並びが TOWERS の順になっていない');
+  me.towers[si]=null;}
+ backTitle();
+ /* ④ 旧セーブ(先頭からN個)の解放済みを取り上げない */
+ META.ot=null;META.nt=3;META.ou=null;META.nu=2;unlMigrate();
+ if(META.ot.length!==3||META.ot[0]!==TOWERS[BASE_T].id)F('旧セーブのタワー解放が引き継がれていない');
+ if(META.ou.length!==2||META.ou[0]!==UBASE[BASE_U].id)F('旧セーブの兵科解放が引き継がれていない');
+ META.sc=kpSc;META.ot=kpOt;META.ou=kpOu;twGrantAll();
+ console.log('🎓解放の門2つ: 塔'+sT+'種・兵科'+sU+'種を'+UNL_TN.length+'段に配り切り / 拠点クリアで棚が増える(🚌は数えない) / 買っていない塔は建たない / 旧セーブの解放済みは残る OK');
+}
+twGrantAll();checkUnlock();
+twGrantAll();checkStrikes();
+twGrantAll();checkSup();
+twGrantAll();checkTeam();
+twGrantAll();checkGacha();
+twGrantAll();checkHero();
+twGrantAll();checkUltMot();
+twGrantAll();checkBonus();
+twGrantAll();checkRice();
+twGrantAll();checkCam();
+twGrantAll();checkBnsFlow();
+twGrantAll();checkTrain();
+twGrantAll();checkRpg();
+twGrantAll();checkProgress();
+twGrantAll();checkMetaReset();
+twGrantAll();checkEvo();
+twGrantAll();checkFinRamp();
+twGrantAll();checkHook();
+twGrantAll();checkBite();
+twGrantAll();checkFx2();
+twGrantAll();checkGachaFx();
+twGrantAll();checkTwFx();
+twGrantAll();checkZLook();
+twGrantAll();checkBus();
+twGrantAll();checkHeroFx();
+twGrantAll();checkPixel();
+twGrantAll();checkULook();
+twGrantAll();checkHeroLook();
+twGrantAll();checkTwLook();
+twGrantAll();checkPreview();
+twGrantAll();checkSfxGain();
+twGrantAll();checkTut();
+twGrantAll();checkTutLock();
+twGrantAll();checkResume();
+twGrantAll();checkResumeFarm();
+twGrantAll();checkTwNew();
+twGrantAll();checkPerUp();
+twGrantAll();checkLabSteps();
+twGrantAll();checkStart0();checkLabMul();checkUChg();checkAtkMotion();checkSlotWt();checkTideKind();
+twGrantAll();checkCryo();
+twGrantAll();checkBeam();
+twGrantAll();checkCoil();
+twGrantAll();checkEarly();
+twGrantAll();checkFinalBoss();
+twGrantAll();checkZPools();
 runStage2();
 runNightmare();
 runPvE(2,'PvE'+D5[2].n+'(素の腕前・W'+D5[2].w+')',false);

@@ -2215,7 +2215,12 @@ const META_RESET=3;
    ⚠**分けてある理由**: 🛠DEVの「研究をリセット」から研究所ぶんだけを戻すため
    (難易度とステージの解放は消したくない)。2026-07-27ユーザー指示。 */
 function metaResetLab(){
- META.pts=0;META.nt=0;META.nu=0;META.st=['air'];META.eq='air';
+ /* ⚠(187)**買った物の集合も戻す**(進行の作り替えB)=数だけ0にしても持ち物が残る */
+ /* ⚠⚠**ここで `TWOWN_K` を触らない**=この関数は起動のごく早い時点(META_RESET の判定)からも呼ばれ、
+    その時 `TWOWN_K` はまだ TDZ=`typeof` でも例外になり、try の中なので**静かに途中で止まる**。
+    ⭐持ち物の覚え書きは `META.ot.length` を鍵にしてあるので、ここを空にすれば勝手に作り直される。 */
+ META.pts=0;META.nt=0;META.nu=0;META.ot=[];META.ou=[];
+ META.st=['air'];META.eq='air';
  /* ⚠**team は null で戻す**=空配列だと「触った結果、固定の2体だけ」の意味になってしまう */
  META.uv=[];META.tg=[];META.ld={};META.team=null;
  META.tw={};META.un={};META.st0=0;
@@ -2372,12 +2377,17 @@ const soloUI=()=>(G?soloMeta():(MODE==='solo'&&!COOP));
    soloMeta()はGを見るので、拠点を作る瞬間(newCamp)はまだ false になり得る=ここでDEVを見るのが確実 */
 /* ⚠**ソロ以外(対戦/協力)は研究所を持たない**ので PVP_T/PVP_U の固定数を返す。
    ⚠**チュートリアルは上限を外す**=2種しか建てられないと🔓解放カードの段が死ぬ(2026-08-01)。 */
-const metaTowerCap=()=>{const BT=(typeof BASE_T!=='undefined')?BASE_T:8;const TP=(typeof T_PLAY!=='undefined')?T_PLAY:20;
- const PT=(typeof PVP_T!=='undefined')?PVP_T:10;
- return (DEV||(typeof G!=='undefined'&&G&&G.tut))?TP:(soloUI()?BT+clamp(META.nt||0,0,TP-BT):PT);};
-const metaUnitCap=()=>{const BU=(typeof BASE_U!=='undefined')?BASE_U:12;const UN=(typeof U_N!=='undefined')?U_N:UNITS.length;
- const PU=(typeof PVP_U!=='undefined')?PVP_U:10;
- return (DEV||(typeof G!=='undefined'&&G&&G.tut))?UN:(soloUI()?BU+clamp(META.nu||0,0,UN-BU):PU);};
+/* ⚠⚠(187)**「先頭から何個」ではなく「持ち物の数」になった**(進行の作り替えB)=
+   研究所で買う順番が自由になったので、持ち物は飛び飛びになる。
+   ⭐**唯一の正は `twOwnList()`/`uOwnList()`**。ここはその長さを返すだけ。
+   ⚠**`i<metaTowerCap()` で「持っているか」を判定しない**=飛び飛びなので嘘になる。
+     持っているかは `twRank(i)>=0` / `uHasI(i)`。 */
+const metaTowerCap=()=>{const PT=(typeof PVP_T!=='undefined')?PVP_T:10;
+ if(typeof twOwnList!=='function')return (DEV?((typeof T_PLAY!=='undefined')?T_PLAY:20):PT);
+ return twOwnList().length;};
+const metaUnitCap=()=>{const PU=(typeof PVP_U!=='undefined')?PVP_U:10;
+ if(typeof uOwnList!=='function')return (DEV?((typeof U_N!=='undefined')?U_N:UNITS.length):PU);
+ return uOwnList().length;};
 /* ⭐2026-07-27ユーザー指示で**研究所の値段を全体的に上げた**(1.5倍→さらに1.8倍=素の2.7倍)。
    さらに同日、**タワー/部隊タブだけ1段ごとの伸び方を x1.13→x1.20 に**した(LAB_TW/LAB_UN)。
    ⚠検査 checkLabSteps() は「1本フルが20,000🧬を超えない/全部取りが60,000🧬を下回らない」を見ている。 */
@@ -4084,13 +4094,14 @@ function teamIdx(){
  /* ⚠**タイトルでは soloUI()**=G が無い時に対戦扱いになると、編成の🎒が
     「持っていない10体」で埋まる(2026-08-01に実機で発覚)。 */
  if(typeof soloUI==='function'&&!soloUI()&&!DEV)return PVP_TEAM();
- const own=metaUnitCap(),raw=META.team;
- let t=((raw)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&i<own);
+ /* ⚠⚠(187)**「先頭から何個」ではなく持ち物の集合で見る**=研究所で買う順が自由になったため */
+ const own=uOwnList(),raw=META.team;
+ let t=((raw)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&own.indexOf(i)>=0);
  t=Array.from(new Set(TEAM_FIX.concat(t))).sort((a,b)=>a-b).slice(0,TEAM_N);
  /* ⚠⚠**自動で埋めるのは「一度も編成を触っていない人」だけ**(2026-08-01に踏んだ)。
     いつも埋めると、外した瞬間に次の安い兵科が入ってきて**外れていないように見える**。
     ⭐編成を1回でも触ったら(`META.team` が配列になったら)その選択をそのまま尊重する。 */
- if(raw==null)for(let i=0;i<own&&t.length<TEAM_N;i++)if(t.indexOf(i)<0)t.push(i);
+ if(raw==null)for(const i of own){if(t.length>=TEAM_N)break;if(t.indexOf(i)<0)t.push(i);}
  return t.sort((a,b)=>a-b);
 }
 /* ⭐**研究所で新しい兵科を解放したら、空きがあれば自動で編成に入れる**(2026-08-02ユーザー指示)。
@@ -4369,7 +4380,8 @@ const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(
    ⭐印は「次が無い段=最終形態」(`!T.up2`)で見る。 */
 const LAB_TG=(k,i,fin)=>Math.round(380*Math.pow(1.085,i||0)*Math.pow(1.02,k||0)*(fin?2.6:1));
 /* 上級兵科(titan/valk)の進化は、その兵科そのものを研究所で解放してからでないと出さない */
-const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&i<BASE_U+(META.nu||0);};
+/* ⚠(187)持ち物が飛び飛びになったので「先頭から何個」ではなく集合で見る */
+const uvBaseOK=b=>{const i=UBASE.findIndex(u=>u.id===b);return i>=0&&(i<BASE_U||unHas(b)||DEV);};
 /* ⚠**弾薬(AMMO)は2026-07-27に廃止した**(ユーザー指示)。
    実弾タワーの威力に一律で乗るだけの数値だったので、**盤面のタワーを進化させる**方に置き換えた。
    ⚠書き戻さないこと。編成の弾薬タブ・研究所の弾薬項目も一緒に消してある。 */
@@ -4918,6 +4930,94 @@ const D5=[
 const BNS_D=6;
 const D_ORD=[0,1,2,BNS_D,3,4,5];
 const isBns=()=>!!(G&&G.pveDiff===BNS_D);
+
+/* 🎓⭐⭐⭐(187)**進行の作り替え B=解放の門を2つにする**(2026-08-06ユーザー決定。設計は DESIGN.md)。
+   ⭐**門①=拠点をクリアすると研究所の棚に並ぶ / 門②=🧬を払って買う**。
+   ⚠⚠**棚に並んだ中はどれから買ってもよい**=これが無いと「同じ強さの物から相性で選ぶ」が成立しない
+     (順番に買わされるだけなら、それは選択ではない)。
+   ⭐だから**持ち物を「先頭から何個」(META.nt/nu)ではなく「idの集合」(META.ot/ou)にした**。
+   ⚠⚠**盤面の⚙️解放(`C.unlocked`)は TOWERS の添字ではなく「持っている塔の並びの何番目まで」になった**
+     =持ち物が飛び飛びになったので、添字で数えると持っていない塔が建つ。
+     **`twOwnList()` / `twRank()` を必ず通すこと**(直に `ti>=C.unlocked` と書かない)。
+   ⚠**対戦/協力は今までどおり先頭10種**・🛠DEVと🎓チュートリアルは全種=どちらも並び=添字のまま。
+   📌**並び順と1段あたりの数は D(属性順の並べ替え)で引き直す**。ここは**仕組みだけ**で、
+     並びは今までの研究所の順(=TOWERS/UBASE の順)をそのまま写してある。 */
+const TW_IDX={};TOWERS.forEach((t,i)=>{if(TW_IDX[t.id]==null)TW_IDX[t.id]=i;});
+const UB_IDX={};UBASE.forEach((u,i)=>{if(UB_IDX[u.id]==null)UB_IDX[u.id]=i;});
+/* 🗼研究所で解放できる塔17種・🪖兵科28種(初期解放の2種ずつは含まない)。⚠**この並びが棚に出る順** */
+const UNL_T=['scrap','net','gren','flame','tesla','mortar','sniper','cryo','laser','acid','drone','arty','coil','rail','gat','plasma','fort'];
+const UNL_U=['big','gun','shd','mol','grn','frz','saw','med','snp','mgn','rkt','spr','chain','axe','smg','pike','flm','gld','elec','mortarU','engi','ninja','gren2','rail2','frost2','chief','titan','valk'];
+/* ⭐**1段(=拠点1つ)ごとに棚へ並ぶ数**。段0=最初から並んでいる分。
+   ⚠**合計は必ず UNL_T/UNL_U の長さに合わせる**(17 / 28)=余ると永久に棚へ出ない塔ができる。
+   ⚠いま拠点は12個(2ステージ×6難易度。🚌は数えない)ので11段まで配ってある。
+   📌設計の目安は「1ステージあたり 塔2種・兵科3種」。 */
+const UNL_TN=[2,1,2,1,2,1,2,1,2,1,2];
+const UNL_UN=[3,2,3,2,3,2,3,2,3,2,3];
+/* 進行の段=**クリア済みの拠点の数**(0〜12)。⚠🚌拠点開拓は「遊べば開く」面なので数えない */
+const UNL_ORD=D_ORD.filter(d=>d!==BNS_D);
+function unlStep(){let n=0;
+ for(let s=0;s<STAGES.length;s++){const a=scArr(s);for(const d of UNL_ORD)if(a[d])n++;}
+ return n;}
+/* 段 st までに棚へ並ぶ個数(段0の分を含むので st+1 個ぶん足す) */
+const unlCnt=(arr,st)=>{let s=0;const n=Math.min(st+1,arr.length);for(let i=0;i<n;i++)s+=arr[i];return s;};
+const shelfT=()=>UNL_T.slice(0,unlCnt(UNL_TN,unlStep()));
+const shelfU=()=>UNL_U.slice(0,unlCnt(UNL_UN,unlStep()));
+/* ⭐**次の1段で並ぶ物**(鍵つきで見せる分)。⚠隠さない=進む動機になる(設計①) */
+const lockT=()=>UNL_T.slice(unlCnt(UNL_TN,unlStep()),unlCnt(UNL_TN,unlStep()+1));
+const lockU=()=>UNL_U.slice(unlCnt(UNL_UN,unlStep()),unlCnt(UNL_UN,unlStep()+1));
+const twHas=id=>(META.ot||[]).indexOf(id)>=0;
+const unHas=id=>(META.ou||[]).indexOf(id)>=0;
+/* ⭐**持っている塔の並び**(TOWERSの添字の配列)。⚠盤面の解放はこの並びを頭から開けていく。
+   ⚠**持ち物が増えた時しか変わらない**ので、長さと場面で覚えておく(CPUの思考から何度も呼ばれる)。 */
+let TWOWN_C=null,TWOWN_K=-1;
+function twOwnList(){
+ const solo=(typeof soloUI==='function')?soloUI():true;
+ const all=!!(DEV||(typeof G!=='undefined'&&G&&G.tut));
+ const k=(all?1:0)+(solo?2:0)+((META.ot||[]).length*4);
+ if(TWOWN_K===k&&TWOWN_C)return TWOWN_C;
+ const a=[];
+ if(all){for(let i=0;i<T_PLAY;i++)a.push(i);}
+ else if(!solo){for(let i=0;i<PVP_T;i++)a.push(i);}
+ else{for(let i=0;i<BASE_T;i++)a.push(i);
+  for(const id of UNL_T)if(twHas(id)&&TW_IDX[id]!=null)a.push(TW_IDX[id]);
+  /* ⚠⚠**並びは必ず TOWERS の順(=安い順)に揃える**=買った順にすると、盤面の⚙️解放が
+     「高い塔から先」になったり、道具の `me.unlocked=ti+1` が別の塔を指したりする。
+     ⭐**全部持っていれば 並びの番号=TOWERSの添字** になる(Dで棚の順を変えても崩れない)。 */
+  a.sort((x,y)=>x-y);}
+ TWOWN_K=k;TWOWN_C=a;return a;}
+/* 🛠**検査と道具から「塔を全部持っている事にする」**(187)=盤面に建てて測るため。
+   ⚠遊びの中からは呼ばない。⚠これを呼ばずに `me.unlocked=ti+1` と書いても、持っていない塔は建たない。 */
+function twGrantAll(){if(!Array.isArray(META.ot))META.ot=[];
+ for(const id of UNL_T)if(!twHas(id))META.ot.push(id);
+ META.nt=META.ot.length;TWOWN_K=-1;}
+/* その塔が持ち物の何番目か(-1=持っていない)。⚠`C.unlocked` と比べるのはこの値 */
+const twRank=ti=>twOwnList().indexOf(ti);
+/* 盤面で建てられるか=持っていて、かつ⚙️で解放済みか */
+const twReady=(C,ti)=>{const r=twRank(ti);return r>=0&&r<((C&&C.unlocked)|0);};
+/* ⭐**持っている兵科の並び**(UBASEの添字)。⚠編成(teamIdx)はここから引く */
+function uOwnList(){
+ if(DEV||(typeof G!=='undefined'&&G&&G.tut)){const a=[];for(let i=0;i<U_N;i++)a.push(i);return a;}
+ if(typeof soloUI==='function'&&!soloUI()){const a=[];for(let i=0;i<PVP_U;i++)a.push(i);return a;}
+ const a=[];for(let i=0;i<BASE_U;i++)a.push(i);
+ for(const id of UNL_U)if(unHas(id)&&UB_IDX[id]!=null)a.push(UB_IDX[id]);
+ return a.sort((x,y)=>x-y);}
+const uHasI=i=>uOwnList().indexOf(i)>=0;
+/* 旧セーブの移し替え=**先頭から何個**で持っていた分を id の集合にする。
+   ⚠**TOWERS/UBASE の並びで写す**(UNL_T の並びで写すと、Dで並べ替えた後に別の物へ化ける)。
+   ⚠**解放済みを取り上げない**のがこの関数の唯一の仕事(設計①)。 */
+function unlMigrate(){
+ if(!Array.isArray(META.ot)){META.ot=[];
+  const n=clamp(META.nt|0,0,T_PLAY-BASE_T);
+  for(let i=BASE_T;i<BASE_T+n;i++)if(TOWERS[i])META.ot.push(TOWERS[i].id);}
+ if(!Array.isArray(META.ou)){META.ou=[];
+  const n=clamp(META.nu|0,0,U_N-BASE_U);
+  for(let i=BASE_U;i<BASE_U+n;i++)if(UBASE[i])META.ou.push(UBASE[i].id);}
+ /* ⚠古い数え方も合わせておく(成績表など「何種持っているか」を出す所のため) */
+ META.nt=META.ot.length;META.nu=META.ou.length;TWOWN_K=-1;}
+/* ⚠⚠**META を読み込んだ直後ではなくここで呼ぶ**=移し替えに TOWERS/UBASE が要るため。
+   ⚠**既定の META に `ot:[]` を書いてはいけない**=Object.assign で「配列がある」状態になり、
+     移し替えが素通りして**古い人の解放済みが消える**。 */
+unlMigrate();
 /* ⭐⭐**開拓便の「超大量」を決める3つのノブ**(2026-08-02(2)ユーザー①)。
    ⚠⚠**宣言をファイルの下の方に置かないこと**=`tideStep` は上の方にあるので、
      下で const にすると読み込み順によっては初期化前アクセスになる(NOTESの TDZ の穴)。
@@ -18128,7 +18228,9 @@ function buildTower(C,si,ti){
  if(!T||T.grd)return false;/* グレードアップ専用は直接は建たない(建て替えでしか手に入らない) */
  if(C.dead||F.dead||F.towers[si]||C.scrap<T.cost)return false;
  /* 支援施設はタワーの解放チェーン(unlocked)の外。それ以外は解放済みの物だけ */
- if(T.type!=='sup'&&ti>=C.unlocked)return false;
+ /* ⚠⚠(187)**添字ではなく「持ち物の並びの何番目か」で見る**=研究所で買う順が自由になったので、
+    `ti>=C.unlocked` だと持っていない塔が建つ(進行の作り替えB)。 */
+ if(T.type!=='sup'&&!twReady(C,ti))return false;
  /* 廃品工房・支援施設は専用スロット専用。逆に専用スロットにはそれしか建てられない */
   if(T.off)return false;/* (113)外した施設は建てられない */
  if(isSupSlot(si)){if(T.type!=='sup'||!supUnlocked(F,si))return false;
@@ -19572,7 +19674,9 @@ function doPurchase(C,kind,opt){
  if(usePts)C.up-=p;else C.scrap-=p;
  switch(kind){
   case 'unlock':C.unlocked++;
-   if(C.isMe&&G){G.introQ=G.introQ||[];G.introQ.push({k:'t',i:C.unlocked-1});}break;
+   /* ⚠(187)紹介に渡すのは**TOWERSの添字**=持ち物の並びから引き直す */
+   if(C.isMe&&G){G.introQ=G.introQ||[];const ti9=twOwnList()[C.unlocked-1];
+    if(ti9!=null)G.introQ.push({k:'t',i:ti9});}break;
   case 'uun':C.uUn++;
    if(C.isMe&&G){G.introQ=G.introQ||[];G.introQ.push({k:'u',i:(C.team||[])[C.uUn-1]});}break;
   case 'slot':{const F2=(G&&G.coop)?G.players[0]:C,si2=opt.si|0;
@@ -19612,12 +19716,19 @@ function cpuTick(C,dt){
   if(sh>eq+4&&C.scrap>=prPush(C.pushUses)*res*1.8&&Math.random()<C.ai.ag*.7){pushTide(C,bt2);return;}}
  let armored=0;for(const z of C.zombies)if(z.armor)armored++;
  const built=C.towers.filter(t=>t).length;
- const cnt=[0,0,0,0,0,0,0,0];for(const t of C.towers)if(t)cnt[t.ti]++;
+ const cnt=[0,0,0,0,0,0,0,0];for(const t of C.towers)if(t)cnt[t.ti]=(cnt[t.ti]|0)+1;
+ const cN=i=>cnt[i]|0;
+ /* ⚠⚠(187)**添字の大小で「解放済み」を判定しない**=持ち物が飛び飛びになった(進行の作り替えB)。
+    持っていて⚙️で開けてあるかは `twReady(C,ti)`、並び順は `twOwnList()`。 */
+ const OWN9=twOwnList();
  let want=-1;
  if(built<2)want=0;
- else if(!cnt[ECO_TI]&&C.unlocked>ECO_TI&&wave<14)want=ECO_TI;/* ⚠添字の直書きをやめた(2026-08-01に並びを変えた) */
- else if(armored>=2&&C.unlocked>4&&cnt[4]+cnt[5]<2)want=C.unlocked>5?5:4;
- else{for(let i=C.unlocked-1;i>=0;i--){if(i===ECO_TI)continue;if(i===0&&cnt[0]>=3)continue;if(C.scrap>=TOWERS[i].cost*res){want=i;break;}}}
+ else if(!cN(ECO_TI)&&twReady(C,ECO_TI)&&wave<14)want=ECO_TI;/* ⚠添字の直書きをやめた(2026-08-01に並びを変えた) */
+ /* 🛡装甲が湧いてきたら爆裂砲/火炎放射(=装甲に通る2種)を優先する。持っていなければ素通り */
+ else if(armored>=2){const a9=[TW_IDX.gren,TW_IDX.flame].filter(i=>i!=null&&twReady(C,i));
+  if(a9.length&&a9.reduce((s,i)=>s+cN(i),0)<2)want=a9[a9.length-1];}
+ if(want<0&&built>=2){for(let k=Math.min(C.unlocked,OWN9.length)-1;k>=0;k--){const i=OWN9[k];
+  if(i===ECO_TI)continue;if(k===0&&cN(i)>=3)continue;if(C.scrap>=TOWERS[i].cost*res){want=i;break;}}}
  if(want>=0&&C.scrap>=TOWERS[want].cost*res){
   if(TOWERS[want].type==='eco'){/* 工房は専用スロットへ */
    for(let k=0;k<ECO_MAX;k++){const si=ECO_BASE+k;if(!C.towers[si]&&ecoUnlocked(C,si)){if(buildTower(C,si,want))return;}}
@@ -21993,13 +22104,14 @@ function openBM(si){
    const want=sSlot?'sup':eSlot?'eco':'';
    if(T.grd||T.off)continue;/* グレードアップ専用と、外した施設は建設リストに出さない */
    if(want){if(T.type!==want)continue;}
-   else{if(T.type==='eco'||T.type==='sup')continue;if(i>=m.unlocked)continue;}
+   /* ⚠(187)添字ではなく持ち物の並びで見る(進行の作り替えB) */
+   else{if(T.type==='eco'||T.type==='sup')continue;if(!twReady(m,i))continue;}
    /* 🛡⭐**硬い敵への通り方を札で出す**(2026-08-04)=盤面で建てる時に一番効く情報 */
    /* ⛔**相性の札は外した**(2026-08-04(145))=(138)で足したが、文字でも記号でも読まれない。
       ⚠**書き戻さない**。相性は敵の見た目と戦闘中のダメージ数字の色で言う。 */
    h+=`<div class="bm-item ${m.scrap<T.cost?'poor':''}" data-p="${T.cost}" data-bd="${i}"><canvas data-th="${i}" width="92" height="80"></canvas><span class="bn">${T.n}</span><span class="bc">⚙️${T.cost}</span></div>`;}
   h+='</div>';
-  if(eSlot&&m.unlocked<=ECO_TI)h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所で『廃品工房』を解放すると建てられる</div>';
+  if(eSlot&&!twReady(m,ECO_TI))h+='<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所で『廃品工房』を解放すると建てられる</div>';
  }else{const T=TOWERS[tw.ti],eco=T.type==='eco';
   if(!tw.us)tw.us=newUs();
   const rows=twStats(tw.ti).map(st=>{
@@ -22235,7 +22347,7 @@ function actPush(){
  if(G)pushTide(G.players[G.myIdx],PUSHTGT);
 }
 /* ---- アクション(ローカル/通信ルーティング) ---- */
-function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||ti>=m.unlocked||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:newUs(),jamT:0,own:CS.myJ};sfx.build();}
+function actBuild(si,ti){if(MODE==='client'){const m=meV();if(m.towers[si]||!twReady(m,ti)||m.scrap<TOWERS[ti].cost)return;sendCmd({t:'c',a:'bd',si,ti});CS.meN.scrap-=TOWERS[ti].cost;CS.meN.towers[si]={ti,us:newUs(),jamT:0,own:CS.myJ};sfx.build();}
  else buildTower(G.players[G.myIdx],si,ti);}
 function actUp(si,st){st=st||'d';
  if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!tw||!tw.us||tw.us[st]==null||tw.us[st]>=usCap(tw.ti,st))return;const p=stCost(tw,st);if(m.scrap<p)return;sendCmd({t:'c',a:'up',si,st});CS.meN.scrap-=p;tw.us[st]++;sfx.build();}
@@ -22375,7 +22487,8 @@ function ivRender(){
  const pc=k=>priceOf(m,k,{zi:ivS.zi,cnt:ivS.cnt});
  const can=k=>m.scrap>=pc(k);
  const tcap=metaTowerCap(),ucap=metaUnitCap();
- const nx=m.unlocked<tcap?TOWERS[m.unlocked]:null;
+ /* ⚠(187)次に開く塔は**持ち物の並びの m.unlocked 番目**(添字ではない) */
+ const nx=m.unlocked<tcap?TOWERS[twOwnList()[m.unlocked]]:null;
  const labT=!nx&&tcap<TOWERS.length,labU0=tcap<TOWERS.length;
  /* ⚠**WAVE3までの解放ロックは廃止した**(2026-07-27ユーザー指示)。最初の作戦タイムから解放できる */
  let h='';
@@ -27807,7 +27920,8 @@ function renderHeroPick(){
    n=タブの短い名前 / d=そのタブの1行説明 */
 /* ic=タブのアイコン素材名 / em=素材が無い時の絵文字 / t=タブの文字 */
 const LAB_CATS=[
- {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'タワー/兵科/🎯砲撃を1つずつ順番に解放する'},
+ /* ⚠(187)**「1つずつ順番に」ではなくなった**=拠点をクリアすると棚に並び、並んだ中から選んで買う */
+ {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'拠点をクリアすると棚に並ぶ。並んだ中から選んで解放する'},
  /* ⚠**派生は兵科とタレットに分けてある**(2026-08-02ユーザー指摘「派生タブにユニットとタレットが
     まとめて入ってるけど、選んだらその中に分岐があったほうがいい」)=下の LAB_TOP の2段目で切り替える */
  {k:'varu',ic:'ic-tab-var',em:'🧬',t:'兵科',d:'兵科の派生(🎖編成で入れ替える)'},
@@ -27856,8 +27970,25 @@ function renderLab(){
  const items=[];
  /* ⭐カードには**実物の姿**を出す(2026-07-26 第91弾ユーザー指示「全容が見える大きさに」)。
     pv={k:'t'|'u', i:添字, def:差し替える中身} を持たせると、下で canvas に描く */
- if(META.nt<T_PLAY-BASE_T){const T=TOWERS[BASE_T+META.nt];items.push({cat:'new',k:'nt',ic:'🗼',pv:{k:'t',i:BASE_T+META.nt},t:T.n,tag:'新型タワー '+(META.nt+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:LAB_NT(META.nt)});}
- if(META.nu<U_N-BASE_U){const U=UBASE[BASE_U+META.nu];/* ⚠UNITSは派生に差し替わるのでUBASE */items.push({cat:'new',k:'nu',ic:'🤖',pv:{k:'u',i:BASE_U+META.nu,def:U},t:U.n,tag:'新型兵科 '+(META.nu+1)+'/'+(U_N-BASE_U),d:U.dsc,p:LAB_NU(META.nu)});}
+ /* 🎓⭐⭐⭐(187)**棚に並ぶのは「クリアした拠点まで」**(進行の作り替えB)。
+    ⭐並んだ中は**どれから買ってもよい**=同じ段の物は強さを揃えてあるので、選ぶ理由が相性になる。
+    ⚠⚠**値段は「次の1個ぶん」で全部共通**=どれを先に買っても損得が出ないようにする
+      (物ごとに値段を変えると「安い順に買う」だけの作業に戻る)。
+    ⚠先の分は**🔒鍵つきで見せる**(隠さない=進む動機になる)。 */
+ {const ot=META.ot||[],ou=META.ou||[],pT=LAB_NT(ot.length),pU=LAB_NU(ou.length);
+  for(const id of shelfT()){if(twHas(id))continue;const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
+   items.push({cat:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
+    tag:'新型タワー '+(ot.length+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:pT});}
+  /* ⚠UNITSは派生に差し替わるのでUBASE */
+  for(const id of shelfU()){if(unHas(id))continue;const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
+   items.push({cat:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
+    tag:'新型兵科 '+(ou.length+1)+'/'+(U_N-BASE_U),d:U.dsc,p:pU});}
+  /* 🔒次の拠点で棚に並ぶ分。⚠`k` を持たせない=押しても買えない(タブのバッジにも数えない) */
+  const lk9='🔒 次の拠点をクリアで並ぶ';
+  for(const id of lockT()){const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
+   items.push({cat:'new',lk:1,ic:'🔒',pv:{k:'t',i:i9},t:T.n,tag:lk9,d:T.dsc,p:0});}
+  for(const id of lockU()){const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
+   items.push({cat:'new',lk:1,ic:'🔒',pv:{k:'u',i:i9,def:U},t:U.n,tag:lk9,d:U.dsc,p:0});}}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -27884,7 +28015,7 @@ function renderLab(){
  {const tg=META.tg||[];
   for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];
    if(!T||T.type==='sup'||T.grd)continue;/* 素のタワーだけを起点にする */
-   if(i>=BASE_T&&(i-BASE_T)>=(META.nt||0))continue;/* 研究所でまだ解放していない新型 */
+   if(i>=BASE_T&&!twHas(TOWERS[i].id)&&!DEV)continue;/* (187)研究所でまだ買っていない新型 */
    /* その系統の「まだ解放していない一番手前の段」を探す */
    let cur=i,nx=T_GRD(cur);
    while(nx>=0&&tg.indexOf(TOWERS[nx].id)>=0){cur=nx;nx=T_GRD(cur);}
@@ -27921,7 +28052,7 @@ function renderLab(){
  {const seen={};
   for(let i=0;i<T_PLAY;i++){const T=TOWERS[i];
    if(T.type==='sup')continue;
-   if(i>=BASE_T&&(i-BASE_T)>=(META.nt||0))continue;/* 研究所でまだ解放していない新型 */
+   if(i>=BASE_T&&!twHas(TOWERS[i].id)&&!DEV)continue;/* (187)研究所でまだ買っていない新型 */
    const key=twKey(T);if(seen[key])continue;seen[key]=1;
    const lv=(META.tw&&META.tw[key])||0;if(lv>=LINE_MAX)continue;
    const TRT=twTrait(T);/* ⚠TT という名前は使わない=グローバルのゲーム時刻を隠すため */
@@ -27932,7 +28063,7 @@ function renderLab(){
     UNITS は編成を適用した時点で派生キャラの実体に差し替わり、タイトルへ戻っても元に戻らない。
     UNITS で引くと『狼』のidで保存され、出撃側(unKey=元のid)が読めず**強化が消える**。 */
  for(let i=0;i<U_N;i++){const U=UBASE[i];
-  if(i>=BASE_U&&(i-BASE_U)>=(META.nu||0))continue;/* まだ解放していない兵科 */
+  if(i>=BASE_U&&!unHas(UBASE[i].id)&&!DEV)continue;/* (187)まだ買っていない兵科 */
   const lv=(META.un&&META.un[U.id])||0;if(lv>=LINE_MAX)continue;
   const st=UN_STEP(U.type),hl=U.type==='heal'?'回復':'攻撃';
   items.push({cat:'unup',k:'un',id:U.id,sm:1,ic:UN_IC[U.type]||'🪖',pv:{k:'u',i:i,def:U},t:U.n,tag:'Lv'+lv+'/'+LINE_MAX,
@@ -27941,8 +28072,9 @@ function renderLab(){
  if((META.st0||0)<STK_MAX)items.push({cat:'new',k:'st0',ic:'🎯',t:'砲撃の威力+'+Math.round(STK_STEP*100)+'%',
   tag:'Lv'+(META.st0||0)+'/'+STK_MAX,d:'装備している砲撃すべての直撃と燃焼が強くなる',p:LAB_ST0(META.st0||0)});
  /* 解放済みの一覧(何を取ったか分かるように) */
- const doneT=TOWERS.slice(BASE_T,BASE_T+META.nt).map(t=>'🗼'+t.n),
-  doneU=UNITS.slice(BASE_U,BASE_U+META.nu).map(u=>'🤖'+u.n),
+ /* ⚠(187)買った物は id の集合(META.ot/ou)=先頭から何個ではない */
+ const doneT=(META.ot||[]).map(id=>{const T=TOWERS[TW_IDX[id]];return T?'🗼'+T.n:'';}).filter(Boolean),
+  doneU=(META.ou||[]).map(id=>{const U=UBASE[UB_IDX[id]];return U?'🤖'+U.n:'';}).filter(Boolean),
   doneS=META.st.filter(k=>k!=='air').map(k=>icoImg('ic-stk-'+k,STRIKES[k].ic)+STRIKES[k].n),
   doneV=(META.uv||[]).map(id=>{const e=VARLIST.find(x=>x.v.id===id);return e?'🧬'+e.v.n:'';}).filter(Boolean),
   doneG=(META.tg||[]).map(id=>{const T=TOWERS.find(t=>t.id===id);return T?(T.type==='eco'?'🏭':'🗼')+T.n:'';}).filter(Boolean),
@@ -28021,7 +28153,7 @@ function renderLab(){
    +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
   body='<div class="bphint">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
     +cat.d+'</div>'
-   +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=META.pts>=it.p;
+   +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=!it.lk&&META.pts>=it.p;
      /* ⭐姿があるものは絵文字ではなく**実物**を描く(第91弾)。何を解放/強化するのか一目で分かる */
      /* ⭐⭐**段のある物は「棒」で見せる**(2026-08-02(68))=調べた型「行そのものを進捗計にする」。
         ⚠**"Lv3/20" という数字だけでは、あと何段あるのかが読み取れない**。
@@ -28038,7 +28170,8 @@ function renderLab(){
       +((rest||(it.sm&&it.d))?'<div class="tg">'+rest+(it.sm&&it.d?(rest?' ':'')+it.d:'')+'</div>':'')
       +bar
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
-      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')+'</button></div>';}).join('')+'</div>')
+      /* 🔒(187)まだ棚に並んでいない物=値段ではなく鍵を出す(押せない) */
+      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?'🔒':('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button></div>';}).join('')+'</div>')
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
  }
  $('lab-items').innerHTML=IC(body);
@@ -28076,8 +28209,13 @@ function renderLab(){
      ⚠**id は増やす前に控える**(it.pv.def=UBASE[BASE_U+META.nu] を指しているため)。
      ⚠**teamAutoAdd は META.nu を増やした後**に呼ぶ=持っていない兵科は編成に入れないため。 */
   let tmId9='',tmHow9='';
-  if(it.k==='nu')tmId9=(it.pv&&it.pv.def&&it.pv.def.id)||'';
-  if(it.k==='nt')META.nt++;else if(it.k==='nu'){META.nu++;tmHow9=teamAutoAdd(tmId9);}else if(it.k==='stk')META.st.push(it.id);
+  if(it.k==='nu')tmId9=it.id||(it.pv&&it.pv.def&&it.pv.def.id)||'';
+  /* ⚠(187)**買った物は id で積む**(進行の作り替えB)=棚のどれから買ってもよくなったため。
+     ⚠`META.nt/nu` は「何種持っているか」の数として合わせておく(成績表などが読む)。
+     ⚠**`TWOWN_K=-1` を忘れない**=持ち物の並びの覚え書きを捨てないと、買った塔がその試合で建たない。 */
+  if(it.k==='nt'){if(!Array.isArray(META.ot))META.ot=[];META.ot.push(it.id);META.nt=META.ot.length;TWOWN_K=-1;}
+  else if(it.k==='nu'){if(!Array.isArray(META.ou))META.ou=[];META.ou.push(it.id);META.nu=META.ou.length;tmHow9=teamAutoAdd(tmId9);}
+  else if(it.k==='stk')META.st.push(it.id);
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);
    /* ⭐買っただけでは装着されない(仕様)ので、どこで着けるかをその場で言う(2026-08-03 UI総監査) */
    toast('⭐『'+it.t+'』を解放した(🎖編成 → 派生を選ぶ で装着)');}
@@ -28253,7 +28391,8 @@ function renderLoad(){
      ⚠猟犬とバットは固定枠(外せない)。 */
   /* ⭐**上=いま連れて行く編成(押すと外す) / 下=入れる兵科(押すと入れる)**
      (2026-08-01ユーザー指示「今選んでるユニットを上部に出して、下から選んで入れる形式に」)。 */
-  const own=metaUnitCap(),T9=teamIdx();
+  /* ⚠(187)持ち物は飛び飛び=**並びそのもの**を持つ(数ではない) */
+  const ownL=uOwnList(),own=ownL.length,T9=teamIdx();
   const sum=T9.reduce((s,x)=>s+(UNITP[x]||0),0);
   /* ⭐**見出しは「何をする所か」だけ**にして、細かい決まりは下の札で言う(2026-08-02(66))。
      ⚠タブ名「🎒 連れて行く」の真下に同じ文字を繰り返さない(2026-08-03 UI総監査)。
@@ -28286,7 +28425,7 @@ function renderLoad(){
        ⚙️の値と並べて置く限り、読ませるのではなく**ノイズになる**。 */
   if(ADD){
   h+='<div class="tmgrid" id="tm-grid">';
-  for(let i=0;i<own;i++){
+  for(const i of ownL){
    const U=UBASE[i];if(!U)continue;
    const on=T9.indexOf(i)>=0,fx=TEAM_FIX.indexOf(i)>=0;
    /* ⭐編成に入っている札も押せる=**押すと外すトグル**(disabledの死に札が一覧の先頭を埋めていた)。
@@ -32506,8 +32645,11 @@ $('bt-lobby-back').onclick=backTitle;
      T_PLAY/U_N のような後で定義される const をそこで触ると TDZ で落ちる(ZCAVEで実際に踏んだ)。
      だから「研究所で解放する種類」の開放だけは、全部の定義が終わったここでやる。 */
 if(DEV){try{
- META.nt=Math.max(META.nt||0,T_PLAY-BASE_T);
- META.nu=Math.max(META.nu||0,U_N-BASE_U);
+ /* ⚠(187)持ち物は id の集合になった=**中身も全部入れる**(数だけ合わせても棚が空になる) */
+ if(!Array.isArray(META.ot))META.ot=[];if(!Array.isArray(META.ou))META.ou=[];
+ for(const id of UNL_T)if(!twHas(id))META.ot.push(id);
+ for(const id of UNL_U)if(!unHas(id))META.ou.push(id);
+ META.nt=META.ot.length;META.nu=META.ou.length;TWOWN_K=-1;
  for(const k of STK_ORDER)if(META.st.indexOf(k)<0)META.st.push(k);/* 砲撃5種も全部 */
  /* ⭐個別強化(タワー/兵科)と砲撃の威力も最大にする(2026-07-26)。
     ⚠ここを開けないと**実機で強化の効果を確かめられない**(DEVは全開放という約束) */
