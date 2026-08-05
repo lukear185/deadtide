@@ -60,6 +60,11 @@ SCN.push({n:"英雄+塔22",mix:["hNox"],hero:"hNox",tw:"rifle"});
    ⚠**全部の塔でやると倍の時間が掛かる**ので、火力と演出が濃い塔だけに絞る。 */
 ["fort","coil","gat","flame","plasma","tesla","gren","arty"].forEach(function(id){
  SCN.push({n:"🔥12枠MAX+ボス "+id,heat:id});});
+/* ⚔(186)**兵科も1種だけ並べて測る**=30種を測ったら**ヴァルキリーだけ**桁違いだった
+   (剣の光で1体につき合成3.7回=20体で74.5回)。⚠**出撃枠いっぱい(重さ4=5体)で見張る**。
+   ⚠他29種は3〜7回で横並びだったので、代表として一番重い2種だけ置く。 */
+[["valk",5],["shd",20]].forEach(function(q){
+ SCN.push({n:"⚔"+q[0]+"×"+q[1]+"+雑魚",uheat:q[0],un:q[1]});});
 var R=[];
 function snap(){var o={};for(var k in PF.cur)o[k]=PF.cur[k];return o;}
 for(var si=0;si<SCN.length;si++){
@@ -73,6 +78,13 @@ for(var si=0;si<SCN.length;si++){
    startTst();me=G.players[0];
    var th=TOWERS.findIndex(function(q){return q.id===S9.heat;});
    tstFill(th);TSTKEEP="b";
+  }else if(S9.uheat){
+   /* ⚔(186)兵科を1種だけ並べる。⚠**枠と待ち時間は通さず直に積む**(同じ体数で比べる場なので) */
+   startTst();me=G.players[0];TSTKEEP="s";
+   var uh=UNITS.findIndex(function(q){return q.id===S9.uheat;});
+   for(var ku=0;ku<S9.un;ku++){var hu=Math.round(UNITS[uh].hp*3);
+    me.units.push({eid:(EID++),ui:uh,own:0,am:1,d:PLEN-70-((ku*13)%160),
+     hp:hu,mhp:hu,cd:(ku%7)*.05,hitT:0,ph:(ku%9),px:0,py:0});}
   }else{
    setDiff=3;showIntro=function(){};startSolo();
    var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<60)introNext();
@@ -89,9 +101,15 @@ for(var si=0;si<SCN.length;si++){
   /* 数える。⚠**最初の数コマは焼き込みが走る**ので捨てる */
   var A={area:0,garea:0,aarea:0,grad:0,comp:0,fill:0,stroke:0,img:0,filt:0,shad:0},N=0,TG={};
   for(var k=0;k<80;k++){
-   /* ⚠**🔥の場面は敵を自分で足さない**=検証場の側が湧かせ続けている(ボスは6体まで) */
-   if(!S9.heat)while(me.zombies.filter(function(z){return !z.dead;}).length<45){
+   /* ⚠**🔥⚔の場面は敵を自分で足さない**=検証場の側が湧かせ続けている(ボスは6体まで) */
+   if(!S9.heat&&!S9.uheat)while(me.zombies.filter(function(z){return !z.dead;}).length<45){
     me.zombies.push(mkZ(zSpec(ri(0,5),18,20),PLEN*(0.22+Math.random()*0.55)));}
+   /* ⚔倒れて減るので毎コマ足し直す(同じ体数で比べるため) */
+   if(S9.uheat){var uh2=UNITS.findIndex(function(q){return q.id===S9.uheat;});
+    while(me.units.length<S9.un){var hu2=Math.round(UNITS[uh2].hp*3);
+     me.units.push({eid:(EID++),ui:uh2,own:0,am:1,d:PLEN-70-((me.units.length*13)%160),
+      hp:hu2,mhp:hu2,cd:0,hitT:0,ph:(me.units.length%9),px:0,py:0});}
+    for(var qu=0;qu<me.units.length;qu++)me.units[qu].hp=me.units[qu].mhp;}
    me.core=me.coreMax;if(S9.hero)me.hCg=1;
    gameStep(0.033);
    for(var q in PF.cur)PF.cur[q]=0;PF.tags={};
