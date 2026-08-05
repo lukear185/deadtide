@@ -51,6 +51,30 @@ function countCatch(file){
  if(a.empty>0)R.info.push('   ⚠**中で例外が起きても誰も気づかない**。新しく足す時は、せめて DEV では赤いエラー帯に出す形にできないか考える');
 }
 
+/* ============ ①' 死にコード(どこからも呼ばれていない関数) ============ */
+/* ⚠⚠**作った理由**=[[TODO]] に「もう当たらない古い分岐が残っている」と書いてあるのに、
+     どれが死んでいるかを**誰も数えていなかった**(`U_PZ`/`uCos`/`uArmTo` など)。
+   ⭐**静的に数えるだけ**=名前が「宣言の1回しか出てこない」関数は、どこからも呼ばれていない。
+   ⚠**これは「未実行コード地図」の安い版**。動的な網羅率(CDP)は
+     ❌「カバレッジ率を目標値にしない」の掟があるので作らない=**一覧を出すだけ**にする。
+   ⚠**消してよいとは限らない**(道具や検査から呼ぶ物・将来使う物がある)。見るのは**増えていないか**。 */
+{
+ /* ⚠⚠**宣言は字句を剥がした側・数えるのは生のまま**=この保管庫は HTML をテンプレート文字列で
+    組み立てるので、`onclick` や文字列の中から呼ばれる関数がある。剥がした側で数えると
+    それが全部「死んでいる」に見える(実際に `tgtBtns` などが誤検出された)。 */
+ const raw=fs.readFileSync('./index.html','utf8');
+ const s=strip(raw);
+ const names=[];
+ for(const m of s.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g))names.push(m[1]);
+ const cnt={};
+ for(const m of raw.matchAll(/[A-Za-z_$][\w$]*/g))cnt[m[0]]=(cnt[m[0]]||0)+1;
+ const dead=[...new Set(names)].filter(n=>cnt[n]===1);
+ num.deadFn=dead.length;
+ R.info.push('🗺 死にコード  どこからも呼ばれていない関数 '+dead.length+'本 / 全'+new Set(names).size+'本');
+ if(dead.length)R.info.push('   '+dead.slice(0,14).join(' ')+(dead.length>14?(' …他'+(dead.length-14)+'本'):''));
+ R.info.push('   ⚠**消してよいとは限らない**(道具や検査から呼ぶ物がある)。見るのは増えていないか');
+}
+
 /* ============ ② ノート(保管庫)の健康 ============ */
 const MD=fs.readdirSync('.').filter(f=>/\.md$/i.test(f));
 const mdSet=new Set(MD.map(f=>f.replace(/\.md$/i,'')));

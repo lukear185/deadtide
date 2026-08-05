@@ -2225,7 +2225,20 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
  if(!META.zdex||typeof META.zdex!=='object')META.zdex={};/* 📖図鑑: ソロで倒したことがある種類 */
  /* ⚠タワー/兵科の個別強化。旧 META.tl/ul(型ごと)は廃止したので読まない */
- if(!META.tw||typeof META.tw!=='object')META.tw={};if(!META.un||typeof META.un!=='object')META.un={};}}catch(e){}
+ if(!META.tw||typeof META.tw!=='object')META.tw={};if(!META.un||typeof META.un!=='object')META.un={};
+ /* 🛡⚠⚠(189)**形の取り違えを丸ごと直す**=localStorage は人の手で触れるし、書き込みが途中で切れる。
+    **1つでも形が違うと起動時に例外→ゲームが1画面も出ない**(🛡セーブ移行の門番が実際に見つけた)。
+    ⚠**新しい META.xxx を足したらここにも1行足す**。⚠`team` は null が「まだ触っていない」の意味。 */
+ if(typeof META.pts!=='number'||!isFinite(META.pts))META.pts=0;
+ if(typeof META.gem!=='number'||!isFinite(META.gem))META.gem=0;
+ if(!Array.isArray(META.st)||!META.st.length)META.st=['air'];
+ if(META.team!=null&&!Array.isArray(META.team))META.team=null;
+ if(!Array.isArray(META.sc))META.sc=null;/* 下の scArr が作り直す */
+ if(!Array.isArray(META.sclr))META.sclr=[];
+ if(META.ot!=null&&!Array.isArray(META.ot))META.ot=null;
+ if(META.ou!=null&&!Array.isArray(META.ou))META.ou=null;
+ for(const k9 of ['nt','nu'])if(typeof META[k9]!=='number'||!isFinite(META[k9]))META[k9]=0;
+ }}catch(e){}
 /* ⭐**難易度の解放と🔬研究所を1回だけリセットする**(2026-07-26ユーザー指示)。
    理由: ①難易度を「1つ下をクリアで開く」に変える前のデータで、飛び越して開いているプレイヤーがいる
         ②`G.pveDiff||2` のバグで**新兵クリアが古参として記録されていた**(兵長が開かず鬼軍曹が開く)
@@ -4131,8 +4144,11 @@ function teamIdx(){
     「持っていない10体」で埋まる(2026-08-01に実機で発覚)。 */
  if(typeof soloUI==='function'&&!soloUI()&&!DEV)return PVP_TEAM();
  /* ⚠⚠(187)**「先頭から何個」ではなく持ち物の集合で見る**=研究所で買う順が自由になったため */
- const own=uOwnList(),raw=META.team;
- let t=((raw)||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&own.indexOf(i)>=0);
+ /* ⚠⚠(189)**壊れたセーブでも落ちないこと**=`META.team` が配列でない時に `.map` で例外になり、
+    **ゲームが1画面も出ずに死んでいた**(🛡セーブ移行の門番が見つけた)。
+    ⚠localStorage は人の手で触れるし、書き込みが途中で切れることもある。 */
+ const own=uOwnList(),raw=Array.isArray(META.team)?META.team:null;
+ let t=(raw||[]).map(id=>UBASE.findIndex(u=>u.id===id)).filter(i=>i>=0&&own.indexOf(i)>=0);
  t=Array.from(new Set(TEAM_FIX.concat(t))).sort((a,b)=>a-b).slice(0,TEAM_N);
  /* ⚠⚠**自動で埋めるのは「一度も編成を触っていない人」だけ**(2026-08-01に踏んだ)。
     いつも埋めると、外した瞬間に次の安い兵科が入ってきて**外れていないように見える**。
