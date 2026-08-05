@@ -47,6 +47,11 @@ const LIM={grad:4,area:9.0,garea:0.6,comp:8};
    ⚠**上限は「いまより悪くなったら落ちる」ための柵**。減らせたら**必ず柵も下げる**こと。 */
 
 const SCRIPT=`
+/* 🎲⭐⭐(189)**乱数を種で固定する**=固定しないと**同じコードで測るたびに数字が振れて、
+   柵ぎりぎりの場面が3回に1回落ちる**(実際に「合成9回/上限8回」と「グ塗り0.61/上限0.6」で
+   交互に落ちた)。⚠**たまに落ちるゲートは誰も見なくなる**(道具が形骸化する一番の原因)。
+   ⚠**ゲーム本体を読み込んだ後**でよい(場面を組み立てる時の乱数を止めたいだけなので)。 */
+(function(){var _s=20260806;Math.random=function(){_s=(_s*1103515245+12345)%2147483648;return _s/2147483648;};})();
 var TOWS=["rifle","shot","net","gren","flame","tesla","mortar","sniper","cryo","laser","acid","drone","arty","coil","rail","gat","plasma","fort","medic","scrap"];
 var SCN=[];
 TOWS.forEach(function(id){SCN.push({n:"塔22台 "+id,mix:[id]});});

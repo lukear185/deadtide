@@ -4360,6 +4360,21 @@ process.exit(0);
   const f5=new Function(js+String.fromCharCode(10)+'return ffSteps().join(",");')();
   if(f5!=='1,2,3,5'){console.log('FAIL: 🛠DEVの倍速に×5が無い ['+f5+']');process.exit(1);}
   console.log('⏩🛠DEVの倍速: ×1→×2→×3→×5→×1 OK');
+  /* 🎚⭐⭐(189)**つまみの上書き口**=`?tune=<base64のJSON>` で数値が差し替わること。
+     ⚠**これが効かないと「実機で振って決める」ができない**(道具を作った意味そのもの)。
+     ⚠既定(何も渡さない時)は必ず素の値に戻ること=渡し忘れで別バランスになると事故。 */
+  {const b=Buffer.from(JSON.stringify({ARMOR_CUT:.55,RPT_X:2}),'utf8').toString('base64');
+   global.location={search:'?dev=1&tune='+encodeURIComponent(b),href:'',hash:''};
+   const t9=new Function(js+String.fromCharCode(10)
+    +'return [ARMOR_CUT,RPT_X,TUNE_N,Object.keys(TUNE_D).length];')();
+   if(Math.abs(t9[0]-.55)>1e-9||Math.abs(t9[1]-2)>1e-9){
+    console.log('FAIL: ?tune= で数値が差し替わらない ARMOR_CUT='+t9[0]+' RPT_X='+t9[1]);process.exit(1);}
+   if(t9[2]!==2){console.log('FAIL: 差し替えた数が合わない '+t9[2]);process.exit(1);}
+   global.location={search:'?dev=1',href:'',hash:''};
+   const t0=new Function(js+String.fromCharCode(10)+'return [ARMOR_CUT,RPT_X,TUNE_N];')();
+   if(Math.abs(t0[0]-.45)>1e-9||t0[2]!==0){
+    console.log('FAIL: つまみを渡していないのに素の値に戻らない '+t0[0]+'/'+t0[2]);process.exit(1);}
+   console.log('🎚つまみ: '+t9[3]+'件 / ?tune= で差し替わる / 渡さなければ素の値 OK');}
   /* 🛠⭐⭐(188)**「素で始める」**=①道具と②面の解放は残したまま、持ち物と🧬だけ素になること。
      ⚠**ここが崩れると実機でバランスを一切測れなくなる**(それが入れた理由そのもの)。
      ⚠見るのは4つ: ①持ち物が2種ずつに戻る ②🧬が補充されない ③**面の解放は残る**
