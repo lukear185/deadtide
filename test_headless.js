@@ -423,6 +423,22 @@ function checkTut(){
   ['🏭','廃品工房'],['🏗','支援施設'],['🦸','英雄の出撃'],['⏩連射','タレット(塔)の個別強化']];
  const lack=MUST.filter(x=>all.indexOf(x[0])<0).map(x=>x[1]);
  if(lack.length){console.log('FAIL: チュートリアルで説明していない要素: '+lack.join('/'));process.exit(1);}
+ /* 🏗⭐⭐(184)**「値段を上げたらチュートリアルで詰む」を機械で捕まえる**
+    (2026-08-05ユーザー「支援枠の値段上げたからチュートリアルで支援枠設置できなくて進めない」)。
+    ⚠その段で持たせる⚙️(sc0。無ければ下限300)で、**その段でやらせる買い物が実際に払えるか**を見る。
+    ⚠⚠**支援の段は「枠の解放」と「施設の建設」の2回払う**ので**合計**で見る
+      (⭐⚙️は毎フレーム下限まで戻るので実際に要るのは高い方だが、合計で見ておけば必ず足りる)。
+      (159)に施設を5倍にした時、sc0 は枠のぶん(700)のままで**枠は開けたが建てられず詰んだ**。 */
+ {const FL=S=>S&&S.sc0||300;
+  const cheap=t=>{let m=1/0;for(const T of TOWERS)if(T&&T.type===t&&!T.off&&T.cost<m)m=T.cost;return isFinite(m)?m:0;};
+  const NEED=[['sup','🏗支援',()=>prSup(0)+cheap('sup'),()=>'枠'+prSup(0)+'+施設'+cheap('sup')],
+   ['eco','🏭工房',()=>cheap('eco'),()=>'工房'+cheap('eco')]];
+  for(const [id,nm,need,how] of NEED){
+   const S=st.find(x=>x.id===id);if(!S)continue;
+   if(FL(S)<need()){
+    console.log('FAIL: チュートリアルの'+nm+'の段で⚙️が足りない(持たせる '+FL(S)+' < 要る '+need()+' = '+how()+')');
+    console.log('      → index.html の その段の sc0 を直す(⚠数字を直に書かず値段の表から出すこと)');
+    process.exit(1);}}}
  /* ⭐**操作させる段が実際にあるか**(読むだけの紙芝居になっていないか=ユーザー指示は「操作させる形式」) */
  const act=st.filter(S=>typeof S.ok==='function').length;
  if(act<4){console.log('FAIL: 実際に操作させる段が少なすぎる('+act+'段)');process.exit(1);}
