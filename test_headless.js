@@ -4095,10 +4095,14 @@ function checkUnitAf(){
 function checkGain(){
  const F=m=>{console.log('FAIL: '+m);process.exit(1);};
  const kp=META.sc;
+ /* ⚠⚠**ステージ2は解放していないと黙って①に落ちる**(2026-08-06にここで一度騙された)=
+    測る前に全部クリア済みにしておき、STAGE が本当に切り替わったかを必ず見ること。 */
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1];
  const rows=[];let st=0,prev=0;
  for(let stg=0;stg<2;stg++)for(const d of UNL_ORD){
   /* その難易度で1試合ぶんに湧く敵の総数(顔ぶれは毎回引き直すので4回の平均) */
   META.stg=stg;setDiff=d;startSolo();frames(6,.016);
+  if(STAGE!==stg)F('ステージ'+(stg+1)+'が読み込まれていない(解放の印を立て忘れ)');
   let n=0;
   /* ⚠⚠**最終ウェーブは試合中に控えておく**= backTitle() の後の curW() は G が無いので
      対戦用の20を返す(ここで一度踏んだ。新兵が5波なのに20波として計算されていた)。 */
