@@ -4018,6 +4018,18 @@ function checkUnlock(){
  const w3=UNL_TN[0]+UNL_TN[1]+UNL_TN[2]+UNL_TN[3];
  if(shelfT().length!==w3)F('3拠点クリアの棚が配分どおりでない '+shelfT().length+'(想定'+w3+')');
  if(!lockT().length&&!lockU().length)F('次の拠点で並ぶ分(🔒)が1つも見えない');
+ /* ②' ⭐(187D)**次の拠点で要る属性が、その手前の段で開く**
+    =②沈んだ港(拠点7=段6の後に入る)の🐟鱗には⚡電撃が要る。段5までに並んでいなければ落とす。
+    ⚠同じく①廃線の🛡装甲(W3のアーマード)には🔥火炎が要るので、段0に無ければ落とす。 */
+ {const upTo=k=>{let n=0;for(let i=0;i<=k&&i<UNL_TN.length;i++)n+=UNL_TN[i];return UNL_T.slice(0,n);};
+  const tyOf=id=>(TOWERS[TW_IDX[id]]||{}).type;
+  if(!upTo(0).some(id=>tyOf(id)==='fire'))F('段0に🔥火炎の塔が無い(①の装甲に間に合わない)');
+  if(!upTo(5).some(id=>tyOf(id)==='elec'))F('②へ入るまでに⚡電撃の塔が棚に並ばない(鱗に手が無い)');
+  const uUp=k=>{let n=0;for(let i=0;i<=k&&i<UNL_UN.length;i++)n+=UNL_UN[i];return UNL_U.slice(0,n);};
+  const utyOf=id=>(UBASE[UB_IDX[id]]||{}).type;
+  if(!uUp(0).some(id=>utyOf(id)==='fire'))F('段0に🔥火炎の兵科が無い(①の装甲に間に合わない)');
+  /* 鱗には特効を持つ兵科が無いので、代わりに**貫通する兵科**(45%に削られない)が要る */
+  if(!uUp(5).some(id=>['fire','blast','pierce'].indexOf(utyOf(id))>=0))F('②へ入るまでに硬い敵へ通る兵科が並ばない');}
  /* ③ 買っていない塔は盤面に建たない(⚙️で全部開けても) */
  META.ot=[];META.ou=[];
  META.stg=0;setDiff=2;startSolo();frames(10,.016);
