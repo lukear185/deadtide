@@ -100,7 +100,12 @@ for(var h9=0;h9<HEROES.length;h9++)(function(H){
   me.hChg=999;heroUlt(me,u);});
 })(HEROES[h9]);
 /* --- コアに漏れる --- */
-feel('コアに1体漏れる',function(me){var z=putZ(me,'walk',2);z.d=0;campStep(me,.02,G.wave);});
+/* ⚠⚠**z.d は「どこまで進んだか」=拠点は PLEN の側**(0は湧く所)。
+   一度 z.d=0 で測って「コア漏れは手応えゼロ」と**嘘の報告をした**(2026-08-06)。
+   ⭐**測る前に、その出来事が本当に起きているかを1つ確かめる**(ここでは core が減ったか)。 */
+feel('コアに1体漏れる',function(me){var c0=me.core;var z=putZ(me,'walk',PLEN+1);
+ campStep(me,.02,G.wave);
+ if(me.core>=c0)throw new Error('コアが減っていない=漏れが起きていない');});
 /* ⚠**ここで process.exit しない**=外の整形処理まで走らずに終わる(実際に一度そうなった) */
 console.log('@@FEEL@@'+JSON.stringify(R));
 `;

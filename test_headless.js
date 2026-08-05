@@ -2947,7 +2947,7 @@ function checkBonus(){
   G.winner=0;G.over=true;G.wave=1;awardMeta();
   if(META.gem!==gm1){console.log('FAIL: 2回目のクリアでも💎が増える(周回で稼げる)');process.exit(1);}
   {const d2=META.pts-pt2;
-   if(d2!==1234*BNS_RPT_K){console.log('FAIL: 2回目の🧬が轢いた数と違う +'+d2+'(轢いた数1234)');process.exit(1);}
+   if(d2!==Math.round(1234*BNS_RPT_K)){console.log('FAIL: 2回目の🧬が轢いた数と違う +'+d2+'(轢いた数1234)');process.exit(1);}
    /* ⚠**初回は「1走ぶん+初回クリア報酬」**なので、必ず2回目より多いこと */
    if(d2>=pt1){console.log('FAIL: 2回目の🧬が初回と同じかそれ以上 +'+d2+' vs 初回'+pt1);process.exit(1);}}
   backTitle();
@@ -3026,13 +3026,13 @@ function checkRice(){
  {const B9=me.bus;const kl0=B9.kill|0;B9.kill=0;
   if(bnsGainPts(B9)!==0){console.log('FAIL: 0体なのに🧬が入っている');process.exit(1);}
   B9.kill=40;
-  if(bnsGainPts(B9)!==40*BNS_RPT_K){console.log('FAIL: 🧬が轢いた数から出ていない '+bnsGainPts(B9));process.exit(1);}
+  if(bnsGainPts(B9)!==Math.round(40*BNS_RPT_K)){console.log('FAIL: 🧬が轢いた数から出ていない '+bnsGainPts(B9));process.exit(1);}
   /* ⚠**スコアでは動かないこと**=前は⚡スコア割だったので、取り違えるとまた倍率が乗る */
   B9.score=999999;
-  if(bnsGainPts(B9)!==40*BNS_RPT_K){console.log('FAIL: 🧬がスコアに引きずられている '+bnsGainPts(B9));process.exit(1);}
+  if(bnsGainPts(B9)!==Math.round(40*BNS_RPT_K)){console.log('FAIL: 🧬がスコアに引きずられている '+bnsGainPts(B9));process.exit(1);}
   /* ⚠**上限は無い**(2026-08-02(69)撤廃)=どれだけ轢いても頭打ちにしないこと */
   B9.kill=999999;
-  if(bnsGainPts(B9)!==999999*BNS_RPT_K){console.log('FAIL: 🧬に上限が残っている '+bnsGainPts(B9));process.exit(1);}
+  if(bnsGainPts(B9)!==Math.round(999999*BNS_RPT_K)){console.log('FAIL: 🧬に上限が残っている '+bnsGainPts(B9));process.exit(1);}
   B9.kill=kl0;B9.score=0;}
  /* ③ 連なり */
  const B=me.bus;
@@ -4158,6 +4158,7 @@ function checkDesignNums(){
   ['TR_MAX(鍛錬Lvの上限)',TR_MAX,50],
   ['BNS_TIME(🚌道中の締め切り)',BNS_TIME,75],
   ['BNS_DAY_N(🚌1日の回数)',BNS_DAY_N,5],
+  ['BNS_RPT_K(🚌1体あたりの🧬)',BNS_RPT_K,.25],
   ['META_RESET(セーブの版)',META_RESET,3],
   ['D5[4].hp(悪夢の体力)',D5[4].hp,1.26],
   ['D5[5].hp(🌑NMの体力)',D5[5].hp,1.42],
@@ -4234,7 +4235,34 @@ function checkInvariants(){
  ownN(null,0);
  console.log('🎲不変条件: 6通り×220手('+steps+'手)のでたらめな操作で、資源が負にならない/コア上限/出撃コスト上限/持ち物が消えない/持っていない塔が建たない OK');
 }
-const CHECKS=[['checkInvariants',checkInvariants],
+/* ---- 🛡🐟⭐⭐(190)**その面の「主役の材質」が本当に主役か** ----
+   ⚠⚠**作った理由**=②沈んだ港は🐟鱗の面のはずなのに、**②🌑NMだけ装甲80%・鱗8%**で
+     ⚡電撃の特効がほとんど効かなかった(顔ぶれが別プールなので誰も気づかなかった)。
+   ⭐**総HPに占める割合**で見る=体数で見ると、重いボスが効かず嘘になる。
+   ⚠**①は装甲・②は鱗**が主役。⚠ここが崩れたら「②はテスラ/レーザーで解ける」が成り立たない。 */
+function checkMaterial(){
+ const kp=META.sc;
+ META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1];
+ const out=[];
+ for(const stg of [0,1])for(const d of [2,4,5]){
+  META.stg=stg;setDiff=d;startSolo();frames(6,.016);
+  if(STAGE!==stg){console.log('FAIL: ステージ'+(stg+1)+'が読み込まれていない');process.exit(1);}
+  let hp=0,ahp=0,shp=0;const wN=curW();
+  for(let w=1;w<=wN;w++)for(let r=0;r<3;r++){buildTide(w);
+   for(const q of G.tide.pool){const m=(q.z.mhp||0)/3;hp+=m;if(q.z.armor)ahp+=m;if(q.z.scl)shp+=m;}}
+  backTitle();
+  const a=ahp/hp*100,s=shp/hp*100;
+  out.push((stg?'②':'①')+D5[d].n+' 🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'%');
+  const main=stg?s:a,sub=stg?a:s;
+  if(main<40){console.log('FAIL: '+(stg?'②沈んだ港':'①廃線')+'の'+D5[d].n+'で、主役の材質が総HPの'
+   +main.toFixed(0)+'%しかない(🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'%)');
+   console.log('      ⚠'+(stg?'②は🐟鱗=⚡電撃で解ける面':'①は🛡装甲=🔥火炎で解ける面')+'という設計が崩れている');
+   process.exit(1);}
+ }
+ META.sc=kp;
+ console.log('🛡🐟材質: 主役が総HPの4割以上ある / '+out.join(' / ')+' OK');
+}
+const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
 ['checkUnitAf',checkUnitAf],
