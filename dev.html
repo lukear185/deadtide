@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DEADTIDE TEST を追加</title>
+<!-- 🛠(183)**テストモードをホーム画面に置くための1枚**(2026-08-05ユーザー
+     「テストモードをスマホのホーム画面に追加できる? いまホーム画面に追加すると初期状態になっちゃう」)。
+     ⚠⚠**原因**=ホーム画面に追加すると、その時のURLではなく **manifest の `start_url` が使われる**。
+       本番の manifest は `"start_url": "."` なので `?dev=1` が落ちて、素のセーブ(=初期状態)で起動していた。
+     ⭐**直し方**=`start_url: "./?dev=1"` を持つ**別の manifest** を用意して、この1枚から追加してもらう。
+       `id` も分けてあるので、本番のアイコンとは**別のアプリ**として並ぶ。 -->
+<link rel="manifest" href="manifest-dev.webmanifest">
+<link rel="apple-touch-icon" href="icon-dev-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-dev-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DT TEST">
+<meta name="theme-color" content="#241f19">
+<style>
+:root{--ink:#241f19;--ink2:#332b22;--paper:#efe6d2;--paper2:#cdbfa4;--gold:#e8a33d;--toxic:#7ac943}
+*{box-sizing:border-box}
+/* ⚠**flex で中央寄せにしない**=中身の min-content で札が画面より広くなり、右がはみ出した(撮って直した)。
+   ⭐素直に `margin:auto` で寄せる。 */
+body{margin:0;min-height:100dvh;background:var(--ink);color:var(--paper);
+ font-family:'Hiragino Maru Gothic ProN','BIZ UDPGothic','Yu Gothic UI','Meiryo',system-ui,sans-serif;
+ padding:18px}
+.card{width:100%;max-width:520px;margin:0 auto;background:var(--ink2);
+ border:3px solid var(--paper2);border-radius:16px;padding:16px;overflow-wrap:anywhere}
+h1{font-size:19px;margin:0 0 2px;font-weight:900}
+.sub{font-size:12.5px;color:var(--paper2);margin:0 0 14px;line-height:1.6}
+.ico{display:flex;align-items:center;gap:12px;margin:0 0 14px}
+.ico img{width:64px;height:64px;border-radius:14px;border:2px solid var(--paper2)}
+.ico b{font-size:15px;display:block}
+.ico span{font-size:12px;color:var(--paper2)}
+ol{margin:0 0 14px;padding-left:1.3em;font-size:13.5px;line-height:1.9}
+ol b{color:var(--gold)}
+.go{display:block;width:100%;min-height:52px;line-height:52px;text-align:center;text-decoration:none;
+ background:var(--gold);color:var(--ink);border:3px solid var(--ink);border-radius:12px;
+ font-size:16px;font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.45)}
+.note{font-size:11.5px;color:var(--paper2);line-height:1.7;margin:14px 0 0}
+.note b{color:var(--toxic)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="ico">
+    <img src="icon-dev-192.png" alt="">
+    <div><b>DT TEST</b><span>実機テスト用(?dev=1)</span></div>
+  </div>
+  <h1>🛠 テストモードをホーム画面へ</h1>
+  <p class="sub">この1枚から追加すると、<b>?dev=1 が付いたまま</b>起動します。<br>
+    本番のアイコンとは別に並ぶので、どちらも残せます。</p>
+  <!-- ⚠**記号で言わない**=SF Symbols(􀈂)は Apple 以外で豆腐になり、⋮ は全角コロンに見える(撮って直した) -->
+  <ol>
+    <li><b>iPhone</b>: 画面下の<b>共有ボタン</b>(四角から↑が出ている印)→「ホーム画面に追加」</li>
+    <li><b>Android</b>: 右上の<b>点3つ</b>のメニュー →「ホーム画面に追加」</li>
+  </ol>
+  <a class="go" href="./?dev=1">▶ いますぐテストモードで開く</a>
+  <p class="note">テストモードは<b>全ステージ解放・資源が無限</b>、そして<b>セーブが本番とは別枠</b>です。
+    本番の進行には触りません。</p>
+</div>
+<script>
+/* ⚠⚠**iOSの保険**=iOS 17 より前は manifest の `start_url` を見ずに「追加した時のURL」を使う。
+   その場合ホーム画面から開くとこの1枚が出てしまうので、**アプリとして開かれた時だけ**
+   `?dev=1` へ飛ばす。⚠普通のブラウザのタブでは飛ばさない(ここで説明を読ませたいため)。 */
+try{
+  var st=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+  if(st)location.replace('./?dev=1');
+}catch(e){}
+</script>
+</body>
+</html>
