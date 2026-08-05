@@ -31,7 +31,16 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 | `?v2=1` `?px=1` | 輪郭2度描き／ドット絵の試作スイッチ(既定オフ) | 人 |
 | 赤いエラー帯 | 実機で例外を画面下に6秒表示 | 人 |
 | Stop フック | セッション終了時に `test_undef.js` を自動実行、FAIL なら block | Claude(自動) |
-| ⭐`tool_release.js` | 🚦リリースゲート。5本を順に流し1本でも落ちたら止める＋⚠件数の基準比較 | Claude |
+| ⭐`tool_release.js` | 🚦リリースゲート。**7本**を順に流し1本でも落ちたら止める＋⚠件数の基準比較 | Claude |
+| ⭐`test_view.js` | 👁UIの**実測**検査(重なり/はみ出し/44px/10.5px)。⚠`test_layout.js` は1件も見つけられない | Claude |
+| ⭐`tool_bench.js` | ⏱**「重い」**=場面ごとの1コマの時間(ms)を本物のChromeで測る | Claude |
+| ⭐`tool_paint.js` | 🔥**「熱い」**=1コマで塗った面積・グラデ枚数・合成の切り替え回数 | Claude |
+| ⭐`tool_mutate.js` | 🧨**壊して確かめる検査**=数値を1か所壊して検査が落ちるか見る(落ちなければ穴) | Claude |
+| ⭐`tool_health.js` | 🩺**健康診断**=空catch/ノートのリンク切れ・迷子・行数/容量の内訳/道具の棚卸し | Claude |
+| ⭐`tool_nums.js` | 📌**数字の腐り止め**=実装から表を作り直す+文章の数字を`@claim`で検算 | Claude |
+| `tool_face.js` `tool_face_embed.js` | 🎨英雄の顔画像の規格化と埋め込み | Claude |
+| `tool_brand.js` `tool_devicon.js` | 🎨ロゴ・アイコンの生成 | Claude |
+| `DT_SKIP_RUN=1` / `DT_SHUFFLE=n` | ⏱実走だけ飛ばす(40秒→4秒) / 🔀検査の順番をシャッフルして順序依存を暴く | Claude |
 
 ### 目についた穴(この文書の出発点)
 

@@ -54,6 +54,13 @@ const STEPS=[
     ⚠(173)の「塔1台につき灯り1枚」はこれがあれば通らなかった。⚠Chromeを起動するので --quick では飛ばす。
     ⚠上限は tool_paint.js の LIM。**減らせたら必ず柵も下げる**こと。 */
  {f:'tool_paint.js',  n:'塗りの量(熱さ)',   heavy:true,args:['--check']},
+ /* 📌**数字の腐り止め**(2026-08-06(189)に追加)。⚠⚠**「①NMのクリアで8400🧬」という古いコメントを
+    信じて配布を3.6倍外した**のがきっかけ。DESIGNの自動の表が古い/`@claim` がズレたら落ちる。
+    ⚠依存ゼロ・1秒で終わるので --quick でも流す。 */
+ {f:'tool_nums.js',   n:'数字の腐り止め',   args:['--check']},
+ /* 🩺**健康診断**(同上)=空catch・ノートのリンク切れ/迷子・道具の棚卸しが**増えたら**落ちる。
+    ⚠**0件を目標にしない**=基準(health_baseline.json)より増えた時だけ。 */
+ {f:'tool_health.js', n:'健康診断',         args:['--check']},
  {f:'test_headless.js',n:'実走(PvE/協力/対戦)',heavy:true,flake:'★4'},
 ];
 
