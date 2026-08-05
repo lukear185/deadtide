@@ -19720,10 +19720,11 @@ function awardMeta(){
        (2026-08-04(156)ユーザー選択「2ステージ目の区切りという意味でのエンディングだけ作ろう」)。
        ⚠**1回だけ**(`META.edOK`)=毎回出すと周回の邪魔になる。
        ⚠**次のステージがある間は出さない**=STAGES が増えたら自動でここは通らなくなる。 */
-    /* 🎬(164)**タイトルへ戻った時に流す**(ユーザー指示「海の最後のステージクリアして
-       タイトル戻ったら自動的に流れるようにして」)=それまでは成績表の上にかぶせていた。
-       ⚠**印はセーブに置く**(META.edPend)=成績表→ホーム→タイトルと何段か挟むため。 */
-    else if(!META.edOK){META.edOK=1;META.edPend=1;saveMeta();}}
+    /* 🎬(179)**クリアしたその場で流す**(ユーザー指示「海のステージ最後がクリアされたら
+       自動で流れるようにして。タイトル画面でタップしてみるんじゃなくて」)。
+       ⚠(164)の「タイトルへ戻ったら流す」はやめた=**印は G に置く**(META.edPend はもう立てない)。
+       ⚠**成績表より先に出さない**=何を達成して幕が出たのかが分からなくなる(開くのは showResultA)。 */
+    else if(!META.edOK){META.edOK=1;G.ending=1;saveMeta();}}
   }
   if(d9>=4&&!META.nmOK){META.nmOK=1;G.nmUnlocked=1;}
   /* 🎯任務。⚠**初回クリアに限らない**=毎日の任務なので、2周目でも「今日突破した」なら数える。
@@ -21783,7 +21784,9 @@ function showResultA(){
  show('result');
  /* 🏁**区切りの幕**は成績表の上にかぶせる(2026-08-04(156))。
     ⚠**成績表より先に出さない**=何を達成して幕が出たのかが分からなくなる。 */
- try{if(G&&G.ending){G.ending=0;setTimeout(openEnding,900);}}catch(e){}
+ /* ⚠**印は先に落としてから開く**=途中で閉じてももう出ない(1回きりの約束)。
+    ⚠**少し待ってから開く**=画面の切り替えと重ねると、幕の1コマ目が飛ぶ。 */
+ try{if(G&&G.ending){G.ending=0;setTimeout(()=>{try{openEnding();}catch(e){}},900);}}catch(e){}
 }
 function showResultC(sn){
  gameActive=false;$('interv').classList.remove('on');closeBM();
@@ -27423,9 +27426,8 @@ function backTitle(){
  try{if(NET.peer){NET.peer.destroy();}}catch(e){}
  NET={peer:null,conn:null,lob:[],host:false};CS={meN:null,ot:[],w:1,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0};CC=null;CCFX=[];MODE='solo';
  show('title');
- /* 🎬(164)**区切りの幕はここで流す**(ユーザー指示)=タイトルに戻った所で1回だけ。
-    ⚠**印は先に落としてから開く**=途中で閉じてももう出ない(1回きりの約束)。
-    ⚠**少し待ってから開く**=画面の切り替えと重ねると、幕の1コマ目が飛ぶ。 */
+ /* 🎬(179)**ここはもう予備の口**=幕はクリアした所(成績表の上)で流す。
+    ⚠**残してあるのは古いセーブのため**(164の頃に印だけ立って未再生の人)。⚠新しく edPend は立てない。 */
  try{if(META.edPend){META.edPend=0;saveMeta();setTimeout(()=>{try{openEnding();}catch(e){}},450);}}catch(e){}
 }
 /* ---- 研究所UI ---- */
@@ -32059,10 +32061,11 @@ $('tut-quit').onclick=()=>{if(!TUT)return;tutEnd(false);backTitle();
 $('bt-totitle').onclick=backTitle;
 /* 🏁区切りの幕。⚠閉じたら**ホームへ戻すだけ**(報酬も解放もここでは配らない) */
 /* 🎬幕。⚠**閉じる時に必ず止める**(`ED.on=0`)=出しっぱなしだと裏で毎コマ描き続ける */
-/* ⚠(164)**もうタイトルに居る**(幕はタイトルで流れる)ので、閉じるだけでよい。
-   ⚠🛠DEVのボタンや古い経路から試合中に開いた時だけタイトルへ戻す。 */
+/* ⚠(179)**成績表の上で流す**ので、閉じたら**成績表をそのまま見せる**(下に隠れている)。
+   ⚠タイトルで開いた時(DEVのボタン・古いセーブの予備の口)も閉じるだけ。
+   ⚠🛠それ以外(試合中に開いた等)だけタイトルへ戻す。 */
 $('bt-ed-ok').onclick=()=>{ED.on=0;$('md-ending').classList.remove('on');
- if(SCR!=='title')backTitle();};
+ if(SCR!=='title'&&SCR!=='result')backTitle();};
 $('bt-ed-skip').onclick=()=>{edSeek(ED_C3);};
 $('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */
