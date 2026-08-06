@@ -1410,6 +1410,10 @@ body.perf #perfbox{display:block}
  font-size:12px;background:rgba(24,20,16,.66);color:var(--pane);border:2px solid var(--gold);
  box-shadow:none;display:none}
 #bt-op-snd.on{display:block}
+/* 🎬暗転=**幕の上に黒を被せてから**画面を入れ替える。⚠切り替えの瞬間を必ず黒で隠すこと */
+#op-fade{position:fixed;inset:0;z-index:79;background:#000;opacity:0;pointer-events:none;
+ transition:opacity .42s linear}
+#op-fade.on{opacity:1}
 </style>
 </head>
 <body>
@@ -1424,6 +1428,9 @@ body.perf #perfbox{display:block}
   <!-- 🔈押しても幕は飛ばない札(ブラウザが音を止めている時だけ出る) -->
   <button class="btn" id="bt-op-snd">🔈 音を出す</button>
 </div>
+<!-- 🎬**暗転の幕**(2026-08-07(202)ユーザー指示「パッと変わらずに暗転してタイトル画面に切り替えて」)。
+     ⚠**幕(#scr-boot)より上・回転を促す画面より下**(z-index 79)。⚠押す所を塞がない(pointer-events:none) -->
+<div id="op-fade"></div>
 
 <div class="scr on" id="scr-title">
   <!-- 🌆(96)タイトルにもホームと同じ夕暮れの情景を敷く(sceneBg) -->
@@ -32356,7 +32363,7 @@ const OP_CUE=[
  [49.5,52.4,'——どこから来るのかは、俺も知らない。'],
  [54.0,56.8,'灯りを、ひとつずつ取り返していく。'],
  [57.3,60.4,'それが、俺たちの仕事だ。']];
-const OP={on:0,t:0,ph:0,cap:-2};   /* ph: 0=開発名 / 1=オープニング */
+const OP={on:0,t:0,ph:0,cap:-2,fade:0};/* ph: 0=開発名 / 1=オープニング / fade=暗転の最中 */
 /* 開発名。⚠**凝らない**=よくある「黒地に名前」。線が伸びて、名前が浮いて、消える */
 function opLogo(c,u){
  const cx=ED_W*.5,cy=ED_H*.5;
@@ -32376,12 +32383,13 @@ function opLogo(c,u){
 }
 /* 灯りのにじみ。⚠⚠**濃い円を1枚置かない**=「色つきの丸」がそのまま見える(1回そうなった)。
    ⭐**薄いのを3枚重ねる**=真ん中だけ濃くなって「にじみ」に見える。⚠ラジアルグラデは使わない(掟) */
-function opGlow(c,x,y,r,col,a){
- /* ⚠⚠**枚数が少ないと同心円が見える**(3枚→6枚とも輪が出た)=**12枚をごく薄く**重ねる。
-    ⚠1枚あたりを濃くしない(.10)=濃いと結局その輪が見える。 */
- for(let k=0;k<12;k++){
-  c.fillStyle='rgba('+col+','+(a*.10).toFixed(3)+')';
-  c.beginPath();c.arc(x,y,r*(1-k/12),0,7);c.fill();}
+function opGlow(c,x,y,r,col,a,ry){
+ /* ⚠⚠**枚数が少ないと同心円が見える**(3枚→6枚とも輪が出た)=**16枚をごく薄く**重ねる。
+    ⚠1枚あたりを濃くしない=濃いと結局その輪が見える。
+    ⭐ry=縦の半径(空の低い所を照らす時は**平たく潰す**=丸いと「光る球」に見える)。 */
+ for(let k=0;k<16;k++){const t=1-k/16;
+  c.fillStyle='rgba('+col+','+(a*.075).toFixed(3)+')';
+  c.beginPath();c.ellipse(x,y,r*t,(ry||r)*t,0,0,7);c.fill();}
 }
 /* 人の影。⚠⚠**頭を大きくしない**(edFig は遠景用なので頭が体の4割ある=近くで使うと人形に見える)。
    ⭐頭・胴・腕・脚を分ける=1本の帯だと棒にしか見えない */
@@ -32396,19 +32404,43 @@ function opFig(c,x,y,h){
  c.fillRect(x+w*.20,y-h*.34,w*.66,h*.34);
 }
 /* 🧟歩く死体の影。⚠**顔を描かない**=輪郭だけで言う。
-   ⭐人(opFig)と分ける物は3つ=**前に垂れた腕・傾いた頭・くの字の背**。⚠これが無いとただの人影 */
-function opZFig(c,x,y,h,ph){
- const w=h*.155,sw=Math.sin(ph)*.5;
- c.save();c.translate(x,y);c.rotate(.07*Math.sin(ph*.5));
- c.beginPath();c.ellipse(w*.5,-h+h*.13,h*.10,h*.115,.35,0,7);c.fill();/* 傾いた頭 */
- rr(c,-w*.9,-h+h*.26,w*1.9,h*.40,w*.55);c.fill();                     /* くの字の胴 */
- /* 前へ垂れた腕(⚠体の前へ出す=これが一番「死体」に見える) */
- c.save();c.translate(w*.6,-h+h*.32);c.rotate(1.05+sw*.14);
- c.fillRect(0,-w*.20,h*.30,w*.40);c.restore();
- c.save();c.translate(w*.2,-h+h*.34);c.rotate(1.25-sw*.14);
- c.fillRect(0,-w*.18,h*.26,w*.36);c.restore();
- c.fillRect(-w*.80,-h*.34,w*.62,h*.34);
- c.fillRect(w*.16,-h*.34,w*.62,h*.34);
+   ⭐人(opFig)と分ける物は3つ=**前に垂れた腕・傾いた頭・くの字の背**。⚠これが無いとただの人影。
+   ⭐⭐(202)**体つきを5種にした**(k)=⚠⚠**同じ形を並べると「点の群れ」にしか見えない**
+     (1回そうなった)。群れは**輪郭の高さがばらつくほど数が多く見える**。
+     k=0 標準 / 1 のっぽ(細い) / 2 ずんぐり / 3 両腕を上げている / 4 這っている。
+   ⭐**歩幅も入れる**(ph)=脚を前後に開くと、止め絵でも歩いて見える。 */
+function opZFig(c,x,y,h,ph,k){
+ k=k||0;
+ const th=k===1?h*1.18:(k===4?h*.52:h),
+       w=th*(k===2?.215:(k===1?.135:.155)),
+       sw=Math.sin(ph),sw2=Math.sin(ph+2.1);
+ c.save();c.translate(x,y);
+ if(k===4){/* 這っている=**横に長い**(輪郭がまるで違うので群れの中でよく目立つ) */
+  c.rotate(.06*sw);
+  rr(c,-w*1.5,-th*.62,w*3.0,th*.42,w*.5);c.fill();                    /* 胴(水平) */
+  c.beginPath();c.ellipse(w*1.9,-th*.60,th*.17,th*.15,.2,0,7);c.fill();/* 前へ出た頭 */
+  c.save();c.translate(w*1.4,-th*.52);c.rotate(-.5+sw*.35);
+  c.fillRect(0,-w*.22,th*.62,w*.44);c.restore();                      /* 前へ伸ばした腕 */
+  c.fillRect(-w*1.5,-th*.30,w*1.0,th*.30);
+  c.restore();return;}
+ c.rotate((k===2?.04:.08)*Math.sin(ph*.5));
+ c.beginPath();c.ellipse(w*.5,-th+th*.13,th*.10,th*.115,.35,0,7);c.fill();/* 傾いた頭 */
+ rr(c,-w*.9,-th+th*.26,w*1.9,th*.40,w*.55);c.fill();                     /* くの字の胴 */
+ if(k===3){/* 両腕を上げている=**群れの中で1〜2体いるだけで「叫んでいる」に見える** */
+  c.save();c.translate(w*.5,-th+th*.30);c.rotate(-1.15+sw*.12);
+  c.fillRect(0,-w*.19,th*.34,w*.38);c.restore();
+  c.save();c.translate(-w*.5,-th+th*.30);c.rotate(-1.95-sw*.12);
+  c.fillRect(0,-w*.19,th*.34,w*.38);c.restore();
+ }else{/* 前へ垂れた腕(⚠体の前へ出す=これが一番「死体」に見える) */
+  c.save();c.translate(w*.6,-th+th*.32);c.rotate(1.05+sw*.14);
+  c.fillRect(0,-w*.20,th*.30,w*.40);c.restore();
+  c.save();c.translate(w*.2,-th+th*.34);c.rotate(1.25-sw*.14);
+  c.fillRect(0,-w*.18,th*.26,w*.36);c.restore();}
+ /* 脚=**前後に開く**(⚠棒2本を並べると立っているだけに見える) */
+ c.save();c.translate(-w*.5,-th*.34);c.rotate(sw*.30);
+ c.fillRect(-w*.31,0,w*.62,th*.36);c.restore();
+ c.save();c.translate(w*.45,-th*.34);c.rotate(sw2*.30);
+ c.fillRect(-w*.31,0,w*.62,th*.36);c.restore();
  c.restore();
 }
 /* ☀カット①=**なんでもない朝**。⚠**ここだけ明るい**=後の落差が全部ここで決まる。
@@ -32542,36 +32574,108 @@ function opCut2(c,u,len){
   rr(c,xx,gy-13*EK,52*EK,9*EK,3);c.fill();
   rr(c,xx+11*EK,gy-19*EK,26*EK,7*EK,2);c.fill();}
 }
-/* 🧟カット④=**群れが歩きだす**。⚠**顔を描かない**=影の数だけで言う。
-   ⭐**奥から手前へ来る**=1体ずつ大きくなるので「近づいている」が伝わる */
+/* 🧟⭐⭐⭐カット④=**群れが歩きだす**(2026-08-07(202)に作り直した)。
+   ⚠⚠**第一版は「点の群れ」にしか見えなかった**(ユーザー指摘)。原因は4つ:
+     ①**平らな板の上に置いていた**=道が無いので奥行きが出ない
+     ②**全部同じ形・同じ間隔**=数がいても「模様」に見える
+     ③**手前と奥が同じ黒**=遠近が色でも言えていない
+     ④**逆光にしていない**=影絵は「明るい所を背負う」ほど強く出る
+   ⭐直した4つ=①**両側にビルを立てて道を谷にする**(消失点へ収束)
+     ②**体つき5種+高さのばらつき+歩幅** ③**遠いほど霞ませる**(色を空へ寄せる)
+     ④**地平の直上を燃やして逆光**にし、手前の数体には**縁の光**を乗せる。
+   ⚠**顔は描かない**(影絵のまま)。⚠**血や損壊は描かない**(この作品の絵柄から外れる)。 */
 function opCut3(c,u,len){
- const p=clamp(u/(len||8),0,1),hz=ED_H*.52,gy=ED_H-ED_BAR-4;
+ const p=clamp(u/(len||8),0,1);
+ const hz=ED_H*.44,gy=ED_H-ED_BAR-2,vx=ED_W*.50;/* hz=消失線 / vx=消失点 */
+ /* 遠近の3本の物差し。q=0(奥)〜1(手前)。⚠**この3本だけで奥行きを作る**=場当たりに置かない */
+ const pY=q=>hz+(gy-hz)*Math.pow(q,1.55);              /* 立つ高さ */
+ const pW=q=>ED_W*(.030+.760*Math.pow(q,1.35));        /* 道の半分の幅 */
+ const pS=q=>.085+1.02*Math.pow(q,1.55);               /* 大きさ */
+ /* 空=夜明け前。⚠**上は暗いまま**=明るいのは地平の直上だけ(そこを背負わせる) */
  let g=c.createLinearGradient(0,0,0,hz);
- g.addColorStop(0,'#141826');g.addColorStop(.7,'#2e2432');g.addColorStop(1,'#5c3a34');
+ g.addColorStop(0,'#0b0e1a');g.addColorStop(.52,'#241a2a');g.addColorStop(1,'#8c4028');
  c.fillStyle=g;c.fillRect(0,0,ED_W,hz);
- /* 遠景=燃え残りの街(⚠低く抑える=主役は群れ) */
- c.fillStyle='#0e0b10';
- for(const b of ED_BLD)c.fillRect(b[0],hz-b[2]*.42*EK,b[1],b[2]*.42*EK);
- /* 路面(奥へ細くなる2本の白線=道だと一目で分かる) */
+ /* ⭐逆光=消失点の奥が燃えている(⚠火そのものは描かない=光だけ)。
+    ⚠**平たく潰す**=丸いと「空に光る球がある」になる(地平が明るいのだと分かる形にする) */
+ opGlow(c,vx,hz+4,230*EK,'255,150,70',.34,74*EK);
+ /* 低い煙(⚠横に流す=縦に立てると火事の絵になる) */
+ c.fillStyle='rgba(20,14,18,.30)';
+ for(const q of [[60,.30,210],[250,.20,180],[430,.38,240]]){
+  c.beginPath();c.ellipse((q[0]+u*7)%(ED_W+280)-140,hz*q[1],q[2]*.5,7*EK,0,0,7);c.fill();}
+ /* 奥の街(⚠消失点のまわりだけ=道の突き当たり) */
+ c.fillStyle='#120d14';
+ for(let i=0;i<7;i++){const bw=(9+((i*37)%11))*EK,bh=(10+((i*53)%16))*EK;
+  c.fillRect(vx-46*EK+i*13*EK,hz-bh,bw,bh);}
+ /* 路面(⚠奥ほど明るい=逆光の照り返し。これが無いと道が黒い穴になる) */
  g=c.createLinearGradient(0,hz,0,ED_H);
- g.addColorStop(0,'#241f22');g.addColorStop(1,'#161316');
+ g.addColorStop(0,'#4a3730');g.addColorStop(.35,'#221b1e');g.addColorStop(1,'#131015');
  c.fillStyle=g;c.fillRect(0,hz,ED_W,ED_H-hz);
- c.fillStyle='rgba(150,140,120,.10)';
- c.beginPath();c.moveTo(ED_W*.44,hz);c.lineTo(ED_W*.47,hz);c.lineTo(ED_W*.16,ED_H);c.lineTo(ED_W*-.1,ED_H);c.closePath();c.fill();
- c.beginPath();c.moveTo(ED_W*.56,hz);c.lineTo(ED_W*.59,hz);c.lineTo(ED_W*1.1,ED_H);c.lineTo(ED_W*.84,ED_H);c.closePath();c.fill();
- /* ⭐群れ=奥から手前へ。⚠**同じ速さで動かさない**=行進に見える(死体の群れは揃わない) */
- for(let i=0;i<34;i++){
-  const s9=((i*2654435761)>>>0)%1000/1000,s8=((i*40503)%977)/977;
-  const q=((u*(.055+s9*.05)+s8)%1);          /* 0=奥 1=手前 */
-  const sc=.16+q*q*.80;
-  const xx=ED_W*.5+(s9-.5)*ED_W*(.18+q*1.5);
-  const yy=hz+ (gy-hz)*(q*q*.94)+2;
-  c.fillStyle='rgba(6,5,8,'+(.45+q*.55).toFixed(2)+')';
-  opZFig(c,xx,yy,52*EK*sc,u*3.4+i*1.7);}
- /* 手前の一番大きい影がゆっくり横切る(⚠**顔を出さない**。⚠画面を覆うほど大きくしない) */
- {const q=clamp((u-2.2)/6,0,1);
-  c.fillStyle='#040305';
-  opZFig(c,ED_W*.13+q*ED_W*.20,gy+14*EK,104*EK,u*2.1);}
+ /* 中央線(⚠**遠近の物差しに乗せる**=等間隔に置くと道が寝て見える) */
+ c.fillStyle='rgba(190,170,140,.13)';
+ for(let i=0;i<9;i++){const q0=.08+i*.105,q1=q0+.045;
+  const y0=pY(q0),y1=pY(q1),w0=pW(q0)*.030+.6,w1=pW(q1)*.030+.6;
+  c.beginPath();c.moveTo(vx-w0,y0);c.lineTo(vx+w0,y0);c.lineTo(vx+w1,y1);c.lineTo(vx-w1,y1);
+  c.closePath();c.fill();}
+ /* ⭐⭐**両側のビル**=道を谷にする。⚠**奥から手前へ**描く(手前が上に重なる) */
+ for(let i=6;i>=0;i--){
+  const q=.06+i*.155,y=pY(q),w=pW(q),s=pS(q);
+  const bh=(120+((i*67)%70))*EK*s*1.15;
+  for(const sg of [-1,1]){
+   const x=vx+sg*w;
+   c.fillStyle=i>4?'#171220':(i>2?'#100c16':'#0a070d');
+   /* 外側へ大きくはみ出させる(⚠画面の端で切る=壁が続いて見える) */
+   c.beginPath();c.moveTo(x,y);c.lineTo(x,y-bh);
+   c.lineTo(x+sg*(150*s+40),y-bh*(1.10+i*.02));c.lineTo(x+sg*(150*s+40),y+30);c.closePath();c.fill();
+   /* 窓=**光っていない四角を数個**(⚠点けると「生きている街」になる) */
+   if(i<4){c.fillStyle='rgba(255,150,80,.05)';
+    for(let k=0;k<3;k++)c.fillRect(x+sg*(6+k*11)*s*2.2,y-bh*(.55+k*.13),7*s*2.2,9*s*2.2);}}}
+ /* 立ち往生した車(⚠道の両脇に寄せる=真ん中に置くと群れが隠れる) */
+ c.fillStyle='#0b080e';
+ for(const q of [[.22,-1],[.31,1],[.46,-1]]){
+  const y=pY(q[0]),s=pS(q[0]),w=pW(q[0]);
+  const x=vx+q[1]*w*.72;
+  rr(c,x-30*s,y-15*s,60*s,13*s,3*s);c.fill();
+  rr(c,x-17*s,y-24*s,32*s,11*s,2.5*s);c.fill();}
+ /* ⭐⭐**群れ**。⚠**奥から手前の順に描く**(重なりが正しくないと平らに見える)。
+    ⚠**同じ速さで動かさない**=行進に見える(死体の群れは揃わない)。
+    ⭐**遠いほど霞ませる**=色を空の側へ寄せる(黒いまま小さくすると「点」になる)。 */
+ {const N=96,ar=[];
+  for(let i=0;i<N;i++){
+   const s9=((i*2654435761)>>>0)%1000/1000,s8=((i*40503)%977)/977,s7=((i*1103515245)>>>7)%1000/1000;
+   const q=((u*(.042+s9*.045)+s8)%1);
+   /* 横位置=道幅の中(⚠端に寄せすぎるとビルにめり込む) */
+   const xr=(s7-.5)*1.86;
+   ar.push({q,x:vx+xr*pW(q)*.94,s9,s7,i});}
+  ar.sort((a,b)=>a.q-b.q);
+  for(const o of ar){
+   const q=o.q,y=pY(q),s=pS(q),h=54*EK*s*(.84+o.s9*.34);
+   /* 体つき=5種(⚠割合を均さない=「這っている」は少ないから効く) */
+   const k=o.s7<.06?4:(o.s7<.12?3:(o.s7<.34?1:(o.s7<.52?2:0)));
+   const ph=u*(3.0+o.s9*1.6)+o.i*1.7;
+   /* 霞み=遠いほど空の色へ寄る */
+   const m=Math.pow(1-q,1.6);
+   const cr=Math.round(6+70*m),cg=Math.round(5+44*m),cb=Math.round(9+52*m);
+   /* 足元の影(⚠これが無いと宙に浮く) */
+   c.fillStyle='rgba(0,0,0,'+(.30*q).toFixed(3)+')';
+   c.beginPath();c.ellipse(o.x,y+1,h*.20,h*.052,0,0,7);c.fill();
+   /* ⭐手前の数体だけ**縁の光**(⚠先に薄い色でずらして描いて、上から本体を重ねる) */
+   /* ⚠**太らせない**(1.03倍にしたら頭巾をかぶって見えた)=**上へ少しずらすだけ** */
+   if(q>.52){c.fillStyle='rgba(255,140,70,'+(.22*(q-.52)/.48).toFixed(3)+')';
+    opZFig(c,o.x,y-2.0*s,h,ph,k);}
+   c.fillStyle='rgb('+cr+','+cg+','+cb+')';
+   opZFig(c,o.x,y,h,ph,k);}}
+ /* 手前の枠=**割れた街灯**(⚠画面の端で切る=カメラが群れの中に居ると分かる) */
+ c.fillStyle='#050407';
+ c.fillRect(ED_W*.055-4,hz+8*EK,8,ED_H);
+ c.fillRect(ED_W*.055-4,hz+8*EK,44*EK,7);
+ c.fillRect(ED_W*.055+34*EK,hz+13*EK,11*EK,9*EK);
+ /* 舞う塵(⚠雪にしない=数を絞って、ゆっくり横へ流す) */
+ for(let i=0;i<18;i++){const s9=((i*2654435761)>>>0)%1000/1000;
+  const yy=hz+((s9*ED_H+u*9)%(ED_H-hz)),xx=(s9*ED_W+u*11+yy*.3)%ED_W;
+  c.fillStyle='rgba(210,170,140,'+(.05+s9*.09).toFixed(3)+')';
+  c.fillRect(xx,yy,1.5,1.5);}
+ /* 終わりに向けて少し暗くする(次のカットは崩落) */
+ if(p>.72){c.fillStyle='rgba(8,6,10,'+((p-.72)/.28*.30).toFixed(3)+')';c.fillRect(0,0,ED_W,ED_H);}
 }
 /* 🔥カット⑤=**崩れていく街**。⚠**戦闘を描かない**=逃げる灯りと、燃えている所だけ */
 function opCut4(c,u,len){
@@ -32777,8 +32881,9 @@ function opCap(){
 function opStep(dt){
  if(!OP.on)return;
  OP.t+=Math.min(.05,dt);
- if(OP.ph===0&&OP.t>=OP_LOGO)opPhase(1);
- else if(OP.ph===1&&OP.t>=OP_END){opEnd();return;}
+ /* ⚠**終わりの少し前から暗転を始める**=真っ黒になった所でちょうど入れ替わる */
+ if(OP.ph===0&&OP.t>=OP_LOGO-OP_FADE/1000)opFade(()=>opPhase(1));
+ else if(OP.ph===1&&OP.t>=OP_END-OP_FADE/1000)opFade(opEnd);
  opCap();opDraw();
 }
 function opPhase(p){
@@ -32788,15 +32893,32 @@ function opPhase(p){
  try{opSndBtn();}catch(e){}
  opCap();try{opDraw();}catch(e){}
 }
-/* ⏭スキップ=①開発名の間はオープニングへ / ②オープニング中はタイトルへ(ユーザー指示) */
+/* 🎬⭐**暗転してから入れ替える**(2026-08-07(202)ユーザー指示「パッと変わらずに暗転して」)。
+   ⚠⚠**入れ替えは真っ黒になりきってから**=途中でやると結局そこで「パッ」と変わる。
+   ⚠**二重に走らせない**(OP.fadeが門番)=連打で画面が2回暗転する。 */
+const OP_FADE=430;/* 暗くなるのに掛ける時間(ms)。⚠CSSの transition と揃えること */
+function opFade(fn){
+ if(OP.fade)return;
+ OP.fade=1;
+ const f=$('op-fade');if(f&&f.classList)f.classList.add('on');
+ setTimeout(()=>{
+  try{fn();}catch(e){}
+  /* ⚠**1コマ置いてから**明るく戻す=同じコマで付け外しすると変化が起きない */
+  setTimeout(()=>{const f2=$('op-fade');if(f2&&f2.classList)f2.classList.remove('on');OP.fade=0;},60);
+ },OP_FADE);
+}
+/* ⏭スキップ=①開発名の間はオープニングへ / ②オープニング中はタイトルへ(ユーザー指示)。
+   ⚠**どちらも暗転を挟む**(ユーザー指示)。 */
 function opSkip(){
- if(!OP.on)return;
- if(OP.ph===0)opPhase(1);else opEnd();
+ if(!OP.on||OP.fade)return;
+ if(OP.ph===0)opFade(()=>opPhase(1));else opFade(opEnd);
 }
 function opEnd(){
  OP.on=0;
  const bx=$('scr-boot');if(bx){bx.classList.add('off');bx.classList.remove('mv');}
  const el=$('op-cap');if(el)el.classList.remove('on');
+ /* ⚠道具(撮影・検査)からは暗転を挟まずに直に呼ばれる=黒が残らないように畳む */
+ if(!OP.fade){const f=$('op-fade');if(f&&f.classList)f.classList.remove('on');}
  /* 🎵幕のBGMを止めて、タイトルのBGMへ渡す */
  try{obgmOff();}catch(e){}
  try{if(AC&&SCR!=='game')tbgmOn();}catch(e){}
@@ -32808,8 +32930,9 @@ function opSeek(ph,t9){OP.on=1;OP.ph=ph;OP.t=t9;OP.cap=-2;
 /* 🎬起動の幕を始める。⚠**もう見た人にも毎回出す**=タップ1回で飛ばせるため(ユーザー指示の流れどおり) */
 function opStart(){
  const bx=$('scr-boot');if(!bx)return;
- OP.on=1;OP.ph=0;OP.t=0;OP.cap=-2;
+ OP.on=1;OP.ph=0;OP.t=0;OP.cap=-2;OP.fade=0;
  bx.classList.remove('off');
+ {const f=$('op-fade');if(f&&f.classList)f.classList.remove('on');}
  /* ⚠**どこを押してもスキップ**(札は「押せると分かるための印」) */
  bx.onclick=()=>{try{if(sfx.tap)sfx.tap();}catch(e){}opSkip();};
  /* 🔈⭐⭐**音を出す札**(2026-08-07(201))。
