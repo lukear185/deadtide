@@ -37,7 +37,7 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 | ⭐`tool_paint.js` | 🔥**「熱い」**=1コマで塗った面積・グラデ枚数・合成の切り替え回数 | Claude |
 | ⭐`tool_mutate.js` | 🧨**壊して確かめる検査**=数値を1か所壊して検査が落ちるか見る(落ちなければ穴) | Claude |
 | ⭐`tool_health.js` | 🩺**健康診断**=空catch/ノートのリンク切れ・迷子・行数/容量の内訳/道具の棚卸し | Claude |
-| ⭐`tool_sheet.js` | 🖼**コンタクトシート**=全種を1枚の格子に(tw/tg/un/uv/hero/zom)。`--sil`でシルエット | Claude |
+| ⭐`tool_sheet.js` | 🖼**コンタクトシート**=全種を1枚の格子に(tw/tg/un/uv/hero/zom)。`--sil`でシルエット / ⭐`--pick=`で数種だけ大きく | Claude |
 | ⭐`tool_tune.js` | 🎚**つまみ**=一覧/雛形/?tune=のURL作り/**index.htmlへ書き戻す** | Claude+人 |
 | ⭐`test_feel.js` | 👊**手応えの計測**=揺れ/止まる時間/演出の数を強い順に。⚠合否は出さない | Claude |
 | ⭐`test_save.js` | 🛡**セーブ移行の門番**=昔のセーブの標本(save_fixtures/)を毎回全通し | Claude |

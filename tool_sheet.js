@@ -26,6 +26,8 @@ const KIND=(process.argv[3]||'tw').replace(/^--/,'');
 const ARG=process.argv.slice(2).join(' ');
 const NUM=(k,d)=>{const m=new RegExp('--'+k+'=(\\d+)').exec(ARG);return m?+m[1]:d;};
 const SIL=ARG.indexOf('--sil')>=0;
+/* ⭐(192)**--pick=名前,名前**=名前の一部で絞る(大きく撮って細部を見るため) */
+const PICK=((/--pick=([^\s]+)/.exec(ARG)||[])[1]||'').split(',').filter(Boolean);
 const COLS=NUM('cols',6),CELL=NUM('cell',180);
 /* ⚠**7番目の引数は時刻であって大きさではない**(drawTower(c,ti,lv,x,y,ang,t,o))=
    大きさを変えたい時は ctx.scale で掛けること。既定は1マスに気持ちよく収まる倍率。 */
@@ -63,7 +65,11 @@ const inj='<script>(function(){\n'
 +'/* 乱数と時刻を固定=毎回同じ絵にする(前回と比べるため) */\n'
 +'var _x=20260806;Math.random=function(){_x=(_x*1103515245+12345)%2147483648;return _x/2147483648;};\n'
 +'function build(){try{\n'
-+' var LIST=('+K.list+').filter(function(e){return e&&!e.skip&&e.n&&e.i>=0;});\n'
++' var PICK='+JSON.stringify(PICK)+';\n'
+/* ⭐(192)**--pick=名前,名前** で数種だけに絞る=**大きく撮って細部を見る**ための口。
+   ⚠90種を1枚にすると1体140pxで、肩当てや面頬のような小さな差は潰れて見えない。 */
++' var LIST=('+K.list+').filter(function(e){return e&&!e.skip&&e.n&&e.i>=0\n'
++'   &&(!PICK.length||PICK.some(function(q){return e.n.indexOf(q)>=0;}));});\n'
 +' var DRAW='+K.draw+';\n'
 +' var COLS='+COLS+',CELL='+CELL+',LBL=20,HEAD=28;\n'
 +' var ROWS=Math.ceil(LIST.length/COLS);\n'

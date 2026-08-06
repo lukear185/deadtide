@@ -97,6 +97,14 @@ SCN.push({n:"英雄+塔22",mix:["hNox"],hero:"hNox",tw:"rifle"});
    ⚠他29種は3〜7回で横並びだったので、代表として一番重い2種だけ置く。 */
 [["valk",5],["shd",20]].forEach(function(q){
  SCN.push({n:"⚔"+q[0]+"×"+q[1]+"+雑魚",uheat:q[0],un:q[1]});});
+/* ⚔⭐(192)**派生の段3も測る**=肩当て・面頬・銃口を足す回なので**描く前に柵を立てる**
+   ([[NOTES_絵]]の手順)。⚠**素の兵科では1本も描かない**ので、上の場面では丸ごと素通りする。
+   ⚠系統(VFAM)ごとに図形が違うので、🛡重装(mgn)と🪓荒くれ(bat)と⚡技術(snp)の3つを見る。
+   ⚠⚠**壁役(shd/gld/big)は選ばない**=段3にすると硬すぎて**敵が溜まり**、
+     敵の白光りの合成が+3回になって「絵のせいで熱くなった」ように見える(実際に一度そう出た)。
+     ⭐**測りたいのは装いの描く回数**なので、盤面が素と同じに進む兵科で見る。 */
+[["mgn",20],["bat",20],["snp",20]].forEach(function(q){
+ SCN.push({n:"⚔派生段3 "+q[0]+"×"+q[1],uheat:q[0],un:q[1],uvar:1});});
 var R=[];
 function snap(){var o={};for(var k in PF.cur)o[k]=PF.cur[k];return o;}
 for(var si=0;si<SCN.length;si++){
@@ -113,7 +121,13 @@ for(var si=0;si<SCN.length;si++){
   }else if(S9.uheat){
    /* ⚔(186)兵科を1種だけ並べる。⚠**枠と待ち時間は通さず直に積む**(同じ体数で比べる場なので) */
    startTst();me=G.players[0];TSTKEEP="s";
-   var uh=UNITS.findIndex(function(q){return q.id===S9.uheat;});
+   /* ⚔(192)派生を測る場面=その兵科だけ**最終段(段3)に差し替える**。
+      ⚠⚠**差し替えると id が派生のid('fortr'等)になる**ので、添字は素の表(UBASE)から引くこと
+        (UNITS を id で引き直すと -1 になって1体も出ない=実際に踏んだ)。
+      ⚠⚠**この SCRIPT はテンプレート文字列の中**=バッククォートを1つでも書くと丸ごと壊れる。 */
+   var uh=UBASE.findIndex(function(q){return q.id===S9.uheat;});
+   if(S9.uvar&&uh>=0)UNITS[uh]=mkVar(UBASE[uh],UVAR[S9.uheat][2]);
+   S9.ui=uh;
    for(var ku=0;ku<S9.un;ku++){var hu=Math.round(UNITS[uh].hp*3);
     me.units.push({eid:(EID++),ui:uh,own:0,am:1,d:PLEN-70-((ku*13)%160),
      hp:hu,mhp:hu,cd:(ku%7)*.05,hitT:0,ph:(ku%9),px:0,py:0});}
@@ -137,7 +151,7 @@ for(var si=0;si<SCN.length;si++){
    if(!S9.heat&&!S9.uheat)while(me.zombies.filter(function(z){return !z.dead;}).length<45){
     me.zombies.push(mkZ(zSpec(ri(0,5),18,20),PLEN*(0.22+Math.random()*0.55)));}
    /* ⚔倒れて減るので毎コマ足し直す(同じ体数で比べるため) */
-   if(S9.uheat){var uh2=UNITS.findIndex(function(q){return q.id===S9.uheat;});
+   if(S9.uheat){var uh2=S9.ui;
     while(me.units.length<S9.un){var hu2=Math.round(UNITS[uh2].hp*3);
      me.units.push({eid:(EID++),ui:uh2,own:0,am:1,d:PLEN-70-((me.units.length*13)%160),
       hp:hu2,mhp:hu2,cd:0,hitT:0,ph:(me.units.length%9),px:0,py:0});}

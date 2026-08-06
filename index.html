@@ -14667,6 +14667,9 @@ function uHead(c,k,U,hy){
  c.save();c.translate(2,py0);c.scale(HK,HK);c.translate(-2,-py0);
  const lw0=c.lineWidth;c.lineWidth=lw0/HK;
  uHead0(c,k,U,hy);
+ /* ⚔(192)派生の面頬。⚠**共通の頭を使っているのは巨漢だけ**だが、かぶり物の"後"に描けるので
+    ここでは顔の下半分をそのまま覆える(bFace 側はかぶり物の前なので同じ位置に置いてある) */
+ vMask(c,2,(hy==null?-42:hy),8,8.6);
  c.lineWidth=lw0;c.restore();
 }
 function uHead0(c,k,U,hy){
@@ -14771,6 +14774,7 @@ function uGun(c,x,y,len,cal,col,mag){
  c.fillStyle=shade(st,1.5);
  c.beginPath();/* 銃身 */
  c.moveTo(x+6.4,y-cal*.5);c.lineTo(x+len,y-cal*.5);c.lineTo(x+len,y+cal*.5);c.lineTo(x+6.4,y+cal*.5);c.closePath();c.fill();c.stroke();
+ vMuz(c,x+len,y,cal*.5);/* ⚔(192)派生の銃口(段2=制退器 / 段3=太く長い) */
 }
 /* ⭐噴射器の共通部品(火炎放射・冷凍)。本体→握り→**先へ広がった筒先**。
    ⚠角丸長方形1つだと「腕の先の弁当箱」に見える(実機で撮って分かった) */
@@ -14782,6 +14786,7 @@ function uNoz(c,x,y,len,col,tip){
  c.fillStyle=shade(col,1.28);/* 筒先(先へ広がる) */
  c.beginPath();c.moveTo(x+len*.58,y-3);c.lineTo(x+len,y-5);c.lineTo(x+len,y+4.6);c.lineTo(x+len*.58,y+2.6);c.closePath();c.fill();c.stroke();
  if(tip){c.fillStyle=tip;c.beginPath();c.arc(x+len+2.4,y-.2,2.6,0,7);c.fill();}
+ vMuz(c,x+len,y-.2,4.4);/* ⚔(192)派生の筒先 */
 }
 /* 背負い物。⚠胴より**奥**に描く(手前に描くと胴に貼り付いた模様に見える) */
 function uBack(c,k,U,walk){
@@ -14857,6 +14862,71 @@ function uBack0(c,k,U,walk){
    ⚠共通の体(uBody/uLegs/uArmTo)とは**別物**。1体ごとに寸法と色を渡して組むための素材で、
      `rr()` や `shade()` と同じ「道具」。⚠ここに兵科ごとの分岐を書かないこと。
    ⚠割り付けの掟は共通=**頭12.6 / 胴16 / 脚18.8**(全高46)。 */
+/* ⚔⭐⭐(192)**派生の段を「肩・兜・得物」でも言う**(2026-08-06)。
+   ⚠(191)の背中の布は**段は言えたが兵科の違いは言えなかった**=90種が「同じマントを着た30種」に見えた。
+   ⭐**共通の道具(bArm / bFace / uGun / uNoz)に1か所ずつ差す**=
+     28種の体に枝を1本も書かずに**90種すべて**へ効く(背中の布と同じ考え方)。
+   ⭐**兵科ごとの違いは系統(VFAM)で出す**=🛡重装は角ばった板 / 🪓荒くれは棘 /
+     ⚡技術はバイザーと鰭 / 🎯軽装は革帯。⚠**系統は4つで足りる**(30種ぶん枝を書かない)。
+   ⚠⚠**1つの図形で言う**(パスは1本・fill+stroke の2回だけ)=**段で頂点を差し替える**。
+     部品を足すと20体×(絵+シルエット2枚)で描く回数が3倍に跳ねる(掟は [[NOTES_絵]])。
+   ⚠**演出の強さ(FXLV)では消さない**=体の一部(消すと段が読めなくなる)。 */
+let VG_T=0,VG_C='#8a8f96',VG_F='lt',VG_A=0;
+const VFAM={shd:'hv',gld:'hv',big:'hv',pike:'hv',titan:'hv',flm:'hv',mortarU:'hv',rkt:'hv',mgn:'hv',gren2:'hv',
+ bat:'br',axe:'br',saw:'br',mol:'br',grn:'br',
+ elec:'tc',frz:'tc',frost2:'tc',rail2:'tc',snp:'tc'};
+const vFam=id=>VFAM[id]||'lt';
+/* 🪖肩当て。⚠**肩の関節(sx,sy)に被せる椀**。w1=腕の付け根の太さ=兵科ごとに違うので大きさが自動で合う。
+   ⚠**奥の腕(1本目)は暗く**する=同じ明るさだと肩が2つ並んで見える。 */
+function vPaul(c,sx,sy,w1){
+ if(!VG_T)return;
+ /* ⚠⚠**大きさを間違えると胸当てになる**(1回そうした)=最初 s=w1*1.31・半幅1.28s で
+    **胴の肩幅(7.8)と同じ16px の板**になり、肩ではなく胸を横切った。⭐**外側(前)へ寄せる**。 */
+ const s=w1*(.66+.10*VG_T),F=VG_F,back=(++VG_A)===1,T=VG_T;
+ c.fillStyle=shade(VG_C,back?.62:1.16);
+ c.beginPath();
+ c.moveTo(sx-s*.80,sy+s*.40);
+ c.bezierCurveTo(sx-s*.92,sy-s*1.00,sx+s*.55,sy-s*1.30,sx+s*1.05,sy-s*.80);
+ if(T>=2){/* 段2から系統の特徴が出る(⚠外側の上=顔にも得物にも当たらない場所) */
+  if(F==='br'){c.lineTo(sx+s*1.70,sy-s*1.30);c.lineTo(sx+s*1.34,sy-s*.42);}/* 棘 */
+  else if(F==='tc'){c.lineTo(sx+s*1.10,sy-s*1.55);c.lineTo(sx+s*1.42,sy-s*.34);}/* 立った鰭 */
+  else if(F==='hv'){c.lineTo(sx+s*1.46,sy-s*.78);c.lineTo(sx+s*1.42,sy-s*.22);}/* 角ばった板 */
+  else{c.lineTo(sx+s*1.22,sy-s*.55);}/* 軽装=丸いまま少し張り出す */
+ }
+ c.lineTo(sx+s*1.16,sy+s*.44);
+ if(T>=3){c.lineTo(sx+s*1.28,sy+s*1.10);c.lineTo(sx-s*.82,sy+s*.95);}/* 段3=裾が伸びて肩が広く見える */
+ c.closePath();c.fill();c.stroke();
+}
+/* 🪖兜(面頬)。⚠**かぶり物は各体が bFace のあとに描く**ので、ここは**顔の下半分**しか使えない
+   =だから「面頬」にした(上へ伸ばすと兜に隠れて1本も見えない)。⚠段1は付けない(背中の布だけ)。 */
+function vMask(c,x,y,rx,ry){
+ if(VG_T<2)return;
+ const F=VG_F,T=VG_T;
+ if(F==='tc'){/* ⚡技術系=目の高さを横切るバイザー(段3で光る色になる) */
+  c.fillStyle=shade(VG_C,T>=3?1.55:1.0);
+  c.beginPath();
+  c.moveTo(x-rx*1.04,y-ry*.46);c.lineTo(x+rx*1.10,y-ry*.56);
+  c.lineTo(x+rx*1.10,y+ry*(T>=3?.34:.10));c.lineTo(x-rx*1.04,y+ry*(T>=3?.42:.18));
+  c.closePath();c.fill();c.stroke();return;}
+ c.fillStyle=shade(VG_C,T>=3?1.22:.82);
+ const ty=T>=3?y+ry*.30:y+ry*.60;/* 段3=目のすぐ下まで上がる(⚠目にかぶせない) */
+ c.beginPath();
+ c.moveTo(x-rx*1.00,ty+ry*.06);c.lineTo(x+rx*1.04,ty);
+ if(F==='br'&&T>=3){c.lineTo(x+rx*.92,y+ry*.60);c.lineTo(x+rx*1.06,y+ry*.62);}/* 🪓牙 */
+ c.lineTo(x+rx*.70,y+ry*1.04);c.lineTo(x-rx*.64,y+ry*1.06);
+ c.closePath();c.fill();c.stroke();
+}
+/* ⚔得物の段=**銃口/筒先に付け足す**。⚠**得物そのものは兵科ごとに手描き**なので、
+   共通の道具を通る銃(uGun)と噴射器(uNoz)にだけ差せる。⚠残りの兵科は [[TODO]]。 */
+function vMuz(c,x,y,h){
+ if(VG_T<2)return;
+ const T=VG_T,ln=T>=3?5.2:3.0,w=h*(T>=3?1.30:1.05);
+ c.fillStyle=shade(VG_C,1.28);
+ c.beginPath();
+ c.moveTo(x-2.2,-w+y);c.lineTo(x+ln,-w*1.06+y);
+ c.lineTo(x+ln,w*1.06+y);c.lineTo(x-2.2,w+y);
+ c.closePath();c.fill();c.stroke();
+}
 /* 脚1本(腿→すね→靴)。dx=前後のずれ / dk=奥(<1)か手前(1) / bw=太さの倍率 */
 function bLeg(c,dx,dk,pa,sho,hip,bw){
  const kx=dx*.5,w=bw||1;
@@ -14899,6 +14969,7 @@ function bArm(c,sx,sy,ex,ey,hx,hy,w1,w2,cA,cH){
  if(cH){c.fillStyle=cH;
   c.beginPath();c.moveTo(hx-w2*.2,hy-w2*1.08);c.lineTo(hx+w2*1.1,hy-w2*.86);
   c.lineTo(hx+w2*1.25,hy+w2*.55);c.lineTo(hx-w2*.15,hy+w2);c.closePath();c.fill();c.stroke();}
+ vPaul(c,sx,sy,w1);/* ⚔(192)派生の肩当て(素の兵科では何も描かない) */
 }
 /* 胴。P=[肩の半幅,腰の半幅,上端,下端]。⚠肩を丸め腰で絞る=四角い胴は段ボールに見える。
    戻り値=胴の輪郭を引く関数(clip に使う) */
@@ -14930,6 +15001,7 @@ function bFace(c,x,y,rx,ry,sk,noMouth){
  c.beginPath();c.moveTo(x+rx*.60,y-.6);c.lineTo(x+rx*.88,y+.2);c.lineTo(x+rx*.56,y+.9);c.closePath();c.fill();
  zEye(c,x+2.6,y,1.9);
  if(!noMouth){c.fillStyle=shade(sk,.6);c.fillRect(x+1.4,y+ry*.60,2.8,1.1);}
+ vMask(c,x,y,rx,ry);/* ⚔(192)派生の面頬(素の兵科では何も描かない) */
 }
 /* ⭐⭐**溜めの間、装備そのものを動かす**(2026-08-01ユーザー指示「杖を動かしたり剣を振ったり
      ガトリングが回ったり、身体の動きじゃなくて装備もしっかり違和感なく動くように」)。
@@ -16145,6 +16217,10 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   if(VEC2_R>0)drawUnit(silLayer(c,VEC2_R,VEC2_RC),ui,x-.9,y-1.6,dr,t,ph,os);
   drawUnit(flatLayer(c),ui,x,y,dr,t,ph,o1);return;}
  const U=UNITS[ui],id=U.base||U.id,vid=U.vid||'',vt=U.vt||0;
+ /* ⚔(192)**派生の装い(肩・面頬・銃口)を共通の道具へ渡す箱**。⚠英雄は素のまま(0を入れる)。
+    ⚠⚠**毎回入れ直す**=入れ忘れると前に描いた派生の肩当てが次の兵科に付く。
+    ⚠VEC2 の写し3枚はこの行より前で return しているので、各層で入り直す(数え漏れが無い)。 */
+ VG_T=U.hro?0:vt;VG_C=U.c||'#8a8f96';VG_F=vFam(id);VG_A=0;
  SWG_ID=id;/* ⭐連撃の型を引くため(bSwing が読む)。⚠毎回入れ直す */
  /* ⭐**溜め中は足を止める**(o.chg>0)=歩行を止めて足を開いた構えにする。
     ⚠止めるだけだと「固まった」に見えるので、溜めの光(drawUChg)と必ずセットで出すこと。 */
@@ -16482,6 +16558,9 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   /* ⚠**しきい値は0ではなく0.30**=真横に近い所(構え)で前に出すと、
      胸の前を横切る茶色い板になって胴の色分けが丸ごと消える(撮って上げた) */
   if(!(sn9>.55))drawBat();/* 奥〜真横を通る間=胴より奥 */
+  /* ⚔⭐(192)**この5兵科(bat/shd/axe/valk/big)は共通の道具を1つも使っていない**
+     =bArm/bFace に差した肩当て・面頬が**丸ごと素通りする**(撮って気づいた)。⚠1体ずつ手で差す。 */
+  vPaul(c,-5.2,-31.6,3.7);/* 肩当て(奥) */
   /* --- 首。⚠**胴より先に描く**=あとから描くと胴の上に肌色の四角が乗って見える。
      ⚠短く。⚠細いと黒フチに食われて黒く沈むので幅6以上いる --- */
   c.fillStyle=shade(SK,.72);
@@ -16515,6 +16594,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.save();swT();
   barm(4.4,-31.4, 9+gx*.5,-29.4+gy*.5, 12.4+gx,-31.2+gy, 3.9,3.4, SK,shade(SK,.92));
   c.restore();
+  vPaul(c,4.4,-31.4,3.9);/* ⚔(192)肩当て(手前) */
   if(sn9>.55)drawBat();/* 手前を通る間=胴より前 */
   /* --- 頭。⚠真円だと風船に見える=縦にすこし長い卵。
      ⚠**全高の3割を超えると人形に見える**(割り付けは 頭13/胴17/脚24 が正解) --- */
@@ -16532,6 +16612,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=shade(SH,.66);c.fillRect(-.4,-48.4,3.8,1.2);/* 縫い目(1本だけ。増やすと汚れに見える) */
   zEye(c,4.4,-41.8,1.8);
   c.fillStyle=shade(SK,.6);c.fillRect(3.2,-38.4,2.8,1.1);/* 口。⚠太く暗いと口髭か傷に見える */
+  vMask(c,1.8,-41.8,5.7,6.3);/* ⚔(192)派生の面頬 */
   c.restore();/* 上体の傾き */
   c.restore();return;
  }
@@ -16568,6 +16649,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=shade(SUIT,.72);/* 奥の腕 */
   c.beginPath();c.moveTo(-6.4,-32.4);c.lineTo(0,-31.4);c.lineTo(0,-26.8);c.lineTo(-6.4,-27.6);c.closePath();c.fill();c.stroke();
   c.beginPath();c.moveTo(-1,-31.6);c.lineTo(5.4,-30.6);c.lineTo(5.4,-26.4);c.lineTo(-1,-27.2);c.closePath();c.fill();c.stroke();
+  vPaul(c,-6.2,-32.2,4.4);/* ⚔(192)派生の肩当て(奥)。⚠共通の道具を使っていない兵科 */
   /* --- 胴(防護服)。⚠肩を張らせ腰で絞る --- */
   const sbody=()=>{c.beginPath();
    c.moveTo(-10,-30.4);
@@ -16588,6 +16670,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.restore();
   c.fillStyle='#3a3128';c.fillRect(-7.6,-24,15.2,2.8);c.strokeRect(-7.6,-24,15.2,2.8);/* 腰の帯 */
   c.fillStyle=GOLD2;c.fillRect(-1.8,-24.4,3.6,3.6);
+  vPaul(c,7.2,-33.2,4.6);/* ⚔(192)派生の肩当て(手前) */
   /* --- 首 → 頭(鉄帽+口元の布) --- */
   c.fillStyle=shade(SK,.72);
   c.beginPath();c.moveTo(-1.4,-40);c.lineTo(4.8,-40);c.lineTo(4.2,-35.6);c.lineTo(-1,-35.6);c.closePath();c.fill();c.stroke();
@@ -16599,6 +16682,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.beginPath();c.arc(1.6,-47.4,6.2,Math.PI,0);c.fill();c.stroke();
   c.fillStyle=shade(PAD,.92);rr(c,-6.8,-48.4,17,3,1.5);c.fill();c.stroke();
   zEye(c,4.2,-43.8,1.9);
+  vMask(c,1.6,-43.6,5.8,6.2);/* ⚔(192)派生の面頬(⚠素の「口元の布」を上書きする=段が上がった印) */
   /* --- ⭐⭐大盾(いちばん手前)。板+鉄枠+中央の鋲。
      ⚠角丸長方形1枚だと座布団に見える=**板の継ぎ目**と**上下の鉄帯**を必ず入れる --- */
   c.save();c.translate(0,-.6);
@@ -16655,6 +16739,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=shade(SK,.70);
   c.beginPath();c.moveTo(-6,-32.6);c.lineTo(.6,-31.6);c.lineTo(.6,-26.4);c.lineTo(-6,-27.2);c.closePath();c.fill();c.stroke();
   c.beginPath();c.moveTo(-.6,-31.8);c.lineTo(6.6,-30.4);c.lineTo(6.6,-25.6);c.lineTo(-.6,-26.6);c.closePath();c.fill();c.stroke();
+  vPaul(c,-6.2,-32.8,4.4);/* ⚔(192)派生の肩当て(奥)。⚠共通の道具を使っていない兵科 */
   /* --- 胴。⭐**肩を大きく張らせ腰で絞る**=これが「戦士の体」 --- */
   const abody=()=>{c.beginPath();
    c.moveTo(-11.4,-30.4);
@@ -16679,6 +16764,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   /* 革の帯+留め金(⚠細く=太いと上着の橙が残らない) */
   c.fillStyle='#4a3a26';c.fillRect(-8.4,-23.6,16.8,2.8);c.strokeRect(-8.4,-23.6,16.8,2.8);
   c.fillStyle=GOLD2;c.fillRect(-2,-24,4.4,3.6);
+  vPaul(c,7.0,-33.6,4.6);/* ⚔(192)派生の肩当て(手前。⚠毛皮の肩掛けの上に重ねる) */
   /* --- ⭐⭐大斧。**柄を体の外へ長く斜めに出す**のが要(これが無いと斧に見えない) --- */
   /* ⭐⭐**斧を実際に振り出す**(2026-08-01ユーザー指示)。⚠それまで斧は `walk` で微かに揺れるだけで、
      溜めで動くのは上体(uChgUp)だけ=**得物そのものは一度も動いていなかった**。
@@ -16723,6 +16809,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.beginPath();c.moveTo(5.4,-44.2);c.lineTo(6.8,-43.6);c.lineTo(5.3,-43);c.closePath();c.fill();
   c.fillStyle='#8f7a5c';/* 髭(⚠**あごの先だけ**。上へ伸ばすと兜と挟んで顔が帯になる) */
   c.beginPath();c.moveTo(-1,-39.6);c.lineTo(5.4,-39.6);c.lineTo(4.4,-35.6);c.lineTo(-.4,-36.2);c.closePath();c.fill();c.stroke();
+  vMask(c,1.6,-44.4,6,6.4);/* ⚔(192)派生の面頬(⚠髭の上に重ねる=段が上がると顔を隠す) */
   /* 兜(⚠⚠**浅い椀**にして顔を出す。深くかぶせると「暗い塊に目が1つ乗っただけ」になる
      =2026-08-01に一度そうなった。**素肌が縦7以上残る位置**に置くこと) */
   c.fillStyle='#5c4a35';
@@ -16983,6 +17070,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.beginPath();c.moveTo(-11,-35);c.lineTo(-16.6,-33.6);c.lineTo(-21,-20.4+sw);c.lineTo(-14.6,-19.6+sw);c.closePath();c.fill();c.stroke();
   c.beginPath();c.moveTo(-14.6,-20.8+sw);c.lineTo(-21,-21.4+sw);c.lineTo(-20.4,-10.4+sw);c.lineTo(-15,-10+sw);c.closePath();c.fill();c.stroke();
   c.beginPath();c.moveTo(-14.4,-11+sw);c.lineTo(-21.6,-11.6+sw);c.lineTo(-22,-4.2+sw);c.lineTo(-14.2,-3.6+sw);c.closePath();c.fill();c.stroke();
+  vPaul(c,-12.4,-35.4,5.4);/* ⚔(192)派生の肩当て(奥)。⚠共通の道具を使っていない兵科 */
   const bb=()=>{c.beginPath();/* 胴(肩が張り腰でくびれる) */
    c.moveTo(-15,-30);
    c.bezierCurveTo(-16.4,-37.4,-9,-40.4,0,-40.4);
@@ -17004,6 +17092,7 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   c.fillStyle=shade(U.c,1.1);
   c.beginPath();c.moveTo(15.2,-11-sw);c.lineTo(22.6,-11.6-sw);c.lineTo(23,-4-sw);c.lineTo(15,-3.4-sw);c.closePath();c.fill();c.stroke();
   c.fillStyle=shade(U.c,.68);c.fillRect(16.2,-8.8-sw,6.4,1.7);/* 指の割れ目 */
+  vPaul(c,12.4,-35.4,5.6);/* ⚔(192)派生の肩当て(手前) */
  }else{const PB=uBody(c,LK.b,U.c,null,!!PZ.cs);uCos(c,PZ.cs,U,PB,walk);}/* ⭐体型+装いも兵科ごと */
  if(id==='mgn'){c.fillStyle='#3f4a54';rr(c,-10,-20,20,10,4);c.fill();c.stroke();}
  /* 手前の腕(胴の後・武器の前=手が武器の握りに来る) */
@@ -24628,6 +24717,7 @@ function bnsLaneD(x,y){
 const H0_SK='#e8c9a0',H0_UNI='#4e5a3a',H0_UNI2='#5d6a45',H0_PA='#47513a',H0_SHO='#2f2a22',
       H0_VST='#3f4830',H0_CAP='#55613c',H0_GUN='#4a4a44',H0_BRD='#6b543a';
 function drawHero0(c,t,ph,walk){
+ VG_T=0;/* ⚠(192)主人公も bArm/uGun を通る=派生の箱を空にしておかないと肩当てが付く */
  const sw=(walk||0)*5;
  c.lineWidth=2.4;c.strokeStyle=INK;c.lineJoin='round';
  bLeg(c,-1-sw,.9,H0_PA,H0_SHO,-18.8);bLeg(c,1+sw,1,H0_PA,H0_SHO,-18.8);
