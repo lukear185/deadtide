@@ -3734,7 +3734,7 @@ const TOWERS=[
     **解放費も建設費も上なのに入口の爆裂砲台に抜かれる**ようになったため、同じ回で直した。
     ⚠テスラコイル104より低いのは据え置き(射程470=次のスナイパー塔まで唯一の遠射という役割の差)。 */
  {id:'mortar',n:'迫撃砲',cost:430,up2:'mortar2',gc:3440,rng:470,minr:160,dmg:100,rate:2.6,type:'blast',aoe:85,c:'#7a7f6a',dsc:'超射程の範囲砲撃'},
- {id:'sniper',n:'スナイパー塔',cost:540,up2:'sniper2',gc:4320,rng:660,dmg:875,rate:4.8,type:'bullet',prio:1,vsB:2.4,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い。💀ボスと👁オーラ持ちには2.4倍'},
+ {id:'sniper',n:'スナイパー塔',cost:540,up2:'sniper2',gc:4320,rng:660,dmg:875,rate:4.8,type:'pierce',prio:1,vsB:2.4,c:STEEL,dsc:'最大HPの敵を一撃で抜く。撃つ間隔はとても長い。💀ボスと👁オーラ持ちには2.4倍'},
  /* ↓ここまでと次の冷却塔までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
  /* frz=完全凍結の秒数(動けず殴れもしない)。⭐**凍っていない敵は必ず凍る**(2026-07-27に再凍結の耐性を廃止) */
  /* frzN=同じ敵を凍らせられる回数(❄冷却回数の強化で+1/段・最大10)。使い切った敵はもう凍らない */
@@ -3746,14 +3746,14 @@ const TOWERS=[
  /* ⚡(163)**レーザーは電撃系**(ユーザー指示「レーザー砲はテスラと一緒で電撃系のタレットにしよう」)。
     ⚠**撃ち方は変わらない**=`if(T.cont)` の枝が先に当たるので、連鎖(テスラ)の枝には入らない。
     ⚠変わるのは**相性**(🐟鱗に×1.9で通る)と**一覧の印(⚡)**だけ。威力・間隔・射程は1つも触っていない。 */
- {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'elec',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が上がる(素で3倍・🔺最大倍率MAXで6倍)'},
+ {id:'laser',n:'レーザー塔',cost:460,up2:'laser2',gc:3680,rng:360,dmg:9,rate:.1,type:'beam',cont:1,pierce:1,heatN:20,heatM:3,c:'#c96b9f',dsc:'光を当て続ける。装甲貫通・同じ敵を焼き続けると威力が上がる(素で3倍・🔺最大倍率MAXで6倍)'},
  /* ⭐**酸は燃焼とは別枠の継続ダメージ**(2026-07-27ユーザー指示
       「酸噴射は酸の継続ダメージをつけて、その酸がついてる敵が死んだら酸爆発で周囲にダメージにしよう」)。
     ⚠それまでは type:'fire' の燃焼をそのまま使っていて、**実戦DPS30=全19種で最弱**だった
       (研究所で4,000🧬払うのに、基本タワーの火炎放射塔58より弱かった)。
     acdT=酸が残る秒数 / axr=酸爆発の半径 / axm=爆発の威力(酸の継続ダメージの何倍か)。
     ⚠爆発は**敵にだけ**効く(部隊とコアには一切当たらない)。⚠装甲を無視して通る。 */
- {id:'acid',n:'酸噴射砲',cost:390,up2:'acid2',gc:3120,rng:170,dmg:10,rate:.3,type:'fire',burn:26,acdT:3,axr:110,axm:5,c:TOXIC,dsc:'装甲に特効(約1.9倍)・酸が残り続けて削る。酸まみれの敵が倒れると酸爆発で周りも溶ける'},
+ {id:'acid',n:'毒噴射塔',cost:390,up2:'acid2',gc:3120,rng:170,dmg:10,rate:.3,type:'poison',burn:26,acdT:3,axr:110,axm:5,c:TOXIC,dsc:'どんな相手にも等倍で通る毒。毒が残り続けて削り、毒まみれの敵が倒れると毒が弾けて周りも溶ける'},
 /* ⭐drn=**そこから飛び立つドローンの数**(2026-07-27ユーザー指示で作り替え)。
     ⚠それまでは multi:2 の「2体を同時に撃つ塔」で、機体は飾りだった。
     今は**機体1つ1つが敵を追いかけて、自分の射程(基地の半分)に入ったら撃つ**。
@@ -3764,12 +3764,12 @@ const TOWERS=[
     ⚠growは指数なので上限が無いと⚡連鎖数Lv5+研究所で青天井になる。必ずgmaxで頭を止めること */
  {id:'coil',n:'重テスラ',cost:700,up2:'coil2',gc:5600,rng:250,dmg:15,rate:1.1,type:'elec',chain:7,arcT:.1,grow:1.45,gmax:5,c:'#4fa8d9',dsc:'電流がゆっくり伝わり、跳ねるたびに威力が跳ね上がる(最大5倍)'},
  /* beam=ビームの半幅。type は bullet のまま(撃ち方だけ線状にする) */
- {id:'rail',n:'レールガン',cost:680,up2:'railx',gc:5440,rng:900,dmg:310,rate:3,type:'bullet',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。一番多く貫ける向きを自動で狙い、線上の敵を全部貫く(装甲貫通)'},
+ {id:'rail',n:'レールガン',cost:680,up2:'railx',gc:5440,rng:900,dmg:310,rate:3,type:'beam',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。一番多く貫ける向きを自動で狙い、線上の敵を全部貫く(装甲貫通)'},
  /* ↓重テスラ(1つ上)より後に解放される4種は、必ず重テスラより強くなるよう数値を置く(2026-07-25ユーザー指示)。
     目安は「実戦DPS=届く敵の数ぶん」: 重テスラ92 < レールガン174 < ガトリング225 < プラズマ307 < 要塞砲482 */
  {id:'gat',n:'ガトリング要塞',cost:540,up2:'gat2',gc:4320,rng:215,dmg:36,rate:.09,type:'bullet',c:'#b0483a',dsc:'単体をひたすら削る弾幕。射程は短い'},
- {id:'plasma',n:'プラズマ砲',cost:820,up2:'plasma2',gc:6560,rng:420,dmg:300,rate:2.2,type:'blast',aoe:150,pz:1,c:'#d966b0',dsc:'最大の爆発範囲で群れを溶かす'},
- {id:'fort',n:'要塞砲',cost:900,up2:'fort2',gc:7200,rng:380,dmg:150,rate:.7,type:'bullet',multi:4,pierce:1,c:'#8a8f96',dsc:'貫通弾を4体へ同時に叩き込む最終兵器'},
+ {id:'plasma',n:'プラズマ砲',cost:820,up2:'plasma2',gc:6560,rng:420,dmg:300,rate:2.2,type:'beam',aoe:150,pz:1,c:'#d966b0',dsc:'最大の爆発範囲で群れを溶かす'},
+ {id:'fort',n:'要塞砲',cost:900,up2:'fort2',gc:7200,rng:380,dmg:150,rate:.7,type:'pierce',multi:4,pierce:1,c:'#8a8f96',dsc:'貫通弾を4体へ同時に叩き込む最終兵器'},
  /* ===== 支援施設(type:'sup') =====
     タワーとは別軸。専用の支援枠2つにしか建たず、タワーの解放チェーンにも研究所にも出さない。
     ⚠タワーの強化はしないこと(ユーザー指示)。効いてよいのは 情報 / 部隊 / 経済 の3軸だけ。
@@ -3821,19 +3821,19 @@ const TOWERS=[
  {id:'tesla2',n:'雷神コイル',base:'tesla',grd:1,cost:1020,rng:218,dmg:88,rate:.81,type:'elec',chain:6,c:'#7fd0ef',dsc:'太い巻線から6体へ跳ぶ雷'},
  /* ⚠素を85→100にしたので、決まり(威力×2.0)どおり 170→**200**(2026-08-02) */
  {id:'mortar2',n:'重迫撃砲',base:'mortar',grd:1,cost:1290,rng:526,minr:160,dmg:200,rate:2.2,type:'blast',aoe:106,c:'#949c80',dsc:'重い弾を遠くへ。爆発範囲も広い'},
- {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'bullet',prio:1,pierce:1,vsB:3,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。💀ボスと👁オーラ持ちには3倍'},
+ {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'pierce',prio:1,pierce:1,vsB:3,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。💀ボスと👁オーラ持ちには3倍'},
  /* ⚠素を38→58にしたので、決まり(威力×2.0)どおり 76→**116**(2026-08-02) */
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:116,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
- {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'elec',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
- {id:'acid2',n:'溶解噴射砲',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'fire',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から溶解液。装甲に特効・強い酸で削り、倒れた敵が大きな酸爆発を起こす'},
+ {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'beam',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
+ {id:'acid2',n:'劇毒噴射塔',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'poison',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から劇毒。強い毒で削り、倒れた敵が大きく弾けて周りも溶かす'},
  {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
  {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
  {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
- {id:'railx',n:'軌道砲',base:'rail',grd:1,cost:2040,rng:1008,dmg:620,rate:2.55,type:'bullet',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
+ {id:'railx',n:'軌道砲',base:'rail',grd:1,cost:2040,rng:1008,dmg:620,rate:2.55,type:'beam',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
  {id:'gat2',n:'重ガトリング',base:'gat',grd:1,cost:1620,rng:241,dmg:72,rate:.09,type:'bullet',c:'#d05a48',dsc:'六本の砲身が唸る。単体をひたすら溶かす'},
- {id:'plasma2',n:'プラズマ炉',base:'plasma',grd:1,cost:2460,rng:470,dmg:600,rate:1.87,type:'blast',aoe:186,spl:70,pz:1,/* ⚠pz=プラズマ球を撃つ印。進化先にも必ず付ける */c:'#f07fc8',dsc:'炉心から撃ち出す極大の爆発。着弾点の周りも崩れる'},
- {id:'fort2',n:'超弩級要塞砲',base:'fort',grd:1,cost:2700,rng:426,dmg:300,rate:.6,type:'bullet',multi:5,pierce:1,spl:62,c:'#a3a8b0',dsc:'三連の巨砲が5体を同時に貫く。最終形態'},
+ {id:'plasma2',n:'プラズマ炉',base:'plasma',grd:1,cost:2460,rng:470,dmg:600,rate:1.87,type:'beam',aoe:186,spl:70,pz:1,/* ⚠pz=プラズマ球を撃つ印。進化先にも必ず付ける */c:'#f07fc8',dsc:'炉心から撃ち出す極大の爆発。着弾点の周りも崩れる'},
+ {id:'fort2',n:'超弩級要塞砲',base:'fort',grd:1,cost:2700,rng:426,dmg:300,rate:.6,type:'pierce',multi:5,pierce:1,spl:62,c:'#a3a8b0',dsc:'三連の巨砲が5体を同時に貫く。最終形態'},
  {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'}
 ];
 /* ===== ⭐⭐**進化の中段(2026-08-02ユーザー指示「進化を2回できるようにして2段目を弱くする」)** =====
@@ -4191,7 +4191,7 @@ const UNITS=[
  {id:'mol',n:'火炎瓶',cost:72,cd:7,hp:345,atk:83,rate:1.6,rng:180,sp:50,type:'fire',aoe:70,burn:12,c:'#c96b35',dsc:'範囲燃焼・装甲無視'},
  {id:'grn',n:'爆弾兵',cost:86,cd:8,hp:376,atk:133,rate:1.9,rng:240,sp:50,type:'blast',aoe:75,c:'#7d8a5c',dsc:'山なり範囲爆撃'},
  {id:'frz',n:'冷凍兵',cost:96,cd:8.5,hp:402,atk:20,rate:1.1,rng:150,sp:48,type:'frost',aoe:110,c:'#7fb6c9',dsc:'範囲を凍らせ減速'},
- {id:'saw',n:'チェーンソー',cost:104,cd:9,hp:456,atk:45,rate:.6,rng:38,sp:60,type:'fire',multi:2,c:'#b0483a',dsc:'前線の破砕機'},
+ {id:'saw',n:'チェーンソー',cost:104,cd:9,hp:456,atk:45,rate:.6,rng:38,sp:60,type:'slash',multi:2,c:'#b0483a',dsc:'前線の破砕機'},
  /* ⚠⚠**回復役は atk がそのまま1回の回復量**(`U.type==='heal'` は溜め倍率を掛けない)。
     戦力カーブに合わせて hp/atk を同率で上げると**回復量が丸ごと+13%**になるので、
     2026-08-02は**HP寄りに振って回復の伸びを+6%に抑えた**(戦力は同じ目標に乗る)。
@@ -4205,18 +4205,18 @@ const UNITS=[
  /* ↓基本兵科の拡張分 */
  {id:'spr',n:'斥候',cost:28,cd:3.5,hp:153,atk:29,rate:.45,rng:120,sp:120,type:'bullet',c:'#9c8f5c',dsc:'俊足の拳銃使い'},
  {id:'chain',n:'鎖使い',cost:42,cd:5,hp:509,atk:33,rate:1,rng:64,sp:56,type:'melee',hook:8,c:'#7a6a8f',dsc:'すり抜ける敵を鎖で引きずり出す。8体まで同時に足止め'},
- {id:'axe',n:'斧使い',cost:52,cd:5,hp:422,atk:52,rate:1.1,rng:38,sp:64,type:'melee',c:'#a0623a',dsc:'一撃が重い近接'},
+ {id:'axe',n:'斧使い',cost:52,cd:5,hp:422,atk:52,rate:1.1,rng:38,sp:64,type:'slash',c:'#a0623a',dsc:'一撃が重い近接'},
  {id:'smg',n:'短機関銃',cost:68,cd:5.5,hp:260,atk:25,rate:.3,rng:190,sp:60,type:'bullet',c:'#7a8a5c',dsc:'手数で押す連射手'},
  {id:'pike',n:'長槍兵',cost:80,cd:6.5,hp:806,atk:45,rate:.9,rng:70,sp:50,type:'pierce',hook:4,c:'#6f8a8f',dsc:'間合いの外から刺す。這う敵も穂先で縫い止める(4体)'},
  {id:'flm',n:'火炎放射兵',cost:100,cd:8,hp:421,atk:35,rate:.35,rng:110,sp:48,type:'fire',burn:14,c:'#c9552e',dsc:'前方を焼き払う'},
  {id:'gld',n:'重装盾',cost:120,cd:11,hp:6500,atk:25,rate:1,rng:40,sp:38,type:'melee',hook:5,c:'#4a5560',dsc:'鋼鉄の防壁。這う敵もまとめて堰き止める(5体)'},
- {id:'elec',n:'電磁兵',cost:132,cd:9,hp:538,atk:134,rate:1.5,rng:200,sp:50,type:'pierce',multi:3,c:TECH2,dsc:'雷撃が3体を貫く'},
+ {id:'elec',n:'電磁兵',cost:132,cd:9,hp:538,atk:134,rate:1.5,rng:200,sp:50,type:'elec',multi:3,c:TECH2,dsc:'雷撃が3体を貫く'},
  {id:'mortarU',n:'迫撃兵',cost:144,cd:10,hp:641,atk:308,rate:2.2,rng:380,minr:90,sp:44,type:'blast',aoe:90,c:'#7d7a5c',dsc:'後方から曲射'},
  /* ⚠医療兵と同じ理由でHP寄り(回復量の伸びを+6%に抑える。2026-08-02) */
  {id:'engi',n:'工兵',cost:112,cd:9,hp:433,atk:57,rate:1.3,rng:150,sp:52,type:'heal',c:GOLD2,dsc:'仲間を修理する(回復)'},
- {id:'ninja',n:'影',cost:160,cd:11,hp:692,atk:215,rate:.9,rng:46,sp:150,type:'pierce',c:'#3f4a54',dsc:'神速の暗殺者'},
+ {id:'ninja',n:'影',cost:160,cd:11,hp:692,atk:215,rate:.9,rng:46,sp:150,type:'slash',c:'#3f4a54',dsc:'神速の暗殺者'},
  {id:'gren2',n:'重爆弾兵',cost:180,cd:12,hp:1036,atk:311,rate:2,rng:250,sp:46,type:'blast',aoe:110,c:'#6b7550',dsc:'束ねた爆薬を投げ込む'},
- {id:'rail2',n:'レール狙撃',cost:208,cd:14,hp:590,atk:1125,rate:2.6,rng:520,sp:42,type:'pierce',c:'#8f6fae',dsc:'超射程の貫通狙撃'},
+ {id:'rail2',n:'レール狙撃',cost:208,cd:14,hp:590,atk:1125,rate:2.6,rng:520,sp:42,type:'beam',c:'#8f6fae',dsc:'超射程の貫通狙撃'},
  {id:'frost2',n:'絶対零度',cost:192,cd:13,hp:821,atk:59,rate:1.2,rng:180,sp:46,type:'frost',aoe:150,c:TECH,dsc:'広範囲を長時間凍結'},
  {id:'chief',n:'隊長',cost:224,cd:15,hp:1498,atk:197,rate:1.2,rng:230,sp:54,type:'bullet',multi:2,c:'#d8d2c4',dsc:'精鋭を率いる歴戦の兵'},
  /* ↓研究所限定の新兵科 */
@@ -4578,17 +4578,19 @@ const TW_TRAIT={
  net:{k:'slow',v:.05,t:'減速/凍結+5%'},
  blast:{k:'aoe',v:.025,t:'爆発範囲+2.5%'},
  /* ⚠連鎖は整数なので端数を切り捨てる=4段ごとに1体増える(使う側で Math.floor する) */
- elec:{k:'chain',v:.25,t:'連鎖+0.25体'}/* ⚠カードは「…/段」と続くので**1段あたりの言い方**にする(4段で+1体) */
+ elec:{k:'chain',v:.25,t:'連鎖+0.25体'},
+ /* ⭐(196)足した型。🧪毒は火炎と同じく継続で削るので同じ伸ばし方にする */
+ poison:{k:'burn',v:.08,t:'継続の毒+8%'}/* ⚠カードは「…/段」と続くので**1段あたりの言い方**にする(4段で+1体) */
 };
 /* ⚠(163)**その塔が実際に持っていない持ち味は出さない**=⚡電撃系にした🔦レーザー塔は
    連鎖しないので、研究所に「連鎖+0.25体/段」と書くと嘘になる(相性のためだけに型を合わせた)。 */
 const twTrait=T=>{const R9=TW_TRAIT[T&&T.type];return (R9&&R9.k==='chain'&&!(T&&T.chain))?null:R9;};
 /* 一覧に出す絵文字。⚠タワー20枚・兵科32枚が全部同じ絵だと見分けられないので型で変える */
-const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡'};
-const UN_IC={melee:'✊',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚'};
+const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡',pierce:'🗡',beam:'🔆',poison:'🧪'};
+const UN_IC={melee:'✊',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚',slash:'⚔',beam:'🔆',elec:'⚡'};
 const TW_DMG_STEP=.05;/* タワーの威力(1段あたりの素の刻み)。⚠伸びは `lineAcc` を通す(後半ほど大きい) */
 /* 兵科は近接だけHP寄り、それ以外は攻撃寄り(型ごと強化の時の配分をそのまま引き継ぐ) */
-const UN_STEP=ty=>ty==='melee'?{a:.03,h:.03}:{a:.04,h:.02};/* 1段あたりの素の刻み */
+const UN_STEP=ty=>(ty==='melee'||ty==='slash')?{a:.03,h:.03}:{a:.04,h:.02};/* 1段あたりの素の刻み */
 /* ⭐⭐⭐**中盤〜後半ほど1段の伸びが大きくなる**(2026-08-02(57)ユーザー
    「強化タブの必要経験Pと、ステータスの伸びを中盤〜後半にかけて増やして」)。
    ⚠⚠**それまでは「刻み×段数」の一直線**だったので、**19段目も1段目も同じ伸び**=
@@ -4898,8 +4900,36 @@ const ELEC_VS_SCALE=TUNE("ELEC_VS_SCALE",1.9,1,3,.05);
    ⚠⚠**弱点(特効)は1体につき1つのまま**=2つ持たせると「片方だけ持って行けば済む」になる
      ([[DESIGN]] で却下ずみ)。⚠**型の分からない一撃(必殺・砲撃)は通る扱い**=分からない物を弱くしない。 */
 const BULLET_VS_WING=TUNE("BULLET_VS_WING",1.9,1,3,.05);
-const WING_MISS=['melee','blast','fire','frost'];/* 🪶羽に届かない型(45%になる) */
-const ARMOR_CUT=TUNE("ARMOR_CUT",.45,.2,1,.05);/* 🛡装甲・🐟鱗の敵に「貫通しない攻撃」が通る割合(dmgZ が掛ける) */
+const ARMOR_CUT=TUNE("ARMOR_CUT",.45,.2,1,.05);/* 🛡耐性(その材質が弾く1つの型)に通る割合 */
+/* ⚔🔆🧪⭐⭐⭐(196)**相性を作り直した**(2026-08-07ユーザー決定)。
+   ⚠⚠**それまでは「弱点1つ・耐性はそれ以外ほぼ全部」**だった(羽は4種が45%)=
+     ユーザー「耐性を弱点以外の全部にすると説明もぐちゃぐちゃする上に爽快感が皆無になる」。
+   ⭐⭐**新しい掟=材質ごとに「弱点1つ(×1.9)・耐性1つ(45%)・残りは全部等倍」**。
+   ⭐**材質を持たない通常種にも弱点を作った**=⚔斬撃。序盤から相性が働くようになる。
+   ⭐🔆**ビームだけは別枠**=材質に関係なく**すべての敵に×1.4**(弱点には勝てないが腐らない)。
+   ⚠⚠**この表以外の場所に相性の分岐を書かないこと**=倍率も見せ方も全部ここから引く。
+   ⚠**型を渡していない一撃(必殺・砲撃・🚌バス)は等倍**=分からない物を弱くしない。 */
+const SLASH_VS_NONE=TUNE("SLASH_VS_NONE",1.9,1,3,.05);/* ⚔斬撃が材質なしの敵へ */
+const BEAM_X=TUNE("BEAM_X",1.4,1,2.5,.05);/* 🔆ビームが全部の敵へ */
+const AF_MAT=[
+ {k:'wing', ic:'🪶',n:'羽',    wk:'bullet',rs:'melee', x:()=>BULLET_VS_WING},
+ {k:'armor',ic:'🛡',n:'装甲',  wk:'fire',  rs:'bullet',x:()=>FIRE_VS_ARMOR},
+ {k:'scale',ic:'🐟',n:'鱗',    wk:'elec',  rs:'fire',  x:()=>ELEC_VS_SCALE},
+ {k:'none', ic:'',  n:'通常種',wk:'slash', rs:'',      x:()=>SLASH_VS_NONE}
+];
+/* その敵の材質(1体1つ)。⚠**羽→装甲→鱗の順で見る**=重ねて持たせない約束だが、順を固定しておく */
+const afKind=z=>(z&&z.wing)?'wing':((z&&z.armor)?'armor':((z&&z.scl)?'scale':'none'));
+const afMat=z=>AF_MAT[AF_MAT.findIndex(m=>m.k===afKind(z))];
+/* ⭐**この一撃が何倍通るか**。ty が無い(型の分からない一撃)なら等倍 */
+function afX(ty,z){
+ if(!ty||ty==='eco'||ty==='sup'||ty==='heal')return 1;
+ if(ty==='beam')return BEAM_X;/* 🔆全部に等しく効く */
+ const M=afMat(z);if(!M)return 1;
+ if(ty===M.wk)return M.x();
+ if(ty===M.rs)return ARMOR_CUT;
+ return 1;
+}
+const afKof=x=>x>1?'wk':(x<1?'rs':'');/* 数字の色分け用の合図 */
 /* ============ 🛡 相性の見せ方(2026-08-04) ============
    ⭐**それまで相性はコードにしか無く、プレイヤーには一切見えていなかった**
      (装甲は⚔近接/🔫実弾が45%・🔥火炎の塔は×1.9…)。兵科30種・ゾンビ46種あっても
@@ -4915,38 +4945,21 @@ const ARMOR_CUT=TUNE("ARMOR_CUT",.45,.2,1,.05);/* 🛡装甲・🐟鱗の敵に�
 const AF_TY={melee:{ic:'✊',n:'近接'},bullet:{ic:'🔫',n:'実弾'},pierce:{ic:'🗡',n:'貫通'},
  blast:{ic:'💣',n:'爆発'},fire:{ic:'🔥',n:'火炎'},frost:{ic:'❄',n:'冷気'},
  elec:{ic:'⚡',n:'電撃'},net:{ic:'🕸',n:'拘束'},heal:{ic:'✚',n:'回復'},
+ /* ⭐(196)足した3つ。⚔斬撃=刃物 / 🔆ビーム=光と超高速の弾 / 🧪毒=継続で削る */
+ slash:{ic:'⚔',n:'斬撃'},beam:{ic:'🔆',n:'ビーム'},poison:{ic:'🧪',n:'毒'},
  eco:{ic:'🏭',n:'工房'},sup:{ic:'🏗',n:'支援'}};
-/* その攻撃が装甲・鱗を貫くか。isTw=タワーの表(TOWERS)を見ている時 */
-const afPrc=(type,prc,isTw)=>isTw?(type!=='bullet'||!!prc):(type==='fire'||type==='blast'||type==='pierce');
-/* 🛡装甲/🐟鱗の敵へ何倍通るか。攻撃しない物(工房・支援・回復)は null */
+/* 🛡各材質へ何倍通るか(表示用)。攻撃しない物(工房・支援・回復)は null。
+   ⚠**中身は afX の1本から作る**=説明と計算がずれないようにするため */
 function afMul(type,prc,isTw){
- if(type==='eco'||type==='sup'||type==='heal')return null;
- const m=afPrc(type,prc,isTw)?1:ARMOR_CUT;
- /* 🪶(194)羽は**届くかどうか**で決まる=貫通の話ではない(名指しの4種だけ届かない) */
- const w=(WING_MISS.indexOf(type)>=0)?ARMOR_CUT:1;
- /* ⚠(187)**塔だけの話ではなくなった**(進行の作り替えC)=兵科・英雄にも同じ特効が乗る */
- return{ar:(type==='fire')?FIRE_VS_ARMOR:m,sc:(type==='elec')?ELEC_VS_SCALE:m,
-  wg:(type==='bullet')?BULLET_VS_WING:w};
+ if(!type||type==='eco'||type==='sup'||type==='heal')return null;
+ return{ar:afX(type,{armor:1}),sc:afX(type,{scl:1}),wg:afX(type,{wing:1}),nm:afX(type,null)};
 }
 /* ⚔⭐⭐⭐(187)**兵科と英雄にも属性を効かせる**(進行の作り替えC・2026-08-06ユーザー決定)。
    ⚠⚠**それまで特効(×1.9)が乗るのは塔だけ**で、兵科と英雄は素通りしていた=
      「相性で選ぶ」が**塔の話にしかなっていなかった**。編成が「強い順」に収束する原因の1つ。
-   ⭐**組み合わせは塔と同じ**=🔥火炎×🛡装甲 / ⚡電撃×🐟鱗。⚠倍率は同じ定数から引く。
-   ⚠**弱い側(45%)は今までどおり `dmgZ` が引き受ける**=ここは特効だけを見る。
-   ⚠⚠**兵科の一撃は必ず `uHit` を通すこと**=`dmgZ` を直に呼ぶと特効が乗らない。 */
-function afUnit(ty,z){
- if(z){if(ty==='fire'&&z.armor)return{m:FIRE_VS_ARMOR,wk:'fire'};
-  if(ty==='elec'&&z.scl)return{m:ELEC_VS_SCALE,wk:'elec'};
-  if(ty==='bullet'&&z.wing)return{m:BULLET_VS_WING,wk:'bullet'};}/* 🪶(194)撃ち落とす */
- return{m:1,wk:0};
-}
-/* その兵科/英雄の攻撃が装甲・鱗を貫くか。⚠**判定は afPrc と同じ式**(2か所に書かない) */
-const uPrc=U=>afPrc((U&&U.type)||'',0,false)?1:0;
-/* 🪶(194)🔫実弾が羽へ当たった時の倍率と合図。⚠**2か所に書かない**ためここ1本にする */
-const wgX=z=>(z&&z.wing)?BULLET_VS_WING:1;
-const wgW=z=>(z&&z.wing)?'bullet':0;
-function uHit(C,z,d,U,quiet){const ty=(U&&U.type)||'',a=afUnit(ty,z);
- dmgZ(C,z,d*a.m,uPrc(U),quiet,a.wk,ty);}
+   ⚠⚠(196)**倍率を掛けるのは `dmgZ` の1か所だけになった**=ここは型を渡すだけ。
+   ⚠**兵科の一撃は必ず `uHit` を通すこと**(型を渡さないと相性が乗らない)。 */
+function uHit(C,z,d,U,quiet){dmgZ(C,z,d,1,quiet,0,(U&&U.type)||'');}
 /* ⭐一覧に出す札1つぶん。⭐⭐**数字ではなく「動詞」で書く**(2026-08-04(142)ユーザー
      「編成とタワーの札もちょっとわかりずらいからもっとほかの方法があるといいね」)。
    ⚠⚠**それまで「装甲45%」「鱗190%」と割合を書いていた**が、
@@ -4955,33 +4968,35 @@ function uHit(C,z,d,U,quiet){const ty=(U&&U.type)||'',a=afUnit(ty,z);
      =数字は**図鑑と見出しの凡例(AF_LEG)にだけ**置き、札は「弾かれる/通る/装甲を焼く」に統一した。
    ⚠**数字を札に書き戻さない**。詳しい割合を知りたい人の口は AF_LEG が受け持つ。
    {ic,n,ty,e(長い),s(短い=幅の無い所),t(絵+長い),k}(k=wk得意/rs苦手/ok等倍) */
+/* ⚠(196)**中身は AF_MAT の表から作る**=弱点を持つ型は「何に効くか」・耐性を持つ型は「何に弾かれるか」 */
 function afTag(type,prc,isTw){
- const T=AF_TY[type]||{ic:'🎯',n:type||'?'},m=afMul(type,prc,isTw);
+ const T=AF_TY[type]||{ic:'🎯',n:type||'?'};
  const mk=(e,k,s)=>({ic:T.ic,n:T.n,ty:type,e,k,s:s||e,t:T.ic+' '+e});
- if(!m||type==='net')return mk(T.n,'');
- if(type==='fire')return mk('装甲を焼く','wk');
- if(type==='elec')return mk('鱗に走る','wk');
- return m.ar<1?mk('硬い敵に弾かれる','rs','弾かれる'):mk('硬い敵にも通る','ok','通る');
+ if(!type||type==='net'||type==='eco'||type==='sup'||type==='heal')return mk(T.n,'');
+ if(type==='beam')return mk('どの敵にも効く','wk','どれにも');
+ const w=AF_MAT.find(m=>m.wk===type),r=AF_MAT.find(m=>m.rs===type);
+ if(w)return mk((w.k==='none'?'通常種':w.ic+w.n)+'に効く','wk',(w.k==='none'?'通常種':w.ic)+'に');
+ if(r)return mk(r.ic+r.n+'に弾かれる','rs',r.ic+'に弱い');
+ return mk('どの材質にも等倍','ok','等倍');
 }
 /* 🧟側=そのゾンビの弱点と耐性。装甲も鱗も持たない個体は null(出さない)。
    ⭐**使うのは🆕新登場の紹介の1画面だけ**(2026-08-04(147)ユーザー「弱点：炎 耐性：なんとか
      とかぐらいの分かりやすい感じで。文字はごちゃごちゃするから要らない」)。
    ⚠⚠**割合(45%/×1.9)も説明文も入れない**=絵文字と一語だけ。長くしたくなったらここを疑う。 */
+/* ⚠(196)**弱点1つ・耐性1つ**になったので、どちらも1語で済む。通常種にも弱点(⚔斬撃)が出る */
+const afWord=ty=>{const T=AF_TY[ty];return T?(T.ic+T.n):'';};
 function afZ(Z){
  if(!Z)return null;
- /* 🪶(194)羽=届く物と届かない物で言う(貫通の話ではない) */
- if(Z.wing)return{wk:'🔫実弾',rs:'✊近接 💣爆発 🔥火炎 ❄冷気'};
- if(!Z.armor&&!Z.scl)return null;
- return{wk:Z.armor?'🔥火炎':'⚡電撃',rs:'✊近接 🔫実弾 ❄冷気'};
+ const M=afMat(Z);if(!M)return null;
+ return{wk:afWord(M.wk),rs:M.rs?afWord(M.rs):'なし'};
 }
 /* 📖(165)**図鑑用=印だけ**(ユーザー指示「ゾンビ図鑑で 弱点:🔥 耐性:🔫 みたいに
    弱点と耐性だけ書いて」)=札が小さいので**言葉は入れない**。⚠中身は afZ と同じ所から出す。
    ⚠(166)**持っていない個体も「-」で必ず出す**(ユーザー指示「耐性とかないやつは 弱点:- って感じで
    一応記載して」)=行が出たり出なかったりすると、**札ごとに高さが変わって並びが揺れる**。 */
 function afZIC(Z){
- if(Z&&Z.wing)return{wk:'🔫',rs:'✊💣🔥❄'};/* 🪶(194) */
- if(!Z||(!Z.armor&&!Z.scl))return{wk:'-',rs:'-'};
- return{wk:Z.armor?'🔥':'⚡',rs:'✊🔫❄'};
+ const M=afMat(Z);if(!M)return{wk:'-',rs:'-'};
+ return{wk:(AF_TY[M.wk]||{}).ic||'-',rs:M.rs?((AF_TY[M.rs]||{}).ic||'-'):'-'};
 }
 /* 🎨⭐**特効のダメージ数字は「効いている属性の色」で出す**(2026-08-04(141)ユーザー指示
      「金色は各属性の色にしたい。電気で効いてるなら黄色、火ならオレンジっぽい色、実弾なら若干黒目」)。
@@ -4990,11 +5005,15 @@ function afZIC(Z){
    ⚠いま特効が出るのは 🔥火炎×装甲 と ⚡電撃×鱗 の2つだけ。**残りは出番待ちの席**
      (🔫実弾は対空を入れた時に使う。⚠使う時は必ず実機で読めるか見ること)。 */
 const AF_WKC={fire:{c:AMBER},elec:{c:GOLD},bullet:{c:STEEL,od:PANE},
- pierce:{c:TECH2,od:PANE},blast:{c:LIFE2,od:PANE},frost:{c:FROST},melee:{c:GOLD2}};
-/* 図鑑・紹介の見出しに1行だけ置く凡例。⚠**掟は1か所にだけ書く**(カード46枚に繰り返さない) */
-const AF_LEG=()=>'🛡装甲・🐟鱗の敵 → <b>⚔🔫❄は弾かれる('+Math.round(ARMOR_CUT*100)+'%)</b>'
- +'／<b>🗡💣🔥はそのまま通る</b>／🔥火炎は装甲を焼く(×'+FIRE_VS_ARMOR.toFixed(1)+')'
- +'・⚡電撃は鱗に走る(×'+ELEC_VS_SCALE.toFixed(1)+')';
+ pierce:{c:TECH2,od:PANE},blast:{c:LIFE2,od:PANE},frost:{c:FROST},melee:{c:GOLD2},
+ /* ⭐(196)足した3つ。⚔斬撃=刃の白 / 🔆ビーム=桃 / 🧪毒=毒色 */
+ slash:{c:PAPER,od:PANE},beam:{c:'#c96b9f',od:PANE},poison:{c:TOXIC,od:PANE}};
+/* 図鑑・紹介の見出しに1行だけ置く凡例。⚠**掟は1か所にだけ書く**(カード46枚に繰り返さない)。
+   ⚠⚠(196)**弱点1つ・耐性1つ**になったので、表から1行を組み立てる(手で書かない) */
+const AF_LEG=()=>AF_MAT.map(m=>(m.k==='none'?'材質なし':m.ic+m.n)
+ +' → 弱点'+(AF_TY[m.wk]||{}).ic+'(×'+m.x().toFixed(1)+')'
+ +(m.rs?('・耐性'+(AF_TY[m.rs]||{}).ic+'('+Math.round(ARMOR_CUT*100)+'%)'):'')).join(' ／ ')
+ +' ／ 🔆ビームはすべてに×'+BEAM_X.toFixed(1);
 /* ⭐電撃が次の敵へ跳べる距離(テスラコイル・重テスラで共通)。
    2026-07-27ユーザー指示で150→180(1.2倍)。⚠**2つの塔で同じ値を使う**ので必ずここだけを直すこと */
 const ARC_HOP=180;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
@@ -19083,11 +19102,14 @@ function dmgZ(C,z,d,armorPierce,quiet,wk,ty){
  /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する。
     ⚠割合は `ARMOR_CUT` の1か所だけ=図鑑・編成・建設メニューの説明も同じ値から作っている */
  let afk9='';/* 🛡この一撃の相性(''=等倍 / 'rs'=減らされた / 'wk'=特効が乗っている) */
- /* 🪶(194)**羽は「届くか」で決まる**=貫通の話ではないので、装甲・鱗とは別の枝にする。
-    ⚠**型(ty)を渡していない一撃は通る扱い**(必殺・砲撃など)=分からない物を弱くしない。 */
- if(z.wing){if(ty&&WING_MISS.indexOf(ty)>=0){d*=ARMOR_CUT;afk9='rs';}}
- else if((z.armor||z.scl)&&!armorPierce){d*=ARMOR_CUT;afk9='rs';}
- if(wk)afk9='wk';/* ⚠特効(×1.9)は呼ぶ側で掛けているので、合図だけ受け取る(中身=属性の名前) */
+ /* 🛡⭐⭐(196)**相性を掛けるのはここ1か所だけ**(呼ぶ側は型を渡すだけ)。
+    ⚠⚠**呼ぶ側で倍率を掛けないこと**=二重に掛かる。⚠`armorPierce` はもう見ていない
+      (材質ごとに「弱点1つ・耐性1つ」になり、貫通するかどうかの概念が消えたため)。
+    ⚠**型(ty)を渡していない一撃は等倍**(必殺・砲撃・🚌バスなど)=分からない物を弱くしない。 */
+ let aty9=wk||'';
+ if(ty){const ax9=afX(ty,z);
+  if(ax9!==1){d*=ax9;afk9=afKof(ax9);if(afk9==='wk')aty9=ty;}}
+ if(wk)afk9='wk';/* 旧経路(呼ぶ側が特効を明示した場合)も受ける */
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
  z.hp-=d;
  /* ⚡⭐(124)**継続攻撃(火炎放射塔・レーザー塔)の白光りは「点滅」にする**。
@@ -19113,8 +19135,8 @@ function dmgZ(C,z,d,armorPierce,quiet,wk,ty){
  const rice0=!!(C.bus&&!z.boss&&!z.elite);
  /* 🛡⭐**相性は数字の色で言う**(2026-08-04(139))=場所を1pxも使わずに全部の攻撃に効く。
     ⚠色を変えるだけ(filter も影も使わない)なので、1コマの時間には響かない。 */
- if(!quiet&&!rice0&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)),afk9?{af:afk9,aty:wk||''}:null);
-  if(afk9==='wk')wkFx(C,z,wk);/* 🎆材質が負けている粒(継続攻撃は quiet なのでここを通らない=塔側で出す) */
+ if(!quiet&&!rice0&&(C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&C.fx.length<70){addFx(C,'dmg',z.px+rnd(-8,8),z.py-44*CH_UP,''+Math.max(1,Math.round(d)),afk9?{af:afk9,aty:aty9}:null);
+  if(afk9==='wk')wkFx(C,z,aty9);/* 🎆材質が負けている粒(継続攻撃は quiet なのでここを通らない=塔側で出す) */
   if(FXLV>0&&Math.random()<(FXLV===2?.35:.15))addFx(C,'blood',z.px,z.py-28*CH_UP,'',{sd:rnd(0,9)});}
  if(z.hp<=0)killZ(C,z);
 }
@@ -19933,7 +19955,7 @@ function campStep(C,dt,wave){
     u.swT=u.swD=SWG_SUB;u.mhFin=(nh9<=1)?1:0;u.hcy=((u.hcy||0)+1)%64;
     if(nh9>1)for(let k9=1;k9<nh9;k9++)later(C,k9*SWG_SUB*1.05,()=>hCmbStrike(C,u,U,ua,k9,nh9));
     /* ⚠(187)当たり判定は `uHit`(特効つき)に移した=ここの `pierce` は**演出(H_FX)に渡すだけ** */
-    const pierce=uPrc(U);
+    const pierce=(U.type==='pierce'||U.type==='beam')?1:0;/* ⚠(196)貫く見た目にするかだけ */
     /* ⭐⭐**投げた物は「着弾してから」当てる**(2026-08-01ユーザー指摘
        「攻撃モーションに入った瞬間に相手にダメージが入っていて、爆発物が着弾していないのに敵が倒れる」)。
        ⚠それまでは**当たり判定は即時・見た目だけ `later` で遅らせる**作りだった(前はそれが正だと書いてあった)。
@@ -20275,7 +20297,7 @@ function campStep(C,dt,wave){
     d.cd-=dt;
     if(tg2&&d.cd<=0&&dist(d.x,d.y,tg2.px,tg2.py)<=dR){
      d.cd=T.rate*twRateM(tw);d.am--;
-     dmgZ(C,tg2,dmd*wgX(tg2),prc9,0,wgW(tg2),'bullet');
+     dmgZ(C,tg2,dmd,1,0,0,T.type);/* ⚠(196)倍率は dmgZ が掛ける */
      if(FXLV>0){addFx(C,'pel',d.x,d.y,'',{x2:tg2.px,y2:tg2.py-20*CH_UP,lf:.16,col:trC9});
       addP(C,2,d.x,d.y,{sp:70,a:Math.atan2((tg2.py-20*CH_UP)-d.y,tg2.px-d.x),spread:.35,g:60,life:.1,r:1.4,col:GLOW});}
      const zz=tg2;later(C,.16,()=>{hitFx(C,zz,tw.ang,hitC9,prc9,T.type);});
@@ -20307,15 +20329,15 @@ function campStep(C,dt,wave){
     const hk=hn?(tw.hs||0)/hn:0;
     tw.chg=hk;/* ⚠溜まり具合は chg に載せる=対戦の相手盤面にもそのまま流れる(レールガンと同じ枠) */
     const dl=dps*dt*(1+(twHeatM(T,tw)-1)*hk);
-    dmgZ(C,tg,dl,T.pierce?1:0,1);acc(tg,dl,(!T.pierce&&(tg.armor||tg.scl))?'rs':'');
+    {const ax9=afX(T.type,tg);dmgZ(C,tg,dl,1,1,0,T.type);acc(tg,dl*ax9,afKof(ax9),T.type);}
     if(FXLV>0&&Math.random()<dt*14)addP(C,1,tg.px,tg.py-14*CH_UP,{sp:70,g:60,life:.2,r:1.8,col:hk>.5?'#fff0fa':'#ffb0dd'});
-   }else{/* 火炎放射塔: 装甲特効・燃焼・周りへ1/4 は今までどおり */
-    const av=tg.armor?FIRE_VS_ARMOR:1,df=dps*dt*av;
-    dmgZ(C,tg,df,1,1);acc(tg,df,av>1?'wk':'','fire');
+   }else{/* 火炎放射塔/毒噴射塔: 燃焼(酸)・周りへ1/4 は今までどおり。⚠(196)倍率は dmgZ が掛ける */
+    const av=afX(T.type,tg),df=dps*dt;
+    dmgZ(C,tg,df,1,1,0,T.type);acc(tg,df*av,afKof(av),T.type);
     if(T.fspl){const sr=T.fspl*(1+.06*usEff(tw.us.g));
      for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
       if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
-      dmgZ(C,z2,dps*dt*.25*(z2.armor?FIRE_VS_ARMOR:1),1,1);}}
+      dmgZ(C,z2,dps*dt*.25,1,1,0,T.type);}}
     if(!tg.dead){tg.burnT=Math.max(tg.burnT||0,2+(tg.armor?1:0));
      tg.burnD=T.burn*m*aB*(1+(TRTc&&TRTc.k==='burn'?TRTc.v*TLc:0))*twBurnM(tw)*av;}
     if(FXLV>0&&Math.random()<dt*16){const mp=twMzPt(T,sx,sy,tw.ang);addP(C,1,mp[0],mp[1],
@@ -20378,18 +20400,18 @@ function campStep(C,dt,wave){
    /* ⭐冷却塔は冷気が床を這う白い波も出す。⚠ネット砲と同じ輪1つでは見分けが付かなかった */
    if(T.frz&&FXLV>0)addFx(C,'shock',sx,sy+6,'',{r:rng*.62,col:'#e8f7ff'});
    twSfx(C,T);}
-  else if(T.type==='fire'){/* 火炎は装甲に特効=殻ごと焼く。直撃も燃焼もFIRE_VS_ARMOR倍、燃焼は1秒長い */
-   const av=tg.armor?FIRE_VS_ARMOR:1;
+  else if(T.type==='fire'||T.type==='poison'){/* 🔥火炎は装甲に特効・🧪毒はどこでも等倍。どちらも継続で削る */
+   const av=afX(T.type,tg);/* ⚠(196)直撃ぶんは dmgZ が掛ける。ここで使うのは燃焼(酸)の分だけ */
    /* ⭐炎(酸)の帯を狙った方向へ吹く。⚠今までは銃口の粒だけで「届いている」感じが出ていなかった */
    if(FXLV>0)addFx(C,'flame',mzx,mzy,'',
     {ang:tw.ang,len:rng*.92,col:T.id==='acid'?'#a8e05a':'#ff9a3d',sd:rnd(0,9)});
-   dmgZ(C,tg,dm*av,1,0,av>1?'fire':0,'fire');/* 🛡av>1=装甲に特効が乗った=数字を火炎の色の▲にする */
+   dmgZ(C,tg,dm,1,0,0,T.type);/* 🛡相性は dmgZ が掛けて色も決める(196) */
    /* ⭐吹き付けた炎は狙った敵の周りにも広がる=直撃の1/4だけ通る(2026-07-26ユーザー指示)。
       ⚠装甲特効は敵ごとに見る(周りの敵が装甲持ちならそちらにも1.9倍が乗る)。燃焼が付くのは直撃だけ */
    if(T.fspl){const sr=T.fspl*(1+.06*usEff(tw.us.g));
     for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
-     dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1,0,z2.armor?'fire':0,'fire');}
+     dmgZ(C,z2,dm*.25,1,0,0,T.type);}
     if(FXLV>0)addFx(C,'ring',tg.px,tg.py,'',{r:sr,col:'#ff9a3d'});}
    if(!tg.dead){const bd=T.burn*m*aB*(1+(TRT&&TRT.k==='burn'?TRT.v*TL:0))*av;
     /* ⭐酸(axr持ち)は燃焼ではなく**酸**として乗せる=倒れた時に酸爆発が起きる */
@@ -20403,19 +20425,21 @@ function campStep(C,dt,wave){
    C.arcs.push({x:mzx,y:mzy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
   else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
-   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*elecX()*(cur.scl?ELEC_VS_SCALE:1),1,0,cur.scl?'elec':0,'elec');
+   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*elecX(),1,0,0,'elec');
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
     let nx=null,bd=1e9;
     for(const z of C.zombies){if(z.dead||hitl.includes(z))continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
     if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===cur)continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
     if(!nx)break;
-    dmgZ(C,nx,dm*Math.pow(.85,k)*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0,'elec');if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
+    dmgZ(C,nx,dm*Math.pow(.85,k)*elecX(),1,0,0,'elec');if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
    addFx(C,'zap',sx,sy,'',{pts,sd:rnd(0,9)});
    /* ⚡(163)粒は**跳ねた先だけ**に1つずつ(元は全点に2つ=連鎖6体で12個/発だった) */
    if(FXLV>0)for(let k6=1;k6<pts.length;k6++)addP(C,1,pts[k6][0],pts[k6][1],{sp:60,g:40,life:.35,r:2,col:FROST});
    twSfx(C,T);}
-  else if(T.type==='blast'){
+  /* ⚠(196)**プラズマ砲は型が🔆ビームに変わった**が、撃ち方は砲弾のまま=`pz` でも拾う
+     (型で撃ち方を決めていたので、型を変えると弾が消えていた。検査 checkVfx が捕まえた) */
+  else if(T.type==='blast'||T.pz){
    /* ⭐プラズマ砲だけは「砲弾」ではなく**プラズマ球**を撃つ(2026-07-26ユーザー指摘=迫撃砲と区別が付かない)。
       速く・低く飛び、着弾はエネルギーの炸裂になる。⚠数値(威力・範囲・間隔)は一切変えていない */
    /* ⚠**進化先(プラズマ炉)が漏れていた**(2026-07-27ユーザー指摘
@@ -20432,7 +20456,7 @@ function campStep(C,dt,wave){
    const prc=T.pierce?1:0;
    /* ⭐着弾点の周りも巻き込む砲(進化した弾体)。⚠素のタワーは spl を持たないので何も起きない */
    const splash=(z0)=>{if(!T.spl)return;
-    for(const z2 of C.zombies){if(z2.dead||z2===z0)continue;if(dist(z2.px,z2.py,z0.px,z0.py)<=T.spl)dmgZ(C,z2,dm*.45*wgX(z2),1,0,wgW(z2),'bullet');}
+    for(const z2 of C.zombies){if(z2.dead||z2===z0)continue;if(dist(z2.px,z2.py,z0.px,z0.py)<=T.spl)dmgZ(C,z2,dm*.45,1,0,0,T.type);}
     addFx(C,'ring',z0.px,z0.py,'',{r:T.spl,col:'#b282ff'});};
    if(T.beam){/* ビーム砲: 射程いっぱいまで貫通ビームを撃ち、線上の敵を全部巻き込む。
      ⚠向き(tw.ang)は上で「一番多く貫ける並び」を選んである */
@@ -20441,7 +20465,7 @@ function campStep(C,dt,wave){
     let cnt=0;
     for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
      if(segDist(z.px,z.py,mzx,mzy,ex,ey)>bw)continue;
-     splash(z);dmgZ(C,z,dm*wgX(z),prc,0,wgW(z),'bullet');if(cnt<4)hitFx(C,z,ang,hitC,prc,T.type);cnt++;}
+     splash(z);dmgZ(C,z,dm,1,0,0,T.type);if(cnt<4)hitFx(C,z,ang,hitC,prc,T.type);cnt++;}
     /* ⚠色は紫で固定(以前から `col` は無視されていた)。beamが色を受けるようになったので明示する。
        ⭐sus=撃ちっぱなしのビーム=太いまま残ってから一気に消える(2026-07-26ユーザー指示) */
     addFx(C,'beam',mzx,mzy,'',{x2:ex,y2:ey,col:'rgba(180,120,255,',col2:'rgba(216,170,255,',w:bw,
@@ -20460,7 +20484,7 @@ function campStep(C,dt,wave){
     const kd=T.id==='drone'?'drone':T.id==='fort'?'fort':T.id==='shot'?'shot':'';
     /* ⚠(172)**着弾の絵は先頭2体だけ**(要塞砲は4〜5体を同時に撃つので、全部に出すと
        1発で着弾の絵が5つ増える)。⚠**当たり判定と威力は全員そのまま**=見せ方だけ間引く。 */
-    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];splash(nx);dmgZ(C,nx,dm*wgX(nx),prc,0,wgW(nx),'bullet');
+    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];splash(nx);dmgZ(C,nx,dm,1,0,0,T.type);
      const qfx=(k2<2);
      if(kd==='drone'&&FXLV>0){
       /* ⭐**浮いている2機がそれぞれ小粒の弾を撃つ**(2026-07-26ユーザー指示)。
@@ -20490,7 +20514,7 @@ function campStep(C,dt,wave){
     if(T.heatN){const hn=twHeatN(T,tw);
      if(tw.hz!==tg){tw.hz=tg;tw.hs=0;}else tw.hs=Math.min((tw.hs||0)+1,hn);
      hk=hn?(tw.hs||0)/hn:0;dmH=dm*(1+((T.heatM||2)-1)*hk);}
-    splash(tg);dmgZ(C,tg,dmH,prc);
+    splash(tg);dmgZ(C,tg,dmH,1,0,0,T.type);
     /* ⭐レーザー塔は「弾」ではなく細いビームが走る(ライフル台と同じ曳光線に見えていた)。
        ⭐焼き切るほどビームが太く白熱する=今どれだけ溜まっているかが目で分かる */
     if(T.id==='laser'&&FXLV>0)addFx(C,'beam',mzx,mzy,'',
@@ -20520,7 +20544,7 @@ function campStep(C,dt,wave){
    if(a.first){/* 最初の1体は塔から直接 */
     a.first=0;
     arcZap(C,a,a.x,a.y,a.cur.px,a.cur.py,1);
-    dmgZ(C,a.cur,a.dm*elecX()*(a.cur.scl?ELEC_VS_SCALE:1),1,0,a.cur.scl?'elec':0);a.k++;continue;}
+    dmgZ(C,a.cur,a.dm*elecX(),1,0,0,'elec');a.k++;continue;}
    let nx=null,bd=1e9;
    for(const z of C.zombies){if(z.dead||a.hitl.includes(z))continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
    if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===a.cur)continue;const dd=dist(z.px,z.py,a.cur.px,a.cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
@@ -20528,7 +20552,7 @@ function campStep(C,dt,wave){
    const gm=Math.min(Math.pow(a.grow,a.k),a.gmax);
    arcZap(C,a,a.cur.px,a.cur.py,nx.px,nx.py,.7+gm*.34);
    if(FXLV>0)addP(C,2+Math.round(gm),nx.px,nx.py,{sp:60+gm*22,g:40,life:.35,r:2,col:FROST});
-   dmgZ(C,nx,a.dm*gm*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0);
+   dmgZ(C,nx,a.dm*gm*elecX(),1,0,0,'elec');
    if(a.hitl.indexOf(nx)<0)a.hitl.push(nx);
    a.cur=nx;a.k++;
   }

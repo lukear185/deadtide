@@ -1147,7 +1147,8 @@ function checkTwNew(){
   const r=hit[1]/hit[0];
   if(Math.abs(r-.25)>.02){console.log('FAIL: 火炎の周囲ダメージが直撃の1/4でない ('+(r*100).toFixed(1)+'%)');process.exit(1);}
   /* 1秒あたりの威力が「連射だった頃と同じ(dmg/rate)」であること */
-  const dpsWant=T.dmg/T.rate,dpsGot=hit[0]/DT;
+  /* ⚠(196)**属性の倍率ぶんを掛けてから比べる**=素の敵に対する倍率(🔆ビームなら1.4) */
+  const dpsWant=(T.dmg/T.rate)*afX(T.type,me.zombies[0]),dpsGot=hit[0]/DT;
   if(Math.abs(dpsGot/dpsWant-1)>.06){console.log('FAIL: 継続攻撃のDPSが連射だった頃と違う '+dpsGot.toFixed(1)+' vs '+dpsWant.toFixed(1));process.exit(1);}
   /* 強化の内訳: ⏩連射を消して🔥継続ダメージにした */
   {const stl=twStats(ti);
@@ -1204,7 +1205,8 @@ function checkTwNew(){
   const mul=dMax/d1;
   if(Math.abs(mul-T.heatM)>.05){console.log('FAIL: レーザーが最大'+T.heatM+'倍にならない ('+mul.toFixed(2)+'倍)');process.exit(1);}
   /* 1秒あたりの素の威力が「連射だった頃と同じ(dmg/rate)」であること */
-  if(Math.abs(d1/(T.dmg/T.rate)-1)>.06){console.log('FAIL: 継続攻撃のDPSが連射だった頃と違う '+d1.toFixed(1));process.exit(1);}
+  /* ⚠(196)🔆ビームになったので属性の倍率ぶんを掛けてから比べる */
+  if(Math.abs(d1/((T.dmg/T.rate)*afX(T.type,z))-1)>.06){console.log('FAIL: 継続攻撃のDPSが連射だった頃と違う '+d1.toFixed(1)+' vs '+((T.dmg/T.rate)*afX(T.type,z)).toFixed(1));process.exit(1);}
   /* 別の敵に移ったら0へ戻る */
   z.dead=true;z.hp=0;
   const z2=mkZ(zSpec(0,1,5),projPath(sx,sy));z2.hp=z2.mhp=1e9;me.zombies.push(z2);
@@ -4084,32 +4086,42 @@ function checkUnitAf(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0];
  /* その兵科を1体置き、目の前の敵1体に1回ぶん当てて削れた量を返す */
- const hit=(uid,arm)=>{
+ /* mat=''(材質なし)/'armor'/'scl'/'wing' */
+ const hit=(uid,mat)=>{
   const ui=UNITS.findIndex(u=>u.id===uid);if(ui<0)F('兵科 '+uid+' が居ない');
   const U=UNITS[ui],ud=me.flagD;
   me.units.length=0;me.zombies.length=0;me.fx.length=0;me.dly=[];
   me.units.push({eid:EID++,ui,own:0,am:1,d:ud,hp:99999,mhp:99999,cd:0,hitT:0,fireT:0,ph:0,px:0,py:0,dr:-1,eng:0});
   const z=mkZ(zSpec(ZOMBIES.findIndex(x=>x.id==='walk'),1,10),ud-Math.min(U.rng*.55,110));
-  z.hp=z.mhp=1e9;z.armor=arm?1:0;me.zombies.push(z);
+  z.hp=z.mhp=1e9;z.armor=0;z.scl=0;z.wing=0;if(mat)z[mat]=1;me.zombies.push(z);
   const h0=z.hp;
   for(let k=0;k<70;k++)campStep(me,.05,G.wave);
   for(const d of (me.dly||[]).slice())campStep(me,.05,G.wave);/* 遅らせた着弾も落とす */
   return h0-z.hp;};
- /* ① 🔥火炎放射兵=装甲に特効 */
- {const p=hit('flm',0),a=hit('flm',1);
+ /* ⚔⭐⭐(196)**弱点1つ・耐性1つ**に作り直した後の見張り。
+    ⚠⚠**「近接と冷気は装甲に45%」は撤回ずみ**(2026-08-07)=装甲が弾くのは🔫実弾だけ。 */
+ const near=(a,b,nm)=>{if(!(a>0&&b>0))F(nm+'が当たっていない');
+  const r=a/b;if(r<.8||r>1.25)F(nm+' '+Math.round(a)+' / '+Math.round(b)+' = x'+r.toFixed(2));};
+ /* ① 🔥火炎=装甲に特効・鱗に弾かれる */
+ {const p=hit('flm',''),a=hit('flm','armor'),s=hit('flm','scl');
   if(!(p>0&&a>0))F('火炎放射兵が当たっていない');
-  if(a/p<1.5)F('火炎の兵科に装甲特効が乗っていない 素'+Math.round(p)+'→装甲'+Math.round(a));}
- /* ② ✊近接(連撃を持つ英雄)=装甲に弾かれる。⚠2打目以降だけ貫通していた穴の見張り */
+  if(a/p<1.5)F('火炎に装甲特効が乗っていない 素'+Math.round(p)+'→装甲'+Math.round(a));
+  if(s/p>.75)F('火炎が鱗に弾かれていない 素'+Math.round(p)+'→鱗'+Math.round(s));}
+ /* ② ✊近接=装甲には等倍・🪶羽にだけ弾かれる(連撃を持つ英雄で2打目以降も見る) */
  {const hid=(H_HITS&&Object.keys(H_HITS)[0])||'';if(!hid)F('連撃を持つ英雄が居ない');
-  const p=hit(hid,0),a=hit(hid,1);
-  if(!(p>0))F('近接英雄が当たっていない');
-  if(a/p>.75)F('近接の連撃が装甲を素通りしている 素'+Math.round(p)+'→装甲'+Math.round(a));}
- /* ③ ❄冷気も弾かれる側 */
- {const p=hit('frz',0),a=hit('frz',1);
-  if(!(p>0))F('冷凍兵が当たっていない');
-  if(a/p>.75)F('冷気が装甲を素通りしている 素'+Math.round(p)+'→装甲'+Math.round(a));}
+  const p=hit(hid,''),a=hit(hid,'armor'),w=hit(hid,'wing');
+  near(a,p,'近接が装甲に等倍でない');
+  if(w/p>.75)F('近接が羽に弾かれていない 素'+Math.round(p)+'→羽'+Math.round(w));}
+ /* ③ ❄冷気=どの材質にも等倍(196で救った側) */
+ {const p=hit('frz',''),a=hit('frz','armor');
+  near(a,p,'冷気が装甲に等倍でない');}
+ /* ④ ⚔斬撃=材質を持たない通常種に特効 */
+ {const p=hit('axe',''),a=hit('axe','armor');
+  if(!(p>0))F('斧使いが当たっていない');
+  if(p/a<1.5)F('斬撃が通常種に特効になっていない 通常'+Math.round(p)+'→装甲'+Math.round(a));}
  backTitle();
- console.log('⚔兵科の属性: 🔥火炎は装甲に×'+FIRE_VS_ARMOR.toFixed(1)+' / ✊近接の連撃も❄冷気も装甲に'+Math.round(ARMOR_CUT*100)+'%(素通りしない) OK');
+ console.log('⚔材質と属性(196): 🔥火炎→装甲×'+FIRE_VS_ARMOR.toFixed(1)+'/鱗'+Math.round(ARMOR_CUT*100)+'% ・'
+  +'✊近接→装甲は等倍/羽だけ'+Math.round(ARMOR_CUT*100)+'% ・❄冷気→どこでも等倍 ・⚔斬撃→通常種×'+SLASH_VS_NONE.toFixed(1)+' OK');
 }
 /* ---- 🧬⭐⭐⭐(187)**実入りと棚の値段が釣り合っているか** ----
    ⚠⚠**この検査が無かったせいで RPT_X を3.6倍も外した**(2026-08-06)。
