@@ -405,10 +405,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  font-family:inherit;color:var(--ink);cursor:pointer;text-align:left}
 .stkc.sel{background:var(--amber);outline:3px solid var(--ink);outline-offset:-6px}
 /* ⭐「装備中」は色だけでなく文字でも言う(英雄窓の「✓連れて行く」と同じ型。状態は形で言う=掟) */
-.stkc .chk2{position:absolute;right:8px;top:8px;background:var(--gold);border:2px solid var(--ink);
+/* ⚠⚠(192)**バッジを名前と同じ行に置かない**=名前に62pxの余白を空けていたので
+   「エアストライク」が**「エアストラ…」で切れていた**(撮って直した)。
+   ⭐**下の隅へ落とす**=名前は全幅を使える。説明は2行なので、その右下に重ねても読める。 */
+.stkc .chk2{position:absolute;right:8px;bottom:7px;background:var(--gold);border:2px solid var(--ink);
  border-radius:7px;padding:0 6px;font-size:10.5px;font-weight:900;color:var(--ink)}
-/* ⚠列が最小幅(174px)まで縮んだ時、長い砲撃名がバッジの下へ潜らないように */
-.stkc.sel .t b{padding-right:62px}
+.stkc.sel .t i{padding-right:64px}
 /* ⭐(96)砲撃の絵は台座に載せる(アイコンの目印が揃う) */
 .stkc .e{width:46px;height:46px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:24px;
  background:rgba(36,31,25,.08);border:2px solid var(--ink);border-radius:11px}
@@ -28639,7 +28641,9 @@ function renderHeroPick(){
   if(!h)f.innerHTML=IC("<span class=\"ul\">🚫 連れて行かない</span><span>英雄は1ゲームに1回だけ出撃できる。倒れたらそれまで</span>");
   else{const U=UNITS[hUiOf(h.id)]||h,bo=hBoost(h.id);
    f.innerHTML=IC("<span class=\"ul\">⚡ 必殺『"+h.ult+"』</span><span>"+h.udsc+"</span>"
-    +"<span class=\"sp\"><span>❤"+fmt(Math.round((U.hp||0)*bo))+"</span><span>⚔"+fmt(Math.round((U.atk||0)*bo))+"</span>"
+    /* ⚠(192)**⚔の印はやめた**=小さい字だと✕(かけ算)に見えて「❤6,800 ✕980」と読めた(撮って直した)。
+       ⭐**言葉2文字**にする(HP/攻)。⚠❤だけ残すと片方だけ印で揃わないので両方言葉にする。 */
+    +"<span class=\"sp\"><span>HP"+fmt(Math.round((U.hp||0)*bo))+"</span><span>攻"+fmt(Math.round((U.atk||0)*bo))+"</span>"
     +"<button id=\"hp-more\">📋 くわしく</button></span>");
    const mb=$("hp-more");if(mb)mb.onclick=()=>{try{if(sfx.tap)sfx.tap();}catch(e){}const m=$("md-hpick");if(m)m.classList.remove("on");openHStat(h.id,'hpick');};}}
 }
