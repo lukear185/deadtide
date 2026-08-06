@@ -1002,6 +1002,22 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-gacha .bpbody{overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #md-gacha #gc-home{flex:1 1 auto;min-height:0}
 #md-gacha #gc-sub{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+/* 💎(201)排出率=**1行=1人**の縦一列(ソシャゲの型)。⚠22人+はずれ4つなので必ず流れる前提 */
+.ratelist{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+/* レア度の見出し=左に太い色帯(★の色でレア度を言う) */
+.rthd{display:flex;align-items:center;gap:8px;margin-top:6px;padding:3px 9px;
+ background:var(--ink3);border-left:7px solid var(--gold);border-radius:0 9px 9px 0;color:var(--paper)}
+.rthd:first-child{margin-top:0}
+.rthd .s{font-size:12px;font-weight:900;letter-spacing:-1px}
+.rthd .n{flex:1 1 auto;font-size:12px;font-weight:900}
+.rthd .p{font-size:12px;font-weight:900;color:var(--gold)}
+.rtrow{display:flex;align-items:center;gap:8px;min-height:22px;padding:2px 9px 2px 16px;
+ background:var(--paper2);border-radius:8px;color:var(--ink)}
+/* 属性の札=幅を揃えて左端に置く(同じ属性が縦に揃って見える) */
+.rtrow .ty{flex:0 0 auto;width:62px;font-size:10.5px;font-weight:900;opacity:.8}
+.rtrow .nm{flex:1 1 auto;font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rtrow .p{flex:0 0 auto;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}
+.rtnote{font-size:11px;font-weight:700;opacity:.8;margin-top:8px;line-height:1.4}
 /* 💫(116)幸運チケットの札=タイトルの左上。⚠押す所44px(この企画の物差し)。
    ⭐使っている間は金色に光って**残り秒数**を出す=「いま効いている」が一目で分かる。 */
 #luckbar{position:absolute;left:10px;top:10px;z-index:6;display:none;min-height:44px;padding:5px 13px;
@@ -30083,18 +30099,43 @@ function gcPull5(){
  saveMeta();
  gcStart(out);
 }
+/* 💎⭐⭐(201)**排出率の画面をソシャゲの型に作り替えた**(2026-08-07ユーザー指示
+     「縦スクロールで『★5 狙撃王ジョルジ 0.05%』のように1行ずつ」)。
+   ⚠⚠**全員ぶん書く**(★5が上に来るだけ)=ユーザー明言。⭐**属性で分ける**(同じ属性が隣り合う)。
+   ⚠⚠**確率そのものには一切触っていない**=1体ぶんは `G_RATE` の枠を人数で割って出す
+     (こうしないと 🛠DEVの底上げや、枠が上限に当たって縮む時に**表示だけ嘘になる**)。 */
+/* ⚠**1%以上は小数1桁まで**(はずれ枠が「7.01%」のように端数だらけになる)/ 1%未満だけ3桁 */
+const gcPc=v=>{let s=v>=1?v.toFixed(1):v.toFixed(3);
+ if(s.indexOf('.')>=0)s=s.replace(/0+$/,'').replace(/\.$/,'');return s+'%';};
+/* 属性の並び順=表(AF_TY)の順。⚠ここに無い属性は最後に回す */
+const GC_TYO=Object.keys(AF_TY);
 function gcRateHtml(){
- /* ⚠**1体あたりの確率も一緒に出す**=「英雄が増えると枠が太くなる」仕組みが伝わらないと、
-    数字だけ見て「★5が0.2%もある」と誤解される(2026-07-30) */
- return '<div class="labdone"><b>排出率</b><div style="font-size:11px">'
-  +G_RATE.map(([k,p])=>{
-   if(k==='dud')return 'はずれ枠 '+p.toFixed(1)+'%';
-   const rk=+k.slice(1);
-   return RK_S[rk]+' '+RK_N[rk]+' '+p.toFixed(1)+'%(1体'+RK_EACH[rk]+'%×'+rkCount(rk)+'人)';}).join(' ／ ')
-  /* ⚠ここはHTML=**で囲んでも太字にならない(そのまま * が出る)。必ず <b> を使う */
-  +'<br>⚠<b>1体あたりの確率は固定</b>。英雄が増えるほど、そのレア度の枠は太くなる。'
+ const rowP=k9=>{const r=G_RATE.find(x=>x[0]===k9);return r?r[1]:0;};
+ let h='';
+ for(let rk=5;rk>=1;rk--){
+  const list=HEROES.filter(x=>x.rk===rk);if(!list.length)continue;
+  const tot=rowP('r'+rk),each=tot/list.length,col=RARE[rk-1]||RARE[0];
+  h+='<div class="rthd" style="border-color:'+col+'"><span class="s" style="color:'+col+'">'+RK_S[rk]+'</span>'
+   +'<span class="n">'+RK_N[rk]+'</span><span class="p">計 '+gcPc(tot)+'</span></div>';
+  /* ⭐属性で分ける=同じ属性を隣り合わせに並べる(並びの中では登場順) */
+  const srt=list.slice().sort((a,b)=>{
+   const ia=GC_TYO.indexOf(a.ty),ib=GC_TYO.indexOf(b.ty);
+   return (ia<0?99:ia)-(ib<0?99:ib)||HEROES.indexOf(a)-HEROES.indexOf(b);});
+  h+=srt.map(x=>{const T=AF_TY[x.ty]||{ic:'🎯',n:x.ty||'?'};
+   return '<div class="rtrow"><span class="ty">'+T.ic+' '+T.n+'</span>'
+    +'<span class="nm">'+x.n+'</span><span class="p">'+gcPc(each)+'</span></div>';}).join('');
+ }
+ /* はずれ枠も1行ずつ(中身が4つあるのに1行に押し込むと「はずれ」の中の差が読めない) */
+ {const dp=rowP('dud'),sw=GDUD.reduce((a,d)=>a+d.w,0);
+  h+='<div class="rthd" style="border-color:var(--dud)"><span class="s" style="color:var(--paper3)">🎁</span>'
+   +'<span class="n">はずれ枠</span><span class="p">計 '+gcPc(dp)+'</span></div>'
+   +GDUD.map(d=>'<div class="rtrow"><span class="nm">'+d.n+'</span>'
+     +'<span class="p">'+gcPc(dp*d.w/sw)+'</span></div>').join('');}
+ /* ⚠ここはHTML=**で囲んでも太字にならない(そのまま * が出る)。必ず <b> を使う */
+ return '<div class="ratelist">'+h
+  +'<div class="rtnote">⚠<b>1体あたりの確率は固定</b>。英雄が増えるほど、そのレア度の枠は太くなる。'
   +(DEV?'<br><b style="color:var(--danger2)">🛠DEV: 演出を確かめるため排出率を大きく上げてある(本番はこの数字ではない)</b>':'')
-  +'<br>はずれ枠の中身: '+GDUD.map(d=>d.n).join(' / ')+'</div></div>';
+  +'</div></div>';
 }
 /* ============ 💎召集画面の骨格(2026-07-27 第93弾) ============
    ⭐ユーザー指示=「ソシャゲの召集画面みたいに、目玉の英雄が大きく出ている画面にする」。
