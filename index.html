@@ -654,8 +654,14 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #md-gacha.fx .bphd{background:transparent;box-shadow:none}
 #md-gacha.fx .bphd::before{display:none}
 #md-gacha.fx .bphd b,#md-gacha.fx .bphd .pt{visibility:hidden}
-.xbtn{flex:0 0 auto;border:2px solid var(--ink);border-radius:9px;background:var(--pane);color:var(--ink);
+.xbtn{position:relative;flex:0 0 auto;border:2px solid var(--ink);border-radius:9px;background:var(--pane);color:var(--ink);
  font-size:14px;font-weight:900;width:30px;height:28px;box-shadow:0 3px 0 var(--ink)}
+/* 👆⭐(192)**✕は絵を大きくせず「押せる所」だけ44pxに広げる**(8つの窓で共通)。
+   ⚠見出しの帯は高さ34pxしか無いので、**ボタン自体を44pxにすると帯が育って本体が14px痩せる**
+   (横画面は高さ393pxしか無い=[[NOTES_UI]])。⭐**透明な当たり判定を被せる**のが正解。
+   ⚠見出しの中で✕の隣に押せる物は無いので、はみ出しても他を奪わない。
+   ⚠⚠**`test_view.js` は要素の寸法を測るので、これでも「44px未満」と出続ける**=直したのに残る。 */
+.xbtn::after{content:'';position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}
 .xbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
 .tabs{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;flex:0 0 auto;padding-bottom:2px}
 .tabs .tb{flex:0 0 auto;border:2px solid var(--ink);border-radius:9px;background:var(--paper2);color:var(--ink);
