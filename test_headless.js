@@ -4177,23 +4177,31 @@ function checkGain(){
   const stp=stg;
   const cnt=(arr)=>{let s2=0;const nn=Math.min(stp+1,arr.length);for(let i=0;i<nn;i++)s2+=arr[i];return s2;};
   const sT=cnt(UNL_TN),sU=cnt(UNL_UN);
-  const own=Math.min(st,sT-1,sU-1),full=(st>=sT||st>=sU);
-  const g=metaGainOf(d,stg,wN,n),c=shelfPairCost(Math.max(0,own));
-  const r=g/c;
-  rows.push({st,g,c,r:+r.toFixed(2),full});
-  if(!full&&(r<.55||r>1.1))F('拠点'+(st+1)+'('+(stg?'②':'①')+D5[d].n+')の実入りが棚と釣り合っていない '
-   +g+'🧬 / 棚の2種'+c+'🧬 = x'+r.toFixed(2)+'(0.55〜1.1に収めること。ノブは RPT_X と LAB_NT/LAB_NU)');
+  const g=metaGainOf(d,stg,wN,n);
+  rows.push({stg,st,g});
   if(g<=prev)F('拠点'+(st+1)+'で実入りが前より減っている '+prev+'→'+g+'(進むほど増やすこと)');
   prev=g;st++;
  }
  META.sc=kp;
- const tot=rows.reduce((a,x)=>a+x.g,0),fl=rows.filter(x=>x.full).length,ok=rows.filter(x=>!x.full);
- console.log('🧬実入り: 12拠点で計'+tot.toLocaleString()+'🧬 / 棚の2種ぶんとの比 x'
-  +Math.min.apply(null,ok.map(x=>x.r)).toFixed(2)+'〜x'+Math.max.apply(null,ok.map(x=>x.r)).toFixed(2)
+ /* ⭐⭐(198)**物差しは「面ごと」**=その面の7拠点で入る🧬 ÷ その段に並ぶ棚の合計額。
+    ⚠1拠点ずつでは意味が無くなった(段が進むのは面を制覇した時だけなので、
+      面の中では同じ棚をずっと買い続けることになる)。⭐狙いは 1.0(0.75〜1.35に収める)。 */
+ const band=[];
+ for(let stg=0;stg<2;stg++){
+  const inc=rows.filter(x=>x.stg===stg).reduce((a,x)=>a+x.g,0);
+  let oT=0,oU=0;for(let i=0;i<stg;i++){oT+=UNL_TN[i];oU+=UNL_UN[i];}
+  let cost=0;
+  for(let k=0;k<UNL_TN[stg];k++)cost+=LAB_NT(oT+k);
+  for(let k=0;k<UNL_UN[stg];k++)cost+=LAB_NU(oU+k);
+  const r=inc/cost;band.push({stg,inc,cost,r:+r.toFixed(2)});
+  /* ⚠(198)面②は面①より少し多め(x1.4前後)=面が長いぶん実入りも増える。上限はそこを見込む */
+  if(r<.75||r>1.55)F('面'+(stg+1)+'の実入りが棚と釣り合っていない '+inc+'🧬 / 段'+stg+'の棚'
+   +Math.round(cost)+'🧬 = x'+r.toFixed(2)+'(0.75〜1.55に収めること。ノブは RPT_X と LAB_NT/LAB_NU)');
+ }
+ const tot=rows.reduce((a,x)=>a+x.g,0);
+ console.log('🧬実入り: 12拠点で計'+tot.toLocaleString()+'🧬 / 面ごとの釣り合い '
+  +band.map(x=>'面'+(x.stg+1)+' '+x.inc+'🧬÷棚'+Math.round(x.cost)+'=x'+x.r.toFixed(2)).join(' / ')
   +' / 進むほど増える(①'+rows[0].g+'→②'+rows[rows.length-1].g+') OK');
- /* ⚠**ここでバックスラッシュnを直に書かない**=この検査はテンプレート文字列の中なので、
-    生成されるコードの文字列が途中で改行して構文エラーになる(2026-08-06に踏んだ)。 */
- if(fl)console.log('   ⚠**終盤の'+fl+'拠点は棚を買い切って🧬が余る**=面③以降を足すまでは仕方ない(繰り越す)');
 }
 /* ⏩(188)**本番には×5を出さない**=×5は絵が飛ぶのでテスト専用。⚠DEV側は checkDevLoad が見ている */
 (function checkFF(){
@@ -4220,7 +4228,7 @@ function checkDesignNums(){
   ['ARMOR_CUT(硬い敵に通る割合)',ARMOR_CUT,.45],
   ['FIRE_VS_ARMOR(🔥火炎×🛡装甲)',FIRE_VS_ARMOR,1.9],
   ['ELEC_VS_SCALE(⚡電撃×🐟鱗)',ELEC_VS_SCALE,1.9],
-  ['RPT_X(🧬配布の全体倍率)',RPT_X,1.2],
+  ['RPT_X(🧬配布の全体倍率)',RPT_X,.72/* ⭐(198)面の制覇で段が進む形にしたので4割下げた */],
   ['STAGES[1].hpM(②沈んだ港の重さ)',STAGES[1].hpM,2],
   /* ⭐(197)面のクリアで開く上限にした=表の上限は100(未クリアは20から) */
   ['TR_MAX(鍛錬Lvの上限)',TR_MAX,100],
