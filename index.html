@@ -688,6 +688,17 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .tabs.t2 .tb{font-size:10.5px;padding:2px 11px;border-radius:999px;background:var(--paper);border-width:2px}
 .tabs.t2 .tb.on{background:var(--amber);color:var(--ink)}
 .tabs.t2 .tb i{font-size:10px;padding:0 3px}
+/* ⭐(201)3段目=小タブ(新種/派生)。⚠**高さが無い**(横画面は393px)ので、
+   2段目のような帯は付けず**さらに右へ寄せた小さな札**だけにする(位置と大きさで段が分かる)。
+   ⚠幅も寄せたぶん引く=引かないと右端がはみ出す(2段目で踏んだのと同じ穴)。 */
+#lab-tabs .tabs.t3{width:calc(100% - 52px)}
+.tabs.t3{margin-left:52px;padding:0}
+.tabs.t3 .tb{font-size:10.5px;padding:1px 10px;border-radius:999px;background:var(--paper2);
+ border-width:2px;border-style:dashed;opacity:.9}
+.tabs.t3 .tb.on{background:var(--ink);color:var(--paper);border-style:solid;opacity:1}
+/* ⚠**バッジの字を小さくしない**=10.5px を切ると👁実測検査が「読めない字」として数える(t2の10pxは古い借金) */
+.tabs.t3 .tb i{font-size:10.5px;padding:0 3px}
+.tabs.t3 .tb.on i{background:var(--paper);color:var(--ink)}
 /* ⚠⚠(191)**`min-height:0` が要る**=flex の子は既定が `min-height:auto` なので、
    中身が高いと**箱ごと伸びて `overflow-y:auto` が効かない**。そのせいで🏋鍛錬所では
    一覧の最後のカードが**下の「鍛える」ボタンの下へ潜り込んで重なっていた**(👁実測検査が見つけた)。 */
@@ -29234,12 +29245,18 @@ function renderHeroPick(){
    n=タブの短い名前 / d=そのタブの1行説明 */
 /* ic=タブのアイコン素材名 / em=素材が無い時の絵文字 / t=タブの文字 */
 const LAB_CATS=[
- /* ⚠(187)**「1つずつ順番に」ではなくなった**=面をクリアすると棚に並び、並んだ中から選んで買う */
- {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'新しい土地へ進むと棚に並ぶ。並んだ手前の物から順に解放する'},
- /* ⚠**派生はユニットとタレットに分けてある**(2026-08-02ユーザー指摘「派生タブにユニットとタレットが
-    まとめて入ってるけど、選んだらその中に分岐があったほうがいい」)=下の LAB_TOP の2段目で切り替える */
- {k:'varu',ic:'ic-tab-var',em:'🧬',t:'ユニット',d:'ユニットの派生(🎖編成で入れ替える)'},
- {k:'vart',ic:'ic-tab-var',em:'🗼',t:'タレット',d:'タレットと廃品工房の進化先'},
+ /* 🔀⭐⭐(201)**解放の中は「対象」で割る**(2026-08-07ユーザー指示)=ユニット/タレット/砲撃/その他。
+    ⚠⚠**それまでは軸が混ざっていた**(🆕新種=目的 / ユニット・タレット=対象)=
+      「新しいユニット」を探す人が🆕新種を開き、「ユニットの派生」を探す人が🧬ユニットを開いていた。
+    ⭐**対象で割ってから、中で「新種 / 派生」の小タブ**(`sb:1` を付けたタブにだけ3段目が出る)。
+    ⚠**砲撃とその他は小タブを出さない**(片方しか物が無いので、押しても空になるだけ)。 */
+ /* ⚠`d`=新種の側の1行説明 / `dv`=派生の側の1行説明(小タブで出し分ける) */
+ {k:'ulu',em:'🤖',t:'ユニット',sb:1,d:'新しい土地へ進むと棚に並ぶ。並んだ手前の物から順に解放する',
+  dv:'ユニットの派生(🎖編成で入れ替える)'},
+ {k:'ult',em:'🗼',t:'タレット',sb:1,d:'新しい土地へ進むと棚に並ぶ。並んだ手前の物から順に解放する',
+  dv:'タレットと廃品工房の進化先'},
+ {k:'uls',em:'🎯',t:'砲撃',d:'砲撃を手前から順に解放して、威力を鍛える'},
+ {k:'ulo',em:'🏋',t:'その他',d:'施設など'},
  {k:'twup',ic:'ic-tab-line',em:'🗼',t:'タレット',d:'タレット1種ずつ鍛える(解放したものだけ並ぶ)'},
  {k:'unup',ic:'ic-tab-line',em:'🪖',t:'ユニット',d:'ユニット1種ずつ鍛える(派生キャラにも同じだけ効く)'},
  {k:'start',ic:'ic-tab-start',em:'🚀',t:'開始',d:'WAVE 1 から効く。序盤の立ち上がりが楽になる'},
@@ -29254,13 +29271,17 @@ const LAB_CATS=[
      「廃品工房はネット砲より前」といった設計がその並びに乗っている(割ると序盤の経済が死ぬ)。
    ⚠`LABTAB` は今までどおり**下段の名前**を入れておく=撮影の `lab=twup` などがそのまま生きる。 */
 const LAB_TOP=[
- {k:'unlock',em:'🔓',t:'解放',subs:['new','varu','vart']},
+ {k:'unlock',em:'🔓',t:'解放',subs:['ulu','ult','uls','ulo']},
  {k:'up',    em:'💪',t:'強化',subs:['twup','unup']},
  {k:'base',  em:'🏕',t:'拠点',subs:['start','eco']},
  {k:'rec',   em:'📖',t:'記録',subs:['rec']}
 ];
 const labTopOf=k=>(LAB_TOP.find(g=>g.subs.indexOf(k)>=0)||LAB_TOP[0]);
-let LABTAB='new';
+/* ⭐(201)3段目の小タブ=**新種 / 派生**。`sb:1` のタブでだけ出す */
+const LAB_SUBS=[{k:'new',em:'🆕',t:'新種'},{k:'var',em:'🧬',t:'派生'}];
+let LABTAB='ulu',LABSUB='new';
+/* ⚠**古いタブ名の受け口**=撮影の `lab=new` / `lab=varu` / `lab=vart` がそのまま生きるようにする */
+const LAB_OLD={new:['ulu','new'],varu:['ulu','var'],vart:['ult','var']};
 /* ⭐まとめ買いの倍率(2026-07-27ユーザー指示)。20段に刻んだので1本フルに**20タップ**要った。
    ⚠**カードにボタンを増やす余地は無い**(横画面は高さ393pxで、.lgrid.tightは6列=1枚60px)。
      そこで**画面にひとつだけ切り替えを置いて全カードに効かせる**。
@@ -29304,16 +29325,16 @@ function renderLab(){
   let nT=0,pvT='';
   for(const id of shelfT()){if(twHas(id))continue;const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
    nT++;
-   if(nT===1){pvT=T.n;items.push({cat:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
+   if(nT===1){pvT=T.n;items.push({cat:'ult',sub:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
      tag:'新型タレット '+(ot.length+1)+'/'+UNL_T.length,d:T.dsc,p:pT});}
-   else{items.push({cat:'new',lk:1,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9(pvT),d:T.dsc,p:0});break;}}
+   else{items.push({cat:'ult',sub:'new',lk:1,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9(pvT),d:T.dsc,p:0});break;}}
   /* ⚠UNITSは派生に差し替わるのでUBASE */
   let nU=0,pvU='';
   for(const id of shelfU()){if(unHas(id))continue;const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
    nU++;
-   if(nU===1){pvU=U.n;items.push({cat:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
+   if(nU===1){pvU=U.n;items.push({cat:'ulu',sub:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
      tag:'新型ユニット '+(ou.length+1)+'/'+UNL_U.length,d:U.dsc,p:pU});}
-   else{items.push({cat:'new',lk:1,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9(pvU),d:U.dsc,p:0});break;}}}
+   else{items.push({cat:'ulu',sub:'new',lk:1,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9(pvU),d:U.dsc,p:0});break;}}}
  /* 進化: どのユニットからでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのはユニットごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -29327,7 +29348,7 @@ function renderLab(){
    if(!uvBaseOK(b))continue;
    const B=UBASE.find(u=>u.id===b)||{n:'?'},t=list.indexOf(nx)+1;
    const bi=UBASE.findIndex(u=>u.id===b);
-   items.push({cat:'varu',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
+   items.push({cat:'ulu',sub:'var',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
     /* ⚠呼び方は🎖編成側と同じ「派生」に統一(進化/派生の2語が混ざって繋がらなかった。
        ⚠タレットの方の「進化」は別物なので触らない) */
     tag:(adv?'上級派生 ':'派生 ')+B.n+' 第'+t+'段階/'+list.length,
@@ -29346,7 +29367,7 @@ function renderLab(){
    while(nx>=0&&tg.indexOf(TOWERS[nx].id)>=0){cur=nx;nx=T_GRD(cur);}
    if(nx<0)continue;
    const NT=TOWERS[nx],eco=NT.type==='eco',fin=!NT.up2;/* 次が無い段=最終形態(値段が上がる) */
-   items.push({cat:'vart',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
+   items.push({cat:'ult',sub:'var',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
     tag:(fin?'最終進化 ':'進化 ')+TOWERS[cur].n+' → '+NT.n,
     /* ⚠⚠**説明は「その塔が何か」を先に書く**(2026-08-02ユーザー指摘「上級廃品工房の説明文が
        最後....になってて読めない」)=建て替えの条件は**どの進化カードにも同じ文**が付くので、
@@ -29354,9 +29375,9 @@ function renderLab(){
     d:NT.dsc+' — 盤面で強化を全部MAXにすると⚙️'+fmt(T_GCOST(cur))+'で建て替えられる',
     p:LAB_TG(tg.length,i,fin)});
   }}
- /* ⭐砲撃は「次の1つ」だけを新種タブに出す(タレット/ユニットと同じ形) */
+ /* ⭐砲撃は「次の1つ」だけを🎯砲撃タブに出す(タレット/ユニットと同じ形) */
  {const nk=stkNext();if(nk){const S=STRIKES[nk],ki=STK_ORDER.indexOf(nk);
-  items.push({cat:'new',k:'stk',id:nk,ic:icoImg('ic-stk-'+nk,S.ic),t:S.n,tag:'砲撃 '+(ki+1)+'/'+STK_ORDER.length,d:S.dsc,p:LAB_STK[ki]});}}
+  items.push({cat:'uls',k:'stk',id:nk,ic:icoImg('ic-stk-'+nk,S.ic),t:S.n,tag:'砲撃 '+(ki+1)+'/'+STK_ORDER.length,d:S.dsc,p:LAB_STK[ki]});}}
  /* ⚠**見出しの数字は「次の1段で増える量」・説明に「いまの合計」**(2026-08-02に段ごとの伸びを変えた)。
     ⚠決め打ちの +40 / +5 / +6 を書き戻さないこと=表(SC0_V/HP0_V/UP0_V)とズレる。 */
  if(META.sc0<SC0_MAX)items.push({cat:'start',k:'sc0',ic:'⚙️',t:'初期スクラップ+'+labNx(SC0_V,META.sc0),tag:'Lv'+META.sc0+'/'+SC0_MAX,d:'開始資金が増える(いま+'+sc0V()+' → +'+SC0_V[META.sc0+1]+')',p:LAB_SC(META.sc0)});
@@ -29369,7 +29390,7 @@ function renderLab(){
  if((META.ec0||0)<5)items.push({cat:'eco',k:'ec0',ic:'🏭',t:'工房の産出+12%',tag:'Lv'+(META.ec0||0)+'/5',d:'工房で稼ぐ速度が上がる',p:LAB_EC0(META.ec0||0)});
  if((META.cd0||0)<5)items.push({cat:'eco',k:'cd0',ic:'⏱',t:'出撃の待ち-6%',tag:'Lv'+(META.cd0||0)+'/5',d:'ユニットを続けて出しやすくなる',p:LAB_CD0(META.cd0||0)});
  /* ⚠鍛錬所をしまっている間は解放項目も出さない(🧬300払っても入口が無いため) */
- if(TR_OPEN&&!(META.tr0||0))items.push({cat:'new',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'ホームに鍛錬所が開く。🔧で英雄を鍛えるとHPと攻撃が最大+'+Math.round(TR_PER*TR_MAX*100)+'%',p:300});
+ if(TR_OPEN&&!(META.tr0||0))items.push({cat:'ulo',k:'tr0',ic:'🏋',t:'ヒーロー鍛錬所',tag:'施設',d:'ホームに鍛錬所が開く。🔧で英雄を鍛えるとHPと攻撃が最大+'+Math.round(TR_PER*TR_MAX*100)+'%',p:300});
  if(!(META.ec1||0))items.push({cat:'start',k:'ec1',ic:'🏭',t:'工房つきで開始',tag:'1回きり',d:'工房エリアに1基が最初から建っている',p:220});
  /* ---- ⭐タレット1種ごとの強化(2026-07-26ユーザー指示。型ごとのまとめ強化から変えた) ----
     ⚠**まだ解放していないタレットは出さない**=持っていない物を強化できても意味がないため。
@@ -29394,7 +29415,7 @@ function renderLab(){
   items.push({cat:'unup',k:'un',id:U.id,sm:1,ic:UN_IC[U.type]||'🪖',pv:{k:'u',i:i,def:U},t:U.n,tag:'Lv'+lv+'/'+LINE_MAX,
    d:hl+'+'+Math.round(st.a*100)+'%・HP+'+Math.round(st.h*100)+'%/段',p:LAB_UN(lv)});}
  /* ---- ⭐🎯砲撃の威力(それまで砲撃だけ研究所で強化できなかった) ---- */
- if((META.st0||0)<STK_MAX)items.push({cat:'new',k:'st0',ic:'🎯',t:'砲撃の威力+'+Math.round(STK_STEP*100)+'%',
+ if((META.st0||0)<STK_MAX)items.push({cat:'uls',k:'st0',ic:'🎯',t:'砲撃の威力+'+Math.round(STK_STEP*100)+'%',
   tag:'Lv'+(META.st0||0)+'/'+STK_MAX,d:'装備している砲撃すべての直撃と燃焼が強くなる',p:LAB_ST0(META.st0||0)});
  /* 解放済みの一覧(何を取ったか分かるように) */
  /* ⚠(187)買った物は id の集合(META.ot/ou)=先頭から何個ではない */
@@ -29425,10 +29446,16 @@ function renderLab(){
  LAB_ITEMS=items;
  const done=[].concat(doneT,doneU,doneV,doneG,doneS,doneX);
  /* ---- タブ(買える数をバッジで出す=どこに何が残っているか一目で分かる) ---- */
- if(!LAB_CATS.some(c=>c.k===LABTAB))LABTAB='new';
+ /* ⚠古いタブ名(new/varu/vart)で来たら新しい組に読み替える */
+ if(LAB_OLD[LABTAB]){LABSUB=LAB_OLD[LABTAB][1];LABTAB=LAB_OLD[LABTAB][0];}
+ if(!LAB_CATS.some(c=>c.k===LABTAB))LABTAB='ulu';
+ const catOf=k=>LAB_CATS.find(c=>c.k===k)||LAB_CATS[0];
+ if(!LAB_SUBS.some(s=>s.k===LABSUB))LABSUB='new';
  const tb=$('lab-tabs');
  if(tb){
-  const cnt=k=>k==='rec'?0:items.filter(it=>(it.cat||'new')===k&&it.k).length;
+  const cnt=k=>k==='rec'?0:items.filter(it=>(it.cat||'ulu')===k&&it.k).length;
+  /* 小タブのバッジ=そのタブの中の「新種」「派生」それぞれの数 */
+  const cntS=(k,s)=>items.filter(it=>(it.cat||'ulu')===k&&(it.sub||'new')===s&&it.k).length;
   const top=labTopOf(LABTAB);
   /* 上段=4枚。⚠バッジは**そのグループの合計**を出す(どこに何が残っているか一目で分かる) */
   const row1=LAB_TOP.map(g=>{
@@ -29440,12 +29467,18 @@ function renderLab(){
    const c=LAB_CATS.find(x=>x.k===k)||{t:k,em:'🔬'},n=cnt(k);
    return '<button class="tb sub'+(LABTAB===k?' on':'')+'" data-tab="'+k+'">'
     +icoImg(c.ic,c.em)+' '+c.t+(n?'<i>'+n+'</i>':'')+'</button>';}).join('');
-  tb.innerHTML='<div class="tabs">'+row1+'</div>'+(row2?'<div class="tabs t2">'+row2+'</div>':'');
+  /* ⭐(201)3段目=小タブ(新種/派生)。⚠`sb:1` のタブでだけ出す */
+  const row3=!catOf(LABTAB).sb?'':LAB_SUBS.map(s=>{const n=cntS(LABTAB,s.k);
+   return '<button class="tb'+(LABSUB===s.k?' on':'')+'" data-sub="'+s.k+'">'
+    +s.em+' '+s.t+(n?'<i>'+n+'</i>':'')+'</button>';}).join('');
+  tb.innerHTML='<div class="tabs">'+row1+'</div>'+(row2?'<div class="tabs t2">'+row2+'</div>':'')
+   +(row3?'<div class="tabs t3">'+row3+'</div>':'');
   /* ⚠上段を押したら**そのグループの先頭**へ移る(下段の選択が別グループのまま残ると中身が食い違う) */
   tb.querySelectorAll('[data-top]').forEach(b=>{b.onclick=()=>{
    const g=LAB_TOP.find(x=>x.k===b.dataset.top);if(!g)return;
    if(g.subs.indexOf(LABTAB)<0)LABTAB=g.subs[0];renderLab();};});
-  tb.querySelectorAll('[data-tab]').forEach(b=>{b.onclick=()=>{LABTAB=b.dataset.tab;renderLab();};});}
+  tb.querySelectorAll('[data-tab]').forEach(b=>{b.onclick=()=>{LABTAB=b.dataset.tab;renderLab();};});
+  tb.querySelectorAll('[data-sub]').forEach(b=>{b.onclick=()=>{LABSUB=b.dataset.sub;renderLab();};});}
  /* ---- 中身は選んだタブのぶんだけ(全部積むと縦が足りない) ---- */
  let body='';
  if(LABTAB==='rec'){
@@ -29461,8 +29494,10 @@ function renderLab(){
    +(done.length?done.map(x=>'<span class="lchip">'+x+'</span>').join(''):'<span style="opacity:.6">まだ何も解放していない</span>')
    +'</div></div>';
  }else{
-  const cat=LAB_CATS.find(c=>c.k===LABTAB)||LAB_CATS[0];
-  const list=items.map((it,i)=>({it,i})).filter(o=>(o.it.cat||'new')===LABTAB);
+  const cat=catOf(LABTAB);
+  /* ⚠小タブのあるタブでは**選んでいる小タブのぶんだけ**(無いタブは全部) */
+  const list=items.map((it,i)=>({it,i}))
+   .filter(o=>(o.it.cat||'ulu')===LABTAB&&(!cat.sb||(o.it.sub||'new')===LABSUB));
   /* ⭐まとめ買いの切り替え。⚠**段があるカードが1枚も無いタブでは出さない**(押しても何も変わらないため) */
   const anyM=list.some(o=>LAB_MSTEP[o.it.k]);
   /* ⭐🛠DEVの「研究をリセット」(2026-07-27ユーザー指示)。DEVは起動時にタレット/ユニットを全部Lv20まで
@@ -29491,7 +29526,7 @@ function renderLab(){
     +'<button data-savex>💾書き出す</button><button data-savei>💾読み込む</button>'):'')
    +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
   body='<div class="bphint'+(tools?' labbar':'')+'">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
-    +cat.d+'</div>'
+    +((cat.sb&&LABSUB==='var'&&cat.dv)?cat.dv:cat.d)+'</div>'
    +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=!it.lk&&META.pts>=it.p;
      /* ⭐姿があるものは絵文字ではなく**実物**を描く(第91弾)。何を解放/強化するのか一目で分かる */
      /* ⭐⭐**段のある物は「棒」で見せる**(2026-08-02(68))=調べた型「行そのものを進捗計にする」。
@@ -29511,7 +29546,8 @@ function renderLab(){
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
       /* ⏭(198)次の1つは灰色+「まだ買えない」。⛔鍵も番号もやめた(ユーザー指示) */
       +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?'⏭ この次':('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button></div>';}).join('')+'</div>')
-    :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
+    /* ⚠(201)小タブができたので「カテゴリ」では広すぎる=**いま開いている所**の話だと分かる文にする */
+    :'<div class="labdone">🎉 ここは全部解放した!</div>');
  }
  $('lab-items').innerHTML=IC(body);
  /* ⭐カードの姿を描く。⚠innerHTMLを入れた**後**でないと canvas がまだ無い。

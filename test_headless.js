@@ -1009,10 +1009,10 @@ function checkPerUp(){
    const st1=LAB_ITEMS.filter(it=>it.k==='stk');
    if(st1.length!==1||st1[0].id!==STK_ORDER[0]){
     console.log('FAIL: 砲撃の解放が「次の1つ」になっていない('+st1.length+'件)');process.exit(1);}
-   if(st1[0].cat!=='new'){console.log('FAIL: 砲撃の解放が新種タブに出ていない');process.exit(1);}
-   if(LAB_CATS.some(c=>c.k==='stk')){console.log('FAIL: 砲撃タブが残っている');process.exit(1);}
+   /* ⚠(201)解放タブを対象で割ったので、砲撃の解放が出るのは🎯砲撃タブ */
+   if(st1[0].cat!=='uls'){console.log('FAIL: 砲撃の解放が砲撃タブに出ていない');process.exit(1);}
    META.st=keep;
-   console.log('砲撃: 新種タブで順番に解放(air→'+STK_ORDER.join('→')+')・総ダメージ '+pw.map(v=>Math.round(v)).join('<')+' OK');}
+   console.log('砲撃: 砲撃タブで順番に解放(air→'+STK_ORDER.join('→')+')・総ダメージ '+pw.map(v=>Math.round(v)).join('<')+' OK');}
   console.log('砲撃の威力: Lv'+STK_MAX+'で直撃x'+(s1.d/s0.d).toFixed(2)+'・燃焼x'+(s1.b/s0.b).toFixed(2)+'(5種すべて) OK');}
  /* --- ⑦ 派生キャラを装備した状態でも、研究所が『素の兵科のid』で保存すること(2026-07-26レビュー) ---
     ⚠applyLoadout(true) は UNITS[i] を派生キャラの実体に差し替え、タイトルへ戻っても元に戻らない。

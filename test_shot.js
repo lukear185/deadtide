@@ -131,8 +131,11 @@ const ARN=/arena=([A-Za-z0-9]+):([A-Za-z0-9]+)/.exec(OPT);
    ⚠オプション名に `t=`/`z=` を含めないこと(先に食われて別の道に入る)。 */
 const HTM=/heat(?:=([A-Za-z0-9]+)(?::([shb]))?)?/.exec(OPT);
 const HEAT=!!HTM,HEATT=(HTM&&HTM[1])||'',HEATK=(HTM&&HTM[2])||'';
-const LM=/lab(?:=([a-z]+))?/.exec(OPT);/* lab / lab=twup(タワー強化) / lab=unup(部隊強化) / lab=rec(記録) = 🔬研究所の指定タブ */
-const LAB=!!LM,LABT=(LM&&LM[1])||'new';
+/* lab / lab=twup(タレット強化) / lab=unup(ユニット強化) / lab=rec(記録) = 🔬研究所の指定タブ
+   ⭐(201)解放は4つ=lab=ulu(ユニット) / lab=ult(タレット) / lab=uls(砲撃) / lab=ulo(その他)。
+   ⚠古い lab=new / varu / vart もそのまま使える(index側で読み替える) */
+const LM=/lab(?:=([a-z]+))?/.exec(OPT);
+const LAB=!!LM,LABT=(LM&&LM[1])||'ulu';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
 const LOAD=!!LDM,LOADT=(LDM&&LDM[1])||'base';
 const TRH=OPT.indexOf('trhome')>=0;/* trhome = 🏋鍛錬所のモーダル */
