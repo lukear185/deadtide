@@ -110,7 +110,7 @@ function snap(){var o={};for(var k in PF.cur)o[k]=PF.cur[k];return o;}
 for(var si=0;si<SCN.length;si++){
  var S9=SCN[si];
  try{
-  FXLV=2;META.tut=1;META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg=1;
+  FXLV=2;META.tut=1;try{opEnd();}catch(e){}META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg=1;
   META.hero={};META.hsel="";if(S9.hero){META.hero[S9.hero]=1;META.hsel=S9.hero;}
   var me,built=0,mix=null;
   if(S9.heat){

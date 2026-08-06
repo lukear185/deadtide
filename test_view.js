@@ -46,7 +46,7 @@ function coarseCSS(s){
    ⚠盤面(canvas)の中は測れない=ここで見るのはDOMで組んだ画面だけ。 */
 const RUNJS='JSON.stringify({v:2,stg:0,dif:2,wave:4})';
 const OWN='META.hero={hNox:1,hSf:1,hMed:2,hCop:1,hLupi:1};META.hsel="hLupi";';
-const BASE='META.tr0=1;META.pts=4820;META.gem=200;META.hmat=88;'+OWN
+const BASE='try{opEnd();}catch(e){}META.tr0=1;META.pts=4820;META.gem=200;META.hmat=88;'+OWN
  +'META.sc=[[1,1,1,1,0,0],[0,0,0,0,0,0]];META.st=["air","mgun","frost"];META.eq="air";'
  +'META.hlv={hNox:3,hSf:22};META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});';
 const NORUN='try{localStorage.removeItem(RUN_KEY);}catch(e){}';

@@ -49,7 +49,7 @@ var R=[];
 for(var si=0;si<SCN.length;si++){
  var S9=SCN[si];
  try{
-  FXLV=2;META.tut=1;META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg=1;
+  FXLV=2;META.tut=1;try{opEnd();}catch(e){}META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg=1;
   META.hero={};META.hsel="";if(S9.hero){META.hero[S9.hero]=1;META.hsel=S9.hero;}
   setDiff=3;showIntro=function(){};startSolo();
   var g=0;while(typeof PAUSED!=="undefined"&&PAUSED&&g++<60)introNext();
@@ -89,7 +89,7 @@ const UIS=`
 var R=[];
 function avg(f,n){var A=[];for(var k=0;k<n;k++){var t0=performance.now();f(k);var t1=performance.now();if(k>=10)A.push(t1-t0);}
  A.sort(function(a,b){return a-b;});return A[Math.floor(A.length*.5)];}
-META.tut=1;META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.tr0=1;META.gem=200;
+try{opEnd();}catch(e){}META.tut=1;META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.tr0=1;META.gem=200;
 show("title");
 R.push(avg(function(k){paradeStep(k*0.033);},60).toFixed(2)+"ms\\tタイトル(行進7体)");
 META.luck=9;LUCKT=999;luckUpd();for(var w=0;w<80;w++)paradeStep(w*0.033);

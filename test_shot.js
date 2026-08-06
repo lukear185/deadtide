@@ -22,7 +22,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['iv=<波>','作戦タイム'],['grid=tw|tg|u|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
   ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
-  ['ed+edt=<秒>','🎬区切りの幕'],['arena=…','🧪検証場'],['title+bus','🚌ゾンビバス'],
+  ['ed+edt=<秒>','🎬区切りの幕'],['op[=logo|<秒>]','🎬起動の幕(開発名/オープニング)'],['arena=…','🧪検証場'],['title+bus','🚌ゾンビバス'],
   ['tut=<段id>[:aim]','🎓チュートリアルのその段(例 tut=flag / tut=strike:aim)'],
  ];
  console.log('📷 test_shot.js — 実画面のスクリーンショット');
@@ -189,11 +189,16 @@ const IVW=(/(^|\+)iv=(\d+)/.exec(OPT)||[])[2]||0;
    ⚠2回目でしか出ない不具合(DOMを作り直す所で要素が消える等)を捕まえるための撮り方。
    画面下に赤いエラー帯が出ていないかを見る。 */
 const RE2=/(^|\+)re2(\+|$)/.test(OPT);
+/* 🎬(201)op / op=logo / op=<秒> = 起動の幕(開発名→オープニング)を撮る */
+const OPM=/(^|\+)op(?:=(logo|[0-9.]+))?(\+|$)/.exec(OPT);
 const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
     タイトルや研究所の撮影が全部チュートリアルの絵になる(tut オプションは自分で呼ぶので影響なし) */
  +'META.tut=1;'
+ /* 🎬(201)起動の幕(開発名→オープニング)を畳む。⚠これが無いと**全部の撮影が真っ黒**になる。
+    ⭐幕そのものを撮る時は下の `op` オプションで開き直す */
+ +'try{opEnd();}catch(e){}'
  /* ⭐タレット/工房の進化先は🔬研究所の解放制になった(2026-07-30)。撮影用は全部開けておく
     (でないと t=fort2 などの「進化先を撮る」オプションが gradeTower で止まる) */
  +'try{META.tg=TG_ALL.slice();}catch(e){}'
@@ -263,6 +268,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
         ⚠既定は 1.6 秒(カット①=岸壁に何か映っている所)。edt=12 で幕の後(札とボタンが出た形)。 */
      :(OPT.indexOf('ed')>=0&&!/edit/.test(OPT))?('try{openEnding();edSeek('
        +((/edt=([0-9.]+)/.exec(OPT)||[0,'1.6'])[1])+');}catch(e){}')
+     /* 🎬(201)op=起動の幕。**op=logo**=開発名 / **op=<秒>**=オープニングのその1コマ(既定3秒)。
+        ⚠⚠**丸ごとの語で拾う**=`indexOf('op')` にすると `opt`(⚙オプション)や `gopen` に食われる。
+        ⚠ヘッドレスは rAF がほとんど回らないので `opSeek` で直に飛ばす。 */
+     :OPM?('try{opSeek('+(OPM[2]==='logo'?'0,1.4':'1,'+(OPM[2]||'3'))+');}catch(e){}')
      /* ⏸pause=一時停止の窓(ボタンの枠がずれていないかを見る口。2026-08-04(153)) */
      :(OPT.indexOf('pause')>=0)?'try{document.getElementById("md-pause").classList.add("on");}catch(e){}'
      :(OPT.indexOf('zoo')>=0)?'openZoo();'
