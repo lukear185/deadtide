@@ -2049,11 +2049,17 @@ function checkTwLook(){
   const key=rec.join(',');(fp[key]||(fp[key]=[])).push(TOWERS[i].n);}
  const dup=Object.keys(fp).filter(k=>fp[k].length>1).map(k=>fp[k].join('='));
  if(dup.length){console.log('FAIL: 同じ形で描かれているタワー: '+dup.join(' / '));process.exit(1);}
- /* ⚠⚠**進化の中段(gmid)はまだ専用の絵が無い**=素の絵を色だけ変えて流用している(2026-08-02)。
-    ⭐17種の絵を描いたらこの一覧が0件になる。0件にしたら drawTower の読み替え(T.gmid なら T.base)も外すこと。
-    ⚠形が同じでも色が違うのでこの検査は通ってしまう=**通ったからといって絵があるとは限らない**。 */
- {const todo=TOWERS.filter(T=>T.gmid).map(T=>T.n);
-  if(todo.length)console.log('TODO: 進化の中段'+todo.length+'種は素の絵を流用中(色だけ違う)= '+todo.slice(0,4).join('/')+'…');}
+ /* ✅(191)**進化の中段17種にも専用の絵が入った**(2026-08-06)。
+    ⚠⚠**読み替え(T.gmid なら T.base)が書き戻されていないか**をここで見張る=
+      書き戻されると「形が同じでも色が違うので上の重複検査は通る」ため、**黙って素の絵に戻る**。
+    ⭐**中段の絵が素と別物か**は、素の絵と形の指紋を突き合わせて確かめる。 */
+ {const bad=[];
+  for(let i=0;i<TOWERS.length;i++){const T=TOWERS[i];if(!T.gmid)continue;
+   const bi=TOWERS.findIndex(q=>q.id===T.base);if(bi<0)continue;
+   const a=shapeFp(rc=>drawTower(rc,i,0,0,0,0.3,1.7,{})).join(',');
+   const b=shapeFp(rc=>drawTower(rc,bi,0,0,0,0.3,1.7,{})).join(',');
+   if(a===b)bad.push(T.n);}
+  if(bad.length){console.log('FAIL: 進化の中段が素の絵のまま(読み替えが戻っている?): '+bad.join('/'));process.exit(1);}}
  console.log('タワーの絵: '+TOWERS.length+'種すべてが違う砲身/特徴パーツを持つ OK');
 }
 /* ---- 姿のプレビュー(第91弾) ----

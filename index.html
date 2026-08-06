@@ -4268,11 +4268,13 @@ const TW_MZ={
  laser:{g:30},laser2:{g:32},acid:{g:31},acid2:{g:34},flame:{g:22},flame2:{g:30},
  drone:{g:0},drone2:{g:0},arty:{g:40},arty2:{g:52},rail:{g:44},railx:{g:46},
  gat:{g:31},gat2:{g:31},plasma:{g:29},plasma2:{g:31},fort:{g:34},fort2:{g:36},
- cryo:{b:[0,-36]},cryo2:{b:[-1,-46]}
+ cryo:{b:[0,-36]},cryo2:{b:[-1,-46]},
+ /* 🏰(191)**進化の中段17種**=絵を描いたので**素の写しをやめて1つずつ採寸した**
+    (それまで `T.gmid` なら素の値を写していた)。⚠絵を直したらここも直すこと。 */
+ rifleM:{g:34},shotM:{g:28},netM:{g:29},grenM:{g:24},flameM:{g:24},teslaM:{b:[0,-35]},
+ mortarM:{g:30},sniperM:{g:47},cryoM:{b:[-3,-41]},laserM:{g:31},acidM:{g:34},artyM:{g:46},
+ coilM:{b:[0,-45]},railM:{g:50},gatM:{g:31},plasmaM:{g:31},fortM:{g:36}
 };
-/* ⚠**進化の中段は素の絵を流用している**(2026-08-02)ので、撃つ位置も**素と同じ値をそのまま写す**。
-   ⭐18種の絵を描いたら、この写しをやめて中段ごとの砲口の位置を採寸すること。 */
-for(const T of TOWERS)if(T.gmid&&TW_MZ[T.base])TW_MZ[T.id]=TW_MZ[T.base];
 /* その塔が実際に撃つ点(世界座標) */
 function twMzPt(T,sx,sy,ang){const m=TW_MZ[(T&&T.id)||'']||{};
  if(m.b)return [sx+m.b[0]*TW_SC,sy+m.b[1]*TW_SC];
@@ -5644,7 +5646,10 @@ const slotUnlocked=(C,si)=>isSupSlot(si)?supUnlocked(C,si):isEcoSlot(si)?ecoUnlo
 const slotCount=C=>{let n=0;for(let i=0;i<ECO_BASE;i++)if(slotUnlocked(C,i))n++;return n;};
 let CORE=[110,620];/* 拠点=経路の終点(loadStageで設定) */
 /* ============ アート ============ */
-function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function rr(c,x,y,w,h,r){c.beginPath();rrP(c,x,y,w,h,r);}
+/* 🧮(191)**`beginPath` を打たない角丸**=同じ色・同じ黒フチの箱を**まとめて1回で塗る**ための口。
+   ⚠**重なる物には使わない**(重なった所の見え方が変わる)。⚠使う側が beginPath と fill/stroke を持つ。 */
+function rrP(c,x,y,w,h,r){c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 function shade(hex,f){const n=parseInt(hex.slice(1),16);return `rgb(${(n>>16)*f|0},${((n>>8)&255)*f|0},${(n&255)*f|0})`;}
 /* 腐敗の印。海の敵に共通で重ねて「ゾンビ化している」と分かるようにする
    (黒ずんだ腐れ+露出した骨+したたる粘液)。x,y=体の中心 w,h=体の大きさ */
@@ -12352,10 +12357,9 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   if(VEC2_R>0)drawTower(silLayer(c,VEC2_R,VEC2_RC),ti,lv,x-.9,y-1.6,ang,t,o1);
   drawTower(flatLayer(c),ti,lv,x,y,ang,t,o1);return;}
  const T=TOWERS[ti];
- /* ⚠⚠**進化の中段(gmid)はまだ専用の絵が無い**(2026-08-02に段を足した)。
-    素のタワーの絵を借りて描く=色だけ最終形態のものが乗るので「同じ塔の上位」には読める。
-    ⭐18種ぶんの絵を描いたらこの読み替えを外すこと(検査 checkTwLook の GRD_TODO も空にする)。 */
- const tid=T.gmid?T.base:T.id;
+ /* ✅(191)**進化の中段17種にも専用の絵を描いた**ので、素の絵への読み替えは外した。
+    ⚠**中段の絵は下の「進化の中段17種」の節**(id は素+"M")。⚠ここに読み替えを書き戻さないこと。 */
+ const tid=T.id;
  c.save();c.translate(x,y);
  /* ⚡⚠⚠⚠(124)**妨害中の灰色に `ctx.filter` を使わない**(総ざらいで発見)。
     ⚠実測=**妨害中の塔が並ぶ盤面で1コマ358ms**(普通の盤面は5ms)。canvas の filter は
@@ -12671,6 +12675,223 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
   if(o.fire){c.fillStyle='#fff0c0';for(let k=-1;k<=1;k++){c.beginPath();c.arc(39,k*11,7.5,0,7);c.fill();}}
   c.restore();
  }
+ /* ===== 🏰⭐⭐**進化の中段17種(2026-08-06(191))** =====
+    ⭐**掟=素の言葉づかいのまま「1つだけ増やす」**([[NOTES_絵]]「進化先は元の言葉づかいを引き継ぐ」)。
+      最終形態は3段目の派手さを持っているので、**中段は素+パーツ1つの控えめな盛り**にする。
+    ⚠**素とも最終形態とも輪郭で見分けが付くこと**(実機45px)。効くのは
+      ①砲身の長さ・太さ・本数 ②基部に置く特徴パーツ の2つ。
+    ⚠特徴パーツは**回らない基部**に置く(砲身に置くと向き次第で見えなくなる)。
+    ⚠**太さ4未満の部品は黒フチ(lineWidth=3)に食われて真っ黒**になる。
+    ⚠色は素より一段明るく(最終形態ほどは明るくしない)。 */
+ /* 速射ライフル台: 素の単砲身のまま**放熱スリーブ3枚**+基部に弾帯(手数が増えた改良型) */
+ else if(tid==='rifleM'){
+  twBelt(c,-24,14,4,GOLD2);
+  c.save();c.rotate(ang);
+  twGun(c,2,29,8.5,'#556270',3);
+  c.fillStyle='#46525e';for(let k=0;k<3;k++){rr(c,8+k*6,-6.5,4.4,13,1.6);c.fill();c.stroke();}/* 放熱スリーブ */
+  twMuz(c,29,4.5,'sight','#3a424b');
+  c.fillStyle='#3f4a54';rr(c,-3,4,13,10,2);c.fill();c.stroke();/* 大きくした箱弾倉 */
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(35,0,6.5,0,7);c.fill();}
+  c.restore();
+ }
+ /* 重ショットガン台: 素の上下二連を**太く**+ラッパ口を大きく。基部に薬莢箱 */
+ else if(tid==='shotM'){
+  twBelt(c,-24,8,4,'#b0483a');
+  c.fillStyle='#5a4a38';rr(c,-24,16,17,10,2.5);c.fill();c.stroke();/* 薬莢箱 */
+  c.save();c.rotate(ang);
+  twGun(c,2,23,10.5,'#55606c',3.5);
+  c.save();c.translate(0,-10);twGun(c,2,23,10.5,'#66717d',3.5);twMuz(c,23,5.5,'flare','#3a424b');c.restore();
+  twMuz(c,23,5.5,'flare','#3a424b');
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(32,0,7,0,7);c.fill();c.beginPath();c.arc(32,-10,7,0,7);c.fill();}
+  c.restore();
+ }
+ /* 粘着ネット砲: 素の四角カゴのまま**糸巻きリール1つ**を基部に足し、筒を太く */
+ else if(tid==='netM'){
+  c.fillStyle='#4f7a6c';c.beginPath();c.arc(-17,4,7,0,7);c.fill();c.stroke();
+  c.strokeStyle='#cfe7dd';c.lineWidth=1.8;c.beginPath();c.arc(-17,4,3.6,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
+  twDrum(c,15,13,6,'#3f5a50');/* 糸巻きリール(最終形態は2つ) */
+  c.save();c.rotate(ang);twGun(c,2,18,15,'#6b9c86',4);
+  c.fillStyle='#cfe7dd';rr(c,19,-11,12,22,2);c.fill();c.stroke();
+  c.strokeStyle='#4f7a6c';c.lineWidth=1.6;
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(21+k*4,-11);c.lineTo(21+k*4,11);c.stroke();}
+  c.beginPath();c.moveTo(19,0);c.lineTo(31,0);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
+  c.restore();
+ }
+ /* 改良爆裂砲: 素の短太砲身を**上下二連**に(最終形態は三連)。回転弾倉はそのまま */
+ else if(tid==='grenM'){
+  twDrum(c,-19,8,8.5,'#4c5648');
+  c.fillStyle='#3c4136';c.beginPath();c.arc(-19,8,2.4,0,7);c.fill();
+  c.save();c.rotate(ang);
+  for(const dy of [-6,6]){c.save();c.translate(0,dy);
+   twGun(c,-2,22,12,dy<0?'#68724c':'#585e4c',5);twMuz(c,20,6,'flare','#4c5648');c.restore();}
+  if(o.fire){c.fillStyle='#ffb347';for(const dy of [-6,6]){c.beginPath();c.arc(28,dy,5.5,0,7);c.fill();}}
+  c.restore();
+ }
+ /* 重火炎放射塔: タンク2本を**太く高く**+**圧力計**+ラッパ口を太く(最終形態はタンク3本・二連ラッパ) */
+ else if(tid==='flameM'){
+  twTank(c,-26,-22,12,28,'#a04f28');twTank(c,-12,-27,12,33,'#d47a3a');
+  c.fillStyle='#cfd5da';c.beginPath();c.arc(-19,4,5,0,7);c.fill();c.stroke();/* 圧力計 */
+  c.strokeStyle='#3a424b';c.lineWidth=2;c.beginPath();c.moveTo(-19,4);c.lineTo(-16,1);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.save();c.rotate(ang);twGun(c,4,20,11,'#6b6b73',5);
+  twMuz(c,22,5.5,'flare','#7a6b60');
+  c.fillStyle='#ffb347';c.globalAlpha=.6+Math.sin(t*12)*.3;c.beginPath();c.arc(31,-5,3.2,0,7);c.fill();c.globalAlpha=1;
+  if(o.fire){c.fillStyle='#ff9a3d';c.beginPath();c.arc(33,0,7+Math.sin(t*20)*2,0,7);c.fill();
+   c.fillStyle=GLOW;c.beginPath();c.arc(32,0,3.4+Math.sin(t*20),0,7);c.fill();}
+  c.restore();
+ }
+ /* 二重コイル: 巻線を**2列に重ねた**柱(素は1列3周・最終形態は太柱に5周+放電棒) */
+ else if(tid==='teslaM'){
+  c.fillStyle='#3d5666';rr(c,-7,-30,14,30,3.5);c.fill();c.stroke();
+  c.strokeStyle='#c98f4a';c.lineWidth=2.2;
+  for(let k=0;k<4;k++){c.beginPath();c.ellipse(0,-7-k*6,9.5,2.8,0,0,7);c.stroke();}
+  c.strokeStyle='#e0b070';c.lineWidth=1.8;
+  for(let k=0;k<4;k++){c.beginPath();c.ellipse(0,-10-k*6,6.5,2,0,0,7);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.fillStyle=TECH;c.beginPath();c.arc(0,-35,9,0,7);c.fill();c.stroke();
+  c.strokeStyle=FROST;c.lineWidth=2;
+  c.beginPath();c.moveTo(0,-35);c.lineTo(9*Math.sin(t*9),-45);c.moveTo(0,-35);c.lineTo(7*Math.sin(t*7+2),-44);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+ }
+ /* 長距離迫撃砲: 素の筒を**長く**+底板+**支え脚2本**(最終形態は極太+砲弾ラック) */
+ else if(tid==='mortarM'){
+  c.strokeStyle='#4a5040';c.lineWidth=4.5;
+  c.beginPath();c.moveTo(-8,4);c.lineTo(-20,14);c.moveTo(8,4);c.lineTo(20,14);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.save();c.rotate(ang-.62);
+  c.fillStyle='#647052';c.beginPath();c.moveTo(-8,-11);c.lineTo(33,-14);c.lineTo(33,14);c.lineTo(-8,11);c.closePath();c.fill();c.stroke();
+  c.save();c.beginPath();c.rect(-10,0,46,20);c.clip();c.fillStyle=shade('#647052',.7);
+  c.beginPath();c.moveTo(-8,-11);c.lineTo(33,-14);c.lineTo(33,14);c.lineTo(-8,11);c.closePath();c.fill();c.restore();
+  c.fillStyle='#2a2f26';c.beginPath();c.ellipse(33,0,4,13,0,0,7);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(38,0,8,0,7);c.fill();}
+  c.restore();
+  c.fillStyle='#3c4136';rr(c,-16,6,32,8,3);c.fill();c.stroke();
+ }
+ /* 精密狙撃塔: 素の長身に**二脚**を足し、スコープを長くする(最終形態は極端に長い+制退器+弾薬箱) */
+ else if(tid==='sniperM'){
+  /* ⚠**二脚だけでは素と見分けが付かなかった**(シートで並べて気づいた)=基部に弾薬箱を足す */
+  c.fillStyle='#4a5560';rr(c,-25,4,14,10,2.5);c.fill();c.stroke();
+  c.fillStyle=GOLD2;c.fillRect(-22,7,8,2.4);
+  c.save();c.rotate(ang);
+  c.strokeStyle='#3a424b';c.lineWidth=4;
+  c.beginPath();c.moveTo(6,0);c.lineTo(17,11);c.moveTo(6,0);c.lineTo(17,-11);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  twGun(c,0,45,7.5,'#5c6874',3);
+  twMuz(c,43,4,'brake','#3a424b');
+  c.fillStyle='#2c333a';rr(c,6,-12,22,7.5,3);c.fill();c.stroke();
+  c.fillStyle=TECH;c.beginPath();c.arc(26,-8.2,2.8,0,7);c.fill();
+  if(o.fire){c.fillStyle='#fff0c0';c.beginPath();c.arc(50,0,7,0,7);c.fill();}
+  c.restore();
+  c.fillStyle=STEEL;c.beginPath();c.arc(0,0,9,0,7);c.fill();c.stroke();
+ }
+ /* 凍結塔: 素のフィン+タンク2本を**高く**+氷球を大きく+**霜柱2本**(最終形態はフィン4段+タンク3本) */
+ else if(tid==='cryoM'){
+  twFins(c,-7,3,10,'#8fc6dc');
+  twTank(c,-15,-34,11,30,'#5f8fa3');twTank(c,1,-29,11,25,'#4d7a8c');
+  c.fillStyle=FROST;c.beginPath();c.arc(-3,-41,10.5,0,7);c.fill();c.stroke();
+  c.fillStyle='rgba(255,255,255,.5)';c.beginPath();c.arc(-6,-44,3.6,0,7);c.fill();
+  c.strokeStyle=TECH;c.lineWidth=2.4;
+  for(let k=0;k<3;k++){const a2=t*.6+k*1.05;
+   c.beginPath();c.moveTo(-3-Math.cos(a2)*15,-41-Math.sin(a2)*15);c.lineTo(-3+Math.cos(a2)*15,-41+Math.sin(a2)*15);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.globalAlpha=.45;c.fillStyle=TECH;c.beginPath();c.arc(-3,-41,13+Math.sin(t*3)*3,0,7);c.fill();c.globalAlpha=1;
+ }
+ /* 増幅レーザー塔: 筒を**太く**+**増幅段の輪**を1つ足す+フィンを2列(最終形態は大レンズ1枚) */
+ else if(tid==='laserM'){
+  twFins(c,-1,2,9,'#b57ba0');twFins(c,-14,4,7,'#a5758f');
+  c.save();c.rotate(ang);twGun(c,2,27,9.5,'#6b5c6b',4);
+  c.fillStyle='#8a5a78';rr(c,14,-8,5,16,2);c.fill();c.stroke();/* 増幅段 */
+  twMuz(c,28,5.5,'ring','#c96b9f');
+  c.fillStyle='#f0a8d8';c.beginPath();c.arc(31,0,o.fire?5:3,0,7);c.fill();
+  if(o.fire){c.strokeStyle='rgba(240,168,216,.7)';c.lineWidth=3.6;c.beginPath();c.moveTo(33,0);c.lineTo(92,0);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
+  c.restore();
+ }
+ /* 強酸噴射砲: タンク2本を**太く**+**加圧ポンプ**を基部に+噴射口を大きく(最終形態は3本+二連) */
+ else if(tid==='acidM'){
+  twTank(c,-25,-19,11,26,'#4c6b32');twTank(c,-11,-23,11,30,TOXIC);
+  twDrum(c,16,11,6.5,'#5f8a2e');/* 加圧ポンプ */
+  c.strokeStyle='#3f4a54';c.lineWidth=4.2;
+  c.beginPath();c.moveTo(-14,-8);c.quadraticCurveTo(-2,4,8,-2);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.save();c.rotate(ang);twGun(c,4,22,10.5,'#5c5c66',4.5);
+  c.fillStyle='#5f8a2e';c.beginPath();c.moveTo(24,-5.5);c.lineTo(34,-2.5);c.lineTo(34,6);c.lineTo(24,5.5);c.closePath();c.fill();c.stroke();
+  if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(37,2,6+Math.sin(t*20)*2,0,7);c.fill();}
+  c.restore();
+  c.fillStyle=TOXIC;c.globalAlpha=.6+Math.sin(t*4)*.3;c.beginPath();c.arc(-19,9,2.8,0,7);c.fill();c.globalAlpha=1;
+ }
+ /* 長砲身重砲: 素の極太砲身を**伸ばす**+駐鋤を2枚に(最終形態は列車砲=枕木つき) */
+ else if(tid==='artyM'){
+  c.fillStyle='#4c5240';c.beginPath();c.moveTo(-26,-4);c.lineTo(-14,-8);c.lineTo(-14,10);c.lineTo(-28,14);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3c4136';c.beginPath();c.moveTo(-22,-8);c.lineTo(-12,-11);c.lineTo(-12,-2);c.lineTo(-24,1);c.closePath();c.fill();c.stroke();
+  c.save();c.rotate(ang);twGun(c,-8,48,23,'#5a6149',7);
+  twMuz(c,42,11.5,'brake','#3c4136');
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(52,0,9.5,0,7);c.fill();}c.restore();
+  c.fillStyle='#3c4136';c.beginPath();c.arc(0,0,9,0,7);c.fill();c.stroke();
+ }
+ /* 高圧テスラ: 素の碍子3枚を**4枚**にして柱を高く+球を大きく(最終形態は浮いた輪3枚) */
+ else if(tid==='coilM'){
+  c.fillStyle='#2f4a5c';rr(c,-9,-36,18,36,4);c.fill();c.stroke();
+  c.fillStyle='#cfd5da';c.beginPath();/* (191)碍子4枚を1本のパスで1回 */
+  for(let k=0;k<4;k++){c.moveTo(14-k*1.4,-8-k*8);c.ellipse(0,-8-k*8,14-k*1.4,3.6,0,0,7);}
+  c.fill();c.stroke();
+  c.fillStyle=TECH;c.beginPath();c.arc(0,-45,12.5,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(TECH,1.4);c.beginPath();c.arc(-4,-49,4.4,0,7);c.fill();
+  c.strokeStyle=FROST;c.lineWidth=2.4;
+  for(let k=0;k<3;k++){const a2=t*9+k*2.1;c.beginPath();c.moveTo(0,-45);c.lineTo(Math.cos(a2)*17,-45+Math.sin(a2)*12);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+ }
+ /* 磁気加速砲: レールを**伸ばす**+蓄電器を大きく+**中間の加速コイル1枚**(最終形態は軌道砲) */
+ else if(tid==='railM'){const cg=o.chg||0;
+  c.fillStyle='#4a4258';rr(c,-25,-11,11,22,4);c.fill();c.stroke();rr(c,14,-11,11,22,4);c.fill();c.stroke();
+  c.fillStyle=HEROC;c.globalAlpha=.45+cg*.55;
+  c.beginPath();c.arc(-19.5,-4,3,0,7);c.fill();c.beginPath();c.arc(19.5,-4,3,0,7);c.fill();c.globalAlpha=1;
+  c.save();c.rotate(ang);
+  c.fillStyle='#5c5c66';rr(c,0,-10,56,5.5,2);c.fill();c.stroke();rr(c,0,4.5,56,5.5,2);c.fill();c.stroke();
+  c.fillStyle='#8f6fae';rr(c,4,-4.5,34,9,3);c.fill();c.stroke();
+  c.fillStyle='#6b5a8a';rr(c,26,-12,7,24,2.5);c.fill();c.stroke();/* 中間の加速コイル */
+  if(cg>0){c.strokeStyle='rgba(216,131,238,'+(.3+cg*.65).toFixed(2)+')';c.lineWidth=1.4+cg*1.8;
+   for(let k=0;k<3;k++){const ph=(t*7+k*.34)%1,xx=4+ph*50;
+    c.beginPath();c.moveTo(xx,-5);c.lineTo(xx+3+Math.sin(t*44+k)*2,0);c.lineTo(xx,5);c.stroke();}
+   c.strokeStyle=INK;c.lineWidth=3;}
+  c.fillStyle=HEROC;c.beginPath();c.arc(56,-2,o.fire?7.5:3.6,0,7);c.fill();
+  c.restore();
+ }
+ /* 速射ガトリング: 素の4本束を**5本**にし、**冷却ジャケット**を巻く(最終形態は6本+特大ドラム) */
+ else if(tid==='gatM'){
+  twDrum(c,-18,5,9.5,'#7a2f28');twBelt(c,-13,11,5,GOLD2);
+  c.save();c.rotate(ang);
+  const spin2=t*22;
+  for(let k=0;k<5;k++){const oy=Math.sin(spin2+k*1.257)*6.5;
+   c.fillStyle=oy>0?'#3a424b':'#5a6570';rr(c,2,oy-2.6,30,5.2,2.4);c.fill();c.stroke();}
+  c.fillStyle='#b0483a';rr(c,-8,-10,14,20,5);c.fill();c.stroke();
+  c.fillStyle='#54606d';rr(c,14,-9,7,18,2.5);c.fill();c.stroke();/* 冷却ジャケット */
+  c.fillStyle='#3f4a54';rr(c,30,-8,6,16,2);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(40,0,7.5,0,7);c.fill();}
+  c.restore();
+ }
+ /* 高圧プラズマ砲: 素の球を大きく+**加圧リング2枚**を砲身に(最終形態は炉+浮いた輪の列) */
+ else if(tid==='plasmaM'){
+  twFins(c,-4,3,10,'#b565a0');
+  c.save();c.rotate(ang);twGun(c,-4,31,22,'#7a5375',8);
+  c.fillStyle='#a34a86';for(let k=0;k<2;k++){c.beginPath();c.ellipse(9+k*11,0,4,15,0,0,7);c.fill();c.stroke();}/* 加圧リング */
+  c.fillStyle='#e070bd';c.beginPath();c.arc(32,0,11+Math.sin(t*8)*2.2,0,7);c.fill();c.stroke();
+  c.fillStyle='#ffd0f0';c.beginPath();c.arc(32,0,5.5+Math.sin(t*8),0,7);c.fill();c.restore();
+  c.strokeStyle='rgba(217,102,176,.6)';c.lineWidth=2.4;
+  c.beginPath();c.arc(0,0,26+Math.sin(t*4)*3,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
+ }
+ /* 多連要塞砲: 素の3連を**4連**に(最終形態は極太3連+装甲板)。防盾とリベットは素のまま */
+ else if(tid==='fortM'){
+  c.save();c.rotate(ang);
+  c.fillStyle=STEEL;rr(c,-11,-17,29,34,6);c.fill();c.stroke();
+  c.save();c.beginPath();c.rect(-13,0,34,20);c.clip();c.fillStyle=shade(STEEL,.72);rr(c,-11,-17,29,34,6);c.fill();c.restore();
+  /* (191)4本とも同じ色=1本のパスにまとめて1回で塗る(重ならないので絵は変わらない) */
+  c.fillStyle='#3f4a54';c.beginPath();for(let k=0;k<4;k++)rrP(c,14,-13.5+k*7.5,25,5.4,2.2);c.fill();c.stroke();
+  c.fillStyle='#6b7580';c.beginPath();for(let k=0;k<4;k++)rrP(c,34,-14.4+k*7.5,8,7.2,1.8);c.fill();c.stroke();
+  c.fillStyle='#6b7580';rr(c,10,-19,6,38,2);c.fill();c.stroke();/* 防盾 */
+  c.fillStyle=PAPER3;for(let k=0;k<2;k++){c.beginPath();c.arc(13,-12+k*24,1.8,0,7);c.fill();}
+  if(o.fire){c.fillStyle='#ffdd66';for(let k=0;k<4;k++){c.beginPath();c.arc(41,-10.8+k*7.5,4.4,0,7);c.fill();}}
+  c.restore();
+ }
  /* 冷却塔: 冷媒タンク2本+**放熱フィン**+氷の球(撃たないので砲身は無い) */
  else if(tid==='cryo'){
   twFins(c,-6,3,10,'#7fb6c9');
@@ -12730,7 +12951,10 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
  /* 重テスラ: 太い柱に**碍子(白い円盤)を3枚**+大きな球。テスラコイルとの違いを輪郭で出す */
  else if(tid==='coil'){
   c.fillStyle='#2f4a5c';rr(c,-9,-30,18,30,4);c.fill();c.stroke();
-  c.fillStyle='#cfd5da';for(let k=0;k<3;k++){c.beginPath();c.ellipse(0,-8-k*8,13-k*1.5,3.4,0,0,7);c.fill();c.stroke();}
+  /* (191)碍子3枚は同じ色で重ならない=1本のパスで1回。⚠ellipse の前に moveTo で切る */
+  c.fillStyle='#cfd5da';c.beginPath();
+  for(let k=0;k<3;k++){c.moveTo(13-k*1.5,-8-k*8);c.ellipse(0,-8-k*8,13-k*1.5,3.4,0,0,7);}
+  c.fill();c.stroke();
   c.fillStyle=TECH;c.beginPath();c.arc(0,-40,11,0,7);c.fill();c.stroke();
   c.fillStyle=shade(TECH,1.4);c.beginPath();c.arc(-3,-43,4,0,7);c.fill();
   c.strokeStyle=FROST;c.lineWidth=2.2;
@@ -12777,9 +13001,10 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
  else if(tid==='fort'){c.save();c.rotate(ang);
   c.fillStyle=STEEL;rr(c,-10,-15,28,30,6);c.fill();c.stroke();
   c.save();c.beginPath();c.rect(-12,0,32,18);c.clip();c.fillStyle=shade(STEEL,.72);rr(c,-10,-15,28,30,6);c.fill();c.restore();
-  c.fillStyle='#3f4a54';for(let k=-1;k<=1;k++){rr(c,14,k*9-3,24,6,2.4);c.fill();c.stroke();}
+  /* (191)3本とも同じ色=1本のパスで1回(重ならないので絵は変わらない) */
+  c.fillStyle='#3f4a54';c.beginPath();for(let k=-1;k<=1;k++)rrP(c,14,k*9-3,24,6,2.4);c.fill();c.stroke();
   /* ⭐砲口の制退器(第104弾)。⚠同じ太さの筒を3本並べただけだと**手袋の指**に見えた */
-  c.fillStyle='#6b7580';for(let k=-1;k<=1;k++){rr(c,33,k*9-4.6,8,9.2,1.8);c.fill();c.stroke();}
+  c.fillStyle='#6b7580';c.beginPath();for(let k=-1;k<=1;k++)rrP(c,33,k*9-4.6,8,9.2,1.8);c.fill();c.stroke();
   /* 防盾(砲身の付け根に立てた板)=横から見ると輪郭に段が出る */
   c.fillStyle='#6b7580';rr(c,10,-17,6,34,2);c.fill();c.stroke();
   c.fillStyle=PAPER3;for(let k=-1;k<=1;k++){c.beginPath();c.arc(13,k*11,1.6,0,7);c.fill();}
