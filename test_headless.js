@@ -4018,17 +4018,26 @@ function checkUnlock(){
  if(sU!==UNL_U.length)F('兵科の配分が合わない 配'+sU+'/種'+UNL_U.length);
  for(const id of UNL_T)if(TW_IDX[id]==null||TW_IDX[id]>=T_PLAY)F('棚の塔 '+id+' が TOWERS に無い');
  for(const id of UNL_U)if(UB_IDX[id]==null)F('棚の兵科 '+id+' が UBASE に無い');
- /* ② 棚は拠点クリアで増える。⚠🚌拠点開拓(BNS_D)は数えない */
+ /* ② ⭐⭐(193)**棚は「面」のクリアで増える**(⚠拠点=面×難易度ではない。ここを取り違えて
+       10面ぶんのつもりが2面で配り切っていた)。⚠🚌拠点開拓(BNS_D)は数えない。 */
  META.sc=[D5.map(()=>0),D5.map(()=>0)];
- if(unlStep()!==0)F('まっさらなのに拠点をクリア済みと数えている '+unlStep());
+ if(unlStep()!==0)F('まっさらなのに面をクリア済みと数えている '+unlStep());
  if(shelfT().length!==UNL_TN[0]||shelfU().length!==UNL_UN[0])F('最初の棚が配分どおりでない');
  META.sc[0][BNS_D]=1;
- if(unlStep()!==0)F('🚌拠点開拓を拠点の数に入れている');
+ if(unlStep()!==0)F('🚌拠点開拓を面の数に入れている');
+ /* ⚠⚠**同じ面の中で難易度をいくつクリアしても段は1つ**=ここが(193)で直した所 */
  META.sc[0][0]=1;META.sc[0][1]=1;META.sc[0][2]=1;
- if(unlStep()!==3)F('クリアした拠点が数えられていない '+unlStep());
- const w3=UNL_TN[0]+UNL_TN[1]+UNL_TN[2]+UNL_TN[3];
- if(shelfT().length!==w3)F('3拠点クリアの棚が配分どおりでない '+shelfT().length+'(想定'+w3+')');
- if(!lockT().length&&!lockU().length)F('次の拠点で並ぶ分(🔒)が1つも見えない');
+ if(unlStep()!==1)F('同じ面の難易度を段の数に入れている(面ごとに1段のはず) '+unlStep());
+ META.sc[1][0]=1;
+ if(unlStep()!==2)F('クリアした面が数えられていない '+unlStep());
+ const w2=UNL_TN[0]+UNL_TN[1]+UNL_TN[2];
+ if(shelfT().length!==w2)F('2面クリアの棚が配分どおりでない '+shelfT().length+'(想定'+w2+')');
+ if(!lockT().length&&!lockU().length)F('次の面で並ぶ分(🔒)が1つも見えない');
+ /* ⭐(193)**10面ぶんに配れているか**=面が2つしか無いいま、2面で配り切っていたら落とす。
+    ⚠この検査が無かったので取り違えに気づけなかった。 */
+ {const w=UNL_T.length,u=UNL_U.length;
+  if(shelfT().length>=w||shelfU().length>=u)F('2面クリアで棚が全部並んでいる(10面ぶんに配れていない)');
+  if(UNL_TN.length<11||UNL_UN.length<11)F('配分が10面ぶん(段0+10段)になっていない');}
  /* ②' ⭐(187D)**次の拠点で要る属性が、その手前の段で開く**
     =②沈んだ港(拠点7=段6の後に入る)の🐟鱗には⚡電撃が要る。段5までに並んでいなければ落とす。
     ⚠同じく①廃線の🛡装甲(W3のアーマード)には🔥火炎が要るので、段0に無ければ落とす。 */
@@ -4120,19 +4129,30 @@ function checkGain(){
   const wN=curW();
   for(let w=1;w<=wN;w++)for(let r=0;r<4;r++){buildTide(w);n+=G.tide.pool.length*.25;}
   backTitle();
-  const g=metaGainOf(d,stg,wN,n),c=shelfPairCost(st);
+  /* ⚠⚠(193)**棚に無い物は買えない**=「拠点st個目には塔st個持っている」という物差しは、
+     棚がそれより薄い所では嘘になる(段が面ごとになったので終盤は棚の方が薄い)。
+     ⭐**持てる数を棚の数で頭切りする**。⚠棚を買い切った所は🧬が余るので、そこは band を見ない。 */
+  /* いま何段目か=クリアした面の数。⚠**その面の最初の難易度を勝つまでは前の段のまま** */
+  const stp=stg+(UNL_ORD.indexOf(d)>0?1:0);
+  const cnt=(arr)=>{let s2=0;const nn=Math.min(stp+1,arr.length);for(let i=0;i<nn;i++)s2+=arr[i];return s2;};
+  const sT=cnt(UNL_TN),sU=cnt(UNL_UN);
+  const own=Math.min(st,sT-1,sU-1),full=(st>=sT||st>=sU);
+  const g=metaGainOf(d,stg,wN,n),c=shelfPairCost(Math.max(0,own));
   const r=g/c;
-  rows.push({st,g,c,r:+r.toFixed(2)});
-  if(r<.7||r>1.4)F('拠点'+(st+1)+'('+(stg?'②':'①')+D5[d].n+')の実入りが棚と釣り合っていない '
+  rows.push({st,g,c,r:+r.toFixed(2),full});
+  if(!full&&(r<.7||r>1.4))F('拠点'+(st+1)+'('+(stg?'②':'①')+D5[d].n+')の実入りが棚と釣り合っていない '
    +g+'🧬 / 棚の2種'+c+'🧬 = x'+r.toFixed(2)+'(0.7〜1.4に収めること。ノブは RPT_X)');
   if(g<=prev)F('拠点'+(st+1)+'で実入りが前より減っている '+prev+'→'+g+'(進むほど増やすこと)');
   prev=g;st++;
  }
  META.sc=kp;
- const tot=rows.reduce((a,x)=>a+x.g,0);
+ const tot=rows.reduce((a,x)=>a+x.g,0),fl=rows.filter(x=>x.full).length,ok=rows.filter(x=>!x.full);
  console.log('🧬実入り: 12拠点で計'+tot.toLocaleString()+'🧬 / 棚の2種ぶんとの比 x'
-  +Math.min.apply(null,rows.map(x=>x.r)).toFixed(2)+'〜x'+Math.max.apply(null,rows.map(x=>x.r)).toFixed(2)
+  +Math.min.apply(null,ok.map(x=>x.r)).toFixed(2)+'〜x'+Math.max.apply(null,ok.map(x=>x.r)).toFixed(2)
   +' / 進むほど増える(①'+rows[0].g+'→②'+rows[rows.length-1].g+') OK');
+ /* ⚠**ここでバックスラッシュnを直に書かない**=この検査はテンプレート文字列の中なので、
+    生成されるコードの文字列が途中で改行して構文エラーになる(2026-08-06に踏んだ)。 */
+ if(fl)console.log('   ⚠**終盤の'+fl+'拠点は棚を買い切って🧬が余る**=面③以降を足すまでは仕方ない(繰り越す)');
 }
 /* ⏩(188)**本番には×5を出さない**=×5は絵が飛ぶのでテスト専用。⚠DEV側は checkDevLoad が見ている */
 (function checkFF(){
@@ -4481,8 +4501,8 @@ process.exit(0);
    +'{const m9=newCamp("t","solo",0,true);a.eco=m9.ecoN;a.sup=m9.supN;a.uun=m9.uUn;'
    +'a.slk=m9.slk.filter(Boolean).length;a.unl=m9.unlocked;'
    +'try{campStep(m9,0.033,1);}catch(e){a.cerr=e.message;}a.s1=m9.scrap;a.u1=m9.up;}'
-   /* 拠点を6つクリアしたことにすると棚が②相当まで進む */
-   +'const q=scArr(0);for(const d of UNL_ORD)q[d]=1;'
+   /* ⚠(193)**段は「面のクリア数」**=面①をクリアしたことにすると棚が1段進む */
+   +'const q=scArr(0);q[UNL_ORD[0]]=1;'
    +'a.sT6=shelfT().length;a.sU6=shelfU().length;a.step6=unlStep();'
    /* 全開放へ戻すと元どおり */
    +'META.devRaw=0;TWOWN_K=-1;saveMeta();a.pts2=META.pts;a.tw2=twOwnList().length;'
@@ -4497,12 +4517,12 @@ process.exit(0);
   if(r9.tw!==r9.bT||r9.un!==r9.bU){console.log('FAIL: 🛠素モードで持ち物が2種ずつに戻らない 塔'+r9.tw+'/兵科'+r9.un);process.exit(1);}
   if(!r9.stg||!r9.dif){console.log('FAIL: 🛠素モードで面の解放まで消えている(②とナイトメアが選べない)');process.exit(1);}
   if(r9.ff!==4){console.log('FAIL: 🛠素モードで×5倍速が消えている');process.exit(1);}
-  if(r9.step6!==6){console.log('FAIL: 🛠クリア+1が数えられていない '+r9.step6);process.exit(1);}
-  if(!(r9.sT6>r9.sT&&r9.sU6>r9.sU)){console.log('FAIL: 拠点をクリアしても棚が増えない');process.exit(1);}
+  if(r9.step6!==1){console.log('FAIL: 面のクリアが数えられていない '+r9.step6);process.exit(1);}
+  if(!(r9.sT6>r9.sT&&r9.sU6>r9.sU)){console.log('FAIL: 面をクリアしても棚が増えない');process.exit(1);}
   if(r9.pts2<1e6||r9.tw2<r9.tp){console.log('FAIL: 🛠全開放に戻しても元に戻らない');process.exit(1);}
   console.log('🛠素で始める: 持ち物'+r9.tw+'+'+r9.un+'種・ゲーム中⚙️'+r9.s1+'🔩'+r9.u1
    +'(🧬は無限)・棚'+r9.sT+'塔/'+r9.sU+'兵科'
-   +' → 6拠点クリアで'+r9.sT6+'塔/'+r9.sU6+'兵科 / 面の解放と×5は残る / 戻せる OK');
+   +' → 面①クリアで'+r9.sT6+'塔/'+r9.sU6+'兵科 / 面の解放と×5は残る / 戻せる OK');
  }catch(e){
   console.log('FAIL: 🛠DEVモード(?dev=1)の読み込みで例外: '+e.message);process.exit(1);
  }finally{

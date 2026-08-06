@@ -5110,38 +5110,47 @@ const UNL_T=[
  /*段9*/'gat',             /*🔫226*/
  /*段10*/'plasma','fort'   /*💣307 と 🔫482*/
 ];
+/* ⚠⚠(193)**段は「面(廃線ハイウェイ / 沈んだ港 …)のクリア数」**に変えた=区切りも面ごとに引き直した。
+   ⭐**段0が厚い**のは、面の中で難易度を上げていく間に🧬で少しずつ買っていくため
+   (面=棚が広がる門 / 難易度=🧬が貯まる門。⭐門は2つのまま)。 */
 const UNL_U=[
- /*段0*/'big','gun','mol',      /*壁 / 🔫実弾 / 🔥火炎(装甲対策)*/
- /*段1*/'shd','grn',            /*壁 / 💣爆発*/
- /*段2*/'saw','frz','med',      /*✊近接 / ❄冷気 / ✚回復*/
- /*段3*/'snp','mgn',            /*🗡貫通 / 🔫実弾*/
- /*段4*/'pike','rkt','spr',     /*🗡貫通 / 💣爆発 / 足の速い🔫実弾*/
- /*段5*/'flm','chain',          /*🔥火炎 / 足止め*/
- /*段6*/'elec','axe','smg',     /*🗡貫通(②の鱗に通る) / ✊近接 / 🔫実弾*/
- /*段7*/'gld','mortarU',        /*壁 / 💣爆発*/
- /*段8*/'ninja','engi','gren2', /*🗡貫通 / ✚回復 / 💣爆発*/
- /*段9*/'rail2','frost2',       /*🗡貫通 / ❄冷気*/
- /*段10*/'chief','titan','valk' /*仕上げの3種*/
+ /*段0*/'big','gun','mol','shd','grn','saw','frz','med','snp','mgn',
+        /*壁2 / 🔫実弾2 / 🔥火炎(①の装甲対策) / 💣爆発 / ✊近接 / ❄冷気 / ✚回復 / 🗡貫通*/
+ /*段1*/'elec','pike','rkt',    /*⚡電撃(②の鱗に通る。⚠面②へ入る前に必ず並べる) / 🗡貫通 / 💣爆発*/
+ /*段2*/'spr','flm',            /*足の速い🔫実弾 / 🔥火炎*/
+ /*段3*/'chain','axe',          /*足止め / ✊近接*/
+ /*段4*/'smg','gld',            /*🔫実弾 / 壁*/
+ /*段5*/'mortarU','ninja',      /*💣爆発 / 🗡貫通*/
+ /*段6*/'engi','gren2',         /*✚回復 / 💣爆発*/
+ /*段7*/'rail2','frost2',       /*🗡貫通 / ❄冷気*/
+ /*段8*/'chief',/*段9*/'titan',/*段10*/'valk'
 ];
-/* ⭐**1段(=拠点1つ)ごとに棚へ並ぶ数**。段0=最初から並んでいる分。
+/* ⭐⭐**1段(=面1つ)ごとに棚へ並ぶ数**。段0=最初から並んでいる分。
+   ⚠⚠⚠**(193)ここを「拠点(=面×難易度)1つごと」に配っていたのが取り違えだった**
+     (2026-08-06ユーザー指摘「拠点1個で1種類なんて誰も言ってない。1面クリアで数種類」)。
+     拠点は面1つにつき6個あるので、**10面ぶんのつもりが2面で配り切っていた**。
+     ⭐**面ごとに直した**=段0(最初)+段1〜段10 の11段=**10面ぶん**。
    ⚠**合計は必ず UNL_T/UNL_U の長さに合わせる**(17 / 28)=余ると永久に棚へ出ない塔ができる
      (検査 checkUnlock が落とす)。
-   ⚠いま拠点は12個(2ステージ×6難易度。🚌は数えない)ので11段まで配ってある。
-   ⭐**ステージ3以降を足しても、この表は伸ばさなくてよい**=段11から先は「新しく並ぶ物なし」になるだけ。
+   ⚠⚠**面が2つしか無いいまは、段2(塔9/兵科15)までしか届かない**=残りは面③以降のぶん。
+     ⭐そのぶん**段0を厚く**してある(面①②を段0〜2だけで戦うため)。
+     ⚠**面を増やしたらこの表は伸ばさなくてよい**(もう10面ぶん入っている)。
      ⚠**塔や兵科そのものを増やした時は、必ずここの数も増やすこと**。
-   📌設計の目安は「1ステージあたり 塔2種・兵科3種」。 */
-const UNL_TN=[2,1,2,1,2,1,2,1,2,1,2];
-const UNL_UN=[3,2,3,2,3,2,3,2,3,2,3];
-/* 進行の段=**クリア済みの拠点の数**(0〜12)。⚠🚌拠点開拓は「遊べば開く」面なので数えない */
+   📌設計の目安は「1面あたり 塔2種・兵科3種」(⚠17種/28種を10面に配ると平均はこれより薄い)。 */
+const UNL_TN=[6,2,1,1,1,1,1,1,1,1,1];
+const UNL_UN=[10,3,2,2,2,2,2,2,1,1,1];
+/* 進行の段=**クリア済みの面の数**(0〜面の数)。
+   ⚠**「面をクリア」=その面をどれか1つの難易度でクリアした**(いちばん低い難易度でよい)。
+   ⚠🚌拠点開拓は「遊べば開く」面なので数えない。 */
 const UNL_ORD=D_ORD.filter(d=>d!==BNS_D);
 function unlStep(){let n=0;
- for(let s=0;s<STAGES.length;s++){const a=scArr(s);for(const d of UNL_ORD)if(a[d])n++;}
+ for(let s=0;s<STAGES.length;s++){const a=scArr(s);if(UNL_ORD.some(d=>a[d]))n++;}
  return n;}
 /* 段 st までに棚へ並ぶ個数(段0の分を含むので st+1 個ぶん足す) */
 const unlCnt=(arr,st)=>{let s=0;const n=Math.min(st+1,arr.length);for(let i=0;i<n;i++)s+=arr[i];return s;};
 const shelfT=()=>UNL_T.slice(0,unlCnt(UNL_TN,unlStep()));
 const shelfU=()=>UNL_U.slice(0,unlCnt(UNL_UN,unlStep()));
-/* ⭐**次の1段で並ぶ物**(鍵つきで見せる分)。⚠隠さない=進む動機になる(設計①) */
+/* ⭐**次の面で並ぶ物**(鍵つきで見せる分)。⚠隠さない=進む動機になる(設計①) */
 const lockT=()=>UNL_T.slice(unlCnt(UNL_TN,unlStep()),unlCnt(UNL_TN,unlStep()+1));
 const lockU=()=>UNL_U.slice(unlCnt(UNL_UN,unlStep()),unlCnt(UNL_UN,unlStep()+1));
 const twHas=id=>(META.ot||[]).indexOf(id)>=0;
@@ -28666,8 +28675,8 @@ function renderHeroPick(){
    n=タブの短い名前 / d=そのタブの1行説明 */
 /* ic=タブのアイコン素材名 / em=素材が無い時の絵文字 / t=タブの文字 */
 const LAB_CATS=[
- /* ⚠(187)**「1つずつ順番に」ではなくなった**=拠点をクリアすると棚に並び、並んだ中から選んで買う */
- {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'拠点をクリアすると棚に並ぶ。並んだ中から選んで解放する'},
+ /* ⚠(187)**「1つずつ順番に」ではなくなった**=面をクリアすると棚に並び、並んだ中から選んで買う */
+ {k:'new',ic:'ic-tab-new',em:'🆕',t:'新種',d:'新しい土地へ進むと棚に並ぶ。並んだ中から選んで解放する'},
  /* ⚠**派生は兵科とタレットに分けてある**(2026-08-02ユーザー指摘「派生タブにユニットとタレットが
     まとめて入ってるけど、選んだらその中に分岐があったほうがいい」)=下の LAB_TOP の2段目で切り替える */
  {k:'varu',ic:'ic-tab-var',em:'🧬',t:'兵科',d:'兵科の派生(🎖編成で入れ替える)'},
@@ -28907,7 +28916,7 @@ function renderLab(){
   const raw9=!!(META.devRaw||0);
   const tools=(DEV?('<button data-labrst>🛠リセット</button><button data-busrst>🛠バス強化</button>'
     +'<button data-devraw'+(raw9?' class="on"':'')+'>'+(raw9?'🛠全開放に戻す':'🛠素で始める')+'</button>'
-    +(raw9?('<button data-devclr>🛠クリア +1('+unlStep()+')</button><button data-devclr0>🛠クリア 0</button>'):'')
+    +(raw9?('<button data-devclr>🛠クリア面 +1('+unlStep()+')</button><button data-devclr0>🛠クリア 0</button>'):'')
     /* 💾(189)**セーブの持ち帰り**=実機で起きた状態をPCで再現するため。⚠DEV専用 */
     +'<button data-savex>💾書き出す</button><button data-savei>💾読み込む</button>'):'')
    +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
@@ -28971,13 +28980,15 @@ function renderLab(){
   saveMeta();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();
   try{refreshStageUI();refreshDiffUI();}catch(e){}};});
  /* 🛠(188)**クリアした拠点の数を進める/戻す**=棚を②相当まで進めてから試すため */
+ /* 🛠(193)**段は「面のクリア数」**になったので、この道具も**面を1つずつ**進める
+    (拠点を1つずつ立てても段は動かない=押しても何も起きないように見える)。 */
  $('lab-items').querySelectorAll('[data-devclr]').forEach(b=>{b.onclick=()=>{
-  const a=scArr(0);let put=false;
-  for(const d of UNL_ORD)if(!a[d]){a[d]=1;put=true;break;}
-  if(!put){const b2=scArr(1);for(const d of UNL_ORD)if(!b2[d]){b2[d]=1;put=true;break;}}
+  let put=false;
+  for(let s=0;s<STAGES.length&&!put;s++){const a=scArr(s);
+   if(!UNL_ORD.some(d=>a[d])){a[UNL_ORD[0]]=1;put=true;}}
   saveMeta();renderLab();try{refreshStageUI();refreshDiffUI();}catch(e){}
-  toast(put?('🛠 クリアした拠点を '+unlStep()+' にした(棚が'+shelfT().length+'塔/'+shelfU().length+'兵科)')
-   :'🛠 もう全部クリア済み');};});
+  toast(put?('🛠 クリアした面を '+unlStep()+' にした(棚が'+shelfT().length+'塔/'+shelfU().length+'兵科)')
+   :'🛠 もう全部の面がクリア済み');};});
  /* 💾⭐⭐(189)**セーブの持ち帰り / 流し込み**(ユーザー指示で作った道具の1つ)。
     ⚠⚠**作った理由**=実機で「こうなった」と言われても、こちらは**その状態を再現できない**。
       セーブを1本の文字列にできれば、貼ってもらうだけでPCで同じ状態から始められる。
@@ -29006,7 +29017,7 @@ function renderLab(){
  $('lab-items').querySelectorAll('[data-devclr0]').forEach(b=>{b.onclick=()=>{
   META.sc=[];META.sclr=[];META.clr=[0,0,0,0,0,0];META.nmOK=0;
   saveMeta();renderLab();try{refreshStageUI();refreshDiffUI();}catch(e){}
-  toast('🛠 クリアした拠点を 0 に戻した');};});
+  toast('🛠 クリアした面を 0 に戻した');};});
  $('lab-items').querySelectorAll('[data-lab]').forEach(b=>{b.onclick=()=>{const it=items[+b.dataset.lab];if(!it||!it.k||META.pts<it.p)return;
   /* ⭐まとめ買いの段数。⚠**表に無い種類は必ず1**(「次の1つ」を買う形の項目を複数回進めない) */
   const n=(LAB_MSTEP[it.k]&&it.n>1)?it.n:1;
