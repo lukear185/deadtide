@@ -30825,7 +30825,10 @@ const ED_BAR=15;                      /* 上下の黒帯(映画の枠) */
    ①戦いの跡(長い夜) ②岸壁の夜明け(沈んでいくもの) ③拠点に灯りが戻る ④荷を積む朝 ⑤次の土地へ。
    ⚠**切れ目の秒数はここだけで持つ**(ED_CT)=描く側も字幕も終わりの判定も全部ここから引く。
    ⚠**壮大にしない**の掟は生きている=話はまだ途中なので、盛るのは「日常が戻る所」だけ。 */
-const ED_CT=[2.7,5.6,9.0,11.9,15.2];  /* 各カットの終わりの秒。⚠末尾=幕の終わり */
+/* 🕊⭐(191)**6本目を足した**(2026-08-06ユーザー指示「最後に鳥系のゾンビがいそうな雰囲気の場所に
+   辿り着くまで=次のエリアの匂わせ」)=⑥**送電鉄塔の丘**。⚠**壮大にしない**の掟は生きている=
+   説明も報酬も無く、**空と電線に影が居るだけ**。⚠「鳥ゾンビ」とは1文字も言わない(見せるだけ)。 */
+const ED_CT=[2.7,5.6,9.0,11.9,15.2,18.8];  /* 各カットの終わりの秒。⚠末尾=幕の終わり */
 const ED_C3=ED_CT[ED_CT.length-1];    /* 幕の終わり(⚠古い名前のまま使っている所がある) */
 const ED_DIP=.42;                     /* 切れ目の暗転(前後で半分ずつ) */
 /* 字幕。⚠**カットの切れ目をまたがせない**=間に隙間を空けて、そこで消えるようにする */
@@ -30835,7 +30838,10 @@ const ED_CUE=[
  [6.00,7.60,'錆びた岸壁に、灯りが戻った。'],
  [7.85,8.75,'ここは、人が住める。'],
  [9.55,11.65,'積み込みが終わる。'],
- [12.30,15.05,'バスは、次の土地へ向かう。']];
+ [12.30,15.05,'バスは、次の土地へ向かう。'],
+ /* 🕊(191)⚠**「鳥」と言わない**=言った瞬間に説明になる。見えている物だけを言う */
+ [15.70,17.10,'丘の上に、鉄塔が並んでいた。'],
+ [17.45,18.65,'——電線に、影が並んでいる。']];
 const ED={on:0,t:0,done:0,cap:-2};
 const edZi=id=>{const i=ZOMBIES.findIndex(z=>z.id===id);return i<0?0:i;};
 /* 沈んだ船の骸。⚠**水平線に少し傾けて置く**=まっすぐ置くと「浮かんでいる船」に見える */
@@ -31142,6 +31148,96 @@ function edCut2(c,u,len){
   c.fillRect(112+s9*22+Math.sin(u*1.7+i)*7,fy-q*66*EK,1.8,1.8);}
  c.restore();
 }
+/* 🕊(191)**羽ばたく影**。⚠**鳥の絵を描かない**=遠くの影なので「への字が2本」で十分に鳥に見える。
+   ⚠**羽ばたきは上下ではなく「への字の深さ」**で出す(上下に動かすと虫に見える)。 */
+function edBird(c,x,y,s,f){
+ const w=Math.sin(f)*.5+.5;/* 0=翼を下ろした 1=上げた */
+ const dy=(2.2+w*5.2)*s;
+ c.beginPath();
+ c.moveTo(x-6.2*s,y+dy*.5);c.quadraticCurveTo(x-3*s,y-dy*.4,x,y);
+ c.quadraticCurveTo(x+3*s,y-dy*.4,x+6.2*s,y+dy*.5);
+ c.quadraticCurveTo(x+3*s,y+dy*.16,x,y+1.1*s);
+ c.quadraticCurveTo(x-3*s,y+dy*.16,x-6.2*s,y+dy*.5);
+ c.closePath();c.fill();
+}
+/* 🗼(191)送電鉄塔(⚠格子は描き込まない=遠景なので**輪郭と横木**だけで鉄塔に読める) */
+function edPylon(c,x,gy,h,w){
+ const tw=w*.5;
+ c.beginPath();
+ c.moveTo(x-w,gy);c.lineTo(x-tw*.34,gy-h);c.lineTo(x+tw*.34,gy-h);c.lineTo(x+w,gy);
+ c.lineTo(x+w*.74,gy);c.lineTo(x+tw*.26,gy-h*.9);c.lineTo(x-tw*.26,gy-h*.9);c.lineTo(x-w*.74,gy);
+ c.closePath();c.fill();
+ /* 横木3段(上ほど短い)=送電線が乗る所 */
+ for(let k=0;k<3;k++){const yy=gy-h*(.62+k*.16),aw=w*(1.5-k*.28);
+  c.fillRect(x-aw,yy,aw*2,h*.022+1);}
+ /* 斜めの筋を2本だけ(格子の匂い) */
+ c.fillRect(x-w*.5,gy-h*.5,w*1.0,1);
+}
+/* 🕊⭐(191)カット⑥=**送電鉄塔の丘**(次のエリアの匂わせ)。
+   ⚠⚠**壮大にしない**=辿り着いた所を見せるだけ。⚠**説明しない**=影が居るのを見せるだけ。
+   ⚠足元は黒帯の上に置く / 縦は全部 ED_H の割合(絶対値は EK を掛ける)。 */
+function edCut5(c,u,len){
+ const p=clamp(u/(len||3.6),0,1),hz=ED_H*.70,gy=ED_H-ED_BAR-4;
+ /* 空=夕暮れ(ここまでで一番赤い。⚠カット③の朝と取り違えないよう赤紫へ寄せる) */
+ let g=c.createLinearGradient(0,0,0,hz);
+ g.addColorStop(0,'#1b2340');g.addColorStop(.48,'#4c3350');g.addColorStop(1,'#b8663a');
+ c.fillStyle=g;c.fillRect(0,0,ED_W,hz);
+ /* 高い雲(⚠横に細長く=縦に置くと煙に見える) */
+ c.fillStyle='rgba(24,20,30,.30)';
+ for(const q of [[40,.16,120],[210,.10,86],[330,.22,150],[452,.13,70]]){
+  const cy=hz*q[1]+Math.sin(u*.4+q[0])*2;
+  c.beginPath();c.ellipse(q[0]+u*4,cy,q[2]*.5,4.6*EK,0,0,7);c.fill();}
+ /* 沈む日(⚠薄い円盤2枚=ラジアルグラデは使わない) */
+ c.fillStyle='rgba(255,170,90,.16)';c.beginPath();c.arc(96,hz-10*EK,54*EK,0,7);c.fill();
+ c.fillStyle='rgba(255,190,110,.28)';c.beginPath();c.arc(96,hz-10*EK,25*EK,0,7);c.fill();
+ /* 丘の稜線(⚠まっすぐ切らない)。⭐**鉄塔はこの上に立つ**ので先に描く */
+ c.fillStyle='#161219';
+ c.beginPath();c.moveTo(0,ED_H);c.lineTo(0,hz+4);
+ for(let x9=0;x9<=ED_W;x9+=20)c.lineTo(x9,hz+4-Math.sin(x9*.0075+.6)*26*EK-Math.cos(x9*.019)*7*EK);
+ c.lineTo(ED_W,ED_H);c.closePath();c.fill();
+ const hillY=x9=>hz+4-Math.sin(x9*.0075+.6)*26*EK-Math.cos(x9*.019)*7*EK;
+ /* 🗼鉄塔3本(高さを変える=並ぶと「送電線の道」に見える) */
+ c.fillStyle='#0c0a10';
+ const PY=[[92,74],[236,96],[392,82]];
+ for(const q of PY)edPylon(c,q[0],hillY(q[0])+2,q[1]*EK,7*EK);
+ /* 電線(⚠まっすぐ引かない=たるませる)。⭐**そこに影が並んで止まっている** */
+ c.strokeStyle='rgba(10,8,12,.85)';c.lineWidth=1.6;
+ for(let k=0;k<2;k++){
+  const yy=k*4.4*EK;
+  for(let i=0;i<PY.length-1;i++){
+   const a=PY[i],b=PY[i+1],ay=hillY(a[0])+2-a[1]*EK*(.78-k*.16)+yy,by=hillY(b[0])+2-b[1]*EK*(.78-k*.16)+yy;
+   c.beginPath();c.moveTo(a[0],ay);
+   c.quadraticCurveTo((a[0]+b[0])*.5,(ay+by)*.5+13*EK,b[0],by);c.stroke();}}
+ /* 止まっている影(⚠等間隔に並べない。⭐**時々1羽が飛び立つ**=生きていると分かる) */
+ c.fillStyle='#0a080c';
+ {const a=PY[0],b=PY[1],ay=hillY(a[0])+2-a[1]*EK*.78,by=hillY(b[0])+2-b[1]*EK*.78;
+  const S=[.12,.21,.28,.41,.52,.58,.71,.83];
+  for(let i=0;i<S.length;i++){
+   const q=S[i],xx=a[0]+(b[0]-a[0])*q;
+   const yy=ay+(by-ay)*q+13*EK*(1-(2*q-1)*(2*q-1))-2.6*EK;
+   /* 1羽だけ、途中で飛び立つ */
+   if(i===4&&u>1.9){const fu=u-1.9;
+    edBird(c,xx+fu*54,yy-fu*46*EK-Math.sin(fu*3)*4,1.5*EK,fu*17);continue;}
+   c.beginPath();c.ellipse(xx,yy,2.3*EK,3.1*EK,0,0,7);c.fill();
+   c.fillRect(xx-.6*EK,yy+2.4*EK,1.2*EK,2.6*EK);}}
+ /* 空を旋回する影4つ(⚠同じ円に乗せない=群れが1つの輪に見える) */
+ c.fillStyle='#0a080c';
+ for(let k=0;k<4;k++){
+  const ph=u*.62+k*1.7,cx=ED_W*(.42+k*.13),cy=hz*(.30+((k*37)%40)/100);
+  const bx=cx+Math.cos(ph)*(52+k*17),by=cy+Math.sin(ph*1.3)*(11+k*3)*EK;
+  edBird(c,bx,by,(1.5+((k*29)%7)*.12)*EK,u*9+k*2.1);}
+ /* 手前を1羽が横切る(⚠**最後に1回だけ**=居るのが分かる決め手) */
+ if(u>1.35){const q=(u-1.35)*.42,bx=ED_W+70-q*(ED_W+180);
+  c.fillStyle='#07060a';edBird(c,bx,ED_H*.30+Math.sin(u*2.2)*7*EK,5.2*EK,u*7.4);}
+ /* 手前の道と、丘へ向かう🚌(⚠小さく=もう遠くまで来た) */
+ c.fillStyle='#211c17';c.fillRect(0,gy-9*EK,ED_W,ED_H-gy+9*EK);
+ c.fillStyle='#3a3226';c.fillRect(0,gy-9*EK,ED_W,2*EK);
+ {const o1=(u*150)%64;c.fillStyle='#5c5347';
+  for(let i=-1;i<10;i++)c.fillRect(i*64-o1,gy-4*EK,22,2.2*EK);}
+ {const bs=.30*EK,bx=90+p*300,by=gy-8*EK;
+  c.fillStyle='rgba(0,0,0,.30)';c.beginPath();c.ellipse(bx,by+2,92*bs,7*bs,0,0,7);c.fill();
+  edBus(c,bx,by,bs,u);}
+}
 /* 幕の1コマ。⚠**時間は ED.t だけ**=撮影と検査は `edSeek(秒)` で好きな所を出せる */
 function edDraw(){
  const cv=$('ed-cv');if(!cv)return;
@@ -31164,7 +31260,8 @@ function edDraw(){
   else if(ci===1)edCut1(c,u,len);
   else if(ci===2)edCut2(c,u,len);
   else if(ci===3)edCut4(c,u,len);
-  else edCut3(c,u,len);}
+  else if(ci===4)edCut3(c,u,len);
+  else edCut5(c,u,len);}
  c.restore();
  /* 上下の黒帯(映画の枠)。⚠**字幕はこの上に置く**(CSS側) */
  c.fillStyle='#000';c.fillRect(0,0,ED_W,ED_BAR);c.fillRect(0,ED_H-ED_BAR,ED_W,ED_BAR);
