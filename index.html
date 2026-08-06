@@ -713,6 +713,9 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .lc{display:flex;flex-direction:column;gap:2px;border:2px solid var(--ink);border-radius:10px;
  background:var(--pane);padding:6px 7px;text-align:left;box-shadow:0 3px 0 rgba(0,0,0,.16)}
 .lc.can{border-color:var(--amber);box-shadow:0 0 0 2px rgba(232,163,61,.45)}
+/* ⏭(198)**次に解放できる物**=灰色で先に見せる(ユーザー指示「鍵じゃなくて灰色で、◯◯を解放したら…に」) */
+.lc.wait{opacity:.62;filter:grayscale(.55)}
+.lc.wait .tg{color:var(--paper3)}
 .lc .ic{font-size:19px;line-height:1.1}
 /* ⭐解放/強化するタワー・キャラは**実物の姿**を出す(2026-07-26 第91弾ユーザー指示)。
    ⚠絵文字のアイコンでは「何を解放するのか」が分からなかった。中身は fitDraw が枠いっぱいに描く */
@@ -29234,20 +29237,23 @@ function renderLab(){
      ⚠⚠**次の面でしか並ばない物は研究所に出さない**(同ユーザー「そもそも研究所にないように」)=
        `lockT()/lockU()` を並べるのをやめた(データ側は残してある=面クリアで並ぶ判定に使う)。
      ⭐棚に並んでいて順番待ちの物は**何番目に解放できるか**を出す(絵と説明はそのまま見せる)。 */
-  const od9='⏭ 解放は ';
-  let nT=0;
+  /* ⏭⭐⭐(198)**出すのは「いま買える1つ」と「その次の1つ」だけ**(2026-08-07ユーザー指示)。
+     ⭐次の1つは**灰色**にして、条件を**手前の物の名前**で書く(「◯◯を解放すると解放できる」)。
+     ⚠**それより先は出さない**=買ったらまた次の1つが現れる。⛔番号(◯番目)で出すのはやめた。 */
+  const od9=n9=>'⏭ 「'+n9+'」を解放すると解放できる';
+  let nT=0,pvT='';
   for(const id of shelfT()){if(twHas(id))continue;const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
    nT++;
-   if(nT===1)items.push({cat:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
-     tag:'新型タワー '+(ot.length+1)+'/'+UNL_T.length,d:T.dsc,p:pT});
-   else items.push({cat:'new',lk:1,wt:nT,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9+nT+'番目',d:T.dsc,p:0});}
+   if(nT===1){pvT=T.n;items.push({cat:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
+     tag:'新型タワー '+(ot.length+1)+'/'+UNL_T.length,d:T.dsc,p:pT});}
+   else{items.push({cat:'new',lk:1,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9(pvT),d:T.dsc,p:0});break;}}
   /* ⚠UNITSは派生に差し替わるのでUBASE */
-  let nU=0;
+  let nU=0,pvU='';
   for(const id of shelfU()){if(unHas(id))continue;const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
    nU++;
-   if(nU===1)items.push({cat:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
-     tag:'新型兵科 '+(ou.length+1)+'/'+UNL_U.length,d:U.dsc,p:pU});
-   else items.push({cat:'new',lk:1,wt:nU,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9+nU+'番目',d:U.dsc,p:0});}}
+   if(nU===1){pvU=U.n;items.push({cat:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
+     tag:'新型兵科 '+(ou.length+1)+'/'+UNL_U.length,d:U.dsc,p:pU});}
+   else{items.push({cat:'new',lk:1,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9(pvU),d:U.dsc,p:0});break;}}}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -29436,15 +29442,15 @@ function renderLab(){
      const bar=lvm?('<div class="lvb"><span class="l">Lv '+lvm[1]+'</span>'
        +'<i><b style="width:'+Math.round(Math.min(1,(+lvm[1])/Math.max(1,+lvm[2]))*100)+'%"></b></i>'
        +'<span class="m">'+lvm[2]+'</span></div>'):'';
-     return '<div class="lc'+(can?' can':'')+'">'
+     return '<div class="lc'+(can?' can':'')+(it.lk?' wait':'')+'">'
       +(it.pv?('<canvas class="pvc'+(it.sm?' sm':'')+'" width="120" height="104" data-pv="'+o.i+'"></canvas>')
              :('<div class="ic">'+(it.ic||'🔬')+'</div>'))
       +'<div class="nm">'+it.t+'</div>'
       +((rest||(it.sm&&it.d))?'<div class="tg">'+rest+(it.sm&&it.d?(rest?' ':'')+it.d:'')+'</div>':'')
       +bar
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
-      /* ⏭(197)順番待ちの物は**何番目か**を出す(⛔鍵はやめた。ユーザー指示) */
-      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?(it.wt?('⏭ '+it.wt+'番目'):'—'):('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button></div>';}).join('')+'</div>')
+      /* ⏭(198)次の1つは灰色+「まだ買えない」。⛔鍵も番号もやめた(ユーザー指示) */
+      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?'⏭ この次':('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button></div>';}).join('')+'</div>')
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
  }
  $('lab-items').innerHTML=IC(body);
