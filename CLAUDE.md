@@ -43,8 +43,9 @@ aliases: [引き継ぎ]
   ⚠生WAVはリポジトリに入れない(加工済みMP3を base64 で埋め込んである)。
 - **公開URL: https://lukear185.github.io/deadtide/** (repo=github.com/lukear185/deadtide・masterへpushで1〜2分で反映)。
   🚑⚠⚠**push したら公開が反映されたかを必ず見る**(196に3回ぶん黙って止まり、2日ぶん届いていなかった)=
-  `gh api repos/lukear185/deadtide/pages/builds/latest` が `built` になるまで。落ちていたら**押し直せば直る**
-  (GitHub側の一時的な認証エラー。ビルドではなく配信の段で落ちる)。⚠`.nojekyll` を消さない。
+  ⭐**一番確かなのは配信物そのもの**=`curl -s https://lukear185.github.io/deadtide/index.html | grep -c <入れた文字>`。
+  ⚠`pages/builds/latest` は**古いまま返ることがある**(202に実際そうなった)=`deployments` か上のcurlで見る。
+  落ちていたら**押し直せば直る**(GitHub側の一時的な失敗)。⚠`.nojekyll` を消さない。
 - **作業が一区切りしたら毎回 master へ push してよい**(許可済み・毎回聞かなくてよい)。
   検査を通してコミットしたら、push して公開URLを渡すところまでやる。
 - ⚠**新しく「珍しいもの」を足したら、同じ回に `?dev=1` の底上げも足す**(一覧は [[NOTES_道具]])。
