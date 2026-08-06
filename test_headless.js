@@ -2504,8 +2504,10 @@ function checkGacha(){
   META.tk5=0;const n0=Object.keys(META.hero).length;
   gcPull5();
   if(Object.keys(META.hero).length!==n0){console.log('FAIL: 🎫0枚でも引けてしまう');process.exit(1);}
-  /* 配布は1人1回きり(印が立っていたら渡らない) */
-  if(!GIFT||!GIFT.id){console.log('FAIL: 配布物(GIFT)の定義が無い');process.exit(1);}
+  /* 配布は1人1回きり(印が立っていたら渡らない)。
+     ⭐(195)**配布を止めている間は null でよい**(2026-08-07ユーザー指示で★5確定チケットの配布を停止)=
+     見るのは「中途半端な形になっていないか」だけ(id の無い配布物は二重配布の元) */
+  if(GIFT&&!GIFT.id){console.log('FAIL: 配布物(GIFT)に id が無い');process.exit(1);}
   META.hero={};META.tk5=0;}
  /* 重複は鍛錬素材になる */
  META.hero={};META.hmat=0;

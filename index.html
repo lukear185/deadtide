@@ -2384,7 +2384,9 @@ try{if((META.rst|0)<META_RESET){META.rst=META_RESET;
    ⚠⚠**やめる時は下の `GIFT` を null にする1行だけ**(それ以外は触らなくてよい)。
    ⚠**`id` は変えないこと**=変えると「もう1回配る」意味になり、受け取り済みの人にもう1枚渡る。
    ⚠受け取った印は `META.gft[id]` に残るので、**同じ人には二度と配られない**。 */
-const GIFT={id:'gift2608a',tk5:1,n:'🎫 ★5確定チケット'};
+/* ⛔(195)**配布を止めた**(2026-08-07ユーザー指示「星5確定チケットは無し」)。
+   ⚠**書き戻す時は id を変えないこと**(変えると受け取り済みの人にもう1枚渡る)=`{id:'gift2608a',tk5:1,n:'🎫 ★5確定チケット'}` */
+const GIFT=null;
 let GIFT_NEW=0;
 try{if(GIFT&&GIFT.id){
  if(!META.gft||typeof META.gft!=='object')META.gft={};
@@ -2412,7 +2414,9 @@ const devAll=()=>DEV&&!(META.devRaw||0);
    ⭐**素モードで見たいのは「研究所で何を買ったか」が試合にどう効くか**なので、
      買う元手(🧬)を絞る意味は無い。⚠**絞るのは持ち物(ot/ou)と、ゲーム中の⚙️🔩の方**。 */
 function devTop(){if(!DEV)return;META.pts=DEV_INF;
- if(!devAll())return;META.gem=DEV_INF;META.hmat=DEV_INF;META.tk5=99;META.luck=9;
+ /* ⛔(195)**🎫★5確定チケットと💫幸運チケットの底上げは外した**(2026-08-07ユーザー指示で両方の配布を止めたため)。
+    ⚠**配布を戻す時はここも戻す**=`META.tk5=99;META.luck=9;`(見られない物を底上げしても混乱するだけ) */
+ if(!devAll())return;META.gem=DEV_INF;META.hmat=DEV_INF;
  if(!Array.isArray(META.bres))META.bres=[0,0,0];
  for(let i=0;i<3;i++)META.bres[i]=99999;}
 devTop();
@@ -4061,7 +4065,10 @@ const ZOMBIES=[
  {id:'ooze',n:'スライム状体',hp:320,sp:44,bt:62,dmg:3,mw:10,noblock:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
  /* ↓中盤以降の強敵 */
  {id:'brut',n:'ブルート',hp:420,sp:74,bt:74,dmg:3,mw:8,armor:1,w:.5,sc:1.3,aoe:2,atk:59,ar:.9,c:'#8a4a3a',dsc:'太い腕で2体まとめて薙ぎ払う'},
- {id:'stlk',n:'ストーカー',hp:560,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
+ /* ⬇(195)**HPを下げた**(2026-08-07ユーザー「ストーカーのHPが高くて倒せない」)=560→360。
+    ⚠速さ190はそのまま=**この個体の怖さは足の速さ**であって硬さではない。
+    📌並び:クローラー300 < ここ360 < ブルート420。⚠②の同じ役どころ(影サメ)は195。 */
+ {id:'stlk',n:'ストーカー',hp:360,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
  {id:'wrth',n:'レイス',hp:300,sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
  {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,aoe:3,atk:78,ar:1.1,c:'#39424c',dsc:'重い盾で3体まとめて薙ぎ払う'},
  /* ⚔⭐(124)**ボスの攻撃力を約1.9倍にした**(ユーザー「ボスの攻撃力が低いからもっと強くして」)。
@@ -4172,7 +4179,10 @@ const UNITS=[
  {id:'gun',n:'ガンナー',cost:44,cd:4,hp:236,atk:49,rate:.8,rng:220,sp:56,type:'bullet',c:'#5c7d8a',dsc:'基本の射撃手'},
  /* 🛡壁役はすり抜け敵も抱えられる(2026-08-04(140)ユーザー指示「盾兵と城塞兵も鎖兵と一緒で足止め適正」)。
     ⚠盾の派生(大盾兵/鉄壁/城塞兵)は `mkVar` が Object.assign で丸ごと写すので hook を自動で引き継ぐ */
- {id:'shd',n:'盾持ち',cost:60,cd:6,hp:4500,atk:3,rate:1,rng:36,sp:46,type:'melee',hook:3,c:STEEL,dsc:'攻撃力は皆無。ただひたすら硬い本物の壁。這う敵も盾で受け止める(3体)'},
+ /* ⬇(195)**HPを下げた**(2026-08-07ユーザー「盾兵のhpが高すぎて強すぎる」)=4500→2400。
+    ⚠出撃コスト60でHP4500は、コスト120の重装盾(6500)にほぼ並んでいた=**壁の順番が壊れていた**。
+    ⚠派生(大盾兵1.45/鉄壁2/城塞兵2.8)は倍率なので、ここを下げると3段まとめて下がる。 */
+ {id:'shd',n:'盾持ち',cost:60,cd:6,hp:2400,atk:3,rate:1,rng:36,sp:46,type:'melee',hook:3,c:STEEL,dsc:'攻撃力は皆無。ただひたすら硬い本物の壁。這う敵も盾で受け止める(3体)'},
  {id:'mol',n:'火炎瓶',cost:72,cd:7,hp:345,atk:83,rate:1.6,rng:180,sp:50,type:'fire',aoe:70,burn:12,c:'#c96b35',dsc:'範囲燃焼・装甲無視'},
  {id:'grn',n:'爆弾兵',cost:86,cd:8,hp:376,atk:133,rate:1.9,rng:240,sp:50,type:'blast',aoe:75,c:'#7d8a5c',dsc:'山なり範囲爆撃'},
  {id:'frz',n:'冷凍兵',cost:96,cd:8.5,hp:402,atk:20,rate:1.1,rng:150,sp:48,type:'frost',aoe:110,c:'#7fb6c9',dsc:'範囲を凍らせ減速'},
@@ -23698,12 +23708,18 @@ const LUCK_DAYS=[1,3,5,10]; /* 何日目に配るか */
    ⚠**もう貰ったチケットは取り上げない**(手に入れた物を消すのは筋が悪い)=日数だけ0に戻す。
    ⚠**上げるのは配り直したい時だけ**=軽い気持ちで上げると、10日目まで進めた人が振り出しに戻る。 */
 const LUCK_GEN=3;/* ⚠2026-08-03(123)にユーザー指示でもう一度配り直した(2→3) */
+/* ⛔⭐(195)**一旦まるごと止めた**(2026-08-07ユーザー指示「幸運チケットも一旦無くして」)=
+   **配らない・札を出さない・使えない**の3つをこの1つで切っている。
+   ⚠**持っている枚数は消していない**(手に入れた物を取り上げるのは筋が悪い)=
+     `LUCK_OFF=0` に戻せば、日数のつづきから元どおり動く。 */
+const LUCK_OFF=1;
 let LUCKT=0;                /* いま効いている残り秒(⚠セーブしない=起動ごとに切れる) */
 const luckOn=()=>LUCKT>0;
 const luckX=()=>luckOn()?LUCK_X:1;
 const luckSp=()=>luckOn()?LUCK_SP:1;
 /* その日の初回起動なら通算日数を1つ進めて、配る日なら1枚渡す。戻り値=配ったら日数 */
 function luckLogin(){
+ if(LUCK_OFF)return 0;/* ⛔(195)止めている間は日数も進めない(再開したら続きから) */
  /* ⚠(118)配布の版が変わっていたら**日数を振り出しに戻す**(=今からもう一度1日目) */
  if((META.lgG|0)!==LUCK_GEN){META.lgG=LUCK_GEN;META.lgD='';META.lgN=0;}
  const k=bnsDayKey();
@@ -23717,6 +23733,7 @@ function luckLogin(){
 }
 /* 使う。⚠**残っている間は二度押ししない**(重ねても意味が無いのに1枚減る) */
 function luckUse(){
+ if(LUCK_OFF)return false;/* ⛔(195) */
  if(luckOn())return false;
  if((META.luck|0)<1)return false;
  META.luck=(META.luck|0)-1;LUCKT=LUCK_T;saveMeta();
@@ -23728,6 +23745,7 @@ function luckUse(){
 /* 札の見た目を合わせる。⚠**持っていない かつ 効いていない**なら丸ごと隠す */
 function luckUpd(){
  const b=$('luckbar');if(!b||!b.style)return;
+ if(LUCK_OFF){b.style.display='none';b.classList.remove('on');return;}/* ⛔(195)札ごと出さない */
  const n=META.luck|0;
  b.style.display=(n>0||luckOn())?'block':'none';
  b.classList.toggle('on',luckOn());
@@ -28447,12 +28465,14 @@ function tutSteps(){return[
  {id:'unit',scr:'game',t:'主役は生存者部隊だ',
   m:'下のデッキから出撃させろ。部隊は WAVE を跨いで戦い続ける。',
   hi:{k:'dom',s:'#deck'},ok:C=>C.units.length>0},
- {id:'flag',scr:'game',t:'🚩集結旗で戦線を張る',
-  m:'🚩を押してから地点をタップ。部隊はそこまで前進して敵を食い止める。',
-  hi:{k:'dom',s:'#flagbtn'},pre:C=>{TUT.mk=C.flagD;},ok:C=>C.flagD!==TUT.mk},
- {id:'strike',scr:'game',t:'🎯航空支援を落とせ',
-  m:'チャージが溜まるたび撃てる。🎯を押してから落とす地点をタップ。',
-  hi:{k:'dom',s:'#strikebtn'},pre:C=>{C.charge=1;},ok:C=>C.charge<1},
+ /* 🚩🎯(195)⭐**道の上にも輪を出す**(ユーザー指示)=`mk:'path'`。
+    ⚠ボタンだけ光らせていたので「押したあと、どこをタップするのか」が分からなかった。 */
+ {id:'flag',scr:'game',t:'🚩集結旗は道の上に立てる',
+  m:'🚩を押してから、光っている道の上をタップ。部隊はその地点まで前進して敵を食い止める。',
+  hi:{k:'dom',s:'#flagbtn'},mk:'path',pre:C=>{TUT.mk=C.flagD;},ok:C=>C.flagD!==TUT.mk},
+ {id:'strike',scr:'game',t:'🎯航空支援は道の敵に落とす',
+  m:'チャージが溜まるたび撃てる。🎯を押してから、光っている道の上をタップ。そこへ爆撃が落ちる。',
+  hi:{k:'dom',s:'#strikebtn'},mk:'path',pre:C=>{C.charge=1;},ok:C=>C.charge<1},
  /* ⚠**1波目の前には作戦タイムのパネルが出ない**(2波目以降だけ)。
     ここで「✅配置完了!」を押させようとすると、見えないボタンを待つことになり
     しかも時間も止めているので**永久に進めなくなる**(2026-07-26に踏んだ)。
@@ -28595,6 +28615,9 @@ function tutPtr(){
  const hi=TUT&&TUT.on&&TUT.hi;
  let el=null;
  try{if(hi&&hi.k==='dom'&&!PAUSED)el=document.querySelector(hi.s);}catch(e){}
+ /* 🚩🎯(195)**狙っている最中はボタンから印を外す**=盤面の輪(道)が主役になる。
+    ⚠外さないとスポットライトが盤面を45%暗く落としたままで、道の輪が沈んで見える。 */
+ if(el&&(AIM||FLAGAIM)&&(TUT.st[TUT.i]||{}).mk==='path')el=null;
  let r=null;try{r=el&&el.getBoundingClientRect();}catch(e){}
  if(!r||(!r.width&&!r.height)){p.classList.remove('on');
   if(s9&&s9.classList)s9.classList.remove('on');return;}
@@ -28701,6 +28724,21 @@ function tutHi(hi){
 function tutMark(c,C,t){
  const hi=TUT&&TUT.on&&TUT.hi;
  if(!TUT||!TUT.on)return;
+ /* 🚩🎯(195)⭐**道の上にも印を出す**(2026-08-07ユーザー指示「下のボタンをタップする時しか
+    黄色い表示がないから、道に旗を建てる/砲撃を道の敵に撃つって分かるようにして」)。
+    ⚠🚩も🎯も**ボタンを押してから道をタップする2段構え**なので、ボタンだけ光らせても行き先が伝わらない。
+    ⭐砲撃の段は**敵が居ればその先頭に寄せる**(「道の敵に撃つ」が絵で分かる)。 */
+ {const S9=TUT.st[TUT.i]||{};
+  if(S9.mk==='path'){
+   /* ⚠**候補の中から画面の下寄りの点を選ぶ**=上の帯(説明文)に矢印が食われるため。
+      ⭐候補はどれも旗の既定(.55)より前=「前へ出す」向きは変わらない。 */
+   let d=0,by=-1e9;
+   if(PATH&&PATH.length)for(const q of [.30,.36,.42,.48]){
+    const pp=pathPos(PLEN*q);if(pp&&pp[1]>by){by=pp[1];d=PLEN*q;}}
+   if(S9.id==='strike'&&C&&C.zombies)for(const z of C.zombies){if(!z.dead&&z.d>0&&z.d<PLEN*.9&&z.d>d)d=z.d;}
+   const p9=(PATH&&PATH.length)?pathPos(d):null;
+   if(p9)tutRing(c,p9,58,t,false);
+   return;}}
  /* ⭐建てる段(sl:1)でも、建設メニューを閉じていたら印を出し直す
     =押す所が分からないまま塞がれている状態を作らない(第89弾) */
  /* ⭐**slotI**=マス番号を決め打ちで光らせる(工房枠・支援枠。2026-07-27)。
@@ -28710,10 +28748,15 @@ function tutMark(c,C,t){
  if(!sl&&!(hi&&hi.k==='core'))return;
  const p=(hi&&hi.k==='core')?PATH[PATH.length-1]:SLOTS[si2>=0?si2:tutSlot(C)];
  if(!p)return;
- const pu=(Math.sin(t*4)+1)*.5,r=(hi.k==='core'?86:52)+pu*10;
+ tutRing(c,p,(hi.k==='core'?86:52),t,true);
+}
+/* 光る輪+下向きの矢印。⚠**盤面の座標のまま**描く。dim=まわりを暗く落とすか
+   (ボタンを光らせている段は画面側のスポットライトが既に落としているので二重に落とさない) */
+function tutRing(c,p,r0,t,dim){
+ const pu=(Math.sin(t*4)+1)*.5,r=r0+pu*10;
  c.save();
  /* ⭐(98)まわりを暗く落として輪を主役に(「黄色の丸が薄い」対策=DOM側のスポットライトと同じ言い方) */
- {const dg=c.createRadialGradient(p[0],p[1],r+8,p[0],p[1],r+360);
+ if(dim){const dg=c.createRadialGradient(p[0],p[1],r+8,p[0],p[1],r+360);
   dg.addColorStop(0,'rgba(10,8,6,0)');dg.addColorStop(.3,'rgba(10,8,6,.32)');dg.addColorStop(1,'rgba(10,8,6,.32)');
   c.fillStyle=dg;c.fillRect(p[0]-1200,p[1]-1200,2400,2400);}
  c.strokeStyle='rgba(255,243,192,.95)';c.lineWidth=13;c.globalAlpha=.5+pu*.3;
@@ -29371,7 +29414,9 @@ function introNext(){
    af9=afZ(Z);
    const tag=[];if(Z.armor)tag.push('装甲');
    if(Z.scl)tag.push('鱗の鎧');
-   if(Z.noblock)tag.push('すり抜け(鎖使いだけが止められる)');
+   /* 🛡(195)⚠**「鎖使いだけ」は古い**(2026-08-04(140)に壁役も止められるようにした)=
+      編成やデッキで**🛡印が付いている部隊**が止められる、という言い方に直した(ユーザー指示) */
+   if(Z.noblock)tag.push('すり抜け(🛡印の部隊だけが止められる)');
    if(Z.aura)tag.push('周囲を加速させる');if(Z.split)tag.push('倒すと弾けて分裂(周りの部隊を巻き込む)');if(Z.boss)tag.push('ボス');if(Z.aoe)tag.push('薙ぎ払い'+Z.aoe+'体');
    ds=tag.length?tag.join(' ／ '):'ごく普通の個体。数で押してくる。';
    st='HP'+Z.hp+' ／ 速さ'+Z.sp+' ／ 報酬⚙️'+Z.bt;

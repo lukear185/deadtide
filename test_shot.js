@@ -23,6 +23,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
   ['ed+edt=<秒>','🎬区切りの幕'],['arena=…','🧪検証場'],['title+bus','🚌ゾンビバス'],
+  ['tut=<段id>[:aim]','🎓チュートリアルのその段(例 tut=flag / tut=strike:aim)'],
  ];
  console.log('📷 test_shot.js — 実画面のスクリーンショット');
  console.log('  使い方: node test_shot.js <出力png> <幅> <高さ> "<オプション>"');
@@ -55,6 +56,8 @@ function coarseCSS(s){
   out+=s.slice(i+k.length,j-1)+'\n';from=j;}
  return out;}
 const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
+/* 🎓(195)tut=<段のid>[:aim] = チュートリアルのその段を撮る(例 tut=flag / tut=strike:aim) */
+const TUTS=/(^|\+)tut=([a-z0-9]+)(:(aim))?(\+|$)/.exec(OPT)&&(()=>{const m=/(^|\+)tut=([a-z0-9]+)(:(aim))?(\+|$)/.exec(OPT);return [m[0],m[2],null,m[4]||''];})();
 const GC=OPT.indexOf('gacha')>=0;/* gacha = タイトルの英雄召集を10連した状態で撮る */
 const NB=OPT.indexOf('nmboss')>=0;/* nmboss = 🌑ナイトメア(獣プール)で撮る */
 /* ⭐bns = 🚌ボーナス面「バスの日」(四方から+バス)。⚠st2 と併せるとステージ2の面になる */
@@ -317,6 +320,12 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(RPGK==='s'?'RG.md={k:"stat"};':'')
        +'RG.fade=0;rgStep(0.02);')
      :SFXT?'openSfxTest();'
+     /* 🎓(195)**チュートリアルの1段を撮る**(例 "dev+tut=flag" / "dev+tut=strike:aim")。
+        ⚠段は id で指定する(tutSteps の id)。`:aim` を付けると🚩/🎯を押した後(狙っている最中)。
+        ⚠これが無いとチュートリアルは撮れなかった=段を進めるのに何度もタップが要るため。 */
+     :TUTS?('tutStart();var i9=TUT.st.findIndex(function(s){return s.id==="'+TUTS[1]+'";});'
+       +'if(i9<0)throw new Error("チュートリアルの段 '+TUTS[1]+' が無い");tutGo(i9);'
+       +(TUTS[3]?('if("'+TUTS[3]+'"==="aim"){if(TUT.st[i9].id==="flag")setFlagAim(true);else setAim(true);}'):''))
      /* ⚠**pose= と grid= は戦闘を始めない**(タイトルのまま)。既定の `startSolo()` に落ちると
         仮想時間ぶんの試合が丸ごと走って**撮影が1分以上終わらない**(実際に何度も固まった)。
         どちらも canvas を全面に被せて絵を並べるだけなので盤面は要らない。 */
