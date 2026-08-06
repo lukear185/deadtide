@@ -1405,6 +1405,11 @@ body.perf #perfbox{display:block}
  font-size:12px;background:rgba(24,20,16,.66);color:var(--pane);border:2px solid var(--paper2);
  box-shadow:none;opacity:0;transition:opacity .5s linear}
 #scr-boot.mv #bt-op-skip{opacity:.9}
+/* 🔈音を出す札=**左上**(⏭スキップの反対側に置く=押し間違えない)。⚠鳴っていない時だけ出す */
+#bt-op-snd{position:absolute;left:8px;top:8px;z-index:3;min-height:44px;padding:0 14px;
+ font-size:12px;background:rgba(24,20,16,.66);color:var(--pane);border:2px solid var(--gold);
+ box-shadow:none;display:none}
+#bt-op-snd.on{display:block}
 </style>
 </head>
 <body>
@@ -1416,6 +1421,8 @@ body.perf #perfbox{display:block}
   <canvas id="op-cv"></canvas>
   <div id="op-cap"></div>
   <button class="btn" id="bt-op-skip">⏭ スキップ</button>
+  <!-- 🔈押しても幕は飛ばない札(ブラウザが音を止めている時だけ出る) -->
+  <button class="btn" id="bt-op-snd">🔈 音を出す</button>
 </div>
 
 <div class="scr on" id="scr-title">
@@ -2788,8 +2795,10 @@ function ensureAC(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioC
  /* ⚠効果音の素材はここで初めて展開する(AudioContextはユーザー操作の後でしか作れないため) */
  try{sfxLoad();}catch(e){}
  /* ⭐タイトルBGMもここで始める。⚠**起動直後は AudioContext が作れない**ので、
-    show('title') の時点では鳴らせない=最初のタップでここへ来た時に鳴り始める。 */
- try{if(SCR&&SCR!=='game')tbgmOn();}catch(e){}}
+    show('title') の時点では鳴らせない=最初のタップでここへ来た時に鳴り始める。
+    🎬⚠**起動の幕が流れている間は幕のBGM**(タイトルのBGMを被せない) */
+ try{if(typeof OP!=='undefined'&&OP.on)obgmOn();
+  else if(SCR&&SCR!=='game')tbgmOn();}catch(e){}}
 /* ⚠⚠**合成音(beep/groan/nzHit)は素材の音と違って SFXVOL を通っていなかった**(2026-07-27に気づいた)。
    そのため**⚙オプションの『全体』を下げても、合成音だけ元の大きさで鳴っていた**。
    ⚠BGMは bgb() で VOL.bgm を掛けてからここへ来るので、全体×BGM の掛け算になる(意図どおり)。 */
@@ -3679,7 +3688,9 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
  /* ⚠🔊音の確認画面(?sfx=1)では鳴らさない=1つずつ聴き比べる画面なので邪魔になる */
  try{if(SFXTEST)return;}catch(e){}
  tbgmStep=0;
+ /* 🎬⚠**起動の幕の間は黙る**=幕には幕のBGMがある(二重に鳴らさない) */
  tbgmTimer=setInterval(()=>{if(!AC||muted||SCR==='game')return;
+  if(typeof OP!=='undefined'&&OP.on)return;
   const s=tbgmStep%TB_LOOP,f=TBGM[s%16];
   /* ⭐**1周かけて盛り上がって、また静かに戻る**(2026-07-27ユーザー指示
        「BGMをある程度流したら若干盛り上がってくる感じに。1サイクルしたらまた最初の落ち着いた感じに」)。
@@ -3708,6 +3719,55 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
   if(s%16===13&&Math.random()<.5)nzHit(700,180,2.2,.137*vol*VOL.bgm,1);/* ③遠くの風 */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
+/* ============ 🎬⭐⭐ 起動の幕のBGM(2026-08-07(201)ユーザー指示) ============
+   ⭐**タイトルのBGMとは別物**にする(ユーザー指示「タイトル画面のBGMとムービー中のBGM別で作って」)。
+   ⭐⭐**カットごとに曲が変わる**=幕は8カットあって場面の温度が全部違うので、
+     1曲を流しっぱなしにすると絵と喧嘩する。**表(OB_CUT)に1カット1行**だけ持たせる。
+   ⚠**音楽素材は足さない**(1曲で数MB)=タイトルBGMと同じくその場で合成する。
+   ⚠**同じ道具で作る**(bgb/nzHit)=音の作り方を2つ持たない。
+   dr=下に敷く音 / mel=旋律(0=休み) / len=1音の長さ / beat=何歩ごとに打点 / nz=何歩ごとに軋み */
+const OB_MS=480;                     /* 1歩の長さ(ms)。⚠16歩でだいたい1カット */
+const OB_CUT=[
+ /* ①なんでもない朝=明るい和音。⚠**ここだけ長調**(後の落差が全部ここで決まる) */
+ {dr:131,drV:.10,mel:[262,0,0,330,0,0,392,0],mV:.11,ty:'triangle',len:2.0},
+ /* ②空の色が変わる=同じ形のまま**半音下げて濁らせる**。⚠別の曲にしない=「変わった」が伝わらない */
+ {dr:131,drV:.11,mel:[262,0,0,311,0,0,370,0],mV:.11,ty:'triangle',len:2.0,beat:4,bf:62,bV:.09},
+ /* ③灯りが消えていく夜=**ほとんど鳴らさない**。⚠静けさも曲のうち */
+ {dr:98,drV:.09,mel:[0,0,0,0,0,0,0,233],mV:.09,ty:'triangle',len:3.0},
+ /* ④群れが歩きだす=**心臓の打点**+半音でにじり寄る旋律 */
+ {dr:110,drV:.08,mel:[220,0,233,0,220,0,207,0],mV:.10,ty:'triangle',len:1.4,beat:2,bf:55,bV:.12},
+ /* ⑤崩れていく街=一番うるさい所。⚠**下がり続ける旋律**+軋み */
+ {dr:87,drV:.10,mel:[175,165,147,131,147,131,117,110],mV:.12,ty:'sawtooth',len:.9,beat:2,bf:49,bV:.13,nz:4},
+ /* ⑥高架下の焚き火=**温かい短調**。⚠人の場面なので打点を入れない */
+ {dr:98,drV:.10,mel:[196,0,233,0,262,0,233,0],mV:.10,ty:'triangle',len:2.2},
+ /* ⑦呼べば応える者がいた=**昇っていく**。⚠ここだけオクターブ上を重ねる */
+ {dr:196,drV:.07,mel:[262,330,392,523,392,330,262,0],mV:.10,ty:'triangle',len:1.2,hi:1},
+ /* ⑧出発=**歩き出す拍**+昇る旋律(①の和音に戻る=一巡したと分かる) */
+ {dr:131,drV:.10,mel:[262,262,330,392,440,392,330,262],mV:.12,ty:'triangle',len:1.0,beat:2,bf:87,bV:.10}
+];
+let obgmTimer=null,obgmStep=0,obgmCi=-1;
+function obgmOn(){if(obgmTimer||!AC)return;
+ try{if(SFXTEST)return;}catch(e){}
+ obgmStep=0;obgmCi=-1;
+ tbgmOff();/* ⚠タイトルBGMと二重に鳴らさない */
+ obgmTimer=setInterval(()=>{
+  if(!AC||muted)return;
+  if(typeof OP==='undefined'||!OP.on){obgmOff();return;}
+  /* 開発名の間=下に敷く音を1回だけ(⚠曲にしない=名前を見せるだけの所) */
+  if(OP.ph===0){if(obgmStep===0){bgb(131,131,2.8,'triangle',.085);bgb(196,196,2.4,'sine',.045);}
+   obgmStep++;return;}
+  /* ⚠**何カット目かは OP_CT から出す**(秒を直に書かない=幕の側と必ず食い違う) */
+  let ci=0;while(ci<OP_CT.length-1&&OP.t>=OP_CT[ci])ci++;
+  if(ci!==obgmCi){obgmCi=ci;obgmStep=0;}/* ⚠カットが変わったら旋律を頭から */
+  const C=OB_CUT[ci]||OB_CUT[0],s=obgmStep;
+  if(s%4===0)bgb(C.dr,C.dr*.995,OB_MS*4/1000+.8,'triangle',C.drV);
+  const f=C.mel[s%C.mel.length];
+  if(f)bgb(f,f*.997,C.len,C.ty,C.mV);
+  if(C.hi&&f)bgb(f*2,f*2,.8,'triangle',.042);
+  if(C.beat&&s%C.beat===0)bgb(C.bf,C.bf*.7,.30,'sawtooth',C.bV);
+  if(C.nz&&s%C.nz===2)nzHit(300,120,.6,.11*VOL.bgm,1);
+  obgmStep++;},OB_MS);}
+function obgmOff(){if(obgmTimer)clearInterval(obgmTimer);obgmTimer=null;}
 document.addEventListener('pointerdown',ensureAC);
 document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
 document.addEventListener('dblclick',e=>{try{e.preventDefault();}catch(x){}});/* 連打によるダブルタップズーム抑止 */
@@ -32725,6 +32785,7 @@ function opPhase(p){
  OP.ph=p;OP.t=0;OP.cap=-2;
  const el=$('op-cap');if(el){el.textContent='';el.classList.remove('on');}
  const bx=$('scr-boot');if(bx)bx.classList.toggle('mv',p===1);
+ try{opSndBtn();}catch(e){}
  opCap();try{opDraw();}catch(e){}
 }
 /* ⏭スキップ=①開発名の間はオープニングへ / ②オープニング中はタイトルへ(ユーザー指示) */
@@ -32736,6 +32797,9 @@ function opEnd(){
  OP.on=0;
  const bx=$('scr-boot');if(bx){bx.classList.add('off');bx.classList.remove('mv');}
  const el=$('op-cap');if(el)el.classList.remove('on');
+ /* 🎵幕のBGMを止めて、タイトルのBGMへ渡す */
+ try{obgmOff();}catch(e){}
+ try{if(AC&&SCR!=='game')tbgmOn();}catch(e){}
 }
 /* 好きな所へ飛ばす(🛠撮影と検査の口)。⚠ヘッドレスは rAF がほとんど回らないのでこれが要る */
 function opSeek(ph,t9){OP.on=1;OP.ph=ph;OP.t=t9;OP.cap=-2;
@@ -32748,8 +32812,29 @@ function opStart(){
  bx.classList.remove('off');
  /* ⚠**どこを押してもスキップ**(札は「押せると分かるための印」) */
  bx.onclick=()=>{try{if(sfx.tap)sfx.tap();}catch(e){}opSkip();};
+ /* 🔈⭐⭐**音を出す札**(2026-08-07(201))。
+    ⚠⚠**ブラウザは「画面を1回触るまで音を鳴らせない」**=起動直後の幕は本来かならず無音になる。
+      ⚠しかも**触ると幕が飛ぶ**ので、普通にしていると幕のBGMを聴く機会が一度も無い。
+    ⭐**この札だけは押しても飛ばない**(`stopPropagation`)=ここで音が始まる。
+    ⚠**音が出せた時は自分で消える**(用が済んだ物を残さない)。 */
+ const sb=$('bt-op-snd');
+ if(sb){sb.onclick=e=>{try{e.stopPropagation();}catch(x){}
+   try{ensureAC();}catch(x){}
+   try{obgmOn();}catch(x){}
+   opSndBtn();};}
+ /* ⭐**鳴らせるなら黙って鳴らす**(PCや、前に触ったことのある端末では大抵こちらで鳴る)。
+    ⚠**ここで `ensureAC()` を呼ばない**=あれは効果音の素材を全部展開するので、
+      幕が始まった瞬間に絵が引っかかる。**音の口だけ**先に開ける。
+    ⚠`resume()` はすぐには効かないので、少し待ってから鳴るかどうかを見る。 */
+ try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+  if(AC&&AC.state==='suspended')AC.resume();}catch(e){}
+ /* ⚠**札を先に出さない**=鳴らせる端末では0.35秒だけ点いて消える(壊れて見える) */
+ setTimeout(()=>{try{if(OP.on&&AC&&AC.state==='running')obgmOn();opSndBtn();}catch(e){}},350);
  try{opDraw();}catch(e){}
 }
+/* 🔈札の出し入れ=鳴っていない時だけ出す */
+function opSndBtn(){const sb=$('bt-op-snd');if(!sb||!sb.classList)return;
+ sb.classList.toggle('on',!!(OP.on&&!obgmTimer));}
 
 /* ============ ⚔ 冒険(育成RPG・鍛錬所の中身) ============
    2026-07-26(第54弾)。⚠**TDとは全く別のゲーム**として作る(ユーザー決定)。
