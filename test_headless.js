@@ -887,9 +887,12 @@ function checkPerUp(){
    return me.zombies.filter((z,i)=>h0[i]-z.hp>0).length;};
   const c0=chainHit('tesla',0),c3=chainHit('tesla',LINE_MAX);
   if(!(c0>0)){console.log('FAIL: テスラコイルが1体にも当たっていない');process.exit(1);}
-  const wantC=TW_TRAIT.elec.v*LINE_MAX;
-  if(c3-c0!==wantC){console.log('FAIL: テスラの連鎖が Lv'+LINE_MAX+'で+'+wantC+'体にならない ('+c0+'体→'+c3+'体)');process.exit(1);}
-  console.log('電撃の連鎖: 素'+c0+'体 → 研究所Lv'+LINE_MAX+'で'+c3+'体(実際に当たった数を数えた) OK');}
+  /* ⚡⭐(197)**テスラコイルは連鎖ではなく「同時攻撃」**になった(素1体→強化で上限まで)。
+     ⚠連鎖するのは重テスラの方=あちらは1跳ねずつ時間をかけて伝わるのでこの測り方では数えられない。 */
+  const TS9=TOWERS[TOWERS.findIndex(t=>t.id==='tesla')];
+  if(c0!==TS9.emul){console.log('FAIL: テスラコイルの素の同時攻撃数が'+TS9.emul+'でない ('+c0+')');process.exit(1);}
+  if(c3!==TS9.emax){console.log('FAIL: テスラコイルが強化MAXで'+TS9.emax+'体にならない ('+c3+')');process.exit(1);}
+  console.log('⚡同時攻撃: テスラコイル 素'+c0+'体 → 研究所Lv'+LINE_MAX+'で'+c3+'体 / 重テスラは連鎖'+TOWERS[TOWERS.findIndex(t=>t.id==='coil')].chain+'→上限'+TOWERS[TOWERS.findIndex(t=>t.id==='coil')].cmax+' OK');}
  /* --- ③ 工房の3段は1つの枠を共有する(建て替えで無駄にならない) --- */
  {const ks=['scrap','scrap2','scrap3'].map(id=>twKey(TOWERS[TOWERS.findIndex(t=>t.id===id)]));
   if(new Set(ks).size!==1){console.log('FAIL: 工房の3段が別々の強化枠になっている ['+ks.join(',')+']');process.exit(1);}
@@ -907,7 +910,8 @@ function checkPerUp(){
   META.tw={};const a0=inc('scrap');
   if(!(a>a0)){console.log('FAIL: 工房を鍛えても産出が増えない '+a0+'→'+a);process.exit(1);}}
  /* --- ④ 支援施設は強化の対象にしない --- */
- META.tw={};ownN(T_PLAY-BASE_T,null);ownN(null,U_N-BASE_U);renderLab();/* 全部解放した状態で数える */
+ /* ⚠(197)**棚の数で数える**=棚には支援施設も載っているので T_PLAY-BASE_T では足りない */
+ META.tw={};ownN(UNL_T.length,null);ownN(null,UNL_U.length);renderLab();/* 全部解放した状態で数える */
  {const rows=LAB_ITEMS.filter(o=>o.cat==='twup');
   const supN=TOWERS.filter(T=>T.type==='sup').length;
   /* ⚠「一覧に出ていないか」だけ見ると、支援施設は T_PLAY の外なので**構造上ぜったい落ちない検査**になる。
@@ -925,7 +929,9 @@ function checkPerUp(){
   const wantN=T_PLAY;
   if(rows.length!==wantN){console.log('FAIL: タワー強化の項目数が合わない 期待'+wantN+' 実際'+rows.length);process.exit(1);}
   const uns=LAB_ITEMS.filter(o=>o.cat==='unup');
-  if(uns.length!==U_N){console.log('FAIL: 兵科強化の項目数が合わない 期待'+U_N+' 実際'+uns.length);process.exit(1);}
+  /* ⚠(197)**棚から外した兵科は解放できない=強化の一覧にも出ない**ので、出るのは 最初の2種+棚の数 */
+  const wantU9=BASE_U+UNL_U.length;
+  if(uns.length!==wantU9){console.log('FAIL: 兵科強化の項目数が合わない 期待'+wantU9+' 実際'+uns.length);process.exit(1);}
   const st=LAB_ITEMS.filter(o=>o.k==='st0');
   if(st.length!==1){console.log('FAIL: 砲撃の威力強化が研究所に出ていない');process.exit(1);}
   /* まだ解放していないタワーは出さない */
@@ -2374,7 +2380,9 @@ function checkEvo(){
  /* 全部解放すれば基本8種+上級2種ぶん選べる */
  ownN(null,U_N-BASE_U);renderLab();
  const vs=LAB_ITEMS.filter(o=>o.k==='uv');
- if(vs.length<ALLVB.length){console.log('FAIL: 進化の選択肢が'+vs.length+'件しか出ていない(全解放なら'+ALLVB.length+'種ぶん出るはず)');process.exit(1);}
+ /* ⚠(197)**棚から外した兵科は本体を持てない=派生も出ない**ので、出るのは「持てる兵科の数」 */
+ {const want9=ALLVB.filter(b9=>uvBaseOK(b9)).length;
+  if(vs.length<want9){console.log('FAIL: 進化の選択肢が'+vs.length+'件しか出ていない(持てる兵科は'+want9+'種)');process.exit(1);}}
  /* 1つ買っても「次の段階」が同じ兵科で出る=段階は飛ばせない */
  const first=vs[0];META.uv.push(first.id);renderLab();
  const again=LAB_ITEMS.filter(o=>o.k==='uv');
@@ -2414,7 +2422,8 @@ function checkTeam(){
  for(const f of TEAM_FIX)if(t.indexOf(f)<0){console.log('FAIL: 固定枠('+f+')が編成に入っていない');process.exit(1);}
  for(let k=1;k<t.length;k++)if(t[k]<=t[k-1]){console.log('FAIL: 編成が安い順に並んでいない');process.exit(1);}
  /* ② 触った後(配列)=**自動で埋めない**。埋めると「外したのに戻る」になる */
- META.team=[UBASE[2].id];
+ /* ⚠(197)**棚に載っている兵科を選ぶこと**=どかした兵科(巨漢ほか)は持っていないので編成に入らない */
+ META.team=[UNL_U[0]];
  t=teamIdx();
  if(t.length!==TEAM_FIX.length+1){console.log('FAIL: 編成を触った後も自動で埋まっている '+t.length);process.exit(1);}
  /* ③ 解放費は「元の添字の UNITP」で引く=高い兵科ばかり選ぶと進まない */
@@ -2439,20 +2448,23 @@ function checkTeam(){
   if(metaUnitCap()!==BASE_U+3){console.log('FAIL: 研究所で解放したぶんがタイトルの編成に出ない '+metaUnitCap());process.exit(1);}}
  /* ⑥ ⭐**研究所で解放した兵科は、空きがあれば自動で編成に入る**(2026-08-02ユーザー指示) */
  {backTitle();
+  /* ⚠(197)**棚に載っている兵科で測る**=どかした兵科は解放できないので前提が崩れる */
+  const s9=UNL_U[0],si9=UB_IDX[s9];
   ownN(null,0);META.team=null;
-  if(teamAutoAdd(UBASE[BASE_U].id)!=='auto'){
+  if(teamAutoAdd(s9)!=='auto'){
    console.log('FAIL: 編成を触っていない人の team を勝手に配列にしている(以後の自動補充が止まる)');process.exit(1);}
   if(META.team!=null){console.log('FAIL: teamAutoAdd が未設定の編成を書き換えた');process.exit(1);}
   /* 触った状態で空きがある=入る */
   ownN(null,1);META.team=[];
-  if(teamAutoAdd(UBASE[BASE_U].id)!=='add'){console.log('FAIL: 解放した兵科が編成に自動で入らない');process.exit(1);}
-  if(teamIdx().indexOf(BASE_U)<0){console.log('FAIL: 自動で入れた兵科が編成に居ない');process.exit(1);}
+  if(teamAutoAdd(s9)!=='add'){console.log('FAIL: 解放した兵科が編成に自動で入らない');process.exit(1);}
+  if(teamIdx().indexOf(si9)<0){console.log('FAIL: 自動で入れた兵科が編成に居ない');process.exit(1);}
   /* 満杯なら入れない(何を外すかはプレイヤーが決める) */
-  ownN(null,U_N-BASE_U);META.team=[];
-  for(let i=TEAM_FIX.length;i<TEAM_N;i++)META.team.push(UBASE[i].id);
+  ownN(null,UNL_U.length);META.team=[];
+  for(let i=0;i<TEAM_N-TEAM_FIX.length;i++)META.team.push(UNL_U[i]);
   if(teamIdx().length!==TEAM_N){console.log('FAIL: 検査の前提が崩れている(編成が'+teamIdx().length+'体)');process.exit(1);}
-  if(teamAutoAdd(UBASE[TEAM_N].id)!=='full'){console.log('FAIL: 編成が満杯なのに押し込んでいる');process.exit(1);}
-  if(teamIdx().indexOf(TEAM_N)>=0){console.log('FAIL: 満杯の編成に'+TEAM_N+'体を超えて入っている');process.exit(1);}
+  {const ex=UNL_U[TEAM_N-TEAM_FIX.length];
+   if(teamAutoAdd(ex)!=='full'){console.log('FAIL: 編成が満杯なのに押し込んでいる');process.exit(1);}
+   if(teamIdx().indexOf(UB_IDX[ex])>=0){console.log('FAIL: 満杯の編成に'+TEAM_N+'体を超えて入っている');process.exit(1);}}
   META.team=null;ownN(null,0);}
  META.team=keep;ownN(null,0);
  console.log('🎒編成: 未設定なら安い順に'+TEAM_N+'体・触った後は自動で埋めない・解放費は元のコスト・上限'+TEAM_N+'体・タイトルでも解放済みだけ・解放した兵科は空きがあれば自動で入る OK');
@@ -3545,7 +3557,8 @@ function checkTrain(){
  /* 上限Lvを超えない・上限に達したら🔧を食わない */
  META.hmat=999999;
  for(let k=0;k<400;k++)trainGrind(h.id);
- if(hLv(h.id)!==TR_MAX){console.log('FAIL: 鍛錬Lvの上限が'+TR_MAX+'でない '+hLv(h.id));process.exit(1);}
+ /* ⚠(197)**上限は面のクリア数で開く**(trMax)=表の上限(TR_MAX=100)とは別物 */
+ if(hLv(h.id)!==trMax()){console.log('FAIL: 鍛錬Lvの上限が'+trMax()+'でない '+hLv(h.id));process.exit(1);}
  {const mm=META.hmat;trainGrind(h.id);
   if(META.hmat!==mm){console.log('FAIL: 上限に達しても🔧を消費している');process.exit(1);}}
  /* 鍛錬Lvが実際の英雄のHPに乗るか + 📖図鑑がソロの撃破で埋まるか */
@@ -4020,7 +4033,9 @@ function checkUnlock(){
  const sT=UNL_TN.reduce((a,b)=>a+b,0),sU=UNL_UN.reduce((a,b)=>a+b,0);
  if(sT!==UNL_T.length)F('塔の配分が合わない 配'+sT+'/種'+UNL_T.length);
  if(sU!==UNL_U.length)F('兵科の配分が合わない 配'+sU+'/種'+UNL_U.length);
- for(const id of UNL_T)if(TW_IDX[id]==null||TW_IDX[id]>=T_PLAY)F('棚の塔 '+id+' が TOWERS に無い');
+ /* ⚠(197)支援施設(🏥野戦病院/👟進軍旗)も棚に載せた=あちらは T_PLAY の外に居るので別扱い */
+ for(const id of UNL_T){const i9=TW_IDX[id];if(i9==null)F('棚の塔 '+id+' が TOWERS に無い');
+  if(i9>=T_PLAY&&TOWERS[i9].type!=='sup')F('棚の塔 '+id+' が解放チェーンの外に居る');}
  for(const id of UNL_U)if(UB_IDX[id]==null)F('棚の兵科 '+id+' が UBASE に無い');
  /* ② ⭐⭐(193)**棚は「面」のクリアで増える**(⚠拠点=面×難易度ではない。ここを取り違えて
        10面ぶんのつもりが2面で配り切っていた)。⚠🚌拠点開拓(BNS_D)は数えない。 */
@@ -4044,7 +4059,8 @@ function checkUnlock(){
   if(UNL_TN.length!==6||UNL_UN.length!==6)F('配分が5面ぶん(段0+5段)になっていない '
    +UNL_TN.length+'/'+UNL_UN.length);
   /* ⭐(193)**1面あたりの配りは「塔2種・兵科3種」**(ユーザーが決めた数字。段0は別枠) */
-  for(let i=1;i<UNL_TN.length;i++)if(UNL_TN[i]!==2)F('面'+i+'の塔が2種でない '+UNL_TN[i]);
+  /* ⭐(197)**1面あたり 塔4種・兵科3種**(最後の段だけ塔2種=種類数の端数) */
+  for(let i=1;i<UNL_TN.length-1;i++)if(UNL_TN[i]!==4)F('面'+i+'の塔が4種でない '+UNL_TN[i]);
   for(let i=1;i<UNL_UN.length;i++)if(UNL_UN[i]!==3)F('面'+i+'の兵科が3種でない '+UNL_UN[i]);}
  /* ②' ⭐(187D)**次の拠点で要る属性が、その手前の段で開く**
     =②沈んだ港(拠点7=段6の後に入る)の🐟鱗には⚡電撃が要る。段5までに並んでいなければ落とす。
@@ -4202,7 +4218,9 @@ function checkDesignNums(){
   ['ELEC_VS_SCALE(⚡電撃×🐟鱗)',ELEC_VS_SCALE,1.9],
   ['RPT_X(🧬配布の全体倍率)',RPT_X,1.2],
   ['STAGES[1].hpM(②沈んだ港の重さ)',STAGES[1].hpM,2],
-  ['TR_MAX(鍛錬Lvの上限)',TR_MAX,50],
+  /* ⭐(197)面のクリアで開く上限にした=表の上限は100(未クリアは20から) */
+  ['TR_MAX(鍛錬Lvの上限)',TR_MAX,100],
+  ['TR_CAP[0](未クリアの上限)',TR_CAP[0],20],
   ['BNS_TIME(🚌道中の締め切り)',BNS_TIME,75],
   ['BNS_DAY_N(🚌1日の回数)',BNS_DAY_N,5],
   ['BNS_RPT_K(🚌1体あたりの🧬)',BNS_RPT_K,.25],

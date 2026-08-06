@@ -3501,7 +3501,9 @@ const TW_SFX={rifle:'shot',shot:'shotgun',sniper:'snipe',gat:'gat',
  rifle2:'shot',shot2:'shot',net2:'net',flame2:'flame',tesla2:'zap',mortar2:'mortar',sniper2:'shot',
  gren2:'gren',cryo2:'cryo',laser2:'laser',acid2:'acid',drone2:'dronefx',arty2:'cannon',coil2:'zap2',
  railx:'rail',gat2:'shot',plasma2:'plasma',fort2:'fort',
-flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net'};
+flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net',
+ /* ⭐(197)新しい塔3台と、その進化先 */
+ bolt:'zap',bolt2:'zap2',bolt3:'zap2',pullt:'net',pullt2:'net',pullt3:'net',lamp:'cryo',lamp2:'cryo',lamp3:'cryo'};
 function twSfx(C,T){
  if(!C||!C.isMe||!T)return;
  const f=sfx[TW_SFX[T.id]];
@@ -3729,7 +3731,11 @@ const TOWERS=[
     狙っている間ずっと**1秒あたり dmg/rate** を与える=与える量は連射だった頃と同じで、
     1発ごとの弾・演出が丸ごと消える。⚠この2つは⏩連射の強化代を持たない(下の twStats)。 */
  {id:'flame',n:'火炎放射塔',cost:280,up2:'flame2',gc:2240,rng:145,dmg:8,rate:.14,type:'fire',cont:1,burn:14,fspl:62,c:'#c96b35',dsc:'炎を吹き続ける。装甲に特効(約1.9倍)・継続燃焼・周りにも1/4'},
- {id:'tesla',n:'テスラコイル',cost:340,up2:'tesla2',gc:2720,rng:195,dmg:44,rate:.95,type:'elec',chain:4,c:TECH2,dsc:'電撃が連鎖する(強化で連鎖数+)'},
+/* ⚡⭐(197)**雷塔**=いちばん最初に手に入る電撃(2026-08-07ユーザー決定「単体型のタレット」)。
+    ⭐**連鎖しない代わりに一発が重く、射程が長い**=テスラコイル(同時に何体も撃つ)と役をずらす。
+    ⚠②沈んだ港の🐟鱗はこれで殴る=面①クリアの棚に置く。 */
+ {id:'bolt',n:'雷塔',cost:260,up2:'bolt2',gc:2080,rng:250,dmg:140,rate:1.35,type:'elec',chain:1,c:'#7fb6c9',dsc:'狙った1体だけを撃つ雷。連鎖はしないが一発が重く射程が長い'},
+ {id:'tesla',n:'テスラコイル',cost:340,up2:'tesla2',gc:2720,rng:195,dmg:44,rate:.95,type:'elec',emul:1,emax:5,trait:{k:'chain',v:.25,t:'同時攻撃+0.25体'},c:TECH2,dsc:'複数の敵へ同時に電撃を飛ばす(強化で最大5体まで)。連鎖はしない'},
  /* ⚠威力は2026-08-02に **85→100**(実戦DPS 50→58)。爆裂砲台を52に上げた結果、
     **解放費も建設費も上なのに入口の爆裂砲台に抜かれる**ようになったため、同じ回で直した。
     ⚠テスラコイル104より低いのは据え置き(射程470=次のスナイパー塔まで唯一の遠射という役割の差)。 */
@@ -3738,6 +3744,13 @@ const TOWERS=[
  /* ↓ここまでと次の冷却塔までが基本タワー=ゲーム内で⚙️解放できる10種(BASE_T=10) */
  /* frz=完全凍結の秒数(動けず殴れもしない)。⭐**凍っていない敵は必ず凍る**(2026-07-27に再凍結の耐性を廃止) */
  /* frzN=同じ敵を凍らせられる回数(❄冷却回数の強化で+1/段・最大10)。使い切った敵はもう凍らない */
+/* 🧲⭐(197)**引力塔**=支援(2026-08-07ユーザー決定)。**進んだ敵を引き戻して1か所へ固める**。
+    ⭐**すり抜ける敵も掴む**(道の上の位置そのものを動かすので、足の有無に関係ない)。
+    ⚠**前進はさせない**=引き戻す方向にしか動かさない(集めるために敵を進めては本末転倒)。 */
+ {id:'pullt',n:'引力塔',cost:380,up2:'pullt2',gc:3040,rng:230,dmg:4,rate:2.6,type:'net',slow:.5,slowT:1.4,pull:90,c:'#8f6fae',dsc:'範囲の敵を塔の位置まで引き戻して1か所に固める。すり抜ける敵も掴む'},
+ /* 💡⭐(197)**照明塔**=支援。**自分は撃たず、照らした敵が受けるダメージを増やす**。
+    ⭐弱点(×1.9)と掛け算になるので、その面の主役をさらに立てる働きをする。 */
+ {id:'lamp',n:'照明塔',cost:420,up2:'lamp2',gc:3360,rng:260,dmg:2,rate:3,type:'net',slow:.15,slowT:.6,lit:3.5,c:'#e8c45a',dsc:'照らした敵が受けるダメージが上がる(強化で範囲も伸びる)。自分はほとんど撃たない'},
  {id:'cryo',n:'冷却塔',cost:320,up2:'cryo2',gc:2560,rng:200,dmg:6,rate:6,type:'net',frz:2.1,frzN:5,slowT:4.5,c:'#7fb6c9',dsc:'範囲の敵を完全に凍結(動けず攻撃もできない)。同じ敵を凍らせられるのは5回まで(❄冷却回数で最大10回・進化しても増えない)'},
  /* ===== ここから下の10種が🔬研究所でしか解放できない(BASE_T=10・上から順に固定で出る) =====
     ⚠並び順がそのまま研究所に出る順番。入れ替えると既存プレイヤーの解放済み(META.nt)が別のタワーを指す */
@@ -3762,7 +3775,7 @@ const TOWERS=[
  {id:'arty',n:'重砲台',cost:640,up2:'arty2',gc:5120,rng:560,minr:190,dmg:130,rate:2.8,type:'blast',aoe:120,c:'#6b6b4a',dsc:'超重量の広範囲砲撃'},
  /* arcT=1跳ねにかかる秒数(テスラコイルは0=一瞬で全部)。grow=跳ねるたびの威力倍率・gmax=その上限。
     ⚠growは指数なので上限が無いと⚡連鎖数Lv5+研究所で青天井になる。必ずgmaxで頭を止めること */
- {id:'coil',n:'重テスラ',cost:700,up2:'coil2',gc:5600,rng:250,dmg:15,rate:1.1,type:'elec',chain:7,arcT:.1,grow:1.45,gmax:5,c:'#4fa8d9',dsc:'電流がゆっくり伝わり、跳ねるたびに威力が跳ね上がる(最大5倍)'},
+ {id:'coil',n:'重テスラ',cost:700,up2:'coil2',gc:5600,rng:250,dmg:15,rate:1.1,type:'elec',chain:5,cmax:10,arcT:.1,grow:1.7,gmax:6,c:'#4fa8d9',dsc:'電流がゆっくり伝わり、跳ねるたびに威力が跳ね上がる(最大5倍)'},
  /* beam=ビームの半幅。type は bullet のまま(撃ち方だけ線状にする) */
  {id:'rail',n:'レールガン',cost:680,up2:'railx',gc:5440,rng:900,dmg:310,rate:3,type:'beam',beam:26,pierce:1,prio:1,c:'#8f6fae',dsc:'超々射程のビーム砲。一番多く貫ける向きを自動で狙い、線上の敵を全部貫く(装甲貫通)'},
  /* ↓重テスラ(1つ上)より後に解放される4種は、必ず重テスラより強くなるよう数値を置く(2026-07-25ユーザー指示)。
@@ -3818,12 +3831,19 @@ const TOWERS=[
  {id:'shot2',n:'散弾要塞',base:'shot',grd:1,cost:600,rng:196,dmg:52,rate:.77,type:'bullet',multi:4,c:'#c4a06b',dsc:'四つ口から浴びせる散弾。4体同時'},
  {id:'net2',n:'鋼糸射出砲',base:'net',grd:1,cost:480,rng:202,dmg:4,rate:1,type:'net',slowT:2.6,c:'#8ac2b0',dsc:'鋼の糸で範囲の敵を強く縛る'},
  {id:'flame2',n:'業火放射塔',base:'flame',grd:1,cost:840,rng:162,dmg:16,rate:.14,type:'fire',cont:1,burn:27,fspl:78,c:'#e08a3a',dsc:'二又の火口が業火を吐き続ける。装甲に特効・強い継続燃焼'},
- {id:'tesla2',n:'雷神コイル',base:'tesla',grd:1,cost:1020,rng:218,dmg:88,rate:.81,type:'elec',chain:6,c:'#7fd0ef',dsc:'太い巻線から6体へ跳ぶ雷'},
+ {id:'tesla2',n:'雷神コイル',base:'tesla',grd:1,cost:1020,rng:218,dmg:88,rate:.81,type:'elec',emul:5,emax:5,trait:{k:'chain',v:.25,t:'同時攻撃+0.25体'},c:'#7fd0ef',dsc:'太い巻線から同時に5体へ撃つ。ここからは威力と射程を伸ばす'},
  /* ⚠素を85→100にしたので、決まり(威力×2.0)どおり 170→**200**(2026-08-02) */
  {id:'mortar2',n:'重迫撃砲',base:'mortar',grd:1,cost:1290,rng:526,minr:160,dmg:200,rate:2.2,type:'blast',aoe:106,c:'#949c80',dsc:'重い弾を遠くへ。爆発範囲も広い'},
  {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'pierce',prio:1,pierce:1,vsB:3,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。💀ボスと👁オーラ持ちには3倍'},
  /* ⚠素を38→58にしたので、決まり(威力×2.0)どおり 76→**116**(2026-08-02) */
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:116,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
+ /* ⚡🧲💡(197)新しい3台の進化。⚠**進化は2段**(素→中段→最終形態)=全部の塔でそろえる決まり */
+ {id:'bolt2',n:'大雷塔',base:'bolt',grd:1,up2:'bolt3',gc:5600,cost:700,rng:275,dmg:168,rate:1.25,type:'elec',chain:1,c:'#a8dcef',dsc:'落ちる雷が一段と太い。単体への一撃が重い'},
+ {id:'bolt3',n:'雷神の柱',base:'bolt',grd:1,cost:1580,rng:305,dmg:300,rate:1.1,type:'elec',chain:1,c:'#d8f2ff',dsc:'空から柱のような雷を落とす。単体への一撃は最終兵器級'},
+ {id:'pullt2',n:'重力塔',base:'pullt',grd:1,up2:'pullt3',gc:8240,cost:1030,rng:255,dmg:8,rate:2.4,type:'net',slow:.55,slowT:1.8,pull:140,c:'#a98fd0',dsc:'引き戻す力が強く、範囲も広い'},
+ {id:'pullt3',n:'特異点塔',base:'pullt',grd:1,cost:2320,rng:285,dmg:16,rate:2.2,type:'net',slow:.6,slowT:2.2,pull:200,c:'#c9a1ff',dsc:'群れをまとめて後ろへ引きずり落とす。すり抜ける敵も掴む'},
+ {id:'lamp2',n:'探照灯',base:'lamp',grd:1,up2:'lamp3',gc:9040,cost:1130,rng:290,dmg:4,rate:2.8,type:'net',slow:.2,slowT:.8,lit:5,c:'#ffd97a',dsc:'照らし続ける時間が長い。範囲の敵が受けるダメージが上がる'},
+ {id:'lamp3',n:'灼光塔',base:'lamp',grd:1,cost:2540,rng:320,dmg:8,rate:2.6,type:'net',slow:.25,slowT:1,lit:7,c:'#fff0b8',dsc:'照らされた敵は長くもろいまま。弱点を突く塔と噛み合う'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
  {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'beam',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
  {id:'acid2',n:'劇毒噴射塔',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'poison',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から劇毒。強い毒で削り、倒れた敵が大きく弾けて周りも溶かす'},
@@ -3891,7 +3911,7 @@ const GRD_MID={
 const SUP_N=4;/* 支援施設の数(末尾のグレードアップ専用の手前まで)。⚠(128)進軍旗を足して3→4 */
 /* ↑末尾のグレードアップ専用の数(工房の2段+タレットの最終形態18種+**中段17種**)。⚠段を足したらここも増やす。
    ⚠**中段は TOWERS の一番後ろに push している**ので、素のタワーの添字は1つも動いていない(セーブと解放順が無事) */
-const GRD_N=20+17;/* ⚠ドローン基地だけ中段が無いので17 */
+const GRD_N=20+17+6;/* ⚠(197)雷塔/引力塔/照明塔の進化ぶん(各2段) *//* ⚠ドローン基地だけ中段が無いので17 */
 const T_GRD=ti=>{const u=TOWERS[ti]&&TOWERS[ti].up2;return u?TOWERS.findIndex(t=>t.id===u):-1;};/* その段の「次」 */
 const T_GCOST=ti=>(TOWERS[ti]&&TOWERS[ti].gc)||700;/* その段からの建て替え費用(⚙️) */
 /* ⭐⭐**進化先は🔬研究所で解放する**(2026-07-30ユーザー指示
@@ -4045,7 +4065,11 @@ const usCap=(ti,st)=>{const T=TOWERS[ti];
     ここで止めないと**6段目以降を買えるのに何も起きない死んだ強化**になる。 */
  if(st==='f')return USTAT_MAX;
  return usMinSt(ti,st)+USTAT_MAX;};
-const twChain=(T,tw)=>T.chain+Math.round(usEff((tw&&tw.us&&tw.us.c)||0));
+/* ⚡⭐(197)**連鎖数には塔ごとの上限を付けた**(2026-08-07ユーザー「重テスラの連鎖数が多すぎて重いし強すぎる」)。
+   ⚠**上限が無いと研究所の強化で伸び続ける**=描く回数も1発の総ダメージも青天井になっていた。 */
+const twChain=(T,tw)=>Math.min(T.cmax||99,T.chain+Math.round(usEff((tw&&tw.us&&tw.us.c)||0)));
+/* ⚡(197)テスラコイルの**同時攻撃数**(連鎖と同じ強化の枠を使う。上限は塔ごとの emax) */
+const twEmul=(T,tw)=>Math.min(T.emax||5,(T.emul||1)+Math.round(usEff((tw&&tw.us&&tw.us.c)||0)));
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
 /* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
 const TR_COL=['rgba(255,235,150,','rgba(255,206,84,','rgba(255,150,60,','rgba(255,92,80,','rgba(206,120,255,','rgba(120,230,255,'];
@@ -4584,7 +4608,9 @@ const TW_TRAIT={
 };
 /* ⚠(163)**その塔が実際に持っていない持ち味は出さない**=⚡電撃系にした🔦レーザー塔は
    連鎖しないので、研究所に「連鎖+0.25体/段」と書くと嘘になる(相性のためだけに型を合わせた)。 */
-const twTrait=T=>{const R9=TW_TRAIT[T&&T.type];return (R9&&R9.k==='chain'&&!(T&&T.chain))?null:R9;};
+/* ⚠(197)**塔ごとの上書き(T.trait)を先に見る**=同じ⚡型でも「連鎖」と「同時攻撃」で言い方が違うため */
+const twTrait=T=>{const R9=(T&&T.trait)||TW_TRAIT[T&&T.type];
+ return (R9&&R9.k==='chain'&&!(T&&(T.chain||T.emul)))?null:R9;};
 /* 一覧に出す絵文字。⚠タワー20枚・兵科32枚が全部同じ絵だと見分けられないので型で変える */
 const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡',pierce:'🗡',beam:'🔆',poison:'🧪'};
 const UN_IC={melee:'✊',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚',slash:'⚔',beam:'🔆',elec:'⚡'};
@@ -4752,10 +4778,19 @@ const TR_OPEN=true;
    経験値は⚔冒険RPGの橋渡しのために在っただけで、冒険をしまった今は意味が無かった)。
    ⭐**Lv1ごとにHPと攻撃が+2%・最大Lv50で+100%(2倍)**。⚠上げ下げは `TR_PER` の1か所。
    ⭐**値段は10Lvごとに🔧が3つずつ高くなる(3→15)**=Lv50まで通しで🔧450。 */
-const TR_MAX=50,TR_PER=.02;/* 上限Lv / 1Lvあたりの伸び */
+/* 🦸⭐⭐(197)**鍛錬Lvの上限は面のクリア数で開く**(2026-08-07ユーザー決定)=
+   未クリア20 / 面①40 / ②60 / ③80 / ④100。⭐**後半ほど1Lvの伸びを大きくする**
+   (敵は面が進むほど桁で強くなるので、一定の+2%では置いていかれる)。
+   ⚠**具体的な%は実測して詰める**=いまは「20Lvごとに+1%ずつ刻みが増える」形だけ入れてある。
+   📌Lv100まで積むと HPと攻撃が **+400%**(20×2% + 20×3% + 20×4% + 20×5% + 20×6%)。 */
+const TR_CAP=[20,40,60,80,100];
+const trMax=()=>TR_CAP[Math.min((typeof unlStep==='function')?unlStep():0,TR_CAP.length-1)];
+const TR_MAX=100,TR_PER=.02;/* 表の上限 / 1Lvあたりの伸び(最初の20Lvぶん) */
+const TR_STEP=lv=>TR_PER+.01*Math.floor((Math.max(1,lv)-1)/20);/* そのLvを1つ上げた時の伸び */
+const trAcc=lv=>{let a=0;for(let k=1;k<=lv;k++)a+=TR_STEP(k);return a;};
 const TR_COST=lv=>3+Math.floor(clamp(lv,0,TR_MAX-1)/10)*3;/* そのLvから1つ上げるのに要る🔧 */
-const hLv=id=>clamp((META.hlv&&META.hlv[id])||0,0,TR_MAX);
-const hBoost=id=>1+TR_PER*hLv(id);
+const hLv=id=>clamp((META.hlv&&META.hlv[id])||0,0,trMax());
+const hBoost=id=>1+trAcc(hLv(id));
 /* 📖ゾンビ図鑑(2026-07-26 第53弾): ソロ作戦で初めて倒したゾンビが載る。
    ⚠元は「🧿コアを集めて洞窟のゾンビを強化する」仕組みだったが、**洞窟をまるごと廃止した**ので
      記録(図鑑)だけ残した。コアの所持数(META.zc)と強化Lv(META.zl)は廃止。 */
@@ -5012,6 +5047,8 @@ const AF_LEG=()=>AF_MAT.map(m=>(m.k==='none'?'材質なし':m.ic+m.n)
  +' ／ 🔆ビームはすべてに×'+BEAM_X.toFixed(1);
 /* ⭐電撃が次の敵へ跳べる距離(テスラコイル・重テスラで共通)。
    2026-07-27ユーザー指示で150→180(1.2倍)。⚠**2つの塔で同じ値を使う**ので必ずここだけを直すこと */
+/* 💡(197)照明塔で照らされた敵が受けるダメージの倍率。⚠**弱点とは別枠で掛かる** */
+const LIT_X=TUNE("LIT_X",1.25,1,2,.05);
 const ARC_HOP=180;/* 電撃タワーの鱗特効(ステージ2の鱗持ちへの倍率)。火炎×装甲と対になる関係 */
 const IV_SEC=20;/* 作戦タイムの秒数 */
 /* 部隊1体が同時に足止めできる敵の数。⭐**すり抜け敵を止められる兵科(hook)だけ枠が広い**
@@ -5179,29 +5216,34 @@ const UB_IDX={};UBASE.forEach((u,i)=>{if(UB_IDX[u.id]==null)UB_IDX[u.id]=i;});
    ⚠**役割もの(🏭工房・🕸ネット砲・❄冷却塔・🛩ドローン)は実戦DPSで測れない**ので、
      強さを揃える相手ではなく「その段の色を変える1枚」として置く。
    ⚠**弱い物を後ろに残さない**=迫撃砲58・ドローン21は前半に置く(後半に来ると死に札になる)。 */
+/* 🎁⭐⭐⭐(197)**棚を作り直した**(2026-08-07ユーザー決定)。⭐**1面ぶん=塔4個・兵科3個**。
+   ⭐**塔4個の内訳をいつも同じ形にする**=①次の面で効く属性 ②足止め/支援 ③どの敵にも等倍の物 ④自由枠。
+   ⭐**面の弱点の順で並べる**=①廃線は🛡装甲(弱点🔥) → ②沈んだ港は🐟鱗(弱点⚡) → ③鉄塔の丘は🪶羽(弱点🔫)。
+   ⚠**その面に入る前の段までに、答えの属性が必ず並ぶ**ように置くこと(検査 checkUnlock)。 */
 const UNL_T=[
- /*段0(7)*/'net','scrap','flame','gren','mortar','tesla','sniper',/* ⏭(197)ネット砲を先頭へ(ユーザー指示) */
+ /*段0(4) 最初から   */'net','scrap','flame','gren',      /* 🕸支援 / 🏭経済 / 🔥①の答え / 💣等倍 */
+ /*段1(4) →②鱗     */'bolt','cryo','mortar','acid',     /* ⚡②の答え / 🕸支援 / 💣等倍 / 🧪毒 */
+ /*段2(4) →③羽     */'drone','pullt','laser','tesla',   /* 🔫③の答え / 🧲支援 / 🔆ビーム / ⚡ */
+ /*段3(4) →④       */'gat','lamp','arty','sniper',      /* 🔫 / 💡支援 / 💣等倍 / 🗡貫通 */
+ /*段4(4) →⑤       */'coil','medic','rail','fort',      /* ⚡ / 🏥支援 / 🔆ビーム / 🗡貫通 */
+ /*段5(2) 仕上げ     */'flag','plasma'                   /* 👟支援 / 🔆ビーム */
      /*🏭経済 / 🔥火炎(①の装甲対策。W3のアーマードに間に合わせる) / 💣爆発 / 🕸拘束 / 💣遠射 /
        ⚡電撃(②の鱗に備える) / 🔫103*/
- /*段1*/'laser','acid',    /*⚡102 と 🔥火炎108=ほぼ同じ強さ*/
- /*段2*/'cryo','drone',    /*❄拘束 と 🛩(役割もの)*/
- /*段3*/'arty','coil',     /*💣89 と ⚡168*/
- /*段4*/'rail','gat',      /*🔫174 と 🔫226*/
- /*段5*/'plasma','fort'    /*💣307 と 🔫482*/
 ];
 /* ⚠⚠(193)**段は「面(廃線ハイウェイ / 沈んだ港 …)のクリア数」**に変えた=区切りも面ごとに引き直した。
    ⭐**段0が厚い**のは、面の中で難易度を上げていく間に🧬で少しずつ買っていくため
    (面=棚が広がる門 / 難易度=🧬が貯まる門。⭐門は2つのまま)。 */
 const UNL_U=[
- /*段0(13)*/'big','gun','mol','shd','grn','saw','frz','med','snp','mgn','elec','pike','rkt',
-        /*壁2 / 🔫実弾2 / 🔥火炎(①の装甲対策) / 💣爆発2 / ✊近接 / ❄冷気 / ✚回復 / 🗡貫通2 /
-          ⚡電撃(②の鱗に通る。⚠面②へ入る前に必ず並べる)*/
- /*段1*/'spr','flm','chain',    /*足の速い🔫実弾 / 🔥火炎 / 足止め*/
- /*段2*/'axe','smg','gld',      /*✊近接 / 🔫実弾 / 壁*/
- /*段3*/'mortarU','ninja','engi',/*💣爆発 / 🗡貫通 / ✚回復*/
- /*段4*/'gren2','rail2','frost2',/*💣爆発 / 🗡貫通 / ❄冷気*/
- /*段5*/'chief','titan','valk'  /*仕上げの3種*/
+ /*段0(3) 最初から*/'mol','shd','grn',      /* 🔥①の答え / 壁 / 💣等倍 */
+ /*段1(3) →②鱗  */'elec','med','axe',     /* ⚡②の答え / ✚回復 / ⚔斬撃 */
+ /*段2(3) →③羽  */'gun','pike','saw',     /* 🔫③の答え / 🗡貫通(すり抜けも止める) / ⚔斬撃 */
+ /*段3(3) →④    */'mgn','chain','snp',    /* 🔫 / 足止め / 🗡貫通 */
+ /*段4(3) →⑤    */'flm','frz','ninja',    /* 🔥 / ❄冷気 / ⚔斬撃 */
+ /*段5(3) 仕上げ  */'rail2','titan','valk' /* 🔆ビーム / 壁 / ⚔斬撃 */
 ];
+/* ⏸⭐⭐(197)**一旦どかした兵科10種**(2026-08-07ユーザー指示「意味ないユニットは一旦どっかに置いといて」)=
+   どれも「同じ役でちょっと強いだけ」の重複。⚠**消していない**(対戦/協力では今までどおり使う)。
+   ⚠面④⑤を作る時に戻す候補: 斥候 / 短機関銃 / 隊長 / 迫撃兵 / 重爆弾兵 / 絶対零度 / 工兵 / 巨漢 / 重装盾 / ロケラン */
 /* ⭐⭐**1段(=面1つ)ごとに棚へ並ぶ数**。段0=最初から並んでいる分。
    ⚠⚠⚠**(193)ここを「拠点(=面×難易度)1つごと」に配っていたのが取り違えだった**
      (2026-08-06ユーザー指摘「拠点1個で1種類なんて誰も言ってない。1面クリアで数種類」)。
@@ -5215,8 +5257,8 @@ const UNL_U=[
      (検査 checkUnlock が落とす)。⚠**塔や兵科を増やした時は必ずここの数も増やすこと**。
    📌**いまは面が2つしか無いので届くのは段2まで**=**塔11種・兵科19種**。残りは面③〜⑤のぶん。
    📌設計の目安「1面あたり 塔2種・兵科3種」がそのまま入っている。 */
-const UNL_TN=[7,2,2,2,2,2];
-const UNL_UN=[13,3,3,3,3,3];
+const UNL_TN=[4,4,4,4,4,2];/* ⭐(197)塔は1面4個(最後だけ2個)=22種 */
+const UNL_UN=[3,3,3,3,3,3];/* ⭐(197)兵科は1面3個=18種 */
 /* 進行の段=**クリア済みの面の数**(0〜面の数)。
    ⚠**「面をクリア」=その面をどれか1つの難易度でクリアした**(いちばん低い難易度でよい)。
    ⚠🚌拠点開拓は「遊べば開く」面なので数えない。 */
@@ -5245,7 +5287,11 @@ function twOwnList(){
  if(all){for(let i=0;i<T_PLAY;i++)a.push(i);}
  else if(!solo){for(let i=0;i<PVP_T;i++)a.push(i);}
  else{for(let i=0;i<BASE_T;i++)a.push(i);
-  for(const id of UNL_T)if(twHas(id)&&TW_IDX[id]!=null)a.push(TW_IDX[id]);
+  /* ⚠(197)**支援施設(🏥野戦病院/👟進軍旗)は棚に並ぶが、この並びには入れない**=
+     盤面の⚙️解放は「持ち物の頭から順に」なので、専用枠にしか建たない物が混ざると番号がずれる。
+     ⭐支援施設は `twHas` だけで判定する(建設メニュー側)。 */
+  for(const id of UNL_T){const i9=TW_IDX[id];if(i9==null||!twHas(id))continue;
+   if((TOWERS[i9]||{}).type==='sup')continue;a.push(i9);}
   /* ⚠⚠**並びは必ず TOWERS の順(=安い順)に揃える**=買った順にすると、盤面の⚙️解放が
      「高い塔から先」になったり、道具の `me.unlocked=ti+1` が別の塔を指したりする。
      ⭐**全部持っていれば 並びの番号=TOWERSの添字** になる(Dで棚の順を変えても崩れない)。 */
@@ -13473,6 +13519,45 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
   twMuz(c,22,4.5,'flare','#3a424b');
   if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,0,6,0,7);c.fill();c.beginPath();c.arc(30,-9,6,0,7);c.fill();}
   c.restore();
+ }else if(tid==='bolt'||tid==='bolt2'||tid==='bolt3'){const g9=tid==='bolt'?0:(tid==='bolt2'?1:2);
+  if(g9)c.scale(1+g9*.13,1+g9*.13);
+  /* ⚡段が上がるほど避雷針が増える(中段2本・最終3本)=形で見分く */
+  for(let k9=1;k9<=g9;k9++){c.fillStyle='#33404a';const dx9=k9%2?-9:9;
+   c.beginPath();c.moveTo(dx9-4,4);c.lineTo(dx9+4,4);c.lineTo(dx9+2.4,-20-k9*4);c.lineTo(dx9-2.4,-20-k9*4);c.closePath();c.fill();c.stroke();
+   c.fillStyle=TECH;c.beginPath();c.arc(dx9,-24-k9*4,3.6,0,7);c.fill();c.stroke();}/* ⚡雷塔: 細い避雷針を1本立てて、先端の玉から一筋だけ落ちる(連鎖しない印) */
+  c.fillStyle='#3f4a54';c.beginPath();c.moveTo(-7,4);c.lineTo(7,4);c.lineTo(4,-30);c.lineTo(-4,-30);c.closePath();c.fill();c.stroke();
+  c.strokeStyle='#6b7580';c.lineWidth=2;c.beginPath();c.moveTo(-5,-8);c.lineTo(5,-8);c.moveTo(-6,-18);c.lineTo(6,-18);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.fillStyle=TECH;c.beginPath();c.arc(0,-35,6,0,7);c.fill();c.stroke();
+  {const a9=t*7;c.strokeStyle=FROST;c.lineWidth=2.4;c.beginPath();c.moveTo(0,-35);
+   c.lineTo(3*Math.sin(a9),-43);c.lineTo(-3*Math.sin(a9*1.3),-50);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
+  if(o.fire){c.fillStyle=GLOW;c.beginPath();c.arc(0,-35,9,0,7);c.fill();}
+ }else if(tid==='pullt'||tid==='pullt2'||tid==='pullt3'){const g9=tid==='pullt'?0:(tid==='pullt2'?1:2);
+  if(g9)c.scale(1+g9*.13,1+g9*.13);
+  /* 🧲段が上がるほど引き寄せの輪が増える */
+  for(let k9=0;k9<g9;k9++){const q9=((t*1.1+k9*.5)%1);c.globalAlpha=.4*(1-q9);
+   c.strokeStyle='#e0c8ff';c.lineWidth=2;c.beginPath();c.arc(0,-14,14+q9*26,0,7);c.stroke();
+   c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=3;}/* 🧲引力塔: U字の磁石を上向きに載せた台。極が赤と青、間に引き寄せの輪 */
+  c.fillStyle='#4a4050';rr(c,-13,-6,26,12,3);c.fill();c.stroke();
+  c.save();c.rotate(Math.sin(t*2)*.12);
+  c.lineWidth=8;c.strokeStyle='#8f6fae';c.beginPath();c.arc(0,-14,10,Math.PI,0);c.stroke();
+  c.lineWidth=3;c.strokeStyle=INK;c.beginPath();c.arc(0,-14,10,Math.PI,0);c.stroke();
+  c.fillStyle='#c0483a';rr(c,-14,-16,8,9,2);c.fill();c.stroke();
+  c.fillStyle='#4f7fc0';rr(c,6,-16,8,9,2);c.fill();c.stroke();
+  c.restore();
+  {const q=(t*1.3)%1;c.globalAlpha=.55*(1-q);c.strokeStyle='#c9a1ff';c.lineWidth=2.6;
+   c.beginPath();c.arc(0,-14,10+q*22,0,7);c.stroke();c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=3;}
+ }else if(tid==='lamp'||tid==='lamp2'||tid==='lamp3'){const g9=tid==='lamp'?0:(tid==='lamp2'?1:2);
+  if(g9)c.scale(1+g9*.13,1+g9*.13);
+  /* 💡段が上がるほど灯が増える(中段2つ・最終3つ) */
+  for(let k9=1;k9<=g9;k9++){const dx9=k9%2?-14:14;
+   c.fillStyle='#7a6a3a';c.beginPath();c.moveTo(dx9-7,-20);c.lineTo(dx9+7,-20);c.lineTo(dx9+4,-27);c.lineTo(dx9-4,-27);c.closePath();c.fill();c.stroke();
+   c.fillStyle=GLOW;c.beginPath();c.arc(dx9,-19,3.4,0,7);c.fill();c.stroke();}/* 💡照明塔: 支柱の上の傘つきランプ。下向きに光の三角が落ちる */
+  c.fillStyle='#4a4a40';rr(c,-4,-24,8,28,2);c.fill();c.stroke();
+  c.fillStyle='#7a6a3a';c.beginPath();c.moveTo(-15,-26);c.lineTo(15,-26);c.lineTo(9,-36);c.lineTo(-9,-36);c.closePath();c.fill();c.stroke();
+  {const g9=.55+Math.sin(t*3)*.2;c.globalAlpha=g9;c.fillStyle='#ffe08a';
+   c.beginPath();c.moveTo(-13,-25);c.lineTo(13,-25);c.lineTo(24,6);c.lineTo(-24,6);c.closePath();c.fill();c.globalAlpha=1;}
+  c.fillStyle=GLOW;c.beginPath();c.arc(0,-25,5,0,7);c.fill();c.stroke();
  }else if(tid==='net'){/* ネット砲: 太い筒の先に**四角い網カゴ**+巻いたロープ */
   c.fillStyle='#4f7a6c';c.beginPath();c.arc(-17,4,7,0,7);c.fill();c.stroke();
   c.strokeStyle='#cfe7dd';c.lineWidth=1.8;c.beginPath();c.arc(-17,4,3.6,0,7);c.stroke();c.strokeStyle=INK;c.lineWidth=3;
@@ -19106,6 +19191,7 @@ function dmgZ(C,z,d,armorPierce,quiet,wk,ty){
  if(ty){const ax9=afX(ty,z);
   if(ax9!==1){d*=ax9;afk9=afKof(ax9);if(afk9==='wk')aty9=ty;}}
  if(wk)afk9='wk';/* 旧経路(呼ぶ側が特効を明示した場合)も受ける */
+ if(z.litT>0)d*=LIT_X;/* 💡(197)照明塔=受けるダメージが上がる(弱点とは別枠) */
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
  z.hp-=d;
  /* ⚡⭐(124)**継続攻撃(火炎放射塔・レーザー塔)の白光りは「点滅」にする**。
@@ -19770,7 +19856,7 @@ function campStep(C,dt,wave){
   if(z.stnT>0)z.stnT-=dt;/* ⭐気絶の見せ方(★が回る)。⚠止める仕組みは frzT の方=これは演出だけ */
   /* 🌊水浸し中は敵の足が1.5倍(②の高波ギミック。G.flood は②のTDでしか立たない)。🐢こもり中は完全停止 */
   const slow=(z.frzT>0||z.shT>0?0:(z.slowT>0?.55:1))*((G&&G.flood>0&&!C.bus)?FLOOD_SP:1)*(z.gumT>0?GUM_SLOW:1);
-  if(z.slowT>0)z.slowT-=dt;if(z.gumT>0)z.gumT-=dt;/* 🫧ガム=かなり遅く(ルピナの必殺) */
+  if(z.slowT>0)z.slowT-=dt;if(z.gumT>0)z.gumT-=dt;if(z.litT>0)z.litT-=dt;/* 💡(197)照らし *//* 🫧ガム=かなり遅く(ルピナの必殺) */
   /* 🐟**潜る**(dv:1の魚系だけ・②のギミック)。潜っている間は狙えず(targeting)・当たらず(dmgZ)・
      止められない(下のblkを丸ごと飛ばす)。⚠凍結中と拠点際(d>PLEN-90)では潜らない=
      取り付き際に消えると「攻撃が当たらないままコアを削られる」理不尽になる。 */
@@ -20376,6 +20462,8 @@ function campStep(C,dt,wave){
    else if(T.type==='elec'){addP(C,4,sx,sy-24,{sp:120,g:60,life:.25,r:2,col:FROST});}
    else if(T.type==='net'){addP(C,4,sx,sy,{sp:70,g:0,flat:1,life:.5,r:2.4,col:T.id==='cryo'?FROST:'#9fd9c6'});}}
   if(T.type==='net'){let nfz=0;
+   /* 🧲(197)引力塔=道の上の「塔の位置」へ引き戻す。⚠1回だけ計算する(敵ごとに出さない) */
+   const pd9=T.pull?projPath(sx,sy):0;
    for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){
     z.slowT=T.slowT*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));
     /* 完全凍結(冷却塔)。同じ敵を凍らせられるのは twFrzN 回まで(初期5・❄冷却回数の強化で最大10) */
@@ -20391,6 +20479,11 @@ function campStep(C,dt,wave){
      z.frzUsed=(z.frzUsed||0)+1;
      /* ⭐凍らせた敵の足元に氷が張る=どれが止まったのか一目で分かる(2026-07-26) */
      if(FXLV>0&&++nfz<=6)addFx(C,'ice',z.px,z.py,'',{r:26,sd:rnd(0,9),lf:.55});}
+    /* 🧲(197)引き戻す。⚠**前へは動かさない**=塔より手前の敵はそのまま */
+    if(T.pull&&z.d>pd9){z.d=Math.max(pd9,z.d-T.pull);z.stnT=Math.max(z.stnT||0,.35);
+     if(FXLV>0)addP(C,2,z.px,z.py-14*CH_UP,{sp:60,a:Math.atan2(sy-z.py,sx-z.px),spread:.5,g:0,life:.25,r:2,col:'#c9a1ff'});}
+    /* 💡(197)照らす=受けるダメージが上がる */
+    if(T.lit)z.litT=Math.max(z.litT||0,T.lit);
     dmgZ(C,z,dm,1,0,0,'net');}}
    addFx(C,'ring',sx,sy,'',{r:rng,col:T.frz?FROST:'#9fd9c6'});
    /* ⭐冷却塔は冷気が床を這う白い波も出す。⚠ネット砲と同じ輪1つでは見分けが付かなかった */
@@ -20415,6 +20508,17 @@ function campStep(C,dt,wave){
     else{tg.burnT=2+(tg.armor?1:0);tg.burnD=bd;}}
    /* ⚠火炎は連続で当たるので、鳴らしすぎないよう間引く(45msの制限も効く) */
    if(Math.random()<.35)twSfx(C,T);}
+  else if(T.type==='elec'&&T.emul){/* ⚡(197)テスラコイル: **連鎖せず、射程内の先頭から何体かへ同時に撃つ**
+    =重テスラ(1体ずつ跳ねて伝わる)と役をはっきり分ける。⚠雷塔は単体1発なのでこちらにも来ない */
+   const inr9=[];for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;if(dist(z.px,z.py,sx,sy)<=rng)inr9.push(z);}
+   inr9.sort((a,b)=>b.d-a.d);
+   /* ⚠研究所の強化ぶん(持ち味=同時攻撃+0.25体/段)もここで足す。⚠上限(emax)は超えない */
+   const n9=Math.min(T.emax||5,twEmul(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0)),pts9=[];let cnt9=0;
+   for(let k9=0;k9<Math.min(n9,inr9.length);k9++){const z9=inr9[k9];
+    dmgZ(C,z9,dm*elecX(),1,0,0,'elec');pts9.push([mzx,mzy],[z9.px,z9.py]);cnt9++;}
+   if(cnt9){addFx(C,'zap',sx,sy,'',{pts:pts9,sd:rnd(0,9)});
+    if(FXLV>0)for(let k9=1;k9<pts9.length;k9+=2)addP(C,1,pts9[k9][0],pts9[k9][1],{sp:60,g:40,life:.3,r:2,col:FROST});
+    twSfx(C,T);}}
   else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
     跳ねるたびに威力が grow 倍(gmax 倍で頭打ち)＝群れが長いほど後半が重くなる */
    const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
@@ -23197,7 +23301,10 @@ function openBM(si){
   for(let i=0;i<TOWERS.length;i++){const T=TOWERS[i];
    const want=sSlot?'sup':eSlot?'eco':'';
    if(T.grd||T.off)continue;/* グレードアップ専用と、外した施設は建設リストに出さない */
-   if(want){if(T.type!==want)continue;}
+   if(want){if(T.type!==want)continue;
+    /* 🏗(197)**支援施設も研究所で解放してから**(ユーザー決定で棚に載せた)。
+       ⚠🎓チュートリアルと🛠DEVでは今までどおり全部出す(段取りが崩れるため) */
+    if(want==='sup'&&!twHas(T.id)&&!devAll()&&!(G&&G.tut))continue;}
    /* ⚠(187)添字ではなく持ち物の並びで見る(進行の作り替えB) */
    else{if(T.type==='eco'||T.type==='sup')continue;if(!twReady(m,i))continue;}
    /* 🛡⭐**硬い敵への通り方を札で出す**(2026-08-04)=盤面で建てる時に一番効く情報 */
@@ -29132,14 +29239,14 @@ function renderLab(){
   for(const id of shelfT()){if(twHas(id))continue;const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
    nT++;
    if(nT===1)items.push({cat:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
-     tag:'新型タワー '+(ot.length+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:pT});
+     tag:'新型タワー '+(ot.length+1)+'/'+UNL_T.length,d:T.dsc,p:pT});
    else items.push({cat:'new',lk:1,wt:nT,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9+nT+'番目',d:T.dsc,p:0});}
   /* ⚠UNITSは派生に差し替わるのでUBASE */
   let nU=0;
   for(const id of shelfU()){if(unHas(id))continue;const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
    nU++;
    if(nU===1)items.push({cat:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
-     tag:'新型兵科 '+(ou.length+1)+'/'+(U_N-BASE_U),d:U.dsc,p:pU});
+     tag:'新型兵科 '+(ou.length+1)+'/'+UNL_U.length,d:U.dsc,p:pU});
    else items.push({cat:'new',lk:1,wt:nU,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9+nU+'番目',d:U.dsc,p:0});}}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
@@ -31246,7 +31353,8 @@ function renderTrHero(box){
 function trainGrind(hid){
  const h=heroOf(hid);if(!h)return;
  const lv=hLv(hid);
- if(lv>=TR_MAX){toast(h.n+' はもう鍛錬しつくした',true);return;}
+ /* ⚠(197)**上限は面のクリア数で開く**=表の上限(TR_MAX)ではなく trMax() を見る */
+ if(lv>=trMax()){toast(h.n+' は今の上限(Lv'+trMax()+')まで鍛えてある。次の面をクリアすると上限が開く',true);return;}
  const cs=TR_COST(lv);
  if(!DEV&&(META.hmat||0)<cs){
   toast('🔧'+cs+' 必要(所持 '+(META.hmat||0)+') — 英雄召集の重複で貯まる',true);return;}
