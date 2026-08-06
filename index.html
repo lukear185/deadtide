@@ -1973,10 +1973,12 @@ body.perf #perfbox{display:block}
     <div class="bphd"><b>⚙ オプション</b><button class="xbtn" id="bt-opt-close">✕</button></div>
     <div id="opt-vols"></div>
     <p class="note" style="margin:14px 0 6px">演出の強さ(弱くすると軽くなる)</p>
+    <!-- ⚠(192)**見出しで言っていることをボタンで繰り返さない**=「演出の強さ」の下に
+         「演出:弱/演出:中/演出:強」と3回書いていた。押す所は短いほど選びやすい。 -->
     <div class="seg" id="seg-fx">
-      <button class="btn sm" data-v="0">演出:弱</button>
-      <button class="btn sm" data-v="1">演出:中</button>
-      <button class="btn sm sel" data-v="2">演出:強</button>
+      <button class="btn sm" data-v="0">弱</button>
+      <button class="btn sm" data-v="1">中</button>
+      <button class="btn sm sel" data-v="2">強</button>
     </div>
   </div>
 </div>

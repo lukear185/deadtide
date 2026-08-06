@@ -275,7 +275,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
        +(OPT.indexOf('hteam')>=0?'renderLoad();document.getElementById("md-load").classList.add("on");':'')
        /* hpick=🦸英雄を選ぶ窓 / hstk=🎯砲撃の窓(2026-08-03。今まで撮る口が無かった) */
        +(OPT.indexOf('hpick')>=0?'META.hero={hNox:1,hSf:2,hCop:1};renderHeroPick();document.getElementById("md-hpick").classList.add("on");':'')
-       +(OPT.indexOf('hstk')>=0?'META.st=["air","mgun","frost"];renderStkPick();document.getElementById("md-stk").classList.add("on");':''))
+       +(OPT.indexOf('hstk')>=0?'META.st=["air","mgun","frost"];renderStkPick();document.getElementById("md-stk").classList.add("on");':'')
+       /* hopt=⚙オプション / hmsn=🎯任務(2026-08-06(192)。今まで撮る口が無かった=一度も見ていなかった) */
+       +(OPT.indexOf('hopt')>=0?'ensureAC();optRender();document.getElementById("md-opt").classList.add("on");':'')
+       +(OPT.indexOf('hmsn')>=0?'openMsn();':''))
      :(OPT.indexOf('worldmap')>=0)?('META.tr0=1;'
        +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
        +'MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')
