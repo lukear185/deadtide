@@ -4044,10 +4044,13 @@ function checkUnlock(){
  if(shelfT().length!==UNL_TN[0]||shelfU().length!==UNL_UN[0])F('最初の棚が配分どおりでない');
  META.sc[0][BNS_D]=1;
  if(unlStep()!==0)F('🚌拠点開拓を面の数に入れている');
- /* ⚠⚠**同じ面の中で難易度をいくつクリアしても段は1つ**=ここが(193)で直した所 */
- META.sc[0][0]=1;META.sc[0][1]=1;META.sc[0][2]=1;
- if(unlStep()!==1)F('同じ面の難易度を段の数に入れている(面ごとに1段のはず) '+unlStep());
- META.sc[1][0]=1;
+ /* ⚠⚠⭐(198)**段が進むのは「その面の🌑ナイトメアを落とした時」だけ**(2026-08-07ユーザー決定)。
+    ❌「どれか1つの難易度でクリア」は撤回ずみ=最初の拠点で棚が進んでしまっていた。 */
+ META.sc[0][0]=1;META.sc[0][1]=1;META.sc[0][2]=1;META.sc[0][4]=1;
+ if(unlStep()!==0)F('ナイトメア以外のクリアで段が進んでいる '+unlStep());
+ META.sc[0][NM_DIFF]=1;
+ if(unlStep()!==1)F('面を制覇しても段が進まない '+unlStep());
+ META.sc[1][NM_DIFF]=1;
  if(unlStep()!==2)F('クリアした面が数えられていない '+unlStep());
  const w2=UNL_TN[0]+UNL_TN[1]+UNL_TN[2];
  if(shelfT().length!==w2)F('2面クリアの棚が配分どおりでない '+shelfT().length+'(想定'+w2+')');
@@ -4170,7 +4173,8 @@ function checkGain(){
      棚がそれより薄い所では嘘になる(段が面ごとになったので終盤は棚の方が薄い)。
      ⭐**持てる数を棚の数で頭切りする**。⚠棚を買い切った所は🧬が余るので、そこは band を見ない。 */
   /* いま何段目か=クリアした面の数。⚠**その面の最初の難易度を勝つまでは前の段のまま** */
-  const stp=stg+(UNL_ORD.indexOf(d)>0?1:0);
+  /* ⚠(198)**その面を制覇するまで段は上がらない**=面の中のどの拠点でも段は「それまでに制覇した面の数」 */
+  const stp=stg;
   const cnt=(arr)=>{let s2=0;const nn=Math.min(stp+1,arr.length);for(let i=0;i<nn;i++)s2+=arr[i];return s2;};
   const sT=cnt(UNL_TN),sU=cnt(UNL_UN);
   const own=Math.min(st,sT-1,sU-1),full=(st>=sT||st>=sU);
@@ -4540,8 +4544,8 @@ process.exit(0);
    +'{const m9=newCamp("t","solo",0,true);a.eco=m9.ecoN;a.sup=m9.supN;a.uun=m9.uUn;'
    +'a.slk=m9.slk.filter(Boolean).length;a.unl=m9.unlocked;'
    +'try{campStep(m9,0.033,1);}catch(e){a.cerr=e.message;}a.s1=m9.scrap;a.u1=m9.up;}'
-   /* ⚠(193)**段は「面のクリア数」**=面①をクリアしたことにすると棚が1段進む */
-   +'const q=scArr(0);q[UNL_ORD[0]]=1;'
+   /* ⚠(198)**段が進むのは🌑ナイトメアのクリアだけ**=面①を制覇したことにすると棚が1段進む */
+   +'const q=scArr(0);q[NM_DIFF]=1;'
    +'a.sT6=shelfT().length;a.sU6=shelfU().length;a.step6=unlStep();'
    /* 全開放へ戻すと元どおり */
    +'META.devRaw=0;TWOWN_K=-1;saveMeta();a.pts2=META.pts;a.tw2=twOwnList().length;'

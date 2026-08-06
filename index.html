@@ -5262,12 +5262,16 @@ const UNL_U=[
    📌設計の目安「1面あたり 塔2種・兵科3種」がそのまま入っている。 */
 const UNL_TN=[4,4,4,4,4,2];/* ⭐(197)塔は1面4個(最後だけ2個)=22種 */
 const UNL_UN=[3,3,3,3,3,3];/* ⭐(197)兵科は1面3個=18種 */
-/* 進行の段=**クリア済みの面の数**(0〜面の数)。
-   ⚠**「面をクリア」=その面をどれか1つの難易度でクリアした**(いちばん低い難易度でよい)。
-   ⚠🚌拠点開拓は「遊べば開く」面なので数えない。 */
+/* 進行の段=**制覇した面の数**(0〜面の数)。
+   ⚠⚠⭐**(198)「面をクリア」=その面の🌑ナイトメアを落とすこと**に直した(2026-08-07ユーザー決定)。
+     ❌**「どれか1つの難易度でクリア」は撤回**=いちばん低い拠点を勝った瞬間に棚が1段進んでしまい、
+     **面の途中で棚が2段ぶん並ぶのに🧬が全然足りない**状態になっていた(実機で発覚)。
+   📌**数字がぴったり合う**=段0は塔4+兵科3の計7種、面①の7拠点で入る🧬は約3,824
+     =**面①を制覇するまでにちょうど買い切る**。制覇した瞬間に次の7種が並ぶ。
+   ⚠🚌拠点開拓は面の数に入らない(遊べば開く面なので)。 */
 const UNL_ORD=D_ORD.filter(d=>d!==BNS_D);
 function unlStep(){let n=0;
- for(let s=0;s<STAGES.length;s++){const a=scArr(s);if(UNL_ORD.some(d=>a[d]))n++;}
+ for(let s=0;s<STAGES.length;s++)if(scArr(s)[NM_DIFF])n++;
  return n;}
 /* 段 st までに棚へ並ぶ個数(段0の分を含むので st+1 個ぶん足す) */
 const unlCnt=(arr,st)=>{let s=0;const n=Math.min(st+1,arr.length);for(let i=0;i<n;i++)s+=arr[i];return s;};
@@ -29494,8 +29498,9 @@ function renderLab(){
     (拠点を1つずつ立てても段は動かない=押しても何も起きないように見える)。 */
  $('lab-items').querySelectorAll('[data-devclr]').forEach(b=>{b.onclick=()=>{
   let put=false;
+  /* ⚠(198)段が進むのは🌑ナイトメアのクリアだけになったので、この道具もそこを立てる */
   for(let s=0;s<STAGES.length&&!put;s++){const a=scArr(s);
-   if(!UNL_ORD.some(d=>a[d])){a[UNL_ORD[0]]=1;put=true;}}
+   if(!a[NM_DIFF]){a[NM_DIFF]=1;put=true;}}
   saveMeta();renderLab();try{refreshStageUI();refreshDiffUI();}catch(e){}
   toast(put?('🛠 クリアした面を '+unlStep()+' にした(棚が'+shelfT().length+'塔/'+shelfU().length+'兵科)')
    :'🛠 もう全部の面がクリア済み');};});
