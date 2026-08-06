@@ -4123,7 +4123,29 @@ const ZOMBIES=[
  {id:'fKing',n:'屍山の王',hp:2600,sp:34,bt:900,dmg:16,boss:1,fin:1,armor:1,aura:1,mw:20,sc:2.6,atk:235,ar:1.15,aoe:7,c:'#6b3a34',dsc:'融合した屍の山。周囲の群れを昂ぶらせ、薙ぎ払う'},
  {id:'fMoth',n:'深淵の母',hp:2600,sp:32,bt:900,dmg:16,st:2,boss:1,fin:1,scl:1,split:3,mw:20,sc:2.6,atk:225,ar:1.2,aoe:6,c:'#3f5a63',dsc:'港の底で孵り続けるもの。倒すと弾けて周りを巻き込み、仔が這い出る'},
  {id:'fLevi',n:'原初の海淵',hp:3000,sp:42,bt:900,dmg:16,nm:1,st:2,boss:1,fin:1,scl:1,aura:1,split:3,mw:20,sc:3.7,/* ⚠中で0.72倍しているので実質2.66 */atk:250,ar:1.1,aoe:8,c:'#2f4a63',dsc:'すべての深海の源。群れを狂わせ、薙ぎ払い、倒れても弾ける'},
- {id:'fBeast',n:'原初の獣',hp:3000,sp:44,bt:900,dmg:16,nm:1,boss:1,fin:1,armor:1,aura:1,split:3,mw:20,sc:2.7,atk:250,ar:1.1,aoe:8,c:'#6b2f3a',dsc:'すべての獣の源。群れを狂わせ、薙ぎ払い、倒すと弾けて仔を産み落とす'}
+ {id:'fBeast',n:'原初の獣',hp:3000,sp:44,bt:900,dmg:16,nm:1,boss:1,fin:1,armor:1,aura:1,split:3,mw:20,sc:2.7,atk:250,ar:1.1,aoe:8,c:'#6b2f3a',dsc:'すべての獣の源。群れを狂わせ、薙ぎ払い、倒すと弾けて仔を産み落とす'},
+ /* ===== 🪶⭐⭐⭐ 面③ 送電鉄塔の丘=**空を飛ぶ敵**(st:3。2026-08-06(194)ユーザー決定) =====
+    ⚠**印は `st:3`**。①②と同じく **`nm` を持たない物がこのプール**(NM専用の顔ぶれはまだ無い=[[TODO]])。
+    ⭐**材質は🪶羽**=✊近接・💣爆発・🔥火炎・❄冷気が届かない(45%)/🔫実弾が特効(×1.9)/
+      ⚡レーザーとテスラは素通り。⚠**羽を持たない個体もわざと混ぜる**
+      =全部が同じ材質だと「実弾を並べるだけ」で終わる。速い個体・すり抜け個体で別の答えを作る。
+    ⭐**役どころは①②と同じ形に揃えてある**=基本 / 速い / 材質 / 群れを昂ぶらせる / 弾ける /
+      すり抜け / 中盤の強敵 / 壁 / ボス / 最終ボス。⚠**新しい役どころは作らない**(読み替えが増える)。 */
+ {id:'aPige',n:'腐肉バト',hp:105,sp:92,bt:13,dmg:1,mw:1,st:3,sc:.9,atk:18,ar:.7,c:'#8a8f7a',dsc:'鉄塔にたかる病んだ鳩。数で押してくる'},
+ {id:'aSpar',n:'群れスズメ',hp:68,sp:190,bt:14,dmg:1,mw:1,st:3,w:1.1,sc:.75,atk:12,ar:.5,c:'#a08a5c',dsc:'小さく速い。ばらばらに飛び込んでくる'},
+ {id:'aCrow',n:'鉄羽のカラス',hp:250,sp:74,bt:26,dmg:2,mw:3,st:3,wing:1,sc:1.05,atk:32,ar:1,c:'#4a4f5c',dsc:'金属質の羽。殴っても爆風も届かないが🔫実弾で落ちる'},
+ {id:'aFly',n:'膨れハエ',hp:330,sp:56,bt:30,dmg:2,mw:4,st:3,split:2,sc:1.3,atk:40,ar:1.2,c:'#6b7a3a',dsc:'倒すと弾けて周りの部隊を巻き込み、中から小型が出る'},
+ {id:'aBat',n:'鳴きコウモリ',hp:150,sp:88,bt:34,dmg:2,mw:5,st:3,aura:1,sc:.95,atk:16,ar:.9,c:'#7a5f8a',dsc:'甲高い声で周りの群れを昂ぶらせる'},
+ {id:'aSwal',n:'疾風ツバメ',hp:92,sp:228,bt:20,dmg:1,mw:6,st:3,sc:.8,atk:14,ar:.45,c:'#5c7d9c',dsc:'この丘でいちばん速い。止める物が要る'},
+ {id:'aSpor',n:'浮遊胞子',hp:305,sp:46,bt:40,dmg:2,mw:6,st:3,noblock:1,w:.5,sc:1.2,atk:0,ar:9,c:'#8f9c6b',dsc:'ふわふわと漂って部隊をすり抜ける'},
+ {id:'aWasp',n:'毒蜂',hp:215,sp:132,bt:36,dmg:2,mw:7,st:3,wing:1,w:.8,sc:.95,atk:34,ar:.6,c:'#c9a13d',dsc:'速い羽音。刺しに来る'},
+ {id:'aDrag',n:'骨トンボ',hp:285,sp:155,bt:44,dmg:2,mw:8,st:3,wing:1,noblock:1,w:.45,sc:1.05,atk:0,ar:9,c:'#7fa8b0',dsc:'透ける四枚羽。速いうえに部隊をすり抜ける'},
+ {id:'aHern',n:'骸のサギ',hp:470,sp:82,bt:74,dmg:3,mw:9,st:3,wing:1,w:.5,sc:1.35,aoe:2,atk:58,ar:.9,c:'#9ca8ae',dsc:'長い嘴で2体まとめて突き刺す'},
+ {id:'aOwl',n:'夜のフクロウ',hp:545,sp:150,bt:62,dmg:2,mw:11,st:3,wing:1,w:.5,sc:1.15,atk:44,ar:.55,c:'#6b5f4a',dsc:'音もなく速い。旗を飛び越えて奥へ入り込む'},
+ {id:'aVult',n:'鉄塔のハゲワシ',hp:650,sp:64,bt:96,dmg:3,mw:12,st:3,wing:1,w:.4,sc:1.5,aoe:2,atk:72,ar:1,c:'#5a4a42',dsc:'鉄塔に巣くう大鳥。鉤爪で2体を薙ぎ払う'},
+ {id:'aBeet',n:'鋼殻の甲虫',hp:760,sp:50,bt:130,dmg:4,mw:15,st:3,wing:1,w:.3,sc:1.45,aoe:3,atk:80,ar:1.1,c:'#3f4a52',dsc:'ぶ厚い鞘翅の壁。3体まとめて弾き飛ばす'},
+ {id:'aRoc',n:'鉄塔の主',hp:1500,sp:42,bt:400,dmg:10,st:3,boss:1,wing:1,mw:5,sc:2.2,atk:168,ar:1.2,aoe:5,c:'#6b6f7a',dsc:'丘の主。翼で薙ぎ払う'},
+ {id:'aStorm',n:'空を覆うもの',hp:2800,sp:34,bt:900,dmg:16,st:3,boss:1,fin:1,wing:1,aura:1,split:3,mw:20,sc:2.7,atk:230,ar:1.2,aoe:6,c:'#46505c',dsc:'丘の空をまるごと覆う影。群れを狂わせ、倒すと弾けて仔が出る'},
 ];
 const SENDABLE=[0,1,2,3];
 /* ⚠**プールは4つある**(2026-07-27にナイトメア×ステージ2を足した)。印の組み合わせで見分ける:
@@ -4132,10 +4154,12 @@ const SENDABLE=[0,1,2,3];
 const BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&!z.nm&&!z.st);
 const NM_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&!z.st);
 const ST2_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===2&&!z.nm);
+const ST3_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===3&&!z.nm&&!z.fin);/* 🪶(194)面③ 鉄塔の主 */
 const NM2_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&z.st===2);/* 🌑×② 腐骸の鯨 */
 /* 最終ウェーブ専用のボス(ステージごと・ナイトメアはプールごとに1体) */
 const FIN_ZI=ZOMBIES.findIndex(z=>z.fin&&!z.st&&!z.nm);
 const FIN2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===2&&!z.nm);
+const FIN3_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===3&&!z.nm);/* 🪶(194)面③ 空を覆うもの */
 const FINNM_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&!z.st);
 const FINNM2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===2);/* 🌑×② 原初の海淵 */
 const NM_DIFF=5;/* 難易度インデックス: 5=ナイトメア */
@@ -4727,7 +4751,9 @@ function zdexAdd(id){
 const ZDEX_G=[{n:'① 廃線ハイウェイ',f:z=>!z.st&&!z.nm},
  {n:'② 沈んだ港',f:z=>z.st===2&&!z.nm},
  {n:'🌑 ナイトメア',f:z=>!!z.nm&&!z.st},
- {n:'🌑 深海のナイトメア',f:z=>!!z.nm&&z.st===2}];
+ {n:'🌑 深海のナイトメア',f:z=>!!z.nm&&z.st===2},
+ /* 🪶(194)面③=空。⚠NM専用の顔ぶれはまだ無いので1グループ */
+ {n:'③ 送電鉄塔の丘',f:z=>z.st===3&&!z.nm}];
 const UBASE=UNITS.slice();/* 素の兵科定義(不変) */
 /* 英雄をUNITSの末尾に「特別な兵科」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=兵科の数え上げには U_N を使うこと
@@ -4843,6 +4869,17 @@ const diffW=d=>(D5[d]||D5[2]).w;
 const curW=()=>(G&&G.pve&&!G.coop&&G.pveDiff!=null)?diffW(G.pveDiff):STAGE_W;
 const FIRE_VS_ARMOR=TUNE("FIRE_VS_ARMOR",1.9,1,3,.05);/* 火炎放射塔の装甲特効(装甲持ちへの直撃と燃焼の倍率) */
 const ELEC_VS_SCALE=TUNE("ELEC_VS_SCALE",1.9,1,3,.05);
+/* 🪶⭐⭐⭐(194)**3つ目の材質=羽(面③の空を飛ぶ敵)**(2026-08-06ユーザー決定
+   「3面は空飛ぶ系の敵・弱点は実弾とレーザー」)。
+   ⭐**装甲/鱗と作りが違う**=あちらは「貫通しない物が45%」だが、羽は**空を飛んでいる**ので
+     **届かない物**を名指しで45%にする=✊近接・💣爆発・🔥火炎・❄冷気。
+     ⭐**撃つ物(🔫実弾)と光る物(⚡レーザー/テスラ)と🗡貫通は素通り**する。
+   ⭐**特効は🔫実弾**(×1.9)=ユーザーの「弱点は実弾とレーザー」を
+     **実弾が一番効く / レーザーはちゃんと通る / 他は弾かれる**という形で入れてある。
+   ⚠⚠**弱点(特効)は1体につき1つのまま**=2つ持たせると「片方だけ持って行けば済む」になる
+     ([[DESIGN]] で却下ずみ)。⚠**型の分からない一撃(必殺・砲撃)は通る扱い**=分からない物を弱くしない。 */
+const BULLET_VS_WING=TUNE("BULLET_VS_WING",1.9,1,3,.05);
+const WING_MISS=['melee','blast','fire','frost'];/* 🪶羽に届かない型(45%になる) */
 const ARMOR_CUT=TUNE("ARMOR_CUT",.45,.2,1,.05);/* 🛡装甲・🐟鱗の敵に「貫通しない攻撃」が通る割合(dmgZ が掛ける) */
 /* ============ 🛡 相性の見せ方(2026-08-04) ============
    ⭐**それまで相性はコードにしか無く、プレイヤーには一切見えていなかった**
@@ -4866,8 +4903,11 @@ const afPrc=(type,prc,isTw)=>isTw?(type!=='bullet'||!!prc):(type==='fire'||type=
 function afMul(type,prc,isTw){
  if(type==='eco'||type==='sup'||type==='heal')return null;
  const m=afPrc(type,prc,isTw)?1:ARMOR_CUT;
+ /* 🪶(194)羽は**届くかどうか**で決まる=貫通の話ではない(名指しの4種だけ届かない) */
+ const w=(WING_MISS.indexOf(type)>=0)?ARMOR_CUT:1;
  /* ⚠(187)**塔だけの話ではなくなった**(進行の作り替えC)=兵科・英雄にも同じ特効が乗る */
- return{ar:(type==='fire')?FIRE_VS_ARMOR:m,sc:(type==='elec')?ELEC_VS_SCALE:m};
+ return{ar:(type==='fire')?FIRE_VS_ARMOR:m,sc:(type==='elec')?ELEC_VS_SCALE:m,
+  wg:(type==='bullet')?BULLET_VS_WING:w};
 }
 /* ⚔⭐⭐⭐(187)**兵科と英雄にも属性を効かせる**(進行の作り替えC・2026-08-06ユーザー決定)。
    ⚠⚠**それまで特効(×1.9)が乗るのは塔だけ**で、兵科と英雄は素通りしていた=
@@ -4877,13 +4917,17 @@ function afMul(type,prc,isTw){
    ⚠⚠**兵科の一撃は必ず `uHit` を通すこと**=`dmgZ` を直に呼ぶと特効が乗らない。 */
 function afUnit(ty,z){
  if(z){if(ty==='fire'&&z.armor)return{m:FIRE_VS_ARMOR,wk:'fire'};
-  if(ty==='elec'&&z.scl)return{m:ELEC_VS_SCALE,wk:'elec'};}
+  if(ty==='elec'&&z.scl)return{m:ELEC_VS_SCALE,wk:'elec'};
+  if(ty==='bullet'&&z.wing)return{m:BULLET_VS_WING,wk:'bullet'};}/* 🪶(194)撃ち落とす */
  return{m:1,wk:0};
 }
 /* その兵科/英雄の攻撃が装甲・鱗を貫くか。⚠**判定は afPrc と同じ式**(2か所に書かない) */
 const uPrc=U=>afPrc((U&&U.type)||'',0,false)?1:0;
-function uHit(C,z,d,U,quiet){const a=afUnit((U&&U.type)||'',z);
- dmgZ(C,z,d*a.m,uPrc(U),quiet,a.wk);}
+/* 🪶(194)🔫実弾が羽へ当たった時の倍率と合図。⚠**2か所に書かない**ためここ1本にする */
+const wgX=z=>(z&&z.wing)?BULLET_VS_WING:1;
+const wgW=z=>(z&&z.wing)?'bullet':0;
+function uHit(C,z,d,U,quiet){const ty=(U&&U.type)||'',a=afUnit(ty,z);
+ dmgZ(C,z,d*a.m,uPrc(U),quiet,a.wk,ty);}
 /* ⭐一覧に出す札1つぶん。⭐⭐**数字ではなく「動詞」で書く**(2026-08-04(142)ユーザー
      「編成とタワーの札もちょっとわかりずらいからもっとほかの方法があるといいね」)。
    ⚠⚠**それまで「装甲45%」「鱗190%」と割合を書いていた**が、
@@ -4905,7 +4949,10 @@ function afTag(type,prc,isTw){
      とかぐらいの分かりやすい感じで。文字はごちゃごちゃするから要らない」)。
    ⚠⚠**割合(45%/×1.9)も説明文も入れない**=絵文字と一語だけ。長くしたくなったらここを疑う。 */
 function afZ(Z){
- if(!Z||(!Z.armor&&!Z.scl))return null;
+ if(!Z)return null;
+ /* 🪶(194)羽=届く物と届かない物で言う(貫通の話ではない) */
+ if(Z.wing)return{wk:'🔫実弾',rs:'✊近接 💣爆発 🔥火炎 ❄冷気'};
+ if(!Z.armor&&!Z.scl)return null;
  return{wk:Z.armor?'🔥火炎':'⚡電撃',rs:'✊近接 🔫実弾 ❄冷気'};
 }
 /* 📖(165)**図鑑用=印だけ**(ユーザー指示「ゾンビ図鑑で 弱点:🔥 耐性:🔫 みたいに
@@ -4913,6 +4960,7 @@ function afZ(Z){
    ⚠(166)**持っていない個体も「-」で必ず出す**(ユーザー指示「耐性とかないやつは 弱点:- って感じで
    一応記載して」)=行が出たり出なかったりすると、**札ごとに高さが変わって並びが揺れる**。 */
 function afZIC(Z){
+ if(Z&&Z.wing)return{wk:'🔫',rs:'✊💣🔥❄'};/* 🪶(194) */
  if(!Z||(!Z.armor&&!Z.scl))return{wk:'-',rs:'-'};
  return{wk:Z.armor?'🔥':'⚡',rs:'✊🔫❄'};
 }
@@ -10155,6 +10203,253 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  /* ⚠黒フチを絵の大きさに比例させて太くする(2.6*CH_UP)のは**試して駄目だった**(第96弾)。
     34pxでは3.9だとフチが図形を食い、頭がヘルメット・腕が黒い棒になる。2.6のままが正しい */
  c.lineWidth=2.6/s;c.strokeStyle=INK;
+ /* ===== 🪶⭐⭐⭐ 面③ 送電鉄塔の丘=空を飛ぶ敵(2026-08-06(194)) =====
+    ⚠⚠**空の敵は「翼2枚+丸い胴」で全部同じ紙飛行機になる**(nmBat/nmCrow で2回踏んだ穴)。
+    ⭐**輪郭を分ける物を1体ずつ決める**=鳩は胸/雀は群れ/烏は金属の羽/蠅は腹/蝙蝠は開いた口/
+      燕は鎌の翼と二又の尾/胞子は傘/蜂は縞と針/蜻蛉は4枚羽/鷺は折れた首/梟は顔盤/
+      禿鷲は裸の首/甲虫は鞘翅/主は鉄骨/空を覆うものは膜と目。
+    ⭐**翼は共通の道具(zWg)にする**=1体ずつ書くと描く回数が跳ねる([[NOTES_絵]]の掟)。
+    ⚠**浮かせる**=空の敵は地面から離して描く(`c.translate(0,-…)`)。 */
+ if(Z.st===3&&!Z.nm){
+  const ZC=Z.c,fl=Math.sin(t*13+ph),fl2=Math.sin(t*13+ph+.9);
+  /* 翼1枚。k=形(0=丸い/1=尖った鎌/2=ぼろぼろ/3=薄い透ける) / sg=左右 / f=羽ばたき */
+  const zWg=(sg,f,dk,ln,k,yb)=>{
+   const tp=(yb||0)-6-f*10;
+   c.fillStyle=(k===3)?shade(ZC,dk*1.5):shade(ZC,dk);
+   if(k===3)c.globalAlpha=.62;
+   c.beginPath();c.moveTo(sg*1.5,(yb||0)+2);
+   c.quadraticCurveTo(sg*ln*.5,tp-5,sg*ln,tp+(k===1?-6:0));
+   if(k===2){/* ぼろぼろ=後縁を3つ欠く */
+    c.quadraticCurveTo(sg*ln*.74,tp+9,sg*ln*.62,tp+3);
+    c.quadraticCurveTo(sg*ln*.5,tp+11,sg*ln*.38,tp+5);
+    c.quadraticCurveTo(sg*ln*.26,tp+12,sg*1.5,(yb||0)+7);}
+   else if(k===1)c.quadraticCurveTo(sg*ln*.42,tp+7,sg*1.5,(yb||0)+7);
+   else c.quadraticCurveTo(sg*ln*.5,tp+10,sg*1.5,(yb||0)+7);
+   c.closePath();c.fill();c.stroke();c.globalAlpha=1;};
+  /* 丸い胴(鳥の型)。yb=胴の中心の高さ */
+  const zBod=(yb,w9,h9,dk)=>zFill(c,()=>{c.beginPath();c.ellipse(0,yb,w9,h9,-.12,0,7);},shade(ZC,dk||1),yb);
+  if(Z.id==='aPige'){/* 腐肉バト=**胸を張ったずんぐり**。⚠翼は短く丸い(尖らせると燕になる) */
+   c.translate(0,-19-Math.abs(fl)*3);
+   zWg(-1,fl2,.72,17,0,0);
+   zBod(0,10,8.4,1);
+   c.fillStyle=shade(ZC,1.28);/* 胸の光沢(鳩の決め手) */
+   c.beginPath();c.ellipse(4.6,1.4,4.6,4.8,-.3,0,7);c.fill();
+   zWg(1,fl,.92,18,0,0);
+   c.fillStyle=shade(ZC,.86);/* 尾(短い扇) */
+   c.beginPath();c.moveTo(-8,-1);c.lineTo(-17,-4.6);c.lineTo(-17,3.4);c.closePath();c.fill();c.stroke();
+   zFill(c,()=>{c.beginPath();c.ellipse(9.4,-8.4,5.2,5,0,0,7);},ZC,-12);
+   c.fillStyle=PANE;c.beginPath();c.moveTo(13,-8.6);c.lineTo(18.4,-7);c.lineTo(13,-5.4);c.closePath();c.fill();c.stroke();
+   zEye(c,11.4,-9.6,1.9);c.restore();return;}
+  if(Z.id==='aSpar'){/* 群れスズメ=**3羽の群れ**(1羽だと点にしか見えない。巨鼠と同じ手当て) */
+   const one=(dx,dy,k9,sc9)=>{c.save();c.translate(dx,dy);c.scale(sc9,sc9);
+    const f9=Math.sin(t*17+ph+k9*1.7);
+    zWg(-1,f9,.7,11,1,0);
+    zFill(c,()=>{c.beginPath();c.moveTo(-8,0);c.lineTo(2,-5.4);c.lineTo(8.6,-1);c.lineTo(1.6,4.4);c.closePath();},ZC,-2);
+    zWg(1,-f9,.95,12,1,0);
+    c.fillStyle=PANE;c.beginPath();c.moveTo(8,-1.6);c.lineTo(12.4,-.2);c.lineTo(8,1.4);c.closePath();c.fill();
+    zEye(c,6,-2.2,1.5);c.restore();};
+   c.translate(0,-20);
+   one(-9,7,0,.86);one(7,3,1,.94);one(-2,-6,2,1.06);c.restore();return;}
+  if(Z.id==='aCrow'){/* 鉄羽のカラス=**羽の1枚1枚が金属板**。⚠これが「殴っても効かない」の看板 */
+   c.translate(0,-21-Math.abs(fl)*3);
+   const mtWg=(sg,f,dk)=>{zWg(sg,f,dk,23,0,0);
+    c.fillStyle=shade(ZC,dk*1.7);/* 板の継ぎ目(長さ違いに3枚) */
+    for(const g of[[20,3],[14,6],[8,8]]){c.beginPath();
+     c.moveTo(sg*3,1);c.lineTo(sg*g[0],-8-f*10+g[1]);c.lineTo(sg*(g[0]-3),-6-f*10+g[1]+2);c.closePath();c.fill();}};
+   mtWg(-1,fl2,.68);
+   zBod(0,11,8,1);
+   c.fillStyle=shade(ZC,1.5);c.fillRect(-6,-3,11,2.2);/* 背の鉄板 */
+   mtWg(1,fl,.95);
+   c.fillStyle=shade(ZC,.8);
+   c.beginPath();c.moveTo(-9,-1);c.lineTo(-20,-5.4);c.lineTo(-19,4);c.closePath();c.fill();c.stroke();
+   zFill(c,()=>{c.beginPath();c.ellipse(10,-8.6,5.6,5.2,0,0,7);},ZC,-12);
+   c.fillStyle=shade(ZC,1.6);/* 嘴(太く先が下へ曲がる=鶴にしない) */
+   c.beginPath();c.moveTo(13.4,-11);c.lineTo(22.4,-8);c.lineTo(20,-4.4);c.lineTo(13.4,-6);c.closePath();c.fill();c.stroke();
+   zEye(c,12,-10.4,2);c.restore();return;}
+  if(Z.id==='aFly'){/* 膨れハエ=**腹が主役**(翼は速すぎてブレる) */
+   c.translate(0,-17-Math.abs(fl)*2);
+   const bw=(sg)=>{c.globalAlpha=.5;c.fillStyle=PAPER3;
+    c.beginPath();c.ellipse(sg*11,-9-Math.abs(fl)*3,11,4.4,sg*.5,0,7);c.fill();c.globalAlpha=1;};
+   bw(-1);bw(1);
+   zFill(c,()=>{c.beginPath();c.ellipse(-3,1,12.4,10,-.1,0,7);},ZC,-3);
+   c.fillStyle=shade(ZC,.66);/* 腹の節(横に2本) */
+   c.fillRect(-14,-1.4,13,2.4);c.fillRect(-13,3.4,12,2.2);
+   zFill(c,()=>{c.beginPath();c.ellipse(10.4,-4.4,6.4,6,0,0,7);},shade(ZC,1.2),-8);
+   c.fillStyle='#c14b3e';/* 複眼(大きい=蠅の決め手) */
+   c.beginPath();c.ellipse(12.4,-6.4,4.2,4.6,-.2,0,7);c.fill();c.stroke();
+   c.fillStyle=PANE;c.beginPath();c.arc(13.6,-7.6,1.3,0,7);c.fill();c.restore();return;}
+  if(Z.id==='aBat'){/* 鳴きコウモリ=**口を開けて鳴いている**(nmBatとは口と音で分ける) */
+   c.translate(0,-23-Math.abs(fl)*4);
+   zWg(-1,fl2,.7,22,2,0);
+   zFill(c,()=>{c.beginPath();c.ellipse(0,0,7.4,9,0,0,7);},ZC,-3);
+   zWg(1,fl,.92,23,2,0);
+   c.fillStyle=shade(ZC,.82);/* 耳(細長く上へ・長さ違い) */
+   c.beginPath();c.moveTo(2,-12);c.lineTo(-1,-22);c.lineTo(6,-14);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(7,-12.4);c.lineTo(9.4,-20);c.lineTo(11,-13);c.closePath();c.fill();c.stroke();
+   zFill(c,()=>{c.beginPath();c.ellipse(7,-11.4,5.6,5.2,0,0,7);},ZC,-14);
+   c.fillStyle='#3a1a1a';/* 開いた口(鳴いている) */
+   c.beginPath();c.moveTo(9,-11);c.lineTo(15.4,-13.4);c.lineTo(15.4,-6.6);c.closePath();c.fill();c.stroke();
+   c.fillStyle=PANE;c.beginPath();c.moveTo(10.4,-11.4);c.lineTo(12.4,-9.4);c.lineTo(12.6,-11.6);c.closePath();c.fill();
+   if(FXLV>0){c.strokeStyle=shade(ZC,1.7);c.lineWidth=1.6/s;c.globalAlpha=.5+.4*Math.sin(t*9+ph);
+    for(const r9 of[7,11]){c.beginPath();c.arc(16,-10,r9,-.8,.8);c.stroke();}
+    c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;}
+   zEye(c,9.6,-12.6,1.8);c.restore();return;}
+  if(Z.id==='aSwal'){/* 疾風ツバメ=**鎌の翼と二又の尾**。⚠前傾させる(速さは姿勢で言う) */
+   c.translate(0,-22-Math.abs(fl)*2);c.rotate(-.16);
+   zWg(-1,fl2*.6,.72,24,1,0);
+   zFill(c,()=>{c.beginPath();c.moveTo(-12,-1);c.bezierCurveTo(-6,-7,6,-8,12,-4);
+    c.bezierCurveTo(7,2,-4,5,-12,3);c.closePath();},ZC,-2);
+   zWg(1,fl*.6,.96,26,1,0);
+   c.fillStyle=shade(ZC,.84);/* 二又の尾(燕の決め手) */
+   c.beginPath();c.moveTo(-10,-1.4);c.lineTo(-24,-7.4);c.lineTo(-16,-.4);c.lineTo(-24,6.4);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(ZC,1.34);c.beginPath();c.ellipse(9.4,-3.4,4,3.4,-.2,0,7);c.fill();/* 喉の明色 */
+   c.fillStyle=PANE;c.beginPath();c.moveTo(13,-5);c.lineTo(18,-3.6);c.lineTo(13,-2.2);c.closePath();c.fill();
+   zEye(c,10.4,-5.4,1.7);c.restore();return;}
+  if(Z.id==='aSpor'){/* 浮遊胞子=**傘と垂れる糸**。⚠翼を付けない(付けると鳥の仲間に見える) */
+   const sw9=Math.sin(t*3.4+ph);
+   c.translate(sw9*3,-24-sw9*4);
+   c.strokeStyle=shade(ZC,.8);c.lineWidth=1.8/s;/* 垂れる糸(長さ違いに4本) */
+   for(const g of[[-7,17],[-2,23],[3,19],[8,14]]){c.beginPath();c.moveTo(g[0],4);
+    c.quadraticCurveTo(g[0]+sw9*3,4+g[1]*.6,g[0]+sw9*5,4+g[1]);c.stroke();}
+   c.strokeStyle=INK;c.lineWidth=2.6/s;
+   zFill(c,()=>{c.beginPath();c.moveTo(-13,4);c.bezierCurveTo(-14,-10,14,-10,13,4);
+    c.quadraticCurveTo(6,7.4,0,4.6);c.quadraticCurveTo(-6,7.4,-13,4);c.closePath();},ZC,-2);
+   c.fillStyle=shade(ZC,1.4);/* 傘の筋(等間隔にしない) */
+   for(const g of[-8,-2,5]){c.beginPath();c.moveTo(g,3);c.quadraticCurveTo(g*.5,-7,g*.2,-8.4);
+    c.lineTo(g*.2+1.6,-8.2);c.quadraticCurveTo(g*.6,-6,g+2,3);c.closePath();c.fill();}
+   zEye(c,3.4,-1.4,2);zEye(c,-4.6,-.6,1.6);c.restore();return;}
+  if(Z.id==='aWasp'){/* 毒蜂=**縞の腹と針**。⚠翼は小さくブレさせる(蜂は羽が見えない) */
+   c.translate(0,-20-Math.abs(fl)*2);
+   c.globalAlpha=.5;c.fillStyle=PAPER3;
+   for(const sg of[-1,1]){c.beginPath();c.ellipse(sg*4,-9-Math.abs(fl)*3,9,3.6,sg*.6,0,7);c.fill();}
+   c.globalAlpha=1;
+   zFill(c,()=>{c.beginPath();c.ellipse(-6,1.4,9.4,7,-.14,0,7);},ZC,-2);
+   c.fillStyle='#2c2620';/* 縞(3本・幅違い) */
+   c.fillRect(-13,-3,3.4,9);c.fillRect(-7.4,-4.4,2.6,10.4);c.fillRect(-2.6,-4.6,2,10);
+   c.fillStyle=shade(ZC,1.5);/* 針 */
+   c.beginPath();c.moveTo(-14.4,-.6);c.lineTo(-23.4,2.4);c.lineTo(-14,3.6);c.closePath();c.fill();c.stroke();
+   zFill(c,()=>{c.beginPath();c.ellipse(6.4,-2.4,6,5.6,0,0,7);},shade(ZC,.8),-6);
+   c.fillStyle='#2c2620';c.beginPath();c.ellipse(9,-4,3.4,3.8,-.2,0,7);c.fill();
+   c.fillStyle=PANE;c.beginPath();c.arc(10,-5,1.2,0,7);c.fill();c.restore();return;}
+  if(Z.id==='aDrag'){/* 骨トンボ=**4枚の細長い透ける羽と節のある尾** */
+   c.translate(0,-23-Math.abs(fl)*2);
+   const dw=(sg,dx,f)=>{c.globalAlpha=.55;c.fillStyle=shade(ZC,1.5);
+    c.beginPath();c.ellipse(dx+sg*13,-4-f*6,15,3.2,sg*.24,0,7);c.fill();c.stroke();c.globalAlpha=1;};
+   dw(-1,4,fl2);dw(-1,-6,fl);dw(1,4,fl);dw(1,-6,fl2);
+   c.fillStyle=shade(ZC,.9);/* 尾(節を5つ・先へ細く) */
+   for(let k=0;k<5;k++){const x9=-8-k*4.6,h9=3.4-k*.42;
+    c.beginPath();c.ellipse(x9,1.4,2.9,h9,0,0,7);c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(-1,0,8,5.4,0,0,7);},ZC,-2);
+   zFill(c,()=>{c.beginPath();c.ellipse(8.4,-2.4,5.4,5,0,0,7);},shade(ZC,1.1),-6);
+   c.fillStyle='#2c2620';/* 複眼2つ(蜻蛉の決め手) */
+   for(const g of[[10.4,-4.6],[7.4,-5.6]]){c.beginPath();c.ellipse(g[0],g[1],3,3.2,0,0,7);c.fill();}
+   c.fillStyle=PANE;c.beginPath();c.arc(11.4,-5.6,1.2,0,7);c.fill();c.restore();return;}
+  if(Z.id==='aHern'){/* 骸のサギ=**S字に折った首と長い脚**。⚠首をまっすぐにすると鶴になる */
+   c.translate(0,-25-Math.abs(fl)*4);
+   c.strokeStyle=shade(ZC,.7);c.lineWidth=3.2/s;/* 垂れる長い脚(2本・長さ違い) */
+   for(const g of[[-2,20],[3,17]]){c.beginPath();c.moveTo(g[0],5);
+    c.quadraticCurveTo(g[0]-3,5+g[1]*.7,g[0]-7,5+g[1]);c.stroke();}
+   c.strokeStyle=INK;c.lineWidth=2.6/s;
+   zWg(-1,fl2,.7,27,0,0);
+   zFill(c,()=>{c.beginPath();c.ellipse(-2,0,11.4,7.4,-.1,0,7);},ZC,-2);
+   zWg(1,fl,.95,29,0,0);
+   c.fillStyle=shade(ZC,.86);/* S字の首 */
+   c.beginPath();c.moveTo(6,-4);c.bezierCurveTo(14,-6,10,-13,4,-14.4);
+   c.bezierCurveTo(11,-19,17,-16,17,-11.4);c.bezierCurveTo(17,-6,12,-1,7,-.6);
+   c.closePath();c.fill();c.stroke();
+   zFill(c,()=>{c.beginPath();c.ellipse(16,-15,4.6,4.2,0,0,7);},ZC,-18);
+   c.fillStyle=PANE;/* 長い嘴 */
+   c.beginPath();c.moveTo(19,-17);c.lineTo(32.4,-13.4);c.lineTo(19,-12.4);c.closePath();c.fill();c.stroke();
+   zEye(c,18,-16.4,1.8);c.restore();return;}
+  if(Z.id==='aOwl'){/* 夜のフクロウ=**丸い顔盤と大きな目2つ**。⚠体は短く詰める(伸ばすと鷹になる) */
+   c.translate(0,-24-Math.abs(fl)*3);
+   zWg(-1,fl2,.72,25,0,-2);
+   zFill(c,()=>{c.beginPath();c.ellipse(0,2,10.4,9.4,0,0,7);},ZC,0);
+   c.fillStyle=shade(ZC,1.3);/* 胸の斑(不揃い) */
+   for(const g of[[-3,4],[3,1],[1,7],[-5,9]]){c.beginPath();c.arc(g[0],g[1],1.5,0,7);c.fill();}
+   zWg(1,fl,.95,26,0,-2);
+   zFill(c,()=>{c.beginPath();c.ellipse(2,-11,10,8.6,0,0,7);},shade(ZC,1.12),-14);
+   c.fillStyle=shade(ZC,1.45);/* 顔盤(2つの円=梟の決め手) */
+   for(const sg of[-1,1]){c.beginPath();c.arc(2+sg*4.4,-11.4,4.6,0,7);c.fill();c.stroke();}
+   c.fillStyle='#e8a33d';for(const sg of[-1,1]){c.beginPath();c.arc(2+sg*4.4,-11.4,2.8,0,7);c.fill();}
+   c.fillStyle=INK;for(const sg of[-1,1]){c.beginPath();c.arc(2.6+sg*4.4,-11.6,1.5,0,7);c.fill();}
+   c.fillStyle=PANE;c.beginPath();c.moveTo(2,-9.4);c.lineTo(6,-7.4);c.lineTo(2,-6);c.closePath();c.fill();
+   c.fillStyle=shade(ZC,.8);/* 耳羽(左右で長さ違い) */
+   c.beginPath();c.moveTo(-4,-17.4);c.lineTo(-6.4,-24);c.lineTo(-.6,-19);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(7,-18);c.lineTo(10.4,-23.4);c.lineTo(10.6,-17.4);c.closePath();c.fill();c.stroke();
+   c.restore();return;}
+  if(Z.id==='aVult'){/* 鉄塔のハゲワシ=**裸の首と丸めた背**。⚠翼はぼろぼろにする */
+   c.translate(0,-24-Math.abs(fl)*4);
+   zWg(-1,fl2,.68,30,2,0);
+   zFill(c,()=>{c.beginPath();c.moveTo(-13,2);c.bezierCurveTo(-15,-11,-2,-15,7,-11);
+    c.bezierCurveTo(13,-8,12,3,6,6.4);c.quadraticCurveTo(-5,9,-13,2);c.closePath();},ZC,-4);
+   c.fillStyle=shade(ZC,1.35);/* 首の襟毛(禿げた首との境) */
+   c.beginPath();c.ellipse(8,-9.4,5.4,4.4,-.4,0,7);c.fill();c.stroke();
+   zWg(1,fl,.95,32,2,0);
+   c.fillStyle=shade('#c99a86',1);/* 裸の首(肌色=禿鷲の決め手) */
+   c.beginPath();c.moveTo(8,-11);c.bezierCurveTo(13,-13,15,-18,13.4,-21.4);
+   c.lineTo(17.4,-21);c.bezierCurveTo(19,-15,15,-9,10.4,-8.4);c.closePath();c.fill();c.stroke();
+   zFill(c,()=>{c.beginPath();c.ellipse(16,-23.4,5,4.6,0,0,7);},'#c99a86',-26);
+   c.fillStyle=shade(ZC,1.5);/* 鉤の嘴(先が強く曲がる) */
+   c.beginPath();c.moveTo(19,-26);c.lineTo(28.4,-23.4);c.quadraticCurveTo(26,-18,22,-19.4);
+   c.lineTo(19,-21.4);c.closePath();c.fill();c.stroke();
+   zEye(c,18.4,-25,2);c.restore();return;}
+  if(Z.id==='aBeet'){/* 鋼殻の甲虫=**左右に開いた鞘翅とその下の薄い後翅**。⚠鳥にしない */
+   c.translate(0,-21-Math.abs(fl)*2);
+   c.globalAlpha=.5;c.fillStyle=PAPER3;/* 後翅(速くて透ける) */
+   for(const sg of[-1,1]){c.beginPath();c.ellipse(sg*13,-6-Math.abs(fl)*4,15,4.4,sg*.4,0,7);c.fill();}
+   c.globalAlpha=1;
+   const el=(sg,f)=>{c.fillStyle=shade(ZC,sg<0?.72:1.02);/* 鞘翅(硬い板・開いている) */
+    c.save();c.translate(0,0);c.rotate(sg*(.5+f*.14));
+    c.beginPath();c.ellipse(sg*8,-4,11.4,5.4,0,0,7);c.fill();c.stroke();
+    c.fillStyle=shade(ZC,1.5);c.beginPath();c.ellipse(sg*8,-5.6,8,1.6,0,0,7);c.fill();c.restore();};
+   el(-1,fl2);
+   zFill(c,()=>{c.beginPath();c.ellipse(-2,2,11.4,8,0,0,7);},ZC,0);
+   el(1,fl);
+   zFill(c,()=>{c.beginPath();c.ellipse(10,-1.4,6.4,6,0,0,7);},shade(ZC,1.16),-5);
+   c.fillStyle=shade(ZC,1.6);/* 角(甲虫の決め手・前へ突き出す) */
+   c.beginPath();c.moveTo(13.4,-4);c.lineTo(26.4,-9.4);c.lineTo(24,-4.4);c.lineTo(21,-6);
+   c.lineTo(22.4,-1.4);c.lineTo(14,-.4);c.closePath();c.fill();c.stroke();
+   zEye(c,12.4,-3.4,1.8);c.restore();return;}
+  if(Z.id==='aRoc'){/* 🪶ボス 鉄塔の主=**巨大な猛禽**。⚠胸に鉄骨を抱えている(丘の主だと分かる) */
+   c.translate(0,-30-Math.abs(fl)*5);
+   zWg(-1,fl2,.66,44,2,-2);
+   zFill(c,()=>{c.beginPath();c.moveTo(-16,4);c.bezierCurveTo(-19,-14,-3,-19,9,-13);
+    c.bezierCurveTo(17,-9,15,5,7,9);c.quadraticCurveTo(-6,12,-16,4);c.closePath();},ZC,-6);
+   c.fillStyle=shade(ZC,1.4);/* 胸の羽の段(3枚・長さ違い) */
+   for(const g of[[-8,2,9],[-2,5,7],[3,7,5]]){c.beginPath();
+    c.moveTo(g[0],g[1]);c.quadraticCurveTo(g[0]+g[2],g[1]+4,g[0]+g[2]+2,g[1]-1);c.lineTo(g[0]+2,g[1]-3);c.closePath();c.fill();}
+   zWg(1,fl,.96,47,2,-2);
+   c.fillStyle='#7a8188';/* 抱えた鉄骨(丘=送電鉄塔の看板) */
+   c.save();c.rotate(.26);c.fillRect(-14,12,34,4.4);c.strokeRect(-14,12,34,4.4);
+   c.fillStyle='#5f676e';for(const g of[-8,2,12]){c.fillRect(g,12.6,2.4,3.2);}c.restore();
+   zFill(c,()=>{c.beginPath();c.ellipse(16,-19,7.4,6.8,0,0,7);},shade(ZC,1.1),-23);
+   c.fillStyle=GOLD2;
+   c.beginPath();c.moveTo(21,-23);c.lineTo(35.4,-19.4);c.quadraticCurveTo(32,-12,26,-14.4);
+   c.lineTo(21.4,-17);c.closePath();c.fill();c.stroke();
+   zEye(c,19.4,-21.4,2.4);c.restore();return;}
+  if(Z.id==='aStorm'){/* 🪶最終ボス 空を覆うもの=**翼ではなく「膜」と、そこに開く目**。
+     ⚠鳥の形にしない(ここまで全部鳥なので、最後だけ形の系統を変える=「別格」が輪郭で出る) */
+   const sw9=Math.sin(t*2.6+ph);
+   c.translate(0,-30-sw9*4);
+   const veil=(sg,f)=>{c.fillStyle=shade(ZC,sg<0?.66:.9);
+    c.beginPath();c.moveTo(sg*3,-6);
+    c.bezierCurveTo(sg*22,-22-f*7,sg*44,-14,sg*49,4+f*4);
+    c.quadraticCurveTo(sg*38,2,sg*33,10);
+    c.quadraticCurveTo(sg*26,3,sg*20,12);
+    c.quadraticCurveTo(sg*13,4,sg*3,10);
+    c.closePath();c.fill();c.stroke();};
+   veil(-1,sw9);
+   zFill(c,()=>{c.beginPath();c.ellipse(0,-2,13.4,15,0,0,7);},ZC,-6);
+   veil(1,-sw9);
+   c.fillStyle=shade(ZC,1.5);/* 膜の筋 */
+   for(const sg of[-1,1])for(const g of[[26,-4],[17,2]]){c.beginPath();
+    c.moveTo(sg*4,-4);c.lineTo(sg*g[0],g[1]);c.lineTo(sg*(g[0]-2),g[1]+3);c.closePath();c.fill();}
+   /* ⭐目を不揃いに散らす(等間隔だと模様になる)=「1体ではない」に見せる */
+   for(const g of[[2,-11,2.8],[-5,-4,2.2],[7,-3,1.9],[-2,4,2.4],[5,9,1.7],[-7,10,1.5]])
+    zEye(c,g[0],g[1],g[2]);
+   c.restore();return;}
+ }
  /* ===== ナイトメアの獣たち ===== */
  /* ===== 🌑ナイトメアの獣たち(2026-07-27 第103弾に8種すべて描き直し) =====
     ⚠ここが一番古い絵で、**角丸長方形の胴+丸い頭+等間隔の部品**が全種に残っていた。
@@ -17601,11 +17896,13 @@ function buildTide(wave){
     ①廃線=ゾンビ / ②沈んだ港=海の亡骸 / ③ナイトメア=獣 / ④🌑×②=変異した深海の生き物。
     ⚠それまでは**ナイトメアならステージを問わず獣**だったので、沈んだ港で陸の獣が出ていた。 */
  const nmOn=isNM();
+ const on3=G.pve&&!G.coop&&stageZs()===3;/* 🪶(194)面③=空。⚠NM専用の顔ぶれはまだ無いので、③は難易度を問わず同じプール */
  const on2=G.pve&&!G.coop&&stageZs()===2;/* いま2面か(難易度は見ない) */
  const st2=!nmOn&&on2;
  const nm2=nmOn&&on2;/* ④深海のナイトメア */
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
   if(Z.boss||Z.mw>wave)return false;
+  if(on3)return Z.st===3&&!Z.nm;/* 🪶(194) */
   if(nm2)return !!Z.nm&&Z.st===2;
   if(nmOn)return !!Z.nm&&!Z.st;/* ⚠**!Z.st を忘れると獣の波に深海が混ざる** */
   if(st2)return Z.st===2&&!Z.nm;/* ⚠同じく **!Z.nm** を忘れると沈んだ港に深海ナイトメアが出る */
@@ -17637,7 +17934,9 @@ function buildTide(wave){
  if(wave===10||wave===15||wave===20||(!G.pve&&wave%5===0)){
   const fin=!!(G.pve&&wave>=20);
   /* ⚠**プール4つぶん**を同じ順で見ること(④→③→②→①)。④を先に見ないと獣のボスが出る */
-  const bi=nm2?((fin&&FINNM2_ZI>=0)?FINNM2_ZI:NM2_BOSS_ZI)
+  /* 🪶(194)面③は難易度を問わず空のボス=**④③②①より先に見る** */
+  const bi=on3?((fin&&FIN3_ZI>=0)?FIN3_ZI:ST3_BOSS_ZI)
+   :nm2?((fin&&FINNM2_ZI>=0)?FINNM2_ZI:NM2_BOSS_ZI)
    :nmOn?((fin&&FINNM_ZI>=0)?FINNM_ZI:NM_BOSS_ZI)
    :st2?((fin&&FIN2_ZI>=0)?FIN2_ZI:ST2_BOSS_ZI)
    :((fin&&FIN_ZI>=0)?FIN_ZI:BOSS_ZI);
@@ -18753,7 +19052,7 @@ function kbZ(z,cx,cy,pw){if(!z||z.dead)return;
    🛡wk=**特効が乗っている一撃なら、その属性の名前**('fire'/'elec'…)。数字をその属性の色で出す。
    ⚠倍率そのものは呼ぶ側で掛けてある(ここでは掛けない)=数字の**色を変えるためだけ**に受け取る。
    ⚠減らされた側(45%)は下でこの関数自身が判定するので、呼ぶ側は何もしなくてよい。 */
-function dmgZ(C,z,d,armorPierce,quiet,wk){
+function dmgZ(C,z,d,armorPierce,quiet,wk,ty){
  if(z.dead)return;
  if(z.dvT>0)return;/* 🐟潜行中は当たらない(②の魚系ギミック) */
  if(z.shT>0)d*=.2;/* 🐢甲羅ごもり中は2割しか通らない(②のウミガメの個性) */
@@ -18765,7 +19064,10 @@ function dmgZ(C,z,d,armorPierce,quiet,wk){
  /* 装甲(ステージ1)も鱗の鎧(ステージ2)も、通常弾は45%しか通らない。貫通はどちらも無視する。
     ⚠割合は `ARMOR_CUT` の1か所だけ=図鑑・編成・建設メニューの説明も同じ値から作っている */
  let afk9='';/* 🛡この一撃の相性(''=等倍 / 'rs'=減らされた / 'wk'=特効が乗っている) */
- if((z.armor||z.scl)&&!armorPierce){d*=ARMOR_CUT;afk9='rs';}
+ /* 🪶(194)**羽は「届くか」で決まる**=貫通の話ではないので、装甲・鱗とは別の枝にする。
+    ⚠**型(ty)を渡していない一撃は通る扱い**(必殺・砲撃など)=分からない物を弱くしない。 */
+ if(z.wing){if(ty&&WING_MISS.indexOf(ty)>=0){d*=ARMOR_CUT;afk9='rs';}}
+ else if((z.armor||z.scl)&&!armorPierce){d*=ARMOR_CUT;afk9='rs';}
  if(wk)afk9='wk';/* ⚠特効(×1.9)は呼ぶ側で掛けているので、合図だけ受け取る(中身=属性の名前) */
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
  z.hp-=d;
@@ -19954,7 +20256,7 @@ function campStep(C,dt,wave){
     d.cd-=dt;
     if(tg2&&d.cd<=0&&dist(d.x,d.y,tg2.px,tg2.py)<=dR){
      d.cd=T.rate*twRateM(tw);d.am--;
-     dmgZ(C,tg2,dmd,prc9);
+     dmgZ(C,tg2,dmd*wgX(tg2),prc9,0,wgW(tg2),'bullet');
      if(FXLV>0){addFx(C,'pel',d.x,d.y,'',{x2:tg2.px,y2:tg2.py-20*CH_UP,lf:.16,col:trC9});
       addP(C,2,d.x,d.y,{sp:70,a:Math.atan2((tg2.py-20*CH_UP)-d.y,tg2.px-d.x),spread:.35,g:60,life:.1,r:1.4,col:GLOW});}
      const zz=tg2;later(C,.16,()=>{hitFx(C,zz,tw.ang,hitC9,prc9,T.type);});
@@ -20052,7 +20354,7 @@ function campStep(C,dt,wave){
      z.frzUsed=(z.frzUsed||0)+1;
      /* ⭐凍らせた敵の足元に氷が張る=どれが止まったのか一目で分かる(2026-07-26) */
      if(FXLV>0&&++nfz<=6)addFx(C,'ice',z.px,z.py,'',{r:26,sd:rnd(0,9),lf:.55});}
-    dmgZ(C,z,dm,1);}}
+    dmgZ(C,z,dm,1,0,0,'net');}}
    addFx(C,'ring',sx,sy,'',{r:rng,col:T.frz?FROST:'#9fd9c6'});
    /* ⭐冷却塔は冷気が床を這う白い波も出す。⚠ネット砲と同じ輪1つでは見分けが付かなかった */
    if(T.frz&&FXLV>0)addFx(C,'shock',sx,sy+6,'',{r:rng*.62,col:'#e8f7ff'});
@@ -20062,13 +20364,13 @@ function campStep(C,dt,wave){
    /* ⭐炎(酸)の帯を狙った方向へ吹く。⚠今までは銃口の粒だけで「届いている」感じが出ていなかった */
    if(FXLV>0)addFx(C,'flame',mzx,mzy,'',
     {ang:tw.ang,len:rng*.92,col:T.id==='acid'?'#a8e05a':'#ff9a3d',sd:rnd(0,9)});
-   dmgZ(C,tg,dm*av,1,0,av>1?'fire':0);/* 🛡av>1=装甲に特効が乗った=数字を火炎の色の▲にする */
+   dmgZ(C,tg,dm*av,1,0,av>1?'fire':0,'fire');/* 🛡av>1=装甲に特効が乗った=数字を火炎の色の▲にする */
    /* ⭐吹き付けた炎は狙った敵の周りにも広がる=直撃の1/4だけ通る(2026-07-26ユーザー指示)。
       ⚠装甲特効は敵ごとに見る(周りの敵が装甲持ちならそちらにも1.9倍が乗る)。燃焼が付くのは直撃だけ */
    if(T.fspl){const sr=T.fspl*(1+.06*usEff(tw.us.g));
     for(const z2 of C.zombies){if(z2.dead||z2===tg||z2.d<0)continue;
      if(dist(z2.px,z2.py,tg.px,tg.py)>sr)continue;
-     dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1,0,z2.armor?'fire':0);}
+     dmgZ(C,z2,dm*.25*(z2.armor?FIRE_VS_ARMOR:1),1,0,z2.armor?'fire':0,'fire');}
     if(FXLV>0)addFx(C,'ring',tg.px,tg.py,'',{r:sr,col:'#ff9a3d'});}
    if(!tg.dead){const bd=T.burn*m*aB*(1+(TRT&&TRT.k==='burn'?TRT.v*TL:0))*av;
     /* ⭐酸(axr持ち)は燃焼ではなく**酸**として乗せる=倒れた時に酸爆発が起きる */
@@ -20082,14 +20384,14 @@ function campStep(C,dt,wave){
    C.arcs.push({x:mzx,y:mzy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
   else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
-   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*elecX()*(cur.scl?ELEC_VS_SCALE:1),1,0,cur.scl?'elec':0);
+   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*elecX()*(cur.scl?ELEC_VS_SCALE:1),1,0,cur.scl?'elec':0,'elec');
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
     let nx=null,bd=1e9;
     for(const z of C.zombies){if(z.dead||hitl.includes(z))continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}
     if(!nx){bd=1e9;for(const z of C.zombies){if(z.dead||z===cur)continue;const dd=dist(z.px,z.py,cur.px,cur.py);if(dd<ARC_HOP&&dd<bd){bd=dd;nx=z;}}}
     if(!nx)break;
-    dmgZ(C,nx,dm*Math.pow(.85,k)*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0);if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
+    dmgZ(C,nx,dm*Math.pow(.85,k)*elecX()*(nx.scl?ELEC_VS_SCALE:1),1,0,nx.scl?'elec':0,'elec');if(hitl.indexOf(nx)<0)hitl.push(nx);pts.push([nx.px,nx.py]);cur=nx;}
    addFx(C,'zap',sx,sy,'',{pts,sd:rnd(0,9)});
    /* ⚡(163)粒は**跳ねた先だけ**に1つずつ(元は全点に2つ=連鎖6体で12個/発だった) */
    if(FXLV>0)for(let k6=1;k6<pts.length;k6++)addP(C,1,pts[k6][0],pts[k6][1],{sp:60,g:40,life:.35,r:2,col:FROST});
@@ -20111,7 +20413,7 @@ function campStep(C,dt,wave){
    const prc=T.pierce?1:0;
    /* ⭐着弾点の周りも巻き込む砲(進化した弾体)。⚠素のタワーは spl を持たないので何も起きない */
    const splash=(z0)=>{if(!T.spl)return;
-    for(const z2 of C.zombies){if(z2.dead||z2===z0)continue;if(dist(z2.px,z2.py,z0.px,z0.py)<=T.spl)dmgZ(C,z2,dm*.45,1);}
+    for(const z2 of C.zombies){if(z2.dead||z2===z0)continue;if(dist(z2.px,z2.py,z0.px,z0.py)<=T.spl)dmgZ(C,z2,dm*.45*wgX(z2),1,0,wgW(z2),'bullet');}
     addFx(C,'ring',z0.px,z0.py,'',{r:T.spl,col:'#b282ff'});};
    if(T.beam){/* ビーム砲: 射程いっぱいまで貫通ビームを撃ち、線上の敵を全部巻き込む。
      ⚠向き(tw.ang)は上で「一番多く貫ける並び」を選んである */
@@ -20120,7 +20422,7 @@ function campStep(C,dt,wave){
     let cnt=0;
     for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
      if(segDist(z.px,z.py,mzx,mzy,ex,ey)>bw)continue;
-     splash(z);dmgZ(C,z,dm,prc);if(cnt<4)hitFx(C,z,ang,hitC,prc,T.type);cnt++;}
+     splash(z);dmgZ(C,z,dm*wgX(z),prc,0,wgW(z),'bullet');if(cnt<4)hitFx(C,z,ang,hitC,prc,T.type);cnt++;}
     /* ⚠色は紫で固定(以前から `col` は無視されていた)。beamが色を受けるようになったので明示する。
        ⭐sus=撃ちっぱなしのビーム=太いまま残ってから一気に消える(2026-07-26ユーザー指示) */
     addFx(C,'beam',mzx,mzy,'',{x2:ex,y2:ey,col:'rgba(180,120,255,',col2:'rgba(216,170,255,',w:bw,
@@ -20139,7 +20441,7 @@ function campStep(C,dt,wave){
     const kd=T.id==='drone'?'drone':T.id==='fort'?'fort':T.id==='shot'?'shot':'';
     /* ⚠(172)**着弾の絵は先頭2体だけ**(要塞砲は4〜5体を同時に撃つので、全部に出すと
        1発で着弾の絵が5つ増える)。⚠**当たり判定と威力は全員そのまま**=見せ方だけ間引く。 */
-    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];splash(nx);dmgZ(C,nx,dm,prc);
+    for(let k2=0;k2<Math.min(T.multi,inr.length);k2++){const nx=inr[k2];splash(nx);dmgZ(C,nx,dm*wgX(nx),prc,0,wgW(nx),'bullet');
      const qfx=(k2<2);
      if(kd==='drone'&&FXLV>0){
       /* ⭐**浮いている2機がそれぞれ小粒の弾を撃つ**(2026-07-26ユーザー指示)。
@@ -20219,7 +20521,7 @@ function campStep(C,dt,wave){
   if(sh.stk){airstrikeHit(C,sh.tx,sh.ty,sh.wave,sh.stk,sh.byMe);continue;}/* 砲撃のロケットが着弾 */
   /* ⭐爆発は死体を外へ吹き飛ばす。⚠爆発範囲が広い砲ほど強く飛ばす(迫撃砲<重砲台<プラズマ砲) */
   for(const z of C.zombies)if(!z.dead&&dist(z.px,z.py,sh.tx,sh.ty)<=sh.aoe){
-   kbZ(z,sh.tx,sh.ty,42+sh.aoe*.45);dmgZ(C,z,sh.dmg,1);}
+   kbZ(z,sh.tx,sh.ty,42+sh.aoe*.45);dmgZ(C,z,sh.dmg,1,0,0,'blast');}
   if(sh.pz){/* ⭐プラズマの炸裂: 火薬の爆発ではなくエネルギーが弾ける */
    addFx(C,'pboom',sh.tx,sh.ty,'',{r:sh.aoe,sd:rnd(0,9)});
    addP(C,14,sh.tx,sh.ty,{sp:250,up:50,g:230,life:.55,r:2.8,col:'#f0a8e0'});
