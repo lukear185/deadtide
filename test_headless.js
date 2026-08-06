@@ -4036,8 +4036,12 @@ function checkUnlock(){
  /* ⭐(193)**10面ぶんに配れているか**=面が2つしか無いいま、2面で配り切っていたら落とす。
     ⚠この検査が無かったので取り違えに気づけなかった。 */
  {const w=UNL_T.length,u=UNL_U.length;
-  if(shelfT().length>=w||shelfU().length>=u)F('2面クリアで棚が全部並んでいる(10面ぶんに配れていない)');
-  if(UNL_TN.length<11||UNL_UN.length<11)F('配分が10面ぶん(段0+10段)になっていない');}
+  if(shelfT().length>=w||shelfU().length>=u)F('2面クリアで棚が全部並んでいる(5面ぶんに配れていない)');
+  if(UNL_TN.length!==6||UNL_UN.length!==6)F('配分が5面ぶん(段0+5段)になっていない '
+   +UNL_TN.length+'/'+UNL_UN.length);
+  /* ⭐(193)**1面あたりの配りは「塔2種・兵科3種」**(ユーザーが決めた数字。段0は別枠) */
+  for(let i=1;i<UNL_TN.length;i++)if(UNL_TN[i]!==2)F('面'+i+'の塔が2種でない '+UNL_TN[i]);
+  for(let i=1;i<UNL_UN.length;i++)if(UNL_UN[i]!==3)F('面'+i+'の兵科が3種でない '+UNL_UN[i]);}
  /* ②' ⭐(187D)**次の拠点で要る属性が、その手前の段で開く**
     =②沈んだ港(拠点7=段6の後に入る)の🐟鱗には⚡電撃が要る。段5までに並んでいなければ落とす。
     ⚠同じく①廃線の🛡装甲(W3のアーマード)には🔥火炎が要るので、段0に無ければ落とす。 */
@@ -4068,7 +4072,7 @@ function checkUnlock(){
  if(META.ot.length!==3||META.ot[0]!==TOWERS[BASE_T].id)F('旧セーブのタワー解放が引き継がれていない');
  if(META.ou.length!==2||META.ou[0]!==UBASE[BASE_U].id)F('旧セーブの兵科解放が引き継がれていない');
  META.sc=kpSc;META.ot=kpOt;META.ou=kpOu;twGrantAll();
- console.log('🎓解放の門2つ: 塔'+sT+'種・兵科'+sU+'種を'+UNL_TN.length+'段に配り切り / 拠点クリアで棚が増える(🚌は数えない) / 買っていない塔は建たない / 旧セーブの解放済みは残る OK');
+ console.log('🎓解放の門2つ: 塔'+sT+'種・兵科'+sU+'種を'+UNL_TN.length+'段(段0+5面)に配り切り / 面クリアで棚が増える(🚌は数えない) / 買っていない塔は建たない / 旧セーブの解放済みは残る OK');
 }
 /* ---- ⚔⭐(187)進行の作り替えC=兵科と英雄にも属性を効かせた ----
    ⚠**塔だけに特効が乗っていた**のを揃えた回。見るのは
