@@ -751,6 +751,12 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .hgrid .hb{background:var(--ink3);border:2px solid var(--dud);border-radius:9px;padding:5px 7px;min-height:44px;font-size:11.5px;color:var(--paper);text-align:left;
  display:flex;flex-direction:column;justify-content:center;gap:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hgrid .hb.own{border-color:var(--paper)}
+/* 📖⭐(192)**英雄図鑑の札に姿を出す**=それまで「??? ★★」の文字だけで**22枚が全部同じ札**だった。
+   [[NOTES_UI]]の型「文字だけのチップをやめて絵を出す」。⚠**まだ引いていない英雄は黒い影**にする
+   (ソシャゲの定石=「まだ見ぬ誰か」が形で分かる)。⚠絵は左・文字は右=1行に絵と文字を混ぜない。 */
+.hgrid .hb.art{position:relative;padding-left:54px;min-height:62px}
+.hgrid .hb.art canvas{position:absolute;left:2px;top:2px;width:48px;height:56px}
+.hgrid .hb.art .hs{font-size:10.5px;letter-spacing:-.5px}
 /* ⚠実機(dp=3)は文字の実測がわずかに太り、「未所持」が折り返して札の縁で切れた(ユーザー写真)。
    1行に固定して溢れは…で切る(大事な言葉は行頭に置く=renderHStat側) */
 .hgrid .hb .hq{font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -816,8 +822,14 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .gcbig{width:100%;padding:6px;font-size:17px;line-height:1.1;flex:1 1 0;min-height:46px;
  display:flex;flex-direction:column;align-items:center;justify-content:center}
 .gcbig small{display:block;font-size:12px;font-weight:900;opacity:.85;margin-top:1px}
+/* ⭐(192)**主(10連)だけ塗って一番大きく**([[NOTES_UI]]の型「同じ大きさの色付きボタンを2つ並べない」)。
+   ⚠**背は倍にしない**=横画面(高さ393px)では下の図鑑/確率が押し出される。1.45倍で止める。 */
+.gcmain{flex:1.45 1 0;font-size:20px}
+.gcsub{flex:.85 1 0;font-size:15px;opacity:.94}
 /* 🎫★5確定チケット=単発/10連と並べても「別物」と分かるように白い縁と金の光で締める */
-.gctk{border-color:#f2ecdc;box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.35) inset,
+/* ⚠(192)**塗りは10連だけ**にしたので、チケットは「薄い金の地」で別物だと言う
+   (素の枠線だけにすると単発と見分けが付かなくなった=撮って直した)。 */
+.gctk{background:#fff3d2;border-color:#f2ecdc;box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.35) inset,
  0 0 10px rgba(255,210,61,.55)}
 /* ⚠⚠**横画面は高さ393pxしか無い**=3つ目の大ボタンを足すと図鑑/確率がはみ出す(撮って判明)。
    ⭐チケットを持っている間だけ全体を詰める。⚠**押す所44pxは割らない**(padding+行送りで確保) */
@@ -1765,10 +1777,13 @@ body.perf #perfbox{display:block}
         <div class="gcshow"><canvas id="gc-hcv"></canvas></div>
         <div class="gcside" id="gc-side">
           <div class="gcgemb" id="gc-gemb">💎 0</div>
-          <button class="btn gold gcbig" id="gc-1">単発<small>💎3</small></button>
-          <button class="btn gold gcbig" id="gc-10">10連<small>💎25</small></button>
+          <!-- ⭐(192)**同じ大きさの色付きボタンを3つ並べない**([[NOTES_UI]]の型)=
+               **主(10連)だけ塗って一番大きく**、単発とチケットは枠線だけにした。
+               ⚠それまで3つとも同じ橙の同じ大きさで、どれを押せばいいのか形で言えていなかった。 -->
+          <button class="btn gcbig gcsub" id="gc-1">単発<small>💎3</small></button>
+          <button class="btn gold gcbig gcmain" id="gc-10">10連<small>💎25</small></button>
           <!-- 🎫★5確定チケット: 持っている時だけ出す(配布物。⚠確率には一切触っていない) -->
-          <button class="btn gold gcbig gctk" id="gc-t5" style="display:none">🎫 ★5確定<small>のこり 0枚</small></button>
+          <button class="btn gcbig gctk" id="gc-t5" style="display:none">🎫 ★5確定<small>のこり 0枚</small></button>
           <div class="gcrow2">
             <button class="btn sm" id="gc-dex">📖 図鑑</button>
             <button class="btn sm" id="gc-rate">確率</button>
@@ -29457,10 +29472,34 @@ function gcDexHtml(){
  /* ⚠押すと🦸ステータス画面が開く(2026-07-30)。図鑑は名前と必殺技だけなので、数値はそちらで見せる */
  return '<div class="labdone" style="margin-top:6px"><b>英雄図鑑 '+own+'/'+HEROES.length+'</b>'
   +'<button class="btn sm" id="gc-dexst" style="float:right;padding:1px 8px;font-size:11px">📋 ステータス</button>'
+  /* 📖⭐(192)**姿を出す**=それまで「??? ★★」の文字だけで**22枚が全部同じ札**に見えた
+     ([[NOTES_UI]]の型「文字だけのチップをやめて絵を出す」)。
+     ⚠**canvasはHTMLの文字列では描けない**ので、枠だけ先に出して `gcDexArt()` があとから流し込む。
+     ⚠**まだ引いていない英雄は黒い影**にする(「まだ見ぬ誰か」が形で分かる)。 */
   +'<div class="hgrid">'+HEROES.map(h=>{const c=(META.hero||{})[h.id]||0;
-   return '<div class="hb'+(c?' own':'')+'">'+(c?RK_S[h.rk]+' '+h.n:'??? '+RK_S[h.rk])
+   return '<div class="hb art'+(c?' own':'')+'" data-dh="'+h.id+'">'
+    +'<span class="hs" style="color:'+(RARE[h.rk-1]||RARE[0])+'">'+RK_S[h.rk]+'</span>'
+    +(c?h.n:'???')
     +'<div class="hq">'+(c?'所持'+c+' / 必殺『'+h.ult+'』':RK_N[h.rk]+'枠')+'</div></div>';}).join('')
   +'</div></div>';
+}
+/* 📖(192)図鑑の札へ姿を流し込む。⚠**未所持は影**=絵を描いてから `source-atop` で黒を被せる
+   (色替えの掟は [[NOTES_絵]]。`ctx.filter` は iOS で効かないので使わない)。 */
+function gcDexArt(){
+ const w=$('gc-list');if(!w||!w.querySelectorAll)return;
+ w.querySelectorAll('.hb.art').forEach(b=>{
+  const h=HEROES.find(x=>x.id===b.dataset.dh);if(!h)return;
+  const ui=hUiOf(h.id);if(ui<0)return;
+  const c=document.createElement('canvas');c.width=48;c.height=56;
+  /* ⚠キーで寸法を覚える=開くたび22人ぶんの画素走査(fitMeasure)をしない。
+     ⚠**ここに try は要らない**=fitDraw の中で描画の例外は握ってある(空catchを増やさない)。 */
+  fitDraw(c,cc=>drawUnitAs(cc,ui,null),2,'hp:'+h.id);
+  if(!heroOwned(h.id)){const cc=c.getContext('2d');
+   /* ⚠**影は札より明るく**する=札の地(--ink3)が暗いので、暗い影にすると形が沈んで見えない
+      (1回そうした)。「暗い背景なら影は明るく」=影の色は地との差で決める。 */
+   cc.globalCompositeOperation='source-atop';cc.fillStyle='#6f6656';
+   cc.fillRect(0,0,c.width,c.height);cc.globalCompositeOperation='source-over';}
+  b.appendChild(c);});
 }
 /* ============ 🦸英雄ステータス画面(2026-07-30ユーザー指示) ============
    ⚠それまで英雄の数値を見る場所が**どこにも無かった**(📖図鑑は名前と必殺技の一言だけ)。
@@ -29779,6 +29818,7 @@ function gcView(v){
  /* ⚠結果の一覧は**別ウィンドウ(#md-gcres)**に移した(第73弾)。ここは確率/図鑑の置き場 */
  $('gc-res').innerHTML=(v==='rate')?IC(gcRateHtml()):'';
  $('gc-list').innerHTML=(v==='dex')?gcDexHtml():'';
+ if(v==='dex')gcDexArt();/* 📖(192)姿を流し込む(⚠innerHTMLの後・canvasは文字列では描けない) */
  {const b=$('gc-dexst');if(b)b.onclick=()=>openHStat('','gacha');}
  const st=$('gc-subt');if(st)st.textContent=(v==='rate')?'1回ごとに抽選する(天井は無い)':(v==='dex')?'引いた英雄がここに載る':'';
  /* ⚠開いた直後は clientWidth が0のことがあるので、次のフレームで測り直してから描く */
