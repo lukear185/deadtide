@@ -64,7 +64,11 @@ function table(){
  add('研究所の段',g('LINE_MAX'),'`LINE_MAX`');
  add('硬い敵に通る割合',Math.round(g('ARMOR_CUT')*100)+'%','`ARMOR_CUT`(✊🔫❄が弾かれる)');
  add('特効の倍率','🔥×'+g('FIRE_VS_ARMOR')+' / ⚡×'+g('ELEC_VS_SCALE'),'`FIRE_VS_ARMOR`/`ELEC_VS_SCALE`');
- add('🧬配布の全体倍率,'.slice(0,-1),g('RPT_X'),'`RPT_X`(1拠点クリアで棚の物2種ぶん)');
+ add('🧬配布の全体倍率,'.slice(0,-1),g('RPT_X'),'`RPT_X`(⚠(196)値上げ後は1拠点で棚の物1.4種ぶん)');
+ /* 🔓(196)解放の値札を2つ足した=どちらもユーザーが動かした所で、表に無いと次に探せない */
+ add('🔬研究所の解放費','塔'+fmt(g('LAB_NT(0)'))+'🧬 / 兵科'+fmt(g('LAB_NU(0)'))+'🧬 から',
+  '`LAB_NT`/`LAB_NU`。**手前の物から順にしか買えない**');
+ add('試合中の兵科解放費',fmt(g('UNITP[2]'))+' / '+fmt(g('UNITP[3]'))+' / '+fmt(g('UNITP[4]'))+' …','`UNITP`');
  add('②沈んだ港の重さ','×'+g('STAGES[1].hpM'),'`STAGES[].hpM`');
  add('🚌道中の締め切り',g('BNS_TIME')+'秒 / 1日'+g('BNS_DAY_N')+'回','`BNS_TIME`/`BNS_DAY_N`');
  add('鍛錬Lvの上限',g('TR_MAX')+'(+'+Math.round(g('TR_PER')*g('TR_MAX')*100)+'%)','`TR_MAX`/`TR_PER`');
