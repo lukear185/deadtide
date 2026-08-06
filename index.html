@@ -4094,14 +4094,15 @@ const ZOMBIES=[
  /* ⚠⚠**装甲を外した**(2026-08-04(151)ユーザー選択)=⬛黒=硬いの看板を出した以上、
     **緑のまま45%カットするのは読めない**。この個体は「すり抜け」1特性に絞る
     (「5面目までは1体1特性」の方針にも合う)。⚠バランスは少し楽になる。 */
- {id:'ooze',n:'スライム状体',hp:320,sp:44,bt:62,dmg:3,mw:10,noblock:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
+ /* ⛔(199)ユーザー指示「1面でレイスとかスライムとかゾンビじゃないやつは外して」 */
+ {id:'ooze',off:1,n:'スライム状体',hp:320,sp:44,bt:62,dmg:3,mw:10,noblock:1,w:.4,sc:1.25,atk:0,ar:9,c:'#5f8f7a'},
  /* ↓中盤以降の強敵 */
  {id:'brut',n:'ブルート',hp:420,sp:74,bt:74,dmg:3,mw:8,armor:1,w:.5,sc:1.3,aoe:2,atk:59,ar:.9,c:'#8a4a3a',dsc:'太い腕で2体まとめて薙ぎ払う'},
  /* ⬇(195)**HPを下げた**(2026-08-07ユーザー「ストーカーのHPが高くて倒せない」)=560→360。
     ⚠速さ190はそのまま=**この個体の怖さは足の速さ**であって硬さではない。
     📌並び:クローラー300 < ここ360 < ブルート420。⚠②の同じ役どころ(影サメ)は195。 */
  {id:'stlk',n:'ストーカー',hp:360,sp:190,bt:60,dmg:2,mw:11,w:.5,sc:1,atk:42,ar:.5,c:'#6b4a7a'},
- {id:'wrth',n:'レイス',hp:300,sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
+ {id:'wrth',off:1,n:'レイス',hp:300,/* ⛔(199)ゾンビでないので①から外した */sp:96,bt:84,dmg:3,mw:13,noblock:1,aura:1,w:.35,sc:1.1,atk:0,ar:9,c:'#4a6b8a'},
  {id:'tank',n:'重装兵',hp:680,sp:52,bt:130,dmg:4,mw:15,armor:1,w:.3,sc:1.45,aoe:3,atk:78,ar:1.1,c:'#39424c',dsc:'重い盾で3体まとめて薙ぎ払う'},
  /* ⚔⭐(124)**ボスの攻撃力を約1.9倍にした**(ユーザー「ボスの攻撃力が低いからもっと強くして」)。
     ⚠それまでの atk 84〜132 は**雑魚の強い個体(屍熊109・腐肉シーラカンス112)と同じ**で、
@@ -4114,8 +4115,9 @@ const ZOMBIES=[
  {id:'nmRat',n:'巨鼠の群れ',hp:95,sp:205,bt:26,dmg:1,mw:1,nm:1,w:1.2,sc:.8,atk:22,ar:.35,c:'#6b5f4a'},
  {id:'nmBoar',n:'変異猪',hp:430,sp:150,bt:64,dmg:3,mw:1,nm:1,w:.7,sc:1.2,aoe:2,atk:73,ar:1,c:'#7a5a3a',dsc:'牙で2体まとめて薙ぎ払う'},
  {id:'nmSpid',n:'肉蜘蛛',hp:260,sp:88,bt:58,dmg:2,mw:2,nm:1,noblock:1,w:.55,sc:1.05,atk:0,ar:9,c:'#4a3a5a'},
- {id:'nmBat',n:'吸血蝙蝠',hp:150,sp:240,bt:48,dmg:2,mw:3,nm:1,noblock:1,w:.5,sc:.9,atk:0,ar:9,c:'#5a4a6b'},
- {id:'nmCrow',n:'腐肉鴉',hp:190,sp:170,bt:54,dmg:2,mw:4,nm:1,aura:1,w:.55,sc:.95,atk:34,ar:.6,c:'#3f3a44'},
+ /* ⛔(199)ユーザー指示「空飛ぶやつは3面から出てくるようにするから」=①のNMから外した */
+ {id:'nmBat',off:1,n:'吸血蝙蝠',hp:150,sp:240,bt:48,dmg:2,mw:3,nm:1,noblock:1,w:.5,sc:.9,atk:0,ar:9,c:'#5a4a6b'},
+ {id:'nmCrow',off:1,n:'腐肉鴉',hp:190,/* ⛔(199)空を飛ぶので①から外した */sp:170,bt:54,dmg:2,mw:4,nm:1,aura:1,w:.55,sc:.95,atk:34,ar:.6,c:'#3f3a44'},
  {id:'nmBear',n:'屍熊',hp:1050,sp:66,bt:150,dmg:5,mw:6,nm:1,armor:1,w:.35,sc:1.7,atk:109,ar:1.1,aoe:3,c:'#5a4a3a'},
  {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:205,ar:1.1,aoe:7,c:'#8a3a5a'},
  /* ===== 🌑ナイトメア × ステージ2 専用: 変異した深海の生き物(nm:1 かつ st:2) =====
@@ -18027,6 +18029,10 @@ function buildTide(wave){
  const st2=!nmOn&&on2;
  const nm2=nmOn&&on2;/* ④深海のナイトメア */
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
+  /* ⛔⭐(199)**`off` の付いた個体はどの波にも出さない**(2026-08-07ユーザー指示)=
+     ①廃線から**ゾンビでない物**(レイス・スライム状体)を、①のナイトメアから**空を飛ぶ物**を外した。
+     ⚠**消していない**(絵も数値も残してある)=面③以降で使う時にこの印を外すだけ。 */
+  if(Z.off)return false;
   if(Z.boss||Z.mw>wave)return false;
   if(on3)return Z.st===3&&!Z.nm;/* 🪶(194) */
   if(nm2)return !!Z.nm&&Z.st===2;
@@ -31491,7 +31497,7 @@ function renderZoo(box,hintId){
     ⚠⚠**書き戻さない**=相性は**絵**(敵の見た目)と**戦闘中のダメージ数字の色**で言う。
     `AF_LEG()` は残してあるが、いまはどこからも呼んでいない。 */
  if(hint)hint.innerHTML=(DEV?'🛠DEVモード=絵の確認用に<b>全種そのまま見える</b>(本番はソロ作戦で倒した種類だけ)。'
-  :'ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は影だけで出る。');
+  :'ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は姿も名前も出ない。');
  const seen=ZOMBIES.filter(z=>zcSeen(z.id)).length;
  /* ⚠単独の窓は見出しに数を出しているので、ここでは出さない(1画面に同じ数が2つ並ぶ) */
  let html=hintId?'':'<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+ZOMBIES.length+' 種</div>';
@@ -31517,8 +31523,12 @@ function renderZoo(box,hintId){
     const az=afZIC(z);
     const azl=ok?('<div class="zaf"><span class="wk">弱点 '+az.wk+'</span>'
       +'<span class="rs">耐性 '+az.rs+'</span></div>'):'';
+    /* 🕶⭐(199)**未発見は姿も出さない**(2026-08-07ユーザー指示「倒してないやつは姿も見えないように」)=
+       それまでは影(シルエット)で形が分かってしまっていた。⚠**枠の大きさは同じ**にする(並びが揺れるため)。 */
     return '<div class="lc"'+(ok?'':' style="opacity:.55"')+'>'
-     +'<canvas class="zth'+(ok?'':' zsil')+'" width="128" height="128" data-zi="'+i+'"></canvas>'
+     +(ok?('<canvas class="zth" width="128" height="128" data-zi="'+i+'"></canvas>')
+         :('<div class="zth" style="display:flex;align-items:center;justify-content:center;'
+           +'background:var(--paper3);border-radius:7px;font-size:34px;opacity:.5">?</div>'))
      +'<div class="nm">'+(ok?z.n:'???')+'</div>'
      +'<div class="tg">'+(ok?('HP'+z.hp+'・攻撃'+z.atk+'／'+tag):'未発見')+'</div>'
      +azl
