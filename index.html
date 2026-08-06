@@ -692,7 +692,14 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .bphint{font-size:11px;font-weight:700;opacity:.75;margin:1px 0 4px;text-align:left;flex:0 0 auto}
 /* ⭐まとめ買いの切り替え(2026-07-27)。20段に刻んだので1本フルに20タップ要った。
    ⚠横幅が無いのでカードにボタンを増やせない=**画面にひとつだけ**置いて全カードに効かせる */
-.mulsw{float:right;display:flex;gap:3px;opacity:1}
+/* ⚠⚠🐞(192)**`float:right` をやめた**=すぐ下の `.lgrid` は**grid の整形文脈を作る箱**なので、
+   **浮いた箱に重ならず、残った幅まで縮む**。🛠DEVの道具が7個並ぶと帯が440pxを占め、
+   **カードが4列→1列**になって右半分が丸ごと空いていた(撮って気づいた)。
+   ⚠**本番でも ×2/×5 のぶんだけ細く縮んでいた**(DEVだけの問題ではない)。
+   ⭐**帯を flex にして右へ寄せる**=浮かせないので下の一覧は全幅を使える。 */
+.bphint.labbar{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.bphint.labbar .mulsw{order:2;margin-left:auto;float:none}
+.mulsw{display:flex;gap:3px;opacity:1;flex-wrap:wrap}
 .mulsw button{border:2px solid var(--ink);border-radius:8px;background:var(--paper2);color:var(--ink);
  font:900 11px/1 var(--ff);padding:3px 8px}
 .mulsw button.on{background:var(--rust);color:var(--pane)}
@@ -28896,7 +28903,7 @@ function renderLab(){
     /* 💾(189)**セーブの持ち帰り**=実機で起きた状態をPCで再現するため。⚠DEV専用 */
     +'<button data-savex>💾書き出す</button><button data-savei>💾読み込む</button>'):'')
    +(anyM?LAB_MULS.map(m=>'<button data-mul="'+m+'"'+(LABMUL===m?' class="on"':'')+'>×'+m+'</button>').join(''):'');
-  body='<div class="bphint">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
+  body='<div class="bphint'+(tools?' labbar':'')+'">'+(tools?('<span class="mulsw">'+tools+'</span>'):'')
     +cat.d+'</div>'
    +(list.length?('<div class="lgrid'+(list.some(o=>o.it.sm)?' tight':'')+'">'+list.map(o=>{const it=o.it,can=!it.lk&&META.pts>=it.p;
      /* ⭐姿があるものは絵文字ではなく**実物**を描く(第91弾)。何を解放/強化するのか一目で分かる */
