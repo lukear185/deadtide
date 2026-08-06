@@ -535,7 +535,8 @@ function checkTutLock(){
   if(tutPass({target:mk('#tut')})!==true){
    console.log('FAIL: 帯の「▶次へ」が押せない段がある: '+st[i].id);process.exit(1);}
   /* ⚠(98)代表は #bt-opt=どの段でも光らせないボタン。#bt-solo は home9(マップの案内)で光らせるようになった */
-  if(st[i].id!=='home9'&&tutPass({target:mk('#bt-solo')})!==false){
+  /* ⚠(199)締めの手前の 'back' も #bt-solo を光らせる(ホームへの帰り道を案内する段) */
+  if(st[i].id!=='home9'&&st[i].id!=='back'&&tutPass({target:mk('#bt-solo')})!==false){
    console.log('FAIL: 光っていない所を押せてしまう段がある: '+st[i].id);process.exit(1);}
   if(tutPass({target:mk('#bt-opt')})!==false){
    console.log('FAIL: 光っていない所を押せてしまう段がある: '+st[i].id);process.exit(1);}
