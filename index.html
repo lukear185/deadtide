@@ -4948,12 +4948,8 @@ const AF_TY={melee:{ic:'✊',n:'近接'},bullet:{ic:'🔫',n:'実弾'},pierce:{i
  /* ⭐(196)足した3つ。⚔斬撃=刃物 / 🔆ビーム=光と超高速の弾 / 🧪毒=継続で削る */
  slash:{ic:'⚔',n:'斬撃'},beam:{ic:'🔆',n:'ビーム'},poison:{ic:'🧪',n:'毒'},
  eco:{ic:'🏭',n:'工房'},sup:{ic:'🏗',n:'支援'}};
-/* 🛡各材質へ何倍通るか(表示用)。攻撃しない物(工房・支援・回復)は null。
-   ⚠**中身は afX の1本から作る**=説明と計算がずれないようにするため */
-function afMul(type,prc,isTw){
- if(!type||type==='eco'||type==='sup'||type==='heal')return null;
- return{ar:afX(type,{armor:1}),sc:afX(type,{scl:1}),wg:afX(type,{wing:1}),nm:afX(type,null)};
-}
+/* ⚠(196)`afMul`(材質ごとの倍率をまとめて返す物)は**消した**=`afX(型, 敵)` 1本に統一したため。
+   表示側が倍率を欲しくなったら `afX('fire',{armor:1})` のように直に呼ぶこと。 */
 /* ⚔⭐⭐⭐(187)**兵科と英雄にも属性を効かせる**(進行の作り替えC・2026-08-06ユーザー決定)。
    ⚠⚠**それまで特効(×1.9)が乗るのは塔だけ**で、兵科と英雄は素通りしていた=
      「相性で選ぶ」が**塔の話にしかなっていなかった**。編成が「強い順」に収束する原因の1つ。
@@ -5184,7 +5180,7 @@ const UB_IDX={};UBASE.forEach((u,i)=>{if(UB_IDX[u.id]==null)UB_IDX[u.id]=i;});
      強さを揃える相手ではなく「その段の色を変える1枚」として置く。
    ⚠**弱い物を後ろに残さない**=迫撃砲58・ドローン21は前半に置く(後半に来ると死に札になる)。 */
 const UNL_T=[
- /*段0(7)*/'scrap','flame','gren','net','mortar','tesla','sniper',
+ /*段0(7)*/'net','scrap','flame','gren','mortar','tesla','sniper',/* ⏭(197)ネット砲を先頭へ(ユーザー指示) */
      /*🏭経済 / 🔥火炎(①の装甲対策。W3のアーマードに間に合わせる) / 💣爆発 / 🕸拘束 / 💣遠射 /
        ⚡電撃(②の鱗に備える) / 🔫103*/
  /*段1*/'laser','acid',    /*⚡102 と 🔥火炎108=ほぼ同じ強さ*/
@@ -20874,6 +20870,11 @@ function awardMeta(){
   if(!META.clr)META.clr=[0,0,0,0,0,0];
   if(STAGE===0&&d9<6)META.clr[d9]=1;/* 旧記録(表示用)も一応そのまま更新する */
   const a=scArr(STAGE);
+  /* 🎁⭐⭐(197)**面を初めてクリアした時に「棚に並んだ物」を控えておく**(2026-08-07ユーザー指示
+     「1面クリアした時に これが解放された みたいな表示が欲しい」)。
+     ⚠**印を立てる前と後で棚を数える**=段が1つ進んだ時にだけ差が出る。
+     ⚠難易度を1つ上げただけのクリアでは何も並ばない(段は面ごとに1つなので差がゼロになる)。 */
+  const st0=unlStep(),sh0T=shelfT().length,sh0U=shelfU().length;
   /* ⭐🚌ボーナスは初回クリアで 🧬研究pt と 💎50。⚠**2回目からは配らない**
      =何度でも入れる面で報酬を配ると、回すだけ増える(チュートリアルの💎で実際に踏んだ) */
   if(d9===BNS_D)bnsReward();
@@ -20898,6 +20899,12 @@ function awardMeta(){
        ⚠(164)の「タイトルへ戻ったら流す」はやめた=**印は G に置く**(META.edPend はもう立てない)。
        ⚠**成績表より先に出さない**=何を達成して幕が出たのかが分からなくなる(開くのは showResultA)。 */
     else if(!META.edOK){META.edOK=1;G.ending=1;saveMeta();}}
+  }
+  /* 🎁(197)段が進んだ=棚に並んだ物の名前を控える(成績表で見せる) */
+  if(unlStep()>st0){
+   const nt=shelfT().slice(sh0T).map(id=>((TOWERS[TW_IDX[id]]||{}).n||'')).filter(Boolean);
+   const nu=shelfU().slice(sh0U).map(id=>((UBASE[UB_IDX[id]]||{}).n||'')).filter(Boolean);
+   if(nt.length||nu.length)G.newShelf={t:nt,u:nu};
   }
   if(d9>=4&&!META.nmOK){META.nmOK=1;G.nmUnlocked=1;}
   /* 🎯任務。⚠**初回クリアに限らない**=毎日の任務なので、2周目でも「今日突破した」なら数える。
@@ -23101,6 +23108,10 @@ function showResultA(){
   if(n9)toast('🗺 新しいエリアへの道が開いた! まずは拠点『'+n9.n+'』へ');},400);
  else if(G.difUnlocked!=null)setTimeout(()=>{let n9=null;try{n9=MAPND.find(x=>x.stg===STAGE&&x.d===G.difUnlocked);}catch(e){}
   if(n9)toast('🗺 次の拠点『'+n9.n+'』への道が開いた!');},400);
+ /* 🎁(197)並んだ物は帯でも報せる(成績表の行は見落とされやすいので二段構えにする)。
+    ⚠**他の報せ(🌑/🗺)より後ろの時刻に出す**=同時に出すと上書きし合う。 */
+ if(G.newShelf){const n9=G.newShelf.t.concat(G.newShelf.u);
+  setTimeout(()=>toast('🎁 研究所に '+n9.length+'種 並んだ! '+n9.join(' / '),true),1100);}
  $('res-title').className='restitle'+(win?' win':'');
  $('res-sub').textContent=G.pve?(win?'WAVE '+curW()+' を守り切った!':'WAVE '+G.wave+' で陥落…'):((G.winner>=0?('生存: '+G.players[G.winner].name+' / '):'')+'WAVE '+G.wave+' まで到達');
  $('res-stats').innerHTML=(G.pve
@@ -23120,6 +23131,10 @@ function showResultA(){
       ['🔥 最高連続','×'+(me.bus.cmbMx||0)+bnsBadge('c','')],
       ['🔥 ニトロ',(me.bus.nitN||0)+'回'],
       ['🛣 進んだ距離',Math.round((BNS_STARTY-me.bus.y)/10)+'m']]:[]),
+    /* 🎁⭐⭐(197)**面を初クリアして棚に並んだ物**(ユーザー指示「これが解放された、みたいな表示が欲しい」)。
+       ⚠**成績表のいちばん上に置く**=🧬より先に「何が増えたか」を見せる。⚠並んだ回だけ出る。 */
+    ...((G.newShelf&&G.newShelf.t.length)?[['🎁 研究所に並んだタワー',G.newShelf.t.join(' / ')]]:[]),
+    ...((G.newShelf&&G.newShelf.u.length)?[['🎁 研究所に並んだ兵科',G.newShelf.u.join(' / ')]]:[]),
     ...(G.clrGem?[['🏅 拠点を初解放','💎+'+G.clrGem]]:[]),
     ...(G.gemGain?[['💎 魔石(ボス撃破)','+'+G.gemGain+' (計'+(META.gem||0)+')']]:[]),['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['解放タワー',me.unlocked+'/'+metaTowerCap()],['解放部隊',me.uUn+'/'+((me.team||[]).length)],['部隊レベル','Lv'+(me.uLv||0)],['火力増強','Lv'+me.atkLv],['砲撃強化','Lv'+(me.stkLv||0)]]
   :[['ゾンビ撃破',me.kills],['部隊出撃',me.dep+'体'],['🔩 獲得強化pt',fmt(me.upTotal||0)],['回収⚙️総額',fmt(me.enTotal)],['押し流し',me.pushCount+'回'],['送った変異体',me.sentCount+'体'],['解放タワー',me.unlocked+'/'+PVP_T],['火力増強','Lv'+me.atkLv]]).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
@@ -29108,26 +29123,24 @@ function renderLab(){
       ⚠⚠**(187)の「棚の中はどれから買ってもよい」は撤回**=書き戻さないこと。
       ⚠**見せるのは今までどおり全部**(隠すと何が来るか分からなくなる)=買えない物に🔒を出すだけ。 */
  {const ot=META.ot||[],ou=META.ou||[],pT=LAB_NT(ot.length),pU=LAB_NU(ou.length);
-  const od9='🔒 手前の物から順に解放する';
-  let nxT=true;
+  /* ⛔⭐(197)**鍵はやめた**(2026-08-07ユーザー「鍵マークじゃなくていい感じの表示に」)。
+     ⚠⚠**次の面でしか並ばない物は研究所に出さない**(同ユーザー「そもそも研究所にないように」)=
+       `lockT()/lockU()` を並べるのをやめた(データ側は残してある=面クリアで並ぶ判定に使う)。
+     ⭐棚に並んでいて順番待ちの物は**何番目に解放できるか**を出す(絵と説明はそのまま見せる)。 */
+  const od9='⏭ 解放は ';
+  let nT=0;
   for(const id of shelfT()){if(twHas(id))continue;const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
-   if(nxT){nxT=false;
-    items.push({cat:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
-     tag:'新型タワー '+(ot.length+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:pT});}
-   else items.push({cat:'new',lk:1,ic:'🔒',pv:{k:'t',i:i9},t:T.n,tag:od9,d:T.dsc,p:0});}
+   nT++;
+   if(nT===1)items.push({cat:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
+     tag:'新型タワー '+(ot.length+1)+'/'+(T_PLAY-BASE_T),d:T.dsc,p:pT});
+   else items.push({cat:'new',lk:1,wt:nT,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9+nT+'番目',d:T.dsc,p:0});}
   /* ⚠UNITSは派生に差し替わるのでUBASE */
-  let nxU=true;
+  let nU=0;
   for(const id of shelfU()){if(unHas(id))continue;const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
-   if(nxU){nxU=false;
-    items.push({cat:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
-     tag:'新型兵科 '+(ou.length+1)+'/'+(U_N-BASE_U),d:U.dsc,p:pU});}
-   else items.push({cat:'new',lk:1,ic:'🔒',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9,d:U.dsc,p:0});}
-  /* 🔒次の拠点で棚に並ぶ分。⚠`k` を持たせない=押しても買えない(タブのバッジにも数えない) */
-  const lk9='🔒 次の拠点をクリアで並ぶ';
-  for(const id of lockT()){const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
-   items.push({cat:'new',lk:1,ic:'🔒',pv:{k:'t',i:i9},t:T.n,tag:lk9,d:T.dsc,p:0});}
-  for(const id of lockU()){const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
-   items.push({cat:'new',lk:1,ic:'🔒',pv:{k:'u',i:i9,def:U},t:U.n,tag:lk9,d:U.dsc,p:0});}}
+   nU++;
+   if(nU===1)items.push({cat:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
+     tag:'新型兵科 '+(ou.length+1)+'/'+(U_N-BASE_U),d:U.dsc,p:pU});
+   else items.push({cat:'new',lk:1,wt:nU,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9+nU+'番目',d:U.dsc,p:0});}}
  /* 進化: どの兵科からでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのは兵科ごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -29323,8 +29336,8 @@ function renderLab(){
       +((rest||(it.sm&&it.d))?'<div class="tg">'+rest+(it.sm&&it.d?(rest?' ':'')+it.d:'')+'</div>':'')
       +bar
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
-      /* 🔒(187)まだ棚に並んでいない物=値段ではなく鍵を出す(押せない) */
-      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?'🔒':('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button></div>';}).join('')+'</div>')
+      /* ⏭(197)順番待ちの物は**何番目か**を出す(⛔鍵はやめた。ユーザー指示) */
+      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?(it.wt?('⏭ '+it.wt+'番目'):'—'):('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button></div>';}).join('')+'</div>')
     :'<div class="labdone">🎉 このカテゴリは全部解放した!</div>');
  }
  $('lab-items').innerHTML=IC(body);
