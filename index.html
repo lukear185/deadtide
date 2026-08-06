@@ -3726,55 +3726,96 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
   if(s%16===13&&Math.random()<.5)nzHit(700,180,2.2,.137*vol*VOL.bgm,1);/* ③遠くの風 */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
-/* ============ 🎬⭐⭐ 起動の幕のBGM(2026-08-07(201)ユーザー指示) ============
-   ⭐**タイトルのBGMとは別物**にする(ユーザー指示「タイトル画面のBGMとムービー中のBGM別で作って」)。
-   ⭐⭐**カットごとに曲が変わる**=幕は8カットあって場面の温度が全部違うので、
-     1曲を流しっぱなしにすると絵と喧嘩する。**表(OB_CUT)に1カット1行**だけ持たせる。
-   ⚠**音楽素材は足さない**(1曲で数MB)=タイトルBGMと同じくその場で合成する。
-   ⚠**同じ道具で作る**(bgb/nzHit)=音の作り方を2つ持たない。
-   dr=下に敷く音 / mel=旋律(0=休み) / len=1音の長さ / beat=何歩ごとに打点 / nz=何歩ごとに軋み */
-const OB_MS=480;                     /* 1歩の長さ(ms)。⚠16歩でだいたい1カット */
-const OB_CUT=[
- /* ①なんでもない朝=明るい和音。⚠**ここだけ長調**(後の落差が全部ここで決まる) */
- {dr:131,drV:.10,mel:[262,0,0,330,0,0,392,0],mV:.11,ty:'triangle',len:2.0},
- /* ②空の色が変わる=同じ形のまま**半音下げて濁らせる**。⚠別の曲にしない=「変わった」が伝わらない */
- {dr:131,drV:.11,mel:[262,0,0,311,0,0,370,0],mV:.11,ty:'triangle',len:2.0,beat:4,bf:62,bV:.09},
- /* ③灯りが消えていく夜=**ほとんど鳴らさない**。⚠静けさも曲のうち */
- {dr:98,drV:.09,mel:[0,0,0,0,0,0,0,233],mV:.09,ty:'triangle',len:3.0},
- /* ④群れが歩きだす=**心臓の打点**+半音でにじり寄る旋律 */
- {dr:110,drV:.08,mel:[220,0,233,0,220,0,207,0],mV:.10,ty:'triangle',len:1.4,beat:2,bf:55,bV:.12},
- /* ⑤崩れていく街=一番うるさい所。⚠**下がり続ける旋律**+軋み */
- {dr:87,drV:.10,mel:[175,165,147,131,147,131,117,110],mV:.12,ty:'sawtooth',len:.9,beat:2,bf:49,bV:.13,nz:4},
- /* ⑥高架下の焚き火=**温かい短調**。⚠人の場面なので打点を入れない */
- {dr:98,drV:.10,mel:[196,0,233,0,262,0,233,0],mV:.10,ty:'triangle',len:2.2},
- /* ⑦呼べば応える者がいた=**昇っていく**。⚠ここだけオクターブ上を重ねる */
- {dr:196,drV:.07,mel:[262,330,392,523,392,330,262,0],mV:.10,ty:'triangle',len:1.2,hi:1},
- /* ⑧出発=**歩き出す拍**+昇る旋律(①の和音に戻る=一巡したと分かる) */
- {dr:131,drV:.10,mel:[262,262,330,392,440,392,330,262],mV:.12,ty:'triangle',len:1.0,beat:2,bf:87,bV:.10}
-];
-let obgmTimer=null,obgmStep=0,obgmCi=-1;
-function obgmOn(){if(obgmTimer||!AC)return;
+/* ============ 🎬⭐⭐⭐ 起動の幕のBGM(2026-08-07(201)→(202)に作り直した) ============
+   ⭐**タイトルのBGMとは別物**(ユーザー指示「タイトル画面のBGMとムービー中のBGM別で作って」)。
+   ⛔⚠⚠**「カットごとに曲が変わる」は撤回した**(2026-08-07(202)ユーザー
+     「BGMは場面で切り替える感じじゃなくて、暗い感じのやつをずっと流す感じでいい」)。
+     ⚠**書き戻さないこと**=表(OB_CUT)ごと消してある。
+   ⛔⚠⚠**旋律(音符)そのものをやめた**(同・ユーザー「こういうどっと音じゃないやつない?」)=
+     **オシレータを短く鳴らすと、何をどう並べても電子音(ピコピコ)に聞こえる**。
+     ⭐これは 2026-07-27 に効果音で出た結論とまったく同じ([[NOTES_音]])=
+       **ノイズをローパスで削る**方が生音に聞こえる。
+   ⭐⭐**作りを変えた**=「一定間隔で音符を鳴らす」から**鳴らしっぱなしの音を1組だけ作る**へ
+     (🚌走行音と同じ形)。**止めるまで途切れない**ので、場面をまたいでも継ぎ目が無い。
+   中身は4つ:
+     ①**空気**=ノイズをローパス(380Hz)で削ったもの。ごくゆっくり濃さが揺れる=風のうなり。
+     ②**低い唸り**=87Hzを2本、わずかにずらして重ねる(うなりが出て落ち着かない)。
+     ③**厚み**=短3度(F+A♭)をゆっくり膨らませて、またしぼませる。⚠**立ち上がりを遅くする**
+       (速いと結局ピコッと鳴る)。
+     ④**遠い地鳴り**=7〜12秒に1回、ノイズを低く削った一撃。⚠これも音符ではない。
+   ⚠**音楽素材は足さない**(1曲で数MB)=その場で合成する。⚠**低すぎる音は出さない**
+     (44〜60Hzはスマホのスピーカーが鳴らせない=[[NOTES_音]])。 */
+let OPA=null;
+function obgmOn(){
+ if(OPA||!AC||muted)return;
  try{if(SFXTEST)return;}catch(e){}
- obgmStep=0;obgmCi=-1;
  tbgmOff();/* ⚠タイトルBGMと二重に鳴らさない */
- obgmTimer=setInterval(()=>{
-  if(!AC||muted)return;
-  if(typeof OP==='undefined'||!OP.on){obgmOff();return;}
-  /* 開発名の間=下に敷く音を1回だけ(⚠曲にしない=名前を見せるだけの所) */
-  if(OP.ph===0){if(obgmStep===0){bgb(131,131,2.8,'triangle',.085);bgb(196,196,2.4,'sine',.045);}
-   obgmStep++;return;}
-  /* ⚠**何カット目かは OP_CT から出す**(秒を直に書かない=幕の側と必ず食い違う) */
-  let ci=0;while(ci<OP_CT.length-1&&OP.t>=OP_CT[ci])ci++;
-  if(ci!==obgmCi){obgmCi=ci;obgmStep=0;}/* ⚠カットが変わったら旋律を頭から */
-  const C=OB_CUT[ci]||OB_CUT[0],s=obgmStep;
-  if(s%4===0)bgb(C.dr,C.dr*.995,OB_MS*4/1000+.8,'triangle',C.drV);
-  const f=C.mel[s%C.mel.length];
-  if(f)bgb(f,f*.997,C.len,C.ty,C.mV);
-  if(C.hi&&f)bgb(f*2,f*2,.8,'triangle',.042);
-  if(C.beat&&s%C.beat===0)bgb(C.bf,C.bf*.7,.30,'sawtooth',C.bV);
-  if(C.nz&&s%C.nz===2)nzHit(300,120,.6,.11*VOL.bgm,1);
-  obgmStep++;},OB_MS);}
-function obgmOff(){if(obgmTimer)clearInterval(obgmTimer);obgmTimer=null;}
+ try{
+  const t=AC.currentTime,V=VOL.all*VOL.bgm;
+  const out=AC.createGain();out.gain.setValueAtTime(.0001,t);
+  /* ⚠**ゆっくり立ち上げる**(2.2秒)=いきなり鳴ると幕の頭が驚く */
+  out.gain.linearRampToValueAtTime(V*.95,t+2.2);
+  out.connect(AC.destination);
+  const S=[];/* 止める時に使う(鳴らしっぱなしの物は全部ここへ) */
+  /* ①空気=ノイズを削る。⚠**ノイズの元は使い回す**(毎回作ると重い) */
+  if(!NZBUF){const n=Math.floor(AC.sampleRate*2),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);
+   for(let i=0;i<n;i++)d[i]=Math.random()*2-1;NZBUF=b;}
+  const air=AC.createBufferSource();air.buffer=NZBUF;air.loop=true;
+  const alp=AC.createBiquadFilter();alp.type='lowpass';alp.frequency.value=380;alp.Q.value=.7;
+  const ag=AC.createGain();ag.gain.value=.17;
+  air.connect(alp).connect(ag).connect(out);air.start();S.push(air);
+  /* 風のうなり=**とてもゆっくり**(23秒で1往復)。⚠速いと機械の唸りに聞こえる */
+  const lf1=AC.createOscillator();lf1.type='sine';lf1.frequency.value=.043;
+  const lg1=AC.createGain();lg1.gain.value=.11;
+  lf1.connect(lg1).connect(ag.gain);lf1.start();S.push(lf1);
+  /* 削り具合も揺らす=「遠くで空気が動いている」に聞こえる */
+  const lf2=AC.createOscillator();lf2.type='sine';lf2.frequency.value=.017;
+  const lg2=AC.createGain();lg2.gain.value=120;
+  lf2.connect(lg2).connect(alp.frequency);lf2.start();S.push(lf2);
+  /* ②低い唸り=87Hzを2本ずらす(うなりの周期は約1.4秒) */
+  const dlp=AC.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=260;dlp.Q.value=.5;
+  /* ⚠⚠**音量を稼ぐ場所ではない**=低い音を上げると、重なった瞬間に潰れる([[NOTES_音]])。
+     ⭐**130.8Hzを厚めに**する=87Hzはスマホのスピーカーではほとんど鳴らないので、
+       ここが無いと実機では「シャー」だけになる。 */
+  const dg=AC.createGain();dg.gain.value=.22;
+  dlp.connect(dg).connect(out);
+  for(const f of [87.0,87.7,130.8]){
+   const o=AC.createOscillator();o.type=f>100?'sine':'triangle';o.frequency.value=f;
+   const g2=AC.createGain();g2.gain.value=f>100?.45:1;
+   o.connect(g2).connect(dlp);o.start();S.push(o);}
+  /* ③厚み=短3度をゆっくり膨らませる。⚠**立ち上がりを遅く**(速いとピコッと鳴る)。
+     ⚠⚠**ここが実機で聞こえる唯一の層**=スマホは200Hz以下をほとんど鳴らせない([[NOTES_音]])。
+     ⭐**下の唸り(87Hz)の2倍・3倍・4倍**(174.6/261.6/349.2)を重ねてある=
+       耳が勝手に87Hzを作り出す(missing fundamental)。⚠207.7だけは色付けの短3度。 */
+  const plp=AC.createBiquadFilter();plp.type='lowpass';plp.frequency.value=820;plp.Q.value=.6;
+  const pg=AC.createGain();pg.gain.value=.075;
+  plp.connect(pg).connect(out);
+  for(const f of [174.6,207.7,261.6,349.2]){
+   const o=AC.createOscillator();o.type='triangle';o.frequency.value=f;
+   const g2=AC.createGain();g2.gain.value=f>300?.18:(f>250?.35:(f>200?.30:.70));
+   o.connect(g2).connect(plp);o.start();S.push(o);}
+  const lf3=AC.createOscillator();lf3.type='sine';lf3.frequency.value=.021;/* 48秒で1往復 */
+  const lg3=AC.createGain();lg3.gain.value=.045;
+  lf3.connect(lg3).connect(pg.gain);lf3.start();S.push(lf3);
+  /* ④遠い地鳴り=7〜12秒に1回。⚠**音符ではない**(ノイズを低く削った一撃) */
+  const tm=setInterval(()=>{try{
+   if(!AC||muted||!OPA)return;
+   nzHit(150,130,2.6,.10*VOL.bgm,1.2);
+  }catch(e){}},9400);
+  OPA={out,S,tm};
+ }catch(e){OPA=null;}
+}
+/* ⚠**すぐ切らない**=ぶつっと切れる。0.5秒で絞ってから外す */
+function obgmOff(){
+ if(!OPA)return;
+ const A=OPA;OPA=null;
+ try{clearInterval(A.tm);}catch(e){}
+ try{const t=AC.currentTime;
+  A.out.gain.cancelScheduledValues(t);
+  A.out.gain.setValueAtTime(Math.max(.0001,A.out.gain.value),t);
+  A.out.gain.exponentialRampToValueAtTime(.0001,t+.5);}catch(e){}
+ setTimeout(()=>{try{for(const n of A.S){try{n.stop();}catch(e){}}A.out.disconnect();}catch(e){}},620);
+}
 document.addEventListener('pointerdown',ensureAC);
 document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
 document.addEventListener('dblclick',e=>{try{e.preventDefault();}catch(x){}});/* 連打によるダブルタップズーム抑止 */
@@ -32957,7 +32998,7 @@ function opStart(){
 }
 /* 🔈札の出し入れ=鳴っていない時だけ出す */
 function opSndBtn(){const sb=$('bt-op-snd');if(!sb||!sb.classList)return;
- sb.classList.toggle('on',!!(OP.on&&!obgmTimer));}
+ sb.classList.toggle('on',!!(OP.on&&!OPA));}
 
 /* ============ ⚔ 冒険(育成RPG・鍛錬所の中身) ============
    2026-07-26(第54弾)。⚠**TDとは全く別のゲーム**として作る(ユーザー決定)。
