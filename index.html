@@ -703,6 +703,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
    ⚠絵文字のアイコンでは「何を解放するのか」が分からなかった。中身は fitDraw が枠いっぱいに描く */
 .lc .pvc{width:100%;height:52px;display:block;background:var(--paper3);border-radius:7px;margin-bottom:2px}
 .lgrid.tight .lc .pvc{height:38px}
+/* 🏋⭐(192)鍛錬所は1枚に**6行**あるので、姿は🔬研究所と違って**左に置く**。
+   ⚠上に帯で置いたら**カードが46px育って1画面に1.5行しか入らなくなった**(撮って直した)。
+   ⭐左なら**カードの高さは変わらず、姿は逆に大きくできる**(46→62px)。 */
+.lc.trc{position:relative;padding-left:54px}
+.lc.trc .trpv{position:absolute;left:4px;top:6px;width:46px;height:62px;margin:0}
 .lc .nm{font-size:13px;font-weight:900;line-height:1.25}
 .lc .tg{font-size:10px;font-weight:800;color:var(--rust2);line-height:1.2}
 /* ⚠**3行だと進化カードの説明が切れる**(2026-08-02ユーザー指摘)。4行に伸ばした。
@@ -30769,18 +30774,37 @@ function renderTrHero(box){
   if(g){g.disabled=true;g.textContent='英雄がいない';}
   return;}
  if(!own.some(h=>h.id===TRSEL))TRSEL=own[0].id;
+ /* 🏋⭐(192)**カードに姿を出す**=それまで**8枚とも文字だけ**で、誰を鍛えているのか
+    名前を読むまで分からなかった([[NOTES_UI]]の型「文字だけのチップをやめて絵を出す」)。
+    ⭐🔬研究所のカードと**同じ `.pvc`** を使う=覚え直すものを増やさない。 */
  box.innerHTML=IC('<div class="lgrid">'+own.map(h=>{
   const lv=hLv(h.id),bo=hBoost(h.id),U=UNITS[hUiOf(h.id)];
   /* ⭐棒はLvそのもの(0→50)。⚠経験値の中間層は撤去したので進捗=Lvしか無い */
   const pct=Math.round(lv/TR_MAX*100);
   return '<div class="lc trc'+(TRSEL===h.id?' sel':'')+'" data-tr="'+h.id+'">'
+   +'<canvas class="pvc trpv" width="46" height="62" data-trh="'+h.id+'"></canvas>'
    +'<div class="tg">'+RK_S[h.rk]+'</div>'
    +'<div class="nm">'+h.n+'</div>'
-   +'<div class="tg">鍛錬Lv'+lv+'/'+TR_MAX+(lv?' (+'+Math.round((bo-1)*100)+'%)':'')+'</div>'
-   +'<div class="ds">HP'+Math.round(U.hp*bo)+' ／ 攻撃'+Math.round(U.atk*bo)+'<br>必殺『'+h.ult+'』</div>'
+   /* ⚠(192)姿を左に置いたぶん**文字の幅が160→106pxに減った**ので、行を短くする
+      (でないと2行に折り返してカードの背が揃わない=撮って直した)。
+      ⭐「鍛錬Lv」→「Lv」(画面が鍛錬所なので言い直さない)/「HP…／攻撃…」→「HP… 攻…」。
+      ⚠**❤⚔の印にはしない**=小さい字だと⚔が✕(かけ算)に見えて「HP900 ✕120」と読める(撮って戻した)。 */
+   +'<div class="tg">Lv'+lv+'/'+TR_MAX+(lv?' +'+Math.round((bo-1)*100)+'%':'')+'</div>'
+   +'<div class="ds">HP'+Math.round(U.hp*bo)+' 攻'+Math.round(U.atk*bo)+'<br>必殺『'+h.ult+'』</div>'
    +'<div class="tbar"><i style="width:'+pct+'%"></i></div>'
    +'<div class="tg">'+(lv>=TR_MAX?'鍛錬しつくした':('次のLv 🔧'+TR_COST(lv)))+'</div></div>';
  }).join('')+'</div>');
+ /* 🏋(192)姿を描く。⚠**innerHTMLの後**でないと canvas がまだ無い。
+    ⚠⚠**canvasの中の寸法とCSSの見た目の寸法を合わせる**(合わないと絵が横に伸びて縦に潰れる=研究所で踏んだ)。
+    ⚠**開いた直後は clientWidth が0のことがある**ので次のフレームでもう一度描く。 */
+ const drawTrPv=()=>{box.querySelectorAll('[data-trh]').forEach(cv2=>{
+  const ui9=hUiOf(cv2.dataset.trh);if(ui9<0)return;
+  const r=Math.min(2,(window.devicePixelRatio||1));
+  const w=Math.round((cv2.clientWidth||46)*r),h9=Math.round((cv2.clientHeight||62)*r);
+  if(w>0&&h9>0&&(cv2.width!==w||cv2.height!==h9)){cv2.width=w;cv2.height=h9;}
+  fitDraw(cv2,cc=>drawUnitAs(cc,ui9,null),3*r);});};
+ drawTrPv();
+ if(window.requestAnimationFrame)requestAnimationFrame(drawTrPv);
  box.querySelectorAll('[data-tr]').forEach(e=>{e.onclick=()=>{TRSEL=e.dataset.tr;renderTrain();};});
  if(g){const sel=heroOf(TRSEL),done=!!sel&&hLv(sel.id)>=TR_MAX,cs=sel?TR_COST(hLv(sel.id)):0;
   g.innerHTML=icoImg('ic-train','🏋')+' '+(sel?sel.n:'')+' を鍛える '+IC('🔧')+cs
