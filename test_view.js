@@ -160,7 +160,15 @@ function VIEW_SCAN(scene){
    var dup=pr&&Math.abs(pr.bottom-r.bottom)<2&&Math.abs(pr.right-r.right)<2;
    if(!dup)out.push({s:scene,k:'cut',e:NAME(e),d:Math.round(over)+'px'});
   }
-  if(TAPPABLE(e)&&!e.disabled){taps.push({e:e,r:r});
+  /* ⚠⚠(191)**重なりは「切り取られた後の四角」で見る**=スクロールの箱の中では、
+     まだ下に隠れているカードも、素の四角(getBoundingClientRect)では下のボタンと重なって見える。
+     ⭐親の切り取り(CLIP)と交差させてから比べる=**見えていない物は重なりに数えない**
+     (🏋鍛錬所の「カード×鍛えるボタン」がこれで、直したのに検査だけ落ち続けた)。
+     ⚠**押す所の大きさ(44px)は切り取り前で見る**=スクロールすれば押せるので、そこは今までどおり。 */
+  if(TAPPABLE(e)&&!e.disabled){
+   const cr={left:Math.max(r.left,c.L),right:Math.min(r.right,c.R),
+             top:Math.max(r.top,c.T),bottom:Math.min(r.bottom,c.B)};
+   if(cr.right-cr.left>0.5&&cr.bottom-cr.top>0.5)taps.push({e:e,r:cr});
    /* ③押す所の大きさ。⚠44pxはこの企画の物差し(CLAUDE.md) */
    if(!DEVSC&&(r.width<43.5||r.height<43.5))
     out.push({s:scene,k:'tap',e:NAME(e),d:Math.round(r.width)+'x'+Math.round(r.height)});

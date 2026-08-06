@@ -3,8 +3,8 @@
  "test_balance.js": 4,
  "view_852x393": {
   "err": 0,
-  "cut": 1,
-  "overlap": 1,
+  "cut": 0,
+  "overlap": 0,
   "tap": 55,
   "font": 94
  }
