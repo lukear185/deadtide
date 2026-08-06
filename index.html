@@ -1410,6 +1410,26 @@ body.perf #perfbox{display:block}
  font-size:12px;background:rgba(24,20,16,.66);color:var(--pane);border:2px solid var(--gold);
  box-shadow:none;display:none}
 #bt-op-snd.on{display:block}
+/* ⭐**触ってもらう板**=幕の一番手前。⚠**押す所を画面いっぱいにする**(小さいボタンだと押し損ねる)。
+   ⭐⭐(202)**背景はタイトル画面をそのまま透かす**(ユーザー指示)=幕の黒を消す。
+   ⚠**右の列(ソロ/召集/対戦…)は下の `body.opgate` で隠す**。 */
+#scr-boot.gate{background:transparent}
+/* ⚠⚠**幕の画布ごと隠す**=残しておくと毎コマ黒で塗るので、タイトルが透けない(1回そうなった) */
+#scr-boot.gate #op-cv{display:none}
+#op-gate{position:absolute;inset:0;z-index:4;display:none;align-items:flex-end;
+ justify-content:center;padding-bottom:3%;cursor:pointer}
+#scr-boot.gate #op-gate{display:flex}
+/* 促し=**画面の下**(ユーザー指示「タップって画面したに出して」)。⚠**点滅させる**=押す物だと分かる。
+   ⚠⚠**行進しているゾンビの上に重ねない**=文字が読めない(1回そうなった)=少し上へ+暗い座布団。 */
+#op-gate .tapmsg{text-align:center;font-size:19px;font-weight:900;letter-spacing:3px;
+ color:var(--pane);text-shadow:0 2px 0 #000,0 0 8px #000;animation:opgt 1.9s ease-in-out infinite;
+ padding:7px 22px;border-radius:999px;background:rgba(10,8,6,.66)}
+#op-gate .tapmsg i{display:block;font-style:normal;font-size:11px;letter-spacing:1px;
+ color:var(--paper3);margin-top:5px;text-shadow:0 1px 0 #000}
+@keyframes opgt{0%,100%{opacity:.45}50%{opacity:1}}
+/* ⭐**タイトルの右の列を隠す**=ロゴと背景と行進だけの「見せる用のタイトル」にする。
+   ⚠**消さずに隠す**(display:none)=押した後にそのまま戻る。 */
+body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgate #vertag{display:none!important}
 /* 🎬暗転=**幕の上に黒を被せてから**画面を入れ替える。⚠切り替えの瞬間を必ず黒で隠すこと */
 #op-fade{position:fixed;inset:0;z-index:79;background:#000;opacity:0;pointer-events:none;
  transition:opacity .42s linear}
@@ -1427,6 +1447,13 @@ body.perf #perfbox{display:block}
   <button class="btn" id="bt-op-skip">⏭ スキップ</button>
   <!-- 🔈押しても幕は飛ばない札(ブラウザが音を止めている時だけ出る) -->
   <button class="btn" id="bt-op-snd">🔈 音を出す</button>
+  <!-- ⭐**触ってもらう板**(2026-08-07(202)ユーザー指示「強制的に押させるやつがムービーの前に欲しい」)。
+       ⚠⚠**ブラウザは画面を1回触るまで音を出せない**=ここを押してもらって初めて音が出せる。 -->
+  <!-- ⭐(202)**中身はタイトル画面そのもの**(ユーザー指示「画面右のソロとかオンラインとかが
+       ない画面を一番最初に」)=幕を透かして、下のタイトル画面を見せる。ここには**促しだけ**を置く。 -->
+  <div id="op-gate">
+    <div class="tapmsg">▶ タップ<i>🔈 音が出ます</i></div>
+  </div>
 </div>
 <!-- 🎬**暗転の幕**(2026-08-07(202)ユーザー指示「パッと変わらずに暗転してタイトル画面に切り替えて」)。
      ⚠**幕(#scr-boot)より上・回転を促す画面より下**(z-index 79)。⚠押す所を塞がない(pointer-events:none) -->
@@ -3726,25 +3753,97 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
   if(s%16===13&&Math.random()<.5)nzHit(700,180,2.2,.137*vol*VOL.bgm,1);/* ③遠くの風 */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
-/* ============ 🎬⭐⭐⭐ 起動の幕のBGM(2026-08-07(201)→(202)に作り直した) ============
+/* ============ 🎬⭐⭐⭐ 起動の幕のBGM(2026-08-07(201)→(202)に**3回**作り直した) ============
    ⭐**タイトルのBGMとは別物**(ユーザー指示「タイトル画面のBGMとムービー中のBGM別で作って」)。
-   ⛔⚠⚠**「カットごとに曲が変わる」は撤回した**(2026-08-07(202)ユーザー
-     「BGMは場面で切り替える感じじゃなくて、暗い感じのやつをずっと流す感じでいい」)。
-     ⚠**書き戻さないこと**=表(OB_CUT)ごと消してある。
-   ⛔⚠⚠**旋律(音符)そのものをやめた**(同・ユーザー「こういうどっと音じゃないやつない?」)=
-     **オシレータを短く鳴らすと、何をどう並べても電子音(ピコピコ)に聞こえる**。
-     ⭐これは 2026-07-27 に効果音で出た結論とまったく同じ([[NOTES_音]])=
-       **ノイズをローパスで削る**方が生音に聞こえる。
-   ⭐⭐**作りを変えた**=「一定間隔で音符を鳴らす」から**鳴らしっぱなしの音を1組だけ作る**へ
-     (🚌走行音と同じ形)。**止めるまで途切れない**ので、場面をまたいでも継ぎ目が無い。
-   中身は4つ:
-     ①**空気**=ノイズをローパス(380Hz)で削ったもの。ごくゆっくり濃さが揺れる=風のうなり。
-     ②**低い唸り**=87Hzを2本、わずかにずらして重ねる(うなりが出て落ち着かない)。
-     ③**厚み**=短3度(F+A♭)をゆっくり膨らませて、またしぼませる。⚠**立ち上がりを遅くする**
-       (速いと結局ピコッと鳴る)。
-     ④**遠い地鳴り**=7〜12秒に1回、ノイズを低く削った一撃。⚠これも音符ではない。
-   ⚠**音楽素材は足さない**(1曲で数MB)=その場で合成する。⚠**低すぎる音は出さない**
-     (44〜60Hzはスマホのスピーカーが鳴らせない=[[NOTES_音]])。 */
+   ⛔**没①=カットごとに曲が変わる形**(ユーザー「場面で切り替える感じじゃなくて、暗い感じのやつを
+     ずっと流す感じでいい」)。⛔**没②=空気と唸りだけの環境音**(ユーザー「ただぶーんってなってる
+     だけでBGMでもなんでもない」)。⚠**どちらも書き戻さない**。
+   ⭐⭐**いまの形=ちゃんとした曲**。⚠**「暗い音をずっと流す」と「曲であること」は両立する**=
+     没②に足りなかったのは**和音が動くこと・旋律があること・拍があること**の3つ。
+   ⚠⚠**それでも「ピコピコ」にしない**([[NOTES_音]]の掟)=
+     ⭐**立ち上がりを遅くする**(パッド1.1秒・旋律0.22秒)/ **2本をわずかにずらして重ねる** /
+       **旋律はしゃくり上げ+ビブラート** / **拍は音符ではなく削ったノイズ**。
+     ⚠**短い音符を並べた瞬間に電子音に戻る**。音は必ず「伸ばす」こと。
+   ⭐**組み立て**=60拍/分・4拍子・4小節で1周(16秒)。幕(約64秒)でちょうど4周する。
+     1周目=ベース+和音(静かに入る) / 2周目=旋律が乗る / 3周目=拍が入る / 4周目=旋律をオクターブ重ね。
+   ⚠**音楽素材は足さない**=その場で合成する(容量ゼロ・ライセンス無し)。
+   ⚠**低い音はスマホでほとんど鳴らない**ので、ベースは必ず2倍・3倍の音も一緒に鳴らす([[NOTES_音]])。 */
+const OB_BEAT=1.0,OB_BAR=OB_BEAT*4;
+/* 和音(4小節で1周)。b=ベース / p=重ねる3音。⚠**短調で降りていく**=不安を保ったまま曲になる */
+const OB_CH=[
+ {b:110.0,p:[220.0,261.6,329.6]},/* Am */
+ {b:87.31,p:[174.6,261.6,349.2]},/* F  */
+ {b:130.8,p:[196.0,261.6,329.6]},/* C  */
+ {b:82.41,p:[164.8,246.9,329.6]} /* E  ⚠ここだけ長3度=次のAmへ帰りたくなる(緊張) */
+];
+/* 旋律 [高さ,長さ(拍),入る拍]。⚠**音数を詰めない**=1小節に2〜3音まで */
+const OB_MEL=[
+ [[440.0,2,0],[523.3,2,2]],
+ [[440.0,1.5,0],[392.0,.5,1.5],[349.2,2,2]],
+ [[329.6,2,0],[392.0,2,2]],
+ [[349.2,1.5,0],[329.6,2.5,1.5]]
+];
+/* パッド1音=2本をわずかにずらして重ねる(うなりで厚くなる)。⚠**立ち上がりを遅く**(1.1秒) */
+function obPad(t0,f,dur,vol,dest){
+ for(const d of [-.32,.32]){
+  const o=AC.createOscillator();o.type='triangle';o.frequency.value=f*(1+d/100);
+  const g=AC.createGain();
+  g.gain.setValueAtTime(.0001,t0);
+  g.gain.linearRampToValueAtTime(vol,t0+1.1);
+  g.gain.setValueAtTime(vol,t0+dur*.72);
+  g.gain.exponentialRampToValueAtTime(.0001,t0+dur+1.2);
+  o.connect(g).connect(dest);o.start(t0);o.stop(t0+dur+1.3);}
+}
+/* ベース。⚠**2倍・3倍を必ず重ねる**=スマホは200Hz以下をほとんど鳴らせない([[NOTES_音]]) */
+function obBass(t0,f,dur,vol,dest){
+ for(const q of [[1,1,'triangle'],[2,.42,'sine'],[3,.16,'sine']]){
+  const o=AC.createOscillator();o.type=q[2];o.frequency.value=f*q[0];
+  const g=AC.createGain();
+  g.gain.setValueAtTime(.0001,t0);
+  g.gain.linearRampToValueAtTime(vol*q[1],t0+.4);
+  g.gain.exponentialRampToValueAtTime(.0001,t0+dur+.5);
+  o.connect(g).connect(dest);o.start(t0);o.stop(t0+dur+.6);}
+}
+/* 旋律。⚠**しゃくり上げ+ビブラート+倍音1本**=これが無いと三角波は笛にしか聞こえない */
+function obLead(t0,f,dur,vol,dest){
+ const g=AC.createGain();
+ g.gain.setValueAtTime(.0001,t0);
+ g.gain.linearRampToValueAtTime(vol,t0+.22);
+ g.gain.setValueAtTime(vol,t0+dur*.70);
+ g.gain.exponentialRampToValueAtTime(.0001,t0+dur+.45);
+ g.connect(dest);
+ const o=AC.createOscillator();o.type='triangle';
+ o.frequency.setValueAtTime(f*.988,t0);
+ o.frequency.linearRampToValueAtTime(f,t0+.16);
+ const vb=AC.createOscillator();vb.type='sine';vb.frequency.value=4.7;
+ const vg=AC.createGain();vg.gain.value=f*.0055;
+ vb.connect(vg).connect(o.frequency);vb.start(t0);vb.stop(t0+dur+.5);
+ o.connect(g);o.start(t0);o.stop(t0+dur+.5);
+ const o2=AC.createOscillator();o2.type='sine';o2.frequency.value=f*2;
+ const g2=AC.createGain();g2.gain.value=.26;
+ o2.connect(g2).connect(g);o2.start(t0);o2.stop(t0+dur+.5);
+}
+/* 拍=**音符ではなく削ったノイズ**(⚠ここを音符にすると一気にピコピコに戻る) */
+function obDrum(t0,f0,f1,dur,vol,dest){
+ if(!NZBUF)return;
+ const s=AC.createBufferSource();s.buffer=NZBUF;s.loop=true;
+ const lp=AC.createBiquadFilter();lp.type='lowpass';lp.Q.value=1.1;
+ lp.frequency.setValueAtTime(f0,t0);lp.frequency.exponentialRampToValueAtTime(Math.max(60,f1),t0+dur);
+ const g=AC.createGain();g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+ s.connect(lp).connect(g).connect(dest);s.start(t0);s.stop(t0+dur+.05);
+}
+/* 1小節ぶんを積む。i=通し番号(4で1周) */
+function obBar(i,t0,dest){
+ const C=OB_CH[i%4],lp=Math.floor(i/4);
+ obBass(t0,C.b,OB_BAR*.92,lp?.055:.042,dest);
+ for(const f of C.p)obPad(t0,f,OB_BAR*.86,lp?.030:.021,dest);
+ /* 2周目から旋律。⭐4周目は**オクターブ上も重ねる**(最後だけ厚くする) */
+ if(lp>=1)for(const m of OB_MEL[i%4]){
+  obLead(t0+m[2]*OB_BEAT,m[0],m[1]*OB_BEAT,.046,dest);
+  if(lp>=3)obLead(t0+m[2]*OB_BEAT,m[0]*2,m[1]*OB_BEAT,.016,dest);}
+ /* 3周目から拍(⚠1拍目と3拍目だけ=詰めると行進になる) */
+ if(lp>=2){obDrum(t0,150,60,.80,.17,dest);obDrum(t0+2*OB_BEAT,132,60,.62,.11,dest);}
+}
 let OPA=null;
 function obgmOn(){
  if(OPA||!AC||muted)return;
@@ -3753,56 +3852,35 @@ function obgmOn(){
  try{
   const t=AC.currentTime,V=VOL.all*VOL.bgm;
   const out=AC.createGain();out.gain.setValueAtTime(.0001,t);
-  /* ⚠**ゆっくり立ち上げる**(2.2秒)=いきなり鳴ると幕の頭が驚く */
-  out.gain.linearRampToValueAtTime(V*.95,t+2.2);
+  /* ⚠**ゆっくり立ち上げる**=いきなり鳴ると幕の頭が驚く */
+  out.gain.linearRampToValueAtTime(V*.95,t+1.6);
   out.connect(AC.destination);
   const S=[];/* 止める時に使う(鳴らしっぱなしの物は全部ここへ) */
-  /* ①空気=ノイズを削る。⚠**ノイズの元は使い回す**(毎回作ると重い) */
   if(!NZBUF){const n=Math.floor(AC.sampleRate*2),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);
    for(let i=0;i<n;i++)d[i]=Math.random()*2-1;NZBUF=b;}
+  /* ⭐**下に敷く空気**=ノイズをローパスで削ったもの。⚠曲の邪魔をしない量まで絞る */
   const air=AC.createBufferSource();air.buffer=NZBUF;air.loop=true;
-  const alp=AC.createBiquadFilter();alp.type='lowpass';alp.frequency.value=380;alp.Q.value=.7;
-  const ag=AC.createGain();ag.gain.value=.17;
+  const alp=AC.createBiquadFilter();alp.type='lowpass';alp.frequency.value=340;alp.Q.value=.7;
+  const ag=AC.createGain();ag.gain.value=.085;
   air.connect(alp).connect(ag).connect(out);air.start();S.push(air);
   /* 風のうなり=**とてもゆっくり**(23秒で1往復)。⚠速いと機械の唸りに聞こえる */
   const lf1=AC.createOscillator();lf1.type='sine';lf1.frequency.value=.043;
-  const lg1=AC.createGain();lg1.gain.value=.11;
+  const lg1=AC.createGain();lg1.gain.value=.05;
   lf1.connect(lg1).connect(ag.gain);lf1.start();S.push(lf1);
-  /* 削り具合も揺らす=「遠くで空気が動いている」に聞こえる */
   const lf2=AC.createOscillator();lf2.type='sine';lf2.frequency.value=.017;
-  const lg2=AC.createGain();lg2.gain.value=120;
+  const lg2=AC.createGain();lg2.gain.value=110;
   lf2.connect(lg2).connect(alp.frequency);lf2.start();S.push(lf2);
-  /* ②低い唸り=87Hzを2本ずらす(うなりの周期は約1.4秒) */
-  const dlp=AC.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=260;dlp.Q.value=.5;
-  /* ⚠⚠**音量を稼ぐ場所ではない**=低い音を上げると、重なった瞬間に潰れる([[NOTES_音]])。
-     ⭐**130.8Hzを厚めに**する=87Hzはスマホのスピーカーではほとんど鳴らないので、
-       ここが無いと実機では「シャー」だけになる。 */
-  const dg=AC.createGain();dg.gain.value=.22;
-  dlp.connect(dg).connect(out);
-  for(const f of [87.0,87.7,130.8]){
-   const o=AC.createOscillator();o.type=f>100?'sine':'triangle';o.frequency.value=f;
-   const g2=AC.createGain();g2.gain.value=f>100?.45:1;
-   o.connect(g2).connect(dlp);o.start();S.push(o);}
-  /* ③厚み=短3度をゆっくり膨らませる。⚠**立ち上がりを遅く**(速いとピコッと鳴る)。
-     ⚠⚠**ここが実機で聞こえる唯一の層**=スマホは200Hz以下をほとんど鳴らせない([[NOTES_音]])。
-     ⭐**下の唸り(87Hz)の2倍・3倍・4倍**(174.6/261.6/349.2)を重ねてある=
-       耳が勝手に87Hzを作り出す(missing fundamental)。⚠207.7だけは色付けの短3度。 */
-  const plp=AC.createBiquadFilter();plp.type='lowpass';plp.frequency.value=820;plp.Q.value=.6;
-  const pg=AC.createGain();pg.gain.value=.075;
-  plp.connect(pg).connect(out);
-  for(const f of [174.6,207.7,261.6,349.2]){
-   const o=AC.createOscillator();o.type='triangle';o.frequency.value=f;
-   const g2=AC.createGain();g2.gain.value=f>300?.18:(f>250?.35:(f>200?.30:.70));
-   o.connect(g2).connect(plp);o.start();S.push(o);}
-  const lf3=AC.createOscillator();lf3.type='sine';lf3.frequency.value=.021;/* 48秒で1往復 */
-  const lg3=AC.createGain();lg3.gain.value=.045;
-  lf3.connect(lg3).connect(pg.gain);lf3.start();S.push(lf3);
-  /* ④遠い地鳴り=7〜12秒に1回。⚠**音符ではない**(ノイズを低く削った一撃) */
-  const tm=setInterval(()=>{try{
-   if(!AC||muted||!OPA)return;
-   nzHit(150,130,2.6,.10*VOL.bgm,1.2);
-  }catch(e){}},9400);
-  OPA={out,S,tm};
+  /* ⭐⭐**曲を1小節ずつ先読みして積む**(⚠setIntervalで音を鳴らすとズレる=
+     積むのはJS、鳴る時刻はAudioContext側で決める) */
+  const A={out,S,bar:0,next:AC.currentTime+.35,tm:0};
+  const sched=()=>{try{
+   if(!OPA||!AC)return;
+   while(A.next<AC.currentTime+OB_BAR*1.6){obBar(A.bar++,A.next,out);A.next+=OB_BAR;}
+  }catch(e){}};
+  A.tm=setInterval(sched,Math.round(OB_BAR*400));
+  OPA=A;sched();
+  /* 遠い地鳴り=9秒に1回。⚠これも音符ではない */
+  A.tm2=setInterval(()=>{try{if(AC&&!muted&&OPA)nzHit(150,130,2.6,.075*VOL.bgm,1.2);}catch(e){}},9400);
  }catch(e){OPA=null;}
 }
 /* ⚠**すぐ切らない**=ぶつっと切れる。0.5秒で絞ってから外す */
@@ -3810,11 +3888,12 @@ function obgmOff(){
  if(!OPA)return;
  const A=OPA;OPA=null;
  try{clearInterval(A.tm);}catch(e){}
+ try{clearInterval(A.tm2);}catch(e){}
  try{const t=AC.currentTime;
   A.out.gain.cancelScheduledValues(t);
   A.out.gain.setValueAtTime(Math.max(.0001,A.out.gain.value),t);
   A.out.gain.exponentialRampToValueAtTime(.0001,t+.5);}catch(e){}
- setTimeout(()=>{try{for(const n of A.S){try{n.stop();}catch(e){}}A.out.disconnect();}catch(e){}},620);
+ setTimeout(()=>{try{for(const n of A.S){try{n.stop();}catch(e){}}A.out.disconnect();}catch(e){}},700);
 }
 document.addEventListener('pointerdown',ensureAC);
 document.addEventListener('gesturestart',e=>{try{e.preventDefault();}catch(x){}});/* iOSピンチズーム抑止 */
@@ -32404,22 +32483,37 @@ const OP_CUE=[
  [49.5,52.4,'——どこから来るのかは、俺も知らない。'],
  [54.0,56.8,'灯りを、ひとつずつ取り返していく。'],
  [57.3,60.4,'それが、俺たちの仕事だ。']];
-const OP={on:0,t:0,ph:0,cap:-2,fade:0};/* ph: 0=開発名 / 1=オープニング / fade=暗転の最中 */
+/* ph: -1=触ってもらう板 / 0=開発名 / 1=オープニング / fade=暗転の最中 */
+const OP={on:0,t:0,ph:-1,cap:-2,fade:0};
 /* 開発名。⚠**凝らない**=よくある「黒地に名前」。線が伸びて、名前が浮いて、消える */
 function opLogo(c,u){
  const cx=ED_W*.5,cy=ED_H*.5;
  /* 出入りの濃さ(前0.7秒で入って、後ろ0.7秒で抜ける) */
  const a=clamp(Math.min(u/.7,(OP_LOGO-u)/.7),0,1);
- /* 下の線=中央から左右へ伸びる(名前より少し早く動く) */
- const lw=clamp((u-.25)/.9,0,1)*ED_W*.30;
  c.globalAlpha=a;
+ /* ⭐⭐**印(ロゴ)**=「なきがら」=**抜け殻**。⚠**髑髏にしない**(生々しくなる/どこにでもある)。
+    ⭐**割れた輪**にする=中身が抜けた殻が割れて、欠片が1つ落ちている。
+    ⚠**線だけで描く**(塗らない)=studioの印は細い線の方が品が出る。 */
+ /* ⚠**印と文字を重ねない**(1回くっついて虫眼鏡に見えた)=印は上、文字は下に離す */
+ {const r=17*EK,gy2=cy-32*EK;
+  c.strokeStyle=PAPER;c.lineWidth=Math.max(1.4,2.0*EK);c.lineCap='round';
+  /* 外の輪=右上を欠けさせる */
+  c.beginPath();c.arc(cx,gy2,r,-Math.PI*.28,Math.PI*1.62);c.stroke();
+  /* 内の輪=少し左下へずらす(中身が抜けて空洞になっている) */
+  c.strokeStyle=PAPER3;c.lineWidth=Math.max(1,1.4*EK);
+  c.beginPath();c.arc(cx-r*.14,gy2+r*.12,r*.52,Math.PI*.12,Math.PI*1.42);c.stroke();
+  /* 落ちた欠片(⚠1つだけ=2つ以上だと散らかって見える。⚠**輪から離す**=くっつくと輪の一部に見える) */
+  c.fillStyle=PAPER;
+  c.beginPath();c.moveTo(cx+r*1.30,gy2-r*.86);c.lineTo(cx+r*1.66,gy2-r*.56);
+  c.lineTo(cx+r*1.36,gy2-r*.42);c.closePath();c.fill();}
+ /* 下の線=中央から左右へ伸びる(名前より少し早く動く) */
+ const lw=clamp((u-.25)/.9,0,1)*ED_W*.26;
  /* ⚠**色は表(PAPER/PAPER3)から引く**=canvasの文字色を直に書かない(検査 checkPalette) */
- c.fillStyle=PAPER3;c.fillRect(cx-lw,cy+20*EK,lw*2,1.4);
+ c.fillStyle=PAPER3;c.fillRect(cx-lw,cy+30*EK,lw*2,1.4);
+ /* ⛔**日本語は入れない**(2026-08-07(202)ユーザー指示「日本語要らない ロゴとNAKIGARAだけ」) */
  c.textAlign='center';
- c.fillStyle=PAPER;c.font='900 '+Math.round(30*EK)+'px '+FF;
- c.fillText('Nakigara',cx,cy+8*EK);
- c.fillStyle=PAPER3;c.font='900 '+Math.round(10.5*EK)+'px '+FF;
- c.fillText('な き が ら',cx,cy+38*EK);
+ c.fillStyle=PAPER;c.font='900 '+Math.round(25*EK)+'px '+FF;
+ c.fillText('NAKIGARA',cx,cy+18*EK);
  c.globalAlpha=1;
 }
 /* 灯りのにじみ。⚠⚠**濃い円を1枚置かない**=「色つきの丸」がそのまま見える(1回そうなった)。
@@ -32891,7 +32985,8 @@ function opDraw(){
  c.setTransform(s,0,0,s,(w-ED_W*s)/2,(h-ED_H*s)/2);
  const t=OP.t;
  c.save();c.beginPath();c.rect(0,0,ED_W,ED_H);c.clip();
- if(OP.ph===0)opLogo(c,t);
+ if(OP.ph<0){/* 触ってもらう板の裏=黒のまま(板はHTML側) */}
+ else if(OP.ph===0)opLogo(c,t);
  else{
   let ci=0;while(ci<OP_CT.length-1&&t>=OP_CT[ci])ci++;
   const t0=ci?OP_CT[ci-1]:0,u=t-t0,len=OP_CT[ci]-t0;
@@ -32921,6 +33016,8 @@ function opCap(){
 }
 function opStep(dt){
  if(!OP.on)return;
+ /* 触ってもらう板=時間を進めない(押されるまで待つ)。⚠**描かない**=下のタイトルを透かすため */
+ if(OP.ph<0)return;
  OP.t+=Math.min(.05,dt);
  /* ⚠**終わりの少し前から暗転を始める**=真っ黒になった所でちょうど入れ替わる */
  if(OP.ph===0&&OP.t>=OP_LOGO-OP_FADE/1000)opFade(()=>opPhase(1));
@@ -32930,7 +33027,9 @@ function opStep(dt){
 function opPhase(p){
  OP.ph=p;OP.t=0;OP.cap=-2;
  const el=$('op-cap');if(el){el.textContent='';el.classList.remove('on');}
- const bx=$('scr-boot');if(bx)bx.classList.toggle('mv',p===1);
+ const bx=$('scr-boot');if(bx){bx.classList.toggle('mv',p===1);bx.classList.toggle('gate',p<0);}
+ /* ⚠タイトルの右の列を隠すのは**触ってもらう板の間だけ** */
+ try{document.body.classList.toggle('opgate',p<0);}catch(e){}
  try{opSndBtn();}catch(e){}
  opCap();try{opDraw();}catch(e){}
 }
@@ -32956,7 +33055,8 @@ function opSkip(){
 }
 function opEnd(){
  OP.on=0;
- const bx=$('scr-boot');if(bx){bx.classList.add('off');bx.classList.remove('mv');}
+ const bx=$('scr-boot');if(bx){bx.classList.add('off');bx.classList.remove('mv');bx.classList.remove('gate');}
+ try{document.body.classList.remove('opgate');}catch(e){}
  const el=$('op-cap');if(el)el.classList.remove('on');
  /* ⚠道具(撮影・検査)からは暗転を挟まずに直に呼ばれる=黒が残らないように畳む */
  if(!OP.fade){const f=$('op-fade');if(f&&f.classList)f.classList.remove('on');}
@@ -32966,39 +33066,45 @@ function opEnd(){
 }
 /* 好きな所へ飛ばす(🛠撮影と検査の口)。⚠ヘッドレスは rAF がほとんど回らないのでこれが要る */
 function opSeek(ph,t9){OP.on=1;OP.ph=ph;OP.t=t9;OP.cap=-2;
- const bx=$('scr-boot');if(bx){bx.classList.remove('off');bx.classList.toggle('mv',ph===1);}
+ const bx=$('scr-boot');if(bx){bx.classList.remove('off');bx.classList.remove('gate');
+  bx.classList.toggle('mv',ph===1);}
+ try{document.body.classList.remove('opgate');}catch(e){}
  opCap();opDraw();}
+/* 🎬起動の幕を始める。⚠**もう見た人にも毎回出す**=タップ1回で飛ばせるため(ユーザー指示の流れどおり) */
+/* 🔈⭐⭐⭐**触った瞬間に音の口を開ける**(2026-08-07(202)に作り直した)。
+   ⚠⚠**起動時に作った AudioContext は、端末によっては二度と鳴らない**
+     (ユーザー「左上の音を出すボタン押しても音流れない」)=**触った中で作り直すのが唯一確実**。
+   ⚠**必ずユーザー操作の中から呼ぶこと**(setTimeout の中から呼んでも効かない)。 */
+function opAudioGo(){
+ try{if(AC&&AC.state!=='running'){try{AC.close();}catch(e){}AC=null;NZBUF=null;}}catch(e){}
+ try{ensureAC();}catch(e){}
+ try{obgmOn();}catch(e){}
+ /* ⚠`resume()` は少し遅れて効くので、開いてからもう一度だけ試す */
+ setTimeout(()=>{try{if(AC&&AC.state==='running')obgmOn();opSndBtn();}catch(e){}},260);
+ try{opSndBtn();}catch(e){}
+}
 /* 🎬起動の幕を始める。⚠**もう見た人にも毎回出す**=タップ1回で飛ばせるため(ユーザー指示の流れどおり) */
 function opStart(){
  const bx=$('scr-boot');if(!bx)return;
- OP.on=1;OP.ph=0;OP.t=0;OP.cap=-2;OP.fade=0;
- bx.classList.remove('off');
+ /* ⭐⭐**まず「触ってもらう板」を出す**(2026-08-07(202)ユーザー指示
+    「強制的に押させるやつがムービーの前に欲しい」)=ここを押して初めて音が出せる。 */
+ OP.on=1;OP.ph=-1;OP.t=0;OP.cap=-2;OP.fade=0;
+ bx.classList.remove('off');bx.classList.add('gate');bx.classList.remove('mv');
+ try{document.body.classList.add('opgate');}catch(e){}
  {const f=$('op-fade');if(f&&f.classList)f.classList.remove('on');}
- /* ⚠**どこを押してもスキップ**(札は「押せると分かるための印」) */
- bx.onclick=()=>{try{if(sfx.tap)sfx.tap();}catch(e){}opSkip();};
- /* 🔈⭐⭐**音を出す札**(2026-08-07(201))。
-    ⚠⚠**ブラウザは「画面を1回触るまで音を鳴らせない」**=起動直後の幕は本来かならず無音になる。
-      ⚠しかも**触ると幕が飛ぶ**ので、普通にしていると幕のBGMを聴く機会が一度も無い。
-    ⭐**この札だけは押しても飛ばない**(`stopPropagation`)=ここで音が始まる。
-    ⚠**音が出せた時は自分で消える**(用が済んだ物を残さない)。 */
+ /* ⚠**板を押した時は始める / それ以外はスキップ**(どこを押しても効く) */
+ bx.onclick=()=>{
+  if(OP.ph<0){opAudioGo();opFade(()=>opPhase(0));return;}
+  try{if(sfx.tap)sfx.tap();}catch(e){}opSkip();};
+ /* 🔈**音を出す札**=板を押しても鳴らなかった時の逃げ道。⚠**これだけは押しても幕が飛ばない** */
  const sb=$('bt-op-snd');
- if(sb){sb.onclick=e=>{try{e.stopPropagation();}catch(x){}
-   try{ensureAC();}catch(x){}
-   try{obgmOn();}catch(x){}
-   opSndBtn();};}
- /* ⭐**鳴らせるなら黙って鳴らす**(PCや、前に触ったことのある端末では大抵こちらで鳴る)。
-    ⚠**ここで `ensureAC()` を呼ばない**=あれは効果音の素材を全部展開するので、
-      幕が始まった瞬間に絵が引っかかる。**音の口だけ**先に開ける。
-    ⚠`resume()` はすぐには効かないので、少し待ってから鳴るかどうかを見る。 */
- try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
-  if(AC&&AC.state==='suspended')AC.resume();}catch(e){}
- /* ⚠**札を先に出さない**=鳴らせる端末では0.35秒だけ点いて消える(壊れて見える) */
- setTimeout(()=>{try{if(OP.on&&AC&&AC.state==='running')obgmOn();opSndBtn();}catch(e){}},350);
+ if(sb){sb.onclick=e=>{try{e.stopPropagation();}catch(x){}opAudioGo();};}
+ opSndBtn();
  try{opDraw();}catch(e){}
 }
-/* 🔈札の出し入れ=鳴っていない時だけ出す */
+/* 🔈札の出し入れ=鳴っていない時だけ出す。⚠**触ってもらう板の間は出さない**(あちらが本命の口) */
 function opSndBtn(){const sb=$('bt-op-snd');if(!sb||!sb.classList)return;
- sb.classList.toggle('on',!!(OP.on&&!OPA));}
+ sb.classList.toggle('on',!!(OP.on&&OP.ph>=0&&!OPA));}
 
 /* ============ ⚔ 冒険(育成RPG・鍛錬所の中身) ============
    2026-07-26(第54弾)。⚠**TDとは全く別のゲーム**として作る(ユーザー決定)。

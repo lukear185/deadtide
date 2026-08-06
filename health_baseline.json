@@ -1,11 +1,11 @@
 {
- "catchEmpty": 373,
+ "catchEmpty": 381,
  "deadFn": 7,
  "mdBroken": 0,
  "mdOrphan": 0,
  "line_CLAUDE.md": 130,
- "line_HANDOFF.md": 70,
- "bytes": 3552051,
+ "line_HANDOFF.md": 72,
+ "bytes": 3557942,
  "toolMissing": 0,
  "noJekyll": 0
 }
