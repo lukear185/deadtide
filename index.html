@@ -11957,7 +11957,13 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   /* ⭐第98弾に描き直し。⚠裾を左右対称の二等辺三角にすると「布のマント」に見えるので、
      **長さの違う筋を4本**に散らす。⚠フードの中は**もっと暗く**して顔が無いことを見せる */
   const fl=Math.sin(t*2.4+ph)*2.5;
-  c.globalAlpha=.72;c.shadowColor='#7fd0ff';c.shadowBlur=11;
+  /* ⚠⚠(191)**`shadowBlur` をやめた**([[NOTES_絵]]の禁止事項=図形1つ1つに掛かるので塗り分けが埋まる)。
+     ⭐**背面の輪3枚**に置き換えた(★4の光と同じ型)=同じ「霧が光っている」読みのまま安い。 */
+  {c.save();c.fillStyle='#7fd0ff';
+   for(let g8=0;g8<3;g8++){c.globalAlpha=.09-g8*.025;
+    c.beginPath();c.ellipse(0,-30,15+g8*7,25+g8*8,0,0,7);c.fill();}
+   c.restore();}
+  c.globalAlpha=.72;
   c.fillStyle=Z.c;
   /* 霧に散る裾(筋の長さと太さを変える) */
   /* ⚠筋を1本ずつ下ろすと**足が3本のクラゲ**に見えた(2回踏んだ)。
@@ -16171,7 +16177,14 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
  if(id==='hnd'){
   /* 猟犬(Lv3+は金の首輪)／派生=狼・ケルベロス・フェンリル */
   const BC=U.c||'#8a6a45';
-  if(vid==='fenr'){c.scale(1.3,1.3);c.shadowColor=TECH;c.shadowBlur=10;}
+  /* ❄フェンリルの霜の光。⚠⚠(191)**`shadowBlur` をやめた**([[NOTES_絵]]の禁止事項)=
+     影は**描く図形1つ1つに掛かる**ので体の塗り分けが光で埋まるうえ、実機で高い。
+     ⭐★4の光と同じ**背面の輪3枚**にした(シルエットの層では描かない)。 */
+  if(vid==='fenr'){c.scale(1.3,1.3);
+   if(!o.sil){c.save();c.fillStyle=TECH;
+    for(let g8=0;g8<3;g8++){c.globalAlpha=.11-g8*.03;
+     c.beginPath();c.ellipse(-1,-11,17+g8*7,12+g8*5,0,0,7);c.fill();}
+    c.restore();}}
   else if(vid==='cerb'){c.scale(1.18,1.18);}
   else if(vid==='wolf'){c.scale(1.08,1.08);}
   /* ⭐第102弾に描き直し。⚠それまで**角丸長方形の胴+5x6の脚4本+丸い頭**で、犬に見えていなかった。
@@ -16234,6 +16247,33 @@ function drawUnit(c,ui,x,y,dr,t,ph,o){
   else head(17,-18,vid==='fenr'?8:7);
   if(vid==='fenr'&&FXLV>0){c.globalAlpha=.5;c.fillStyle=FROST;c.beginPath();c.arc(27,-16,3+Math.sin(t*12)*1.5,0,7);c.fill();c.globalAlpha=1;}
   c.restore();return;
+ }
+ /* ⚔⭐⭐(191)**派生の段を「背中の布」で言う**(2026-08-06)。
+    ⚠⚠**それまで派生90種は素の体を共有していて、違いは色だけ**だった([[TODO]])=
+      盤面(30px)では**素と最上位が見分けられない**。⚠段(vt)は 1〜3。
+    ⭐**輪郭で言う**のが唯一効く手([[NOTES_絵]])=段が上がるほど布が長くなり、縁取りと裂けが増える。
+    ⭐**体の"前"に描く**=体の後ろに回るので、**どの兵科の体でも前面を隠さない**
+      (28種の体に1つずつ枝を書かなくても、90種すべてに一度で効く)。
+    ⚠**猟犬の系統(狼/ケルベロス/フェンリル)は上で return 済み**=四つ足に肩布は付けない。
+    ⚠**ヴァルキリーの系統は外す**(翼と重なる)。⚠色は体の色から作る(派生ごとの色分けは残る)。 */
+ /* ⚠**演出の強さ(FXLV)では消さない**=これは演出ではなく体の一部(消すと段が読めなくなる) */
+ if(vt&&id!=='valk'){
+  const VC=U.c||'#8a8f96',y0=-33.5,y1=[0,-15,-7,2][Math.min(3,vt)];
+  /* ⚠**胴(x -7〜7)より外へ出す**=同じ幅だと体に隠れて1本も見えない(1回そうなった)。
+     ⭐**下へ行くほど広がる台形**にして、歩きに合わせて裾を振る。 */
+  const sw9=walk*.7,fw=Math.sin(t*5.5+ph)*1.1*vt;
+  c.fillStyle=shade(VC,.55);
+  c.beginPath();
+  c.moveTo(-8,y0);c.lineTo(7,y0);
+  c.quadraticCurveTo(10.5,(y0+y1)*.5,10+fw+sw9,y1);
+  if(vt>=3){/* 段3=裾が2つに裂けて風になびく */
+   c.lineTo(4+fw*.7+sw9,y1-6.5);c.lineTo(-1+fw*.4+sw9,y1);}
+  c.lineTo(-12+fw*.6+sw9,y1);
+  c.quadraticCurveTo(-11.5,(y0+y1)*.5,-8,y0);
+  c.closePath();c.fill();c.stroke();
+  /* 肩の留め具(段2から)=前から見ても段が読める */
+  if(vt>=2){c.fillStyle=shade(VC,1.35);
+   c.beginPath();c.moveTo(-9,y0+1);c.lineTo(8,y0+1);c.lineTo(8,y0+3.6);c.lineTo(-9,y0+3.6);c.closePath();c.fill();c.stroke();}
  }
  if(id==='bat'){/* ⭐バット「基本の殴り屋」(2026-07-30に専用の姿へ描き直し)。
     ⚠それまでは**共通の体+野球帽+前に突き出した棒**で、大写し(`pose=u:bat`)にすると5つ出た:
