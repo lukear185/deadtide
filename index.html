@@ -30149,23 +30149,34 @@ function renderLab(){
      ⚠⚠**次の面でしか並ばない物は研究所に出さない**(同ユーザー「そもそも研究所にないように」)=
        `lockT()/lockU()` を並べるのをやめた(データ側は残してある=面クリアで並ぶ判定に使う)。
      ⭐棚に並んでいて順番待ちの物は**何番目に解放できるか**を出す(絵と説明はそのまま見せる)。 */
-  /* ⏭⭐⭐(198)**出すのは「いま買える1つ」と「その次の1つ」だけ**(2026-08-07ユーザー指示)。
-     ⭐次の1つは**灰色**にして、条件を**手前の物の名前**で書く(「◯◯を解放すると解放できる」)。
-     ⚠**それより先は出さない**=買ったらまた次の1つが現れる。⛔番号(◯番目)で出すのはやめた。 */
+  /* 👀⭐⭐⭐(208)**いまの面で解放できる分は全部並べる**(2026-08-07ユーザー「友達から:
+     研究所の新種解放のとこで、今現在どこまで解放が可能か見れた方がいい」)。
+     ⛔**(198)の「いま買える1つ+その次の1つだけ」は撤回**=**どこまで行けるかが読めなかった**。
+     ⭐**買えるのは今までどおり手前から順に1つだけ**(196の決定はそのまま)=残りは灰色で並ぶ。
+     ⚠⚠**次の面の分は出さない**(197の決定はそのまま)=棚に並ぶのは制覇した面の分だけ。
+     ⭐**灰色の札の条件は「すぐ手前の物の名前」**で書く=順番待ちの並びがそのまま読める。
+     ⭐**買い切ったら1枚だけ「次の面」の札を出す**=空っぽの棚は壊れて見える。 */
   const od9=n9=>'⏭ 「'+n9+'」を解放すると解放できる';
+  /* ⚠**最後の面まで配り終えた時に「次の面」と言わない**(嘘になる)=棚の長さで見分ける */
+  const nx9T=shelfT().length>=UNL_T.length?'🎉 これで全部':'🗺 次の面を 🌑 で落とすと新しく並ぶ';
+  const nx9U=shelfU().length>=UNL_U.length?'🎉 これで全部':'🗺 次の面を 🌑 で落とすと新しく並ぶ';
   let nT=0,pvT='';
   for(const id of shelfT()){if(twHas(id))continue;const i9=TW_IDX[id],T=TOWERS[i9];if(!T)continue;
    nT++;
    if(nT===1){pvT=T.n;items.push({cat:'ult',sub:'new',k:'nt',id,ic:'🗼',pv:{k:'t',i:i9},t:T.n,
      tag:'新型タレット '+(ot.length+1)+'/'+UNL_T.length,d:T.dsc,p:pT});}
-   else{items.push({cat:'ult',sub:'new',lk:1,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9(pvT),d:T.dsc,p:0});break;}}
+   else{items.push({cat:'ult',sub:'new',lk:1,ic:'🗼',pv:{k:'t',i:i9},t:T.n,tag:od9(pvT),d:T.dsc,p:0});pvT=T.n;}}
+  if(!nT)items.push({cat:'ult',sub:'new',lk:1,inf:1,ic:'🗼',t:'新型タレットはここまで',
+   tag:nx9T,d:'',p:0});
   /* ⚠UNITSは派生に差し替わるのでUBASE */
   let nU=0,pvU='';
   for(const id of shelfU()){if(unHas(id))continue;const i9=UB_IDX[id],U=UBASE[i9];if(!U)continue;
    nU++;
    if(nU===1){pvU=U.n;items.push({cat:'ulu',sub:'new',k:'nu',id,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,
      tag:'新型ユニット '+(ou.length+1)+'/'+UNL_U.length,d:U.dsc,p:pU});}
-   else{items.push({cat:'ulu',sub:'new',lk:1,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9(pvU),d:U.dsc,p:0});break;}}}
+   else{items.push({cat:'ulu',sub:'new',lk:1,ic:'🤖',pv:{k:'u',i:i9,def:U},t:U.n,tag:od9(pvU),d:U.dsc,p:0});pvU=U.n;}}
+  if(!nU)items.push({cat:'ulu',sub:'new',lk:1,inf:1,ic:'🤖',t:'新型ユニットはここまで',
+   tag:nx9U,d:'',p:0});}
  /* 進化: どのユニットからでも好きに選べる(2026-07-25ユーザー指示。以前は猟犬→バット…の固定順だった)。
     出すのはユニットごとの「次の段階」1つだけ=段階の飛ばしはできない。値段は取った総数で上がる */
  {const uv=META.uv||[];
@@ -30375,8 +30386,10 @@ function renderLab(){
       +((rest||(it.sm&&it.d))?'<div class="tg">'+rest+(it.sm&&it.d?(rest?' ':'')+it.d:'')+'</div>':'')
       +bar
       +((it.d&&!it.sm)?'<div class="ds">'+it.d+'</div>':'')
-      /* ⏭(198)次の1つは灰色+「まだ買えない」。⛔鍵も番号もやめた(ユーザー指示) */
-      +'<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?'⏭ この次':('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button></div>';}).join('')+'</div>')
+      /* ⏭順番待ちは灰色+「まだ買えない」。⛔鍵も番号もやめた(ユーザー指示)。
+         ⚠(208)**「この次」とは書かない**=いまの面の分を全部並べたので、3つ目4つ目にも同じ札が付く。
+         ⚠**知らせるだけの札(inf)にはボタンを出さない**=押せない物を置かない。 */
+      +(it.inf?'':('<button class="bu" data-lab="'+o.i+'"'+(can?'':' disabled')+'>'+(it.lk?'⏭ 順番待ち':('🧬'+fmt(it.p)+(it.n>1?' ×'+it.n:'')))+'</button>'))+'</div>';}).join('')+'</div>')
     /* ⚠(201)小タブができたので「カテゴリ」では広すぎる=**いま開いている所**の話だと分かる文にする */
     :'<div class="labdone">🎉 ここは全部解放した!</div>');
  }
