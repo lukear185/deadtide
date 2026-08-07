@@ -4512,7 +4512,27 @@ function checkStage3(){
  console.log('🪶面'+(si+1)+'('+STAGES[si].n+'): 道2本とも'+Math.round(PLEN)+'(1pxも違わない) / 湧き口は1点 / 合流は'
   +(mf*100).toFixed(0)+'% / 置き場'+nsl+'+工房3+支援2はどちらの道からも95以上 / ユニットと🚩旗は合流点より後ろだけ / 敵は両方の枝から均等 OK');
 }
+/* ---- 🐞⭐⭐(207)**表の印が実体まで届いているか** ----
+   ⚠⚠**作った理由**=ゾンビの表の印を実体へ写しているのは1か所だけなのに、そこへの書き忘れが
+     **3つ**寝ていた(🪶羽・🐟潜る・🐢甲羅ごもり)。⭐**表にも絵にも数値にも異常が無い**ので、
+     その印を主役にした面を作るまで誰も気づけない(羽は面③の弱点そのものだったので発覚した)。
+   ⭐**見るのは1つ**=表でその印を持っている種類を1体拾い、実体を作った後も印が残っているか。 */
+function checkZFlag(){
+ /* ⚠**盤面で z.○○ として読んでいる印だけ**を並べる(表にしか無い物=mw/w/st/nm は入れない) */
+ const need=['armor','scl','wing','dv','shl','noblock','aura','split','aoe','fin','boss'];
+ const miss=[];
+ for(const k of need){
+  const zi=ZOMBIES.findIndex(z=>z[k]);
+  if(zi<0){miss.push(k+'(表に1体も居ない)');continue;}
+  const sp=zSpec(zi,1,1);
+  if(!sp[k])miss.push(k+'='+ZOMBIES[zi].n);
+ }
+ if(miss.length){console.log('FAIL: 表の印が実体に渡っていない '+miss.join(' / ')
+  +' ← zSpec の返す物に1つずつ足すこと(足さないと、その印は盤面で一度も効かない)');process.exit(1);}
+ console.log('🐞ゾンビの印: '+need.length+'種すべて表から実体まで届いている OK');
+}
 const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
+['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
 ['checkUnitAf',checkUnitAf],

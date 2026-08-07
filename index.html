@@ -235,6 +235,16 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .mapcard b{display:block;font-size:15px;background:var(--ink);color:var(--pane);
  margin:-9px -12px 7px;padding:7px 12px;border-radius:10px 10px 0 0;border-left:6px solid var(--gold)}
 .mapback{position:absolute;left:10px;bottom:10px;padding:11px 16px}
+/* 🗺(207)面をめくる帯=上端に貼る。⚠**中央寄せにしない**=名前の長さで◀▶が左右に動く */
+.maphd{position:absolute;left:10px;right:10px;top:8px;display:flex;align-items:center;gap:8px;
+ pointer-events:none}
+.maphd>*{pointer-events:auto}
+.maptitle{flex:1;text-align:center;font-size:15px;font-weight:900;color:var(--ink);
+ background:rgba(242,236,220,.86);border:2px solid var(--ink);border-radius:10px;padding:5px 10px;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mapnav{min-width:44px;min-height:44px;padding:8px 10px;font-size:16px}
+.maplock{position:absolute;left:50%;transform:translateX(-50%);top:60px;font-size:12px;font-weight:900;
+ color:var(--pane);background:rgba(36,31,25,.78);border-radius:8px;padding:5px 12px;white-space:nowrap}
 /* 下のボタンも1列に積まず横に並べる。⚠「防衛開始」だけ広く取って押し間違えを防ぐ */
 #scr-setup .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 #scr-setup .btnrow .btn{flex:1 1 150px;padding:11px 12px}
@@ -1619,6 +1629,13 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
      ①廃線の6拠点→🚌→②港の6拠点→🚌→③???と1本の道で繋がる。バスが選んだ拠点へ走る。 -->
 <div class="scr" id="scr-map">
   <canvas id="mapcv"></canvas>
+  <!-- 🗺(207)面をめくる帯。⚠**押す所は44px**・◀▶は端に貼る(真ん中は名前で伸び縮みする) -->
+  <div class="maphd">
+    <button class="btn sm mapnav" id="bt-map-prev" aria-label="前の面">◀</button>
+    <div class="maptitle" id="map-title">—</div>
+    <button class="btn sm mapnav" id="bt-map-next" aria-label="次の面">▶</button>
+  </div>
+  <div class="maplock" id="map-lock" style="display:none">🔒 手前の面を 🌑 で落とすと開く</div>
   <div id="map-card" class="panel mapcard">
     <b id="mc-name">—</b>
     <p class="note" id="mc-sub" style="margin:2px 0"></p>
@@ -18435,7 +18452,9 @@ const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示)
    ⚙️の総額が動かないように、体数に掛けた値の逆数をここへ渡す。⚠省略したら1(今までどおり)。 */
 function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,wing:Z.wing||0,/* 🪶(205)**羽を写し忘れていた**=面③の材質が1体にも乗っていなかった */fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,wing:Z.wing||0,dv:Z.dv||0,shl:Z.shl||0,/* ⚠⚠(207)**表の印はここを通らないと一度も効かない**=🪶羽/🐟潜る/🐢甲羅ごもりの3つが写し忘れだった。
+    ⭐**ZOMBIES に新しい印を足したら、必ずここにも1つ足すこと**(検査 checkZFlag が見張る)。 */
+fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 /* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
 /* ⚠`stnT`=気絶の**見せ方**だけのタイマー(★が頭上を回る)。止める仕組みは `frzT` の方。
    ⚠**凍結と気絶を分けるために持つ**=罠・引力場・時間停止・落雷を氷漬けで見せない(2026-08-02) */
@@ -35076,29 +35095,64 @@ $('bt-back1').onclick=()=>show('title');
    被ってるから修正」)=そこは拠点カードの置き場。道は右下を避けて左下の???へ抜ける。 */
 /* ⛔(204h)**d:1(兵長)の2拠点を外した**(ユーザー決定「各面の2ステージ目がほぼ意味ない」)=
    ❌錆びた高架 / ❌錆びた桟橋。⚠**書き戻さない**。⚠残した拠点の x/y は間を詰め直してある。 */
+/* 🗺⭐⭐⭐(207)**地図は面ごとに1枚**になった(ユーザー指示「面毎にマップは分けて欲しい」)。
+   ⚠それまでは3面ぶん18拠点を1枚に詰めていたので、**面が増えるほどピンも札も小さく詰まる**
+     (面⑤まで作ると30拠点=1枚には入らない)。
+   ⭐**x/y は「その面の1枚の中での位置」**=どの面も画面いっぱいを使ってよい。
+   ⚠⚠**右下の一角(x>.60かつy>.58)には置かない**=そこは拠点カードの置き場(前からの掟)。
+   ⚠**上端(y<.10)にも置かない**=面の名前と◀▶の帯がある。 */
 const MAPND=[
- {stg:0,d:0,n:'砂の関門',      s:'埋もれた検問を抜ける最初の戦い',x:.07,y:.22},
- {stg:0,d:2,n:'廃線ハイウェイ',s:'砂に埋もれた最終防衛拠点',      x:.22,y:.10},
- {stg:0,d:6,n:'森の道',        s:'🚌開拓便=轢いて稼ぐボーナス',   x:.37,y:.20,bns:1},
- {stg:0,d:3,n:'検問所跡',      s:'鬼軍曹いわく「ここからが本番」',x:.52,y:.09},
- {stg:0,d:4,n:'崩れた立体交差',s:'悪夢のような物量が来る',        x:.66,y:.19},
- {stg:0,d:5,n:'終末の廃線',    s:'🌑生態系が一新される。獣の群れ',x:.80,y:.10,nm:1},
- {stg:1,d:0,n:'防波堤の入り江',s:'潮の匂い。海の拠点の入り口',    x:.90,y:.33},
- {stg:1,d:2,n:'沈んだ港',      s:'ゾンビ化した海の生き物の巣',    x:.74,y:.47},
- {stg:1,d:6,n:'海沿いの道',    s:'🚌開拓便=🌊高潮の走り屋コース', x:.59,y:.38,bns:1},
- {stg:1,d:3,n:'塩漬けの市場',  s:'高波が押し寄せる市場跡',        x:.44,y:.50},
- {stg:1,d:4,n:'深潮の埠頭',    s:'悪夢の物量が水浸しの道を走る',  x:.29,y:.41},
- {stg:1,d:5,n:'海淵の底',      s:'🌑深海のナイトメアが孵る場所',  x:.14,y:.53,nm:1},
- /* 🪶(205)**面③=送電鉄塔の丘**。⚠**右下の一角(x>.60かつy>.58)は拠点カードの置き場**なので使わない。
+ {stg:0,d:0,n:'砂の関門',      s:'埋もれた検問を抜ける最初の戦い',x:.10,y:.60},
+ {stg:0,d:2,n:'廃線ハイウェイ',s:'砂に埋もれた最終防衛拠点',      x:.25,y:.36},
+ {stg:0,d:6,n:'森の道',        s:'🚌開拓便=轢いて稼ぐボーナス',   x:.40,y:.57,bns:1},
+ {stg:0,d:3,n:'検問所跡',      s:'鬼軍曹いわく「ここからが本番」',x:.55,y:.30},
+ {stg:0,d:4,n:'崩れた立体交差',s:'悪夢のような物量が来る',        x:.72,y:.46},
+ {stg:0,d:5,n:'終末の廃線',    s:'🌑生態系が一新される。獣の群れ',x:.88,y:.22,nm:1},
+ {stg:1,d:0,n:'防波堤の入り江',s:'潮の匂い。海の拠点の入り口',    x:.09,y:.30},
+ {stg:1,d:2,n:'沈んだ港',      s:'ゾンビ化した海の生き物の巣',    x:.24,y:.55},
+ {stg:1,d:6,n:'海沿いの道',    s:'🚌開拓便=🌊高潮の走り屋コース', x:.40,y:.30,bns:1},
+ {stg:1,d:3,n:'塩漬けの市場',  s:'高波が押し寄せる市場跡',        x:.55,y:.54},
+ {stg:1,d:4,n:'深潮の埠頭',    s:'悪夢の物量が水浸しの道を走る',  x:.72,y:.29},
+ {stg:1,d:5,n:'海淵の底',      s:'🌑深海のナイトメアが孵る場所',  x:.88,y:.51,nm:1},
+ /* 🪶(205)**面③=送電鉄塔の丘**。⭐**登っていく並び**にしてある(左下のふもと→右上の頂)。
     ⚠**🌑ナイトメア専用の顔ぶれはまだ無い**(③は難易度を問わず同じプール)=[[TODO]]。 */
- {stg:2,d:0,n:'麓の変電所',    s:'丘のふもと。ここから登る',      x:.06,y:.66},
- {stg:2,d:2,n:'送電鉄塔の丘',  s:'鉄塔の稜線。道が二手に分かれる',x:.17,y:.76},
- {stg:2,d:6,n:'稜線の道',      s:'🚌開拓便=丘を駆け下りる',       x:.28,y:.65,bns:1},
- {stg:2,d:3,n:'送電線の谷',    s:'鉄塔の影が落ちる谷',            x:.38,y:.76},
- {stg:2,d:4,n:'崩れた鉄塔',    s:'悪夢の物量が空から降ってくる',  x:.48,y:.65},
- {stg:2,d:5,n:'雷鳴の頂',      s:'🌑丘の空をまるごと覆う影',      x:.57,y:.77,nm:1}
+ {stg:2,d:0,n:'麓の変電所',    s:'丘のふもと。ここから登る',      x:.09,y:.64},
+ {stg:2,d:2,n:'送電鉄塔の丘',  s:'鉄塔の稜線。道が二手に分かれる',x:.24,y:.49},
+ {stg:2,d:6,n:'稜線の道',      s:'🚌開拓便=丘を駆け下りる',       x:.39,y:.57,bns:1},
+ {stg:2,d:3,n:'送電線の谷',    s:'鉄塔の影が落ちる谷',            x:.54,y:.40},
+ {stg:2,d:4,n:'崩れた鉄塔',    s:'悪夢の物量が空から降ってくる',  x:.71,y:.31},
+ {stg:2,d:5,n:'雷鳴の頂',      s:'🌑丘の空をまるごと覆う影',      x:.88,y:.17,nm:1}
 ];
 let MSEL=-1,MBUS=null;
+/* 🗺**いま開いている面の地図**。⚠**MSEL(選んでいる拠点)とは別**=別の面を覗いている間も選択は残る */
+let MPAGE=0;
+const mapPageN=()=>STAGES.length;
+/* その面の拠点だけ(並びは表のまま=道の順) */
+const mapNodes=(pg)=>MAPND.filter(n=>n.stg===(pg==null?MPAGE:pg));
+/* 面をめくる。⚠**選んでいる拠点は動かさない**(めくっただけで出撃先が変わらないように)。
+   ⭐ただし**その面に何も選んでいない時**は、その面の「次に行く拠点」を選ぶ。 */
+function mapPage(pg){
+ const p=clamp(pg|0,0,mapPageN()-1);
+ if(p===MPAGE)return;
+ MPAGE=p;MBUS=null;/* ⚠バスを前の面から飛ばしてこない */
+ const cur=MAPND[MSEL];
+ if(!cur||cur.stg!==MPAGE){
+  const L=mapNodes();let pick=L[0];
+  for(const nd of L){if(ndOpen(nd)){pick=nd;if(!ndClr(nd))break;}}
+  mapSel(MAPND.indexOf(pick));
+ }
+ mapHd();
+}
+/* 上の帯=面の名前と◀▶。⚠**行ける面かどうかは◀▶の効きで言う**(押せない物は薄くする) */
+function mapHd(){
+ const t9=$('map-title');
+ if(t9)t9.innerHTML=IC('①②③④⑤'[MPAGE]+' '+((STAGES[MPAGE]||{}).n||''));
+ for(const q of [['bt-map-prev',MPAGE>0],['bt-map-next',MPAGE<mapPageN()-1]]){
+  const b=$(q[0]);if(b&&b.style)b.style.visibility=q[1]?'':'hidden';}
+ /* 🔒まだ行けない面は帯で言う(ピンは全部🔒になるので、理由が読めないと迷子になる) */
+ const w9=$('map-lock');
+ if(w9)w9.style.display=stageOK(MPAGE)?'none':'';
+}
 const ndOpen=nd=>!nd.lock3&&stageOK(nd.stg)&&diffOK(nd.stg,nd.d);
 const ndClr=nd=>!nd.lock3&&!!scArr(nd.stg)[nd.d];
 function mapDefSel(){
@@ -35107,6 +35161,11 @@ function mapDefSel(){
   if(nd.lock3)continue;
   if(ndOpen(nd)){last=i;if(!ndClr(nd))return i;}}
  return last;/* 全部クリア済みなら一番先の拠点 */
+}
+/* 🗺地図を開く時=**いま行く拠点がある面**を開く(前に見ていた面ではない) */
+function mapOpen(){
+ MSEL=mapDefSel();MPAGE=clamp((MAPND[MSEL]||{}).stg|0,0,mapPageN()-1);
+ MBUS=null;mapSel(MSEL);mapHd();
 }
 function mapSel(i){
  const nd=MAPND[i];if(!nd)return;
@@ -35140,8 +35199,139 @@ function mapSel(i){
  /* ⚠タップ音はここで鳴らさない(🗺出撃ボタン経由だと一括リスナーと二重に鳴っていた)。
     ピンを押した側(pointerdown)が鳴らす。 */
 }
+/* 押した音。⚠**握り潰しを1か所にまとめる**(同じ try を3つ書かない) */
+function mapTap(){try{if(sfx.tap)sfx.tap();}catch(e){if(DEV)console.log('tap',e.message);}}
 /* 🚌バスの位置。⚠選ぶたびに走らせる=「バスで拠点へ向かう」物語の絵 */
 function mapXY(nd,w,h){return[nd.x*w,(0.08+nd.y*.78)*h];}
+/* 🗺⭐⭐(207)**面ごとの地形**。⚠全部プロシージャル・**道とピンより下に描く**。
+   ⭐**紙(セピア)・繊維・縁の焼けは3面とも共通**=同じ地図帳の別のページに見える。
+   ⚠**乱数は種から回す**(毎フレーム同じ絵。Math.random は使わない)。 */
+function mapBg(c,w,h,dpr,pg){
+ c.fillStyle='#ddd3bc';c.fillRect(0,0,w,h);
+ /* 紙の繊維(まだらな点々) */
+ {let s9=7+pg*31;const R9=()=>(s9=(s9*16807)%2147483647)/2147483647;
+  c.fillStyle='rgba(74,64,52,.06)';
+  for(let i=0;i<130;i++){const x=R9()*w,y=R9()*h,r=(.6+R9()*1.2)*dpr;c.fillRect(x,y,r,r);}}
+ /* 山なみ(3面とも置くが、場所と数を変える) */
+ const mts=(L)=>{c.strokeStyle='rgba(74,64,52,.42)';c.lineWidth=2*dpr;
+  for(const m of L){const mx=m[0]*w,my=m[1]*h;
+   for(let k=0;k<m[2];k++){const ox=mx+k*16*dpr,oy=my+(k%2)*4*dpr,s5=(9-k*1.5)*dpr;
+    c.beginPath();c.moveTo(ox-s5,oy);c.lineTo(ox,oy-s5);c.lineTo(ox+s5,oy);c.stroke();
+    c.beginPath();c.moveTo(ox,oy-s5);c.lineTo(ox+s5*.35,oy-s5*.45);c.stroke();}}};
+ /* 枯れ木(Yの字) */
+ const trees=(L)=>{c.strokeStyle='rgba(74,64,52,.5)';c.lineWidth=2*dpr;
+  for(const q of L){const tx=q[0]*w,ty=q[1]*h;
+   c.beginPath();c.moveTo(tx,ty);c.lineTo(tx,ty-11*dpr);
+   c.moveTo(tx,ty-6*dpr);c.lineTo(tx-5*dpr,ty-12*dpr);
+   c.moveTo(tx,ty-8*dpr);c.lineTo(tx+5*dpr,ty-13*dpr);c.stroke();}};
+ if(pg===0){
+  /* ①廃線ハイウェイ=砂の荒野。クレーター・砂丘の等高線・打ち捨てられた線路 */
+  c.strokeStyle='rgba(74,64,52,.18)';c.lineWidth=2*dpr;
+  for(const q of [[.16,.34,.055],[.52,.24,.035],[.34,.80,.045],[.70,.62,.03],[.88,.80,.038]]){
+   c.beginPath();c.arc(q[0]*w,q[1]*h,q[2]*w,0,7);c.stroke();
+   c.beginPath();c.arc(q[0]*w,q[1]*h,q[2]*w*.55,0,7);c.stroke();}
+  /* 砂丘=寝かせた弧を3本ずつ */
+  c.strokeStyle='rgba(160,140,100,.45)';c.lineWidth=2*dpr;
+  for(const q of [[.20,.86],[.62,.86],[.44,.14],[.80,.36]])
+   for(let k=0;k<3;k++){const bx=q[0]*w,by=q[1]*h+k*7*dpr,r5=(26-k*6)*dpr;
+    c.beginPath();c.arc(bx,by,r5,3.34,6.08);c.stroke();}
+  /* 🚃打ち捨てられた線路(面の名前そのもの)=枕木つきの一直線 */
+  {c.strokeStyle='rgba(74,64,52,.34)';c.lineWidth=2*dpr;
+   const y0=.72*h,y1=.30*h,x0=.04*w,x1=.98*w;
+   for(const o of [-3.5*dpr,3.5*dpr]){c.beginPath();c.moveTo(x0,y0+o);c.lineTo(x1,y1+o);c.stroke();}
+   for(let k=0;k<26;k++){const t8=k/25,tx=x0+(x1-x0)*t8,ty=y0+(y1-y0)*t8;
+    c.beginPath();c.moveTo(tx-1*dpr,ty-6*dpr);c.lineTo(tx+1*dpr,ty+6*dpr);c.stroke();}}
+  mts([[.15,.20,3],[.46,.66,2],[.78,.14,3]]);
+  trees([[.30,.68],[.62,.20],[.94,.60]]);
+ }else if(pg===1){
+  /* ②沈んだ港=**下半分がまるごと海**。海岸線・波・沈没船・桟橋
+     ⚠⚠**隅に寄せない**=右下は拠点カード・左下は「←ホーム」なので、隅に描くと札の裏に隠れて
+       ただの薄い三角にしか見えない(1回そう作って撮り直した)。⭐**幅いっぱいの帯**にする。 */
+  {/* 海岸線=左が高く右が低い、ゆるくうねる線(y は割合) */
+   const cy=x=>(.60+Math.sin(x*7.4+.6)*.035+x*.10)*h;
+   const seaPath=(dy)=>{c.beginPath();c.moveTo(0,cy(0)+dy);
+    for(let k=1;k<=40;k++){const x=k/40;c.lineTo(x*w,cy(x)+dy);}
+    c.lineTo(w,h*1.2);c.lineTo(0,h*1.2);c.closePath();};
+   c.fillStyle='rgba(95,138,156,.22)';seaPath(0);c.fill();
+   c.fillStyle='rgba(95,138,156,.16)';seaPath(.07*h);c.fill();
+   c.strokeStyle='rgba(63,90,107,.45)';c.lineWidth=2.5*dpr;
+   c.beginPath();c.moveTo(0,cy(0));
+   for(let k=1;k<=40;k++){const x=k/40;c.lineTo(x*w,cy(x));}c.stroke();
+   /* 砂浜の点描(海岸線の陸側に沿って) */
+   c.fillStyle='rgba(63,90,107,.20)';
+   {let s8=13;const R8=()=>(s8=(s8*48271)%2147483647)/2147483647;
+    for(let i=0;i<52;i++){const x=i/52;
+     c.fillRect(x*w+(R8()*10-5)*dpr,cy(x)-(3+R8()*11)*dpr,1.6*dpr,1.6*dpr);}}}
+  /* 波の記号(⚠**カードと「←ホーム」の裏を避けて真ん中〜左に置く**) */
+  c.strokeStyle='rgba(63,90,107,.35)';c.lineWidth=2*dpr;
+  for(const q of [[.12,.78],[.26,.90],[.40,.80],[.52,.92],[.62,.80],[.34,.72],[.06,.94]]){
+   c.beginPath();c.moveTo(q[0]*w-14*dpr,q[1]*h);
+   c.quadraticCurveTo(q[0]*w-7*dpr,q[1]*h-6*dpr,q[0]*w,q[1]*h);
+   c.quadraticCurveTo(q[0]*w+7*dpr,q[1]*h-6*dpr,q[0]*w+14*dpr,q[1]*h);c.stroke();}
+  /* ⚓沈没船 */
+  {const sx=.46*w,sy=.86*h;
+   c.strokeStyle='rgba(36,31,25,.55)';c.fillStyle='rgba(36,31,25,.30)';c.lineWidth=2*dpr;
+   c.beginPath();c.moveTo(sx-14*dpr,sy);c.lineTo(sx+12*dpr,sy);c.lineTo(sx+7*dpr,sy-7*dpr);c.lineTo(sx-9*dpr,sy-7*dpr);c.closePath();c.fill();c.stroke();
+   c.beginPath();c.moveTo(sx,sy-7*dpr);c.lineTo(sx+2*dpr,sy-17*dpr);c.stroke();
+   c.beginPath();c.moveTo(sx+2*dpr,sy-17*dpr);c.lineTo(sx+8*dpr,sy-13*dpr);c.stroke();}
+  /* 桟橋(陸から海へ突き出す杭の列。⚠海岸線の上に足を置く) */
+  {c.strokeStyle='rgba(74,64,52,.45)';c.lineWidth=2*dpr;
+   const bx=.17*w,by=.62*h;
+   c.beginPath();c.moveTo(bx,by);c.lineTo(bx+56*dpr,by+26*dpr);c.stroke();
+   for(let k=0;k<5;k++){const px=bx+k*13*dpr,py=by+k*6*dpr;
+    c.beginPath();c.moveTo(px,py-4*dpr);c.lineTo(px,py+7*dpr);c.stroke();}}
+  mts([[.13,.14,3],[.42,.14,2],[.70,.58,2]]);
+  trees([[.06,.46],[.30,.16],[.62,.68]]);
+ }else{
+  /* ③送電鉄塔の丘=左下から右上へ登る稜線+送電鉄塔と電線 */
+  /* 稜線(重なった丘の線を3本。上ほど薄い=遠い) */
+  for(let k=0;k<3;k++){
+   const oy=.80-k*.19,al=.26-k*.06;
+   c.strokeStyle='rgba(74,64,52,'+al.toFixed(2)+')';c.lineWidth=2.5*dpr;
+   c.beginPath();c.moveTo(0,(oy+.10)*h);
+   c.quadraticCurveTo(.30*w,(oy-.10)*h,.56*w,oy*h);
+   c.quadraticCurveTo(.80*w,(oy+.08)*h,w,(oy-.14)*h);c.stroke();}
+  /* 等高線(丘の腹に短い弧) */
+  c.strokeStyle='rgba(140,140,96,.40)';c.lineWidth=1.8*dpr;
+  for(const q of [[.18,.80],[.46,.66],[.74,.50],[.90,.34]])
+   for(let k=0;k<3;k++){const bx=q[0]*w,by=q[1]*h+k*8*dpr,r5=(30-k*7)*dpr;
+    c.beginPath();c.arc(bx,by,r5,3.5,5.9);c.stroke();}
+  /* ⚡送電鉄塔=左下から右上へ3基、電線で繋ぐ(この面の顔) */
+  {const TW=[[.20,.88],[.52,.72],[.84,.56]];/* ⚠拠点の並びより下=電線が札を横切らない */
+   c.strokeStyle='rgba(58,52,64,.55)';c.lineWidth=2*dpr;
+   /* 先に電線(たるませる) */
+   for(let k=0;k<TW.length-1;k++){
+    const a=[TW[k][0]*w,TW[k][1]*h-26*dpr],b=[TW[k+1][0]*w,TW[k+1][1]*h-26*dpr];
+    for(const o of [-5*dpr,0,5*dpr]){c.beginPath();c.moveTo(a[0],a[1]+o);
+     c.quadraticCurveTo((a[0]+b[0])/2,(a[1]+b[1])/2+16*dpr+o,b[0],b[1]+o);c.stroke();}}
+   /* 鉄塔=下広がりの脚+腕木2段 */
+   for(const q of TW){const tx=q[0]*w,ty=q[1]*h,hh=26*dpr,ww=7*dpr;
+    c.strokeStyle='rgba(58,52,64,.75)';c.lineWidth=2.2*dpr;
+    c.beginPath();c.moveTo(tx-ww,ty);c.lineTo(tx-ww*.28,ty-hh);
+    c.moveTo(tx+ww,ty);c.lineTo(tx+ww*.28,ty-hh);c.stroke();
+    for(const yy of [ty-hh*.62,ty-hh*.92]){
+     c.beginPath();c.moveTo(tx-ww*.85,yy);c.lineTo(tx+ww*.85,yy);c.stroke();}
+    /* 筋交い */
+    c.lineWidth=1.4*dpr;
+    c.beginPath();c.moveTo(tx-ww*.8,ty-hh*.2);c.lineTo(tx+ww*.55,ty-hh*.62);
+    c.moveTo(tx+ww*.8,ty-hh*.2);c.lineTo(tx-ww*.55,ty-hh*.62);c.stroke();}}
+  /* 風の線(丘の上を流れる) */
+  c.strokeStyle='rgba(74,64,52,.20)';c.lineWidth=1.6*dpr;
+  for(const q of [[.28,.24],[.40,.16],[.62,.22],[.74,.12]]){
+   const bx=q[0]*w,by=q[1]*h;
+   c.beginPath();c.moveTo(bx-20*dpr,by);
+   c.quadraticCurveTo(bx,by-6*dpr,bx+20*dpr,by);
+   c.quadraticCurveTo(bx+30*dpr,by+4*dpr,bx+36*dpr,by-2*dpr);c.stroke();}
+  trees([[.34,.86],[.66,.74]]);
+ }
+ /* 紙の縁の焼け(四隅を薄く落とす。⚠3面とも共通=同じ地図帳のページに見せる) */
+ for(const q of [[0,0],[1,0],[0,1],[1,1]]){
+  const vg=c.createRadialGradient(q[0]*w,q[1]*h,0,q[0]*w,q[1]*h,.28*w);
+  vg.addColorStop(0,'rgba(58,46,32,.20)');vg.addColorStop(1,'rgba(58,46,32,0)');
+  c.fillStyle=vg;c.fillRect(0,0,w,h);}
+ /* まだ行けない面は紙ごと薄くもやを掛ける(ピンの🔒だけでは「なぜ」が読めない) */
+ if(!stageOK(pg)){c.fillStyle='rgba(58,52,64,.22)';c.fillRect(0,0,w,h);}
+}
 function mapDraw(t){
  const cv9=$('mapcv');if(!cv9)return;
  const dpr=Math.min(2,window.devicePixelRatio||1);
@@ -35151,90 +35341,27 @@ function mapDraw(t){
  if(cv9.height!==Math.round(h))cv9.height=Math.round(h);
  const c=cv9.getContext('2d');if(!c)return;
  c.setTransform(1,0,0,1,0,0);
- /* ---- 地図の紙。⚠DEADTIDEの雰囲気=セピアの紙+荒野と海(参考の地図の「型」だけ借りる) ---- */
- c.fillStyle='#ddd3bc';c.fillRect(0,0,w,h);
- /* 海(②の帯=右上から下半分へ)。紙の上の水彩っぽく薄く2段 */
- c.fillStyle='rgba(95,138,156,.20)';
- c.beginPath();c.moveTo(w,0.18*h);c.quadraticCurveTo(.72*w,.52*h,.30*w,.88*h);
- c.lineTo(w*1.2,h*1.2);c.closePath();c.fill();
- c.fillStyle='rgba(95,138,156,.13)';
- c.beginPath();c.moveTo(w,0.30*h);c.quadraticCurveTo(.70*w,.62*h,.38*w,.98*h);
- c.lineTo(w*1.2,h*1.2);c.closePath();c.fill();
- /* 荒野の模様=ひび・クレーター(⚠等間隔に並べない) */
- c.strokeStyle='rgba(74,64,52,.18)';c.lineWidth=2*dpr;
- const cr=[[.15,.48,.05],[.48,.40,.033],[.30,.82,.04],[.62,.40,.026],[.86,.20,.03]];
- for(const q of cr){c.beginPath();c.arc(q[0]*w,q[1]*h,q[2]*w,0,7);c.stroke();
-  c.beginPath();c.arc(q[0]*w,q[1]*h,q[2]*w*.55,0,7);c.stroke();}
- /* 波の記号(海側) */
- c.strokeStyle='rgba(63,90,107,.35)';
- for(const q of [[.84,.62],[.90,.75],[.74,.80],[.94,.55],[.68,.70],[.60,.86],[.80,.90]]){
-  c.beginPath();c.moveTo(q[0]*w-14*dpr,q[1]*h);
-  c.quadraticCurveTo(q[0]*w-7*dpr,q[1]*h-6*dpr,q[0]*w,q[1]*h);
-  c.quadraticCurveTo(q[0]*w+7*dpr,q[1]*h-6*dpr,q[0]*w+14*dpr,q[1]*h);c.stroke();}
- /* ---- 🗺(97)地図の作り込み(全部プロシージャル・道とピンより下に描く) ---- */
- /* 紙の繊維(まだらな点々。座標は決め打ちのLCG=毎フレーム同じ) */
- {let s9=7;const R9=()=>(s9=(s9*16807)%2147483647)/2147483647;
-  c.fillStyle='rgba(74,64,52,.06)';
-  for(let i=0;i<130;i++){const x=R9()*w,y=R9()*h,r=(.6+R9()*1.2)*dpr;c.fillRect(x,y,r,r);}}
- /* 海岸線(海の1段目の縁をなぞる+砂浜の点描) */
- c.strokeStyle='rgba(63,90,107,.45)';c.lineWidth=2.5*dpr;
- c.beginPath();c.moveTo(w,0.18*h);c.quadraticCurveTo(.72*w,.52*h,.30*w,.88*h);c.stroke();
- c.fillStyle='rgba(63,90,107,.20)';
- {let s8=13;const R8=()=>(s8=(s8*48271)%2147483647)/2147483647;
-  for(let i=0;i<46;i++){const t8=i/46,px=w+( .30*w-w)*t8,py=.18*h+(.88*h-.18*h)*t8;
-   /* 曲線の近似に沿ってばらす */
-   const qx=(1-t8)*(1-t8)*w+2*(1-t8)*t8*.72*w+t8*t8*.30*w,
-         qy=(1-t8)*(1-t8)*.18*h+2*(1-t8)*t8*.52*h+t8*t8*.88*h;
-   c.fillRect(qx-(4+R8()*14)*dpr,qy+(R8()*8-4)*dpr,1.6*dpr,1.6*dpr);}}
- /* 山なみ(荒野側のすき間に小さく) */
- const MTS=[[.155,.335,3],[.47,.30,2],[.335,.665,3],[.52,.70,2],[.10,.13,2]];
- c.strokeStyle='rgba(74,64,52,.42)';c.lineWidth=2*dpr;
- for(const m of MTS){const mx=m[0]*w,my=m[1]*h;
-  for(let k=0;k<m[2];k++){const ox=mx+k*16*dpr,oy=my+(k%2)*4*dpr,s5=(9-k*1.5)*dpr;
-   c.beginPath();c.moveTo(ox-s5,oy);c.lineTo(ox,oy-s5);c.lineTo(ox+s5,oy);c.stroke();
-   c.beginPath();c.moveTo(ox,oy-s5);c.lineTo(ox+s5*.35,oy-s5*.45);c.stroke();}}
- /* 枯れ木(Yの字) */
- c.strokeStyle='rgba(74,64,52,.5)';c.lineWidth=2*dpr;
- for(const q of [[.26,.60],[.44,.135],[.065,.44]]){const tx=q[0]*w,ty=q[1]*h;
-  c.beginPath();c.moveTo(tx,ty);c.lineTo(tx,ty-11*dpr);
-  c.moveTo(tx,ty-6*dpr);c.lineTo(tx-5*dpr,ty-12*dpr);
-  c.moveTo(tx,ty-8*dpr);c.lineTo(tx+5*dpr,ty-13*dpr);c.stroke();}
- /* 沈没船(海のすき間に1つ) */
- {const sx=.545*w,sy=.845*h;
-  c.strokeStyle='rgba(36,31,25,.55)';c.fillStyle='rgba(36,31,25,.30)';c.lineWidth=2*dpr;
-  c.beginPath();c.moveTo(sx-14*dpr,sy);c.lineTo(sx+12*dpr,sy);c.lineTo(sx+7*dpr,sy-7*dpr);c.lineTo(sx-9*dpr,sy-7*dpr);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(sx,sy-7*dpr);c.lineTo(sx+2*dpr,sy-17*dpr);c.stroke();/* 傾いたマスト */
-  c.beginPath();c.moveTo(sx+2*dpr,sy-17*dpr);c.lineTo(sx+8*dpr,sy-13*dpr);c.stroke();}
- /* 未踏地帯(???の一角に薄いもや+斜線) */
- {const fg=c.createRadialGradient(.06*w,.66*h,0,.06*w,.66*h,.20*w);
-  fg.addColorStop(0,'rgba(58,52,64,.16)');fg.addColorStop(1,'rgba(58,52,64,0)');
-  c.fillStyle=fg;c.fillRect(0,.40*h,.30*w,.60*h);
-  c.strokeStyle='rgba(58,52,64,.16)';c.lineWidth=1.5*dpr;
-  for(let k=0;k<7;k++){const x0=(.01+k*.023)*w;
-   c.beginPath();c.moveTo(x0,.92*h);c.lineTo(x0+.05*w,.62*h);c.stroke();}}
- /* 紙の縁の焼け(四隅を薄く落とす) */
- for(const q of [[0,0],[1,0],[0,1],[1,1]]){
-  const vg=c.createRadialGradient(q[0]*w,q[1]*h,0,q[0]*w,q[1]*h,.28*w);
-  vg.addColorStop(0,'rgba(58,46,32,.20)');vg.addColorStop(1,'rgba(58,46,32,0)');
-  c.fillStyle=vg;c.fillRect(0,0,w,h);}
- /* ---- 道=拠点を順に繋ぐ点線(にゃんこの型)。⚠③へは薄く引く ---- */
+ /* ---- 地図の紙+その面の地形(2026-08-07(207)に面ごとの1枚へ分けた) ---- */
+ mapBg(c,w,h,dpr,MPAGE);
+ const ND=mapNodes();
+ /* ---- 道=拠点を順に繋ぐ点線(にゃんこの型) ---- */
  c.lineCap='round';
  /* ⭐(97)道は「薄い轍の帯」の上に点線=1本の点線より道らしく見える */
- for(let i=0;i<MAPND.length-1;i++){
-  const a=mapXY(MAPND[i],w,h),b=mapXY(MAPND[i+1],w,h);
+ for(let i=0;i<ND.length-1;i++){
+  const a=mapXY(ND[i],w,h),b=mapXY(ND[i+1],w,h);
   c.strokeStyle='rgba(74,64,52,.14)';c.setLineDash([]);c.lineWidth=10*dpr;
   c.beginPath();c.moveTo(a[0],a[1]);
   c.quadraticCurveTo((a[0]+b[0])/2,(a[1]+b[1])/2-14*dpr,b[0],b[1]);c.stroke();}
- for(let i=0;i<MAPND.length-1;i++){
-  const a=mapXY(MAPND[i],w,h),b=mapXY(MAPND[i+1],w,h);
-  const open=ndOpen(MAPND[i+1]);
-  c.strokeStyle=MAPND[i+1].lock3?'rgba(74,64,52,.25)':open?'#4a4034':'rgba(74,64,52,.45)';
+ for(let i=0;i<ND.length-1;i++){
+  const a=mapXY(ND[i],w,h),b=mapXY(ND[i+1],w,h);
+  const open=ndOpen(ND[i+1]);
+  c.strokeStyle=open?'#4a4034':'rgba(74,64,52,.45)';
   c.setLineDash([2.5*dpr,7*dpr]);c.lineWidth=4*dpr;
   c.beginPath();c.moveTo(a[0],a[1]);
   c.quadraticCurveTo((a[0]+b[0])/2,(a[1]+b[1])/2-14*dpr,b[0],b[1]);c.stroke();}
  c.setLineDash([]);
  /* ---- 拠点 ---- */
- for(let i=0;i<MAPND.length;i++){const nd=MAPND[i];
+ for(let i9=0;i9<ND.length;i9++){const nd=ND[i9];const i=MAPND.indexOf(nd);
   /* ⚠🔒のピンは一回り小さく薄く(未解放の建設マスと同じ理屈=錠前だらけで現役が読めない)。
      ⚠タップ判定は座標からの距離なので押しやすさは変わらない */
   const p=mapXY(nd,w,h),open=ndOpen(nd),clr=ndClr(nd),r=((open||clr)?15:12)*dpr;
@@ -35268,7 +35395,8 @@ function mapDraw(t){
   rr(c,p[0]-tw9/2,p[1]+r+4*dpr,tw9,16*dpr,4*dpr);c.fill();c.stroke();
   c.fillStyle=INK;c.fillText(nd.n,p[0],p[1]+r+16*dpr);
  }
- /* ---- 🚌バス=選んだ拠点へ走る ---- */
+ /* ---- 🚌バス=選んだ拠点へ走る。⚠**別の面を覗いている間は出さない**(居ない拠点へ走ってしまう) ---- */
+ if((MAPND[MSEL]||{}).stg===MPAGE)
  {const tgP=mapXY(MAPND[Math.max(0,MSEL)],w,h),ty=tgP[1]-22*dpr;
   if(!MBUS)MBUS={x:tgP[0],y:ty,t:t,fl:1};
   /* ⚠フレームレート依存にしない(毎rAFで×.12だと120Hz端末で2倍速)=時間で減衰させる。
@@ -35287,7 +35415,7 @@ function mapDraw(t){
   c.beginPath();c.arc(-8,7,3.4,0,7);c.fill();c.beginPath();c.arc(9,7,3.4,0,7);c.fill();
   c.restore();}
  /* 🧭(97)方位(右上の角) */
- {const cxp=.952*w,cyp=.115*h,r6=12*dpr;
+ {const cxp=.952*w,cyp=.245*h,r6=12*dpr;/* ⚠(207)面をめくる帯とぶつかるので下げた */
   c.strokeStyle='rgba(36,31,25,.5)';c.lineWidth=2*dpr;
   c.beginPath();c.arc(cxp,cyp,r6,0,7);c.stroke();
   c.fillStyle='rgba(36,31,25,.55)';
@@ -35313,10 +35441,14 @@ $('mapcv').addEventListener('pointerdown',e=>{
  const px=(e.clientX-rc9.left)*dpr,py=(e.clientY-rc9.top)*dpr;
  const w=cv9.width,h=cv9.height;
  let bi=-1,bd=1e9;
- for(let i=0;i<MAPND.length;i++){const p=mapXY(MAPND[i],w,h);
+ /* ⚠**いま開いている面の拠点だけ**を押せる(他の面のピンは描いていない) */
+ for(const nd of mapNodes()){const i=MAPND.indexOf(nd),p=mapXY(nd,w,h);
   const dd=Math.hypot(p[0]-px,p[1]-py);if(dd<26*dpr&&dd<bd){bd=dd;bi=i;}}
- if(bi>=0){mapSel(bi);try{if(sfx.tap)sfx.tap();}catch(e){}}
+ if(bi>=0){mapSel(bi);mapTap();}
 });
+/* ◀▶=面をめくる。⚠**まだ行けない面も覗ける**(何が待っているかは見えた方がよい) */
+$('bt-map-prev').onclick=()=>{mapPage(MPAGE-1);mapTap();};
+$('bt-map-next').onclick=()=>{mapPage(MPAGE+1);mapTap();};
 $('bt-map-go').onclick=()=>{
  const nd=MAPND[MSEL];if(!nd||nd.lock3)return;
  if(!ndOpen(nd)){
@@ -35506,7 +35638,7 @@ function homeDraw(t){
  c.restore();
 }
 let HOMEOC=null;/* 影絵用の使い回しcanvas(毎フレーム作らない) */
-$('bt-map').onclick=()=>{MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show('map');};
+$('bt-map').onclick=()=>{mapOpen();show('map');};
 $('bt-home-resume').onclick=()=>{ensureAC();if(!resumeRun())renderHome();};
 $('hm-team').onclick=()=>{renderLoad();$('md-load').classList.add('on');};
 $('hm-hero').onclick=()=>{renderHeroPick();$('md-hpick').classList.add('on');};

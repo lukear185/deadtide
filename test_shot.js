@@ -18,7 +18,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['pc','PC用CSS(既定はスマホ用を強制適用)'],
   ['st2|st3','ステージ2(沈んだ港)/ステージ3(送電鉄塔の丘)'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
   ['setup','出撃準備'],['lab[=タブ]','🔬研究所(twup/unup/rec…)'],['load','🎒編成'],['home','🏠ホーム'],
-  ['map','🗺エリアマップ'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
+  ['map','🗺エリアマップ(worldmap+mappg=0|1|2 で面を選ぶ)'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
   ['iv=<波>','作戦タイム'],['grid=tw|tg|u|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
   ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
@@ -312,7 +312,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        +(OPT.indexOf('hmsn')>=0?'openMsn();':''))
      :(OPT.indexOf('worldmap')>=0)?('META.tr0=1;'
        +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
-       +'MSEL=mapDefSel();mapSel(MSEL);MBUS=null;show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')
+       +'mapOpen();'+((/mappg=(\d)/.exec(OPT)||[0,''])[1]?('mapPage('+(/mappg=(\d)/.exec(OPT)||[0,0])[1]+');'):'')+'show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')
      /* hstat=🦸英雄ステータス。hs=英雄id を足すとその1人を選んだ状態で撮る */
      /* ⭐hsdemo = ▶必殺技のデモを再生した状態で撮る(2026-08-03(100)) */
      :(OPT.indexOf('hstat')>=0)?('META.hero={hNox:1,hSf:2,hCop:1,hDawn:1,hStorm:1,hLupi:1};META.gem=17;'
