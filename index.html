@@ -4377,13 +4377,13 @@ const ZOMBIES=[
  /* 🌑⭐(204)**獣をやめて「①の敵の黒ずんだ強化版」へ**(1体目)。⚠**id は変えない**(📖図鑑が覚えている)。
     ⚠**強さの数値は1つも触っていない**=変えたのは名前と大きさ(見た目だけ)と絵。仕組みは `NMB`。 */
  {id:'nmRat',n:'爛れた走者',hp:95,sp:205,bt:26,dmg:1,mw:1,nm:1,w:1.2,sc:.9,atk:22,ar:.35,c:'#656332'},
- {id:'nmBoar',n:'変異猪',hp:430,sp:150,bt:64,dmg:3,mw:1,nm:1,w:.7,sc:1.2,aoe:2,atk:73,ar:1,c:'#7a5a3a',dsc:'牙で2体まとめて薙ぎ払う'},
- {id:'nmSpid',n:'肉蜘蛛',hp:260,sp:88,bt:58,dmg:2,mw:2,nm:1,noblock:1,w:.55,sc:1.05,atk:0,ar:9,c:'#4a3a5a'},
+ {id:'nmBoar',n:'爛れた薙ぎ手',hp:430,sp:150,bt:64,dmg:3,mw:1,nm:1,w:.7,sc:1.2,aoe:2,atk:73,ar:1,c:'#4b453a',dsc:'骨の刃で2体まとめて薙ぎ払う'},
+ {id:'nmSpid',n:'爛れた這うもの',hp:260,sp:88,bt:58,dmg:2,mw:2,nm:1,noblock:1,w:.55,sc:1.05,atk:0,ar:9,c:'#43403c'},
  /* ⛔(199)ユーザー指示「空飛ぶやつは3面から出てくるようにするから」=①のNMから外した */
  {id:'nmBat',off:1,n:'吸血蝙蝠',hp:150,sp:240,bt:48,dmg:2,mw:3,nm:1,noblock:1,w:.5,sc:.9,atk:0,ar:9,c:'#5a4a6b'},
  {id:'nmCrow',off:1,n:'腐肉鴉',hp:190,/* ⛔(199)空を飛ぶので①から外した */sp:170,bt:54,dmg:2,mw:4,nm:1,aura:1,w:.55,sc:.95,atk:34,ar:.6,c:'#3f3a44'},
- {id:'nmBear',n:'屍熊',hp:1050,sp:66,bt:150,dmg:5,mw:6,nm:1,armor:1,w:.35,sc:1.7,atk:109,ar:1.1,aoe:3,c:'#5a4a3a'},
- {id:'nmHorr',n:'肉塊の主',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:205,ar:1.1,aoe:7,c:'#8a3a5a'},
+ {id:'nmBear',n:'爛れた重装兵',hp:1050,sp:66,bt:150,dmg:5,mw:6,nm:1,armor:1,w:.35,sc:1.7,atk:109,ar:1.1,aoe:3,c:'#3b4046'},
+ {id:'nmHorr',n:'爛れた巨兵',hp:2600,sp:38,bt:600,dmg:14,boss:1,nm:1,armor:1,mw:5,sc:2.4,atk:205,ar:1.1,aoe:7,c:'#46474a'},
  /* ===== 🌑ナイトメア × ステージ2 専用: 変異した深海の生き物(nm:1 かつ st:2) =====
     ⭐2026-07-27ユーザー指示「2ステージ目のナイトメアも別の種類の敵にしたい」。方向は
       **A=深海の生き物が変異した**(ユーザー選択)。⚠それまでは**ステージ2でも陸の獣が出ていた**。
@@ -4428,7 +4428,9 @@ const ZOMBIES=[
  {id:'fKing',n:'屍山の王',hp:2600,sp:34,bt:900,dmg:16,boss:1,fin:1,armor:1,aura:1,mw:20,sc:2.6,atk:235,ar:1.15,aoe:7,c:'#6b3a34',dsc:'融合した屍の山。周囲の群れを昂ぶらせ、薙ぎ払う'},
  {id:'fMoth',n:'深淵の母',hp:2600,sp:32,bt:900,dmg:16,st:2,boss:1,fin:1,scl:1,split:3,mw:20,sc:2.6,atk:225,ar:1.2,aoe:6,c:'#3f5a63',dsc:'港の底で孵り続けるもの。倒すと弾けて周りを巻き込み、仔が這い出る'},
  {id:'fLevi',n:'原初の海淵',hp:3000,sp:42,bt:900,dmg:16,nm:1,st:2,boss:1,fin:1,scl:1,aura:1,split:3,mw:20,sc:3.7,/* ⚠中で0.72倍しているので実質2.66 */atk:250,ar:1.1,aoe:8,c:'#2f4a63',dsc:'すべての深海の源。群れを狂わせ、薙ぎ払い、倒れても弾ける'},
- {id:'fBeast',n:'原初の獣',hp:3000,sp:44,bt:900,dmg:16,nm:1,boss:1,fin:1,armor:1,aura:1,split:3,mw:20,sc:2.7,atk:250,ar:1.1,aoe:8,c:'#6b2f3a',dsc:'すべての獣の源。群れを狂わせ、薙ぎ払い、倒すと弾けて仔を産み落とす'},
+ /* 💀⭐(204)**ナイトメアの最終ボスも獣だったので作り直した**=屍山の王の黒ずんだ姿へ。
+    ⚠**id は変えない**(📖図鑑が覚えている)。⚠**強さの数値は1つも触っていない**。 */
+ {id:'fBeast',n:'爛れた王',hp:3000,sp:44,bt:900,dmg:16,nm:1,boss:1,fin:1,armor:1,aura:1,split:3,mw:20,sc:2.7,atk:250,ar:1.1,aoe:8,c:'#4a3f3c',dsc:'すべての爛れの源。群れを狂わせ、薙ぎ払い、倒すと弾けて仔が這い出る'},
  /* ===== 🪶⭐⭐⭐ 面③ 送電鉄塔の丘=**空を飛ぶ敵**(st:3。2026-08-06(194)ユーザー決定) =====
     ⚠**印は `st:3`**。①②と同じく **`nm` を持たない物がこのプール**(NM専用の顔ぶれはまだ無い=[[TODO]])。
     ⭐**材質は🪶羽**=✊近接・💣爆発・🔥火炎・❄冷気が届かない(45%)/🔫実弾が特効(×1.9)/
@@ -6193,7 +6195,18 @@ function flatLayer(c){
        ⚠⚠これが無いと検査 `checkZLook`(同じ形のゾンビを落とす)が必ず落ちる。
    ⚠**強さの数値は1つも触らない**=写すのは絵だけ。 */
 const NM_ON=true;
-const NMB={nmRat:{b:'run'}};/* ⭐1体ずつ増やす(⚠まとめて量産しない=ユーザー指示) */
+/* ⭐**写し元は「材質が同じ①の敵」を選ぶ**(2026-08-07(204))=これが作り替えの目的そのもの。
+   ⚠⚠**装甲を持たない個体に装甲持ちの体を着せない**=薙ぎ手(装甲なし)にブルートの体を当てると
+     **黒い鉄の体なのに火炎が効かない**という、いま直そうとしている穴がそのまま再発する。
+     だから薙ぎ手の写し元はブルートではなく**ストーカー**(①で唯一の装甲を持たない速い狩り手)。 */
+const NMB={
+ nmRat: {b:'run'},   /* 🏃爛れた走者   = ランナー      / 材質なし */
+ nmSpid:{b:'crwl'},  /* 🐛爛れた這うもの= クローラー    / 材質なし・すり抜け */
+ nmBoar:{b:'stlk'},  /* 🗡爛れた薙ぎ手 = ストーカー    / 材質なし */
+ nmBear:{b:'tank'},  /* 🛡爛れた重装兵 = 重装兵        / 🛡装甲 */
+ nmHorr:{b:'jug'},   /* 👑爛れた巨兵   = ジャガーノート/ 🛡装甲・中ボス */
+ fBeast:{b:'fKing'}, /* 💀爛れた王     = 屍山の王      / 🛡装甲・最終ボス */
+};
 const NMBZ={},NMBI={},NMSC={};
 /* 煮しめた黒へ寄せる。⚠**真っ黒にしない**=黒フチ(INK)に食われて塊になる([[NOTES_絵]])。
    ⭐**明るい側だけ「膿んだ黄土」を残す**=暗い側は黒、明るい側は爛れた色、で立体が生き残る。 */
@@ -6213,19 +6226,20 @@ function nmSoot(col){
  let out;
  if(r>=228&&g>=228&&b>=228)out='#cfc6a8';
  else{
-  const L=(r*.30+g*.59+b*.11)/255,k=L*L*.34;
-  /* ⭐**まず色みを抜く**(55%)=これが一番効く。抜かないと青いシャツ・茶色いズボンが
+  const L=(r*.30+g*.59+b*.11)/255;
+  /* ①⭐**まず色みを抜く**(55%)=これが一番効く。抜かないと青いシャツ・茶色いズボンが
      暗くなっただけで残り、「ただ影に入った同じ敵」に見える(1回そう出た)。 */
   const G=L*255,ds=v=>v*.45+G*.55;
-  const f=(v,o)=>{const x=22+ds(v)*.30;return x+(o-x)*k;};
-  let rr=f(r,138),gg=f(g,117),bb=f(b,56);
-  /* ⚠⚠**暗い側に床を作る**([[NOTES_絵]]「暗くしすぎると黒フチに食われて黒い塊になる」)=
-     元から暗い服・靴をそのまま沈めると **黒フチ(INK)との差が1桁**になって脚が消える。
-     ⭐明るさが床を割った時だけ、色みを保ったまま床まで持ち上げる。 */
-  const L2=(rr*.30+gg*.59+bb*.11)/255,FL=.17;
-  if(L2<FL&&L2>.001){const m=FL/L2;rr*=m;gg*=m;bb*=m;}
+  /* ②⚠⚠**「暗くする」ではなく「明るさの幅を狭い所へ寄せる」**(2026-08-07(204)に作り直した)。
+     ⭐一律に暗くすると、**元から真っ黒な⬛装甲の一族**(重装兵・巨兵・王)が
+       黒フチに溶けて**輪郭の無い黒い塊**になり、素の敵との違いも消えた(1回そう出た)。
+     ⭐狙い=明るい物は沈め、**暗すぎる物はむしろ持ち上げる**。 */
+  const Lt=.13+.34*L,sc9=Lt/Math.max(L,.02);
+  /* ③⭐**焦げた暖色へ寄せる**=装甲の一族は素が「冷たい青黒」なので、
+     暖色にするだけで**明るさを落とさずに別物**として読める。⚠暗い所にも下限の暖かみを入れる。 */
+  const k=.10+L*.26,f=(v,o)=>{const x=ds(v)*sc9;return x+(o-x)*k;};
   const cl=v=>Math.max(0,Math.min(255,Math.round(v)));
-  out='#'+[cl(rr),cl(gg),cl(bb)].map(v=>v.toString(16).padStart(2,'0')).join('');}
+  out='#'+[cl(f(r,138)),cl(f(g,112)),cl(f(b,64))].map(v=>v.toString(16).padStart(2,'0')).join('');}
  NMSC[col]=out;return out;
 }
 /* 塗る色だけを煮しめる層。⚠**線の太さも透明度も触らない**(触ると輪郭が痩せる)。
@@ -6240,9 +6254,22 @@ function nmSootLayer(c){
  if(NMLY&&c&&typeof c==='object')NMLY.set(c,p);
  return p;
 }
+/* ⚠⚠⭐**丸い端の太い線で生やした物は、実寸だと必ず「ホース/紐」に見える**
+   (2026-08-07(204)に巨兵の腕と王の肋で2回踏んだ)=線の太さは局所5pxでも画面では2px。
+   ⭐**根元を太く・先を細くした面**で描くこと。曲がりは中の点(cx,cy)で作る。 */
+function nmLimb(c,x0,y0,cx,cy,x1,y1,w0,w1){
+ const a=Math.atan2(cy-y0,cx-x0),b=Math.atan2(y1-cy,x1-cx),
+       sa=Math.sin(a)*w0,ca=Math.cos(a)*w0,sb=Math.sin(b)*w1,cb=Math.cos(b)*w1;
+ c.beginPath();
+ c.moveTo(x0-sa,y0+ca);
+ c.quadraticCurveTo(cx-sb*1.35,cy+cb*1.35,x1-sb,y1+cb);
+ c.lineTo(x1+sb,y1-cb);
+ c.quadraticCurveTo(cx+sb*1.35,cy-cb*1.35,x0+sa,y0-ca);
+ c.closePath();c.fill();c.stroke();
+}
 /* 1体ずつ違う「変異した部位」。⚠**体より先に呼ぶ**=根元を体に埋めないと
    底辺の黒フチが体を横切って「櫛を乗せた」ように見える([[NOTES_絵]]のハリボテ4原因④)。 */
-function nmMut(c,Z,t,ph,walk){
+function nmMut(c,Z,t,ph,walk,s){
  if(Z.id==='nmRat'){/* 🏃⭐爛れた走者(元=巨鼠の群れ): 変異部位=**背から突き出た短い棘の列**。
     ⚠走る方向へ寝かせる(後ろへ反らせる)=立てると背びれに見えて「走っている」が消える。
     ⚠**等間隔・同じ長さで並べない**([[NOTES_絵]]のハリボテ4原因①)=長さも角度も間隔も崩す。
@@ -6261,6 +6288,76 @@ function nmMut(c,Z,t,ph,walk){
    c.quadraticCurveTo(lx*.6+p[0]*.4,ly-2.6,lx,ly);
    c.quadraticCurveTo(lx*.5+p[0]*.5,ly+2.2,p[0]+2.8,p[1]+2.4);
    c.closePath();c.fill();c.stroke();}
+  return;}
+ if(Z.id==='nmSpid'){/* 🐛⭐爛れた這うもの(元=肉蜘蛛 / 写し元=クローラー): 変異部位=**背に並んだ肉の瘤**。
+    ⚠這っている胴は背が y=-16 で低いので、瘤は **y=-18前後に置いて上へ7pxだけ覗かせる**。
+    ⚠**大きさも間隔も崩す**(等間隔に並べると芋虫の節に見える)。 */
+  const br=Math.sin(t*5+ph)*.5;
+  for(const p of [[-12.6,-18.4,5.8,5.0],[-4.4,-20.2,7.2,6.2],[3.6,-18.6,4.8,4.2],[10.2,-17.2,3.6,3.2]]){
+   c.fillStyle='#7a4a3e';
+   c.beginPath();c.ellipse(p[0],p[1]+br,p[2],p[3],p[0]*.012,0,7);c.fill();c.stroke();
+   c.fillStyle='#9c5f4a';/* 張った所の照り(1つの瘤を球に見せる) */
+   c.beginPath();c.ellipse(p[0]-p[2]*.3,p[1]-p[3]*.36+br,p[2]*.34,p[3]*.3,0,0,7);c.fill();}
+  return;}
+ if(Z.id==='nmBoar'){/* 🗡⭐爛れた薙ぎ手(元=変異猪 / 写し元=ストーカー): 変異部位=**前腕を突き破った骨の刃**。
+    ⚠⚠**背の棘にしない**=ストーカーは元から背に棘を持っているうえ、走者と被る。
+    ⭐前へ伸びた腕の先に付けると「2体まとめて薙ぐ」という役どころとも噛み合う。 */
+  const sw=Math.sin(t*14+ph)*2;
+  c.fillStyle='#a89c7e';
+  /* ⚠⚠**刃は「軸に垂直な幅」で作る**=根元と先を斜めに結んだだけだと、膨らんだ所が
+     木の葉に見える(1回そうなった)。⭐背だけ反らせ、刃側はほぼ直線にする。 */
+  for(const p of [[8,-19.4,33,-9.2,4.2],[5,-14.6,28,-1.8,3.4]]){
+   const dx=p[2]+sw-p[0],dy=p[3]-p[1],ln=Math.max(1,Math.sqrt(dx*dx+dy*dy)),
+         nx=-dy/ln,ny=dx/ln,w9=p[4];
+   c.beginPath();
+   c.moveTo(p[0]+nx*w9,p[1]+ny*w9);
+   c.quadraticCurveTo(p[0]+dx*.52+nx*w9*.85,p[1]+dy*.52+ny*w9*.85,p[2]+sw,p[3]);
+   c.quadraticCurveTo(p[0]+dx*.5-nx*w9*.2,p[1]+dy*.5-ny*w9*.2,p[0]-nx*w9,p[1]-ny*w9);
+   c.closePath();c.fill();c.stroke();}
+  return;}
+ if(Z.id==='nmBear'){/* 🛡⭐爛れた重装兵(元=屍熊 / 写し元=重装兵): 変異部位=**兜を割って生えた肉の角**。
+    ⚠重装兵は元から「低く平たい箱」で輪郭に余白が無い=**上へ出すしかない**。
+    ⚠⚠**左右に2本だけ生やすと兎の耳になる**(1回そうなった)=**不揃いな3本を後ろへ寄せて扇に**する。 */
+  for(const p of [[-8,-51,-34,-66,-22,-63,10.4],[-1,-53,-22,-78,-9,-68,8.0],[7,-52,15,-70,13,-60,5.6]]){
+   c.fillStyle='#5f3b34';
+   c.beginPath();
+   c.moveTo(p[0]-p[6]*.5,p[1]);
+   c.quadraticCurveTo(p[4]-p[6]*.6,p[5],p[2],p[3]);
+   c.quadraticCurveTo(p[4]+p[6]*.6,p[5]+2.6,p[0]+p[6]*.5,p[1]);
+   c.closePath();c.fill();c.stroke();
+   c.fillStyle='#a8968a';/* 先だけ骨が覗く=角として読ませる */
+   c.beginPath();c.moveTo(p[2],p[3]);
+   c.quadraticCurveTo((p[2]+p[4])*.5,(p[3]+p[5])*.5,p[4],p[5]);
+   c.quadraticCurveTo((p[2]+p[4])*.5+2.2,(p[3]+p[5])*.5,p[2],p[3]);
+   c.closePath();c.fill();}
+  return;}
+ if(Z.id==='nmHorr'){/* 👑⭐爛れた巨兵(元=肉塊の主 / 写し元=ジャガーノート): 変異部位=**背から生えた腕の束**。
+    ⚠**背中側(進む向きの後ろ)に寄せる**=前に出すと本体の腕と重なって何本あるのか読めない。
+    ⚠太さも長さも1本ずつ変える(同じ腕を3本生やすと熊手に見える)。 */
+  /* ⚠**肩当てが x=-28 まで張り出している**=そこより内側に生やすと1本も見えない(1回そうなった)。
+     ⚠⚠**3本の細い腕をやめて2本の太い腕にした**=実寸(71px)では細い腕は紐にしか見えない。 */
+  for(const p of [[-17,-47,-33,-62,-47,-59,8.4,4.2],[-16,-52,-30,-70,-41,-80,6.6,3.4]]){
+   const aw=Math.sin(t*2.2+ph+p[0]*.1)*2.6;
+   c.fillStyle='#8a5847';
+   nmLimb(c,p[0],p[1],p[2],p[3]+aw,p[4],p[5]+aw,p[6],p[7]);
+   /* ⭐**開いた手**を先に置く=これが無いと腕ではなく突起に見える。⚠指は3本(多いと櫛になる) */
+   const hx=p[4],hy=p[5]+aw,hs=p[7]*1.5;
+   c.fillStyle='#9c6350';
+   c.beginPath();c.ellipse(hx-hs*.2,hy-hs*.1,hs*.86,hs*.7,-.35,0,7);c.fill();c.stroke();
+   c.fillStyle='#7a4a3c';
+   for(const f of [[-1.5,-1.25,.9],[-1.7,-.3,1.0],[-1.25,.75,.8]]){
+    c.beginPath();c.ellipse(hx+f[0]*hs,hy+f[1]*hs,hs*.42*f[2],hs*.24,f[1]*.5-.2,0,7);c.fill();c.stroke();}}
+  return;}
+ if(Z.id==='fBeast'){/* 💀⭐爛れた王(元=原初の獣 / 写し元=屍山の王): 変異部位=**背から立ち上がる肋の列**。
+    ⚠⚠**焼く箱からはみ出さない**(局所で|x|≦54・y≧-105)=はみ出すと無言で切れる。
+    ⚠本体の頭の塊(中心から半径36×34)に隠れる所には置かない=**外側だけ**に立てる。
+    ⚠⚠**細い線で長く回すと「括弧」に見える**(1回そうなった)=**短く太い骨の棘**を扇に立てる。
+    ⚠**上の細い突起5本(素の絵)と喧嘩させない**=あれは中央なので、こちらは外側だけ。 */
+  c.fillStyle='#cfc3a4';
+  for(const p of [[-27,-44,-40,-66,-46,-88,8.0,1.6],[-38,-36,-47,-52,-52,-68,6.4,1.4],
+                  [28,-44,41,-66,47,-90,8.4,1.8],[39,-36,48,-52,53,-70,6.0,1.4]]){
+   const rw=Math.sin(t*1.6+ph+p[0]*.07)*2.2;
+   nmLimb(c,p[0],p[1],p[2],p[3]+rw,p[4],p[5]+rw,p[6],p[7]);}
   return;}
 }
 function zFill(c,pathFn,col,yc){
@@ -10658,7 +10755,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠層をかぶせたあとの `c.save/restore` は素のcanvasへそのまま通る(数は合っている)。 */
  /* ⚠**変異部位だけは層をかぶせる前に描く**=層を通すと体と同じ明るさまで沈んで溶けるため、
     こちらは沈めたあとの体より1段明るい色を直に指定する。 */
- if(NB){nmMut(c,Z0,t,ph,walk);c=nmSootLayer(c);}
+ if(NB){nmMut(c,Z0,t,ph,walk,s);c=nmSootLayer(c);}
  /* ===== 🪶⭐⭐⭐ 面③ 送電鉄塔の丘=空を飛ぶ敵(2026-08-06(194)) =====
     ⚠⚠**空の敵は「翼2枚+丸い胴」で全部同じ紙飛行機になる**(nmBat/nmCrow で2回踏んだ穴)。
     ⭐**輪郭を分ける物を1体ずつ決める**=鳩は胸/雀は群れ/烏は金属の羽/蠅は腹/蝙蝠は開いた口/
@@ -10913,81 +11010,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠獣は服を着ていないので、**背(Z.c)/腹の下毛/爪と牙/むき出しの肉** で分ける。 */
  /* ⛔(204)**巨鼠の群れの絵は捨てた**=`NMB` で①のランナーの写しになったので、ここへは来ない。
     ⚠**書き戻さない**(獣に戻すと「弱点が読めない」が再発する)。変異部位は `nmMut` にある。 */
- if(Z.id==='nmBoar'){/* ⭐変異猪(第103弾に描き直し): 突進する獣。**前が重く後ろが細い体**と牙が売り。
-    ⚠それまで角丸長方形+丸い頭+等間隔の棘4本+四角い脚2本で、実機では茶色い箱だった。
-    ⚠鬣は**胴より先に描いて根元を埋める**(棘を胴の上から乗せると底辺の黒フチが体を横切る)。 */
-  const sw=walk*4;
-  const bleg=(x0,dx,dk,h2)=>{
-   c.fillStyle=shade(Z.c,dk);
-   c.beginPath();c.moveTo(x0-3.6,-h2);c.lineTo(x0+3.6,-h2);c.lineTo(x0+2.6+dx,-4.4);c.lineTo(x0-2.6+dx,-4.4);c.closePath();c.fill();c.stroke();
-   c.fillStyle=shade('#2b2419',dk*1.15);/* 蹄 */
-   c.beginPath();c.moveTo(x0-2.8+dx,-4.6);c.lineTo(x0+2.8+dx,-4.6);c.lineTo(x0+3.6+dx,-.4);c.lineTo(x0-3.2+dx,-.4);c.closePath();c.fill();c.stroke();};
-  bleg(-13,-sw,.6,15);bleg(9,sw,.6,16);
-  c.fillStyle=shade(Z.c,.7);/* 尾(短く巻く) */
-  c.beginPath();c.moveTo(-19,-24);c.lineTo(-17,-20.6);
-  c.quadraticCurveTo(-26,-19,-27.4,-27);c.quadraticCurveTo(-24,-21.6,-19,-24);c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade(Z.c,1.26);/* 鬣(⚠長さも間隔も崩す) */
-  for(const g of [[-8,7.6],[-2,11],[3.6,8],[9.4,11.6],[14.4,7]]){
-   c.beginPath();c.moveTo(g[0]-3.2,-28);c.lineTo(g[0]+.6,-28-g[1]);c.lineTo(g[0]+3.6,-28);c.closePath();c.fill();c.stroke();}
-  zFill(c,()=>{c.beginPath();/* 胴(前が高く後ろが低い) */
-   c.moveTo(-20,-19.6);
-   c.bezierCurveTo(-22.4,-26,-14,-29.4,-4,-29.8);
-   c.bezierCurveTo(6,-30.2,16,-31.4,20,-27);
-   c.lineTo(19,-13.6);
-   c.bezierCurveTo(8,-9.6,-10,-9.6,-19,-13.6);
-   c.closePath();},Z.c,-20);
-  bleg(-8,-sw*.7,.94,16);bleg(14,sw*.7,1,17);
-  c.fillStyle=shade(Z.c,.76);/* 耳 */
-  c.beginPath();c.moveTo(19.4,-31.6);c.lineTo(15,-39);c.lineTo(23.4,-35.6);c.closePath();c.fill();c.stroke();
-  zFill(c,()=>{c.beginPath();/* 頭+鼻面を1本の輪郭で */
-   c.moveTo(15,-27);
-   c.bezierCurveTo(15,-34.4,20,-37.4,26,-36);
-   c.bezierCurveTo(31.4,-34.6,33.4,-30,32,-26.6);
-   c.lineTo(37.4,-24);c.lineTo(36.4,-19.4);
-   c.lineTo(27,-18.4);
-   c.bezierCurveTo(19,-17.8,15.4,-22,15,-27);
-   c.closePath();},Z.c,-24);
-  c.fillStyle=INK;c.beginPath();c.ellipse(36,-21.6,2.4,2,0,0,7);c.fill();/* 鼻 */
-  c.fillStyle=PANE;/* 牙(⚠左右で長さを変える) */
-  c.beginPath();c.moveTo(30.6,-19);c.lineTo(35.4,-30.4);c.lineTo(33.6,-18.6);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(26.6,-18.8);c.lineTo(28.6,-25.6);c.lineTo(29.4,-18.4);c.closePath();c.fill();c.stroke();
-  zEye(c,25,-30,2);
-  c.restore();return;}
- if(Z.id==='nmSpid'){/* ⭐肉蜘蛛(第103弾に描き直し): すり抜ける。**膝で折れた8本脚**と肉の腹が売り。
-    ⚠それまで**同じ太さの線を等間隔に8本**引いていたので、蜘蛛ではなく櫛に見えた。
-    ⭐脚は「**根元から上へ上がってから下へ降りる**」=膝を作ると一気に蜘蛛に読める。
-    ⚠脚も長さと膝の高さを崩す。⚠線ではなく帯で描く(細い線は黒フチに食われて棒になる)。 */
-  /* ⚠膝を体の**真上**に置くと脚が縦の棒になり、体に**檻**をかぶせたように見える(1回そうなった)。
-     膝は体より**外側**へ張り出させ、高さは体の少し上までに留めること。 */
-  const sleg=(hx,kx,ky,fx,dk,k)=>{
-   const a3=Math.sin(t*6+ph+k*1.1)*2.4;
-   c.fillStyle=shade(Z.c,dk);
-   c.beginPath();
-   c.moveTo(hx-2.6,-16);c.lineTo(hx+2.6,-15);
-   c.lineTo(kx+2.4,ky+a3+1.6);c.lineTo(fx+1.6,-.6);c.lineTo(fx-1.6,-.6);c.lineTo(kx-2.6,ky+a3-.6);
-   c.closePath();c.fill();c.stroke();};
-  /* ⚠脚の付け根は**全部 頭胸部**に置く。腹から生やすと脚が腹を縦に横切って檻に見える(2回踏んだ) */
-  sleg(2,-21,-26,-31,.58,0);sleg(5,-6,-29,-13,.62,1);
-  sleg(9,15,-28,21,.58,2);sleg(13,31,-25,38,.62,3);
-  zFill(c,()=>{c.beginPath();/* 腹(いちばん大きい塊) */
-   c.ellipse(-9,-19,15,12.6,-.12,0,7);},Z.c,-18);
-  c.fillStyle=ZS.rot;/* 破れて覗く肉(⚠大きさを変えて2つ) */
-  c.beginPath();c.ellipse(-13,-21,5,3.4,.4,0,7);c.fill();
-  c.beginPath();c.ellipse(-5,-13.6,3,2,-.3,0,7);c.fill();
-  c.fillStyle=shade(Z.c,1.3);/* 腹の筋(長さ違い) */
-  c.beginPath();c.moveTo(-19,-25);c.quadraticCurveTo(-10,-27.4,-2,-24);c.lineTo(-2,-22.6);
-  c.quadraticCurveTo(-10,-25.6,-19,-23.4);c.closePath();c.fill();
-  sleg(3,-15,-23,-24,.9,4);sleg(7,-1,-26,-6,.96,5);
-  sleg(10,20,-25,27,.92,6);sleg(14,35,-22,43,1,7);
-  zFill(c,()=>{c.beginPath();/* 頭胸部 */
-   c.ellipse(9,-17,9.6,8.4,0,0,7);},Z.c,-16);
-  c.fillStyle=INK;/* 牙(不揃いに2本) */
-  c.beginPath();c.moveTo(14,-12.6);c.lineTo(16.4,-6.4);c.lineTo(17.6,-12.4);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(11,-12);c.lineTo(12.4,-7.6);c.lineTo(14,-12);c.closePath();c.fill();
-  c.fillStyle=DANGER;/* 単眼の群れ(⚠大きさを変える) */
-  for(const e2 of [[14.4,-21,2.4],[10.4,-22.6,1.7],[16.6,-17.6,1.5],[12,-18,1.2]]){
-   c.beginPath();c.arc(e2[0],e2[1],e2[2],0,7);c.fill();}
-  c.restore();return;}
+ /* ⛔(204)**変異猪の絵は捨てた**=NMB で①の敵の写しになったのでここへは来ない。⚠書き戻さない。 */
+ /* ⛔(204)**肉蜘蛛の絵は捨てた**=NMB で①の敵の写しになったのでここへは来ない。⚠書き戻さない。 */
  if(Z.id==='nmBat'){/* ⭐吸血蝙蝠(第103弾に描き直し): 飛んですり抜ける。
     ⚠平たい三角の翼を左右対称に開いていたので**紙飛行機**に見えた。
     ⭐**指の骨で翼を割り、後縁を扇形に欠く**。⚠左右で羽ばたきの位相を変える(揃うと1枚の板に潰れる)。 */
@@ -11069,89 +11093,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.beginPath();c.ellipse(11,-16.6,3.4,2.2,.4,0,7);c.fill();
   zEye(c,17.6,-23,2.2);
   c.restore();return;}
- if(Z.id==='nmBear'){/* ⭐屍熊(第103弾に描き直し): 装甲持ちの大物。**肩の瘤と低く垂れた頭**が熊の決め手。
-    ⚠角丸長方形+丸い頭+丸い耳2つ+四角い脚2本で、実機では茶色い箱だった。
-    ⚠爪と牙は不揃いに。⚠あばらの傷を等間隔で3本引かない。 */
-  const sw=walk*5;
-  const rleg2=(x0,dx,dk,h2)=>{
-   c.fillStyle=shade(Z.c,dk);
-   /* ⚠まっすぐな四角だとテーブルの脚に見える=根元を太く、足首で絞る */
-   c.beginPath();c.moveTo(x0-7,-h2);c.lineTo(x0+7,-h2);c.lineTo(x0+5.6+dx*.5,-13);
-   c.lineTo(x0+4.6+dx,-6);c.lineTo(x0-4.6+dx,-6);c.lineTo(x0-5.6+dx*.5,-13);c.closePath();c.fill();c.stroke();
-   c.beginPath();c.moveTo(x0-5.4+dx,-6.4);c.lineTo(x0+5.4+dx,-6.4);c.lineTo(x0+7.4+dx,-.6);c.lineTo(x0-6.4+dx,-.6);c.closePath();c.fill();c.stroke();
-   c.fillStyle=PANE;/* 爪(⚠等間隔に並べない) */
-   for(const k of [[-3.4,3.2],[.6,4.2],[4.4,2.8]]){
-    c.beginPath();c.moveTo(x0+k[0]+dx,-2.4);c.lineTo(x0+k[0]+1.4+dx,-2.4+k[1]);c.lineTo(x0+k[0]+2.6+dx,-2.4);c.closePath();c.fill();}};
-  rleg2(-16,-sw,.62,22);rleg2(12,sw,.62,20);
-  zFill(c,()=>{c.beginPath();/* 胴(肩に瘤・尻が低い) */
-   c.moveTo(-26,-20);
-   c.bezierCurveTo(-28,-34,-18,-40,-6,-41);
-   c.bezierCurveTo(4,-42,14,-48,20,-44);   /* 肩の瘤(前が高い) */
-   c.lineTo(24,-24);
-   c.bezierCurveTo(12,-14,-14,-14,-26,-20);
-   c.closePath();},Z.c,-24);
-  c.strokeStyle=ZS.rot;c.lineWidth=2.6/s;/* あばらの傷(⚠長さも間隔も崩す) */
-  for(const g of [[-18,-34,-12,-22],[-9,-37,-4,-24],[-1,-33,3,-25]]){
-   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.stroke();}
-  c.strokeStyle=INK;c.lineWidth=2.6/s;
-  rleg2(-10,-sw*.7,.92,23);rleg2(16,sw*.7,1,21);
-  c.fillStyle=shade(Z.c,.78);/* 耳(小さく丸い=熊の決め手。左右で大きさを変える) */
-  c.beginPath();c.arc(20,-52,5.4,0,7);c.fill();c.stroke();
-  c.beginPath();c.arc(31,-50,4.4,0,7);c.fill();c.stroke();
-  zFill(c,()=>{c.beginPath();/* 頭+鼻面を1本の輪郭で(前へ低く突き出す) */
-   c.moveTo(19,-40);
-   c.bezierCurveTo(18,-49,24,-53.4,31,-52.4);
-   c.bezierCurveTo(38,-51.4,40.4,-46,39,-41.6);
-   c.lineTo(47,-38.4);c.lineTo(46,-32.6);
-   c.lineTo(34,-30.6);
-   c.bezierCurveTo(24,-29.6,19.6,-34.6,19,-40);
-   c.closePath();},Z.c,-38);
-  c.fillStyle=INK;c.beginPath();c.ellipse(45.4,-35.6,2.8,2.2,0,0,7);c.fill();/* 鼻 */
-  c.fillStyle=PANE;/* 牙(不揃いに3本) */
-  for(const k of [[34,5.4],[38.4,7],[42.6,4.6]]){
-   c.beginPath();c.moveTo(k[0],-31.4);c.lineTo(k[0]+2,-31.4+k[1]);c.lineTo(k[0]+3.6,-31.4);c.closePath();c.fill();}
-  zEye(c,29.4,-45.6,2.6);
-  c.restore();return;}
- if(Z.id==='nmHorr'){/* ⭐肉塊の主(第103弾に描き直し・ナイトメアのボス): 融合した肉の塊。
-    ⚠**なめらかな楕円**に、等間隔の触手5本・足4つ・牙5本を並べていたので「玉に櫛が3段」に見えた。
-    ⭐輪郭に**大小のこぶ**を作り、こぶごとに違う速さで揺らす(スライム状体で分かったのと同じ)。
-    ⚠触手・足・牙は全部**長さも間隔も崩す**。目だけは元から不揃いだったのでそのまま。 */
-  const w1=Math.sin(t*2.2+ph)*3,w2=Math.sin(t*1.7+ph*1.4)*2.4,w3=Math.sin(t*3.1+ph*.7)*2;
-  c.fillStyle=shade(Z.c,.7);/* 疑似足(大きさも間隔も違う) */
-  for(const g of [[-26,10,7.6,1.2],[-11,7.4,5.6,2.6],[4,11,8,.4],[21,8.4,6.4,3.4]]){
-   const a4=Math.sin(t*3+g[3]+ph)*2.2;
-   c.beginPath();c.ellipse(g[0],-6+a4*.4,g[1],g[2],0,0,7);c.fill();c.stroke();}
-  c.strokeStyle=shade(Z.c,1.4);c.lineCap='round';/* 触手(太さも長さも崩す) */
-  for(const g of [[-22,-52,5,1.1],[-9,-62,3.4,2.3],[3,-56,6,.5],[16,-64,3.8,3.1],[26,-50,4.6,1.7]]){
-   const a5=Math.sin(t*2.6+g[3]+ph)*10;
-   c.lineWidth=g[2];
-   c.beginPath();c.moveTo(g[0],-52);c.quadraticCurveTo(g[0]-4+a5,g[1]-10,g[0]+4+a5,g[1]-22);c.stroke();}
-  c.lineCap='butt';c.strokeStyle=INK;c.lineWidth=2.6/s;
-  zFill(c,()=>{c.beginPath();/* 肉の塊(輪郭にこぶ) */
-   c.moveTo(-33-w1,-30);
-   c.bezierCurveTo(-36,-46,-28,-58+w2,-16,-59+w2);
-   c.bezierCurveTo(-8,-60-w3,-9,-66+w1,0,-66+w1);
-   c.bezierCurveTo(9,-66+w1,10,-58+w3,18,-60+w3);
-   c.bezierCurveTo(29,-62-w2,36+w1,-46,34+w1,-30);
-   c.bezierCurveTo(32,-14,-30,-14,-33-w1,-30);
-   c.closePath();},Z.c,-32);
-  c.fillStyle=ZS.rot;/* むき出しの肉(大きさ違い) */
-  c.beginPath();c.ellipse(-20,-42,10,7,.3,0,7);c.fill();
-  c.beginPath();c.ellipse(22,-52,6,4,-.4,0,7);c.fill();
-  c.globalAlpha=.4;c.fillStyle=shade(Z.c,1.4);/* 表面のつやめき */
-  c.beginPath();c.ellipse(-12,-54+w2,13,6,-.16,0,7);c.fill();c.globalAlpha=1;
-  c.fillStyle=GOLD;/* 目(大きさも高さも違う) */
-  for(const e2 of [[-16,-46,6.4],[5,-52,7.4],[19,-38,5],[-5,-30,5.4],[15,-24,4],[-25,-31,3.4]]){
-   c.beginPath();c.arc(e2[0],e2[1],e2[2],0,7);c.fill();c.stroke();
-   c.fillStyle='#3a1020';c.beginPath();c.arc(e2[0]+e2[2]*.26,e2[1],e2[2]*.46,0,7);c.fill();c.fillStyle=GOLD;}
-  c.fillStyle='#3a1020';/* 口(横に裂ける) */
-  c.beginPath();c.ellipse(0,-16,17,7.4,.04,0,7);c.fill();c.stroke();
-  c.fillStyle=PANE;/* 牙(⚠等間隔に並べない) */
-  for(const k of [[-13,7.4],[-7.4,9.6],[-1,6.6],[4.6,9],[10.4,7.6]]){
-   c.beginPath();c.moveTo(k[0],-21);c.lineTo(k[0]+2.4,-21+k[1]);c.lineTo(k[0]+4.4,-21);c.closePath();c.fill();}
-  for(const k of [[-9,5.4],[1.4,6.6],[8,4.6]]){
-   c.beginPath();c.moveTo(k[0],-11.6);c.lineTo(k[0]+2.2,-11.6-k[1]);c.lineTo(k[0]+4,-11.6);c.closePath();c.fill();}
-  c.restore();return;}
+ /* ⛔(204)**屍熊の絵は捨てた**=NMB で①の敵の写しになったのでここへは来ない。⚠書き戻さない。 */
+ /* ⛔(204)**肉塊の主の絵は捨てた**=NMB で①の敵の写しになったのでここへは来ない。⚠書き戻さない。 */
  /* ===== ステージ2「沈んだ港」: ゾンビ化した海の生き物(2026-07-27 第101弾に13種すべて描き直し) =====
     ⭐ステージ1で分かった3つをそのまま当てる:
       ①大きさ(第95弾で1.5倍にしてある=34px前後) ②色の区分け ③ハリボテ感の4原因
@@ -12116,73 +12059,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   zEye(c,26,-70,5);
   rotMark(c,-6,-58,50,36,ph,t);
   c.restore();return;}
- if(Z.id==='fBeast'){/* 原初の獣(ナイトメアの最終ボス): 背から仔獣の頭が生え、腹に仔をぶら下げた巨獣
-    ⚠スプライトに焼く箱の中に収まるのは局所座標で|x|≦54・y≧-105まで(bakeSet)。はみ出すと切れる。
-    ⭐第103弾に描き直し。⚠それまで**楕円の胴+等間隔の四角い脚4本+同じ大きさの仔の頭3つ**で、
-      大きいだけの塊だった。脚は根元を太く足首で絞り、仔の頭と角と牙は全部大きさを崩す。 */
-  const br=Math.sin(t*2+ph)*3,gp=Math.sin(t*3.4+ph);
-  /* ⚠全部を Z.c 一色で塗ると**巨大な塊**になって形が読めない(第103弾に踏んだ)。
-     脚を暗く・頭と仔獣を明るくして、部位ごとに段を付ける。 */
-  const LC='#43202a',HC='#8a3c4a';
-  /* 4本の太い脚(⚠等間隔・同じ太さで並べない) */
-  const fleg=(x0,h2,wd,dk,dir2)=>{
-   const sw=walk*dir2*4;
-   c.fillStyle=shade(LC,dk);
-   c.beginPath();c.moveTo(x0-wd,-h2);c.lineTo(x0+wd,-h2);
-   c.lineTo(x0+wd*.72+sw*.5,-14);c.lineTo(x0+wd*.62+sw,-2.4);c.lineTo(x0-wd*.62+sw,-2.4);c.lineTo(x0-wd*.72+sw*.5,-14);
-   c.closePath();c.fill();c.stroke();
-   c.fillStyle='#efe7d2';/* 爪(不揃いに3本) */
-   for(const k of [[-5,3.6],[-.6,4.6],[3.4,3]]){
-    c.beginPath();c.moveTo(x0+k[0]+sw,-2.6);c.lineTo(x0+k[0]+1.6+sw,-2.6+k[1]);c.lineTo(x0+k[0]+3+sw,-2.6);c.closePath();c.fill();}};
-  fleg(-34,30,8,.86,1);fleg(-14,32,7,.9,-1);
-  c.fillStyle=shade(LC,1.3);/* 腹にぶら下がる仔(大きさ違い) */
-  for(const g of [[-30,7.6,5.4,1.2],[-14,5.6,4,2.8],[2,8.4,6,.3]]){
-   const sy=Math.sin(t*2.6+g[3]+ph)*2;
-   c.beginPath();c.ellipse(g[0],-14+sy,g[1],g[2],0,0,7);c.fill();c.stroke();
-   c.fillStyle='#ffb03d';c.beginPath();c.arc(g[0]+g[1]*.4,-15+sy,1.6,0,7);c.fill();
-   c.fillStyle=shade(LC,1.3);}
-  zFill(c,()=>{c.beginPath();/* 胴(肩が高く尻が低い・輪郭にこぶ) */
-   c.moveTo(-46,-42);
-   c.bezierCurveTo(-50,-60,-38,-70+br*.4,-22,-71+br*.4);
-   c.bezierCurveTo(-6,-72,10,-76,20,-68);
-   c.lineTo(24,-40);
-   c.bezierCurveTo(6,-24,-32,-26,-46,-42);
-   c.closePath();},Z.c,-46);
-  c.fillStyle=ZS.rot;/* 裂けた脇腹とあばら(⚠長さを崩す) */
-  c.beginPath();c.ellipse(-30,-52,9,6,.3,0,7);c.fill();
-  c.strokeStyle=ZS.rot;c.lineWidth=2.6/s;
-  for(const g of [[-20,-62,-14,-44],[-8,-66,-3,-46],[3,-62,6,-48]]){
-   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.stroke();}
-  c.strokeStyle=INK;c.lineWidth=2.6/s;
-  /* 背に生えた仔獣の頭(⚠大きさも高さも崩す) */
-  for(const hd of [[-36,-70,8],[-18,-80,11.4],[2,-74,6.6]]){
-   c.fillStyle=HC;c.beginPath();c.arc(hd[0],hd[1],hd[2],0,7);c.fill();c.stroke();
-   c.beginPath();c.moveTo(hd[0]-hd[2]*.85,hd[1]-hd[2]*.7);c.lineTo(hd[0]-hd[2]*.3,hd[1]-hd[2]*1.7);
-   c.lineTo(hd[0]-hd[2]*.05,hd[1]-hd[2]*.75);c.closePath();c.fill();c.stroke();
-   c.fillStyle='#ffb03d';c.beginPath();c.arc(hd[0]+hd[2]*.34,hd[1]-hd[2]*.1,hd[2]*.24,0,7);c.fill();}
-  fleg(-2,33,7.4,1.16,1);fleg(18,31,8.4,1.24,-1);
-  /* 角(⚠左右対称にしない。太さも長さも変える) */
-  c.fillStyle=shade(HC,1.2);
-  c.beginPath();c.moveTo(19,-66);c.lineTo(8,-97);c.lineTo(16,-92);c.lineTo(30,-70);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(37,-62);c.lineTo(51,-86);c.lineTo(50,-77);c.lineTo(46,-57);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#2a0d16';/* 口の中(頭より先に敷いて、輪郭の切り欠きから覗かせる) */
-  c.beginPath();c.moveTo(28,-52);c.lineTo(52,-58);c.lineTo(52,-38);c.closePath();c.fill();
-  zFill(c,()=>{c.beginPath();/* 頭(顎を切り欠く) */
-   c.moveTo(13,-54);
-   c.bezierCurveTo(13,-68,24,-74,34,-72);
-   c.bezierCurveTo(45,-70,50,-62,49,-56);
-   c.lineTo(30,-52);          /* 上顎の内側 */
-   c.lineTo(50,-42);          /* 下顎の内側 */
-   c.bezierCurveTo(38,-34,16,-40,13,-54);
-   c.closePath();},HC,-52);
-  c.fillStyle='#efe7d2';/* 牙(⚠長さも間隔も崩す) */
-  for(const k of [[33,-51.4,8.4],[38.6,-53.6,11],[44,-55.6,7.6]]){
-   c.beginPath();c.moveTo(k[0],k[1]);c.lineTo(k[0]+2.6,k[1]+k[2]+gp);c.lineTo(k[0]+5,k[1]+.6);c.closePath();c.fill();}
-  for(const k of [[35,-44.4,7.6],[42,-47.4,9.4]]){
-   c.beginPath();c.moveTo(k[0],k[1]);c.lineTo(k[0]+2.4,k[1]-k[2]-gp);c.lineTo(k[0]+4.6,k[1]-.6);c.closePath();c.fill();}
-  zEye(c,29,-62,3.6);
-  rotMark(c,-14,-52,44,38,ph,t);
-  c.restore();return;}
+ /* ⛔(204)**原初の獣の絵は捨てた**=NMB で①の敵の写しになったのでここへは来ない。⚠書き戻さない。 */
 /* ===== ① 廃線ハイウェイ(2026-07-26 第82弾で作り直し) =====
     ⚠**実機でゾンビは22CSSpxしかない**(タレットの35pxより更に小さい)。
       効くのは ①輪郭の形 ②明暗 ③色 の3つだけで、細かい模様は何を描いても消える。
