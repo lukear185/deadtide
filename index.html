@@ -2618,7 +2618,7 @@ function resumeRun(){
  /* 🦸英雄: ウェーブの区切りで保存するので「出撃中」は未出撃に戻す(盤面に実体が残らないため)。
     ただし戦死(2)はそのまま引き継ぐ=1ゲーム1回の約束を再開で覆せないようにする */
  if(d.hsel!=null){m.hUi=d.hsel?hUiOf(d.hsel):-1;m.hOut=(d.hOut===2)?2:0;m.hCg=0;}
- if(d.flagD)m.flagD=clamp(d.flagD,0,PLEN);
+ if(d.flagD)m.flagD=clamp(d.flagD,flagLo(),PLEN);
  if(d.slk&&d.slk.length)m.slk=m.slk.map((v,i)=>!!d.slk[i]);
  /* ⚠🛠DEVは「最初から全開放」なので、中断前のセーブで巻き戻さない */
  if(devAll()){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.team=teamIdx();m.uUn=Math.max(m.uUn||0,m.team.length);
@@ -5874,6 +5874,14 @@ const bnsEndOut=(x,y)=>Math.min(
  Math.hypot(x-BNS_CX,y-BNS_STARTY)-BNS_EXP_R);
 const bnsEndD=(x,y)=>Math.min(Math.hypot(x-BNS_CX,y-BNS_GOALY),Math.hypot(x-BNS_CX,y-BNS_STARTY));
 /* その道が拠点から見てどちらか(予告の文言用)。⚠面ごとに道の向きが違うので決め打ちにしない */
+/* 🪶⭐**枝の呼び名**(枝分かれする面。分岐と合流の間の真ん中の高さで見る)。
+   ⚠**決め打ちで「北/南」と書かない**=面が変われば枝の走り方も変わる。 */
+function laneN(ln){
+ if(!LANES||ln==null||!LANES[ln]||LANES.length<2||!MERGE_D)return '';
+ const my=li=>pathPos((MERGE_D)*.5,li)[1];
+ const a=my(ln),b=my(ln===0?1:0);
+ return a<b?'北':'南';
+}
 function bnsDirN(ln){
  const L=LANES&&LANES[ln];if(!L)return '';
  const a=L.seg[0].a,dx=a[0]-BNS_CX,dy=a[1]-BNS_CY;
@@ -5929,7 +5937,30 @@ const STAGES=[
   hpM:TUNE("ST2_hpM",2,1,3,.05),/* ⭐2026-07-27ユーザー指示「2ステージめは1ステージ目より断然強く」で1.35→2.0 */
   /* ⚠支援枠はステージごと。ここの座標を共通にすると片方のステージで道の上に乗る */
   sup:[[870,340],[1170,340]],/* 港は廃線ハイウェイより断然重い(同じ難易度でも敵のHPが2倍・攻撃は√2倍) */
-  pal:{g0:'#9EA6A0',g1:'#75858A',tuft:'#3f6b5e',bld:'#54636e',patch:['#41565c','#c2cbc6']}}
+  pal:{g0:'#9EA6A0',g1:'#75858A',tuft:'#3f6b5e',bld:'#54636e',patch:['#41565c','#c2cbc6']}},
+ /* 🪶⭐⭐⭐**面③ 送電鉄塔の丘=道が2本に分かれる最初の面**(2026-08-07(205)ユーザー決定)。
+    ⭐**道は「分岐 → 2本 → 合流」**=分岐は入口のすぐ先(d=230)・**合流は道の8割**(d=2090/2615)。
+    ⚠⚠**2本の長さは1pxも違わない**(北1860 / 南1860)=`z.d>=PLEN` で拠点到達を見ている所を
+      1つも直さずに済む(掟は LANES の所)。**長さを変える時は必ず両方そろえること**。
+    🚩⭐**ユニットと集結旗は合流点より後ろにしか置けない**(ユーザー決定=A案)=
+      道の位置は「進んだ距離」だけで決まるので、枝の上に立たせると**どちらの枝に居るのか決められない**。
+      ⭐**分岐はタレットの配り方で捌く**(左右どちらを厚くするか)。❌枝ごとに旗を持つB案は採らない。
+    ⚠**マスは道なりに22個**=①分岐の手前2 ②北の枝8 ③南の枝8 ④合流の後4。
+      ⚠**どちらの道からも95以上**離してある(片方だけ見ると必ず道に乗る)。検査 checkStage3。 */
+ {n:'送電鉄塔の丘',sub:'鉄塔の稜線。空から降ってくる',zs:3,
+  path:[[1660,435],[1430,435],[1430,175],[1180,175],[1180,345],[940,345],[940,175],[690,175],[690,345],[430,345],[430,435],[300,435],[300,670],[140,670]],
+  /* ⭐**南の枝**(`path2`)=分岐(1430,435)と合流(430,435)から先は北とまったく同じ点を通る。
+     ⚠**先頭と末尾を北と1pxでも違えると、分岐/合流が2重の道に見える**(検査が落とす)。 */
+  path2:[[1660,435],[1430,435],[1430,695],[1200,695],[1200,525],[990,525],[990,695],[720,695],[720,525],[430,525],[430,435],[300,435],[300,670],[140,670]],
+  slots:[[1540,335],[1330,385],[840,343],[502,245],[1330,485],[890,529],[558,625],[342,299],
+   [240,360],[446,625],[1532,535],[1530,209],[1080,211],[924,440],[788,272],[590,213],
+   [1530,693],[1100,647],[1236,436],[828,595],[620,691],[756,436]],
+  /* ⭐**初期の8マス**(先頭8つ)=分岐の手前1・北の枝3・南の枝3・合流の後1
+     =**どちらの枝も最初から守れる**(片方に寄せると、開けていない側が素通りになる)。 */
+  order:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21],
+  hpM:TUNE("ST3_hpM",2.6,1,5,.05),/* 🪶②沈んだ港の次の面。⚠数字は実機待ち(検査の出力で②との比を見る) */
+  sup:[[1304,300],[1304,594]],/* 北の枝の内側と南の枝の内側に1つずつ */
+  pal:{g0:'#9A9A72',g1:'#7A7C58',tuft:'#4f6b3c',bld:'#77787e',patch:['#5e5f42','#cfc9a6']}}
 ];
 let STAGE=0;
 const stagePal=()=>(STAGES[STAGE]||STAGES[0]).pal;
@@ -6076,16 +6107,40 @@ const SEG=[];let PLEN=0;
 /* 道路が右へ突き抜けている分を含めた「収めたい幅」(loadStageで決まる)。
    ⚠使う場所(fitCanvas)より前で宣言すること=letのTDZで落ちるため */
 let PMAXX=MW;
+/* 🪶⭐⭐**枝が合流する所(進んだ距離)**。0=枝分かれの無い面(今までどおり)。
+   ⚠**ユニットと🚩集結旗の下限**=ここより手前は「どちらの枝か」が決まらないので置けない。
+   ⚠⚠**宣言は loadStage より前**(loadStage が読み込みの途中で呼ばれても落ちないように=TDZの穴) */
+let MERGE_D=0;
+/* 🚩⭐**🚩集結旗(=ユニットの立つ線)を置ける一番手前**。
+   ⚠枝分かれのある面では**合流点より後ろだけ**=枝の上に置くと「どちらの枝に立っているか」が決まらない。 */
+const flagLo=()=>Math.max(PLEN*.1,MERGE_D);
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
- LANES=null;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;BENT.length=0;BOBJ.length=0;TRE_CELL=null;terrClear();
+ LANES=null;MERGE_D=0;camOff();MAPW=MW;MAPH=MH;BPROP.length=0;BBLD.length=0;BTREE.length=0;BENT.length=0;BOBJ.length=0;TRE_CELL=null;terrClear();
  BSEA=0;/* 🌊海(2面の開拓便だけ)を必ず落とす=残すと普通の面の地形に海が混ざる */
  const S=STAGES[STAGE];
  PATH=S.path.map(p=>p.slice());
  SEG.length=0;PLEN=0;
  for(let i=0;i<PATH.length-1;i++){const l=dist(PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]);SEG.push({a:PATH[i],b:PATH[i+1],l,s:PLEN});PLEN+=l;}
  SEG.avg=PLEN/Math.max(1,SEG.length);SEG.vdy=0;/* ⚠y の索引は「y で等間隔に打った道」だけ(=開拓便) */
+ /* 🪶⭐⭐**枝分かれする面(面③)はここでレーンを2本作る**(2026-08-07(205))。
+    ⚠**2本目は `path2`**。⭐**1本目(PATH)は今までどおりの道**=道を見ている処理は全部そのまま動く。
+    ⚠⚠**長さは1pxも違ってはいけない**(`z.d>=PLEN` が全レーン共通なので)=違ったら作り直す。
+    ⭐`MERGE_D`=**末尾から見て2本が一致しなくなる所**=ここより後ろにしかユニットと🚩旗を置けない。 */
+ if(S.path2){
+  const mk=pts=>{const sg=[];let ln=0;
+   for(let i=0;i<pts.length-1;i++){const l=dist(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);sg.push({a:pts[i],b:pts[i+1],l,s:ln});ln+=l;}
+   sg.avg=ln/Math.max(1,sg.length);sg.vdy=0;return {seg:sg,len:ln};};
+  LANES=[{seg:SEG,len:PLEN},mk(S.path2.map(p=>p.slice()))];
+  /* 合流点=**末尾から数えて座標が同じ辺**がどこまで続くか。⚠座標そのもので見る(長さでは見ない) */
+  {const A=PATH,B=S.path2;let k=0;
+   while(k<A.length-1&&k<B.length-1
+     &&A[A.length-1-k][0]===B[B.length-1-k][0]&&A[A.length-1-k][1]===B[B.length-1-k][1])k++;
+   /* ⚠**同じ点が k 個なら、同じ辺は k-1 本**(ここを1本多く数えると合流点が手前へずれる) */
+   let t=0;for(let i=A.length-k+1;i<A.length;i++)t+=dist(A[i-1][0],A[i-1][1],A[i][0],A[i][1]);
+   MERGE_D=PLEN-t;}
+ }
  SLOTS=S.slots.map(p=>p.slice());for(const e of ECO_SLOTS)SLOTS.push(e.slice());for(const e of (S.sup||SUP_SLOTS).slice(0,SUP_MAX))SLOTS.push(e.slice());/* ⚠(113)使う枠のぶんだけ作る */
  AI_ORDER=S.order.slice();SLOT_ORDER=S.order.slice();
  CORE=PATH[PATH.length-1].slice();
@@ -6135,11 +6190,13 @@ function pathPos(d,ln){
    ステージ1の右端は**505も続く真縦の道**で、90/200/380 では最後まで縦のまま=左右が決まらず
    古い分岐(左)に落ちていた。⭐**道の一番長い直線より長い段**(700/1200)まで置く。 */
 const PF_L=[90,200,380,700,1200];
-function pathFace(d,px,sign,ang){
- for(let i=0;i<PF_L.length;i++){const q=pathPos(clamp(d+sign*PF_L[i],0,PLEN)),dx=q[0]-px;
+/* ⚠(205)**レーン(ln)も受け取る**=枝分かれする面で、南の枝の敵の向きを北の枝で決めない */
+function pathFace(d,px,sign,ang,ln){
+ const pl9=(LANES&&ln!=null&&LANES[ln])?LANES[ln].len:PLEN;
+ for(let i=0;i<PF_L.length;i++){const q=pathPos(clamp(d+sign*PF_L[i],0,pl9),ln),dx=q[0]-px;
   if(Math.abs(dx)>8)return dx>0?1:-1;}
  /* それでも差が出ない=道が端まで真縦。最後は経路の端(湧き口/コア)の側を向く */
- const e=pathPos(sign<0?0:PLEN),ex=e[0]-px;
+ const e=pathPos(sign<0?0:pl9,ln),ex=e[0]-px;
  if(Math.abs(ex)>8)return ex>0?1:-1;
  return (Math.cos(ang)>=-.05?1:-1)*sign;
 }
@@ -6152,6 +6209,27 @@ function uFace(u,p){
 function projPath(x,y){let bd=1e9,br=0;
  const R=segRangeY(SEG,y),i0=R?R[0]:0,i1=R?R[1]:SEG.length-1;
  for(let i=i0;i<=i1;i++){const s=SEG[i];const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}return br;}
+/* 🪶⭐**枝分かれする面用**=一番近い道の[進んだ距離, レーン番号, 道までの距離]。
+   ⚠**レーンが無い面では今までと同じ値**(レーン番号は null)=呼ぶ側で分岐を書かなくてよい。
+   ⚠**「レーンの上のどこか」を1本目だけで測ってはいけない**=南の枝の上の物が、
+     北の枝の見当違いの距離として返る(🎯絨毯爆撃と🧲引力塔で実際に効く)。 */
+function projPathIn(x,y,ln){
+ const sg=(LANES&&ln!=null&&LANES[ln])?LANES[ln].seg:SEG;
+ let bd=1e9,br=0;
+ const R=segRangeY(sg,y),i0=R?R[0]:0,i1=R?R[1]:sg.length-1;
+ for(let i=i0;i<=i1;i++){const s=sg[i];const vx=s.b[0]-s.a[0],vy=s.b[1]-s.a[1];
+  const t=clamp(((x-s.a[0])*vx+(y-s.a[1])*vy)/(s.l*s.l),0,1);
+  const dd=dist(x,y,s.a[0]+vx*t,s.a[1]+vy*t);if(dd<bd){bd=dd;br=s.s+t*s.l;}}
+ return [br,bd];
+}
+function projPathL(x,y){
+ if(!LANES)return [projPath(x,y),null,0];
+ let bd=1e9,br=0,bl=0;
+ for(let li=0;li<LANES.length;li++){const r=projPathIn(x,y,li);if(r[1]<bd){bd=r[1];br=r[0];bl=li;}}
+ return [br,bl,bd];
+}
+/* その点から**どの道にも当たらない距離**(建設マスの条件に使う)。⚠枝がある面は全部の枝を見る */
+const roadDist=(x,y)=>LANES?projPathL(x,y)[2]:projPathIn(x,y,null)[1];
 /* 建設マス(loadStageでステージのものに差し替わる)。
    置き方の決まり: 道路の中心線からちょうど95(道路半幅49+マス半28=77なので18px空く)。
    道なりの順に並べる=散らばって見えないように。
@@ -18286,7 +18364,7 @@ function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,d
     研究所の開始ボーナス(🧱建設スロット/🤝ユニット枠/廃品工房)が効いているか分からない。 */
  towers:SLOTS.map(()=>null),ecoN:devAll()?ECO_MAX:1,supN:devAll()?SUP_MAX:0,up:12,upTotal:12,
  slk:SLOTS.map((_,i)=>devAll()?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0)),
- zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:devAll()?teamIdx().length:2,uLv:0,dep:0,flagD:PLEN*.55,q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
+ zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:devAll()?teamIdx().length:2,uLv:0,dep:0,flagD:Math.max(PLEN*.55,flagLo()),q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
  hUi:-1,hOut:0,hCg:0,fallen:[],/* 英雄: 連れて行く英雄のUNITS添字 / 0=未出撃 1=出撃中 2=戦死 / 必殺チャージ / 戦死したユニット(蘇生用) */
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
@@ -18296,7 +18374,7 @@ const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示)
    ⚙️の総額が動かないように、体数に掛けた値の逆数をここへ渡す。⚠省略したら1(今までどおり)。 */
 function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,wing:Z.wing||0,/* 🪶(205)**羽を写し忘れていた**=面③の材質が1体にも乗っていなかった */fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 /* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
 /* ⚠`stnT`=気絶の**見せ方**だけのタイマー(★が頭上を回る)。止める仕組みは `frzT` の方。
    ⚠**凍結と気絶を分けるために持つ**=罠・引力場・時間停止・落雷を氷漬けで見せない(2026-08-02) */
@@ -18475,6 +18553,12 @@ function buildTide(wave){
      ⚠ボスは写さない(何度も出てしまう)。⚠使うのは `tideStep` の補充だけ。 */
   T.bnsTpl=pool.filter(e=>!e.boss).slice(-240).map(e=>({dl:e.dl,z:e.z,ln:0}));
  }
+ /* 🪶⭐⭐**枝分かれする面(面③)は1体ずつ交互に振り分ける**(2026-08-07(205))。
+    ⚠⚠**乱数で配ると片側だけ厚くなる**(🚌開拓便で踏んだのと同じ穴)=**順ぐりに配ること**。
+    ⭐**ボスと主は波ごとに枝を替える**=いつも同じ枝から来ると、片側を厚くするだけで済んでしまう。
+      ⚠湧いた時の報せに枝の名前を足してある(どちらへ手を回すかを決められるように)。 */
+ if(LANES&&!isBns()){let k9=0;
+  for(const e of pool)e.ln=(e.boss||e.z.siege)?(wave%LANES.length):(k9++%LANES.length);}
  for(let pi=0;pi<G.players.length;pi++){const P=G.players[pi];
   for(const s of P.inc.sent){for(let i=0;i<s.cnt;i++)pool.splice(ri(0,pool.length),0,{dl:.4,z:zSpec(s.zi,mul,wave,1,s.from),tgt:pi});}}
  /* 🛠編集モード: 敵を一切出さない(マスの配置に集中するため) */
@@ -18606,7 +18690,9 @@ function tideStep(dt){
     z9.hp*=hx9;z9.mhp*=hx9;z9.sp*=1+pg9*BNS_SPX;
     if(pg9>.35&&Math.random()<BNS_ELT*(pg9-.35)/.65){
      z9.elite=1;z9.hp*=2.6;z9.mhp*=2.6;z9.bt=Math.round(z9.bt*3);z9.sp*=.92;}}
-   if(e.ln!=null){z9.ln=e.ln;z9.off=rnd(-BNS_OFF,BNS_OFF);z9.d-=rnd(0,320);}
+   /* ⚠(205)**横のずれと前後のばらけは🚌開拓便だけ**=いつもの面に掛けると
+      道幅(半幅49)を超えて敵が地面の上を歩く(BNS_OFF は150以上ある)。 */
+   if(e.ln!=null){z9.ln=e.ln;if(C.bus){z9.off=rnd(-BNS_OFF,BNS_OFF);z9.d-=rnd(0,320);}}
    /* ⭐⭐**かたまりで湧かせる**(2026-08-02(25)ユーザー「ゾンビの密度がまばらになってるから
       **ある程度まとまった個所で今よりもっと密度を増して**」)。
       ⚠1体ずつ道いっぱいに散らすと、いくら数を出しても**均一に薄い**ままになる(それが「まばら」の正体)。
@@ -18638,7 +18724,8 @@ function tideStep(dt){
      ジャガーノートが現れた!って表示される」)=①のボスの名前をそのまま書いていたので、
      屍山の王・深淵の母・原初の獣が出ても「ジャガーノート」と言っていた。
      ⚠HPバーの名前(`bn`)は先に直してあったので、**残っていたのは湧いた時と撃破の報せ**。 */
-  if(e.boss){ev(ti2,'💀 '+zNameOf(e.z)+'がこっちに来た!',true);C.shake=.4;
+  /* ⚠(205)**枝が2本ある面はどちらから来たかも言う**=手を回す先を決められないと分岐が運になる */
+  if(e.boss){ev(ti2,'💀 '+zNameOf(e.z)+'が'+((LANES&&!C.bus&&laneN(e.ln))?laneN(e.ln)+'の道から':'こっちに')+'来た!',true);C.shake=.4;
    addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:RUST});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
    if(C.isMe)sfx.growl();}
   /* 🌊(127)海の面は湧く間隔を詰める=ゾンビの量が増える */
@@ -19716,10 +19803,14 @@ function airstrikeHit(C,x,y,wave,stk,mine){
     ⚠soloMeta()で包んであるので協力/対戦には効かない(砲撃は対戦でも撃てる) */
  const SP=stkPow(C);
  if(stk==='carpet'){/* 絨毯爆撃: 道に沿って前後300を連続爆撃 */
-  const cd0=projPath(x,y),dm=240*(1+.15*wave)*SP;
-  for(const z of F.zombies){if(!z.dead&&Math.abs(z.d-cd0)<=330){kbZ(z,x,y,150);dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=40*SP;}}}
+  /* ⚠(205)**枝分かれする面では「狙った枝」だけを焼く**=距離(d)だけで見ると、
+     反対の枝の同じ距離に居る敵まで巻き込む(絵の上では何も落ちていない所で死ぬ)。
+     ⚠合流より後ろは2本が同じ道なので、そこは枝を問わない。 */
+  const pl9=projPathL(x,y),cd0=pl9[0],aln=pl9[1],dm=240*(1+.15*wave)*SP;
+  const onLn=z=>!LANES||aln==null||z.ln==null||z.ln===aln||z.d>=MERGE_D;
+  for(const z of F.zombies){if(!z.dead&&onLn(z)&&Math.abs(z.d-cd0)<=330){kbZ(z,x,y,150);dmgZ(F,z,dm,1);if(!z.dead){z.burnT=2;z.burnD=40*SP;}}}
   /* ⭐時間差で5発。1発ずつに土煙と衝撃波を付けて「線に沿って落ちてくる」のを見せる(第65弾) */
-  for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN)),dd=.07*(k+2);
+  for(let k=-2;k<=2;k++){const p=pathPos(clamp(cd0+k*140,0,PLEN),aln),dd=.07*(k+2);
    addFx(F,'boom',p[0],p[1],'',{d0:dd});
    if(FXLV>0){addFx(F,'dust',p[0],p[1]+4,'',{d0:dd,r:96});
     addFx(F,'shock',p[0],p[1]+4,'',{d0:dd,r:62,col:'#ffdd66'});
@@ -20186,7 +20277,9 @@ function campStep(C,dt,wave){
       ここで出した sin/cos をそのまま使い回す(バス側で出し直さない)。 */
    z.nx=-Math.sin(p[2]);z.ny=Math.cos(p[2]);
    z.px+=z.nx*k9;z.py+=z.ny*k9;}
-  z.dr=(z.ln!=null)?((BNS_CX-p[0])>=0?1:-1):pathFace(Math.max(0,z.d),p[0],1,p[2]);
+  /* ⚠🚌開拓便だけは「拠点の中心の側」で決める(道が4本とも拠点を向いているため)。
+     ⚠(205)枝分かれする面はいつもどおり道から決める=**そのレーンの道**を見ること */
+  z.dr=(C.bus&&z.ln!=null)?((BNS_CX-p[0])>=0?1:-1):pathFace(Math.max(0,z.d),p[0],1,p[2],z.ln);
   z.vw=pxVw(p[2]);if(z.aura)scrs.push(z);}
  if(C.bus)bnsBusStep(C,dt);/* 🚌ボーナス面の轢き殺し */
  for(const u of C.units)u.eng=0;
@@ -20832,7 +20925,10 @@ function campStep(C,dt,wave){
    else if(T.type==='net'){addP(C,4,sx,sy,{sp:70,g:0,flat:1,life:.5,r:2.4,col:T.id==='cryo'?FROST:'#9fd9c6'});}}
   if(T.type==='net'){let nfz=0;
    /* 🧲(197)引力塔=道の上の「塔の位置」へ引き戻す。⚠1回だけ計算する(敵ごとに出さない) */
+   /* ⚠(205)**枝が2本ある面はレーンごとに出す**=1本目だけで測ると、
+      南の枝の敵が北の枝の見当違いの距離まで引き戻される(=道の外へ飛ぶ)。 */
    const pd9=T.pull?projPath(sx,sy):0;
+   const pdL9=(T.pull&&LANES)?LANES.map((L,li)=>projPathIn(sx,sy,li)[0]):null;
    for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){
     z.slowT=T.slowT*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));
     /* 🕸(204d)**鈍足の深さ**も持つようにした(それまでは一律55%で、塔ごとの `slow` は使っていなかった)。
@@ -20860,8 +20956,9 @@ function campStep(C,dt,wave){
        ⭐**地面に凍り付いた物は掴めない**=絵でも読める理屈で、掛け合わせを断ち切れる。
        ⚠**気絶(stnT)も同じ**=掴んだ本人が付けた気絶で二度掴みするのを防ぐ。
        ⚠(204e)**気絶は0.35→0.15秒**=1回ごとの足止めも積み上がっていた。 */
-    if(T.pull&&z.d>pd9&&!(z.frzT>0)&&!(z.stnT>0)&&(z.pulUsed||0)<twPulN(T,tw)){
-     z.d=Math.max(pd9,z.d-T.pull);z.stnT=Math.max(z.stnT||0,.15);
+    const pf9=(pdL9&&z.ln!=null)?pdL9[z.ln]:pd9;
+    if(T.pull&&z.d>pf9&&!(z.frzT>0)&&!(z.stnT>0)&&(z.pulUsed||0)<twPulN(T,tw)){
+     z.d=Math.max(pf9,z.d-T.pull);z.stnT=Math.max(z.stnT||0,.15);
      z.pulUsed=(z.pulUsed||0)+1;
      if(FXLV>0)addP(C,2,z.px,z.py-14*CH_UP,{sp:60,a:Math.atan2(sy-z.py,sx-z.px),spread:.5,g:0,life:.25,r:2,col:'#c9a1ff'});}
     /* 💡(197)照らす=受けるダメージが上がる。⚠(204d)**倍率も敵に持たせる**(💡もろさの強化ぶん) */
@@ -21175,7 +21272,7 @@ const DIFFS=[{ag:.35,delay:1.0,res:1.4},{ag:.6,delay:.65,res:1.15},{ag:.85,delay
 function cpuTick(C,dt){
  if(C.dead||G.phase!=='wave')return;
  C.aiT-=dt;if(C.aiT>0)return;C.aiT=C.ai.delay*rnd(.8,1.3);
- C.flagD=PLEN*(C.core<C.coreMax*.5?.65:.45+C.ai.ag*.06);
+ C.flagD=Math.max(flagLo(),PLEN*(C.core<C.coreMax*.5?.65:.45+C.ai.ag*.06));
  const wave=G.wave;
  if(C.charge>=1){let bx=0,by=0,cnt=0;for(const z of C.zombies){if(z.d>PLEN*.45){bx+=z.px;by+=z.py;cnt++;}}
   if(cnt>=6){airstrike(C,bx/cnt,by/cnt,wave);return;}}
@@ -21300,14 +21397,18 @@ function newGame(specs,myIdx){
 const RPT_X=TUNE("RPT_X",.72,.2,4,.05);/* 🧬配布の全体倍率。⚠触ったら検査 checkGain の物差しで確かめ直すこと */
 /* 🧬⭐(204h)**面を初めて落とした時の上乗せ**(面ごと)。⚠**実測で決める**=手で書き換えない。
    ⚠足りない面は最後の値を使う(面③〜⑤を足す時はここに1つずつ足す)。 */
-const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10)];
+const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10),TUNE("STG_GEN3",560,0,8000,10)];
 function metaGainOf(d9,stg,wave,kills){
  /* ⚠末尾=🚌ボーナス面。⭐(204h)**🚌を .90→1.05 へ上げた**(ユーザー「拠点開拓は上げてもいい」)。
     ⚠**新兵(1.37)は上げない**=すでに一番実入りが良く、そこを上げると
       「一番簡単で一番短い拠点を回し続けるのが最適」になる(面を進める意味が消える)。
     ⚠兵長(1.17)は並びから外したので、もう通らない。 */
  const mult=(([1.37,1.17,1,.84,.74,.88,1.05][d9])||1)*RPT_X;
- const stgX=(stg===1&&d9!==BNS_D)?([4.8,4.25,3.8,3.35,2.95,2.65][d9]||1):1;
+ /* ⭐**面ごとの倍率**。⚠⚠**数字は必ず実測から**(検査 checkGain が「その面の実入り ÷ その段の棚」で見張る)。
+    ⚠🚌拠点開拓には掛けない(あちらは轢いた数そのままで配る)。
+    ⚠**面が増えたら行を1つ足す**=足さないと、新しい面の実入りが面①と同じ額になる。 */
+ const STG_X=[null,[4.8,4.25,3.8,3.35,2.95,2.65],[9.6,8.5,7.6,6.7,5.9,5.3]];
+ const stgX=(d9!==BNS_D&&STG_X[stg])?(STG_X[stg][d9]||1):1;
  return Math.max(1,Math.round((wave*25+kills*1.4)*mult*stgX));
 }
 /* 🧬⭐**その拠点で買う「2種ぶん」の値段**(=実入りと釣り合っているかの物差し)。
@@ -21644,9 +21745,11 @@ function makeScenery(){
  DOTS.length=0;for(let i=0;i<260;i++)DOTS.push([rnd(-160,1760),rnd(120,940),rnd(1.5,4),Math.random()<.5]);
  PATCHES.length=0;for(let i=0;i<42;i++)PATCHES.push([rnd(-150,1750),rnd(130,930),rnd(40,120),rnd(20,60),rnd(0,3.14),Math.random()<.5]);
  TUFTS.length=0;for(let i=0;i<115;i++)TUFTS.push([rnd(-160,1760),rnd(120,942),rnd(4,9),rnd(0,9)]);
- CRACKS.length=0;for(let i=0;i<34;i++){const d0=rnd(0,PLEN),p=pathPos(d0),a=rnd(0,6.28),l=rnd(14,46);
+ /* ⚠(205)**枝がある面は両方の道にひびと轍を撒く**(1本目だけだと片側の道だけ新品に見える) */
+ const rln=()=>LANES?(Math.random()<.5?1:0):null;
+ CRACKS.length=0;for(let i=0;i<34;i++){const ln=rln(),d0=rnd(0,PLEN),p=pathPos(d0,ln),a=rnd(0,6.28),l=rnd(14,46);
   CRACKS.push([p[0]+Math.cos(a)*rnd(0,34),p[1]+Math.sin(a)*rnd(0,26),a,l,rnd(.5,1.6)]);}
- SKID.length=0;for(let i=0;i<9;i++){const d0=rnd(120,PLEN-120),p1=pathPos(d0),p2=pathPos(d0+rnd(60,150));
+ SKID.length=0;for(let i=0;i<9;i++){const ln=rln(),d0=rnd(120,PLEN-120),p1=pathPos(d0,ln),p2=pathPos(d0+rnd(60,150),ln);
   SKID.push([p1[0],p1[1],p2[0],p2[1],rnd(-16,16)]);}}
 loadStage(0);/* 起動時はステージ1を読み込んでおく */
 /* 時間帯の色(朝→昼→夕→宵→夜)。画面の縁と空の色でウェーブの進行を表現する */
@@ -21690,7 +21793,11 @@ function bgDrawL2(c,tod,dk,PAL,VL,VR,VT,VB){
    c.fillStyle='#fff';for(let s=0;s<18;s++){const sx2=((s*197)%1500)+40,sy2=((s*83)%80)+12;c.globalAlpha=clamp((tod-.6)*3,0,1)*(.4+(s%3)*.2);c.fillRect(sx2,sy2,2,2);}c.globalAlpha=1;}
  }
  c.fillStyle='rgba(0,0,0,.25)';c.fillRect(VL,110,VR-VL,6);
+ /* ⚠⚠(205)**焼き込む方(ここ)にもレーンを通すこと**=下の生描き(renderCamp)だけ直しても、
+    実機はこの焼き絵しか見ないので**枝が1本も出ない**(撮って気づいた)。
+    ⚠**この2か所は必ず同じ形にする**。 */
  const roadPath=()=>{c.beginPath();
+  if(LANES){for(const L of LANES){c.moveTo(L.seg[0].a[0],L.seg[0].a[1]);for(const s of L.seg)c.lineTo(s.b[0],s.b[1]);}return;}
   c.moveTo(PATH[0][0],PATH[0][1]);for(let i=1;i<PATH.length;i++)c.lineTo(PATH[i][0],PATH[i][1]);};
  c.lineJoin='round';c.lineCap='round';
  c.strokeStyle='rgba(0,0,0,.22)';c.lineWidth=104;roadPath();c.stroke();
@@ -23071,7 +23178,7 @@ function renderCamp(C,t){
  /* 照準 */
  if(AIM&&aimPos){c.strokeStyle='#E84832';c.lineWidth=4;c.setLineDash([12,10]);c.beginPath();c.arc(aimPos[0],aimPos[1],135,0,7);c.stroke();c.setLineDash([]);
   c.beginPath();c.moveTo(aimPos[0]-20,aimPos[1]);c.lineTo(aimPos[0]+20,aimPos[1]);c.moveTo(aimPos[0],aimPos[1]-20);c.lineTo(aimPos[0],aimPos[1]+20);c.stroke();}
- if(FLAGAIM&&aimPos){const fd2=clamp(projPath(aimPos[0],aimPos[1]),PLEN*.1,PLEN*.9),fp2=pathPos(fd2);
+ if(FLAGAIM&&aimPos){const fd2=clamp(projPath(aimPos[0],aimPos[1]),flagLo(),PLEN*.9),fp2=pathPos(fd2);
   c.strokeStyle='#6f9c43';c.lineWidth=4;c.setLineDash([10,8]);c.beginPath();c.arc(fp2[0],fp2[1],44,0,7);c.stroke();c.setLineDash([]);
   c.font='900 32px '+FF;c.textAlign='center';c.fillText('🚩',fp2[0],fp2[1]-10);}
  /* ボスHP */
@@ -23849,7 +23956,8 @@ function edBad(si){
  const bad=[],area=isSupSlot(si)?2:isEcoSlot(si)?1:0;
  /* 工房枠は画面のいちばん上(y=190)に置く決まりなので、上端の制限は通常マスにだけ掛ける */
  if(p[0]<75||p[0]>1560||p[1]>730||(area!==1&&p[1]<205))bad.push('画面外');
- let rd=1e9;for(let i=0;i<PATH.length-1;i++)rd=Math.min(rd,segDist(p[0],p[1],PATH[i][0],PATH[i][1],PATH[i+1][0],PATH[i+1][1]));
+ /* ⚠(205)**枝が2本ある面は両方の道から95以上**=片方だけ見ると、もう片方の道の上に乗る */
+ const rd=roadDist(p[0],p[1]);
  if(rd<95)bad.push('道'+Math.round(rd));
  if(dist(p[0],p[1],CORE[0],CORE[1])<150)bad.push('拠点');
  for(const b of BRANCH)if(dist(p[0],p[1],b[0],b[1])<120)bad.push('テント');
@@ -23986,7 +24094,7 @@ $('strikebtn').onclick=()=>{const m=meV();if(!m||m.dead||m.charge<1){setAim(fals
 function setFlagAim(on){if(on)setAim(false);FLAGAIM=on;aimPos=null;$('flagbtn').classList.toggle('aim',on);$('flaghint').style.display=on?'block':'none';}
 $('flagbtn').onclick=()=>{const m=meV();if(!m||m.dead){setFlagAim(false);return;}setFlagAim(!FLAGAIM);};
 let FLAGPOP=-9,FRAMECOL='';
-function actFlag(x,y){const fd=clamp(projPath(x,y),PLEN*.1,PLEN*.9);
+function actFlag(x,y){const fd=clamp(projPath(x,y),flagLo(),PLEN*.9);
  if(MODE==='client'){sendCmd({t:'c',a:'fg',fd:Math.round(fd)});CS.fd=fd;FLAGPOP=TT;sfx.dep();return;}
  if(G){const me=G.players[G.myIdx];if(me.dead)return;me.flagD=fd;FLAGPOP=TT;
   const F2=G.coop?G.players[0]:me;const fp=pathPos(fd);addFx(F2,'ring',fp[0],fp[1],'',{r:44,col:'#c9dba1'});sfx.dep();}}
@@ -34868,7 +34976,14 @@ const MAPND=[
  {stg:1,d:3,n:'塩漬けの市場',  s:'高波が押し寄せる市場跡',        x:.44,y:.50},
  {stg:1,d:4,n:'深潮の埠頭',    s:'悪夢の物量が水浸しの道を走る',  x:.29,y:.41},
  {stg:1,d:5,n:'海淵の底',      s:'🌑深海のナイトメアが孵る場所',  x:.14,y:.53,nm:1},
- {stg:2,d:-1,n:'???',          s:'第3の拠点(これから作る)',       x:.06,y:.72,lock3:1}
+ /* 🪶(205)**面③=送電鉄塔の丘**。⚠**右下の一角(x>.60かつy>.58)は拠点カードの置き場**なので使わない。
+    ⚠**🌑ナイトメア専用の顔ぶれはまだ無い**(③は難易度を問わず同じプール)=[[TODO]]。 */
+ {stg:2,d:0,n:'麓の変電所',    s:'丘のふもと。ここから登る',      x:.06,y:.66},
+ {stg:2,d:2,n:'送電鉄塔の丘',  s:'鉄塔の稜線。道が二手に分かれる',x:.17,y:.76},
+ {stg:2,d:6,n:'稜線の道',      s:'🚌開拓便=丘を駆け下りる',       x:.28,y:.65,bns:1},
+ {stg:2,d:3,n:'送電線の谷',    s:'鉄塔の影が落ちる谷',            x:.38,y:.76},
+ {stg:2,d:4,n:'崩れた鉄塔',    s:'悪夢の物量が空から降ってくる',  x:.48,y:.65},
+ {stg:2,d:5,n:'雷鳴の頂',      s:'🌑丘の空をまるごと覆う影',      x:.57,y:.77,nm:1}
 ];
 let MSEL=-1,MBUS=null;
 const ndOpen=nd=>!nd.lock3&&stageOK(nd.stg)&&diffOK(nd.stg,nd.d);
@@ -35495,7 +35610,7 @@ function hostData(c,d){
   else if(d.a==='buy')doPurchase(P,''+d.k,d.o||{});
   else if(d.a==='ps')pushTide(P,(d.tg!=null?d.tg|0:-1));
   else if(d.a==='un')deployUnit(P,d.ui|0);
-  else if(d.a==='fg')P.flagD=clamp(+d.fd||0,PLEN*.1,PLEN*.9);
+  else if(d.a==='fg')P.flagD=clamp(+d.fd||0,flagLo(),PLEN*.9);
   else if(d.a==='rd')P.ready=true;
  }
 }

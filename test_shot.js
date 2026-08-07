@@ -16,7 +16,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['(なし)','タイトル画面'],['dev','🛠DEVモード(全開放の見た目)'],['edit','🛠マス編集モード'],
   ['perf','🔥塗りの物差しを出す(?perf=1)。dev と混ぜるなら "dev+perf"'],
   ['pc','PC用CSS(既定はスマホ用を強制適用)'],
-  ['st2','ステージ2(沈んだ港)'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
+  ['st2|st3','ステージ2(沈んだ港)/ステージ3(送電鉄塔の丘)'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
   ['setup','出撃準備'],['lab[=タブ]','🔬研究所(twup/unup/rec…)'],['load','🎒編成'],['home','🏠ホーム'],
   ['map','🗺エリアマップ'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
   ['iv=<波>','作戦タイム'],['grid=tw|tg|u|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
@@ -43,7 +43,10 @@ const PC=OPT.indexOf('pc')>=0;
 const ST=/st(\d)/.exec(OPT);/* 例 st2 = ステージ2を撮る */
 const WM=/w(\d+)/.exec(OPT),WAIT=WM?+WM[1]:9000;/* 例 w30000 = 30秒ぶん進めてから撮る(敵が出た状態) */
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'];
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean);
 const BR=BROWSERS.find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf-8');
@@ -209,7 +212,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
  /* v2 = ⭐輪郭を1本にまとめる2度描きを有効にして撮る(?v2=1 と同じ。既定は切ってある) */
  +(/v2on/.test(OPT)?'VEC2=true;':'')
  /* ステージ2以降は「前のステージをナイトメアでクリア」が条件なので、撮影用に全部クリア済みにする */
- +(ST?('META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
+ +(ST?('META.sc=STAGES.map(function(){return D5.map(function(){return 1;});});META.sclr=[1,1,1];META.stg='+(+ST[1]-1)+';'):'')
  +(LAB?('META.pts=99999;META.ot=UNL_T.slice(0,2);META.ou=UNL_U.slice(0,3);META.nt=2;META.nu=3;META.sc0=1;META.tg=[];META.sc=[[1,1,1,0,0,0],[0,0,0,0,0,0]];/* ⚠(187)3拠点クリア=棚に「買える物」と「🔒次の分」が両方並ぶ状態で撮る *//* ⚠研究所を撮る時は進化の解放を戻す(上で全部開けているため) */META.st.push("frost");LABTAB="'+LABT+'";renderLab();document.getElementById("md-lab").classList.add("on");'
      /* ⭐tmtip = 初めて兵科を解放した時に1回だけ出る「🎒編成のはなし」(2026-08-02)。
         ⚠1回きりの案内なので、こうしないと撮る機会が無い */

@@ -26,7 +26,10 @@ const NUMS=ARG.filter(a=>/^\d+$/.test(a));
 const W=+(NUMS[0]||852),H=+(NUMS[1]||393);
 
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'];
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean);
 const BR=BROWSERS.find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 

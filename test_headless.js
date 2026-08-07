@@ -167,7 +167,7 @@ function runCoop(tag){
 }
 /* ---- ステージ2(沈んだ港・海の亡骸)の疎通確認 ---- */
 function runStage2(){
- META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=1;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=1;
  const seen={};
  setDiff=1;startSolo();
  frames(30,.016);
@@ -249,7 +249,7 @@ function checkFinalBoss(){
  const want=[['ステージ1',0,FIN_ZI,4],['ステージ2',1,FIN2_ZI,4],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF],
   ['🌑深海のナイトメア',1,FINNM2_ZI,NM_DIFF]];
  for(const [nm,si,fi,df] of want){
-  META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=si;META.nmOK=1;setDiff=df;startSolo();
+  META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   /* 通常のボス波(15)と最終波を作って中身を見る */
   const got=[];
   for(const w of [15,20]){
@@ -281,7 +281,7 @@ function checkZPools(){
  const key=Z=>(Z.nm?'n':'-')+(Z.st||0);
  const want=[['① 廃線',0,4,'-0'],['② 沈んだ港',1,4,'-2'],['🌑 ナイトメア',0,NM_DIFF,'n0'],['🌑 深海のナイトメア',1,NM_DIFF,'n2']];
  for(const [nm,si,df,k] of want){
-  META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=si;META.nmOK=1;setDiff=df;startSolo();
+  META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   const seen={},bad=[];
   for(const w of [1,5,10,15,20]){buildTide(w);
    for(const e of G.tide.pool){const Z=ZOMBIES[e.z.zi];seen[Z.n]=1;if(key(Z)!==k)bad.push(Z.n+'('+key(Z)+')');}}
@@ -309,7 +309,7 @@ function checkZPools(){
 }
 /* ---- 🌑ナイトメア(獣プール)を実走: 獣しか出ないか・最終ボスまで描画で例外が出ないか ---- */
 function runNightmare(){
- META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];META.sclr=[1];META.stg=0;META.nmOK=1;setDiff=NM_DIFF;startSolo();
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=0;META.nmOK=1;setDiff=NM_DIFF;startSolo();
  frames(30,.016);
  if(!isNM()){console.log('FAIL: ナイトメアになっていない');process.exit(1);}
  const seen={};
@@ -1526,7 +1526,7 @@ function checkProgress(){
    process.exit(1);}
   console.log('難易度の並び: 画面(seg-diff)と D_ORD が一致 '+D_ORD.map(d=>D5[d].n).join('→')+' OK');}
  console.log('進行: 難易度は順に解放(最終W='+ws+')/クリアした難易度がそのまま記録される/港はナイトメアクリアで解放/港の重さx'+STAGES[1].hpM+' OK');
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.bcl=[];
 }
 /* ---- セーブの1回だけのリセットが、消してはいけないものを消していないか(2026-07-26) ---- */
 function checkMetaReset(){
@@ -1563,7 +1563,7 @@ function checkMetaReset(){
   ['難易度の記録',!scArr(0)[0]&&!scArr(0)[5]],['ナイトメア解放',!META.nmOK]];
  for(const [n,ok] of gone)if(!ok){console.log('FAIL: リセットしたのに '+n+' が残っている');process.exit(1);}
  console.log('セーブの初期化: 難易度と研究所('+gone.length+'項目)+💎英雄🔧図鑑⚔冒険('+gone2.length+'項目)を全部消す OK');
- META.sc=[[1,1,1,1,1,1],[1,1,1,1,1,1]];
+ META.sc=STAGES.map(()=>D5.map(()=>1));
 }
 /* ---- レールガン(ビーム砲)が線上の敵を全部巻き込むか ---- */
 function checkBeam(){
@@ -2844,7 +2844,7 @@ function checkCam(){
   const okY=(MAPH*SC<=VH)?Math.abs(OY-(VH-MAPH*SC)/2)<.02:(OY<=.02&&OY>=VH-MAPH*SC-.02);
   if(!okX||!okY){console.log('FAIL: カメラが地図の外を映している '+tag+' OX='+OX.toFixed(1)+' OY='+OY.toFixed(1));process.exit(1);}
  };
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.stg=0;setDiff=2;startSolo();
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.stg=0;setDiff=2;startSolo();
  if(CAM){console.log('FAIL: いつもの面でカメラが入っている');process.exit(1);}
  fitCanvas();const sc0=SC,ox0=OX,oy0=OY;
  fitCanvas();
@@ -2876,7 +2876,7 @@ function checkCam(){
    ⑥**中断の記録を残さない**(残すと再開で何度も入り直せて報酬の周回になる)
    ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。 */
 function checkBonus(){
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
  for(let si=0;si<STAGES.length;si++){
   META.bcl=[];META.gem=0;META.pts=0;
   scArr(si)[BNS_D]=0;
@@ -3061,7 +3061,7 @@ function checkBonus(){
   backTitle();
   if(LANES){console.log('FAIL: ボーナス面を出てもレーンが残っている');process.exit(1);}
  }
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.bcl=[];META.stg=0;setDiff=2;
  console.log('🚌道中: ステージ'+STAGES.length+'面ぶん(縦一直線1本/置き場なし/バスの先に湧く/すれ違いは無傷/到着でクリア/遊べば次が開く/報酬は初回だけ/🧬は上限つき/1日5回まで/中断できない) OK');
 }
 /* ⭐⭐**米粒ゾンビと轢き応え**(2026-08-02(2)ユーザー①)。見るのは6つ:
@@ -3073,7 +3073,7 @@ function checkBonus(){
    ⑥⚠**本編(普通の面)では今までどおり死体も文字も出る**=米粒の細工が漏れていないこと */
 function checkRice(){
  const fx0=FXLV;FXLV=2;
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
  META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  const me=G.players[0];
  fitCanvas();
@@ -3531,7 +3531,7 @@ function checkRice(){
   if(!m2.fx.some(e=>e.k==='corpse')){console.log('FAIL: 普通の面で死体が出なくなっている');process.exit(1);}
   if(!m2.fx.some(e=>e.k==='txt')){console.log('FAIL: 普通の面で⚙️の文字が出なくなっている');process.exit(1);}}
  backTitle();
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.bcl=[];META.stg=0;setDiff=2;FXLV=fx0;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.bcl=[];META.stg=0;setDiff=2;FXLV=fx0;
  console.log('🧟米粒ゾンビ: 盤面'+live.length+'体(上限'+BNS_CAP+')/描画は例外なし/跡は上限どまり(血'+me.bstn.length+'・肉'+me.bchk.length+'・轍'+me.btrk.length+')/'
   +'死体と⚙️を出さない(🧬に差し替え)/連なり×'+mx+'まで数えて途切れる/本編は今までどおり OK');
  console.log('  (🏚🌲地形: 建物'+nwall+'棟・木'+ntree+'本/関所'+BNS_GATE.length+'か所で道幅'+BNS_OFF+'→'+BNS_GATW
@@ -3827,7 +3827,7 @@ function checkSup(){
    ⑧強化は**この試合かぎり**(次の試合に残らない=定数ではなくバスの持ち物に入れてある)
    ⚠この検査ファイルは丸ごとテンプレート文字列なので、コメントにバッククォートを書かないこと。 */
 function checkBnsFlow(){
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1,1];
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
  /* ⚠**永続の分は先にまっさらに戻す**(2026-08-02(44))=前の検査で買った物が残っていると
     「買えていない」「値段が減らない」が全部すり抜ける。 */
  META.bres=[0,0,0];META.bup={};META.beq={};
@@ -4224,9 +4224,10 @@ function checkGain(){
  const kp=META.sc;
  /* ⚠⚠**ステージ2は解放していないと黙って①に落ちる**(2026-08-06にここで一度騙された)=
     測る前に全部クリア済みにしておき、STAGE が本当に切り替わったかを必ず見ること。 */
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1];
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
  const rows=[];let st=0,prev=0;
- for(let stg=0;stg<2;stg++)for(const d of UNL_ORD){
+ /* ⚠(205)**面が増えたら自動で全部の面を見る**(2にベタ書きすると新しい面の実入りを誰も測らない) */
+ for(let stg=0;stg<STAGES.length;stg++)for(const d of UNL_ORD){
   /* その難易度で1試合ぶんに湧く敵の総数(顔ぶれは毎回引き直すので4回の平均) */
   META.stg=stg;setDiff=d;startSolo();frames(6,.016);
   if(STAGE!==stg)F('ステージ'+(stg+1)+'が読み込まれていない(解放の印を立て忘れ)');
@@ -4254,7 +4255,7 @@ function checkGain(){
     ⚠1拠点ずつでは意味が無くなった(段が進むのは面を制覇した時だけなので、
       面の中では同じ棚をずっと買い続けることになる)。⭐狙いは 1.0(0.75〜1.35に収める)。 */
  const band=[];
- for(let stg=0;stg<2;stg++){
+ for(let stg=0;stg<STAGES.length;stg++){
   /* 🧬(204h)**面の初クリアの上乗せも足して測る**=兵長を並びから外したぶんはここで返している */
   const inc=rows.filter(x=>x.stg===stg).reduce((a,x)=>a+x.g,0)+(STG_GEN[stg]||STG_GEN[STG_GEN.length-1]||0);
   let oT=0,oU=0;for(let i=0;i<stg;i++){oT+=UNL_TN[i];oU+=UNL_UN[i];}
@@ -4388,27 +4389,94 @@ function checkInvariants(){
    ⚠**①は装甲・②は鱗**が主役。⚠ここが崩れたら「②はテスラ/レーザーで解ける」が成り立たない。 */
 function checkMaterial(){
  const kp=META.sc;
- META.sc=[D5.map(()=>1),D5.map(()=>1)];META.sclr=[1];
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
  const out=[];
- for(const stg of [0,1])for(const d of [2,4,5]){
+ /* 🪶(205)**面③=羽**を足した。⚠**③はわざと羽を持たない個体も混ぜてある**(速い個体・すり抜け個体)が、
+    実測では総HPの55〜88%が羽=①②と同じ4割の物差しで足りる。 */
+ const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘'],IC3=['①','②','③'],LO3=[40,40,40];
+ for(let stg=0;stg<STAGES.length;stg++)for(const d of [2,4,5]){
   META.stg=stg;setDiff=d;startSolo();frames(6,.016);
   if(STAGE!==stg){console.log('FAIL: ステージ'+(stg+1)+'が読み込まれていない');process.exit(1);}
-  let hp=0,ahp=0,shp=0;const wN=curW();
+  let hp=0,ahp=0,shp=0,whp=0;const wN=curW();
   for(let w=1;w<=wN;w++)for(let r=0;r<3;r++){buildTide(w);
-   for(const q of G.tide.pool){const m=(q.z.mhp||0)/3;hp+=m;if(q.z.armor)ahp+=m;if(q.z.scl)shp+=m;}}
+   for(const q of G.tide.pool){const m=(q.z.mhp||0)/3;hp+=m;
+    if(q.z.armor)ahp+=m;if(q.z.scl)shp+=m;if(q.z.wing)whp+=m;}}
   backTitle();
-  const a=ahp/hp*100,s=shp/hp*100;
-  out.push((stg?'②':'①')+D5[d].n+' 🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'%');
-  const main=stg?s:a,sub=stg?a:s;
-  if(main<40){console.log('FAIL: '+(stg?'②沈んだ港':'①廃線')+'の'+D5[d].n+'で、主役の材質が総HPの'
-   +main.toFixed(0)+'%しかない(🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'%)');
-   console.log('      ⚠'+(stg?'②は🐟鱗=⚡電撃で解ける面':'①は🛡装甲=🔥火炎で解ける面')+'という設計が崩れている');
+  const a=ahp/hp*100,s=shp/hp*100,w9=whp/hp*100;
+  out.push(IC3[stg]+D5[d].n+' 🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'%');
+  const main=stg===0?a:stg===1?s:w9;
+  if(main<LO3[stg]){console.log('FAIL: '+NM3[stg]+'の'+D5[d].n+'で、主役の材質が総HPの'
+   +main.toFixed(0)+'%しかない(🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'%)');
+   console.log('      ⚠'+['①は🛡装甲=🔥火炎で解ける面','②は🐟鱗=⚡電撃で解ける面','③は🪶羽=🔫実弾で解ける面'][stg]
+    +'という設計が崩れている');
    process.exit(1);}
  }
  META.sc=kp;
- console.log('🛡🐟材質: 主役が総HPの4割以上ある / '+out.join(' / ')+' OK');
+ console.log('🛡🐟🪶材質: 面ごとの主役が総HPの'+LO3.join('/')+'%以上ある / '+out.join(' / ')+' OK');
 }
-const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],
+/* ---- 🪶⭐⭐(205)**面③=道が2本に分かれて合流する面** ----
+   ⚠⚠**この面だけの前提**を全部ここで縛る。崩れると「敵が道の外を歩く」「旗が枝の上に置ける」
+     「片方の枝にしか敵が来ない」のどれかが静かに起きる(どれも実機で気づくまで分からない)。
+   見るのは7つ: ①2本の長さが1pxも違わない ②入口は1点(1本の道が分かれる)
+   ③合流点から後ろは2本が完全に同じ道 ④枝はちゃんと離れている
+   ⑤置き場27枠すべてが「どちらの道からも95以上」 ⑥ユニットと🚩旗は合流点より後ろだけ
+   ⑦敵が両方の枝から均等に来て、南の枝の敵もちゃんと拠点に届く */
+function checkStage3(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kp=META.sc;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
+ const si=STAGES.findIndex(S=>S.path2);
+ if(si<0)F('枝分かれする面が1つも無い');
+ META.stg=si;setDiff=2;startSolo();frames(10,.016);
+ if(STAGE!==si)F('面'+(si+1)+'が読み込まれていない');
+ if(!LANES||LANES.length!==2)F('道が2本になっていない '+(LANES?LANES.length:0)+'本');
+ /* ① */
+ if(Math.abs(LANES[0].len-LANES[1].len)>.5)
+  F('2本の道の長さが違う '+Math.round(LANES[0].len)+' / '+Math.round(LANES[1].len)
+   +'(z.d>=PLEN の拠点到達が全レーン共通なので、揃えないと片方が手前で消える)');
+ if(Math.abs(LANES[0].len-PLEN)>.5)F('1本目の長さが PLEN と違う');
+ /* ② 入口は1点 */
+ {const a=pathPos(0,0),b=pathPos(0,1);
+  if(dist(a[0],a[1],b[0],b[1])>.5)F('湧き口が2か所ある(1本の道が分かれる形になっていない)');}
+ /* ③ 合流点から後ろは同じ道 */
+ const mf=MERGE_D/PLEN;
+ if(!(mf>.72&&mf<.86))F('合流が道の8割あたりにない '+(mf*100).toFixed(1)+'%');
+ for(let d=MERGE_D;d<=PLEN;d+=20){const a=pathPos(d,0),b=pathPos(d,1);
+  if(dist(a[0],a[1],b[0],b[1])>.5)F('合流した後なのに2本が離れている d='+Math.round(d));}
+ /* ④ 枝は離れている(=分岐に意味がある) */
+ {let sep=0;for(let d=40;d<MERGE_D-40;d+=20){const a=pathPos(d,0),b=pathPos(d,1);
+   sep=Math.max(sep,dist(a[0],a[1],b[0],b[1]));}
+  if(sep<320)F('枝が離れていない(いちばん離れた所で'+Math.round(sep)+'px)');}
+ /* ⑤ 置き場はどちらの道からも離れている */
+ {let ng=0,w='';for(let k=0;k<SLOTS.length;k++){const b=edBad(k);if(b.length){ng++;w=w||('マス'+k+' '+b.join('/'));}}
+  if(ng)F('置き場'+ng+'枠が条件に反している('+w+')');}
+ /* ⑥ ユニットと🚩旗は合流点より後ろだけ */
+ const me=G.players[0];
+ if(!(me.flagD>=MERGE_D-.5))F('試合の始めの旗が合流点より手前にある '+Math.round(me.flagD));
+ {const p=pathPos(MERGE_D*.4,1);actFlag(p[0],p[1]);
+  if(!(G.players[G.myIdx].flagD>=MERGE_D-.5))F('枝の上に🚩旗が置けてしまう '+Math.round(G.players[G.myIdx].flagD));}
+ {me.scrap=99999;for(const ui of (me.team||[]).slice(0,me.uUn))deployUnit(me,ui);
+  if(!me.units.length)F('ユニットが1体も出せない');
+  frames(300,.05);
+  for(const u of me.units)if(u.d<MERGE_D-1)F('ユニットが合流点より前へ出た d='+Math.round(u.d)+'(合流'+Math.round(MERGE_D)+')');}
+ /* ⑦ 敵は両方の枝から来る */
+ {buildTide(6);const cn=[0,0];for(const e of G.tide.pool)if(e.ln!=null)cn[e.ln]++;
+  if(!(cn[0]>0&&cn[1]>0))F('片方の枝にしか敵が湧かない '+cn.join('/'));
+  if(Math.abs(cn[0]-cn[1])>2)F('枝ごとの数が偏っている '+cn.join('/'));}
+ /* 南の枝の敵も拠点に届く(=z.d>=PLEN の判定が全レーン共通で効いている) */
+ {const zi=ZOMBIES.findIndex(z=>z.st===3&&!z.boss&&!z.nm);
+  me.units.length=0;me.zombies.length=0;
+  const z=mkZ(zSpec(zi,1,1));z.ln=1;z.d=PLEN-40;z.siege=0;me.zombies.push(z);
+  const c0=me.core;frames(90,.05);
+  if(!(me.core<c0))F('南の枝の敵が拠点に届かない(レーンごとに道の長さを見ている所がある)');}
+ /* 枝の呼び名(ボスの報せに使う) */
+ if(laneN(0)!=='北'||laneN(1)!=='南')F('枝の呼び名が北/南になっていない '+laneN(0)+'/'+laneN(1));
+ const nsl=STAGES[si].slots.length;
+ backTitle();META.sc=kp;
+ console.log('🪶面'+(si+1)+'('+STAGES[si].n+'): 道2本とも'+Math.round(PLEN)+'(1pxも違わない) / 湧き口は1点 / 合流は'
+  +(mf*100).toFixed(0)+'% / 置き場'+nsl+'+工房3+支援2はどちらの道からも95以上 / ユニットと🚩旗は合流点より後ろだけ / 敵は両方の枝から均等 OK');
+}
+const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
 ['checkUnitAf',checkUnitAf],

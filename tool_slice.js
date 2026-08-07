@@ -23,7 +23,10 @@ const LIST=A.indexOf('--list')>=0;
 if(!SRC||!fs.existsSync(SRC)){console.log('画像が見つからない: '+SRC);process.exit(1);}
 if(!LIST&&!NAMES.length){console.log('保存名をカンマ区切りで渡すか --list を付けること');process.exit(1);}
 const BR=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean).find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const ext=path.extname(SRC).slice(1).toLowerCase();
 const mime=ext==='jpg'?'jpeg':ext;

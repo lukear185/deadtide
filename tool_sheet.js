@@ -34,7 +34,10 @@ const COLS=NUM('cols',6),CELL=NUM('cell',180);
 const ZOOM=+((/--zoom=([\d.]+)/.exec(ARG)||[])[1]||(KIND==='zom'?1.5:1.9));
 
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'];
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean);
 const BR=BROWSERS.find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 

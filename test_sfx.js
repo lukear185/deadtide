@@ -6,7 +6,10 @@
    使い方: node test_sfx.js */
 const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process');
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'];
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean);
 const BR=BROWSERS.find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない(検査を飛ばす)');process.exit(0);}
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf-8');

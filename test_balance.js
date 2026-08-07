@@ -18,7 +18,10 @@
 const fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process');
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf-8');
 const BR=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean).find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 /* ⚠英雄(UNITSの末尾・U_N以降)は解放順の対象外なので数えない */
 const TK=['id','n','cost','rng','dmg','rate','type','multi','aoe','burn','chain','grow','gmax','cont',

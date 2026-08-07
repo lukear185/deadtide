@@ -35,7 +35,10 @@ const EMOJI={'ic-scrap':'⚙️','ic-up':'🔩','ic-res':'🧬','ic-gem':'💎',
 const files=fs.readdirSync(DIR).filter(f=>/^(ic|fr)-.*\.png$/i.test(f)).sort();
 if(!files.length){console.log('ui_src に ic-*.png / fr-*.png が無い');process.exit(1);}
 const BR=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find(p=>fs.existsSync(p));
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean).find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const srcs=files.map(f=>({n:path.basename(f,'.png'),
  u:'data:image/png;base64,'+fs.readFileSync(path.join(DIR,f)).toString('base64')}));

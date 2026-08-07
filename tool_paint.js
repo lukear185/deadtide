@@ -22,7 +22,10 @@ const ARG=process.argv.slice(2);
 const CHECK=ARG.indexOf('--check')>=0;
 const TARGET=path.resolve(ARG.find(a=>/\.html$/i.test(a))||'./index.html');
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
- 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'];
+ 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+ process.env.DT_CHROME||'',
+ '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+ '/usr/bin/chromium','/usr/bin/chromium-browser','/usr/bin/google-chrome'].filter(Boolean);
 const BR=BROWSERS.find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const OUT=path.join(require('os').tmpdir(),'dt_paint.html');
@@ -186,7 +189,7 @@ document.title=R.join(" || ");
 fs.writeFileSync(OUT,html.replace('</body>','<scr'+'ipt>(function(){try{'+SCRIPT+'}catch(e){document.title="ERR "+e.message;}})();</scr'+'ipt></body>'),'utf-8');
 console.log('🔥 塗りを数えています(1〜3分)… 対象='+path.basename(TARGET));
 /* ⚠**?perf=1 を付けて開く**=計測の仕掛けはそれでしか動かない */
-const r=cp.execSync('"'+BR+'" --headless --disable-gpu --window-size=852,393 --dump-dom "file:///'+OUT.replace(/\\/g,'/')+'?perf=1"',{maxBuffer:1e9}).toString();
+const r=cp.execSync('"'+BR+'" --headless --disable-gpu --no-sandbox --window-size=852,393 --dump-dom "file:///'+OUT.replace(/\\/g,'/')+'?perf=1"',{maxBuffer:1e9}).toString();
 const m=/<title>([^<]*)<\/title>/.exec(r);
 if(!m){console.log('(結果が取れなかった)');process.exit(1);}
 const rows=m[1].split(' || ').map(l=>l.split('\u0001'));
