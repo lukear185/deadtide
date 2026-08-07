@@ -31613,8 +31613,9 @@ function gcStart(res){
  /* ⭐★5は ✨ロブ1/3 / どんでん返し1/3 / 通常の最上位1/3(2026-07-30の均等の考えを★5に引き継ぐ)。
     ★4は どんでん返しGC_P_TW / 残りは通常。⚠**1回の乱数を割る**こと=別々に引くと比が崩れる。 */
  const rl9=Math.random();
- /* ⭐(136)★5の合図は**4通りを1/4ずつ**(✨ロブ/🥇どんでん返し/🐕犬の軍勢/通常の最上位) */
- const lob=!!(best>=5&&LB_ZI>=0&&rl9<.25);
+ /* ⛔(210)**🐕犬の軍勢を外した**(ユーザー「今あるやつだいぶ微妙だから削除」)=
+    ★5の合図は**3通りを1/3ずつ**へ戻した(✨ロブ/🥇どんでん返し/通常の最上位)。⚠書き戻さない。 */
+ const lob=!!(best>=5&&LB_ZI>=0&&rl9<1/3);
  /* ⭐⭐**どんでん返し**(2026-07-30ユーザー指示)。わざと**一番しょぼい見た目**
       (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、**当たった所までは通常演出と同じ**に見せ、
       爆散した跡から**金色の個体が現れて**もう一度砕ける。★4以上を引いた回だけ、たまに起きる。
@@ -31623,12 +31624,9 @@ function gcStart(res){
       なって…のやつは星5確定演出にして。いまだとあの演出出たのに星4当たっちゃってる」)。
     ⚠★4でも出していたので、**一番の盛り上がりが空振りする**ことがあった。
     ⭐これで★5の合図は3つとも「確定」で揃う=🌈虹の文字 / ✨黄金のロブスター / 🥇どんでん返し。 */
- const twist=best>=5&&rl9>=.25&&rl9<.5;
- /* 🐕⭐(136)**犬の軍勢も★5確定にした**(ユーザー指示)=★5の合図は4つになった。
-    ⚠★4には専用の合図が無くなる(そこは⚡レーザーの見た目が担う)。 */
- const dogs=best>=5&&rl9>=.5&&rl9<.75;
- GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:(dogs?1:tw),zk:twist?0:(dogs?1:tw),hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,
-  night:(twist||dogs)?false:night,fc:(twist||dogs)?0:fc,lob:lob?1:0,twist:twist?1:0,dogs:dogs?1:0};
+ const twist=best>=5&&rl9>=1/3&&rl9<2/3;
+ GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,
+  night:twist?false:night,fc:twist?0:fc,lob:lob?1:0,twist:twist?1:0};
  cv.classList.add('on');gcFit();
  if(sfx.heal)sfx.heal();
 }
@@ -31704,15 +31702,7 @@ function gcHitSfx(){
    前半 GC_TW_R = 普通に木っ端みじん(通常演出と見分けが付かない) / 後半 = その跡から金色の個体がせり上がる */
 const GC_TWIST=1.5;
 const GC_TW_R=.45;/* 爆発から「金色が現れる」へ切り替わる所(0〜1) */
-/* 🐕⭐⭐(128)**犬の軍勢**(ユーザー「ショットガン+アーマーゾンビが今一番期待できない演出になってる
-     けど、そこを逆手にとって、ショットガンでアーマーゾンビ撃つ→死なない→犬の軍勢が横切って
-     アーマーゾンビが喰われて骨になる→星何個の演出っていうのを新規で」)。
-   ⚠**どんでん返しを★5確定にした穴埋め**=★4にも「まさか」の枠を1つ残す。
-   ⭐必ず**ショットガン+アーマーゾンビ(=一番期待できない見た目)**から始まる。 */
-const GC_DOGS=2.0;   /* 犬が横切って骨になるまでの秒数 */
-const GC_DOG_N=30;   /* ⚠(136)走り抜ける犬の数=**アーマーゾンビが見えなくなるぐらい**(ユーザー指示) */
-const GC_DOG_R=.50;  /* この進み具合で「喰われて骨になる」=**犬の壁に隠れている間に消える** */
-const gcDly=()=>GC?(GC.twist?GC_TWIST:(GC.dogs?GC_DOGS:0)):0;
+const gcDly=()=>GC?(GC.twist?GC_TWIST:0):0;
 /* ⭐★4以上を引いた回の内訳(2026-07-30ユーザー指示「ピラミッドにしよう」)。
    ✨黄金のロブスター20% / どんでん返し35% / 通常の最上位演出45%。
    ⚠**珍しい絵ほど出にくい**のが演出の基本=均等にすると「派手=当たり」の情報価値が消え、
@@ -31879,28 +31869,6 @@ function gcRays(c,cx,cy,R,n,rot,col,a){
   c.beginPath();c.moveTo(0,0);c.lineTo(R,-R*.055);c.lineTo(R,R*.055);c.closePath();c.fill();}
  c.restore();c.globalAlpha=1;
 }
-/* 🦴(128)喰われた跡=骨(頭骨+あばら+散らばった骨)。⚠**血は出さない**=喰い尽くされた後なので */
-function gcBones(c,ZX,ZY,k){
- const a=Math.min(1,k*2.2);if(a<=0)return;
- c.save();c.globalAlpha=a;
- c.fillStyle='#e8e2d0';c.strokeStyle=INK;c.lineWidth=3;
- /* 頭骨 */
- c.beginPath();c.arc(ZX-2,ZY-16,11,0,7);c.fill();c.stroke();
- c.fillStyle='#3a3128';
- c.beginPath();c.arc(ZX-6,ZY-18,2.6,0,7);c.fill();c.beginPath();c.arc(ZX+2,ZY-18,2.6,0,7);c.fill();
- /* あばら */
- c.fillStyle='#e8e2d0';c.strokeStyle=INK;
- c.beginPath();c.moveTo(ZX-1,ZY-6);c.lineTo(ZX+1,ZY+6);c.lineWidth=4;c.stroke();
- c.lineWidth=3;
- for(let i=0;i<3;i++){const y=ZY-3+i*5;
-  c.beginPath();c.moveTo(ZX-9,y);c.quadraticCurveTo(ZX,y-3,ZX+9,y);c.stroke();}
- /* 散らばった骨 */
- for(let i=0;i<4;i++){const a2=i*1.7+.6,r=16+i*4;
-  const bx=ZX+Math.cos(a2)*r*k,by=ZY+6+Math.sin(a2)*r*.4*k;
-  c.save();c.translate(bx,by);c.rotate(a2);
-  c.fillStyle='#e8e2d0';rr(c,-6,-1.6,12,3.2,1.6);c.fill();c.stroke();c.restore();}
- c.restore();c.globalAlpha=1;
-}
 /* ⭐木っ端みじん(衝撃の輪+肉片+地面の染み)。⚠肉片は落ちたら地面に転がしておく(消すと跡が残らない)。
    ⭐**どんでん返しでも同じ絵を使う**(2026-07-30)=「1回目=普通に爆散 / 2回目=金色のまま砕ける」で
      見た目の筋が通る。gold=1 で肉片と染みが金になる */
@@ -31976,13 +31944,10 @@ function gcDraw(){
   const stop=hit&&ft<GC_FLY+GC_HOLD;
   /* どんでん返しの進み(0→1)。前半=普通に爆散 / 後半=その跡から金色の個体が現れる */
   const twK=GC.twist?clamp((ft-GC_FLY-GC_HOLD)/dly,0,1):0;
-  /* 🐕(128)犬の軍勢の進み(0→1)。前半=当たったのに立ったまま / 犬が横切る / 後半=骨になる */
-  const dgK=GC.dogs?clamp((ft-GC_FLY-GC_HOLD)/dly,0,1):0;
   const rz9=GC.twist?clamp((twK-GC_TW_R)/(.85-GC_TW_R),0,1):0;/* 金色がせり上がる分 */
   /* ⚠**どんでん返しでも一度はちゃんと爆散する**(2026-07-30ユーザー指示)ので、
      立っているのは「当たる前」と「止めている一瞬」だけ */
-  /* ⚠🐕犬の軍勢は**喰われるまで立っている**(当たっても死なないのがこの演出の肝) */
-  const alive9=(!hit||stop||(GC.dogs&&dgK<GC_DOG_R));
+  const alive9=(!hit||stop);
   /* 肉片の散り方。⚠どんでん返しの1回目は途中で止める=跡が残っていないと出現の土台が無い */
   const bk9=(GC.twist&&twK<1)?Math.min(.5,twK/GC_TW_R*.5):hk;
   const mx=TX+64,my=TY-64,ex=ZX,ey=ZY-26;/* 銃口 → 的 */
@@ -32007,16 +31972,12 @@ function gcDraw(){
       ⚠どんでん返しは**当たるまで普通の姿**=見た目で先に割れてはいけない */
    if(GC.lob)gcGold(c,zidx,zsc,ZX,ZY,1,1.5);
    else{
-    /* 🐕当たったのに立っている間は**のけぞって震える**=「効いていないのに死なない」を体で言う */
-    const sh9=(GC.dogs&&hit)?Math.sin(GC.t*40)*3:0;
-    c.save();c.translate(ZX+sh9,ZY);c.scale(zsc,zsc);
-    try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{hitT:(GC.dogs&&hit&&dgK<.18)?1:0});}catch(e){}
+    c.save();c.translate(ZX,ZY);c.scale(zsc,zsc);
+    try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
     c.restore();}
   }else{
-   /* ⭐倒し方は確定で木っ端みじん。⚠どんでん返しの2回目は**金色のまま砕ける**
-      ⚠🐕犬の軍勢だけは**爆散させない**=喰われて骨になるので、跡地には骨を置く */
-   if(GC.dogs)gcBones(c,ZX,ZY,clamp((dgK-GC_DOG_R)/(1-GC_DOG_R),0,1));
-   else gcGib(c,ZX,ZY,bk9,Z,(GC.lob||(GC.twist&&twK>=1))?1:0);
+   /* ⭐倒し方は確定で木っ端みじん。⚠どんでん返しの2回目は**金色のまま砕ける** */
+   gcGib(c,ZX,ZY,bk9,Z,(GC.lob||(GC.twist&&twK>=1))?1:0);
    /* ⭐⭐どんでん返し: 爆発の跡から**金色の個体がせり上がる**(2026-07-30ユーザー指示
       「当たったらゾンビが爆発して金色のゾンビが現れる感じで」)。 */
    if(GC.twist&&rz9>0&&twK<1){
@@ -32077,25 +32038,6 @@ function gcDraw(){
      c.beginPath();c.moveTo(mx+Math.cos(a)*d,my+Math.sin(a)*d);
      c.lineTo(mx+Math.cos(a)*(d*.45),my+Math.sin(a)*(d*.45));c.stroke();}
     c.globalAlpha=1;c.lineWidth=3;}}
-  /* 🐕(128)犬の軍勢=**枝の外**で描く(立っている間も骨になった後も横切る) */
-  if(GC.dogs&&dgK>0.02&&dgK<.98){
-   const di9=ZOMBIES.findIndex(q=>q.id==='dog');
-   if(di9>=0)for(let i9=0;i9<GC_DOG_N;i9++){
-    const ph9=i9/GC_DOG_N;
-    const q9=clamp((dgK-.02-ph9*.30)/.42,0,1);
-    if(q9<=0||q9>=1)continue;
-    const dp9=((i9*7)%5)/4;/* 奥行き(奥ほど小さく上) */
-    const dx9=w*1.3-(w*1.75)*q9,dy9=ZY+22-dp9*44;
-    const ds9=1.05-dp9*.30;/* ⚠(136)一回り大きく=群れで的を隠す */
-    c.save();c.translate(dx9,dy9);c.scale(ds9,ds9);
-    try{drawZombie(c,di9,0,0,1,GC.t*3.2+i9,i9,{});}catch(e){}
-    c.restore();
-   }
-   c.globalAlpha=.22;c.fillStyle='#b9a67c';
-   for(let i9=0;i9<7;i9++){const q9=clamp((dgK-.05-i9*.05)/.6,0,1);if(q9<=0||q9>=1)continue;
-    c.beginPath();c.ellipse(w*1.25-(w*1.75)*q9,ZY+14,22,7,0,0,7);c.fill();}
-   c.globalAlpha=1;
-  }
   /* ---- 弾(GC_FLY秒かけて奥へ飛ぶ。奥へ行くほど小さくなる) ---- */
   if(fire&&ft<=GC_FLY+.04){
    const p=clamp(ft/GC_FLY,0,1),bx=mx+(ex-mx)*p,by=my+(ey-my)*p,sz=1-p*.55;

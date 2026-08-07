@@ -407,8 +407,6 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
           gnight/gmorn=背景の朝夜 / gfc=0..2 で「撃て!」の文字色(白/赤/虹) /
           glob=的が✨黄金のロブスター / gtwist=どんでん返し(しょぼい見た目から始まる) /
           ggold=金色に変わっていく途中 */
-       +(OPT.indexOf('gdogs')>=0?'if(GC){GC.dogs=1;GC.twist=0;GC.lob=0;GC.tw=GC.zk=1;GC.fc=0;GC.night=false;GC.best=4;}':'')
-       +((/gdogk=([0-9.]+)/.exec(OPT))?('if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+GC_DOGS*'+(/gdogk=([0-9.]+)/.exec(OPT))[1]+';GC.hit=1;}'):'')
        +(OPT.indexOf('gtwist')>=0?'if(GC){GC.twist=1;GC.lob=0;GC.tw=GC.zk=0;GC.fc=0;GC.night=false;GC.best=Math.max(4,GC.best);}':'')
        +(OPT.indexOf('glob')>=0?'if(GC){GC.lob=1;GC.twist=0;GC.tw=GC.zk=2;GC.fc=2;GC.night=true;GC.best=5;}':'')
        +(OPT.indexOf('gnight')>=0?'if(GC){GC.night=true;}':'')
