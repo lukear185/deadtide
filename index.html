@@ -4028,7 +4028,7 @@ const TOWERS=[
 /* 🧲⭐(197)**引力塔**=支援(2026-08-07ユーザー決定)。**進んだ敵を引き戻して1か所へ固める**。
     ⭐**すり抜ける敵も掴む**(道の上の位置そのものを動かすので、足の有無に関係ない)。
     ⚠**前進はさせない**=引き戻す方向にしか動かさない(集めるために敵を進めては本末転倒)。 */
- {id:'pullt',n:'引力塔',cost:380,up2:'pullt2',gc:3040,rng:230,dmg:4,rate:2.6,type:'net',slow:.5,slowT:1.4,pull:90,pulN:3,c:'#8f6fae',dsc:'範囲の敵を塔の位置まで引き戻して1か所に固める。すり抜ける敵も掴む'},
+ {id:'pullt',n:'引力塔',cost:380,up2:'pullt2',gc:3040,rng:230,dmg:4,rate:2.6,type:'net',slow:.5,slowT:1.4,pull:90,pulN:2,c:'#8f6fae',dsc:'範囲の敵を塔の位置まで引き戻して1か所に固める。すり抜ける敵も掴む'},
  /* 💡⭐(197)**照明塔**=支援。**自分は撃たず、照らした敵が受けるダメージを増やす**。
     ⭐弱点(×1.9)と掛け算になるので、その面の主役をさらに立てる働きをする。 */
  {id:'lamp',n:'照明塔',cost:420,up2:'lamp2',gc:3360,rng:260,dmg:2,rate:3,type:'net',slow:.15,slowT:.6,lit:3.5,c:'#e8c45a',dsc:'照らした敵が受けるダメージが上がる(強化で範囲も伸びる)。自分はほとんど撃たない'},
@@ -4121,8 +4121,8 @@ const TOWERS=[
  /* ⚡🧲💡(197)新しい3台の進化。⚠**進化は2段**(素→中段→最終形態)=全部の塔でそろえる決まり */
  {id:'bolt2',n:'大雷塔',base:'bolt',grd:1,up2:'bolt3',gc:5600,cost:700,rng:275,dmg:168,rate:1.25,type:'elec',chain:1,cmax:1,sky:1,c:'#a8dcef',dsc:'空から落ちる雷が一段と太い。単体への一撃が重い'},
  {id:'bolt3',n:'雷神の柱',base:'bolt',grd:1,cost:1580,rng:305,dmg:300,rate:1.1,type:'elec',chain:1,cmax:1,sky:1,c:'#d8f2ff',dsc:'空から柱のような雷を落とす。単体への一撃は最終兵器級'},
- {id:'pullt2',n:'重力塔',base:'pullt',grd:1,up2:'pullt3',gc:8240,cost:1030,rng:255,dmg:8,rate:2.4,type:'net',slow:.55,slowT:1.8,pull:140,pulN:4,c:'#a98fd0',dsc:'引き戻す力が強く、範囲も広い'},
- {id:'pullt3',n:'特異点塔',base:'pullt',grd:1,cost:2320,rng:285,dmg:16,rate:2.2,type:'net',slow:.6,slowT:2.2,pull:200,pulN:5,c:'#c9a1ff',dsc:'群れをまとめて後ろへ引きずり落とす。すり抜ける敵も掴む'},
+ {id:'pullt2',n:'重力塔',base:'pullt',grd:1,up2:'pullt3',gc:8240,cost:1030,rng:255,dmg:8,rate:2.4,type:'net',slow:.55,slowT:1.8,pull:140,pulN:3,c:'#a98fd0',dsc:'引き戻す力が強く、範囲も広い'},
+ {id:'pullt3',n:'特異点塔',base:'pullt',grd:1,cost:2320,rng:285,dmg:16,rate:2.2,type:'net',slow:.6,slowT:2.2,pull:200,pulN:3,c:'#c9a1ff',dsc:'群れをまとめて後ろへ引きずり落とす。すり抜ける敵も掴む'},
  {id:'lamp2',n:'探照灯',base:'lamp',grd:1,up2:'lamp3',gc:9040,cost:1130,rng:290,dmg:4,rate:2.8,type:'net',slow:.2,slowT:.8,lit:5,c:'#ffd97a',dsc:'照らし続ける時間が長い。範囲の敵が受けるダメージが上がる'},
  {id:'lamp3',n:'灼光塔',base:'lamp',grd:1,cost:2540,rng:320,dmg:8,rate:2.6,type:'net',slow:.25,slowT:1,lit:7,c:'#fff0b8',dsc:'照らされた敵は長くもろいまま。弱点を突く塔と噛み合う'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
@@ -4383,7 +4383,10 @@ const twSlowV=(T,tw)=>Math.max(.30,(1-(T.slow||.45))-.05*usEff((tw&&tw.us&&tw.us
 /* 🧲⭐**同じ敵を掴める回数**(2026-08-07ユーザー「引力塔を最大強化すると敵が一切前に行けなくなる」)。
    ⚠⚠**回数で止めるのが要**=連射を買うほど掴む間隔が縮み、**永久に前へ進めなくなっていた**。
      ❄冷却塔で先に通った手当て(`frzUsed`)と同じ考え方。⭐掴む力そのものは触っていない。 */
-const twPulN=(T,tw)=>(T.pulN||3)+Math.round(usEff((tw&&tw.us&&tw.us.pl)||0));
+/* ⚠⚠(204e)**1回目の手当てでは足りなかった**(2026-08-07ユーザー実機「引力は強すぎるよまだ」)=
+   ⭐**回数を減らし、伸びも半分にした**(1段ごと+1 → 2段ごと+1)。素3→2 / 中段4→3 / 最終5→3、
+     強化で+2まで=**最終形態でも5回**(前は10回)。 */
+const twPulN=(T,tw)=>(T.pulN||2)+Math.floor(usEff((tw&&tw.us&&tw.us.pl)||0)*.5);
 /* 💡もろさ=照らされた敵が受けるダメージの倍率。1段ごとに+0.06倍 */
 const twLitX=(T,tw)=>LIT_X+.06*usEff((tw&&tw.us&&tw.us.li)||0);
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
@@ -20816,7 +20819,14 @@ function campStep(C,dt,wave){
     /* 🧲(197)引き戻す。⚠**前へは動かさない**=塔より手前の敵はそのまま。
        ⚠⚠(204d)**同じ敵を掴めるのは twPulN 回まで**=これが無いと連射を買うほど間隔が縮み、
          敵が**一度も前へ進めなくなる**(2026-08-07ユーザー実機)。⭐掴む力そのものは据え置き。 */
-    if(T.pull&&z.d>pd9&&(z.pulUsed||0)<twPulN(T,tw)){z.d=Math.max(pd9,z.d-T.pull);z.stnT=Math.max(z.stnT||0,.35);
+    /* ⚠⚠⭐(204e)**凍っている敵は引き戻せない**(2026-08-07ユーザー実機「冷凍と合わせたら動けない」)。
+       ⭐**足し算になっていたのが原因**=❄が足を止め、🧲がその間に何度も巻き戻すので、
+         どちらの上限にも掛からないまま**一歩も進まない**状態が作れていた。
+       ⭐**地面に凍り付いた物は掴めない**=絵でも読める理屈で、掛け合わせを断ち切れる。
+       ⚠**気絶(stnT)も同じ**=掴んだ本人が付けた気絶で二度掴みするのを防ぐ。
+       ⚠(204e)**気絶は0.35→0.15秒**=1回ごとの足止めも積み上がっていた。 */
+    if(T.pull&&z.d>pd9&&!(z.frzT>0)&&!(z.stnT>0)&&(z.pulUsed||0)<twPulN(T,tw)){
+     z.d=Math.max(pd9,z.d-T.pull);z.stnT=Math.max(z.stnT||0,.15);
      z.pulUsed=(z.pulUsed||0)+1;
      if(FXLV>0)addP(C,2,z.px,z.py-14*CH_UP,{sp:60,a:Math.atan2(sy-z.py,sx-z.px),spread:.5,g:0,life:.25,r:2,col:'#c9a1ff'});}
     /* 💡(197)照らす=受けるダメージが上がる。⚠(204d)**倍率も敵に持たせる**(💡もろさの強化ぶん) */
