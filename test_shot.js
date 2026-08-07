@@ -51,12 +51,25 @@ const BR=BROWSERS.find(p=>fs.existsSync(p));
 if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf-8');
 /* @media (pointer:coarse){...} を全部取り出す(入れ子の}を数えて閉じ位置を見つける) */
-function coarseCSS(s){
- const k='@media (pointer:coarse){';let out='',from=0;
- for(;;){const i=s.indexOf(k,from);if(i<0)break;
-  let d=1,j=i+k.length;
-  while(j<s.length&&d>0){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}
-  out+=s.slice(i+k.length,j-1)+'\n';from=j;}
+function coarseCSS(s,w){
+ /* ⚠(205)**`@media (pointer:coarse) and (max-width:NNNpx)` も拾う**=拾わないと、
+    狭い端末用の指定だけ当たらない絵を見て「直っている」と思い込む(実際にそうなりかけた)。 */
+ const KS=['@media (pointer:coarse){','@media (pointer:coarse) and (max-width:'];
+ let out='';
+ for(const k of KS){let from=0;
+  for(;;){const i=s.indexOf(k,from);if(i<0)break;
+   let st=i+k.length;
+   if(k.indexOf('max-width')>=0){
+    const m=/^(\d+)px\)\{/.exec(s.slice(st));
+    if(!m){from=i+k.length;continue;}
+    st+=m[0].length;
+    if(w&&w>+m[1]){/* この幅では当たらない=中身を飛ばす */
+     let d=1,j=st;while(j<s.length&&d>0){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}
+     from=j;continue;}
+   }
+   let d=1,j=st;
+   while(j<s.length&&d>0){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}
+   out+=s.slice(st,j-1)+'\n';from=j;}}
  return out;}
 const VS=OPT.indexOf('vs')>=0;/* vs = 対戦(空き枠はCPU)を撮る */
 /* 🎓(195)tut=<段のid>[:aim] = チュートリアルのその段を撮る(例 tut=flag / tut=strike:aim) */
@@ -194,7 +207,7 @@ const IVW=(/(^|\+)iv=(\d+)/.exec(OPT)||[])[2]||0;
 const RE2=/(^|\+)re2(\+|$)/.test(OPT);
 /* 🎬(201)op / op=logo / op=<秒> = 起動の幕(開発名→オープニング)を撮る */
 const OPM=/(^|\+)op(?:=(logo|[0-9.]+))?(\+|$)/.exec(OPT);
-const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
+const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
  +'<scr'+'ipt>setTimeout(function(){try{'
  /* 🎓チュートリアルの自動起動を止める。⚠これが無いと、起動0.6秒後に勝手に始まって
     タイトルや研究所の撮影が全部チュートリアルの絵になる(tut オプションは自分で呼ぶので影響なし) */

@@ -551,7 +551,11 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  #zbar2 .zk{font-size:11px;padding:2px 6px}}
 /* 画面下の操作バー: 🚩集結旗・🎯航空支援・出撃デッキ・🌊押す を一列にまとめる。
    フィールドの上にボタンを浮かせないぶん、マップを画面いっぱいまで広げられる */
-#abar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
+/* ⭐⭐(205)**役割で端に貼る**(2026-08-07ユーザー「スマホの大きさで位置が変わる」)=
+   **🚩🎯は左端 / ユニットの札は真ん中 / 諦める🔊は右端**。
+   ⚠**中央寄せ(justify-content:center)だと、札の枚数と画面の幅でボタンが左右に動く**ので、
+     端末ごとに親指の置き場が変わっていた。⭐真ん中の札だけを伸び縮みさせれば両端は動かない。 */
+#abar{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none;
  padding:4px max(6px,env(safe-area-inset-right)) max(4px,calc(env(safe-area-inset-bottom) - 12px)) max(6px,env(safe-area-inset-left))}
 #abar>*{pointer-events:auto;flex:0 0 auto}
 #flagbtn,#strikebtn,#pushbtn,#herobtn{width:58px;height:58px;border-radius:50%;border:3px solid var(--paper);color:var(--pane);font-weight:900;box-shadow:0 3px 0 #000}
@@ -575,8 +579,14 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 #pushtgt{align-self:flex-end;margin-top:3px;background:rgba(36,31,25,.88);border:2px solid var(--paper);border-radius:10px;color:var(--paper);font-size:11px;padding:4px 9px;font-weight:900;display:none}
 #strikehint{position:absolute;left:12px;bottom:78px;color:var(--pane);font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
 #flaghint{position:absolute;left:12px;bottom:98px;color:var(--pane);font-size:12px;font-weight:900;text-shadow:1px 1px 0 #000;display:none;z-index:6}
-#deck{display:flex;gap:5px;overflow-x:auto;flex:0 1 auto;padding-bottom:2px}
-#deck .dk{position:relative;flex:0 0 auto;width:62px;height:78px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:2px 0 0;overflow:hidden}
+/* ⚠(205)**真ん中で伸び縮みするのは札だけ**=`flex:1` にして中身を中央寄せにする。
+   ⚠**空の時に伸ばさない**(🚌開拓便は札を出さない面なので、伸ばすと右端の並びが崩れる)。 */
+/* ⚠**`safe center`**=入り切っている時は真ん中・**溢れた時は左端から**見せる。
+   ⚠ただの center だと、溢れた時に**真ん中までスクロールした状態**で始まり、1枚目が隠れる(撮って気づいた)。 */
+#deck{display:flex;gap:5px;overflow-x:auto;flex:1 1 auto;justify-content:safe center;padding-bottom:2px;min-width:0}
+#deck:empty{flex:0 0 auto}
+body.bns #deck{flex:0 0 auto}
+#deck .dk{position:relative;flex:0 0 auto;width:var(--dkw,62px);height:78px;border-radius:10px;border:2px solid var(--paper);background:var(--pane);box-shadow:0 3px 0 #000;padding:2px 0 0;overflow:hidden}
 #deck .dk canvas{width:56px;height:42px;display:block;margin:0 auto}
 /* ユニット名は下から2段目の黒帯に白文字で出す(淡色カードに黒文字だと潰れて読めないため) */
 #deck .dk .dn{position:absolute;left:0;right:0;bottom:15px;display:block;font-size:12px;font-weight:900;color:var(--pane);background:rgba(36,31,25,.9);line-height:16px;height:16px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.3px}
@@ -601,7 +611,7 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  /* ⚠基本ユニット8種+🚩🎯+諦める+🔊 が横に収まる幅にしてある(ユニットを増やしたら要再計算) */
  #abar{gap:5px;padding:3px max(4px,env(safe-area-inset-right)) max(3px,calc(env(safe-area-inset-bottom) - 14px)) max(4px,env(safe-area-inset-left))}
  #deck{gap:3px}
- #deck .dk{width:48px;height:72px}
+ #deck .dk{width:var(--dkw,48px);height:72px}
  #deck .dk canvas{width:42px;height:32px}/* ⚠サムネは104x78=4:3。36pxだと縦に伸びる */
  #deck .dk .dn{font-size:12px;line-height:15px;height:15px;bottom:14px}
  #deck .dk .dc{font-size:11px;line-height:14px;height:14px}
@@ -610,6 +620,23 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  #flagbtn{font-size:22px}
  #strikebtn{font-size:24px}
  #pushbtn,#herobtn{font-size:11px}
+ /* 🃏(205)札の幅の上限(ここから deckFit が引く)。⚠**下限44は JS 側**(押す所の物差し) */
+ #deck{--dkmax:48px}
+}
+/* 📏⭐⭐(205)**幅の狭い端末はもう一段だけ詰める**(667pxのような小さい横画面)。
+   ⚠⚠**上の @media (pointer:coarse) が既に上の札を小さくしている**=
+     ここに同じ物を書くと**後ろが勝って逆に大きくなる**(2026-08-07に実際そうなって撮って気づいた)。
+     ⭐**必ず「いまの値より小さい値」だけ書くこと**。
+   ⚠**押す所と文字の下限は守る**=縮めるのは余白と棒の長さだけ(文字は10.5px以上)。 */
+@media (pointer:coarse) and (max-width:820px){
+ #topbar{gap:3px;padding:3px}
+ .hudpanel{gap:3px;padding:2px 5px}
+ #wavebadge{min-width:112px}
+ #wprog{width:34px}
+ #corebar{width:32px}
+ #abar{gap:4px}
+ #flagbtn,#strikebtn,#pushbtn,#herobtn{width:48px;height:48px}
+ #abar #ffwave,#abar #mutebtn{height:50px;padding:0 7px}
 }
 #bigbanner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:7}
 #bigbanner span{font-size:min(10vw,54px);font-weight:900;color:var(--pane);text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 rgba(0,0,0,.4);animation:bpop .9s ease}
@@ -1108,7 +1135,7 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 /* ---- インターバル ---- */
 #interv{position:fixed;inset:0;background:rgba(20,16,12,.8);display:none;align-items:flex-start;justify-content:center;z-index:30;overflow:auto;padding:12px 8px 24px}
 #interv.on{display:flex}
-.ivpanel{width:min(600px,96vw);max-height:94vh;overflow:auto;background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 8px 0 #000;padding:12px}
+.ivpanel{width:min(600px,96vw);max-height:min(94vh,calc(var(--appH,94vh) * .94));overflow:auto;background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 8px 0 #000;padding:12px}
 .ivhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .ivtimer{width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--rust) 0%,var(--paper2) 0);border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;flex-shrink:0}
 .ivhead .t{font-size:18px;font-weight:900}
@@ -1129,6 +1156,27 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
 .chips .btn{font-size:10px;padding:3px 6px;box-shadow:0 2px 0 var(--ink)}
 #ivlog{margin-top:8px;font-size:11px;font-weight:700;line-height:1.7;max-height:76px;overflow:auto;background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:6px}
 #ivready{width:100%;margin-top:8px;font-size:18px}
+/* 📏⭐(205)**縦の短い横画面(393px)では作戦タイムを詰める**=それまで**2段目の札が必ず切れて**
+   スクロールしないと見えなかった(撮って気づいた)。⚠**押す所(買うボタン)は縮めない**=44pxの物差し。
+   ⚠**縮めるのは余白と見出しと絵文字だけ**。文字は10.5px以上。 */
+@media (max-height:470px){
+ #interv{padding:6px 6px 10px}
+ .ivpanel{padding:8px}
+ .ivhead{gap:8px;margin-bottom:5px}
+ .ivtimer{width:40px;height:40px;font-size:15px;border-width:2px}
+ .ivhead .t{font-size:15px}
+ .ivhead .en{padding:3px 8px}
+ .hazard{height:5px}
+ .cards{gap:5px}
+ .card{padding:5px;gap:2px}
+ /* ⚠**買うボタンは44pxを割らない**(押す所の物差し)=高さは固定して、余白と文字だけ詰める */
+ .card .buy{min-height:44px;padding:6px 8px;font-size:14px;box-shadow:0 3px 0 var(--ink)}
+ .card .ci{font-size:17px;line-height:1.1}
+ .card .ct{font-size:12px}
+ .card .cdsc{font-size:10.5px;line-height:1.3;min-height:0}
+ #ivlog{margin-top:6px;max-height:52px}
+ #ivready{margin-top:6px}
+}
 /* ---- 🎓 チュートリアル(2026-07-26 第86弾) ----
    ⚠**画面の上に置く**。光らせる相手(デッキ・🚩・🎯・✅配置完了)はどれも下端にあるので、
      下に置くと自分で隠してしまう。上のHUD(〜y50)は避けて y54 から。
@@ -21651,13 +21699,24 @@ let SC=1,SCY=1,OX=0,OY=0,DPR=1;
 function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||innerHeight||460;DPR=Math.min(MOBILE?1.5:2,window.devicePixelRatio||1);const W=Math.round(w*DPR),H=Math.round(h*DPR);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
  const band=Math.round(barBandPx()*DPR);/* 下の操作バーぶん＝ここにマップは入れない(タレット置き場と絶対に被らせない) */
  const rres=Math.round(minisResPx()*DPR);/* 対戦のミニ盤面ぶんの右余白(ソロ・協力では0) */
+ /* ⚠⚠⭐(205)**上の札(WAVE・拠点・⚙️…)ぶんの帯も空ける**(2026-08-07ユーザー実機
+    「waveとかギアとかのUIが画面一番上じゃなくてちょっと下にずれてて、工房のとこが隠れてる」)。
+    ⭐**原因は「下の帯しか引いていなかった」こと**=横に細い画面ほど倍率が幅で決まるので、
+      地面の上端が画面の上へせり上がり、**画面の上に貼ってある札の裏に潜っていた**
+      (廃品工房の枠はマップのいちばん上=y211 にあるので、真っ先に隠れる)。
+    ⚠**🎥カメラを使う面(🚌開拓便)では引かない**=あちらは寄って見る面なので、
+      帯を引くと倍率が下がって「バスがちっちゃい」の却下済みの形へ逆戻りする。 */
+ const tband=CAM?0:(Math.round(topBandPx()*DPR)||0);/* ⚠NaN は0に落とす(倍率をNaNにしない) */
  const availW=Math.max(160,W-rres),availH=Math.max(90,H-band);
  /* ⭐ミニ盤面がある時(対戦)は、マップ矩形ではなく**道路の右端(PMAXX)**まで収める(2026-07-26ユーザー指示)。
     ⚠侵入路はマップ矩形の外(x>MW)にあるため、MWだけを基準にすると助走路がミニ盤面の下へ潜る。
     ⚠ソロ/協力(rres=0)では今までどおりMW基準=マップは1pxも縮まない */
  const wantW=rres>0?PMAXX:MW;
  /* 空(上端SKYH)は画面の外へはみ出してよい＝そのぶん地面を大きく使う。ただし地平線の帯(SKYKEEP)は必ず残す */
- SC=Math.min(availW/wantW,availH/(MH-SKYH+SKYKEEP));
+ /* ⚠⚠(205)**3つ目の縛り=「マップの中身の上端」を上の札より下に置く**。
+    ⭐**空と地平線は札の裏へ潜ってよい**(飾りなので)=そこまで避けると盤面が1割以上小さくなる。
+    ⭐**避けるのは `KEEPY` より下**=道の上端(y175-半幅52=123)と建設マス(y205-半分32=173)が入る高さ。 */
+ SC=Math.min(availW/wantW,availH/(MH-SKYH+SKYKEEP),(availH-tband)/(MH-KEEPY));
  SCY=SC;/* ⚠既定は縦横同じ。潰すのは camApply の中(🎥カメラを使う面)だけ */
  /* 中央寄せが基本。ただし道路の右端がミニ盤面に届く時は、その分だけ左へ寄せる */
  OX=Math.min((availW-MW*SC)/2,availW-wantW*SC);
@@ -21665,7 +21724,7 @@ function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||
  if(oy>0)oy*=.5;/* 縦に余る画面(PC等)では中央へ */
  OY=oy;
  /* 🎥カメラ(下の節)が使う値を控えておく。⚠CAM が null の間は何も起きない */
- SC0=SC;VW=availW;VH=availH;camApply();}
+ SC0=SC;VW=availW;VH=availH;VT=tband;camApply();deckFit();/* ⚠中で握り潰してあるので裸で呼ぶ */}
 /* ============ 🎥 カメラ(見ている点に追従してマップを見せる) ============
    ⭐⭐**🚌開拓便のための土台**(2026-08-02ユーザー指示で先に作った)。
    ⚠⚠**本編は今までどおり「マップ全体が必ず画面に収まる」**=`CAM` が null の間は
@@ -21676,7 +21735,9 @@ function fitCanvas(){const w=cv.clientWidth||innerWidth||360,h=cv.clientHeight||
    ⚠**マップの外を映さない**=端まで来たら寄せを止める(画面の外に何も無い帯を見せない)。
    ⚠**画面に収まってしまう向きは中央寄せに戻す**=でないと端でカメラが震える。 */
 let CAM=null;        /* {x,y,zm,sx,sy}=いま見ている点 / 倍率 / 追いかける先。null=全景(いつもの面) */
-let SC0=1,VW=0,VH=0; /* fitCanvas が出した「全景に収める」倍率と、使える画面の大きさ(デバイスpx) */
+let SC0=1,VW=0,VH=0,VT=0; /* fitCanvas が出した「全景に収める」倍率と、使える画面の大きさ(デバイスpx) */
+/* ⚠(205)`VT`=**上の札ぶんの帯**(デバイスpx)。⚠**画面の座標を出す所は必ずこれを足す**
+   =忘れると盤面だけ下がって、寄せた時の中心と当たり判定がずれる。 */
 const CAM_LERP=6;    /* 追従の速さ(1秒あたり)。⚠速すぎると酔う/遅すぎると置いていかれる */
 /* ⚠**sq=縦だけの潰し**(1=潰さない)。⚠**走行中に動かさない**(SCが変わると焼いた地形を全部捨てる) */
 function camOn(x,y,zm,sq){CAM={x:x,y:y,zm:zm||2.2,sq:sq||1,sx:x,sy:y,lvx:0,lvy:0};}
@@ -21709,11 +21770,25 @@ function camApply(){
  /* ⚠**寄せの範囲はいま遊んでいる面の広さ(MAPW/MAPH)**=MW/MH で切ると広い面の端まで行けない */
  const mw=MAPW*SC,mh=MAPH*SCY;
  OX=(mw<=VW)?(VW-mw)/2:clamp(VW/2-CAM.x*SC,VW-mw,0);
- OY=(mh<=VH)?(VH-mh)/2:clamp(VH/2-CAM.y*SCY,VH-mh,0);
+ OY=VT+((mh<=VH)?(VH-mh)/2:clamp(VH/2-CAM.y*SCY,VH-mh,0));/* ⚠(205)上の札ぶんの帯を足す */
 }
 const SKYH=108,SKYKEEP=36;/* マップ上端の空の帯/そのうち画面に必ず残す高さ(地平線と廃墟の足元) */
+/* ⭐(205)**上の札より下に必ず置くマップのy**=道の上端(175-52=123)と建設マス(205-32=173)が入る高さ。
+   ⚠**これより上(空と地平線)は札の裏へ潜ってよい**=そこまで避けると盤面が1割以上小さくなる。 */
+const KEEPY=118;
 /* 画面下端から操作バーの上端までの高さ(CSSpx)。実測できない時は既定値 */
-let BARBAND=70,BARBT=-9,MINIRES=0,MINIT=-9;
+let BARBAND=70,BARBT=-9,MINIRES=0,MINIT=-9,TOPBAND=46,TOPBT=-9;
+/* ⭐(205)**画面の上端から、上の札の下端までの高さ**(CSSpx)。マップはここより下にだけ入れる。
+   ⚠**実測する**=札の大きさは画面の幅で変わる(下の @media)ので、決め打ちにすると必ずずれる。 */
+function topBandPx(){
+ const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
+ if(now-TOPBT<400)return TOPBAND;TOPBT=now;
+ try{const d=$('topbar'),r=d&&d.getBoundingClientRect();
+  /* ⚠**`bottom` が数字であることまで見る**=作り物のDOM(検査)では undefined が返り、
+     そのまま掛けると**倍率が丸ごと NaN**になって盤面が消える(2026-08-07に検査で捕まえた)。 */
+  if(r&&r.height>4&&isFinite(r.bottom))TOPBAND=Math.ceil(Math.max(0,r.bottom)+4);
+ }catch(e){}
+ return TOPBAND;}
 function barBandPx(){
  const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
  if(now-BARBT<400)return BARBAND;BARBT=now;
@@ -24184,7 +24259,34 @@ function buildDeck(){const w=$('deck');w.innerHTML='';DECKB=[];DECKI=[];
   b.innerHTML=`<canvas width="${UTHW}" height="${UTHH}"></canvas><span class="dn">${U.n}</span><span class="dc">${IC('⚙️')}${U.cost}</span><i class="cdov"></i><span class="lk">${IC('🔒')}</span>`+(U.hook?'<span class="hk">🛡</span>':'');
   const cc=b.querySelector('canvas');if(cc&&UTHUMBS[i])cc.getContext('2d').drawImage(UTHUMBS[i],0,0);
   b.onclick=()=>actDeploy(i);
-  w.appendChild(b);DECKB.push(b);DECKI.push(i);}}
+  w.appendChild(b);DECKB.push(b);DECKI.push(i);}
+ deckFit();}
+/* 🃏⭐⭐(205)**ユニットの札は「入る幅」に合わせて縮める**(2026-08-07ユーザー
+     「スマホの大きさで位置が変わる」)=**小さい端末で横スクロールになり、
+     後ろの数枚が戦闘中に出せなかった**(667pxでは8枚までしか見えていない)。
+   ⚠⚠**下限は44**=押す所の物差し(この企画は44px)。それ以下には絶対に縮めない
+     =入り切らない端末では今までどおり指でずらす。⭐**縮めるのは幅だけ**(高さは変えない)。
+   ⚠**両端のボタンぶんを引いた「札に使える幅」で数える**=画面の幅で数えると必ず溢れる。 */
+const DK_MIN=44;
+function deckFit(){
+ try{
+  const d=$('deck');if(!d)return;
+  const n=d.children.length;if(!n){d.style.removeProperty('--dkw');return;}
+  const cs=getComputedStyle(d),gap=parseFloat(cs.gap)||3;
+  const mx=parseFloat(cs.getPropertyValue('--dkmax'))||(MOBILE?48:62);
+  /* ⚠**自分の幅ではなく「兄弟を除いた残り」で測る**=自分は flex:1 なので、
+     いまの幅は前回の札の幅に引きずられる(測るたびに縮み続ける)。 */
+  const bar=$('abar');if(!bar)return;
+  const bs=getComputedStyle(bar),bgap=parseFloat(bs.gap)||8;
+  let side=0,kids=0;
+  for(const c of bar.children){if(c===d)continue;
+   const r=c.getBoundingClientRect();if(r.width<1)continue;side+=r.width;kids++;}
+  const pad=parseFloat(bs.paddingLeft)+parseFloat(bs.paddingRight);
+  const avail=Math.max(80,(bar.clientWidth||innerWidth)-pad-side-bgap*(kids+1));
+  const w=clamp(Math.floor((avail-gap*(n-1))/n),DK_MIN,mx);
+  d.style.setProperty('--dkw',w+'px');
+ }catch(e){}
+}
 /* ソロ限定: ウェーブ放棄=残敵+出現予定分のコアダメージを受けて即・作戦タイムへ */
 function giveUpDmg(me){let d=0;for(const z of me.zombies)if(!z.dead)d+=z.dmg;if(G)for(const e of G.tide.pool)d+=e.z.dmg;return d;}
 /* 放棄しても工房の取りこぼしが出ないよう、残り時間ぶんの生産を先に精算する */

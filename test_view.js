@@ -36,12 +36,25 @@ if(!BR){console.log('ChromeもEdgeも見つからない');process.exit(1);}
 const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf-8');
 /* ⚠ヘッドレスChromeでは @media (pointer:coarse) が効かない=スマホ用CSSを条件なしで後ろに足す
    (test_shot.js と同じ理屈。これを忘れると**実機と違う寸法**を測って嘘の結果になる) */
-function coarseCSS(s){
- const k='@media (pointer:coarse){';let out='',from=0;
- for(;;){const i=s.indexOf(k,from);if(i<0)break;
-  let d=1,j=i+k.length;
-  while(j<s.length&&d>0){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}
-  out+=s.slice(i+k.length,j-1)+'\n';from=j;}
+function coarseCSS(s,w){
+ /* ⚠(205)**`@media (pointer:coarse) and (max-width:NNNpx)` も拾う**=拾わないと、
+    狭い端末用の指定だけ当たらない絵を見て「直っている」と思い込む(実際にそうなりかけた)。 */
+ const KS=['@media (pointer:coarse){','@media (pointer:coarse) and (max-width:'];
+ let out='';
+ for(const k of KS){let from=0;
+  for(;;){const i=s.indexOf(k,from);if(i<0)break;
+   let st=i+k.length;
+   if(k.indexOf('max-width')>=0){
+    const m=/^(\d+)px\)\{/.exec(s.slice(st));
+    if(!m){from=i+k.length;continue;}
+    st+=m[0].length;
+    if(w&&w>+m[1]){/* この幅では当たらない=中身を飛ばす */
+     let d=1,j=st;while(j<s.length&&d>0){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}
+     from=j;continue;}
+   }
+   let d=1,j=st;
+   while(j<s.length&&d>0){if(s[j]==='{')d++;else if(s[j]==='}')d--;j++;}
+   out+=s.slice(st,j-1)+'\n';from=j;}}
  return out;}
 
 /* ---- 測る場面 ----
@@ -212,7 +225,7 @@ const inj='<scr'+'ipt>\n'
 
 const tmp=path.join(os.tmpdir(),'dt_view_'+W+'x'+H+'.html');
 fs.writeFileSync(tmp,html.replace('</body>',
- '<style>'+coarseCSS(html)+'</style>'+inj+'</body>'));
+ '<style>'+coarseCSS(html,W)+'</style>'+inj+'</body>'));
 
 /* ⚠⚠**`--window-size` は窓の外枠**=中身(innerWidth/innerHeight)はそれより小さい
    (実測で 852x393 を頼むと 836x298 になった=**95pxも違う**)。

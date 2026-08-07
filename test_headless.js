@@ -2882,6 +2882,9 @@ function checkCam(){
  fitCanvas();const sc0=SC,ox0=OX,oy0=OY;
  fitCanvas();
  if(SC!==sc0||OX!==ox0||OY!==oy0){console.log('FAIL: カメラ無しなのに毎フレーム値が変わる');process.exit(1);}
+ /* ⚠(206)**NaN を「変わっていない」で見逃さない**=NaN!==NaN なのでこの比較には引っかかるが、
+    出た値そのものも見ておく(帯の実測が undefined を掴むと倍率が丸ごと NaN になる)。 */
+ if(!isFinite(SC)||!isFinite(OX)||!isFinite(OY)){console.log('FAIL: 倍率か原点が数字になっていない SC='+SC+' OX='+OX+' OY='+OY);process.exit(1);}
  backTitle();
  META.stg=0;setDiff=BNS_D;startSolo();bnsPreSkip();
  if(!CAM){console.log('FAIL: 開拓便でカメラが入らない');process.exit(1);}
