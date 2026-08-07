@@ -3847,8 +3847,8 @@ function obDrum(t0,f0,f1,dur,vol,dest){
 /* 1小節ぶんを積む。i=通し番号(4で1周) */
 function obBar(i,t0,dest){
  const C=OB_CH[i%4],lp=Math.floor(i/4);
- obBass(t0,C.b,OB_BAR*.92,lp?.055:.042,dest);
- for(const f of C.p)obPad(t0,f,OB_BAR*.86,lp?.030:.021,dest);
+ obBass(t0,C.b,OB_BAR*.92,lp?.055:.052,dest);
+ for(const f of C.p)obPad(t0,f,OB_BAR*.86,lp?.030:.027,dest);
  /* 2周目から旋律。⭐4周目は**オクターブ上も重ねる**(最後だけ厚くする) */
  if(lp>=1)for(const m of OB_MEL[i%4]){
   obLead(t0+m[2]*OB_BEAT,m[0],m[1]*OB_BEAT,.046,dest);
@@ -3864,8 +3864,13 @@ function obgmOn(){
  try{
   const t=AC.currentTime,V=VOL.all*VOL.bgm;
   const out=AC.createGain();out.gain.setValueAtTime(.0001,t);
-  /* ⚠**ゆっくり立ち上げる**=いきなり鳴ると幕の頭が驚く */
-  out.gain.linearRampToValueAtTime(V*.95,t+1.6);
+  /* ⚠**ゆっくり立ち上げる**=いきなり鳴ると幕の頭が驚く。
+     🔊⚠⚠**倍率が4.0なのは間違いではない**(2026-08-07(202)ユーザー「ムービーのBGMもっとでかくていい
+       タイトル画面のBGMのほうがでかい」)=**この曲は音を伸ばして重ねる作り**なので、
+       1本ずつの山が低く、素のままだとタイトルBGM(短い音を強く鳴らす)の半分以下にしか聞こえない。
+     📌**実測**(出口の山・1.0で割れる)=入りの静かな所 0.357 / 一番厚い所 0.582。
+     ⚠**ここを触ったら必ず測り直す**(解析器を `OPA.out` に繋いで山を見る)。 */
+  out.gain.linearRampToValueAtTime(V*4.0,t+1.6);
   out.connect(AC.destination);
   const S=[];/* 止める時に使う(鳴らしっぱなしの物は全部ここへ) */
   if(!NZBUF){const n=Math.floor(AC.sampleRate*2),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);
