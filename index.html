@@ -4374,7 +4374,9 @@ const ZOMBIES=[
     ⚠難易度側の `boss` 倍率(古参1.0〜ナイトメア1.6)はこの上に掛かる。 */
  {id:'jug',n:'ジャガーノート',hp:1400,sp:40,bt:400,dmg:10,boss:1,armor:1,mw:5,sc:2.1,atk:160,ar:1.2,aoe:5,c:'#c14b3e'},
  /* ===== ナイトメア専用: 変異した獣たち(nm:1 の個体は通常の波には出ない) ===== */
- {id:'nmRat',n:'巨鼠の群れ',hp:95,sp:205,bt:26,dmg:1,mw:1,nm:1,w:1.2,sc:.8,atk:22,ar:.35,c:'#6b5f4a'},
+ /* 🌑⭐(204)**獣をやめて「①の敵の黒ずんだ強化版」へ**(1体目)。⚠**id は変えない**(📖図鑑が覚えている)。
+    ⚠**強さの数値は1つも触っていない**=変えたのは名前と大きさ(見た目だけ)と絵。仕組みは `NMB`。 */
+ {id:'nmRat',n:'爛れた走者',hp:95,sp:205,bt:26,dmg:1,mw:1,nm:1,w:1.2,sc:.9,atk:22,ar:.35,c:'#656332'},
  {id:'nmBoar',n:'変異猪',hp:430,sp:150,bt:64,dmg:3,mw:1,nm:1,w:.7,sc:1.2,aoe:2,atk:73,ar:1,c:'#7a5a3a',dsc:'牙で2体まとめて薙ぎ払う'},
  {id:'nmSpid',n:'肉蜘蛛',hp:260,sp:88,bt:58,dmg:2,mw:2,nm:1,noblock:1,w:.55,sc:1.05,atk:0,ar:9,c:'#4a3a5a'},
  /* ⛔(199)ユーザー指示「空飛ぶやつは3面から出てくるようにするから」=①のNMから外した */
@@ -6177,6 +6179,89 @@ function flatLayer(c){
     t.stroke.apply(t,arguments);t.restore();};
    const v=t[k];return typeof v==='function'?v.bind(t):v;},
   set(t,k,v){t[k]=v;return true;}});
+}
+/* ===== 🌑⭐⭐⭐ナイトメアの敵=「①の敵の黒ずんだ強化版」(2026-08-07(204)から1体ずつ) =====
+   ⚠**それまでは変異した獣**(巨鼠・猪・蜘蛛・熊…)だった=**弱点が読めない**のが理由で作り替え
+     (獣は装甲を82%持っているのに、絵のどこにも装甲が見えなかった)。
+   ⭐やり方は3つ。**どれも1か所で8体ぶんに効く**([[NOTES_絵]]の「共通の道具に差す」と同じ考え):
+     ①`NMB` に「素のどの敵の写しか」を書く=`drawZombie` の頭で **id を素の敵へ差し替える**。
+       ⚠**表(ZOMBIES)の id は変えない**=📖図鑑は id で覚えているので、変えると記録が全部飛ぶ。
+     ②色は **`nmSootLayer`(層)** で塗る側をまとめて煮しめる=`Z.c` も服(`ZW`)も
+       体の中の生の色も**全部まとめて**暗くなる。⚠層にしたのは、体ごとに色を書き換えると
+       `ZW` を書き戻す所が枝の数だけ要るため(2度描きの層と同じ作り)。
+     ③`nmMut` で **1体ずつ違う「変異した部位」**を体の後ろに足す。
+       ⚠⚠これが無いと検査 `checkZLook`(同じ形のゾンビを落とす)が必ず落ちる。
+   ⚠**強さの数値は1つも触らない**=写すのは絵だけ。 */
+const NM_ON=true;
+const NMB={nmRat:{b:'run'}};/* ⭐1体ずつ増やす(⚠まとめて量産しない=ユーザー指示) */
+const NMBZ={},NMBI={},NMSC={};
+/* 煮しめた黒へ寄せる。⚠**真っ黒にしない**=黒フチ(INK)に食われて塊になる([[NOTES_絵]])。
+   ⭐**明るい側だけ「膿んだ黄土」を残す**=暗い側は黒、明るい側は爛れた色、で立体が生き残る。 */
+function nmSoot(col){
+ if(typeof col!=='string')return col;
+ if(NMSC[col]!==undefined)return NMSC[col];
+ let r,g,b;
+ if(col.charAt(0)==='#'){let h=col.slice(1);
+  if(h.length===3)h=h.charAt(0)+h.charAt(0)+h.charAt(1)+h.charAt(1)+h.charAt(2)+h.charAt(2);
+  if(h.length!==6)return col;
+  const n=parseInt(h,16);r=(n>>16)&255;g=(n>>8)&255;b=n&255;}
+ else if(col.slice(0,4)==='rgb('){const m=col.slice(4).split(',');
+  r=parseInt(m[0],10);g=parseInt(m[1],10);b=parseInt(m[2],10);
+  if(!(r>=0&&g>=0&&b>=0))return col;}
+ else return col;/* 色名・グラデーションは触らない */
+ /* ⚠白目だけは沈めない=沈めると目が消える。**膿んだ白**にして「爛れた」を言う */
+ let out;
+ if(r>=228&&g>=228&&b>=228)out='#cfc6a8';
+ else{
+  const L=(r*.30+g*.59+b*.11)/255,k=L*L*.34;
+  /* ⭐**まず色みを抜く**(55%)=これが一番効く。抜かないと青いシャツ・茶色いズボンが
+     暗くなっただけで残り、「ただ影に入った同じ敵」に見える(1回そう出た)。 */
+  const G=L*255,ds=v=>v*.45+G*.55;
+  const f=(v,o)=>{const x=22+ds(v)*.30;return x+(o-x)*k;};
+  let rr=f(r,138),gg=f(g,117),bb=f(b,56);
+  /* ⚠⚠**暗い側に床を作る**([[NOTES_絵]]「暗くしすぎると黒フチに食われて黒い塊になる」)=
+     元から暗い服・靴をそのまま沈めると **黒フチ(INK)との差が1桁**になって脚が消える。
+     ⭐明るさが床を割った時だけ、色みを保ったまま床まで持ち上げる。 */
+  const L2=(rr*.30+gg*.59+bb*.11)/255,FL=.17;
+  if(L2<FL&&L2>.001){const m=FL/L2;rr*=m;gg*=m;bb*=m;}
+  const cl=v=>Math.max(0,Math.min(255,Math.round(v)));
+  out='#'+[cl(rr),cl(gg),cl(bb)].map(v=>v.toString(16).padStart(2,'0')).join('');}
+ NMSC[col]=out;return out;
+}
+/* 塗る色だけを煮しめる層。⚠**線の太さも透明度も触らない**(触ると輪郭が痩せる)。
+   ⚠**層は canvas ごとに1つ作って覚えておく**=毎コマ作ると層そのものがごみになる
+     (層に状態は無いので使い回して安全)。 */
+const NMLY=(typeof WeakMap!=='undefined')?new WeakMap():null;
+function nmSootLayer(c){
+ if(NMLY&&NMLY.has(c))return NMLY.get(c);
+ const p=new Proxy(c,{
+  get(t,k){const v=t[k];return typeof v==='function'?v.bind(t):v;},
+  set(t,k,v){t[k]=(k==='fillStyle'||k==='strokeStyle')?nmSoot(v):v;return true;}});
+ if(NMLY&&c&&typeof c==='object')NMLY.set(c,p);
+ return p;
+}
+/* 1体ずつ違う「変異した部位」。⚠**体より先に呼ぶ**=根元を体に埋めないと
+   底辺の黒フチが体を横切って「櫛を乗せた」ように見える([[NOTES_絵]]のハリボテ4原因④)。 */
+function nmMut(c,Z,t,ph,walk){
+ if(Z.id==='nmRat'){/* 🏃⭐爛れた走者(元=巨鼠の群れ): 変異部位=**背から突き出た短い棘の列**。
+    ⚠走る方向へ寝かせる(後ろへ反らせる)=立てると背びれに見えて「走っている」が消える。
+    ⚠**等間隔・同じ長さで並べない**([[NOTES_絵]]のハリボテ4原因①)=長さも角度も間隔も崩す。
+    ⚠**根元は幅6以上**=細くすると黒フチに食われてただの黒い棒になる。 */
+  const sw=Math.sin(t*15+ph);
+  /* ⚠⚠**煮しめた体と同じ色で描くと棘が体に溶ける**=**膿んだ黄土**を直に指定する
+     (ここは層をかぶせる前なので、この値がそのまま出る)。 */
+  c.fillStyle='#9c8443';
+  /* [根元x, 根元y, 長さ, そり上がり] */
+  for(const p of [[-5.4,-25.8,9.6,1.4],[-4.6,-29.4,13.4,4.2],[-3.8,-32.6,10.8,2.2],
+                  [-3.0,-35.6,8.4,4.0],[-2.4,-38.6,6.0,1.6]]){
+   const lx=p[0]-p[2],ly=p[1]-p[3]-sw*.5;
+   c.beginPath();
+   c.moveTo(p[0]+2.8,p[1]+2.4);
+   c.lineTo(p[0]-.6,p[1]-3.2);
+   c.quadraticCurveTo(lx*.6+p[0]*.4,ly-2.6,lx,ly);
+   c.quadraticCurveTo(lx*.5+p[0]*.5,ly+2.2,p[0]+2.8,p[1]+2.4);
+   c.closePath();c.fill();c.stroke();}
+  return;}
 }
 function zFill(c,pathFn,col,yc){
  c.fillStyle=col;pathFn();c.fill();
@@ -10535,6 +10620,14 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠**表(ZOMBIES)を書き換えない**=写しを1つ作って覚えておく(毎コマ作ると無駄)。 */
  let Z=ZOMBIES[zi];
  if(SCL_ON&&Z.scl&&!pxOf(Z.id))Z=SCLZ[zi]||(SCLZ[zi]=Object.assign({},Z,{c:sclWet(Z.c)}));
+ /* 🌑⭐**ナイトメアの敵は「①の敵の写し」**=ここで id を素の敵へ差し替える。
+    ⚠**表(ZOMBIES)の id は変えない**(📖図鑑が id で覚えているため)=写しを作って覚えておく。
+    ⚠**材質(装甲/鱗)と大きさと名前はナイトメア側の表が正**=素の敵の値で上書きしない。 */
+ const Z0=ZOMBIES[zi],NB=NM_ON?NMB[Z0.id]:null;
+ if(NB)Z=NMBZ[Z0.id]||(NMBZ[Z0.id]=(()=>{
+  if(NMBI[NB.b]===undefined)NMBI[NB.b]=ZOMBIES.findIndex(q=>q.id===NB.b);
+  return Object.assign({},ZOMBIES[NMBI[NB.b]],
+   {sc:Z0.sc,n:Z0.n,nm:1,armor:Z0.armor,scl:Z0.scl});})());
  const s=Z.sc*(o.elite?1.35:1);
  const walk=Math.sin(t*(Z.sp>90?14:8)+ph);
  let bob=Math.abs(walk)*2.5*s;
@@ -10561,6 +10654,11 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
  /* ⚠黒フチを絵の大きさに比例させて太くする(2.6*CH_UP)のは**試して駄目だった**(第96弾)。
     34pxでは3.9だとフチが図形を食い、頭がヘルメット・腕が黒い棒になる。2.6のままが正しい */
  c.lineWidth=2.6/s;c.strokeStyle=INK;
+ /* 🌑ナイトメア: ①塗る色をまとめて煮しめる層をかぶせる ②変異部位を**体より先に**描く。
+    ⚠層をかぶせたあとの `c.save/restore` は素のcanvasへそのまま通る(数は合っている)。 */
+ /* ⚠**変異部位だけは層をかぶせる前に描く**=層を通すと体と同じ明るさまで沈んで溶けるため、
+    こちらは沈めたあとの体より1段明るい色を直に指定する。 */
+ if(NB){nmMut(c,Z0,t,ph,walk);c=nmSootLayer(c);}
  /* ===== 🪶⭐⭐⭐ 面③ 送電鉄塔の丘=空を飛ぶ敵(2026-08-06(194)) =====
     ⚠⚠**空の敵は「翼2枚+丸い胴」で全部同じ紙飛行機になる**(nmBat/nmCrow で2回踏んだ穴)。
     ⭐**輪郭を分ける物を1体ずつ決める**=鳩は胸/雀は群れ/烏は金属の羽/蠅は腹/蝙蝠は開いた口/
@@ -10813,47 +10911,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠ここが一番古い絵で、**角丸長方形の胴+丸い頭+等間隔の部品**が全種に残っていた。
     ⭐当てるのはステージ1・2と同じ3つ: ①大きさ ②色の区分け(`ZB`) ③ハリボテ感の4原因。
     ⚠獣は服を着ていないので、**背(Z.c)/腹の下毛/爪と牙/むき出しの肉** で分ける。 */
- if(Z.id==='nmRat'){/* ⭐巨鼠の群れ(第103弾に描き直し): 名前のとおり**群れ**にする。
-    ⚠それまで角丸長方形の胴+丸い頭+三角の鼻を**1匹だけ**描いていた=石鹸に尻尾が付いて見えた。
-    ⭐大きさ・高さ・位相を変えた3匹にすると、部品の繰り返しが**群れ**として意味を持つ。 */
-  const RT=[[-18,-1,.64,1.9,.66],[13,-3,.76,3.2,.8],[-2,0,1.04,0,1]];
-  for(let k=0;k<3;k++){const r=RT[k],bw=Math.sin(t*11+ph+r[3]),dk=r[4];
-   c.save();c.translate(r[0],r[1]);c.scale(r[2],r[2]);
-   c.fillStyle=shade(Z.c,dk*.66);/* 尾(先が細い) */
-   c.beginPath();c.moveTo(-13,-13);c.lineTo(-12,-9.6);
-   c.quadraticCurveTo(-24,-9,-27.4,-19+bw*2);
-   c.quadraticCurveTo(-22,-12,-13,-13);c.closePath();c.fill();c.stroke();
-   c.fillStyle=shade(Z.c,dk*.64);/* 奥の脚 */
-   for(const g of [[-8,-3.4],[6,3.4]]){
-    c.beginPath();c.moveTo(g[0]-2.6,-9);c.lineTo(g[0]+2.6,-9);
-    c.lineTo(g[0]+2.2+g[1]*bw*.5,-.6);c.lineTo(g[0]-2.2+g[1]*bw*.5,-.6);c.closePath();c.fill();c.stroke();}
-   zFill(c,()=>{c.beginPath();/* 胴(背が丸く盛り上がる) */
-    c.moveTo(-14,-9.6);
-    c.bezierCurveTo(-15.4,-16,-9,-19.4,-2,-19);
-    c.bezierCurveTo(5,-18.6,11,-17.4,13,-14);
-    c.lineTo(12,-8);
-    c.bezierCurveTo(6,-5.4,-8,-5.4,-14,-8);
-    c.closePath();},Z.c,-10);
-   c.fillStyle=shade(Z.c,dk*.9);/* 手前の脚 */
-   for(const g of [[-4,-3],[9,3]]){
-    c.beginPath();c.moveTo(g[0]-2.6,-9);c.lineTo(g[0]+2.6,-9);
-    c.lineTo(g[0]+2.2+g[1]*bw*.5,-.6);c.lineTo(g[0]-2.2+g[1]*bw*.5,-.6);c.closePath();c.fill();c.stroke();}
-   c.fillStyle=shade(Z.c,dk*.76);/* 耳(丸く大きい=鼠の決め手) */
-   c.beginPath();c.arc(12.4,-20.4,4.6,0,7);c.fill();c.stroke();
-   zFill(c,()=>{c.beginPath();/* 頭+鼻面を1本の輪郭で */
-    c.moveTo(9,-16.4);
-    c.bezierCurveTo(9,-21.4,13,-23.4,17,-22.4);
-    c.bezierCurveTo(21,-21.4,22.4,-18,22,-15.6);
-    c.lineTo(27.4,-13.6);c.lineTo(27,-10.8);
-    c.lineTo(19,-9.8);
-    c.bezierCurveTo(13,-9.2,9.4,-13,9,-16.4);
-    c.closePath();},Z.c,-14);
-   c.fillStyle='#d88a9a';c.beginPath();c.arc(26.4,-12.2,1.6,0,7);c.fill();/* 鼻 */
-   c.fillStyle=PANE;/* 前歯(不揃いに2本) */
-   c.beginPath();c.moveTo(21.6,-10.8);c.lineTo(22.6,-6.4);c.lineTo(24,-10.4);c.closePath();c.fill();
-   zEye(c,17.4,-17,1.9);
-   c.restore();}
-  c.restore();return;}
+ /* ⛔(204)**巨鼠の群れの絵は捨てた**=`NMB` で①のランナーの写しになったので、ここへは来ない。
+    ⚠**書き戻さない**(獣に戻すと「弱点が読めない」が再発する)。変異部位は `nmMut` にある。 */
  if(Z.id==='nmBoar'){/* ⭐変異猪(第103弾に描き直し): 突進する獣。**前が重く後ろが細い体**と牙が売り。
     ⚠それまで角丸長方形+丸い頭+等間隔の棘4本+四角い脚2本で、実機では茶色い箱だった。
     ⚠鬣は**胴より先に描いて根元を埋める**(棘を胴の上から乗せると底辺の黒フチが体を横切る)。 */
