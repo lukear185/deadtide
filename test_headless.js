@@ -412,9 +412,16 @@ function checkTutList(){
  if(!Array.isArray(TUT_LS)||TUT_LS.length<2){console.log('FAIL: チュートリアルの一覧が無い');process.exit(1);}
  if(TUT_LS[0].id!=='base'){console.log('FAIL: 1つ目が基礎ではない');process.exit(1);}
  META.tutC=[];META.tutOk=0;
- if(tutCanDo(1)){console.log('FAIL: 基礎を済ませていないのに2つ目が開いている');process.exit(1);}
- META.tutOk=1;
- if(!tutCanDo(1)){console.log('FAIL: 基礎を済ませたのに2つ目が開かない');process.exit(1);}
+ /* 🎓(204g)**並びはタレットの解放順・開くのはその塔を解放した時**(ユーザー指示) */
+ {const L=tutList();
+  if(L[0].id!=='base'){console.log('FAIL: はじめかたが先頭ではない');process.exit(1);}
+  let pv=-2;
+  for(let i=1;i<L.length;i++){const k=UNL_T.indexOf(L[i].tw[0]);
+   if(k<pv){console.log('FAIL: 並びがタレットの解放順ではない '+L[i].id);process.exit(1);}pv=k;}
+  const K1=L[1],sv=(META.ot||[]).slice();
+  META.ot=[];if(tutCanDo(K1)){console.log('FAIL: 塔を解放していないのに開いている '+K1.id);process.exit(1);}
+  META.ot=[K1.tw[0]];if(!tutCanDo(K1)){console.log('FAIL: 塔を解放したのに開かない '+K1.id);process.exit(1);}
+  META.ot=sv;}
  let n=0;
  for(let i=1;i<TUT_LS.length;i++){
   const K=TUT_LS[i];
@@ -450,7 +457,7 @@ function checkTutList(){
   n++;
  }
  META.tutC=[];META.tutOk=0;backTitle();
- console.log('🎓小分けチュートリアル: 一覧'+TUT_LS.length+'本(上から順に開く) / 塔の回'+n+'本すべて最後まで進む / 報酬💎'+TUT_GEM+'は初回だけ / 建てられる塔は絞られる OK');
+ console.log('🎓小分けチュートリアル: 一覧'+TUT_LS.length+'本(タレットの解放順に並ぶ・解放した塔から開く) / 塔の回'+n+'本すべて最後まで進む / 報酬💎'+TUT_GEM+'は初回だけ / 建てられる塔は絞られる OK');
 }
 function checkTut(){
  /* 廃止した操作・古い言い回しが混ざっていないか */

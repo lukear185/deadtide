@@ -2068,6 +2068,17 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
 <!-- 🎓⭐**チュートリアルの一覧**(2026-08-07(204f)ユーザー指示「チュートリアルボタン押したら
      内容が羅列してあって 上から順番にやっていく感じで 報酬でガチャ石10個」)。
      ⚠**高さは vh で決めない**=必ず var(--appH)([[NOTES_UI]] で4回崩している) -->
+<!-- 🎓(204g)**解放したその場で誘う**(ユーザー指示「解放したときにチュートリアルで学ぼう
+     見る / 今は見ない って表示だそう」)。⚠**押し付けない**=断っても一覧からいつでもできる -->
+<div class="modal" id="md-tutask">
+  <div class="panel center" style="max-width:360px;width:min(92vw,360px)">
+    <h2 class="hd">🎓 チュートリアルで学ぼう</h2>
+    <div id="tutask-t" style="font-size:17px;font-weight:900;margin-top:4px"></div>
+    <div id="tutask-d" style="font-size:12px;font-weight:700;opacity:.85;margin:2px 0 8px"></div>
+    <div style="display:flex;gap:8px"><button class="btn grn" id="tutask-y" style="flex:1">見る</button>
+    <button class="btn" id="tutask-n" style="flex:1">今は見ない</button></div>
+  </div>
+</div>
 <div class="modal" id="md-tutlist">
   <div class="panel" style="max-width:420px;width:min(94vw,420px)">
     <h2 class="hd">🎓 あそびかた</h2>
@@ -29031,18 +29042,52 @@ function tutSupCost(){
      ここは「読む気で開いている画面」なので盤面の札より長くてよいが、**1段3行まで**。
    ⭐**上から順にしか開かない**(研究所の棚と同じ読み方)。⚠**報酬は初回だけ**(`META.tutC`)。 */
 const TUT_GEM=10;/* 1本ごとの報酬(💎)。⚠初回だけ */
-const TUT_LS=[
+/* ⚠**tw**=この回だけ建てられる塔 / **pre**=先に建てておく塔(相方が要る回だけ)。
+   ⚠⚠**並び順はここでは決まらない**=下の `tutList()` が**タレットの解放順**に並べ替える
+   (2026-08-07(204g)ユーザー指示「チュートリアルの順番はタレットの解放順にしてほしい」)。 */
+const TUT_L0=[
  {id:'base', ic:'🎓',n:'はじめかた',      d:'建てる・出す・戦う'},
- /* ⚠**tw**=この回だけ建てられる塔 / **pre**=先に建てておく塔(相方が要る回だけ) */
  {id:'cryo', ic:'❄',n:'冷却塔',          d:'凍らせて足を止める',      tw:['cryo']},
  {id:'pullt',ic:'🧲',n:'引力塔',          d:'道の後ろへ引き戻す',      tw:['pullt']},
  {id:'lamp', ic:'💡',n:'照明塔',          d:'照らして脆くする',        tw:['lamp'],pre:'rifle'},
  {id:'tesla',ic:'⚡',n:'テスラコイル',    d:'同時に何体も撃つ',        tw:['tesla']},
  {id:'coil', ic:'⚡',n:'重テスラ',        d:'跳ねるほど重くなる',      tw:['coil']},
 ];
+/* 🎓⭐⭐(204g)**並びも開き方もタレットに合わせる**(ユーザー指示)。
+   ⭐**並び**=棚(`UNL_T`)の順。⭐**開く条件**=**その塔を解放したら開く**
+     (「上から順に済ませたら」ではない=解放した物からすぐ学べる)。
+   ⚠**はじめかたは必ず先頭**。⚠棚に無い塔(最初から持っている物)は先に並べる。 */
+function tutList(){
+ const ord=id=>{const k=UNL_T.indexOf(id);return k<0?-1:k;};
+ const a=TUT_L0.filter(K=>K.id==='base');
+ const b=TUT_L0.filter(K=>K.id!=='base').slice()
+  .sort((x,y)=>ord(x.tw[0])-ord(y.tw[0]));
+ return a.concat(b);
+}
+const TUT_LS=TUT_L0;/* ⚠**中身を引く時はこちら**(id→定義)。並べる時は tutList() を使う */
 const tutClr=id=>(id==='base'&&META.tutOk)||((META.tutC||[]).indexOf(id)>=0);
-const tutCanDo=i=>i===0||tutClr(TUT_LS[i-1].id);
+/* 🎓(204g)開けるか。⚠**基礎はいつでも / 塔の回はその塔を解放していたら**(devは全部開く) */
+function tutCanDo(K){
+ if(typeof K==='number')K=tutList()[K];
+ if(!K)return false;
+ if(K.id==='base')return true;
+ if(devAll())return true;
+ /* ⚠**最初から持っている塔**(棚に載っていない物)は解放を待たずに開く */
+ return (K.tw||[]).every(id=>twHas(id)||UNL_T.indexOf(id)<0);
+}
 const tutCourse=id=>TUT_LS.find(q=>q.id===id)||TUT_LS[0];
+/* 🎓(204g)**解放したその場で誘う**。⚠押し付けない=「見る / 今は見ない」の2択 */
+function tutAsk(twId){
+ const K=TUT_LS.find(q=>q.id!=='base'&&(q.tw||[]).indexOf(twId)>=0);
+ if(!K||tutClr(K.id))return;
+ const m=$('md-tutask');if(!m)return;
+ const e1=$('tutask-t');if(e1)e1.textContent=K.ic+' '+K.n+' の使い方';
+ const e2=$('tutask-d');if(e2)e2.textContent=K.d;
+ const y=$('tutask-y'),n=$('tutask-n');
+ if(y)y.onclick=()=>{m.classList.remove('on');tutStart(K.id);};
+ if(n)n.onclick=()=>{m.classList.remove('on');};
+ m.classList.add('on');
+}
 /* 🎓**塔の回の段**。⚠**4段だけ**=①何をする塔か ②建てる ③効き目を見る ④覚えておくこと。
    ⚠**効き目を見る段は「実際に起きたら」進む**(時間では進めない)=起きた所を必ず目で見せる。 */
 function tutTwSteps(K){
@@ -29255,7 +29300,7 @@ function tutHold(){return !!(TUT&&TUT.on&&!TUT.ran);}/* 作戦タイムの残り
 /* ⚠ゲームを止めて「閉じるまで待つ」もの=どの段でも必ず押せるようにする(下の tutPass を見ること) */
 /* ⚠**チュートリアル中でも必ず押させるもの**。閉じられないと詰むUIはここに入れる。
    #md-intro=新登場の紹介(閉じるまでPAUSED) / #bm-x=建設・強化ウィンドウの✕(2026-07-27に追加) */
-const TUT_FREE='#md-intro,#bm-x,#md-tutlist';
+const TUT_FREE='#md-intro,#bm-x,#md-tutlist,#md-tutask';
 function tutPass(e){
  if(!TUT||!TUT.on)return true;
  const t=e&&e.target;if(!t||!t.closest)return true;
@@ -29359,11 +29404,13 @@ function tutOpen(){
 /* 🎓(204f)**一覧**。⚠上から順にしか開かない。⚠済んだ回は✅、まだの回は▶、先の回は🔒 */
 function tutListOpen(){
  const b=$('tutlist-b');if(!b){tutStart();return;}
- b.innerHTML=TUT_LS.map((K,i)=>{
-  const done=tutClr(K.id),can=tutCanDo(i);
+ /* ⚠並びは**タレットの解放順**(204g)。⚠**まだ解放していない塔の回は🔒**=何が待っているかは見せる */
+ b.innerHTML=tutList().map(K=>{
+  /* ⚠**一度やった回は解放を問わず開く**(もう一度見たい時のため。報酬は出ない) */
+  const done=tutClr(K.id),can=tutCanDo(K)||done;
   return '<button class="btn '+(done?'':can?'grn':'')+' tut-row" data-tl="'+K.id+'" '+(can?'':'disabled')+'>'
    +'<span class="tlic">'+(done?'✅':can?K.ic:'🔒')+'</span>'
-   +'<span class="tlnm">'+K.n+'<small>'+K.d+'</small></span>'
+   +'<span class="tlnm">'+K.n+'<small>'+(can?K.d:'🔬研究所で解放すると学べる')+'</small></span>'
    +'<span class="tlgm">'+(done?'済み':'💎'+TUT_GEM)+'</span></button>';}).join('');
  b.querySelectorAll('[data-tl]').forEach(el=>{el.onclick=()=>{
   $('md-tutlist').classList.remove('on');tutStart(el.dataset.tl);};});
@@ -30150,12 +30197,15 @@ function renderLab(){
   /* ⭐新しいユニットを解放したら**空きがあれば自動で編成に入れる**+初回だけ案内を出す(2026-08-02ユーザー指示)。
      ⚠**id は増やす前に控える**(it.pv.def=UBASE[BASE_U+META.nu] を指しているため)。
      ⚠**teamAutoAdd は META.nu を増やした後**に呼ぶ=持っていないユニットは編成に入れないため。 */
-  let tmId9='',tmHow9='';
+  let tmId9='',tmHow9='',tmAsk9='';
   if(it.k==='nu')tmId9=it.id||(it.pv&&it.pv.def&&it.pv.def.id)||'';
   /* ⚠(187)**買った物は id で積む**(進行の作り替えB)=棚のどれから買ってもよくなったため。
      ⚠`META.nt/nu` は「何種持っているか」の数として合わせておく(成績表などが読む)。
      ⚠**`TWOWN_K=-1` を忘れない**=持ち物の並びの覚え書きを捨てないと、買った塔がその試合で建たない。 */
-  if(it.k==='nt'){if(!Array.isArray(META.ot))META.ot=[];META.ot.push(it.id);META.nt=META.ot.length;TWOWN_K=-1;}
+  if(it.k==='nt'){if(!Array.isArray(META.ot))META.ot=[];META.ot.push(it.id);META.nt=META.ot.length;TWOWN_K=-1;
+   /* 🎓(204g)**解放したその場で「学ぼう」と誘う**(2026-08-07ユーザー指示)=
+      ⚠**押し付けない**=「見る / 今は見ない」の2択。断っても一覧からいつでもできる。 */
+   tmAsk9=it.id;}
   else if(it.k==='nu'){if(!Array.isArray(META.ou))META.ou=[];META.ou.push(it.id);META.nu=META.ou.length;tmHow9=teamAutoAdd(tmId9);}
   else if(it.k==='stk')META.st.push(it.id);
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);
@@ -30168,7 +30218,8 @@ function renderLab(){
   else if(it.k==='tw'){if(!META.tw)META.tw={};META.tw[it.id]=(META.tw[it.id]||0)+n;}
   else if(it.k==='un'){if(!META.un)META.un={};META.un[it.id]=(META.un[it.id]||0)+n;}
   saveMeta();sfx.buy();renderLab();renderStkSeg();updLabBtn();refreshTrainBtn();
-  if(tmHow9)teamTip(tmId9,tmHow9);};});
+  if(tmHow9)teamTip(tmId9,tmHow9);
+  if(tmAsk9)tutAsk(tmAsk9);};});
  if(scEl)scEl.scrollTop=keepTop;
 }
 /* ---- 新登場の紹介(ウェーブ開始前に止めて説明する) ---- */
