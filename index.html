@@ -6212,6 +6212,8 @@ const NMBZ={},NMBI={},NMSC={};
    ⭐**明るい側だけ「膿んだ黄土」を残す**=暗い側は黒、明るい側は爛れた色、で立体が生き残る。 */
 function nmSoot(col){
  if(typeof col!=='string')return col;
+ /* 🔴**灯る目だけは沈めない**=ここを煮しめると「赤く光る目」の印が消える */
+ if(col===NM_EYE_C||col===NM_EYE_H)return col;
  if(NMSC[col]!==undefined)return NMSC[col];
  let r,g,b;
  if(col.charAt(0)==='#'){let h=col.slice(1);
@@ -6383,8 +6385,26 @@ const ZW={sh:'#4d5a68',sh2:'#5f5142',rag:'#6b6152',pa:'#6a5945',sho:'#453a2a',bl
      背(Z.c) / 腹 / ひれ / 関節の膜 / 腐って露出した肉 の5つで分ける。
    ⚠ここも体ごとに変えず**共通の表**にする(体ごとに色を作ると盤面が散らかる=ZWと同じ理由)。 */
 const ZS={bel:'#c6bda0',fin:'#68766a',jnt:'#353c37',rot:'#78353f'};
+/* 🔴⭐⭐⭐**ナイトメアの敵は目が赤く灯る**(2026-08-07(204c)ユーザー発案
+   「目を赤く光らせて移動時に目の光の余韻が残るとかにすれば黒くてもいけそう」)。
+   ⭐**34pxで一番確実に読める印は「暗い体の上の明るい点」**=体の色も形も潰れても点は残る。
+   ⭐**①も②も、ナイトメアなら全部**(`Z.nm`)に付く=「赤い目＝ナイトメア」の統一の印。
+   ⚠⚠**「目を光らせたから体をもっと黒くしていい」ではない**=前に黒い塊になったのは
+     脚やズボンが**黒フチに溶けた**からで、目が光っても形は戻らない。体の明るさは触らないこと。
+   ⚠**印は焼いた絵の中**(ここ)/**余韻は盤面で外から**(`nmEyeFx`)の2本立て。 */
+const NM_EYE_C='#ff3a28',NM_EYE_H='#ffd0b0';
+let NM_EYE=false,NM_EYE_ZI=-1;
+/* 焼く時に「一番前の目」の局所座標を覚えておく=余韻をどこに出すかは体ごとに違うため。
+   ⚠**表を手で持たない**(体を直すたびに合わなくなる)=描いた時に自分で覚えさせる。 */
+const NM_EYEP={};
 /* 目。⚠22pxでは点1つに潰れるので、白目を大きめに取って「目がある」ことだけ伝える */
 function zEye(c,x,y,r){r=r||2.3;
+ if(NM_EYE){
+  if(NM_EYE_ZI>=0&&(!NM_EYEP[NM_EYE_ZI]||x>NM_EYEP[NM_EYE_ZI][0]))NM_EYEP[NM_EYE_ZI]=[x,y];
+  c.fillStyle='#1a0f0c';c.beginPath();c.arc(x,y,r,0,7);c.fill();/* 落ち窪んだ眼窩 */
+  c.fillStyle=NM_EYE_C;c.beginPath();c.arc(x+r*.12,y,r*.74,0,7);c.fill();
+  c.fillStyle=NM_EYE_H;c.beginPath();c.arc(x+r*.2,y,r*.32,0,7);c.fill();
+  return;}
  c.fillStyle='#fff';c.beginPath();c.arc(x,y,r,0,7);c.fill();
  c.fillStyle=INK;c.beginPath();c.arc(x+r*.36,y,r*.52,0,7);c.fill();
 }
@@ -10598,8 +10618,10 @@ function zArmHum(c,Z,t,ph,walk){
 function zaVisor(c,x0,y0,x1,y1,ex,ey,r){
  c.fillStyle='#12161c';c.beginPath();
  c.moveTo(x0,y0);c.lineTo(x1,y0-.4);c.lineTo(x1,y1-.2);c.lineTo(x0,y1);c.closePath();c.fill();
- c.fillStyle='#e8703c';c.beginPath();c.ellipse(ex,ey,r||1.8,(r||1.8)*.66,0,0,7);c.fill();
- c.fillStyle='#ffdcae';c.beginPath();c.ellipse(ex+.3,ey,(r||1.8)*.44,(r||1.8)*.34,0,0,7);c.fill();
+ /* 🔴ナイトメアだけ**橙ではなく赤**に灯る=素の⬛装甲の敵と一目で見分けが付く */
+ if(NM_EYE&&NM_EYE_ZI>=0&&(!NM_EYEP[NM_EYE_ZI]||ex>NM_EYEP[NM_EYE_ZI][0]))NM_EYEP[NM_EYE_ZI]=[ex,ey];
+ c.fillStyle=NM_EYE?NM_EYE_C:'#e8703c';c.beginPath();c.ellipse(ex,ey,r||1.8,(r||1.8)*.66,0,0,7);c.fill();
+ c.fillStyle=NM_EYE?NM_EYE_H:'#ffdcae';c.beginPath();c.ellipse(ex+.3,ey,(r||1.8)*.44,(r||1.8)*.34,0,0,7);c.fill();
 }
 /* ⭐**あごの下は開ける**=腐った肌と歯が覗く。⚠塞ぎ切ると「鉄の人形」になってゾンビに見えない */
 function zaJaw(c,x0,y0,x1,y1){
@@ -10721,6 +10743,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠**表(ZOMBIES)の id は変えない**(📖図鑑が id で覚えているため)=写しを作って覚えておく。
     ⚠**材質(装甲/鱗)と大きさと名前はナイトメア側の表が正**=素の敵の値で上書きしない。 */
  const Z0=ZOMBIES[zi],NB=NM_ON?NMB[Z0.id]:null;
+ /* 🔴**ナイトメアなら目が赤く灯る**(①の6種も②の深海8種も同じ印)。⚠印は焼いた絵の中に入る */
+ NM_EYE=!!Z0.nm;NM_EYE_ZI=NM_EYE?zi:-1;
  if(NB)Z=NMBZ[Z0.id]||(NMBZ[Z0.id]=(()=>{
   if(NMBI[NB.b]===undefined)NMBI[NB.b]=ZOMBIES.findIndex(q=>q.id===NB.b);
   return Object.assign({},ZOMBIES[NMBI[NB.b]],
@@ -16901,6 +16925,7 @@ function bUlt(c,o,t){
  return ()=>{UL_HA=UL_HX=UL_HY=0;c.restore();};
 }
 function drawUnit(c,ui,x,y,dr,t,ph,o){
+ NM_EYE=false;/* 🔴⚠**味方に赤い目を移さない**=ナイトメアの印は敵を描いた直後だけ立っている */
  pfTag('ユニット');
  o=o||{};
  /* ⭐溜めの構えを型ごとに変えるため、攻撃の型を o に載せて各体へ渡す(uChgUp が読む) */
@@ -21564,6 +21589,23 @@ function bgCache(C,tod,dk,PAL){
 /* ⚡(185)白光りを溜めておく入れ物(FLQ9=撃たれた敵 / FLC9=倒れた瞬間の死体)。
    ⚠**使い回す**=毎コマ作らない。⚠**必ず吐いた後に length=0 で空にする**。 */
 const FLQ9=[],FLC9=[];
+/* 🔴⭐⭐**ナイトメアの目の余韻**(2026-08-07(204c)ユーザー発案)。
+   ⚠⚠**焼いた絵の中には入れられない**(絵は1体ぶん焼いて使い回すため)=盤面で外から描く。
+   ⚠⚠**1体ごとに合成を切り替えない**((185)で踏んだ穴)=**溜めて最後に1回**。
+   ⚠影(shadowBlur)とにじみ(filter)は使わない=薄い赤を重ねるだけ。 */
+const NMQ9=[];
+const NM_TRN=4;/* 残す残像の数 */
+function nmEyeFx(z){
+ const Z=ZOMBIES[z.zi],p=NM_EYEP[z.zi];if(!p)return;
+ const s=Z.sc*(z.elite?1.35:1),dr=(z.dr||1)<0?-1:1,ox=dr*p[0]*s,oy=p[1]*s;
+ /* ⭐⭐**余韻は「道を少し戻った所」に置く**(コマの履歴は持たない)。利点が3つある:
+     ①**曲がり角でも道に沿う**(履歴だと角で尾が道から外れる)
+     ②**同じコマで2回描かれても壊れない**(状態を持たないため)
+     ③**戻す量を足の速さに比例させられる**=速い敵ほど長く尾を引く=速さがそのまま見た目になる。 */
+ const st=Z.sp*.045,e=[];
+ for(let k=1;k<=NM_TRN;k++){const q=pathPos(Math.max(0,z.d-k*st),z.ln);e.push(q[0]+ox,q[1]+oy);}
+ NMQ9.push({x:z.px+ox,y:z.py+oy,s,e});
+}
 /* ⚔⭐⭐(186)**体の中の「加算の光」を溜める口**(2026-08-05ユーザー実機の続き
    「ユニットも重いやついるかチェックして」→ ⚔ヴァルキリーだけ **合成74.5回/コマ**(20体)だった)。
    ⚠⚠**正体**=剣の光が体の中に2か所あり、**1体につき毎コマ約3.7回**合成が切り替わっていた
@@ -22048,6 +22090,8 @@ function renderCamp(C,t){
   else{const o9={sent:z.sent,lg:z.lgT,elite:z.elite,d:z.d,vw:z.vw};
    drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,o9);
    if(fl9>0)FLQ9.push({zi:z.zi,x:z.px,y:z.py,dr:z.dr,ph:z.ph,o:o9,a:fl9*.7});}
+  /* 🔴ナイトメアの目の余韻(⚠溜めるだけ=吐き出しはループの外)。⚠止まっている間は出さない */
+  if(ZOMBIES[z.zi].nm&&!(z.frzT>0)&&!(z.stnT>0))nmEyeFx(z);
   /* ⭐⭐**気絶**(2026-08-02ユーザー指示)。凍結の使い回しをやめて、
      **頭の上を★が円を描いて回る**+目の高さで小さくよろける。⚠氷漬けは出さない。
      ⚠★は3つ・**奥に回った時は小さく暗く**する=平面に並べると回って見えない。 */
@@ -22100,6 +22144,17 @@ function renderCamp(C,t){
    else drawZombie(c,q.zi,q.x,q.y,q.dr,t,q.ph,q.o);
    if(ivz9!==1)c.restore();}
   c.restore();FLQ9.length=0;}
+ /* 🔴**溜めておいた目の余韻をここで一気に**。⚠⚠**吐き出しは必ずループの外**(合成の切り替えは2回で固定)。
+    ⭐古い位置ほど薄く小さく=速い敵ほど長く尾を引く(位置の差がそのまま速さ)。 */
+ if(NMQ9.length){c.save();c.globalCompositeOperation='lighter';
+  for(const q of NMQ9){
+   const e=q.e;
+   for(let k=e.length-2;k>=0;k-=2){const g=1-(k/2+1)/(NM_TRN+1);
+    c.fillStyle='rgba(255,58,40,'+(g*.34).toFixed(3)+')';
+    c.beginPath();c.arc(e[k],e[k+1],3.4*q.s*(.55+.45*g),0,7);c.fill();}
+   c.fillStyle='rgba(255,72,46,.50)';
+   c.beginPath();c.arc(q.x,q.y,3.0*q.s,0,7);c.fill();}
+  c.restore();NMQ9.length=0;}
  /* 集結旗(協力時は全員分・色分け)。⚠🚌ボーナス面はユニットが居ないので出さない */
  if(!C.dead&&!C.bus){
   let fls=[];
