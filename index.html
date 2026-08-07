@@ -32498,34 +32498,59 @@ const OP_CUE=[
 /* ph: -1=触ってもらう板 / 0=開発名 / 1=オープニング / fade=暗転の最中 */
 const OP={on:0,t:0,ph:-1,cap:-2,fade:0};
 /* 開発名。⚠**凝らない**=よくある「黒地に名前」。線が伸びて、名前が浮いて、消える */
+/* 🏷⭐⭐**開発者の印**(2026-08-07(202)ユーザー指示「前アイコンにしたやつ」)=
+   **噛み跡のアイコン**(`brand/nakigara_icon.png` と同じ形)。
+   ⚠⚠**別の印を新しく描かない**=アイコン・Xの画像・ここ、で**同じ形**でないと印の意味が無い。
+   ⭐**形の作り方は `brand/_maker.html` の `biteMask` と同じ**=
+     円板の縁を「扇形の口+縁に沿った歯」で食い取る。⚠点を並べるだけでは噛み跡に見えない。
+   ⚠**canvasではくり抜かない**=**台紙の色で上から塗る**(切り抜きは他の絵まで消す)。 */
+function opMark(c,x,y,s){
+ c.save();c.translate(x,y);c.scale(s/400,s/400);c.translate(-200,-200);
+ /* 台紙(角丸の四角)=アプリのアイコンと同じ地 */
+ c.fillStyle=RUST2;rr(c,0,0,400,400,92);c.fill();
+ /* ⚠⚠**台紙の中で切る**=噛み跡の扇形は円板より外まで伸びるので、切らないと
+    **台紙の外へ角が飛び出す**(1回そうなった。SVG側はマスクなので起きない) */
+ c.save();rr(c,0,0,400,400,92);c.clip();
+ /* 円板(影→本体) */
+ c.fillStyle='rgba(0,0,0,.32)';c.beginPath();c.arc(200,209,142,0,7);c.fill();
+ c.fillStyle=PANE;c.beginPath();c.arc(200,200,142,0,7);c.fill();
+ /* 噛み跡=台紙の色で塗る */
+ c.fillStyle=RUST2;
+ const A=-38*Math.PI/180,H=.46,r=142,ax=200+Math.cos(A)*r*.30,ay=200+Math.sin(A)*r*.30,L=r*1.35;
+ c.beginPath();c.moveTo(ax,ay);
+ c.lineTo(ax+Math.cos(A-H)*L,ay+Math.sin(A-H)*L);
+ c.lineTo(ax+Math.cos(A)*L*1.18,ay+Math.sin(A)*L*1.18);
+ c.lineTo(ax+Math.cos(A+H)*L,ay+Math.sin(A+H)*L);
+ c.closePath();c.fill();
+ const rs=r*.155;
+ for(const sg of [-1,1]){const a2=A+sg*H;
+  for(let d=rs*.9;d<L*.92;d+=rs*1.7){
+   const px=ax+Math.cos(a2)*d,py=ay+Math.sin(a2)*d;
+   if(Math.sqrt((px-200)*(px-200)+(py-200)*(py-200))>r+rs)break;
+   c.beginPath();c.arc(px,py,rs*(1-d/(L*2.6)),0,7);c.fill();}}
+ c.beginPath();c.arc(ax,ay,rs*.72,0,7);c.fill();
+ c.restore();/* 切り取りを戻す */
+ c.restore();
+}
 function opLogo(c,u){
  const cx=ED_W*.5,cy=ED_H*.5;
  /* 出入りの濃さ(前0.7秒で入って、後ろ0.7秒で抜ける) */
  const a=clamp(Math.min(u/.7,(OP_LOGO-u)/.7),0,1);
  c.globalAlpha=a;
- /* ⭐⭐**印(ロゴ)**=「なきがら」=**抜け殻**。⚠**髑髏にしない**(生々しくなる/どこにでもある)。
-    ⭐**割れた輪**にする=中身が抜けた殻が割れて、欠片が1つ落ちている。
-    ⚠**線だけで描く**(塗らない)=studioの印は細い線の方が品が出る。 */
  /* ⚠**印と文字を重ねない**(1回くっついて虫眼鏡に見えた)=印は上、文字は下に離す */
- {const r=17*EK,gy2=cy-32*EK;
-  c.strokeStyle=PAPER;c.lineWidth=Math.max(1.4,2.0*EK);c.lineCap='round';
-  /* 外の輪=右上を欠けさせる */
-  c.beginPath();c.arc(cx,gy2,r,-Math.PI*.28,Math.PI*1.62);c.stroke();
-  /* 内の輪=少し左下へずらす(中身が抜けて空洞になっている) */
-  c.strokeStyle=PAPER3;c.lineWidth=Math.max(1,1.4*EK);
-  c.beginPath();c.arc(cx-r*.14,gy2+r*.12,r*.52,Math.PI*.12,Math.PI*1.42);c.stroke();
-  /* 落ちた欠片(⚠1つだけ=2つ以上だと散らかって見える。⚠**輪から離す**=くっつくと輪の一部に見える) */
-  c.fillStyle=PAPER;
-  c.beginPath();c.moveTo(cx+r*1.30,gy2-r*.86);c.lineTo(cx+r*1.66,gy2-r*.56);
-  c.lineTo(cx+r*1.36,gy2-r*.42);c.closePath();c.fill();}
+ opMark(c,cx,cy-40*EK,62*EK);
  /* 下の線=中央から左右へ伸びる(名前より少し早く動く) */
  const lw=clamp((u-.25)/.9,0,1)*ED_W*.26;
- /* ⚠**色は表(PAPER/PAPER3)から引く**=canvasの文字色を直に書かない(検査 checkPalette) */
- c.fillStyle=PAPER3;c.fillRect(cx-lw,cy+30*EK,lw*2,1.4);
- /* ⛔**日本語は入れない**(2026-08-07(202)ユーザー指示「日本語要らない ロゴとNAKIGARAだけ」) */
+ /* ⚠**色は表(PANE/AMBER/RUST2)から引く**=canvasの文字色を直に書かない(検査 checkPalette) */
+ c.fillStyle=RUST2;c.fillRect(cx-lw,cy+43*EK,lw*2,1.6);
  c.textAlign='center';
- c.fillStyle=PAPER;c.font='900 '+Math.round(25*EK)+'px '+FF;
- c.fillText('NAKIGARA',cx,cy+18*EK);
+ /* ⭐**ヘッダー画像と同じ組み**=小さい琥珀の肩書き+大きいクリームの名前(鉄錆の影つき) */
+ c.fillStyle=AMBER;c.font='900 '+Math.round(9*EK)+'px '+FF;
+ c.fillText('G A M E   S T U D I O',cx,cy+9*EK);
+ /* ⛔**日本語は入れない**(2026-08-07(202)ユーザー指示「日本語要らない ロゴとNAKIGARAだけ」) */
+ c.font='900 '+Math.round(26*EK)+'px '+FF;
+ c.fillStyle=RUST2;c.fillText('NAKIGARA',cx+1.1,cy+34*EK+1.5);
+ c.fillStyle=PANE;c.fillText('NAKIGARA',cx,cy+34*EK);
  c.globalAlpha=1;
 }
 /* 灯りのにじみ。⚠⚠**濃い円を1枚置かない**=「色つきの丸」がそのまま見える(1回そうなった)。
