@@ -776,6 +776,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'openBM(s9);window.addEventListener("resize",function(){try{openBM(s9);}catch(e){}});'
      +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e){}},120);'
      +'}catch(e){document.title="ERR12 "+e.message;}},1300);'):'')
+ /* 🎓tutlist=**チュートリアルの一覧**を開いて撮る(2026-08-07(204f))。⚠タイトルで使う */
+ +(/(^|\+)tutlist(\+|$)/.test(OPT)?('setTimeout(function(){try{META.tutOk=1;META.tutC=["cryo"];tutListOpen();}'
+     +'catch(e){document.title="ERR16 "+e.message;}},1200);'):'')
  /* 🔧⭐bmup=**建ててあるタレットの強化ウィンドウ**を開いて撮る(2026-08-07(204d))。
     ⚠`bmenu` は**空きマス**を開くので、強化の行(⚔攻撃/📡射程…)は1つも写らなかった。
     ⚠`t=<id>` と一緒に使う(その塔を建てた最初のマスを開く)。`bmus=5` で全部の枠を5段まで上げる。 */

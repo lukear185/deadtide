@@ -405,6 +405,53 @@ function checkCryo(){
      ②最終ウェーブを STAGE_W 固定で出していたので新兵(5波)でも「WAVE20まで」と嘘をついていた。
    ⚠**中身(tutSteps)はDOMを触らないデータの関数**にしてあるので、こちらで直に検査できる。
    ⚠DOM側だけを見る検査は、ヘッドレスでは0個でも通ってしまう=何も見ていないのにOKと出る。 */
+/* 🎓⭐(204f)**小分けにしたチュートリアル**(塔1本ずつ)。見るのは4つ=
+   ①一覧が上から順にしか開かない ②どの回も最後まで進める ③報酬は初回だけ💎10
+   ④その回で建てられる塔がちゃんと絞られている */
+function checkTutList(){
+ if(!Array.isArray(TUT_LS)||TUT_LS.length<2){console.log('FAIL: チュートリアルの一覧が無い');process.exit(1);}
+ if(TUT_LS[0].id!=='base'){console.log('FAIL: 1つ目が基礎ではない');process.exit(1);}
+ META.tutC=[];META.tutOk=0;
+ if(tutCanDo(1)){console.log('FAIL: 基礎を済ませていないのに2つ目が開いている');process.exit(1);}
+ META.tutOk=1;
+ if(!tutCanDo(1)){console.log('FAIL: 基礎を済ませたのに2つ目が開かない');process.exit(1);}
+ let n=0;
+ for(let i=1;i<TUT_LS.length;i++){
+  const K=TUT_LS[i];
+  if(!K.tw||!K.tw.length){console.log('FAIL: 塔の回に建てさせる塔が無い '+K.id);process.exit(1);}
+  for(const id of K.tw)if(!TOWERS.some(q=>q.id===id)){console.log('FAIL: 知らない塔 '+id);process.exit(1);}
+  if(K.pre&&!TOWERS.some(q=>q.id===K.pre)){console.log('FAIL: 知らない相方の塔 '+K.pre);process.exit(1);}
+  const st=tutStepsNow(K.id);
+  if(st.length<3){console.log('FAIL: 段が少なすぎる '+K.id);process.exit(1);}
+  for(const S of st)if(!S.t||!S.m){console.log('FAIL: 見出しか本文が無い '+K.id+' '+S.id);process.exit(1);}
+  /* ⚠(204f)**説明口調の言い回しを混ぜない**(ユーザー指摘)=名詞でまとめた言い方を弾く */
+  for(const S of st){const q=S.t+S.m;
+   for(const d of ['につきの','ことができ','となります','を行う'])
+    if(q.indexOf(d)>=0){console.log('FAIL: 説明口調が残っている「'+d+'」 '+K.id+' → '+S.m);process.exit(1);}}
+  const g0=META.gem||0;
+  tutStart(K.id);
+  if(!TUT){console.log('FAIL: 始められない '+K.id);process.exit(1);}
+  if(!G||!G.tut){console.log('FAIL: 戦場が始まっていない '+K.id);process.exit(1);}
+  /* ④建てられる塔が絞られているか */
+  {const me=G.players[0],ok=TOWERS.filter((T,ti)=>!T.grd&&!T.off&&T.type!=='eco'&&T.type!=='sup'
+    &&twReady(me,ti)&&(!(TUT.K&&TUT.K.tw)||TUT.K.tw.indexOf(T.id)>=0)).map(T=>T.id);
+   if(ok.join()!==K.tw.join()){console.log('FAIL: 建てられる塔が絞れていない '+K.id+' → '+ok.join());process.exit(1);}}
+  if(K.pre){const me=G.players[0];
+   if(!(me.towers||[]).some(tw=>tw&&TOWERS[tw.ti].id===K.pre)){console.log('FAIL: 相方の塔が建っていない '+K.id);process.exit(1);}}
+  for(let k=0;k<st.length+2&&TUT;k++)tutGo(TUT.i+1);
+  if(TUT){console.log('FAIL: 最後まで進まない '+K.id);process.exit(1);}
+  const got=(META.gem||0)-g0;
+  if(got!==TUT_GEM){console.log('FAIL: 報酬が💎'+TUT_GEM+'ではない '+K.id+'('+got+')');process.exit(1);}
+  if(!tutClr(K.id)){console.log('FAIL: 済んだ印が付かない '+K.id);process.exit(1);}
+  /* ③2回目は報酬なし */
+  const g1=META.gem||0;
+  tutStart(K.id);for(let k=0;k<st.length+2&&TUT;k++)tutGo(TUT.i+1);
+  if((META.gem||0)!==g1){console.log('FAIL: 2回目にも報酬が出る '+K.id);process.exit(1);}
+  n++;
+ }
+ META.tutC=[];META.tutOk=0;backTitle();
+ console.log('🎓小分けチュートリアル: 一覧'+TUT_LS.length+'本(上から順に開く) / 塔の回'+n+'本すべて最後まで進む / 報酬💎'+TUT_GEM+'は初回だけ / 建てられる塔は絞られる OK');
+}
 function checkTut(){
  /* 廃止した操作・古い言い回しが混ざっていないか */
  const NG=[['長押し','デッキ長押しの部隊レベルアップは廃止済み'],
@@ -491,7 +538,8 @@ function checkTut(){
  for(let k=0;k<st.length+2&&TUT;k++)tutGo(TUT.i+1);
  if(TUT){console.log('FAIL: チュートリアルが最後まで進まない');process.exit(1);}
  const got=(META.gem||0)-gem0;
- if(got!==3){console.log('FAIL: チュートリアルで渡す💎が3個ではない('+got+'個)');process.exit(1);}
+ /* 🎓(204f)**基礎は 説明の中の3個 + 済ませた報酬の10個**(ユーザー指示「報酬でガチャ石10個」) */
+ if(got!==3+TUT_GEM){console.log('FAIL: チュートリアルで渡す💎が'+(3+TUT_GEM)+'個ではない('+got+'個)');process.exit(1);}
  META.gem=gem0;/* ⚠測ったら戻す=検査どうしがMETAを汚し合わないように */
  if(!META.tut){console.log('FAIL: チュートリアルを終えても META.tut が立たない(毎回出てしまう)');process.exit(1);}
  if(!META.tutOk){console.log('FAIL: 最後まで通しても META.tutOk が立たない(2回目の判定ができない)');process.exit(1);}
@@ -4385,6 +4433,7 @@ const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial
 ['checkPreview',checkPreview],
 ['checkSfxGain',checkSfxGain],
 ['checkTut',checkTut],
+['checkTutList',checkTutList],
 ['checkTutLock',checkTutLock],
 ['checkResume',checkResume],
 ['checkResumeFarm',checkResumeFarm],

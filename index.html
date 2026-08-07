@@ -1015,6 +1015,12 @@ body.bns #abar{justify-content:flex-end;padding-right:132px}
  background:var(--paper2);border-radius:8px;color:var(--ink)}
 /* 属性の札=幅を揃えて左端に置く(同じ属性が縦に揃って見える) */
 .rtrow .ty{flex:0 0 auto;width:62px;font-size:10.5px;font-weight:900;opacity:.8}
+/* 🎓(204f)チュートリアルの一覧の1行。⚠押す所は44px以上・文字は10.5px以上([[NOTES_UI]]) */
+.tut-row{display:flex;align-items:center;gap:8px;text-align:left;min-height:48px;padding:6px 10px}
+.tut-row .tlic{flex:0 0 auto;font-size:20px;width:26px;text-align:center}
+.tut-row .tlnm{flex:1 1 auto;font-size:14px;font-weight:900;line-height:1.2}
+.tut-row .tlnm small{display:block;font-size:11px;font-weight:700;opacity:.8}
+.tut-row .tlgm{flex:0 0 auto;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}
 .rtrow .nm{flex:1 1 auto;font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rtrow .p{flex:0 0 auto;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}
 .rtnote{font-size:11px;font-weight:700;opacity:.8;margin-top:8px;line-height:1.4}
@@ -2059,6 +2065,16 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
   </div>
 </div>
 
+<!-- 🎓⭐**チュートリアルの一覧**(2026-08-07(204f)ユーザー指示「チュートリアルボタン押したら
+     内容が羅列してあって 上から順番にやっていく感じで 報酬でガチャ石10個」)。
+     ⚠**高さは vh で決めない**=必ず var(--appH)([[NOTES_UI]] で4回崩している) -->
+<div class="modal" id="md-tutlist">
+  <div class="panel" style="max-width:420px;width:min(94vw,420px)">
+    <h2 class="hd">🎓 あそびかた</h2>
+    <div id="tutlist-b" style="display:flex;flex-direction:column;gap:6px;max-height:calc(var(--appH) * 0.56);overflow:auto;margin:6px 0"></div>
+    <button class="btn" id="tutlist-x">閉じる</button>
+  </div>
+</div>
 <div class="modal" id="md-intro">
   <div class="panel center" style="max-width:400px;width:min(92vw,400px)">
     <h2 class="hd" id="itr-h">新戦力</h2>
@@ -2373,7 +2389,7 @@ let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK
    `bres`=持っている物資[⛽燃料,🏭鉄材,🏠食料] / `bup`=性能の段 / `beq`=付けた装備。
    ⚠**遊ぶたびに積み上がる**ので、値段は「1試合ぶんの稼ぎ×何試合ぶんか」で決めること。 */
 const META_KEY=DEV?'dt_meta_dev':'dt_meta';/* 🛠DEVモードのセーブは別枠(普段のデータを汚さない) */
-try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;
+try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv==='object'){META=Object.assign(META,mv);if(!META.st||!META.st.length)META.st=['air'];if(META.st.indexOf(META.eq)<0)META.eq='air';META.nt=META.nt||0;META.nu=META.nu||0;if(!Array.isArray(META.clr))META.clr=[0,0,0,0,0,0];while(META.clr.length<6)META.clr.push(0);META.nmOK=META.nmOK||0;if(!Array.isArray(META.tutC))META.tutC=[];
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
@@ -2476,6 +2492,7 @@ function metaResetAll(){
  META.cupR=[];                                 /* 🥤(166)カップゾンビの記録 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
  META.stg=0;META.tut=0;META.tutOk=0;           /* 選んでいたステージ・チュートリアル済み・最後まで通した */
+ META.tutC=[];                                 /* 🎓(204f)済ませたチュートリアルのid(報酬は1回だけ) */
  META.tmTip=0;                                 /* 🎒編成の案内(初めてユニットを解放した時に1回) */
  META.bcl=[];                                  /* 🚌ボーナス面の初回クリア(ステージごと。報酬は1回だけ) */
  META.brec=[];                                 /* 🚌道中の自己ベスト(ステージごと。タイム/轢いた数/最高連続) */
@@ -23698,7 +23715,9 @@ function openBM(si){
        ⚠🎓チュートリアルと🛠DEVでは今までどおり全部出す(段取りが崩れるため) */
     if(want==='sup'&&!twHas(T.id)&&!devAll()&&!(G&&G.tut))continue;}
    /* ⚠(187)添字ではなく持ち物の並びで見る(進行の作り替えB) */
-   else{if(T.type==='eco'||T.type==='sup')continue;if(!twReady(m,i))continue;}
+   else{if(T.type==='eco'||T.type==='sup')continue;if(!twReady(m,i))continue;
+    /* 🎓(204f)塔の回のチュートリアル中は**その塔だけ**出す(選び間違えると教えられない) */
+    if(TUT&&TUT.on&&TUT.K&&TUT.K.tw&&TUT.K.tw.indexOf(T.id)<0)continue;}
    /* 🛡⭐**硬い敵への通り方を札で出す**(2026-08-04)=盤面で建てる時に一番効く情報 */
    /* ⛔**相性の札は外した**(2026-08-04(145))=(138)で足したが、文字でも記号でも読まれない。
       ⚠**書き戻さない**。相性は敵の見た目と戦闘中のダメージ数字の色で言う。 */
@@ -29001,6 +29020,79 @@ function tutSupCost(){
  if(!isFinite(mn))mn=0;
  return prSup(0)+mn+200;
 }
+/* ============ 🎓⭐⭐⭐**チュートリアルを小分けにした**(2026-08-07(204f)ユーザー指示) ============
+   「各塔 一個一個 説明が必要なやつはチュートリアルほしい / いまあるあそびかたのやつは
+     基礎の基礎チュートリアルとしてひとつめであるかんじで / チュートリアルボタン押したら
+     内容が羅列してあって 上から順番にやっていく感じで / 報酬でガチャ石10個もらえる感じ」。
+   ⭐**作り方も指示ずみ**=「読みながらタワーたてて 敵がきて 凍らせたり、しっかりと効果が分かるような
+     作りにしてほしい。照明塔とか単体だとわからないからしっかり作って。
+     同じタワーの凍結回数は共有される〜みたいな説明は説明文だけでOK」。
+   ⚠⚠**文の書き方の掟**(同日ユーザー指摘)=**説明口調にしない・規則を名詞でまとめない**。
+     ここは「読む気で開いている画面」なので盤面の札より長くてよいが、**1段3行まで**。
+   ⭐**上から順にしか開かない**(研究所の棚と同じ読み方)。⚠**報酬は初回だけ**(`META.tutC`)。 */
+const TUT_GEM=10;/* 1本ごとの報酬(💎)。⚠初回だけ */
+const TUT_LS=[
+ {id:'base', ic:'🎓',n:'はじめかた',      d:'建てる・出す・戦う'},
+ /* ⚠**tw**=この回だけ建てられる塔 / **pre**=先に建てておく塔(相方が要る回だけ) */
+ {id:'cryo', ic:'❄',n:'冷却塔',          d:'凍らせて足を止める',      tw:['cryo']},
+ {id:'pullt',ic:'🧲',n:'引力塔',          d:'道の後ろへ引き戻す',      tw:['pullt']},
+ {id:'lamp', ic:'💡',n:'照明塔',          d:'照らして脆くする',        tw:['lamp'],pre:'rifle'},
+ {id:'tesla',ic:'⚡',n:'テスラコイル',    d:'同時に何体も撃つ',        tw:['tesla']},
+ {id:'coil', ic:'⚡',n:'重テスラ',        d:'跳ねるほど重くなる',      tw:['coil']},
+];
+const tutClr=id=>(id==='base'&&META.tutOk)||((META.tutC||[]).indexOf(id)>=0);
+const tutCanDo=i=>i===0||tutClr(TUT_LS[i-1].id);
+const tutCourse=id=>TUT_LS.find(q=>q.id===id)||TUT_LS[0];
+/* 🎓**塔の回の段**。⚠**4段だけ**=①何をする塔か ②建てる ③効き目を見る ④覚えておくこと。
+   ⚠**効き目を見る段は「実際に起きたら」進む**(時間では進めない)=起きた所を必ず目で見せる。 */
+function tutTwSteps(K){
+ const Ti=TOWERS.findIndex(q=>q.id===K.tw[0]),T=TOWERS[Ti]||{},nm=T.n||'';
+ const Z=K.zk||{};
+ /* 敵を湧かせる。⚠**道の途中に置く**=湧き口から歩かせると効き目を見るまで待たされる */
+ const put=(C,n,zid,d0)=>{const zi=ZOMBIES.findIndex(q=>q.id===(zid||'walk'));if(zi<0||!C)return;
+  for(let k=0;k<n;k++){const z=mkZ(zSpec(zi,1,3),Math.max(20,(d0||PLEN*.42)-k*34));z.hp=z.mhp=z.hp*3;C.zombies.push(z);}};
+ return[
+  {id:'tw0',scr:'game',t:K.t0,m:K.m0},
+  {id:'tw1',scr:'game',t:nm+'を建てろ',m:K.m1,
+   hi:{k:'slot'},sl:1,al:'#buildmenu',ok:C=>!!(C.towers||[])[tutSlot(C)]},
+  {id:'tw2',scr:'game',t:K.t2,m:K.m2,sl:2,
+   pre:C=>{put(C,Z.n||8,Z.id,Z.d);},ok:K.ok},
+  {id:'tw3',scr:'game',t:K.t3,m:K.m3,sl:2},
+ ];
+}
+/* 🎓各回の文。⚠**説明口調にしない**=名札と短い言い切りで書く(2026-08-07の指摘)。 */
+const TUT_TXT={
+ cryo:{t0:'❄冷却塔を教える',m0:'撃って倒す塔じゃない。敵を凍らせて、その場に止める塔だ。',
+  m1:'光っているマスに冷却塔を建てろ。範囲の中の敵をまとめて凍らせる。',
+  t2:'凍らせてみろ',m2:'敵が来る。範囲に入ると氷漬けになって、動くのも殴るのもやめる。',
+  ok:C=>(C.zombies||[]).some(z=>!z.dead&&z.frzT>0),
+  t3:'覚えておくこと',m3:'同じ敵に5回まで。回数は敵が持っている。冷却塔を2本建てても5回のままだ。',
+  zk:{n:9,id:'walk'}},
+ pullt:{t0:'🧲引力塔を教える',m0:'こいつも倒す塔じゃない。進んだ敵を塔の所まで引き戻す。',
+  m1:'光っているマスに引力塔を建てろ。すり抜ける敵も掴む。',
+  t2:'引き戻してみろ',m2:'敵が来る。掴まれた敵は道を後ろへ戻される。前へは動かせない。',
+  ok:C=>(C.zombies||[]).some(z=>!z.dead&&(z.pulUsed||0)>0),
+  t3:'覚えておくこと',m3:'同じ敵を掴めるのは4回まで。凍っている敵は掴めない。冷却塔と重ねても止まり続けはしない。',
+  zk:{n:9,id:'walk'}},
+ lamp:{t0:'💡照明塔を教える',m0:'照明塔はほとんど撃たない。照らした敵が受けるダメージを増やす塔だ。',
+  m1:'ライフル台はもう建ててある。光っているマスに照明塔を建てて、同じ敵を照らせ。',
+  t2:'数字を見ろ',m2:'照らされた敵に出るダメージの数字が大きくなる。撃つ塔と組ませて初めて働く。',
+  ok:C=>(C.zombies||[]).some(z=>!z.dead&&z.litT>0),
+  t3:'覚えておくこと',m3:'倍率は一番強い照明塔のものが乗る。2本建てても足し算にはならない。',
+  zk:{n:8,id:'walk'}},
+ tesla:{t0:'⚡テスラコイルを教える',m0:'1体ずつではなく、範囲の先頭から何体かへ同時に撃つ塔だ。',
+  m1:'光っているマスにテスラコイルを建てろ。強化すると同時に撃つ数が増える。',
+  t2:'同時に撃たせろ',m2:'電撃が何本も同時に伸びる。跳ね返りはしない。まとまって来る敵に強い。',
+  ok:C=>(C.zombies||[]).some(z=>!z.dead&&z.hitT>0),
+  t3:'覚えておくこと',m3:'こいつは連鎖しない。跳ねて伝わるのは重テスラの方だ。',
+  zk:{n:10,id:'walk'}},
+ coil:{t0:'⚡重テスラを教える',m0:'1体撃つと、そこから近くの敵へ跳ねて伝わる。跳ねるほど重くなる。',
+  m1:'光っているマスに重テスラを建てろ。列になった敵の後ろほど痛い。',
+  t2:'跳ねさせろ',m2:'電撃が1体ずつ順に伝わっていく。塊の中で撃つと最後の1体が一番重い。',
+  ok:C=>(C.zombies||[]).some(z=>!z.dead&&z.hitT>0),
+  t3:'覚えておくこと',m3:'跳ねる数は10回で頭打ち。そこから先は連鎖を強化しても伸びない。',
+  zk:{n:12,id:'walk'}},
+};
 function tutSteps(){return[
  /* ⭐**いきなり戦場を始めない**(2026-07-26ユーザー指示「いきなり始まるんじゃなくて
     チュートリアルを開くとこからにして」)。まずタイトルで「🎓あそびかた」を押させる。
@@ -29146,7 +29238,9 @@ function tutSteps(){return[
      やり直すたびに💎が3個ずつ増える穴もここで塞がる**。
    ⚠判定は `META.tutOk`(最後まで通したか)。`META.tut` は**始めた時点で立つ**ので使えない
      (再読み込みで自動起動しないための印であって、済んだ印ではない)。 */
-function tutStepsNow(){
+function tutStepsNow(cs){
+ /* 🎓(204f)塔の回はここで作る(基礎だけ今までの表を使う) */
+ if(cs&&cs!=='base'){const K=tutCourse(cs);return tutTwSteps(Object.assign({},K,TUT_TXT[cs]||{}));}
  const a=tutSteps();
  return (META.tutOk)?a.filter(s=>['gift','pull','end'].indexOf(s.id)<0):a;
 }
@@ -29161,7 +29255,7 @@ function tutHold(){return !!(TUT&&TUT.on&&!TUT.ran);}/* 作戦タイムの残り
 /* ⚠ゲームを止めて「閉じるまで待つ」もの=どの段でも必ず押せるようにする(下の tutPass を見ること) */
 /* ⚠**チュートリアル中でも必ず押させるもの**。閉じられないと詰むUIはここに入れる。
    #md-intro=新登場の紹介(閉じるまでPAUSED) / #bm-x=建設・強化ウィンドウの✕(2026-07-27に追加) */
-const TUT_FREE='#md-intro,#bm-x';
+const TUT_FREE='#md-intro,#bm-x,#md-tutlist';
 function tutPass(e){
  if(!TUT||!TUT.on)return true;
  const t=e&&e.target;if(!t||!t.closest)return true;
@@ -29260,10 +29354,24 @@ function tutNope(){
    =押した瞬間に TUT を作り直してしまうと、いつまでも最初の段から動かない */
 function tutOpen(){
  if(TUT&&TUT.on&&TUT.st[TUT.i]&&TUT.st[TUT.i].id==='open'){tutGo(TUT.i+1);return;}
- tutStart();
+ tutListOpen();/* 🎓(204f)ボタンを押したら一覧を出す(はじめての人は上の段が先に進む) */
 }
-function tutBegin(from){
- TUT={on:true,i:-1,st:tutStepsNow(),mk:0,ran:false,t:0,si:null,gem0:0,mv:0};
+/* 🎓(204f)**一覧**。⚠上から順にしか開かない。⚠済んだ回は✅、まだの回は▶、先の回は🔒 */
+function tutListOpen(){
+ const b=$('tutlist-b');if(!b){tutStart();return;}
+ b.innerHTML=TUT_LS.map((K,i)=>{
+  const done=tutClr(K.id),can=tutCanDo(i);
+  return '<button class="btn '+(done?'':can?'grn':'')+' tut-row" data-tl="'+K.id+'" '+(can?'':'disabled')+'>'
+   +'<span class="tlic">'+(done?'✅':can?K.ic:'🔒')+'</span>'
+   +'<span class="tlnm">'+K.n+'<small>'+K.d+'</small></span>'
+   +'<span class="tlgm">'+(done?'済み':'💎'+TUT_GEM)+'</span></button>';}).join('');
+ b.querySelectorAll('[data-tl]').forEach(el=>{el.onclick=()=>{
+  $('md-tutlist').classList.remove('on');tutStart(el.dataset.tl);};});
+ $('md-tutlist').classList.add('on');
+}
+function tutBegin(from,cs){
+ cs=cs||'base';
+ TUT={on:true,i:-1,st:tutStepsNow(cs),mk:0,ran:false,t:0,si:null,gem0:0,mv:0,cs,K:tutCourse(cs)};
  /* ⭐**始めた時点で「出した」ことにする**(第89弾)。第89弾で光っている所以外を押せなくしたので、
     万一どこかの段で詰まった時の逃げ道が**再読み込みだけ**になった。ここで立てておけば
     再読み込みで自動起動が二度と掛からない=遊べなくなる事故を防げる。
@@ -29272,7 +29380,7 @@ function tutBegin(from){
  tutGo(from);
 }
 function tutAuto(){tutBegin(0);}/* はじめての人=タイトルの「開くところ」から */
-function tutStart(){tutBegin(1);}/* ボタンから=そのまま戦場へ */
+function tutStart(cs){tutBegin((cs&&cs!=='base')?0:1,cs);}/* 一覧から=そのまま戦場へ */
 /* 戦場を始める。⚠新兵・ステージ1に固定し、G.tut=1 で本編の記録を汚さない */
 function tutBattle(){
  setDiff=0;META.stg=0;
@@ -29283,6 +29391,16 @@ function tutBattle(){
     ⚠G.tut が立っているので戦績もセーブも汚さない。 */
  try{if(G){const hi9=hUiOf('hCop');if(hi9>=0){G.players[0].hUi=hi9;G.players[0].hOut=0;G.players[0].hCg=0;}}}catch(e){}
  TUT.si=null;if(G)tutSlot(G.players[0]);/* 建てさせるマスをここで確定させる */
+ /* 🎓(204f)**塔の回の下ごしらえ**=相方の塔は先に建てておく(照明塔は1本だと何も起きないため)。
+    ⚠**建てる場所は教える塔の隣**=離すと同じ敵に当たらず、効き目を見られない。 */
+ try{const K=TUT&&TUT.K;const C=G&&G.players[0];
+  if(K&&K.tw&&C){C.unlocked=TOWERS.length;C.scrap=Math.max(C.scrap|0,4000);
+   if(K.pre){const pi=TOWERS.findIndex(q=>q.id===K.pre),si0=tutSlot(C);
+    let best=-1,bd=1e9;
+    for(const si of SLOT_ORDER){if(si===si0||isEcoSlot(si)||isSupSlot(si)||C.towers[si])continue;
+     const d9=dist(SLOTS[si][0],SLOTS[si][1],SLOTS[si0][0],SLOTS[si0][1]);
+     if(d9<bd){bd=d9;best=si;}}
+    if(pi>=0&&best>=0){C.slk&&(C.slk[best]=true);buildTower(C,best,pi);}}}}catch(e){}
 }
 function tutGo(i){
  if(!TUT)return;
@@ -29413,6 +29531,7 @@ function tutStep(dt){
   if(ok)tutGo(TUT.i+1);}
 }
 function tutEnd(done){
+ const cs0=(TUT&&TUT.cs)||'base';/* ⚠TUT を消す前に控える */
  tutHi(null);
  const e=$('tut');if(e)e.classList.remove('on');
  /* 🔦(98)スポットライトと矢印も必ず消す(TUTが消えると誰も消さなくなる) */
@@ -29422,9 +29541,16 @@ function tutEnd(done){
  META.tut=1;
  /* ⭐**最後まで通した印**(2026-07-28)。これが立つと2回目以降=💎とガチャの段が消え、やめるボタンが出る。
     ⚠`META.tut` は始めた時点で立つので済んだ印にはならない。⚠**途中でやめた時(done=false)は立てない**。 */
- if(done)META.tutOk=1;
+ if(done&&cs0==='base')META.tutOk=1;
+ /* 🎓(204f)**報酬は初回だけ**(ユーザー指示「報酬でガチャ石10個」)。⚠済んだ印も一緒に付ける */
+ let got=0;
+ if(done&&cs0&&(META.tutC||[]).indexOf(cs0)<0){
+  META.tutC=(META.tutC||[]).concat([cs0]);META.gem=(META.gem||0)+TUT_GEM;got=TUT_GEM;}
  saveMeta();
- if(done){backTitle();toast('🎓 チュートリアル終了!シングルプレイで腕を試せ');}
+ if(done){backTitle();try{updLabBtn();}catch(e){}
+  toast(got?('🎓 終わり! 💎'+got+' もらった'):'🎓 チュートリアル終了!シングルプレイで腕を試せ');
+  /* ⚠済んだら一覧へ戻す=次の回にそのまま進める(2本目以降は一覧が入口) */
+  if(cs0!=='base'||META.tutOk)setTimeout(()=>{try{tutListOpen();}catch(e){}},420);}
 }
 function backTitle(){
  if(TUT&&!TUT.mv)tutEnd(false);/* ⚠TUT.mv=チュートリアル自身が画面を移している最中=畳まない */
@@ -35098,6 +35224,8 @@ $('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
 $('bt-back2').onclick=()=>show('title');
 $('bt-howto').onclick=()=>tutOpen();
+/* 🎓(204f)一覧を閉じる。⚠TUT_FREE にも入れてある=チュートリアル中でも必ず押せる */
+{const x9=$('tutlist-x');if(x9)x9.onclick=()=>{$('md-tutlist').classList.remove('on');};}
 $('tut-next').onclick=()=>{if(TUT)tutGo(TUT.i+1);};
 /* ⭐やめる(2回目以降だけ出る)。⚠**done=false で終わる**=最後まで通した印(tutOk)は動かさない */
 $('tut-quit').onclick=()=>{if(!TUT)return;tutEnd(false);backTitle();
