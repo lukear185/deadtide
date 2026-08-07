@@ -6263,13 +6263,22 @@ const SUP_HL=[16,25,33,41,47,52];
 const supHlOf=lv=>SUP_HL[Math.min(SUP_HL.length-1,Math.max(0,lv|0))];
 const isEcoSlot=si=>si>=ECO_BASE&&si<SUP_BASE;
 const isSupSlot=si=>si>=SUP_BASE;
+/* 🎓チュートリアルの状態。⚠⚠**宣言はここ**(下の方に置くと、読み込みの途中で触った時に落ちる=TDZの穴)。
+   ⚠中身を入れるのは `tutStart` の所。ここでは入れ物だけ作る。 */
+let TUT=null;
 const supUnlocked=(C,si)=>(si-SUP_BASE)<(C&&C.supN||0);
 const prSup=n=>[600,1500][n]||1e9;/* n=現在の解放数 → 次の枠の価格 */
 /* 🏗⭐⭐(204d)**開けられる支援枠は「研究所で解放した支援施設の種類数」まで**(2026-08-07ユーザー指示
    「中身を解放してないのに置き場を解放できちゃう」「同じやつは2個置けないから、
      中身の解放数に応じて置き場を解放できる数を決めて」)。
-   ⚠**同じ施設は2つ建てられない**ので、種類より多い枠を開けても必ず空き枠になる。 */
-const supOwnN=()=>devAll()?SUP_MAX:Math.min(SUP_MAX,TOWERS.filter(T=>T.type==='sup'&&!T.off&&twHas(T.id)).length);
+   ⚠**同じ施設は2つ建てられない**ので、種類より多い枠を開けても必ず空き枠になる。
+   ⚠⚠⚠**チュートリアルの最中は必ず開けられる**(2026-08-07(205)ユーザー実機
+     「チュートリアルで支援枠に置けなくなったせいで進めない」)=はじめかたの回には
+     **支援枠を開けて1つ建てる段**があるのに、始めたばかりでは支援施設を1つも持っていないので
+     **どうやっても開けられず詰む**。⚠**同じ形の詰みは3度目**(値段を上げた時に2回・今回は開ける条件)。
+     ⭐**チュートリアルで「押せないボタン」を見せない**の掟(この段のコメント)がここにも掛かる。
+     ⚠検査 `checkTutSup` が、持ち物が素のままでこの段を通れることを見張る。 */
+const supOwnN=()=>(devAll()||(G&&G.tut)||(TUT&&TUT.on))?SUP_MAX:Math.min(SUP_MAX,TOWERS.filter(T=>T.type==='sup'&&!T.off&&twHas(T.id)).length);
 const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
 const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
 const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
@@ -29140,7 +29149,6 @@ function startGameUI(others){
      難易度は新兵(0)・ステージ1に固定し、⚙️は足りなくならないよう補充する。
    段の形: {id, t:見出し, m:本文, hi:光らせる所, pre:段に入る時, ok:進む条件(無ければ▶で進む)}
      hi = {k:'dom',s:セレクタ} / {k:'slot'}(建設マス) / {k:'core'}(拠点) / null */
-let TUT=null;
 /* チュートリアルで建てさせるマス。⚠工房枠(eco)と支援枠(sup)は専用なので除く。
    ⭐**一度決めたら動かさない**(TUT.siに覚える)。毎回選び直すと、建てた瞬間に
      「空いている枠」が別のマスに移り、①印が飛ぶ ②「建てたか」の判定が別のマスを見て

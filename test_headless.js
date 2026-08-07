@@ -459,6 +459,39 @@ function checkTutList(){
  META.tutC=[];META.tutOk=0;backTitle();
  console.log('🎓小分けチュートリアル: 一覧'+TUT_LS.length+'本(タレットの解放順に並ぶ・解放した塔から開く) / 塔の回'+n+'本すべて最後まで進む / 報酬💎'+TUT_GEM+'は初回だけ / 建てられる塔は絞られる OK');
 }
+/* ---- 🏗⭐⭐(205)**チュートリアルの支援枠が「開けない」で詰まないか** ----
+   ⚠⚠**同じ形の詰みは3度目**(2026-08-05は値段・今回は開ける条件)=
+     (204d)で「開けられる支援枠は解放済みの支援施設の種類数まで」にした結果、
+     **始めたばかりの人は1種も持っていないので、どうやっても枠を開けられず詰んだ**。
+   ⭐見るのは2つ=①チュートリアル中は素の持ち物でも開けて建てられる
+     ②チュートリアルの外では今までどおり「持っている種類数まで」。 */
+function checkTutSup(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kpOt=META.ot;
+ /* 素の持ち物(段0の4種)=支援施設は1つも持っていない */
+ META.ot=UNL_T.slice(0,UNL_TN[0]);
+ if(TOWERS.filter(T=>T.type==='sup'&&!T.off&&twHas(T.id)).length)F('素の持ち物に支援施設が入っている(検査の前提が崩れた)');
+ META.stg=0;setDiff=0;startSolo();frames(6,.016);
+ const me=G.players[0];
+ /* ① チュートリアルの外=開けられない(204dの決まりはそのまま) */
+ G.tut=0;
+ if(supOwnN()!==0)F('支援施設を1つも持っていないのに枠を開けられる(204dの決まりが効いていない)');
+ /* ② チュートリアル中=開けて建てられる */
+ G.tut=1;
+ if(supOwnN()<1)F('チュートリアル中なのに支援枠を1つも開けられない(この段で詰む)');
+ me.scrap=tutSupCost();
+ if(!doPurchase(me,'supslot',{}))F('チュートリアルで支援枠が開けない(⚙️'+tutSupCost()+'持たせても)');
+ const ti=TOWERS.findIndex(T=>T.type==='sup'&&!T.off);
+ if(ti<0)F('建てられる支援施設が1つも無い');
+ if(!buildTower(me,SUP_BASE,ti))F('チュートリアルで支援施設が建てられない(枠は開いたのに)');
+ if(!me.towers[SUP_BASE])F('建てたのに枠が空のまま');
+ /* その段の合格条件そのもの(ok)も通ること */
+ {const S=tutSteps().find(x=>x.id==='sup');
+  if(!S)F('はじめかたに支援枠の段が無い');
+  if(typeof S.ok==='function'&&!S.ok(me))F('支援施設を建てても段の合格条件が通らない');}
+ backTitle();META.ot=kpOt;twGrantAll();
+ console.log('🏗チュートリアルの支援枠: 素の持ち物(支援施設0種)でも 枠を開けて 施設を建てられる / チュートリアルの外では今までどおり開けられない OK');
+}
 function checkTut(){
  /* 廃止した操作・古い言い回しが混ざっていないか */
  const NG=[['長押し','デッキ長押しの部隊レベルアップは廃止済み'],
@@ -4510,7 +4543,7 @@ const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial
 ['checkTwLook',checkTwLook],
 ['checkPreview',checkPreview],
 ['checkSfxGain',checkSfxGain],
-['checkTut',checkTut],
+['checkTut',checkTut],['checkTutSup',checkTutSup],
 ['checkTutList',checkTutList],
 ['checkTutLock',checkTutLock],
 ['checkResume',checkResume],
