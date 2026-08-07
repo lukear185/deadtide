@@ -2483,16 +2483,17 @@ function checkGacha(){
  const want={1:5,2:4,3:4,4:4,5:5};
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
- /* ⭐**排出率は「1体あたり」で決まる**(2026-07-30ユーザー指示)=英雄を足すとその枠が太くなること。
-    ⚠それまではレア度の枠が固定で、足すほど狙った1人が出にくくなる逆の作りだった。 */
+ /* ⭐⭐**排出率は「レア度の枠」で決まる**=にゃんこ式(2026-08-07(203)ユーザー決定)。
+    ⚠⚠**2026-07-30の「1体あたり固定」は撤回された**=英雄を足すと**1体あたりが薄まる**のが正しい。 */
  for(let rk=1;rk<=5;rk++){
   const row=G_RATE.find(r=>r[0]==='r'+rk),n9=HEROES.filter(h=>h.rk===rk).length;
   if(!row){console.log('FAIL: ★'+rk+'の枠が無い');process.exit(1);}
-  if(Math.abs(row[1]-RK_EACH[rk]*n9)>1e-9){
-   console.log('FAIL: ★'+rk+'の枠が「1体あたり×人数」になっていない '+row[1]+' vs '+(RK_EACH[rk]*n9));process.exit(1);}}
- for(let rk=1;rk<5;rk++)if(!(RK_EACH[rk]>RK_EACH[rk+1])){console.log('FAIL: 1体あたりの確率がレア度順に下がっていない');process.exit(1);}
+  if(Math.abs(row[1]-RK_RATE[rk])>1e-9){
+   console.log('FAIL: ★'+rk+'の枠が表どおりでない '+row[1]+' vs '+RK_RATE[rk]);process.exit(1);}
+  if(Math.abs(rkEachOf(rk)-row[1]/n9)>1e-9){console.log('FAIL: 1体あたりが「枠÷人数」になっていない');process.exit(1);}}
+ for(let rk=1;rk<5;rk++)if(!(RK_RATE[rk]>RK_RATE[rk+1])){console.log('FAIL: レア度の枠が順に下がっていない');process.exit(1);}
  if(G_RATE[0][0]!=='dud'||G_RATE[0][1]<DUD_MIN){console.log('FAIL: はずれ枠が下限を割っている');process.exit(1);}
- console.log('排出率: 1体あたり ★1 '+RK_EACH[1]+'% … ★5 '+RK_EACH[5]+'% / いまの枠 '
+ console.log('排出率(にゃんこ式=枠が固定): 1体あたり ★1 '+rkEachOf(1).toFixed(2)+'% … ★5 '+rkEachOf(5).toFixed(3)+'% / 枠 '
   +G_RATE.map(r=>(r[0]==='dud'?'はずれ':RK_S[+r[0].slice(1)])+r[1].toFixed(1)).join(' ')+' OK');
  /* 魔石が足りない時は引けない */
  META.gem=0;META.hero={};META.hmat=0;META.pts=0;
