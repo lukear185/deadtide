@@ -22629,11 +22629,13 @@ function renderCamp(C,t){
       ⭐**頭の上**に出すため、★の高さ×拡大率 からさらに1段上げる。 */
    const ts9=TSCALE[uTier(u.ui)-1]||1;
    const sy9=(U9.id==='hGiant')?-72:(U9.id==='hDawn')?-78:(U9.id==='hDark')?-84:-62;
-   const hy9=u.py+sy9*ts9-9;
-   const bw9=34,col9=r4>.5?TOXIC:r4>.25?AMBER:DANGER;
-   c.fillStyle='rgba(0,0,0,.55)';rr(c,u.px-bw9/2-1,hy9-1,bw9+2,7,2.5);c.fill();
-   c.fillStyle=col9;rr(c,u.px-bw9/2,hy9,bw9*r4,5,2);c.fill();
-   c.strokeStyle=INK;c.lineWidth=1.6;rr(c,u.px-bw9/2-1,hy9-1,bw9+2,7,2.5);c.stroke();c.lineWidth=3;}
+   /* ⭐(212)ユーザー指示で**ひと回り大きく**した(幅34→42・帯の高さ5→7)。
+      ⚠**下へ伸ばすと頭に被る**ので、伸ばした2pxぶん上へ逃がしてある(-9→-11)。 */
+   const hy9=u.py+sy9*ts9-11;
+   const bw9=42,col9=r4>.5?TOXIC:r4>.25?AMBER:DANGER;
+   c.fillStyle='rgba(0,0,0,.55)';rr(c,u.px-bw9/2-1,hy9-1,bw9+2,9,3);c.fill();
+   c.fillStyle=col9;rr(c,u.px-bw9/2,hy9,bw9*r4,7,2.5);c.fill();
+   c.strokeStyle=INK;c.lineWidth=1.6;rr(c,u.px-bw9/2-1,hy9-1,bw9+2,9,3);c.stroke();c.lineWidth=3;}
   else if(u.hp<u.mhp){const r4=clamp(u.hp/u.mhp,0,1);c.fillStyle='rgba(0,0,0,.45)';c.fillRect(u.px-15,u.py-56*CH_UP,30,5);c.fillStyle=GOLD;c.fillRect(u.px-15,u.py-56*CH_UP,30*r4,5);}
   if(COOP&&u.own!=null){c.fillStyle=PCOL[u.own%3];c.lineWidth=2;c.strokeStyle=INK;c.beginPath();c.arc(u.px,u.py-64*CH_UP,4.5,0,7);c.fill();c.stroke();c.lineWidth=3;}
  }
