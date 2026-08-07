@@ -1313,9 +1313,12 @@ function checkTwNew(){
   if(usMax(tw.ti)!==USTAT_MAX*2){console.log('FAIL: 進化先の強化上限が2倍になっていない '+usMax(tw.ti));process.exit(1);}
   {const d0=twDmgM(tw),r0=twRateM(tw),g0=twRngM(tw);
    me.scrap=99999999;
-   for(const st of twStats(tw.ti))for(let k=0;k<USTAT_MAX;k++)
-    if(!upTower(me,si,st)){console.log('FAIL: 進化後に '+st+' を強化できない(Lv'+tw.us[st]+')');process.exit(1);}
-   if(twStats(tw.ti).some(st=>tw.us[st]!==USTAT_MAX*2)){console.log('FAIL: 進化後の強化が上限まで届かない');process.exit(1);}
+   /* ⚠(204d)**上限に届く所で止まる枠がある**(📡射程が盤面を覆う / ⚡連鎖が塔ごとの上限)=
+       まで買えれば合格にする(死んだ段を作らない直しの副作用)。 */
+   for(const st of twStats(tw.ti)){const cap9=usCap(tw.ti,st);
+    while((tw.us[st]||0)<cap9)
+     if(!upTower(me,si,st)){console.log('FAIL: 進化後に '+st+' を強化できない(Lv'+tw.us[st]+'/上限'+cap9+')');process.exit(1);}}
+   if(twStats(tw.ti).some(st=>tw.us[st]!==usCap(tw.ti,st))){console.log('FAIL: 進化後の強化が上限まで届かない');process.exit(1);}
    if(upTower(me,si,twStats(tw.ti)[0])){console.log('FAIL: 上限を超えて強化できてしまう');process.exit(1);}
    /* 6段目から先は効き目が半分(⏩連射が10段で10倍撃つ壊れ方を防ぐ) */
    if(!(twDmgM(tw)>d0&&twRngM(tw)>g0)){console.log('FAIL: 進化後の強化が効いていない');process.exit(1);}
@@ -2222,12 +2225,16 @@ function checkFinRamp(){
  const me=G.players[0];
  const fi=ZOMBIES.findIndex(z=>z.fin&&!z.nm&&!z.st);
  if(fi<0){console.log('FAIL: 最終ボスが見つからない');process.exit(1);}
- const f0={fin:1,age:0},f1={fin:1,age:FIN_RAMP},f4={fin:1,age:FIN_RAMP*4},f9={fin:1,age:FIN_RAMP*99};
+ /* 💀(204d)**HPバーが出るボスは全員上がる**(ユーザー指示)=中ボスは上限が低い(BOSS_MAX) */
+ const f0={fin:1,boss:1,age:0},f1={fin:1,boss:1,age:FIN_RAMP},
+       f4={fin:1,boss:1,age:FIN_RAMP*4},f9={fin:1,boss:1,age:FIN_RAMP*99};
  if(finAtkM(f0)!==1){console.log('FAIL: 湧いた直後の倍率が1ではない '+finAtkM(f0));process.exit(1);}
  if(Math.abs(finAtkM(f1)-2)>.001){console.log('FAIL: 1分で2倍になっていない '+finAtkM(f1));process.exit(1);}
  if(Math.abs(finAtkM(f4)-FIN_MAX)>.001){console.log('FAIL: 4分で上限になっていない '+finAtkM(f4));process.exit(1);}
  if(finAtkM(f9)!==FIN_MAX){console.log('FAIL: 上限を超えて上がっている '+finAtkM(f9));process.exit(1);}
- if(finAtkM({boss:1,age:FIN_RAMP*9})!==1){console.log('FAIL: 最終ボス以外まで上がっている');process.exit(1);}
+ if(finAtkM({boss:1,age:FIN_RAMP*99})!==BOSS_MAX){console.log('FAIL: 中ボスの上限が違う '+finAtkM({boss:1,age:FIN_RAMP*99}));process.exit(1);}
+ if(Math.abs(finAtkM({boss:1,age:FIN_RAMP})-2)>.001){console.log('FAIL: 中ボスが1分で2倍になっていない');process.exit(1);}
+ if(finAtkM({age:FIN_RAMP*99})!==1){console.log('FAIL: 雑魚まで上がっている');process.exit(1);}
  const hit=(age)=>{
   me.units.length=0;me.zombies.length=0;me.flagD=PLEN*.5;
   const ui=UNITS.findIndex(u=>u.id==='shd');
@@ -2241,8 +2248,8 @@ function checkFinRamp(){
  if(d4<d0*3){console.log('FAIL: 時間が経っても攻撃力が上がっていない '+Math.round(d0)+'→'+Math.round(d4));process.exit(1);}
  {const z=mkZ(zSpec(fi,1,20),0);const d1=z.dmg;z.age=FIN_RAMP*9;
   if(z.dmg!==d1){console.log('FAIL: コアへのダメージまで動いている');process.exit(1);}}
- console.log('💀最終ボスの攻撃力: 湧いた直後x1 → '+FIN_RAMP+'秒ごとに+1倍 → 上限x'+FIN_MAX
-  +' / 実測 盾役の被害 '+Math.round(d0)+'→'+Math.round(d4)+' / 普通のボスと雑魚は据え置き OK');
+ console.log('💀ボスの攻撃力: 湧いた直後x1 → '+FIN_RAMP+'秒ごとに+1倍 → 最終ボスx'+FIN_MAX+'/中ボスx'+BOSS_MAX
+  +' / 実測 盾役の被害 '+Math.round(d0)+'→'+Math.round(d4)+' / 雑魚は据え置き OK');
  backTitle();
 }
 function checkHook(){
@@ -4236,7 +4243,8 @@ function checkDesignNums(){
   /* ⭐(197)面のクリアで開く上限にした=表の上限は100(未クリアは20から) */
   ['TR_MAX(鍛錬Lvの上限)',TR_MAX,100],
   ['TR_CAP[0](未クリアの上限)',TR_CAP[0],20],
-  ['BNS_TIME(🚌道中の締め切り)',BNS_TIME,75],
+  /* ⏱(204d)75→50秒(2026-08-07ユーザー実機「バスがちょっと長い」)。⚠濃さ(BNS_DLX)とセット */
+  ['BNS_TIME(🚌道中の締め切り)',BNS_TIME,50],
   ['BNS_DAY_N(🚌1日の回数)',BNS_DAY_N,5],
   ['BNS_RPT_K(🚌1体あたりの🧬)',BNS_RPT_K,.25],
   ['META_RESET(セーブの版)',META_RESET,3],

@@ -776,6 +776,17 @@ const inj=(PC?'':'<style>'+coarseCSS(html)+'</style>')
      +'openBM(s9);window.addEventListener("resize",function(){try{openBM(s9);}catch(e){}});'
      +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e){}},120);'
      +'}catch(e){document.title="ERR12 "+e.message;}},1300);'):'')
+ /* 🔧⭐bmup=**建ててあるタレットの強化ウィンドウ**を開いて撮る(2026-08-07(204d))。
+    ⚠`bmenu` は**空きマス**を開くので、強化の行(⚔攻撃/📡射程…)は1つも写らなかった。
+    ⚠`t=<id>` と一緒に使う(その塔を建てた最初のマスを開く)。`bmus=5` で全部の枠を5段まで上げる。 */
+ +(OPT.indexOf('bmup')>=0?('setTimeout(function(){try{var m9=G.players[0];m9.scrap=999999;'
+     +'var s9=-1;for(var k9=0;k9<ECO_BASE;k9++){if(m9.towers[k9]){s9=k9;break;}}'
+     +'if(s9<0){document.title="ERR15 建っているタレットが無い";return;}'
+     +((/bmus=(\d+)/.exec(OPT)||[])[1]?('var lv9='+(/bmus=(\d+)/.exec(OPT)[1])+';'
+       +'twStats(m9.towers[s9].ti).forEach(function(st){for(var q9=0;q9<lv9;q9++)upTower(m9,s9,st);});'):'')
+     +'openBM(s9);window.addEventListener("resize",function(){try{openBM(s9);}catch(e){}});'
+     +'setInterval(function(){try{if(document.getElementById("buildmenu").style.display!=="block")openBM(s9);}catch(e){}},120);'
+     +'}catch(e){document.title="ERR15 "+e.message;}},1300);'):'')
  /* 🏗supbm=支援枠に🏥野戦病院を建てて強化ウィンドウを開く(2026-08-04(159))。
     ⚠**支援施設は専用枠にしか建たない**ので bmenu(普通のマス)では絶対に出ない=専用の口が要る。
     ⚠supbm2 で2枠目(👟進軍旗)を開く。 */

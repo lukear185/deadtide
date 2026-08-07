@@ -3179,6 +3179,19 @@ const SFXSYN={
     tap=進む(高い) / back=閉じる・戻る(低い) の2つだけ。耳で「進んだのか戻ったのか」が分かる */
  tap:()=>{beep(1150,780,.032,'triangle',.055);beep(330,240,.055,'sine',.04);},
  back:()=>{beep(560,330,.05,'triangle',.055);beep(190,150,.075,'sine',.035);},
+ /* 💡⭐**照明塔=灯が点く音**(2026-08-07(204d)ユーザー指示
+    「照明塔も引力塔も音をちゃんと照明・引力っぽい音にしてほしい。いまだとネットと一緒だから駄目」)。
+    ⭐3層=①点火の低い「ボッ」 ②**濾したノイズを下から上へ開く**(アークが立ち上がる)
+      ③短く残る中音の芯(灯りが点いて落ち着く)。
+    ⚠**高いキラキラ音は禁止**(掟)=上へ伸ばさない・必ず短く切る。
+    ⚠🕸ネット砲(高→低のノイズ1発=「バサッ」)と**向きを逆**にしてある=耳で別物と分かる。 */
+ lamp:()=>{beep(150,96,.10,'sine',.075);nzHit(700,2400,.17,.040,1);
+  beep(430,472,.20,'triangle',.036);beep(645,700,.16,'triangle',.018);},
+ /* 🧲⭐**引力塔=引き寄せる音**。⭐3層=①**高→低へ落ちるうなり**(吸い込まれる)
+    ②低い芯(重さ) ③掴んだ瞬間の短い「ゴッ」。
+    ⚠**上げない**=上昇させると「撃った」に聞こえる。⚠低くしすぎない(スマホは200Hz以下が鳴らない)。 */
+ pull:()=>{beep(520,124,.26,'sawtooth',.050);beep(262,131,.24,'sine',.070);
+  nzHit(620,190,.11,.028,2);beep(196,131,.15,'triangle',.028);},
  shot:()=>beep(210,70,.05,'square',.05), shotgun:()=>beep(120,40,.09,'sawtooth',.09),
  snipe:()=>beep(900,120,.09,'sawtooth',.09), zap:()=>beep(880,180,.1,'sawtooth',.07),
  thunk:()=>beep(140,70,.09,'triangle',.1), boom:()=>{beep(110,26,.4,'sawtooth',.2);beep(300,60,.28,'square',.1);},
@@ -3619,7 +3632,10 @@ const TW_SFX={rifle:'shot',shot:'shotgun',sniper:'snipe',gat:'gat',
  railx:'rail',gat2:'shot',plasma2:'plasma',fort2:'fort',
 flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net',
  /* ⭐(197)新しい塔3台と、その進化先 */
- bolt:'zap',bolt2:'zap2',bolt3:'zap2',pullt:'net',pullt2:'net',pullt3:'net',lamp:'cryo',lamp2:'cryo',lamp3:'cryo'};
+ /* ⭐(204d)**照明塔と引力塔に専用の音を付けた**(ユーザー「いまだとネットと一緒だから駄目」) */
+ bolt:'zap',bolt2:'zap2',bolt3:'zap2',
+ pullt:'pull',pullt2:'pull',pullt3:'pull',
+ lamp:'lamp',lamp2:'lamp',lamp3:'lamp'};
 function twSfx(C,T){
  if(!C||!C.isMe||!T)return;
  const f=sfx[TW_SFX[T.id]];
@@ -3999,7 +4015,7 @@ const TOWERS=[
 /* ⚡⭐(197)**雷塔**=いちばん最初に手に入る電撃(2026-08-07ユーザー決定「単体型のタレット」)。
     ⭐**連鎖しない代わりに一発が重く、射程が長い**=テスラコイル(同時に何体も撃つ)と役をずらす。
     ⚠②沈んだ港の🐟鱗はこれで殴る=面①クリアの棚に置く。 */
- {id:'bolt',n:'雷塔',cost:260,up2:'bolt2',gc:2080,rng:250,dmg:140,rate:1.35,type:'elec',chain:1,c:'#7fb6c9',dsc:'狙った1体だけを撃つ雷。連鎖はしないが一発が重く射程が長い'},
+ {id:'bolt',n:'雷塔',cost:260,up2:'bolt2',gc:2080,rng:250,dmg:140,rate:1.35,type:'elec',chain:1,cmax:1,sky:1,c:'#7fb6c9',dsc:'空から狙った1体へ雷を落とす。連鎖はしないが一発が重く射程が長い'},
  {id:'tesla',n:'テスラコイル',cost:340,up2:'tesla2',gc:2720,rng:195,dmg:44,rate:.95,type:'elec',emul:1,emax:5,trait:{k:'chain',v:.25,t:'同時攻撃+0.25体'},c:TECH2,dsc:'複数の敵へ同時に電撃を飛ばす(強化で最大5体まで)。連鎖はしない'},
  /* ⚠威力は2026-08-02に **85→100**(実戦DPS 50→58)。爆裂砲台を52に上げた結果、
     **解放費も建設費も上なのに入口の爆裂砲台に抜かれる**ようになったため、同じ回で直した。
@@ -4012,7 +4028,7 @@ const TOWERS=[
 /* 🧲⭐(197)**引力塔**=支援(2026-08-07ユーザー決定)。**進んだ敵を引き戻して1か所へ固める**。
     ⭐**すり抜ける敵も掴む**(道の上の位置そのものを動かすので、足の有無に関係ない)。
     ⚠**前進はさせない**=引き戻す方向にしか動かさない(集めるために敵を進めては本末転倒)。 */
- {id:'pullt',n:'引力塔',cost:380,up2:'pullt2',gc:3040,rng:230,dmg:4,rate:2.6,type:'net',slow:.5,slowT:1.4,pull:90,c:'#8f6fae',dsc:'範囲の敵を塔の位置まで引き戻して1か所に固める。すり抜ける敵も掴む'},
+ {id:'pullt',n:'引力塔',cost:380,up2:'pullt2',gc:3040,rng:230,dmg:4,rate:2.6,type:'net',slow:.5,slowT:1.4,pull:90,pulN:3,c:'#8f6fae',dsc:'範囲の敵を塔の位置まで引き戻して1か所に固める。すり抜ける敵も掴む'},
  /* 💡⭐(197)**照明塔**=支援。**自分は撃たず、照らした敵が受けるダメージを増やす**。
     ⭐弱点(×1.9)と掛け算になるので、その面の主役をさらに立てる働きをする。 */
  {id:'lamp',n:'照明塔',cost:420,up2:'lamp2',gc:3360,rng:260,dmg:2,rate:3,type:'net',slow:.15,slowT:.6,lit:3.5,c:'#e8c45a',dsc:'照らした敵が受けるダメージが上がる(強化で範囲も伸びる)。自分はほとんど撃たない'},
@@ -4103,10 +4119,10 @@ const TOWERS=[
  /* ⚠素を38→58にしたので、決まり(威力×2.0)どおり 76→**116**(2026-08-02) */
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:116,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  /* ⚡🧲💡(197)新しい3台の進化。⚠**進化は2段**(素→中段→最終形態)=全部の塔でそろえる決まり */
- {id:'bolt2',n:'大雷塔',base:'bolt',grd:1,up2:'bolt3',gc:5600,cost:700,rng:275,dmg:168,rate:1.25,type:'elec',chain:1,c:'#a8dcef',dsc:'落ちる雷が一段と太い。単体への一撃が重い'},
- {id:'bolt3',n:'雷神の柱',base:'bolt',grd:1,cost:1580,rng:305,dmg:300,rate:1.1,type:'elec',chain:1,c:'#d8f2ff',dsc:'空から柱のような雷を落とす。単体への一撃は最終兵器級'},
- {id:'pullt2',n:'重力塔',base:'pullt',grd:1,up2:'pullt3',gc:8240,cost:1030,rng:255,dmg:8,rate:2.4,type:'net',slow:.55,slowT:1.8,pull:140,c:'#a98fd0',dsc:'引き戻す力が強く、範囲も広い'},
- {id:'pullt3',n:'特異点塔',base:'pullt',grd:1,cost:2320,rng:285,dmg:16,rate:2.2,type:'net',slow:.6,slowT:2.2,pull:200,c:'#c9a1ff',dsc:'群れをまとめて後ろへ引きずり落とす。すり抜ける敵も掴む'},
+ {id:'bolt2',n:'大雷塔',base:'bolt',grd:1,up2:'bolt3',gc:5600,cost:700,rng:275,dmg:168,rate:1.25,type:'elec',chain:1,cmax:1,sky:1,c:'#a8dcef',dsc:'空から落ちる雷が一段と太い。単体への一撃が重い'},
+ {id:'bolt3',n:'雷神の柱',base:'bolt',grd:1,cost:1580,rng:305,dmg:300,rate:1.1,type:'elec',chain:1,cmax:1,sky:1,c:'#d8f2ff',dsc:'空から柱のような雷を落とす。単体への一撃は最終兵器級'},
+ {id:'pullt2',n:'重力塔',base:'pullt',grd:1,up2:'pullt3',gc:8240,cost:1030,rng:255,dmg:8,rate:2.4,type:'net',slow:.55,slowT:1.8,pull:140,pulN:4,c:'#a98fd0',dsc:'引き戻す力が強く、範囲も広い'},
+ {id:'pullt3',n:'特異点塔',base:'pullt',grd:1,cost:2320,rng:285,dmg:16,rate:2.2,type:'net',slow:.6,slowT:2.2,pull:200,pulN:5,c:'#c9a1ff',dsc:'群れをまとめて後ろへ引きずり落とす。すり抜ける敵も掴む'},
  {id:'lamp2',n:'探照灯',base:'lamp',grd:1,up2:'lamp3',gc:9040,cost:1130,rng:290,dmg:4,rate:2.8,type:'net',slow:.2,slowT:.8,lit:5,c:'#ffd97a',dsc:'照らし続ける時間が長い。範囲の敵が受けるダメージが上がる'},
  {id:'lamp3',n:'灼光塔',base:'lamp',grd:1,cost:2540,rng:320,dmg:8,rate:2.6,type:'net',slow:.25,slowT:1,lit:7,c:'#fff0b8',dsc:'照らされた敵は長くもろいまま。弱点を突く塔と噛み合う'},
  {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
@@ -4114,7 +4130,7 @@ const TOWERS=[
  {id:'acid2',n:'劇毒噴射塔',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'poison',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から劇毒。強い毒で削り、倒れた敵が大きく弾けて周りも溶かす'},
  {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
  {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
- {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
+ {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,cmax:10,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
  {id:'railx',n:'軌道砲',base:'rail',grd:1,cost:2040,rng:1008,dmg:620,rate:2.55,type:'beam',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
  {id:'gat2',n:'重ガトリング',base:'gat',grd:1,cost:1620,rng:241,dmg:72,rate:.09,type:'bullet',c:'#d05a48',dsc:'六本の砲身が唸る。単体をひたすら溶かす'},
  {id:'plasma2',n:'プラズマ炉',base:'plasma',grd:1,cost:2460,rng:470,dmg:600,rate:1.87,type:'beam',aoe:186,spl:70,pz:1,/* ⚠pz=プラズマ球を撃つ印。進化先にも必ず付ける */c:'#f07fc8',dsc:'炉心から撃ち出す極大の爆発。着弾点の周りも崩れる'},
@@ -4232,7 +4248,7 @@ const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タレット個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0,ms:0,hl:0});/* z=❄凍結時間 / ms=👟移動速度(進軍旗) / hl=💚回復量(野戦病院) */
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0,sw:0,pl:0,li:0,ms:0,hl:0});/* z=❄凍結時間 / ms=👟移動速度(進軍旗) / hl=💚回復量(野戦病院) */
 /* 盤面の強化は⚙️払い。⚠進化先は**そのタレットの値段で1段目から数え直す**(引き継いだLvのぶん
    1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMinSt(tw.ti,st)));
@@ -4261,7 +4277,14 @@ const twStatsRaw=ti=>TOWERS[ti].type==='sup'?(TOWERS[ti].supMs?['ms']:TOWERS[ti]
  :TOWERS[ti].frzN?(TOWERS[ti].grd?['z','r','g']:['f','r','g'])
  :TOWERS[ti].cont?(TOWERS[ti].heatN?['d','h','m']:['d','b','g'])
  :TOWERS[ti].heatN?['d','r','h']
- :(TOWERS[ti].type==='elec'?['d','c','g']:['d','r','g']);
+ /* ⭐(204d)**威力がほぼ0の3本は⚔攻撃を持たない**=その塔の持ち味そのものを伸ばす枠に差し替える */
+ :TOWERS[ti].pull?['pl','r','g']   /* 🧲引力塔=掴める回数 */
+ :TOWERS[ti].lit?['li','r','g']    /* 💡照明塔=もろくする度合い */
+ :(TOWERS[ti].type==='net'?['sw','r','g']/* 🕸ネット砲=鈍足の強さ */
+ /* ⚡⚠(204d)**連鎖しない雷塔に「連鎖数」の枠を出さない**=説明文(連鎖はしない)と食い違ううえ、
+    買っても跳ねないので死に枠だった。⭐**上限が素の数と同じなら枠ごと出さない**。 */
+ :TOWERS[ti].type==='elec'?((TOWERS[ti].emul||(TOWERS[ti].cmax||99)>(TOWERS[ti].chain||0))?['d','c','g']:['d','r','g'])
+ :['d','r','g']);
 /* ⚠⚠**冷却塔(frzN)だけは⏩連射を外さない**(2026-07-27にユーザー指摘
      「ドローンとかも進化すると攻撃速度ないけど大丈夫?」を調べて見つけた)。理由は3つ:
    ①**威力の枠を持っていない**ので、下の「連射を失った塔は⚔攻撃を厚くする」補正が一切効かず、
@@ -4269,8 +4292,10 @@ const twStatsRaw=ti=>TOWERS[ti].type==='sup'?(TOWERS[ti].supMs?['ms']:TOWERS[ti]
    ②凍らせられる回数は**10回で頭打ち**なので、連射を伸ばしても無限には効かない。
    ③そもそも撃つ間隔が6秒の塔で、「早すぎてうるさい」の対象ではない。
    ⚠ドローン母艦は⚔攻撃を持っているので補正が効く=外して問題ない(調べて確認済み)。 */
+/* ⚠(204d)**⚔攻撃を持たない塔から⏩連射まで外すと、進化しただけ弱くなる**
+   =下の「連射を失った塔は⚔攻撃を厚くする」補正が効かないため。⭐**dがある塔だけ外す**。 */
 const twStats=ti=>{const T=TOWERS[ti],L=twStatsRaw(ti);
- return (T&&T.grd&&T.type!=='eco'&&!T.frzN)?L.filter(k=>k!=='r'):L;};
+ return (T&&T.grd&&T.type!=='eco'&&!T.frzN&&L.indexOf('d')>=0)?L.filter(k=>k!=='r'):L;};
 /* ⭐⭐**⏩連射を失った塔だけ、⚔攻撃の1段を大きくして帳尻を合わせる**(2026-07-27ユーザー指摘
      「そもそも既に進化後の攻撃速度上昇の強化が無くて他の強化になってるやつがあるから、
        それが強くなっちゃうと思うからいい感じにバランス取って」)。
@@ -4283,7 +4308,10 @@ const twStats=ti=>{const T=TOWERS[ti],L=twStatsRaw(ti);
 const TW_DSTEP=.20,TW_DSTEP_G=.40;
 const twLostRate=ti=>{const T=TOWERS[ti];if(!T||!T.grd||T.type==='eco')return false;
  const b=TOWERS.findIndex(z=>z.up2===T.id);return b>=0&&twStatsRaw(b).indexOf('r')>=0;};
-const USTAT_L={ms:'👟移動速度',hl:'💚回復量',d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+/* ⭐(204d)**攻撃力がほぼ0の塔から⚔攻撃の枠を外した**(2026-08-07ユーザー指示
+   「攻撃力ほぼ0のやつで攻撃力の強化は不要だから削除して、そのタワー固有の効果を強化できるやつに差し換え」)。
+   ⚠対象=🕸ネット砲・🧲引力塔・💡照明塔(どれも威力2〜16で、⚔を買っても何も起きなかった)。 */
+const USTAT_L={ms:'👟移動速度',hl:'💚回復量',d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',sw:'🕸鈍足の強さ',pl:'🧲掴む回数',li:'💡もろさ',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに15.5%短くなる。
    ⭐⭐**掛け算にした**(2026-07-30ユーザー指摘「レーザー砲の進化後の昇温時間が0.3から上がらず無駄強化」)。
    ⚠それまでは `20*(1-.13*段)` の**引き算**だったので、進化後(最大10段=usEff 7.5)は
@@ -4329,12 +4357,35 @@ const usCap=(ti,st)=>{const T=TOWERS[ti];
  /* ⚠**❄冷却回数は進化しても5段まで**(2026-07-27)。上の twFrzN が5段までしか数えないので、
     ここで止めないと**6段目以降を買えるのに何も起きない死んだ強化**になる。 */
  if(st==='f')return USTAT_MAX;
- return usMinSt(ti,st)+USTAT_MAX;};
+ const top=usMinSt(ti,st)+USTAT_MAX;
+ /* ⚡⭐(204d)**上限に届く段で止める**(2026-08-07ユーザー指摘
+    「重テスラの連鎖数が最大10なのに進化後も連鎖の強化があって、上げても10から変わらない」)。
+    ⚠**買えるのに何も起きない段を作らない**=❄冷却回数と同じ考え方をここへ広げた。 */
+ if(st==='c'&&T){const lim=T.emul?(T.emax||5):(T.cmax||0),b=T.emul?(T.emul||1):(T.chain||0);
+  if(lim){let n=usMinSt(ti,st);while(n<top&&b+Math.round(usEff(n))<lim)n++;return Math.max(usMinSt(ti,st),n);}}
+ /* 📡⭐(204d)**射程が盤面を覆ったらそれ以上は伸ばさない**(2026-08-07ユーザー指摘
+    「攻撃範囲がすでに画面いっぱいなのにまだ強化できるタワーがあって無駄」)。 */
+ if(st==='g'&&T&&T.rng&&T.type!=='eco'){let n=usMinSt(ti,st);
+  while(n<top&&T.rng*twRngMlv(n)<TW_RNG_CAP)n++;
+  /* ⚠⚠**進化後に必ず1段は残す**=残さないと「進化しても買う物が1枠しかない塔」が18本出た(実際に出た)。
+     ⭐止めたいのは**死んだ段が何段も並ぶこと**であって、伸ばせないことではない。 */
+  return Math.min(top,Math.max(usMinSt(ti,st)+1,n));}
+ return top;};
 /* ⚡⭐(197)**連鎖数には塔ごとの上限を付けた**(2026-08-07ユーザー「重テスラの連鎖数が多すぎて重いし強すぎる」)。
    ⚠**上限が無いと研究所の強化で伸び続ける**=描く回数も1発の総ダメージも青天井になっていた。 */
 const twChain=(T,tw)=>Math.min(T.cmax||99,T.chain+Math.round(usEff((tw&&tw.us&&tw.us.c)||0)));
 /* ⚡(197)テスラコイルの**同時攻撃数**(連鎖と同じ強化の枠を使う。上限は塔ごとの emax) */
 const twEmul=(T,tw)=>Math.min(T.emax||5,(T.emul||1)+Math.round(usEff((tw&&tw.us&&tw.us.c)||0)));
+/* 🕸🧲💡⭐(204d)**威力がほぼ0の3本の「持ち味」の強化**(⚔攻撃の枠と入れ替えたもの)。
+   ⭐どれも1段ごとに効きが上がる。⚠数字は [[DESIGN]] ではなくここが正。 */
+/* 🕸鈍足の強さ=止まりはしないが遅くなる。⚠**0.30より下げない**(実質停止になる) */
+const twSlowV=(T,tw)=>Math.max(.30,(1-(T.slow||.45))-.05*usEff((tw&&tw.us&&tw.us.sw)||0));
+/* 🧲⭐**同じ敵を掴める回数**(2026-08-07ユーザー「引力塔を最大強化すると敵が一切前に行けなくなる」)。
+   ⚠⚠**回数で止めるのが要**=連射を買うほど掴む間隔が縮み、**永久に前へ進めなくなっていた**。
+     ❄冷却塔で先に通った手当て(`frzUsed`)と同じ考え方。⭐掴む力そのものは触っていない。 */
+const twPulN=(T,tw)=>(T.pulN||3)+Math.round(usEff((tw&&tw.us&&tw.us.pl)||0));
+/* 💡もろさ=照らされた敵が受けるダメージの倍率。1段ごとに+0.06倍 */
+const twLitX=(T,tw)=>LIT_X+.06*usEff((tw&&tw.us&&tw.us.li)||0);
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
 /* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
 const TR_COL=['rgba(255,235,150,','rgba(255,206,84,','rgba(255,150,60,','rgba(255,92,80,','rgba(206,120,255,','rgba(120,230,255,'];
@@ -4342,6 +4393,9 @@ const HIT_COL=[GLOW,'#ffe08a','#ffc078','#ff9a8a','#e0b0ff','#c8f2ff'];
 const twTier=tw=>{const n=tw&&tw.us?(tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0)):0;return n>=13?5:n>=10?4:n>=7?3:n>=4?2:n>=2?1:0;};
 const twDmgM=tw=>1+(twLostRate(tw&&tw.ti)?TW_DSTEP_G:TW_DSTEP)*usEff(tw.us?tw.us.d:0);
 const twRateM=tw=>1-.09*usEff(tw.us?tw.us.r:0);
+/* 📡⭐(204d)**射程の頭打ち**(盤面は1600×760)。半径がこれを超えると盤面のほぼ全部を覆うので、
+   それ以上は伸ばせないようにした(⚙️の捨て所になっていた)。⚠数字を上げる時は実機で見ること。 */
+const TW_RNG_CAP=430;
 const RNG_STEP=.13;/* 📡射程強化1段あたりの拡大率(2026-07-25: .08→.13へ拡大) */
 const twRngM=tw=>1+RNG_STEP*usEff(tw.us?tw.us.g:0);
 const twRngMlv=g=>1+RNG_STEP*usEff(g);/* 指定Lvでの射程倍率(強化前プレビュー用) */
@@ -5353,10 +5407,14 @@ const ENG_GAP=36;
    ⚠**上げるのはユニットへの攻撃力(atk)だけ**=コアへのダメージ(dmg)は触らない
      (漏れた時の被害まで5倍になると、耐える遊びではなく事故になる)。
    ⚠**倍率を文章に直接書かない**=札も知らせもこの定数から作る(相性の掟と同じ)。 */
-const FIN_RAMP=60,FIN_MAX=5;/* 何秒で+1倍 / 上限の倍率 */
-const finAtkM=z=>(z&&z.fin)?Math.min(FIN_MAX,1+(z.age||0)/FIN_RAMP):1;
-/* いま何段目か(1〜FIN_MAX)。⚠**段が上がった時だけ知らせる**=毎秒言うと読めない */
-const finStep=z=>Math.min(FIN_MAX,1+Math.floor((z&&z.age||0)/FIN_RAMP));
+/* 💀⭐(204d)**HPバーが出るボスは全員そうする**(2026-08-07ユーザー指示
+   「そのステージの最後のボスだけじゃなくて、HPバーがでるボスは全員時間経過で攻撃力をあげていって」)。
+   ⚠**中ボス(波10・15)の頭は低くする**=最終ボスより早く倒す相手なので、同じ×5だと事故になる。 */
+const FIN_RAMP=60,FIN_MAX=5,BOSS_MAX=3;/* 何秒で+1倍 / 最終ボスの上限 / 中ボスの上限 */
+const bossMaxM=z=>(z&&z.fin)?FIN_MAX:BOSS_MAX;
+const finAtkM=z=>(z&&z.boss)?Math.min(bossMaxM(z),1+(z.age||0)/FIN_RAMP):1;
+/* いま何段目か(1〜上限)。⚠**段が上がった時だけ知らせる**=毎秒言うと読めない */
+const finStep=z=>Math.min(bossMaxM(z),1+Math.floor((z&&z.age||0)/FIN_RAMP));
 /* ⭐⭐**🚩集結旗にどこまで詰めるかはユニットごとに違う**(2026-07-28ユーザー指示
      「各々のユニットの攻撃射程まで旗に近づくようにしたい。敵がいないときに旗のとこまで
        遠距離職も行っちゃって遠距離の意味があまりなくなっちゃうから」)。
@@ -5692,6 +5750,8 @@ const BNS_BEHIND=1600;
    **湧く速さがそのまま道の埋まり具合**になる(バスが進むぶん、前を埋め直し続ける必要がある)。
    ⭐盤面が上限に達したら勝手に休むので、詰めても暴走はしない。 */
 const BNS_GAP=.005;   /* 次の1体までの秒数(=濃さ)。⚠小さいほど濃い */
+/* ⏱(204d)**尺を詰めたぶんの濃さの倍率**=50/75。⚠`BNS_TIME` を動かしたらここも合わせる */
+const BNS_DLX=50/75;
 const BNS_GAP2=.05;   /* 9体に1回だけ入れる息継ぎ(塊と塊の切れ目) */
 /* ⚠**230→150に絞った**(2026-08-02(3)ユーザー「四方八方すぎて対応できない」)=
    広げるほど塊にはなるが、**道から溢れて「どこからでも来る」**になり、迎え撃つ場所が決まらない。
@@ -6085,6 +6145,11 @@ const isEcoSlot=si=>si>=ECO_BASE&&si<SUP_BASE;
 const isSupSlot=si=>si>=SUP_BASE;
 const supUnlocked=(C,si)=>(si-SUP_BASE)<(C&&C.supN||0);
 const prSup=n=>[600,1500][n]||1e9;/* n=現在の解放数 → 次の枠の価格 */
+/* 🏗⭐⭐(204d)**開けられる支援枠は「研究所で解放した支援施設の種類数」まで**(2026-08-07ユーザー指示
+   「中身を解放してないのに置き場を解放できちゃう」「同じやつは2個置けないから、
+     中身の解放数に応じて置き場を解放できる数を決めて」)。
+   ⚠**同じ施設は2つ建てられない**ので、種類より多い枠を開けても必ず空き枠になる。 */
+const supOwnN=()=>devAll()?SUP_MAX:Math.min(SUP_MAX,TOWERS.filter(T=>T.type==='sup'&&!T.off&&twHas(T.id)).length);
 const ecoUnlocked=(C,si)=>(si-ECO_BASE)<(C&&C.ecoN||1);
 const prEco=n=>[450,1100][n-1]||1e9;/* n=現在の枠数 → 次の枠の価格 */
 const ECO_TI=TOWERS.findIndex(T=>T.type==='eco');
@@ -6208,13 +6273,29 @@ const NMB={
  fBeast:{b:'fKing'}, /* 💀爛れた王     = 屍山の王      / 🛡装甲・最終ボス */
 };
 const NMBZ={},NMBI={},NMSC={};
+/* 🎨⭐⭐(204d)**1体ずつ「焦げの色」を変える**(2026-08-07ユーザー実機
+   「ナイトメアの装甲もちのゾンビは正直わかりづらい。全員黒いから見分けが付きづらい」)。
+   ⚠⚠**明るさは変えない**(黒い一族のままにする)=**明るい側に乗せる暖色だけ**を体ごとに変える。
+     こうすると暗い所は黒のまま、光が当たる面の色で「どいつか」が分かる。
+   ⚠**装甲の3体(重装兵・巨兵・王)は元が同じ青黒**なので、ここを分けないと本当に区別が付かない。 */
+const NM_TINT={
+ nmRat: [138,112, 64],/* 🏃走者=膿んだ黄土 */
+ nmSpid:[152, 88, 68],/* 🐛這うもの=赤みの肉 */
+ nmBoar:[110,104,136],/* 🗡薙ぎ手=冷たい紫 */
+ nmBear:[158, 80, 46],/* 🛡重装兵=錆 */
+ nmHorr:[ 78,126,120],/* 👑巨兵=青緑の鉄 */
+ fBeast:[176,142, 62],/* 💀王=金茶 */
+};
+let NM_TC=[138,112,64],NM_TK='';/* いま塗っている個体の暖色と、覚え書きの鍵 */
 /* 煮しめた黒へ寄せる。⚠**真っ黒にしない**=黒フチ(INK)に食われて塊になる([[NOTES_絵]])。
    ⭐**明るい側だけ「膿んだ黄土」を残す**=暗い側は黒、明るい側は爛れた色、で立体が生き残る。 */
 function nmSoot(col){
  if(typeof col!=='string')return col;
  /* 🔴**灯る目だけは沈めない**=ここを煮しめると「赤く光る目」の印が消える */
  if(col===NM_EYE_C||col===NM_EYE_H)return col;
- if(NMSC[col]!==undefined)return NMSC[col];
+ /* ⚠**覚え書きの鍵に暖色も入れる**=入れないと最初に塗った個体の色が全員に配られる */
+ const ck=NM_TK+col;
+ if(NMSC[ck]!==undefined)return NMSC[ck];
  let r,g,b;
  if(col.charAt(0)==='#'){let h=col.slice(1);
   if(h.length===3)h=h.charAt(0)+h.charAt(0)+h.charAt(1)+h.charAt(1)+h.charAt(2)+h.charAt(2);
@@ -6241,8 +6322,8 @@ function nmSoot(col){
      暖色にするだけで**明るさを落とさずに別物**として読める。⚠暗い所にも下限の暖かみを入れる。 */
   const k=.10+L*.26,f=(v,o)=>{const x=ds(v)*sc9;return x+(o-x)*k;};
   const cl=v=>Math.max(0,Math.min(255,Math.round(v)));
-  out='#'+[cl(f(r,138)),cl(f(g,112)),cl(f(b,64))].map(v=>v.toString(16).padStart(2,'0')).join('');}
- NMSC[col]=out;return out;
+  out='#'+[cl(f(r,NM_TC[0])),cl(f(g,NM_TC[1])),cl(f(b,NM_TC[2]))].map(v=>v.toString(16).padStart(2,'0')).join('');}
+ NMSC[ck]=out;return out;
 }
 /* 塗る色だけを煮しめる層。⚠**線の太さも透明度も触らない**(触ると輪郭が痩せる)。
    ⚠**層は canvas ごとに1つ作って覚えておく**=毎コマ作ると層そのものがごみになる
@@ -10779,7 +10860,8 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠層をかぶせたあとの `c.save/restore` は素のcanvasへそのまま通る(数は合っている)。 */
  /* ⚠**変異部位だけは層をかぶせる前に描く**=層を通すと体と同じ明るさまで沈んで溶けるため、
     こちらは沈めたあとの体より1段明るい色を直に指定する。 */
- if(NB){nmMut(c,Z0,t,ph,walk,s);c=nmSootLayer(c);}
+ if(NB){NM_TC=NM_TINT[Z0.id]||[138,112,64];NM_TK=Z0.id+'|';
+  nmMut(c,Z0,t,ph,walk,s);c=nmSootLayer(c);}
  /* ===== 🪶⭐⭐⭐ 面③ 送電鉄塔の丘=空を飛ぶ敵(2026-08-06(194)) =====
     ⚠⚠**空の敵は「翼2枚+丸い胴」で全部同じ紙飛行機になる**(nmBat/nmCrow で2回踏んだ穴)。
     ⭐**輪郭を分ける物を1体ずつ決める**=鳩は胸/雀は群れ/烏は金属の羽/蠅は腹/蝙蝠は開いた口/
@@ -18180,7 +18262,7 @@ function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1
 /* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
 /* ⚠`stnT`=気絶の**見せ方**だけのタイマー(★が頭上を回る)。止める仕組みは `frzT` の方。
    ⚠**凍結と気絶を分けるために持つ**=罠・引力場・時間停止・落雷を氷漬けで見せない(2026-08-02) */
-function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,frzT:0,stnT:0,frzUsed:0,burnT:0,burnD:0,acdT:0,acdD:0,acdX:0,acdR:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
+function mkZ(spec,d){return Object.assign({eid:EID++,d:d||-rnd(0,40),slowT:0,slowV:1,frzT:0,stnT:0,frzUsed:0,pulUsed:0,litX:0,burnT:0,burnD:0,acdT:0,acdD:0,acdX:0,acdR:0,hitT:0,ph:rnd(0,9),px:0,py:0,sm:1},spec);}
 /* ⚠⚠(124)**ボスの名前は必ずここから引く**(ユーザー「ジャガーノートじゃないのに
    ジャガーノートが現れた!って表示される」)=報せの文に名前を直に書くと、
    ステージやナイトメアで別のボスが出た時に必ず嘘になる。
@@ -18522,7 +18604,10 @@ function tideStep(dt){
    addFx(C,'ring',PATH[0][0],PATH[0][1],'',{r:240,col:RUST});addFx(C,'boomL',PATH[0][0],PATH[0][1],'');
    if(C.isMe)sfx.growl();}
   /* 🌊(127)海の面は湧く間隔を詰める=ゾンビの量が増える */
- T.qt+=(T.pool.length?T.pool[0].dl:0)*((meV()&&meV().bus&&BSEA)?BNS_SEA_DL:1);
+ /* ⏱⭐(204d)**尺を75→50秒に詰めたぶん、湧く間隔も同じだけ詰める**(2026-08-07ユーザー指示
+    「拠点開拓のバスがちょっと長いから1プレイ50秒にして、その分ゾンビの数を増やして欲しい」)。
+    ⚠**総数を変えないための倍率**=秒数と連動させる(片方だけ動かすと薄い道になる)。 */
+ T.qt+=(T.pool.length?T.pool[0].dl:0)*BNS_DLX*((meV()&&meV().bus&&BSEA)?BNS_SEA_DL:1);
  }
 }
 function pushTide(C,tg){
@@ -19434,7 +19519,7 @@ function dmgZ(C,z,d,armorPierce,quiet,wk,ty){
  if(ty){const ax9=afX(ty,z);
   if(ax9!==1){d*=ax9;afk9=afKof(ax9);if(afk9==='wk')aty9=ty;}}
  if(wk)afk9='wk';/* 旧経路(呼ぶ側が特効を明示した場合)も受ける */
- if(z.litT>0)d*=LIT_X;/* 💡(197)照明塔=受けるダメージが上がる(弱点とは別枠) */
+ if(z.litT>0)d*=(z.litX||LIT_X);/* 💡(197)照明塔=受けるダメージが上がる(弱点とは別枠。倍率は💡もろさで伸びる) */
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
  z.hp-=d;
  /* ⚡⭐(124)**継続攻撃(火炎放射塔・レーザー塔)の白光りは「点滅」にする**。
@@ -20090,16 +20175,19 @@ function campStep(C,dt,wave){
   if(z.dead)continue;
   /* 💀(165)**ラスボスは居座るほど攻撃力が上がる**=年齢を数える。⚠ここ以外で age を触らない。
      ⭐**段が上がった瞬間だけ知らせる**=盾で耐えているだけだと危なくなっていくのが分かる。 */
-  if(z.fin){const st0=finStep(z);z.age=(z.age||0)+dt;
+  /* ⚠(204d)**幕(banner)をやめて小さい知らせ(toast)にした**(ユーザー「表示がでかすぎる」)。
+     ⚠戦闘の最中に画面の真ん中を覆うと、その間の盤面が読めなくなる。 */
+  if(z.boss){const st0=finStep(z);z.age=(z.age||0)+dt;
    const st1=finStep(z);
-   if(st1>st0&&C.isMe){UI.banner('💀 '+(ZOMBIES[z.zi]?ZOMBIES[z.zi].n:'ボス')+' の攻撃が激しくなった! ×'+st1);
+   if(st1>st0&&C.isMe){toast('💀 '+(ZOMBIES[z.zi]?ZOMBIES[z.zi].n:'ボス')+' の攻撃 ×'+st1);
     try{sfx.elite&&sfx.elite();}catch(e){}}}
   /* 凍結中は完全停止(移動も攻撃もできない)。永久ロックは**凍らせられる回数の上限**が止める */
   if(z.frzT>0)z.frzT-=dt;
   if(z.stnT>0)z.stnT-=dt;/* ⭐気絶の見せ方(★が回る)。⚠止める仕組みは frzT の方=これは演出だけ */
   /* 🌊水浸し中は敵の足が1.5倍(②の高波ギミック。G.flood は②のTDでしか立たない)。🐢こもり中は完全停止 */
-  const slow=(z.frzT>0||z.shT>0?0:(z.slowT>0?.55:1))*((G&&G.flood>0&&!C.bus)?FLOOD_SP:1)*(z.gumT>0?GUM_SLOW:1);
-  if(z.slowT>0)z.slowT-=dt;if(z.gumT>0)z.gumT-=dt;if(z.litT>0)z.litT-=dt;/* 💡(197)照らし *//* 🫧ガム=かなり遅く(ルピナの必殺) */
+  const slow=(z.frzT>0||z.shT>0?0:(z.slowT>0?(z.slowV||.55):1))*((G&&G.flood>0&&!C.bus)?FLOOD_SP:1)*(z.gumT>0?GUM_SLOW:1);
+  if(z.slowT>0){z.slowT-=dt;if(z.slowT<=0)z.slowV=1;}
+  if(z.gumT>0)z.gumT-=dt;if(z.litT>0){z.litT-=dt;if(z.litT<=0)z.litX=0;}/* 💡(197)照らし *//* 🫧ガム=かなり遅く(ルピナの必殺) */
   /* 🐟**潜る**(dv:1の魚系だけ・②のギミック)。潜っている間は狙えず(targeting)・当たらず(dmgZ)・
      止められない(下のblkを丸ごと飛ばす)。⚠凍結中と拠点際(d>PLEN-90)では潜らない=
      取り付き際に消えると「攻撃が当たらないままコアを削られる」理不尽になる。 */
@@ -20709,6 +20797,9 @@ function campStep(C,dt,wave){
    const pd9=T.pull?projPath(sx,sy):0;
    for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){
     z.slowT=T.slowT*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));
+    /* 🕸(204d)**鈍足の深さ**も持つようにした(それまでは一律55%で、塔ごとの `slow` は使っていなかった)。
+       ⚠**一番強い物が勝つ**(Math.min)。⚠切れたら `slowV` は1へ戻す(足す側ではなく減る側で戻す)。 */
+    z.slowV=Math.min(z.slowV||1,twSlowV(T,tw));
     /* 完全凍結(冷却塔)。同じ敵を凍らせられるのは twFrzN 回まで(初期5・❄冷却回数の強化で最大10) */
     /* ⭐**「範囲内なのに凍らない」を直した**(2026-07-27ユーザー報告)。
        ⚠原因は**再凍結までの耐性(frzCd=素の凍結時間×2=5.2秒)**。
@@ -20722,11 +20813,14 @@ function campStep(C,dt,wave){
      z.frzUsed=(z.frzUsed||0)+1;
      /* ⭐凍らせた敵の足元に氷が張る=どれが止まったのか一目で分かる(2026-07-26) */
      if(FXLV>0&&++nfz<=6)addFx(C,'ice',z.px,z.py,'',{r:26,sd:rnd(0,9),lf:.55});}
-    /* 🧲(197)引き戻す。⚠**前へは動かさない**=塔より手前の敵はそのまま */
-    if(T.pull&&z.d>pd9){z.d=Math.max(pd9,z.d-T.pull);z.stnT=Math.max(z.stnT||0,.35);
+    /* 🧲(197)引き戻す。⚠**前へは動かさない**=塔より手前の敵はそのまま。
+       ⚠⚠(204d)**同じ敵を掴めるのは twPulN 回まで**=これが無いと連射を買うほど間隔が縮み、
+         敵が**一度も前へ進めなくなる**(2026-08-07ユーザー実機)。⭐掴む力そのものは据え置き。 */
+    if(T.pull&&z.d>pd9&&(z.pulUsed||0)<twPulN(T,tw)){z.d=Math.max(pd9,z.d-T.pull);z.stnT=Math.max(z.stnT||0,.35);
+     z.pulUsed=(z.pulUsed||0)+1;
      if(FXLV>0)addP(C,2,z.px,z.py-14*CH_UP,{sp:60,a:Math.atan2(sy-z.py,sx-z.px),spread:.5,g:0,life:.25,r:2,col:'#c9a1ff'});}
-    /* 💡(197)照らす=受けるダメージが上がる */
-    if(T.lit)z.litT=Math.max(z.litT||0,T.lit);
+    /* 💡(197)照らす=受けるダメージが上がる。⚠(204d)**倍率も敵に持たせる**(💡もろさの強化ぶん) */
+    if(T.lit){z.litT=Math.max(z.litT||0,T.lit);z.litX=Math.max(z.litX||0,twLitX(T,tw));}
     dmgZ(C,z,dm,1,0,0,'net');}}
    addFx(C,'ring',sx,sy,'',{r:rng,col:T.frz?FROST:'#9fd9c6'});
    /* ⭐冷却塔は冷気が床を這う白い波も出す。⚠ネット砲と同じ輪1つでは見分けが付かなかった */
@@ -20768,7 +20862,13 @@ function campStep(C,dt,wave){
    C.arcs.push({x:mzx,y:mzy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
   else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
-   let cur=tg,hitl=[tg],pts=[[mzx,mzy],[tg.px,tg.py]];dmgZ(C,cur,dm*elecX(),1,0,0,'elec');
+   /* ⚡⭐(204d)**雷塔の系統は「空から落とす」**(2026-08-07ユーザー指示
+      「雷塔は頭上から雷を落とす感じにしてほしい」)。⚠塔から敵へ線を引くと重テスラと同じに見えていた。
+      ⭐**起点だけ敵の真上へ移す**=当たり判定も威力も1つも変えていない。塔は避雷針として光らせる。 */
+   const st9=T.sky?[tg.px+rnd(-9,9),tg.py-300]:[mzx,mzy];
+   let cur=tg,hitl=[tg],pts=[st9,[tg.px,tg.py]];dmgZ(C,cur,dm*elecX(),1,0,0,'elec');
+   if(T.sky&&FXLV>0){addFx(C,'shock',tg.px,tg.py+4,'',{r:30,col:'#d8f2ff'});
+    addP(C,4,tg.px,tg.py-10,{sp:110,g:180,life:.28,r:2.2,col:'#d8f2ff'});}
    for(let k=1;k<chainN;k++){
     /* まだ撃っていない敵を優先。居なければ既に撃った敵へ跳ね返す(敵が2体でも往復して連鎖する) */
     let nx=null,bd=1e9;
@@ -20962,7 +21062,7 @@ function priceOf(C,kind,opt){
   case 'uun':return uupCost(C);
   case 'uup':return (C.uLv||0)<ULV_MAX?prUup(C.uLv||0):1e9;/* ⚠🔩支払い */
   case 'ecoslot':{const F2=(G&&G.coop)?G.players[0]:C;return (F2.ecoN||1)<ECO_MAX?prEco(F2.ecoN||1):1e9;}
-  case 'supslot':{const F3=(G&&G.coop)?G.players[0]:C;return (F3.supN||0)<SUP_MAX?prSup(F3.supN||0):1e9;}
+  case 'supslot':{const F3=(G&&G.coop)?G.players[0]:C;return (F3.supN||0)<supOwnN()?prSup(F3.supN||0):1e9;}
   case 'slot':{const F2=(G&&G.coop)?G.players[0]:C;return prSlot(slotCount(F2));}
   case 'atk':return prAtk(C.atkLv);/* ⚠🔩支払い */
   case 'stkup':return prStk(C.stkLv||0);/* ⚠🔩支払い */
@@ -20985,7 +21085,7 @@ function doPurchase(C,kind,opt){
  if(kind==='uun'&&C.uUn>=((C.team||[]).length))return false;
  if(kind==='uup'&&(C.uLv||0)>=ULV_MAX)return false;
  if(kind==='ecoslot'&&(((G&&G.coop)?G.players[0]:C).ecoN||1)>=ECO_MAX)return false;
- if(kind==='supslot'&&(((G&&G.coop)?G.players[0]:C).supN||0)>=SUP_MAX)return false;
+ if(kind==='supslot'&&(((G&&G.coop)?G.players[0]:C).supN||0)>=supOwnN())return false;
  const tgt=opt.tgt!=null&&opt.tgt>=0?G.players[opt.tgt]:null;
  if((kind==='big'||kind==='send'||kind==='jam')&&(!tgt||tgt===C||tgt.dead))return false;
  if(kind==='big'){
@@ -22713,7 +22813,8 @@ function renderCamp(C,t){
    /* 🎨特効は**効いている属性の色**(🔥オレンジ/⚡黄…)。表に無い属性は金に落ちる */
    const wc9=wk9?(AF_WKC[e.aty]||{c:GOLD}):null;
    c.fillStyle=wk9?wc9.c:rs9?DIM:PANE;c.strokeStyle=(wc9&&wc9.od)||INK;c.lineWidth=3;
-   c.font='900 '+(wk9?25:rs9?16:20)+'px '+FF;c.textAlign='center';
+   /* ⚔(204d)**弱点を突いた時の数字を一回り大きく**(2026-08-07ユーザー指示)=25→30 */
+   c.font='900 '+(wk9?30:rs9?16:20)+'px '+FF;c.textAlign='center';
    const s9=wk9?(e.s+' ▲'):rs9?(e.s+' ▼'):e.s,ty=e.y-e.t*40;
    c.strokeText(s9,e.x,ty);c.fillText(s9,e.x,ty);c.globalAlpha=1;}
   else if(e.k==='leak'){c.strokeStyle='rgba(232,72,50,'+Math.max(0,1-e.t*2)+')';c.lineWidth=8;c.beginPath();c.arc(CORE[0],CORE[1],40+e.t*140,0,7);c.stroke();}
@@ -23565,9 +23666,12 @@ function openBM(si){
    `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">解放した数だけ価格が上がる(現在 ${slotCount(m)}/${ECO_BASE}枠)</div>`+
    `<div class="bm-row"><button class="btn gold sm" id="bm-slot" data-p="${p}" ${m.scrap>=p?'':'disabled'}>🔓 解放 ⚙️${fmt(p)}</button></div>`;
  }else if(sSlot&&!supUnlocked(m,si)){/* 未解放の支援枠=解放メニュー */
-  const sn=m.supN||0,p=(sn<SUP_MAX)?prSup(sn):null,nextOk=(si-SUP_BASE)===sn;
+  /* 🏗(204d)**開けられるのは解放済みの支援施設の種類数まで**(同じ施設は2つ建てられないため) */
+  const sOwn=supOwnN(),sn=m.supN||0,p=(sn<sOwn)?prSup(sn):null,nextOk=(si-SUP_BASE)===sn;
   h=`<div id="bm-title">🏗 支援枠 ${si-SUP_BASE+1}/${SUP_MAX}</div>`+
-   `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${nextOk?'開くと支援施設(🏥野戦病院/👟進軍旗)を建てられる':'左の枠から順に開ける'}</div>`+
+   `<div class="cdsc" style="font-size:12px;margin:4px 0;color:var(--paper)">${
+     sn>=sOwn?'🔬研究所で支援施設(🏥野戦病院/👟進軍旗)を解放すると、その種類の数だけ枠を開けられる'
+     :nextOk?'開くと支援施設(🏥野戦病院/👟進軍旗)を建てられる':'左の枠から順に開ける'}</div>`+
    `<div class="bm-row"><button class="btn gold sm" id="bm-sup" ${nextOk&&p!=null?'data-p="'+p+'"':''} ${nextOk&&p!=null&&m.scrap>=p?'':'disabled'}>${p!=null?'🔓 解放 ⚙️'+fmt(p):'MAX'}</button></div>`;
  }else if(eSlot&&!ecoUnlocked(m,si)){/* 未解放の工房スロット=増設メニュー */
   const p=(eN<ECO_MAX)?prEco(eN):null;
@@ -23597,7 +23701,15 @@ function openBM(si){
    const lvv=tw.us[st]||0,mn9=usMinSt(tw.ti,st),mx9=usCap(tw.ti,st),mx=lvv>=mx9,p=mx?null:stCost(tw,st);
    /* ⚠⚡連鎖数は研究所の個別強化(elecの持ち味+1/段)も足して出す=実際に飛ぶ数と合わせる */
    const chBonus=(twTrait(T)&&twTrait(T).k==='chain')?Math.floor(twTrait(T).v*twlv(twKey(T))):0;
-   let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):USTAT_L[st])+(st==='c'?'('+(twChain(T,tw)+chBonus)+'体)':'')
+   /* ⚡⚠(204d)**テスラコイルは「連鎖」ではなく「同時攻撃」**=`chain` を持っていないので
+      `twChain` を通すと **NaN体** と出ていた(2026-08-07ユーザー報告)。⭐持っている方で数える。 */
+   const cN9=T.emul?Math.min(T.emax||5,twEmul(T,tw)+chBonus):Math.min(T.cmax||99,twChain(T,tw)+chBonus);
+   let lbl=(eco?(st==='d'?USTAT_L.ecoD:USTAT_L.ecoR):(st==='c'&&T.emul?'⚡同時攻撃数':USTAT_L[st]))
+    +(st==='c'?'('+cN9+'体)':'')
+    /* 🕸🧲💡(204d)持ち味の枠も「今→強化後」を出す */
+    +(st==='sw'?(mx?'(-'+Math.round((1-twSlowV(T,tw))*100)+'%)':'(-'+Math.round((1-twSlowV(T,tw))*100)+'%→-'+Math.round((1-twSlowV(T,{us:Object.assign({},tw.us,{sw:lvv+1})}))*100)+'%)'):'')
+    +(st==='pl'?(mx?'('+twPulN(T,tw)+'回)':'('+twPulN(T,tw)+'→'+twPulN(T,{us:Object.assign({},tw.us,{pl:lvv+1})})+'回)'):'')
+    +(st==='li'?(mx?'(x'+twLitX(T,tw).toFixed(2)+')':'(x'+twLitX(T,tw).toFixed(2)+'→x'+twLitX(T,{us:Object.assign({},tw.us,{li:lvv+1})}).toFixed(2)+')'):'')
     +(st==='f'?(mx?'('+twFrzN(T,tw)+'回)':'('+twFrzN(T,tw)+'→'+(twFrzN(T,tw)+1)+'回)'):'')
     /* 🔥昇温速度は「最大倍率まで何発か」を出す=数字が減るほど良い、と分かるように */
     /* 🔥昇温速度は「最大倍率まで何秒か」を出す(継続攻撃になったので発射数ではなく時間) */
@@ -23649,12 +23761,18 @@ function openBM(si){
  /* ⭐**画面に収まる高さで切る**(2026-08-01)。⚠切らないと下がはみ出して、
     指で動かした時にページごと動く(ユーザー指摘の症状)。中身は #bm-body がスクロールする。
     ⚠上下の余白6px×2 + パネルの padding 8px×2 + 下の操作バーぶん を引く */
+ /* 🔧⭐(204d)**塔と射程の輪に被せない**(2026-08-07ユーザー指摘
+    「強化ウィンドウがタレットにかぶってるせいで攻撃範囲がどれだけ増えるか見えない」)。
+    ⭐**画面の半分より高くしない**+**塔と反対側の端へ寄せる**=射程の輪がいつも見える。
+    ⚠中身は #bm-body がスクロールするので、短くしても押せなくなることはない。 */
  {const bd=$('bm-body');
-  if(bd){bd.style.maxHeight=Math.max(96,innerHeight-12-16-barBandPx())+'px';}}
+  if(bd){bd.style.maxHeight=Math.max(96,Math.min(innerHeight-12-16-barBandPx(),Math.round(innerHeight*.52)))+'px';}}
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
- bm.style.left=clamp(px-bw/2,6,innerWidth-bw-6)+'px';
+ /* ⚠**横も塔と反対側へ寄せる**=縦だけだと、下の操作バーのぶん窓が下がりきれず塔に届く(実際に届いた) */
+ bm.style.left=(px<innerWidth*.5?Math.max(6,innerWidth-bw-6):6)+'px';
  /* 下の操作バーには絶対に被せない(被るとデッキが押せなくなる) */
- bm.style.top=clamp(py+40,6,Math.max(6,innerHeight-bh-6-barBandPx()))+'px';
+ const bmBot=Math.max(6,innerHeight-bh-6-barBandPx());
+ bm.style.top=(py<innerHeight*.5?bmBot:6)+'px';
 }
 /* ============ 🛠 マス編集モード(?edit=1 の時だけ) ============
    実機で建設マスを指でドラッグして置き直し、そのまま `slots:[...]` を書き出すための開発用モード。
@@ -23850,7 +23968,7 @@ function actEcoSlot(){
  if(G)doPurchase(G.players[G.myIdx],'ecoslot',{});}
 function actSupSlot(){
  const m=meV();if(!m)return;const sn=m.supN||0;
- if(sn>=SUP_MAX)return;const p=prSup(sn);
+ if(sn>=supOwnN()){toast('🔬研究所で支援施設を解放すると枠を開けられる',true);return;}const p=prSup(sn);
  if(m.scrap<p){toast('⚙️'+fmt(p)+' 必要 — 支援枠の解放',true);return;}
  if(MODE==='client'){sendCmd({t:'c',a:'buy',k:'supslot',o:{}});m.scrap-=p;m.supN=sn+1;sfx.buy();toast('🏗 支援枠を開いた!');return;}
  if(G)doPurchase(G.players[G.myIdx],'supslot',{});}
@@ -26069,7 +26187,9 @@ function bnsArrStep(C,dt){
    ⚠⚠**到着でクリアだった形は捨てた**=道は走り切れない長さにして、**締め切りは時間**にする。
    ⚠**負けは無い**は守る=時間切れは「失敗」ではなく**締め切り**(そこまでの成果で終わり)。
    ⭐時間切れに**「次の拠点に着いた」の軽いイベント**を出す(ユーザー決定)=物語の役割は保つ。 */
-const BNS_TIME=TUNE("BNS_TIME",75,30,180,5);
+/* ⏱⭐(204d)**75→50秒**(2026-08-07ユーザー実機「バスがちょっと長い」)。
+   ⚠**尺を詰めたら濃さも同じだけ上げる**=`BNS_DLX` とセットで動かすこと(片方だけだと道が薄くなる)。 */
+const BNS_TIME=TUNE("BNS_TIME",50,30,180,5);
 /* ⭐⭐**スコア=Σ(1体 × 連なりの段の倍率)**(2026-08-02(38))。
    ⚠⚠**ただの総キル数にしない**=濃い所を走れば誰でも同じ数になり、**上手い下手がほぼ出ない**。
    ⭐**段を上げて切らさない**ことに値段を付けると、「濃い所をどう繋ぐか」が上手さになる。
@@ -26592,7 +26712,8 @@ const bnsCmbT=n=>n>=80?4:n>=40?3:n>=18?2:n>=5?1:0;
    ⚠**段を上げた「後」で積む**=上げた瞬間から新しい倍率が乗る(繋いだご褒美をその場で返す)。
    ⚠爆発で倒した分も同じ道を通す(通さないと「爆発させると損」という逆の遊びになる)。 */
 function bnsScore(B,n){if(!B||!(n>0))return;
- B.score=(B.score||0)+n*(BNS_CMB_X[bnsCmbT(B.cmb||0)]||1);}
+ /* ⚡(204d)計器の上乗せ(`cmbX`)もここ1か所で掛ける=爆発でも感電でも同じ道を通る */
+ B.score=(B.score||0)+n*(BNS_CMB_X[bnsCmbT(B.cmb||0)]||1)*(B.cmbX||1);}
 const BNS_CMB_N=['','轢殺','大轢殺','蹂躙','地獄のバス'];
 const BNS_CMB_C=['',PAPER,GOLD,AMBER,RUST];
 function bnsFxInit(C){C.bstn=[];C.bstnI=0;C.bchk=[];C.bchkI=0;C.btrk=[];C.btrkI=0;C.bdst=[];C.bdstI=0;
@@ -27060,13 +27181,22 @@ function bnsStick(dx,dy){const m=meV();if(!m||!m.bus)return;m.bus.ix=dx;m.bus.iy
      「連なりの猶予」のような内輪の言い方を出さない。
    ⭐**枠は2つ**=🔧性能(数値が伸びる)と ⚔装備(**見た目が変わって挙動が増える**)。
    ⚠**轢く範囲を数値だけで広げない**=絵と当たりは必ず揃える掟(NOTES)。広げる物は装備として絵を足す。 */
+/* 🔧⭐(204d)**中身を入れ替えた**(2026-08-07ユーザー実機
+   「バス強化で実質意味ないやつは削除して、ちゃんと意味のある強化を増やして欲しい」)。
+   ⛔**外した=🛞タイヤ(加速/曲がりやすさ)**。⚠道は広くほぼ直線で、最高速まではすぐ届くので
+     **買っても走りが変わらなかった**(⚠書き戻さない)。
+   ⭐**足した2つはどちらも「点が伸びる」所に効く**=この面の目当ては⚡スコアなので、
+     効いたかどうかが**その場の数字で分かる**。
+   ・🦿踏破=**しがみつかれても速さが落ちにくい**(厚い所へ突っ込めるようになる=一番効く)
+   ・⚡計器=**連なりの倍率そのものを上げる**(👥乗員は「切れるまでの時間」なので役が被らない) */
 const BUP=[
  {k:'sp', r:0,ic:'🏎',n:'エンジン',  d:'スピード +7%',           mx:5,c:[30,60,110,190,300]},
  {k:'nt', r:0,ic:'🔥',n:'ニトロ増槽',d:'満タンで 0.6秒 長く吹ける',mx:4,c:[45,90,170,290]},
  {k:'ram',r:1,ic:'🛡',n:'排障器',    d:'ひき殺す力 +20%',         mx:5,c:[30,60,110,190,300]},
- {k:'tir',r:1,ic:'🛞',n:'タイヤ',    d:'加速が速い / よく曲がる', mx:3,c:[55,110,210]},
+ {k:'grd',r:1,ic:'🦿',n:'踏破',      d:'しがみつかれても遅くなりにくい -18%',mx:4,c:[50,100,190,320]},
  {k:'crw',r:2,ic:'👥',n:'乗員',      d:'コンボが切れるまで +0.3秒',mx:4,c:[40,80,150,260]},
- {k:'kit',r:2,ic:'🍖',n:'炊き出し',  d:'ニトロが早く溜まる +18%', mx:4,c:[40,80,150,260]}
+ {k:'kit',r:2,ic:'🍖',n:'炊き出し',  d:'ニトロが早く溜まる +18%', mx:4,c:[40,80,150,260]},
+ {k:'gau',r:2,ic:'⚡',n:'計器',      d:'連なりの倍率 +8%',        mx:4,c:[60,120,230,380]}
 ];
 /* ⚔⭐⭐⭐**装備**(2026-08-02(44)ユーザー「バスの前面に回るのこぎりブレードみたいなやつとか、
    そういう爽快感がまずバス強化がほしい 別枠のUIで」)。
@@ -27208,10 +27338,13 @@ function bupApply(B,up,eq){
  B.spMx =BUS_SP   *(1+.07*(up.sp|0));
  B.nitT0=BUS_NIT_T+ .60*(up.nt|0);
  B.dpsX =1+.20*(up.ram|0);
- B.accX =1+.12*(up.tir|0);
- B.gripX=1+.10*(up.tir|0);
+ B.accX =1;B.gripX=1;/* ⛔🛞タイヤは(204d)に外した=素の値のまま(装備の🛞タイヤはこの後で掛ける) */
  B.cmbT0=BNS_CMB_T+.30*(up.crw|0);
  B.nitK =BUS_NIT_K*(1+.18*(up.kit|0));
+ /* 🦿(204d)踏破=しがみつきで落ちる最高速の割合を減らす。⚠**この後の🛡増加装甲(0にする)が優先** */
+ B.grdX =Math.max(0,1-.18*(up.grd|0));
+ /* ⚡(204d)計器=連なりの倍率の上乗せ */
+ B.cmbX =1+.08*(up.gau|0);
  B.eq=eq;
  /* 🚌**大型車体/🚛連結トレーラー**=⚠⚠**当たりも絵も装備の寸法も、全部この1つを掛ける**
     (掛け忘れると絵と当たりがずれる)。⚠**段は積み上がるので置き換え**(掛け算にしない)。 */
@@ -27228,7 +27361,7 @@ function bupApply(B,up,eq){
  B.blOut  =0;
  for(const bx9 of B.blXs)B.blOut=Math.max(B.blOut,Math.hypot(bx9,B.blY)+B.blR);
  B.upX    =eq.spike?EQ_UP:1;        /* 🔩打ち上げ */
- B.gripS  =eq.plate?0:BUS_GRIP_S;   /* 🛡しがみつきで落ちる最高速(0=落ちない) */
+ B.gripS  =eq.plate?0:BUS_GRIP_S*(B.grdX==null?1:B.grdX);/* 🛡しがみつきで落ちる最高速(0=落ちない) */
  B.noDrag =eq.tire ?1:0;            /* 🛞障害物で減速しない */
  B.gripX *=eq.tire ?1.15:1;         /* 🛞よく曲がる */
  B.sideX  =(eq.blade?(eq.saw2?2.2:1.7):1)*(eq.blast?1.6:1);/* 横へ弾く強さ */
@@ -32482,23 +32615,27 @@ const OP_CT=[7.5,14.0,21.5,29.5,37.5,45.5,53.0,61.0];
 const OP_END=OP_CT[OP_CT.length-1];
 const OP_DIP=.5;                   /* 切れ目の暗転(前後で半分ずつ) */
 /* 字幕。⚠**カットの切れ目をまたがせない**=間に隙間を空けて、そこで消える */
+/* ✍⭐(204d)**字幕を書き直した**(2026-08-07ユーザー指摘「ところどころAI臭い」)。
+   ⚠直した所=①**きれいに対句にしない** ②**まとめの一言で締めない**
+     (「それが、俺たちの仕事だ。」のような台詞がいちばん臭う) ③**抽象語をやめて手に取れる物で言う**
+     (パン・無線・バス)。⚠**壮大にしない**の掟はそのまま。 */
 const OP_CUE=[
- [.8,3.2,'はじまりは、なんでもない朝だった。'],
- [3.9,6.9,'誰も、その日で終わるとは思っていない。'],
- [8.3,10.7,'その日、空の色が変わった。'],
- [11.2,13.4,'何が起きたのかは、いまも分かっていない。'],
- [15.0,17.6,'灯りが、ひとつずつ消えていった。'],
- [18.1,20.9,'ひと晩で、街は静かになった。'],
- [22.3,25.0,'動かなくなったはずのものが、歩きだした。'],
- [25.6,28.9,'噛まれた者は、朝までに同じものになる。'],
- [30.3,33.0,'街は、ひと月ももたなかった。'],
- [33.5,36.9,'国も、軍も、連絡が途切れたきりだ。'],
- [38.3,41.0,'それでも、生きている者がいる。'],
- [41.5,44.9,'高架の下に火を焚いて、朝を待っている。'],
- [46.3,49.0,'呼べば、応える者がいた。'],
- [49.5,52.4,'——どこから来るのかは、俺も知らない。'],
- [54.0,56.8,'灯りを、ひとつずつ取り返していく。'],
- [57.3,60.4,'それが、俺たちの仕事だ。']];
+ [.8,3.2,'あの朝は、いつもの朝だった。'],
+ [3.9,6.9,'パンを焼いて、天気の話をしていた。'],
+ [8.3,10.7,'昼前に、空が変な色になった。'],
+ [11.2,13.4,'何だったのかは、いまも誰も知らない。'],
+ [15.0,17.6,'夜になっても、電気は戻らなかった。'],
+ [18.1,20.9,'窓の灯りが、一つずつ消えていった。'],
+ [22.3,25.0,'外で、足音がした。'],
+ [25.6,28.9,'一人ぶんじゃなかった。'],
+ [30.3,33.0,'ひと月で、街は形をなくした。'],
+ [33.5,36.9,'無線は、とっくに誰も応えない。'],
+ [38.3,41.0,'高架の下で火を焚いて、朝まで起きている。'],
+ [41.5,44.9,'生きているのは、まだ俺たちだけじゃない。'],
+ [46.3,49.0,'声を出したら、返事があった。'],
+ [49.5,52.4,'どこから来たのかは、聞いても答えない。'],
+ [54.0,56.8,'バスを直した。走る。'],
+ [57.3,60.4,'灯りのある場所を、取り返しに行く。']];
 /* ph: -1=触ってもらう板 / 0=開発名 / 1=オープニング / fade=暗転の最中 */
 const OP={on:0,t:0,ph:-1,cap:-2,fade:0};
 /* 開発名。⚠**凝らない**=よくある「黒地に名前」。線が伸びて、名前が浮いて、消える */
@@ -32815,16 +32952,26 @@ function opCut3(c,u,len){
  /* ⭐⭐**群れ**。⚠**奥から手前の順に描く**(重なりが正しくないと平らに見える)。
     ⚠**同じ速さで動かさない**=行進に見える(死体の群れは揃わない)。
     ⭐**遠いほど霞ませる**=色を空の側へ寄せる(黒いまま小さくすると「点」になる)。 */
- {const N=96,ar=[];
+ /* ⚠⚠⭐(204d)**手前まで来た個体が消えるのをやめた**(2026-08-07ユーザー実機
+    「手前のゾンビがパッと消えてるけどそれだとリアル感がない。画面外に歩いていく感じにして」)。
+    ⚠原因=進み具合を **1で折り返していた**=一番手前に着いた瞬間に地平へ瞬間移動していた。
+    ⭐**1周を1.34にして、1を超えたぶんを「カメラの脇を通り過ぎる区間」にする**=
+      下と外へ大きく外れながら薄くなって画面から出ていく。⚠**湧く側も薄く出す**(そちらも急に現れる)。 */
+ {const N=96,CY=1.34,ar=[];
   for(let i=0;i<N;i++){
    const s9=((i*2654435761)>>>0)%1000/1000,s8=((i*40503)%977)/977,s7=((i*1103515245)>>>7)%1000/1000;
-   const q=((u*(.042+s9*.045)+s8)%1);
-   /* 横位置=道幅の中(⚠端に寄せすぎるとビルにめり込む) */
-   const xr=(s7-.5)*1.86;
-   ar.push({q,x:vx+xr*pW(q)*.94,s9,s7,i});}
-  ar.sort((a,b)=>a.q-b.q);
+   ar.push({qr:((u*(.042+s9*.045)+s8*CY)%CY),s9,s7,i});}
+  ar.sort((a,b)=>a.qr-b.qr);
   for(const o of ar){
-   const q=o.q,y=pY(q),s=pS(q),h=54*EK*s*(.84+o.s9*.34);
+   const qr=o.qr,q=Math.min(1,qr),e=Math.max(0,qr-1)/(CY-1);
+   /* 横位置=道幅の中(⚠端に寄せすぎるとビルにめり込む)。通り過ぎる間は外へ大きく開く */
+   const xr=(o.s7-.5)*1.86;
+   o.x=vx+xr*pW(q)*.94*(1+e*2.6);
+   const y=pY(q)+e*(ED_H-pY(q))*1.35,s=pS(q)*(1+e*1.7),h=54*EK*s*(.84+o.s9*.34);
+   /* 薄くなって消える(⚠**急に切らない**)/ 湧く側も最初の数%で薄く出す */
+   const fd=(1-clamp((e-.55)/.45,0,1))*clamp(qr/.045,0,1);
+   if(fd<=.01)continue;
+   c.globalAlpha=fd;
    /* 体つき=5種(⚠割合を均さない=「這っている」は少ないから効く) */
    const k=o.s7<.06?4:(o.s7<.12?3:(o.s7<.34?1:(o.s7<.52?2:0)));
    const ph=u*(3.0+o.s9*1.6)+o.i*1.7;
@@ -32839,7 +32986,8 @@ function opCut3(c,u,len){
    if(q>.52){c.fillStyle='rgba(255,140,70,'+(.22*(q-.52)/.48).toFixed(3)+')';
     opZFig(c,o.x,y-2.0*s,h,ph,k);}
    c.fillStyle='rgb('+cr+','+cg+','+cb+')';
-   opZFig(c,o.x,y,h,ph,k);}}
+   opZFig(c,o.x,y,h,ph,k);}
+  c.globalAlpha=1;}
  /* 手前の枠=**割れた街灯**(⚠画面の端で切る=カメラが群れの中に居ると分かる) */
  c.fillStyle='#050407';
  c.fillRect(ED_W*.055-4,hz+8*EK,8,ED_H);
