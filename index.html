@@ -5135,13 +5135,9 @@ const HEROES=[
 const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
 const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
 /* はずれ枠(4種)。⚠ここで配るのは研究所と同じメタ強化=無駄玉にならないようにするため */
-const GDUD=[
- {id:'gpt',n:'🧬 研究pt',w:22,dsc:'研究ptがまとまって手に入る'},
- {id:'gmat',n:'🔧 鍛錬素材',w:20,dsc:'英雄の鍛錬に使う素材(鍛錬所で消費)'},
- /* ⚠伸びる量は研究所の表(SC0_V/UP0_V)と同じ=段が上がるほど1回の重みも増える(2026-08-02) */
- {id:'gsc',n:'⚙️ 初期資金アップ',w:7,dsc:'出撃時の所持⚙️が永久に増える(研究所の初期スクラップが1段進む)'},
- {id:'gup',n:'🔩 開始強化ptアップ',w:6,dsc:'出撃時の🔩が永久に増える(研究所の開始強化ptが1段進む)'}
-];
+/* ⛔(211)**はずれ枠(資源)はガチャから外した**(ユーザー決定「10枠すべてキャラにする」)。
+   ⚠**書き戻さない**。🔧鍛錬素材は**重複**で入る(専用ゲームで獲得する予定=まだ白紙)。
+   ⚠🧬研究pt・⚙️初期資金・🔩開始強化ptは**元から他の入手先がある**(試合と研究所)。 */
 /* ⭐⭐⭐**排出率は「レア度の枠」で決める**=にゃんこ大戦争と同じ作り
      (2026-08-07(203)ユーザー決定「実はおれはにゃんこ式のつもりでいたわ だから変えよう」)。
    ⚠⚠**2026-07-30の「1体あたりを固定する」決定は撤回された**=書き戻さないこと。
@@ -5152,9 +5148,12 @@ const GDUD=[
      分けている(ピックアップ)のはそのため。⭐**★5が10人を超えたらこちらも分ける話になる**。
    🔢**枠の数字**(2026-08-07ユーザー指示「★3は10% ★4は3% ★5は1%」)。
      ⚠**★2も一緒に上げた**(10→20)=★3を10%にすると**★2と並んでしまい、順番が壊れる**ため。
-   ⚠はずれ枠は**残り全部**。人数ではなくこの表だけで決まる。 */
-const RK_RATE=[0,30,20,10,3,1];/* ★1〜★5の「レア度ごとの枠」(%)。⚠1体あたりではない */
-const DUD_MIN=20;/* はずれ枠の下限(%) */
+   🎰⭐⭐⭐(211)**ガチャから資源(はずれ枠)を外した**(ユーザー決定「10枠すべてキャラにする」)=
+     ⭐**10連は必ず10人**。⚠**バスから10人が降りてくる演出**がこれで素直に成立する。
+     ⚠**浮いた36%は★1〜★4だけに配った**(ユーザー指示「★5はそのまま」)=**★5は1%で据え置き**。
+     📌配り方=★1〜★4を**そのままの比のまま1.57倍**にした(ピラミッドの形を崩さないため)。
+     ⚠🔧鍛錬素材の入手先は**重複だけ**になった(専用ゲームで獲得する予定=まだ白紙)。 */
+const RK_RATE=[0,47,31,16,5,1];/* ★1〜★5の「レア度ごとの枠」(%)。⚠1体あたりではない。合計100 */
 /* そのレア度の「1体あたり」(%)。⚠**表示にも抽選にもここを通す**=枠と食い違わせない */
 const rkEachOf=rk=>{const r=G_RATE.find(x=>x[0]==='r'+rk),n=rkCount(rk);return (r&&n)?r[1]/n:0;};
 /* ⭐⭐**🛠DEV(?dev=1)では見て欲しいものの確率を上げる**(2026-07-30ユーザー指示
@@ -5163,17 +5162,17 @@ const rkEachOf=rk=>{const r=G_RATE.find(x=>x[0]==='r'+rk),n=rkCount(rk);return (
      (どんでん返しも黄金のロブスターも★4以上でしか出ない)。
    ⚠**普通に遊ぶ側の確率は1ミリも変えない**。DEVはセーブも別枠(dt_meta_dev)。
    ⭐**新しく「珍しいもの」を足したら、必ずここに DEV の底上げも足すこと**。 */
-const RK_RATE_DEV=[0,10,15,20,25,30];/* 🛠DEV: 枠(★5ほど濃い=演出を見に行きやすい) */
+const RK_RATE_DEV=[0,10,15,20,25,30];/* 🛠DEV: 枠(★5ほど濃い=演出を見に行きやすい)。⚠合計は下で100へ揃う */
 const G_RATE=(()=>{
  const cnt=[0,0,0,0,0,0];for(const h of HEROES)cnt[h.rk]++;
  const EA=DEV?RK_RATE_DEV:RK_RATE;
  /* ⚠**人数は掛けない**(にゃんこ式=枠そのものが答え)。⚠**居ないレア度の枠は捨てる**
     =誰も居ない所に確率を残すと、その分が永久に当たらない穴になる */
  let rows=[];for(let rk=1;rk<=5;rk++)if(cnt[rk])rows.push(['r'+rk,EA[rk]]);
- let tot=rows.reduce((a,r)=>a+r[1],0);
- const cap=100-DUD_MIN;
- if(tot>cap){const k9=cap/tot;rows=rows.map(r=>[r[0],r[1]*k9]);tot=cap;}
- return [['dud',100-tot]].concat(rows);
+ /* ⚠**合計を必ず100にする**=居ないレア度があっても穴が空かない(その分を比のまま伸ばす) */
+ const tot=rows.reduce((a,r)=>a+r[1],0);
+ if(tot>0&&Math.abs(tot-100)>1e-9){const k9=100/tot;rows=rows.map(r=>[r[0],r[1]*k9]);}
+ return rows;
 })();
 /* そのレア度が何人いるか(確率の表示に使う) */
 const rkCount=rk=>HEROES.filter(h=>h.rk===rk).length;
@@ -30864,13 +30863,9 @@ function gcPick(){
  if(TUT&&TUT.on&&TUT.forceHero){const p9=HEROES.filter(h=>h.rk<=3);
   if(p9.length)return{hero:p9[ri(0,p9.length-1)]};}
  let r=Math.random()*100;
- let tier='dud';
+ /* ⚠(211)はずれ枠は無くなった=**必ずどれかのレア度に着地する**(端数は最後の行が受ける) */
+ let tier=G_RATE[G_RATE.length-1][0];
  for(const [k,p] of G_RATE){if(r<p){tier=k;break;}r-=p;}
- if(tier==='dud'){
-  const ws=GDUD.reduce((a,d)=>a+d.w,0);let r2=Math.random()*ws;
-  for(const d of GDUD){r2-=d.w;if(r2<=0)return{dud:d};}
-  return{dud:GDUD[0]};
- }
  const rk=+tier.slice(1),pool=HEROES.filter(h=>h.rk===rk);
  return{hero:pool[ri(0,pool.length-1)]};
 }
@@ -30957,12 +30952,7 @@ function gcRateHtml(){
    return '<div class="rtrow"><span class="ty">'+T.ic+' '+T.n+'</span>'
     +'<span class="nm">'+x.n+'</span><span class="p">'+gcPc(each)+'</span></div>';}).join('');
  }
- /* はずれ枠も1行ずつ(中身が4つあるのに1行に押し込むと「はずれ」の中の差が読めない) */
- {const dp=rowP('dud'),sw=GDUD.reduce((a,d)=>a+d.w,0);
-  h+='<div class="rthd" style="border-color:var(--dud)"><span class="s" style="color:var(--paper3)">🎁</span>'
-   +'<span class="n">はずれ枠</span><span class="p">計 '+gcPc(dp)+'</span></div>'
-   +GDUD.map(d=>'<div class="rtrow"><span class="nm">'+d.n+'</span>'
-     +'<span class="p">'+gcPc(dp*d.w/sw)+'</span></div>').join('');}
+ /* ⛔(211)**はずれ枠の段は消した**=ガチャから資源を外し、10枠すべてキャラにしたため */
  /* ⚠ここはHTML=**で囲んでも太字にならない(そのまま * が出る)。必ず <b> を使う */
  return '<div class="ratelist">'+h
   /* ⚠(203)にゃんこ式へ変えたので**言うことが逆になった**=書き戻さないこと */

@@ -1826,7 +1826,8 @@ function checkFx2(){
 /* ---- 💎英雄召集の演出(2026-07-26 第71弾) ----
    ⚠**結果(gcPick/gcApply)は演出で変わってはいけない**。段階が進むこと・全部見せ終えて閉じることを見る */
 function checkGachaFx(){
- const res=[{hero:HEROES[HEROES.length-1],txt:'NEW!'},{dud:GDUD[0],txt:'🧬 研究pt +100'},
+ /* ⚠(211)はずれ枠は無くなったので、低レアは★1で作る */
+ const res=[{hero:HEROES[HEROES.length-1],txt:'NEW!'},{hero:HEROES.find(h=>h.rk===1),txt:''},
   {hero:HEROES[0],txt:'重複 → 🔧 鍛錬素材 +3',dupe:true}];
  gcStart(res);
  if(!GC){console.log('FAIL: 召集の演出が始まらない(canvasが取れていない)');process.exit(1);}
@@ -1859,9 +1860,9 @@ function checkGachaFx(){
     → レーザー(段2)が出たら★4以上が確定 / レアでない時は基本ライフル+通常ゾンビ */
  let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0],hi5N=[0,0,0],tw4=0,n4=0;
  for(let k=0;k<1200;k++){
-  const rk=k%6;
-  const one=[rk===0?{dud:GDUD[0],txt:''}:{hero:HEROES.find(h=>h.rk===rk),txt:''}];
-  if(!one[0].dud&&!one[0].hero)continue;
+  const rk=k%5+1;/* ⚠(211)はずれ枠は無いので★1〜★5だけ回す */
+  const one=[{hero:HEROES.find(h=>h.rk===rk),txt:''}];
+  if(!one[0].hero)continue;
   gcStart(one);const r=gcRank(one[0]),base=r>=4?2:r>=2?1:0;
   /* ⭐⭐2026-08-03(92)ユーザー指示「虹とか金のロブスターとかは★5以上確定にして」=
      **虹の文字(fc2)と✨黄金のロブスターは★5確定**へ。レーザーとどんでん返しは★4以上のまま。 */
@@ -1904,7 +1905,7 @@ function checkGachaFx(){
   +'夜'+(nightN[1]/Math.max(1,nightN[1]+dayN[1])*100|0)+'% vs '+(nightN[0]/Math.max(1,nightN[0]+dayN[0])*100|0)+'% / '
   +'★5の内訳 ✨黄金'+hi5N[0]+'/どんでん返し'+hi5N[1]+'/通常'+hi5N[2]+'(1/3ずつ・虹文字と✨は★5確定) OK');
  /* ⭐10連でも撃つ場面は1回だけ=示唆するのは「その回の一番いい結果」 */
- {const many=[{dud:GDUD[0],txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{dud:GDUD[1],txt:''}];
+ {const many=[{hero:HEROES.find(h=>h.rk===1),txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{hero:HEROES.find(h=>h.rk===2),txt:''}];
   gcStart(many);
   if(GC.best!==4){console.log('FAIL: 10連の示唆が一番いい結果になっていない '+GC.best);process.exit(1);}
   /* ⚠どんでん返し(twist)の時はわざと段0で見せるので、その時は見ない(2026-07-30) */
@@ -2583,9 +2584,15 @@ function checkGacha(){
    console.log('FAIL: ★'+rk+'の枠が表どおりでない '+row[1]+' vs '+RK_RATE[rk]);process.exit(1);}
   if(Math.abs(rkEachOf(rk)-row[1]/n9)>1e-9){console.log('FAIL: 1体あたりが「枠÷人数」になっていない');process.exit(1);}}
  for(let rk=1;rk<5;rk++)if(!(RK_RATE[rk]>RK_RATE[rk+1])){console.log('FAIL: レア度の枠が順に下がっていない');process.exit(1);}
- if(G_RATE[0][0]!=='dud'||G_RATE[0][1]<DUD_MIN){console.log('FAIL: はずれ枠が下限を割っている');process.exit(1);}
- console.log('排出率(にゃんこ式=枠が固定): 1体あたり ★1 '+rkEachOf(1).toFixed(2)+'% … ★5 '+rkEachOf(5).toFixed(3)+'% / 枠 '
-  +G_RATE.map(r=>(r[0]==='dud'?'はずれ':RK_S[+r[0].slice(1)])+r[1].toFixed(1)).join(' ')+' OK');
+ /* 🎰⭐(211)**はずれ枠は無い**=10枠すべてキャラ(ユーザー決定)。⚠**書き戻さない** */
+ if(G_RATE.some(r=>r[0]==='dud')){console.log('FAIL: はずれ枠が残っている(ガチャから資源は外した)');process.exit(1);}
+ /* ⭐★5は1%で据え置き(ユーザー指示「★5はそのまま」)=**ここが動いたら落とす** */
+ if(Math.abs(RK_RATE[5]-1)>1e-9){console.log('FAIL: ★5の枠が1%でない '+RK_RATE[5]);process.exit(1);}
+ {const p10=(1-Math.pow(1-RK_RATE[5]/100,10))*100;
+  if(Math.abs(p10-9.56)>.3){console.log('FAIL: 10連で★5が出る率がずれている '+p10.toFixed(2)+'%');process.exit(1);}}
+ console.log('排出率(にゃんこ式=枠が固定・はずれ無し): 1体あたり ★1 '+rkEachOf(1).toFixed(2)+'% … ★5 '+rkEachOf(5).toFixed(3)+'% / 枠 '
+  +G_RATE.map(r=>RK_S[+r[0].slice(1)]+r[1].toFixed(1)).join(' ')
+  +' / 10連で★5 '+((1-Math.pow(1-RK_RATE[5]/100,10))*100).toFixed(2)+'% OK');
  /* 魔石が足りない時は引けない */
  META.gem=0;META.hero={};META.hmat=0;META.pts=0;
  gcPull(1);
@@ -2597,9 +2604,12 @@ function checkGacha(){
  META.gem=3*20000;META.hero={};
  let dud=0,byRk={1:0,2:0,3:0,4:0,5:0};
  for(let i=0;i<20000;i++){const o=gcPick();if(o.dud)dud++;else byRk[o.hero.rk]++;}
- const dp=dud/200;
- /* ⚠**55固定で見ない**=はずれ枠は「残り全部」なので英雄を足すと動く(2026-07-30) */
- if(Math.abs(dp-G_RATE[0][1])>3){console.log('FAIL: はずれ枠の率がずれている '+dp.toFixed(1)+'%(想定'+G_RATE[0][1].toFixed(1)+'%)');process.exit(1);}
+ /* 🎰(211)**1回もはずれが出ないこと**=10枠すべてキャラ */
+ if(dud){console.log('FAIL: はずれが'+dud+'回出た(ガチャから資源は外した)');process.exit(1);}
+ /* 実測がレア度の枠どおりか(2万回) */
+ for(let rk=1;rk<=5;rk++){const pc=byRk[rk]/200;
+  if(Math.abs(pc-RK_RATE[rk])>Math.max(1.2,RK_RATE[rk]*.25)){
+   console.log('FAIL: ★'+rk+'の実測がずれている '+pc.toFixed(2)+'%(枠'+RK_RATE[rk]+'%)');process.exit(1);}}
  if(!byRk[5]){console.log('WARN: 2万回でギガトンレアが出なかった(確率0.1%なので稀にあり得る)');}
  /* 🎫★5確定チケット(配布物・2026-08-03(106))=1枚減って必ず★5が1体入る。0枚なら引けない */
  {META.hero={};META.gem=0;META.tk5=2;
@@ -2633,7 +2643,7 @@ function checkGacha(){
     表示が変わらないどころか、元から実際の人数と合っていなかった */
  {const rkN=[0,0,0,0,0];for(const h of HEROES)rkN[clamp((h.rk||1)-1,0,4)]++;
   const brk=rkN.map((n,i)=>'★'.repeat(i+1)+'x'+n).join('/');
-  console.log('ガチャ: 英雄'+HEROES.length+'種('+brk+')・はずれ'+dp.toFixed(1)+'%・重複→素材・10連25個 OK');}
+  console.log('ガチャ: 英雄'+HEROES.length+'種('+brk+')・はずれ枠なし(10枠すべてキャラ)・重複→素材・10連25個 OK');}
  META.gem=0;META.hero={};META.hmat=0;
 }
 /* ---- 🦸英雄: 出撃(1ゲーム1回)と必殺技11種 ----
