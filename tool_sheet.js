@@ -9,9 +9,12 @@
 //   node tool_sheet.js out.png tw      # 🗼素のタワー
 //   node tool_sheet.js out.png tg      # 🗼進化先(中段+最終形態)
 //   node tool_sheet.js out.png un      # 🪖兵科30種
-//   node tool_sheet.js out.png uv      # ⭐派生(90種)…素と並べて見分けが付くか
+//   node tool_sheet.js out.png uv      # ⭐派生(78種)…素と並べて見分けが付くか
 //   node tool_sheet.js out.png hero    # 🦸英雄22人
-//   node tool_sheet.js out.png zom     # 🧟ゾンビ46種
+//   node tool_sheet.js out.png zom     # 🧟ゾンビ61種
+// ⚠**数を手で持たない**=並ぶのは `UBASE`/`VARLIST`/`HEROES`/`ZOMBIES` の中身そのもの。
+//   上の数は 2026-08-08 に index.html を数えた実測(⚠昔は「ゾンビ46種」「派生90種」と書いてあった)。
+//   📌`VARLIST` が78で90でないのは、`VBASE` の4つ(mortarU/gren2/rail2/frost2)に派生が無いため。
 //   node tool_sheet.js out.png zom --sil     # 🕶シルエットだけ=形で見分けが付くか
 //   node tool_sheet.js out.png un --cols=8 --cell=150
 //
@@ -70,7 +73,7 @@ const inj='<script>(function(){\n'
 +'function build(){try{\n'
 +' var PICK='+JSON.stringify(PICK)+';\n'
 /* ⭐(192)**--pick=名前,名前** で数種だけに絞る=**大きく撮って細部を見る**ための口。
-   ⚠90種を1枚にすると1体140pxで、肩当てや面頬のような小さな差は潰れて見えない。 */
+   ⚠派生78種を1枚にすると1体140pxで、肩当てや面頬のような小さな差は潰れて見えない。 */
 +' var LIST=('+K.list+').filter(function(e){return e&&!e.skip&&e.n&&e.i>=0\n'
 +'   &&(!PICK.length||PICK.some(function(q){return e.n.indexOf(q)>=0;}));});\n'
 +' var DRAW='+K.draw+';\n'

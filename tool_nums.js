@@ -58,6 +58,12 @@ function table(){
  const fmt=n=>typeof n==='number'?(Number.isInteger(n)?n.toLocaleString():n):n;
  const rows=[];
  const add=(k,v,memo)=>rows.push('| '+k+' | '+fmt(v)+' | '+(memo||'')+' |');
+ /* 📌⭐(212)**種類数の行**を足した=md が各所で「数は自動の表」と指すようになったのに、
+    肝心の数が表に無く、各冊が手で持ってバラバラに腐っていたため(棚卸しで発覚)。 */
+ add('種類数','🗼タレット'+g('T_PLAY')+'(+進化'+g('GRD_N')+'・支援'+g('SUP_N')+')'
+  +' / 🪖ユニット'+g('U_N')+'(+派生'+g('Object.keys(UVAR).length')+')'
+  +' / 🦸英雄'+g('HEROES.length')+' / 🧟ゾンビ'+g('ZOMBIES.length'),
+  '⚠**md に手で書かない**(ここが正)。`T_PLAY`/`GRD_N`/`SUP_N`/`U_N`/`UVAR`/`HEROES`/`ZOMBIES`');
  add('初期解放','塔'+g('BASE_T')+'種 / 兵科'+g('BASE_U')+'種','`BASE_T`/`BASE_U`');
  add('連れて行く兵科',g('TEAM_N')+'体','`TEAM_N`');
  add('出撃コストの上限',g('MAXU'),'`MAXU`(兵科の重さ `uWt` の合計)');
@@ -71,6 +77,8 @@ function table(){
  add('試合中の兵科解放費',fmt(g('UNITP[2]'))+' / '+fmt(g('UNITP[3]'))+' / '+fmt(g('UNITP[4]'))+' …','`UNITP`');
  add('②沈んだ港の重さ','×'+g('STAGES[1].hpM'),'`STAGES[].hpM`');
  add('🚌道中の締め切り',g('BNS_TIME')+'秒 / 1日'+g('BNS_DAY_N')+'回','`BNS_TIME`/`BNS_DAY_N`');
+ /* 📐(212)**バスの最高速**=道の長さの下限(最高速×制限時間)を出すのに要る。md 側が表を指していたので足した */
+ add('🚌バスの最高速',g('BUS_SP'),'`BUS_SP`。⚠**道の長さの下限=これ×締め切り**');
  add('鍛錬Lvの上限',g('TR_MAX')+'(+'+Math.round(g('TR_PER')*g('TR_MAX')*100)+'%)','`TR_MAX`/`TR_PER`');
  add('セーブの版',g('META_RESET'),'`META_RESET`(上げると全員リセット)');
  /* 難易度の表 */

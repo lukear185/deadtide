@@ -169,7 +169,8 @@ const ZM=/z=([A-Za-z0-9,]+)/.exec(OPT),ZIDS=ZM?ZM[1].split(','):[];
 const TM=/t=([A-Za-z0-9]+)/.exec(OPT),TID=TM?TM[1]:'';/* ⚠数字も拾うこと(以前は [A-Za-z]+ で `t=scrap2` が `scrap` になっていた) */
 /* ⚔冒険(育成RPG): rpg=拠点の町 / rpgf=エリアのフィールド / rpgb=戦闘 / rpgg=門(エリア選択) / rpgs=つよさ */
 const RPM=/rpg([a-z]?)/.exec(OPT),RPG=!!RPM,RPGK=RPM?RPM[1]:'';
-/* 例 hero=hNox = その英雄を出撃させて撮る / hero=all = 英雄11人を経路上に並べて撮る */
+/* 例 hero=hNox = その英雄を出撃させて撮る / hero=all = 英雄22人を経路上に並べて撮る
+   ⚠**人数を手で持たない**=`HEROES` を数えること(2026-08-08時点で22人。昔は11人と書いてあった) */
 const HM=/hero=([A-Za-z]+)/.exec(OPT),HID=HM?HM[1]:'';
 /* ⭐ult=0.7 = hero= と一緒に渡すと、**必殺技の詠唱をその進み具合で止めて盤面ごと撮る**(2026-08-02)。
    ⚠pose= の並べ撮りでは体の動きしか見えない=足元の紋章や照準線(drawUChg)は盤面でしか出ない。
@@ -663,7 +664,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      +'cvv.width=W2*DP;cvv.height=H2*DP;var c=cvv.getContext("2d");c.scale(DP,DP);'
      +'c.fillStyle=PAPER;c.fillRect(0,0,W2,H2);'
      +'var K="'+GRID+'",items=[];'
-     /* ⭐tw=素のタワーだけ / tg=進化先だけ(2026-07-27)。42種を一度に並べると固まる */
+     /* ⭐tw=素のタワーだけ / tg=進化先だけ(2026-07-27。⚠当時42種)。一度に全部並べると固まる
+        ⚠**種類数を手で持たない**=`TOWERS` を数えること(2026-08-08時点で52種) */
      +'if(K==="tw"){for(var i=0;i<TOWERS.length;i++)if(!TOWERS[i].grd)items.push({n:TOWERS[i].n,i:i});}'
      +'else if(K==="tg"){for(var i=0;i<TOWERS.length;i++)if(TOWERS[i].grd)items.push({n:TOWERS[i].n,i:i});}'
      +'else if(K==="u"){for(var i=0;i<U_N;i++)items.push({n:UNITS[i].n,i:i});}'
