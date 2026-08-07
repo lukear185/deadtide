@@ -1410,6 +1410,12 @@ body.perf #perfbox{display:block}
  font-size:12px;background:rgba(24,20,16,.66);color:var(--pane);border:2px solid var(--gold);
  box-shadow:none;display:none}
 #bt-op-snd.on{display:block}
+/* 🔈状態の1行=左上・札の下。⚠**押す所ではない**(素通しにする) */
+#op-snd-msg{position:absolute;left:8px;top:58px;z-index:3;max-width:70%;
+ padding:5px 11px;border-radius:9px;background:rgba(10,8,6,.72);
+ font-size:11.5px;font-weight:800;line-height:1.5;color:var(--pane);
+ pointer-events:none;opacity:0;transition:opacity .3s linear}
+#op-snd-msg.on{opacity:1}
 /* ⭐**触ってもらう板**=幕の一番手前。⚠**押す所を画面いっぱいにする**(小さいボタンだと押し損ねる)。
    ⭐⭐(202)**背景はタイトル画面をそのまま透かす**(ユーザー指示)=幕の黒を消す。
    ⚠**右の列(ソロ/召集/対戦…)は下の `body.opgate` で隠す**。 */
@@ -1447,6 +1453,8 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
   <button class="btn" id="bt-op-skip">⏭ スキップ</button>
   <!-- 🔈押しても幕は飛ばない札(ブラウザが音を止めている時だけ出る) -->
   <button class="btn" id="bt-op-snd">🔈 音を出す</button>
+  <!-- 🔈いま音がどうなっているか(⚠鳴っていない時は出したままにする=写真を撮ってもらうため) -->
+  <div id="op-snd-msg"></div>
   <!-- ⭐**触ってもらう板**(2026-08-07(202)ユーザー指示「強制的に押させるやつがムービーの前に欲しい」)。
        ⚠⚠**ブラウザは画面を1回触るまで音を出せない**=ここを押してもらって初めて音が出せる。 -->
   <!-- ⭐(202)**中身はタイトル画面そのもの**(ユーザー指示「画面右のソロとかオンラインとかが
@@ -2825,6 +2833,10 @@ const volOf=k=>VOL.all*(VOL_VO[k]?VOL.vo:VOL_UI[k]?VOL.ui:VOL.bt);
 try{const v=JSON.parse(localStorage.getItem('dt_vol')||'null');if(v)for(const k in VOL)if(typeof v[k]==='number')VOL[k]=clamp(v[k],0,1.5);}catch(e){}
 function volSave(){try{localStorage.setItem('dt_vol',JSON.stringify(VOL));}catch(e){}}
 function ensureAC(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+ /* 🔈⚠⚠**iPhoneは「消音スイッチ」を入れているとWebAudioが全部鳴らない**(2026-08-07(202))。
+    ⭐`audioSession.type='playback'` にすると**動画と同じ扱い**になって消音スイッチを無視できる
+      (iOS 16.4以降/対応していない端末では何も起きない=置いておいて害は無い)。 */
+ try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
  if(AC&&AC.state==='suspended')AC.resume();
  /* ⚠効果音の素材はここで初めて展開する(AudioContextはユーザー操作の後でしか作れないため) */
  try{sfxLoad();}catch(e){}
@@ -33058,6 +33070,7 @@ function opEnd(){
  const bx=$('scr-boot');if(bx){bx.classList.add('off');bx.classList.remove('mv');bx.classList.remove('gate');}
  try{document.body.classList.remove('opgate');}catch(e){}
  const el=$('op-cap');if(el)el.classList.remove('on');
+ {const m=$('op-snd-msg');if(m&&m.classList)m.classList.remove('on');}
  /* ⚠道具(撮影・検査)からは暗転を挟まずに直に呼ばれる=黒が残らないように畳む */
  if(!OP.fade){const f=$('op-fade');if(f&&f.classList)f.classList.remove('on');}
  /* 🎵幕のBGMを止めて、タイトルのBGMへ渡す */
@@ -33076,12 +33089,45 @@ function opSeek(ph,t9){OP.on=1;OP.ph=ph;OP.t=t9;OP.cap=-2;
      (ユーザー「左上の音を出すボタン押しても音流れない」)=**触った中で作り直すのが唯一確実**。
    ⚠**必ずユーザー操作の中から呼ぶこと**(setTimeout の中から呼んでも効かない)。 */
 function opAudioGo(){
- try{if(AC&&AC.state!=='running'){try{AC.close();}catch(e){}AC=null;NZBUF=null;}}catch(e){}
+ /* 🐞⚠⚠⚠**ここが「音が出ない」の正体だった**(2026-08-07(202)ユーザー「音 ない」)。
+    ⭐**指を置いた時点(pointerdown)で `ensureAC()` が走って、曲まで始まってしまう**。
+      その直後の click でここへ来て、まだ `resume()` が効いていない口を**閉じて作り直す**ので、
+      **曲は「閉じた口」に繋がったまま残り、`OPA` があるせいで二度と作り直されない**=永久に無音。
+    ⚠⚠**口を閉じる前に、必ず曲を捨てること**。⚠PCでは口が最初から `running` なのでこの道を通らない
+      =**PCで確かめても絶対に見つからない**種類の不具合。 */
+ try{if(AC&&AC.state!=='running'){
+   if(OPA){try{clearInterval(OPA.tm);}catch(e){}try{clearInterval(OPA.tm2);}catch(e){}OPA=null;}
+   try{AC.close();}catch(e){}AC=null;NZBUF=null;}}catch(e){}
+ /* 🔇⭐⭐**音量が0なら戻す**(2026-08-07(202)ユーザー「音 ない」)。
+    ⚠⚠**⚙オプションの「全体」を0にしたまま忘れていると、何をどう直しても永久に無音**。
+      ⭐この札は文字どおり**「音を出す」**なので、0の時は音量も戻すのが正しい振る舞い。
+    ⚠**0でない時は触らない**(勝手に音量を変えない)。 */
+ try{if(muted)muted=false;
+  if(!(VOL.all>0)){VOL.all=.58;SFXVOL=VOL.all;volSave();}
+  if(!(VOL.bgm>0)){VOL.bgm=1;volSave();}}catch(e){}
  try{ensureAC();}catch(e){}
  try{obgmOn();}catch(e){}
- /* ⚠`resume()` は少し遅れて効くので、開いてからもう一度だけ試す */
- setTimeout(()=>{try{if(AC&&AC.state==='running')obgmOn();opSndBtn();}catch(e){}},260);
- try{opSndBtn();}catch(e){}
+ /* ⚠`resume()` は少し遅れて効くので、開いてから何度か様子を見る */
+ for(const ms of [260,700,1500])setTimeout(()=>{try{
+  if(AC&&AC.state==='running')obgmOn();opSndBtn();opSndSay();}catch(e){}},ms);
+ try{opSndBtn();opSndSay();}catch(e){}
+}
+/* 🔈⭐**いま音がどうなっているかを画面に出す**(2026-08-07(202))。
+   ⚠⚠**「鳴らない」と言われても、こちらには聴こえないし端末も見えない**=
+     **状態を画面に出すのが唯一の手がかり**。⚠専門用語は括弧に押し込んで、頭は普通の言葉にする。 */
+function opSndSay(){
+ const el=$('op-snd-msg');if(!el)return;
+ let m='';
+ if(!AC)m='⚠ 音を作れませんでした';
+ else if(AC.state!=='running')m='⚠ 端末が音を止めています('+AC.state+')';
+ else if(!OPA)m='⚠ 曲を始められませんでした';
+ else if(!(VOL.all>0))m='⚠ 音量が0です(⚙オプション)';
+ else m='🔈 音 ON（全体'+Math.round(VOL.all*100)+'／BGM'+Math.round(VOL.bgm*100)+'）';
+ el.textContent=m;
+ el.classList.add('on');
+ clearTimeout(opSndSay.t);
+ /* ⚠うまく鳴っている時だけ消す(鳴っていない時は出したままにして、写真を撮ってもらう) */
+ if(m.charAt(0)!=='⚠')opSndSay.t=setTimeout(()=>{try{el.classList.remove('on');}catch(e){}},3200);
 }
 /* 🎬起動の幕を始める。⚠**もう見た人にも毎回出す**=タップ1回で飛ばせるため(ユーザー指示の流れどおり) */
 function opStart(){
