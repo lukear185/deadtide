@@ -1473,10 +1473,12 @@ function checkTwNew(){
 function checkProgress(){
  META.sc=[[0,0,0,0,0,0],[0,0,0,0,0,0]];META.sclr=[];
  if(!diffOK(0,0)){console.log('FAIL: 新兵が選べない');process.exit(1);}
- if(diffOK(0,1)){console.log('FAIL: 新兵をクリアしていないのに兵長が選べる');process.exit(1);}
+ /* ⛔(204h)**兵長は並びから外した**(ユーザー決定)=新兵の次は古参 */
+ if(D_ORD.indexOf(1)>=0){console.log('FAIL: 兵長がまだ並びに残っている');process.exit(1);}
+ if(diffOK(0,2)){console.log('FAIL: 新兵をクリアしていないのに古参が選べる');process.exit(1);}
  if(stageOK(1)){console.log('FAIL: ステージ1をナイトメアでクリアしていないのに港が開いている');process.exit(1);}
  scArr(0)[0]=1;
- if(!diffOK(0,1)){console.log('FAIL: 新兵クリア後に兵長が開かない');process.exit(1);}
+ if(!diffOK(0,2)){console.log('FAIL: 新兵クリア後に古参が開かない');process.exit(1);}
  for(let d=1;d<=4;d++)scArr(0)[d]=1;
  if(stageOK(1)){console.log('FAIL: 悪夢どまりで港が開いている(ナイトメアが条件のはず)');process.exit(1);}
  scArr(0)[NM_DIFF]=1;
@@ -4253,7 +4255,8 @@ function checkGain(){
       面の中では同じ棚をずっと買い続けることになる)。⭐狙いは 1.0(0.75〜1.35に収める)。 */
  const band=[];
  for(let stg=0;stg<2;stg++){
-  const inc=rows.filter(x=>x.stg===stg).reduce((a,x)=>a+x.g,0);
+  /* 🧬(204h)**面の初クリアの上乗せも足して測る**=兵長を並びから外したぶんはここで返している */
+  const inc=rows.filter(x=>x.stg===stg).reduce((a,x)=>a+x.g,0)+(STG_GEN[stg]||STG_GEN[STG_GEN.length-1]||0);
   let oT=0,oU=0;for(let i=0;i<stg;i++){oT+=UNL_TN[i];oU+=UNL_UN[i];}
   let cost=0;
   for(let k=0;k<UNL_TN[stg];k++)cost+=LAB_NT(oT+k);
@@ -4264,7 +4267,7 @@ function checkGain(){
    +Math.round(cost)+'🧬 = x'+r.toFixed(2)+'(0.75〜1.55に収めること。ノブは RPT_X と LAB_NT/LAB_NU)');
  }
  const tot=rows.reduce((a,x)=>a+x.g,0);
- console.log('🧬実入り: 12拠点で計'+tot.toLocaleString()+'🧬 / 面ごとの釣り合い '
+ console.log('🧬実入り: '+rows.length+'拠点で計'+tot.toLocaleString()+'🧬 + 面の初クリア'+STG_GEN.join('/')+'🧬 / 面ごとの釣り合い '
   +band.map(x=>'面'+(x.stg+1)+' '+x.inc+'🧬÷棚'+Math.round(x.cost)+'=x'+x.r.toFixed(2)).join(' / ')
   +' / 進むほど増える(①'+rows[0].g+'→②'+rows[rows.length-1].g+') OK');
 }
