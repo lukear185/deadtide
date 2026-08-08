@@ -2443,6 +2443,22 @@ function faceImg(id){
  return (im&&im.complete&&im.naturalWidth)?im:null;
 }
 /* === FACES-END === */
+/* === POSES-START === */
+/* 🖼**画像で描くキャラ**(2026-08-09(227g)ユーザー決定)。⚠ここは道具が丸ごと書き換える=手で編集しない。
+   ⭐入れ方=`node tool_pose.js <ポーズ表.png> <id>` → `node tool_pose.js --embed`。
+   ⚠**いまは空**=絵が届くまでは今までどおりコードの体で描く(空でも落ちないように表だけ置いてある)。 */
+const POSE={};
+/* 接地点と大きさ(道具が測った値)。ox,oy=絵の左上から見た「足元の中心」 */
+const POSEM={};
+const POSEI={};/* 読み込んだ Image の置き場(1回だけ作る) */
+function poseImg(id,k){
+ const P=POSE[id];if(!P||!P[k])return null;
+ if(typeof Image==='undefined')return null;/* ⚠Image の無い環境(検査)では描かない */
+ const key=id+'|'+k;let im=POSEI[key];
+ if(im===undefined){try{im=new Image();im.src=P[k];}catch(e){im=null;}POSEI[key]=im;}
+ return (im&&im.complete&&im.naturalWidth)?im:null;
+}
+/* === POSES-END === */
 /* ============ 見た目の決まりごと(書体と色の表) ============
    ⚠色を新しく足す前に、必ずこの表に役割の近いものが無いか見ること。
      ここに無い色を直に書くと、同じ役目の色が少しずつ違う値で散らばる(実際に334色まで増えた)。
@@ -16071,13 +16087,50 @@ HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
  c.restore();
  c.restore();
 };
+/* 🖼⭐⭐(227g)**画像で描く英雄**(ポーズ表)。⚠**絵と道具は tool_pose.js が作る**。
+   ⭐**ポーズの選び方はここ1か所**=状態(跳ぶ/攻撃/溜め/歩き)から名前を1つ選ぶだけ。
+   ⚠**倍率は1体ずつ手で合わせる**(POSE_K)=絵の描き方で背丈が変わるので自動では決まらない。
+     合わせ方=`node test_shot.js out.png 1100 700 "pose=u:<id>"` で他の英雄と並べて見る。
+   ⚠**向きは右向きで描いてもらう**=左は反転で出す(uFace が向きを決めている)。
+   ⚠**★の印と後始末は呼び出し側**(drawHeroBody)がやる=ここでは体だけ描く。 */
+const POSE_K={hWolf:.30};/* 1画素あたりの絵の単位。⚠大きいほどキャラが大きくなる */
+function poseKeyOf(U,walk,o){
+ /* ⚠**上から順に強い状態**=跳んでいる間は攻撃より跳びを出す(絵が飛んで見えないため) */
+ if(o.wjT!=null&&o.wjT<1.5)return 'leap';
+ if(o.ulT>0)return 'breath';
+ if(typeof bRc==='function'&&bRc(o)>.35)return 'howl';
+ if(o.fireT>0)return ((o.cmb|0)%2)?'claw':'bite';
+ if(o.mv)return (Math.floor(walk*2)&1)?'walkB':'walkA';
+ return 'idle';
+}
+function drawPoseBody(c,U,walk,t,o){
+ const P=POSE[U.id],M=(typeof POSEM!=='undefined'&&POSEM[U.id])?POSEM[U.id]:null;
+ if(!P||!M)return false;
+ let k=poseKeyOf(U,walk,o);
+ /* ⚠**そのポーズが無ければ待機に落とす**=1枚足りないだけで消えると原因が分からない */
+ let im=poseImg(U.id,k);
+ if(!im){k='idle';im=poseImg(U.id,k);}
+ const q=M.p&&M.p[k];
+ if(!im||!q)return false;
+ const K=POSE_K[U.id]||.30;
+ c.save();
+ /* 足元(ox,oy)を原点(0,0)に合わせて置く=コードの体と同じ「足が地面」の約束 */
+ c.drawImage(im,-q.ox*K,-q.oy*K,q.w*K,q.h*K);
+ c.restore();
+ return true;
+}
 function drawHeroBody(c,U,walk,o,t,ph){
  const rk=U.hro||1;
  /* ⚠**shadowBlur は使わない**(2026-07-31ユーザー指摘「色がぜんぶ濁っている」)。
     ★4の光は drawUnit 側が背面の輪で出している。 */
  const f=HBODY[U.id];
  H_MZOFF=0;
- if(f)f(c,U,walk,t||0,ph||0,o||{},rk);
+ /* 🖼⭐⭐(227g)**画像で描く英雄**(2026-08-09ユーザー決定「顔だけじゃなくて全部画像でいきたい。
+    今までのやつだと図形組み合わせました感が強すぎる」)=ポーズ表が入っていればそちらで描く。
+    ⚠**入っていない英雄は今までどおり**(コードの体)=1体ずつ移せる。
+    ⚠絵が読み込めていない間もコードの体に落ちる(初回の1〜2コマ)。 */
+ if(typeof POSE!=='undefined'&&POSE[U.id]&&drawPoseBody(c,U,walk,t||0,o||{}))H_MZOFF=1;
+ else if(f)f(c,U,walk,t||0,ph||0,o||{},rk);
  /* 撃った瞬間の閃光(⚠武器の先あたり)。⚠`H_MZOFF=1` を立てた体は**自分で銃口に描いている** */
  if(!H_MZOFF&&o&&o.fireT>0&&FXLV>0){c.fillStyle='#ffdd66';c.beginPath();c.arc(26,-33,4+o.fireT*20,0,7);c.fill();}
  /* レア度の★。⚠🏠ホームの一枚絵は★を出さない(o.nost)=下の名前に★が付いている+拡大すると巨大になる。

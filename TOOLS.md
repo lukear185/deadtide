@@ -56,6 +56,7 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 | 🎙`..\sao\gen.py` | **Stable Audio Openをローカルで**(無料・RTX3080)=英語プロンプト→`sfx_src/AI_*.wav`+📒台帳。⚠リポジトリ外(`Claude Games\sao\`=venv数GB)。⚠HFの同意+トークン(`sao\.hf_token`)+商用前にStability登録が要る(手順は [[TODO]]) | Claude(同意は人) |
 | 🔬研究所の`💾書き出す/読み込む` | セーブを1本の文字列に。**実機の状態をPCで再現**する口。**実機で変な事が起きた時** | 人→Claude |
 | `tool_face.js` `tool_face_embed.js` | 🎨英雄の顔画像の規格化と埋め込み | Claude |
+| `tool_pose.js` | 🖼**キャラ全身の画像**(ポーズ表1枚)を切って埋め込む(227g)。⭐規格は [[TODO]] | Claude |
 | `tool_brand.js` `tool_devicon.js` | 🎨ロゴ・アイコンの生成 | Claude |
 | `tool_bench.js --slow[=N]` | 🐢**遅い端末を真似て測る**(同じ条件どうしの比較用)。**実機だけ重い時** | Claude |
 | `test_shot.js --help` | ❓主なオプション(名前の衝突つき)。⚠**全部の一覧は [[NOTES_道具]]** | Claude |
