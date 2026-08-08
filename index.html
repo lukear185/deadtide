@@ -171,6 +171,17 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homehn{position:absolute;left:4%;right:4%;bottom:4px;text-align:center;font-weight:900;font-size:15px;color:var(--pane);text-shadow:0 2px 0 #000;
  background:linear-gradient(90deg,rgba(16,13,10,0),rgba(16,13,10,.85) 16%,rgba(16,13,10,.85) 84%,rgba(16,13,10,0));
  border-top:2px solid rgba(255,210,61,.6);border-bottom:2px solid rgba(255,210,61,.22);padding:5px 6px}
+/* 🦸(227c)**押せることを絵の右上の印で言う**(2026-08-09ユーザー
+   「中央の絵の右上とかに入れ替えの矢印みたいなの入れるだけ」)=一枚絵は前から押せたが、
+   **見た目が絵なので押せると気づかれなかった**。⚠**文字で説明しない=入れ替えの印だけ**。
+   ⚠押すのは絵ぜんぶ(親)なので、この印自体は指を受けない(pointer-events:none)。
+   ❌名札の中に「変更」の札を置く形はやめた(同じ回に差し替え)。 */
+/* ⚠**枠の右上に貼らない**=絵の入れ物は幅480pxもあるので、隅に置くと**英雄から遠く離れて浮く**
+   (撮って気づいた)。⭐**絵の中心から右へ寄せる**=英雄の頭のすぐ右上に付く。 */
+.heroswap{position:absolute;top:11%;left:50%;margin-left:56px;width:36px;height:36px;border-radius:50%;
+ display:flex;align-items:center;justify-content:center;pointer-events:none;
+ font-size:19px;font-weight:900;line-height:1;color:var(--ink);background:var(--gold);
+ border:2px solid var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.5)}
 .homehsub{position:absolute;left:0;right:0;top:auto;bottom:42px;text-align:center;font-weight:900;font-size:10.5px;
  letter-spacing:4px;color:var(--paper3);text-shadow:0 2px 0 #000;opacity:.9}
 /* ⚠`min-height:0` が要る=flexの子は既定で中身より小さくなれないので、
@@ -224,6 +235,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .navbt:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.5)}
 .navbt .nic{font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;min-height:21px}
 .navbt .nic .ico{height:1.2em;width:1.2em;vertical-align:-.2em}
+/* 🦸(227c)英雄タブ=顔まわりの切り抜きを丸く出す。ふちの色はレア度(JSが入れる) */
+.navbt .nic.face{width:32px;height:32px;min-height:32px;border-radius:50%;overflow:hidden;
+ border:2px solid rgba(242,236,220,.5);background:rgba(12,10,8,.6)}
 .navbt b{font-size:10.5px;letter-spacing:1px;white-space:nowrap}
 /* いま開いている窓のタブを点す(homeNavSyncが同期する) */
 .navbt.on{border-color:rgba(255,210,61,.75);background:rgba(58,46,26,.88)}
@@ -1660,6 +1674,8 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
     <!-- 🦸(124)**一枚絵ごと押せる**(ユーザー指示)=ナビの「🦸英雄」と同じ窓が開く -->
     <div class="homeleft" id="home-hero">
       <canvas id="homecv" width="300" height="330"></canvas>
+      <!-- 🦸(227c)入れ替えの印=ここを含む絵ぜんぶが英雄を選ぶボタン(ユーザー指示) -->
+      <div class="heroswap" aria-hidden="true">⇄</div>
       <div class="homehsub">連れて行く英雄</div>
       <div id="home-hname" class="homehn"></div>
     </div>
@@ -30879,6 +30895,77 @@ function updHomeTrain(){
    ⭐調べた型=**左=えらぶ/右=きめる**・**1画面1目的**・**1画面の選択肢は6±1個**。
      この画面では「いま何を持って行くか」を**見せるだけ**にして、選び直しは専用の窓へ逃がす。
    ⚠**行の中身は必ず絵を出す**=ゲームは全部のユニット・英雄の絵をすでに焼いてある(UTHUMBS)。 */
+/* 🦸⭐⭐(227c)**英雄の「顔まわりだけ」を切り抜いた丸い絵**(下のナビの英雄タブ用)。
+   ⚠⚠**全身を21pxに潰すと誰だか読めない**(2026-08-09ユーザー「英雄のアイコンやっぱりちっちゃすぎる」)=
+     **同じ大きさのまま頭の周りだけを大きく出す**と、小さくても誰を連れているか一目で分かる。
+   ⚠**顔の画像はルピナ1人ぶんしか無い**(FACEの表)ので、**プロシージャルの体をそのまま拡大して切り抜く**。
+   ⚠切り抜く場所は骨格の決まりで全員ほぼ同じ所にある(★の印を頭飾りの上=-64に置いているのと同じ物差し)。
+   ⚠**★の印は出さない**(nost)=丸の中に星が入ると顔が隠れる。 */
+/* ⚠⚠**切り抜く場所を決め打ちの座標で書かない**(2026-08-09に1度やって外した)=
+   drawUnit の中の単位は英雄ごとに違い(背の高さで全高116〜164)、決め打ちだと**胸から下**が出た。
+   ⭐**絵を測ってから決める**=`fitBox` が返す上端から下へ、高さの HD_R 倍ぶんを四角く切る。
+   ⚠横は**体の軸(x≒0)**に寄せる=箱の中心にすると、槍や大鎌のぶん横に流れて顔が外れる。 */
+const HD_R=.21,HD_CX=4,HD_STRIP=20,HD_WMIN=26;/* 切り抜く半径(全高比)/体の軸/帯の幅/頭とみなす太さ */
+/* ⚠**仕組みで当たらない2人だけ手で下げる**(半径の何倍ぶん下げるか)。
+   ⭐死潮の預言者=**杖の玉が頭より太い**ので玉を頭と間違える / 紅蓮の大魔導士=**とんがり帽子が長い**。
+   ⚠**増やす前にまず仕組みを疑うこと**=ここが3人4人と伸びるなら、それは物差しの方が間違っている。
+   ⚠確かめ方=`node test_shot.js hd.png 1500 900 "dev+grid=hd"`(22人ぶん1枚に並ぶ)。 */
+const HD_ADJ={hSeer:1.25,hPyro:1.0};
+/* ⚠⚠**絵ぜんぶの上端を頭だと思ってはいけない**(2026-08-09に1度そうして外した)=
+   杖・槍・大鎌が頭より高く伸びる英雄では、**杖の先を中心に切り抜いて顔が入らなかった**
+   (死潮の預言者・雷鳴の巫女で実際に出た)。
+   ⭐**体の軸まわりの細い帯だけを見て上端を決める**=横へ張り出す得物は数に入らない。
+   ⚠高さ(切り抜く大きさの元)は**絵ぜんぶ**から取る=帯だけだと英雄ごとに大きさが揃わない。 */
+const HDBOX={};
+function hdBox(ui){
+ if(HDBOX[ui]!==undefined)return HDBOX[ui];
+ let out=null;
+ try{
+  const B=200,tmp=document.createElement('canvas');tmp.width=B;tmp.height=B;
+  const t=tmp.getContext&&tmp.getContext('2d');
+  if(t&&t.getImageData){
+   t.save();t.translate(B*.5,B*.72);t.lineWidth=3;t.strokeStyle=INK;
+   drawUnit(t,ui,0,0,1,.4,0,{nost:1});t.restore();
+   const d=t.getImageData(0,0,B,B).data;
+   const xa=Math.max(0,Math.round(B*.5+HD_CX-HD_STRIP)),xb=Math.min(B-1,Math.round(B*.5+HD_CX+HD_STRIP));
+   let y0=B,y1=-1,sy=B,hy=B;
+   for(let y=0;y<B;y++){
+    let n=0;
+    for(let x=0;x<B;x++)if(d[(y*B+x)*4+3]>12){
+     if(y<y0)y0=y;if(y>y1)y1=y;
+     if(x>=xa&&x<=xb){n++;if(y<sy)sy=y;}}
+    /* ⚠⚠**「上端=頭」ではない**(2026-08-09に2度外した)=軸の上に立つ**細い物**
+       (杖・三叉の冠・とんがり帽子の先)が先に当たる。⭐**その行の太さが頭ぶんある所**まで下りる
+       =細い物は素通りし、頭・兜・帽子の実体から始まる。 */
+    if(n>=HD_WMIN&&y<hy)hy=y;}
+   if(y1>y0)out={top:(hy<B?hy:(sy<B?sy:y0))-B*.72,h:y1-y0};
+  }
+ }catch(e){out=null;}
+ HDBOX[ui]=out;return out;
+}
+function heroHeadTh(ui,px){
+ if(ui==null||ui<0)return null;
+ const dpr=Math.min(2,(typeof window!=='undefined'&&window.devicePixelRatio)||1);
+ const c9=document.createElement('canvas');
+ c9.width=Math.round(px*dpr);c9.height=Math.round(px*dpr);
+ const c=c9.getContext&&c9.getContext('2d');if(!c)return null;
+ const dr9=q=>{drawUnit(q,ui,0,0,1,.4,0,{nost:1});};
+ /* ⚠測るのは重い(200×200の全画素)ので必ず覚えさせる=毎回描き直す所から呼ばれる */
+ const box=hdBox(ui);
+ if(!box)return null;
+ const r=Math.max(12,box.h*HD_R);
+ /* ⚠頭が始まる所より少し下を中心に=かぶり物も顎も入る。⚠HD_ADJ の2人だけさらに下げる */
+ const U9=UNITS[ui],aj=(U9&&HD_ADJ[U9.base||U9.id])||0;
+ const cy=box.top+r*(.55+aj);
+ c.save();
+ const k=c9.width/(r*2);
+ c.translate(c9.width/2,c9.height/2);c.scale(k,k);c.translate(-HD_CX,-cy);
+ c.lineWidth=3;c.strokeStyle=INK;
+ try{dr9(c);}catch(e){}
+ c.restore();
+ c9.style.cssText='width:'+px+'px;height:'+px+'px;display:block';
+ return c9;
+}
 /* 焼いてあるサムネを1枚貼る(⚠その場で描き直さない) */
 function pickTh(ui){
  if(ui==null||ui<0||!UTHUMBS[ui])return null;
@@ -34820,6 +34907,9 @@ function opSkip(){
 }
 function opEnd(){
  OP.on=0;
+ /* 🐞⚠⚠(227c)**音の様子見を必ず止める**=残っていると幕の曲が鳴り直す(上の opAudioGo の注記)。
+    ⚠**OP.on を下ろした"後"に消すこと**(順番が逆だと、消した直後に発火した1本がすり抜ける) */
+ try{(opAudioGo.tm||[]).forEach(t=>clearTimeout(t));opAudioGo.tm=[];}catch(e){}
  const bx=$('scr-boot');if(bx){bx.classList.add('off');bx.classList.remove('mv');bx.classList.remove('gate');}
  try{document.body.classList.remove('opgate');}catch(e){}
  const el=$('op-cap');if(el)el.classList.remove('on');
@@ -34860,9 +34950,17 @@ function opAudioGo(){
   if(!(VOL.bgm>0)){VOL.bgm=1;volSave();}}catch(e){}
  try{ensureAC();}catch(e){}
  try{obgmOn();}catch(e){}
- /* ⚠`resume()` は少し遅れて効くので、開いてから何度か様子を見る */
- for(const ms of [260,700,1500])setTimeout(()=>{try{
-  if(AC&&AC.state==='running')obgmOn();opSndBtn();opSndSay();}catch(e){}},ms);
+ /* ⚠`resume()` は少し遅れて効くので、開いてから何度か様子を見る。
+    🐞⚠⚠⚠**(227c)ここが「タイトルでも幕の曲が流れ続ける」の正体だった**(2026-08-09ユーザー実機
+      「オープニングムービーを連打してスキップするとタイトル画面でもずっと流れちゃう」)=
+      **連打で飛ばすと幕は最短1.3秒ほどで終わるので、1.5秒後の様子見が幕の"後"に発火して曲を鳴らし直す**。
+      ⚠しかも `obgmOn` は中でタイトル曲を消してから鳴るので、**幕の曲だけが永久に残る**。
+      ⚠**普通に見ていると幕が20秒近くあるので絶対に起きない**=連打した時だけ出る種類の不具合。
+    ⭐止め方は2重=①幕を畳む `opEnd` が待ち行列を消す ②発火しても `OP.on` が下りていたら何もしない。 */
+ opAudioGo.tm=opAudioGo.tm||[];
+ for(const ms of [260,700,1500])opAudioGo.tm.push(setTimeout(()=>{try{
+  if(!OP.on)return;/* ⚠幕が終わっていたら鳴らし直さない */
+  if(AC&&AC.state==='running')obgmOn();opSndBtn();opSndSay();}catch(e){}},ms));
  try{opSndBtn();opSndSay();}catch(e){}
 }
 /* 🔈⭐**いま音がどうなっているかを画面に出す**(2026-08-07(202))。
@@ -36614,14 +36712,14 @@ function renderHome(){
   if(w9){w9.innerHTML='';T.slice(0,2).forEach(i=>{const c9=pickTh(i);if(c9)w9.appendChild(c9);});}
   const ti=$('hm-team-i');if(ti)ti.textContent='ユニット '+teamIdx().length+'種';}
  {const hi=$('hm-hero-ic');
-  /* ⚠所持していない英雄は出さない(左の名札と同じ条件に揃える。DEVは全員可) */
+  /* ⚠所持していない英雄は出さない(中央の名札と同じ条件に揃える。DEVは全員可) */
   const H9=HEROES.find(x=>x.id===META.hsel&&(DEV||heroOwned(x.id)));
-  /* ⭐選んだ英雄が居ればその顔を出す(隣の編成パネルが実物サムネなので型を揃える)。⚠28x21=4:3 */
-  if(hi){hi.innerHTML='';
-   const c9=H9?pickTh(hUiOf(H9.id)):null;
-   if(c9){c9.style.cssText='width:28px;height:21px;display:block';hi.appendChild(c9);}
-   else hi.innerHTML=icoImg('ic-hero','🦸');}
-  const t9=$('hm-hero-i');if(t9)t9.textContent=H9?H9.n:'連れて行かない';}
+  /* 🦸⭐(227c)**顔まわりの切り抜き**を丸く出す(全身の縮小をやめた=誰か読めなかった)。
+     ⚠丸のふちは**レア度の色**(RARE)=誰を連れているかに加えて格も一目で分かる */
+  if(hi){hi.innerHTML='';hi.classList.toggle('face',!!H9);
+   const c9=H9?heroHeadTh(hUiOf(H9.id),32):null;
+   if(c9){hi.appendChild(c9);hi.style.borderColor=RARE[H9.rk-1]||RARE[0];}
+   else {hi.innerHTML=icoImg('ic-hero','🦸');hi.style.borderColor='';}}}
  {const k9=META.eq||(META.st&&META.st[0]);
   const si=$('hm-stk-ic');if(si)si.innerHTML=(k9&&STRIKES[k9])?icoImg('ic-stk-'+k9,STRIKES[k9].ic):'🎯';
   const t9=$('hm-stk-i');if(t9)t9.textContent=(k9&&STRIKES[k9])?STRIKES[k9].n:'まだ無い';}
