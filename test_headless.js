@@ -2603,7 +2603,8 @@ function checkGacha(){
  /* ⭐⭐**排出率は「レア度の枠」で決まる**=にゃんこ式(2026-08-07(203)ユーザー決定)。
     ⚠⚠**2026-07-30の「1体あたり固定」は撤回された**=英雄を足すと**1体あたりが薄まる**のが正しい。 */
  for(let rk=1;rk<=5;rk++){
-  const row=G_RATE.find(r=>r[0]==='r'+rk),n9=HEROES.filter(h=>h.rk===rk).length;
+  /* ⛔(226g)外している英雄(off:1)は頭数に入れない=rkCountと同じ数え方 */
+  const row=G_RATE.find(r=>r[0]==='r'+rk),n9=HEROES.filter(h=>h.rk===rk&&!h.off).length;
   if(!row){console.log('FAIL: ★'+rk+'の枠が無い');process.exit(1);}
   if(Math.abs(row[1]-RK_RATE[rk])>1e-9){
    console.log('FAIL: ★'+rk+'の枠が表どおりでない '+row[1]+' vs '+RK_RATE[rk]);process.exit(1);}

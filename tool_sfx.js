@@ -524,6 +524,14 @@ const REC=[
  {k:'lasF',  f:'AI_lasF',  t:0, d:.7,  g:0},
  {k:'railE', f:'AI_railE', t:0, d:1.4, g:0},
  {k:'railF', f:'AI_railF', t:0, d:1.4, g:0},
+ /* 🎙(226g)第3陣(E=うるさい/F=惜しいが静か/レールE・F=爆発音で全ボツ、の返事を受けて)=
+    レーザーはF寄りで厚みを足した1本・レールガンは「爆発禁止」の電磁・ビーム寄り2本 */
+ {k:'lasG',  f:'AI_lasG',  t:0, d:.7,  g:0},
+ {k:'railG', f:'AI_railG', t:0, d:1.4, g:0},
+ {k:'railH', f:'AI_railH', t:0, d:1.4, g:0},
+ /* 🎙(226g追記)ユーザー「どっちもビーム感がほしい。近未来的な」=その路線を強めた2本 */
+ {k:'lasH',  f:'AI_lasH',  t:0, d:.7,  g:0},
+ {k:'railI', f:'AI_railI', t:0, d:1.4, g:0},
  {k:'winC',  f:'AI_winC',  t:0, d:3.0, g:0},
  {k:'winD',  f:'AI_winD',  t:0, d:3.0, g:0},
  {k:'uboltC',f:'AI_uboltC',t:0, d:.9,  g:0},

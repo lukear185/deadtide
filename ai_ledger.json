@@ -259,5 +259,50 @@
   "file": "sfx_src/AI_railF.wav",
   "license": "Stability Community License(年商$1M未満・要登録)",
   "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "steady laser beam tone, warm full-bodied electronic hum, constant single pitch, clearly audible, smooth, no explosion",
+  "duration": 0.7,
+  "file": "sfx_src/AI_lasG.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "electromagnetic railgun charge and release, high energy electric hum building into a piercing zap, metallic resonance, no explosion, no boom, clean sci-fi energy",
+  "duration": 1.4,
+  "file": "sfx_src/AI_railG.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "sci-fi energy beam weapon, sustained electric buzz with deep hum undertone, smooth energy discharge, constant tone, no explosion",
+  "duration": 1.4,
+  "file": "sfx_src/AI_railH.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "futuristic sci-fi laser beam weapon firing, sleek high-tech energy beam, smooth steady tone, spaceship laser, clean synthetic sound",
+  "duration": 0.7,
+  "file": "sfx_src/AI_lasH.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "huge futuristic beam cannon firing, short charging whine then massive sustained energy beam, sci-fi spaceship weapon, deep synthetic tone, no explosion",
+  "duration": 1.4,
+  "file": "sfx_src/AI_railI.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
  }
 ]
