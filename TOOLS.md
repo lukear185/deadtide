@@ -52,6 +52,7 @@ Claude Code 自身が作って Claude Code 自身が使う道具の洗い出し�
 | ⭐`tool_nums.js` | 📌**数字の腐り止め**=実装から表を作り直す+文章の数字を`@claim`で検算。**ゲートで自動** | Claude |
 | ⭐`tool_stock.js` | 📦**素材の在庫台帳**=zipを開かずに**日本語で引ける**(骨/血/バス/歓声…)。`--take`で取り出し方だけ出す。**音を探す時** | Claude |
 | 🎙`tool_aisfx.js` | **ElevenLabsで効果音を生成**して sfx_src へ+📒`ai_ledger.json` に台帳(Steam AI開示用)。⚠⚠**Starter($5/月)以上で契約してから**(無料プランの出力は商用不可)。キーは `.eleven_key`(gitignore済み)か環境変数 | Claude(契約は人) |
+| 🎙`..\sao\gen.py` | **Stable Audio Openをローカルで**(無料・RTX3080)=英語プロンプト→`sfx_src/AI_*.wav`+📒台帳。⚠リポジトリ外(`Claude Games\sao\`=venv数GB)。⚠HFの同意+トークン(`sao\.hf_token`)+商用前にStability登録が要る(手順は [[TODO]]) | Claude(同意は人) |
 | 🔬研究所の`💾書き出す/読み込む` | セーブを1本の文字列に。**実機の状態をPCで再現**する口。**実機で変な事が起きた時** | 人→Claude |
 | `tool_face.js` `tool_face_embed.js` | 🎨英雄の顔画像の規格化と埋め込み | Claude |
 | `tool_brand.js` `tool_devicon.js` | 🎨ロゴ・アイコンの生成 | Claude |
