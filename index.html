@@ -3965,7 +3965,8 @@ const SFX_GEOSHELL='geoShD';
 /* ⚔**近接英雄の攻撃音**(2026-08-03(84))。⚠**呼び出し側に直に書かない**=選び直しはここ1か所。 */
 /* ⭐**近接5人とも決着**(2026-08-03(88)ユーザー「G Aで」=騎槍は mSprG)。選び直しはここ1か所。
    👑⭐**暁の王も決着**(2026-08-08(217)ユーザー「暁AでOK」=dwnA。B〜Eは🗑ボツへ)。 */
-const H_SFX={hNox:'mLong',hDark:'mSprG',hGiant:'mHeavy',hMech:'mTool',hPost:'mBlunt',hDawn:'dwnA'};
+const H_SFX={hNox:'mLong',hDark:'mSprG',hGiant:'mHeavy',hMech:'mTool',hPost:'mBlunt',hDawn:'dwnA',
+ hWolf:'mDog'/* 🐺(226d)噛みつき=本物の犬の吠え(猟犬と同じ素材。狼なので合う) */};
 /* ✊(217)**近接兵科の攻撃音**(武器ごと。⚠それまで近接は無音=聞こえていたのは撃破の血しぶき)。
    ⚠進化先は元の兵科の武器を引き継ぐ(U.base で引く)。表に無い近接=バット/斬撃=刃 に落ちる */
 const MELEE_SFX={bat:'mBat',hnd:'mDog',big:'mFist',shd:'mShld',gld:'mShld',chain:'mChain',
@@ -5551,7 +5552,15 @@ const HEROES=[
     ⭐**必殺=ゴムボール3発、跳ねるたびに威力が上がる(最大10連鎖)**。
     ⚠威力は「平均3回当たる」前提で1発を軽くしてある(群れに強く、1体だけ(ボス)には並)。
     ⚠絵は掟どおり全部プロシージャル(HBODY.hLupi)。仕組みは lupiBall(跳弾の共通処理)。 */
- {id:'hLupi',n:'跳弾姫ルピナ',rk:5,hp:5400,atk:480,rate:1.1,sp:76,c:'#ff7fb8',ty:'rubber',/*🫧(221)実弾→ゴム(全部等倍で跳弾)*/rng:300,uch:56,ult:'バブルガム・ボム',udsc:'巨大なバブルガムをふわりと放つ。大破裂が広範囲を巻き込み、ガムがべたついた敵は10秒間かなり遅くなり、受けるダメージが2倍になる'}
+ {id:'hLupi',n:'跳弾姫ルピナ',rk:5,hp:5400,atk:480,rate:1.1,sp:76,c:'#ff7fb8',ty:'rubber',/*🫧(221)実弾→ゴム(全部等倍で跳弾)*/rng:300,uch:56,ult:'バブルガム・ボム',udsc:'巨大なバブルガムをふわりと放つ。大破裂が広範囲を巻き込み、ガムがべたついた敵は10秒間かなり遅くなり、受けるダメージが2倍になる'},
+ /* 🐺⭐⭐**蒼雷の狼王**(2026-08-08(226d)ユーザー協議ずみ=参考画像「雷を纏う狼」。
+    名前=ユーザー選択「蒼雷の狼王で」。18+αで唯一の**獣の英雄**(四つ足)。
+    ⭐通常攻撃=**飛びかかって噛みつき→ひっかき→ひっかきの3コンボを約2秒かけて**、
+      終わったら**元居た所へ素早く跳んで戻る**(ユーザー指定の動き。跳びは絵の位置だけ=ulBkと同じ掟)。
+    ⭐必殺=遠吠え→**雷の狼3体を召喚**、5秒間食らいつき→**放電の締め+王のブレス**(同時)。
+      技名はこちらの案「蒼雷の群狼」(ユーザー「技名はまた考えて」)。
+    ⚠atkは「1回の攻撃(3打合計のもと)」=1打あたりは1/3×連撃の盛り。rate2.0が跳びの尺の分母。 */
+ {id:'hWolf',n:'蒼雷の狼王',rk:5,hp:6400,atk:1900,rate:2.0,sp:112,c:'#8fb4e0',ty:'elec',rng:64,uch:56,ult:'蒼雷の群狼',udsc:'遠吠えで雷の狼を3体呼ぶ。5秒間敵に食らいつき、締めの放電と同時に王みずから雷のブレスを吐く'}
 ];
 const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
 const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
@@ -5682,7 +5691,7 @@ const hUiOf=id=>{const k=HEROES.findIndex(h=>h.id===id);return k<0?-1:HERO_I0+k;
    ⚠**近接は据え置き**=type melee と、近接英雄5人(騎槍80/鉄拳64はblastだが殴り)。
    ⚠**表(HEROES/UBASE)は素のまま**=掛けるのは実際に使う UNITS 側の1か所だけ。
      戻す時もここを消すだけ。⚠タレットは別表(TOWERS)なので巻き込まない。 */
-const RNG_X=1.2,RNG_MELEE=['hNox','hDark','hGiant','hMech','hPost'];
+const RNG_X=1.2,RNG_MELEE=['hNox','hDark','hGiant','hMech','hPost','hWolf'/* 🐺(226d)電撃だが噛みつき=近接 */];
 for(const U of UNITS){if(U.type==='melee'||RNG_MELEE.indexOf(U.base||U.id)>=0)continue;
  if((U.rng||0)>50)U.rng=Math.round(U.rng*RNG_X);}
 
@@ -5729,7 +5738,8 @@ const U_MOT={
     上体も前かがみ(CHG_LEAN.snipe=+.13)になっていた。正しくは振りかぶる 'slash'(-.30)。
     ⚠**秒数(1.2)は動かしていない**=遊びの数値は据え置き。 */
  hNox:['slash',1.2],hDawn:['cast',1],hDark:['now',.36],hGeo:['snipe',1.3],hPyro:['cast',.9],
- hLupi:['now',.2]/* 🌈跳弾姫=玩具ブラスターをその場で撃つ(軽い溜め) */
+ hLupi:['now',.2],/* 🌈跳弾姫=玩具ブラスターをその場で撃つ(軽い溜め) */
+ hWolf:['now',0]/* 🐺(226d)溜めゼロ=飛びかかりのテンポが命(型がboltに落ちると落雷の溜めが付く) */
 };
 const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
 const uMotK=ui=>uMot(ui)[0];
@@ -14634,7 +14644,8 @@ const H_LOOK={
  hGeo  :{cape:1,h:'plume', w:'lrifle', k:'cape2', c2:'#3f4a35'},/* 狙撃王: 羽根つば広帽+白い丸眼鏡+長銃 */
  hPyro :{cape:1,h:'darkh', w:'fstaff', k:'robe',  c2:'#5c1f24'},/* 紅蓮の大魔導士: 深紅の頭巾+炎の杖 */
  /* ⚠HBODY.hLupi 登録済み=ここの値は台帳の札(重複検査用)。h/w/k は他の誰とも違う名前にすること */
- hLupi :{cape:0,h:'rcap',  w:'bgun',  k:'pony',  c2:'#2e2c34'} /* 跳弾姫: 星の白キャップ+玩具ブラスター+虹のポニーテール */
+ hLupi :{cape:0,h:'rcap',  w:'bgun',  k:'pony',  c2:'#2e2c34'},/* 跳弾姫: 星の白キャップ+玩具ブラスター+虹のポニーテール */
+ hWolf :{cape:0,h:'wmane', w:'wfang', k:'wtail', c2:'#5a6478'} /* 🐺蒼雷の狼王: 逆立つたてがみ+雷の牙+ふさふさの尾(四つ足=HBODY.hWolf) */
 };
 /* ============ 🦸英雄18人の「専用の体」(2026-08-01) ============
    ⭐ユーザー指示「英雄18人」。⚠それまで英雄は**全員が同じ胴・同じ脚・同じ腕**で、
@@ -15680,6 +15691,89 @@ HBODY.hLupi=(c,U,walk,t,ph,o)=>{
   /* 前髪(桃)を右に少し出す=キャップだけだと坊主に見える */
   c.fillStyle=PK;c.beginPath();c.moveTo(6.4,HSK.fy-4);c.quadraticCurveTo(8.4,HSK.fy-1,6.6,HSK.fy+2.4);
   c.quadraticCurveTo(5.4,HSK.fy-1,6.4,HSK.fy-4);c.closePath();c.fill();c.stroke();}
+ c.restore();
+};
+/* ---- 🐺★5 蒼雷の狼王(2026-08-08(226d)ユーザー協議・参考画像=雷を纏う狼)。
+   ⭐**唯一の「獣(四つ足)」の英雄**=輪郭がまるごと違うのが一番の差(騎乗の馬と同じ考え)。
+   要点: ①灰青の毛+背のぎざぎざのたてがみ ②黄色く鋭い目+体の傷跡 ③前脚に布の巻き(参考画像)
+   ④ふさふさの尾 ⑤**体に青白い電気が走る**(体の一部=FXLVで消さない) ⑥攻撃=顎を開く/溜め=遠吠えで上を向く。
+   ⚠四つ足なので人型の部品(hLeg2/bTorso/hFc)は使わない。⚠|x|≦54に収める。 ---- */
+HBODY.hWolf=(c,U,walk,t,ph,o)=>{
+ const FUR='#6a7086',FUR2='#7d8499',BLY='#565b6e',MN2='#9aa2b8',EL='#bfe9ff',WRAP='#4a5060';
+ const rc=bRc(o);/* 溜め(遠吠え)0..1 */
+ const atk=(o&&o.fireT>0)?1:0;
+ c.save();c.scale(1.15,1.15);
+ if(atk)c.translate(2.6,-1);/* 攻撃の瞬間は少し前へ突っ込む */
+ /* 脚4本(狼はほっそり)。⚠前後で振りの位相を変える(馬と同じ掟) */
+ const wleg=(lx,pz,col,fr)=>{const s1=Math.sin(t*8+ph+pz),lift=Math.max(0,Math.sin(t*8+ph+pz+1.2))*2.4;
+  c.fillStyle=col;
+  c.beginPath();c.moveTo(lx-3.4,-18);c.lineTo(lx+3.6,-18);
+  c.lineTo(lx+2.4+s1*2.6,-9);c.lineTo(lx-2.2+s1*2.6,-9);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(lx-2.2+s1*2.6,-9.4);c.lineTo(lx+2.4+s1*2.6,-9.4);
+  c.lineTo(lx+2+s1*4.2,-.4-lift);c.lineTo(lx-2+s1*4.2,-.4-lift);c.closePath();c.fill();c.stroke();
+  if(fr){c.fillStyle=WRAP;c.fillRect(lx-2.6+s1*3.4,-8,5.2,3.2);c.strokeRect(lx-2.6+s1*3.4,-8,5.2,3.2);}};
+ wleg(-16,3.14,shade(FUR,.66));wleg(14,1.2,shade(FUR,.66),1);/* 奥の2本 */
+ /* ふさふさの尾(先をぎざぎざに割る=矢印に見せない) */
+ c.fillStyle=MN2;
+ c.beginPath();c.moveTo(-24,-26);
+ c.quadraticCurveTo(-36,-30+walk,-40,-20+walk*1.6);
+ c.lineTo(-35,-19);c.lineTo(-37,-14);c.lineTo(-31,-15);
+ c.quadraticCurveTo(-27,-18,-23,-20);c.closePath();c.fill();c.stroke();
+ /* 胴(背を丸め腹をくびれさせる=箱にしない) */
+ c.fillStyle=FUR;
+ c.beginPath();c.moveTo(-25,-22);
+ c.bezierCurveTo(-27,-31,-14,-35,0,-34);
+ c.bezierCurveTo(10,-33.5,17,-31,21,-27);
+ c.lineTo(22,-18);
+ c.bezierCurveTo(8,-13,-12,-13,-25,-17);
+ c.closePath();c.fill();c.stroke();
+ c.save();c.beginPath();c.rect(-27,-20,52,10);c.clip();/* 腹側だけ1段暗く */
+ c.fillStyle=BLY;
+ c.beginPath();c.moveTo(-25,-22);c.bezierCurveTo(-27,-31,-14,-35,0,-34);
+ c.bezierCurveTo(10,-33.5,17,-31,21,-27);c.lineTo(22,-18);
+ c.bezierCurveTo(8,-13,-12,-13,-25,-17);c.closePath();c.fill();c.restore();
+ /* 背のたてがみ(ぎざぎざ=このキャラの署名)。⚠高くしすぎると背中に岩が乗って見える(撮って下げた) */
+ c.fillStyle=shade(MN2,.92);
+ c.beginPath();c.moveTo(-22,-27);
+ for(let i=0;i<5;i++)c.lineTo(-18+i*6,-31.5-(i%2?1.5:3.5)-walk*.5);
+ c.lineTo(10,-31);c.lineTo(8,-28);c.closePath();c.fill();c.stroke();
+ /* 胴の傷跡2本 */
+ c.save();c.strokeStyle='#3d4150';c.lineWidth=1.6;
+ c.beginPath();c.moveTo(-8,-28);c.lineTo(-3,-22);c.moveTo(-5,-28);c.lineTo(0,-22);c.stroke();c.restore();
+ wleg(-9,0,FUR);wleg(19,2.4,FUR,1);/* 手前の2本 */
+ /* 首と頭。⭐溜め(遠吠え)=頭を上げる / 攻撃=顎を開く */
+ {c.save();c.translate(20,-28);c.rotate(-rc*.62+(atk?.12:0));
+  c.fillStyle=FUR2;
+  c.beginPath();c.moveTo(-4,2);c.lineTo(2,-8);c.lineTo(9,-7);c.lineTo(6,4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(1,-7);c.lineTo(6,-13);c.lineTo(12,-12);
+  c.quadraticCurveTo(20,-10,21,-6);
+  c.lineTo(14,-3.6);c.lineTo(6,-2);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#2a2d38';c.beginPath();c.arc(20.4,-6.4,1.5,0,7);c.fill();/* 鼻先 */
+  {const op=Math.max(atk?.5:0,rc*.65);/* 開く顎 */
+   c.fillStyle=shade(FUR2,.8);
+   c.beginPath();c.moveTo(8,-2.6);c.lineTo(19,-3.4+op*6);c.lineTo(9,1+op*5);c.closePath();c.fill();c.stroke();
+   if(op>.2){c.fillStyle='#fff';/* 牙 */
+    c.beginPath();c.moveTo(11,-2.8);c.lineTo(12.6,-.6+op*3);c.lineTo(14,-3);c.closePath();c.fill();}}
+  c.fillStyle=FUR2;/* 耳2本(長さを変える) */
+  c.beginPath();c.moveTo(2,-12);c.lineTo(0,-19);c.lineTo(6,-14);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(7,-13.6);c.lineTo(8,-19.4);c.lineTo(11.4,-13);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#ffd23d';c.beginPath();c.ellipse(11.6,-8.4,2.3,1.3,-.15,0,7);c.fill();/* 黄色い目 */
+  c.fillStyle=INK;c.beginPath();c.arc(12.3,-8.4,.7,0,7);c.fill();
+  c.save();c.strokeStyle='#3d4150';c.lineWidth=1.4;/* 顔の傷 */
+  c.beginPath();c.moveTo(9,-12);c.lineTo(10.4,-9.6);c.stroke();c.restore();
+  c.restore();}
+ /* ⚡体を走る電気(ゆっくり明滅。体の一部=段の布と同じ扱いでFXLVでは消さない) */
+ {c.save();c.globalAlpha=Math.max(.15,.4+.35*Math.sin(t*9+ph));
+  c.strokeStyle=EL;c.lineWidth=1.8;
+  c.beginPath();c.moveTo(-14,-33);c.lineTo(-10,-29);c.lineTo(-6,-32);c.lineTo(-2,-28);c.stroke();
+  c.beginPath();c.moveTo(4,-33);c.lineTo(8,-30);c.lineTo(12,-33);c.stroke();
+  c.restore();}
+ /* 遠吠え(溜め)=口元から立ちのぼる雷 */
+ if(rc>.3){c.save();c.globalAlpha=(rc-.3)/.7*.8;
+  c.strokeStyle=EL;c.lineWidth=2.2;
+  c.beginPath();c.moveTo(24,-46);c.lineTo(28,-40);c.lineTo(24,-36);c.stroke();
+  c.beginPath();c.moveTo(14,-48);c.lineTo(17,-43);c.lineTo(13,-40);c.stroke();
+  c.restore();}
  c.restore();
 };
 /* ---- ★5 暗黒の騎士「漆黒の突撃」= **18人でただ1人の騎乗**(2026-08-01ユーザーの絵から起こした)。
@@ -17515,8 +17609,15 @@ const H_HITS={
  hGiant:[1,3], /* 鋼鉄の巨人(鉄拳)=重い一撃→三連打 */
  hMech:[3],    /* 整備士(レンチ)=カンカンカンの三連ずっと */
  hPost:[2],    /* 配達人(荷物)=振り下ろし→放り上げの二連 */
+ hWolf:[3],    /* 🐺(226d)蒼雷の狼王=噛みつき→ひっかき→ひっかきの三連ずっと */
 };
 const SWG_SUB=.16;/* 1発ぶんの振りの長さ(秒)。⚠短いほど連打に見えるが、.12を切ると残像になる */
+/* 🐺(226d)**打と打の間隔をキャラ別に持てる口**(既定は SWG_SUB×1.05)。
+   狼王はユーザー指定「3コンボを2秒かけて」=0.6秒おき(0/0.6/1.2秒に当てて、残りで跳んで戻る)。 */
+const H_SUBT={hWolf:.60};
+const hSubT=U=>H_SUBT[U&&(U.base||U.id)]||SWG_SUB*1.05;
+/* 🐺(226d)狼王の飛びかかりの尺(秒)=跳ぶ/敵の上に居る/戻る。合計1.9 < rate2.0 に収める */
+const WJ_OUT=.18,WJ_STAY=1.5,WJ_BACK=.22;
 function uHitsN(u){const U=UNITS[u.ui];const A=U&&H_HITS[U.base||U.id];
  return A?A[((u.hcy||0))%A.length]:1;}
 /* ⭐**2発目以降の一撃**。⚠最初の1発は普段の枝がそのまま打つ(枝を書き写さないため)。
@@ -19694,6 +19795,19 @@ const H_FX={
   if(FXLV>0)hitFx(C,tg,ang,'#ff7fb8',0,U.type);
   if(n9>1)lupiBall(C,u,ua9,0,n9-1,tg,.14,0);
   if(C.isMe)(sfx.gren||sfx.shot)();},
+ /* 🐺(226d)**蒼雷の狼王=噛みつき/ひっかき**。⚠飛びかかりの絵はここで「行き先」を更新するだけ
+    (タイムラインと絵の位置は campStep 側=ulBkと同じ「絵だけ動かす」掟)。
+    ⚠2打目3打目は hCmbStrike が同じこの関数を呼ぶので、的が替われば跳び先も付いていく。 */
+ hWolf:(C,u,U,tg,mx,my,ang)=>{u.fireT=.14;
+  if(u.wjT==null)u.wjT=0;/* 1打目=飛びかかり開始 */
+  u.wjx=tg.px;u.wjy=tg.py;
+  if(FXLV>0){
+   const pz9=[[tg.px+rnd(-9,9),tg.py-46*CH_UP],[tg.px,tg.py-16*CH_UP]];
+   addFx(C,'zap',pz9[0][0],pz9[0][1],'',{pts:pz9,sd:rnd(0,9),wm:.8});
+   addP(C,4,tg.px,tg.py-16*CH_UP,{sp:130,g:240,life:.22,r:1.8,col:'#bfe9ff'});
+   hCmbFx(C,u,tg,ang,'#bfe9ff');
+   hitFx(C,tg,ang,'#bfe9ff',1,U.type);}
+  if(C.isMe&&sfx[H_SFX.hWolf])sfx[H_SFX.hWolf]();},
 };
 /* 🌈**跳弾の共通処理**(2026-08-03(92)ユーザー指示)。ボールが敵から敵へ跳ねる:
    bd=1跳ねの威力 / grow=1跳ねごとの伸び(通常0 / 必殺.3) / hops=残りの跳ね数 /
@@ -19751,7 +19865,7 @@ const FX_SPLAT_MAX=80;/* 演出がこれ以上混んでいたら、地面の血�
 const FX_GACC=.35;    /* 「+⚙️」を足し込む間合い(秒)。これより短い間に倒したら1枚にまとめる */
 const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slp:.4,slash:.26,shock:.5,
  toss:.3,rkt:.26,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
- beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24,bsink:2.6};
+ beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24,bsink:2.6,lwolf:.5/* 🐺(226d)雷の狼 */};
 /* ⚠寿命が1つずつ違う演出は ex に `lf` を持たせる(投擲=飛ぶ距離で / 死体=大きさで変わる)。
    `d0` は「その秒数だけ待ってから始まる」=絨毯爆撃の時間差に使う */
 const fxLife=(k,e)=>(e&&e.lf!=null)?e.lf:(FX_LIFE[k]!==undefined?FX_LIFE[k]:.5);
@@ -20816,6 +20930,48 @@ function heroUlt(C,wave){
    if(C.isMe)(sfx.gren||sfx.shot)();
   });
   C.shake=Math.max(C.shake||0,.15);
+ }else if(id==='hWolf'){/* 🐺⭐(226d)蒼雷の群狼(ユーザー協議の仕様どおり)=
+    遠吠え→**雷の狼3体を召喚**→5秒間それぞれの敵に食らいつく(0.45秒ごと)→
+    **5秒後に放電**(範囲ダメージ+気絶)、**同時に王みずから前方へ雷のブレス**。
+    ⚠1体目の食らいつきはその場で入る(押した瞬間に何も起きないと不発に見える=検査も見る)。 */
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'蒼雷の群狼');
+  addFx(C,'ring',u.px,u.py,'',{r:300,col:'#bfe9ff'});
+  if(C.isMe)sfxAtR('growl',1.0,.86);/* 遠吠え=狼男の唸り素材を低めに */
+  const pickW=()=>C.zombies.filter(z=>!z.dead&&z.d>=0).sort((a,b)=>b.hp-a.hp);
+  const tg0=pickW().slice(0,3);
+  const wvs=[0,1,2].map(k=>({tg:tg0[k]||null}));
+  const bite9=(wv)=>{
+   if(wv.tg&&(wv.tg.dead||wv.tg.d<0))wv.tg=null;
+   if(!wv.tg)wv.tg=pickW()[0]||null;
+   const z=wv.tg;if(!z)return;
+   dmgZ(C,z,Math.round(130*W),1,0,0,'elec');
+   if(!z.dead)z.slowT=Math.max(z.slowT||0,.6);/* 食らいつかれている間はよろける */
+   if(FXLV>0){
+    addFx(C,'lwolf',z.px,z.py,'',{dr:(z.dr||-1),sd:rnd(0,9)});
+    if(Math.random()<.5)addP(C,3,z.px,z.py-18*CH_UP,{sp:120,g:200,life:.2,r:1.8,col:'#bfe9ff'});}};
+  for(let k=0;k<3;k++){bite9(wvs[k]);
+   for(let i=1;i<11;i++)later(C,i*.45+k*.09,()=>bite9(wvs[k]));}
+  /* ⚡締め=放電(狼ごとに範囲)+王のブレス(同時) */
+  later(C,5,()=>{
+   for(const wv of wvs){const z=wv.tg;if(!z||z.dead)continue;
+    const zx=z.px,zy=z.py;
+    for(const z2 of C.zombies){if(z2.dead||z2.d<0)continue;if(dist(z2.px,z2.py,zx,zy)>130)continue;
+     dmgZ(C,z2,Math.round(430*W),1,0,0,'elec');
+     if(!z2.dead){z2.frzT=Math.max(z2.frzT||0,1.6);z2.stnT=Math.max(z2.stnT||0,1.6);}}
+    addFx(C,'shock',zx,zy-8,'',{r:130,col:'#bfe9ff'});
+    addFx(C,'ring',zx,zy,'',{r:150,col:'#8fb4e0'});
+    addP(C,10,zx,zy-14,{sp:190,g:340,life:.4,r:2.2,col:'#bfe9ff'});}
+   if(C.isMe)(sfx[SFX_UBOLT]||sfx.zap)();
+   /* 🌩王のブレス=前方一直線の太い雷 */
+   const ts9=C.zombies.filter(z=>!z.dead&&z.d>=0&&(u.d-z.d)>=-20&&(u.d-z.d)<=620);
+   let far9=null;for(const z of ts9){if(!far9||z.d<far9.d)far9=z;}
+   const ex9=far9?far9.px:u.px+(u.dr||-1)*520,ey9=far9?far9.py-16*CH_UP:u.py-24*CH_UP;
+   addFx(C,'beam',u.px+(u.dr||-1)*22*CH_UP,u.py-26*CH_UP,'',
+    {x2:ex9,y2:ey9,col:'rgba(140,200,255,',col2:'rgba(235,248,255,',w:8,lf:.4,sus:1});
+   for(const z of ts9){dmgZ(C,z,Math.round(500*W),1,0,0,'elec');}
+   u.ulT=Math.max(u.ulT||0,.6);/* ブレスの間は吠えの構え */
+   C.shake=Math.max(C.shake||0,.4);
+   if(C.isMe)sfx.zap2&&sfx.zap2();});
  }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
   for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
    addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:DANGER});}
@@ -21030,7 +21186,21 @@ function campStep(C,dt,wave){
     /* 下がる(0→.66で目一杯)→加速して戻る(.66→1で0へ)。
        ⚠**退がるのは d を増やす向き**=敵は d の小さい側から来る(d=0が湧き口・PLENがコア) */
     const e=q<.66?Math.sin(q/.66*1.5708):Math.pow(1-(q-.66)/.34,2);
-    const pb=pathPos(clamp(u.d+u.ulBk*e,0,PLEN),uLnOf(C,u));u.px=pb[0];u.py=pb[1];}}}
+    const pb=pathPos(clamp(u.d+u.ulBk*e,0,PLEN),uLnOf(C,u));u.px=pb[0];u.py=pb[1];}}
+  /* 🐺(226d)**蒼雷の狼王の飛びかかり**=跳ぶ(0.18秒)→敵の上で3コンボ(〜1.5秒)→
+     素早く元の場所へ跳んで戻る(0.22秒)。⚠**絵の位置(px/py)だけ動かす**(ulBkと同じ掟)=
+     u.d は動かさないので当たり判定・射程・旗の線は1つも変わらない。 */
+  else if(u.wjT!=null&&!u.dead&&(UNITS[u.ui].base||UNITS[u.ui].id)==='hWolf'){
+   u.wjT+=dt;
+   const q9=u.wjT;let f9=0,arc9=0;
+   if(q9<WJ_OUT){f9=q9/WJ_OUT;arc9=Math.sin(f9*Math.PI)*30;}
+   else if(q9<WJ_STAY)f9=1;
+   else if(q9<WJ_STAY+WJ_BACK){f9=1-(q9-WJ_STAY)/WJ_BACK;arc9=Math.sin((1-f9)*Math.PI)*24;}
+   else{u.wjT=null;}
+   if(u.wjT!=null&&f9>0&&u.wjx!=null){
+    u.px=u.px+(u.wjx-u.px)*f9;
+    u.py=u.py+(u.wjy-u.py)*f9-arc9;
+    u.mv=0;/* 跳んでいる間は歩きの足踏みを止める */}}}
  for(const u of C.units){
   if(u.dead)continue;
   /* ⚠溜めの間は通常攻撃をしない=撃ちながら溜めると何をしているのか読めない */
@@ -21089,7 +21259,7 @@ function campStep(C,dt,wave){
     /* ⭐⭐**1回の攻撃で N 回殴る**(2026-08-03(83))。1発目はこの下の普段の枝が打ち、
        2発目以降を短い間隔で予約する。⚠**次の攻撃で並びが1つ進む**(単発→二連→三連…)。 */
     u.swT=u.swD=SWG_SUB;u.mhFin=(nh9<=1)?1:0;u.hcy=((u.hcy||0)+1)%64;
-    if(nh9>1)for(let k9=1;k9<nh9;k9++)later(C,k9*SWG_SUB*1.05,()=>hCmbStrike(C,u,U,ua,k9,nh9));
+    if(nh9>1)for(let k9=1;k9<nh9;k9++)later(C,k9*hSubT(U),()=>hCmbStrike(C,u,U,ua,k9,nh9));/* 🐺(226d)間隔はキャラ別 */
     /* ⚠(187)当たり判定は `uHit`(特効つき)に移した=ここの `pierce` は**演出(H_FX)に渡すだけ** */
     const pierce=(U.type==='pierce'||U.type==='beam')?1:0;/* ⚠(196)貫く見た目にするかだけ */
     /* ⭐⭐**投げた物は「着弾してから」当てる**(2026-08-01ユーザー指摘
@@ -23264,6 +23434,23 @@ function renderCamp(C,t){
     c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();}
    c.lineCap='butt';
    c.globalAlpha=a3;c.fillStyle='#fff';c.beginPath();c.arc(e.x,e.y,3+a3*7,0,7);c.fill();c.globalAlpha=1;}
+  else if(e.k==='lwolf'){
+   /* 🐺(226d)雷の狼(蒼雷の群狼の召喚)=青白い狼の影が食らいつく。0.45秒ごとに置き直されるので
+      1枚は0.5秒で消える。⚠体は多角形1つ+目だけ=何体出ても軽い */
+   const a9=Math.max(0,1-e.t/.5),sd9=e.sd||0;
+   c.save();c.translate(e.x,e.y-10);c.scale(-(e.dr||-1),1);
+   c.translate(Math.sin(sd9+e.t*30)*1.8,Math.cos(sd9*1.7+e.t*26)*1.5);
+   c.globalAlpha=a9*.8;
+   c.fillStyle='rgba(150,205,255,.85)';c.strokeStyle='rgba(235,248,255,.95)';c.lineWidth=2;
+   c.beginPath();
+   c.moveTo(-27,-8);c.lineTo(-19,-14);c.lineTo(-8,-17);c.lineTo(-2,-14);
+   c.lineTo(1,-20);c.lineTo(6,-14);/* 耳 */
+   c.lineTo(16,-12);c.lineTo(25,-7);/* 鼻先 */
+   c.lineTo(15,-4);c.lineTo(19,4);/* 開いた顎 */
+   c.lineTo(8,1);c.lineTo(2,8);c.lineTo(-4,1);c.lineTo(-13,8);c.lineTo(-18,0);c.lineTo(-25,4);
+   c.closePath();c.fill();c.stroke();
+   c.globalAlpha=a9;c.fillStyle='#fff';c.beginPath();c.arc(11,-9,1.7,0,7);c.fill();
+   c.restore();c.globalAlpha=1;}
   else if(e.k==='zap'){
    /* 電流が流れて見えるよう、太い芯+細い枝+走る光点で描く */
    const life=.5,k5=Math.max(0,1-e.t/life),ps=e.pts;if(ps.length<2)continue;
@@ -34632,7 +34819,9 @@ const RG_HERO={
  hDark:{b:{hp:64,mp:13,st:25,df:16,sp:20},g:{hp:11.4,mp:3.0,st:4.6,df:2.8,sp:3.2},sk:[[1,'s_doom'],[22,'s_end']]},
  hGeo :{b:{hp:52,mp:14,st:27,df:12,sp:18},g:{hp:9.4,mp:3.2,st:5.0,df:2.2,sp:2.9},sk:[[1,'s_snip'],[20,'s_burst']]},
  hLupi:{b:{hp:53,mp:18,st:24,df:12,sp:19},g:{hp:9.6,mp:4.0,st:4.4,df:2.2,sp:3.0},sk:[[1,'s_snip'],[20,'s_burst']]},
- hPyro:{b:{hp:54,mp:22,st:26,df:13,sp:13},g:{hp:9.8,mp:4.6,st:4.8,df:2.4,sp:2.1},sk:[[1,'s_flame'],[20,'s_end']]}
+ hPyro:{b:{hp:54,mp:22,st:26,df:13,sp:13},g:{hp:9.8,mp:4.6,st:4.8,df:2.4,sp:2.1},sk:[[1,'s_flame'],[20,'s_end']]},
+ /* 🐺(226d)蒼雷の狼王=速さが売りの物理アタッカー。とくぎは雷の2本(巫女と同じ系) */
+ hWolf:{b:{hp:58,mp:16,st:26,df:13,sp:22},g:{hp:10.2,mp:3.6,st:4.7,df:2.3,sp:3.4},sk:[[1,'s_bolt'],[20,'s_storm']]}
 };
 /* ---- どうぐ ---- */
 const RG_IT=[
