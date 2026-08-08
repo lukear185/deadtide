@@ -408,6 +408,20 @@ const REC=[
  {k:'ultRush', d:.70, g:-3, af:'highpass=f=120',
    mix:[{f:'Wind, Rush, Whoosh',t:0,o:.04,d:.22,g:-4,r:1.10},
         {f:'4 x Punch, Body',t:3,d:.32,g:-2,r:.88,dl:200}]},
+ /* 🎴(216)召集のカード開示の「層」(2026-08-08ユーザー「在庫を最大限使って候補を見せて」)。
+    ⚠1本ずつは層=単体では鳴らさず、index.html 側の候補(gRev5A…)が sfxRaw で重ねる。
+    braam=予告編の「ででででーん」ホーン / boom=太い一発 / shim=鐘のきらめき /
+    glas=水晶の破片 / conf=紙吹雪 / mag系=魔法の顕現 / cre=魔法の生成(★3向け) */
+ {k:'gvBrm',  f:'Huge-32',            t:0, d:2.4, g:-6},
+ {k:'gvBrm2', f:'Huge-67',            t:0, d:2.4, g:-6},
+ {k:'gvBrmD', f:'Transition Braam',   t:0, d:2.0, g:-5},
+ {k:'gvBoom', f:'Booms_Vol2_075',     t:0, d:2.0, g:-6},
+ {k:'gvMag',  f:'Tonal Bright',       t:0, d:2.0, g:-4},
+ {k:'gvMagS', f:'astonishment',       t:0, d:2.2, g:-3},
+ {k:'gvCre',  f:'Magic Creation',     t:0, d:1.8, g:-1},
+ {k:'gvShim', f:'Shimmer Loop Small Bell', t:0, d:1.6, g:-5},
+ {k:'gvGlas', f:'Crystal Fragments',  t:0, d:1.4, g:-3},
+ {k:'gvConf', f:'Cofetti',            t:0, d:1.2, g:-2},
 ];
 
 const SRC=process.argv[3]||path.join(__dirname,'sfx_src');
