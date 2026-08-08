@@ -223,5 +223,41 @@
   "file": "sfx_src/AI_gr5H.wav",
   "license": "Stability Community License(年商$1M未満・要登録)",
   "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "laser beam weapon firing, steady sustained single tone, constant pitch electronic hum, smooth sci-fi energy beam, no pitch sweep",
+  "duration": 0.7,
+  "file": "sfx_src/AI_lasE.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "continuous laser beam, low steady electronic tone, constant pitch, clean focused energy hum",
+  "duration": 0.7,
+  "file": "sfx_src/AI_lasF.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "heavy energy beam cannon firing, deep steady tone, constant low pitch, luminous plasma beam, sustained powerful blast",
+  "duration": 1.4,
+  "file": "sfx_src/AI_railE.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "sci-fi beam cannon shot, low frequency sustained energy beam, steady deep hum, constant pitch, massive and smooth",
+  "duration": 1.4,
+  "file": "sfx_src/AI_railF.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
  }
 ]

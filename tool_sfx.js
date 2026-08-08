@@ -518,6 +518,12 @@ const REC=[
  {k:'lasD',  f:'AI_lasD',  t:0, d:.7,  g:0},
  {k:'railC', f:'AI_railC', t:0, d:1.4, g:0},
  {k:'railD', f:'AI_railD', t:0, d:1.4, g:0},
+ /* 🎙(226)レーザー/レールガンだけ作り直し(2026-08-08ユーザー「レーザーは一定の音程/
+    レールガンは一定でもっと光のビーム感・Dは音が高い」)=C/Dはボツ・E/Fが新候補 */
+ {k:'lasE',  f:'AI_lasE',  t:0, d:.7,  g:0},
+ {k:'lasF',  f:'AI_lasF',  t:0, d:.7,  g:0},
+ {k:'railE', f:'AI_railE', t:0, d:1.4, g:0},
+ {k:'railF', f:'AI_railF', t:0, d:1.4, g:0},
  {k:'winC',  f:'AI_winC',  t:0, d:3.0, g:0},
  {k:'winD',  f:'AI_winD',  t:0, d:3.0, g:0},
  {k:'uboltC',f:'AI_uboltC',t:0, d:.9,  g:0},
