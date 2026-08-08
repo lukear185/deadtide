@@ -188,8 +188,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homeback:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.5)}
 .homeres{flex:0 0 auto;font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:7px;justify-content:flex-end;align-items:center}
 /* ✉️🎯(227)右上の印だけのボタン(メール・任務)=角丸四角。研究Pの札の左に並ぶ(ユーザー指示)。
-   受け取れる物・未読があると右上に赤い点。⚠文字は出さない(印と点だけ) */
-#hm-mail{margin-left:auto}
+   受け取れる物・未読があると右上に赤い点。⚠文字は出さない(印と点だけ)。
+   (227b)右寄せの margin は先頭の🏭基地が持つ */
 .homeico{position:relative;font-size:19px}
 .homeico .rdot{position:absolute;top:-4px;right:-4px;width:13px;height:13px;border-radius:50%;
  background:var(--danger);border:2px solid rgba(16,13,10,.92);box-shadow:0 0 6px rgba(255,90,74,.7)}
@@ -205,69 +205,43 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* ⚠⚠**`grid-auto-rows:1fr` が要る**=これが無いと行は中身の高さ(auto)で止まり、
    伸ばした箱の**下に謎の空きが残る**(2026-08-03(107)ユーザー指摘「下に謎の空間があって画面全体が上にズレてる」)。
    ⚠`.homebt{height:100%}` だけでは効かない=**行そのものが伸びていない**ため。 */
-.homegrid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:9px;flex:1 1 auto;min-height:0}
-/* ⭐⭐**▶続きからが出ている時はタイルを詰める**(`cmp`)。
-   ⚠**大ボタンが2つ並ぶと縦が足りなくなる**=台座と文字を一回り小さくして2行ぶんを収める。
-   ⚠押す所は `min-height:44px` で守る(下の .homebt)。 */
-.homegrid.cmp .homebt{padding:4px 7px;gap:6px}
-.homegrid.cmp .homebt .hic{width:32px;height:32px;font-size:17px;border-radius:9px}
-.homegrid.cmp .homebt .hth{min-height:32px;padding:2px 4px}
-.homegrid.cmp .homebt .hth canvas{width:24px;height:18px}
-.homegrid.cmp .homebt b{font-size:13px}
-.homegrid.cmp .homebt i{font-size:10.5px}
-/* 🏠⭐⭐(223)**参考画像の配置**(2026-08-08ユーザー)=左上=戻る/左=縦のサブ列/左下=召集の丸/
-   中央=英雄の絵/右=カードの縦積み(2列→全幅→一番下に出撃)。⚠質感は既存の紙と錆のまま。 */
+/* (227b)タイルの格子(homegrid/cmp)は王道ソシャゲ型への作り替えで廃止した(下の homenav が後継) */
+/* 🏠⭐⭐(227b)**王道ソシャゲ型**(2026-08-09ユーザー決定)=
+   下に薄い固定ナビ6個(ホーム|英雄|編成|研究|図鑑|召集)+右端に巨大な出撃/
+   中央=連れて行く英雄を大きく/鍛錬所・砲撃は右上の🏭基地の窓へ。
+   ⚠ナビは薄く(56px)=横画面393pxで主役(英雄の絵)を縮めないため(ユーザー了承)。
+   ❌(223)の「左=縦のサブ列/左下=召集の丸/右=カードの縦積み」は廃止(書き戻さない)。 */
 .homewrap{flex-direction:column;gap:6px}
-.hometop{display:flex;gap:12px;flex:1 1 auto;min-height:0;position:relative}
-.homesub{flex:0 0 104px;display:flex;flex-direction:column;gap:8px;padding-top:2px;align-items:center}
-/* 🦸(226c)英雄ボタン=「小さすぎて何か分からない・位置も微妙」(ユーザー実機)=
-   一回り大きく+縦の真ん中へ(margin-top:autoが上と丸の間で釣り合う) */
-.homesub .homebt{width:88px}
-.homesub .homebt{flex:0 0 auto;height:auto;min-height:78px;flex-direction:column;padding:7px 6px;gap:3px;justify-content:center;margin-top:auto}
-.homesub .homebt .hic{width:44px;height:44px;font-size:25px;border-radius:11px}
-.homesub .homebt b{font-size:13.5px}
-.homesub .homebt i{display:none}
-.homeleft{flex:1 1 auto;min-width:0}
-.homeright{flex:0 0 46%;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0}
-.hrow2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.hrow2 .homebt{min-height:44px;height:auto}
-/* 🎯(227)任務を右上の印ボタンへ移したので、上の段は3枚(図鑑・砲撃・鍛錬所)を1行に。
-   ⚠3枚で割ると1枚が狭い=絵と余白を一回り詰めて下の行の字を守る(それでも長い名前は…で切れる) */
-#home-grid{grid-template-columns:repeat(3,1fr)}
-#home-grid .homebt{padding:6px 6px;gap:6px}
-#home-grid .homebt .hic{width:30px;height:30px;font-size:17px;border-radius:9px}
-#home-grid .homebt i{font-size:10.5px}
-.homeright .hfull{min-height:44px;height:auto}
-.homeright .homebt b{font-size:15px}
-.homeright .homebt i{font-size:11px}
-/* 👀(224)**余白と小さいアイコンの直し**(2026-08-08ユーザー「明らかに余白があるやつとか
-   アイコンが小さくてなんなのかわからないやつ」)=①アイコンを一回り大きく ②全幅の札(編成/研究所)は
-   中身を真ん中へ寄せて右の空きを消す ③編成のサムネも大きく */
-.homeright .homebt .hic{width:34px;height:34px;font-size:20px;border-radius:9px}
-/* ⭐(224b)編成/研究所=メインの2枚。(226c)ユーザー「縦の太さをもっと太く。メインだからでかめ」=さらに増した */
-.hmain .homebt{min-height:88px}
-.hmain .homebt .hic{width:50px;height:50px;font-size:29px;border-radius:12px}
-.hmain .homebt .hth{min-height:50px;padding:2px 6px}
-.hmain .homebt .hth canvas{width:52px;height:40px}
-.hmain .homebt b{font-size:18px}
-.homeright .homebt .hth{min-height:34px;padding:2px 5px}
-.homeright .homebt .hth canvas{width:34px;height:26px}
-#bt-home-resume{font-size:15px;padding:3px 8px}
-.homego{margin-top:auto;min-height:48px;font-size:20px}
-/* 💎英雄召集=左下の大きい丸(押す所は十分に大きい)。⚠.btn の紙の枠と鋲は消して丸に見せる */
-.gachaorb{margin-top:auto;flex:0 0 auto;width:88px!important;height:88px;
- border-radius:50%!important;overflow:hidden;
- display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px;
- background:radial-gradient(circle at 50% 34%,#4a2c5e,#2b1a38 68%,#180f22)!important;
- border:3px solid #8a63b8!important;
- box-shadow:0 4px 0 rgba(0,0,0,.55),inset 0 2px 0 rgba(242,236,220,.14)!important;color:var(--pane)!important}
-.gachaorb::before,.gachaorb::after{display:none!important}
-.gachaorb:active{transform:translateY(2px)}
-.gachaorb .hic{width:30px;height:30px;font-size:21px;background:transparent;border:0}
-.gachaorb .hlb{align-items:center}
-.gachaorb b{font-size:11.5px;white-space:nowrap}
-.gachaorb i{font-style:normal;font-size:11px;font-weight:900;opacity:.95;white-space:nowrap}
-/* ⭐機能タイルはちょうど6つ(3×2)。⚠戻るはここに入れない(上の帯へ出した) */
+.hometop{display:flex;justify-content:center;flex:1 1 auto;min-height:0;position:relative}
+.homeleft{flex:0 1 480px;min-width:0}
+/* 下の固定ナビ。⚠iPhoneの画面下の白いバーと重ならないよう safe-area ぶん下を逃す */
+.homenav{display:flex;gap:6px;align-items:stretch;flex:0 0 auto;
+ margin-bottom:max(0px,env(safe-area-inset-bottom))}
+.navbt{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+ min-height:56px;padding:4px 2px;position:relative;
+ background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:12px;color:var(--pane);
+ box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(242,236,220,.08)}
+.navbt:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.5)}
+.navbt .nic{font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;min-height:21px}
+.navbt .nic .ico{height:1.2em;width:1.2em;vertical-align:-.2em}
+.navbt b{font-size:10.5px;letter-spacing:1px;white-space:nowrap}
+/* いま開いている窓のタブを点す(homeNavSyncが同期する) */
+.navbt.on{border-color:rgba(255,210,61,.75);background:rgba(58,46,26,.88)}
+/* 🎫★5確定チケットの小さな数字(召集のタブの右上) */
+.navbt .ntk{position:absolute;top:1px;right:3px;font-size:10.5px;font-weight:900;font-style:normal;color:var(--gold)}
+/* 出撃=ナビの右端の巨大ボタン */
+.homenav .homego{margin:0;width:auto;flex:0 0 236px;min-height:56px;font-size:19px;letter-spacing:3px}
+/* ▶続きから=絵とナビの間の右寄せの行(出ている時だけ)。
+   ⚠英雄の絵(押せる)の上に浮かべない=押す所が重なる(検査で出た)。
+   ⚠幅は中身に合わせる(拠点名が長くても「…」で切らない掟)・押す所は44px */
+#bt-home-resume{flex:0 0 auto;align-self:flex-end;width:auto;min-width:236px;min-height:44px;
+ white-space:nowrap;font-size:14px;padding:4px 12px}
+/* 🏭基地(右上・文字つき)=鍛錬所と砲撃の入口。印だけだと何か分からないので字を添える */
+#hm-base{margin-left:auto;width:auto;padding:0 12px;display:flex;gap:5px;align-items:center;font-size:17px}
+#hm-base .hblb{font-size:12.5px;font-weight:900}
+/* 🏭基地の窓の行=全幅の横長ボタン(字を切らない) */
+.basebt{height:auto;min-height:56px;width:100%;margin-bottom:6px;justify-content:flex-start}
+.basebt .hic{width:38px;height:38px;font-size:21px}
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
 /* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
@@ -1665,46 +1639,40 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
 <div class="scr" id="scr-home">
   <!-- 🌆(96)背景=夕暮れの廃墟のスカイライン(プロシージャル。homeBgが毎フレーム描く) -->
   <canvas id="homebg"></canvas>
-  <!-- 🏠⭐⭐(223)**ユーザーの参考画像の配置**(2026-08-08)=①左上=戻る ②左=縦のサブ列
-       ③左下=英雄召集の大きい丸 ④中央=英雄の絵+名前 ⑤右=カードの縦積み(2列→全幅→出撃が一番下)。
-       ⚠見た目は画像のままにしない(「AI臭いから雰囲気合わせて」)=既存の紙と錆の質感で。 -->
+  <!-- 🏠⭐⭐(227b)**王道ソシャゲ型**(2026-08-09ユーザー決定)=①上の帯=戻る/🏭基地/✉️🎯/資源
+       ②中央=連れて行く英雄を大きく ③下=薄い固定ナビ6個(ホーム|英雄|編成|研究|図鑑|召集)+右端に巨大な出撃。
+       ⚠質感は既存の紙と錆のまま(「AI臭いから雰囲気合わせて」)。❌(223)の左右カラム配置は廃止。 -->
   <div class="homewrap">
    <div class="homebar">
      <button class="btn homeback" id="hm-back" aria-label="タイトルへ戻る">←</button>
      <!-- ✉️🎯(227)メールと任務=右上の印だけの角丸ボタン(ユーザー指示「的マークだけでよくて、
           受け取れるやつがあったら赤い点」)。研究Pの札の左に並ぶ -->
+     <!-- 🏭(227b)基地=鍛錬所と砲撃の入口(ユーザー決定「基地ボタン内へまとめる」) -->
+     <button class="btn homeback" id="hm-base" aria-label="基地">🏭<span class="hblb">基地</span></button>
      <button class="btn homeback homeico" id="hm-mail" aria-label="メール">✉️<span class="rdot" id="hm-mail-dot" style="display:none"></span></button>
      <button class="btn homeback homeico" id="hm-msn" aria-label="任務">🎯<span class="rdot" id="hm-msn-dot" style="display:none"></span></button>
      <div class="homeres" id="home-res"></div>
    </div>
+   <!-- 🏠⭐⭐(227b)**王道ソシャゲ型**(ユーザー決定)=中央に英雄の一枚絵/下に固定ナビ6個+巨大な出撃。
+        ⚠id は旧タイルの物を使い回す(renderHome と onclick を書き直さないため)。
+        鍛錬所(hm-train)と砲撃(hm-stk)は🏭基地の窓(md-base)の中にある -->
    <div class="hometop">
-    <div class="homesub">
-      <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><span class="hlb"><b>英雄</b><i id="hm-hero-i"></i></span></button>
-      <!-- 💎(223)英雄召集=左下の大きい丸。⚠絶対配置にしない=英雄の絵(タップ可)と重なる(検査で出た) -->
-      <button class="btn gachaorb" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><span class="hlb"><b>英雄召集</b><i id="hm-gem"></i></span></button>
-    </div>
-    <!-- 🦸(124)**一枚絵ごと押せる**(ユーザー指示「この画面で左のヒーロータップしたら英雄画面に」)=
-         右の「🦸英雄」タイルと同じ窓が開く。⚠押せることは `cursor` と押し込みで言う -->
+    <!-- 🦸(124)**一枚絵ごと押せる**(ユーザー指示)=ナビの「🦸英雄」と同じ窓が開く -->
     <div class="homeleft" id="home-hero">
       <canvas id="homecv" width="300" height="330"></canvas>
       <div class="homehsub">連れて行く英雄</div>
       <div id="home-hname" class="homehn"></div>
     </div>
-    <div class="homeright">
-      <!-- 🎯(227)任務タイルは右上の印ボタンへ移した=上の段は3枚1行 -->
-      <div class="hrow2" id="home-grid">
-        <button class="btn homebt" id="hm-zoo"><span class="hic" id="hm-zoo-ic">📖</span><span class="hlb"><b>図鑑</b><i id="hm-zoo-i"></i></span></button>
-        <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
-        <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
-      </div>
-      <!-- ⭐(224b)編成と研究所=メインなので**縦に大きく・横は他と同じ2マスで横並び**(ユーザー指示) -->
-      <div class="hrow2 hmain">
-        <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
-        <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
-      </div>
-      <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
-      <button class="btn red homego" id="bt-map">🗺 出撃 <i>次の拠点へ — 生存圏の地図</i></button>
-    </div>
+   </div>
+   <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
+   <div class="homenav">
+     <button class="btn navbt on" id="nav-home"><span class="nic">🏠</span><b>ホーム</b></button>
+     <button class="btn navbt" id="hm-hero"><span class="nic" id="hm-hero-ic">🦸</span><b>英雄</b></button>
+     <button class="btn navbt" id="hm-team"><span class="nic">🎖</span><b>編成</b></button>
+     <button class="btn navbt" id="hm-lab"><span class="nic" id="hm-lab-ic">🔬</span><b>研究</b></button>
+     <button class="btn navbt" id="hm-zoo"><span class="nic" id="hm-zoo-ic">📖</span><b>図鑑</b></button>
+     <button class="btn navbt" id="hm-gacha"><span class="nic" id="hm-gacha-ic">💎</span><b>召集</b><i class="ntk" id="hm-gem"></i></button>
+     <button class="btn red homego" id="bt-map">🗺 出撃 <i>次の拠点へ — 生存圏の地図</i></button>
    </div>
   </div>
 </div>
@@ -2195,6 +2163,17 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
     <div class="bphd"><b>🎯 今日の任務</b><span class="pt" id="msn-cnt"></span><button class="xbtn" id="bt-msn-close">✕</button></div>
     <div class="bphint" id="msn-hint"></div>
     <div class="bpbody" id="msn-list"></div>
+  </div>
+</div>
+<!-- 🏭基地(227b)=鍛錬所と砲撃の窓(ユーザー決定「基地ボタン内へまとめる」)。
+     ⚠中のボタンの id(hm-train/hm-stk)は旧タイルの物=onclickとrenderHomeがそのまま効く -->
+<div class="modal" id="md-base">
+  <div class="panel bigpanel" style="width:min(94vw,480px);height:auto;max-height:min(88vh,var(--appH,88vh))">
+    <div class="bphd"><b>🏭 基地</b><button class="xbtn" id="bt-base-close">✕</button></div>
+    <div class="bpbody">
+      <button class="btn homebt basebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
+      <button class="btn homebt basebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
+    </div>
   </div>
 </div>
 <!-- ✉️メール(2026-08-09(227)ユーザー指示)=プレゼントとお知らせの受け取り箱。⚠1枚=1通 -->
@@ -30856,9 +30835,10 @@ function applyFrames(){
  try{
   if(!ICN['fr-btn'])return;
   const css=[];
-  /* ⚠🏠ホームの機能タイル(.homebt)と小さな戻る(.homeback)は暗いガラス板の意匠なので紙の枠を貼らない
-     (2026-08-03(96)(106))。⚠この枠は `padding:4px 12px` も上書きするので、貼ると寸法まで崩れる */
-  css.push('.btn:not(.sm):not(.homebt):not(.homeback){border-style:solid;border-width:10px 14px;border-radius:0;'
+  /* ⚠🏠ホームの機能タイル(.homebt)と小さな戻る(.homeback)と下のナビ(.navbt(227b))は
+     暗いガラス板の意匠なので紙の枠を貼らない(2026-08-03(96)(106))。
+     ⚠この枠は `padding:4px 12px` も上書きするので、貼ると寸法まで崩れる */
+  css.push('.btn:not(.sm):not(.homebt):not(.homeback):not(.navbt){border-style:solid;border-width:10px 14px;border-radius:0;'
    +'border-image-source:url('+ICN['fr-btn']+');border-image-slice:24% 11%;border-image-repeat:stretch;'
    /* ⚠枠のぶん上下に10pxずつ増えるので、その分パディングを削らないとボタンが背高になって
       タイトルのメニューが画面からはみ出す(2026-07-26に実際にそうなった) */
@@ -36735,8 +36715,20 @@ function sceneBg(cv9,t){
  v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.44)');
  c.fillStyle=v;c.fillRect(0,0,w,h);
 }
+/* 🏠(227b)下のナビの点灯を「いま開いている窓」に同期する(毎フレーム・変わった時だけDOMを触る)。
+   ⚠ナビの押下だけで点けると、✕で閉じた時に点きっぱなしになる=開いている窓から逆引きが正 */
+let HNAVON='';
+function homeNavSync(){
+ const M=[['md-hpick','hm-hero'],['md-load','hm-team'],['md-lab','hm-lab'],['md-zoo','hm-zoo'],['md-gacha','hm-gacha']];
+ let on='nav-home';
+ for(const [m,b] of M){const el=$(m);if(el&&el.classList.contains('on')){on=b;break;}}
+ if(HNAVON===on)return;HNAVON=on;
+ for(const id of ['nav-home','hm-hero','hm-team','hm-lab','hm-zoo','hm-gacha']){
+  const b=$(id);if(b)b.classList.toggle('on',id===on);}
+}
 function homeDraw(t){
  try{homeBg(t);}catch(e){}
+ try{homeNavSync();}catch(e){}
  const cv9=$('homecv');if(!cv9)return;
  const dpr=Math.min(2,window.devicePixelRatio||1);
  const w=cv9.clientWidth*dpr,h=cv9.clientHeight*dpr;
@@ -36801,6 +36793,13 @@ $('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add(
 $('hm-zoo').onclick=()=>{openZoo();};
 $('hm-msn').onclick=()=>{openMsn();};
 $('hm-mail').onclick=()=>{openMail();};/* ✉️(227) */
+/* 🏭(227b)基地=鍛錬所と砲撃の窓 */
+$('hm-base').onclick=()=>{$('md-base').classList.add('on');};
+{const bc=$('bt-base-close');if(bc)bc.onclick=()=>$('md-base').classList.remove('on');}
+/* 🏠(227b)ホームタブ=開いている窓を全部閉じて素の状態に戻す。
+   ⚠それぞれの✕を押した扱いにする=召集の曲の切り替えなど、✕に付いている後始末をそのまま通すため */
+{const nh=$('nav-home');if(nh)nh.onclick=()=>{
+ document.querySelectorAll('.modal.on .xbtn').forEach(b=>{try{b.click();}catch(e){}});};}
 $('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');tbgmOff();gbgmOn();/* 🎵(213)⚠開く入口は2つ(タイトルとホーム)=両方で曲を切り替える */};
 $('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
