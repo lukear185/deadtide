@@ -909,10 +909,6 @@ body.bns #deck{flex:0 0 auto}
 .gcside.tk{gap:5px}
 .gcside.tk .gchint{display:none}
 .gcrow2{display:flex;gap:5px}
-/* 🎰(212)演出の簡素化の行。⚠押す所44pxの掟(labelごと押せる) */
-/* ⚠地はクリーム色のパネル=文字は濃い側(--ink2)。paperにすると沈んで読めない(撮って直した) */
-.gcsimp{display:flex;align-items:center;gap:6px;min-height:26px;font-size:11px;font-weight:800;color:var(--ink2)}
-.gcsimp input{width:16px;height:16px;accent-color:var(--gold)}
 .gcrow2 .btn{flex:1 1 0;padding:5px 4px}
 .gchint{font-size:10.5px;font-weight:700;opacity:.75;line-height:1.35;margin-top:auto}
 /* 💎英雄召集の演出(第71弾): パネル全面にかぶせる canvas。押すと次へ */
@@ -1996,8 +1992,6 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
             <button class="btn sm" id="gc-dex">📖 図鑑</button>
             <button class="btn sm" id="gc-rate">確率</button>
           </div>
-          <!-- 🎰(212)演出の簡素化(ユーザー指示)。⚠既定は全部見る。結果は1件も変わらない -->
-          <label class="gcsimp"><input type="checkbox" id="gc-simp"> ⏩ 演出を短く</label>
           <div class="gchint" id="gc-hint">💎はソロ作戦のボス撃破で入る(難易度が高いほど多い)</div>
         </div>
       </div>
@@ -2472,7 +2466,7 @@ const STRIKES={
  frost:{n:'凍結爆弾',ic:'❄',ch:22,dsc:'広範囲を4.5秒止めて中ダメージ'},
  napalm:{n:'ナパーム',ic:'🔥',ch:38,dsc:'着弾地点を5秒燃やし続ける。総ダメージが大きい'}
 };
-let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0,bcl:[],bres:[0,0,0],bup:{},beq:{},bday:[],bnum:[],gsimp:0};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) / gsimp=🎰(212)ガチャ演出の簡素化(0=全部見る) */
+let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0,bcl:[],bres:[0,0,0],bup:{},beq:{},bday:[],bnum:[]};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
 /* 🎒🚌**バス強化は永続**(2026-08-02(44)ユーザー決定「この強化は永続だから」)=
    `bres`=持っている物資[⛽燃料,🏭鉄材,🏠食料] / `bup`=性能の段 / `beq`=付けた装備。
    ⚠**遊ぶたびに積み上がる**ので、値段は「1試合ぶんの稼ぎ×何試合ぶんか」で決めること。 */
@@ -2508,7 +2502,6 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
     ⚠**新しい META.xxx を足したらここにも1行足す**。⚠`team` は null が「まだ触っていない」の意味。 */
  if(typeof META.pts!=='number'||!isFinite(META.pts))META.pts=0;
  if(typeof META.gem!=='number'||!isFinite(META.gem))META.gem=0;
- META.gsimp=META.gsimp?1:0;/* 🎰(212)演出の簡素化(どんな型が来ても0/1へ) */
  if(!Array.isArray(META.st)||!META.st.length)META.st=['air'];
  if(META.team!=null&&!Array.isArray(META.team))META.team=null;
  if(!Array.isArray(META.sc))META.sc=null;/* 下の scArr が作り直す */
@@ -2587,7 +2580,6 @@ function metaResetAll(){
  META.brec=[];                                 /* 🚌道中の自己ベスト(ステージごと。タイム/轢いた数/最高連続) */
  META.bres=[0,0,0];META.bup={};META.beq={};    /* 🚌バスの物資と永続強化(2026-08-02(44)) */
  META.bday=[];META.bnum=[];                    /* 🚌1日の回数(2026-08-02(58)) */
- META.gsimp=0;                                 /* 🎰(212)ガチャ演出の簡素化 */
 }
 /* ⚠⚠**3への上げは「難易度と研究所だけ」戻す**(2026-08-01ユーザー選択)。
    理由=初期解放を2種に絞ったので `META.nt`/`META.nu`(BASE_T/BASE_U から数えた相対値)が
@@ -3888,6 +3880,33 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
   if(s%16===13&&Math.random()<.5)nzHit(700,180,2.2,.137*vol*VOL.bgm,1);/* ③遠くの風 */
   tbgmStep++;},700);}
 function tbgmOff(){if(tbgmTimer)clearInterval(tbgmTimer);tbgmTimer=null;}
+/* ============ 🎰⭐**ガチャ画面専用のBGM**(2026-08-08(213)ユーザー指示 ============
+   「ガチャ画面に入ってもタイトルのままだから安っぽい」→「ガチャ画面専用BGMもつくって」。
+   ⚠素材は足さない=タイトルBGMと同じ合成(bgb=VOL.bgmを通す)。
+   ⭐**性格を変える**=タイトルは「廃墟の不安」、こちらは**儀式の期待**:
+     ①同じ低いドローンで世界は繋げる ②**4歩ごとの低い鼓動**(心拍=引く前のどきどき)
+     ③旋律は短調のまま少し前へ進む形(上がって・ためて・落ちる) ④山の頂上だけ薄いきらめき(⚠高い笛は禁止帯)。
+   ⚠メニューでずっと鳴る音なので**間を大きく空ける**(タイトルBGMの掟と同じ)。 */
+const GBGM=[220,0,262,294,0,262,0,220,0,175,196,220,0,262,196,0];/* Aマイナー系=暗い世界のままの期待 */
+const GB_LOOP=32;/* 約15秒で 静か→高まる→静か を一巡(ガチャ画面は滞在が短い=山を早めに) */
+let gbgmTimer=null,gbgmStep=0;
+function gbgmOn(){if(gbgmTimer||!AC)return;
+ if(typeof SFXTEST!=='undefined'&&SFXTEST)return;/* 🔊音の確認画面では鳴らさない */
+ gbgmStep=0;
+ gbgmTimer=setInterval(()=>{if(!AC||muted)return;
+  const s=gbgmStep%GB_LOOP,f=GBGM[s%16];
+  const up=Math.pow(Math.sin(Math.PI*s/GB_LOOP),.6),vol=1+.9*up;
+  /* ①ドローン(タイトルと同じ帯=世界が繋がる) */
+  if(s%4===0){bgb(110,109,2.6,'triangle',.085*vol);bgb(110.7,109.7,2.6,'sine',.06*vol);}
+  /* ②鼓動=4歩ごとの低い打点(⚠音符ではなく削ったノイズ=ピコピコにしない) */
+  if(s%4===2)nzHit(360,130,.45,(.10+.06*up)*VOL.bgm,1);
+  /* ③旋律(三角波・2本ずらし) */
+  if(f){bgb(f,f*.996,1.4,'triangle',.115*vol);bgb(f*.5,f*.5,1.8,'triangle',.05*vol);}
+  /* ④山の頂上だけ5度と1オクターブ上が薄く乗る(⚠523Hzまで=それより上は「ぴゅぅ~」の禁止帯) */
+  if(up>.45&&f)bgb(Math.min(523,f*1.5),Math.min(523,f*1.5),1.1,'triangle',.055*up);
+  if(up>.7&&f&&s%2===0)bgb(Math.min(523,f*2),Math.min(523,f*2),.9,'triangle',.045*up);
+  gbgmStep++;},460);}
+function gbgmOff(){if(gbgmTimer)clearInterval(gbgmTimer);gbgmTimer=null;}
 /* ============ 🎬⭐⭐⭐ 起動の幕のBGM(2026-08-07(201)→(202)に**3回**作り直した) ============
    ⭐**タイトルのBGMとは別物**(ユーザー指示「タイトル画面のBGMとムービー中のBGM別で作って」)。
    ⛔**没①=カットごとに曲が変わる形**(ユーザー「場面で切り替える感じじゃなくて、暗い感じのやつを
@@ -30951,127 +30970,6 @@ function gcPull5(){
  saveMeta();
  gcStart(out);
 }
-/* 🎰🚌============ バスガチャの演出プラン(2026-08-08(212)) ============
-   ⚠⚠⚠**大原則(DESIGN)=演出でガチャ結果を決めない**。res は gcPull で確定済みの結果。
-   ここは「結果と矛盾しない演出の台本」を選ぶだけの**純関数**=test_busgacha.js が何千回も回して
-   矛盾ゼロを保証する。⚠**乱数は引数 rnd で受ける**(検査が種を固定できる)。
-   📌バスの段階: 1=青(素) 2=紫(★3+) 3=黄(★4+) 4=赤(★5) 5=虹(★5×2) */
-function bgPlan(res,rnd){
- rnd=rnd||Math.random;
- const rks=res.map(o=>o.hero.rk);
- const c5=rks.filter(r=>r>=5).length,mx=Math.max.apply(null,rks);
- const one=res.length===1;/* 単発=地図と走行を省き降車から(DESIGN) */
- /* 最終のバス段階。⚠虹(5)は★5が2体以上の回だけ */
- let tier=mx<=2?1:mx===3?2:mx===4?3:4;
- let mark=0;/* 🌈虹★(地図の特殊な印)=★5×2の回の50%。⭐出たら虹バス確定
-   (⚠地図は走行より先に出るので、印だけ見せて赤止まりだと嘘になる)。
-   ⭐★5×2でも10%は赤のまま(「赤だと思ったら2枚抜き」)=印なしの側(50%)から出す */
- if(c5>=2&&!one){const r=rnd();
-  if(r<.5){mark=1;tier=5;}
-  else if(r<.6)tier=4;
-  else tier=5;}
- /* 🗺接敵地点の数(1〜3)。⭐**最終段階から逆算**(尺そのものが期待度)。⚠独立抽選にしない */
- let K=0;
- if(!one){const r=rnd();
-  K=tier<=1?(r<.7?1:2)
-   :tier===2?(r<.3?1:(r<.8?2:3))
-   :tier===3?(r<.15?1:(r<.6?2:3))
-   :(r<.35?2:3);}
- /* ✨★5の合図は3通り(DESIGN)=金ロブを轢く / 通り過ぎて急ブレーキ / 通常。
-    ⚠虹バスの回は金ロブの代わりに🌈虹ゾンビを轢く(絵だけの違い=描く側が段階で分ける) */
- let sig='';
- if(c5>=1&&!one){const r=rnd();sig=r<1/3?'lob':(r<2/3?'brake':'');}
- /* 昇格(+1〜+2)を接敵地点の判定に配る。⭐後ろほど重く(山を終盤へ)。
-    🥇急ブレーキの回は「黄→赤/虹」のぶんをバックの轢きが担ぐ */
- const up=[];for(let k=0;k<K;k++)up.push(0);
- let brake=null,g=one?0:tier-1;
- if(sig==='brake'){brake={up:tier-3};g=2;}
- for(let i9=0;i9<g;i9++){
-  const cand=[];for(let k=0;k<K;k++)if(up[k]<2)cand.push(k);
-  let tot=0;for(const k of cand)tot+=(k+1)*(k+1);
-  let r=rnd()*tot,pick=cand[cand.length-1];
-  for(const k of cand){r-=(k+1)*(k+1);if(r<0){pick=k;break;}}
-  up[pick]++;}
- /* ✨金ロブ(虹ゾンビ)を轢く場所=そこを轢いた判定で赤(段4)に届く地点 */
- let lobAt=-1;
- if(sig==='lob'){let cum=1;for(let k=0;k<K;k++){cum+=up[k];if(cum>=4){lobAt=k;break;}}}
- /* 🚪降車(DESIGN)=★2以下はまとめてドッと・★3以上だけ1人ずつ低い順 */
- const lows=[],highs=[];
- rks.forEach((r,i)=>{(r<=2?lows:highs).push(i);});
- highs.sort((a,b)=>(rks[a]-rks[b])||(a-b));
- for(let i=lows.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const t9=lows[i];lows[i]=lows[j];lows[j]=t9;}
- /* 🔄レア昇格演出=①連れ去り(s) ②二重マント(w)。⚠⚠**確定済みの結果以上には絶対に化けない**
-    =wは「1段下のオーラで着地→開示でもう1枚」なので★4以上だけ(1段下でもマント圏の★3が要る) */
- const fake={};
- for(const i of highs){const rk=rks[i],r=rnd();
-  if(rk>=4){if(r<.25)fake[i]='w';else if(r<.4)fake[i]='s';}
-  else if(r<.15)fake[i]='s';}
- return {tier,mark,K,up,brake,sig,lobAt,lows,highs,fake,one};
-}
-/* 🧪プランの検査(DESIGNの4つ+降車の掟)。戻り値=''なら矛盾なし。
-   ⚠ゲーム中は呼ばない(test_busgacha.js が回す)。純関数のままにしておくこと */
-function bgCheck(res,p){
- const rks=res.map(o=>o.hero.rk),c5=rks.filter(r=>r>=5).length,mx=Math.max.apply(null,rks);
- /* ①バスの段階と結果 */
- if(p.tier===5&&c5<2)return '虹バスなのに★5が2体いない';
- if(p.tier===4&&c5<1)return '赤バスなのに★5がいない';
- if(c5>=2&&p.tier<4)return '★5が2体いるのに赤未満';
- if(c5===1&&p.tier!==4)return '★5が1体なのに赤でない';
- if(c5===0&&p.tier!==(mx<=2?1:mx===3?2:3))return '段階が結果と合わない';
- /* ②虹★ */
- if(p.mark&&c5<2)return '虹★なのに★5が2体未満';
- if(p.mark&&p.tier!==5)return '虹★なのに虹バスでない';
- /* ③昇格の合計=最終段階ちょうど(届かない/行き過ぎ 両方落とす) */
- const sum=(p.up||[]).reduce((a,b)=>a+b,0)+(p.brake?p.brake.up:0);
- if(p.one){if(p.K!==0||sum!==0)return '単発なのに道中がある';}
- else{if(1+sum!==p.tier)return '昇格の合計が最終段階と合わない('+(1+sum)+'≠'+p.tier+')';
-  if(p.K<1||p.K>3)return '接敵地点が1〜3の外('+p.K+')';
-  if((p.up||[]).length!==p.K)return '判定の数が地点の数と合わない';
-  if((p.up||[]).some(u=>u<0||u>2))return '1回の昇格が0〜2の外';}
- /* ④降車と開示=**結果の並べ替えそのもの**(演出は引いていないキャラを出せない作り) */
- const all=(p.lows||[]).concat(p.highs||[]).slice().sort((a,b)=>a-b);
- if(all.length!==rks.length||all.some((v,i)=>v!==i))return '降車の並びが結果と1:1でない';
- if((p.lows||[]).some(i=>rks[i]>2))return '★3以上がまとめ降車に混ざった';
- if((p.highs||[]).some(i=>rks[i]<3))return '★2以下が1人ずつ降車に混ざった';
- for(let k=1;k<(p.highs||[]).length;k++)if(rks[p.highs[k-1]]>rks[p.highs[k]])return '1人ずつ降車が低い順でない';
- for(const i in (p.fake||{})){const f9=p.fake[i],rk=rks[+i];
-  if(rk<3)return '昇格演出が低レアに付いた';
-  if(f9==='w'&&rk<4)return '二重マントが★3に付いた(1段下がマント圏の外)';}
- if(p.sig&&c5<1)return '★5の合図なのに★5がいない';
- if(p.sig==='lob'&&!(p.lobAt>=0&&p.lobAt<p.K))return '金ロブを轢く場所が道中にない';
- if(p.brake&&p.sig!=='brake')return '急ブレーキの昇格が合図なしで居る';
- if(p.brake&&p.brake.up!==p.tier-3)return '急ブレーキの昇格量が合わない';
- return '';
-}
-/* ⏱尺の表(⚠**秒はここにしか書かない**=描画・スキップ・検査が全部ここから引く)。
-   📌DESIGN: 地図5/走行2×地点/分岐3×地点/昇格0.7〜1.3/降車10/開示3〜5 → 1印約25秒 */
-const BG_LEN={map:5,run:2,pov:3,jup:1.3,jno:.7,brake:2.8,arrive:2.4,drop:2.6,hdrop:2.1,snatch:3.1,rvlow:1.5,rv:1.7,rvw:2.6,fin:.9};
-/* プラン→シーンの列。⭐1シーン=1タップで飛ばせる単位(「各シーンを個別にスキップ可」)。
-   simp=🎛演出の簡素化(META.gsimp)=道中を丸ごと省き降車と開示だけ短く。⚠結果は1件も変わらない */
-function bgScenes(p,simp){
- const s=[];
- if(!p.one&&!simp){
-  s.push({k:'map',len:BG_LEN.map});
-  for(let k=0;k<p.K;k++){
-   s.push({k:'run',len:BG_LEN.run,pt:k});
-   s.push({k:'pov',len:BG_LEN.pov,pt:k,lob:p.lobAt===k?1:0,mark:(p.mark&&k===p.K-1)?1:0});
-   s.push({k:'judge',len:p.up[k]>0?BG_LEN.jup:BG_LEN.jno,pt:k,up:p.up[k]});}
-  if(p.brake)s.push({k:'brake',len:BG_LEN.brake,up:p.brake.up});
- }
- s.push({k:'arrive',len:simp?1.2:BG_LEN.arrive});
- if(p.lows.length)s.push({k:'drop',len:(simp?1.4:BG_LEN.drop)+.12*p.lows.length});
- p.highs.forEach((i,x)=>{const f9=p.fake[i];
-  s.push({k:f9==='s'?'snatch':'hdrop',len:simp?1:(f9==='s'?BG_LEN.snatch:BG_LEN.hdrop),slot:i,hx:x});});
- if(p.lows.length)s.push({k:'rvlow',len:simp?1:BG_LEN.rvlow});
- p.highs.forEach((i,x)=>{const f9=p.fake[i];
-  s.push({k:'rv',len:(f9==='w'?BG_LEN.rvw:BG_LEN.rv)*(simp?.6:1),slot:i,hx:x,w:f9==='w'?1:0});});
- s.push({k:'fin',len:BG_LEN.fin});
- /* 🚌各シーンに「その時点のバスの段階」を焼き込む(描く側が色をここから引く) */
- let tb=p.one?p.tier:1;
- for(const e of s){e.tb=tb;if(e.k==='judge')tb+=e.up;else if(e.k==='brake')tb+=e.up;
-  else if(e.k==='arrive')tb=p.tier;e.ta=tb;}
- return s;
-}
 /* 💎⭐⭐(201)**排出率の画面をソシャゲの型に作り替えた**(2026-08-07ユーザー指示
      「縦スクロールで『★5 狙撃王ジョルジ 0.05%』のように1行ずつ」)。
    ⚠⚠**全員ぶん書く**(★5が上に来るだけ)=ユーザー明言。⭐**属性で分ける**(同じ属性が隣り合う)。
@@ -31654,17 +31552,35 @@ function gcHomeDraw(){
    パネル全面のcanvasに ①魔法陣に光が集まる ②炸裂 ③1枚ずつめくる を描く。
    ⚠**中身(gcPick/gcApply)は一切変えていない**=確率も配るものも今までどおり。足したのは演出だけ。
    ⚠**当たりの色を最初から出す**のがガチャの肝=光の色でレア度が予告される(その回の最高レア度) */
-/* ============ 🎰🚌 バスガチャの演出(2026-08-08(212)ユーザー決定) ============
-   ⭐この世界の主役はバス=**バスが仲間を乗せて帰ってくる**話にする(⛔「撃つ」演出は(212)で引退)。
-   ⚠⚠結果(res)は gcPull で確定済み。台本は bgPlan/bgScenes(純関数)が作る=**ここは絵と音だけ**。
-   ⭐シーンは「時間だけから絵を出す」(op/edと同じ型)=タップで今のシーンを飛ばせる/検査と撮影はseekで出す。
-   📌流れ: 地図予告→走行→運転手視点で轢く→昇格判定→(地点ぶん)→到着→まとめ降車→
-   ★3以上は1人ずつ→正体開示(低い順・カットイン)→結果一覧(DOMは今までのまま)。 */
-const bgRGB=hex=>{const n=parseInt(hex.slice(1),16);return (n>>16)+','+((n>>8)&255)+','+(n&255);};
-/* バスの段階の色(1青/2紫/3黄/4赤)。⚠色は色の表から引く(TECH2/HEROC/GOLD/DANGER)。5虹はグラデで作る */
-const BG_TCOL=[null,TECH2,HEROC,GOLD,DANGER];
-const BG_RB=[TECH2,HEROC,GOLD,DANGER,TOXIC];/* 🌈虹のグラデの並び */
+const GC_COL=[['#7a8f6a','#cfe0b8'],/* 0=はずれ枠 */
+ ['#cfd6dd','#ffffff'],[TECH2,FROST],[HEROC,'#f2d4ff'],
+ ['#ffb830',GLOW],[DANGER,'#ffd7b0']];
+const GC_FLY=.5;   /* 弾が飛んでいる秒数(目で追えること) */
+const GC_BANG=1.9; /* 撃ってから結果カードへ移るまで */
+/* ⭐演出の「間」(2026-07-27ユーザー指示=ソシャゲみたいなちゃんとした演出にしたい)。
+   ⚠**安っぽさの原因は絵ではなく組み立て**だった。押した瞬間に結果へ向かい、カメラが1ミリも動かず、
+     音が演出に同期していなかった。効くのは次の3つで、どれも絵に依存しない:
+     ①溜め(押してから撃つまでの「ため」) ②カメラ(寄り・引き・揺れ) ③着弾で一瞬止める(ヒットストップ) */
+const GC_CHG=.85;  /* 「撃て!」を押してから実際に撃つまでの溜め */
+const GC_HOLD=.14; /* 着弾の瞬間に画を止める長さ=ここで一拍おくと衝撃が出る */
+/* ⭐撃つ演出(2026-07-26 第72弾ユーザー指示)。
+   「撃て!」でタップ → タレットがゾンビを撃つ → 傷の具合で結果がだいたい読める → GETのカードへ。
+   ⚠**展開が読めること**が肝なので、対応をはっきり決めてある:
+     ダメージ = 結果そのもの(軽傷=はずれ/★1 / 重傷=★2-3 / 木っ端みじん=★4-5)
+     タレット = 予告。基本はダメージと同じ段だが、**たまに1段下がる(下振れだけ・上振れはしない)**
+     → **レーザーが出たら★4以上が確定**する=見た瞬間に沸ける。ライフルでも木っ端みじんなら大当たり */
+const GC_TW=['rifle','shot','laser'];      /* ライフル / ショットガン / レーザー(レーザーが一番レア) */
+const GC_TWN=['ライフル台','ショットガン台','レーザー塔'];
+const GC_ZM=['walk','arm','brut'];         /* ゾンビ3種(大きさと色が違うものを選ぶ) */
+/* ⚠倒し方は**確定で木っ端みじん**の1種類だけ(2026-07-26ユーザー指示=軽傷/重傷はやめた)。
+   結果の示唆は「跡地に出るもの」の★の数と色でやる */
+const GC_TWC=[['#cfd6dd','#ffffff'],[AMBER,'#ffdd66'],['#c96b9f','#f0a8d8']];
 let GC=null;
+const gcRank=o=>o.dud?0:o.hero.rk;
+const gcTi=k=>TOWERS.findIndex(T=>T.id===GC_TW[k]);
+/* ⭐★4以上を引いた回の1/3で、的が✨黄金のロブスターになる(2026-07-30ユーザー指示) */
+const gcZi=k=>{if(GC&&GC.lob&&LB_ZI>=0)return LB_ZI;
+ const i=ZOMBIES.findIndex(z=>z.id===GC_ZM[k]);return i<0?0:i;};
 /* ⭐金色に焼く共通処理。⚠**ctx.filter は iOS で効かない**ので、別canvasに一度描いてから
    source-atop で金のグラデを被せる(タイトルの黄金ロブスターと同じやり方)。
    ⚠べた塗りで潰さない=明るい所だけ濃く乗せないと黒フチも陰影も消える。 */
@@ -31710,90 +31626,169 @@ function gcFit(){
 function gcStart(res){
  const cv=$('gc-cv');
  if(!cv||!cv.getContext||!res||!res.length){renderGacha(res);return;}
- /* ⚠(98)演出中は見出しの帯を消す(✕だけ残す) */
+ /* ⚠(98)演出中は見出しの帯を消す(黒帯が「撃て!」に被さったまま=ユーザー写真)。✕だけ残す */
  try{$('md-gacha').classList.add('fx');}catch(e){}
- /* ⚠演出用の値は**結果の中(res)に混ぜない**(旧演出からの掟)。台本はGC側に持つ。
-    ⚠プランの正しさは test_busgacha.js が bgCheck で1万回見張っている=ここでは信じて使う */
- const plan=bgPlan(res,Math.random);
- const scs=bgScenes(plan,META.gsimp?1:0);
- /* 並び位置: 低レア(まとめ降車)が左・★3以上が右へ足される=左→右がそのまま開示の順(低い順) */
- const pos={};plan.lows.forEach((s9,i)=>pos[s9]=i);plan.highs.forEach((s9,i)=>pos[s9]=plan.lows.length+i);
- GC={res,plan,scs,pos,sc:0,t:0,w:760,h:360,dpr:1,sk:null,snd:{}};
+ /* ⚠演出用の値は**結果の中(res)に混ぜない**。混ぜると「演出が結果を書き換えていないか」を見られなくなる。
+    ⭐撃つ場面は**1回の召集につき1回だけ**。10連でも1回で、その1回が「10連全体の一番いい結果」を示唆する */
+ const best=res.reduce((a,o)=>Math.max(a,gcRank(o)),0);
+ const base=best>=4?2:best>=2?1:0;
+ /* たまに1段下がる=下振れだけ。★5は必ず最上段で見せる
+    → レーザーが出たら★4以上が確定。レアでない時は基本ライフル+通常ゾンビになる */
+ const tw=(best<5&&Math.random()<.35)?Math.max(0,base-1):base;
+ /* ⭐⭐**期待度の見せ方を3つ足した**(2026-07-30ユーザー指示)。
+    ⚠**どれも下振れだけ**=タレットと同じ約束(上振れさせると読みが崩れて演出が嘘になる)。
+    ①**背景**: 朝=ふつう / 夜=期待度が高い
+    ②**「撃て!」の文字色**: 白 → 赤 → 虹(虹が出たら★4以上が確定)
+    ③**的**: ★4以上を引いた回の1/3で✨黄金のロブスターが出てくる */
+ const night=(best>=3)?(Math.random()<.82):(Math.random()<.18);
+ /* ⭐⭐**虹の文字と✨黄金のロブスターは「★5確定」**(2026-08-03(92)ユーザー指示
+      「虹とか金のロブスターとかは★5以上確定にしてほしい」)。
+    ❌(7/30)の「★4以上確定」はこの指示で上書き。⭐レーザーとどんでん返しは★4以上のまま
+      =★4にも派手さは残しつつ、**一番強い2つの合図だけ★5の約束**にする。 */
+ const fcB=best>=5?2:best>=2?1:0;
+ const fc=(best<5&&Math.random()<.35)?Math.max(0,fcB-1):fcB;
+ /* ⭐★5は ✨ロブ1/3 / どんでん返し1/3 / 通常の最上位1/3(2026-07-30の均等の考えを★5に引き継ぐ)。
+    ★4は どんでん返しGC_P_TW / 残りは通常。⚠**1回の乱数を割る**こと=別々に引くと比が崩れる。 */
+ const rl9=Math.random();
+ /* ⛔(210)**🐕犬の軍勢を外した**(ユーザー「今あるやつだいぶ微妙だから削除」)=
+    ★5の合図は**3通りを1/3ずつ**へ戻した(✨ロブ/🥇どんでん返し/通常の最上位)。⚠書き戻さない。 */
+ const lob=!!(best>=5&&LB_ZI>=0&&rl9<1/3);
+ /* ⭐⭐**どんでん返し**(2026-07-30ユーザー指示)。わざと**一番しょぼい見た目**
+      (朝・ライフル台・通常ゾンビ・白い「撃て!」)で始めて、**当たった所までは通常演出と同じ**に見せ、
+      爆散した跡から**金色の個体が現れて**もう一度砕ける。★4以上を引いた回だけ、たまに起きる。
+    ⚠これがあるので「ライフル+通常ゾンビ=はずれ」と決め打ちできなくなる=毎回タップする理由になる。 */
+ /* ⭐⭐(128)**どんでん返しは★5確定にした**(ユーザー「一番しょぼい演出かと思ったら金のゾンビに
+      なって…のやつは星5確定演出にして。いまだとあの演出出たのに星4当たっちゃってる」)。
+    ⚠★4でも出していたので、**一番の盛り上がりが空振りする**ことがあった。
+    ⭐これで★5の合図は3つとも「確定」で揃う=🌈虹の文字 / ✨黄金のロブスター / 🥇どんでん返し。 */
+ const twist=best>=5&&rl9>=1/3&&rl9<2/3;
+ GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,snd:{},
+  night:twist?false:night,fc:twist?0:fc,lob:lob?1:0,twist:twist?1:0};
  cv.classList.add('on');gcFit();
- bgSfxIn(scs[0]);
+ if(sfx.heal)sfx.heal();
 }
-/* 🔊シーンの入りで1回だけ鳴らす音。⚠**新しい素材は作らない**=在庫の使い回し
-   (場面と音の対応表はDESIGNの未決=実装の最後にユーザーと選ぶ。ここは当座の仮置き) */
-function bgSfxIn(s){
- try{
-  if(!s)return;
-  if(s.k==='run'){if(sfx.nitro)sfx.nitro();}
-  else if(s.k==='judge'&&s.up>0){if(sfx.cmbUp)sfx.cmbUp(s.ta);if(s.ta>=4&&sfx.busHorn)sfx.busHorn();}
-  else if(s.k==='arrive'){if(sfx.skid)sfx.skid();}
-  else if(s.k==='rvlow'){if(sfx.buy)sfx.buy();}
- }catch(e){}
+/* 「撃て!」→ **まず溜める**。溜め切ってから gcShoot() で撃つ */
+function gcFire(){
+ if(!GC||GC.ph!=='aim')return;
+ GC.ph='chg';GC.t=0;GC.hit=0;
+ /* きゅいーんと充填する音(レールガンのものを流用=素材を増やさずに済む) */
+ if(sfx.railChg)sfx.railChg();
 }
-/* 🔊シーンの途中の音(そのシーンの経過割合 nt で1回だけ。鳴らした印は GC.snd) */
-function bgSfxCue(s,u){
- const nt=u/s.len;
- const one=(k,f)=>{if(!GC.snd[k]&&nt>=f){GC.snd[k]=1;return 1;}return 0;};
- try{
-  if(s.k==='map'){
-   for(let m=0;m<GC.plan.K;m++)if(one('mk'+m,(1+m*1.05)/s.len)){if(sfx.tap)sfx.tap();}
-   if(GC.plan.mark&&one('mkR',(1.15+(GC.plan.K-1)*1.05)/s.len)){if(sfx.busHorn)sfx.busHorn();}
-  }else if(s.k==='pov'){
-   if(one('hit',.67)){if(s.lob){if(sfx.lobKill)sfx.lobKill();}else if(sfx.boom)sfx.boom();if(sfx.busHit)sfx.busHit();}
-  }else if(s.k==='brake'){
-   if(one('sk',.18)){if(sfx.skid)sfx.skid();}
-   if(one('bk',.71)){if(sfx.lobKill)sfx.lobKill();if(sfx.busHorn)sfx.busHorn();}
-  }else if(s.k==='arrive'){
-   if(one('dr',.72)){if(sfx.geoCkC)sfx.geoCkC();}
-  }else if(s.k==='drop'){
-   const n=GC.plan.lows.length;
-   for(let j=0;j<n;j++)if(one('lo'+j,.08+j*.5/Math.max(1,n))){if(sfx.thunk)sfx.thunk();}
-  }else if(s.k==='hdrop'){
-   if(one('dr',.06)){if(sfx.geoCkC)sfx.geoCkC();}
-   if(one('ld',.52)){if(sfx.mBlunt)sfx.mBlunt();}
-   if(one('au',.68)){if(sfx.heal)sfx.heal();}
-  }else if(s.k==='snatch'){
-   if(one('dr',.06)){if(sfx.geoCkC)sfx.geoCkC();}
-   if(one('gr',.26)){if(sfx.boom)sfx.boom();}
-   if(one('ld',.8)){if(sfx.mBlunt)sfx.mBlunt();}
-   if(one('au',.86)){if(sfx.heal)sfx.heal();}
-  }else if(s.k==='rv'){
-   if(one('off',s.w?.28:.32)){if(sfx.eliteKill)sfx.eliteKill();}
-   if(s.w&&one('w2',.58)){if(sfx.railChg)sfx.railChg();}
-   if(GC.res[s.slot].hero.rk>=5&&one('r5',s.w?.72:.5)){if(sfx.lobKill)sfx.lobKill();}
-  }
- }catch(e){}
-}
-/* 次のシーンへ。最後まで行ったら結果一覧(gcEnd) */
-function gcNext(){
+/* 溜め切って実際に撃つ。タレットの種類で音を変える */
+function gcShoot(){
  if(!GC)return;
- GC.sc++;GC.t=0;GC.snd={};
- if(GC.sc>=GC.scs.length){gcEnd();return;}
- bgSfxIn(GC.scs[GC.sc]);
+ GC.ph='fire';GC.t=0;GC.hit=0;GC.hit2=0;GC.hit3=0;
+ const tw=GC.tw;
+ if(tw===2&&sfx.laser)sfx.laser();
+ else if(tw===1&&sfx.shotgun)sfx.shotgun();
+ else if(sfx.shot)sfx.shot();
 }
+/* ⭐カメラ(2026-07-27)。⚠**同じ絵でもカメラが動くだけで別物に見える**。
+   返すのは {x,y,z,sx,sy} = 見る中心・寄り・揺れ。画面の外が見えないよう地面は広めに描くこと。
+   ⚠**文字と閃光にはカメラを掛けない**(寄せると読めなくなる/画面の端に隙間ができる) */
+function gcCam(w,h,TX,TY,ZX,ZY){
+ const t=GC.t,ph=GC.ph;
+ let x=(TX+ZX)/2,y=(TY+ZY)/2-20,z=1,sx=0,sy=0;
+ if(ph==='aim'){
+  /* 待っている間はゆっくり息をする程度(止まっていると死んで見える) */
+  z=1.03+Math.sin(t*.9)*.012;
+  x+=Math.sin(t*.5)*10;y+=Math.cos(t*.42)*6;
+ }else if(ph==='chg'){
+  /* 溜め=タレット寄りへ。⚠**寄せすぎない**(的が画面から消えると何を撃つのか分からなくなる)。
+     終わり際ほど速く寄ると「来るぞ」という感じが出る */
+  const k=clamp(t/GC_CHG,0,1),e=k*k;
+  const gx=TX+130,gy=TY-95;
+  z=1.03+e*.20;x+=(gx-x)*e;y+=(gy-y)*e;
+  /* 撃つ直前に小刻みに震える */
+  const q=Math.max(0,k-.55)/.45;sx=(Math.sin(t*54)*3.2)*q;sy=(Math.cos(t*61)*2.4)*q;
+ }else if(ph==='fire'){
+  const ft=t,gx=TX+130,gy=TY-95;
+  if(ft<GC_FLY){
+   /* 弾を追って的の方へ流す。⚠寄りは**緩める**=速い動きに強い寄りを足すと何も読めない */
+   const k=clamp(ft/GC_FLY,0,1);
+   z=1.23-k*.13;x=gx+((ZX-60)-gx)*k;y=gy+((ZY-40)-gy)*k;
+   /* 発射の反動(最初の0.12秒だけ強く蹴る) */
+   const r=Math.max(0,1-ft/.12);sx=Math.sin(ft*90)*11*r;sy=Math.cos(ft*77)*7*r;
+  }else{
+   const hk=clamp((ft-GC_FLY-GC_HOLD-gcDly())/1.05,0,1);
+   /* 着弾で一気に寄ってから、ゆっくり引いて跡地を見せる */
+   const e=hk*hk*(3-2*hk);
+   z=1.46-e*.43;x=ZX+(( (TX+ZX)/2 )-ZX)*e;y=(ZY-30)+(((TY+ZY)/2-20)-(ZY-30))*e;
+   /* 揺れは着弾直後だけ。⚠**長く揺らすと酔う**ので0.35で消す。
+      ⚠**着弾からの実時間で引く**こと=hkで引くと、どんでん返しの1.5秒がまるごと hk=0 なので
+        その間ずっと最大で揺れ続ける(2026-07-30に尺を伸ばして踏んだ)。2回目の爆発でもう一度揺らす */
+   const s1=clamp(1-(ft-GC_FLY-GC_HOLD)/.35,0,1);
+   const s2=GC.twist?clamp(1-(ft-GC_FLY-GC_HOLD-GC_TWIST)/.35,0,1):0;
+   const q=Math.max(s1,s2);
+   sx=Math.sin(ft*73)*20*q*q;sy=Math.cos(ft*97)*14*q*q;
+  }
+ }
+ return {x,y,z,sx,sy};
+}
+/* 傷が出た瞬間の音(木っ端みじんが一番派手) */
+function gcHitSfx(){
+ if(sfx.boom)sfx.boom();
+ /* ⚠✨黄金のロブスターだけ豪華な撃破音(タイトルと同じ音を使い回す=素材を増やさない) */
+ if(GC&&GC.lob&&sfx.lobKill)sfx.lobKill();
+ else if(sfx.eliteKill)sfx.eliteKill();
+}
+/* ⭐どんでん返しの尺(秒)。⚠短いと何が起きたか読めない。
+   ⭐**中身を作り替えた**(2026-07-30ユーザー指示「弾がゾンビに当たるまでは通常演出と同じで、
+     当たったらゾンビが爆発して金色のゾンビが現れる感じで」)。
+   ⚠それまでは「当たっても倒れず、その場で金色に変色する」だった=**当たった手応えが無かった**。
+   前半 GC_TW_R = 普通に木っ端みじん(通常演出と見分けが付かない) / 後半 = その跡から金色の個体がせり上がる */
+const GC_TWIST=1.5;
+const GC_TW_R=.45;/* 爆発から「金色が現れる」へ切り替わる所(0〜1) */
+const gcDly=()=>GC?(GC.twist?GC_TWIST:0):0;
+/* ⭐★4以上を引いた回の内訳(2026-07-30ユーザー指示「ピラミッドにしよう」)。
+   ✨黄金のロブスター20% / どんでん返し35% / 通常の最上位演出45%。
+   ⚠**珍しい絵ほど出にくい**のが演出の基本=均等にすると「派手=当たり」の情報価値が消え、
+     逆転演出も毎回起きると茶番になる。
+   ⚠ただし★4以上を引くこと自体が約1%なので、**定番の5〜10%まで絞ると一生見られない**。
+     この2つの折り合いが 20/35/45。 */
+/* ⚠🛠DEVでは**3通りを均等**にする=どれも同じだけ見たいので(普通に遊ぶ側は20/35/45のまま) */
+const GC_P_LOB=DEV?1/3:.20,GC_P_TW=DEV?1/3:.35;
 function gcStep(dt){
  if(!GC)return;
- /* ⚠パネルの寸法は開いた直後に確定していないことがある=毎フレーム見比べて測り直す */
+ /* ⚠パネルの寸法は開いた直後に確定していないことがある(文字や画像の読み込みで動く)。
+    毎フレーム見比べて、変わっていたら測り直す=円が楕円に潰れるのを防ぐ */
  {const cv=$('gc-cv');if(cv&&(cv.clientWidth!==GC.w||cv.clientHeight!==GC.h))gcFit();}
- /* 🛠GC.frz=撮影用の静止(test_shot の gc= が立てる)=時間を止めて同じ1コマを出し続ける
-    (⚠ヘッドレスは仮想時間が勝手に進むので、seekした絵がそのままでは流れてしまう) */
- if(!GC.frz){
-  GC.t+=dt;
-  const s=GC.scs[GC.sc];
-  if(s)bgSfxCue(s,GC.t);
-  if(s&&GC.t>=s.len){gcNext();if(!GC)return;}
- }
+ /* ⚠「撃て!」は**押すまで絶対に進めない**(2026-07-26ユーザー指示)。時間では進まない */
+ if(GC.ph==='aim'){GC.t+=dt;try{gcDraw();}catch(e){}return;}
+ GC.t+=dt;
+ /* 溜め切ったら撃つ */
+ if(GC.ph==='chg'&&GC.t>=GC_CHG){gcShoot();}
+ /* 撃った弾が当たる瞬間に音を鳴らす(1発だけ) */
+ if(GC.ph==='fire'&&!GC.hit&&GC.t>=GC_FLY){GC.hit=1;
+  /* ⚠どんでん返しも**1回目でちゃんと爆発する**(2026-07-30)ので、ここは普通の撃破音。
+     豪華な方(eliteKill/lobKill)は2回目に取っておく */
+  if(GC.twist){if(sfx.boom)sfx.boom();}else gcHitSfx();}
+ /* どんでん返し: 爆発の跡から金色の個体が現れ始める瞬間 */
+ if(GC.ph==='fire'&&GC.twist&&!GC.hit3&&GC.t>=GC_FLY+GC_HOLD+GC_TWIST*GC_TW_R){GC.hit3=1;
+  if(sfx.heal)sfx.heal();}
+ /* どんでん返し: 金色になり切った瞬間に大爆発 */
+ if(GC.ph==='fire'&&GC.twist&&!GC.hit2&&GC.t>=GC_FLY+GC_HOLD+GC_TWIST){GC.hit2=1;gcHitSfx();}
+ if(GC.ph==='fire'&&GC.t>=GC_FLY+GC_HOLD+GC_BANG+gcDly()){GC.ph='card';GC.t=0;}
+ if(GC.ph==='card')gcCardSfx();
  try{gcDraw();}catch(e){}
 }
-/* 押した時: ≫まとめて見る=全部飛ばして結果一覧へ / それ以外=**今のシーンを1つ飛ばす**
-   (⭐DESIGNの「各シーンを個別にスキップ可」の実装そのもの。⚠結果は確定済みなので何を飛ばしても同じ) */
+/* 押した時: 「撃て!」なら撃つ / 撃った後の余韻は飛ばす / カードなら次の1枚へ */
 function gcTap(mx,my){
  if(!GC)return;
  if(GC.sk&&mx>=GC.sk[0]&&my>=GC.sk[1]&&mx<=GC.sk[0]+GC.sk[2]&&my<=GC.sk[1]+GC.sk[3]){gcEnd();return;}
- gcNext();
+ if(GC.ph==='aim'){gcFire();return;}
+ /* ⚠溜めている間は飛ばさない(ここを飛ばせると「ため」が無くなって元の安っぽさに戻る) */
+ if(GC.ph==='chg')return;
+ if(GC.ph==='fire'){
+  /* 弾が飛んでいる間は飛ばさない(当たる前に結果へ行くと何が起きたか分からない) */
+  if(GC.t<GC_FLY+GC_HOLD+.35+gcDly())return;
+  GC.ph='card';GC.t=0;return;}
+ /* 🎴(213)ソシャゲの送り方: 開き切る前のタップ=その場で全部見せる。次のタップで次の1枚 */
+ {const o9=GC.res[GC.i],L9=o9?gcCardTL(o9):null;
+  if(L9&&!o9.dud&&GC.t<L9.done){GC.t=L9.done;try{gcDraw();}catch(e){}return;}}
+ GC.i++;
+ if(GC.i>=GC.res.length){gcEnd();return;}
+ GC.t=0;GC.snd={};
 }
 function gcEnd(){
  const cv=$('gc-cv');if(cv)cv.classList.remove('on');
@@ -31963,501 +31958,385 @@ function gcGold(c,zidx,zsc,ZX,ZY,a,big){
  /* きらめき。⚠**出かかりでは出さない**=まだ形が無いのに光だけ散ると何が起きたか読めない */
  if(a>.55){try{parSpark(c,ZX,ZY-14,GC.t);}catch(e){}}
 }
-/* ---- 🚌 横向きバス(区切りの幕のedBusの絵)に段階の色を焼く。⚠ctx.filterはiOS不可=goldCvと同じ source-atop ---- */
-let BGBUS=null;
-function bgBusCv(tier,t){
- const W=300,H=175,d2=2;
- if(!BGBUS)BGBUS=document.createElement('canvas');
- if(BGBUS.width!==W*d2){BGBUS.width=W*d2;BGBUS.height=H*d2;}
- const bc=BGBUS.getContext('2d');if(!bc)return null;
- bc.setTransform(d2,0,0,d2,0,0);bc.clearRect(0,0,W,H);
- bc.save();bc.translate(W/2,H-22);
- edBus(bc,0,0,1,t);
- bc.restore();
- bc.globalCompositeOperation='source-atop';
- try{
-  if(tier>=5){const g=bc.createLinearGradient(0,0,W,0);
-   for(let k=0;k<=5;k++)g.addColorStop(k/5,'rgba('+bgRGB(BG_RB[(k+Math.floor(t*2))%5])+',.50)');
-   bc.fillStyle=g;bc.fillRect(0,0,W,H);}
-  else if(tier===3){bc.fillStyle='rgba('+bgRGB(GOLD)+',.26)';bc.fillRect(0,0,W,H);}
-  else if(tier>0){bc.fillStyle='rgba('+bgRGB(BG_TCOL[tier])+','+(tier===1?'.24':'.40')+')';bc.fillRect(0,0,W,H);}
- }catch(e){}
- bc.globalCompositeOperation='source-over';
- return BGBUS;
+/* ---- 🎴(213)カード開示=ソシャゲの型 ----
+   (ユーザー指示「全体的にソシャゲのガチャっぽくしっかり作って」)
+   1枚の時間割: 裏面(★4=金/★5=虹の縁が漏れて震える焦らし)→めくり→★が1個ずつ灯る→
+   全部灯って和音+輪→名前と必殺→NEW/凸→(★4以上は紙吹雪)。
+   ⭐**タップ1回目=その場で全部見せる / 2回目=次の1枚**(ソシャゲの標準の送り方)。
+   ⚠結果には一切触らない=見せる順と間だけ。 */
+function gcCardTL(o){
+ const rk=gcRank(o);
+ const tease=rk>=4?.55:.12;
+ const face=tease+.16;
+ const st0=face+.12,stG=.16;
+ const stEnd=st0+Math.max(0,rk-1)*stG+.06;
+ const name=stEnd+.14;
+ const done=name+.16;
+ return {rk,tease,face,st0,stG,stEnd,name,done};
 }
-/* バスの下と後ろの淡い光。⚠濃い1枚円は縞が出る=薄い楕円を重ねる(opGlowの掟) */
-function bgBusGlow(c,x,y,tier,t,a){
- const col=tier>=5?BG_RB[Math.floor(t*3)%5]:(BG_TCOL[tier]||TECH2);
- c.save();c.fillStyle=col;
- for(let k=0;k<7;k++){c.globalAlpha=.045*a;
-  c.beginPath();c.ellipse(x,y+4,150-k*16,24-k*2.6,0,0,7);c.fill();}
- c.restore();c.globalAlpha=1;
+/* 🔊カードの音(gcStepから)。鳴らした印はGC.snd=カード送りで空にする。⚠素材は増やさない */
+function gcCardSfx(){
+ const o=GC.res[GC.i];if(!o||o.dud)return;
+ const L=gcCardTL(o),u=GC.t;
+ if(u>=L.tease&&!GC.snd.fl){GC.snd.fl=1;if(sfx.tap)sfx.tap();}
+ for(let j=0;j<L.rk;j++)if(u>=L.st0+j*L.stG&&!GC.snd['s'+j]){GC.snd['s'+j]=1;
+  try{sfxAtR('coin',.5,1+j*.13);}catch(e9){}}
+ if(u>=L.stEnd+.03&&!GC.snd.ch){GC.snd.ch=1;
+  if(L.rk>=3&&sfx.cmbUp)sfx.cmbUp(L.rk-1);
+  if(L.rk>=5&&sfx.lobKill)sfx.lobKill();else if(L.rk===4&&sfx.eliteKill)sfx.eliteKill();}
+ if(u>=L.name&&!GC.snd.nm){GC.snd.nm=1;if(!o.dupe&&sfx.buy)sfx.buy();}
 }
-/* ---- 👤 人影(降車の姿) ---- */
-function bgFig(c,x,y,hh,col){
- c.fillStyle=col||'#12100d';
- c.beginPath();c.arc(x,y-hh*.84,hh*.155,0,7);c.fill();
- rr(c,x-hh*.16,y-hh*.72,hh*.32,hh*.72,hh*.08);c.fill();
-}
-/* フード付きマント(⭐★3以上だけが着る。⚠低レアは着ない=全員マントだと全員当たりに見える) */
-function bgCloak(c,x,y,hh,col){
- c.fillStyle=col||'#12100d';
+/* 紙吹雪(位置は起動時に1回だけ決める=毎フレーム乱数を引くと踊る) */
+const GC_CONF=gcLcg(9137,18,r=>({x:r()*2-1,d:r()*.5,s:r(),w:5+r()*6,h:3+r()*4,v:.55+r()*.8}));
+function gcStar(c,x,y,r,col){
  c.beginPath();
- c.moveTo(x,y-hh);
- c.quadraticCurveTo(x-hh*.30,y-hh*.74,x-hh*.28,y-hh*.44);
- c.lineTo(x-hh*.40,y);
- c.quadraticCurveTo(x,y-hh*.05,x+hh*.40,y);
- c.lineTo(x+hh*.28,y-hh*.44);
- c.quadraticCurveTo(x+hh*.30,y-hh*.74,x,y-hh);
- c.closePath();c.fill();
+ for(let q=0;q<10;q++){const r9=(q%2)?r*.45:r,a9=-Math.PI/2+q*Math.PI/5;
+  if(q===0)c.moveTo(x+Math.cos(a9)*r9,y+Math.sin(a9)*r9);
+  else c.lineTo(x+Math.cos(a9)*r9,y+Math.sin(a9)*r9);}
+ c.closePath();
+ c.fillStyle=col;c.fill();
+ c.strokeStyle=INK;c.lineWidth=2;c.stroke();c.lineWidth=3;
 }
-/* 🌟輪郭のオーラ(2026-08-08(212)ユーザー決定=⛔足元の輪ではなく**体の輪郭が光る**。
-   横一列に並んだ時に色を比べられるのが仕事)。ひと回り大きい同じ形を薄く3枚、背面に重ねる。 */
-function bgAura(c,x,y,hh,col,a,cloak){
- if(!(a>0))return;
- const f=cloak?bgCloak:bgFig;
+function gcCard(c,w,h,cx,cy,t,COL){
+ const o=GC.res[GC.i],L=gcCardTL(o),rk=L.rk,u=GC.t;
+ const bw=Math.min(w*.86,520),bh=Math.min(h*.84,300);
+ const by=cy-bh/2-2;
+ /* 背後の光条(レアなほど派手。表になってから全開) */
+ const bgA=u<L.face?.3:1;
+ if(rk>=2)gcRays(c,cx,cy*.98,Math.min(w,h)*(.5+rk*.09),6+rk*4,t*(.3+rk*.12),COL[0],(.10+rk*.035)*bgA);
+ /* 全部灯った瞬間=広がる輪(★5は虹)+白い閃き */
+ if(rk>=4&&u>=L.stEnd&&u<L.stEnd+.5){const k=(u-L.stEnd)/.5;
+  c.strokeStyle=rk>=5?'hsl('+Math.round((t*160)%360)+',95%,60%)':GOLD;
+  c.globalAlpha=1-k;c.lineWidth=6;
+  c.beginPath();c.arc(cx,cy,60+k*Math.min(w,h)*.55,0,7);c.stroke();
+  c.globalAlpha=1;c.lineWidth=3;}
+ if(rk>=5&&u>=L.stEnd&&u<L.stEnd+.22){
+  c.fillStyle='rgba(255,243,192,'+(.5*(1-(u-L.stEnd)/.22)).toFixed(2)+')';c.fillRect(0,0,w,h);}
+ /* めくり(横につぶす)。裏→表 */
+ let sx=1,back=0;
+ if(u<L.tease){sx=1;back=1;}
+ else if(u<L.face){const k=(u-L.tease)/(L.face-L.tease);
+  if(k<.5){back=1;sx=1-k*2;}else{back=0;sx=(k-.5)*2;}}
+ let jx=0;
+ if(back&&rk>=4&&u<L.tease)jx=Math.sin(u*60)*2.2*(u/L.tease);/* 焦らしの震え */
  c.save();
- for(let k=3;k>=1;k--){c.globalAlpha=.14*a*(4-k)/3;f(c,x,y+hh*.012*k,hh*(1+.05*k),col);}
- c.restore();c.globalAlpha=1;
-}
-/* 開示済みの英雄を任意の場所へ(足元基準)。⚠drawUnitは中でTSCALE倍する=割って戻す(結果カードと同じ手) */
-function bgHero(c,slot,x,y,hh,t){
- const o=GC.res[slot],ui=hUiOf(o.hero.id);
- if(!(ui>=0)){bgFig(c,x,y,hh,'#20241f');return;}
- const sc=(hh/92)/(TSCALE[uTier(ui)-1]||1);
- c.save();c.translate(x,y);c.scale(sc,sc);
- drawUnit(c,ui,0,0,-1,t,0,{mv:0,fld:1});/* fld=頭上の★を焼き込まない(レア度は輪郭のオーラと名前の帯が言う) */
- c.restore();
-}
-/* 並び位置(左6割に横一列。右はバス) */
-function bgLineXY(w,h,i){
- const n=Math.max(1,GC.res.length),m=w*.045,span=w*.56;
- return {x:m+span*(n<=1?.5:i/(n-1)),y:h*.80};
-}
-/* 現在のシーンまでに「着地した/正体が開いた」スロット */
-function bgState(){
- const landed={},rev={};
- for(let i=0;i<GC.sc;i++){const e=GC.scs[i];
-  if(e.k==='drop')GC.plan.lows.forEach(s9=>landed[s9]=1);
-  else if(e.k==='hdrop'||e.k==='snatch')landed[e.slot]=1;
-  else if(e.k==='rvlow')GC.plan.lows.forEach(s9=>rev[s9]=1);
-  else if(e.k==='rv')rev[e.slot]=1;}
- return {landed,rev};
-}
-/* 降車時に見せるオーラの段(⚠二重マントは1段下で着地=**上振れは絶対にしない**。bgCheckが見張る) */
-function bgDispRk(slot){
- const rk=GC.res[slot].hero.rk;
- return GC.plan.fake[slot]==='w'?Math.max(3,rk-1):rk;
-}
-/* ---- 🗺 地図予告 ---- */
-const BG_MDOT=gcLcg(20260808,60,r=>({x:r(),y:r(),a:.05+r()*.06}));
-function bgMapPt(w,h,f){
- const ax=w*.10,ay=h*.80,bx=w*.88,by=h*.26,cx=w*.52,cy=h*.16,g=1-f;
- return {x:g*g*ax+2*g*f*cx+f*f*bx,y:g*g*ay+2*g*f*cy+f*f*by};
-}
-function bgScMap(c,w,h,s,u){
- c.fillStyle='#ddd3bc';c.fillRect(0,0,w,h);/* 紙(エリアマップと同じ地色) */
- c.fillStyle='#241f19';
- for(const d of BG_MDOT){c.globalAlpha=d.a;c.fillRect(d.x*w,d.y*h,2,2);}
- c.globalAlpha=1;
- /* 山なみの落書き */
- c.strokeStyle='rgba(74,64,52,.35)';c.lineWidth=2;
- for(let i=0;i<4;i++){const mx=w*(.16+i*.22),my=h*(.30+(i%2)*.28);
-  c.beginPath();c.moveTo(mx-14,my);c.lineTo(mx,my-10);c.lineTo(mx+14,my);
-  c.moveTo(mx+6,my-5);c.lineTo(mx+16,my-12);c.lineTo(mx+28,my);c.stroke();}
- /* 道(点線)が描かれていく */
- const dk=clamp(u/.9,0,1);
- c.strokeStyle='#4a4034';c.lineWidth=4;c.setLineDash([3,8]);
- c.beginPath();
- for(let i=0;i<=40*dk;i++){const p=bgMapPt(w,h,i/40);if(i===0)c.moveTo(p.x,p.y);else c.lineTo(p.x,p.y);}
- c.stroke();c.setLineDash([]);c.lineWidth=3;
- /* 出発のバス印 */
- {const p=bgMapPt(w,h,0);
-  c.fillStyle='#c9a13d';rr(c,p.x-16,p.y-12,32,15,4);c.fill();
-  c.strokeStyle=INK;c.lineWidth=2;rr(c,p.x-16,p.y-12,32,15,4);c.stroke();c.lineWidth=3;
-  c.fillStyle='#8fdcf5';for(let k=0;k<3;k++)c.fillRect(p.x-11+k*9,p.y-9,6,5);}
- /* 🏠到着の印 */
- {const p=bgMapPt(w,h,1);
-  c.strokeStyle='#4a4034';c.lineWidth=2.5;
-  c.strokeRect(p.x-9,p.y-7,18,13);
-  c.beginPath();c.moveTo(p.x-12,p.y-7);c.lineTo(p.x,p.y-16);c.lineTo(p.x+12,p.y-7);c.stroke();c.lineWidth=3;}
- /* 接敵の印=1個ずつ判を押す(⭐印の数=轢けるチャンスの数。⚠数はプランから=独立抽選にしない) */
- const p9=GC.plan;
- for(let k=0;k<p9.K;k++){
-  const u0=1+k*1.05,pk=clamp((u-u0)/.28,0,1);if(pk<=0)continue;
-  const f=(k+1)/(p9.K+1),p=bgMapPt(w,h,f);
-  const rb=p9.mark&&k===p9.K-1;/* 🌈虹★は最後の印 */
-  const sc9=1+(1-pk)*(1-pk)*2.2;/* 上から判を押す */
-  c.save();c.translate(p.x,p.y);c.scale(sc9,sc9);c.globalAlpha=Math.min(1,pk*1.6);
-  if(rb){
-   let g=null;try{g=c.createLinearGradient(-14,-14,14,14);
-    for(let q=0;q<=4;q++)g.addColorStop(q/4,BG_RB[q]);}catch(e){}
-   c.fillStyle=g||GOLD;
-   c.beginPath();
-   for(let q=0;q<10;q++){const r9=(q%2)?7:16,a9=-Math.PI/2+q*Math.PI/5;
-    if(q===0)c.moveTo(Math.cos(a9)*r9,Math.sin(a9)*r9);else c.lineTo(Math.cos(a9)*r9,Math.sin(a9)*r9);}
-   c.closePath();c.fill();
-   c.strokeStyle=INK;c.lineWidth=2;c.stroke();
-  }else{
-   c.fillStyle=RUST;
-   c.beginPath();
-   for(let q=0;q<16;q++){const r9=(q%2)?6:11,a9=q*Math.PI/8;
-    if(q===0)c.moveTo(Math.cos(a9)*r9,Math.sin(a9)*r9);else c.lineTo(Math.cos(a9)*r9,Math.sin(a9)*r9);}
-   c.closePath();c.fill();
-   c.strokeStyle=INK;c.lineWidth=2;c.stroke();
-  }
-  c.restore();c.globalAlpha=1;c.lineWidth=3;
- }
-}
-/* ---- 🚌 横スクロール走行 ---- */
-const BG_PYL=gcLcg(775,4,r=>({x:r(),h:.24+r()*.12}));
-const BG_STK=gcLcg(776,9,r=>({x:r()}));
-function bgScRun(c,w,h,s,u){
- const t=GC.t,hz=h*.56,gy=h*.80;
- /* 夕暮れの空(平ら2枚+低い陽) */
- c.fillStyle='#5a4638';c.fillRect(0,0,w,hz);
- c.fillStyle='#6e5744';c.fillRect(0,hz-h*.10,w,h*.10);
- c.globalAlpha=.85;c.fillStyle='#e8b56a';c.beginPath();c.arc(w*.16,hz-h*.07,h*.05,0,7);c.fill();c.globalAlpha=1;
- c.fillStyle='#3a2f24';c.fillRect(0,hz,w,h-hz);
- c.fillStyle='#55504a';c.fillRect(0,gy-26,w,52);
- c.fillStyle='rgba(216,206,170,.4)';
- {const off=(u*560)%64;for(let x=-64;x<w+64;x+=64)c.fillRect(x-off,gy-2,30,4);}
- /* 送電鉄塔(遠景・ゆっくり) */
- c.fillStyle='rgba(36,28,22,.55)';
- for(const p of BG_PYL){const px=(((p.x-u*.05)%1)+1)%1*w,ph=h*p.h;
-  c.fillRect(px-2,hz-ph,4,ph);
-  c.fillRect(px-12,hz-ph*.82,24,3);c.fillRect(px-8,hz-ph*.6,16,3);}
- /* 標識杭(近景・速い)+反射板 */
- for(const p of BG_STK){const px=(((p.x-u*.9)%1)+1)%1*(w+40)-20;
-  c.fillStyle=INK;c.fillRect(px,gy+10,5,16);
-  c.fillStyle='#f0a83a';c.fillRect(px,gy+10,5,4);}
- /* 速度線 */
- c.strokeStyle='rgba(232,224,206,.20)';c.lineWidth=2;
- for(let i=0;i<5;i++){const ly=h*(.30+i*.11),lx=w-((u*900+i*167)%(w+180));
-  c.beginPath();c.moveTo(lx,ly);c.lineTo(lx+70,ly);c.stroke();}
- c.lineWidth=3;
- /* バス(段階の色)+土埃 */
- const bx=w*.40,by=gy+Math.sin(u*13)*1.4;
- bgBusGlow(c,bx,by,s.tb,t,1);
- c.fillStyle='rgba(122,106,84,.30)';
- for(let i=0;i<6;i++){const dx=bx-120-((u*260+i*47)%150);
-  c.beginPath();c.arc(dx,by+2-((i*13)%10),5+((i*31)%9),0,7);c.fill();}
- const bcv=bgBusCv(s.tb,t);
- if(bcv)c.drawImage(bcv,bx-150,by-153,300,175);
-}
-/* ---- 🧟 運転手視点(分岐→轢く) ---- */
-function bgScPov(c,w,h,s,u){
- const hk=clamp((u-2.02)/.5,0,1);
- c.save();
- if(hk>0&&hk<1){const q=1-hk;c.translate(Math.sin(u*73)*10*q,Math.cos(u*97)*7*q);}
- const hz=h*.40;
- c.fillStyle='#4a3a30';c.fillRect(-20,-20,w+40,hz+20);
- c.fillStyle='#3a2f24';c.fillRect(-20,hz,w+40,h-hz+40);
- /* 道=台形。⚠バスが自動で曲がる(プレイヤーは選ばない)=分岐のもう1本が逃げていくだけ */
- const dir=(s.pt%2)?1:-1,k=clamp(u/1.6,0,1);
- const cx=w/2+dir*k*k*w*.10;
- c.fillStyle='#55504a';
- c.beginPath();c.moveTo(cx-14,hz);c.lineTo(cx+14,hz);
- c.lineTo(w*.5+w*.42,h+40);c.lineTo(w*.5-w*.42,h+40);c.closePath();c.fill();
- if(k<1){const ox=cx-dir*(30+k*w*.30);
-  c.globalAlpha=1-k*.8;
-  c.beginPath();c.moveTo(ox-10,hz);c.lineTo(ox+10,hz);
-  c.lineTo(ox-dir*w*.26+10,h*.72);c.lineTo(ox-dir*w*.26-40,h*.72);c.closePath();c.fill();
-  c.globalAlpha=1;}
- /* 中央の破線(迫ってくる) */
- c.fillStyle='rgba(216,206,170,.42)';
- for(let i=0;i<6;i++){const f=(i/6+(u*.5))%1,y=hz+(h-hz)*f*f,sc9=.2+f;
-  c.fillRect(cx-3*sc9,y,6*sc9,14*sc9);}
- /* 群れ(米粒→近づいて大きく)。🌈虹★の地点は群れが虹色 */
- const ap=clamp(u/2.02,0,1);
- if(hk<1){
-  const zy=hz+(h*.72-hz)*ap*ap,zsc=.3+ap*1.7;
-  const n9=12+(s.tb>=3?6:0)+(s.mark?10:0);
-  for(let i=0;i<n9;i++){
-   const zx=cx+((i*53)%56-28)*zsc*.9,zy2=zy-((i*29)%18)*zsc*.3;
-   c.fillStyle=s.mark?BG_RB[i%5]:((i%3)?'#5d7141':'#6d8151');
-   c.globalAlpha=Math.min(1,ap*1.5)*(1-hk);
-   const s9=zsc*1.35*(1+((i*17)%3)*.15);
-   c.fillRect(zx-4*s9,zy2-14*s9,8*s9,14*s9);
-   c.beginPath();c.arc(zx,zy2-15*s9,3.4*s9,0,7);c.fill();
-  }
-  c.globalAlpha=1;
-  /* ✨金のロブスター(★5確定の合図)。⚠虹バスの回もこの1体が兼ねる(金のまま=合図の意味は同じ) */
-  if(s.lob&&ap>.25){
-   const ly=hz+(h*.70-hz)*ap*ap;
-   gcGold(c,LB_ZI>=0?LB_ZI:0,.5+ap*1.1,cx,ly,Math.min(1,ap*1.4),1);
-  }
- }
- if(hk>0){
-  gcGib(c,cx,h*.72,hk*.8,{c:'#6d8151'},s.lob?1:0);
-  c.fillStyle='rgba(255,240,210,'+Math.max(0,.5-hk*.9).toFixed(3)+')';c.fillRect(-20,-20,w+40,h+40);
- }
- c.restore();
- /* 🚍運転席の枠(手前)=ダッシュボード+ハンドル+柱 */
- c.fillStyle='#171310';
- c.beginPath();c.moveTo(0,h);c.lineTo(0,h*.78);
- c.quadraticCurveTo(w*.5,h*.66,w,h*.78);c.lineTo(w,h);c.closePath();c.fill();
- c.fillStyle='#100d0a';c.fillRect(0,0,w*.045,h);c.fillRect(w*.955,0,w*.045,h);
- c.fillRect(0,0,w,h*.05);
- c.strokeStyle='#0c0a08';c.lineWidth=10;
- c.beginPath();c.arc(w*.24,h*1.02,h*.20,Math.PI*1.05,Math.PI*1.95);c.stroke();
- c.lineWidth=3;
-}
-/* ---- 🎚 昇格判定(バスの色が一段上がる/上がらない) ---- */
-function bgScJudge(c,w,h,s,u){
- const t=GC.t,nt=u/s.len,gy=h*.74,bx=w*.5;
- c.fillStyle='#38302a';c.fillRect(0,0,w,h*.56);
- c.fillStyle='#3a2f24';c.fillRect(0,h*.56,w,h-h*.56);
- c.fillStyle='#55504a';c.fillRect(0,gy-24,w,48);
- const k=s.up>0?clamp((nt-.3)/.3,0,1):0;
- bgBusGlow(c,bx,gy,k>=.5?s.ta:s.tb,t,1.3);
- {const b0=bgBusCv(s.tb,t);if(b0)c.drawImage(b0,bx-165,gy-170,330,192);}
- if(s.up>0&&k>0){
-  const b1=bgBusCv(s.ta,t);
-  if(b1){c.globalAlpha=k;c.drawImage(b1,bx-165,gy-170,330,192);c.globalAlpha=1;}
-  const rk9=clamp((nt-.3)/.55,0,1);
-  if(rk9<1){const col=s.ta>=5?BG_RB[Math.floor(t*4)%5]:BG_TCOL[s.ta];
-   c.strokeStyle=col;c.globalAlpha=1-rk9;c.lineWidth=5;
-   c.beginPath();c.ellipse(bx,gy-40,40+rk9*w*.4,(40+rk9*w*.4)*.5,0,0,7);c.stroke();
-   c.globalAlpha=1;c.lineWidth=3;}
-  if(s.ta>=4)gcRays(c,bx,gy-60,w*.5,s.ta>=5?18:12,t*.5,s.ta>=5?'#fff3bd':'#ffd7b0',.16*k);
- }else if(s.up<=0){
-  const p9=.5+.5*Math.sin(u*9);
-  bgBusGlow(c,bx,gy,s.tb,t,.5+p9*.3);
- }
-}
-/* ---- 🥇 通り過ぎて急ブレーキ→バックで戻って轢く(旧どんでん返しの置き換え・★5確定) ---- */
-function bgScBrake(c,w,h,s,u){
- const t=GC.t,hz=h*.56,gy=h*.80;
- c.fillStyle='#504034';c.fillRect(0,0,w,hz);
- c.fillStyle='#3a2f24';c.fillRect(0,hz,w,h-hz);
- c.fillStyle='#55504a';c.fillRect(0,gy-26,w,52);
- c.fillStyle='rgba(216,206,170,.4)';
- for(let x=0;x<w;x+=64)c.fillRect(x,gy-2,30,4);
- const lx=w*.46;
- if(u<2.0)gcGold(c,LB_ZI>=0?LB_ZI:0,.9,lx,gy+6,1,1);
- /* バス: 通り過ぎる→画面外で急ブレーキ→バックで戻る→轢く */
- let bx;
- if(u<.55)bx=w*.30+(w*1.15-w*.30)*(u/.55);
- else if(u<1.2)bx=w*1.15+20;
- else if(u<2.0){const k=(u-1.2)/.8;bx=w*1.15-(w*1.15-(lx+120))*(1-(1-k)*(1-k));}
- else bx=lx+120;
- if(u>=.5){c.strokeStyle='rgba(20,16,12,.6)';c.lineWidth=7;
-  c.beginPath();c.moveTo(w*.62,gy+12);c.lineTo(w+40,gy+9);c.stroke();
-  c.beginPath();c.moveTo(w*.66,gy+22);c.lineTo(w+40,gy+19);c.stroke();c.lineWidth=3;}
- const hk=clamp((u-2.0)/.55,0,1);
- if(hk>0)gcGib(c,lx,gy+4,hk*.8,{c:'#6d8151'},1);
- const tier=hk>=.3?s.ta:s.tb;
- bgBusGlow(c,bx,gy,tier,t,1);
- const bcv=bgBusCv(tier,t);
- if(bcv)c.drawImage(bcv,bx-150,gy-153,300,175);
- /* ⚠バック中は後退の白ランプ(前進と見分ける) */
- if(u>=1.2&&u<2.0){c.fillStyle='#fff3c0';c.fillRect(bx-118,gy-46,8,10);}
- if(hk>0){c.fillStyle='rgba(255,243,189,'+Math.max(0,.45-hk*.7).toFixed(3)+')';c.fillRect(0,0,w,h);}
-}
-/* ---- 🏕 拠点の小物(柵・見張り塔・土のう・電球の紐) ---- */
-function bgCampProps(c,w,h,hz,t){
- c.fillStyle='#1c1712';
- for(let i=0;i<7;i++){const x=w*.03+i*w*.045;rr(c,x,hz-38-((i*13)%9),w*.03,38+((i*13)%9),3);c.fill();}
- const tx=w*.16;
- c.fillStyle='#171310';
- c.fillRect(tx-4,hz-96,8,96);c.fillRect(tx+26,hz-96,8,96);
- rr(c,tx-14,hz-124,58,34,4);c.fill();
- c.fillStyle='#241d16';c.fillRect(tx-14,hz-96,58,6);
- c.fillStyle='#2b2318';
- for(let i=0;i<8;i++){const x=w*.30+i*17,y=hz-8-(i%2)*7;c.beginPath();c.ellipse(x,y,11,6,0,0,7);c.fill();}
- /* 電球の紐(揺れる明かり=夕暮れの拠点) */
- const ax=tx+20,ay=hz-118,bx=w*.72,by=hz-92,mx=w*.45,my=hz-66;
- c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=2;
- c.beginPath();c.moveTo(ax,ay);c.quadraticCurveTo(mx,my,bx,by);c.stroke();c.lineWidth=3;
- for(let i=1;i<8;i++){const f=i/8,g=1-f;
-  const lx=g*g*ax+2*g*f*mx+f*f*bx,ly=g*g*ay+2*g*f*my+f*f*by+3;
-  const fl=.75+.25*Math.sin(t*3+i*2.2);
-  c.globalAlpha=.85*fl;c.fillStyle=GLOW;c.beginPath();c.arc(lx,ly,2.6,0,7);c.fill();
-  c.globalAlpha=.12*fl;c.beginPath();c.arc(lx,ly,7,0,7);c.fill();}
- c.globalAlpha=1;
-}
-/* ---- 🏕 拠点(到着〜降車〜開示の舞台)。1枚絵+「どこまで進んだか」で描く ---- */
-function bgCampBase(c,w,h,s,u){
- const t=GC.t+GC.sc*1.7,p=GC.plan,hz=h*.58,gy=h*.80,nt=u/s.len;
- gcBg(c,w,h,hz,t,true);
- c.fillStyle='#241d16';c.fillRect(-2,hz,w+4,h-hz+2);
- c.fillStyle='rgba(255,255,255,.04)';c.fillRect(-2,hz,w+4,3);
- bgCampProps(c,w,h,hz,t);
- /* バス(右)。到着のシーンだけ走り込んでくる */
- let bx=w*.84,drA=1;
- if(s.k==='arrive'){
-  const k=clamp(nt/.62,0,1),e=1-(1-k)*(1-k);
-  bx=-200+(w*.84+200)*e;
-  drA=clamp((nt-.71)/.2,0,1);
- }
- const dx=bx-96;/* 扉(尻側)のx */
- bgBusGlow(c,bx,gy,p.tier,t,1);
- const bcv=bgBusCv(p.tier,t);
- if(bcv)c.drawImage(bcv,bx-150,gy-153,300,175);
- if(s.k==='arrive'&&nt>.5&&nt<.83){c.fillStyle='rgba(122,106,84,.25)';
-  for(let i=0;i<5;i++){c.beginPath();c.arc(bx-130+i*22,gy+4,8+(i%3)*4,0,7);c.fill();}}
- /* 扉の白い光(開いている間)。⭐**扉がもう一度開くかどうか**が緊張の芯=開閉をはっきり見せる */
- {/* 扉の枠(車体に付ける)。開くと中の白い光が見える */
-  c.fillStyle='#4a4322';rr(c,dx-3,gy-72,30,70,4);c.fill();
-  if(drA>0){
-   c.fillStyle='rgba(255,243,192,'+(.92*drA).toFixed(3)+')';rr(c,dx,gy-68,24*drA,64,3);c.fill();
-   c.globalAlpha=.15*drA;c.fillStyle=GLOW;
-   c.beginPath();c.moveTo(dx,gy-68);c.lineTo(dx-64,gy+2);c.lineTo(dx+24,gy+2);c.lineTo(dx+24,gy-68);c.closePath();c.fill();
-   c.globalAlpha=1;}}
- /* ---- 整列している者たち(過去のシーンぶん) ---- */
- const st=bgState(),skip={};
- if(s.k==='rvlow')p.lows.forEach(s9=>skip[s9]=1);
- if(s.k==='hdrop'||s.k==='snatch')skip[s.slot]=1;
- const hh=h*.16;
- const drawStand=(slot,rv9)=>{
-  const q=bgLineXY(w,h,GC.pos[slot]),rk=GC.res[slot].hero.rk;
-  if(rv9){bgAura(c,q.x,q.y,hh,RARE[rk-1],.9,false);bgHero(c,slot,q.x,q.y,hh*1.05,t);}
-  else{const dk=bgDispRk(slot);
-   bgAura(c,q.x,q.y,hh,RARE[dk-1],rk>2?1.15:.95,rk>=3);
-   (rk>=3?bgCloak:bgFig)(c,q.x,q.y,hh);}};
- for(const slot in st.landed)if(!st.rev[slot]&&!skip[slot])drawStand(+slot,0);
- for(const slot in st.rev)if(!skip[slot])drawStand(+slot,1);
- /* ---- シーンごとの動き ---- */
- if(s.k==='drop'){
-  /* ⭐低レアはまとめてドッと(黒い影が弧を描いて次々に着地→着地で輪郭のオーラ) */
-  const n=Math.max(1,p.lows.length);
-  p.lows.forEach((slot,j)=>{
-   const u0=.08+j*.5/n,k=clamp((nt-u0)/.18,0,1);
-   if(k<=0)return;
-   const q=bgLineXY(w,h,GC.pos[slot]);
-   if(k<1){
-    const x=dx+(q.x-dx)*k,y=gy-8+(q.y-(gy-8))*k-Math.sin(k*Math.PI)*46;
-    bgFig(c,x,y,hh);
-   }else{
-    const ak=clamp((nt-u0-.18)/.14,0,1);
-    bgAura(c,q.x,q.y,hh,RARE[GC.res[slot].hero.rk-1],.7*ak,false);
-    const sq=1-.18*Math.max(0,1-(nt-u0-.18)/.07);
-    bgFig(c,q.x,q.y,hh*sq);
-   }});
- }else if(s.k==='hdrop'){
-  /* ⭐★3以上=扉が開き直してマント姿が1人。着地で輪郭のオーラ(⚠二重マントは1段下の色) */
-  const slot=s.slot,q=bgLineXY(w,h,GC.pos[slot]),col=RARE[bgDispRk(slot)-1];
-  const door={x:dx+10,y:gy-2};
-  if(nt<.5){const k=clamp((nt-.12)/.38,0,1);
-   if(k>0)bgCloak(c,door.x,door.y-28+28*k-Math.sin(k*Math.PI)*18,hh*(.9+.1*k));}
-  else{
-   const ak=clamp((nt-.66)/.14,0,1),wk=clamp((nt-.78)/.19,0,1);
-   const x=door.x+(q.x-door.x)*wk,y=door.y+(q.y-door.y)*wk;
-   bgAura(c,x,y,hh,col,ak,true);
-   bgCloak(c,x,y,hh);
-  }
- }else if(s.k==='snatch'){
-  /* 🔄連れ去り=黒い影が降りかけ→影の腕に攫われ→間→マント姿が改めて降りる(昇格の見せ方①) */
-  const slot=s.slot,q=bgLineXY(w,h,GC.pos[slot]),col=RARE[bgDispRk(slot)-1];
-  const door={x:dx+10,y:gy-2};
-  if(nt<.2){const k=nt/.2;
-   bgFig(c,door.x,door.y-26+26*k-Math.sin(k*Math.PI)*14,hh*.9);}
-  else if(nt<.44){const k=(nt-.2)/.24,y=door.y-4-k*k*h*.9;
-   bgFig(c,door.x,y,hh*.9);
-   c.strokeStyle='#0a0806';c.lineWidth=9;
-   for(let a9=0;a9<3;a9++){c.beginPath();
-    c.moveTo(door.x-26+a9*26,-12);
-    c.quadraticCurveTo(door.x+(a9-1)*18,y-60,door.x+(a9-1)*7,y-28);c.stroke();}
-   c.lineWidth=3;}
-  else if(nt<.6){/* 静寂の間(扉の光だけ) */}
-  else if(nt<.8){const k=(nt-.6)/.2;
-   bgCloak(c,door.x,door.y-28+28*k-Math.sin(k*Math.PI)*16,hh*(.9+.1*k));}
-  else{
-   const ak=clamp((nt-.84)/.12,0,1),wk=clamp((nt-.88)/.11,0,1);
-   const x=door.x+(q.x-door.x)*wk,y=door.y+(q.y-door.y)*wk;
-   bgAura(c,x,y,hh,col,ak,true);
-   bgCloak(c,x,y,hh);
-  }
- }else if(s.k==='rvlow'){
-  /* 低レアの一斉開示(白くはじけて姿へ) */
-  p.lows.forEach((slot,j)=>{
-   const u0=.13+j*.05,k=clamp((nt-u0)/.16,0,1);
-   const q=bgLineXY(w,h,GC.pos[slot]),rk=GC.res[slot].hero.rk;
-   if(k>=1){bgAura(c,q.x,q.y,hh,RARE[rk-1],.9,false);bgHero(c,slot,q.x,q.y,hh*1.05,t);}
-   else{
-    bgFig(c,q.x,q.y,hh);
-    if(k>0){c.globalAlpha=Math.sin(k*Math.PI);c.fillStyle=GLOW;
-     c.beginPath();c.arc(q.x,q.y-hh*.4,hh*.55*k+6,0,7);c.fill();c.globalAlpha=1;}
-   }});
- }
- /* fin=全員そろった一枚(何もしない=整列の絵そのもの) */
-}
-/* ---- 🎭 正体開示(1人ぶんのカットイン。低い順に来る) ---- */
-function bgRvOver(c,w,h,s,u){
- const o=GC.res[s.slot],rk=o.hero.rk,t=GC.t,nt=u/s.len;
- c.fillStyle='rgba(8,6,5,.66)';c.fillRect(0,0,w,h);
- const cx=w*.5,cy=h*.82,hh=h*.42,w2=s.w?1:0;
- const off1=w2?.28:.32,off2=.58;/* 脱ぐ時刻(割合)。二重マントは2回 */
- const disp=w2?Math.max(3,rk-1):rk,cloaked=rk>=3;
- const colD=RARE[disp-1],colR=RARE[rk-1];
- let ph;
- if(!cloaked)ph=nt<.3?0:2;
- else if(!w2)ph=nt<off1?0:(nt<off1+.12?1:2);
- else ph=nt<off1?0:(nt<off1+.12?1:(nt<off2?3:(nt<off2+.12?4:2)));
- /* ph0=まだマント(or影) / 1=1枚目が飛ぶ / 3=下にもマント(色が跳ね上がる) / 4=2枚目が飛ぶ / 2=姿 */
- if(ph===0){
-  const tr=Math.sin(u*26)*2*(nt/off1);
-  bgAura(c,cx+tr,cy,hh,cloaked?colD:colR,.9,cloaked);
-  (cloaked?bgCloak:bgFig)(c,cx+tr,cy,hh);
- }else if(ph===1||ph===4){
-  const k=clamp((nt-(ph===1?off1:off2))/.12,0,1);
-  if(ph===1&&w2){bgAura(c,cx,cy,hh,colR,1,true);bgCloak(c,cx,cy,hh);
-   c.strokeStyle=colR;c.globalAlpha=1-k;c.lineWidth=5;
-   c.beginPath();c.arc(cx,cy-hh*.45,hh*(.5+k*.9),0,7);c.stroke();c.globalAlpha=1;c.lineWidth=3;}
-  else{bgAura(c,cx,cy,hh,colR,1,false);bgHero(c,s.slot,cx,cy,hh,t);}
-  c.save();c.translate(cx+k*w*.3,cy-hh*.5-k*h*.55);c.rotate(k*2.2);
-  c.globalAlpha=1-k*.5;bgCloak(c,0,hh*.5,hh*(1+k*.3),'#1a1510');c.restore();c.globalAlpha=1;
- }else if(ph===3){
-  const p9=.5+.5*Math.sin(u*7);
-  bgAura(c,cx,cy,hh,colR,.8+p9*.2,true);
-  bgCloak(c,cx,cy,hh);
- }else{
-  gcRays(c,cx,cy-hh*.5,w*.5,rk>=5?18:rk>=4?14:10,t*.4,rk>=5?'#fff3bd':'#ffd7b0',rk>=3?.20:.10);
-  bgAura(c,cx,cy,hh,colR,1,false);
-  bgHero(c,s.slot,cx,cy,hh,t);
-  if(rk>=4)parSpark(c,cx,cy-hh*.55,t);
+ c.translate(cx+jx,0);c.scale(Math.max(.02,sx),1);c.translate(-cx,0);
+ const bx=cx-bw/2;
+ c.fillStyle='rgba(0,0,0,.5)';rr(c,bx+5,by+6,bw,bh,14);c.fill();
+ if(back){
+  /* 🎴裏面=暗い地+斜めの地紋+💎。⭐★4=金/★5=虹の縁がにじみ出す(この時点で当たり確定の予告) */
+  c.fillStyle='#1d1a15';rr(c,bx,by,bw,bh,14);c.fill();
+  let ecol='rgba(242,236,220,.35)';
+  if(rk>=4){const lk=Math.min(1,u/Math.max(.2,L.tease));
+   ecol=rk>=5?'hsl('+Math.round((t*220)%360)+',95%,62%)':GOLD;
+   c.globalAlpha=.2+.6*lk;}
+  c.lineWidth=4;c.strokeStyle=ecol;rr(c,bx,by,bw,bh,14);c.stroke();c.globalAlpha=1;
+  c.lineWidth=1.5;c.strokeStyle='rgba(242,236,220,.25)';rr(c,bx+6,by+6,bw-12,bh-12,10);c.stroke();
+  c.lineWidth=3;
+  c.save();rr(c,bx,by,bw,bh,14);c.clip();
+  c.strokeStyle='rgba(242,236,220,.06)';c.lineWidth=2;
+  for(let q=-8;q<9;q++){
+   c.beginPath();c.moveTo(cx+q*34-bh,by-4);c.lineTo(cx+q*34+bh,by+bh+4);c.stroke();
+   c.beginPath();c.moveTo(cx+q*34+bh,by-4);c.lineTo(cx+q*34-bh,by+bh+4);c.stroke();}
+  c.restore();c.lineWidth=3;
   c.textAlign='center';
-  c.fillStyle=colR;c.font='900 20px '+FF;c.fillText(RK_S[rk],cx,h*.16);
-  c.fillStyle=PANE;c.font='900 26px '+FF;c.fillText(o.hero.n,cx,h*.16+30);
-  c.font='900 15px '+FF;
-  if(!o.dupe){c.fillStyle=GOLD;c.fillText('✨ NEW!',cx,h*.16+54);}
-  else{c.fillStyle=HEROC;drawIcoText(c,o.txt,cx,h*.16+54,15);}
+  drawIcoText(c,'💎',cx,by+bh*.62,56);
+ }else{
+  /* 🎴表面(額)。左=姿 / 右=★→名前→NEW/凸→必殺 の順に時刻で出る */
+  c.fillStyle='#2b2721';rr(c,bx,by,bw,bh,14);c.fill();
+  c.lineWidth=4;c.strokeStyle=COL[0];rr(c,bx,by,bw,bh,14);c.stroke();
+  c.lineWidth=1.5;c.strokeStyle='rgba(242,236,220,.35)';rr(c,bx+5,by+5,bw-10,bh-10,10);c.stroke();
+  c.lineWidth=3;c.strokeStyle=INK;
+  const lx=bx+bw*.24,tx=bx+bw*.60;
+  if(o.dud){
+   c.textAlign='center';
+   c.fillStyle=PANE;c.font='900 52px '+FF;
+   drawIcoText(c,Array.from(o.dud.n)[0]||'?',lx,by+bh*.60,52);
+   c.font='900 20px '+FF;c.fillStyle=COL[1];
+   drawIcoText(c,o.dud.n,tx,by+bh*.44,20);
+   c.font='900 16px '+FF;c.fillStyle=GOLD;
+   drawIcoText(c,o.txt,tx,by+bh*.62,16);
+   c.font='900 12px '+FF;c.fillStyle='rgba(242,236,220,.75)';
+   c.fillText(o.dud.dsc||'',tx,by+bh*.78);
+  }else{
+   const h2=o.hero,ui=hUiOf(h2.id);
+   /* 姿=表になった瞬間から(下からふっと立ち上がる) */
+   if(ui>=0){const fk=clamp((u-L.face)/.22,0,1);
+    const sc=Math.min(2.4,bh/118)/(TSCALE[uTier(ui)-1]||1);
+    c.save();c.globalAlpha=fk;
+    c.translate(lx,by+bh*.87+(1-fk)*14);c.scale(sc,sc);
+    try{drawUnit(c,ui,0,0,-1,GC.t*.6,0,{});}catch(e9){}
+    c.restore();c.globalAlpha=1;}
+   c.textAlign='center';
+   /* ⭐★が1個ずつ灯る(ポンと大きく出て収まる) */
+   for(let j=0;j<rk;j++){
+    const su=L.st0+j*L.stG;if(u<su)break;
+    const k=clamp((u-su)/.12,0,1),pop=1.8-.8*k;
+    const sxr=tx-(rk-1)*16+j*32;
+    gcStar(c,sxr,by+bh*.20,13*pop,COL[0]);}
+   if(u>=L.stEnd){
+    c.fillStyle=COL[1];c.font='900 12px '+FF;
+    c.fillText(RK_N[rk],tx,by+bh*.34);}
+   /* 名前(すこし下から出る) */
+   if(u>=L.name){
+    const k=clamp((u-L.name)/.14,0,1);
+    c.globalAlpha=k;
+    c.fillStyle=PANE;c.font='900 24px '+FF;
+    c.fillText(h2.n,tx,by+bh*.52+(1-k)*10);
+    c.globalAlpha=1;}
+   /* NEW / 凸(ポンと弾む) */
+   if(u>=L.name+.10){
+    const k=clamp((u-L.name-.10)/.14,0,1),pop=1+(1-k)*.5;
+    c.save();c.translate(tx,by+bh*.66);c.scale(pop,pop);
+    c.fillStyle=o.dupe?HEROC:GOLD;c.font='900 15px '+FF;
+    drawIcoText(c,o.dupe?o.txt:'✨ NEW!',0,0,15);
+    c.restore();}
+   if(u>=L.name+.16){
+    c.fillStyle='rgba(242,236,220,.85)';c.font='900 12px '+FF;
+    c.fillText('必殺技『'+h2.ult+'』',tx,by+bh*.80);
+    /* ⚠canvasは折り返さない=額からはみ出す説明は測って詰める(ルピナで実際にはみ出た) */
+    {const mW=bw*.70;let ds=h2.udsc||'';
+     if(c.measureText(ds).width>mW){
+      while(ds.length>4&&c.measureText(ds+'…').width>mW)ds=ds.slice(0,-1);
+      ds+='…';}
+     c.fillText(ds,tx,by+bh*.90);}}
+  }
  }
+ c.restore();
+ /* 🎊紙吹雪(★4以上・全部灯ってから) */
+ if(!o.dud&&rk>=4&&u>=L.stEnd){const ck=u-L.stEnd;
+  for(const p of GC_CONF){const pt=ck-p.d;if(pt<0||pt>1.4)continue;
+   const px=cx+p.x*bw*.6+Math.sin((pt+p.s)*6)*14,py=by-10+pt*pt*(bh+80)*p.v;
+   c.save();c.translate(px,py);c.rotate((p.s*7+pt*9)*(p.x<0?-1:1));
+   c.globalAlpha=Math.max(0,1-pt*.8);
+   c.fillStyle=p.s<.34?COL[0]:(p.s<.67?GOLD:PANE);
+   c.fillRect(-p.w/2,-p.h/2,p.w,p.h);c.restore();}
+  c.globalAlpha=1;}
+ /* 下の案内=進みのドット+タップ送り+まとめて見る */
+ c.textAlign='center';
+ {const n=GC.res.length;
+  if(n>1){const dw=14,x0=cx-(n-1)*dw/2;
+   for(let j=0;j<n;j++){
+    c.beginPath();c.arc(x0+j*dw,h-28,3.4,0,7);
+    c.fillStyle=j<GC.i?GOLD:(j===GC.i?PANE:'rgba(242,236,220,.25)');c.fill();}}
+  c.fillStyle=PANE;c.font='900 13px '+FF;
+  c.fillText(u<L.done?'▶ タップで開く':'▶ タップで次へ',cx,h-12);}
+ if(GC.res.length>1){
+  const sw=104,sh=24,sxq=w-sw-10,syq=h-sh-8;GC.sk=[sxq,syq,sw,sh];
+  c.fillStyle='rgba(242,236,220,.14)';rr(c,sxq,syq,sw,sh,8);c.fill();
+  c.lineWidth=2;c.strokeStyle='rgba(242,236,220,.5)';rr(c,sxq,syq,sw,sh,8);c.stroke();c.lineWidth=3;
+  c.fillStyle=PANE;c.font='900 12px '+FF;c.fillText('≫ まとめて見る',sxq+sw/2,syq+16);
+ }else GC.sk=null;
 }
 function gcDraw(){
  const cv=$('gc-cv'),c=cv&&cv.getContext&&cv.getContext('2d');if(!c||!GC)return;
  const w=GC.w,h=GC.h;
  c.setTransform(GC.dpr,0,0,GC.dpr,0,0);
  c.clearRect(0,0,w,h);
- c.fillStyle='#0c0a08';c.fillRect(0,0,w,h);/* 下のDOMが透けないように */
- c.textAlign='center';c.lineWidth=3;
- const s=GC.scs[GC.sc];if(!s)return;
- const u=GC.t;
- try{
-  if(s.k==='map')bgScMap(c,w,h,s,u);
-  else if(s.k==='run')bgScRun(c,w,h,s,u);
-  else if(s.k==='pov')bgScPov(c,w,h,s,u);
-  else if(s.k==='judge')bgScJudge(c,w,h,s,u);
-  else if(s.k==='brake')bgScBrake(c,w,h,s,u);
-  else{bgCampBase(c,w,h,s,u);
-   if(s.k==='rv')bgRvOver(c,w,h,s,u);}
- }catch(e){}
- /* 下の帯: とばす案内 と ≫まとめて見る(押すと結果一覧へ直行) */
- c.textAlign='center';
- c.fillStyle='rgba(242,236,220,.85)';c.font='900 12px '+FF;
- c.fillText('▶ タップでとばす ('+(GC.sc+1)+'/'+GC.scs.length+')',w*.42,h-10);
- {const sw=112,sh=24,sx=w-sw-10,sy=h-sh-8;GC.sk=[sx,sy,sw,sh];
-  c.fillStyle='rgba(242,236,220,.14)';rr(c,sx,sy,sw,sh,8);c.fill();
-  c.lineWidth=2;c.strokeStyle='rgba(242,236,220,.5)';rr(c,sx,sy,sw,sh,8);c.stroke();c.lineWidth=3;
-  c.fillStyle=PANE;c.font='900 12px '+FF;c.fillText('≫ まとめて見る',sx+sw/2,sy+16);}
+ /* ⚠下の一覧が透けると気が散る。**完全に**覆う(薄く残すと図鑑の枠が見えて安っぽくなる) */
+ c.fillStyle='#0c0a08';c.fillRect(0,0,w,h);
+ const cx=w/2,cy=h*.5,t=GC.t;
+ /* ⚠撃つ場面の色は**タレットの段**で決める(レア度の色をそのまま出すと結果が先に分かってしまう) */
+ const COL=GC.ph==='card'?(GC_COL[gcRank(GC.res[GC.i])]||GC_COL[0]):(GC_TWC[GC.tw]||GC_TWC[0]);
+ c.lineWidth=3;c.strokeStyle=INK;c.textAlign='center';
+ if(GC.ph!=='card'){
+  /* ⭐撃つ場面(2026-07-26 第74弾に作り直し)。**1回の召集につき1回だけ**やる。
+     ⚠奥行きを出すため**タレットは手前(大きく)・ゾンビは奥(小さく)**で斜めに置く。
+     ⚠弾は GC_FLY 秒かけて飛ぶ=目で追える。⚠「撃て!」は押すまで進まない。
+     ⚠倒し方は**確定で木っ端みじん**。**跡地に出るもの**がこの召集の結果を示唆する */
+  const fire=GC.ph==='fire',chg=GC.ph==='chg',ft=GC.t;
+  const hz=h*.40;                       /* 地平線 */
+  const TX=w*.24,TY=h*.88,TS=2.5;       /* タレット=手前(大きい) */
+  const ZX=w*.70,ZY=h*.55,ZS=1.4;       /* ゾンビ=奥(小さい) */
+  const zidx=gcZi(GC.zk),Z=ZOMBIES[zidx]||{sc:1,c:'#7a8f5f'};
+  /* ⭐着弾したら GC_HOLD 秒だけ画を止める(ヒットストップ)。hk はそのあとから進む。
+     ⚠止めている間も**ゾンビは立ったまま**にする=消すと0.14秒の穴が空いて手応えが消える */
+  /* ⭐どんでん返しの間(GC_TWIST秒)は**まだ決着していない**ので、跡地の進行(hk)をその分うしろへずらす */
+  const dly=gcDly();
+  const hit=fire&&ft>=GC_FLY,hk=hit?clamp((ft-GC_FLY-GC_HOLD-dly)/1.05,0,1):0;
+  const stop=hit&&ft<GC_FLY+GC_HOLD;
+  /* どんでん返しの進み(0→1)。前半=普通に爆散 / 後半=その跡から金色の個体が現れる */
+  const twK=GC.twist?clamp((ft-GC_FLY-GC_HOLD)/dly,0,1):0;
+  const rz9=GC.twist?clamp((twK-GC_TW_R)/(.85-GC_TW_R),0,1):0;/* 金色がせり上がる分 */
+  /* ⚠**どんでん返しでも一度はちゃんと爆散する**(2026-07-30ユーザー指示)ので、
+     立っているのは「当たる前」と「止めている一瞬」だけ */
+  const alive9=(!hit||stop);
+  /* 肉片の散り方。⚠どんでん返しの1回目は途中で止める=跡が残っていないと出現の土台が無い */
+  const bk9=(GC.twist&&twK<1)?Math.min(.5,twK/GC_TW_R*.5):hk;
+  const mx=TX+64,my=TY-64,ex=ZX,ey=ZY-26;/* 銃口 → 的 */
+  /* ⭐ここからカメラを掛ける。⚠**文字と閃光には掛けない**ので、あとで必ず restore する */
+  const CAM=gcCam(w,h,TX,TY,ZX,ZY);
+  c.save();
+  c.translate(cx+CAM.sx,cy+CAM.sy);c.scale(CAM.z,CAM.z);c.translate(-CAM.x,-CAM.y);
+  /* ---- 奥行きのある地面(消失点へ収束させる)。⚠寄せるので**画面より広く**描く(端に隙間が出る) ---- */
+  gcBg(c,w,h,hz,GC.t,GC.night);
+  c.fillStyle=GC.night===false?'#6a6154':'#2b2419';c.fillRect(-w,hz,w*3,h*2);
+  {const vx=w*.62;
+   c.strokeStyle='rgba(242,236,220,.09)';c.lineWidth=2;
+   for(let i=-5;i<=7;i++){c.beginPath();c.moveTo(vx+i*w*.24,h+60);c.lineTo(vx,hz);c.stroke();}
+   for(let i=1;i<=6;i++){const q=i/6,yy=hz+(h-hz)*q*q;
+    c.beginPath();c.moveTo(-w,yy);c.lineTo(w*2,yy);c.stroke();}
+   c.strokeStyle='rgba(242,236,220,.22)';
+   c.beginPath();c.moveTo(-w,hz);c.lineTo(w*2,hz);c.stroke();c.lineWidth=3;}
+  /* ---- ゾンビ(奥)。⚠手前のタレットより先に描く=奥行きの順番 ---- */
+  const zsc=ZS/(Z.sc||1);
+  if(alive9){
+   /* ⚠✨黄金のロブスターだけ**最初から金色**(この回の主役なので一回り大きく見せる)。
+      ⚠どんでん返しは**当たるまで普通の姿**=見た目で先に割れてはいけない */
+   if(GC.lob)gcGold(c,zidx,zsc,ZX,ZY,1,1.5);
+   else{
+    c.save();c.translate(ZX,ZY);c.scale(zsc,zsc);
+    try{drawZombie(c,zidx,0,0,-1,GC.t*.8,0,{});}catch(e){}
+    c.restore();}
+  }else{
+   /* ⭐倒し方は確定で木っ端みじん。⚠どんでん返しの2回目は**金色のまま砕ける** */
+   gcGib(c,ZX,ZY,bk9,Z,(GC.lob||(GC.twist&&twK>=1))?1:0);
+   /* ⭐⭐どんでん返し: 爆発の跡から**金色の個体がせり上がる**(2026-07-30ユーザー指示
+      「当たったらゾンビが爆発して金色のゾンビが現れる感じで」)。 */
+   if(GC.twist&&rz9>0&&twK<1){
+    /* 地面から立ち上る金の光=**どこから出てくるのか**を先に見せる */
+    c.globalAlpha=rz9*.32;c.fillStyle=GOLD;
+    c.beginPath();c.moveTo(ZX-18*rz9,ZY+2);c.lineTo(ZX-7*rz9,hz-40);
+    c.lineTo(ZX+7*rz9,hz-40);c.lineTo(ZX+18*rz9,ZY+2);c.closePath();c.fill();c.globalAlpha=1;
+    /* ⚠**地面から生えてくる**ように、下からせり上げながら少しずつ大きくする */
+    const sc9=.74+rz9*.26;
+    c.save();c.translate(ZX,ZY+(1-rz9)*26);c.scale(sc9,sc9);c.translate(-ZX,-ZY);
+    gcGold(c,zidx,zsc,ZX,ZY,rz9,1);
+    c.restore();
+   }
+   /* ---- ⭐跡地に残る「示唆」= この召集の一番いい結果を教える ---- */
+   /* ⭐**一度に全部出さない**。まず「木っ端みじん!!」を見せ、それが消えてから気配が立ち上る
+      (同時に出すと★と文字が重なって、どちらも読めなくなっていた) */
+   const gk=clamp((hk-.32)/.5,0,1);
+   if(gk>0){
+    const rk=GC.best,LC=GC_COL[rk]||GC_COL[0],ry=ZY-24-gk*20;
+    /* 地面から立ち上る光の柱 */
+    c.globalAlpha=gk*.30;c.fillStyle=LC[0];
+    c.beginPath();c.moveTo(ZX-15*gk,ZY+2);c.lineTo(ZX-6*gk,hz-30);
+    c.lineTo(ZX+6*gk,hz-30);c.lineTo(ZX+15*gk,ZY+2);c.closePath();c.fill();c.globalAlpha=1;
+    if(rk>=3)gcRays(c,ZX,ry,86*gk,rk>=4?14:8,GC.t*1.1,LC[0],.20*gk);
+    /* 宝珠 */
+    c.globalAlpha=.45*gk;c.fillStyle=LC[0];c.beginPath();c.arc(ZX,ry,20*gk,0,7);c.fill();
+    c.globalAlpha=1;c.fillStyle=LC[1];c.beginPath();c.arc(ZX,ry,9.5*gk,0,7);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(ZX,ry,4.2*gk,0,7);c.fill();
+    /* ★の数と一言(ここが結果の示唆) */
+    c.globalAlpha=gk;
+    c.fillStyle=LC[0];c.font='900 17px '+FF;
+    c.fillText(rk>=1?RK_S[rk]:'—',ZX,ry-28);
+    c.fillStyle=PANE;c.font='900 12px '+FF;
+    c.fillText(rk>=4?'すごい気配…!!':rk>=2?'いい気配…!':rk>=1?'何かいる…':'…手応えなし',ZX,ry+34);
+    c.globalAlpha=1;
+   }
+  }
+  /* ---- タレット(手前・大きい) ---- */
+  {const ti=gcTi(GC.tw),ang=Math.atan2(ey-my,ex-mx);
+   /* ⚠drawTowerは基部の円の中心が原点なので、そのまま地面に置くと半分が埋まる */
+   c.save();c.translate(TX,TY-42);c.scale(TS,TS);
+   try{if(ti>=0)drawTower(c,ti,0,0,0,ang,GC.t,{fire:fire&&ft<.16,si:0});}catch(e){}
+   c.restore();
+   /* ⭐溜めている間は銃口に光が溜まっていく(何が起きているのか目で分かるように) */
+   if(chg){const k=clamp(ft/GC_CHG,0,1),r=6+k*k*26;
+    c.globalAlpha=.30+k*.45;c.fillStyle=COL[0];
+    c.beginPath();c.arc(mx,my,r,0,7);c.fill();
+    c.globalAlpha=.85;c.fillStyle=COL[1];
+    c.beginPath();c.arc(mx,my,r*.45,0,7);c.fill();
+    c.globalAlpha=1;c.fillStyle='#fff';
+    c.beginPath();c.arc(mx,my,r*.2,0,7);c.fill();
+    /* 溜まるほど内へ吸い込まれる光の筋 */
+    c.strokeStyle=COL[0];c.lineWidth=2;
+    for(let i=0;i<6;i++){const a=i*1.047+ft*3,d=r*2.4*(1-k*.7);
+     c.globalAlpha=(.5-k*.35);
+     c.beginPath();c.moveTo(mx+Math.cos(a)*d,my+Math.sin(a)*d);
+     c.lineTo(mx+Math.cos(a)*(d*.45),my+Math.sin(a)*(d*.45));c.stroke();}
+    c.globalAlpha=1;c.lineWidth=3;}}
+  /* ---- 弾(GC_FLY秒かけて奥へ飛ぶ。奥へ行くほど小さくなる) ---- */
+  if(fire&&ft<=GC_FLY+.04){
+   const p=clamp(ft/GC_FLY,0,1),bx=mx+(ex-mx)*p,by=my+(ey-my)*p,sz=1-p*.55;
+   const ang=Math.atan2(ey-my,ex-mx);
+   if(GC.tw===2){/* レーザー: 銃口から先端へ伸びていく */
+    c.lineCap='round';
+    for(const q of [[26,'rgba(201,107,159,',.40],[13,'rgba(240,168,216,',.75],[4.5,'rgba(255,255,255,',1]]){
+     c.strokeStyle=q[1]+q[2]+')';c.lineWidth=q[0]*sz;
+     c.beginPath();c.moveTo(mx,my);c.lineTo(bx,by);c.stroke();}
+    c.lineCap='butt';
+    c.fillStyle='#fff';c.beginPath();c.arc(bx,by,7*sz,0,7);c.fill();
+   }else if(GC.tw===1){/* ショットガン: 粒が広がりながら飛ぶ */
+    for(let i=0;i<7;i++){const off=(i-3)*10*p;
+     const px=bx-Math.sin(ang)*off,py=by+Math.cos(ang)*off;
+     c.fillStyle='#ffe08a';c.beginPath();c.arc(px,py,3.2*sz,0,7);c.fill();
+     c.strokeStyle='rgba(255,224,138,.45)';c.lineWidth=2*sz;
+     c.beginPath();c.moveTo(px-Math.cos(ang)*16*sz,py-Math.sin(ang)*16*sz);c.lineTo(px,py);c.stroke();}
+    c.lineWidth=3;
+   }else{/* ライフル: 1発が尾を引いて飛ぶ */
+    c.strokeStyle='rgba(255,235,150,.55)';c.lineWidth=3.4*sz;c.lineCap='round';
+    c.beginPath();c.moveTo(bx-Math.cos(ang)*46*sz,by-Math.sin(ang)*46*sz);c.lineTo(bx,by);c.stroke();
+    c.lineCap='butt';c.lineWidth=3;
+    c.fillStyle=GLOW;c.beginPath();c.arc(bx,by,4.2*sz,0,7);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(bx,by,2*sz,0,7);c.fill();}
+  }
+  /* ⭐ここでカメラを外す。これより下は画面にべた張り(寄せると読めない/端に隙間が出る) */
+  c.restore();
+  /* 着弾の閃光。⚠**止めている間は白を出しっぱなし**にして、そのあと一気に引く */
+  /* ⚠**閃光は「当たった実時間」で引く**=hk で引くと、どんでん返しの間ずっと真っ白になる。
+     ⭐金色が砕ける瞬間にもう一度光らせる(ここが一番の見せ場) */
+  if(hit){let fl=stop?1:Math.max(0,1-(ft-GC_FLY-GC_HOLD)/.22);
+   if(GC.twist&&hk>0)fl=Math.max(fl,Math.max(0,1-hk/.2));
+   if(fl>0){c.globalAlpha=fl*.85;c.fillStyle='#fff';c.fillRect(0,0,w,h);c.globalAlpha=1;}}
+  /* ⭐溜めている間は画面の四隅を暗く締める(視線が中央に集まって「来るぞ」という感じが出る) */
+  if(chg){const k=clamp(ft/GC_CHG,0,1);
+   const g=c.createRadialGradient&&c.createRadialGradient(cx,cy,Math.min(w,h)*(.42-k*.22),cx,cy,Math.max(w,h)*.72);
+   if(g){g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,'+(.35+k*.45).toFixed(3)+')');
+    c.fillStyle=g;c.fillRect(0,0,w,h);}}
+  /* ---- 文字 ---- */
+  c.textAlign='center';
+  /* ⚠タレットの名前は**狙っている間だけ**。カメラが動くと文字だけ取り残されて位置が合わなくなる */
+  if(!fire&&!chg){c.fillStyle=COL[0];c.font='900 13px '+FF;c.fillText(GC_TWN[GC.tw],TX,TY+16);}
+  if(!fire&&!chg){
+   const bl=.55+Math.abs(Math.sin(t*7))*.45;
+   /* ⭐**文字色が期待度**(2026-07-30ユーザー指示): 白=ふつう / 赤 / 虹=★4以上が確定。
+      ⚠虹はグラデを回して作る(色を1つ置くだけだと「黄色い字」にしか見えない)。
+      ⚠**必ず黒フチを付ける**=明るい色は朝の空に溶ける */
+   let fcol='#ffffff';
+   if(GC.fc===1)fcol=DANGER;
+   else if(GC.fc===2){try{const g7=c.createLinearGradient(cx-96,0,cx+96,0);
+     for(let k=0;k<=5;k++)g7.addColorStop(k/5,'hsl('+Math.round((t*160+k*66)%360)+',95%,60%)');
+     fcol=g7;}catch(e){fcol=GOLD;}}
+   c.globalAlpha=bl;c.font='900 42px '+FF;
+   c.lineWidth=7;c.strokeStyle=INK;c.strokeText('撃て！',cx,h*.22);
+   c.fillStyle=fcol;c.fillText('撃て！',cx,h*.22);c.globalAlpha=1;c.lineWidth=3;
+   c.fillStyle='rgba(242,236,220,.85)';c.font='900 13px '+FF;
+   c.fillText('▶ タップで発射',cx,h*.22+24);
+  }else if(GC.twist&&hit&&twK<1){
+   /* ⭐どんでん返しの最中(2026-07-30に作り替え): 前半は**通常と同じ「木っ端みじん!!」**。
+      ⚠ここで違う文字を出すと当たった瞬間に仕掛けが割れる=通常演出と見分けが付かないのが肝。
+        後半で跡から金色が出てきて初めて「え?」となる */
+   const gm=twK>=GC_TW_R;
+   c.globalAlpha=gm?Math.min(1,(twK-GC_TW_R)*7):Math.min(1,twK*8);
+   c.fillStyle=gm?GOLD:DANGER;c.font='900 '+(gm?29:34)+'px '+FF;
+   c.lineWidth=7;c.strokeStyle=INK;
+   const ms=gm?'金色の個体が現れた…!?':'木っ端みじん!!';
+   c.strokeText(ms,cx,h*.16);c.fillText(ms,cx,h*.16);c.globalAlpha=1;c.lineWidth=3;
+  }else if(hit&&hk<.36){
+   /* ⚠出しっぱなしにすると、あとから立ち上る★の気配と重なって両方読めなくなる=先に消す */
+   c.globalAlpha=Math.min(1,hk*8)*Math.min(1,(.36-hk)/.07);
+   c.fillStyle=GC.twist?GOLD:DANGER;c.font='900 34px '+FF;
+   c.lineWidth=7;c.strokeStyle=INK;
+   const bm=GC.twist?'大 逆 転!!':(GC.lob?'黄金が砕けた!!':'木っ端みじん!!');
+   c.strokeText(bm,cx,h*.16);c.fillText(bm,cx,h*.16);c.globalAlpha=1;c.lineWidth=3;
+  }
+  c.fillStyle='rgba(242,236,220,.75)';c.font='900 12px '+FF;
+  c.fillText(GC.res.length>1?(GC.res.length+'連'):'単発',cx,h-12);
+  GC.sk=null;
+ }else gcCard(c,w,h,cx,cy,t,COL);
 }
 {const cv=$('gc-cv');
  if(cv)cv.onclick=(e)=>{const r=cv.getBoundingClientRect();gcTap(e.clientX-r.left,e.clientY-r.top);};}
-$('bt-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');};
+$('bt-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');tbgmOff();gbgmOn();/* 🎵(213)ガチャ画面専用BGM */};
 $('bt-gacha-close').onclick=()=>{
  if(GC)gcEnd();/* 演出の途中で閉じても止まったままにならないように */
- $('md-gacha').classList.remove('on');try{renderHeroSeg();refreshTrainBtn();}catch(e){}};
+ $('md-gacha').classList.remove('on');
+ gbgmOff();/* 🎵(213)ガチャ曲を止めてタイトル曲へ(ゲーム中は戻さない) */
+ try{renderHeroSeg();refreshTrainBtn();if(SCR&&SCR!=='game')tbgmOn();}catch(e){}};
 $('bt-gcres-close').onclick=closeGcRes;
 $('bt-gcres-ok').onclick=closeGcRes;
 $('gc-1').onclick=()=>gcPull(1);
@@ -32466,9 +32345,6 @@ $('gc-t5').onclick=()=>gcPull5();
 $('gc-rate').onclick=()=>gcView('rate');
 $('gc-dex').onclick=()=>gcView('dex');
 $('gc-back').onclick=()=>gcView('home');
-/* 🎰(212)演出の簡素化。⚠結果には一切触らない(尺が縮むだけ) */
-{const s9=$('gc-simp');if(s9){s9.checked=!!META.gsimp;
- s9.onchange=()=>{META.gsimp=s9.checked?1:0;saveMeta();try{if(sfx.tap)sfx.tap();}catch(e){}};}}
 /* 🦸英雄ステータス: ソロ設定の「📋 性能」と、召集画面の📖図鑑の下から開ける */
 /* ⚠**📋性能は英雄を選ぶ窓の中(「くわしく」)へ移した**(2026-08-02(68)) */
 $('bt-hstat-close').onclick=closeHStat;

@@ -18,7 +18,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['pc','PC用CSS(既定はスマホ用を強制適用)'],
   ['st2|st3','ステージ2(沈んだ港)/ステージ3(送電鉄塔の丘)'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
   ['setup','出撃準備'],['lab[=タブ]','🔬研究所(twup/unup/rec…)'],['load','🎒編成'],['home','🏠ホーム'],
-  ['map','🗺エリアマップ(worldmap+mappg=0|1|2 で面を選ぶ)'],['gacha','💎召集(+gc=シーン:秒:味付け で🚌バスガチャの演出。シーン=map|run|pov|judge|brake|arrive|drop|hdrop|snatch|rvlow|rv 味付け=rich,low,lob,brake,mark,w,snatch,dup)'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
+  ['map','🗺エリアマップ(worldmap+mappg=0|1|2 で面を選ぶ)'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
   ['iv=<波>','作戦タイム'],['grid=tw|tg|u|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
   ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
@@ -385,48 +385,54 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        +'for(var q9=0;q9<'+Math.round((+((/arn=(\d+)/.exec(OPT)||[0,'14'])[1]))*30)+';q9++)'
        +'{try{tstPut9(q9);tstStep(1/30);}catch(e){document.title="TSTERR "+e.message;break;}}')
      :(ARTM||GRID)?''
-     /* 🎰🚌gacha=召集画面 / +gc=シーン:秒:味付け で**バスガチャの演出**を撮る(2026-08-08(212))
-        シーン: map|run|pov|judge|brake|arrive|drop|hdrop|snatch|rvlow|rv|fin
-        味付け(カンマで重ねる): rich=★5×2 / low=全員★2以下 / lob=金ロブ / brake=急ブレーキ /
-        mark=虹★ / w=二重マント / snatch=連れ去り / dup=全員重複
-        例: "dev+gacha+gc=pov:2.3:rich,lob" / "dev+gacha+gc=rv:1.2:rich,w"
-        ⚠ヘッドレスはrAFが回らない=シーンと秒を直に差してgcDraw()で1コマ出す(op/edのseekと同じ掟) */
+     /* gacha=10連の演出 / gacha5=★5を引いた状態で撮る(いちばん派手な絵を確かめる用) */
      :GC?('META.gem=200;'
+       /* gowned=★5まで持っている状態(目玉が下のレア度に降りた時の絵を確かめる用) */
        +(OPT.indexOf('gowned')>=0?'META.hero={};HEROES.forEach((h,i)=>{if(i>0)META.hero[h.id]=1;});':'')
        +'renderGacha(null);document.getElementById("md-gacha").classList.add("on");'
+       /* gopen=召集画面を開いただけの姿 / gdex=📖英雄図鑑 / grate=確率 */
        +(OPT.indexOf('gdex')>=0?'gcView("dex");':'')
        +(OPT.indexOf('grate')>=0?'gcView("rate");':'')
        +((OPT.indexOf('gopen')>=0||OPT.indexOf('gdex')>=0||OPT.indexOf('grate')>=0)
-         /* ⚠gspin=N は**何人目を正面にするか**(スワイプ式) */
+         /* ⚠gspin=N は**何人目を正面にするか**(2026-07-30にスワイプ操作へ作り替えたので秒数ではない) */
          ?('if(GCV==="home"){gcHomeFit();gcHomeStep(0.016);GCH.idx='+((/gspin=(\d+)/.exec(OPT)||[0,'0'])[1])
-           +';for(var q9=0;q9<40;q9++)gcHomeStep(0.05);}')
-         :(()=>{const M=/(^|\+)gc=([a-z]+)(?::([\d.]+))?(?::([a-z,0-9]+))?(\+|$)/.exec(OPT);
-           const kind=M?M[2]:'',sec=M?(+M[3]||0):0,wants=(M&&M[4]?M[4]:'').split(',');
-           const has=x=>wants.indexOf(x)>=0;
-           /* 結果を手で組む(⚠gcPullを使わない=セーブを汚さず、種で毎回同じ絵になる) */
-           let mk='var _H=function(rk){return HEROES.filter(function(h){return h.rk===rk;})[0];};'
-            +'var _R=[];'
-            +(has('rich')?'_R.push({hero:_H(5)},{hero:HEROES.filter(function(h){return h.rk===5;})[1]||_H(5)},{hero:_H(4)},{hero:_H(3)});for(var q9=0;q9<6;q9++)_R.push({hero:_H(1+q9%2)});'
-             :has('low')?'for(var q9=0;q9<10;q9++)_R.push({hero:_H(1+q9%2)});'
-             :'_R.push({hero:_H(4)},{hero:_H(3)},{hero:_H(3)});for(var q9=0;q9<7;q9++)_R.push({hero:_H(1+q9%2)});')
-            +'_R.forEach(function(o){o.dupe='+(has('dup')?'true':'false')+';o.lb='+(has('dup')?'3':'0')+';o.txt='+(has('dup')?'"重複 → 🔺凸3"':'"NEW!"')+';});'
-            /* 望みの台本が出る種を探し、同じ種で本番を流す(⚠プランを手で書き換えない=矛盾を作らない) */
-            +'var _mk=function(sd){var s9=sd>>>0||1;return function(){s9=(s9*1103515245+12345)>>>0;return s9/4294967296;};};'
-            +'var _ok=function(p){return true'
-            +(has('lob')?'&&p.sig==="lob"':'')
-            +(has('brake')?'&&p.sig==="brake"':'')
-            +(has('mark')?'&&p.mark===1':'')
-            +(has('w')?'&&Object.keys(p.fake).some(function(k){return p.fake[k]==="w";})':'')
-            +(has('snatch')?'&&Object.keys(p.fake).some(function(k){return p.fake[k]==="s";})':'')
-            +';};'
-            +'var _sd=1;for(;_sd<3000;_sd++){if(_ok(bgPlan(_R,_mk(_sd))))break;}'
-            +'Math.random=_mk(_sd);gcStart(_R);'
-            +'if(GC&&"'+kind+'"){var _f=-1;for(var q9=0;q9<GC.scs.length;q9++)if(GC.scs[q9].k==="'+kind+'"){_f=q9;break;}'
-            +'if(_f>=0){GC.sc=_f;GC.t=Math.min('+sec+',GC.scs[_f].len-.01);GC.snd={};}GC.frz=1;}'
-            +'if(GC)gcDraw();';
-           return mk;})())
+           +';for(var q9=0;q9<40;q9++)gcHomeStep(0.05);}'):'gcPull(10);')+''
+       +(OPT.indexOf('gacha5')>=0
+         ?'if(GC){GC.res[0]={hero:HEROES[HEROES.length-1],txt:"NEW!"};GC.best=5;}':'')
+       /* gdup5=★5が**重複**した札(2026-08-04(124)に🔧100+💎25にしたので、
+          額の文字が右へはみ出していないかを見る口)。⚠gcard と一緒に渡す */
+       +(OPT.indexOf('gdup5')>=0
+         ?'if(GC){var h5=HEROES.filter(function(h){return h.rk===5;})[0];'
+          +'META.hero[h5.id]=1;GC.res[0]=gcApply({hero:h5});GC.best=5;}':'')
+       /* ⭐期待度の演出を狙って撮る(2026-07-30)。
+          gnight/gmorn=背景の朝夜 / gfc=0..2 で「撃て!」の文字色(白/赤/虹) /
+          glob=的が✨黄金のロブスター / gtwist=どんでん返し(しょぼい見た目から始まる) /
+          ggold=金色に変わっていく途中 */
+       +(OPT.indexOf('gtwist')>=0?'if(GC){GC.twist=1;GC.lob=0;GC.tw=GC.zk=0;GC.fc=0;GC.night=false;GC.best=Math.max(4,GC.best);}':'')
+       +(OPT.indexOf('glob')>=0?'if(GC){GC.lob=1;GC.twist=0;GC.tw=GC.zk=2;GC.fc=2;GC.night=true;GC.best=5;}':'')
+       +(OPT.indexOf('gnight')>=0?'if(GC){GC.night=true;}':'')
+       +(OPT.indexOf('gmorn')>=0?'if(GC){GC.night=false;}':'')
+       +((/gfc=(\d)/.exec(OPT))?('if(GC){GC.fc='+(/gfc=(\d)/.exec(OPT))[1]+';}'):'')
+       /* ggold=金色の個体がせり上がった所 / gtwgib=その手前(まず普通に爆散する所) */
+       +(OPT.indexOf('ggold')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+GC_TWIST*.8;GC.hit=1;}':'')
+       +(OPT.indexOf('gtwgib')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+GC_TWIST*.3;GC.hit=1;}':'')
+       /* ⚠ヘッドレスの仮想時間ではrAFがほとんど回らず、いつまでも魔法陣のまま。
+          カードの絵を撮りたい時は段階を直に進める(gcard=カード / gburst=炸裂) */
+       +(OPT.indexOf('gcard')>=0?'if(GC){GC.ph="card";GC.t=.42;}':'')
+       /* gk=秒 カードの時刻(🎴(213)めくり/★点灯/名前の各段を撮る) */
+       +((/gk=([0-9.]+)/.exec(OPT))?('if(GC){GC.ph="card";GC.t='+(/gk=([0-9.]+)/.exec(OPT))[1]+';}'):'')
+       +(OPT.indexOf('gaim')>=0?'if(GC){GC.ph="aim";GC.t=.2;}':'')
        /* gres=召集結果の別ウィンドウ(アイコンの一覧)を撮る */
-       +(OPT.indexOf('gres')>=0?'gcEnd();':''))
+       +(OPT.indexOf('gres')>=0?'gcEnd();':'')
+       /* gfly=弾が飛んでいる途中 / gbang=木っ端みじん+跡地の示唆 */
+       +(OPT.indexOf('gfly')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY*.55;}':'')
+       +(OPT.indexOf('gbang')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD+.75+(GC.twist?GC_TWIST:0);GC.hit=1;GC.hit2=1;}':'')
+       /* gchg=溜め(押してから撃つまで) / ghold=着弾で止めている一瞬 */
+       +(OPT.indexOf('gchg')>=0?'if(GC){GC.ph="chg";GC.t=GC_CHG*.8;}':'')
+       +(OPT.indexOf('ghold')>=0?'if(GC){GC.ph="fire";GC.t=GC_FLY+GC_HOLD*.5;GC.hit=1;}':'')
+       /* gt0/gt1/gt2 でタレットの段(ライフル/ショットガン/レーザー)を指定。
+          ⚠オプション名に「w+数字」を入れないこと=時間指定 `w(\d+)` に食われる(gtw2 で実際に踏んだ) */
+       +((/gt(\d)/.exec(OPT))?('if(GC){GC.tw=GC.zk='+(/gt(\d)/.exec(OPT))[1]+';}'):''))
      :VS?'NET.host=true;NET.hostName="キミ";setLMode=0;hostStart();'
      :NB?'META.nmOK=1;setDiff=NM_DIFF;startSolo();'
      /* ⭐bns = 🚌ボーナス面「バスの日」を撮る(st2 と併せるとステージ2の面) */

@@ -1574,7 +1574,7 @@ function checkMetaReset(){
  if(META.pts!==0||META.nt!==0||META.st0!==0){console.log('FAIL: 研究リセットで研究所ぶんが消えていない');process.exit(1);}
  if(!(META.sc&&META.sc[0]&&META.sc[0][0])||META.nmOK!==1){console.log('FAIL: 研究リセットで難易度の解放まで消えている');process.exit(1);}
  META.pts=500;ownN(3,null);ownN(null,4);META.uv=['x'];META.py0=3;
- META.tw={rifle:2};META.un={bat:3};META.st0=4;META.gsimp=1;
+ META.tw={rifle:2};META.un={bat:3};META.st0=4;
  metaReset();
  /* ⭐**2026-07-27から「全部消す」**(ユーザー指示「通常プレイ用のやつは初期化して最初からに」)。
     ⚠それまでは💎英雄🔧図鑑⚔冒険を残す作りで、この検査もそれを守っていた。**方針が変わった**。
@@ -1587,9 +1587,7 @@ function checkMetaReset(){
   /* ⚠🎒編成の案内は「1回だけ出す」印=消し忘れると初期化した人に案内が出ない(2026-08-02) */
   ['🎒編成の案内の印',!META.tmTip],
   /* 🎫⚠印まで消さないと、初期化した人に配布物がもう一度渡らない(逆に印が残ると永久に渡らない) */
-  ['🎫★5確定チケット',!(META.tk5||0)],['🎫配布物の印',Object.keys(META.gft||{}).length===0],
-  /* 🎰(212)演出の簡素化の設定も初期化で既定(全部見る)へ戻す */
-  ['🎰演出の簡素化',!(META.gsimp||0)]];
+  ['🎫★5確定チケット',!(META.tk5||0)],['🎫配布物の印',Object.keys(META.gft||{}).length===0]];
  for(const [n,ok] of gone2)if(!ok){console.log('FAIL: 初期化しても '+n+' が残っている');process.exit(1);}
  const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
   ['派生',META.uv.length===0],['経済強化',META.py0===0],
@@ -1828,48 +1826,120 @@ function checkFx2(){
 /* ---- 💎英雄召集の演出(2026-07-26 第71弾) ----
    ⚠**結果(gcPick/gcApply)は演出で変わってはいけない**。段階が進むこと・全部見せ終えて閉じることを見る */
 function checkGachaFx(){
- /* 🎰🚌(212)バスガチャに作り替えた。プランと結果の矛盾は test_busgacha.js が1万回見ている=
-    ここでは「演出の器」だけを見る: 進む/飛ばせる/閉じられる/終わる/結果を書き換えない/凸の配り物 */
- const res=[{hero:HEROES[HEROES.length-1],txt:'NEW!'},{hero:HEROES.find(h=>h.rk===1),txt:'NEW!'},
-  {hero:HEROES[0],txt:'重複 → 🔺凸1',dupe:true,lb:1}];
+ /* ⚠(211)はずれ枠は無くなったので、低レアは★1で作る */
+ const res=[{hero:HEROES[HEROES.length-1],txt:'NEW!'},{hero:HEROES.find(h=>h.rk===1),txt:''},
+  {hero:HEROES[0],txt:'重複 → 🔧 鍛錬素材 +3',dupe:true}];
  gcStart(res);
  if(!GC){console.log('FAIL: 召集の演出が始まらない(canvasが取れていない)');process.exit(1);}
- /* ⭐大原則: 台本(プラン)が結果と矛盾していないこと(bgCheckは純関数) */
- {const e9=bgCheck(res,GC.plan);
-  if(e9){console.log('FAIL: 演出プランが結果と矛盾: '+e9);process.exit(1);}}
- if(GC.sc!==0){console.log('FAIL: 最初のシーンから始まっていない '+GC.sc);process.exit(1);}
- if(!GC.scs.length||GC.scs[GC.scs.length-1].k!=='fin'){console.log('FAIL: シーンの列が閉じていない');process.exit(1);}
- /* ⭐時間で次のシーンへ進む */
- {let g9=0;while(GC&&GC.sc===0&&g9++<10000)gcStep(.05);
-  if(!GC||GC.sc<1){console.log('FAIL: 時間で次のシーンへ進まない');process.exit(1);}}
- /* ⭐タップで「今のシーンを1つ」飛ばせる(DESIGNの「各シーンを個別にスキップ可」) */
- {const s0=GC.sc;gcTap(200,50);
-  if(!GC||GC.sc!==s0+1){console.log('FAIL: タップで今のシーンを飛ばせない');process.exit(1);}}
- /* ⭐「≫まとめて見る」で途中でも結果一覧へ */
- GC.sk=[10,10,90,20];gcTap(20,15);
- if(GC){console.log('FAIL: 「まとめて見る」で閉じられない');process.exit(1);}
- /* ⭐タップしなくても必ず終わる(時間だけで最後まで流れ切る) */
- {gcStart(res);let g9=0;while(GC&&g9++<6000)gcStep(.1);
-  if(GC){console.log('FAIL: 放っておいても演出が終わらない');process.exit(1);}}
- /* ⭐演出が結果の中身を書き換えない */
- {const before=JSON.stringify(res);
-  gcStart(res);for(let k=0;k<50;k++)gcStep(.1);if(GC)gcEnd();
-  if(JSON.stringify(res)!==before){console.log('FAIL: 演出が結果の中身を書き換えている');process.exit(1);}}
- /* 🎛簡素化: シーンが減る・結果は同じ(結果はそもそも演出の前に確定している) */
- {const gs0=META.gsimp;
-  META.gsimp=0;gcStart(res);const nF=GC.scs.length;gcEnd();
-  META.gsimp=1;gcStart(res);const nS=GC.scs.length;gcEnd();
-  META.gsimp=gs0;
-  if(!(nS<nF)){console.log('FAIL: 簡素化でシーンが減らない('+nS+'/'+nF+')');process.exit(1);}}
- /* 🚪降車の掟: 10連で低レアが居れば「まとめ降車(drop)」がある/★3以上の人数ぶん1人ずつ(hdrop/snatch) */
- {const many=[];for(let k=0;k<10;k++)many.push({hero:HEROES.find(h=>h.rk===(k<7?1:(k<9?3:4))),txt:'NEW!'});
+ if(GC.best!==5){console.log('FAIL: 予告の色が最高レア度になっていない best='+GC.best);process.exit(1);}
+ /* ⭐撃つ場面は**召集1回につき1回だけ**。最初から「撃て!」で始まること */
+ if(GC.ph!=='aim'){console.log('FAIL: 「撃て!」から始まっていない '+GC.ph);process.exit(1);}
+ /* ⭐押すまで絶対に進まないこと(時間では進まない) */
+ for(let k=0;k<120;k++)gcStep(.05);
+ if(GC.ph!=='aim'){console.log('FAIL: 押していないのに勝手に進んだ '+GC.ph);process.exit(1);}
+ /* ⭐押すと**まず溜める**(2026-07-27)。⚠押した瞬間に結果へ向かうのが安っぽさの元だった */
+ gcTap(0,0);
+ if(GC.ph!=='chg'){console.log('FAIL: 押しても溜めに入らない '+GC.ph);process.exit(1);}
+ /* ⚠溜めは飛ばせないこと(飛ばせると「ため」が無くなって元に戻る) */
+ gcTap(0,0);
+ if(GC.ph!=='chg'){console.log('FAIL: 溜めを飛ばせてしまう '+GC.ph);process.exit(1);}
+ for(let k=0;k<40&&GC.ph==='chg';k++)gcStep(.05);
+ if(GC.ph!=='fire'){console.log('FAIL: 溜め切っても撃たない '+GC.ph);process.exit(1);}
+ gcTap(0,0);
+ if(GC.ph!=='fire'){console.log('FAIL: 弾が飛んでいる途中で飛ばせてしまう');process.exit(1);}
+ for(let k=0;k<12;k++)gcStep(.05);/* 着弾させる(⚠0.05を10回足しても浮動小数で0.5に届かない) */
+ if(!GC.hit){console.log('FAIL: 弾が当たっていない(GC_FLY秒たっても着弾しない)');process.exit(1);}
+ for(let k=0;k<80&&GC.ph==='fire';k++)gcStep(.05);
+ if(GC.ph!=='card'){console.log('FAIL: 撃ったあと結果カードに進まない '+GC.ph);process.exit(1);}
+ /* ⭐撃つ場面は1回きり=2枚目以降はカードのまま(「撃て!」に戻らない)。
+    🎴(213)ソシャゲ式の送り: **1回目のタップ=その場で全部見せる / 2回目=次の1枚** */
+ gcTap(0,0);
+ if(!GC||GC.i!==0||GC.ph!=='card'){console.log('FAIL: 1回目のタップで次の枚へ飛んでいる(開くだけの約束)');process.exit(1);}
+ gcTap(0,0);
+ if(!GC||GC.i!==1||GC.ph!=='card'){console.log('FAIL: 2枚目で撃つ場面に戻っている '+(GC&&GC.ph));process.exit(1);}
+ gcTap(0,0);gcTap(0,0);gcTap(0,0);gcTap(0,0);
+ if(GC){console.log('FAIL: 全部見せ終えても演出が閉じない');process.exit(1);}
+ /* ⭐展開が読めること: タレット/ゾンビは予告で**下振れだけ**(上振れしない)
+    → レーザー(段2)が出たら★4以上が確定 / レアでない時は基本ライフル+通常ゾンビ */
+ let sawRifleLow=0,twN=0,lobN=0,nightN=[0,0],dayN=[0,0],hi5N=[0,0,0],tw4=0,n4=0;
+ for(let k=0;k<1200;k++){
+  const rk=k%5+1;/* ⚠(211)はずれ枠は無いので★1〜★5だけ回す */
+  const one=[{hero:HEROES.find(h=>h.rk===rk),txt:''}];
+  if(!one[0].hero)continue;
+  gcStart(one);const r=gcRank(one[0]),base=r>=4?2:r>=2?1:0;
+  /* ⭐⭐2026-08-03(92)ユーザー指示「虹とか金のロブスターとかは★5以上確定にして」=
+     **虹の文字(fc2)と✨黄金のロブスターは★5確定**へ。レーザーとどんでん返しは★4以上のまま。 */
+  if(r===4)n4++;
+
+  if(GC.twist){
+   if(r<4){console.log('FAIL: ★4未満でどんでん返しが起きている(レア度'+r+')');process.exit(1);}
+   if(GC.tw!==0||GC.zk!==0||GC.fc!==0||GC.night!==false||GC.lob){
+    console.log('FAIL: どんでん返しなのに見た目がしょぼくない');process.exit(1);}
+   twN++;if(r===5)hi5N[1]++;else tw4++;gcEnd();continue;}
+  if(GC.lob&&r<5){console.log('FAIL: ★5未満なのに黄金のロブスターが出た(レア度'+r+')');process.exit(1);}
+  if(GC.lob)lobN++;
+  if(r===5)hi5N[GC.lob?0:2]++;
+  if(GC.tw>base){console.log('FAIL: 予告が上振れしている(レア度'+r+' 予告'+GC.tw+' 上限'+base+')');process.exit(1);}
+  if(GC.tw===2&&r<4){console.log('FAIL: レーザーが出たのに★4未満(レア度'+r+')');process.exit(1);}
+  if(r===5&&GC.tw!==2){console.log('FAIL: ★5なのにレーザーで見せていない');process.exit(1);}
+  if(GC.zk!==GC.tw){console.log('FAIL: ゾンビの種類がタレットの段と揃っていない');process.exit(1);}
+  /* ⭐「撃て!」の文字色も**下振れだけ**(虹=fc2 が出たら**★5確定**) */
+  if(GC.fc>Math.min(base,r>=5?2:1)){console.log('FAIL: 文字色が上振れしている(レア度'+r+' 色'+GC.fc+')');process.exit(1);}
+  if(GC.fc===2&&r<5){console.log('FAIL: 虹の文字なのに★5未満(レア度'+r+')');process.exit(1);}
+  if(typeof GC.night!=='boolean'){console.log('FAIL: 背景の朝夜が決まっていない');process.exit(1);}
+  if(GC.night)nightN[r>=3?1:0]++;else dayN[r>=3?1:0]++;
+  if(r<=1){if(GC.tw!==0){console.log('FAIL: レアでないのにライフル以外が出ている(レア度'+r+')');process.exit(1);}sawRifleLow=1;}
+  gcEnd();
+ }
+ if(!sawRifleLow){console.log('FAIL: レアでない時の見せ方を確かめられていない');process.exit(1);}
+ if(!twN){console.log('FAIL: どんでん返しが一度も起きなかった');process.exit(1);}
+ if(!lobN){console.log('FAIL: ✨黄金のロブスターが一度も出なかった');process.exit(1);}
+ /* ⛔(210)**🐕犬の軍勢を外した**ので★5は**3通りを1/3ずつ**(✨ロブ/🥇どんでん返し/通常)。
+    ⚠数える箱と同じ並び(0=ロブ / 1=どんでん返し / 2=通常)。 */
+ {const tot=hi5N[0]+hi5N[1]+hi5N[2],want=[1/3,1/3,1/3];
+  for(let q=0;q<3;q++){const pc=hi5N[q]/Math.max(1,tot);
+   if(Math.abs(pc-want[q])>.10){console.log('FAIL: ★5の演出の割合がずれている '+hi5N.join('/')+' (計'+tot+' 想定1/3ずつ)');process.exit(1);}}}
+ /* ⭐**★5の合図は3つ**(✨ロブ/🥇どんでん返し/通常)=どれも★5でしか出ない。 */
+ {if(tw4>0){console.log('FAIL: ★5確定にしたのに★4でどんでん返しが出た '+tw4+'/'+n4);process.exit(1);}}
+ /* ⭐**夜の方が期待度が高い**=レアな時ほど夜が出やすいこと(逆になっていたら演出が嘘になる) */
+ {const hi=nightN[1]/Math.max(1,nightN[1]+dayN[1]),lo=nightN[0]/Math.max(1,nightN[0]+dayN[0]);
+  if(!(hi>lo+.2)){console.log('FAIL: 夜が期待度になっていない(レア時'+(hi*100|0)+'% / それ以外'+(lo*100|0)+'%)');process.exit(1);}}
+ console.log('💎召集の予告: 下振れだけ / 虹の文字とレーザーは★4以上が確定 / '
+  +'夜'+(nightN[1]/Math.max(1,nightN[1]+dayN[1])*100|0)+'% vs '+(nightN[0]/Math.max(1,nightN[0]+dayN[0])*100|0)+'% / '
+  +'★5の内訳 ✨黄金'+hi5N[0]+'/どんでん返し'+hi5N[1]+'/通常'+hi5N[2]+'(1/3ずつ・虹文字と✨は★5確定) OK');
+ /* ⭐10連でも撃つ場面は1回だけ=示唆するのは「その回の一番いい結果」 */
+ {const many=[{hero:HEROES.find(h=>h.rk===1),txt:''},{hero:HEROES.find(h=>h.rk===4),txt:''},{hero:HEROES.find(h=>h.rk===2),txt:''}];
   gcStart(many);
-  const dr=GC.scs.filter(s=>s.k==='drop').length,hi=GC.scs.filter(s=>s.k==='hdrop'||s.k==='snatch').length;
-  const rv=GC.scs.filter(s=>s.k==='rv').length,rl=GC.scs.filter(s=>s.k==='rvlow').length;
-  if(dr!==1||rl!==1){console.log('FAIL: まとめ降車/一斉開示が1回でない');process.exit(1);}
-  if(hi!==3||rv!==3){console.log('FAIL: ★3以上の1人ずつが人数と合わない('+hi+'/'+rv+')');process.exit(1);}
+  if(GC.best!==4){console.log('FAIL: 10連の示唆が一番いい結果になっていない '+GC.best);process.exit(1);}
+  /* ⚠どんでん返し(twist)の時はわざと段0で見せるので、その時は見ない(2026-07-30) */
+  if(!GC.twist&&(GC.tw>2||GC.tw<1)){console.log('FAIL: ★4の予告の段がおかしい '+GC.tw);process.exit(1);}
   gcEnd();}
- /* 🔺(212)凸の配り物(⛔★5の🔧100+💎25は外した=💎は絶対に出ない) */
+ /* 「まとめて見る」で途中でも閉じられること */
+ gcStart(res);GC.ph='card';GC.sk=[10,10,90,20];
+ gcTap(20,15);
+ if(GC){console.log('FAIL: 「まとめて見る」で閉じられない');process.exit(1);}
+ /* 演出を通しても、配られる中身が変わっていないこと */
+ const before=JSON.stringify(res);
+ gcStart(res);for(let k=0;k<80;k++)gcStep(.05);gcEnd();
+ if(JSON.stringify(res)!==before){console.log('FAIL: 演出が結果の中身を書き換えている');process.exit(1);}
+ /* ---- 召集結果は別ウィンドウのアイコン一覧(2026-07-26 第73弾) ----
+    ⚠ヘッドレスのDOMは差し込んだ要素を数えられないので、DOMを触らない gcResRows() の方を検査する */
+ {const rows=gcResRows(res);
+  if(rows.length!==res.length){console.log('FAIL: アイコンの数が結果の数と合わない '+rows.length+'/'+res.length);process.exit(1);}
+  const hero=rows.filter(r=>!r.dud),dud=rows.filter(r=>r.dud);
+  if(hero.some(r=>!(r.ui>=0))){console.log('FAIL: 英雄のアイコンに絵が割り当たっていない');process.exit(1);}
+  if(hero.some(r=>!r.lbl)){console.log('FAIL: 英雄のアイコンに★が付いていない');process.exit(1);}
+  if(dud.some(r=>!r.ic)){console.log('FAIL: はずれ枠のアイコンが空');process.exit(1);}
+  /* 新規はNEW・重複はNEWなし */
+  if(rows[0].nw!==1||rows[2].nw!==0){console.log('FAIL: NEW/重複の印が合っていない');process.exit(1);}
+  /* 一番レアなもの(★5=先頭)が最初から選ばれること */
+  if(gcResBest(rows)!==0){console.log('FAIL: 一番レアな結果が最初に選ばれない '+gcResBest(rows));process.exit(1);}
+  /* 枠の中に長い文章が入っていないこと(アイコン制の肝) */
+  for(const r of rows)if((r.lbl||'').length>6){console.log('FAIL: アイコンの文字が長すぎる「'+r.lbl+'」');process.exit(1);}
+  console.log('召集結果の一覧: アイコン'+rows.length+'個(英雄'+hero.length+'/はずれ'+dud.length+')・一番レアを最初に選ぶ・文字は★と+数字だけ OK');
+  try{renderGcRes(res);}catch(e){console.log('FAIL: 召集結果の描き出しで例外 '+e.message);process.exit(1);}}
+ console.log('💎英雄召集の演出: 撃て!(押すまで進まない)→弾が飛ぶ→木っ端みじん→跡地の示唆→結果カード / 撃つのは1回だけ / 予告は下振れのみ OK');
+ /* ---- 🔺(212)凸の配り物(⛔★5の🔧100+💎25は外した=💎は絶対に出ない) ---- */
  {const mh0=META.hero,mm0=META.hmat,mg0=META.gem;
   META.hero={};META.hmat=0;
   const h1=HEROES.find(h=>h.rk===1),h5=HEROES.find(h=>h.rk===5);
@@ -1879,7 +1949,7 @@ function checkGachaFx(){
   if(!o.dupe||o.lb!==1){console.log('FAIL: ★1の重複で凸1になっていない');process.exit(1);}
   if(META.hmat!==0){console.log('FAIL: ★1の重複(完凸前)で🔧が出ている(凸だけの約束)');process.exit(1);}
   META.hero[h1.id]=11;o=gcApply({hero:h1});/* 12枚目=完凸のあと */
-  if(o.lb!==10||META.hmat!==LB_MAT[1]){console.log('FAIL: 完凸後の重複が🔧'+LB_MAT[1]+'でない(凸'+o.lb+'/🔧'+META.hmat+')');process.exit(1);}
+  if(o.lb!==LB_MAX||META.hmat!==LB_MAT[1]){console.log('FAIL: 完凸後の重複が🔧'+LB_MAT[1]+'でない(凸'+o.lb+'/🔧'+META.hmat+')');process.exit(1);}
   META.hmat=0;META.hero[h5.id]=1;const g9=(META.gem||0);
   o=gcApply({hero:h5});
   if(o.lb!==1||META.hmat!==LB_MAT[5]){console.log('FAIL: ★5の重複が凸+🔧'+LB_MAT[5]+'でない');process.exit(1);}
@@ -1889,20 +1959,8 @@ function checkGachaFx(){
    const b=hBoost(h1.id);
    if(Math.abs(b-(1+LB_PER*LB_MAX))>1e-9){console.log('FAIL: 完凸の+'+Math.round(LB_PER*LB_MAX*100)+'%がhBoostに乗っていない('+b+')');process.exit(1);}
    META.hlv=hl0;}
-  META.hero=mh0;META.hmat=mm0;META.gem=mg0;}
- /* ---- 召集結果は別ウィンドウのアイコン一覧(そのまま) ---- */
- {const rows=gcResRows(res);
-  if(rows.length!==res.length){console.log('FAIL: アイコンの数が結果の数と合わない '+rows.length+'/'+res.length);process.exit(1);}
-  const hero=rows.filter(r=>!r.dud);
-  if(hero.some(r=>!(r.ui>=0))){console.log('FAIL: 英雄のアイコンに絵が割り当たっていない');process.exit(1);}
-  if(hero.some(r=>!r.lbl)){console.log('FAIL: 英雄のアイコンに★が付いていない');process.exit(1);}
-  if(rows[0].nw!==1||rows[2].nw!==0){console.log('FAIL: NEW/重複の印が合っていない');process.exit(1);}
-  if(rows[2].lb!==1){console.log('FAIL: 重複の札に凸の数が乗っていない');process.exit(1);}
-  if(gcResBest(rows)!==0){console.log('FAIL: 一番レアな結果が最初に選ばれない '+gcResBest(rows));process.exit(1);}
-  for(const r of rows)if((r.lbl||'').length>6){console.log('FAIL: アイコンの文字が長すぎる「'+r.lbl+'」');process.exit(1);}
-  try{renderGcRes(res);}catch(e){console.log('FAIL: 召集結果の描き出しで例外 '+e.message);process.exit(1);}}
- console.log('🎰🚌バスガチャの演出: プラン矛盾なし / 時間で進む / タップで1シーン飛ぶ / まとめて見るで閉じる / '
-  +'放置でも終わる / 結果は不変 / 簡素化で短い / 降車の内訳が人数どおり / 凸の配り物(💎なし) OK');
+  META.hero=mh0;META.hmat=mm0;META.gem=mg0;
+  console.log('🔺凸の配り物: ★3以下=完凸まで凸だけ→完凸後🔧'+LB_MAT[1]+' / ★5=凸+🔧'+LB_MAT[5]+'(💎なし) / 完凸+'+Math.round(LB_PER*LB_MAX*100)+'% OK');}
 }
 /* ---- ゾンビ36種が1種ずつ違う絵になっているか(2026-07-26 第82弾) ----
    ⭐それまでステージ1の13種のうち10種が**同じ胴を共有**していて、実機(22px)では色しか違わなかった。
@@ -4650,23 +4708,16 @@ process.exit(0);
        「見て欲しいやつの確率は上げて欲しい。テストするときは毎回そうして」)。
      ⚠素の確率のままでは★4以上が約1%で、どんでん返しも黄金のロブスターも確かめようがない。
      ⚠**新しく珍しいものを足したら、ここの一覧にも足すこと**。 */
-  /* 🎰🚌(212)バスガチャ: ★5の合図3通り(✨ロブ/🥇急ブレーキ/通常)が**1/3ずつ**出ること
-     (⚠旧演出の GC_P_LOB/GC_P_TW は演出ごと消えた。今は bgPlan が誰に対しても1/3ずつ) */
-  const d=new Function(js+String.fromCharCode(10)+'const h5=HEROES.filter(h=>h.rk===5)[0],h1=HEROES.filter(h=>h.rk===1)[0];'
-   +'const r9=[{hero:h5}];for(let q=0;q<9;q++)r9.push({hero:h1});'
-   +'let s9=7;const rnd9=()=>{s9=(s9*1103515245+12345)>>>0;return s9/4294967296;};'
-   +'const sg={lob:0,brake:0,norm:0};'
-   +'for(let q=0;q<600;q++){const p=bgPlan(r9,rnd9);sg[p.sig||"norm"]++;}'
-   +'return {hi:G_RATE.filter(r=>r[0]==="r4"||r[0]==="r5").reduce((a,r)=>a+r[1],0),'
-   +'lob:lbRate(),rb:rbRate(),bus:busRate(),sg:sg,sum:G_RATE.reduce((a,r)=>a+r[1],0)};')();
+  const d=new Function(js+String.fromCharCode(10)+'return {hi:G_RATE.filter(r=>r[0]==="r4"||r[0]==="r5").reduce((a,r)=>a+r[1],0),'
+   +'lob:lbRate(),rb:rbRate(),bus:busRate(),pl:GC_P_LOB,pt:GC_P_TW,sum:G_RATE.reduce((a,r)=>a+r[1],0)};')();
   if(Math.abs(d.sum-100)>1e-9){console.log('FAIL: 🛠DEVの排出率の合計が100でない '+d.sum);process.exit(1);}
   if(d.hi<10){console.log('FAIL: 🛠DEVで★4以上が出にくすぎる '+d.hi.toFixed(1)+'%(演出を確かめられない)');process.exit(1);}
   if(d.lob<.2){console.log('FAIL: 🛠DEVで✨黄金のロブスターが出にくすぎる');process.exit(1);}
   if(d.rb<.2){console.log('FAIL: 🛠DEVで🌈虹のゾンビが出にくすぎる');process.exit(1);}
   if(d.bus<.2){console.log('FAIL: 🛠DEVで🚌ゾンビバスが出にくすぎる(0.001%では実機で一度も見られない)');process.exit(1);}
-  for(const k9 of ['lob','brake','norm'])if(Math.abs(d.sg[k9]/600-1/3)>.1){
-   console.log('FAIL: ★5の合図3通りが1/3ずつでない '+JSON.stringify(d.sg));process.exit(1);}
-  console.log('🛠DEVの底上げ: ★4以上 '+d.hi.toFixed(1)+'% / ★5の合図 ✨'+d.sg.lob+'/🥇'+d.sg.brake+'/通常'+d.sg.norm+'(1/3ずつ) / '
+  if(Math.abs(d.pl-1/3)>1e-9||Math.abs(d.pt-1/3)>1e-9){
+   console.log('FAIL: 🛠DEVで召集の3通りが均等になっていない');process.exit(1);}
+  console.log('🛠DEVの底上げ: ★4以上 '+d.hi.toFixed(1)+'% / 召集の演出は3通り均等 / '
    +'タイトルの✨金'+(d.lob*100)+'%・🌈虹'+(d.rb*100)+'%・🚌バス'+(d.bus*100)+'% OK');
   /* 🚌⭐⭐**まっさらな状態でも「2面の開拓便」まで手が届くこと**(2026-08-02(66)ユーザー
      「これだと2面解放されてないからテストできん」)=**新しく作った物へ実機で行けなければ
