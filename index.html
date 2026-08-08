@@ -1151,13 +1151,15 @@ body.bns #deck{flex:0 0 auto}
 /* ⚠(114)一覧を消したので**姿と数値が窓いっぱい**に伸びる */
 #md-hstat .hstop{flex:1 1 auto;min-height:0}
 #md-hstat .hsinfo{overflow-y:auto;overscroll-behavior:contain;min-height:0}
-.tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;
+/* 👀(226c)ユーザー「入れるタブのカードの余白が多いから最適化」=列の下限を絵(96px)+枠ぶんまで詰め、
+   札の中の遊びも絞る(押す所44pxと文字10.5pxの物差しは割っていない) */
+.tmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:5px;
  overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0;padding-bottom:4px}
 /* ⭐(96c)一覧の札=英雄窓と同じ暗い札。**金の枠+✅=編成に入っている(押すと外す)** */
 /* ⚠⚠overflow:hiddenを付けない=スクロールするgridの札に付けると、行の高さが中身を無視して
    潰れる(2026-08-03(96c)に踏んだ。Chromeはoverflow≠visibleの札を0まで縮めて枠の高さに合わせる) */
-.tmc{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:2px;border:2px solid var(--ink);
- border-radius:11px;background:linear-gradient(180deg,var(--ink2),var(--ink4));padding:5px 5px 5px;text-align:center;
+.tmc{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:1px;border:2px solid var(--ink);
+ border-radius:11px;background:linear-gradient(180deg,var(--ink2),var(--ink4));padding:4px 3px 3px;text-align:center;
  color:var(--pane);box-shadow:0 3px 0 rgba(0,0,0,.3)}
 /* ⚠⚠**canvasは「中の寸法(属性)」と「CSSの見た目の寸法」を必ず合わせる**(NOTESの掟)。
    `width:100%;height:34px` に 76x76 の絵を流し込んでいたので**横に伸びて縦に潰れていた**
@@ -31089,8 +31091,13 @@ function renderLab(){
   else if(it.k==='nu'){if(!Array.isArray(META.ou))META.ou=[];META.ou.push(it.id);META.nu=META.ou.length;tmHow9=teamAutoAdd(tmId9);}
   else if(it.k==='stk')META.st.push(it.id);
   else if(it.k==='uv'){if(!Array.isArray(META.uv))META.uv=[];META.uv.push(it.id);
-   /* ⭐買っただけでは装着されない(仕様)ので、どこで着けるかをその場で言う(2026-08-03 UI総監査) */
-   toast('⭐『'+it.t+'』を解放した(🎖編成 → 派生を選ぶ で装着)');}
+   /* ⭐⭐(226c)**解放したら自動でいちばん強い派生を装着**(2026-08-08ユーザー指示
+      「派生を解放したら自動的に一番強い派生になるようにして」)。
+      ⚠UVARの並び=段の順なので「持っている中で一番後ろ」が最強。🎖編成でいつでも戻せる。 */
+   {let bid9=null;for(const b9 in UVAR){if((UVAR[b9]||[]).some(x=>x.id===it.id)){bid9=b9;break;}}
+    if(bid9){const os9=(UVAR[bid9]||[]).filter(x=>(META.uv||[]).indexOf(x.id)>=0);
+     if(os9.length){if(!META.ld)META.ld={};META.ld[bid9]=os9[os9.length-1].id;}}}
+   toast('⭐『'+it.t+'』を解放して装着した(🎖編成 → 派生を選ぶ で戻せる)');}
   else if(it.k==='tg'){if(!Array.isArray(META.tg))META.tg=[];META.tg.push(it.id);}
   else if(it.k==='sc0')META.sc0+=n;else if(it.k==='hp0')META.hp0+=n;
   else if(['up0','uu0','sl0','py0','ec0','cd0','ec1','tr0'].indexOf(it.k)>=0)META[it.k]=(META[it.k]||0)+n;
@@ -31346,7 +31353,14 @@ function renderLoad(){
   const fixMsg=()=>{sfx.back&&sfx.back();toast('🎒 猟犬とバットは固定枠(外せない)');};
   box.querySelectorAll('[data-out]').forEach(b=>{
    const i=+b.dataset.out;ldPrev(b.querySelector('canvas'),i,uEff(i));
-   b.onclick=()=>{if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,false);};});
+   /* 👆📊(226c)**長押し=そのユニットのステータス**(2026-08-08ユーザー指示
+      「連れていくタブでも長押しでユニットのステータスが見れるように」)。⚠短押しは今までどおり外す。
+      ⚠長押しが発火したら直後のclickを1回だけ握り潰す(でないと開いた瞬間に外れる)。 */
+   let lp9=0,lpT9=null;
+   const cl9=()=>{if(lpT9){clearTimeout(lpT9);lpT9=null;}};
+   b.addEventListener('pointerdown',()=>{lp9=0;cl9();lpT9=setTimeout(()=>{lp9=1;if(sfx.tap)sfx.tap();openUstat(i);},480);});
+   ['pointermove','pointerup','pointercancel','pointerleave'].forEach(ev9=>b.addEventListener(ev9,cl9));
+   b.onclick=()=>{if(lp9){lp9=0;return;}if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,false);};});
   box.querySelectorAll('[data-team]').forEach(b=>{
    const i=+b.dataset.team;ldPrev(b.querySelector('canvas'),i,uEff(i));
    /* ⚠**ボタンの中にボタンは置けない**(HTMLとして不正)ので、ⓘは span にして押した所で振り分ける */
@@ -31571,19 +31585,12 @@ function gcRateHtml(){
    ⚠**📖英雄図鑑と確率は畳んでボタンから開く**(常時出しておくと目玉の英雄より図鑑の方が目立つ)。
    ⚠確率と配るもの(gcPick/gcApply)には**一切触っていない**=変えたのは見た目だけ。 */
 let GCV='home';/* 開いている面: home / dex(図鑑) / rate(確率) */
-/* 目玉の英雄=まだ持っていない中で一番レアなもの(全部持っていたら最高レア度)。
-   ⚠1人に固定すると、持っている英雄が出続けて「引く理由」が画面から消える。
-   ⭐**同じレア度が複数いるなら全員を出す**(2026-07-28ユーザー指示
-     「暁の王が今出る最上位に順番で出るようにして」)。★5が2人になったので、
-     1人だけ出す作りのままだと**もう片方が永久に画面に出ない**。
-   ⚠並びは HEROES の順=足した順に回ってくる。 */
-function gcStarList(){
- let rk=0;
- for(const h of HEROES)if(!heroOwned(h.id)&&h.rk>rk)rk=h.rk;
- if(!rk){const m=HEROES.reduce((a,h)=>Math.max(a,h.rk),1);return HEROES.filter(h=>h.rk===m);}
- return HEROES.filter(h=>h.rk===rk&&!heroOwned(h.id));
-}
-function gcStarHero(){return gcStarList()[0]||HEROES[HEROES.length-1];}
+/* 🎰(226c)**目玉=★5の誰かをランダムに1体**(2026-08-08ユーザー指示
+   「今狙える最上位っていう文削除して、あそこにでるのは★5の誰かをランダムに1体」)=
+   ⭐一覧は★5全員(スワイプで入れ替えは今までどおり)・開くたびに正面をくじで決める(renderGacha)。
+   ❌「未所持の最上位だけ」の絞りと「いま狙える最上位」の帯はこの指示で廃止。 */
+function gcStarList(){return HEROES.filter(h=>h.rk===5);}
+/* ⚠(226c)gcStarHero(先頭の1人を返す口)は目玉のくじ引き化で不要になったので消した */
 function gcDexHtml(){
  const own=HEROES.filter(h=>heroOwned(h.id)).length;
  /* ⚠押すと🦸ステータス画面が開く(2026-07-30)。図鑑は名前と必殺技だけなので、数値はそちらで見せる */
@@ -31940,11 +31947,20 @@ function gcView(v){
  $('gc-list').innerHTML=(v==='dex')?gcDexHtml():'';
  if(v==='dex')gcDexArt();/* 📖(192)姿を流し込む(⚠innerHTMLの後・canvasは文字列では描けない) */
  {const b=$('gc-dexst');if(b)b.onclick=()=>openHStat('','gacha');}
+ /* 📖(226c)**図鑑の札をタップ=その英雄のステータス**(ユーザー指示)。⚠未所持(???)は開かない */
+ {const L9=$('gc-list');if(L9&&L9.addEventListener&&!L9.dxTap){L9.dxTap=1;
+  L9.addEventListener('click',e=>{
+   const b9=e.target&&e.target.closest?e.target.closest('.hb[data-dh]'):null;
+   if(!b9||!b9.classList.contains('own'))return;
+   const m9=$('md-gacha');if(m9)m9.classList.remove('on');
+   openHStat(b9.dataset.dh,'gacha');});}}
  const st=$('gc-subt');if(st)st.textContent=(v==='rate')?'1回ごとに抽選する(天井は無い)':(v==='dex')?'引いた英雄がここに載る':'';
  /* ⚠開いた直後は clientWidth が0のことがあるので、次のフレームで測り直してから描く */
  if(v==='home')requestAnimationFrame(()=>{gcHomeFit();gcHomeDraw();});
 }
 function renderGacha(res){
+ /* 🎰(226c)開くたびに正面の★5をくじで決める(⚠開いている間の描き直しでは回さない=勝手に入れ替わる) */
+ if(!gcOpen()){const n9=Math.max(1,gcStarList().length);GCH.idx=(Math.random()*n9)|0;GCH.a=-GCH.idx*Math.PI*2/n9;}
  $('gc-gem').innerHTML=IC('🔧 '+(META.hmat||0));
  $('gem-cnt').innerHTML=IC('💎')+(META.gem||0);
  const gb=$('gc-gemb');if(gb)gb.innerHTML=IC('💎 ')+(META.gem||0);
@@ -31994,7 +32010,7 @@ function gcHomeStep(dt){
 {const cv=$('gc-hcv');
  if(cv&&cv.addEventListener){
   const px=e=>(e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX)||0;
-  const dn=e=>{if(GC||(GCH.n||1)<2)return;GCH.dg={x0:px(e),dx:0};};
+  const dn=e=>{if(GC)return;GCH.dg={x0:px(e),dx:0};};/* (226c)1人でもタップ(ステータス)は効かせる */
   const mv=e=>{if(!GCH.dg)return;GCH.dg.dx=px(e)-GCH.dg.x0;
    if(Math.abs(GCH.dg.dx)>6&&e.cancelable)e.preventDefault();};
   const up=()=>{if(!GCH.dg)return;const dx=GCH.dg.dx,n=Math.max(1,GCH.n||1);
@@ -32072,12 +32088,7 @@ function gcHomeDraw(){
   fitDrawIn(c,drw,bx,by,ww,hh2,2,key);
   c.globalAlpha=1;
  }
- /* 「目玉」の帯 */
- const bw=Math.min(112,w*.30),bh=20;
- c.fillStyle=col;rr(c,6,6,bw,bh,7);c.fill();
- c.lineWidth=3;c.strokeStyle=INK;rr(c,6,6,bw,bh,7);c.stroke();
- c.textAlign='center';c.fillStyle=INK;c.font='900 12px '+FF;
- c.fillText(heroOwned(H.id)?'ぜんぶ揃った':'いま狙える最上位',6+bw/2,6+14);
+ /* ⛔(226c)「いま狙える最上位」の帯は削除(ユーザー指示)=★5のくじ引き表示に文は要らない */
  /* ⭐**スワイプで入れ替えられることを出す**(2026-07-30)。⚠出さないと止まっている絵にしか見えない。
     ⚠1人しか居ない時は出さない(入れ替える先が無いのに案内するのは嘘) */
  if(n>1){
@@ -33104,12 +33115,14 @@ function renderZoo(box,hintId){
     `AF_LEG()` は残してあるが、いまはどこからも呼んでいない。 */
  if(hint)hint.innerHTML=(DEV?'🛠DEVモード=絵の確認用に<b>全種そのまま見える</b>(本番はソロ作戦で倒した種類だけ)。'
   :'ソロ作戦で<b>初めて倒したゾンビが載る</b>。まだ倒していない種類は姿も名前も出ない。');
- const seen=ZOMBIES.filter(z=>zcSeen(z.id)).length;
+ /* 🕶(226c)**外してある敵(off:1=レイス/スライム状体)は図鑑にも載せない**(2026-08-08ユーザー
+    「一旦消してるやつは図鑑からも消しといて」)=面を全クリしても永久に「未発見」で残っていた。 */
+ const seen=ZOMBIES.filter(z=>!z.off&&zcSeen(z.id)).length,all9=ZOMBIES.filter(z=>!z.off).length;
  /* ⚠単独の窓は見出しに数を出しているので、ここでは出さない(1画面に同じ数が2つ並ぶ) */
- let html=hintId?'':'<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+ZOMBIES.length+' 種</div>';
+ let html=hintId?'':'<div class="bphint" style="margin:0 0 4px">図鑑 '+seen+'／'+all9+' 種</div>';
  for(const G2 of ZDEX_G){
   const list=[];
-  for(let i=0;i<ZOMBIES.length;i++)if(G2.f(ZOMBIES[i]))list.push(i);
+  for(let i=0;i<ZOMBIES.length;i++)if(!ZOMBIES[i].off&&G2.f(ZOMBIES[i]))list.push(i);
   if(!list.length)continue;
   let sn=0;for(const i of list)if(zcSeen(ZOMBIES[i].id))sn++;
   html+='<div class="bphint" style="margin:7px 0 3px">'+G2.n+'　'+sn+'／'+list.length+'</div>'
@@ -33151,7 +33164,7 @@ function renderZoo(box,hintId){
 function openZoo(){
  const box=$('zoo-list');if(!box)return;
  const n=$('zoo-cnt');
- if(n)n.textContent=ZOMBIES.filter(z=>zcSeen(z.id)).length+' / '+ZOMBIES.length+' 種';
+ if(n)n.textContent=ZOMBIES.filter(z=>!z.off&&zcSeen(z.id)).length+' / '+ZOMBIES.filter(z=>!z.off).length+' 種';/* (226c)off:1は数えない */
  renderZoo(box,'zoo-hint');
  $('md-zoo').classList.add('on');
 }
@@ -36214,7 +36227,7 @@ function renderHome(){
   const lp=$('hm-lab-pts');if(lp)lp.innerHTML='';}
  /* 📖図鑑タイル。⭐**登録数を札に出す**=「まだ埋まっていない」が押す前に分かる(2026-08-04(142)) */
  {const zi=$('hm-zoo-ic');if(zi)zi.innerHTML=IC('📖');
-  const zn=$('hm-zoo-i');if(zn)zn.textContent=ZOMBIES.filter(z=>zcSeen(z.id)).length+' / '+ZOMBIES.length+' 種';}
+  const zn=$('hm-zoo-i');if(zn)zn.textContent=ZOMBIES.filter(z=>!z.off&&zcSeen(z.id)).length+' / '+ZOMBIES.filter(z=>!z.off).length+' 種';}/* (226c)off:1は数えない */
  /* 🎯任務タイル。⭐**受け取れる件数を札に出す**=窓を開かないと気付けない、をなくす(💎チケットと同じ手) */
  {const mi=$('hm-msn-ic');if(mi)mi.innerHTML=IC('🎯');
   const mn=$('hm-msn-i');
