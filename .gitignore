@@ -6,3 +6,4 @@ ui_src/ChatGPT*.png
 # Obsidian の端末ごとの表示状態(保管庫はリポジトリの根っこ)
 .obsidian/
 .eleven_key
+bgm_src/
