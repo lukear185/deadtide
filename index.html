@@ -3852,6 +3852,9 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
  /* 🎬⚠**起動の幕の間は黙る**=幕には幕のBGMがある(二重に鳴らさない) */
  tbgmTimer=setInterval(()=>{if(!AC||muted||SCR==='game')return;
   if(typeof OP!=='undefined'&&OP.on)return;
+  /* 🎵(213)⚠ガチャの曲が鳴っている間は黙る=最初のタップの後始末(ensureAC)がタイトル曲を
+     もう一度点けても、ここで止まるので二重に鳴らない */
+  if(gbgmTimer)return;
   const s=tbgmStep%TB_LOOP,f=TBGM[s%16];
   /* ⭐**1周かけて盛り上がって、また静かに戻る**(2026-07-27ユーザー指示
        「BGMをある程度流したら若干盛り上がってくる感じに。1サイクルしたらまた最初の落ち着いた感じに」)。
@@ -3892,6 +3895,7 @@ const GB_LOOP=32;/* 約15秒で 静か→高まる→静か を一巡(ガチャ�
 let gbgmTimer=null,gbgmStep=0;
 function gbgmOn(){if(gbgmTimer||!AC)return;
  if(typeof SFXTEST!=='undefined'&&SFXTEST)return;/* 🔊音の確認画面では鳴らさない */
+ tbgmOff();/* ⚠呼び忘れ対策=こちらを点けたらタイトル曲は必ず消す */
  gbgmStep=0;
  gbgmTimer=setInterval(()=>{if(!AC||muted)return;
   const s=gbgmStep%GB_LOOP,f=GBGM[s%16];
@@ -35765,7 +35769,7 @@ $('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add(
    ⭐相性を学ぶ場所は**最初から押せる**こと。窓(`md-zoo`)と `openZoo()` は前からあったので繋いだだけ。 */
 $('hm-zoo').onclick=()=>{openZoo();};
 $('hm-msn').onclick=()=>{openMsn();};
-$('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');};
+$('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');tbgmOff();gbgmOn();/* 🎵(213)⚠開く入口は2つ(タイトルとホーム)=両方で曲を切り替える */};
 $('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
 $('bt-back2').onclick=()=>show('title');
