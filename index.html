@@ -22209,12 +22209,38 @@ function bgDrawL1(c,tod,dk,PAL,VL,VR,VT,VB){
  c.restore();
  for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
 }
+/* 🪶⭐(222)**地平線のシルエット**=①②はビルの廃墟 / ③送電鉄塔の丘は**稜線+高圧鉄塔**(ユーザー決定の絵面)。
+   ⚠描く場所が2か所ある(bgDrawL2=焼く方 と 生描きの方)ので**必ずここを通す**(片方だけ直すと食い違う) */
+function bgHorizon(c,tod,PAL){
+ if(STAGE===2){
+  const rgY=x=>110-(14+Math.sin(x*.006)*10+Math.sin(x*.013+2)*7);
+  c.fillStyle=mix(PAL.bld,'#1a2015',.4+tod*.4);
+  c.beginPath();c.moveTo(-200,110);
+  for(let x9=-200;x9<=1800;x9+=60)c.lineTo(x9,rgY(x9));
+  c.lineTo(1800,110);c.closePath();c.fill();
+  c.strokeStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
+  const px9=[-60,260,600,940,1280,1620];
+  for(let i9=0;i9<px9.length;i9++){const x=px9[i9],by=rgY(x)+4,ty=by-58;
+   c.lineWidth=3;
+   c.beginPath();c.moveTo(x-12,by);c.lineTo(x-3,ty);c.moveTo(x+12,by);c.lineTo(x+3,ty);c.stroke();
+   c.lineWidth=2;
+   for(let a9=0;a9<3;a9++){const yy=ty+8+a9*13,w9=16-a9*3;
+    c.beginPath();c.moveTo(x-w9,yy);c.lineTo(x+w9,yy);c.stroke();}
+   c.beginPath();c.moveTo(x-9,by-14);c.lineTo(x+9,ty+22);c.moveTo(x+9,by-14);c.lineTo(x-9,ty+22);c.stroke();
+   if(i9>0){const xp=px9[i9-1],typ=rgY(xp)+4-58;
+    c.lineWidth=1.4;c.globalAlpha=.8;
+    for(let a9=0;a9<3;a9++){const y1=typ+8+a9*13,y2=ty+8+a9*13;
+     c.beginPath();c.moveTo(xp,y1);c.quadraticCurveTo((xp+x)/2,Math.max(y1,y2)+16,x,y2);c.stroke();}
+    c.globalAlpha=1;}}
+  return;}
+ c.fillStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
+ [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
+}
 /* ②草の上=空・廃墟・月/太陽・道路・廃車・木。⚠🌑血月の脈打つ光だけは生で描く(あれは動く) */
 function bgDrawL2(c,tod,dk,PAL,VL,VR,VT,VB){
  {const sky=todCol(tod),sg=c.createLinearGradient(0,0,0,115);
   sg.addColorStop(0,sky);sg.addColorStop(1,mix(PANE,sky,.72));c.fillStyle=sg;c.fillRect(VL,VT,VR-VL,115-VT);}
- c.fillStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
- [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
+ bgHorizon(c,tod,PAL);
  if(isNM()){
   c.fillStyle='#8a1a2a';c.beginPath();c.arc(1380,48,34,0,7);c.fill();
   c.fillStyle='#5a1020';c.beginPath();c.arc(1372,42,9,0,7);c.fill();c.beginPath();c.arc(1391,56,6,0,7);c.fill();
@@ -22427,8 +22453,7 @@ function renderCamp(C,t){
  /* 地平線と廃墟 */
  {const sky=todCol(tod),sg=c.createLinearGradient(0,0,0,115);
   sg.addColorStop(0,sky);sg.addColorStop(1,mix(PANE,sky,.72));c.fillStyle=sg;c.fillRect(VL,VT,VR-VL,115-VT);}
- c.fillStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
- [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
+ bgHorizon(c,tod,PAL);/* 🪶(222)③は稜線+鉄塔・①②はビル(中身は bgHorizon 1か所) */
  if(isNM()){/* 血月 */
   c.fillStyle='#8a1a2a';c.beginPath();c.arc(1380,48,34,0,7);c.fill();
   c.globalAlpha=.35;c.fillStyle='#c1302e';c.beginPath();c.arc(1380,48,50+Math.sin(t*1.5)*4,0,7);c.fill();c.globalAlpha=1;
