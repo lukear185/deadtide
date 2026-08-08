@@ -28363,7 +28363,8 @@ const BUP=[
 const BEQ_TB=[{ic:'🚌',n:'車体'},{ic:'⚔',n:'装備'}];
 const BEQ=[
  /* ===== 🚌車体タブ(tb:0)=**車体そのものをいじる物**(エンジン・増槽・大きさ・内張り) ===== */
- {k:'blast',tb:0,r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを吹き飛ばす',      c:60},
+ /* 💨(226h)ユーザー「効果がよくわからない」→ア案=**効きを派手にして説明を直す**(1.6→2.3倍) */
+ {k:'blast',tb:0,r:0,ic:'💨',n:'排気ブラスト',    d:'横のゾンビを強く弾き飛ばす',  c:60},
  {k:'boost',tb:0,r:0,ic:'🚀',n:'追加ブースター',  d:'ニトロ中がさらに速い',        c:130},
  {k:'nit2', tb:0,r:0,ic:'🔋',n:'大容量タンク',    d:'ニトロの減りが 26% 遅い',     c:220},
  /* 🚌⭐(115)**大きさは3段**(ユーザー「バスの車体でかくするやつは3段階のデカさを設けて、
@@ -28520,7 +28521,7 @@ function bupApply(B,up,eq){
  B.gripS  =eq.plate?0:BUS_GRIP_S*(B.grdX==null?1:B.grdX);/* 🛡しがみつきで落ちる最高速(0=落ちない) */
  B.noDrag =eq.tire ?1:0;            /* 🛞障害物で減速しない */
  B.gripX *=eq.tire ?1.15:1;         /* 🛞よく曲がる */
- B.sideX  =(eq.saw3?2.6:eq.blade?(eq.saw2?2.2:1.7):1)*(eq.blast?1.6:1);/* 横へ弾く強さ */
+ B.sideX  =(eq.saw3?2.6:eq.blade?(eq.saw2?2.2:1.7):1)*(eq.blast?2.3:1);/* 横へ弾く強さ。💨(226h)ア案=1.6→2.3 */
  B.nitSpX =eq.boost?1.18:1;         /* 🚀ニトロ中の最高速 */
  B.nit2   =eq.nit2 ?1:0;            /* 🔋(127)ニトロの減りが遅くなる */
  /* 🔊引き寄せの強さ=**0=無 / 1=📢拡声器(近く・弱い) / 2=🔊サイレン(遠く・強い)** */
@@ -29616,11 +29617,12 @@ function drawBusEq(c,B,t){
     c.lineTo(cx+Math.cos(a+.36)*R*.13,cy+Math.sin(a+.36)*R*.08);
     c.closePath();c.fill();}
   }}
- /* 💨サイドブラスト=横の噴射口。走っている時だけ噴く */
+ /* 💨サイドブラスト=横の噴射口。走っている時だけ噴く。
+    💨(226h)ア案=**噴射を一回り派手に**(長く・濃く)=「弾き飛ばしている」が見えるように */
  if(E.blast){c.fillStyle='#5a5550';
   for(const s9 of [-1,1]){c.beginPath();c.rect(R*.10,s9*R*.52-9,R*.26,18);c.fill();c.stroke();}
-  if(mv>.25&&FXLV>0){c.globalAlpha=.35+.35*mv;c.fillStyle='#cfd6dc';
-   for(const s9 of [-1,1]){const l=R*(.35+.75*mv)*(.8+.2*Math.sin(t*22+s9));
+  if(mv>.25&&FXLV>0){c.globalAlpha=.45+.40*mv;c.fillStyle='#dfe6ec';
+   for(const s9 of [-1,1]){const l=R*(.50+1.0*mv)*(.8+.2*Math.sin(t*22+s9));
     c.beginPath();c.moveTo(R*.36,s9*R*.60);c.lineTo(R*.36+l*.5,s9*(R*.60+l));
     c.lineTo(R*.10,s9*(R*.58+l*.4));c.closePath();c.fill();}
    c.globalAlpha=1;}}
