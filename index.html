@@ -204,6 +204,20 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homegrid.cmp .homebt .hth canvas{width:24px;height:18px}
 .homegrid.cmp .homebt b{font-size:13px}
 .homegrid.cmp .homebt i{font-size:10.5px}
+/* 🏠⭐(221)**ソシャゲの型に組み替え**(2026-08-08ユーザー指示)=
+   ①主役4つ(編成/英雄/研究所/英雄召集)は**下部の横長の帯**へ ②残り(任務/図鑑/砲撃/鍛錬所)は
+   **右上の小さい入り口の列**へ ③真ん中は絵と出撃だけ。⚠押す所44px/appHの掟はそのまま。 */
+.homewrap{flex-direction:column}
+.hometop{display:flex;gap:14px;flex:1 1 auto;min-height:0}
+.homedock{display:flex;gap:8px;width:100%;flex:0 0 auto}
+.homedock .homebt{flex:1 1 0;min-width:0;min-height:54px;justify-content:center;padding:5px 8px}
+.homedock .homebt b{font-size:15px}
+.homedock .homebt i{font-size:10.5px}
+.homemini{display:flex;gap:6px;justify-content:flex-end;flex:0 0 auto}
+.homemini .homebt{flex:0 0 auto;min-height:44px;padding:4px 9px;gap:5px}
+.homemini .homebt .hic{width:26px;height:26px;font-size:15px;border-radius:8px}
+.homemini .homebt b{font-size:11.5px}
+.homemini .homebt i{display:none}/* 小さい入り口は名前だけ(中身の数字は開けば分かる) */
 /* ⭐機能タイルはちょうど6つ(3×2)。⚠戻るはここに入れない(上の帯へ出した) */
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
@@ -698,7 +712,12 @@ body.bns #deck{flex:0 0 auto}
    (横画面は高さ393pxしか無い=[[NOTES_UI]])。⭐**透明な当たり判定を被せる**のが正解。
    ⚠見出しの中で✕の隣に押せる物は無いので、はみ出しても他を奪わない。
    ⚠⚠**`test_view.js` は要素の寸法を測るので、これでも「44px未満」と出続ける**=直したのに残る。 */
-.xbtn::after{content:'';position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}
+/* 👆(222)**当たりを少し「上」へ寄せる**(2026-08-08ユーザー「小さいボタンのタップ判定が若干下にある」)=
+   指は見た目の中心より上を突くので、透明な当たりを上へ8px多めに伸ばす(見た目は変えない)。 */
+.xbtn::after{content:'';position:absolute;left:50%;top:50%;width:46px;height:48px;transform:translate(-50%,-58%)}
+/* ⏸⏩など上の帯の小ボタンも同じ手当て(今までは見た目の寸法=約34pxしか押せなかった) */
+#pausebtn,#ffbtn{position:relative}
+#pausebtn::after,#ffbtn::after{content:'';position:absolute;left:-6px;right:-6px;top:-10px;bottom:-2px}
 .xbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
 .tabs{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;flex:0 0 auto;padding-bottom:2px}
 .tabs .tb{flex:0 0 auto;border:2px solid var(--ink);border-radius:9px;background:var(--paper2);color:var(--ink);
@@ -1594,6 +1613,7 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
   <!-- 🌆(96)背景=夕暮れの廃墟のスカイライン(プロシージャル。homeBgが毎フレーム描く) -->
   <canvas id="homebg"></canvas>
   <div class="homewrap">
+   <div class="hometop">
     <!-- 🦸(124)**一枚絵ごと押せる**(ユーザー指示「この画面で左のヒーロータップしたら英雄画面に」)=
          右の「🦸英雄」タイルと同じ窓が開く。⚠押せることは `cursor` と押し込みで言う -->
     <div class="homeleft" id="home-hero">
@@ -1602,30 +1622,31 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
       <div id="home-hname" class="homehn"></div>
     </div>
     <div class="homeright">
-      <!-- ⭐戻るは**上の帯の左端**に小さく置く(2026-08-03(106)ユーザー「下に埋もれてるから場所変えて
-           小さいボタンにして」)。⚠タイル(3×2)の中に混ぜない=機能タイルと戻るは役割が違う -->
+      <!-- ⭐戻るは**上の帯の左端**に小さく置く(2026-08-03(106)ユーザー指示)。 -->
       <div class="homebar">
         <button class="btn homeback" id="hm-back" aria-label="タイトルへ戻る">←</button>
         <div class="homeres" id="home-res"></div>
       </div>
+      <!-- 🏠(221)**小さい入り口**=主役4つ以外はソシャゲの右上アイコン列へ(ユーザー指示
+           「そのほかのやつはいい感じにソシャゲっぽく」)。⚠idは全部そのまま=配線は1本も触らない -->
+      <div class="homemini" id="home-grid">
+        <button class="btn homebt" id="hm-msn"><span class="hic" id="hm-msn-ic">🎯</span><span class="hlb"><b>任務</b><i id="hm-msn-i"></i></span></button>
+        <button class="btn homebt" id="hm-zoo"><span class="hic" id="hm-zoo-ic">📖</span><span class="hlb"><b>図鑑</b><i id="hm-zoo-i"></i></span></button>
+        <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
+        <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
+      </div>
       <button class="btn red homego" id="bt-map">🗺 出撃 <i>エリア1 — 生存圏の地図</i></button>
       <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
-      <div class="homegrid" id="home-grid">
-        <!-- ⭐絵は左・文字は右の**横並び**(2026-08-03(109)ユーザー「無理に2列にしなくていい。横とか良い感じに」)。
-             ⚠b と i は `.hlb` でひとまとめにする=でないと横並びにした時に名前と中身が横一列に散らばる -->
-        <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
-        <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><span class="hlb"><b>英雄</b><i id="hm-hero-i"></i></span></button>
-        <!-- 🏋鍛錬所: 🔬研究所で🧬300を払うまでは**灰色の錠前**で置いておく(存在を先に見せる) -->
-        <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
-        <!-- 📖図鑑: ⚠**最初から押せる**(解放も課金も無い)=相性を学ぶ場所なので初手で要る -->
-        <!-- 🎯任務: ⚠**最初から押せる**(解放も課金も無い)=「今日それを遊ぶ理由」なので初手で要る -->
-        <button class="btn homebt" id="hm-msn"><span class="hic" id="hm-msn-ic">🎯</span><span class="hlb"><b>任務</b><i id="hm-msn-i"></i></span></button>
-        <button class="btn homebt" id="hm-zoo"><span class="hic" id="hm-zoo-ic">📖</span><span class="hlb"><b>ゾンビ図鑑</b><i id="hm-zoo-i"></i></span></button>
-        <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
-        <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
-        <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><span class="hlb"><b>英雄召集</b><i id="hm-gem"></i></span></button>
-      </div>
     </div>
+   </div>
+   <!-- 🏠⭐(221)**下部の主ボタン4つ(横長)**(2026-08-08ユーザー指示
+        「メインどころは画面下部に横長方形で。編成・英雄・研究所・英雄召喚の4つ」) -->
+   <div class="homedock">
+    <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
+    <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><span class="hlb"><b>英雄</b><i id="hm-hero-i"></i></span></button>
+    <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
+    <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><span class="hlb"><b>英雄召集</b><i id="hm-gem"></i></span></button>
+   </div>
   </div>
 </div>
 <!-- 🗺⭐⭐**エリアマップ**(2026-08-03(93)ユーザー指示「にゃんこ大戦争みたいにマップ移動方式。
@@ -5311,7 +5332,11 @@ const twTrait=T=>{const R9=(T&&T.trait)||TW_TRAIT[T&&T.type];
  return (R9&&R9.k==='chain'&&!(T&&(T.chain||T.emul)))?null:R9;};
 /* 一覧に出す絵文字。⚠タレット20枚・ユニット32枚が全部同じ絵だと見分けられないので型で変える */
 const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡',pierce:'🗡',beam:'🔆',poison:'🧪'};
-const UN_IC={melee:'✊',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚',slash:'⚔',beam:'🔆',elec:'⚡'};
+/* ⭐(221)英雄専用の3属性を追加(2026-08-08ユーザー指示)=🫧ゴム(ルピナ・全部等倍で跳弾)/
+   💧水(消防士・⚠「火の敵に特攻・電気の敵に弱い」は火/電気の敵が実装されたら効かせる=いまは等倍)/
+   🧪毒(毒霧の魔女・等倍で継続ダメージ) */
+const UN_IC={melee:'✊',bullet:'🔫',pierce:'🗡',blast:'💣',fire:'🔥',frost:'❄',heal:'✚',slash:'⚔',beam:'🔆',elec:'⚡',
+ rubber:'🫧',water:'💧',poison:'🧪'};
 const TW_DMG_STEP=.05;/* タレットの威力(1段あたりの素の刻み)。⚠伸びは `lineAcc` を通す(後半ほど大きい) */
 /* ユニットは近接だけHP寄り、それ以外は攻撃寄り(型ごと強化の時の配分をそのまま引き継ぐ) */
 const UN_STEP=ty=>(ty==='melee'||ty==='slash')?{a:.03,h:.03}:{a:.04,h:.02};/* 1段あたりの素の刻み */
@@ -5364,7 +5389,7 @@ const stkPow=C=>(soloMeta()?1+STK_STEP*clamp(META.st0||0,0,STK_MAX):1)*(1+STK_RU
 const HEROES=[
  /* ★1 弱ヒーロー(5種) */
  {id:'hCop',n:'元警官',rk:1,hp:900,atk:120,rate:.9,sp:64,c:'#4a6b8a',ty:'bullet',rng:300,uch:28,ult:'制圧射撃',udsc:'前方の敵を撃ち続けて足を止める'},
- {id:'hFire',n:'消防士',rk:1,hp:1400,atk:80,rate:1.2,sp:56,c:'#b0483a',ty:'fire',rng:140,aoe:70,burn:16,uch:28,ult:'放水',udsc:'範囲の敵を押し戻して消火(燃焼解除+減速)'},
+ {id:'hFire',n:'消防士',rk:1,hp:1400,atk:80,rate:1.2,sp:56,c:'#b0483a',ty:'water',/*💧(221)火→水*/rng:140,aoe:70,burn:16,uch:28,ult:'放水',udsc:'範囲の敵を押し戻して消火(燃焼解除+減速)'},
  {id:'hHunt',n:'猟師',rk:1,hp:820,atk:165,rate:1.4,sp:70,c:'#7a6a45',ty:'pierce',rng:380,uch:30,ult:'一斉罠',udsc:'足元に罠を撒いて踏んだ敵を拘束'},
  {id:'hMech',n:'整備士',rk:1,hp:1050,atk:95,rate:1,sp:60,c:'#8a8f96',ty:'melee',rng:44,uch:26,ult:'応急修理',udsc:'コアを回復し、壊れかけのタレットを直す'},
  {id:'hPost',n:'配達人',rk:1,hp:760,atk:110,rate:.7,sp:118,c:GOLD2,ty:'melee',rng:40,uch:24,ult:'速達',udsc:'超高速で突っ込んで一直線の敵を轢き飛ばす'},
@@ -5372,15 +5397,15 @@ const HEROES=[
  {id:'hSf',n:'特殊ユニット員',rk:2,hp:1600,atk:290,rate:.75,sp:78,c:'#3f4a54',ty:'bullet',rng:420,uch:34,ult:'精密狙撃',udsc:'最大HPの敵に必殺の一撃'},
  {id:'hMed',n:'軍医',rk:2,hp:1450,atk:150,rate:1,sp:66,c:LIFE,ty:'bullet',rng:260,uch:36,ult:'蘇生',udsc:'戦死したユニットをその場に呼び戻す'},
  {id:'hBomb',n:'爆破屋',rk:2,hp:1350,atk:330,rate:1.6,sp:62,c:'#d9884a',ty:'blast',rng:300,aoe:95,uch:34,ult:'大爆破',udsc:'仕掛けた爆薬を一斉に起爆する'},
- {id:'hDeal',n:'闇商人',rk:2,hp:1500,atk:200,rate:1,sp:74,c:'#a58a5c',ty:'bullet',rng:240,uch:32,ult:'闇取引',udsc:'煙玉を撒いて敵から⚙️を巻き上げ、ユニットの出撃待ちを全部消す'},
+ {id:'hDeal',n:'闇商人',rk:2,hp:1500,atk:200,rate:1,sp:74,c:'#a58a5c',ty:'bullet',rng:240,uch:32,ult:'闇取引',udsc:'敵から⚙️を巻き上げ、出撃待ちを全部消す'},/* ✍(221)ユーザー「大抵の画面ではみ出てる」=短くした */
  /* ★3 激レア(3種)。⚠2026-07-28ユーザー指示で2人足した(毒霧の魔女・傭兵団長) */
  {id:'hSeer',n:'死潮の預言者',rk:3,hp:2100,atk:420,rate:1.1,sp:70,c:'#8f6fae',ty:'pierce',rng:340,uch:40,ult:'時間停止',udsc:'盤面の敵を数秒完全に止める'},
- {id:'hVenom',n:'毒霧の魔女',rk:3,hp:1950,atk:300,rate:1.3,sp:66,c:TOXIC,ty:'fire',rng:210,aoe:85,burn:26,uch:38,ult:'腐食の霧',udsc:'盤面の敵の装甲を溶かし、じわじわ焼く'},
+ {id:'hVenom',n:'毒霧の魔女',rk:3,hp:1950,atk:300,rate:1.3,sp:66,c:TOXIC,ty:'poison',/*🧪(221)火→毒*/rng:210,aoe:85,burn:26,uch:38,ult:'腐食の霧',udsc:'盤面の敵の装甲を溶かし、じわじわ焼く'},
  {id:'hCmd',n:'傭兵団長',rk:3,hp:2400,atk:380,rate:.95,sp:72,c:'#8a7a4a',ty:'bullet',rng:300,uch:42,ult:'増援要請',udsc:'いま出せる一番強いユニットを4体その場に呼ぶ'},
  {id:'hMag',n:'磁力技師',rk:3,hp:2250,atk:350,rate:1.2,sp:64,c:'#6f9cae',ty:'blast',rng:200,aoe:90,uch:40,ult:'引力場',udsc:'前方の敵を1か所へ引き寄せて足止めする(すり抜ける敵も掴む)'},
  /* ★4 ウルトラレア(4種)。⚠2026-07-28ユーザー指示で2人足した(雷鳴の巫女・炉心の番人) */
  {id:'hGiant',n:'鋼鉄の巨人',rk:4,hp:5200,atk:560,rate:1.5,sp:46,c:GOLD2,ty:'blast',rng:64,aoe:110,uch:46,ult:'地響き',udsc:'全域の敵を吹き飛ばして気絶させる'},
- {id:'hStorm',n:'雷鳴の巫女',rk:4,hp:3900,atk:640,rate:1.2,sp:68,c:'#7fa8d9',ty:'pierce',rng:360,uch:48,ult:'雷嵐',udsc:'落雷が次々に落ちて敵を撃ち抜き、気絶させる'},
+ {id:'hStorm',n:'雷鳴の巫女',rk:4,hp:3900,atk:640,rate:1.2,sp:68,c:'#7fa8d9',ty:'elec',/*⚡(221)貫通→電撃*/rng:360,uch:48,ult:'雷嵐',udsc:'落雷が次々に落ちて敵を撃ち抜き、気絶させる'},
  {id:'hReact',n:'炉心の番人',rk:4,hp:4400,atk:520,rate:1.3,sp:52,c:'#c9d94a',ty:'fire',rng:150,aoe:80,burn:30,uch:50,ult:'炉心解放',udsc:'12秒間すべてのタレットの攻撃が+60%。発動時に熱波で焼く'},
  /* ⚠⚠**暁の王は2026-08-01に★5→★4へ降格**(ユーザー指示)。数値も★4の並びへ落とした。
     ⭐**並び順も★4の枠へ移した**(2026-08-03(89)ユーザー「★5だったときの順番にところどころなってる」)=
@@ -5396,16 +5421,16 @@ const HEROES=[
  /* ⭐★5の3人目(2026-08-01ユーザーの絵から起こした)。**18人でただ1人の騎乗**。
     ⚠排出率は「1体あたり」なので数値表は触らない=★5の枠が 0.2%→0.3% に自動で太くなる。
     ⚠終焉の騎士と題材が近いので**速さと範囲**で役割を分ける=馬で駆けて薙ぎ払う。 */
- {id:'hGeo',n:'狙撃王ジョルジ',rk:5,hp:5200,atk:1400,rate:1.9,sp:70,c:'#4e5b41',ty:'pierce',rng:520,uch:56,ult:'撃墜',udsc:'構えて10発を連続で撃ち込む(撃つ→コッキングの繰り返し)'},
+ {id:'hGeo',n:'狙撃王ジョルジ',rk:5,hp:5200,atk:1400,rate:1.9,sp:70,c:'#4e5b41',ty:'bullet',/*🔫(221)貫通→実弾*/rng:520,uch:56,ult:'撃墜',udsc:'構えて10発を連続で撃ち込む(撃つ→コッキングの繰り返し)'},
  {id:'hPyro',n:'紅蓮の大魔導士',rk:5,hp:5600,atk:760,rate:1.2,sp:60,c:'#c8323c',ty:'fire',rng:300,aoe:120,burn:40,uch:58,ult:'紅蓮の柱',udsc:'道の3か所に業火の柱を立て、しばらく燃やし続ける'},
- {id:'hDark',n:'暗黒の騎士',rk:5,hp:7000,atk:1020,rate:1.1,sp:96,c:'#8f1f28',ty:'blast',rng:80,aoe:105,uch:56,ult:'漆黒の突撃',udsc:'道を端まで駆け抜けて、触れた敵を薙ぎ倒し暗黒の炎を残す'},
+ {id:'hDark',n:'暗黒の騎士',rk:5,hp:7000,atk:1020,rate:1.1,sp:96,c:'#8f1f28',ty:'pierce',/*🗡(221)爆発→貫通*/rng:80,aoe:105,uch:56,ult:'漆黒の突撃',udsc:'道を端まで駆け抜けて、触れた敵を薙ぎ倒し暗黒の炎を残す'},
  /* 🌈⭐⭐**虹彩の跳弾姫ルピナ**(2026-08-03(92)ユーザー指示・参考絵あり=虹のポニーテール+
     星の白キャップ+白ジャケット+ばかでかい玩具ブラスター)。
     ⭐**通常攻撃=弾むゴムボール1発**。当たった敵から敵へ**1〜5回跳ねる(回数は等確率で抽選)**。
     ⭐**必殺=ゴムボール3発、跳ねるたびに威力が上がる(最大10連鎖)**。
     ⚠威力は「平均3回当たる」前提で1発を軽くしてある(群れに強く、1体だけ(ボス)には並)。
     ⚠絵は掟どおり全部プロシージャル(HBODY.hLupi)。仕組みは lupiBall(跳弾の共通処理)。 */
- {id:'hLupi',n:'跳弾姫ルピナ',rk:5,hp:5400,atk:480,rate:1.1,sp:76,c:'#ff7fb8',ty:'bullet',rng:300,uch:56,ult:'バブルガム・ボム',udsc:'巨大なバブルガムをふわりと放つ。大破裂が広範囲を巻き込み、ガムがべたついた敵は10秒間かなり遅くなり、受けるダメージが2倍になる'}
+ {id:'hLupi',n:'跳弾姫ルピナ',rk:5,hp:5400,atk:480,rate:1.1,sp:76,c:'#ff7fb8',ty:'rubber',/*🫧(221)実弾→ゴム(全部等倍で跳弾)*/rng:300,uch:56,ult:'バブルガム・ボム',udsc:'巨大なバブルガムをふわりと放つ。大破裂が広範囲を巻き込み、ガムがべたついた敵は10秒間かなり遅くなり、受けるダメージが2倍になる'}
 ];
 const RK_N=['','弱','レア','激レア','ウルトラレア','ギガトンレア'];
 const RK_S=['','★','★★','★★★','★★★★','★★★★★'];
@@ -5693,6 +5718,8 @@ const AF_TY={melee:{ic:'✊',n:'近接'},bullet:{ic:'🔫',n:'実弾'},pierce:{i
  elec:{ic:'⚡',n:'電撃'},net:{ic:'🕸',n:'拘束'},heal:{ic:'✚',n:'回復'},
  /* ⭐(196)足した3つ。⚔斬撃=刃物 / 🔆ビーム=光と超高速の弾 / 🧪毒=継続で削る */
  slash:{ic:'⚔',n:'斬撃'},beam:{ic:'🔆',n:'ビーム'},poison:{ic:'🧪',n:'毒'},
+ /* ⭐(221)英雄専用(2026-08-08ユーザー指示)。AF_MATに載せない=どの材質にも等倍 */
+ rubber:{ic:'🫧',n:'ゴム'},water:{ic:'💧',n:'水'},
  eco:{ic:'🏭',n:'工房'},sup:{ic:'🏗',n:'支援'}};
 /* ⚠(196)`afMul`(材質ごとの倍率をまとめて返す物)は**消した**=`afX(型, 敵)` 1本に統一したため。
    表示側が倍率を欲しくなったら `afX('fire',{armor:1})` のように直に呼ぶこと。 */
