@@ -19,7 +19,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['st2|st3','ステージ2(沈んだ港)/ステージ3(送電鉄塔の丘)'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
   ['setup','出撃準備'],['lab[=タブ]','🔬研究所(twup/unup/rec…)'],['load','🎒編成'],['home','🏠ホーム'],
   ['map','🗺エリアマップ(worldmap+mappg=0|1|2 で面を選ぶ)'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
-  ['iv=<波>','作戦タイム'],['grid=tw|tg|u|hero|hd|z','部品を並べて撮る(hd=🦸顔の切り抜き。⚠**全種1枚は tool_sheet.js**)'],
+  ['iv=<波>','作戦タイム'],['grid=tw|tg|u|hero|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
   ['home+hsel=<id>','🏠ホームで連れて行く英雄を差し替える'],
   ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
@@ -315,7 +315,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        /* hopt=⚙オプション / hmsn=🎯任務(2026-08-06(192)。今まで撮る口が無かった=一度も見ていなかった) */
        +(OPT.indexOf('hopt')>=0?'ensureAC();optRender();document.getElementById("md-opt").classList.add("on");':'')
        +(OPT.indexOf('hmsn')>=0?'openMsn();':'')
-       +(OPT.indexOf('hmail')>=0?'openMail();':'')/* ✉️(227)メールの窓 */
+       /* ✉️(227)メールの窓。hmailv=アップデートの通を開いた状態(中身が全部出ている所) */
+       +(OPT.indexOf('hmailv')>=0?'MAILV="m2";openMail();':(OPT.indexOf('hmail')>=0?'openMail();':''))
        +(OPT.indexOf('hbase')>=0?'document.getElementById("md-base").classList.add("on");':''))/* 🏭(227b)基地の窓 */
      :(OPT.indexOf('worldmap')>=0)?('META.tr0=1;'
        +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
@@ -688,9 +689,6 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      +'else if(K==="tg"){for(var i=0;i<TOWERS.length;i++)if(TOWERS[i].grd)items.push({n:TOWERS[i].n,i:i});}'
      +'else if(K==="u"){for(var i=0;i<U_N;i++)items.push({n:UNITS[i].n,i:i});}'
      +'else if(K==="hero"){for(var i=0;i<HEROES.length;i++)items.push({n:HEROES[i].n,i:HERO_I0+i});}'
-     /* 🦸(227c)hd=**顔まわりの切り抜き**を全員ぶん(下のナビの英雄タブに出る絵)。
-        ⚠左=実寸(32px)・右=3倍。⚠外してある英雄(off)は出さない */
-     +'else if(K==="hd"){for(var i=0;i<HEROES.length;i++)if(!HEROES[i].off)items.push({n:HEROES[i].n,i:HERO_I0+i});}'
      +'else{for(var i=0;i<ZOMBIES.length;i++)items.push({n:ZOMBIES[i].n,i:i});}'
      +'var n=items.length,cols=Math.ceil(Math.sqrt(n*W2/H2*.75)),rows=Math.ceil(n/cols);'
      +'var cw=W2/cols,ch=H2/rows;'
@@ -698,10 +696,6 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      +'c.save();c.beginPath();c.rect(cx,cy,cw,ch);c.clip();'
      +'c.strokeStyle="rgba(0,0,0,.15)";c.lineWidth=1;c.strokeRect(cx+.5,cy+.5,cw-1,ch-1);'
      +'c.fillStyle=INK;c.font="900 11px "+FF;c.textAlign="left";c.fillText(items[k].n,cx+5,cy+13);'
-     /* 🦸(227c)hd=顔の切り抜きは丸ごと別の描き方(切り抜きなので fitDraw を通さない) */
-     +'if(K==="hd"){var a9=null,b9=null;try{a9=heroHeadTh(items[k].i,32);b9=heroHeadTh(items[k].i,96);}catch(e){}'
-     +'try{if(b9)c.drawImage(b9,cx+cw*.52,cy+ch-104,96,96);if(a9)c.drawImage(a9,cx+10,cy+ch-42,32,32);}catch(e){}'
-     +'c.restore();continue;}'
      /* 左=実寸 / 右=3倍。⚠実寸で見分けが付くかが本番、3倍は細部の壊れを見るため */
      +'var by=cy+ch-8;'
      +'for(var m=0;m<2;m++){var sc=(m?3:1)*s0,px=cx+(m?cw*.62:cw*.22);'
