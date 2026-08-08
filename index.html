@@ -4034,8 +4034,10 @@ function tbgmOn(){if(tbgmTimer||!AC)return;
  tbgmTimer=setInterval(()=>{if(!AC||muted||SCR==='game')return;
   if(typeof OP!=='undefined'&&OP.on)return;
   /* 🎵(213)⚠ガチャの曲が鳴っている間は黙る=最初のタップの後始末(ensureAC)がタイトル曲を
-     もう一度点けても、ここで止まるので二重に鳴らない */
-  if(gbgmTimer)return;
+     もう一度点けても、ここで止まるので二重に鳴らない。
+     ⚠⚠(220)**引いている最中の曲(gpbgm)も見る**=ここを見落として、実際に引いている間だけ
+     タイトル曲が入り込んでいた(2026-08-08ユーザー報告)。 */
+  if(gbgmTimer||gpbgmTimer)return;
   const s=tbgmStep%TB_LOOP,f=TBGM[s%16];
   /* ⭐**1周かけて盛り上がって、また静かに戻る**(2026-07-27ユーザー指示
        「BGMをある程度流したら若干盛り上がってくる感じに。1サイクルしたらまた最初の落ち着いた感じに」)。
@@ -4134,7 +4136,7 @@ function gbgmOff(){if(gbgmTimer&&gbgmTimer!=='file')clearInterval(gbgmTimer);
 let gpbgmTimer=null,gpbgmStep=0;
 function gpbgmOn(){if(gpbgmTimer||!AC)return;
  if(typeof SFXTEST!=='undefined'&&SFXTEST)return;
- gbgmOff();
+ gbgmOff();tbgmOff();/* ⚠(220)再点火されたタイトル曲もここで確実に消す */
  if(fileBgmPlay('gpl',.22)){gpbgmTimer='file';return;}/* 🎵(219)本物の曲(さらに小さめ)。無ければ下の合成 */
  gpbgmStep=0;
  gpbgmTimer=setInterval(()=>{if(!AC||muted)return;
