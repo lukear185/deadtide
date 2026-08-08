@@ -1566,6 +1566,7 @@ function checkMetaReset(){
  META.gem=7;META.hero={hNox:1};META.hmat=5;META.zdex={walk:1};META.hlv={hNox:2};META.hxp={hNox:30};
  META.rpg={gold:99};META.hsel='hNox';META.tr0=1;META.tmTip=1;
  META.tk5=2;META.gft={x:1};/* 🎫★5確定チケットと配布物の印(2026-08-03(106)) */
+ META.mailRd={m1:1};META.mailGot={m1:1};/* ✉️メールの印(2026-08-09(227)) */
  META.pts=500;ownN(3,null);ownN(null,4);META.uv=['x'];META.py0=3;
  META.tw={rifle:2};META.un={bat:3};META.st0=4;/* タワー/兵科の個別強化と砲撃威力 */
  META.sc=[[1,1,1,1,1,1],[0,0,0,0,0,0]];META.nmOK=1;
@@ -1587,7 +1588,10 @@ function checkMetaReset(){
   /* ⚠🎒編成の案内は「1回だけ出す」印=消し忘れると初期化した人に案内が出ない(2026-08-02) */
   ['🎒編成の案内の印',!META.tmTip],
   /* 🎫⚠印まで消さないと、初期化した人に配布物がもう一度渡らない(逆に印が残ると永久に渡らない) */
-  ['🎫★5確定チケット',!(META.tk5||0)],['🎫配布物の印',Object.keys(META.gft||{}).length===0]];
+  ['🎫★5確定チケット',!(META.tk5||0)],['🎫配布物の印',Object.keys(META.gft||{}).length===0],
+  /* ✉️印まで消さないと、初期化した人がメールをもう一度受け取れない/逆に残ると永久に渡らない */
+  ['✉️メールの読んだ印',Object.keys(META.mailRd||{}).length===0],
+  ['✉️メールの受け取った印',Object.keys(META.mailGot||{}).length===0]];
  for(const [n,ok] of gone2)if(!ok){console.log('FAIL: 初期化しても '+n+' が残っている');process.exit(1);}
  const gone=[['研究pt',META.pts===0],['新種タワー',META.nt===0],['新種兵科',META.nu===0],
   ['派生',META.uv.length===0],['経済強化',META.py0===0],

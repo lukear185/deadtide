@@ -127,6 +127,8 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .ver{position:fixed;top:10px;right:12px;font-size:11px;font-weight:800;color:var(--paper);opacity:.6}
 /* ---- セットアップ/ロビー ---- */
 .setwrap{width:min(430px,92vw);display:flex;flex-direction:column;gap:12px}
+/* 📱(227)出撃準備も切り欠きを避ける(左右とも=反転で逆側に来る) */
+#scr-setup{padding-left:max(0px,env(safe-area-inset-left));padding-right:max(0px,env(safe-area-inset-right))}
 /* ⭐**出撃準備だけ画面を大きく使う**(2026-07-27ユーザー指示)。
    ⚠それまで .setwrap は全画面共通の 430px 固定で、横画面(852px)では**左右に420pxの空きが出て**
      縦にスクロールしないと「防衛開始」に届かなかった。
@@ -144,7 +146,10 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
    ⭐型=**アークナイツ式**: ①全画面の情景(夕暮れの廃墟)の上に ②左=英雄の立ち姿(枠に入れない) /
    ③右上=資源のピル ④右=大きな出撃バナー ⑤下=暗いガラス板の機能タイル。
    ⚠情景は #homebg(プロシージャル)。タイルは紙の枠を貼らない(applyFramesで除外)。 */
-#scr-home{display:none;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--ink4)}
+#scr-home{display:none;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--ink4);
+ /* 📱(227)スマホの切り欠き(カメラの黒い円柱)と音量の帯を避ける=左右とも(反転すると逆側に来る)。
+    ⚠盤面(ゲーム中)はここに倣わない=操作バーの幅に余裕が無い([[NOTES_UI]]) */
+ padding-left:max(0px,env(safe-area-inset-left));padding-right:max(0px,env(safe-area-inset-right))}
 #scr-home.on{display:flex}
 #homebg{position:absolute;inset:0;width:100%;height:100%;display:block}
 /* ⚠⚠⚠**`94vh` だけで高さを決めない**(2026-08-03(109)ユーザー写真=実機でタイルの下が切れ続けた)。
@@ -154,7 +159,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* ⭐**上下の遊びを削る**(2026-08-03(109)ユーザー「上にちょっと詰めれない?空いてるから」)=
    94%で持っていたので上下に6%(約24px)の死に地があった。**高さいっぱいに使い、余白は上4/下8だけ**
    (⚠下を少し残すのは iPhone のホームインジケータに札が被らないようにするため)。 */
-.homewrap{position:relative;z-index:1;display:flex;gap:14px;width:min(97vw,900px);
+.homewrap{position:relative;z-index:1;display:flex;gap:14px;width:min(97%,900px);/* 📱(227)97vw→97%=切り欠き避けのpaddingの内側で数える */
  height:min(100vh,var(--appH,100vh),486px);max-height:100%;align-items:stretch;padding:4px 0 8px}
 /* 英雄は「箱の中の絵」ではなく情景の上に立たせる(枠・背景なし) */
 .homeleft{flex:0 0 33%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
@@ -181,7 +186,13 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:12px;color:var(--pane);
  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(242,236,220,.08)}
 .homeback:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.5)}
-.homeres{flex:1 1 auto;font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:7px;justify-content:flex-end;align-items:center}
+.homeres{flex:0 0 auto;font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:7px;justify-content:flex-end;align-items:center}
+/* ✉️🎯(227)右上の印だけのボタン(メール・任務)=角丸四角。研究Pの札の左に並ぶ(ユーザー指示)。
+   受け取れる物・未読があると右上に赤い点。⚠文字は出さない(印と点だけ) */
+#hm-mail{margin-left:auto}
+.homeico{position:relative;font-size:19px}
+.homeico .rdot{position:absolute;top:-4px;right:-4px;width:13px;height:13px;border-radius:50%;
+ background:var(--danger);border:2px solid rgba(16,13,10,.92);box-shadow:0 0 6px rgba(255,90,74,.7)}
 .homeres span{background:rgba(12,10,8,.66);border:2px solid rgba(242,236,220,.24);border-radius:20px;padding:3px 12px;
  box-shadow:inset 0 1px 0 rgba(242,236,220,.08)}
 /* 出撃=この画面の主役。文字を大きく+光が周期的に走る */
@@ -220,6 +231,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homeright{flex:0 0 46%;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0}
 .hrow2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .hrow2 .homebt{min-height:44px;height:auto}
+/* 🎯(227)任務を右上の印ボタンへ移したので、上の段は3枚(図鑑・砲撃・鍛錬所)を1行に。
+   ⚠3枚で割ると1枚が狭い=絵と余白を一回り詰めて下の行の字を守る(それでも長い名前は…で切れる) */
+#home-grid{grid-template-columns:repeat(3,1fr)}
+#home-grid .homebt{padding:6px 6px;gap:6px}
+#home-grid .homebt .hic{width:30px;height:30px;font-size:17px;border-radius:9px}
+#home-grid .homebt i{font-size:10.5px}
 .homeright .hfull{min-height:44px;height:auto}
 .homeright .homebt b{font-size:15px}
 .homeright .homebt i{font-size:11px}
@@ -255,12 +272,14 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
 /* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
 /* ⭐**絵は左・文字は右の横並び**(2026-08-03(109))=縦に積むより背が低くて済み、名前と中身が読みやすい */
-.homebt{height:100%;min-height:44px;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;padding:6px 9px;overflow:hidden;text-align:left;
+/* 📐(227)**中身は真ん中に寄せる**(ユーザー指摘「ボタンの右部分が空白になってる」)=
+   絵+名前の塊を中央へ。名前の行そのものは左揃えのまま(2段の頭を揃える) */
+.homebt{height:100%;min-height:44px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;padding:6px 9px;overflow:hidden;text-align:left;
  background:rgba(24,20,15,.80);border:2px solid rgba(242,236,220,.22);border-radius:14px;color:var(--pane);
  box-shadow:0 4px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(242,236,220,.08)}
 .homebt:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.5)}
 /* 文字は絵の右に2行(名前/中身)。⚠`min-width:0` が要る=無いと長い名前で絵が潰れる */
-.homebt .hlb{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;overflow:hidden}
+.homebt .hlb{flex:0 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;overflow:hidden}/* (227)1 1→0 1=名前の幅ぶんだけ(余りは両側へ=中央寄せが効く) */
 .homebt b{font-size:14px;color:var(--pane);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .homebt i{font-style:normal;font-size:11px;color:var(--paper3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* アイコンは小さな台座に載せる(タイルの目印が揃う) */
@@ -276,13 +295,13 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 #scr-map{display:none;position:relative}
 #scr-map.on{display:block}
 #mapcv{position:absolute;inset:0;width:100%;height:100%;display:block}
-.mapcard{position:absolute;right:10px;bottom:10px;width:min(42vw,290px);padding:9px 12px}
+.mapcard{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:10px;width:min(42vw,290px);padding:9px 12px}/* 📱(227)切り欠き避け */
 /* ⭐(96)拠点名は墨の帯で(窓の見出しと同じ型) */
 .mapcard b{display:block;font-size:15px;background:var(--ink);color:var(--pane);
  margin:-9px -12px 7px;padding:7px 12px;border-radius:10px 10px 0 0;border-left:6px solid var(--gold)}
-.mapback{position:absolute;left:10px;bottom:10px;padding:11px 16px}
+.mapback{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:10px;padding:11px 16px}/* 📱(227)切り欠き避け */
 /* 🗺(207)面をめくる帯=上端に貼る。⚠**中央寄せにしない**=名前の長さで◀▶が左右に動く */
-.maphd{position:absolute;left:10px;right:10px;top:8px;display:flex;align-items:center;gap:8px;
+.maphd{position:absolute;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:8px;display:flex;align-items:center;gap:8px;/* 📱(227)切り欠き避け */
  pointer-events:none}
 .maphd>*{pointer-events:auto}
 .maptitle{flex:1;text-align:center;font-size:15px;font-weight:900;color:var(--ink);
@@ -1652,6 +1671,10 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
   <div class="homewrap">
    <div class="homebar">
      <button class="btn homeback" id="hm-back" aria-label="タイトルへ戻る">←</button>
+     <!-- ✉️🎯(227)メールと任務=右上の印だけの角丸ボタン(ユーザー指示「的マークだけでよくて、
+          受け取れるやつがあったら赤い点」)。研究Pの札の左に並ぶ -->
+     <button class="btn homeback homeico" id="hm-mail" aria-label="メール">✉️<span class="rdot" id="hm-mail-dot" style="display:none"></span></button>
+     <button class="btn homeback homeico" id="hm-msn" aria-label="任務">🎯<span class="rdot" id="hm-msn-dot" style="display:none"></span></button>
      <div class="homeres" id="home-res"></div>
    </div>
    <div class="hometop">
@@ -1668,8 +1691,8 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
       <div id="home-hname" class="homehn"></div>
     </div>
     <div class="homeright">
+      <!-- 🎯(227)任務タイルは右上の印ボタンへ移した=上の段は3枚1行 -->
       <div class="hrow2" id="home-grid">
-        <button class="btn homebt" id="hm-msn"><span class="hic" id="hm-msn-ic">🎯</span><span class="hlb"><b>任務</b><i id="hm-msn-i"></i></span></button>
         <button class="btn homebt" id="hm-zoo"><span class="hic" id="hm-zoo-ic">📖</span><span class="hlb"><b>図鑑</b><i id="hm-zoo-i"></i></span></button>
         <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
         <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
@@ -2174,6 +2197,13 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
     <div class="bpbody" id="msn-list"></div>
   </div>
 </div>
+<!-- ✉️メール(2026-08-09(227)ユーザー指示)=プレゼントとお知らせの受け取り箱。⚠1枚=1通 -->
+<div class="modal" id="md-mail">
+  <div class="panel bigpanel" style="width:min(94vw,560px);height:auto;max-height:min(88vh,var(--appH,88vh))">
+    <div class="bphd"><b>✉️ メール</b><span class="pt" id="mail-cnt"></span><button class="xbtn" id="bt-mail-close">✕</button></div>
+    <div class="bpbody" id="mail-list"></div>
+  </div>
+</div>
 <div class="modal" id="md-zoo">
   <div class="panel bigpanel">
     <div class="bphd"><b>📖 ゾンビ図鑑</b><span class="pt" id="zoo-cnt"></span><button class="xbtn" id="bt-zoo-close">✕</button></div>
@@ -2536,6 +2566,8 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0','tk5','arcW','arcL'])META[k]=META[k]||0;/* ⚠(125)arcW/arcL=🏹弓比べの戦績 */
  if(!META.gft||typeof META.gft!=='object')META.gft={};/* 🎫受け取った配布物の印 id→1 */
  if(!META.msn||typeof META.msn!=='object')META.msn=null;
+ if(!META.mailRd||typeof META.mailRd!=='object')META.mailRd={};/* ✉️(227)読んだ印 id→1 */
+ if(!META.mailGot||typeof META.mailGot!=='object')META.mailGot={};/* ✉️(227)受け取った印 id→1 */
  META.edOK=META.edOK||0;/* 🏁(156)区切りの幕を見たか */
  META.edPend=META.edPend||0;/* 🎬(164)タイトルへ戻ったら流す印 *//* 🎯任務(2026-08-04(152))。⚠日が違えば msnDay が作り直す */
  /* 🚌バスの物資と永続強化(2026-08-02(44))。⚠古いセーブには無いので必ず作り直す */
@@ -2627,6 +2659,7 @@ function metaResetAll(){
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.msn=null;                                /* 🎯(152)今日の任務(次に開いた時に作り直される) */
+ META.mailRd={};META.mailGot={};               /* ✉️(227)メールの読んだ印・受け取った印 */
  META.edOK=0;META.edPend=0;                    /* 🏁(156)区切りの幕を見たか */
  META.cupR=[];                                 /* 🥤(166)カップゾンビの記録 */
  META.rpg={};                                  /* ⚔冒険の進捗 */
@@ -6615,10 +6648,44 @@ function msnClaim(i){
  try{toast('🎯 受け取った! 💎'+d.gem);}catch(e){}
  return true;
 }
-/* 受け取れる件数(ホームのタイルの札に出す=開かなくても分かる) */
+/* 受け取れる件数(ホームの赤い点に使う=開かなくても分かる) */
 function msnReady(){try{const M=msnDay();let n=0;
  for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];if(d&&!M.got[i]&&M.p[i]>=d.g)n++;}
  return n;}catch(e){return 0;}}
+/* ============ ✉️メール(2026-08-09(227)ユーザー指示) ============
+   ⭐プレゼントとお知らせの受け取り箱(ホーム右上の✉️から)。
+   ⭐**新しく送る時はこの表の先頭に1行足すだけ**(表示は上から=新しい順に並べておく)。
+   ⚠id は一意・一度出したら書き換えない(受け取りの印が id で残る)。
+   gift={gem:💎,hmat:🔧,tk5:🎫} を好きに組み合わせる(無ければお知らせだけ)。
+   ⚠⚙️🔩など試合中の資源は配らない(🎯任務と同じ理由=1試合の強さが配布で変わってしまう)。
+   ⚠読んだ印=META.mailRd / 受け取った印=META.mailGot(metaResetAll にも入れてある)。 */
+const MAILS=[
+ {id:'m2',d:'2026-08-09',t:'アップデート情報',
+  b:'・新エリア「送電鉄塔の丘」<br>・🎖編成に「タレット」タブ<br>・🚌バスの装備を一新',gift:{gem:10}},
+ {id:'m1',d:'2026-08-09',t:'開拓団へようこそ',
+  b:'生き延びた仲間からの差し入れ。たしにしてくれ。',gift:{gem:30}},
+];
+/* 付き物を1行の文字にする(受け取るボタンとトーストで使う) */
+function mailGift(g){if(!g)return '';const p=[];
+ if(g.gem)p.push('💎'+g.gem);if(g.hmat)p.push('🔧'+g.hmat);if(g.tk5)p.push('🎫'+g.tk5);
+ return p.join(' ');}
+/* 赤い点=未読があるか、受け取っていない付き物がある */
+function mailDot(){try{const rd=META.mailRd||{},gt=META.mailGot||{};
+ return MAILS.some(m=>!rd[m.id]||(m.gift&&!gt[m.id]));}catch(e){return false;}}
+/* 受け取り。⚠付き物があって、まだ受け取っていない時だけ(二度押しで2回配らない) */
+function mailClaim(id){
+ const m=MAILS.find(x=>x.id===id);
+ META.mailGot=META.mailGot||{};
+ if(!m||!m.gift||META.mailGot[id])return false;
+ META.mailGot[id]=1;
+ if(m.gift.gem)META.gem=(META.gem||0)+m.gift.gem;
+ if(m.gift.hmat)META.hmat=(META.hmat||0)+m.gift.hmat;
+ if(m.gift.tk5)META.tk5=(META.tk5||0)+m.gift.tk5;
+ saveMeta();
+ try{if(sfx.win)sfx.win();}catch(e){}
+ /* ⚠toast に IC() を通した文字列を渡さない(絵文字のまま=[[NOTES_UI]]の掟) */
+ try{toast('✉️ 受け取った! '+mailGift(m.gift));}catch(e){}
+ return true;}
 /* 次に走れるまでの残り(⚠日付が変わるまでなので分まで出す) */
 function bnsNextS(){
  const d=new Date();
@@ -33524,6 +33591,31 @@ function renderMsn(){
   if(msnClaim(+b.dataset.msn)){renderMsn();renderHome();}};});
 }
 function openMsn(){renderMsn();$('md-msn').classList.add('on');}
+/* ✉️メールの窓(227)。⚠開いたら全部「読んだ」にする=赤い点は受け取り残しがある間だけ残る。
+   ⚠1枚=1通・受け取るボタンは付き物が残っている通にだけ出す(🎯任務の窓と同じ型) */
+function renderMail(){
+ const box=$('mail-list');if(!box)return;
+ META.mailRd=META.mailRd||{};META.mailGot=META.mailGot||{};
+ let rd9=0;MAILS.forEach(m=>{if(!META.mailRd[m.id]){META.mailRd[m.id]=1;rd9=1;}});
+ if(rd9)saveMeta();
+ const left9=MAILS.filter(m=>m.gift&&!META.mailGot[m.id]).length;
+ const n=$('mail-cnt');
+ if(n)n.textContent=left9?('受け取れる '+left9+'通'):(MAILS.length+'通');
+ box.innerHTML=MAILS.map(m=>{
+  const got=!!META.mailGot[m.id],has=!!m.gift;
+  return '<div class="lc'+(has&&!got?' can':'')+'" style="margin-bottom:6px">'
+   +'<div style="display:flex;align-items:center;gap:8px">'
+   +'<b style="flex:1;font-size:13px">'+IC(m.t)+'</b>'
+   +'<span style="font-size:10.5px;opacity:.7;white-space:nowrap">'+m.d+'</span>'
+   +'</div>'
+   +'<div style="font-size:11.5px;color:var(--paper3);margin-top:3px;line-height:1.55">'+IC(m.b)+'</div>'
+   +(has?(got?'<div style="font-size:11.5px;opacity:.7;margin-top:3px">✅ 受け取り済み</div>'
+    :'<button class="btn gold" data-mail="'+m.id+'" style="margin-top:5px;width:100%;min-height:44px">'+IC(mailGift(m.gift))+' 受け取る</button>'):'')
+   +'</div>';}).join('');
+ box.querySelectorAll('[data-mail]').forEach(b=>{b.onclick=()=>{
+  if(mailClaim(b.dataset.mail)){renderMail();renderHome();}};});
+}
+function openMail(){renderMail();$('md-mail').classList.add('on');}
 /* ============ 📖 HUDの札の中身(押すと出る) ============
    2026-08-04(158)ユーザー指示「リソースの歯車とナットマークを押したら獲得条件を見れるように」
    「ついでにユニット上限と拠点HPも」。
@@ -36559,13 +36651,10 @@ function renderHome(){
   const lp=$('hm-lab-pts');if(lp)lp.innerHTML='';}
  /* 📖図鑑タイル。⭐**登録数を札に出す**=「まだ埋まっていない」が押す前に分かる(2026-08-04(142)) */
  {const zi=$('hm-zoo-ic');if(zi)zi.innerHTML=IC('📖');
-  const zn=$('hm-zoo-i');if(zn)zn.textContent=ZOMBIES.filter(z=>!z.off&&zcSeen(z.id)).length+' / '+ZOMBIES.filter(z=>!z.off).length+' 種';}/* (226c)off:1は数えない */
- /* 🎯任務タイル。⭐**受け取れる件数を札に出す**=窓を開かないと気付けない、をなくす(💎チケットと同じ手) */
- {const mi=$('hm-msn-ic');if(mi)mi.innerHTML=IC('🎯');
-  const mn=$('hm-msn-i');
-  if(mn){const r=msnReady();
-   mn.textContent=r?('受け取れる '+r+'件!'):(msnDay().got.filter(x=>x).length+' / '+MSN_N+' 達成');}
-  const mb=$('hm-msn');if(mb)mb.classList.toggle('can',msnReady()>0);}
+  const zn=$('hm-zoo-i');if(zn)zn.textContent=ZOMBIES.filter(z=>!z.off&&zcSeen(z.id)).length+'/'+ZOMBIES.filter(z=>!z.off).length+' 種';}/* (226c)off:1は数えない。(227)3枚割りで狭い=空白を詰める */
+ /* 🎯✉️(227)右上の印ボタン=受け取れる物・未読があると赤い点だけ(ユーザー指示=文字は出さない) */
+ {const d9=$('hm-msn-dot');if(d9)d9.style.display=msnReady()>0?'':'none';}
+ {const d9=$('hm-mail-dot');if(d9)d9.style.display=mailDot()?'':'none';}
  {const gi=$('hm-gacha-ic');if(gi)gi.innerHTML=icoImg('ic-gem','💎');
   /* 💎⭐(226)**資源の数字は右上の帯だけに出す**(2026-08-08ユーザー「いろんなとこに書いてあるから
      右上に表示するなら右上だけ」)=丸から💎の数を外した。🎫チケットだけは右上に無いので残す */
@@ -36711,6 +36800,7 @@ $('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add(
    ⭐相性を学ぶ場所は**最初から押せる**こと。窓(`md-zoo`)と `openZoo()` は前からあったので繋いだだけ。 */
 $('hm-zoo').onclick=()=>{openZoo();};
 $('hm-msn').onclick=()=>{openMsn();};
+$('hm-mail').onclick=()=>{openMail();};/* ✉️(227) */
 $('hm-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');tbgmOff();gbgmOn();/* 🎵(213)⚠開く入口は2つ(タイトルとホーム)=両方で曲を切り替える */};
 $('hm-back').onclick=()=>show('title');
 $('bt-online').onclick=()=>{ensureAC();show('online');};
@@ -37044,6 +37134,7 @@ try{
   zb.onclick=()=>{openZoo();};}
  const zc=$('bt-zoo-close');if(zc)zc.onclick=()=>$('md-zoo').classList.remove('on');
  const mc=$('bt-msn-close');if(mc)mc.onclick=()=>$('md-msn').classList.remove('on');
+ const mlc=$('bt-mail-close');if(mlc)mlc.onclick=()=>{$('md-mail').classList.remove('on');renderHome();/* ✉️(227)閉じたら赤い点を引き直す */};
  /* 🧪検証場(DEV専用)。⚠選ぶ画面は廃止=押したらそのまま入る */
  const tb=$('bt-tst');
  if(tb){if(DEV){tb.style.display='block';devRow();}

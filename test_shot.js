@@ -311,7 +311,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        +(OPT.indexOf('hstk')>=0?'META.st=["air","mgun","frost"];renderStkPick();document.getElementById("md-stk").classList.add("on");':'')
        /* hopt=⚙オプション / hmsn=🎯任務(2026-08-06(192)。今まで撮る口が無かった=一度も見ていなかった) */
        +(OPT.indexOf('hopt')>=0?'ensureAC();optRender();document.getElementById("md-opt").classList.add("on");':'')
-       +(OPT.indexOf('hmsn')>=0?'openMsn();':''))
+       +(OPT.indexOf('hmsn')>=0?'openMsn();':'')
+       +(OPT.indexOf('hmail')>=0?'openMail();':''))/* ✉️(227)メールの窓 */
      :(OPT.indexOf('worldmap')>=0)?('META.tr0=1;'
        +(OPT.indexOf('mapmid')>=0?'META.sc=[[1,1,1,1,0,0,1],[0,0,0,0,0,0]];':'')
        +'mapOpen();'+((/mappg=(\d)/.exec(OPT)||[0,''])[1]?('mapPage('+(/mappg=(\d)/.exec(OPT)||[0,0])[1]+');'):'')+'show("map");for(var q9=0;q9<30;q9++)mapDraw(q9*.1);')
