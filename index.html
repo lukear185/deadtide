@@ -204,20 +204,38 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homegrid.cmp .homebt .hth canvas{width:24px;height:18px}
 .homegrid.cmp .homebt b{font-size:13px}
 .homegrid.cmp .homebt i{font-size:10.5px}
-/* 🏠⭐(221)**ソシャゲの型に組み替え**(2026-08-08ユーザー指示)=
-   ①主役4つ(編成/英雄/研究所/英雄召集)は**下部の横長の帯**へ ②残り(任務/図鑑/砲撃/鍛錬所)は
-   **右上の小さい入り口の列**へ ③真ん中は絵と出撃だけ。⚠押す所44px/appHの掟はそのまま。 */
-.homewrap{flex-direction:column}
-.hometop{display:flex;gap:14px;flex:1 1 auto;min-height:0}
-.homedock{display:flex;gap:8px;width:100%;flex:0 0 auto}
-.homedock .homebt{flex:1 1 0;min-width:0;min-height:54px;justify-content:center;padding:5px 8px}
-.homedock .homebt b{font-size:15px}
-.homedock .homebt i{font-size:10.5px}
-.homemini{display:flex;gap:6px;justify-content:flex-end;flex:0 0 auto}
-.homemini .homebt{flex:0 0 auto;min-height:44px;padding:4px 9px;gap:5px}
-.homemini .homebt .hic{width:26px;height:26px;font-size:15px;border-radius:8px}
-.homemini .homebt b{font-size:11.5px}
-.homemini .homebt i{display:none}/* 小さい入り口は名前だけ(中身の数字は開けば分かる) */
+/* 🏠⭐⭐(223)**参考画像の配置**(2026-08-08ユーザー)=左上=戻る/左=縦のサブ列/左下=召集の丸/
+   中央=英雄の絵/右=カードの縦積み(2列→全幅→一番下に出撃)。⚠質感は既存の紙と錆のまま。 */
+.homewrap{flex-direction:column;gap:6px}
+.hometop{display:flex;gap:12px;flex:1 1 auto;min-height:0;position:relative}
+.homesub{flex:0 0 92px;display:flex;flex-direction:column;gap:8px;padding-top:2px;align-items:center}
+.homesub .homebt{width:62px}
+.homesub .homebt{flex:0 0 auto;height:auto;min-height:52px;flex-direction:column;padding:5px 4px;gap:2px;justify-content:center}
+.homesub .homebt .hic{width:26px;height:26px;font-size:15px;border-radius:8px}
+.homesub .homebt b{font-size:10.5px}
+.homesub .homebt i{display:none}
+.homeleft{flex:1 1 auto;min-width:0}
+.homeright{flex:0 0 46%;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0}
+.hrow2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.hrow2 .homebt{min-height:40px;height:auto}
+.homeright .hfull{min-height:40px;height:auto}
+.homeright .homebt b{font-size:14px}
+.homeright .homebt i{font-size:10.5px}
+#bt-home-resume{font-size:15px;padding:3px 8px}
+.homego{margin-top:auto;min-height:48px;font-size:20px}
+/* 💎英雄召集=左下の大きい丸(押す所は十分に大きい)。⚠.btn の紙の枠と鋲は消して丸に見せる */
+.gachaorb{margin-top:auto;flex:0 0 auto;width:88px!important;height:88px;
+ border-radius:50%!important;overflow:hidden;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px;
+ background:radial-gradient(circle at 50% 34%,#4a2c5e,#2b1a38 68%,#180f22)!important;
+ border:3px solid #8a63b8!important;
+ box-shadow:0 4px 0 rgba(0,0,0,.55),inset 0 2px 0 rgba(242,236,220,.14)!important;color:var(--pane)!important}
+.gachaorb::before,.gachaorb::after{display:none!important}
+.gachaorb:active{transform:translateY(2px)}
+.gachaorb .hic{width:26px;height:26px;font-size:17px;background:transparent;border:0}
+.gachaorb .hlb{align-items:center}
+.gachaorb b{font-size:11.5px;white-space:nowrap}
+.gachaorb i{font-style:normal;font-size:11px;font-weight:900;opacity:.95;white-space:nowrap}
 /* ⭐機能タイルはちょうど6つ(3×2)。⚠戻るはここに入れない(上の帯へ出した) */
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
@@ -1612,8 +1630,20 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
 <div class="scr" id="scr-home">
   <!-- 🌆(96)背景=夕暮れの廃墟のスカイライン(プロシージャル。homeBgが毎フレーム描く) -->
   <canvas id="homebg"></canvas>
+  <!-- 🏠⭐⭐(223)**ユーザーの参考画像の配置**(2026-08-08)=①左上=戻る ②左=縦のサブ列
+       ③左下=英雄召集の大きい丸 ④中央=英雄の絵+名前 ⑤右=カードの縦積み(2列→全幅→出撃が一番下)。
+       ⚠見た目は画像のままにしない(「AI臭いから雰囲気合わせて」)=既存の紙と錆の質感で。 -->
   <div class="homewrap">
+   <div class="homebar">
+     <button class="btn homeback" id="hm-back" aria-label="タイトルへ戻る">←</button>
+     <div class="homeres" id="home-res"></div>
+   </div>
    <div class="hometop">
+    <div class="homesub">
+      <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><span class="hlb"><b>英雄</b><i id="hm-hero-i"></i></span></button>
+      <!-- 💎(223)英雄召集=左下の大きい丸。⚠絶対配置にしない=英雄の絵(タップ可)と重なる(検査で出た) -->
+      <button class="btn gachaorb" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><span class="hlb"><b>英雄召集</b><i id="hm-gem"></i></span></button>
+    </div>
     <!-- 🦸(124)**一枚絵ごと押せる**(ユーザー指示「この画面で左のヒーロータップしたら英雄画面に」)=
          右の「🦸英雄」タイルと同じ窓が開く。⚠押せることは `cursor` と押し込みで言う -->
     <div class="homeleft" id="home-hero">
@@ -1622,30 +1652,17 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
       <div id="home-hname" class="homehn"></div>
     </div>
     <div class="homeright">
-      <!-- ⭐戻るは**上の帯の左端**に小さく置く(2026-08-03(106)ユーザー指示)。 -->
-      <div class="homebar">
-        <button class="btn homeback" id="hm-back" aria-label="タイトルへ戻る">←</button>
-        <div class="homeres" id="home-res"></div>
-      </div>
-      <!-- 🏠(221)**小さい入り口**=主役4つ以外はソシャゲの右上アイコン列へ(ユーザー指示
-           「そのほかのやつはいい感じにソシャゲっぽく」)。⚠idは全部そのまま=配線は1本も触らない -->
-      <div class="homemini" id="home-grid">
+      <div class="hrow2" id="home-grid">
         <button class="btn homebt" id="hm-msn"><span class="hic" id="hm-msn-ic">🎯</span><span class="hlb"><b>任務</b><i id="hm-msn-i"></i></span></button>
         <button class="btn homebt" id="hm-zoo"><span class="hic" id="hm-zoo-ic">📖</span><span class="hlb"><b>図鑑</b><i id="hm-zoo-i"></i></span></button>
         <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
         <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
       </div>
-      <button class="btn red homego" id="bt-map">🗺 出撃 <i>エリア1 — 生存圏の地図</i></button>
+      <button class="btn homebt hfull" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
+      <button class="btn homebt hfull" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
       <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
+      <button class="btn red homego" id="bt-map">🗺 出撃 <i>次の拠点へ — 生存圏の地図</i></button>
     </div>
-   </div>
-   <!-- 🏠⭐(221)**下部の主ボタン4つ(横長)**(2026-08-08ユーザー指示
-        「メインどころは画面下部に横長方形で。編成・英雄・研究所・英雄召喚の4つ」) -->
-   <div class="homedock">
-    <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
-    <button class="btn homebt" id="hm-hero"><span class="hic" id="hm-hero-ic">🦸</span><span class="hlb"><b>英雄</b><i id="hm-hero-i"></i></span></button>
-    <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
-    <button class="btn homebt" id="hm-gacha"><span class="hic" id="hm-gacha-ic">💎</span><span class="hlb"><b>英雄召集</b><i id="hm-gem"></i></span></button>
    </div>
   </div>
 </div>
