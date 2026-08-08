@@ -3404,6 +3404,29 @@ const SFXSYN={
    nzHit(1600,300,1.0,.11,1);},650);
   [[0,880],[130,740],[270,988],[430,660]].forEach(b=>setTimeout(()=>{
    beep(b[1],b[1]*.99,.32,'triangle',.042);beep(b[1]*1.51,b[1]*1.5,.2,'triangle',.02);},700+b[0]));},
+ /* 🎴⭐(214)**召集のカード開示の締め(レア度別)**(2026-08-08ユーザー指示
+      「ロブスター倒した時と同じ音を使い回さず、レア度に応じてもっと豪華に」)。
+    ⚠高い笛は禁止=豪華さは**和音の厚みと段数**で出す(虹・金と同じ考え方)。
+    ⭐形は「ででででーん」=**短い和音の連打→太い締めの和音**。レア度が上がるほど連打の数・声部・尾が増える。
+    ⚠鐘は短く小さく(.04前後)=伸ばすと禁止された高いキラキラ音になる。 */
+ gRev3:()=>{beep(147,147,.12,'sawtooth',.09);beep(220,220,.12,'sawtooth',.07);beep(294,294,.12,'triangle',.05);
+  setTimeout(()=>{nzHit(900,200,.4,.10,1);beep(165,165,1.0,'sawtooth',.09);beep(247,247,1.0,'sawtooth',.075);
+   beep(330,330,1.0,'triangle',.05);},170);},
+ gRev4:()=>{[0,150].forEach((d,i)=>setTimeout(()=>{const f=147*(i?1.122:1);
+   beep(f,f,.12,'sawtooth',.095);beep(f*1.5,f*1.5,.12,'sawtooth',.075);beep(f*2,f*2,.12,'triangle',.05);},d));
+  setTimeout(()=>{nzHit(1200,220,.6,.16,1);
+   beep(196,196,1.5,'sawtooth',.10);beep(262,262,1.5,'sawtooth',.085);
+   beep(330,330,1.5,'triangle',.06);beep(392,392,1.4,'triangle',.045);},320);
+  [[560,784],[700,988]].forEach(b=>setTimeout(()=>beep(b[1],b[1]*.99,.26,'triangle',.036),b[0]));},
+ gRev5:()=>{[0,140,280].forEach((d,i)=>setTimeout(()=>{const f=147*Math.pow(1.122,i);
+   beep(f,f,.12,'sawtooth',.10);beep(f*1.5,f*1.5,.12,'sawtooth',.08);beep(f*2,f*2,.12,'triangle',.055);},d));
+  setTimeout(()=>{nzHit(1500,220,.9,.20,1);
+   beep(196,196,2.1,'sawtooth',.105);beep(262,262,2.1,'sawtooth',.09);beep(330,330,2.1,'sawtooth',.07);
+   beep(392,392,2.0,'triangle',.06);beep(494,494,1.9,'triangle',.04);},450);
+  setTimeout(()=>{beep(220,220,1.6,'sawtooth',.07);beep(294,294,1.6,'triangle',.055);
+   nzHit(1600,300,.9,.10,1);},700);
+  [[760,880],[890,740],[1030,988],[1190,660]].forEach(b=>setTimeout(()=>{
+   beep(b[1],b[1]*.99,.30,'triangle',.040);beep(b[1]*1.51,b[1]*1.5,.18,'triangle',.018);},b[0]));},
  /* ⭐**🚌ゾンビバスを叩いた音**(2026-08-01)。⚠中身は鉄の箱なので**鈍い「ゴンッ」**にする。
     ⚠金(lobHit)と同じ**倍音を整数比にしない**やり方だが、**基音を低く(210Hz)・擦れも低く**して
       「鐘」ではなく「鉄板」に寄せた。⚠短く切る(伸ばすと禁止された高いキラキラ音になる)。 */
@@ -3636,6 +3659,9 @@ const SFX_LBL={
  rainbow:['🌈虹のゾンビ撃破','タイトルで虹のゾンビを倒した','ev'],
  lobHit:['✨黄金のロブスター(叩く)','タイトルで金の殻を叩いた(金属音)','ev'],
  lobKill:['✨黄金のロブスター撃破','タイトルで黄金のロブスターを倒した','ev'],
+ gRev3:['🎴召集の締め(★3)','カードの★が全部灯った時。連打1発+和音(控えめ)','ev'],
+ gRev4:['🎴召集の締め(★4)','連打2発+締めの和音+鐘2つ','ev'],
+ gRev5:['🎴召集の締め(★5)','連打3発+いちばん厚い和音+鐘4つ。最上位','ev'],
  busHit:['🚌ゾンビバス(叩く)','タイトルでバスくんの鉄板を叩いた','ev'],
  busHorn:['🚌ゾンビバス撃破','タイトルでバスくんを倒した(警笛→和音)','ev'],
  win:['勝利','クリア','ev'], lose:['敗北','コア陥落','ev']};
@@ -19288,7 +19314,7 @@ const FX_SPLAT_MAX=80;/* 演出がこれ以上混んでいたら、地面の血�
 const FX_GACC=.35;    /* 「+⚙️」を足し込む間合い(秒)。これより短い間に倒したら1枚にまとめる */
 const FX_LIFE={txt:1,splat:1.6,boomL:.7,spark:.6,mzl:.14,hit:.3,ric:.4,slp:.4,slash:.26,shock:.5,
  toss:.3,rkt:.26,flame:.2,corpse:1.1,ice:.55,pool:2.6,dust:.55,
- beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24};
+ beam:.3,pel:.16,spread:.22,pboom:.55,wave:.24,bsink:2.6};
 /* ⚠寿命が1つずつ違う演出は ex に `lf` を持たせる(投擲=飛ぶ距離で / 死体=大きさで変わる)。
    `d0` は「その秒数だけ待ってから始まる」=絨毯爆撃の時間差に使う */
 const fxLife=(k,e)=>(e&&e.lf!=null)?e.lf:(FX_LIFE[k]!==undefined?FX_LIFE[k]:.5);
@@ -19641,7 +19667,14 @@ function killZ(C,z){
  addP(C,Math.round(9*bsc),z.px,z.py-22*CH_UP,{sp:150*bsc,up:60,g:520,life:.55,r:2.8*bsc,col:'#4a5a2e',jx:6,jy:8});
  addP(C,Math.round(3*bsc),z.px,z.py,{sp:0,g:0,life:6,r:11*bsc,col:'#2f3a1c',typ:'stain',jx:12*bsc,jy:5});
  /* ⭐倒れる死体(2026-07-26 第65弾)。大きいほど長く残り、雑魚はさっと消える */
- if(FXLV>0)addFx(C,'corpse',z.px,z.py,'',{zi:z.zi,el:z.elite?1:0,dr:z.dr||1,
+ /* 💀⭐(214)**ボスは倒れず「揺れながら沈んで消える」**(2026-08-08ユーザー指示
+    「倒した瞬間にあっさりクリアになる。ボスが消えた後も演出が欲しい」)= bsink へ。
+    ⚠🚌開拓便は縦が潰れている(SCY)ので従来どおり corpse。
+    ⭐クリアはこの沈みが終わるまで待たせる(G.bsinkT。見る側は gameStep の勝ち判定) */
+ if(z.boss&&!C.bus&&FXLV>0){
+  addFx(C,'bsink',z.px,z.py,'',{zi:z.zi,dr:z.dr||1});
+  if(G)G.bsinkT=Math.max(G.bsinkT||0,FX_LIFE.bsink+.4);
+ }else if(FXLV>0)addFx(C,'corpse',z.px,z.py,'',{zi:z.zi,el:z.elite?1:0,dr:z.dr||1,
   lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1),
   kb:z.kbp||0,kx:z.kbx||0,ky:z.kby||0});/* ⭐爆風で吹き飛ぶ(kbZで書かれていた時だけ) */
  }
@@ -21707,10 +21740,12 @@ function gameStep(dt){
    }}
   if(G.pve){
    const me=G.players[0];
+   /* 💀(214)ボスが沈み切るまでクリアを待つ(倒した瞬間に成績表が出るとあっさりしすぎるため) */
+   if(G.bsinkT>0)G.bsinkT-=dt;
    if(me.dead){G.winner=-1;G.over=true;awardMeta();
     if(MODE==='host'){try{G.netT=1;hostNetTick(1);}catch(e){}}
     UI.showResult();return;}
-   if(me.waveDone&&G.wave>=curW()){for(const P of G.players)P.place=1;G.winner=0;G.over=true;awardMeta();
+   if(me.waveDone&&G.wave>=curW()&&!(G.bsinkT>0)){for(const P of G.players)P.place=1;G.winner=0;G.over=true;awardMeta();
     if(MODE==='host'){try{G.netT=1;hostNetTick(1);}catch(e){}}
     UI.showResult();return;}
   }else if(G.alive<=1){const w=G.players.findIndex(p=>!p.dead);if(w>=0)G.players[w].place=1;G.winner=w;G.over=true;
@@ -22705,7 +22740,37 @@ function renderCamp(C,t){
  for(const e of C.fx){
   if(e.d0&&e.t<e.d0)continue;/* 着弾待ち(時間差の爆撃) */
   if(e.k==='corpse')continue;/* 死体はゾンビより先に描いてある */
-  if(e.k==='tr'){const a2=Math.max(0,1-e.t/.14);
+  if(e.k==='bsink'){/* 💀(214)ボス撃破=**揺れながら地面へ沈んで消えていく**(2026-08-08ユーザー指示)。
+     ⚠倒れる corpse とは別物=**足元を軸に揺れ**、地面から下は clip で切って「沈む」に見せる。
+     ⚠粒(addP)は積まない=煙は e.t だけの式で6本まで(重さを増やさない)。 */
+   const lf9=fxLife('bsink',e),k9=clamp(e.t/lf9,0,1);
+   let S9=null;try{S9=bakeZ(e.zi,0);}catch(e8){}
+   if(S9&&S9.f&&S9.f[0]){
+    const ss9=S9.ss||1,topH=S9.oy/ss9,pw9=(S9.W/ss9)*.5;
+    const snk=Math.pow(k9,1.4)*(topH+12);
+    /* 沈む先の暗い沼(だんだん広がり、最後は本体と一緒に薄れる) */
+    c.globalAlpha=.55*Math.min(1,k9*3)*(1-Math.pow(k9,5));
+    c.fillStyle='#171310';c.beginPath();
+    c.ellipse(e.x,e.y+2,pw9*(.7+k9*.6),pw9*(.7+k9*.6)*.30,0,0,7);c.fill();c.globalAlpha=1;
+    /* 本体。地面(e.y+6)から下は描かない */
+    c.save();
+    c.beginPath();c.rect(e.x-pw9*2.4,e.y-topH-90,pw9*4.8,topH+96);c.clip();
+    c.globalAlpha=.95*(1-Math.pow(k9,2.6));
+    c.translate(e.x,e.y+snk);
+    c.rotate(Math.sin(e.t*6.2)*.13*(1-k9*.75));/* 揺れ(だんだん収まる) */
+    try{drawSpr(c,S9,0,0,0,(e.dr||1)<0);}catch(e7){}
+    c.restore();c.globalAlpha=1;
+    /* 立ちのぼる煙のゆらぎ */
+    for(let i9=0;i9<6;i9++){
+     const cyc=(e.t*.55+i9*.37)%1,px9=e.x+Math.sin(i9*2.7+e.t*.8)*pw9*(.5+(i9%3)*.2);
+     const py9=e.y-4-cyc*(topH*.7),a9=Math.max(0,1-cyc)*.28*(1-k9);
+     if(a9<=0)continue;
+     c.globalAlpha=a9;c.fillStyle=i9%3?'#4a423a':'#6b6055';
+     c.beginPath();c.arc(px9,py9,5+cyc*9+(i9%2)*2,0,7);c.fill();}
+    c.globalAlpha=1;
+   }
+  }
+  else if(e.k==='tr'){const a2=Math.max(0,1-e.t/.14);
    c.strokeStyle=(e.col||'rgba(255,235,150,')+a2+')';c.lineWidth=(e.w||3);c.beginPath();c.moveTo(e.x,e.y);c.lineTo(e.x2,e.y2);c.stroke();
    /* 着弾は控えめな点光だけ */
    c.globalAlpha=a2*.8;c.fillStyle=e.hit||GLOW;c.beginPath();c.arc(e.x2,e.y2,1.4+a2*1.8,0,7);c.fill();c.globalAlpha=1;}
@@ -32001,8 +32066,11 @@ function gcCardSfx(){
  for(let j=0;j<L.rk;j++)if(u>=L.st0+j*L.stG&&!GC.snd['s'+j]){GC.snd['s'+j]=1;
   try{sfxAtR('coin',.5,1+j*.13);}catch(e9){}}
  if(u>=L.stEnd+.03&&!GC.snd.ch){GC.snd.ch=1;
-  if(L.rk>=3&&sfx.cmbUp)sfx.cmbUp(L.rk-1);
-  if(L.rk>=5&&sfx.lobKill)sfx.lobKill();else if(L.rk===4&&sfx.eliteKill)sfx.eliteKill();}
+  /* 🎴(214)締めはレア度別の専用音(ユーザー指示「ロブスター撃破の音を使い回さない」)。
+     ⚠✨的が黄金のロブスターの回の**撃破音(撃つ場面)**は今までどおり=ここはカードの締めだけ */
+  if(L.rk>=5&&sfx.gRev5)sfx.gRev5();
+  else if(L.rk===4&&sfx.gRev4)sfx.gRev4();
+  else if(L.rk===3&&sfx.gRev3)sfx.gRev3();}
  if(u>=L.name&&!GC.snd.nm){GC.snd.nm=1;if(!o.dupe&&sfx.buy)sfx.buy();}
 }
 /* 紙吹雪(位置は起動時に1回だけ決める=毎フレーム乱数を引くと踊る) */
@@ -32023,14 +32091,30 @@ function gcCard(c,w,h,cx,cy,t,COL){
  /* 背後の光条(レアなほど派手。表になってから全開) */
  const bgA=u<L.face?.3:1;
  if(rk>=2)gcRays(c,cx,cy*.98,Math.min(w,h)*(.5+rk*.09),6+rk*4,t*(.3+rk*.12),COL[0],(.10+rk*.035)*bgA);
- /* 全部灯った瞬間=広がる輪(★5は虹)+白い閃き */
- if(rk>=4&&u>=L.stEnd&&u<L.stEnd+.5){const k=(u-L.stEnd)/.5;
-  c.strokeStyle=rk>=5?'hsl('+Math.round((t*160)%360)+',95%,60%)':GOLD;
-  c.globalAlpha=1-k;c.lineWidth=6;
-  c.beginPath();c.arc(cx,cy,60+k*Math.min(w,h)*.55,0,7);c.stroke();
-  c.globalAlpha=1;c.lineWidth=3;}
- if(rk>=5&&u>=L.stEnd&&u<L.stEnd+.22){
-  c.fillStyle='rgba(255,243,192,'+(.5*(1-(u-L.stEnd)/.22)).toFixed(2)+')';c.fillRect(0,0,w,h);}
+ /* 🎇(214)全部灯った瞬間の光をもっと派手に(2026-08-08ユーザー指示)=
+    ①輪は1本→**3本を時間差で** ②**放射の光の筋**を加算で散らす(⚠等間隔・同じ長さだと花火の丸になる)
+    ③閃きは★4にも(弱め)。★5は虹・★4は金。 */
+ if(rk>=4&&u>=L.stEnd){
+  for(let q=0;q<3;q++){const k=(u-L.stEnd-q*.11)/.55;if(k<0||k>=1)continue;
+   c.strokeStyle=rk>=5?'hsl('+Math.round((t*160+q*46)%360)+',95%,62%)':GOLD;
+   c.globalAlpha=(1-k)*(.95-q*.22);c.lineWidth=7-q*2;
+   c.beginPath();c.arc(cx,cy,60+k*Math.min(w,h)*(.55+q*.14),0,7);c.stroke();}
+  c.globalAlpha=1;c.lineWidth=3;
+  const bk=(u-L.stEnd)/.6;
+  if(bk<1){c.save();c.globalCompositeOperation='lighter';
+   const M=rk>=5?22:14,R0=54+bk*90;
+   for(let i=0;i<M;i++){const a=i*6.283/M+((i*37)%11)*.06;
+    const ln=Math.min(w,h)*(.16+bk*.42)*(.5+((i*29)%17)/17);
+    c.strokeStyle=rk>=5?'hsla('+Math.round((t*160+i*16)%360)+',95%,'+(i%3?62:80)+'%,'+(.55*(1-bk)).toFixed(2)+')'
+     :'rgba(255,'+(i%3?'214':'240')+','+(i%3?'110':'190')+','+(.5*(1-bk)).toFixed(2)+')';
+    c.lineWidth=(i%4===0?3.4:1.8)*(1-bk*.6);
+    c.beginPath();c.moveTo(cx+Math.cos(a)*R0,cy+Math.sin(a)*R0);
+    c.lineTo(cx+Math.cos(a)*(R0+ln),cy+Math.sin(a)*(R0+ln));c.stroke();}
+   c.restore();c.lineWidth=3;}
+ }
+ if(rk>=4&&u>=L.stEnd&&u<L.stEnd+.22){
+  const fA=(rk>=5?.6:.3)*(1-(u-L.stEnd)/.22);
+  c.fillStyle=(rk>=5?'rgba(255,243,192,':'rgba(255,224,150,')+fA.toFixed(2)+')';c.fillRect(0,0,w,h);}
  /* めくり(横につぶす)。裏→表 */
  let sx=1,back=0;
  if(u<L.tease){sx=1;back=1;}
@@ -32091,8 +32175,14 @@ function gcCard(c,w,h,cx,cy,t,COL){
    for(let j=0;j<rk;j++){
     const su=L.st0+j*L.stG;if(u<su)break;
     const k=clamp((u-su)/.12,0,1),pop=1.8-.8*k;
-    const sxr=tx-(rk-1)*16+j*32;
-    gcStar(c,sxr,by+bh*.20,13*pop,COL[0]);}
+    const sxr=tx-(rk-1)*16+j*32,syy=by+bh*.20;
+    gcStar(c,sxr,syy,13*pop,COL[0]);
+    /* 🎇(214)灯った瞬間だけ十字の光が弾ける */
+    if(k<1){c.save();c.globalAlpha=1-k;c.strokeStyle='#fff3bd';c.lineWidth=2;
+     for(let q2=0;q2<4;q2++){const a2=q2*1.5708+.4;
+      c.beginPath();c.moveTo(sxr+Math.cos(a2)*(15+k*16),syy+Math.sin(a2)*(15+k*16));
+      c.lineTo(sxr+Math.cos(a2)*(21+k*22),syy+Math.sin(a2)*(21+k*22));c.stroke();}
+     c.restore();c.lineWidth=3;}}
    if(u>=L.stEnd){
     c.fillStyle=COL[1];c.font='900 12px '+FF;
     c.fillText(RK_N[rk],tx,by+bh*.34);}
@@ -32121,6 +32211,17 @@ function gcCard(c,w,h,cx,cy,t,COL){
      c.fillText(ds,tx,by+bh*.90);}}
   }
  }
+ /* ✨(214)開いた札の上を光の帯が斜めに1回走る(★4=金/★5=虹。ソシャゲの定番の「艶」) */
+ if(!back&&!o.dud&&rk>=4&&u>=L.stEnd&&u<L.stEnd+.9){
+  const sk=(u-L.stEnd)/.9;
+  c.save();rr(c,bx,by,bw,bh,14);c.clip();
+  c.globalCompositeOperation='lighter';
+  c.translate(bx+(sk*1.4-.2)*bw,by+bh/2);c.rotate(-.5);
+  const gsw=c.createLinearGradient(-46,0,46,0);
+  const cc9=rk>=5?'hsla('+Math.round((t*160)%360)+',95%,70%,':'rgba(255,226,132,';
+  gsw.addColorStop(0,cc9+'0)');gsw.addColorStop(.5,cc9+'.4)');gsw.addColorStop(1,cc9+'0)');
+  c.fillStyle=gsw;c.fillRect(-46,-bh,92,bh*2);
+  c.restore();}
  c.restore();
  /* 🎊紙吹雪(★4以上・全部灯ってから) */
  if(!o.dud&&rk>=4&&u>=L.stEnd){const ck=u-L.stEnd;

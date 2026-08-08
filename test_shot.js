@@ -24,6 +24,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
   ['ed+edt=<秒>','🎬区切りの幕'],['op[=logo|<秒>]','🎬起動の幕(開発名/オープニング)'],['arena=…','🧪検証場'],['title+bus','🚌ゾンビバス'],
   ['tut=<段id>[:aim]','🎓チュートリアルのその段(例 tut=flag / tut=strike:aim)'],
+  ['z=<id>+bsink=<秒>','💀ボス撃破の沈み演出をその経過で止める'],
  ];
  console.log('📷 test_shot.js — 実画面のスクリーンショット');
  console.log('  使い方: node test_shot.js <出力png> <幅> <高さ> "<オプション>"');
@@ -477,6 +478,16 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      +'setInterval(function(){try{var t9=me.towers[AI_ORDER[0]];if(t9)t9.cd=0;'
        +'me.zombies.forEach(function(z){z.hp=z.mhp;});}catch(e){}},80);'):'')
      +'}catch(e){document.title="ERR2 "+e.message;}},1200);'):'')
+ /* 💀bsink=<秒> = ボス撃破の「沈み」演出をその経過で止めて撮る(2026-08-08(214))。
+    ⚠z= と一緒に使う(例 "z=jugger+bsink=1.2")。1体目をボス扱いで倒し、演出の時刻を固定し続ける */
+ +((/bsink=([0-9.]+)/.exec(OPT))?('setTimeout(function(){try{var C9=G.players[0];'
+     +'var z9=C9.zombies[0];if(!z9){document.title="ERR20 敵が居ない(z= を付ける)";return;}'
+     /* ⚠紹介モーダル等でPAUSEDのままだと px/py が未計算(NaN)=演出が見えない座標に湧く。自前で入れる */
+     +'var p9=pathPos(Math.max(0,z9.d||0));z9.px=p9[0];z9.py=p9[1];'
+     +'z9.boss=1;z9.fin=1;killZ(C9,z9);C9.zombies=C9.zombies.filter(function(q){return q!==z9;});'
+     +'setInterval(function(){try{C9.fx.forEach(function(e){if(e.k==="bsink")e.t='
+       +(/bsink=([0-9.]+)/.exec(OPT))[1]+';});}catch(e){}},50);'
+     +'}catch(e){document.title="ERR20 "+e.message;}},1800);'):'')
  +(HID?('setTimeout(function(){try{var me=G.players[0];'
      +(HID==='all'
        ?'me.units.length=0;HEROES.forEach(function(h,k){var ui=HERO_I0+k;'
