@@ -4515,15 +4515,35 @@ function checkStage3(){
  /* ⑤ 置き場はどちらの道からも離れている */
  {let ng=0,w='';for(let k=0;k<SLOTS.length;k++){const b=edBad(k);if(b.length){ng++;w=w||('マス'+k+' '+b.join('/'));}}
   if(ng)F('置き場'+ng+'枠が条件に反している('+w+')');}
- /* ⑥ ユニットと🚩旗は合流点より後ろだけ */
+ /* ⑥ 🚩旗は枝の上にも置ける(226bユーザー指示で(205)のA案を解禁)。
+    ⭐旗がレーンを持ち、ユニットは旗の枝に立つ / 交戦・噛みつきは同じ枝だけ。
+    ⚠**始めの旗だけは合流点より後ろ**(両方の枝を受けられる位置)のまま。 */
  const me=G.players[0];
  if(!(me.flagD>=MERGE_D-.5))F('試合の始めの旗が合流点より手前にある '+Math.round(me.flagD));
  {const p=pathPos(MERGE_D*.4,1);actFlag(p[0],p[1]);
-  if(!(G.players[G.myIdx].flagD>=MERGE_D-.5))F('枝の上に🚩旗が置けてしまう '+Math.round(G.players[G.myIdx].flagD));}
+  const m2=G.players[G.myIdx];
+  if(Math.abs(m2.flagD-MERGE_D*.4)>60)F('枝の上に🚩旗が置けない fd='+Math.round(m2.flagD)+'(狙い'+Math.round(MERGE_D*.4)+')');
+  if(m2.flagLn!==1)F('旗のレーンが南(1)になっていない '+m2.flagLn);}
  {me.scrap=99999;for(const ui of (me.team||[]).slice(0,me.uUn))deployUnit(me,ui);
   if(!me.units.length)F('ユニットが1体も出せない');
   frames(300,.05);
-  for(const u of me.units)if(u.d<MERGE_D-1)F('ユニットが合流点より前へ出た d='+Math.round(u.d)+'(合流'+Math.round(MERGE_D)+')');}
+  let onBr=0;
+  for(const u of me.units)if(u.d<MERGE_D-1){onBr++;
+   /* ⚠歩いている間は「位置を置く→dが進む」の順なので1コマぶん(数px)ずれる=
+      見るのは「南の枝の近くに居るか」(枝どうしは320以上離れている) */
+   const a=pathPos(u.d,1),b=pathPos(u.d,0);
+   if(dist(u.px,u.py,a[0],a[1])>40||dist(u.px,u.py,a[0],a[1])>dist(u.px,u.py,b[0],b[1]))
+    F('枝の上のユニットが旗の枝(南)に立っていない d='+Math.round(u.d));}
+  if(!onBr)F('旗を枝に置いたのにユニットが合流点より前へ出ない');
+  /* 枝ちがいの敵は撃てない・止められない / 同じ枝の敵は止める */
+  {const u0=me.units.reduce((a,b)=>a.d<b.d?a:b);
+   const zi=ZOMBIES.findIndex(z=>z.st===3&&!z.boss&&!z.nm);
+   me.zombies.length=0;
+   const zA=mkZ(zSpec(zi,1,1));zA.ln=0;zA.d=u0.d-16;zA.hp=zA.mhp=99999;me.zombies.push(zA);
+   const zB=mkZ(zSpec(zi,1,1));zB.ln=1;zB.d=u0.d-16;zB.hp=zB.mhp=99999;me.zombies.push(zB);
+   const dA=zA.d,dB=zB.d;frames(40,.05);
+   if(!(zA.d>dA+30))F('別の枝(北)の敵まで足止めしている(枝またぎの交戦) 進み'+Math.round(zA.d-dA));
+   if(zB.dead||zB.d>dB+30)F('同じ枝(南)の敵を止められていない 進み'+Math.round(zB.d-dB));}}
  /* ⑦ 敵は両方の枝から来る */
  {buildTide(6);const cn=[0,0];for(const e of G.tide.pool)if(e.ln!=null)cn[e.ln]++;
   if(!(cn[0]>0&&cn[1]>0))F('片方の枝にしか敵が湧かない '+cn.join('/'));
@@ -4539,7 +4559,7 @@ function checkStage3(){
  const nsl=STAGES[si].slots.length;
  backTitle();META.sc=kp;
  console.log('🪶面'+(si+1)+'('+STAGES[si].n+'): 道2本とも'+Math.round(PLEN)+'(1pxも違わない) / 湧き口は1点 / 合流は'
-  +(mf*100).toFixed(0)+'% / 置き場'+nsl+'+工房3+支援2はどちらの道からも95以上 / ユニットと🚩旗は合流点より後ろだけ / 敵は両方の枝から均等 OK');
+  +(mf*100).toFixed(0)+'% / 置き場'+nsl+'+工房3+支援2はどちらの道からも95以上 / 🚩旗は枝の上にも置けて交戦は同じ枝だけ / 敵は両方の枝から均等 OK');
 }
 /* ---- 🐞⭐⭐(207)**表の印が実体まで届いているか** ----
    ⚠⚠**作った理由**=ゾンビの表の印を実体へ写しているのは1か所だけなのに、そこへの書き忘れが

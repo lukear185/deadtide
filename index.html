@@ -208,11 +208,13 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
    中央=英雄の絵/右=カードの縦積み(2列→全幅→一番下に出撃)。⚠質感は既存の紙と錆のまま。 */
 .homewrap{flex-direction:column;gap:6px}
 .hometop{display:flex;gap:12px;flex:1 1 auto;min-height:0;position:relative}
-.homesub{flex:0 0 92px;display:flex;flex-direction:column;gap:8px;padding-top:2px;align-items:center}
-.homesub .homebt{width:62px}
-.homesub .homebt{flex:0 0 auto;height:auto;min-height:52px;flex-direction:column;padding:5px 4px;gap:2px;justify-content:center}
-.homesub .homebt .hic{width:32px;height:32px;font-size:19px;border-radius:9px}
-.homesub .homebt b{font-size:11px}
+.homesub{flex:0 0 104px;display:flex;flex-direction:column;gap:8px;padding-top:2px;align-items:center}
+/* 🦸(226c)英雄ボタン=「小さすぎて何か分からない・位置も微妙」(ユーザー実機)=
+   一回り大きく+縦の真ん中へ(margin-top:autoが上と丸の間で釣り合う) */
+.homesub .homebt{width:88px}
+.homesub .homebt{flex:0 0 auto;height:auto;min-height:78px;flex-direction:column;padding:7px 6px;gap:3px;justify-content:center;margin-top:auto}
+.homesub .homebt .hic{width:44px;height:44px;font-size:25px;border-radius:11px}
+.homesub .homebt b{font-size:13.5px}
 .homesub .homebt i{display:none}
 .homeleft{flex:1 1 auto;min-width:0}
 .homeright{flex:0 0 46%;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0}
@@ -225,12 +227,12 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
    アイコンが小さくてなんなのかわからないやつ」)=①アイコンを一回り大きく ②全幅の札(編成/研究所)は
    中身を真ん中へ寄せて右の空きを消す ③編成のサムネも大きく */
 .homeright .homebt .hic{width:34px;height:34px;font-size:20px;border-radius:9px}
-/* ⭐(224b)編成/研究所=メインの2枚。縦に大きく(他の1.5倍)・アイコンも一回り大きく */
-.hmain .homebt{min-height:66px}
-.hmain .homebt .hic{width:42px;height:42px;font-size:25px;border-radius:11px}
-.hmain .homebt .hth{min-height:42px;padding:2px 6px}
-.hmain .homebt .hth canvas{width:44px;height:34px}
-.hmain .homebt b{font-size:17px}
+/* ⭐(224b)編成/研究所=メインの2枚。(226c)ユーザー「縦の太さをもっと太く。メインだからでかめ」=さらに増した */
+.hmain .homebt{min-height:88px}
+.hmain .homebt .hic{width:50px;height:50px;font-size:29px;border-radius:12px}
+.hmain .homebt .hth{min-height:50px;padding:2px 6px}
+.hmain .homebt .hth canvas{width:52px;height:40px}
+.hmain .homebt b{font-size:18px}
 .homeright .homebt .hth{min-height:34px;padding:2px 5px}
 .homeright .homebt .hth canvas{width:34px;height:26px}
 #bt-home-resume{font-size:15px;padding:3px 8px}
@@ -2702,7 +2704,7 @@ function runData(){
      「未解放の枠に建っている」状態になって消える(2026-07-26に発覚) */
   repairs:m.repairs||0,boosts:m.boosts||0,ecoN:m.ecoN||1,supN:m.supN||0,up:Math.round(m.up||0),upTotal:Math.round(m.upTotal||0),
   uUn:m.uUn,team:(m.team||[]).slice(),uLv:m.uLv||0,kills:m.kills||0,enTotal:Math.round(m.enTotal||0),charge:m.charge||0,
-  stk:m.stk||'air',flagD:Math.round(m.flagD||0),
+  stk:m.stk||'air',flagD:Math.round(m.flagD||0),flagLn:m.flagLn||0,
   hsel:(m.hUi>=0&&heroAt(m.hUi))?heroAt(m.hUi).id:'',hOut:m.hOut||0,
   slk:(m.slk||[]).map(v=>v?1:0),
   tw:(m.towers||[]).map(t=>t?{ti:t.ti,us:Object.assign({},t.us),spent:t.spent}:0)};
@@ -2740,7 +2742,7 @@ function resumeRun(){
  /* 🦸英雄: ウェーブの区切りで保存するので「出撃中」は未出撃に戻す(盤面に実体が残らないため)。
     ただし戦死(2)はそのまま引き継ぐ=1ゲーム1回の約束を再開で覆せないようにする */
  if(d.hsel!=null){m.hUi=d.hsel?hUiOf(d.hsel):-1;m.hOut=(d.hOut===2)?2:0;m.hCg=0;}
- if(d.flagD)m.flagD=clamp(d.flagD,flagLo(),PLEN);
+ if(d.flagD)m.flagD=clamp(d.flagD,flagLo(),PLEN);m.flagLn=d.flagLn||0;
  if(d.slk&&d.slk.length)m.slk=m.slk.map((v,i)=>!!d.slk[i]);
  /* ⚠🛠DEVは「最初から全開放」なので、中断前のセーブで巻き戻さない */
  if(devAll()){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.team=teamIdx();m.uUn=Math.max(m.uUn||0,m.team.length);
@@ -3646,7 +3648,8 @@ const SFX_GAIN={
  /* 🎙(225)AI生成の候補も帯(0.13前後)へ実測で揃える。⚠雷嵐は1本ずつ連発なので一段下(0.07) */
  gatD:.40, canC:.47, canD:.83, fortC:.79, fortD:.53, grenC:.47,
  lasC:.32, lasD:.36, railC:.29, railD:.39, winC:.79, winD:.92,
- uboltC:.19, uboltD:.33, gr4E:.84, gr5G:.58, gr5H:.95,
+ /* ⚡(226b)uboltCは雷塔の発射音に転用=塔の帯(0.13)へ上げ直した(雷嵐用の一段下=.19はもう要らない) */
+ uboltC:.36, uboltD:.33, gr4E:.84, gr5G:.58, gr5H:.95,
  /* 🎙(226)レーザー/レールガンの作り直し候補E/F=実測で揃える(レーザーは今の照射.082へ・レールは帯.13へ) */
  lasE:.23, lasF:.20, railE:.47, railF:.30,
  /* ボス登場の咆哮(素のRMS: growl .441 / growl2 .191)。
@@ -3675,7 +3678,8 @@ const SFX_VAR={shot:.10,shotgun:.08,bite:.14,bite2:.12,splat:.12,thunk:.10,zap:.
       ここから先は**素材ではなく鳴らし方**で直すこと。 */
  crush:.24,crush2:.24,crush3:.24,crush4:.24,smash:.10,smash2:.10,smash3:.10,
  /* ✊(217)近接は同じ音が続くので高さを揺らす(轢く音の掟と同じ) */
- mBat:.12,mFist:.12,mShld:.10,mChain:.12,mDog:.15,mBladeU:.12,mTitanU:.10};
+ mBat:.12,mFist:.12,mShld:.10,mChain:.12,mDog:.15,mBladeU:.12,mTitanU:.10,
+ uboltC:.09/* ⚡(226b)雷塔の落雷=1.1〜1.35秒に1発鳴るので高さを揺らす */};
 /* ⭐ゾンビの声は**同じ音が繰り返されると怖くない**。何種類か用意して毎回くじを引く。
    さらに**ステージで声が変わる**: ①廃線=人型 / ②沈んだ港=水棲 / 🌑ナイトメア=獣・蟲。
    ⚠ここは sfx を組み立てる時点では isNM も STAGE もまだ無いので、**鳴らす瞬間に** try/catch で見る
@@ -3820,7 +3824,7 @@ const SFX_LBL={
  fortD:['(ボツ)要塞砲・案D(AI)','列車砲の一撃+落ちる破片','out'],
  grenD:['(ボツ)爆裂砲台・案D(AI)','発射音+小花火の連なり','out'],
  winC:['(ボツ)勝利・案C(AI)','ブラスと太鼓の凱歌','out'],
- uboltC:['(ボツ)雷嵐の落雷・案C(AI)','本物寄りの鋭い雷のクラック','out'],
+ uboltC:['⚡雷塔の落雷 ★転用(AI)','雷嵐ではボツだった雷のクラックを雷塔専用に(226b。テスラと同じ音だった)','tw'],
  gr3D:['(ボツ)★3案E(AI)','柔らかい鈴と軽いチャイム','out'],
  gr4E:['(ボツ)★4案E(AI)','金の鈴+上がるチャイム','out'],
  gr5G:['(ボツ)★5案G(AI)','巨大なオーケストラの一撃+聖歌','out'],
@@ -4028,7 +4032,8 @@ const TW_SFX={rifle:'shotD',shot:'shotgun',sniper:'snipe',gat:'gatD',
 flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net',
  /* ⭐(197)新しい塔3台と、その進化先 */
  /* ⭐(204d)**照明塔と引力塔に専用の音を付けた**(ユーザー「いまだとネットと一緒だから駄目」) */
- bolt:'zap',bolt2:'zap2',bolt3:'zap2',
+ /* ⚡(226b)雷塔=テスラと同じ音だった(ユーザー指摘)→本物の雷のクラック(雷嵐でボツのC案を転用)に */
+ bolt:'uboltC',bolt2:'uboltC',bolt3:'uboltC',
  pullt:'pull',pullt2:'pull',pullt3:'pull',
  lamp:'lamp',lamp2:'lamp',lamp3:'lamp'};
 function twSfx(C,T){
@@ -5441,8 +5446,9 @@ const TW_TRAIT={
 /* ⚠(163)**その塔が実際に持っていない持ち味は出さない**=⚡電撃系にした🔦レーザー塔は
    連鎖しないので、研究所に「連鎖+0.25体/段」と書くと嘘になる(相性のためだけに型を合わせた)。 */
 /* ⚠(197)**塔ごとの上書き(T.trait)を先に見る**=同じ⚡型でも「連鎖」と「同時攻撃」で言い方が違うため */
+/* ⚡(226b)**連鎖が上限で頭打ちの塔(雷塔=chain1/cmax1)にも「連鎖+」を出さない**=伸びない持ち味は嘘になる */
 const twTrait=T=>{const R9=(T&&T.trait)||TW_TRAIT[T&&T.type];
- return (R9&&R9.k==='chain'&&!(T&&(T.chain||T.emul)))?null:R9;};
+ return (R9&&R9.k==='chain'&&!(T&&(T.emul||((T.chain||0)<(T.cmax||99)))))?null:R9;};
 /* 一覧に出す絵文字。⚠タレット20枚・ユニット32枚が全部同じ絵だと見分けられないので型で変える */
 const TW_IC={bullet:'🔫',eco:'🏭',fire:'🔥',net:'🕸',blast:'💥',elec:'⚡',pierce:'🗡',beam:'🔆',poison:'🧪'};
 /* ⭐(221)英雄専用の3属性を追加(2026-08-08ユーザー指示)=🫧ゴム(ルピナ・全部等倍で跳弾)/
@@ -6603,8 +6609,16 @@ let PMAXX=MW;
    ⚠⚠**宣言は loadStage より前**(loadStage が読み込みの途中で呼ばれても落ちないように=TDZの穴) */
 let MERGE_D=0;
 /* 🚩⭐**🚩集結旗(=ユニットの立つ線)を置ける一番手前**。
-   ⚠枝分かれのある面では**合流点より後ろだけ**=枝の上に置くと「どちらの枝に立っているか」が決まらない。 */
-const flagLo=()=>Math.max(PLEN*.1,MERGE_D);
+   🪶⭐⭐(226b)**枝の上にも置けるようにした**(2026-08-08ユーザー「分岐までしか旗おけなくて
+   そこから先へユニットとかヒーローが進めない」=(205)のA案を解禁)。
+   ⭐**旗がレーン(flagLn)を持つ**=枝の上ではユニットは旗の枝に立ち、交戦も同じ枝だけ。 */
+const flagLo=()=>PLEN*.1;
+/* 🪶(226b)ユニットの立つレーン=合流点より手前に居る間だけ「持ち主の旗の枝」。それ以外は今までどおり */
+const uFlagLn=(C,u)=>{const P=(typeof G!=='undefined'&&G&&G.coop&&G.players[u.own||0])?G.players[u.own||0]:C;
+ return (P&&P.flagLn)||0;};
+const uLnOf=(C,u)=>(LANES&&MERGE_D>0&&u.d<MERGE_D-.5)?uFlagLn(C,u):null;
+/* 🪶(226b)枝ちがい=両方が合流点より手前で、敵の枝と旗の枝が違う(=撃てない・止められない) */
+const lnMis=(C,u,z)=>!!(LANES&&MERGE_D>0&&u.d<MERGE_D&&z.d<MERGE_D&&z.ln!=null&&z.ln!==uFlagLn(C,u));
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
@@ -6693,9 +6707,9 @@ function pathFace(d,px,sign,ang,ln){
 }
 /* ユニットの向き: ①狙っている敵が居ればその敵の側 ②後退中は進む向き ③それ以外は敵の来る側。
    ⚠真上・真下の敵(横の差が小さい)では①を使わない=左右にちらつく */
-function uFace(u,p){
+function uFace(u,p,ln){
  if(!u.back&&u.tgx!=null){const dx=u.tgx-p[0];if(Math.abs(dx)>6)return dx>0?1:-1;}
- return pathFace(u.d,p[0],u.back?1:-1,p[2]);
+ return pathFace(u.d,p[0],u.back?1:-1,p[2],ln);/* 🪶(226b)枝の上では自分の枝で向きを決める */
 }
 function projPath(x,y){let bd=1e9,br=0;
  const R=segRangeY(SEG,y),i0=R?R[0]:0,i1=R?R[1]:SEG.length-1;
@@ -17516,7 +17530,7 @@ function hCmbStrike(C,u,U,ua,k,n){
     ⭐**2打目以降だけ届く幅を+50広げる**=踏み込みながら振っている、の絵に合う。
     ⚠最初の1打(普段の枝)の射程は触らない=交戦の始まる距離は変えない。 */
  let tg=null,best=1e9;
- for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;const gp=u.d-z.d;
+ for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;if(lnMis(C,u,z))continue;const gp=u.d-z.d;
   if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)+50&&gp<best){best=gp;tg=z;}}
  if(!tg)return;
  const d5=(u.dr||-1),mx=u.px+d5*30*CH_UP,my=u.py-27*CH_UP;
@@ -18926,7 +18940,8 @@ function newCamp(name,kind,ai,isMe){return{name,kind,ai,isMe:!!isMe,dead:false,d
     研究所の開始ボーナス(🧱建設スロット/🤝ユニット枠/廃品工房)が効いているか分からない。 */
  towers:SLOTS.map(()=>null),ecoN:devAll()?ECO_MAX:1,supN:devAll()?SUP_MAX:0,up:12,upTotal:12,
  slk:SLOTS.map((_,i)=>devAll()?i<ECO_BASE:(i>=ECO_BASE?false:SLOT_ORDER.indexOf(i)<SLOT0)),
- zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:devAll()?teamIdx().length:2,uLv:0,dep:0,flagD:Math.max(PLEN*.55,flagLo()),q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
+ /* 🚩(226b)始めの旗は合流点より後ろ(両方の枝を受けられる位置)。枝へ出すのはプレイヤーの操作だけ */
+ zombies:[],shells:[],arcs:[],fx:[],units:[],ucd:UNITS.map(()=>0),team:teamIdx(),uUn:devAll()?teamIdx().length:2,uLv:0,dep:0,flagD:Math.max(PLEN*.55,flagLo(),MERGE_D||0),flagLn:0,q:[],qt:1,waveDone:true,charge:.25,waveMul:1,
  hUi:-1,hOut:0,hCg:0,fallen:[],/* 英雄: 連れて行く英雄のUNITS添字 / 0=未出撃 1=出撃中 2=戦死 / 必殺チャージ / 戦死したユニット(蘇生用) */
  kills:0,killsWave:0,totalWave:0,sentCount:0,enTotal:0,pushUses:0,pushCount:0,inc:{sent:[],jam:[]},
  ready:false,tm:rnd(0,9),aiT:0,planned:false};}
@@ -20921,6 +20936,7 @@ function campStep(C,dt,wave){
    /* 1体が同時に抱えられる数。⚠すり抜け敵が重なると鎖使いが3体で埋まり、4体目から素通りしていた
       (普通の敵は他のユニットへ回れるが、すり抜け敵は鎖使いにしか止められないため逃げ場が無い。2026-07-25修正) */
    if(u.eng>=(z.noblock&&hk?Math.max(ENG_MAX,hk):ENG_MAX))continue;
+   if(lnMis(C,u,z))continue;/* 🪶(226b)別の枝のユニットには噛みつけない(=止められない) */
    const gap=u.d-z.d;if(gap>=-6&&gap<=ENG_GAP&&gap<bd2){bd2=gap;blk=u;}}
   if(blk){blk.eng++;
    if(z.frzT<=0)z.acd=(z.acd||0)-dt;/* 凍結中は殴れない */
@@ -20985,7 +21001,7 @@ function campStep(C,dt,wave){
  /* ユニット */
  const MR=38;
  for(let ui2=0;ui2<UNITS.length;ui2++)if(C.ucd[ui2]>0)C.ucd[ui2]-=dt;
- for(const u of C.units){const p=pathPos(u.d);u.px=p[0];u.py=p[1];u.dr=uFace(u,p);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;
+ for(const u of C.units){const ln8=uLnOf(C,u),p=pathPos(u.d,ln8);u.px=p[0];u.py=p[1];u.dr=uFace(u,p,ln8);if(u.hitT>0)u.hitT-=dt;if(u.fireT>0)u.fireT-=dt;if(u.ulT>0)u.ulT-=dt;
   /* ⭐⭐⭐**据える型(狙撃)の英雄は「構え」を保つ**(2026-08-03(71)ユーザー
      「完全に敵が射程にいるときは一発一発立たずにしゃがんだまま次の弾うってコッキングしてまた撃つ」)。
      ⚠⚠**しゃがみの深さは `u.chg`(溜め)から出していた**が、`u.chg` は**1発撃つたびに0へ戻る**
@@ -21012,7 +21028,7 @@ function campStep(C,dt,wave){
     /* 下がる(0→.66で目一杯)→加速して戻る(.66→1で0へ)。
        ⚠**退がるのは d を増やす向き**=敵は d の小さい側から来る(d=0が湧き口・PLENがコア) */
     const e=q<.66?Math.sin(q/.66*1.5708):Math.pow(1-(q-.66)/.34,2);
-    const pb=pathPos(clamp(u.d+u.ulBk*e,0,PLEN));u.px=pb[0];u.py=pb[1];}}}
+    const pb=pathPos(clamp(u.d+u.ulBk*e,0,PLEN),uLnOf(C,u));u.px=pb[0];u.py=pb[1];}}}
  for(const u of C.units){
   if(u.dead)continue;
   /* ⚠溜めの間は通常攻撃をしない=撃ちながら溜めると何をしているのか読めない */
@@ -21043,7 +21059,7 @@ function campStep(C,dt,wave){
   }else
   /* ⚠**噛みついてくる相手には必ず届くようにする**。射程が噛みつきの窓(ENG_GAP)より短い近接ユニットは、
      素のままだと殴られているのに反撃できない。旗で足が止まっているので詰めることもできない */
-  for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;const gap=u.d-z.d;
+  for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;if(lnMis(C,u,z))continue;const gap=u.d-z.d;
    if(gap>=-10&&gap<=Math.max(U.rng,ENG_GAP+2)&&z.d>best){best=z.d;tg=z;}}
   if(tg){
    /* ⭐⭐**交戦中の印**(2026-07-30ユーザー指摘「敵がいないのにバットを振る」)。
@@ -21164,7 +21180,7 @@ function campStep(C,dt,wave){
       :tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c');
      if(f9>0)later(C,f9,im9);else im9();
      if(U.aoe>=100)u.fireT=.14;}}
-    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead)continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){uHit(C,z,ua,U);if(++n2>=U.multi)break;}}}
+    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead||lnMis(C,u,z))continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){uHit(C,z,ua,U);if(++n2>=U.multi)break;}}}
     else{
      /* ⭐**飛び道具の英雄だけ、当たるのを飛行時間ぶん遅らせる**(2026-08-03(71))。
         ⚠`tg` はそのまま持つ=途中で倒れていれば `dmgZ` が頭で弾く(追尾にはならない)。 */
@@ -21581,10 +21597,14 @@ function campStep(C,dt,wave){
     twSfx(C,T);}}
   else if(T.type==='elec'&&T.arcT){/* 重テスラ: 一瞬で全部ではなく、1跳ねずつ時間をかけて伝わる。
     跳ねるたびに威力が grow 倍(gmax 倍で頭打ち)＝群れが長いほど後半が重くなる */
-   const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
+   /* ⚡⚠⚠(226b)研究所の持ち味(連鎖+0.25体/段)は**上限(cmax)を素通りしていた**=上限で頭打ちに */
+   const chainN=Math.min(T.cmax||99,twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0));
    C.arcs.push({x:mzx,y:mzy,cur:tg,hitl:[tg],k:0,n:chainN,t:0,step:T.arcT,dm,grow:T.grow||1.4,gmax:T.gmax||5,first:1});
    twSfx(C,T);}
-  else if(T.type==='elec'){const chainN=twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0);
+  else if(T.type==='elec'){
+   /* ⚡⚠⚠(226b)**雷塔が連鎖していた正体**=研究所の持ち味(連鎖+0.25体/段)が上限(cmax:1)を
+      素通りして足されていた(2026-08-08ユーザー「雷塔が普通に連鎖しちゃってる」)。上限で頭打ちに。 */
+   const chainN=Math.min(T.cmax||99,twChain(T,tw)+(TRT&&TRT.k==='chain'?Math.floor(TRT.v*TL):0));
    /* ⚡⭐(204d)**雷塔の系統は「空から落とす」**(2026-08-07ユーザー指示
       「雷塔は頭上から雷を落とす感じにしてほしい」)。⚠塔から敵へ線を引くと重テスラと同じに見えていた。
       ⭐**起点だけ敵の真上へ移す**=当たり判定も威力も1つも変えていない。塔は避雷針として光らせる。 */
@@ -23062,11 +23082,11 @@ function renderCamp(C,t){
  if(!C.dead&&!C.bus){
   let fls=[];
   if(COOP){
-   if(G)fls=G.players.map((P,i)=>({d:P.flagD,col:PCOL[i%3]}));
+   if(G)fls=G.players.map((P,i)=>({d:P.flagD,ln:P.flagLn,col:PCOL[i%3]}));
    else if(C.fda)fls=C.fda.map((d2,i)=>({d:d2,col:PCOL[i%3]}));
-   else if(C.flagD!=null)fls=[{d:C.flagD,col:'#6f9c43'}];
-  }else if(C.flagD!=null)fls=[{d:C.flagD,col:'#6f9c43'}];
-  for(const f of fls){if(f.d==null)continue;const fp=pathPos(f.d),fw=Math.sin(t*5)*3;
+   else if(C.flagD!=null)fls=[{d:C.flagD,ln:C.flagLn,col:'#6f9c43'}];
+  }else if(C.flagD!=null)fls=[{d:C.flagD,ln:C.flagLn,col:'#6f9c43'}];
+  for(const f of fls){if(f.d==null)continue;const fp=pathPos(f.d,(LANES&&f.d<MERGE_D)?(f.ln||0):null),fw=Math.sin(t*5)*3;
    const pop=1+Math.max(0,(.3-(t-FLAGPOP))/.3)*.5;
    c.save();c.translate(fp[0],fp[1]);c.scale(pop,pop);c.strokeStyle=INK;c.lineWidth=3;
    c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(0,3,14,6,0,0,7);c.fill();
@@ -23845,7 +23865,8 @@ function renderCamp(C,t){
  /* 照準 */
  if(AIM&&aimPos){c.strokeStyle='#E84832';c.lineWidth=4;c.setLineDash([12,10]);c.beginPath();c.arc(aimPos[0],aimPos[1],135,0,7);c.stroke();c.setLineDash([]);
   c.beginPath();c.moveTo(aimPos[0]-20,aimPos[1]);c.lineTo(aimPos[0]+20,aimPos[1]);c.moveTo(aimPos[0],aimPos[1]-20);c.lineTo(aimPos[0],aimPos[1]+20);c.stroke();}
- if(FLAGAIM&&aimPos){const fd2=clamp(projPath(aimPos[0],aimPos[1]),flagLo(),PLEN*.9),fp2=pathPos(fd2);
+ if(FLAGAIM&&aimPos){const pj2=projPathL(aimPos[0],aimPos[1]),fd2=clamp(pj2[0],flagLo(),PLEN*.9),
+  fp2=pathPos(fd2,(LANES&&fd2<MERGE_D)?(pj2[1]||0):null);/* 🪶(226b)枝の上も指せる */
   c.strokeStyle='#6f9c43';c.lineWidth=4;c.setLineDash([10,8]);c.beginPath();c.arc(fp2[0],fp2[1],44,0,7);c.stroke();c.setLineDash([]);
   c.font='900 32px '+FF;c.textAlign='center';c.fillText('🚩',fp2[0],fp2[1]-10);}
  /* ボスHP */
@@ -24345,7 +24366,7 @@ function drawMini(cvm,camp){
  c.fillStyle=AMBER;c.beginPath();c.arc(CORE[0],CORE[1],64,0,7);c.fill();
  for(let si=0;si<SLOTS.length;si++){const tw=(camp.towers||[])[si];if(!tw)continue;
   c.fillStyle=tw.jamT>0?'#5a5a5a':TOWERS[tw.ti].c;c.fillRect(SLOTS[si][0]-28,SLOTS[si][1]-28,56,56);}
- if(camp.flagD!=null){const fp=pathPos(camp.flagD);c.fillStyle='#6f9c43';c.beginPath();c.arc(fp[0],fp[1],30,0,7);c.fill();}
+ if(camp.flagD!=null){const fp=pathPos(camp.flagD,(LANES&&camp.flagD<MERGE_D)?(camp.flagLn||0):null);c.fillStyle='#6f9c43';c.beginPath();c.arc(fp[0],fp[1],30,0,7);c.fill();}
  for(const u of (camp.units||[])){if(u.dead)continue;const px=u.px||pathPos(u.d)[0],py=u.py||pathPos(u.d)[1];
   c.fillStyle='#d8eba8';c.beginPath();c.arc(px,py,20,0,7);c.fill();}
  for(const z of (camp.zombies||[])){if(z.dead||z.d<0||z.dvT>0)continue;const px=z.px||pathPos(Math.max(0,z.d))[0],py=z.py||pathPos(Math.max(0,z.d))[1];
@@ -24776,10 +24797,12 @@ $('strikebtn').onclick=()=>{const m=meV();if(!m||m.dead||m.charge<1){setAim(fals
 function setFlagAim(on){if(on)setAim(false);FLAGAIM=on;aimPos=null;$('flagbtn').classList.toggle('aim',on);$('flaghint').style.display=on?'block':'none';}
 $('flagbtn').onclick=()=>{const m=meV();if(!m||m.dead){setFlagAim(false);return;}setFlagAim(!FLAGAIM);};
 let FLAGPOP=-9,FRAMECOL='';
-function actFlag(x,y){const fd=clamp(projPath(x,y),flagLo(),PLEN*.9);
- if(MODE==='client'){sendCmd({t:'c',a:'fg',fd:Math.round(fd)});CS.fd=fd;FLAGPOP=TT;sfx.dep();return;}
- if(G){const me=G.players[G.myIdx];if(me.dead)return;me.flagD=fd;FLAGPOP=TT;
-  const F2=G.coop?G.players[0]:me;const fp=pathPos(fd);addFx(F2,'ring',fp[0],fp[1],'',{r:44,col:'#c9dba1'});sfx.dep();}}
+function actFlag(x,y){const pj=projPathL(x,y),fd=clamp(pj[0],flagLo(),PLEN*.9);
+ /* 🪶(226b)枝の上に置いたら「押した場所に近い方の枝」が旗のレーンになる */
+ const fl=(LANES&&fd<MERGE_D)?(pj[1]||0):0;
+ if(MODE==='client'){sendCmd({t:'c',a:'fg',fd:Math.round(fd),fl});CS.fd=fd;CS.fl=fl;FLAGPOP=TT;sfx.dep();return;}
+ if(G){const me=G.players[G.myIdx];if(me.dead)return;me.flagD=fd;me.flagLn=fl;FLAGPOP=TT;
+  const F2=G.coop?G.players[0]:me;const fp=pathPos(fd,fl);addFx(F2,'ring',fp[0],fp[1],'',{r:44,col:'#c9dba1'});sfx.dep();}}
 $('pushbtn').onclick=()=>{actPush();};
 /* 🦸英雄: 1回目のタップで出撃、以後はチャージが満タンになるたび必殺技 */
 $('herobtn').onclick=()=>{
@@ -36302,8 +36325,8 @@ function homeDraw(t){
   c.fillStyle=rg;c.fillRect(0,0,w,h);}
  c.fillStyle='rgba(232,163,61,.14)';
  c.beginPath();c.ellipse(w/2,h*.88,w*.30,h*.05,0,0,7);c.fill();
- const s9=Math.min(w,h)/140;/* ⚠英雄の全高は約53×CH_UP。⚠(224b)/118では**鎌など頭の上に出る武器**が
-    上端で切れた(ユーザー「ヒーローの上部が欠けてる」)=/140で頭上に余白を残す */
+ const s9=Math.min(w,h)/164;/* ⚠英雄の全高は約53×CH_UP。⚠(224b)/118では鎌が、(226c)/140でも
+    **紅蓮の大魔導士の帽子と杖**が上端で切れた(ユーザー実機)=/164で頭上にさらに余白を残す */
  /* ⚠まだ1人も持っていない時は**影絵**にする(未所持の英雄をフルカラーで出すと嘘になる)。
     ⚠ctx.filterはSafariで効かないので、別canvasに描いてsource-atopで塗りつぶす */
  const sil9=!DEV&&!heroOwned(HOMEH);
@@ -36474,7 +36497,7 @@ function clientCamp(dt){
  const m=CS.meN;if(!m){CC=null;return;}
  if(!CC)CC={zm:new Map(),um:new Map(),zombies:[],units:[],shells:[],fx:[],towers:[],ps:[],shake:0};
  CC.core=m.core;CC.coreMax=m.coreMax;CC.dead=m.dead;CC.waveDone=m.waveDone;CC.towers=m.towers;
- CC.flagD=CS.fd!=null?CS.fd:null;CC.fda=CS.fda;CC.ecoN=m.ecoN||1;CC.slk=m.slk;
+ CC.flagD=CS.fd!=null?CS.fd:null;CC.flagLn=CS.fl||0;CC.fda=CS.fda;CC.ecoN=m.ecoN||1;CC.slk=m.slk;
  if(CC.shake>0)CC.shake-=dt;
  if(m.ucd)for(let i=0;i<m.ucd.length;i++)if(m.ucd[i]>0)m.ucd[i]-=dt;
  syncEnts(CC,CS.es||[],CS.us||[],dt);
@@ -36543,7 +36566,7 @@ function hostData(c,d){
   else if(d.a==='buy')doPurchase(P,''+d.k,d.o||{});
   else if(d.a==='ps')pushTide(P,(d.tg!=null?d.tg|0:-1));
   else if(d.a==='un')deployUnit(P,d.ui|0);
-  else if(d.a==='fg')P.flagD=clamp(+d.fd||0,flagLo(),PLEN*.9);
+  else if(d.a==='fg'){P.flagD=clamp(+d.fd||0,flagLo(),PLEN*.9);P.flagLn=(+d.fl||0);}
   else if(d.a==='rd')P.ready=true;
  }
 }
