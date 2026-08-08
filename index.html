@@ -2532,7 +2532,7 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  /* 旧セーブの移行: ステージ×難易度の記録(META.sc)が無ければ、ステージ1ぶんを META.clr から作る */
  if(!Array.isArray(META.sc)){META.sc=[META.clr.slice(),[0,0,0,0,0,0]];
   if(Array.isArray(META.sclr)&&META.sclr[0])META.sc[0][5]=1;}
- if(!Array.isArray(META.uv))META.uv=[];if(!Array.isArray(META.tg))META.tg=[];if(!META.ld||typeof META.ld!=='object')META.ld={};delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
+ if(!Array.isArray(META.uv))META.uv=[];if(!Array.isArray(META.tg))META.tg=[];if(!META.ld||typeof META.ld!=='object')META.ld={};if(!Array.isArray(META.twOff))META.twOff=[];/* 🏰(226f)タレットの編成 */delete META.am;delete META.amEq;/* ⚠弾薬は2026-07-27に廃止(進化に置き換えた) */
  for(const k of ['up0','cd0','ec0','sl0','py0','uu0','ec1','st0','gem','hmat','tr0','tk5','arcW','arcL'])META[k]=META[k]||0;/* ⚠(125)arcW/arcL=🏹弓比べの戦績 */
  if(!META.gft||typeof META.gft!=='object')META.gft={};/* 🎫受け取った配布物の印 id→1 */
  if(!META.msn||typeof META.msn!=='object')META.msn=null;
@@ -2589,7 +2589,7 @@ function metaResetLab(){
  META.pts=0;META.nt=0;META.nu=0;META.ot=[];META.ou=[];
  META.st=['air'];META.eq='air';
  /* ⚠**team は null で戻す**=空配列だと「触った結果、固定の2体だけ」の意味になってしまう */
- META.uv=[];META.tg=[];META.ld={};META.team=null;
+ META.uv=[];META.tg=[];META.ld={};META.team=null;META.twOff=[];TWOWN_K=-1;/* 🏰(226f) */
  META.tw={};META.un={};META.st0=0;
  for(const k of ['sc0','hp0','up0','cd0','ec0','sl0','py0','uu0','ec1'])META[k]=0;
 }
@@ -6161,12 +6161,19 @@ const unHas=id=>(META.ou||[]).indexOf(id)>=0;
 /* ⭐**持っている塔の並び**(TOWERSの添字の配列)。⚠盤面の解放はこの並びを頭から開けていく。
    ⚠**持ち物が増えた時しか変わらない**ので、長さと場面で覚えておく(CPUの思考から何度も呼ばれる)。 */
 let TWOWN_C=null,TWOWN_K=-1;
+/* 🏰⭐⭐(226f)**タレットの編成**(2026-08-08ユーザー指示「ユニットみたいにタレットも編成するようにしよう。
+   火炎タレットいらないのにもっていかなきゃいけないの無駄すぎる」)=
+   ⭐**外す方式**(META.twOff=外した塔のidの一覧)。上限は設けない(絞るかは実機の感想を聞いてから)。
+   ⚠**効くのはソロだけ**(協力/対戦は素の並びで統一=ユニットの編成と同じ掟)。
+   ⚠🏭廃品工房(eco)は外せない(経済の柱)。⚠外しすぎの下限はUI側(twOffMin)で守る。 */
+const twOffHas=id=>((META.twOff||[]).indexOf(id)>=0);
+const TWOFF_MIN=4;/* 🏰外しても最低これだけは残す(全部外すと建てる物が無い) */
 function twOwnList(){
  const solo=(typeof soloUI==='function')?soloUI():true;
  const all=!!(devAll()||(typeof G!=='undefined'&&G&&G.tut));
- const k=(all?1:0)+(solo?2:0)+((META.ot||[]).length*4);
+ const k=((all?1:0)+(solo?2:0)+((META.ot||[]).length*4))+'/'+((META.twOff||[]).join('.'));
  if(TWOWN_K===k&&TWOWN_C)return TWOWN_C;
- const a=[];
+ let a=[];
  if(all){for(let i=0;i<T_PLAY;i++)a.push(i);}
  else if(!solo){for(let i=0;i<PVP_T;i++)a.push(i);}
  else{for(let i=0;i<BASE_T;i++)a.push(i);
@@ -6175,6 +6182,9 @@ function twOwnList(){
      ⭐支援施設は `twHas` だけで判定する(建設メニュー側)。 */
   for(const id of UNL_T){const i9=TW_IDX[id];if(i9==null||!twHas(id))continue;
    if((TOWERS[i9]||{}).type==='sup')continue;a.push(i9);}
+  /* 🏰(226f)**編成で外した塔を抜く**=盤面の⚙️解放・建設メニュー・CPU・紹介が全部この並びを見るので、
+     ここ1か所で「持って行かない」が全部に効く。⚠eco(廃品工房)は外せない */
+  a=a.filter(i=>((TOWERS[i]||{}).type==='eco')||!twOffHas((TOWERS[i]||{}).id));
   /* ⚠⚠**並びは必ず TOWERS の順(=安い順)に揃える**=買った順にすると、盤面の⚙️解放が
      「高い塔から先」になったり、道具の `me.unlocked=ti+1` が別の塔を指したりする。
      ⭐**全部持っていれば 並びの番号=TOWERSの添字** になる(Dで棚の順を変えても崩れない)。 */
@@ -31482,6 +31492,8 @@ let LDTAB='team';
 const LD_TABS=[
  {k:'team',n:'🎒 連れて行く',d:''},
  {k:'add', n:'🪖 入れる',d:''},
+ /* 🏰(226f)タレットの編成(ユーザー指示)。⚠効くのはソロだけ */
+ {k:'tw',  n:'🏰 タレット',d:''},
  /* ⚠🔒の入手経路はここで言う(2026-08-03 UI総監査)=どこにも書いておらず「壊れた画面」に見えた */
  {k:'var', n:'⭐ 派生を選ぶ',d:'どの派生キャラで出すか決める。🔒は🔬研究所のユニットタブで解放できる'}];
 /* ⚠**弾薬タブは2026-07-27に廃止**(タレットの進化に置き換えた)。書き戻さないこと */
@@ -31613,6 +31625,54 @@ function renderLoad(){
    b.onclick=e=>{
     if(e&&e.target&&e.target.classList&&e.target.classList.contains('ib')){openUstat(i);return;}
     if(TEAM_FIX.indexOf(i)>=0){fixMsg();return;}pick(i,b.dataset.on!=='1');};});
+  return;
+ }
+ /* 🏰⭐⭐(226f)**タレットの編成**(ユーザー指示「ユニットみたいにタレットも編成するようにしよう。
+    火炎タレットいらないのにもっていかなきゃいけないの無駄すぎる」)。
+    ⭐**外す方式・上限なし**(絞るかは実機の感想から)。⚠効くのはソロだけ(ユニットの編成と同じ)。
+    ⚠一覧は「持っている全部」=twOwnList は外した後の並びなので、ここでは素の持ち物から組む。 */
+ if(LDTAB==='tw'){
+  const own9=[];
+  for(let i=0;i<BASE_T;i++)own9.push(i);
+  for(const id of UNL_T){const i9=TW_IDX[id];if(i9==null||!twHas(id))continue;
+   if((TOWERS[i9]||{}).type==='sup')continue;own9.push(i9);}
+  own9.sort((x,y)=>x-y);
+  const inN=own9.filter(i=>(TOWERS[i].type==='eco')||!twOffHas(TOWERS[i].id)).length;
+  h='<div class="ldhdr" style="border-top:0;padding-top:0;margin:2px 2px 3px">'
+   +'🏰 <b>'+inN+'/'+own9.length+'</b>'
+   +'<span class="lsub">押すと外す/戻す・🏭廃品工房は固定・協力/対戦には効かない</span></div>';
+  h+='<div class="tmgrid" id="tw-grid">';
+  for(const i of own9){const T=TOWERS[i];
+   const eco=T.type==='eco',on=eco||!twOffHas(T.id);
+   h+='<button class="tmc'+(on?' on':'')+'" data-twsel="'+i+'">'
+    +(on?'<span class="onb">'+IC('✅')+'</span>':'')
+    +'<canvas data-tws="'+i+'" width="96" height="58"></canvas>'
+    +'<span class="nm">'+T.n+'</span>'
+    +'<span class="tg">'+(eco?'固定':'⚙️'+T.cost)+'</span></button>';}
+  h+='</div>';
+  box.innerHTML=IC(h);
+  /* ⚠THUMBSは92x80=**縦横比を保って96x58の中へ収める**(潰すと絵の掟に反する)。
+     ⚠tryは足さない(空catchの柵)=無い環境はifで弾く */
+  box.querySelectorAll('[data-tws]').forEach(cc=>{
+   const im=(typeof THUMBS!=='undefined')?THUMBS[+cc.dataset.tws]:null;
+   const c9=im&&im.width&&cc.getContext?cc.getContext('2d'):null;if(!c9)return;
+   const k9=Math.min(96/im.width,58/im.height),w9=im.width*k9,h9=im.height*k9;
+   c9.drawImage(im,(96-w9)/2,(58-h9)/2,w9,h9);});
+  box.querySelectorAll('[data-twsel]').forEach(b=>{b.onclick=()=>{
+   const i=+b.dataset.twsel,T=TOWERS[i];
+   if(T.type==='eco'){sfx.back&&sfx.back();toast('🏭 廃品工房は固定(⚙️を稼ぐ柱)');return;}
+   if(!Array.isArray(META.twOff))META.twOff=[];
+   const at9=META.twOff.indexOf(T.id);
+   if(at9>=0)META.twOff.splice(at9,1);
+   else{
+    /* ⚠外しすぎの下限=攻撃できる塔を TWOFF_MIN 種は残す(全部外すと建てる物が無い) */
+    const left9=own9.filter(x=>TOWERS[x].type!=='eco'&&!twOffHas(TOWERS[x].id)).length;
+    if(left9<=TWOFF_MIN){sfx.back&&sfx.back();toast('🏰 これ以上は外せない(最低'+TWOFF_MIN+'種)');return;}
+    META.twOff.push(T.id);}
+   TWOWN_K=-1;saveMeta();sfx.buy&&sfx.buy();
+   const sv=(()=>{const g=$('tw-grid');return g?g.scrollTop:0;})();
+   renderLoad();
+   {const g=$('tw-grid');if(g)g.scrollTop=sv;}};});
   return;
  }
  /* ⭐派生の割り当て。⚠基本と上級を**1つのタブ**にまとめた(2026-08-01)=分ける意味が無かった */
