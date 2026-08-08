@@ -2053,7 +2053,8 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
             <button class="btn sm" id="gc-dex">📖 図鑑</button>
             <button class="btn sm" id="gc-rate">確率</button>
           </div>
-          <div class="gchint" id="gc-hint">💎はソロ作戦のボス撃破で入る(難易度が高いほど多い)</div>
+          <!-- ⛔(227f)「難易度」を拠点へ読み替えた決定の取り残しを直した(→[[TODO]]) -->
+          <div class="gchint" id="gc-hint">💎はソロ作戦のボス撃破で入る(先の拠点ほど多い)</div>
         </div>
       </div>
       <!-- ⚠図鑑と確率は畳んでおく(常時出すと目玉の英雄より図鑑の方が目立つ) -->
@@ -6023,6 +6024,18 @@ const uStand=U=>Math.max(0,Math.min((U.rng||0)/2,(U.rng||0)-ENG_GAP-14));
 function uGoal(C,u,U){
  const fD=(G&&G.coop&&G.players[u.own||0]?G.players[u.own||0]:C).flagD;
  let goal=clamp(fD+uStand(U),60,PLEN-40);
+ /* 🏕⭐⭐⭐(227f)**拠点に取り付かれている間だけ、みんな戻って殴り返す**(2026-08-07(206)ユーザー実機
+    「拠点に張り付いた敵をユニットが素通りする。いい感じにして」)。
+    🐞**正体**=取り付く敵は**門の手前(SIEGE_D)で止まる**が、ユニットが湧くのは**それより拠点寄り**。
+      湧いた一瞬だけ噛み合い、そのあと**旗の所まで前へ歩き去る**ので、誰も殴り返さなかった。
+    ⭐**旗の意味(前線を引く)は壊さない**=戻るのは**取り付かれている間だけ**。倒せば元の線へ戻る。
+    ⚠**戻る向きは d を増やす方**(拠点側)。⚠交戦中でも下がれる((163)の仕組みにそのまま乗る)。
+    ⚠⚠**難易度が動く**=取り付くのは最終ウェーブの主なので、手応えは実機で見てもらうこと。 */
+ if(!C.bus&&C.zombies){
+  let sg=-1;
+  for(const z of C.zombies){if(z.dead||!z.siege||z.d<PLEN-SIEGE_D-1)continue;if(z.d>sg)sg=z.d;}
+  if(sg>=0)goal=Math.max(goal,clamp(sg+uStand(U),60,PLEN-40));
+ }
  /* 🪶⭐⭐(227e)**枝が食い違ったら、まず合流点(分かれ道)まで戻る**=瞬間移動させないための片割れ。
     ⚠**戻る向きは d を増やす方**(d=0が湧き口・PLENがコア)。合流点を越えた所で `uLnOf` が
       新しい枝を覚え直し、そこから反対の枝へ歩き出す=**上の道も下の道も1本に繋がって見える**。
@@ -24950,15 +24963,20 @@ function openBM(si){
     「強化ウィンドウがタレットにかぶってるせいで攻撃範囲がどれだけ増えるか見えない」)。
     ⭐**画面の半分より高くしない**+**塔と反対側の端へ寄せる**=射程の輪がいつも見える。
     ⚠中身は #bm-body がスクロールするので、短くしても押せなくなることはない。 */
+ /* 🔧⭐⭐(227f)**上の札(WAVE…)の帯より下から始める**(2026-08-07(206)ユーザー実機「✕が上すぎて押せない」)。
+    🐞**それまで上端6pxに丸めていた**ので、窓が高い時に✕が上の札と重なって押せなかった。
+    ⚠⚠**✕はパネルの外へ12px出ている**(`#bm-x` の top:-12px)=帯にその分も足して避けること。
+    ⚠**帯の高さは端末と画面の幅で変わる**=必ず実測(`topBandPx`)で取る(決め打ちは必ずずれる)。 */
+ const tMin=Math.round(topBandPx())+16;
  {const bd=$('bm-body');
-  if(bd){bd.style.maxHeight=Math.max(96,Math.min(innerHeight-12-16-barBandPx(),Math.round(innerHeight*.52)))+'px';}}
+  if(bd){bd.style.maxHeight=Math.max(96,Math.min(innerHeight-tMin-6-16-barBandPx(),Math.round(innerHeight*.52)))+'px';}}
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
  /* 🔧⭐(214)**窓は塔のそばに置く**(2026-08-08ユーザー指摘「強化対象のタレットと遠くてやりずらい。
     タレットにかぶらないけど近くに置いて」)。⚠(204d)の「反対側の端へ寄せる」は輪は見えたが遠すぎた。
     ⭐**射程の輪(緑のプレビュー含む・いま見えている一番外)のすぐ外、左右の空いている方**に置く。
     輪が大きくて左右どちらにも入らない画面では、**塔だけ避けて(40px)**横に並べる。
     ⚠縦は塔の高さに合わせて、画面と下の操作バーの内側へ丸める(操作バーに被せない=デッキが押せなくなる) */
- const yMax=Math.max(6,innerHeight-bh-6-barBandPx());
+ const yMax=Math.max(tMin,innerHeight-bh-6-barBandPx());
  let rc=40;/* 塔そのものを避ける最低の半径(CSSpx) */
  if(tw&&TOWERS[tw.ti].rng){const T9=TOWERS[tw.ti],g9=(tw.us?tw.us.g:0);
   /* 盤面に描いている輪と同じ式で外周を出す(強化できる間は強化後プレビューの輪が一番外) */
@@ -24972,7 +24990,7 @@ function openBM(si){
  /* それでも入らない狭い画面だけ、塔の真上に重なるのを承知で中央へ丸める */
  if(lx<0)lx=Math.max(6,Math.min(innerWidth-bw-6,px-bw/2));
  bm.style.left=Math.round(lx)+'px';
- bm.style.top=Math.round(Math.max(6,Math.min(yMax,py-bh/2)))+'px';
+ bm.style.top=Math.round(Math.max(tMin,Math.min(yMax,py-bh/2)))+'px';
 }
 /* ============ 🛠 マス編集モード(?edit=1 の時だけ) ============
    実機で建設マスを指でドラッグして置き直し、そのまま `slots:[...]` を書き出すための開発用モード。
