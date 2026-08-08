@@ -211,16 +211,28 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homesub{flex:0 0 92px;display:flex;flex-direction:column;gap:8px;padding-top:2px;align-items:center}
 .homesub .homebt{width:62px}
 .homesub .homebt{flex:0 0 auto;height:auto;min-height:52px;flex-direction:column;padding:5px 4px;gap:2px;justify-content:center}
-.homesub .homebt .hic{width:26px;height:26px;font-size:15px;border-radius:8px}
-.homesub .homebt b{font-size:10.5px}
+.homesub .homebt .hic{width:32px;height:32px;font-size:19px;border-radius:9px}
+.homesub .homebt b{font-size:11px}
 .homesub .homebt i{display:none}
 .homeleft{flex:1 1 auto;min-width:0}
 .homeright{flex:0 0 46%;display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0}
 .hrow2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.hrow2 .homebt{min-height:40px;height:auto}
-.homeright .hfull{min-height:40px;height:auto}
-.homeright .homebt b{font-size:14px}
-.homeright .homebt i{font-size:10.5px}
+.hrow2 .homebt{min-height:44px;height:auto}
+.homeright .hfull{min-height:44px;height:auto}
+.homeright .homebt b{font-size:15px}
+.homeright .homebt i{font-size:11px}
+/* 👀(224)**余白と小さいアイコンの直し**(2026-08-08ユーザー「明らかに余白があるやつとか
+   アイコンが小さくてなんなのかわからないやつ」)=①アイコンを一回り大きく ②全幅の札(編成/研究所)は
+   中身を真ん中へ寄せて右の空きを消す ③編成のサムネも大きく */
+.homeright .homebt .hic{width:34px;height:34px;font-size:20px;border-radius:9px}
+/* ⭐(224b)編成/研究所=メインの2枚。縦に大きく(他の1.5倍)・アイコンも一回り大きく */
+.hmain .homebt{min-height:66px}
+.hmain .homebt .hic{width:42px;height:42px;font-size:25px;border-radius:11px}
+.hmain .homebt .hth{min-height:42px;padding:2px 6px}
+.hmain .homebt .hth canvas{width:44px;height:34px}
+.hmain .homebt b{font-size:17px}
+.homeright .homebt .hth{min-height:34px;padding:2px 5px}
+.homeright .homebt .hth canvas{width:34px;height:26px}
 #bt-home-resume{font-size:15px;padding:3px 8px}
 .homego{margin-top:auto;min-height:48px;font-size:20px}
 /* 💎英雄召集=左下の大きい丸(押す所は十分に大きい)。⚠.btn の紙の枠と鋲は消して丸に見せる */
@@ -232,7 +244,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
  box-shadow:0 4px 0 rgba(0,0,0,.55),inset 0 2px 0 rgba(242,236,220,.14)!important;color:var(--pane)!important}
 .gachaorb::before,.gachaorb::after{display:none!important}
 .gachaorb:active{transform:translateY(2px)}
-.gachaorb .hic{width:26px;height:26px;font-size:17px;background:transparent;border:0}
+.gachaorb .hic{width:30px;height:30px;font-size:21px;background:transparent;border:0}
 .gachaorb .hlb{align-items:center}
 .gachaorb b{font-size:11.5px;white-space:nowrap}
 .gachaorb i{font-style:normal;font-size:11px;font-weight:900;opacity:.95;white-space:nowrap}
@@ -1658,8 +1670,11 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
         <button class="btn homebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
         <button class="btn homebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
       </div>
-      <button class="btn homebt hfull" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
-      <button class="btn homebt hfull" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
+      <!-- ⭐(224b)編成と研究所=メインなので**縦に大きく・横は他と同じ2マスで横並び**(ユーザー指示) -->
+      <div class="hrow2 hmain">
+        <button class="btn homebt" id="hm-team"><span class="hth" id="hm-team-th"></span><span class="hlb"><b>編成</b><i id="hm-team-i"></i></span></button>
+        <button class="btn homebt" id="hm-lab"><span class="hic" id="hm-lab-ic">🔬</span><span class="hlb"><b>研究所</b><i id="hm-lab-pts"></i></span></button>
+      </div>
       <button class="btn gold" id="bt-home-resume" style="display:none">▶ 続きから</button>
       <button class="btn red homego" id="bt-map">🗺 出撃 <i>次の拠点へ — 生存圏の地図</i></button>
     </div>
@@ -4918,6 +4933,16 @@ const ZOMBIES=[
  {id:'aBeet',n:'鋼殻の甲虫',hp:760,sp:50,bt:130,dmg:4,mw:15,st:3,wing:1,w:.3,sc:1.45,aoe:3,atk:80,ar:1.1,c:'#3f4a52',dsc:'ぶ厚い鞘翅の壁。3体まとめて弾き飛ばす'},
  {id:'aRoc',n:'鉄塔の主',hp:1500,sp:42,bt:400,dmg:10,st:3,boss:1,wing:1,mw:5,sc:2.2,atk:168,ar:1.2,aoe:5,c:'#6b6f7a',dsc:'丘の主。翼で薙ぎ払う'},
  {id:'aStorm',n:'空を覆うもの',hp:2800,sp:34,bt:900,dmg:16,st:3,boss:1,fin:1,wing:1,aura:1,split:3,mw:20,sc:2.7,atk:230,ar:1.2,aoe:6,c:'#46505c',dsc:'丘の空をまるごと覆う影。群れを狂わせ、倒すと弾けて仔が出る'},
+ /* ===== 🌑🪶 面③×ナイトメア(nm:1,st:3)=2026-08-08(224)ユーザー承認の6体 =====
+    ⭐絵は①と同じ原則「③の敵の黒ずんだ強化版+赤く灯る目」(NMB/NM_TINT/nmMut)。
+    ⚠**写し元は材質が同じ③の敵**(羽は羽・材質なしは材質なし)。⚠強さの数字は写し元と同じ値から
+    始める(NM難易度の倍率とST3_hpMが上に乗る)=**詰めは実測から**(勝手にいじらない)。 */
+ {id:'n3Swal',n:'爛れた翼',hp:92,sp:228,bt:20,dmg:1,mw:1,nm:1,st:3,sc:.8,atk:14,ar:.45,c:'#5c7d9c',dsc:'黒ずんだツバメ。裂けた尾を引いて突っ込んでくる'},
+ {id:'n3Spar',n:'蝕まれた群れ',hp:68,sp:190,bt:14,dmg:1,mw:1,nm:1,st:3,w:1.1,sc:.75,atk:12,ar:.5,c:'#a08a5c',dsc:'焦げた小鳥の群れ。ばらばらに飛び込んでくる'},
+ {id:'n3Crow',n:'黒鉄の鴉',hp:250,sp:74,bt:26,dmg:2,mw:3,nm:1,st:3,wing:1,sc:1.05,atk:32,ar:1,c:'#4a4f5c',dsc:'煮しめた鉄の羽。🔫実弾でしか落ちない'},
+ {id:'n3Beet',n:'錆びた甲殻',hp:760,sp:50,bt:130,dmg:4,mw:8,nm:1,st:3,wing:1,w:.35,sc:1.45,aoe:3,atk:80,ar:1.1,c:'#3f4a52',dsc:'錆に喰われた鞘翅の壁。3体まとめて弾き飛ばす'},
+ {id:'n3Vult',n:'鉄塔の暴君'/*(224b)ユーザー「もうちょいシンプルに」*/,hp:1500,sp:42,bt:400,dmg:10,nm:1,st:3,boss:1,wing:1,mw:5,sc:2.2,atk:168,ar:1.2,aoe:5,c:'#5a4a42',dsc:'黒ずんだ大鳥。赤い目が丘を見下ろす'},
+ {id:'n3Storm',n:'空を喰らう王',hp:2800,sp:34,bt:900,dmg:16,nm:1,st:3,boss:1,fin:1,wing:1,aura:1,split:3,mw:20,sc:2.7,atk:230,ar:1.2,aoe:6,c:'#46505c',dsc:'空ごと喰らう黒い影。群れを狂わせ、倒すと仔が出る'},
 ];
 const SENDABLE=[0,1,2,3];
 /* ⚠**プールは4つある**(2026-07-27にナイトメア×ステージ2を足した)。印の組み合わせで見分ける:
@@ -4934,6 +4959,8 @@ const FIN2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===2&&!z.nm);
 const FIN3_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===3&&!z.nm);/* 🪶(194)面③ 空を覆うもの */
 const FINNM_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&!z.st);
 const FINNM2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===2);/* 🌑×② 原初の海淵 */
+const NM3_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&z.st===3&&!z.fin);/* 🌑×③(224) 送電塔の暴君 */
+const FINNM3_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===3);/* 🌑×③(224) 空を喰らう王 */
 const NM_DIFF=5;/* 難易度インデックス: 5=ナイトメア */
 const isNM=()=>!!(G&&G.pveDiff===NM_DIFF);
 const UNITS=[
@@ -5561,8 +5588,9 @@ const ZDEX_G=[{n:'① 廃線ハイウェイ',f:z=>!z.st&&!z.nm},
  {n:'② 沈んだ港',f:z=>z.st===2&&!z.nm},
  {n:'🌑 ナイトメア',f:z=>!!z.nm&&!z.st},
  {n:'🌑 深海のナイトメア',f:z=>!!z.nm&&z.st===2},
- /* 🪶(194)面③=空。⚠NM専用の顔ぶれはまだ無いので1グループ */
- {n:'③ 送電鉄塔の丘',f:z=>z.st===3&&!z.nm}];
+ {n:'③ 送電鉄塔の丘',f:z=>z.st===3&&!z.nm},
+ /* 🌑🪶(224)③のナイトメア6体(ユーザー承認) */
+ {n:'🌑 鉄塔のナイトメア',f:z=>!!z.nm&&z.st===3}];
 const UBASE=UNITS.slice();/* 素のユニット定義(不変) */
 /* 英雄をUNITSの末尾に「特別なユニット」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=ユニットの数え上げには U_N を使うこと
@@ -6790,6 +6818,13 @@ const NMB={
  nmBear:{b:'tank'},  /* 🛡爛れた重装兵 = 重装兵        / 🛡装甲 */
  nmHorr:{b:'jug'},   /* 👑爛れた巨兵   = ジャガーノート/ 🛡装甲・中ボス */
  fBeast:{b:'fKing'}, /* 💀爛れた王     = 屍山の王      / 🛡装甲・最終ボス */
+ /* 🌑🪶(224)面③のナイトメア6体(ユーザー承認)=③の敵の写し。⚠材質が同じ写し元 */
+ n3Swal:{b:'aSwal'}, /* 🕊爛れた翼     = 疾風ツバメ    / 材質なし・速い */
+ n3Spar:{b:'aSpar'}, /* 🐦蝕まれた群れ = 群れスズメ    / 材質なし・物量 */
+ n3Crow:{b:'aCrow'}, /* 🪶黒鉄の鴉     = 鉄羽のカラス  / 🪶羽・中堅 */
+ n3Beet:{b:'aBeet'}, /* 🪲錆びた甲殻   = 鋼殻の甲虫    / 🪶羽・硬い */
+ n3Vult:{b:'aVult'}, /* 👑送電塔の暴君 = 鉄塔のハゲワシ/ 🪶羽・中ボス */
+ n3Storm:{b:'aStorm'},/* 💀空を喰らう王 = 空を覆うもの  / 🪶羽・最終ボス */
 };
 const NMBZ={},NMBI={},NMSC={};
 /* 🎨⭐⭐(204d)**1体ずつ「焦げの色」を変える**(2026-08-07ユーザー実機
@@ -6804,6 +6839,13 @@ const NM_TINT={
  nmBear:[158, 80, 46],/* 🛡重装兵=錆 */
  nmHorr:[ 78,126,120],/* 👑巨兵=青緑の鉄 */
  fBeast:[176,142, 62],/* 💀王=金茶 */
+ /* 🌑🪶(224)面③の6体=空の敵なので寒色寄りに散らす(①の6体と被らない帯) */
+ n3Swal:[ 96,118,148],/* 🕊翼=薄青 */
+ n3Spar:[150,120, 70],/* 🐦群れ=焦げ麦 */
+ n3Crow:[104,112,128],/* 🪶鴉=鈍い鋼 */
+ n3Beet:[148, 96, 52],/* 🪲甲殻=赤錆 */
+ n3Vult:[136, 92,104],/* 👑暴君=どす赤 */
+ n3Storm:[118,100,150],/* 💀王=雷雲の紫 */
 };
 let NM_TC=[138,112,64],NM_TK='';/* いま塗っている個体の暖色と、覚え書きの鍵 */
 /* 煮しめた黒へ寄せる。⚠**真っ黒にしない**=黒フチ(INK)に食われて塊になる([[NOTES_絵]])。
@@ -6960,6 +7002,54 @@ function nmMut(c,Z,t,ph,walk,s){
                   [28,-44,41,-66,47,-90,8.4,1.8],[39,-36,48,-52,53,-70,6.0,1.4]]){
    const rw=Math.sin(t*1.6+ph+p[0]*.07)*2.2;
    nmLimb(c,p[0],p[1],p[2],p[3]+rw,p[4],p[5]+rw,p[6],p[7]);}
+  return;}
+ /* ===== 🌑🪶(224)面③の6体(ユーザー承認)。⚠1体ずつ形の違う変異部位=checkZLook対策も兼ねる ===== */
+ if(Z.id==='n3Swal'){/* 🕊爛れた翼: 変異部位=**裂けて三又になった長い尾羽**(速さの印) */
+  const fl=Math.sin(t*12+ph)*2.4;
+  c.fillStyle='#6b7f9c';
+  for(const p of [[-26,-16,-1.2],[-29,-20,0],[-25,-24,1.4]]){
+   c.beginPath();c.moveTo(-12,-19);
+   c.quadraticCurveTo(p[0]*.6,-19+p[2]*2,p[0]-4,p[1]+fl*p[2]);
+   c.lineTo(p[0]+2,p[1]+2+fl*p[2]);c.closePath();c.fill();c.stroke();}
+  return;}
+ if(Z.id==='n3Spar'){/* 🐦蝕まれた群れ: 変異部位=**周りに舞う焦げた羽毛の欠片** */
+  c.fillStyle='#8a7443';
+  for(const p of [[-18,-26,3.2],[-8,-33,2.4],[6,-30,2.8],[15,-24,2.2],[-14,-14,2.0]]){
+   const dr=Math.sin(t*6+ph+p[0])*2;
+   c.save();c.translate(p[0],p[1]+dr);c.rotate(p[0]*.2+t*2);
+   c.beginPath();c.ellipse(0,0,p[2],p[2]*.45,0,0,7);c.fill();c.stroke();c.restore();}
+  return;}
+ if(Z.id==='n3Crow'){/* 🪶黒鉄の鴉: 変異部位=**背で逆立った鉄の羽の列**(ぎざぎざ) */
+  c.fillStyle='#5c6470';
+  for(const p of [[-14,-26,10,2.6],[-6,-30,14,3.2],[2,-31,12,2.8],[10,-27,8,2.2]]){
+   const sw=Math.sin(t*4+ph+p[0]*.3)*1.2;
+   c.beginPath();c.moveTo(p[0]-p[3],p[1]);
+   c.lineTo(p[0]+sw*.4,p[1]-p[2]);c.lineTo(p[0]+p[3],p[1]);c.closePath();c.fill();c.stroke();}
+  return;}
+ if(Z.id==='n3Beet'){/* 🪲錆びた甲殻: 変異部位=**鞘翅の錆の斑と走る裂け目** */
+  c.fillStyle='#8a4a2a';
+  for(const p of [[-16,-24,5,3.6],[-2,-30,6.6,4.4],[12,-22,4.2,3.0]]){
+   c.beginPath();c.ellipse(p[0],p[1],p[2],p[3],p[0]*.05,0,7);c.fill();c.stroke();}
+  c.strokeStyle='#2a1f18';c.lineWidth=2.4;
+  c.beginPath();c.moveTo(-20,-18);c.lineTo(-8,-27);c.lineTo(2,-24);c.lineTo(14,-31);c.stroke();
+  c.lineWidth=3;c.strokeStyle=INK;
+  return;}
+ if(Z.id==='n3Vult'){/* 👑送電塔の暴君: 変異部位=**首を囲む骨の襟(短い棘の扇)** */
+  c.fillStyle='#cfc3a4';
+  for(const p of [[-24,-34,-34,-52,7],[-12,-40,-16,-62,8],[2,-42,2,-64,8.4],[16,-40,20,-61,7.6],[27,-33,37,-50,6.6]]){
+   const rw=Math.sin(t*2+ph+p[0]*.1)*1.8;
+   c.beginPath();c.moveTo(p[0]-p[4]*.5,p[1]);
+   c.lineTo(p[2],p[3]+rw);c.lineTo(p[0]+p[4]*.5,p[1]+2);c.closePath();c.fill();c.stroke();}
+  return;}
+ if(Z.id==='n3Storm'){/* 💀空を喰らう王: 変異部位=**体を走る赤く光る裂け目**(中の火が漏れる) */
+  const gl=.6+Math.sin(t*3+ph)*.25;
+  c.save();c.globalAlpha=gl;
+  c.strokeStyle='#c1302e';c.lineWidth=3.4;
+  for(const p of [[-30,-30,-16,-46,-20,-62],[6,-26,18,-44,14,-60],[-8,-52,2,-66,-4,-80]]){
+   c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(p[2],p[3]);c.lineTo(p[4],p[5]);c.stroke();}
+  c.globalAlpha=gl*.5;c.lineWidth=7;c.strokeStyle='#8a1a2a';
+  c.beginPath();c.moveTo(-30,-30);c.lineTo(-16,-46);c.lineTo(-20,-62);c.stroke();
+  c.restore();c.lineWidth=3;c.strokeStyle=INK;
   return;}
 }
 function zFill(c,pathFn,col,yc){
@@ -11388,7 +11478,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
       禿鷲は裸の首/甲虫は鞘翅/主は鉄骨/空を覆うものは膜と目。
     ⭐**翼は共通の道具(zWg)にする**=1体ずつ書くと描く回数が跳ねる([[NOTES_絵]]の掟)。
     ⚠**浮かせる**=空の敵は地面から離して描く(`c.translate(0,-…)`)。 */
- if(Z.st===3&&!Z.nm){
+ if(Z.st===3){/* 🌑(224)⚠`!Z.nm` を外した=③のナイトメアは写し(NMB)でここへ来る。弾くと素体の人型になる(1回踏んだ) */
   const ZC=Z.c,fl=Math.sin(t*13+ph),fl2=Math.sin(t*13+ph+.9);
   /* 翼1枚。k=形(0=丸い/1=尖った鎌/2=ぼろぼろ/3=薄い透ける) / sg=左右 / f=羽ばたき */
   const zWg=(sg,f,dk,ln,k,yb)=>{
@@ -18857,7 +18947,8 @@ function buildTide(wave){
     ①廃線=ゾンビ / ②沈んだ港=海の亡骸 / ③ナイトメア=獣 / ④🌑×②=変異した深海の生き物。
     ⚠それまでは**ナイトメアならステージを問わず獣**だったので、沈んだ港で陸の獣が出ていた。 */
  const nmOn=isNM();
- const on3=G.pve&&!G.coop&&stageZs()===3;/* 🪶(194)面③=空。⚠NM専用の顔ぶれはまだ無いので、③は難易度を問わず同じプール */
+ const on3=G.pve&&!G.coop&&stageZs()===3;/* 🪶(194)面③=空 */
+ const nm3=nmOn&&on3;/* 🌑×③(224)=③のナイトメア専用プール(承認済みの6体) */
  const on2=G.pve&&!G.coop&&stageZs()===2;/* いま2面か(難易度は見ない) */
  const st2=!nmOn&&on2;
  const nm2=nmOn&&on2;/* ④深海のナイトメア */
@@ -18867,6 +18958,7 @@ function buildTide(wave){
      ⚠**消していない**(絵も数値も残してある)=面③以降で使う時にこの印を外すだけ。 */
   if(Z.off)return false;
   if(Z.boss||Z.mw>wave)return false;
+  if(nm3)return !!Z.nm&&Z.st===3;/* 🌑×③(224) */
   if(on3)return Z.st===3&&!Z.nm;/* 🪶(194) */
   if(nm2)return !!Z.nm&&Z.st===2;
   if(nmOn)return !!Z.nm&&!Z.st;/* ⚠**!Z.st を忘れると獣の波に深海が混ざる** */
@@ -18900,7 +18992,8 @@ function buildTide(wave){
   const fin=!!(G.pve&&wave>=20);
   /* ⚠**プール4つぶん**を同じ順で見ること(④→③→②→①)。④を先に見ないと獣のボスが出る */
   /* 🪶(194)面③は難易度を問わず空のボス=**④③②①より先に見る** */
-  const bi=on3?((fin&&FIN3_ZI>=0)?FIN3_ZI:ST3_BOSS_ZI)
+  const bi=nm3?((fin&&FINNM3_ZI>=0)?FINNM3_ZI:NM3_BOSS_ZI)/* 🌑×③(224)=on3より先に見る */
+   :on3?((fin&&FIN3_ZI>=0)?FIN3_ZI:ST3_BOSS_ZI)
    :nm2?((fin&&FINNM2_ZI>=0)?FINNM2_ZI:NM2_BOSS_ZI)
    :nmOn?((fin&&FINNM_ZI>=0)?FINNM_ZI:NM_BOSS_ZI)
    :st2?((fin&&FIN2_ZI>=0)?FIN2_ZI:ST2_BOSS_ZI)
@@ -36138,7 +36231,8 @@ function homeDraw(t){
   c.fillStyle=rg;c.fillRect(0,0,w,h);}
  c.fillStyle='rgba(232,163,61,.14)';
  c.beginPath();c.ellipse(w/2,h*.88,w*.30,h*.05,0,0,7);c.fill();
- const s9=Math.min(w,h)/118;/* ⚠英雄の全高は約53×CH_UP=枠に収まる倍率にする(最初/70で頭が切れた) */
+ const s9=Math.min(w,h)/140;/* ⚠英雄の全高は約53×CH_UP。⚠(224b)/118では**鎌など頭の上に出る武器**が
+    上端で切れた(ユーザー「ヒーローの上部が欠けてる」)=/140で頭上に余白を残す */
  /* ⚠まだ1人も持っていない時は**影絵**にする(未所持の英雄をフルカラーで出すと嘘になる)。
     ⚠ctx.filterはSafariで効かないので、別canvasに描いてsource-atopで塗りつぶす */
  const sil9=!DEV&&!heroOwned(HOMEH);
