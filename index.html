@@ -24090,11 +24090,26 @@ function openBM(si){
  {const bd=$('bm-body');
   if(bd){bd.style.maxHeight=Math.max(96,Math.min(innerHeight-12-16-barBandPx(),Math.round(innerHeight*.52)))+'px';}}
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
- /* ⚠**横も塔と反対側へ寄せる**=縦だけだと、下の操作バーのぶん窓が下がりきれず塔に届く(実際に届いた) */
- bm.style.left=(px<innerWidth*.5?Math.max(6,innerWidth-bw-6):6)+'px';
- /* 下の操作バーには絶対に被せない(被るとデッキが押せなくなる) */
- const bmBot=Math.max(6,innerHeight-bh-6-barBandPx());
- bm.style.top=(py<innerHeight*.5?bmBot:6)+'px';
+ /* 🔧⭐(214)**窓は塔のそばに置く**(2026-08-08ユーザー指摘「強化対象のタレットと遠くてやりずらい。
+    タレットにかぶらないけど近くに置いて」)。⚠(204d)の「反対側の端へ寄せる」は輪は見えたが遠すぎた。
+    ⭐**射程の輪(緑のプレビュー含む・いま見えている一番外)のすぐ外、左右の空いている方**に置く。
+    輪が大きくて左右どちらにも入らない画面では、**塔だけ避けて(40px)**横に並べる。
+    ⚠縦は塔の高さに合わせて、画面と下の操作バーの内側へ丸める(操作バーに被せない=デッキが押せなくなる) */
+ const yMax=Math.max(6,innerHeight-bh-6-barBandPx());
+ let rc=40;/* 塔そのものを避ける最低の半径(CSSpx) */
+ if(tw&&TOWERS[tw.ti].rng){const T9=TOWERS[tw.ti],g9=(tw.us?tw.us.g:0);
+  /* 盤面に描いている輪と同じ式で外周を出す(強化できる間は強化後プレビューの輪が一番外) */
+  const wr=T9.rng*(g9<usMax(tw.ti)?twRngMlv(g9+1):twRngM(tw));
+  rc=Math.max(rc,wr*SC/DPR+10);}
+ let lx=-1;
+ for(const r9 of[rc,40]){/* まず輪の外→入らなければ塔だけ避ける */
+  const cand=px<innerWidth*.5?[px+r9,px-r9-bw]:[px-r9-bw,px+r9];
+  for(const x9 of cand)if(x9>=6&&x9+bw<=innerWidth-6){lx=x9;break;}
+  if(lx>=0)break;}
+ /* それでも入らない狭い画面だけ、塔の真上に重なるのを承知で中央へ丸める */
+ if(lx<0)lx=Math.max(6,Math.min(innerWidth-bw-6,px-bw/2));
+ bm.style.left=Math.round(lx)+'px';
+ bm.style.top=Math.round(Math.max(6,Math.min(yMax,py-bh/2)))+'px';
 }
 /* ============ 🛠 マス編集モード(?edit=1 の時だけ) ============
    実機で建設マスを指でドラッグして置き直し、そのまま `slots:[...]` を書き出すための開発用モード。
