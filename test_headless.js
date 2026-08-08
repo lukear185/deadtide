@@ -4041,17 +4041,20 @@ function checkBnsFlow(){
   if((Q.tab|0)!==2){console.log('FAIL: ⚔装備の枠に切り替わらない');process.exit(1);}
   bnsUpTap(Q,R.tab[1].x+4,R.tab[1].y+4);
   if((Q.tab|0)!==1){console.log('FAIL: 🚌車体の枠に切り替わらない');process.exit(1);}
-  /* ⚠装備の効き目がバスに入っていること(絵と当たりの両方がこれを見る) */
-  if(!(me.bus.bladeR>0&&me.bus.zap&&me.bus.siren&&me.bus.gun)){
+  /* ⚠装備の効き目がバスに入っていること(絵と当たりの両方がこれを見る)。
+     ⚠(226e)特大ノコを持っていると丸ノコ(bladeR)は換装で消えるのが正しい */
+  if(!((me.bus.saw3||me.bus.bladeR>0)&&me.bus.zap&&me.bus.siren&&me.bus.gun&&me.bus.beam)){
    console.log('FAIL: 装備の効き目がバスに入っていない');process.exit(1);}
   /* 🚌⭐**大型車体/二階建て**=**当たりと絵が同じ倍率**であること(2026-08-02(62))。
      ⚠**掛け忘れが一番怖い装備**なので、①倍率が入っている ②轢く丸に乗っている ③ノコの寸法にも乗る、を見る */
   if(!(me.bus.bigX>1.4)){console.log('FAIL: 二階建てでバスが大きくなっていない '+me.bus.bigX);process.exit(1);}
   if(!(me.bus.rX>=me.bus.bigX)){console.log('FAIL: 大型車体が轢く当たりに乗っていない '+me.bus.rX);process.exit(1);}
-  /* 🪚**四連ノコ**=前後2組になっていること(素は1組) */
-  if(!(Array.isArray(me.bus.blXs)&&me.bus.blXs.length===2)){
-   console.log('FAIL: 四連ノコが2組になっていない');process.exit(1);}
-  if(!(me.bus.blOut>EQ_BL_OUT)){console.log('FAIL: 四連ノコで外接半径が伸びていない');process.exit(1);}
+  /* 🪚(226e)大ノコ=前の1組が1.5倍 / ⚙特大ノコ=横長1本に換装(丸ノコは消える・幅は2枚ノコより広い) */
+  if(!me.bus.saw3){console.log('FAIL: 特大ノコが効いていない');process.exit(1);}
+  if(me.bus.bladeR!==0){console.log('FAIL: 特大ノコを持っているのに丸ノコが残っている');process.exit(1);}
+  if(!(me.bus.s3Out>EQ_BL_OUT)){console.log('FAIL: 特大ノコで外接半径が伸びていない');process.exit(1);}
+  if(!(EQ_S3_W>EQ_BL3_Y+EQ_BL3_R)){console.log('FAIL: 特大ノコが大ノコ2枚より幅広でない');process.exit(1);}
+  if(!(EQ_BL3_R>EQ_BL_R*1.49&&EQ_BL3_R<EQ_BL_R*1.51)){console.log('FAIL: 大ノコが1.5倍でない');process.exit(1);}
   /* 🚌⭐⭐**当たりの形が「絵そのもの」であること**(2026-08-02(64)ユーザー
      「ちゃんと当たり判定をバスの見た目通りにしてほしい バスの先端」)。
      ⚠**丸だった頃は横が絵より39px外・先端が絵より64px手前**だった。ここが崩れたら必ず落ちること。
@@ -4106,7 +4109,8 @@ function checkBnsFlow(){
  {const b2=G.players[0].bus;
   if(Math.abs(b2.spMx-sp1)>1e-6){
    console.log('FAIL: 強化の段が次の試合に残っていない '+b2.spMx+'/'+sp1);process.exit(1);}
-  if(!(b2.bladeR>0)){console.log('FAIL: 装備が次の試合に残っていない');process.exit(1);}
+  /* ⚠(226e)全部そろえていると特大ノコ換装で丸ノコ(bladeR)は0が正しい=残りの装備で見る */
+  if(!(b2.saw3||b2.bladeR>0)){console.log('FAIL: 装備が次の試合に残っていない');process.exit(1);}
   for(let i=0;i<3;i++)if(META.bres[i]!==res1[i]){
    console.log('FAIL: 余った物資が次の試合に残っていない');process.exit(1);}
   /* ⚠**初期化した人には残らないこと**(metaResetAll に書き忘れると残る) */

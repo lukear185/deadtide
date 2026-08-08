@@ -27523,8 +27523,9 @@ function bnsBusStep(C,dt){
  /* いちばん外側(=先に弾く丸)。⚠**装備で伸びる分もここに足す**(足し忘れると当たらなくなる) */
  const out9=Math.max(BUSH_OUT*k9,
    wr9?Math.hypot((BUSH_RX+EQ_WIRE_X)*k9,EQ_WIRE_W*k9):0,
-   (B.bladeR?(B.blOut||EQ_BL_OUT):0)*bg9);
- const bl9=B.bladeR||0,sr9=B.siren?1:0;
+   (B.bladeR?(B.blOut||EQ_BL_OUT):0)*bg9,
+   (B.s3Out||0)*bg9/* ⚙(226e)特大ノコの分 */);
+ const bl9=B.bladeR||0,s39=B.saw3?1:0,sr9=B.siren?1:0;
  const gn9=B.gun?1:0;
  /* 🔊サイレンが引き寄せる先=**バスが道のどこに居るか**(横のずれ)。⚠1フレームに1回だけ出す */
  let boff9=0;
@@ -27571,11 +27572,14 @@ function bnsBusStep(C,dt){
    if(dx*dx+dy*dy>rq9*rq9)continue;
    const fw=dx*tx9+dy*ty9,sw=-dx*ty9+dy*tx9;
    let ok9=busBoxHit(fw,sw,zr,k9,wr9);
-   /* ⚙**回転ノコ/🪚四連ノコ**=**丸ノコの円そのもの**が当たり(絵と1pxもずれない) */
+   /* ⚙**回転ノコ/🪚大ノコ**=**丸ノコの円そのもの**が当たり(絵と1pxもずれない) */
    if(!ok9&&bl9){const rb9=B.blR*bg9+zr,XS=B.blXs;
     for(let bi=0;bi<XS.length&&!ok9;bi++)
      for(let s9=-1;s9<=1&&!ok9;s9+=2){const ux=fw-XS[bi]*bg9,uy=sw-B.blY*bg9*s9;
       if(ux*ux+uy*uy<=rb9*rb9)ok9=1;}}
+   /* ⚙(226e)**特大ノコ**=前いっぱいの横長の箱(絵と同じ寸法) */
+   if(!ok9&&s39){
+    if(fw>=BUSH_RX*bg9-8&&fw<=(BUSH_RX+EQ_S3_D)*bg9+zr&&Math.abs(sw)<=EQ_S3_W*bg9+zr)ok9=1;}
    if(!ok9)continue;}
   /* ⚠**quiet で削る**=ダメージ数字を出さない(米粒には読めないうえ演出の枠を食い潰す) */
   dmgZ(C,z,BUS_DPS*(B.dpsX||1)*(nz9?BUS_NIT_DPS:1)*(B.surf?BSG_SURF:1)*dt,1,true);
@@ -27609,12 +27613,13 @@ function bnsBusStep(C,dt){
    if(ox9*ox9+oy9*oy9>rz9*rz9)continue;
    const fw9=ox9*tx9+oy9*ty9,sw9=-ox9*ty9+oy9*tx9;
    if(!busBoxHit(fw9,sw9,o.r,k9,wr9)){
-    /* ⚙丸ノコで壊すのも同じ形で見る(絵の外で壊れないため) */
+    /* ⚙丸ノコ/特大ノコで壊すのも同じ形で見る(絵の外で壊れないため) */
     let ok8=0;
     if(bl9){const rb8=B.blR*bg9+o.r,XS=B.blXs;
      for(let bi=0;bi<XS.length&&!ok8;bi++)
       for(let s8=-1;s8<=1&&!ok8;s8+=2){const ux=fw9-XS[bi]*bg9,uy=sw9-B.blY*bg9*s8;
        if(ux*ux+uy*uy<=rb8*rb8)ok8=1;}}
+    if(!ok8&&s39&&fw9>=BUSH_RX*bg9-8&&fw9<=(BUSH_RX+EQ_S3_D)*bg9+o.r&&Math.abs(sw9)<=EQ_S3_W*bg9+o.r)ok8=1;
     if(!ok8)continue;}
    try{bnsSmash(C,o);}catch(e){o.dead=1;}
   }}
@@ -27628,18 +27633,20 @@ function bnsBusStep(C,dt){
   B.gunCd=(B.gunCd||0)-dt;
   if(B.gunCd<0)B.gunCd=0;
   if(gtZ&&B.gunCd<=0){
-   B.gunCd=EQ_GUN_CD;
+   /* 🔆(226e)ビーム砲(進化)=太く・重く・少しゆっくり(数値は EQ_BEAM_*) */
+   const bm9=B.beam?1:0;
+   B.gunCd=bm9?EQ_BEAM_CD:EQ_GUN_CD;
    const gl=Math.hypot(gtZ.px-B.x,gtZ.py-B.y)||1;
    const ux=(gtZ.px-B.x)/gl,uy=(gtZ.py-B.y)/gl;
-   const dmg=EQ_GUN_D*(B.dpsX||1);
+   const dmg=(bm9?EQ_BEAM_D:EQ_GUN_D)*(B.dpsX||1),hw9=bm9?EQ_BEAM_W:EQ_GUN_W;
    for(const z of C.zombies){
     if(z.dead||z.d<0||z.dvT>0)continue;
     const ax=z.px-B.x,ay=z.py-B.y;
     const fw=ax*ux+ay*uy;if(fw<0||fw>EQ_GUN_R)continue;   /* 前だけ・届く所だけ */
-    const sw=-ax*uy+ay*ux;if(sw>EQ_GUN_W||sw<-EQ_GUN_W)continue;/* 帯からはみ出す物は撃たない */
+    const sw=-ax*uy+ay*ux;if(sw>hw9||sw<-hw9)continue;/* 帯からはみ出す物は撃たない */
     dmgZ(C,z,dmg,1,true);if(z.dead)kil++;
    }
-   B.gunT=.09;B.gunX=B.x+ux*EQ_GUN_R;B.gunY=B.y+uy*EQ_GUN_R;/* 曳光弾の絵(⚠世界座標のまま持つ) */
+   B.gunT=bm9?.14:.09;B.gunX=B.x+ux*EQ_GUN_R;B.gunY=B.y+uy*EQ_GUN_R;/* 曳光弾/ビームの絵(⚠世界座標のまま持つ) */
   }}
  /* ⭐**連続轢殺**(2026-08-02(2)ユーザー①「連続で気持ちいい」)。
     ⚠**1体ごとの手応えは埋もれる**(NOTESの結論)ので、手応えは**連なり**の側に置く。 */
@@ -28290,7 +28297,9 @@ const BUP=[
  {k:'grd',r:1,ic:'🦿',n:'踏破',      d:'しがみつかれても遅くなりにくい -18%',mx:4,c:[50,100,190,320]},
  {k:'crw',r:2,ic:'👥',n:'乗員',      d:'コンボが切れるまで +0.3秒',mx:4,c:[40,80,150,260]},
  {k:'kit',r:2,ic:'🍖',n:'炊き出し',  d:'ニトロが早く溜まる +18%', mx:4,c:[40,80,150,260]},
- {k:'gau',r:2,ic:'⚡',n:'計器',      d:'連なりの倍率 +8%',        mx:4,c:[60,120,230,380]}
+ /* ⚡(226e)「計器」は意味不明とユーザー判定→**そのまま「スコア倍率」**に改名(効き目は前から
+    ⚡スコア全体に掛かっている=bnsScoreの1か所。名前と説明だけが分かりにくかった) */
+ {k:'gau',r:2,ic:'⚡',n:'スコア倍率',d:'⚡スコアが +8% 増える',   mx:4,c:[60,120,230,380]}
 ];
 /* ⚔⭐⭐⭐**装備**(2026-08-02(44)ユーザー「バスの前面に回るのこぎりブレードみたいなやつとか、
    そういう爽快感がまずバス強化がほしい 別枠のUIで」)。
@@ -28339,12 +28348,17 @@ const BEQ=[
  {k:'wire', tb:1,r:1,ic:'🪤',n:'鉄条網バンパー',  d:'前に張り出して当たりが広い',  c:100},
  {k:'spike',tb:1,r:1,ic:'🔩',n:'スパイクローラー',d:'ひいた体が高く舞う',          c:180},
  {k:'blade',tb:1,r:1,ic:'⚙',n:'回転ノコ',        d:'左右の丸ノコで横も薙ぐ',      c:300},
- {k:'saw2', tb:1,r:1,ic:'🪚',n:'四連ノコ',        d:'丸ノコが前後4枚・もっと外まで',c:480},
+ /* 🪚(226e)**四連ノコ廃止→大ノコ**(ユーザー「バスの後ろにつけても意味ない。前のノコを1.5倍にする
+    大ノコに替えて」)。⚠キー(saw2)はそのまま=買った人の持ち物を消さない(big/trailと同じ掟) */
+ {k:'saw2', tb:1,r:1,ic:'🪚',n:'大ノコ',          d:'丸ノコが1.5倍にでかくなる',   c:480},
+ {k:'saw3', tb:1,r:1,ic:'⚙',n:'特大ノコ',        d:'前いっぱいの横長ノコに換装(2枚より幅広)',c:760},
  {k:'plate',tb:1,r:2,ic:'🛡',n:'内張り装甲',      d:'しがみつかれても遅くならない',c:50},
  {k:'horn', tb:1,r:2,ic:'📢',n:'拡声器',          d:'近くのゾンビが寄ってくる',    c:110},
  {k:'siren',tb:1,r:2,ic:'🔊',n:'サイレン',        d:'遠くまで群がってくる',        c:200},
  {k:'zap',  tb:1,r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320},
- {k:'gun',  tb:1,r:2,ic:'🔫',n:'ルーフガン',      d:'前を撃ち抜く(並んだ敵ごと)',  c:520}
+ {k:'gun',  tb:1,r:2,ic:'🔫',n:'ルーフガン',      d:'前を撃ち抜く(並んだ敵ごと)',  c:520},
+ /* 🔆(226e)ルーフガンの進化(ユーザー「ルーフガンの次にビーム砲を追加」)=同じ銃座がビームになる */
+ {k:'beam', tb:1,r:2,ic:'🔆',n:'ビーム砲',        d:'銃座がビームに進化(太く・重い一撃)',c:780}
 ];
 /* ⭐**梯子(系統)を表から自動で作る**=**同じタブ・同じ物資**の並び順がそのまま段になる。
    ⚠⚠**手で段番号を書かない**=表に1行足すたびに書き直すことになり、必ずどこかで食い違う。
@@ -28383,10 +28397,22 @@ const EQ_BL_OUT=Math.hypot(EQ_BL_X,EQ_BL_Y)+EQ_BL_R;/* ノコまで含めた外�
    ⚠**位置と大きさは④と同じ作り方**(車体の横から張り出しの先までをちょうど埋める円)。 */
 /* ⚠**張り出しを欲張らない**(2026-08-02(62)に撮って下げた・152→118)=大きくすると
    **ノコが車体より大きくなって、バスが4枚の円盤の後ろに隠れる**。⭐4枚に増えるだけで段は上がって見える。 */
-const EQ_BLADE2=118; /* 四連ノコの横への張り出し(px)。⚠④(86)より少し外まで */
+const EQ_BLADE2=118; /* (旧)四連ノコの横への張り出し(px)。⚠(226e)後ろの組は廃止=いまは使っていない */
 const EQ_BL2_Y=(BUS_R*.50+BUS_R+EQ_BLADE2)/2;
 const EQ_BL2_R=(BUS_R+EQ_BLADE2-BUS_R*.50)/2;
-const EQ_BL2_X=-BUS_R*.62;/* 後ろ側の組(前は EQ_BL_X をそのまま使う)。⚠近すぎると2枚が重なって1枚に見える */
+const EQ_BL2_X=-BUS_R*.62;/* (旧)後ろ側の組。⛔(226e)四連ノコ廃止=もう並べない(値は名残) */
+/* 🪚(226e)**大ノコ**(ユーザー「前のノコのでかさを1.5倍にする大ノコに替えて」)=
+   前の2枚がそのまま1.5倍。位置は「車体の縁から外へちょうど」を保つ(絵と当たりは同じ式) */
+const EQ_BL3_R=EQ_BL_R*1.5;
+const EQ_BL3_Y=BUS_R*.50+EQ_BL3_R;
+/* ⚙(226e)**特大ノコ**(ユーザー「前方にかなりでかめの横ながのノコ。2枚ノコより横幅を大きく。
+   それまでのノコは消して振替」)=前いっぱいの横長ローラーノコ1本。
+   幅=大ノコ2枚の外端(EQ_BL3_Y+EQ_BL3_R)より15%広い。前への出っ張りは控えめ(欲張ると
+   バスがノコの後ろに隠れる=四連ノコで踏んだのと同じ穴)。 */
+const EQ_S3_W=(EQ_BL3_Y+EQ_BL3_R)*1.15;/* 横の半幅 */
+const EQ_S3_D=96;                       /* 前への出っ張り */
+/* 🔆(226e)**ビーム砲**(ルーフガンの進化)=太く・重く・少しゆっくり撃つ */
+const EQ_BEAM_CD=.34,EQ_BEAM_D=1500,EQ_BEAM_W=120;
 /* ⚠🪤鉄条網の張り出しは `EQ_WIRE_X`/`EQ_WIRE_W`(当たりの形と同じ所)へ移した(2026-08-02(64)) */
 const EQ_UP=1.5;     /* スパイクローラーで体が何倍高く舞うか */
 /* 🔊**サイレン**=⚠⚠**道の中央へ寄せてはいけない**(2026-08-02(54)ユーザー「ゾンビが整列しちゃってて
@@ -28448,23 +28474,28 @@ function bupApply(B,up,eq){
  B.rX     =B.bigX;
  /* ⚙🪚**丸ノコ**=⚠⚠**位置と大きさを1か所に持つ**(絵も当たりもここを見る)。
     ⚠**配列はここで1回だけ作る**=毎フレーム作ると輪の中で new することになる(この面の掟)。 */
- B.bladeR =eq.blade?(eq.saw2?EQ_BLADE2:EQ_BLADE):0;/* ⚙横への張り出し */
- B.blY    =eq.saw2?EQ_BL2_Y:EQ_BL_Y;
- B.blR    =eq.saw2?EQ_BL2_R:EQ_BL_R;
- B.blXs   =eq.saw2?[EQ_BL_X,EQ_BL2_X]:[EQ_BL_X];
+ /* 🪚(226e)段の並び=回転ノコ(2枚)→大ノコ(前の2枚が1.5倍)→特大ノコ(横長1本に換装)。
+    ⚠特大ノコを持っていたら丸ノコは描かない・当てない(「それまでのノコは消して振替」) */
+ B.saw3   =eq.saw3?1:0;
+ B.bladeR =(eq.blade&&!eq.saw3)?(eq.saw2?EQ_BLADE2:EQ_BLADE):0;/* ⚙丸ノコを出すか(横の張り出し) */
+ B.blY    =eq.saw2?EQ_BL3_Y:EQ_BL_Y;
+ B.blR    =eq.saw2?EQ_BL3_R:EQ_BL_R;
+ B.blXs   =[EQ_BL_X];/* ⛔(226e)後ろの組は廃止=前だけ */
  B.blOut  =0;
  for(const bx9 of B.blXs)B.blOut=Math.max(B.blOut,Math.hypot(bx9,B.blY)+B.blR);
+ B.s3Out  =eq.saw3?Math.hypot(BUSH_RX+EQ_S3_D,EQ_S3_W):0;/* 特大ノコの外接半径 */
  B.upX    =eq.spike?EQ_UP:1;        /* 🔩打ち上げ */
  B.gripS  =eq.plate?0:BUS_GRIP_S*(B.grdX==null?1:B.grdX);/* 🛡しがみつきで落ちる最高速(0=落ちない) */
  B.noDrag =eq.tire ?1:0;            /* 🛞障害物で減速しない */
  B.gripX *=eq.tire ?1.15:1;         /* 🛞よく曲がる */
- B.sideX  =(eq.blade?(eq.saw2?2.2:1.7):1)*(eq.blast?1.6:1);/* 横へ弾く強さ */
+ B.sideX  =(eq.saw3?2.6:eq.blade?(eq.saw2?2.2:1.7):1)*(eq.blast?1.6:1);/* 横へ弾く強さ */
  B.nitSpX =eq.boost?1.18:1;         /* 🚀ニトロ中の最高速 */
  B.nit2   =eq.nit2 ?1:0;            /* 🔋(127)ニトロの減りが遅くなる */
  /* 🔊引き寄せの強さ=**0=無 / 1=📢拡声器(近く・弱い) / 2=🔊サイレン(遠く・強い)** */
  B.siren  =eq.siren?2:(eq.horn?1:0);
  B.zap    =eq.zap?1:0;
  B.gun    =eq.gun  ?1:0;            /* 🔫屋根の自動射撃 */
+ B.beam   =eq.beam ?1:0;            /* 🔆(226e)ルーフガンの進化=ビームで撃つ */
 }
 /* ⚡**電磁バンパー**=轢いた瞬間にたまに周りへ感電させる。
    ⚠⚠**倒した分は必ず連なりとスコアとニトロの同じ道を通す**(NOTESの掟)=
@@ -29505,9 +29536,26 @@ function drawBusEq(c,B,t){
   c.fillStyle='#b9b0a0';
   for(let i=0;i<9;i++){const a=ph+i*.7,y=-R*.42+i*R*.105,dx=Math.cos(a)*rr9*.9;
    c.beginPath();c.moveTo(cx+dx,y-5);c.lineTo(cx+dx+rr9*.85,y);c.lineTo(cx+dx,y+5);c.closePath();c.fill();}}
- /* ⚙回転ノコ / 🪚四連ノコ=丸ノコ。⚠⚠**位置も半径も当たりと同じ物(`B.blXs`/`blY`/`blR`)から出す**
-    =見た目より外で当たらない。⭐四連ノコは**前後2組**になるだけ(絵の作り方は同じ)。 */
- if(E.blade){const by=B.blY||EQ_BL_Y,rb=B.blR||EQ_BL_R,ph=t*(9+mv*34);
+ /* ⚙(226e)**特大ノコ**=前いっぱいの横長ローラーノコ(丸ノコはこれに換装=描かない)。
+    ⚠当たり(EQ_S3_W/EQ_S3_D)と同じ寸法から描く(絵の外で当たらない=この面の掟) */
+ if(E.saw3){const x0=BUSH_RX,x1=BUSH_RX+EQ_S3_D,hw=EQ_S3_W,ph=t*(6+mv*30);
+  c.fillStyle='#7d8490';c.beginPath();c.rect(x0,-hw,x1-x0,hw*2);c.fill();c.stroke();
+  /* 回転の帯(ローラーが回って見える縞) */
+  c.save();c.beginPath();c.rect(x0+2,-hw+2,x1-x0-4,hw*2-4);c.clip();
+  c.strokeStyle='#aab2bd';c.lineWidth=3;
+  for(let i=0;i<10;i++){const yy=-hw+((i/10*hw*2+ph*40)%(hw*2));
+   c.beginPath();c.moveTo(x0+2,yy);c.lineTo(x1-2,yy+6);c.stroke();}
+  c.restore();c.strokeStyle=INK;c.lineWidth=3.2;
+  /* 進行方向の歯(ぎざぎざ) */
+  c.fillStyle='#d9dee4';c.beginPath();
+  for(let i=0;i<11;i++){const yy=-hw+i/10*hw*2;
+   c.moveTo(x1,yy-6);c.lineTo(x1+16,yy);c.lineTo(x1,yy+6);}
+  c.fill();
+  c.fillStyle='#4a443c';c.beginPath();c.rect(x0-6,-hw-4,8,hw*2+8);c.fill();c.stroke();/* 取り付けの梁 */}
+ /* ⚙回転ノコ / 🪚大ノコ=丸ノコ。⚠⚠**位置も半径も当たりと同じ物(`B.blXs`/`blY`/`blR`)から出す**
+    =見た目より外で当たらない。⭐(226e)大ノコは**前の2枚が1.5倍**になる(絵の作り方は同じ)。
+    ⚠特大ノコを持っていたら描かない(換装) */
+ if(E.blade&&!E.saw3){const by=B.blY||EQ_BL_Y,rb=B.blR||EQ_BL_R,ph=t*(9+mv*34);
   const XS=B.blXs||[EQ_BL_X];
   for(let bi=0;bi<XS.length;bi++)for(const s9 of [-1,1]){
    c.save();c.translate(XS[bi],by*s9);c.rotate(ph*s9*(bi?-1:1));
@@ -29592,8 +29640,11 @@ function drawBusEq(c,B,t){
   c.fillStyle='#4b4f56';c.beginPath();c.arc(0,0,R*.17,0,7);c.fill();c.stroke();
   c.rotate(ga);
   const kb=(B.gunT||0)>0?1:0;/* 撃った瞬間だけ少し後ろへ下がる(反動) */
-  c.fillStyle='#6e737a';c.beginPath();c.rect(-R*.04-kb*R*.03,-R*.05,R*.42,R*.10);c.fill();c.stroke();
-  if(kb&&FXLV>0){c.fillStyle='#ffe6a8';c.beginPath();
+  /* 🔆(226e)ビーム砲(進化)=砲身が太く・先端にエネルギーの珠 */
+  if(E.beam){c.fillStyle='#5a6a7d';c.beginPath();c.rect(-R*.04-kb*R*.03,-R*.07,R*.46,R*.14);c.fill();c.stroke();
+   c.fillStyle='#9fd8ff';c.beginPath();c.arc(R*.44-kb*R*.03,0,R*.06+(kb?R*.03:0),0,7);c.fill();c.stroke();}
+  else{c.fillStyle='#6e737a';c.beginPath();c.rect(-R*.04-kb*R*.03,-R*.05,R*.42,R*.10);c.fill();c.stroke();}
+  if(kb&&FXLV>0&&!E.beam){c.fillStyle='#ffe6a8';c.beginPath();
    c.moveTo(R*.38,0);c.lineTo(R*.50,-R*.09);c.lineTo(R*.62,0);c.lineTo(R*.50,R*.09);c.closePath();c.fill();}
   c.restore();
  }
@@ -29648,10 +29699,18 @@ function drawBus(c,C,t){
  /* 🔫**曳光弾**(⚔🏠⑤)=撃った的まで1本。⚠**世界座標のまま引く**=線は縦の潰しが掛かって正しい
     (打ち消すと道路や敵と向きが食い違う)。⚠**細く短命に**=毎秒4発なので太いと画面が埋まる。 */
  if((B.gunT||0)>0&&B.gunX!=null&&FXLV>0){
-  const q8=clamp(B.gunT/.09,0,1);
-  c.save();c.globalAlpha=q8*.85;c.strokeStyle='#ffe6a8';c.lineWidth=3.4;c.lineCap='round';
-  c.beginPath();c.moveTo(B.x,B.y);c.lineTo(B.gunX,B.gunY);c.stroke();
-  c.restore();}
+  /* 🔆(226e)ビーム砲=太い青白の柱+白い芯(曳光弾より一回り派手) */
+  if(B.beam){const q8=clamp(B.gunT/.14,0,1);
+   c.save();c.lineCap='round';
+   c.globalAlpha=q8*.75;c.strokeStyle='#9fd8ff';c.lineWidth=13;
+   c.beginPath();c.moveTo(B.x,B.y);c.lineTo(B.gunX,B.gunY);c.stroke();
+   c.globalAlpha=q8;c.strokeStyle='#f2fbff';c.lineWidth=4.5;
+   c.beginPath();c.moveTo(B.x,B.y);c.lineTo(B.gunX,B.gunY);c.stroke();
+   c.restore();}
+  else{const q8=clamp(B.gunT/.09,0,1);
+   c.save();c.globalAlpha=q8*.85;c.strokeStyle='#ffe6a8';c.lineWidth=3.4;c.lineCap='round';
+   c.beginPath();c.moveTo(B.x,B.y);c.lineTo(B.gunX,B.gunY);c.stroke();
+   c.restore();}}
  /* ⭐⭐**前照灯の光と、まとめ轢きの閃光**(2026-08-02(34)=粒の絵)。⚠**加算(lighter)で乗せる**。
     ⚠車体の後(=上)に描く=光が車体を薄く覆って「点いている」に見える。 */
  if(FXLV>0&&prtImg('glow')&&prtImg('glow').width){
