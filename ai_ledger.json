@@ -1,0 +1,227 @@
+[
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "single rifle gunshot, dry, punchy, close range, no reverb tail",
+  "duration": 1.2,
+  "file": "sfx_src/AI_test_rifle.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "single rifle gunshot, dry, punchy, tight, close range",
+  "duration": 1.0,
+  "file": "sfx_src/AI_shotC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "powerful assault rifle single shot, deep crack, short echo",
+  "duration": 1.2,
+  "file": "sfx_src/AI_shotD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "single minigun shot, very short, mechanical, metallic snap",
+  "duration": 0.5,
+  "file": "sfx_src/AI_gatC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "heavy machine gun single round, short punchy blast",
+  "duration": 0.5,
+  "file": "sfx_src/AI_gatD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "heavy artillery cannon blast, deep boom, battlefield",
+  "duration": 1.8,
+  "file": "sfx_src/AI_canC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "tank cannon firing, sharp crack then deep thud",
+  "duration": 1.8,
+  "file": "sfx_src/AI_canD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "massive fortress siege cannon, mechanical breech clank then colossal blast, long rumbling tail",
+  "duration": 2.4,
+  "file": "sfx_src/AI_fortC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "gigantic railway gun firing, huge concussive blast, debris falling",
+  "duration": 2.4,
+  "file": "sfx_src/AI_fortD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "grenade launcher thump followed by small explosion burst",
+  "duration": 1.0,
+  "file": "sfx_src/AI_grenC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "mortar launch pop and cluster of small firework bursts",
+  "duration": 1.0,
+  "file": "sfx_src/AI_grenD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "sci-fi laser beam firing, sharp energy zap, bright hiss",
+  "duration": 0.7,
+  "file": "sfx_src/AI_lasC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "futuristic heat ray blast, focused plasma hiss",
+  "duration": 0.7,
+  "file": "sfx_src/AI_lasD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "electromagnetic railgun shot, electric charge crack then supersonic boom, metallic ring",
+  "duration": 1.4,
+  "file": "sfx_src/AI_railC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "coilgun firing, rising electric whine then piercing shot",
+  "duration": 1.4,
+  "file": "sfx_src/AI_railD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "short victory fanfare, brass and drums, triumphant, gritty post-apocalyptic",
+  "duration": 3.0,
+  "file": "sfx_src/AI_winC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "victory jingle, dark orchestral hit then hopeful chord, war drums",
+  "duration": 3.0,
+  "file": "sfx_src/AI_winD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "thunder lightning strike, sharp electric crack, close",
+  "duration": 0.9,
+  "file": "sfx_src/AI_uboltC.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "electric discharge zap, heavy spark burst",
+  "duration": 0.9,
+  "file": "sfx_src/AI_uboltD.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "small magical chime reveal, short sparkle jingle, subtle",
+  "duration": 1.8,
+  "file": "sfx_src/AI_gr3C.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "card reveal jingle, soft bells and light chime, pleasant",
+  "duration": 1.8,
+  "file": "sfx_src/AI_gr3D.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "rare item reveal fanfare, golden bells, rising chime, exciting",
+  "duration": 2.4,
+  "file": "sfx_src/AI_gr4E.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "treasure reveal jingle, bright orchestral hit with shimmer",
+  "duration": 2.4,
+  "file": "sfx_src/AI_gr4F.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "epic legendary reveal fanfare, huge orchestral hit, choir swell, celebration",
+  "duration": 3.2,
+  "file": "sfx_src/AI_gr5G.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-08",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "jackpot fanfare, dramatic brass hit, sparkling bells, fireworks, grand finale",
+  "duration": 3.2,
+  "file": "sfx_src/AI_gr5H.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ }
+]
