@@ -200,7 +200,9 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 .homeres{flex:0 0 auto;font-weight:900;font-size:13px;color:var(--pane);display:flex;gap:7px;justify-content:flex-end;align-items:center}
 /* ✉️🎯(227)右上の印だけのボタン(メール・任務)=角丸四角。研究Pの札の左に並ぶ(ユーザー指示)。
    受け取れる物・未読があると右上に赤い点。⚠文字は出さない(印と点だけ)。
-   (227b)右寄せの margin は先頭の🏭基地が持つ */
+   ⛔(228m)🏭基地は廃止した(ユーザー「上にあると忘れがちだし中身が何かわからない」)=
+   右寄せの margin は✉️が持つ。🏋鍛錬所は🦸英雄の窓へ・🎯砲撃は🎖編成のタブへ移した */
+#hm-mail{margin-left:auto}
 .homeico{position:relative;font-size:19px}
 .homeico .rdot{position:absolute;top:-4px;right:-4px;width:13px;height:13px;border-radius:50%;
  background:var(--danger);border:2px solid rgba(16,13,10,.92);box-shadow:0 0 6px rgba(255,90,74,.7)}
@@ -219,7 +221,7 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
 /* (227b)タイルの格子(homegrid/cmp)は王道ソシャゲ型への作り替えで廃止した(下の homenav が後継) */
 /* 🏠⭐⭐(227b)**王道ソシャゲ型**(2026-08-09ユーザー決定)=
    下に薄い固定ナビ6個(ホーム|英雄|編成|研究|図鑑|召集)+右端に巨大な出撃/
-   中央=連れて行く英雄を大きく/鍛錬所・砲撃は右上の🏭基地の窓へ。
+   中央=連れて行く英雄を大きく/⛔(228m)基地は廃止=鍛錬所は英雄の窓・砲撃は編成のタブへ。
    ⚠ナビは薄く(56px)=横画面393pxで主役(英雄の絵)を縮めないため(ユーザー了承)。
    ❌(223)の「左=縦のサブ列/左下=召集の丸/右=カードの縦積み」は廃止(書き戻さない)。 */
 .homewrap{flex-direction:column;gap:6px}
@@ -247,12 +249,13 @@ text-shadow:3px 3px 0 #000,-3px 3px 0 #000,3px -3px 0 #000,-3px -3px 0 #000,0 10
    ⚠幅は中身に合わせる(拠点名が長くても「…」で切らない掟)・押す所は44px */
 #bt-home-resume{flex:0 0 auto;align-self:flex-end;width:auto;min-width:236px;min-height:44px;
  white-space:nowrap;font-size:14px;padding:4px 12px}
-/* 🏭基地(右上・文字つき)=鍛錬所と砲撃の入口。印だけだと何か分からないので字を添える */
-#hm-base{margin-left:auto;width:auto;padding:0 12px;display:flex;gap:5px;align-items:center;font-size:17px}
-#hm-base .hblb{font-size:12.5px;font-weight:900}
-/* 🏭基地の窓の行=全幅の横長ボタン(字を切らない) */
-.basebt{height:auto;min-height:56px;width:100%;margin-bottom:6px;justify-content:flex-start}
-.basebt .hic{width:38px;height:38px;font-size:21px}
+/* ⛔(228m)🏭基地のボタンと窓のCSSは廃止した(中身は英雄の窓と編成のタブへ) */
+/* 🏋(228m)英雄の窓の見出しに置く鍛錬所の入口。🔒の時は印が錠になる(renderTrainTileが差し替える) */
+#hm-train{width:auto;min-height:44px;padding:0 12px;display:flex;gap:5px;align-items:center;white-space:nowrap}
+/* ⚠見出し(bphd)の中に置くので、文字の色と大きさは自前で持つ(見出しの白い太字を継がない=白地に白で消えた) */
+#hm-train .htlb{font-weight:900;font-size:12.5px;color:var(--ink)}
+#hm-train i{font-style:normal;font-size:10.5px;opacity:.8;color:var(--ink)}
+#hm-train.lk{opacity:.55;filter:grayscale(.7)}
 /* 🔒まだ解放していない施設=形で言う(押せない・暗い)。⚠文字で「未解放」と書くだけにしない掟 */
 .homebt.lk{opacity:.55;filter:grayscale(.7)}
 /* 機能タイル=情景の上に浮かぶ暗いガラス板(紙の枠は貼らない) */
@@ -1650,7 +1653,7 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
 <div class="scr" id="scr-home">
   <!-- 🌆(96)背景=夕暮れの廃墟のスカイライン(プロシージャル。homeBgが毎フレーム描く) -->
   <canvas id="homebg"></canvas>
-  <!-- 🏠⭐⭐(227b)**王道ソシャゲ型**(2026-08-09ユーザー決定)=①上の帯=戻る/🏭基地/✉️🎯/資源
+  <!-- 🏠⭐⭐(227b)**王道ソシャゲ型**(2026-08-09ユーザー決定)=①上の帯=戻る/✉️🎯/資源(⛔基地は(228m)廃止)
        ②中央=連れて行く英雄を大きく ③下=薄い固定ナビ6個(ホーム|英雄|編成|研究|図鑑|召集)+右端に巨大な出撃。
        ⚠質感は既存の紙と錆のまま(「AI臭いから雰囲気合わせて」)。❌(223)の左右カラム配置は廃止。 -->
   <div class="homewrap">
@@ -1658,15 +1661,15 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
      <button class="btn homeback" id="hm-back" aria-label="タイトルへ戻る">←</button>
      <!-- ✉️🎯(227)メールと任務=右上の印だけの角丸ボタン(ユーザー指示「的マークだけでよくて、
           受け取れるやつがあったら赤い点」)。研究Pの札の左に並ぶ -->
-     <!-- 🏭(227b)基地=鍛錬所と砲撃の入口(ユーザー決定「基地ボタン内へまとめる」) -->
-     <button class="btn homeback" id="hm-base" aria-label="基地">🏭<span class="hblb">基地</span></button>
+     <!-- ⛔(228m)🏭基地は廃止(ユーザー「上にあると忘れがち・中身が分からない」)=
+          🏋鍛錬所は🦸英雄の窓の見出しへ・🎯砲撃は🎖編成のタブへ -->
      <button class="btn homeback homeico" id="hm-mail" aria-label="メール">✉️<span class="rdot" id="hm-mail-dot" style="display:none"></span></button>
      <button class="btn homeback homeico" id="hm-msn" aria-label="任務">🎯<span class="rdot" id="hm-msn-dot" style="display:none"></span></button>
      <div class="homeres" id="home-res"></div>
    </div>
    <!-- 🏠⭐⭐(227b)**王道ソシャゲ型**(ユーザー決定)=中央に英雄の一枚絵/下に固定ナビ6個+巨大な出撃。
         ⚠id は旧タイルの物を使い回す(renderHome と onclick を書き直さないため)。
-        鍛錬所(hm-train)と砲撃(hm-stk)は🏭基地の窓(md-base)の中にある -->
+        ⛔(228m)🏭基地は廃止=鍛錬所(hm-train)は🦸英雄の窓の見出し・砲撃は🎖編成の「🎯砲撃」タブ -->
    <div class="hometop">
     <!-- 🦸(124)**一枚絵ごと押せる**(ユーザー指示)=ナビの「🦸英雄」と同じ窓が開く -->
     <div class="homeleft" id="home-hero">
@@ -2088,7 +2091,8 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
      ⭐★は**枠の色+地の色+上の帯**で出す(色は RARE の表=ゲームが既に持っている物)。 -->
 <div class="modal" id="md-hpick">
   <div class="panel bigpanel">
-    <div class="bphd"><b>🦸 連れて行く英雄</b><span class="bphint2">1ゲームに1回だけ出撃できる</span><span class="pt" id="hp-own"></span><button class="xbtn" id="bt-hpick-close">✕</button></div>
+    <!-- 🏋(228m)鍛錬所の入口はここ(英雄を鍛える場所=英雄の窓に置く)。🔒中は印が錠になる -->
+    <div class="bphd"><b>🦸 連れて行く英雄</b><span class="bphint2">1ゲームに1回だけ出撃できる</span><span class="pt" id="hp-own"></span><button class="btn sm" id="hm-train"><span id="hm-train-ic">🏋</span><span class="htlb">鍛錬所</span><i id="hm-train-i"></i></button><button class="xbtn" id="bt-hpick-close">✕</button></div>
     <div class="hprail" id="hp-rail"></div>
     <div class="hpfoot" id="hp-foot"></div>
   </div>
@@ -2180,17 +2184,9 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
     <div class="bpbody" id="msn-list"></div>
   </div>
 </div>
-<!-- 🏭基地(227b)=鍛錬所と砲撃の窓(ユーザー決定「基地ボタン内へまとめる」)。
-     ⚠中のボタンの id(hm-train/hm-stk)は旧タイルの物=onclickとrenderHomeがそのまま効く -->
-<div class="modal" id="md-base">
-  <div class="panel bigpanel" style="width:min(94vw,480px);height:auto;max-height:min(88vh,var(--appH,88vh))">
-    <div class="bphd"><b>🏭 基地</b><button class="xbtn" id="bt-base-close">✕</button></div>
-    <div class="bpbody">
-      <button class="btn homebt basebt" id="hm-train"><span class="hic" id="hm-train-ic">🏋</span><span class="hlb"><b>鍛錬所</b><i id="hm-train-i"></i></span></button>
-      <button class="btn homebt basebt" id="hm-stk"><span class="hic" id="hm-stk-ic">🎯</span><span class="hlb"><b>砲撃</b><i id="hm-stk-i"></i></span></button>
-    </div>
-  </div>
-</div>
+<!-- ⛔(228m)🏭基地の窓は廃止した(2026-08-09ユーザー「上にあると忘れがちだし中身が何かわからない」+
+     「中のボタンを押しても窓が残ったまま」)=🏋鍛錬所は🦸英雄の窓(md-hpick)の見出しへ・
+     🎯砲撃は🎖編成(md-load)のタブへ。⚠書き戻さない -->
 <!-- ✉️メール(2026-08-09(227)ユーザー指示)=プレゼントとお知らせの受け取り箱。⚠1枚=1通 -->
 <div class="modal" id="md-mail">
   <div class="panel bigpanel" style="width:min(94vw,560px);height:auto;max-height:min(88vh,var(--appH,88vh))">
@@ -6712,6 +6708,9 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m10',d:'2026-08-09',t:'アップデート',ver:'0.018',
+  b:'押すと変わった所が全部見られます',
+  list:['🏭右上の「基地」ボタンをやめた=🏋鍛錬所は英雄の画面の中へ、🎯砲撃は編成のタブへ移動']},
  {id:'m9',d:'2026-08-09',t:'アップデート',ver:'0.017',
   b:'押すと変わった所が全部見られます',
   list:['✉️メールが「🆕新着 / 📨既読」のタブに分かれた(新着=未読か受け取り残し)',
@@ -31765,6 +31764,8 @@ const LD_TABS=[
  {k:'add', n:'🪖 入れる',d:''},
  /* 🏰(226f)タレットの編成(ユーザー指示)。⚠効くのはソロだけ */
  {k:'tw',  n:'🏰 タレット',d:''},
+ /* 🎯(228m)砲撃=🏭基地の廃止でここへ(装備も編成の一部)。窓(md-stk)は出撃準備からの口として残っている */
+ {k:'stk', n:'🎯 砲撃',d:'持って行く砲撃を1つ選ぶ。新型は🔬研究所で解放できる'},
  /* ⚠🔒の入手経路はここで言う(2026-08-03 UI総監査)=どこにも書いておらず「壊れた画面」に見えた */
  {k:'var', n:'⭐ 派生を選ぶ',d:'どの派生キャラで出すか決める。🔒は🔬研究所のユニットタブで解放できる'}];
 /* ⚠**弾薬タブは2026-07-27に廃止**(タレットの進化に置き換えた)。書き戻さないこと */
@@ -31776,6 +31777,16 @@ function renderLoad(){
  if(tb){tb.innerHTML=LD_TABS.map(t=>'<button class="tb'+(LDTAB===t.k?' on':'')+'" data-ldt="'+t.k+'">'+t.n+'</button>').join('');
   tb.querySelectorAll('[data-ldt]').forEach(b=>{b.onclick=()=>{LDTAB=b.dataset.ldt;renderLoad();};});}
  let h='<div class="bphint">'+(LD_TABS.find(t=>t.k===LDTAB)||LD_TABS[0]).d+'</div>';
+ /* 🎯(228m)砲撃タブ=装備砲撃の窓(renderStkPick)と同じ札。⚠選んでも閉じない(タブの中なので) */
+ if(LDTAB==='stk'){
+  h+='<div class="stkgrid">'+META.st.map(k=>{const S=STRIKES[k];
+   return '<button class="stkc'+(META.eq===k?' sel':'')+'" data-lstk="'+k+'">'
+    +'<span class="e">'+icoImg('ic-stk-'+k,S.ic)+'</span><span class="t"><b>'+S.n+'</b><i>'+S.dsc+'</i></span>'
+    +(META.eq===k?'<span class="chk2">✓ 装備中</span>':'')+'</button>';}).join('')+'</div>';
+  box.innerHTML=h;
+  box.querySelectorAll('[data-lstk]').forEach(b=>{b.onclick=()=>{
+   META.eq=b.dataset.lstk;saveMeta();try{if(sfx.tap)sfx.tap();}catch(e){}renderLoad();};});
+  return;}
  const row=(bid,label)=>{
   const i=UBASE.findIndex(u=>u.id===bid);if(i<0)return;
   const B=UBASE[i],cur=META.ld[bid]||'',opts=[{v:null,def:B}].concat((UVAR[bid]||[]).map(v=>({v,def:mkVar(B,v)})));
@@ -37022,10 +37033,12 @@ $('hm-hero').onclick=()=>{renderHeroPick();$('md-hpick').classList.add('on');};
 /* 🦸(124)**左の一枚絵を押しても同じ窓**(ユーザー指示)。⚠タイルと同じ動きにする=別の入口を作らない */
 {const hl=$('home-hero');if(hl)hl.onclick=()=>{ensureAC();try{if(sfx.tap)sfx.tap();}catch(e){}
  renderHeroPick();$('md-hpick').classList.add('on');};}
-$('hm-stk').onclick=()=>{renderStkPick();$('md-stk').classList.add('on');};
+/* ⛔(228m)hm-stk(ホーム側の砲撃ボタン)は廃止=🎖編成の「🎯砲撃」タブへ(renderLoad) */
 $('hm-lab').onclick=()=>{renderLab();$('md-lab').classList.add('on');};
-/* 🏋鍛錬所(2026-08-03にホームへ移した。⚠タイトルのボタンは出さない) */
-$('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add('on');};
+/* 🏋鍛錬所=(228m)🦸英雄の窓の見出しへ移した。
+   ⚠⚠**開く前に英雄の窓を必ず閉じる**(2026-08-09ユーザー指摘「押した時、画面はそこに移動するけど
+   そのウィンドウが残ったままだった」=基地の窓で起きた穴。同じ穴をここで作らない) */
+$('hm-train').onclick=()=>{ensureAC();$('md-hpick').classList.remove('on');renderTrain();$('md-train').classList.add('on');};
 /* 📖⭐**図鑑はホームの独立タイルから開く**(2026-08-04(142)ユーザー「図鑑はテストモードにしかない」)。
    ⚠⚠それまでの口は①タイトルの `bt-zoo`(**DEV専用**)②鍛錬所のタブ(**🔬研究所で🧬300を払って
      『ヒーロー鍛錬所』を買うまでホームにタイルすら出ない**)の2つだけ=**素で遊ぶと存在しなかった**。
@@ -37033,9 +37046,7 @@ $('hm-train').onclick=()=>{ensureAC();renderTrain();$('md-train').classList.add(
 $('hm-zoo').onclick=()=>{openZoo();};
 $('hm-msn').onclick=()=>{openMsn();};
 $('hm-mail').onclick=()=>{openMail();};/* ✉️(227) */
-/* 🏭(227b)基地=鍛錬所と砲撃の窓 */
-$('hm-base').onclick=()=>{$('md-base').classList.add('on');};
-{const bc=$('bt-base-close');if(bc)bc.onclick=()=>$('md-base').classList.remove('on');}
+/* ⛔(228m)🏭基地のボタンと窓は廃止した(中身は英雄の窓と編成のタブへ)。書き戻さない */
 /* 🏠(227b)ホームタブ=開いている窓を全部閉じて素の状態に戻す。
    ⚠それぞれの✕を押した扱いにする=召集の曲の切り替えなど、✕に付いている後始末をそのまま通すため */
 {const nh=$('nav-home');if(nh)nh.onclick=()=>{

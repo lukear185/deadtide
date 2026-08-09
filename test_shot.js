@@ -315,6 +315,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        /* hopt=⚙オプション / hmsn=🎯任務(2026-08-06(192)。今まで撮る口が無かった=一度も見ていなかった) */
        +(OPT.indexOf('hopt')>=0?'ensureAC();optRender();document.getElementById("md-opt").classList.add("on");':'')
        +(OPT.indexOf('hmsn')>=0?'openMsn();':'')
+       /* 🦸(228m)英雄の窓 / 🎖編成の砲撃タブ(基地の廃止で入口が移った先を撮る) */
+       +(OPT.indexOf('hpick')>=0?'renderHeroPick();document.getElementById("md-hpick").classList.add("on");':'')
+       +(OPT.indexOf('hldstk')>=0?'LDTAB="stk";renderLoad();document.getElementById("md-load").classList.add("on");':'')
        /* ✉️(227)メールの窓。hmailv=アップデートの通を開いた状態(中身が全部出ている所) */
        +(OPT.indexOf('hmailv')>=0?'MAILV="m2";openMail();':(OPT.indexOf('hmail')>=0?'openMail();':''))
        +(OPT.indexOf('hbase')>=0?'document.getElementById("md-base").classList.add("on");':''))/* 🏭(227b)基地の窓 */
