@@ -532,6 +532,14 @@ const REC=[
  /* 🎙(226g追記)ユーザー「どっちもビーム感がほしい。近未来的な」=その路線を強めた2本 */
  {k:'lasH',  f:'AI_lasH',  t:0, d:.7,  g:0},
  {k:'railI', f:'AI_railI', t:0, d:1.4, g:0},
+ /* 🎙(228r)第5陣=E〜Iは「全然ダメ」で全ボツ。今回はユーザーの言葉から=
+    レーザー「今の音のもっと優しいビーム」/レールガン「光を集める溜め→太いビームの発射」 */
+ {k:'lasI',  f:'AI_lasI',  t:0, d:1.6, g:0},
+ {k:'lasJ',  f:'AI_lasJ',  t:0, d:1.6, g:0},
+ {k:'lasK',  f:'AI_lasK',  t:0, d:1.6, g:0},
+ {k:'railJ', f:'AI_railJ', t:0, d:2.8, g:0},
+ {k:'railK', f:'AI_railK', t:0, d:2.8, g:0},
+ {k:'railL', f:'AI_railL', t:0, d:2.8, g:0},
  {k:'winC',  f:'AI_winC',  t:0, d:3.0, g:0},
  {k:'winD',  f:'AI_winD',  t:0, d:3.0, g:0},
  {k:'uboltC',f:'AI_uboltC',t:0, d:.9,  g:0},

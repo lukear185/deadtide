@@ -304,5 +304,59 @@
   "file": "sfx_src/AI_railI.wav",
   "license": "Stability Community License(年商$1M未満・要登録)",
   "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "soft gentle sci-fi laser beam, steady single pitch hum, warm smooth continuous tone, quiet and soothing, no harshness, clean energy beam",
+  "duration": 2.0,
+  "file": "sfx_src/AI_lasI.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "gentle continuous laser beam tone, mellow pure steady pitch, soft airy shimmer, delicate science fiction beam hum, kind and calm",
+  "duration": 2.0,
+  "file": "sfx_src/AI_lasJ.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "smooth quiet energy beam, soft synth pad tone, steady pitch, tender sci-fi laser hum, rounded and warm",
+  "duration": 2.0,
+  "file": "sfx_src/AI_lasK.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "sci-fi railgun charge and fire: shimmering particles of light converging inward, rising gathering energy, then a massive thick sustained energy beam blast, deep and wide, no explosion",
+  "duration": 3.2,
+  "file": "sfx_src/AI_railJ.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "energy cannon: sparkling light gathering to a focus point, glowing crescendo charge, then a fat deep laser beam firing, thick sustained beam discharge, powerful low end, no explosion",
+  "duration": 3.2,
+  "file": "sfx_src/AI_railK.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "futuristic beam cannon: luminous charge-up swell collecting light, then wide heavy beam release, deep bassy sustained beam, smooth tail, no explosion",
+  "duration": 3.2,
+  "file": "sfx_src/AI_railL.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
  }
 ]

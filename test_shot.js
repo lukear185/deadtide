@@ -321,6 +321,8 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        /* 🔧(228p)openbm=最初に建っている塔の強化ウィンドウを開いて撮る(t=と組み合わせる)。
           ⚠t= の建設は setTimeout の中=**建つまで見張ってから開く**(1回きりだと空振りする) */
        +(OPT.indexOf('openbm')>=0?'var obm9=setInterval(function(){try{var m=G&&G.players&&G.players[0];if(!m)return;for(var i=0;i<m.towers.length;i++){if(m.towers[i]){openBM(i);clearInterval(obm9);break;}}}catch(e){}},280);':'')
+       /* 🔨(228r)openbd=空きマスの建設メニューを開く(属性の印の確認用) */
+       +(OPT.indexOf('openbd')>=0?'setTimeout(function(){try{openBM(AI_ORDER[0]);}catch(e){}},600);':'')
        /* ✉️(227)メールの窓。hmailv=アップデートの通を開いた状態(中身が全部出ている所) */
        +(OPT.indexOf('hmailv')>=0?'MAILV="m2";openMail();':(OPT.indexOf('hmail')>=0?'openMail();':''))
        +(OPT.indexOf('hbase')>=0?'document.getElementById("md-base").classList.add("on");':''))/* 🏭(227b)基地の窓 */
