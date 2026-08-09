@@ -5125,6 +5125,27 @@ const ZOMBIES=[
  {id:'n3Beet',n:'錆びた甲殻',hp:760,sp:50,bt:130,dmg:4,mw:8,nm:1,st:3,wing:1,w:.35,sc:1.45,aoe:3,atk:80,ar:1.1,c:'#3f4a52',dsc:'錆に喰われた鞘翅の壁。3体まとめて弾き飛ばす'},
  {id:'n3Vult',n:'鉄塔の暴君'/*(224b)ユーザー「もうちょいシンプルに」*/,hp:1500,sp:42,bt:400,dmg:10,nm:1,st:3,boss:1,wing:1,mw:5,sc:2.2,atk:168,ar:1.2,aoe:5,c:'#5a4a42',dsc:'黒ずんだ大鳥。赤い目が丘を見下ろす'},
  {id:'n3Storm',n:'空を喰らう王',hp:2800,sp:34,bt:900,dmg:16,nm:1,st:3,boss:1,fin:1,wing:1,aura:1,split:3,mw:20,sc:2.7,atk:230,ar:1.2,aoe:6,c:'#46505c',dsc:'空ごと喰らう黒い影。群れを狂わせ、倒すと仔が出る'},
+ /* ===== 🥩⭐⭐⭐ 面④ 飽食の市街=肉の一族(st:4。2026-08-09(229)ユーザー承認の14体) =====
+    ⭐**材質は🥩肉(fls:1)=弱点🗡貫通/耐性💣爆発**。⚠**装甲肉3体は armor:1**(弱点🔥=既存の装甲と同じ)、
+      下水の群れだけ材質なし(弱点⚔)。⚠1体に材質2つは持たせない([[DESIGN]]の掟)。
+    ⚠**強さは③の同じ役どころの数字を下敷きに少し上**(ST4_hpMが上に乗る)=詰めは実測から。
+    ⚠新しい印 fls は zSpec への写しと checkZFlag への登録が必須(羽で踏んだ穴)。 */
+ {id:'fWalk',n:'膨れ歩き',hp:130,sp:60,bt:13,dmg:1,mw:1,st:4,fls:1,sc:1.05,atk:20,ar:.7,c:'#b57a6a',dsc:'食いすぎて膨れた歩き手。数で押してくる'},
+ {id:'fRun',n:'肥えた走者',hp:95,sp:150,bt:14,dmg:1,mw:1,st:4,fls:1,sc:.95,atk:16,ar:.5,c:'#c9917a',dsc:'肉を揺らして走る。見た目より速い'},
+ {id:'fRat',n:'下水の群れ',hp:60,sp:175,bt:12,dmg:1,mw:2,st:4,w:1.1,sc:.7,atk:10,ar:.45,c:'#7a6a5a',dsc:'肥えた市街の残飯で育った鼠ども'},
+ {id:'fBurst',n:'破裂胎',hp:310,sp:55,bt:30,dmg:2,mw:3,st:4,fls:1,split:2,sc:1.25,atk:34,ar:1.1,c:'#c96a6a',dsc:'はち切れる寸前。倒すと中から出てくる'},
+ {id:'fHowl',n:'咆える脂肪',hp:240,sp:62,bt:34,dmg:2,mw:4,st:4,fls:1,aura:1,sc:1.15,atk:18,ar:.8,c:'#b5836b',dsc:'腹の底から吠えて群れを昂ぶらせる'},
+ {id:'fGut',n:'這う腸',hp:290,sp:70,bt:40,dmg:2,mw:5,st:4,fls:1,noblock:1,w:.5,sc:1.1,atk:0,ar:9,c:'#a15a62',dsc:'腸を引きずって這い、ユニットをすり抜ける'},
+ {id:'fSew',n:'縫い合わせ',hp:520,sp:58,bt:60,dmg:3,mw:6,st:4,fls:1,aoe:2,sc:1.3,atk:52,ar:.9,c:'#a87a72',dsc:'2体ぶんを縫い合わせた腕が2体まとめて薙ぐ'},
+ {id:'fRiot',n:'鎮圧盾の肉塊',hp:470,sp:48,bt:70,dmg:3,mw:7,st:4,armor:1,w:.5,sc:1.25,atk:44,ar:.8,c:'#8a6a62',dsc:'防暴の盾ごと太った壁。🔥火炎で炙るしかない'},
+ {id:'fFat',n:'垂れ肉の大男',hp:880,sp:40,bt:95,dmg:3,mw:9,st:4,fls:1,w:.5,sc:1.45,atk:60,ar:.9,c:'#c4988a',dsc:'垂れた肉が段になった生きる壁'},
+ {id:'fRivet',n:'鋲鎧の肥大',hp:660,sp:42,bt:110,dmg:4,mw:11,st:4,armor:1,w:.26,sc:1.4,atk:76,ar:1,c:'#96625a',dsc:'肉に鉄板を直接鋲で打った重装。🔥で炙れ'},
+ {id:'fCar',n:'廃車の殻',hp:760,sp:38,bt:130,dmg:4,mw:13,st:4,armor:1,w:.2,sc:1.55,aoe:3,atk:92,ar:1.1,c:'#8f6a5e',dsc:'廃車の外板を背負った大亀。3体まとめて弾き飛ばす'},
+ /* ⚠⚠**並びの最後尾(ボスの手前)は必ず🥩肉の大物にする**=波の後半は「一番後ろの敵」を
+    4割まで引く仕組みがあるので、最後尾を装甲にすると④の主役が装甲になる(checkMaterialで実際に踏んだ) */
+ {id:'fGlut',n:'食い溜めの巨躯',hp:1060,sp:46,bt:120,dmg:4,mw:15,st:4,fls:1,w:.4,sc:1.5,aoe:2,atk:88,ar:1.1,c:'#b06a55',dsc:'腹の口で何でも喰う。2体まとめて呑みかかる'},
+ {id:'fMark',n:'市場の主',hp:1700,sp:36,bt:420,dmg:10,st:4,boss:1,fls:1,mw:5,sc:2.3,atk:180,ar:1.2,aoe:4,c:'#c07a68',dsc:'市場を喰い尽くした肉の山'},
+ {id:'f4King',n:'飽食の王',hp:3100,sp:30,bt:950,dmg:16,st:4,boss:1,fin:1,fls:1,aura:1,split:3,mw:20,sc:2.8,atk:240,ar:1.2,aoe:5,c:'#a55548',dsc:'市街を喰らい尽くす王。群れを昂ぶらせ、倒すと中から出てくる'},
 ];
 const SENDABLE=[0,1,2,3];
 /* ⚠**プールは4つある**(2026-07-27にナイトメア×ステージ2を足した)。印の組み合わせで見分ける:
@@ -5143,6 +5164,8 @@ const FINNM_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&!z.st);
 const FINNM2_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===2);/* 🌑×② 原初の海淵 */
 const NM3_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&z.st===3&&!z.fin);/* 🌑×③(224) 送電塔の暴君 */
 const FINNM3_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===3);/* 🌑×③(224) 空を喰らう王 */
+const ST4_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===4&&!z.nm&&!z.fin);/* 🥩(229f)面④ 市場の主 */
+const FIN4_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===4&&!z.nm);/* 🥩(229f)面④ 飽食の王 */
 const NM_DIFF=5;/* 難易度インデックス: 5=ナイトメア */
 const isNM=()=>!!(G&&G.pveDiff===NM_DIFF);
 const UNITS=[
@@ -5789,7 +5812,9 @@ const ZDEX_G=[{n:'① 廃線ハイウェイ',f:z=>!z.st&&!z.nm},
  {n:'🌑 深海のナイトメア',f:z=>!!z.nm&&z.st===2},
  {n:'③ 送電鉄塔の丘',f:z=>z.st===3&&!z.nm},
  /* 🌑🪶(224)③のナイトメア6体(ユーザー承認) */
- {n:'🌑 鉄塔のナイトメア',f:z=>!!z.nm&&z.st===3}];
+ {n:'🌑 鉄塔のナイトメア',f:z=>!!z.nm&&z.st===3},
+ /* 🥩(229f)④の肉の一族14体(ユーザー承認)。🌑×④の欄はNMの顔ぶれを作る時に足す */
+ {n:'④ 飽食の市街',f:z=>z.st===4&&!z.nm}];
 const UBASE=UNITS.slice();/* 素のユニット定義(不変) */
 /* 英雄をUNITSの末尾に「特別なユニット」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=ユニットの数え上げには U_N を使うこと
@@ -5916,6 +5941,10 @@ const ELEC_VS_SCALE=TUNE("ELEC_VS_SCALE",1.9,1,3,.05);
    ⚠⚠**弱点(特効)は1体につき1つのまま**=2つ持たせると「片方だけ持って行けば済む」になる
      ([[DESIGN]] で却下ずみ)。⚠**型の分からない一撃(必殺・砲撃)は通る扱い**=分からない物を弱くしない。 */
 const BULLET_VS_WING=TUNE("BULLET_VS_WING",1.9,1,3,.05);
+/* 🥩⭐(229f)**4つ目の材質=肉(面④の膨れた敵)**(2026-08-09ユーザー決定「市街地・肉の材質」)=
+   **弱点🗡貫通(×1.9)/耐性💣爆発(45%)**。弾も爆風もめり込んで止まり、細い貫通だけ芯まで刺さる。
+   ⚠④の装甲肉(鎮圧盾/鋲鎧/廃車)は armor:1=既存の装甲と同じ(弱点🔥)。肉と装甲は重ねない。 */
+const PIERCE_VS_FLESH=TUNE("PIERCE_VS_FLESH",1.9,1,3,.05);
 const ARMOR_CUT=TUNE("ARMOR_CUT",.45,.2,1,.05);/* 🛡耐性(その材質が弾く1つの型)に通る割合 */
 /* ⚔🔆🧪⭐⭐⭐(196)**相性を作り直した**(2026-08-07ユーザー決定)。
    ⚠⚠**それまでは「弱点1つ・耐性はそれ以外ほぼ全部」**だった(羽は4種が45%)=
@@ -5931,10 +5960,11 @@ const AF_MAT=[
  {k:'wing', ic:'🪶',n:'羽',    wk:'bullet',rs:'melee', x:()=>BULLET_VS_WING},
  {k:'armor',ic:'🛡',n:'装甲',  wk:'fire',  rs:'bullet',x:()=>FIRE_VS_ARMOR},
  {k:'scale',ic:'🐟',n:'鱗',    wk:'elec',  rs:'fire',  x:()=>ELEC_VS_SCALE},
+ {k:'flesh',ic:'🥩',n:'肉',    wk:'pierce',rs:'blast', x:()=>PIERCE_VS_FLESH},/* 🥩(229f)面④ */
  {k:'none', ic:'',  n:'通常種',wk:'slash', rs:'',      x:()=>SLASH_VS_NONE}
 ];
-/* その敵の材質(1体1つ)。⚠**羽→装甲→鱗の順で見る**=重ねて持たせない約束だが、順を固定しておく */
-const afKind=z=>(z&&z.wing)?'wing':((z&&z.armor)?'armor':((z&&z.scl)?'scale':'none'));
+/* その敵の材質(1体1つ)。⚠**羽→装甲→鱗→肉の順で見る**=重ねて持たせない約束だが、順を固定しておく */
+const afKind=z=>(z&&z.wing)?'wing':((z&&z.armor)?'armor':((z&&z.scl)?'scale':((z&&z.fls)?'flesh':'none')));
 const afMat=z=>AF_MAT[AF_MAT.findIndex(m=>m.k===afKind(z))];
 /* ⭐**この一撃が何倍通るか**。ty が無い(型の分からない一撃)なら等倍 */
 function afX(ty,z){
@@ -6623,10 +6653,9 @@ const STAGES=[
       中心の拠点(790,415)へ。**道は自分とどこでも繋がらない**ので「回り込んでいる」が絵で読める。
       ⚠交差点(同じ場所に道のりが2つ)の穴も一緒に消えた(経緯と掟は NOTES_面)。
     ⭐**内側の2列(渦の腹)が一等地**=上下の帯のマスは渦の2辺に同時に届く。マスは列と行の交点。
-    ⚠⚠**wip:1=まだ敵が居ない**(顔ぶれ16体は協議済み・次の回)=地図のピンは lock3 で締めてあり、
-      検査(checkGain/checkMaterial)もこの印で飛ばしている。🌑NM・背景・🚌開拓便の道・STG_X/STG_GEN の行も未着手。
-      ⭐**敵(st:4)と実入りを入れる回に wip と lock3 を一緒に外すこと**(checkStage4 が見張る)。 */
- {n:'飽食の市街',sub:'肉に呑まれた渦の中心街',zs:4,wip:1,
+    ✅🥩**(229f)敵14体が入って開通した**(wip を外した)=🌑ナイトメアのピンだけ lock3 のまま
+      (④のNM専用の顔ぶれがまだ無いため。③が(224)までそうだったのと同じ)。⚠背景と🚌開拓便の道も未着手。 */
+ {n:'飽食の市街',sub:'肉に呑まれた渦の中心街',zs:4,
   /* 🌀(229e)**左の道はマップの端(x=140)まで**(ユーザー再々指摘「まだ左空いてるやん」)=
      ①の左端(x80)とほぼ同じで、道の外に残るのは細い縁だけ。
      ⚠左上の工房の定位置(x129〜374)は道と95を取り合うため、**工房3枠はこの面だけ渦の内側(eco)へ移した**。 */
@@ -6854,6 +6883,13 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m14',d:'2026-08-09',t:'アップデート',ver:'0.03',
+  b:'押すと変わった所が全部見られます',gift:{gem:10},
+  list:['🥩4つ目の土地「飽食の市街」が開いた=3つ目の土地を🌑で落とすと行ける。渦巻きの道が中心の拠点をぐるりと囲む',
+   '🥩新しい材質「肉」=🗡貫通が深く刺さり(ハープーン砲・スナイパー塔など)、💣爆発は弾かれる',
+   '🛡装甲を着た肉もいる(鎮圧盾・鋲鎧・廃車の殻)=そちらは今までどおり🔥火炎で',
+   '🧟新しい敵14種(💀ボス「市場の主」「飽食の王」を含む)',
+   '⚠4つ目の土地の🌑ナイトメアの拠点はまだ「作っていない」(顔ぶれをこれから作る)']},
  {id:'m13',d:'2026-08-09',t:'アップデート',ver:'0.021',
   b:'押すと変わった所が全部見られます',
   list:['🔬研究所の棚を土地の進み具合に合わせて整理した=先の土地のぶんまで解放済みだったタレット/ユニットは、いったん未解放に戻る',
@@ -12168,6 +12204,296 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    /* ⭐目を不揃いに散らす(等間隔だと模様になる)=「1体ではない」に見せる */
    for(const g of[[2,-11,2.8],[-5,-4,2.2],[7,-3,1.9],[-2,4,2.4],[5,9,1.7],[-7,10,1.5]])
     zEye(c,g[0],g[1],g[2]);
+   c.restore();return;}
+ }
+ /* ===== 🥩⭐⭐⭐ 面④ 飽食の市街=肉の一族(2026-08-09(229f)) =====
+    ⚠⚠**肉は「楕円の胴+丸い頭」で全部同じ水風船になる**(③の紙飛行機と同じ穴)。
+    ⭐**輪郭を分ける物を1体ずつ決める**=膨れ歩きは洋梨と食い込むベルト/走者は流れるたるみ/
+      鼠は3匹の群れ/破裂胎は縫い目/咆えるは上向きの顎/腸は低い姿勢と引きずり/縫い合わせは胴2つ/
+      鎮圧盾は盾と兜/大男はたるみ3段/巨躯は腹の口/鋲鎧は打ち付けた鉄板/廃車は背負ったドア/
+      主は山/王は縦に裂けた顎とあばらの冠。
+    ⚠装甲肉(鎮圧盾/鋲鎧/廃車)の鉄は**青黒**=既存の🛡装甲と同じ色域(🔥弱点が色で読める)。
+    ⚠等間隔・左右対称・定規の直線を避ける(NOTES_絵のハリボテ4原因)。 */
+ if(Z.st===4){
+  const ZC=Z.c;
+  /* ずんぐりした脚(左右で位相をずらす)。⚠棒にしない=根元を太く先を細く */
+  const zLeg4=(dx,pho,dk)=>{const st9=Math.sin(t*7.5+ph+pho)*2.6;
+   c.fillStyle=shade(ZC,dk);
+   c.beginPath();c.moveTo(dx-4.6,-13);
+   c.quadraticCurveTo(dx-5.2+st9*.5,-5,dx-3.4+st9,0);
+   c.lineTo(dx+3.2+st9,0);
+   c.quadraticCurveTo(dx+4.8,-7,dx+4.2,-13);
+   c.closePath();c.fill();c.stroke();};
+  /* 垂れたたるみ1段(幅・高さ・明るさを段ごとに変える=肉の決め手) */
+  const zRoll=(y9,w9,h9,dk,ox)=>{c.fillStyle=shade(ZC,dk);
+   c.beginPath();c.ellipse(ox||0,y9,w9,h9,0,0,7);c.fill();c.stroke();};
+  /* 縫い目(×を並べる。⚠等間隔にしない) */
+  const zStit=(pts)=>{c.strokeStyle=shade(ZC,1.55);c.lineWidth=1.7/s;
+   for(const g of pts){c.beginPath();c.moveTo(g[0]-2,g[1]-2);c.lineTo(g[0]+2,g[1]+2);
+    c.moveTo(g[0]+2,g[1]-2);c.lineTo(g[0]-2,g[1]+2);c.stroke();}
+   c.strokeStyle=INK;c.lineWidth=2.6/s;};
+  if(Z.id==='fWalk'){/* 膨れ歩き=洋梨の胴+食い込むベルト。⚠頭は小さく(肥満は頭身差で言う) */
+   zLeg4(-5,0,.62);zLeg4(6,2.6,.8);
+   zFill(c,()=>{c.beginPath();c.moveTo(-11,-12);
+    c.bezierCurveTo(-14,-30,-8,-40,0,-40);
+    c.bezierCurveTo(9,-40,15,-28,12,-12);
+    c.bezierCurveTo(6,-6,-6,-6,-11,-12);c.closePath();},ZC,-24);
+   c.fillStyle=shade(ZC,1.26);/* 張った腹の光り */
+   c.beginPath();c.ellipse(3,-17,6.4,7.4,-.2,0,7);c.fill();
+   c.fillStyle=ZW.pa;c.fillRect(-12.4,-14,20,3);/* 食い込むベルト */
+   c.fillStyle=shade(ZC,.7);c.beginPath();c.ellipse(-3,-10.4,4.4,2.4,.1,0,7);c.fill();/* はみ出た下腹 */
+   {const ar9=Math.sin(t*7.5+ph)*2;/* 垂れた腕 */
+    c.fillStyle=shade(ZC,.84);
+    c.beginPath();c.moveTo(9,-31);c.quadraticCurveTo(15,-24+ar9,13.4,-15+ar9);
+    c.lineTo(10,-15.4+ar9);c.quadraticCurveTo(9.4,-24,6.4,-29);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(3.4,-44,5.2,4.8,0,0,7);},shade(ZC,1.1),-48);/* 小さい頭 */
+   zEye(c,5.6,-44.6,1.8);
+   c.fillStyle=shade(ZC,.6);c.beginPath();c.ellipse(3,-41,2.2,1.1,0,0,7);c.fill();/* 開いた口 */
+   c.restore();return;}
+  if(Z.id==='fRun'){/* 肥えた走者=前傾+後ろへ流れるたるみ。⚠速さは姿勢とたなびきで言う */
+   c.rotate(-.14);
+   zLeg4(-6,0,.6);zLeg4(7,3.1,.82);
+   {const fw=Math.sin(t*11+ph);
+    c.fillStyle=shade(ZC,.66);/* 流れるたるみ2枚(長さ違い) */
+    c.beginPath();c.moveTo(-8,-26);c.quadraticCurveTo(-19,-24+fw*3,-24,-17+fw*4);
+    c.quadraticCurveTo(-16,-16,-9,-19);c.closePath();c.fill();c.stroke();
+    c.beginPath();c.moveTo(-7,-18);c.quadraticCurveTo(-15,-14+fw*2,-18,-8+fw*3);
+    c.quadraticCurveTo(-11,-9,-6,-12);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.moveTo(-9,-12);
+    c.bezierCurveTo(-11,-27,-4,-36,4,-35);
+    c.bezierCurveTo(12,-34,15,-24,11,-11);
+    c.bezierCurveTo(4,-5,-4,-5,-9,-12);c.closePath();},ZC,-22);
+   c.fillStyle=shade(ZC,1.3);c.beginPath();c.ellipse(5,-20,5,6,-.3,0,7);c.fill();
+   {const ar9=Math.sin(t*11+ph+1.2)*4;/* 振る腕 */
+    c.fillStyle=shade(ZC,.9);
+    c.beginPath();c.moveTo(8,-29);c.quadraticCurveTo(16,-26-ar9,18,-19-ar9);
+    c.lineTo(14.6,-17.4-ar9);c.quadraticCurveTo(10,-24,5.6,-27);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(9,-39,4.8,4.4,.2,0,7);},shade(ZC,1.12),-43);
+   zEye(c,11,-39.6,1.7);
+   c.restore();return;}
+  if(Z.id==='fRat'){/* 下水の群れ=鼠3匹(1匹だと点になる=群れスズメと同じ手当て) */
+   const one=(dx,dy,k9,sc9)=>{c.save();c.translate(dx,dy);c.scale(sc9,sc9);
+    const hop=Math.abs(Math.sin(t*12+ph+k9*2.1))*3;
+    c.translate(0,-hop);
+    c.strokeStyle=shade(ZC,.7);c.lineWidth=1.8/s;/* 裸の尾 */
+    c.beginPath();c.moveTo(-8,-2);c.quadraticCurveTo(-15,-6,-19,-1+k9);c.stroke();
+    c.strokeStyle=INK;c.lineWidth=2.6/s;
+    zFill(c,()=>{c.beginPath();c.moveTo(-9,-2);
+     c.bezierCurveTo(-8,-9,2,-10.4,7,-6);
+     c.quadraticCurveTo(11,-3,9.4,-.6);
+     c.quadraticCurveTo(0,3,-9,-2);c.closePath();},ZC,-4);
+    c.fillStyle=shade(ZC,1.2);c.beginPath();c.ellipse(-2,-4.4,3.4,2.2,.2,0,7);c.fill();/* 背の禿げ */
+    c.fillStyle=shade(ZC,.84);
+    c.beginPath();c.arc(4.4,-8,2.2,0,7);c.fill();c.stroke();/* 耳 */
+    c.fillStyle=PANE;c.beginPath();c.moveTo(9,-4);c.lineTo(12.4,-2.6);c.lineTo(9,-1.6);c.closePath();c.fill();
+    zEye(c,6,-4.6,1.4);c.restore();};
+   one(-8,0,0,.9);one(8,-2,1,.84);one(0,2,2,1.05);
+   c.restore();return;}
+  if(Z.id==='fBurst'){/* 破裂胎=はち切れる寸前の球。⚠縫い目が主役(倒すとそこから出てくる) */
+   zLeg4(-5,0,.56);zLeg4(6,2.4,.72);
+   {const bw9=1+Math.sin(t*5+ph)*.04;/* 息づく膨らみ */
+    c.save();c.scale(bw9,1);
+    zFill(c,()=>{c.beginPath();c.ellipse(0,-22,14.4,15,0,0,7);},ZC,-30);
+    c.fillStyle=shade(ZC,1.34);c.beginPath();c.ellipse(4.6,-26,6,7,-.3,0,7);c.fill();/* 張り詰めた光り */
+    c.strokeStyle=shade(ZC,1.6);c.lineWidth=2/s;/* 真ん中の裂け目 */
+    c.beginPath();c.moveTo(-1,-35);c.quadraticCurveTo(2,-24,-.6,-9);c.stroke();
+    c.strokeStyle=INK;c.lineWidth=2.6/s;
+    zStit([[-1,-31],[1.4,-26],[-1.4,-21],[.6,-15]]);
+    c.restore();}
+   zFill(c,()=>{c.beginPath();c.ellipse(1,-39.4,4.4,4,0,0,7);},shade(ZC,.94),-43);/* 埋もれた頭 */
+   zEye(c,3,-40,1.6);
+   c.restore();return;}
+  if(Z.id==='fHowl'){/* 咆える脂肪=のけぞって上へ吠える。⚠開いた顎が主役 */
+   zLeg4(-5,0,.6);zLeg4(6,2.8,.78);
+   c.rotate(.1);
+   zFill(c,()=>{c.beginPath();c.moveTo(-10,-11);
+    c.bezierCurveTo(-13,-26,-7,-36,2,-36);
+    c.bezierCurveTo(11,-36,14,-26,11,-12);
+    c.bezierCurveTo(4,-6,-5,-6,-10,-11);c.closePath();},ZC,-22);
+   zRoll(-13,8.4,4,.74);/* 下腹のたるみ */
+   {const jaw=Math.abs(Math.sin(t*4+ph));
+    zFill(c,()=>{c.beginPath();c.ellipse(1,-40,5.4,4.6,-.3,0,7);},shade(ZC,1.08),-45);/* 上を向いた頭 */
+    c.fillStyle='#3a1a1a';/* 開いた口(上向き) */
+    c.beginPath();c.moveTo(-2,-42);c.quadraticCurveTo(1,-48-jaw*4,5,-42.6);
+    c.quadraticCurveTo(1.6,-40,-2,-42);c.closePath();c.fill();c.stroke();}
+   c.fillStyle=shade(ZC,.66);c.beginPath();c.ellipse(1.4,-36,3,2,0,0,7);c.fill();/* 震える喉袋 */
+   zEye(c,-2.6,-41,1.4);
+   if(FXLV>0){c.strokeStyle=shade(ZC,1.7);c.lineWidth=1.6/s;c.globalAlpha=.4+.4*Math.sin(t*8+ph);
+    for(const r9 of[8,12,16]){c.beginPath();c.arc(1,-48,r9,-2.4,-.7);c.stroke();}
+    c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;}
+   c.restore();return;}
+  if(Z.id==='fGut'){/* 這う腸=低く這う+後ろへ引きずる腸。⚠立たせない(すり抜けは姿勢で言う) */
+   {const cr=Math.sin(t*6+ph);
+    c.strokeStyle=shade(ZC,.62);c.lineWidth=3.4/s;/* 引きずる腸(うねる2本・長さ違い) */
+    c.beginPath();c.moveTo(-6,-4);
+    c.quadraticCurveTo(-14,-1+cr*2,-21,-4+cr*3);c.quadraticCurveTo(-27,-6+cr*2,-31,-2+cr*4);c.stroke();
+    c.beginPath();c.moveTo(-4,-2.6);c.quadraticCurveTo(-12,2+cr*1.5,-18,-1+cr*2);c.stroke();
+    c.strokeStyle=INK;c.lineWidth=2.6/s;}
+   zFill(c,()=>{c.beginPath();c.moveTo(-8,-3);
+    c.bezierCurveTo(-6,-12,6,-14,13,-9);
+    c.quadraticCurveTo(17,-6,15,-2.6);
+    c.quadraticCurveTo(2,3,-8,-3);c.closePath();},ZC,-8);
+   c.fillStyle=shade(ZC,.7);/* 腹の裂け(中身が覗く) */
+   c.beginPath();c.ellipse(1,-4,4.6,2.2,.15,0,7);c.fill();c.stroke();
+   {const cl=Math.sin(t*6+ph+1.4)*2;/* 引き寄せる腕 */
+    c.fillStyle=shade(ZC,.92);
+    c.beginPath();c.moveTo(12,-9);c.quadraticCurveTo(19,-11,22+cl,-6);
+    c.lineTo(19.4+cl,-3.4);c.quadraticCurveTo(14,-6,10.4,-6.4);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(14.4,-12,4.6,4,.2,0,7);},shade(ZC,1.1),-16);/* 前へ突き出た頭 */
+   zEye(c,16.4,-12.6,1.6);
+   c.restore();return;}
+  if(Z.id==='fSew'){/* 縫い合わせ=2体ぶんの胴が横に融合。⚠左右非対称(高さも幅も変える) */
+   zLeg4(-8,0,.58);zLeg4(0,1.8,.72);zLeg4(8,3.4,.66);/* 脚3本(2体ぶん) */
+   zFill(c,()=>{c.beginPath();c.moveTo(-15,-11);
+    c.bezierCurveTo(-18,-28,-11,-38,-4,-37);
+    c.bezierCurveTo(0,-36.6,1,-32,1,-28);
+    c.bezierCurveTo(3,-34,8,-38,12,-36);
+    c.bezierCurveTo(18,-33,19,-22,15,-11);
+    c.bezierCurveTo(5,-5,-8,-5,-15,-11);c.closePath();},ZC,-24);
+   c.fillStyle=shade(ZC,.8);c.beginPath();c.ellipse(-7,-22,5,6.4,.1,0,7);c.fill();/* 左の胴は暗い(別人の肉) */
+   zStit([[0,-31],[1.6,-25],[.4,-19],[2,-13]]);/* 融合線の縫い目 */
+   {const sww=Math.sin(t*7+ph)*5;/* 大振りの薙ぎ腕 */
+    c.fillStyle=shade(ZC,.95);
+    c.beginPath();c.moveTo(13,-31);c.quadraticCurveTo(24,-28-sww,27,-18-sww);
+    c.lineTo(22.6,-15-sww);c.quadraticCurveTo(16,-24,10.4,-28);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(-6,-41,4.6,4.2,0,0,7);},shade(ZC,1.1),-45);/* 主の頭 */
+   zEye(c,-4,-41.6,1.6);
+   zFill(c,()=>{c.beginPath();c.ellipse(9,-39,3.6,3.2,.6,0,7);},shade(ZC,.8),-42);/* 垂れたもう1つの頭 */
+   c.fillStyle=shade(ZC,.5);c.beginPath();c.ellipse(9.6,-38,1.3,.8,.6,0,7);c.fill();/* 閉じた目 */
+   c.restore();return;}
+  if(Z.id==='fRiot'){/* 鎮圧盾の肉塊=防暴盾+目深の兜。⚠鉄は青黒(🔥弱点が色で読める) */
+   const MT='#3d4754';
+   zLeg4(-5,0,.6);zLeg4(6,2.2,.78);
+   zFill(c,()=>{c.beginPath();c.moveTo(-10,-11);
+    c.bezierCurveTo(-13,-28,-6,-38,2,-38);
+    c.bezierCurveTo(10,-38,14,-27,11,-11);
+    c.bezierCurveTo(4,-6,-5,-6,-10,-11);c.closePath();},ZC,-23);
+   c.fillStyle=shade(MT,1.05);/* 肩の装甲板 */
+   c.beginPath();c.moveTo(-11,-33);c.lineTo(1,-36.4);c.lineTo(2,-31);c.lineTo(-9.4,-28);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(MT,.9);/* 前に構える盾 */
+   c.beginPath();c.moveTo(9,-36);c.lineTo(20,-34);c.quadraticCurveTo(22.4,-20,20,-4);c.lineTo(9,-6);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(MT,1.5);c.globalAlpha=.5;c.fillRect(11,-31,7,10);c.globalAlpha=1;/* 覗き窓 */
+   c.fillStyle=shade(MT,1.4);
+   for(const g of[[10.4,-33],[19.4,-31],[10.4,-8.4],[19,-7]]){c.beginPath();c.arc(g[0],g[1],1,0,7);c.fill();}
+   zFill(c,()=>{c.beginPath();c.ellipse(0,-41,4.6,4.2,0,0,7);},shade(ZC,1.05),-45);
+   c.fillStyle=shade(MT,1.15);/* 目深の兜 */
+   c.beginPath();c.moveTo(-5.4,-41);c.quadraticCurveTo(-4,-47.4,0,-47.4);
+   c.quadraticCurveTo(4.6,-47.4,5.6,-41);c.closePath();c.fill();c.stroke();
+   zEye(c,2.4,-40.4,1.5);
+   c.restore();return;}
+  if(Z.id==='fFat'){/* 垂れ肉の大男=たるみ3段の生きる壁。⚠段の幅と高さを1段ずつ変える */
+   zLeg4(-7,0,.56);zLeg4(8,2.6,.74);
+   zRoll(-13,15,6.4,.72);/* 下段(いちばん広い) */
+   zRoll(-22,13,6,.92);
+   zRoll(-31,10.4,5.4,1.08);
+   c.fillStyle=shade(ZC,1.3);c.beginPath();c.ellipse(4,-31,4.6,3.4,-.2,0,7);c.fill();/* 胸の光り */
+   {const ha=Math.sin(t*6+ph)*2;/* ハムのような腕(左右で長さ違い) */
+    c.fillStyle=shade(ZC,.86);
+    c.beginPath();c.moveTo(11,-33);c.quadraticCurveTo(19,-28+ha,17.4,-16+ha);
+    c.quadraticCurveTo(13.4,-14.6,12,-17);c.quadraticCurveTo(11.4,-26,8,-31);c.closePath();c.fill();c.stroke();
+    c.beginPath();c.moveTo(-11,-33);c.quadraticCurveTo(-17,-27-ha,-15.4,-18-ha);
+    c.quadraticCurveTo(-12,-16.6,-10.6,-19);c.quadraticCurveTo(-10.4,-27,-8,-31);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(0,-38.4,4.8,4,0,0,7);},shade(ZC,1.12),-42);/* 肩に沈んだ頭 */
+   zEye(c,2,-39,1.5);
+   c.restore();return;}
+  if(Z.id==='fGlut'){/* 食い溜めの巨躯=腹にもう1つの口。⚠頭の口より腹の口を大きく(そこが主役) */
+   zLeg4(-7,0,.58);zLeg4(8,2.9,.76);
+   zFill(c,()=>{c.beginPath();c.moveTo(-13,-11);
+    c.bezierCurveTo(-17,-30,-9,-42,1,-42);
+    c.bezierCurveTo(11,-42,17,-30,13,-11);
+    c.bezierCurveTo(5,-5,-6,-5,-13,-11);c.closePath();},ZC,-26);
+   {const mo=Math.abs(Math.sin(t*3.4+ph))*2;/* 腹の口(開閉) */
+    c.fillStyle='#3a1a1a';
+    c.beginPath();c.ellipse(0,-20,8.4,4.4+mo,0,0,7);c.fill();c.stroke();}
+   c.fillStyle=PANE;/* 不揃いの歯 */
+   for(const g of[[-6,-23,2.4],[-1.4,-24,3],[3.6,-23,2.2],[-3.6,-17,2],[2,-16.6,2.6]]){
+    c.beginPath();c.moveTo(g[0]-1.2,g[1]);c.lineTo(g[0],g[1]+(g[1]<-20?g[2]:-g[2]));c.lineTo(g[0]+1.2,g[1]);c.closePath();c.fill();}
+   {const gr=Math.sin(t*6+ph)*3;/* 掴みかかる腕 */
+    c.fillStyle=shade(ZC,.9);
+    c.beginPath();c.moveTo(12,-34);c.quadraticCurveTo(22,-31-gr,25,-22-gr);
+    c.lineTo(20.4,-19-gr);c.quadraticCurveTo(14,-28,9,-31);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(2,-45,4,3.6,0,0,7);},shade(ZC,1.1),-49);/* ちんまり頭 */
+   zEye(c,3.6,-45.6,1.4);
+   c.restore();return;}
+  if(Z.id==='fRivet'){/* 鋲鎧の肥大=肉へ直接鋲打ちした鉄板。⚠板は角度も大きさも揃えない */
+   const MT='#46505c';
+   zLeg4(-6,0,.58);zLeg4(7,2.5,.76);
+   zFill(c,()=>{c.beginPath();c.moveTo(-12,-11);
+    c.bezierCurveTo(-15,-29,-8,-40,1,-40);
+    c.bezierCurveTo(10,-40,15,-28,12,-11);
+    c.bezierCurveTo(4,-5,-6,-5,-12,-11);c.closePath();},ZC,-24);
+   const plate=(pts,dk,rv)=>{c.fillStyle=shade(MT,dk);
+    c.beginPath();c.moveTo(pts[0][0],pts[0][1]);
+    for(let k=1;k<pts.length;k++)c.lineTo(pts[k][0],pts[k][1]);
+    c.closePath();c.fill();c.stroke();
+    c.fillStyle=shade(MT,dk*1.5);
+    for(const g of rv){c.beginPath();c.arc(g[0],g[1],1,0,7);c.fill();}};
+   plate([[-12,-34],[2,-38],[4,-27],[-10,-24]],1.05,[[-9,-32],[1,-35],[-8,-26]]);/* 胸板 */
+   plate([[3,-24],[13,-27],[14,-14],[5,-12]],.85,[[11,-24],[6,-15]]);/* 右腹の板 */
+   plate([[-13,-20],[-5,-21],[-6,-12],[-13,-13]],.7,[[-11,-18]]);/* 左腰の板 */
+   c.fillStyle=shade(ZC,.7);c.beginPath();c.ellipse(0,-9,6,2.6,0,0,7);c.fill();/* 板からはみ出す肉 */
+   zFill(c,()=>{c.beginPath();c.ellipse(1,-43.4,4.4,4,0,0,7);},shade(ZC,1.08),-47);
+   c.fillStyle=shade(MT,1.2);c.fillRect(-3.4,-47.4,9,2.2);/* 額の帯金 */
+   zEye(c,3,-43.8,1.5);
+   c.restore();return;}
+  if(Z.id==='fCar'){/* 廃車の殻=車の外板を背負う大亀。⚠窓とドアノブで「車」と言う */
+   const MT='#5a6b74',RS='#8a5a3e';
+   zLeg4(-9,0,.56);zLeg4(-1,1.7,.68);zLeg4(9,3.2,.62);/* 低い脚3本(数も崩す) */
+   zFill(c,()=>{c.beginPath();c.moveTo(-16,-8);
+    c.bezierCurveTo(-14,-16,10,-18,16,-10);
+    c.quadraticCurveTo(18,-6,16,-4);
+    c.quadraticCurveTo(0,1,-16,-8);c.closePath();},ZC,-10);/* 低い肉の胴 */
+   c.fillStyle=shade(MT,.95);/* 背負った車のドア */
+   c.beginPath();c.moveTo(-19,-12);
+   c.quadraticCurveTo(-14,-34,4,-36);
+   c.quadraticCurveTo(17,-36,19,-24);
+   c.quadraticCurveTo(20,-15,15,-12);c.closePath();c.fill();c.stroke();
+   c.fillStyle=shade(MT,1.5);c.globalAlpha=.6;/* 窓 */
+   c.beginPath();c.moveTo(-9,-24);c.quadraticCurveTo(-5,-31,4,-31);c.lineTo(3,-24);c.closePath();c.fill();c.globalAlpha=1;
+   c.fillStyle=RS;/* 錆の食い(大小2か所) */
+   c.beginPath();c.ellipse(10,-20,4,2.6,.3,0,7);c.fill();
+   c.beginPath();c.ellipse(-12,-16,2.4,1.6,-.2,0,7);c.fill();
+   c.fillStyle=shade(MT,1.3);c.fillRect(6,-26,5,1.6);/* ドアノブ */
+   zFill(c,()=>{c.beginPath();c.ellipse(19,-9,4.6,3.8,.1,0,7);},shade(ZC,1.06),-13);/* 殻から出た頭 */
+   zEye(c,21,-9.8,1.6);
+   c.restore();return;}
+  if(Z.id==='fMark'){/* 💀市場の主=肉の山。⚠人型にしない(山にする=別格は輪郭で言う) */
+   {const br=Math.sin(t*2.8+ph)*.5;/* 山ごと息づく */
+    zRoll(-7,19,7.4+br,.66);/* 裾野 */
+    zRoll(-17,15.4,6.6,.86,-2);
+    zRoll(-26,11.4,6,1.02,1);
+    zRoll(-34,7.4,5,1.16,-1);/* 頂 */}
+   c.fillStyle=shade(ZC,1.34);c.beginPath();c.ellipse(4,-27,4.6,3.2,-.3,0,7);c.fill();
+   c.fillStyle=shade(ZC,.6);/* 山肌の垂れ(左右不揃い) */
+   c.beginPath();c.moveTo(-14,-20);c.quadraticCurveTo(-17,-13,-14,-8);c.quadraticCurveTo(-11,-12,-12,-18);c.closePath();c.fill();
+   c.beginPath();c.moveTo(12,-14);c.quadraticCurveTo(15,-9,12,-5);c.quadraticCurveTo(9,-9,10,-13);c.closePath();c.fill();
+   c.fillStyle='#3a1a1a';/* 山に埋もれた口(中心からずらす) */
+   c.beginPath();c.ellipse(4,-19,5.4,3,0,0,7);c.fill();c.stroke();
+   c.fillStyle=PANE;
+   c.beginPath();c.moveTo(1,-21.4);c.lineTo(2.2,-18.6);c.lineTo(3.4,-21.2);c.closePath();c.fill();
+   zEye(c,1.4,-25,2.2);zEye(c,8.4,-24,1.7);
+   if(FXLV>0){c.fillStyle=INK;/* 群がる蠅(軌道ばらばら) */
+    for(const g of[[0,5.3,9],[2.1,4.1,14],[4.4,6.7,6]]){
+     c.beginPath();c.arc(Math.sin(t*g[1]+g[0])*g[2],-38+Math.cos(t*g[1]+g[0])*4,1,0,7);c.fill();}}
+   c.restore();return;}
+  if(Z.id==='f4King'){/* 💀飽食の王=縦に裂けた大顎+あばらの冠。⚠市場の主(山)と系統を変える */
+   const br=Math.sin(t*2.4+ph);
+   zLeg4(-8,0,.5);zLeg4(9,2.2,.62);
+   zFill(c,()=>{c.beginPath();c.moveTo(-16,-8);
+    c.bezierCurveTo(-21,-30,-12,-46,1,-46);
+    c.bezierCurveTo(14,-46,21,-29,16,-8);
+    c.bezierCurveTo(6,-2,-7,-2,-16,-8);c.closePath();},ZC,-26);
+   c.fillStyle='#2c1512';/* 縦に裂けた大顎(体の芯まで開く) */
+   c.beginPath();c.moveTo(0,-42);
+   c.bezierCurveTo(-7,-32,-7,-18,-1,-10+br);
+   c.bezierCurveTo(5,-18,5,-32,0,-42);c.closePath();c.fill();c.stroke();
+   c.fillStyle=PANE;/* 裂け目に並ぶ歯(左右で数を変える) */
+   for(const g of[[-4,-33,1],[-4.6,-26,-1],[-4,-19,1],[3.6,-35,-1],[4.4,-28,1],[3.8,-21,-1],[4.2,-15,1]]){
+    c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[0]+g[2]*3,g[1]+1.4);c.lineTo(g[0],g[1]+2.8);c.closePath();c.fill();}
+   c.fillStyle=shade(ZC,1.4);/* あばらの冠(骨5本・長さ違い) */
+   for(const g of[[-8,-46,-12,-56],[-4,-48,-5,-60],[0,-49,1,-62],[4,-48,6,-59],[8,-45,12,-54]]){
+    c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.lineTo(g[2]+2,g[3]+2);c.lineTo(g[0]+2.4,g[1]);c.closePath();c.fill();c.stroke();}
+   zEye(c,-8,-38,2.4);zEye(c,10,-37,1.9);/* 顎の左右に離れた目 */
    c.restore();return;}
  }
  /* ===== ナイトメアの獣たち ===== */
@@ -19499,8 +19825,8 @@ const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示)
    ⚙️の総額が動かないように、体数に掛けた値の逆数をここへ渡す。⚠省略したら1(今までどおり)。 */
 function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,wing:Z.wing||0,dv:Z.dv||0,shl:Z.shl||0,/* ⚠⚠(207)**表の印はここを通らないと一度も効かない**=🪶羽/🐟潜る/🐢甲羅ごもりの3つが写し忘れだった。
-    ⭐**ZOMBIES に新しい印を足したら、必ずここにも1つ足すこと**(検査 checkZFlag が見張る)。 */
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,wing:Z.wing||0,fls:Z.fls||0,dv:Z.dv||0,shl:Z.shl||0,/* ⚠⚠(207)**表の印はここを通らないと一度も効かない**=🪶羽/🐟潜る/🐢甲羅ごもりの3つが写し忘れだった。
+    ⭐**ZOMBIES に新しい印を足したら、必ずここにも1つ足すこと**(検査 checkZFlag が見張る)。🥩fls=(229f) */
 fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 /* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
 /* ⚠`stnT`=気絶の**見せ方**だけのタイマー(★が頭上を回る)。止める仕組みは `frzT` の方。
@@ -19584,12 +19910,16 @@ function buildTide(wave){
  const on2=G.pve&&!G.coop&&stageZs()===2;/* いま2面か(難易度は見ない) */
  const st2=!nmOn&&on2;
  const nm2=nmOn&&on2;/* ④深海のナイトメア */
+ /* 🥩(229f)面④=肉の一族。⚠**NM専用の顔ぶれはまだ無い**=③が(224)より前にそうだったのと同じで、
+    ④は難易度を問わず同じプール(🌑の拠点は地図側で締めてある)。NMの顔ぶれを作ったら nm4 の枝を足すこと */
+ const on4=G.pve&&!G.coop&&stageZs()===4;
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
   /* ⛔⭐(199)**`off` の付いた個体はどの波にも出さない**(2026-08-07ユーザー指示)=
      ①廃線から**ゾンビでない物**(レイス・スライム状体)を、①のナイトメアから**空を飛ぶ物**を外した。
      ⚠**消していない**(絵も数値も残してある)=面③以降で使う時にこの印を外すだけ。 */
   if(Z.off)return false;
   if(Z.boss||Z.mw>wave)return false;
+  if(on4)return Z.st===4&&!Z.nm;/* 🥩(229f)面④=難易度を問わず肉の一族(NM顔ぶれはまだ) */
   if(nm3)return !!Z.nm&&Z.st===3;/* 🌑×③(224) */
   if(on3)return Z.st===3&&!Z.nm;/* 🪶(194) */
   if(nm2)return !!Z.nm&&Z.st===2;
@@ -19624,7 +19954,8 @@ function buildTide(wave){
   const fin=!!(G.pve&&wave>=20);
   /* ⚠**プール4つぶん**を同じ順で見ること(④→③→②→①)。④を先に見ないと獣のボスが出る */
   /* 🪶(194)面③は難易度を問わず空のボス=**④③②①より先に見る** */
-  const bi=nm3?((fin&&FINNM3_ZI>=0)?FINNM3_ZI:NM3_BOSS_ZI)/* 🌑×③(224)=on3より先に見る */
+  const bi=on4?((fin&&FIN4_ZI>=0)?FIN4_ZI:ST4_BOSS_ZI)/* 🥩(229f)面④=難易度を問わず(NMボスはまだ) */
+   :nm3?((fin&&FINNM3_ZI>=0)?FINNM3_ZI:NM3_BOSS_ZI)/* 🌑×③(224)=on3より先に見る */
    :on3?((fin&&FIN3_ZI>=0)?FIN3_ZI:ST3_BOSS_ZI)
    :nm2?((fin&&FINNM2_ZI>=0)?FINNM2_ZI:NM2_BOSS_ZI)
    :nmOn?((fin&&FINNM_ZI>=0)?FINNM_ZI:NM_BOSS_ZI)
@@ -19666,6 +19997,8 @@ function buildTide(wave){
      ⭐実際に何が出るかは湧く瞬間に `bnsPickZi` が進み具合で決める。 */
   T.bnsZp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
    if(Z.boss)return false;
+   /* 🥩(229f)⚠④の開拓便に st:4 の枝は足していない=③と同じで、道中は①のゾンビを使う
+      (③がそうしてあるのに④だけ変えると、面ごとに道中の顔ぶれの規則が割れる)。変えるなら③と一緒に */
    if(nm2)return !!Z.nm&&Z.st===2;
    if(nmOn)return !!Z.nm&&!Z.st;
    if(st2)return Z.st===2&&!Z.nm;
@@ -22647,7 +22980,7 @@ function newGame(specs,myIdx){
 const RPT_X=TUNE("RPT_X",.72,.2,4,.05);/* 🧬配布の全体倍率。⚠触ったら検査 checkGain の物差しで確かめ直すこと */
 /* 🧬⭐(204h)**面を初めて落とした時の上乗せ**(面ごと)。⚠**実測で決める**=手で書き換えない。
    ⚠足りない面は最後の値を使う(面③〜⑤を足す時はここに1つずつ足す)。 */
-const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10),TUNE("STG_GEN3",560,0,8000,10)];
+const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10),TUNE("STG_GEN3",560,0,8000,10),TUNE("STG_GEN4",760,0,9000,10)];/* 🥩(229f)④ */
 function metaGainOf(d9,stg,wave,kills){
  /* ⚠末尾=🚌ボーナス面。⭐(204h)**🚌を .90→1.05 へ上げた**(ユーザー「拠点開拓は上げてもいい」)。
     ⚠**新兵(1.37)は上げない**=すでに一番実入りが良く、そこを上げると
@@ -22657,7 +22990,9 @@ function metaGainOf(d9,stg,wave,kills){
  /* ⭐**面ごとの倍率**。⚠⚠**数字は必ず実測から**(検査 checkGain が「その面の実入り ÷ その段の棚」で見張る)。
     ⚠🚌拠点開拓には掛けない(あちらは轢いた数そのままで配る)。
     ⚠**面が増えたら行を1つ足す**=足さないと、新しい面の実入りが面①と同じ額になる。 */
- const STG_X=[null,[4.8,4.25,3.8,3.35,2.95,2.65],[9.6,8.5,7.6,6.7,5.9,5.3]];
+ /* 🥩(229f)④の行=段3の棚(塔5+兵科3)は値段が指数で跳ねるので、③の約3.4倍が釣り合いの目安。
+    ⚠数字は checkGain の出力(面ごとの釣り合い x0.75〜1.55)を見て合わせた=手で動かす時も必ず実測から */
+ const STG_X=[null,[4.8,4.25,3.8,3.35,2.95,2.65],[9.6,8.5,7.6,6.7,5.9,5.3],[32,28.5,25.5,22.5,20,17.9]];
  const stgX=(d9!==BNS_D&&STG_X[stg])?(STG_X[stg][d9]||1):1;
  return Math.max(1,Math.round((wave*25+kills*1.4)*mult*stgX));
 }
@@ -36774,13 +37109,13 @@ const MAPND=[
  {stg:2,d:3,n:'送電線の谷',    s:'鉄塔の影が落ちる谷',            x:.54,y:.40},
  {stg:2,d:4,n:'崩れた鉄塔',    s:'悪夢の物量が空から降ってくる',  x:.71,y:.31},
  {stg:2,d:5,n:'雷鳴の頂',      s:'🌑丘の空をまるごと覆う影',      x:.88,y:.17,nm:1},
- /* 🥩(229)**面④=飽食の市街**。⚠⚠**全ピン lock3(まだ作っていない)**=敵16体(協議済み)が入るまで
-    開けない。⚠**ピンの名前は仮**(ユーザーに見せて直す)。⭐外す時は STAGES[3].wip と一緒に(checkStage4)。 */
- {stg:3,d:0,n:'外環の検問所',  s:'市街の入口。ぐるりと回り込む',  x:.09,y:.62,lock3:1},
- {stg:3,d:2,n:'飽食の市街',    s:'肉に呑まれた中心街を道が囲む',  x:.25,y:.47,lock3:1},
- {stg:3,d:6,n:'中央大通り',    s:'🚌開拓便=市街を突っ切る',       x:.40,y:.56,bns:1,lock3:1},
- {stg:3,d:3,n:'崩れた商店街',  s:'肉の詰まった路地',              x:.55,y:.40,lock3:1},
- {stg:3,d:4,n:'腐肉の団地',    s:'悪夢の物量が窓から溢れる',      x:.71,y:.31,lock3:1},
+ /* 🥩(229f)**面④=飽食の市街が開通**(敵14体入り)。⚠**🌑のピンだけ lock3**=④のNM専用の
+    顔ぶれがまだ無い(③が(224)までそうだったのと同じ)。⚠**ピンの名前は仮**(ユーザーに見せて直す)。 */
+ {stg:3,d:0,n:'外環の検問所',  s:'市街の入口。ぐるりと回り込む',  x:.09,y:.62},
+ {stg:3,d:2,n:'飽食の市街',    s:'肉に呑まれた中心街を道が囲む',  x:.25,y:.47},
+ {stg:3,d:6,n:'中央大通り',    s:'🚌開拓便=市街を突っ切る',       x:.40,y:.56,bns:1},
+ {stg:3,d:3,n:'崩れた商店街',  s:'肉の詰まった路地',              x:.55,y:.40},
+ {stg:3,d:4,n:'腐肉の団地',    s:'悪夢の物量が窓から溢れる',      x:.71,y:.31},
  {stg:3,d:5,n:'飽食の玉座',    s:'🌑市街を喰らい尽くす王が待つ',  x:.88,y:.20,nm:1,lock3:1}
 ];
 let MSEL=-1,MBUS=null;

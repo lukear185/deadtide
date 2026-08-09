@@ -4487,22 +4487,22 @@ function checkMaterial(){
  /* 🪶(205)**面③=羽**を足した。⚠**③はわざと羽を持たない個体も混ぜてある**(速い個体・すり抜け個体)が、
     実測では総HPの55〜88%が羽=①②と同じ4割の物差しで足りる。 */
  const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘','④飽食の市街'],IC3=['①','②','③','④'],LO3=[40,40,40,40];
- /* 🥩(229)wip の面(敵がまだ)は飛ばす=④の主役は🥩肉。敵を入れて wip を外したらここに肉の判定を足すこと */
+ /* 🥩(229f)④の主役は🥩肉(fls)。⚠wip の面(敵がまだ)は飛ばす(いまは全面が開通している) */
  for(let stg=0;stg<STAGES.length;stg++)for(const d of [2,4,5]){
   if(STAGES[stg].wip)continue;
   META.stg=stg;setDiff=d;startSolo();frames(6,.016);
   if(STAGE!==stg){console.log('FAIL: ステージ'+(stg+1)+'が読み込まれていない');process.exit(1);}
-  let hp=0,ahp=0,shp=0,whp=0;const wN=curW();
+  let hp=0,ahp=0,shp=0,whp=0,fhp=0;const wN=curW();
   for(let w=1;w<=wN;w++)for(let r=0;r<3;r++){buildTide(w);
    for(const q of G.tide.pool){const m=(q.z.mhp||0)/3;hp+=m;
-    if(q.z.armor)ahp+=m;if(q.z.scl)shp+=m;if(q.z.wing)whp+=m;}}
+    if(q.z.armor)ahp+=m;if(q.z.scl)shp+=m;if(q.z.wing)whp+=m;if(q.z.fls)fhp+=m;}}
   backTitle();
-  const a=ahp/hp*100,s=shp/hp*100,w9=whp/hp*100;
-  out.push(IC3[stg]+D5[d].n+' 🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'%');
-  const main=stg===0?a:stg===1?s:w9;
+  const a=ahp/hp*100,s=shp/hp*100,w9=whp/hp*100,f9=fhp/hp*100;
+  out.push(IC3[stg]+D5[d].n+' 🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'% 🥩'+f9.toFixed(0)+'%');
+  const main=[a,s,w9,f9][stg];
   if(main<LO3[stg]){console.log('FAIL: '+NM3[stg]+'の'+D5[d].n+'で、主役の材質が総HPの'
-   +main.toFixed(0)+'%しかない(🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'%)');
-   console.log('      ⚠'+['①は🛡装甲=🔥火炎で解ける面','②は🐟鱗=⚡電撃で解ける面','③は🪶羽=🔫実弾で解ける面'][stg]
+   +main.toFixed(0)+'%しかない(🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'% 🥩'+f9.toFixed(0)+'%)');
+   console.log('      ⚠'+['①は🛡装甲=🔥火炎で解ける面','②は🐟鱗=⚡電撃で解ける面','③は🪶羽=🔫実弾で解ける面','④は🥩肉=🗡貫通で解ける面'][stg]
     +'という設計が崩れている');
    process.exit(1);}
  }
@@ -4642,16 +4642,23 @@ function checkStage4(){
   const z=mkZ(zSpec(0,1,1));z.d=PLEN-40;z.siege=0;me.zombies.push(z);
   const c0=me.core;frames(90,.05);
   if(!(me.core<c0))F('道の終端の敵が拠点に届かない');}
- /* ⑤⑥ wip(作りかけ)と地図のピンと敵の対応 */
+ /* ⑤⑥ wip(作りかけ)と地図のピンと敵の対応。
+    🥩(229f)開通後=**🌑のピンだけは「④のNM専用の顔ぶれ」が入るまで lock3**(③の(224)前と同じ)。 */
  const pins=MAPND.filter(n=>n.stg===si);
  if(pins.length!==6)F('面④の地図のピンが6つでない '+pins.length);
  const hasZ=ZOMBIES.some(z=>z.st===4&&!z.nm&&!z.boss);
+ const hasNm=ZOMBIES.some(z=>!!z.nm&&z.st===4);
  if(S.wip){
   if(pins.some(n=>!n.lock3))F('作りかけ(wip)なのに開いているピンがある');
   if(hasZ)F('敵(st:4)が入ったのに wip が付いたまま(棚と実入りの検査が飛ばされ続ける)');
  }else{
-  if(pins.some(n=>n.lock3))F('wip を外したのに地図のピンが lock3 のまま');
-  if(!hasZ)F('wip を外したのに敵(st:4)が1体も居ない');
+  if(!hasZ)F('開通したのに敵(st:4)が1体も居ない');
+  for(const nd of pins){
+   if(nd.nm){
+    if(!hasNm&&!nd.lock3)F('NMの顔ぶれが無いのに🌑のピンが開いている(棚が段4まで進んでしまう)');
+    if(hasNm&&nd.lock3)F('NMの顔ぶれが入ったのに🌑のピンが閉じたまま');
+   }else if(nd.lock3)F('開通したのにピンが閉じている '+nd.n);}
+  if(ST4_BOSS_ZI<0||FIN4_ZI<0)F('④のボスの索引が引けていない '+ST4_BOSS_ZI+'/'+FIN4_ZI);
  }
  backTitle();META.sc=kp;
  console.log('🥩面4(飽食の市街): 渦巻き=外周を一周して中心の拠点へ(道'+Math.round(PLEN)
@@ -4665,7 +4672,7 @@ function checkStage4(){
    ⭐**見るのは1つ**=表でその印を持っている種類を1体拾い、実体を作った後も印が残っているか。 */
 function checkZFlag(){
  /* ⚠**盤面で z.○○ として読んでいる印だけ**を並べる(表にしか無い物=mw/w/st/nm は入れない) */
- const need=['armor','scl','wing','dv','shl','noblock','aura','split','aoe','fin','boss'];
+ const need=['armor','scl','wing','fls','dv','shl','noblock','aura','split','aoe','fin','boss'];/* 🥩fls=(229f) */
  const miss=[];
  for(const k of need){
   const zi=ZOMBIES.findIndex(z=>z[k]);
