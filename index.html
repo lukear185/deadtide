@@ -15991,16 +15991,31 @@ HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
  c.save();c.scale(.86,.86);/* ⚠騎乗は背が高い=一回り縮めて他の英雄と並べても浮かないようにする */
  const sw=walk*3.4;
  /* 馬の脚(⚠4本を等間隔に並べない=前後で振りの位相を変える) */
+ /* 🐴⭐⭐⭐(227j)**馬の脚を「直線の筒」から作り直した**(ウォーカーと同じ掟)。
+    🐞**前の版**=上も下もほぼ同じ太さの4点多角形で、**竹馬に乗った箱**に見えていた。
+    ⭐**馬の脚は「上が太く、下が極端に細い」のが命**=腿を9.5から4.4まで一気に絞り、
+      **飛節(かかと)で1回折る**と、それだけで馬の脚に読める。
+    ⭐**縁は片側だけ膨らませる**(道具=hb)=直線が消えて肉が付く。⚠両側を膨らませると芋虫。
+    ⚠蹄は足首より**横に広く**(地面に立って見える)。⚠奥の脚は暗くして手前と分ける。 */
+ const hb=(x0,y0,x1,y1,w0,w1,bg,col)=>{
+  const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+  const mx=(x0+x1)/2,my=(y0+y1)/2;
+  c.fillStyle=col;c.beginPath();
+  c.moveTo(x0+nx*w0,y0+ny*w0);
+  c.quadraticCurveTo(mx+nx*(w0*.6+w1*.4+bg),my+ny*(w0*.6+w1*.4+bg),x1+nx*w1,y1+ny*w1);
+  c.lineTo(x1-nx*w1,y1-ny*w1);
+  c.quadraticCurveTo(mx-nx*(w0*.5+w1*.5),my-ny*(w0*.5+w1*.5),x0-nx*w0,y0-ny*w0);
+  c.closePath();c.fill();c.stroke();};
  const hleg=(lx,pz,col)=>{
   const s1=Math.sin(t*7+ph+pz),lift=Math.max(0,Math.sin(t*7+ph+pz+1.2))*2.6;
-  c.fillStyle=col;
-  c.beginPath();c.moveTo(lx-4.4,-21);c.lineTo(lx+4.4,-21);
-  c.lineTo(lx+3+s1*2.4,-11);c.lineTo(lx-3+s1*2.4,-11);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(lx-3+s1*2.4,-11.4);c.lineTo(lx+3+s1*2.4,-11.4);
-  c.lineTo(lx+2.6+s1*4.4,-3.4-lift);c.lineTo(lx-2.4+s1*4.4,-3.4-lift);c.closePath();c.fill();c.stroke();
-  c.fillStyle=HF;/* 蹄(⚠横に広く=地面に立って見える) */
-  c.beginPath();c.moveTo(lx-3.4+s1*4.4,-4-lift);c.lineTo(lx+3.6+s1*4.4,-4-lift);
-  c.lineTo(lx+4.4+s1*4.4,-.2-lift);c.lineTo(lx-4.2+s1*4.4,-.2-lift);c.closePath();c.fill();c.stroke();};
+  const hk=lx+s1*2.4,an=lx+s1*4.4;/* 飛節・足首(⚠一直線に置かない) */
+  hb(lx,-21.5,hk,-11.2,4.9,2.6,1.7,col);                       /* 腿(⭐太→細へ一気に絞る) */
+  hb(hk,-11.6,an,-3.6-lift,2.6,1.7,.9,shade(col,.92));          /* 管(細い) */
+  c.fillStyle=HF;/* 蹄(⚠足首より横に広く) */
+  c.beginPath();c.moveTo(an-3.2,-4.2-lift);c.lineTo(an+3.4,-4.2-lift);
+  c.quadraticCurveTo(an+4.6,-2.2-lift,an+4.3,-.2-lift);
+  c.lineTo(an-4.1,-.2-lift);
+  c.quadraticCurveTo(an-4.2,-2.4-lift,an-3.2,-4.2-lift);c.closePath();c.fill();c.stroke();};
  hleg(-26,3.14,shade(HS,.68));hleg(24,1.2,shade(HS,.68));/* 奥の脚 */
  /* 尾(⚠先を細らせる。太いまま引くと矢印に見える) */
  c.fillStyle=MN;
