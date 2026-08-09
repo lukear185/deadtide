@@ -23424,6 +23424,41 @@ function bgHorizon(c,tod,PAL){
      c.beginPath();c.moveTo(xp,y1);c.quadraticCurveTo((xp+x)/2,Math.max(y1,y2)+16,x,y2);c.stroke();}
     c.globalAlpha=1;}}
   return;}
+ if(STAGE===3){/* 🥩(229g)④飽食の市街=**密集した廃ビル群**。①②の「まばらな遠いビル」との差は
+    **密度と高さ**=壁のように途切れない2層+欠けた頭+傾いて寄りかかる1本+屋上の水槽。
+    ⚠等間隔・同じ高さにしない(ハリボテ4原因)。⚠窓は「消えた窓」をまばらに(灯すと人が居る話になる) */
+  /* 奥の層(薄い)=途切れないビルの壁 */
+  c.fillStyle=mix(PAL.bld,'#1a1a20',.22+tod*.3);
+  for(const b of [[-200,42,150],[-60,66,110],[40,50,80],[150,74,120],[260,58,90],[380,70,140],[510,48,80],
+   [620,80,130],[790,60,100],[930,72,120],[1080,54,90],[1200,78,140],[1370,62,100],[1500,70,130],[1660,52,160]])
+   c.fillRect(b[0],110-b[1],b[2],b[1]);
+  /* 手前の層(濃い)=頭の欠けたビル。cut=てっぺんの崩れの深さ */
+  const NEAR=mix(PAL.bld,'#12151f',.4+tod*.45);
+  const bld=(x,w9,h9,cut)=>{const by=112,ty=by-h9;
+   c.fillStyle=NEAR;
+   c.beginPath();c.moveTo(x,by);c.lineTo(x,ty);c.lineTo(x+w9*.42,ty+cut);
+   c.lineTo(x+w9,ty+cut*.4);c.lineTo(x+w9,by);c.closePath();c.fill();
+   /* 消えた窓(場所は決め打ちの式から=乱数を使わない。⚠まばらに・列にしない) */
+   c.fillStyle='rgba(216,209,188,.13)';
+   const n9=Math.max(2,(h9/16)|0);
+   for(let k=0;k<n9;k++){const wx=x+6+((x*7+k*29)%Math.max(8,(w9-14)|0)),wy=ty+cut+9+k*13+((k*11+x)%6);
+    if(wy<by-8)c.fillRect(wx,wy,3,4);}};
+  bld(-150,120,64,10);bld(20,90,88,16);bld(150,70,52,8);bld(270,120,96,22);bld(440,80,70,6);
+  bld(570,110,60,12);bld(880,70,56,9);bld(990,130,84,18);bld(1170,80,66,7);
+  bld(1290,110,92,24);bld(1450,90,58,11);bld(1580,150,78,15);
+  /* 傾いて寄りかかるビル1本(「崩れた市街」の顔) */
+  c.fillStyle=NEAR;
+  c.save();c.translate(760,112);c.rotate(-.09);c.fillRect(-26,-92,50,92);c.restore();
+  /* 屋上の給水タンク(脚つき)とアンテナ(数を絞って場所を散らす) */
+  c.strokeStyle=mix(PAL.bld,'#12151f',.55);c.lineWidth=2;
+  c.fillStyle=NEAR;
+  for(const a of [[70,86],[1030,82]]){const bx=a[0],ty=112-a[1];
+   c.beginPath();c.moveTo(bx-5,ty);c.lineTo(bx-5,ty-6);c.moveTo(bx+5,ty);c.lineTo(bx+5,ty-6);c.stroke();
+   c.fillRect(bx-8,ty-15,16,9);}
+  for(const a of [[320,90],[1330,86],[1620,63]]){
+   c.beginPath();c.moveTo(a[0],112-a[1]);c.lineTo(a[0],112-a[1]-13);c.stroke();
+   c.beginPath();c.moveTo(a[0]-4,112-a[1]-9);c.lineTo(a[0]+4,112-a[1]-9);c.stroke();}
+  return;}
  c.fillStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
  [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
 }
