@@ -6676,6 +6676,19 @@ function msnClaim(i){
  try{toast('🎯 受け取った! 💎'+d.gem);}catch(e){}
  return true;
 }
+/* 🎯⭐(228l)**一括受け取り**(2026-08-09ユーザー指示「任務は一括受け取りできるようにボタンつけて」)。
+   ⚠報せと音は**1回にまとめる**(1件ずつ鳴らすと3連トーストになる)。⚠配る物は msnClaim と同じ💎だけ */
+function msnClaimAll(){
+ const M=msnDay();let tot=0,n=0;
+ for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];
+  if(!d||M.got[i]||M.p[i]<d.g)continue;
+  M.got[i]=1;META.gem=(META.gem||0)+d.gem;tot+=d.gem;n++;}
+ if(!n)return false;
+ saveMeta();
+ try{if(sfx.win)sfx.win();}catch(e){}
+ try{toast('🎯 まとめて受け取った! 💎'+tot+'('+n+'件)');}catch(e){}
+ return true;
+}
 /* 受け取れる件数(ホームの赤い点に使う=開かなくても分かる) */
 function msnReady(){try{const M=msnDay();let n=0;
  for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];if(d&&!M.got[i]&&M.p[i]>=d.g)n++;}
@@ -6694,31 +6707,21 @@ function msnReady(){try{const M=msnDay();let n=0;
    🔢⭐⭐**版の付け方はユーザー指定**(2026-08-09)=**0.01から始める**。
      **細かい調整=0.001を足す**(0.011 → 0.012) / **大きい調整=0.01を足す**(0.02 → 0.03)。
      ⚠**桁を勝手に丸めない**(0.010 と 0.01 を混ぜない)=前の版と並べて読めなくなる。 */
+/* ⚠⚠⭐**書くのはプレイヤーに関わる変更だけ**(2026-08-09ユーザー指示「アップデート情報は
+   プレイヤーに必要そうなやつだけでいい。熱くなくなるとか、キャラのデザイン戻したとかは要らない」)=
+   遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
+   ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
- {id:'m8',d:'2026-08-09',t:'アップデート',ver:'0.016',
+ {id:'m9',d:'2026-08-09',t:'アップデート',ver:'0.017',
   b:'押すと変わった所が全部見られます',
-  list:['🔥ボスを続けて倒した時に熱くなりにくくした=2体目からは爆発・土煙・画面の帯を減らす(1体目の派手さと報酬はそのまま)',
-   '💀同時に沈んでいくボスは3体まで(4体目からは普通に倒れる)']},
+  list:['✉️メールが「🆕新着 / 📨既読」のタブに分かれた(新着=未読か受け取り残し)',
+   '🎯任務に「まとめて受け取る」ボタンが付いた(達成が2件以上ある時)']},
  {id:'m7',d:'2026-08-09',t:'アップデート',ver:'0.015',
   b:'押すと変わった所が全部見られます',
-  list:['🔥ガトリング系が熱くなりにくくなった=描く量を大きく減らした(威力・音・薬莢はそのまま。閃光と弾の線だけ半分に)',
-   '🚩3つ目の土地で、倒すと増える敵の子が別の道へワープして出てくる不具合を修正(親と同じ道に出る)']},
+  list:['🚩3つ目の土地で、倒すと増える敵の子が別の道へワープして出てくる不具合を修正(親と同じ道に出る)']},
  {id:'m6',d:'2026-08-09',t:'アップデート',ver:'0.014',
   b:'押すと変わった所が全部見られます',
   list:['🤝協力の「ゾンビの強さ」から兵長を外した(ソロと同じ並び=新兵・古参・鬼軍曹・悪夢)']},
- {id:'m5',d:'2026-08-09',t:'アップデート',ver:'0.013',
-  b:'押すと変わった所が全部見られます',
-  list:['🧟キャラの大きさと見た目を以前の状態に戻した(ver 0.011〜0.012の絵の変更は取りやめ)']},
- {id:'m4',d:'2026-08-09',t:'アップデート',ver:'0.012',
-  b:'押すと変わった所が全部見られます',
-  list:['🏃ランナーを作り直した=全力疾走の体に(深い前傾・拳・かかとの蹴り上げ)',
-   '🎈ブローターを作り直した=両腕が付いて、よたよた歩きに(顔も明るく見やすく)',
-   '😱スクリーマーを作り直した=のけ反って両手を空に突き上げる体に',
-   '🐕感染ハウンドの脚を獣の脚にした(かかとで折れて足先が広い)',
-   '🌑ナイトメアの「爛れた走者」も新しい体に変わっています']},
- {id:'m3',d:'2026-08-09',t:'アップデート',ver:'0.011',
-  b:'押すと変わった所が全部見られます',
-  list:['🐴暗黒の騎士の見た目を調整=馬を暗く・騎士の甲冑を明るくして、乗っている姿がはっきり見えるように']},
  {id:'m2',d:'2026-08-09',t:'アップデート',ver:'0.01',
   b:'押すと変わった所が全部見られます',gift:{gem:10},
   list:['🏠ホームを作り直した=下に「ホーム/英雄/編成/研究/図鑑/召集」が並び、右端に大きな出撃',
@@ -21814,7 +21817,7 @@ function campStep(C,dt,wave){
    if(!tw.dr)tw.dr=[];
    while(tw.dr.length<n9)tw.dr.push({x:sx+rnd(-24,24),y:sy+rnd(-24,24),cd:rnd(0,T.rate),am:MAG,rl:0});
    if(tw.dr.length>n9)tw.dr.length=n9;
-   const TLd=twlv(twKey(T));
+   const TLd=(tw.rl!=null)?tw.rl:twlv(twKey(T));/* 🧪(228k)検証場=研究MAX相当 */
    const dmd=T.dmg*m*aB*(1+lineAcc(TW_DMG_STEP,TLd));
    const prc9=T.pierce?1:0,tt9=twTier(tw),trC9=TR_COL[tt9],hitC9=HIT_COL[tt9];
    const taken=[];
@@ -21871,7 +21874,7 @@ function campStep(C,dt,wave){
    tw.ct=tg||null;
    if(!tg){tw.hz=null;tw.hs=0;tw.chg=0;tw.fireT=0;continue;}
    tw.fireT=.12;
-   const TLc=twlv(twKey(T)),TRTc=twTrait(T);
+   const TLc=(tw.rl!=null)?tw.rl:twlv(twKey(T)),TRTc=twTrait(T);/* 🧪(228k)検証場=研究MAX相当 */
    const dps=(T.dmg/T.rate)*m*aB*(1+lineAcc(TW_DMG_STEP,TLc));
    /* ⚠**ダメージ数字は毎フレーム出さない**(継続攻撃は1フレーム1回当たるので、そのままだと
         数字と血が画面を埋めて「重い」が直らない)。0.35秒ぶんためて1つにまとめて出す。 */
@@ -21914,7 +21917,9 @@ function campStep(C,dt,wave){
     ⚠型ごとのまとめ強化だった頃と同じ場所で効かせている=当たり判定や順番は変えていない */
  /* ⚠ローカル名を TT にしてはいけない=**グローバルの TT(ゲーム時刻)を隠してしまう**。
     実際に droneOff(…,TT) が undefined を受けて弾の座標が NaN になり、ドローンの弾が消えていた(2026-07-26) */
- const TL=twlv(twKey(T)),TRT=twTrait(T);
+ /* 🧪(228k)**検証場の🔥熱さで建てた塔は研究の段を tw.rl で持つ**(下の2か所も同じ)=
+    通常プレイと同じ「研究MAX相当」の強さで撃たせるため。普通の試合では rl は無い=今までどおり */
+ const TL=(tw.rl!=null)?tw.rl:twlv(twKey(T)),TRT=twTrait(T);
   /* ⭐**特攻**(vsB)=💀ボス級と👁オーラ持ちにだけ倍率が乗る(2026-07-30ユーザー指示
      「スナイパータレットはオーラ纏ってる敵とボスに特攻にする」)。
      ⚠狙いは1体なので、ここで tg を見て掛けてしまってよい(貫通しても線上は同じ倍率になる)。 */
@@ -30241,14 +30246,25 @@ function tstHero(ui){
    ⚠**sp=0**=歩かないので、置いた所に居続ける。 */
 function tstDummy(){
  if(!G||!G.tst)return;const me=G.players[0];if(!me)return;
+ const mk9=d9=>{const z=mkZ(zSpec(0,1,1),d9);
+  z.dummy=1;z.n='🎯ダミー';
+  z.hp=z.mhp=1e12;z.atk=0;z.dmg=0;z.sp=0;z.bt=0;
+  z.armor=0;z.scl=0;z.noblock=0;z.aoe=0;
+  me.zombies.push(z);};
+ /* 🔥⭐(228k)**熱さのタブでは6体を建設マスの6列に合わせて置く**(2026-08-09ユーザー指示
+    「熱さ検査の時はダミーが全タレットの射程に入るようにしてほしい」)=
+    どの枠の塔からも真下(±152)にダミーが居る=**射程が一番短い塔でも必ず届く**。
+    ⚠押し直すと置き直し(12体に増やさない)。⚠他のタブでは今までどおり道の真ん中に1体。 */
+ if(TSTBAR==='w'){
+  me.zombies=me.zombies.filter(z9=>!z9.dummy);
+  const L=TST_LONG,R=TST_CX+L/2,x0=TST_CX-L/2+120,dx=(L-240)/5;
+  for(let i=0;i<6;i++)mk9(R-(x0+i*dx));
+  toast('🎯 ダミー6体=どの枠の塔にも射程内(もう一度押すと置き直し)');
+  return;}
  /* ⚠**道の真ん中に出す**(2026-08-03(81)ユーザー「ダミーは道の真ん中にだして」)=
     湧き口(d=0)の側に出すと**画面の端**になり、味方が歩いて行くまで待たされるうえ
     絵が切れて見比べにならない。⭐真ん中なら左右どちらからでも同じ条件で見られる。 */
- const z=mkZ(zSpec(0,1,1),PLEN*.5);
- z.dummy=1;z.n='🎯ダミー';
- z.hp=z.mhp=1e12;z.atk=0;z.dmg=0;z.sp=0;z.bt=0;
- z.armor=0;z.scl=0;z.noblock=0;z.aoe=0;
- me.zombies.push(z);
+ mk9(PLEN*.5);
  toast('🎯 ダミーを出した(倒れない・殴ってこない)');
 }
 /* 🔥(178)2段目=塔の一覧。⚠**素20種+進化19種を1列に並べない**=右端に届かなくなる
@@ -30286,6 +30302,10 @@ function tstFill(ti){
   me.towers[si]={ti,us:newUs(),cd:rnd(.1,.4),ang:-.6,jamT:0,fireT:0,spent:0,own:me.gi||0};
   const tw=me.towers[si];
   twStats(ti).forEach(st=>{tw.us[st]=usCap(ti,st);});
+  /* 🧪⭐(228k)**研究所の恒久強化もMAX相当で乗せる**(2026-08-09ユーザー指摘「進化版を出した時
+     通常の時の強化が反映されてなくない?」)。⚠検証場はDEVの別枠セーブなので研究の段が0のままで、
+     **試合中の強化だけMAX**という中途半端な強さだった。⚠rl は熱さ検査で建てた塔だけが持つ。 */
+  tw.rl=LINE_MAX;
   n++;}
  TSTFILL=ti;SEL=-1;
  tstTwBar();
@@ -33735,7 +33755,11 @@ function renderMsn(){
  if(n)n.textContent=M.got.filter(x=>x).length+' / '+MSN_N+' 受取';
  const h=$('msn-hint');
  if(h)h.innerHTML='毎日 0時に3件とも入れ替わる(残り '+bnsNextS()+')。⚠受け取り忘れは繰り越さない';
- box.innerHTML=M.id.map((zi,i)=>{
+ /* 🎯⭐(228l)**達成が2件以上ある時だけ「まとめて受け取る」を一番上に出す**
+    (1件だけなら札のボタンで足りる=同じ事をするボタンを2つ並べない) */
+ const rdy9=msnReady();
+ box.innerHTML=(rdy9>=2?('<button class="btn gold" id="bt-msn-all" style="margin-bottom:8px;width:100%;min-height:44px">💎 まとめて受け取る('+rdy9+'件)</button>'):'')
+  +M.id.map((zi,i)=>{
   const d=MSN_P[zi];if(!d)return '';
   const p=Math.min(M.p[i],d.g),done=p>=d.g,got=!!M.got[i];
   return '<div class="lc'+(done&&!got?' can':'')+'" style="margin-bottom:6px">'
@@ -33749,19 +33773,33 @@ function renderMsn(){
    +'</div>';}).join('');
  box.querySelectorAll('[data-msn]').forEach(b=>{b.onclick=()=>{
   if(msnClaim(+b.dataset.msn)){renderMsn();renderHome();}};});
+ {const b=$('bt-msn-all');if(b)b.onclick=()=>{if(msnClaimAll()){renderMsn();renderHome();}};}
 }
 function openMsn(){renderMsn();$('md-msn').classList.add('on');}
 /* ✉️メールの窓(227)。⚠開いたら全部「読んだ」にする=赤い点は受け取り残しがある間だけ残る。
    ⚠1枚=1通・受け取るボタンは付き物が残っている通にだけ出す(🎯任務の窓と同じ型) */
+/* ✉️⭐(228l)**🆕新着と📨既読のタブ**(2026-08-09ユーザー指示「新規メールと既読のメールをタブで分けて」)。
+   ⭐**新着=窓を開いた時点で「未読 か 受け取り残し」だった通**(MAILNEW に写す)=
+     開いている間は読んだ印が付いてもタブを移らない(受け取った瞬間に目の前から消えると混乱する)。
+   ⚠次に開いた時に既読へ落ちる。⚠既読タブはただの保管箱(受け取り残しがあればそこでも受け取れる)。 */
+let MAILTAB='new',MAILNEW=null;
 function renderMail(){
  const box=$('mail-list');if(!box)return;
  META.mailRd=META.mailRd||{};META.mailGot=META.mailGot||{};
+ if(!MAILNEW){MAILNEW={};MAILS.forEach(m=>{if(!META.mailRd[m.id]||(m.gift&&!META.mailGot[m.id]))MAILNEW[m.id]=1;});}
  let rd9=0;MAILS.forEach(m=>{if(!META.mailRd[m.id]){META.mailRd[m.id]=1;rd9=1;}});
  if(rd9)saveMeta();
  const left9=MAILS.filter(m=>m.gift&&!META.mailGot[m.id]).length;
  const n=$('mail-cnt');
  if(n)n.textContent=left9?('受け取れる '+left9+'通'):(MAILS.length+'通');
- box.innerHTML=MAILS.map(m=>{
+ const NW=MAILS.filter(m=>MAILNEW[m.id]),OL=MAILS.filter(m=>!MAILNEW[m.id]);
+ const LS=(MAILTAB==='new')?NW:OL;
+ box.innerHTML='<div class="seg" style="margin-bottom:8px">'
+  +'<button class="btn sm'+(MAILTAB==='new'?' sel':'')+'" data-mailtab="new">🆕 新着 '+NW.length+'</button>'
+  +'<button class="btn sm'+(MAILTAB==='old'?' sel':'')+'" data-mailtab="old">📨 既読 '+OL.length+'</button>'
+  +'</div>'
+  +(LS.length?'':('<div class="labdone" style="opacity:.7">'+(MAILTAB==='new'?'新着は無い':'既読は無い')+'</div>'))
+  +LS.map(m=>{
   const got=!!META.mailGot[m.id],has=!!m.gift,L=m.list&&m.list.length?m.list:null,op=MAILV===m.id;
   return '<div class="lc'+(has&&!got?' can':'')+'" style="margin-bottom:6px">'
    /* 📢バージョンを持つ通は**押すと中身が開く**=見出しの行ぜんぶが押す所(44px) */
@@ -33784,8 +33822,15 @@ function renderMail(){
  /* 📢押すたびに開く/閉じる。⚠開くのは1通だけ(全部開くと何を見ているのか分からなくなる) */
  box.querySelectorAll('[data-mailv]').forEach(b=>{b.onclick=()=>{
   MAILV=(MAILV===b.dataset.mailv)?'':b.dataset.mailv;renderMail();};});
+ box.querySelectorAll('[data-mailtab]').forEach(b=>{b.onclick=()=>{
+  MAILTAB=b.dataset.mailtab;MAILV='';renderMail();};});
 }
-function openMail(){renderMail();$('md-mail').classList.add('on');}
+function openMail(){
+ /* ⚠開くたびに「新着」を測り直す(前回開いた時の写しを引きずらない) */
+ MAILNEW=null;META.mailRd=META.mailRd||{};META.mailGot=META.mailGot||{};
+ MAILNEW={};MAILS.forEach(m=>{if(!META.mailRd[m.id]||(m.gift&&!META.mailGot[m.id]))MAILNEW[m.id]=1;});
+ MAILTAB=Object.keys(MAILNEW).length?'new':'old';MAILV='';
+ renderMail();$('md-mail').classList.add('on');}
 /* ============ 📖 HUDの札の中身(押すと出る) ============
    2026-08-04(158)ユーザー指示「リソースの歯車とナットマークを押したら獲得条件を見れるように」
    「ついでにユニット上限と拠点HPも」。
