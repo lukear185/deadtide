@@ -550,6 +550,15 @@ const REC=[
  {k:'gr4F',  f:'AI_gr4F',  t:0, d:2.4, g:0},
  {k:'gr5G',  f:'AI_gr5G',  t:0, d:3.2, g:0},
  {k:'gr5H',  f:'AI_gr5H',  t:0, d:3.2, g:0},
+ /* 🔩(229k)ハープーン砲の発射音の候補6本(2026-08-09ユーザー「もっと槍を撃ってる感じ。
+    今だとスナイパーと一緒になっちゃってる」)=AI生成(SAO)。A空気圧+杭 / B大弩の弦 / C捕鯨砲+ワイヤー /
+    Dバネ+杭の風切り / E空圧ピストン / F大弩の低い胴鳴り */
+ {k:'harpA', f:'AI_harp_a', t:0, d:1.2, g:0},
+ {k:'harpB', f:'AI_harp_b', t:0, d:1.2, g:0},
+ {k:'harpC', f:'AI_harp_c', t:0, d:1.4, g:0},
+ {k:'harpD', f:'AI_harp_d', t:0, d:1.1, g:0},
+ {k:'harpE', f:'AI_harp_e', t:0, d:1.0, g:0},
+ {k:'harpF', f:'AI_harp_f', t:0, d:1.3, g:0},
  /* ⭐使い回しの解消=英雄参戦・ユニット強化(どちらもエリート出現の音を鳴らしていた) */
  {k:'heroIn', d:1.0, g:-1, mix:[{f:'Transition Braam',t:0,d:1.0,g:0,r:1.25}]},
  {k:'unitUp', d:1.0, g:2, mix:[{f:'Rapid Chord',t:0,d:1.0,g:2,r:1.25},
