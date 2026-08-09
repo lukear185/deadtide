@@ -1191,7 +1191,14 @@ body.bns #deck{flex:0 0 auto}
 .tmc .afu.wk.af-elec,.bm-item .baf.wk.af-elec{color:var(--gold)}
 .tmc .onb{position:absolute;left:4px;top:4px;font-size:13px;line-height:1}
 .tmc .hkb{position:absolute;right:4px;top:4px;font-size:13px;line-height:1;text-shadow:0 1px 0 rgba(0,0,0,.5)}
-#buildmenu .bm-us{text-align:left;font-size:13px}
+/* 🔧(228p)**強化の行を詰める+2列に**(2026-08-09ユーザー指示「強化ウィンドウはスクロールせずに
+   全部見える状態にして。冷却塔とか強化の項目が多いやつが長くなってる」)=
+   ①文字と余白を一段小さく ②**強化中(up9)は窓を広げて2列**=行数が半分になり、横画面393pxでも収まる。
+   ⚠横幅いっぱいの行なので、背が34pxでも押し損ねはない(44pxの掟は小さい的の話) */
+#buildmenu .bm-us{text-align:left;font-size:11.5px;min-height:34px;padding:3px 8px;line-height:1.25}
+#buildmenu .bm-us .uspip{font-size:10px}
+#buildmenu.up9{max-width:472px}
+#buildmenu.up9 .bm-col{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
 .bm-item canvas{width:46px;height:40px}
@@ -2179,7 +2186,7 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
   <!-- ⚠**3件しか無いので bigpanel の高さいっぱいにしない**(下2/3が空白の紙になる)=中身に合わせる。
        ⚠高さは `vh` で決めない=`--appH` で抑える([[NOTES_UI]]で3回崩している) -->
   <div class="panel bigpanel" style="width:min(94vw,560px);height:auto;max-height:min(88vh,var(--appH,88vh))">
-    <div class="bphd"><b>🎯 今日の任務</b><span class="pt" id="msn-cnt"></span><button class="xbtn" id="bt-msn-close">✕</button></div>
+    <div class="bphd"><b>🎯 任務</b><span class="pt" id="msn-cnt"></span><button class="xbtn" id="bt-msn-close">✕</button></div>
     <div class="bphint" id="msn-hint"></div>
     <div class="bpbody" id="msn-list"></div>
   </div>
@@ -2590,6 +2597,7 @@ try{const mv=JSON.parse(localStorage.getItem(META_KEY)||'null');if(mv&&typeof mv
  if(!META.hero||typeof META.hero!=='object')META.hero={};/* 所持英雄 id→所持数 */
  if(typeof META.hsel!=='string')META.hsel='';/* 連れて行く英雄のid('' =連れて行かない) */
  if(!META.zdex||typeof META.zdex!=='object')META.zdex={};/* 📖図鑑: ソロで倒したことがある種類 */
+ if(!META.msnP||typeof META.msnP!=='object')META.msnP={};/* 🏆(228n)通常任務の受け取った印 */
  /* ⚠タレット/ユニットの個別強化。旧 META.tl/ul(型ごと)は廃止したので読まない */
  if(!META.tw||typeof META.tw!=='object')META.tw={};if(!META.un||typeof META.un!=='object')META.un={};
  /* 🛡⚠⚠(189)**形の取り違えを丸ごと直す**=localStorage は人の手で触れるし、書き込みが途中で切れる。
@@ -2665,6 +2673,7 @@ function metaResetAll(){
  META.hmat=0;META.hlv={};META.hxp={};META.tr0=0;/* 🔧鍛錬素材・鍛錬Lv・経験・鍛錬所の解放 */
  META.zdex={};                                 /* 📖ゾンビ図鑑 */
  META.msn=null;                                /* 🎯(152)今日の任務(次に開いた時に作り直される) */
+ META.msnP={};                                 /* 🏆(228n)通常任務の受け取った印 */
  META.mailRd={};META.mailGot={};               /* ✉️(227)メールの読んだ印・受け取った印 */
  META.edOK=0;META.edPend=0;                    /* 🏁(156)区切りの幕を見たか */
  META.cupR=[];                                 /* 🥤(166)カップゾンビの記録 */
@@ -5597,7 +5606,7 @@ const HEROES=[
  /* ⭐★5の3人目(2026-08-01ユーザーの絵から起こした)。**18人でただ1人の騎乗**。
     ⚠排出率は「1体あたり」なので数値表は触らない=★5の枠が 0.2%→0.3% に自動で太くなる。
     ⚠終焉の騎士と題材が近いので**速さと範囲**で役割を分ける=馬で駆けて薙ぎ払う。 */
- {id:'hGeo',n:'狙撃王ジョルジ',rk:5,hp:5200,atk:1400,rate:1.9,sp:70,c:'#4e5b41',ty:'bullet',/*🔫(221)貫通→実弾*/rng:520,uch:56,ult:'撃墜',udsc:'構えて10発を連続で撃ち込む(撃つ→コッキングの繰り返し)'},
+ {id:'hGeo',n:'狙撃王ジョルジ',rk:5,hp:5200,atk:1400,rate:1.9,sp:70,c:'#4e5b41',ty:'bullet',/*🔫(221)貫通→実弾*/rng:520,vsB:2.4,/*🎯(228o)スナイパー塔と同じ特効(ユーザー指示)*/uch:56,ult:'撃墜',udsc:'構えて10発を連続で撃ち込む(撃つ→コッキングの繰り返し)。💀ボスと👁オーラ持ちには2.4倍'},
  {id:'hPyro',n:'紅蓮の大魔導士',rk:5,hp:5600,atk:760,rate:1.2,sp:60,c:'#c8323c',ty:'fire',rng:300,aoe:120,burn:40,uch:58,ult:'紅蓮の柱',udsc:'道の3か所に業火の柱を立て、しばらく燃やし続ける'},
  {id:'hDark',n:'暗黒の騎士',rk:5,hp:7000,atk:1020,rate:1.1,sp:96,c:'#8f1f28',ty:'pierce',/*🗡(221)爆発→貫通*/rng:80,aoe:105,uch:56,ult:'漆黒の突撃',udsc:'道を端まで駆け抜けて、触れた敵を薙ぎ倒し暗黒の炎を残す'},
  /* 🌈⭐⭐**虹彩の跳弾姫ルピナ**(2026-08-03(92)ユーザー指示・参考絵あり=虹のポニーテール+
@@ -5921,7 +5930,12 @@ const AF_TY={melee:{ic:'✊',n:'近接'},bullet:{ic:'🔫',n:'実弾'},pierce:{i
      「相性で選ぶ」が**塔の話にしかなっていなかった**。編成が「強い順」に収束する原因の1つ。
    ⚠⚠(196)**倍率を掛けるのは `dmgZ` の1か所だけになった**=ここは型を渡すだけ。
    ⚠**ユニットの一撃は必ず `uHit` を通すこと**(型を渡さないと相性が乗らない)。 */
-function uHit(C,z,d,U,quiet){dmgZ(C,z,d,1,quiet,0,(U&&U.type)||'');}
+function uHit(C,z,d,U,quiet){
+ /* 🎯⭐(228o)**vsB=💀ボスと👁オーラ持ちへの特効**(2026-08-09ユーザー指示「ジョルジは
+    スナイパータレットと一緒でボスとオーラ持ち特効にして」)。⚠持っているのは英雄の表に vsB を
+    書いた者だけ(いまはジョルジ2.4)=他のユニットは今までどおり。⚠必殺は別の道なので乗らない */
+ if(U&&U.vsB&&z&&(z.boss||z.aura))d*=U.vsB;
+ dmgZ(C,z,d,1,quiet,0,(U&&U.type)||'');}
 /* ⭐一覧に出す札1つぶん。⭐⭐**数字ではなく「動詞」で書く**(2026-08-04(142)ユーザー
      「編成とタレットの札もちょっとわかりずらいからもっとほかの方法があるといいね」)。
    ⚠⚠**それまで「装甲45%」「鱗190%」と割合を書いていた**が、
@@ -6672,22 +6686,63 @@ function msnClaim(i){
  try{toast('🎯 受け取った! 💎'+d.gem);}catch(e){}
  return true;
 }
-/* 🎯⭐(228l)**一括受け取り**(2026-08-09ユーザー指示「任務は一括受け取りできるようにボタンつけて」)。
-   ⚠報せと音は**1回にまとめる**(1件ずつ鳴らすと3連トーストになる)。⚠配る物は msnClaim と同じ💎だけ */
+/* 🏆⭐⭐(228n)**通常任務**(2026-08-09ユーザー指示「今ある3つのやつはデイリー任務で、
+   通常任務も欲しい。進行に合わせた感じの任務」)=**一度きりの実績型**。
+   ⭐**進み具合は保存を読むだけ**(専用のカウンタを持たない=昔のセーブでもその場で正しく数えられる)。
+   受け取った印だけ META.msnP に持つ。⚠報酬は💎だけ(デイリーと同じ理由=試合中の資源は配らない)。
+   💰**合計76💎=10連(💎25)3回ぶん**に抑えてある(デイリーが1日約16💎)。 */
+const msnpSt=()=>{let n=0;try{if(Array.isArray(META.sc))for(const a of META.sc)if(Array.isArray(a))for(let d=0;d<=NM_DIFF;d++)if(a[d])n++;}catch(e){}return n;};
+const msnpHero=()=>{let n=0;try{for(const k in (META.hero||{}))if(META.hero[k]>0)n++;}catch(e){}return n;};
+const msnpLb=()=>{let n=0;try{for(const k in (META.hero||{}))n=Math.max(n,(META.hero[k]||0)-1);}catch(e){}return n;};
+const MSNP_L=[
+ {id:'p_st1', n:'🏁 拠点を 1つ 突破する', g:1, gem:3, f:msnpSt},
+ {id:'p_st3', n:'🏁 拠点を 3つ 突破する', g:3, gem:3, f:msnpSt},
+ {id:'p_st6', n:'🏁 拠点を 6つ 突破する', g:6, gem:5, f:msnpSt},
+ {id:'p_st12',n:'🏁 拠点を 12 突破する', g:12,gem:5, f:msnpSt},
+ {id:'p_nm1', n:'🌑 最初の土地を ナイトメアで落とす', g:1, gem:10, f:unlStep},
+ {id:'p_nm2', n:'🌑 2つ目の土地を ナイトメアで落とす', g:2, gem:10, f:unlStep},
+ {id:'p_dex10',n:'📖 図鑑に 10種 のせる', g:10, gem:3, f:()=>Object.keys(META.zdex||{}).length},
+ {id:'p_dex25',n:'📖 図鑑に 25種 のせる', g:25, gem:5, f:()=>Object.keys(META.zdex||{}).length},
+ {id:'p_dex50',n:'📖 図鑑に 50種 のせる', g:50, gem:8, f:()=>Object.keys(META.zdex||{}).length},
+ {id:'p_hero3',n:'🦸 英雄を 3人 集める', g:3, gem:3, f:msnpHero},
+ {id:'p_hero8',n:'🦸 英雄を 8人 集める', g:8, gem:5, f:msnpHero},
+ {id:'p_lab10',n:'🔬 研究所で 10種 解放する', g:10, gem:3, f:()=>((META.ot||[]).length+(META.ou||[]).length)},
+ {id:'p_lab20',n:'🔬 研究所で 20種 解放する', g:20, gem:5, f:()=>((META.ot||[]).length+(META.ou||[]).length)},
+ {id:'p_tr',  n:'🏋 鍛錬所を 解放する', g:1, gem:5, f:()=>((META.tr0||0)?1:0)},
+ {id:'p_lb1', n:'🔺 だれかを 1凸 する', g:1, gem:3, f:msnpLb},
+];
+const msnpGot=id=>!!((META.msnP||{})[id]);
+const msnpVal=d=>{let v=0;try{v=d.f()||0;}catch(e){}return Math.min(v,d.g);};
+/* 🎯⭐(228l)**一括受け取り**(2026-08-09ユーザー指示)。⭐(228n)**デイリーと通常の両方をまとめて**受け取る。
+   ⚠報せと音は**1回にまとめる**(1件ずつ鳴らすと連続トーストになる)。⚠配る物は msnClaim と同じ💎だけ */
 function msnClaimAll(){
  const M=msnDay();let tot=0,n=0;
  for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];
   if(!d||M.got[i]||M.p[i]<d.g)continue;
   M.got[i]=1;META.gem=(META.gem||0)+d.gem;tot+=d.gem;n++;}
+ META.msnP=META.msnP||{};
+ for(const d of MSNP_L){if(msnpGot(d.id)||msnpVal(d)<d.g)continue;
+  META.msnP[d.id]=1;META.gem=(META.gem||0)+d.gem;tot+=d.gem;n++;}
  if(!n)return false;
  saveMeta();
  try{if(sfx.win)sfx.win();}catch(e){}
  try{toast('🎯 まとめて受け取った! 💎'+tot+'('+n+'件)');}catch(e){}
  return true;
 }
-/* 受け取れる件数(ホームの赤い点に使う=開かなくても分かる) */
+/* 🏆通常任務を1件受け取る(二度押しで2回配らない) */
+function msnpClaim(id){
+ const d=MSNP_L.find(x=>x.id===id);
+ if(!d||msnpGot(id)||msnpVal(d)<d.g)return false;
+ META.msnP=META.msnP||{};META.msnP[id]=1;
+ META.gem=(META.gem||0)+d.gem;saveMeta();
+ try{if(sfx.win)sfx.win();}catch(e){}
+ try{toast('🎯 受け取った! 💎'+d.gem);}catch(e){}
+ return true;
+}
+/* 受け取れる件数(ホームの赤い点に使う=開かなくても分かる)。⭐(228n)通常任務も数える */
 function msnReady(){try{const M=msnDay();let n=0;
  for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];if(d&&!M.got[i]&&M.p[i]>=d.g)n++;}
+ for(const d of MSNP_L)if(!msnpGot(d.id)&&msnpVal(d)>=d.g)n++;
  return n;}catch(e){return 0;}}
 /* ============ ✉️メール(2026-08-09(227)ユーザー指示) ============
    ⭐プレゼントとお知らせの受け取り箱(ホーム右上の✉️から)。
@@ -6708,6 +6763,15 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m11',d:'2026-08-09',t:'アップデート',ver:'0.019',
+  b:'押すと変わった所が全部見られます',
+  list:['🏆任務に「通常」タブが増えた=進行に合わせた一度きりの任務(報酬は💎)',
+   '💎任務の「まとめて受け取る」は受け取れる物が1件でもあれば出る(きょう+通常をまとめて)',
+   '⚔最終ウェーブのあとに余分な1波が来てしまう不具合を修正(10ウェーブの拠点で11波目が来ていた)',
+   '🎯狙撃王ジョルジに特効=💀ボスと👁オーラ持ちに2.4倍(スナイパー塔と同じ)',
+   '🎓タレットのチュートリアル(冷却塔など5本)で敵が来ないまま進まなくなる不具合を修正',
+   '🔧タレットの強化ウィンドウを2列にして、スクロールなしで全部見えるように',
+   '🏰タレット編成の「これ以上は外せない」の報せに、🏭工房を数えていないことを書いた']},
  {id:'m10',d:'2026-08-09',t:'アップデート',ver:'0.018',
   b:'押すと変わった所が全部見られます',
   list:['🏭右上の「基地」ボタンをやめた=🏋鍛錬所は英雄の画面の中へ、🎯砲撃は編成のタブへ移動']},
@@ -22634,12 +22698,20 @@ function gameStep(dt){
        割り戻してから引く。これをしないと 2秒が 2/CLEAR_SLOW 秒(約6秒)になる。
      ⚠演出オフ(FXLV=0)では余韻を入れない=今までどおりすぐ切り替わる。 */
   if(done){
+   /* 🐞⭐(228o)**最終ウェーブでは作戦タイムへ入らない**(2026-08-09ユーザー実機
+      「各面の2ステージ目が10ウェーブのはずが11まである」)。
+      ⚠原因=(215)の「💀ボスが沈み切るまでクリアを待つ」の間に、この下の startInterval が
+        先に走って**11波目が始まっていた**(最終波はボスが居るので沈み待ち約3秒 > 余韻2秒で必ず負ける)。
+      ⭐勝ち判定(上の waveDone && 最終波 && 沈み終わり)が拾うまでこの場で待つだけでよい。 */
+   if(G.pve&&G.wave>=curW()){}
+   else{
    /* ⚠**専用の音は付けない**(2026-07-27ユーザー判断「音イランわ」)。
       「どぅーん」を4回作り直したが最後まで刺さらなかった。**制圧の合図は `sfx.clearJ()` だけで足りる**
       (ウェーブをしのいだ瞬間に鳴っている)。⚠書き戻さないこと。 */
    if(G.clearT==null)G.clearT=FXLV>0?CLEAR_HOLD:0;
    G.clearT-=dt/CLEAR_SLOW;
    if(G.clearT<=0){G.clearT=null;startInterval();}
+   }
   }
  }else if(G.phase==='interval'){
   /* ⭐**遅らせておいた演出の続きだけは進める**(2026-08-02)=必殺技の締めの1発が宙に浮かないように */
@@ -25053,6 +25125,7 @@ function openBM(si){
     ⚠✕は下の TUT_FREE にも入れてある=チュートリアル中でも必ず押せる。 */
  /* ⚠✕は**スクロールする箱の外**に置く=中に入れると一緒に流れて、下まで送ると押せなくなる */
  bm.innerHTML='<button id="bm-x" class="xbtn" aria-label="閉じる">✕</button><div id="bm-body">'+IC(h)+'</div>';
+ bm.classList.toggle('up9',!!tw);/* 🔧(228p)強化中だけ広い2列の窓にする */
  bm.querySelectorAll('[data-th]').forEach(cc=>{cc.getContext('2d').drawImage(THUMBS[+cc.dataset.th],0,0);});
  bm.querySelectorAll('[data-bd]').forEach(b=>{b.onclick=()=>{actBuild(si,+b.dataset.bd);closeBM();};});
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
@@ -25077,7 +25150,11 @@ function openBM(si){
     ⚠**帯の高さは端末と画面の幅で変わる**=必ず実測(`topBandPx`)で取る(決め打ちは必ずずれる)。 */
  const tMin=Math.round(topBandPx())+16;
  {const bd=$('bm-body');
-  if(bd){bd.style.maxHeight=Math.max(96,Math.min(innerHeight-tMin-6-16-barBandPx(),Math.round(innerHeight*.52)))+'px';}}
+  /* 🔧⭐(228p)**高さの上限(画面の52%)は外した**(2026-08-09ユーザー指示「スクロールせずに全部見える
+     状態にして」)=上の札と下の操作バーの間をいっぱいに使う。⚠(214)の「輪に被せない」は
+     **横の置き場所**(輪の外へ寄せる)が守っている=縦に伸びても輪は隠れない。
+     ⚠それでも入らない端末のための保険としてスクロールの仕組み自体は残す。 */
+  if(bd){bd.style.maxHeight=Math.max(96,innerHeight-tMin-6-16-barBandPx())+'px';}}
  const bw=bm.offsetWidth,bh=bm.offsetHeight;
  /* 🔧⭐(214)**窓は塔のそばに置く**(2026-08-08ユーザー指摘「強化対象のタレットと遠くてやりずらい。
     タレットにかぶらないけど近くに置いて」)。⚠(204d)の「反対側の端へ寄せる」は輪は見えたが遠すぎた。
@@ -30492,7 +30569,11 @@ function tutTwSteps(K){
   {id:'tw1',scr:'game',t:nm+'を建てろ',m:K.m1,
    hi:{k:'slot'},sl:1,al:'#buildmenu',ok:C=>!!(C.towers||[])[tutSlot(C)]},
   {id:'tw2',scr:'game',t:K.t2,m:K.m2,sl:2,
-   pre:C=>{put(C,Z.n||8,Z.id,Z.d);},ok:K.ok},
+   /* 🐞⭐⭐(228p)**塔の回は波をここで自分で始める**(2026-08-09ユーザー実機「冷却塔のチュートリアル、
+      ここから敵も来ないし進まない」)。⚠塔の回には fight の段が無い=TUT.ran が立たず、
+      tutHold が作戦タイムの時計を止めたまま**一生 wave が始まらなかった**(5つの塔の回すべて同じ穴)。
+      ⚠さらに wave が始まらないと位置の計算(campStep)も回らない=pre で置いた敵は(0,0)のまま見えない。 */
+   pre:C=>{if(TUT)TUT.ran=true;if(G&&G.phase==='interval')G.tI=0;put(C,Z.n||8,Z.id,Z.d);},ok:K.ok},
   {id:'tw3',scr:'game',t:K.t3,m:K.m3,sl:2},
  ];
 }
@@ -31947,9 +32028,11 @@ function renderLoad(){
    const at9=META.twOff.indexOf(T.id);
    if(at9>=0)META.twOff.splice(at9,1);
    else{
-    /* ⚠外しすぎの下限=攻撃できる塔を TWOFF_MIN 種は残す(全部外すと建てる物が無い) */
+    /* ⚠外しすぎの下限=攻撃できる塔を TWOFF_MIN 種は残す(全部外すと建てる物が無い)。
+       🐞(228p)報せに**🏭工房を数えていない**ことを書く(2026-08-09ユーザー「5種の状況で4種にする時に
+       出てくる」=画面には工房も1枚に見えるので、工房+4種の時に「最低4種なのに外せない」に見えていた) */
     const left9=own9.filter(x=>TOWERS[x].type!=='eco'&&!twOffHas(TOWERS[x].id)).length;
-    if(left9<=TWOFF_MIN){sfx.back&&sfx.back();toast('🏰 これ以上は外せない(最低'+TWOFF_MIN+'種)');return;}
+    if(left9<=TWOFF_MIN){sfx.back&&sfx.back();toast('🏰 これ以上は外せない(🏭工房のほかに最低'+TWOFF_MIN+'種)');return;}
     META.twOff.push(T.id);}
    TWOWN_K=-1;saveMeta();sfx.buy&&sfx.buy();
    const sv=(()=>{const g=$('tw-grid');return g?g.scrollTop:0;})();
@@ -33759,34 +33842,63 @@ function openZoo(){
 /* 🎯今日の任務の窓。⚠**1行=1つの任務** / ⚠**進み具合は数字ではなく棒**(研究所の段と同じ見せ方)。
    ⚠⚠強調の `**` の直後にスラッシュを置くとコメントが早く閉じる([[NOTES_絵]]に記録あり・3回目)。
    ⚠受け取りボタンは**達成した行にだけ**出す=押せない灰色のボタンを3つ並べない。 */
+/* 🏆(228n)開いている札: d=📅きょう / p=🏆通常(タブの型は✉️メールと同じ) */
+let MSNTAB='d';
 function renderMsn(){
  const box=$('msn-list');if(!box)return;
  const M=msnDay();
+ /* 受け取れる数(タブごと)。⚠見出しの数字は両方の合計=どちらのタブに用があるか開く前に分かる */
+ let rdD=0;for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];if(d&&!M.got[i]&&M.p[i]>=d.g)rdD++;}
+ let rdP=0;for(const d of MSNP_L)if(!msnpGot(d.id)&&msnpVal(d)>=d.g)rdP++;
+ const rdy9=rdD+rdP;
  const n=$('msn-cnt');
- if(n)n.textContent=M.got.filter(x=>x).length+' / '+MSN_N+' 受取';
+ if(n)n.textContent=rdy9?('受け取れる '+rdy9+'件'):(M.got.filter(x=>x).length+' / '+MSN_N+' 受取');
  const h=$('msn-hint');
- if(h)h.innerHTML='毎日 0時に3件とも入れ替わる(残り '+bnsNextS()+')。⚠受け取り忘れは繰り越さない';
- /* 🎯⭐(228l)**達成が2件以上ある時だけ「まとめて受け取る」を一番上に出す**
-    (1件だけなら札のボタンで足りる=同じ事をするボタンを2つ並べない) */
- const rdy9=msnReady();
- box.innerHTML=(rdy9>=2?('<button class="btn gold" id="bt-msn-all" style="margin-bottom:8px;width:100%;min-height:44px">💎 まとめて受け取る('+rdy9+'件)</button>'):'')
-  +M.id.map((zi,i)=>{
-  const d=MSN_P[zi];if(!d)return '';
-  const p=Math.min(M.p[i],d.g),done=p>=d.g,got=!!M.got[i];
-  return '<div class="lc'+(done&&!got?' can':'')+'" style="margin-bottom:6px">'
-   +'<div style="display:flex;align-items:center;gap:8px">'
-   +'<b style="flex:1;font-size:12.5px">'+IC(d.n)+'</b>'
-   +'<span style="font-size:12.5px;font-weight:900;white-space:nowrap;color:var(--rust2)">'+IC('💎')+d.gem+'</span>'
-   +'</div>'
-   +'<div class="lvb"><span class="l">'+p+'</span><i><b style="width:'+Math.round(p/d.g*100)+'%"></b></i><span class="m">'+d.g+'</span></div>'
-   +(got?'<div style="font-size:11.5px;opacity:.7;margin-top:2px">✅ 受け取り済み</div>'
-     :done?'<button class="btn gold" data-msn="'+i+'" style="margin-top:4px;width:100%;min-height:44px">受け取る</button>':'')
-   +'</div>';}).join('');
+ if(h)h.innerHTML=(MSNTAB==='d')
+  ?('毎日 0時に3件とも入れ替わる(残り '+bnsNextS()+')。⚠受け取り忘れは繰り越さない')
+  :'一度きりの任務。ゲームを進めると勝手に貯まる';
+ /* 1枚ぶんの札(デイリーも通常も同じ形) */
+ const card=(nm,gem,p,g,got,btn)=>'<div class="lc'+(p>=g&&!got?' can':'')+'" style="margin-bottom:6px">'
+  +'<div style="display:flex;align-items:center;gap:8px">'
+  +'<b style="flex:1;font-size:12.5px">'+IC(nm)+'</b>'
+  +'<span style="font-size:12.5px;font-weight:900;white-space:nowrap;color:var(--rust2)">'+IC('💎')+gem+'</span>'
+  +'</div>'
+  +'<div class="lvb"><span class="l">'+p+'</span><i><b style="width:'+Math.round(p/g*100)+'%"></b></i><span class="m">'+g+'</span></div>'
+  +(got?'<div style="font-size:11.5px;opacity:.7;margin-top:2px">✅ 受け取り済み</div>'
+    :(p>=g)?('<button class="btn gold" '+btn+' style="margin-top:4px;width:100%;min-height:44px">受け取る</button>'):'')
+  +'</div>';
+ /* 🎯⭐(228n)**まとめて受け取るは1件でもあれば出す**(2026-08-09ユーザー「まとめて受け取るある?」=
+    2件以上の時だけ出す前の形は「あったり無かったり」で見つけられなかった)。⭐両タブぶんまとめて配る */
+ let html='<div class="seg" style="margin-bottom:8px">'
+  +'<button class="btn sm'+(MSNTAB==='d'?' sel':'')+'" data-msntab="d">📅 きょう'+(rdD?' ●':'')+'</button>'
+  +'<button class="btn sm'+(MSNTAB==='p'?' sel':'')+'" data-msntab="p">🏆 通常'+(rdP?' ●':'')+'</button>'
+  +'</div>'
+  +(rdy9?('<button class="btn gold" id="bt-msn-all" style="margin-bottom:8px;width:100%;min-height:44px">💎 まとめて受け取る('+rdy9+'件)</button>'):'');
+ if(MSNTAB==='d'){
+  html+=M.id.map((zi,i)=>{
+   const d=MSN_P[zi];if(!d)return '';
+   return card(d.n,d.gem,Math.min(M.p[i],d.g),d.g,!!M.got[i],'data-msn="'+i+'"');}).join('');
+ }else{
+  /* ⭐並び=受け取れる物 → 進行中 → 受け取り済み(用がある物から) */
+  const L9=MSNP_L.slice().sort((a,b)=>{
+   const ka=msnpGot(a.id)?2:(msnpVal(a)>=a.g?0:1),kb=msnpGot(b.id)?2:(msnpVal(b)>=b.g?0:1);
+   return ka-kb;});
+  html+=L9.map(d=>card(d.n,d.gem,msnpVal(d),d.g,msnpGot(d.id),'data-msnp="'+d.id+'"')).join('');
+ }
+ box.innerHTML=html;
+ box.querySelectorAll('[data-msntab]').forEach(b=>{b.onclick=()=>{MSNTAB=b.dataset.msntab;renderMsn();};});
  box.querySelectorAll('[data-msn]').forEach(b=>{b.onclick=()=>{
   if(msnClaim(+b.dataset.msn)){renderMsn();renderHome();}};});
+ box.querySelectorAll('[data-msnp]').forEach(b=>{b.onclick=()=>{
+  if(msnpClaim(b.dataset.msnp)){renderMsn();renderHome();}};});
  {const b=$('bt-msn-all');if(b)b.onclick=()=>{if(msnClaimAll()){renderMsn();renderHome();}};}
 }
-function openMsn(){renderMsn();$('md-msn').classList.add('on');}
+function openMsn(){
+ /* ⭐(228n)開く時は「受け取れる物がある方」のタブから(きょう優先) */
+ try{const M=msnDay();let rdD=0;for(let i=0;i<MSN_N;i++){const d=MSN_P[M.id[i]];if(d&&!M.got[i]&&M.p[i]>=d.g)rdD++;}
+  let rdP=0;for(const d of MSNP_L)if(!msnpGot(d.id)&&msnpVal(d)>=d.g)rdP++;
+  MSNTAB=(rdD===0&&rdP>0)?'p':'d';}catch(e){}
+ renderMsn();$('md-msn').classList.add('on');}
 /* ✉️メールの窓(227)。⚠開いたら全部「読んだ」にする=赤い点は受け取り残しがある間だけ残る。
    ⚠1枚=1通・受け取るボタンは付き物が残っている通にだけ出す(🎯任務の窓と同じ型) */
 /* ✉️⭐(228l)**🆕新着と📨既読のタブ**(2026-08-09ユーザー指示「新規メールと既読のメールをタブで分けて」)。

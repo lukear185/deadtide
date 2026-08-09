@@ -318,6 +318,9 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        /* 🦸(228m)英雄の窓 / 🎖編成の砲撃タブ(基地の廃止で入口が移った先を撮る) */
        +(OPT.indexOf('hpick')>=0?'renderHeroPick();document.getElementById("md-hpick").classList.add("on");':'')
        +(OPT.indexOf('hldstk')>=0?'LDTAB="stk";renderLoad();document.getElementById("md-load").classList.add("on");':'')
+       /* 🔧(228p)openbm=最初に建っている塔の強化ウィンドウを開いて撮る(t=と組み合わせる)。
+          ⚠t= の建設は setTimeout の中=**建つまで見張ってから開く**(1回きりだと空振りする) */
+       +(OPT.indexOf('openbm')>=0?'var obm9=setInterval(function(){try{var m=G&&G.players&&G.players[0];if(!m)return;for(var i=0;i<m.towers.length;i++){if(m.towers[i]){openBM(i);clearInterval(obm9);break;}}}catch(e){}},280);':'')
        /* ✉️(227)メールの窓。hmailv=アップデートの通を開いた状態(中身が全部出ている所) */
        +(OPT.indexOf('hmailv')>=0?'MAILV="m2";openMail();':(OPT.indexOf('hmail')>=0?'openMail();':''))
        +(OPT.indexOf('hbase')>=0?'document.getElementById("md-base").classList.add("on");':''))/* 🏭(227b)基地の窓 */
