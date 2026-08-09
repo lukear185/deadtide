@@ -1811,9 +1811,10 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
       </div>
       <div id="lb-diffwrap" style="display:none">
         <p class="note" style="margin:10px 0 6px">ゾンビの強さ</p>
+        <!-- ⛔(228h)**兵長はここからも外した**(ソロ(204h)と同じ並びに揃える=ユーザー決定)。
+             ⚠値は DIFFS の添字なので**詰めずに1を飛ばす**(古参=2 のまま)。 -->
         <div class="seg" id="lb-diff">
           <button class="btn sm" data-v="0">新兵</button>
-          <button class="btn sm" data-v="1">兵長</button>
           <button class="btn sm sel" data-v="2">古参</button>
           <button class="btn sm" data-v="3">鬼軍曹</button>
           <button class="btn sm" data-v="4">悪夢</button>
@@ -6694,6 +6695,9 @@ function msnReady(){try{const M=msnDay();let n=0;
      **細かい調整=0.001を足す**(0.011 → 0.012) / **大きい調整=0.01を足す**(0.02 → 0.03)。
      ⚠**桁を勝手に丸めない**(0.010 と 0.01 を混ぜない)=前の版と並べて読めなくなる。 */
 const MAILS=[
+ {id:'m6',d:'2026-08-09',t:'アップデート',ver:'0.014',
+  b:'押すと変わった所が全部見られます',
+  list:['🤝協力の「ゾンビの強さ」から兵長を外した(ソロと同じ並び=新兵・古参・鬼軍曹・悪夢)']},
  {id:'m5',d:'2026-08-09',t:'アップデート',ver:'0.013',
   b:'押すと変わった所が全部見られます',
   list:['🧟キャラの大きさと見た目を以前の状態に戻した(ver 0.011〜0.012の絵の変更は取りやめ)']},
