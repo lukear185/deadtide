@@ -6695,6 +6695,10 @@ function msnReady(){try{const M=msnDay();let n=0;
      **細かい調整=0.001を足す**(0.011 → 0.012) / **大きい調整=0.01を足す**(0.02 → 0.03)。
      ⚠**桁を勝手に丸めない**(0.010 と 0.01 を混ぜない)=前の版と並べて読めなくなる。 */
 const MAILS=[
+ {id:'m7',d:'2026-08-09',t:'アップデート',ver:'0.015',
+  b:'押すと変わった所が全部見られます',
+  list:['🔥ガトリング系が熱くなりにくくなった=描く量を大きく減らした(威力・音・薬莢はそのまま。閃光と弾の線だけ半分に)',
+   '🚩3つ目の土地で、倒すと増える敵の子が別の道へワープして出てくる不具合を修正(親と同じ道に出る)']},
  {id:'m6',d:'2026-08-09',t:'アップデート',ver:'0.014',
   b:'押すと変わった所が全部見られます',
   list:['🤝協力の「ゾンビの強さ」から兵長を外した(ソロと同じ並び=新兵・古参・鬼軍曹・悪夢)']},
@@ -13902,7 +13906,8 @@ function twDrum(c,x,y,r,col){
 /* 弾帯(薬莢が並んだ帯) */
 function twBelt(c,x,y,n,col){
  c.fillStyle='#3a3128';rr(c,x-2,y-3,n*5+4,7,2);c.fill();c.stroke();
- c.fillStyle=col||GOLD2;for(let i=0;i<n;i++)c.fillRect(x+i*5,y-1.6,3.2,4);
+ /* 🔥(228i)薬莢は1本のパスで1回で塗る(n回のfillRectだった=重ならないので絵は変わらない) */
+ c.fillStyle=col||GOLD2;c.beginPath();for(let i=0;i<n;i++)c.rect(x+i*5,y-1.6,3.2,4);c.fill();
 }
 /* 燃料/冷媒タンク(基部の後ろに背負う) */
 function twTank(c,x,y,w,h,col){
@@ -14261,9 +14266,11 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  else if(tid==='gat2'){
   twDrum(c,-19,6,10,'#7a2f26');twBelt(c,-24,20,5,GOLD2);
   c.save();c.rotate(ang);
-  const spin=t*9;
-  for(let k=0;k<6;k++){const yy=Math.sin(spin+k*1.047)*9;
-   c.fillStyle=yy>0?'#6b7580':'#8a97a5';rr(c,2,yy-3,28,6,2.6);c.fill();c.stroke();}
+  /* 🔥(228i)砲身は色ごとに1本のパス(gatと同じ)=6本×2の12回が4回に */
+  const spin=t*9,byy=k=>Math.sin(spin+k*1.047)*9;
+  for(const g9 of [[0,'#8a97a5'],[1,'#6b7580']]){let f9=0;c.fillStyle=g9[1];c.beginPath();
+   for(let k=0;k<6;k++){const yy=byy(k);if((yy>0)===!!g9[0]){rrP(c,2,yy-3,28,6,2.6);f9=1;}}
+   if(f9){c.fill();c.stroke();}}
   c.fillStyle='#54606d';rr(c,-6,-12,12,24,4);c.fill();c.stroke();
   c.fillStyle='#3a424b';c.beginPath();c.arc(30,0,5.5,0,7);c.fill();c.stroke();
   if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(36,0,8,0,7);c.fill();}
@@ -14503,9 +14510,11 @@ function drawTower(c,ti,lv,x,y,ang,t,o){
  else if(tid==='gatM'){
   twDrum(c,-18,5,9.5,'#7a2f28');twBelt(c,-13,11,5,GOLD2);
   c.save();c.rotate(ang);
-  const spin2=t*22;
-  for(let k=0;k<5;k++){const oy=Math.sin(spin2+k*1.257)*6.5;
-   c.fillStyle=oy>0?'#3a424b':'#5a6570';rr(c,2,oy-2.6,30,5.2,2.4);c.fill();c.stroke();}
+  /* 🔥(228i)砲身は色ごとに1本のパス(gatと同じ)=5本×2の10回が4回に */
+  const spin2=t*22,byy=k=>Math.sin(spin2+k*1.257)*6.5;
+  for(const g9 of [[0,'#5a6570'],[1,'#3a424b']]){let f9=0;c.fillStyle=g9[1];c.beginPath();
+   for(let k=0;k<5;k++){const oy=byy(k);if((oy>0)===!!g9[0]){rrP(c,2,oy-2.6,30,5.2,2.4);f9=1;}}
+   if(f9){c.fill();c.stroke();}}
   c.fillStyle='#b0483a';rr(c,-8,-10,14,20,5);c.fill();c.stroke();
   c.fillStyle='#54606d';rr(c,14,-9,7,18,2.5);c.fill();c.stroke();/* 冷却ジャケット */
   c.fillStyle='#3f4a54';rr(c,30,-8,6,16,2);c.fill();c.stroke();
@@ -14625,10 +14634,13 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
  /* ガトリング要塞: 回る銃身束+**大きな弾倉ドラムと弾帯**(基部)=撃っていなくても弾幕の塔だと分かる */
  else if(tid==='gat'){
   twDrum(c,-17,4,9,'#7a2f28');twBelt(c,-12,10,5,GOLD2);
-  c.save();c.rotate(ang);c.fillStyle='#4a5560';
-  const spin=t*22;
-  for(let k=0;k<4;k++){const oy=Math.sin(spin+k*1.57)*5.5;
-   c.fillStyle=oy>0?'#3a424b':'#5a6570';rr(c,2,oy-2.6,32,5.2,2.4);c.fill();c.stroke();}
+  c.save();c.rotate(ang);
+  /* 🔥(228i)**砲身は色ごとに1本のパスで1回**(要塞砲(191)と同じ手)=4本×(塗り+フチ)の8回が4回に。
+     ⚠奥(上)を先・手前(下)を後に描く=重なった時に手前が上に来る(前は並べた順で不定だった) */
+  const spin=t*22,byy=k=>Math.sin(spin+k*1.57)*5.5;
+  for(const g9 of [[0,'#5a6570'],[1,'#3a424b']]){let f9=0;c.fillStyle=g9[1];c.beginPath();
+   for(let k=0;k<4;k++){const oy=byy(k);if((oy>0)===!!g9[0]){rrP(c,2,oy-2.6,32,5.2,2.4);f9=1;}}
+   if(f9){c.fill();c.stroke();}}
   c.fillStyle='#b0483a';rr(c,-8,-9,14,18,5);c.fill();c.stroke();
   c.fillStyle='#3f4a54';rr(c,30,-7,6,14,2);c.fill();c.stroke();
   if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(40,0,7,0,7);c.fill();}c.restore();}
@@ -20534,7 +20546,12 @@ function killZ(C,z){
   const Zp=ZOMBIES[z.zi]||{},pn=!!Zp.nm,ps=Zp.st||0,
    base=ZOMBIES.findIndex(Q=>!Q.boss&&Q.mw<=1&&!!Q.nm===pn&&(Q.st||0)===ps);
   const bi=base<0?0:base;
-  for(let i=0;i<z.split;i++)C.zombies.push(mkZ(zSpec(bi,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i)));}
+  /* 🚩🐞(228i)⚠⚠**子は親の枝(z.ln)を必ず引き継ぐ**(2026-08-09ユーザー実機
+     「蝿が下の道に来てて、倒すと増える敵が上の道に出てくる」)。
+     mkZ は ln を持たないので、そのまま押すと**面③の分かれ道では子が別の枝へワープ**していた。
+     ⚠ln が無い面(①②など)では null のまま=今までどおり。 */
+  for(let i=0;i<z.split;i++){const c9=mkZ(zSpec(bi,C.waveMul,G?G.wave:1),Math.max(0,z.d-8*i));
+   if(z.ln!=null)c9.ln=z.ln;C.zombies.push(c9);}}
 }
 /* ⭐**爆風で死体を吹き飛ばす**(2026-07-27ユーザー指示「爽快感」)。
    ⚠**必ず dmgZ より先に呼ぶ**=dmgZ の中で死ぬと、その場で死体fxが湧いてしまうため。
@@ -21225,7 +21242,8 @@ function campStep(C,dt,wave){
  /* 位置・オーラ */
  const scrs=[];
  /* ⚠向きは `pathFace` で決める(道が真縦の所で左右がおかしくなるため。掟は pathFace の所) */
- /* ⚠レーン(z.ln)は🚌ボーナス面だけ入っている。いつもの面では undefined=今までどおり1本道。
+ /* ⚠レーン(z.ln)は🚌ボーナス面と**面③の分かれ道**に入っている(⚠(205)から。①②は undefined=1本道)。
+    ⚠⚠**途中で敵を湧かせる仕組みを足す時は親の ln を必ず写す**(分裂で1回踏んだ=(228i))。
     ⭐⭐**横のずれ(z.off)で群れにする**(2026-08-02ユーザー「もっと密度があってたくさんいる感じ」)。
       ⚠敵は道の上の距離(d)しか持っていないので、そのままだと**何百体居ても一列の行列**になる。
       道の法線方向へばらけさせると、同じ仕組みのまま「塊で押し寄せる」絵になる。
@@ -21893,6 +21911,11 @@ function campStep(C,dt,wave){
   const dm=T.dmg*m*aB*(1+lineAcc(TW_DMG_STEP,TL))*vsB;/* ⚠伸びは後半ほど大きい(lineAcc) */
   /* 銃口の火花・煙・薬莢 */
   const [mzx,mzy]=twMzPt(T,sx,sy,tw.ang);/* ⭐ここから撃つ(塔ごとに違う) */
+  /* 🔥⭐(228i)**ガトリング系だけ、閃光・火花・曳光線を1発おきに間引く**(2026-08-09ユーザー実機
+     「ガトリング重すぎる暑すぎる」)。⚠rate .09=毎秒11発×12台で、1発ごとの絵が熱さの主犯だった。
+     ⚠**威力・当たり判定・音・薬莢の滝は1発も間引かない**=見せ方だけ半分。
+     ⚠毎秒5.5回の閃光でも連射には見える(人の目は10Hz前後で点滅が繋がる)。 */
+  const thin9=(T.id==='gat'||T.id==='gatM'||T.id==='gat2')&&(((tw.gk=((tw.gk||0)+1))&1)===0);
   if(FXLV>0&&T.type!=='eco'){const mx2=mzx,my2=mzy;
    /* ⭐銃口の閃光。⚠丸い光を1つ置くだけでは「撃った」感じが出ないので、**向きを持った扇形**にする。
       色と大きさはタレットの型で変える=何が撃ったか音を消しても分かる */
@@ -21900,11 +21923,11 @@ function campStep(C,dt,wave){
      :T.type==='blast'?['#ffdd66',1.5]:T.type==='elec'?[FROST,1.25]
      :T.type==='net'?['#9fd9c6',.85]:[GLOW,1];
     const big=(T.id==='fort'||T.id==='arty'||T.id==='rail'||T.id==='plasma');
-    addFx(C,'mzl',mx2,my2,'',{ang:tw.ang,r:(big?24:14)*MZ[1],col:MZ[0]});
+    if(!thin9)addFx(C,'mzl',mx2,my2,'',{ang:tw.ang,r:(big?24:14)*MZ[1],col:MZ[0]});
     /* 重い砲は足元に衝撃波が広がる */
     if(big&&FXLV>1)addFx(C,'shock',sx,sy+8,'',{r:54,col:MZ[0]});}
-   if(T.type==='bullet'){addP(C,4,mx2,my2,{sp:150,a:tw.ang,spread:.28,g:60,life:.12,r:2.2,col:GLOW});
-    addP(C,1,sx,sy-6,{sp:70,a:tw.ang-1.6,spread:.5,up:40,g:600,life:.9,r:1.6,col:DIM,typ:'shell',gr:sy+10});
+   if(T.type==='bullet'){if(!thin9)addP(C,4,mx2,my2,{sp:150,a:tw.ang,spread:.28,g:60,life:.12,r:2.2,col:GLOW});
+    if(!thin9)addP(C,1,sx,sy-6,{sp:70,a:tw.ang-1.6,spread:.5,up:40,g:600,life:.9,r:1.6,col:DIM,typ:'shell',gr:sy+10});
     /* ⭐ガトリング要塞は薬莢が滝のように落ちる=弾幕を張っている感じを出す(ライフル台と同じ絵だった) */
     if(T.id==='gat')addP(C,2,sx,sy-4,{sp:95,a:tw.ang-1.95,spread:.65,up:55,g:660,life:1,r:1.7,col:DIM,typ:'shell',gr:sy+12});}
    else if(T.type==='fire'){addP(C,3,mx2,my2,{sp:60,a:tw.ang,spread:.5,g:-40,life:.5,r:3,col:T.id==='acid'?TOXIC:'#ff9a3d'});}
@@ -22097,8 +22120,8 @@ function campStep(C,dt,wave){
     if(T.id==='laser'&&FXLV>0)addFx(C,'beam',mzx,mzy,'',
      {x2:tg.px,y2:tg.py-14*CH_UP,col:hk>.5?'rgba(255,170,225,':'rgba(230,140,205,',
       col2:hk>.5?'rgba(255,240,250,':'rgba(255,205,238,',w:5+hk*7,lf:.16});
-    else addFx(C,'tr',mzx,mzy,'',{x2:tg.px,y2:tg.py,col:T.pierce?'rgba(216,131,238,':trC,hit:hitC,w:trW});
-    hitFx(C,tg,tw.ang,hitC,prc,T.type);
+    else if(!thin9)addFx(C,'tr',mzx,mzy,'',{x2:tg.px,y2:tg.py,col:T.pierce?'rgba(216,131,238,':trC,hit:hitC,w:trW});/* 🔥(228i)ガトリングは曳光線も1発おき */
+    if(!thin9)hitFx(C,tg,tw.ang,hitC,prc,T.type);/* 🔥(228i)着弾の火花も同じ(数字と血は残る=手応えは死なない) */
     /* ⚠タレットごとに音が違う。連射しても45msの制限で重ならない */
     twSfx(C,T);}
   }
