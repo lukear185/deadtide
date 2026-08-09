@@ -82,7 +82,12 @@ for(const f of files){
   +' / 拠点'+out.stg+' / 編成'+t.length+'体');
 }
 console.log('─'.repeat(66));
-/* ⭐**旧セーブの解放済みを取り上げていないか**(2026-08-06(187)の移し替えの本番) */
+/* ⭐(187)旧セーブの移し替え+🔒(229)**面の進みより先の解放は🧬を返して巻き戻す**(2026-08-09ユーザー指示
+   「すでに終盤のタレットとか解放してるやつも未解放に戻す。辻褄合ってるやつはそのまま」)。
+   ⚠**「解放済みを取り上げない」の物差しは(229)で変わった**=棚(面のクリアで並ぶ分)に無い物は
+   未解放へ戻し、**払った🧬を全額返す**(同じ値段で買い直せる)。
+   ⭐この標本は拠点0=棚は段0だけ → **塔4種・兵科2種が残る**(標本の塔5種のうち4種と、
+   兵科8種のうち2種が段0の棚に居る)。⚠**段0の顔ぶれを変えたらこの数字も直すこと**。 */
 {
  const raw=fs.readFileSync(path.join(DIR,'v1_旧式_解放は個数.json'),'utf8');
  const o=JSON.parse(raw);
@@ -94,10 +99,17 @@ console.log('─'.repeat(66));
  const LS={'dt_meta':raw};
  global.localStorage={getItem:k=>(k in LS?LS[k]:null),setItem:(k,v)=>{LS[k]=''+v;},
   removeItem:k=>{delete LS[k];},clear:()=>{for(const k in LS)delete LS[k];}};
- const g=new Function(js+'\n;return [(META.ot||[]).length,(META.ou||[]).length];')();
- if(g[0]!==o.nt||g[1]!==o.nu){
-  console.log('🔴 旧セーブの解放済みが引き継がれていない 塔'+g[0]+'/'+o.nt+' 兵科'+g[1]+'/'+o.nu);bad++;
- }else console.log('✅ 旧セーブ(先頭からN個)の解放済みを取り上げていない 塔'+g[0]+'種 兵科'+g[1]+'種');
+ /* 返す物=[残った塔, 残った兵科, いまの🧬, 残りが全部棚の中か(1/0), 返るべき🧬の合計]
+    ⚠返金の式は本体と同じ物差し(何個目かの値段)を**本体の関数で**数える(式を写さない) */
+ const g=new Function(js+'\n;return [(META.ot||[]).length,(META.ou||[]).length,META.pts|0,'
+  +'((META.ot||[]).every(id=>shelfT().indexOf(id)>=0)&&(META.ou||[]).every(id=>shelfU().indexOf(id)>=0))?1:0,'
+  +'(function(){let s=0;for(let k=(META.ot||[]).length;k<'+(o.nt|0)+';k++)s+=LAB_NT(k);'
+  +'for(let k=(META.ou||[]).length;k<'+(o.nu|0)+';k++)s+=LAB_NU(k);return s;})()];')();
+ const wantP=(o.pts|0)+g[4];
+ if(!g[3]){console.log('🔴 棚に無い物が解放済みのまま残っている 塔'+g[0]+' 兵科'+g[1]);bad++;}
+ else if(g[0]!==4||g[1]!==2){console.log('🔴 巻き戻しの残りが想定と違う 塔'+g[0]+'(想定4) 兵科'+g[1]+'(想定2)=棚の中まで取り上げた?');bad++;}
+ else if(g[2]!==wantP){console.log('🔴 巻き戻した🧬が全額返っていない '+g[2]+'(想定'+wantP+')');bad++;}
+ else console.log('✅ 旧セーブ: 棚の中は残る(塔4・兵科2)+先の解放は🧬を全額返して巻き戻し(🧬'+g[2]+')');
 }
 if(bad){console.log('🔴 '+bad+'件おかしい。⚠**昔から遊んでいる人のデータが壊れる**');process.exit(1);}
 console.log('🟢 標本すべて壊れずに読み込めた');

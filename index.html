@@ -6628,6 +6628,29 @@ function scArr(si){if(!Array.isArray(META.sc))META.sc=[];
  for(let k=0;k<META.sc.length;k++){if(!Array.isArray(META.sc[k]))META.sc[k]=D5.map(()=>0);
   while(META.sc[k].length<D5.length)META.sc[k].push(0);}
  return META.sc[clamp(si|0,0,STAGES.length-1)];}
+/* 🔒⭐⭐(229)**持ち物を「面のクリア状況」へ巻き戻す**(2026-08-09ユーザー指示
+   「すでに終盤のタレットとか解放してるやつも未解放に戻す。面のクリア状況で辻褄合ってるやつはそのまま」)=
+   進行の作り替え(187〜198)より前に解放した物が、いまの棚(面クリアの門)より先まで残っている人がいる。
+   ⭐**棚にまだ並ばない物だけ取り上げて、払った🧬は全額返す**
+   (値段は「何個目か」で決まるので、返す額=巻き戻した個数ぶんを後ろから数えた合計。
+    買い直す時も同じ「何個目か」で数えるので、返した額でそのまま買い直せる)。
+   ⚠🛠DEVでは呼ばない=DEVは全開放が約束(ファイル末尾の底上げと毎回喧嘩して、🧬が際限なく増える)。
+   ⚠毎回の読み込みで呼んでよい(棚の中しか持っていなければ何もしないで戻る)。検査は checkUnlock の⑤。 */
+function unlClamp(){
+ if(!Array.isArray(META.ot)||!Array.isArray(META.ou))return false;
+ const aT=shelfT(),aU=shelfU();
+ let back=0;
+ const cut=(own,allow,price)=>{
+  const keep=own.filter(id=>allow.indexOf(id)>=0);
+  for(let k=own.length-1;k>=keep.length;k--)back+=price(k);
+  return keep;};
+ const kT=cut(META.ot,aT,LAB_NT),kU=cut(META.ou,aU,LAB_NU);
+ if(kT.length===META.ot.length&&kU.length===META.ou.length)return false;
+ META.ot=kT;META.ou=kU;META.nt=kT.length;META.nu=kU.length;TWOWN_K=-1;
+ META.pts=(META.pts||0)+back;
+ saveMeta();
+ return true;}
+if(!devAll())unlClamp();
 /* 難易度は1つ下をクリアしないと選べない(新兵から順に)。⚠🛠DEVモードは全部選べる。
    ⚠⚠**添字の順ではなく `D_ORD` の並びで1つ前を見る**=🚌ボーナスは D5 の末尾(6)に置いてあるので、
      `d-1` で見ると「ナイトメアをクリアしないと開かない」になる(2026-08-02)。 */
@@ -6806,6 +6829,10 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m13',d:'2026-08-09',t:'アップデート',ver:'0.021',
+  b:'押すと変わった所が全部見られます',
+  list:['🔬研究所の棚を土地の進み具合に合わせて整理した=先の土地のぶんまで解放済みだったタレット/ユニットは、いったん未解放に戻る',
+   '🧬戻したぶんの研究Pは全額返ってくる(棚に並んだら同じ値段でそのまま買い直せる)']},
  {id:'m12',d:'2026-08-09',t:'アップデート',ver:'0.02',
   b:'押すと変わった所が全部見られます',
   list:['🔩新タレット「ハープーン砲」=巨大な鉄杭で直線の敵を串刺しにして、後ろへ吹っ飛ばす。3つ目の土地をナイトメアで落とすと研究所に並ぶ(進化で二連→スパイクランチャー)',

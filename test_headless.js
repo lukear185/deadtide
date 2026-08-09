@@ -4237,8 +4237,21 @@ function checkUnlock(){
  META.ot=null;META.nt=3;META.ou=null;META.nu=2;unlMigrate();
  if(META.ot.length!==3||META.ot[0]!==TOWERS[BASE_T].id)F('旧セーブのタワー解放が引き継がれていない');
  if(META.ou.length!==2||META.ou[0]!==UBASE[BASE_U].id)F('旧セーブの兵科解放が引き継がれていない');
+ /* ⑤ 🔒(229)**面の進みより先の解放は巻き戻す+🧬を全額返す**(2026-08-09ユーザー指示)。
+    ⚠④(移し替え自体は取り上げない)とは別の段=巻き戻しは読み込み時の unlClamp がやる。 */
+ {META.sc=[];const kpP=META.pts;
+  META.sc=[D5.map(()=>0),D5.map(()=>0)];/* 面クリア0=棚は段0だけ */
+  META.ot=['flame','rail'];META.ou=['mol','titan'];META.pts=0;
+  if(!unlClamp())F('面の進みより先の解放が巻き戻されない');
+  if(META.ot.length!==1||META.ot[0]!=='flame')F('棚の中の塔まで取り上げた/先の塔が残った '+META.ot.join(','));
+  if(META.ou.length!==1||META.ou[0]!=='mol')F('棚の中の兵科まで取り上げた/先の兵科が残った '+META.ou.join(','));
+  const want=LAB_NT(1)+LAB_NU(1);/* 2個目の値段(後ろから1個ぶんずつ) */
+  if(META.pts!==want)F('巻き戻しの🧬が全額返っていない '+META.pts+'(想定'+want+')');
+  if(unlClamp())F('巻き戻しが2回効いている(読み込みのたびに🧬が増える)');
+  if(META.pts!==want)F('2回目の呼び出しで🧬が動いた '+META.pts);
+  META.pts=kpP;}
  META.sc=kpSc;META.ot=kpOt;META.ou=kpOu;twGrantAll();
- console.log('🎓解放の門2つ: 塔'+sT+'種・兵科'+sU+'種を'+UNL_TN.length+'段(段0+5面)に配り切り / 面クリアで棚が増える(🚌は数えない) / 買っていない塔は建たない / 旧セーブの解放済みは残る OK');
+ console.log('🎓解放の門2つ: 塔'+sT+'種・兵科'+sU+'種を'+UNL_TN.length+'段(段0+5面)に配り切り / 面クリアで棚が増える(🚌は数えない) / 買っていない塔は建たない / 旧セーブの解放済みは残る / 面の進みより先は🧬を返して巻き戻す OK');
 }
 /* ---- ⚔⭐(187)進行の作り替えC=兵科と英雄にも属性を効かせた ----
    ⚠**塔だけに特効が乗っていた**のを揃えた回。見るのは
