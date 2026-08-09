@@ -2823,7 +2823,9 @@ function checkHero(){
   const front=Math.min.apply(null,UNITS.slice(0,U_N).filter(U=>U.type==='melee').map(U=>uStand(U)));
   for(const id of RNG_MELEE){const U=UNITS[hUiOf(id)];const bk=uStand(U);
    if(!(bk>front)){console.log('FAIL: 近接英雄 '+U.n+' が前線の兵科より後ろに居ない (英雄'+bk+' / 前線'+front+')');process.exit(1);}
-   if(bk>60){console.log('FAIL: 近接英雄 '+U.n+' が下がりすぎ '+bk);process.exit(1);}
+   /* 🐺(229j)狼王だけ上限を緩める(2026-08-09ユーザー指示「もっと射程を伸ばして、遠目から飛びかかり」=
+      飛びかかりの絵が距離を埋めるので「殴れない置物」にはならない。届く保証(下のmg)はそのまま効く) */
+   if(bk>(id==='hWolf'?110:60)){console.log('FAIL: 近接英雄 '+U.n+' が下がりすぎ '+bk);process.exit(1);}
    /* 敵は前線から最大 ENG_GAP 離れた所で止まる=英雄からの距離は bk+ENG_GAP */
    const need=bk+ENG_GAP,mg=(U.rng||0)-need;
    if(mg<0){console.log('FAIL: 近接英雄 '+U.n+' の射程が届かない(要'+need+' / 射程'+U.rng+')');process.exit(1);}

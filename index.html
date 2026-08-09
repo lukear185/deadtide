@@ -2766,7 +2766,7 @@ function runData(){
   stk:m.stk||'air',flagD:Math.round(m.flagD||0),flagLn:m.flagLn||0,
   hsel:(m.hUi>=0&&heroAt(m.hUi))?heroAt(m.hUi).id:'',hOut:m.hOut||0,
   slk:(m.slk||[]).map(v=>v?1:0),
-  tw:(m.towers||[]).map(t=>t?{ti:t.ti,us:Object.assign({},t.us),spent:t.spent}:0)};
+  tw:(m.towers||[]).map(t=>t?{ti:t.ti,us:Object.assign({},t.us),spent:t.spent,md:t.md?1:0}:0)};/* 🔩md=(229i)ハープーンのモード */
  return d;
 }
 /* ⭐⭐**戦闘中に中断したら「そのウェーブが始まった時の状態」しか保存しない**(2026-07-28ユーザー指摘)。
@@ -2807,7 +2807,7 @@ function resumeRun(){
  if(devAll()){m.unlocked=Math.max(m.unlocked||0,metaTowerCap());m.team=teamIdx();m.uUn=Math.max(m.uUn||0,m.team.length);
   m.ecoN=ECO_MAX;m.supN=SUP_MAX;m.slk=m.slk.map((v,i)=>i<ECO_BASE?true:v);}
  if(d.tw&&d.tw.length)m.towers=m.towers.map((t,i)=>{const s=d.tw[i];
-  return s?{ti:s.ti,us:Object.assign(newUs(),s.us||{}),cd:rnd(.1,.5),ang:-.6,jamT:0,fireT:0,spent:s.spent||0,own:0}:null;});
+  return s?{ti:s.ti,us:Object.assign(newUs(),s.us||{}),cd:rnd(.1,.5),ang:-.6,jamT:0,fireT:0,spent:s.spent||0,md:s.md||0,own:0}:null;});
  {const k9=STRIKES[m.stk]?m.stk:'air';$('strikebtn').innerHTML=icoImg('ic-stk-'+k9,STRIKES[k9].ic);}
  toast('▶ WAVE '+((G.wave||0)+1)+' から再開!');
  return true;
@@ -4658,7 +4658,7 @@ const TOWERS=[
     ⭐**直線の敵を bmax 体まで串刺し+kb で後ろへ吹っ飛ばす**(狙いはレールガンと同じ「一番多く貫ける並び」)。
     ⚠⚠**ここへ差し込んだので後ろ(支援・進化専用)の番号が1つずれた**=続きからの版をv3へ(loadRunの断り)。
     🔊音は仮でスナイパー塔と同じ(AI生成の候補は後日の協議=[[TODO]])。 */
- {id:'harp',n:'ハープーン砲',cost:560,up2:'harp2',gc:4480,rng:300,dmg:210,rate:2.3,type:'pierce',beam:16,bmax:4,kb:120,c:'#8f7a54',dsc:'廃材の大杭を撃ち出し、直線の4体を串刺しにして後ろへ吹っ飛ばす'},
+ {id:'harp',n:'ハープーン砲',cost:560,up2:'harp2',gc:4480,rng:300,dmg:210,rate:2.3,type:'pierce',beam:16,bmax:4,kb:120,c:'#8f7a54',dsc:'廃材の大杭で直線の4体を串刺し+後ろへ吹っ飛ばす。⇄で⚡速射(1体を速く)に切替できる'},
  /* ===== 支援施設(type:'sup') =====
     タレットとは別軸。専用の支援枠2つにしか建たず、タレットの解放チェーンにも研究所にも出さない。
     ⚠タレットの強化はしないこと(ユーザー指示)。効いてよいのは 情報 / ユニット / 経済 の3軸だけ。
@@ -5705,7 +5705,10 @@ const HEROES=[
     一旦キャラのデータは残しといてゲームからは外しておこう」)=off:1で排出・召集・図鑑・選択・検証場から
     消える(データと実装は温存)。⭐**作り直しの指示**=見た目とブレスは全面作り直し/攻撃は
     「もっと射程を伸ばして遠目から飛びかかり、攻撃後は結構戻る」イメージ(→[[TODO]])。 */
- {id:'hWolf',off:1,n:'蒼雷の狼王',rk:5,hp:6400,atk:1900,rate:2.0,sp:112,c:'#8fb4e0',ty:'elec',rng:64,uch:56,ult:'蒼雷の群狼',udsc:'遠吠えで雷の狼を3体呼ぶ。5秒間敵に食らいつき、締めの放電と同時に王みずから雷のブレスを吐く'}
+ /* 🐺(229j)**作り直して復帰**(2026-08-09ユーザー指示「もう一回作ってみて。かっこよさ重視」)=
+    off を外した。⭐射程64→150(ユーザー指示「もっと射程を伸ばして、遠目から飛びかかり、攻撃後は結構戻る」
+    =飛びかかりの絵は元からあるので、立ち位置が遠くなるだけで「遠くから跳んで戻る」になる) */
+ {id:'hWolf',n:'蒼雷の狼王',rk:5,hp:6400,atk:1900,rate:2.0,sp:112,c:'#8fb4e0',ty:'elec',rng:150,uch:56,ult:'蒼雷の群狼',udsc:'遠吠えで雷の狼を3体呼ぶ。5秒間敵に食らいつき、締めの放電と同時に王が薙ぎ払いの雷ブレスを吐く'}
 ];
 /* ⛔(226g)**外している英雄(off:1)を除いた一覧**=排出・召集・図鑑・選択・検証場は必ずこちらを見る。
    ⚠HEROES そのもの(添字・hUiOf・UNITS変換)は触らない=持っている人のセーブと実装を壊さないため。 */
@@ -6897,6 +6900,12 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m16',d:'2026-08-09',t:'アップデート',ver:'0.032',
+  b:'押すと変わった所が全部見られます',
+  list:['🔩ハープーン砲の吹っ飛ばしを修正=刺さった敵がちゃんと後ろへ押し戻されるようになった(それまで倒した時しか飛ばなかった)',
+   '🔩ハープーン砲に⚡速射モード=強化ウィンドウの⇄ボタンで「串刺し(4体+吹っ飛ばし)」と「速射(1体を速く)」を切り替えられる(無料・強化は共通)',
+   '🐺★5「蒼雷の狼王」が姿を変えて復帰=狩りの前傾と稲妻のたてがみ。射程が伸びて、遠くから飛びかかって戻る',
+   '🐺必殺「蒼雷の群狼」の締めが薙ぎ払いの雷ブレスになった(天からの落雷→扇に5本)']},
  {id:'m15',d:'2026-08-09',t:'アップデート',ver:'0.031',
   b:'押すと変わった所が全部見られます',
   list:['🌑4つ目の土地に「飽食の玉座」が開いた=ナイトメアの敵6種(腐れ歩き/腐れ走者/腐れ胎/黒鉄の鎮圧盾/💀市場の暴君/💀飢えの王)。黒ずんだ体に赤い目',
@@ -16511,80 +16520,132 @@ HBODY.hLupi=(c,U,walk,t,ph,o)=>{
    ④ふさふさの尾 ⑤**体に青白い電気が走る**(体の一部=FXLVで消さない) ⑥攻撃=顎を開く/溜め=遠吠えで上を向く。
    ⚠四つ足なので人型の部品(hLeg2/bTorso/hFc)は使わない。⚠|x|≦54に収める。 ---- */
 HBODY.hWolf=(c,U,walk,t,ph,o)=>{
- const FUR='#6a7086',FUR2='#7d8499',BLY='#565b6e',MN2='#9aa2b8',EL='#bfe9ff',WRAP='#4a5060';
+ /* 🐺⭐⭐(229j)**全面作り直し=かっこよさ重視**(2026-08-09ユーザー指示。前の体は0点判定)。
+    ⭐効かせた手は NOTES_絵 の3つ:
+      ①**片側だけ膨らむ曲線**(前の体は台形の脚=板を組んだ物だった)
+      ②**明暗3段**=体は嵐の紺(暗)/腹と脚先はさらに暗く/**一番明るいのは稲妻のたてがみと目**
+      ③**棒立ちをやめる**=頭を肩より低く落とした**狩りの前傾**・耳は伏せる・尻を絞る。
+    ⭐署名=**たてがみそのものが稲妻の形**(後ろへ流れるギザギザ)+ジグザグの尾+額の雷紋。 */
+ const BD='#2c3242',DK='#1e222d',MN='#9fb6d8',EL='#cfeaff',EL2='#8fd0ff';
  const rc=bRc(o);/* 溜め(遠吠え)0..1 */
  const atk=(o&&o.fireT>0)?1:0;
- c.save();c.scale(1.15,1.15);
- if(atk)c.translate(2.6,-1);/* 攻撃の瞬間は少し前へ突っ込む */
- /* 脚4本(狼はほっそり)。⚠前後で振りの位相を変える(馬と同じ掟) */
- const wleg=(lx,pz,col,fr)=>{const s1=Math.sin(t*8+ph+pz),lift=Math.max(0,Math.sin(t*8+ph+pz+1.2))*2.4;
+ c.save();c.scale(1.2,1.2);
+ if(atk)c.translate(3,-1);/* 攻撃の瞬間は前へ突っ込む */
+ /* 脚(狼はつま先立ち)。⭐外側だけ膨らむ腿+細い脛+爪先。⚠前後で振りの位相を変える */
+ const wleg=(lx,pz,col,hind)=>{const s1=Math.sin(t*8+ph+pz),lift=Math.max(0,Math.sin(t*8+ph+pz+1.2))*2.8;
   c.fillStyle=col;
-  c.beginPath();c.moveTo(lx-3.4,-18);c.lineTo(lx+3.6,-18);
-  c.lineTo(lx+2.4+s1*2.6,-9);c.lineTo(lx-2.2+s1*2.6,-9);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(lx-2.2+s1*2.6,-9.4);c.lineTo(lx+2.4+s1*2.6,-9.4);
-  c.lineTo(lx+2+s1*4.2,-.4-lift);c.lineTo(lx-2+s1*4.2,-.4-lift);c.closePath();c.fill();c.stroke();
-  if(fr){c.fillStyle=WRAP;c.fillRect(lx-2.6+s1*3.4,-8,5.2,3.2);c.strokeRect(lx-2.6+s1*3.4,-8,5.2,3.2);}};
- wleg(-16,3.14,shade(FUR,.66));wleg(14,1.2,shade(FUR,.66),1);/* 奥の2本 */
- /* ふさふさの尾(先をぎざぎざに割る=矢印に見せない) */
- c.fillStyle=MN2;
- c.beginPath();c.moveTo(-24,-26);
- c.quadraticCurveTo(-36,-30+walk,-40,-20+walk*1.6);
- c.lineTo(-35,-19);c.lineTo(-37,-14);c.lineTo(-31,-15);
- c.quadraticCurveTo(-27,-18,-23,-20);c.closePath();c.fill();c.stroke();
- /* 胴(背を丸め腹をくびれさせる=箱にしない) */
- c.fillStyle=FUR;
- c.beginPath();c.moveTo(-25,-22);
- c.bezierCurveTo(-27,-31,-14,-35,0,-34);
- c.bezierCurveTo(10,-33.5,17,-31,21,-27);
- c.lineTo(22,-18);
- c.bezierCurveTo(8,-13,-12,-13,-25,-17);
+  c.beginPath();c.moveTo(lx-4.6,-20);
+  if(hind){/* 後脚=くの字に畳む(飛びかかりのバネ) */
+   c.bezierCurveTo(lx-8.4,-15,lx-7,-10,lx-3+s1*2,-8.6);
+   c.quadraticCurveTo(lx-1+s1*3.4,-4,lx+.4+s1*4.6,-.4-lift);
+   c.lineTo(lx+3.6+s1*4.6,-.4-lift);
+   c.quadraticCurveTo(lx+3.4+s1*2,-8,lx+4.4,-14);}
+  else{/* 前脚=まっすぐ地を掴む */
+   c.quadraticCurveTo(lx-5.4+s1*1.4,-10,lx-2.6+s1*3.4,-.4-lift);
+   c.lineTo(lx+1.4+s1*3.4,-.4-lift);
+   c.quadraticCurveTo(lx+3.6+s1*1.2,-12,lx+4.2,-19);}
+  c.lineTo(lx+4.6,-20);c.closePath();c.fill();c.stroke();
+  /* 爪先(小さく2つ=これで「肉球で立つ獣」に読める) */
+  c.fillStyle=shade(col,1.3);
+  c.fillRect(lx-2.6+s1*(hind?4.6:3.4),-2.2-lift,2,1.8);c.fillRect(lx+.2+s1*(hind?4.6:3.4),-2.4-lift,2,1.8);};
+ wleg(-19,3.14,shade(DK,.9),1);wleg(12,1.2,shade(DK,.9));/* 奥の2本(暗い) */
+ /* ⚡ジグザグの尾(稲妻の形・先だけ光る)=署名② */
+ c.fillStyle=shade(MN,.8);
+ c.beginPath();c.moveTo(-26,-27);
+ c.lineTo(-34,-33+walk);c.lineTo(-31,-28+walk);c.lineTo(-40,-31+walk*1.6);
+ c.lineTo(-36,-24+walk);c.lineTo(-28,-23);c.closePath();c.fill();c.stroke();
+ c.fillStyle=EL;c.beginPath();c.moveTo(-40,-31+walk*1.6);c.lineTo(-44,-32+walk*1.6);c.lineTo(-40,-28+walk*1.6);c.closePath();c.fill();
+ /* 稲妻のたてがみ(奥の層=肩から後ろへ流れる)。⚠体より先に描く=輪郭の外へ流す */
+ {const mw=rc*3;/* 溜めで逆立つ */
+  c.fillStyle=shade(MN,.66);
+  c.beginPath();c.moveTo(14,-36);
+  c.lineTo(6,-44-mw);c.lineTo(9,-38);c.lineTo(-3,-45-mw);c.lineTo(-1,-38);
+  c.lineTo(-13,-42-mw);c.lineTo(-10,-35);c.lineTo(-22,-37-mw);c.lineTo(-16,-31);
+  c.lineTo(-24,-29);c.lineTo(-6,-30);c.closePath();c.fill();c.stroke();}
+ /* 胴=**狩りの前傾**。肩(x10,-37)が最高点→首が下がる→頭は肩より低い。尻は絞って低い */
+ c.fillStyle=BD;
+ c.beginPath();c.moveTo(-26,-22);
+ c.bezierCurveTo(-29,-29,-22,-31,-14,-31);
+ c.bezierCurveTo(-4,-38,8,-39,14,-36);
+ c.bezierCurveTo(20,-33,24,-28,27,-23);
+ c.lineTo(25,-16);
+ c.bezierCurveTo(14,-11,4,-12,-6,-14);
+ c.bezierCurveTo(-16,-12,-24,-14,-26,-22);
  c.closePath();c.fill();c.stroke();
- c.save();c.beginPath();c.rect(-27,-20,52,10);c.clip();/* 腹側だけ1段暗く */
- c.fillStyle=BLY;
- c.beginPath();c.moveTo(-25,-22);c.bezierCurveTo(-27,-31,-14,-35,0,-34);
- c.bezierCurveTo(10,-33.5,17,-31,21,-27);c.lineTo(22,-18);
- c.bezierCurveTo(8,-13,-12,-13,-25,-17);c.closePath();c.fill();c.restore();
- /* 背のたてがみ(ぎざぎざ=このキャラの署名)。⚠高くしすぎると背中に岩が乗って見える(撮って下げた) */
- c.fillStyle=shade(MN2,.92);
- c.beginPath();c.moveTo(-22,-27);
- for(let i=0;i<5;i++)c.lineTo(-18+i*6,-31.5-(i%2?1.5:3.5)-walk*.5);
- c.lineTo(10,-31);c.lineTo(8,-28);c.closePath();c.fill();c.stroke();
- /* 胴の傷跡2本 */
- c.save();c.strokeStyle='#3d4150';c.lineWidth=1.6;
- c.beginPath();c.moveTo(-8,-28);c.lineTo(-3,-22);c.moveTo(-5,-28);c.lineTo(0,-22);c.stroke();c.restore();
- wleg(-9,0,FUR);wleg(19,2.4,FUR,1);/* 手前の2本 */
- /* 首と頭。⭐溜め(遠吠え)=頭を上げる / 攻撃=顎を開く */
- {c.save();c.translate(20,-28);c.rotate(-rc*.62+(atk?.12:0));
-  c.fillStyle=FUR2;
-  c.beginPath();c.moveTo(-4,2);c.lineTo(2,-8);c.lineTo(9,-7);c.lineTo(6,4);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(1,-7);c.lineTo(6,-13);c.lineTo(12,-12);
-  c.quadraticCurveTo(20,-10,21,-6);
-  c.lineTo(14,-3.6);c.lineTo(6,-2);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#2a2d38';c.beginPath();c.arc(20.4,-6.4,1.5,0,7);c.fill();/* 鼻先 */
-  {const op=Math.max(atk?.5:0,rc*.65);/* 開く顎 */
-   c.fillStyle=shade(FUR2,.8);
-   c.beginPath();c.moveTo(8,-2.6);c.lineTo(19,-3.4+op*6);c.lineTo(9,1+op*5);c.closePath();c.fill();c.stroke();
-   if(op>.2){c.fillStyle='#fff';/* 牙 */
-    c.beginPath();c.moveTo(11,-2.8);c.lineTo(12.6,-.6+op*3);c.lineTo(14,-3);c.closePath();c.fill();}}
-  c.fillStyle=FUR2;/* 耳2本(長さを変える) */
-  c.beginPath();c.moveTo(2,-12);c.lineTo(0,-19);c.lineTo(6,-14);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(7,-13.6);c.lineTo(8,-19.4);c.lineTo(11.4,-13);c.closePath();c.fill();c.stroke();
-  c.fillStyle='#ffd23d';c.beginPath();c.ellipse(11.6,-8.4,2.3,1.3,-.15,0,7);c.fill();/* 黄色い目 */
-  c.fillStyle=INK;c.beginPath();c.arc(12.3,-8.4,.7,0,7);c.fill();
-  c.save();c.strokeStyle='#3d4150';c.lineWidth=1.4;/* 顔の傷 */
-  c.beginPath();c.moveTo(9,-12);c.lineTo(10.4,-9.6);c.stroke();c.restore();
+ /* 腹と胸の下側=1段暗く(明暗3段の暗) */
+ c.save();c.beginPath();c.rect(-27,-19,56,10);c.clip();
+ c.fillStyle=DK;
+ c.beginPath();c.moveTo(-26,-22);c.bezierCurveTo(-29,-29,-22,-31,-14,-31);
+ c.bezierCurveTo(-4,-38,8,-39,14,-36);c.bezierCurveTo(20,-33,24,-28,27,-23);
+ c.lineTo(25,-16);c.bezierCurveTo(14,-11,4,-12,-6,-14);
+ c.bezierCurveTo(-16,-12,-24,-14,-26,-22);c.closePath();c.fill();c.restore();
+ /* 肩甲骨の張り(肩が最高点だと読ませる一番明るい面の予告) */
+ c.fillStyle=shade(BD,1.25);
+ c.beginPath();c.ellipse(9,-32,6.4,4,-.25,0,7);c.fill();
+ /* 胴の傷3本(王の年季)。⚠等間隔にしない */
+ c.save();c.strokeStyle='#454b5c';c.lineWidth=1.5;
+ c.beginPath();c.moveTo(-10,-28);c.lineTo(-5,-21);c.moveTo(-7,-29);c.lineTo(-2,-22);c.moveTo(1,-26);c.lineTo(4,-21);c.stroke();c.restore();
+ wleg(-14,0,DK,1);wleg(18,2.4,shade(BD,.9));/* 手前の2本 */
+ /* 稲妻のたてがみ(手前の層=首から胸へ)。一番明るい帯=署名① */
+ {const mw=rc*3;
+  c.fillStyle=MN;
+  c.beginPath();c.moveTo(20,-32);
+  c.lineTo(13,-42-mw);c.lineTo(15,-35);c.lineTo(4,-41-mw);c.lineTo(7,-34);
+  c.lineTo(-4,-37-mw);c.lineTo(0,-31);c.lineTo(-8,-30);
+  c.lineTo(4,-28);c.lineTo(14,-29);c.closePath();c.fill();c.stroke();
+  c.fillStyle=EL;/* たてがみの先端だけ雷色(一番明るい所) */
+  c.beginPath();c.moveTo(13,-42-mw);c.lineTo(11,-46-mw);c.lineTo(15,-43-mw);c.closePath();c.fill();
+  c.beginPath();c.moveTo(4,-41-mw);c.lineTo(1,-45-mw);c.lineTo(6,-42-mw);c.closePath();c.fill();}
+ /* 胸の飾り毛(前へ突き出す=前傾の勢い) */
+ c.fillStyle=shade(MN,.85);
+ c.beginPath();c.moveTo(24,-24);c.lineTo(30,-21);c.lineTo(25,-19);c.lineTo(29,-15);c.lineTo(23,-15);c.closePath();c.fill();c.stroke();
+ /* 首と頭=**肩より低く**(狩りの姿勢)。⭐溜め(遠吠え)=頭を上げる / 攻撃=顎を開く */
+ {c.save();c.translate(25,-24);c.rotate(-rc*.9+(atk?.12:.06));
+  const HD=shade(BD,1.12);
+  c.fillStyle=HD;/* 首(太い) */
+  c.beginPath();c.moveTo(-6,4);c.quadraticCurveTo(-4,-6,3,-7);c.lineTo(8,-5);c.lineTo(7,5);c.closePath();c.fill();c.stroke();
+  /* 頭+鼻筋(長いマズル・先を下げる) */
+  c.fillStyle=HD;
+  c.beginPath();c.moveTo(0,-6);
+  c.bezierCurveTo(4,-10,9,-10.4,12,-9);
+  c.quadraticCurveTo(19,-7.4,22.4,-3.4);/* 鼻筋 */
+  c.lineTo(21,-.6);c.lineTo(13,-.4);c.lineTo(4,1.4);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#171a22';c.beginPath();c.ellipse(21.4,-3.2,1.7,1.3,.3,0,7);c.fill();/* 鼻先 */
+  {const op=Math.max(atk?.55:0,rc*.7);/* 開く顎+牙 */
+   c.fillStyle=shade(HD,.72);
+   c.beginPath();c.moveTo(9,.4);c.lineTo(20,-.4+op*6);c.lineTo(10,3.4+op*5);c.closePath();c.fill();c.stroke();
+   c.fillStyle='#fff';/* 牙は閉じていても覗く(かっこよさの芯) */
+   c.beginPath();c.moveTo(12,.2);c.lineTo(13.4,2.6+op*3);c.lineTo(15,0);c.closePath();c.fill();
+   c.beginPath();c.moveTo(16.4,-.4);c.lineTo(17.4,1.6+op*3);c.lineTo(18.6,-.6);c.closePath();c.fill();}
+  c.fillStyle=shade(BD,.9);/* 伏せた耳2本(後ろへ寝かせる=威嚇。⚠立てると犬になる) */
+  c.beginPath();c.moveTo(-1,-6.4);c.lineTo(-9,-9.4);c.lineTo(-2,-3.4);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(3,-8);c.lineTo(-3,-12.4);c.lineTo(4.6,-9.4);c.closePath();c.fill();c.stroke();
+  /* ⚡額の雷紋(一番明るい点=顔の署名) */
+  c.fillStyle=EL;
+  c.beginPath();c.moveTo(7,-9.4);c.lineTo(9.4,-6.4);c.lineTo(7.8,-6.2);c.lineTo(10,-3.6);c.lineTo(6.6,-5.6);c.lineTo(8,-5.8);c.closePath();c.fill();
+  /* 目=白青に灯る(瞳孔は縦) */
+  c.fillStyle=EL;c.beginPath();c.ellipse(12.4,-6,2.5,1.5,.15,0,7);c.fill();c.stroke();
+  c.fillStyle=INK;c.fillRect(12.9,-7,1,2.2);
+  /* 目尻の傷 */
+  c.save();c.strokeStyle='#454b5c';c.lineWidth=1.4;
+  c.beginPath();c.moveTo(10,-10);c.lineTo(11.2,-7.6);c.stroke();c.restore();
   c.restore();}
- /* ⚡体を走る電気(ゆっくり明滅。体の一部=段の布と同じ扱いでFXLVでは消さない) */
- {c.save();c.globalAlpha=Math.max(.15,.4+.35*Math.sin(t*9+ph));
-  c.strokeStyle=EL;c.lineWidth=1.8;
-  c.beginPath();c.moveTo(-14,-33);c.lineTo(-10,-29);c.lineTo(-6,-32);c.lineTo(-2,-28);c.stroke();
-  c.beginPath();c.moveTo(4,-33);c.lineTo(8,-30);c.lineTo(12,-33);c.stroke();
+ /* ⚡体を走る電光(関節に沿わせる。体の一部=FXLVでは消さない) */
+ {c.save();c.globalAlpha=Math.max(.2,.45+.35*Math.sin(t*9+ph));
+  c.strokeStyle=EL2;c.lineWidth=1.7;
+  c.beginPath();c.moveTo(6,-37);c.lineTo(2,-32);c.lineTo(-3,-35);c.lineTo(-8,-30);c.stroke();
+  c.beginPath();c.moveTo(17,-30);c.lineTo(14,-25);c.lineTo(19,-22);c.stroke();
   c.restore();}
- /* 遠吠え(溜め)=口元から立ちのぼる雷 */
- if(rc>.3){c.save();c.globalAlpha=(rc-.3)/.7*.8;
-  c.strokeStyle=EL;c.lineWidth=2.2;
-  c.beginPath();c.moveTo(24,-46);c.lineTo(28,-40);c.lineTo(24,-36);c.stroke();
-  c.beginPath();c.moveTo(14,-48);c.lineTo(17,-43);c.lineTo(13,-40);c.stroke();
+ /* 足元の小さな放電(接地の火花=雷を纏うの実感)。⚠薄く小さく */
+ {c.save();c.globalAlpha=.3+.25*Math.sin(t*13+ph);
+  c.strokeStyle=EL;c.lineWidth=1.4;
+  c.beginPath();c.moveTo(14,-1);c.lineTo(18,-3);c.lineTo(21,0);c.stroke();
+  c.restore();}
+ /* 遠吠え(溜め)=口元から立ちのぼる雷柱2本 */
+ if(rc>.3){c.save();c.globalAlpha=(rc-.3)/.7*.85;
+  c.strokeStyle=EL;c.lineWidth=2.4;
+  c.beginPath();c.moveTo(30,-52);c.lineTo(34,-44);c.lineTo(29,-40);c.lineTo(33,-33);c.stroke();
+  c.beginPath();c.moveTo(19,-55);c.lineTo(22,-48);c.lineTo(17,-44);c.stroke();
   c.restore();}
  c.restore();
 };
@@ -21194,7 +21255,11 @@ function killZ(C,z){
    ⚠大物は飛ばない(ボス1/4・エリート3/5)=重い敵が軽々飛ぶと嘘くさくなる。 */
 function kbZ(z,cx,cy,pw){if(!z||z.dead)return;
  const dx=z.px-cx,dy=(z.py-cy)*.5,l=Math.hypot(dx,dy)||1;
- z.kbx=dx/l;z.kby=dy/(l*2);z.kbp=pw*(z.boss?.25:z.elite?.6:1);}
+ z.kbx=dx/l;z.kby=dy/(l*2);z.kbp=pw*(z.boss?.25:z.elite?.6:1);
+ /* 🔩⭐(229i)**生きている敵も道を後ろへ滑らせる**(2026-08-09ユーザー実機「ノックバックしてなくない?」)。
+    🐞それまで kbp は**死んだ時の死体の吹っ飛びにしか使われていなかった**=生きた敵は1pxも動かない。
+    ⭐押し戻す量はそのまま kbp(ボス1/4・エリート6割)を0.22秒で消化=引力塔と同じ「dを動かす」枠。 */
+ z.kbT=.22;z.kbV=z.kbp/.22;}
 /* quiet=ダメージ数字と血を出さない(継続攻撃はまとめて1つ出すので毎フレーム湧かせない)
    🛡wk=**特効が乗っている一撃なら、その属性の名前**('fire'/'elec'…)。数字をその属性の色で出す。
    ⚠倍率そのものは呼ぶ側で掛けてある(ここでは掛けない)=数字の**色を変えるためだけ**に受け取る。
@@ -21832,16 +21897,27 @@ function heroUlt(C,wave){
     addFx(C,'ring',zx,zy,'',{r:150,col:'#8fb4e0'});
     addP(C,10,zx,zy-14,{sp:190,g:340,life:.4,r:2.2,col:'#bfe9ff'});}
    if(C.isMe)(sfx[SFX_UBOLT]||sfx.zap)();
-   /* 🌩王のブレス=前方一直線の太い雷 */
-   const ts9=C.zombies.filter(z=>!z.dead&&z.d>=0&&(u.d-z.d)>=-20&&(u.d-z.d)<=620);
-   let far9=null;for(const z of ts9){if(!far9||z.d<far9.d)far9=z;}
-   const ex9=far9?far9.px:u.px+(u.dr||-1)*520,ey9=far9?far9.py-16*CH_UP:u.py-24*CH_UP;
-   addFx(C,'beam',u.px+(u.dr||-1)*22*CH_UP,u.py-26*CH_UP,'',
-    {x2:ex9,y2:ey9,col:'rgba(140,200,255,',col2:'rgba(235,248,255,',w:8,lf:.4,sus:1});
-   for(const z of ts9){dmgZ(C,z,Math.round(500*W),1,0,0,'elec');}
-   u.ulT=Math.max(u.ulT||0,.6);/* ブレスの間は吠えの構え */
-   C.shake=Math.max(C.shake||0,.4);
-   if(C.isMe)sfx.zap2&&sfx.zap2();});
+   /* 🌩⭐(229j)**王のブレス=薙ぎ払いの奔流に作り直し**(2026-08-09ユーザー指示「かっこよさ重視」。
+      前=細い一直線1本で「言われないと気づかない」)=
+      ①天から王へ太い落雷が落ちる(力が宿る) ②**極太の蒼雷を前方へ扇に薙ぐ**(5本を0.1秒刻み・
+      真ん中の1本が極太で本命)。⚠威力は 脇200×4+芯420(旧500の一直線より強い)=手触りは実機待ち。 */
+   {const dr9=(u.dr||-1);
+    addFx(C,'zap',u.px,u.py-140*CH_UP,'',{pts:[[u.px+rnd(-26,26),u.py-140*CH_UP],[u.px,u.py-20*CH_UP]],sd:rnd(0,9),wm:1.6});
+    addFx(C,'shock',u.px,u.py-8,'',{r:90,col:'#bfe9ff'});
+    const swp=[-.42,.42,-.21,.21,0];/* 外→内→芯の順で薙ぐ(最後に一番太いのが来る) */
+    swp.forEach((ao,k9)=>{later(C,.12+k9*.1,()=>{
+     if(u.dead)return;
+     const core9=(ao===0),bx=u.px+dr9*20,by=u.py-24*CH_UP;
+     const ang9=(dr9<0?Math.PI:0)+ao*(dr9<0?1:-1);
+     const ex9=bx+Math.cos(ang9)*560,ey9=by+Math.sin(ang9)*560*.35;/* 見下ろしなので縦の開きは潰す */
+     addFx(C,'beam',bx,by,'',{x2:ex9,y2:ey9,col:'rgba(140,200,255,',col2:'rgba(235,248,255,',w:core9?16:9,lf:core9?.4:.25,sus:1});
+     for(const z of C.zombies){if(z.dead||z.d<0)continue;
+      if(segDist(z.px,z.py,bx,by,ex9,ey9)>(core9?34:26))continue;
+      dmgZ(C,z,Math.round((core9?420:200)*W),1,0,0,'elec');}
+     if(FXLV>0)addP(C,5,(bx+ex9)/2,(by+ey9)/2,{sp:150,g:260,life:.28,r:2,col:'#bfe9ff'});
+     C.shake=Math.max(C.shake||0,core9?.42:.2);
+     if(C.isMe&&core9)sfx.zap2&&sfx.zap2();});});}
+   u.ulT=Math.max(u.ulT||0,1.0);/* ブレスの間は吠えの構え */});
  }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
   for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
    addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:DANGER});}
@@ -21989,6 +22065,8 @@ function campStep(C,dt,wave){
     if((C.isMe||C.kind==='remote'||(G&&G.coop&&C===G.players[0]))&&FXLV>0&&C.fx.length<70&&Math.random()<(FXLV===2?.5:.25))addFx(C,'blood',blk.px,blk.py-30*CH_UP,'',{sd:rnd(0,9),gray:1});}
    continue;
   }
+  /* 🔩(229i)ハープーンの吹っ飛ばし=kbZ が書いた量を消化して道を後ろへ滑る(0.22秒) */
+  if(z.kbT>0){z.d=Math.max(0,z.d-z.kbV*dt);z.kbT-=dt;}
   z.d+=z.sp*z.sm*slow*dt;
   /* ⭐⭐**最終ウェーブの主(siege)は素通りせず、拠点に取り付いて何度も殴る**(2026-07-30ユーザー指示)。
      ⚠それまでは**どんな敵も拠点へ触れた瞬間に消えて1回ぶんのダメージ**だったので、
@@ -22532,7 +22610,12 @@ function campStep(C,dt,wave){
    continue;
   }
   if(tw.cd>0||!tg)continue;
-  tw.cd=T.rate*twRateM(tw);tw.fireT=.12;
+  /* 🔩⭐(229i)**ハープーンの2モード**(2026-08-09ユーザー指示「早い攻撃速度モードと
+     遅い4体貫通ノックバックモードで切り替え」)=⚡速射(1体・間隔1/3.5・吹っ飛ばし半分)⇄🔩串刺し。
+     ⚠強化(us)と値段は共通=モードは**その1台の旗(tw.md)**だけ。切替は強化ウィンドウの⇄ボタン。
+     ⚠協力/対戦の先頭10種にハープーンは居ない=通信への同期は要らない。 */
+  const hpMd=((T.id==='harp'||T.id==='harpM'||T.id==='harp2')&&tw.md===1);
+  tw.cd=(hpMd?T.rate/3.5:T.rate)*twRateM(tw);tw.fireT=.12;
   /* ⭐研究所の個別強化(そのタレット1種ぶん)。TL=段数、TT=その型の持ち味。
     ⚠型ごとのまとめ強化だった頃と同じ場所で効かせている=当たり判定や順番は変えていない */
  /* ⚠ローカル名を TT にしてはいけない=**グローバルの TT(ゲーム時刻)を隠してしまう**。
@@ -22704,11 +22787,12 @@ function campStep(C,dt,wave){
     let ls9=[];
     for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
      if(segDist(z.px,z.py,mzx,mzy,ex,ey)>bw)continue;ls9.push(z);}
-    if(T.bmax&&ls9.length>T.bmax){ls9.sort((a,b)=>dist(a.px,a.py,mzx,mzy)-dist(b.px,b.py,mzx,mzy));ls9=ls9.slice(0,T.bmax);}
+    const bm9=hpMd?1:T.bmax;/* 🔩(229i)⚡速射モードは1体だけ */
+    if(bm9&&ls9.length>bm9){ls9.sort((a,b)=>dist(a.px,a.py,mzx,mzy)-dist(b.px,b.py,mzx,mzy));ls9=ls9.slice(0,bm9);}
     let cnt=0;
     for(const z of ls9){
      splash(z);dmgZ(C,z,dm,1,0,0,T.type);
-     if(T.kb)kbZ(z,mzx,mzy,T.kb);/* 🔩杭に押されて後ろへ(死んだ時は死体ごと吹っ飛ぶ) */
+     if(T.kb)kbZ(z,mzx,mzy,hpMd?T.kb*.5:T.kb);/* 🔩杭に押されて後ろへ(⚡速射は半分) */
      if(cnt<4)hitFx(C,z,ang,hitC,prc,T.type);cnt++;}
     const hp9=(T.id==='harp'||T.id==='harpM'||T.id==='harp2');
     /* ⚠色は紫で固定(以前から `col` は無視されていた)。beamが色を受けるようになったので明示する。
@@ -25723,7 +25807,10 @@ function openBM(si){
   const grd=gp?`<div class="bm-row"><button class="btn gold sm" id="bm-grd" data-p="${gp}" ${m.scrap>=gp?'':'disabled'}>⬆ ${TOWERS[nx9].n}へ ⚙️${fmt(gp)}</button></div>`
    :(nx9<0?'':!tgOK(nx9)?`<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所の🧬派生タブで『${TOWERS[nx9].n}』を解放すると進化できる</div>`
    :`<div class="cdsc" style="font-size:12px;color:var(--gold)">⬆ 強化を全部MAXにすると『${TOWERS[nx9].n}』へ進化できる(⚙️${fmt(T_GCOST(tw.ti))})</div>`);
-  h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div>${grd}<div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
+  /* 🔩(229i)ハープーンの2モード切替(ユーザー指示)。⚠切替は無料・強化は両モード共通 */
+  const hmd=(T.id==='harp'||T.id==='harpM'||T.id==='harp2')
+   ?`<div class="bm-row"><button class="btn sm gold" id="bm-hmd">${tw.md===1?'⚡速射モード(1体を速く) ⇄ 🔩串刺しへ':'🔩串刺しモード('+T.bmax+'体+吹っ飛ばし) ⇄ ⚡速射へ'}</button></div>`:'';
+  h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div>${hmd}${grd}<div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
  }
  /* ⭐**必ず閉じられる✕を付ける**(2026-07-27ユーザー指摘
       「チュートリアル中にタレット強化する時、強化ウィンドウが消せない」)。
@@ -25738,6 +25825,8 @@ function openBM(si){
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
  const bs=$('bm-sell');if(bs)bs.onclick=()=>{actSell(si);closeBM();};
  const bg=$('bm-grd');if(bg)bg.onclick=()=>{actGrade(si);openBM(si);};
+ /* 🔩(229i)ハープーンのモード切替=その1台の旗を反転して窓を描き直すだけ */
+ const bhm=$('bm-hmd');if(bhm)bhm.onclick=()=>{const t9=m.towers[si];if(t9)t9.md=t9.md===1?0:1;openBM(si);};
  const be=$('bm-eco');if(be)be.onclick=()=>{actEcoSlot();closeBM();};
  const bs2=$('bm-sup');if(bs2)bs2.onclick=()=>{actSupSlot();closeBM();};
  const bl=$('bm-slot');if(bl)bl.onclick=()=>{actSlot(si);closeBM();};
