@@ -2603,11 +2603,12 @@ function checkGacha(){
  /* ⚠2026-07-28ユーザー指示で★3x2・★4x1(→14種)、さらに★2〜★5を1人ずつ(→18種)足した。
     ⚠2026-08-01に★5の暗黒の騎士を足して19種。⭐排出率は『1体あたり』なので数値表は触らない */
  /* ⭐2026-08-03(92)に跳弾姫ルピナを足して22人。🐺2026-08-08(226d)に蒼雷の狼王を足して23人 */
- if(HEROES.length!==23){console.log('FAIL: 英雄が23種でない '+HEROES.length);process.exit(1);}
+ /* ⚔2026-08-10(230)に**残月の剣鬼**(★5)を足して24人 */
+ if(HEROES.length!==24){console.log('FAIL: 英雄が24種でない '+HEROES.length);process.exit(1);}
  const cnt={};for(const h of HEROES)cnt[h.rk]=(cnt[h.rk]||0)+1;
  /* ⚠2026-08-01に★5へ暗黒の騎士を足し、同日に**暁の王を★5→★4へ降格**。
     ⭐2026-08-03(92)に★5へ**跳弾姫ルピナ**、🐺(226d)に**蒼雷の狼王**を足して6人 */
- const want={1:5,2:4,3:4,4:4,5:6};
+ const want={1:5,2:4,3:4,4:4,5:7};
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
  /* ⭐⭐**排出率は「レア度の枠」で決まる**=にゃんこ式(2026-08-07(203)ユーザー決定)。

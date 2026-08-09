@@ -4136,7 +4136,8 @@ const SFX_GEOSHELL='geoShD';
 /* ⭐**近接5人とも決着**(2026-08-03(88)ユーザー「G Aで」=騎槍は mSprG)。選び直しはここ1か所。
    👑⭐**暁の王も決着**(2026-08-08(217)ユーザー「暁AでOK」=dwnA。B〜Eは🗑ボツへ)。 */
 const H_SFX={hNox:'mLong',hDark:'mSprG',hGiant:'mHeavy',hMech:'mTool',hPost:'mBlunt',hDawn:'dwnA',
- hWolf:'mDog'/* 🐺(226d)噛みつき=本物の犬の吠え(猟犬と同じ素材。狼なので合う) */};
+ hWolf:'mDog',/* 🐺(226d)噛みつき=本物の犬の吠え(猟犬と同じ素材。狼なので合う) */
+ hZan:'mBladeU'/* ⚔(230)打刀=本物の剣の斬り(斧使い/影と同じ素材)。⚠専用音は必要になったら協議 */};
 /* ✊(217)**近接兵科の攻撃音**(武器ごと。⚠それまで近接は無音=聞こえていたのは撃破の血しぶき)。
    ⚠進化先は元の兵科の武器を引き継ぐ(U.base で引く)。表に無い近接=バット/斬撃=刃 に落ちる */
 const MELEE_SFX={bat:'mBat',hnd:'mDog',big:'mFist',shd:'mShld',gld:'mShld',chain:'mChain',
@@ -5805,7 +5806,12 @@ const HEROES=[
  /* 🐺(229j)**作り直して復帰**(2026-08-09ユーザー指示「もう一回作ってみて。かっこよさ重視」)=
     off を外した。⭐射程64→150(ユーザー指示「もっと射程を伸ばして、遠目から飛びかかり、攻撃後は結構戻る」
     =飛びかかりの絵は元からあるので、立ち位置が遠くなるだけで「遠くから跳んで戻る」になる) */
- {id:'hWolf',n:'蒼雷の狼王',rk:5,hp:6400,atk:1900,rate:2.0,sp:112,c:'#8fb4e0',ty:'elec',rng:150,uch:56,ult:'蒼雷の群狼',udsc:'遠吠えで雷の狼を3体呼ぶ。5秒間敵に食らいつき、締めの放電と同時に王が薙ぎ払いの雷ブレスを吐く'}
+ {id:'hWolf',n:'蒼雷の狼王',rk:5,hp:6400,atk:1900,rate:2.0,sp:112,c:'#8fb4e0',ty:'elec',rng:150,uch:56,ult:'蒼雷の群狼',udsc:'遠吠えで雷の狼を3体呼ぶ。5秒間敵に食らいつき、締めの放電と同時に王が薙ぎ払いの雷ブレスを吐く'},
+ /* ⚔⭐⭐**残月の剣鬼**(2026-08-10(230)ユーザーが絵を渡して協議ずみ=ぼろ外套の流れ者+打刀)。
+    ⭐名前はこちらで付けた(ユーザー「名前はいい感じにつけてくれ」)=絵の署名**白い三日月の斬撃**から。
+    ⭐役どころ=**前に出て、前の3体をまとめて薙ぐ4連撃**。硬さは控えめ・足は速い。
+    ⚠1発の威力が低いのは**4連撃(H_HITS)で1.45倍になる**ため=1体あたりの手応えは他の★5と同じ帯。 */
+ {id:'hZan',n:'残月の剣鬼',rk:5,hp:5600,atk:660,rate:.95,sp:104,c:'#cfd8e0',ty:'pierce',rng:52,multi:3,uch:56,ult:'残月',udsc:'前方へ巨大な三日月の斬撃を放つ。斬った敵の数だけ大きく・強くなりながら道を進む'}
 ];
 /* ⛔(226g)**外している英雄(off:1)を除いた一覧**=排出・召集・図鑑・選択・検証場は必ずこちらを見る。
    ⚠HEROES そのもの(添字・hUiOf・UNITS変換)は触らない=持っている人のセーブと実装を壊さないため。 */
@@ -5943,7 +5949,8 @@ const hUiOf=id=>{const k=HEROES.findIndex(h=>h.id===id);return k<0?-1:HERO_I0+k;
    ⚠**近接は据え置き**=type melee と、近接英雄5人(騎槍80/鉄拳64はblastだが殴り)。
    ⚠**表(HEROES/UBASE)は素のまま**=掛けるのは実際に使う UNITS 側の1か所だけ。
      戻す時もここを消すだけ。⚠タレットは別表(TOWERS)なので巻き込まない。 */
-const RNG_X=1.2,RNG_MELEE=['hNox','hDark','hGiant','hMech','hPost','hWolf'/* 🐺(226d)電撃だが噛みつき=近接 */];
+const RNG_X=1.2,RNG_MELEE=['hNox','hDark','hGiant','hMech','hPost','hWolf'/* 🐺(226d)電撃だが噛みつき=近接 */,
+ 'hZan'/* ⚔(230)貫通だが打刀=近接 */];
 for(const U of UNITS){if(U.type==='melee'||RNG_MELEE.indexOf(U.base||U.id)>=0)continue;
  if((U.rng||0)>50)U.rng=Math.round(U.rng*RNG_X);}
 
@@ -5991,7 +5998,8 @@ const U_MOT={
     ⚠**秒数(1.2)は動かしていない**=遊びの数値は据え置き。 */
  hNox:['slash',1.2],hDawn:['cast',1],hDark:['now',.36],hGeo:['snipe',1.3],hPyro:['cast',.9],
  hLupi:['now',.2],/* 🌈跳弾姫=玩具ブラスターをその場で撃つ(軽い溜め) */
- hWolf:['now',0]/* 🐺(226d)溜めゼロ=飛びかかりのテンポが命(型がboltに落ちると落雷の溜めが付く) */
+ hWolf:['now',0],/* 🐺(226d)溜めゼロ=飛びかかりのテンポが命(型がboltに落ちると落雷の溜めが付く) */
+ hZan:['slash',.34]/* ⚔(230)残月の剣鬼=振りかぶって薙ぐ。⚠溜めは短く(手数で見せる剣士なので) */
 };
 const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
 const uMotK=ui=>uMot(ui)[0];
@@ -6997,6 +7005,11 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m18',d:'2026-08-10',t:'アップデート',ver:'0.034',gift:{gem:10},
+  b:'押すと変わった所が全部見られます',
+  list:['⚔★5の英雄「残月の剣鬼」が召集に加わった=打刀で前の3体をまとめて薙ぐ四連撃。硬さは控えめで足が速い',
+   '⚔必殺「残月」=前方へ巨大な三日月の斬撃を放つ。斬った敵の数だけ大きく・強くなりながら道を進む',
+   '⚠★5が7人になったので、★5の中で1人を引き当てる確率はそのぶん下がります(★5そのものの出やすさは今までどおり)']},
  {id:'m17',d:'2026-08-10',t:'アップデート',ver:'0.033',
   b:'押すと変わった所が全部見られます',
   list:['🔩ハープーン砲に専用の発射音が付いた=串刺しと⚡速射で音が違う',
@@ -15569,7 +15582,9 @@ const H_LOOK={
  hPyro :{cape:1,h:'darkh', w:'fstaff', k:'robe',  c2:'#5c1f24'},/* 紅蓮の大魔導士: 深紅の頭巾+炎の杖 */
  /* ⚠HBODY.hLupi 登録済み=ここの値は台帳の札(重複検査用)。h/w/k は他の誰とも違う名前にすること */
  hLupi :{cape:0,h:'rcap',  w:'bgun',  k:'pony',  c2:'#2e2c34'},/* 跳弾姫: 星の白キャップ+玩具ブラスター+虹のポニーテール */
- hWolf :{cape:0,h:'wmane', w:'wfang', k:'wtail', c2:'#5a6478'} /* 🐺蒼雷の狼王: 逆立つたてがみ+雷の牙+ふさふさの尾(四つ足=HBODY.hWolf) */
+ hWolf :{cape:0,h:'wmane', w:'wfang', k:'wtail', c2:'#5a6478'},/* 🐺蒼雷の狼王: 逆立つたてがみ+雷の牙+ふさふさの尾(四つ足=HBODY.hWolf) */
+ /* ⚠HBODY.hZan 登録済み=ここの値は台帳の札(かぶり物・武器・背中の物の重複検査用) */
+ hZan  :{cape:1,h:'mane',  w:'katana', k:'saya',  c2:'#3a3f47'} /* ⚔残月の剣鬼: 逆立つ黒髪+打刀+背中の鞘(ぼろ外套) */
 };
 /* ============ 🦸英雄18人の「専用の体」(2026-08-01) ============
    ⭐ユーザー指示「英雄18人」。⚠それまで英雄は**全員が同じ胴・同じ脚・同じ腕**で、
@@ -16797,6 +16812,106 @@ HBODY.hWolf=(c,U,walk,t,ph,o)=>{
   c.beginPath();c.moveTo(30,-52);c.lineTo(34,-44);c.lineTo(29,-40);c.lineTo(33,-33);c.stroke();
   c.beginPath();c.moveTo(19,-55);c.lineTo(22,-48);c.lineTo(17,-44);c.stroke();
   c.restore();}
+ c.restore();
+};
+/* ---- ⚔★5 残月の剣鬼(2026-08-10(230)ユーザーが絵を渡して協議ずみ=ぼろ外套の流れ者+打刀)。
+   ⭐渡された絵の要点6つ:
+     ①**逆立った黒髪**  ②**口を覆う赤錆の襟巻き**(端が後ろへなびく)
+     ③**片方だけの鉄の肩当て**(反対は布のまま=左右が違うのが一番効く)
+     ④**裾がぼろぼろの外套**  ⑤帯と腰の小袋・胸で交差する革帯・包帯を巻いた手
+     ⑥**反りのある長い打刀**(刃に血の跡)+背中に差した鞘。斬撃は**白い三日月**。
+   ⚠終焉の騎士(髑髏兜+大鎌+赤マント)と輪郭が近い=**顔が出ている / 片肩だけ鉄 / 細い刀**で分ける。
+   ⚠|x|≦54 に収める(刀を伸ばしすぎない)。⚠刀は腕と一体で振る(bSwing の掟)。 ---- */
+HBODY.hZan=(c,U,walk,t,ph,o,rk)=>{
+ const SK=U_SKIN,CT='#333941',CT2='#252a31',CT3='#454c57',
+       SC='#8c3a2e',SC2='#6e2c23',ST='#8b9099',ST2='#b0b7bf',
+       BD='#cfc6b0',HR='#221e1c',BL='#dfe6ec',HD='#3a3028',PA='#2b3038',SHO='#221c17',rc=bRc(o);
+ hLeg2(c,walk,PA,SHO,4.8,1);
+ hTop(c,t,ph,-.03);
+ /* 背中に差した鞘(⚠外套より先=背中から斜めに覗く) */
+ c.fillStyle='#1e2228';c.save();c.translate(-5,-30);c.rotate(-.44);
+ rr(c,-2.4,-5,4.8,34,2);c.fill();c.stroke();c.restore();
+ /* ぼろぼろの外套(⚠裾を破る=ただの三角だと布に見えない。終焉の騎士より色は沈める) */
+ /* ⚠**裾を広げすぎない**=広いと「ずんぐりした塊」になって流れ者の細い輪郭が消える(撮って詰めた) */
+ c.fillStyle=CT2;c.beginPath();c.moveTo(-6,-40.4);c.lineTo(-12.4-rk*.3,-18+walk*2.2);
+ for(let i=0;i<5;i++)c.lineTo(-10.4+i*3.2,-6+((i%2)?7:1.4));
+ c.lineTo(5.4,-7);c.lineTo(7,-38.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(CT2,.7);c.beginPath();c.moveTo(-6,-40.4);c.lineTo(-12.4-rk*.3,-18+walk*2.2);
+ c.lineTo(-7.4,-8);c.lineTo(-4.4,-38);c.closePath();c.fill();
+ /* 奥の腕(⚠刀と同じ振りを掛ける=両手で振る掟) */
+ const g1=bSwing(c,o,5.2,-34.6,-.30,1.02,-2,-1);
+ bArm(c,-4.8,-34.8, 2.6,-31.4, 9.4,-28.4, 5.0,4.0, shade(CT,.74),shade(BD,.86));
+ g1();
+ bTorso(c,CT,[10.4,7.4,HSK.y0,HSK.y1]);
+ /* 前合わせの襟(V字) */
+ c.fillStyle=CT3;
+ c.beginPath();c.moveTo(-7.4,-37.6);c.lineTo(1.6,-29.4);c.lineTo(9.4,-37.2);
+ c.lineTo(9.4,-33.6);c.lineTo(1.6,-26.4);c.lineTo(-7.4,-33.8);c.closePath();c.fill();c.stroke();
+ /* 胸で交差する革帯(⚠2本=絵の×印) */
+ c.save();c.strokeStyle='#6b5a44';c.lineWidth=2.2;
+ c.beginPath();c.moveTo(-7.6,-36.4);c.lineTo(8.4,-25.6);c.moveTo(8.4,-36.4);c.lineTo(-7.2,-25.6);c.stroke();c.restore();
+ /* 帯+腰の小袋(⚠片側だけ=左右で違う) */
+ c.fillStyle=SHO;c.fillRect(-8,-25.6,16.4,3.6);c.strokeRect(-8,-25.6,16.4,3.6);
+ c.fillStyle='#5c4a34';rr(c,-10.4,-25.2,5.6,6.6,1.4);c.fill();c.stroke();
+ /* ⭐⭐片方だけの鉄の肩当て(署名③=左右が違うのが輪郭で一番効く) */
+ c.fillStyle=ST;
+ c.beginPath();c.moveTo(-15.6,-39.6);c.quadraticCurveTo(-9.4,-43.6,-1.6,-40.4);
+ c.lineTo(-1.4,-33.4);c.quadraticCurveTo(-9,-31.2,-16.2,-33.6);c.closePath();c.fill();c.stroke();
+ c.fillStyle=ST2;/* 一番明るい面(ここだけ光らせる=体で唯一の金属の照り) */
+ c.beginPath();c.moveTo(-14.4,-38.6);c.quadraticCurveTo(-9,-41.6,-3.4,-39.2);
+ c.lineTo(-3.2,-36.2);c.quadraticCurveTo(-9,-38.8,-14.6,-35.8);c.closePath();c.fill();
+ c.fillStyle=shade(ST,.72);/* 鋲3つ(⚠等間隔にしない) */
+ for(const rx of[-13.4,-9.6,-4.4]){c.beginPath();c.arc(rx,-34.4,1,0,7);c.fill();}
+ /* ⭐打刀(手前の手)+手前の腕。⚠腕と一体で肩を軸に回す */
+ {const g2=bSwing(c,o,5.2,-34.6,-.30,1.02,-2,-1);
+  c.save();c.translate(9.6,-31.6);c.rotate(.16);/* ⚠傾けすぎない=下へ垂れて折れて見える(実機指摘) */
+  c.fillStyle=HD;rr(c,-3.4,-2,13.4,4.4,1.6);c.fill();c.stroke();/* 柄(⚠握りは長め=両手が乗る) */
+  c.save();c.strokeStyle='#8a7a5c';c.lineWidth=1.2;/* 柄巻きの菱形 */
+  for(let i=0;i<3;i++){c.beginPath();c.moveTo(-2+i*4,-2);c.lineTo(1+i*4,2.4);c.stroke();}c.restore();
+  c.fillStyle='#c9a13d';c.fillRect(10.4,-3.6,2.8,8);c.strokeRect(10.4,-3.6,2.8,8);/* 鍔 */
+  /* ⭐刀身。⚠⚠**先へ向かって上へ反らせる**(打刀の反り)=下へ曲げると
+     「刀が折れ曲がっている」に見える(2026-08-10ユーザー実機指摘で直した)。
+     峰(上)=外側にふくらむ / 刃(下)=内側にへこむ。先へ行くほど細くする。 */
+  c.fillStyle=BL;
+  c.beginPath();c.moveTo(13.4,-2.2);
+  c.quadraticCurveTo(28,-5,41.4,-6.4);/* 峰 */
+  c.lineTo(44.6,-4.2);/* 切先(⚠斜めに落とす=真横に切ると棒の先になる) */
+  c.quadraticCurveTo(27,-1.2,13.4,1.6);/* 刃 */
+  c.closePath();c.fill();c.stroke();
+  c.fillStyle=shade(BL,.72);/* 刃紋(峰側を1段暗く=白い板に見えない) */
+  c.beginPath();c.moveTo(14,-1.8);c.quadraticCurveTo(28,-4.6,41,-6);c.lineTo(41,-5.2);
+  c.quadraticCurveTo(28,-3.4,14,-.6);c.closePath();c.fill();
+  c.fillStyle='#6e1f1e';/* 刃に残る血の跡(⚠小さく暗く=大きいと刃が桃色の板になる) */
+  c.beginPath();c.moveTo(26,-2.6);c.lineTo(33,-4);c.lineTo(33,-2.6);c.lineTo(25.6,-1.2);c.closePath();c.fill();
+  c.restore();
+  bArm(c,5.2,-34.6, 8.4,-33.2, 10.8,-31.6, 5.2,4.2, shade(CT,1.22),BD);g2();}
+ bNeck(c,1.6,HSK.nk0,HSK.nk1,shade(SK,.5));
+ bFace(c,1.6,HSK.fy,HSK.rx,HSK.ry,SK,1);/* ⚠口は描かない=襟巻きで覆う */
+ /* ⭐口を覆う赤錆の襟巻き(署名②)。⚠**顎の下から鼻の下まで**=目は必ず出す */
+ c.fillStyle=SC;
+ c.beginPath();c.moveTo(-4.8,HSK.fy+1.4);c.quadraticCurveTo(1.6,HSK.fy+.4,8,HSK.fy+1.8);
+ c.lineTo(8.4,HSK.fy+6.4);c.quadraticCurveTo(1.6,HSK.fy+9.4,-5,HSK.fy+6.2);c.closePath();c.fill();c.stroke();
+ c.fillStyle=SC2;/* 首元の巻きだまり */
+ c.beginPath();c.moveTo(-6,HSK.fy+5.6);c.quadraticCurveTo(1.6,HSK.fy+10.4,9,HSK.fy+5.8);
+ c.lineTo(9.4,HSK.fy+9.4);c.quadraticCurveTo(1.6,HSK.fy+13.4,-6.4,HSK.fy+9.2);c.closePath();c.fill();c.stroke();
+ c.fillStyle=SC;/* 後ろへなびく端(⚠2枚・長さを変える) */
+ c.beginPath();c.moveTo(-5.4,HSK.fy+6.4);c.lineTo(-17-walk*1.4,HSK.fy+2.4-walk);
+ c.lineTo(-15.4-walk*1.4,HSK.fy+7);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(-5.6,HSK.fy+9);c.lineTo(-13.4-walk,HSK.fy+11.4+walk);
+ c.lineTo(-6.4,HSK.fy+12);c.closePath();c.fill();c.stroke();
+ /* ⭐逆立った黒髪(署名①)。⚠**房ごとに長さを変える**=揃えると兜に見える */
+ c.fillStyle=HR;
+ c.beginPath();c.moveTo(-6.4,HSK.fy-1.4);
+ c.lineTo(-8.4,HSK.fy-7.4);c.lineTo(-4.4,HSK.fy-5.4);
+ c.lineTo(-5.4,HSK.fy-12.4);c.lineTo(-.4,HSK.fy-7.8);
+ c.lineTo(.6,HSK.fy-13.6);c.lineTo(4.4,HSK.fy-8.4);
+ c.lineTo(6.4,HSK.fy-12.4);c.lineTo(8.4,HSK.fy-6.4);
+ c.lineTo(9.4,HSK.fy-9.4);c.lineTo(9.6,HSK.fy-2);
+ c.quadraticCurveTo(1.6,HSK.fy-6.4,-6.4,HSK.fy-1.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=shade(HR,1.5);/* 前髪の艶(1本だけ明るく=黒い塊にしない) */
+ c.beginPath();c.moveTo(2.6,HSK.fy-6.4);c.lineTo(6.4,HSK.fy-9.8);c.lineTo(6.8,HSK.fy-5.4);c.closePath();c.fill();
+ /* ⚠⚠**刃の光を体の座標で描かない**=刀は腕と一緒に回るので、光だけ空中に取り残される
+    (1回描いて撮って却下した)。⭐冴えは撃った瞬間の三日月(H_FX)が受け持つ。 */
  c.restore();
 };
 /* ---- ★5 暗黒の騎士「漆黒の突撃」= **18人でただ1人の騎乗**(2026-08-01ユーザーの絵から起こした)。
@@ -18623,7 +18738,8 @@ const U_SWG=new Set([
  'hDark',
  /* 🐺(229p)ユーザー指示「攻撃モーションちゃんと欲しい」=狼王も振る側へ。
     ⚠**四つ足なので bSwing(肩を軸に腕を回す)は通さない**=HBODY.hWolf が o.sw を直に読む。 */
- 'hWolf']);
+ 'hWolf',
+ 'hZan'/* ⚔(230)残月の剣鬼=打刀を実際に振る */]);
 /* ⭐⭐⭐**近接英雄の連撃**(2026-08-03(78))。ヴァルキリーの3連撃(袈裟→逆袈裟→突き)の一般化。
    ⚠⚠**ヴァルキリーだけ専用の枝で書かれていた**ので、他の近接英雄は
      **何発撃っても同じ一振り**=「連続攻撃」に見えなかった。
@@ -18652,6 +18768,9 @@ const H_CMB={
  hMech:[[-.44,.72,-2, 0],[ .40,-.62,-6, 2],[-.10,.30,-8,-1],[ .58,-.92,-3, 4],[-.70,1.12,-1,-3]],
  /* 配達人(荷物)=**2手**。①振り下ろし ②下から放り上げ */
  hPost:[[-.10,1.02,-1,-2],[ .72,-.92,-2, 5]],
+ /* ⚔(230)残月の剣鬼(打刀)=**4手**。①袈裟 ②逆袈裟 ③水平の薙ぎ ④踏み込んで大きく振り下ろす締め。
+    ⚠どの2手も振り抜き(dn)を0.25以上離してある(検査が見ている) */
+ hZan :[[-.46, .64,-3,-2],[ .70,-.88,-2, 5],[-.04, .18,-8,-1],[-.88,1.16,-4,-6]],
 };
 /* ⭐**その体の手数**(2026-08-03(79)ユーザー「3連撃で固定せずキャラごとに変えて欲しい」)。
    ⚠表に無い体は3のまま(ヴァルキリーの専用の枝が %3 で書かれているため)。 */
@@ -18673,6 +18792,7 @@ const H_HITS={
  hMech:[3],    /* 整備士(レンチ)=カンカンカンの三連ずっと */
  hPost:[2],    /* 配達人(荷物)=振り下ろし→放り上げの二連 */
  hWolf:[3],    /* 🐺(226d)蒼雷の狼王=噛みつき→ひっかき→ひっかきの三連ずっと */
+ hZan:[4],     /* ⚔(230)残月の剣鬼=**四連撃ずっと**(手数で見せる剣士。1発の威力はそのぶん低い) */
 };
 const SWG_SUB=.16;/* 1発ぶんの振りの長さ(秒)。⚠短いほど連打に見えるが、.12を切ると残像になる */
 /* 🐺(229p)**1発ぶんの振りの長さもキャラ別に持てる口**。狼王は打と打の間隔が .60 と広いので、
@@ -18711,6 +18831,12 @@ function hCmbStrike(C,u,U,ua,k,n){
     ⭐`uHit` に揃えた=✊近接の連撃も装甲には弾かれ、🔥火炎なら特効が乗る。 */
  if(U.aoe){for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,tg.px,tg.py)<=U.aoe){
    uHit(C,z,ua,U);if(U.burn&&!z.dead){z.burnT=2;z.burnD=U.burn;}}}}
+ /* ⚔(230)**まとめて斬る体は連撃の続きも人数ぶん斬る**=ここが1体だけだと
+    「1発目は3体・残り3発は1体」というちぐはぐな連撃になる(残月の剣鬼で踏むところだった) */
+ else if(U.multi){let n8=0;
+  for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0||lnMis(C,u,z))continue;
+   const gp8=u.d-z.d;
+   if(gp8>=-10&&gp8<=Math.max(U.rng,ENG_GAP+2)+50){uHit(C,z,ua,U);if(++n8>=U.multi)break;}}}
  else uHit(C,tg,ua,U);
  if(H_FX[U.id])H_FX[U.id](C,u,U,tg,mx,my,ang,ucl,utl,d5,1);
 }
@@ -20888,6 +21014,22 @@ const H_FX={
    hCmbFx(C,u,tg,ang,'#bfe9ff');
    hitFx(C,tg,ang,'#bfe9ff',1,U.type);}
   if(C.isMe&&sfx[H_SFX.hWolf])sfx[H_SFX.hWolf]();},
+ /* ⚔(230)**残月の剣鬼=白い三日月の薙ぎ**。⚠1振りで前の3体を斬るので、弧は**敵の側ではなく
+    自分の前に1枚**出す(敵ごとに出すと3枚重なって白い塊になる)。当たった所には短い斬り跡だけ。 */
+ hZan:(C,u,U,tg,mx,my,ang,col)=>{u.fireT=.13;
+  const cl9=U.c||'#e8f0f6';
+  if(FXLV>0){
+   /* 前へ薙ぐ大きな弧(手ごとに向きが変わる=hCmbFx と同じ番号の出し方) */
+   const n9=uCmbN(u.ui),k9=((u.cmb||0)+n9-1)%n9;
+   const a9=ang+[-.62,.66,-.04,-.9][k9%4];
+   addFx(C,'slash',mx+Math.cos(ang)*26,my+Math.sin(ang)*22,'',
+    {ang:a9,r:(u.mhFin?40:28)*CH_UP,lv:u.mhFin?3:2,col:cl9});
+   if(u.mhFin)addFx(C,'slash',mx+Math.cos(ang)*30,my+Math.sin(ang)*24,'',
+    {ang:a9+2.5,r:30*CH_UP,lv:2,col:'#ffffff'});
+   addP(C,3,mx+Math.cos(ang)*24,my+Math.sin(ang)*20,{sp:170,a:ang,spread:.5,g:180,life:.2,r:1.8,col:cl9});
+   hitFx(C,tg,ang,cl9,1,U.type);}
+  if(u.mhFin)C.shake=Math.max(C.shake||0,.12);
+  if(C.isMe&&sfx[H_SFX.hZan])sfx[H_SFX.hZan]();},
 };
 /* 🌈**跳弾の共通処理**(2026-08-03(92)ユーザー指示)。ボールが敵から敵へ跳ねる:
    bd=1跳ねの威力 / grow=1跳ねごとの伸び(通常0 / 必殺.3) / hops=残りの跳ね数 /
@@ -22083,6 +22225,35 @@ function heroUlt(C,wave){
      C.shake=Math.max(C.shake||0,core9?.42:.2);
      if(C.isMe&&core9)sfx.zap2&&sfx.zap2();});});}
    u.ulT=Math.max(u.ulT||0,1.0);/* ブレスの間は吠えの構え */});
+ }else if(id==='hZan'){/* ⚔⭐⭐(230)**残月**=前方へ巨大な三日月の斬撃を1枚放つ。
+    ⭐**斬った数だけ大きく・強くなりながら道を進む**=群れが厚いほど、後ろの敵ほど深く切れる。
+    ⚠進む向きは**道のりが減る方**(敵が来る側)。⚠**1体は1回だけ斬る**(追い抜くたびに何度も斬らない)。
+    ⚠他の★5と被らせない=終焉の騎士は画面全部・暗黒の騎士は馬で駆け抜ける・こちらは**斬撃だけが走る**。 */
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'残月');
+  if(C.isMe)(sfx[H_SFX.hZan]||sfx.shot)();
+  const cut9=new Set();let gw9=0;/* gw9=ここまでに斬った数 */
+  const ZAN_N=15,ZAN_STEP=44,ZAN_CAP=10;/* 進む回数 / 1回に進む道のり / 育ちの頭打ち */
+  const run9=(k)=>{
+   if(!C)return;
+   const q=clamp((u.d||0)-30-k*ZAN_STEP,0,PLEN),p=pathPos(q);
+   const g9=Math.min(gw9,ZAN_CAP);
+   const wid=42+g9*8;/* 幅=斬った数で広がる */
+   const pw=1+g9*.14;/* 威力=斬った数で伸びる(頭打ちで2.4倍) */
+   for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
+    if(Math.abs(z.d-q)>wid||cut9.has(z))continue;
+    cut9.add(z);gw9++;
+    dmgZ(C,z,Math.round(300*W*pw),1,0,0,'pierce');
+    if(FXLV>0)addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:'#e8f0f6'});}
+   /* 三日月の絵(⚠育つほど大きく=強くなっているのが目で分かる) */
+   const pn=pathPos(clamp(q-60,0,PLEN)),aw=Math.atan2(pn[1]-p[1],pn[0]-p[0]);
+   addFx(C,'slash',p[0],p[1]-20*CH_UP,'',{ang:aw+1.5708,r:(30+g9*5)*CH_UP,lv:3,col:'#eef6ff'});
+   if(FXLV>0){addFx(C,'tr',p[0]-Math.cos(aw)*80,p[1]-20*CH_UP-Math.sin(aw)*80,'',
+     {x2:p[0],y2:p[1]-20*CH_UP,col:'rgba(232,240,246,',w:3+g9*.6});
+    addP(C,3,p[0],p[1]-18*CH_UP,{sp:120,a:aw,spread:.6,g:180,life:.22,r:2,col:'#eef6ff'});}
+   if(k%4===0)C.shake=Math.max(C.shake||0,.14);
+   if(k%5===0&&C.isMe)(sfx[H_SFX.hZan]||sfx.shot)();};
+  run9(0);for(let k=1;k<ZAN_N;k++)later(C,k*.055,()=>run9(k));
+  C.shake=Math.max(C.shake||0,.2);
  }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
   for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
    addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:DANGER});}
@@ -22466,7 +22637,12 @@ function campStep(C,dt,wave){
       :tossFly(C,u,U,tx9,ty9,fire9?'bottle':'nade',fire9?'#ffb347':'#7d8a5c');
      if(f9>0)later(C,f9,im9);else im9();
      if(U.aoe>=100)u.fireT=.14;}}
-    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead||lnMis(C,u,z))continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){uHit(C,z,ua,U);if(++n2>=U.multi)break;}}}
+    else if(U.multi){let n2=0;u.fireT=.12;for(const z of C.zombies){if(z.dead||lnMis(C,u,z))continue;const gp=u.d-z.d;if(gp>=-10&&gp<=Math.max(U.rng,ENG_GAP+2)){uHit(C,z,ua,U);if(++n2>=U.multi)break;}}
+     /* ⚔(230)**この枝は H_FX を一度も呼んでいなかった**=英雄で「まとめて斬る」を持つのは
+        残月の剣鬼が初めて(ユニットは H_FX を持たないので、足しても他は1体も変わらない) */
+     if(U.hro&&H_FX[U.id]){const d52=(u.dr||-1),mx2=u.px+d52*30*CH_UP,my2=u.py-27*CH_UP;
+      const utl2=uFxTier(u),ucl2=uUniq(u.ui)?(U.c||UFX_COL[utl2]):UFX_COL[utl2];
+      H_FX[U.id](C,u,U,tg,mx2,my2,Math.atan2((tg.py-20*CH_UP)-my2,tg.px-mx2),ucl2,utl2,d52,pierce);}}
     else{
      /* ⭐**飛び道具の英雄だけ、当たるのを飛行時間ぶん遅らせる**(2026-08-03(71))。
         ⚠`tg` はそのまま持つ=途中で倒れていれば `dmgZ` が頭で弾く(追尾にはならない)。 */
@@ -36273,7 +36449,9 @@ const RG_HERO={
  hLupi:{b:{hp:53,mp:18,st:24,df:12,sp:19},g:{hp:9.6,mp:4.0,st:4.4,df:2.2,sp:3.0},sk:[[1,'s_snip'],[20,'s_burst']]},
  hPyro:{b:{hp:54,mp:22,st:26,df:13,sp:13},g:{hp:9.8,mp:4.6,st:4.8,df:2.4,sp:2.1},sk:[[1,'s_flame'],[20,'s_end']]},
  /* 🐺(226d)蒼雷の狼王=速さが売りの物理アタッカー。とくぎは雷の2本(巫女と同じ系) */
- hWolf:{b:{hp:58,mp:16,st:26,df:13,sp:22},g:{hp:10.2,mp:3.6,st:4.7,df:2.3,sp:3.4},sk:[[1,'s_bolt'],[20,'s_storm']]}
+ hWolf:{b:{hp:58,mp:16,st:26,df:13,sp:22},g:{hp:10.2,mp:3.6,st:4.7,df:2.3,sp:3.4},sk:[[1,'s_bolt'],[20,'s_storm']]},
+ /* ⚔(230)残月の剣鬼=手数と速さの★5(硬さは★5の中で一番低い) */
+ hZan :{b:{hp:52,mp:14,st:27,df:12,sp:24},g:{hp:9.4,mp:3.2,st:4.9,df:2.1,sp:3.6},sk:[[1,'s_doom'],[20,'s_end']]}
 };
 /* ---- どうぐ ---- */
 const RG_IT=[
