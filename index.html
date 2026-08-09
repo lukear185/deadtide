@@ -6695,6 +6695,10 @@ function msnReady(){try{const M=msnDay();let n=0;
      **細かい調整=0.001を足す**(0.011 → 0.012) / **大きい調整=0.01を足す**(0.02 → 0.03)。
      ⚠**桁を勝手に丸めない**(0.010 と 0.01 を混ぜない)=前の版と並べて読めなくなる。 */
 const MAILS=[
+ {id:'m8',d:'2026-08-09',t:'アップデート',ver:'0.016',
+  b:'押すと変わった所が全部見られます',
+  list:['🔥ボスを続けて倒した時に熱くなりにくくした=2体目からは爆発・土煙・画面の帯を減らす(1体目の派手さと報酬はそのまま)',
+   '💀同時に沈んでいくボスは3体まで(4体目からは普通に倒れる)']},
  {id:'m7',d:'2026-08-09',t:'アップデート',ver:'0.015',
   b:'押すと変わった所が全部見られます',
   list:['🔥ガトリング系が熱くなりにくくなった=描く量を大きく減らした(威力・音・薬莢はそのまま。閃光と弾の線だけ半分に)',
@@ -20432,12 +20436,16 @@ function killZ(C,z){
   else{addFx(C,'txt',z.px,z.py-30*CH_UP,'+'+g+'⚙️');
    C.gTx=C.fx[C.fx.length-1];C.gTx.g=g;}
  }
+ /* 🔥⭐(228j)**ボスの連続撃破は演出を軽くする**(2026-08-09ユーザー実機「ボス出しまくって
+    倒しまくると熱くなる」)。⚠0.7秒以内に次のボスが倒れた時だけ(rapB9)=**1体目は今までどおり派手**。
+    ⚠取り分(⚙️💎)・当たり判定・沈み待ちのクリア判定は一切変えない=減らすのは絵と画面の帯だけ。 */
+ const rapB9=!!(z.boss&&(C.tm-(C.bkT||-9))<.7);if(z.boss)C.bkT=C.tm;
  /* 💎魔石: ボス級を倒した時だけ落ちる(英雄召集の通貨)。ソロのみ */
  if(z.boss&&soloMeta()&&C.isMe){const gm=gemBoss(z.fin);
   META.gem=(META.gem||0)+gm;G.gemGain=(G.gemGain||0)+gm;saveMeta();
   addFx(C,'txt',z.px,z.py-58*CH_UP,'💎+'+gm);
-  addP(C,14,z.px,z.py-30*CH_UP,{sp:170,up:80,g:420,life:.9,r:3,col:TECH});
-  toast('💎 魔石を'+gm+'個 手に入れた(計'+META.gem+')');}
+  addP(C,rapB9?6:14,z.px,z.py-30*CH_UP,{sp:170,up:80,g:420,life:.9,r:3,col:TECH});
+  if(!rapB9)toast('💎 魔石を'+gm+'個 手に入れた(計'+META.gem+')');/* ⚠連続時は帯を出さない(DOMの書き換えも熱い) */}
  /* 📖ゾンビ図鑑: ソロで初めて倒した種類を登録する */
  if(soloMeta()&&C.isMe&&zdexAdd((ZOMBIES[z.zi]||{}).id)){
   addFx(C,'txt',z.px,z.py-46*CH_UP,'📖'+ZOMBIES[z.zi].n+' 図鑑に登録');
@@ -20453,15 +20461,18 @@ function killZ(C,z){
     「倒した瞬間にあっさりクリアになる。ボスが消えた後も演出が欲しい」)= bsink へ。
     ⚠🚌開拓便は縦が潰れている(SCY)ので従来どおり corpse。
     ⭐クリアはこの沈みが終わるまで待たせる(G.bsinkT。見る側は gameStep の勝ち判定) */
- if(z.boss&&!C.bus&&FXLV>0){
+ /* 🔥(228j)⚠**同時に沈めるのは3体まで**=4体目からは普通の死体(倒れて薄れる)に落とす。
+    沈み1体は軽い(焼いた絵1枚+煙6個)が、湧かせ続けて倒すと際限なく重なるため。 */
+ let nbs9=0;if(z.boss&&!C.bus&&FXLV>0)for(const f9 of C.fx)if(f9.k==='bsink')nbs9++;
+ if(z.boss&&!C.bus&&FXLV>0&&nbs9<3){
   addFx(C,'bsink',z.px,z.py,'',{zi:z.zi,dr:z.dr||1});
   if(G)G.bsinkT=Math.max(G.bsinkT||0,FX_LIFE.bsink+.4);
  }else if(FXLV>0)addFx(C,'corpse',z.px,z.py,'',{zi:z.zi,el:z.elite?1:0,dr:z.dr||1,
   lf:(z.boss?2.4:z.elite?1.6:1)*(FXLV===1?.65:1),
   kb:z.kbp||0,kx:z.kbx||0,ky:z.kby||0});/* ⭐爆風で吹き飛ぶ(kbZで書かれていた時だけ) */
  }
- /* 大物が倒れると足元に土煙が広がる。⚠雑魚には出さない(画面が埋まる) */
- if(FXLV>0&&(z.boss||z.elite))addFx(C,'dust',z.px,z.py+2,'',{r:z.boss?120:66});
+ /* 大物が倒れると足元に土煙が広がる。⚠雑魚には出さない(画面が埋まる)。⚠(228j)連続撃破時も出さない */
+ if(FXLV>0&&(z.boss||z.elite)&&!rapB9)addFx(C,'dust',z.px,z.py+2,'',{r:z.boss?120:66});
  /* ⚠**雑魚撃破の「間」(ヒットストップ)は2026-07-27に入れて、同日に外した**。
     ユーザー実機判断=「全く何が変わったのか分からないレベル」。
     0.03秒×35%→0.05秒×6%(ほぼ完全停止)まで強めても伝わらなかった。
@@ -20488,15 +20499,15 @@ function killZ(C,z){
   if(z.elite)sfx.moanBig();}
  /* 大物撃破の特別演出 */
  if(z.boss){
-  addP(C,26,z.px,z.py-30*CH_UP,{sp:300,up:120,g:540,life:.9,r:4,col:GOLD,jx:14,jy:14});
-  addP(C,10,z.px,z.py-20*CH_UP,{sp:80,up:60,g:-40,life:1.6,r:13,col:'#5c5148',typ:'smoke'});
+  addP(C,rapB9?10:26,z.px,z.py-30*CH_UP,{sp:300,up:120,g:540,life:.9,r:4,col:GOLD,jx:14,jy:14});
+  addP(C,rapB9?4:10,z.px,z.py-20*CH_UP,{sp:80,up:60,g:-40,life:1.6,r:13,col:'#5c5148',typ:'smoke'});
   C.shake=.55;if(G)G.hitStopT=[0,.45,.85][FXLV];
   addFx(C,'boomL',z.px,z.py,'');
-  const nb=[0,2,3][FXLV];
+  const nb=rapB9?0:[0,2,3][FXLV];/* 🔥(228j)追い爆発は連続時は積まない(大爆発1つは残る) */
   for(let k=0;k<nb;k++)addFx(C,'boom',z.px+rnd(-80,80),z.py+rnd(-55,30),'',{d0:.12+k*.16});
-  if(FXLV>0)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:GOLD,big:1});
+  if(FXLV>0&&!rapB9)addFx(C,'spark',z.px,z.py,'',{sd:rnd(0,9),col:GOLD,big:1});
   addFx(C,'txt',z.px,z.py-90*CH_UP,'+'+g+'⚙️ とどめ!'+(z.bpaid?'(削り '+z.bpaid+'⚙️)':''));
-  if(C.isMe){sfx.bossKill();UI.banner('💀 '+zNameOf(z)+'撃破!!');}/* ⚠(124)名前は決め打ちにしない */
+  if(C.isMe){sfx.bossKill();if(!rapB9)UI.banner('💀 '+zNameOf(z)+'撃破!!');}/* ⚠(124)名前は決め打ちにしない。⚠(228j)帯(DOM)は連続時は出さない=音は毎回鳴る */
  }else if(z.elite){
   addP(C,14,z.px,z.py-24*CH_UP,{sp:200,up:80,g:540,life:.6,r:3,col:HEROC});
   C.shake=Math.max(C.shake||0,.25);
