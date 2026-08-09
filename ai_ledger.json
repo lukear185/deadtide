@@ -412,5 +412,23 @@
   "file": "sfx_src/AI_harp_f.wav",
   "license": "Stability Community License(年商$1M未満・要登録)",
   "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "single lone wolf howling, long powerful epic howl rising then falling, night ambience, no music",
+  "duration": 2.6,
+  "file": "sfx_src/AI_howl_a.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-09",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "large alpha wolf howl, deep fierce howl with a slight growl at the start, echoing, no music",
+  "duration": 2.6,
+  "file": "sfx_src/AI_howl_b.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
  }
 ]
