@@ -6694,6 +6694,13 @@ function msnReady(){try{const M=msnDay();let n=0;
      **細かい調整=0.001を足す**(0.011 → 0.012) / **大きい調整=0.01を足す**(0.02 → 0.03)。
      ⚠**桁を勝手に丸めない**(0.010 と 0.01 を混ぜない)=前の版と並べて読めなくなる。 */
 const MAILS=[
+ {id:'m4',d:'2026-08-09',t:'アップデート',ver:'0.012',
+  b:'押すと変わった所が全部見られます',
+  list:['🏃ランナーを作り直した=全力疾走の体に(深い前傾・拳・かかとの蹴り上げ)',
+   '🎈ブローターを作り直した=両腕が付いて、よたよた歩きに(顔も明るく見やすく)',
+   '😱スクリーマーを作り直した=のけ反って両手を空に突き上げる体に',
+   '🐕感染ハウンドの脚を獣の脚にした(かかとで折れて足先が広い)',
+   '🌑ナイトメアの「爛れた走者」も新しい体に変わっています']},
  {id:'m3',d:'2026-08-09',t:'アップデート',ver:'0.011',
   b:'押すと変わった所が全部見られます',
   list:['🐴暗黒の騎士の見た目を調整=馬を暗く・騎士の甲冑を明るくして、乗っている姿がはっきり見えるように']},
@@ -13357,67 +13364,127 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   zEye(c,-.2,-46.4,1.9);
   c.fillStyle=INK;c.beginPath();c.moveTo(-.4,-43.6);c.lineTo(4,-43.8);c.lineTo(3.4,-41.8);c.lineTo(.4,-41.8);c.closePath();c.fill();
   c.restore();return;}
- if(Z.id==='blo'){/* ブローター: ほぼ球。膞れた腹に小さな頭が埋まり、脚は短い切り株 */
-  const br=Math.sin(t*2.6+ph)*1.6,sw=walk*2.4;
-  /* ⭐描き直し(第97弾)。**腹が売り**なので服で隠さない=はち切れたシャツが肩と脇に**残っている**形にする。
-     ⚠腹に腐った斑を打つ(全部同じ紫だと風船に見える)。⚠短い脚には破れたズボン+裸足 */
-  const bleg=(dx,dk)=>{
-   c.fillStyle=shade(ZW.pa,dk);
-   c.beginPath();c.moveTo(-4.6+dx,-13);c.lineTo(4.6+dx,-13);c.lineTo(4+dx,-5);c.lineTo(-4+dx,-5);c.closePath();c.fill();c.stroke();
-   c.fillStyle=shade(Z.c,dk*.9);/* 裸足 */
-   c.beginPath();c.moveTo(-4+dx,-5);c.lineTo(4+dx,-5);c.lineTo(6+dx,-.6);c.lineTo(-4.6+dx,-.6);c.closePath();c.fill();c.stroke();};
-  bleg(-8+sw,.8);bleg(8-sw,1);
-  /* 短い腕(肌) */
-  c.fillStyle=shade(Z.c,.8);
-  c.beginPath();c.moveTo(15,-33);c.lineTo(20,-32);c.lineTo(27,-28+sw*.5);c.lineTo(26,-23+sw*.5);c.closePath();c.fill();c.stroke();
-  /* 腹(肌) */
-  zFill(c,()=>{c.beginPath();c.ellipse(0,-29,21+br,19+br,0,0,7);},Z.c,-29);
+ if(Z.id==='blo'){/* 🎈⭐⭐(228c)**ブローター=作り直した**(ウォーカーの3つの掟を球の体に当てはめた)。
+    🐞**前の版**=脚が直線の切り株・腕が右に1本だけ・頭も腹も同じ紫=風船に瘤が付いた物に見えた。
+    ①**脚は「片側だけ膨らむ曲線」** ②**明暗3段**=暗いズボン/中間の腹(下半分は暗い)/**一番明るいのは顔**
+    ③**よたよた歩き**=腹をわずかに揺らし、脚は左右で形を変え、**両腕を短く広げて釣り合いを取る**。
+    ⚠腹は裸のまま(はち切れたシャツを貼るのは駄目=第97弾に試して失敗済み)。⚠斑は大きさも向きも不揃いに。 */
+  const br=Math.sin(t*2.6+ph)*1.6,sw=walk*2.4,tlt=Math.sin(t*2.6+ph)*.025;
+  const PANTS='#5c4c39';
+  const lb=(x0,y0,x1,y1,w0,w1,bg,col)=>{/* 曲がった手足の道具(⚠両側を膨らませない) */
+   const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+   const mx=(x0+x1)/2,my=(y0+y1)/2;
+   c.fillStyle=col;c.beginPath();
+   c.moveTo(x0+nx*w0,y0+ny*w0);
+   c.quadraticCurveTo(mx+nx*(w0*.62+w1*.38+bg),my+ny*(w0*.62+w1*.38+bg),x1+nx*w1,y1+ny*w1);
+   c.lineTo(x1-nx*w1,y1-ny*w1);
+   c.quadraticCurveTo(mx-nx*(w0*.5+w1*.5),my-ny*(w0*.5+w1*.5),x0-nx*w0,y0-ny*w0);
+   c.closePath();c.fill();c.stroke();
+  };
+  const bfoot=(ax,dk,tip)=>{c.fillStyle=shade(Z.c,dk*.92);/* 裸足(⚠横に広く=踏んで見える) */
+   c.beginPath();c.moveTo(ax-4.4,-4.4);c.lineTo(ax+3.6,-4.4);
+   c.quadraticCurveTo(ax+6.6,-3.4,ax+7.0*Math.max(tip,.2)+(tip>0?0:-2),-.6);c.lineTo(ax-5.0,-.6);
+   c.quadraticCurveTo(ax-5.4,-2.6,ax-4.4,-4.4);c.closePath();c.fill();c.stroke();};
+  /* 脚=⚠左右で太さと向きを変える(切り株の左右対称をやめる) */
+  lb(-9+sw,-14.5,-10.6+sw*1.4,-3.8,5.2,3.8,1.6,shade(PANTS,.74));   /* 奥(引きずる) */
+  bfoot(-10.6+sw*1.4,.82,-1);
+  lb(8-sw,-14.5,9.6-sw*1.2,-3.8,5.6,4.2,1.9,shade(PANTS,1.05));     /* 手前(踏ん張る) */
+  bfoot(9.6-sw*1.2,1,1);
+  /* 奥の腕=⭐短く広げて釣り合いを取る(⚠前は腕が1本も無い側だった)。
+     ⚠⚠**腹の縁(y-40でx≒-17)より8px以上外へ出す**=内側だと腹に貼り付いた札に見える(1回そうなった) */
+  lb(-14,-35.2,-24.4,-40.2+sw*.6,3.4,2.5,-1.1,shade(Z.c,.62));
+  c.fillStyle=shade(Z.c,.62);/* 開いた小さな手 */
+  c.beginPath();c.moveTo(-24.2,-42.2+sw*.6);c.lineTo(-27.6,-41.2+sw*.6);
+  c.quadraticCurveTo(-28.6,-39.2+sw*.6,-27.2,-37.8+sw*.6);c.lineTo(-24.0,-38.0+sw*.6);c.closePath();c.fill();c.stroke();
+  /* 腹(⭐わずかに傾けて揺らす=直立の風船をやめる) */
+  zFill(c,()=>{c.beginPath();c.ellipse(0,-29,21+br,19+br,.07+tlt,0,7);},Z.c,-29);
   c.globalAlpha=.5;c.fillStyle=shade(Z.c,1.32);/* 張ったつやめき */
   c.beginPath();c.ellipse(-5,-36,10,6,-.4,0,7);c.fill();c.globalAlpha=1;
-  c.fillStyle=shade(Z.c,.66);/* 腐った斑(3つ・大きさを変える) */
+  c.fillStyle=shade(Z.c,.66);/* 腐った斑(⚠大きさ・向き・数を不揃いに) */
   c.beginPath();c.ellipse(-11,-24,5,3.6,.3,0,7);c.fill();
   c.beginPath();c.ellipse(6,-20,3.4,2.4,-.2,0,7);c.fill();
   c.beginPath();c.ellipse(11,-33,2.6,3.4,.4,0,7);c.fill();
-  /* ⚠**はち切れたシャツの切れ端を腹に貼るのは駄目だった**(第97弾に試した)。
-     腹が丸いので、布の多角形が「腹に貼り付いた灰色の矢印」に見える。
-     ブローターは**裸の腹+破れたズボン**が正解=服を着せない。 */
-  /* 腹に埋まった小さい頭 */
+  c.beginPath();c.ellipse(-2,-31,1.7,1.3,.2,0,7);c.fill();
+  c.fillStyle=shade(Z.c,.78);/* へその陰(⭐球の下半分に暗い床=立体になる) */
+  c.beginPath();c.ellipse(1,-16.6,6.4,2.2,.05,0,7);c.fill();
+  /* 手前の腕=⭐腹の縁から外へ突き出す(⚠縁の内側で終わると腹の模様に見える=奥の腕と同じ掟) */
+  lb(16,-33.6,25.4,-28.6+sw*.5,3.6,2.7,1.3,shade(Z.c,.8));
+  c.fillStyle=shade(Z.c,.8);/* 垂れた手 */
+  c.beginPath();c.moveTo(25.0,-30.4+sw*.5);c.lineTo(28.2,-29.2+sw*.5);
+  c.quadraticCurveTo(29.0,-27.0+sw*.5,27.4,-25.6+sw*.5);c.lineTo(24.4,-26.0+sw*.5);c.closePath();c.fill();c.stroke();
+  /* 腹に埋まった小さい頭=⭐**腹より1段明るくして目を置く場所を作る**(前は腹と同じ色で瘤に見えた) */
+  {const HD=shade(Z.c,1.16);
+  c.save();c.translate(15,-46);c.rotate(.10+tlt);c.translate(-15,46);
+  c.fillStyle=shade(Z.c,.7);/* 二重あごの折り目(頭が腹に埋まって見える) */
+  c.beginPath();c.ellipse(14.6,-40.6,6.2,1.9,.12,0,7);c.fill();
   zFill(c,()=>{c.beginPath();
    c.moveTo(8,-44);c.bezierCurveTo(8,-49.6,11,-52,15,-52);
    c.bezierCurveTo(19,-52,21.6,-49.6,21.4,-45.4);
-   c.lineTo(20.6,-42);c.bezierCurveTo(19.6,-40,10.4,-40,9,-42);c.closePath();},Z.c,-39.6);
-  c.fillStyle=shade(Z.c,.7);c.beginPath();c.moveTo(15,-46.6);c.lineTo(21,-46.2);c.lineTo(20.8,-44.8);c.lineTo(15.2,-45.2);c.closePath();c.fill();
-  zEye(c,18.4,-44.6,1.9);
-  c.fillStyle=shade(Z.c,.46);c.beginPath();c.ellipse(13,-45,1.5,1.4,0,0,7);c.fill();
-  c.fillStyle=INK;c.beginPath();c.ellipse(16.6,-42,2.4,1.7,0,0,7);c.fill();
+   c.lineTo(20.6,-42);c.bezierCurveTo(19.6,-40,10.4,-40,9,-42);c.closePath();},HD,-39.6);
+  c.fillStyle=shade(HD,.7);/* 眉の下の影 */
+  c.beginPath();c.moveTo(15,-46.6);c.lineTo(21,-46.2);c.lineTo(20.8,-44.8);c.lineTo(15.2,-45.2);c.closePath();c.fill();
+  zEye(c,18.4,-44.6,1.9);                       /* 手前の目(⭐一番明るい点) */
+  c.fillStyle=shade(HD,.46);c.beginPath();c.ellipse(13,-45,1.5,1.4,0,0,7);c.fill();
+  c.fillStyle=INK;/* ふいごのような口(小さく開く) */
+  c.beginPath();c.ellipse(16.6,-42,2.2,1.6,.1,0,7);c.fill();
+  c.restore();}
   c.restore();return;}
- if(Z.id==='scr'){/* スクリーマー: のけ反って両腕を上げ、叫びの輪を飛ばす。唯一の「腕が上がった」輪郭 */
+ if(Z.id==='scr'){/* 😱⭐⭐(228d)**スクリーマー=作り直した**(ウォーカーの3つの掟)。売り=のけ反って両腕を上げる。
+    🐞**前の版**=腕がまっすぐの板・脚が四角の柱で、腕を上げた案山子に見えた。
+    ①**手足を「片側だけ膨らむ曲線」に**+腕は**肘で折る** ②**明暗3段**=暗いズボン/中間のぼろ布/**一番明るいのは顔**
+    ③**のけ反りを体で作る**=背中の線を外へ反らせ、**腕は左右で高さと角度を変える**+開いた手。
+    ⚠口は縦に大きく開ける(小さいと叫びに見えない)。 */
   const sw=Math.sin(t*8+ph);
-  /* ⭐描き直し(第97弾)。**のけ反って両腕を上げた輪郭**が売り。色=肌 / ぼろ布(他と違う系統) / ズボン / 靴。
-     ⚠叫んでいる口は**縦に大きく**開ける(小さいと「叫んでいる」に見えない) */
-  const sleg=(dx,dk)=>{
-   c.fillStyle=shade(ZW.pa,dk);
-   c.beginPath();c.moveTo(-3+dx,-16);c.lineTo(2.6+dx,-16);c.lineTo(2.4+dx,-5);c.lineTo(-2.8+dx,-5);c.closePath();c.fill();c.stroke();
-   c.fillStyle=shade(ZW.sho,dk);
-   c.beginPath();c.moveTo(-3+dx,-5);c.lineTo(2.8+dx,-5);c.lineTo(4.6+dx,-.6);c.lineTo(-3.2+dx,-.6);c.closePath();c.fill();c.stroke();};
-  sleg(-4.6,.8);sleg(5,1);
-  /* 上げた腕(奥・肌) */
-  c.fillStyle=shade(Z.c,.72);
-  c.beginPath();c.moveTo(-5,-34);c.lineTo(-1,-35);c.lineTo(-11,-45-sw*3);c.lineTo(-14.4,-43.4-sw*3);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(-14.4,-44.4-sw*3);c.lineTo(-11,-46-sw*3);c.lineTo(-9.4,-42.6-sw*3);c.lineTo(-12.6,-41.4-sw*3);c.closePath();c.fill();c.stroke();
-  /* 胴(ぼろ布)。裾を大きく欠かす */
+  const PANTS='#5c4c39',SHOE='#3a3122';
+  const lb=(x0,y0,x1,y1,w0,w1,bg,col)=>{/* 曲がった手足の道具(⚠両側を膨らませない) */
+   const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+   const mx=(x0+x1)/2,my=(y0+y1)/2;
+   c.fillStyle=col;c.beginPath();
+   c.moveTo(x0+nx*w0,y0+ny*w0);
+   c.quadraticCurveTo(mx+nx*(w0*.62+w1*.38+bg),my+ny*(w0*.62+w1*.38+bg),x1+nx*w1,y1+ny*w1);
+   c.lineTo(x1-nx*w1,y1-ny*w1);
+   c.quadraticCurveTo(mx-nx*(w0*.5+w1*.5),my-ny*(w0*.5+w1*.5),x0-nx*w0,y0-ny*w0);
+   c.closePath();c.fill();c.stroke();
+  };
+  const sshoe=(ax,dk)=>{c.fillStyle=shade(SHOE,dk*1.4);/* 靴(⚠横に長く) */
+   c.beginPath();c.moveTo(ax-3.0,-5.2);c.lineTo(ax+2.6,-5.2);
+   c.quadraticCurveTo(ax+5.8,-4.2,ax+6.4,-1.4);c.lineTo(ax+6.2,-.4);c.lineTo(ax-3.8,-.4);
+   c.quadraticCurveTo(ax-4.2,-2.6,ax-3.0,-5.2);c.closePath();c.fill();c.stroke();};
+  /* 脚=⚠左右で開きと太さを変える(のけ反りを支える半歩) */
+  lb(-3.6,-17,-6.0-sw*.4,-4.6,3.6,2.7,1.2,shade(PANTS,.74));
+  sshoe(-6.0-sw*.4,.8);
+  lb(4.6,-17,7.0+sw*.4,-4.6,3.8,2.9,1.4,shade(PANTS,1.05));
+  sshoe(7.0+sw*.4,1);
+  /* 上げた腕(奥)=⭐肘で折る+左右で高さを変える(まっすぐの板をやめる) */
+  lb(-4.6,-34.6,-9.8,-40.2-sw*1.4,3.2,2.6,-1.0,shade(Z.c,.66));       /* 上腕 */
+  lb(-9.8,-40.4-sw*1.4,-13.6,-46.6-sw*2.6,2.6,2.0,-.8,shade(Z.c,.60));/* 前腕 */
+  c.fillStyle=shade(Z.c,.60);/* 開いた手(空を掴む) */
+  c.beginPath();c.moveTo(-13.2,-47.2-sw*2.6);c.lineTo(-16.6,-50.0-sw*2.6);
+  c.lineTo(-15.2,-46.6-sw*2.6);c.lineTo(-17.2,-47.4-sw*2.6);c.lineTo(-14.6,-44.6-sw*2.6);
+  c.lineTo(-12.4,-45.0-sw*2.6);c.closePath();c.fill();c.stroke();
+  /* 胴(ぼろ布)=⭐背中の線を外へ反らせる(のけ反りは箱では出ない)。裾は大きく裂く */
   const sbody=()=>{c.beginPath();
-   c.moveTo(-8.5,-37);c.lineTo(8,-38);c.lineTo(9,-24);
-   c.lineTo(5,-18);c.lineTo(2,-23);c.lineTo(-2,-17);c.lineTo(-5.4,-22);c.lineTo(-8,-19);c.closePath();};
-  c.fillStyle=ZW.rag;sbody();c.fill();c.stroke();
-  c.save();c.beginPath();c.rect(-14,-27,30,26);c.clip();
-  c.fillStyle=shade(ZW.rag,.8);sbody();c.fill();c.restore();
-  c.fillStyle=ZW.bl;
-  c.beginPath();c.moveTo(-2,-34);c.lineTo(4,-35);c.lineTo(5,-31);c.lineTo(-1,-30);c.closePath();c.fill();
-  /* 上げた腕(手前・肌) */
-  c.fillStyle=Z.c;
-  c.beginPath();c.moveTo(3,-35);c.lineTo(7,-36);c.lineTo(15,-46+sw*3);c.lineTo(11.6,-48+sw*3);c.closePath();c.fill();c.stroke();
-  c.beginPath();c.moveTo(11.6,-47.4+sw*3);c.lineTo(15.2,-46.4+sw*3);c.lineTo(16.6,-49.6+sw*3);c.lineTo(13.4,-51+sw*3);c.closePath();c.fill();c.stroke();
+   c.moveTo(-9.6,-35.6);
+   c.bezierCurveTo(-11.4,-30.2,-10.2,-24.0,-7.6,-19.4);  /* 反った背中(外へ膨らむ) */
+   c.lineTo(-5.2,-21.6);c.lineTo(-2.2,-17.2);c.lineTo(1.2,-22.6);
+   c.lineTo(4.6,-17.8);c.lineTo(6.8,-20.4);              /* 裂けた裾(⚠等間隔にしない) */
+   c.bezierCurveTo(8.8,-25.6,9.4,-31.6,7.6,-36.8);       /* 腹→胸(上へ張る) */
+   c.bezierCurveTo(2.6,-39.6,-4.8,-39.0,-9.6,-35.6);     /* 肩の線 */
+   c.closePath();};
+  zFill(c,sbody,ZW.rag,-24.5);
+  c.save();c.beginPath();c.moveTo(-15,-41);c.lineTo(-5.4,-38.6);/* ⭐背中側を斜めに1段暗く */
+  c.lineTo(-7.0,-16);c.lineTo(-15,-16);c.closePath();c.clip();
+  c.fillStyle=shade(ZW.rag,.76);sbody();c.fill();c.restore();
+  c.fillStyle=ZW.bl;/* 胸の血(⚠横に広く) */
+  c.beginPath();c.moveTo(-2.6,-34.4);c.lineTo(1.6,-35.4);c.lineTo(5.2,-34.2);
+  c.lineTo(4.2,-31.8);c.lineTo(.8,-32.6);c.lineTo(-1.8,-31.2);c.closePath();c.fill();
+  /* 上げた腕(手前)=⭐奥より高く突き上げる(⚠長さも角度も奥と変える=1本に潰れない) */
+  lb(4.4,-35.4,10.0,-42.6+sw*1.4,3.4,2.8,1.2,shade(Z.c,1.04));        /* 上腕 */
+  lb(10.0,-42.8+sw*1.4,13.4,-50.2+sw*2.8,2.8,2.2,1.0,Z.c);            /* 前腕 */
+  c.fillStyle=Z.c;/* 開いた手(⭐指は3本まで=多いと櫛) */
+  c.beginPath();c.moveTo(13.0,-50.8+sw*2.8);c.lineTo(15.6,-54.4+sw*2.8);
+  c.lineTo(14.6,-50.6+sw*2.8);c.lineTo(17.2,-52.6+sw*2.8);c.lineTo(15.2,-49.0+sw*2.8);
+  c.lineTo(16.8,-48.6+sw*2.8);c.lineTo(13.0,-47.2+sw*2.8);c.closePath();c.fill();c.stroke();
   /* のけ反った首と頭 */
   c.fillStyle=shade(Z.c,.72);
   c.beginPath();c.moveTo(-2,-40);c.lineTo(3,-41);c.lineTo(3.6,-36.6);c.lineTo(-1.4,-36);c.closePath();c.fill();c.stroke();
@@ -13442,11 +13509,30 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠胴は角丸長方形ではなく**背中が反り腹がくびれた形**。⚠鼻面は頭と1本の輪郭で繋ぐ(別の三角を貼らない)。
     ⭐首の破れた革の首輪で色を分ける(獣でも「元は飼い犬」が出る) */
   const sw=walk*4;
-  const dleg=(x0,dx,dk,h2)=>{
-   c.fillStyle=shade(Z.c,dk);
-   c.beginPath();c.moveTo(x0-3,-h2);c.lineTo(x0+3,-h2);c.lineTo(x0+2.2+dx,-3.6);c.lineTo(x0-2.2+dx,-3.6);c.closePath();c.fill();c.stroke();
-   c.beginPath();c.moveTo(x0-2.4+dx,-4);c.lineTo(x0+2.4+dx,-4);c.lineTo(x0+4+dx,-.6);c.lineTo(x0-3.2+dx,-.6);c.closePath();c.fill();c.stroke();};
-  dleg(-10,-sw,.64,11);dleg(9,sw,.64,11);            /* 奥の2本 */
+  /* 🐕⭐(228e)**脚を「直線の柱」から作り直した**(暗黒の騎士の馬の脚と同じ掟)=
+     腿は太→細へ一気に絞り、**飛節(かかと)で1回折り**、足先は足首より横に広く。
+     ⚠4本の振りの位相をずらす(等間隔に並べると机の脚)。⚠奥の2本は暗くして手前と分ける。 */
+  const dlb=(x0,y0,x1,y1,w0,w1,bg,col)=>{/* 片側だけ膨らむ曲線(⚠両側は芋虫) */
+   const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+   const mx=(x0+x1)/2,my=(y0+y1)/2;
+   c.fillStyle=col;c.beginPath();
+   c.moveTo(x0+nx*w0,y0+ny*w0);
+   c.quadraticCurveTo(mx+nx*(w0*.6+w1*.4+bg),my+ny*(w0*.6+w1*.4+bg),x1+nx*w1,y1+ny*w1);
+   c.lineTo(x1-nx*w1,y1-ny*w1);
+   c.quadraticCurveTo(mx-nx*(w0*.5+w1*.5),my-ny*(w0*.5+w1*.5),x0-nx*w0,y0-ny*w0);
+   c.closePath();c.fill();c.stroke();
+  };
+  const dleg=(x0,pz,col)=>{
+   const s1=Math.sin(t*7+ph+pz),lift=Math.max(0,Math.sin(t*7+ph+pz+1.2))*2.2;
+   const hk=x0+s1*2.0,an=x0+s1*3.8;/* 飛節・足首(⚠一直線に置かない) */
+   dlb(x0,-13,hk,-8.6,3.6,2.0,1.3,col);                 /* 腿(⭐太→細へ一気に絞る) */
+   dlb(hk,-8.9,an,-2.8-lift,2.0,1.4,.8,shade(col,.94)); /* 管(細い) */
+   c.fillStyle=col;/* 足先(⚠足首より横に広く) */
+   c.beginPath();c.moveTo(an-2.6,-3.4-lift);c.lineTo(an+2.8,-3.4-lift);
+   c.quadraticCurveTo(an+4.4,-1.8-lift,an+4.0,-.4-lift);
+   c.lineTo(an-3.2,-.4-lift);c.quadraticCurveTo(an-3.4,-2.0-lift,an-2.6,-3.4-lift);c.closePath();c.fill();c.stroke();
+  };
+  dleg(-10,3.14,shade(Z.c,.64));dleg(9,1.2,shade(Z.c,.64));/* 奥の2本 */
   /* 尾(先が細い) */
   c.fillStyle=shade(Z.c,.7);
   c.beginPath();c.moveTo(-15,-19);c.lineTo(-13,-15);
@@ -13462,7 +13548,7 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.strokeStyle=shade(Z.c,.6);c.lineWidth=2/s;/* 浮き出た肋 */
   for(let k=0;k<3;k++){c.beginPath();c.moveTo(-2+k*5,-20);c.quadraticCurveTo(-1+k*5,-15,-3+k*5,-11);c.stroke();}
   c.strokeStyle=INK;c.lineWidth=2.6/s;
-  dleg(-6,-sw*.7,.9,12);dleg(12,sw*.7,1,12);        /* 手前の2本 */
+  dleg(-6,0,shade(Z.c,.92));dleg(12,2.4,Z.c);        /* 手前の2本 */
   /* 首輪(破れた革) */
   c.fillStyle='#5c4326';
   c.beginPath();c.moveTo(11,-23);c.lineTo(16,-24);c.lineTo(17,-15);c.lineTo(12,-14);c.closePath();c.fill();c.stroke();
