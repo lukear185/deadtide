@@ -5247,7 +5247,7 @@ const unitsWt=(arr,own)=>{let w=0;if(!arr)return 0;
      ゾンビの絵に付く印(❄👑HPバー)は元から `*ZOMBIES[].sc` を掛ける作りだったので触っていない。
      ⚠持ち上げる倍率は**一律 CH_UP**(個体ごとの sc ではない)=元のコードも一律だったので、
        ここを個体ごとにすると今までの見え方が変わってしまう。 */
-const CH_UP=1.5,CH_P=.72;
+const CH_UP=2.5,CH_P=.72;
 /* ⭐**歩きの振れ幅**(2026-07-30)。⚠それまで腕は±1.2pxしか振れておらず、数式は連続でも
    実質ほぼ静止していた=「絵を差し替えても動いて見えない」の本当の原因。誇張して振らせる。 */
 const WALK_AMP=1.7;
@@ -11478,6 +11478,14 @@ function zArmHum(c,Z,t,ph,walk){
  };
  /* 奥の腕(暗い)。⚠**手前より短く低く**=長さと高さが揃うと1本の太い腕に潰れる */
  parm(1.6,-33.0, 7.2,-28.0+sw*.5, 12.0,-24.0+sw*.7, 3.4,3.2, zarSh(B,.60),zarSh(B,.66),0);
+ /* 🛡⭐⭐(227h)**奥にも肩当てを足す**=シルエットテストで**ウォーカーと見分けが付かなかった**
+    (真っ黒にすると、どちらも「同じ幅の人型」だった)。
+    🐞**原因**=肩当てが**手前の1枚しか無く**、奥側の輪郭が素の胴のままだったこと。
+    ⭐**両肩が外へ張り出す**と、それだけで「鎧を着た太い人」に読めて素の人型と分かれる。
+    ⚠**胴より先に描く**=あとに描くと胴の上に板が乗って「肩章」に見える(既出の掟)。
+    ⚠手前より**一回り小さく暗く**する(同じにすると左右対称の板になって作り物に見える)。 */
+ zaP(c,[[-4.4,-40.0],[-10.4,-40.6],[-14.6,-37.2],[-14.2,-32.8],[-10.2,-30.8],[-5.8,-31.4],[-4.0,-35.0]],zarSh(B,.72),0);
+ zaRiv(c,-10.2,-36.8,.85);
  /* --- 胴(胸当て)。⭐**肩を角張らせて外へ張り出させる**のがこの絵の主役 --- */
  const body=()=>{c.beginPath();
   c.moveTo(-11.8,-34.0);
@@ -13078,6 +13086,17 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    c.beginPath();/* 靴。⚠**横に長く**しないと地面に立っているように見えない */
    c.moveTo(-3.6+ax,-4.8);c.lineTo(3.1+ax,-4.8);c.lineTo(4.4+ax,-2.6);
    c.lineTo(6.6+ax,-2);c.lineTo(6.8+ax,-.3);c.lineTo(-4+ax,-.3);c.closePath();c.fill();c.stroke();
+   /* 🖼⭐(227h)**57pxで足せる作り込み=「部品」ではなく「材質の影」**。
+      ⚠⚠**黒フチを持つ小さい部品を足してはいけない**=この大きさでも黒フチは3px近くあるので、
+        5px未満の物は輪郭に食われて**ただの黒い点**になる(指を描こうとして分かった)。
+      ⭐**塗りだけ(strokeしない)**で入れると、同じ画素数でも「材質」として読める。 */
+   c.fillStyle=shade(SHOE,dk*1.05);/* 靴底(⚠一番下だけ暗く=踏んでいる面ができる) */
+   c.fillRect(-4+ax,-1.5,10.8,1.2);
+   /* 膝の折り目。⚠⚠**平行な線を2本引くと縞模様になる**(1回そうなった)=
+      **膝のすぐ上に1本だけ**、しかも**斜めに**入れる。⭐膝の関節の陰と合わせて「折れている」に見せる */
+   c.fillStyle=shade(PANTS,dk*.74);
+   c.beginPath();c.moveTo(-3.4+kx,-15.2);c.lineTo(2.6+kx,-16.1);
+   c.lineTo(2.8+kx,-15.1);c.lineTo(-3.3+kx,-14.3);c.closePath();c.fill();
   };
   /* ⚠⚠**基準のずれと振りを同符号で足さない**。`leg(-3.4-sw*1.7)` と `leg(3.2+sw*1.7)` は
      sw>0 で 6.6+5.4=12 開くのに sw<0 では 6.6-5.4=1.2 しか開かない=**1周期に1歩しか出ず**、
@@ -13124,6 +13143,18 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   c.save();c.beginPath();c.moveTo(-14,-42);c.lineTo(-6.2,-39.4);
   c.lineTo(-7.8,-18);c.lineTo(-14,-18);c.closePath();c.clip();
   c.fillStyle=shade(SHIRT,.8);body();c.fill();c.restore();
+  /* 🖼⭐(227h)**シャツを「服」として読ませる**(襟・ボタン・腹の陰)。⚠全部**塗りだけ**。
+     ⚠⚠**必ず胴の中へ切る**=はみ出すと胴の外に浮いた図形になる(黒フチが無いぶん余計に目立つ)。 */
+  c.save();c.beginPath();body();c.clip();
+  c.fillStyle=shade(SHIRT,.72);/* 襟(⚠横一文字にしない=首輪に見える。V字に開かせる) */
+  c.beginPath();c.moveTo(-2.4,-38.4);c.lineTo(2.6,-33.6);c.lineTo(7.6,-38);
+  c.lineTo(8.4,-35.4);c.lineTo(2.8,-30.6);c.lineTo(-3.2,-35.8);c.closePath();c.fill();
+  c.fillStyle=shade(SHIRT,.66);/* ボタン(⚠等間隔・同じ大きさにしない) */
+  c.beginPath();c.arc(3.5,-28.8,1,0,7);c.fill();
+  c.beginPath();c.arc(3.9,-24.6,.8,0,7);c.fill();
+  c.fillStyle=shade(SHIRT,.88);/* 腹の陰(⚠斜めに入れる=横一文字だと帯を貼ったように見える) */
+  c.beginPath();c.moveTo(-6.6,-24.6);c.lineTo(7.2,-22.6);c.lineTo(6.6,-20.4);c.lineTo(-6.8,-22);c.closePath();c.fill();
+  c.restore();
   c.fillStyle=BLOOD;/* 肩の血。⚠**縦に長い形にするとネクタイに見える**(3回そうなった)=横に広く付ける。
      ⚠**首の真下に置かない**=胸の中央に縦の赤が来ると、どう描いてもネクタイにしか見えない。
      ⭐**背中側の肩**に寄せると、手前の腕にも隠れず、暗い背中の中で赤が効く(撮って動かした) */
@@ -13141,6 +13172,17 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
        **付け根は胴の右の輪郭に重ねる**(x≒5以上)のが正解。 */
   zarm(5.2,-34.6, 11.8,-31.2-sw*.4, 18.6,-33-sw*.7, 3.7,3.8,
        shade(SHIRT,1.12),SKIN,SKIN);
+  /* 🖼⭐(227h)**破れた袖口と腕の傷**=「袖から先が素肌」という設定を、境目の形で見せる。
+     ⚠**塗りだけ**(黒フチを足すと袖と腕の間に黒い帯が増えて腕が折れて見える)。
+     ⚠腕は歩きで動くので、**呼び出しと同じ式で位置を出す**(決め打ちにするとズレる)。 */
+  {const ex=11.8,ey=-31.2-sw*.4,hx2=18.6,hy2=-33-sw*.7;
+   c.fillStyle=shade(SHIRT,.74);/* 袖口(⚠まっすぐ切らない=破れて見えない) */
+   c.beginPath();c.moveTo(ex-1.8,ey-3.5);c.lineTo(ex+1.4,ey-2.5);c.lineTo(ex+.2,ey-.3);
+   c.lineTo(ex+1.7,ey+1.5);c.lineTo(ex-1.6,ey+3.3);c.closePath();c.fill();
+   const mx=(ex+hx2)/2,my=(ey+hy2)/2;
+   c.fillStyle=BLOOD;/* 引っかき傷2本(⚠長さと高さを変える=平行に並べるとハリボテの元) */
+   c.beginPath();c.moveTo(mx-1.6,my-1.9);c.lineTo(mx+2,my-1.4);c.lineTo(mx+1.9,my-.7);c.lineTo(mx-1.7,my-1.2);c.closePath();c.fill();
+   c.beginPath();c.moveTo(mx-.1,my+.5);c.lineTo(mx+1.4,my+.8);c.lineTo(mx+1.3,my+1.4);c.lineTo(mx-.2,my+1.1);c.closePath();c.fill();}
   /* --- 首(短く・暗く)。⚠長いと頭が体から浮く(前はここが4本ぶんあった) --- */
   c.fillStyle=shade(SKIN,.64);
   c.beginPath();c.moveTo(.2,-42);c.lineTo(5.2,-42);c.lineTo(4.8,-37.6);c.lineTo(-.2,-37.6);c.closePath();c.fill();c.stroke();
@@ -13164,6 +13206,9 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
   zEye(c,5,-46.2,1.95);                              /* 前の目 */
   c.fillStyle=shade(SKIN,.44);                       /* 奥の目=落ちくぼんだ穴(小さく・少し上) */
   c.beginPath();c.ellipse(.7,-46.8,1.55,1.45,0,0,7);c.fill();
+  /* 🖼(227h)穴の中にわずかな光=**穴のままだと「目が無い」に見える**が、点を1つ置くと
+     「暗がりの中の目」に読める。⚠手前の目より小さく・暗く(揃えると目が2つ並んだ正面顔になる) */
+  c.fillStyle=shade(PANE,.72);c.beginPath();c.arc(1.1,-46.9,.62,0,7);c.fill();
   c.fillStyle=INK;/* 開いた口(横に広く・下顎が落ちている) */
   c.beginPath();c.moveTo(.8,-42.6);c.lineTo(6,-42.8);c.lineTo(5.2,-39.9);c.lineTo(1.6,-40.1);c.closePath();c.fill();
   c.fillStyle=PANE;/* ⭐歯(不揃いに2本)=口が開いていることが実寸でも読める。
@@ -13692,13 +13737,17 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    c.beginPath();c.moveTo(-5.8+dx,-6);c.lineTo(5.8+dx,-6);c.lineTo(8.4+dx,-.6);c.lineTo(-6.4+dx,-.6);c.closePath();c.fill();c.stroke();};
   jleg(-8+sw,.82);jleg(8-sw,1);
   /* 引きずる鎖と鉄球 */
-  c.strokeStyle=JG3;c.lineWidth=3.2/s;
-  c.beginPath();c.moveTo(-18,-34);c.quadraticCurveTo(-29,-20,-31,-8);c.stroke();
+  /* 🔗⭐(227h)**鉄球は体から離して大きくする**=シルエットで体と繋がっていると、
+     ただの「胴が横に伸びた塊」になって何を持っているのか読めない。
+     ⭐**鎖を細く長く / 球を一回り大きく**すると、**体と球の間に空きができて**両方が形として立つ。
+     ⚠地面から浮かせすぎない(引きずっている物なので)。 */
+  c.strokeStyle=JG3;c.lineWidth=2.6/s;
+  c.beginPath();c.moveTo(-19,-36);c.quadraticCurveTo(-31,-26,-35,-13);c.stroke();
   c.strokeStyle=INK;c.lineWidth=2.6/s;
-  c.fillStyle='#4a4238';c.beginPath();c.arc(-33,-7,7.4,0,7);c.fill();c.stroke();
-  c.fillStyle='#6b6155';c.beginPath();c.arc(-35,-9.4,3,0,7);c.fill();/* ハイライト */
+  c.fillStyle='#4a4238';c.beginPath();c.arc(-38,-10,9.2,0,7);c.fill();c.stroke();
+  c.fillStyle='#6b6155';c.beginPath();c.arc(-40.4,-12.8,3.6,0,7);c.fill();/* ハイライト */
   c.fillStyle='#2e2a24';/* 鋲 */
-  for(const b of [[-33,-13.4],[-27.6,-6],[-33,-.6],[-38.4,-8]]){c.beginPath();c.arc(b[0],b[1],1.9,0,7);c.fill();}
+  for(const b of [[-38,-17.6],[-31.4,-9],[-38,-2.4],[-44.6,-11]]){c.beginPath();c.arc(b[0],b[1],2.1,0,7);c.fill();}
   /* 奥の腕 */
   c.fillStyle=shade(AR?BB:Z.c,.66);
   c.beginPath();c.moveTo(14,-42+sw);c.lineTo(21,-41+sw);c.lineTo(31,-33+sw);c.lineTo(28,-28+sw);c.closePath();c.fill();c.stroke();
@@ -13719,13 +13768,24 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    c.fillStyle=JG2;
    c.beginPath();c.moveTo(11,y0+h2);c.bezierCurveTo(11,y0,16,y0-3,11+w2*.55,y0-2);
    c.bezierCurveTo(11+w2,y0-1,11+w2,y0+h2*.6,11+w2*.92,y0+h2);c.closePath();c.fill();c.stroke();
-   c.fillStyle=JG3;
-   for(const k of spk){c.beginPath();
-    c.moveTo(11+k[0],y0-1.4);c.lineTo(11+k[0]+k[2]*.5,y0-1.4-k[1]);c.lineTo(11+k[0]+k[2],y0-.6);
+   /* 🗿⚠⚠(227h)**左右対称の二等辺三角形を並べると「櫛/松の木」に見える**(撮って分かった)。
+      ⭐直し=①**先端を根元の真ん中から外す**(k[3]=傾き) ②**途中で1回折る**=まっすぐな三角にしない。
+      ⚠**色は中間(JG2)**=明るい色(JG3)にすると、暗いボスの中で棘だけが光って浮く(兜の稜線と同じ罠)。 */
+   c.fillStyle=JG2;
+   for(const k of spk){const ln=k[3]||0;c.beginPath();
+    c.moveTo(11+k[0],y0-1.4);
+    c.lineTo(11+k[0]+k[2]*.5+ln,y0-1.4-k[1]);
+    c.lineTo(11+k[0]+k[2]*.80,y0-1.4-k[1]*.30);
+    c.lineTo(11+k[0]+k[2],y0-.6);
     c.closePath();c.fill();c.stroke();}
    c.restore();};
-  pad(-1,-56,17,14,[[2,7,4.4],[8,10.5,5],[13.6,5.4,3.6]]);
-  pad(1,-58,19,15,[[1.6,10,5],[8,6,4],[13,12,5.4]]);
+  /* 🗿⭐⭐(227h)**棘を頭より高くする**=シルエットテストで**重装兵と見分けが付かなかった**
+     (真っ黒にすると、ただの縦長の長方形だった)。
+     🐞**原因**=棘の先(-71)と兜のてっぺん(-70)が**同じ高さ**で、上端が一直線になっていた。
+     ⭐**棘を頭より9〜14高く**すると「小さい頭が、棘だらけの肩の谷間に沈んでいる」輪郭になる。
+     ⚠**3本を同じ高さにしない**(櫛になる)=左右でも高さの並びを変えてある。 */
+  pad(-1,-56,19,14,[[2,16,6,-1.6],[9.5,23,7.2,2.2],[16,10,4.8,-.8]]);
+  pad(1,-58,22,15,[[1.6,21,6.6,1.8],[9,13,5.6,-2.4],[15,26,7.6,3.4]]);
   /* 兜(Tスリットのバイザー) */
   zFill(c,()=>{c.beginPath();
    c.moveTo(-9,-58);c.bezierCurveTo(-9.4,-66,-5.4,-70,1.6,-70);
