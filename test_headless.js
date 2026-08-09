@@ -247,7 +247,10 @@ function checkFinalBoss(){
     ⚠⚠このファイルは39行目から末尾まで**丸ごとテンプレートリテラル**なので、
       コメントであってもバッククォートを書いた瞬間に文字列が閉じて壊れる。絶対に使わないこと。 */
  const want=[['ステージ1',0,FIN_ZI,4],['ステージ2',1,FIN2_ZI,4],['🌑ナイトメア',0,FINNM_ZI,NM_DIFF],
-  ['🌑深海のナイトメア',1,FINNM2_ZI,NM_DIFF]];
+  ['🌑深海のナイトメア',1,FINNM2_ZI,NM_DIFF],
+  /* 🪶🥩(229h)③④も同じ物差しで見る(それまで①②とNM2種しか見ていなかった) */
+  ['ステージ3',2,FIN3_ZI,4],['🌑鉄塔のナイトメア',2,FINNM3_ZI,NM_DIFF],
+  ['ステージ4',3,FIN4_ZI,4],['🌑飽食のナイトメア',3,FINNM4_ZI,NM_DIFF]];
  for(const [nm,si,fi,df] of want){
   META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   /* 通常のボス波(15)と最終波を作って中身を見る */
@@ -279,7 +282,10 @@ function checkFinalBoss(){
    ⚠**波の中身だけでなく、ボス・最終ボス・分裂の子・図鑑の並びも同じ印で分かれているか**を見る。 */
 function checkZPools(){
  const key=Z=>(Z.nm?'n':'-')+(Z.st||0);
- const want=[['① 廃線',0,4,'-0'],['② 沈んだ港',1,4,'-2'],['🌑 ナイトメア',0,NM_DIFF,'n0'],['🌑 深海のナイトメア',1,NM_DIFF,'n2']];
+ const want=[['① 廃線',0,4,'-0'],['② 沈んだ港',1,4,'-2'],['🌑 ナイトメア',0,NM_DIFF,'n0'],['🌑 深海のナイトメア',1,NM_DIFF,'n2'],
+  /* 🪶🥩(229h)③④も同じ物差しで見る */
+  ['③ 送電鉄塔の丘',2,4,'-3'],['🌑 鉄塔のナイトメア',2,NM_DIFF,'n3'],
+  ['④ 飽食の市街',3,4,'-4'],['🌑 飽食のナイトメア',3,NM_DIFF,'n4']];
  for(const [nm,si,df,k] of want){
   META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   const seen={},bad=[];
