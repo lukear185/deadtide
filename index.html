@@ -6694,6 +6694,9 @@ function msnReady(){try{const M=msnDay();let n=0;
      **細かい調整=0.001を足す**(0.011 → 0.012) / **大きい調整=0.01を足す**(0.02 → 0.03)。
      ⚠**桁を勝手に丸めない**(0.010 と 0.01 を混ぜない)=前の版と並べて読めなくなる。 */
 const MAILS=[
+ {id:'m3',d:'2026-08-09',t:'アップデート',ver:'0.011',
+  b:'押すと変わった所が全部見られます',
+  list:['🐴暗黒の騎士の見た目を調整=馬を暗く・騎士の甲冑を明るくして、乗っている姿がはっきり見えるように']},
  {id:'m2',d:'2026-08-09',t:'アップデート',ver:'0.01',
   b:'押すと変わった所が全部見られます',gift:{gem:10},
   list:['🏠ホームを作り直した=下に「ホーム/英雄/編成/研究/図鑑/召集」が並び、右端に大きな出撃',
@@ -15986,8 +15989,12 @@ HBODY.hWolf=(c,U,walk,t,ph,o)=>{
      題材が近いので、**兜(角) / 得物(騎槍) / 馬**の3つで必ず分ける。
    ⚠焼き箱に収まるのは |x|≦54・y≧-105。馬は横に長いので**尾も鼻も±52まで**に収めてある。 ---- */
 HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
- const SK=U_SKIN,C1=U.c||'#8f1f28',AR='#3a3440',AR2='#4b4454',HS='#443e4c',HS2='#544d5e',
-       RD='#8f1f28',RD2='#c8323c',MN='#7a1f26',HF='#2a2630',rc=bRc(o);
+ /* 🎨⭐⭐(228)**明暗を3段に分けた**(ウォーカーで実証した②の掟)。
+    🐞**前の版**=馬(明るさ.25〜.31)の方が鎧(.21〜.28)より明るい逆転で、騎士が馬に沈んで黒い塊だった。
+    ⭐**下段=馬(.20)/中段=甲冑(.29〜.37)/一番明るいのは兜だけ(HL=.46)**。
+    ⭐**赤も2段**=馬のたてがみ・房(MN)は暗く、騎士のマント(RD)は明るく=遠目に騎士だけ浮く。 */
+ const SK=U_SKIN,C1=U.c||'#8f1f28',AR='#4f4566',AR2='#665a80',HL='#7d7099',HS='#38313f',HS2='#423a4a',
+       RD='#a32530',RD2='#c8323c',MN='#641a20',HF='#2a2630',rc=bRc(o);
  c.save();c.scale(.86,.86);/* ⚠騎乗は背が高い=一回り縮めて他の英雄と並べても浮かないようにする */
  const sw=walk*3.4;
  /* 馬の脚(⚠4本を等間隔に並べない=前後で振りの位相を変える) */
@@ -16016,7 +16023,7 @@ HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
   c.quadraticCurveTo(an+4.6,-2.2-lift,an+4.3,-.2-lift);
   c.lineTo(an-4.1,-.2-lift);
   c.quadraticCurveTo(an-4.2,-2.4-lift,an-3.2,-4.2-lift);c.closePath();c.fill();c.stroke();};
- hleg(-26,3.14,shade(HS,.68));hleg(24,1.2,shade(HS,.68));/* 奥の脚 */
+ hleg(-26,3.14,shade(HS,.8));hleg(24,1.2,shade(HS,.8));/* 奥の脚(⚠.68だと黒フチ(.13)との差が1桁=脚が消える) */
  /* 尾(⚠先を細らせる。太いまま引くと矢印に見える) */
  c.fillStyle=MN;
  c.beginPath();c.moveTo(-34,-34);c.quadraticCurveTo(-48,-30+walk*2,-50,-12+walk*2.6);
@@ -16039,7 +16046,7 @@ HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
  for(const q of [[-24,-38,9],[-12,-40,11],[2,-40,8]])c.fillRect(q[0],q[1],3.4,q[2]);
  /* 鞍と赤い房(⚠差し色は赤だけ=1色に絞ると格が出る) */
  c.fillStyle=HF;c.beginPath();c.moveTo(-14,-44);c.lineTo(6,-43.6);c.lineTo(5,-37);c.lineTo(-13,-37.4);c.closePath();c.fill();c.stroke();
- c.fillStyle=RD;c.beginPath();c.moveTo(-16,-38.4);c.lineTo(-4,-38);c.lineTo(-6,-27);c.lineTo(-13,-26.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=MN;c.beginPath();c.moveTo(-16,-38.4);c.lineTo(-4,-38);c.lineTo(-6,-27);c.lineTo(-13,-26.4);c.closePath();c.fill();c.stroke();/* ⚠(228)房は暗い赤=馬の段。明るい赤は騎士のマントだけ */
  hleg(-18,0,HS);hleg(30,2.4,HS);/* 手前の脚 */
  /* 首(⚠斜めに立てる=水平だと四つ足の胴が2つに見える) */
  c.fillStyle=HS;
@@ -16119,7 +16126,7 @@ HBODY.hDark=(c,U,walk,t,ph,o,rk)=>{
   bArm(c,4.6,-20, 1.4+TX*.34,-15.4+TY, 8+TX*.82,-18.2+TY, 4.8,3.9, AR2,shade(AR,.62));}
  /* 首と角の兜(⚠顔は出さない=赤い目のスリットだけで「暗黒」に読める) */
  c.fillStyle=shade(AR,.7);c.fillRect(-2.6,-27.4,6,4.4);
- c.fillStyle=AR2;
+ c.fillStyle=HL;/* ⭐(228)兜だけ一番明るい=「一番明るい所を1つだけ」の掟(ウォーカーの顔と同じ役) */
  c.beginPath();c.ellipse(.6,-33,7,7.6,0,0,7);c.fill();c.stroke();
  c.fillStyle=AR;/* 面頬(下半分) */
  c.beginPath();c.moveTo(-6.4,-32.4);c.lineTo(7.4,-32.4);c.lineTo(5.4,-25.6);c.lineTo(-4.4,-25.6);c.closePath();c.fill();c.stroke();
