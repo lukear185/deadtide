@@ -4316,7 +4316,10 @@ function checkGain(){
  META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
  const rows=[];let st=0,prev=0;
  /* ⚠(205)**面が増えたら自動で全部の面を見る**(2にベタ書きすると新しい面の実入りを誰も測らない) */
+ /* 🥩(229)**wip の面(敵も実入りの行もまだ)は飛ばす**=地図のピンが lock3 で誰も入れない。
+    ⚠敵と STG_X/STG_GEN を入れて wip を外した瞬間から、この検査が自動でその面も見る。 */
  for(let stg=0;stg<STAGES.length;stg++)for(const d of UNL_ORD){
+  if(STAGES[stg].wip)continue;
   /* その難易度で1試合ぶんに湧く敵の総数(顔ぶれは毎回引き直すので4回の平均) */
   META.stg=stg;setDiff=d;startSolo();frames(6,.016);
   if(STAGE!==stg)F('ステージ'+(stg+1)+'が読み込まれていない(解放の印を立て忘れ)');
@@ -4345,6 +4348,7 @@ function checkGain(){
       面の中では同じ棚をずっと買い続けることになる)。⭐狙いは 1.0(0.75〜1.35に収める)。 */
  const band=[];
  for(let stg=0;stg<STAGES.length;stg++){
+  if(STAGES[stg].wip)continue;/* 🥩(229)作りかけの面は飛ばす(上と同じ) */
   /* 🧬(204h)**面の初クリアの上乗せも足して測る**=兵長を並びから外したぶんはここで返している */
   const inc=rows.filter(x=>x.stg===stg).reduce((a,x)=>a+x.g,0)+(STG_GEN[stg]||STG_GEN[STG_GEN.length-1]||0);
   let oT=0,oU=0;for(let i=0;i<stg;i++){oT+=UNL_TN[i];oU+=UNL_UN[i];}
@@ -4482,8 +4486,10 @@ function checkMaterial(){
  const out=[];
  /* 🪶(205)**面③=羽**を足した。⚠**③はわざと羽を持たない個体も混ぜてある**(速い個体・すり抜け個体)が、
     実測では総HPの55〜88%が羽=①②と同じ4割の物差しで足りる。 */
- const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘'],IC3=['①','②','③'],LO3=[40,40,40];
+ const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘','④飽食の市街'],IC3=['①','②','③','④'],LO3=[40,40,40,40];
+ /* 🥩(229)wip の面(敵がまだ)は飛ばす=④の主役は🥩肉。敵を入れて wip を外したらここに肉の判定を足すこと */
  for(let stg=0;stg<STAGES.length;stg++)for(const d of [2,4,5]){
+  if(STAGES[stg].wip)continue;
   META.stg=stg;setDiff=d;startSolo();frames(6,.016);
   if(STAGE!==stg){console.log('FAIL: ステージ'+(stg+1)+'が読み込まれていない');process.exit(1);}
   let hp=0,ahp=0,shp=0,whp=0;const wN=curW();
@@ -4585,6 +4591,59 @@ function checkStage3(){
  console.log('🪶面'+(si+1)+'('+STAGES[si].n+'): 道2本とも'+Math.round(PLEN)+'(1pxも違わない) / 湧き口は1点 / 合流は'
   +(mf*100).toFixed(0)+'% / 置き場'+nsl+'+工房3+支援2はどちらの道からも95以上 / 🚩旗は枝の上にも置けて交戦は同じ枝だけ / 敵は両方の枝から均等 OK');
 }
+/* ---- 🥩⭐⭐(229)**面④=環状線が中心街を囲む面**(ユーザー選択=ア案「包囲網」) ----
+   ⚠⚠**この面だけの前提**=道が同じ交差点を2回通る(大通り→環状線1周→中心へ)。
+   見るのは6つ: ①交差点を2回通っている(環状線が閉じている) ②拠点が地図の真ん中
+   ③置き場22+工房3+支援2が全部「道から95以上」 ④道の終端の敵が拠点に届く
+   ⑤作りかけ(wip)の間は地図のピンが全部lock3(=誰も入れない)
+   ⑥敵(st:4)を入れたら wip を外す/外したらピンも開ける(入れ忘れ・外し忘れの両方を締める) */
+function checkStage4(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kp=META.sc;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
+ const si=3,S=STAGES[si];
+ if(!S)F('面④が無い');
+ META.stg=si;setDiff=2;startSolo();frames(10,.016);
+ if(STAGE!==si)F('面④が読み込まれていない');
+ if(LANES)F('面④の道が2本になっている(交差点のある1本道のはず)');
+ /* ① 環状線=道の点列に「同じ点」が2回出てくる(そこが交差点) */
+ let xj=null;
+ {const P=S.path;
+  for(let i=0;i<P.length&&!xj;i++)for(let j=i+1;j<P.length;j++)
+   if(P[i][0]===P[j][0]&&P[i][1]===P[j][1]){xj=[i,j];break;}
+  if(!xj)F('道が同じ交差点を2回通っていない(環状線が閉じていない)');
+  /* 交差点の2つの道のり(コメントと食い違ったら直す) */
+  const dAt=k=>{let s=0;for(let i=1;i<=k;i++)s+=dist(P[i-1][0],P[i-1][1],P[i][0],P[i][1]);return s;};
+  const d1=dAt(xj[0]),d2=dAt(xj[1]);
+  if(!(d2-d1>PLEN*.5))F('環状線が短すぎる(1周が道の半分に満たない) '+Math.round(d1)+'→'+Math.round(d2));
+  checkStage4.dj=[Math.round(d1),Math.round(d2)];}
+ /* ② 拠点(=道の終点)が地図の真ん中の帯にある */
+ if(!(CORE[0]>MW*.3&&CORE[0]<MW*.7&&CORE[1]>MH*.3&&CORE[1]<MH*.7))
+  F('拠点が地図の真ん中にない ('+CORE[0]+','+CORE[1]+')');
+ /* ③ 置き場は全部道から95以上(edBad=本番と同じ物差し) */
+ {let ng=0,w='';for(let k=0;k<SLOTS.length;k++){const b=edBad(k);if(b.length){ng++;w=w||('マス'+k+' '+b.join('/'));}}
+  if(ng)F('置き場'+ng+'枠が条件に反している('+w+')');}
+ /* ④ 道の終端の敵が拠点に届く(1本道の到達判定がそのまま効いている) */
+ {const me=G.players[0];me.units.length=0;me.zombies.length=0;
+  const z=mkZ(zSpec(0,1,1));z.d=PLEN-40;z.siege=0;me.zombies.push(z);
+  const c0=me.core;frames(90,.05);
+  if(!(me.core<c0))F('道の終端の敵が拠点に届かない');}
+ /* ⑤⑥ wip(作りかけ)と地図のピンと敵の対応 */
+ const pins=MAPND.filter(n=>n.stg===si);
+ if(pins.length!==6)F('面④の地図のピンが6つでない '+pins.length);
+ const hasZ=ZOMBIES.some(z=>z.st===4&&!z.nm&&!z.boss);
+ if(S.wip){
+  if(pins.some(n=>!n.lock3))F('作りかけ(wip)なのに開いているピンがある');
+  if(hasZ)F('敵(st:4)が入ったのに wip が付いたまま(棚と実入りの検査が飛ばされ続ける)');
+ }else{
+  if(pins.some(n=>n.lock3))F('wip を外したのに地図のピンが lock3 のまま');
+  if(!hasZ)F('wip を外したのに敵(st:4)が1体も居ない');
+ }
+ backTitle();META.sc=kp;
+ console.log('🥩面4(飽食の市街): 大通り→環状線1周→中心の拠点(道'+Math.round(PLEN)
+  +'・交差点は d='+checkStage4.dj.join(' と d=')+'の2回通る) / 拠点は真ん中 / 置き場22+工房3+支援2は道から95以上 / '
+  +(S.wip?'⚠作りかけ=ピン6つ全部🔒(敵はまだ)':'開通ずみ')+' OK');
+}
 /* ---- 🐞⭐⭐(207)**表の印が実体まで届いているか** ----
    ⚠⚠**作った理由**=ゾンビの表の印を実体へ写しているのは1か所だけなのに、そこへの書き忘れが
      **3つ**寝ていた(🪶羽・🐟潜る・🐢甲羅ごもり)。⭐**表にも絵にも数値にも異常が無い**ので、
@@ -4605,6 +4664,7 @@ function checkZFlag(){
  console.log('🐞ゾンビの印: '+need.length+'種すべて表から実体まで届いている OK');
 }
 const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
+['checkStage4',checkStage4],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
