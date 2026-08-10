@@ -7293,7 +7293,20 @@ const uLnOf=(C,u)=>{
 const uLnNow=(C,u)=>(u.ln9!=null?u.ln9:uFlagLn(C,u));
 /* 🪶(226b)枝ちがい=両方が合流点より手前で、敵の枝と**自分の立っている枝**が違う(=撃てない・止められない)。
    ⚠(227e)ここを「旗の枝」で見てはいけない=旗を差し替えた瞬間に、居もしない枝の敵と撃ち合う。 */
-const lnMis=(C,u,z)=>!!(LANES&&MERGE_D>0&&u.d<MERGE_D&&z.d<MERGE_D&&z.ln!=null&&z.ln!==uLnNow(C,u));
+const lnMis=(C,u,z)=>{
+ if(!(LANES&&MERGE_D>0)||z.ln==null||z.d>=MERGE_D)return false;/* 合流より後ろの敵は道が1本 */
+ if(u.d<MERGE_D)return z.ln!==uLnNow(C,u);/* 枝の上=**立っている枝**の敵だけ */
+ /* 🚩🐞⭐⭐(238)**合流より後ろに居て、旗が枝の上にある間は「旗の枝」の敵しか見ない**
+    (2026-08-10ユーザー実機「面③で上側の道に旗を置いてもユニットとかヒーローが行かない」)。
+    🐞**正体**=交戦中は前へ歩けない決まり((163))なのに、合流点に立つと**両方の枝の敵が射程に入る**。
+      反対の枝から来る敵に延々と足を止められて、**いつまでも旗の枝へ入れなかった**
+      (=旗を置いても行かない。敵が途切れた時だけ少し進む、を繰り返す)。
+    ⭐**旗の枝へ向かっている間は、反対の枝の敵を相手にしない**=歩いて枝へ入れる。
+    ⚠**着いた後は今までどおり**(枝の上では「立っている枝」で見る)=この直しが効くのは道中だけ。 */
+ const P=(typeof G!=='undefined'&&G&&G.coop&&G.players[u.own||0])?G.players[u.own||0]:C;
+ if(P&&P.flagD!=null&&P.flagD<MERGE_D)return z.ln!==uFlagLn(C,u);
+ return false;
+};
 function loadStage(si){
  STAGE=clamp(si|0,0,STAGES.length-1);
  /* ⚠🚌開拓便のレーン・カメラ・マップの広さを必ず戻す(残すと普通の面が別物になる) */
@@ -32063,6 +32076,14 @@ function tutListOpen(){
 }
 function tutBegin(from,cs){
  cs=cs||'base';
+ /* 🎓🐞⭐⭐**始める前に開いている窓を全部閉じる**(2026-08-10ユーザー実機
+    「塔を解放した時の案内で『見る』を押すと、強化画面のままチュートリアルが始まって画面が見られない」)。
+    🐞**正体**=誘いの窓だけ閉じて**下に開いたままの🔬研究所**を残していた=戦場は始まっているのに
+      その上に強化画面が乗っていて、光る場所も敵も見えなかった。
+    ⚠**入口が増えても効くように、ここで一括して閉じる**(呼ぶ側で1つずつ閉じない)。 */
+ try{const ms=document.querySelectorAll('.modal.on');
+  for(let q=0;q<ms.length;q++)ms[q].classList.remove('on');}
+ catch(e9){if(DEV&&window.console)console.warn('窓を閉じられない',e9);}
  TUT={on:true,i:-1,st:tutStepsNow(cs),mk:0,ran:false,t:0,si:null,gem0:0,mv:0,cs,K:tutCourse(cs)};
  /* ⭐**始めた時点で「出した」ことにする**(第89弾)。第89弾で光っている所以外を押せなくしたので、
     万一どこかの段で詰まった時の逃げ道が**再読み込みだけ**になった。ここで立てておけば
@@ -35605,7 +35626,7 @@ const sltCost=()=>SLT_BET*SLTU;
    ⭐**ロビーの「💰メダル」で先に借りておく**。台の下の帯は**レバーと停止だけ**にする。 */
 function sltStart(){
  SLTU=SLT_UNIT.indexOf(META.sltU|0)>=0?(META.sltU|0):10;
- CAS={g:'slot',ph:'idle',st:'norm',med:META.sltM|0,role:'',hold:'',rep:0,gase:0,
+ CAS={g:'slot',ph:'idle',st:'norm',role:'',hold:'',rep:0,gase:0,
   g0:META.sltG0|0,czG:0,bn:null,at:null,atRet:0,win:0,got:0,msg:'',rch:0,cut:0,
   cutH:(Math.random()*HEROES.length)|0,
   pop:[],flash:0,lamp:0,t:0,hist:[],
@@ -35615,20 +35636,20 @@ function sltStart(){
   r:[{p:0,v:0,run:0,tp:0,d:0},{p:7,v:0,run:0,tp:0,d:0},{p:13,v:0,run:0,tp:0,d:0}]};
  CASM='';
 }
-function sltSave(){if(CAS&&CAS.g==='slot'){META.sltM=CAS.med|0;META.sltG0=CAS.g0|0;}
+function sltSave(){if(CAS&&CAS.g==='slot')META.sltG0=CAS.g0|0;
  META.sltU=SLTU;saveMeta();}
 /* 💰メダルの残り(台に座っていない時はセーブの値が正) */
-const sltMed=()=>(CAS&&CAS.g==='slot')?CAS.med:(META.sltM|0);
+const sltMed=()=>META.sltM|0;/* 💰**出所は1つだけ**=台の中に写しを持たない(食い違いの元) */
 function sltBorrow(n){
  const cost=n*SLTU;
  if(casChip()<cost){toast('🪙が足りない(🪙'+cost+'要る)');if(sfx.warn)sfx.warn();return;}
  casAdd(-cost);META.sltM=(META.sltM|0)+n;
- if(CAS&&CAS.g==='slot')CAS.med=META.sltM;
+
  saveMeta();casS('casChip');casRender();
 }
 function sltCash(){
  const m=sltMed();if(m<=0){toast('精算するメダルが無い');return;}
- const g9=m*SLTU;META.sltM=0;if(CAS&&CAS.g==='slot')CAS.med=0;
+ const g9=m*SLTU;META.sltM=0;
  casAdd(g9);saveMeta();toast('💰 🪙'+g9.toLocaleString()+' を受け取った');casS('casPile');casRender();
 }
 function sltSetUnit(u){
@@ -35688,9 +35709,9 @@ function sltPick(i,cur){
 /* ---- 🕹レバーと停止 ---- */
 function sltLever(){
  if(!CAS||CAS.ph!=='idle')return;
- if(!CAS.rep&&CAS.med<SLT_BET){CASM='⚠メダルが足りない=「← 戻る」→ 両替所で借りる';
+ if(!CAS.rep&&sltMed()<SLT_BET){CASM='⚠メダルが足りない=「← 戻る」→ 両替所で借りる';
   if(sfx.warn)sfx.warn();return;}
- if(!CAS.rep)CAS.med-=SLT_BET;
+ if(!CAS.rep)META.sltM=sltMed()-SLT_BET;
  CAS.role=sltRoll();CAS.win=0;CAS.rch=0;CAS.cut=0;CASM='';
  CAS.gase=(CAS.role==='lose'&&!CAS.hold&&Math.random()<SLT_GASE)?1:0;
  CAS.ph='spin';CAS.t=0;
@@ -35724,7 +35745,7 @@ function sltPop(txt,col){CAS.pop.push({t:0,x:txt,c:col||'#f0d79a'});
 function sltJudge(){
  const H=sltHand();
  CAS.rep=(H.k==='rep')?1:0;
- if(H.pay>0){CAS.med+=H.pay;CAS.win=H.pay;CAS.got+=H.pay;casS('casPile');}
+ if(H.pay>0){META.sltM=sltMed()+H.pay;CAS.win=H.pay;CAS.got+=H.pay;casS('casPile');}
  else CAS.win=0;
  CAS.hist.push(H.k);if(CAS.hist.length>40)CAS.hist.shift();
  if(sltRare(H.k)&&CAS.zw)sltFxSlash();/* 🎬レア役=液晶で1体斬る */
@@ -35821,8 +35842,8 @@ function sltStep(dt){
    ⚠⚠これが**戻り(RTP)の実測**の土台。play側と同じ関数を通すこと(別勘定を作らない) */
 function sltAuto(){
  if(!CAS||CAS.ph!=='idle')return;
- if(!CAS.rep&&CAS.med<SLT_BET)CAS.med+=10000;
- if(!CAS.rep)CAS.med-=SLT_BET;
+ if(!CAS.rep&&sltMed()<SLT_BET)META.sltM=sltMed()+10000;
+ if(!CAS.rep)META.sltM=sltMed()-SLT_BET;
  CAS.role=sltRoll();CAS.win=0;CAS.gase=0;
  for(let i=0;i<3;i++){CAS.r[i].run=1;CAS.r[i].tp=0;}
  for(let i=0;i<3;i++){
@@ -36001,7 +36022,7 @@ function sltBandTxt(c,x,y,w,h,ix,iw){
  }else if(CAS.hold){
   casText(c,'揃うまで',lx,my-h*.15,sub,'#cbbf9e');casText(c,'消えない',lx,my+h*.12,num,'#f0d79a');
   casText(c,'⇩ 狙え',rx,my,Math.max(15,h*.28),(Math.floor(CAST*4)%2)?'#f0c86a':'#fff2c8');
- }else if(CAS.med<SLT_BET){
+ }else if(sltMed()<SLT_BET){
   casText(c,'メダルが無い',lx,my-h*.14,num,'#e0a08a');
   casText(c,'両替所で借りる',lx,my+h*.14,sub,'#cbbf9e');
  }else{
@@ -36042,7 +36063,7 @@ function sltCtlPanel(c,x,y,w,h,ix,rw,gap){
  {const wx=x+w-w*.20,wy=y+h*.28,ww=w*.17,wh=h*.44;
   c.fillStyle='#0c0f0c';casRR(c,wx,wy,ww,wh,4);c.fill();
   c.strokeStyle='#5a4a34';c.lineWidth=2;casRR(c,wx,wy,ww,wh,4);c.stroke();
-  casText(c,'💰 '+CAS.med,wx+ww/2,wy+wh*.5,Math.max(12,wh*.5),'#8fd08a');}
+  casText(c,'💰 '+sltMed(),wx+ww/2,wy+wh*.5,Math.max(12,wh*.5),'#8fd08a');}
 }
 function sltDraw(c){
  const g0=c.createLinearGradient(0,0,0,CASH);
@@ -36125,7 +36146,7 @@ function casSig(){
  return CASV+'|'+CASM+'|'+(CAS.ph||'')+'|'+(CAS.st||'')+'|'+(CAS.cur==null?'':CAS.cur)
   +'|'+(CAS.call||0)+'|'+(CAS.win||'')+'|'+(CAS.road||0)+'|'+(CAS.pl?CAS.pl[0].bet+':'+(CAS.pl[0].fold?1:0):'')
   /* 🎰スロット=**止まっていないリール**と持ちメダルが変わったら帯を作り直す(停止ボタンの出入り) */
-  +'|'+(CAS.g==='slot'?(CAS.r.map(r=>(r.run&&!r.tp)?1:0).join('')+':'+CAS.med+':'+(CAS.hold||'')):'');
+  +'|'+(CAS.g==='slot'?(CAS.r.map(r=>(r.run&&!r.tp)?1:0).join('')+':'+sltMed()+':'+(CAS.hold||'')):'');
 }
 function casLoop(ts){
  CASRAF=requestAnimationFrame(casLoop);

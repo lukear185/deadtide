@@ -4808,7 +4808,7 @@ function checkSlot(){
  const rnd0=Math.random;{let s9=20260810>>>0;Math.random=()=>{
   s9=(s9+0x6D2B79F5)|0;let t=Math.imul(s9^(s9>>>15),1|s9);
   t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};}
- CASV='slot';sltStart();CAS.med=1e12;
+ CASV='slot';META.sltM=1e12;sltStart();
  const N=300000;
  let inTot=0,outTot=0,bad=0,cnt={},czN=0,bnN=0,atN=0,cont={},normG=0,czG=0,bnG=0,atG=0;
  let last='norm';

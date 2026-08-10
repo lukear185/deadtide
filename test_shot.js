@@ -355,13 +355,13 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        /* 🎰(237)スロット=状態ごとに撮れるようにする(通常/回転中/告知/CZ/ボーナス/AT) */
        /* ⚠⚠**この撮り方ではアニメの輪(requestAnimationFrame)が進まない**
           =🎡ルーレットや🃏バカラと同じで、**手で何コマか進めてから撮る**(液晶の映像が出ない) */
-       CASKIND==='slot'?'CASV="slot";sltStart();CAS.med=320;sltFx(90);':
-       CASKIND==='slotspin'?'CASV="slot";sltStart();CAS.med=320;sltFx(60);sltLever();for(var s9=0;s9<26;s9++)sltStep(0.02);sltStopReel(0);for(var s8=0;s8<14;s8++)sltStep(0.02);':
-       CASKIND==='slothold'?'CASV="slot";sltStart();CAS.med=180;CAS.hold="r7";sltFx(90);':
-       CASKIND==='slotcz'?'CASV="slot";sltStart();CAS.med=210;CAS.st="cz";CAS.czG=4;sltFx(120);':
-       CASKIND==='slotbn'?'CASV="slot";sltStart();CAS.med=640;CAS.st="bn";CAS.bn={k:"r7",g:5,got:33};sltFx(150);':
-       CASKIND==='slotat'?'CASV="slot";sltStart();CAS.med=980;CAS.st="at";CAS.at={g:7,set:3,cont:0.75,got:412};sltFx(150);':
-       CASKIND==='slotcut'?'CASV="slot";sltStart();CAS.med=520;CAS.st="at";CAS.at={g:4,set:2,cont:0.9,got:263};sltFx(150);CAS.cut=0.6;CAS.rch=1;sltFx(10);':'')))))))
+       CASKIND==='slot'?'CASV="slot";sltStart();META.sltM=320;sltFx(90);':
+       CASKIND==='slotspin'?'CASV="slot";sltStart();META.sltM=320;sltFx(60);sltLever();for(var s9=0;s9<26;s9++)sltStep(0.02);sltStopReel(0);for(var s8=0;s8<14;s8++)sltStep(0.02);':
+       CASKIND==='slothold'?'CASV="slot";sltStart();META.sltM=180;CAS.hold="r7";sltFx(90);':
+       CASKIND==='slotcz'?'CASV="slot";sltStart();META.sltM=210;CAS.st="cz";CAS.czG=4;sltFx(120);':
+       CASKIND==='slotbn'?'CASV="slot";sltStart();META.sltM=640;CAS.st="bn";CAS.bn={k:"r7",g:5,got:33};sltFx(150);':
+       CASKIND==='slotat'?'CASV="slot";sltStart();META.sltM=980;CAS.st="at";CAS.at={g:7,set:3,cont:0.75,got:412};sltFx(150);':
+       CASKIND==='slotcut'?'CASV="slot";sltStart();META.sltM=520;CAS.st="at";CAS.at={g:4,set:2,cont:0.9,got:263};sltFx(150);CAS.cut=0.6;CAS.rch=1;sltFx(10);':'')))))))
        +'casRender();')
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
