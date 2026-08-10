@@ -34999,7 +34999,11 @@ function rouSpin(){
  casAdd(-CAS.tot);
  CAS.ph='spin';CAS.t=0;CAS.res=(Math.random()*37)|0;CAS.spd=7+Math.random()*2;
  CAS.slot=ROU_ORD.indexOf(CAS.res);/* 🎡本物の並びのどの升か */
- CAS.win='spin';CAS.win2=0;CASM='';CAS.bt=0;casS('casPile');
+ CAS.win='spin';CAS.win2=0;CASM='';CAS.bt=0;
+ /* 🎡(233)玉と輪の状態を作り直す。⚠**lock は必ず null に戻す**(前の回の吸い込みが残る) */
+ CAS.ba=Math.random()*6.2832;CAS.bv=-15-Math.random()*2;CAS.wv=1.1+Math.random()*.3;
+ CAS.brf=1.12;CAS.lock=null;
+ casS('casPile');
 }
 function rouPay(){
  const n=CAS.res;let w=0;
@@ -35018,7 +35022,8 @@ function rouPay(){
    ⚠**画面いっぱいを使う**=背の低い実機では、卓の上に小さく置くと絶対に押せない。 */
 /* 🎡本物の輪の並び(ヨーロピアン)。⚠数字順に並べない=見た目の説得力がまるで違う */
 const ROU_ORD=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const ROU_T=[.7,5.2,6.6,7.3,8.0];/* 玉を投げる / 周回 / 落ちる / 升へ吸われる / 一緒に回って止まる */
+/* 🎡時間の割り(秒)=①溝の上を走る ②すり鉢を落ちる ③升へ吸われ始める ④収まる ⑤結果を出す */
+const ROU_T=[4.6,6.3,6.9,7.7,8.4];
 /* ⭐賭ける台を「与えられた四角の中いっぱい」に描く。big=大きい窓か(押せる所も返す) */
 function rouBoard(c,x0,y0,w,h,big){
  const gap=big?3:2,zw=w*.072,cw=(w-zw)/12;
@@ -35061,43 +35066,92 @@ function rouBetWin(c){
  rouBoard(c,26,CASH*.115,CASW-52,CASH*.86,1);
 }
 /* 🎡**大きな回っている輪**(数字と鉄球が見える) */
+/* 🎡⭐⭐(233)**輪を作り直した**(2026-08-10ユーザー「挙動がおかしい / 立体感もつけて」)。
+   ⚠⚠**前は玉の角度を式で出していた**ので、途中で速さの符号が変わって**逆回りして見えた**。
+     ⭐いまは**速さを減らしながら積み上げる(積分)**=絶対に向きが変わらない。
+   ⭐**立体感**=①上から見下ろした楕円(縦を0.58に潰す) ②木の外枠に上の照り返しと下の落ち影
+     ③玉が走る溝を一段くぼませる ④升の仕切り(フレット)に金物の光 ⑤中央の塔を立体に
+     ⑥**玉は手前で大きく奥で小さく**+真下に影。⚠**玉だけ潰さない**(潰すと玉に見えない)。 */
+const ROU_SQ=.58;/* 見下ろす角度(縦の潰し) */
 function rouSpinWin(c){
- c.fillStyle='rgba(12,10,8,.96)';c.fillRect(0,0,CASW,CASH);
- const R=Math.min(CASH*.44,196),wx=CASW*.31,wy=CASH*.5;
- const t=CAS.t;
- /* 木の枠 */
- c.fillStyle='#4a3826';c.beginPath();c.arc(wx,wy,R*1.22,0,7);c.fill();
- c.fillStyle='#31241a';c.beginPath();c.arc(wx,wy,R*1.1,0,7);c.fill();
- /* 升(37) */
- for(let i=0;i<37;i++){
-  const n=ROU_ORD[i],a=CAS.ang+i/37*6.2832;
-  c.fillStyle=n===0?'#2f6b3a':(rouRed(n)?'#8c2b28':'#181410');
-  c.beginPath();c.moveTo(wx,wy);c.arc(wx,wy,R,a,a+6.2832/37);c.closePath();c.fill();
-  c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=1.4;c.stroke();
-  /* 数字(升と一緒に回る) */
-  const am=a+3.1416/37;
-  c.save();c.translate(wx+Math.cos(am)*R*.84,wy+Math.sin(am)*R*.84);c.rotate(am+1.5708);
-  casText(c,''+n,0,0,Math.max(11,R*.088),'#f2ecdc');c.restore();}
- c.fillStyle='#8a7448';c.beginPath();c.arc(wx,wy,R*.38,0,7);c.fill();
- c.fillStyle='#c9a13d';c.beginPath();c.arc(wx,wy,R*.14,0,7);c.fill();
+ const g0=c.createLinearGradient(0,0,0,CASH);
+ g0.addColorStop(0,'#1a1510');g0.addColorStop(1,'#0c0a08');
+ c.fillStyle=g0;c.fillRect(0,0,CASW,CASH);
+ const R=Math.min(CASH*.46,205),wx=CASW*.32,wy=CASH*.52;
+ const SQ=ROU_SQ;
+ /* 卓に落ちる影 */
+ c.fillStyle='rgba(0,0,0,.45)';c.beginPath();
+ c.ellipse(wx+R*.09,wy+R*.13,R*1.34,R*1.34*SQ,0,0,7);c.fill();
+ c.save();c.translate(wx,wy);c.scale(1,SQ);
+ /* ①木の外枠(外側ほど暗い=丸みが出る) */
+ const gw=c.createRadialGradient(0,-R*.2,R*.6,0,0,R*1.32);
+ gw.addColorStop(0,'#6b5238');gw.addColorStop(.62,'#4a3826');gw.addColorStop(1,'#241a12');
+ c.fillStyle=gw;c.beginPath();c.arc(0,0,R*1.32,0,7);c.fill();
+ c.strokeStyle='rgba(255,225,170,.30)';c.lineWidth=R*.05;/* 上の照り返し */
+ c.beginPath();c.arc(0,0,R*1.26,3.55,5.87);c.stroke();
+ c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=R*.06;/* 下の影 */
+ c.beginPath();c.arc(0,0,R*1.26,.36,2.78);c.stroke();
+ /* ②玉の走る溝(一段くぼませる) */
+ const gt=c.createRadialGradient(0,0,R*1.0,0,0,R*1.2);
+ gt.addColorStop(0,'#241c14');gt.addColorStop(.5,'#100c09');gt.addColorStop(1,'#33261a');
+ c.fillStyle=gt;c.beginPath();c.arc(0,0,R*1.18,0,7);c.fill();
+ /* ③升(37)=本物の並び */
+ for(let k=0;k<37;k++){
+  const n=ROU_ORD[k],a=CAS.ang+k/37*6.2832;
+  c.fillStyle=n===0?'#2f6b3a':(rouRed(n)?'#8c2b28':'#171310');
+  c.beginPath();c.moveTo(0,0);c.arc(0,0,R,a,a+6.2832/37);c.closePath();c.fill();}
+ /* 升の底の陰(外周ほど暗い=すり鉢に見える) */
+ const gb=c.createRadialGradient(0,0,R*.34,0,0,R);
+ gb.addColorStop(0,'rgba(0,0,0,0)');gb.addColorStop(1,'rgba(0,0,0,.5)');
+ c.fillStyle=gb;c.beginPath();c.arc(0,0,R,0,7);c.fill();
+ /* ④仕切りの金物(フレット)=1本ずつ光らせる */
+ for(let k=0;k<37;k++){
+  const a=CAS.ang+k/37*6.2832;
+  const c1=Math.cos(a),s1=Math.sin(a);
+  c.strokeStyle='#b9ae95';c.lineWidth=R*.018;
+  c.beginPath();c.moveTo(c1*R*.38,s1*R*.38);c.lineTo(c1*R*1.01,s1*R*1.01);c.stroke();
+  c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=R*.008;
+  c.beginPath();c.moveTo(c1*R*.4,s1*R*.4-1);c.lineTo(c1*R*.99,s1*R*.99-1);c.stroke();}
+ /* ⑤数字(升と一緒に回る=寝かせて置く) */
+ for(let k=0;k<37;k++){
+  const n=ROU_ORD[k],am=CAS.ang+(k+.5)/37*6.2832;
+  c.save();c.translate(Math.cos(am)*R*.82,Math.sin(am)*R*.82);c.rotate(am+1.5708);
+  c.scale(1,1/SQ*.72);/* ⚠潰しを少し戻す=読めないほど潰れる */
+  casText(c,''+n,0,0,Math.max(11,R*.086),'#f2ecdc');c.restore();}
+ /* ⑥中央の塔(立体) */
+ const gc=c.createRadialGradient(-R*.1,-R*.14,R*.04,0,0,R*.36);
+ gc.addColorStop(0,'#d8bd7a');gc.addColorStop(.6,'#8a7448');gc.addColorStop(1,'#4a3c22');
+ c.fillStyle=gc;c.beginPath();c.arc(0,0,R*.36,0,7);c.fill();
+ c.restore();
+ /* 🏛塔(ターレット)=**潰さずに立てる**=これが立体感の要(見下ろしているのに高さが分かる) */
+ {const th=R*.42;/* 高さ */
+  const gs=c.createLinearGradient(wx-R*.1,0,wx+R*.1,0);
+  gs.addColorStop(0,'#d8bd7a');gs.addColorStop(.45,'#8a7448');gs.addColorStop(1,'#4a3c22');
+  c.fillStyle=gs;c.beginPath();
+  c.moveTo(wx-R*.115,wy);c.lineTo(wx-R*.045,wy-th*.78);c.lineTo(wx+R*.045,wy-th*.78);
+  c.lineTo(wx+R*.115,wy);c.closePath();c.fill();
+  /* 横木(本物の握り) */
+  c.fillStyle='#7a6438';c.beginPath();
+  c.moveTo(wx-R*.20,wy-th*.6);c.lineTo(wx+R*.20,wy-th*.72);c.lineTo(wx+R*.20,wy-th*.60);
+  c.lineTo(wx-R*.20,wy-th*.48);c.closePath();c.fill();
+  /* てっぺんの玉 */
+  const gk=c.createRadialGradient(wx-R*.02,wy-th-R*.02,R*.01,wx,wy-th,R*.075);
+  gk.addColorStop(0,'#f4e0a8');gk.addColorStop(.6,'#c9a13d');gk.addColorStop(1,'#6b5426');
+  c.fillStyle=gk;c.beginPath();c.arc(wx,wy-th,R*.075,0,7);c.fill();}
  /* 上の目印 */
- c.fillStyle='#e8dcc0';c.beginPath();c.moveTo(wx,wy-R*1.06);c.lineTo(wx-9,wy-R*1.22);c.lineTo(wx+9,wy-R*1.22);c.closePath();c.fill();
- /* 🔩鉄球 */
- const tgt=CAS.ang+(CAS.slot+.5)/37*6.2832;
- let ba,br;
- if(t<ROU_T[1]){const q=Math.min(1,t/ROU_T[1]);
-  ba=-t*(15-9*q);br=R*(.97-.02*q);}
- else if(t<ROU_T[2]){const q=(t-ROU_T[1])/(ROU_T[2]-ROU_T[1]);
-  ba=-ROU_T[1]*6-(t-ROU_T[1])*(6-4*q);br=R*(.95-.22*q)+Math.sin(q*18)*R*.02;}
- else if(t<ROU_T[3]){const q=(t-ROU_T[2])/(ROU_T[3]-ROU_T[2]);
-  const free=-ROU_T[1]*6-(ROU_T[2]-ROU_T[1])*4-(t-ROU_T[2])*2.2;
-  let d=((tgt-free+3.1416)%6.2832+6.2832)%6.2832-3.1416;/* 近い方から寄せる */
-  ba=free+d*(q*q*(3-2*q));br=R*(.73-.05*q)+Math.abs(Math.sin(q*9))*R*.03*(1-q);}
- else{ba=tgt;br=R*.68;}
- c.fillStyle='#f6f2e6';c.beginPath();c.arc(wx+Math.cos(ba)*br,wy+Math.sin(ba)*br,Math.max(6,R*.045),0,7);c.fill();
- c.fillStyle='rgba(255,255,255,.5)';c.beginPath();c.arc(wx+Math.cos(ba)*br-2,wy+Math.sin(ba)*br-2,Math.max(2,R*.016),0,7);c.fill();
- /* 右=いま置いている賭けと結果 */
- const px=CASW*.66;
+ c.fillStyle='#e8dcc0';c.beginPath();
+ c.moveTo(wx,wy-R*1.2*SQ);c.lineTo(wx-9,wy-R*1.42*SQ);c.lineTo(wx+9,wy-R*1.42*SQ);c.closePath();c.fill();
+ /* 🔩鉄球(⚠潰さない・手前で大きく奥で小さく・真下に影) */
+ const ba=rouBallA(),br=(CAS.brf||.97)*R;
+ const bx=wx+Math.cos(ba)*br,by=wy+Math.sin(ba)*br*SQ;
+ const dep=(Math.sin(ba)+1)/2;/* 0=奥 1=手前 */
+ const rr9=Math.max(5,R*.045)*(.82+.34*dep);
+ c.fillStyle='rgba(0,0,0,.5)';c.beginPath();c.ellipse(bx+1,by+rr9*.7,rr9*.9,rr9*.42,0,0,7);c.fill();
+ const gball=c.createRadialGradient(bx-rr9*.35,by-rr9*.4,rr9*.1,bx,by,rr9);
+ gball.addColorStop(0,'#ffffff');gball.addColorStop(.55,'#e8e2d2');gball.addColorStop(1,'#8f8874');
+ c.fillStyle=gball;c.beginPath();c.arc(bx,by,rr9,0,7);c.fill();
+ /* 右=結果 */
+ const px=CASW*.70;
  casText(c,CAS.ph==='res'?'結  果':'回っています…',px,CASH*.16,Math.max(15,CASH*.075),'#cbbf9e');
  if(CAS.ph==='res'){
   c.fillStyle=CAS.res===0?'#2f6b3a':(rouRed(CAS.res)?'#8c2b28':'#181410');
@@ -35110,30 +35164,38 @@ function rouSpinWin(c){
   casText(c,'置いた 🪙'+CAS.tot,px,CASH*.4,Math.max(15,CASH*.08),'#f0d79a');
   casText(c,'ノー・モア・ベット',px,CASH*.62,Math.max(13,CASH*.06),'#8a8172');}
 }
+/* ⭐いま玉が居る角度。⚠**升へ吸われてからは輪と一緒に回る**(ずれは滑らかに0へ) */
+function rouBallA(){
+ if(CAS.lock==null)return CAS.ba||0;
+ const e=clamp((CAS.t-ROU_T[2])/Math.max(.1,ROU_T[3]-ROU_T[2]),0,1);
+ return CAS.ang+(CAS.slot+.5)/37*6.2832+CAS.lock*(1-e*e*(3-2*e));
+}
+
+/* 🎡卓を見ている時の画面(台は見るだけ・押すと大きな窓が開く) */
 function rouDraw(c){
  if(CAS.win==='bet'){rouBetWin(c);return;}
  if(CAS.win==='spin'){rouSpinWin(c);return;}
  const k=CK(),TOP=CASH*.5;
  casRoom(c);casDealer(c,CASW-210,TOP*.99,1.2*k);
- /* 🎡輪(左上) */
+ /* 🎡卓の脇の輪(小さく・見るだけ。⚠立体の輪は回す窓の方) */
  const wx=150,wy=TOP*.54,R=TOP*.33;
- c.fillStyle='#3a2b1e';c.beginPath();c.arc(wx,wy,R+13,0,7);c.fill();
- c.fillStyle='#20180f';c.beginPath();c.arc(wx,wy,R,0,7);c.fill();
+ c.save();c.translate(wx,wy);c.scale(1,ROU_SQ);
+ c.fillStyle='#4a3826';c.beginPath();c.arc(0,0,R*1.28,0,7);c.fill();
+ c.fillStyle='#100c09';c.beginPath();c.arc(0,0,R*1.14,0,7);c.fill();
  for(let i=0;i<37;i++){
-  const a=CAS.ang+i/37*6.2832;
-  c.fillStyle=i===0?'#2f6b3a':(rouRed(i)?'#8c2b28':'#181410');
-  c.beginPath();c.moveTo(wx,wy);c.arc(wx,wy,R,a,a+6.2832/37);c.closePath();c.fill();}
- c.fillStyle='#8a7448';c.beginPath();c.arc(wx,wy,R*.42,0,7);c.fill();
- c.fillStyle='#c9a13d';c.beginPath();c.moveTo(wx,wy-R-8);c.lineTo(wx-8,wy-R-20);c.lineTo(wx+8,wy-R-20);c.closePath();c.fill();
- if(CAS.ph!=='bet'){/* 玉。⚠回っている間は輪と逆へ速く、止まったら当たりの升に収まる */
-  const aa=(CAS.ph==='spin')?(-CAS.t*9):(CAS.ang+(CAS.res+.5)/37*6.2832);
-  const br=(CAS.ph==='spin')?R*.86:R*.72;
-  c.fillStyle='#f4eedd';c.beginPath();c.arc(wx+Math.cos(aa)*br,wy+Math.sin(aa)*br,6,0,7);c.fill();}
- if(CAS.res>=0&&CAS.ph==='res'){
+  const n=ROU_ORD[i],a=CAS.ang+i/37*6.2832;
+  c.fillStyle=n===0?'#2f6b3a':(rouRed(n)?'#8c2b28':'#171310');
+  c.beginPath();c.moveTo(0,0);c.arc(0,0,R,a,a+6.2832/37);c.closePath();c.fill();}
+ c.fillStyle='#8a7448';c.beginPath();c.arc(0,0,R*.38,0,7);c.fill();
+ c.restore();
+ if(CAS.ph==='res'){
+  const ba=rouBallA();
+  c.fillStyle='#f6f2e6';c.beginPath();
+  c.arc(wx+Math.cos(ba)*R*.72,wy+Math.sin(ba)*R*.72*ROU_SQ,5,0,7);c.fill();
   c.fillStyle=CAS.res===0?'#2f6b3a':(rouRed(CAS.res)?'#8c2b28':'#181410');
-  c.beginPath();casRR(c,wx-34,TOP*.06,68,40,8);c.fill();
+  c.beginPath();casRR(c,wx-32,TOP*.04,64,36,8);c.fill();
   c.strokeStyle='#c9a13d';c.lineWidth=3;c.stroke();
-  casText(c,''+CAS.res,wx,TOP*.06+21,24,'#f4eedd');}
+  casText(c,''+CAS.res,wx,TOP*.04+19,22,'#f4eedd');}
  casTable(c,TOP);
  /* 卓の上の台は**見るだけ**(小さいので押させない)=押したら大きな窓を開く */
  const bh=CASH-TOP-6;
@@ -35142,15 +35204,32 @@ function rouDraw(c){
  casText(c,'▶ 台を押すと大きく開く',CASW/2,TOP-14,Math.max(13,CASH*.055),'#f0d79a');
  casHands(c);
 }
+/* 🎡⭐(233)**玉と輪は「速さを減らしながら積み上げる」**=式で角度を出すと途中で符号が変わって
+   逆回りして見えた(実機指摘の正体)。⚠**減衰は掛け算だけ**にすること(引き算だと0を跨いで戻る)。 */
 function rouStep(dt){
  if(CAS.ph!=='spin')return;
- CAS.t+=dt;CAS.ang+=CAS.spd*dt*.2;CAS.spd*=Math.pow(.985,dt*60);/* 輪はゆっくり回り続ける */
- /* 🎡玉が枠を走る音=**速いほど短い間隔**(だんだん遅くなるのが耳で分かる)。
-    ⚠升へ吸われてからは鳴らさない(止まったのに音だけ続くと嘘になる) */
- if(CAS.t<ROU_T[2]){CAS.bt=(CAS.bt||0)-dt;
-  if(CAS.bt<=0){CAS.bt=.05+CAS.t*.028;casS('casBall');}}
- else if(CAS.t<ROU_T[3]){CAS.bt=(CAS.bt||0)-dt;
-  if(CAS.bt<=0){CAS.bt=.14;casS('casFlip');}}/* 升に当たって跳ねる */
+ CAS.t+=dt;
+ CAS.wv=(CAS.wv==null?1.25:CAS.wv)*Math.pow(.93,dt);/* 輪(ゆっくり・向きは玉と逆) */
+ CAS.ang+=CAS.wv*dt;
+ CAS.bv=(CAS.bv==null?-16:CAS.bv)*Math.pow(.60,dt);/* 玉(速い→だんだん遅く) */
+ CAS.ba=(CAS.ba||0)+CAS.bv*dt;
+ /* 溝の上を走る → すり鉢を転がり落ちる → 升へ */
+ if(CAS.t<ROU_T[0])CAS.brf=1.12;
+ else if(CAS.t<ROU_T[1]){const q=(CAS.t-ROU_T[0])/(ROU_T[1]-ROU_T[0]);
+  CAS.brf=1.12-.40*q+Math.abs(Math.sin(q*9.4))*.05*(1-q);/* 跳ねながら落ちる */}
+ else CAS.brf=.72;
+ /* 升へ吸い込まれる瞬間に「いまのずれ」を控える(あとは滑らかに0へ) */
+ if(CAS.t>=ROU_T[2]&&CAS.lock==null){
+  const pa=(CAS.slot+.5)/37*6.2832;
+  let d=(CAS.ba-(CAS.ang+pa))%6.2832;
+  if(d>3.1416)d-=6.2832;if(d<-3.1416)d+=6.2832;
+  CAS.lock=d;}
+ /* 🎡音=**速さに合わせて間隔が変わる**(遅くなるのが耳で分かる)。⚠止まったら鳴らさない */
+ if(CAS.t<ROU_T[2]){
+  CAS.bt=(CAS.bt||0)-dt;
+  if(CAS.bt<=0){
+   CAS.bt=clamp(1.15/Math.max(.4,Math.abs(CAS.bv)),.05,.5);
+   casS(CAS.t<ROU_T[0]?'casBall':'casFlip');}}
  if(CAS.t>ROU_T[4]&&CAS.ph==='spin'){CAS.ph='res';rouPay();}
 }
 

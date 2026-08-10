@@ -4731,6 +4731,27 @@ function checkCasino(){
  /* 🏆景品の英雄は cas:1 が付いていること(付いていないと交換前から召集に並ぶ) */
  for(const p of CAS_PRZ)if(p.k==='hero'){const h=HEROES.find(x=>x.id===p.id);
   if(!h||!h.cas){console.log('FAIL: 景品の英雄 '+p.id+' に cas:1 が無い');process.exit(1);}}
+ /* 🎡⭐⭐**玉が逆回りしないか**(2026-08-10ユーザー実機「挙動がおかしい」の正体)=
+    角度を式で出していたので途中で速さの符号が変わっていた。⚠**向きが1度でも変わったら落とす**。 */
+ {const keep=META.chip;META.chip=100000;
+  for(let n=0;n<6;n++){
+   CASV='roul';rouStart();CAS.bets.red=100;CAS.tot=100;rouSpin();
+   let prev=CAS.ba,last=0,steps=0;
+   while(CAS.ph==='spin'){
+    rouStep(.02);steps++;
+    if(CAS.lock==null){/* 升へ吸われる前だけ見る(吸い込みは寄せるので向きが変わってよい) */
+     const d=CAS.ba-prev;
+     if(d>0){console.log('FAIL: ルーレットの玉が逆回りした('+steps+'コマ目)');process.exit(1);}
+     prev=CAS.ba;}
+    if(steps>2000){console.log('FAIL: ルーレットが止まらない');process.exit(1);}}
+   /* 止まった玉が当たりの升に居るか(2度以内) */
+   const pa=(CAS.slot+.5)/37*6.2832,ba=rouBallA();
+   let d2=(ba-(CAS.ang+pa))%6.2832;if(d2>3.1416)d2-=6.2832;if(d2<-3.1416)d2+=6.2832;
+   if(Math.abs(d2)>.035){console.log('FAIL: 玉が当たりの升に収まっていない ずれ'+d2.toFixed(3));process.exit(1);}
+   if(ROU_ORD[CAS.slot]!==CAS.res){console.log('FAIL: 升と出目が食い違っている');process.exit(1);}
+   last=steps;
+   if(last*.02<6||last*.02>12){console.log('FAIL: 回る尺が想定外 '+(last*.02).toFixed(1)+'秒');process.exit(1);}}
+  CAS=null;CASV='lobby';META.chip=keep;}
  /* ♠⭐⭐**1手が最後まで進むか**(2026-08-10ユーザー実機「コールしたあと進まなくなった」)=
     コールし続けるだけで**必ず決着まで行く**ことを確かめる。⚠止まるバグはこれでしか捕まえられない。 */
  {const keep={chip:META.chip,casIn:META.casIn};
@@ -4749,7 +4770,7 @@ function checkCasino(){
    if(pot<=0){console.log('FAIL: 卓のチップが消えた');process.exit(1);}}
   CAS=null;CASV='lobby';META.chip=keep.chip;META.casIn=keep.casIn;}
  console.log('🎰カジノ: ポーカーの役10通り / バカラの点 / ルーレット赤黒18-18・0は外側に当たらない / '
-  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / ♠12手ともコールだけで決着まで進む OK');
+  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / 🎡6回とも玉が逆回りせず当たりの升に収まる / ♠12手ともコールだけで決着まで進む OK');
 }
 const CHECKS=[['checkCasino',checkCasino],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],
