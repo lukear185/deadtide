@@ -4869,6 +4869,16 @@ function checkBusHit(){
  /* ③ 車体そのものは前と同じ(真後ろは当たらない=素通りさせない印) */
  if(!hit(0,0,0))F('車体の真ん中に当たらない');
  SC=sc0;SCY=scy0;
+ /* 🚗(248)**狭路は「最大強化のバス」で必ず通れる**=通れない道を作らない。
+    ⚠車体の半幅=BUSH_W×大型車体Ⅲ。縁の余裕(BUS_CL)を足した物より、狭路の半幅がはっきり広いこと。 */
+ {const half=BUSH_W*EQ_BIG3+BUS_CL;
+  let mn=1e9,at=0;
+  for(let u=0;u<=1;u+=.002){const w=bnsCorrW(u);if(w<mn){mn=w;at=u;}}
+  if(!(mn>half+60))F('一番細い所('+Math.round(at*100)+'%)が最大の車体に対して狭すぎる 半幅'
+   +Math.round(mn)+'(車体+余裕='+Math.round(half)+')');
+  if(!(mn<BNS_OFF*.42))F('狭路が細くなっていない(運転が要る所が無い) 半幅'+Math.round(mn));
+  console.log('   🚗狭路: 一番細い所は半幅'+Math.round(mn)+'(道の'+Math.round(mn/BNS_OFF*100)
+   +'%) / 最大の車体は半幅'+Math.round(BUSH_W*EQ_BIG3)+'=左右に'+Math.round(mn-half)+'ずつ空く');}
  backTitle();META.sc=kp;META.beq=kq;
  console.log('⚙🚌バスの当たり: 絵のとおり(縦の潰し×'+iv.toFixed(2)+'を打ち消して当てる) / '
   +'特大ノコの端(半幅'+Math.round(EQ_S3_W)+')まで当たる / 打ち消しすぎもない OK');

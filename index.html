@@ -6652,8 +6652,20 @@ const BNS_GATW=680;          /* 関所での通路の幅(半分)。⚠道幅と�
    **絞りの入口と出口が同時に映る**ので、道ではなく**八角形の闘技場**に見える。
    ⭐画面の縦(約1800px)より長くかけて絞ると「道が細くなっていく」に見える。 */
 const BNS_GATR=.09;          /* 関所の前後どれだけかけて絞るか */
+/* 🚗⭐⭐(248)**狭路**(2026-08-10ユーザー指示「運転操作が求められる細い道とか欲しいね。
+     バスの最大強化のバスの大きさでちゃんと通過できるようにしてね」)。
+   ⚠⚠**関所とは別物**=関所は「群れが溜まる場所」(3割細くなるだけ)、狭路は「腕が要る場所」。
+   ⭐**幅は最大強化のバスから決める**=車体の半幅(`BUSH_W`×大型車体Ⅲ)+ 縁の余裕(`BUS_CL`)より
+     はっきり広く取る。⚠**通れない狭路は作らない**(検査 `checkBusHit` が最大の車体で締める)。 */
+const BNS_NAR=[.20,.50,.79]; /* 狭路の位置(道に沿った割合)。⚠関所(BNS_GATE)と重ねない */
+const BNS_NARW=280;          /* 狭路の半幅=560px。⚠最大の車体は幅約303なので左右に約128ずつ空く */
+const BNS_NARR=.055;         /* 絞る長さ。⚠関所より短い=「急に細くなる」のが狭路の手触り */
 function bnsCorrW(u){
  let w=BNS_OFF;
+ for(let i=0;i<BNS_NAR.length;i++){
+  const q=Math.abs(u-BNS_NAR[i])/BNS_NARR;
+  if(q<1){const v=BNS_NARW+(BNS_OFF-BNS_NARW)*q*q;if(v<w)w=v;}
+ }
  for(let i=0;i<BNS_GATE.length;i++){
   const q=Math.abs(u-BNS_GATE[i])/BNS_GATR;
   if(q<1){const v=BNS_GATW+(BNS_OFF-BNS_GATW)*q*q;if(v<w)w=v;}
