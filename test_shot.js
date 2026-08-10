@@ -158,8 +158,6 @@ const LAB=!!LM,LABT=(LM&&LM[1])||'ulu';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
 const LOAD=!!LDM,LOADT=(LDM&&LDM[1])||'base';
 const TRH=OPT.indexOf('trhome')>=0;/* trhome = 🏋鍛錬所のモーダル */
-/* 🎰casino[=ex|shop|roul|bacc|poker] = カジノの画面を撮る(2026-08-10(231)) */
-const CASM2=/casino(?:=([a-z]+))?/.exec(OPT),CASSHOT=!!CASM2,CASKIND=(CASM2&&CASM2[1])||'lobby';
 const SFXT=OPT.indexOf('sfx')>=0;/* sfx = 🔊音の確認の画面 */
 const TTL=OPT.indexOf('title')>=0;/* title = タイトル画面をそのまま撮る */
 /* ⭐setup = 🧟ソロの出撃準備画面(ステージ/難易度/砲撃/英雄を選ぶ所)。2026-07-27に2列へ作り替えた */
@@ -350,21 +348,6 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        +(OPT.indexOf('bus')>=0?('setTimeout(function(){PAR.length=0;PAR.push({zi:-1,x:innerWidth*.3,sp:0,ph:1,ht:0,hp:'
          +((/busn=(\d+)/.exec(OPT)||[0,''])[1]||'BUS_HP')+',kb:0,fl:0,bus:1});},300);'):'')
        +(OPTM?'optRender();document.getElementById("md-opt").classList.add("on");':''))
-     :CASSHOT?('META.gem=400;META.chip=8600;META.casIn=1;casOpen();'
-       +'CASV="'+CASKIND+'";'
-       +(CASKIND==='roul'?'rouStart();':(CASKIND==='roulbet'?'CASV="roul";rouStart();CAS.win="bet";':(CASKIND==='roulspin'?'CASV="roul";rouStart();CAS.bets={n17:100,red:200};CAS.tot=300;rouSpin();for(var q9=0;q9<200&&CAS.brf>0.95;q9++)rouStep(0.05);for(var q8=0;q8<6;q8++)rouStep(0.05);':(CASKIND==='bacc'?'bacStart();for(var z9=0;z9<28;z9++){bacStart();CAS.bets.p=10;CAS.tot=10;bacDeal();CAS.ph="res";bacPay();}bacStart();CAS.bets.p=100;CAS.bets.bp=50;CAS.tot=150;':(CASKIND==='baccroad'?'CASV="bacc";bacStart();for(var z8=0;z8<46;z8++){bacStart();CAS.bets.p=10;CAS.tot=10;bacDeal();CAS.ph="res";bacPay();}bacStart();CAS.road=1;':(CASKIND==='baccsq'?'CASV="bacc";bacStart();CAS.bets.p=100;CAS.tot=100;bacDeal();CAS.t=1.4;bacStep(0.01);CAS.rvP[0]=0.55;':(
-       /* 🎰(237)スロット=状態ごとに撮れるようにする(通常/回転中/告知/CZ/ボーナス/AT) */
-       /* ⚠⚠**この撮り方ではアニメの輪(requestAnimationFrame)が進まない**
-          =🎡ルーレットや🃏バカラと同じで、**手で何コマか進めてから撮る**(液晶の映像が出ない) */
-       CASKIND==='slot'?'CASV="slot";sltStart();META.sltM=320;sltFx(90);':
-       CASKIND==='slotmsg'?'CASV="slot";sltStart();META.sltM=0;sltFx(90);sltLever();':
-       CASKIND==='slotspin'?'CASV="slot";sltStart();META.sltM=320;sltFx(60);sltLever();for(var s9=0;s9<26;s9++)sltStep(0.02);sltStopReel(0);for(var s8=0;s8<14;s8++)sltStep(0.02);':
-       CASKIND==='slothold'?'CASV="slot";sltStart();META.sltM=180;CAS.hold="r7";sltFx(90);':
-       CASKIND==='slotcz'?'CASV="slot";sltStart();META.sltM=210;CAS.st="cz";CAS.czG=4;sltFx(120);':
-       CASKIND==='slotbn'?'CASV="slot";sltStart();META.sltM=640;CAS.st="bn";CAS.bn={k:"r7",g:5,got:33};sltFx(150);':
-       CASKIND==='slotat'?'CASV="slot";sltStart();META.sltM=980;CAS.st="at";CAS.at={g:7,set:3,cont:0.75,got:412};sltFx(150);':
-       CASKIND==='slotcut'?'CASV="slot";sltStart();META.sltM=520;CAS.st="at";CAS.at={g:4,set:2,cont:0.9,got:263};sltFx(150);CAS.cut=0.6;CAS.rch=1;sltFx(10);':'')))))))
-       +'casRender();')
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
        +'META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});'
