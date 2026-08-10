@@ -29976,7 +29976,8 @@ function bnsCredit(C,n){
 /* ⚠**入れ物(BGIM)の宣言はファイルの上の方(BOBJ の隣)**=`loadStage` は読み込みの途中でも呼ばれるので、
    ここで const にすると**初期化前アクセスでスクリプトごと止まる**(TDZの穴。この面で1度踏んでいる)。 */
 const GIM_WIRE_R=44;   /* ⚡高圧線に触れたと見なす距離 */
-const GIM_WIRE_SL=.55; /* ⚡バスが触れた時に速さへ掛ける割合(1コマぶん) */
+/* ⛔(247)**バスを減速させる仕掛けは外した**(ユーザー実機「突っかかってストレス」)=
+   ⚠**書き戻さない**。減速を入れるなら「1回だけ」であって、触れている間ずっと掛けてはいけない。 */
 const GIM_GAS_R=210;   /* 💨ガス溜まりの半径 */
 const GIM_GAS_T=1.1;   /* 💨1つが燃えている秒数 */
 const GIM_GAS_CH=1100;  /* 💨隣の溜まりへ燃え移る距離(⚠溜まりの間隔520〜980とセットで決める) */
@@ -30068,12 +30069,15 @@ function bnsGimStep(C,dt){
     if(s<g.o0||s>g.o1)continue;
     z.stnT=Math.max(z.stnT||0,.25);
     dmgZ(C,z,BOBJ_BDMG,1,true);if(z.dead)kil++;}
-   /* ⚡バスが触れたら減速(耐久は削らない=この面に負けは無い) */
+   /* ⚡🐞⚠⚠(247)**バスは止めない**(2026-08-10ユーザー実機「ギミックにバスが突っかかってストレス」)。
+      🐞**正体**=触れている間**毎コマ**速さに0.55を掛けていた=1秒で0.55の60乗、つまり**その場で停止**。
+        「少し減速する」つもりが「壁」になっていた。⚠**掛け算の減速を毎コマ当て続けない**。
+      ⭐**いまは通り抜けるだけ**=火花と軽い揺れで「感電した」と伝えるが、速さは1つも削らない
+        (この面の主役は轢くこと。⚡線は**敵を焼く場所**であって、バスの障害物ではない)。 */
    {const dx=B.x-g.x,dy=B.y-g.y;
     const s=dx*g.nx+dy*g.ny,perp=dx*(-g.ny)+dy*g.nx;
-    if(perp>-GIM_WIRE_R*1.6&&perp<GIM_WIRE_R*1.6&&s>g.o0&&s<g.o1){
-     B.vx*=GIM_WIRE_SL;B.vy*=GIM_WIRE_SL;
-     if(FXLV>0)C.shake=Math.max(C.shake||0,.2);}}
+    if(perp>-GIM_WIRE_R&&perp<GIM_WIRE_R&&s>g.o0&&s<g.o1){
+     if(FXLV>0)C.shake=Math.max(C.shake||0,.12);}}
   }else if(g.k==='gas'&&g.t>0){
    g.t-=dt;
    for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
@@ -32060,6 +32064,9 @@ function tutSupCost(){
      ここは「読む気で開いている画面」なので盤面の札より長くてよいが、**1段3行まで**。
    ⭐**上から順にしか開かない**(研究所の棚と同じ読み方)。⚠**報酬は初回だけ**(`META.tutC`)。 */
 const TUT_GEM=10;/* 1本ごとの報酬(💎)。⚠初回だけ */
+/* 🎓(247)**塔の回で敵を出す位置**=建てた塔より道のこれだけ手前。
+   ⚠**塔の射程(200〜280)より少し遠く**にする=出た瞬間に効いてしまうと「効き目」が見えない。 */
+const TUT_ZBACK=320;
 /* ⚠**tw**=この回だけ建てられる塔 / **pre**=先に建てておく塔(相方が要る回だけ)。
    ⚠⚠**並び順はここでは決まらない**=下の `tutList()` が**タレットの解放順**に並べ替える
    (2026-08-07(204g)ユーザー指示「チュートリアルの順番はタレットの解放順にしてほしい」)。 */
@@ -32111,9 +32118,18 @@ function tutAsk(twId){
 function tutTwSteps(K){
  const Ti=TOWERS.findIndex(q=>q.id===K.tw[0]),T=TOWERS[Ti]||{},nm=T.n||'';
  const Z=K.zk||{};
- /* 敵を湧かせる。⚠**道の途中に置く**=湧き口から歩かせると効き目を見るまで待たされる */
+ /* 敵を湧かせる。⚠**道の途中に置く**=湧き口から歩かせると効き目を見るまで待たされる。
+    🐞⚠⚠⭐(247)**必ず「建てた塔の手前」に出す**(2026-08-10ユーザー実機
+      「引力塔とか凍結塔のチュートリアル、最初に出てくる敵がタレットより後に出てきて素通りしちゃう」)。
+      🐞**正体**=出す場所を**道の42%**と決め打ちにしていたので、塔がそれより手前に建つ面では
+        **敵が塔を通り過ぎた所に出て**、効き目を1つも受けずに拠点まで歩いて行っていた。
+      ⭐**塔の道の上の位置から `TUT_ZBACK` だけ手前**に置く=必ず塔の射程へ歩いて入る。
+      ⚠**面ごとに道の形が違う**ので、割合や座標で決め打ちにしないこと。 */
  const put=(C,n,zid,d0)=>{const zi=ZOMBIES.findIndex(q=>q.id===(zid||'walk'));if(zi<0||!C)return;
-  for(let k=0;k<n;k++){const z=mkZ(zSpec(zi,1,3),Math.max(20,(d0||PLEN*.42)-k*34));z.hp=z.mhp=z.hp*3;C.zombies.push(z);}};
+  let base=d0;
+  if(base==null){const sp=SLOTS[tutSlot(C)];
+   base=sp?Math.max(60,projPath(sp[0],sp[1])-TUT_ZBACK):PLEN*.42;}
+  for(let k=0;k<n;k++){const z=mkZ(zSpec(zi,1,3),Math.max(20,base-k*34));z.hp=z.mhp=z.hp*3;C.zombies.push(z);}};
  return[
   {id:'tw0',scr:'game',t:K.t0,m:K.m0},
   {id:'tw1',scr:'game',t:nm+'を建てろ',m:K.m1,
