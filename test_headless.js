@@ -4697,29 +4697,48 @@ function checkZFlag(){
    ⚠ここが狂うと「払い戻しがおかしい」に直結するので、役の判定・バカラの3枚目・払いを数字で確かめる。 */
 let ROU_SPAN='';
 function checkCasino(){
- const C=(a)=>casEval(a);
- /* ♠役の判定(7枚から一番強い5枚) */
- const mk=(s,r)=>s*13+((r+12)%13);/* r=1..13(1=A) → 表の並びへ */
- const A=(s)=>mk(s,1),K=(s)=>mk(s,13),Q=(s)=>mk(s,12),J=(s)=>mk(s,11),T=(s)=>mk(s,10);
- const n=(s,v)=>mk(s,v);
- const cases=[
-  [[A(0),K(0),Q(0),J(0),T(0),n(1,2),n(2,5)],8,'ストレートフラッシュ'],
-  [[n(0,9),n(1,9),n(2,9),n(3,9),n(0,2),n(1,5),n(2,7)],7,'フォーカード'],
-  [[n(0,9),n(1,9),n(2,9),n(3,4),n(0,4),n(1,7),n(2,2)],6,'フルハウス'],
-  [[n(0,2),n(0,5),n(0,7),n(0,9),n(0,12),n(1,3),n(2,4)],5,'フラッシュ'],
-  [[n(0,5),n(1,6),n(2,7),n(3,8),n(0,9),n(1,2),n(2,12)],4,'ストレート'],
-  [[A(0),n(1,2),n(2,3),n(3,4),n(0,5),n(1,9),n(2,12)],4,'A-5のストレート'],
-  [[n(0,9),n(1,9),n(2,9),n(3,4),n(0,7),n(1,2),n(2,12)],3,'スリーカード'],
-  [[n(0,9),n(1,9),n(2,4),n(3,4),n(0,7),n(1,2),n(2,12)],2,'ツーペア'],
-  [[n(0,9),n(1,9),n(2,4),n(3,6),n(0,7),n(1,2),n(2,12)],1,'ワンペア'],
-  [[n(0,9),n(1,3),n(2,4),n(3,6),n(0,7),n(1,11),n(2,13)],0,'ハイカード']];
- for(const [cs,want,nm] of cases){const h=C(cs);
-  if(h[0]!==want){console.log('FAIL: ポーカーの役 '+nm+' が '+CAS_HN[h[0]]+' になった');process.exit(1);}}
- /* 強い方が必ず勝つ */
- if(casCmp(C(cases[1][0]),C(cases[2][0]))<=0){console.log('FAIL: フォーカードがフルハウスに負けた');process.exit(1);}
+ /* 札の作り方: s=マーク(0..3) r=1..13(1=A) */
+ const mk=(s9,r9)=>s9*13+((r9+12)%13);
  /* 🃏バカラの点(10〜Kは0・Aは1) */
  if(casBaccV(mk(0,10))!==0||casBaccV(mk(0,13))!==0||casBaccV(mk(0,1))!==1||casBaccV(mk(0,8))!==8){
   console.log('FAIL: バカラの点の数え方');process.exit(1);}
+ /* 🃏⭐(235)**本物の卓に寄せた所**=シュー(8組)・ペア・罫線(大路)が正しく動くか */
+ {const keep=META.chip;META.chip=100000;
+  bacShoe(1);
+  if(BACT.shoe.length!==52*BAC_SHOE){console.log('FAIL: シューの枚数が'+BACT.shoe.length);process.exit(1);}
+  /* 同じ札が1組につき8枚あるか(=8組ぶん入っている) */
+  {const cnt={};for(const c9 of BACT.shoe)cnt[c9]=(cnt[c9]||0)+1;
+   for(let k=0;k<52;k++)if(cnt[k]!==BAC_SHOE){console.log('FAIL: シューの中身が偏っている');process.exit(1);}}
+  /* 何手も回して、組み直しが起きること・罫線が伸びること */
+  let resh=0,pp=0,bp=0;
+  for(let n=0;n<400;n++){
+   const before=BACT.sh;
+   CASV='bacc';bacStart();
+   if(BACT.sh!==before)resh++;
+   CAS.bets.p=10;CAS.bets.pp=10;CAS.bets.bp=10;CAS.tot=30;
+   bacDeal();CAS.ph='res';bacPay();
+   /* ペアの判定=最初の2枚が同じ数字か */
+   const wantP=casRk(CAS.ph2[0])===casRk(CAS.ph2[1])?1:0;
+   const wantB=casRk(CAS.bk[0])===casRk(CAS.bk[1])?1:0;
+   if(CAS.pp!==wantP||CAS.bp!==wantB){console.log('FAIL: ペアの判定が違う');process.exit(1);}
+   pp+=CAS.pp;bp+=CAS.bp;
+   if(CAS.ph2.length<2||CAS.ph2.length>3||CAS.bk.length<2||CAS.bk.length>3){
+    console.log('FAIL: 配った枚数がおかしい');process.exit(1);}}
+  if(!resh){console.log('FAIL: シューが一度も組み直されない');process.exit(1);}
+  if(!pp||!bp){console.log('FAIL: ペアが一度も出ない(判定が死んでいる)');process.exit(1);}
+  /* 🀄大路=同じ側が続くと下へ・変わると次の列・タイでは升が増えない */
+  BACT.hist=[{r:'p'},{r:'p'},{r:'b'},{r:'t'},{r:'b'},{r:'p'}];
+  {const col=bacBigRoad();
+   if(col.length!==3){console.log('FAIL: 大路の列が'+col.length+'(想定3)');process.exit(1);}
+   if(col[0].length!==2||col[1].length!==2||col[2].length!==1){
+    console.log('FAIL: 大路の並びがおかしい');process.exit(1);}
+   if(col[1][0].t!==1){console.log('FAIL: タイの印が付いていない');process.exit(1);}}
+  /* 7連勝は6行で折り返して右の列へ */
+  BACT.hist=[];for(let k=0;k<7;k++)BACT.hist.push({r:'b'});
+  {const col=bacBigRoad();
+   if(col.length!==2||col[0].length!==6||col[1].length!==1){
+    console.log('FAIL: 大路が6行で折り返していない');process.exit(1);}}
+  bacShoe(1);CAS=null;CASV='lobby';META.chip=keep;}
  /* 🎡ルーレットの赤黒=18/18/0の1つ */
  let red=0,blk=0;for(let i=1;i<=36;i++){if(rouRed(i))red++;else blk++;}
  if(red!==18||blk!==18){console.log('FAIL: ルーレットの赤黒が18/18でない '+red+'/'+blk);process.exit(1);}
@@ -4758,25 +4777,8 @@ function checkCasino(){
   if(lo<av*.45||hi>av*1.8){console.log('FAIL: 出目が偏っている 最少'+lo+' 最多'+hi+'(平均'+av.toFixed(0)+')');process.exit(1);}
   ROU_SPAN=tmin.toFixed(1)+'〜'+tmax.toFixed(1)+'秒 / 最少'+lo+'最多'+hi;
   CAS=null;CASV='lobby';META.chip=keep;}
- /* ♠⭐⭐**1手が最後まで進むか**(2026-08-10ユーザー実機「コールしたあと進まなくなった」)=
-    コールし続けるだけで**必ず決着まで行く**ことを確かめる。⚠止まるバグはこれでしか捕まえられない。 */
- {const keep={chip:META.chip,casIn:META.casIn};
-  META.chip=100000;META.casIn=1;
-  for(let hand=0;hand<12;hand++){
-   CASV='poker';if(hand===0)pkStart();else pkHand();
-   if(!CAS||CAS.g!=='poker'){console.log('FAIL: ポーカーの卓が立たない');process.exit(1);}
-   let n=0,acted=0;
-   while(CAS.st!=='show'&&CAS.st!=='dead'){
-    if(CAS.cur===0&&!CAS.pl[0].fold&&!CAS.pl[0].allin&&(!CAS.pl[0].act||CAS.pl[0].bet<CAS.call)){
-     pkAct('call');acted++;}
-    else pkStep(.05);
-    if(++n>4000){console.log('FAIL: ポーカーが決着まで進まない(手'+hand+' 打った回数'+acted+
-      ' 段'+CAS.st+' 番'+CAS.cur+' コール額'+CAS.call+')');process.exit(1);}}
-   const pot=CAS.pl.reduce((a,p)=>a+p.ch,0);
-   if(pot<=0){console.log('FAIL: 卓のチップが消えた');process.exit(1);}}
-  CAS=null;CASV='lobby';META.chip=keep.chip;META.casIn=keep.casIn;}
- console.log('🎰カジノ: ポーカーの役10通り / バカラの点 / ルーレット赤黒18-18・0は外側に当たらない / '
-  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / 🎡3000回まわして偏りなし('+ROU_SPAN+') / ♠12手ともコールだけで決着まで進む OK');
+ console.log('🎰カジノ: バカラの点・8組のシュー・ペア・大路 / ルーレット赤黒18-18・0は外側に当たらない / '
+  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / 🎡3000回まわして偏りなし('+ROU_SPAN+') OK');
 }
 const CHECKS=[['checkCasino',checkCasino],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],

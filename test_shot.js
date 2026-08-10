@@ -351,7 +351,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        +(OPTM?'optRender();document.getElementById("md-opt").classList.add("on");':''))
      :CASSHOT?('META.gem=400;META.chip=8600;META.casIn=1;casOpen();'
        +'CASV="'+CASKIND+'";'
-       +(CASKIND==='roul'?'rouStart();':(CASKIND==='roulbet'?'CASV="roul";rouStart();CAS.win="bet";':(CASKIND==='roulspin'?'CASV="roul";rouStart();CAS.bets={n17:100,red:200};CAS.tot=300;rouSpin();for(var q9=0;q9<200&&CAS.brf>0.95;q9++)rouStep(0.05);for(var q8=0;q8<6;q8++)rouStep(0.05);':(CASKIND==='bacc'?'bacStart();':(CASKIND==='baccsq'?'CASV="bacc";bacStart();CAS.bets.p=100;CAS.tot=100;bacDeal();CAS.t=1.4;bacStep(0.01);CAS.rvP[0]=0.55;':(CASKIND==='poker'?'pkStart();':''))))))
+       +(CASKIND==='roul'?'rouStart();':(CASKIND==='roulbet'?'CASV="roul";rouStart();CAS.win="bet";':(CASKIND==='roulspin'?'CASV="roul";rouStart();CAS.bets={n17:100,red:200};CAS.tot=300;rouSpin();for(var q9=0;q9<200&&CAS.brf>0.95;q9++)rouStep(0.05);for(var q8=0;q8<6;q8++)rouStep(0.05);':(CASKIND==='bacc'?'bacStart();for(var z9=0;z9<28;z9++){bacStart();CAS.bets.p=10;CAS.tot=10;bacDeal();CAS.ph="res";bacPay();}bacStart();CAS.bets.p=100;CAS.bets.bp=50;CAS.tot=150;':(CASKIND==='baccroad'?'CASV="bacc";bacStart();for(var z8=0;z8<46;z8++){bacStart();CAS.bets.p=10;CAS.tot=10;bacDeal();CAS.ph="res";bacPay();}bacStart();CAS.road=1;':(CASKIND==='baccsq'?'CASV="bacc";bacStart();CAS.bets.p=100;CAS.tot=100;bacDeal();CAS.t=1.4;bacStep(0.01);CAS.rvP[0]=0.55;':(CASKIND==='poker'?'':'')))))))
        +'casRender();')
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
