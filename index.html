@@ -3559,6 +3559,22 @@ const SFXSYN={
       ②薬莢の `coin`(⚙️入手のジングル=金属というより効果音のピコン)。
     ⚠**`SFXSYN` に置いてあるのは、`?sfx=1` の一覧に出して永井さんが押し比べられるようにするため**
       (Claudeは音を聴けない=つまみを1か所に集めて、耳のある人が回せる形にするしかない)。 */
+ /* 🎰⭐(231b)**カジノの音**(2026-08-10ユーザー「ちゃんと効果音とかつけた?」=付いていなかった)。
+    ⚠**素材は足していない**=ノイズを削る(nzHit)+短い音(beep)だけで作る。
+    ⚠**1手ごとに何度も鳴る音(チップ・カード)は小さく短く**=大きいと連打で耳に刺さる。 */
+ casChip:()=>{nzHit(1900,700,.05,.055,3);beep(2600,2100,.05,'triangle',.022);},
+ casPile:()=>{for(let i=0;i<3;i++)setTimeout(()=>{nzHit(1700,650,.05,.05,3);
+   beep(2400+i*180,1900,.05,'triangle',.02);},i*55);},
+ casCardS:()=>{nzHit(5200,2400,.10,.045,1);},
+ casFlip:()=>{nzHit(3800,1100,.06,.06,2);beep(1800,900,.04,'triangle',.018);},
+ /* 🎡玉=**木の枠を走る**=硬い短打。⚠回っている間、間隔を詰めて何度も呼ぶ側で鳴らす */
+ casBall:()=>{nzHit(2600,900,.035,.05,5);},
+ casWin:()=>{const F=[523,659,784];F.forEach((f,i)=>setTimeout(()=>
+   beep(f,f,.22,'triangle',.075),i*90));setTimeout(()=>SFXSYN.casPile(),240);},
+ casBig:()=>{const F=[392,523,659,784,1046];F.forEach((f,i)=>setTimeout(()=>{
+   beep(f,f,.26,'triangle',.085);if(i>2)beep(f*2,f*2,.3,'sine',.03);},i*85));
+  setTimeout(()=>{nzHit(4200,1800,.5,.05,1);SFXSYN.casPile();},480);},
+ casLose:()=>{beep(220,110,.34,'triangle',.06);nzHit(420,150,.28,.035,2);},
  /* 🔩コッキング=**建設音(金属を組む音)を2枚**。引く→戻すの2拍にすると「機構」に聞こえる */
  geoCock:()=>{sfxRaw('build',.30,1.22,0);sfxRaw('build',.22,1.58,.085);},
  /* 🥉薬莢=**命中音を高く・ごく小さく**。⚠大きいと撃発を食う(1発ごとに鳴る) */
@@ -4117,6 +4133,16 @@ const SFX_LBL={
  clearJ:['WAVE 制圧','WAVE をしのいだ','ev'],
  /* ⚠**新しい合成音は必ずここに足す**=?sfx=1 で鳴らして確かめられないと、
     実機で「聞こえない」と言われた時に原因(音量なのか帯域なのか呼ばれていないのか)が切り分けられない */
+ /* 🎰(231b)カジノの音(全部その場で作る合成音=素材は1バイトも足していない)。
+    ⚠**?sfx=1 で押し比べられるように必ずここに載せる**(合成音の掟) */
+ casChip:['🎰チップを置く','木の打点+小さな金属の鳴り','ev'],
+ casPile:['🎰チップを寄せる','3連打(払い戻し)','ev'],
+ casCardS:['🎰カードを配る','紙が滑る擦れ','ev'],
+ casFlip:['🎰カードをめくる','短いパチッ','ev'],
+ casBall:['🎰ルーレットの玉','木の枠を走るカタッ(回っている間つづけて鳴る)','ev'],
+ casWin:['🎰当たり','明るい3音+チップの雨','ev'],
+ casBig:['🎰大当たり','駆け上がる5音+鐘','ev'],
+ casLose:['🎰はずれ','低く落ちる一音','ev'],
  acidPop:['酸爆発','酸まみれの敵が倒れた','ev'],
  rainbow:['🌈虹のゾンビ撃破','タイトルで虹のゾンビを倒した','ev'],
  lobHit:['✨黄金のロブスター(叩く)','タイトルで金の殻を叩いた(金属音)','ev'],
@@ -4512,6 +4538,33 @@ function gpbgmOn(){if(gpbgmTimer||!AC)return;
   gpbgmStep++;},310);}
 function gpbgmOff(){if(gpbgmTimer&&gpbgmTimer!=='file')clearInterval(gpbgmTimer);
  if(gpbgmTimer==='file')fileBgmStop();gpbgmTimer=null;}
+/* 🎰⭐⭐(231b)**賭場の曲**(2026-08-10ユーザー「カジノっぽいBGMもつけたいね」)。
+   ⭐性格=**煙たいラウンジ**。①**歩くベース**(Am7を4分で登り降り=カジノの土台)
+     ②**ブラシの刻み**(削ったノイズ。裏で細かく) ③**7thの和音を薄く置く**(たまに)
+     ④**旋律は置かない**=遊びの音(チップ・カード・玉)が主役なので、曲は下で張るだけ。
+   ⚠**明るい長調にしない**=ここは廃墟の地下の賭場(参考画像)。マイナー7thで「煙たい」を作る。
+   ⚠上限523Hzの禁止帯の掟はそのまま。⚠音量はガチャ画面より一段小さい。 */
+const CBGM_B=[110,131,147,165,196,165,147,131];/* 歩くベース(A C D E G E D C)=Aマイナー */
+let cbgmTimer=null,cbgmStep=0;
+function cbgmOn(){if(cbgmTimer||!AC)return;
+ if(typeof SFXTEST!=='undefined'&&SFXTEST)return;/* 🔊音の確認画面では鳴らさない */
+ tbgmOff();gbgmOff();gpbgmOff();/* ⚠ほかの曲は必ず消す(重ねない) */
+ /* 🎵**本物の曲が入っていればそちらを回す**(無ければ下の合成)。⭐AI生成の曲を採用する時は
+    BGMB に 'cas' の1行を足すだけ=ここは書き換えなくてよい(ガチャ画面と同じ作り) */
+ if(fileBgmPlay('cas',.24)){cbgmTimer='file';return;}
+ cbgmStep=0;
+ cbgmTimer=setInterval(()=>{if(!AC||muted)return;
+  const s=cbgmStep,b=CBGM_B[s%8];
+  bgb(b,b*.998,.46,'triangle',.085);/* ①歩くベース(1歩=1音) */
+  nzHit(6400,3200,.05,.020*VOL.bgm,1);/* ②ブラシの刻み(表) */
+  if(s%2===1)nzHit(5200,2600,.04,.012*VOL.bgm,1);/* 裏は小さく */
+  if(s%4===2)nzHit(320,140,.16,.045*VOL.bgm,1);/* 軽い胴の打点 */
+  /* ③7thの和音を薄く(4小節に1回だけ=置きすぎると曲が前へ出る) */
+  if(s%16===0){for(const f of[220,262,330,392])bgb(f,f,1.5,'sine',.026);}
+  if(s%16===8){for(const f of[196,247,294,349])bgb(f,f,1.5,'sine',.024);}
+  cbgmStep++;},430);}
+function cbgmOff(){if(cbgmTimer&&cbgmTimer!=='file')clearInterval(cbgmTimer);
+ if(cbgmTimer==='file')fileBgmStop();cbgmTimer=null;}
 /* ============ 🎬⭐⭐⭐ 起動の幕のBGM(2026-08-07(201)→(202)に**3回**作り直した) ============
    ⭐**タイトルのBGMとは別物**(ユーザー指示「タイトル画面のBGMとムービー中のBGM別で作って」)。
    ⛔**没①=カットごとに曲が変わる形**(ユーザー「場面で切り替える感じじゃなくて、暗い感じのやつを
@@ -34728,6 +34781,8 @@ const CAS_RATE=[[10,100],[50,550],[150,1800]];
    ⚠英雄は id を HEROES に `cas:1` 付きで足しておくこと(交換するまで召集に出ない)。 */
 const CAS_PRZ=[];
 const casChip=()=>META.chip||0;
+/* 🎰(231b)カジノの音を鳴らす受け皿。⚠**音の器が閉じていても落ちない**(acSafeに任せる) */
+const casS=k=>{if(typeof SFXSYN!=='undefined'&&SFXSYN[k])acSafe(()=>SFXSYN[k]());};
 function casAdd(n){META.chip=Math.max(0,Math.round((META.chip||0)+n));saveMeta();casTop();}
 /* 🏆景品を交換したか(英雄が召集に並ぶかの判定にも使う)。
    ⚠**関数宣言にしてある**=HERO_L(ずっと上)がこれを呼ぶので、const だと読み込みの順で落ちる */
@@ -34932,13 +34987,13 @@ function rouPut(k){
  if(CAS.ph!=='bet')return;
  const add=Math.min(CASBET,CAS_MAXBET-CAS.tot,casChip()-CAS.tot);
  if(add<=0){CASM=CAS.tot>=CAS_MAXBET?('⚠1回に賭けられるのは 🪙'+CAS_MAXBET+' まで'):'⚠チップが足りない';return;}
- CAS.bets[k]=(CAS.bets[k]||0)+add;CAS.tot+=add;CASM='🪙'+CAS.tot+' を置いた';
+ CAS.bets[k]=(CAS.bets[k]||0)+add;CAS.tot+=add;CASM='🪙'+CAS.tot+' を置いた';casS('casChip');
 }
 function rouSpin(){
  if(CAS.ph!=='bet'||CAS.tot<=0){CASM='⚠まずチップを置く';return;}
  casAdd(-CAS.tot);
  CAS.ph='spin';CAS.t=0;CAS.res=(Math.random()*37)|0;CAS.spd=18+Math.random()*4;
- CASM='回っている…';if(sfx.tap)sfx.tap();
+ CASM='回っている…';CAS.bt=0;casS('casPile');
 }
 function rouPay(){
  const n=CAS.res;let w=0;
@@ -34948,7 +35003,7 @@ function rouPay(){
   if(o&&o.w(n))w+=b*o.p;}
  CAS.win=w;if(w>0)casAdd(w);
  CASM=(w>0?('🎉 '+n+' ! 🪙+'+w):('… '+n+' 。🪙-'+CAS.tot));
- ((w>0?sfx.buy:sfx.warn)||sfx.tap)();
+ casS(w>=CAS.tot*4?'casBig':(w>0?'casWin':'casLose'));
 }
 function rouDraw(c){
  const k=CK(),TOP=CASH*.5;
@@ -35007,6 +35062,8 @@ function rouDraw(c){
 function rouStep(dt){
  if(CAS.ph!=='spin')return;
  CAS.t+=dt;CAS.ang+=CAS.spd*dt*.2;CAS.spd*=Math.pow(.28,dt);
+ /* 🎡玉が枠を走る音=**速いほど短い間隔**(だんだん遅くなるのが耳で分かる) */
+ CAS.bt=(CAS.bt||0)-dt;if(CAS.bt<=0){CAS.bt=.055+CAS.t*.055;casS('casBall');}
  if(CAS.t>3.2){CAS.ph='res';rouPay();}
 }
 
@@ -35020,7 +35077,7 @@ function bacPut(k){
  if(CAS.ph!=='bet')return;
  const add=Math.min(CASBET,CAS_MAXBET-CAS.tot,casChip()-CAS.tot);
  if(add<=0){CASM=CAS.tot>=CAS_MAXBET?('⚠1回に賭けられるのは 🪙'+CAS_MAXBET+' まで'):'⚠チップが足りない';return;}
- CAS.bets[k]+=add;CAS.tot+=add;CASM='🪙'+CAS.tot+' を置いた';
+ CAS.bets[k]+=add;CAS.tot+=add;CASM='🪙'+CAS.tot+' を置いた';casS('casChip');
 }
 const bacSum=a=>a.reduce((s,c)=>s+casBaccV(c),0)%10;
 function bacDeal(){
@@ -35045,7 +35102,7 @@ function bacDeal(){
  }
  CAS.ph2=P;CAS.bk=B;CAS.ph='deal';CAS.t=0;CAS.step=0;
  CAS.res=ps>bs?'p':(bs>ps?'b':'t');
- CASM='配っている…';if(sfx.tap)sfx.tap();
+ CASM='配っている…';
 }
 function bacPay(){
  const r=CAS.res;let w=0;
@@ -35055,7 +35112,7 @@ function bacPay(){
  CAS.win=w;if(w>0)casAdd(w);
  const nm={p:'プレイヤー',b:'バンカー',t:'タイ'}[r];
  CASM=nm+' の勝ち('+bacSum(CAS.ph2)+' 対 '+bacSum(CAS.bk)+')  '+(w>0?('🪙+'+w):('🪙-'+CAS.tot));
- ((w>0?sfx.buy:sfx.warn)||sfx.tap)();
+ casS(w>=CAS.tot*3?'casBig':(w>0?'casWin':'casLose'));
 }
 function bacDraw(c){
  const k=CK(),TOP=CASH*.46;
@@ -35092,7 +35149,9 @@ function bacStep(dt){
  if(CAS.ph!=='deal')return;
  CAS.t+=dt;
  const n=(CAS.ph2.length===3?1:0)+(CAS.bk.length===3?1:0)+4;
- CAS.step=Math.min(6,Math.floor(CAS.t/.34));
+ const st9=Math.min(6,Math.floor(CAS.t/.34));
+ if(st9>CAS.step)casS('casCardS');/* ⚠1枚ごとに1回だけ */
+ CAS.step=st9;
  if(CAS.t>.34*n+.5){CAS.ph='res';bacPay();}
 }
 
@@ -35130,9 +35189,10 @@ function pkHand(){
  pkPut(P[sb],PK_SB);pkPut(P[bb],PK_BB);
  /* ⚠**最初に打つのはビッグブラインドの次**=cur は「その1つ手前」に置く(pkAdv が1つ進めるため) */
  CAS.call=PK_BB;CAS.minR=PK_BB;CAS.cur=(CAS.d+2)%4;
- CASM='';pkTurn();
+ CASM='';casS('casCardS');setTimeout(()=>casS('casCardS'),110);pkTurn();
 }
-function pkPut(p,n){const v=Math.min(n,p.ch);p.ch-=v;p.bet+=v;CAS.pot+=v;if(p.ch<=0)p.allin=1;}
+function pkPut(p,n){const v=Math.min(n,p.ch);p.ch-=v;p.bet+=v;CAS.pot+=v;if(p.ch<=0)p.allin=1;
+ if(v>0)casS('casChip');/* 🪙置いた音 */}
 const pkLive=()=>CAS.pl.filter(p=>!p.fold);
 function pkAdv(){/* 次に打つ人へ */
  for(let i=1;i<=4;i++){const k=(CAS.cur+i)%4;const p=CAS.pl[k];
@@ -35155,7 +35215,7 @@ function pkNext(){
  else if(CAS.board.length===3){CAS.board.push(CAS.deck.pop());CAS.st='turn';}
  else if(CAS.board.length===4){CAS.board.push(CAS.deck.pop());CAS.st='river';}
  else{pkShow();return;}
- if(sfx.tap)sfx.tap();
+ casS('casFlip');/* 🃏場の札をめくる */
  if(pkLive().filter(p=>!p.allin).length<=1){CAS.t=0;CAS.st2='run';return;}
  pkTurn();
 }
@@ -35172,7 +35232,7 @@ function pkShow(){
  CAS.res=(live.length===1)?(live[0].n+' が総取り'):
   (wins.map(p=>p.n).join('・')+' の勝ち('+CAS_HN[best[0]]+')');
  CASM=CAS.res+(you?('  🪙+'+share):'');
- ((you?sfx.buy:sfx.warn)||sfx.tap)();
+ casS(you?((share>=PK_BUY)?'casBig':'casWin'):'casLose');
 }
 /* CPUの打ち方=いまの手の強さ(0..1)+はったり */
 function pkAiStr(p){
@@ -35267,12 +35327,13 @@ function casOpen(){
  if(!META.casIn){META.casIn=1;META.chip=(META.chip||0)+CAS_WELCOME;saveMeta();
   toast('🎰 ようこそ。初回入場のしるしに 🪙'+CAS_WELCOME);}
  CASV='lobby';CAS=null;CASM='';
- $('md-casino').classList.add('on');casTop();casRender();
+ $('md-casino').classList.add('on');casTop();casRender();cbgmOn();/* 🎵(231b)賭場の曲 */
  if(!CASRAF)CASRAF=requestAnimationFrame(casLoop);
 }
 function casClose(){
  if(CAS&&CAS.g==='poker')pkLeave();/* ⚠持ち込んだチップを必ず戻す */
  $('md-casino').classList.remove('on');
+ cbgmOff();try{if(SCR&&SCR!=='game')tbgmOn();}catch(e9){if(DEV&&window.console)console.warn('曲を戻せない',e9);}
  if(CASRAF){cancelAnimationFrame(CASRAF);CASRAF=0;}
  CAS=null;CASV='lobby';
 }
@@ -35320,7 +35381,8 @@ function casPaint(){
 let CAS_S=1,CAS_OX=0,CAS_OY=0;
 function casTap(mx,my){
  const x=(mx-CAS_OX)/CAS_S,y=(my-CAS_OY)/CAS_S;
- for(const h of (CASX||[]))if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){h.f();if(sfx.tap)sfx.tap();casCtl();return;}
+ /* ⚠ここでタップ音を鳴らさない=賭ける所は casChip(チップの音)が鳴るので二重になる */
+ for(const h of (CASX||[]))if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){h.f();casCtl();return;}
 }
 /* ---- 下の操作帯(押す所は44px以上・文字は10.5px以上) ---- */
 function casBt(id,label,cls){return '<button class="btn '+(cls||'')+'" data-cas="'+id+'">'+label+'</button>';}
