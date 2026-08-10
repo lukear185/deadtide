@@ -4682,6 +4682,77 @@ function checkStage4(){
   +'・曲がりは全部同じ向き・離れた辺は220以上) / 拠点は真ん中 / マップを使い切る / 置き場22+工房3+支援2が条件どおり / '
   +(S.wip?'⚠作りかけ=ピン6つ全部🔒(敵はまだ)':'開通ずみ')+' OK');
 }
+/* ---- 💨⭐⭐⭐(240)**面⑤=ガス溜まりと誘爆**(この面の目玉) ----
+   ⚠⚠**芯は「引火できるのは💣爆発だけ」**=ここが緩むと①(装甲×火炎)と役どころが被って面が死ぬ。
+   見るのは7つ: ①谷間が道の中に収まっていて2か所が離れている ②谷間にだけガスが溜まる
+   ③🔥火炎でも🔫実弾でも引火しない ④💣爆発で引火する ⑤誘爆が隣のマスへ道なりに広がる
+   ⑥燃えた所に居た敵が削れる ⑦ガスを持たない面では1マスも作られない(他の面に漏れない) */
+function checkGas(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kp=META.sc;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
+ const si=STAGES.findIndex(S=>S.gasZ);
+ if(si<0)F('ガスの面(gasZ を持つ面)が1つも無い');
+ META.stg=si;setDiff=2;startSolo();frames(6,.016);
+ if(STAGE!==si)F('面'+(si+1)+'が読み込まれていない');
+ const S=STAGES[si],me=G.players[0];
+ /* ① 谷間の置き方 */
+ for(const z of S.gasZ){
+  if(!(z[0]>=0&&z[1]<=PLEN))F('谷間が道からはみ出している ['+z+'] 道='+Math.round(PLEN));
+  if(!(z[1]-z[0]>=GAS_W*3))F('谷間が短すぎる(誘爆が繋がらない) 長さ'+Math.round(z[1]-z[0]));}
+ if(S.gasZ.length<2)F('谷間が2か所ない '+S.gasZ.length);
+ if(!(S.gasZ[1][0]-S.gasZ[0][1]>=300))F('谷間どうしが近すぎて1か所に見える');
+ /* ② 谷間にだけ溜まる。⚠**盤面に敵を1体残しておく**=空にするとウェーブが終わって時間が止まる */
+ me.units.length=0;me.zombies.length=0;G.tide.pool.length=0;
+ const z1=mkZ(zSpec(0,1,1));z1.d=0;z1.hp=z1.mhp=9e6;me.zombies.push(z1);
+ frames(420,.05);/* 21秒 */
+ const g=me.gas;
+ if(!g||!g.length)F('ガスのマスが作られていない');
+ const mid=Math.floor((S.gasZ[0][0]+S.gasZ[0][1])/2/GAS_W);
+ if(!(g[mid]>=.6))F('21秒たっても谷間にガスが溜まらない 濃さ'+(g[mid]||0).toFixed(2));
+ {let out=0;for(let i=0;i<g.length;i++)if(!gasInZone((i+.5)*GAS_W))out=Math.max(out,g[i]);
+  if(out>.01)F('谷間の外にガスが残っている 濃さ'+out.toFixed(2)+'(溜め場が谷間だけでなくなる)');}
+ /* ③ 火炎と実弾では引火しない */
+ z1.d=(mid+.5)*GAS_W;frames(1,.016);
+ dmgZ(me,z1,1,1,1,0,'fire');
+ if(!(me.gas[mid]>=.5))F('🔥火炎で引火してしまった(①装甲×火炎と役どころが被る)');
+ dmgZ(me,z1,1,1,1,0,'bullet');
+ if(!(me.gas[mid]>=.5))F('🔫実弾で引火してしまった');
+ /* ④⑤⑥ 爆発で引火 → 道なりに燃え広がる → 中に居た敵が削れる */
+ const hp0=z1.hp,dens0=me.gas[mid];
+ dmgZ(me,z1,1,1,1,0,'blast');
+ if(me.gas[mid]>0)F('💣爆発を当てたのにガスに引火しない');
+ frames(30,.04);/* 1.2秒=谷間の端まで炎が走り切る長さ */
+ {let hi=0,n=0;
+  for(let i=0;i<me.gas.length;i++){const d=(i+.5)*GAS_W;
+   if(d<S.gasZ[0][0]||d>S.gasZ[0][1])continue;n++;hi=Math.max(hi,me.gas[i]);}
+  if(!(n>=3))F('谷間のマスが3つも無い '+n);
+  if(hi>=GAS_MIN)F('誘爆が隣のマスへ広がっていない(残り濃さ'+hi.toFixed(2)+')');}
+ const dmg=hp0-z1.hp;
+ if(!(dmg>GAS_DMG*dens0*.5))F('誘爆で敵が削れていない 与えた'+Math.round(dmg));
+ /* もう片方の谷間は無事(誘爆は道の上で繋がっている所までしか行かない) */
+ {const m2=Math.floor((S.gasZ[1][0]+S.gasZ[1][1])/2/GAS_W);
+  if(!(me.gas[m2]>=.5))F('離れた谷間まで一緒に燃えた(道の上で繋がっていない所へ飛び火している)');}
+ /* 外から撒く口(散布塔と敵がここを呼ぶ)。⚠谷間の外なので数秒で薄れる */
+ {const dOut=(S.gasZ[0][1]+S.gasZ[1][0])/2,io=Math.floor(dOut/GAS_W);
+  gasAdd(me,dOut,1);
+  if(!(me.gas[io]>=.9))F('gasAdd で撒いたガスが乗っていない');
+  frames(200,.05);
+  if(me.gas[io]>.01)F('谷間の外に撒いたガスが薄れない(どこでも溜め場になってしまう)');}
+ /* 敵の体力と見比べるための物差し(強さの詰めは敵14体が入ってから) */
+ let mhp=0,cnt=0;buildTide(Math.max(1,Math.round(curW()*.6)));
+ for(const q of G.tide.pool){mhp+=q.z.mhp||0;cnt++;}
+ const avg=cnt?mhp/cnt:0;
+ backTitle();
+ /* ⑦ ガスを持たない面には1マスも作られない */
+ META.stg=0;setDiff=2;startSolo();frames(30,.05);
+ if(G.players[0].gas)F('ガスの無い面(①)にまでガスのマスが作られている');
+ backTitle();META.sc=kp;
+ console.log('💨面'+(si+1)+'('+S.n+'): 谷間'+S.gasZ.length+'か所にだけガスが溜まる(空から満杯まで'
+  +Math.round(1/(GAS_SEEP-GAS_KEEP))+'秒) / '
+  +'引火は💣爆発だけ(🔥火炎と🔫実弾は不発) / 誘爆が道なりに広がる(速さ'+GAS_SPD+'px/秒) / '
+  +'満杯1マス='+GAS_DMG+'(この面の敵の体力の平均'+Math.round(avg)+'の'+(avg?Math.round(GAS_DMG/avg*100):0)+'%) OK');
+}
 /* ---- 🐞⭐⭐(207)**表の印が実体まで届いているか** ----
    ⚠⚠**作った理由**=ゾンビの表の印を実体へ写しているのは1か所だけなのに、そこへの書き忘れが
      **3つ**寝ていた(🪶羽・🐟潜る・🐢甲羅ごもり)。⭐**表にも絵にも数値にも異常が無い**ので、
@@ -4865,6 +4936,7 @@ function checkSlot(){
 }
 const CHECKS=[['checkCasino',checkCasino],['checkSlot',checkSlot],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],
+['checkGas',checkGas],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],

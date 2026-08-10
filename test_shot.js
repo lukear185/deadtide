@@ -16,7 +16,8 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['(なし)','タイトル画面'],['dev','🛠DEVモード(全開放の見た目)'],['edit','🛠マス編集モード'],
   ['perf','🔥塗りの物差しを出す(?perf=1)。dev と混ぜるなら "dev+perf"'],
   ['pc','PC用CSS(既定はスマホ用を強制適用)'],
-  ['st2|st3','ステージ2(沈んだ港)/ステージ3(送電鉄塔の丘)'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
+  ['st2〜st5','ステージ2(沈んだ港)〜5(腐海の湿地帯)'],
+  ['gas[fire]','💨⑤のガス溜まり(自分で時間を進める)。gasfire=引火した瞬間。例 "st5+gas"'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
   ['setup','出撃準備'],['lab[=タブ]','🔬研究所(twup/unup/rec…)'],['load','🎒編成'],['home','🏠ホーム'],
   ['map','🗺エリアマップ(worldmap+mappg=0|1|2 で面を選ぶ)'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
   ['iv=<波>','作戦タイム'],['grid=tw|tg|u|hero|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
@@ -471,6 +472,16 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      /* ⚠(99)初回チュートリアルの札で画面が覆われないよう既定は済んだ印を立てる。
         撮りたい時だけ bnstut を付ける(例: "bns+bnstut") */
      :BNS?((OPT.indexOf('bnstut')>=0?'META.bnsTut=0;':'META.bnsTut=1;')+'setDiff=BNS_D;startSolo();')
+     /* 💨(240)gas=⑤腐海の湿地帯の**ガス溜まり**を撮る(⚠"st5+gas" のように面と併せる)。
+        gasfire=**引火した瞬間**(誘爆が道なりに走っている所)。
+        ⚠⚠**自分で時間を進める**=ヘッドレスの仮想時間では rAF がほとんど回らないので、
+          放っておくとガスが1マスも溜まっていない絵になる(掟は NOTES_面)。 */
+     :(OPT.indexOf('gas')>=0)?('setDiff=2;startSolo();try{nextWave();'
+       +'for(var q9=0;q9<520;q9++)gameStep(.05);'
+       +(OPT.indexOf('gasfire')>=0?'var S9=STAGES[STAGE],C9=G.players[0],'
+         +'p9=pathPos((S9.gasZ[0][0]+S9.gasZ[0][1])*.5,null);gasSpark(C9,p9[0],p9[1]);'
+         +'for(var q8=0;q8<5;q8++)gameStep(.05);':'')
+       +'}catch(e){document.title="ERR-gas "+e.message;}')
      :'setDiff=2;startSolo();')+(NOITR?'showIntro=function(){};':'')+'}catch(e){document.title="ERR "+e.message;}'
  /* ⚠以前は `ZIDS.length` を条件にしていたため、**`t=` を単体で指定すると丸ごと無視されていた**
       (敵を並べずにタワーだけ撮りたい時に、何も建たないまま撮れてしまう)。`t=` だけでも走らせる */

@@ -20718,6 +20718,179 @@ function floodStep(dt){
 }
 /* ⚡水浸し中は電撃が1.5倍(上のギミックの相方)。電撃のダメージ行4か所が掛ける */
 const elecX=()=>((G&&G.flood>0)?FLOOD_ELEC:1);
+/* 💨⭐⭐⭐**⑤腐海の湿地帯「ガス溜まりと誘爆」**(2026-08-10ユーザー決定・この面の目玉)。
+   ⭐**芯**=道にガスが溜まる → **💣爆発の攻撃だけが引火できる** → 溜まったガスが道なりに燃え広がる。
+   ⚠⚠**🔥火炎では引火しない**(①装甲×火炎と役どころを被らせないため。ユーザー決定)。
+     ⚠**🔆ビーム(プラズマ)も引火しない**=あれは相性の表では爆発ではない。
+       **「引火できる=💣爆発の型」の1本だけ**にしておくと、札を見れば誰が起爆役か分かる。
+   ⭐**溜めて→好きな時に爆破する**の読み合いが目玉=**引火の合図はプレイヤーが握る**。
+   ⭐**谷間(`STAGES[].gasZ`)だけガスが消えない**=そこが溜め場。外は撒いてもすぐ薄れる。
+   ⚠⚠**ガスは「道の上の距離(d)」のマス目で持つ**=絵と当たりを別々に持たない(掟は NOTES_面)。
+   ⚠**当たるのは敵だけ**=ユニットにもコアにも一切効かない(酸爆発と同じ約束)。
+   ⚠**動くのは `gasZ` を持つ面のTD(ソロ/協力ホスト)だけ**=他の面と🚌開拓便は丸ごと素通りする。
+     ⚠協力のクライアントは盤面をホストから受け取るので、**手元にガスの絵は出ない**(高波と同じ割り切り。
+       ⭐引火の炎と数字は `addFx`/`dmgZ` 経由なので向こうにも届く)。
+   ⬜**まだ無い相方**=💨撒く塔(散布塔)と、ガスを垂れ流す敵/勝手に引火する敵(→ TODO の面⑤の節)。
+     ⭐**外からの入口は `gasAdd(C, 道の上の距離, 量)` 1本**=足す時はここを呼ぶだけでよい。 */
+const GAS_W=60;/* マス1つの長さ(道の上の距離)。⚠細かくすると誘爆の粒が増えるだけで見た目は変わらない */
+const GAS_SEEP=TUNE("GAS_SEEP",.075,0,.4,.005);/* 谷間で1秒に湧く濃さ(0→満杯まで約14秒) */
+const GAS_KEEP=TUNE("GAS_KEEP",.012,0,.2,.002);/* 谷間で1秒に薄れる分(ほぼ消えない=溜め場) */
+const GAS_FADE=TUNE("GAS_FADE",.16,0,1,.01);/* 谷間の外で1秒に薄れる分(満杯でも約6秒で消える) */
+const GAS_FIRE=TUNE("GAS_FIRE",.30,.05,1,.05);/* 引火に要る濃さ(これ未満の薄いガスには火が点かない) */
+const GAS_MIN=TUNE("GAS_MIN",.12,.02,1,.02);/* 燃え広がる下限(これ未満のマスで炎が止まる) */
+const GAS_SPD=TUNE("GAS_SPD",480,100,2000,20);/* 炎が道の上を伝わる速さ(px/秒)=溜まりが長いほど見応えが出る */
+const GAS_DMG=TUNE("GAS_DMG",320,20,3000,10);/* 濃さ1のマス1つぶんの威力。⚠強さの実測は敵14体が入ってから */
+const GAS_CHAIN=TUNE("GAS_CHAIN",.10,0,.5,.01);/* 誘爆が1つ繋がるごとに威力が増える割合 */
+const GAS_CHAIN_MAX=TUNE("GAS_CHAIN_MAX",2.0,1,4,.1);/* その頭打ち */
+/* いまの面がガスの面か(=`gasZ` を持つ面のPvE)。⚠🚌開拓便と検証場では動かさない */
+const gasS=()=>{const S=STAGES[STAGE];return (S&&S.gasZ&&G&&G.pve&&!G.tst&&!isBns())?S:null;};
+const gasOn=C=>!!(gasS()&&C&&!C.bus&&!C.dead);
+const gasCD=i=>(i+.5)*GAS_W;/* マスの真ん中の「道の上の距離」 */
+const gasInZone=d=>{const S=gasS();if(!S)return false;
+ for(const z of S.gasZ)if(d>=z[0]&&d<=z[1])return true;return false;};
+/* マスごとの折れ線(角を含む)。⚠**道の形は試合中変わらない**ので1回だけ作って使い回す
+   (毎コマ `pathPos` を何百回も呼ぶと、絵の分だけで盤面より重くなる) */
+let GAS_PTS=null,GAS_KEY='';
+function gasPts(){
+ const key=STAGE+'/'+Math.round(PLEN);
+ if(GAS_PTS&&GAS_KEY===key)return GAS_PTS;
+ const n=Math.max(1,Math.ceil(PLEN/GAS_W)),out=[];
+ for(let i=0;i<n;i++){
+  const d0=i*GAS_W,d1=Math.min(PLEN,(i+1)*GAS_W),ps=[];
+  ps.push(pathPos(d0,null).slice(0,2));
+  /* 途中に道の角があればそこも通す(角を跨ぐマスを直線で結ぶと道からはみ出す) */
+  for(const s of SEG){if(s.s>d0&&s.s<d1)ps.push([s.a[0],s.a[1]]);}
+  ps.push(pathPos(d1,null).slice(0,2));
+  out.push(ps);
+ }
+ GAS_PTS=out;GAS_KEY=key;return out;
+}
+function gasInit(C){
+ const n=Math.max(1,Math.ceil(PLEN/GAS_W));
+ if(!C.gas||C.gas.length!==n){C.gas=new Array(n).fill(0);C.gasQ=[];C.gasSfx=0;}
+}
+/* ⭐**外からガスを足す唯一の入口**(散布塔・ガスを垂れ流す敵・倒れて弾ける敵はここを呼ぶ)。
+   ⚠**道の上の距離**で受ける=撒く側が座標しか持っていないなら `projPath` を通してから呼ぶこと */
+function gasAdd(C,d,amt){
+ if(!gasOn(C))return;
+ gasInit(C);
+ const i=clamp(Math.floor(d/GAS_W),0,C.gas.length-1);
+ C.gas[i]=clamp(C.gas[i]+amt,0,1);
+}
+/* ⚠⚠**誘爆の最中は引火を受け付けない印**=誘爆のダメージも型は💣爆発なので、
+   そのまま `dmgZ` の引火の口へ入ると**隣のマスが待ち時間を飛ばして即その場で燃え**、
+   炎が走る絵にならないまま**再帰で一気に全部消える**(道が長いほど深く潜る)。 */
+let GAS_IN=0;
+/* 💥1マスぶんの誘爆。lv=連鎖の何番目か(繋がるほど威力が上がる) */
+function gasBurn(C,i,lv){
+ const g=C.gas;if(!g||i<0||i>=g.length)return;
+ const dens=g[i];if(dens<GAS_MIN)return;
+ g[i]=0;/* ⭐**先に消す**=両隣から同時に火が来ても2度は燃えない(誘爆が無限に往復しない) */
+ const d0=gasCD(i),p=pathPos(d0,null);
+ const dm=GAS_DMG*dens*Math.min(GAS_CHAIN_MAX,1+GAS_CHAIN*lv);
+ /* ⚠**当たるのは自分のマスの中に居る敵だけ**=炎は道なりに順ぐりに走るので、
+    離れた敵は「そこまで火が届いた時」に自分のマスで当たる */
+ GAS_IN++;
+ for(const z of C.zombies){if(z.dead||z.dvT>0)continue;
+  if(Math.abs(z.d-d0)>GAS_W*.5+14)continue;
+  dmgZ(C,z,dm,1,0,0,'blast');}
+ GAS_IN--;
+ addFx(C,'boom',p[0],p[1],'');
+ if(FXLV>0){addP(C,4,p[0],p[1],{sp:150,up:60,g:420,life:.4,r:2.6,col:'#c8e05a'});
+  addP(C,2,p[0],p[1],{sp:50,up:45,g:-60,life:1,r:7,col:'#5c6b3a',typ:'smoke'});}
+ if(C.isMe&&(C.gasSfx||0)<=0){C.gasSfx=.11;sfx.boom();}
+ for(const nb of [i-1,i+1])
+  if(nb>=0&&nb<g.length&&g[nb]>=GAS_MIN)C.gasQ.push({i:nb,t:GAS_W/GAS_SPD,lv:lv+1});
+}
+/* 🔥⭐**引火の口**=💣爆発が落ちた場所からガスに火を点ける。点いたら true。
+   ⚠⚠**呼ぶのは爆発の型(blast)の所だけ**=ここに火炎やビームを足さないこと(この面の芯が消える)。 */
+function gasSpark(C,x,y){
+ if(GAS_IN||!gasOn(C)||!C.gas)return false;
+ const r=projPathIn(x,y,null);
+ if(r[1]>76)return false;/* 道から離れた爆発は引火しない(道幅の半分+少し) */
+ const i0=clamp(Math.floor(r[0]/GAS_W),0,C.gas.length-1);
+ /* 爆風の真ん中が薄くても、隣のマスが濃ければそこから点く */
+ for(const k of [i0,i0-1,i0+1]){
+  if(k<0||k>=C.gas.length||C.gas[k]<GAS_FIRE)continue;
+  C.shake=Math.max(C.shake||0,.18);
+  gasBurn(C,k,0);
+  return true;
+ }
+ return false;
+}
+function gasStep(C,dt){
+ if(!gasOn(C)){if(C&&C.gas)C.gas=null;return;}
+ gasInit(C);
+ const g=C.gas;
+ if((C.gasSfx||0)>0)C.gasSfx-=dt;
+ for(let i=0;i<g.length;i++){
+  if(gasInZone(gasCD(i))){
+   g[i]=clamp(g[i]+(GAS_SEEP-GAS_KEEP)*dt,0,1);
+   /* 💨**溜まりを初めて見た時に1回だけ言う**(⚠説明ではなく「その場で起きること」を口で言う) */
+   if(g[i]>=.6&&C.isMe&&!C.gasTold){C.gasTold=1;
+    try{toast('💨 沼のガスが溜まった: 💣爆発を当てると引火して燃え広がる',true);}
+    catch(e){console.log('💨ガスの知らせが出せなかった '+(e&&e.message));}}
+  }else if(g[i]>0)g[i]=Math.max(0,g[i]-GAS_FADE*dt);
+ }
+ /* ⏳待っている誘爆。⚠**別の配列に取り替えてから回す**=燃えた先で次の誘爆が積まれるので、
+    同じ配列を舐めながら足すと順番が壊れる */
+ if(C.gasQ&&C.gasQ.length){
+  const Q=C.gasQ;C.gasQ=[];
+  for(const q of Q){q.t-=dt;if(q.t<=0)gasBurn(C,q.i,q.lv);else C.gasQ.push(q);}
+ }
+}
+/* 💨ガスの絵。⚠**道の上・敵の下**に敷く。
+   ⚠⚠**帯(太い線)で塗ってはいけない**((240)撮って却下)=道の上に**黄緑の長方形**が乗っているようにしか
+     見えず、端も直角に切れる。⭐**ふわっとした丸を道なりに重ねる**=同じ濃さの持ち方のまま霧に見える。
+   ⭐**丸は1回だけ焼いて貼り回す**(`gasSpr`)=毎コマ createRadialGradient を呼ぶと、
+     濃い所の数だけ勾配を作り直すことになる(⚠一番高い部類の呼び出し)。 */
+let GAS_SPR=null,GAS_SPR_NG=0;
+function gasSpr(){
+ if(GAS_SPR||GAS_SPR_NG)return GAS_SPR;
+ if(typeof document==='undefined'||!document.createElement){GAS_SPR_NG=1;return null;}
+ const R=64,cv2=document.createElement('canvas');cv2.width=cv2.height=R*2;
+ const g2=cv2.getContext&&cv2.getContext('2d');
+ if(!g2||!g2.createRadialGradient){GAS_SPR_NG=1;return null;}
+ const gr=g2.createRadialGradient(R,R,0,R,R,R);
+ gr.addColorStop(0,'rgba(196,232,92,.92)');
+ gr.addColorStop(.45,'rgba(150,196,66,.55)');
+ gr.addColorStop(.78,'rgba(112,158,54,.22)');
+ gr.addColorStop(1,'rgba(96,140,50,0)');
+ g2.fillStyle=gr;g2.fillRect(0,0,R*2,R*2);
+ GAS_SPR=cv2;return GAS_SPR;
+}
+function drawGas(c,C,t){
+ const g=C&&C.gas;if(!g||!g.length)return;
+ const PT=gasPts();if(PT.length!==g.length)return;
+ const SP=gasSpr();if(!SP)return;
+ c.save();
+ for(let i=0;i<g.length;i++){
+  const v=g[i];if(v<.02)continue;
+  const ps=PT[i],p0=ps[0],p1=ps[ps.length-1];
+  /* ⭐**マスの端と真ん中に3つ重ねる**=マスの継ぎ目が縞に見えない(1つだけだと数珠つなぎに見える) */
+  for(let k=0;k<3;k++){
+   const u=k*.5,x=p0[0]+(p1[0]-p0[0])*u,y=p0[1]+(p1[1]-p0[1])*u;
+   /* ゆらぎ=位置ごとに違う速さで息をする(乱数は使わない=毎コマ形が変わると煮え立って見える) */
+   const w=Math.sin(t*.9+i*1.7+k*2.1);
+   const r=(40+v*26)*(1+w*.07);
+   c.globalAlpha=Math.min(.72,v*.62)*(1+w*.12);
+   c.drawImage(SP,x-r,y-r*.86+w*2,r*2,r*1.72);
+  }
+ }
+ /* 🫧気泡=濃い所から上がる。⚠**1本のパスに積んで1回で塗る**(丸は都度 moveTo が要る) */
+ if(FXLV>0){
+  c.globalAlpha=.6;c.fillStyle='#e6f79a';c.beginPath();let nb=0;
+  for(let i=0;i<g.length&&nb<26;i++){
+   if(g[i]<.3)continue;
+   const ph=((t*.5+i*.37)%1),ps=PT[i],p0=ps[0],p1=ps[ps.length-1];
+   const x=(p0[0]+p1[0])*.5+((i*37)%29)-14,y=(p0[1]+p1[1])*.5+((i*53)%23)-11-ph*30;
+   const r=(3+g[i]*3.4)*(1-ph*.55);
+   c.moveTo(x+r,y);c.arc(x,y,r,0,7);nb++;
+  }
+  c.fill();
+ }
+ c.restore();c.globalAlpha=1;c.lineWidth=3;c.strokeStyle=INK;c.lineCap='round';
+}
 function tideStep(dt){
  const T=G.tide;
  const alive=G.players.map((p,i)=>i).filter(i=>!G.players[i].dead);
@@ -21788,6 +21961,9 @@ function dmgZ(C,z,d,armorPierce,quiet,wk,ty){
  let aty9=wk||'';
  if(ty){const ax9=afX(ty,z);
   if(ax9!==1){d*=ax9;afk9=afKof(ax9);if(afk9==='wk')aty9=ty;}}
+ /* 💨⑤**爆発が当たった敵の足元のガスに引火する**(⚠砲弾は着弾点の側で見ているので、
+    ここで拾うのは**塔以外の爆発**=💣の兵科・英雄の直撃。⚠誘爆の最中は入らない(GAS_IN)) */
+ if(ty==='blast')gasSpark(C,z.px,z.py);
  if(wk)afk9='wk';/* 旧経路(呼ぶ側が特効を明示した場合)も受ける */
  if(z.litT>0)d*=(z.litX||LIT_X);/* 💡(197)照明塔=受けるダメージが上がる(弱点とは別枠。倍率は💡もろさで伸びる) */
  if(z.gumT>0)d*=GUM_DEF;/* 🫧ガムがべたつく=防御力半分(受けるダメージ×2。ルピナの必殺) */
@@ -22512,6 +22688,7 @@ function campStep(C,dt,wave){
   z.dr=(C.bus&&z.ln!=null)?((BNS_CX-p[0])>=0?1:-1):pathFace(Math.max(0,z.d),p[0],1,p[2],z.ln);
   z.vw=pxVw(p[2]);if(z.aura)scrs.push(z);}
  if(C.bus)bnsBusStep(C,dt);/* 🚌ボーナス面の轢き殺し */
+ gasStep(C,dt);/* 💨⑤のガス溜まりと誘爆(gasZ を持たない面では何もしないで戻る) */
  for(const u of C.units)u.eng=0;
  /* 🔥⭐(124)**燃えている敵が増えるほど、1体あたりの火の粉を減らす**(ユーザー
       「火炎放射器タレットが何台も置くと重い」)。⚠火炎放射塔は**周りにも燃焼を配る**ので、
@@ -23448,6 +23625,9 @@ function campStep(C,dt,wave){
   /* ⭐爆発は死体を外へ吹き飛ばす。⚠爆発範囲が広い砲ほど強く飛ばす(迫撃砲<重砲台<プラズマ砲) */
   for(const z of C.zombies)if(!z.dead&&dist(z.px,z.py,sh.tx,sh.ty)<=sh.aoe){
    kbZ(z,sh.tx,sh.ty,42+sh.aoe*.45);dmgZ(C,z,sh.dmg,1,0,0,'blast');}
+  /* 💨⑤**砲弾が落ちた所のガスに引火する**(⚠敵が1体も居ない所へ撃ってもここは通る=
+     「ガスだけを狙って撃つ」ができる。⚠プラズマ(pz)は🔆ビームなので引火させない) */
+  if(!sh.pz)gasSpark(C,sh.tx,sh.ty);
   if(sh.pz){/* ⭐プラズマの炸裂: 火薬の爆発ではなくエネルギーが弾ける */
    addFx(C,'pboom',sh.tx,sh.ty,'',{r:sh.aoe,sd:rnd(0,9)});
    addP(C,14,sh.tx,sh.ty,{sp:250,up:50,g:230,life:.55,r:2.8,col:'#f0a8e0'});
@@ -24444,6 +24624,9 @@ function renderCamp(C,t){
  for(const car of CARS)drawCar(c,car[0],car[1],car[2],car[3]);
  for(const tr2 of TREES)drawTree(c,tr2[0],tr2[1]);
  }/* ← 🖼(124)ここまでが「焼いた2枚目」に入っている分(焼けた時は丸ごと飛ばす) */
+ /* 💨⑤のガス溜まり。⚠**道の上・敵の下**=踏み込んで行く物なので地面側に敷く。
+    ⚠動く(濃さが変わる)ので焼き込みには入れない */
+ if(C.gas)drawGas(c,C,t);
  /* 🛞轍と🩸血だまり(🚌開拓便)。⚠**地面の上・廃墟の下**=踏まれている物なので一番下に敷く */
  if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
  /* 🏚🌲地形(建物と森と廃車)。⚠**焼いた画を貼るだけ**=中身は `drawTerrIn`。これが導線そのもの */
