@@ -7128,6 +7128,12 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m22',d:'2026-08-10',t:'アップデート',ver:'0.074',
+  b:'押すと変わった所が全部見られます',
+  list:['🎰スロットのレア役を作り直しました=👁チェリー / 🥩スイカ / ⚡チャンス目',
+   '🔴同じ役でも「強い方」があります=**赤く光って画面が揺れたら期待できます**(青い時は弱い方)',
+   '☠確定役=👁が3つ揃ったらその場で飢餓(AT)が確定します',
+   '🕹回っている間は**画面のどこを押してもリールが1つ止まります**(ボタンを狙わなくてOK)']},
  {id:'m21',d:'2026-08-10',t:'アップデート',ver:'0.064',
   b:'押すと変わった所が全部見られます',
   list:['🔩ハープーン砲の吹っ飛ばしを無くしました=並べても敵が固まらなくなります',
@@ -35644,15 +35650,26 @@ const SLT_REEL=[
  [S_MEAT,S_EYE,S_REP,S_BRN,S_B7,  S_MEAT,S_EYE,S_REP,S_BRN,S_R7,  S_MEAT,S_EYE,S_REP,S_BRN,S_BAR, S_MEAT,S_EYE,S_REP,S_BRN,S_R7],
  [S_EYE,S_REP,S_BRN,S_MEAT,S_BAR, S_EYE,S_REP,S_BRN,S_MEAT,S_R7,  S_EYE,S_REP,S_BRN,S_MEAT,S_B7,  S_EYE,S_REP,S_BRN,S_MEAT,S_R7]];
 const SLT_BET=3;                  /* 1ゲームの投入(枚) */
-const SLT_ODD={rep:7.3,eye:24,meat:32,cha:64,brn:9,d7:700,db7:500};/* 1/x(d7=血7の直撃・db7=蒼7) */
-const SLT_PAY={brn:8,meat:5,eye:2};/* 小役の払い(枚) */
+/* 🎲⭐⭐(238e)**レア役は弱と強に分かれる**(2026-08-10ユーザー指示「レア役はチェリーとかスイカとか
+   チャンス目とかが欲しい。強レア役も欲しい」)=実機と同じで、**同じ図柄でも当たりの期待度が2段**ある。
+   ⭐**弱と強の見分けは演出で見せる**(青く光る=弱 / 赤く光って揺れる=強)=実機と同じ作法。
+     ⚠**図柄の止まり方で分けない**=この並び(5コマおき)だと角チェリーが毎回勝手に出てしまう。
+   ⭐**確定役**=👁目が3つ揃い(見た目でも一発で分かる)=**その場でAT確定**。
+   ⚠**確率を触ったら必ず検査(checkSlot)で戻りを見る**=直撃を厚くすると一気に跳ね上がる。 */
+const SLT_ODD={rep:7.3,eye:24,meat:32,cha:64,brn:9,d7:700,db7:500,conf:12000};
+const SLT_STR={eye:.18,meat:.25};/* レア役のうち「強」が出る割合 */
+const SLT_RN={eye:'👁チェリー',eyeS:'👁強チェリー',meat:'🥩スイカ',meatS:'🥩強スイカ',
+ cha:'⚡チャンス目',conf:'☠確定役'};/* 液晶に出す名前 */
+const SLT_PAY={brn:8,meat:5,eye:2,conf:10};/* 小役の払い(枚) */
 /* 🧟CZ=レア役から入る前哨戦。zone=何ゲームごとの節目か / ceil=天井(CZ間) */
-const SLT_CZ={eye:.06,meat:.20,cha:.60,zone:20,zoneP:.08,ceil:120,g:6,n:'屍の群れ'};
+const SLT_CZ={eye:.04,eyeS:.25,meat:.12,meatS:.45,cha:.60,zone:20,zoneP:.08,ceil:120,g:6,n:'屍の群れ'};
+/* ⚡**通常時にATへ直撃する割合**。⚠⚠**ここを厚くすると戻りが跳ねる**(1%足すだけで数%動く) */
+const SLT_ATD={eyeS:.004,meatS:.008,cha:.005};
 /* 🩸ボーナス=**7を揃えて始まる**。g=ゲーム数 / pay=毎ゲームの払い(純増=pay-3) / at=終了時のAT当選率 */
-const SLT_BN={r7:{n:'大暴食',g:8,pay:11,at:.45,c:'#c33a2e'},b7:{n:'暴食',g:4,pay:11,at:.20,c:'#4f86cc'}};
+const SLT_BN={r7:{n:'大暴食',g:8,pay:11,at:.40,c:'#c33a2e'},b7:{n:'暴食',g:4,pay:11,at:.18,c:'#4f86cc'}};
 /* ☠AT=1セット10ゲーム。継続率は**入った時に1回だけ抽選**(50%/75%/90%。ユーザー決定の重み) */
 const SLT_ATC=[[.50,.50],[.75,.30],[.90,.20]];
-const SLT_AT={g:10,n:'飢餓',up:{eye:[2,.20],meat:[5,.50],cha:[5,1]}};/* up=[上乗せG,当選率] */
+const SLT_AT={g:10,n:'飢餓',up:{eye:[2,.20],eyeS:[4,1],meat:[4,.50],meatS:[6,1],cha:[4,1],conf:[15,1]}};/* up=[上乗せG,当選率] */
 const SLT_SLOT_N='飢餓のリール';  /* 台の名前(液晶の見出し) */
 const SLT_GASE=1/14;              /* はずれの時に7を2つ止める(ガセのリーチ)割合 */
 const SLT_UNIT=[2,10,50,200];     /* 1枚あたりのチップ(⚠1ゲーム=3枚なので最大600=上限1000の中) */
@@ -35671,14 +35688,15 @@ function sltStart(){
   pop:[],flash:0,lamp:0,t:0,hist:[],
   /* 🎬液晶=歩くゾンビ/斬撃/英雄の位置。⚠**最初から2体置いておく**=座った瞬間から映像が動く */
   zw:[{zi:1,x:.55,y:.88,sp:.12,d:0,t:.4},{zi:4,x:.88,y:.95,sp:.10,d:0,t:1.9}],
-  spT:1.4,slash:0,hx:-.30,hact:0,
+  spT:1.4,slash:0,hx:-.30,hact:0,fxc:0,shk:0,/* fxc=1なら赤い光(強レア) */
   r:[{p:0,v:0,run:0,tp:0,d:0},{p:7,v:0,run:0,tp:0,d:0},{p:13,v:0,run:0,tp:0,d:0}]};
  CASM='';
 }
 function sltSave(){if(CAS&&CAS.g==='slot')META.sltG0=CAS.g0|0;
  META.sltU=SLTU;saveMeta();}
 /* 💰メダルの残り(台に座っていない時はセーブの値が正) */
-const sltMed=()=>META.sltM|0;/* 💰**出所は1つだけ**=台の中に写しを持たない(食い違いの元) */
+/* ⚠**|0 を使わない**=21億を超えると桁が回って負の数になる(検査で踏んだ) */
+const sltMed=()=>Math.max(0,Math.round(META.sltM||0));/* 💰**出所は1つだけ**=台の中に写しを持たない(食い違いの元) */
 function sltBorrow(n){
  const cost=n*SLTU;
  if(casChip()<cost){toast('🪙が足りない(🪙'+cost+'要る)');if(sfx.warn)sfx.warn();return;}
@@ -35701,23 +35719,27 @@ function sltRoll(){
  if(!CAS.hold){                                       /* 7の直撃(持ち越しが無い時だけ) */
   if(Math.random()<1/SLT_ODD.d7)CAS.hold='r7';
   else if(Math.random()<1/SLT_ODD.db7)CAS.hold='b7';}
+ /* ☠確定役=👁が3つ揃う(いちばん強い) */
+ if(Math.random()<1/SLT_ODD.conf)return 'conf';
  const x=Math.random();let a=1/SLT_ODD.rep;
  if(x<a)return 'rep';
- a+=1/SLT_ODD.eye;  if(x<a)return 'eye';
- a+=1/SLT_ODD.meat; if(x<a)return 'meat';
+ a+=1/SLT_ODD.eye;  if(x<a)return (Math.random()<SLT_STR.eye)?'eyeS':'eye';
+ a+=1/SLT_ODD.meat; if(x<a)return (Math.random()<SLT_STR.meat)?'meatS':'meat';
  a+=1/SLT_ODD.cha;  if(x<a)return 'cha';
  /* ⭐**AT中は残り全部が脳**(押し順ナビで毎ゲーム取れる)=これがATの純増の正体 */
  a+=(CAS.st==='at')?1:(1/SLT_ODD.brn); if(x<a)return 'brn';
  return CAS.hold||'lose';
 }
-const sltRare=k=>k==='eye'||k==='meat'||k==='cha';
+const sltRare=k=>k==='eye'||k==='eyeS'||k==='meat'||k==='meatS'||k==='cha'||k==='conf';
+const sltStrong=k=>k==='eyeS'||k==='meatS'||k==='cha'||k==='conf';/* 赤く光る方 */
 /* ---- 🎯引き込み(4コマ以内) ---- */
 function sltDesire(i){
  const R=CAS.role;
  if(R==='rep')return S_REP;
  if(R==='brn')return S_BRN;
- if(R==='meat')return S_MEAT;
- if(R==='eye')return i===0?S_EYE:-1;                  /* 👁は左だけで成立(角チェリー) */
+ if(R==='meat'||R==='meatS')return S_MEAT;
+ if(R==='conf')return S_EYE;/* ☠確定役=👁が3つ揃う */
+ if(R==='eye'||R==='eyeS')return i===0?S_EYE:-1;                  /* 👁は左だけで成立(角チェリー) */
  if(R==='cha')return [S_MEAT,S_EYE,S_REP][i];         /* チャンス目=決まった並び */
  if(R==='r7')return S_R7;
  if(R==='b7')return S_B7;
@@ -35729,7 +35751,8 @@ function sltCen(i){const r=CAS.r[i];return r.run?-1:SLT_REEL[i][((Math.round(r.p
 /* ⚠**役が揃ってしまわない所か**=誤爆(狙っていない役の成立)を防ぐ最後の柵 */
 function sltSafe(i,p){
  const s=SLT_REEL[i][p];
- if(CAS.role==='eye'){if(i>0&&s===S_EYE)return false;}
+ if(CAS.role==='conf')return true;/* ☠確定役だけは3つ揃いを許す */
+ if(CAS.role==='eye'||CAS.role==='eyeS'){if(i>0&&s===S_EYE)return false;}
  else if(i===0&&s===S_EYE)return false;               /* 角チェリーの誤爆 */
  const L=[sltCen(0),sltCen(1),sltCen(2)];L[i]=s;
  if(L[0]>=0&&L[1]>=0&&L[2]>=0){
@@ -35771,11 +35794,12 @@ function sltHand(){
  if(L[0]===L[1]&&L[1]===L[2]){
   if(L[0]===S_REP)return{k:'rep',pay:0};
   if(L[0]===S_BRN)return{k:'brn',pay:CAS.st==='bn'?SLT_BN[CAS.bn.k].pay:SLT_PAY.brn};
-  if(L[0]===S_MEAT)return{k:'meat',pay:SLT_PAY.meat};
+  if(L[0]===S_MEAT)return{k:(CAS.role==='meatS'?'meatS':'meat'),pay:SLT_PAY.meat};
   if(L[0]===S_R7)return{k:'r7',pay:0};
   if(L[0]===S_B7)return{k:'b7',pay:0};
+  if(L[0]===S_EYE)return{k:'conf',pay:SLT_PAY.conf};/* ☠確定役 */
  }
- if(L[0]===S_EYE)return{k:'eye',pay:SLT_PAY.eye};
+ if(L[0]===S_EYE)return{k:(CAS.role==='eyeS'?'eyeS':'eye'),pay:SLT_PAY.eye};
  if(L[0]===S_MEAT&&L[1]===S_EYE&&L[2]===S_REP)return{k:'cha',pay:0};
  return{k:'lose',pay:0};
 }
@@ -35787,7 +35811,10 @@ function sltJudge(){
  if(H.pay>0){META.sltM=sltMed()+H.pay;CAS.win=H.pay;CAS.got+=H.pay;casS('casPile');}
  else CAS.win=0;
  CAS.hist.push(H.k);if(CAS.hist.length>40)CAS.hist.shift();
- if(sltRare(H.k)&&CAS.zw)sltFxSlash();/* 🎬レア役=液晶で1体斬る */
+ /* 🎬レア役=液晶で斬る。⭐**強レアは赤く光って画面が揺れる**=弱と強の見分けはここで見せる */
+ if(sltRare(H.k)&&CAS.zw){sltFxSlash();
+  if(sltStrong(H.k)){CAS.fxc=1;CAS.flash=1;CAS.shk=.35;casS('sltUp');}
+  else{CAS.fxc=0;casS('casWin');}}
  /* 🩸7が揃った=ボーナス開始(⚠持ち越しはここで消える) */
  if(H.k==='r7'||H.k==='b7'){
   CAS.hold='';CAS.atRet=(CAS.st==='at')?1:0;
@@ -35805,12 +35832,16 @@ function sltJudge(){
 /* 🌀通常時=CZを引きに行くだけの時間。⚠**ゲーム数はリプレイでも進む**(実機と同じ) */
 function sltNormGame(H){
  CAS.g0++;
+ /* ☠確定役=その場でAT確定 */
+ if(H.k==='conf'){sltPop('☠ 確定役','#ffd76a');sltAtIn();return;}
  let hit=0;
- if(sltRare(H.k)&&Math.random()<SLT_CZ[H.k])hit=1;
+ /* ⚡強レアは通常時からATへ直撃することがある(⚠薄く。厚くすると戻りが跳ねる) */
+ if(sltRare(H.k)&&Math.random()<(SLT_ATD[H.k]||0)){sltAtIn();return;}
+ if(sltRare(H.k)&&Math.random()<(SLT_CZ[H.k]||0))hit=1;
  else if(CAS.g0%SLT_CZ.zone===0&&Math.random()<SLT_CZ.zoneP)hit=1;
  if(CAS.g0>=SLT_CZ.ceil)hit=1;                        /* 天井 */
  if(hit)sltCzIn();
- else if(sltRare(H.k)){CASM='';sltPop(H.k==='cha'?'チャンス目':(H.k==='meat'?'🥩':'👁'),'#cfd6c0');}
+ else if(sltRare(H.k)){CASM='';sltPop(SLT_RN[H.k]||'',sltStrong(H.k)?'#ff8a6a':'#cfd6c0');}
 }
 function sltCzIn(){
  CAS.st='cz';CAS.czG=SLT_CZ.g;CAS.g0=0;
@@ -35859,6 +35890,7 @@ function sltStep(dt){
  CAS.t+=dt;
  sltFxStep(dt);/* 🎬液晶の映像 */
  if(CAS.flash>0)CAS.flash=Math.max(0,CAS.flash-dt*1.6);
+ if(CAS.shk>0)CAS.shk=Math.max(0,CAS.shk-dt*1.5);
  for(const p of CAS.pop)p.t+=dt;
  while(CAS.pop.length&&CAS.pop[0].t>1.8)CAS.pop.shift();
  if(CAS.cut>0)CAS.cut=Math.max(0,CAS.cut-dt);
@@ -36024,7 +36056,8 @@ function sltLcd(c,x,y,w,h){
   c.strokeStyle='rgba(255,120,90,.7)';c.lineWidth=h*.016*a;
   c.beginPath();c.arc(x+w*(CAS.hx+.16),y+h*.60,h*.50,-1.0,.8);c.stroke();
   c.restore();}
- if(CAS.flash>0){c.fillStyle='rgba(255,244,214,'+(CAS.flash*.42).toFixed(3)+')';c.fillRect(x,y,w,h);}
+ if(CAS.flash>0){c.fillStyle=(CAS.fxc?'rgba(255,120,80,':'rgba(180,215,255,')+(CAS.flash*.45).toFixed(3)+')';
+  c.fillRect(x,y,w,h);}
  /* 見出し=状態の名前(ここだけ大きく) */
  const T=Math.max(16,h*.20);
  let ttl='',tc='#c9b98a';
@@ -36109,6 +36142,9 @@ function sltDraw(c){
  g0.addColorStop(0,'#1a1510');g0.addColorStop(1,'#0b0908');
  c.fillStyle=g0;c.fillRect(0,0,CASW,CASH);
  casLamp(c,CASW*.5,CASH*.02,CASH*.5);
+ /* 💥強レアは台ごと揺れる(弱との差を体で分からせる) */
+ const sk=CAS.shk>0?CAS.shk:0;
+ if(sk>0){c.save();c.translate((Math.random()-.5)*sk*22,(Math.random()-.5)*sk*14);}
  /* 🎰台の枠。⭐**上の帯も下のボタンも消した**ので、窓のほぼ全部を台に使う */
  const bx=18,by=CASH*.018,bw=CASW-36,bh=CASH*.964;
  c.fillStyle='#2a2018';casRR(c,bx,by,bw,bh,12);c.fill();
@@ -36151,6 +36187,7 @@ function sltDraw(c){
  /* 中段の線(=当たりの1本) */
  c.strokeStyle=CAS.rch?"#ffca6a":"rgba(201,161,61,.75)";c.lineWidth=CAS.rch?4:2;
  c.beginPath();c.moveTo(rx0-12,ry+rh/2);c.lineTo(rx0+rW+12,ry+rh/2);c.stroke();
+ if(sk>0)c.restore();
  /* 🕹操作パネル(レバーと丸ボタン=**押すのはここ**) */
  const cy0=by0+bhh+6;
  sltCtlPanel(c,lx,cy0,lw,by+bh-cy0-7,rx0,rw,gap);
@@ -36231,6 +36268,10 @@ function casTap(mx,my){
  const x=(mx-CAS_OX)/CAS_S,y=(my-CAS_OY)/CAS_S;
  /* ⚠ここでタップ音を鳴らさない=賭ける所は casChip(チップの音)が鳴るので二重になる */
  for(const h of (CASX||[]))if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){h.f();casCtl();return;}
+ /* 🎰⭐(238e)**回っている間は画面のどこを押してもリールが1つ止まる**(2026-08-10ユーザー指示
+    「ボタンは画面タップで止めれるようにして」)=左から順に止まる。⚠ボタンを狙わなくてよい */
+  if(CASV==='slot'&&CAS&&CAS.ph==='spin'){
+   for(let i=0;i<3;i++)if(CAS.r[i].run&&!CAS.r[i].tp){sltStopReel(i);casCtl();return;}}
 }
 /* ---- 下の操作帯(押す所は44px以上・文字は10.5px以上) ---- */
 function casBt(id,label,cls){return '<button class="btn '+(cls||'')+'" data-cas="'+id+'">'+label+'</button>';}

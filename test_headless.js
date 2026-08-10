@@ -4808,19 +4808,19 @@ function checkSlot(){
  const rnd0=Math.random;{let s9=20260810>>>0;Math.random=()=>{
   s9=(s9+0x6D2B79F5)|0;let t=Math.imul(s9^(s9>>>15),1|s9);
   t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};}
- CASV='slot';META.sltM=1e12;sltStart();
+ CASV='slot';META.sltM=1e8;sltStart();
  const N=300000;
  let inTot=0,outTot=0,bad=0,cnt={},czN=0,bnN=0,atN=0,cont={},normG=0,czG=0,bnG=0,atG=0;
  let last='norm';
  for(let n=0;n<N;n++){
-  const rep=CAS.rep,st=CAS.st,before=CAS.med,role=null;
+  const rep=CAS.rep,st=CAS.st,before=sltMed();
   sltAuto();
   /* ②抽選した役がそのまま揃っているか(引き込みが効いているか) */
   const h=sltHand().k,want=CAS.role;
   if(want!=='lose'&&h!==want)bad++;
   if(want==='lose'&&h!=='lose')bad++;
   cnt[h]=(cnt[h]||0)+1;
-  inTot+=rep?0:3;outTot+=(CAS.med-before)+(rep?0:3);
+  inTot+=rep?0:3;outTot+=(sltMed()-before)+(rep?0:3);
   if(st==='at')atG++;else if(st==='bn')bnG++;else if(st==='cz')czG++;else normG++;
   if(last!=='cz'&&CAS.st==='cz')czN++;
   if(last!=='bn'&&CAS.st==='bn')bnN++;
@@ -4845,9 +4845,14 @@ function checkSlot(){
    if(p<w[k]*.75||p>w[k]*1.25){console.log('FAIL: AT継続率'+k+'の出方が'+(p*100).toFixed(1)+'%(想定'+(w[k]*100)+'%)');
     process.exit(1);}}}
  if(!czN||!bnN||!atN){console.log('FAIL: CZ/ボーナス/ATのどれかに一度も入っていない');process.exit(1);}
+ /* 🎲(238e)**弱レア・強レア・確定役が全部出ているか**=どれか0なら、その役は一生出ない */
+ for(const k of ['eye','eyeS','meat','meatS','cha','conf'])if(!cnt[k]){
+  console.log('FAIL: レア役 '+k+' が30万ゲームで一度も出ていない');process.exit(1);}
+ /* 強は弱より少ないこと(逆なら弱/強の割り振りが裏返っている) */
+ if(cnt.eyeS>=cnt.eye||cnt.meatS>=cnt.meat){console.log('FAIL: 強レアの方が多い(弱と強が逆)');process.exit(1);}
  console.log('🎰スロット: 引き込み'+N.toLocaleString()+'ゲーム誤爆0 / 戻り'+R.toFixed(2)+'% / '
   +'CZ 1/'+(normG/czN).toFixed(0)+' ボーナス 1/'+((normG+czG)/bnN).toFixed(0)
-  +' AT 1/'+(normG/atN).toFixed(0)+' (AT平均'+(atG/atN).toFixed(0)+'G) OK');
+  +' AT 1/'+(normG/atN).toFixed(0)+' (AT平均'+(atG/atN).toFixed(0)+'G) / 強レア'+(cnt.eyeS+cnt.meatS)+'回 確定役'+cnt.conf+'回 OK');
  CAS=null;CASV='lobby';META.chip=keep;META.sltM=keepM;
 }
 const CHECKS=[['checkCasino',checkCasino],['checkSlot',checkSlot],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
