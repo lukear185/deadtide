@@ -356,6 +356,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        /* ⚠⚠**この撮り方ではアニメの輪(requestAnimationFrame)が進まない**
           =🎡ルーレットや🃏バカラと同じで、**手で何コマか進めてから撮る**(液晶の映像が出ない) */
        CASKIND==='slot'?'CASV="slot";sltStart();META.sltM=320;sltFx(90);':
+       CASKIND==='slotmsg'?'CASV="slot";sltStart();META.sltM=0;sltFx(90);sltLever();':
        CASKIND==='slotspin'?'CASV="slot";sltStart();META.sltM=320;sltFx(60);sltLever();for(var s9=0;s9<26;s9++)sltStep(0.02);sltStopReel(0);for(var s8=0;s8<14;s8++)sltStep(0.02);':
        CASKIND==='slothold'?'CASV="slot";sltStart();META.sltM=180;CAS.hold="r7";sltFx(90);':
        CASKIND==='slotcz'?'CASV="slot";sltStart();META.sltM=210;CAS.st="cz";CAS.czG=4;sltFx(120);':

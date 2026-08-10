@@ -1125,7 +1125,16 @@ body.bns #deck{flex:0 0 auto}
  font-size:12px;color:#f2ecdc;background:#5a2b2b;cursor:pointer}
 .caschip.on{outline:3px solid var(--gold);transform:scale(1.06)}
 .caschip.c50{background:#2f4a2f}.caschip.c100{background:#2b3a5a}.caschip.c500{background:#4a3a20}
-.casmsg{color:#e8dcc0;font-size:12px;font-weight:800;text-align:center;flex:1 1 100%}
+/* 💬⚠⚠⭐⭐(238)**一言は帯の中に置かない**(2026-08-10ユーザー実機「メダルが足りないとか出ると
+   上のスロット部分が縮む / ルーレットもチップ置いたらテーブルが縮む」)=
+   🐞**帯の中に文字を足すと帯が高くなり、その分だけ上の canvas が縮む**(=台や卓が小さくなる)。
+   ⭐**canvas の上に重ねて浮かせる**=出ても消えても**寸法が1pxも動かない**。
+   ⚠⚠**この型は他の画面でも同じ**=[[NOTES_UI]]「文字で入れ物の大きさを変えない」を必ず見ること。 */
+#cas-msg{position:absolute;left:8px;right:8px;bottom:6px;z-index:3;pointer-events:none;
+ color:#ffe9a8;font-size:12.5px;font-weight:900;text-align:center;display:none;
+ background:rgba(12,10,8,.78);border:2px solid #6b5638;border-radius:9px;padding:5px 8px;
+ text-shadow:0 1px 0 rgba(0,0,0,.8)}
+#cas-msg.on{display:block}
 .casgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:10px}
 .caspz{background:var(--pane);border:2px solid var(--ink);border-radius:10px;padding:8px;text-align:center}
 .caspz b{display:block;font-size:13px}
@@ -2131,7 +2140,7 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
   <div class="panel bigpanel">
     <div class="bphd"><b id="cas-ttl">🎰 賭場</b><span class="pt" id="cas-chip">🪙 0</span><button class="xbtn" id="bt-cas-close">✕</button></div>
     <div class="bpbody">
-      <div id="cas-wrap"><canvas id="cas-cv"></canvas><div id="cas-dom"></div></div>
+      <div id="cas-wrap"><canvas id="cas-cv"></canvas><div id="cas-dom"></div><div id="cas-msg"></div></div>
       <div id="cas-ctl"></div>
     </div>
   </div>
@@ -36167,7 +36176,7 @@ function casGo(v){
  if(v==='roul')rouStart();else if(v==='bacc')bacStart();else if(v==='slot')sltStart();else CAS=null;
  casRender();
 }
-let CASLT=0,CASSIG='';
+let CASLT=0,CASSIG='',CASM9='',CASMT=0;
 /* ⭐いま画面の下に出るべきボタンを決める要素を1本の文字列にした物。これが変わったら作り直す */
 function casSig(){
  if(!CAS)return CASV+'|'+CASM;
@@ -36180,6 +36189,9 @@ function casLoop(ts){
  CASRAF=requestAnimationFrame(casLoop);
  if(!casOn())return;
  const dt=Math.min(.05,(ts-CASLT)/1000||0);CASLT=ts;CAST+=dt;
+ /* 💬(238)一言は2.8秒で自分から消える=レバーや停止ボタンの上に居座らせない */
+ if(CASM!==CASM9){CASM9=CASM;CASMT=2.8;}
+ else if(CASM){CASMT-=dt;if(CASMT<=0){CASM='';CASM9='';}}
  if(CAS){
   if(CAS.g==='roul')rouStep(dt);else if(CAS.g==='bacc')bacStep(dt);else if(CAS.g==='slot')sltStep(dt);
   /* ⚠⚠**下の帯は「言葉が変わった時」だけでなく「状況が変わった時」に作り直す**
@@ -36223,7 +36235,8 @@ function casBt(id,label,cls){return '<button class="btn '+(cls||'')+'" data-cas=
 function casCtl(){
  const e=$('cas-ctl');if(!e)return;
  let h='';
- if(CASM)h+='<div class="casmsg">'+CASM+'</div>';
+ /* 💬一言は帯の外(canvasの上)へ=帯の高さを変えない(掟は #cas-msg の所) */
+ {const mm=$('cas-msg');if(mm){mm.textContent=CASM||'';mm.classList.toggle('on',!!CASM);}}
  if(CASV==='lobby'){
   h+=casBt('ex','🪙 両替所','gold')+casBt('shop','🏆 景品と交換')
    +casBt('roul','🎡 ルーレット')+casBt('bacc','🃏 バカラ')+casBt('slot','🎰 スロット');
