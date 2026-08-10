@@ -4776,6 +4776,42 @@ function checkGas(){
   +'引火は💣爆発だけ(🔥火炎と🔫実弾は不発) / 誘爆が道なりに広がる(速さ'+GAS_SPD+'px/秒) / '
   +'満杯1マス='+GAS_DMG+'(この面の敵の体力の平均'+Math.round(avg)+'の'+(avg?Math.round(GAS_DMG/avg*100):0)+'%) OK');
 }
+/* ---- 🗺🐞⭐⭐⭐(243)**どの面にも地図のピンがあるか** ----
+   ⚠⚠**作った理由**=(238f)で面⑤を足した時、**地図のピンを1つも足していなかった**。
+     地図は面の数だけ頁があるので**5頁目だけ拠点が0個の白い頁**になり、**どこからも入れない面**が
+     1つ増えていた。⚠**面の中身の検査は全部通る**(面そのものは動いていた)ので、
+     実機で「5面が無いぞ」と言われるまで誰も気づけなかった。
+   ⭐**見るのは4つ**=①どの面にも6つ ②段の並びが揃っている ③札の置き場(右下)と上端を避けている
+   ④**入れるピンが必ず1つはある**(全部 lock3 の面を作らない)。 */
+function checkMapPins(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const want=[0,2,6,3,4,5];/* 入口 / 本命 / 🚌開拓便 / 3つ目 / 悪夢 / 🌑 */
+ const out=[];
+ for(let si=0;si<STAGES.length;si++){
+  const pins=MAPND.filter(n=>n.stg===si);
+  if(pins.length!==6)F('面'+(si+1)+'('+STAGES[si].n+')の地図のピンが'+pins.length
+   +'個しかない(6個要る)=**地図のその頁から入れない面になる**');
+  const ds=pins.map(n=>n.d).slice().sort((a,b)=>a-b);
+  if(ds.join(',')!==want.slice().sort((a,b)=>a-b).join(','))
+   F('面'+(si+1)+'の段の並びが他の面と違う ['+pins.map(n=>n.d).join(',')+']');
+  for(const nd of pins){
+   if(!nd.n||!nd.s)F('面'+(si+1)+'のピンに名前か説明が無い');
+   if(!(nd.x>=.05&&nd.x<=.92&&nd.y>=.10&&nd.y<=.80))F('ピンが地図からはみ出している '+nd.n);
+   if(nd.x>.60&&nd.y>.58)F('ピンが拠点カードの置き場(右下)に重なっている '+nd.n);}
+  if(pins.every(n=>n.lock3))F('面'+(si+1)+'のピンが全部🔒(どこにも入れない面になっている)');
+  out.push('面'+(si+1)+'='+(6-pins.filter(n=>n.lock3).length)+'/6');
+ }
+ /* ④ 一番後ろの面の入れるピンから、実際に試合が始まる */
+ {const kp=META.sc;
+  META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
+  const si=STAGES.length-1,nd=MAPND.filter(n=>n.stg===si&&!n.lock3&&n.d!==BNS_D)[0];
+  if(!nd)F('最後の面に入れる拠点が1つも無い');
+  META.stg=nd.stg;setDiff=nd.d;startSolo();frames(20,.05);
+  if(STAGE!==si)F('最後の面の拠点から出撃しても、その面が読み込まれない');
+  backTitle();META.sc=kp;}
+ console.log('🗺地図のピン: '+STAGES.length+'面すべてに6つ('+out.join(' / ')+'=🔒でない数) / '
+  +'並びも置き場も揃っている / 最後の面の拠点から出撃できる OK');
+}
 /* ---- 🐞⭐⭐(207)**表の印が実体まで届いているか** ----
    ⚠⚠**作った理由**=ゾンビの表の印を実体へ写しているのは1か所だけなのに、そこへの書き忘れが
      **3つ**寝ていた(🪶羽・🐟潜る・🐢甲羅ごもり)。⭐**表にも絵にも数値にも異常が無い**ので、
@@ -4798,6 +4834,7 @@ function checkZFlag(){
 const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],
 ['checkGas',checkGas],
+['checkMapPins',checkMapPins],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
