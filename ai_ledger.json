@@ -430,5 +430,14 @@
   "file": "sfx_src/AI_howl_b.wav",
   "license": "Stability Community License(年商$1M未満・要登録)",
   "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
+ },
+ {
+  "date": "2026-08-10",
+  "tool": "Stable Audio Open 1.0 (local)",
+  "prompt": "smoky underground jazz lounge, slow swing groove, walking upright double bass, soft brushed drums on snare, muted piano chords, dim smoky casino bar, warm vintage, instrumental, no vocals, loop",
+  "duration": 45.0,
+  "file": "sfx_src/AI_casbgmA.wav",
+  "license": "Stability Community License(年商$1M未満・要登録)",
+  "ships": "加工してbase64でindex.htmlに埋め込む(Steam Content Survey 開示対象)"
  }
 ]
