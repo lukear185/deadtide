@@ -2614,7 +2614,8 @@ const STRIKES={
 };
 let META={pts:0,nt:0,nu:0,st:['air'],eq:'air',sc0:0,hp0:0,clr:[0,0,0,0,0,0],nmOK:0,uv:[],ld:{},up0:0,cd0:0,ec0:0,sl0:0,py0:0,uu0:0,ec1:0,st0:0,tw:{},un:{},stg:0,sclr:[],gem:0,tg:[],hero:{},hmat:0,hsel:'',tr0:0,hlv:{},hxp:{},zdex:{},tmTip:0,bcl:[],bres:[0,0,0],bup:{},beq:{},bday:[],bnum:[],
  /* 🎰(231)カジノ: chip=持っているチップ / casIn=初回入場の1000を受け取った印 / casP=景品を交換した印 */
- chip:0,casIn:0,casP:{}};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
+ /* 🎰(237)スロット: sltM=台に残っているメダル / sltU=1枚あたりのチップ */
+ chip:0,casIn:0,casP:{},sltM:0,sltU:10};/* tmTip=🎒編成の案内を1回出したか(2026-08-02) */
 /* 🎒🚌**バス強化は永続**(2026-08-02(44)ユーザー決定「この強化は永続だから」)=
    `bres`=持っている物資[⛽燃料,🏭鉄材,🏠食料] / `bup`=性能の段 / `beq`=付けた装備。
    ⚠**遊ぶたびに積み上がる**ので、値段は「1試合ぶんの稼ぎ×何試合ぶんか」で決めること。 */
@@ -2734,6 +2735,7 @@ function metaResetAll(){
  META.bres=[0,0,0];META.bup={};META.beq={};    /* 🚌バスの物資と永続強化(2026-08-02(44)) */
  META.bday=[];META.bnum=[];                    /* 🚌1日の回数(2026-08-02(58)) */
  META.chip=0;META.casIn=0;META.casP={};        /* 🎰(231)チップ・初回入場の印・景品の交換済み */
+ META.sltM=0;META.sltU=10;                     /* 🎰(237)スロットの持ちメダルと1枚あたりのチップ */
 }
 /* ⚠⚠**3への上げは「難易度と研究所だけ」戻す**(2026-08-01ユーザー選択)。
    理由=初期解放を2種に絞ったので `META.nt`/`META.nu`(BASE_T/BASE_U から数えた相対値)が
@@ -3575,6 +3577,11 @@ const SFXSYN={
    beep(f,f,.26,'triangle',.085);if(i>2)beep(f*2,f*2,.3,'sine',.03);},i*85));
   setTimeout(()=>{nzHit(4200,1800,.5,.05,1);SFXSYN.casPile();},480);},
  casLose:()=>{beep(220,110,.34,'triangle',.06);nzHit(420,150,.28,.035,2);},
+ /* 🎰(237)スロットの音。⚠**1ゲームに4回鳴る**(レバー+停止3つ)ので、どれも短く小さく */
+ sltLever:()=>{nzHit(900,260,.09,.06,2);beep(150,90,.10,'square',.05);},
+ sltStop:()=>{nzHit(1300,420,.05,.055,3);beep(260,170,.06,'square',.04);},
+ sltNav:()=>{beep(1180,1180,.07,'square',.045);setTimeout(()=>beep(1570,1570,.09,'square',.045),70);},
+ sltUp:()=>{const F=[784,988,1319];F.forEach((f,i)=>setTimeout(()=>beep(f,f,.14,'triangle',.06),i*70));},
  /* 🔩コッキング=**建設音(金属を組む音)を2枚**。引く→戻すの2拍にすると「機構」に聞こえる */
  geoCock:()=>{sfxRaw('build',.30,1.22,0);sfxRaw('build',.22,1.58,.085);},
  /* 🥉薬莢=**命中音を高く・ごく小さく**。⚠大きいと撃発を食う(1発ごとに鳴る) */
@@ -4143,6 +4150,10 @@ const SFX_LBL={
  casWin:['🎰当たり','明るい3音+チップの雨','ev'],
  casBig:['🎰大当たり','駆け上がる5音+鐘','ev'],
  casLose:['🎰はずれ','低く落ちる一音','ev'],
+ sltLever:['🎰スロットのレバー','ガコンと落ちる','ev'],
+ sltStop:['🎰リールが止まる','短いドン','ev'],
+ sltNav:['🎰ナビ・告知','高い2音(狙えの合図)','ev'],
+ sltUp:['🎰ゲーム数の上乗せ','駆け上がる3音','ev'],
  acidPop:['酸爆発','酸まみれの敵が倒れた','ev'],
  rainbow:['🌈虹のゾンビ撃破','タイトルで虹のゾンビを倒した','ev'],
  lobHit:['✨黄金のロブスター(叩く)','タイトルで金の殻を叩いた(金属音)','ev'],
@@ -7108,6 +7119,14 @@ function msnReady(){try{const M=msnDay();let n=0;
    遊びが変わる物・不具合の修正・新しい物だけ。**熱さ/軽さの対策・内部の直し・絵の実験の行き来は書かない**。
    ⚠この方針で(228l)に 0.011〜0.013 と 0.015〜0.016 の熱さ/絵の通は削った(版番号は詰めない)。 */
 const MAILS=[
+ {id:'m20',d:'2026-08-10',t:'アップデート',ver:'0.054',
+  b:'押すと変わった所が全部見られます',
+  list:['🎰賭場に「スロット」が入った(3台目)',
+   '💰チップでメダルを借りて回し、やめる時に精算してチップに戻す',
+   '🕹レバーを叩いて、リールは自分で3つ止める(当たっていれば多少ずれても揃います)',
+   '🧟屍の群れ(前哨戦)→🩸暴食ボーナス→☠飢餓(セットが続くほど増える)の3段構え',
+   '🩸「7を狙え」が出たら、7が揃うまで消えません(狙って止めてください)',
+   '🎡ルーレット=いま自分が押さえている数字が光るようにしました(回っている輪の上でも光ります)']},
  {id:'m19',d:'2026-08-10',t:'アップデート',ver:'0.044',
   b:'押すと変わった所が全部見られます',
   list:['🎰4つ目の土地のバスの道の横に「賭場」が開いた=🗺エリアマップで🚌拠点開拓を選ぶと入口が出る',
@@ -34996,8 +35015,24 @@ function rouPay(){
 const ROU_ORD=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 /* 🎡時間の割り(秒)=①溝の上を走る ②すり鉢を落ちる ③升へ吸われ始める ④収まる ⑤結果を出す */
 const ROU_T=[4.6,6.3,6.9,7.7,8.4];
+/* 🎡⭐⭐**いま自分が押さえている数字**(2026-08-10ユーザー指示
+     「自分が選んでる数字がハイライトされてわかるようにして欲しい / 回ってる時の輪の数字も」)=
+   ⭐赤に置いたら**赤の18個が全部光る**。台の上でも、回っている輪の上でも同じ色で光らせる。
+   ⚠**外側の賭け(赤・偶数・ダース…)は当たりの判定をそのまま使う**=表と光り方がずれない。 */
+function rouCov(){
+ const cov=new Array(37).fill(false);
+ if(!CAS||!CAS.bets)return cov;
+ for(const k in CAS.bets){
+  if(!CAS.bets[k])continue;
+  if(k.charAt(0)==='n'){const n=+k.slice(1);if(n>=0&&n<=36)cov[n]=true;continue;}
+  const o=ROU_OUT.find(x=>x.k===k)||ROU_DOZ.find(x=>x.k===k);
+  if(o)for(let n=0;n<=36;n++)if(o.w(n))cov[n]=true;}
+ return cov;
+}
+const ROU_HL='#ffd76a';/* 押さえている所の色(台と輪で同じ) */
 /* ⭐賭ける台を「与えられた四角の中いっぱい」に描く。big=大きい窓か(押せる所も返す) */
 function rouBoard(c,x0,y0,w,h,big){
+ const cov=rouCov();
  const gap=big?3:2,zw=w*.072,cw=(w-zw)/12;
  const rowH=h*(big?.155:.14),dh=h*(big?.2:.19),oh=h*(big?.26:.29);
  const gy=y0,dy=gy+rowH*3+h*.03,oy=dy+dh+h*.03;
@@ -35006,25 +35041,32 @@ function rouBoard(c,x0,y0,w,h,big){
   const col=((i-1)/3)|0,row=(i-1)%3;
   const x=x0+zw+col*cw,y=gy+row*rowH;
   c.fillStyle=rouRed(i)?'rgba(150,44,40,.92)':'rgba(24,20,16,.92)';
-  c.fillRect(x,y,cw-gap,rowH-gap);c.strokeStyle=CAS_LINE;c.lineWidth=big?2:1.4;
+  c.fillRect(x,y,cw-gap,rowH-gap);
+  if(cov[i]){c.fillStyle='rgba(255,215,106,.26)';c.fillRect(x,y,cw-gap,rowH-gap);}
+  c.strokeStyle=cov[i]?ROU_HL:CAS_LINE;c.lineWidth=cov[i]?(big?3.5:2.5):(big?2:1.4);
   c.strokeRect(x,y,cw-gap,rowH-gap);
-  casText(c,''+i,x+(cw-gap)/2,y+(rowH-gap)/2,fs);
+  casText(c,''+i,x+(cw-gap)/2,y+(rowH-gap)/2,fs,cov[i]?'#fff6d8':undefined);
   const b=CAS.bets['n'+i];if(b)casChips(c,x+cw-16,y+rowH-8,Math.ceil(b/CASBET),'#c9a13d');
   if(big)casHit(x,y,cw-gap,rowH-gap,()=>rouPut('n'+i));}
  c.fillStyle='rgba(47,107,58,.92)';c.fillRect(x0,gy,zw-gap,rowH*3-gap);
- c.strokeStyle=CAS_LINE;c.strokeRect(x0,gy,zw-gap,rowH*3-gap);
- casText(c,'0',x0+(zw-gap)/2,gy+rowH*1.5,fs*1.1);
+ if(cov[0]){c.fillStyle='rgba(255,215,106,.26)';c.fillRect(x0,gy,zw-gap,rowH*3-gap);}
+ c.strokeStyle=cov[0]?ROU_HL:CAS_LINE;c.lineWidth=cov[0]?3.5:2;
+ c.strokeRect(x0,gy,zw-gap,rowH*3-gap);
+ casText(c,'0',x0+(zw-gap)/2,gy+rowH*1.5,fs*1.1,cov[0]?'#fff6d8':undefined);
  if(CAS.bets.n0)casChips(c,x0+zw-16,gy+rowH*3-10,Math.ceil(CAS.bets.n0/CASBET),'#c9a13d');
  if(big)casHit(x0,gy,zw-gap,rowH*3-gap,()=>rouPut('n0'));
  ROU_DOZ.forEach((d,i)=>{const x=x0+zw+i*cw*4,ww=cw*4-gap;
   c.fillStyle='rgba(24,20,16,.8)';c.fillRect(x,dy,ww,dh);
-  c.strokeStyle=CAS_LINE;c.strokeRect(x,dy,ww,dh);
+  c.strokeStyle=CAS.bets[d.k]?ROU_HL:CAS_LINE;c.lineWidth=CAS.bets[d.k]?3.5:2;
+  c.strokeRect(x,dy,ww,dh);
   casText(c,d.n,x+ww/2,dy+dh/2,big?Math.min(22,dh*.46):Math.min(16,dh*.5));
   const b=CAS.bets[d.k];if(b)casChips(c,x+ww-22,dy+dh-6,Math.ceil(b/CASBET),'#c9a13d');
   if(big)casHit(x,dy,ww,dh,()=>rouPut(d.k));});
  ROU_OUT.forEach((o,i)=>{const ww=(cw*12)/6-gap,x=x0+zw+i*(cw*12)/6;
   c.fillStyle=o.k==='red'?'rgba(150,44,40,.88)':(o.k==='blk'?'rgba(20,17,14,.92)':'rgba(24,20,16,.78)');
-  c.fillRect(x,oy,ww,oh);c.strokeStyle=CAS_LINE;c.strokeRect(x,oy,ww,oh);
+  c.fillRect(x,oy,ww,oh);
+  c.strokeStyle=CAS.bets[o.k]?ROU_HL:CAS_LINE;c.lineWidth=CAS.bets[o.k]?3.5:2;
+  c.strokeRect(x,oy,ww,oh);
   casText(c,o.n,x+ww/2,oy+oh/2,big?Math.min(22,oh*.4):Math.min(15,oh*.46));
   const b=CAS.bets[o.k];if(b)casChips(c,x+ww-20,oy+oh-6,Math.ceil(b/CASBET),'#c9a13d');
   if(big)casHit(x,oy,ww,oh,()=>rouPut(o.k));});
@@ -35067,11 +35109,17 @@ function rouSpinWin(c){
  const gt=c.createRadialGradient(0,0,R*1.0,0,0,R*1.2);
  gt.addColorStop(0,'#241c14');gt.addColorStop(.5,'#100c09');gt.addColorStop(1,'#33261a');
  c.fillStyle=gt;c.beginPath();c.arc(0,0,R*1.18,0,7);c.fill();
- /* ③升(37)=本物の並び */
+ /* ③升(37)=本物の並び。⭐**押さえている升は明るく塗る**(2026-08-10ユーザー指示) */
+ const cov9=rouCov();
  for(let k=0;k<37;k++){
   const n=ROU_ORD[k],a=CAS.ang+k/37*6.2832;
   c.fillStyle=n===0?'#2f6b3a':(rouRed(n)?'#8c2b28':'#171310');
-  c.beginPath();c.moveTo(0,0);c.arc(0,0,R,a,a+6.2832/37);c.closePath();c.fill();}
+  c.beginPath();c.moveTo(0,0);c.arc(0,0,R,a,a+6.2832/37);c.closePath();c.fill();
+  if(cov9[n]){c.fillStyle='rgba(255,215,106,.30)';
+   c.beginPath();c.moveTo(0,0);c.arc(0,0,R,a,a+6.2832/37);c.closePath();c.fill();
+   /* 外周に金の輪=**押さえている升だけ縁が光る**(赤黒の色だけでは読み取りづらいため) */
+   c.strokeStyle=ROU_HL;c.lineWidth=R*.055;
+   c.beginPath();c.arc(0,0,R*.945,a+.012,a+6.2832/37-.012);c.stroke();}}
  /* 升の底の陰(外周ほど暗い=すり鉢に見える) */
  const gb=c.createRadialGradient(0,0,R*.34,0,0,R);
  gb.addColorStop(0,'rgba(0,0,0,0)');gb.addColorStop(1,'rgba(0,0,0,.5)');
@@ -35098,7 +35146,7 @@ function rouSpinWin(c){
   const n=ROU_ORD[k],am=CAS.ang+(k+.5)/37*6.2832;
   c.save();c.translate(Math.cos(am)*R*.82,Math.sin(am)*R*.82);c.rotate(am+1.5708);
   c.scale(1,1/SQ*.72);/* ⚠潰しを少し戻す=読めないほど潰れる */
-  casText(c,''+n,0,0,Math.max(11,R*.086),'#f2ecdc');c.restore();}
+  casText(c,''+n,0,0,Math.max(11,R*.086)*(cov9[n]?1.14:1),cov9[n]?'#fff3c8':'#f2ecdc');c.restore();}
  /* ⑥中央の塔(立体) */
  const gc=c.createRadialGradient(-R*.1,-R*.14,R*.04,0,0,R*.36);
  gc.addColorStop(0,'#d8bd7a');gc.addColorStop(.6,'#8a7448');gc.addColorStop(1,'#4a3c22');
@@ -35512,6 +35560,542 @@ function bacStep(dt){
  if(CAS.ph==='sq'&&bacDone()){CAS.ph='res';bacPay();}
 }
 
+/* ============ 🎰⭐⭐⭐スロット「飢餓のリール」(2026-08-10(237)ユーザー決定) ============
+   ⭐**賭場の3つ目**。⛔パチンコから振り替えた(横に長い窓とリール3つの相性が良い)。
+   ⭐**いまの台(6.5号機/スマスロ)の作りをそのまま写した**=
+     🌀通常 →(レア役/ゾーン/天井)→ 🧟**CZ**(6ゲームの前哨戦) →(成功)→ 🩸**ボーナス**
+     →(抽選)→ ☠**AT**(1セット10ゲーム・セット継続+ゲーム数上乗せ)。
+   ⭐**操作=レバー+自分で3つ止める**(ユーザー決定)。当たっていれば**4コマ以内に引き込む**ので
+     目押しが下手でも小役は取りこぼさない。⚠**7だけは目押しが要る**(成立したら揃うまで持ち越す)。
+   ⭐**お金**=💰台に**メダルを借りて**遊び、やめる時に**精算**してチップへ戻す(実機と同じ)。
+     ⚠**1ゲームごとにチップを触らない**=保存(saveMeta)が毎回走ると重いのと、
+       貸し借りを1か所にまとめた方が「いくら負けたか」が読めるため。
+   ⚠⚠**数字は実測で合わせる**=検査 checkSlot が20万ゲーム回して**戻り97%前後**を見張る。
+     ⭐つまみは下の SLT_ODD / SLT_CZ / SLT_BN / SLT_AT だけ。⚠ここ以外に数字を散らかさない。 */
+const S_R7=0,S_B7=1,S_BAR=2,S_BRN=3,S_MEAT=4,S_EYE=5,S_REP=6;
+const SLT_SYM=[{n:'血の7',c:'#c33a2e'},{n:'蒼の7',c:'#4f86cc'},{n:'BAR',c:'#c9b478'},
+ {n:'脳',c:'#d894ab'},{n:'肉',c:'#b0563c'},{n:'目',c:'#e4ddc9'},{n:'再',c:'#6cba79'}];
+const SLT_N=20;
+/* ⚠⚠**並びの掟**=🧠脳・🥩肉・👁目・☣再は**必ず5コマおき**に置く
+   (4コマ滑りで100%引き込める=**小役の取りこぼしが起きない**=戻りの計算が狂わない)。
+   ⭐7とBARだけ間を空ける=**目押しの意味**。⚠検査 checkSlot が間隔を見張っている。 */
+const SLT_REEL=[
+ [S_BRN,S_MEAT,S_EYE,S_REP,S_R7,  S_BRN,S_MEAT,S_EYE,S_REP,S_BAR, S_BRN,S_MEAT,S_EYE,S_REP,S_B7,  S_BRN,S_MEAT,S_EYE,S_REP,S_R7],
+ [S_MEAT,S_EYE,S_REP,S_BRN,S_B7,  S_MEAT,S_EYE,S_REP,S_BRN,S_R7,  S_MEAT,S_EYE,S_REP,S_BRN,S_BAR, S_MEAT,S_EYE,S_REP,S_BRN,S_R7],
+ [S_EYE,S_REP,S_BRN,S_MEAT,S_BAR, S_EYE,S_REP,S_BRN,S_MEAT,S_R7,  S_EYE,S_REP,S_BRN,S_MEAT,S_B7,  S_EYE,S_REP,S_BRN,S_MEAT,S_R7]];
+const SLT_BET=3;                  /* 1ゲームの投入(枚) */
+const SLT_ODD={rep:7.3,eye:24,meat:32,cha:64,brn:9,d7:700,db7:500};/* 1/x(d7=血7の直撃・db7=蒼7) */
+const SLT_PAY={brn:8,meat:5,eye:2};/* 小役の払い(枚) */
+/* 🧟CZ=レア役から入る前哨戦。zone=何ゲームごとの節目か / ceil=天井(CZ間) */
+const SLT_CZ={eye:.06,meat:.20,cha:.60,zone:20,zoneP:.08,ceil:120,g:6,n:'屍の群れ'};
+/* 🩸ボーナス=**7を揃えて始まる**。g=ゲーム数 / pay=毎ゲームの払い(純増=pay-3) / at=終了時のAT当選率 */
+const SLT_BN={r7:{n:'大暴食',g:8,pay:11,at:.45,c:'#c33a2e'},b7:{n:'暴食',g:4,pay:11,at:.20,c:'#4f86cc'}};
+/* ☠AT=1セット10ゲーム。継続率は**入った時に1回だけ抽選**(50%/75%/90%。ユーザー決定の重み) */
+const SLT_ATC=[[.50,.50],[.75,.30],[.90,.20]];
+const SLT_AT={g:10,n:'飢餓',up:{eye:[2,.20],meat:[5,.50],cha:[5,1]}};/* up=[上乗せG,当選率] */
+const SLT_SLOT_N='飢餓のリール';  /* 台の名前(液晶の見出し) */
+const SLT_GASE=1/14;              /* はずれの時に7を2つ止める(ガセのリーチ)割合 */
+const SLT_UNIT=[2,10,50,200];     /* 1枚あたりのチップ(⚠1ゲーム=3枚なので最大600=上限1000の中) */
+let SLTU=10;                      /* いまの1枚あたりのチップ */
+const sltUnit=()=>SLTU;
+const sltCost=()=>SLT_BET*SLTU;
+/* ---- 🎰台に座る ----
+   ⚠⚠**メダルの貸し借りは台の中でやらない**(2026-08-10ユーザー指示
+     「メダルを借りるのは全部事前に借りるようにしよう。カジノ全部ね」)=
+   ⭐**ロビーの「💰メダル」で先に借りておく**。台の下の帯は**レバーと停止だけ**にする。 */
+function sltStart(){
+ SLTU=SLT_UNIT.indexOf(META.sltU|0)>=0?(META.sltU|0):10;
+ CAS={g:'slot',ph:'idle',st:'norm',med:META.sltM|0,role:'',hold:'',rep:0,gase:0,
+  g0:META.sltG0|0,czG:0,bn:null,at:null,atRet:0,win:0,got:0,msg:'',rch:0,cut:0,
+  cutH:(Math.random()*HEROES.length)|0,
+  pop:[],flash:0,lamp:0,t:0,hist:[],
+  /* 🎬液晶=歩くゾンビ/斬撃/英雄の位置。⚠**最初から2体置いておく**=座った瞬間から映像が動く */
+  zw:[{zi:1,x:.55,y:.88,sp:.12,d:0,t:.4},{zi:4,x:.88,y:.95,sp:.10,d:0,t:1.9}],
+  spT:1.4,slash:0,hx:-.30,hact:0,
+  r:[{p:0,v:0,run:0,tp:0,d:0},{p:7,v:0,run:0,tp:0,d:0},{p:13,v:0,run:0,tp:0,d:0}]};
+ CASM='';
+}
+function sltSave(){if(CAS&&CAS.g==='slot'){META.sltM=CAS.med|0;META.sltG0=CAS.g0|0;}
+ META.sltU=SLTU;saveMeta();}
+/* 💰メダルの残り(台に座っていない時はセーブの値が正) */
+const sltMed=()=>(CAS&&CAS.g==='slot')?CAS.med:(META.sltM|0);
+function sltBorrow(n){
+ const cost=n*SLTU;
+ if(casChip()<cost){toast('🪙が足りない(🪙'+cost+'要る)');if(sfx.warn)sfx.warn();return;}
+ casAdd(-cost);META.sltM=(META.sltM|0)+n;
+ if(CAS&&CAS.g==='slot')CAS.med=META.sltM;
+ saveMeta();casS('casChip');casRender();
+}
+function sltCash(){
+ const m=sltMed();if(m<=0){toast('精算するメダルが無い');return;}
+ const g9=m*SLTU;META.sltM=0;if(CAS&&CAS.g==='slot')CAS.med=0;
+ casAdd(g9);saveMeta();toast('💰 🪙'+g9.toLocaleString()+' を受け取った');casS('casPile');casRender();
+}
+function sltSetUnit(u){
+ if(sltMed()>0){toast('先に精算する(メダルが残っている)');return;}
+ SLTU=u;META.sltU=u;saveMeta();casRender();
+}
+/* ---- 🎲抽選(⚠**ここだけが確率の正**) ---- */
+function sltRoll(){
+ if(CAS.st==='bn')return 'brn';                       /* ボーナス中は毎ゲーム脳が揃う */
+ if(!CAS.hold){                                       /* 7の直撃(持ち越しが無い時だけ) */
+  if(Math.random()<1/SLT_ODD.d7)CAS.hold='r7';
+  else if(Math.random()<1/SLT_ODD.db7)CAS.hold='b7';}
+ const x=Math.random();let a=1/SLT_ODD.rep;
+ if(x<a)return 'rep';
+ a+=1/SLT_ODD.eye;  if(x<a)return 'eye';
+ a+=1/SLT_ODD.meat; if(x<a)return 'meat';
+ a+=1/SLT_ODD.cha;  if(x<a)return 'cha';
+ /* ⭐**AT中は残り全部が脳**(押し順ナビで毎ゲーム取れる)=これがATの純増の正体 */
+ a+=(CAS.st==='at')?1:(1/SLT_ODD.brn); if(x<a)return 'brn';
+ return CAS.hold||'lose';
+}
+const sltRare=k=>k==='eye'||k==='meat'||k==='cha';
+/* ---- 🎯引き込み(4コマ以内) ---- */
+function sltDesire(i){
+ const R=CAS.role;
+ if(R==='rep')return S_REP;
+ if(R==='brn')return S_BRN;
+ if(R==='meat')return S_MEAT;
+ if(R==='eye')return i===0?S_EYE:-1;                  /* 👁は左だけで成立(角チェリー) */
+ if(R==='cha')return [S_MEAT,S_EYE,S_REP][i];         /* チャンス目=決まった並び */
+ if(R==='r7')return S_R7;
+ if(R==='b7')return S_B7;
+ if(CAS.gase&&i<2)return S_R7;                        /* ガセのリーチ */
+ return -1;
+}
+/* いま中段に見えているコマ(止まっているリールだけ) */
+function sltCen(i){const r=CAS.r[i];return r.run?-1:SLT_REEL[i][((Math.round(r.p)%SLT_N)+SLT_N)%SLT_N];}
+/* ⚠**役が揃ってしまわない所か**=誤爆(狙っていない役の成立)を防ぐ最後の柵 */
+function sltSafe(i,p){
+ const s=SLT_REEL[i][p];
+ if(CAS.role==='eye'){if(i>0&&s===S_EYE)return false;}
+ else if(i===0&&s===S_EYE)return false;               /* 角チェリーの誤爆 */
+ const L=[sltCen(0),sltCen(1),sltCen(2)];L[i]=s;
+ if(L[0]>=0&&L[1]>=0&&L[2]>=0){
+  if(L[0]===L[1]&&L[1]===L[2])return false;           /* 3つ揃いの誤爆 */
+  if(L[0]===S_MEAT&&L[1]===S_EYE&&L[2]===S_REP)return false;/* チャンス目の誤爆 */
+ }
+ return true;
+}
+function sltPick(i,cur){
+ const want=sltDesire(i);
+ if(want>=0)for(let s=0;s<=4;s++){const p=((cur+s)%SLT_N+SLT_N)%SLT_N;
+  if(SLT_REEL[i][p]===want)return cur+s;}
+ for(let s=0;s<=4;s++){const p=((cur+s)%SLT_N+SLT_N)%SLT_N;if(sltSafe(i,p))return cur+s;}
+ return cur;
+}
+/* ---- 🕹レバーと停止 ---- */
+function sltLever(){
+ if(!CAS||CAS.ph!=='idle')return;
+ if(!CAS.rep&&CAS.med<SLT_BET){CASM='⚠メダルが足りない=「← 戻る」→ 両替所で借りる';
+  if(sfx.warn)sfx.warn();return;}
+ if(!CAS.rep)CAS.med-=SLT_BET;
+ CAS.role=sltRoll();CAS.win=0;CAS.rch=0;CAS.cut=0;CASM='';
+ CAS.gase=(CAS.role==='lose'&&!CAS.hold&&Math.random()<SLT_GASE)?1:0;
+ CAS.ph='spin';CAS.t=0;
+ for(let i=0;i<3;i++){const r=CAS.r[i];r.run=1;r.v=22;r.tp=0;r.d=0;}
+ if(CAS.hold)casS('sltNav');else casS('sltLever');
+ if(sltRare(CAS.role))CAS.flash=.35;/* ⭐当たりの匂わせ(斬るのは揃った時) */
+}
+function sltStopReel(i){
+ if(!CAS||CAS.ph!=='spin')return;
+ const r=CAS.r[i];
+ if(!r.run||r.tp||CAS.t<.3)return;                    /* ⚠**0.3秒は止められない**(実機と同じ) */
+ const cur=Math.ceil(r.p);
+ r.tp=sltPick(i,cur);r.d=.09+(r.tp-cur)*.035;r.t0=0;r.p0=r.p;
+}
+/* ---- 🧮判定 ---- */
+function sltHand(){
+ const L=[sltCen(0),sltCen(1),sltCen(2)];
+ if(L[0]===L[1]&&L[1]===L[2]){
+  if(L[0]===S_REP)return{k:'rep',pay:0};
+  if(L[0]===S_BRN)return{k:'brn',pay:CAS.st==='bn'?SLT_BN[CAS.bn.k].pay:SLT_PAY.brn};
+  if(L[0]===S_MEAT)return{k:'meat',pay:SLT_PAY.meat};
+  if(L[0]===S_R7)return{k:'r7',pay:0};
+  if(L[0]===S_B7)return{k:'b7',pay:0};
+ }
+ if(L[0]===S_EYE)return{k:'eye',pay:SLT_PAY.eye};
+ if(L[0]===S_MEAT&&L[1]===S_EYE&&L[2]===S_REP)return{k:'cha',pay:0};
+ return{k:'lose',pay:0};
+}
+function sltPop(txt,col){CAS.pop.push({t:0,x:txt,c:col||'#f0d79a'});
+ while(CAS.pop.length>6)CAS.pop.shift();/* ⚠検査は絵を回さないので、ここで必ず捨てる */}
+function sltJudge(){
+ const H=sltHand();
+ CAS.rep=(H.k==='rep')?1:0;
+ if(H.pay>0){CAS.med+=H.pay;CAS.win=H.pay;CAS.got+=H.pay;casS('casPile');}
+ else CAS.win=0;
+ CAS.hist.push(H.k);if(CAS.hist.length>40)CAS.hist.shift();
+ if(sltRare(H.k)&&CAS.zw)sltFxSlash();/* 🎬レア役=液晶で1体斬る */
+ /* 🩸7が揃った=ボーナス開始(⚠持ち越しはここで消える) */
+ if(H.k==='r7'||H.k==='b7'){
+  CAS.hold='';CAS.atRet=(CAS.st==='at')?1:0;
+  CAS.st='bn';CAS.bn={k:H.k,g:SLT_BN[H.k].g,got:0};CAS.got=0;
+  CASM='';sltPop('🩸 '+SLT_BN[H.k].n+' 開始','#f0c86a');casS('casBig');CAS.flash=1;
+  sltSave();return;}
+ if(CAS.st==='bn'){                                   /* ボーナス消化 */
+  CAS.bn.got+=H.pay;CAS.bn.g--;
+  if(CAS.bn.g<=0)sltBnEnd();
+  return;}
+ if(CAS.st==='at'){sltAtGame(H);return;}
+ if(CAS.st==='cz'){sltCzGame(H);return;}
+ sltNormGame(H);
+}
+/* 🌀通常時=CZを引きに行くだけの時間。⚠**ゲーム数はリプレイでも進む**(実機と同じ) */
+function sltNormGame(H){
+ CAS.g0++;
+ let hit=0;
+ if(sltRare(H.k)&&Math.random()<SLT_CZ[H.k])hit=1;
+ else if(CAS.g0%SLT_CZ.zone===0&&Math.random()<SLT_CZ.zoneP)hit=1;
+ if(CAS.g0>=SLT_CZ.ceil)hit=1;                        /* 天井 */
+ if(hit)sltCzIn();
+ else if(sltRare(H.k)){CASM='';sltPop(H.k==='cha'?'チャンス目':(H.k==='meat'?'🥩':'👁'),'#cfd6c0');}
+}
+function sltCzIn(){
+ CAS.st='cz';CAS.czG=SLT_CZ.g;CAS.g0=0;
+ sltPop('🧟 '+SLT_CZ.n+' 突入','#8fd08a');casS('casWin');CAS.flash=1;
+}
+/* 🧟CZ=6ゲームの間にレア役を引けば成功(=ボーナス確定)。⚠成功しても**7は自分で狙う** */
+function sltCzGame(H){
+ CAS.czG--;
+ if(sltRare(H.k)){
+  CAS.st='norm';CAS.czG=0;
+  CAS.hold=Math.random()<.5?'r7':'b7';
+  sltPop('🩸 '+SLT_BN[CAS.hold].n+' 確定','#f0c86a');casS('casBig');CAS.flash=1;casS('sltNav');
+  return;}
+ if(CAS.czG<=0){CAS.st='norm';sltPop('失敗…','#a09080');casS('casLose');}
+}
+/* 🩸ボーナスの終わり=ATの当落。⚠ATから来ていた時は必ず戻す(消化中は減らない) */
+function sltBnEnd(){
+ const B=SLT_BN[CAS.bn.k],got=CAS.bn.got;
+ CAS.bn=null;
+ if(CAS.atRet){CAS.atRet=0;CAS.st='at';sltPop('☠ '+SLT_AT.n+' へ戻る','#e08a8a');return;}
+ if(Math.random()<B.at){sltAtIn();}
+ else{CAS.st='norm';sltPop('+'+got+'枚 で終了','#cbbf9e');}
+}
+function sltAtIn(){
+ let x=Math.random(),c=SLT_ATC[0][0];
+ for(const e of SLT_ATC){if(x<e[1]){c=e[0];break;}x-=e[1];}
+ CAS.st='at';CAS.at={g:SLT_AT.g,set:1,cont:c,got:0};
+ sltPop('☠ '+SLT_AT.n+' 突入','#e0604a');casS('casBig');CAS.flash=1;sltSave();
+}
+/* ☠AT=1セット10ゲーム。レア役でゲーム数の上乗せ / セットの終わりで継続抽選 */
+function sltAtGame(H){
+ CAS.at.got+=H.pay;
+ if(sltRare(H.k)){const u=SLT_AT.up[H.k];
+  if(u&&Math.random()<u[1]){CAS.at.g+=u[0];sltPop('+'+u[0]+'G','#f0d79a');casS('sltUp');}}
+ CAS.at.g--;
+ if(CAS.at.g>0)return;
+ if(Math.random()<CAS.at.cont){
+  CAS.at.set++;CAS.at.g=SLT_AT.g;
+  sltPop('☠ '+CAS.at.set+'セット目','#e0604a');casS('casWin');CAS.flash=.8;
+ }else{
+  sltPop('+'+CAS.at.got+'枚 で終了','#cbbf9e');casS('casLose');
+  CAS.st='norm';CAS.at=null;CAS.g0=0;sltSave();}
+}
+/* ---- ⏱動き ---- */
+function sltStep(dt){
+ CAS.t+=dt;
+ sltFxStep(dt);/* 🎬液晶の映像 */
+ if(CAS.flash>0)CAS.flash=Math.max(0,CAS.flash-dt*1.6);
+ for(const p of CAS.pop)p.t+=dt;
+ while(CAS.pop.length&&CAS.pop[0].t>1.8)CAS.pop.shift();
+ if(CAS.cut>0)CAS.cut=Math.max(0,CAS.cut-dt);
+ if(CAS.ph!=='spin')return;
+ let run=0;
+ for(let i=0;i<3;i++){const r=CAS.r[i];if(!r.run)continue;run++;
+  if(!r.tp){r.p+=r.v*dt;continue;}
+  r.t0+=dt;const u=Math.min(1,r.t0/r.d),e=1-(1-u)*(1-u);
+  r.p=r.p0+(r.tp-r.p0)*e;
+  if(u>=1){r.p=r.tp;r.run=0;r.tp=0;casS('sltStop');
+   /* 🔥リーチ=7が2つ揃った=最後の1つをゆっくりにしてカットイン */
+   const L=[sltCen(0),sltCen(1),sltCen(2)];
+   const two=(L[0]>=0&&L[0]===L[1]&&(L[0]===S_R7||L[0]===S_B7));
+   if(two&&L[2]<0){CAS.rch=L[0]+1;CAS.r[2].v=7;CAS.cut=1.1;CAS.cutH=(Math.random()*HEROES.length)|0;casS('sltNav');}
+  }}
+ if(run&&!CAS.r[0].run&&!CAS.r[1].run&&!CAS.r[2].run){CAS.ph='idle';sltJudge();
+  if((CAS.g0%20)===0)sltSave();}
+}
+/* ⭐**検査と自動運転のための1ゲーム**=完全な目押しで回す(絵も時間も使わない)。
+   ⚠⚠これが**戻り(RTP)の実測**の土台。play側と同じ関数を通すこと(別勘定を作らない) */
+function sltAuto(){
+ if(!CAS||CAS.ph!=='idle')return;
+ if(!CAS.rep&&CAS.med<SLT_BET)CAS.med+=10000;
+ if(!CAS.rep)CAS.med-=SLT_BET;
+ CAS.role=sltRoll();CAS.win=0;CAS.gase=0;
+ for(let i=0;i<3;i++){CAS.r[i].run=1;CAS.r[i].tp=0;}
+ for(let i=0;i<3;i++){
+  const want=sltDesire(i);let put=-1;
+  if(want>=0){for(let p=0;p<SLT_N;p++)if(SLT_REEL[i][p]===want){put=p;break;}}
+  if(put<0){for(let p=0;p<SLT_N;p++)if(sltSafe(i,p)){put=p;break;}}
+  CAS.r[i].p=put;CAS.r[i].run=0;}
+ sltJudge();
+}
+/* ============ 🎰スロットの絵 ============
+   ⭐**左=液晶(演出)/右=リール3つ**。⚠横に長い窓なので、縦に積まない。 */
+function sltSymDraw(c,k,x,y,w,h){
+ /* ⚠**コマは横に長い**(リールの帯)ので、min(w,h) だと図柄が豆粒になる=高さ基準で大きくする */
+ const cx=x+w/2,cy=y+h/2,S=Math.min(w*.55,h*1.3);
+ if(k===S_R7||k===S_B7){
+  const col=k===S_R7?'#d0402f':'#4f86cc';
+  c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=S*.22;
+  c.beginPath();c.moveTo(cx-S*.24,cy-S*.28);c.lineTo(cx+S*.26,cy-S*.28);c.lineTo(cx-S*.02,cy+S*.32);c.stroke();
+  c.strokeStyle=col;c.lineWidth=S*.16;
+  c.beginPath();c.moveTo(cx-S*.24,cy-S*.28);c.lineTo(cx+S*.26,cy-S*.28);c.lineTo(cx-S*.02,cy+S*.32);c.stroke();
+  c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=S*.045;
+  c.beginPath();c.moveTo(cx-S*.22,cy-S*.32);c.lineTo(cx+S*.2,cy-S*.32);c.stroke();
+  if(k===S_R7){c.fillStyle='#8d1f18';/* 滴る血 */
+   for(const d of[[-.16,.34,.05],[.06,.42,.038]]){
+    c.beginPath();c.ellipse(cx+S*d[0],cy+S*d[1],S*d[2],S*d[2]*1.5,0,0,7);c.fill();}}
+  return;}
+ if(k===S_BAR){
+  c.fillStyle='#20180f';casRR(c,cx-S*.34,cy-S*.17,S*.68,S*.34,S*.05);c.fill();
+  c.fillStyle='#c9b478';casRR(c,cx-S*.31,cy-S*.14,S*.62,S*.28,S*.04);c.fill();
+  c.fillStyle='#6b5a30';casRR(c,cx-S*.31,cy+S*.04,S*.62,S*.10,S*.03);c.fill();
+  casText(c,'BAR',cx,cy-S*.03,S*.19,'#2a2114');return;}
+ if(k===S_BRN){
+  c.fillStyle='#8a4a5c';c.beginPath();c.ellipse(cx,cy+S*.03,S*.30,S*.25,0,0,7);c.fill();
+  c.fillStyle='#d894ab';c.beginPath();c.ellipse(cx-S*.13,cy-S*.02,S*.17,S*.20,0,0,7);c.fill();
+  c.beginPath();c.ellipse(cx+S*.13,cy-S*.02,S*.17,S*.20,0,0,7);c.fill();
+  c.strokeStyle='#a35c74';c.lineWidth=S*.045;
+  for(const s of[-1,1])for(let q=0;q<2;q++){
+   c.beginPath();c.arc(cx+s*S*.13,cy-S*.06+q*S*.12,S*.09,.2,3.0);c.stroke();}
+  c.fillStyle='#5f2f3c';c.fillRect(cx-S*.015,cy-S*.2,S*.03,S*.4);return;}
+ if(k===S_MEAT){
+  /* ⚠**骨は短く太く**=長く細いと飴玉に見える(1回そうなった)。肉の陰から少しだけ出す */
+  c.strokeStyle='#e6ddc6';c.lineWidth=S*.10;
+  c.beginPath();c.moveTo(cx+S*.06,cy+S*.06);c.lineTo(cx+S*.26,cy+S*.22);c.stroke();
+  c.fillStyle='#efe7d4';
+  c.beginPath();c.arc(cx+S*.30,cy+S*.18,S*.065,0,7);c.fill();
+  c.beginPath();c.arc(cx+S*.24,cy+S*.29,S*.065,0,7);c.fill();
+  c.fillStyle='#5e2519';c.beginPath();c.ellipse(cx-S*.04,cy-S*.01,S*.32,S*.26,-.25,0,7);c.fill();
+  c.fillStyle='#a84f38';c.beginPath();c.ellipse(cx-S*.04,cy-S*.03,S*.29,S*.23,-.25,0,7);c.fill();
+  c.fillStyle='#d9836a';c.beginPath();c.ellipse(cx-S*.10,cy-S*.08,S*.13,S*.10,-.25,0,7);c.fill();
+  c.fillStyle='rgba(255,255,255,.22)';c.beginPath();c.ellipse(cx-S*.13,cy-S*.11,S*.06,S*.04,-.25,0,7);c.fill();
+  return;}
+ if(k===S_EYE){
+  c.fillStyle='#e8e2d0';c.beginPath();c.ellipse(cx,cy,S*.30,S*.22,0,0,7);c.fill();
+  c.strokeStyle='#a8342c';c.lineWidth=S*.022;
+  for(let q=0;q<5;q++){const a=q*1.26+.4;
+   c.beginPath();c.moveTo(cx+Math.cos(a)*S*.08,cy+Math.sin(a)*S*.06);
+   c.lineTo(cx+Math.cos(a)*S*.28,cy+Math.sin(a)*S*.20);c.stroke();}
+  c.fillStyle='#3d6b4a';c.beginPath();c.arc(cx,cy,S*.12,0,7);c.fill();
+  c.fillStyle='#120e0a';c.beginPath();c.arc(cx,cy,S*.055,0,7);c.fill();
+  c.fillStyle='rgba(255,255,255,.7)';c.beginPath();c.arc(cx-S*.05,cy-S*.06,S*.03,0,7);c.fill();return;}
+ /* ☣再遊技 */
+ c.strokeStyle='#2a4a30';c.lineWidth=S*.05;c.fillStyle='#6cba79';
+ for(let q=0;q<3;q++){const a=q*2.094-1.5708;
+  c.beginPath();c.arc(cx+Math.cos(a)*S*.15,cy+Math.sin(a)*S*.15,S*.13,0,7);c.fill();c.stroke();}
+ c.fillStyle='#152018';c.beginPath();c.arc(cx,cy,S*.075,0,7);c.fill();
+}
+/* 🎬⭐⭐⭐**液晶に流す演出**(2026-08-10ユーザー決定「コードで動かそう」)。
+   ⚠⚠**液晶は表示板ではない**=**映像が流れて期待感を作る所**(ユーザー指摘「液晶って何かわかってる?」)。
+     ⭐だから**上半分は丸ごと液晶にして、リールはその下の帯へ下ろした**(前は液晶の真ん中に
+       リールを置いたので、左右の細い余白しか残らず「ただの表示板」になっていた)。
+   ⭐流す物5つ=①通常はゾンビが1体ずつ横切る ②レア役で白く弾けて斬撃
+     ③🧟屍の群れは群れが速く迫る ④告知/リーチは英雄が寄る ⑤ボーナス/ATは英雄が斬り続ける。
+   ⭐**絵は既にある物(ゾンビと英雄)をそのまま動かす**=新しい素材は要らない。
+   ⚠**位置は0〜1の割合で持つ**=液晶の大きさが変わっても崩れない。 */
+const SLT_ZI=[0,1,2,4,5];/* 液晶に出すゾンビ(小柄で読みやすい顔ぶれだけ) */
+let SLT_ERR=0;             /* 一度でも描けなかったら止める(毎フレーム例外を出さない) */
+function sltFxTry(f){if(SLT_ERR)return;
+ try{f();}catch(e9){SLT_ERR=1;if(DEV&&window.console)console.warn('液晶の絵が描けない',e9);}}
+/* 🧟レア役=白く弾けて、いちばん手前の1体を斬る */
+function sltFxSlash(){
+ CAS.slash=1;CAS.flash=Math.max(CAS.flash,.6);
+ let best=null;for(const z of CAS.zw)if(!z.d&&(!best||z.x<best.x))best=z;
+ if(best)best.d=.001;
+}
+/* 📷撮影の道具から呼ぶ=**何コマか手で進める**(撮影ではアニメの輪が回らない) */
+function sltFx(n){for(let q=0;q<n;q++)sltFxStep(1/30);}
+function sltFxStep(dt){
+ const st=CAS.st,rush=(st==='cz');
+ const hero=(st==='at'||st==='bn'||CAS.cut>0||CAS.hold);
+ CAS.hx+=((hero?.14:-.30)-CAS.hx)*Math.min(1,dt*3.2);
+ CAS.spT-=dt;
+ const want=rush?8:(hero?4:2);
+ if(CAS.spT<=0&&CAS.zw.length<want){
+  CAS.spT=rush?.38:(hero?.75:2.1);
+  CAS.zw.push({zi:SLT_ZI[(Math.random()*SLT_ZI.length)|0],x:1.1+Math.random()*.2,
+   y:.84+Math.random()*.11,sp:.10+Math.random()*.07,d:0,t:Math.random()*3});}
+ for(const z of CAS.zw){
+  z.t+=dt;
+  if(z.d>0){z.d+=dt;z.x+=dt*.35;continue;}
+  z.x-=z.sp*dt*(rush?2.2:1);
+  if(hero&&z.x<CAS.hx+.09){z.d=.001;CAS.hact=.28;CAS.slash=Math.max(CAS.slash,.8);}}
+ CAS.zw=CAS.zw.filter(z=>z.x>-.3&&z.d<1.1);
+ if(CAS.hact>0)CAS.hact=Math.max(0,CAS.hact-dt);
+ if(CAS.slash>0)CAS.slash=Math.max(0,CAS.slash-dt*2.4);
+}
+/* 📺液晶=**上半分いっぱい**。ここに映像が流れる */
+function sltLcd(c,x,y,w,h){
+ const st=CAS.st;
+ c.fillStyle='#07090a';casRR(c,x,y,w,h,8);c.fill();
+ c.save();c.beginPath();casRR(c,x,y,w,h,8);c.clip();
+ const g=c.createLinearGradient(0,y,0,y+h);
+ const bg=st==='at'?['#5a1414','#100606']:(st==='bn'?['#553a08','#100b04']:
+   (st==='cz'?['#0f4520','#050c07']:['#16212a','#070a0c']));
+ g.addColorStop(0,bg[0]);g.addColorStop(1,bg[1]);
+ c.fillStyle=g;c.fillRect(x,y,w,h);
+ /* 🌕赤い月と廃ビル(奥) */
+ c.fillStyle=st==='at'?'rgba(255,120,90,.22)':'rgba(220,150,90,.16)';
+ c.beginPath();c.arc(x+w*.78,y+h*.30,h*.30,0,7);c.fill();
+ c.fillStyle='rgba(0,0,0,.55)';
+ for(let q=0;q<18;q++){const bw9=w*.048,bh9=h*(.22+((q*13)%7)*.055);
+  c.fillRect(x+w*.005+q*w*.0555,y+h-bh9,bw9,bh9);}
+ c.fillStyle='rgba(0,0,0,.30)';c.fillRect(x,y+h*.86,w,h*.14);/* 地面 */
+ /* 🧟ゾンビ(手前)=**既存の絵をそのまま動かす** */
+ const k=h/210;/* ⚠大きすぎると液晶が埋まる=歩いているのが見えるくらいに小さく */
+ for(const z of CAS.zw)sltFxTry(()=>{
+  c.save();c.translate(x+z.x*w,y+z.y*h);
+  if(z.d>0){c.rotate(Math.min(1.4,z.d*3));c.globalAlpha=Math.max(0,1-z.d);}
+  c.scale(k,k);drawZombie(c,z.zi,0,0,-1,z.t,0,{});c.restore();});
+ /* 🦸英雄(左)=ボーナス・AT・リーチの時だけ寄ってくる */
+ if(CAS.hx>-.25)sltFxTry(()=>{
+  const hk=k*1.25,sw=CAS.hact>0?(1-CAS.hact/.28):0;
+  c.save();c.translate(x+CAS.hx*w,y+h*.92);c.rotate(-.25*Math.sin(sw*3.14));
+  c.scale(hk,hk);drawUnitAs(c,HERO_I0+CAS.cutH,UNITS[HERO_I0+CAS.cutH]);c.restore();});
+ /* ⚔斬撃(白い弧) */
+ if(CAS.slash>0){
+  const a=CAS.slash;c.save();c.globalAlpha=Math.min(1,a);
+  c.strokeStyle='#fff6e0';c.lineWidth=h*.045*a;
+  c.beginPath();c.arc(x+w*(CAS.hx+.16),y+h*.60,h*.42,-1.1,.9);c.stroke();
+  c.strokeStyle='rgba(255,120,90,.7)';c.lineWidth=h*.016*a;
+  c.beginPath();c.arc(x+w*(CAS.hx+.16),y+h*.60,h*.50,-1.0,.8);c.stroke();
+  c.restore();}
+ if(CAS.flash>0){c.fillStyle='rgba(255,244,214,'+(CAS.flash*.42).toFixed(3)+')';c.fillRect(x,y,w,h);}
+ /* 見出し=状態の名前(ここだけ大きく) */
+ const T=Math.max(16,h*.20);
+ let ttl='',tc='#c9b98a';
+ if(st==='at'){ttl='☠ '+SLT_AT.n+'  '+CAS.at.set+'セット目';tc='#ff8a6a';}
+ else if(st==='bn'){ttl='🩸 '+SLT_BN[CAS.bn.k].n;tc='#ffca6a';}
+ else if(st==='cz'){ttl='🧟 '+SLT_CZ.n;tc='#9fe0a0';}
+ else if(CAS.hold){ttl=(CAS.hold==='r7'?'血の7':'蒼の7')+' を狙え';
+  tc=(Math.floor(CAST*4)%2)?'#f0c86a':'#fff2c8';}
+ else ttl=SLT_SLOT_N;
+ casText(c,ttl,x+w/2,y+h*.15,T,tc);
+ if(CAS.cut>0)casText(c,'喰らえ!',x+w*.72,y+h*.44,Math.max(16,h*.22),'#ffca6a');
+ /* 浮かぶ札(上乗せ・突入)=液晶の真ん中で弾ける */
+ CAS.pop.forEach((p,q)=>{const a=1-Math.max(0,(p.t-1.1)/.7);
+  if(a<=0)return;c.globalAlpha=a;
+  const sc=1+Math.max(0,.5-p.t)*.8;
+  casText(c,p.x,x+w/2,y+h*.55-q*h*.17-p.t*8,Math.max(14,h*.19*sc),p.c);c.globalAlpha=1;});
+ c.restore();
+ c.strokeStyle='#4a3a26';c.lineWidth=3;casRR(c,x,y,w,h,8);c.stroke();
+}
+/* 🔢リール帯の左右に出す数字(⚠液晶には数字を並べない=映像の邪魔になる) */
+function sltBandTxt(c,x,y,w,h,ix,iw){
+ const st=CAS.st;
+ const lx=x+(ix-x)/2,rx=ix+iw+(x+w-ix-iw)/2,my=y+h/2;
+ const sub=Math.max(10,h*.14),num=Math.max(14,h*.26);
+ if(st==='at'){
+  casText(c,'のこり',lx,my-h*.17,sub,'#cbbf9e');casText(c,CAS.at.g+' G',lx,my+h*.11,num,'#f0d79a');
+  casText(c,'+'+CAS.at.got+' 枚',rx,my,Math.max(15,h*.30),'#ffd98a');
+ }else if(st==='bn'){
+  casText(c,'のこり',lx,my-h*.17,sub,'#cbbf9e');casText(c,CAS.bn.g+' G',lx,my+h*.11,num,'#f0d79a');
+  casText(c,'+'+CAS.bn.got+' 枚',rx,my,Math.max(15,h*.30),'#ffd98a');
+ }else if(st==='cz'){
+  casText(c,'のこり',lx,my-h*.17,sub,'#cbbf9e');casText(c,CAS.czG+' G',lx,my+h*.11,num,'#9fe0a0');
+  casText(c,'レア役で',rx,my-h*.15,sub,'#cbbf9e');casText(c,'ボーナス',rx,my+h*.12,num,'#9fe0a0');
+ }else if(CAS.hold){
+  casText(c,'揃うまで',lx,my-h*.15,sub,'#cbbf9e');casText(c,'消えない',lx,my+h*.12,num,'#f0d79a');
+  casText(c,'⇩ 狙え',rx,my,Math.max(15,h*.28),(Math.floor(CAST*4)%2)?'#f0c86a':'#fff2c8');
+ }else if(CAS.med<SLT_BET){
+  casText(c,'メダルが無い',lx,my-h*.14,num,'#e0a08a');
+  casText(c,'両替所で借りる',lx,my+h*.14,sub,'#cbbf9e');
+ }else{
+  casText(c,SLT_CZ.n+' まで',lx,my-h*.17,sub,'#9aa090');
+  casText(c,CAS.g0+' G',lx,my+h*.11,num,'#e8dcc0');
+  if(CAS.win>0)casText(c,'+'+CAS.win+' 枚',rx,my,Math.max(15,h*.30),'#8fd08a');
+  else if(CAS.rep)casText(c,'再遊技',rx,my,num,'#6cba79');
+  else{casText(c,'天井',rx,my-h*.15,sub,'#8a8172');casText(c,SLT_CZ.ceil+' G',rx,my+h*.12,num,'#8a8172');}
+ }
+}
+function sltCtlPanel(c,x,y,w,h,ix,rw,gap){
+ const g=c.createLinearGradient(0,y,0,y+h);
+ g.addColorStop(0,'#5a4b34');g.addColorStop(.5,'#3a2f20');g.addColorStop(1,'#221a12');
+ c.fillStyle=g;casRR(c,x,y,w,h,7);c.fill();
+ c.strokeStyle='#7a6440';c.lineWidth=2;casRR(c,x,y,w,h,7);c.stroke();
+ /* 🕹レバー(回っている間は下に倒れる) */
+ {const lx=x+w*.075,ly=y+h*.66,dn=(CAS.ph==='spin')?h*.20:0;
+  c.fillStyle='#20180f';c.beginPath();c.ellipse(lx,ly,h*.24,h*.11,0,0,7);c.fill();
+  c.strokeStyle='#b9ae95';c.lineWidth=Math.max(3,h*.09);
+  c.beginPath();c.moveTo(lx,ly);c.lineTo(lx+dn*.7,ly-h*.42+dn);c.stroke();
+  const gk=c.createRadialGradient(lx-2+dn*.7,ly-h*.5+dn,1,lx+dn*.7,ly-h*.46+dn,h*.19);
+  gk.addColorStop(0,'#ffd9a0');gk.addColorStop(.55,'#c9412f');gk.addColorStop(1,'#5e1a12');
+  c.fillStyle=gk;c.beginPath();c.arc(lx+dn*.7,ly-h*.46+dn,h*.19,0,7);c.fill();
+  if(CAS.ph==='idle')casHit(x+w*.02,y,w*.11,h,()=>sltLever());}
+ /* ⏹停止ボタン3つ=**リールの真下**に置く(どのボタンがどのリールか、線を引かなくても分かる) */
+ for(let i=0;i<3;i++){
+  const bxx=ix+i*(rw+gap)+rw/2,byy=y+h*.52,r=Math.min(h*.30,rw*.22);
+  const live=CAS.ph==='spin'&&CAS.r[i].run&&!CAS.r[i].tp;
+  c.fillStyle='#15100a';c.beginPath();c.arc(bxx,byy+2,r*1.18,0,7);c.fill();
+  const gb=c.createRadialGradient(bxx-r*.3,byy-r*.35,r*.1,bxx,byy,r);
+  if(live){gb.addColorStop(0,'#fff0c0');gb.addColorStop(.5,'#f0a83c');gb.addColorStop(1,'#8a4e12');}
+  else{gb.addColorStop(0,'#6a5a44');gb.addColorStop(1,'#2a2118');}
+  c.fillStyle=gb;c.beginPath();c.arc(bxx,byy,r,0,7);c.fill();
+  c.strokeStyle=live?'rgba(255,230,150,'+(.5+.4*Math.sin(CAST*8+i)).toFixed(3)+')':'#5a4a34';
+  c.lineWidth=2.5;c.beginPath();c.arc(bxx,byy,r*1.16,0,7);c.stroke();
+  if(live)casHit(bxx-r*1.4,y,r*2.8,h,()=>sltStopReel(i));}
+ /* 💰いま持っているメダル(実機の表示窓) */
+ {const wx=x+w-w*.20,wy=y+h*.28,ww=w*.17,wh=h*.44;
+  c.fillStyle='#0c0f0c';casRR(c,wx,wy,ww,wh,4);c.fill();
+  c.strokeStyle='#5a4a34';c.lineWidth=2;casRR(c,wx,wy,ww,wh,4);c.stroke();
+  casText(c,'💰 '+CAS.med,wx+ww/2,wy+wh*.5,Math.max(12,wh*.5),'#8fd08a');}
+}
+function sltDraw(c){
+ const g0=c.createLinearGradient(0,0,0,CASH);
+ g0.addColorStop(0,'#1a1510');g0.addColorStop(1,'#0b0908');
+ c.fillStyle=g0;c.fillRect(0,0,CASW,CASH);
+ casLamp(c,CASW*.5,CASH*.02,CASH*.5);
+ /* 🎰台の枠。⭐**上の帯も下のボタンも消した**ので、窓のほぼ全部を台に使う */
+ const bx=18,by=CASH*.018,bw=CASW-36,bh=CASH*.964;
+ c.fillStyle='#2a2018';casRR(c,bx,by,bw,bh,12);c.fill();
+ c.strokeStyle='#6b5638';c.lineWidth=4;casRR(c,bx,by,bw,bh,12);c.stroke();
+ /* ⭐**台の枠が光る**=いまボーナスかATかが、目を上げなくても分かる */
+ if(CAS.st==='at'||CAS.st==='bn'||CAS.st==='cz'||CAS.hold){
+  const gc=CAS.st==='at'?'#e0604a':(CAS.st==='bn'?'#f0c86a':(CAS.st==='cz'?'#7fd08a':'#ffe9a8'));
+  c.strokeStyle=gc;c.globalAlpha=.45+.35*Math.sin(CAST*5);c.lineWidth=7;
+  casRR(c,bx-3,by-3,bw+6,bh+6,14);c.stroke();c.globalAlpha=1;}
+ /* 📺⭐**上=液晶(演出が流れる)/中=リールの帯/下=操作パネル**。
+    ⚠⚠**液晶にリールを重ねない**=重ねると映像を流す場所が無くなる(ユーザー指摘で作り直した)。 */
+ const lx=bx+7,ly=by+7,lw=bw-14,lh=bh*.440;
+ sltLcd(c,lx,ly,lw,lh);
+ /* 🎰リールの帯=**縦幅は狭く**(ユーザー指示)。左右の空きに数字を置く */
+ const by0=ly+lh+6,bhh=bh*.375;
+ const gap=lw*.012,rw=lw*.150,rW=rw*3+gap*2,rx0=lx+(lw-rW)/2;
+ const rh=bhh*.94,ry=by0+(bhh-rh)/2,cell=rh/3;
+ c.fillStyle="#181209";casRR(c,lx,by0,lw,bhh,7);c.fill();
+ c.strokeStyle="#4a3a26";c.lineWidth=2;casRR(c,lx,by0,lw,bhh,7);c.stroke();
+ sltBandTxt(c,lx,by0,lw,bhh,rx0,rW);
+ for(let i=0;i<3;i++){
+  const x=rx0+i*(rw+gap),r=CAS.r[i];
+  c.fillStyle="#0a0806";casRR(c,x-3,ry-3,rw+6,rh+6,5);c.fill();
+  c.save();c.beginPath();c.rect(x,ry,rw,rh);c.clip();
+  const off=(r.p-Math.floor(r.p))*cell,base=Math.floor(r.p);
+  for(let k=-2;k<=2;k++){
+   const idx=((base-k)%SLT_N+SLT_N)%SLT_N;
+   const yy=ry+rh/2-cell/2+k*cell+off;
+   c.fillStyle=(k===0&&!r.run)?"rgba(70,58,38,.55)":"rgba(30,26,20,.55)";
+   c.fillRect(x,yy,rw,cell-1.5);
+   sltSymDraw(c,SLT_REEL[i][idx],x,yy,rw,cell-1.5);
+   /* 🩸告知中は狙う図柄を光らせる=目押しの助け */
+   if(CAS.hold&&SLT_REEL[i][idx]===(CAS.hold==="r7"?S_R7:S_B7)){
+    c.strokeStyle="rgba(255,230,150,"+(.45+.35*Math.sin(CAST*9)).toFixed(3)+")";c.lineWidth=3;
+    c.strokeRect(x+2,yy+2,rw-4,cell-5);}}
+  if(r.run){c.fillStyle="rgba(0,0,0,.20)";c.fillRect(x,ry,rw,rh);}
+  c.restore();
+  c.strokeStyle="#8a7048";c.lineWidth=3;casRR(c,x-3,ry-3,rw+6,rh+6,5);c.stroke();
+  if(CAS.ph==="spin"&&r.run&&!r.tp)casHit(x-3,ry-3,rw+6,rh+6,()=>sltStopReel(i));}
+ /* 中段の線(=当たりの1本) */
+ c.strokeStyle=CAS.rch?"#ffca6a":"rgba(201,161,61,.75)";c.lineWidth=CAS.rch?4:2;
+ c.beginPath();c.moveTo(rx0-12,ry+rh/2);c.lineTo(rx0+rW+12,ry+rh/2);c.stroke();
+ /* 🕹操作パネル(レバーと丸ボタン=**押すのはここ**) */
+ const cy0=by0+bhh+6;
+ sltCtlPanel(c,lx,cy0,lw,by+bh-cy0-7,rx0,rw,gap);
+}
+
 /* ============ 🎰画面の骨組み ============ */
 function casTop(){const e=$('cas-chip');if(e)e.textContent='🪙 '+casChip().toLocaleString();}
 function casOpen(){
@@ -35522,6 +36106,7 @@ function casOpen(){
  if(!CASRAF)CASRAF=requestAnimationFrame(casLoop);
 }
 function casClose(){
+ if(CAS&&CAS.g==='slot')sltSave();/* 🎰台のメダルを取り落とさない */
  $('md-casino').classList.remove('on');
  cbgmOff();try{if(SCR&&SCR!=='game')tbgmOn();}catch(e9){if(DEV&&window.console)console.warn('曲を戻せない',e9);}
  if(CASRAF){cancelAnimationFrame(CASRAF);CASRAF=0;}
@@ -35530,7 +36115,7 @@ function casClose(){
 const casOn=()=>{try{return $('md-casino').classList.contains('on');}catch(e){return false;}};
 function casGo(v){
  CASV=v;CASM='';
- if(v==='roul')rouStart();else if(v==='bacc')bacStart();else CAS=null;
+ if(v==='roul')rouStart();else if(v==='bacc')bacStart();else if(v==='slot')sltStart();else CAS=null;
  casRender();
 }
 let CASLT=0,CASSIG='';
@@ -35538,14 +36123,16 @@ let CASLT=0,CASSIG='';
 function casSig(){
  if(!CAS)return CASV+'|'+CASM;
  return CASV+'|'+CASM+'|'+(CAS.ph||'')+'|'+(CAS.st||'')+'|'+(CAS.cur==null?'':CAS.cur)
-  +'|'+(CAS.call||0)+'|'+(CAS.win||'')+'|'+(CAS.road||0)+'|'+(CAS.pl?CAS.pl[0].bet+':'+(CAS.pl[0].fold?1:0):'');
+  +'|'+(CAS.call||0)+'|'+(CAS.win||'')+'|'+(CAS.road||0)+'|'+(CAS.pl?CAS.pl[0].bet+':'+(CAS.pl[0].fold?1:0):'')
+  /* 🎰スロット=**止まっていないリール**と持ちメダルが変わったら帯を作り直す(停止ボタンの出入り) */
+  +'|'+(CAS.g==='slot'?(CAS.r.map(r=>(r.run&&!r.tp)?1:0).join('')+':'+CAS.med+':'+(CAS.hold||'')):'');
 }
 function casLoop(ts){
  CASRAF=requestAnimationFrame(casLoop);
  if(!casOn())return;
  const dt=Math.min(.05,(ts-CASLT)/1000||0);CASLT=ts;CAST+=dt;
  if(CAS){
-  if(CAS.g==='roul')rouStep(dt);else if(CAS.g==='bacc')bacStep(dt);
+  if(CAS.g==='roul')rouStep(dt);else if(CAS.g==='bacc')bacStep(dt);else if(CAS.g==='slot')sltStep(dt);
   /* ⚠⚠**下の帯は「言葉が変わった時」だけでなく「状況が変わった時」に作り直す**
      =(231)は CASM の変化だけで見ていたので、**ポーカーで自分の番が戻ってきても
        ボタンが出ないまま止まって見えた**(2026-08-10ユーザー実機指摘)。
@@ -35567,6 +36154,7 @@ function casPaint(){
  CASX=[];CAS_S=s;CAS_OX=0;CAS_OY=(h-CASH*s)/2;
  if(CASV==='roul'&&CAS)rouDraw(c);
  else if(CASV==='bacc'&&CAS)bacDraw(c);
+ else if(CASV==='slot'&&CAS)sltDraw(c);
  else {const k=CK(),TOP=CASH*.46;
   casRoom(c);casDealer(c,CASW/2,TOP*.99,1.4*k);casTable(c,TOP);
   casText(c,'賭  場',CASW/2,TOP+(CASH-TOP)*.3,Math.min(40,CASH*.1),'#f0d79a');
@@ -35588,8 +36176,8 @@ function casCtl(){
  let h='';
  if(CASM)h+='<div class="casmsg">'+CASM+'</div>';
  if(CASV==='lobby'){
-  h+=casBt('ex','🪙 チップを買う','gold')+casBt('shop','🏆 景品と交換')
-   +casBt('roul','🎡 ルーレット')+casBt('bacc','🃏 バカラ');
+  h+=casBt('ex','🪙 両替所','gold')+casBt('shop','🏆 景品と交換')
+   +casBt('roul','🎡 ルーレット')+casBt('bacc','🃏 バカラ')+casBt('slot','🎰 スロット');
  }else if(CASV==='ex'||CASV==='shop'){
   h+=casBt('lobby','← 戻る');
  }else if(CASV==='roul'){
@@ -35614,6 +36202,11 @@ function casCtl(){
   else if(ph==='res'){}
   else if(ph==='res'){h+=casBt('again','もう一度','gold');}
   h+=casBt('lobby','← 戻る','small');
+ }else if(CASV==='slot'){
+  /* 🎰⭐⭐**下の帯は「戻る」だけ**(2026-08-10ユーザー指示「中 右 とかも要らん」)=
+     ⭐**レバーも停止ボタンも、台に描いてある物をそのまま押す**。
+     ⚠**帯を薄くするほど台(液晶)が大きくなる**=これが横長の窓で効く一番の手。 */
+  h+=casBt('lobby','← 戻る','small');
  }
  e.innerHTML=h;
  for(const b of e.querySelectorAll('[data-cas]'))b.onclick=()=>casBtn(b.getAttribute('data-cas'));
@@ -35621,9 +36214,13 @@ function casCtl(){
 function casBtn(k){
  if(sfx.tap)sfx.tap();
  if(k.slice(0,4)==='chip'){CASBET=+k.slice(4);casCtl();return;}
- if(k==='lobby'){casGo('lobby');return;}
+ if(k==='lobby'){if(CASV==='slot'){sltSave();CAS=null;}casGo('lobby');return;}
  if(k==='ex'||k==='shop'){CASV=k;CASM='';casRender();return;}
- if(k==='roul'||k==='bacc'){casGo(k);return;}
+ if(k==='roul'||k==='bacc'||k==='slot'){casGo(k);return;}
+ /* 🎰スロット=**貸し借りは両替所だけ**(台の中にボタンは置かない) */
+ if(k.slice(0,3)==='bor'){sltBorrow(+k.slice(3));return;}
+ if(k==='cash'){sltCash();return;}
+ if(k.slice(0,3)==='slu'){sltSetUnit(+k.slice(3));return;}
  if(k==='spin'){rouSpin();casCtl();return;}
  if(k==='deal'){bacDeal();casCtl();return;}
  if(k==='clear'){if(CAS&&CAS.ph==='bet'){CAS.bets=CAS.g==='bacc'?{p:0,b:0,t:0}:{};CAS.tot=0;CASM='';}casCtl();return;}
@@ -35650,15 +36247,31 @@ function casPrize(id){
  casRender();
 }
 function casRender(){
+ /* 🎰⭐**スロットの時は上の帯(賭場/チップ/✕)も消す**(2026-08-10ユーザー指示)=
+    台をできるだけ大きく出すため。⚠出るのは下の「← 戻る」だけになる。 */
+ try{const hd=document.querySelector('#md-casino .bphd');
+  if(hd)hd.style.display=(CASV==='slot')?'none':'';}
+ catch(e9){if(DEV&&window.console)console.warn('賭場の帯を隠せない',e9);}
  const d=$('cas-dom');
  if(!d){casCtl();return;}
  if(CASV==='ex'){
   d.classList.add('on');
-  let h='<h4>🪙 チップを買う</h4><p>💎ガチャ石でチップに換えます。'
+  let h='<h4>🪙 両替所</h4><p>💎ガチャ石でチップに換えます。'
    +'<b style="color:#e0a">⚠チップは石には戻せません。</b></p><div class="casgrid">';
   h+=CAS_RATE.map((r,i)=>'<div class="caspz"><b>🪙 '+r[1]+'</b><small>💎 '+r[0]+'</small>'
    +'<button class="btn sm gold" data-cas="ex-'+i+'">交換する</button></div>').join('');
   h+='</div><p>いま 💎'+(META.gem||0)+' / 🪙'+casChip()+'</p>';
+  /* 🎰⭐**メダルは台に入る前にここで借りる**(2026-08-10ユーザー指示)=台の中では貸し借りしない */
+  h+='<h4>💰 スロットのメダル</h4><p>🎰スロットはメダルで回します。'
+   +'<b>先にここで借りてから</b>台へ行ってください。1ゲームで3枚使います。</p>'
+   +'<p>1枚あたりのチップ '+SLT_UNIT.map(v=>'<button class="btn sm'+(SLTU===v?' gold':'')
+     +'" data-cas="slu'+v+'">🪙'+v+'</button>').join(' ')
+   +(sltMed()>0?' <small>(精算すると変えられます)</small>':'')+'</p><div class="casgrid">';
+  h+=[50,200,500].map(n=>'<div class="caspz"><b>💰 '+n+'枚</b><small>🪙 '+(n*SLTU)+'</small>'
+   +'<button class="btn sm gold" data-cas="bor'+n+'">借りる</button></div>').join('');
+  h+='</div><p>いま 💰'+sltMed()+'枚'
+   +(sltMed()>0?' <button class="btn sm" data-cas="cash">精算する(🪙'+(sltMed()*SLTU)+')</button>':'')
+   +'</p>';
   d.innerHTML=h;
  }else if(CASV==='shop'){
   d.classList.add('on');

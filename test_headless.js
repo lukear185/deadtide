@@ -4780,7 +4780,77 @@ function checkCasino(){
  console.log('🎰カジノ: バカラの点・8組のシュー・ペア・大路 / ルーレット赤黒18-18・0は外側に当たらない / '
   +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / 🎡3000回まわして偏りなし('+ROU_SPAN+') OK');
 }
-const CHECKS=[['checkCasino',checkCasino],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
+/* 🎰⭐⭐(237)スロット=**戻り(RTP)と引き込みの柵**。
+   ⚠⚠ここが狂うと「いくら入れても出ない台」または「入れ食いの台」になる。絵は見ない。
+   ⭐見張るのは4つ=①リールの並び(取りこぼしが起きない) ②抽選した役が必ず揃う
+   ③小役の実測が表どおり ④**30万ゲーム回して戻りが97%前後**。 */
+function checkSlot(){
+ const keep=META.chip,keepM=META.sltM;META.chip=1e9;
+ /* ①リールの並び=脳・肉・目・再は**5コマ以下の間隔**(4コマ滑りで100%引き込める) */
+ for(let i=0;i<3;i++){
+  if(SLT_REEL[i].length!==SLT_N){console.log('FAIL: リール'+i+'のコマ数が'+SLT_REEL[i].length);process.exit(1);}
+  for(const s of [S_BRN,S_MEAT,S_EYE,S_REP]){
+   const at=[];for(let p=0;p<SLT_N;p++)if(SLT_REEL[i][p]===s)at.push(p);
+   if(!at.length){console.log('FAIL: リール'+i+'に'+SLT_SYM[s].n+'が無い');process.exit(1);}
+   for(let k=0;k<at.length;k++){
+    const gap=((at[(k+1)%at.length]-at[k])+SLT_N)%SLT_N;
+    if(gap>5){console.log('FAIL: リール'+i+'の'+SLT_SYM[s].n+'の間隔が'+gap+'コマ(5以下でないと取りこぼす)');
+     process.exit(1);}}}
+  /* 7は逆に**間隔が空いている**こと(=目押しの意味がある) */
+  const sv=[];for(let p=0;p<SLT_N;p++)if(SLT_REEL[i][p]===S_R7)sv.push(p);
+  if(!sv.length){console.log('FAIL: リール'+i+'に血の7が無い');process.exit(1);}
+ }
+ /* ②③④=まとめて実走。⚠**遊ぶ時と同じ関数(sltAuto)を通す**=別勘定を作らない。
+    ⚠⚠**乱数を固定する**=ATの当たり外れで戻りが±3%も揺れるため、
+      本物の乱数だと「たまたま落ちる検査」になって信用されなくなる(=柵を緩める羽目になる)。
+    ⚠⚠**線形合同法(よくある1行の乱数)は使わない**=偏りが乗って戻りが6%もずれた(実測)。
+      ⭐mulberry32=短いのに癖の無い乱数。 */
+ const rnd0=Math.random;{let s9=20260810>>>0;Math.random=()=>{
+  s9=(s9+0x6D2B79F5)|0;let t=Math.imul(s9^(s9>>>15),1|s9);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};}
+ CASV='slot';sltStart();CAS.med=1e12;
+ const N=300000;
+ let inTot=0,outTot=0,bad=0,cnt={},czN=0,bnN=0,atN=0,cont={},normG=0,czG=0,bnG=0,atG=0;
+ let last='norm';
+ for(let n=0;n<N;n++){
+  const rep=CAS.rep,st=CAS.st,before=CAS.med,role=null;
+  sltAuto();
+  /* ②抽選した役がそのまま揃っているか(引き込みが効いているか) */
+  const h=sltHand().k,want=CAS.role;
+  if(want!=='lose'&&h!==want)bad++;
+  if(want==='lose'&&h!=='lose')bad++;
+  cnt[h]=(cnt[h]||0)+1;
+  inTot+=rep?0:3;outTot+=(CAS.med-before)+(rep?0:3);
+  if(st==='at')atG++;else if(st==='bn')bnG++;else if(st==='cz')czG++;else normG++;
+  if(last!=='cz'&&CAS.st==='cz')czN++;
+  if(last!=='bn'&&CAS.st==='bn')bnN++;
+  if(last!=='at'&&CAS.st==='at'){atN++;cont[CAS.at.cont]=(cont[CAS.at.cont]||0)+1;}
+  last=CAS.st;
+ }
+ Math.random=rnd0;
+ if(bad){console.log('FAIL: 抽選した役と揃った物が食い違った回数='+bad+'(引き込みが壊れている)');process.exit(1);}
+ /* ③小役の実測=表の確率どおりか(±12%) */
+ for(const k of ['rep','eye','meat']){
+  const want=1/SLT_ODD[k],got=(cnt[k]||0)/N;
+  /* ⚠AT中は脳ばかり・ボーナス中は小役を引かないので、リプレイ以外は少し薄く出る。緩めに見る */
+  if(got<want*.6||got>want*1.5){
+   console.log('FAIL: '+k+'の出方が表と違う 実測1/'+(1/got).toFixed(1)+' 表1/'+SLT_ODD[k]);process.exit(1);}}
+ /* ④戻り(RTP)=97%前後。⚠ATの当たり外れで揺れるので幅は広めに取る */
+ const R=outTot/inTot*100;
+ if(R<95||R>98.5){console.log('FAIL: スロットの戻りが'+R.toFixed(2)+'%(95〜98.5%の外)。'
+  +'⚠SLT_ODD/SLT_CZ/SLT_BN/SLT_AT のどれかを触ったら必ずここを見ること');process.exit(1);}
+ /* 継続率の抽選が 50/30/20 の重みで来ているか */
+ {const t=atN||1;const w={'0.5':.5,'0.75':.3,'0.9':.2};
+  for(const k in w){const p=(cont[k]||0)/t;
+   if(p<w[k]*.75||p>w[k]*1.25){console.log('FAIL: AT継続率'+k+'の出方が'+(p*100).toFixed(1)+'%(想定'+(w[k]*100)+'%)');
+    process.exit(1);}}}
+ if(!czN||!bnN||!atN){console.log('FAIL: CZ/ボーナス/ATのどれかに一度も入っていない');process.exit(1);}
+ console.log('🎰スロット: 引き込み'+N.toLocaleString()+'ゲーム誤爆0 / 戻り'+R.toFixed(2)+'% / '
+  +'CZ 1/'+(normG/czN).toFixed(0)+' ボーナス 1/'+((normG+czG)/bnN).toFixed(0)
+  +' AT 1/'+(normG/atN).toFixed(0)+' (AT平均'+(atG/atN).toFixed(0)+'G) OK');
+ CAS=null;CASV='lobby';META.chip=keep;META.sltM=keepM;
+}
+const CHECKS=[['checkCasino',checkCasino],['checkSlot',checkSlot],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
