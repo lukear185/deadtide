@@ -1368,7 +1368,7 @@ body.bns #deck{flex:0 0 auto}
    ⚠**幕を見終わったらクラスを外す**=いつもの「もう一度/タイトルへ」が戻る。 */
 #bt-resnext{display:none}
 #reswrap.ednext #bt-resnext{display:block}
-#reswrap.ednext #bt-rematch,#reswrap.ednext #bt-totitle{display:none}
+#reswrap.ednext #bt-totitle{display:none}
 /* ⚠(181)**見出しは拠点名から作る**ので長さが揃わない(『崩れた立体交差』解放! で14文字)。
    ⭐**折り返せるようにして、行の高さを詰める**=2行になっても札と表を押し出さない。 */
 .restitle{font-size:min(14vw,60px);font-weight:900;color:var(--pane);text-align:center;
@@ -2059,8 +2059,8 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
         <!-- 🎬(180)**幕が控えている時だけ「次へ」1つに差し替える**(ユーザー指示)。
              ⚠隠し方はクラス側に寄せる(JSでインラインの display を書かない=[[NOTES_面]]) -->
         <button class="btn gold" id="bt-resnext">▶ 次へ</button>
-        <button class="btn red" id="bt-rematch">🔁 もう一度防衛</button>
-        <button class="btn" id="bt-totitle">🏕 タイトルへ</button>
+        <!-- ⛔(238)「🔁もう一度防衛」は削除した(ユーザー指示)。⚠書き戻さない -->
+        <button class="btn" id="bt-totitle">🏠 ホームへ</button>
       </div>
     </div>
     <table class="stats" id="res-stats"></table>
@@ -4867,7 +4867,7 @@ const TOWERS=[
     ⭐**直線の敵を bmax 体まで串刺し+kb で後ろへ吹っ飛ばす**(狙いはレールガンと同じ「一番多く貫ける並び」)。
     ⚠⚠**ここへ差し込んだので後ろ(支援・進化専用)の番号が1つずれた**=続きからの版をv3へ(loadRunの断り)。
     🔊音は仮でスナイパー塔と同じ(AI生成の候補は後日の協議=[[TODO]])。 */
- {id:'harp',n:'ハープーン砲',cost:560,up2:'harp2',gc:4480,rng:300,dmg:210,rate:2.3,type:'pierce',beam:16,bmax:4,kb:120,c:'#8f7a54',dsc:'廃材の大杭で直線の4体を串刺し+後ろへ吹っ飛ばす。⇄で⚡速射(1体を速く)に切替できる'},
+ {id:'harp',n:'ハープーン砲',cost:560,up2:'harp2',gc:4480,rng:300,dmg:210,rate:2.3,type:'pierce',beam:16,bmax:4,kb:70,c:'#8f7a54',dsc:'廃材の大杭で直線の4体を串刺し+後ろへ吹っ飛ばす。⇄で⚡速射(1体を速く)に切替できる'},
  /* ===== 支援施設(type:'sup') =====
     タレットとは別軸。専用の支援枠2つにしか建たず、タレットの解放チェーンにも研究所にも出さない。
     ⚠タレットの強化はしないこと(ユーザー指示)。効いてよいのは 情報 / ユニット / 経済 の3軸だけ。
@@ -4941,7 +4941,7 @@ const TOWERS=[
  {id:'fort2',n:'超弩級要塞砲',base:'fort',grd:1,cost:2700,rng:426,dmg:300,rate:.6,type:'pierce',multi:5,pierce:1,spl:62,c:'#a3a8b0',dsc:'三連の巨砲が5体を同時に貫く。最終形態'},
  /* 🔩(228q)ハープーン砲の最終形態=スパイクランチャー(ユーザー案③を最終の語彙に使う決定)。
     数値の決まりどおり=威力×2.0 / 間隔×0.85 / 射程×1.12。持ち味は串刺し4→6体・吹っ飛ばし強化 */
- {id:'harp2',n:'スパイクランチャー',base:'harp',grd:1,cost:1680,rng:336,dmg:420,rate:1.95,type:'pierce',beam:20,bmax:6,kb:170,pierce:1,c:'#b09a6a',dsc:'圧縮空気の多連杭。直線の6体を貫き、まとめて吹っ飛ばす'},
+ {id:'harp2',n:'スパイクランチャー',base:'harp',grd:1,cost:1680,rng:336,dmg:420,rate:1.95,type:'pierce',beam:20,bmax:6,kb:100,pierce:1,c:'#b09a6a',dsc:'圧縮空気の多連杭。直線の6体を貫き、まとめて吹っ飛ばす'},
  {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'}
 ];
 /* ===== ⭐⭐**進化の中段(2026-08-02ユーザー指示「進化を2回できるようにして2段目を弱くする」)** =====
@@ -21702,10 +21702,20 @@ function killZ(C,z){
    🐞(229i)で kbZ に一律で足したら、**この関数は爆発の砲弾や砲撃も死体飛ばし用に呼んでいた**ので、
    爆発系まで生きた敵を押すようになった。⭐生きた敵を押すのは**ハープーンだけ**(live=1)。
    押し戻す量は kbp(ボス1/4・エリート6割)を0.22秒で消化=引力塔と同じ「dを動かす」枠。 */
+const KB_CD=1.5;/* 🔩(238)同じ敵を押し戻せる間隔(秒) */
 function kbZ(z,cx,cy,pw,live){if(!z||z.dead)return;
  const dx=z.px-cx,dy=(z.py-cy)*.5,l=Math.hypot(dx,dy)||1;
  z.kbx=dx/l;z.kby=dy/(l*2);z.kbp=pw*(z.boss?.25:z.elite?.6:1);
- if(live){z.kbT=.22;z.kbV=z.kbp/.22;}}
+ if(!live)return;
+ /* 🔩⭐⭐(238)**生きた敵を押し戻す時の3つの柵**(2026-08-10ユーザー実機
+    「ハープーン塔をいっぱい置くとゾンビが全然前に進めない / ボスはノックバックしない方がいい」)。
+    🐞**正体**=1台でも歩く速さより押し戻す方が大きく、しかも**何台でも重ねがけできた**
+      =台を並べるだけで敵が一歩も前に出られない(❄冷凍や🕸ネットと重ねると完全に固まる)。
+    ⭐①**ボスは完全に無効** ②**1体につき1.5秒に1回まで**(重ねがけしない)
+      ③**1回の距離を半分に**(表の kb を 120→70 / 170→100)。⚠死体の吹っ飛びは今までどおり。 */
+ if(z.boss)return;
+ if((z.kbCd||0)>0)return;
+ z.kbCd=KB_CD;z.kbT=.22;z.kbV=(pw*(z.elite?.6:1))/.22;}
 /* quiet=ダメージ数字と血を出さない(継続攻撃はまとめて1つ出すので毎フレーム湧かせない)
    🛡wk=**特効が乗っている一撃なら、その属性の名前**('fire'/'elec'…)。数字をその属性の色で出す。
    ⚠倍率そのものは呼ぶ側で掛けてある(ここでは掛けない)=数字の**色を変えるためだけ**に受け取る。
@@ -22544,6 +22554,7 @@ function campStep(C,dt,wave){
   }
   /* 🔩(229i)ハープーンの吹っ飛ばし=kbZ が書いた量を消化して道を後ろへ滑る(0.22秒) */
   if(z.kbT>0){z.d=Math.max(0,z.d-z.kbV*dt);z.kbT-=dt;}
+  if(z.kbCd>0)z.kbCd-=dt;/* 🔩(238)押し戻しの間隔 */
   z.d+=z.sp*z.sm*slow*dt;
   /* ⭐⭐**最終ウェーブの主(siege)は素通りせず、拠点に取り付いて何度も殴る**(2026-07-30ユーザー指示)。
      ⚠それまでは**どんな敵も拠点へ触れた瞬間に消えて1回ぶんのダメージ**だったので、
@@ -26198,7 +26209,13 @@ function showResultC(sn){
 /* ---- 建設メニュー・入力 ---- */
 function mapToClient(x,y){const r=cv.getBoundingClientRect();return[r.left+(OX+x*SC)/DPR,r.top+(OY+y*SCY)/DPR];}
 function evtToMap(e){const r=cv.getBoundingClientRect();return[((e.clientX-r.left)*DPR-OX)/SC,((e.clientY-r.top)*DPR-OY)/SCY];}
-function closeBM(){$('buildmenu').style.display='none';SEL=-1;}
+/* 🔧⭐⭐(238)**開いている間は窓の位置も大きさも動かさない**(2026-08-10ユーザー実機
+   「強化ウィンドウで強化するとき、ウィンドウ内の文字が動くとウィンドウの位置とか大きさとかが変わる」)。
+   🐞**正体**=強化を押すたびに窓を作り直して**測り直して置き直していた**ので、
+     値段や段の文字が1文字増えるだけで幅も高さも位置も変わり、次の行が指の下から逃げていた。
+   ⭐**最初に開いた時の寸法を覚えて、閉じるまでそれを使い回す**。中身が増えた時は中だけ動く。 */
+let BMFIX=null;
+function closeBM(){$('buildmenu').style.display='none';SEL=-1;BMFIX=null;}
 /* ⭐建設メニューを開いている間に⚙️が増えたら、その場で押せるようにする(2026-07-26ユーザー指示)。
    ⚠以前は開いた瞬間の所持額でボタンが固まっていて、敵を倒して足りたのに開き直すまで強化できなかった。
    ⚠中身(innerHTML)は作り直さない=押している最中に作り直すとタップを取りこぼす。
@@ -26322,6 +26339,11 @@ function openBM(si){
  const bx=$('bm-x');if(bx)bx.onclick=()=>{closeBM();};
  const [px,py]=mapToClient(SLOTS[si][0],SLOTS[si][1]);
  bm.style.display='block';
+ /* 🔧(238)**2回目からは覚えた寸法をそのまま当てる**=測り直さない(=動かない) */
+ if(BMFIX&&BMFIX.si===si){
+  bm.style.left=BMFIX.x+'px';bm.style.top=BMFIX.y+'px';bm.style.width=BMFIX.w+'px';
+  const bd9=$('bm-body');if(bd9){bd9.style.height=BMFIX.bh+'px';bd9.style.maxHeight='';}
+  return;}
  /* ⭐**画面に収まる高さで切る**(2026-08-01)。⚠切らないと下がはみ出して、
     指で動かした時にページごと動く(ユーザー指摘の症状)。中身は #bm-body がスクロールする。
     ⚠上下の余白6px×2 + パネルの padding 8px×2 + 下の操作バーぶん を引く */
@@ -26359,8 +26381,14 @@ function openBM(si){
   if(lx>=0)break;}
  /* それでも入らない狭い画面だけ、塔の真上に重なるのを承知で中央へ丸める */
  if(lx<0)lx=Math.max(6,Math.min(innerWidth-bw-6,px-bw/2));
+ const ty=Math.round(Math.max(tMin,Math.min(yMax,py-bh/2)));
  bm.style.left=Math.round(lx)+'px';
- bm.style.top=Math.round(Math.max(tMin,Math.min(yMax,py-bh/2)))+'px';
+ bm.style.top=ty+'px';
+ /* 🔧(238)ここで寸法を焼き付ける。⚠**中身の高さも固定**=行が増えても窓は伸びない(中でスクロールする) */
+ {const bd9=$('bm-body');
+  bm.style.width=bw+'px';
+  if(bd9){bd9.style.height=bd9.offsetHeight+'px';bd9.style.maxHeight='';}
+  BMFIX={si,x:Math.round(lx),y:ty,w:bw,bh:bd9?bd9.offsetHeight:0};}
 }
 /* ============ 🛠 マス編集モード(?edit=1 の時だけ) ============
    実機で建設マスを指でドラッグして置き直し、そのまま `slots:[...]` を書き出すための開発用モード。
@@ -39960,7 +39988,10 @@ $('tut-next').onclick=()=>{if(TUT)tutGo(TUT.i+1);};
 /* ⭐やめる(2回目以降だけ出る)。⚠**done=false で終わる**=最後まで通した印(tutOk)は動かさない */
 $('tut-quit').onclick=()=>{if(!TUT)return;tutEnd(false);backTitle();
  toast('🎓 やめた。タイトルの「🎓 あそびかた」からいつでもやり直せる');};
-$('bt-totitle').onclick=backTitle;
+/* 🏠⭐(238)**成績表から戻る先はホーム**(2026-08-10ユーザー指示「タイトルじゃなくてホーム画面に戻る」)。
+   ⚠タイトルの後始末(backTitle)はそのまま通す=盤面・通信・全画面の畳みが全部そこに入っているため。 */
+function backHome(){backTitle();try{renderHome();show('home');}catch(e9){if(DEV&&window.console)console.warn('ホームへ戻れない',e9);}}
+$('bt-totitle').onclick=backHome;
 /* 🏁区切りの幕。⚠閉じたら**ホームへ戻すだけ**(報酬も解放もここでは配らない) */
 /* 🎬幕。⚠**閉じる時に必ず止める**(`ED.on=0`)=出しっぱなしだと裏で毎コマ描き続ける */
 /* ⚠(179)**成績表の上で流す**ので、閉じたら**成績表をそのまま見せる**(下に隠れている)。
@@ -39973,7 +40004,6 @@ $('bt-ed-ok').onclick=()=>{ED.on=0;$('md-ending').classList.remove('on');
 /* 🎬(180)成績表の「▶ 次へ」=ここで幕を開く */
 $('bt-resnext').onclick=()=>{try{openEnding();}catch(e){toast('幕でエラー: '+e.message,true);}};
 $('bt-ed-skip').onclick=()=>{edSeek(ED_C3);};
-$('bt-rematch').onclick=()=>{if(MODE==='solo'){startSolo();}else{backTitle();}};
 /* ============ 通信(PeerJS) ============ */
 let NET={peer:null,conn:null,lob:[],host:false},CS={meN:null,ot:[],w:0,ph:0,tI:0,ivOn:false,over:false,ts:[],pr:0,tu:0,myJ:0},CC=null,CCFX=[];
 let CLSNAP=0,CLWARN=0;/* クライアント側: 最後にスナップショットが届いた時刻(通信断の検知用) */
