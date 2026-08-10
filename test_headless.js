@@ -4779,6 +4779,61 @@ function checkGas(){
   +'引火は💣爆発だけ(🔥火炎と🔫実弾は不発) / 誘爆が道なりに広がる(速さ'+GAS_SPD+'px/秒) / '
   +'満杯1マス='+GAS_DMG+'(この面の敵の体力の平均'+Math.round(avg)+'の'+(avg?Math.round(GAS_DMG/avg*100):0)+'%) OK');
 }
+/* ---- 🚌🎨⭐⭐(245)**開拓便の「面ごとの個性」** ----
+   ⭐③=切れた高圧線 / ④=轢いた敵が弾ける / ⑤=沼のガスに引火して燃え広がる。
+   見るのは5つ: ①面ごとに違う物が入っている ②①②の面には1つも入っていない(前の面を変えていない)
+   ③高圧線は道を端まで塞がない(必ず抜ける隙間がある) ④ガスは引火して燃え移る・上限で止まる
+   ⑤どの経路で倒した分も「連なり」に乗る(乗らないと爆発させるほど損になる)。 */
+function checkBusGim(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kp=META.sc;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
+ const want=['','','wire','pop','gas'],got=[];
+ for(let si=0;si<STAGES.length;si++){
+  META.stg=si;setDiff=BNS_D;startSolo();bnsPreSkip();frames(6,.05);
+  if(gimKind()!==want[si])F('面'+(si+1)+'の個性が違う '+(gimKind()||'なし')+'(狙い '+(want[si]||'なし')+')');
+  const nw=BGIM.filter(g=>g.k==='wire').length,ng=BGIM.filter(g=>g.k==='gas').length;
+  got.push('面'+(si+1)+'='+(want[si]?(want[si]==='wire'?('⚡'+nw+'本'):(want[si]==='gas'?('💨'+ng+'か所'):'🥩弾ける')):'なし'));
+  if(!want[si]&&BGIM.length)F('個性の無い面('+(si+1)+')に置き物がある '+BGIM.length);
+  if(want[si]==='wire'){
+   if(nw<8)F('高圧線が少なすぎる '+nw);
+   /* ③ 端まで塞がない=必ず抜けられる隙間がある */
+   for(const g of BGIM){const w=BNS_OFF;
+    if(g.o1-g.o0>w*1.75)F('高圧線が道を端まで塞いでいる(抜けられない) 幅'+Math.round(g.o1-g.o0));}
+  }
+  if(want[si]==='gas'){
+   if(ng<40)F('ガス溜まりが少なすぎる '+ng);
+   const C=G.players[0],B=C.bus;
+   /* ④ ドラム缶の爆発で引火 → 燃え移る → 上限で止まる */
+   const g0=BGIM.filter(g=>g.k==='gas')[Math.floor(ng/2)];
+   bnsGimBoom(C,g0.x,g0.y);
+   if(!BGIM.some(g=>g.t>0))F('ドラム缶の爆発でガスに火が付かない');
+   const k0=B.kill||0;
+   /* 燃えている所へ敵を置いて、倒した分が連なりに乗るか見る。
+      ⚠**frames を回さない**=位置は毎コマ道の上から出し直されるので、置いた座標が消える */
+   {const z=mkZ(zSpec(0,1,1));z.d=10;z.ln=0;z.px=g0.x;z.py=g0.y;z.hp=z.mhp=1;C.zombies.push(z);}
+   bnsGimStep(C,.05);
+   if(!((B.kill||0)>k0))F('ガスで倒した分が連なりに乗っていない(爆発させるほど損になる)');
+   frames(60,.05);
+   const burnt=BGIM.filter(g=>g.done).length;
+   if(burnt<3)F('ガスが燃え移っていない '+burnt+'か所');
+   if(burnt>=ng)F('道のガスが全部燃えてしまう(進む先が空になる) '+burnt+'/'+ng);
+  }
+  if(want[si]==='pop'){
+   const C=G.players[0],B=C.bus;
+   C.zombies.length=0;
+   for(let q=0;q<14;q++){const z=mkZ(zSpec(0,1,1));z.d=10;z.ln=0;
+    z.px=C.bus.x+rnd(-90,90);z.py=C.bus.y+rnd(-90,90);z.hp=z.mhp=1;C.zombies.push(z);}
+   const k0=B.kill||0,c0=B.cmb||0;
+   bnsGimPop(C,C.bus.x,C.bus.y,1);
+   if(!((B.kill||0)>k0&&(B.cmb||0)>c0))F('弾けた分が連なりに乗っていない');
+  }
+  backTitle();
+ }
+ META.sc=kp;
+ console.log('🚌🎨面ごとの個性: '+got.join(' / ')+' / 高圧線は必ず隙間がある / '
+  +'ガスは引火して燃え移り、上限('+GIM_GAS_MAX+'回)で止まる / どの経路の撃破も連なりに乗る OK');
+}
 /* ---- ⚙🐞⭐⭐(244)**🚌バスの当たりが「絵のとおり」か** ----
    ⚠⚠**作った理由**=この面は世界を縦に潰して描く(BNS_SQ)のに、**バスと装備だけ潰しを打ち消して**
      描いていた。当たりは世界の座標のままだったので**絵と当たりが縦に1.25倍ずれ**、
@@ -4878,6 +4933,7 @@ const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial
 ['checkGas',checkGas],
 ['checkMapPins',checkMapPins],
 ['checkBusHit',checkBusHit],
+['checkBusGim',checkBusGim],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
