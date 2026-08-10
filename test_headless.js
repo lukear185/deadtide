@@ -3386,7 +3386,10 @@ function checkRice(){
   nwall=BBLD.length;ntree=BTREE.length;/* ⚠タイトルへ戻すと消えるので、ここで控えておく */
   if(BBLD.length<60){console.log('FAIL: 建物が少なすぎる '+BBLD.length);process.exit(1);}
   if(BTREE.length<300){console.log('FAIL: 森が少なすぎる '+BTREE.length);process.exit(1);}
-  for(const g of BNS_GATE)if(!(bnsCorrW(g)<BNS_OFF*.6)){
+  /* 🚌(244)**締め切りを .6→.78 に緩めた**(ユーザー実機「先に進むにつれて細くなってるから広くして」)=
+     道もろとも関所を広げたので、絞りは「3割ほど細くなる」に留めてある。⚠**絞りを無くしてはいけない**
+     (群れが密集する所=バスの狩り場が消える)ので、上限は残す。 */
+  for(const g of BNS_GATE)if(!(bnsCorrW(g)<BNS_OFF*.78)){
    console.log('FAIL: 関所で通路が絞れていない '+g+'→'+bnsCorrW(g));process.exit(1);}
   if(!(bnsCorrW(.005)>BNS_OFF*.95)){console.log('FAIL: 関所以外まで絞れている');process.exit(1);}
   /* ⚠**建物も木も通路の中に立っていないこと**=ここが崩れると「壁の中をゾンビが歩く」。
@@ -4776,6 +4779,45 @@ function checkGas(){
   +'引火は💣爆発だけ(🔥火炎と🔫実弾は不発) / 誘爆が道なりに広がる(速さ'+GAS_SPD+'px/秒) / '
   +'満杯1マス='+GAS_DMG+'(この面の敵の体力の平均'+Math.round(avg)+'の'+(avg?Math.round(GAS_DMG/avg*100):0)+'%) OK');
 }
+/* ---- ⚙🐞⭐⭐(244)**🚌バスの当たりが「絵のとおり」か** ----
+   ⚠⚠**作った理由**=この面は世界を縦に潰して描く(BNS_SQ)のに、**バスと装備だけ潰しを打ち消して**
+     描いていた。当たりは世界の座標のままだったので**絵と当たりが縦に1.25倍ずれ**、
+     **一番横に長い特大ノコの端(半幅350)では約90px**も食い違っていた(ユーザー実機
+     「一番デカいノコのはじの判定がない」)。⚠中心では0なので、**端だけ当たらない**という出方をする。
+   ⭐**見るのは2つ**=①潰しが効く向き(東向き)で、絵の端に居る敵に当たる
+   ②潰しが効かない向き(北向き)では今までどおり(=直しすぎていない)。 */
+function checkBusHit(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ const kp=META.sc,kq=META.beq;
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
+ META.stg=0;setDiff=BNS_D;META.beq={saw3:1,blade:1};
+ startSolo();frames(10,.016);
+ const C=G.players[0],B=C.bus;
+ if(!B)F('🚌開拓便のバスが出ていない');
+ if(!B.saw3)F('特大ノコが付いていない(装備の反映が効いていない)');
+ const sc0=SC,scy0=SCY;
+ SC=1;SCY=BNS_SQ;/* 実機と同じ「縦を潰した」状態にする */
+ if(!(camIvY()>1.05))F('縦の潰しが効いていない(この検査の前提が崩れている) '+camIvY());
+ const hit=(ang,fw,sw)=>{
+  B.ang=ang;B.vx=0;B.vy=0;C.zombies.length=0;
+  const z=mkZ(zSpec(0,1,1));z.hp=z.mhp=1e7;z.d=10;z.off=0;
+  const tx=Math.cos(ang),ty=Math.sin(ang);
+  z.px=B.x+tx*fw-ty*sw;z.py=B.y+ty*fw+tx*sw;
+  C.zombies.push(z);const h0=z.hp;bnsBusStep(C,.05);return (h0-z.hp)>0;};
+ const fw=BUSH_RX+EQ_S3_D*.5,iv=camIvY();
+ /* ① 東向き=ノコの幅が世界の縦になる=絵は 1.25倍に伸びて見えている所まで当たる */
+ if(!hit(0,fw,EQ_S3_W*iv*.96))F('特大ノコの端(絵のとおりの所)に当たらない=絵と当たりがずれている');
+ if(hit(0,fw,EQ_S3_W*iv*1.12))F('絵より外で当たっている(打ち消しすぎ)');
+ /* ② 北向き=潰しが効かない向き。ここは前と同じ幅のまま */
+ if(!hit(-Math.PI/2,fw,EQ_S3_W*.96))F('潰しが効かない向きで特大ノコの端に当たらない');
+ if(hit(-Math.PI/2,fw,EQ_S3_W*1.20))F('潰しが効かない向きで絵より外まで当たっている');
+ /* ③ 車体そのものは前と同じ(真後ろは当たらない=素通りさせない印) */
+ if(!hit(0,0,0))F('車体の真ん中に当たらない');
+ SC=sc0;SCY=scy0;
+ backTitle();META.sc=kp;META.beq=kq;
+ console.log('⚙🚌バスの当たり: 絵のとおり(縦の潰し×'+iv.toFixed(2)+'を打ち消して当てる) / '
+  +'特大ノコの端(半幅'+Math.round(EQ_S3_W)+')まで当たる / 打ち消しすぎもない OK');
+}
 /* ---- 🗺🐞⭐⭐⭐(243)**どの面にも地図のピンがあるか** ----
    ⚠⚠**作った理由**=(238f)で面⑤を足した時、**地図のピンを1つも足していなかった**。
      地図は面の数だけ頁があるので**5頁目だけ拠点が0個の白い頁**になり、**どこからも入れない面**が
@@ -4835,6 +4877,7 @@ const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial
 ['checkStage4',checkStage4],
 ['checkGas',checkGas],
 ['checkMapPins',checkMapPins],
+['checkBusHit',checkBusHit],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
