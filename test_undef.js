@@ -83,32 +83,44 @@ function strip(src){
  return out.join('');
 }
 
-/* ============ 2. 変数として使われている名前を拾う ============ */
+/* ============ 2. 変数として使われている名前を拾う ============
+   ⚡⚠⚠**行の前後を slice で切り出さない**(2026-08-10(239)に285秒→0.6秒へ)。
+     🐞**正体**=index.html には**埋め込み素材(base64)の1行が数十万文字**あり、
+       strip はその中身を**同じ長さの空白**に置き換えるので、長い行はそのまま残る。
+       そこで識別子1個ごとに `ln.slice(0,s)` と `ln.slice(e)` を作っていたため、
+       **1行の長さ×識別子の数**(実質2乗)になって、この検査だけで**4分45秒**かかっていた。
+     ⭐**直し方=文字を1つずつ見る**(空白を飛ばして前後の1〜2文字だけ調べる)=結果は1文字も変わらない。
+     ⚠**新しく「前後を見る」条件を足す時も slice を作らないこと**。 */
 function collectUses(code){
  const uses=new Map();const lines=code.split('\n');
  let prevEnd='';/* 直前の中身がある行の末尾文字(オブジェクトのキー判定に使う) */
+ const isSp=c=>c===' '||c==='\t'||c==='\r'||c==='\f'||c==='\v';
  lines.forEach((ln,li)=>{
   const re=/[A-Za-z_$][A-Za-z0-9_$]*/g;let m;
+  const L=ln.length;
   while((m=re.exec(ln))){
    const s=m.index,e=re.lastIndex;
-   if(/[0-9]$/.test(ln.slice(0,s)))continue;/* 1e9 / 0x1F など数値の一部 */
-   const before=ln.slice(0,s).replace(/\s+$/,'');
-   if(/[.]$/.test(before))continue;/* o.name / o?.name = プロパティ参照 */
-   const after=ln.slice(e).replace(/^\s+/,'');
+   /* 1e9 / 0x1F など数値の一部=直前の1文字が数字 */
+   if(s>0){const c0=ln.charCodeAt(s-1);if(c0>=48&&c0<=57)continue;}
+   /* 空白を飛ばして「直前の中身のある1文字」 */
+   let p=s-1;while(p>=0&&isSp(ln[p]))p--;
+   const bc=p>=0?ln[p]:'';
+   if(bc==='.')continue;/* o.name / o?.name = プロパティ参照 */
    /* オブジェクトのキー( name: )は変数ではない。行頭のキーは前の行の末尾で判断する */
-   if(/^:/.test(after)&&!/^::/.test(after)){
-    const ctx=before||prevEnd;
-    if(/[{,[(]$/.test(ctx)||ctx==='')continue;
+   let q=e;while(q<L&&isSp(ln[q]))q++;
+   if(ln[q]===':'&&ln[q+1]!==':'){
+    const ctx=(p>=0)?bc:prevEnd;
+    if(ctx===''||ctx==='{'||ctx===','||ctx==='['||ctx==='(')continue;
    }
    const name=m[0];
    if(!uses.has(name))uses.set(name,[]);
    uses.get(name).push(li+1);
   }
-  const t=ln.replace(/\s+$/,'');if(t)prevEnd=t.slice(-1);
+  let z=L-1;while(z>=0&&isSp(ln[z]))z--;
+  if(z>=0)prevEnd=ln[z];
  });
  return uses;
 }
-
 /* ============ 3. 宣言されている名前を広めに集める ============
    ここは「拾いすぎ」で構わない(見逃し=誤報になるだけ)。逆に拾い漏れると誤報が増える */
 function collectDecls(code){
