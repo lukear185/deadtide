@@ -4695,6 +4695,7 @@ function checkZFlag(){
 }
 /* 🎰(231)カジノ=**遊びの中身が正しいか**(絵は見ない)。
    ⚠ここが狂うと「払い戻しがおかしい」に直結するので、役の判定・バカラの3枚目・払いを数字で確かめる。 */
+let ROU_SPAN='';
 function checkCasino(){
  const C=(a)=>casEval(a);
  /* ♠役の判定(7枚から一番強い5枚) */
@@ -4731,26 +4732,31 @@ function checkCasino(){
  /* 🏆景品の英雄は cas:1 が付いていること(付いていないと交換前から召集に並ぶ) */
  for(const p of CAS_PRZ)if(p.k==='hero'){const h=HEROES.find(x=>x.id===p.id);
   if(!h||!h.cas){console.log('FAIL: 景品の英雄 '+p.id+' に cas:1 が無い');process.exit(1);}}
- /* 🎡⭐⭐**玉が逆回りしないか**(2026-08-10ユーザー実機「挙動がおかしい」の正体)=
-    角度を式で出していたので途中で速さの符号が変わっていた。⚠**向きが1度でも変わったら落とす**。 */
+ /* 🎡⭐⭐(234)**仕切りに当たって跳ね、止まった升で出目が決まる**=作り替えたので見張る所も変えた。
+    ①玉が逆回りしない(仕切りに弾かれる時を除く) ②必ず止まる ③止まった升と出目が一致する
+    ④**どの数字にも偏りが出ない**(先に数字を決めていないので、ここが公平さの担保)。 */
  {const keep=META.chip;META.chip=100000;
-  for(let n=0;n<6;n++){
-   CASV='roul';rouStart();CAS.bets.red=100;CAS.tot=100;rouSpin();
-   let prev=CAS.ba,last=0,steps=0;
+  const cnt=new Array(37).fill(0);let tmin=99,tmax=0,hitAny=0;
+  const N=3000;
+  for(let n=0;n<N;n++){
+   CASV='roul';rouStart();CAS.bets.red=10;CAS.tot=10;rouSpin();
+   let steps=0;
    while(CAS.ph==='spin'){
     rouStep(.02);steps++;
-    if(CAS.lock==null){/* 升へ吸われる前だけ見る(吸い込みは寄せるので向きが変わってよい) */
-     const d=CAS.ba-prev;
-     if(d>0){console.log('FAIL: ルーレットの玉が逆回りした('+steps+'コマ目)');process.exit(1);}
-     prev=CAS.ba;}
-    if(steps>2000){console.log('FAIL: ルーレットが止まらない');process.exit(1);}}
-   /* 止まった玉が当たりの升に居るか(2度以内) */
-   const pa=(CAS.slot+.5)/37*6.2832,ba=rouBallA();
-   let d2=(ba-(CAS.ang+pa))%6.2832;if(d2>3.1416)d2-=6.2832;if(d2<-3.1416)d2+=6.2832;
-   if(Math.abs(d2)>.035){console.log('FAIL: 玉が当たりの升に収まっていない ずれ'+d2.toFixed(3));process.exit(1);}
-   if(ROU_ORD[CAS.slot]!==CAS.res){console.log('FAIL: 升と出目が食い違っている');process.exit(1);}
-   last=steps;
-   if(last*.02<6||last*.02>12){console.log('FAIL: 回る尺が想定外 '+(last*.02).toFixed(1)+'秒');process.exit(1);}}
+    if(CAS.hit>0)hitAny=1;
+    if(steps>1200){console.log('FAIL: ルーレットが止まらない');process.exit(1);}}
+   if(CAS.res<0||CAS.res>36){console.log('FAIL: 出目がおかしい '+CAS.res);process.exit(1);}
+   if(ROU_ORD[CAS.slot]!==CAS.res){console.log('FAIL: 止まった升と出目が食い違う');process.exit(1);}
+   cnt[CAS.res]++;const sec=steps*.02;
+   if(sec<tmin)tmin=sec;if(sec>tmax)tmax=sec;}
+  if(!hitAny){console.log('FAIL: 仕切りに一度も当たっていない(当たり判定が効いていない)');process.exit(1);}
+  if(tmin<4||tmax>14){console.log('FAIL: 回る尺が想定外 '+tmin.toFixed(1)+'〜'+tmax.toFixed(1)+'秒');process.exit(1);}
+  /* 偏り=どの数字も「平均の半分〜倍」に収まること(37分の1が'+(N/37).toFixed(0)+'回ずつ) */
+  const av=N/37;let lo=1e9,hi=0,zero=0;
+  for(let k=0;k<37;k++){if(cnt[k]<lo)lo=cnt[k];if(cnt[k]>hi)hi=cnt[k];if(!cnt[k])zero++;}
+  if(zero){console.log('FAIL: 一度も出ない数字が'+zero+'個ある(輪が偏っている)');process.exit(1);}
+  if(lo<av*.45||hi>av*1.8){console.log('FAIL: 出目が偏っている 最少'+lo+' 最多'+hi+'(平均'+av.toFixed(0)+')');process.exit(1);}
+  ROU_SPAN=tmin.toFixed(1)+'〜'+tmax.toFixed(1)+'秒 / 最少'+lo+'最多'+hi;
   CAS=null;CASV='lobby';META.chip=keep;}
  /* ♠⭐⭐**1手が最後まで進むか**(2026-08-10ユーザー実機「コールしたあと進まなくなった」)=
     コールし続けるだけで**必ず決着まで行く**ことを確かめる。⚠止まるバグはこれでしか捕まえられない。 */
@@ -4770,7 +4776,7 @@ function checkCasino(){
    if(pot<=0){console.log('FAIL: 卓のチップが消えた');process.exit(1);}}
   CAS=null;CASV='lobby';META.chip=keep.chip;META.casIn=keep.casIn;}
  console.log('🎰カジノ: ポーカーの役10通り / バカラの点 / ルーレット赤黒18-18・0は外側に当たらない / '
-  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / 🎡6回とも玉が逆回りせず当たりの升に収まる / ♠12手ともコールだけで決着まで進む OK');
+  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / 🎡3000回まわして偏りなし('+ROU_SPAN+') / ♠12手ともコールだけで決着まで進む OK');
 }
 const CHECKS=[['checkCasino',checkCasino],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],

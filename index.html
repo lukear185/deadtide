@@ -34997,12 +34997,12 @@ function rouPut(k){
 function rouSpin(){
  if(CAS.ph!=='bet'||CAS.tot<=0){CASM='⚠まずチップを置く';return;}
  casAdd(-CAS.tot);
- CAS.ph='spin';CAS.t=0;CAS.res=(Math.random()*37)|0;CAS.spd=7+Math.random()*2;
- CAS.slot=ROU_ORD.indexOf(CAS.res);/* 🎡本物の並びのどの升か */
+ CAS.ph='spin';CAS.t=0;CAS.res=-1;CAS.slot=0;/* ⚠出目は**止まった升**で決まる(234) */
  CAS.win='spin';CAS.win2=0;CASM='';CAS.bt=0;
  /* 🎡(233)玉と輪の状態を作り直す。⚠**lock は必ず null に戻す**(前の回の吸い込みが残る) */
- CAS.ba=Math.random()*6.2832;CAS.bv=-15-Math.random()*2;CAS.wv=1.1+Math.random()*.3;
- CAS.brf=1.12;CAS.lock=null;
+ /* 🎡玉と輪の初期値(⚠毎回ばらす=これが公平さの土台) */
+ CAS.ba=Math.random()*6.2832;CAS.bv=-(13.5+Math.random()*3.5);
+ CAS.wv=.9+Math.random()*.5;CAS.brf=ROU_TRK;CAS.vr=0;CAS.set=0;CAS.setT=0;CAS.hit=0;CAS.slow=0;
  casS('casPile');
 }
 function rouPay(){
@@ -35104,14 +35104,23 @@ function rouSpinWin(c){
  const gb=c.createRadialGradient(0,0,R*.34,0,0,R);
  gb.addColorStop(0,'rgba(0,0,0,0)');gb.addColorStop(1,'rgba(0,0,0,.5)');
  c.fillStyle=gb;c.beginPath();c.arc(0,0,R,0,7);c.fill();
+ /* 🧱(234)**升は窪み**=外側に一段高い縁を巻いて、升がその内側へ落ち込んで見えるようにする */
+ c.save();c.beginPath();c.arc(0,0,R*1.07,0,7);c.arc(0,0,R*.985,0,7,true);c.clip();
+ const gl=c.createRadialGradient(0,-R*.2,R*.9,0,0,R*1.07);
+ gl.addColorStop(0,'#7a6142');gl.addColorStop(1,'#3d2e1e');
+ c.fillStyle=gl;c.beginPath();c.arc(0,0,R*1.07,0,7);c.fill();c.restore();
+ c.strokeStyle='rgba(0,0,0,.55)';c.lineWidth=R*.022;/* 縁の内側の落ち影=窪みの深さ */
+ c.beginPath();c.arc(0,0,R*.975,0,7);c.stroke();
  /* ④仕切りの金物(フレット)=1本ずつ光らせる */
  for(let k=0;k<37;k++){
   const a=CAS.ang+k/37*6.2832;
   const c1=Math.cos(a),s1=Math.sin(a);
-  c.strokeStyle='#b9ae95';c.lineWidth=R*.018;
-  c.beginPath();c.moveTo(c1*R*.38,s1*R*.38);c.lineTo(c1*R*1.01,s1*R*1.01);c.stroke();
-  c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=R*.008;
-  c.beginPath();c.moveTo(c1*R*.4,s1*R*.4-1);c.lineTo(c1*R*.99,s1*R*.99-1);c.stroke();}
+  c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=R*.026;/* 仕切りの影(片側だけ=厚みが出る) */
+  c.beginPath();c.moveTo(c1*R*.38+1,s1*R*.38+1.5);c.lineTo(c1*R*1.06+1,s1*R*1.06+1.5);c.stroke();
+  c.strokeStyle='#b9ae95';c.lineWidth=R*.020;/* 仕切りの金物(縁の上まで伸ばす) */
+  c.beginPath();c.moveTo(c1*R*.38,s1*R*.38);c.lineTo(c1*R*1.06,s1*R*1.06);c.stroke();
+  c.strokeStyle='rgba(255,255,255,.42)';c.lineWidth=R*.008;/* 上の照り */
+  c.beginPath();c.moveTo(c1*R*.4,s1*R*.4-1.2);c.lineTo(c1*R*1.04,s1*R*1.04-1.2);c.stroke();}
  /* ⑤数字(升と一緒に回る=寝かせて置く) */
  for(let k=0;k<37;k++){
   const n=ROU_ORD[k],am=CAS.ang+(k+.5)/37*6.2832;
@@ -35150,26 +35159,29 @@ function rouSpinWin(c){
  const gball=c.createRadialGradient(bx-rr9*.35,by-rr9*.4,rr9*.1,bx,by,rr9);
  gball.addColorStop(0,'#ffffff');gball.addColorStop(.55,'#e8e2d2');gball.addColorStop(1,'#8f8874');
  c.fillStyle=gball;c.beginPath();c.arc(bx,by,rr9,0,7);c.fill();
+ /* 🧱(234)仕切りに当たった瞬間の小さな光(当たり判定が働いているのが目で分かる) */
+ if(CAS.hit>0){c.save();c.globalAlpha=clamp(CAS.hit/.12,0,1)*.9;
+  c.strokeStyle='#fff2c8';c.lineWidth=2.2;
+  for(let q=0;q<4;q++){const aq=ba+q*1.57+.4;
+   c.beginPath();c.moveTo(bx+Math.cos(aq)*rr9*1.2,by+Math.sin(aq)*rr9*1.2);
+   c.lineTo(bx+Math.cos(aq)*rr9*2.3,by+Math.sin(aq)*rr9*2.3);c.stroke();}
+  c.restore();}
  /* 右=結果 */
  const px=CASW*.70;
- casText(c,CAS.ph==='res'?'結  果':'回っています…',px,CASH*.16,Math.max(15,CASH*.075),'#cbbf9e');
- if(CAS.ph==='res'){
+ casText(c,(CAS.ph==='res'||CAS.set)?'結  果':'回っています…',px,CASH*.16,Math.max(15,CASH*.075),'#cbbf9e');
+ if(CAS.ph==='res'||CAS.set){
   c.fillStyle=CAS.res===0?'#2f6b3a':(rouRed(CAS.res)?'#8c2b28':'#181410');
   c.beginPath();casRR(c,px-70,CASH*.26,140,CASH*.3,10);c.fill();
   c.strokeStyle='#c9a13d';c.lineWidth=4;c.stroke();
   casText(c,''+CAS.res,px,CASH*.41,Math.max(30,CASH*.19),'#f4eedd');
-  casText(c,CAS.win2>0?('🪙 +'+CAS.win2):('🪙 -'+CAS.tot),px,CASH*.68,Math.max(16,CASH*.085),
+  if(CAS.ph==='res')casText(c,CAS.win2>0?('🪙 +'+CAS.win2):('🪙 -'+CAS.tot),px,CASH*.68,Math.max(16,CASH*.085),
    CAS.win2>0?'#8fd08a':'#d08a8a');
  }else{
   casText(c,'置いた 🪙'+CAS.tot,px,CASH*.4,Math.max(15,CASH*.08),'#f0d79a');
   casText(c,'ノー・モア・ベット',px,CASH*.62,Math.max(13,CASH*.06),'#8a8172');}
 }
-/* ⭐いま玉が居る角度。⚠**升へ吸われてからは輪と一緒に回る**(ずれは滑らかに0へ) */
-function rouBallA(){
- if(CAS.lock==null)return CAS.ba||0;
- const e=clamp((CAS.t-ROU_T[2])/Math.max(.1,ROU_T[3]-ROU_T[2]),0,1);
- return CAS.ang+(CAS.slot+.5)/37*6.2832+CAS.lock*(1-e*e*(3-2*e));
-}
+/* ⭐いま玉が居る角度(234からは物理そのまま=寄せる細工は無し) */
+function rouBallA(){return CAS.ba||0;}
 
 /* 🎡卓を見ている時の画面(台は見るだけ・押すと大きな窓が開く) */
 function rouDraw(c){
@@ -35206,31 +35218,78 @@ function rouDraw(c){
 }
 /* 🎡⭐(233)**玉と輪は「速さを減らしながら積み上げる」**=式で角度を出すと途中で符号が変わって
    逆回りして見えた(実機指摘の正体)。⚠**減衰は掛け算だけ**にすること(引き算だと0を跨いで戻る)。 */
+/* 🎡⭐⭐⭐(234)**仕切り(フレット)に当たり判定を付けた**(2026-08-10ユーザー
+     「各数字の縁らへんに仕切りありの窪みをつけて、仕切りに判定をつけて。本当のルーレットみたいに。
+      そこに当たったりして跳ねるのも演出のうち」)。
+   ⭐**作り**=①玉は溝の上を走る ②遅くなると窪みの面へ落ちる ③**升の境目(仕切り)を跨ぐたびに当たる**
+     =弾き返されたり、乗り越えたり、上へ跳ねたり ④相対の速さが十分落ちたら、いま居る升で止まる。
+   ⭐⭐**出目は「止まった升」で決める**=先に数字を決めて後から寄せるのをやめた
+     (寄せると、跳ねているのに結果だけ決まっている嘘の動きになる)。
+   ⚠**公平さ**=玉の初速・輪の速さ・投げ入れる位置を毎回ばらす+跳ね方に乱数。
+     検査で3000回まわして**どの数字にも偏りが出ない**ことを見張っている。
+   ⚠**細かく刻んで解く**(1/120秒)=1コマぶんまとめて動かすと仕切りを飛び越えて当たり判定が抜ける。 */
+const ROU_FLR=.72,ROU_LIP=1.00,ROU_TRK=1.12;/* 升の底 / 仕切りの高さ / 溝(玉が走る所) */
 function rouStep(dt){
  if(CAS.ph!=='spin')return;
- CAS.t+=dt;
- CAS.wv=(CAS.wv==null?1.25:CAS.wv)*Math.pow(.93,dt);/* 輪(ゆっくり・向きは玉と逆) */
- CAS.ang+=CAS.wv*dt;
- CAS.bv=(CAS.bv==null?-16:CAS.bv)*Math.pow(.60,dt);/* 玉(速い→だんだん遅く) */
- CAS.ba=(CAS.ba||0)+CAS.bv*dt;
- /* 溝の上を走る → すり鉢を転がり落ちる → 升へ */
- if(CAS.t<ROU_T[0])CAS.brf=1.12;
- else if(CAS.t<ROU_T[1]){const q=(CAS.t-ROU_T[0])/(ROU_T[1]-ROU_T[0]);
-  CAS.brf=1.12-.40*q+Math.abs(Math.sin(q*9.4))*.05*(1-q);/* 跳ねながら落ちる */}
- else CAS.brf=.72;
- /* 升へ吸い込まれる瞬間に「いまのずれ」を控える(あとは滑らかに0へ) */
- if(CAS.t>=ROU_T[2]&&CAS.lock==null){
-  const pa=(CAS.slot+.5)/37*6.2832;
-  let d=(CAS.ba-(CAS.ang+pa))%6.2832;
-  if(d>3.1416)d-=6.2832;if(d<-3.1416)d+=6.2832;
-  CAS.lock=d;}
- /* 🎡音=**速さに合わせて間隔が変わる**(遅くなるのが耳で分かる)。⚠止まったら鳴らさない */
- if(CAS.t<ROU_T[2]){
-  CAS.bt=(CAS.bt||0)-dt;
-  if(CAS.bt<=0){
-   CAS.bt=clamp(1.15/Math.max(.4,Math.abs(CAS.bv)),.05,.5);
-   casS(CAS.t<ROU_T[0]?'casBall':'casFlip');}}
- if(CAS.t>ROU_T[4]&&CAS.ph==='spin'){CAS.ph='res';rouPay();}
+ const SUB=1/120;
+ let left=Math.min(.05,dt);
+ while(left>0){const h=Math.min(SUB,left);left-=h;rouSub(h);}
+ /* 🎡音=速さに合わせて間隔が変わる。⚠止まったら鳴らさない */
+ if(!CAS.set){CAS.bt=(CAS.bt||0)-dt;
+  if(CAS.bt<=0){CAS.bt=clamp(1.1/Math.max(.4,Math.abs(CAS.bv-CAS.wv)),.05,.5);
+   casS(CAS.brf>ROU_LIP?'casBall':'casFlip');}}
+ if(CAS.set&&CAS.t>CAS.setT+.9&&CAS.ph==='spin'){CAS.ph='res';rouPay();}
+}
+function rouSub(h){
+ CAS.t+=h;
+ /* 輪はゆっくり回り続ける(玉と逆向き) */
+ /* ⚠⚠**減衰は「1秒あたり」で書く**=にすると刻みを細かくしたぶんだけ効きすぎて
+    一瞬で止まる(1回踏んだ:8秒のはずが2秒で終わった) */
+ CAS.wv*=Math.pow(.97,h);CAS.ang+=CAS.wv*h;
+ if(CAS.set){CAS.bv=CAS.wv;CAS.ba+=CAS.bv*h;return;}/* 升に収まったら輪と一緒に回る */
+ CAS.bv*=Math.pow(.86,h);/* 玉は少しずつ遅くなる(1秒あたり) */
+ const relPrev=CAS.ba-CAS.ang;
+ CAS.ba+=CAS.bv*h;
+ /* ⚠⚠**溝の上は遠心力で貼り付いている**=速いうちは落ちない。
+    (1回踏んだ:ここで常に重力を掛けていたので、投げた直後に落ちて2秒で終わっていた) */
+ if(CAS.brf>=ROU_TRK-.001&&Math.abs(CAS.bv)>6.4){CAS.brf=ROU_TRK;CAS.vr=0;}
+ else{
+  CAS.vr-=1.15*h;/* 中心へ引かれる(すり鉢) */
+  CAS.brf+=CAS.vr*h;
+  if(CAS.brf>ROU_TRK){CAS.brf=ROU_TRK;if(CAS.vr>0)CAS.vr=0;}
+  if(CAS.brf<ROU_FLR){CAS.brf=ROU_FLR;if(CAS.vr<0)CAS.vr=-CAS.vr*.34;if(Math.abs(CAS.vr)<.05)CAS.vr=0;}}
+ /* 🧱仕切りの当たり判定=**升の境目を跨いだ瞬間**に見る(玉が仕切りより低い時だけ) */
+ if(CAS.brf<ROU_LIP){
+  const st=6.2832/37,rel=CAS.ba-CAS.ang;
+  const a0=Math.floor(relPrev/st),a1=Math.floor(rel/st);
+  if(a0!==a1){
+   const relV=CAS.bv-CAS.wv;
+   /* 仕切りにどう当たるか=**弾かれる/乗り越える**を、当たった強さで振り分ける */
+   const hard=Math.min(1,Math.abs(relV)/7);
+   if(Math.random()<.34+.30*(1-hard)){/* 弾き返される */
+    CAS.bv=CAS.wv-relV*(.22+Math.random()*.34);
+   }else{/* 乗り越える(勢いを削られる) */
+    CAS.bv=CAS.wv+relV*(.62+Math.random()*.22);}
+   CAS.vr+=(.14+Math.random()*.30)*(.35+hard);/* 上へ跳ねる */
+   CAS.hit=.12;/* 当たった印(絵の火花) */
+  }
+  /* 止まる=相対の速さが落ちて、升の底に**しばらく**居る。
+     ⚠⚠**一瞬の0では止めない**=仕切りに弾かれた瞬間に速さが0を通るので、そこで止めると
+       跳ねている途中で唐突に決まってしまう。0.15秒続いたら収まったと見なす。 */
+  if(Math.abs(CAS.bv-CAS.wv)<.42&&CAS.brf<ROU_FLR+.012&&Math.abs(CAS.vr)<.12)CAS.slow=(CAS.slow||0)+h;
+  else CAS.slow=0;
+  if(CAS.slow>.15){
+   const idx=((Math.floor(((CAS.ba-CAS.ang)%6.2832+6.2832)%6.2832/st))%37+37)%37;
+   CAS.set=1;CAS.setT=CAS.t;CAS.slot=idx;CAS.res=ROU_ORD[idx];
+   CAS.ba=CAS.ang+(idx+.5)*st;CAS.bv=CAS.wv;CAS.brf=ROU_FLR;CAS.vr=0;
+   casS('casFlip');}
+ }
+ if(CAS.hit>0)CAS.hit-=h;
+ /* ⚠**保険**=何かの拍子に止まらなくても必ず終わらせる(鳴りっぱなしと同じ事故になるため) */
+ if(!CAS.set&&CAS.t>10.5){const st=6.2832/37;
+  const idx=((Math.floor(((CAS.ba-CAS.ang)%6.2832+6.2832)%6.2832/st))%37+37)%37;
+  CAS.set=1;CAS.setT=CAS.t;CAS.slot=idx;CAS.res=ROU_ORD[idx];
+  CAS.ba=CAS.ang+(idx+.5)*st;CAS.bv=CAS.wv;CAS.brf=ROU_FLR;CAS.vr=0;}
 }
 
 /* ============ 🃏バカラ(本式の3枚目の決まりどおり) ============
