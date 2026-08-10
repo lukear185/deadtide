@@ -351,7 +351,7 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        +(OPTM?'optRender();document.getElementById("md-opt").classList.add("on");':''))
      :CASSHOT?('META.gem=400;META.chip=8600;META.casIn=1;casOpen();'
        +'CASV="'+CASKIND+'";'
-       +(CASKIND==='roul'?'rouStart();':CASKIND==='bacc'?'bacStart();':CASKIND==='poker'?'pkStart();':'')
+       +(CASKIND==='roul'?'rouStart();':(CASKIND==='roulbet'?'CASV="roul";rouStart();CAS.win="bet";':(CASKIND==='roulspin'?'CASV="roul";rouStart();CAS.bets={n17:100,red:200};CAS.tot=300;rouSpin();CAS.t=5.6;':(CASKIND==='bacc'?'bacStart();':(CASKIND==='baccsq'?'CASV="bacc";bacStart();CAS.bets.p=100;CAS.tot=100;bacDeal();CAS.t=1.4;bacStep(0.01);CAS.rvP[0]=0.55;':(CASKIND==='poker'?'pkStart();':''))))))
        +'casRender();')
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */

@@ -34844,6 +34844,7 @@ const CK=()=>CASH/460;/* 人や物の大きさの倍率(背の低い画面では
 const CAS_WOOD='#3a2b1e',CAS_WOOD2='#2a1f16',CAS_FELT='#3f5c40',CAS_FELT2='#334c35',
       CAS_LAMP='#f0c063',CAS_LINE='rgba(232,220,190,.62)',CAS_TXT='#e8dcc0';
 let CASX=null;/* いま押せる所の一覧 [{x,y,w,h,f}] */
+let CASSQ=[];/* 🃏(232)いま絞れる札の一覧 */
 function casHit(x,y,w,h,f){CASX.push({x,y,w,h,f});}
 function casRR(c,x,y,w,h,r){rr(c,x,y,w,h,r);}
 /* 🏮ランプ(琥珀の光の玉)。⚠光は塗り重ねで作る=影を落とすより軽い */
@@ -34985,7 +34986,8 @@ const ROU_OUT=[
 ];
 const ROU_DOZ=[{k:'d1',n:'1st 12',p:3,w:n=>n>=1&&n<=12},
  {k:'d2',n:'2nd 12',p:3,w:n=>n>=13&&n<=24},{k:'d3',n:'3rd 12',p:3,w:n=>n>=25}];
-function rouStart(){CAS={g:'roul',bets:{},tot:0,ph:'bet',ang:0,spd:0,res:-1,t:0,win:0};CASM='賭ける所を押してチップを置く(上限 🪙'+CAS_MAXBET+')';}
+function rouStart(){CAS={g:'roul',bets:{},tot:0,ph:'bet',ang:0,spd:0,res:-1,slot:0,t:0,win:'',win2:0};
+ CASM='台を押して賭ける所を選ぶ(上限 🪙'+CAS_MAXBET+')';}
 function rouPut(k){
  if(CAS.ph!=='bet')return;
  const add=Math.min(CASBET,CAS_MAXBET-CAS.tot,casChip()-CAS.tot);
@@ -34995,8 +34997,9 @@ function rouPut(k){
 function rouSpin(){
  if(CAS.ph!=='bet'||CAS.tot<=0){CASM='⚠まずチップを置く';return;}
  casAdd(-CAS.tot);
- CAS.ph='spin';CAS.t=0;CAS.res=(Math.random()*37)|0;CAS.spd=18+Math.random()*4;
- CASM='回っている…';CAS.bt=0;casS('casPile');
+ CAS.ph='spin';CAS.t=0;CAS.res=(Math.random()*37)|0;CAS.spd=7+Math.random()*2;
+ CAS.slot=ROU_ORD.indexOf(CAS.res);/* 🎡本物の並びのどの升か */
+ CAS.win='spin';CAS.win2=0;CASM='';CAS.bt=0;casS('casPile');
 }
 function rouPay(){
  const n=CAS.res;let w=0;
@@ -35004,11 +35007,112 @@ function rouPay(){
   if(k.charAt(0)==='n'){if(+k.slice(1)===n)w+=b*36;continue;}
   const o=ROU_OUT.find(x=>x.k===k)||ROU_DOZ.find(x=>x.k===k);
   if(o&&o.w(n))w+=b*o.p;}
- CAS.win=w;if(w>0)casAdd(w);
- CASM=(w>0?('🎉 '+n+' ! 🪙+'+w):('… '+n+' 。🪙-'+CAS.tot));
+ CAS.win2=w;if(w>0)casAdd(w);
+ CASM='';
  casS(w>=CAS.tot*4?'casBig':(w>0?'casWin':'casLose'));
 }
+/* 🎡⭐⭐(232)**専用のウィンドウ**(2026-08-10ユーザー実機指摘
+     「台をタップしたら専用のウィンドウがデカく出て、一つ一つを大きく」
+     「回る時も専用のウィンドウがデカく出て、数字と鉄球が見えるように、現実的な時間をかけて丁寧に」)。
+   ⭐`CAS.win` = ''(卓を見ている) / 'bet'(賭ける台) / 'spin'(回っている輪)。
+   ⚠**画面いっぱいを使う**=背の低い実機では、卓の上に小さく置くと絶対に押せない。 */
+/* 🎡本物の輪の並び(ヨーロピアン)。⚠数字順に並べない=見た目の説得力がまるで違う */
+const ROU_ORD=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const ROU_T=[.7,5.2,6.6,7.3,8.0];/* 玉を投げる / 周回 / 落ちる / 升へ吸われる / 一緒に回って止まる */
+/* ⭐賭ける台を「与えられた四角の中いっぱい」に描く。big=大きい窓か(押せる所も返す) */
+function rouBoard(c,x0,y0,w,h,big){
+ const gap=big?3:2,zw=w*.072,cw=(w-zw)/12;
+ const rowH=h*(big?.155:.14),dh=h*(big?.2:.19),oh=h*(big?.26:.29);
+ const gy=y0,dy=gy+rowH*3+h*.03,oy=dy+dh+h*.03;
+ const fs=big?Math.min(26,rowH*.5):Math.min(17,rowH*.44);
+ for(let i=1;i<=36;i++){
+  const col=((i-1)/3)|0,row=(i-1)%3;
+  const x=x0+zw+col*cw,y=gy+row*rowH;
+  c.fillStyle=rouRed(i)?'rgba(150,44,40,.92)':'rgba(24,20,16,.92)';
+  c.fillRect(x,y,cw-gap,rowH-gap);c.strokeStyle=CAS_LINE;c.lineWidth=big?2:1.4;
+  c.strokeRect(x,y,cw-gap,rowH-gap);
+  casText(c,''+i,x+(cw-gap)/2,y+(rowH-gap)/2,fs);
+  const b=CAS.bets['n'+i];if(b)casChips(c,x+cw-16,y+rowH-8,Math.ceil(b/CASBET),'#c9a13d');
+  if(big)casHit(x,y,cw-gap,rowH-gap,()=>rouPut('n'+i));}
+ c.fillStyle='rgba(47,107,58,.92)';c.fillRect(x0,gy,zw-gap,rowH*3-gap);
+ c.strokeStyle=CAS_LINE;c.strokeRect(x0,gy,zw-gap,rowH*3-gap);
+ casText(c,'0',x0+(zw-gap)/2,gy+rowH*1.5,fs*1.1);
+ if(CAS.bets.n0)casChips(c,x0+zw-16,gy+rowH*3-10,Math.ceil(CAS.bets.n0/CASBET),'#c9a13d');
+ if(big)casHit(x0,gy,zw-gap,rowH*3-gap,()=>rouPut('n0'));
+ ROU_DOZ.forEach((d,i)=>{const x=x0+zw+i*cw*4,ww=cw*4-gap;
+  c.fillStyle='rgba(24,20,16,.8)';c.fillRect(x,dy,ww,dh);
+  c.strokeStyle=CAS_LINE;c.strokeRect(x,dy,ww,dh);
+  casText(c,d.n,x+ww/2,dy+dh/2,big?Math.min(22,dh*.46):Math.min(16,dh*.5));
+  const b=CAS.bets[d.k];if(b)casChips(c,x+ww-22,dy+dh-6,Math.ceil(b/CASBET),'#c9a13d');
+  if(big)casHit(x,dy,ww,dh,()=>rouPut(d.k));});
+ ROU_OUT.forEach((o,i)=>{const ww=(cw*12)/6-gap,x=x0+zw+i*(cw*12)/6;
+  c.fillStyle=o.k==='red'?'rgba(150,44,40,.88)':(o.k==='blk'?'rgba(20,17,14,.92)':'rgba(24,20,16,.78)');
+  c.fillRect(x,oy,ww,oh);c.strokeStyle=CAS_LINE;c.strokeRect(x,oy,ww,oh);
+  casText(c,o.n,x+ww/2,oy+oh/2,big?Math.min(22,oh*.4):Math.min(15,oh*.46));
+  const b=CAS.bets[o.k];if(b)casChips(c,x+ww-20,oy+oh-6,Math.ceil(b/CASBET),'#c9a13d');
+  if(big)casHit(x,oy,ww,oh,()=>rouPut(o.k));});
+}
+/* 🎡**大きな賭けの台**(画面いっぱい) */
+function rouBetWin(c){
+ c.fillStyle='rgba(16,26,18,.97)';c.fillRect(0,0,CASW,CASH);
+ c.fillStyle=CAS_FELT2;c.fillRect(8,8,CASW-16,CASH-16);
+ c.strokeStyle='#6b5638';c.lineWidth=5;c.strokeRect(8,8,CASW-16,CASH-16);
+ casText(c,'🪙 いま置いている '+CAS.tot+'  /  上限 '+CAS_MAXBET,CASW/2,CASH*.062,Math.max(13,CASH*.055),'#f0d79a');
+ rouBoard(c,26,CASH*.115,CASW-52,CASH*.86,1);
+}
+/* 🎡**大きな回っている輪**(数字と鉄球が見える) */
+function rouSpinWin(c){
+ c.fillStyle='rgba(12,10,8,.96)';c.fillRect(0,0,CASW,CASH);
+ const R=Math.min(CASH*.44,196),wx=CASW*.31,wy=CASH*.5;
+ const t=CAS.t;
+ /* 木の枠 */
+ c.fillStyle='#4a3826';c.beginPath();c.arc(wx,wy,R*1.22,0,7);c.fill();
+ c.fillStyle='#31241a';c.beginPath();c.arc(wx,wy,R*1.1,0,7);c.fill();
+ /* 升(37) */
+ for(let i=0;i<37;i++){
+  const n=ROU_ORD[i],a=CAS.ang+i/37*6.2832;
+  c.fillStyle=n===0?'#2f6b3a':(rouRed(n)?'#8c2b28':'#181410');
+  c.beginPath();c.moveTo(wx,wy);c.arc(wx,wy,R,a,a+6.2832/37);c.closePath();c.fill();
+  c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=1.4;c.stroke();
+  /* 数字(升と一緒に回る) */
+  const am=a+3.1416/37;
+  c.save();c.translate(wx+Math.cos(am)*R*.84,wy+Math.sin(am)*R*.84);c.rotate(am+1.5708);
+  casText(c,''+n,0,0,Math.max(11,R*.088),'#f2ecdc');c.restore();}
+ c.fillStyle='#8a7448';c.beginPath();c.arc(wx,wy,R*.38,0,7);c.fill();
+ c.fillStyle='#c9a13d';c.beginPath();c.arc(wx,wy,R*.14,0,7);c.fill();
+ /* 上の目印 */
+ c.fillStyle='#e8dcc0';c.beginPath();c.moveTo(wx,wy-R*1.06);c.lineTo(wx-9,wy-R*1.22);c.lineTo(wx+9,wy-R*1.22);c.closePath();c.fill();
+ /* 🔩鉄球 */
+ const tgt=CAS.ang+(CAS.slot+.5)/37*6.2832;
+ let ba,br;
+ if(t<ROU_T[1]){const q=Math.min(1,t/ROU_T[1]);
+  ba=-t*(15-9*q);br=R*(.97-.02*q);}
+ else if(t<ROU_T[2]){const q=(t-ROU_T[1])/(ROU_T[2]-ROU_T[1]);
+  ba=-ROU_T[1]*6-(t-ROU_T[1])*(6-4*q);br=R*(.95-.22*q)+Math.sin(q*18)*R*.02;}
+ else if(t<ROU_T[3]){const q=(t-ROU_T[2])/(ROU_T[3]-ROU_T[2]);
+  const free=-ROU_T[1]*6-(ROU_T[2]-ROU_T[1])*4-(t-ROU_T[2])*2.2;
+  let d=((tgt-free+3.1416)%6.2832+6.2832)%6.2832-3.1416;/* 近い方から寄せる */
+  ba=free+d*(q*q*(3-2*q));br=R*(.73-.05*q)+Math.abs(Math.sin(q*9))*R*.03*(1-q);}
+ else{ba=tgt;br=R*.68;}
+ c.fillStyle='#f6f2e6';c.beginPath();c.arc(wx+Math.cos(ba)*br,wy+Math.sin(ba)*br,Math.max(6,R*.045),0,7);c.fill();
+ c.fillStyle='rgba(255,255,255,.5)';c.beginPath();c.arc(wx+Math.cos(ba)*br-2,wy+Math.sin(ba)*br-2,Math.max(2,R*.016),0,7);c.fill();
+ /* 右=いま置いている賭けと結果 */
+ const px=CASW*.66;
+ casText(c,CAS.ph==='res'?'結  果':'回っています…',px,CASH*.16,Math.max(15,CASH*.075),'#cbbf9e');
+ if(CAS.ph==='res'){
+  c.fillStyle=CAS.res===0?'#2f6b3a':(rouRed(CAS.res)?'#8c2b28':'#181410');
+  c.beginPath();casRR(c,px-70,CASH*.26,140,CASH*.3,10);c.fill();
+  c.strokeStyle='#c9a13d';c.lineWidth=4;c.stroke();
+  casText(c,''+CAS.res,px,CASH*.41,Math.max(30,CASH*.19),'#f4eedd');
+  casText(c,CAS.win2>0?('🪙 +'+CAS.win2):('🪙 -'+CAS.tot),px,CASH*.68,Math.max(16,CASH*.085),
+   CAS.win2>0?'#8fd08a':'#d08a8a');
+ }else{
+  casText(c,'置いた 🪙'+CAS.tot,px,CASH*.4,Math.max(15,CASH*.08),'#f0d79a');
+  casText(c,'ノー・モア・ベット',px,CASH*.62,Math.max(13,CASH*.06),'#8a8172');}
+}
 function rouDraw(c){
+ if(CAS.win==='bet'){rouBetWin(c);return;}
+ if(CAS.win==='spin'){rouSpinWin(c);return;}
  const k=CK(),TOP=CASH*.5;
  casRoom(c);casDealer(c,CASW-210,TOP*.99,1.2*k);
  /* 🎡輪(左上) */
@@ -35031,50 +35135,30 @@ function rouDraw(c){
   c.strokeStyle='#c9a13d';c.lineWidth=3;c.stroke();
   casText(c,''+CAS.res,wx,TOP*.06+21,24,'#f4eedd');}
  casTable(c,TOP);
- /* 賭けの盤(⚠フェルトの中に必ず収める=下は CASH*.98 まで) */
- /* ⚠**縦の割り当ての合計を1.0未満に保つ**=はみ出すと下の列が画面の外へ落ちる(1回踏んだ) */
- const bh=CASH-TOP-6,gy=TOP+bh*.02,ch=bh*.14,gx=132,cw=57;
- for(let i=1;i<=36;i++){
-  const col=((i-1)/3)|0,row=(i-1)%3;
-  const x=gx+52+col*cw,y=gy+row*ch;
-  c.fillStyle=rouRed(i)?'rgba(140,43,40,.85)':'rgba(24,20,16,.85)';
-  c.fillRect(x,y,cw-2,ch-2);c.strokeStyle=CAS_LINE;c.lineWidth=1.4;c.strokeRect(x,y,cw-2,ch-2);
-  casText(c,''+i,x+cw/2-1,y+ch/2-1,Math.min(17,ch*.44));
-  const b=CAS.bets['n'+i];if(b)casChips(c,x+cw-14,y+ch-6,Math.ceil(b/CASBET),'#c9a13d');
-  casHit(x,y,cw-2,ch-2,()=>rouPut('n'+i));}
- c.fillStyle='rgba(47,107,58,.85)';c.fillRect(gx,gy,50,ch*3-2);
- c.strokeStyle=CAS_LINE;c.strokeRect(gx,gy,50,ch*3-2);
- casText(c,'0',gx+25,gy+ch*1.5,Math.min(20,ch*.5));
- if(CAS.bets.n0)casChips(c,gx+36,gy+ch*3-10,Math.ceil(CAS.bets.n0/CASBET),'#c9a13d');
- casHit(gx,gy,50,ch*3-2,()=>rouPut('n0'));
- const dh=bh*.19,oh=bh*.29,dy=gy+ch*3+bh*.025,oy=dy+dh+bh*.025;
- ROU_DOZ.forEach((d,i)=>{const x=gx+52+i*cw*4;
-  c.fillStyle='rgba(24,20,16,.72)';c.fillRect(x,dy,cw*4-4,dh);
-  c.strokeStyle=CAS_LINE;c.strokeRect(x,dy,cw*4-4,dh);
-  casText(c,d.n,x+(cw*4-4)/2,dy+dh/2,Math.min(16,dh*.5));
-  const b=CAS.bets[d.k];if(b)casChips(c,x+cw*4-22,dy+dh-4,Math.ceil(b/CASBET),'#c9a13d');
-  casHit(x,dy,cw*4-4,dh,()=>rouPut(d.k));});
- ROU_OUT.forEach((o,i)=>{const w=(cw*12-4)/6,x=gx+52+i*w;
-  c.fillStyle=o.k==='red'?'rgba(140,43,40,.8)':(o.k==='blk'?'rgba(20,17,14,.85)':'rgba(24,20,16,.7)');
-  c.fillRect(x,oy,w-3,oh);c.strokeStyle=CAS_LINE;c.strokeRect(x,oy,w-3,oh);
-  casText(c,o.n,x+(w-3)/2,oy+oh/2,Math.min(15,oh*.46));
-  const b=CAS.bets[o.k];if(b)casChips(c,x+w-20,oy+oh-4,Math.ceil(b/CASBET),'#c9a13d');
-  casHit(x,oy,w-3,oh,()=>rouPut(o.k));});
+ /* 卓の上の台は**見るだけ**(小さいので押させない)=押したら大きな窓を開く */
+ const bh=CASH-TOP-6;
+ rouBoard(c,132,TOP+bh*.02,CASW-264,bh*.96,0);
+ casHit(90,TOP-12,CASW-180,CASH-TOP+12,()=>{CAS.win='bet';CASM='';});
+ casText(c,'▶ 台を押すと大きく開く',CASW/2,TOP-14,Math.max(13,CASH*.055),'#f0d79a');
  casHands(c);
 }
 function rouStep(dt){
  if(CAS.ph!=='spin')return;
- CAS.t+=dt;CAS.ang+=CAS.spd*dt*.2;CAS.spd*=Math.pow(.28,dt);
- /* 🎡玉が枠を走る音=**速いほど短い間隔**(だんだん遅くなるのが耳で分かる) */
- CAS.bt=(CAS.bt||0)-dt;if(CAS.bt<=0){CAS.bt=.055+CAS.t*.055;casS('casBall');}
- if(CAS.t>3.2){CAS.ph='res';rouPay();}
+ CAS.t+=dt;CAS.ang+=CAS.spd*dt*.2;CAS.spd*=Math.pow(.985,dt*60);/* 輪はゆっくり回り続ける */
+ /* 🎡玉が枠を走る音=**速いほど短い間隔**(だんだん遅くなるのが耳で分かる)。
+    ⚠升へ吸われてからは鳴らさない(止まったのに音だけ続くと嘘になる) */
+ if(CAS.t<ROU_T[2]){CAS.bt=(CAS.bt||0)-dt;
+  if(CAS.bt<=0){CAS.bt=.05+CAS.t*.028;casS('casBall');}}
+ else if(CAS.t<ROU_T[3]){CAS.bt=(CAS.bt||0)-dt;
+  if(CAS.bt<=0){CAS.bt=.14;casS('casFlip');}}/* 升に当たって跳ねる */
+ if(CAS.t>ROU_T[4]&&CAS.ph==='spin'){CAS.ph='res';rouPay();}
 }
 
 /* ============ 🃏バカラ(本式の3枚目の決まりどおり) ============
    ⭐払い= プレイヤー x2 / バンカー x1.95(5%の寺銭) / タイ x9。
    ⚠**3枚目の決まりは本物と同じ**にしてある(適当にすると「バカラじゃない」になる)。 */
 const BAC_PAY={p:2,b:1.95,t:9};
-function bacStart(){CAS={g:'bacc',bets:{p:0,b:0,t:0},tot:0,ph:'bet',ph2:[],bk:[],t:0,step:0,res:'',win:0};
+function bacStart(){CAS={g:'bacc',bets:{p:0,b:0,t:0},tot:0,ph:'bet',ph2:[],bk:[],t:0,step:0,res:'',win:0,rvP:[0,0,0],rvB:[0,0,0]};
  CASM='プレイヤー / タイ / バンカー に置く(上限 🪙'+CAS_MAXBET+')';}
 function bacPut(k){
  if(CAS.ph!=='bet')return;
@@ -35104,6 +35188,7 @@ function bacDeal(){
   if(draw){B.push(d.pop());bs=bacSum(B);}
  }
  CAS.ph2=P;CAS.bk=B;CAS.ph='deal';CAS.t=0;CAS.step=0;
+ CAS.rvP=[0,0,0];CAS.rvB=[0,0,0];/* 🃏(232)絞りの進み(札ごと) */
  CAS.res=ps>bs?'p':(bs>ps?'b':'t');
  CASM='配っている…';
 }
@@ -35117,45 +35202,94 @@ function bacPay(){
  CASM=nm+' の勝ち('+bacSum(CAS.ph2)+' 対 '+bacSum(CAS.bk)+')  '+(w>0?('🪙+'+w):('🪙-'+CAS.tot));
  casS(w>=CAS.tot*3?'casBig':(w>0?'casWin':'casLose'));
 }
+/* 🃏⭐⭐(232)**絞り(しぼり)**(2026-08-10ユーザー指摘「1枚1枚絞れる(捲れる)ように。
+     スワイプを徐々にして捲っていく感じ。2回タップしたらサッと捲れるようにも」)。
+   ⭐**指で擦った距離ぶんだけ角がめくれる**=途中で止めてよい(戻らない)。**2回叩くと一気に開く**。
+   ⚠**3枚目は最初の4枚を開き切ってから**出す(本物と同じ順番=先に見えると絞る意味が消える)。 */
+const BAC_SQ=96;/* これだけ擦ると開き切る(仮想px) */
+/* 🃏札の大きさ。⚠**絞る間は大きくする**=指で擦る物なので小さいと押さえられない(実機指摘) */
+const bacCH=av=>(CAS&&(CAS.ph==='sq'||CAS.ph==='res'||CAS.ph==='deal'))?Math.min(150,av*.7):Math.min(96,av*.42);
+function bacCards(){/* いま卓に出ている札の場所を返す(絞りの当たり判定と描画で共用) */
+ const TOP=CASH*.46,av=CASH-TOP,ch=bacCH(av),cw=ch*.7,mid=CASW/2,cy=TOP+av*.14;
+ const out=[];
+ for(const side of[0,1]){const arr=side?CAS.bk:CAS.ph2;if(!arr)continue;
+  for(let idx=0;idx<arr.length;idx++){
+   if(idx===2&&!bacRdy4())continue;/* 3枚目はまだ伏せない=出さない */
+   const bx=side?(mid+112+idx*(cw+7)):(mid-112-cw-idx*(cw+7));
+   out.push({s:side,i:idx,x:bx,y:cy,w:cw,h:ch,card:arr[idx]});}}
+ return out;}
+const bacRv=(s9,i9)=>((s9?CAS.rvB:CAS.rvP)||[])[i9]||0;
+function bacSetRv(s9,i9,v){const a=s9?CAS.rvB:CAS.rvP;if(a)a[i9]=clamp(v,0,1);}
+const bacRdy4=()=>bacRv(0,0)>=1&&bacRv(0,1)>=1&&bacRv(1,0)>=1&&bacRv(1,1)>=1;
+function bacDone(){
+ if(!bacRdy4())return false;
+ if(CAS.ph2.length>2&&bacRv(0,2)<1)return false;
+ if(CAS.bk.length>2&&bacRv(1,2)<1)return false;
+ return true;}
+function bacAll(){/* ぜんぶ めくる */
+ for(const c9 of bacCards())bacSetRv(c9.s,c9.i,1);
+ casS('casFlip');}
+/* 🂠絞りの絵=**角からめくれる**(rv=0..1)。⚠中途半端な所で止まるのが絞りの気持ちよさ */
+function bacCardSq(c,x,y,w,h,card,rv){
+ if(rv>=1){casCard(c,x,y,w,h,card,1);return;}
+ casCard(c,x,y,w,h,card,0);
+ if(rv<=0)return;
+ const d=rv*1.55;
+ c.save();
+ c.beginPath();c.moveTo(x,y+h);c.lineTo(x+w*d,y+h);c.lineTo(x,y+h-h*d);c.closePath();
+ c.clip();casCard(c,x,y,w,h,card,1);c.restore();
+ /* めくれた裏の三角(紙が起きている所) */
+ c.save();c.fillStyle='#7a5539';c.strokeStyle='#1a140d';c.lineWidth=2;
+ c.beginPath();c.moveTo(x+w*d,y+h);c.lineTo(x+w*d*.62,y+h-h*d*.62);c.lineTo(x,y+h-h*d);
+ c.closePath();c.fill();c.stroke();c.restore();}
 function bacDraw(c){
  const k=CK(),TOP=CASH*.46;
  casRoom(c);casDealer(c,CASW/2,TOP*.99,1.35*k);casTable(c,TOP);
- const av=CASH-TOP,ch=Math.min(96,av*.42),cw=ch*.7,mid=CASW/2;
- const cy=TOP+av*.06;
- /* カード(左=プレイヤー / 右=バンカー) */
- const show=CAS.ph==='deal'?CAS.step:99;
- const seq=[[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]];/* 配る順 */
- for(let i=0;i<6;i++){
-  const side=seq[i][0],idx=seq[i][1];
-  const arr=side?CAS.bk:CAS.ph2;if(!arr||!arr[idx])continue;
-  if(i>=show)continue;
-  const bx=side?(mid+112+idx*(cw+7)):(mid-112-cw-idx*(cw+7));
-  casCard(c,bx,cy,cw,ch,arr[idx],1,(idx===2?.35:0));}
- if((show>=6||CAS.ph==='res')&&CAS.ph2.length){
-  casText(c,'合計 '+bacSum(CAS.ph2),mid-185,cy+ch+13,16);
-  casText(c,'合計 '+bacSum(CAS.bk),mid+185,cy+ch+13,16);}
+ const av=CASH-TOP,ch=bacCH(av),cw=ch*.7,mid=CASW/2,cy=TOP+av*.14;
+ if(CAS.ph==='deal'){/* 配っている最中(伏せたまま滑ってくる) */
+  const seq=[[0,0],[1,0],[0,1],[1,1]];
+  for(let i=0;i<Math.min(4,CAS.step);i++){const sd=seq[i][0],idx=seq[i][1];
+   const bx=sd?(mid+112+idx*(cw+7)):(mid-112-cw-idx*(cw+7));
+   casCard(c,bx,cy,cw,ch,0,0);}
+ }else if(CAS.ph==='sq'||CAS.ph==='res'){
+  CASSQ=[];
+  for(const c9 of bacCards()){
+   const rv=CAS.ph==='res'?1:bacRv(c9.s,c9.i);
+   bacCardSq(c,c9.x,c9.y,c9.w,c9.h,c9.card,rv);
+   if(CAS.ph==='sq'&&rv<1)CASSQ.push(c9);}
+  if(CAS.ph==='sq')casText(c,'指で札を擦ると めくれる(2回叩くと一気に)',mid,TOP+av*.06,Math.max(12,av*.07),'#f0d79a');
+  if(CAS.ph==='res'){
+   casText(c,'合計 '+bacSum(CAS.ph2),mid-190,TOP+av*.06,16);
+   casText(c,'合計 '+bacSum(CAS.bk),mid+190,TOP+av*.06,16);}
+ }
  /* 賭ける所 */
+ if(CAS.ph!=='bet'){/* 絞り中は場所を札に譲って、賭けた中身は1行にまとめる */
+  const nm9={p:'PLAYER',b:'BANKER',t:'TIE'};
+  const ln=['p','t','b'].map(q=>nm9[q]+' 🪙'+CAS.bets[q]+((CAS.ph==='res'&&CAS.res===q)?' ◀勝ち':'')).join('   /   ');
+  casText(c,ln,mid,CASH-av*.06,Math.max(12,av*.075),CAS.ph==='res'?'#f0d79a':'#cbbf9e');
+  casHands(c);return;}
  const bw=200,bhh=Math.min(56,av*.26),by=CASH-bhh-av*.05;
  const spots=[{k:'p',n:'PLAYER  x2',x:mid-330},{k:'t',n:'TIE  x9',x:mid-100},{k:'b',n:'BANKER  x1.95',x:mid+130}];
- for(const s of spots){
-  const hit=(CAS.ph==='res'&&CAS.res===s.k);
+ for(const s9 of spots){
+  const hit=(CAS.ph==='res'&&CAS.res===s9.k);
   c.fillStyle=hit?'rgba(201,161,61,.42)':'rgba(20,26,20,.5)';
-  c.beginPath();casRR(c,s.x,by,bw,bhh,8);c.fill();
+  c.beginPath();casRR(c,s9.x,by,bw,bhh,8);c.fill();
   c.strokeStyle=hit?'#c9a13d':CAS_LINE;c.lineWidth=hit?4:2;c.stroke();
-  casText(c,s.n,s.x+bw/2,by+bhh*.34,15);
-  casText(c,'🪙'+CAS.bets[s.k],s.x+bw/2,by+bhh*.74,14,'#c9a13d');
-  if(CAS.bets[s.k])casChips(c,s.x+bw-24,by+bhh-8,Math.ceil(CAS.bets[s.k]/CASBET),'#c9a13d');
-  casHit(s.x,by,bw,bhh,()=>bacPut(s.k));}
+  casText(c,s9.n,s9.x+bw/2,by+bhh*.34,15);
+  casText(c,'🪙'+CAS.bets[s9.k],s9.x+bw/2,by+bhh*.74,14,'#c9a13d');
+  if(CAS.bets[s9.k])casChips(c,s9.x+bw-24,by+bhh-8,Math.ceil(CAS.bets[s9.k]/CASBET),'#c9a13d');
+  if(CAS.ph==='bet')casHit(s9.x,by,bw,bhh,()=>bacPut(s9.k));}
  casHands(c);
 }
 function bacStep(dt){
- if(CAS.ph!=='deal')return;
- CAS.t+=dt;
- const n=(CAS.ph2.length===3?1:0)+(CAS.bk.length===3?1:0)+4;
- const st9=Math.min(6,Math.floor(CAS.t/.34));
- if(st9>CAS.step)casS('casCardS');/* ⚠1枚ごとに1回だけ */
- CAS.step=st9;
- if(CAS.t>.34*n+.5){CAS.ph='res';bacPay();}
+ if(CAS.ph==='deal'){
+  CAS.t+=dt;
+  const st9=Math.min(4,Math.floor(CAS.t/.3));
+  if(st9>CAS.step)casS('casCardS');/* ⚠1枚ごとに1回だけ */
+  CAS.step=st9;
+  if(CAS.t>1.35){CAS.ph='sq';CASM='札を絞る';}
+  return;}
+ if(CAS.ph==='sq'&&bacDone()){CAS.ph='res';bacPay();}
 }
 
 /* ============ ♠テキサスホールデム(CPU3人と1卓) ============
@@ -35348,14 +35482,24 @@ function casGo(v){
  else if(v==='poker')pkStart();else CAS=null;
  casRender();
 }
-let CASLT=0;
+let CASLT=0,CASSIG='';
+/* ⭐いま画面の下に出るべきボタンを決める要素を1本の文字列にした物。これが変わったら作り直す */
+function casSig(){
+ if(!CAS)return CASV+'|'+CASM;
+ return CASV+'|'+CASM+'|'+(CAS.ph||'')+'|'+(CAS.st||'')+'|'+(CAS.cur==null?'':CAS.cur)
+  +'|'+(CAS.call||0)+'|'+(CAS.win||'')+'|'+(CAS.pl?CAS.pl[0].bet+':'+(CAS.pl[0].fold?1:0):'');
+}
 function casLoop(ts){
  CASRAF=requestAnimationFrame(casLoop);
  if(!casOn())return;
  const dt=Math.min(.05,(ts-CASLT)/1000||0);CASLT=ts;CAST+=dt;
- if(CAS){const before=CASM;
+ if(CAS){
   if(CAS.g==='roul')rouStep(dt);else if(CAS.g==='bacc')bacStep(dt);else if(CAS.g==='poker')pkStep(dt);
-  if(CASM!==before)casCtl();}
+  /* ⚠⚠**下の帯は「言葉が変わった時」だけでなく「状況が変わった時」に作り直す**
+     =(231)は CASM の変化だけで見ていたので、**ポーカーで自分の番が戻ってきても
+       ボタンが出ないまま止まって見えた**(2026-08-10ユーザー実機指摘)。
+     ⭐押せる物が変わる要素を全部つないだ札(casSig)で見る。 */
+  const sg=casSig();if(sg!==CASSIG){CASSIG=sg;casCtl();}}
  casPaint();
 }
 function casPaint(){
@@ -35398,14 +35542,25 @@ function casCtl(){
    +casBt('roul','🎡 ルーレット')+casBt('bacc','🃏 バカラ')+casBt('poker','♠ ポーカー');
  }else if(CASV==='ex'||CASV==='shop'){
   h+=casBt('lobby','← 戻る');
- }else if(CASV==='roul'||CASV==='bacc'){
+ }else if(CASV==='roul'){
+  /* 🎡(232)**窓ごとにボタンを変える**=卓を見ている/大きな台/回っている輪 */
+  const w9=CAS?CAS.win:'';
+  if(w9==='bet'){
+   h+='<div class="casbet">'+[10,50,100,500].map(v=>
+    '<button class="caschip c'+v+(CASBET===v?' on':'')+'" data-cas="chip'+v+'">'+v+'</button>').join('')+'</div>';
+   h+=casBt('spin','🎡 回す','gold')+casBt('clear','やり直す','small')+casBt('close','閉じる','small');
+  }else if(w9==='spin'){
+   if(CAS&&CAS.ph==='res')h+=casBt('again','もう一度','gold')+casBt('close','台へ戻る','small');
+   else h+='';
+  }else{h+=casBt('open','🎲 台を開く','gold')+casBt('lobby','← 戻る','small');}
+ }else if(CASV==='bacc'){
   const ph=CAS?CAS.ph:'bet';
-  h+='<div class="casbet">'+[10,50,100,500].map(v=>
-   '<button class="caschip c'+v+(CASBET===v?' on':'')+'" data-cas="chip'+v+'">'+v+'</button>').join('')+'</div>';
   if(ph==='bet'){
-   h+=casBt(CASV==='roul'?'spin':'deal',CASV==='roul'?'🎡 回す':'🃏 配る','gold')
-    +casBt('clear','やり直す','small');
-  }else if(ph==='res'){h+=casBt('again','もう一度','gold');}
+   h+='<div class="casbet">'+[10,50,100,500].map(v=>
+    '<button class="caschip c'+v+(CASBET===v?' on':'')+'" data-cas="chip'+v+'">'+v+'</button>').join('')+'</div>';
+   h+=casBt('deal','🃏 配る','gold')+casBt('clear','やり直す','small');
+  }else if(ph==='sq'){h+=casBt('open','ぜんぶ めくる','gold');}
+  else if(ph==='res'){h+=casBt('again','もう一度','gold');}
   h+=casBt('lobby','← 戻る','small');
  }else if(CASV==='poker'){
   if(CAS&&CAS.st==='dead'){h+=casBt('lobby','← 席を立つ','gold');}
@@ -35429,7 +35584,9 @@ function casBtn(k){
  if(k==='spin'){rouSpin();casCtl();return;}
  if(k==='deal'){bacDeal();casCtl();return;}
  if(k==='clear'){if(CAS&&CAS.ph==='bet'){CAS.bets=CAS.g==='bacc'?{p:0,b:0,t:0}:{};CAS.tot=0;CASM='';}casCtl();return;}
- if(k==='again'){if(CASV==='roul')rouStart();else bacStart();casCtl();return;}
+ if(k==='again'){if(CASV==='roul'){rouStart();CAS.win='bet';}else bacStart();casCtl();return;}
+ if(k==='open'){if(CASV==='roul'){CAS.win='bet';CASM='';}else if(CASV==='bacc')bacAll();casCtl();return;}
+ if(k==='close'){if(CAS)CAS.win='';CASM='';casCtl();return;}
  if(k.slice(0,3)==='pk-'){pkAct(k.slice(3));casCtl();return;}
  if(k.slice(0,3)==='ex-'){casBuy(+k.slice(3));return;}
  if(k.slice(0,3)==='pz-'){casPrize(k.slice(3));return;}
@@ -35479,8 +35636,42 @@ function casRender(){
  for(const b of d.querySelectorAll('[data-cas]'))b.onclick=()=>casBtn(b.getAttribute('data-cas'));
  casTop();casCtl();
 }
+/* 🃏⭐(232)**指の入力**=押す→擦る→離す。⚠**click は使わない**(擦りと二重に効く)。
+   ⭐擦った距離ぶんだけ札がめくれる / **同じ札を2回叩くと一気に開く** / 動かさずに離したら「押した」。 */
+let CASP=null,CAST2=0,CASTC=null;
+function casPos(cv,e){const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];}
+function casDown(mx,my){
+ const x=(mx-CAS_OX)/CAS_S,y=(my-CAS_OY)/CAS_S;
+ CASP={x0:x,y0:y,x:x,y:y,mv:0,c:null};
+ for(const q of CASSQ)if(x>=q.x-6&&x<=q.x+q.w+6&&y>=q.y-6&&y<=q.y+q.h+6){CASP.c=q;break;}
+}
+function casMove(mx,my){
+ if(!CASP)return;
+ const x=(mx-CAS_OX)/CAS_S,y=(my-CAS_OY)/CAS_S;
+ const dd=Math.hypot(x-CASP.x0,y-CASP.y0);
+ if(dd>6)CASP.mv=1;
+ if(CASP.c&&CAS&&CAS.ph==='sq'){
+  const was=bacRv(CASP.c.s,CASP.c.i);
+  const v=clamp(dd/BAC_SQ,0,1);
+  if(v>was){bacSetRv(CASP.c.s,CASP.c.i,v);
+   if(Math.floor(v*6)>Math.floor(was*6))casS('casCardS');/* 擦っている間の紙の音 */
+   if(v>=1)casS('casFlip');}}
+ CASP.x=x;CASP.y=y;
+}
+function casUp(){
+ if(!CASP)return;const p=CASP;CASP=null;
+ if(p.mv)return;/* 擦った時は「押した」にしない */
+ if(p.c&&CAS&&CAS.ph==='sq'){
+  const now=(typeof performance!=='undefined'&&performance.now)?performance.now():0;
+  const same=CASTC&&CASTC.s===p.c.s&&CASTC.i===p.c.i;
+  if(same&&now-CAST2<420){bacSetRv(p.c.s,p.c.i,1);casS('casFlip');CASTC=null;return;}
+  CAST2=now;CASTC={s:p.c.s,i:p.c.i};return;}
+ casTap(p.x0*CAS_S+CAS_OX,p.y0*CAS_S+CAS_OY);
+}
 {const cv=$('cas-cv');
- if(cv)cv.onclick=(e)=>{const r=cv.getBoundingClientRect();casTap(e.clientX-r.left,e.clientY-r.top);};
+ if(cv){cv.onpointerdown=(e)=>{const q=casPos(cv,e);casDown(q[0],q[1]);};
+  cv.onpointermove=(e)=>{if(CASP){const q=casPos(cv,e);casMove(q[0],q[1]);}};
+  cv.onpointerup=()=>casUp();cv.onpointercancel=()=>{CASP=null;};}
  const cb=$('bt-cas-close');if(cb)cb.onclick=()=>casClose();}
 $('bt-gacha').onclick=()=>{GCV='home';renderGacha(null);$('md-gacha').classList.add('on');tbgmOff();gbgmOn();/* 🎵(213)ガチャ画面専用BGM */};
 $('bt-gacha-close').onclick=()=>{

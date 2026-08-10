@@ -4731,8 +4731,25 @@ function checkCasino(){
  /* 🏆景品の英雄は cas:1 が付いていること(付いていないと交換前から召集に並ぶ) */
  for(const p of CAS_PRZ)if(p.k==='hero'){const h=HEROES.find(x=>x.id===p.id);
   if(!h||!h.cas){console.log('FAIL: 景品の英雄 '+p.id+' に cas:1 が無い');process.exit(1);}}
+ /* ♠⭐⭐**1手が最後まで進むか**(2026-08-10ユーザー実機「コールしたあと進まなくなった」)=
+    コールし続けるだけで**必ず決着まで行く**ことを確かめる。⚠止まるバグはこれでしか捕まえられない。 */
+ {const keep={chip:META.chip,casIn:META.casIn};
+  META.chip=100000;META.casIn=1;
+  for(let hand=0;hand<12;hand++){
+   CASV='poker';if(hand===0)pkStart();else pkHand();
+   if(!CAS||CAS.g!=='poker'){console.log('FAIL: ポーカーの卓が立たない');process.exit(1);}
+   let n=0,acted=0;
+   while(CAS.st!=='show'&&CAS.st!=='dead'){
+    if(CAS.cur===0&&!CAS.pl[0].fold&&!CAS.pl[0].allin&&(!CAS.pl[0].act||CAS.pl[0].bet<CAS.call)){
+     pkAct('call');acted++;}
+    else pkStep(.05);
+    if(++n>4000){console.log('FAIL: ポーカーが決着まで進まない(手'+hand+' 打った回数'+acted+
+      ' 段'+CAS.st+' 番'+CAS.cur+' コール額'+CAS.call+')');process.exit(1);}}
+   const pot=CAS.pl.reduce((a,p)=>a+p.ch,0);
+   if(pot<=0){console.log('FAIL: 卓のチップが消えた');process.exit(1);}}
+  CAS=null;CASV='lobby';META.chip=keep.chip;META.casIn=keep.casIn;}
  console.log('🎰カジノ: ポーカーの役10通り / バカラの点 / ルーレット赤黒18-18・0は外側に当たらない / '
-  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 OK');
+  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 / ♠12手ともコールだけで決着まで進む OK');
 }
 const CHECKS=[['checkCasino',checkCasino],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],
