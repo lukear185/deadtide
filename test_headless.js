@@ -4693,7 +4693,48 @@ function checkZFlag(){
   +' ← zSpec の返す物に1つずつ足すこと(足さないと、その印は盤面で一度も効かない)');process.exit(1);}
  console.log('🐞ゾンビの印: '+need.length+'種すべて表から実体まで届いている OK');
 }
-const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
+/* 🎰(231)カジノ=**遊びの中身が正しいか**(絵は見ない)。
+   ⚠ここが狂うと「払い戻しがおかしい」に直結するので、役の判定・バカラの3枚目・払いを数字で確かめる。 */
+function checkCasino(){
+ const C=(a)=>casEval(a);
+ /* ♠役の判定(7枚から一番強い5枚) */
+ const mk=(s,r)=>s*13+((r+12)%13);/* r=1..13(1=A) → 表の並びへ */
+ const A=(s)=>mk(s,1),K=(s)=>mk(s,13),Q=(s)=>mk(s,12),J=(s)=>mk(s,11),T=(s)=>mk(s,10);
+ const n=(s,v)=>mk(s,v);
+ const cases=[
+  [[A(0),K(0),Q(0),J(0),T(0),n(1,2),n(2,5)],8,'ストレートフラッシュ'],
+  [[n(0,9),n(1,9),n(2,9),n(3,9),n(0,2),n(1,5),n(2,7)],7,'フォーカード'],
+  [[n(0,9),n(1,9),n(2,9),n(3,4),n(0,4),n(1,7),n(2,2)],6,'フルハウス'],
+  [[n(0,2),n(0,5),n(0,7),n(0,9),n(0,12),n(1,3),n(2,4)],5,'フラッシュ'],
+  [[n(0,5),n(1,6),n(2,7),n(3,8),n(0,9),n(1,2),n(2,12)],4,'ストレート'],
+  [[A(0),n(1,2),n(2,3),n(3,4),n(0,5),n(1,9),n(2,12)],4,'A-5のストレート'],
+  [[n(0,9),n(1,9),n(2,9),n(3,4),n(0,7),n(1,2),n(2,12)],3,'スリーカード'],
+  [[n(0,9),n(1,9),n(2,4),n(3,4),n(0,7),n(1,2),n(2,12)],2,'ツーペア'],
+  [[n(0,9),n(1,9),n(2,4),n(3,6),n(0,7),n(1,2),n(2,12)],1,'ワンペア'],
+  [[n(0,9),n(1,3),n(2,4),n(3,6),n(0,7),n(1,11),n(2,13)],0,'ハイカード']];
+ for(const [cs,want,nm] of cases){const h=C(cs);
+  if(h[0]!==want){console.log('FAIL: ポーカーの役 '+nm+' が '+CAS_HN[h[0]]+' になった');process.exit(1);}}
+ /* 強い方が必ず勝つ */
+ if(casCmp(C(cases[1][0]),C(cases[2][0]))<=0){console.log('FAIL: フォーカードがフルハウスに負けた');process.exit(1);}
+ /* 🃏バカラの点(10〜Kは0・Aは1) */
+ if(casBaccV(mk(0,10))!==0||casBaccV(mk(0,13))!==0||casBaccV(mk(0,1))!==1||casBaccV(mk(0,8))!==8){
+  console.log('FAIL: バカラの点の数え方');process.exit(1);}
+ /* 🎡ルーレットの赤黒=18/18/0の1つ */
+ let red=0,blk=0;for(let i=1;i<=36;i++){if(rouRed(i))red++;else blk++;}
+ if(red!==18||blk!==18){console.log('FAIL: ルーレットの赤黒が18/18でない '+red+'/'+blk);process.exit(1);}
+ /* 賭ける所の当たり判定(0はどの外側にも当たらない=胴元の取り分の源) */
+ for(const o of ROU_OUT)if(o.w(0)){console.log('FAIL: 0が外側の賭け('+o.k+')に当たっている');process.exit(1);}
+ for(const d of ROU_DOZ)if(d.w(0)){console.log('FAIL: 0がダース('+d.k+')に当たっている');process.exit(1);}
+ /* 🪙交換のわりが「買うほど得」になっているか(逆転していると値札の意味が消える) */
+ let last=0;for(const r of CAS_RATE){const per=r[1]/r[0];
+  if(per<last){console.log('FAIL: チップの交換わりが逆転している');process.exit(1);}last=per;}
+ /* 🏆景品の英雄は cas:1 が付いていること(付いていないと交換前から召集に並ぶ) */
+ for(const p of CAS_PRZ)if(p.k==='hero'){const h=HEROES.find(x=>x.id===p.id);
+  if(!h||!h.cas){console.log('FAIL: 景品の英雄 '+p.id+' に cas:1 が無い');process.exit(1);}}
+ console.log('🎰カジノ: ポーカーの役10通り / バカラの点 / ルーレット赤黒18-18・0は外側に当たらない / '
+  +'チップの交換わり / 景品'+CAS_PRZ.length+'件 OK');
+}
+const CHECKS=[['checkCasino',checkCasino],['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],

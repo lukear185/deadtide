@@ -157,6 +157,8 @@ const LAB=!!LM,LABT=(LM&&LM[1])||'ulu';
 const LDM=/load(?:=([a-z]+))?/.exec(OPT);/* load / load=am = 🎖編成の指定タブ */
 const LOAD=!!LDM,LOADT=(LDM&&LDM[1])||'base';
 const TRH=OPT.indexOf('trhome')>=0;/* trhome = 🏋鍛錬所のモーダル */
+/* 🎰casino[=ex|shop|roul|bacc|poker] = カジノの画面を撮る(2026-08-10(231)) */
+const CASM2=/casino(?:=([a-z]+))?/.exec(OPT),CASSHOT=!!CASM2,CASKIND=(CASM2&&CASM2[1])||'lobby';
 const SFXT=OPT.indexOf('sfx')>=0;/* sfx = 🔊音の確認の画面 */
 const TTL=OPT.indexOf('title')>=0;/* title = タイトル画面をそのまま撮る */
 /* ⭐setup = 🧟ソロの出撃準備画面(ステージ/難易度/砲撃/英雄を選ぶ所)。2026-07-27に2列へ作り替えた */
@@ -347,6 +349,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
        +(OPT.indexOf('bus')>=0?('setTimeout(function(){PAR.length=0;PAR.push({zi:-1,x:innerWidth*.3,sp:0,ph:1,ht:0,hp:'
          +((/busn=(\d+)/.exec(OPT)||[0,''])[1]||'BUS_HP')+',kb:0,fl:0,bus:1});},300);'):'')
        +(OPTM?'optRender();document.getElementById("md-opt").classList.add("on");':''))
+     :CASSHOT?('META.gem=400;META.chip=8600;META.casIn=1;casOpen();'
+       +'CASV="'+CASKIND+'";'
+       +(CASKIND==='roul'?'rouStart();':CASKIND==='bacc'?'bacStart();':CASKIND==='poker'?'pkStart();':'')
+       +'casRender();')
      :TRH?('META.tr0=1;META.hmat=88;META.hero={hNox:1,hSf:1,hMed:2,hCop:1};META.hlv={hNox:3,hSf:10};META.hxp={hNox:120};'
        /* 図鑑タブ(trzoo)は、半分ぐらい発見済みの状態で撮る */
        +'META.zdex={};ZOMBIES.forEach(function(z,i){if(i%2===0)META.zdex[z.id]=1;});'
