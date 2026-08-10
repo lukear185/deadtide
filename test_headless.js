@@ -4591,6 +4591,29 @@ function checkStage3(){
    const dA=zA.d,dB=zB.d;frames(40,.05);
    if(!(zA.d>dA+30))F('別の枝(北)の敵まで足止めしている(枝またぎの交戦) 進み'+Math.round(zA.d-dA));
    if(zB.dead||zB.d>dB+30)F('同じ枝(南)の敵を止められていない 進み'+Math.round(zB.d-dB));}}
+ /* 🐞⭐⭐(241)**枝から枝へ乗り換えられるか(両方向)**(2026-08-10ユーザー実機
+    「一回下の道に行くと上に行けない/上からは戻れる、という変な状況」)。
+    🐞**正体**=戻る先が「合流点+2」だったのに、歩きは**目標の8px手前で止まる**ので、
+      合流点の数px手前で止まると枝を覚え直さず**永久にその枝から出られなかった**。
+    ⚠**止まる位置は歩幅次第**なので、上の枝と下の枝で結果が変わって見えた=**両方向を見る**。 */
+ {me.zombies.length=0;G.tide.pool.length=0;
+  const far=mkZ(zSpec(0,1,1));far.d=10;far.ln=0;far.hp=far.mhp=9e6;far.sp=0;me.zombies.push(far);/* 波を終わらせない番人 */
+  const on=(u,ln)=>{const a=pathPos(u.d,ln),b=pathPos(u.d,1-ln);
+   return dist(u.px,u.py,a[0],a[1])<=40&&dist(u.px,u.py,a[0],a[1])<=dist(u.px,u.py,b[0],b[1]);};
+  for(const from of [0,1]){const to=1-from;
+   me.units.length=0;me.scrap=99999;
+   {const p=pathPos(MERGE_D*.55,from);actFlag(p[0],p[1]);}
+   deployUnit(me,me.team[0]);frames(240,.05);
+   const u=me.units[0];
+   if(!u)F('ユニットが出せない');
+   if(!(u.d<MERGE_D-1&&on(u,from)))F('旗を置いた枝('+(from?'南':'北')+')に入っていない d='+Math.round(u.d));
+   {const p=pathPos(MERGE_D*.55,to);actFlag(p[0],p[1]);}
+   frames(400,.05);
+   if(!(u.d<MERGE_D-1&&on(u,to)))
+    F((from?'南':'北')+'の枝から'+(to?'南':'北')+'の枝へ乗り換えられない d='+Math.round(u.d)
+      +'(合流点'+Math.round(MERGE_D)+')=分かれ道まで戻り切れずに止まっている');
+  }
+  me.units.length=0;me.zombies.length=0;}
  /* ⑦ 敵は両方の枝から来る */
  {buildTide(6);const cn=[0,0];for(const e of G.tide.pool)if(e.ln!=null)cn[e.ln]++;
   if(!(cn[0]>0&&cn[1]>0))F('片方の枝にしか敵が湧かない '+cn.join('/'));
