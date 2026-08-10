@@ -4400,7 +4400,12 @@ function checkDesignNums(){
   ['FIRE_VS_ARMOR(🔥火炎×🛡装甲)',FIRE_VS_ARMOR,1.9],
   ['ELEC_VS_SCALE(⚡電撃×🐟鱗)',ELEC_VS_SCALE,1.9],
   ['RPT_X(🧬配布の全体倍率)',RPT_X,.72/* ⭐(198)面の制覇で段が進む形にしたので4割下げた */],
-  ['STAGES[1].hpM(②沈んだ港の重さ)',STAGES[1].hpM,2],
+  /* 🎚(238f)面ごとの目盛りを作り直した(面①ナイトメア=10 として 面② 5→20)。
+     ⚠**hpM と spr は必ず一組で見る**=片方だけ直すと落差が壊れる */
+  ['STAGES[1].hpM(②沈んだ港の重さ)',STAGES[1].hpM,1.47],
+  ['STAGES[1].spr(②の段の効き方)',STAGES[1].spr,1.88],
+  ['STAGES[2].spr(③の段の効き方)',STAGES[2].spr,1.30],
+  ['STAGES[3].spr(④の段の効き方)',STAGES[3].spr,1.31],
   /* ⭐(197)面のクリアで開く上限にした=表の上限は100(未クリアは20から) */
   ['TR_MAX(鍛錬Lvの上限)',TR_MAX,100],
   ['TR_CAP[0](未クリアの上限)',TR_CAP[0],20],
