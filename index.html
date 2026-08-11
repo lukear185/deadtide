@@ -17721,6 +17721,15 @@ HBODY.hRen=(c,U,walk,t,ph,o,rk)=>{
  const uw=(o&&o.ulp>=0)?clamp(o.ulp,0,1):0;
  /* ⚠**最後の1割は動かさない**=詠唱は「タメ込んで止まる」のが決まり(検査が見ている) */
  if(uw>0){const q9=clamp(uw/.85,0,1),q=q9*q9;c.translate(0,-q*230);c.scale(1-q*.5,1-q*.5);}
+ /* 💥⭐(257)**落ちている間は拳を先にして前へ倒れる**(ユーザー指示「レンの拳で撃墜する感じ」)。
+    ⚠**腰のあたりを軸に回す**=足元を軸にすると体が寝そべって見える。
+    ⭐着地の一拍は**沈み込む**(踏み込んで殴った後の形)。 */
+ if(o&&o.rj>=0){
+  if(o.rj<RJ_DOWN){const f=clamp(o.rj/RJ_DOWN,0,1);
+   c.translate(0,-30);c.rotate(.5+f*.65);c.translate(0,30);}
+  else if(o.rj<RJ_DOWN+RJ_HOLD){const f=clamp((o.rj-RJ_DOWN)/RJ_HOLD,0,1);
+   c.scale(1+.10*(1-f),1-.14*(1-f));}
+ }
  hLeg2(c,walk,PA,SHO,5.2,1);
  hTop(c,t,ph,-.02);
  /* 膝の装甲板(⚠左右で大きさを変える) */
@@ -17902,16 +17911,21 @@ HBODY.hKrup=(c,U,walk,t,ph,o)=>{
 HBODY.hDim=(c,U,walk,t,ph,o,rk)=>{
  const SK=U_SKIN,CT='#2a2634',CT2='#1c1a24',CT3='#3b3648',
        AR='#4a4658',AR2='#7d7a92',PU='#8f6fe0',PU2='#c4a8ff',
-       HR='#1a1720',HR2='#5a3f8a',BD='#cfc6b0',PA='#242030',SHO='#1a1720',rc=bRc(o);
+       HR='#1a1720',HR2='#5a3f8a',BD='#cfc6b0',PA='#242030',SHO='#1a1720';
  const sw=(o&&o.sw)||0;
  hLeg2(c,walk,PA,SHO,4.8,1);
  hTop(c,t,ph,-.03);
  /* ⭐署名⑤**背後に開く空間の裂け目**。⚠**体より先に描く**=後ろにあるものなので。
-    ⚠**溜めている間は大きく開く**(rc)=何を溜めているのかが絵で分かる。 */
- {const op=.34+rc*.66,rw=(9+rc*9),rh=(15+rc*13);
+    🐞⚠⚠(257)**開き具合を「溜め」から取ってはいけない**(2026-08-11ユーザー実機
+      「通常攻撃を一回でもしたら謎の黒い丸が背中あたりにずっとある」)。
+      正体=溜めの進み(chg)は**撃った後もそのまま残る決まり**(次の的へ引き継ぐため)なので、
+      1回攻撃すると rc=1 のまま**裂け目が全開で貼り付き**、丸い黒盾のように見えていた。
+    ⭐**開くのは「振っている間」と「必殺の詠唱中」だけ**=普段は**細い縦の裂け目**に閉じている。 */
+ {const rop=clamp(Math.max(sw*1.7,(o&&o.ulm)?1:0),0,1);
+  const op=.30+rop*.70,rw=(2.6+rop*15),rh=(9+rop*19);
   c.fillStyle='#120e1c';
   c.beginPath();c.ellipse(-15,-34,rw,rh,-.18,0,7);c.fill();c.stroke();
-  c.fillStyle=PU;c.globalAlpha=.5+rc*.4;
+  c.fillStyle=PU;c.globalAlpha=.5+rop*.4;
   c.beginPath();c.ellipse(-15,-34,rw*.72,rh*.74,-.18,0,7);c.fill();
   c.fillStyle='#e8dcff';c.globalAlpha=op;
   /* 裂け目の中の星(⚠乱数を使わない=毎コマ瞬くと煮え立って見える) */
@@ -20121,6 +20135,26 @@ const H_SUBT={hWolf:.60};
 const hSubT=U=>H_SUBT[U&&(U.base||U.id)]||SWG_SUB*1.05;
 /* 🐺(226d)狼王の飛びかかりの尺(秒)=跳ぶ/敵の上に居る/戻る。合計1.9 < rate2.0 に収める */
 const WJ_OUT=.18,WJ_STAY=1.5,WJ_BACK=.22;
+/* 💥⭐⭐(257)**爆拳のレンの流星墜拳=本人が落ちてくる**(2026-08-11ユーザー指示
+     「最初に真上に飛んで画面外に行って、レンの拳で敵の真上から撃墜する感じに。
+      撃墜後はジャンプで元の位置に戻る」)。
+   ⚠それまでは**筋と爆発だけ**で、体は元の場所に立ったままだった=「跳んで落ちた」に見えなかった。
+   ⭐落ちる(RJ_DOWN)→着地で溜める(RJ_HOLD)→跳んで戻る(RJ_BACK)。⚠**絵の位置だけ動かす**
+     (u.d は据え置き=当たり判定・射程・旗の線は1つも変わらない。狼王の飛びかかりと同じ掟)。
+   ⚠**RJ_HI は画面の外**まで=これより低いと「上から落ちてきた」に見えない。 */
+const RJ_DOWN=.17,RJ_HOLD=.30,RJ_BACK=.34,RJ_HI=620;
+/* 💥流星墜拳の「絵の位置」。hx,hy=元の立ち位置 / 戻り切ったら null。
+   ⚠**式はここ1か所**に持つ(撮る道具 test_shot.js の rj= からも呼ぶ)。 */
+function renDivePos(u,hx,hy){
+ const q=u.rjT;
+ if(!(q>=0))return null;
+ if(q<RJ_DOWN){const f=q/RJ_DOWN;return [u.rjx,u.rjy-RJ_HI*(1-f*f)];}/* 落ちる(加速) */
+ if(q<RJ_DOWN+RJ_HOLD)return [u.rjx,u.rjy];/* 着地して一拍 */
+ if(q<RJ_DOWN+RJ_HOLD+RJ_BACK){/* 跳んで戻る(山なり) */
+  const f=(q-RJ_DOWN-RJ_HOLD)/RJ_BACK;
+  return [u.rjx+(hx-u.rjx)*f,u.rjy+(hy-u.rjy)*f-Math.sin(f*Math.PI)*90];}
+ return null;
+}
 function uHitsN(u){const U=UNITS[u.ui];const A=U&&H_HITS[U.base||U.id];
  return A?A[((u.hcy||0))%A.length]:1;}
 /* ⭐**2発目以降の一撃**。⚠最初の1発は普段の枝がそのまま打つ(枝を書き写さないため)。
@@ -20156,6 +20190,31 @@ function hCmbStrike(C,u,U,ua,k,n){
  else uHit(C,tg,ua,U);
  if(H_FX[U.id])H_FX[U.id](C,u,U,tg,mx,my,ang,ucl,utl,d5,1);
 }
+/* ⚔⭐⭐⭐(257)**「刃が走る向き」を振りそのものから出す**(2026-08-11ユーザー実機
+     「剣の振りと攻撃のエフェクトが合ってない。横振りなのに縦に円状にエフェクトが出てる」)。
+   ⚠⚠**向きを手で書かない**=書くと振りを直した時にまた食い違う。⭐**振りの数字から計算する**:
+     ①**角度の差(振り抜き-振りかぶり)**=肩を回した量 → 得物の先は**縦**に動く
+     ②**ずれx**=角度を変えずに前へ走らせた量 → 得物の先は**横**に動く
+     この2つを合成したのが「刃が走る向き」。0=横一文字 / 正=前下がりの斜め / ±1.45=ほぼ縦。
+   ⚠**右を向いている体での角度**=左を向いている体は cutDir で左右を返すこと。 */
+const CUT_HX=.06;/* ずれx 1px を角度いくつぶんと見るか。⚠上げると全部横に寝る */
+function cmbCut(id,k){
+ const A=H_CMB[id];const r=A&&A[(((k||0)%A.length)+A.length)%A.length];
+ if(!r)return .35;/* 表に無い体=浅い斜め斬り */
+ return clamp(Math.atan2(r[1]-r[0],Math.abs(r[2])*CUT_HX+.10),-1.45,1.45);
+}
+/* ⚔**左を向いている体は左右が反転する**(π-c)。⚠間違えると筋が体の側へ食い込む */
+const cutDir=(c9,d5)=>(d5>=0)?c9:(Math.PI-c9);
+/* ⚔⭐**突きの体**=反らない直線の筋にする(弧を1本でも描くと「薙いだ」に読める。掟は暗黒の騎士の項) */
+const U_THRUST=new Set(['hDark','hRen']);
+/* ⚔⭐**斬撃の筋を1枚置く**。cut=刃が走る向き / fw=前(敵のいる向き)。
+   ⭐反りは必ず**前へ膨らむ**側に倒す=自分の体側へ反ると「引いた」に見える。
+   ⚠o.bw に 0 を渡すと**反らない直線の筋=突き**になる。 */
+/* ⚠**ここでは演出の強さ(FXLV)を見ない**=必殺の切り口は FXLV=0 でも出す(呼ぶ側が間引く) */
+function slashFx(C,x,y,cut,fw,o){
+ const bw=(o&&o.bw===0)?0:((Math.cos(cut+1.5708-fw)>=0)?1:-1);
+ addFx(C,'slash',x,y,'',{ang:cut,bw,r:(o&&o.r)||26,lv:(o&&o.lv)||0,col:(o&&o.col)||null});
+}
 /* ⭐⭐**連撃の「手ごとの当たりの絵」**(2026-08-03(79))。
    ⚠⚠**腕の振りを変えただけでは実機で連撃に見えない**(ユーザー「★5のやつ見てみたけど誰もなってない」)=
      ①実寸だと腕の角度の差は数pxしかない ②**当たった時の絵が毎回同じ**だと、目は「同じ攻撃の繰り返し」と読む。
@@ -20163,14 +20222,19 @@ function hCmbStrike(C,u,U,ua,k,n){
      これがヴァルキリーが連撃に見えていた本当の理由。 */
 function hCmbFx(C,u,tg,ang,col){
  if(!(FXLV>0))return;
+ const U=UNITS[u.ui],id=(U&&(U.base||U.id))||'';
  const n=uCmbN(u.ui),k=((u.cmb||0)+n-1)%n;/* ⚠cmb は撃つ前に進むので1つ戻して「いま出した手」を見る */
  /* ⭐**締めは「その攻撃の最後の一撃」**(2026-08-03(83))=連撃の中で1回だけ大きくする。
     ⚠`cmb` の折り返しで見ると、連撃の途中で締めが出て拍が壊れる。 */
  const fin=!!u.mhFin;
- const a0=ang+(k%2?2.2:-.55)+k*.42;
- addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:a0,r:(fin?34:22)*CH_UP,lv:fin?3:2,col});
+ /* ⚔⭐⭐(257)**筋の向きは「いま出した手の振り」から出す**=向きを手で書かない(掟は cmbCut)。
+    ⚠前は `ang+(k%2?2.2:-.55)+k*.42` と**振りと無関係な角度**を足していた=これが食い違いの元。 */
+ const d5=(u.dr||-1),th=U_THRUST.has(id),cut=cutDir(cmbCut(id,k),d5);
+ slashFx(C,tg.px,tg.py-18*CH_UP,th?ang:cut,ang,
+  {r:(fin?34:22)*CH_UP,lv:fin?3:2,col,bw:th?0:1});
  if(fin){
-  addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:a0+2.4,r:26*CH_UP,lv:2,col:'#fff6d8'});
+  /* ⚠締めの2枚目は**少しだけ角度を変える**(前は+2.4=ほぼ直角に交わって「十字の印」に見えていた) */
+  slashFx(C,tg.px,tg.py-18*CH_UP,th?ang:(cut+d5*.55),ang,{r:26*CH_UP,lv:2,col:'#fff6d8',bw:th?0:1});
   addFx(C,'ring',tg.px,tg.py,'',{r:56,col});
   C.shake=Math.max(C.shake||0,.30);
  }
@@ -21495,8 +21559,12 @@ function drawTree(c,x,y){c.save();c.translate(x,y);c.strokeStyle='#3a3128';c.lin
 const SPR={u:{},z:{}},SPRN=4;
 function sprFrame(t,ph,sp){return Math.floor((((t*(sp||10)+ph)/(2*Math.PI))%1+1)%1*SPRN)%SPRN;}
 /* キャラの大きさに合わせた最小限のキャンバスへ焼く(見切れ防止+省メモリ)。ss=画面解像度に合わせた解像度倍率 */
-function bakeSet(scale,drawFn){
- const ss=clamp(SC||1,1,2),W=Math.ceil(104*scale*ss),H=Math.ceil(124*scale*ss),
+/* 🐺⚠⚠(257)**横に長い体は焼き枠からはみ出して切れる**(2026-08-11ユーザー実機
+     「狼の口の先端あたりが切れちゃって画面に映ってない」)。
+   ⭐**幅だけ広げられる口(wf)**を足した=四つ足の狼のように横長の体はここで広げる。
+   ⚠**高さと足元の位置(oy)は動かさない**=立ち位置がずれると全キャラの足元が浮く。 */
+function bakeSet(scale,drawFn,wf){
+ const ss=clamp(SC||1,1,2),W=Math.ceil(104*scale*ss*(wf||1)),H=Math.ceil(124*scale*ss),
   ox=Math.round(W/2),oy=Math.round(H-24*scale*ss),f=[];
  for(let i=0;i<SPRN;i++){
   const cvv=document.createElement('canvas');cvv.width=W;cvv.height=H;
@@ -21508,9 +21576,12 @@ function bakeSet(scale,drawFn){
 /* ⚠**焼いたコマは盤面でしか使わない**ので fld:1 を渡す(2026-08-03(103))=
    英雄の頭上の★を焼き込まない(盤面ではHPバーを出すため)。⚠ここを忘れると
    直描きの時だけ★が消えて、止まっている間だけ★が出る、という食い違いになる(実際に踏んだ) */
+/* 🐺(257)**横に広い体の枠の広げ幅**。⚠鼻先(局所x≒65)と尾(≒-53)が既定の枠(±54.6)を超える */
+const SPR_WIDE={hWolf:1.4};
 function bakeU(ui){const key=''+ui;if(SPR.u[key])return SPR.u[key];
- const sc=(TSCALE[uTier(ui)-1]||1)*1.05;
- return SPR.u[key]=bakeSet(sc,(c,i)=>drawUnit(c,ui,0,0,1,i/SPRN*(2*Math.PI/10),0,{fld:1}));}
+ const sc=(TSCALE[uTier(ui)-1]||1)*1.05,U9=UNITS[ui]||{};
+ return SPR.u[key]=bakeSet(sc,(c,i)=>drawUnit(c,ui,0,0,1,i/SPRN*(2*Math.PI/10),0,{fld:1}),
+  SPR_WIDE[U9.base||U9.id]||1);}
 function bakeZ(zi,elite){const key=zi+'_'+(elite?1:0);if(SPR.z[key])return SPR.z[key];
  const spd=(ZOMBIES[zi].sp>90?14:8),sc=ZOMBIES[zi].sc*(elite?1.4:1)*1.05;
  /* ⚠(124)`bake:1`=**焼いている最中の印**。エリートの紫の影はこの時だけ掛ける(盤面では掛けない) */
@@ -22349,7 +22420,8 @@ const H_FX={
   if(C.isMe&&Math.random()<.4)sfx.snipe?sfx.snipe():sfx.shot();},
  /* 整備士: **レンチで殴る**。鋼の弧+火花が散る(飛び道具は出さない) */
  hMech:(C,u,U,tg,mx,my,ang,col,utl)=>{u.fireT=.12;
-  if(FXLV>0){addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang-.6,r:(20+utl*5)*CH_UP,lv:2,col:'#cfd5da'});
+  /* ⚔(257)弧は hCmbFx が**手ごとの向き**で1枚出す=ここで別の向きの弧を重ねない(食い違いの元) */
+  if(FXLV>0){
    addP(C,6,tg.px,tg.py-18*CH_UP,{sp:160,a:ang,spread:1.1,g:420,life:.3,r:1.6,col:'#ffdd66'});
    hCmbFx(C,u,tg,ang,'#cfd5da');
    hitFx(C,tg,ang,'#cfd5da',1,U.type);}
@@ -22357,7 +22429,8 @@ const H_FX={
   if(C.isMe&&sfx[H_SFX.hMech])sfx[H_SFX.hMech]();},/* ⚠3連打なので毎回鳴らす(くじ引きをやめた=連撃が聞こえない) */
  /* 配達人: **突っ込んで鞄を叩きつける**。走った跡の風と舞う紙 */
  hPost:(C,u,U,tg,mx,my,ang)=>{u.fireT=.1;
-  if(FXLV>0){addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang+.2,r:22*CH_UP,lv:1,col:GOLD2});
+  /* ⚔(257)弧は hCmbFx が手ごとの向きで出す=ここでは重ねない */
+  if(FXLV>0){
    addP(C,5,tg.px,tg.py-22*CH_UP,{sp:60,a:ang+Math.PI,spread:1.2,up:30,g:90,life:.75,r:2.2,col:PAPER});
    hCmbFx(C,u,tg,ang,GOLD2);
    hitFx(C,tg,ang,GOLD2,1,U.type);}
@@ -22376,8 +22449,9 @@ const H_FX={
  hMed:(C,u,U,tg,mx,my,ang)=>{u.fireT=.12;
   addFx(C,'pel',mx,my-6*CH_UP,'',{x2:tg.px,y2:tg.py-20*CH_UP,lf:.16,col:LIFE});
   if(FXLV>0){later(C,.16,()=>{
-   addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:0,r:15*CH_UP,lv:2,col:LIFE});
-   addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:1.5708,r:15*CH_UP,lv:2,col:'#eaffd8'});
+   /* ✚十字の光。⚔(257)**反らせない**(bw:0)=斬撃ではなく印なので、まっすぐな2本で交わらせる */
+   addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:0,bw:0,r:15*CH_UP,lv:2,col:LIFE});
+   addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:1.5708,bw:0,r:15*CH_UP,lv:2,col:'#eaffd8'});
    addFx(C,'ring',tg.px,tg.py,'',{r:34,col:LIFE});});
    hitFx(C,tg,ang,LIFE,1,U.type);}
   if(C.isMe&&Math.random()<.4)sfx.heal?sfx.heal():sfx.shot();},
@@ -22423,8 +22497,9 @@ const H_FX={
   for(let i=0;i<3;i++){const a2=ang+(i-1)*.34;
    addFx(C,'tr',tg.px-Math.cos(a2)*120,tg.py-20*CH_UP-Math.sin(a2)*120,'',
     {x2:tg.px,y2:tg.py-20*CH_UP,col:'rgba(255,226,150,',w:2.2});}
-  if(FXLV>0){addFx(C,'slash',tg.px,tg.py-20*CH_UP,'',{ang:0,r:16*CH_UP,lv:1,col:GOLD});
-   addFx(C,'slash',tg.px,tg.py-20*CH_UP,'',{ang:1.5708,r:16*CH_UP,lv:1,col:GOLD});
+  /* ⚔(257)照準の十字も**反らせない**(bw:0)=斬った跡ではなく印 */
+  if(FXLV>0){addFx(C,'slash',tg.px,tg.py-20*CH_UP,'',{ang:0,bw:0,r:16*CH_UP,lv:1,col:GOLD});
+   addFx(C,'slash',tg.px,tg.py-20*CH_UP,'',{ang:1.5708,bw:0,r:16*CH_UP,lv:1,col:GOLD});
    hitFx(C,tg,ang,GOLD,1,U.type);}
   if(C.isMe&&Math.random()<.5)sfx.shot();},
  /* 磁力技師: **引き寄せ**。敵から自分へ粒が吸われ、青い環が締まる(線を引かない) */
@@ -22466,10 +22541,14 @@ const H_FX={
  /* 終焉の騎士: **飛ぶ三日月の斬撃**。⚠光ではなく**血の色の刃**=他の誰とも被らない */
  hNox:(C,u,U,tg,mx,my,ang,col,utl)=>{u.fireT=.18;
   const sx=u.px+(u.dr||-1)*16*CH_UP,sy=u.py-30*CH_UP;
+  /* ⚔(257)**飛んでいく三日月も、その時に振った手の向きで飛ぶ**。⚠向きは飛ばす前に決めておく
+     (0.2秒後に開くので、その時には次の手へ進んでいることがある) */
+  const d59=(u.dr||-1),nx9=uCmbN(u.ui),kx9=((u.cmb||0)+nx9-1)%nx9;
+  const cu9=cutDir(cmbCut('hNox',kx9),d59);
   addFx(C,'wave',sx,sy,'',{x2:tg.px,y2:tg.py-18*CH_UP,lf:.22,col:DANGER});
   if(FXLV>0)later(C,.2,()=>{
-   addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang-.55,r:(26+utl*6)*CH_UP,lv:3,col:DANGER});
-   addFx(C,'slash',tg.px,tg.py-18*CH_UP,'',{ang:ang+2.2,r:(20+utl*5)*CH_UP,lv:2,col:'#3f2c38'});
+   slashFx(C,tg.px,tg.py-18*CH_UP,cu9,ang,{r:(26+utl*6)*CH_UP,lv:3,col:DANGER});
+   slashFx(C,tg.px,tg.py-18*CH_UP,cu9+d59*.5,ang,{r:(20+utl*5)*CH_UP,lv:2,col:'#3f2c38'});
    addP(C,7,tg.px,tg.py-18*CH_UP,{sp:150,a:ang,spread:.9,g:300,life:.42,r:2.2,col:DANGER2});});
   hCmbFx(C,u,tg,ang,DANGER);/* ⭐手ごとに斬撃の向きが変わる+最後の1手は大きい */
   if(FXLV>0)hitFx(C,tg,ang,DANGER,1,U.type);
@@ -22569,13 +22648,13 @@ const H_FX={
  hZan:(C,u,U,tg,mx,my,ang,col)=>{u.fireT=.13;
   const cl9=U.c||'#e8f0f6';
   if(FXLV>0){
-   /* 前へ薙ぐ大きな弧(手ごとに向きが変わる=hCmbFx と同じ番号の出し方) */
+   /* 前へ薙ぐ大きな弧。⚔(257)**向きは振りそのものから出す**(手で書かない=cmbCut) */
    const n9=uCmbN(u.ui),k9=((u.cmb||0)+n9-1)%n9;
-   const a9=ang+[-.62,.66,-.04,-.9][k9%4];
-   addFx(C,'slash',mx+Math.cos(ang)*26,my+Math.sin(ang)*22,'',
-    {ang:a9,r:(u.mhFin?40:28)*CH_UP,lv:u.mhFin?3:2,col:cl9});
-   if(u.mhFin)addFx(C,'slash',mx+Math.cos(ang)*30,my+Math.sin(ang)*24,'',
-    {ang:a9+2.5,r:30*CH_UP,lv:2,col:'#ffffff'});
+   const d59=(u.dr||-1),a9=cutDir(cmbCut('hZan',k9),d59);
+   slashFx(C,mx+Math.cos(ang)*26,my+Math.sin(ang)*22,a9,ang,
+    {r:(u.mhFin?40:28)*CH_UP,lv:u.mhFin?3:2,col:cl9});
+   if(u.mhFin)slashFx(C,mx+Math.cos(ang)*30,my+Math.sin(ang)*24,a9+d59*.4,ang,
+    {r:30*CH_UP,lv:2,col:'#ffffff'});
    addP(C,3,mx+Math.cos(ang)*24,my+Math.sin(ang)*20,{sp:170,a:ang,spread:.5,g:180,life:.2,r:1.8,col:cl9});
    hitFx(C,tg,ang,cl9,1,U.type);}
   if(u.mhFin)C.shake=Math.max(C.shake||0,.12);
@@ -22650,11 +22729,12 @@ const H_FX={
      ⭐**重さは3つで作る**=①弧を大きく ②画面を揺らす ③足元へ黒い衝撃波を落とす。 */
   if(FXLV>0){
    const n9=uCmbN(u.ui),k9=((u.cmb||0)+n9-1)%n9;
-   /* ⭐(256)弧も寝かせる=立てた弧は円運動に見える(ユーザー指摘)。①ほぼ水平 ②やや斜め */
-   const a9=ang+[-.10,.26][k9%2];
+   /* ⭐(256)弧も寝かせる=立てた弧は円運動に見える(ユーザー指摘)。
+      ⚔(257)**向きは振りそのものから出す**=①横一文字 ②やや斜めの返し が筋にもそのまま出る */
+   const d59=(u.dr||-1),a9=cutDir(cmbCut('hDim',k9),d59);
    const bx=mx+Math.cos(ang)*26,by=my+Math.sin(ang)*22;
-   addFx(C,'slash',bx,by,'',{ang:a9,r:56*CH_UP,lv:3,col:'#b48cff'});/* 縁(先に大きく) */
-   addFx(C,'slash',bx,by,'',{ang:a9,r:46*CH_UP,lv:3,col:'#0e0a16'});/* 黒い刃(上から) */
+   slashFx(C,bx,by,a9,ang,{r:56*CH_UP,lv:3,col:'#b48cff'});/* 縁(先に大きく) */
+   slashFx(C,bx,by,a9,ang,{r:46*CH_UP,lv:3,col:'#0e0a16'});/* 黒い刃(上から) */
    addFx(C,'shock',u.px,u.py+4,'',{r:110,col:'#5a3f8a'});
    /* 🌌切った跡に残る裂け目(1つだけ大きく=数を増やすと散らかる) */
    addFx(C,'ring',bx+Math.cos(a9)*20,by+Math.sin(a9)*16,'',{r:34,col:'#c4a8ff'});
@@ -22755,6 +22835,14 @@ const uFxTier=u=>u.hro?3:(UFX_T[(UNITS[u.ui]||{}).id]||0);
    ⭐**k0=溜まり具合を外から渡す**(2026-08-02)=必殺技の詠唱でもここを使い回すため。
      ⚠これが無いと詠唱中は `u.chg` が0に伏せられていて(通常攻撃をさせないため)
        **型ごとの光が1つも出ず、21人が同じ汎用の光だけ**になっていた。 */
+/* 🎯⭐⭐(257)**照準を出すのは「本当に狙って撃つ体」だけ**(2026-08-11ユーザー実機
+     「必殺技の時の照準みたいなのはスナイパーキャラだけにして。他のヒーローでも同じことに
+      なってたら修正して」)。
+   ⚠⚠**型(snipe)は「据える姿勢」の型でもある**=(256)にディメンションナイトを
+     「しゃがんで溜める」形にするため snipe へ入れたので、**剣士にまで照準線と十字が伸びていた**。
+   ⭐**型と照準を切り離した**=ここに載っている体だけ照準を出す。他は共通の「光が内へ寄る」に落ちる。
+   ⚠**新しく snipe の型を使う体を足す時は、銃で狙う体かどうかをここで決めること**。 */
+const AIM_ID=new Set(['rkt','snp','rail2','hHunt','hSf','hGeo']);
 function drawUChg(c,u,t,lay,k0){
  const k=clamp(k0!=null?k0:(u.chg||0),0,1);if(k<=0)return;
  const M=uMotK(u.ui),col=uMotCol(u.ui),U=UNITS[u.ui]||{};
@@ -22792,7 +22880,7 @@ function drawUChg(c,u,t,lay,k0){
   }
   c.restore();return;
  }
- if(M==='snipe'){
+ if(M==='snipe'&&AIM_ID.has(U.base||U.id)){
   /* 狙撃: 照準の線が伸びる。⚠**伸び切ったら点滅**=「一拍止まって撃つ」が読める */
   const tx=(u.tx!=null?u.tx:x+fx9*200),ty=(u.ty!=null?u.ty:y)-18*CH_UP;
   const q=Math.min(1,k*1.25);
@@ -23911,7 +23999,8 @@ function heroUlt(C,wave){
     if(FXLV>0)addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:'#e8f0f6'});}
    /* 三日月の絵(⚠育つほど大きく=強くなっているのが目で分かる) */
    const pn=pathPos(clamp(q-60,0,PLEN)),aw=Math.atan2(pn[1]-p[1],pn[0]-p[0]);
-   addFx(C,'slash',p[0],p[1]-20*CH_UP,'',{ang:aw+1.5708,r:(30+g9*5)*CH_UP,lv:3,col:'#eef6ff'});
+   /* ⚔(257)筋は**進む向きと直角**に立てて、反りは進む先へ膨らませる(=走っている三日月に見える) */
+   slashFx(C,p[0],p[1]-20*CH_UP,aw+1.5708,aw+Math.PI,{r:(30+g9*5)*CH_UP,lv:3,col:'#eef6ff'});
    if(FXLV>0){addFx(C,'tr',p[0]-Math.cos(aw)*80,p[1]-20*CH_UP-Math.sin(aw)*80,'',
      {x2:p[0],y2:p[1]-20*CH_UP,col:'rgba(232,240,246,',w:3+g9*.6});
     addP(C,3,p[0],p[1]-18*CH_UP,{sp:120,a:aw,spread:.6,g:180,life:.22,r:2,col:'#eef6ff'});}
@@ -23931,9 +24020,14 @@ function heroUlt(C,wave){
     let n=0;for(const w of live2)if(Math.abs(w.d-z.d)<RN_R*.8)n++;
     if(n>best){best=n;tx=z.px;ty=z.py;}}
    if(best<0){const q=clamp((u.d||0)-260,0,PLEN),p=pathPos(q);tx=p[0];ty=p[1];}
-   /* ①落ちてくる筋(空から一直線)=**先に線だけ出す** */
-   if(FXLV>0)addFx(C,'tr',tx+40,ty-620,'',{x2:tx,y2:ty,col:'rgba(255,154,61,',w:9});
-   later(C,.14,()=>{
+   /* 💥⭐⭐(257)**本人が真上から落ちてくる**(ユーザー指示)=絵の位置を動かす合図をここで立てる。
+      ⚠**着弾は落ち切った時**(RJ_DOWN)=先に爆発すると、まだ空に居るのに地面が爆ぜる。
+      ⚠**余韻(ulT)は戻り終わるまで**持たせる=途中で焼いたコマに戻ると空中で立ち姿になる。 */
+   u.rjT=0;u.rjx=tx;u.rjy=ty;
+   u.ulT=Math.max(u.ulT||0,RJ_DOWN+RJ_HOLD+RJ_BACK+.12);
+   /* ①落ちてくる筋(⚠**真上から一直線**=斜めにすると「飛んできた」に見える) */
+   if(FXLV>0)addFx(C,'tr',tx,ty-RJ_HI,'',{x2:tx,y2:ty,col:'rgba(255,154,61,',w:9});
+   later(C,RJ_DOWN,()=>{
     if(!C||u.dead)return;
     /* ②着弾=大爆発 */
     for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
@@ -23956,8 +24050,7 @@ function heroUlt(C,wave){
       if(dist(z.px,z.py,tx,ty)>RN_R*1.25)continue;
       dmgZ(C,z,Math.round(600*W),1,0,0,'blast');}
      addFx(C,'ring',tx,ty,'',{r:RN_R*1.25,col:'#ffdd66'});
-     C.shake=Math.max(C.shake||0,.3);});
-    u.ulT=Math.max(u.ulT||0,.7);});}
+     C.shake=Math.max(C.shake||0,.3);});});}
  }else if(id==='hKrup'){/* 💧⭐⭐(254)**大津波**=ユーザー指定「津波を巻き起こして敵を押し返す」。
    ⭐**押し返しは一度きり**(消防士の放水と同じ形)=(238d)で外した「押し続ける仕掛け」は作らない。
    ⭐**波は道なりに走る**=前方の敵を順に押し戻し、濡れた敵はしばらく遅くなる。
@@ -24022,8 +24115,9 @@ function heroUlt(C,wave){
     for(let i9=0;i9<N9;i9++){
      const q9=i9/(N9-1),rx=ox+cs*DM_LEN*q9,ry=oy+sn*DM_LEN*q9;
      const r9=(46+q9*34)*CH_UP;
-     addFx(C,'slash',rx,ry,'',{ang:ang9+1.5708,r:r9*1.22,lv:3,col:'#b48cff'});
-     addFx(C,'slash',rx,ry,'',{ang:ang9+1.5708,r:r9,lv:3,col:'#0b0812'});}}
+     /* ⚔(257)筋は**切り裂く線と直角**に立てる=反りは進む先へ膨らむ */
+     slashFx(C,rx,ry,ang9+1.5708,ang9,{r:r9*1.22,lv:3,col:'#b48cff'});
+     slashFx(C,rx,ry,ang9+1.5708,ang9,{r:r9,lv:3,col:'#0b0812'});}}
    C.shake=Math.max(C.shake||0,.5);
    if(FXLV>0){
     /* 切り口に開く裂け目(⚠等間隔にしない)+吸い込まれる黒い破片 */
@@ -24041,7 +24135,7 @@ function heroUlt(C,wave){
     /* ⭐崩れる時は**黒く潰れる**=光らせない(光らせると「爆発」になって斬撃の余韻が消える) */
     for(const q of [.3,.6,.86]){
      const rx=ox+cs*DM_LEN*q,ry=oy+sn*DM_LEN*q;
-     addFx(C,'slash',rx,ry,'',{ang:ang9-1.5708,r:70*CH_UP,lv:3,col:'#0b0812'});}
+     slashFx(C,rx,ry,ang9-1.5708,ang9,{r:70*CH_UP,lv:3,col:'#0b0812'});}
     if(FXLV>0){for(const q of [.3,.6,.86]){
       const rx=ox+cs*DM_LEN*q,ry=oy+sn*DM_LEN*q;
       addFx(C,'spark',rx,ry,'',{sd:rnd(0,9),col:'#c4a8ff',big:1});
@@ -24370,7 +24464,13 @@ function campStep(C,dt,wave){
    if(u.wjT!=null&&f9>0&&u.wjx!=null){
     u.px=u.px+(u.wjx-u.px)*f9;
     u.py=u.py+(u.wjy-u.py)*f9-arc9;
-    u.mv=0;/* 跳んでいる間は歩きの足踏みを止める */}}}
+    u.mv=0;/* 跳んでいる間は歩きの足踏みを止める */}}
+  /* 💥(257)**爆拳のレンの流星墜拳**=真上の画面外から的の真上へ一直線に落ちて、
+     着地で一拍溜めてから、跳んで元の場所へ戻る。⚠絵の位置だけ(掟は RJ_DOWN の所)。 */
+  else if(u.rjT!=null&&!u.dead&&(UNITS[u.ui].base||UNITS[u.ui].id)==='hRen'){
+   u.rjT+=dt;
+   const P9=renDivePos(u,u.px,u.py);
+   if(!P9)u.rjT=null;else{u.px=P9[0];u.py=P9[1];u.mv=0;}}}
  for(const u of C.units){
   if(u.dead)continue;
   /* ⚠溜めの間は通常攻撃をしない=撃ちながら溜めると何をしているのか読めない */
@@ -24500,8 +24600,9 @@ function campStep(C,dt,wave){
       const im8=()=>{
        hit9();/* ⭐光の刃が届いてから斬る */
        /* 着弾=十字に斬り裂く(爆風ではない)。⚠2本にすると「斬った」に見える */
-       addFx(C,'slash',tx9,ty9-16*CH_UP,'',{ang:sa9-.5,r:U.aoe*.52,lv:3,col:scl9});
-       addFx(C,'slash',tx9,ty9-16*CH_UP,'',{ang:sa9+2.3,r:U.aoe*.42,lv:2,col:'#fff6d8'});
+       /* ⚔(257)十字に交わる2枚=**それぞれ違う向きに走った筋**として置く(円を描かせない) */
+       slashFx(C,tx9,ty9-16*CH_UP,sa9+.55,sa9,{r:U.aoe*.52,lv:3,col:scl9});
+       slashFx(C,tx9,ty9-16*CH_UP,sa9-.85,sa9,{r:U.aoe*.42,lv:2,col:'#fff6d8'});
        addFx(C,'ring',tx9,ty9,'',{r:U.aoe,col:scl9});
        addP(C,9,tx9,ty9-14*CH_UP,{sp:190,g:260,life:.35,r:2.2,col:scl9});
        C.shake=Math.max(C.shake||0,.12);
@@ -24642,7 +24743,13 @@ function campStep(C,dt,wave){
       u.fireT=.1;
       if(FXLV>0){
        const aa=Math.atan2((tg.py-22*CH_UP)-(u.py-26*CH_UP),tg.px-u.px);
-       addFx(C,'slash',u.px,u.py-26*CH_UP,'',{ang:aa,r:(24+utl*7)*CH_UP,lv:utl,col:ucl});
+       /* ⚔⭐(257)**振るたびに斬る向きを変える**(横一文字→逆袈裟→袈裟)。
+          ⚠前は「敵のいる向き」をそのまま渡していた=どの兵科も毎回まったく同じ弧だった。
+          ⚠筋は**体の上ではなく当たる所**へ置く(体の上に出すと自分を斬っているように見える)。 */
+       u.slk=((u.slk||0)+1)%3;
+       const cu9=cutDir([.12,-.52,.72][u.slk],(u.dr||-1));
+       slashFx(C,u.px+Math.cos(aa)*20*CH_UP,u.py-26*CH_UP+Math.sin(aa)*16*CH_UP,cu9,aa,
+        {r:(24+utl*7)*CH_UP,lv:utl,col:ucl});
        hitFx(C,tg,aa,ucl,pierce,U.type);}
       /* ✊(217)**近接兵科の攻撃音**(2026-08-08ユーザー「近接攻撃系の音全般が血しぶきの使い回し」
          =正しくは**無音**で、聞こえていたのは撃破時の血しぶきだった)。武器ごとの表 MELEE_SFX から引く。
@@ -26610,7 +26717,9 @@ function renderCamp(C,t){
  ULQON=1;
  const us2=(C.units||[]).slice().sort((a,b)=>a.py-b.py);
  for(const u of us2){
-  groundShadow(c,u.px,u.py,14*CH_UP);
+  /* 💥(257)**影は地面に置いたまま**=空に居る間も影が付いてくると「浮いている」が読めない。
+     ⭐落ちてくる先に影が出るので、どこへ落ちるのかが先に分かる。 */
+  groundShadow(c,u.px,(u.rjT!=null&&u.rjy!=null)?u.rjy:u.py,14*CH_UP);
   /* ⭐溜め中は焼いたコマ(歩いている)が使えないので、直に描く方へ回す */
   /* ⭐⭐**狙撃の英雄は敵が居なくても構えたまま待つ**(2026-08-02ユーザー指示
        「ジョルジは敵がいなくてもしゃがみで撃つのを待機して、射程に入ったら撃つように」)。
@@ -26674,7 +26783,9 @@ function renderCamp(C,t){
    /* ⚠必殺の構えは **ul9 をそのまま渡して抜く**=1/0で切ると技の終わりに立ち姿へカクッと戻る */
    /* ⚠fld=**盤面で描いている**印(2026-08-03(103))=英雄の頭上の★を出さない(代わりにHPバー) */
    const uo9={hitT:u.hitT,fireT:u.fireT,chg:pose9||ul9,bsw:bsw9,vsw:vsw9,sw:sw9,vcb:u.cmb||0,mv:u.mv,
-    fld:1,ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0};
+    fld:1,ulm:ul9>0?1:0,ulp:ulp9,ulr:ulp9<0?ul9:0,
+    /* 💥(257)レンの流星墜拳の進み(落下→着地→戻り)。⚠していない時は -1 */
+    rj:(u.rjT!=null)?u.rjT:-1};
    drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,uo9);
    if(ufl9>0){c.save();c.globalCompositeOperation='lighter';c.globalAlpha=ufl9*.7;
     drawUnit(c,u.ui,u.px,u.py,u.dr||-1,t,u.ph,uo9);c.restore();}
@@ -26981,25 +27092,47 @@ function renderCamp(C,t){
    c.beginPath();c.ellipse(e.x,e.y,rr,rr*.4,0,0,7);c.stroke();
    c.globalAlpha=a4*.2;c.lineWidth=8*(1-tt*1.8)+.5;
    c.beginPath();c.ellipse(e.x,e.y,rr*.66,rr*.28,0,0,7);c.stroke();c.globalAlpha=1;}
-  else if(e.k==='slash'){/* ⭐近接の斬撃。段階(lv)が上がるほど太く、外側にもう1本増える */
-   const a4=Math.max(0,1-e.t/fxLife('slash')),lv=e.lv||0,rr=e.r||26;
-   c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);c.globalAlpha=a4;
-   c.lineCap='round';
-   const sw=-1.0+e.t*7;
-   c.strokeStyle=e.col||PANE;c.lineWidth=(3+lv*1.7)*(.45+a4*.85);
-   c.beginPath();c.arc(0,0,rr,sw-.85,sw+.85);c.stroke();
-   if(lv>=2){c.strokeStyle='rgba(255,255,255,'+(a4*.75).toFixed(2)+')';c.lineWidth=1.6;
-    c.beginPath();c.arc(0,0,rr*1.2,sw-.62,sw+.62);c.stroke();}
-   /* ⭐**光の斬撃は加算で芯を光らせる**(2026-08-01)。⚠lv3(ヴァルキリー・英雄)だけ=乱発しない。
-      ⚔(186)**これも溜めて最後に1回**=ヴァルキリーを並べると斬撃の数だけ合成が切れていた。
-      ⚠**濃さ(globalAlpha=a4)は外で立てている**ので、預ける側で立て直すこと(忘れると濃くなる)。 */
-   if(lv>=3)ulAdd(c,(c)=>{
-    c.globalAlpha=a4;c.lineCap='round';
-    c.strokeStyle='rgba(255,244,214,'+(a4*.55).toFixed(2)+')';c.lineWidth=9;
-    c.beginPath();c.arc(0,0,rr,sw-.7,sw+.7);c.stroke();
-    c.strokeStyle='rgba(255,255,255,'+(a4*.9).toFixed(2)+')';c.lineWidth=2.4;
-    c.beginPath();c.arc(0,0,rr,sw-.5,sw+.5);c.stroke();});
-   c.lineCap='butt';c.globalAlpha=1;c.restore();}
+  else if(e.k==='slash'){
+   /* ⚔⭐⭐(257)**刃が走った筋**(2026-08-11ユーザー実機「横振りなのに縦に円状にエフェクトが出てる。
+      剣の振りと攻撃のエフェクトが合ってない」)。
+      🐞⚠⚠**正体=弧そのものが寿命の間にぐるっと回っていた**(回り幅が約2ラジアン=115°)。
+        しかも弧の幅が97°もあったので、**どの向きを渡しても「円を描いた」に見え**、
+        体が横に薙いでいても筋だけ縦にぐるっと回っていた。
+      ⭐作り直した形=**刃が走る向き(ang)に沿って伸びる、浅く反った細長い筋**。
+        ①長さの向き=ang そのもの ②反りは前(敵の側)へ膨らむだけ(bw) ③根元から先へ伸びて、
+        遅れて根元が追いつく=「刃が通り過ぎた」に見える。
+      ⚠⚠**弧を回さないこと**=回した瞬間に円運動の絵へ戻る(これが今回の原因)。
+      ⚠**bw=0 は突き**(反らない直線の筋)=騎槍・空手の突きはこちらを使う。 */
+   const lf4=fxLife('slash',e),p4=clamp(e.t/lf4,0,1),a4=1-p4,lv=e.lv||0,rr=e.r||26;
+   const hl=rr*1.15;/* 筋の半分の長さ */
+   const bwv=(e.bw===0?0:((e.bw<0)?-1:1))*rr*.20;/* 反りの深さ(長さの2割=浅く反る) */
+   const s0=clamp((p4-.34)/.66,0,1),s1=clamp(p4/.26,0,1);/* 根元 / 先端 の進み */
+   if(s1>s0){
+    const N=12,xs=[],ys=[],ws=[];
+    const wM=(2.4+lv*2.0)*(.45+a4*.9);/* 一番太い所の半分の幅 */
+    for(let i=0;i<=N;i++){
+     const q=i/N,s=s0+(s1-s0)*q,x=-hl+2*hl*s;
+     xs.push(x);ys.push(-bwv*(1-(x/hl)*(x/hl)));
+     ws.push(wM*Math.pow(Math.max(0,1-Math.abs(2*q-1)),.55));/* 両端が尖った木の葉形 */
+    }
+    const pth=(c)=>{c.beginPath();c.moveTo(xs[0],ys[0]);
+     for(let i=0;i<=N;i++)c.lineTo(xs[i],ys[i]-ws[i]);
+     for(let i=N;i>=0;i--)c.lineTo(xs[i],ys[i]+ws[i]);
+     c.closePath();};
+    c.save();c.translate(e.x,e.y);c.rotate(e.ang||0);c.globalAlpha=a4;
+    c.fillStyle=e.col||PANE;pth(c);c.fill();
+    if(lv>=2){/* 芯の白い線(⚠細く=太いと色が飛ぶ) */
+     c.strokeStyle='rgba(255,255,255,'+(a4*.8).toFixed(2)+')';c.lineWidth=1.5;c.lineCap='round';
+     c.beginPath();for(let i=0;i<=N;i++)c.lineTo(xs[i],ys[i]);c.stroke();c.lineCap='butt';}
+    /* ⭐**光の斬撃は加算で芯を光らせる**(2026-08-01)。⚠lv3(ヴァルキリー・英雄)だけ=乱発しない。
+       ⚔(186)**これも溜めて最後に1回**=ヴァルキリーを並べると斬撃の数だけ合成が切れていた。
+       ⚠**濃さ(globalAlpha=a4)は外で立てている**ので、預ける側で立て直すこと(忘れると濃くなる)。 */
+    if(lv>=3)ulAdd(c,(c)=>{
+     c.globalAlpha=a4*.55;c.fillStyle='rgba(255,244,214,1)';pth(c);c.fill();
+     c.globalAlpha=a4*.9;c.strokeStyle='rgba(255,255,255,1)';c.lineWidth=2.2;c.lineCap='round';
+     c.beginPath();for(let i=0;i<=N;i++)c.lineTo(xs[i],ys[i]);c.stroke();
+     c.lineCap='butt';});
+    c.globalAlpha=1;c.restore();}}
   else if(e.k==='rkt'){/* ⭐ロケット弾(⚠**山なりにしない**=筒の先からまっすぐ速く飛ぶ) */
    const lfR=fxLife('rkt',e),pR=clamp((e.t-(e.d0||0))/lfR,0,1);
    const dxR=e.x2-e.x,dyR=e.y2-e.y,angR=Math.atan2(dyR,dxR);

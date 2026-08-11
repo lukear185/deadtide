@@ -2785,6 +2785,44 @@ function checkHero(){
    if(!U_SWG.has(id)){console.log('FAIL: '+id+' が U_SWG に無い(武器が動かない)');process.exit(1);}}
   const uniq=Object.keys(lens).map(k=>lens[k]).filter((v,i,a)=>a.indexOf(v)===i);
   if(uniq.length<2){console.log('FAIL: 全員が同じ手数(キャラごとに変わっていない)');process.exit(1);}
+  /* ⚔⭐⭐(257)**振りと斬撃の筋の向きが食い違っていないこと**(2026-08-11ユーザー実機
+     「剣の振りと攻撃のエフェクトが合ってない。横振りなのに縦に円状にエフェクトが出てる」)。
+     ⭐筋の向き(cmbCut)は**振りの数字から計算している**ので、ここで4つ締める:
+       ①どの手も真縦を超えない(1.45まで)=上から円を描く軌道にしない
+       ②**角度を大きく振る手**(縦の振り)は筋も縦寄り / **前へ走らせる手**(横薙ぎ)は筋も横寄り
+       ③上下の向きが振りと逆になっていない
+       ④🌌ディメンションナイトは**どの手も横〜斜め**(ユーザー明示「縦の斬り下ろしは入れない」)。 */
+  for(const id of ids)for(let k=0;k<H_CMB[id].length;k++){
+   const r=H_CMB[id][k],cut=cmbCut(id,k),dd=r[1]-r[0],nm=id+' の'+(k+1)+'手目';
+   if(!(Math.abs(cut)<=1.4501)){console.log('FAIL: '+nm+' の斬撃が真縦を超えている('+cut.toFixed(2)+')');process.exit(1);}
+   if(Math.abs(dd)>=.7&&Math.abs(cut)<.7){
+    console.log('FAIL: '+nm+' は大きく振っている(角度差'+dd.toFixed(2)+')のに斬撃が横向き('+cut.toFixed(2)+')');process.exit(1);}
+   if(Math.abs(dd)<.45&&Math.abs(r[2])>=10&&Math.abs(cut)>.55){
+    console.log('FAIL: '+nm+' は前へ薙いでいる(ずれx'+r[2]+')のに斬撃が縦向き('+cut.toFixed(2)+')');process.exit(1);}
+   if(Math.abs(dd)>.2&&(dd>0)!==(cut>0)){
+    console.log('FAIL: '+nm+' の斬撃の上下が振りと逆('+dd.toFixed(2)+' と '+cut.toFixed(2)+')');process.exit(1);}
+   if(id==='hDim'&&Math.abs(cut)>.8){
+    console.log('FAIL: ディメンションナイトの'+(k+1)+'手目が縦の斬り下ろしになっている('+cut.toFixed(2)+')');process.exit(1);}}
+  console.log('斬撃の向きが振りと合っている: '+ids.map(k=>k+'='+H_CMB[k].map((r,i)=>cmbCut(k,i).toFixed(2)).join('/')).join(' ')+' OK');
+  /* 🎯(257)**照準は狙って撃つ体だけ**(ユーザー「必殺技の時の照準みたいなのはスナイパーキャラだけに」)。
+     ⚠剣士(据える型を姿勢のために借りている体)が混ざっていないこと。 */
+  {for(const id of AIM_ID){if(uMotK(UNITS.findIndex(x=>x.id===id))!=='snipe'){
+    console.log('FAIL: 照準を出す '+id+' が狙撃の型ではない');process.exit(1);}}
+   for(const id of ['hDim','hNox','hZan'])if(AIM_ID.has(id)){
+    console.log('FAIL: 剣士 '+id+' に照準が付いている');process.exit(1);}}
+  /* 💥⭐(257)**流星墜拳=本人が真上から落ちて、殴ってから元の場所へ戻る**(ユーザー指示)。見るのは4つ:
+     ①出だしは**画面の外**(高さぶん上) ②落ち切った先が**狙った点そのもの**
+     ③戻り終わりは**元の立ち位置** ④ちゃんと終わる(終わらないと英雄が敵陣に置き去りになる) */
+  {const u9={rjT:0,rjx:500,rjy:300},hx=100,hy=280;
+   const a9=renDivePos(u9,hx,hy);
+   if(!a9||a9[1]>u9.rjy-RJ_HI*.9){console.log('FAIL: 流星墜拳の出だしが空の上でない');process.exit(1);}
+   u9.rjT=RJ_DOWN;const b9=renDivePos(u9,hx,hy);
+   if(!b9||Math.abs(b9[0]-500)>1||Math.abs(b9[1]-300)>1){console.log('FAIL: 流星墜拳が狙った点に落ちていない');process.exit(1);}
+   u9.rjT=RJ_DOWN+RJ_HOLD+RJ_BACK-.005;const c9=renDivePos(u9,hx,hy);
+   if(!c9||Math.abs(c9[0]-hx)>8||Math.abs(c9[1]-hy)>8){console.log('FAIL: 流星墜拳の後に元の位置へ戻らない');process.exit(1);}
+   u9.rjT=RJ_DOWN+RJ_HOLD+RJ_BACK+.01;
+   if(renDivePos(u9,hx,hy)!==null){console.log('FAIL: 流星墜拳が終わらない(英雄が敵陣に置き去りになる)');process.exit(1);}
+   console.log('流星墜拳: 空→狙った点→元の位置 OK');}
   /* ③実際に回るか=撃たせて u.cmb の通った値を数える */
   {const h9=HEROES.find(x=>x.id==='hNox');
    META.stg=0;setDiff=2;META.hero={};META.hero.hNox=1;META.hsel='hNox';

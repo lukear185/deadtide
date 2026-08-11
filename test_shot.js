@@ -24,7 +24,9 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['home+hsel=<id>','🏠ホームで連れて行く英雄を差し替える'],
   ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
   ['ultgo[+w<ミリ秒>]','必殺を止めずに撃って、その時刻の絵を撮る'],
+  ['hero=hRen+rj=<秒>','💥流星墜拳を経過で止める(落下.17/着地.30/戻り.34秒)'],
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
+  ['fxslash','⚔斬撃の筋だけを向き別・寿命別に12枚並べる'],
   ['ed+edt=<秒>','🎬区切りの幕'],['op[=logo|<秒>]','🎬起動の幕(開発名/オープニング)'],['arena=…','🧪検証場'],['title+bus','🚌ゾンビバス'],
   ['tut=<段id>[:aim]','🎓チュートリアルのその段(例 tut=flag / tut=strike:aim)'],
   ['z=<id>+bsink=<秒>','💀ボス撃破の沈み演出をその経過で止める'],
@@ -184,6 +186,10 @@ const ULM=/ult=([0-9.]+)/.exec(OPT),ULP=ULM?ULM[1]:'';
    ⚠`ult=` は詠唱を止める口なので、**発射後の絵(ブレスなど)が一度も撮れなかった**。
    ⚠発射は1.4秒後=いつの絵を撮るかは `w<ミリ秒>` で選ぶ(例 "hero=hUgni+ultgo+w4200")。 */
 const ULGO=/(^|\+)ultgo(\+|$)/.test(OPT);
+/* 💥⭐(257)rj=<秒> = 爆拳のレンの流星墜拳を**その経過で止めて**撮る(落下0.17/着地0.30/戻り0.34秒)。
+   ⚠⚠ヘッドレスは rAF がほとんど回らないので `ultgo` では落ちてくる所を捕まえられない。
+   ⭐位置の式は index 側の `renDivePos` を呼ぶ(道具側に式を写さない)。例 "hero=hRen+rj=0.10" */
+const RJM=/(^|\+)rj=([0-9.]+)/.exec(OPT),RJT=RJM?RJM[2]:'';
 /* 例 u=grn = その兵科を3体出して、目の前にゾンビを湧かせ続ける(攻撃と撃破の演出を撮るため)
    ⚠ゾンビは倒されたら補充されるので、投擲の軌道・炎・死体がいつでも画面に出ている状態になる */
 const UM=/u=([A-Za-z0-9]+)/.exec(OPT),UID=UM?UM[1]:'';
@@ -191,7 +197,8 @@ const UM=/u=([A-Za-z0-9]+)/.exec(OPT),UID=UM?UM[1]:'';
 const SKM=/stk=([a-z]+)/.exec(OPT),SKID=SKM?SKM[1]:'';
 /* fxdemo = 新しい演出を1つずつ並べて、寿命の途中の姿で止めて撮る(絵そのものを確かめる用)
    ⚠一瞬しか出ない演出は実戦の撮影ではまず捉えられないので、こうして並べて見る */
-const FXD=OPT.indexOf('fxdemo')>=0;
+const FXS=OPT.indexOf('fxslash')>=0;/* ⚔(257)斬撃だけを向き別・寿命別に12枚並べる */
+const FXD=OPT.indexOf('fxdemo')>=0&&!FXS;
 /* tut / tut=3 = 🎓チュートリアルを撮る(数字はその段まで進めてから撮る) */
 /* ⚠(99)区切りを必ず見る=裸の /tut/ だと bnstut(開拓便の案内)まで一致して🎓が勝手に始まる
    (「w+数字」の罠と同じ形。実際に踏んだ) */
@@ -632,6 +639,17 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      +'me.zombies.length=0;for(var k9=0;k9<9;k9++){var z9=mkZ(zSpec(0,1,10),PLEN*.46-k9*44);z9.hp=z9.mhp=9e5;me.zombies.push(z9);}'
      +'heroUlt(me,10);'
      +'}catch(e){document.title="ERR14b "+e.message;}},1400);'):'')
+ +((HID&&RJT)?('setTimeout(function(){try{var me=G.players[0];me.hCg=1;'
+     +'me.zombies.length=0;for(var k9=0;k9<9;k9++){var z9=mkZ(zSpec(0,1,10),PLEN*.46-k9*44);z9.hp=z9.mhp=9e5;me.zombies.push(z9);}'
+     +'var hm=null;'
+     +'var pin=function(){var hu=(G.players[0].units||[]).filter(function(u){return u.hro;})[0];if(!hu)return;'
+     +'if(!hm)hm=[hu.px,hu.py];'
+     +'hu.ulW=0;hu.ulT=2;hu.rjT='+RJT+';hu.mv=0;'
+     /* ⚠ゾンビの px/py は1コマ進むまで入っていない=**道のり(d)から出す** */
+     +'if(hu.rjx==null){var z=me.zombies[4]||me.zombies[0];var pz=pathPos(z.d,0);hu.rjx=pz[0];hu.rjy=pz[1];}'
+     +'var P=renDivePos(hu,hm[0],hm[1]);if(P){hu.px=P[0];hu.py=P[1];}};'
+     +'pin();setInterval(pin,40);'
+     +'}catch(e){document.title="ERR14c "+e.message;}},1400);'):'')
  +((HID&&ULP)?('setTimeout(function(){try{var me=G.players[0];me.hCg=1;'
      +'me.zombies.length=0;for(var k9=0;k9<5;k9++)me.zombies.push(mkZ(zSpec(0,1,10),PLEN*.62-150-k9*40));'
      +'heroUlt(me,10);'
@@ -681,6 +699,20 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      +(IVW?('G.wave='+IVW+';'):'')
      /* ⚠新登場の紹介モーダル(PAUSED)が上に乗るので、待ってから畳んで開く */
      +'INTROQ.length=0;G.introQ=[];document.getElementById("md-intro").classList.remove("on");PAUSED=false;ivOpen();'
+     +'}catch(e){document.title="ERR6 "+e.message;}},1200);'):'')
+ +(FXS?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
+     /* ⚔(257)**斬撃だけを向き別・寿命別に並べる**=剣の振りと筋の向きが合っているかを見る口。
+        ⚠1枚ごとに「刃が走る向き(ang)」を変えてある。上段=出はじめ / 下段=消えぎわ。 */
+     +'var A9=[0,.5,1.4,-.5],N9=["yoko","naname","tate","gyaku"];'
+     +'var D=[];for(var i9=0;i9<4;i9++)for(var j9=0;j9<3;j9++)'
+     +'D.push(["slash",240+i9*330,260+j9*180,{ang:A9[i9],r:44,lv:3,col:"#e8f0f6",bw:1},.10+j9*.30]);'
+     +'setInterval(function(){try{'
+     /* ⚠新種の紹介と作戦タイムが被さるので毎コマ閉じる(敵を消すと波が終わって作戦タイムが開く) */
+     +'INTROQ.length=0;G.introQ=[];document.getElementById("md-intro").classList.remove("on");'
+     +'document.getElementById("interv").classList.remove("on");PAUSED=false;'
+     +'me.fx.length=0;me.dly=[];'
+     +'D.forEach(function(d){var e=Object.assign({k:d[0],x:d[1],y:d[2],t:0,s:""},d[3]);'
+     +'e.t=(fxLife(e.k,e))*d[4];me.fx.push(e);});}catch(e){}},16);'
      +'}catch(e){document.title="ERR6 "+e.message;}},1200);'):'')
  +(FXD?('setTimeout(function(){try{var me=G.players[0];me.zombies.length=0;'
      +'var D=[["toss",240,300,{x2:420,y2:300,lf:.3,hi:90,kind:"nade",col:"#7d8a5c",sd:1},.5],'
