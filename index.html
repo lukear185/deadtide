@@ -1399,6 +1399,8 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
    ⚠⚠**中央上は盤面の主役が通る所**(道の入口・ボス・必殺)なので、そこへ札を出すと必ず被る。
    ⭐**HUDの下・右端**=どの画面でも空いていて、目の端で読める。⭐**小さく・幅も半分**にした。
    ⚠**消してはいない**=ガスの湧きやチュートリアルの案内はここでしか伝えていない。 */
+/* 🗺(255)地図の見出しの下に出す「材質 → 弱点」の1行。⚠小さく・目立たせすぎない */
+#map-title .mwk{display:block;font-size:11.5px;font-weight:800;opacity:.92;margin-top:2px}
 #toasts{position:fixed;top:58px;right:8px;left:auto;transform:none;z-index:60;display:flex;flex-direction:column;gap:4px;align-items:flex-end;pointer-events:none;width:min(56vw,330px)}
 .toast{background:var(--ink);color:var(--paper);border:2px solid var(--paper);border-radius:10px;padding:5px 10px;font-size:11.5px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.5);animation:tin .25s ease;max-width:100%;opacity:.94;text-align:right}
 .toast.warn{background:var(--rust);color:var(--pane)}
@@ -5962,7 +5964,7 @@ const HEROES=[
       いままで★5に1人も居なかった枠が埋まる。
     ⚠残月の剣鬼(🗡貫通・居合の一撃)とは**役どころで分ける**=あちらは単体を深く、
       こちらは**前方をまとめて薙ぐ範囲**。⚠強さは他の★5と同じ帯。詰めは実測から。 */
- {id:'hDim',n:'ディメンションナイト',rk:5,hp:6200,atk:1040,rate:1.15,sp:92,c:'#8f6fe0',ty:'slash',rng:116,/* ⚠(254)118を超えると立ち位置が下がりすぎる(検査)=範囲は aoe が持つ */aoe:140,uch:58,ult:'次元斬',udsc:'力を溜めて、空間ごと前方を一直線に切り裂く。裂け目に呑まれた敵は形を保てない'},
+ {id:'hDim',n:'ディメンションナイト',rk:5,hp:6200,atk:1350,/* ⚠(255)単発化=連撃の盛り(×1.30)を攻撃力へ振り替え */rate:1.15,sp:92,c:'#8f6fe0',ty:'slash',rng:116,/* ⚠(254)118を超えると立ち位置が下がりすぎる(検査)=範囲は aoe が持つ */aoe:140,uch:58,ult:'次元斬',udsc:'力を溜めて、空間ごと前方を一直線に切り裂く。裂け目に呑まれた敵は形を保てない'},
  {id:'hUgni',n:'炎龍ウグニウス',rk:5,hp:7200,atk:900,rate:1.35,sp:52,c:'#d94a2a',ty:'fire',rng:260,aoe:130,burn:52,uch:58,ult:'劫火の吐息',udsc:'口を大きく開けて火の塊を吐き出す。塊は道を進むほど大きく・熱くなり、通った所を燃やし続ける'}
 ];
 /* ⛔(226g)**外している英雄(off:1)を除いた一覧**=排出・召集・図鑑・選択・検証場は必ずこちらを見る。
@@ -6269,6 +6271,29 @@ function afX(ty,z){
  return 1;
 }
 const afKof=x=>x>1?'wk':(x<1?'rs':'');/* 数字の色分け用の合図 */
+/* 🗺⭐⭐(255)**その面の主役の材質**(2026-08-11ユーザー「各面の弱点属性が何かを書いて欲しい。
+     マップ上とかでOK」)。⚠⚠**手で表に書かない**=面を足すたびに必ず食い違う。
+   ⭐**その面に出る敵を数えて、一番多い材質を主役とする**=検査(checkMaterial)と同じ見方。
+   ⚠ボスと🌑ナイトメアは数えない(顔ぶれの傾向を見たいだけ)。 */
+const STG_MAT_C={};
+function stgMat(si){
+ if(STG_MAT_C[si]!==undefined)return STG_MAT_C[si];
+ const zs=(STAGES[si]||{}).zs,cnt={};
+ for(const Z of ZOMBIES){
+  if(Z.off||Z.boss||Z.nm)continue;
+  const zk=(Z.st||0);
+  if(zs===0?zk!==0:zk!==zs)continue;
+  const k=afKind(Z);cnt[k]=(cnt[k]||0)+1;}
+ let best='',bn=0;
+ for(const k in cnt)if(cnt[k]>bn&&k!=='none'){bn=cnt[k];best=k;}
+ const M=best?AF_MAT.find(m=>m.k===best):null;
+ return (STG_MAT_C[si]=M||null);
+}
+/* 🗺その面の「材質 → 弱点」を1行で。⚠**言葉は増やさない**=絵文字と一語だけ(札の掟) */
+function stgWkLine(si){
+ const M=stgMat(si);if(!M)return '';
+ return M.ic+M.n+' → 弱点'+((AF_TY[M.wk]||{}).ic||'')+((AF_TY[M.wk]||{}).n||'');
+}
 /* ============ 🛡 相性の見せ方(2026-08-04) ============
    ⭐**それまで相性はコードにしか無く、プレイヤーには一切見えていなかった**
      (装甲は⚔近接/🔫実弾が45%・🔥火炎の塔は×1.9…)。ユニット30種・ゾンビ46種あっても
@@ -17672,7 +17697,7 @@ HBODY.hKrup=(c,U,walk,t,ph,o)=>{
  c.save();c.scale(1.16,1.16);
  /* ⭐署名④**ヒレの尾**(扇)。⚠体より先に描く=後ろにある物。⚠半透明にして「水の生き物」を言う */
  {const sw=Math.sin(t*3.2+ph)*.16;
-  c.save();c.translate(-11,-13);c.rotate(-.5+sw);
+  c.save();c.translate(-9.4,-11.4);c.rotate(-.5+sw);
   c.globalAlpha=.86;c.fillStyle=FIN;
   c.beginPath();c.moveTo(0,0);
   c.quadraticCurveTo(-14,-9,-25,-4);
@@ -17687,65 +17712,74 @@ HBODY.hKrup=(c,U,walk,t,ph,o)=>{
   for(const g of [[-6,.62,0],[6,.8,1.6]]){
    c.fillStyle=shade(FUR,g[1]);
    c.beginPath();c.ellipse(g[0]+s1*(g[2]?1:-1),-3.6,4.6,3.4,0,0,7);c.fill();c.stroke();}}
- /* 胴(⚠洋梨=下がふっくら)。腹はクリーム */
+ /* 胴(⚠洋梨=下がふっくら)。腹はクリーム
+    ⚠⚠(255)**頭を大きくしたので胴は小さく低く**した(2026-08-11ユーザー「顔もっと大きくして可愛くして」)。
+      ⭐かわいさは**頭身**で決まる=頭を大きくするだけだと「太った獣」になる。胴とセットで詰めること。 */
  c.fillStyle=FUR;
- c.beginPath();c.moveTo(-10,-8);
- c.bezierCurveTo(-13,-24,-8,-32,0,-32);
- c.bezierCurveTo(8,-32,13,-23,10,-8);
- c.bezierCurveTo(5,-3,-5,-3,-10,-8);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(-8.6,-7);
+ c.bezierCurveTo(-11,-19,-7,-26,0,-26);
+ c.bezierCurveTo(7,-26,11,-18.4,8.6,-7);
+ c.bezierCurveTo(4.4,-2.6,-4.4,-2.6,-8.6,-7);c.closePath();c.fill();c.stroke();
  c.fillStyle=CRM;
- c.beginPath();c.ellipse(.6,-14,6.4,8.4,0,0,7);c.fill();
+ c.beginPath();c.ellipse(.6,-12.4,5.4,6.8,0,0,7);c.fill();
  /* 前足(短い。⚠攻撃中は前へ出す=泡を吹いている手) */
  {const ar=atk?4.2:Math.sin(t*3+ph)*1.4;
   c.fillStyle=shade(FUR,.9);
-  c.beginPath();c.ellipse(9+ar,-17,3.6,2.8,-.3,0,7);c.fill();c.stroke();
+  c.beginPath();c.ellipse(7.8+ar,-14.6,3.4,2.7,-.3,0,7);c.fill();c.stroke();
   c.fillStyle=shade(FUR,.7);
-  c.beginPath();c.ellipse(-8.4,-16,3.2,2.6,.3,0,7);c.fill();c.stroke();}
+  c.beginPath();c.ellipse(-7.4,-13.8,3.0,2.5,.3,0,7);c.fill();c.stroke();}
  /* ⭐署名③**青いマフラー**+菱形の宝石。⚠首を1周させる(片側だけだと襟に見える) */
  c.fillStyle=SCF;
- c.beginPath();c.ellipse(0,-30,9.4,3.6,0,0,7);c.fill();c.stroke();
+ c.beginPath();c.ellipse(0,-25.4,8.6,3.4,0,0,7);c.fill();c.stroke();
  {const fw=Math.sin(t*2.6+ph)*2;/* 後ろへなびく端 */
-  c.beginPath();c.moveTo(-7,-31);c.lineTo(-16-fw,-27+fw*.6);c.lineTo(-14-fw,-22+fw*.6);
-  c.lineTo(-6,-27);c.closePath();c.fill();c.stroke();}
+  c.beginPath();c.moveTo(-6.4,-26.4);c.lineTo(-15-fw,-22.4+fw*.6);c.lineTo(-13-fw,-17.6+fw*.6);
+  c.lineTo(-5.4,-22.4);c.closePath();c.fill();c.stroke();}
  c.fillStyle=GEM;
- c.beginPath();c.moveTo(1.4,-31.4);c.lineTo(4.4,-28.4);c.lineTo(1.4,-25);c.lineTo(-1.6,-28.4);
+ c.beginPath();c.moveTo(1.4,-26.6);c.lineTo(4.2,-23.8);c.lineTo(1.4,-20.6);c.lineTo(-1.4,-23.8);
  c.closePath();c.fill();c.stroke();
- /* ⭐頭(大きく丸く=かわいさの芯)。マズルはクリーム */
+ /* ⭐⭐(255)**頭を大きくした**(2026-08-11ユーザー「顔もっと大きくして可愛くして」)。
+    ⭐かわいさの作り方は4つ=①**頭を胴より大きく**(2頭身) ②**目を大きく・下寄りに**
+      ③**マズルを横に広く低く** ④**ほっぺの赤み**。⚠目を上に置くと大人びる(下寄りが幼い)。 */
  c.fillStyle=FUR;
- c.beginPath();c.ellipse(1,-40,10.4,9,0,0,7);c.fill();c.stroke();
- /* 丸い耳(⚠小さく・頭の上のほうに置く) */
- for(const g of [[-6.4,-47.4,3.0],[8,-46.4,2.6]]){
+ c.beginPath();c.ellipse(1,-38,14.2,12.6,0,0,7);c.fill();c.stroke();
+ /* 丸い耳(⚠頭が大きくなったぶん外へ) */
+ for(const g of [[-9,-47.4,3.6],[10.4,-46,3.1]]){
   c.fillStyle=FUR2;c.beginPath();c.arc(g[0],g[1],g[2],0,7);c.fill();c.stroke();
   c.fillStyle=shade(FUR,1.3);c.beginPath();c.arc(g[0],g[1],g[2]*.5,0,7);c.fill();}
- c.fillStyle=CRM;/* マズル(横に広い) */
- c.beginPath();c.ellipse(3.4,-37,7.4,5.2,0,0,7);c.fill();c.stroke();
- c.fillStyle=NOSE;/* 鼻 */
- c.beginPath();c.ellipse(6.4,-39.4,2.0,1.5,0,0,7);c.fill();
+ c.fillStyle=CRM;/* マズル(横に広く低く) */
+ c.beginPath();c.ellipse(3.6,-33.4,10.4,7.0,0,0,7);c.fill();c.stroke();
+ c.fillStyle=NOSE;/* 鼻(⚠丸く大きめ=かわいさに効く) */
+ c.beginPath();c.ellipse(7.4,-36.4,2.6,2.0,0,0,7);c.fill();
  /* 口(⚠攻撃中は「お」の形=泡を吹いている) */
- c.strokeStyle=NOSE;c.lineWidth=1.4;
- if(atk||rc>.3){c.fillStyle=NOSE;c.beginPath();c.ellipse(6.6,-35.4,1.6,1.9,0,0,7);c.fill();}
- else{c.beginPath();c.moveTo(4.4,-36);c.quadraticCurveTo(6.4,-34.4,8.4,-36);c.stroke();}
+ c.strokeStyle=NOSE;c.lineWidth=1.6;
+ if(atk||rc>.3){c.fillStyle=NOSE;c.beginPath();c.ellipse(7.4,-31.4,2.1,2.5,0,0,7);c.fill();}
+ else{c.beginPath();c.moveTo(4.4,-32.6);c.quadraticCurveTo(7.4,-30.4,10.4,-32.6);c.stroke();}
  c.lineWidth=2.6;c.strokeStyle=INK;
- /* 目(⚠大きく・光を2つ=これがかわいさの決め手) */
- for(const g of [[6.4,-42.4,2.6],[-2.6,-42,2.2]]){
-  c.fillStyle=EYE;c.beginPath();c.ellipse(g[0],g[1],g[2],g[2]*1.12,0,0,7);c.fill();c.stroke();
-  c.fillStyle='#ffffff';c.beginPath();c.arc(g[0]+g[2]*.3,g[1]-g[2]*.4,g[2]*.36,0,7);c.fill();
-  c.beginPath();c.arc(g[0]-g[2]*.34,g[1]+g[2]*.3,g[2]*.18,0,7);c.fill();}
+ /* ⭐目(⚠**大きく・下寄り**=これがかわいさの決め手)。光は2つ */
+ for(const g of [[7.6,-40.4,3.8],[-4.6,-39.6,3.2]]){
+  c.fillStyle=EYE;c.beginPath();c.ellipse(g[0],g[1],g[2],g[2]*1.14,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#ffffff';c.beginPath();c.arc(g[0]+g[2]*.3,g[1]-g[2]*.42,g[2]*.38,0,7);c.fill();
+  c.beginPath();c.arc(g[0]-g[2]*.36,g[1]+g[2]*.32,g[2]*.2,0,7);c.fill();}
+ /* ⭐ほっぺの赤み(⚠薄く2つだけ=濃いと化粧に見える) */
+ c.globalAlpha=.34;c.fillStyle='#e08a8a';
+ c.beginPath();c.ellipse(12.4,-34.4,3.0,2.0,0,0,7);c.fill();
+ c.beginPath();c.ellipse(-8.6,-34,2.6,1.8,0,0,7);c.fill();
+ c.globalAlpha=1;
  /* ひげ(3本・長さを変える) */
- c.strokeStyle=CRM2;c.lineWidth=1.2;
- for(const g of [[9.4,-38.4,17,-40],[9.6,-36.6,18,-36],[9.2,-35,16,-33]]){
+ c.strokeStyle=CRM2;c.lineWidth=1.3;
+ for(const g of [[12.4,-35.4,21,-37.4],[12.8,-33.4,22,-32.6],[12.2,-31.4,20,-29]]){
   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.stroke();}
  c.strokeStyle=INK;c.lineWidth=2.6;
  /* ⭐署名⑤**水色の斑点**(頭と背。⚠数も大きさも揃えない) */
  c.fillStyle=FIN;
- for(const g of [[-3.4,-47,1.4],[2.6,-48.4,1.0],[-8,-25,1.6],[-6,-18,1.1]]){
+ for(const g of [[-3.4,-47.4,1.5],[3.2,-48.6,1.1],[-7,-21,1.6],[-5.4,-15.4,1.1]]){
   c.globalAlpha=.7;c.beginPath();c.arc(g[0],g[1],g[2],0,7);c.fill();}
  c.globalAlpha=1;
  /* ⭐署名⑥**浮かぶ泡**(⚠乱数を使わない=毎コマ形が変わると煮え立って見える) */
  if(FXLV>0){c.strokeStyle=FIN;c.lineWidth=1.4;
   for(let i=0;i<3;i++){const q=((t*.5+i*.34+ph*.1)%1);
    c.globalAlpha=(1-q)*.7;
-   c.beginPath();c.arc(14+i*4,-30-q*30,2.2+i*.9,0,7);c.stroke();}
+   c.beginPath();c.arc(17+i*4,-28-q*32,2.2+i*.9,0,7);c.stroke();}
   c.globalAlpha=1;c.lineWidth=2.6;c.strokeStyle=INK;}
  c.restore();
 };
@@ -19955,12 +19989,15 @@ const H_HITS={
  /* ⚔(249)**居合=一撃**。⚠**合計の強さは据え置き**=4連撃の盛り(×1.45)ぶんを atk に振り替えてある
     (660→960)。⚠片方だけ動かすと強さが変わるので、必ず両方を一緒に見ること。 */
  hZan:[1],
- hDim:[2,3],/* 🌌(254)二連→三連=**まとめて薙ぐ**のがこの人の売り */
+ /* 🌌⭐(255)**一撃を重く**(2026-08-11ユーザー「もっとかっこよく一撃が重い感じに」)=
+    連撃をやめて**単発**にした。⚠合計の強さは据え置き(連撃の盛りぶんを攻撃力へ振り替えてある) */
+ hDim:[1],
 };
 const SWG_SUB=.16;/* 1発ぶんの振りの長さ(秒)。⚠短いほど連打に見えるが、.12を切ると残像になる */
 /* 🐺(229p)**1発ぶんの振りの長さもキャラ別に持てる口**。狼王は打と打の間隔が .60 と広いので、
    .16 のままだと**1発ごとに一瞬ピクッと動くだけ**で「爪→爪→噛みつき」が読めない。⚠間隔より短く保つこと */
-const SWG_D={hWolf:.42};
+/* 🌌(255)ディメンションナイトは**1発の振りを長く**=重い一撃は「ゆっくり大きく振る」で作る */
+const SWG_D={hWolf:.42,hDim:.30};
 const hSwgD=U=>SWG_D[U&&(U.base||U.id)]||SWG_SUB;
 /* 🐺(226d)**打と打の間隔をキャラ別に持てる口**(既定は SWG_SUB×1.05)。
    狼王はユーザー指定「3コンボを2秒かけて」=0.6秒おき(0/0.6/1.2秒に当てて、残りで跳んで戻る)。 */
@@ -22434,37 +22471,55 @@ const H_FX={
     ⭐**何個か出す**=1個ずつ時間差で的へ届き、着いた所で弾ける。⚠当たりは本体側(aoe)が済ませている
       =ここは絵と音だけ(数を増やしても強さは動かない)。 */
  hKrup:(C,u,U,tg,mx,my,ang)=>{u.fireT=.16;
+  /* 💧⭐⭐(255)**泡はゆっくり飛んで、着いた所で弾ける**(2026-08-11ユーザー
+     「もっと泡がゆっくり飛んでいって着弾したらダメージにして」)。
+     🐞前は粒を撒くだけで**飛んでいる玉が見えなかった**=「出した瞬間に当たった」ようにしか見えない。
+     ⭐**玉は `fball` で飛ばす**(紅蓮の火の玉と同じ口)=軌道が絵として残る。
+     ⚠**寿命(飛ぶ時間)は距離から出す**=近い敵にも遠い敵にも同じ速さで飛ぶ。⚠遅すぎると当たりとずれる。
+     ⚠**3つとも少しずつ時間をずらす**=「ぷくぷく」と続けて出た感じになる。 */
   const cl9=U.c||'#5aa8d8';
-  if(FXLV>0){
-   const n9=3;
-   for(let i9=0;i9<n9;i9++){
-    const dl=i9*.09,r9=4+i9*1.6;
-    addP(C,1,mx,my,{sp:120,a:ang,spread:.22,g:-24,life:.34+dl,r:r9,col:cl9});
-    later(C,.16+dl,()=>{
-     if(!C)return;
-     addFx(C,'ring',tg.px+rnd(-14,14),tg.py-14*CH_UP+rnd(-10,10),'',{r:20+i9*8,col:'#bfe6ff'});
-     if(C.isMe&&i9===1&&sfx[H_SFX.hKrup])sfx[H_SFX.hKrup]();});}
-   addP(C,3,mx,my,{sp:60,up:40,g:-40,life:.5,r:2.4,col:'#bfe6ff'});
-   hitFx(C,tg,ang,cl9,1,U.type);}
-  if(C.isMe&&sfx[H_SFX.hKrup])sfx[H_SFX.hKrup]();},
+  const tx=tg.px,ty=tg.py-16*CH_UP;
+  const fl=clamp(dist(mx,my,tx,ty)/420,.22,.62);/* 💧ゆっくり(火の玉の約2倍かける) */
+  if(FXLV>0)for(let i9=0;i9<3;i9++){
+   const dl=i9*.10,r9=7.4+i9*2.2;
+   /* ふわりと浮きながら飛ぶ玉。⚠出どころは口(mx,my) */
+   later(C,dl,()=>{
+    if(!C||u.dead)return;
+    addFx(C,'fball',mx,my,'',{x2:tx+rnd(-12,12),y2:ty+rnd(-10,10),r:r9,lf:fl,
+     col:'#5aa8d8',col2:'#e8f8ff',sd:rnd(0,9)});
+    if(C.isMe&&i9===0&&sfx[H_SFX.hKrup])sfx[H_SFX.hKrup]();});
+   /* 💥着弾=そこで弾ける(輪+しぶき)。⚠**飛び終わってから**出す(先に出ると玉が追いかける) */
+   later(C,dl+fl,()=>{
+    if(!C)return;
+    const bx=tx+rnd(-12,12),by=ty+rnd(-10,10);
+    addFx(C,'ring',bx,by,'',{r:26+i9*10,col:'#bfe6ff'});
+    addP(C,5,bx,by,{sp:150,up:50,g:420,life:.4,r:2.6,col:'#8fd4ee'});
+    if(C.isMe&&sfx[H_SFX.hKrup])sfx[H_SFX.hKrup]();});}
+  if(FXLV>0){addP(C,2,mx,my,{sp:40,up:34,g:-40,life:.5,r:2.2,col:'#bfe6ff'});
+   hitFx(C,tg,ang,cl9,1,U.type);}},
  /* 🌌(254)**ディメンションナイト=時空を切り裂く範囲斬撃**(ユーザー指定)。
     ⭐**弧を1枚+その弧の上に「空間の裂け目」を数か所**開ける=ただの斬撃と分かれる。
     ⚠**弧は自分の前に1枚**(敵ごとに出すと白い塊になる=残月で踏んだ穴と同じ)。
     ⚠当たりは本体側(aoe)が済ませている=ここは絵と音だけ。 */
- hDim:(C,u,U,tg,mx,my,ang,col)=>{u.fireT=.15;
-  const cl9=U.c||'#8f6fe0';
+ hDim:(C,u,U,tg,mx,my,ang,col)=>{u.fireT=.2;
+  /* 🌌⭐⭐(255)**黒い斬撃**(2026-08-11ユーザー「黒い斬撃で」「一撃が重い感じ」)。
+     ⚠⚠**黒はそのままでは盤面に出ない**(下地も暗いため)=**必ず縁を光らせる**。
+       ⭐やり方=**大きい薄紫の弧を1枚 → その上に一回り小さい黒の弧**を重ねる
+       =黒い刃に紫の縁が付いて見える(黒いのに読める)。
+     ⭐**重さは3つで作る**=①弧を大きく ②画面を揺らす ③足元へ黒い衝撃波を落とす。 */
   if(FXLV>0){
    const n9=uCmbN(u.ui),k9=((u.cmb||0)+n9-1)%n9;
    const a9=ang+[-.5,.58,-.92][k9%3];
-   const bx=mx+Math.cos(ang)*24,by=my+Math.sin(ang)*20;
-   addFx(C,'slash',bx,by,'',{ang:a9,r:(u.mhFin?42:32)*CH_UP,lv:u.mhFin?3:2,col:cl9});
-   /* 🌌**弧の上に開く裂け目**(2〜3か所・大きさを変える)=「空間を切った」の絵 */
-   for(let i9=0;i9<(u.mhFin?3:2);i9++){
-    const q9=(i9+1)/4,rx=bx+Math.cos(a9)*(q9*2-1)*34,ry=by+Math.sin(a9)*(q9*2-1)*26;
-    addFx(C,'ring',rx,ry,'',{r:16+i9*9,col:'#c4a8ff'});}
-   addP(C,4,bx,by,{sp:150,a:ang,spread:.7,g:150,life:.3,r:2.4,col:'#c4a8ff'});
-   hitFx(C,tg,ang,cl9,1,U.type);}
-  if(u.mhFin)C.shake=Math.max(C.shake||0,.14);
+   const bx=mx+Math.cos(ang)*26,by=my+Math.sin(ang)*22;
+   addFx(C,'slash',bx,by,'',{ang:a9,r:56*CH_UP,lv:3,col:'#b48cff'});/* 縁(先に大きく) */
+   addFx(C,'slash',bx,by,'',{ang:a9,r:46*CH_UP,lv:3,col:'#0e0a16'});/* 黒い刃(上から) */
+   addFx(C,'shock',u.px,u.py+4,'',{r:110,col:'#5a3f8a'});
+   /* 🌌切った跡に残る裂け目(1つだけ大きく=数を増やすと散らかる) */
+   addFx(C,'ring',bx+Math.cos(a9)*20,by+Math.sin(a9)*16,'',{r:34,col:'#c4a8ff'});
+   addP(C,5,bx,by,{sp:200,a:ang,spread:.8,g:220,life:.34,r:3.0,col:'#2a1f3f'});
+   addP(C,3,bx,by,{sp:130,a:ang,spread:.5,g:150,life:.28,r:2.2,col:'#c4a8ff'});
+   hitFx(C,tg,ang,'#b48cff',1,U.type);}
+  C.shake=Math.max(C.shake||0,.2);
   if(C.isMe&&sfx[H_SFX.hDim])sfx[H_SFX.hDim]();},
  hUgni:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.2;
   const ts=TSCALE[3],dd=(d5||u.dr||-1);
@@ -23728,23 +23783,34 @@ function heroUlt(C,wave){
    ⚠**コアの方向へは押さない**(0で止める)。⚠ボスは押し戻す量を減らす(理不尽よけ)。 */
   addFx(C,'txt',u.px,u.py-84*CH_UP,'大津波');
   if(C.isMe)(sfx.ultHose||sfx.win)();
-  {const KR_LEN=760,KR_PUSH=210,KR_N=12;
+  /* 🌊⭐⭐(255)**波はクループの足元から立ち上がって、敵の方へ押し寄せる**(2026-08-11ユーザー
+     「ちゃんと波がクループから敵に向かって押し寄せる感じにして」)。
+     🐞前は「輪が道の上を順に出るだけ」で、**どこから来た波なのか**が分からなかった。
+     ⭐直した所は3つ=①**必ず自分の足元から始める**(k=0 が u.d) ②**進むほど波が高くなる**
+       (輪を大きく・しぶきを増やす) ③**波の壁を横に引く**=道を横切る帯にして「押し寄せる面」を見せる。
+     ⚠押し返しは一度きり(印 krW)。⚠ボスは半分。 */
+  {const KR_LEN=760,KR_PUSH=210,KR_N=14;
    const run=(k)=>{
     if(!C||u.dead)return;
-    const q=clamp((u.d||0)-40-k*(KR_LEN/KR_N),0,PLEN),p=pathPos(q);
+    const g9=k/(KR_N-1);/* 0=足元 → 1=一番遠く */
+    const q=clamp((u.d||0)-k*(KR_LEN/(KR_N-1)),0,PLEN),p=pathPos(q);
+    const nx=-Math.sin(p[2]),ny=Math.cos(p[2]);
     for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
-     if(Math.abs(z.d-q)>70)continue;
+     if(Math.abs(z.d-q)>72)continue;
      dmgZ(C,z,Math.round(260*W),1,0,0,'water');
      if(z.dead)continue;
-     /* 🌊押し返す(⚠一度きり=印を立てる)。⚠ボスは半分 */
      if(!z.krW){z.krW=1;z.d=Math.max(0,z.d-KR_PUSH*(z.boss?.4:1));}
      z.slowT=Math.max(z.slowT||0,5);z.slowV=Math.min(z.slowV||1,.55);}
-    addFx(C,'ring',p[0],p[1],'',{r:120,col:'#8fd4ee'});
+    /* 🌊**波の壁**=道を横切る帯(進むほど幅も高さも増す)。⚠1枚に絞る(重ねると水色の塊になる) */
+    const w9=110+g9*120;
+    addFx(C,'beam',p[0]-nx*w9,p[1]-ny*w9,'',{x2:p[0]+nx*w9,y2:p[1]+ny*w9,
+     col:'rgba(90,168,216,',col2:'rgba(232,248,255,',w:26+g9*22,lf:.3,sus:1});
+    addFx(C,'ring',p[0],p[1],'',{r:100+g9*70,col:'#8fd4ee'});
     if(FXLV>0){
-     addFx(C,'shock',p[0],p[1]+4,'',{r:150,col:'#bfe6ff'});
-     addP(C,6,p[0],p[1]-10*CH_UP,{sp:180,up:90,g:420,life:.5,r:3.2,col:'#8fd4ee'});}
-    if(k%3===0)C.shake=Math.max(C.shake||0,.22);};
-   run(0);for(let k=1;k<KR_N;k++)later(C,k*.055,()=>run(k));
+     addFx(C,'shock',p[0],p[1]+4,'',{r:130+g9*80,col:'#bfe6ff'});
+     addP(C,4+((g9*5)|0),p[0],p[1]-10*CH_UP,{sp:170+g9*90,up:90+g9*70,g:440,life:.55,r:3.0+g9*1.4,col:'#8fd4ee',jx:w9*.5,jy:20});}
+    if(k%3===0)C.shake=Math.max(C.shake||0,.2+g9*.16);};
+   run(0);for(let k=1;k<KR_N;k++)later(C,k*.05,()=>run(k));
    /* 印を落とす(次の必殺でまた押せるように) */
    later(C,1.2,()=>{if(C)for(const z of C.zombies)z.krW=0;});
    C.shake=Math.max(C.shake||0,.4);}
@@ -23766,26 +23832,39 @@ function heroUlt(C,wave){
    for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
     if(!inBand(z))continue;
     dmgZ(C,z,Math.round(1500*W),1,0,0,'slash');}
-   addFx(C,'beam',ox,oy,'',{x2:ex,y2:ey,col:'rgba(143,111,224,',col2:'rgba(232,220,255,',w:26,lf:.42,sus:1});
-   addFx(C,'slash',ox+cs*90,oy+sn*90,'',{ang:ang9+1.5708,r:70*CH_UP,lv:3,col:'#e8dcff'});
+   /* 🌌⭐⭐(255)**ビームをやめて「黒い次元の斬撃」へ**(2026-08-11ユーザー
+      「必殺技もビームみたいな感じじゃなくて黒い次元の斬撃で」)。
+      ⚠⚠**光の線(beam)は「撃った」に見える**=斬ったことにならない。⭐**弧を道なりに並べて置く**=
+        1本の長い切り口になり、しかも**斬撃の形**のまま。
+      ⚠**黒は縁を光らせないと見えない**=大きい薄紫の弧 → 一回り小さい黒の弧、の順で重ねる。 */
+   {const N9=7;
+    for(let i9=0;i9<N9;i9++){
+     const q9=i9/(N9-1),rx=ox+cs*DM_LEN*q9,ry=oy+sn*DM_LEN*q9;
+     const r9=(46+q9*34)*CH_UP;
+     addFx(C,'slash',rx,ry,'',{ang:ang9+1.5708,r:r9*1.22,lv:3,col:'#b48cff'});
+     addFx(C,'slash',rx,ry,'',{ang:ang9+1.5708,r:r9,lv:3,col:'#0b0812'});}}
    C.shake=Math.max(C.shake||0,.5);
    if(FXLV>0){
-    /* 裂け目=帯の上に等間隔でない穴を開ける */
-    for(const q of [.18,.38,.55,.74,.9]){
+    /* 切り口に開く裂け目(⚠等間隔にしない)+吸い込まれる黒い破片 */
+    for(const q of [.16,.4,.63,.88]){
      const rx=ox+cs*DM_LEN*q,ry=oy+sn*DM_LEN*q;
-     addFx(C,'ring',rx,ry,'',{r:40+q*70,col:'#8f6fe0'});
-     addP(C,4,rx,ry,{sp:200,g:120,life:.5,r:2.8,col:'#c4a8ff'});}}
+     addFx(C,'ring',rx,ry,'',{r:44+q*74,col:'#8f6fe0'});
+     addP(C,5,rx,ry,{sp:210,g:140,life:.55,r:3.2,col:'#1a1226'});
+     addP(C,3,rx,ry,{sp:150,g:90,life:.45,r:2.2,col:'#c4a8ff'});}}
    /* ②一拍おいて**空間が崩れる**=溜めた一撃の後始末(ここが「次元」の見せ場) */
    later(C,.34,()=>{
     if(!C||u.dead)return;
     for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
      if(!inBand(z))continue;
      dmgZ(C,z,Math.round(700*W),1,0,0,'slash');}
-    addFx(C,'boomL',ox+cs*DM_LEN*.5,oy+sn*DM_LEN*.5,'');
+    /* ⭐崩れる時は**黒く潰れる**=光らせない(光らせると「爆発」になって斬撃の余韻が消える) */
+    for(const q of [.3,.6,.86]){
+     const rx=ox+cs*DM_LEN*q,ry=oy+sn*DM_LEN*q;
+     addFx(C,'slash',rx,ry,'',{ang:ang9-1.5708,r:70*CH_UP,lv:3,col:'#0b0812'});}
     if(FXLV>0){for(const q of [.3,.6,.86]){
       const rx=ox+cs*DM_LEN*q,ry=oy+sn*DM_LEN*q;
       addFx(C,'spark',rx,ry,'',{sd:rnd(0,9),col:'#c4a8ff',big:1});
-      addP(C,6,rx,ry,{sp:260,g:340,life:.6,r:3.2,col:'#8f6fe0'});}}
+      addP(C,6,rx,ry,{sp:260,g:340,life:.6,r:3.2,col:'#2a1f3f'});}}
     C.shake=Math.max(C.shake||0,.36);
     if(C.isMe&&sfx[H_SFX.hDim])sfx[H_SFX.hDim]();});}
  }else if(id==='hUgni'){/* 🐉⭐⭐⭐(253)**劫火の吐息=2秒吐き続ける「末広がりのブレス」**
@@ -25500,6 +25579,12 @@ function minisResPx(){
 function show(id){document.querySelectorAll('.scr').forEach(e=>e.classList.remove('on'));$('scr-'+id).classList.add('on');SCR=id;document.body.classList.toggle('ingame',id==='game');
  if(id!=='game'){FRAMECOL='';try{document.body.style.background='';document.documentElement.style.background='';}catch(e){}}/* ⭐ゲームに入ったらタイトルBGMを切り、出たら戻す(2026-07-27ユーザー指示)。
     ⚠戦闘中のBGM(bgmOn)は**ゲーム以外の画面すべてで止める**=以前はタイトルでしか止めていなかった。 */
+ /* 🎵🐞⭐(255)**ガチャの2曲は画面が変わったら必ず止める**(2026-08-11ユーザー実機
+    「ガチャ画面からステージいくとガチャ画面のbgmが流れたまま」)。
+    🐞**それまでは「ガチャの窓を閉じるボタン」でしか止めていなかった**ので、
+      窓を開けたままホームや出撃へ進むと鳴り続けていた。
+    ⭐**画面を切り替える所は `show` の1本だけ**=ここで止めれば、どの入口から出ても止まる。 */
+ try{gbgmOff();gpbgmOff();}catch(e){}
  if(id==='game'){tbgmOff();bgmOn();}else{bgmOff();tbgmOn();}}
 function meV(){if(MODE==='client')return CS.meN||{dead:false,scrap:0,core:50,coreMax:50,unlocked:2,uUn:2,team:[0,1],uLv:0,ucd:[],atkLv:0,stkLv:0,repairs:0,boosts:0,jams:0,charge:0,pushUses:0,waveDone:false,killsWave:0,totalWave:0,towers:[]};return G?G.players[G.myIdx]:null;}
 function aliveOthers(){if(MODE==='client')return (CS.ot||[]).filter(o=>!o.dd).map(o=>({i:o.j,n:o.n}));return G?G.players.map((p,i)=>({i,n:p.name,d:p.dead})).filter(o=>o.i!==G.myIdx&&!o.d):[];}
@@ -35038,7 +35123,7 @@ function renderLoad(){
     h+='<button class="tmo'+(fx?' fix':'')+'" data-out="'+i+'">'
      +'<b>'+(k+1)+'</b><canvas width="96" height="36"></canvas>'
      +'<span class="nm2">'+((uEff(i)||{}).n||'?')+'</span>'
-     +'<i>⚙️'+p+'</i>'+(fx?'<em>固定</em>':'<em>✕</em>')+'</button>';});
+     +'<i>'+((UN_IC[(uEff(i)||{}).type]||'')+' ')+'⚙️'+p+'</i>'+(fx?'<em>固定</em>':'<em>✕</em>')+'</button>';});
    for(let k=T9.length;k<TEAM_N;k++)h+='<div class="tmo emp">＋</div>';
    h+='</div>';
    /* ⭐**次にやる事を大きなボタンで置く**=タブがあることに気づかなくても一覧へ行ける */
@@ -35064,7 +35149,9 @@ function renderLoad(){
     +'<canvas width="96" height="58"></canvas>'
     +'<span class="nm">'+(uEff(i)||U).n+'</span>'
     /* ⚠**行を増やさない**(一覧の1行目の下端が箱から切れる。撮って気づいた) */
-    +'<span class="tg">'+(fx?'固定枠':'⚙️'+(UNITP[i]||0))+'</span></button>';}
+    /* 🎒(255)**属性の印**(2026-08-11ユーザー「編成画面でタレットとかユニットの属性がちゃんと見れるように」)。
+       ⚠(145)で外したのは**弱点/耐性の文字**=これは**自分の攻撃の型**の1文字だけ(建設メニューと同じ物)。 */
+    +'<span class="tg">'+((UN_IC[(uEff(i)||U).type]||'')+' ')+(fx?'固定枠':'⚙️'+(UNITP[i]||0))+'</span></button>';}
   h+='</div>';}
   /* ⭐持っているのが固定2種だけの時は「押せる物ゼロ」で故障に見える=次にやる事を1行だけ。
      ⚠auto-fillのgridでは grid-column:1/-1 が1列ぶんに潰れる=**箱の外**に置く */
@@ -35133,7 +35220,8 @@ function renderLoad(){
     +(on?'<span class="onb">'+IC('✅')+'</span>':'')
     +'<canvas data-tws="'+i+'" width="96" height="58"></canvas>'
     +'<span class="nm">'+T.n+'</span>'
-    +'<span class="tg">'+(eco?'固定':'⚙️'+T.cost)+'</span></button>';}
+    /* 🏰(255)属性の印(建設メニューと同じ twTyIc)=編成でも属性が見えるようにする */
+    +'<span class="tg">'+(twTyIc(T)?twTyIc(T)+' ':'')+(eco?'固定':'⚙️'+T.cost)+'</span></button>';}
   h+='</div>';
   box.innerHTML=IC(h);
   /* ⚠THUMBSは92x80=**縦横比を保って96x58の中へ収める**(潰すと絵の掟に反する)。
@@ -39792,7 +39880,9 @@ function mapPage(pg){
 /* 上の帯=面の名前と◀▶。⚠**行ける面かどうかは◀▶の効きで言う**(押せない物は薄くする) */
 function mapHd(){
  const t9=$('map-title');
- if(t9)t9.innerHTML=IC('①②③④⑤'[MPAGE]+' '+((STAGES[MPAGE]||{}).n||''));
+ /* 🗺(255)面の名前の下に**その面の材質と弱点**を1行(ユーザー指示)。⚠中身は stgWkLine が敵から数える */
+ if(t9)t9.innerHTML=IC('①②③④⑤'[MPAGE]+' '+((STAGES[MPAGE]||{}).n||'')
+  +(stgWkLine(MPAGE)?'<span class="mwk">'+stgWkLine(MPAGE)+'</span>':''));
  for(const q of [['bt-map-prev',MPAGE>0],['bt-map-next',MPAGE<mapPageN()-1]]){
   const b=$(q[0]);if(b&&b.style)b.style.visibility=q[1]?'':'hidden';}
  /* 🔒まだ行けない面は帯で言う(ピンは全部🔒になるので、理由が読めないと迷子になる) */
