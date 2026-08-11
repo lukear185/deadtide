@@ -1207,18 +1207,22 @@ body.bns #deck{flex:0 0 auto}
    全部見える状態にして。冷却塔とか強化の項目が多いやつが長くなってる」)=
    ①文字と余白を一段小さく ②**強化中(up9)は窓を広げて2列**=行数が半分になり、横画面393pxでも収まる。
    ⚠横幅いっぱいの行なので、背が34pxでも押し損ねはない(44pxの掟は小さい的の話) */
-/* 🔧⭐⭐(253)**強化の行を「札 / ◆ / 値段」の3枠に固定した**(同ユーザー指示)。
-   🐞**それまでは1本の文にぶら下げていた**ので、札が伸びた瞬間(例 射程 98→110)に
-     **◆と値段まで押されて2行に折り返し**、行の高さが変わって下の行が全部ずれていた。
-   ⭐**◆と値段は右に固定・折り返さない** / 札だけが伸び縮みする。⭐**背は最初から2行ぶん**
-     確保してあるので、札が2行になっても**行の高さは1pxも変わらない**。 */
-#buildmenu .bm-us{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:6px;
- text-align:left;font-size:11.5px;min-height:40px;padding:3px 8px;line-height:1.2}
-#buildmenu .bm-us .uslbl{min-width:0;overflow-wrap:anywhere}
+/* 🔧⭐⭐⭐(254)**強化の行は「札を1行目・◆と値段を2行目」の2段に固定**。
+   🐞⚠⚠(253)で**横に3枠並べたのが大失敗だった**(2026-08-11ユーザー実機「文字が縦になったり
+     もうめちゃくちゃ」)=◆と値段の枠を `auto` にしたので、**字が少し大きい端末では
+     その2枠が幅を全部取り、札の枠が0まで潰れて1文字ずつ縦に並んだ**。
+   ⭐**横に並べるのをやめた**=札は必ず**行いっぱいの幅**を持つので、どんな字の大きさでも縦にならない。
+   ⭐**札は2行で打ち切る**(はみ出しは隠す)+**背は先に2段ぶん**=行の高さは何を出しても変わらない。
+   ⚠**幅を `auto` の枠に渡さないこと**=これが今回の原因そのもの。 */
+#buildmenu .bm-us{display:block;text-align:left;font-size:11.5px;min-height:46px;padding:4px 8px;line-height:1.22}
+#buildmenu .bm-us .uslbl{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+ overflow:hidden;overflow-wrap:break-word;word-break:normal}
+#buildmenu .bm-us .usbot{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:2px}
 #buildmenu .bm-us .uspip{font-size:10px;white-space:nowrap}
 #buildmenu .bm-us .uspr{white-space:nowrap}
 #buildmenu.up9{max-width:472px}
-#buildmenu.up9 .bm-col{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0}
+/* ⚠(254)**2列は入る時だけ**=幅が足りない端末では1列に落とす(無理に2列にすると札が潰れる) */
+#buildmenu.up9 .bm-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(186px,1fr));gap:4px;margin:5px 0}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
 .bm-item{border:2px solid var(--paper);border-radius:10px;background:var(--pane);padding:4px 3px;display:flex;flex-direction:column;align-items:center;min-width:74px}
 .bm-item canvas{width:46px;height:40px}
@@ -3605,6 +3609,18 @@ const SFXSYN={
     ⭐**斬撃は3つでできている**: ①空気を切る「シャッ」(高→低へ速く閉じるノイズ)
       ②**刃鳴り**=金属の比(1 : 1.51 : 2.31)の短い和音(⚠整数比だと笛になる) ③斬り込んだ低い芯。
     ⚠**伸ばさない**=伸ばすと禁止側(高いキラキラ)になる。⚠上の倍音は1900Hzまで。 */
+ /* 🌌⭐(254)**次元斬の斬撃**(ディメンションナイト)。⚠打刀(mKatana)と被らせない=
+    あちらは「空気を切るシャッ」、こちらは**空間が裂ける**=①低い方へ落ちる軋み(長め)
+    ②**わずかにずらした2つの音**(うなりが出る=普通の刃物ではない合図) ③重い芯。
+    ⚠高い倍音は入れない(禁止のキラキラになる)。 */
+ /* 💧⭐(254)**泡が弾ける**(クループ)。⚠水の音は「低い方へ落ちる短い丸い音」=
+    ①膜が割れる小さなノイズ ②**上へ跳ねてすぐ落ちる**丸い音(泡の合図) ③低い芯は入れない(重くなる)。 */
+ mBub:()=>{nzHit(1800,900,.05,.045,.7);
+  beep(520,880,.05,'sine',.045);beep(880,300,.09,'sine',.035);},
+ mDim:()=>{nzHit(3200,240,.26,.075,.9);
+  beep(196,150,.22,'sawtooth',.030);beep(203,155,.22,'sawtooth',.026);
+  beep(586,470,.13,'triangle',.016);
+  beep(96,64,.20,'sine',.060);},
  mKatana:()=>{nzHit(6800,820,.14,.085,1.45);
   beep(820,780,.085,'triangle',.030);beep(1238,1178,.07,'triangle',.019);beep(1894,1802,.055,'triangle',.011);
   beep(300,196,.10,'sine',.055);},
@@ -4060,6 +4076,8 @@ const SFX_LBL={
  mDog:['✊猟犬の吠え ★仮採用','本物の犬の吠え(猟犬系)','tw'],
  mBladeU:['✊刃 ★仮採用','本物の剣の斬り(斧使い/チェーンソー/影)','tw'],
  mKatana:['⚔打刀の斬撃 ★採用中','空気を切るシャッ+刃鳴り+低い芯(残月の剣鬼)','tw'],
+ mDim:['🌌次元斬 ★採用中','空間が裂ける軋み+うなり+重い芯(ディメンションナイト)','tw'],
+ mBub:['💧泡が弾ける ★採用中','膜が割れる音+跳ねて落ちる丸い音(クループ)','tw'],
  mTitanU:['✊巨体の一撃 ★仮採用','重い拳+低い爆発(タイタン)','tw'],
  heroIn:['🦸英雄参戦','暗いホーンの膨らみ(それまでエリート出現と同じ音)','ev'],
  unitUp:['⚡ユニット強化','和音の一撃+カリンバ(それまでエリート出現と同じ音)','ev'],
@@ -4182,7 +4200,9 @@ const SFX_GEOSHELL='geoShD';
 const H_SFX={hNox:'mLong',hDark:'mSprG',hGiant:'mHeavy',hMech:'mTool',hPost:'mBlunt',hDawn:'dwnA',
  hWolf:'mDog',/* 🐺(226d)噛みつき=本物の犬の吠え(猟犬と同じ素材。狼なので合う) */
  hZan:'mKatana',/* ⚔(253)打刀=**専用の斬撃音**へ(ユーザー「ダサいからもっと剣の斬撃音に」)。⚠前は斧使いと同じ素材 */
- hUgni:'flame'/* 🐉(252)ブレス=火炎放射塔と同じ素材(仮)。⚠専用の音は後日の協議=[[TODO]] */};
+ hUgni:'flame',/* 🐉(252)ブレス=火炎放射塔と同じ素材(仮)。⚠専用の音は後日の協議=[[TODO]] */
+ hDim:'mDim',/* 🌌(254)次元斬=専用の合成音 */
+ hKrup:'mBub'/* 💧(254)泡 */};
 /* ✊(217)**近接兵科の攻撃音**(武器ごと。⚠それまで近接は無音=聞こえていたのは撃破の血しぶき)。
    ⚠進化先は元の兵科の武器を引き継ぐ(U.base で引く)。表に無い近接=バット/斬撃=刃 に落ちる */
 const MELEE_SFX={bat:'mBat',hnd:'mDog',big:'mFist',shd:'mShld',gld:'mShld',chain:'mChain',
@@ -5928,6 +5948,21 @@ const HEROES=[
     ⚠型は🔥火炎=①の🛡装甲に特効。⚠紅蓮の大魔導士(同じ火炎の★5)とは**役どころで分ける**=
       あちらは術者で「置いて燃やす」・こちらは**前へ吹き付ける**(射程は短く、硬さと範囲で勝る)。
     ⚠強さは他の★5と同じ帯に置いた(実効DPSで 紅蓮633 < ここ667 < ジョルジ737)。⚠詰めは実測から。 */
+ /* 💧⭐⭐**クループ**(2026-08-11ユーザーが絵を渡して指示=水色のカワウソ)。
+    ⭐**決まっていること**(全部ユーザー指定)=名前 / ★5 / 💧水 /
+      通常攻撃は**泡をぷくぷくと何個か出して、弾けるとダメージ** / 必殺は**津波で敵を押し返す**。
+    ⭐⭐**★5で初めての💧水**(いままで0人)。⚠水はどの材質にも等倍=**押し返す**のが持ち味。
+    ⚠押し返しは**一度きり**(消防士の放水と同じ形)=(238d)で外した「押し続ける仕掛け」は作らない。
+    ⚠26人でただ1体の**小動物**=輪郭がまるごと違う(獣は狼王・龍はウグニウス)。 */
+ {id:'hKrup',n:'クループ',rk:5,hp:5800,atk:720,rate:1.0,sp:84,c:'#5aa8d8',ty:'water',rng:300,aoe:95,uch:56,ult:'大津波',udsc:'大波を起こして前方の敵をまとめて押し返す。濡れた敵はしばらく足が遅くなる'},
+ /* 🌌⭐⭐**ディメンションナイト**(2026-08-11ユーザーが絵を渡して指示)。
+    ⭐**決まっていること**(全部ユーザー指定)=名前 / ★5 / ⚔斬撃 /
+      通常攻撃は**時空を切り裂く範囲斬撃** / 必殺は**力を溜めて一撃で空間を切り裂く次元斬撃**。
+    ⭐⭐**★5で初めての⚔斬撃**=斬撃は「材質を持たない通常種」の弱点なので、
+      いままで★5に1人も居なかった枠が埋まる。
+    ⚠残月の剣鬼(🗡貫通・居合の一撃)とは**役どころで分ける**=あちらは単体を深く、
+      こちらは**前方をまとめて薙ぐ範囲**。⚠強さは他の★5と同じ帯。詰めは実測から。 */
+ {id:'hDim',n:'ディメンションナイト',rk:5,hp:6200,atk:1040,rate:1.15,sp:92,c:'#8f6fe0',ty:'slash',rng:116,/* ⚠(254)118を超えると立ち位置が下がりすぎる(検査)=範囲は aoe が持つ */aoe:140,uch:58,ult:'次元斬',udsc:'力を溜めて、空間ごと前方を一直線に切り裂く。裂け目に呑まれた敵は形を保てない'},
  {id:'hUgni',n:'炎龍ウグニウス',rk:5,hp:7200,atk:900,rate:1.35,sp:52,c:'#d94a2a',ty:'fire',rng:260,aoe:130,burn:52,uch:58,ult:'劫火の吐息',udsc:'口を大きく開けて火の塊を吐き出す。塊は道を進むほど大きく・熱くなり、通った所を燃やし続ける'}
 ];
 /* ⛔(226g)**外している英雄(off:1)を除いた一覧**=排出・召集・図鑑・選択・検証場は必ずこちらを見る。
@@ -6073,7 +6108,8 @@ const hUiOf=id=>{const k=HEROES.findIndex(h=>h.id===id);return k<0?-1:HERO_I0+k;
    ⚠**表(HEROES/UBASE)は素のまま**=掛けるのは実際に使う UNITS 側の1か所だけ。
      戻す時もここを消すだけ。⚠タレットは別表(TOWERS)なので巻き込まない。 */
 const RNG_X=1.2,RNG_MELEE=['hNox','hDark','hGiant','hMech','hPost','hWolf'/* 🐺(226d)電撃だが噛みつき=近接 */,
- 'hZan'/* ⚔(230)貫通だが打刀=近接 */];
+ 'hZan',/* ⚔(230)貫通だが打刀=近接 */
+ 'hDim'/* 🌌(254)斬撃の大剣=近接(範囲は aoe が持つ) */];
 for(const U of UNITS){if(U.type==='melee'||RNG_MELEE.indexOf(U.base||U.id)>=0)continue;
  if((U.rng||0)>50)U.rng=Math.round(U.rng*RNG_X);}
 
@@ -6123,7 +6159,9 @@ const U_MOT={
  hLupi:['now',.2],/* 🌈跳弾姫=玩具ブラスターをその場で撃つ(軽い溜め) */
  hWolf:['now',0],/* 🐺(226d)溜めゼロ=飛びかかりのテンポが命(型がboltに落ちると落雷の溜めが付く) */
  hZan:['slash',.46],/* ⚔(249)居合=**抜く前の静止**。⚠短いと「ただ振った」に見える(溜めが居合の芯) */
- hUgni:['heat',.5]/* 🐉(252)ブレス=**喉に火を溜めてから吐く**(炉熱の型。首をもたげる) */
+ hUgni:['heat',.5],/* 🐉(252)ブレス=**喉に火を溜めてから吐く**(炉熱の型。首をもたげる) */
+ hDim:['slash',.5],/* 🌌(254)大剣を引いて時空を掴む(斬撃の型) */
+ hKrup:['cast',.34]/* 💧(254)泡をふくらませてから放す */
 };
 const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
 const uMotK=ui=>uMot(ui)[0];
@@ -16273,7 +16311,11 @@ const H_LOOK={
  /* ⚠HBODY.hZan 登録済み=ここの値は台帳の札(かぶり物・武器・背中の物の重複検査用) */
  hZan  :{cape:1,h:'mane',  w:'katana', k:'saya',  c2:'#3a3f47'},/* ⚔残月の剣鬼: 逆立つ黒髪+打刀+背中の鞘(ぼろ外套) */
  /* ⚠HBODY.hUgni 登録済み=ここの値は台帳の札(重複検査用)。h/w/k は他の誰とも違う名前にすること */
- hUgni :{cape:0,h:'dhorn', w:'dmaw',   k:'dwing', c2:'#7a2418'} /* 🐉炎龍ウグニウス: 後ろへ伸びる角+火の顎+革の翼(四つ足) */
+ hUgni :{cape:0,h:'dhorn', w:'dmaw',   k:'dwing', c2:'#7a2418'},/* 🐉炎龍ウグニウス: 後ろへ伸びる角+火の顎+革の翼(四つ足) */
+ /* ⚠HBODY.hDim 登録済み=ここの値は台帳の札(重複検査用) */
+ hDim  :{cape:1,h:'spik',  w:'vsword', k:'rift',  c2:'#2a2634'},/* 🌌ディメンションナイト: 逆立つ黒髪+紫に光る大剣+背後の裂け目 */
+ /* ⚠HBODY.hKrup 登録済み=ここの値は台帳の札(重複検査用) */
+ hKrup :{cape:0,h:'oear',  w:'bubl',   k:'ftail', c2:'#3f6f96'} /* 💧クループ: 丸い耳+泡+ヒレの尾(小動物) */
 };
 /* ============ 🦸英雄18人の「専用の体」(2026-08-01) ============
    ⭐ユーザー指示「英雄18人」。⚠それまで英雄は**全員が同じ胴・同じ脚・同じ腕**で、
@@ -17566,20 +17608,25 @@ HBODY.hZan=(c,U,walk,t,ph,o,rk)=>{
      ⚠振っている間(o.sw>0)だけ刀身が出る=**抜き打ちの一閃**がそのまま絵になる。 */
   if(!((o&&o.sw)>0)){c.restore();bArm(c,5.2,-34.6, 8.4,-33.2, 10.8,-31.6, 5.2,4.2, shade(CT,1.22),BD);g2();}
   else{
-  /* ⭐刀身。⚠⚠**先へ向かって上へ反らせる**(打刀の反り)=下へ曲げると
-     「刀が折れ曲がっている」に見える(2026-08-10ユーザー実機指摘で直した)。
-     峰(上)=外側にふくらむ / 刃(下)=内側にへこむ。先へ行くほど細くする。 */
+  /* ⭐刀身。⚠⚠⚠**刃は必ず下**(2026-08-11ユーザー実機「刀身の刃の方が上になってるから、
+     刃をちゃんと下にして」)=**峰(むね)が上・刃(は)が下**。
+     ⭐**見分けは「どちらが光っているか」**=刃だけ白く光らせれば、形が同じでも下が刃だと読める。
+     ⚠**峰側を暗く**するのとセット(片方だけだと白い板に戻る)。
+     ⚠反りは**峰がゆるく上へ**=先が跳ね上がりすぎると「折れ曲がっている」に見える(既知の指摘)。 */
   c.fillStyle=BL;
-  c.beginPath();c.moveTo(13.4,-2.2);
-  c.quadraticCurveTo(28,-5,41.4,-6.4);/* 峰 */
-  c.lineTo(44.6,-4.2);/* 切先(⚠斜めに落とす=真横に切ると棒の先になる) */
-  c.quadraticCurveTo(27,-1.2,13.4,1.6);/* 刃 */
+  c.beginPath();c.moveTo(13.4,-2.6);
+  c.quadraticCurveTo(28,-4.6,42,-5);/* 峰(上) */
+  c.lineTo(45.4,-1.6);/* 切先(⚠斜めに落とす=真横に切ると棒の先になる) */
+  c.quadraticCurveTo(28,1.4,13.4,2.2);/* 刃(下) */
   c.closePath();c.fill();c.stroke();
-  c.fillStyle=shade(BL,.72);/* 刃紋(峰側を1段暗く=白い板に見えない) */
-  c.beginPath();c.moveTo(14,-1.8);c.quadraticCurveTo(28,-4.6,41,-6);c.lineTo(41,-5.2);
-  c.quadraticCurveTo(28,-3.4,14,-.6);c.closePath();c.fill();
+  c.fillStyle=shade(BL,.66);/* 峰側を1段暗く */
+  c.beginPath();c.moveTo(13.8,-2.2);c.quadraticCurveTo(28,-4.2,41.6,-4.6);c.lineTo(41.8,-3.2);
+  c.quadraticCurveTo(28,-2.6,13.8,-.4);c.closePath();c.fill();
+  c.fillStyle='#ffffff';/* ⭐**刃(下)だけ白く光る**=刃が下だと一目で分かる */
+  c.beginPath();c.moveTo(14.2,1.2);c.quadraticCurveTo(28,.6,43.4,-2.2);c.lineTo(43.8,-1);
+  c.quadraticCurveTo(28,1.8,14.2,2.2);c.closePath();c.fill();
   c.fillStyle='#6e1f1e';/* 刃に残る血の跡(⚠小さく暗く=大きいと刃が桃色の板になる) */
-  c.beginPath();c.moveTo(26,-2.6);c.lineTo(33,-4);c.lineTo(33,-2.6);c.lineTo(25.6,-1.2);c.closePath();c.fill();
+  c.beginPath();c.moveTo(26,-2.2);c.lineTo(33,-3.4);c.lineTo(33,-2);c.lineTo(25.6,-.8);c.closePath();c.fill();
   c.restore();
   bArm(c,5.2,-34.6, 8.4,-33.2, 10.8,-31.6, 5.2,4.2, shade(CT,1.22),BD);g2();}}
  bNeck(c,1.6,HSK.nk0,HSK.nk1,shade(SK,.5));
@@ -17609,6 +17656,223 @@ HBODY.hZan=(c,U,walk,t,ph,o,rk)=>{
  c.beginPath();c.moveTo(2.6,HSK.fy-6.4);c.lineTo(6.4,HSK.fy-9.8);c.lineTo(6.8,HSK.fy-5.4);c.closePath();c.fill();
  /* ⚠⚠**刃の光を体の座標で描かない**=刀は腕と一緒に回るので、光だけ空中に取り残される
     (1回描いて撮って却下した)。⭐冴えは撃った瞬間の三日月(H_FX)が受け持つ。 */
+ c.restore();
+};
+/* ---- 💧★5 クループ(2026-08-11ユーザーが絵を渡して指示=水色のカワウソ)。
+   渡された絵の要点は6つ:
+     ①**青灰色の毛+クリーム色の顔と腹** ②**丸い小さな耳**と**大きな青い目**+黒い鼻+ひげ
+     ③**青いマフラー**と**菱形の宝石** ④**水色の半透明のヒレの尾**(扇のように開く)
+     ⑤頭と背に**水色の斑点** ⑥まわりに**浮かぶ泡**。
+   ⚠**26人でただ1体の小動物**=人型の部品(hLeg2/bTorso/hFc)は使わない。⚠|x|≦54に収める。
+   ⚠**かわいさは「頭身」で作る**=頭を大きく・胴を丸く・手足を短く。 ---- */
+HBODY.hKrup=(c,U,walk,t,ph,o)=>{
+ const FUR='#4b7f9e',FUR2='#3a6580',CRM='#efe6d4',CRM2='#d6c9b2',
+       SCF='#2f78c4',GEM='#bfe6ff',FIN='#8fd4ee',NOSE='#22303a',EYE='#1d4a6b';
+ const rc=bRc(o),atk=(o&&o.fireT>0)?1:0;
+ c.save();c.scale(1.16,1.16);
+ /* ⭐署名④**ヒレの尾**(扇)。⚠体より先に描く=後ろにある物。⚠半透明にして「水の生き物」を言う */
+ {const sw=Math.sin(t*3.2+ph)*.16;
+  c.save();c.translate(-11,-13);c.rotate(-.5+sw);
+  c.globalAlpha=.86;c.fillStyle=FIN;
+  c.beginPath();c.moveTo(0,0);
+  c.quadraticCurveTo(-14,-9,-25,-4);
+  c.quadraticCurveTo(-27,2,-24,7);
+  c.quadraticCurveTo(-13,10,0,6);c.closePath();c.fill();c.stroke();
+  c.strokeStyle=shade(FIN,.72);c.lineWidth=1.5;/* ヒレの筋(⚠等間隔にしない) */
+  for(const g of [[-8,-4,-19,-3],[-8,0,-22,1],[-7,4,-19,6]]){
+   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6;c.globalAlpha=1;c.restore();}
+ /* 後ろ足(短く丸い。⚠棒にしない) */
+ {const s1=Math.sin(t*7+ph)*1.6;
+  for(const g of [[-6,.62,0],[6,.8,1.6]]){
+   c.fillStyle=shade(FUR,g[1]);
+   c.beginPath();c.ellipse(g[0]+s1*(g[2]?1:-1),-3.6,4.6,3.4,0,0,7);c.fill();c.stroke();}}
+ /* 胴(⚠洋梨=下がふっくら)。腹はクリーム */
+ c.fillStyle=FUR;
+ c.beginPath();c.moveTo(-10,-8);
+ c.bezierCurveTo(-13,-24,-8,-32,0,-32);
+ c.bezierCurveTo(8,-32,13,-23,10,-8);
+ c.bezierCurveTo(5,-3,-5,-3,-10,-8);c.closePath();c.fill();c.stroke();
+ c.fillStyle=CRM;
+ c.beginPath();c.ellipse(.6,-14,6.4,8.4,0,0,7);c.fill();
+ /* 前足(短い。⚠攻撃中は前へ出す=泡を吹いている手) */
+ {const ar=atk?4.2:Math.sin(t*3+ph)*1.4;
+  c.fillStyle=shade(FUR,.9);
+  c.beginPath();c.ellipse(9+ar,-17,3.6,2.8,-.3,0,7);c.fill();c.stroke();
+  c.fillStyle=shade(FUR,.7);
+  c.beginPath();c.ellipse(-8.4,-16,3.2,2.6,.3,0,7);c.fill();c.stroke();}
+ /* ⭐署名③**青いマフラー**+菱形の宝石。⚠首を1周させる(片側だけだと襟に見える) */
+ c.fillStyle=SCF;
+ c.beginPath();c.ellipse(0,-30,9.4,3.6,0,0,7);c.fill();c.stroke();
+ {const fw=Math.sin(t*2.6+ph)*2;/* 後ろへなびく端 */
+  c.beginPath();c.moveTo(-7,-31);c.lineTo(-16-fw,-27+fw*.6);c.lineTo(-14-fw,-22+fw*.6);
+  c.lineTo(-6,-27);c.closePath();c.fill();c.stroke();}
+ c.fillStyle=GEM;
+ c.beginPath();c.moveTo(1.4,-31.4);c.lineTo(4.4,-28.4);c.lineTo(1.4,-25);c.lineTo(-1.6,-28.4);
+ c.closePath();c.fill();c.stroke();
+ /* ⭐頭(大きく丸く=かわいさの芯)。マズルはクリーム */
+ c.fillStyle=FUR;
+ c.beginPath();c.ellipse(1,-40,10.4,9,0,0,7);c.fill();c.stroke();
+ /* 丸い耳(⚠小さく・頭の上のほうに置く) */
+ for(const g of [[-6.4,-47.4,3.0],[8,-46.4,2.6]]){
+  c.fillStyle=FUR2;c.beginPath();c.arc(g[0],g[1],g[2],0,7);c.fill();c.stroke();
+  c.fillStyle=shade(FUR,1.3);c.beginPath();c.arc(g[0],g[1],g[2]*.5,0,7);c.fill();}
+ c.fillStyle=CRM;/* マズル(横に広い) */
+ c.beginPath();c.ellipse(3.4,-37,7.4,5.2,0,0,7);c.fill();c.stroke();
+ c.fillStyle=NOSE;/* 鼻 */
+ c.beginPath();c.ellipse(6.4,-39.4,2.0,1.5,0,0,7);c.fill();
+ /* 口(⚠攻撃中は「お」の形=泡を吹いている) */
+ c.strokeStyle=NOSE;c.lineWidth=1.4;
+ if(atk||rc>.3){c.fillStyle=NOSE;c.beginPath();c.ellipse(6.6,-35.4,1.6,1.9,0,0,7);c.fill();}
+ else{c.beginPath();c.moveTo(4.4,-36);c.quadraticCurveTo(6.4,-34.4,8.4,-36);c.stroke();}
+ c.lineWidth=2.6;c.strokeStyle=INK;
+ /* 目(⚠大きく・光を2つ=これがかわいさの決め手) */
+ for(const g of [[6.4,-42.4,2.6],[-2.6,-42,2.2]]){
+  c.fillStyle=EYE;c.beginPath();c.ellipse(g[0],g[1],g[2],g[2]*1.12,0,0,7);c.fill();c.stroke();
+  c.fillStyle='#ffffff';c.beginPath();c.arc(g[0]+g[2]*.3,g[1]-g[2]*.4,g[2]*.36,0,7);c.fill();
+  c.beginPath();c.arc(g[0]-g[2]*.34,g[1]+g[2]*.3,g[2]*.18,0,7);c.fill();}
+ /* ひげ(3本・長さを変える) */
+ c.strokeStyle=CRM2;c.lineWidth=1.2;
+ for(const g of [[9.4,-38.4,17,-40],[9.6,-36.6,18,-36],[9.2,-35,16,-33]]){
+  c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[2],g[3]);c.stroke();}
+ c.strokeStyle=INK;c.lineWidth=2.6;
+ /* ⭐署名⑤**水色の斑点**(頭と背。⚠数も大きさも揃えない) */
+ c.fillStyle=FIN;
+ for(const g of [[-3.4,-47,1.4],[2.6,-48.4,1.0],[-8,-25,1.6],[-6,-18,1.1]]){
+  c.globalAlpha=.7;c.beginPath();c.arc(g[0],g[1],g[2],0,7);c.fill();}
+ c.globalAlpha=1;
+ /* ⭐署名⑥**浮かぶ泡**(⚠乱数を使わない=毎コマ形が変わると煮え立って見える) */
+ if(FXLV>0){c.strokeStyle=FIN;c.lineWidth=1.4;
+  for(let i=0;i<3;i++){const q=((t*.5+i*.34+ph*.1)%1);
+   c.globalAlpha=(1-q)*.7;
+   c.beginPath();c.arc(14+i*4,-30-q*30,2.2+i*.9,0,7);c.stroke();}
+  c.globalAlpha=1;c.lineWidth=2.6;c.strokeStyle=INK;}
+ c.restore();
+};
+/* ---- 🌌★5 ディメンションナイト(2026-08-11ユーザーが絵を渡して指示)。
+   渡された絵の要点は6つ:
+     ①**逆立つ黒髪**(紫の差し色が数房) ②**黒銀の鎧**(肩当て+胸の菱形の紋章)
+     ③**裾がぼろぼろの黒紫のコート** ④**紫に光る大剣**(黒い柄・翼のような鍔・反りのある片刃)
+     ⑤**背後に開く空間の裂け目**(黒地に星が覗く楕円)+散る**紫の結晶片**
+     ⑥色は黒〜黒紫の1系統+**差し色は紫だけ**。
+   ⚠**終焉の騎士(髑髏兜+大鎌+赤マント)と残月の剣鬼(ぼろ外套+打刀)に近い**ので、
+     **裂け目・紫の刃・逆立つ髪**の3つで必ず分ける。⚠|x|≦54に収める。 ---- */
+HBODY.hDim=(c,U,walk,t,ph,o,rk)=>{
+ const SK=U_SKIN,CT='#2a2634',CT2='#1c1a24',CT3='#3b3648',
+       AR='#4a4658',AR2='#7d7a92',PU='#8f6fe0',PU2='#c4a8ff',
+       HR='#1a1720',HR2='#5a3f8a',BD='#cfc6b0',PA='#242030',SHO='#1a1720',rc=bRc(o);
+ const sw=(o&&o.sw)||0;
+ hLeg2(c,walk,PA,SHO,4.8,1);
+ hTop(c,t,ph,-.03);
+ /* ⭐署名⑤**背後に開く空間の裂け目**。⚠**体より先に描く**=後ろにあるものなので。
+    ⚠**溜めている間は大きく開く**(rc)=何を溜めているのかが絵で分かる。 */
+ {const op=.34+rc*.66,rw=(9+rc*9),rh=(15+rc*13);
+  c.fillStyle='#120e1c';
+  c.beginPath();c.ellipse(-15,-34,rw,rh,-.18,0,7);c.fill();c.stroke();
+  c.fillStyle=PU;c.globalAlpha=.5+rc*.4;
+  c.beginPath();c.ellipse(-15,-34,rw*.72,rh*.74,-.18,0,7);c.fill();
+  c.fillStyle='#e8dcff';c.globalAlpha=op;
+  /* 裂け目の中の星(⚠乱数を使わない=毎コマ瞬くと煮え立って見える) */
+  for(const g of [[-17,-40,1.3],[-12,-33,1.0],[-18,-28,.9],[-13,-42,.8]])
+   c.beginPath(),c.arc(g[0],g[1],g[2],0,7),c.fill();
+  c.globalAlpha=1;
+  /* ふちから走る紫の亀裂(3本・長さを変える) */
+  c.strokeStyle=PU2;c.lineWidth=1.8;
+  for(const g of [[-15-rw,-40,-9,-8],[-15+rw,-30,8,6],[-15,-34-rh,-3,-9]]){
+   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[0]+g[2],g[1]+g[3]);c.stroke();}
+  c.lineWidth=2.6;c.strokeStyle=INK;}
+ /* 散る紫の結晶片(署名⑤の後半)。⚠大きさも角度も揃えない */
+ {const fl=Math.sin(t*2.2+ph)*1.6;
+  c.fillStyle=PU2;
+  for(const g of [[-26,-46,3.0,.4],[-24,-22,2.2,-.3],[6,-52,2.6,.2],[-30,-33,1.8,.7]]){
+   c.save();c.translate(g[0],g[1]+fl*g[3]*2);c.rotate(g[3]);
+   c.beginPath();c.moveTo(0,-g[2]);c.lineTo(g[2]*.6,0);c.lineTo(0,g[2]);c.lineTo(-g[2]*.6,0);
+   c.closePath();c.fill();c.stroke();c.restore();}}
+ /* ぼろぼろの黒紫コート(⚠裾を破る。終焉の騎士より暗く・残月より長い) */
+ c.fillStyle=CT2;c.beginPath();c.moveTo(-6,-40.4);c.lineTo(-13.4-rk*.3,-16+walk*2.4);
+ for(let i=0;i<5;i++)c.lineTo(-11.4+i*3.4,-4+((i%2)?8:1.6));
+ c.lineTo(6,-6);c.lineTo(7.4,-38.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=CT3;/* コートの内側(1枚だけ明るく=黒い塊にしない) */
+ c.beginPath();c.moveTo(-6,-40.4);c.lineTo(-13.4-rk*.3,-16+walk*2.4);
+ c.lineTo(-8.4,-6);c.lineTo(-4.4,-38);c.closePath();c.fill();
+ /* 奥の腕(⚠大剣と同じ振りを掛ける=両手で振る掟) */
+ const g1=bSwing(c,o,5.2,-34.6,-.26,1.06,-2,-1);
+ bArm(c,-4.8,-34.8, 2.6,-31.4, 9.4,-28.4, 5.0,4.0, shade(CT,.74),shade(BD,.86));
+ g1();
+ bTorso(c,CT,[10.4,7.4,HSK.y0,HSK.y1]);
+ /* ⭐署名②**胸の菱形の紋章**(絵の要点)。⚠小さく1つだけ=増やすと装飾に見える */
+ c.fillStyle=AR;
+ c.beginPath();c.moveTo(1.4,-36.4);c.lineTo(6.4,-31.4);c.lineTo(1.4,-26.4);c.lineTo(-3.6,-31.4);
+ c.closePath();c.fill();c.stroke();
+ c.fillStyle=PU;c.beginPath();c.moveTo(1.4,-34.4);c.lineTo(4.4,-31.4);c.lineTo(1.4,-28.4);
+ c.lineTo(-1.6,-31.4);c.closePath();c.fill();
+ /* 黒銀の肩当て(⚠左右で形を変える=輪郭で一番効く) */
+ c.fillStyle=AR;
+ c.beginPath();c.moveTo(-16.4,-39.6);c.quadraticCurveTo(-9.4,-44.6,-1.6,-40.4);
+ c.lineTo(-2.4,-32.4);c.quadraticCurveTo(-9.6,-30.6,-16.8,-33.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=AR2;/* 一番明るい面(体で唯一の金属の照り) */
+ c.beginPath();c.moveTo(-15,-38.6);c.quadraticCurveTo(-9,-42.4,-3.4,-39.2);
+ c.lineTo(-3.6,-36.2);c.quadraticCurveTo(-9,-39.4,-15.2,-35.8);c.closePath();c.fill();
+ c.fillStyle=PU;/* 肩の棘の先だけ紫に光る */
+ c.beginPath();c.moveTo(-16.4,-39.6);c.lineTo(-21.4,-45.4);c.lineTo(-13.4,-41.6);c.closePath();c.fill();c.stroke();
+ /* 腰の帯 */
+ c.fillStyle=SHO;c.fillRect(-8,-25.6,16.4,3.6);c.strokeRect(-8,-25.6,16.4,3.6);
+ /* ⭐⭐(254)**剣は普段は鞘の中**(2026-08-11ユーザー指示「剣士キャラは剣を前方に構えるんじゃなくて
+    基本鞘に納めた状態にして。んで攻撃時に引き抜いて攻撃」)=**振っている間だけ刀身が出る**。
+    ⚠⚠**刃は必ず下**(同指示)=峰(上)を暗く・**刃(下)だけ紫に光らせる**。
+    ⭐腰の鞘は**いつも描く**=抜いている間も鞘は残る(消えると剣がどこから出たのか分からない)。 */
+ c.fillStyle='#191622';/* 腰の鞘(⚠ほぼ水平に差す) */
+ c.save();c.translate(-6.4,-24.4);c.rotate(-.2);
+ rr(c,-3,-2.8,34,5.6,2.6);c.fill();c.stroke();
+ c.fillStyle=AR;rr(c,26,-2.4,5.6,4.8,1.6);c.fill();c.stroke();/* 鯉口 */
+ c.fillStyle=PU;c.fillRect(6,-1.2,12,2.4);/* 鞘に走る紫の筋 */
+ c.restore();
+ /* ⭐署名④**紫に光る大剣**(手前の手)+手前の腕。⚠肩を軸に一体で回す */
+ {const g2=bSwing(c,o,5.2,-34.6,-.26,1.06,-2,-1);
+  c.save();c.translate(9.6,-31.6);c.rotate(.1);
+  c.fillStyle=HR;rr(c,-4.4,-2.2,13,4.4,1.6);c.fill();c.stroke();/* 柄 */
+  if(!(sw>0)){c.restore();bArm(c,5.2,-34.6, 8.4,-33.2, 10.8,-31.6, 5.2,4.2, shade(CT,1.22),BD);g2();}
+  else{
+  c.fillStyle=AR2;/* 翼のような鍔(絵の要点) */
+  c.beginPath();c.moveTo(8.4,-2.6);c.lineTo(14.4,-9.4);c.lineTo(12.4,-1.6);
+  c.lineTo(14.4,7.4);c.lineTo(8.4,2.6);c.closePath();c.fill();c.stroke();
+  /* 刃=**反りのある片刃**。⚠峰(上)がゆるく反り、刃(下)がまっすぐ=刃が下だと形で読める */
+  c.fillStyle='#2f2a3c';
+  c.beginPath();c.moveTo(12.4,-4.2);
+  c.quadraticCurveTo(28,-7.8,44,-8.6);
+  c.lineTo(48.4,-3.6);
+  c.quadraticCurveTo(28,.4,12.4,2.6);
+  c.closePath();c.fill();c.stroke();
+  c.fillStyle=PU;/* ⭐**刃(下)だけ紫に光る**=全部光らせると板になる */
+  c.beginPath();c.moveTo(13.4,1.6);
+  c.quadraticCurveTo(28,-.4,44.4,-4.4);
+  c.lineTo(45.6,-2.6);
+  c.quadraticCurveTo(28,1.6,13.4,2.6);
+  c.closePath();c.fill();
+  c.fillStyle=PU2;/* 切先の芯 */
+  c.beginPath();c.moveTo(41,-6.4);c.lineTo(48.4,-3.6);c.lineTo(41,-2.2);c.closePath();c.fill();
+  c.restore();
+  bArm(c,5.2,-34.6, 8.4,-33.2, 10.8,-31.6, 5.2,4.2, shade(CT,1.22),BD);g2();}}
+ bNeck(c,1.6,HSK.nk0,HSK.nk1,shade(SK,.5));
+ bFace(c,1.6,HSK.fy,HSK.rx,HSK.ry,SK,1);
+ /* ⭐署名①**逆立つ黒髪**(⚠房ごとに長さを変える)+**紫の差し色を2房だけ** */
+ c.fillStyle=HR;
+ c.beginPath();c.moveTo(-6.8,HSK.fy-1.4);
+ c.lineTo(-9.4,HSK.fy-8.4);c.lineTo(-4.4,HSK.fy-5.4);
+ c.lineTo(-5.8,HSK.fy-13.4);c.lineTo(-.4,HSK.fy-8.2);
+ c.lineTo(.8,HSK.fy-14.6);c.lineTo(4.6,HSK.fy-8.8);
+ c.lineTo(6.8,HSK.fy-13.4);c.lineTo(8.8,HSK.fy-6.8);
+ c.lineTo(10,HSK.fy-10);c.lineTo(10,HSK.fy-2);
+ c.quadraticCurveTo(1.6,HSK.fy-6.4,-6.8,HSK.fy-1.4);c.closePath();c.fill();c.stroke();
+ c.fillStyle=HR2;/* 紫の差し色(2房だけ) */
+ c.beginPath();c.moveTo(-.4,HSK.fy-8.2);c.lineTo(.8,HSK.fy-14.6);c.lineTo(2.8,HSK.fy-11);
+ c.closePath();c.fill();
+ c.beginPath();c.moveTo(6.8,HSK.fy-13.4);c.lineTo(8.8,HSK.fy-6.8);c.lineTo(5.4,HSK.fy-8.4);
+ c.closePath();c.fill();
+ /* 目=紫に光る(⚠白目は描かない=険しい顔にする) */
+ c.fillStyle=PU2;
+ c.beginPath();c.ellipse(4.4,HSK.fy-1.4,1.9,1.2,-.14,0,7);c.fill();
+ c.beginPath();c.ellipse(-2.6,HSK.fy-1.2,1.5,1.05,-.14,0,7);c.fill();
  c.restore();
 };
 /* ---- 🐉★5 炎龍ウグニウス(2026-08-10(252)ユーザー指示・参考画像=赤い炎の龍)。
@@ -17727,20 +17991,34 @@ HBODY.hUgni=(c,U,walk,t,ph,o)=>{
   if(th>.35){c.fillStyle=EM2;c.globalAlpha=.4+th*.6;
    c.beginPath();c.ellipse(18,-44-nu*7,2.4+th*1.8,1.6+th*1.4,-.5,0,7);c.fill();}
   c.globalAlpha=1;}
- /* ⭐頭(⚠丸くしない=**細長い吻**+奥へ張る頬)。開く顎は下顎だけ落とす */
+ /* 🐉⭐⭐(254)**頭を作り直した**(2026-08-11ユーザー「今だとトカゲにしか見えない」)。
+    ⭐**龍とトカゲを分けるのは4つ**=①**眉の張り出し(庇)** ②**頬から後ろへ流れる棘**
+      ③**口を閉じていても見える上顎の牙** ④**角が2対**。
+    ⚠**丸い吻・つるんとした頬・丸い目**がトカゲの正体=どれも角張らせて潰す。
+    ⚠曲線をやめて**稜(折れ)で作る**=硬い生き物に見える。 */
  /* ⭐(253)顎= 溜め中はじわじわ開き、吐いている間は**大きく開けっぱなし** */
  const jaw=ub?(9.6+Math.sin(t*22+ph)*.7):(uw>0?(1.4+uw*6.2):(atk?4.6:rc*1.6));
+ /* 頬(顎の付け根)=奥へ張る。⚠これが無いと首から吻が生えただけに見える */
+ c.fillStyle=shade(BD,.84);
+ c.beginPath();c.moveTo(hx-9,hy+10);
+ c.lineTo(hx-11,hy-2);c.lineTo(hx-2,hy-7);c.lineTo(hx+7,hy-2);
+ c.lineTo(hx+5,hy+8);c.closePath();c.fill();c.stroke();
+ /* 上顎(⚠稜を立てる=丸い吻にしない) */
  c.fillStyle=BD;
- c.beginPath();c.moveTo(hx-6,hy+8);
- c.quadraticCurveTo(hx-4,hy-3,hx+4,hy-2);
- c.quadraticCurveTo(hx+16,hy-1,hx+21,hy+3);/* 吻の上 */
- c.lineTo(hx+21,hy+5);
- c.quadraticCurveTo(hx+10,hy+6,hx+2,hy+9);c.closePath();c.fill();c.stroke();
- c.fillStyle=DK;/* 下顎 */
- c.beginPath();c.moveTo(hx-3,hy+8);
- c.quadraticCurveTo(hx+8,hy+9+jaw,hx+19,hy+6+jaw);
- c.lineTo(hx+19,hy+8.4+jaw);
- c.quadraticCurveTo(hx+7,hy+13+jaw,hx-4,hy+11);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(hx-7,hy+7);
+ c.lineTo(hx-5,hy-5);c.lineTo(hx+3,hy-7.4);c.lineTo(hx+9,hy-3.4);
+ c.lineTo(hx+22,hy+1);c.lineTo(hx+22,hy+4.6);
+ c.lineTo(hx+10,hy+6.4);c.lineTo(hx+1,hy+9);c.closePath();c.fill();c.stroke();
+ /* ⭐眉の張り出し(署名①)=目の上に庇を作る。⚠ここだけ明るく=峰が立って「睨んでいる」に見える */
+ c.fillStyle=shade(BD,1.4);
+ c.beginPath();c.moveTo(hx-4.4,hy-4.2);c.lineTo(hx+3.4,hy-6.6);c.lineTo(hx+10,hy-2.4);
+ c.lineTo(hx+6.4,hy-.4);c.lineTo(hx+1.4,hy-2.6);c.closePath();c.fill();c.stroke();
+ c.fillStyle='#2a0c08';/* 鼻孔 */
+ c.beginPath();c.ellipse(hx+18.4,hy+2.2,1.6,1,-.3,0,7);c.fill();
+ c.fillStyle=DK;/* 下顎(⚠角張らせる) */
+ c.beginPath();c.moveTo(hx-4,hy+8);
+ c.lineTo(hx+8,hy+10.4+jaw);c.lineTo(hx+20,hy+6+jaw);c.lineTo(hx+20,hy+8.8+jaw);
+ c.lineTo(hx+7,hy+13.6+jaw);c.lineTo(hx-5,hy+11);c.closePath();c.fill();c.stroke();
  /* ⭐(253)**口の中で膨らむ火の玉**=溜めの主役。⚠**顎より先へはみ出させない**(玉が宙に浮いて見える) */
  if(jaw>2){c.fillStyle=EM2;c.globalAlpha=.5+gl*.5;/* 開いた口の奥で燃える火 */
   c.beginPath();c.ellipse(hx+9,hy+7+jaw*.5,7,jaw*.5,0,0,7);c.fill();c.globalAlpha=1;}
@@ -17758,9 +18036,17 @@ HBODY.hUgni=(c,U,walk,t,ph,o)=>{
     c.globalAlpha=(1-q9)*uw*.8;
     c.beginPath();c.arc(hx+9+Math.cos(a9)*(6+q9*26),hy+5.4+Math.sin(a9)*(4+q9*18),1.4,0,7);c.fill();}
    c.globalAlpha=1;}}
- c.fillStyle=HN;/* 牙(⚠上下で数を変える) */
- for(const g of [[hx+7,hy+5,2.2],[hx+13,hy+4.4,1.8],[hx+18,hy+4,1.4]]){
-  c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[0]+1.4,g[1]+g[2]);c.lineTo(g[0]+2.6,g[1]);c.closePath();c.fill();}
+ /* ⭐署名③**上顎から下へ突き出す牙**=口を閉じていても見える(トカゲとの一番の分かれ目)。
+    ⚠長さを1本ずつ変える(揃えると櫛になる) */
+ c.fillStyle=HN;
+ for(const g of [[hx+6,hy+5.8,3.2],[hx+11,hy+5.4,2.4],[hx+16,hy+4.8,1.8],[hx+20,hy+4.4,1.3]]){
+  c.beginPath();c.moveTo(g[0]-1.3,g[1]-1);c.lineTo(g[0]+.3,g[1]+g[2]);c.lineTo(g[0]+1.7,g[1]-1);
+  c.closePath();c.fill();c.stroke();}
+ /* ⭐署名②**頬から後ろへ流れる棘**(3本・長さも角度も変える)=顔の輪郭がとげとげになる */
+ c.fillStyle=shade(HN,.86);
+ for(const g of [[hx-8,hy-3,-13,-10,2.6],[hx-9,hy+2,-15,-1,3.0],[hx-8,hy+7,-12,9,2.2]]){
+  c.beginPath();c.moveTo(g[0],g[1]-g[4]*.5);c.lineTo(g[0]+g[2],g[1]+g[3]);
+  c.lineTo(g[0],g[1]+g[4]*.6);c.closePath();c.fill();c.stroke();}
  /* ⭐後ろへ長く伸びる角2本(⚠長さを変える)+顎の髭 */
  c.fillStyle=HN;
  c.beginPath();c.moveTo(hx-4,hy-1);c.quadraticCurveTo(hx-14,hy-9,hx-24,hy-7);
@@ -17772,8 +18058,11 @@ HBODY.hUgni=(c,U,walk,t,ph,o)=>{
   c.beginPath();c.moveTo(hx+3,hy+11);c.quadraticCurveTo(hx-3,hy+17+wv,hx-9,hy+16+wv);c.stroke();
   c.strokeStyle=INK;c.lineWidth=2.6;}
  /* 目(⚠**細い縦の瞳**=丸い目にすると愛嬌が出て龍に見えない) */
- c.fillStyle=EM2;c.beginPath();c.ellipse(hx+3.4,hy+2.2,3.0,2.2,-.2,0,7);c.fill();c.stroke();
- c.fillStyle='#2a0c08';c.beginPath();c.ellipse(hx+3.6,hy+2.2,.9,1.9,-.2,0,7);c.fill();
+ /* ⭐(254)目=**細く鋭く**+庇の影を落とす。⚠丸いと愛嬌が出てトカゲに戻る */
+ c.fillStyle=EM2;c.beginPath();c.ellipse(hx+3.8,hy+.8,3.6,1.8,-.17,0,7);c.fill();c.stroke();
+ c.fillStyle='#2a0c08';c.beginPath();c.ellipse(hx+4.2,hy+.8,.85,1.6,-.17,0,7);c.fill();
+ c.fillStyle=shade(BD,.5);
+ c.beginPath();c.moveTo(hx+.4,hy-1.2);c.lineTo(hx+8,hy+1);c.lineTo(hx+7.4,hy-.9);c.closePath();c.fill();
  c.restore();
 };
 /* ---- ★5 暗黒の騎士「漆黒の突撃」= **18人でただ1人の騎乗**(2026-08-01ユーザーの絵から起こした)。
@@ -19601,7 +19890,8 @@ const U_SWG=new Set([
  /* 🐺(229p)ユーザー指示「攻撃モーションちゃんと欲しい」=狼王も振る側へ。
     ⚠**四つ足なので bSwing(肩を軸に腕を回す)は通さない**=HBODY.hWolf が o.sw を直に読む。 */
  'hWolf',
- 'hZan'/* ⚔(230)残月の剣鬼=打刀を実際に振る */]);
+ 'hZan',/* ⚔(230)残月の剣鬼=打刀を実際に振る */
+ 'hDim'/* 🌌(254)ディメンションナイト=大剣を実際に振る */]);
 /* ⭐⭐⭐**近接英雄の連撃**(2026-08-03(78))。ヴァルキリーの3連撃(袈裟→逆袈裟→突き)の一般化。
    ⚠⚠**ヴァルキリーだけ専用の枝で書かれていた**ので、他の近接英雄は
      **何発撃っても同じ一振り**=「連続攻撃」に見えなかった。
@@ -19638,6 +19928,9 @@ const H_CMB={
       ⭐**横に薙ぐ絵は「角度をほぼ変えず、前へ大きく走らせる」**(ずれxを大きく取る)。
     ⭐**2手で回す**=①**抜き打ちの横一文字**(居合の主) ②**縦の斬り下ろし**(締め・1回だけ)。 */
  hZan :[[-.30, .12, 26,-1],[-.98, 1.06,-4,-6]],
+ /* 🌌(254)ディメンションナイト(大剣)=**3手**。①横一文字の薙ぎ ②返しの逆薙ぎ ③踏み込んで斬り下ろす締め。
+    ⚠どの2手も振り抜き(dn)を0.25以上離してある(検査が見ている) */
+ hDim :[[-.24, .10, 8,-1],[ .46,-.62,-6, 4],[-.86, 1.14,-2,-6]],
 };
 /* ⭐**その体の手数**(2026-08-03(79)ユーザー「3連撃で固定せずキャラごとに変えて欲しい」)。
    ⚠表に無い体は3のまま(ヴァルキリーの専用の枝が %3 で書かれているため)。 */
@@ -19662,6 +19955,7 @@ const H_HITS={
  /* ⚔(249)**居合=一撃**。⚠**合計の強さは据え置き**=4連撃の盛り(×1.45)ぶんを atk に振り替えてある
     (660→960)。⚠片方だけ動かすと強さが変わるので、必ず両方を一緒に見ること。 */
  hZan:[1],
+ hDim:[2,3],/* 🌌(254)二連→三連=**まとめて薙ぐ**のがこの人の売り */
 };
 const SWG_SUB=.16;/* 1発ぶんの振りの長さ(秒)。⚠短いほど連打に見えるが、.12を切ると残像になる */
 /* 🐺(229p)**1発ぶんの振りの長さもキャラ別に持てる口**。狼王は打と打の間隔が .60 と広いので、
@@ -22136,6 +22430,42 @@ const H_FX={
  /* 🐉(252)**炎龍ウグニウス=前へ吹き付けるブレス**。⚠**飛び道具を出さない**=紅蓮の大魔導士(火の玉を放つ)と
     絵で分ける。⭐**口から的まで届く帯を1本**+的の周りを焦がす(範囲は U.aoe が本体側で効く)。
     ⚠出どころは決め打ちの銃口ではなく**顎の先**=体の局所座標に英雄の倍率を掛けて世界座標にする。 */
+ /* 💧(254)**クループ=泡をぷくぷく出して、弾けるとダメージ**(ユーザー指定)。
+    ⭐**何個か出す**=1個ずつ時間差で的へ届き、着いた所で弾ける。⚠当たりは本体側(aoe)が済ませている
+      =ここは絵と音だけ(数を増やしても強さは動かない)。 */
+ hKrup:(C,u,U,tg,mx,my,ang)=>{u.fireT=.16;
+  const cl9=U.c||'#5aa8d8';
+  if(FXLV>0){
+   const n9=3;
+   for(let i9=0;i9<n9;i9++){
+    const dl=i9*.09,r9=4+i9*1.6;
+    addP(C,1,mx,my,{sp:120,a:ang,spread:.22,g:-24,life:.34+dl,r:r9,col:cl9});
+    later(C,.16+dl,()=>{
+     if(!C)return;
+     addFx(C,'ring',tg.px+rnd(-14,14),tg.py-14*CH_UP+rnd(-10,10),'',{r:20+i9*8,col:'#bfe6ff'});
+     if(C.isMe&&i9===1&&sfx[H_SFX.hKrup])sfx[H_SFX.hKrup]();});}
+   addP(C,3,mx,my,{sp:60,up:40,g:-40,life:.5,r:2.4,col:'#bfe6ff'});
+   hitFx(C,tg,ang,cl9,1,U.type);}
+  if(C.isMe&&sfx[H_SFX.hKrup])sfx[H_SFX.hKrup]();},
+ /* 🌌(254)**ディメンションナイト=時空を切り裂く範囲斬撃**(ユーザー指定)。
+    ⭐**弧を1枚+その弧の上に「空間の裂け目」を数か所**開ける=ただの斬撃と分かれる。
+    ⚠**弧は自分の前に1枚**(敵ごとに出すと白い塊になる=残月で踏んだ穴と同じ)。
+    ⚠当たりは本体側(aoe)が済ませている=ここは絵と音だけ。 */
+ hDim:(C,u,U,tg,mx,my,ang,col)=>{u.fireT=.15;
+  const cl9=U.c||'#8f6fe0';
+  if(FXLV>0){
+   const n9=uCmbN(u.ui),k9=((u.cmb||0)+n9-1)%n9;
+   const a9=ang+[-.5,.58,-.92][k9%3];
+   const bx=mx+Math.cos(ang)*24,by=my+Math.sin(ang)*20;
+   addFx(C,'slash',bx,by,'',{ang:a9,r:(u.mhFin?42:32)*CH_UP,lv:u.mhFin?3:2,col:cl9});
+   /* 🌌**弧の上に開く裂け目**(2〜3か所・大きさを変える)=「空間を切った」の絵 */
+   for(let i9=0;i9<(u.mhFin?3:2);i9++){
+    const q9=(i9+1)/4,rx=bx+Math.cos(a9)*(q9*2-1)*34,ry=by+Math.sin(a9)*(q9*2-1)*26;
+    addFx(C,'ring',rx,ry,'',{r:16+i9*9,col:'#c4a8ff'});}
+   addP(C,4,bx,by,{sp:150,a:ang,spread:.7,g:150,life:.3,r:2.4,col:'#c4a8ff'});
+   hitFx(C,tg,ang,cl9,1,U.type);}
+  if(u.mhFin)C.shake=Math.max(C.shake||0,.14);
+  if(C.isMe&&sfx[H_SFX.hDim])sfx[H_SFX.hDim]();},
  hUgni:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.2;
   const ts=TSCALE[3],dd=(d5||u.dr||-1);
   const sx=u.px+dd*ts*1.18*46,sy=u.py-ts*1.18*44;/* 顎の先(HBODY.hUgni の hx+21,hy+6 あたり) */
@@ -22391,7 +22721,7 @@ const H_ULW_RK=[.34,.34,.5,.74,.95];
 const H_ULW_BACK={hDark:150,hPost:90};/* 下がってから出る英雄(値=退がる距離) */
 /* 🐉⭐(253)**前置きを人ごとに伸ばせる口**(2026-08-11ユーザー指示「もっと口の中で炎を貯める時間を持って」)。
    ⚠**レア度の表(上)より優先**=ここに書いた人だけ長くなる。⚠長すぎると「反応が無い」になるので2秒まで。 */
-const H_ULW_ID={hUgni:1.7};
+const H_ULW_ID={hUgni:1.7,hDim:1.5};/* 🌌(254)次元斬も「力を溜めて」=長め */
 const hUltWind=H=>(H&&H_ULW_ID[H.id])||H_ULW_RK[clamp((H&&H.rk||1)-1,0,4)];
 /* 溜めの絵。⚠**輪は外へ開かず内へ閉じる**=外へ開く輪は「もう出た」に見えて前置きにならない。
    ⚠⚠**2026-08-02に薄くした**(ユーザー「のけぞるだけだと安っぽい」→ 主役を体の動きへ移した)=
@@ -23392,6 +23722,72 @@ function heroUlt(C,wave){
    if(k%5===0&&C.isMe)(sfx[H_SFX.hZan]||sfx.shot)();};
   run9(0);for(let k=1;k<ZAN_N;k++)later(C,k*.055,()=>run9(k));
   C.shake=Math.max(C.shake||0,.2);
+ }else if(id==='hKrup'){/* 💧⭐⭐(254)**大津波**=ユーザー指定「津波を巻き起こして敵を押し返す」。
+   ⭐**押し返しは一度きり**(消防士の放水と同じ形)=(238d)で外した「押し続ける仕掛け」は作らない。
+   ⭐**波は道なりに走る**=前方の敵を順に押し戻し、濡れた敵はしばらく遅くなる。
+   ⚠**コアの方向へは押さない**(0で止める)。⚠ボスは押し戻す量を減らす(理不尽よけ)。 */
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'大津波');
+  if(C.isMe)(sfx.ultHose||sfx.win)();
+  {const KR_LEN=760,KR_PUSH=210,KR_N=12;
+   const run=(k)=>{
+    if(!C||u.dead)return;
+    const q=clamp((u.d||0)-40-k*(KR_LEN/KR_N),0,PLEN),p=pathPos(q);
+    for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
+     if(Math.abs(z.d-q)>70)continue;
+     dmgZ(C,z,Math.round(260*W),1,0,0,'water');
+     if(z.dead)continue;
+     /* 🌊押し返す(⚠一度きり=印を立てる)。⚠ボスは半分 */
+     if(!z.krW){z.krW=1;z.d=Math.max(0,z.d-KR_PUSH*(z.boss?.4:1));}
+     z.slowT=Math.max(z.slowT||0,5);z.slowV=Math.min(z.slowV||1,.55);}
+    addFx(C,'ring',p[0],p[1],'',{r:120,col:'#8fd4ee'});
+    if(FXLV>0){
+     addFx(C,'shock',p[0],p[1]+4,'',{r:150,col:'#bfe6ff'});
+     addP(C,6,p[0],p[1]-10*CH_UP,{sp:180,up:90,g:420,life:.5,r:3.2,col:'#8fd4ee'});}
+    if(k%3===0)C.shake=Math.max(C.shake||0,.22);};
+   run(0);for(let k=1;k<KR_N;k++)later(C,k*.055,()=>run(k));
+   /* 印を落とす(次の必殺でまた押せるように) */
+   later(C,1.2,()=>{if(C)for(const z of C.zombies)z.krW=0;});
+   C.shake=Math.max(C.shake||0,.4);}
+ }else if(id==='hDim'){/* 🌌⭐⭐(254)**次元斬**=ユーザー指定「力を溜めて一撃で空間を切り裂く」。
+   ⭐**一撃**=残月(斬撃が走る)/炎龍(2秒吐き続ける)と**動きの数**で分ける=これは**1回だけ**。
+   ⭐**道なりに長い帯**を一瞬で切る → 一拍おいて**空間が崩れる**(2発目)。
+   ⚠向きは道なり(敵が来る側)。⚠**1体は1回だけ**(帯の中に居るかどうかだけ)。 */
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'次元斬');
+  if(C.isMe&&sfx[H_SFX.hDim])sfx[H_SFX.hDim]();
+  {const DM_LEN=900,DM_W=120;
+   const pA=pathPos(clamp(u.d||0,0,PLEN)),pB=pathPos(clamp((u.d||0)-DM_LEN,0,PLEN));
+   const ox=u.px,oy=u.py-26*CH_UP;
+   const ang9=Math.atan2(pB[1]-oy,pB[0]-ox),cs=Math.cos(ang9),sn=Math.sin(ang9);
+   const ex=ox+cs*DM_LEN,ey=oy+sn*DM_LEN;
+   const inBand=z=>{const dx=z.px-ox,dy=(z.py-16*CH_UP)-oy;
+    const tp=dx*cs+dy*sn;if(tp<-40||tp>DM_LEN)return false;
+    return Math.abs(-dx*sn+dy*cs)<=DM_W;};
+   /* ①一の太刀=空間ごと切る */
+   for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
+    if(!inBand(z))continue;
+    dmgZ(C,z,Math.round(1500*W),1,0,0,'slash');}
+   addFx(C,'beam',ox,oy,'',{x2:ex,y2:ey,col:'rgba(143,111,224,',col2:'rgba(232,220,255,',w:26,lf:.42,sus:1});
+   addFx(C,'slash',ox+cs*90,oy+sn*90,'',{ang:ang9+1.5708,r:70*CH_UP,lv:3,col:'#e8dcff'});
+   C.shake=Math.max(C.shake||0,.5);
+   if(FXLV>0){
+    /* 裂け目=帯の上に等間隔でない穴を開ける */
+    for(const q of [.18,.38,.55,.74,.9]){
+     const rx=ox+cs*DM_LEN*q,ry=oy+sn*DM_LEN*q;
+     addFx(C,'ring',rx,ry,'',{r:40+q*70,col:'#8f6fe0'});
+     addP(C,4,rx,ry,{sp:200,g:120,life:.5,r:2.8,col:'#c4a8ff'});}}
+   /* ②一拍おいて**空間が崩れる**=溜めた一撃の後始末(ここが「次元」の見せ場) */
+   later(C,.34,()=>{
+    if(!C||u.dead)return;
+    for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
+     if(!inBand(z))continue;
+     dmgZ(C,z,Math.round(700*W),1,0,0,'slash');}
+    addFx(C,'boomL',ox+cs*DM_LEN*.5,oy+sn*DM_LEN*.5,'');
+    if(FXLV>0){for(const q of [.3,.6,.86]){
+      const rx=ox+cs*DM_LEN*q,ry=oy+sn*DM_LEN*q;
+      addFx(C,'spark',rx,ry,'',{sd:rnd(0,9),col:'#c4a8ff',big:1});
+      addP(C,6,rx,ry,{sp:260,g:340,life:.6,r:3.2,col:'#8f6fe0'});}}
+    C.shake=Math.max(C.shake||0,.36);
+    if(C.isMe&&sfx[H_SFX.hDim])sfx[H_SFX.hDim]();});}
  }else if(id==='hUgni'){/* 🐉⭐⭐⭐(253)**劫火の吐息=2秒吐き続ける「末広がりのブレス」**
     (2026-08-11ユーザー指示「もっと口の中で炎を貯める時間を持って、**幅が口から遠いほど大きくなる**
      ブレスを2秒ぐらい出す感じに。もっと迫力も欲しい」)。
@@ -27461,11 +27857,13 @@ function openBM(si){
     +(st==='ms'?(mx?'(+'+SUP_MS[Math.min(SUP_MS.length-1,lvv)]+'%)':'(+'+SUP_MS[Math.min(SUP_MS.length-1,lvv)]+'%→+'+SUP_MS[Math.min(SUP_MS.length-1,lvv+1)]+'%)'):'')
     +(st==='hl'?(mx?'('+supHlOf(lvv)+'/秒)':'('+supHlOf(lvv)+'→'+supHlOf(lvv+1)+'/秒)'):'');
    /* 射程は「今→強化後」の数値も出す(強化前に効果が分かるように) */
-   if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
+   /* ⚠(254)**括弧をやめた**=札は短いほど縦に折れにくい(実機で1文字ずつ縦に並んだ件の再発防止) */
+   if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' '+cur:' '+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1));}
    /* ⚠進化先は引き継いだぶんを引いて数える(◆が10個並ぶとボタンからはみ出す) */
    const pips='◆'.repeat(Math.max(0,lvv-mn9))+'◇'.repeat(Math.max(0,mx9-lvv));
    /* 🔧(253)**3枠に分ける**=札(伸びる) / ◆(固定) / 値段(固定)。⚠CSSの grid とセットで直すこと */
-   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx?'':'data-p="'+p+'"'} ${mx||m.scrap<p?'disabled':''}><span class="uslbl">${lbl}</span><span class="uspip">${pips}</span><span class="uspr">${mx?'MAX':'⚙️'+fmt(p)}</span></button>`;
+   /* 🔧(254)**2段**=1行目に札 / 2行目に◆と値段(右寄せ)。⚠CSSの .uslbl/.usbot とセットで直すこと */
+   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx?'':'data-p="'+p+'"'} ${mx||m.scrap<p?'disabled':''}><span class="uslbl">${lbl}</span><span class="usbot"><span class="uspip">${pips}</span><span class="uspr">${mx?'MAX':'⚙️'+fmt(p)}</span></span></button>`;
   }).join('');
   const canSell=!(COOP&&(tw.own||0)!==(MODE==='client'?CS.myJ:(G?G.myIdx:0)));
   /* ⭐廃品工房を全部MAXまで上げたら『上級廃品工房』へ建て替えられる(2026-07-26ユーザー指示) */
@@ -31057,7 +31455,7 @@ function bnsGimMake(rd,rr2){
   /* ⚠⚠**間隔は「画面に映る縦」から決める**=(253)最初 3400〜5400 にしたら、走っていて**一度も映らなかった**
      (この面は道が32万pxもあるのに、画面に映るのは約1300pxしかない)。
      ⭐1800〜2800=**1〜2秒に1本すれ違う**。⚠これ以上詰めると脇道どうしが繋がって見える。 */
-  for(let d=len*.09;d<len*.95;d+=rr2(1800,2800)){
+  for(let d=len*.09;d<len*.999;d+=rr2(1800,2800)){
    const u=d/len,p=pathPos(d,0),w=bnsCorrW(u);
    const nx=-Math.sin(p[2]),ny=Math.cos(p[2]);
    const sd=rd()<.5?-1:1,slen=rr2(900,1500),sw=rr2(300,430);
@@ -31213,7 +31611,7 @@ function drawBnsGim(c,C,t){
     (ガスも高圧線も。撮って初めて分かった)。⚠この面は世界を縦に潰して描くので、
     `prtView` の返す縦の範囲がこの面の見え方と合っていない。⭐**バスから±3000pxだけ描く**
     =この面は必ずバスが画面の中に居るので、これで十分かつ確実。 */
- const B=C&&C.bus,R9=3000;
+ const B=C&&C.bus,R9=12000;
  for(let i=0;i<BGIM.length;i++){const g=BGIM[i];
   if(B&&(g.y-B.y>R9||g.y-B.y<-R9))continue;
   if(g.k==='wire'){
@@ -38133,6 +38531,10 @@ const RG_HERO={
  /* ⚔(230)残月の剣鬼=手数と速さの★5(硬さは★5の中で一番低い) */
  hZan :{b:{hp:52,mp:14,st:27,df:12,sp:24},g:{hp:9.4,mp:3.2,st:4.9,df:2.1,sp:3.6},sk:[[1,'s_doom'],[20,'s_end']]},
  /* 🐉(252)炎龍ウグニウス=★5で一番硬い。足は遅い。とくぎは炎の2本(紅蓮と同じ系) */
+ /* 💧(254)クループ=打たれ強く素早い支援寄りの★5。とくぎは水と回復の系 */
+ hKrup:{b:{hp:60,mp:21,st:22,df:17,sp:19},g:{hp:10.8,mp:4.4,st:4.0,df:3.1,sp:3.0},sk:[[1,'s_water'],[16,'s_care']]},
+ /* 🌌(254)ディメンションナイト=攻めと速さの★5(硬さは並)。とくぎは終焉と同じ系 */
+ hDim:{b:{hp:56,mp:17,st:27,df:14,sp:21},g:{hp:10.0,mp:3.8,st:4.9,df:2.5,sp:3.3},sk:[[1,'s_doom'],[20,'s_end']]},
  hUgni:{b:{hp:74,mp:20,st:25,df:20,sp:8},g:{hp:13.2,mp:4.2,st:4.6,df:3.6,sp:1.2},sk:[[1,'s_flame'],[18,'s_end']]}
 };
 /* ---- どうぐ ---- */
