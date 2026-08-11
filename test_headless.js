@@ -4828,6 +4828,28 @@ function checkBusGim(){
    const burnt=BGIM.filter(g=>g.done).length;
    if(burnt<3)F('ガスが燃え移っていない '+burnt+'か所');
    if(burnt>=ng)F('道のガスが全部燃えてしまう(進む先が空になる) '+burnt+'/'+ng);
+   /* 🧨(253)**脇道と爆薬**(ユーザー設計)。見るのは4つ:
+      ①脇道が何本かある ②どの脇道にも「道の上の1個目」がある(バスが轢ける)
+      ③1個目に火を点けると**順に爆ぜて奥まで届く** ④だまりを倒した分が連なりに乗る */
+   const sr=BGIM.filter(g=>g.k==='sroad'),ex=BGIM.filter(g=>g.k==='ex');
+   console.log('SRDBG n='+sr.length+' starty='+BNS_STARTY+' goaly='+BNS_GOALY+' busy='+Math.round(G.players[0].bus.y)+' cx='+BNS_CX+' gasx='+BGIM.filter(g=>g.k==='gas').slice(0,3).map(g=>Math.round(g.x)+'/'+Math.round(g.y)).join(',')+' srx='+sr.slice(0,3).map(g=>Math.round(g.x)+'/'+Math.round(g.y)).join(','));
+   if(sr.length<4)F('脇道が少なすぎる '+sr.length);
+   if(ex.length<sr.length*4)F('爆薬が少なすぎる '+ex.length+'(脇道'+sr.length+'本)');
+   for(const r of sr){
+    const mine=ex.filter(g=>g.g===r.g).sort((a2,b2)=>a2.i-b2.i);
+    if(!mine.length||mine[0].i!==0)F('脇道'+r.g+'に道の上の爆薬(1個目)が無い');
+    const dd=Math.hypot(mine[0].x-r.x,mine[0].y-r.y);
+    if(dd>r.w0*1.15)F('脇道'+r.g+'の1個目が通路の外にある '+Math.round(dd)+'>'+Math.round(r.w0));
+   }
+   {const C2=G.players[0],B2=C2.bus;
+    const r0=sr[0],grp=ex.filter(g=>g.g===r0.g).sort((a2,b2)=>a2.i-b2.i);
+    const last=grp[grp.length-1];
+    const z2=mkZ(zSpec(0,1,1));z2.pool=1;z2.sp=0;z2.d=0;z2.ln=0;z2.px=last.x;z2.py=last.y;z2.hp=z2.mhp=1;C2.zombies.push(z2);
+    const k0=B2.kill||0;
+    grp[0].lit=1e-4;
+    for(let q=0;q<200&&grp.some(g=>!g.done);q++)bnsGimStep(C2,.05);
+    if(grp.some(g=>!g.done))F('爆薬の連鎖が奥まで届かない '+grp.filter(g=>g.done).length+'/'+grp.length);
+    if(!((B2.kill||0)>k0))F('脇道のだまりを倒した分が連なりに乗っていない');}
   }
   if(want[si]==='pop'){
    const C=G.players[0],B=C.bus;
@@ -4842,7 +4864,8 @@ function checkBusGim(){
  }
  META.sc=kp;
  console.log('🚌🎨面ごとの個性: '+got.join(' / ')+' / 高圧線は必ず隙間がある / '
-  +'ガスは引火して燃え移り、上限('+GIM_GAS_MAX+'回)で止まる / どの経路の撃破も連なりに乗る OK');
+  +'ガスは引火して燃え移り、上限('+GIM_GAS_MAX+'回)で止まる / '
+  +'🧨脇道の爆薬は道の上の1個目から奥まで連鎖する / どの経路の撃破も連なりに乗る OK');
 }
 /* ---- ⚙🐞⭐⭐(244)**🚌バスの当たりが「絵のとおり」か** ----
    ⚠⚠**作った理由**=この面は世界を縦に潰して描く(BNS_SQ)のに、**バスと装備だけ潰しを打ち消して**

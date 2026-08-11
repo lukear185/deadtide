@@ -23515,7 +23515,11 @@ function campStep(C,dt,wave){
       ⚠敵は道の上の距離(d)しか持っていないので、そのままだと**何百体居ても一列の行列**になる。
       道の法線方向へばらけさせると、同じ仕組みのまま「塊で押し寄せる」絵になる。
       ⚠**拠点の手前ではずれを絞る**=最後は1点に吸い込ませないと、拠点の周りをすり抜けて見える。 */
- for(const z of C.zombies){const p=pathPos(Math.max(0,z.d),z.ln);z.px=p[0];z.py=p[1];
+ for(const z of C.zombies){
+  /* 🧟(253)**脇道のだまりは道の外に居る**=道の上の座標(d/off)では表せないので、
+     世界座標をそのまま使う。⚠ここを通すと全員が道の上へ吸い戻される(置いた意味が消える)。 */
+  if(z.pool){if(z.aura)scrs.push(z);continue;}
+  const p=pathPos(Math.max(0,z.d),z.ln);z.px=p[0];z.py=p[1];
   if(z.off){const pl=(LANES&&z.ln!=null&&LANES[z.ln])?LANES[z.ln].len:PLEN;
    /* ⭐⭐**導線**(2026-08-02(3))=道の両脇の壁で横のずれを挟む。**関所で通路が絞れる**ので
       群れが勝手に密集する=そこがバスの狩り場になる。⚠壁の絵も同じ `bnsCorrW` から生えている。
@@ -30997,6 +31001,20 @@ const GIM_NEAR=1700;   /* ⚠**バスから遠い物は見ない**=87本の線×
 const GIM_POP_P=.22;   /* 🥩轢いた敵が弾ける割合 */
 const GIM_POP_R=210;   /* 🥩弾けた時に巻き込む半径 */
 const GIM_POP_MAX=3;   /* 🥩連鎖の深さの上限(⚠無いと1コマで全部消える) */
+/* 🧨⭐⭐⭐(253)**⑤沈んだ県道=脇道の爆薬**(2026-08-11ユーザー設計
+     「脇道がところどころあって爆薬が敷いてあって、普通のメイン道路にその脇道の爆薬につながる爆薬を置いて、
+      それを轢けば連鎖で爆薬が爆発して脇道にいるゾンビだまりを倒せる、っていうバスステージにしよう」)。
+   ⭐**芯=バスでは行けない所の敵を、道の上の1個を轢くだけで刈る**=
+     「轢く」以外の稼ぎ方が初めて生まれる。⚠**運転と轢き味は1つも触っていない**(この面の掟)。
+   ⚠⚠**脇道はバスが入れない**(通路の壁はそのまま)=だから爆薬が要る、という筋が通る。
+   ⚠**溜まっている敵は歩かない**(`pool`)=main の群れに混ざると「だまり」でなくなる。 */
+const EX_R=330;        /* 🧨爆薬1つの爆風の半径 */
+const EX_STEP=.11;     /* 🧨次の爆薬へ火が走る間隔(秒)。⚠短すぎると連鎖に見えない */
+const EX_TRIG=190;     /* 🧨バスが轢いたと見なす距離 */
+const EX_N=[4,6];      /* 🧨1本の脇道に敷く爆薬の数 */
+const EX_POOL=[8,13];  /* 🧟脇道1本に溜まっている敵の数 */
+const EX_KEEP=5200;    /* 🧟通り過ぎただけ残さない距離。⚠⚠これが無いと1試合で1000体以上溜まって重くなる */
+const EX_SPAWN=2600;   /* 🧟だまりを湧かせ始めるバスからの距離(⚠遠すぎると盤面が重い) */
 /* 面の番号 → その面の個性。⚠**面の番号だけで決める**(下の `bnsGimMake` は地形を作る時に呼ばれ、
    その時点では試合(G)がまだ立っていないことがある=`isBns()` を見ると何も置かれない。1度踏んだ) */
 const gimOf=si=>si===2?'wire':(si===3?'pop':(si===4?'gas':''));
@@ -31032,7 +31050,68 @@ function bnsGimMake(rd,rr2){
     BGIM.push({k:'gas',x:cx+rr2(-190,190),y:cy+rr2(-190,190),
      r:GIM_GAS_R*rr2(.8,1.25),t:0,sd:rd()*6});
   }
+  /* 🧨⭐(253)**脇道と爆薬**(ユーザー設計)。⚠⚠**ガスと同じ面に置いてある**=
+     この面だけ仕掛けが2つになるが、**繋がっている**(爆薬の連鎖は沼のガスにも引火する)ので
+     覚えることは増えない。⭐**脇道は左右どちらかに1本ずつ**・道なりに間を空けて置く。 */
+  let gid=0;
+  /* ⚠⚠**間隔は「画面に映る縦」から決める**=(253)最初 3400〜5400 にしたら、走っていて**一度も映らなかった**
+     (この面は道が32万pxもあるのに、画面に映るのは約1300pxしかない)。
+     ⭐1800〜2800=**1〜2秒に1本すれ違う**。⚠これ以上詰めると脇道どうしが繋がって見える。 */
+  for(let d=len*.09;d<len*.95;d+=rr2(1800,2800)){
+   const u=d/len,p=pathPos(d,0),w=bnsCorrW(u);
+   const nx=-Math.sin(p[2]),ny=Math.cos(p[2]);
+   const sd=rd()<.5?-1:1,slen=rr2(900,1500),sw=rr2(300,430);
+   /* 脇道そのもの(絵と、だまりを湧かせる目印) */
+   /* ⚠**脇道は通路の壁のきわから外へ**=中から生やすと本線の上に帯が乗って「道が広がった」に見える */
+   BGIM.push({k:'sroad',x:p[0],y:p[1],nx:nx*sd,ny:ny*sd,g:gid,w0:w*.86,len:w+slen,hw:sw,sp:0});
+   /* 🧨爆薬=**道の上(1個目)から脇道の奥へ一列**。⚠1個目は必ず通路の内側=バスが轢ける所 */
+   const n2=EX_N[0]+((rd()*(EX_N[1]-EX_N[0]+1))|0);
+   for(let q=0;q<n2;q++){
+    const o=w*.42+(w+slen*.92-w*.42)*(q/(n2-1));
+    BGIM.push({k:'ex',x:p[0]+nx*sd*o+(-ny*sd)*rr2(-70,70),y:p[1]+ny*sd*o+(nx*sd)*rr2(-70,70),
+     g:gid,i:q,last:q===n2-1,lit:0,done:0,sd:rd()*6});
+   }
+   gid++;
+  }
  }
+}
+/* 🧟(253)**脇道のだまりを湧かせる**=バスが近づいた1回だけ。⚠**歩かせない**(pool)。
+   ⚠**totalWave は増やさない**=波の数え上げは道中の群れのぶんだけ(到着で終わる面なので影響しない)。 */
+function bnsPoolMake(C,g){
+ if(g.sp||!G||!G.tide)return;g.sp=1;
+ const zp=G.tide.bnsZp;if(!zp||!zp.length)return;
+ const n=EX_POOL[0]+((Math.random()*(EX_POOL[1]-EX_POOL[0]+1))|0);
+ const cx=g.x+g.nx*(g.w0+(g.len-g.w0)*.72),cy=g.y+g.ny*(g.w0+(g.len-g.w0)*.72);
+ for(let q=0;q<n;q++){
+  const zi=zp[Math.min(zp.length-1,(Math.random()*Math.max(1,zp.length*.7))|0)];
+  const z=mkZ(zSpec(zi,C.waveMul||1,G.wave||1),0);
+  /* ⚠**道の上の座標ではなく世界座標で置く**=脇道は道の外なので d/off では表せない。
+     ⭐`pool` が立っている敵は毎コマの位置計算を丸ごと飛ばす(下の campStep の分岐)。 */
+  z.pool=1;z.sp=0;z.d=0;z.ln=0;
+  z.px=cx+rnd(-g.hw*.9,g.hw*.9);z.py=cy+rnd(-g.hw*.9,g.hw*.9);
+  z.dr=(BNS_CX-z.px)>=0?1:-1;
+  C.zombies.push(z);
+ }
+}
+/* 🧨**1個ぶんの爆発**。⚠**バスは削らない**(負けの無い面)=揺れと絵だけ */
+function bnsExBoom(C,g){
+ g.done=1;g.lit=0;
+ let n=0;
+ for(const z of C.zombies){if(z.dead||z.dvT>0)continue;
+  const dx=z.px-g.x,dy=z.py-g.y;
+  if(dx*dx+dy*dy>EX_R*EX_R)continue;
+  dmgZ(C,z,BOBJ_BDMG,1,true);if(z.dead)n++;}
+ if(n)bnsCredit(C,n);
+ try{bnsGimBoom(C,g.x,g.y);}catch(e){}/* 💨沼のガスにも引火する(2つの仕掛けが繋がる) */
+ addFx(C,'boom',g.x,g.y,'');
+ if(FXLV>0){addFx(C,'ring',g.x,g.y,'',{r:EX_R,col:'#ffb347'});
+  addP(C,7,g.x,g.y,{sp:260,up:60,g:520,life:.45,r:3.4,col:'#ffb347'});
+  addP(C,3,g.x,g.y,{sp:70,up:60,g:-70,life:1.1,r:11,col:'#4a4438',typ:'smoke'});}
+ const B=C.bus;
+ if(B&&Math.abs(g.y-B.y)<1500)C.shake=Math.max(C.shake||0,.24);
+ /* 🔥次の爆薬へ火を渡す。⚠**同じ組の次の番号だけ**=別の脇道へ飛び火させない */
+ for(let j=0;j<BGIM.length;j++){const h=BGIM[j];
+  if(h.k==='ex'&&h.g===g.g&&h.i===g.i+1&&!h.done&&!h.lit){h.lit=1e-4;break;}}
 }
 /* 💨**引火の口**=ドラム缶の爆発から呼ぶ。⚠**燃えている物からは呼ばない**(燃え移りは下の step が持つ) */
 function bnsGimBoom(C,x,y){
@@ -31065,10 +31144,29 @@ function bnsGimPop(C,x,y,lv){
 function bnsGimStep(C,dt){
  if(!BGIM.length||!C||!C.bus)return;
  const B=C.bus;let kil=0;
+ /* 🧟(253)**通り過ぎた脇道のだまりを片付ける**。⚠⚠これが無いと、脇道100本×十数体が
+    盤面に残り続けて**1試合の終わりには1000体以上**になる(轢いていないので減らない)。
+    ⭐**バスの後ろへ十分離れた物だけ**消す=まだ見えている所からは消えない。⚠0.4秒に1回でよい。 */
+ C.poolT=(C.poolT||0)-dt;
+ if(C.poolT<=0){C.poolT=.4;
+  for(let q=C.zombies.length-1;q>=0;q--){const z=C.zombies[q];
+   if(z.pool&&!z.dead&&z.py-B.y>EX_KEEP)C.zombies.splice(q,1);}}
  for(let i=0;i<BGIM.length;i++){const g=BGIM[i];
   /* ⚠**バスから遠い物は見ない**=道は4万px以上あるので、全部を毎コマ舐めると盤面より重くなる。
      ⚠**燃えている溜まりだけは遠くても進める**(火が付いたまま止まって見えないように)。 */
   const near9=(g.y-B.y<GIM_NEAR&&g.y-B.y>-GIM_NEAR);
+  /* 🧟(253)脇道のだまり=バスが近づいたら1回だけ湧かせる(⚠遠くから全部湧かせない=重い) */
+  if(g.k==='sroad'){if(!g.sp&&g.y-B.y<EX_SPAWN&&g.y-B.y>-EX_SPAWN)bnsPoolMake(C,g);continue;}
+  /* 🧨(253)爆薬=①道の上の1個目をバスが轢いたら火が点く ②点いたら順に爆ぜていく */
+  if(g.k==='ex'){
+   if(g.done)continue;
+   if(g.lit>0){g.lit+=dt;if(g.lit>=EX_STEP)bnsExBoom(C,g);continue;}
+   if(!near9||g.i!==0)continue;
+   const dx=B.x-g.x,dy=B.y-g.y;
+   if(dx*dx+dy*dy<=EX_TRIG*EX_TRIG){g.lit=1e-4;
+    if(C.isMe)try{toast('🧨 導火線に火が点いた!');}catch(e){}}
+   continue;
+  }
   if(g.k==='wire'){
    if(!near9)continue;
    g.t+=dt;
@@ -31111,9 +31209,13 @@ function bnsGimStep(C,dt){
 /* 🎨絵。⚠**地形の上・ゾンビの下**。⚠**縦の潰しはそのまま**(地面に貼る物なので潰れているのが正しい) */
 function drawBnsGim(c,C,t){
  if(!BGIM.length)return;
- const V=prtView(340);
+ /* 🐞⚠⚠(253)**間引きを `prtView` からバスの位置へ変えた**=それまで**1つも描かれていなかった**
+    (ガスも高圧線も。撮って初めて分かった)。⚠この面は世界を縦に潰して描くので、
+    `prtView` の返す縦の範囲がこの面の見え方と合っていない。⭐**バスから±3000pxだけ描く**
+    =この面は必ずバスが画面の中に居るので、これで十分かつ確実。 */
+ const B=C&&C.bus,R9=3000;
  for(let i=0;i<BGIM.length;i++){const g=BGIM[i];
-  if(g.x<V[0]||g.x>V[1]||g.y<V[2]||g.y>V[3])continue;
+  if(B&&(g.y-B.y>R9||g.y-B.y<-R9))continue;
   if(g.k==='wire'){
    const x0=g.x+g.nx*g.o0,y0=g.y+g.ny*g.o0,x1=g.x+g.nx*g.o1,y1=g.y+g.ny*g.o1;
    c.save();
@@ -31127,6 +31229,43 @@ function drawBnsGim(c,C,t){
     const u=((t*.55+g.t+k*.25)%1),ux=x0+(x1-x0)*u,uy=y0+(y1-y0)*u;
     const jx=g.nx*18,jy=g.ny*18;
     c.beginPath();c.moveTo(ux-jx,uy-jy+6);c.lineTo(ux,uy);c.lineTo(ux+jx,uy+jy-6);c.stroke();}
+   c.restore();
+  }else if(g.k==='sroad'){
+   /* 🛣(253)脇道=通路の脇から伸びる短い道。⚠**縁を1本入れる**=入れないと地面の染みに見える */
+   const x0=g.x+g.nx*g.w0,y0=g.y+g.ny*g.w0,x1=g.x+g.nx*g.len,y1=g.y+g.ny*g.len;
+   c.save();c.lineCap='butt';
+   c.strokeStyle='rgba(20,18,16,.35)';c.lineWidth=g.hw*2+16;
+   c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();
+   c.strokeStyle='#5d5546';c.lineWidth=g.hw*2;
+   c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();
+   c.strokeStyle='rgba(190,182,158,.34)';c.lineWidth=8;c.setLineDash([70,90]);
+   c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke();c.setLineDash([]);
+   /* 行き止まりの土手(⚠これが無いと「道が地面に溶けて終わる」に見える) */
+   c.strokeStyle='#463f34';c.lineWidth=26;
+   c.beginPath();c.moveTo(x1-g.ny*g.hw,y1+g.nx*g.hw);c.lineTo(x1+g.ny*g.hw,y1-g.nx*g.hw);c.stroke();
+   c.restore();c.lineCap='round';
+  }else if(g.k==='ex'){
+   if(g.done){c.save();c.globalAlpha=.34;c.fillStyle='#2a231c';
+    c.beginPath();c.ellipse(g.x,g.y,52,30,0,0,7);c.fill();c.restore();continue;}
+   c.save();
+   /* 導線=次の爆薬へ伸びる紐(⚠**繋がっている**ことが絵で読めないと連鎖が理解されない) */
+   for(let j=0;j<BGIM.length;j++){const h=BGIM[j];
+    if(h.k!=='ex'||h.g!==g.g||h.i!==g.i+1)continue;
+    c.strokeStyle=g.lit>0?'#ffcf6a':'rgba(60,52,40,.8)';c.lineWidth=g.lit>0?7:5;
+    c.beginPath();c.moveTo(g.x,g.y);c.lineTo(h.x,h.y);c.stroke();break;}
+   /* 木箱の爆薬。⚠1個目(道の上)だけ**赤く大きく**=そこを轢けばよい、が一目で分かる */
+   const w9=g.i===0?46:34;
+   c.fillStyle=INK;c.fillRect(g.x-w9-4,g.y-w9*.62-4,w9*2+8,w9*1.24+8);
+   c.fillStyle=g.i===0?'#a8412c':'#6f5a3c';c.fillRect(g.x-w9,g.y-w9*.62,w9*2,w9*1.24);
+   c.fillStyle=g.i===0?'#d4643f':'#8a7150';c.fillRect(g.x-w9+6,g.y-w9*.62+5,w9*2-12,w9*.42);
+   c.fillStyle='#2b2620';c.fillRect(g.x-w9*.6,g.y-4,w9*1.2,8);
+   /* 火が点いている間の火花(⚠乱数を使わない=毎コマ形が変わると煮え立って見える) */
+   if(g.lit>0){const q=Math.min(1,g.lit/EX_STEP);
+    c.fillStyle='#ffe9b0';c.beginPath();c.arc(g.x,g.y-w9*.9,7+q*9,0,7);c.fill();
+    c.fillStyle='#ff9a3d';c.beginPath();c.arc(g.x,g.y-w9*.9,4+q*5,0,7);c.fill();}
+   else if(g.i===0){/* 目印=ゆっくり脈打つ輪(轢く所) */
+    c.globalAlpha=.32+.22*Math.sin(t*3+g.sd);c.strokeStyle='#ffb347';c.lineWidth=7;
+    c.beginPath();c.ellipse(g.x,g.y,86,50,0,0,7);c.stroke();c.globalAlpha=1;}
    c.restore();
   }else if(g.k==='gas'){
    const on=g.t>0;
