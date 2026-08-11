@@ -16,7 +16,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['(なし)','タイトル画面'],['dev','🛠DEVモード(全開放の見た目)'],['edit','🛠マス編集モード'],
   ['perf','🔥塗りの物差しを出す(?perf=1)。dev と混ぜるなら "dev+perf"'],
   ['pc','PC用CSS(既定はスマホ用を強制適用)'],
-  ['st2〜st5','ステージ2(沈んだ港)〜5(腐海の湿地帯)'],
+  ["st2〜st10","ステージ2(沈んだ港)〜10(腐海の最奥)。🔁st6〜st10=焼き増しの面"],
   ['gas[fire]','💨⑤のガス溜まり(自分で時間を進める)。gasfire=引火した瞬間。例 "st5+gas"'],['w<数字>','⚠**何ミリ秒ぶん進めてから撮るか**(既定9000)'],
   ['setup','出撃準備'],['lab[=タブ]','🔬研究所(twup/unup/rec…)'],['load','🎒編成'],['home','🏠ホーム'],
   ['map','🗺エリアマップ(worldmap+mappg=0|1|2 で面を選ぶ)'],['gacha','💎召集'],['train','🏋鍛錬所'],['zoo','📖ゾンビ図鑑(⚠devと一緒に)'],
@@ -46,7 +46,7 @@ const OUT=path.resolve(process.argv[2]||'shot.png');
 const W=+(process.argv[3]||852),H=+(process.argv[4]||393);
 const OPT=(process.argv[5]||'');
 const PC=OPT.indexOf('pc')>=0;
-const ST=/st(\d)/.exec(OPT);/* 例 st2 = ステージ2を撮る */
+const ST=/st(\d+)/.exec(OPT);/* 例 st2 = ステージ2を撮る。🔁(258)st6〜st10=焼き増しの面 */
 const WM=/w(\d+)/.exec(OPT),WAIT=WM?+WM[1]:9000;/* 例 w30000 = 30秒ぶん進めてから撮る(敵が出た状態) */
 const BROWSERS=['C:/Program Files/Google/Chrome/Application/chrome.exe',
  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',

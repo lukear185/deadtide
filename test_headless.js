@@ -2740,6 +2740,12 @@ function checkHero(){
   /* 倒れたら二度と出せない */
   /* ⚠**十分に大きい一撃で殺す**=暁の号令(uOv)が生きていると被ダメージが半分になり、
      hp+1 では死なない(2026-07-28に踏んだ) */
+  /* 💥⭐(258)**流星墜拳で空に居る間は当たらない**(ユーザー指示)=ここで一緒に締める。
+     ⚠**空に居るうちは何発撃っても減らない** → 降ろしてから殺す(でないと戦死の記録を見られない)。 */
+  if(typeof renAir==='function'&&renAir(hu)){
+   const hp0=hu.hp;dmgU(me,hu,hu.hp*10+1000);
+   if(hu.hp!==hp0){console.log('FAIL: 流星墜拳で空に居るのに当たっている '+h.id);process.exit(1);}
+   hu.rjT=null;hu.ulW=0;}
   dmgU(me,hu,hu.hp*10+1000);
   if(me.hOut!==2){console.log('FAIL: 英雄の戦死が記録されない '+h.id);process.exit(1);}
   if(heroDeploy(me)){console.log('FAIL: 戦死した英雄が再出撃できる '+h.id);process.exit(1);}
@@ -4409,6 +4415,10 @@ function checkGain(){
  const band=[];
  for(let stg=0;stg<STAGES.length;stg++){
   if(STAGES[stg].wip)continue;/* 🥩(229)作りかけの面は飛ばす(上と同じ) */
+  /* 🔁(258)**焦き増しの面(⑥〜⑩)は棚が一つも広がらない**＝「実入り÷棚」の物差しが使えない
+     (割る相手が前の面の棚のままなので、実入りを増やした分だけ必ず外れる)。
+     ⚠**進むほど増えているかは上の拠点ごとの検査が見ている**。 */
+  if(stgLap(stg))continue;
   /* 🧬(204h)**面の初クリアの上乗せも足して測る**=兵長を並びから外したぶんはここで返している */
   const inc=rows.filter(x=>x.stg===stg).reduce((a,x)=>a+x.g,0)+(STG_GEN[stg]||STG_GEN[STG_GEN.length-1]||0);
   let oT=0,oU=0;for(let i=0;i<stg;i++){oT+=UNL_TN[i];oU+=UNL_UN[i];}
@@ -4552,8 +4562,11 @@ function checkMaterial(){
  /* 🪶(205)**面③=羽**を足した。⚠**③はわざと羽を持たない個体も混ぜてある**(速い個体・すり抜け個体)が、
     実測では総HPの55〜88%が羽=①②と同じ4割の物差しで足りる。 */
  /* 💨(252)⑤腐海の湿地帯=**⑤専用の14体が入った**ので、主役は💨ガスで見る(借り物ではなくなった)。 */
- const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘','④飽食の市街','⑤腐海の湿地帯'],
-  IC3=['①','②','③','④','⑤'],LO3=[40,40,40,40,40],MI3=[0,1,2,3,4];
+ /* 🔁(258)面⑥〜⑩は①〜⑤の焼き増し=**主役の材質も元の面と同じ**(敵の顔ぶれが同じなので) */
+ const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘','④飽食の市街','⑤腐海の湿地帯',
+  '⑥廃線の深部','⑦深潮の港','⑧高圧の稜線','⑨飽食の胃袋','⑩腐海の最奥'],
+  IC3=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'],
+  LO3=[40,40,40,40,40,40,40,40,40,40],MI3=[0,1,2,3,4,0,1,2,3,4];
  /* 🥩(229f)④の主役は🥩肉(fls)。⚠wip の面(敵がまだ)は飛ばす(いまは全面が開通している) */
  for(let stg=0;stg<STAGES.length;stg++)for(const d of [2,4,5]){
   if(STAGES[stg].wip)continue;
@@ -4570,7 +4583,7 @@ function checkMaterial(){
   const main=[a,s,w9,f9,g9][MI3[stg]];
   if(main<LO3[stg]){console.log('FAIL: '+NM3[stg]+'の'+D5[d].n+'で、主役の材質が総HPの'
    +main.toFixed(0)+'%しかない('+brk+')');
-   console.log('      ⚠'+['①は🛡装甲=🔥火炎で解ける面','②は🐟鱗=⚡電撃で解ける面','③は🪶羽=🔫実弾で解ける面','④は🥩肉=🗡貫通で解ける面','⑤は💨ガス=💣爆発で解ける面'][stg]
+   console.log('      ⚠'+['①は🛡装甲=🔥火炎で解ける面','②は🐟鱗=⚡電撃で解ける面','③は🪶羽=🔫実弾で解ける面','④は🥩肉=🗡貫通で解ける面','⑤は💨ガス=💣爆発で解ける面'][stgBase(stg)]
     +'という設計が崩れている');
    process.exit(1);}
  }
@@ -4836,7 +4849,8 @@ function checkBusGim(){
  const F=m=>{console.log('FAIL: '+m);process.exit(1);};
  const kp=META.sc;
  META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
- const want=['','','wire','pop','gas'],got=[];
+ /* 🔁(258)⑥〜⑩は①〜⑤の焦き増し＝個性も元の面と同じ */
+ const want=['','','wire','pop','gas','','','wire','pop','gas'],got=[];
  for(let si=0;si<STAGES.length;si++){
   META.stg=si;setDiff=BNS_D;startSolo();bnsPreSkip();frames(6,.05);
   if(gimKind()!==want[si])F('面'+(si+1)+'の個性が違う '+(gimKind()||'なし')+'(狙い '+(want[si]||'なし')+')');

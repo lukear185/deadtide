@@ -2166,6 +2166,20 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
   </div>
 </div>
 
+<!-- 💥(258)タレットを売る前に聞く窓(2026-08-11ユーザー「全タレットは売却時は売却しますか? はい いいえ みたいなの欲しい」)。
+     ⚠**取り消せない**(建て直すと⚙️が満額かかる)ので、必ず1回聞く。⚠戻ってくる額もここに出す -->
+<div class="modal" id="md-sell">
+  <div class="panel" style="width:min(92vw,420px);text-align:center">
+    <div style="font-size:34px;line-height:1">💥</div>
+    <b style="display:block;font-size:17px;margin:4px 0 2px">売却しますか?</b>
+    <p class="note" id="sell-dsc" style="margin:2px 0 10px"></p>
+    <div style="display:flex;gap:8px">
+      <button class="btn gold" id="bt-sell-yes" style="flex:1 1 0">はい</button>
+      <button class="btn" id="bt-sell-no" style="flex:1 1 0">いいえ</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="md-bsg">
   <div class="panel bigpanel">
     <div class="bphd"><b>⚡ スコア報酬</b><span class="pt" id="bsg-gem"></span><button class="xbtn" id="bt-bsg-close">✕</button></div>
@@ -3893,8 +3907,8 @@ const SFX_VAR={shot:.10,shotgun:.08,bite:.14,bite2:.12,splat:.12,thunk:.10,zap:.
 function sfxScene(){
  /* ⚠**ナイトメア×ステージ2(深海のナイトメア)は獣の声ではなく水の声**にする(2026-07-27)。
     出てくるのは変異した深海の生き物なので、獣・蟲の声だと絵と音が食い違う。 */
- try{if(isNM())return STAGE===1?'s2':'nm';}catch(e){}
- try{if(STAGE===1)return 's2';}catch(e){}
+ try{if(isNM())return stgBase(STAGE)===1?'s2':'nm';}catch(e){}
+ try{if(stgBase(STAGE)===1)return 's2';}catch(e){}
  return 's1';}
 const SFX_SET={
  moan:   {s1:['moan','moan2','moan3'],s2:['moanW','moan3','moanW'],nm:['moanN','moan3','moanN']},
@@ -7067,6 +7081,39 @@ const STAGES=[
   sup:[[1180,455],[880,455]],/* 🏗谷を見下ろす2つの窪み(どちらの谷にも効く) */
   pal:{g0:'#6b7a55',g1:'#4e5c3e',tuft:'#7d8f52',bld:'#5a6350',patch:['#3f4a33','#8fa05e']}}
 ];
+/* 🔁⭐⭐⭐(258)**面⑥〜⑩=面①〜⑤の焼き増し**(2026-08-11ユーザー決定
+     「6面からは1〜5面の焼き増しで、何か追加要素を各々一つだけ追加したかさましステージにしたい」)。
+   ⭐**地形・建設マス・背景・敵の顔ぶれ・🚌開拓便の道は元の面をそのまま使う**=
+     写しを作るのはここ1か所。⚠**元の面の表を書き換えない**(写しに上書きする)。
+   ⭐**違うのは3つ**=①**強さの目盛り** ②**敵の見た目(面ごとの色と淀み)** ③**面ごとの追加要素1つ**。
+   🎚⭐⭐**目盛り**(面①のナイトメアを10とした物差し)=
+     **⑥ 39→78 / ⑦ 66→133 / ⑧ 113→226 / ⑨ 192→384 / ⑩ 326→653**。
+     ⭐**⑥の1ステージ目が面⑤の悪夢(39)と同じ**(2026-08-11ユーザー指示「6面の1ステージ目から
+     5面の悪夢ぐらいの強さで始めて。かなり強めに」)=**面をまたいでも下がらない**。
+     ⚠**段の開き(spr)を1より小さくしてある**=①〜⑤とは逆で、**下の段ほど持ち上がる**
+       (=入口が高い)。⚠`spr` の下限を 0.8 まで開けてあるのはこのため。
+   ⚠⚠**強さは全部仮**=実機の手応えで詰める(掟は [[CLAUDE]] の「実測から」)。 */
+const LAP_N=5;/* 焼き増しの面の数 */
+/* 🔁**焼き増しの面か**(0=素の面 / 1=2周目)。⚠**地形と背景と敵はここで元の面へ読み替える** */
+const stgLap=si=>((si|0)>=LAP_N?1:0);
+const stgBase=si=>{const i=si|0;return i>=LAP_N?i-LAP_N:i;};
+/* 🎨(258)**2周目の面ごとの色**=敵の体をこの色へ寄せる+足元に同じ色の淀みを敷く。
+   ⚠**5面とも違う色**=どの焼き増し面に居るのかが敵の見た目で分かる。 */
+const LAP_COL=['#b0442e','#2f6fa8','#c2a03a','#7d3f8f','#4f8f45'];
+{const LAP=[
+  /* [名前, 副題, hpM, spr] ⚠hpM/spr は上の目盛りから逆算した値 */
+  ['廃線の深部','砂の下にもう一本の道があった',        7.97,.94],
+  ['深潮の港',  '港のさらに沖。潮がもう引かない',      13.58,.94],
+  ['高圧の稜線','鉄塔が生きている丘',                  23.08,.94],
+  ['飽食の胃袋','喰われた街の内側',                    39.21,.94],
+  ['腐海の最奥','沼の底。すべてが溶けていく',          66.69,.94]];
+ for(let i=0;i<LAP.length;i++){
+  const S=STAGES[i],L=LAP[i];
+  STAGES.push(Object.assign({},S,{n:L[0],sub:L[1],
+   hpM:TUNE('ST'+(i+6)+'_hpM',L[2],1,120,.01),spr:TUNE('ST'+(i+6)+'_spr',L[3],.8,3,.02),
+   lap:1,src:i}));
+ }
+}
 let STAGE=0;
 const stagePal=()=>(STAGES[STAGE]||STAGES[0]).pal;
 const stageZs=()=>(STAGES[STAGE]||STAGES[0]).zs;
@@ -12485,6 +12532,32 @@ function sclWet(hex,f){
   const x=(a>>s)&255,y=(b>>s)&255;return Math.round(x+(y-x)*f);};
  return '#'+[m(16),m(8),m(0)].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
+/* 🔁🎨⭐⭐(258)**焼き増しの面(⑥〜⑩)の敵は見た目を変える**(2026-08-11ユーザー指示
+     「焼き増しとは言ったけど、なにか分かりやすい1箇所とかでもいいから敵の見た目に変化つけて欲しい」)。
+   ⭐**変えるのは2つだけ**=①**体の色を面ごとの色へ寄せる**(全部の敵に一度に効く)
+     ②**背中に色付きの結晶(棘)を3本**生やす。⚠**面ごとに色が違う**ので、どの焼き増し面かも見て分かる。
+   ⚠**焼いた絵の中に入れる**(bakeZ の鍵に面を混ぜてある)=盤面で毎コマ描き足さないので重くならない。
+   ⚠**混ぜ切らない**(.34)=切ると14種の見分けが消えて同じ色の塊になる(🐟鱗で踏んだのと同じ穴)。 */
+let LAP_DRAW=0;/* 0=素の面 / 1〜5=その焼き増し面 */
+const LAPZ={};
+function lapTint(hex,li){
+ const a=parseInt(hex.slice(1),16),b=parseInt(LAP_COL[li-1].slice(1),16),f=.34,m=(s)=>{
+  const x=(a>>s)&255,y=(b>>s)&255;return Math.round((x+(y-x)*f)*.86);};/* ⚠一段くすませる(.86) */
+ return '#'+[m(16),m(8),m(0)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+/* 🔁背中の結晶(3本)。⚠**足元(y=0)を基準に体の高さから出す**=飛ぶ敵でも体から生える */
+function lapSpike(c,sc,li){
+ const C1=LAP_COL[li-1];
+ c.save();c.scale(sc,sc);
+ c.strokeStyle=INK;c.lineWidth=1.6/Math.max(.4,sc);
+ for(const g of [[-7,-30,7],[-1,-36,10],[5,-31,8]]){
+  c.fillStyle=C1;
+  c.beginPath();c.moveTo(g[0]-2.6,g[1]);c.lineTo(g[0],g[1]-g[2]);c.lineTo(g[0]+2.6,g[1]);c.closePath();
+  c.fill();c.stroke();
+  c.fillStyle='rgba(255,255,255,.55)';
+  c.beginPath();c.moveTo(g[0]-.8,g[1]-1.6);c.lineTo(g[0],g[1]-g[2]*.7);c.lineTo(g[0]+.8,g[1]-1.6);c.closePath();c.fill();}
+ c.restore();
+}
 function drawZombie(c,zi,x,y,dir,t,ph,o){
  pfTag('敵');
  o=o||{};
@@ -12501,6 +12574,9 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
     ⚠**表(ZOMBIES)を書き換えない**=写しを1つ作って覚えておく(毎コマ作ると無駄)。 */
  let Z=ZOMBIES[zi];
  if(SCL_ON&&Z.scl&&!pxOf(Z.id))Z=SCLZ[zi]||(SCLZ[zi]=Object.assign({},Z,{c:sclWet(Z.c)}));
+ /* 🔁(258)焼き増しの面の個体=**体の色を面ごとの色へ寄せる**(⚠🐟鱗の写しの後に掛ける) */
+ if(LAP_DRAW&&!pxOf(Z.id)){const k9=LAP_DRAW+'_'+zi;
+  Z=LAPZ[k9]||(LAPZ[k9]=Object.assign({},Z,{c:lapTint(Z.c,LAP_DRAW)}));}
  /* 🌑⭐**ナイトメアの敵は「①の敵の写し」**=ここで id を素の敵へ差し替える。
     ⚠**表(ZOMBIES)の id は変えない**(📖図鑑が id で覚えているため)=写しを作って覚えておく。
     ⚠**材質(装甲/鱗)と大きさと名前はナイトメア側の表が正**=素の敵の値で上書きしない。 */
@@ -20143,6 +20219,13 @@ const WJ_OUT=.18,WJ_STAY=1.5,WJ_BACK=.22;
      (u.d は据え置き=当たり判定・射程・旗の線は1つも変わらない。狼王の飛びかかりと同じ掟)。
    ⚠**RJ_HI は画面の外**まで=これより低いと「上から落ちてきた」に見えない。 */
 const RJ_DOWN=.17,RJ_HOLD=.30,RJ_BACK=.34,RJ_HI=620;
+/* 💥⭐(258)**流星墜拳で空に居るか**(=当たらない・狙われない)。
+   ⚠**判定はここ1か所**=敵の狙い(uPick)と被弾(dmgU)の両方から呼ぶ。 */
+function renAir(u){
+ if(!u||!u.hro)return false;
+ const U=UNITS[u.ui];if(!U||(U.base||U.id)!=='hRen')return false;
+ return (u.rjT!=null)||(u.ulW>0);
+}
 /* 💥流星墜拳の「絵の位置」。hx,hy=元の立ち位置 / 戻り切ったら null。
    ⚠**式はここ1か所**に持つ(撮る道具 test_shot.js の rj= からも呼ぶ)。 */
 function renDivePos(u,hx,hy){
@@ -21582,10 +21665,17 @@ function bakeU(ui){const key=''+ui;if(SPR.u[key])return SPR.u[key];
  const sc=(TSCALE[uTier(ui)-1]||1)*1.05,U9=UNITS[ui]||{};
  return SPR.u[key]=bakeSet(sc,(c,i)=>drawUnit(c,ui,0,0,1,i/SPRN*(2*Math.PI/10),0,{fld:1}),
   SPR_WIDE[U9.base||U9.id]||1);}
-function bakeZ(zi,elite){const key=zi+'_'+(elite?1:0);if(SPR.z[key])return SPR.z[key];
+/* 🔁(258)**焼き増しの面は別の絵として焼く**=鍵に面を混ぜる(混ぜないと素の面まで色が変わる) */
+function bakeZ(zi,elite){const lp=stgLap(STAGE)?(stgBase(STAGE)+1):0;
+ const key=zi+'_'+(elite?1:0)+'_'+lp;if(SPR.z[key])return SPR.z[key];
  const spd=(ZOMBIES[zi].sp>90?14:8),sc=ZOMBIES[zi].sc*(elite?1.4:1)*1.05;
  /* ⚠(124)`bake:1`=**焼いている最中の印**。エリートの紫の影はこの時だけ掛ける(盤面では掛けない) */
- return SPR.z[key]=bakeSet(sc,(c,i)=>drawZombie(c,zi,0,0,1,i/SPRN*(2*Math.PI/spd),0,{elite,bake:1}));}
+ return SPR.z[key]=bakeSet(sc,(c,i)=>{
+  LAP_DRAW=lp;
+  try{drawZombie(c,zi,0,0,1,i/SPRN*(2*Math.PI/spd),0,{elite,bake:1});
+   if(lp)lapSpike(c,ZOMBIES[zi].sc*(elite?1.4:1),lp);}
+  finally{LAP_DRAW=0;}/* ⚠**必ず下ろす**=下ろし忘れると図鑑やデッキの絵まで色が変わる */
+ });}
 function drawSpr(c,S,fi,x,y,flip){
  const im=S.f[fi];if(!im)return;
  c.save();c.translate(x,y);if(flip)c.scale(-1,1);
@@ -21915,7 +22005,7 @@ function normShares(){const T=G.tide;const alive=G.players.map((p,i)=>i).filter(
      (画面の水の色だけは出ない=既知の割り切り)。⚠倍率と長さは FLOOD_* の1か所。 */
 const FLOOD_SP=1.5,FLOOD_ELEC=1.5,FLOOD_LEN=12;
 function floodStep(dt){
- if(!(G&&G.pve&&STAGE===1&&!isBns())){if(G)G.flood=0;return;}
+ if(!(G&&G.pve&&stgBase(STAGE)===1&&!isBns())){if(G)G.flood=0;return;}
  if(G.flood>0){G.flood-=dt;
   if(G.flood<=0){G.flood=0;try{toast('🌊 潮が引いた');}catch(e){}}
   return;}
@@ -23408,6 +23498,11 @@ function deployUnit(C,ui){
 }
 function dmgU(C,u,d2){
  if(u.dead)return;
+ /* 💥⭐(258)**流星墜拳で空に居る間は当たらない**(2026-08-11ユーザー
+    「レンの必殺技で飛んでる時は相手の攻撃が当たらないようにして」)。
+    ⚠**空に居る2つの間**=①詠唱で真上へ消えている間(ulW) ②落ちて戻るまで(rjT)。
+    ⚠**着地して殴っている一拍も含む**=そこで殴られると「無敵で降りてきて着地で死ぬ」になる。 */
+ if(renAir(u))return;
  if((C.uOv||0)>0)d2*=UOV_DMG;/* ⭐暁の王『暁の号令』=ユニットの被ダメージを減らす(英雄も含む) */
  u.hp-=d2;u.hitT=.1;
  if(u.hp<=0){u.dead=true;addFx(C,'splat',u.px,u.py,'',{gray:1});
@@ -24353,6 +24448,8 @@ function campStep(C,dt,wave){
    /* すり抜け個体は普通のユニットでは止められないが、hookを持つユニットだけは引きずり出して足止めできる */
    const hk=uHook(u.ui);
    if(z.noblock&&!hk)continue;
+   /* 💥(258)流星墜拳で空に居る間は**止められもしない**(足止めの枠を空で埋めない) */
+   if(renAir(u))continue;
    /* 1体が同時に抱えられる数。⚠すり抜け敵が重なると鎖使いが3体で埋まり、4体目から素通りしていた
       (普通の敵は他のユニットへ回れるが、すり抜け敵は鎖使いにしか止められないため逃げ場が無い。2026-07-25修正) */
    if(u.eng>=(z.noblock&&hk?Math.max(ENG_MAX,hk):ENG_MAX))continue;
@@ -25501,7 +25598,11 @@ function newGame(specs,myIdx){
 const RPT_X=TUNE("RPT_X",.72,.2,4,.05);/* 🧬配布の全体倍率。⚠触ったら検査 checkGain の物差しで確かめ直すこと */
 /* 🧬⭐(204h)**面を初めて落とした時の上乗せ**(面ごと)。⚠**実測で決める**=手で書き換えない。
    ⚠足りない面は最後の値を使う(面③〜⑤を足す時はここに1つずつ足す)。 */
-const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10),TUNE("STG_GEN3",560,0,8000,10),TUNE("STG_GEN4",760,0,9000,10),TUNE("STG_GEN5",1000,0,12000,10)];/* 🥩(229f)④ / 💨(252)⑤ */
+/* 🎉**面を初めて制覇した時にまとめて入る🧬**。⚠**面が増えたら行を足す**(足りないと最後の行が使われる)。
+   🔁(258)⑥〜⑩(焼き増し)は1面ごとに約3倍=実入り(STG_X)の伸びに合わせてある。 */
+const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10),TUNE("STG_GEN3",560,0,8000,10),TUNE("STG_GEN4",760,0,9000,10),TUNE("STG_GEN5",1000,0,12000,10),/* 🥩(229f)④ / 💨(252)⑤ */
+ TUNE("STG_GEN6",1300,0,20000,10),TUNE("STG_GEN7",1700,0,26000,10),TUNE("STG_GEN8",2200,0,34000,10),
+ TUNE("STG_GEN9",2900,0,44000,10),TUNE("STG_GEN10",3800,0,58000,10)];
 function metaGainOf(d9,stg,wave,kills){
  /* ⚠末尾=🚌ボーナス面。⭐(204h)**🚌を .90→1.05 へ上げた**(ユーザー「拠点開拓は上げてもいい」)。
     ⚠**新兵(1.37)は上げない**=すでに一番実入りが良く、そこを上げると
@@ -25514,8 +25615,13 @@ function metaGainOf(d9,stg,wave,kills){
  /* 🥩(229f)④の行=段3の棚(塔5+兵科3)は値段が指数で跳ねるので、③の約3.4倍が釣り合いの目安。
     ⚠数字は checkGain の出力(面ごとの釣り合い x0.75〜1.55)を見て合わせた=手で動かす時も必ず実測から */
  /* 🧪(238g)⑤の行=④の約3.0倍(段4の棚は値段がさらに跳ねる)。⚠数字は checkGain の出力を見て合わせる */
+ /* 🔁(258)**面⑥〜⑩(焼き増し)の行**=1面ごとに約3倍(①〜⑤の伸び方をそのまま延長)。
+    ⚠**進むほど増やすこと**(検査 checkGain が「前の拠点より減っていないか」を見張る)。
+    ⚠数字は仮=実機の手応えで詰める。 */
  const STG_X=[null,[4.8,4.25,3.8,3.35,2.95,2.65],[9.6,8.5,7.6,6.7,5.9,5.3],[32,28.5,25.5,22.5,20,17.9],
-  [96,85.5,76.5,67.5,60,53.7]];
+  [96,85.5,76.5,67.5,60,53.7],
+  [210,187,167,148,131,117],[452,403,360,318,283,253],[972,866,775,683,608,543],
+  [2090,1862,1666,1469,1306,1168],[4494,4004,3582,3159,2809,2512]];
  const stgX=(d9!==BNS_D&&STG_X[stg])?(STG_X[stg][d9]||1):1;
  return Math.max(1,Math.round((wave*25+kills*1.4)*mult*stgX));
 }
@@ -25930,7 +26036,7 @@ function bgDrawL1(c,tod,dk,PAL,VL,VR,VT,VB){
  for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
  /* 💨(252)⑤腐海の湿地帯=**溜まり水**を地面に敷く。⚠**焼き込みに入る層なので動かさない**
     (泡は動くので別。下の `drawSwampBub`)。⚠道の上には置かない=道は別の層が上に塗る。 */
- if(STAGE===4)for(const p of SWAMP){
+ if(stgBase(STAGE)===4)for(const p of SWAMP){
   c.fillStyle='rgba(46,68,44,.30)';
   c.beginPath();c.ellipse(p[0],p[1],p[2],p[3],p[4],0,7);c.fill();
   c.fillStyle='rgba(150,186,110,.10)';/* 水面の照り(中心から少しずらす) */
@@ -25958,7 +26064,7 @@ function drawSwampBub(c,t){
 /* 🪶⭐(222)**地平線のシルエット**=①②はビルの廃墟 / ③送電鉄塔の丘は**稜線+高圧鉄塔**(ユーザー決定の絵面)。
    ⚠描く場所が2か所ある(bgDrawL2=焼く方 と 生描きの方)ので**必ずここを通す**(片方だけ直すと食い違う) */
 function bgHorizon(c,tod,PAL){
- if(STAGE===2){
+ if(stgBase(STAGE)===2){
   const rgY=x=>110-(14+Math.sin(x*.006)*10+Math.sin(x*.013+2)*7);
   c.fillStyle=mix(PAL.bld,'#1a2015',.4+tod*.4);
   c.beginPath();c.moveTo(-200,110);
@@ -25979,7 +26085,7 @@ function bgHorizon(c,tod,PAL){
      c.beginPath();c.moveTo(xp,y1);c.quadraticCurveTo((xp+x)/2,Math.max(y1,y2)+16,x,y2);c.stroke();}
     c.globalAlpha=1;}}
   return;}
- if(STAGE===3){/* 🥩(229g)④飽食の市街=**密集した廃ビル群**。①②の「まばらな遠いビル」との差は
+ if(stgBase(STAGE)===3){/* 🥩(229g)④飽食の市街=**密集した廃ビル群**。①②の「まばらな遠いビル」との差は
     **密度と高さ**=壁のように途切れない2層+欠けた頭+傾いて寄りかかる1本+屋上の水槽。
     ⚠等間隔・同じ高さにしない(ハリボテ4原因)。⚠窓は「消えた窓」をまばらに(灯すと人が居る話になる) */
   /* 奥の層(薄い)=途切れないビルの壁 */
@@ -26014,7 +26120,7 @@ function bgHorizon(c,tod,PAL){
    c.beginPath();c.moveTo(a[0],112-a[1]);c.lineTo(a[0],112-a[1]-13);c.stroke();
    c.beginPath();c.moveTo(a[0]-4,112-a[1]-9);c.lineTo(a[0]+4,112-a[1]-9);c.stroke();}
   return;}
- if(STAGE===4){/* 💨(252)⑤腐海の湿地帯=**沼に半分沈んだ街**+立ち枯れた木の林+低く這う霧。
+ if(stgBase(STAGE)===4){/* 💨(252)⑤腐海の湿地帯=**沼に半分沈んだ街**+立ち枯れた木の林+低く這う霧。
     ⭐①②のビル・③の鉄塔・④の廃ビル群と分ける決め手は**「水に浸かって傾いている」**こと=
       **屋根の下を水平の水面線で切る**と、高さの違うビルが全部同じ線で止まって「沈んでいる」に見える。
     ⚠**立ち枯れの木は等間隔・同じ高さにしない**(ハリボテ4原因)。⚠**窓は灯さない**(人が居る話になる) */
@@ -26315,7 +26421,7 @@ function renderCamp(C,t){
     ⚠動く(濃さが変わる)ので焼き込みには入れない */
  /* 💨(252)⑤の気泡=溜まり水から上がり続ける(副題「気泡が上がり続ける」そのもの)。
     ⚠🚌開拓便では出さない(あちらは別の面) */
- if(STAGE===4&&!C.bus&&FXLV>0)drawSwampBub(c,t);
+ if(stgBase(STAGE)===4&&!C.bus&&FXLV>0)drawSwampBub(c,t);
  if(C.gas)drawGas(c,C,t);
  /* 🛞轍と🩸血だまり(🚌開拓便)。⚠**地面の上・廃墟の下**=踏まれている物なので一番下に敷く */
  if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
@@ -26630,7 +26736,12 @@ function renderCamp(C,t){
   }
   /* ⚠**d(進んだ距離)を渡す**=ドット絵のコマ送りを距離で回すため(足が滑らない) */
   else{const o9={sent:z.sent,lg:z.lgT,elite:z.elite,d:z.d,vw:z.vw};
-   drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,o9);
+   /* 🔁(258)**直に描く時も面の色を掛ける**=掛けないと殴られた一瞬だけ色が戻る */
+   LAP_DRAW=stgLap(STAGE)?(stgBase(STAGE)+1):0;
+   try{drawZombie(c,z.zi,z.px,z.py,z.dr,t,z.ph,o9);
+    if(LAP_DRAW){c.save();c.translate(z.px,z.py);if((z.dr||1)<0)c.scale(-1,1);
+     lapSpike(c,ZOMBIES[z.zi].sc*(z.elite?1.4:1),LAP_DRAW);c.restore();}}
+   finally{LAP_DRAW=0;}
    if(fl9>0)FLQ9.push({zi:z.zi,x:z.px,y:z.py,dr:z.dr,ph:z.ph,o:o9,a:fl9*.7});}
   /* 🔴ナイトメアの目の余韻(⚠溜めるだけ=吐き出しはループの外)。⚠止まっている間は出さない */
   if(ZOMBIES[z.zi].nm&&!(z.frzT>0)&&!(z.stnT>0))nmEyeFx(z);
@@ -28289,7 +28400,9 @@ function openBM(si){
  bm.querySelectorAll('[data-th]').forEach(cc=>{cc.getContext('2d').drawImage(THUMBS[+cc.dataset.th],0,0);});
  bm.querySelectorAll('[data-bd]').forEach(b=>{b.onclick=()=>{actBuild(si,+b.dataset.bd);closeBM();};});
  bm.querySelectorAll('.bm-us').forEach(b=>{b.onclick=()=>{actUp(si,b.dataset.us);openBM(si);};});
- const bs=$('bm-sell');if(bs)bs.onclick=()=>{actSell(si);closeBM();};
+ /* 💥⭐(258)**売る前に必ず1回聞く**(2026-08-11ユーザー指示)=誤タップで塔が消えるのを止める。
+    ⚠**取り消せない**(建て直すと⚙️が満額かかる)ので、戻ってくる額も窓に出す。 */
+ const bs=$('bm-sell');if(bs)bs.onclick=()=>{askSell(si);};
  const bg=$('bm-grd');if(bg)bg.onclick=()=>{actGrade(si);openBM(si);};
  /* 🔩(229i)ハープーンのモード切替=その1台の旗を反転して窓を描き直すだけ */
  const bhm=$('bm-hmd');if(bhm)bhm.onclick=()=>{const t9=m.towers[si];if(t9)t9.md=t9.md===1?0:1;openBM(si);};
@@ -28532,6 +28645,19 @@ function actGrade(si){
  if(MODE==='client'){const m=meV(),tw=m.towers[si];if(!canGrade(m,tw)||m.scrap<T_GCOST(tw.ti))return;
   sendCmd({t:'c',a:'gd',si});CS.meN.scrap-=T_GCOST(tw.ti);const ec9=TOWERS[tw.ti].type==='eco';tw.ti=T_GRD(tw.ti);if(ec9)tw.us=newUs();sfx.build();return;}
  if(G)gradeTower(G.players[G.myIdx],si);}
+/* 💥⭐(258)**売る前の確認**(2026-08-11ユーザー指示「全タレットは売却時は売却しますか? はい いいえ」)。
+   ⚠**塔の名前と戻ってくる⚙️を出す**=「何を売るのか」「いくら戻るのか」が押す前に読める。
+   ⚠**戻る額の式は sellTower と同じ 60%**(2か所で別々に持たない)。 */
+let SELL_SI=-1;
+function askSell(si){
+ const m=meV(),tw=m&&m.towers&&m.towers[si];
+ if(!tw){closeBM();return;}
+ SELL_SI=si;
+ const T=TOWERS[tw.ti]||{},back=Math.round((tw.spent||0)*.6);
+ const d=$('sell-dsc');
+ if(d)d.innerHTML=IC('<b>'+(T.n||'タレット')+'</b> を売ります。<br>⚙️<b>'+fmt(back)+'</b> が戻ります(かけた分の60%)。');
+ $('md-sell').classList.add('on');
+}
 function actSell(si){if(MODE==='client'){const tw=meV().towers[si];if(!tw)return;if(COOP&&(tw.own||0)!==CS.myJ)return;sendCmd({t:'c',a:'sl',si});CS.meN.towers[si]=null;sfx.sell();}
  else sellTower(G.players[G.myIdx],si);}
 function actSlot(si){
@@ -29550,7 +29676,7 @@ function bnsWobAt(u,si){
 }
 function bnsLanePts(){
  /* ⚠**うねる面は点を細かく打つ**=7点のままだと折れ線が波を跨いで、絵と当たりが両方ずれる */
- const si=STAGE|0,pts=[],N=(si===1)?260:7;
+ const si=stgBase(STAGE),pts=[],N=(si===1)?260:7;
  for(let i=0;i<=N;i++){
   const u=i/N;
   pts.push([BNS_CX+bnsWobAt(u,si),BNS_GOALY+(BNS_STARTY-BNS_GOALY)*u]);
@@ -29591,7 +29717,7 @@ function loadBonus(si){
     ⚠⚠**`BNS_CX`(道の中心)は動かさない**=道の座標を出している所が山ほどあるので、
       中心を動かすと全部ずれる。⭐**広げるのは右端(`MAPW`)だけ**にすると1か所で済む。
     ⚠寄り具合の基準は `MW` のままなので、広げても「画面に見える広さ」は変わらない。 */
- BSEA=(STAGE===1)?1:0;
+ BSEA=(stgBase(STAGE)===1)?1:0;
  MAPW=BNS_W+(BSEA?BNS_SEA_W:0);MAPH=BNS_H;
  /* ⭐**道は1本だけ**(2026-08-02(24))=上(到着)から下(出発)へ引く。
     ⚠**`d` が増える向き=上→下**なので、ゾンビは進行方向の先から下りてくる。 */
@@ -31817,7 +31943,8 @@ const EX_KEEP=5200;    /* 🧟通り過ぎただけ残さない距離。⚠⚠�
 const EX_SPAWN=2600;   /* 🧟だまりを湧かせ始めるバスからの距離(⚠遠すぎると盤面が重い) */
 /* 面の番号 → その面の個性。⚠**面の番号だけで決める**(下の `bnsGimMake` は地形を作る時に呼ばれ、
    その時点では試合(G)がまだ立っていないことがある=`isBns()` を見ると何も置かれない。1度踏んだ) */
-const gimOf=si=>si===2?'wire':(si===3?'pop':(si===4?'gas':''));
+/* 🔁(258)焦き増しの面(⑥〜⑩)は**元の面と同じ個性**(道も同じものを使うため) */
+const gimOf=si=>{const i=stgBase(si);return i===2?'wire':(i===3?'pop':(i===4?'gas':''));};
 /* いまの面の個性(🚌開拓便の試合中だけ)。''=無し */
 const gimKind=()=>(G&&G.pve&&isBns())?gimOf(STAGE):'';
 /* ⭐置き場を作る(`bnsMap` の最後から呼ぶ)。⚠**乱数は種から**(`rd`)=毎回同じ道になる */
@@ -36432,7 +36559,18 @@ function gcStart(res){
     ⚠★4でも出していたので、**一番の盛り上がりが空振りする**ことがあった。
     ⭐これで★5の合図は3つとも「確定」で揃う=🌈虹の文字 / ✨黄金のロブスター / 🥇どんでん返し。 */
  const twist=best>=5&&rl9>=1/3&&rl9<2/3;
- GC={res,i:0,ph:'aim',t:0,best,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,snd:{},
+ /* ⭐⭐(258)**跡地に出す★は「下限」にした**(2026-08-11ユーザー
+      「あそこに表示されるのは下限のレア度にしよう。★3だったら★3以上が当たってる、って感じで。
+       でも★5確定演出の時は今まで通り★5でおk」)。
+    ⚠それまでは**その回の一番いい結果**を出していたので、めくる前に答えが割れて面白くなかった。
+    ⭐**引いた英雄の中で一番低いレア度**を出す=「これ以上の物が必ず入っている」という読み方になる。
+    ⚠**英雄以外(💎や🔧)は数えない**=混ぜると下限がいつも0になって、示唆が死ぬ。
+    ⚠**★5確定の合図が出ている回(🌈虹の文字 / ✨黄金のロブスター / 🥇どんでん返し)は★5のまま**
+      =あちらは「★5が必ず入っている」という約束なので、下限で上書きすると嘘になる。 */
+ const rkA=res.map(o=>gcRank(o)).filter(r=>r>=1);
+ const flo=rkA.length?Math.min.apply(null,rkA):0;
+ const sug=(fc>=2||lob||twist)?5:flo;
+ GC={res,i:0,ph:'aim',t:0,best,sug,tw:twist?0:tw,zk:twist?0:tw,hit:0,hit2:0,hit3:0,w:760,h:360,dpr:1,sk:null,snd:{},
   night:twist?false:night,fc:twist?0:fc,lob:lob?1:0,twist:twist?1:0};
  cv.classList.add('on');gcFit();
  if(sfx.heal)sfx.heal();
@@ -37017,7 +37155,8 @@ function gcDraw(){
       (同時に出すと★と文字が重なって、どちらも読めなくなっていた) */
    const gk=clamp((hk-.32)/.5,0,1);
    if(gk>0){
-    const rk=GC.best,LC=GC_COL[rk]||GC_COL[0],ry=ZY-24-gk*20;
+    /* ⚠(258)**ここは「下限」**(GC.sug)=最高レアを出すと、めくる前に答えが割れる */
+    const rk=(GC.sug!=null?GC.sug:GC.best),LC=GC_COL[rk]||GC_COL[0],ry=ZY-24-gk*20;
     /* 地面から立ち上る光の柱 */
     c.globalAlpha=gk*.30;c.fillStyle=LC[0];
     c.beginPath();c.moveTo(ZX-15*gk,ZY+2);c.lineTo(ZX-6*gk,hz-30);
@@ -37030,7 +37169,7 @@ function gcDraw(){
     /* ★の数と一言(ここが結果の示唆) */
     c.globalAlpha=gk;
     c.fillStyle=LC[0];c.font='900 17px '+FF;
-    c.fillText(rk>=1?RK_S[rk]:'—',ZX,ry-28);
+    c.fillText(rk>=1?(RK_S[rk]+(rk<5?' 以上':'')):'—',ZX,ry-28);
     c.fillStyle=PANE;c.font='900 12px '+FF;
     c.fillText(rk>=4?'すごい気配…!!':rk>=2?'いい気配…!':rk>=1?'何かいる…':'…手応えなし',ZX,ry+34);
     c.globalAlpha=1;
@@ -40176,6 +40315,34 @@ const MAPND=[
  /* 🌑💨(252)⑤専用のナイトメア6体が入ったので lock3 を外した(③④と同じ道すじ) */
  {stg:4,d:5,n:'腐海の胎',      s:'🌑沼の底で膨れ上がった何か',    x:.88,y:.55,nm:1}
 ];
+/* 🔁⭐⭐(258)**面⑥〜⑩のピン**(焼き増しの面。⚠**名前は仮**=④⑤と同じくユーザーに見せて直す)。
+   ⭐**置き場所は元の面と同じ**=地形も元の面のものを使うので、ピンだけずらすと道から外れる。
+   ⚠⚠**面を足したら同じ回に必ずピンも足す**((243)で踏んだ掟。検査 checkMapPins が見ている)。 */
+{const LAPN=[
+  ['砂鉄の坑口','廃線の深部','崩れた側道','砂の底','鉄骨の墓場','深部の終着駅'],
+  ['沖の防波堤','深潮の港','満潮の県道','沈没船の墓場','黒潮の埠頭','深潮の底'],
+  ['変電所の裏手','高圧の稜線','落雷の道','送電網の心臓','焼けた鉄塔群','雷雲の巣'],
+  ['内環の門','飽食の胃袋','腸の大通り','肉の回廊','脂の沼','胃の最奥'],
+  ['沈んだ堤','腐海の最奥','泥濘の県道','毒気の底','溶けた街','腐海の心臓']];
+ const LAPS=[
+  ['さらに深い坑道へ潜る','砂の下に埋もれたもう一本の道','🚌開拓便=崩れた側道を抜ける',
+   '光の届かない砂の底','錆びた鉄骨が積み上がる','🌑二度目の終着駅。何かが待っている'],
+  ['沖へ出る最初の足場','潮が引かなくなった港','🚌開拓便=満潮の県道を走る',
+   '沈没船が積み重なる墓場','黒い潮が押し寄せる埠頭','🌑深潮の底で目覚めたもの'],
+  ['変電所の裏から登り直す','電気を帯びた鉄塔の稜線','🚌開拓便=落雷の道を駆ける',
+   '送電網の中枢','焼け落ちた鉄塔の群れ','🌑雷雲そのものが巣になっている'],
+  ['市街の内側への門','喰われた街の内側','🚌開拓便=腸のような大通り',
+   '肉の壁が続く回廊','脂が溜まった沼','🌑胃の最奥で膨れ続けるもの'],
+  ['崩れた堤から沼へ','沼の底へ沈んでいく','🚌開拓便=泥濘の県道を突っ切る',
+   '毒気が淀む底','溶けかけた街の残骸','🌑腐海の心臓。すべての元']];
+ for(let i=0;i<LAP_N;i++){
+  const src=MAPND.filter(n=>n.stg===i);
+  for(let k=0;k<src.length;k++){
+   const o=src[k],nd={stg:LAP_N+i,d:o.d,n:LAPN[i][k],s:LAPS[i][k],x:o.x,y:o.y};
+   if(o.bns)nd.bns=1;if(o.nm)nd.nm=1;
+   MAPND.push(nd);}
+ }
+}
 let MSEL=-1,MBUS=null;
 /* 🗺**いま開いている面の地図**。⚠**MSEL(選んでいる拠点)とは別**=別の面を覗いている間も選択は残る */
 let MPAGE=0;
@@ -40200,7 +40367,8 @@ function mapPage(pg){
 function mapHd(){
  const t9=$('map-title');
  /* 🗺(255)面の名前の下に**その面の材質と弱点**を1行(ユーザー指示)。⚠中身は stgWkLine が敵から数える */
- if(t9)t9.innerHTML=IC('①②③④⑤'[MPAGE]+' '+((STAGES[MPAGE]||{}).n||'')
+ /* 🔁(258)**面は10ある**＝5つしか並べていなかったので⑥以降が undefined になっていた */
+ if(t9)t9.innerHTML=IC(('①②③④⑤⑥⑦⑧⑨⑩'[MPAGE]||'')+' '+((STAGES[MPAGE]||{}).n||'')
   +(stgWkLine(MPAGE)?'<span class="mwk">'+stgWkLine(MPAGE)+'</span>':''));
  for(const q of [['bt-map-prev',MPAGE>0],['bt-map-next',MPAGE<mapPageN()-1]]){
   const b=$(q[0]);if(b&&b.style)b.style.visibility=q[1]?'':'hidden';}
@@ -40262,6 +40430,8 @@ function mapXY(nd,w,h){return[nd.x*w,(0.08+nd.y*.78)*h];}
    ⭐**紙(セピア)・繊維・縁の焼けは3面とも共通**=同じ地図帳の別のページに見える。
    ⚠**乱数は種から回す**(毎フレーム同じ絵。Math.random は使わない)。 */
 function mapBg(c,w,h,dpr,pg){
+ /* 🔁(258)焦き増しの面(⑥〜⑩)は**元の面の地形**を使う(拠点の位置も元の面と同じ) */
+ pg=stgBase(pg);
  c.fillStyle='#ddd3bc';c.fillRect(0,0,w,h);
  /* 紙の繊維(まだらな点々) */
  {let s9=7+pg*31;const R9=()=>(s9=(s9*16807)%2147483647)/2147483647;
@@ -40566,6 +40736,10 @@ try{
  };
  $('bt-luck-yes').onclick=()=>{$('md-luck').classList.remove('on');luckUse();};
  $('bt-luck-no').onclick=()=>{$('md-luck').classList.remove('on');};
+ /* 💥(258)売却の確認。⚠**押した枠を覚えておく**=窓を開けている間に強化ウィンドウを閉じるため */
+ $('bt-sell-yes').onclick=()=>{$('md-sell').classList.remove('on');
+  if(SELL_SI>=0){actSell(SELL_SI);SELL_SI=-1;}closeBM();};
+ $('bt-sell-no').onclick=()=>{$('md-sell').classList.remove('on');SELL_SI=-1;};
 }catch(e){}
 /* ---- 🏠ホーム ---- */
 function renderHome(){
