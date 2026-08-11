@@ -1435,8 +1435,9 @@ body.itc #rotatehint .rh-p{display:block}
 body.itc{overflow-x:hidden}
 body.itc #topbar{width:100%;max-width:100%;box-sizing:border-box;flex-wrap:wrap;row-gap:5px}
 body.itc #wavebadge{min-width:0}
-body.itc #bstick{width:108px;height:108px}
-body.itc #bstick i{width:50px;height:50px;margin:-25px 0 0 -25px}
+/* 🎮⭐⭐(263)**迎撃便にスティックは出さない**(2026-08-11ユーザー「操作性をもっと反応性をよく、
+   シンプルに」)=**画面をなぞった所へバスが来る**直操作にしたので、つまみは邪魔にしかならない。 */
+body.itc #bstick{display:none!important}
 body.itc #bnitro{width:92px;height:92px}
 #errbox{position:fixed;left:0;right:0;bottom:0;background:#900;color:var(--pane);font-size:11px;padding:6px;z-index:99;display:none;white-space:pre-wrap}
 .center{text-align:center}
@@ -28876,8 +28877,9 @@ cv.addEventListener('pointerdown',e=>{
  /* 🎒⭐**走る前の流れ(選択/ミニゲーム/強化)は盤面のタップを丸ごと横取りする**(2026-08-02(43))。
     ⚠**建設メニューへ渡さない**=この面に建てる物は無いし、渡すと札の裏で別の物が開く。
     ⚠**画面座標も渡す**=札は画面の割合で置いてあるので、世界座標では当たりが出せない。 */
- /* 🚌🔫**迎撃便は盤面を押しても何も起きない**=操作はスティックと🔥だけ(建設メニューへ渡さない) */
- if(G&&G.itc)return;
+ /* 🚌🔫🎮(263)**迎撃便は盤面をなぞってバスを動かす**(⚠建設メニューへは渡さない) */
+ if(G&&G.itc){try{if(itcAimAt(e)){ITC_DRAG=e.pointerId;
+  try{cv.setPointerCapture&&cv.setPointerCapture(ITC_DRAG);}catch(x){}}}catch(x){}return;}
  if(G&&G.bpre){const r9=cv.getBoundingClientRect();
   try{bnsPreTap((e.clientX-r9.left)*DPR,(e.clientY-r9.top)*DPR,mx,my);}catch(x){}
   return;}
@@ -28929,7 +28931,13 @@ function slotHit(mx,my){
   const d=dist(mx,my,SLOTS[si][0],SLOTS[si][1]);if(d<hb){hb=d;hit=si;}}
  return hit;
 }
-cv.addEventListener('pointermove',e=>{if(AIM||FLAGAIM)aimPos=evtToMap(e);});
+/* 🎮(263)迎撃便でなぞっている指の番号(⚠**1本目だけ**を追う=2本目に持っていかれない) */
+let ITC_DRAG=null;
+cv.addEventListener('pointermove',e=>{
+ if(ITC_DRAG!=null&&e.pointerId===ITC_DRAG){try{itcAimAt(e);}catch(x){}return;}
+ if(AIM||FLAGAIM)aimPos=evtToMap(e);});
+for(const k9 of ['pointerup','pointercancel','pointerleave','lostpointercapture'])
+ cv.addEventListener(k9,e=>{if(ITC_DRAG!=null&&e.pointerId===ITC_DRAG)ITC_DRAG=null;});
 /* ⭐🚌バスのバーチャルスティック(2026-08-02)。
    ⚠**指を離したら必ず0へ戻す**(pointerleave/cancel も拾う)=入れっぱなしだと壁に貼り付く。
    ⚠**setPointerCapture** を使う=枠の外まで指を動かしても追従する(スティックの外で止まらない)。
@@ -32623,12 +32631,37 @@ const BUP=[
  {k:'nt', r:0,ic:'🔥',n:'ニトロ増槽',d:'満タンで 0.6秒 長く吹ける',mx:4,c:[45,90,170,290]},
  {k:'ram',r:1,ic:'🛡',n:'排障器',    d:'ひき殺す力 +20%',         mx:5,c:[30,60,110,190,300]},
  {k:'grd',r:1,ic:'🦿',n:'踏破',      d:'しがみつかれても遅くなりにくい -18%',mx:4,c:[50,100,190,320]},
- {k:'crw',r:2,ic:'👥',n:'乗員',      d:'コンボが切れるまで +0.3秒',mx:4,c:[40,80,150,260]},
+ {k:'crw',r:2,ic:'👥',n:'乗員',      d:'コンボが切れるまで +0.3秒',mx:4,c:[40,80,150,260],both:1,io:7},
  {k:'kit',r:2,ic:'🍖',n:'炊き出し',  d:'ニトロが早く溜まる +18%', mx:4,c:[40,80,150,260]},
  /* ⚡(226e)「計器」は意味不明とユーザー判定→**そのまま「スコア倍率」**に改名(効き目は前から
     ⚡スコア全体に掛かっている=bnsScoreの1か所。名前と説明だけが分かりにくかった) */
- {k:'gau',r:2,ic:'⚡',n:'スコア倍率',d:'⚡スコアが +8% 増える',   mx:4,c:[60,120,230,380]}
+ {k:'gau',r:2,ic:'⚡',n:'スコア倍率',d:'⚡スコアが +8% 増える',   mx:4,c:[60,120,230,380],both:1,io:8},
+ /* 🚌🔫⭐⭐⭐(262)**ここから下は迎撃便(面⑥〜⑩)にだけ出る**(2026-08-11ユーザー決定
+    「**バスの性能強化=タレットの性能強化 / 装備の解放=タレットの新種解放**」)。
+    ⚠⚠**表は1つのまま**=買った物(`META.bup`)も物資も走る便と共通の1つ。
+      `itc:1`=迎撃便だけ / `both:1`=どちらにも出す / 印なし=走る便だけ。
+    ⚠**io**=迎撃便で並べる順(表の並びは走る便の都合で決まっているので、そのままだと読み順が悪い)。
+    ⚠⚠**新しい行は必ず末尾に足す**=`BUP[0]` を見ている検査がある。
+    ⚠**数字は全部仮**(実機の手応えで詰める)。 */
+ {k:'twa', r:0,ic:'🔫',n:'砲の火力',    d:'タレットの攻撃力 +12%',      mx:6,c:[35,70,130,220,340,500],itc:1,io:1},
+ {k:'twr', r:0,ic:'⏱',n:'装填',        d:'タレットの撃つ間隔 -8%',     mx:5,c:[45,90,170,290,440],   itc:1,io:2},
+ {k:'twg', r:1,ic:'🎯',n:'照準',        d:'タレットの届く距離 +8%',     mx:4,c:[40,80,150,260],       itc:1,io:3},
+ {k:'hull',r:1,ic:'🛡',n:'装甲板',      d:'バスの耐久 +12%',            mx:5,c:[35,70,130,220,340],   itc:1,io:4},
+ {k:'mob', r:2,ic:'🏎',n:'横の足',      d:'左右に動く速さ +8%',         mx:4,c:[40,80,150,260],       itc:1,io:5},
+ {k:'rcd', r:2,ic:'🔥',n:'急発進の整備',d:'🔥が溜まるのが 10% 早い',    mx:4,c:[50,100,190,320],      itc:1,io:6}
 ];
+/* ⭐**その便に出す🔧性能の行だけ**(⚠添字は BUP のまま返す=買う側も描く側も同じ物を見る) */
+function bupIx(){
+ const it=itcOn(),L=[];
+ for(let i=0;i<BUP.length;i++){const u=BUP[i];
+  if(it?!(u.itc||u.both):!!u.itc)continue;L.push(i);}
+ if(it)L.sort((a,b)=>((BUP[a].io|0)-(BUP[b].io|0)));
+ return L;
+}
+/* ⭐**つまみの並び**=`null`=🔧性能 / 数字=`BEQ_TB` の添字。⚠**便で中身が変わる**
+   (走る便=🔧性能/🚌車体/⚔装備 ・ 迎撃便=🔧性能/🔫砲座)。
+   ⚠⚠**描く側・押す側・検査が必ずこの1本から引く**(2か所に書くと必ず食い違う)。 */
+const bnsTabL=()=>itcOn()?[null,2]:[null,0,1];
 /* ⚔⭐⭐⭐**装備**(2026-08-02(44)ユーザー「バスの前面に回るのこぎりブレードみたいなやつとか、
    そういう爽快感がまずバス強化がほしい 別枠のUIで」)。
    ⚠⚠**「どれか1つを選ぶ」ではない**(ユーザー明言)=**買った物がどんどん増えていく**。
@@ -32656,7 +32689,7 @@ const BUP=[
 /* ⚠⚠**つまみの名前は「知らない言葉」を使わない**(2026-08-02(64)ユーザー「艤装ってなんだ
    わかりやすい言葉にしてくれ」)=**❌艤装**は船の言葉で伝わらなかった。
    ⭐**ユーザーが使った言葉をそのまま使う**(「ノコとかの**装備**をつける」)。 */
-const BEQ_TB=[{ic:'🚌',n:'車体'},{ic:'⚔',n:'装備'}];
+const BEQ_TB=[{ic:'🚌',n:'車体'},{ic:'⚔',n:'装備'},{ic:'🔫',n:'砲座'}];
 const BEQ=[
  /* ===== 🚌車体タブ(tb:0)=**車体そのものをいじる物**(エンジン・増槽・大きさ・内張り) ===== */
  /* 💨(226h)ユーザー「効果がよくわからない」→ア案=**効きを派手にして説明を直す**(1.6→2.3倍) */
@@ -32687,7 +32720,26 @@ const BEQ=[
  {k:'zap',  tb:1,r:2,ic:'⚡',n:'電磁バンパー',    d:'ひいた時、たまに周りへ感電',  c:320},
  {k:'gun',  tb:1,r:2,ic:'🔫',n:'ルーフガン',      d:'前を撃ち抜く(並んだ敵ごと)',  c:520},
  /* 🔆(226e)ルーフガンの進化(ユーザー「ルーフガンの次にビーム砲を追加」)=同じ銃座がビームになる */
- {k:'beam', tb:1,r:2,ic:'🔆',n:'ビーム砲',        d:'銃座がビームに進化(太く・重い一撃)',c:780}
+ {k:'beam', tb:1,r:2,ic:'🔆',n:'ビーム砲',        d:'銃座がビームに進化(太く・重い一撃)',c:780},
+ /* ===== 🔫砲座タブ(tb:2)=**迎撃便(面⑥〜⑩)にだけ出る**(262) =====
+    ⭐⭐⭐**ローグライク式に「足していく」**(2026-08-11ユーザー決定)=
+      **入れ替えではない**。ライフル台の次にテスラコイルを取ったら**両方が屋根に載って同時に撃つ**。
+    ⭐**素の2つ(ライフル台/ショットガン台)は最初から載っている**=ここは3つ目以降。
+    ⚠⚠**`tw` に本編の塔の名前を書くだけ**=撃つ側(`itcTwStep`)も絵(`itcDraw`)も付いてくる。
+    ⚠**載る数の上限は `ITC_TW_MAX`**=屋根に並ばなくなるので、ここを増やす時は必ず一緒に見る。
+    ⚠**列(物資)ごとに役どころを分けてある**=⛽連射 / 🏭範囲 / 🏠一撃。
+    ⚠**支える塔(回復・鈍足・明かり)は入れない**=この面は「撃って落とす」だけなので仕事が無い。
+    ⚠**値段も強さも仮**。 */
+ {k:'t_tesla', tb:2,r:0,tw:'tesla', ic:'⚡',n:'テスラコイル',   d:'近くを速く撃ち続ける',        c:60},
+ {k:'t_drone', tb:2,r:0,tw:'drone', ic:'🛩',n:'ドローン基地',   d:'遠くまで届く連射',            c:170},
+ {k:'t_harp',  tb:2,r:0,tw:'harp',  ic:'🔱',n:'ハープーン砲',   d:'重い一撃を中距離へ',          c:360},
+ {k:'t_gat',   tb:2,r:0,tw:'gat',   ic:'🌀',n:'ガトリング要塞', d:'弾幕を張る(近い敵に滅法強い)',c:640},
+ {k:'t_gren',  tb:2,r:1,tw:'gren',  ic:'💥',n:'爆裂砲台',       d:'着弾でまとめて巻き込む',      c:70},
+ {k:'t_mortar',tb:2,r:1,tw:'mortar',ic:'🎇',n:'迫撃砲',         d:'遠くの塊へ広い爆風',          c:210},
+ {k:'t_arty',  tb:2,r:1,tw:'arty',  ic:'🏰',n:'重砲台',         d:'画面の上まで届く特大の爆風',  c:430},
+ {k:'t_bolt',  tb:2,r:2,tw:'bolt',  ic:'🌩',n:'雷塔',           d:'固い1体を撃ち抜く',          c:80},
+ {k:'t_sniper',tb:2,r:2,tw:'sniper',ic:'🎯',n:'スナイパー塔',   d:'画面の端の1体を一撃で',      c:250},
+ {k:'t_rail',  tb:2,r:2,tw:'rail',  ic:'🚄',n:'レールガン',     d:'どこまでも届く重い一撃',      c:500}
 ];
 /* ⭐**梯子(系統)を表から自動で作る**=**同じタブ・同じ物資**の並び順がそのまま段になる。
    ⚠⚠**手で段番号を書かない**=表に1行足すたびに書き直すことになり、必ずどこかで食い違う。
@@ -32823,6 +32875,14 @@ function bupApply(B,up,eq){
  /* 🔊引き寄せの強さ=**0=無 / 1=📢拡声器(近く・弱い) / 2=🔊サイレン(遠く・強い)** */
  B.siren  =eq.siren?2:(eq.horn?1:0);
  B.zap    =eq.zap?1:0;
+ /* 🚌🔫(262)**迎撃便ぶん**。⚠**素の値も必ず入れる**=1つも買っていない時に undefined を掛けないため。
+    ⚠**走る便では誰も見ない**(掛ける側が迎撃便の中にしかない)ので、ここに置いても走る便は1つも変わらない。 */
+ B.twDX   =1+.12*(up.twa|0);        /* 🔫タレットの攻撃力 */
+ B.twRX   =Math.max(.35,1-.08*(up.twr|0));/* ⏱撃つ間隔(小さいほど速い) */
+ B.twGX   =1+.08*(up.twg|0);        /* 🎯届く距離 */
+ B.hullX  =1+.12*(up.hull|0);       /* 🛡バスの耐久 */
+ B.mobX   =1+.08*(up.mob|0);        /* 🏎左右に動く速さ */
+ B.ramCD  =ITC_RAM_CD*Math.max(.5,1-.10*(up.rcd|0));/* 🔥急発進が溜まるまで */
  B.gun    =eq.gun  ?1:0;            /* 🔫屋根の自動射撃 */
  B.beam   =eq.beam ?1:0;            /* 🔆(226e)ルーフガンの進化=ビームで撃つ */
 }
@@ -33269,23 +33329,27 @@ function bnsUpRects(W,H,tab){
  /* ⚠⚠**⚔装備は「列=物資・行=段」**(2026-08-02(55))=**上から下へ段が上がる**のがそのまま見える。
     ⚠**行優先で並べない**=段の梯子が横に折れて、どれが次の段か読めなくなる。
     ⭐🔧性能は物資ごとに2つなので**2列**(こちらは1行=1つの物資)。 */
- const LN=tab?beqLines(tab-1):null;
- const CL=tab?LN.length:2;
- const rows=tab?LN.reduce((a,l)=>Math.max(a,l.ix.length),1):Math.ceil(BUP.length/CL);
+ /* 🚌🔫(262)**つまみの中身は便で変わる**=`bnsTabL` が唯一の正(描く側も押す側も検査もここから引く) */
+ const TB=bnsTabL(),tv=TB[clamp(tab|0,0,TB.length-1)];
+ const LN=tv==null?null:beqLines(tv);
+ const IX=tv==null?bupIx():null;
+ const CL=LN?LN.length:2;
+ const rows=LN?LN.reduce((a,l)=>Math.max(a,l.ix.length),1):Math.ceil(IX.length/CL);
  const ty=H*.145,th=H*.085;/* 枠のつまみ */
  const gy=ty+th+10*dp,gh=H*.965-H*.135-gy;/* 札の置ける高さ(下に「準備OK」を残す) */
  const cw=(W-mx*2-gp*(CL-1))/CL,ch=(gh-gp*(rows-1))/rows;
- if(tab){
+ if(LN){
   /* ⚠**列ごとに段の数が違う**ので、素直に列→段の二重回しで置く(添字の割り算で出さない) */
   for(let cx9=0;cx9<LN.length;cx9++)for(let ry9=0;ry9<LN[cx9].ix.length;ry9++)
    R.push({x:mx+cx9*(cw+gp),y:gy+ry9*(ch+gp),w:cw,h:ch,i:LN[cx9].ix[ry9]});
  }else{
-  for(let i=0;i<BUP.length;i++)
-   R.push({x:mx+(i%CL)*(cw+gp),y:gy+((i/CL)|0)*(ch+gp),w:cw,h:ch,i:i});
+  /* ⚠**添字は BUP のまま入れる**(並べ替えても買う先を取り違えない) */
+  for(let k9=0;k9<IX.length;k9++)
+   R.push({x:mx+(k9%CL)*(cw+gp),y:gy+((k9/CL)|0)*(ch+gp),w:cw,h:ch,i:IX[k9]});
  }
- /* つまみ3つ。⚠**幅は3等分**=文字が入らないので札の名前は短くしてある */
+ /* つまみ。⚠**幅は3等分のまま**=文字が入らないので札の名前は短くしてある(迎撃便は2つなので右が空く) */
  R.tab=[];
- for(let i=0;i<3;i++)R.tab.push({x:W*.035+i*W*.172,y:ty,w:W*.162,h:th,i:i});
+ for(let i=0;i<TB.length;i++)R.tab.push({x:W*.035+i*W*.172,y:ty,w:W*.162,h:th,i:i});
  R.go={x:W*.56,y:ty,w:W*.405,h:th};
  return R;
 }
@@ -33302,6 +33366,8 @@ function beqTabCnt(E,tb){const L=beqLines(tb);let n=0,o=0;
  return o+'/'+n;}
 function bnsUpTap(Q,sx,sy){
  const hit=(r)=>sx>=r.x&&sx<=r.x+r.w&&sy>=r.y&&sy<=r.y+r.h;
+ /* 🚌🔫(262)⚠**便が変わるとつまみの数も変わる**=はみ出した番号は先頭へ戻す */
+ const TB9=bnsTabL();if((Q.tab|0)>=TB9.length)Q.tab=0;
  const R=bnsUpRects(cv.width,cv.height,Q.tab|0);
  if(hit(R.go)){bnsPreGo();return;}
  for(const tb of R.tab)if(hit(tb)){
@@ -33309,7 +33375,7 @@ function bnsUpTap(Q,sx,sy){
  for(const r of R){
   if(!hit(r))continue;
   /* ⚔装備は買い切り(段が無い) / 🔧性能は段を1つ積む */
-  const eqm=(Q.tab|0)>0;
+  const eqm=TB9[Q.tab|0]!=null;
   const u=eqm?BEQ[r.i]:BUP[r.i];
   const p=eqm?beqCost(Q.eq,r.i):bupCost(Q.up,r.i);
   if(p==null){try{if(sfx.back)sfx.back();}catch(e){}return;}
@@ -33384,7 +33450,9 @@ const ITC_BOT=360;
 const itcBy=()=>itcFh()-ITC_BOT;
 const ITC_GRABD=300;       /* バスからこの距離より下では敵がバスへ寄ってくる(=取り付きに来る) */
 const ITC_MG=60;           /* 左右の路肩(バスも敵もここから外へは出ない) */
-const ITC_BSP=420,ITC_BACC=1900,ITC_BFRI=7.0;/* バスの最高速 / 加速 / 手を離した時の減速 */
+/* 🎮⭐⭐(263)**最高速を上げた**(420→1100)=直操作にしたので、ここは「指に付いてこられる上限」。
+   ⚠**加速と減速はもう使っていない**(惰性を捨てた)=値は名残。⚠書き戻さないこと。 */
+const ITC_BSP=1100,ITC_BACC=1900,ITC_BFRI=7.0;/* バスの最高速 /(旧)加速 /(旧)手を離した時の減速 */
 const ITC_BL=115,ITC_BW=74;/* バスの当たり(半分の長さ / 半分の幅)。⚠**絵の寸法×縮尺**から出してある */
 const ITC_BS=.80;          /* バスの絵の縮尺(⚠`drawBusTop` は半長150・半幅96で描いている) */
 const ITC_ZS=1.0;          /* 敵の絵の縮尺(⚠本編と同じ大きさ=バスとの釣り合いが本編と揃う) */
@@ -33401,6 +33469,17 @@ const ITC_WGAP=8.0;        /* 次の波までの間 */
 /* ⚠⚠**骨の間だけの積み荷**=ここが②「ローグライク式に足していく」の受け口になる。
    ⭐決まっていること=**入れ替えではなく足す**(ライフルの次にショットガンを取ったら両方載る)。 */
 const ITC_START=['rifle','shot'];
+/* 🔫⭐⭐⭐(262)**屋根に載る台の上限**=これを超えると並べきれない(4つ×3段)。
+   ⚠**🔫砲座の表を増やす時は必ずここも見る**(増やすだけだと最後の何台かが黙って載らない)。 */
+const ITC_TW_MAX=12;
+/* 🔫⭐⭐⭐(262)**この試合に載る台の並び**=素の2つ+🔫砲座で解放した物。
+   ⚠⚠**入れ替えではなく足す**(ユーザー決定)=解放するたびに屋根の台が1つ増えて、全部が同時に撃つ。
+   ⚠**買った物は `META.beq`**(走る便の装備と同じ入れ物)=物資も進行も1本で済む。 */
+function itcTwList(){
+ const L=ITC_START.slice(),E=(typeof META!=='undefined'&&META&&META.beq)||{};
+ for(const q of BEQ)if(q.tw&&E[q.k])L.push(q.tw);
+ return L.slice(0,ITC_TW_MAX);
+}
 /* 🎚**面が1つ進むごとに、始まりの波をこれだけ先へ進める**(⑥=1波目 / ⑦=4波目 / … / ⑩=13波目)。
    ⭐**倍率を新しく作らない**=坂は1本(波の進み)だけにして、面の重さはその上のどこから始めるかで出す。
    ⚠**数字は仮**(実機の手応えで詰める)。 */
@@ -33438,12 +33517,33 @@ function itcTurn(on){
   const p9=screen.orientation.lock(on?'portrait':'landscape');p9&&p9.catch&&p9.catch(()=>{});}});
  itcTry(()=>{hudT=0;syncAppH();});
 }
+/* 🎮⭐⭐⭐(263)**指の横位置をそのまま狙いにする**(2026-08-11ユーザー
+   「操作性をもっと反応性をよく、シンプルに」)。
+   ⚠⚠**スティックだと惰性ぶんの遅れが必ず乗る**=数字をいくら詰めても「思った所で止まらない」が残る。
+   ⭐**盤の変換は描く側と同じ式から出す**(`itcDraw` の k と ox)=絵とタップが1pxもずれない。
+   ⚠**なぞっている間だけ動く**=離した所で止まる(押しっぱなしで壁に貼り付かない)。 */
+function itcAimAt(e){
+ const I=G&&G.itc;if(!I||I.over||!cv||!cv.width)return false;
+ if(!gameActive||PAUSED)return false;
+ const r=cv.getBoundingClientRect();if(!r.width)return false;
+ const sx=(e.clientX-r.left)*(cv.width/r.width);
+ const FH=itcFh(),k=Math.min(cv.width/ITC_FW,cv.height/FH),ox=(cv.width-ITC_FW*k)/2;
+ if(!(k>0))return false;
+ I.tx=clamp((sx-ox)/k,ITC_MG+ITC_BW,ITC_FW-ITC_MG-ITC_BW);
+ return true;
+}
 const itcSfx=k=>{try{const f=sfx[k];if(f)f();}catch(e){}};
 const itcTry=f=>{try{f();}catch(e){}};
 /* 🔫**載せたタレットの横位置**(⚠撃つ側と描く側が同じ物を見るように1か所から出す) */
-const itcTwX=(I,i,n)=>I.bx+(n<=1?0:(-ITC_BW*.62+i*(ITC_BW*1.24/(n-1))));
+/* ⚠⚠(262)**1段に4つまで**=足していく仕組みが入って最大12台になったので、横一列では並びきらない。
+   ⭐**前の段から順に埋める**=先に取った台ほど前に出る(どれが増えたのか見て分かる)。 */
+const ITC_TW_C=4;
+const itcTwCol=n=>Math.min(ITC_TW_C,Math.max(1,n));
+const itcTwX=(I,i,n)=>{const c=itcTwCol(n),q=i%c;
+ return I.bx+(c<=1?0:(-ITC_BW*.85+q*(ITC_BW*1.70/(c-1))));};
 /* ⚠**車体の前寄り**に据える=真ん中だと「屋根に置いた丸」にしか見えない */
-const itcTwY=I=>I.by-ITC_BL*.34;
+const itcTwY=(I,i,n)=>{const c=itcTwCol(n||1),rw=Math.max(1,Math.ceil((n||1)/c)),r=((i|0)/c)|0;
+ return I.by-ITC_BL*.45+(rw<=1?0:r*(ITC_BL*.95/(rw-1)));};
 function itcAddTw(id){
  const I=G&&G.itc;if(!I)return;
  const ti=TW_IDX[id];if(ti==null)return;
@@ -33452,16 +33552,21 @@ function itcAddTw(id){
 function itcStart(C){
  const B=C&&C.bus;if(!B)return;
  const li=Math.max(0,(STAGE|0)-LAP_N);
- G.itc={t:0,bx:ITC_FW/2,bvx:0,by:itcBy(),en:[],sh:[],fx:[],tw:[],zp:itcZp(),
+ G.itc={t:0,bx:ITC_FW/2,bvx:0,tx:null,by:itcBy(),en:[],sh:[],fx:[],tw:[],zp:itcZp(),
   wave:li*ITC_W0,wT:ITC_LEAD,ramT:0,over:0,endT:0,done:0,
   lap:stgLap(STAGE)?(stgBase(STAGE)+1):0};
- for(const id of ITC_START)itcAddTw(id);
- /* ⭐**耐久は画面の🚌のバーをそのまま使う**(`updHUD` が `core/coreMax` を🚌の印で出している) */
- C.coreMax=ITC_HP;C.core=ITC_HP;
+ /* 🔫(262)**強化画面で解放した台もここで載る**(⚠`bnsPreGo` は `bupApply` の後にここへ来る) */
+ for(const id of itcTwList())itcAddTw(id);
+ /* ⭐**耐久は画面の🚌のバーをそのまま使う**(`updHUD` が `core/coreMax` を🚌の印で出している)。
+    🛡(262)装甲板ぶんはここで乗る。 */
+ C.coreMax=Math.round(ITC_HP*(B.hullX||1));C.core=C.coreMax;
  /* ⚡🧟**成績はバスの持ち物に積む**=`bnsRecord`(自己ベスト)も🧬の実入りも今までの道を通る */
  B.score=0;B.kill=0;B.cmb=0;B.cmbT=0;B.cmbMx=0;B.left=null;B.arr=0;B.mov=0;
  B.nit=0;B.nitOn=0;B.nitT=0;B.grip=0;
  BNIT_P=-1;BNIT_R=-1;BNIT_M=0;/* ⚠ボタンの表示を1回書き直させる */
+ ITC_DRAG=null;
+ /* 🎮(263)⚠**なぞる操作は見えない**ので、始まりに1回だけ言う(スティックを隠したため) */
+ itcTry(()=>toast('🚌 画面をなぞってバスを動かす / 🔥は急発進'));
  itcTurn(true);/* 📱ここから縦持ち */
 }
 /* 🔥**急発進**=🔥のボタン。⚠**満タンの時だけ出る**(空押しは音で断る) */
@@ -33497,13 +33602,20 @@ function itcStep(dt){
 function itcBusStep(I,C,B,dt){
  const ix=clamp(B.ix||0,-1,1),lo=ITC_MG+ITC_BW,hi=ITC_FW-ITC_MG-ITC_BW;
  /* ⭐**重い車らしく**=倒した向きへ加速し、離しても惰性で流れる(走る便と同じ手触り) */
- if(Math.abs(ix)>.06)I.bvx+=ix*ITC_BACC*dt;
- else I.bvx*=Math.max(0,1-ITC_BFRI*dt);
- I.bvx=clamp(I.bvx,-ITC_BSP,ITC_BSP);
- I.bx+=I.bvx*dt;
- if(I.bx<lo){I.bx=lo;I.bvx*=.25;}else if(I.bx>hi){I.bx=hi;I.bvx*=.25;}
+ /* 🏎(262)横の足=速さの倍率 */
+ const mv9=B.mobX||1,sp9=ITC_BSP*mv9;
+ /* 🎮⭐⭐⭐(263)**惰性を捨てた**(ユーザー「反応性をよく」)=
+    ⭐**狙いがある間は最短でそこへ寄り、着いたら止まる**(行き過ぎない・跳ね返らない)。
+    ⚠**スティックの道も残してある**=つまみは隠したが、外から入れた時に動かなくなるのを避けるため。 */
+ if(I.tx!=null){
+  const d9=I.tx-I.bx,mx9=sp9*dt;
+  if(Math.abs(d9)<=mx9){I.bx=I.tx;I.bvx=0;I.tx=null;}
+  else{const st9=(d9<0?-1:1)*mx9;I.bx+=st9;I.bvx=st9/Math.max(dt,1e-4);}
+ }else if(Math.abs(ix)>.04){I.bvx=ix*sp9;I.bx+=I.bvx*dt;}
+ else I.bvx=0;
+ if(I.bx<lo){I.bx=lo;I.bvx=0;I.tx=null;}else if(I.bx>hi){I.bx=hi;I.bvx=0;I.tx=null;}
  /* 🔥急発進の溜まり */
- if((B.nit||0)<1)B.nit=Math.min(1,(B.nit||0)+dt/ITC_RAM_CD);
+ if((B.nit||0)<1)B.nit=Math.min(1,(B.nit||0)+dt/(B.ramCD||ITC_RAM_CD));
  if(I.ramT>0){
   I.ramT=Math.max(0,I.ramT-dt);
   const u=1-I.ramT/ITC_RAM_T;
@@ -33528,7 +33640,7 @@ function itcKill(I,C,B,e,crush){
  if(e.dead)return;
  e.dead=1;
  B.kill=(B.kill|0)+1;
- B.cmb=(B.cmb|0)+1;B.cmbT=BNS_CMB_T;if(B.cmb>(B.cmbMx|0))B.cmbMx=B.cmb;
+ B.cmb=(B.cmb|0)+1;B.cmbT=(B.cmbT0||BNS_CMB_T);if(B.cmb>(B.cmbMx|0))B.cmbMx=B.cmb;
  bnsScore(B,1);/* ⚡**段の倍率はここ1か所**(走る便と同じ式) */
  itcFx(I,e.x,e.y,crush?1:0,e.r);
  if(crush&&C.isMe)itcTry(()=>busCrushSfx(C));
@@ -33587,20 +33699,21 @@ function itcTwStep(I,C,B,dt){
   const tw=I.tw[i],T=TOWERS[tw.ti];if(!T)continue;
   if(tw.fl>0)tw.fl=Math.max(0,tw.fl-dt);
   if(tw.cd>0){tw.cd-=dt;continue;}
-  const rng=(T.rng||0)*ITC_RNG_X;
+  /* 🔧(262)**強化はここ1か所で掛ける**(⚠絵の側は位置しか見ないので、ずれる心配が無い) */
+  const rng=(T.rng||0)*ITC_RNG_X*(B.twGX||1);
   if(!(rng>0)||!(T.dmg>0))continue;
-  const mx=itcTwX(I,i,n),my=itcTwY(I);
+  const mx=itcTwX(I,i,n),my=itcTwY(I,i,n);
   /* ⚠**近い順に並べる**=多重撃ち(ショットガン台)が同じ物を何度も撃たないように */
   const cand=[];
   for(const e of I.en){if(e.dead)continue;
    const d=Math.hypot(e.x-mx,e.y-my);if(d<=rng)cand.push([d,e]);}
   if(!cand.length)continue;
   cand.sort((a,b)=>a[0]-b[0]);
-  tw.cd=T.rate||.6;tw.ang=Math.atan2(cand[0][1].y-my,cand[0][1].x-mx);tw.fl=.09;
+  tw.cd=(T.rate||.6)*(B.twRX||1);tw.ang=Math.atan2(cand[0][1].y-my,cand[0][1].x-mx);tw.fl=.09;
   const nn=Math.max(1,T.multi||1);
   for(let q=0;q<nn&&q<cand.length;q++){
    const e=cand[q][1];
-   I.sh.push({x:mx,y:my,tx:e.x,ty:e.y,e:e,dmg:T.dmg,aoe:T.aoe||0,col:T.c||'#ffe6a8',t:0});
+   I.sh.push({x:mx,y:my,tx:e.x,ty:e.y,e:e,dmg:T.dmg*(B.twDX||1),aoe:T.aoe||0,col:T.c||'#ffe6a8',t:0});
   }
   if(C.isMe)itcTry(()=>twSfx(C,T));
  }
@@ -33706,7 +33819,11 @@ function itcDrawEn(c,I,t,cl){
 function itcDrawBus(c,I,C,B,t){
  /* 🚌**真上から見たバス**は走る便の絵をそのまま使う(⚠局所座標は+xが進行方向なので上へ回す) */
  c.save();c.translate(I.bx,I.by);c.scale(ITC_BS,ITC_BS);c.rotate(-Math.PI/2);
- itcTry(()=>{drawBusTop(c,B,t);drawBusEq(c,B,t);});
+ /* ⚔⛔⭐(263)**走る便の装備は描かない**(ユーザー「シンプルに」)=
+    ノコもバンパーも**この面では一度も当たらない**のに車体より大きく張り出して、
+    「効く物」に見えたうえに降りてくる敵まで隠していた。
+    ⭐**この面の装備はタレット**=屋根に載る台だけを見せる。 */
+ itcTry(()=>{drawBusTop(c,B,t);});
  c.restore();
  /* 🔥急発進の炎(⚠車体の後ろにだけ) */
  if(I.ramT>0&&FXLV>0){
@@ -33722,7 +33839,7 @@ function itcDrawBus(c,I,C,B,t){
  const n=I.tw.length;
  for(let i=0;i<n;i++){
   const tw=I.tw[i],T=TOWERS[tw.ti];if(!T)continue;
-  const mx=itcTwX(I,i,n),my=itcTwY(I);
+  const mx=itcTwX(I,i,n),my=itcTwY(I,i,n);
   /* ①台座 → ②砲身 → ③発砲炎(⚠この順でないと砲身が台座に隠れる) */
   c.fillStyle='#2b2721';c.strokeStyle=INK;c.lineWidth=3;
   c.beginPath();c.arc(mx,my,17,0,7);c.fill();c.stroke();
@@ -34192,12 +34309,18 @@ function bnsDrawBoard(c,Q,W,H,dp){
 /* ④🔧**強化画面**。⚠**買えるかどうかが札の色で読めること**(値段だけ書いても押してみるまで分からない)。
    ⚠**「ずっと残る」と必ず書く**(2026-08-02(44)から永続)=そう書かないと使い惜しみされる。 */
 function bnsDrawUp(c,Q,W,H,dp,t){
- const tab=Q.tab|0;
+ /* 🚌🔫(262)便でつまみの中身が変わる。⚠**はみ出した番号は先頭へ戻す**(押す側と同じ扱い) */
+ const TB=bnsTabL();if((Q.tab|0)>=TB.length)Q.tab=0;
+ const tab=Q.tab|0,tv=TB[tab];
  c.fillStyle='rgba(12,9,6,.84)';c.fillRect(0,0,W,H);
  c.textAlign='left';c.fillStyle=GOLD;c.font='900 '+Math.round(20*dp)+'px '+FF;
- c.fillText('🔧 バス強化',W*.035,H*.072);
+ /* ⚠⚠(262)**見出しの幅は測って出す**=決め打ちだと、名前が1文字でも伸びた時に
+    後ろの「買った物はずっと残る」と重なる(迎撃便で長くなって実際に重なった)。 */
+ const ttl9=itcOn()?'🔫 迎撃バス強化':'🔧 バス強化';
+ c.fillText(ttl9,W*.035,H*.072);
+ const tw9=c.measureText(ttl9).width;
  c.fillStyle='rgba(242,236,220,.72)';c.font='900 '+Math.round(13*dp)+'px '+FF;
- c.fillText('買った物はずっと残る',W*.035+118*dp,H*.072);
+ c.fillText('買った物はずっと残る',W*.035+tw9+9*dp,H*.072);
  /* ⚠**見出しの右から始める**(2026-08-02(44)に撮って気づいた)=既定の位置だと
     「買った物はずっと残る」の上に物資が重なって両方読めない。 */
  bnsResBar(c,Q,W,H*.072,dp,.44);
@@ -34211,9 +34334,10 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.lineWidth=(on?3:2)*dp;c.stroke();
   c.textAlign='center';c.fillStyle=on?GOLD:'rgba(242,236,220,.6)';
   c.font='900 '+Math.round(14*dp)+'px '+FF;
-  const own=tb.i?beqTabCnt(Q.eq,tb.i-1)
-                :BUP.reduce((a,u)=>a+((Q.up[u.k])|0),0)+'/'+BUP.reduce((a,u)=>a+u.mx,0);
-  const nm=tb.i?(BEQ_TB[tb.i-1].ic+BEQ_TB[tb.i-1].n):'🔧性能';
+  const tv9=TB[tb.i],IX9=tv9==null?bupIx():null;
+  const own=tv9!=null?beqTabCnt(Q.eq,tv9)
+                :IX9.reduce((a,i)=>a+((Q.up[BUP[i].k])|0),0)+'/'+IX9.reduce((a,i)=>a+BUP[i].mx,0);
+  const nm=tv9!=null?(BEQ_TB[tv9].ic+BEQ_TB[tv9].n):'🔧性能';
   c.fillText(nm+' '+own,tb.x+tb.w/2,tb.y+tb.h*.64);
  }
  /* ⚠⚠⭐**文字の位置と大きさは「札の高さ」から出す**(2026-08-02(65)ユーザー実機「文字がおかしい」)=
@@ -34224,9 +34348,9 @@ function bnsDrawUp(c,Q,W,H,dp,t){
  const kz=R.length?bnsUpTextK(R[0].h,dp):1;
  const PAD=9*dp*Math.max(.7,kz);
  for(const r of R){
-  const u=tab?BEQ[r.i]:BUP[r.i];
-  const p=tab?beqCost(Q.eq,r.i):bupCost(Q.up,r.i);
-  const lv=tab?((Q.eq[u.k])?1:0):((Q.up[u.k])|0);
+  const u=tv!=null?BEQ[r.i]:BUP[r.i];
+  const p=tv!=null?beqCost(Q.eq,r.i):bupCost(Q.up,r.i);
+  const lv=tv!=null?((Q.eq[u.k])?1:0):((Q.up[u.k])|0);
   /* ⚔**3通りを必ず書き分ける**=✅装備ずみ / 買える / 🔒前の段がまだ(2026-08-02(55)) */
   const lk=(p!=null&&p<0);
   const ok=p!=null&&!lk&&(Q.res[u.r]|0)>=p;
@@ -34239,12 +34363,12 @@ function bnsDrawUp(c,Q,W,H,dp,t){
   c.font='900 '+Math.round(16*dp*kz)+'px '+FF;
   /* ⚔段の数字(①②③④⑤)=どこまで来たかが一目で分かる */
   /* ⚠(115)車体の列が6段になった=**丸数字も伸ばす**(足りないと6段目が無印になる) */
-  c.fillText((tab?'①②③④⑤⑥'.charAt(BEQ_AT[r.i].st)+' ':'')+u.ic+' '+u.n,r.x+PAD,r.y+22*dp*kz);
+  c.fillText((tv!=null?'①②③④⑤⑥'.charAt(BEQ_AT[r.i].st)+' ':'')+u.ic+' '+u.n,r.x+PAD,r.y+22*dp*kz);
   c.font='900 '+Math.round(12*dp*kz)+'px '+FF;
   c.fillStyle=(ok||p==null)?'rgba(242,236,220,.85)':(lk?'rgba(242,236,220,.3)':'rgba(242,236,220,.45)');
   c.fillText(u.d,r.x+PAD,r.y+39*dp*kz);
   /* 🔧性能は段(◆の数)=いくつ積んだかが数字より速く読める。⚔装備は付いているかだけ */
-  if(!tab){c.fillStyle=GOLD;c.font='900 '+Math.round(12*dp*kz)+'px '+FF;
+  if(tv==null){c.fillStyle=GOLD;c.font='900 '+Math.round(12*dp*kz)+'px '+FF;
    let dm='';for(let k=0;k<u.mx;k++)dm+=(k<lv?'◆':'◇');
    c.fillText(dm,r.x+PAD,r.y+55*dp*kz);}
   c.textAlign='right';
@@ -34261,7 +34385,7 @@ function bnsDrawUp(c,Q,W,H,dp,t){
    rr(c,r.x+2*dp,r.y+6*dp,bw,r.h-12*dp,bw*.5);c.fill();}
   c.textAlign='right';
   c.font='900 '+Math.round(15*dp*kz)+'px '+FF;
-  if(p==null){c.fillStyle=LIFE;c.fillText(tab?'✅':'MAX',r.x+r.w-PAD,r.y+r.h-PAD);}
+  if(p==null){c.fillStyle=LIFE;c.fillText(tv!=null?'✅':'MAX',r.x+r.w-PAD,r.y+r.h-PAD);}
   else if(lk){c.fillStyle='rgba(242,236,220,.34)';c.fillText('🔒',r.x+r.w-PAD,r.y+r.h-PAD);}
   else if(ok){/* ⭐買える=金の座布団に値段(押せる物がどれか、色で先に目に入る) */
    const tx=BRES[u.r].ic+p,tw=c.measureText(tx).width;

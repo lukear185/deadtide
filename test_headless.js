@@ -4076,10 +4076,14 @@ function checkBnsFlow(){
      前の段を買うまで次は買えない。タブごとに列の数も段の数も違うので、
      添字の割り算で位置を出さず BEQ_LN(列の一覧)と BEQ_AT(添字→列と段)から見ること。 */
   {Q.eq={};Q.res=[9999,9999,9999];
-   if(BEQ_TB.length!==2){console.log('FAIL: 装備のタブが2つでない '+BEQ_TB.length);process.exit(1);}
-   for(let tb=0;tb<BEQ_TB.length;tb++){
-    Q.tab=tb+1;
-    const LN=BEQ_LN.filter(l=>l.tb===tb),RE=bnsUpRects(cv.width,cv.height,tb+1);
+   if(BEQ_TB.length!==3){console.log('FAIL: 装備のタブが3つでない '+BEQ_TB.length);process.exit(1);}
+   /* 🚌🔫(262)⚠**つまみの中身は便で変わる**(迎撃便は🔫砲座に化ける)=
+      **この面(走る便)に出る枠だけ**を見る。⭐正は bnsTabL の1本（⚠このファイルのこの位置は雛形の中なのでバッククオート禁止）。 */
+   const TBL=bnsTabL();
+   for(let ti=1;ti<TBL.length;ti++){
+    const tb=TBL[ti];
+    Q.tab=ti;
+    const LN=BEQ_LN.filter(l=>l.tb===tb),RE=bnsUpRects(cv.width,cv.height,ti);
     let n9=0;for(const l of LN)n9+=l.ix.length;
     if(RE.length!==n9){console.log('FAIL: 札の数が中身と合わない tb'+tb+' '+RE.length+'/'+n9);process.exit(1);}
     /* ⚠**1列=1つの物資**(混ざっていると並びの意味が消える) */
@@ -4110,7 +4114,8 @@ function checkBnsFlow(){
     {const i0=LN[0].ix[0],r0=Q.res[BEQ[i0].r];bnsUpTap(Q,pos[i0].x+4,pos[i0].y+4);
      if(Q.res[BEQ[i0].r]!==r0){console.log('FAIL: 同じ装備を2度買える');process.exit(1);}}
    }
-   for(const q of BEQ)if(!Q.eq[q.k]){console.log('FAIL: 装備が買えていない '+q.k);process.exit(1);}}
+   for(const q of BEQ)if(TBL.indexOf(q.tb)>0&&!Q.eq[q.k]){
+    console.log('FAIL: 装備が買えていない '+q.k);process.exit(1);}}
   /* ⚔つまみで枠が切り替わること(3つある) */
   bnsUpTap(Q,R.tab[2].x+4,R.tab[2].y+4);
   if((Q.tab|0)!==2){console.log('FAIL: ⚔装備の枠に切り替わらない');process.exit(1);}
@@ -5027,12 +5032,97 @@ function checkZFlag(){
   +' ← zSpec の返す物に1つずつ足すこと(足さないと、その印は盤面で一度も効かない)');process.exit(1);}
  console.log('🐞ゾンビの印: '+need.length+'種すべて表から実体まで届いている OK');
 }
+/* 🚌🔫⭐⭐⭐(262)**迎撃便のタレットを足していく仕組み**。⚠見るのは7つ:
+   ①走る便には迎撃便の枠も札も出ない ②迎撃便のつまみは🔧性能と🔫砲座の2つ
+   ③🔫砲座を順に全部買える ④**素の2台が残ったまま**買った数だけ台が増える(=入れ替えではない)
+   ⑤屋根で台が重ならない(段で折り返している) ⑥強化がバスに入る
+   ⑦**強化が実際に弾と射程に乗る**(数値を持たせただけで掛け忘れる事故を止める) */
+function checkItcTw(){
+ const F=m=>{console.log('FAIL: '+m);process.exit(1);};
+ META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);
+ META.bres=[9999,9999,9999];META.bup={};META.beq={};
+ /* ① 走る便(面①) */
+ META.stg=0;setDiff=BNS_D;startSolo();
+ if(itcOn())F('面①が迎撃便になっている');
+ if(bnsTabL().length!==3)F('走る便のつまみが3つでない '+bnsTabL().length);
+ for(const i of bupIx())if(BUP[i].itc)F('走る便に迎撃便だけの強化が出ている '+BUP[i].n);
+ /* ② 面⑥=迎撃便 */
+ META.stg=LAP_N;setDiff=BNS_D;startSolo();
+ if(!itcOn())F('面⑥が迎撃便でない');
+ const TBL=bnsTabL();
+ if(TBL.length!==2||TBL[1]!==2)F('迎撃便のつまみが🔧性能と🔫砲座の2つでない '+JSON.stringify(TBL));
+ const IX=bupIx();
+ if(IX.length<6)F('迎撃便の🔧性能の札が少なすぎる '+IX.length);
+ for(const i of IX)if(!(BUP[i].itc||BUP[i].both))F('迎撃便に走る便だけの強化が出ている '+BUP[i].n);
+ /* ③ 🔫砲座を順に全部買う */
+ const Q=G.bpre;if(!Q)F('走る前の流れに入っていない');
+ fitCanvas();Q.st='up';Q.tab=1;
+ const tws=BEQ.filter(q=>q.tb===2);
+ if(!tws.length)F('🔫砲座の中身が空');
+ const RE=bnsUpRects(cv.width,cv.height,1);
+ if(RE.length!==tws.length)F('🔫砲座の札の数が中身と合わない '+RE.length+'/'+tws.length);
+ try{drawBnsPre(ctx,G.players[0],1.2);}catch(e){F('迎撃便の強化画面の描画で例外 '+e.message);}
+ {const pos={};for(const r of RE)pos[r.i]=r;
+  for(const l of BEQ_LN.filter(l=>l.tb===2))for(const i of l.ix){
+   Q.res=[9999,9999,9999];bnsUpTap(Q,pos[i].x+4,pos[i].y+4);}}
+ for(const q of tws)if(!Q.eq[q.k])F('🔫砲座が順に買えない '+q.n);
+ /* 🔧性能も積んでおく(⑥⑦で効き目を見る) */
+ Q.res=[9999,9999,9999];
+ Q.up.twa=3;Q.up.twr=2;Q.up.twg=2;Q.up.hull=4;Q.up.mob=3;Q.up.rcd=4;
+ /* ④ 出撃=素の2台+買った台が全部載る */
+ bnsPreSkip();
+ const I=G.itc,C=G.players[0],B=C.bus;
+ if(!I)F('迎撃便が始まっていない');
+ const want=Math.min(ITC_TW_MAX,ITC_START.length+tws.length);
+ if(I.tw.length!==want)F('屋根に載った台の数が合わない '+I.tw.length+'/'+want);
+ for(const id of ITC_START)if(!I.tw.some(t=>TOWERS[t.ti].id===id))
+  F('素の台が入れ替わって消えている(足す仕組みになっていない) '+id);
+ for(const q of tws)if(!I.tw.some(t=>TOWERS[t.ti].id===q.tw))F('解放した台が載っていない '+q.n);
+ /* ⑤ 屋根で重ならない */
+ {const n=I.tw.length;
+  for(let a=0;a<n;a++)for(let b=a+1;b<n;b++){
+   const d=Math.hypot(itcTwX(I,a,n)-itcTwX(I,b,n),itcTwY(I,a,n)-itcTwY(I,b,n));
+   if(d<30)F('屋根の台が重なっている('+a+'と'+b+') 距離'+Math.round(d));}}
+ /* ⑥ 強化がバスに入っている */
+ if(!(B.twDX>1.3))F('🔫火力がバスに入っていない '+B.twDX);
+ if(!(B.twRX<.9))F('⏱装填がバスに入っていない '+B.twRX);
+ if(!(B.twGX>1.1))F('🎯照準がバスに入っていない '+B.twGX);
+ if(!(B.mobX>1.2))F('🏎横の足がバスに入っていない '+B.mobX);
+ if(!(B.ramCD<ITC_RAM_CD*.75))F('🔥急発進の整備がバスに入っていない '+B.ramCD);
+ if(!(C.coreMax>ITC_HP*1.4))F('🛡装甲板が耐久に乗っていない '+C.coreMax+'/'+ITC_HP);
+ /* ⑧🎮(263)**なぞった所へ最短で寄り、着いたら止まる**(惰性を捨てた=行き過ぎない・跋ねない) */
+ {I.tx=ITC_MG+ITC_BW+20;const x0=I.bx;
+  itcBusStep(I,C,B,.016);
+  if(!(I.bx<x0))F('なぞってもバスが動かない');
+  for(let k=0;k<200&&I.tx!=null;k++)itcBusStep(I,C,B,.016);
+  if(I.tx!=null)F('なぞった所へたどり着かない '+Math.round(I.bx));
+  if(Math.abs(I.bx-(ITC_MG+ITC_BW+20))>1)F('狙った所で止まらない(行き過ぎている) '+Math.round(I.bx));
+  const x1=I.bx;for(let k=0;k<20;k++)itcBusStep(I,C,B,.016);
+  if(Math.abs(I.bx-x1)>.5)F('指を離しても惰性で流れる '+Math.round(I.bx-x1));}
+ /* ⑦ 弾と射程に乗っている=**素の射程のすぐ外**に置いた敵へ届き、弾の傷に倍率が乗る */
+ {I.en.length=0;I.sh.length=0;
+  const n=I.tw.length,T0=TOWERS[I.tw[0].ti],base=T0.rng*ITC_RNG_X;
+  const mx=itcTwX(I,0,n),my=itcTwY(I,0,n);
+  I.en.push({zi:0,x:mx,y:my-base*1.05,hp:9e9,mhp:9e9,sp:0,r:20,bh:60,
+   ph:0,dr:1,cl:0,ox:0,oy:0,hitT:0,dead:0});
+  for(const t of I.tw)t.cd=0;
+  itcTwStep(I,C,B,.02);
+  if(!I.sh.length)F('🎯照準を上げても素の射程のすぐ外へ届かない');
+  const raw=I.tw.map(t=>TOWERS[t.ti].dmg);
+  for(const sh of I.sh)if(!raw.some(d=>Math.abs(sh.dmg-d*B.twDX)<1e-6))
+   F('🔫火力が弾の傷に乗っていない '+sh.dmg);
+  I.en.length=0;I.sh.length=0;}
+ META.bup={};META.beq={};META.bres=[0,0,0];
+ console.log('🚌🔫迎撃便の積み荷: 素'+ITC_START.length+'台+🔫砲座'+tws.length+'種='+want
+  +'台が同時に載る(上限'+ITC_TW_MAX+') / 🔧性能'+IX.length+'項目 OK');
+}
 const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
 ['checkStage4',checkStage4],
 ['checkGas',checkGas],
 ['checkMapPins',checkMapPins],
 ['checkBusHit',checkBusHit],
 ['checkBusGim',checkBusGim],
+['checkItcTw',checkItcTw],
 ['checkZFlag',checkZFlag],
 ['checkUnlock',checkUnlock],
 ['checkGain',checkGain],
