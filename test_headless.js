@@ -1374,7 +1374,7 @@ function checkTwNew(){
       ⚠数え方＝その系統の中に LAP_GT の id がいくつ入っているか。 */
    let lapN9=0;{let c9=i,n9=T_GRD(c9);
     while(n9>=0){if(LAP_GT.some(a9=>a9.indexOf(TOWERS[n9].id)>=0))lapN9++;c9=n9;n9=T_GRD(c9);}}
-   const want9=(T0.id==='drone')?1:2+lapN9;
+   const want9=((T0.id==='drone')?1:2)+lapN9;
    if(step!==want9){console.log('FAIL: '+T0.n+' の進化が'+want9+'段になっていない('+step+'段)');process.exit(1);}
    /* 素から最終形態までで、射程は1.1倍以上・威力は2.5倍以上 */
    const F=TOWERS[cur];

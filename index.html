@@ -4294,6 +4294,11 @@ const TW_SFX={rifle:'shotD',shot:'shotgun',sniper:'snipe',gat:'gatD',
  railx:'railJ',gat2:'gatD',plasma2:'plasma',fort2:'fortC',
  /* 🔁(259)面⑥で開くもう一段。⚠音は元の塔と同じ(専用の音は後日の協議) */
  net3:'net',flame3:'flame',gren3:'grenC',
+ /* 🔁(260)面⑦〜⑩のもう一段。⚠音は元の塔と同じ */
+ bolt4:'uboltC',cryo3:'cryo',mortar3:'mortar',acid3:'acid',
+ drone3:'dronefx',pullt4:'pull',laser3:'laser',tesla3:'zap',
+ gat3:'gatD',lamp4:'lamp',arty3:'canC',sniper3:'shot',harp3:'harpA',
+ coil3:'zap2',rail3:'railJ',fort3:'fortC',spray3:'net',
 flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net',
  /* ⭐(197)新しい塔3台と、その進化先 */
  /* ⭐(204d)**照明塔と引力塔に専用の音を付けた**(ユーザー「いまだとネットと一緒だから駄目」) */
@@ -4303,11 +4308,11 @@ flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net',
  lamp:'lamp',lamp2:'lamp',lamp3:'lamp',
  /* 🔩(229p)ハープーン=**モードで音が変わる**(2026-08-10ユーザー「おそい方がA 速い方がF」)。
     🔩串刺し(遅い)=案A(空気圧の発射+杭の風切り) / ⚡速射(速い)=案F(大弩の低い胴鳴り+速い風切り)。 */
- harp:'harpA',harp2:'harpA',
+ harp:'harpA',harp2:'harpA',harp3:'harpA',
  /* 💨(252)散布塔の音は仮でネット砲と同じ(専用の音は後日の協議=[[TODO]]) */
  spray:'net',sprayM:'net',spray2:'net'};
 /* ⭐**同じ塔でもモードで音を替える口**。⚠いまはハープーンだけ=増える時はここに1行足す */
-const TW_SFX_MD={harp:'harpF',harpM:'harpF',harp2:'harpF'};
+const TW_SFX_MD={harp:'harpF',harpM:'harpF',harp2:'harpF',harp3:'harpF'};
 /* 🔆⭐(229q)**照射の音を「1本の線」で鳴らす塔**(2026-08-10ユーザー指示)。
    ⚠ここに載せた塔だけ sfxHold(輪にして回す)を通る。火炎/酸/テスラは今までどおり0.3秒ごとの撃ち直し
      (あちらは音の形そのものが「繰り返し」なので合っている)。
@@ -4909,40 +4914,60 @@ const TOWERS=[
  {id:'shot2',n:'散弾要塞',base:'shot',grd:1,cost:600,rng:196,dmg:52,rate:.77,type:'bullet',multi:4,c:'#c4a06b',dsc:'四つ口から浴びせる散弾。4体同時'},
  {id:'net2',n:'鋼糸射出砲',base:'net',grd:1,up2:'net3',gc:3600,cost:480,rng:202,dmg:4,rate:1,type:'net',slowT:2.6,c:'#8ac2b0',dsc:'鋼の糸で範囲の敵を強く縛る'},
  {id:'flame2',n:'業火放射塔',base:'flame',grd:1,up2:'flame3',gc:6300,cost:840,rng:162,dmg:16,rate:.14,type:'fire',cont:1,burn:27,fspl:78,c:'#e08a3a',dsc:'二又の火口が業火を吐き続ける。装甲に特効・強い継続燃焼'},
- {id:'tesla2',n:'雷神コイル',base:'tesla',grd:1,cost:1020,rng:218,dmg:88,rate:.81,type:'elec',emul:5,emax:5,trait:{k:'chain',v:.25,t:'同時攻撃+0.25体'},c:'#7fd0ef',dsc:'太い巻線から同時に5体へ撃つ。ここからは威力と射程を伸ばす'},
+ {id:'tesla2',n:'雷神コイル',base:'tesla',grd:1,up2:'tesla3',gc:8200,cost:1020,rng:218,dmg:88,rate:.81,type:'elec',emul:5,emax:5,trait:{k:'chain',v:.25,t:'同時攻撃+0.25体'},c:'#7fd0ef',dsc:'太い巻線から同時に5体へ撃つ。ここからは威力と射程を伸ばす'},
  /* ⚠素を85→100にしたので、決まり(威力×2.0)どおり 170→**200**(2026-08-02) */
- {id:'mortar2',n:'重迫撃砲',base:'mortar',grd:1,cost:1290,rng:526,minr:160,dmg:200,rate:2.2,type:'blast',aoe:106,c:'#949c80',dsc:'重い弾を遠くへ。爆発範囲も広い'},
- {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'pierce',prio:1,pierce:1,vsB:3,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。💀ボスと👁オーラ持ちには3倍'},
+ {id:'mortar2',n:'重迫撃砲',base:'mortar',grd:1,up2:'mortar3',gc:10300,cost:1290,rng:526,minr:160,dmg:200,rate:2.2,type:'blast',aoe:106,c:'#949c80',dsc:'重い弾を遠くへ。爆発範囲も広い'},
+ {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,up2:'sniper3',gc:13000,cost:1620,rng:739,dmg:1750,rate:4.1,type:'pierce',prio:1,pierce:1,vsB:3,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。💀ボスと👁オーラ持ちには3倍'},
  /* ⚠素を38→58にしたので、決まり(威力×2.0)どおり 76→**116**(2026-08-02) */
  {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,up2:'gren3',gc:6800,cost:900,rng:314,dmg:116,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  /* ⚡🧲💡(197)新しい3台の進化。⚠**進化は2段**(素→中段→最終形態)=全部の塔でそろえる決まり */
  {id:'bolt2',n:'大雷塔',base:'bolt',grd:1,up2:'bolt3',gc:5600,cost:700,rng:275,dmg:168,rate:1.25,type:'elec',chain:1,cmax:1,sky:1,c:'#a8dcef',dsc:'空から落ちる雷が一段と太い。単体への一撃が重い'},
- {id:'bolt3',n:'雷神の柱',base:'bolt',grd:1,cost:1580,rng:305,dmg:300,rate:1.1,type:'elec',chain:1,cmax:1,sky:1,c:'#d8f2ff',dsc:'空から柱のような雷を落とす。単体への一撃は最終兵器級'},
+ {id:'bolt3',n:'雷神の柱',base:'bolt',grd:1,up2:'bolt4',gc:12000,cost:1580,rng:305,dmg:300,rate:1.1,type:'elec',chain:1,cmax:1,sky:1,c:'#d8f2ff',dsc:'空から柱のような雷を落とす。単体への一撃は最終兵器級'},
  {id:'pullt2',n:'重力塔',base:'pullt',grd:1,up2:'pullt3',gc:8240,cost:1030,rng:255,dmg:8,rate:2.4,type:'net',slow:.55,slowT:1.8,pull:140,pulN:3,c:'#a98fd0',dsc:'引き戻す力が強く、範囲も広い'},
- {id:'pullt3',n:'特異点塔',base:'pullt',grd:1,cost:2320,rng:285,dmg:16,rate:2.2,type:'net',slow:.6,slowT:2.2,pull:200,pulN:3,c:'#c9a1ff',dsc:'群れをまとめて後ろへ引きずり落とす。すり抜ける敵も掴む'},
+ {id:'pullt3',n:'特異点塔',base:'pullt',grd:1,up2:'pullt4',gc:18000,cost:2320,rng:285,dmg:16,rate:2.2,type:'net',slow:.6,slowT:2.2,pull:200,pulN:3,c:'#c9a1ff',dsc:'群れをまとめて後ろへ引きずり落とす。すり抜ける敵も掴む'},
  {id:'lamp2',n:'探照灯',base:'lamp',grd:1,up2:'lamp3',gc:9040,cost:1130,rng:290,dmg:4,rate:2.8,type:'net',slow:.2,slowT:.8,lit:5,c:'#ffd97a',dsc:'照らし続ける時間が長い。範囲の敵が受けるダメージが上がる'},
- {id:'lamp3',n:'灼光塔',base:'lamp',grd:1,cost:2540,rng:320,dmg:8,rate:2.6,type:'net',slow:.25,slowT:1,lit:7,c:'#fff0b8',dsc:'照らされた敵は長くもろいまま。弱点を突く塔と噛み合う'},
- {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
- {id:'laser2',n:'集束レーザー',base:'laser',grd:1,cost:1380,rng:403,dmg:18,rate:.1,type:'beam',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
- {id:'acid2',n:'劇毒噴射塔',base:'acid',grd:1,cost:1170,rng:190,dmg:20,rate:.26,type:'poison',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から劇毒。強い毒で削り、倒れた敵が大きく弾けて周りも溶かす'},
- {id:'drone2',n:'無人機母艦',base:'drone',grd:1,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
- {id:'arty2',n:'列車砲',base:'arty',grd:1,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
- {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,cmax:10,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
- {id:'railx',n:'軌道砲',base:'rail',grd:1,cost:2040,rng:1008,dmg:620,rate:2.55,type:'beam',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
- {id:'gat2',n:'重ガトリング',base:'gat',grd:1,cost:1620,rng:241,dmg:72,rate:.09,type:'bullet',c:'#d05a48',dsc:'六本の砲身が唸る。単体をひたすら溶かす'},
+ {id:'lamp3',n:'灼光塔',base:'lamp',grd:1,up2:'lamp4',gc:20000,cost:2540,rng:320,dmg:8,rate:2.6,type:'net',slow:.25,slowT:1,lit:7,c:'#fff0b8',dsc:'照らされた敵は長くもろいまま。弱点を突く塔と噛み合う'},
+ {id:'cryo2',n:'極低温塔',base:'cryo',grd:1,up2:'cryo3',gc:7700,cost:960,rng:224,dmg:12,rate:5.1,type:'net',frz:3.3,frzN:5,slowT:5.6,c:'#9fd6e8',dsc:'凍結がずっと長い(❄凍結時間の強化でさらに伸ばせる)。⚠凍らせられる回数は冷却塔と共通(最大10回)で、進化しても増えない'},
+ {id:'laser2',n:'集束レーザー',base:'laser',grd:1,up2:'laser3',gc:11000,cost:1380,rng:403,dmg:18,rate:.1,type:'beam',cont:1,pierce:1,heatN:20,heatM:4,c:'#e88cc4',dsc:'束ねた光を当て続ける。焼き切ると威力が上がる(素で4倍・🔺最大倍率MAXで7倍)'},
+ {id:'acid2',n:'劇毒噴射塔',base:'acid',grd:1,up2:'acid3',gc:9400,cost:1170,rng:190,dmg:20,rate:.26,type:'poison',burn:49,acdT:3.6,axr:140,axm:6,c:'#c2f06b',dsc:'二又の口から劇毒。強い毒で削り、倒れた敵が大きく弾けて周りも溶かす'},
+ {id:'drone2',n:'無人機母艦',base:'drone',grd:1,up2:'drone3',gc:12000,cost:1500,rng:370,dmg:60,rate:.68,type:'bullet',drn:1,mag:10,c:'#7fb0c4',dsc:'装甲甲板の母艦。5機のドローンが積める弾を増やせる(強化で最大20発)'},
+ {id:'arty2',n:'列車砲',base:'arty',grd:1,up2:'arty3',gc:15000,cost:1920,rng:627,minr:190,dmg:260,rate:2.38,type:'blast',aoe:150,c:'#8a8a60',dsc:'軌道に据えた巨砲。極大の爆発'},
+ {id:'coil2',n:'超伝導コイル',base:'coil',grd:1,up2:'coil3',gc:17000,cost:2100,rng:280,dmg:30,rate:.94,type:'elec',chain:9,cmax:10,arcT:.09,grow:1.5,gmax:6.5,c:'#6fc8f0',dsc:'冷やし固めた巻線。跳ねるたびに最大6.5倍まで跳ね上がる'},
+ {id:'railx',n:'軌道砲',base:'rail',grd:1,up2:'rail3',gc:16000,cost:2040,rng:1008,dmg:620,rate:2.55,type:'beam',beam:34,pierce:1,prio:1,c:'#a58cd0',dsc:'太いビームが線上の敵を根こそぎ貫く'},
+ {id:'gat2',n:'重ガトリング',base:'gat',grd:1,up2:'gat3',gc:13000,cost:1620,rng:241,dmg:72,rate:.09,type:'bullet',c:'#d05a48',dsc:'六本の砲身が唸る。単体をひたすら溶かす'},
  {id:'plasma2',n:'プラズマ炉',base:'plasma',grd:1,cost:2460,rng:470,dmg:600,rate:1.87,type:'beam',aoe:186,spl:70,pz:1,/* ⚠pz=プラズマ球を撃つ印。進化先にも必ず付ける */c:'#f07fc8',dsc:'炉心から撃ち出す極大の爆発。着弾点の周りも崩れる'},
- {id:'fort2',n:'超弩級要塞砲',base:'fort',grd:1,cost:2700,rng:426,dmg:300,rate:.6,type:'pierce',multi:5,pierce:1,spl:62,c:'#a3a8b0',dsc:'三連の巨砲が5体を同時に貫く。最終形態'},
+ {id:'fort2',n:'超弩級要塞砲',base:'fort',grd:1,up2:'fort3',gc:21000,cost:2700,rng:426,dmg:300,rate:.6,type:'pierce',multi:5,pierce:1,spl:62,c:'#a3a8b0',dsc:'三連の巨砲が5体を同時に貫く。最終形態'},
  /* 🔩(228q)ハープーン砲の最終形態=スパイクランチャー(ユーザー案③を最終の語彙に使う決定)。
     数値の決まりどおり=威力×2.0 / 間隔×0.85 / 射程×1.12。持ち味は串刺し4→6体 */
- {id:'harp2',n:'スパイクランチャー',base:'harp',grd:1,cost:1680,rng:336,dmg:490,rate:1.95,type:'pierce',beam:20,bmax:6,pierce:1,c:'#b09a6a',dsc:'圧縮空気の多連杭。直線の6体をまとめて貫く'},
+ {id:'harp2',n:'スパイクランチャー',base:'harp',grd:1,up2:'harp3',gc:13500,cost:1680,rng:336,dmg:490,rate:1.95,type:'pierce',beam:20,bmax:6,pierce:1,c:'#b09a6a',dsc:'圧縮空気の多連杭。直線の6体をまとめて貫く'},
  /* 💨(252)散布塔の最終形態。決まりどおり=間隔×0.85 / 射程×1.12。持ち味(撒く量)は一段上 */
- {id:'spray2',n:'腐霧散布塔',base:'spray',grd:1,cost:1440,rng:291,dmg:8,rate:1.36,type:'net',gsp:.38,slow:.2,slowT:.9,c:'#c2e07a',dsc:'四つの噴口が沼のガスを撒き散らす。💣爆発と組ませた時の火力が段違い'},
+ {id:'spray2',n:'腐霧散布塔',base:'spray',grd:1,up2:'spray3',gc:11500,cost:1440,rng:291,dmg:8,rate:1.36,type:'net',gsp:.38,slow:.2,slowT:.9,c:'#c2e07a',dsc:'四つの噴口が沼のガスを撒き散らす。💣爆発と組ませた時の火力が段違い'},
  {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,up2:'scrap4',gc:5600,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'},
  /* 🔁⭐⭐(259)**面⑥のクリアで開く「もう一段」**(2026-08-11ユーザー決定
     「5面までクリアしたら、面のクリアの時と一緒の種類のタレットとユニットのもう一段進化が
      面クリアごとに解放されるようにしよう」)=**段0の顔ぶれ4種**(🕸ネット砲/🏭廃品工房/🔥火炎放射塔/💣爆裂砲台)。
     ⚠**決まりは今までの段と同じ**=威力×約1.9 / 射程×約1.11 / 値段×約3。持ち味だけ一段上へ。
     ⚠**門は LAP_GT が持つ**=面⑥を制覇するまで研究所に並ばない。 */
+ /* 🔁⭐⭐(260)**面⑦〜⑩のクリアで開く「もう一段」**(ユーザー決定の続き)。
+    ⭐**面⑦=段1 / ⑧=段2 / ⑨=段3 / ⑩=段4** の顔ぶれ。⚠値は前の段の決まりどおり
+    (威力×約2 / 射程×約1.11 / 値段×3)。⚠🏥野戦病院だけは支援施設なので進化しない。 */
+ {id:'bolt4',n:'天罰の尖塔',base:'bolt',grd:1,cost:4740,rng:338,dmg:540,rate:1,type:'elec',chain:1,cmax:1,sky:1,c:'#eaffff',dsc:'空が割れて一発ごとに雷が落ちる'},
+ {id:'cryo3',n:'絶対零度塔',base:'cryo',grd:1,cost:2880,rng:249,dmg:24,rate:4.4,type:'net',frz:5,frzN:6,slowT:7,c:'#cdf1ff',dsc:'近づいた物から順に凍り付いていく'},
+ {id:'mortar3',n:'攻城臼砲',base:'mortar',grd:1,cost:3870,rng:584,minr:160,dmg:400,rate:1.9,type:'blast',aoe:132,c:'#aab08e',dsc:'壁ごと吹き飛ばす大口径の臼砲'},
+ {id:'acid3',n:'腐蝕噴射塔',base:'acid',grd:1,cost:3510,rng:211,dmg:40,rate:.22,type:'poison',burn:92,acdT:4.2,axr:176,axm:7,c:'#e0ff8a',dsc:'触れた物を片端から溶かす強酸'},
+ {id:'drone3',n:'無人機戦隊',base:'drone',grd:1,cost:4500,rng:411,dmg:120,rate:.58,type:'bullet',drn:1,mag:10,c:'#9fd0e4',dsc:'群れで飛ぶ無人機が空から撃ち下ろす'},
+ {id:'pullt4',n:'事象の地平塔',base:'pullt',grd:1,cost:6960,rng:317,dmg:32,rate:2,type:'net',slow:.66,slowT:2.8,pull:280,pulN:4,c:'#e0c4ff',dsc:'抜け出せない引力で群れごと引き戻す'},
+ {id:'laser3',n:'貫通レーザー塔',base:'laser',grd:1,cost:4140,rng:448,dmg:36,rate:.1,type:'beam',cont:1,pierce:1,heatN:20,heatM:5,c:'#ffb0e0',dsc:'一本の光が列を丸ごと焼き抜く'},
+ {id:'tesla3',n:'神鳴の塔',base:'tesla',grd:1,cost:3060,rng:242,dmg:176,rate:.7,type:'elec',emul:5,emax:6,trait:{k:'chain',v:.25,t:'同時攻撃+0.25体'},c:'#b0f0ff',dsc:'周り一帯に絶え間なく電を落とす'},
+ {id:'gat3',n:'揃射要塞',base:'gat',grd:1,cost:4860,rng:268,dmg:144,rate:.09,type:'bullet',c:'#f07a5a',dsc:'四連の銃身が弾幕を張り続ける'},
+ {id:'lamp4',n:'白光の灯台',base:'lamp',grd:1,cost:7620,rng:355,dmg:16,rate:2.4,type:'net',slow:.3,slowT:1.3,lit:9.5,c:'#fffbe0',dsc:'照らした物の守りを剥ぎ取る白い光'},
+ {id:'arty3',n:'巨砲要塞',base:'arty',grd:1,cost:5760,rng:696,minr:190,dmg:520,rate:2,type:'blast',aoe:186,c:'#a8a878',dsc:'地平の向こうまで届く据え付けの巨砲'},
+ {id:'sniper3',n:'狙撃管制塔',base:'sniper',grd:1,cost:4860,rng:820,dmg:3500,rate:3.5,type:'pierce',prio:1,pierce:1,vsB:3.6,c:'#9aa8b4',dsc:'一番厚い目標を選んで一発で抜く'},
+ {id:'harp3',n:'連装ハープーン砲',base:'harp',grd:1,cost:5040,rng:373,dmg:980,rate:1.66,type:'pierce',beam:24,bmax:8,pierce:1,c:'#d0b884',dsc:'太い杭を並べて打ち、一線に並んだ敵を串刷しにする'},
+ {id:'coil3',n:'雷霹の環',base:'coil',grd:1,cost:6300,rng:311,dmg:60,rate:.8,type:'elec',chain:12,cmax:12,arcT:.08,grow:1.4,gmax:7,c:'#9fe8ff',dsc:'電が連なるほど育ち、群れを一周して戻ってくる'},
+ {id:'rail3',n:'歼滅軌道砲',base:'rail',grd:1,cost:6120,rng:1119,dmg:1240,rate:2.15,type:'beam',beam:42,pierce:1,prio:1,c:'#c4a8ff',dsc:'盤面の端から端までを一本の光で割る'},
+ {id:'fort3',n:'城塞主砲',base:'fort',grd:1,cost:8100,rng:473,dmg:600,rate:.52,type:'pierce',multi:6,pierce:1,spl:78,c:'#c0c4cc',dsc:'六門の砲が同時に火を吹く動かぬ要塞'},
+ {id:'spray3',n:'瘩気散布塔',base:'spray',grd:1,cost:4320,rng:323,dmg:16,rate:1.16,type:'net',gsp:.62,slow:.25,slowT:1.1,c:'#e0ff9a',dsc:'八つの噴口が盤面を瘩気で埋める'},
  {id:'net3',n:'縛鎖網砲',base:'net',grd:1,cost:1440,rng:224,dmg:8,rate:.9,type:'net',slow:.62,slowT:3.4,c:'#b0e0cc',dsc:'鋼の網を幾重にも重ねて、範囲の敵を縫い止める'},
  {id:'flame3',n:'獄炎放射塔',base:'flame',grd:1,cost:2520,rng:180,dmg:30,rate:.14,type:'fire',cont:1,burn:48,fspl:94,c:'#ffb347',dsc:'三又の火口が獄炎を吐き続ける。装甲を焼き抜き、周りごと燃え上がらせる'},
  {id:'gren3',n:'飽和爆裂砲',base:'gren',grd:1,cost:2700,rng:350,dmg:220,rate:1.1,type:'blast',aoe:106,c:'#b5c48a',dsc:'六つの砲口が休みなく撃ち込み、範囲ごと吹き飛ばす'},
@@ -5005,7 +5030,7 @@ const GRD_MID={
 const SUP_N=4;/* 支援施設の数(末尾のグレードアップ専用の手前まで)。⚠(128)進軍旗を足して3→4 */
 /* ↑末尾のグレードアップ専用の数(工房の2段+タレットの最終形態18種+**中段17種**)。⚠段を足したらここも増やす。
    ⚠**中段は TOWERS の一番後ろに push している**ので、素のタレットの添字は1つも動いていない(セーブと解放順が無事) */
-const GRD_N=20+18+6+1+2+4;/* 🔁(259)+4=面⑥で開くもう一段(net3/flame3/gren3/scrap4) *//* ⚠(197)雷塔/引力塔/照明塔の進化ぶん(各2段) *//* ⚠ドローン基地だけ中段が無いので中段は18(=17+ハープーン) *//* 🔩(228q)+1=harp2。中段18にはharpMを含む *//* 💨(252)+2=spray2とsprayM */
+const GRD_N=20+18+6+1+2+4+17;/* 🔁(260)+17=面⑦〜⑩で開くもう一段 *//* 🔁(259)+4=面⑥で開くもう一段(net3/flame3/gren3/scrap4) *//* ⚠(197)雷塔/引力塔/照明塔の進化ぶん(各2段) *//* ⚠ドローン基地だけ中段が無いので中段は18(=17+ハープーン) *//* 🔩(228q)+1=harp2。中段18にはharpMを含む *//* 💨(252)+2=spray2とsprayM */
 /* 🎨⭐(228r)**属性の印**(2026-08-09ユーザー指示「TD中とかタレット設置するときとか
    ユニットのボタンに属性がわかるマークを」)=建設メニューの札とデッキの札の隅に小さく出す。
    ⚠(145)で外した「相性の札(通り方の文)」とは別物=これは**自分の攻撃の型**の一文字だけ。
@@ -5664,15 +5689,21 @@ const UVAR={
  chain:[
   {id:'hook',n:'捕縛兵',cm:1.2,hp:1.3,atk:1.3,c:'#6f8a8f',dsc:'鉤縄で確実に絡め取る'},
   {id:'netm',n:'大網使い',cm:1.45,hp:1.7,atk:1.6,rng:1.2,c:'#6f9c8f',dsc:'投網で数体まとめて止める'},
-  {id:'onich',n:'鎖鬼',cm:1.75,hp:2.4,atk:2.2,c:'#8f6fae',dsc:'鉄鎖を振り回す鬼神'}],
+  {id:'onich',n:'鎖鬼',cm:1.75,hp:2.4,atk:2.2,c:'#8f6fae',dsc:'鉄鎖を振り回す鬼神'},
+  /* 🔁(260)面⑨の第4段階 */
+  {id:'onich2',n:'千鎖の鬼',cm:2.1,hp:3.2,atk:3,c:'#5f3f7a',dsc:'鎖が四方から伸びて誰も通さない'}],
  gun:[
   {id:'sgun',n:'散弾兵',cm:1.2,hp:1.3,atk:1.35,c:'#a5875c',dsc:'近距離で薙ぎ払う散弾'},
   {id:'hmg',n:'重機関手',cm:1.45,hp:1.7,atk:1.7,rate:.82,c:'#6b7580',dsc:'重機関銃で弾幕を張る'},
-  {id:'mark',n:'特務射手',cm:1.75,hp:2.1,atk:2.2,rng:1.15,c:'#4a5560',dsc:'訓練された特務ユニットの射手'}],
+  {id:'mark',n:'特務射手',cm:1.75,hp:2.1,atk:2.2,rng:1.15,c:'#4a5560',dsc:'訓練された特務ユニットの射手'},
+  /* 🔁(260)面⑧の第4段階 */
+  {id:'mark2',n:'特務隊長',cm:2.1,hp:2.8,atk:3,rng:1.24,c:'#2f3a44',dsc:'部隊ひとつ分の弾を一人で撃つ'}],
  axe:[
   {id:'waxe',n:'戦斧兵',cm:1.2,hp:1.3,atk:1.35,c:'#8a6a45',dsc:'戦場慣れした斧の使い手'},
   {id:'twin',n:'双斧',cm:1.45,hp:1.7,atk:1.8,rate:.85,c:'#b0483a',dsc:'両手の斧で連続で断つ'},
-  {id:'exec',n:'処刑人',cm:1.75,hp:2.3,atk:2.5,c:'#3f4a54',dsc:'巨大な処刑斧を振り下ろす'}],
+  {id:'exec',n:'処刑人',cm:1.75,hp:2.3,atk:2.5,c:'#3f4a54',dsc:'巨大な処刑斧を振り下ろす'},
+  /* 🔁(260)面⑦の第4段階 */
+  {id:'exec2',n:'断罪の斧',cm:2.1,hp:3.1,atk:3.4,c:'#8a2f3a',dsc:'振り下ろすたびに列がひとつ消える'}],
  big:[
   {id:'bounc',n:'用心棒',cm:1.2,hp:1.45,atk:1.35,c:'#8f6a4a',dsc:'場慣れした大男。腕っぷしも上がる'},
   {id:'htank',n:'人間戦車',cm:1.45,hp:2,atk:1.5,c:'#7a6f5c',dsc:'ぶつかった物を押し返す肉の戦車'},
@@ -5704,23 +5735,33 @@ const UVAR={
  frz:[
   {id:'frz2',n:'冷却兵',cm:1.2,hp:1.3,atk:1.3,c:'#8fc4d9',dsc:'冷却剤で足を鈍らせる'},
   {id:'frz3',n:'氷結兵',cm:1.45,hp:1.7,atk:1.7,c:'#7fb6c9',dsc:'路面ごと凍らせて止める'},
-  {id:'frz4',n:'凍土の魔手',cm:1.75,hp:2.2,atk:2.2,rng:1.15,c:'#cdf1ff',dsc:'触れた物を凍土に変える'}],
+  {id:'frz4',n:'凍土の魔手',cm:1.75,hp:2.2,atk:2.2,rng:1.15,c:'#cdf1ff',dsc:'触れた物を凍土に変える'},
+  /* 🔁(260)面⑩の第4段階 */
+  {id:'frz5',n:'永久凍土',cm:2.1,hp:2.9,atk:3,rng:1.24,c:'#eafcff',dsc:'足元から凍り付いて二度と溶けない'}],
  saw:[
   {id:'saw2',n:'電動鋸',cm:1.2,hp:1.35,atk:1.35,c:'#c96b35',dsc:'刃を替えて回転を上げた'},
   {id:'saw3',n:'解体屋',cm:1.45,hp:1.8,atk:1.8,c:'#8a4526',dsc:'建物も屍も解体する'},
-  {id:'saw4',n:'屠殺人',cm:1.75,hp:2.4,atk:2.4,rate:.88,c:'#7a2f2a',dsc:'肉を挽くことしか知らない'}],
+  {id:'saw4',n:'屠殺人',cm:1.75,hp:2.4,atk:2.4,rate:.88,c:'#7a2f2a',dsc:'肉を挽くことしか知らない'},
+  /* 🔁(260)面⑧の第4段階 */
+  {id:'saw5',n:'解体機関',cm:2.1,hp:3.2,atk:3.3,rate:.84,c:'#4a1f1c',dsc:'止まらない刃が列ごと挽いていく'}],
  med:[
   {id:'med2',n:'衛生兵',cm:1.2,hp:1.3,atk:1.35,c:'#a8d98f',dsc:'手際のいい前線の衛生兵'},
   {id:'med3',n:'軍医',cm:1.45,hp:1.7,atk:1.8,c:'#7ba33f',dsc:'重傷でも立たせる本物の医者'},
-  {id:'med4',n:'聖救の手',cm:1.75,hp:2.2,atk:2.4,rng:1.15,c:'#b7e07a',dsc:'触れずとも傷が塞がる'}],
+  {id:'med4',n:'聖救の手',cm:1.75,hp:2.2,atk:2.4,rng:1.15,c:'#b7e07a',dsc:'触れずとも傷が塞がる'},
+  /* 🔁(260)面⑦の第4段階 */
+  {id:'med5',n:'再生の祈り',cm:2.1,hp:2.9,atk:3.2,rng:1.24,c:'#e8ffc0',dsc:'倒れかけた者が立ち上がっていく'}],
  snp:[
   {id:'snp2',n:'狙撃手',cm:1.2,hp:1.3,atk:1.35,c:'#7f9cae',dsc:'呼吸を止めて撃つ本職'},
   {id:'snp3',n:'精密狙撃',cm:1.45,hp:1.7,atk:1.8,rng:1.1,c:'#5f8fa3',dsc:'風も距離も読み切る'},
-  {id:'snp4',n:'神の一撃',cm:1.75,hp:2.1,atk:2.5,rate:.9,c:'#cdf1ff',dsc:'外すという言葉を知らない'}],
+  {id:'snp4',n:'神の一撃',cm:1.75,hp:2.1,atk:2.5,rate:.9,c:'#cdf1ff',dsc:'外すという言葉を知らない'},
+  /* 🔁(260)面⑨の第4段階 */
+  {id:'snp5',n:'終焉の照準',cm:2.1,hp:2.8,atk:3.4,rate:.86,c:'#ffffff',dsc:'狙われた時点で終わっている'}],
  mgn:[
   {id:'mgn2',n:'重ミニガン',cm:1.2,hp:1.35,atk:1.35,c:'#7a8590',dsc:'銃身を増やして弾を厚くした'},
   {id:'mgn3',n:'掃射手',cm:1.45,hp:1.8,atk:1.75,c:'#5c6b78',dsc:'道を丸ごと薙ぐ掃射'},
-  {id:'mgn4',n:'鉄の雨',cm:1.75,hp:2.4,atk:2.4,rng:1.12,c:'#3f4a54',dsc:'降り止まぬ鉄の雨'}],
+  {id:'mgn4',n:'鉄の雨',cm:1.75,hp:2.4,atk:2.4,rng:1.12,c:'#3f4a54',dsc:'降り止まぬ鉄の雨'},
+  /* 🔁(260)面⑨の第4段階 */
+  {id:'mgn5',n:'鉄嵐',cm:2.1,hp:3.2,atk:3.3,rng:1.2,c:'#2a333c',dsc:'弾で道そのものを塞ぐ'}],
  rkt:[
   {id:'rkt2',n:'対戦車兵',cm:1.2,hp:1.3,atk:1.35,c:'#8a7a5c',dsc:'装甲を抜くために撃つ'},
   {id:'rkt3',n:'多連装ロケット',cm:1.45,hp:1.7,atk:1.8,rate:.9,c:'#a0623a',dsc:'続けざまに撃ち込む'},
@@ -5732,11 +5773,15 @@ const UVAR={
  pike:[
   {id:'pike2',n:'重槍兵',cm:1.2,hp:1.4,atk:1.3,c:'#8a8f96',dsc:'厚い穂先で受けて突く'},
   {id:'pike3',n:'槍衾',cm:1.45,hp:1.9,atk:1.7,c:'#6f8a8f',dsc:'穂先を並べて前を塞ぐ'},
-  {id:'pike4',n:'貫きの穂先',cm:1.75,hp:2.5,atk:2.2,rng:1.14,c:'#a5b8c4',dsc:'何体でもまとめて貫く'}],
+  {id:'pike4',n:'貫きの穂先',cm:1.75,hp:2.5,atk:2.2,rng:1.14,c:'#a5b8c4',dsc:'何体でもまとめて貫く'},
+  /* 🔁(260)面⑧の第4段階 */
+  {id:'pike5',n:'不動の穂',cm:2.1,hp:3.4,atk:3,rng:1.22,c:'#d0dce4',dsc:'穂先の壁は一歩も退かない'}],
  flm:[
   {id:'flm2',n:'焼却兵',cm:1.2,hp:1.3,atk:1.35,c:'#d9803a',dsc:'火力を上げた焼却装備'},
   {id:'flm3',n:'業火放射',cm:1.45,hp:1.75,atk:1.8,rng:1.12,c:'#ff9a3d',dsc:'炎の帯が遠くまで届く'},
-  {id:'flm4',n:'灼熱の炉',cm:1.75,hp:2.4,atk:2.4,c:'#ffcf6a',dsc:'背負った炉から吹き出す白い炎'}],
+  {id:'flm4',n:'灼熱の炉',cm:1.75,hp:2.4,atk:2.4,c:'#ffcf6a',dsc:'背負った炉から吹き出す白い炎'},
+  /* 🔁(260)面⑩の第4段階 */
+  {id:'flm5',n:'焦土の炎',cm:2.1,hp:3.2,atk:3.3,rng:1.1,c:'#fff0c0',dsc:'通った跡が焦土に変わる'}],
  gld:[
   {id:'gld2',n:'装甲盾',cm:1.2,hp:1.45,atk:1.2,c:'#7a8590',dsc:'鋼板を足した重い盾'},
   {id:'gld3',n:'鋼鉄障壁',cm:1.45,hp:2,atk:1.45,c:'#5c6b78',dsc:'並べば道が塞がる'},
@@ -5744,7 +5789,9 @@ const UVAR={
  elec:[
   {id:'elec2',n:'電磁投射',cm:1.2,hp:1.3,atk:1.35,c:'#9fdcf5',dsc:'磁力で弾を加速して撃つ'},
   {id:'elec3',n:'雷撃兵',cm:1.45,hp:1.7,atk:1.8,c:'#5fa8c9',dsc:'雷を落として貫く'},
-  {id:'elec4',n:'雷神の槍',cm:1.75,hp:2.2,atk:2.4,rng:1.12,c:'#ffd23d',dsc:'空から降る雷そのもの'}],
+  {id:'elec4',n:'雷神の槍',cm:1.75,hp:2.2,atk:2.4,rng:1.12,c:'#ffd23d',dsc:'空から降る雷そのもの'},
+  /* 🔁(260)面⑦の第4段階 */
+  {id:'elec5',n:'雷帝',cm:2.1,hp:2.9,atk:3.2,rng:1.2,c:'#fff0a8',dsc:'一歩ごとに空が鳴る'}],
  mortarU:[
   {id:'mor2',n:'重迫撃',cm:1.2,hp:1.3,atk:1.35,c:'#8a8560',dsc:'砲身を太くして威力を上げた'},
   {id:'mor3',n:'曲射砲兵',cm:1.45,hp:1.7,atk:1.8,rng:1.1,c:'#6b6b4a',dsc:'壁の裏まで撃ち込む'},
@@ -5756,7 +5803,9 @@ const UVAR={
  ninja:[
   {id:'ninja2',n:'隠密',cm:1.2,hp:1.3,atk:1.35,sp:1.05,c:'#5a5560',dsc:'足音を消して回り込む'},
   {id:'ninja3',n:'暗殺者',cm:1.45,hp:1.7,atk:1.8,sp:1.1,c:'#3f3a4a',dsc:'一撃で急所を断つ'},
-  {id:'ninja4',n:'無音の刃',cm:1.75,hp:2.2,atk:2.4,sp:1.16,c:'#b07ad0',dsc:'斬られたことにも気づかせない'}],
+  {id:'ninja4',n:'無音の刃',cm:1.75,hp:2.2,atk:2.4,sp:1.16,c:'#b07ad0',dsc:'斬られたことにも気づかせない'},
+  /* 🔁(260)面⑩の第4段階 */
+  {id:'ninja5',n:'影の頭領',cm:2.1,hp:2.9,atk:3.2,sp:1.24,c:'#e0c4ff',dsc:'影そのものが列を渡って斬る'}],
  gren2:[
   {id:'gren3',n:'破砕擲弾兵',cm:1.2,hp:1.3,atk:1.35,c:'#8f9c5c',dsc:'破片を撒く重い擲弾'},
   {id:'gren4',n:'榴散弾兵',cm:1.45,hp:1.75,atk:1.8,c:'#6b7a45',dsc:'広く薄く、確実に削る'},
@@ -6702,8 +6751,17 @@ const unlCnt=(arr,st)=>{let s=0;const n=Math.min(st+1,arr.length);for(let i=0;i<
      段0 なら 🕸ネット砲・🏭廃品工房・🔥火炎放射塔・💣爆裂砲台 と 🧪火炎瓶・🛡盾持ち・💣爆弾兵。
    ⚠**今まである進化と派生には門を掛けない**＝今まで買えた物は今までどおり。
    ⚠⚠**中身を足したらこの表にも必ず足すこと**＝足さないと**面をクリアしていなくても並ぶ**。 */
-const LAP_GT=[['net3','flame3','gren3','scrap4'],[],[],[],[]];
-const LAP_GU=[['mol5','shd4','grn5'],[],[],[],[]];
+const LAP_GT=[['net3','flame3','gren3','scrap4'],
+ ['bolt4','cryo3','mortar3','acid3'],
+ ['drone3','pullt4','laser3','tesla3'],
+ ['gat3','lamp4','arty3','sniper3','harp3'],
+ /* ⚠🏥野戦病院は支援施設なので進化しない＝⑩は4種 */
+ ['coil3','rail3','fort3','spray3']];
+const LAP_GU=[['mol5','shd4','grn5'],
+ ['elec5','med5','exec2'],
+ ['mark2','pike5','saw5'],
+ ['mgn5','onich2','snp5'],
+ ['flm5','frz5','ninja5']];
 /* その id がどの段の「もう一段」か(-1=普通の進化・門は無し) */
 const lapGSt=id=>{for(let i=0;i<LAP_GT.length;i++)if(LAP_GT[i].indexOf(id)>=0||LAP_GU[i].indexOf(id)>=0)return i;return -1;};
 /* その進化先がもう棚に並んでいるか。⚠面⑥を制覇してはじめて段0が開く */
@@ -16287,6 +16345,183 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
 /* 🔁⭐(259)**面⑥で開くもう一段**の4種。⭐**前の段の言葉づかいをそのまま使って、
    「数を一つ増やす」で最終形を作る**(炉二基→四基 / 二又→三又 / 三連→六連 / 網一枚→三枚)。
    ⚠**形を一から変えない**＝別の塔に見えると、進化したのか建て直したのかが読めなくなる。 */
+ /* 🔁⭐⭐(260)**面⑦〜⑩で開くもう一段の絵**。
+    ⭐**前の段の言葉づかいのまま「数を一つ増やす」**=タンク3本→4本 / 砲口3門→5門 /
+    レール2本→3本 / 磍子3枚→4枚。⚠**形を一から変えない**(建て直しに見える)。 */
+ else if(tid==='cryo3'){
+  twFins(c,-9,4,10,'#cdf1ff');
+  twTank(c,-26,-30,10,26,'#4d7a8c');twTank(c,-13,-38,11,34,'#5f8fa3');
+  twTank(c,0,-38,11,34,'#5f8fa3');twTank(c,13,-30,10,26,'#4d7a8c');
+  c.fillStyle=FROST;c.beginPath();c.arc(-1,-48,14,0,7);c.fill();c.stroke();
+  c.fillStyle='#eafcff';c.beginPath();c.arc(-1,-48,7.5,0,7);c.fill();
+  c.fillStyle='rgba(255,255,255,.6)';c.beginPath();c.arc(-5,-52,4.4,0,7);c.fill();
+  c.strokeStyle=TECH;c.lineWidth=2.6;
+  for(let k=0;k<6;k++){const a2=t*.5+k*.52;
+   c.beginPath();c.moveTo(-1-Math.cos(a2)*20,-48-Math.sin(a2)*20);c.lineTo(-1+Math.cos(a2)*20,-48+Math.sin(a2)*20);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+ }
+ else if(tid==='mortar3'){
+  c.fillStyle='#5c6b4a';for(let k=0;k<4;k++){rr(c,-26+k*8,8,6.5,14,2.5);c.fill();c.stroke();}
+  c.save();c.rotate(-1.02);
+  twGun(c,-4,38,22,'#8a9070',6);
+  c.fillStyle='#5c6448';c.beginPath();c.moveTo(30,-13.5);c.lineTo(42,-18);c.lineTo(42,18);c.lineTo(30,13.5);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3a4030';c.beginPath();c.ellipse(41,0,3.8,13,0,0,7);c.fill();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(49,0,12,0,7);c.fill();}
+  c.restore();
+  c.fillStyle='#4a5040';rr(c,-19,10,38,9,3);c.fill();c.stroke();
+ }
+ else if(tid==='acid3'){
+  twTank(c,-31,-18,10,24,'#4c6b32');twTank(c,-19,-26,11,32,TOXIC);
+  twTank(c,-7,-26,11,32,TOXIC);twTank(c,5,-18,10,24,'#4c6b32');
+  c.strokeStyle='#3f4a54';c.lineWidth=4.4;
+  c.beginPath();c.moveTo(-20,-6);c.quadraticCurveTo(-4,8,10,-1);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.save();c.rotate(ang);
+  for(let m=-1;m<=1;m++){c.save();c.translate(0,m*9);
+   twGun(c,4,m===0?21:16,m===0?11:8,m===0?'#6b6b73':'#5c5c66',4);
+   c.fillStyle=m===0?'#5f8a2e':'#4c6b32';
+   c.beginPath();c.moveTo(m===0?24:19,-5);c.lineTo(m===0?34:27,-2.4);c.lineTo(m===0?34:27,5);c.lineTo(m===0?24:19,4.4);c.closePath();c.fill();c.stroke();
+   if(o.fire){c.fillStyle=TOXIC;c.beginPath();c.arc(m===0?37:29,1,(m===0?7:5)+Math.sin(t*19+m)*2,0,7);c.fill();}
+   c.restore();}
+  c.restore();
+  c.fillStyle=TOXIC;c.globalAlpha=.6+Math.sin(t*4)*.3;
+  c.beginPath();c.arc(-24,10,3.2,0,7);c.fill();c.beginPath();c.arc(-14,14,2.6,0,7);c.fill();c.globalAlpha=1;
+ }
+ else if(tid==='drone3'){
+  c.fillStyle='#2f3a44';rr(c,-23,-12,46,26,6);c.fill();c.stroke();
+  c.fillStyle='#3a4750';rr(c,-19,-20,38,10,4);c.fill();c.stroke();
+  c.fillStyle='#4a5a68';rr(c,-15,-9,30,11,4);c.fill();c.stroke();
+  c.fillStyle='#9fd0e4';rr(c,-6,-33,12,15,3);c.fill();c.stroke();
+  c.fillStyle='#28323c';c.beginPath();c.arc(0,4,7.5,0,7);c.fill();
+  c.fillStyle=TECH;c.globalAlpha=.4+Math.sin(t*3)*.25;c.beginPath();c.arc(0,4,5,0,7);c.fill();c.globalAlpha=1;
+  c.fillStyle=(Math.sin(t*5)>0)?DANGER:'#3c4136';c.beginPath();c.arc(0,-35,2.8,0,7);c.fill();
+  c.strokeStyle='#8a97a5';c.lineWidth=2.6;
+  for(const ox of [-20,-8,8,20]){c.beginPath();c.moveTo(ox,-11);c.lineTo(ox,-18);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;}
+ else if(tid==='laser3'){
+  twFins(c,-14,4,12,'#e88cc4');
+  c.save();c.rotate(ang);
+  twGun(c,0,30,15,'#a06a90',5);
+  c.fillStyle='#6b4560';rr(c,26,-11,7,22,2);c.fill();c.stroke();
+  for(const gx of [30,40]){c.fillStyle=o.fire?'#fff0fa':'#ffb0e0';
+   c.beginPath();c.ellipse(gx,0,4.6,gx===30?11:8,0,0,7);c.fill();c.stroke();}
+  c.fillStyle='rgba(255,255,255,.6)';c.beginPath();c.ellipse(29,-3,2,4,0,0,7);c.fill();
+  c.restore();
+ }
+ else if(tid==='tesla3'){
+  c.strokeStyle='#5f8fa3';c.lineWidth=4;
+  for(let k=0;k<6;k++){const a2=k*1.047+.4;
+   c.beginPath();c.moveTo(Math.cos(a2)*10,Math.sin(a2)*6+4);c.lineTo(Math.cos(a2)*26,Math.sin(a2)*14+4);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.fillStyle='#4a5560';rr(c,-8,-38,16,40,4);c.fill();c.stroke();
+  c.fillStyle='#b07a3a';for(let k=0;k<6;k++){rr(c,-11,-36+k*6,22,4.2,2);c.fill();c.stroke();}
+  c.fillStyle='#b0f0ff';c.beginPath();c.arc(0,-47,13,0,7);c.fill();c.stroke();
+  c.strokeStyle='rgba(176,240,255,'+(.45+Math.sin(t*11)*.35)+')';c.lineWidth=2.6;
+  for(let k=0;k<6;k++){const a2=t*3.5+k*1.047;
+   c.beginPath();c.moveTo(Math.cos(a2)*13,-47+Math.sin(a2)*13);c.lineTo(Math.cos(a2)*23,-47+Math.sin(a2)*23);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+ }
+ else if(tid==='gat3'){
+  twDrum(c,-21,6,10,'#7a2f26');twDrum(c,-8,14,7,'#5c231c');twBelt(c,-26,20,5,GOLD2);
+  c.save();c.rotate(ang);
+  const spin=t*9,byy=k=>Math.sin(spin+k*.785)*10;
+  for(const g9 of [[0,'#f0907a'],[1,'#8a4436']]){let f9=0;c.fillStyle=g9[1];c.beginPath();
+   for(let k=0;k<8;k++){const yy=byy(k);if((yy>0)===!!g9[0]){rrP(c,2,yy-3,31,6,2.6);f9=1;}}
+   if(f9){c.fill();c.stroke();}}
+  c.fillStyle='#54606d';rr(c,-7,-14,13,28,4);c.fill();c.stroke();
+  c.fillStyle='#3a424b';c.beginPath();c.arc(33,0,6,0,7);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(40,0,9,0,7);c.fill();}
+  c.restore();
+ }
+ else if(tid==='arty3'){
+  c.fillStyle='#4a4a38';rr(c,-28,12,56,7,2);c.fill();c.stroke();
+  c.fillStyle='#a8a878';for(let k=0;k<5;k++){rr(c,-26+k*11,10,7,12,2);c.fill();c.stroke();}
+  c.save();c.rotate(ang);
+  twGun(c,-6,60,16,'#a8a878',5);
+  twMuz(c,54,9,'brake','#5a5a3c');
+  c.fillStyle='#5a5a3c';rr(c,-12,-13,19,26,4);c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(66,0,13,0,7);c.fill();}
+  c.restore();
+ }
+ else if(tid==='sniper3'){
+  c.fillStyle='#4a5560';rr(c,-27,8,17,12,2.5);c.fill();c.stroke();
+  c.fillStyle=GOLD2;c.fillRect(-24,11,11,2.6);
+  c.strokeStyle='#8a97a5';c.lineWidth=2.4;
+  c.beginPath();c.moveTo(-19,8);c.lineTo(-24,-16);c.stroke();
+  c.fillStyle=TECH;c.beginPath();c.arc(-24,-18,3,0,7);c.fill();c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.save();c.rotate(ang);
+  c.strokeStyle='#3a424b';c.lineWidth=4.5;
+  c.beginPath();c.moveTo(8,0);c.lineTo(22,14);c.stroke();c.beginPath();c.moveTo(8,0);c.lineTo(22,-14);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+  twGun(c,0,54,8,'#9aa8b4',3);
+  twMuz(c,54,5,'brake','#3a424b');
+  c.fillStyle='#2f3a44';rr(c,-2,-15,20,8,3);c.fill();c.stroke();
+  c.fillStyle='#2f3a44';rr(c,20,-13,14,7,3);c.fill();c.stroke();
+  c.fillStyle=TECH;c.beginPath();c.arc(15,-11,3.2,0,7);c.fill();
+  if(o.fire){c.fillStyle='#fff0c0';c.beginPath();c.arc(62,0,9,0,7);c.fill();}
+  c.restore();
+ }
+ else if(tid==='harp3'){
+  twTank(c,-30,-21,9,25,'#8a7a54');twTank(c,-20,-26,10,31,'#a08c60');twTank(c,-10,-21,9,25,'#8a7a54');
+  twDrum(c,-18,12,7.5,'#6b5a3c');
+  c.save();c.rotate(ang);
+  c.fillStyle='#5c4f3c';rr(c,-8,-14,36,28,4);c.fill();c.stroke();
+  c.fillStyle='#3a332a';rr(c,-12,-16,7,32,2);c.fill();c.stroke();
+  c.fillStyle='#b0a078';c.beginPath();for(let k=-2;k<=2;k++)rrP(c,26,k*6-2,10,4,1.6);c.fill();c.stroke();
+  c.fillStyle='#e0d0a8';c.beginPath();
+  for(let k=-2;k<=2;k++){c.moveTo(36,k*6-2.2);c.lineTo(43,k*6);c.lineTo(36,k*6+2.2);c.closePath();}
+  c.fill();c.stroke();
+  if(o.fire){c.fillStyle='#ffe9b0';c.beginPath();c.arc(46,0,7.5,0,7);c.fill();}
+  c.restore();}
+ else if(tid==='coil3'){
+  twTank(c,-27,-16,11,22,'#3f6b8a');twTank(c,-14,-20,10,26,'#4d7a9c');
+  twTank(c,4,-20,10,26,'#4d7a9c');twTank(c,16,-16,11,22,'#3f6b8a');
+  c.fillStyle='#4a5560';rr(c,-6,-52,12,54,4);c.fill();c.stroke();
+  c.fillStyle='#9fe8ff';c.beginPath();c.arc(0,-58,11,0,7);c.fill();c.stroke();
+  c.strokeStyle='#9fe8ff';c.lineWidth=4;
+  for(let k=0;k<4;k++){const yy=-16-k*11+Math.sin(t*2.4+k)*1.6;
+   c.beginPath();c.ellipse(0,yy,19-k*2.4,5.4,0,0,7);c.stroke();}
+  c.strokeStyle='rgba(159,232,255,'+(.4+Math.sin(t*9)*.3)+')';c.lineWidth=2.4;
+  c.beginPath();c.moveTo(0,-58);c.lineTo(Math.cos(t*4)*19,-16);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=3;
+ }
+ else if(tid==='rail3'){const cg=o.chg||0;
+  twDrum(c,-21,11,8,'#4a3a6b');twDrum(c,-6,15,6,'#3f3060');twDrum(c,17,13,6.5,'#3f3060');
+  c.save();c.rotate(ang);
+  for(const sy of [-12,0,12]){c.fillStyle=sy===0?'#8a72b0':'#6b5a8a';rr(c,0,sy-4.5,48,9,3);c.fill();c.stroke();}
+  c.fillStyle='#3a2f4a';rr(c,-9,-17,17,34,4);c.fill();c.stroke();
+  if(cg>0||o.fire){c.fillStyle='rgba(210,180,255,'+(.35+cg*.6)+')';rr(c,4,-4,40*Math.max(cg,o.fire?1:0),8,3);c.fill();}
+  c.fillStyle='#c4a8ff';c.globalAlpha=.5+Math.sin(t*14)*.35;
+  c.beginPath();c.arc(50,0,5+cg*5,0,7);c.fill();c.globalAlpha=1;
+  if(o.fire){c.fillStyle='#f0e0ff';c.beginPath();c.arc(57,0,11,0,7);c.fill();}
+  c.restore();
+ }
+ else if(tid==='fort3'){
+  c.fillStyle='#6b7078';rr(c,-29,-6,15,26,3);c.fill();c.stroke();
+  c.fillStyle='#6b7078';rr(c,14,-6,15,26,3);c.fill();c.stroke();
+  c.fillStyle='#8a8f96';rr(c,-29,-12,15,7,2);c.fill();c.stroke();
+  c.fillStyle='#8a8f96';rr(c,14,-12,15,7,2);c.fill();c.stroke();
+  c.save();c.rotate(ang);
+  for(let k=-2;k<=2;k++){c.save();c.translate(0,k*9);
+   twGun(c,0,k===0?34:28,8.5,k===0?'#c0c4cc':'#9aa0a8',3.5);
+   twMuz(c,k===0?34:28,5.4,'brake','#5c636b');c.restore();}
+  if(o.fire){c.fillStyle='#fff0c0';for(let k=-2;k<=2;k++){c.beginPath();c.arc(k===0?43:37,k*9,6.5,0,7);c.fill();}}
+  c.restore();
+ }
+ else if(tid==='spray3'){
+  twTank(c,-31,-24,11,32,'#8fa356');twTank(c,-19,-30,12,38,'#a8c266');twTank(c,-7,-24,11,32,'#8fa356');
+  c.fillStyle='#5f6b3a';rr(c,-14,-4,11,15,3);c.fill();c.stroke();
+  c.save();c.rotate(ang);
+  for(let m=-1;m<=1;m++){c.save();c.translate(0,m*9);
+   c.fillStyle='#6b7a42';rr(c,-2,-4.5,18,9,3);c.fill();c.stroke();
+   c.fillStyle='#e0ff9a';c.beginPath();c.moveTo(16,-7);c.lineTo(27,-11);c.lineTo(27,11);c.lineTo(16,7);c.closePath();c.fill();c.stroke();
+   c.restore();}
+  if(o.fire){c.globalAlpha=.5;c.fillStyle='#e0ff9a';
+   for(let m=-1;m<=1;m++)for(let k=0;k<2;k++){c.beginPath();c.arc(32+k*9,m*9+Math.sin(t*6+k+m)*3,5-k,0,7);c.fill();}
+   c.globalAlpha=1;}
+  c.restore();
+ }
  else if(tid==='net3'){/* 縛鎖網砲: ドラム三つ+**網カゴが三枚**(鋼糸射出砲は一枚) */
   twDrum(c,-21,10,8,'#4a6b60');twDrum(c,17,12,6.5,'#3f5a50');twDrum(c,-2,15,5.5,'#4a6b60');
   c.save();c.rotate(ang);
@@ -16410,7 +16645,7 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
   twMuz(c,22,4.5,'flare','#3a424b');
   if(o.fire){c.fillStyle='#ffdd66';c.beginPath();c.arc(30,0,6,0,7);c.fill();c.beginPath();c.arc(30,-9,6,0,7);c.fill();}
   c.restore();
- }else if(tid==='bolt'||tid==='bolt2'||tid==='bolt3'){const g9=tid==='bolt'?0:(tid==='bolt2'?1:2);
+ }else if(tid==='bolt'||tid==='bolt2'||tid==='bolt3'||tid==='bolt4'){const g9=tid==='bolt'?0:(tid==='bolt2'?1:(tid==='bolt3'?2:3));
   if(g9)c.scale(1+g9*.13,1+g9*.13);
   /* ⚡段が上がるほど避雷針が増える(中段2本・最終3本)=形で見分く */
   for(let k9=1;k9<=g9;k9++){c.fillStyle='#33404a';const dx9=k9%2?-9:9;
@@ -16423,7 +16658,7 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
   {const a9=t*7;c.strokeStyle=FROST;c.lineWidth=2.4;c.beginPath();c.moveTo(0,-35);
    c.lineTo(3*Math.sin(a9),-43);c.lineTo(-3*Math.sin(a9*1.3),-50);c.stroke();c.strokeStyle=INK;c.lineWidth=3;}
   if(o.fire){c.fillStyle=GLOW;c.beginPath();c.arc(0,-35,9,0,7);c.fill();}
- }else if(tid==='pullt'||tid==='pullt2'||tid==='pullt3'){const g9=tid==='pullt'?0:(tid==='pullt2'?1:2);
+ }else if(tid==='pullt'||tid==='pullt2'||tid==='pullt3'||tid==='pullt4'){const g9=tid==='pullt'?0:(tid==='pullt2'?1:(tid==='pullt3'?2:3));
   if(g9)c.scale(1+g9*.13,1+g9*.13);
   /* 🧲段が上がるほど引き寄せの輪が増える */
   for(let k9=0;k9<g9;k9++){const q9=((t*1.1+k9*.5)%1);c.globalAlpha=.4*(1-q9);
@@ -16438,7 +16673,7 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
   c.restore();
   {const q=(t*1.3)%1;c.globalAlpha=.55*(1-q);c.strokeStyle='#c9a1ff';c.lineWidth=2.6;
    c.beginPath();c.arc(0,-14,10+q*22,0,7);c.stroke();c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=3;}
- }else if(tid==='lamp'||tid==='lamp2'||tid==='lamp3'){const g9=tid==='lamp'?0:(tid==='lamp2'?1:2);
+ }else if(tid==='lamp'||tid==='lamp2'||tid==='lamp3'||tid==='lamp4'){const g9=tid==='lamp'?0:(tid==='lamp2'?1:(tid==='lamp3'?2:3));
   if(g9)c.scale(1+g9*.13,1+g9*.13);
   /* 💡段が上がるほど灯が増える(中段2つ・最終3つ) */
   for(let k9=1;k9<=g9;k9++){const dx9=k9%2?-14:14;
@@ -25133,7 +25368,7 @@ function campStep(C,dt,wave){
      遅い4体貫通モードで切り替え」)=⚡速射(1体・間隔1/4.5)⇄🔩串刺し(直線4体)。⛔(238d)吹っ飛ばしは両方とも無い。
      ⚠強化(us)と値段は共通=モードは**その1台の旗(tw.md)**だけ。切替は強化ウィンドウの⇄ボタン。
      ⚠協力/対戦の先頭10種にハープーンは居ない=通信への同期は要らない。 */
-  const hpMd=((T.id==='harp'||T.id==='harpM'||T.id==='harp2')&&tw.md===1);
+  const hpMd=((T.id==='harp'||T.id==='harpM'||T.id==='harp2'||T.id==='harp3')&&tw.md===1);
   /* ⚖(229n)**速射は間隔1/4.5**(2026-08-10ユーザー指示「ノックバックの有無を考慮してDPSを調整」)=
      ⛔(238d)**吹っ飛ばしは全廃**したので、いまは純粋に「1体を速く」対「直線をまとめて」の選択
      (素: 速射411/秒 vs 串刺し最大365/秒+吹っ飛ばし。ガトリング要塞400/秒と同じ帯)。⚠実機の感触待ち */
@@ -25328,7 +25563,7 @@ function campStep(C,dt,wave){
         ⚠**書き戻さない**=戻すなら「1体に効く足止めは同時に1つまで」の作りごと要る。
         ⭐**モードは2つとも残す**=🔩串刺し(直線4体貫通)はこの塔にしかない役目なので消さない。 */
      if(cnt<4)hitFx(C,z,ang,hitC,prc,T.type);cnt++;}
-    const hp9=(T.id==='harp'||T.id==='harpM'||T.id==='harp2');
+    const hp9=(T.id==='harp'||T.id==='harpM'||T.id==='harp2'||T.id==='harp3');
     /* ⚠色は紫で固定(以前から `col` は無視されていた)。beamが色を受けるようになったので明示する。
        ⭐sus=撃ちっぱなしのビーム=太いまま残ってから一気に消える(2026-07-26ユーザー指示)。
        🔩ハープーンは光らせない=**鉄杭の軌跡**(短い寿命の細い帯+木羽色)で「物が飛んだ」に見せる */
@@ -28469,7 +28704,7 @@ function openBM(si){
    :(nx9<0?'':!tgOK(nx9)?`<div class="cdsc" style="font-size:12px;color:var(--paper)">🔬研究所の🧬派生タブで『${TOWERS[nx9].n}』を解放すると進化できる</div>`
    :`<div class="cdsc" style="font-size:12px;color:var(--gold)">⬆ 強化を全部MAXにすると『${TOWERS[nx9].n}』へ進化できる(⚙️${fmt(T_GCOST(tw.ti))})</div>`);
   /* 🔩(229i)ハープーンの2モード切替(ユーザー指示)。⚠切替は無料・強化は両モード共通 */
-  const hmd=(T.id==='harp'||T.id==='harpM'||T.id==='harp2')
+  const hmd=(T.id==='harp'||T.id==='harpM'||T.id==='harp2'||T.id==='harp3')
    ?`<div class="bm-row"><button class="btn sm gold" id="bm-hmd">${tw.md===1?'⚡速射モード(1体を速く) ⇄ 🔩串刺しへ':'🔩串刺しモード(直線'+T.bmax+'体) ⇄ ⚡速射へ'}</button></div>`:'';
   h=`<div id="bm-title">${T.n} — ${T.dsc}</div><div class="bm-col">${rows}</div>${hmd}${grd}<div class="bm-row"><button class="btn sm" id="bm-sell" ${canSell?'':'disabled'}>💥売却(60%)</button></div>`;
  }
