@@ -250,7 +250,9 @@ function checkFinalBoss(){
   ['🌑深海のナイトメア',1,FINNM2_ZI,NM_DIFF],
   /* 🪶🥩(229h)③④も同じ物差しで見る(それまで①②とNM2種しか見ていなかった) */
   ['ステージ3',2,FIN3_ZI,4],['🌑鉄塔のナイトメア',2,FINNM3_ZI,NM_DIFF],
-  ['ステージ4',3,FIN4_ZI,4],['🌑飽食のナイトメア',3,FINNM4_ZI,NM_DIFF]];
+  ['ステージ4',3,FIN4_ZI,4],['🌑飽食のナイトメア',3,FINNM4_ZI,NM_DIFF],
+  /* 💨(252)⑤も同じ物差しで見る */
+  ['ステージ5',4,FIN5_ZI,4],['🌑腐海のナイトメア',4,FINNM5_ZI,NM_DIFF]];
  for(const [nm,si,fi,df] of want){
   META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   /* 通常のボス波(15)と最終波を作って中身を見る */
@@ -285,7 +287,9 @@ function checkZPools(){
  const want=[['① 廃線',0,4,'-0'],['② 沈んだ港',1,4,'-2'],['🌑 ナイトメア',0,NM_DIFF,'n0'],['🌑 深海のナイトメア',1,NM_DIFF,'n2'],
   /* 🪶🥩(229h)③④も同じ物差しで見る */
   ['③ 送電鉄塔の丘',2,4,'-3'],['🌑 鉄塔のナイトメア',2,NM_DIFF,'n3'],
-  ['④ 飽食の市街',3,4,'-4'],['🌑 飽食のナイトメア',3,NM_DIFF,'n4']];
+  ['④ 飽食の市街',3,4,'-4'],['🌑 飽食のナイトメア',3,NM_DIFF,'n4'],
+  /* 💨(252)⑤も同じ物差しで見る */
+  ['⑤ 腐海の湿地帯',4,4,'-5'],['🌑 腐海のナイトメア',4,NM_DIFF,'n5']];
  for(const [nm,si,df,k] of want){
   META.sc=STAGES.map(()=>D5.map(()=>1));META.sclr=STAGES.map(()=>1);META.stg=si;META.nmOK=1;setDiff=df;startSolo();
   const seen={},bad=[];
@@ -2604,11 +2608,11 @@ function checkGacha(){
     ⚠2026-08-01に★5の暗黒の騎士を足して19種。⭐排出率は『1体あたり』なので数値表は触らない */
  /* ⭐2026-08-03(92)に跳弾姫ルピナを足して22人。🐺2026-08-08(226d)に蒼雷の狼王を足して23人 */
  /* ⚔2026-08-10(230)に**残月の剣鬼**(★5)を足して24人 */
- if(HEROES.length!==24){console.log('FAIL: 英雄が24種でない '+HEROES.length);process.exit(1);}
+ if(HEROES.length!==25){console.log('FAIL: 英雄が25種でない '+HEROES.length);process.exit(1);}/* 🐉(252)炎龍ウグニウス */
  const cnt={};for(const h of HEROES)cnt[h.rk]=(cnt[h.rk]||0)+1;
  /* ⚠2026-08-01に★5へ暗黒の騎士を足し、同日に**暁の王を★5→★4へ降格**。
     ⭐2026-08-03(92)に★5へ**跳弾姫ルピナ**、🐺(226d)に**蒼雷の狼王**を足して6人 */
- const want={1:5,2:4,3:4,4:4,5:7};
+ const want={1:5,2:4,3:4,4:4,5:8};/* 🐉(252)炎龍ウグニウスで★5は8人 */
  for(const k in want)if(cnt[k]!==want[k]){console.log('FAIL: ★'+k+'の数が違う '+cnt[k]+'(想定'+want[k]+')');process.exit(1);}
  if(Math.abs(G_RATE.reduce((a,r)=>a+r[1],0)-100)>1e-9){console.log('FAIL: 排出率の合計が100でない');process.exit(1);}
  /* ⭐⭐**排出率は「レア度の枠」で決まる**=にゃんこ式(2026-08-07(203)ユーザー決定)。
@@ -4223,7 +4227,7 @@ function checkUnlock(){
   /* ⭐(193)**1面あたりの配りは「塔2種・兵科3種」**(ユーザーが決めた数字。段0は別枠) */
   /* ⭐(197)**1面あたり 塔4種・兵科3種**(最後の段だけ塔2種=種類数の端数)。
      🔩(228q)**段3だけ5種**=ハープーン砲を面④の貫通の答えとして足した(ユーザー決定)。 */
-  for(let i=1;i<UNL_TN.length-1;i++){const want=(i===3)?5:4;
+  for(let i=1;i<UNL_TN.length-1;i++){const want=(i===3||i===4)?5:4;/* 💨(252)段4=散布塔で5種 */
    if(UNL_TN[i]!==want)F('面'+i+'の塔が'+want+'種でない '+UNL_TN[i]);}
   for(let i=1;i<UNL_UN.length;i++)if(UNL_UN[i]!==3)F('面'+i+'の兵科が3種でない '+UNL_UN[i]);}
  /* ②' ⭐(187D)**次の拠点で要る属性が、その手前の段で開く**
@@ -4509,31 +4513,31 @@ function checkMaterial(){
  const out=[];
  /* 🪶(205)**面③=羽**を足した。⚠**③はわざと羽を持たない個体も混ぜてある**(速い個体・すり抜け個体)が、
     実測では総HPの55〜88%が羽=①②と同じ4割の物差しで足りる。 */
- /* 🧪(238g)⑤腐海の湿地帯=**まだ④の顔ぶれを借りている**ので、主役は🥩肉のまま見る。
-    ⚠⚠**⑤の敵(💨ガス)を作ったら、ここを 💨 の列に差し替えること**(借り物のまま通ると気づけない) */
- const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘','④飽食の市街','⑤腐海の湿地帯(いまは④の借り物)'],
-  IC3=['①','②','③','④','⑤'],LO3=[40,40,40,40,40],MI3=[0,1,2,3,3];
+ /* 💨(252)⑤腐海の湿地帯=**⑤専用の14体が入った**ので、主役は💨ガスで見る(借り物ではなくなった)。 */
+ const NM3=['①廃線','②沈んだ港','③送電鉄塔の丘','④飽食の市街','⑤腐海の湿地帯'],
+  IC3=['①','②','③','④','⑤'],LO3=[40,40,40,40,40],MI3=[0,1,2,3,4];
  /* 🥩(229f)④の主役は🥩肉(fls)。⚠wip の面(敵がまだ)は飛ばす(いまは全面が開通している) */
  for(let stg=0;stg<STAGES.length;stg++)for(const d of [2,4,5]){
   if(STAGES[stg].wip)continue;
   META.stg=stg;setDiff=d;startSolo();frames(6,.016);
   if(STAGE!==stg){console.log('FAIL: ステージ'+(stg+1)+'が読み込まれていない');process.exit(1);}
-  let hp=0,ahp=0,shp=0,whp=0,fhp=0;const wN=curW();
+  let hp=0,ahp=0,shp=0,whp=0,fhp=0,ghp=0;const wN=curW();
   for(let w=1;w<=wN;w++)for(let r=0;r<3;r++){buildTide(w);
    for(const q of G.tide.pool){const m=(q.z.mhp||0)/3;hp+=m;
-    if(q.z.armor)ahp+=m;if(q.z.scl)shp+=m;if(q.z.wing)whp+=m;if(q.z.fls)fhp+=m;}}
+    if(q.z.armor)ahp+=m;if(q.z.scl)shp+=m;if(q.z.wing)whp+=m;if(q.z.fls)fhp+=m;if(q.z.gs)ghp+=m;}}
   backTitle();
-  const a=ahp/hp*100,s=shp/hp*100,w9=whp/hp*100,f9=fhp/hp*100;
-  out.push(IC3[stg]+D5[d].n+' 🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'% 🥩'+f9.toFixed(0)+'%');
-  const main=[a,s,w9,f9][MI3[stg]];
+  const a=ahp/hp*100,s=shp/hp*100,w9=whp/hp*100,f9=fhp/hp*100,g9=ghp/hp*100;
+  const brk='🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'% 🥩'+f9.toFixed(0)+'% 💨'+g9.toFixed(0)+'%';
+  out.push(IC3[stg]+D5[d].n+' '+brk);
+  const main=[a,s,w9,f9,g9][MI3[stg]];
   if(main<LO3[stg]){console.log('FAIL: '+NM3[stg]+'の'+D5[d].n+'で、主役の材質が総HPの'
-   +main.toFixed(0)+'%しかない(🛡'+a.toFixed(0)+'% 🐟'+s.toFixed(0)+'% 🪶'+w9.toFixed(0)+'% 🥩'+f9.toFixed(0)+'%)');
-   console.log('      ⚠'+['①は🛡装甲=🔥火炎で解ける面','②は🐟鱗=⚡電撃で解ける面','③は🪶羽=🔫実弾で解ける面','④は🥩肉=🗡貫通で解ける面','⑤は💨ガス=💣爆発で解ける面(まだ④の借り物)'][stg]
+   +main.toFixed(0)+'%しかない('+brk+')');
+   console.log('      ⚠'+['①は🛡装甲=🔥火炎で解ける面','②は🐟鱗=⚡電撃で解ける面','③は🪶羽=🔫実弾で解ける面','④は🥩肉=🗡貫通で解ける面','⑤は💨ガス=💣爆発で解ける面'][stg]
     +'という設計が崩れている');
    process.exit(1);}
  }
  META.sc=kp;
- console.log('🛡🐟🪶材質: 面ごとの主役が総HPの'+LO3.join('/')+'%以上ある / '+out.join(' / ')+' OK');
+ console.log('🛡🐟🪶🥩💨材質: 面ごとの主役が総HPの'+LO3.join('/')+'%以上ある / '+out.join(' / ')+' OK');
 }
 /* ---- 🪶⭐⭐(205)**面③=道が2本に分かれて合流する面** ----
    ⚠⚠**この面だけの前提**を全部ここで縛る。崩れると「敵が道の外を歩く」「旗が枝の上に置ける」
@@ -4932,7 +4936,7 @@ function checkMapPins(){
    ⭐**見るのは1つ**=表でその印を持っている種類を1体拾い、実体を作った後も印が残っているか。 */
 function checkZFlag(){
  /* ⚠**盤面で z.○○ として読んでいる印だけ**を並べる(表にしか無い物=mw/w/st/nm は入れない) */
- const need=['armor','scl','wing','fls','dv','shl','noblock','aura','split','aoe','fin','boss'];/* 🥩fls=(229f) */
+ const need=['armor','scl','wing','fls','gs','leak','puff','smld','jam','dv','shl','noblock','aura','split','aoe','fin','boss'];/* 🥩fls=(229f) / 💨gs・leak・puff・smld・jam=(252) */
  const miss=[];
  for(const k of need){
   const zi=ZOMBIES.findIndex(z=>z[k]);

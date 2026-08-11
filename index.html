@@ -2756,13 +2756,13 @@ const RUN_KEY=DEV?'dt_run_dev':'dt_run';
 /* ⚠⚠(228q)**v2→v3**=ハープーン砲を素のタレットの並びへ差し込み、後ろの番号が1つずれたため。
    中断データ(続きから)は塔を**番号**で持つので、旧v2を読むと支援施設と進化塔が別の塔に化ける。
    ⭐恒久セーブ(META)はぜんぶidなので無傷=**捨てるのは「続きから」1回ぶんだけ**。 */
-function loadRun(){try{const d=JSON.parse(localStorage.getItem(RUN_KEY)||'null');return (d&&d.v===3)?d:null;}catch(e){return null;}}
+function loadRun(){try{const d=JSON.parse(localStorage.getItem(RUN_KEY)||'null');return (d&&d.v===4)?d:null;}catch(e){return null;}}
 function clearRun(){try{localStorage.removeItem(RUN_KEY);}catch(e){}try{refreshRunUI();}catch(e){}}
 /* ⚠**中身を作るだけ**の関数に分けてある=ウェーブが始まった瞬間の写しを取るため(下の saveRun) */
 function runData(){
  if(!(MODE==='solo'&&G&&G.pve&&!G.coop&&!G.over)||G.tut)return null;/* 🎓チュートリアルは中断保存しない */
  const m=G.players[0];if(!m||m.dead)return null;
- const d={v:3,/* ⚠(228q)版はloadRunの断りを見ること */stg:STAGE,dif:G.pveDiff==null?2:G.pveDiff,
+ const d={v:4,/* ⚠(228q)(252)版はloadRunの断りを見ること=塔を差し込むと ti の番号がずれる */stg:STAGE,dif:G.pveDiff==null?2:G.pveDiff,
   wave:G.phase==='wave'?Math.max(0,G.wave-1):G.wave,
   core:m.core,coreMax:m.coreMax,scrap:Math.round(m.scrap),unlocked:m.unlocked,atkLv:m.atkLv,stkLv:m.stkLv||0,
   /* ⚠supN(支援枠をいくつ開いたか)を保存し忘れると、再開したときに建ててあった支援施設が
@@ -4143,7 +4143,8 @@ const SFX_GEOSHELL='geoShD';
    👑⭐**暁の王も決着**(2026-08-08(217)ユーザー「暁AでOK」=dwnA。B〜Eは🗑ボツへ)。 */
 const H_SFX={hNox:'mLong',hDark:'mSprG',hGiant:'mHeavy',hMech:'mTool',hPost:'mBlunt',hDawn:'dwnA',
  hWolf:'mDog',/* 🐺(226d)噛みつき=本物の犬の吠え(猟犬と同じ素材。狼なので合う) */
- hZan:'mBladeU'/* ⚔(230)打刀=本物の剣の斬り(斧使い/影と同じ素材)。⚠専用音は必要になったら協議 */};
+ hZan:'mBladeU',/* ⚔(230)打刀=本物の剣の斬り(斧使い/影と同じ素材)。⚠専用音は必要になったら協議 */
+ hUgni:'flame'/* 🐉(252)ブレス=火炎放射塔と同じ素材(仮)。⚠専用の音は後日の協議=[[TODO]] */};
 /* ✊(217)**近接兵科の攻撃音**(武器ごと。⚠それまで近接は無音=聞こえていたのは撃破の血しぶき)。
    ⚠進化先は元の兵科の武器を引き継ぐ(U.base で引く)。表に無い近接=バット/斬撃=刃 に落ちる */
 const MELEE_SFX={bat:'mBat',hnd:'mDog',big:'mFist',shd:'mShld',gld:'mShld',chain:'mChain',
@@ -4219,7 +4220,9 @@ flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net',
  lamp:'lamp',lamp2:'lamp',lamp3:'lamp',
  /* 🔩(229p)ハープーン=**モードで音が変わる**(2026-08-10ユーザー「おそい方がA 速い方がF」)。
     🔩串刺し(遅い)=案A(空気圧の発射+杭の風切り) / ⚡速射(速い)=案F(大弩の低い胴鳴り+速い風切り)。 */
- harp:'harpA',harp2:'harpA'};
+ harp:'harpA',harp2:'harpA',
+ /* 💨(252)散布塔の音は仮でネット砲と同じ(専用の音は後日の協議=[[TODO]]) */
+ spray:'net',sprayM:'net',spray2:'net'};
 /* ⭐**同じ塔でもモードで音を替える口**。⚠いまはハープーンだけ=増える時はここに1行足す */
 const TW_SFX_MD={harp:'harpF',harpM:'harpF',harp2:'harpF'};
 /* 🔆⭐(229q)**照射の音を「1本の線」で鳴らす塔**(2026-08-10ユーザー指示)。
@@ -4767,6 +4770,14 @@ const TOWERS=[
     ⚠⚠**ここへ差し込んだので後ろ(支援・進化専用)の番号が1つずれた**=続きからの版をv3へ(loadRunの断り)。
     🔊音は仮でスナイパー塔と同じ(AI生成の候補は後日の協議=[[TODO]])。 */
  {id:'harp',n:'ハープーン砲',cost:560,up2:'harp2',gc:4480,rng:300,dmg:245,rate:2.3,type:'pierce',beam:16,bmax:4,c:'#8f7a54',dsc:'廃材の大杭で直線の4体を串刺しにする。⇄で⚡速射(1体を速く)に切替できる'},
+ /* 💨⭐⭐(252)**散布塔**(2026-08-10ユーザー決定「⑤の新タレット=ガスを撒く塔」)=面⑤の相方。
+    ⭐⭐**単体ではほぼダメージが出ない**=**💣爆発系と組ませて初めて火力になる**
+      (この塔が撒く → 爆発が引火 → 道なりに誘爆)。**塔の組み合わせが初めて意味を持つ**枠。
+    ⚠⚠**自分では火を点けない**=点けられるのは💣爆発だけ、という面の芯を崩さないため。
+    ⚠**撒けるのは谷を持つ面(ガスの面)だけ**=他の面では「ちょっと遅くする塔」にしかならない。
+      ⭐それでよい(面の道具なので)。⚠強くしたくなったら GAS_DMG ではなく撒く量(gsp)で振ること。
+    ⭐**④クリアの棚(段4)に並ぶ**=⑤へ入る前に必ず手に入る。 */
+ {id:'spray',n:'散布塔',cost:480,up2:'spray2',gc:3840,rng:260,dmg:4,rate:1.6,type:'net',gsp:.20,slow:.15,slowT:.7,c:'#9cb85a',dsc:'道に沼のガスを撒く。自分ではほとんど削れないが、💣爆発を当てると引火して燃え広がる'},
  /* ===== 支援施設(type:'sup') =====
     タレットとは別軸。専用の支援枠2つにしか建たず、タレットの解放チェーンにも研究所にも出さない。
     ⚠タレットの強化はしないこと(ユーザー指示)。効いてよいのは 情報 / ユニット / 経済 の3軸だけ。
@@ -4841,6 +4852,8 @@ const TOWERS=[
  /* 🔩(228q)ハープーン砲の最終形態=スパイクランチャー(ユーザー案③を最終の語彙に使う決定)。
     数値の決まりどおり=威力×2.0 / 間隔×0.85 / 射程×1.12。持ち味は串刺し4→6体 */
  {id:'harp2',n:'スパイクランチャー',base:'harp',grd:1,cost:1680,rng:336,dmg:490,rate:1.95,type:'pierce',beam:20,bmax:6,pierce:1,c:'#b09a6a',dsc:'圧縮空気の多連杭。直線の6体をまとめて貫く'},
+ /* 💨(252)散布塔の最終形態。決まりどおり=間隔×0.85 / 射程×1.12。持ち味(撒く量)は一段上 */
+ {id:'spray2',n:'腐霧散布塔',base:'spray',grd:1,cost:1440,rng:291,dmg:8,rate:1.36,type:'net',gsp:.38,slow:.2,slowT:.9,c:'#c2e07a',dsc:'四つの噴口が沼のガスを撒き散らす。💣爆発と組ませた時の火力が段違い'},
  {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'}
 ];
 /* ===== ⭐⭐**進化の中段(2026-08-02ユーザー指示「進化を2回できるようにして2段目を弱くする」)** =====
@@ -4876,7 +4889,8 @@ const GRD_MID={
  gat:['速射ガトリング','冷却装置を足して回し続ける改良型'],
  plasma:['高圧プラズマ砲','炉圧を上げた改良型'],
  fort:['多連要塞砲','砲を増やした改良型'],
- harp:['二連ハープーン','杭を二連にした改良型']/* 🔩(228q) */
+ harp:['二連ハープーン','杭を二連にした改良型'],/* 🔩(228q) */
+ spray:['二連散布塔','噴口を二つにした改良型']/* 💨(252) */
 };
 {const add=[];
  for(const B of TOWERS){
@@ -4899,13 +4913,13 @@ const GRD_MID={
 const SUP_N=4;/* 支援施設の数(末尾のグレードアップ専用の手前まで)。⚠(128)進軍旗を足して3→4 */
 /* ↑末尾のグレードアップ専用の数(工房の2段+タレットの最終形態18種+**中段17種**)。⚠段を足したらここも増やす。
    ⚠**中段は TOWERS の一番後ろに push している**ので、素のタレットの添字は1つも動いていない(セーブと解放順が無事) */
-const GRD_N=20+18+6+1;/* ⚠(197)雷塔/引力塔/照明塔の進化ぶん(各2段) *//* ⚠ドローン基地だけ中段が無いので中段は18(=17+ハープーン) *//* 🔩(228q)+1=harp2。中段18にはharpMを含む */
+const GRD_N=20+18+6+1+2;/* ⚠(197)雷塔/引力塔/照明塔の進化ぶん(各2段) *//* ⚠ドローン基地だけ中段が無いので中段は18(=17+ハープーン) *//* 🔩(228q)+1=harp2。中段18にはharpMを含む *//* 💨(252)+2=spray2とsprayM */
 /* 🎨⭐(228r)**属性の印**(2026-08-09ユーザー指示「TD中とかタレット設置するときとか
    ユニットのボタンに属性がわかるマークを」)=建設メニューの札とデッキの札の隅に小さく出す。
    ⚠(145)で外した「相性の札(通り方の文)」とは別物=これは**自分の攻撃の型**の一文字だけ。
    ⚠🕸拘束系は型では言えない物があるので、持ち味の印で上書きする(❄凍結/🧲引力/💡照明)。 */
 const TY_IC={bullet:'🔫',blast:'💣',fire:'🔥',elec:'⚡',pierce:'🗡',beam:'🔆',poison:'🧪',slash:'⚔',frost:'❄',heal:'✚',water:'💧',rubber:'🫧',melee:'✊',net:'🕸'};
-const twTyIc=T=>!T?'':T.frz?'❄':T.pull?'🧲':T.lit?'💡':T.type==='net'?'🕸':(TY_IC[T.type]||'');
+const twTyIc=T=>!T?'':T.frz?'❄':T.pull?'🧲':T.lit?'💡':T.gsp?'💨':T.type==='net'?'🕸':(TY_IC[T.type]||'');
 const T_GRD=ti=>{const u=TOWERS[ti]&&TOWERS[ti].up2;return u?TOWERS.findIndex(t=>t.id===u):-1;};/* その段の「次」 */
 const T_GCOST=ti=>(TOWERS[ti]&&TOWERS[ti].gc)||700;/* その段からの建て替え費用(⚙️) */
 /* ⭐⭐**進化先は🔬研究所で解放する**(2026-07-30ユーザー指示
@@ -4993,6 +5007,7 @@ const twStatsRaw=ti=>TOWERS[ti].type==='sup'?(TOWERS[ti].supMs?['ms']:TOWERS[ti]
  /* ⭐(204d)**威力がほぼ0の3本は⚔攻撃を持たない**=その塔の持ち味そのものを伸ばす枠に差し替える */
  :TOWERS[ti].pull?['pl','r','g']   /* 🧲引力塔=掴める回数 */
  :TOWERS[ti].lit?['li','r','g']    /* 💡照明塔=もろくする度合い */
+ :TOWERS[ti].gsp?['gz','r','g']    /* 💨(252)散布塔=撒くガスの量 */
  :(TOWERS[ti].type==='net'?['sw','r','g']/* 🕸ネット砲=鈍足の強さ */
  /* ⚡⚠(204d)**連鎖しない雷塔に「連鎖数」の枠を出さない**=説明文(連鎖はしない)と食い違ううえ、
     買っても跳ねないので死に枠だった。⭐**上限が素の数と同じなら枠ごと出さない**。 */
@@ -5024,7 +5039,7 @@ const twLostRate=ti=>{const T=TOWERS[ti];if(!T||!T.grd||T.type==='eco')return fa
 /* ⭐(204d)**攻撃力がほぼ0の塔から⚔攻撃の枠を外した**(2026-08-07ユーザー指示
    「攻撃力ほぼ0のやつで攻撃力の強化は不要だから削除して、そのタワー固有の効果を強化できるやつに差し換え」)。
    ⚠対象=🕸ネット砲・🧲引力塔・💡照明塔(どれも威力2〜16で、⚔を買っても何も起きなかった)。 */
-const USTAT_L={ms:'👟移動速度',hl:'💚回復量',d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',sw:'🕸鈍足の強さ',pl:'🧲掴む回数',li:'💡もろさ',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
+const USTAT_L={ms:'👟移動速度',hl:'💚回復量',d:'⚔攻撃',r:'⏩連射',g:'📡射程',c:'⚡連鎖数',f:'❄冷却回数',h:'🔥昇温速度',b:'🔥継続ダメージ',m:'🔺最大倍率',n:'🛩機体数',a:'🔫弾数',z:'❄凍結時間',sw:'🕸鈍足の強さ',pl:'🧲掴む回数',li:'💡もろさ',gz:'💨撒く量',ecoD:'⚙️産出',ecoR:'⏩サイクル'};
 /* 最大倍率まで焼き切るのに要る発射数。🔥昇温速度1段ごとに15.5%短くなる。
    ⭐⭐**掛け算にした**(2026-07-30ユーザー指摘「レーザー砲の進化後の昇温時間が0.3から上がらず無駄強化」)。
    ⚠それまでは `20*(1-.13*段)` の**引き算**だったので、進化後(最大10段=usEff 7.5)は
@@ -5102,6 +5117,9 @@ const twSlowV=(T,tw)=>Math.max(.30,(1-(T.slow||.45))-.05*usEff((tw&&tw.us&&tw.us
 const twPulN=(T,tw)=>(T.pulN||2)+Math.floor(usEff((tw&&tw.us&&tw.us.pl)||0)*.5);
 /* 💡もろさ=照らされた敵が受けるダメージの倍率。1段ごとに+0.06倍 */
 const twLitX=(T,tw)=>LIT_X+.06*usEff((tw&&tw.us&&tw.us.li)||0);
+/* 💨(252)撒く量=1回に道へ乗せるガスの濃さ。1段ごとに+22%(Lv5で2.1倍)。
+   ⚠**引火の威力(GAS_DMG)には触らない**=濃さが上がれば誘爆も自然に強くなる(掛け算が二重にならない) */
+const twGasA=(T,tw)=>(T.gsp||0)*(1+.22*usEff((tw&&tw.us&&tw.us.gz)||0));
 const twPips=tw=>Math.min(5,(tw.us?tw.us.d+tw.us.r+tw.us.g+(tw.us.c||0)+(tw.us.b||0)+(tw.us.m||0):0));
 /* 強化の総数で弾・着弾の色が変わる(白→黄→橙→赤→紫→水色) */
 const TR_COL=['rgba(255,235,150,','rgba(255,206,84,','rgba(255,150,60,','rgba(255,92,80,','rgba(206,120,255,','rgba(120,230,255,'];
@@ -5264,6 +5282,45 @@ const ZOMBIES=[
  {id:'n4Burst',n:'腐れ胎',hp:310,sp:55,bt:30,dmg:2,mw:3,nm:1,st:4,fls:1,split:2,sc:1.25,atk:34,ar:1.1,c:'#c96a6a',dsc:'裂けた縫い目から骨が覗く。倒すと中から出てくる'},
  {id:'n4Mark',n:'市場の暴君',hp:1700,sp:36,bt:420,dmg:10,nm:1,st:4,boss:1,fls:1,mw:5,sc:2.3,atk:180,ar:1.2,aoe:4,c:'#c07a68',dsc:'肋骨の突き出た黒い肉の山。赤い目が市場を見下ろす'},
  {id:'n4King',n:'飢えの王',hp:3100,sp:30,bt:950,dmg:16,nm:1,st:4,boss:1,fin:1,fls:1,aura:1,split:3,mw:20,sc:2.8,atk:240,ar:1.2,aoe:5,c:'#a55548',dsc:'裂けた顎から牙が溢れる飢えそのもの。倒すと中から出てくる'},
+ /* ===== 💨⭐⭐⭐ 面⑤ 腐海の湿地帯=沼の一族(st:5。2026-08-10(252)ユーザー承認の14体) =====
+    ⭐**材質は💨ガス(gs:1)=弱点💣爆発/耐性🔫実弾**。⚠**泥被りだけ armor:1(弱点🔥)・
+      沈み胴だけ scl:1(弱点⚡)**=**爆発を並べるだけでは詰む**役を2体だけ混ぜてある(①〜④と同じ作法)。
+    ⭐⭐**この面だけの新しい印は4つ**=どれも面の目玉(ガス溜まりと誘爆)に噛み合わせてある:
+      `leak`=歩きながらガスを垂れ流す(素材役) / `puff`=倒すと特大の溜まりを撒く(素材役) /
+      `smld`=通り道のガスに**勝手に引火する**(邪魔役) / `jam`=近くのタレットを短い間だけ黙らせる。
+      ⚠**印を足したら `zSpec` への写しが要る**(検査 checkZFlag が両方向を締める)。
+    ⚠⚠**並びの最後尾(ボスの手前)は必ず💨ガスの大物にする**=波の後半は「一番後ろの敵」を
+      4割まで引く仕組みがあるので、最後尾を鱗にすると⑤の主役が鱗になる(④で実際に踏んだ)。
+    ⚠**強さは④の同じ役どころの数字を下敷きに少し上**(ST5_hpMが上に乗る)=詰めは実測から。 */
+ {id:'gWalk',n:'沼這い',hp:140,sp:58,bt:14,dmg:1,mw:1,st:5,gs:1,sc:1.05,atk:21,ar:.7,c:'#7d9455',dsc:'ガスで膨れた沼の住人。数で押してくる'},
+ {id:'gMud',n:'泥かき',hp:100,sp:155,bt:15,dmg:1,mw:1,st:5,gs:1,w:1.05,sc:.9,atk:17,ar:.5,c:'#9c8a52',dsc:'泥を掻き分けて先頭を走る。薄いが速い'},
+ {id:'gCarry',n:'ガス運び',hp:210,sp:62,bt:22,dmg:1,mw:2,st:5,gs:1,leak:1,sc:1.1,atk:24,ar:.8,c:'#8fb04e',dsc:'破れた腹から沼のガスを垂れ流しながら歩く'},
+ {id:'gSack',n:'破れ袋',hp:270,sp:54,bt:28,dmg:2,mw:3,st:5,gs:1,puff:1,sc:1.2,atk:30,ar:1,c:'#b0bc6a',dsc:'倒すとその場に特大のガス溜まりを撒く'},
+ {id:'gSpor',n:'胞子袋',hp:335,sp:56,bt:32,dmg:2,mw:3,st:5,gs:1,split:2,sc:1.25,atk:36,ar:1.1,c:'#8f7aa8',dsc:'倒すと弾けて周りのユニットを巻き込み、中から小型が出る'},
+ {id:'gLead',n:'導き手',hp:255,sp:64,bt:34,dmg:2,mw:4,st:5,gs:1,aura:1,sc:1.15,atk:19,ar:.8,c:'#c4a94e',dsc:'低い唸りで周りの群れの足を速める'},
+ /* 🔥⭐**燻り屋=通り道のガスに勝手に引火する**=**プレイヤーが握っていた引火の合図を奪う**役。
+    ⚠**こいつが居る間は「溜めて待つ」が安全ではなくなる**=先に落とすか、溜め場を諦めるかの選択が出る。 */
+ {id:'gSmld',n:'燻り屋',hp:240,sp:76,bt:36,dmg:2,mw:4,st:5,gs:1,smld:1,w:.9,sc:1.05,atk:34,ar:.7,c:'#a8632f',dsc:'体の熾火が通り道のガスに勝手に火を点ける'},
+ {id:'gLeech',n:'沼蛭',hp:310,sp:72,bt:40,dmg:2,mw:5,st:5,gs:1,noblock:1,w:.5,sc:1.05,atk:0,ar:9,c:'#4f6b5c',dsc:'泥の下を滑ってユニットをすり抜ける'},
+ {id:'gMire',n:'泥被り',hp:510,sp:50,bt:70,dmg:3,mw:7,st:5,armor:1,w:.5,sc:1.3,atk:48,ar:.85,c:'#5f6656',dsc:'焼き固まった泥の鎧。💣爆風では割れない。🔥火炎で炙れ'},
+ /* 🔇⚠**タレットを黙らせる役は「弱く」でユーザーに勧めてある**(TODO)=
+    **1基だけ・短い間だけ・間を置いて**にしてある。⚠強くすると盤面が理不尽に止まる。 */
+ {id:'gSpit',n:'腐れ吹き',hp:360,sp:58,bt:62,dmg:3,mw:8,st:5,gs:1,jam:1,w:.7,sc:1.2,atk:40,ar:.9,c:'#7aa88f',dsc:'腐った息を吹きかけてタレット1基を少しの間だけ黙らせる'},
+ {id:'gSunk',n:'沈み胴',hp:720,sp:46,bt:110,dmg:4,mw:11,st:5,scl:1,w:.35,sc:1.45,aoe:3,atk:80,ar:1.1,c:'#4a7a8a',dsc:'水を吸った鱗の胴。💣爆風を吸うが⚡電撃に弱い。3体まとめて薙ぐ'},
+ /* ⚠**最後尾は💨ガスの大物**(上の掟。ここを鱗にすると⑤の主役が鱗になる) */
+ {id:'gBloat',n:'膨張体',hp:1150,sp:42,bt:130,dmg:4,mw:13,st:5,gs:1,w:.4,sc:1.55,aoe:2,atk:94,ar:1.1,c:'#9caf3f',dsc:'限界まで膨れた沼の塊。2体まとめて押し潰す'},
+ {id:'gLord',n:'湿地の主',hp:1850,sp:34,bt:440,dmg:10,st:5,boss:1,gs:1,mw:5,sc:2.35,atk:190,ar:1.2,aoe:4,c:'#5c7a3a',dsc:'沼を統べる巨躯。泥ごと薙ぎ払う'},
+ {id:'gWomb',n:'腐海の胎児',hp:3300,sp:28,bt:980,dmg:16,st:5,boss:1,fin:1,gs:1,aura:1,split:3,leak:1,mw:20,sc:2.85,atk:250,ar:1.2,aoe:5,c:'#a8b04a',dsc:'沼の底で膨れ続けるもの。ガスを吐き、群れを狂わせ、倒すと仔が這い出る'},
+ /* ===== 🌑💨 面⑤×ナイトメア(nm:1,st:5)=2026-08-10(252)ユーザー承認の6体 =====
+    ①③④と同じ「写し(NMB)+黒ずみ+赤目+変異部位(nmMut)」。⚠写し元は材質が同じ⑤の敵。
+    ⚠強さは写し元と同じ数字から(詰めは実測)。⚠id は変えない(📖図鑑が覚える)。 */
+ {id:'n5Walk',n:'澱んだ這い手',hp:140,sp:58,bt:14,dmg:1,mw:1,nm:1,st:5,gs:1,sc:1.05,atk:21,ar:.7,c:'#7d9455',dsc:'黒く澱んだ沼の住人。腹の泡が脈打つ'},
+ {id:'n5Sack',n:'破れた膿袋',hp:270,sp:54,bt:28,dmg:2,mw:3,nm:1,st:5,gs:1,puff:1,sc:1.2,atk:30,ar:1,c:'#b0bc6a',dsc:'黒ずんだ袋。倒すと特大のガス溜まりを撒く'},
+ {id:'n5Smld',n:'燻る火だね',hp:240,sp:76,bt:36,dmg:2,mw:4,nm:1,st:5,gs:1,smld:1,w:.9,sc:1.05,atk:34,ar:.7,c:'#a8632f',dsc:'胸の熾火が赤く割れている。通り道のガスに火を点ける'},
+ {id:'n5Spit',n:'黒い息',hp:360,sp:58,bt:62,dmg:3,mw:8,nm:1,st:5,gs:1,jam:1,w:.7,sc:1.2,atk:40,ar:.9,c:'#7aa88f',dsc:'煤けた息でタレット1基を少しの間だけ黙らせる'},
+ /* ⚠最後尾は💨ガス(波の後半は一番後ろを4割引く=④と同じ穴)。⑤のNMは全員ガスなので自動で満たす */
+ {id:'n5Lord',n:'湿地の暴君',hp:1850,sp:34,bt:440,dmg:10,nm:1,st:5,boss:1,gs:1,mw:5,sc:2.35,atk:190,ar:1.2,aoe:4,c:'#5c7a3a',dsc:'黒い泥をまとった巨躯。赤い目が沼を見下ろす'},
+ {id:'n5Womb',n:'腐海の母',hp:3300,sp:28,bt:980,dmg:16,nm:1,st:5,boss:1,fin:1,gs:1,aura:1,split:3,leak:1,mw:20,sc:2.85,atk:250,ar:1.2,aoe:5,c:'#a8b04a',dsc:'腐海そのものが孕んだもの。ガスを吐き、倒すと仔が這い出る'},
 ];
 const SENDABLE=[0,1,2,3];
 /* ⚠**プールは4つある**(2026-07-27にナイトメア×ステージ2を足した)。印の組み合わせで見分ける:
@@ -5286,6 +5343,10 @@ const ST4_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===4&&!z.nm&&!z.fin);/* 🥩(
 const FIN4_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===4&&!z.nm);/* 🥩(229f)面④ 飽食の王 */
 const NM4_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&z.st===4&&!z.fin);/* 🌑×④(229h) 市場の暴君 */
 const FINNM4_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===4);/* 🌑×④(229h) 飢えの王 */
+const ST5_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.st===5&&!z.nm&&!z.fin);/* 💨(252)面⑤ 湿地の主 */
+const FIN5_ZI=ZOMBIES.findIndex(z=>z.fin&&z.st===5&&!z.nm);/* 💨(252)面⑤ 腐海の胎児 */
+const NM5_BOSS_ZI=ZOMBIES.findIndex(z=>z.boss&&z.nm&&z.st===5&&!z.fin);/* 🌑×⑤(252) 湿地の暴君 */
+const FINNM5_ZI=ZOMBIES.findIndex(z=>z.fin&&z.nm&&z.st===5);/* 🌑×⑤(252) 腐海の母 */
 const NM_DIFF=5;/* 難易度インデックス: 5=ナイトメア */
 const isNM=()=>!!(G&&G.pveDiff===NM_DIFF);
 const UNITS=[
@@ -5821,7 +5882,15 @@ const HEROES=[
     ⭐名前はこちらで付けた(ユーザー「名前はいい感じにつけてくれ」)=絵の署名**白い三日月の斬撃**から。
     ⭐役どころ=**前に出て、前の3体をまとめて薙ぐ4連撃**。硬さは控えめ・足は速い。
     ⚠1発の威力が低いのは**4連撃(H_HITS)で1.45倍になる**ため=1体あたりの手応えは他の★5と同じ帯。 */
- {id:'hZan',n:'残月の剣鬼',rk:5,hp:5600,atk:960,/* ⚔(249)居合の一撃へ=4連撃の盛りぶんを振り替え */rate:.95,sp:104,c:'#cfd8e0',ty:'pierce',rng:52,multi:3,uch:56,ult:'残月',udsc:'前方へ巨大な三日月の斬撃を放つ。斬った敵の数だけ大きく・強くなりながら道を進む'}
+ {id:'hZan',n:'残月の剣鬼',rk:5,hp:5600,atk:960,/* ⚔(249)居合の一撃へ=4連撃の盛りぶんを振り替え */rate:.95,sp:104,c:'#cfd8e0',ty:'pierce',rng:52,multi:3,uch:56,ult:'残月',udsc:'前方へ巨大な三日月の斬撃を放つ。斬った敵の数だけ大きく・強くなりながら道を進む'},
+ /* 🐉⭐⭐**炎龍ウグニウス**(2026-08-10(252)ユーザー指示・参考画像=赤い炎の龍)。
+    ⭐**ユーザーが決めた4点だけ**=名前 / ★5 / ⚔通常攻撃はブレス(炎を吐く) /
+      💥必殺=口を大きく開けて、**どんどん大きくなる火の塊**を出す特大ブレス。
+    ⭐**24人でただ2体目の「獣」**(四つ足は狼王だけだった)=**翼を持つのはこの1体**。
+    ⚠型は🔥火炎=①の🛡装甲に特効。⚠紅蓮の大魔導士(同じ火炎の★5)とは**役どころで分ける**=
+      あちらは術者で「置いて燃やす」・こちらは**前へ吹き付ける**(射程は短く、硬さと範囲で勝る)。
+    ⚠強さは他の★5と同じ帯に置いた(実効DPSで 紅蓮633 < ここ667 < ジョルジ737)。⚠詰めは実測から。 */
+ {id:'hUgni',n:'炎龍ウグニウス',rk:5,hp:7200,atk:900,rate:1.35,sp:52,c:'#d94a2a',ty:'fire',rng:260,aoe:130,burn:52,uch:58,ult:'劫火の吐息',udsc:'口を大きく開けて火の塊を吐き出す。塊は道を進むほど大きく・熱くなり、通った所を燃やし続ける'}
 ];
 /* ⛔(226g)**外している英雄(off:1)を除いた一覧**=排出・召集・図鑑・選択・検証場は必ずこちらを見る。
    ⚠HEROES そのもの(添字・hUiOf・UNITS変換)は触らない=持っている人のセーブと実装を壊さないため。 */
@@ -5946,7 +6015,11 @@ const ZDEX_G=[{n:'① 廃線ハイウェイ',f:z=>!z.st&&!z.nm},
  /* 🥩(229f)④の肉の一族14体(ユーザー承認) */
  {n:'④ 飽食の市街',f:z=>z.st===4&&!z.nm},
  /* 🌑🥩(229h)④のナイトメア6体(ユーザー承認) */
- {n:'🌑 飽食のナイトメア',f:z=>!!z.nm&&z.st===4}];
+ {n:'🌑 飽食のナイトメア',f:z=>!!z.nm&&z.st===4},
+ /* 💨(252)⑤の沼の一族14体(ユーザー承認) */
+ {n:'⑤ 腐海の湿地帯',f:z=>z.st===5&&!z.nm},
+ /* 🌑💨(252)⑤のナイトメア6体(ユーザー承認) */
+ {n:'🌑 腐海のナイトメア',f:z=>!!z.nm&&z.st===5}];
 const UBASE=UNITS.slice();/* 素のユニット定義(不変) */
 /* 英雄をUNITSの末尾に「特別なユニット」として足す。
    ⚠ここより後ろはデッキにも解放チェーンにも出さない=ユニットの数え上げには U_N を使うこと
@@ -6011,7 +6084,8 @@ const U_MOT={
  hNox:['slash',1.2],hDawn:['cast',1],hDark:['now',.36],hGeo:['snipe',1.3],hPyro:['cast',.9],
  hLupi:['now',.2],/* 🌈跳弾姫=玩具ブラスターをその場で撃つ(軽い溜め) */
  hWolf:['now',0],/* 🐺(226d)溜めゼロ=飛びかかりのテンポが命(型がboltに落ちると落雷の溜めが付く) */
- hZan:['slash',.46]/* ⚔(249)居合=**抜く前の静止**。⚠短いと「ただ振った」に見える(溜めが居合の芯) */
+ hZan:['slash',.46],/* ⚔(249)居合=**抜く前の静止**。⚠短いと「ただ振った」に見える(溜めが居合の芯) */
+ hUgni:['heat',.5]/* 🐉(252)ブレス=**喉に火を溜めてから吐く**(炉熱の型。首をもたげる) */
 };
 const uMot=ui=>{const U=UNITS[ui];if(!U)return MOT0;return U_MOT[U.base||U.id]||U_MOT[U.id]||MOT0;};
 const uMotK=ui=>uMot(ui)[0];
@@ -6079,6 +6153,12 @@ const BULLET_VS_WING=TUNE("BULLET_VS_WING",1.9,1,3,.05);
    **弱点🗡貫通(×1.9)/耐性💣爆発(45%)**。弾も爆風もめり込んで止まり、細い貫通だけ芯まで刺さる。
    ⚠④の装甲肉(鎮圧盾/鋲鎧/廃車)は armor:1=既存の装甲と同じ(弱点🔥)。肉と装甲は重ねない。 */
 const PIERCE_VS_FLESH=TUNE("PIERCE_VS_FLESH",1.9,1,3,.05);
+/* 💨⭐(252)**5つ目の材質=ガス(面⑤の膨れた体)**(2026-08-10ユーザー決定「⑤の材質は💨ガス」)=
+   **弱点💣爆発(×1.9)/耐性🔫実弾(45%)**。ガスで膨れた体は弾が抜けても萎まないが、爆風には裂ける。
+   ⚠⚠**面の目玉(ガス溜まりの誘爆)と揃えてある**=引火できるのも💣爆発だけ。
+     ⭐こうすると「爆発を並べる」1つの答えが**敵にも道にも同時に効く**=面の芯が1本になる。
+   ⚠⑤の泥被りは armor:1(弱点🔥)・沈み胴は scl:1(弱点⚡)=**爆発だけでは詰む役**。 */
+const BLAST_VS_GAS=TUNE("BLAST_VS_GAS",1.9,1,3,.05);
 const ARMOR_CUT=TUNE("ARMOR_CUT",.45,.2,1,.05);/* 🛡耐性(その材質が弾く1つの型)に通る割合 */
 /* ⚔🔆🧪⭐⭐⭐(196)**相性を作り直した**(2026-08-07ユーザー決定)。
    ⚠⚠**それまでは「弱点1つ・耐性はそれ以外ほぼ全部」**だった(羽は4種が45%)=
@@ -6095,10 +6175,13 @@ const AF_MAT=[
  {k:'armor',ic:'🛡',n:'装甲',  wk:'fire',  rs:'bullet',x:()=>FIRE_VS_ARMOR},
  {k:'scale',ic:'🐟',n:'鱗',    wk:'elec',  rs:'fire',  x:()=>ELEC_VS_SCALE},
  {k:'flesh',ic:'🥩',n:'肉',    wk:'pierce',rs:'blast', x:()=>PIERCE_VS_FLESH},/* 🥩(229f)面④ */
+ /* 💨(252)面⑤。⚠**耐性の🔫実弾は🛡装甲と同じ**=`afTag` は先に見つけた方(装甲)で札を書くが、
+    実弾の札は元から「🪶羽に効く」が勝っているので見え方は変わらない(倍率は afX が敵ごとに引く)。 */
+ {k:'gas',  ic:'💨',n:'ガス',  wk:'blast', rs:'bullet',x:()=>BLAST_VS_GAS},
  {k:'none', ic:'',  n:'通常種',wk:'slash', rs:'',      x:()=>SLASH_VS_NONE}
 ];
-/* その敵の材質(1体1つ)。⚠**羽→装甲→鱗→肉の順で見る**=重ねて持たせない約束だが、順を固定しておく */
-const afKind=z=>(z&&z.wing)?'wing':((z&&z.armor)?'armor':((z&&z.scl)?'scale':((z&&z.fls)?'flesh':'none')));
+/* その敵の材質(1体1つ)。⚠**羽→装甲→鱗→肉→ガスの順で見る**=重ねて持たせない約束だが、順を固定しておく */
+const afKind=z=>(z&&z.wing)?'wing':((z&&z.armor)?'armor':((z&&z.scl)?'scale':((z&&z.fls)?'flesh':((z&&z.gs)?'gas':'none'))));
 const afMat=z=>AF_MAT[AF_MAT.findIndex(m=>m.k===afKind(z))];
 /* ⭐**この一撃が何倍通るか**。ty が無い(型の分からない一撃)なら等倍 */
 function afX(ty,z){
@@ -6412,7 +6495,7 @@ const UNL_T=[
  /*段1(4) →②鱗     */'bolt','cryo','mortar','acid',     /* ⚡②の答え / 🕸支援 / 💣等倍 / 🧪毒 */
  /*段2(4) →③羽     */'drone','pullt','laser','tesla',   /* 🔫③の答え / 🧲支援 / 🔆ビーム / ⚡ */
  /*段3(5) →④       */'gat','lamp','arty','sniper','harp',/* 🔫 / 💡支援 / 💣等倍 / 🗡貫通 / 🔩🗡貫通(228q) */
- /*段4(4) →⑤       */'coil','medic','rail','fort',      /* ⚡ / 🏥支援 / 🔆ビーム / 🗡貫通 */
+ /*段4(5) →⑤       */'coil','medic','rail','fort','spray',/* ⚡ / 🏥支援 / 🔆ビーム / 🗡貫通 / 💨⑤の相方(252) */
  /*段5(2) 仕上げ     */'flag','plasma'                   /* 👟支援 / 🔆ビーム */
      /*🏭経済 / 🔥火炎(①の装甲対策。W3のアーマードに間に合わせる) / 💣爆発 / 🕸拘束 / 💣遠射 /
        ⚡電撃(②の鱗に備える) / 🔫103*/
@@ -6444,7 +6527,7 @@ const UNL_U=[
      (検査 checkUnlock が落とす)。⚠**塔やユニットを増やした時は必ずここの数も増やすこと**。
    📌**いまは面が2つしか無いので届くのは段2まで**=**塔11種・ユニット19種**。残りは面③〜⑤のぶん。
    📌設計の目安「1面あたり 塔2種・ユニット3種」がそのまま入っている。 */
-const UNL_TN=[4,4,4,5,4,2];/* ⭐(197)塔は1面4個(最後だけ2個)。🔩(228q)段3だけ5個(ハープーン砲)=23種 */
+const UNL_TN=[4,4,4,5,5,2];/* ⭐(197)塔は1面4個(最後だけ2個)。🔩(228q)段3=5個(ハープーン砲)/💨(252)段4=5個(散布塔)=24種 */
 const UNL_UN=[3,3,3,3,3,3];/* ⭐(197)ユニットは1面3個=18種 */
 /* 進行の段=**制覇した面の数**(0〜面の数)。
    ⚠⚠⭐**(198)「面をクリア」=その面の🌑ナイトメアを落とすこと**に直した(2026-08-07ユーザー決定)。
@@ -6847,9 +6930,9 @@ const STAGES=[
     🧱⭐**(246)建設マスも置き直した**(同ユーザー「タレットの置き場所の配置も適当すぎる」)=
       **列(100刻み)と行(205/320/455/590/700)の交点**にだけ置き、**道なりに均等**になるよう選んである
       (前は真ん中に10個の帯+画面のいちばん下に9個で、半分は道から遠すぎた)。
-    ⚠⚠**敵はまだ④の顔ぶれを借りている**(zs:4)=⑤の14体と🌑6体は次に作る。
+    ✅💨**(252)⑤専用の敵14体と🌑6体が入って開通した**(zs:5)=🌑のピンも開けた。
       ⭐**目盛りは 17→46**(④の出口34の半分が入口)=(238f)の並びに乗せた。 */
- {n:'腐海の湿地帯',sub:'沈んだ街を呑んだ沼。気泡が上がり続ける',zs:4,
+ {n:'腐海の湿地帯',sub:'沈んだ街を呑んだ沼。気泡が上がり続ける',zs:5,
   path:[[1660,320],[1460,320],[1310,590],[1110,590],[960,320],[760,320],[610,590],[410,590],[260,320],[120,320]],
   /* 💨**狭い谷間**=[道の上の距離の始まり,終わり]。⭐**下の辺(y=590)の2本がそのまま谷** */
   gasZ:[[500,715],[1520,1735]],
@@ -7568,6 +7651,13 @@ const NMB={
  n4Riot:{b:'fRiot'},  /* 🛡黒鉄の鎮圧盾 = 鎮圧盾の肉塊  / 🛡装甲・壁 */
  n4Mark:{b:'fMark'},  /* 👑市場の暴君   = 市場の主      / 🥩肉・中ボス */
  n4King:{b:'f4King'}, /* 💀飢えの王     = 飽食の王      / 🥩肉・最終ボス */
+ /* 🌑💨(252)面⑤のナイトメア6体(ユーザー承認)=⑤の敵の写し。⚠写し元は材質が同じ(全員💨ガス) */
+ n5Walk:{b:'gWalk'},  /* 🚶澱んだ這い手 = 沼這い        / 💨ガス */
+ n5Sack:{b:'gSack'},  /* 🎈破れた膿袋   = 破れ袋        / 💨ガス・倒すと撒く */
+ n5Smld:{b:'gSmld'},  /* 🔥燻る火だね   = 燻り屋        / 💨ガス・勝手に引火 */
+ n5Spit:{b:'gSpit'},  /* 🔇黒い息       = 腐れ吹き      / 💨ガス・黙らせる */
+ n5Lord:{b:'gLord'},  /* 👑湿地の暴君   = 湿地の主      / 💨ガス・中ボス */
+ n5Womb:{b:'gWomb'},  /* 💀腐海の母     = 腐海の胎児    / 💨ガス・最終ボス */
 };
 const NMBZ={},NMBI={},NMSC={};
 /* 🎨⭐⭐(204d)**1体ずつ「焦げの色」を変える**(2026-08-07ユーザー実機
@@ -7596,6 +7686,13 @@ const NM_TINT={
  n4Riot:[118,112, 92],/* 🛡鎮圧盾=汚れた鉄土 */
  n4Mark:[152, 86,100],/* 👑暴君=どす紅 */
  n4King:[186,100, 62],/* 💀王=焼けた橙 */
+ /* 🌑💨(252)面⑤の6体=澱んだ沼の帯(①③④と被らない寒い緑寄り。⚠燻る火だねだけ熾火の橙) */
+ n5Walk:[110,132, 72],/* 🚶這い手=澱んだ苔 */
+ n5Sack:[150,152, 84],/* 🎈膿袋=くすんだ膿 */
+ n5Smld:[176, 96, 46],/* 🔥火だね=熾火の橙 */
+ n5Spit:[ 92,136,118],/* 🔇黒い息=病んだ翡翠 */
+ n5Lord:[ 86,116, 62],/* 👑暴君=深い沼 */
+ n5Womb:[160,150, 60],/* 💀母=腐れた金 */
 };
 let NM_TC=[138,112,64],NM_TK='';/* いま塗っている個体の暖色と、覚え書きの鍵 */
 /* 煮しめた黒へ寄せる。⚠**真っ黒にしない**=黒フチ(INK)に食われて塊になる([[NOTES_絵]])。
@@ -7845,6 +7942,65 @@ function nmMut(c,Z,t,ph,walk,s){
   nmLimb(c,-7,-12,-13,-8,-16,-1,3.6,1.4);/* 左の大牙(短い) */
   nmLimb(c,12,-26,18,-25,21,-21,2.8,1.2);/* 右上の小牙 */
   nmLimb(c,-11,-28,-17,-28,-20,-25,2.4,1.1);/* 左上の小牙 */
+  return;}
+ /* 🌑💨(252)面⑤の6体。⚠**沼の一族は元から丸い**ので、変異部位は
+    **輪郭の外へ出る物**にする(内側に置くと煮しめた体に沈んで何も足していないのと同じになる)。 */
+ if(Z.id==='n5Walk'){/* 🚶澱んだ這い手: 変異部位=**背から生えた気泡の房**(膨れて弾ける) */
+  const br=Math.abs(Math.sin(t*3.4+ph));
+  for(const p of [[-12,-30,5.4,1.0],[-15,-23,4.0,.55],[-10.4,-17,3.0,.3],[-14.6,-33,2.6,.8]]){
+   c.fillStyle='#9cb85a';
+   c.beginPath();c.arc(p[0],p[1],p[2]*(.86+br*p[3]*.2),0,7);c.fill();c.stroke();
+   c.fillStyle='#d2e88a';/* 泡の照り */
+   c.beginPath();c.arc(p[0]-p[2]*.34,p[1]-p[2]*.36,p[2]*.3,0,7);c.fill();}
+  return;}
+ if(Z.id==='n5Sack'){/* 🎈破れた膿袋: 変異部位=**腹から垂れ下がった袋3つ**(揺れる。長さを崩す) */
+  const sw=Math.sin(t*3.8+ph)*1.6;
+  for(const p of [[-9,-14,4.4,7.4],[1,-11,5.6,9.6],[9,-15,3.4,5.4]]){
+   c.fillStyle='#a8b06a';
+   c.beginPath();c.ellipse(p[0]+sw*(p[3]/9),p[1]+p[3],p[2],p[3],0,0,7);c.fill();c.stroke();
+   c.fillStyle='#6b7a3a';/* 袋の底の澱み */
+   c.beginPath();c.ellipse(p[0]+sw*(p[3]/9),p[1]+p[3]*1.4,p[2]*.5,p[3]*.28,0,0,7);c.fill();}
+  return;}
+ if(Z.id==='n5Smld'){/* 🔥燻る火だね: 変異部位=**胸で割れた熾火の裂け目**+立ち昇る煙。
+    ⚠⚠**この1体だけ光る**=「勝手に引火する厄介者」を絵で名指しするため(役どころと絵を揃える)。 */
+  const gl=.55+.45*Math.sin(t*5+ph);
+  c.fillStyle='#ff8a3a';
+  for(const p of [[0,-26,7.4,2.6,-.3],[-4,-18,4.6,1.8,.2],[5,-33,3.4,1.4,.5]]){
+   c.globalAlpha=.55+gl*.45;
+   c.beginPath();c.ellipse(p[0],p[1],p[2],p[3],p[4],0,7);c.fill();}
+  c.globalAlpha=1;
+  c.fillStyle='#ffd27a';/* 芯の白熱 */
+  c.beginPath();c.ellipse(0,-26,3.6,1.2,-.3,0,7);c.fill();
+  if(FXLV>0){c.fillStyle='#4a4438';/* 立ち昇る煙(3つ・高さ違い) */
+   for(const g of [[2,-42,3.4,3.1],[-3,-48,2.6,2.2],[4,-53,2.0,4.3]]){
+    c.globalAlpha=.34;
+    c.beginPath();c.arc(g[0]+Math.sin(t*g[3]+ph)*2.4,g[1],g[2],0,7);c.fill();}
+   c.globalAlpha=1;}
+  return;}
+ if(Z.id==='n5Spit'){/* 🔇黒い息: 変異部位=**顎から垂れて広がる黒い息の房**(前へ流れる) */
+  const bw=Math.sin(t*4.2+ph);
+  c.fillStyle='#3f5a4e';
+  for(const p of [[12,-30,26,-26,4.2],[13,-24,24,-16,3.2],[11,-34,21,-34,2.4]]){
+   c.globalAlpha=.72;
+   c.beginPath();c.moveTo(p[0],p[1]-p[4]);
+   c.quadraticCurveTo((p[0]+p[2])*.5,p[1]+bw*3,p[2],p[3]+bw*3);
+   c.quadraticCurveTo((p[0]+p[2])*.5,p[1]+p[4]+bw*2,p[0],p[1]+p[4]);
+   c.closePath();c.fill();c.stroke();}
+  c.globalAlpha=1;
+  return;}
+ if(Z.id==='n5Lord'){/* 👑湿地の暴君: 変異部位=**背を割って生えた朽木の枝**(左右不揃い・沼から生えた物) */
+  c.fillStyle='#5f4a32';
+  for(const p of [[-13,-30,-24,-40,-29,-48,4.6],[-16,-20,-29,-25,-34,-24,4.0],[-11,-40,-19,-49,-17,-56,3.4]]){
+   const rw=Math.sin(t*2.2+ph+p[0]*.1)*1.4;
+   nmLimb(c,p[0],p[1],p[2],p[3]+rw,p[4],p[5]+rw,p[6],1.4);}
+  return;}
+ if(Z.id==='n5Womb'){/* 💀腐海の母: 変異部位=**体を巡って脈打つ卵の連なり**(外の輪郭へはみ出す) */
+  const pl=Math.sin(t*2.6+ph);
+  for(const p of [[-17,-30,6.0],[-20,-19,5.2],[-15,-42,4.6],[17,-34,5.6],[20,-22,4.8],[13,-46,3.8]]){
+   c.fillStyle='#b8c45a';
+   c.beginPath();c.arc(p[0],p[1],p[2]*(.94+pl*.06),0,7);c.fill();c.stroke();
+   c.fillStyle='#4a3a2a';/* 中で丸まっている仔 */
+   c.beginPath();c.arc(p[0]+p[2]*.16,p[1]+p[2]*.14,p[2]*.42,0,7);c.fill();}
   return;}
 }
 function zFill(c,pathFn,col,yc){
@@ -12803,6 +12959,347 @@ function drawZombie(c,zi,x,y,dir,t,ph,o){
    zEye(c,-8,-38,2.4);zEye(c,10,-37,1.9);/* 顎の左右に離れた目 */
    c.restore();return;}
  }
+ /* ===== 💨⭐⭐⭐ 面⑤ 腐海の湿地帯=沼の一族(2026-08-10(252)) =====
+    ⚠⚠**ガスで膨れた体は「丸い風船」で全部同じになる**(③の紙飛行機・④の水風船と同じ穴)。
+    ⭐**輪郭を分ける物を1体ずつ決める**=沼這いは背の気泡/泥かきは掻く長い腕/ガス運びは腹の穴と噴煙/
+      破れ袋は縛った首の大袋/胞子袋は背の傘/導き手は掲げた腕と喉袋/燻り屋は胸の熾火/
+      沼蛭は低く長い胴と吸盤/泥被りは焼き固めた板/腐れ吹きは突き出た筒口/沈み胴は重なる鱗板/
+      膨張体は張り詰めた球と裂け目/主は沼草をまとった巨躯/胎児は抱えた卵嚢。
+    ⚠泥被りの板は**青黒**・沈み胴の鱗は**濡れた青緑**=既存の🛡装甲・🐟鱗と同じ色域(弱点が色で読める)。
+    ⚠等間隔・左右対称・定規の直線を避ける(NOTES_絵のハリボテ4原因)。 */
+ if(Z.st===5){
+  const ZC=Z.c;
+  /* 泥に沈んだ脚(先が細く、地面のきわで消える)。⚠④のずんぐり脚と作りを変える=面ごとの顔を出す */
+  const zLeg5=(dx,pho,dk)=>{const st9=Math.sin(t*7+ph+pho)*2.4;
+   c.fillStyle=shade(ZC,dk);
+   c.beginPath();c.moveTo(dx-4.2,-14);
+   c.quadraticCurveTo(dx-4.6+st9*.6,-6,dx-2.2+st9,-.6);
+   c.lineTo(dx+2.4+st9,-.6);
+   c.quadraticCurveTo(dx+4.4,-7,dx+3.6,-14);
+   c.closePath();c.fill();c.stroke();};
+  /* 気泡1つ(この一族の共通の印)。⚠**大きさも間隔も崩す**=揃えると水玉模様になる */
+  const zBub=(bx,by,r9,sp9)=>{const bb=Math.abs(Math.sin(t*sp9+ph));
+   c.fillStyle=shade(ZC,1.45);
+   c.beginPath();c.arc(bx,by-bb*1.6,r9*(.88+bb*.14),0,7);c.fill();c.stroke();
+   c.fillStyle=shade(ZC,1.8);
+   c.beginPath();c.arc(bx-r9*.32,by-bb*1.6-r9*.34,r9*.3,0,7);c.fill();};
+  if(Z.id==='gWalk'){/* 沼這い=前かがみ+背に湧く気泡。⚠背を丸めて「沼から出てきた」を姿勢で言う */
+   zLeg5(-5,0,.6);zLeg5(6,2.7,.8);
+   zFill(c,()=>{c.beginPath();c.moveTo(-12,-13);
+    c.bezierCurveTo(-16,-29,-9,-39,1,-38);
+    c.bezierCurveTo(10,-37,14,-27,11,-13);
+    c.bezierCurveTo(4,-7,-6,-7,-12,-13);c.closePath();},ZC,-24);
+   zBub(-7,-30,4.2,3.1);zBub(-10,-22,3.0,4.3);zBub(-4,-35,2.4,2.4);
+   {const ar9=Math.sin(t*7+ph)*2.2;/* 垂れた腕(片方だけ描く=前かがみの奥行き) */
+    c.fillStyle=shade(ZC,.84);
+    c.beginPath();c.moveTo(9,-30);c.quadraticCurveTo(15,-22+ar9,13.2,-13+ar9);
+    c.lineTo(9.8,-13.4+ar9);c.quadraticCurveTo(9.2,-22,6.2,-28);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(5,-40,4.8,4.4,.25,0,7);},shade(ZC,1.12),-44);/* 前へ落ちた頭 */
+   zEye(c,7,-40.6,1.7);
+   c.restore();return;}
+  if(Z.id==='gMud'){/* 泥かき=前傾+泥を掻く長い腕2本。⚠速さは「腕の振り」で言う(体は膨らませない) */
+   c.rotate(-.16);
+   zLeg5(-6,0,.58);zLeg5(7,3.2,.8);
+   {const sw9=Math.sin(t*12+ph)*6,sw8=Math.sin(t*12+ph+2.1)*6;
+    /* ⚠**平らな板にしない**=根元を太く先を細く、先に泥を掻く手を付ける((252)撮って直した) */
+    c.fillStyle=shade(ZC,.78);/* 後ろへ掻き終えた腕 */
+    c.beginPath();c.moveTo(-4,-28);c.quadraticCurveTo(-15,-23+sw8,-21,-12+sw8);
+    c.lineTo(-16.4,-9.6+sw8);c.quadraticCurveTo(-12,-19,-7.4,-24.4);c.closePath();c.fill();c.stroke();
+    c.fillStyle=shade(ZC,.62);
+    c.beginPath();c.ellipse(-19,-10.6+sw8,3.4,2.6,.5,0,7);c.fill();c.stroke();
+    c.fillStyle=shade(ZC,.98);/* 前へ突き出した腕 */
+    c.beginPath();c.moveTo(6,-29);c.quadraticCurveTo(18,-27-sw9,24,-18-sw9);
+    c.lineTo(19.4,-14-sw9);c.quadraticCurveTo(14,-22,3,-25);c.closePath();c.fill();c.stroke();
+    c.fillStyle=shade(ZC,1.18);
+    c.beginPath();c.ellipse(23.6,-16.6-sw9,3.8,2.8,-.5,0,7);c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.moveTo(-8,-12);
+    c.bezierCurveTo(-10,-25,-3,-32,4,-31);
+    c.bezierCurveTo(11,-30,13,-22,10,-11);
+    c.bezierCurveTo(3,-6,-4,-6,-8,-12);c.closePath();},ZC,-20);
+   zBub(-4,-25,2.4,5.2);
+   zFill(c,()=>{c.beginPath();c.ellipse(9,-35,4.4,4,.3,0,7);},shade(ZC,1.14),-39);
+   zEye(c,11,-35.6,1.6);
+   c.restore();return;}
+  if(Z.id==='gCarry'){/* ガス運び=腹に開いた穴から噴き出す。⚠**噴煙が主役**(素材役だと絵で分かること) */
+   zLeg5(-5,0,.6);zLeg5(6,2.5,.78);
+   zFill(c,()=>{c.beginPath();c.moveTo(-12,-12);
+    c.bezierCurveTo(-15,-30,-8,-41,2,-41);
+    c.bezierCurveTo(12,-41,16,-29,12,-12);
+    c.bezierCurveTo(4,-6,-6,-6,-12,-12);c.closePath();},ZC,-25);
+   c.fillStyle='#2f3a22';/* 腹の破れ穴(中は暗い) */
+   c.beginPath();c.ellipse(2,-22,6.4,5.2,-.15,0,7);c.fill();c.stroke();
+   {const pf=(t*1.7+ph)%1;/* 穴から噴き出すガス(外へ広がりながら薄くなる) */
+    c.fillStyle='#a8d24a';
+    for(const g of [[0,.0],[1,.42],[2,.71]]){
+     const k9=(pf+g[1])%1;
+     c.globalAlpha=.62*(1-k9);
+     c.beginPath();c.arc(9+k9*22,-22-k9*10+Math.sin(t*4+g[0])*2.4,3.4+k9*7,0,7);c.fill();}
+    c.globalAlpha=1;}
+   c.fillStyle=ZW.pa;c.fillRect(-12.6,-15,20,2.8);/* 腰に巻いた古い帯 */
+   zBub(-8,-33,3.2,3.6);
+   zFill(c,()=>{c.beginPath();c.ellipse(1,-45,4.8,4.4,0,0,7);},shade(ZC,1.1),-49);
+   zEye(c,3,-45.6,1.7);
+   c.restore();return;}
+  if(Z.id==='gSack'){/* 破れ袋=体そのものが「口を縛った大袋」。⚠人型に見せない(倒すと撒く役) */
+   zLeg5(-4,0,.56);zLeg5(5,2.2,.7);
+   {const sg=1+Math.sin(t*3.2+ph)*.05;
+    c.save();c.scale(sg,1/sg);
+    zFill(c,()=>{c.beginPath();c.moveTo(-15,-10);
+     c.bezierCurveTo(-19,-30,-11,-44,-2,-44);
+     c.bezierCurveTo(8,-44,17,-31,14,-10);
+     c.bezierCurveTo(5,-4,-7,-4,-15,-10);c.closePath();},ZC,-26);
+    c.restore();}
+   c.fillStyle=shade(ZC,.62);/* 袋を縛った紐の食い込み(左右で深さが違う) */
+   c.beginPath();c.moveTo(-9,-40);c.quadraticCurveTo(-1,-36.4,8,-39.6);
+   c.quadraticCurveTo(0,-33,-9,-40);c.closePath();c.fill();c.stroke();
+   c.strokeStyle=shade(ZC,1.6);c.lineWidth=1.8/s;/* 縦に走る張りの筋(3本・間隔を崩す) */
+   for(const g of [[-8,-34,-6,-13],[0,-38,2,-11],[8,-33,6,-14]]){
+    c.beginPath();c.moveTo(g[0],g[1]);c.quadraticCurveTo((g[0]+g[2])*.5+2,(g[1]+g[3])*.5,g[2],g[3]);c.stroke();}
+   c.strokeStyle=INK;c.lineWidth=2.6/s;
+   zBub(-12,-24,3.4,2.8);zBub(12,-29,2.6,4.1);
+   zFill(c,()=>{c.beginPath();c.ellipse(0,-46.4,3.6,3.2,0,0,7);},shade(ZC,1.06),-50);/* 縛り口の上のちんまり頭 */
+   zEye(c,1.6,-46.8,1.5);
+   c.restore();return;}
+  if(Z.id==='gSpor'){/* 胞子袋=背に開いた傘(キノコ)。⚠傘は左右で高さを変える(揃えると玩具になる) */
+   zLeg5(-5,0,.58);zLeg5(6,2.6,.74);
+   zFill(c,()=>{c.beginPath();c.moveTo(-11,-12);
+    c.bezierCurveTo(-14,-27,-7,-36,2,-36);
+    c.bezierCurveTo(11,-36,14,-26,11,-12);
+    c.bezierCurveTo(4,-6,-5,-6,-11,-12);c.closePath();},ZC,-22);
+   {const sw=Math.sin(t*2.6+ph)*.8;/* 背の傘3つ(大きさ・傾き・高さを全部変える) */
+    for(const g of [[-13,-34,8.4,-.35],[-17,-25,6.0,-.15],[-9,-41,4.6,-.6]]){
+     c.fillStyle=shade(ZC,.72);
+     c.beginPath();c.ellipse(g[0],g[1]+sw,g[2],g[2]*.46,g[3],Math.PI,7);c.closePath();c.fill();c.stroke();
+     c.fillStyle=shade(ZC,1.3);/* 傘の裏のひだ */
+     c.beginPath();c.ellipse(g[0],g[1]+sw+1.2,g[2]*.72,g[2]*.17,g[3],0,7);c.fill();}}
+   if(FXLV>0){c.fillStyle='#cbb2e0';/* 落ちる胞子 */
+    for(const g of [[0,3.2,11],[1.7,2.4,7],[3.9,4.1,15]]){
+     c.globalAlpha=.5;
+     c.beginPath();c.arc(-13+Math.sin(t*g[1]+g[0])*4,-26+((t*g[2]+g[0]*7)%16),1.2,0,7);c.fill();}
+    c.globalAlpha=1;}
+   zFill(c,()=>{c.beginPath();c.ellipse(4,-40,4.4,4,.15,0,7);},shade(ZC,1.14),-44);
+   zEye(c,6,-40.6,1.6);
+   c.restore();return;}
+  if(Z.id==='gLead'){/* 導き手=片腕を高く掲げて先導+膨らむ喉袋。⚠オーラ持ちは「上へ伸びる形」で見分ける */
+   zLeg5(-5,0,.6);zLeg5(6,2.9,.78);
+   zFill(c,()=>{c.beginPath();c.moveTo(-10,-12);
+    c.bezierCurveTo(-13,-28,-6,-37,2,-37);
+    c.bezierCurveTo(10,-37,13,-27,10,-12);
+    c.bezierCurveTo(3,-6,-5,-6,-10,-12);c.closePath();},ZC,-23);
+   {const up=Math.sin(t*3.4+ph)*3;/* 掲げた腕(⚠**細い棒にしない**=根元を太く先を細く。実寸では線1本に潰れる) */
+    c.fillStyle=shade(ZC,.92);
+    c.beginPath();c.moveTo(3,-30);c.quadraticCurveTo(14,-40,16.6,-55+up);
+    c.lineTo(10.4,-56+up);c.quadraticCurveTo(9,-41,-2,-28);c.closePath();c.fill();c.stroke();
+    c.fillStyle=shade(ZC,1.2);/* 開いた手 */
+    c.beginPath();c.ellipse(13.4,-56.4+up,3.6,2.8,-.4,0,7);c.fill();c.stroke();}
+   {const th=Math.abs(Math.sin(t*3.4+ph));/* 膨らむ喉袋 */
+    c.fillStyle=shade(ZC,.66);
+    c.beginPath();c.ellipse(-1,-33,5.4+th*2.2,4.4+th*1.8,.1,0,7);c.fill();c.stroke();
+    c.fillStyle=shade(ZC,1.34);
+    c.beginPath();c.ellipse(-3,-35,2.4,1.8,.1,0,7);c.fill();}
+   if(FXLV>0){c.strokeStyle=shade(ZC,1.7);c.lineWidth=1.5/s;c.globalAlpha=.36+.36*Math.sin(t*6+ph);
+    for(const r9 of [10,15,20]){c.beginPath();c.arc(-1,-33,r9,2.2,4.1);c.stroke();}
+    c.globalAlpha=1;c.strokeStyle=INK;c.lineWidth=2.6/s;}
+   zFill(c,()=>{c.beginPath();c.ellipse(0,-43,4.4,4,0,0,7);},shade(ZC,1.1),-47);
+   zEye(c,2,-43.6,1.6);
+   c.restore();return;}
+  if(Z.id==='gSmld'){/* 燻り屋=胸の熾火と立ち昇る煙。⚠⚠**この1体だけ光る**=
+     「通り道のガスに勝手に火を点ける厄介者」を絵で名指しする(役どころと絵を揃える) */
+   zLeg5(-5,0,.58);zLeg5(6,2.4,.76);
+   zFill(c,()=>{c.beginPath();c.moveTo(-11,-12);
+    c.bezierCurveTo(-14,-28,-7,-38,2,-38);
+    c.bezierCurveTo(11,-38,14,-27,11,-12);
+    c.bezierCurveTo(4,-6,-5,-6,-11,-12);c.closePath();},ZC,-23);
+   {const gl=.5+.5*Math.sin(t*5+ph);/* 胸で割れた熾火(裂け目3本・長さ違い) */
+    c.fillStyle='#ff7a2a';
+    for(const g of [[0,-27,7.0,2.4,-.3],[-4,-19,4.4,1.6,.25],[4,-33,3.2,1.3,.5]]){
+     c.globalAlpha=.5+gl*.5;
+     c.beginPath();c.ellipse(g[0],g[1],g[2],g[3],g[4],0,7);c.fill();}
+    c.globalAlpha=1;
+    c.fillStyle='#ffd68f';
+    c.beginPath();c.ellipse(0,-27,3.4,1.1,-.3,0,7);c.fill();}
+   {const ar9=Math.sin(t*8+ph)*2.6;
+    c.fillStyle=shade(ZC,.88);
+    c.beginPath();c.moveTo(9,-30);c.quadraticCurveTo(17,-25+ar9,15.4,-15+ar9);
+    c.lineTo(11.8,-15.4+ar9);c.quadraticCurveTo(10.4,-24,6.6,-28);c.closePath();c.fill();c.stroke();}
+   if(FXLV>0){c.fillStyle='#4a4438';/* 立ち昇る煙(高さも太さも変える) */
+    for(const g of [[1,-47,3.6,3.1],[-3,-53,2.8,2.2],[4,-58,2.1,4.3]]){
+     c.globalAlpha=.32;
+     c.beginPath();c.arc(g[0]+Math.sin(t*g[3]+ph)*2.6,g[1],g[2],0,7);c.fill();}
+    c.globalAlpha=1;}
+   zFill(c,()=>{c.beginPath();c.ellipse(1,-42,4.4,4,0,0,7);},shade(ZC,1.12),-46);
+   zEye(c,3,-42.6,1.6);
+   c.restore();return;}
+  if(Z.id==='gLeech'){/* 沼蛭=低く長い胴+先の吸盤。⚠**立たせない**(すり抜けは姿勢で言う=④の腸と別の形に) */
+   {const un=Math.sin(t*5.5+ph);/* うねる胴(3節。上下に波打たせる) */
+    zFill(c,()=>{c.beginPath();c.moveTo(-24,-4+un*1.6);
+     c.quadraticCurveTo(-16,-13+un*2.4,-6,-8);
+     c.quadraticCurveTo(3,-3-un*2.4,13,-10);
+     c.quadraticCurveTo(19,-14,21,-8);
+     c.quadraticCurveTo(12,1,-2,1);
+     c.quadraticCurveTo(-14,1,-24,-4+un*1.6);c.closePath();},ZC,-8);
+    c.fillStyle=shade(ZC,1.34);/* 背を走る筋(節の目印。間隔を崩す) */
+    for(const g of [[-18,-7],[-9,-9],[1,-6],[10,-10]]){
+     c.beginPath();c.ellipse(g[0],g[1]+un,2.6,1.2,-.2,0,7);c.fill();}}
+   c.fillStyle=shade(ZC,.6);/* 先の吸盤(輪) */
+   c.beginPath();c.arc(21,-8,4.6,0,7);c.fill();c.stroke();
+   c.fillStyle='#2c3a2e';
+   c.beginPath();c.arc(22,-8,2.2,0,7);c.fill();
+   zBub(-14,-11,2.6,3.4);zBub(4,-12,2.0,4.6);
+   zEye(c,17,-12.4,1.4);
+   c.restore();return;}
+  if(Z.id==='gMire'){/* 泥被り=焼き固まった泥の板をまとった壁。⚠板は**青黒**(既存の🛡装甲と同じ色域) */
+   const MT='#414c58';
+   zLeg5(-6,0,.58);zLeg5(7,2.3,.76);
+   zFill(c,()=>{c.beginPath();c.moveTo(-12,-11);
+    c.bezierCurveTo(-15,-29,-8,-39,2,-39);
+    c.bezierCurveTo(12,-39,15,-28,12,-11);
+    c.bezierCurveTo(4,-6,-6,-6,-12,-11);c.closePath();},ZC,-24);
+   {const slab=(pts,dk)=>{c.fillStyle=shade(MT,dk);
+     c.beginPath();c.moveTo(pts[0][0],pts[0][1]);
+     for(let k=1;k<pts.length;k++)c.lineTo(pts[k][0],pts[k][1]);
+     c.closePath();c.fill();c.stroke();};
+    slab([[-13,-35],[3,-38],[6,-24],[-11,-21]],1.02);/* 胸の大板 */
+    slab([[5,-23],[15,-26],[16,-12],[6,-10]],.82);   /* 右腹の板 */
+    slab([[-14,-19],[-4,-19],[-5,-9],[-13,-11]],.66);/* 左腰の板 */
+    c.fillStyle=shade(MT,1.4);/* 板の割れ(ひび2本。直線にしない) */
+    c.beginPath();c.moveTo(-8,-34);c.quadraticCurveTo(-4,-30,-6,-23);c.lineTo(-4.4,-23);
+    c.quadraticCurveTo(-2,-30,-6.6,-34);c.closePath();c.fill();}
+   c.fillStyle=shade(ZC,.66);/* 板の隙間からはみ出す泥の肉 */
+   c.beginPath();c.ellipse(0,-8,6.4,2.6,0,0,7);c.fill();
+   zFill(c,()=>{c.beginPath();c.ellipse(1,-43,4.4,4,0,0,7);},shade(ZC,1.06),-47);
+   c.fillStyle=shade(MT,1.12);/* 泥で固めた面頬 */
+   c.beginPath();c.moveTo(-5,-42.6);c.quadraticCurveTo(-3.4,-48.4,1,-48.4);
+   c.quadraticCurveTo(5.6,-48.4,6,-42.6);c.closePath();c.fill();c.stroke();
+   zEye(c,3.2,-42.2,1.5);
+   c.restore();return;}
+  if(Z.id==='gSpit'){/* 腐れ吹き=顔ごと前へ伸びた筒口+吹き出す霧。⚠タレットを黙らせる役=口が主役 */
+   zLeg5(-5,0,.6);zLeg5(6,2.7,.78);
+   zFill(c,()=>{c.beginPath();c.moveTo(-11,-12);
+    c.bezierCurveTo(-15,-29,-8,-39,1,-39);
+    c.bezierCurveTo(10,-39,13,-28,10,-12);
+    c.bezierCurveTo(3,-6,-5,-6,-11,-12);c.closePath();},ZC,-24);
+   {const bl=Math.abs(Math.sin(t*2.4+ph));/* ふいごのように膨らむ胸 */
+    c.fillStyle=shade(ZC,.68);
+    c.beginPath();c.ellipse(-1,-27,7.4+bl*1.8,6.4+bl*1.4,.1,0,7);c.fill();c.stroke();
+    c.fillStyle=shade(ZC,1.28);
+    c.beginPath();c.ellipse(-3.4,-29.6,3,2.2,.1,0,7);c.fill();}
+   /* ⚠**明暗の境目(第4引数)は必ずその形の真ん中に置く**=形より上に置くと全部が暗い側になり、
+      口の黒と溶けて「黒い塊」になる((252)撮って直した)。 */
+   zFill(c,()=>{c.beginPath();c.moveTo(4,-45);
+    c.quadraticCurveTo(14,-46,23,-41);
+    c.quadraticCurveTo(26,-38.4,23,-35.6);
+    c.quadraticCurveTo(13,-32,4,-36);c.closePath();},shade(ZC,1.16),-39);/* 前へ伸びた筒の顔 */
+   c.fillStyle='#26301f';/* 筒の口 */
+   c.beginPath();c.ellipse(23.4,-38.4,2.0,2.8,.1,0,7);c.fill();c.stroke();
+   if(FXLV>0){const pf=(t*1.4+ph)%1;/* 吹き出す腐った息 */
+    c.fillStyle='#8fae6a';
+    for(const g of [[0,0],[1,.5]]){const k9=(pf+g[1])%1;
+     c.globalAlpha=.5*(1-k9);
+     c.beginPath();c.arc(26+k9*20,-38+Math.sin(t*3+g[0])*3,3+k9*8,0,7);c.fill();}
+    c.globalAlpha=1;}
+   zEye(c,9,-43,1.6);
+   c.restore();return;}
+  if(Z.id==='gSunk'){/* 沈み胴=水を吸って重い胴+重なる鱗板。⚠鱗は**濡れた青緑**(既存の🐟鱗と同じ色域) */
+   zLeg5(-7,0,.56);zLeg5(8,2.6,.72);
+   zFill(c,()=>{c.beginPath();c.moveTo(-14,-9);
+    c.bezierCurveTo(-18,-28,-10,-41,1,-41);
+    c.bezierCurveTo(13,-41,19,-28,14,-9);
+    c.bezierCurveTo(5,-3,-6,-3,-14,-9);c.closePath();},ZC,-24);
+   {c.fillStyle=shade(ZC,1.24);/* 重なる鱗板(段ごとに幅と反りを変える) */
+    for(const g of [[-1,-34,11.4,4.0],[0,-27,13.0,4.6],[-1,-19,12.0,4.2],[1,-12,9.4,3.4]]){
+     c.beginPath();c.ellipse(g[0],g[1],g[2],g[3],g[0]*.02,Math.PI,7);c.closePath();c.fill();c.stroke();}}
+   c.fillStyle=shade(ZC,.62);/* 滴る水(胴の下に溜まる影) */
+   c.beginPath();c.ellipse(0,-6,10.4,2.6,0,0,7);c.fill();
+   {const sww=Math.sin(t*6+ph)*5;/* 薙ぎ払う太腕 */
+    c.fillStyle=shade(ZC,.9);
+    c.beginPath();c.moveTo(13,-33);c.quadraticCurveTo(25,-30-sww,28,-19-sww);
+    c.lineTo(23,-16-sww);c.quadraticCurveTo(17,-26,10.4,-30);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(2,-45,4.8,4.2,0,0,7);},shade(ZC,1.1),-49);
+   zEye(c,4,-45.6,1.7);
+   c.restore();return;}
+  if(Z.id==='gBloat'){/* 膨張体=限界まで張った球+走る裂け目。⚠手足はうんと小さく(球が主役) */
+   {const bw=1+Math.sin(t*2.6+ph)*.045;
+    zLeg5(-6,0,.5);zLeg5(7,2.2,.62);
+    c.save();c.scale(bw,1/bw);
+    zFill(c,()=>{c.beginPath();c.ellipse(0,-26,18.4,18.4,0,0,7);},ZC,-38);
+    c.fillStyle=shade(ZC,1.36);/* 張り詰めた照り */
+    c.beginPath();c.ellipse(6,-33,7.4,8.4,-.3,0,7);c.fill();
+    c.strokeStyle=shade(ZC,1.66);c.lineWidth=2.2/s;/* 走る裂け目(枝分かれ・左右非対称) */
+    c.beginPath();c.moveTo(-9,-40);c.quadraticCurveTo(-5,-28,-11,-16);
+    c.moveTo(-7,-31);c.quadraticCurveTo(0,-29,5,-22);c.stroke();
+    c.strokeStyle=INK;c.lineWidth=2.6/s;
+    c.restore();}
+   zBub(-16,-14,4.6,2.6);zBub(15,-11,3.4,3.9);zBub(-13,-42,3.0,4.8);
+   {const ar9=Math.sin(t*5+ph)*2;/* ちんまりした腕 */
+    c.fillStyle=shade(ZC,.86);
+    c.beginPath();c.moveTo(16,-30);c.quadraticCurveTo(23,-27+ar9,22,-21+ar9);
+    c.lineTo(18.6,-21.4+ar9);c.quadraticCurveTo(18,-26,14,-28);c.closePath();c.fill();c.stroke();}
+   zFill(c,()=>{c.beginPath();c.ellipse(3,-45.4,4.2,3.6,0,0,7);},shade(ZC,1.08),-49);/* 球に埋もれた頭 */
+   zEye(c,5,-46,1.5);
+   c.restore();return;}
+  if(Z.id==='gLord'){/* 💀湿地の主=沼草と泥をまとった巨躯。⚠④の主(山)と系統を変える=**立たせる** */
+   const br=Math.sin(t*2.4+ph);
+   zLeg5(-9,0,.5);zLeg5(10,2.2,.62);
+   zFill(c,()=>{c.beginPath();c.moveTo(-17,-9);
+    c.bezierCurveTo(-23,-31,-13,-48,1,-48);
+    c.bezierCurveTo(15,-48,22,-30,17,-9);
+    c.bezierCurveTo(6,-3,-7,-3,-17,-9);c.closePath();},ZC,-28);
+   /* ⚠**肩から2本だけ出すと兎の耳になる**((252)撮って直した)=**細く・数を増やし・下へ垂らす**。
+      ⚠腕と同じ明るさにすると腕が消えるので、草はうんと暗くしておく。 */
+   {c.fillStyle=shade(ZC,.42);/* 肩から垂れる沼草(長さも角度も全部変える) */
+    for(const g of [[-15,-40,-24,-12,2.2],[-10,-45,-17,-14,1.7],[-5,-46,-9,-16,1.4],
+                    [9,-44,15,-13,1.9],[14,-40,22,-16,1.5],[17,-34,26,-14,1.2]]){
+     const wv=Math.sin(t*2.2+ph+g[0]*.15)*2.4;
+     c.beginPath();c.moveTo(g[0]-g[4],g[1]);
+     c.quadraticCurveTo(g[2]-g[4]+wv,(g[1]+g[3])*.5,g[2]+wv,g[3]);
+     c.quadraticCurveTo(g[2]+g[4]+wv,(g[1]+g[3])*.5,g[0]+g[4],g[1]);
+     c.closePath();c.fill();c.stroke();}}
+   c.fillStyle='#2c3a1e';/* 泥に沈んだ口(横に裂ける) */
+   c.beginPath();c.ellipse(2,-27,8.4,3.4+Math.abs(br)*1.6,.05,0,7);c.fill();c.stroke();
+   c.fillStyle=PANE;/* 不揃いの牙 */
+   for(const g of [[-4,-29,2.2],[1,-30,2.8],[6,-29,2.0],[-1,-24,-2.4],[4,-23.6,-2.0]]){
+    c.beginPath();c.moveTo(g[0]-1.2,g[1]);c.lineTo(g[0],g[1]+g[2]);c.lineTo(g[0]+1.2,g[1]);c.closePath();c.fill();}
+   zBub(-14,-18,4.2,3.1);zBub(14,-14,3.4,4.3);
+   {const sww=Math.sin(t*4.6+ph)*6;/* 薙ぎ払う丸太のような腕(⚠草より明るく=沈むと腕が消える) */
+    c.fillStyle=shade(ZC,1.12);
+    c.beginPath();c.moveTo(16,-42);c.quadraticCurveTo(32,-38-sww,36,-22-sww);
+    c.lineTo(29,-17-sww);c.quadraticCurveTo(22,-32,13,-37);c.closePath();c.fill();c.stroke();
+    c.fillStyle=shade(ZC,.8);/* 泥をまとった拳 */
+    c.beginPath();c.ellipse(33.4,-19.6-sww,5.0,4.0,-.4,0,7);c.fill();c.stroke();}
+   zEye(c,-6,-38,2.2);zEye(c,8,-37,1.8);
+   c.restore();return;}
+  if(Z.id==='gWomb'){/* 💀腐海の胎児=抱えた卵嚢+裂けた腹から覗く仔。⚠主(立つ巨躯)と系統を変える=**うずくまる** */
+   const br=Math.sin(t*2.2+ph);
+   zLeg5(-11,0,.48);zLeg5(12,2.0,.58);
+   zFill(c,()=>{c.beginPath();c.moveTo(-20,-8);
+    c.bezierCurveTo(-26,-30,-16,-46,0,-46);
+    c.bezierCurveTo(16,-46,25,-29,20,-8);
+    c.bezierCurveTo(7,-2,-8,-2,-20,-8);c.closePath();},ZC,-26);
+   {c.fillStyle=shade(ZC,.62);/* 抱え込んだ卵嚢(大きさを崩して積む) */
+    for(const g of [[-6,-16,9.4,8.0],[7,-19,7.4,6.6],[-1,-27,6.0,5.4]]){
+     c.beginPath();c.ellipse(g[0],g[1]+br*.6,g[2],g[3],g[0]*.02,0,7);c.fill();c.stroke();
+     c.fillStyle='#3a2c1e';/* 中で丸まっている仔 */
+     c.beginPath();c.arc(g[0]+g[2]*.16,g[1]+g[3]*.12+br*.6,g[2]*.4,0,7);c.fill();
+     c.fillStyle=shade(ZC,.62);}}
+   c.fillStyle='#241a12';/* 腹の裂け目(縦に大きく) */
+   c.beginPath();c.moveTo(-2,-40);
+   c.bezierCurveTo(-9,-33,-9,-22,-3,-14+br);
+   c.bezierCurveTo(4,-22,4,-33,-2,-40);c.closePath();c.fill();c.stroke();
+   {c.fillStyle=PANE;/* 裂け目に並ぶ牙(⚠**内側へ向ける**=外向きだと矢印の模様に見えた(252)) */
+    for(const g of [[-5.4,-35,2.6],[-6,-27,3.0],[-4.6,-19,2.2],[2.6,-36,-2.4],[3.2,-28,-2.8],[2.4,-21,-2.0]]){
+     c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[0]+g[2],g[1]+1.6);c.lineTo(g[0],g[1]+3.2);c.closePath();c.fill();}}
+   {const gf=(t*.9+ph)%1;/* 吐き出すガス(上へ広がる) */
+    c.fillStyle='#b8d24a';
+    for(const g of [[0,0],[1,.34],[2,.68]]){const k9=(gf+g[1])%1;
+     c.globalAlpha=.44*(1-k9);
+     c.beginPath();c.arc(-2+Math.sin(t*2+g[0])*5,-50-k9*22,5+k9*11,0,7);c.fill();}
+    c.globalAlpha=1;}
+   /* ⚠**大きい気泡を目の高さに置かない**=目が4つあるように見えた((252)撮って下げた) */
+   zBub(-21,-16,3.6,2.8);zBub(21,-13,3.0,4.1);
+   zEye(c,-11,-40,2.4);zEye(c,11,-39,2.0);
+   c.restore();return;}
+ }
  /* ===== ナイトメアの獣たち ===== */
  /* ===== 🌑ナイトメアの獣たち(2026-07-27 第103弾に8種すべて描き直し) =====
     ⚠ここが一番古い絵で、**角丸長方形の胴+丸い頭+等間隔の部品**が全種に残っていた。
@@ -14609,6 +15106,8 @@ const TW_SHAPE={
  rifle:'tower',shot:'box',sniper:'tripod',gat:'box',fort:'oct',laser:'mast',drone:'box',rail:'tripod',
  /* 🔩(228q)ハープーン=素は箱(据え付けの発射台)・中段も箱・最終は八角(重装の台座) */
  harp:'box',harpM:'box',harp2:'oct',
+ /* 💨(252)散布塔=素は平たい皿・中段も皿・最終は六角(タンクを載せた台) */
+ spray:'dish',sprayM:'dish',spray2:'hex',
  /* 爆発系 */
  mortar:'dish',gren:'hex',arty:'oct',plasma:'hex',
  /* 電撃系 */
@@ -15491,6 +15990,52 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
   c.moveTo(34,4.8);c.lineTo(41,7);c.lineTo(34,9.2);c.closePath();c.fill();c.stroke();
   if(o.fire){c.fillStyle='#ffe9b0';c.beginPath();c.arc(43,0,6.5,0,7);c.fill();}
   c.restore();}
+ /* 💨(252)散布塔: 沼のガスを溜めたタンク+**広口のラッパ**。⚠砲身にしない=撃つ塔と輪郭で分ける */
+ else if(tid==='spray'){
+  twTank(c,-24,-20,10,26,'#7a8f4a');                 /* ガスのタンク */
+  c.fillStyle='#5f6b3a';rr(c,-13,-6,10,14,3);c.fill();c.stroke();/* ポンプ */
+  c.save();c.rotate(ang);
+  c.fillStyle='#6b7a42';rr(c,-2,-5,20,10,3);c.fill();c.stroke();  /* 送り管 */
+  c.fillStyle='#8fa356';c.beginPath();                            /* 広口のラッパ */
+  c.moveTo(17,-6);c.lineTo(32,-14);c.lineTo(32,14);c.lineTo(17,6);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3f4a28';c.beginPath();c.ellipse(32,0,3.2,13,0,0,7);c.fill();/* 口の中 */
+  c.restore();
+  {const pf=(t*.7)%1;c.fillStyle='#9cb85a';/* ふわりと漂うガス(3つ・外へ薄れる) */
+   for(const k of [0,.33,.66]){const q=(pf+k)%1;c.globalAlpha=.5*(1-q);
+    c.beginPath();c.arc(Math.cos(ang)*(26+q*20),Math.sin(ang)*(26+q*20)-6,5+q*9,0,7);c.fill();}
+   c.globalAlpha=1;}}
+ /* 💨二連散布塔(中段): ラッパが上下2つ=輪郭で段が読める */
+ else if(tid==='sprayM'){
+  twTank(c,-25,-22,10,28,'#7a8f4a');twTank(c,-14,-25,8,22,'#93a862');
+  c.fillStyle='#5f6b3a';rr(c,-13,-4,10,13,3);c.fill();c.stroke();
+  c.save();c.rotate(ang);
+  c.fillStyle='#6b7a42';rr(c,-2,-9,18,18,3);c.fill();c.stroke();
+  c.fillStyle='#8fa356';c.beginPath();                            /* ラッパ2口(1回で塗る。⚠上下に開かせる) */
+  c.moveTo(15,-10);c.lineTo(29,-18);c.lineTo(29,-6);c.lineTo(15,-1);c.closePath();
+  c.moveTo(15,1);c.lineTo(29,6);c.lineTo(29,18);c.lineTo(15,10);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#3f4a28';/* 口の中2つ */
+  c.beginPath();c.ellipse(29,-12,2.4,6,0,0,7);c.fill();
+  c.beginPath();c.ellipse(29,12,2.4,6,0,0,7);c.fill();
+  c.restore();
+  {const pf=(t*.8)%1;c.fillStyle='#a8c266';
+   for(const k of [0,.5]){const q=(pf+k)%1;c.globalAlpha=.5*(1-q);
+    c.beginPath();c.arc(Math.cos(ang)*(26+q*22),Math.sin(ang)*(26+q*22)-8,6+q*10,0,7);c.fill();}
+   c.globalAlpha=1;}}
+ /* 💨腐霧散布塔(最終): 大タンク2本+四つ口の噴霧環。⚠段が上がるほど「機械」に寄せる */
+ else if(tid==='spray2'){
+  twTank(c,-28,-24,11,32,'#8fa356');twTank(c,-16,-28,12,36,'#a8c266');
+  twDrum(c,-15,12,7.5,'#5f6b3a');
+  c.save();c.rotate(ang);
+  c.fillStyle='#6b7a42';rr(c,-4,-13,18,26,4);c.fill();c.stroke();  /* 分配室 */
+  c.fillStyle='#8fa356';c.beginPath();                              /* 四つ口を扇に開く(1回で塗る) */
+  c.moveTo(13,-13);c.lineTo(30,-21);c.lineTo(30,21);c.lineTo(13,13);c.closePath();c.fill();c.stroke();
+  c.fillStyle='#c2e07a';c.beginPath();for(let k=-1.5;k<=1.5;k++)rrP(c,26,k*9.5-3,7,6,2);c.fill();c.stroke();/* 四つの噴口 */
+  c.fillStyle='#3f4a28';c.beginPath();for(let k=-1.5;k<=1.5;k++)c.rect(31,k*9.5-1.6,2.6,3.2);c.fill();
+  c.restore();
+  {const pf=(t*.9)%1;c.fillStyle='#c2e07a';
+   for(const k of [0,.25,.5,.75]){const q=(pf+k)%1;c.globalAlpha=.46*(1-q);
+    c.beginPath();c.arc(Math.cos(ang)*(28+q*26),Math.sin(ang)*(28+q*26)-9,6+q*12,0,7);c.fill();}
+   c.globalAlpha=1;}}
  /* プラズマ砲: 太い砲身の先に**でかいプラズマ球**+基部に放熱フィン */
  else if(tid==='plasma'){
   twFins(c,-4,3,10,'#a5588f');
@@ -15688,7 +16233,9 @@ const H_LOOK={
  hLupi :{cape:0,h:'rcap',  w:'bgun',  k:'pony',  c2:'#2e2c34'},/* 跳弾姫: 星の白キャップ+玩具ブラスター+虹のポニーテール */
  hWolf :{cape:0,h:'wmane', w:'wfang', k:'wtail', c2:'#5a6478'},/* 🐺蒼雷の狼王: 逆立つたてがみ+雷の牙+ふさふさの尾(四つ足=HBODY.hWolf) */
  /* ⚠HBODY.hZan 登録済み=ここの値は台帳の札(かぶり物・武器・背中の物の重複検査用) */
- hZan  :{cape:1,h:'mane',  w:'katana', k:'saya',  c2:'#3a3f47'} /* ⚔残月の剣鬼: 逆立つ黒髪+打刀+背中の鞘(ぼろ外套) */
+ hZan  :{cape:1,h:'mane',  w:'katana', k:'saya',  c2:'#3a3f47'},/* ⚔残月の剣鬼: 逆立つ黒髪+打刀+背中の鞘(ぼろ外套) */
+ /* ⚠HBODY.hUgni 登録済み=ここの値は台帳の札(重複検査用)。h/w/k は他の誰とも違う名前にすること */
+ hUgni :{cape:0,h:'dhorn', w:'dmaw',   k:'dwing', c2:'#7a2418'} /* 🐉炎龍ウグニウス: 後ろへ伸びる角+火の顎+革の翼(四つ足) */
 };
 /* ============ 🦸英雄18人の「専用の体」(2026-08-01) ============
    ⭐ユーザー指示「英雄18人」。⚠それまで英雄は**全員が同じ胴・同じ脚・同じ腕**で、
@@ -17024,6 +17571,143 @@ HBODY.hZan=(c,U,walk,t,ph,o,rk)=>{
  c.beginPath();c.moveTo(2.6,HSK.fy-6.4);c.lineTo(6.4,HSK.fy-9.8);c.lineTo(6.8,HSK.fy-5.4);c.closePath();c.fill();
  /* ⚠⚠**刃の光を体の座標で描かない**=刀は腕と一緒に回るので、光だけ空中に取り残される
     (1回描いて撮って却下した)。⭐冴えは撃った瞬間の三日月(H_FX)が受け持つ。 */
+ c.restore();
+};
+/* ---- 🐉★5 炎龍ウグニウス(2026-08-10(252)ユーザー指示・参考画像=赤い炎の龍)。
+   ⭐**24人で唯一「翼を持つ獣」**=輪郭がまるごと違うのが一番の差(狼王=四つ足だけ / 暗黒の騎士=騎乗)。
+   要点: ①暗い赤の鱗+背の棘の列 ②**革の翼2枚**(奥は暗く・手前は明るく=1枚の板にしない)
+   ③後ろへ長く伸びる角2本と顎の髭 ④先が房になった尾 ⑤**喉と胸の隙間が熾火で光る**
+   ⑥溜め(火を溜める)で**首をもたげて喉が明るくなる** / 撃つ瞬間は**顎を開く**。
+   ⚠四つ足なので人型の部品(hLeg2/bTorso/hFc)は使わない。⚠|x|≦54に収める。
+   ⚠**光は体の一部**(FXLVで消さない)=熾火が消えると「ただの赤いトカゲ」になる。 ---- */
+HBODY.hUgni=(c,U,walk,t,ph,o)=>{
+ const BD='#7a2418',DK='#4a1410',LT='#b0442a',WG='#5c1e18',WG2='#8f3324',
+       EM='#ff8a2a',EM2='#ffd06a',HN='#c9b48a';
+ const rc=bRc(o);/* 溜め(喉に火を溜める)0..1 */
+ const atk=(o&&o.fireT>0)?1:0;
+ const gl=.55+.45*Math.sin(t*6+ph);/* 熾火の明滅 */
+ c.save();c.scale(1.18,1.18);
+ if(atk)c.translate(2.2,0);
+ /* ⭐**奥の翼**(暗い)。⚠**手前と同じ形にしない**=左右対称の板に見える。指の骨で膜を割る */
+ {const fl=Math.sin(t*2.2+ph)*.16+(rc?rc*.3:0);
+  c.save();c.translate(-6,-30);c.rotate(-.5-fl);
+  c.fillStyle=WG;
+  c.beginPath();c.moveTo(0,0);
+  c.quadraticCurveTo(-16,-22,-34,-24);
+  c.quadraticCurveTo(-28,-13,-30,-6);
+  c.quadraticCurveTo(-21,-8,-19,-1);
+  c.quadraticCurveTo(-12,-4,-8,3);c.closePath();c.fill();c.stroke();
+  c.strokeStyle=shade(WG,.62);c.lineWidth=1.6;/* 指の骨3本 */
+  for(const g of [[-34,-24],[-29,-7],[-18,-1]]){c.beginPath();c.moveTo(0,0);c.lineTo(g[0],g[1]);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6;
+  c.restore();}
+ /* 脚(4本。⚠奥は暗く・前後で位相をずらす。太腿は外側だけ膨らませる) */
+ const dleg=(lx,pz,col,hind)=>{const s1=Math.sin(t*7+ph+pz),lift=Math.max(0,Math.sin(t*7+ph+pz+1.1))*2.4;
+  c.fillStyle=col;
+  c.beginPath();c.moveTo(lx-5,-20);
+  if(hind){c.bezierCurveTo(lx-9.4,-15,lx-7.6,-9,lx-3+s1*2,-7.4);
+   c.quadraticCurveTo(lx-1+s1*3,-3.6,lx+.6+s1*4,-.4-lift);
+   c.lineTo(lx+4.4+s1*4,-.4-lift);
+   c.quadraticCurveTo(lx+4,-8,lx+5,-14);}
+  else{c.quadraticCurveTo(lx-5.8+s1*1.2,-10,lx-3+s1*3,-.4-lift);
+   c.lineTo(lx+1.6+s1*3,-.4-lift);
+   c.quadraticCurveTo(lx+4,-12,lx+4.6,-19);}
+  c.lineTo(lx+5,-20);c.closePath();c.fill();c.stroke();
+  c.fillStyle=HN;/* 爪3本(⚠揃えない) */
+  for(let k=0;k<3;k++)c.fillRect(lx-3+s1*(hind?4:3)+k*2.4,-2-lift-(k===1?.6:0),1.8,2.2);};
+ dleg(-15,0,DK,1);dleg(11,1.6,DK,0);
+ /* ⭐尾(先が房)。⚠**うねらせる**=一直線だと棒に見える */
+ {const sw=Math.sin(t*3.2+ph)*4;
+  c.fillStyle=BD;
+  c.beginPath();c.moveTo(-19,-26);
+  c.quadraticCurveTo(-30,-24+sw,-38,-14+sw*1.4);
+  c.quadraticCurveTo(-42,-9+sw,-45,-11+sw*1.6);
+  c.quadraticCurveTo(-38,-6+sw,-31,-13+sw);
+  c.quadraticCurveTo(-25,-18,-18,-20);c.closePath();c.fill();c.stroke();
+  c.fillStyle=EM;/* 尾の先の火の房 */
+  c.globalAlpha=.5+gl*.5;
+  c.beginPath();c.moveTo(-44,-11+sw*1.6);c.quadraticCurveTo(-50,-16+sw*1.6,-53,-8+sw*1.6);
+  c.quadraticCurveTo(-48,-8+sw*1.6,-44,-9+sw*1.6);c.closePath();c.fill();
+  c.globalAlpha=1;}
+ /* 胴(⚠**片側だけ膨らむ**=左右対称の俵にしない)。背は高く、腹は低く垂らす */
+ c.fillStyle=BD;
+ c.beginPath();c.moveTo(-19,-24);
+ c.bezierCurveTo(-20,-38,-8,-44,4,-43);
+ c.bezierCurveTo(15,-42,20,-33,19,-22);
+ c.bezierCurveTo(12,-15,-10,-15,-19,-24);c.closePath();c.fill();c.stroke();
+ c.fillStyle=DK;/* 腹側(下だけ1段暗く) */
+ c.save();c.beginPath();c.rect(-30,-24,60,30);c.clip();
+ c.beginPath();c.ellipse(0,-24,19,12,0,0,7);c.fill();c.restore();
+ c.fillStyle=LT;/* 背の明るい面(1本だけ=赤い塊にしない) */
+ c.beginPath();c.moveTo(-14,-33);c.quadraticCurveTo(-2,-42,14,-33);
+ c.quadraticCurveTo(-2,-37,-14,-33);c.closePath();c.fill();
+ /* ⭐胸と脇で覗く熾火(署名=**この体で唯一光る所**) */
+ c.fillStyle=EM;c.globalAlpha=.42+gl*.5;
+ for(const g of [[8,-27,5.4,2.4,-.3],[-2,-22,4.0,1.6,.15],[-12,-28,3.0,1.3,.4]]){
+  c.beginPath();c.ellipse(g[0],g[1],g[2],g[3],g[4],0,7);c.fill();}
+ c.globalAlpha=1;
+ /* ⭐背の棘(⚠等間隔・同じ長さにしない=ハリボテ4原因) */
+ c.fillStyle=HN;
+ for(const g of [[-14,-36,5.4,3.4],[-7,-41,8.0,4.6],[1,-43,6.6,3.0],[8,-41,4.4,2.2],[14,-36,3.0,1.6]]){
+  c.beginPath();c.moveTo(g[0]-g[3]*.5,g[1]);c.lineTo(g[0]-g[3]*.2,g[1]-g[2]);
+  c.lineTo(g[0]+g[3]*.6,g[1]);c.closePath();c.fill();c.stroke();}
+ /* ⭐**手前の翼**(明るい)。⚠奥より大きく開く=2枚が別物に見える */
+ {const fl=Math.sin(t*2.2+ph+.7)*.2+(rc?rc*.42:0);
+  c.save();c.translate(2,-34);c.rotate(-.86-fl);
+  c.fillStyle=WG2;
+  c.beginPath();c.moveTo(0,0);
+  c.quadraticCurveTo(-14,-28,-38,-32);
+  c.quadraticCurveTo(-32,-19,-35,-9);
+  c.quadraticCurveTo(-24,-12,-22,-3);
+  c.quadraticCurveTo(-13,-6,-9,4);c.closePath();c.fill();c.stroke();
+  c.strokeStyle=shade(WG2,.6);c.lineWidth=1.8;
+  for(const g of [[-38,-32],[-34,-10],[-21,-3]]){c.beginPath();c.moveTo(0,0);c.lineTo(g[0],g[1]);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=2.6;
+  c.fillStyle=HN;/* 翼の先の鉤爪 */
+  c.beginPath();c.moveTo(-38,-32);c.lineTo(-45,-36);c.lineTo(-37,-29);c.closePath();c.fill();c.stroke();
+  c.restore();}
+ /* ⭐首(溜めでもたげる)。⚠付け根から頭まで**太→細**にする=筒だと蛇に見える */
+ const nu=rc*.34+(atk?-.1:0);/* 溜めで持ち上げ、吐く瞬間は少し下げる */
+ /* ⚠**|x|は54まで**(掟)=頭は hx+21・尾は -48 で収まる位置に置いてある。動かす時は両端を数え直すこと */
+ const hx=21+atk*3,hy=-52-nu*10;
+ c.fillStyle=BD;
+ c.beginPath();c.moveTo(9,-40);
+ c.quadraticCurveTo(20,-48-nu*8,hx-2,hy+3);
+ c.lineTo(hx-4,hy+11);
+ c.quadraticCurveTo(16,-40-nu*6,7,-30);c.closePath();c.fill();c.stroke();
+ c.fillStyle=EM;c.globalAlpha=.3+rc*.6;/* 喉に溜まった火(溜めるほど明るい) */
+ c.beginPath();c.ellipse(18,-44-nu*7,5.4,3.2,-.5,0,7);c.fill();c.globalAlpha=1;
+ /* ⭐頭(⚠丸くしない=**細長い吻**+奥へ張る頬)。開く顎は下顎だけ落とす */
+ const jaw=atk?4.6:(rc*1.6);
+ c.fillStyle=BD;
+ c.beginPath();c.moveTo(hx-6,hy+8);
+ c.quadraticCurveTo(hx-4,hy-3,hx+4,hy-2);
+ c.quadraticCurveTo(hx+16,hy-1,hx+21,hy+3);/* 吻の上 */
+ c.lineTo(hx+21,hy+5);
+ c.quadraticCurveTo(hx+10,hy+6,hx+2,hy+9);c.closePath();c.fill();c.stroke();
+ c.fillStyle=DK;/* 下顎 */
+ c.beginPath();c.moveTo(hx-3,hy+8);
+ c.quadraticCurveTo(hx+8,hy+9+jaw,hx+19,hy+6+jaw);
+ c.lineTo(hx+19,hy+8.4+jaw);
+ c.quadraticCurveTo(hx+7,hy+13+jaw,hx-4,hy+11);c.closePath();c.fill();c.stroke();
+ if(jaw>2){c.fillStyle=EM2;c.globalAlpha=.5+gl*.5;/* 開いた口の奥で燃える火 */
+  c.beginPath();c.ellipse(hx+9,hy+7+jaw*.5,7,jaw*.5,0,0,7);c.fill();c.globalAlpha=1;}
+ c.fillStyle=HN;/* 牙(⚠上下で数を変える) */
+ for(const g of [[hx+7,hy+5,2.2],[hx+13,hy+4.4,1.8],[hx+18,hy+4,1.4]]){
+  c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[0]+1.4,g[1]+g[2]);c.lineTo(g[0]+2.6,g[1]);c.closePath();c.fill();}
+ /* ⭐後ろへ長く伸びる角2本(⚠長さを変える)+顎の髭 */
+ c.fillStyle=HN;
+ c.beginPath();c.moveTo(hx-4,hy-1);c.quadraticCurveTo(hx-14,hy-9,hx-24,hy-7);
+ c.quadraticCurveTo(hx-14,hy-5,hx-4,hy+2);c.closePath();c.fill();c.stroke();
+ c.beginPath();c.moveTo(hx-2,hy+2);c.quadraticCurveTo(hx-12,hy-3,hx-19,hy+1);
+ c.quadraticCurveTo(hx-11,hy+1,hx-2,hy+4.4);c.closePath();c.fill();c.stroke();
+ {const wv=Math.sin(t*3+ph)*1.6;
+  c.strokeStyle=shade(HN,.7);c.lineWidth=1.6;
+  c.beginPath();c.moveTo(hx+3,hy+11);c.quadraticCurveTo(hx-3,hy+17+wv,hx-9,hy+16+wv);c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2.6;}
+ /* 目(⚠**細い縦の瞳**=丸い目にすると愛嬌が出て龍に見えない) */
+ c.fillStyle=EM2;c.beginPath();c.ellipse(hx+3.4,hy+2.2,3.0,2.2,-.2,0,7);c.fill();c.stroke();
+ c.fillStyle='#2a0c08';c.beginPath();c.ellipse(hx+3.6,hy+2.2,.9,1.9,-.2,0,7);c.fill();
  c.restore();
 };
 /* ---- ★5 暗黒の騎士「漆黒の突撃」= **18人でただ1人の騎乗**(2026-08-01ユーザーの絵から起こした)。
@@ -20370,8 +21054,9 @@ const ZHPM_N=.5;/* ボス以外はさらに半分(2026-07-24 永井さん指示)
    ⚙️の総額が動かないように、体数に掛けた値の逆数をここへ渡す。⚠省略したら1(今までどおり)。 */
 function zSpec(zi,mul,wave,sent,from,bk){const Z=ZOMBIES[zi];const m=mul*(sent?1.3:1);
  const zhm=ZHPM*(Z.boss?1:ZHPM_N);
- return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,wing:Z.wing||0,fls:Z.fls||0,dv:Z.dv||0,shl:Z.shl||0,/* ⚠⚠(207)**表の印はここを通らないと一度も効かない**=🪶羽/🐟潜る/🐢甲羅ごもりの3つが写し忘れだった。
-    ⭐**ZOMBIES に新しい印を足したら、必ずここにも1つ足すこと**(検査 checkZFlag が見張る)。🥩fls=(229f) */
+ return{zi,hp:Z.hp*zhm*m,mhp:Z.hp*zhm*m,sp:Z.sp*(1+wave*.012)*(sent?1.12:1),bt:Math.max(1,Math.round(Z.bt*(1+.04*wave)*(wave>=12?1+(wave-11)*.05:1)*(bk||1))),/* 終盤は数が減るぶん1体の取り分を上げる */dmg:Z.dmg,armor:Z.armor||0,scl:Z.scl||0,wing:Z.wing||0,fls:Z.fls||0,gs:Z.gs||0,leak:Z.leak||0,puff:Z.puff||0,smld:Z.smld||0,jam:Z.jam||0,dv:Z.dv||0,shl:Z.shl||0,/* ⚠⚠(207)**表の印はここを通らないと一度も効かない**=🪶羽/🐟潜る/🐢甲羅ごもりの3つが写し忘れだった。
+    ⭐**ZOMBIES に新しい印を足したら、必ずここにも1つ足すこと**(検査 checkZFlag が見張る)。
+    🥩fls=(229f) / 💨gs・leak(垂れ流す)・puff(倒すと撒く)・smld(勝手に引火)・jam(黙らせる)=(252)面⑤ */
 fin:Z.fin||0,split:Z.split||0,aura:Z.aura||0,boss:Z.boss||0,noblock:Z.noblock||0,aoe:Z.aoe||0,atk:Z.atk*Math.sqrt(m),ar:Z.ar,sent:!!sent,from:from||''};}
 /* acdT/acdD=酸の残り秒数と毎秒ダメージ / acdX=倒れた時の酸爆発の威力 / acdR=その半径 */
 /* ⚠`stnT`=気絶の**見せ方**だけのタイマー(★が頭上を回る)。止める仕組みは `frzT` の方。
@@ -20471,12 +21156,17 @@ function buildTide(wave){
  /* 🥩(229f)面④=肉の一族。🌑(229h)NM専用の顔ぶれ6体(承認済み)が入った=nm4 の枝あり */
  const on4=G.pve&&!G.coop&&stageZs()===4;
  const nm4=nmOn&&on4;/* 🌑×④(229h)=④のナイトメア専用プール */
+ /* 💨(252)面⑤=沼の一族。🌑NM専用の顔ぶれ6体(承認済み)が入った=nm5 の枝あり */
+ const on5=G.pve&&!G.coop&&stageZs()===5;
+ const nm5=nmOn&&on5;/* 🌑×⑤(252)=⑤のナイトメア専用プール */
  const zp=ZOMBIES.map((z,i)=>i).filter(i=>{const Z=ZOMBIES[i];
   /* ⛔⭐(199)**`off` の付いた個体はどの波にも出さない**(2026-08-07ユーザー指示)=
      ①廃線から**ゾンビでない物**(レイス・スライム状体)を、①のナイトメアから**空を飛ぶ物**を外した。
      ⚠**消していない**(絵も数値も残してある)=面③以降で使う時にこの印を外すだけ。 */
   if(Z.off)return false;
   if(Z.boss||Z.mw>wave)return false;
+  if(nm5)return !!Z.nm&&Z.st===5;/* 🌑×⑤(252) */
+  if(on5)return Z.st===5&&!Z.nm;/* 💨(252)面⑤ */
   if(nm4)return !!Z.nm&&Z.st===4;/* 🌑×④(229h) */
   if(on4)return Z.st===4&&!Z.nm;/* 🥩(229f)面④ */
   if(nm3)return !!Z.nm&&Z.st===3;/* 🌑×③(224) */
@@ -20513,7 +21203,9 @@ function buildTide(wave){
   const fin=!!(G.pve&&wave>=20);
   /* ⚠**プール4つぶん**を同じ順で見ること(④→③→②→①)。④を先に見ないと獣のボスが出る */
   /* 🪶(194)面③は難易度を問わず空のボス=**④③②①より先に見る** */
-  const bi=nm4?((fin&&FINNM4_ZI>=0)?FINNM4_ZI:NM4_BOSS_ZI)/* 🌑×④(229h)=on4より先に見る */
+  const bi=nm5?((fin&&FINNM5_ZI>=0)?FINNM5_ZI:NM5_BOSS_ZI)/* 🌑×⑤(252)=on5より先に見る */
+   :on5?((fin&&FIN5_ZI>=0)?FIN5_ZI:ST5_BOSS_ZI)/* 💨(252)面⑤ */
+   :nm4?((fin&&FINNM4_ZI>=0)?FINNM4_ZI:NM4_BOSS_ZI)/* 🌑×④(229h)=on4より先に見る */
    :on4?((fin&&FIN4_ZI>=0)?FIN4_ZI:ST4_BOSS_ZI)/* 🥩(229f)面④ */
    :nm3?((fin&&FINNM3_ZI>=0)?FINNM3_ZI:NM3_BOSS_ZI)/* 🌑×③(224)=on3より先に見る */
    :on3?((fin&&FIN3_ZI>=0)?FIN3_ZI:ST3_BOSS_ZI)
@@ -20751,6 +21443,46 @@ function gasSpark(C,x,y){
   return true;
  }
  return false;
+}
+/* 🧟💨⭐⭐(252)**⑤の敵がガスに絡む3つ**(ユーザー承認の顔ぶれの役どころ)。
+   ⚠**どれも `gasAdd`/`gasBurn` を呼ぶだけ**=ガスの仕組み本体には1行も足していない。
+   ⚠**ガスの面でしか動かない**(`gasOn` が false なら丸ごと素通り)=他の面へ漏れない。 */
+const ZGAS_LEAK=TUNE("ZGAS_LEAK",.16,0,1,.01);/* 💨ガス運びが1秒に垂らす濃さ */
+const ZGAS_PUFF=TUNE("ZGAS_PUFF",.85,0,1,.05);/* 💨破れ袋が倒れた時に真下へ撒く濃さ(隣は半分) */
+const ZGAS_SMCD=TUNE("ZGAS_SMCD",2.2,.5,10,.1);/* 🔥燻り屋が次に火を点けるまでの間 */
+const ZJAM_R=TUNE("ZJAM_R",260,60,600,10);/* 🔇腐れ吹きが届く距離 */
+const ZJAM_T=TUNE("ZJAM_T",2.4,.5,10,.1);/* 🔇黙らせる秒数。⚠**短く**(ユーザーへ「弱く」と勧めた形) */
+const ZJAM_CD=TUNE("ZJAM_CD",7,1,30,.5);/* 🔇次に吹くまでの間 */
+/* 💨**倒れた敵がその場に撒く**(破れ袋)。⚠隣のマスにも半分だけ乗せる=1マスだけだと点にしか見えない */
+function gasPuff(C,d,amt){
+ if(!gasOn(C))return;
+ gasAdd(C,d,amt);
+ gasAdd(C,d-GAS_W,amt*.5);gasAdd(C,d+GAS_W,amt*.5);
+}
+/* 🧟1体ぶんの毎コマの絡み。⚠**呼ぶのは stepZombies の1か所だけ** */
+function zGasStep(C,z,dt){
+ if(!gasOn(C))return;
+ /* 💨**歩きながら垂れ流す**(ガス運び・腐海の胎児)=素材役。⚠谷間の外ではすぐ薄れるので溜まらない */
+ if(z.leak)gasAdd(C,z.d,ZGAS_LEAK*dt*(z.boss?2.4:1));
+ /* 🔥**勝手に引火する**(燻り屋)=**プレイヤーが握っていた引火の合図を奪う**邪魔役。
+    ⚠⚠**誘爆の最中は呼ばない**(GAS_IN)=誘爆のダメージから再帰で戻ってくると一瞬で全部燃える。 */
+ if(z.smld&&!GAS_IN){
+  z.smCd=(z.smCd==null)?rnd(.6,ZGAS_SMCD):z.smCd-dt;
+  if(z.smCd<=0){z.smCd=ZGAS_SMCD;
+   const i=clamp(Math.floor(z.d/GAS_W),0,(C.gas?C.gas.length:1)-1);
+   if(C.gas&&C.gas[i]>=GAS_FIRE){C.shake=Math.max(C.shake||0,.14);gasBurn(C,i,0);}}}
+ /* 🔇**タレット1基を短い間だけ黙らせる**(腐れ吹き)。⚠**1基・短く・間を置く**=強くすると盤面が止まる */
+ if(z.jam){
+  z.jmCd=(z.jmCd==null)?rnd(2,ZJAM_CD):z.jmCd-dt;
+  if(z.jmCd<=0){z.jmCd=ZJAM_CD;
+   let bi=-1,bd=ZJAM_R*ZJAM_R;
+   for(let si=0;si<C.towers.length;si++){const tw=C.towers[si];
+    if(!tw||tw.jamT>0||!SLOTS[si])continue;
+    const dx=SLOTS[si][0]-z.px,dy=SLOTS[si][1]-z.py,ds=dx*dx+dy*dy;
+    if(ds<bd){bd=ds;bi=si;}}
+   if(bi>=0){C.towers[bi].jamT=ZJAM_T;
+    if(FXLV>0){addFx(C,'ring',SLOTS[bi][0],SLOTS[bi][1],'',{r:34,col:'#7aa88f'});
+     addP(C,5,z.px,z.py-16*CH_UP,{sp:90,up:30,g:-40,life:.7,r:5,col:'#7aa88f',typ:'smoke'});}}}}
 }
 function gasStep(C,dt){
  if(!gasOn(C)){if(C&&C.gas)C.gas=null;return;}
@@ -21335,6 +22067,23 @@ const H_FX={
    hitFx(C,tg,ang,cl9,1,U.type);}
   if(u.mhFin)C.shake=Math.max(C.shake||0,.12);
   if(C.isMe&&sfx[H_SFX.hZan])sfx[H_SFX.hZan]();},
+ /* 🐉(252)**炎龍ウグニウス=前へ吹き付けるブレス**。⚠**飛び道具を出さない**=紅蓮の大魔導士(火の玉を放つ)と
+    絵で分ける。⭐**口から的まで届く帯を1本**+的の周りを焦がす(範囲は U.aoe が本体側で効く)。
+    ⚠出どころは決め打ちの銃口ではなく**顎の先**=体の局所座標に英雄の倍率を掛けて世界座標にする。 */
+ hUgni:(C,u,U,tg,mx,my,ang,col,utl,d5)=>{u.fireT=.2;
+  const ts=TSCALE[3],dd=(d5||u.dr||-1);
+  const sx=u.px+dd*ts*1.18*46,sy=u.py-ts*1.18*44;/* 顎の先(HBODY.hUgni の hx+21,hy+6 あたり) */
+  const tx=tg.px,ty=tg.py-18*CH_UP,aw=Math.atan2(ty-sy,tx-sx);
+  if(FXLV>0){
+   /* 吹き付ける帯(⚠2本重ねる=芯は明るく・外は暗い。1本だと「線」に見える) */
+   addFx(C,'flame',sx,sy,'',{ang:aw,len:Math.min(dist(sx,sy,tx,ty)+26,320),col:'#ff6a2a',sd:rnd(0,9)});
+   addFx(C,'flame',sx,sy,'',{ang:aw+.1,len:Math.min(dist(sx,sy,tx,ty)*.7,220),col:'#ffd24a',sd:rnd(0,9)});
+   addP(C,6,sx,sy,{sp:120,a:aw,spread:.36,g:-30,life:.35,r:2.6,col:'#ff8a3a'});
+   addFx(C,'ring',tg.px,tg.py,'',{r:(U.aoe||120)*.7,col:'#ff6a2a'});
+   addP(C,5,tg.px,tg.py-6,{sp:40,up:110,g:-70,life:.7,r:2.6,col:'#ff6a2a'});
+   hitFx(C,tg,ang,'#ff6a2a',1,U.type);}
+  C.shake=Math.max(C.shake||0,.13);
+  if(C.isMe&&sfx[H_SFX.hUgni])sfx[H_SFX.hUgni]();},
 };
 /* 🌈**跳弾の共通処理**(2026-08-03(92)ユーザー指示)。ボールが敵から敵へ跳ねる:
    bd=1跳ねの威力 / grow=1跳ねごとの伸び(通常0 / 必殺.3) / hops=残りの跳ね数 /
@@ -21832,6 +22581,12 @@ function killZ(C,z){
   /* 地面に残る酸だまり */
   if(FXLV>0)addP(C,6,z.px,z.py,{sp:0,g:0,life:4,r:10,col:'#5c8f24',typ:'stain',jx:ar*.5,jy:ar*.22});
   if(C.isMe&&sfx.acidPop)sfx.acidPop();}
+ /* 💨⭐(252)**破れ袋は倒れた所に特大のガス溜まりを撒く**(⑤の素材役)。
+    ⚠**引火はしない**=撒くだけ。点けるのはプレイヤー(💣爆発)か燻り屋。 */
+ if(z.puff&&gasOn(C)){
+  gasPuff(C,z.d,ZGAS_PUFF*(z.boss?1.4:1));
+  addFx(C,'ring',z.px,z.py,'',{r:78,col:'#b8d24a'});
+  if(FXLV>0)addP(C,10,z.px,z.py-14*CH_UP,{sp:110,up:50,g:-80,life:1.3,r:11,col:'#8fb04e',typ:'smoke',jx:14,jy:8});}
  /* 分裂で出てくる小型は、その敵と同じ生態系(=同じプール)の一番弱い個体にする */
  if(z.split){C.totalWave+=z.split;
   /* ⭐**弾けた瞬間に周りのユニットを巻き込む**(2026-07-27ユーザー指示)。
@@ -22564,6 +23319,38 @@ function heroUlt(C,wave){
    if(k%5===0&&C.isMe)(sfx[H_SFX.hZan]||sfx.shot)();};
   run9(0);for(let k=1;k<ZAN_N;k++)later(C,k*.055,()=>run9(k));
   C.shake=Math.max(C.shake||0,.2);
+ }else if(id==='hUgni'){/* 🐉⭐⭐(252)**劫火の吐息**=ユーザー指定「口を大きく開けて、
+    **どんどん大きくなる火の塊**を出す特大ブレス」。
+   ⭐**塊が道を進むほど大きく・熱くなる**=前に行くほど威力も範囲も上がる(残月とは伸び方の理屈が違う=
+     あちらは「斬った数」で育つ / こちらは**進んだ距離そのもの**で育つ=群れが薄くても必ず育つ)。
+   ⭐**通った所は燃え続ける**(燃焼を置いていく)=吐き終わった後も削り続けるのがこのキャラの性格。
+   ⚠**1体を何度も焼かない**ようにはしない=火の塊は通り抜ける物なので、留まった敵は何度も焼ける
+     (かわりに1回ぶんを軽くしてある)。⚠向きは**道のりが減る方**(敵が来る側)。 */
+  addFx(C,'txt',u.px,u.py-84*CH_UP,'劫火の吐息');
+  if(C.isMe&&sfx[H_SFX.hUgni])sfx[H_SFX.hUgni]();
+  u.ulT=Math.max(u.ulT||0,1.4);/* 吐いている間は顎を開けた構え */
+  const UG_N=18,UG_STEP=40,UG_CAP=14;/* 進む回数 / 1回に進む道のり / 育ちの頭打ち */
+  const roar=(k)=>{
+   if(!C||u.dead)return;
+   const q=clamp((u.d||0)-24-k*UG_STEP,0,PLEN),p=pathPos(q);
+   const g9=Math.min(k,UG_CAP);
+   const rad=54+g9*7;      /* 塊の大きさ=進むほど膨らむ */
+   const pw=1+g9*.13;      /* 熱さ=進むほど上がる(頭打ちで2.8倍) */
+   for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
+    if(Math.abs(z.d-q)>rad)continue;
+    dmgZ(C,z,Math.round(210*W*pw),1,0,0,'fire');
+    /* 🔥**通った所を燃やし続ける**=一番強い燃焼が勝つ(重ねて足さない) */
+    if(!z.dead){z.burnT=Math.max(z.burnT||0,4.5);z.burnD=Math.max(z.burnD||0,Math.round(46*W*pw));}}
+   /* 火の塊(⚠育つほど大きく=強くなっているのが目で分かる) */
+   addFx(C,'ring',p[0],p[1],'',{r:rad,col:'#ff6a2a'});
+   if(FXLV>0){
+    addFx(C,'spark',p[0],p[1]-20*CH_UP,'',{sd:rnd(0,9),col:'#ffd24a',big:g9>7?1:0});
+    addFx(C,'flame',p[0],p[1]-6,'',{ang:-1.5708,len:40+g9*4,col:'#ff6a2a',sd:rnd(0,9)});
+    addP(C,3+((g9/4)|0),p[0],p[1]-10*CH_UP,{sp:60,up:90+g9*4,g:-70,life:.7,r:2.6+g9*.12,col:'#ff8a3a'});}
+   if(k%4===0)C.shake=Math.max(C.shake||0,.16+g9*.01);
+   if(k%6===0&&C.isMe&&sfx[H_SFX.hUgni])sfx[H_SFX.hUgni]();};
+  roar(0);for(let k=1;k<UG_N;k++)later(C,k*.06,()=>roar(k));
+  C.shake=Math.max(C.shake||0,.24);
  }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
   for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
    addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:DANGER});}
@@ -22680,6 +23467,8 @@ function campStep(C,dt,wave){
     z.shCd-=dt;
     if(z.shCd<=0&&z.frzT<=0){z.shT=2.2;z.shCd=rnd(6,9);
      if(FXLV>0)addFx(C,'ring',z.px,z.py,'',{r:30,col:'#5f6b52'});}}}
+  /* 💨(252)⑤の敵がガスに絡む3つ(垂れ流す/勝手に引火する/黙らせる)。⚠ガスの面でしか動かない */
+  if((z.leak||z.smld||z.jam)&&!C.bus&&z.frzT<=0&&z.d>0)zGasStep(C,z,dt);
   let blk=null,bd2=1e9;
   for(const u of C.units){if(u.dead)continue;
    if(z.dvT>0)break;/* 🐟潜行中は誰にも止められない */
@@ -23320,6 +24109,14 @@ function campStep(C,dt,wave){
       南の枝の敵が北の枝の見当違いの距離まで引き戻される(=道の外へ飛ぶ)。 */
    const pd9=T.pull?projPath(sx,sy):0;
    const pdL9=(T.pull&&LANES)?LANES.map((L,li)=>projPathIn(sx,sy,li)[0]):null;
+   /* 💨⭐(252)**散布塔=道へガスを撒く**。⚠**火は点けない**(点けられるのは💣爆発だけ)。
+      ⭐**塔から道へ下ろした点を中心に、射程のぶんだけ道の上へ広げて乗せる**=端ほど薄い。
+      ⚠**撒くのは1回だけ**(敵ごとに撒くと、群れの数だけ濃さが跳ねる)。 */
+   if(T.gsp&&gasOn(C)){
+    const amt=twGasA(T,tw),c9=projPath(sx,sy),span=Math.max(GAS_W,rng*.5);
+    for(let dd=-span;dd<=span;dd+=GAS_W)
+     gasAdd(C,c9+dd,amt*Math.max(.25,1-Math.abs(dd)/(span+GAS_W)));
+    if(FXLV>0)addP(C,4,sx,sy-18,{sp:70,up:26,g:-50,life:1,r:8,col:'#9cb85a',typ:'smoke',jx:12,jy:6});}
    for(const z of C.zombies){if(!z.dead&&dist(z.px,z.py,sx,sy)<=rng){
     z.slowT=T.slowT*(1+(TRT&&TRT.k==='slow'?TRT.v*TL:0));
     /* 🕸(204d)**鈍足の深さ**も持つようにした(それまでは一律55%で、塔ごとの `slow` は使っていなかった)。
@@ -23812,7 +24609,7 @@ function newGame(specs,myIdx){
 const RPT_X=TUNE("RPT_X",.72,.2,4,.05);/* 🧬配布の全体倍率。⚠触ったら検査 checkGain の物差しで確かめ直すこと */
 /* 🧬⭐(204h)**面を初めて落とした時の上乗せ**(面ごと)。⚠**実測で決める**=手で書き換えない。
    ⚠足りない面は最後の値を使う(面③〜⑤を足す時はここに1つずつ足す)。 */
-const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10),TUNE("STG_GEN3",560,0,8000,10),TUNE("STG_GEN4",760,0,9000,10)];/* 🥩(229f)④ */
+const STG_GEN=[TUNE("STG_GEN1",260,0,4000,10),TUNE("STG_GEN2",400,0,6000,10),TUNE("STG_GEN3",560,0,8000,10),TUNE("STG_GEN4",760,0,9000,10),TUNE("STG_GEN5",1000,0,12000,10)];/* 🥩(229f)④ / 💨(252)⑤ */
 function metaGainOf(d9,stg,wave,kills){
  /* ⚠末尾=🚌ボーナス面。⭐(204h)**🚌を .90→1.05 へ上げた**(ユーザー「拠点開拓は上げてもいい」)。
     ⚠**新兵(1.37)は上げない**=すでに一番実入りが良く、そこを上げると
@@ -24233,6 +25030,32 @@ function bgDrawL1(c,tod,dk,PAL,VL,VR,VT,VB){
   c.save();c.translate(p[0],p[1]);c.rotate(p[4]);c.beginPath();c.ellipse(0,0,p[2],p[3],0,0,7);c.fill();c.restore();}
  c.restore();
  for(const d of DOTS){c.fillStyle=d[3]?'rgba(0,0,0,.12)':'rgba(255,255,255,.08)';c.beginPath();c.arc(d[0],d[1],d[2],0,7);c.fill();}
+ /* 💨(252)⑤腐海の湿地帯=**溜まり水**を地面に敷く。⚠**焼き込みに入る層なので動かさない**
+    (泡は動くので別。下の `drawSwampBub`)。⚠道の上には置かない=道は別の層が上に塗る。 */
+ if(STAGE===4)for(const p of SWAMP){
+  c.fillStyle='rgba(46,68,44,.30)';
+  c.beginPath();c.ellipse(p[0],p[1],p[2],p[3],p[4],0,7);c.fill();
+  c.fillStyle='rgba(150,186,110,.10)';/* 水面の照り(中心から少しずらす) */
+  c.beginPath();c.ellipse(p[0]-p[2]*.22,p[1]-p[3]*.28,p[2]*.44,p[3]*.36,p[4],0,7);c.fill();}
+}
+/* 💨(252)⑤の溜まり水。[x,y,横,縦,傾き]。⚠**道(y=320/590の帯)を避けて置いてある** */
+const SWAMP=[[240,470,96,34,.12],[520,150,78,26,-.09],[760,470,120,40,.06],[1040,150,88,30,.14],
+ [1330,455,104,36,-.11],[150,690,72,24,.05],[900,80,64,22,-.06],[1560,200,86,28,.1],
+ [640,690,92,30,-.04],[1180,690,70,24,.08]];
+/* 💨(252)**上がり続ける気泡**(面⑤の看板=副題そのもの)。⚠**焼き込みに入れない**(動くので)。
+   ⭐**数は固定・位置も固定**=乱数を毎コマ引くと粒が飛び散って霧に見える。
+   ⚠1コマ14個の丸だけ(塗り回数の掟。重い物は足さない)。 */
+const SWBUB=[];
+for(let i=0;i<14;i++){const p=SWAMP[i%SWAMP.length];
+ SWBUB.push([p[0]+((i*137)%Math.max(20,p[2]|0))-p[2]*.5,p[1]+((i*89)%Math.max(10,p[3]|0))-p[3]*.5,
+  1.6+((i*7)%5)*.5,1.1+((i*13)%9)*.13,(i*31)%10*.1]);}
+function drawSwampBub(c,t){
+ for(const b of SWBUB){
+  const k=((t*b[3]+b[4])%1);
+  c.globalAlpha=.42*(1-k);
+  c.fillStyle='#b8d47a';
+  c.beginPath();c.arc(b[0],b[1]-k*9,b[2]*(.5+k*.8),0,7);c.fill();}
+ c.globalAlpha=1;
 }
 /* 🪶⭐(222)**地平線のシルエット**=①②はビルの廃墟 / ③送電鉄塔の丘は**稜線+高圧鉄塔**(ユーザー決定の絵面)。
    ⚠描く場所が2か所ある(bgDrawL2=焼く方 と 生描きの方)ので**必ずここを通す**(片方だけ直すと食い違う) */
@@ -24292,6 +25115,35 @@ function bgHorizon(c,tod,PAL){
   for(const a of [[320,90],[1330,86],[1620,63]]){
    c.beginPath();c.moveTo(a[0],112-a[1]);c.lineTo(a[0],112-a[1]-13);c.stroke();
    c.beginPath();c.moveTo(a[0]-4,112-a[1]-9);c.lineTo(a[0]+4,112-a[1]-9);c.stroke();}
+  return;}
+ if(STAGE===4){/* 💨(252)⑤腐海の湿地帯=**沼に半分沈んだ街**+立ち枯れた木の林+低く這う霧。
+    ⭐①②のビル・③の鉄塔・④の廃ビル群と分ける決め手は**「水に浸かって傾いている」**こと=
+      **屋根の下を水平の水面線で切る**と、高さの違うビルが全部同じ線で止まって「沈んでいる」に見える。
+    ⚠**立ち枯れの木は等間隔・同じ高さにしない**(ハリボテ4原因)。⚠**窓は灯さない**(人が居る話になる) */
+  const WL=110;/* 水面の線 */
+  /* 奥=沈んだ街の影(薄い。傾きも高さもばらばら) */
+  c.fillStyle=mix(PAL.bld,'#1b2418',.26+tod*.3);
+  for(const b of [[-160,44,90,-.05],[10,30,60,.04],[130,56,110,-.08],[300,36,70,.03],[430,62,95,-.04],
+   [600,28,60,.06],[720,50,120,-.03],[900,40,80,.05],[1030,58,100,-.06],[1210,32,66,.02],
+   [1330,52,110,-.05],[1520,38,74,.04],[1640,60,120,-.02]]){
+   c.save();c.translate(b[0],WL);c.rotate(b[3]);c.fillRect(0,-b[1],b[2],b[1]+8);c.restore();}
+  /* 水面の線=ここで全部を切ると「浸かっている」が読める */
+  c.fillStyle=mix(PAL.bld,'#0e1712',.5+tod*.4);c.fillRect(-200,WL-3,2000,7);
+  /* 立ち枯れた木(幹+折れた枝2〜3本。長さも角度も1本ずつ変える) */
+  c.strokeStyle=mix(PAL.bld,'#0e1410',.5+tod*.4);c.lineCap='round';
+  for(const g of [[-40,54,.06],[180,38,-.09],[395,62,.11],[545,30,-.05],[830,58,.08],
+   [1120,44,-.12],[1275,66,.05],[1450,34,-.07],[1700,50,.1]]){
+   const x=g[0],h=g[1],sk=g[2];
+   c.lineWidth=3.4;c.beginPath();c.moveTo(x,WL);c.lineTo(x+sk*h*2,WL-h);c.stroke();
+   c.lineWidth=2;
+   const tx=x+sk*h*2;
+   c.beginPath();c.moveTo(tx,WL-h*.72);c.lineTo(tx-9-h*.12,WL-h*.94);c.stroke();
+   c.beginPath();c.moveTo(tx,WL-h*.5);c.lineTo(tx+7+h*.1,WL-h*.78);c.stroke();
+   if(h>48){c.beginPath();c.moveTo(tx,WL-h*.9);c.lineTo(tx+5,WL-h*1.12);c.stroke();}}
+  c.lineWidth=3;
+  /* 低く這う霧の帯(⚠**動かさない**=ここは焼き込みに入る) */
+  c.fillStyle='rgba(180,206,130,.10)';c.fillRect(-200,WL-22,2000,20);
+  c.fillStyle='rgba(180,206,130,.07)';c.fillRect(-200,WL-40,2000,16);
   return;}
  c.fillStyle=mix(PAL.bld,'#12151f',.35+tod*.45);
  [[-190,50,120],[-40,38,70],[60,55,90],[210,35,60],[340,70,110],[520,45,70],[700,60,80],[900,30,60],[1080,65,95],[1300,40,70],[1480,58,85],[1620,44,100],[1750,60,120]].forEach(b=>{c.fillRect(b[0],110-b[1],b[2],b[1]);});
@@ -24563,6 +25415,9 @@ function renderCamp(C,t){
  }/* ← 🖼(124)ここまでが「焼いた2枚目」に入っている分(焼けた時は丸ごと飛ばす) */
  /* 💨⑤のガス溜まり。⚠**道の上・敵の下**=踏み込んで行く物なので地面側に敷く。
     ⚠動く(濃さが変わる)ので焼き込みには入れない */
+ /* 💨(252)⑤の気泡=溜まり水から上がり続ける(副題「気泡が上がり続ける」そのもの)。
+    ⚠🚌開拓便では出さない(あちらは別の面) */
+ if(STAGE===4&&!C.bus&&FXLV>0)drawSwampBub(c,t);
  if(C.gas)drawGas(c,C,t);
  /* 🛞轍と🩸血だまり(🚌開拓便)。⚠**地面の上・廃墟の下**=踏まれている物なので一番下に敷く */
  if(C.bus)try{drawBnsMarks(c,C);}catch(e){}
@@ -37008,7 +37863,9 @@ const RG_HERO={
  /* 🐺(226d)蒼雷の狼王=速さが売りの物理アタッカー。とくぎは雷の2本(巫女と同じ系) */
  hWolf:{b:{hp:58,mp:16,st:26,df:13,sp:22},g:{hp:10.2,mp:3.6,st:4.7,df:2.3,sp:3.4},sk:[[1,'s_bolt'],[20,'s_storm']]},
  /* ⚔(230)残月の剣鬼=手数と速さの★5(硬さは★5の中で一番低い) */
- hZan :{b:{hp:52,mp:14,st:27,df:12,sp:24},g:{hp:9.4,mp:3.2,st:4.9,df:2.1,sp:3.6},sk:[[1,'s_doom'],[20,'s_end']]}
+ hZan :{b:{hp:52,mp:14,st:27,df:12,sp:24},g:{hp:9.4,mp:3.2,st:4.9,df:2.1,sp:3.6},sk:[[1,'s_doom'],[20,'s_end']]},
+ /* 🐉(252)炎龍ウグニウス=★5で一番硬い。足は遅い。とくぎは炎の2本(紅蓮と同じ系) */
+ hUgni:{b:{hp:74,mp:20,st:25,df:20,sp:8},g:{hp:13.2,mp:4.2,st:4.6,df:3.6,sp:1.2},sk:[[1,'s_flame'],[18,'s_end']]}
 };
 /* ---- どうぐ ---- */
 const RG_IT=[
@@ -38239,7 +39096,8 @@ const MAPND=[
  {stg:4,d:6,n:'沈んだ県道',    s:'🚌開拓便=水没した道を突っ切る', x:.39,y:.30,bns:1},
  {stg:4,d:3,n:'ガスの谷',      s:'谷間にガスが淀む',              x:.54,y:.52},
  {stg:4,d:4,n:'腐れの沼床',    s:'悪夢の物量が泥から這い出る',    x:.71,y:.33},
- {stg:4,d:5,n:'腐海の胎',      s:'🌑沼の底で膨れ上がった何か',    x:.88,y:.55,nm:1,lock3:1}
+ /* 🌑💨(252)⑤専用のナイトメア6体が入ったので lock3 を外した(③④と同じ道すじ) */
+ {stg:4,d:5,n:'腐海の胎',      s:'🌑沼の底で膨れ上がった何か',    x:.88,y:.55,nm:1}
 ];
 let MSEL=-1,MBUS=null;
 /* 🗺**いま開いている面の地図**。⚠**MSEL(選んでいる拠点)とは別**=別の面を覗いている間も選択は残る */
