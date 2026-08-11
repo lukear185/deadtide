@@ -4292,6 +4292,8 @@ const TW_SFX={rifle:'shotD',shot:'shotgun',sniper:'snipe',gat:'gatD',
  rifle2:'shotD',shot2:'shot',net2:'net',flame2:'flame',tesla2:'zap',mortar2:'mortar',sniper2:'shot',
  gren2:'grenC',cryo2:'cryo',laser2:'laser',acid2:'acid',drone2:'dronefx',arty2:'canC',coil2:'zap2',
  railx:'railJ',gat2:'gatD',plasma2:'plasma',fort2:'fortC',
+ /* 🔁(259)面⑥で開くもう一段。⚠音は元の塔と同じ(専用の音は後日の協議) */
+ net3:'net',flame3:'flame',gren3:'grenC',
 flame:'flame',acid:'acid',tesla:'zap',coil:'zap2',cryo:'cryo',net:'net',
  /* ⭐(197)新しい塔3台と、その進化先 */
  /* ⭐(204d)**照明塔と引力塔に専用の音を付けた**(ユーザー「いまだとネットと一緒だから駄目」) */
@@ -4905,14 +4907,14 @@ const TOWERS=[
     ⚠ここを据え置くと「フル進化しても素のショットガン台と同じ」が残る=直した意味が半分になる。 */
  {id:'rifle2',n:'連装ライフル',base:'rifle',grd:1,cost:360,rng:258,dmg:56,rate:.47,type:'bullet',c:'#9fb0c2',dsc:'二連の砲身が交互に吠える。ライフル台の完成形'},
  {id:'shot2',n:'散弾要塞',base:'shot',grd:1,cost:600,rng:196,dmg:52,rate:.77,type:'bullet',multi:4,c:'#c4a06b',dsc:'四つ口から浴びせる散弾。4体同時'},
- {id:'net2',n:'鋼糸射出砲',base:'net',grd:1,cost:480,rng:202,dmg:4,rate:1,type:'net',slowT:2.6,c:'#8ac2b0',dsc:'鋼の糸で範囲の敵を強く縛る'},
- {id:'flame2',n:'業火放射塔',base:'flame',grd:1,cost:840,rng:162,dmg:16,rate:.14,type:'fire',cont:1,burn:27,fspl:78,c:'#e08a3a',dsc:'二又の火口が業火を吐き続ける。装甲に特効・強い継続燃焼'},
+ {id:'net2',n:'鋼糸射出砲',base:'net',grd:1,up2:'net3',gc:3600,cost:480,rng:202,dmg:4,rate:1,type:'net',slowT:2.6,c:'#8ac2b0',dsc:'鋼の糸で範囲の敵を強く縛る'},
+ {id:'flame2',n:'業火放射塔',base:'flame',grd:1,up2:'flame3',gc:6300,cost:840,rng:162,dmg:16,rate:.14,type:'fire',cont:1,burn:27,fspl:78,c:'#e08a3a',dsc:'二又の火口が業火を吐き続ける。装甲に特効・強い継続燃焼'},
  {id:'tesla2',n:'雷神コイル',base:'tesla',grd:1,cost:1020,rng:218,dmg:88,rate:.81,type:'elec',emul:5,emax:5,trait:{k:'chain',v:.25,t:'同時攻撃+0.25体'},c:'#7fd0ef',dsc:'太い巻線から同時に5体へ撃つ。ここからは威力と射程を伸ばす'},
  /* ⚠素を85→100にしたので、決まり(威力×2.0)どおり 170→**200**(2026-08-02) */
  {id:'mortar2',n:'重迫撃砲',base:'mortar',grd:1,cost:1290,rng:526,minr:160,dmg:200,rate:2.2,type:'blast',aoe:106,c:'#949c80',dsc:'重い弾を遠くへ。爆発範囲も広い'},
  {id:'sniper2',n:'対物狙撃塔',base:'sniper',grd:1,cost:1620,rng:739,dmg:1750,rate:4.1,type:'pierce',prio:1,pierce:1,vsB:3,c:'#7c8a96',dsc:'装甲ごと抜く対物弾。💀ボスと👁オーラ持ちには3倍'},
  /* ⚠素を38→58にしたので、決まり(威力×2.0)どおり 76→**116**(2026-08-02) */
- {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,cost:900,rng:314,dmg:116,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
+ {id:'gren2',n:'多連爆裂砲',base:'gren',grd:1,up2:'gren3',gc:6800,cost:900,rng:314,dmg:116,rate:1.28,type:'blast',aoe:88,c:'#96a370',dsc:'三連の砲口から続けざまに撃ち込む'},
  /* ⚡🧲💡(197)新しい3台の進化。⚠**進化は2段**(素→中段→最終形態)=全部の塔でそろえる決まり */
  {id:'bolt2',n:'大雷塔',base:'bolt',grd:1,up2:'bolt3',gc:5600,cost:700,rng:275,dmg:168,rate:1.25,type:'elec',chain:1,cmax:1,sky:1,c:'#a8dcef',dsc:'空から落ちる雷が一段と太い。単体への一撃が重い'},
  {id:'bolt3',n:'雷神の柱',base:'bolt',grd:1,cost:1580,rng:305,dmg:300,rate:1.1,type:'elec',chain:1,cmax:1,sky:1,c:'#d8f2ff',dsc:'空から柱のような雷を落とす。単体への一撃は最終兵器級'},
@@ -4935,7 +4937,16 @@ const TOWERS=[
  {id:'harp2',n:'スパイクランチャー',base:'harp',grd:1,cost:1680,rng:336,dmg:490,rate:1.95,type:'pierce',beam:20,bmax:6,pierce:1,c:'#b09a6a',dsc:'圧縮空気の多連杭。直線の6体をまとめて貫く'},
  /* 💨(252)散布塔の最終形態。決まりどおり=間隔×0.85 / 射程×1.12。持ち味(撒く量)は一段上 */
  {id:'spray2',n:'腐霧散布塔',base:'spray',grd:1,cost:1440,rng:291,dmg:8,rate:1.36,type:'net',gsp:.38,slow:.2,slowT:.9,c:'#c2e07a',dsc:'四つの噴口が沼のガスを撒き散らす。💣爆発と組ませた時の火力が段違い'},
- {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'}
+ {id:'scrap3',n:'廃品プラント',cost:700,rng:0,dmg:0,rate:2,type:'eco',inc:75,grd:1,up2:'scrap4',gc:5600,c:'#e8cf7a',dsc:'炉を二基備えた解体工場。⚙️が流れ込んでくる'},
+ /* 🔁⭐⭐(259)**面⑥のクリアで開く「もう一段」**(2026-08-11ユーザー決定
+    「5面までクリアしたら、面のクリアの時と一緒の種類のタレットとユニットのもう一段進化が
+     面クリアごとに解放されるようにしよう」)=**段0の顔ぶれ4種**(🕸ネット砲/🏭廃品工房/🔥火炎放射塔/💣爆裂砲台)。
+    ⚠**決まりは今までの段と同じ**=威力×約1.9 / 射程×約1.11 / 値段×約3。持ち味だけ一段上へ。
+    ⚠**門は LAP_GT が持つ**=面⑥を制覇するまで研究所に並ばない。 */
+ {id:'net3',n:'縛鎖網砲',base:'net',grd:1,cost:1440,rng:224,dmg:8,rate:.9,type:'net',slow:.62,slowT:3.4,c:'#b0e0cc',dsc:'鋼の網を幾重にも重ねて、範囲の敵を縫い止める'},
+ {id:'flame3',n:'獄炎放射塔',base:'flame',grd:1,cost:2520,rng:180,dmg:30,rate:.14,type:'fire',cont:1,burn:48,fspl:94,c:'#ffb347',dsc:'三又の火口が獄炎を吐き続ける。装甲を焼き抜き、周りごと燃え上がらせる'},
+ {id:'gren3',n:'飽和爆裂砲',base:'gren',grd:1,cost:2700,rng:350,dmg:220,rate:1.1,type:'blast',aoe:106,c:'#b5c48a',dsc:'六つの砲口が休みなく撃ち込み、範囲ごと吹き飛ばす'},
+ {id:'scrap4',n:'廃品コンビナート',cost:2100,rng:0,dmg:0,rate:1.7,type:'eco',inc:290,grd:1,c:'#fff0a8',dsc:'炉が四基。街ひとつ分の廃品を呑み込んで⚙️に変える'}
 ];
 /* ===== ⭐⭐**進化の中段(2026-08-02ユーザー指示「進化を2回できるようにして2段目を弱くする」)** =====
    ⚠**素のタレットから機械的に作る**。手で18行書くと `pz`(プラズマ球)・`drn`(ドローン)・`cont`(継続攻撃)・
@@ -4994,7 +5005,7 @@ const GRD_MID={
 const SUP_N=4;/* 支援施設の数(末尾のグレードアップ専用の手前まで)。⚠(128)進軍旗を足して3→4 */
 /* ↑末尾のグレードアップ専用の数(工房の2段+タレットの最終形態18種+**中段17種**)。⚠段を足したらここも増やす。
    ⚠**中段は TOWERS の一番後ろに push している**ので、素のタレットの添字は1つも動いていない(セーブと解放順が無事) */
-const GRD_N=20+18+6+1+2;/* ⚠(197)雷塔/引力塔/照明塔の進化ぶん(各2段) *//* ⚠ドローン基地だけ中段が無いので中段は18(=17+ハープーン) *//* 🔩(228q)+1=harp2。中段18にはharpMを含む *//* 💨(252)+2=spray2とsprayM */
+const GRD_N=20+18+6+1+2+4;/* 🔁(259)+4=面⑥で開くもう一段(net3/flame3/gren3/scrap4) *//* ⚠(197)雷塔/引力塔/照明塔の進化ぶん(各2段) *//* ⚠ドローン基地だけ中段が無いので中段は18(=17+ハープーン) *//* 🔩(228q)+1=harp2。中段18にはharpMを含む *//* 💨(252)+2=spray2とsprayM */
 /* 🎨⭐(228r)**属性の印**(2026-08-09ユーザー指示「TD中とかタレット設置するときとか
    ユニットのボタンに属性がわかるマークを」)=建設メニューの札とデッキの札の隅に小さく出す。
    ⚠(145)で外した「相性の札(通り方の文)」とは別物=これは**自分の攻撃の型**の一文字だけ。
@@ -5669,7 +5680,9 @@ const UVAR={
  shd:[
   {id:'bshd',n:'大盾兵',cm:1.2,hp:1.45,atk:1.2,c:'#5f8fa3',dsc:'一回り大きい盾で受け止める'},
   {id:'iron',n:'鉄壁',cm:1.45,hp:2,atk:1.45,c:'#8a8f96',dsc:'鋼板を並べた動く壁'},
-  {id:'fortr',n:'城塞兵',cm:1.75,hp:2.8,atk:1.75,c:GOLD2,dsc:'決して抜かれぬ人間城塞'}],
+  {id:'fortr',n:'城塞兵',cm:1.75,hp:2.8,atk:1.75,c:GOLD2,dsc:'決して抜かれぬ人間城塞'},
+  /* 🔁(259)面⑥の第4段階。⚠hook(這う敵を受け止める数)は元のユニットから自動で引き継ぐ */
+  {id:'shd4',n:'不落の砎',cm:2.1,hp:3.8,atk:2.1,c:'#e8dcc0',dsc:'一度も抜かれたことがない一枚岩'}],
 
  /* ⭐⭐(163)**派生を全ユニットに用意した**(ユーザー指示「ユニットで派生が無いやついるから
     全員派生があるように作って」)=それまで派生があったのは10種だけで、
@@ -5679,11 +5692,15 @@ const UVAR={
  mol:[
   {id:'mol2',n:'焼夷瓶',cm:1.2,hp:1.3,atk:1.35,c:'#d9803a',dsc:'よく燃える焼夷剤を詰めた瓶'},
   {id:'mol3',n:'焼き討ち屋',cm:1.45,hp:1.7,atk:1.8,c:'#b0483a',dsc:'街ごと焼いてきた放火の玄人'},
-  {id:'mol4',n:'業火の使徒',cm:1.75,hp:2.3,atk:2.4,rng:1.12,c:'#ff8a3d',dsc:'消えぬ業火を投げる狂信者'}],
+  {id:'mol4',n:'業火の使徒',cm:1.75,hp:2.3,atk:2.4,rng:1.12,c:'#ff8a3d',dsc:'消えぬ業火を投げる狂信者'},
+  /* 🔁(259)面⑥の第4段階(段0の額) */
+  {id:'mol5',n:'劫火の預言者',cm:2.1,hp:3.0,atk:3.2,rng:1.2,c:'#ffd24a',dsc:'投げた先が二度と消えない火の海になる'}],
  grn:[
   {id:'grn2',n:'榴弾兵',cm:1.2,hp:1.3,atk:1.35,c:'#8f9c5c',dsc:'破片で薙ぐ榴弾を投げる'},
   {id:'grn3',n:'破砕兵',cm:1.45,hp:1.7,atk:1.8,c:'#6b7a45',dsc:'瓦礫ごと吹き飛ばす破砕弾'},
-  {id:'grn4',n:'爆砕王',cm:1.75,hp:2.3,atk:2.45,rate:.9,c:'#a0623a',dsc:'投げる間も惜しむ爆破の王'}],
+  {id:'grn4',n:'爆砕王',cm:1.75,hp:2.3,atk:2.45,rate:.9,c:'#a0623a',dsc:'投げる間も惜しむ爆破の王'},
+  /* 🔁(259)面⑥の第4段階 */
+  {id:'grn5',n:'歼滅砲手',cm:2.1,hp:3.0,atk:3.3,rate:.85,c:'#c96b35',dsc:'一投で群れごと消し飛ばす'}],
  frz:[
   {id:'frz2',n:'冷却兵',cm:1.2,hp:1.3,atk:1.3,c:'#8fc4d9',dsc:'冷却剤で足を鈍らせる'},
   {id:'frz3',n:'氷結兵',cm:1.45,hp:1.7,atk:1.7,c:'#7fb6c9',dsc:'路面ごと凍らせて止める'},
@@ -5777,15 +5794,16 @@ for(const b in UVAR)for(const v of UVAR[b]){
  if(v.cm)v.cm=+(1+(v.cm-1)*VAR_COSTB).toFixed(2);
 }
 const VARLIST=[];/* 全派生の一覧(解放済みの表示・名前引きに使う。解放の順番はもう固定していない) */
-for(let t=0;t<3;t++)for(const b of VBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v});}
-for(let t=0;t<3;t++)for(const b of FVBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v,adv:1});}
+/* 🔁(259)**4段目まで数える**＝面⑥〜⑩のクリアで開く「もう一段」の分。⚠ここを3のままにすると一覚に一行も出ない */
+for(let t=0;t<4;t++)for(const b of VBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v});}
+for(let t=0;t<4;t++)for(const b of FVBASE){const v=UVAR[b]&&UVAR[b][t];if(v)VARLIST.push({b,t,v,adv:1});}
 /* ⭐**派生は「段」で値段が跳ね上がる**(2026-07-27ユーザー指示。猟犬→狼100 / →ケルベロス300 / →フェンリル500)。
    ⚠それまでは**取った総数だけ**で決まっていた(240×1.13^k)ので、
      「浅い段をつまみ食いする」のと「1本を最後まで伸ばす」のが同じ値段だった。
    ⭐t=そのユニットの第何段階(0..2) / k=すでに取った派生の総数。
      総数のぶんは緩やかに(1.022^k)効かせる。⚠最初は100/300/500だったが、
      「研究所の必要ptがまだ低い」というユーザー判断で全タブごと1.8倍にした(最後の1つは約1,900🧬)。 */
-const UV_TIER=[180,540,900];/* ⚠2026-07-27に全タブを上げた時に1.8倍(最後の1つは約1,900🧬) */
+const UV_TIER=[180,540,900,1600];/* 🔁(259)4段目=面⑥〜⑩で開く分 *//* ⚠2026-07-27に全タブを上げた時に1.8倍(最後の1つは約1,900🧬) */
 const LAB_UV=(t,k)=>Math.round((UV_TIER[t]||UV_TIER[UV_TIER.length-1])*Math.pow(1.022,k||0));
 /* ⭐タレット/工房の進化の解放価格(2026-07-30)。k=すでに取った進化の総数。
    ⚠**取った総数だけで上がる**形にしてある(派生の「段で跳ねる」形と分けた理由=
@@ -6677,6 +6695,19 @@ function unlStep(){let n=0;
  return n;}
 /* 段 st までに棚へ並ぶ個数(段0の分を含むので st+1 個ぶん足す) */
 const unlCnt=(arr,st)=>{let s=0;const n=Math.min(st+1,arr.length);for(let i=0;i<n;i++)s+=arr[i];return s;};
+/* 🔁⭐⭐⭐(259)**面⑥〜⑩のクリアで「もう一段の進化」が開く**(2026-08-11ユーザー決定
+     「5面までクリアしたら、面のクリアの時と一緒の種類のタレットとユニットの
+      もう一段進化が面クリアごとに解放されるようにしよう」)。
+   ⭐**開く顔ぶれは「その段」と同じ**＝**面⑥=段0 / ⑦=段1 / ⑧=段2 / ⑨=段3 / ⑩=段4**。
+     段0 なら 🕸ネット砲・🏭廃品工房・🔥火炎放射塔・💣爆裂砲台 と 🧪火炎瓶・🛡盾持ち・💣爆弾兵。
+   ⚠**今まである進化と派生には門を掛けない**＝今まで買えた物は今までどおり。
+   ⚠⚠**中身を足したらこの表にも必ず足すこと**＝足さないと**面をクリアしていなくても並ぶ**。 */
+const LAP_GT=[['net3','flame3','gren3','scrap4'],[],[],[],[]];
+const LAP_GU=[['mol5','shd4','grn5'],[],[],[],[]];
+/* その id がどの段の「もう一段」か(-1=普通の進化・門は無し) */
+const lapGSt=id=>{for(let i=0;i<LAP_GT.length;i++)if(LAP_GT[i].indexOf(id)>=0||LAP_GU[i].indexOf(id)>=0)return i;return -1;};
+/* その進化先がもう棚に並んでいるか。⚠面⑥を制覇してはじめて段0が開く */
+const lapGOK=id=>{const st=lapGSt(id);return st<0||devAll()||unlStep()>=LAP_N+st+1;};
 const shelfT=()=>UNL_T.slice(0,unlCnt(UNL_TN,unlStep()));
 const shelfU=()=>UNL_U.slice(0,unlCnt(UNL_UN,unlStep()));
 /* ⭐**次の面で並ぶ物**(鍵つきで見せる分)。⚠隠さない=進む動機になる(設計①) */
@@ -16253,6 +16284,59 @@ else if(tid==='drone'){/* 発着台(機体は tw.dr の位置に別で描く) */
   c.fillStyle='#6b7580';rr(c,10,-17,6,34,2);c.fill();c.stroke();
   c.fillStyle=PAPER3;for(let k=-1;k<=1;k++){c.beginPath();c.arc(13,k*11,1.6,0,7);c.fill();}
   if(o.fire){c.fillStyle='#ffdd66';for(let k=-1;k<=1;k++){c.beginPath();c.arc(40,k*9,5,0,7);c.fill();}}c.restore();}
+/* 🔁⭐(259)**面⑥で開くもう一段**の4種。⭐**前の段の言葉づかいをそのまま使って、
+   「数を一つ増やす」で最終形を作る**(炉二基→四基 / 二又→三又 / 三連→六連 / 網一枚→三枚)。
+   ⚠**形を一から変えない**＝別の塔に見えると、進化したのか建て直したのかが読めなくなる。 */
+ else if(tid==='net3'){/* 縛鎖網砲: ドラム三つ+**網カゴが三枚**(鋼糸射出砲は一枚) */
+  twDrum(c,-21,10,8,'#4a6b60');twDrum(c,17,12,6.5,'#3f5a50');twDrum(c,-2,15,5.5,'#4a6b60');
+  c.save();c.rotate(ang);
+  twGun(c,0,20,14,'#6f9c8f',4);
+  for(let m=0;m<3;m++){const ox=17+m*7;
+   c.fillStyle=m===1?'#d8f2e6':'#b0e0cc';
+   c.beginPath();c.moveTo(ox,-13+m);c.lineTo(ox+7,-16+m);c.lineTo(ox+7,16-m);c.lineTo(ox,13-m);c.closePath();
+   c.fill();c.stroke();}
+  c.strokeStyle='#2f4a42';c.lineWidth=2;
+  for(let k=0;k<4;k++){c.beginPath();c.moveTo(18+k*6,-14.5);c.lineTo(18+k*6,14.5);c.stroke();}
+  for(let k=0;k<3;k++){c.beginPath();c.moveTo(17,-8+k*8);c.lineTo(38,-8+k*8);c.stroke();}
+  c.strokeStyle=INK;c.lineWidth=3;
+  c.restore();
+ }
+ else if(tid==='flame3'){/* 獄炎放射塔: タンク4本+**三又のラッパ口**+種火3つ */
+  twTank(c,-31,-20,10,26,'#8a3a24');twTank(c,-19,-28,11,34,'#c96b35');
+  twTank(c,-7,-28,11,34,'#c96b35');twTank(c,5,-20,10,26,'#8a3a24');
+  c.save();c.rotate(ang);
+  for(let m=-1;m<=1;m++){c.save();c.translate(0,m*11);
+   twGun(c,4,m===0?22:16,m===0?11:8,m===0?'#6b6b73':'#5c5c66',4);
+   twMuz(c,m===0?26:20,m===0?6.5:5,'flare',m===0?'#8a7b70':'#7a6b60');
+   if(o.fire){c.fillStyle='#ffb347';c.beginPath();c.arc(m===0?34:28,0,(m===0?7:5)+Math.sin(t*22+m)*2,0,7);c.fill();
+    c.fillStyle=GLOW;c.beginPath();c.arc(m===0?33:27,0,(m===0?3.6:2.6)+Math.sin(t*22+m),0,7);c.fill();}
+   c.restore();}
+  c.restore();
+ }
+ else if(tid==='gren3'){/* 飽和爆裂砲: 砲口が**六つ**(多連は三つ)+弾薬ドラム2つ */
+  twDrum(c,-21,9,8,'#5c6448');twDrum(c,-4,13,6.5,'#4c5648');
+  c.save();c.rotate(ang);
+  for(let k=-1;k<=1;k++)for(let m=0;m<2;m++){c.save();c.translate(m*6,k*10+(m?5:0));
+   twGun(c,0,18,7.5,(k===0&&!m)?'#b5c48a':'#7d8a5c',3);
+   twMuz(c,18,4.6,'ring','#4c5648');c.restore();}
+  if(o.fire){c.fillStyle='#ffdd66';
+   for(let k=-1;k<=1;k++)for(let m=0;m<2;m++){c.beginPath();c.arc(26+m*6,k*10+(m?5:0),4.6,0,7);c.fill();}}
+  c.restore();
+ }
+ else if(tid==='scrap4'){/* 廃品コンビナート(4段目): **炉が四基**+煌突4本+二段のベルト */
+  c.fillStyle='#6b5530';rr(c,-26,-24,52,38,5);c.fill();c.stroke();
+  c.fillStyle='#5c5346';
+  for(const g of [[11,-40,9,17],[-1,-35,8,13],[-13,-42,9,19],[-24,-33,7,10]])
+   {rr(c,g[0],g[1],g[2],g[3],2);c.fill();c.stroke();}
+  for(let k=0;k<4;k++){const bx=-17+k*11.5;
+   c.fillStyle='#241610';rr(c,bx-4.5,-7,10,13,2);c.fill();c.stroke();
+   c.fillStyle='#ffb347';c.globalAlpha=.45+Math.sin(t*7+k*1.6)*.3;rr(c,bx-2.6,-4,6.4,9,1.5);c.fill();c.globalAlpha=1;}
+  for(let r9=0;r9<2;r9++){const by=9+r9*8;
+   c.fillStyle='#3f3a32';rr(c,-24,by,48,6,2);c.fill();c.stroke();
+   c.fillStyle=GOLD2;for(let k=0;k<5;k++){const bx=-22+((k*11+t*(26+r9*9))%44);c.fillRect(bx,by+1.5,3.2,3);}}
+  c.fillStyle='#c9a05a';c.beginPath();c.arc(0,-30,7,0,7);c.fill();c.stroke();
+  c.fillStyle='#8a6f3a';c.beginPath();c.arc(0,-30,3,0,7);c.fill();
+ }
  else if(tid==='scrap3'){/* 廃品プラント(3段目): 炉が二基+運び出すベルト。⚠上級と一目で違うこと */
   c.fillStyle='#6b5530';rr(c,-22,-21,44,34,5);c.fill();c.stroke();
   /* 煙突2本(高さを変えて工場らしくする) */
@@ -35049,6 +35133,7 @@ function renderLab(){
       それまで上級(FVBASE)だけを見ていたので、研究所で1つも解放していないのに
       巨漢・斥候・鎖使い…の進化カードが並んでいた。タレットの進化(下)と同じ扱いに揃えた。 */
    if(!uvBaseOK(b))continue;
+   if(!lapGOK(nx.id))continue;/* 🔁(259)面⑥〜⑩で開く「もう一段」は、その面を落とすまで並ばない */
    const B=UBASE.find(u=>u.id===b)||{n:'?'},t=list.indexOf(nx)+1;
    const bi=UBASE.findIndex(u=>u.id===b);
    items.push({cat:'ulu',sub:'var',k:'uv',id:nx.id,ic:adv?'⭐':'🧬',pv:{k:'u',i:bi,def:mkVar(B,nx)},t:nx.n,
@@ -35069,6 +35154,7 @@ function renderLab(){
    let cur=i,nx=T_GRD(cur);
    while(nx>=0&&tg.indexOf(TOWERS[nx].id)>=0){cur=nx;nx=T_GRD(cur);}
    if(nx<0)continue;
+   if(!lapGOK(TOWERS[nx].id))continue;/* 🔁(259)同上 */
    const NT=TOWERS[nx],eco=NT.type==='eco',fin=!NT.up2;/* 次が無い段=最終形態(値段が上がる) */
    items.push({cat:'ult',sub:'var',k:'tg',id:NT.id,ic:eco?'🏭':'🗼',pv:{k:'t',i:nx},t:NT.n,
     tag:(fin?'最終進化 ':'進化 ')+TOWERS[cur].n+' → '+NT.n,

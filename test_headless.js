@@ -1370,7 +1370,11 @@ function checkTwNew(){
     if(!TW_SFX[E.id]){console.log('FAIL: '+E.n+' に発射音が割り当てられていない');process.exit(1);}
     cur=g;}
    /* ⚠ドローン基地だけ1段(機数がDR_MAXで頭打ち=中段に置ける強化枠が作れない。index.htmlのGRD_MID参照) */
-   const want9=(T0.id==='drone')?1:2;
+   /* 🔁(259)**面⑥〜⑩で「もう一段」が生える系統は1段多い**(ユーザー決定)。
+      ⚠数え方＝その系統の中に LAP_GT の id がいくつ入っているか。 */
+   let lapN9=0;{let c9=i,n9=T_GRD(c9);
+    while(n9>=0){if(LAP_GT.some(a9=>a9.indexOf(TOWERS[n9].id)>=0))lapN9++;c9=n9;n9=T_GRD(c9);}}
+   const want9=(T0.id==='drone')?1:2+lapN9;
    if(step!==want9){console.log('FAIL: '+T0.n+' の進化が'+want9+'段になっていない('+step+'段)');process.exit(1);}
    /* 素から最終形態までで、射程は1.1倍以上・威力は2.5倍以上 */
    const F=TOWERS[cur];
