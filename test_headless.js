@@ -2753,10 +2753,11 @@ function checkHero(){
   const lens={};
   for(const id of ids){
    const A=H_CMB[id];
-   /* ⚔(249)**居合の体は1手でよい**=抜いて斬って納める一撃が型そのもの(残月の剣鬼)。
-      ⚠それ以外の体は今までどおり2手以上(1手だと「振りが1種類しかない」だけになる)。 */
-   const need=(id==='hZan')?1:2;
-   if(!Array.isArray(A)||A.length<need){console.log('FAIL: '+id+' の連撃が'+need+'手未満');process.exit(1);}
+   if(!Array.isArray(A)||A.length<2){console.log('FAIL: '+id+' の連撃が2手未満');process.exit(1);}
+   /* ⚔(250)**居合の体は「横に薙ぐ手」を必ず持つ**=角度を大きく振ると必ず縦の振り下ろしになるので、
+      角度の差が小さく・前への走り(ずれx)が大きい手が1つも無ければ「縦切りだけ」に戻っている。 */
+   if(id==='hZan'&&!A.some(r=>Math.abs(r[1]-r[0])<.6&&Math.abs(r[2])>=18)){
+    console.log('FAIL: 居合の横一文字が無い(角度の差が小さく前へ大きく走る手が要る)');process.exit(1);}
    for(const r of A){
     if(!Array.isArray(r)||r.length!==4){console.log('FAIL: '+id+' の1手が[振りかぶり,振り抜き,ずれx,ずれy]になっていない');process.exit(1);}
     if(Math.abs(r[0])>1.25||Math.abs(r[1])>1.25){console.log('FAIL: '+id+' の振りが1.25radを超えている(腕が背中側へ回る)');process.exit(1);}
