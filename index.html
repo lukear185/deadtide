@@ -33356,7 +33356,7 @@ const swpOn=()=>!!(isBns()&&stgLap(STAGE));
 /* ⚠⚠(264)**広さより「濃さ」**=最初 7600px 四方に300体で撮ったら**画面に1体も映らなかった**。
    ⭐**広場は見渡せる大きさに絞り、体数を増やす**=引きの絵にした時に群れが厚く見えるのが正義。
    📌**目安**=画面に映る面積(約3000×1400)に**80体以上**が入る濃さにすること。 */
-const SWP_W=5200;          /* 広場の一辺(世界px)。⚠バスの全長は約310px */
+const SWP_W=5200;          /* 広場を囲む四角の一辺(世界px)。⚠バスの全長は約310px */
 const SWP_EDGE=300;        /* 外周の瓦礫の帯(この内側だけ走れる) */
 const SWP_VIEW=3000;       /* ⭐画面の横幅に映す世界の幅(=引きの強さ。小さいほど寄る) */
 const SWP_T=90;            /* 制限時間(秒)。⚠仮 */
@@ -33366,6 +33366,18 @@ const SWP_CLR=[190,410];   /* 塊の広がり */
 const SWP_SPX=.55;         /* 足の速さ(本編比)。⚠速いと轢く前に囲まれるだけの面になる */
 const SWP_FAR=1250;        /* 湧かすのはバスからこれ以上離れた所(目の前に湧かせない) */
 const SWP_FRI=2.4;         /* 手を離した時の減速 */
+/* ⭕⭐⭐(265)**広場は円**(2026-08-11ユーザー「円状のフィールドにして」)。
+   ⚠⚠**四角の角は死に地**だった=角へ逃げ込むと二方向しか攻められず、群れの中を走る面なのに
+     一番安全な場所が生まれてしまう。⭐**円にすると「縁に沿って回る」走り方が生まれる**。
+   ⚠**走れる所も湧く所も敵の居られる所も、全部この1つの円から出す**(2か所に持つと必ず食い違う)。 */
+const SWP_CX=SWP_W/2,SWP_CY=SWP_W/2;
+const SWP_R=SWP_W/2-SWP_EDGE;/* 走れる円の半径 */
+/* 円の中へ押し戻す(⚠`pad`=その物の半径。円の外なら [x,y] を返す・中なら null) */
+function swpIn(x,y,pad){
+ const dx=x-SWP_CX,dy=y-SWP_CY,d=Math.hypot(dx,dy),m=Math.max(40,SWP_R-(pad||0));
+ if(d<=m||d<1e-6)return null;
+ return [SWP_CX+dx/d*m,SWP_CY+dy/d*m];
+}
 const SWP_SPLIT=180;       /* 押しのける力 */
 /* 🎚**面ごとの重さ**(⑥〜⑩)。⚠**坂は体力と足だけ**=体数は変えない(薄いと掃討にならない)。⚠仮 */
 const SWP_HPX=[1,1.5,2.2,3.2,4.6];
@@ -33401,13 +33413,15 @@ function swpStart(C){
    ⚠**バスの近くには湧かせない**(`SWP_FAR`)=目の前に降ってくると理不尽になる。
    ⚠**初回(first)だけはバスの周りにも置く**=走り出しの1秒で轢ける物が要る。 */
 function swpFill(S,B,first){
- const lo=SWP_EDGE+60,hi=SWP_W-SWP_EDGE-60;
+ /* ⭕**円の中から一様に引く**=⚠**√を掛けないと真ん中に寄る**(円の面積は半径の2乗に効くため) */
+ const pick=()=>{const a=rnd(0,6.2832),d=Math.sqrt(Math.random())*(SWP_R-90);
+  return [SWP_CX+Math.cos(a)*d,SWP_CY+Math.sin(a)*d];};
  let live=0;for(const z of S.en)if(!z.dead)live++;
  let guard=0;
  while(live<SWP_KEEP&&guard++<80){
   let cx=0,cy=0,ok=0;
   for(let k=0;k<24&&!ok;k++){
-   cx=rnd(lo,hi);cy=rnd(lo,hi);
+   const p=pick();cx=p[0];cy=p[1];
    if(first||Math.hypot(cx-B.x,cy-B.y)>=SWP_FAR)ok=1;
   }
   if(!ok)break;
@@ -33416,7 +33430,9 @@ function swpFill(S,B,first){
   for(let i=0;i<n&&live<SWP_KEEP;i++,live++){
    const a=rnd(0,6.2832),d=Math.sqrt(Math.random())*rr9;
    const zi=swpPick(S),Z=ZOMBIES[zi],Sp=zSpec(zi,hx,8);
-   S.en.push({zi:zi,x:clamp(cx+Math.cos(a)*d,lo,hi),y:clamp(cy+Math.sin(a)*d,lo,hi),
+   let zx=cx+Math.cos(a)*d,zy=cy+Math.sin(a)*d;
+   const q=swpIn(zx,zy,40);if(q){zx=q[0];zy=q[1];}
+   S.en.push({zi:zi,x:zx,y:zy,
     hp:Sp.hp,mhp:Sp.mhp,sp:Sp.sp*SWP_SPX,r:22*(Z.sc||1),bh:62*(Z.sc||1),
     ph:rnd(0,9),dr:1,hitT:0,stn:0,dead:0});
   }
@@ -33447,10 +33463,16 @@ function swpBusStep(S,C,B,dt){
   const f=Math.max(0,1-SWP_FRI*dt);B.vx*=f;B.vy*=f;v=Math.hypot(B.vx,B.vy);
  }
  B.x+=B.vx*dt;B.y+=B.vy*dt;
- /* 🧱**外周の瓦礫**=止めるのではなく滑らせる(正面から突っ込んでも張り付かない) */
- const lo=SWP_EDGE+BUS_R*.55,hi=SWP_W-SWP_EDGE-BUS_R*.55;
- if(B.x<lo){B.x=lo;if(B.vx<0)B.vx*=-.12;}else if(B.x>hi){B.x=hi;if(B.vx>0)B.vx*=-.12;}
- if(B.y<lo){B.y=lo;if(B.vy<0)B.vy*=-.12;}else if(B.y>hi){B.y=hi;if(B.vy>0)B.vy*=-.12;}
+ /* 🧱⭕**円の縁**=止めるのではなく**外向きの速さだけ殺す**=縁に沿って滑って走り続けられる。
+    ⚠**跳ね返させない**(2026-08-11(265))=跳ねると縁で弾かれて群れから引き離される。 */
+ {const q=swpIn(B.x,B.y,BUS_R*.55);
+  if(q){
+   const nx=(B.x-SWP_CX),ny=(B.y-SWP_CY),nd=Math.hypot(nx,ny)||1;
+   B.x=q[0];B.y=q[1];
+   const vn=B.vx*(nx/nd)+B.vy*(ny/nd);
+   if(vn>0){B.vx-=nx/nd*vn;B.vy-=ny/nd*vn;}
+   v=Math.hypot(B.vx,B.vy);
+  }}
  /* 向き=速さの向き。⚠**止まっている間は向きを変えない**(その場でくるくる回らない) */
  if(v>40)B.ang=Math.atan2(B.vy,B.vx);
  if(!BUSA)swpTry(busSndOn);
@@ -33461,7 +33483,6 @@ function swpBusStep(S,C,B,dt){
    🔊📢**サイレン/拡声器**=寄ってくる速さが上がる(走る便と同じ役どころ)。 */
 function swpZStep(S,C,B,dt){
  const sr=B.siren|0,pull=sr>1?2.1:(sr?1.45:1);
- const lo=SWP_EDGE+20,hi=SWP_W-SWP_EDGE-20;
  for(let i=S.en.length-1;i>=0;i--){
   const z=S.en[i];
   if(z.dead){S.en.splice(i,1);continue;}
@@ -33469,8 +33490,8 @@ function swpZStep(S,C,B,dt){
   if(z.stn>0){z.stn-=dt;continue;}
   const dx=B.x-z.x,dy=B.y-z.y,d=Math.hypot(dx,dy)||1;
   const sp=z.sp*pull;
-  z.x=clamp(z.x+dx/d*sp*dt,lo,hi);
-  z.y=clamp(z.y+dy/d*sp*dt,lo,hi);
+  z.x+=dx/d*sp*dt;z.y+=dy/d*sp*dt;
+  const q=swpIn(z.x,z.y,20);if(q){z.x=q[0];z.y=q[1];}
   z.dr=dx>=0?1:-1;
  }
 }
@@ -33503,7 +33524,9 @@ function swpCrush(S,C,B,dt){
   if(z.hp<=0){z.dead=1;kil++;swpSplat(S,C,B,z);}
   else{/* ⭐**押しのける**=倒しきれない相手はどかす(止まって詰まるのが一番つまらない) */
    const d=Math.hypot(dx,dy)||1,f=SWP_SPLIT*(B.sideX||1)*(nz?1.8:1)*dt;
-   z.x+=dx/d*f;z.y+=dy/d*f;z.stn=Math.max(z.stn||0,.10);}
+   z.x+=dx/d*f;z.y+=dy/d*f;
+   {const q=swpIn(z.x,z.y,20);if(q){z.x=q[0];z.y=q[1];}}
+   z.stn=Math.max(z.stn||0,.10);}
  }
  /* 🧟**しがみつきの溜まり**=倒しきれない相手に当たり続けると速さが落ちる(走る便と同じ) */
  {const st=nz?0:Math.max(0,hit-kil);
@@ -33604,29 +33627,36 @@ function swpDraw(t){
  swpHudDraw(c,S,C,B,W,H,dp);
  swpTry(()=>bnsHud(C));
 }
-/* 🧱**地面**=荒れた広場。⚠**線は太く少なく**=引いた絵なので細い模様は消える */
+/* 🧱⭕**地面**=円い広場。⚠**線は太く少なく**=引いた絵なので細い模様は消える。
+   ⭐**同心円と放射線**にしてある=**いま円のどのあたりに居るか**が一目で読める
+     (四角の目地だと、円の中に居ることも縁までの距離も分からなかった)。 */
 function swpDrawGround(c,S,cx,cy,vw,vh){
  const PAL=stagePal();
- c.fillStyle=mix(PAL.g0,'#2c2822',.40);c.fillRect(0,0,SWP_W,SWP_W);
- /* 割れた舗装の目地(⚠画面に入る所だけ描く) */
- const G0=760,x0=Math.max(0,Math.floor((cx-vw/2)/G0)*G0),x1=Math.min(SWP_W,cx+vw/2+G0);
- const y0=Math.max(0,Math.floor((cy-vh/2)/G0)*G0),y1=Math.min(SWP_W,cy+vh/2+G0);
- c.strokeStyle='rgba(20,17,14,.20)';c.lineWidth=7;
+ /* 円の外(瓦礫)=画面に映る所だけ塗る */
+ c.fillStyle=mix(PAL.g1,'#211d18',.55);
+ c.fillRect(cx-vw/2-60,cy-vh/2-60,vw+120,vh+120);
+ c.save();
+ c.beginPath();c.arc(SWP_CX,SWP_CY,SWP_R,0,7);c.clip();
+ c.fillStyle=mix(PAL.g0,'#2c2822',.40);
+ c.fillRect(SWP_CX-SWP_R,SWP_CY-SWP_R,SWP_R*2,SWP_R*2);
+ /* 同心円 */
+ c.strokeStyle='rgba(20,17,14,.16)';c.lineWidth=7;
+ for(let r=680;r<SWP_R;r+=680){c.beginPath();c.arc(SWP_CX,SWP_CY,r,0,7);c.stroke();}
+ /* 放射線(12本) */
  c.beginPath();
- for(let x=x0;x<=x1;x+=G0){c.moveTo(x,y0);c.lineTo(x,y1);}
- for(let y=y0;y<=y1;y+=G0){c.moveTo(x0,y);c.lineTo(x1,y);}
+ for(let i=0;i<12;i++){const a=i*Math.PI/6;
+  c.moveTo(SWP_CX+Math.cos(a)*340,SWP_CY+Math.sin(a)*340);
+  c.lineTo(SWP_CX+Math.cos(a)*SWP_R,SWP_CY+Math.sin(a)*SWP_R);}
  c.stroke();
  /* 🩸**薙いだ跡**(路面に残る) */
  c.fillStyle='rgba(84,18,15,.30)';
  for(const p of S.cps){
   c.save();c.translate(p.x,p.y);c.rotate(p.a);
   c.beginPath();c.ellipse(0,0,p.r*1.5,p.r*.8,0,0,7);c.fill();c.restore();}
- /* 🧱**外周の瓦礫** */
- c.fillStyle=mix(PAL.g1,'#211d18',.5);
- c.fillRect(0,0,SWP_W,SWP_EDGE);c.fillRect(0,SWP_W-SWP_EDGE,SWP_W,SWP_EDGE);
- c.fillRect(0,0,SWP_EDGE,SWP_W);c.fillRect(SWP_W-SWP_EDGE,0,SWP_EDGE,SWP_W);
- c.strokeStyle='rgba(20,17,14,.6)';c.lineWidth=9;
- c.strokeRect(SWP_EDGE,SWP_EDGE,SWP_W-SWP_EDGE*2,SWP_W-SWP_EDGE*2);
+ c.restore();
+ /* ⭕**縁**=太い輪。⚠**内側に描く**(外へ描くと走れる所と絵が食い違う) */
+ c.strokeStyle='rgba(20,17,14,.62)';c.lineWidth=26;
+ c.beginPath();c.arc(SWP_CX,SWP_CY,SWP_R-13,0,7);c.stroke();
 }
 /* 🧟**群れ**=⚠**画面に入る物だけ**描く(300体を毎コマ全部描くと重い) */
 function swpDrawEn(c,S,t,cx,cy,vw,vh){

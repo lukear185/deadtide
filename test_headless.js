@@ -5061,16 +5061,22 @@ function checkSwp(){
   if(!((B.kill|0)>k0))F('鼻先の敵を轢いても倒れない');
   if(!((B.score||0)>s0))F('轢いても⚡スコアが増えない');
   if(!((B.cmb|0)>0))F('轢いても連なりが乗らない');}
- /* ⑤ 外周の外へ出られない */
- {B.ix=-1;B.iy=0;for(let n=0;n<400;n++)swpBusStep(S,C,B,.03);
-  if(B.x<SWP_EDGE)F('外周の瓦礫を突き抜けた '+Math.round(B.x));
-  B.ix=0;B.iy=0;}
+ /* ⑤⭕ 円の外へ出られない(⚠**斜めにも押し当てる**=四角で止めていた名残が残っていないか見る) */
+ for(const dz of [[-1,0],[0,-1],[.71,.71],[-.71,.71]]){
+  B.ix=dz[0];B.iy=dz[1];for(let n=0;n<400;n++)swpBusStep(S,C,B,.03);
+  const d9=Math.hypot(B.x-SWP_CX,B.y-SWP_CY);
+  if(d9>SWP_R+1)F('円の縁を突き抜けた 中心から'+Math.round(d9)+'>'+Math.round(SWP_R));
+  if(d9<SWP_R*.5)F('縁まで走れていない(何かに引っかかっている) '+Math.round(d9));}
+ B.ix=0;B.iy=0;
+ /* ⭕ 敵も円の中だけ */
+ for(const z of S.en)if(!z.dead&&Math.hypot(z.x-SWP_CX,z.y-SWP_CY)>SWP_R+1)
+  F('敵が円の外に居る '+Math.round(Math.hypot(z.x-SWP_CX,z.y-SWP_CY)));
  /* ⑥ 時間で終わる(⚠負けは無い) */
  {S.left=.02;S.over=0;S.endT=0;S.done=0;
   swpStep(.05);
   if(!S.over)F('時間が来ても終わらない');}
  META.bup={};META.beq={};META.bres=[0,0,0];
- console.log('🚌🧹掃討便: 広場'+SWP_W+'px四方 / 群れ'+live+'体 / 制限'+SWP_T+'秒 / 引きの絵='
+ console.log('🚌🧹掃討便: 円の広場 半径'+SWP_R+'px / 群れ'+live+'体 / 制限'+SWP_T+'秒 / 引きの絵='
   +SWP_VIEW+'px幅 / 轢く・⚡・連なり・外周・締め すべて OK');
 }
 const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial],['checkStage3',checkStage3],
