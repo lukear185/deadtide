@@ -1419,7 +1419,25 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
 #rotatehint .ic{font-size:64px;animation:rot 1.6s ease-in-out infinite}
 @keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
 #rotatehint p{font-weight:900;font-size:18px;line-height:1.7}
-@media (orientation:portrait){body #rotatehint:not(.off){display:flex}}
+/* 📱⭐**普段は横持ち専用**。⚠🚌🔫**迎撃便(面⑥〜⑩)だけは縦持ち**(2026-08-11ユーザー決定)=
+   同じ画面で**促す向きを裏返す**。⚠**2枚の文を持たせて切り替える**(文をJSで書き換えると、
+   どちらの向きの時に何が出るのかがCSSからは読めなくなる)。 */
+@media (orientation:portrait){body:not(.itc) #rotatehint:not(.off){display:flex}}
+@media (orientation:landscape){body.itc #rotatehint:not(.off){display:flex}}
+#rotatehint .rh-p{display:none}
+body.itc #rotatehint .rh-l{display:none}
+body.itc #rotatehint .rh-p{display:block}
+/* 🚌🔫縦持ちの間は**下の操作を一回り小さく**する=画面が細いので、既定の大きさだとバスに重なる。
+   ⚠**44pxの掟は守る**(108pxも104pxも十分大きい)。 */
+/* ⚠**縦持ちは横幅が狭い**ので、上の札の帯が1行に収まらない端末では**折り返す**。
+   ⚠⚠**横へはみ出させない**=はみ出すと画面ごと横に広がり、位置を固定した物
+     (スティック・🔥のボタン)が画面の外へ出る。 */
+body.itc{overflow-x:hidden}
+body.itc #topbar{width:100%;max-width:100%;box-sizing:border-box;flex-wrap:wrap;row-gap:5px}
+body.itc #wavebadge{min-width:0}
+body.itc #bstick{width:108px;height:108px}
+body.itc #bstick i{width:50px;height:50px;margin:-25px 0 0 -25px}
+body.itc #bnitro{width:92px;height:92px}
 #errbox{position:fixed;left:0;right:0;bottom:0;background:#900;color:var(--pane);font-size:11px;padding:6px;z-index:99;display:none;white-space:pre-wrap}
 .center{text-align:center}
 /* 資源アイコン(AI生成PNGを埋め込んだもの)。文字の中に混ぜて使うので、文字サイズに追従させる。
@@ -2417,7 +2435,8 @@ body.opgate #scr-title .menu,body.opgate #arcbtn,body.opgate #luckbar,body.opgat
 </div>
 <div id="rotatehint">
   <div class="ic">🔄</div>
-  <p>スマホを横向きにしろ!<br><span style="font-size:13px;opacity:.85">DEADTIDEは横画面専用作戦だ</span></p>
+  <p class="rh-l">スマホを横向きにしろ!<br><span style="font-size:13px;opacity:.85">DEADTIDEは横画面専用作戦だ</span></p>
+  <p class="rh-p">スマホを縦向きにしろ!<br><span style="font-size:13px;opacity:.85">🚌迎撃便は縦画面で迎え撃つ</span></p>
   <button class="btn sm" id="bt-rothide">このまま遊ぶ</button>
 </div>
 
@@ -33351,28 +33370,32 @@ function bnsPreSkip(){if(G&&G.bpre)bnsPreGo();}
    ⭐**流れは今までどおり**=廃墟でミニゲーム3回→乗り込み→🔧強化→**ここ**→成績。1日5回も据え置き。 */
 /* 🔁**面⑥〜⑩だけ**(⚠①〜⑤の走る便は今までどおり) */
 const itcOn=()=>!!(isBns()&&stgLap(STAGE));
-/* 📐**盤の物差し**=**高さ1000で固定**し、横幅は画面の縦横比から出す。
-   ⚠⚠**横幅を決め打ちにしない**=横長の実機(852×393)で決め打ちにすると、
-     画面の真ん中に細い帯が1本立つだけの絵になる(左右が丸ごと余る)。
-   ⚠**上限と下限は置く**=極端な比でも「バスが端まで走るのに何秒もかかる」を出さない。 */
-const ITC_FH=1000;
-const ITC_FW_MIN=1400,ITC_FW_MAX=2400;
-const itcFw=()=>clamp(ITC_FH*((cv&&cv.width)||16)/((cv&&cv.height)||9),ITC_FW_MIN,ITC_FW_MAX);
-const ITC_BY=ITC_FH-150;   /* バスの居る高さ */
-const ITC_GRAB=ITC_FH-320; /* この線より下では敵がバスへ寄ってくる(=取り付きに来る) */
-const ITC_MG=90;           /* 左右の路肩(バスも敵もここから外へは出ない) */
-const ITC_BSP=980,ITC_BACC=4200,ITC_BFRI=7.0;/* バスの最高速 / 加速 / 手を離した時の減速 */
-const ITC_BL=100,ITC_BW=66;/* バスの当たり(半分の長さ / 半分の幅) */
-const ITC_BS=.67;          /* バスの絵の縮尺(⚠`drawBusTop` は半長150で描いている) */
-const ITC_ZS=1.5;          /* 敵の絵の縮尺 */
+/* 📐📱⭐⭐**盤の物差し**=**縦持ち**(2026-08-11ユーザー決定「C=画面ごと縦持ちにする」)。
+   ⭐**横幅1000で固定**し、**高さは画面の縦横比から出す**=縦に長い実機ほど「降りてくる道」が長くなる。
+   ⚠⚠**高さを決め打ちにしない**=決め打ちにすると端末ごとに上下が余る/はみ出す。
+   ⚠**上限と下限は置く**=横持ちのまま遊ばれた時(「このまま遊ぶ」)でも形が壊れないように。
+   ⚠**バスの高さも取り付きの線も、下端からの距離で持つ**(高さが端末ごとに変わるため)。 */
+/* ⚠**横幅700**=1000だと物が小さくなりすぎた(撮って直した)。バスが画面幅の約1/4に見える所 */
+const ITC_FW=700;
+const ITC_FH_MIN=900,ITC_FH_MAX=1900;
+const itcFh=()=>clamp(ITC_FW*((cv&&cv.height)||16)/((cv&&cv.width)||9),ITC_FH_MIN,ITC_FH_MAX);
+/* ⚠**下端から360**=スティックと🔥のボタン(画面の下角)にバスを重ねないための高さ */
+const ITC_BOT=360;
+const itcBy=()=>itcFh()-ITC_BOT;
+const ITC_GRABD=300;       /* バスからこの距離より下では敵がバスへ寄ってくる(=取り付きに来る) */
+const ITC_MG=60;           /* 左右の路肩(バスも敵もここから外へは出ない) */
+const ITC_BSP=420,ITC_BACC=1900,ITC_BFRI=7.0;/* バスの最高速 / 加速 / 手を離した時の減速 */
+const ITC_BL=115,ITC_BW=74;/* バスの当たり(半分の長さ / 半分の幅)。⚠**絵の寸法×縮尺**から出してある */
+const ITC_BS=.80;          /* バスの絵の縮尺(⚠`drawBusTop` は半長150・半幅96で描いている) */
+const ITC_ZS=1.0;          /* 敵の絵の縮尺(⚠本編と同じ大きさ=バスとの釣り合いが本編と揃う) */
 const ITC_HP=900;          /* バスの耐久。⚠**画面の🚌のバーがそのままこれ**(`C.core`)*/
 const ITC_CLING=13;        /* 取り付き1体が毎秒削る耐久 */
-const ITC_RNG_X=2.0;       /* 本編の射程 → この盤の物差しへ直す倍率 */
-const ITC_SP_X=1.8;        /* 本編の足の速さ → この盤の落ちる速さ */
-const ITC_SHSP=1400;       /* 弾の速さ */
+const ITC_RNG_X=2.3;       /* 本編の射程 → この盤の物差しへ直す倍率(ライフル台で降り道の約4割) */
+const ITC_SP_X=1.7;        /* 本編の足の速さ → この盤の落ちる速さ(ウォーカーで約9秒) */
+const ITC_SHSP=1000;       /* 弾の速さ */
 const ITC_RAM_CD=7.0;      /* 🔥急発進が溜まるまでの秒数 */
 const ITC_RAM_T=.5;        /* 前へ出ている秒数 */
-const ITC_RAM_D=360;       /* 前へ出る距離 */
+const ITC_RAM_D=300;       /* 前へ出る距離 */
 const ITC_LEAD=2.2;        /* 1波目までの間 */
 const ITC_WGAP=8.0;        /* 次の波までの間 */
 /* ⚠⚠**骨の間だけの積み荷**=ここが②「ローグライク式に足していく」の受け口になる。
@@ -33398,10 +33421,22 @@ function itcPick(I){
 }
 /* 🔊⭐**音と一発物の呼び出しはこの2つを通す**(⚠握り潰す `catch` をこの面で撒かないため)=
    音が無い環境(ヘッドレス)でも黙って何もしないだけで、遊びの側は止まらない。 */
+/* 📱⭐⭐**この面だけ縦持ちにする**(2026-08-11ユーザー決定)=①body の印を付け替える
+   (回転を促す画面の向きがこれで裏返る) ②対応端末なら向きの固定も掛け直す。
+   ⚠**固定は全画面の時しか効かない端末が多い**=効かなくても、促す画面が出るので遊びは成立する。
+   ⚠**戻し忘れが一番怖い**ので、終わり(`itcFinish`)とタイトルへ戻る所の両方から呼ぶ。 */
+function itcTurn(on){
+ itcTry(()=>document.body.classList.toggle('itc',!!on));
+ itcTry(()=>{if(screen.orientation&&screen.orientation.lock){
+  const p9=screen.orientation.lock(on?'portrait':'landscape');p9&&p9.catch&&p9.catch(()=>{});}});
+ itcTry(()=>{hudT=0;syncAppH();});
+}
 const itcSfx=k=>{try{const f=sfx[k];if(f)f();}catch(e){}};
 const itcTry=f=>{try{f();}catch(e){}};
 /* 🔫**載せたタレットの横位置**(⚠撃つ側と描く側が同じ物を見るように1か所から出す) */
 const itcTwX=(I,i,n)=>I.bx+(n<=1?0:(-ITC_BW*.62+i*(ITC_BW*1.24/(n-1))));
+/* ⚠**車体の前寄り**に据える=真ん中だと「屋根に置いた丸」にしか見えない */
+const itcTwY=I=>I.by-ITC_BL*.34;
 function itcAddTw(id){
  const I=G&&G.itc;if(!I)return;
  const ti=TW_IDX[id];if(ti==null)return;
@@ -33410,7 +33445,7 @@ function itcAddTw(id){
 function itcStart(C){
  const B=C&&C.bus;if(!B)return;
  const li=Math.max(0,(STAGE|0)-LAP_N);
- G.itc={t:0,bx:itcFw()/2,bvx:0,by:ITC_BY,en:[],sh:[],fx:[],tw:[],zp:itcZp(),
+ G.itc={t:0,bx:ITC_FW/2,bvx:0,by:itcBy(),en:[],sh:[],fx:[],tw:[],zp:itcZp(),
   wave:li*ITC_W0,wT:ITC_LEAD,ramT:0,over:0,endT:0,done:0,
   lap:stgLap(STAGE)?(stgBase(STAGE)+1):0};
  for(const id of ITC_START)itcAddTw(id);
@@ -33420,6 +33455,7 @@ function itcStart(C){
  B.score=0;B.kill=0;B.cmb=0;B.cmbT=0;B.cmbMx=0;B.left=null;B.arr=0;B.mov=0;
  B.nit=0;B.nitOn=0;B.nitT=0;B.grip=0;
  BNIT_P=-1;BNIT_R=-1;BNIT_M=0;/* ⚠ボタンの表示を1回書き直させる */
+ itcTurn(true);/* 📱ここから縦持ち */
 }
 /* 🔥**急発進**=🔥のボタン。⚠**満タンの時だけ出る**(空押しは音で断る) */
 function itcRam(on){
@@ -33452,7 +33488,7 @@ function itcStep(dt){
   itcSfx('lose');itcTry(busSndOff);itcTry(()=>toast('🚌 バスが動かなくなった…',true));}
 }
 function itcBusStep(I,C,B,dt){
- const FW=itcFw(),ix=clamp(B.ix||0,-1,1),lo=ITC_MG+ITC_BW,hi=FW-ITC_MG-ITC_BW;
+ const ix=clamp(B.ix||0,-1,1),lo=ITC_MG+ITC_BW,hi=ITC_FW-ITC_MG-ITC_BW;
  /* ⭐**重い車らしく**=倒した向きへ加速し、離しても惰性で流れる(走る便と同じ手触り) */
  if(Math.abs(ix)>.06)I.bvx+=ix*ITC_BACC*dt;
  else I.bvx*=Math.max(0,1-ITC_BFRI*dt);
@@ -33464,10 +33500,10 @@ function itcBusStep(I,C,B,dt){
  if(I.ramT>0){
   I.ramT=Math.max(0,I.ramT-dt);
   const u=1-I.ramT/ITC_RAM_T;
-  I.by=ITC_BY-ITC_RAM_D*Math.sin(u*Math.PI);
+  I.by=itcBy()-ITC_RAM_D*Math.sin(u*Math.PI);
   B.nitT=.12;
   itcCrush(I,C,B);
- }else{I.by=ITC_BY;B.nitT=0;}
+ }else{I.by=itcBy();B.nitT=0;}
  /* 🔊走行音(⚠**横の速さで唸らせる**=前へは進まない面なので、これが無いと無音の車になる) */
  B.vx=I.bvx;B.vy=0;
  if(!BUSA)itcTry(busSndOn);
@@ -33499,19 +33535,21 @@ function itcSpawnStep(I,dt){
  itcSpawnWave(I);
 }
 function itcSpawnWave(I){
- const FW=itcFw(),n=itcWaveN(I.wave),mul=itcMul(I.wave);
- const cols=Math.min(8,Math.max(4,Math.round(n/2))),rows=Math.max(1,Math.ceil(n/cols));
- const gw=(FW-ITC_MG*2)/(cols+1);
+ const n=itcWaveN(I.wave),mul=itcMul(I.wave);
+ /* ⚠**列は5本まで**=横幅700の盤にそれ以上並べると体が重なって、どこが空いているか読めない */
+ const cols=Math.min(5,Math.max(4,Math.round(n/2))),rows=Math.max(1,Math.ceil(n/cols));
+ const gw=(ITC_FW-ITC_MG*2)/(cols+1);
  let k=0;
  for(let r=0;r<rows;r++)for(let q=0;q<cols&&k<n;q++,k++){
   const zi=itcPick(I),S=zSpec(zi,mul,I.wave);
-  I.en.push({zi:zi,x:ITC_MG+gw*(q+1)+rnd(-gw*.18,gw*.18),y:-110-r*140-rnd(0,40),
-   hp:S.hp,mhp:S.mhp,sp:S.sp*ITC_SP_X,r:24*(ZOMBIES[zi].sc||1)*ITC_ZS,
+  I.en.push({zi:zi,x:clamp(ITC_MG+gw*(q+1)+rnd(-gw*.18,gw*.18),ITC_MG+40,ITC_FW-ITC_MG-40),y:-110-r*140-rnd(0,40),
+   hp:S.hp,mhp:S.mhp,sp:S.sp*ITC_SP_X,r:22*(ZOMBIES[zi].sc||1)*ITC_ZS,
+   bh:62*(ZOMBIES[zi].sc||1)*ITC_ZS,/* 絵のだいたいの背丈(=体力の帯を頭の上へ出すため) */
    ph:rnd(0,9),dr:1,cl:0,ox:0,oy:0,hitT:0,dead:0});
  }
 }
 function itcEnemyStep(I,C,B,dt){
- const FW=itcFw(),line=I.by-ITC_BL*.7;
+ const line=I.by-ITC_BL*.7;
  for(let i=I.en.length-1;i>=0;i--){
   const e=I.en[i];
   if(e.dead){I.en.splice(i,1);continue;}
@@ -33520,15 +33558,17 @@ function itcEnemyStep(I,C,B,dt){
   if(e.cl){e.x=I.bx+e.ox;e.y=I.by+e.oy;C.core-=ITC_CLING*dt;continue;}
   e.y+=e.sp*dt;
   /* ⭐取り付きの線より下ではバスの方へ寄る=どこへ逃げても最後は追ってくる */
-  if(e.y>ITC_GRAB){
+  if(e.y>I.by-ITC_GRABD){
    const dx=I.bx-e.x,ad=Math.abs(dx);
    if(ad>2)e.x+=(dx<0?-1:1)*Math.min(ad,e.sp*1.4*dt);
    e.dr=dx>=0?1:-1;
   }
-  e.x=clamp(e.x,ITC_MG,FW-ITC_MG);
+  /* ⚠**体の幅ぶん内側**で止める=路肩の帯に体が重なると道の境目が読めなくなる */
+  e.x=clamp(e.x,ITC_MG+e.r,ITC_FW-ITC_MG-e.r);
   if(e.y>=line){
    if(Math.abs(e.x-I.bx)<=ITC_BW+e.r*.6){
-    e.cl=1;e.ox=clamp(e.x-I.bx,-ITC_BW,ITC_BW);e.oy=clamp(e.y-I.by,-ITC_BL*.8,ITC_BL*.8);
+    /* ⚠**鼻先に寄せる**=車体の真ん中に貼ると「乗っている」ようにしか見えない */
+    e.cl=1;e.ox=clamp(e.x-I.bx,-ITC_BW*1.05,ITC_BW*1.05);e.oy=clamp(e.y-I.by,-ITC_BL*1.02,-ITC_BL*.42);
     itcSfx('bite');
    }else e.y=line;/* ⚠**すり抜けさせない**=横へ回り込む間はここで止まる */
   }
@@ -33542,7 +33582,7 @@ function itcTwStep(I,C,B,dt){
   if(tw.cd>0){tw.cd-=dt;continue;}
   const rng=(T.rng||0)*ITC_RNG_X;
   if(!(rng>0)||!(T.dmg>0))continue;
-  const mx=itcTwX(I,i,n),my=I.by;
+  const mx=itcTwX(I,i,n),my=itcTwY(I);
   /* ⚠**近い順に並べる**=多重撃ち(ショットガン台)が同じ物を何度も撃たないように */
   const cand=[];
   for(const e of I.en){if(e.dead)continue;
@@ -33588,6 +33628,7 @@ function itcFxStep(I,dt){for(const f of I.fx)if(f.t<9)f.t+=dt;}
 function itcFinish(C){
  const I=G&&G.itc;if(!I||I.done)return;
  I.done=1;
+ itcTurn(false);/* 📱成績表は横持ちの画面なので、ここで戻す */
  itcTry(busSndOff);itcTry(()=>bnsRecord(C));
  for(const P of G.players)P.place=1;
  G.winner=0;G.over=true;
@@ -33598,8 +33639,8 @@ function itcDraw(t){
  const I=G&&G.itc,C=G&&G.players&&G.players[0],B=C&&C.bus;
  if(!I||!B||!cv.width)return;
  pfTag('迎撃便');
- const c=ctx,W=cv.width,H=cv.height,dp=DPR||1,FW=itcFw();
- const k=Math.min(W/FW,H/ITC_FH),ox=(W-FW*k)/2,oy=(H-ITC_FH*k)/2;
+ const c=ctx,W=cv.width,H=cv.height,dp=DPR||1,FH=itcFh();
+ const k=Math.min(W/ITC_FW,H/FH),ox=(W-ITC_FW*k)/2,oy=(H-FH*k)/2;
  c.setTransform(1,0,0,1,0,0);
  c.lineJoin='round';c.lineCap='round';c.globalAlpha=1;c.setLineDash([]);
  const PAL=stagePal();
@@ -33608,47 +33649,49 @@ function itcDraw(t){
  const sh=(C.shake>0&&FXLV>0)?1:0;
  c.translate(ox+(sh?rnd(-3,3)*dp:0),oy+(sh?rnd(-2,2)*dp:0));
  c.scale(k,k);
- itcDrawRoad(c,I,FW,t);
+ itcDrawRoad(c,I,FH,t);
  /* 🎨(258)焼き増しの面=敵の体をその面の色へ寄せる。⚠**必ず下ろす**(図鑑まで色が変わる) */
  const lap0=LAP_DRAW;
- try{LAP_DRAW=I.lap;itcDrawEn(c,I,t);}finally{LAP_DRAW=lap0;}
+ /* ⚠**取り付いた敵はバスの後に描く**=先に描くと車体の下に隠れて、削られている理由が見えない */
+ try{LAP_DRAW=I.lap;itcDrawEn(c,I,t,0);}finally{LAP_DRAW=lap0;}
  itcDrawBus(c,I,C,B,t);
+ try{LAP_DRAW=I.lap;itcDrawEn(c,I,t,1);}finally{LAP_DRAW=lap0;}
  itcDrawShots(c,I);
  itcDrawFx(c,I);
  c.restore();
  itcHudDraw(c,I,C,B,W,H,dp);
  itcTry(()=>bnsHud(C));
 }
-function itcDrawRoad(c,I,FW,t){
+function itcDrawRoad(c,I,FH,t){
  const PAL=stagePal();
- c.fillStyle=mix(PAL.g0,'#2c2822',.42);c.fillRect(0,0,FW,ITC_FH);
+ c.fillStyle=mix(PAL.g0,'#2c2822',.42);c.fillRect(0,0,ITC_FW,FH);
  /* ⭐**流れる路面の線**=「走っている」を出す唯一の手(バスは前へ進まないので絵で言う) */
  c.save();
  c.strokeStyle='rgba(242,236,220,.14)';c.lineWidth=8;
  c.setLineDash([80,110]);c.lineDashOffset=-((t*560)%190);
- const step=Math.max(190,(FW-ITC_MG*2)/6);
- for(let x=ITC_MG+step*.5;x<FW-ITC_MG;x+=step){c.beginPath();c.moveTo(x,-40);c.lineTo(x,ITC_FH+40);c.stroke();}
+ const step=(ITC_FW-ITC_MG*2)/3;
+ for(let x=ITC_MG+step*.5;x<ITC_FW-ITC_MG;x+=step){c.beginPath();c.moveTo(x,-40);c.lineTo(x,FH+40);c.stroke();}
  c.restore();
  /* 路肩(⚠バスも敵もここから外へは出ない=当たりと絵が同じ線) */
  c.fillStyle='rgba(18,15,12,.62)';
- c.fillRect(0,0,ITC_MG,ITC_FH);c.fillRect(FW-ITC_MG,0,ITC_MG,ITC_FH);
+ c.fillRect(0,0,ITC_MG,FH);c.fillRect(ITC_FW-ITC_MG,0,ITC_MG,FH);
  c.strokeStyle=INK;c.lineWidth=5;
- c.beginPath();c.moveTo(ITC_MG,0);c.lineTo(ITC_MG,ITC_FH);
- c.moveTo(FW-ITC_MG,0);c.lineTo(FW-ITC_MG,ITC_FH);c.stroke();
+ c.beginPath();c.moveTo(ITC_MG,0);c.lineTo(ITC_MG,FH);
+ c.moveTo(ITC_FW-ITC_MG,0);c.lineTo(ITC_FW-ITC_MG,FH);c.stroke();
  /* ⚠**取り付きの線**=ここから下は敵がバスへ寄ってくる(読めないと理不尽になる) */
  c.save();c.strokeStyle='rgba(193,80,46,.34)';c.lineWidth=3;c.setLineDash([26,20]);
- c.beginPath();c.moveTo(ITC_MG,ITC_GRAB);c.lineTo(FW-ITC_MG,ITC_GRAB);c.stroke();c.restore();
+ {const gy=I.by-ITC_GRABD;c.beginPath();c.moveTo(ITC_MG,gy);c.lineTo(ITC_FW-ITC_MG,gy);c.stroke();}c.restore();
 }
-function itcDrawEn(c,I,t){
+function itcDrawEn(c,I,t,cl){
  for(const e of I.en){
-  if(e.dead)continue;
+  if(e.dead||(!!e.cl)!==(!!cl))continue;
   c.save();c.translate(e.x,e.y);c.scale(ITC_ZS,ITC_ZS);
   try{drawZombie(c,e.zi,0,0,e.dr,t,e.ph);}catch(x){}
   c.restore();
-  if(e.hitT>0){c.save();c.globalAlpha=clamp(e.hitT/.12,0,1)*.55;c.fillStyle='#fff2d8';
-   c.beginPath();c.arc(e.x,e.y-e.r*.5,e.r*.9,0,7);c.fill();c.restore();}
+  if(e.hitT>0){c.save();c.globalAlpha=clamp(e.hitT/.12,0,1)*.5;c.fillStyle='#fff2d8';
+   c.beginPath();c.arc(e.x,e.y-(e.bh||60)*.45,e.r*.95,0,7);c.fill();c.restore();}
   /* 体力の帯(⚠減っている時だけ=満タンの帯で画面を埋めない) */
-  if(e.hp<e.mhp){const w=46,h=7,y=e.y-e.r*2.1;
+  if(e.hp<e.mhp){const w=40,h=6,y=e.y-(e.bh||60)*.75-8;
    c.fillStyle='rgba(20,17,14,.72)';c.fillRect(e.x-w/2,y,w,h);
    c.fillStyle=(e.hp/e.mhp>.4)?LIFE:DANGER2;c.fillRect(e.x-w/2,y,w*clamp(e.hp/e.mhp,0,1),h);}
  }
@@ -33672,16 +33715,18 @@ function itcDrawBus(c,I,C,B,t){
  const n=I.tw.length;
  for(let i=0;i<n;i++){
   const tw=I.tw[i],T=TOWERS[tw.ti];if(!T)continue;
-  const mx=itcTwX(I,i,n),my=I.by;
-  c.save();c.translate(mx,my);
-  c.rotate(tw.ang==null?-Math.PI/2:tw.ang);
+  const mx=itcTwX(I,i,n),my=itcTwY(I);
+  /* ①台座 → ②砲身 → ③発砲炎(⚠この順でないと砲身が台座に隠れる) */
+  c.fillStyle='#2b2721';c.strokeStyle=INK;c.lineWidth=3;
+  c.beginPath();c.arc(mx,my,17,0,7);c.fill();c.stroke();
+  c.save();c.translate(mx,my);c.rotate(tw.ang==null?-Math.PI/2:tw.ang);
   c.fillStyle=mix(T.c||'#8a97a5','#e8e2c8',.28);c.strokeStyle=INK;c.lineWidth=3;
-  c.beginPath();rr(c,6,-6,30,12,4);c.fill();c.stroke();
+  c.beginPath();rr(c,2,-6.5,32,13,4);c.fill();c.stroke();
   if(tw.fl>0){c.globalAlpha=clamp(tw.fl/.09,0,1);c.fillStyle='#ffe6a8';
-   c.beginPath();c.arc(40,0,10,0,7);c.fill();c.globalAlpha=1;}
+   c.beginPath();c.arc(38,0,10,0,7);c.fill();c.globalAlpha=1;}
   c.restore();
-  c.fillStyle=T.c||'#8a97a5';c.strokeStyle=INK;c.lineWidth=3;
-  c.beginPath();c.arc(mx,my,16,0,7);c.fill();c.stroke();
+  c.fillStyle=T.c||'#8a97a5';c.strokeStyle=INK;c.lineWidth=2.6;
+  c.beginPath();c.arc(mx,my,8,0,7);c.fill();c.stroke();
  }
 }
 function itcDrawShots(c,I){
@@ -35478,6 +35523,7 @@ function backTitle(){
  try{const e9=$('heroinfo');if(e9)e9.classList.remove('on');}catch(e2){}/* 🦸(99)必殺の詳細も畳む */
  LANES=null;camOff();try{document.body.classList.remove('bns');document.body.classList.remove('bnspre');}catch(e){}/* 🚌ボーナス面の後始末 */
  try{busSndOff();}catch(e){}/* ⚠走行音を必ず止める(鳴りっぱなしはバグそのもの) */
+ try{itcTurn(false);}catch(e){}/* 📱🚌🔫縦持ちを必ず戻す(迎撃便の後始末) */
  try{document.exitFullscreen&&document.fullscreenElement&&document.exitFullscreen().catch(()=>{});}catch(e){}
  $('interv').classList.remove('on');$('pausebtn').style.display='none';$('ffbtn').style.display='none';
  try{if(NET.peer){NET.peer.destroy();}}catch(e){}
