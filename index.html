@@ -33425,7 +33425,14 @@ function itcPick(I){
    (回転を促す画面の向きがこれで裏返る) ②対応端末なら向きの固定も掛け直す。
    ⚠**固定は全画面の時しか効かない端末が多い**=効かなくても、促す画面が出るので遊びは成立する。
    ⚠**戻し忘れが一番怖い**ので、終わり(`itcFinish`)とタイトルへ戻る所の両方から呼ぶ。 */
+let ITC_ROFF=false;/* 迎撃便に入る前に「このまま遊ぶ」が押されていたか */
 function itcTurn(on){
+ /* 🐞⚠⚠**「このまま遊ぶ」を一度押していると案内が二度と出ない**=向きの固定が効かない端末では
+    **横のまま迎撃が始まる**。⭐**迎撃便に入る時だけ断りを解く**(促す向きが逆になるので、
+    横持ちの時に押した『このまま遊ぶ』はここでは効かせない)。⚠**出る時に元へ戻す**。 */
+ itcTry(()=>{const rh=$('rotatehint');if(!rh)return;
+  if(on){ITC_ROFF=rh.classList.contains('off');rh.classList.remove('off');}
+  else if(ITC_ROFF)rh.classList.add('off');});
  itcTry(()=>document.body.classList.toggle('itc',!!on));
  itcTry(()=>{if(screen.orientation&&screen.orientation.lock){
   const p9=screen.orientation.lock(on?'portrait':'landscape');p9&&p9.catch&&p9.catch(()=>{});}});
