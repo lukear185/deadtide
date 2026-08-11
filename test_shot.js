@@ -23,6 +23,7 @@ if(process.argv.includes('--help')||process.argv.includes('-h')){
   ['iv=<波>','作戦タイム'],['grid=tw|tg|u|hero|z','部品を並べて撮る(⚠**全種1枚は tool_sheet.js**)'],
   ['home+hsel=<id>','🏠ホームで連れて行く英雄を差し替える'],
   ['bns[+bnsn=秒]','🚌開拓便'],['hero=<id>','英雄を出す'],['ult=<0〜1>','必殺の途中で止める'],
+  ['ultgo[+w<ミリ秒>]','必殺を止めずに撃って、その時刻の絵を撮る'],
   ['pose=u:<id>+poseult','必殺の詠唱を5コマ'],['heat=<塔id>:s|h|b','🔥熱さ検査の場面'],
   ['ed+edt=<秒>','🎬区切りの幕'],['op[=logo|<秒>]','🎬起動の幕(開発名/オープニング)'],['arena=…','🧪検証場'],['title+bus','🚌ゾンビバス'],
   ['tut=<段id>[:aim]','🎓チュートリアルのその段(例 tut=flag / tut=strike:aim)'],
@@ -179,6 +180,10 @@ const HM=/hero=([A-Za-z]+)/.exec(OPT),HID=HM?HM[1]:'';
    ⚠pose= の並べ撮りでは体の動きしか見えない=足元の紋章や照準線(drawUChg)は盤面でしか出ない。
    ⚠止め方=毎回 ulW を書き戻す(発射そのものは待ち行列で進むが、絵は詠唱のまま残る)。 */
 const ULM=/ult=([0-9.]+)/.exec(OPT),ULP=ULM?ULM[1]:'';
+/* ⭐ultgo = 必殺を**止めずに発射してそのまま進める**(2026-08-11)。
+   ⚠`ult=` は詠唱を止める口なので、**発射後の絵(ブレスなど)が一度も撮れなかった**。
+   ⚠発射は1.4秒後=いつの絵を撮るかは `w<ミリ秒>` で選ぶ(例 "hero=hUgni+ultgo+w4200")。 */
+const ULGO=/(^|\+)ultgo(\+|$)/.test(OPT);
 /* 例 u=grn = その兵科を3体出して、目の前にゾンビを湧かせ続ける(攻撃と撃破の演出を撮るため)
    ⚠ゾンビは倒されたら補充されるので、投擲の軌道・炎・死体がいつでも画面に出ている状態になる */
 const UM=/u=([A-Za-z0-9]+)/.exec(OPT),UID=UM?UM[1]:'';
@@ -623,6 +628,10 @@ const inj=(PC?'':'<style>'+coarseCSS(html,W)+'</style>')
      +'toast("ph="+G.phase+" w="+G.wave+" pool="+G.tide.pool.length+" z="+G.players[0].zombies.length'
      +'+" lead="+Math.round(G.tide.lead)+" P="+PAUSED+" act="+gameActive+" over="+G.over);'
      +'}catch(e){try{toast("DBGERR "+e.message);}catch(x){}}},1500);'):'')
+ +((HID&&ULGO)?('setTimeout(function(){try{var me=G.players[0];me.hCg=1;'
+     +'me.zombies.length=0;for(var k9=0;k9<9;k9++){var z9=mkZ(zSpec(0,1,10),PLEN*.46-k9*44);z9.hp=z9.mhp=9e5;me.zombies.push(z9);}'
+     +'heroUlt(me,10);'
+     +'}catch(e){document.title="ERR14b "+e.message;}},1400);'):'')
  +((HID&&ULP)?('setTimeout(function(){try{var me=G.players[0];me.hCg=1;'
      +'me.zombies.length=0;for(var k9=0;k9<5;k9++)me.zombies.push(mkZ(zSpec(0,1,10),PLEN*.62-150-k9*40));'
      +'heroUlt(me,10);'

@@ -37,7 +37,12 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
 /* 実際の表示領域の高さ(--appH)を使う。iOSでツールバーが隠れると100%が実画面より短くなり、下に黒帯が出るため */
 html,body{height:100%;height:100dvh;height:var(--appH,100dvh);overflow:hidden}
-body{font-family:var(--ff);background:var(--ink);color:var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+/* 🔢⭐⭐(253)**数字の幅を全部そろえる**(2026-08-11ユーザー「98から110になったときに文字数が
+     増えたせいで文字が2行になったりして色々ズレる。余裕を持ったUIにして欲しい。全体的にチェックして」)。
+   ⭐**tabular-nums**=どの数字も同じ幅になる=**桁が増えない限り1pxも動かない**。
+     ⚠これだけで「98→99で揺れる」類はほぼ全部消える(桁が増える時のぶんは下の各所で場所を確保する)。
+   ⚠**ここ1か所に置く**=画面ごとに書くと必ず書き漏れる。 */
+body{font-family:var(--ff);background:var(--ink);color:var(--ink);user-select:none;-webkit-user-select:none;touch-action:manipulation;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
 /* 連打でiOSのダブルタップズームが発動してタップ座標がずれる対策(touch-actionは継承しないため個別指定) */
 button,.dk,.mini,.btn,.seg,#topbar,#deck,#minis,#tidebar,#buildmenu,#interv,.card{touch-action:manipulation}
 #cv,#cvwrap{touch-action:none}
@@ -933,7 +938,8 @@ body.bns #deck{flex:0 0 auto}
 .zaf .wk{color:var(--rust2)}
 .zaf .rs{color:var(--ink2);opacity:.75}
 .hchips{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}
-.hchips span{background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
+/* 🔢(253)桁が増えても隣へ押し出さないよう、折り返しだけ止める(幅は中身なり) */
+.hchips span{white-space:nowrap;background:var(--paper2);border:2px solid var(--ink);border-radius:7px;
  padding:1px 6px;font-size:10.5px;font-weight:800}
 /* ⚠金色は紙色の地では読めない(コントラスト不足)。必殺の行は英雄窓の .ul と同じ濃い錆色に揃える */
 /* ⚠(100)必殺の説明は**高さを固定**する(ユーザー指摘)=英雄によって1行/2行で下の一覧が上下に動き、
@@ -1201,8 +1207,16 @@ body.bns #deck{flex:0 0 auto}
    全部見える状態にして。冷却塔とか強化の項目が多いやつが長くなってる」)=
    ①文字と余白を一段小さく ②**強化中(up9)は窓を広げて2列**=行数が半分になり、横画面393pxでも収まる。
    ⚠横幅いっぱいの行なので、背が34pxでも押し損ねはない(44pxの掟は小さい的の話) */
-#buildmenu .bm-us{text-align:left;font-size:11.5px;min-height:34px;padding:3px 8px;line-height:1.25}
-#buildmenu .bm-us .uspip{font-size:10px}
+/* 🔧⭐⭐(253)**強化の行を「札 / ◆ / 値段」の3枠に固定した**(同ユーザー指示)。
+   🐞**それまでは1本の文にぶら下げていた**ので、札が伸びた瞬間(例 射程 98→110)に
+     **◆と値段まで押されて2行に折り返し**、行の高さが変わって下の行が全部ずれていた。
+   ⭐**◆と値段は右に固定・折り返さない** / 札だけが伸び縮みする。⭐**背は最初から2行ぶん**
+     確保してあるので、札が2行になっても**行の高さは1pxも変わらない**。 */
+#buildmenu .bm-us{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:6px;
+ text-align:left;font-size:11.5px;min-height:40px;padding:3px 8px;line-height:1.2}
+#buildmenu .bm-us .uslbl{min-width:0;overflow-wrap:anywhere}
+#buildmenu .bm-us .uspip{font-size:10px;white-space:nowrap}
+#buildmenu .bm-us .uspr{white-space:nowrap}
 #buildmenu.up9{max-width:472px}
 #buildmenu.up9 .bm-col{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0}
 #buildmenu .uspip{color:var(--amber);letter-spacing:1px}
@@ -1218,7 +1232,8 @@ body.bns #deck{flex:0 0 auto}
 .bm-item.poor{opacity:.5}
 #buildmenu .bm-row{display:flex;gap:6px;margin-top:6px}
 #buildmenu .bm-row .btn{flex:1;font-size:13px;padding:8px 6px}
-#bm-title{color:var(--paper);font-size:12px;font-weight:900;margin-bottom:6px;text-align:center}
+/* 🔧(253)**見出しの右に✕のぶんの余白**=✕はパネルの外へ出ているが、見出しの1行目に被っていた */
+#bm-title{color:var(--paper);font-size:12px;font-weight:900;margin-bottom:6px;text-align:center;padding-right:26px}
 /* ---- インターバル ---- */
 #interv{position:fixed;inset:0;background:rgba(20,16,12,.8);display:none;align-items:flex-start;justify-content:center;z-index:30;overflow:auto;padding:12px 8px 24px}
 #interv.on{display:flex}
@@ -1233,6 +1248,8 @@ body.bns #deck{flex:0 0 auto}
 .card .ci{font-size:22px}
 .card .ct{font-weight:900;font-size:13px}
 .card .cdsc{font-size:10px;line-height:1.45;opacity:.85;min-height:30px}
+/* 🔢(253)値段の桁が増えても札の高さが変わらないよう、ボタンの背を先に取っておく */
+.card .btn{min-height:32px;white-space:nowrap}
 /* ⭐**効き目の数字だけ太く**(2026-08-02(66))=説明文の中で「何がどれだけ上がるか」が真っ先に目に入る */
 .card .cdsc b{font-weight:900;opacity:1;font-size:11.5px}
 .card .buy{margin-top:auto}
@@ -1344,12 +1361,17 @@ body.bns #deck{flex:0 0 auto}
 #reswrap.ednext #bt-totitle{display:none}
 /* ⚠(181)**見出しは拠点名から作る**ので長さが揃わない(『崩れた立体交差』解放! で14文字)。
    ⭐**折り返せるようにして、行の高さを詰める**=2行になっても札と表を押し出さない。 */
-.restitle{font-size:min(14vw,60px);font-weight:900;color:var(--pane);text-align:center;
+.restitle{font-size:min(11vw,46px);font-weight:900;color:var(--pane);text-align:center;
  line-height:1.06;max-width:100%;overflow-wrap:anywhere;
  text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,0 8px 0 var(--rust2)}
 .restitle.win{color:var(--toxic)}
-table.stats{border-collapse:collapse;margin:10px 0;background:var(--pane);border:3px solid var(--ink);border-radius:12px;overflow:hidden;font-size:13px;font-weight:800}
-table.stats td{padding:6px 14px;border-bottom:2px solid var(--paper2)}
+/* 🚌⭐(253)**成績表を一回り小さくした**(2026-08-11ユーザー「バスステージ終わった後リザルト画面が
+     デカすぎるから小さくして」)=字と余白を詰め、**長い見出しは折り返す**(横へ伸ばさない)。
+   ⚠**数字の側(右の列)は折り返さない**=1行に収める(2段になると読めない。横画面の掟と同じ)。 */
+table.stats{border-collapse:collapse;margin:8px 0;background:var(--pane);border:3px solid var(--ink);border-radius:12px;overflow:hidden;font-size:12px;font-weight:800;max-width:100%}
+table.stats td{padding:4px 10px;border-bottom:2px solid var(--paper2)}
+table.stats td:first-child{max-width:min(52vw,300px);overflow-wrap:anywhere}
+table.stats td:last-child{white-space:nowrap}
 table.stats td:last-child{text-align:right;color:var(--rust2)}
 /* 🏆⚠⚠(181)**横画面(スマホ)の成績表はここで上書きする**。⚠**この塊は必ず上の素の指定より後に置く**
    =前は上に書いてあったので `.restitle` も `table.stats` も**同じ強さの後ろ勝ちで死んでいた**
@@ -1359,18 +1381,24 @@ table.stats td:last-child{text-align:right;color:var(--rust2)}
  /* ⚠**表は縮めない・見出し側で折り返す**=表を縮めると数字が2段になって読めなくなる */
  #res-left{flex:1 1 auto}
  table.stats{flex:0 0 auto}
- .restitle{font-size:min(7vw,42px)}
- #res-sub{font-size:13px}
- table.stats{font-size:12px;margin:0}
- table.stats td{padding:4px 12px}
+ .restitle{font-size:min(6vw,34px)}
+ #res-sub{font-size:12px}
+ table.stats{font-size:11.5px;margin:0}
+ table.stats td{padding:3px 9px}
+ table.stats td:first-child{max-width:min(40vw,240px)}
  #reswrap .menu{margin-top:8px}
  #reswrap .btn{padding:9px 16px;font-size:15px}
 }
 /* ---- 共通 ---- */
-#toasts{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(94vw,480px)}
-.toast{background:var(--ink);color:var(--paper);border:2px solid var(--paper);border-radius:12px;padding:8px 14px;font-size:13px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.5);animation:tin .25s ease;max-width:100%}
+/* 🔔⭐⭐(253)**知らせは中央上をやめて右上へ避けた**(2026-08-11ユーザー「TD中に中央上に出てくる
+     エアストライクがどうとかが邪魔すぎる。無しにするかもっと邪魔にならないところに。小さくするとか」)。
+   ⚠⚠**中央上は盤面の主役が通る所**(道の入口・ボス・必殺)なので、そこへ札を出すと必ず被る。
+   ⭐**HUDの下・右端**=どの画面でも空いていて、目の端で読める。⭐**小さく・幅も半分**にした。
+   ⚠**消してはいない**=ガスの湧きやチュートリアルの案内はここでしか伝えていない。 */
+#toasts{position:fixed;top:58px;right:8px;left:auto;transform:none;z-index:60;display:flex;flex-direction:column;gap:4px;align-items:flex-end;pointer-events:none;width:min(56vw,330px)}
+.toast{background:var(--ink);color:var(--paper);border:2px solid var(--paper);border-radius:10px;padding:5px 10px;font-size:11.5px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.5);animation:tin .25s ease;max-width:100%;opacity:.94;text-align:right}
 .toast.warn{background:var(--rust);color:var(--pane)}
-@keyframes tin{from{transform:translateY(-14px);opacity:0}}
+@keyframes tin{from{transform:translateX(14px);opacity:0}}
 .modal{position:fixed;inset:0;background:rgba(20,16,12,.75);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
 .modal.on{display:flex}
 .modal .panel{max-width:520px;max-height:84vh;overflow:auto}
@@ -3571,6 +3599,15 @@ const SFXSYN={
  lslash:()=>{nzHit(4200,700,.15,.09,1);
   beep(392,392,.12,'triangle',.05);beep(592,592,.11,'triangle',.034);beep(905,905,.09,'triangle',.02);
   beep(155,110,.09,'sine',.07);},
+ /* ⚔⭐(253)**打刀の斬撃**(2026-08-11ユーザー「残月の剣鬼の攻撃音がダサいから
+      もっと剣の斬撃音にして欲しい」)。⚠それまでは斧使い/影と**同じ素材**の当たり音だったので、
+      「刃で斬った」ではなく「何かに当たった」にしか聞こえなかった。
+    ⭐**斬撃は3つでできている**: ①空気を切る「シャッ」(高→低へ速く閉じるノイズ)
+      ②**刃鳴り**=金属の比(1 : 1.51 : 2.31)の短い和音(⚠整数比だと笛になる) ③斬り込んだ低い芯。
+    ⚠**伸ばさない**=伸ばすと禁止側(高いキラキラ)になる。⚠上の倍音は1900Hzまで。 */
+ mKatana:()=>{nzHit(6800,820,.14,.085,1.45);
+  beep(820,780,.085,'triangle',.030);beep(1238,1178,.07,'triangle',.019);beep(1894,1802,.055,'triangle',.011);
+  beep(300,196,.10,'sine',.055);},
  /* ⭐**貫通弾**(2026-08-01ユーザー指示「貫通弾はビームじゃないから、なにかいい感じの音。他と被らないやつ」)。
     ⚠被らせない相手=レールガン(rail・電磁のビーム音)/狙撃(snipe・短い一発)/要塞砲(fort)/爆発(boom)。
     ⭐**対物ライフルの重い一撃**に寄せて4層を重ねる:
@@ -4022,6 +4059,7 @@ const SFX_LBL={
  mChain:['✊鎖 ★仮採用','金物が走る+金属の当たり(鎖使い)','tw'],
  mDog:['✊猟犬の吠え ★仮採用','本物の犬の吠え(猟犬系)','tw'],
  mBladeU:['✊刃 ★仮採用','本物の剣の斬り(斧使い/チェーンソー/影)','tw'],
+ mKatana:['⚔打刀の斬撃 ★採用中','空気を切るシャッ+刃鳴り+低い芯(残月の剣鬼)','tw'],
  mTitanU:['✊巨体の一撃 ★仮採用','重い拳+低い爆発(タイタン)','tw'],
  heroIn:['🦸英雄参戦','暗いホーンの膨らみ(それまでエリート出現と同じ音)','ev'],
  unitUp:['⚡ユニット強化','和音の一撃+カリンバ(それまでエリート出現と同じ音)','ev'],
@@ -4143,7 +4181,7 @@ const SFX_GEOSHELL='geoShD';
    👑⭐**暁の王も決着**(2026-08-08(217)ユーザー「暁AでOK」=dwnA。B〜Eは🗑ボツへ)。 */
 const H_SFX={hNox:'mLong',hDark:'mSprG',hGiant:'mHeavy',hMech:'mTool',hPost:'mBlunt',hDawn:'dwnA',
  hWolf:'mDog',/* 🐺(226d)噛みつき=本物の犬の吠え(猟犬と同じ素材。狼なので合う) */
- hZan:'mBladeU',/* ⚔(230)打刀=本物の剣の斬り(斧使い/影と同じ素材)。⚠専用音は必要になったら協議 */
+ hZan:'mKatana',/* ⚔(253)打刀=**専用の斬撃音**へ(ユーザー「ダサいからもっと剣の斬撃音に」)。⚠前は斧使いと同じ素材 */
  hUgni:'flame'/* 🐉(252)ブレス=火炎放射塔と同じ素材(仮)。⚠専用の音は後日の協議=[[TODO]] */};
 /* ✊(217)**近接兵科の攻撃音**(武器ごと。⚠それまで近接は無音=聞こえていたのは撃破の血しぶき)。
    ⚠進化先は元の兵科の武器を引き継ぐ(U.base で引く)。表に無い近接=バット/斬撃=刃 に落ちる */
@@ -17586,6 +17624,12 @@ HBODY.hUgni=(c,U,walk,t,ph,o)=>{
  const rc=bRc(o);/* 溜め(喉に火を溜める)0..1 */
  const atk=(o&&o.fireT>0)?1:0;
  const gl=.55+.45*Math.sin(t*6+ph);/* 熾火の明滅 */
+ /* 🐉⭐⭐(253)**必殺の「口の中で火を貯める」**(ユーザー指示)。
+    ⭐uw=詠唱の進み(0→1) / ub=いま吐いている最中。⚠**新しい印は足していない**=
+      盤面は `o.ulp`(詠唱の進み)と `o.ulr`(技の余韻)を、図鑑などの静止画は `o.ulW/ulT` を見る。 */
+ const uw=(o&&o.ulp>=0)?clamp(o.ulp,0,1)
+   :((o&&o.ulW>0&&o.ulW0>0)?clamp(1-o.ulW/o.ulW0,0,1):0);
+ const ub=(o&&(o.ulr>0||(o.ulT>0&&!(o.ulW>0))))?1:0;
  c.save();c.scale(1.18,1.18);
  if(atk)c.translate(2.2,0);
  /* ⭐**奥の翼**(暗い)。⚠**手前と同じ形にしない**=左右対称の板に見える。指の骨で膜を割る */
@@ -17667,18 +17711,25 @@ HBODY.hUgni=(c,U,walk,t,ph,o)=>{
   c.beginPath();c.moveTo(-38,-32);c.lineTo(-45,-36);c.lineTo(-37,-29);c.closePath();c.fill();c.stroke();
   c.restore();}
  /* ⭐首(溜めでもたげる)。⚠付け根から頭まで**太→細**にする=筒だと蛇に見える */
- const nu=rc*.34+(atk?-.1:0);/* 溜めで持ち上げ、吐く瞬間は少し下げる */
+ /* ⭐(253)**溜めるほど首をもたげ、吐く間は前へ突き出す**(ユーザー「もっと迫力も欲しい」) */
+ const nu=rc*.34+uw*1.05+(atk?-.1:0)-ub*.34;
  /* ⚠**|x|は54まで**(掟)=頭は hx+21・尾は -48 で収まる位置に置いてある。動かす時は両端を数え直すこと */
- const hx=21+atk*3,hy=-52-nu*10;
+ const hx=21+atk*3+ub*5,hy=-52-nu*10;
  c.fillStyle=BD;
  c.beginPath();c.moveTo(9,-40);
  c.quadraticCurveTo(20,-48-nu*8,hx-2,hy+3);
  c.lineTo(hx-4,hy+11);
  c.quadraticCurveTo(16,-40-nu*6,7,-30);c.closePath();c.fill();c.stroke();
- c.fillStyle=EM;c.globalAlpha=.3+rc*.6;/* 喉に溜まった火(溜めるほど明るい) */
- c.beginPath();c.ellipse(18,-44-nu*7,5.4,3.2,-.5,0,7);c.fill();c.globalAlpha=1;
+ /* ⭐(253)喉に溜まった火=**溜めるほど大きく明るく**(ユーザー「口の中で炎を貯める時間」) */
+ {const th=Math.max(rc*.5,uw,ub*.9);
+  c.fillStyle=EM;c.globalAlpha=.28+th*.7;
+  c.beginPath();c.ellipse(18,-44-nu*7,5.4+th*3.4,3.2+th*2.6,-.5,0,7);c.fill();
+  if(th>.35){c.fillStyle=EM2;c.globalAlpha=.4+th*.6;
+   c.beginPath();c.ellipse(18,-44-nu*7,2.4+th*1.8,1.6+th*1.4,-.5,0,7);c.fill();}
+  c.globalAlpha=1;}
  /* ⭐頭(⚠丸くしない=**細長い吻**+奥へ張る頬)。開く顎は下顎だけ落とす */
- const jaw=atk?4.6:(rc*1.6);
+ /* ⭐(253)顎= 溜め中はじわじわ開き、吐いている間は**大きく開けっぱなし** */
+ const jaw=ub?(9.6+Math.sin(t*22+ph)*.7):(uw>0?(1.4+uw*6.2):(atk?4.6:rc*1.6));
  c.fillStyle=BD;
  c.beginPath();c.moveTo(hx-6,hy+8);
  c.quadraticCurveTo(hx-4,hy-3,hx+4,hy-2);
@@ -17690,8 +17741,23 @@ HBODY.hUgni=(c,U,walk,t,ph,o)=>{
  c.quadraticCurveTo(hx+8,hy+9+jaw,hx+19,hy+6+jaw);
  c.lineTo(hx+19,hy+8.4+jaw);
  c.quadraticCurveTo(hx+7,hy+13+jaw,hx-4,hy+11);c.closePath();c.fill();c.stroke();
+ /* ⭐(253)**口の中で膨らむ火の玉**=溜めの主役。⚠**顎より先へはみ出させない**(玉が宙に浮いて見える) */
  if(jaw>2){c.fillStyle=EM2;c.globalAlpha=.5+gl*.5;/* 開いた口の奥で燃える火 */
   c.beginPath();c.ellipse(hx+9,hy+7+jaw*.5,7,jaw*.5,0,0,7);c.fill();c.globalAlpha=1;}
+ if(uw>.06||ub){const bl=uw>0?uw:1,r9=(2.4+bl*7.4)*(1+Math.sin(t*(14+bl*14)+ph)*.07);
+  c.fillStyle=EM;c.globalAlpha=.42+bl*.5;
+  c.beginPath();c.arc(hx+9,hy+5.4+jaw*.4,r9,0,7);c.fill();
+  c.fillStyle=EM2;c.globalAlpha=.55+bl*.45;
+  c.beginPath();c.arc(hx+9,hy+5.4+jaw*.4,r9*.5,0,7);c.fill();
+  c.fillStyle='#fff6d8';c.globalAlpha=bl*.9;
+  c.beginPath();c.arc(hx+9,hy+5.4+jaw*.4,r9*.2,0,7);c.fill();
+  c.globalAlpha=1;
+  /* 吸い込まれる火の粉(⚠**内へ寄せる**=外へ散らすと「もう出た」に見えて前置きにならない) */
+  if(uw>.15&&FXLV>0){c.fillStyle=EM;
+   for(let i9=0;i9<4;i9++){const a9=(t*3.4+i9*1.57+ph)%6.2832,q9=1-((t*1.7+i9*.25)%1);
+    c.globalAlpha=(1-q9)*uw*.8;
+    c.beginPath();c.arc(hx+9+Math.cos(a9)*(6+q9*26),hy+5.4+Math.sin(a9)*(4+q9*18),1.4,0,7);c.fill();}
+   c.globalAlpha=1;}}
  c.fillStyle=HN;/* 牙(⚠上下で数を変える) */
  for(const g of [[hx+7,hy+5,2.2],[hx+13,hy+4.4,1.8],[hx+18,hy+4,1.4]]){
   c.beginPath();c.moveTo(g[0],g[1]);c.lineTo(g[0]+1.4,g[1]+g[2]);c.lineTo(g[0]+2.6,g[1]);c.closePath();c.fill();}
@@ -22074,10 +22140,14 @@ const H_FX={
   const ts=TSCALE[3],dd=(d5||u.dr||-1);
   const sx=u.px+dd*ts*1.18*46,sy=u.py-ts*1.18*44;/* 顎の先(HBODY.hUgni の hx+21,hy+6 あたり) */
   const tx=tg.px,ty=tg.py-18*CH_UP,aw=Math.atan2(ty-sy,tx-sx);
+  /* 🔥⭐⭐(253)**炎の長さは敵の近さで変えない**(2026-08-11ユーザー指示
+     「敵の近さとか関係なく攻撃範囲分の長さ分炎を出して欲しい」)=**いつも射程いっぱい**まで吹く。
+     ⚠**狙う向きだけは敵の方**=長さを的に合わせると、近い敵に「ちょろっと吐く」絵になっていた。 */
+  const RL=(U.rng||260);
   if(FXLV>0){
    /* 吹き付ける帯(⚠2本重ねる=芯は明るく・外は暗い。1本だと「線」に見える) */
-   addFx(C,'flame',sx,sy,'',{ang:aw,len:Math.min(dist(sx,sy,tx,ty)+26,320),col:'#ff6a2a',sd:rnd(0,9)});
-   addFx(C,'flame',sx,sy,'',{ang:aw+.1,len:Math.min(dist(sx,sy,tx,ty)*.7,220),col:'#ffd24a',sd:rnd(0,9)});
+   addFx(C,'flame',sx,sy,'',{ang:aw,len:RL,col:'#ff6a2a',sd:rnd(0,9)});
+   addFx(C,'flame',sx,sy,'',{ang:aw+.1,len:RL*.66,col:'#ffd24a',sd:rnd(0,9)});
    addP(C,6,sx,sy,{sp:120,a:aw,spread:.36,g:-30,life:.35,r:2.6,col:'#ff8a3a'});
    addFx(C,'ring',tg.px,tg.py,'',{r:(U.aoe||120)*.7,col:'#ff6a2a'});
    addP(C,5,tg.px,tg.py-6,{sp:40,up:110,g:-70,life:.7,r:2.6,col:'#ff6a2a'});
@@ -22319,7 +22389,10 @@ function drawUChgHero(c,u,t,k,col,U){
    ⚠**音は足していない**(NOTESの掟「音を足す前に画だけで足りていないか先に確かめる」)。 */
 const H_ULW_RK=[.34,.34,.5,.74,.95];
 const H_ULW_BACK={hDark:150,hPost:90};/* 下がってから出る英雄(値=退がる距離) */
-const hUltWind=H=>H_ULW_RK[clamp((H&&H.rk||1)-1,0,4)];
+/* 🐉⭐(253)**前置きを人ごとに伸ばせる口**(2026-08-11ユーザー指示「もっと口の中で炎を貯める時間を持って」)。
+   ⚠**レア度の表(上)より優先**=ここに書いた人だけ長くなる。⚠長すぎると「反応が無い」になるので2秒まで。 */
+const H_ULW_ID={hUgni:1.7};
+const hUltWind=H=>(H&&H_ULW_ID[H.id])||H_ULW_RK[clamp((H&&H.rk||1)-1,0,4)];
 /* 溜めの絵。⚠**輪は外へ開かず内へ閉じる**=外へ開く輪は「もう出た」に見えて前置きにならない。
    ⚠⚠**2026-08-02に薄くした**(ユーザー「のけぞるだけだと安っぽい」→ 主役を体の動きへ移した)=
      ここは「必殺技の詠唱だ」と分かる印だけに留め、型ごとの見せ場は drawUChg 側に任せる。 */
@@ -23319,38 +23392,89 @@ function heroUlt(C,wave){
    if(k%5===0&&C.isMe)(sfx[H_SFX.hZan]||sfx.shot)();};
   run9(0);for(let k=1;k<ZAN_N;k++)later(C,k*.055,()=>run9(k));
   C.shake=Math.max(C.shake||0,.2);
- }else if(id==='hUgni'){/* 🐉⭐⭐(252)**劫火の吐息**=ユーザー指定「口を大きく開けて、
-    **どんどん大きくなる火の塊**を出す特大ブレス」。
-   ⭐**塊が道を進むほど大きく・熱くなる**=前に行くほど威力も範囲も上がる(残月とは伸び方の理屈が違う=
-     あちらは「斬った数」で育つ / こちらは**進んだ距離そのもの**で育つ=群れが薄くても必ず育つ)。
-   ⭐**通った所は燃え続ける**(燃焼を置いていく)=吐き終わった後も削り続けるのがこのキャラの性格。
-   ⚠**1体を何度も焼かない**ようにはしない=火の塊は通り抜ける物なので、留まった敵は何度も焼ける
-     (かわりに1回ぶんを軽くしてある)。⚠向きは**道のりが減る方**(敵が来る側)。 */
+ }else if(id==='hUgni'){/* 🐉⭐⭐⭐(253)**劫火の吐息=2秒吐き続ける「末広がりのブレス」**
+    (2026-08-11ユーザー指示「もっと口の中で炎を貯める時間を持って、**幅が口から遠いほど大きくなる**
+     ブレスを2秒ぐらい出す感じに。もっと迫力も欲しい」)。
+   ⛔**(252)の「火の塊が道を進む」形は取り下げた**=あれは残月(斬撃が走る)と動きが同じだった。⚠書き戻さない。
+   ⭐**芯は3つ**:
+     ①**溜め**=前置きを1.7秒に伸ばしてある(`H_ULW_ID`)。その間ずっと**口の中で火が膨らむ**(体の側)。
+     ②**末広がり**=当たり判定そのものが円錐。**口元は細く(16)・先は太い(140)**=
+       「遠いほど大きい」が絵だけでなく**当たりでも本当にそう**。
+     ③**吐き続ける**=2秒のあいだ0.05秒ごとに削る=**留まった敵ほど溶ける**(通り抜ける敵は少しで済む)。
+   ⚠**向きは道なり**(敵が来る側)=まっすぐ前へ吐くと、蛇行する面⑤では道を外して当たらない。
+   ⚠**1回ぶんは軽い**(40回に分けて当てるため)。⚠合計の手応えは実機で詰める。 */
   addFx(C,'txt',u.px,u.py-84*CH_UP,'劫火の吐息');
-  if(C.isMe&&sfx[H_SFX.hUgni])sfx[H_SFX.hUgni]();
-  u.ulT=Math.max(u.ulT||0,1.4);/* 吐いている間は顎を開けた構え */
-  const UG_N=18,UG_STEP=40,UG_CAP=14;/* 進む回数 / 1回に進む道のり / 育ちの頭打ち */
-  const roar=(k)=>{
-   if(!C||u.dead)return;
-   const q=clamp((u.d||0)-24-k*UG_STEP,0,PLEN),p=pathPos(q);
-   const g9=Math.min(k,UG_CAP);
-   const rad=54+g9*7;      /* 塊の大きさ=進むほど膨らむ */
-   const pw=1+g9*.13;      /* 熱さ=進むほど上がる(頭打ちで2.8倍) */
-   for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
-    if(Math.abs(z.d-q)>rad)continue;
-    dmgZ(C,z,Math.round(210*W*pw),1,0,0,'fire');
-    /* 🔥**通った所を燃やし続ける**=一番強い燃焼が勝つ(重ねて足さない) */
-    if(!z.dead){z.burnT=Math.max(z.burnT||0,4.5);z.burnD=Math.max(z.burnD||0,Math.round(46*W*pw));}}
-   /* 火の塊(⚠育つほど大きく=強くなっているのが目で分かる) */
-   addFx(C,'ring',p[0],p[1],'',{r:rad,col:'#ff6a2a'});
-   if(FXLV>0){
-    addFx(C,'spark',p[0],p[1]-20*CH_UP,'',{sd:rnd(0,9),col:'#ffd24a',big:g9>7?1:0});
-    addFx(C,'flame',p[0],p[1]-6,'',{ang:-1.5708,len:40+g9*4,col:'#ff6a2a',sd:rnd(0,9)});
-    addP(C,3+((g9/4)|0),p[0],p[1]-10*CH_UP,{sp:60,up:90+g9*4,g:-70,life:.7,r:2.6+g9*.12,col:'#ff8a3a'});}
-   if(k%4===0)C.shake=Math.max(C.shake||0,.16+g9*.01);
-   if(k%6===0&&C.isMe&&sfx[H_SFX.hUgni])sfx[H_SFX.hUgni]();};
-  roar(0);for(let k=1;k<UG_N;k++)later(C,k*.06,()=>roar(k));
-  C.shake=Math.max(C.shake||0,.24);
+  {const UG_DUR=2.0,UG_TICK=.05,UG_LEN=540,UG_W0=26,UG_W1=140;
+   const n9=Math.round(UG_DUR/UG_TICK);
+   /* ⚠**顎を開けた構えは `u.ulT` で保つ**=体の側は `o.ulr`(=技の余韻)で「いま吐いている」を見る。
+      ⭐新しい印を足さずに済む=campStep も drawUnit の受け渡しも1行も触らない。 */
+   u.ulT=Math.max(u.ulT||0,UG_DUR+.5);
+   /* 口元(顎の先)。⚠体の局所座標に英雄の倍率を掛ける=口から出ていないと「体の脇から吹いた」に見える */
+   const ts=TSCALE[3]*1.18,bx=u.px+((u.dr||-1)<0?-1:1)*ts*46,by=u.py-ts*44;
+   /* ⚠⚠**当たりの起点は口元ではなく体の中心**(2026-08-11に検査が落として分かった)。
+      🐞口元は体から**90px以上**前に出るので、**至近距離の敵が円錐より手前**に落ちて一切当たらなかった。
+      ⭐**絵は口から / 当たりは体から**=見た目のずれは口の長さぶんだけで、実機では読めない。 */
+   const ox=u.px,oy=u.py-26*CH_UP;
+   /* ⭐⭐**向きは「一番近い前の敵」へ**(2026-08-11に撮って直した)。
+      🐞⚠**道の接線で向きを出すと、角に立っている時に真上へ吹く**(実際にそうなった)=
+        道は曲がるので、立ち位置しだいで**明後日の方向へ吐く**。
+      🐞⚠⚠**狙いの起点は必ず口元(bx,by)にする**=体の真ん中から測ると、
+        口元から出る円錐と軸がずれて**近くの敵が円錐の外に落ちる**(検査が「効果が無い」で落とした)。
+      ⭐**的の方へ吐けば必ず群れに当たる**=末広がりなので、その後ろの列もまとめて入る。
+      ⚠敵が1体も居なければ**向いている方へ真横**。⚠向きは**撃つ瞬間に1回だけ**決める。 */
+   let ang9;
+   {let tg9=null,bd9=1e9;
+    for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
+     const g9=(u.d||0)-z.d;if(g9<-140||g9>UG_LEN)continue;/* ⚠英雄は出撃直後 d が負=少し後ろも見る */
+     if(g9<bd9){bd9=g9;tg9=z;}}
+    if(tg9)ang9=Math.atan2((tg9.py-16*CH_UP)-oy,tg9.px-ox);
+    else ang9=((u.dr||-1)<0)?Math.PI:0;}
+   const cs=Math.cos(ang9),sn=Math.sin(ang9);
+   /* 💥**吐き出しの瞬間**=溜めた火が一気に抜ける(迫力はここで作る) */
+   addFx(C,'boom',bx,by,'');
+   addFx(C,'ring',bx,by,'',{r:120,col:'#ffd24a'});
+   addFx(C,'shock',u.px,u.py+4,'',{r:150,col:'#ff6a2a'});
+   C.shake=Math.max(C.shake||0,.55);
+   if(C.isMe&&sfx[H_SFX.hUgni])sfx[H_SFX.hUgni]();
+   const roar=(k)=>{
+    if(!C||u.dead)return;
+    const q=k/n9;                       /* 0→1(吐いている進み) */
+    const gr=Math.min(1,k/6);           /* 吐き始めの0.3秒だけ細い=一気に全開にしない */
+    const fade=q>.86?(1-q)/.14:1;       /* 終わり際は細く途切れる */
+    const ln=UG_LEN*(.5+.5*gr)*(.9+.1*fade);
+    const ex=bx+cs*ln,ey=by+sn*ln;
+    /* 🔥**末広がりの当たり**=口元から先へ行くほど太い円錐 */
+    const w1=(UG_W1*gr)*(.85+.15*fade);
+    for(const z of C.zombies){if(z.dead||z.d<0||z.dvT>0)continue;
+     const dx=z.px-ox,dy=(z.py-16*CH_UP)-oy;
+     const tp=dx*cs+dy*sn;if(tp<-30||tp>ln)continue;/* ⚠少し手前まで拾う(密着した敵を外さない) */
+     const pp=Math.abs(-dx*sn+dy*cs);
+     if(pp>UG_W0+(w1-UG_W0)*Math.max(0,tp)/ln)continue;
+     dmgZ(C,z,Math.round(105*W),1,1,0,'fire');/* ⚠quiet=数字を毎コマ出さない(40回ぶん重なる) */
+     /* 🔥**炙られた所は燃え続ける**=吐き終わった後も削るのがこのキャラの性格 */
+     if(!z.dead){z.burnT=Math.max(z.burnT||0,5);z.burnD=Math.max(z.burnD||0,Math.round(62*W));}}
+    /* 絵。⚠**帯は3枚重ね**(外の暗い炎/芯の明るい炎/白い芯)=1枚だと「線」にしか見えない。
+       ⚠`flame` は元から先へ行くほど丸が大きくなる=**末広がりがそのまま絵になる** */
+    /* ⭐⭐**末広がりの本体は「太さの違う帯を4本つなぐ」**(2026-08-11に撮って作り直した)。
+       🐞⚠**炎の粒(flame)だけだと実機では口元の小さな塊にしか見えない**=寿命0.2秒・粒が小さいため。
+       ⭐**遠いほど太い帯**を重ねると、末広がりが一目で読めて迫力も出る。⚠4本まで(増やすと重い)。 */
+    for(let i9=0;i9<4;i9++){
+     const t0=ln*i9/4,t1=ln*(i9+1)/4,wv=(UG_W0+(w1-UG_W0)*((i9+.6)/4))*.9;
+     addFx(C,'beam',bx+cs*t0,by+sn*t0,'',{x2:bx+cs*t1,y2:by+sn*t1,
+      col:'rgba(224,67,26,',col2:'rgba(255,214,120,',w:Math.max(6,wv),lf:.16,sus:1});}
+    addFx(C,'flame',bx,by,'',{ang:ang9,len:ln,col:'#e0431a',sd:rnd(0,9)});
+    if(FXLV>0&&(k&1)===0){
+     addFx(C,'flame',bx,by,'',{ang:ang9+.06,len:ln*.78,col:'#ff8a2a',sd:rnd(0,9)});
+     addFx(C,'flame',bx,by,'',{ang:ang9-.05,len:ln*.5,col:'#ffd24a',sd:rnd(0,9)});
+     /* 先端で渦を巻く火の玉(⚠「遠いほど大きい」を先端でもう一押しする) */
+     addFx(C,'spark',ex,ey,'',{sd:rnd(0,9),col:'#ffd24a',big:1});
+     addP(C,3,bx+cs*ln*.6,by+sn*ln*.6,{sp:90,a:ang9,spread:.5,up:70,g:-90,life:.8,r:3.4,col:'#ff8a3a'});
+     addP(C,2,ex,ey,{sp:60,up:40,g:-70,life:1.2,r:9,col:'#4a2a1a',typ:'smoke'});}
+    /* 通った跡の焦げ(⚠地面に残る=吐いた場所が後から読める) */
+    if(FXLV>0&&k%6===0)addP(C,3,bx+cs*ln*.55,by+sn*ln*.55,{sp:0,g:0,life:3.5,r:12,col:'#3a2216',typ:'stain',jx:ln*.3,jy:w1*.4});
+    C.shake=Math.max(C.shake||0,.3*fade);/* ⭐揺れっぱなし=「吐き続けている」の手応え */
+    if(k%7===0&&C.isMe&&sfx[H_SFX.hUgni])sfx[H_SFX.hUgni]();};
+   roar(0);for(let k=1;k<n9;k++)later(C,k*UG_TICK,()=>roar(k));}
  }else{/* hNox 死の宣告: 画面上の敵すべてに致命傷 */
   for(const z of live){const cut=z.boss?.25:.55;dmgZ(C,z,z.hp*cut+900*W,1);
    addFx(C,'spark',z.px,z.py-18*CH_UP,'',{sd:rnd(0,9),col:DANGER});}
@@ -24467,9 +24591,10 @@ function doPurchase(C,kind,opt){
    if(C.isMe)UI.banner('🏗 支援枠を開いた!');break;}
   case 'ecoslot':{const F2=(G&&G.coop)?G.players[0]:C;F2.ecoN=(F2.ecoN||1)+1;
    if(C.isMe){toast('🏭 工房スロットを増設した!('+F2.ecoN+'/'+ECO_MAX+')');addFx(F2,'ring',SLOTS[ECO_BASE+F2.ecoN-1][0],SLOTS[ECO_BASE+F2.ecoN-1][1],'',{r:70,col:AMBER});}break;}
-  case 'uup':C.uLv=(C.uLv||0)+1;
-   if(C.isMe){if(C.uLv===3){UI.banner('🛡 ユニットが強化装備を入手!');sfx.buy();}
-    else if(C.uLv===5||C.uLv===10){UI.banner('⚡ ユニットがさらに強くなった!!');(sfx.unitUp||sfx.elite)();}}break;/* ⚡(217)使い回し解消 */
+  /* ⛔⭐(253)**Lv3/5/10の「節目」の幕を外した**(2026-08-11ユーザー「前の進化ていう概念の残りカスだから削除して」)。
+     ⚠**書き戻さない**=いまのユニット強化は1段ごとに+10%の連続した物で、節目という区切りはもう無い。
+     ⭐買った知らせは小さい方(toast)が今までどおり出る=何段目かは分かる。 */
+  case 'uup':C.uLv=(C.uLv||0)+1;if(C.isMe)sfx.buy();break;
   case 'atk':C.atkLv++;break;
   case 'stkup':C.stkLv=(C.stkLv||0)+1;break;
   case 'repair':{C.repairs++;const FC=G&&G.coop?G.players[0]:C;FC.core=Math.min(FC.coreMax,FC.core+12);break;}
@@ -27196,7 +27321,10 @@ function showResultA(){
     /* ⭐🚌ボーナス面の初回クリア報酬(2回目からは出ない=配っていないので) */
     ...(G.bnsPts?[['🚌 初回クリア報酬(🧬'+BNS_FIRST_X+'倍)','🧬+'+fmt(G.bnsPts)+' / 💎+'+(G.bnsGem||0)]]:[]),
     /* ⚡(115)スコアの段位報酬=**この走りで新しく取った段だけ**出す */
-    ...((G.bnsSg&&G.bnsSg.length)?[['⚡ スコア報酬('+G.bnsSg.map(i=>fmt(BNS_SG[i].s)).join(' / ')+')',
+    /* ⚡⚠(253)**段の点数を並べるのをやめた**(2026-08-11ユーザー「特にスコア報酬のやつが横に長すぎる」)=
+       『⚡ スコア報酬(3,000 / 6,000 / 10,000)』で1行が表の幅を決めてしまい、成績表全体が横に伸びていた。
+       ⭐**何段取ったかだけ**にした(どの段だったかは⚡スコア報酬の窓で見られる)。 */
+    ...((G.bnsSg&&G.bnsSg.length)?[['⚡ スコア報酬 ×'+G.bnsSg.length,
       '💎+'+G.bnsSg.reduce((a,i)=>a+BNS_SG[i].g,0)]]:[]),
     /* ⭐🚌轢き殺した数と最高連続(2026-08-02(2))=「連続で気持ちいい」の締めをここで見せる。
        ⚠バスの居る面(開拓便)でしか出さない */
@@ -27332,7 +27460,8 @@ function openBM(si){
    if(st==='g'&&!eco&&T.rng){const cur=Math.round(T.rng*twRngMlv(lvv));lbl+=mx?' ('+cur+')':' ('+cur+'→'+Math.round(T.rng*twRngMlv(lvv+1))+')';}
    /* ⚠進化先は引き継いだぶんを引いて数える(◆が10個並ぶとボタンからはみ出す) */
    const pips='◆'.repeat(Math.max(0,lvv-mn9))+'◇'.repeat(Math.max(0,mx9-lvv));
-   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx?'':'data-p="'+p+'"'} ${mx||m.scrap<p?'disabled':''}>${lbl} <span class="uspip">${pips}</span> ${mx?'MAX':'⚙️'+fmt(p)}</button>`;
+   /* 🔧(253)**3枠に分ける**=札(伸びる) / ◆(固定) / 値段(固定)。⚠CSSの grid とセットで直すこと */
+   return `<button class="btn grn sm bm-us" data-us="${st}" ${mx?'':'data-p="'+p+'"'} ${mx||m.scrap<p?'disabled':''}><span class="uslbl">${lbl}</span><span class="uspip">${pips}</span><span class="uspr">${mx?'MAX':'⚙️'+fmt(p)}</span></button>`;
   }).join('');
   const canSell=!(COOP&&(tw.own||0)!==(MODE==='client'?CS.myJ:(G?G.myIdx:0)));
   /* ⭐廃品工房を全部MAXまで上げたら『上級廃品工房』へ建て替えられる(2026-07-26ユーザー指示) */
