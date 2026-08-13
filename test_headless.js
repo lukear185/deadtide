@@ -931,6 +931,38 @@ function checkLabMul(){
  LABMUL=1;META.pts=keep;META.tw={};META.un={};
  console.log('研究所のまとめ買い: ×5='+want+'🧬(1段ずつの合計と一致)/残り3段では×3へ縮む/解放項目は対象外 OK');
 }
+/* 💨⭐(266)**盤面の強化の枠が「出ているのに買えない」塔が無いこと**
+   (2026-08-13ユーザー報告「散布塔の散布量強化できない」で見つけた穴)。
+   ⚠原因は newUs() に撒く量の枠が無く、買う手続きが「その枠は無い」と見て黙って弾いていたこと=
+   ⚠⚠この冊の検査の中身は丸ごと1つの長い文字列に入っている=**コメントにもバッククォートを書かない**
+     (書くと文字列がそこで切れて、検査ぜんぶが読み込めなくなる。実際にやった)。
+     **枠は画面に出るのに押しても何も起きない**。⚠絵にも音にも出ないので目視では絶対に気付けない。
+   ⭐だから**塔を1本ずつ全部**、出ている枠を実際に1段買って上がるところまで見る。 */
+function checkUpSlot(){
+ META.stg=0;setDiff=2;startSolo();frames(20,.016);
+ const me=G.players[0],si=AI_ORDER[0],keys=Object.keys(newUs());
+ for(let ti=0;ti<TOWERS.length;ti++){const T=TOWERS[ti],sts=twStats(ti);
+  for(const st of sts){
+   /* ① 入れ物に枠そのものがあるか(ここが抜けていたのが今回の穴) */
+   if(keys.indexOf(st)<0){console.log('FAIL: '+T.n+'の強化枠「'+(USTAT_L[st]||st)+'」が newUs() に無い(押しても買えない)');process.exit(1);}
+   /* ② 実際に1段買えるか。⚠値段は素の1段目=⚙️を積んでおけば必ず届く */
+   me.scrap=9e8;me.towers[si]={ti,us:newUs(),cd:9,ang:-.6,jamT:0,fireT:0,spent:0,own:0};
+   const tw=me.towers[si],b=tw.us[st];
+   if(!upTower(me,si,st)){console.log('FAIL: '+T.n+'の「'+(USTAT_L[st]||st)+'」を買えない(⚙️は足りている)');process.exit(1);}
+   if(!(tw.us[st]>b)){console.log('FAIL: '+T.n+'の「'+(USTAT_L[st]||st)+'」を買ったのに段が上がらない');process.exit(1);}}}
+ /* ③ 💨(266)撒く量の枠が、他の持ち味の枠と同じく「今→強化後」を出しているか。
+    ⚠買えても効き目が画面に出ないと、直っていることがプレイヤーに分からない。 */
+ {const ti=TOWERS.findIndex(t=>t.id==='spray');
+  me.scrap=9e8;me.towers[si]={ti,us:newUs(),cd:9,ang:-.6,jamT:0,fireT:0,spent:0,own:0};
+  /* ⚠この冊の作り物の画面は innerHTML を捨てる作りなので、ここだけ一時的に受け取れるようにする */
+  const el=document.getElementById('buildmenu');let cap='';
+  Object.defineProperty(el,'innerHTML',{configurable:true,get:()=>cap,set:v=>{cap=v;}});
+  try{openBM(si);}finally{Object.defineProperty(el,'innerHTML',{configurable:true,get:()=>'',set:()=>{}});}
+  if(cap.indexOf('撒く量(x1.00→x1.22)')<0){console.log('FAIL: 散布塔の「撒く量」に今→強化後が出ていない: '+cap.replace(/<[^>]*>/g,'|').slice(0,200));process.exit(1);}
+  closeBM();}
+ me.towers[si]=null;
+ console.log('盤面の強化: 塔'+TOWERS.length+'本ぜんぶ、出ている枠を実際に1段買えて段が上がる/散布塔は撒く量の伸びも出る OK');
+}
 function checkPerUp(){
  META.stg=0;setDiff=2;startSolo();frames(20,.016);
  const me=G.players[0],si=AI_ORDER[0],[sx,sy]=SLOTS[si];
@@ -5127,6 +5159,7 @@ const CHECKS=[['checkInvariants',checkInvariants],['checkMaterial',checkMaterial
 ['checkResumeFarm',checkResumeFarm],
 ['checkTwNew',checkTwNew],
 ['checkPerUp',checkPerUp],
+['checkUpSlot',checkUpSlot],
 ['checkLabSteps',checkLabSteps],
 ['checkStart0',checkStart0],
 ['checkLabMul',checkLabMul],

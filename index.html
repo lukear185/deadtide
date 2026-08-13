@@ -5093,7 +5093,10 @@ const usEff=lv=>Math.min(lv||0,USTAT_MAX)+Math.max(0,(lv||0)-USTAT_MAX)*.5;
 /* ⚠タレット個別強化の入れ物は**必ずこれで作る**(2026-07-26)。
    場所ごとに手書きしていたため `f`(❄冷却回数)や `c`(⚡連鎖)が抜けた形が混ざり、
    `stCost` が NaN になりかねない状態だった。足すステータスが増えた時もここ1か所で済む */
-const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0,sw:0,pl:0,li:0,ms:0,hl:0});/* z=❄凍結時間 / ms=👟移動速度(進軍旗) / hl=💚回復量(野戦病院) */
+/* 💨⚠⚠(266)**gz(撒く量)がここに無かったので散布塔だけ強化を買えなかった**
+   (2026-08-13ユーザー報告「散布塔の散布量強化できない」)。upTower が `tw.us[st]==null` で弾いていた
+   =枠は出るのに押しても何も起きない。⭐**枠を足したら必ずここへも足す**(この注意書きの通り)。 */
+const newUs=()=>({d:0,r:0,g:0,c:0,f:0,h:0,b:0,m:0,n:0,a:0,z:0,sw:0,pl:0,li:0,gz:0,ms:0,hl:0});/* z=❄凍結時間 / gz=💨撒く量(散布塔) / ms=👟移動速度(進軍旗) / hl=💚回復量(野戦病院) */
 /* 盤面の強化は⚙️払い。⚠進化先は**そのタレットの値段で1段目から数え直す**(引き継いだLvのぶん
    1.75^5=16倍から始めると、進化した瞬間に手が届かない値段になる) */
 const stCost=(tw,st)=>Math.round(TOWERS[tw.ti].cost*.45*Math.pow(1.75,(tw.us[st]||0)-usMinSt(tw.ti,st)));
@@ -28686,6 +28689,8 @@ function openBM(si){
     +(st==='sw'?(mx?'(-'+Math.round((1-twSlowV(T,tw))*100)+'%)':'(-'+Math.round((1-twSlowV(T,tw))*100)+'%→-'+Math.round((1-twSlowV(T,{us:Object.assign({},tw.us,{sw:lvv+1})}))*100)+'%)'):'')
     +(st==='pl'?(mx?'('+twPulN(T,tw)+'回)':'('+twPulN(T,tw)+'→'+twPulN(T,{us:Object.assign({},tw.us,{pl:lvv+1})})+'回)'):'')
     +(st==='li'?(mx?'(x'+twLitX(T,tw).toFixed(2)+')':'(x'+twLitX(T,tw).toFixed(2)+'→x'+twLitX(T,{us:Object.assign({},tw.us,{li:lvv+1})}).toFixed(2)+')'):'')
+    /* 💨(266)撒く量も「今→強化後」を出す=素の濃さを1.00とした倍率(生の値は .20 などで読めない) */
+    +(st==='gz'?(mx?'(x'+(twGasA(T,tw)/(T.gsp||1)).toFixed(2)+')':'(x'+(twGasA(T,tw)/(T.gsp||1)).toFixed(2)+'→x'+(twGasA(T,{us:Object.assign({},tw.us,{gz:lvv+1})})/(T.gsp||1)).toFixed(2)+')'):'')
     +(st==='f'?(mx?'('+twFrzN(T,tw)+'回)':'('+twFrzN(T,tw)+'→'+(twFrzN(T,tw)+1)+'回)'):'')
     /* 🔥昇温速度は「最大倍率まで何発か」を出す=数字が減るほど良い、と分かるように */
     /* 🔥昇温速度は「最大倍率まで何秒か」を出す(継続攻撃になったので発射数ではなく時間) */
