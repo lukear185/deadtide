@@ -14,7 +14,7 @@ setTimeout(()=>{try{
   FLVIEW.canvas.dispatchEvent(new PointerEvent('pointerdown',opts));FLVIEW.canvas.dispatchEvent(new PointerEvent('pointerup',opts));};
  document.querySelector('.fl-card[data-id="gun"]').click();tap(250,110);need(FLVIEW.battle.units.length===1,'兵士を配置できない');
  const funds=FLVIEW.battle.scrap;tap(1000,350);need(FLVIEW.battle.scrap===funds,'配置範囲外で費用が減った');
- document.querySelector('.fl-card[data-id="shd"]').click();tap(430,100);need(FLVIEW.battle.units.length===2,'盾持ちを配置できない');
+ document.querySelector('.fl-card[data-id="shd"]').click();tap(430,100);need(FLVIEW.battle.units.length===2,'盾持ちを配置できない: '+document.getElementById('fl-hint').textContent);
  document.querySelector('.fl-card[data-id="rifle"]').click();tap(450,260);need(FLVIEW.battle.towers.length===1,'タレットを配置できない');
  document.getElementById('fl-start').click();need(FLVIEW.battle.phase==='battle','開始できない');
  document.getElementById('fl-pause').click();need(FLVIEW.battle.paused,'停止できない');
