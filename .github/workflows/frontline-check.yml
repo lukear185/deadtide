@@ -1,0 +1,42 @@
+name: 開放戦場の検査
+on:
+  push:
+    branches: [codex/open-battlefield]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 試作を構築
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('frontline.patch.json','utf8'));
+          let s=fs.readFileSync('index.html','utf8');
+          for(const p of data.patches){if(s.split(p.old).length!==2)throw new Error('アンカーが一意でない');s=s.replace(p.old,()=>p.new);}
+          fs.writeFileSync('index.html',s);
+          JS
+      - name: 日本語フォント
+        run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
+      - name: ブラウザの確認
+        run: google-chrome --version
+      - name: 開放戦場の挙動
+        run: node test_frontline.js
+      - name: 開放戦場の操作と撮影
+        run: node test_frontline_browser.js
+      - name: 既存のリリースゲート
+        run: node tool_release.js
+      - name: 画面を保存
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontline-screenshots
+          path: test-output/frontline-*.png
+          if-no-files-found: ignore
