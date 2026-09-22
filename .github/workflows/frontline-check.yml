@@ -45,6 +45,19 @@ jobs:
         run: node test_frontline_browser.js
       - name: 既存のリリースゲート
         run: node tool_release.js
+      - name: 残りの検査結果を記録
+        if: failure()
+        run: |
+          node <<'JS'
+          const cp=require('child_process');
+          let failed=false;
+          for(const args of [['tool_paint.js','--check'],['test_save.js'],['tool_nums.js','--check'],['tool_look.js','--check'],['tool_health.js','--check'],['test_headless.js']]){
+            console.log('残りの検査:',args.join(' '));
+            const r=cp.spawnSync(process.execPath,args,{stdio:'inherit'});
+            console.log('検査の終了:',args[0],r.status);failed=failed||r.status!==0;
+          }
+          process.exit(failed?1:0);
+          JS
       - name: 画面を保存
         if: always()
         uses: actions/upload-artifact@v4
