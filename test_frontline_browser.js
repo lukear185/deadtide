@@ -11,6 +11,7 @@ setTimeout(()=>{try{
  need(document.querySelectorAll('#fl-root .fl-card').length===8,'配置カード不足');
  frontlineDraw();
  const tap=(x,y)=>{const r=FLVIEW.canvas.getBoundingClientRect(),opts={bubbles:true,pointerId:1,pointerType:'touch',clientX:r.left+FLVIEW.ox+x*FLVIEW.scale,clientY:r.top+FLVIEW.oy+y*FLVIEW.scale};
+  need(document.elementFromPoint(opts.clientX,opts.clientY)===FLVIEW.canvas,'配置タップを別の要素が遮る');
   FLVIEW.canvas.dispatchEvent(new PointerEvent('pointerdown',opts));FLVIEW.canvas.dispatchEvent(new PointerEvent('pointerup',opts));};
  document.querySelector('.fl-card[data-id="gun"]').click();tap(250,110);need(FLVIEW.battle.units.length===1,'兵士を配置できない');
  const funds=FLVIEW.battle.scrap;tap(1000,350);need(FLVIEW.battle.scrap===funds,'配置範囲外で費用が減った');
@@ -40,10 +41,17 @@ const out=path.join(__dirname,'test-output');fs.mkdirSync(out,{recursive:true});
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'deadtide-frontline-'));
 try{
  const file=path.join(tmp,'index.html');fs.writeFileSync(file,html.replace('</body>','<script>'+check+'</script></body>'));
- for(const [w,h] of [[852,393],[1365,935]]){
+ // Chrome の外枠を除いた表示領域を指定する。外枠の寸法は版ごとに測る。
+ const probe=path.join(tmp,'viewport.html');fs.writeFileSync(probe,'<title>viewport</title><script>document.title="VP "+innerHeight;</script>');
+ const pr=cp.spawnSync(chrome,['--headless=new','--no-sandbox','--disable-gpu','--force-device-scale-factor=1','--window-size=852,600','--dump-dom','file://'+probe],{encoding:'utf8',timeout:30000});
+ const pm=/<title>VP (\d+)<\/title>/.exec(pr.stdout||'');
+ if(!pm)throw new Error('ブラウザの表示領域を測れない');
+ const chromeHeight=600-Number(pm[1]);
+ console.log('ブラウザ外枠の高さ:',chromeHeight);
+ for(const [w,h] of [[852,393],[393,852],[1365,935]]){
   const png=path.join(out,'frontline-'+w+'x'+h+'.png');
   const r=cp.spawnSync(chrome,['--headless=new','--no-sandbox','--disable-gpu','--hide-scrollbars','--force-device-scale-factor=1',
-   '--user-data-dir='+path.join(tmp,'profile-'+w),'--window-size='+w+','+h,'--virtual-time-budget=3500','--screenshot='+png,'--dump-dom','file://'+file+'?frontline=1'],
+   '--user-data-dir='+path.join(tmp,'profile-'+w),'--window-size='+w+','+(h+chromeHeight),'--virtual-time-budget=3500','--screenshot='+png,'--dump-dom','file://'+file+'?frontline=1'],
    {encoding:'utf8',maxBuffer:32*1024*1024,timeout:60000});
   const title=/<title>(FLPASS[^<]*|FLFAIL[^<]*)<\/title>/.exec(r.stdout||'');
   if(r.status!==0||!title||!title[1].startsWith('FLPASS')||!fs.existsSync(png)){
