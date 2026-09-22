@@ -23,7 +23,7 @@ setTimeout(()=>{try{
  FLVIEW.cursor=null;frontlineHUD();frontlineDraw();
  const root=document.getElementById('fl-root').getBoundingClientRect(),cv9=FLVIEW.canvas.getBoundingClientRect();
  need(root.left>=-1&&root.right<=innerWidth+1&&root.bottom<=innerHeight+1,'画面がはみ出す');
- need(cv9.height>=140&&cv9.width>=300,'戦場がつぶれている');
+ need(cv9.height>=140&&cv9.width>=300,'戦場がつぶれている: viewport='+innerWidth+'x'+innerHeight+', canvas='+cv9.width+'x'+cv9.height);
  for(const e of document.querySelectorAll('#fl-root button')){
   if(!e.getClientRects().length)continue;const r=e.getBoundingClientRect();
   need(r.height>=43,'ボタンが小さい: '+e.textContent);
