@@ -25,6 +25,18 @@ jobs:
           JS
       - name: 日本語フォント
         run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
+      - name: 既存版の表示検査を比較
+        run: |
+          node <<'JS'
+          const fs=require('fs'),cp=require('child_process');
+          cp.execFileSync('git',['fetch','--depth=1','origin','576ff9c9453bb24505989b51f59b3f13913ac57a'],{stdio:'inherit'});
+          const changed=fs.readFileSync('index.html');
+          try{
+            fs.writeFileSync('index.html',cp.execFileSync('git',['show','576ff9c9453bb24505989b51f59b3f13913ac57a:index.html'],{maxBuffer:32*1024*1024}));
+            const result=cp.spawnSync(process.execPath,['test_view.js'],{encoding:'utf8'});
+            console.log('変更前の同条件の検査:',result.status);console.log(result.stdout);
+          }finally{fs.writeFileSync('index.html',changed);}
+          JS
       - name: ブラウザの確認
         run: google-chrome --version
       - name: 開放戦場の挙動

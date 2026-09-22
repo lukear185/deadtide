@@ -6,6 +6,7 @@ const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');
 const check=String.raw`
 setTimeout(()=>{try{
  const need=(ok,text)=>{if(!ok)throw new Error(text);};
+ need(innerWidth===Number(frameElement.width)&&innerHeight===Number(frameElement.height),'指定した画面の寸法になっていない');
  need(FRONTLINE_MODE&&FLVIEW,'試作が起動していない');
  need(META_KEY==='dt_meta_frontline','保存先が本編と混ざる');
  need(document.querySelectorAll('#fl-root .fl-card').length===8,'配置カード不足');
@@ -33,25 +34,24 @@ setTimeout(()=>{try{
  const c=FLVIEW.context.getImageData(0,0,FLVIEW.canvas.width,FLVIEW.canvas.height).data;
  let visible=0;for(let i=3;i<c.length;i+=400)if(c[i])visible++;
  need(visible>100,'Canvasが描かれていない');
- document.title='FLPASS '+innerWidth+'x'+innerHeight;
+ document.title='FLPASS '+innerWidth+'x'+innerHeight;parent.document.title=document.title;
  FLVIEW.battle.paused=true;
-}catch(e){document.title='FLFAIL '+e.message;console.error(e);}},700);
+}catch(e){document.title='FLFAIL '+e.message;parent.document.title=document.title;console.error(e);}},700);
 `;
 const out=path.join(__dirname,'test-output');fs.mkdirSync(out,{recursive:true});
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'deadtide-frontline-'));
 try{
- const file=path.join(tmp,'index.html');fs.writeFileSync(file,html.replace('</body>','<script>'+check+'</script></body>'));
- // Chrome の外枠を除いた表示領域を指定する。外枠の寸法は版ごとに測る。
- const probe=path.join(tmp,'viewport.html');fs.writeFileSync(probe,'<title>viewport</title><script>document.title="VP "+innerHeight;</script>');
- const pr=cp.spawnSync(chrome,['--headless=new','--no-sandbox','--disable-gpu','--force-device-scale-factor=1','--window-size=852,600','--dump-dom','file://'+probe],{encoding:'utf8',timeout:30000});
- const pm=/<title>VP (\d+)<\/title>/.exec(pr.stdout||'');
- if(!pm)throw new Error('ブラウザの表示領域を測れない');
- const chromeHeight=600-Number(pm[1]);
- console.log('ブラウザ外枠の高さ:',chromeHeight);
+ // iframe 内の表示領域を固定し、Chrome の最小ウィンドウ幅や外枠の影響を除く。
+ const file=path.join(tmp,'index.html');
+ const route="const FRONTLINE_MODE=(()=>{try{return (location.search||'').replace('?','&').split('&').includes('frontline=1');}catch(e){return false;}})();";
+ if(html.split(route).length!==2)throw new Error('試作の入口が見つからない');
+ const content=html.replace(route,'const FRONTLINE_MODE=true;').replace('</body>','<script>'+check+'</script></body>');
+ const literal=JSON.stringify(content).replace(/</g,'\\u003c');
  for(const [w,h] of [[852,393],[393,852],[1365,935]]){
+  fs.writeFileSync(file,'<!doctype html><title>実操作検査</title><style>body{margin:0;background:#252b28}iframe{display:block;border:0}</style><iframe width="'+w+'" height="'+h+'"></iframe><script>document.querySelector("iframe").srcdoc='+literal+';</script>');
   const png=path.join(out,'frontline-'+w+'x'+h+'.png');
   const r=cp.spawnSync(chrome,['--headless=new','--no-sandbox','--disable-gpu','--hide-scrollbars','--force-device-scale-factor=1',
-   '--user-data-dir='+path.join(tmp,'profile-'+w),'--window-size='+w+','+(h+chromeHeight),'--virtual-time-budget=3500','--screenshot='+png,'--dump-dom','file://'+file+'?frontline=1'],
+   '--user-data-dir='+path.join(tmp,'profile-'+w),'--window-size='+Math.max(500,w)+','+(h+220),'--virtual-time-budget=3500','--screenshot='+png,'--dump-dom','file://'+file+'?frontline=1'],
    {encoding:'utf8',maxBuffer:32*1024*1024,timeout:60000});
   const title=/<title>(FLPASS[^<]*|FLFAIL[^<]*)<\/title>/.exec(r.stdout||'');
   if(r.status!==0||!title||!title[1].startsWith('FLPASS')||!fs.existsSync(png)){
